@@ -6,7 +6,7 @@ import request from "supertest";
 
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { ProductCatalogReader } from "../src/b2b/catalog/domain/ports/product-catalog.reader.js";
 import { OrderOperations } from "../src/b2b/orders/application/services/order-operations.service.js";
 import { OperationDayRequiredError } from "../src/b2b/orders/domain/errors/order-operation-errors.js";
@@ -17,6 +17,7 @@ import { prepareAtCommerce } from "./operations-at-commerce-seed.js";
 import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { staffViewer } from "../src/b2b/catalog/domain/catalog-viewer.js";
+import { cardGatewayDouble } from "./order-factory.js";
 
 /**
  * **Le drapeau `operationOnly` devient une règle de vente** (lot 3 de
@@ -39,17 +40,7 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: token, scopes: [] }),
 };
 
-let intentSeq = 0;
-const fakeGateway = {
-  createIntent: () => {
-    intentSeq += 1;
-    const paymentIntentId = `pi_op_${String(intentSeq)}`;
-    return Promise.resolve({ paymentIntentId, clientSecret: `${paymentIntentId}_secret` });
-  },
-  publishableKey: () => "pk_op",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+const fakeGateway = cardGatewayDouble("pi_op");
 
 let ctx: E2eContext;
 let companyId = "";
@@ -58,7 +49,7 @@ let pickupId = "";
 beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: fakeGateway },
       { token: AdminTokenVerifier, value: stubAdminVerifier },
     ],
   });

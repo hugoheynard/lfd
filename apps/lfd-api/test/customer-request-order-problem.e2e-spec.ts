@@ -15,7 +15,7 @@ import type { CreatedIdResponse, CustomerRequestView, RequestReasonPayload } fro
 import type { Test } from "supertest";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
@@ -49,7 +49,7 @@ beforeAll(async () => {
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
       { token: MAILER, value: recordingMailer },
-      { token: PaymentGateway, value: cardGatewayDouble("pi_probleme") },
+      { token: CardProviders, value: cardGatewayDouble("pi_probleme") },
     ],
   });
 });

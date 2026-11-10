@@ -5,7 +5,10 @@ import { DomainEventPublisher } from "../../../../platform/events/domain-event-p
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { CommerceOrderPlacedFact } from "../../../../delivery/channels/commerce/index.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { PaymentGateway } from "../../../payments/domain/payment-gateway.js";
+import {
+  CardPayments,
+  type CardPaymentPreparation,
+} from "../../../../card-payment/channels/requests/index.js";
 import type { Order } from "../../domain/entities/order.js";
 import {
   IdempotencyKeyReusedError,
@@ -29,14 +32,11 @@ import { OrderIntake } from "../services/order-intake.service.js";
 import { PlaceShopOrderCommand, type PlaceShopOrderResult } from "./place-shop-order.command.js";
 import { GUEST_BUYER } from "../../domain/value-objects/order-buyer-kind.js";
 
-/** Devise unique de la plateforme (montants en centimes d'euro). */
-const CURRENCY = "eur";
-
-/** L'intention créée avant l'écriture : son secret pour la boutique, son id pour l'annuler. */
-interface ShopIntent {
-  readonly clientSecret: string;
-  readonly paymentIntentId: string;
-}
+import {
+  ORDER_CARD_SUBJECT_TYPE,
+  PERSONAL_CARD_TAG,
+  orderCardSubject,
+} from "../services/order-card-subject.js";
 
 /**
  * **Commander sans compte** — plan
@@ -76,7 +76,7 @@ export class PlaceShopOrderHandler implements ICommandHandler<
     private readonly buyers: GuestBuyerRegistrar,
     private readonly drafting: OrderDrafting,
     private readonly orders: OrderRepository,
-    private readonly payments: PaymentGateway,
+    private readonly payments: CardPayments,
     private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
     private readonly keys: ShopOrderIdempotencyStore,
@@ -212,7 +212,7 @@ export class PlaceShopOrderHandler implements ICommandHandler<
       ...base,
       payment: {
         clientSecret: intent.clientSecret,
-        publishableKey: this.payments.publishableKey(),
+        publishableKey: intent.publishableKey,
         amountCents: order.totalCents,
       },
     };
@@ -226,14 +226,14 @@ export class PlaceShopOrderHandler implements ICommandHandler<
    *
    * 🔴 Si la transaction échoue — le reste de la vitrine pris entre-temps par
    * une autre passation (plan du jour J, §12, lot L4), l'arrêt du plan —,
-   * l'intention Stripe déjà créée est annulée, comme sur le chemin connecté :
-   * jamais confirmée, elle ne serait jamais débitée, mais elle resterait
-   * orpheline. `cancelIntent` ne lève jamais.
+   * l'intention déjà créée est rendue (`release`), comme sur le chemin
+   * connecté : jamais confirmée, elle ne serait jamais débitée, mais elle
+   * resterait orpheline. `release` ne lève jamais.
    */
   private async persist(
     order: Order,
     payload: PlaceShopOrderCommand["payload"],
-    intent: ShopIntent | null,
+    intent: CardPaymentPreparation | null,
   ): Promise<PlacedOrder> {
     try {
       return await this.unitOfWork.run(async () => {
@@ -242,6 +242,9 @@ export class PlaceShopOrderHandler implements ICommandHandler<
         // la composition et l'écriture (lot O3, S5 ; plan du jour J, §12).
         await this.drafting.holdSupply(order, payload.requestedDeliveryDate);
         const written = await this.orders.place(order);
+        if (intent !== null) {
+          await this.payments.attach(orderCardSubject(written.id), intent.prepared, "first");
+        }
         await this.keys.resolve(payload.idempotencyKey, written.id);
         // La case des offres, pour après la validation (C2, règles 17 et 21) :
         // une adresse d'invité n'est jamais prouvée — double confirmation.
@@ -256,7 +259,7 @@ export class PlaceShopOrderHandler implements ICommandHandler<
       });
     } catch (error) {
       if (intent !== null) {
-        await this.payments.cancelIntent(intent.paymentIntentId);
+        await this.payments.release(intent.prepared);
       }
       throw error;
     }
@@ -303,17 +306,17 @@ export class PlaceShopOrderHandler implements ICommandHandler<
    * Un total nul ne crée aucune intention : Stripe refuserait un montant de
    * zéro, et il n'y a rien à encaisser.
    */
-  private async settle(order: Order): Promise<ShopIntent | null> {
+  private async settle(order: Order): Promise<CardPaymentPreparation | null> {
     if (order.totalCents <= 0) {
       order.deferPayment();
       return null;
     }
-    const intent = await this.payments.createIntent({
-      amountCents: order.totalCents,
-      currency: CURRENCY,
-      companyId: null,
-    });
-    order.payByCard(intent.paymentIntentId);
-    return { clientSecret: intent.clientSecret, paymentIntentId: intent.paymentIntentId };
+    const preparation = await this.payments.prepare(
+      ORDER_CARD_SUBJECT_TYPE,
+      order.totalCents,
+      PERSONAL_CARD_TAG,
+    );
+    order.payByCard(preparation.prepared.providerRef);
+    return preparation;
   }
 }

@@ -14,6 +14,12 @@
  * sortant est enveloppée ici — sauf l'adaptateur réel, qui se garde déjà
  * (sans quoi chaque appel compterait deux fois). Instrument de mesure, pas
  * double : le comportement de l'instance ne change pas.
+ *
+ * Les cartes n'ont plus de jeton ici depuis le lot P0.c2 du plan M2
+ * (2026-11-09) : le jeton doublé est le registre `CardProviders`, dont les
+ * méthodes s'appellent légitimement sous transaction (le choix d'un compte),
+ * et c'est le prestataire doublé (`E2eCardProvider`, `card-payments.ts`) qui
+ * pose lui-même la garde sur ses appels « réseau », comme l'adaptateur réel.
  */
 import { appendFileSync } from "node:fs";
 import { relative } from "node:path";
@@ -26,8 +32,6 @@ import { PublicShelfStateReader } from "../src/b2b/catalog/domain/ports/public-s
 import { ShopShelfCache } from "../src/b2b/catalog/domain/ports/shop-shelf-cache.js";
 import { ShopShelfSwitch } from "../src/b2b/catalog/domain/ports/shop-shelf-switch.js";
 import { MarketDirectory } from "../src/b2b/growth/domain/ports/market-directory.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
-import { PaymentRefunder } from "../src/b2b/payments/domain/payment-refunder.js";
 import { CheckoutGateway } from "../src/b2b/payments/domain/ports/checkout-gateway.js";
 import { PublicSettingsEdgeCache } from "../src/b2b/shared/public-settings-cache/domain/ports/public-settings-edge-cache.js";
 import { ShopCopyEdgeCache } from "../src/b2b/shop-copy/domain/ports/shop-copy-edge-cache.js";
@@ -56,8 +60,6 @@ import { E2E_NETWORK_LOG } from "./setup-env.js";
 type ProviderToken = symbol | (abstract new (...args: never[]) => unknown);
 
 const OUTBOUND_TOKENS: readonly { readonly token: ProviderToken; readonly name: string }[] = [
-  { token: PaymentGateway, name: "Stripe.PaymentGateway" },
-  { token: PaymentRefunder, name: "Stripe.PaymentRefunder" },
   { token: CheckoutGateway, name: "Stripe.CheckoutGateway" },
   { token: MAILER, name: "Resend.MAILER" },
   { token: InboundMailReader, name: "Resend.InboundMailReader" },
@@ -87,8 +89,6 @@ const OUTBOUND_TOKENS: readonly { readonly token: ProviderToken; readonly name: 
  * les envelopper compterait chaque appel deux fois (relevé le 2026-11-06).
  */
 const SELF_GUARDED: ReadonlySet<string> = new Set([
-  "StripePaymentGateway",
-  "StripePaymentRefunder",
   "StripeCheckoutGateway",
   "EffectiveCopyMailer",
   "ResendInboundMailReader",

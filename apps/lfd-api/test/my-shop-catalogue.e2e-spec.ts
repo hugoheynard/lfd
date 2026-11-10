@@ -22,9 +22,10 @@ import {
 } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { cardGatewayDouble } from "./order-factory.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -32,17 +33,7 @@ const stubAdminVerifier = {
 };
 
 /** L'intention change à chaque appel : la colonne est `@unique`. */
-let intentCounter = 0;
-const fakeGateway = {
-  createIntent: () => {
-    intentCounter += 1;
-    return Promise.resolve({
-      id: `pi_${String(intentCounter)}`,
-      clientSecret: `secret_${String(intentCounter)}`,
-    });
-  },
-  publishableKey: () => "pk_test",
-};
+const fakeGateway = cardGatewayDouble("pi_my_shop_catalogue");
 
 let ctx: E2eContext;
 
@@ -50,7 +41,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: fakeGateway },
     ],
   });
 });

@@ -22,14 +22,14 @@ import {
   streamsWith,
 } from "../src/b2b/accounting/domain/services/__tests__/pdf-objects.js";
 import { renderFacturXml } from "../src/b2b/accounting/domain/services/facturx-xml.js";
-import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
 import { MarkOrderFulfilledCommand } from "../src/b2b/orders/application/commands/mark-order-fulfilled.command.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { OutboxRelay } from "../src/platform/outbox/outbox-relay.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { addBillingAddress, attachTo, createCompany, createUser } from "./factories.js";
+import { cardPaid } from "./card-payments.js";
 import { cardGatewayDouble, pickupSite, placeOrder } from "./order-factory.js";
 
 const ENTITIES = "/admin/accounting/legal-entities";
@@ -49,7 +49,7 @@ beforeAll(async () => {
         token: AdminTokenVerifier,
         value: { verify: () => Promise.resolve({ subject: STAFF, scopes: [] }) },
       },
-      { token: PaymentGateway, value: cardGatewayDouble("pi_p7") },
+      { token: CardProviders, value: cardGatewayDouble("pi_p7") },
     ],
   });
 });
@@ -183,9 +183,7 @@ describe("la facture carte d'une commande au poids (P7)", () => {
     });
     expect(line).toMatchObject({ saleUnit: "weight", quantity: WEIGHT_GRAMS });
 
-    await ctx.app
-      .get(CommandBus)
-      .execute(new ConfirmOrderPaymentCommand(order.intent, "succeeded"));
+    await cardPaid(ctx, order.intent);
     await ctx.app
       .get(CommandBus)
       .execute(

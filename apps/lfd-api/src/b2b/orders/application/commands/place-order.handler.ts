@@ -6,7 +6,10 @@ import { DomainEventPublisher } from "../../../../platform/events/domain-event-p
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { CommerceOrderPlacedFact } from "../../../../delivery/channels/commerce/index.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
-import { PaymentGateway } from "../../../payments/domain/payment-gateway.js";
+import {
+  CardPayments,
+  type CardPaymentPreparation,
+} from "../../../../card-payment/channels/requests/index.js";
 import type { Order } from "../../domain/entities/order.js";
 
 import {
@@ -28,7 +31,9 @@ import { OrderMarketingConsent } from "../services/order-marketing-consent.js";
 import { CustomerCancellationDeadline } from "../services/customer-cancellation-deadline.js";
 import { OrderDrafting } from "../services/order-drafting.service.js";
 import { OrderIntake } from "../services/order-intake.service.js";
-import { settleOrder, type CreatedIntent } from "../services/order-settlement.js";
+import { OrderCardRetrieval } from "../../domain/ports/order-card-payments.js";
+import { orderCardSubject } from "../services/order-card-subject.js";
+import { settleOrder } from "../services/order-settlement.js";
 import { PlaceOrderCommand, type PlaceOrderResult } from "./place-order.command.js";
 import { REGISTERED_BUYER } from "../../domain/value-objects/order-buyer-kind.js";
 
@@ -42,8 +47,10 @@ import { REGISTERED_BUYER } from "../../domain/value-objects/order-buyer-kind.js
  * - le règlement : `payByCard` si une carte est requise et le total > 0, sinon
  *   `deferPayment`.
  *
- * Pour une carte, l'intention Stripe est créée AVANT la persistance, dimensionnée
- * sur `order.totalCents` : une commande `pending` porte toujours son intent.
+ * Pour une carte, l'intention est préparée AVANT la persistance (par le bloc
+ * `card-payment`), dimensionnée sur `order.totalCents`, et rattachée DANS sa
+ * transaction : une commande `pending` porte toujours son intention, et sa
+ * ligne de paiement (plan M2, §4.2).
  */
 @CommandHandler(PlaceOrderCommand)
 export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, PlaceOrderResult> {
@@ -51,7 +58,8 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     private readonly guard: OrderGuardReader,
     private readonly drafting: OrderDrafting,
     private readonly orders: OrderRepository,
-    private readonly payments: PaymentGateway,
+    private readonly payments: CardPayments,
+    private readonly cards: OrderCardRetrieval,
     private readonly events: DomainEventPublisher,
     private readonly waivers: OrderCutoffWaiverGate,
     private readonly clock: Clock,
@@ -208,7 +216,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
       settlement,
       payment: {
         clientSecret: intent.clientSecret,
-        publishableKey: this.payments.publishableKey(),
+        publishableKey: intent.publishableKey,
         amountCents: order.totalCents,
       },
     };
@@ -228,15 +236,16 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
    * entier) est définitive dès sa passation : son reliquat s'émet dans la même
    * transaction (C5). Les autres attendent le rattrapage de nuit.
    *
-   * 🔴 Si la transaction échoue, l'intention Stripe déjà créée est annulée
-   * (§11 bis, mineurs) : jamais confirmée, elle ne serait jamais débitée, mais
+   * 🔴 Si la transaction échoue, l'intention déjà créée est rendue (`release`,
+   * §11 bis, mineurs) : jamais confirmée, elle ne serait jamais débitée, mais
    * un bon disputé par deux onglets en rendrait l'orpheline courante.
-   * `cancelIntent` ne lève jamais.
+   * `release` ne lève jamais. La ligne de paiement, elle, tombe avec la
+   * transaction.
    */
   private async persist(
     command: PlaceOrderCommand,
     order: Order,
-    intent: CreatedIntent | null,
+    intent: CardPaymentPreparation | null,
   ): Promise<PlacedOrder> {
     const { actorUserId, payload } = command;
     const voucherId = payload.voucherId ?? null;
@@ -252,6 +261,9 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
           await this.vouchers.reserve(voucherId, actorUserId, this.clock.now());
         }
         const written = await this.orders.place(order);
+        if (intent !== null) {
+          await this.payments.attach(orderCardSubject(written.id), intent.prepared, "first");
+        }
         await this.keys.resolve(actorUserId, payload.idempotencyKey, written.id);
         // La case des offres, pour après la validation (C2, règle 21).
         this.consent.collect(written.id, command.consentBuyer, payload.marketingConsent);
@@ -272,7 +284,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
       });
     } catch (error) {
       if (intent !== null) {
-        await this.payments.cancelIntent(intent.paymentIntentId);
+        await this.payments.release(intent.prepared);
       }
       throw error;
     }
@@ -287,7 +299,11 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
    * laisser vieillir en base. Un aller-retour de plus, sur un chemin rare.
    *
    * Ni la dérogation ni l'événement de domaine ne repartent : la commande a
-   * déjà consommé l'une et publié l'autre. Un rejeu ne recommence rien.
+   * déjà consommé l'une et publié l'autre. Un rejeu ne recommence rien — pas
+   * même l'adoption d'une intention d'avant le bloc `card-payment` (plan M2,
+   * §4.6) : il la dit « à adopter », comme la page de règlement.
+   *
+   * @throws {OrderPaymentAwaitsAdoptionError} intention sans ligne de paiement.
    */
   private async replay(orderId: string): Promise<PlaceOrderResult> {
     const found = await this.reader.findById(orderId);
@@ -301,14 +317,14 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     if (view.paymentStatus !== "pending" || stripePaymentIntentId === null) {
       return { id: view.id, orderNumber: view.orderNumber, settlement: view.settlement };
     }
-    const intent = await this.payments.retrieveIntent(stripePaymentIntentId);
+    const intent = await this.cards.retrieveFirst(view.id);
     return {
       id: view.id,
       orderNumber: view.orderNumber,
       settlement: view.settlement,
       payment: {
         clientSecret: intent.clientSecret,
-        publishableKey: this.payments.publishableKey(),
+        publishableKey: intent.publishableKey,
         amountCents: view.totalCents,
       },
     };

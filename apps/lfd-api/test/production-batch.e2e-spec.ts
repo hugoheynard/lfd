@@ -20,7 +20,7 @@ import type {
 
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import {
   bootstrapE2e,
   E2E_STAFF_ID,
@@ -31,7 +31,7 @@ import {
 import { binTypeId } from "./delivery-loading-scene.js";
 import { fillOrder, packingOrderPath } from "./production-day-fixture.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
-import { settleCardPayments } from "./card-payments.js";
+import { cardProvidersDouble, settleCardPayments } from "./card-payments.js";
 
 const MEMBER = "auth0|member";
 const SERVICE_DAY = serviceDay();
@@ -56,36 +56,8 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: "staff-e2e", scopes: [] }),
 };
 
-/**
- * La passerelle de paiement, doublée.
- *
- * 🔴 **`paymentIntentId` était CONSTANT (`"pi_e2e"`) jusqu'au 2026-09-10**, et
- * `orders.stripe_payment_intent_id` est `@unique`. Deux commandes payables ne
- * pouvaient donc pas coexister dans une même suite : la seconde échouait en
- * `persistence.duplicate`, avec un message qui ne nomme rien.
- *
- * Ce n'était pas un bug de produit — le vrai Stripe rend un identifiant neuf à
- * chaque appel. C'était un doublé qui MENTAIT sur son contrat, et le prix a été
- * qu'aucun cas de ce fichier n'a jamais placé deux commandes à régler. La
- * contrainte d'unicité n'avait donc jamais été éprouvée honnêtement.
- *
- * Un compteur suffit : il rend l'unicité vraie sans rendre l'identifiant
- * imprévisible, ce dont aucun test n'a besoin ici.
- */
-let intentCount = 0;
-/** Les intentions émises et pas encore réglées — vidées par `settleCardPayments`. */
-const issuedIntents: string[] = [];
-const fakeGateway = {
-  createIntent: () => {
-    intentCount += 1;
-    const id = `pi_e2e_${String(intentCount)}`;
-    issuedIntents.push(id);
-    return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret` });
-  },
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+/** Le prestataire de carte doublé ; `settleCardPayments` vide ses intentions émises. */
+const cards = cardProvidersDouble("pi_e2e");
 
 let ctx: E2eContext;
 
@@ -93,7 +65,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: cards },
     ],
   });
 });
@@ -165,7 +137,7 @@ describe("la fiche de production lit ce qui a été convenu", () => {
         lines: [{ sku: "VIE-001-1", quantity: 2 }],
       })
       .expect(201);
-    await settleCardPayments(ctx, issuedIntents);
+    await settleCardPayments(ctx, cards.provider.issued);
 
     // Le client change son contact sur place — après avoir commandé.
     await ctx.prisma.address.update({
@@ -215,7 +187,7 @@ describe("la fiche de production lit ce qui a été convenu", () => {
         lines: [{ sku: "VIE-001-1", quantity: 2 }],
       })
       .expect(201);
-    await settleCardPayments(ctx, issuedIntents);
+    await settleCardPayments(ctx, cards.provider.issued);
 
     const sheet = (await batch()).sheets[0];
     // Commande personnelle : pas de société, donc pas de détenteur à qui se
@@ -383,7 +355,7 @@ describe("le colisage", () => {
         lines: [{ sku: "VIE-001-1", quantity: 2 }],
       })
       .expect(201);
-    await settleCardPayments(ctx, issuedIntents);
+    await settleCardPayments(ctx, cards.provider.issued);
     return jsonBody<{ orderNumber: string }>(response).orderNumber;
   }
 
@@ -608,7 +580,7 @@ describe("les courriels d'une commande", () => {
         lines: [{ sku: "VIE-001-1", quantity: 2 }],
       })
       .expect(201);
-    await settleCardPayments(ctx, issuedIntents);
+    await settleCardPayments(ctx, cards.provider.issued);
     return jsonBody<{ orderNumber: string }>(response).orderNumber;
   }
 
@@ -698,7 +670,7 @@ describe("le journal d'une commande", () => {
         })
         .expect(201),
     );
-    await settleCardPayments(ctx, issuedIntents);
+    await settleCardPayments(ctx, cards.provider.issued);
     return placed.orderNumber;
   }
 
@@ -801,7 +773,7 @@ describe("le plan du soir", () => {
         })
         .expect(201),
     );
-    await settleCardPayments(ctx, issuedIntents);
+    await settleCardPayments(ctx, cards.provider.issued);
     return placed.orderNumber;
   }
 
@@ -1088,7 +1060,7 @@ describe("la remise en livraison", () => {
         })
         .expect(201),
     );
-    await settleCardPayments(ctx, issuedIntents);
+    await settleCardPayments(ctx, cards.provider.issued);
     return placed.orderNumber;
   }
 
@@ -1209,7 +1181,7 @@ describe("la file de remise", () => {
         })
         .expect(201),
     );
-    await settleCardPayments(ctx, issuedIntents);
+    await settleCardPayments(ctx, cards.provider.issued);
     return placed.orderNumber;
   }
 

@@ -27,7 +27,6 @@ import {
   type ShopQuoteView,
 } from "@lfd/contracts";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { PricingMaterialsCache } from "../src/b2b/pricing/infrastructure/pricing-materials.cache.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { Clock } from "../src/platform/time/clock.js";
@@ -41,6 +40,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { promotionTerms } from "./promotion-fixtures.js";
+import { cardProvidersOverride } from "./card-payments.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -56,26 +56,6 @@ function todayAt(time: string): Date {
   return instant;
 }
 
-let intentCounter = 0;
-const fakeGateway = {
-  createIntent: () => {
-    intentCounter += 1;
-    return Promise.resolve({
-      paymentIntentId: `pi_hours_${String(intentCounter)}`,
-      clientSecret: `pi_hours_${String(intentCounter)}_secret`,
-    });
-  },
-  retrieveIntent: (id: string) =>
-    Promise.resolve({
-      paymentIntentId: id,
-      clientSecret: `${id}_secret`,
-      state: "awaiting_payment" as const,
-    }),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
-
 const clock = new FixedClock(todayAt("17:30"));
 let ctx: E2eContext;
 
@@ -84,7 +64,7 @@ beforeAll(async () => {
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
       { token: Clock, value: clock },
-      { token: PaymentGateway, value: fakeGateway },
+      cardProvidersOverride("pi_hours"),
     ],
   });
 });

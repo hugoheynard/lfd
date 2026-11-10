@@ -29,11 +29,10 @@ import type {
 import { CommandBus } from "@nestjs/cqrs";
 import request from "supertest";
 
-import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
 import { MarkOrderFulfilledCommand } from "../src/b2b/orders/application/commands/mark-order-fulfilled.command.js";
 import { ConvertLoyaltyPointsCommand } from "../src/b2b/loyalty/application/commands/convert-loyalty-points.command.js";
 import { PendingSettlementSweep } from "../src/b2b/orders/application/services/pending-settlement-sweep.service.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { OrderStatus, PaymentStatus } from "../src/platform/database/client/client.js";
 import { ServiceDay } from "../src/production/channels/commerce/index.js";
@@ -46,7 +45,9 @@ import {
   serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
+import { cardPaid } from "./card-payments.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { cardGatewayDouble } from "./order-factory.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 
 /** Un palier : 1 000 points valent 5 € HT. */
@@ -63,27 +64,9 @@ const CLIENT = "auth0|bon-fidele";
 const OTHER = "auth0|bon-voisin";
 const DAY_OF_SERVICE = serviceDay();
 
-let created = 0;
-const cancelledIntents: string[] = [];
-const fakeGateway = {
-  createIntent: () => {
-    created += 1;
-    const id = `pi_bon_${String(created)}`;
-    return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_sec` });
-  },
-  retrieveIntent: (paymentIntentId: string) =>
-    Promise.resolve({
-      paymentIntentId,
-      clientSecret: `${paymentIntentId}_sec`,
-      state: "awaiting_payment" as const,
-    }),
-  cancelIntent: (id: string) => {
-    cancelledIntents.push(id);
-    return Promise.resolve({ kind: "cancelled" as const });
-  },
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-};
+const fakeGateway = cardGatewayDouble("pi_bon");
+/** Les intentions créées et celles dont l'annulation a été demandée — vidées avant chaque test. */
+const { issued: createdIntents, cancelled: cancelledIntents } = fakeGateway.provider;
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -96,7 +79,7 @@ let pickupId = "";
 beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: fakeGateway },
       { token: AdminTokenVerifier, value: stubAdminVerifier },
     ],
   });
@@ -108,7 +91,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
-  created = 0;
+  createdIntents.splice(0);
   cancelledIntents.splice(0);
   const point = await ctx.prisma.site.create({
     data: {
@@ -220,7 +203,7 @@ describe("la passation avec un bon", () => {
     // Toute intention créée hors celle du gagnant est annulée. Régression
     // (CI du 2026-11-03) : le test exigeait UNE annulation, or un perdant
     // refusé avant d'avoir créé son intention n'en a aucune à annuler.
-    expect(cancelledIntents).toHaveLength(created - 1);
+    expect(cancelledIntents).toHaveLength(createdIntents.length - 1);
   });
 
   it("refuse le bon d'une autre personne (404), sans rien écrire", async () => {
@@ -560,10 +543,11 @@ async function seedOrderCarrying(
       : basket(state.units, voucherId);
   const order = await placed(body);
   const { orderNumber, stripePaymentIntentId } = await orderRow(order.id);
-  const bus = ctx.app.get(CommandBus);
-  await bus.execute(new ConfirmOrderPaymentCommand(stripePaymentIntentId ?? "", "succeeded"));
+  await cardPaid(ctx, stripePaymentIntentId ?? "");
   if (state.fulfilled === true) {
-    await bus.execute(new MarkOrderFulfilledCommand(orderNumber, E2E_STAFF_ID, new Date(), "scan"));
+    await ctx.app
+      .get(CommandBus)
+      .execute(new MarkOrderFulfilledCommand(orderNumber, E2E_STAFF_ID, new Date(), "scan"));
   }
   await ctx.drain();
   return order.id;

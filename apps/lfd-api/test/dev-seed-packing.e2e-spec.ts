@@ -10,12 +10,13 @@
  */
 import type { DevSeedReport } from "@lfd/contracts";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { ADMIN_VERIFIER_OVERRIDE, admin } from "./delivery-rounds-scene.js";
 import { seedDriverRole } from "./delivery-driver-scene.js";
 import { ROAD_ROUTING_OVERRIDES } from "./delivery-routing-scene.js";
 import { seedWeighedArticles } from "./weighed-catalog-scene.js";
+import { cardGatewayDouble } from "./order-factory.js";
 
 const RELOAD = "/admin/dev/seed/reload";
 /** Cf. `dev-seed-driver.e2e-spec.ts` : un rechargement complet est long. */
@@ -27,17 +28,7 @@ const RELOAD = "/admin/dev/seed/reload";
  */
 const FULL_RELOAD_TIMEOUT_MS = 240_000;
 
-let intentCount = 0;
-const fakeGateway = {
-  createIntent: () => {
-    intentCount += 1;
-    const id = `pi_e2e_dev_packing_${String(intentCount)}`;
-    return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret` });
-  },
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+const fakeGateway = cardGatewayDouble("pi_e2e_dev_packing");
 
 let ctx: E2eContext;
 
@@ -47,7 +38,7 @@ beforeAll(async () => {
     // le double routier, la CI — qui n'a pas d'OSRM — répond 409 (2026-10-14).
     overrides: [
       ADMIN_VERIFIER_OVERRIDE,
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: fakeGateway },
       ...ROAD_ROUTING_OVERRIDES,
     ],
   });

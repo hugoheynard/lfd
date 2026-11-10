@@ -13,7 +13,6 @@ import { CommandBus } from "@nestjs/cqrs";
 import type request from "supertest";
 
 import { ConvertLoyaltyPointsCommand } from "../src/b2b/loyalty/application/commands/convert-loyalty-points.command.js";
-import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
 import { OrderRepository } from "../src/b2b/orders/domain/ports/order.repository.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import {
@@ -22,6 +21,7 @@ import {
   PaymentStatus,
 } from "../src/platform/database/client/client.js";
 import { OrderWithdrawalDesk, ServiceDay } from "../src/production/channels/commerce/index.js";
+import { cardFailed } from "./card-payments.js";
 import {
   E2E_STAFF_ID,
   E2E_STAFF_SUB,
@@ -145,7 +145,7 @@ describe("POST /admin/orders/:id/cancel — carte non payée (décision 7)", () 
     await cancelRequest(orderId).expect(204);
     await deliver();
 
-    await ctx.app.get(CommandBus).execute(new ConfirmOrderPaymentCommand(intent ?? "", "failed"));
+    await cardFailed(ctx, intent ?? "");
     await deliver();
 
     expect((await orderState(orderId)).status).toBe(OrderStatus.cancelled);

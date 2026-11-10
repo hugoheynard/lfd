@@ -26,7 +26,7 @@ import type { MailReceipt, SendMailArgs } from "@lfd/mailer";
 import { PlaceShopOrderHandler } from "../src/b2b/orders/application/commands/place-shop-order.handler.js";
 import { NO_LOGIN_METHODS } from "../src/b2b/account/domain/ports/__tests__/login-method-doubles.js";
 import { CustomerIdentityPort } from "../src/b2b/account/domain/ports/customer-identity.port.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { MarketingConsent } from "../src/mail/channels/marketing/marketing-consent.js";
 import { SpacePublicOrigins } from "../src/mail/marketing/domain/ports/space-public-origins.js";
 import { MAIL_REQUEST_PURGE_MODE } from "../src/mail/requests/domain/services/mail-request-retention.js";
@@ -38,6 +38,7 @@ import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./
 import { createUser } from "./factories.js";
 import { placeShopOrderSeeingTotal, type Unseen } from "./seen-total-shop-command.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
+import { cardGatewayDouble } from "./order-factory.js";
 
 const ORIGIN = "https://shop.lfc.test";
 const CONFIRM = "customer.marketing-confirm";
@@ -73,23 +74,7 @@ const identityDouble: CustomerIdentityPort = {
   changeEmail: (): Promise<void> => Promise.resolve(),
 };
 
-let intentSeq = 0;
-const fakeGateway = {
-  createIntent: () => {
-    intentSeq += 1;
-    const paymentIntentId = `pi_consent_${String(intentSeq)}`;
-    return Promise.resolve({ paymentIntentId, clientSecret: `${paymentIntentId}_secret` });
-  },
-  retrieveIntent: () =>
-    Promise.resolve({
-      paymentIntentId: "pi_consent_1",
-      clientSecret: "pi_consent_1_secret",
-      state: "awaiting_payment" as const,
-    }),
-  publishableKey: () => "pk_public",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+const fakeGateway = cardGatewayDouble("pi_consent");
 
 const transport = new KeepingTransport();
 let ctx: E2eContext;
@@ -103,7 +88,7 @@ beforeAll(async () => {
       { token: MAIL_TRANSPORT, value: transport },
       { token: SpacePublicOrigins, value: new ShopOrigin() },
       { token: CustomerIdentityPort, value: identityDouble },
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: fakeGateway },
       { token: MAIL_REQUEST_PURGE_MODE, value: "on" },
     ],
   });

@@ -23,15 +23,15 @@ import { z } from "zod";
 
 import type { ShopQuoteView } from "@lfd/contracts";
 
-import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
 import { MarkOrderFulfilledCommand } from "../src/b2b/orders/application/commands/mark-order-fulfilled.command.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { PricingMaterialsCache } from "../src/b2b/pricing/infrastructure/pricing-materials.cache.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { OutboxRelay } from "../src/platform/outbox/outbox-relay.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { addBillingAddress, attachTo, createCompany, createUser } from "./factories.js";
+import { cardPaid } from "./card-payments.js";
 import { cardGatewayDouble, pickupSite, placeOrder } from "./order-factory.js";
 import { onlyVariant, posePromotion, promotionTerms } from "./promotion-fixtures.js";
 
@@ -50,7 +50,7 @@ beforeAll(async () => {
         token: AdminTokenVerifier,
         value: { verify: () => Promise.resolve({ subject: STAFF, scopes: [] }) },
       },
-      { token: PaymentGateway, value: cardGatewayDouble("pi_split") },
+      { token: CardProviders, value: cardGatewayDouble("pi_split") },
     ],
   });
 });
@@ -228,7 +228,7 @@ it("−20 % au panier : la remise se ventile juste par taux, du devis à la fact
     new MarkOrderFulfilledCommand(order.orderNumber, STAFF, new Date(daysAgo(0)), "manual"),
   );
   await settle();
-  await bus.execute(new ConfirmOrderPaymentCommand(order.paymentIntentId ?? "", "succeeded"));
+  await cardPaid(ctx, order.paymentIntentId ?? "");
   await settle();
 
   const placed = await ctx.prisma.order.findUniqueOrThrow({ where: { id: order.id } });
@@ -377,7 +377,7 @@ it("deux remises cumulables, la seconde sur un seul article : chaînées, ventil
     new MarkOrderFulfilledCommand(order.orderNumber, STAFF, new Date(daysAgo(0)), "manual"),
   );
   await settle();
-  await bus.execute(new ConfirmOrderPaymentCommand(order.paymentIntentId ?? "", "succeeded"));
+  await cardPaid(ctx, order.paymentIntentId ?? "");
   await settle();
 
   const placed = await ctx.prisma.order.findUniqueOrThrow({ where: { id: order.id } });

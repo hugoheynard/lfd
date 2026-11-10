@@ -4,7 +4,10 @@ import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.
 import { RecordingJournal } from "../../../../../platform/journal/__tests__/recording-journal.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { FixedWallClock } from "../../../../../platform/time/fixed-wall-clock.js";
-import type { RefundIssuance, RefundLookup } from "../../../../payments/domain/payment-refunder.js";
+import type {
+  RefundIssuance,
+  RefundLookup,
+} from "../../../../../card-payment/channels/requests/index.js";
 import { OrderRefundRejectedEvent } from "../../../domain/events/order-refund-rejected.event.js";
 import { RefundAttentionBell } from "../../services/refund-attention-bell.js";
 import { RefundIssuanceRecorder } from "../../services/refund-issuance-recorder.js";
@@ -20,6 +23,8 @@ import {
   RecordingNotifier,
   RefundStore,
   ScriptedRefunder,
+  FixedCardAdoption,
+  CARD_ACCOUNT,
   stripeRefund,
 } from "./refund-doubles.js";
 
@@ -58,12 +63,14 @@ function build(
     clock,
     wall,
   );
+  const intent = options.intent === undefined ? "pi_1" : options.intent;
   const handler = new IssueOrderRefundHandler(
     new InMemoryLease(store),
     requests,
-    new InMemoryRefundReader(store, options.intent === undefined ? "pi_1" : options.intent),
+    new InMemoryRefundReader(store, intent),
     ledgers,
     refunder,
+    new FixedCardAdoption(intent),
     recorder,
     bell,
     events,
@@ -88,7 +95,8 @@ describe("IssueOrderRefundHandler — émis", () => {
 
     expect(refunder.calls).toEqual([
       {
-        paymentIntentId: "pi_1",
+        account: CARD_ACCOUNT,
+        providerRef: "pi_1",
         key: "lfd-order-refund:ord_1:1:1",
         requestId: ORDER_ID,
         generation: 1,
@@ -395,7 +403,8 @@ describe("IssueOrderRefundHandler — génération suivante", () => {
 
     expect(refunder.calls).toEqual([
       {
-        paymentIntentId: "pi_1",
+        account: CARD_ACCOUNT,
+        providerRef: "pi_1",
         key: "lfd-order-refund:ord_1:2:1",
         requestId: ORDER_ID,
         generation: 2,

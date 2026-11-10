@@ -11,7 +11,7 @@
  */
 import type { ProductionDueThresholdsView, ProductionSettingsView } from "@lfd/contracts";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   bootstrapE2e,
@@ -40,7 +40,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: cardGatewayDouble("pi_tranches") },
+      { token: CardProviders, value: cardGatewayDouble("pi_tranches") },
     ],
   });
 });

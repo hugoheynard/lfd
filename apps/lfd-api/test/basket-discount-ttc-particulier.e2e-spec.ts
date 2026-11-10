@@ -18,14 +18,13 @@ import { randomUUID } from "node:crypto";
 
 import type { PlacedOrderResponse, ShopCatalogueView } from "@lfd/contracts";
 import { htMillicentsOf } from "@lfd/pim-contracts";
-import { CommandBus } from "@nestjs/cqrs";
 import { z } from "zod";
 
-import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
-import {
-  PaymentGateway,
-  type CreateIntentParams,
-} from "../src/b2b/payments/domain/payment-gateway.js";
+import type {
+  CreateIntentParams,
+  CreatedIntent,
+} from "../src/card-payment/domain/ports/card-provider-types.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { PricingMaterialsCache } from "../src/b2b/pricing/infrastructure/pricing-materials.cache.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
@@ -35,6 +34,7 @@ import {
   serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
+import { cardPaid, E2eCardProvider, E2eCardProviders } from "./card-payments.js";
 import { createUser } from "./factories.js";
 import { onlyVariant, posePromotion, promotionTerms } from "./promotion-fixtures.js";
 
@@ -47,35 +47,39 @@ const CROISSANT_LABEL = 2_100;
 const PAIN_LABEL = 337;
 const BP = 10_000;
 
-const intents: CreateIntentParams[] = [];
+/**
+ * Le prestataire des e2e, qui garde en plus ce qu'on lui demande d'encaisser :
+ * le montant de l'intention est le sujet de la suite.
+ */
+class AmountRecordingCardProvider extends E2eCardProvider {
+  readonly requested: CreateIntentParams[] = [];
+
+  override createIntent(params: CreateIntentParams): Promise<CreatedIntent> {
+    this.requested.push(params);
+    return super.createIntent(params);
+  }
+}
+
+/** Le registre doublé, servi par le prestataire qui garde les montants. */
+class AmountRecordingCardProviders extends E2eCardProviders {
+  override readonly provider: AmountRecordingCardProvider;
+
+  constructor(prefix: string) {
+    super(prefix);
+    this.provider = new AmountRecordingCardProvider(prefix);
+  }
+}
+
 /** Jamais remis à zéro : deux commandes ne partagent pas une intention. */
-let issued = 0;
+const cardProviders = new AmountRecordingCardProviders("pi_particulier");
+const intents = cardProviders.provider.requested;
 let ctx: E2eContext;
 let pickupId = "";
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
-      {
-        token: PaymentGateway,
-        value: {
-          createIntent: (params: CreateIntentParams) => {
-            intents.push(params);
-            issued += 1;
-            const id = `pi_particulier_${String(issued)}`;
-            return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_sec` });
-          },
-          retrieveIntent: (paymentIntentId: string) =>
-            Promise.resolve({
-              paymentIntentId,
-              clientSecret: `${paymentIntentId}_sec`,
-              state: "awaiting_payment" as const,
-            }),
-          cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-          publishableKey: () => "pk_e2e",
-          parseWebhook: () => ({ kind: "ignored" as const }),
-        },
-      },
+      { token: CardProviders, value: cardProviders },
       {
         token: AdminTokenVerifier,
         value: { verify: () => Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }) },
@@ -160,16 +164,13 @@ async function place(lines: readonly { sku: string; quantity: number }[]) {
   return response;
 }
 
-/** Règle la carte comme le webhook Stripe, par la vraie commande de confirmation. */
+/** Règle la carte comme le webhook du prestataire, par la vraie commande du webhook. */
 async function pay(orderId: string): Promise<void> {
   const row = await ctx.prisma.order.findUniqueOrThrow({
     where: { id: orderId },
     select: { stripePaymentIntentId: true },
   });
-  await ctx.app
-    .get(CommandBus)
-    .execute(new ConfirmOrderPaymentCommand(row.stripePaymentIntentId ?? "", "succeeded"));
-  await ctx.drain();
+  await cardPaid(ctx, row.stripePaymentIntentId ?? "");
 }
 
 const shareSchema = z.array(

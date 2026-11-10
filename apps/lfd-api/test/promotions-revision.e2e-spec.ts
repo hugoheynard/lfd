@@ -14,7 +14,6 @@
 import type { AdminPlacedOrderResponse, CreatedPickupResponse } from "@lfd/contracts";
 
 import { PricingMaterialsCache } from "../src/b2b/pricing/infrastructure/pricing-materials.cache.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   CompanyStatus,
@@ -30,6 +29,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { cardProvidersOverride } from "./card-payments.js";
 
 const DAY = serviceDay(7);
 const BUYER = "auth0|l9-acheteur";
@@ -39,26 +39,13 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
 };
 
-const fakeGateway = {
-  createIntent: () => Promise.resolve({ paymentIntentId: "pi_l9", clientSecret: "pi_l9_secret" }),
-  retrieveIntent: (id: string) =>
-    Promise.resolve({
-      paymentIntentId: id,
-      clientSecret: `${id}_secret`,
-      state: "awaiting_payment" as const,
-    }),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
-
 let ctx: E2eContext;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: fakeGateway },
+      cardProvidersOverride("pi_l9"),
     ],
   });
 });

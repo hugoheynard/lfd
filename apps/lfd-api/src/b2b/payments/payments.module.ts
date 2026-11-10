@@ -4,8 +4,6 @@ import { AccountModule } from "../account/account.module.js";
 import { AccountingModule } from "../accounting/accounting.module.js";
 import { FeatureAccessModule } from "../feature-access/feature-access.module.js";
 
-import { PaymentGateway } from "./domain/payment-gateway.js";
-import { PaymentRefunder } from "./domain/payment-refunder.js";
 import { PaymentMandateRepository } from "./domain/payment-mandate.repository.js";
 import { BankAccountGuardReader } from "./domain/ports/bank-account-guard.reader.js";
 import { CompanyBankAccountRepository } from "./domain/ports/company-bank-account.repository.js";
@@ -43,12 +41,10 @@ import { SiteMandatesReader } from "./domain/ports/site-mandates.reader.js";
 import { PrismaSiteMandatesReader } from "./infrastructure/prisma-site-mandates.reader.js";
 import { SiteMandateRevoker } from "./application/site-mandate-revoker.js";
 import { PrismaPaymentMandateRepository } from "./infrastructure/prisma-payment-mandate.repository.js";
-import { StripePaymentGateway } from "./infrastructure/stripe-payment-gateway.js";
-import { StripePaymentRefunder } from "./infrastructure/stripe-payment-refunder.js";
 import { AdminCompanyBankAccountController } from "./http/admin-company-bank-account.controller.js";
 import { CompanyBankAccountController } from "./http/company-bank-account.controller.js";
 import { AdminMandatesController } from "./http/admin-mandates.controller.js";
-import { PaymentsWebhookController } from "./http/payments-webhook.controller.js";
+import { PaymentLinksWebhookController } from "./http/payment-links-webhook.controller.js";
 import { AdminAccountingSettingsController } from "./http/admin-accounting-settings.controller.js";
 import { AdminPaymentLinksController } from "./http/admin-payment-links.controller.js";
 import {
@@ -65,6 +61,8 @@ import { ExpirePaymentLinkHandler } from "./application/commands/expire-payment-
 import { SetAccountingSettingsHandler } from "./application/commands/set-accounting-settings.handler.js";
 import { SettlePaymentLinkHandler } from "./application/commands/settle-payment-link.handler.js";
 import { OnRefundWithoutOrder } from "./application/handlers/on-refund-without-order.handler.js";
+import { OnCardCheckoutEvent } from "./application/handlers/on-card-checkout-event.handler.js";
+import { RecordPaymentLinkEventHandler } from "./application/commands/record-payment-link-event.handler.js";
 import { GetAccountingSettingsHandler } from "./application/queries/get-accounting-settings.handler.js";
 import { ListPaymentLinksHandler } from "./application/queries/list-payment-links.handler.js";
 import { PrismaAccountingSettingsStore } from "./infrastructure/prisma-accounting-settings.store.js";
@@ -74,11 +72,14 @@ import { PrismaPaymentLinkRepository } from "./infrastructure/prisma-payment-lin
 import { StripeCheckoutGateway } from "./infrastructure/stripe-checkout-gateway.js";
 
 /**
- * Contexte **paiement** : l'encaissement d'une commande par carte, et le
- * mandat de prélèvement SEPA.
+ * Contexte **paiement** : le mandat de prélèvement SEPA, et les liens de
+ * paiement libres.
  *
- * `PaymentGateway` encaisse une commande ponctuelle (intention + webhook) ; il
- * est **exporté** car `orders` le consomme à la passation. Le mandat, lui, ne
+ * ⚠️ L'encaissement d'une commande par carte (`PaymentGateway`, son webhook,
+ * son remboursement chez Stripe) vivait ici jusqu'au 2026-11-09 : il est au
+ * bloc `card-payment` depuis le lot P0.c2 du plan M2
+ * (`documentation/commandes/modification/plan-m2-historique-de-transactions.md`),
+ * et `orders` l'atteint par son canal. Le mandat, lui, ne
  * passe par aucun prestataire : il est frappé et rangé ici, et traité
  * directement avec la banque (`documentation/comptabilite/prelevement/prelevement-sepa.md`).
  * Le port Stripe des mandats (`MandateGateway`) a été supprimé le 2026-09-19 :
@@ -88,9 +89,10 @@ import { StripeCheckoutGateway } from "./infrastructure/stripe-checkout-gateway.
  * 2026-09-14 : le client génère et renvoie désormais le sien
  * (`CompanyMandateController`).
  *
- * Le contrôleur de webhook ne dépend pas d'`OrdersModule` : après vérification
- * de signature, il dispatche sur le bus CQRS. Le couplage passe par le bus, pas
- * par un import.
+ * Le webhook des liens (`POST /payments/links/webhook`) a son endpoint et son
+ * secret à lui (§4.5) ; pendant P0, les `checkout.*` arrivent aussi par le
+ * relais du webhook des cartes (`card_payment.checkout_event`), et les deux
+ * projections sont idempotentes.
  */
 @Module({
   // 🔴 `payments` importe `accounting`, et jamais l'inverse. Le mandat est le
@@ -103,7 +105,7 @@ import { StripeCheckoutGateway } from "./infrastructure/stripe-checkout-gateway.
   // n'importe aucun module, vérifié le 2026-10-20).
   imports: [AccountingModule, AccountModule, FeatureAccessModule],
   controllers: [
-    PaymentsWebhookController,
+    PaymentLinksWebhookController,
     AdminMandatesController,
     AdminCompanyBankAccountController,
     CompanyBankAccountController,
@@ -112,9 +114,6 @@ import { StripeCheckoutGateway } from "./infrastructure/stripe-checkout-gateway.
     AdminAccountingSettingsController,
   ],
   providers: [
-    { provide: PaymentGateway, useClass: StripePaymentGateway },
-    // Le remboursement d'une commande annulée (lot C4) : un port à part (ISP).
-    { provide: PaymentRefunder, useClass: StripePaymentRefunder },
     { provide: PaymentMandateRepository, useClass: PrismaPaymentMandateRepository },
     { provide: MandateDebtorReader, useClass: PrismaMandateDebtorReader },
     { provide: SiteMandatesReader, useClass: PrismaSiteMandatesReader },
@@ -138,7 +137,11 @@ import { StripeCheckoutGateway } from "./infrastructure/stripe-checkout-gateway.
     CreatePaymentLinkHandler,
     CancelPaymentLinkHandler,
     SettlePaymentLinkHandler,
-    // Un remboursement Stripe qu'aucune commande ne porte (lot R1, A11).
+    RecordPaymentLinkEventHandler,
+    // Le relais des pages de lien par le webhook des cartes (plan M2, §4.5).
+    OnCardCheckoutEvent,
+    // Un remboursement Stripe qu'aucune commande ne porte (lot R1, A11) —
+    // annoncé par `card_payment.unmatched` depuis le plan M2, P0.c2.
     OnRefundWithoutOrder,
     ExpirePaymentLinkHandler,
     ListPaymentLinksHandler,
@@ -166,6 +169,6 @@ import { StripeCheckoutGateway } from "./infrastructure/stripe-checkout-gateway.
     SetMyCompanyMandateOptionsHandler,
     GetMyCompanyMandateOptionsHandler,
   ],
-  exports: [PaymentGateway, PaymentRefunder, SiteMandateRevoker],
+  exports: [SiteMandateRevoker],
 })
 export class PaymentsModule {}

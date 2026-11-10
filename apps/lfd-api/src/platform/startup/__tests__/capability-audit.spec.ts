@@ -21,6 +21,7 @@ const ALL_PRESENT: CapabilitySnapshot = {
   hasCustomerStorage: true,
   hasProductionStorage: true,
   hasStripe: true,
+  hasStripeLinksWebhookSecret: true,
   hasClientBaseUrl: true,
   hasAdminBaseUrl: true,
   hasGeocoderUrl: true,

@@ -13,33 +13,17 @@
  * écoute. Un particulier distinct par commande là où le remplacement ne doit
  * pas jouer.
  */
-import { CommandBus } from "@nestjs/cqrs";
-
-import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { OrderStatus, PaymentStatus } from "../src/platform/database/client/client.js";
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";
+import { cardPaid, cardProvidersDouble } from "./card-payments.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 import { pickupSite, placeOrder } from "./order-factory.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 
-const cancelledIntents: string[] = [];
-let issuedIntents = 0;
-const fakeGateway = {
-  createIntent: () => {
-    issuedIntents += 1;
-    const paymentIntentId = `pi_non_reglee_${String(issuedIntents)}`;
-    return Promise.resolve({ paymentIntentId, clientSecret: `${paymentIntentId}_secret` });
-  },
-  retrieveIntent: () => Promise.reject(new Error("non utilisé")),
-  cancelIntent: (id: string) => {
-    cancelledIntents.push(id);
-    return Promise.resolve({ kind: "cancelled" as const });
-  },
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-};
+/** Le prestataire de carte doublé : il garde les intentions dont l'annulation est demandée. */
+const cards = cardProvidersDouble("pi_non_reglee");
 
 const sentTemplates: string[] = [];
 const recordingMailer = {
@@ -55,7 +39,7 @@ let ctx: E2eContext;
 beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: cards },
       { token: MAILER, value: recordingMailer },
     ],
   });
@@ -67,7 +51,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
-  cancelledIntents.splice(0);
+  cards.provider.cancelled.splice(0);
   sentTemplates.splice(0);
 });
 
@@ -113,12 +97,9 @@ describe("deux essais, un paiement", () => {
     const second = await seedPending(buyer.id, 0);
 
     // La seconde passation a publié son fait, qui a remplacé la première.
-    await ctx.app
-      .get(CommandBus)
-      .execute(new ConfirmOrderPaymentCommand(second.intent, "succeeded"));
-    await ctx.drain();
+    await cardPaid(ctx, second.intent);
 
-    expect(cancelledIntents).toEqual([first.intent]);
+    expect(cards.provider.cancelled).toEqual([first.intent]);
     expect(await stateOf(first.id)).toEqual({
       status: OrderStatus.cancelled,
       paymentStatus: PaymentStatus.failed,
@@ -134,8 +115,7 @@ describe("POST /admin/orders/unsettled-shop-orders/expire — le cron", () => {
     const lapsed = await seedPending(buyer.id, 31);
     const young = await seedPending(await otherBuyer("jeune"), 29);
     const paid = await seedPending(await otherBuyer("payee"), 45);
-    await ctx.app.get(CommandBus).execute(new ConfirmOrderPaymentCommand(paid.intent, "succeeded"));
-    await ctx.drain();
+    await cardPaid(ctx, paid.intent);
 
     const response = await ctx
       .http()
@@ -145,7 +125,7 @@ describe("POST /admin/orders/unsettled-shop-orders/expire — le cron", () => {
     await ctx.drain();
 
     expect(jsonBody<{ readonly cancelled: number }>(response).cancelled).toBe(1);
-    expect(cancelledIntents).toEqual([lapsed.intent]);
+    expect(cards.provider.cancelled).toEqual([lapsed.intent]);
     expect((await stateOf(young.id)).status).toBe(OrderStatus.placed);
     expect(await stateOf(paid.id)).toEqual({
       status: OrderStatus.placed,

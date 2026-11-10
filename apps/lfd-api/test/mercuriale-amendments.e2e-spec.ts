@@ -20,7 +20,7 @@ import type {
 import { millicentsFromCents } from "@lfd/money";
 
 import { ProductCatalogReader } from "../src/b2b/catalog/domain/ports/product-catalog.reader.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { Pricer } from "../src/b2b/pricing/application/pricer.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
@@ -47,7 +47,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: cardGatewayDouble("pi_avenant") },
+      { token: CardProviders, value: cardGatewayDouble("pi_avenant") },
     ],
   });
 });

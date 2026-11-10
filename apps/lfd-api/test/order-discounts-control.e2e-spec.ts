@@ -18,7 +18,6 @@ import type { AdminPlacedOrderResponse, PlacedOrderResponse } from "@lfd/contrac
 import { htMillicentsOf } from "@lfd/pim-contracts";
 import { randomUUID } from "node:crypto";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   CompanyStatus,
@@ -37,6 +36,7 @@ import {
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { frozenDiscountsCreate } from "./order-discount-fixtures.js";
 import { poseSiteDiscount } from "./promotion-fixtures.js";
+import { cardProvidersOverride } from "./card-payments.js";
 
 const DAY = serviceDay(7);
 const PERSON = "auth0|particulier-controle";
@@ -50,33 +50,13 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
 };
 
-let intents = 0;
-const fakeGateway = {
-  createIntent: () => {
-    intents += 1;
-    return Promise.resolve({
-      paymentIntentId: `pi_controle_${intents}`,
-      clientSecret: `pi_controle_${intents}_s`,
-    });
-  },
-  retrieveIntent: (id: string) =>
-    Promise.resolve({
-      paymentIntentId: id,
-      clientSecret: `${id}_s`,
-      state: "awaiting_payment" as const,
-    }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-};
-
 let ctx: E2eContext;
 let pickupId = "";
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
-      { token: PaymentGateway, value: fakeGateway },
+      cardProvidersOverride("pi_controle"),
       { token: AdminTokenVerifier, value: stubAdminVerifier },
     ],
   });

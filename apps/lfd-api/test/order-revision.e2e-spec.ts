@@ -25,7 +25,6 @@ import {
   CustomerRole,
   DeferredTerm,
 } from "../src/platform/database/client/client.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import {
   bootstrapE2e,
   daysAgo,
@@ -37,6 +36,7 @@ import {
 import { poseSiteDiscount } from "./promotion-fixtures.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { untilWaiters } from "./day-lock-race.js";
+import { cardProvidersOverride } from "./card-payments.js";
 
 const DAY = serviceDay(7);
 const NEXT_DAY = serviceDay(8);
@@ -46,26 +46,6 @@ const OUTSIDER = "auth0|etranger-revision";
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
     Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
-};
-
-let intentCounter = 0;
-const fakeGateway = {
-  createIntent: () => {
-    intentCounter += 1;
-    return Promise.resolve({
-      paymentIntentId: `pi_revision_${String(intentCounter)}`,
-      clientSecret: `pi_revision_${String(intentCounter)}_secret`,
-    });
-  },
-  retrieveIntent: (id: string) =>
-    Promise.resolve({
-      paymentIntentId: id,
-      clientSecret: `${id}_secret`,
-      state: "awaiting_payment",
-    }),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
 };
 
 /** La clé du verrou de la journée — celle de `PrismaProductionDayLock`. */
@@ -79,7 +59,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: fakeGateway },
+      cardProvidersOverride("pi_revision"),
     ],
   });
 });

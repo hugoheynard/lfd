@@ -20,7 +20,6 @@ import type {
 
 import { placeShopOrderSeeingTotal } from "./seen-total-shop-command.js";
 import { PlaceShopOrderHandler } from "../src/b2b/orders/application/commands/place-shop-order.handler.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import {
   CompanyStatus,
   CustomerRole,
@@ -36,35 +35,18 @@ import {
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { prose } from "./legal-document-writes.js";
+import { cardProvidersOverride } from "./card-payments.js";
 
 const MEMBER = "auth0|membre-cgv";
 const PDF = Buffer.from("%PDF-1.7\n%%EOF", "latin1");
 const SERVICE_DAY = serviceDay();
-
-let intentSeq = 0;
-const fakeGateway = {
-  createIntent: () => {
-    intentSeq += 1;
-    const paymentIntentId = `pi_cgv_${String(intentSeq)}`;
-    return Promise.resolve({ paymentIntentId, clientSecret: `${paymentIntentId}_secret` });
-  },
-  retrieveIntent: (id: string) =>
-    Promise.resolve({
-      paymentIntentId: id,
-      clientSecret: `${id}_secret`,
-      state: "awaiting_payment" as const,
-    }),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
 
 let ctx: E2eContext;
 let pickupId = "";
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [ADMIN_VERIFIER_OVERRIDE, { token: PaymentGateway, value: fakeGateway }],
+    overrides: [ADMIN_VERIFIER_OVERRIDE, cardProvidersOverride("pi_cgv")],
   });
 });
 

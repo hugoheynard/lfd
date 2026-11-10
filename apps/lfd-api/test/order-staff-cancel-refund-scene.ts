@@ -2,14 +2,13 @@ import { CommandBus } from "@nestjs/cqrs";
 
 import { IssueOrderRefundCommand } from "../src/b2b/orders/application/commands/issue-order-refund.command.js";
 import { RecordOrderRefundCommand } from "../src/b2b/orders/application/commands/record-order-refund.command.js";
-import type { PaymentRefundStatus } from "../src/b2b/payments/domain/payment-gateway.js";
 import {
-  PaymentRefunder,
+  CardProviderRefunds,
   type IssuedRefund,
   type RefundIssuance,
   type RefundLookup,
-  type RefundRequestParams,
-} from "../src/b2b/payments/domain/payment-refunder.js";
+  type RefundRemainderParams,
+} from "../src/card-payment/channels/requests/index.js";
 import { PaymentStatus } from "../src/platform/database/client/client.js";
 import { currentTransaction } from "../src/platform/database/transaction.store.js";
 import { WallClock } from "../src/platform/time/wall-clock.js";
@@ -22,7 +21,8 @@ import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
  * `documentation/commandes/annulation/annulation-par-le-staff.md`, lot C4) — celle de
  * l'annulation staff, plus deux doublures :
  *
- * - **Stripe** côté remboursement : un magasin de `re_…` par intention, avec la
+ * - **Stripe** côté remboursement, sur le port transitoire `CardProviderRefunds`
+ *   du bloc `card-payment` (plan M2, §4.2 ; lot P0.c2) : un magasin de `re_…` par intention, avec la
  *   recherche par métadonnée, l'idempotence par clé, le « reste remboursable »
  *   — et des issues écrites d'avance. 🔴 Il REFUSE d'être appelé sous une
  *   transaction : un appel sous transaction est compté, et chaque suite le
@@ -38,6 +38,17 @@ export type ScriptedOutcome =
   | { readonly kind: "nothing_left" }
   /** Émet, mais pour ce montant — un refus du carnet (`exceeds_charge`). */
   | { readonly kind: "issue_amount"; readonly amountCents: number };
+
+/** Le statut d'un `re_…`, tel que le prestataire le rend. */
+type PaymentRefundStatus = IssuedRefund["status"];
+
+/**
+ * Un appel reçu : les paramètres de la demande, et l'intention visée — que
+ * le port transitoire passe à part, avec le compte (lot P0.c2).
+ */
+interface RefundRequestParams extends RefundRemainderParams {
+  readonly paymentIntentId: string;
+}
 
 interface FakeRefund extends IssuedRefund {
   readonly paymentIntentId: string;
@@ -100,8 +111,13 @@ function issue(params: RefundRequestParams, amountCents: number): RefundIssuance
   return { kind: "issued", refund };
 }
 
-class FakeStripeRefunder extends PaymentRefunder {
-  async refundRemainder(params: RefundRequestParams): Promise<RefundIssuance> {
+class FakeStripeRefunder extends CardProviderRefunds {
+  async refundRemainder(
+    _account: string,
+    providerRef: string,
+    request: RefundRemainderParams,
+  ): Promise<RefundIssuance> {
+    const params: RefundRequestParams = { ...request, paymentIntentId: providerRef };
     if (currentTransaction() !== undefined) {
       stripe.underTransaction += 1;
     }
@@ -140,8 +156,12 @@ class FakeStripeRefunder extends PaymentRefunder {
     return issuance;
   }
 
-  findRefund(params: RefundRequestParams): Promise<RefundLookup> {
-    const found = findOurs(params);
+  findRefund(
+    _account: string,
+    providerRef: string,
+    request: RefundRemainderParams,
+  ): Promise<RefundLookup> {
+    const found = findOurs({ ...request, paymentIntentId: providerRef });
     return Promise.resolve(
       found === undefined ? { kind: "none" } : { kind: "found", refund: found },
     );
@@ -161,7 +181,7 @@ export const wall = new OffsetWallClock();
 
 export function bootRefundScene() {
   return bootScene([
-    { token: PaymentRefunder, value: new FakeStripeRefunder() },
+    { token: CardProviderRefunds, value: new FakeStripeRefunder() },
     { token: WallClock, value: wall },
   ]);
 }

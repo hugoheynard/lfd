@@ -92,10 +92,8 @@ export const OUTBOUND = [
 export const ADMITTED = {
   [`${SRC}/platform/auth/remote-key-set.ts`]:
     "2026-11-06 — les clés de signature Auth0 se lisent à la vérification du jeton, à l'entrée de la requête, avant tout handler ; jose les garde 24 h",
-  [`${SRC}/b2b/payments/infrastructure/stripe-intent-translation.ts`]:
-    "2026-11-06 — n'importe Stripe que pour ses classes d'erreur : aucun appel",
   [`${SRC}/card-payment/infrastructure/stripe/stripe-intent-translation.ts`]:
-    "2026-11-09 — copie du précédent (plan M2, P0) : n'importe Stripe que pour ses classes d'erreur, aucun appel",
+    "2026-11-09 — n'importe Stripe que pour ses classes d'erreur, aucun appel (plan M2, P0 ; l'original de b2b/payments retiré au lot P0.c2)",
   [`${SRC}/dev/seeding/storage.seed.ts`]:
     "2026-11-06 — semis local du bucket de développement, hors de toute requête",
 };
@@ -118,10 +116,6 @@ export const DELEGATED = {
     guard: `${SRC}/platform/outbound/pinned-https-webhook-poster.ts`,
     reason:
       "2026-11-06 — la résolution DNS n'est demandée que par le relais des webhooks, qui garde post()",
-  },
-  [`${SRC}/b2b/payments/infrastructure/stripe-refund-calls.ts`]: {
-    guard: `${SRC}/b2b/payments/infrastructure/stripe-payment-refunder.ts`,
-    reason: "2026-11-06 — n'est appelé que par StripePaymentRefunder, qui garde chaque méthode",
   },
 };
 

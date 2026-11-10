@@ -12,7 +12,8 @@ export const PAYMENT_LINK_CANCELLED = "payment_link.cancelled" satisfies Journal
  *
  * Le paiement et l'expiration n'y sont PAS : ce sont des projections d'un
  * événement Stripe, pas des actes dont un humain répond (même règle que
- * `ConfirmOrderPaymentHandler`).
+ * `RecordProviderEventHandler`, bloc `card-payment`, depuis le lot P0.c2 du
+ * plan M2).
  */
 abstract class PaymentLinkStaffAct implements JournaledEvent {
   protected constructor(

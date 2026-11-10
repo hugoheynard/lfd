@@ -15,48 +15,39 @@ import { randomUUID } from "node:crypto";
  */
 import type { PlacedOrderResponse } from "@lfd/contracts";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import type { RetrievedIntent } from "../src/card-payment/domain/ports/card-provider-types.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { E2eCardProvider, E2eCardProviders } from "./card-payments.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 
 const CLIENT = "auth0|idem";
 
 /**
- * Passerelle doublée. `retrieveIntent` compte ses appels : le rejeu doit
- * **re-dériver** le secret plutôt que le relire d'une colonne — nous n'en
- * stockons aucun, et c'est la règle du dépôt.
+ * Le prestataire de carte doublé, qui compte aussi ses relectures
+ * d'intention : le rejeu doit **re-dériver** le secret plutôt que le relire
+ * d'une colonne — nous n'en stockons aucun, et c'est la règle du dépôt.
  */
-let retrieved = 0;
-let created = 0;
-const fakeGateway = {
-  /**
-   * Une intention DISTINCTE par appel — `orders.stripe_payment_intent_id` est
-   * `@unique`, et un double qui rendrait toujours le même identifiant ferait
-   * échouer la deuxième commande de la suite sur une contrainte de base plutôt
-   * que sur ce qu'elle éprouve.
-   */
-  createIntent: () => {
-    created += 1;
-    const id = `pi_idem_${String(created)}`;
-    return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_sec` });
-  },
-  retrieveIntent: (paymentIntentId: string) => {
-    retrieved += 1;
-    return Promise.resolve({
-      paymentIntentId,
-      clientSecret: `${paymentIntentId}_sec`,
-      state: "awaiting_payment" as const,
-    });
-  },
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+class RetrieveCountingCardProvider extends E2eCardProvider {
+  retrieved = 0;
+
+  override retrieveIntent(providerRef: string): Promise<RetrievedIntent> {
+    this.retrieved += 1;
+    return super.retrieveIntent(providerRef);
+  }
+}
+
+/** Le registre doublé, servi par le prestataire qui compte. */
+class RetrieveCountingCardProviders extends E2eCardProviders {
+  override readonly provider = new RetrieveCountingCardProvider("pi_idem");
+}
+
+const cards = new RetrieveCountingCardProviders("pi_idem");
 
 let ctx: E2eContext;
 let pickupId = "";
 
 beforeAll(async () => {
-  ctx = await bootstrapE2e({ overrides: [{ token: PaymentGateway, value: fakeGateway }] });
+  ctx = await bootstrapE2e({ overrides: [{ token: CardProviders, value: cards }] });
 });
 
 afterAll(async () => {
@@ -65,8 +56,8 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
-  retrieved = 0;
-  created = 0;
+  cards.provider.issued.splice(0);
+  cards.provider.retrieved = 0;
   const point = await ctx.prisma.site.create({
     data: {
       label: "Le Labo",
@@ -123,16 +114,17 @@ describe("une clé de passation ne sert qu'une fois", () => {
   it("redemande l'intention au prestataire plutôt que de la stocker", async () => {
     const payload = order();
     const first = jsonBody<PlacedOrderResponse>(await place(payload).expect(201));
-    expect(first.payment?.clientSecret).toBe("pi_idem_1_sec");
-    expect(retrieved).toBe(0);
+    const [intent] = cards.provider.issued;
+    expect(first.payment?.clientSecret).toBe(`${String(intent)}_secret`);
+    expect(cards.provider.retrieved).toBe(0);
 
     const second = jsonBody<PlacedOrderResponse>(await place(payload).expect(201));
 
     // LA MÊME intention, et une seule création : le rejeu ne dimensionne pas un
     // second encaissement.
-    expect(second.payment?.clientSecret).toBe("pi_idem_1_sec");
-    expect(created).toBe(1);
-    expect(retrieved).toBe(1);
+    expect(second.payment?.clientSecret).toBe(`${String(intent)}_secret`);
+    expect(cards.provider.issued).toEqual([intent]);
+    expect(cards.provider.retrieved).toBe(1);
   });
 
   /**

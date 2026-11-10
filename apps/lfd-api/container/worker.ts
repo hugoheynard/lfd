@@ -145,6 +145,9 @@ const RUNTIME_KEYS = [
   "STRIPE_SECRET_KEY",
   "STRIPE_PUBLISHABLE_KEY",
   "STRIPE_WEBHOOK_SECRET",
+  // Le secret de l'endpoint des liens de paiement (plan M2, §4.5) — vide tant
+  // que l'endpoint n'est pas créé chez Stripe : la route rend alors 400.
+  "STRIPE_LINKS_WEBHOOK_SECRET",
   // Jeton interne du recompute : forwardé au container (le guard le compare) ET
   // lu ici par le handler `scheduled` (le Cron Trigger le présente à l'endpoint).
   "RECOMPUTE_TOKEN",
@@ -677,11 +680,31 @@ async function triggerDeliveryNotesReconcile(env: Env): Promise<void> {
 }
 
 /**
+ * Réveille le container et rattrape les premiers paiements par carte (plan
+ * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+ * §4.3, §6.8) : les intentions qu'une commande porte et que
+ * `card_payment.payment` ne connaît pas encore, ou en retard sur elle. Sur le
+ * cron HORAIRE, de P0 à P2 ; idempotent, et muet sans ligne-témoin. Même porte
+ * et même jeton que la boîte d'envoi.
+ */
+async function triggerFirstPaymentsReplay(env: Env): Promise<void> {
+  const token = env.RECOMPUTE_TOKEN;
+  if (!token) {
+    return;
+  }
+  await postSweep(env, token, "admin/card-payments/first-payments/replay");
+}
+
+/**
  * Les passages du cron horaire, chacun pour soi : l'échec de l'un ne prive
  * pas l'autre de son tour (`postSweep` l'écrit dans les logs du Worker).
  */
 async function hourlySweeps(env: Env): Promise<void> {
-  await Promise.allSettled([triggerSettlementReminders(env), triggerDeliveryNotesReconcile(env)]);
+  await Promise.allSettled([
+    triggerSettlementReminders(env),
+    triggerDeliveryNotesReconcile(env),
+    triggerFirstPaymentsReplay(env),
+  ]);
 }
 
 /**

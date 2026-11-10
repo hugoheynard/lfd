@@ -31,7 +31,6 @@ import {
 import { CommandBus } from "@nestjs/cqrs";
 import { randomUUID } from "node:crypto";
 
-import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
 import { MarkOrderFulfilledCommand } from "../src/b2b/orders/application/commands/mark-order-fulfilled.command.js";
 import {
   PlaceOrderForCustomerCommand,
@@ -45,6 +44,7 @@ import { runWithRequestContext } from "../src/platform/context/request-context.s
 import { newTraceId } from "../src/platform/context/trace-context.js";
 import type { PrismaService } from "../src/platform/database/prisma.service.js";
 import { E2E_STAFF_ID, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { cardPaid, cardProvidersDouble, type E2eCardProviders } from "./card-payments.js";
 import { seeingTotal } from "./seen-total-shop-command.js";
 
 /** Une ligne de panier : le client n'envoie qu'un SKU et une quantité, le serveur tarife. */
@@ -283,37 +283,28 @@ export async function pickupSite(prisma: PrismaService): Promise<string> {
 }
 
 /**
- * Une passerelle de carte doublée qui émet une intention DISTINCTE par
- * passation (`<préfixe>_1`, `<préfixe>_2`…) — sans quoi deux commandes
- * partageraient une intention, et le règlement de l'une solderait l'autre.
+ * Le prestataire de carte doublé, posé sur le jeton `CardProviders` du bloc
+ * `card-payment` (plan M2, §4.7) : une intention DISTINCTE par passation
+ * (`<préfixe>_1`, `<préfixe>_2`…) — sans quoi deux commandes partageraient une
+ * intention, et le règlement de l'une solderait l'autre.
+ *
+ * ⚠️ Remplace `cardGatewayDouble`, qui doublait `PaymentGateway` (retiré au
+ * lot P0.c2) : `{ token: CardProviders, value: cardGatewayDouble("pi_x") }`.
  */
-export function cardGatewayDouble(prefix: string) {
-  let issued = 0;
-  return {
-    createIntent: () => {
-      issued += 1;
-      const paymentIntentId = `${prefix}_${String(issued)}`;
-      return Promise.resolve({ paymentIntentId, clientSecret: `${paymentIntentId}_secret` });
-    },
-    publishableKey: () => "pk_e2e",
-    parseWebhook: () => ({ kind: "ignored" as const }),
-    cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-  };
+export function cardGatewayDouble(prefix: string): E2eCardProviders {
+  return cardProvidersDouble(prefix);
 }
 
 /**
- * Règle la carte d'une commande comme le webhook Stripe le ferait — par la
- * vraie commande de confirmation. Sans intention (au compte, total nul), il n'y
- * a rien à régler.
+ * Règle la carte d'une commande comme le webhook le ferait — par la vraie
+ * commande du webhook de `card-payment`, signée par le prestataire doublé.
+ * Sans intention (au compte, total nul), il n'y a rien à régler.
  */
 export async function payByCard(ctx: E2eContext, order: PlacedTestOrder): Promise<void> {
   if (order.paymentIntentId === null) {
     return;
   }
-  await ctx.app
-    .get(CommandBus)
-    .execute(new ConfirmOrderPaymentCommand(order.paymentIntentId, "succeeded"));
-  await ctx.drain();
+  await cardPaid(ctx, order.paymentIntentId);
 }
 
 /**

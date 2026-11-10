@@ -19,7 +19,7 @@ import type { SetLoyaltySettingsPayload } from "@lfd/contracts";
 import { LoyaltySettings } from "../src/b2b/loyalty/domain/value-objects/loyalty-settings.js";
 import { PrismaLoyaltySettingsStore } from "../src/b2b/loyalty/infrastructure/prisma-loyalty-settings.store.js";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   bootstrapE2e,
@@ -60,7 +60,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: cardGatewayDouble("pi_fidelite") },
+      { token: CardProviders, value: cardGatewayDouble("pi_fidelite") },
     ],
   });
 });

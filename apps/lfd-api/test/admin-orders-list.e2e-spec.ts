@@ -20,7 +20,7 @@ import {
 import type request from "supertest";
 
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import {
   bootstrapE2e,
@@ -31,6 +31,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { cardGatewayDouble } from "./order-factory.js";
 
 const SERVICE_DAY = serviceDay();
 const MEMBER = "auth0|member";
@@ -46,26 +47,14 @@ const COURIER_ADDR: BillingAddressPayload = {
 };
 
 /** Un identifiant d'intention par appel : la colonne est `@unique`. */
-let intentCounter = 0;
-const fakeGateway = {
-  createIntent: () => {
-    intentCounter += 1;
-    return Promise.resolve({
-      paymentIntentId: `pi_list_${intentCounter}`,
-      clientSecret: `pi_list_${intentCounter}_secret`,
-    });
-  },
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+const fakeGateway = cardGatewayDouble("pi_list");
 
 let ctx: E2eContext;
 let pickupId = "pickup_absent";
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [ADMIN_VERIFIER_OVERRIDE, { token: PaymentGateway, value: fakeGateway }],
+    overrides: [ADMIN_VERIFIER_OVERRIDE, { token: CardProviders, value: fakeGateway }],
   });
 });
 

@@ -37,6 +37,8 @@ import { PromotionsModule } from "../b2b/promotions/promotions.module.js";
 import { OrderPricingModule } from "../b2b/orders/order-pricing.module.js";
 import { AccountingModule } from "../b2b/accounting/accounting.module.js";
 import { PaymentsModule } from "../b2b/payments/payments.module.js";
+import { CardPaymentModule } from "../card-payment/card-payment.module.js";
+import { CardPaymentFeedModule } from "./card-payment-feed.module.js";
 import { LoyaltyModule } from "../b2b/loyalty/loyalty.module.js";
 import { DevModule } from "../dev/dev.module.js";
 import { OrderCutoffsModule } from "../b2b/order-cutoffs/order-cutoffs.module.js";
@@ -232,7 +234,12 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     AccountModule,
     // Les notes du commercial : staff seulement, sur `StaffDirectory` d'AccountModule.
     ClientNotesModule,
-    // Paiement avant Orders : Orders consomme le port PaymentGateway exposé ici.
+    // L'encaissement par carte (plan M2, lot P0.c2) : le bloc, global, dont
+    // les blocs métier n'atteignent que le canal ; et son fil, qui lui relie
+    // le compte des commandes et leur implémentation du canal retour.
+    CardPaymentModule,
+    CardPaymentFeedModule,
+    // Les mandats, les liens de paiement et leur webhook.
     PaymentsModule,
     AccountingModule,
     // La fidélité : le livre de points et les bons (plan points de fidélité).

@@ -49,7 +49,8 @@ import {
   MandateProofNotFoundError,
 } from "../domain/errors/mandate-errors.js";
 import { GetCompanyMandateQuery } from "../application/queries/get-company-mandate.query.js";
-import { PaymentGateway } from "../domain/payment-gateway.js";
+import { GetCardPublishableKeyQuery } from "../../../card-payment/channels/requests/index.js";
+import { ORDER_CARD_SUBJECT_TYPE } from "../../orders/application/services/order-card-subject.js";
 
 /** Backstop DoS du multipart, aligné sur le KBIS (le domaine tranche à 10 Mo). */
 const PROOF_UPLOAD_HARD_LIMIT = 20 * 1024 * 1024;
@@ -78,7 +79,6 @@ export class AdminMandatesController {
   constructor(
     private readonly commands: CommandBus,
     private readonly queries: QueryBus,
-    private readonly payments: PaymentGateway,
   ) {}
 
   /**
@@ -102,9 +102,15 @@ export class AdminMandatesController {
       GetMandateMintBlockersQuery,
       MandateMintReadinessView
     >(new GetMandateMintBlockersQuery(companyId));
+    // La clé du compte qui encaisse les commandes, par une requête du canal
+    // de `card-payment` (plan M2, §4.2) : l'écran l'affiche, le bloc
+    // n'encaisse pas le prélèvement.
+    const publishableKey = await this.queries.execute<GetCardPublishableKeyQuery, string>(
+      new GetCardPublishableKeyQuery(ORDER_CARD_SUBJECT_TYPE),
+    );
     return {
       mandate,
-      publishableKey: this.payments.publishableKey(),
+      publishableKey,
       mintBlockers: readiness.blockers,
       issuerScheme: readiness.issuerScheme,
     };

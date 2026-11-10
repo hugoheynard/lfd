@@ -21,13 +21,11 @@ import {
   CustomerRole,
   DeferredTerm,
 } from "../src/platform/database/client/client.js";
-import {
-  PaymentGateway,
-  type PaymentIntentState,
-} from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { posePromotion, promotionTerms } from "./promotion-fixtures.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { cardGatewayDouble } from "./order-factory.js";
 
 /**
  * Le jour de **service** d'une commande de test. Obligatoire depuis que
@@ -50,28 +48,11 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: "staff-e2e", scopes: [] }),
 };
 
-/** L'identifiant d'intention change à chaque appel : la colonne est `@unique`. */
-let intentCounter = 0;
-/** L'état que Stripe rendrait à la relecture — remis à « payable » avant chaque test. */
-let intentState: PaymentIntentState = "awaiting_payment";
-const fakeGateway = {
-  createIntent: () => {
-    intentCounter += 1;
-    return Promise.resolve({
-      paymentIntentId: `pi_admin_${intentCounter}`,
-      clientSecret: `pi_admin_${intentCounter}_secret`,
-    });
-  },
-  retrieveIntent: (id: string) =>
-    Promise.resolve({
-      paymentIntentId: id,
-      clientSecret: `${id}_secret`,
-      state: intentState,
-    }),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+/**
+ * Le prestataire doublé : une intention distincte par passation (la colonne est
+ * `@unique`), payable à la relecture sauf si un test pose un autre état.
+ */
+const fakeGateway = cardGatewayDouble("pi_admin");
 
 let ctx: E2eContext;
 
@@ -79,7 +60,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: fakeGateway },
     ],
   });
 });
@@ -89,7 +70,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-  intentState = "awaiting_payment";
+  fakeGateway.provider.states.clear();
   await ctx.reset();
 });
 
@@ -374,7 +355,9 @@ describe("POST /admin/orders — le règlement", () => {
         .send(payload({ companyId, buyerUserId: buyerId, settlement: "link" }))
         .expect(201),
     );
-    intentState = "canceled";
+    for (const providerRef of fakeGateway.provider.issued) {
+      fakeGateway.provider.states.set(providerRef, "canceled");
+    }
 
     const refusal = await ctx.asSub(BUYER).get(`/orders/${placed.id}/payment`).expect(409);
     expect(jsonBody<{ readonly code: string }>(refusal).code).toBe("orders.payment.intent_closed");

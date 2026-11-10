@@ -24,7 +24,6 @@ import {
 import { randomUUID } from "node:crypto";
 import type request from "supertest";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import {
   CompanyStatus,
   CustomerRole,
@@ -39,35 +38,16 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { cardProvidersOverride } from "./card-payments.js";
 
 const DAY = serviceDay(7);
 const BUYER = "auth0|acheteur-vues-revision";
-
-let intentCounter = 0;
-const fakeGateway = {
-  createIntent: () => {
-    intentCounter += 1;
-    return Promise.resolve({
-      paymentIntentId: `pi_vues_${String(intentCounter)}`,
-      clientSecret: `pi_vues_${String(intentCounter)}_secret`,
-    });
-  },
-  retrieveIntent: (id: string) =>
-    Promise.resolve({
-      paymentIntentId: id,
-      clientSecret: `${id}_secret`,
-      state: "awaiting_payment",
-    }),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
 
 let ctx: E2eContext;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [ADMIN_VERIFIER_OVERRIDE, { token: PaymentGateway, value: fakeGateway }],
+    overrides: [ADMIN_VERIFIER_OVERRIDE, cardProvidersOverride("pi_vues")],
   });
 });
 

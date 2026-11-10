@@ -17,7 +17,6 @@ import type {
   ShopQuoteView,
 } from "@lfd/contracts";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
 import {
@@ -29,6 +28,7 @@ import {
 } from "./e2e-harness.js";
 import { posePromotion, promotionTerms } from "./promotion-fixtures.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { cardProvidersOverride } from "./card-payments.js";
 
 const ACTIVE = "auth0|exclusions-pro";
 
@@ -37,28 +37,13 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
 };
 
-/** Un pro au compte ne crée pas d'intention ; le double n'est là que par sûreté. */
-const fakeGateway = {
-  createIntent: () =>
-    Promise.resolve({ paymentIntentId: "pi_exclusions", clientSecret: "pi_exclusions_secret" }),
-  retrieveIntent: (id: string) =>
-    Promise.resolve({
-      paymentIntentId: id,
-      clientSecret: `${id}_secret`,
-      state: "awaiting_payment" as const,
-    }),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
-
 let ctx: E2eContext;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: fakeGateway },
+      cardProvidersOverride("pi_exclusions"),
     ],
   });
 });

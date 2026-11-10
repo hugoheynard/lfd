@@ -14,7 +14,7 @@
  */
 import { addDays, instantToLocal, localToInstant, type AudiencesView } from "@lfd/contracts";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole, OrderStatus } from "../src/platform/database/client/client.js";
 import { Clock } from "../src/platform/time/clock.js";
@@ -51,7 +51,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: cardGatewayDouble("pi_audiences") },
+      { token: CardProviders, value: cardGatewayDouble("pi_audiences") },
     ],
   });
 });

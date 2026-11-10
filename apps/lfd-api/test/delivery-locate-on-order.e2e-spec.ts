@@ -14,7 +14,7 @@ import { randomUUID } from "node:crypto";
 
 import type { BillingAddressPayload, DeliveryAddressPayload } from "@lfd/contracts";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { GeocoderUnavailableError } from "../src/delivery/domain/errors/delivery-routing-errors.js";
 import {
   type GeocodeAnswer,
@@ -26,20 +26,13 @@ import { CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
+import { cardGatewayDouble } from "./order-factory.js";
 
 const OWNER = "auth0|owner";
 const SERVICE_DAY = serviceDay();
 
 /** Une intention NEUVE par commande : l'identifiant Stripe est unique en base. */
-const fakeGateway = {
-  createIntent: () => {
-    const id = `pi_${randomUUID()}`;
-    return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret` });
-  },
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+const fakeGateway = cardGatewayDouble("pi_delivery_locate_on_order");
 
 /** Le géocodeur du test : retenu jusqu'à `release()`, ou en panne. */
 class HeldGeocoder extends Geocoder {
@@ -88,7 +81,7 @@ let companyId: string;
 beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: fakeGateway },
       { token: Geocoder, value: geocoder },
     ],
   });

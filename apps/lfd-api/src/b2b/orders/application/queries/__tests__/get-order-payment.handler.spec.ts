@@ -1,14 +1,13 @@
 import type { OrderStatus, OrderView, PaymentStatus } from "@lfd/contracts";
 
-import {
-  PaymentGateway,
-  type PaymentIntentState,
-} from "../../../../payments/domain/payment-gateway.js";
+import type { CardIntentState } from "../../../../../card-payment/channels/requests/index.js";
 import { OrderNotFoundError, OrderNotPayableError } from "../../../domain/errors/order-errors.js";
 import {
   CancelledOrderNotPayableError,
+  OrderPaymentAwaitsAdoptionError,
   PaymentIntentClosedError,
 } from "../../../domain/errors/order-payment-errors.js";
+import { OrderCardRetrieval } from "../../../domain/ports/order-card-payments.js";
 import { OrderAccessReader } from "../../../domain/ports/order-access.reader.js";
 import { OrderReader, type OwnedOrder } from "../../../domain/ports/order.reader.js";
 import { orderView } from "../../handlers/__tests__/payment-failure-doubles.js";
@@ -56,23 +55,61 @@ const guard: OrderAccessReader = {
   accessToOrder: () => Promise.resolve(null),
 };
 
+/**
+ * Le premier paiement relu par le bloc `card-payment` (plan M2, P0.c2) : la
+ * commande demandée est notée ; `awaitsAdoption` simule une intention d'avant
+ * le bloc, sans ligne.
+ */
+class FixedRetrieval extends OrderCardRetrieval {
+  constructor(
+    private readonly sink: { retrieved: string | null },
+    private readonly state: CardIntentState,
+    private readonly awaitsAdoption: boolean,
+  ) {
+    super();
+  }
+
+  retrieveFirst(orderId: string) {
+    this.sink.retrieved = orderId;
+    if (this.awaitsAdoption) {
+      return Promise.reject(new OrderPaymentAwaitsAdoptionError(orderId));
+    }
+    return Promise.resolve({
+      paymentId: "pay_1",
+      providerRef: "pi_1",
+      clientSecret: "pi_1_secret",
+      publishableKey: "pk_test_123",
+      state: this.state,
+    });
+  }
+}
+
 function payments(
   sink: { retrieved: string | null } = { retrieved: null },
-  state: PaymentIntentState = "awaiting_payment",
-): PaymentGateway {
-  return {
-    createIntent: () => Promise.resolve({ paymentIntentId: "pi_1", clientSecret: "pi_1_secret" }),
-    retrieveIntent: (id) => {
-      sink.retrieved = id;
-      return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret`, state });
-    },
-    cancelIntent: () => Promise.resolve({ kind: "cancelled" }),
-    publishableKey: () => "pk_test_123",
-    parseWebhook: () => ({ kind: "ignored" }),
-  };
+  state: CardIntentState = "awaiting_payment",
+  awaitsAdoption = false,
+): OrderCardRetrieval {
+  return new FixedRetrieval(sink, state, awaitsAdoption);
 }
 
 describe("GetOrderPaymentHandler", () => {
+  /**
+   * Plan M2, §4.6 (lot P0.c2) : une intention ouverte avant le bloc
+   * `card-payment` n'a pas de ligne. La page la dit « à adopter » et n'écrit
+   * rien — c'est l'écran qui envoie l'adoption, puis relit.
+   */
+  it("dit « à adopter » une intention d'avant le bloc, sans rien écrire", async () => {
+    const handler = new GetOrderPaymentHandler(
+      guard,
+      reader(owned({ paymentStatus: "pending" })),
+      payments(undefined, "awaiting_payment", true),
+    );
+
+    await expect(handler.execute(new GetOrderPaymentQuery("u1", "order_1"))).rejects.toBeInstanceOf(
+      OrderPaymentAwaitsAdoptionError,
+    );
+  });
+
   it("rend de quoi payer une commande en attente", async () => {
     const sink = { retrieved: null as string | null };
     const handler = new GetOrderPaymentHandler(
@@ -89,7 +126,7 @@ describe("GetOrderPaymentHandler", () => {
       amountCents: 12_345,
     });
     // Le secret est REDEMANDÉ au prestataire : on ne stocke que l'identifiant.
-    expect(sink.retrieved).toBe("pi_1");
+    expect(sink.retrieved).toBe("order_1");
   });
 
   it("refuse une commande déjà réglée — sans prétendre qu'elle a disparu", async () => {
@@ -224,7 +261,7 @@ describe("GetOrderPaymentHandler", () => {
 
     expect(intent.clientSecret).toBe("pi_1_secret");
     // La MÊME intention : aucune nouvelle n'est créée.
-    expect(sink.retrieved).toBe("pi_1");
+    expect(sink.retrieved).toBe("order_1");
   });
 
   it("refuse une commande `failed` dont l'intention a été annulée chez Stripe", async () => {

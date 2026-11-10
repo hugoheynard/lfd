@@ -3,7 +3,6 @@ import { randomUUID } from "node:crypto";
 import type { CatalogItemView } from "@lfd/contracts";
 import request from "supertest";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import {
@@ -15,6 +14,7 @@ import {
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { pickupSite } from "./order-factory.js";
+import { cardProvidersOverride } from "./card-payments.js";
 
 /**
  * E2E — **la quantité minimale d'achat, refusée partout en dessous**
@@ -34,16 +34,6 @@ const PRO_MINIMUM = 6;
 const PUBLIC_MINIMUM = 4;
 const BELOW_MINIMUM = "orders.line.quantity_below_minimum";
 
-const fakeGateway = {
-  createIntent: () => {
-    const id = `pi_minimum_${randomUUID()}`;
-    return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret` });
-  },
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
-
 let ctx: E2eContext;
 let companyId = "";
 let buyerId = "";
@@ -51,7 +41,7 @@ let pickupId = "";
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [ADMIN_VERIFIER_OVERRIDE, { token: PaymentGateway, value: fakeGateway }],
+    overrides: [ADMIN_VERIFIER_OVERRIDE, cardProvidersOverride("pi_minimum")],
   });
 });
 

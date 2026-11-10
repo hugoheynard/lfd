@@ -6,10 +6,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import {
-  PaymentGateway,
-  type IntentCancellation,
-} from "../../../payments/domain/payment-gateway.js";
+import type { CardPaymentCancellation } from "../../../../card-payment/channels/requests/index.js";
 import {
   OrderAbandonUnavailableError,
   OrderNotAbandonableError,
@@ -25,6 +22,7 @@ import { OrderReader, type OwnedOrder } from "../../domain/ports/order.reader.js
 import { OrderRepository, type AbandonedSettlement } from "../../domain/ports/order.repository.js";
 import { ensureOrderVisible } from "../../domain/services/order-access.js";
 import { abandonStanding, ensureOrderAuthor } from "../../domain/services/order-abandon.js";
+import { OrderCardCancellation } from "../../domain/ports/order-card-payments.js";
 import { AbandonOrderCommand } from "./abandon-order.command.js";
 
 /**
@@ -75,7 +73,7 @@ export class AbandonOrderHandler implements ICommandHandler<AbandonOrderCommand,
     private readonly access: OrderAccessReader,
     private readonly orders: OrderReader,
     private readonly repository: OrderRepository,
-    private readonly payments: PaymentGateway,
+    private readonly cards: OrderCardCancellation,
     private readonly events: DomainEventPublisher,
     private readonly unitOfWork: UnitOfWork,
     private readonly vouchers: LoyaltyVoucherRedemption,
@@ -93,7 +91,7 @@ export class AbandonOrderHandler implements ICommandHandler<AbandonOrderCommand,
       throw new OrderNotAbandonableError(standing);
     }
     if (owned.clientele === "public" && owned.stripePaymentIntentId !== null) {
-      const outcome = await this.payments.cancelIntent(owned.stripePaymentIntentId);
+      const outcome = await this.cards.cancelFirst(command.orderId);
       this.ensureIntentDead(outcome, command.orderId);
     }
 
@@ -151,7 +149,7 @@ export class AbandonOrderHandler implements ICommandHandler<AbandonOrderCommand,
   }
 
   /** Les cinq issues de `cancelIntent` (§5) : deux laissent écrire, trois refusent. */
-  private ensureIntentDead(outcome: IntentCancellation, orderId: string): void {
+  private ensureIntentDead(outcome: CardPaymentCancellation, orderId: string): void {
     switch (outcome.kind) {
       case "cancelled":
       case "already_cancelled":

@@ -25,7 +25,6 @@ import { instantToLocal, localToInstant } from "@lfd/contracts";
 import { placeShopOrderSeeingTotal, type Unseen } from "./seen-total-shop-command.js";
 import { PlaceShopOrderHandler } from "../src/b2b/orders/application/commands/place-shop-order.handler.js";
 import { UnsettledShopOrderExpiry } from "../src/b2b/orders/application/services/unsettled-shop-order-expiry.service.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { CompanyStatus } from "../src/platform/database/client/client.js";
 import { Clock } from "../src/platform/time/clock.js";
@@ -34,25 +33,7 @@ import { PlanAdmissionDesk, ServiceDay } from "../src/production/channels/commer
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
-
-/** Une intention distincte par appel : `stripe_payment_intent_id` est unique en base. */
-let intentSeq = 0;
-const fakeGateway = {
-  createIntent: () => {
-    intentSeq += 1;
-    const paymentIntentId = `pi_shelf_${String(intentSeq)}`;
-    return Promise.resolve({ paymentIntentId, clientSecret: `${paymentIntentId}_secret` });
-  },
-  retrieveIntent: (id: string) =>
-    Promise.resolve({
-      paymentIntentId: id,
-      clientSecret: `${id}_secret`,
-      state: "awaiting_payment" as const,
-    }),
-  publishableKey: () => "pk_shelf",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+import { cardProvidersOverride } from "./card-payments.js";
 
 const CROISSANT = "VIE-001-1";
 const BREAD = "PAI-001-1";
@@ -74,7 +55,7 @@ beforeAll(async () => {
     overrides: [
       ADMIN_VERIFIER_OVERRIDE,
       { token: Clock, value: clock },
-      { token: PaymentGateway, value: fakeGateway },
+      cardProvidersOverride("pi_shelf"),
     ],
   });
 });

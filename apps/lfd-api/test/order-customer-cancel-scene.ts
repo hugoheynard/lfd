@@ -4,13 +4,13 @@ import { OrderMailOrigins } from "../src/b2b/orders/domain/ports/order-mail-orig
 import { CommandBus } from "@nestjs/cqrs";
 
 import { CancelOrderCommand } from "../src/b2b/orders/application/commands/cancel-order.command.js";
-import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
 import {
   CompanyStatus,
   CustomerRole,
   OrderStatus,
   PaymentStatus,
 } from "../src/platform/database/client/client.js";
+import { cardFailed } from "./card-payments.js";
 import { daysAgo, E2E_STAFF_ID, E2E_STAFF_SUB, serviceDay } from "./e2e-harness.js";
 import { createCompany, createGuest, createUser } from "./factories.js";
 import {
@@ -160,15 +160,12 @@ export async function seedCustomerOrder(seed: CustomerOrderSeed): Promise<Seeded
   return { orderId: order.id, orderNumber: order.orderNumber, intent: order.paymentIntentId };
 }
 
-/** La carte réglée ou refusée par la vraie confirmation ; en attente sinon. */
+/** La carte réglée ou refusée par le vrai webhook de `card-payment` ; en attente sinon. */
 async function settle(order: PlacedTestOrder, payment: PaymentStatus | undefined): Promise<void> {
   if (payment === PaymentStatus.paid) {
     await payByCard(context(), order);
   } else if (payment === PaymentStatus.failed && order.paymentIntentId !== null) {
-    await context()
-      .app.get(CommandBus)
-      .execute(new ConfirmOrderPaymentCommand(order.paymentIntentId, "failed"));
-    await context().drain();
+    await cardFailed(context(), order.paymentIntentId);
   }
 }
 

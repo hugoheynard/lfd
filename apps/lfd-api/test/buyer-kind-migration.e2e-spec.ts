@@ -20,8 +20,9 @@ import type { PlaceShopOrderPayload } from "@lfd/contracts";
 
 import { placeShopOrderSeeingTotal, type Unseen } from "./seen-total-shop-command.js";
 import { PlaceShopOrderHandler } from "../src/b2b/orders/application/commands/place-shop-order.handler.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { bootstrapE2e, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { cardGatewayDouble } from "./order-factory.js";
 
 const MIGRATION = join(
   process.cwd(),
@@ -38,29 +39,13 @@ function backfillStatement(): string {
   return match[0];
 }
 
-let intentSeq = 0;
-const fakeGateway = {
-  createIntent: () => {
-    intentSeq += 1;
-    const paymentIntentId = `pi_buyer_kind_${String(intentSeq)}`;
-    return Promise.resolve({ paymentIntentId, clientSecret: `${paymentIntentId}_secret` });
-  },
-  retrieveIntent: () =>
-    Promise.resolve({
-      paymentIntentId: "pi_buyer_kind_1",
-      clientSecret: "pi_buyer_kind_1_secret",
-      state: "awaiting_payment" as const,
-    }),
-  publishableKey: () => "pk_public",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+const fakeGateway = cardGatewayDouble("pi_buyer_kind");
 
 let ctx: E2eContext;
 let pickupId = "";
 
 beforeAll(async () => {
-  ctx = await bootstrapE2e({ overrides: [{ token: PaymentGateway, value: fakeGateway }] });
+  ctx = await bootstrapE2e({ overrides: [{ token: CardProviders, value: fakeGateway }] });
 });
 
 afterAll(async () => {

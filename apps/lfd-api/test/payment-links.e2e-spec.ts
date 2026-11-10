@@ -11,8 +11,9 @@ import { randomUUID } from "node:crypto";
  *   le journal ; le webhook le rapproche par sa session, rejoué sans dommage,
  *   et sonne la cloche quand un lien annulé est payé.
  *
- * Frontières doublées : la signature du jeton staff, la passerelle Stripe (les
- * deux ports), le mailer et l'origine de l'espace client.
+ * Frontières doublées : la signature du jeton staff, le prestataire de carte
+ * de `card-payment` (dont le webhook relaie la page d'un lien), la passerelle
+ * des sessions Stripe, le mailer et l'origine de l'espace client.
  */
 import type {
   AccountingSettingsView,
@@ -24,11 +25,8 @@ import type {
 import { PaymentLink } from "../src/b2b/payments/domain/entities/payment-link.js";
 import { CheckoutGateway } from "../src/b2b/payments/domain/ports/checkout-gateway.js";
 import { PaymentLinkRepository } from "../src/b2b/payments/domain/ports/payment-link.repository.js";
-import {
-  PaymentGateway,
-  type PaymentWebhookEvent,
-} from "../src/b2b/payments/domain/payment-gateway.js";
 import { PaymentLinkTerms } from "../src/b2b/payments/domain/value-objects/payment-link-terms.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { OrderMailOrigins } from "../src/b2b/orders/domain/ports/order-mail-origins.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
@@ -47,6 +45,7 @@ import {
   serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
+import { cardProvidersDouble } from "./card-payments.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
 const BUYER = "auth0|acheteur-carte";
@@ -59,27 +58,8 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
 };
 
-let intentCounter = 0;
-/** Le prochain événement que « Stripe » livrera au webhook. */
-let nextWebhook: PaymentWebhookEvent = { kind: "ignored" };
-const fakeGateway = {
-  createIntent: () => {
-    intentCounter += 1;
-    return Promise.resolve({
-      paymentIntentId: `pi_link_${String(intentCounter)}`,
-      clientSecret: `pi_link_${String(intentCounter)}_secret`,
-    });
-  },
-  retrieveIntent: (id: string) =>
-    Promise.resolve({
-      paymentIntentId: id,
-      clientSecret: `${id}_s`,
-      state: "awaiting_payment" as const,
-    }),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: (): PaymentWebhookEvent => nextWebhook,
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+/** Le prestataire de carte doublé : il signe ce que la suite livre au webhook. */
+const cards = cardProvidersDouble("pi_link");
 
 let sessionCounter = 0;
 const expiredSessions: string[] = [];
@@ -122,7 +102,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: cards },
       { token: CheckoutGateway, value: fakeCheckout },
       { token: MAILER, value: recordingMailer },
       { token: OrderMailOrigins, value: origins },
@@ -139,7 +119,6 @@ beforeEach(async () => {
   sentMails.splice(0);
   expiredSessions.splice(0);
   clientBaseUrl = "https://app.lfc.test";
-  nextWebhook = { kind: "ignored" };
 });
 
 function staff(): ReturnType<E2eContext["asSub"]> {
@@ -188,15 +167,34 @@ async function placeCardOrder(companyId: string): Promise<string> {
   return jsonBody<{ id: string }>(response).id;
 }
 
-async function webhook(event: PaymentWebhookEvent): Promise<void> {
-  nextWebhook = event;
+/** Ce que « Stripe » livre au webhook pour un lien : sa session, payée ou expirée. */
+interface LinkWebhook {
+  readonly kind: "link_paid" | "link_expired";
+  readonly sessionId: string;
+}
+
+/**
+ * La page d'un lien, signée par le prestataire doublé et livrée à la vraie
+ * route du webhook des cartes, qui la relaie à `b2b/payments` par un fait
+ * durable (plan M2, §4.5) — d'où le drainage.
+ */
+async function webhook(event: LinkWebhook): Promise<void> {
+  const paid = event.kind === "link_paid";
+  const { signature } = cards.provider.sign({
+    kind: "checkout",
+    eventId: cards.provider.nextEventId(),
+    eventType: paid ? "checkout.session.completed" : "checkout.session.expired",
+    outcome: paid ? "paid" : "expired",
+    sessionId: event.sessionId,
+  });
   await ctx
     .http()
     .post("/payments/webhook")
-    .set("stripe-signature", "t=1,v1=signé-par-le-doublé")
+    .set("stripe-signature", signature)
     .set("content-type", "application/json")
     .send("{}")
     .expect(200);
+  await ctx.drain();
 }
 
 describe("2a — les commandes à régler par carte", () => {

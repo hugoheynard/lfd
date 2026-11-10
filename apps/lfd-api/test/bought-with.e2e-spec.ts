@@ -19,7 +19,7 @@ import request from "supertest";
 import { CommandBus } from "@nestjs/cqrs";
 
 import { CancelOrderCommand } from "../src/b2b/orders/application/commands/cancel-order.command.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
@@ -42,7 +42,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: cardGatewayDouble("pi_pris_avec") },
+      { token: CardProviders, value: cardGatewayDouble("pi_pris_avec") },
     ],
   });
 });

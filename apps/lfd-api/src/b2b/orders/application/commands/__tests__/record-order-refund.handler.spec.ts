@@ -1,3 +1,5 @@
+import { HeldAfterCommit } from "../../../../../platform/database/__tests__/held-after-commit.js";
+import { AmbientAfterCommit } from "../../../../../platform/database/after-commit.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
@@ -90,6 +92,8 @@ function build(paymentStatus: LedgerPaymentStatus | null = "paid") {
     new FixedClock(new Date(STRIPE_AT.getTime() + 5_000)),
     events,
     durable,
+    // Hors de toute transaction, `AmbientAfterCommit` publie tout de suite.
+    new AmbientAfterCommit(),
   );
   const send = (r: RefundReport) => handler.execute(new RecordOrderRefundCommand("pi_1", r));
   return { refunds, journal, events, durable, send };
@@ -184,6 +188,7 @@ describe("RecordOrderRefundHandler", () => {
       new FixedClock(STRIPE_AT),
       events,
       new RecordingDurable(),
+      new AmbientAfterCommit(),
     );
 
     await expect(
@@ -259,5 +264,57 @@ describe("RecordOrderRefundHandler — un remboursement qui n'a pas rendu l'arge
     await send(failing(500, "canceled"));
 
     expect(durable.facts.map((fact) => fact.type)).toEqual(["order.refund_failed"]);
+  });
+});
+
+describe("RecordOrderRefundHandler — appelé dans une transaction (abonné durable, P0.c2)", () => {
+  /**
+   * Régression : publiés à la sortie de `unitOfWork.run`, le refus et le
+   * « sans commande » partaient encore dans la transaction du reçu durable qui
+   * appelle cette commande depuis P0.c2 ; la cloche, lancée en fond, s'exécutait
+   * sur une transaction fermée et n'était jamais émise (e2e `order-refunds`,
+   * 2026-11-09). Les deux événements attendent la validation.
+   */
+  it("un refus n'est publié qu'après la validation", async () => {
+    const afterCommit = new HeldAfterCommit();
+    const events = new RecordingPublisher();
+    const handler = new RecordOrderRefundHandler(
+      new InMemoryRefunds("pi_1", "paid"),
+      new DirectUnitOfWork(),
+      new RecordingJournal(),
+      new FixedIdGenerator("ref"),
+      new FixedClock(STRIPE_AT),
+      events,
+      new RecordingDurable(),
+      afterCommit,
+    );
+
+    await handler.execute(new RecordOrderRefundCommand("pi_1", report(500, "re_usd", "usd")));
+    expect(events.published).toEqual([]);
+
+    await afterCommit.commit();
+    expect(events.published).toHaveLength(1);
+    expect(events.published[0]).toBeInstanceOf(OrderRefundRejectedEvent);
+  });
+
+  it("un remboursement sans commande n'est publié qu'après la validation", async () => {
+    const afterCommit = new HeldAfterCommit();
+    const events = new RecordingPublisher();
+    const handler = new RecordOrderRefundHandler(
+      new InMemoryRefunds("pi_1", null),
+      new DirectUnitOfWork(),
+      new RecordingJournal(),
+      new FixedIdGenerator("ref"),
+      new FixedClock(STRIPE_AT),
+      events,
+      new RecordingDurable(),
+      afterCommit,
+    );
+
+    await handler.execute(new RecordOrderRefundCommand("pi_libre", report(500)));
+    expect(events.published).toEqual([]);
+
+    await afterCommit.commit();
+    expect(events.published).toEqual([new RefundWithoutOrderEvent(report(500))]);
   });
 });

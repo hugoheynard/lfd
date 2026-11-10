@@ -15,10 +15,7 @@
  */
 import { instantToLocal } from "@lfd/contracts";
 
-import { CommandBus } from "@nestjs/cqrs";
-
-import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { cardProvidersOverride } from "./card-payments.js";
 import { staffWithRole } from "./delivery-driver-scene.js";
 import { DOOR_DAY, DOOR_ROLE, departedStop, JPEG, myRound } from "./delivery-handover-scene.js";
 import { MY_ROUND } from "./delivery-driver-scene.js";
@@ -26,24 +23,14 @@ import { ADMIN_VERIFIER_OVERRIDE, forgetCustomer } from "./delivery-rounds-scene
 import { forgetRoutingScene } from "./delivery-routing-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
-import { pickupSite, placeOrder } from "./order-factory.js";
+import { payByCard, pickupSite, placeOrder } from "./order-factory.js";
 
 let ctx: E2eContext;
 let sequence = 0;
 
-/** L'intention que la prochaine passation recevra. */
-let nextIntent = "pi_e2e";
-const fakeGateway = {
-  createIntent: () =>
-    Promise.resolve({ paymentIntentId: nextIntent, clientSecret: `${nextIntent}_secret` }),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
-
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [ADMIN_VERIFIER_OVERRIDE, { token: PaymentGateway, value: fakeGateway }],
+    overrides: [ADMIN_VERIFIER_OVERRIDE, cardProvidersOverride("pi_recue")],
   });
 });
 
@@ -62,13 +49,11 @@ beforeEach(async () => {
 async function readyOrder(): Promise<{ readonly id: string; readonly number: string }> {
   sequence += 1;
   const user = await createUser(ctx.prisma, { auth0Sub: `auth0|recue-${String(sequence)}` });
-  nextIntent = `pi_recue_${String(sequence)}`;
   const order = await placeOrder(ctx, {
     buyerUserId: user.id,
     fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
   });
-  await ctx.app.get(CommandBus).execute(new ConfirmOrderPaymentCommand(nextIntent, "succeeded"));
-  await ctx.drain();
+  await payByCard(ctx, order);
   return { id: order.id, number: order.orderNumber };
 }
 

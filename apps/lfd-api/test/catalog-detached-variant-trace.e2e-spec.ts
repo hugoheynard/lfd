@@ -12,7 +12,7 @@
 import type { CustomerSkuStat } from "@lfd/contracts";
 
 import { EvaluateBasket } from "../src/b2b/alerts/application/handlers/evaluate-basket.service.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { OutboxRelayTrigger } from "../src/platform/outbox/outbox-relay-trigger.js";
@@ -36,7 +36,7 @@ beforeAll(async () => {
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
       { token: OutboxRelayTrigger, value: SILENT_TRIGGER },
-      { token: PaymentGateway, value: cardGatewayDouble("pi_lineage_alerts") },
+      { token: CardProviders, value: cardGatewayDouble("pi_lineage_alerts") },
     ],
   });
 });

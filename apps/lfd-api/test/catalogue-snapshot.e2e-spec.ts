@@ -18,7 +18,7 @@
  */
 import { randomUUID } from "node:crypto";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { CatalogueSnapshotStore } from "../src/b2b/catalog/infrastructure/catalogue-snapshot/catalogue-snapshot.store.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
@@ -32,6 +32,7 @@ import {
   seedGoldenScene,
   type GoldenScene,
 } from "./pricing-golden-master-scene.js";
+import { cardGatewayDouble } from "./order-factory.js";
 
 const CROISSANT = "VIE-001-1";
 const PAIN = "PAI-001-1";
@@ -53,19 +54,7 @@ const BASKET: GoldenBasket = {
   staffRevision: [],
 };
 
-const fakeGateway = {
-  createIntent: () =>
-    Promise.resolve({ paymentIntentId: `pi_${randomUUID()}`, clientSecret: "pi_secret" }),
-  retrieveIntent: (id: string) =>
-    Promise.resolve({
-      paymentIntentId: id,
-      clientSecret: `${id}_secret`,
-      state: "awaiting_payment" as const,
-    }),
-  publishableKey: () => "pk_catalogue_snapshot",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+const fakeGateway = cardGatewayDouble("pi_catalogue_snapshot");
 
 let ctx: E2eContext;
 let scene: GoldenScene;
@@ -76,7 +65,7 @@ beforeAll(async () => {
     overrides: [
       ADMIN_VERIFIER_OVERRIDE,
       { token: Clock, value: GOLDEN_CLOCK },
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: fakeGateway },
     ],
   });
 }, 120_000);

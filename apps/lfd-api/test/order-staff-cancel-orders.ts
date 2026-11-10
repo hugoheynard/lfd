@@ -1,12 +1,12 @@
 import { CommandBus } from "@nestjs/cqrs";
 
 import { ConvertLoyaltyPointsCommand } from "../src/b2b/loyalty/application/commands/convert-loyalty-points.command.js";
-import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
 import {
   OrderClientele,
   OrderStatus,
   PaymentStatus,
 } from "../src/platform/database/client/client.js";
+import { cardFailed, cardPaid } from "./card-payments.js";
 import { E2E_STAFF_ID, E2E_STAFF_SUB } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { pickupSite, placeOrder, placeOrderForCustomer } from "./order-factory.js";
@@ -124,9 +124,7 @@ async function settleCard(
   if (intent === null || (payment !== PaymentStatus.paid && payment !== PaymentStatus.failed)) {
     return;
   }
-  const outcome = payment === PaymentStatus.paid ? "succeeded" : "failed";
-  await context().app.get(CommandBus).execute(new ConfirmOrderPaymentCommand(intent, outcome));
-  await context().drain();
+  await (payment === PaymentStatus.paid ? cardPaid : cardFailed)(context(), intent);
 }
 
 /**
@@ -136,18 +134,29 @@ async function settleCard(
  *   produire demanderait la clôture du fournil puis le colisage entiers ;
  * - une carte SANS intention : la passation en lie toujours une ; l'état
  *   n'existe qu'après une panne de la passerelle au moment de la passation.
+ *   Depuis le lot P0.c2 du plan M2, la passation rattache aussi la ligne du
+ *   premier paiement (`card_payment.payment`) : elle est retirée avec
+ *   l'intention, sous la purge du scénario — le déclencheur refuse tout
+ *   `DELETE` hors d'elle.
  */
 async function forceState(orderId: string, seed: OrderSeed): Promise<void> {
   if (seed.status === undefined && seed.intent !== null) {
     return;
   }
-  await context().prisma.order.update({
+  const { prisma } = context();
+  await prisma.order.update({
     where: { id: orderId },
     data: {
       ...(seed.status === undefined ? {} : { status: seed.status }),
       ...(seed.intent === null ? { stripePaymentIntentId: null } : {}),
     },
   });
+  if (seed.intent === null) {
+    await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SET LOCAL card_payment.purge = 'on'`;
+      await tx.cardPayment.deleteMany({ where: { subjectType: "order", subjectId: orderId } });
+    });
+  }
 }
 
 const FREE_CLIENT_PREFIX = "auth0|annulation-gratuite";

@@ -117,6 +117,7 @@ export class StartupReport implements OnApplicationBootstrap {
       hasCustomerStorage: customers.config !== null,
       hasProductionStorage: fournil.config !== null,
       hasStripe: this.config.stripeConfig() !== null,
+      hasStripeLinksWebhookSecret: this.config.stripeLinksWebhookSecret() !== null,
       hasClientBaseUrl: this.config.clientBaseUrl() !== null,
       hasAdminBaseUrl: this.config.adminBaseUrl() !== null,
       hasGeocoderUrl: this.config.geocoderUrl() !== null,

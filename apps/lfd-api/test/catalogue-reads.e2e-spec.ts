@@ -34,7 +34,7 @@ import { randomUUID } from "node:crypto";
 
 import type request from "supertest";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { PricingMaterialsCache } from "../src/b2b/pricing/infrastructure/pricing-materials.cache.js";
 import { CatalogueSnapshotStore } from "../src/b2b/catalog/infrastructure/catalogue-snapshot/catalogue-snapshot.store.js";
 import { StaffAccessResolver } from "../src/platform/auth/staff-access.resolver.js";
@@ -50,6 +50,7 @@ import {
   seedGoldenScene,
   type GoldenScene,
 } from "./pricing-golden-master-scene.js";
+import { cardGatewayDouble } from "./order-factory.js";
 
 /** La sonde, qui retient en plus le modèle de chaque appel. */
 class ModelTracingCounter extends SchemaOpsCounter {
@@ -107,19 +108,7 @@ const BASKET: GoldenBasket = {
   staffRevision: [],
 };
 
-const fakeGateway = {
-  createIntent: () =>
-    Promise.resolve({ paymentIntentId: `pi_${randomUUID()}`, clientSecret: "pi_secret" }),
-  retrieveIntent: (id: string) =>
-    Promise.resolve({
-      paymentIntentId: id,
-      clientSecret: `${id}_secret`,
-      state: "awaiting_payment" as const,
-    }),
-  publishableKey: () => "pk_catalogue_reads",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+const fakeGateway = cardGatewayDouble("pi_catalogue_reads");
 
 const tracer = new ModelTracingCounter(GOLDEN_CLOCK);
 let ctx: E2eContext;
@@ -131,7 +120,7 @@ beforeAll(async () => {
     overrides: [
       ADMIN_VERIFIER_OVERRIDE,
       { token: Clock, value: GOLDEN_CLOCK },
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: fakeGateway },
       { token: SchemaOpsCounter, value: tracer },
     ],
   });

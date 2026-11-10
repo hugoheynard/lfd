@@ -9,11 +9,13 @@ import { htMillicentsOf } from "@lfd/pim-contracts";
 import { CommandBus } from "@nestjs/cqrs";
 
 import { ConvertLoyaltyPointsCommand } from "../src/b2b/loyalty/application/commands/convert-loyalty-points.command.js";
-import {
-  PaymentGateway,
-  type CreateIntentParams,
-} from "../src/b2b/payments/domain/payment-gateway.js";
+import type {
+  CreateIntentParams,
+  CreatedIntent,
+} from "../src/card-payment/domain/ports/card-provider-types.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { E2eCardProvider, E2eCardProviders } from "./card-payments.js";
 import {
   bootstrapE2e,
   E2E_STAFF_SUB,
@@ -50,23 +52,21 @@ const DAY_OF_SERVICE = serviceDay();
 /** L'étiquette du banana bread : 21,00 € TTC à 5,5 % (plan, § 1). */
 const BANANA_LABEL_CENTS = 2_100;
 
+/** Les paramètres de chaque intention créée — le montant y est éprouvé. */
 const intents: CreateIntentParams[] = [];
-const fakeGateway = {
-  createIntent: (params: CreateIntentParams) => {
+
+/** Le prestataire de carte doublé, qui garde les paramètres de chaque création. */
+class ParamsRecordingCardProvider extends E2eCardProvider {
+  override createIntent(params: CreateIntentParams): Promise<CreatedIntent> {
     intents.push(params);
-    const id = `pi_ttc_${String(intents.length)}`;
-    return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_sec` });
-  },
-  retrieveIntent: (paymentIntentId: string) =>
-    Promise.resolve({
-      paymentIntentId,
-      clientSecret: `${paymentIntentId}_sec`,
-      state: "awaiting_payment" as const,
-    }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-};
+    return super.createIntent(params);
+  }
+}
+
+/** Le registre doublé, servi par le prestataire qui garde les paramètres. */
+class ParamsRecordingCardProviders extends E2eCardProviders {
+  override readonly provider = new ParamsRecordingCardProvider("pi_ttc");
+}
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -79,7 +79,7 @@ let pickupId = "";
 beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: new ParamsRecordingCardProviders("pi_ttc") },
       { token: AdminTokenVerifier, value: stubAdminVerifier },
     ],
   });

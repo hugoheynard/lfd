@@ -1,10 +1,5 @@
-import {
-  PaymentGateway,
-  type CreatedIntent,
-  type IntentCancellation,
-  type PaymentWebhookEvent,
-  type RetrievedIntent,
-} from "../../../../payments/domain/payment-gateway.js";
+import type { CardPaymentCancellation } from "../../../../../card-payment/channels/requests/index.js";
+import { OrderCardCancellation } from "../../../domain/ports/order-card-payments.js";
 import {
   PackingWithdrawalDesk,
   type PackingWithdrawalOutcome,
@@ -135,37 +130,25 @@ export class InMemoryCancellations extends OrderCancellationRepository {
   }
 }
 
-/** Le prestataire : une issue d'annulation écrite d'avance, et les appels vus. */
-export class ScriptedCancelGateway extends PaymentGateway {
+/**
+ * Le prestataire, par le bloc `card-payment` : une issue d'annulation écrite
+ * d'avance, et les commandes dont l'intention a été annulée (plan M2, P0.c2 —
+ * l'annulation se demande par commande, plus par intention).
+ */
+export class ScriptedCancelGateway extends OrderCardCancellation {
   readonly cancelled: string[] = [];
 
   constructor(
-    private readonly outcome: IntentCancellation,
+    private readonly outcome: CardPaymentCancellation,
     private readonly trace: string[] = [],
   ) {
     super();
   }
 
-  cancelIntent(paymentIntentId: string): Promise<IntentCancellation> {
-    this.trace.push(`stripe:${paymentIntentId}`);
-    this.cancelled.push(paymentIntentId);
+  cancelFirst(orderId: string): Promise<CardPaymentCancellation> {
+    this.trace.push(`stripe:${orderId}`);
+    this.cancelled.push(orderId);
     return Promise.resolve(this.outcome);
-  }
-
-  createIntent(): Promise<CreatedIntent> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-
-  retrieveIntent(): Promise<RetrievedIntent> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-
-  publishableKey(): string {
-    return "pk_test";
-  }
-
-  parseWebhook(): PaymentWebhookEvent {
-    return { kind: "ignored" };
   }
 }
 

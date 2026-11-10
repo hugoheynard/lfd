@@ -19,7 +19,7 @@ import { createHmac } from "node:crypto";
 
 import { MailerIdempotencyInFlightError, type MailReceipt, type SendMailArgs } from "@lfd/mailer";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { MAIL_DELIVERY_FAILED } from "../src/mail/channels/deliveries/mail-delivery-failed.event.js";
 import { Mail } from "../src/mail/channels/requests/mail.js";
 import { MailRequest } from "../src/mail/requests/domain/entities/mail-request.js";
@@ -60,7 +60,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: MAILER, value: mailer },
-      { token: PaymentGateway, value: cardGatewayDouble("pi_cloche") },
+      { token: CardProviders, value: cardGatewayDouble("pi_cloche") },
     ],
   });
   // Le secret du webhook n'existe pas dans l'environnement de test.

@@ -31,13 +31,13 @@ import {
 } from "@lfd/contracts";
 
 import { cycleToConstitute } from "../src/b2b/accounting/domain/services/billing-cycle.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser, markDelivered } from "./factories.js";
 import { placeOrder as placeTestOrder } from "./order-factory.js";
+import { cardProvidersOverride } from "./card-payments.js";
 
 const SERVICE_DAY = serviceDay();
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -49,20 +49,6 @@ const COLLECTION = "/admin/accounting/collection";
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
     Promise.resolve({ subject: "staff-e2e", scopes: [] }),
-};
-
-let intents = 0;
-const fakeGateway = {
-  createIntent: () => {
-    intents += 1;
-    return Promise.resolve({
-      paymentIntentId: `pi_s4_${String(intents)}`,
-      clientSecret: `pi_s4_${String(intents)}_secret`,
-    });
-  },
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
 };
 
 let ctx: E2eContext;
@@ -79,7 +65,7 @@ const silentMailer = {
 beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
-      { token: PaymentGateway, value: fakeGateway },
+      cardProvidersOverride("pi_s4"),
       { token: AdminTokenVerifier, value: stubAdminVerifier },
       { token: MAILER, value: silentMailer },
     ],

@@ -13,7 +13,6 @@ import { PrismaService } from "../src/platform/database/prisma.service.js";
 import { IdGenerator } from "../src/platform/id/id-generator.js";
 import { SecretGenerator } from "../src/platform/secret/secret-generator.js";
 import { Clock } from "../src/platform/time/clock.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import type { Order } from "../src/b2b/orders/domain/entities/order.js";
 import {
   OrderRepository,
@@ -24,10 +23,11 @@ import type { HandoverVia } from "../src/b2b/orders/domain/services/handover.js"
 import type { FirstHandoverStatus } from "../src/b2b/orders/domain/services/shipment-settlement.js";
 import { ON_PRODUCTION_DAY_CLOSED } from "../src/b2b/orders/application/handlers/on-production-day-closed.handler.js";
 import { PrismaOrderRepository } from "../src/b2b/orders/infrastructure/prisma-order.repository.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { placeLateByStaff } from "./staff-late-order.js";
 import { createUser } from "./factories.js";
-import { settleCardPayments } from "./card-payments.js";
+import { cardProvidersDouble, settleCardPayments } from "./card-payments.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 
 const MEMBER = "auth0|member";
@@ -101,19 +101,8 @@ class FlakyOrders extends OrderRepository {
   }
 }
 
-let intentCount = 0;
-const issuedIntents: string[] = [];
-const fakeGateway = {
-  createIntent: () => {
-    intentCount += 1;
-    const id = `pi_day_closed_${String(intentCount)}`;
-    issuedIntents.push(id);
-    return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret` });
-  },
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+/** Le prestataire de carte doublé ; `settleCardPayments` vide ses intentions émises. */
+const cards = cardProvidersDouble("pi_day_closed");
 
 const orders = new FlakyOrders();
 let ctx: E2eContext;
@@ -125,7 +114,7 @@ beforeAll(async () => {
         token: AdminTokenVerifier,
         value: { verify: () => Promise.resolve({ subject: STAFF, scopes: [] }) },
       },
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: cards },
       { token: OrderRepository, value: orders },
     ],
   });
@@ -169,7 +158,7 @@ async function place(): Promise<string> {
       })
       .expect(201),
   );
-  await settleCardPayments(ctx, issuedIntents);
+  await settleCardPayments(ctx, cards.provider.issued);
   return placed.orderNumber;
 }
 

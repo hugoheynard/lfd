@@ -223,6 +223,9 @@ jobs:
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
           STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          # L'endpoint des liens de paiement (plan M2, §4.5) : vide tant qu'il
+          # n'est pas créé chez Stripe — sauté par la boucle, la route rend 400.
+          STRIPE_LINKS_WEBHOOK_SECRET: ${{ secrets.STRIPE_LINKS_WEBHOOK_SECRET }}
           # Jeton interne des portes machine-à-machine (recompute, contrôle du
           # courrier). Il était posé À LA MAIN, donc sans source de vérité : une
           # rotation se serait faite quelque part, sans trace, et le Cron aurait
@@ -303,6 +306,7 @@ jobs:
                       R2_PRODUCTION_ENDPOINT R2_PRODUCTION_BUCKET \
                       R2_PRODUCTION_ACCESS_KEY_ID R2_PRODUCTION_SECRET_ACCESS_KEY \
                       STRIPE_SECRET_KEY STRIPE_PUBLISHABLE_KEY STRIPE_WEBHOOK_SECRET \
+                      STRIPE_LINKS_WEBHOOK_SECRET \
                       CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_ANALYTICS_TOKEN \
                       CLOUDFLARE_API_CONTAINER_APPLICATION_ID \
                       VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT \

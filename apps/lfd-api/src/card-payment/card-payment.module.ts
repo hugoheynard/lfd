@@ -36,10 +36,10 @@ import { RegistryCardProviders } from "./infrastructure/registry-card-providers.
  * types de sujet — `CardAccountDefaults` (la valeur `order → lfc-stripe`) et
  * `SubjectSettlements` (l'implémenteur `order` de `b2b/orders`).
  *
- * ⚠️ **Débranché au lot P0.c1** (2026-11-09) : `AppModule` ne l'importe pas
- * encore. Le lot c2 relie les deux jetons, l'importe, et retire le webhook de
- * `b2b/payments` — les deux routes `POST /payments/webhook` ne coexistent
- * jamais.
+ * Branché au lot P0.c2 (2026-11-09) : `appBootstrap/card-payment-feed.module.ts`
+ * fournit les deux jetons et `AppModule` importe les deux modules ; le webhook
+ * de `b2b/payments` est retiré le même jour — les deux routes
+ * `POST /payments/webhook` n'ont jamais coexisté.
  */
 @Global()
 @Module({

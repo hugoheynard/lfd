@@ -12,7 +12,7 @@
  * le parcours de chacun, et ce qui est éprouvé ici est la LECTURE.
  */
 import { SaleReferenceUsage } from "../src/pim/channels/b2b-platform/sale-reference-usage/sale-reference-usage.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { CompanyStatus } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, daysAgo, type E2eContext } from "./e2e-harness.js";
 import { createCompany, createUser } from "./factories.js";
@@ -24,7 +24,7 @@ let ctx: E2eContext;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [{ token: PaymentGateway, value: cardGatewayDouble("pi_usage") }],
+    overrides: [{ token: CardProviders, value: cardGatewayDouble("pi_usage") }],
   });
 });
 

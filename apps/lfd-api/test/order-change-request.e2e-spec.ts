@@ -26,7 +26,7 @@ import type {
   RequestReasonPayload,
 } from "@lfd/contracts";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   CompanyStatus,
@@ -42,6 +42,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { cardGatewayDouble } from "./order-factory.js";
 
 const DAY = serviceDay(7);
 const BUYER = "auth0|acheteur-demande-modif";
@@ -66,18 +67,7 @@ const stubAdminVerifier = {
     Promise.resolve({ subject, scopes: [] }),
 };
 
-const fakeGateway = {
-  createIntent: () => Promise.resolve({ paymentIntentId: "pi_x", clientSecret: "pi_x_secret" }),
-  retrieveIntent: (id: string) =>
-    Promise.resolve({
-      paymentIntentId: id,
-      clientSecret: `${id}_secret`,
-      state: "awaiting_payment",
-    }),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+const fakeGateway = cardGatewayDouble("pi_x");
 
 let ctx: E2eContext;
 
@@ -85,7 +75,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: fakeGateway },
       { token: MAILER, value: recordingMailer },
     ],
   });

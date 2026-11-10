@@ -8,10 +8,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { BusinessError, DomainError } from "../../../../platform/shared/errors/app-error.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import {
-  PaymentGateway,
-  type IntentCancellation,
-} from "../../../payments/domain/payment-gateway.js";
+import type { CardPaymentCancellation } from "../../../../card-payment/channels/requests/index.js";
 import {
   OrderCancellationNotRecordedError,
   OrderCancellationPaymentInProgressError,
@@ -41,6 +38,7 @@ import { CancellationAllowanceGate } from "./cancellation-allowance-gate.js";
 import { recordOf, type CancellationIntent } from "./cancellation-intent.js";
 import { CancellationRule } from "./cancellation-rule.js";
 import { CancellationRefundRequester } from "./cancellation-refund-requester.js";
+import { OrderCardCancellation } from "../../domain/ports/order-card-payments.js";
 import { OrderWorkshopWithdrawal } from "./order-workshop-withdrawal.js";
 import { VoucherRestitutionRefusal } from "./voucher-restitution-refusal.js";
 
@@ -122,7 +120,7 @@ export class OrderCancellation {
   constructor(
     private readonly subjects: CancellationSubjectReader,
     private readonly cancellations: OrderCancellationRepository,
-    private readonly payments: PaymentGateway,
+    private readonly cards: OrderCardCancellation,
     private readonly workshops: OrderWorkshopWithdrawal,
     private readonly vouchers: LoyaltyVoucherRedemption,
     private readonly refusals: VoucherRestitutionRefusal,
@@ -172,13 +170,13 @@ export class OrderCancellation {
     if (regime !== "due" || subject.stripePaymentIntentId === null) {
       return false;
     }
-    const outcome = await this.payments.cancelIntent(subject.stripePaymentIntentId);
+    const outcome = await this.cards.cancelFirst(subject.orderId);
     this.ensureIntentDead(outcome, subject);
     return true;
   }
 
-  /** Les cinq issues de `cancelIntent` : deux laissent écrire, trois refusent sans rien toucher. */
-  private ensureIntentDead(outcome: IntentCancellation, subject: CancellationSubject): void {
+  /** Les cinq issues de `cancelFirst` : deux laissent écrire, trois refusent sans rien toucher. */
+  private ensureIntentDead(outcome: CardPaymentCancellation, subject: CancellationSubject): void {
     switch (outcome.kind) {
       case "cancelled":
       case "already_cancelled":

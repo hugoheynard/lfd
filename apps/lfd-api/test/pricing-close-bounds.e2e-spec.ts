@@ -20,7 +20,6 @@ import { millicentsFromCents } from "@lfd/money";
 
 import { Pricer } from "../src/b2b/pricing/application/pricer.js";
 import { ProductCatalogReader } from "../src/b2b/catalog/domain/ports/product-catalog.reader.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import {
@@ -33,13 +32,7 @@ import {
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { staffViewer } from "../src/b2b/catalog/domain/catalog-viewer.js";
-
-const fakeGateway = {
-  createIntent: () => Promise.resolve({ paymentIntentId: "pi_e2e", clientSecret: "pi_e2e_secret" }),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+import { cardProvidersOverride } from "./card-payments.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -52,7 +45,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: fakeGateway },
+      cardProvidersOverride("pi_e2e"),
     ],
   });
 });

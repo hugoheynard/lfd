@@ -38,6 +38,7 @@ import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { AbandonOrderCommand } from "../application/commands/abandon-order.command.js";
+import { AdoptOrderPaymentCommand } from "../application/commands/adopt-order-payment.command.js";
 import { CancelOrderByCustomerCommand } from "../application/commands/cancel-order-by-customer.command.js";
 import {
   PlaceOrderCommand,
@@ -242,6 +243,21 @@ export class OrdersController {
   ): Promise<OrderPaymentIntent> {
     return this.queries.execute<GetOrderPaymentQuery, OrderPaymentIntent>(
       new GetOrderPaymentQuery(user.userId, id),
+    );
+  }
+
+  /**
+   * **Adopter le paiement** d'une commande ouverte avant le bloc
+   * `card-payment` (plan M2, §4.6) : la page de règlement l'a dit « à
+   * adopter » (409 `orders.payment.awaits_adoption`) ; l'écran envoie ce
+   * geste, puis relit `GET :id/payment`. `204`, idempotent ; même mur que la
+   * page.
+   */
+  @Post(":id/payment/adopt")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async adoptPayment(@CurrentUser() user: Principal, @Param("id") id: string): Promise<void> {
+    await this.commands.execute<AdoptOrderPaymentCommand, void>(
+      new AdoptOrderPaymentCommand(user.userId, id),
     );
   }
 

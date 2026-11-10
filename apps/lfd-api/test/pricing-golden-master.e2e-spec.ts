@@ -28,7 +28,6 @@ import { join } from "node:path";
 
 import { instantToLocal } from "@lfd/contracts";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
@@ -54,26 +53,9 @@ import {
 } from "./pricing-golden-master-refusals.js";
 import { GOLDEN_CLOCK, seedGoldenScene, type GoldenScene } from "./pricing-golden-master-scene.js";
 import { GOLDEN_MASTER_WRITE } from "./setup-env.js";
+import { cardProvidersOverride } from "./card-payments.js";
 
 const SNAPSHOT = join(process.cwd(), "test/pricing-golden-master.snapshot.json");
-
-let intentSeq = 0;
-const fakeGateway = {
-  createIntent: () => {
-    intentSeq += 1;
-    const id = `pi_golden_${String(intentSeq)}`;
-    return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret` });
-  },
-  retrieveIntent: (id: string) =>
-    Promise.resolve({
-      paymentIntentId: id,
-      clientSecret: `${id}_secret`,
-      state: "awaiting_payment" as const,
-    }),
-  publishableKey: () => "pk_golden",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
 
 type Snapshot = Record<string, Paths>;
 
@@ -88,7 +70,7 @@ beforeAll(async () => {
     overrides: [
       ADMIN_VERIFIER_OVERRIDE,
       { token: Clock, value: GOLDEN_CLOCK },
-      { token: PaymentGateway, value: fakeGateway },
+      cardProvidersOverride("pi_golden"),
     ],
   });
   await ctx.reset();

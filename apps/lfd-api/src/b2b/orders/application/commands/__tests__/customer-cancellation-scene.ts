@@ -3,7 +3,7 @@ import type { CustomerCancellationSettingsView } from "@lfd/contracts";
 
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
-import type { IntentCancellation } from "../../../../payments/domain/payment-gateway.js";
+import type { CardPaymentCancellation } from "../../../../../card-payment/channels/requests/index.js";
 import type { OrderWithdrawalOutcome } from "../../../../../production/channels/commerce/index.js";
 import type { CancellationSubject } from "../../../domain/ports/cancellation-subject.reader.js";
 import type { CancellingPrincipal } from "../../../domain/ports/cancelling-member.reader.js";
@@ -52,7 +52,7 @@ export interface CustomerScene {
   readonly members?: readonly string[];
   /** `user:company` → le principal par lequel le client atteint la commande d'un site. */
   readonly principals?: Readonly<Record<string, CancellingPrincipal>>;
-  readonly stripe?: IntentCancellation;
+  readonly stripe?: CardPaymentCancellation;
   readonly desk?: OrderWithdrawalOutcome;
   readonly failures?: number;
   readonly now: Date;

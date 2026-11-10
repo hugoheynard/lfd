@@ -19,7 +19,7 @@ import { LoyaltySettingsReader } from "../src/b2b/loyalty/domain/ports/loyalty-s
 import type { LoyaltySettings } from "../src/b2b/loyalty/domain/value-objects/loyalty-settings.js";
 import { PrismaLoyaltySettingsStore } from "../src/b2b/loyalty/infrastructure/prisma-loyalty-settings.store.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 import { cardGatewayDouble, payByCard, pickupSite, placeOrder } from "./order-factory.js";
@@ -68,7 +68,7 @@ beforeAll(async () => {
         },
       },
       { token: LoyaltySettingsReader, value: settings },
-      { token: PaymentGateway, value: cardGatewayDouble("pi_retrait") },
+      { token: CardProviders, value: cardGatewayDouble("pi_retrait") },
     ],
   });
   settings.inner = ctx.app.get(PrismaLoyaltySettingsStore);

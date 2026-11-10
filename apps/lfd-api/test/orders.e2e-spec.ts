@@ -15,7 +15,8 @@ import { randomUUID } from "node:crypto";
 import type { CompanyStatus } from "../src/platform/database/client/client.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import type { BillingAddressPayload, CustomerOrderView, PlacedOrderResponse } from "@lfd/contracts";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { cardProvidersDouble } from "./card-payments.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { lineTotalCents, pieces } from "@lfd/money";
@@ -24,18 +25,13 @@ const ADMIN = "auth0|admin";
 const MEMBER = "auth0|member";
 const STRANGER = "auth0|stranger";
 
-/** Passerelle de paiement doublée : intention fixe, aucun appel réseau. */
-const fakeGateway = {
-  createIntent: () => Promise.resolve({ paymentIntentId: "pi_e2e", clientSecret: "pi_e2e_secret" }),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+/** Le prestataire de carte doublé : aucun appel réseau, une intention par passation. */
+const cards = cardProvidersDouble("pi_e2e");
 
 let ctx: E2eContext;
 
 beforeAll(async () => {
-  ctx = await bootstrapE2e({ overrides: [{ token: PaymentGateway, value: fakeGateway }] });
+  ctx = await bootstrapE2e({ overrides: [{ token: CardProviders, value: cards }] });
 });
 
 afterAll(async () => {
@@ -190,7 +186,7 @@ describe("zéro friction — commande sans entreprise", () => {
     const stored = await ctx.prisma.order.findUniqueOrThrow({ where: { id: placed.id } });
     expect(stored.companyId).toBeNull();
     expect(stored.paymentStatus).toBe("pending");
-    expect(stored.stripePaymentIntentId).toBe("pi_e2e");
+    expect(stored.stripePaymentIntentId).toBe(cards.provider.issued.at(-1));
 
     // Non réglée, elle n'est pas listée (Hugo, 2026-10-09 : ni suivi, ni table —
     // commande-carte-reglee.md) ; réglée, elle l'est.

@@ -4,22 +4,16 @@
  * clôture d'une journée tue d'abord les règlements restés en l'air, puis
  * compte ce qu'il y a à produire.
  *
- * Stripe est la seule frontière doublée (avec la signature des jetons) : son
- * issue d'annulation est écrite d'avance, test par test. Le port synchrone du
+ * Le prestataire de carte est la seule frontière doublée (avec la signature
+ * des jetons) : son issue d'annulation est écrite d'avance, test par test. Le port synchrone du
  * fournil, l'adaptateur du commerce, le `where` conditionné, les abonnés du
  * courriel et de la cloche tournent sur le vrai Postgres.
  *
  * Les commandes sont passées par le vrai chemin (`placeOrder`, plan T), et
- * réglées ou refusées par la vraie confirmation. Seule la commande SANS jour
+ * réglées ou refusées par le vrai webhook de `card-payment`. Seule la commande SANS jour
  * de retrait garde une écriture brute, datée au-dessus d'elle.
  */
-import { CommandBus } from "@nestjs/cqrs";
-
-import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
-import {
-  PaymentGateway,
-  type IntentCancellation,
-} from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   OrderClientele,
@@ -35,28 +29,19 @@ import {
   serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
+import { cardFailed, cardPaid, cardProvidersDouble } from "./card-payments.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
-import {
-  cardGatewayDouble,
-  pickupSite,
-  placeOrder,
-  placeOrderForCustomer,
-} from "./order-factory.js";
+import { pickupSite, placeOrder, placeOrderForCustomer } from "./order-factory.js";
 
 /** La journée balayée, et la veille — pour une commande sans date passée hors fenêtre. */
 const DAY = serviceDay();
 const EVE = serviceDay(6);
 
-let cancellation: IntentCancellation = { kind: "cancelled" };
-const cancelledIntents: string[] = [];
-const fakeGateway = {
-  ...cardGatewayDouble("pi_balayage"),
-  retrieveIntent: () => Promise.reject(new Error("non utilisé")),
-  cancelIntent: (id: string) => {
-    cancelledIntents.push(id);
-    return Promise.resolve(cancellation);
-  },
-};
+/**
+ * Le prestataire de carte doublé : il garde les intentions dont l'annulation
+ * est demandée, et rend l'issue que chaque test écrit dans `cancellation`.
+ */
+const cards = cardProvidersDouble("pi_balayage");
 
 interface SentMail {
   readonly to: string;
@@ -82,7 +67,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: cards },
       { token: MAILER, value: recordingMailer },
     ],
   });
@@ -94,8 +79,8 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
-  cancellation = { kind: "cancelled" };
-  cancelledIntents.splice(0);
+  cards.provider.cancellation = { kind: "cancelled" };
+  cards.provider.cancelled.splice(0);
   sentMails.splice(0);
 });
 
@@ -148,9 +133,7 @@ async function seedOrder(seed: Seed = {}): Promise<{ orderId: string; intent: st
       : await placeOrder(ctx, { ...content, companyId, settlement: "card" });
   const intent = order.paymentIntentId ?? "";
   if (seed.payment !== undefined && seed.payment !== "pending") {
-    const outcome = seed.payment === "paid" ? "succeeded" : "failed";
-    await ctx.app.get(CommandBus).execute(new ConfirmOrderPaymentCommand(intent, outcome));
-    await ctx.drain();
+    await (seed.payment === "paid" ? cardPaid : cardFailed)(ctx, intent);
   }
   if (seed.day === null) {
     await forgetServiceDay(order.id, seed.createdAt);
@@ -204,7 +187,7 @@ describe("la clôture balaie AVANT de compter (Q1, B1)", () => {
 
     expect(response.status).toBe(201);
     expect(jsonBody<{ readonly absorbed: number }>(response).absorbed).toBe(1);
-    expect(cancelledIntents).toEqual([pending.intent]);
+    expect(cards.provider.cancelled).toEqual([pending.intent]);
     expect(await stateOf(pending.orderId)).toMatchObject(CANCELLED);
     expect(await stateOf(paid.orderId)).toMatchObject({ status: OrderStatus.confirmed });
   });
@@ -237,7 +220,7 @@ describe("la clôture balaie AVANT de compter (Q1, B1)", () => {
 
     await close();
 
-    expect(cancelledIntents).toEqual([refused.intent]);
+    expect(cards.provider.cancelled).toEqual([refused.intent]);
     expect(await stateOf(refused.orderId)).toMatchObject(CANCELLED);
   });
 
@@ -259,7 +242,7 @@ describe("la clôture balaie AVANT de compter (Q1, B1)", () => {
   it("Stripe injoignable n'empêche pas la clôture : la commande est annulée quand même", async () => {
     await paidOrder();
     const pending = await seedOrder();
-    cancellation = { kind: "unavailable", reason: "ECONNRESET" };
+    cards.provider.cancellation = { kind: "unavailable", reason: "ECONNRESET" };
 
     const response = await close();
 
@@ -280,7 +263,7 @@ describe("la réannonce balaie aussi, sans rien redire (S4)", () => {
 
     expect(jsonBody<{ readonly alreadyClosed: boolean }>(again).alreadyClosed).toBe(true);
     expect(await stateOf(after.orderId)).toMatchObject(CANCELLED);
-    expect(cancelledIntents).toEqual([before.intent, after.intent]);
+    expect(cards.provider.cancelled).toEqual([before.intent, after.intent]);
     expect(sentMails.map((mail) => mail.template)).toEqual([
       "customer.payment-expired",
       "customer.payment-expired",
@@ -318,13 +301,11 @@ describe("un encaissement après la clôture (lot 6 bis)", () => {
   it("la commande reste annulée, et UNE demande de remboursement s'ouvre, sans l'ancienne cloche", async () => {
     await paidOrder();
     const late = await seedOrder();
-    cancellation = { kind: "unavailable", reason: "ECONNRESET" };
+    cards.provider.cancellation = { kind: "unavailable", reason: "ECONNRESET" };
     await close();
 
-    const bus = ctx.app.get(CommandBus);
-    await bus.execute(new ConfirmOrderPaymentCommand(late.intent, "succeeded"));
-    await bus.execute(new ConfirmOrderPaymentCommand(late.intent, "succeeded"));
-    await ctx.drain();
+    await cardPaid(ctx, late.intent);
+    await cardPaid(ctx, late.intent);
 
     expect(await stateOf(late.orderId)).toEqual({ ...CANCELLED, paidAt: null });
     expect(

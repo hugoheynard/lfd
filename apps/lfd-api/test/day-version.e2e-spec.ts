@@ -16,9 +16,10 @@ import { randomUUID } from "node:crypto";
  */
 import type { OpenedPackingContainer } from "@lfd/contracts";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { settleCardPayments } from "./card-payments.js";
+import { cardGatewayDouble } from "./order-factory.js";
 import { DAY_VERSIONS, dayVersionOf, dayVersionsOf } from "./day-versions-door.js";
 import {
   bootstrapE2e,
@@ -53,19 +54,9 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: token, scopes: [] }),
 };
 
-let intentCount = 0;
-const issuedIntents: string[] = [];
-const fakeGateway = {
-  createIntent: () => {
-    intentCount += 1;
-    const id = `pi_e2e_version_${String(intentCount)}`;
-    issuedIntents.push(id);
-    return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret` });
-  },
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+const fakeGateway = cardGatewayDouble("pi_e2e_version");
+/** Les intentions émises par le prestataire doublé — `settleCardPayments` les règle et vide la file. */
+const issuedIntents = fakeGateway.provider.issued;
 
 let ctx: E2eContext;
 
@@ -73,7 +64,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: fakeGateway },
     ],
   });
 });

@@ -1,32 +1,22 @@
 /**
  * **La scène des e2e du scénario de développement** — ce que les suites
- * `dev-scenario*` partagent : la passerelle de paiement doublée, et les deux
+ * `dev-scenario*` partagent : le prestataire de carte doublé, et les deux
  * mesures qui disent si un rechargement laisse quelque chose derrière lui.
  */
 import type request from "supertest";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { CLIENT_RAISON_SOCIALE, DEFAULT_IDENTITY } from "../src/dev/seeding/client.seed.js";
+import { cardProvidersOverride } from "./card-payments.js";
 import { admin } from "./delivery-rounds-scene.js";
 import type { E2eContext, E2eOverride } from "./e2e-harness.js";
 import { storageKeys } from "./storage.js";
 
-let intentCount = 0;
-
-/** Stripe, la seule frontière doublée en plus de la signature : le semis paie des commandes. */
-export const PAYMENT_GATEWAY_OVERRIDE: E2eOverride = {
-  token: PaymentGateway,
-  value: {
-    createIntent: () => {
-      intentCount += 1;
-      const id = `pi_e2e_dev_scenario_${String(intentCount)}`;
-      return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret` });
-    },
-    publishableKey: () => "pk_e2e",
-    parseWebhook: () => ({ kind: "ignored" as const }),
-    cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-  },
-};
+/**
+ * Le prestataire de carte, la seule frontière doublée en plus de la signature :
+ * le semis paie des commandes. Posé sur le jeton `CardProviders` du bloc
+ * `card-payment` (lot P0.c2) ; le nom reste celui que les suites importent.
+ */
+export const PAYMENT_GATEWAY_OVERRIDE: E2eOverride = cardProvidersOverride("pi_e2e_dev_scenario");
 
 /**
  * Les schémas mesurés : tous ceux où le scénario écrit, ou où un abonné écrit

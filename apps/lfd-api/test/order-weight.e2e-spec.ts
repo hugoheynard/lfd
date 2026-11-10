@@ -3,11 +3,13 @@ import { randomUUID } from "node:crypto";
 import type { OrderView, PlacedOrderResponse } from "@lfd/contracts";
 import { htMillicentsOf } from "@lfd/pim-contracts";
 
-import {
-  PaymentGateway,
-  type CreateIntentParams,
-} from "../src/b2b/payments/domain/payment-gateway.js";
+import type {
+  CreateIntentParams,
+  CreatedIntent,
+} from "../src/card-payment/domain/ports/card-provider-types.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
+import { E2eCardProvider, E2eCardProviders } from "./card-payments.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
@@ -32,17 +34,21 @@ const PRO_PRICE_PER_KG_MILLICENTS = 4_000_000;
 /** Le public : 42,20 € TTC le kilo, à 5,5 %. */
 const PUBLIC_LABEL_PER_KG_CENTS = 4_220;
 
+/** Les paramètres de chaque intention créée — le montant y est éprouvé. */
 const intents: CreateIntentParams[] = [];
-const fakeGateway = {
-  createIntent: (params: CreateIntentParams) => {
+
+/** Le prestataire de carte doublé, qui garde les paramètres de chaque création. */
+class ParamsRecordingCardProvider extends E2eCardProvider {
+  override createIntent(params: CreateIntentParams): Promise<CreatedIntent> {
     intents.push(params);
-    const id = `pi_poids_${String(intents.length)}`;
-    return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret` });
-  },
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+    return super.createIntent(params);
+  }
+}
+
+/** Le registre doublé, servi par le prestataire qui garde les paramètres. */
+class ParamsRecordingCardProviders extends E2eCardProviders {
+  override readonly provider = new ParamsRecordingCardProvider("pi_poids");
+}
 
 let ctx: E2eContext;
 let companyId = "";
@@ -50,7 +56,10 @@ let pickupId = "";
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [ADMIN_VERIFIER_OVERRIDE, { token: PaymentGateway, value: fakeGateway }],
+    overrides: [
+      ADMIN_VERIFIER_OVERRIDE,
+      { token: CardProviders, value: new ParamsRecordingCardProviders("pi_poids") },
+    ],
   });
 });
 

@@ -6,11 +6,10 @@
  *
  * La scène est partagée avec `order-staff-cancel-refund.e2e-spec.ts`.
  */
-import { CommandBus } from "@nestjs/cqrs";
 import type request from "supertest";
 
-import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
 import { OrderStatus, PaymentStatus } from "../src/platform/database/client/client.js";
+import { cardPaid } from "./card-payments.js";
 import { E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import {
   cancelledMails,
@@ -251,9 +250,7 @@ describe("l'encaissé après annulation se rembourse tout seul (C4.11)", () => {
     await deliver();
     stripe.charged.set(intent ?? "", totalCents);
 
-    await ctx.app
-      .get(CommandBus)
-      .execute(new ConfirmOrderPaymentCommand(intent ?? "", "succeeded"));
+    await cardPaid(ctx, intent ?? "");
     await deliver();
 
     expect((await orderState(orderId)).status).toBe(OrderStatus.cancelled);
@@ -276,9 +273,7 @@ describe("l'encaissé après annulation se rembourse tout seul (C4.11)", () => {
     await cancelRequest(orderId).expect(204);
     await deliver();
 
-    await ctx.app
-      .get(CommandBus)
-      .execute(new ConfirmOrderPaymentCommand(intent ?? "", "succeeded"));
+    await cardPaid(ctx, intent ?? "");
     await deliver();
 
     expect(

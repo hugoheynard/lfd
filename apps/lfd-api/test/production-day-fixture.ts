@@ -9,7 +9,7 @@ import type {
 } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { OutboxRelay } from "../src/platform/outbox/outbox-relay.js";
 import { OutboxRelayTrigger } from "../src/platform/outbox/outbox-relay-trigger.js";
 import {
@@ -19,7 +19,7 @@ import {
   type E2eContext,
   type E2eOverride,
 } from "./e2e-harness.js";
-import { settleCardPayments } from "./card-payments.js";
+import { cardProvidersDouble, settleCardPayments } from "./card-payments.js";
 
 /**
  * **Une journée de fournil, par l'API** — ce que les suites des fournées
@@ -66,8 +66,9 @@ export async function bootstrapProductionDay(extra: readonly E2eOverride[] = [])
   readonly ctx: E2eContext;
   readonly issued: string[];
 }> {
-  const issued: string[] = [];
-  let count = 0;
+  // Le prestataire de carte doublé du bloc `card-payment` (plan M2, §4.7 ;
+  // lot P0.c2) : il remplit lui-même la file des intentions émises.
+  const cards = cardProvidersDouble("pi_e2e");
   const ctx = await bootstrapE2e({
     overrides: [
       {
@@ -77,20 +78,7 @@ export async function bootstrapProductionDay(extra: readonly E2eOverride[] = [])
             Promise.resolve({ subject: STAFF, scopes: [] }),
         },
       },
-      {
-        token: PaymentGateway,
-        value: {
-          createIntent: () => {
-            count += 1;
-            const id = `pi_e2e_${String(count)}`;
-            issued.push(id);
-            return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret` });
-          },
-          publishableKey: () => "pk_e2e",
-          parseWebhook: () => ({ kind: "ignored" as const }),
-          cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-        },
-      },
+      { token: CardProviders, value: cards },
       {
         token: OutboxRelayTrigger,
         value: {
@@ -106,7 +94,7 @@ export async function bootstrapProductionDay(extra: readonly E2eOverride[] = [])
   });
   relayGate.open = true;
   relayGate.relay = ctx.app.get(OutboxRelay);
-  return { ctx, issued };
+  return { ctx, issued: cards.provider.issued };
 }
 
 /** Le jour servi par défaut : dans une semaine, jamais une date du calendrier. */

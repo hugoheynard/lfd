@@ -25,7 +25,6 @@ import type {
 
 import { placeShopOrderSeeingTotal } from "./seen-total-shop-command.js";
 import { PlaceShopOrderHandler } from "../src/b2b/orders/application/commands/place-shop-order.handler.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { PricingMaterialsCache } from "../src/b2b/pricing/infrastructure/pricing-materials.cache.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
@@ -37,6 +36,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { cardProvidersOverride } from "./card-payments.js";
 
 const REGISTERED = "auth0|l10-inscrit";
 const SERVICE_DAY = serviceDay();
@@ -48,33 +48,13 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
 };
 
-let intentCounter = 0;
-const fakeGateway = {
-  createIntent: () => {
-    intentCounter += 1;
-    return Promise.resolve({
-      paymentIntentId: `pi_l10_${String(intentCounter)}`,
-      clientSecret: `pi_l10_${String(intentCounter)}_secret`,
-    });
-  },
-  retrieveIntent: (id: string) =>
-    Promise.resolve({
-      paymentIntentId: id,
-      clientSecret: `${id}_secret`,
-      state: "awaiting_payment" as const,
-    }),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
-
 let ctx: E2eContext;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: fakeGateway },
+      cardProvidersOverride("pi_l10"),
     ],
   });
 });

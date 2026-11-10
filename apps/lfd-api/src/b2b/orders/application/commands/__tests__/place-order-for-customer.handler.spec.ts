@@ -9,9 +9,13 @@ import type { AdminPlaceOrderPayload, PickupAddressView } from "@lfd/contracts";
 import { zoneFees } from "../../../../delivery-zones/application/__tests__/delivery-zone-fee.doubles.js";
 import { AppConfig } from "../../../../../platform/config/app-config.js";
 import {
-  PaymentGateway,
-  type CreateIntentParams,
-} from "../../../../payments/domain/payment-gateway.js";
+  type AttachedCardPayment,
+  type CardPaymentCancellation,
+  type CardPaymentPreparation,
+  CardPayments,
+  type PreparedCardPayment,
+  type RetrievedCardPayment,
+} from "../../../../../card-payment/channels/requests/index.js";
 import { PickupAddressRepository } from "../../../../pickup-addresses/domain/pickup-address.repository.js";
 import { PreferredPickupReader } from "../../../domain/ports/preferred-pickup.reader.js";
 import type { OrderToPlace } from "../../../domain/entities/order.js";
@@ -266,22 +270,53 @@ function deliveryAvailability(
 
 const zones = zoneFees([]);
 
-function payments(sink: { intent: CreateIntentParams | null } = { intent: null }): PaymentGateway {
-  return {
-    createIntent: (params) => {
-      sink.intent = params;
-      return Promise.resolve({ paymentIntentId: "pi_1", clientSecret: "pi_1_secret" });
-    },
-    retrieveIntent: () =>
-      Promise.resolve({
-        paymentIntentId: "pi_1",
-        clientSecret: "pi_1_secret",
-        state: "awaiting_payment",
-      }),
-    cancelIntent: () => Promise.resolve({ kind: "cancelled" }),
-    publishableKey: () => "pk_test_123",
-    parseWebhook: () => ({ kind: "ignored" }),
-  };
+/** Ce que la passation demande au bloc `card-payment` en préparant le lien. */
+interface CardPreparationRequest {
+  readonly subjectType: string;
+  readonly amountCents: number;
+  readonly tag: string;
+}
+
+/** Le bloc `card-payment` doublé, côté passation (lot P0.c2) : sans réseau. */
+class PreparingCardPayments extends CardPayments {
+  constructor(private readonly sink: { intent: CardPreparationRequest | null }) {
+    super();
+  }
+
+  prepare(subjectType: string, amountCents: number, tag: string): Promise<CardPaymentPreparation> {
+    this.sink.intent = { subjectType, amountCents, tag };
+    return Promise.resolve({
+      prepared: { account: "lfc-stripe", providerRef: "pi_1", amountCents },
+      clientSecret: "pi_1_secret",
+      publishableKey: "pk_test_123",
+    });
+  }
+
+  attach(_subject: unknown, prepared: PreparedCardPayment): Promise<AttachedCardPayment> {
+    return Promise.resolve({ paymentId: "pay_1", providerRef: prepared.providerRef });
+  }
+
+  release(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  retrieve(): Promise<RetrievedCardPayment> {
+    return Promise.reject(new Error("non utilisé"));
+  }
+
+  cancel(): Promise<CardPaymentCancellation> {
+    return Promise.reject(new Error("non utilisé"));
+  }
+
+  adopt(): Promise<string> {
+    return Promise.reject(new Error("non utilisé"));
+  }
+}
+
+function payments(
+  sink: { intent: CardPreparationRequest | null } = { intent: null },
+): CardPayments {
+  return new PreparingCardPayments(sink);
 }
 
 function repo(sink: { placed: OrderToPlace | null }): OrderRepository {
@@ -343,7 +378,7 @@ function payload(over: Partial<AdminPlaceOrderPayload> = {}): AdminPlaceOrderPay
 }
 
 interface HandlerOptions {
-  readonly payments?: PaymentGateway;
+  readonly payments?: CardPayments;
   readonly events?: RecordingPublisher;
   readonly clientBaseUrl?: string | null;
   readonly delivery?: DeliveryAvailabilityView;
@@ -678,7 +713,7 @@ describe("PlaceOrderForCustomerHandler — sur la vitrine (L4)", () => {
    */
   it("au comptoir, le lien de règlement est refusé même avec un crédit, sans intention", async () => {
     const sink = { placed: null as OrderToPlace | null };
-    const intents = { intent: null as CreateIntentParams | null };
+    const intents = { intent: null as CardPreparationRequest | null };
     const plans = gateOf();
 
     await expect(
@@ -765,7 +800,7 @@ describe("PlaceOrderForCustomerHandler — sur la vitrine (L4)", () => {
 
   it("un pro sans crédit, réglage « refuser » : le lien de paiement est refusé, sans intention", async () => {
     const sink = { placed: null as OrderToPlace | null };
-    const intents = { intent: null as CreateIntentParams | null };
+    const intents = { intent: null as CardPreparationRequest | null };
     const plans = gateOf();
 
     await expect(
@@ -872,7 +907,7 @@ describe("PlaceOrderForCustomerHandler — la trace", () => {
 
 describe("PlaceOrderForCustomerHandler — le règlement", () => {
   it("au compte : rien à encaisser quand le crédit est accordé", async () => {
-    const intents = { intent: null as CreateIntentParams | null };
+    const intents = { intent: null as CardPreparationRequest | null };
     const sink = { placed: null as OrderToPlace | null };
 
     const result = await handler(guard("orders", "active", "granted"), sink, {
@@ -922,14 +957,14 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
   });
 
   it("lien : crée l'intention sur le total et rend l'adresse à transmettre", async () => {
-    const intents = { intent: null as CreateIntentParams | null };
+    const intents = { intent: null as CardPreparationRequest | null };
     const sink = { placed: null as OrderToPlace | null };
 
     const result = await handler(guard("orders"), sink, { payments: payments(intents) }).execute(
       new PlaceOrderForCustomerCommand("staff_1", payload({ settlement: "link" })),
     );
 
-    expect(intents.intent).toEqual({ amountCents: 400, currency: "eur", companyId: "c1" });
+    expect(intents.intent).toEqual({ subjectType: "order", amountCents: 400, tag: "c1" });
     expect(sink.placed?.paymentStatus).toBe("pending");
     expect(result.paymentUrl).toBe("https://boutique.lfc.fr/commandes/order_1/regler");
   });
@@ -948,7 +983,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
   });
 
   it("le lien ne demande pas un règlement quand il n'y a rien à encaisser", async () => {
-    const intents = { intent: null as CreateIntentParams | null };
+    const intents = { intent: null as CardPreparationRequest | null };
     const sink = { placed: null as OrderToPlace | null };
 
     // Une remise de retrait qui ramène le total à zéro n'existe pas au seed ;
@@ -1347,7 +1382,7 @@ describe("PlaceOrderForCustomerHandler — au comptoir, hors vitrine (E4 étendu
    */
   it("une commande PROGRAMMÉE au comptoir avec un lien est refusée, sans intention", async () => {
     const sink = { placed: null as OrderToPlace | null };
-    const intents = { intent: null as CreateIntentParams | null };
+    const intents = { intent: null as CardPreparationRequest | null };
 
     await expect(
       handler(guard("orders", "active", "granted"), sink, { payments: payments(intents) }).execute(
@@ -1464,7 +1499,7 @@ describe("PlaceOrderForCustomerHandler — le total vu", () => {
 
   it("différent, refuse 409 avec les deux totaux, sans lien ni écriture", async () => {
     const total = await composedTotal();
-    const intents = { intent: null as CreateIntentParams | null };
+    const intents = { intent: null as CardPreparationRequest | null };
     const sink = { placed: null as OrderToPlace | null };
 
     const refusal = handler(guard("orders", "active", "granted"), sink, {

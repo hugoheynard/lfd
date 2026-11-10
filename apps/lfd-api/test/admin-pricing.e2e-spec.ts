@@ -15,7 +15,7 @@ import { millicentsFromCents } from "@lfd/money";
 import type { PricingBoardView, PricingComparisonView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import {
   bootstrapE2e,
   E2E_STAFF_ID,
@@ -25,6 +25,8 @@ import {
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { E2E_FAMILIES } from "./catalog-fixture.js";
+import { cardPaid } from "./card-payments.js";
+import { cardGatewayDouble } from "./order-factory.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
 const stubAdminVerifier = {
@@ -37,17 +39,7 @@ const stubAdminVerifier = {
  * étant `@unique`. Sans ce double, poser une commande échoue — et le rapport
  * prix/volume n'a alors aucune vente à mesurer.
  */
-let intentCounter = 0;
-const fakeGateway = {
-  createIntent: () => {
-    intentCounter += 1;
-    return Promise.resolve({
-      id: `pi_${String(intentCounter)}`,
-      clientSecret: `secret_${String(intentCounter)}`,
-    });
-  },
-  publishableKey: () => "pk_test",
-};
+const fakeGateway = cardGatewayDouble("pi_admin_pricing");
 
 /**
  * Le jour de service des commandes semées ici. Relatif : depuis que l'heure
@@ -66,7 +58,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: fakeGateway },
     ],
   });
 });
@@ -1055,6 +1047,14 @@ describe("le rapport prix / volume", () => {
         requestedDeliveryDate: SERVICE_DAY,
         lines: [{ sku: SKU, quantity }],
       });
+    expect(response.status).toBe(201);
+    // Une vente est une commande RÉGLÉE : impayée, la commande suivante du
+    // même client la remplacerait (`ReplaceUnsettledShopOrders`), et le double
+    // de carte sait désormais l'annuler pour de bon — jusqu'au lot P0.c2 du
+    // plan M2 (2026-11-09), l'ancien double sans `cancelIntent` laissait ces
+    // commandes impayées « gardées », et la mesure comptait des ventes qui
+    // n'en étaient pas.
+    await cardPaid(ctx, fakeGateway.provider.issued.at(-1) ?? "");
     // La commande est datée d'aujourd'hui par défaut : on la recule pour la
     // faire tomber dans la fenêtre voulue. C'est `order.createdAt` que la mesure
     // lit — la date à laquelle le prix a été résolu.
@@ -1380,6 +1380,10 @@ describe("l’écran daté et la comparaison", () => {
         requestedDeliveryDate: SERVICE_DAY,
         lines: [{ sku: SKU, quantity }],
       });
+    expect(response.status).toBe(201);
+    // Réglée, comme plus haut : une commande impayée serait remplacée par la
+    // suivante du même client (`ReplaceUnsettledShopOrders`).
+    await cardPaid(ctx, fakeGateway.provider.issued.at(-1) ?? "");
     await ctx.prisma.order.update({
       where: { id: jsonBody<{ id: string }>(response).id },
       data: { createdAt: new Date(Date.now() - daysAgo * DAY_MS) },

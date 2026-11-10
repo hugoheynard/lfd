@@ -14,7 +14,7 @@ import type { ShopQuoteView } from "@lfd/contracts";
 import type { ProductSaleUnitUsageView } from "@lfd/pim-contracts";
 import request from "supertest";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { OutboxRelayTrigger } from "../src/platform/outbox/outbox-relay-trigger.js";
 import { anActiveFiche, relayAll, SILENT_TRIGGER, type Fiche } from "./catalog-facts-scene.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
@@ -31,7 +31,7 @@ beforeAll(async () => {
     overrides: [
       ADMIN_VERIFIER_OVERRIDE,
       { token: OutboxRelayTrigger, value: SILENT_TRIGGER },
-      { token: PaymentGateway, value: cardGatewayDouble("pi_unit") },
+      { token: CardProviders, value: cardGatewayDouble("pi_unit") },
     ],
   });
 });

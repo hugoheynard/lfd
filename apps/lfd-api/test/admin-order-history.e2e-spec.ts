@@ -11,7 +11,7 @@ import { randomUUID } from "node:crypto";
 import type { ActivityEventView, RoleGrant } from "@lfd/contracts";
 import type request from "supertest";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import {
   bootstrapE2e,
@@ -22,29 +22,18 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { cardGatewayDouble } from "./order-factory.js";
 
 const SERVICE_DAY = serviceDay();
 const SOLO = "auth0|history-solo";
 
-let intentCounter = 0;
-const fakeGateway = {
-  createIntent: () => {
-    intentCounter += 1;
-    return Promise.resolve({
-      paymentIntentId: `pi_history_${intentCounter}`,
-      clientSecret: `pi_history_${intentCounter}_secret`,
-    });
-  },
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+const fakeGateway = cardGatewayDouble("pi_history");
 
 let ctx: E2eContext;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [ADMIN_VERIFIER_OVERRIDE, { token: PaymentGateway, value: fakeGateway }],
+    overrides: [ADMIN_VERIFIER_OVERRIDE, { token: CardProviders, value: fakeGateway }],
   });
 });
 

@@ -12,7 +12,6 @@ import { centsFromMillicents, millicentsFromCents } from "@lfd/money";
  * 2. une règle posée en base **change réellement le prix facturé** au bout de la
  *    chaîne HTTP → handler → drafting → résolution → `order_lines`.
  */
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   bootstrapE2e,
@@ -23,6 +22,7 @@ import {
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { E2E_FAMILIES } from "./catalog-fixture.js";
+import { cardProvidersOverride } from "./card-payments.js";
 
 const SERVICE_DAY = serviceDay();
 let pickupId = "pickup_absent";
@@ -42,23 +42,6 @@ let pickupId = "pickup_absent";
  */
 let soloCompanyId = "company_absente";
 
-/**
- * Passerelle de paiement doublée : l'intention change à chaque appel, la colonne
- * étant `@unique` — un double constant ferait échouer la deuxième commande et
- * n'apprendrait rien sur le produit.
- */
-let intentCounter = 0;
-const fakeGateway = {
-  createIntent: () => {
-    intentCounter += 1;
-    return Promise.resolve({
-      id: `pi_${String(intentCounter)}`,
-      clientSecret: `secret_${String(intentCounter)}`,
-    });
-  },
-  publishableKey: () => "pk_test",
-};
-
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
     Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
@@ -69,7 +52,7 @@ let ctx: E2eContext;
 beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
-      { token: PaymentGateway, value: fakeGateway },
+      cardProvidersOverride("pi_price_rules"),
       // La suite appelle une route ADMIN depuis qu'elle y a déplacé le
       // scellement : le vérificateur de jeton staff est la seule frontière que
       // le harnais double, faute d'un tenant Auth0 et de ses clés privées.

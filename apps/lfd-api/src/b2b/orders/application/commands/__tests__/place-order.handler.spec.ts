@@ -22,9 +22,14 @@ import {
 import { zoneFees } from "../../../../delivery-zones/application/__tests__/delivery-zone-fee.doubles.js";
 import type { DeliveryZoneFeeReader } from "../../../domain/ports/delivery-zone-fee.reader.js";
 import {
-  PaymentGateway,
-  type CreateIntentParams,
-} from "../../../../payments/domain/payment-gateway.js";
+  type AttachedCardPayment,
+  type CardPaymentCancellation,
+  type CardPaymentPreparation,
+  CardPayments,
+  type PreparedCardPayment,
+  type RetrievedCardPayment,
+} from "../../../../../card-payment/channels/requests/index.js";
+import { OrderCardRetrieval } from "../../../domain/ports/order-card-payments.js";
 import { PickupAddressRepository } from "../../../../pickup-addresses/domain/pickup-address.repository.js";
 import { PreferredPickupReader } from "../../../domain/ports/preferred-pickup.reader.js";
 import {
@@ -315,24 +320,73 @@ function events(): RecordingPublisher {
   return new RecordingPublisher();
 }
 
-/** Passerelle de paiement doublée : capture l'appel `createIntent` (sans réseau). */
-function payments(sink: { intent: CreateIntentParams | null } = { intent: null }): PaymentGateway {
-  return {
-    createIntent: (params) => {
-      sink.intent = params;
-      return Promise.resolve({ paymentIntentId: "pi_test_1", clientSecret: "pi_test_1_secret" });
-    },
-    retrieveIntent: () =>
-      Promise.resolve({
-        paymentIntentId: "pi_1",
-        clientSecret: "pi_1_secret",
-        state: "awaiting_payment",
-      }),
-    cancelIntent: () => Promise.resolve({ kind: "cancelled" }),
-    publishableKey: () => "pk_test_123",
-    parseWebhook: () => ({ kind: "ignored" }),
-  };
+/** Ce que la passation demande au bloc `card-payment` en préparant une carte. */
+interface CardPreparationRequest {
+  readonly subjectType: string;
+  readonly amountCents: number;
+  readonly tag: string;
 }
+
+/**
+ * Le bloc `card-payment` doublé, côté passation (lot P0.c2) : capture la
+ * préparation (sans réseau), et note les intentions rendues (`release`) quand
+ * la transaction échoue.
+ */
+class PreparingCardPayments extends CardPayments {
+  constructor(
+    private readonly sink: { intent: CardPreparationRequest | null },
+    private readonly released: string[],
+  ) {
+    super();
+  }
+
+  prepare(subjectType: string, amountCents: number, tag: string): Promise<CardPaymentPreparation> {
+    this.sink.intent = { subjectType, amountCents, tag };
+    return Promise.resolve({
+      prepared: { account: "lfc-stripe", providerRef: "pi_test_1", amountCents },
+      clientSecret: "pi_test_1_secret",
+      publishableKey: "pk_test_123",
+    });
+  }
+
+  attach(_subject: unknown, prepared: PreparedCardPayment): Promise<AttachedCardPayment> {
+    return Promise.resolve({ paymentId: "pay_test_1", providerRef: prepared.providerRef });
+  }
+
+  release(prepared: PreparedCardPayment): Promise<void> {
+    this.released.push(prepared.providerRef);
+    return Promise.resolve();
+  }
+
+  retrieve(): Promise<RetrievedCardPayment> {
+    return Promise.reject(new Error("non utilisé"));
+  }
+
+  cancel(): Promise<CardPaymentCancellation> {
+    return Promise.reject(new Error("non utilisé"));
+  }
+
+  adopt(): Promise<string> {
+    return Promise.reject(new Error("non utilisé"));
+  }
+}
+
+/** Bloc de carte doublé : capture la préparation, et note les intentions rendues. */
+function payments(
+  sink: { intent: CardPreparationRequest | null } = { intent: null },
+  released: string[] = [],
+): CardPayments {
+  return new PreparingCardPayments(sink, released);
+}
+
+/** Aucune commande à relire : ces cas ne passent jamais par le rejeu de la passation. */
+class NoCardRetrieval extends OrderCardRetrieval {
+  retrieveFirst(): Promise<RetrievedCardPayment> {
+    return Promise.reject(new Error("non utilisé"));
+  }
+}
+
+const noRetrieval = new NoCardRetrieval();
 
 const catalog = new InMemoryProductCatalog(Object.values(CATALOG));
 
@@ -622,6 +676,7 @@ describe("PlaceOrderHandler", () => {
         drafting(pickups(LABO_POINT), zones()),
         capturingRepo(sink),
         payments(),
+        noRetrieval,
         events(),
         noWaivers,
         new FixedClock(PRICED_AT),
@@ -656,6 +711,7 @@ describe("PlaceOrderHandler", () => {
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
       payments(),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -686,6 +742,7 @@ describe("PlaceOrderHandler", () => {
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
       payments(),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -713,6 +770,7 @@ describe("PlaceOrderHandler", () => {
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
       payments(),
+      noRetrieval,
       published,
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -759,6 +817,7 @@ describe("PlaceOrderHandler", () => {
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
       payments(),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -781,12 +840,13 @@ describe("PlaceOrderHandler", () => {
 
   it("SANS entreprise, ne vérifie aucun membership et exige une carte (per_order)", async () => {
     const sink = { placed: null as OrderToPlace | null };
-    const intentSink = { intent: null as CreateIntentParams | null };
+    const intentSink = { intent: null as CardPreparationRequest | null };
     const handler = new SeeingPlaceOrderHandler(
       guard(null, null),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
       payments(intentSink),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -803,8 +863,8 @@ describe("PlaceOrderHandler", () => {
 
     const result = await handler.execute(new PlaceOrderCommand("u1", payload(), null));
 
-    // 2 × 200 = 400, aucun terme d'entreprise → carte, intent sans companyId.
-    expect(intentSink.intent).toEqual({ amountCents: 400, currency: "eur", companyId: null });
+    // 2 × 200 = 400, aucun terme d'entreprise → carte, intention marquée « personal ».
+    expect(intentSink.intent).toEqual({ subjectType: "order", amountCents: 400, tag: "personal" });
     expect(sink.placed?.companyId).toBeNull();
     expect(sink.placed?.paymentStatus).toBe("pending");
     expect(result.payment?.amountCents).toBe(400);
@@ -817,6 +877,7 @@ describe("PlaceOrderHandler", () => {
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
       payments(),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -892,6 +953,7 @@ describe("PlaceOrderHandler", () => {
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
       payments(),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -934,6 +996,7 @@ describe("PlaceOrderHandler", () => {
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
       payments(),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -963,6 +1026,7 @@ describe("PlaceOrderHandler", () => {
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
       payments(),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -993,6 +1057,7 @@ describe("PlaceOrderHandler", () => {
       drafting(pickups(null), zones()),
       capturingRepo(sink),
       payments(),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -1024,6 +1089,7 @@ describe("PlaceOrderHandler", () => {
       drafting(pickups(point), zones()),
       capturingRepo(sink),
       payments(),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -1085,6 +1151,7 @@ describe("PlaceOrderHandler", () => {
       drafting(pickups(point), zones(), { classifications }),
       capturingRepo(sink),
       payments(),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -1132,6 +1199,7 @@ describe("PlaceOrderHandler", () => {
       drafting(pickups(point), zones(), { status: "pending" }),
       capturingRepo(sink),
       payments(),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -1162,6 +1230,7 @@ describe("PlaceOrderHandler", () => {
       }),
       capturingRepo(sink),
       payments(),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -1195,6 +1264,7 @@ describe("PlaceOrderHandler", () => {
       drafting(pickups(), zones(TARENTAISE)),
       capturingRepo(sink),
       payments(),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -1252,6 +1322,7 @@ describe("PlaceOrderHandler", () => {
       drafting(pickups(), zones(TARENTAISE), { deliveryVat }),
       capturingRepo(sink),
       payments(),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -1298,6 +1369,7 @@ describe("PlaceOrderHandler", () => {
         }),
         capturingRepo(sink),
         payments(),
+        noRetrieval,
         events(),
         noWaivers,
         new FixedClock(PRICED_AT),
@@ -1354,6 +1426,7 @@ describe("PlaceOrderHandler", () => {
       drafting(pickups(), zones(TARENTAISE)),
       capturingRepo(sink),
       payments(),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -1385,12 +1458,13 @@ describe("PlaceOrderHandler", () => {
 
   it("en PER_ORDER, crée une intention Stripe du total, marque pending et renvoie le clientSecret", async () => {
     const sink = { placed: null as OrderToPlace | null };
-    const intentSink = { intent: null as CreateIntentParams | null };
+    const intentSink = { intent: null as CardPreparationRequest | null };
     const handler = new SeeingPlaceOrderHandler(
       guard("orders", "active", "none"),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
       payments(intentSink),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -1407,7 +1481,7 @@ describe("PlaceOrderHandler", () => {
 
     const result = await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
 
-    expect(intentSink.intent).toEqual({ amountCents: 400, currency: "eur", companyId: "c1" });
+    expect(intentSink.intent).toEqual({ subjectType: "order", amountCents: 400, tag: "c1" });
     expect(sink.placed?.paymentStatus).toBe("pending");
     expect(sink.placed?.stripePaymentIntentId).toBe("pi_test_1");
     expect(result.settlement).toBe("due");
@@ -1420,12 +1494,13 @@ describe("PlaceOrderHandler", () => {
 
   it("en terme différé (mensuel) sur entreprise active, ne crée AUCUNE intention et marque not_required", async () => {
     const sink = { placed: null as OrderToPlace | null };
-    const intentSink = { intent: null as CreateIntentParams | null };
+    const intentSink = { intent: null as CardPreparationRequest | null };
     const handler = new SeeingPlaceOrderHandler(
       guard("orders", "active"),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
       payments(intentSink),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -1452,12 +1527,13 @@ describe("PlaceOrderHandler", () => {
 
   it("entreprise NON active (pending) : carte requise malgré un terme différé", async () => {
     const sink = { placed: null as OrderToPlace | null };
-    const intentSink = { intent: null as CreateIntentParams | null };
+    const intentSink = { intent: null as CardPreparationRequest | null };
     const handler = new SeeingPlaceOrderHandler(
       guard("orders", "pending"),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
       payments(intentSink),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -1516,6 +1592,7 @@ describe("PlaceOrderHandler — un article d'opération datée", () => {
       drafting(pickups(LABO_POINT), zones(), { sale }),
       capturingRepo(sink),
       payments(),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -1577,6 +1654,7 @@ describe("PlaceOrderHandler — un article d'opération datée", () => {
       drafting(pickups(LABO_POINT), zones(), { sale }),
       capturingRepo(sink),
       payments(),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -1608,13 +1686,14 @@ describe("PlaceOrderHandler — prélèvement bloqué", () => {
   function blockedHandler(
     standing: AccountSettlementStanding,
     sink: { placed: OrderToPlace | null },
-    intentSink: { intent: CreateIntentParams | null },
+    intentSink: { intent: CardPreparationRequest | null },
   ): PlaceOrderHandler {
     return new SeeingPlaceOrderHandler(
       guard("orders", "active", standing),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
       payments(intentSink),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -1632,7 +1711,7 @@ describe("PlaceOrderHandler — prélèvement bloqué", () => {
 
   it("REFUSE « au compte » en nommant la suspension, sans rien enregistrer", async () => {
     const sink = { placed: null as OrderToPlace | null };
-    const intentSink = { intent: null as CreateIntentParams | null };
+    const intentSink = { intent: null as CardPreparationRequest | null };
 
     const refusal = blockedHandler("blocked", sink, intentSink).execute(
       new PlaceOrderCommand("u1", payload({ settlement: "account" }), "c1"),
@@ -1646,7 +1725,7 @@ describe("PlaceOrderHandler — prélèvement bloqué", () => {
 
   it("sans mode choisi, bascule sur la carte en silence", async () => {
     const sink = { placed: null as OrderToPlace | null };
-    const intentSink = { intent: null as CreateIntentParams | null };
+    const intentSink = { intent: null as CardPreparationRequest | null };
 
     await blockedHandler("blocked", sink, intentSink).execute(
       new PlaceOrderCommand("u1", payload(), "c1"),
@@ -1658,7 +1737,7 @@ describe("PlaceOrderHandler — prélèvement bloqué", () => {
 
   it("par carte demandée, passe comme avant", async () => {
     const sink = { placed: null as OrderToPlace | null };
-    const intentSink = { intent: null as CreateIntentParams | null };
+    const intentSink = { intent: null as CardPreparationRequest | null };
 
     await blockedHandler("blocked", sink, intentSink).execute(
       new PlaceOrderCommand("u1", payload({ settlement: "card" }), "c1"),
@@ -1669,7 +1748,7 @@ describe("PlaceOrderHandler — prélèvement bloqué", () => {
 
   it("sans crédit du tout, le refus ne parle PAS de suspension", async () => {
     const sink = { placed: null as OrderToPlace | null };
-    const intentSink = { intent: null as CreateIntentParams | null };
+    const intentSink = { intent: null as CardPreparationRequest | null };
 
     const refusal = blockedHandler("none", sink, intentSink).execute(
       new PlaceOrderCommand("u1", payload({ settlement: "account" }), "c1"),
@@ -1680,7 +1759,7 @@ describe("PlaceOrderHandler — prélèvement bloqué", () => {
 
   it("crédit accordé et non bloqué : « au compte » passe sans intention", async () => {
     const sink = { placed: null as OrderToPlace | null };
-    const intentSink = { intent: null as CreateIntentParams | null };
+    const intentSink = { intent: null as CardPreparationRequest | null };
 
     await blockedHandler("granted", sink, intentSink).execute(
       new PlaceOrderCommand("u1", payload({ settlement: "account" }), "c1"),
@@ -1706,21 +1785,13 @@ describe("PlaceOrderHandler — le bon de fidélité", () => {
     readonly status?: OrderCompanyStatus | null;
   }): PlaceOrderHandler {
     const cancelled = over.cancelled ?? [];
-    const gateway = payments();
+    const intentsFor = { intent: null as CardPreparationRequest | null };
     return new SeeingPlaceOrderHandler(
       guard(over.role ?? null, over.status ?? null),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(over.sink),
-      {
-        createIntent: (params) => gateway.createIntent(params),
-        retrieveIntent: (id) => gateway.retrieveIntent(id),
-        publishableKey: () => gateway.publishableKey(),
-        parseWebhook: (body, signature) => gateway.parseWebhook(body, signature),
-        cancelIntent: (paymentIntentId) => {
-          cancelled.push(paymentIntentId);
-          return Promise.resolve({ kind: "cancelled" });
-        },
-      },
+      payments(intentsFor, cancelled),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -1830,6 +1901,7 @@ describe("PlaceOrderHandler — créneau ou échéance", () => {
       }),
       capturingRepo(sink),
       payments(),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -1951,6 +2023,7 @@ describe("PlaceOrderHandler — un site facturé à son principal", () => {
       drafting(pickups(LABO_POINT), zones(), { payers }),
       capturingRepo(sink),
       payments({ intent: null }),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -2077,6 +2150,7 @@ describe("PlaceOrderHandler — la boutique fermée à une clientèle", () => {
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
       payments(),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -2176,11 +2250,11 @@ describe("PlaceOrderHandler — l'arrêt du plan", () => {
   function planHandler(over: {
     readonly sink: { placed: OrderToPlace | null };
     readonly plans: OrderPlanGate;
-    readonly intents?: { intent: CreateIntentParams | null };
+    readonly intents?: { intent: CardPreparationRequest | null };
     readonly cancelled?: string[];
     readonly shelf?: ShelfCircuit;
   }): PlaceOrderHandler {
-    const gateway = payments(over.intents);
+    const intentsFor = over.intents ?? { intent: null as CardPreparationRequest | null };
     const cancelled = over.cancelled ?? [];
     return new SeeingPlaceOrderHandler(
       guard(null, null),
@@ -2189,16 +2263,8 @@ describe("PlaceOrderHandler — l'arrêt du plan", () => {
         ...(over.shelf === undefined ? {} : { shelf: over.shelf }),
       }),
       capturingRepo(over.sink),
-      {
-        createIntent: (params) => gateway.createIntent(params),
-        retrieveIntent: (id) => gateway.retrieveIntent(id),
-        publishableKey: () => gateway.publishableKey(),
-        parseWebhook: (body, signature) => gateway.parseWebhook(body, signature),
-        cancelIntent: (paymentIntentId) => {
-          cancelled.push(paymentIntentId);
-          return Promise.resolve({ kind: "cancelled" });
-        },
-      },
+      payments(intentsFor, cancelled),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -2216,7 +2282,7 @@ describe("PlaceOrderHandler — l'arrêt du plan", () => {
 
   it("refuse une journée au plan arrêté AVANT l'intention Stripe, sans rien écrire", async () => {
     const sink = { placed: null as OrderToPlace | null };
-    const intents = { intent: null as CreateIntentParams | null };
+    const intents = { intent: null as CardPreparationRequest | null };
     const desk = new RecordingAdmissionDesk([DAY]);
     const plans = gateOf(new FixedClosedPlans([DAY]), desk);
 
@@ -2263,7 +2329,7 @@ describe("PlaceOrderHandler — l'arrêt du plan", () => {
 
   it("le jour même, fermé par le réglage : refusé au client avant l'intention", async () => {
     const sink = { placed: null as OrderToPlace | null };
-    const intents = { intent: null as CreateIntentParams | null };
+    const intents = { intent: null as CardPreparationRequest | null };
 
     await expect(
       planHandler({ sink, plans: gateOf(), intents }).execute(
@@ -2346,7 +2412,7 @@ describe("PlaceOrderHandler — l'arrêt du plan", () => {
 
     it("la clientèle fermée par le réglage : refusée avant l'intention", async () => {
       const sink = { placed: null as OrderToPlace | null };
-      const intents = { intent: null as CreateIntentParams | null };
+      const intents = { intent: null as CardPreparationRequest | null };
       const plans = gateOf(new FixedClosedPlans([TODAY]), new RecordingAdmissionDesk([TODAY]));
 
       await expect(
@@ -2389,6 +2455,7 @@ describe("PlaceOrderHandler — les CGV en vigueur", () => {
       drafting(pickups(LABO_POINT), zones(), { status, salesTerms }),
       capturingRepo(sink),
       payments(),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -2465,6 +2532,7 @@ describe("PlaceOrderHandler — les CGV cochées au panier", () => {
       drafting(pickups(LABO_POINT), zones(), { status: "active", salesTerms }),
       capturingRepo(sink),
       payments(),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -2582,6 +2650,7 @@ describe("PlaceOrderHandler — limite d'article et règle générale", () => {
       drafting(pickups(LABO_POINT), zones(), { cutoffs, limits: lateLimits }),
       capturingRepo(sink),
       payments(),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -2632,6 +2701,7 @@ describe("PlaceOrderHandler — le délai d'annulation figé", () => {
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
       payments(),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -2708,7 +2778,7 @@ describe("PlaceOrderHandler — le total vu", () => {
 
   function handlerWith(
     sink: { placed: OrderToPlace | null },
-    paid: { intent: CreateIntentParams | null },
+    paid: { intent: CardPreparationRequest | null },
     keys: OrderIdempotencyStore = freeKeys,
   ): PlaceOrderHandler {
     return new SeeingPlaceOrderHandler(
@@ -2716,6 +2786,7 @@ describe("PlaceOrderHandler — le total vu", () => {
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
       payments(paid),
+      noRetrieval,
       events(),
       noWaivers,
       new FixedClock(PRICED_AT),
@@ -2753,7 +2824,7 @@ describe("PlaceOrderHandler — le total vu", () => {
   it("différent, refuse 409 avec les deux totaux, sans intention ni écriture, et rend la clé", async () => {
     const total = await composedTotal();
     const sink = { placed: null as OrderToPlace | null };
-    const paid = { intent: null as CreateIntentParams | null };
+    const paid = { intent: null as CardPreparationRequest | null };
     const keys = new ReleasingKeys();
     const seen = total - 1;
 

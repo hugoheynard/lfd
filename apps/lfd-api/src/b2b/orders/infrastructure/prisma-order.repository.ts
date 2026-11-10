@@ -280,8 +280,9 @@ export class PrismaOrderRepository extends OrderRepository {
         // `PAID_FROM` l'aurait repassée `paid` sur un encaissement tardif — une
         // commande annulée, payée, que personne ne produira. Le refus ici la
         // laisse annulée ; l'argent, lui, est reçu chez Stripe, et c'est
-        // `ConfirmOrderPaymentHandler` qui fait sonner « à rembourser » quand
-        // rien n'a franchi (lot 6 bis du plan d'abandon).
+        // `OrderSubjectSettlement.onPaid` (canal de `card-payment`, depuis le
+        // lot P0.c2 du plan M2) qui fait sonner « à rembourser » quand rien
+        // n'a franchi (lot 6 bis du plan d'abandon).
         status: { not: OrderStatus.cancelled },
       },
       data:

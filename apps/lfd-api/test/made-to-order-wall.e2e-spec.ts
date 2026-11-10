@@ -15,7 +15,7 @@ import { randomUUID } from "node:crypto";
 import request from "supertest";
 
 import { BundleChoiceCatalogue } from "../src/b2b/bundles/domain/ports/bundle-choice.catalogue.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   CompanyStatus,
@@ -32,29 +32,14 @@ import {
 } from "./e2e-harness.js";
 import { markCustomRecipe } from "./custom-recipe-fixture.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { cardGatewayDouble } from "./order-factory.js";
 
 const stubAdminVerifier = {
   verify: (sub: string): Promise<{ subject: string; scopes: string[] }> =>
     Promise.resolve({ subject: sub, scopes: [] }),
 };
 
-let intents = 0;
-const fakeGateway = {
-  createIntent: () => {
-    intents += 1;
-    const id = `pi_wall_${String(intents)}`;
-    return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_sec` });
-  },
-  retrieveIntent: (paymentIntentId: string) =>
-    Promise.resolve({
-      paymentIntentId,
-      clientSecret: `${paymentIntentId}_sec`,
-      state: "awaiting_payment" as const,
-    }),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+const fakeGateway = cardGatewayDouble("pi_wall");
 
 /** L'article réservé : la baguette du catalogue e2e. */
 const X = "PAI-001-1";
@@ -77,7 +62,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: fakeGateway },
     ],
   });
 });

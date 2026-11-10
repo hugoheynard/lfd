@@ -8,7 +8,6 @@ import {
   PendingSettlementSweeper,
   type ServiceDay,
 } from "../../../../production/channels/commerce/index.js";
-import { PaymentGateway } from "../../../payments/domain/payment-gateway.js";
 import { OrderPaymentFailedEvent } from "../../domain/events/order-payment-failed.event.js";
 import { LoyaltyVoucherRedemption } from "../../domain/ports/loyalty-voucher-redemption.js";
 import { OrderRepository } from "../../domain/ports/order.repository.js";
@@ -17,6 +16,7 @@ import {
   type UnsettledSettlement,
 } from "../../domain/ports/unsettled-settlement.reader.js";
 import { settlementSweepWindow } from "../../domain/services/settlement-sweep.js";
+import { OrderCardCancellation } from "../../domain/ports/order-card-payments.js";
 
 /**
  * **La clôture tue les règlements en vol de sa journée** (plan
@@ -59,7 +59,7 @@ export class PendingSettlementSweep extends PendingSettlementSweeper {
 
   constructor(
     private readonly unsettled: UnsettledSettlementReader,
-    private readonly payments: PaymentGateway,
+    private readonly cards: OrderCardCancellation,
     private readonly orders: OrderRepository,
     private readonly durable: DurablePublisher,
     private readonly unitOfWork: UnitOfWork,
@@ -78,7 +78,7 @@ export class PendingSettlementSweep extends PendingSettlementSweeper {
 
   private async cut(settlement: UnsettledSettlement): Promise<void> {
     if (settlement.paymentIntentId !== null) {
-      const spared = await this.tryCancel(settlement.orderId, settlement.paymentIntentId);
+      const spared = await this.tryCancel(settlement.orderId);
       if (spared) {
         return;
       }
@@ -112,7 +112,7 @@ export class PendingSettlementSweep extends PendingSettlementSweeper {
 
   /**
    * Tente la mise à mort chez Stripe, et dit si la commande doit être
-   * **épargnée**. `cancelIntent` ne lève jamais.
+   * **épargnée**. `cancelFirst` ne lève jamais.
    *
    * 🔴 **De l'argent pris, ou en train de l'être, épargne la commande**
    * (`already_paid`, `in_progress`) : le client a payé avant la clôture, et
@@ -125,8 +125,8 @@ export class PendingSettlementSweep extends PendingSettlementSweeper {
    * Une panne (`unavailable`) n'épargne rien : la clôture ne dépend pas de
    * Stripe (B1), et un encaissement tardif sonnera « à rembourser » (lot 6 bis).
    */
-  private async tryCancel(orderId: string, paymentIntentId: string): Promise<boolean> {
-    const outcome = await this.payments.cancelIntent(paymentIntentId);
+  private async tryCancel(orderId: string): Promise<boolean> {
+    const outcome = await this.cards.cancelFirst(orderId);
     if (outcome.kind === "cancelled" || outcome.kind === "already_cancelled") {
       return false;
     }

@@ -10,37 +10,42 @@
  * - un refus qui n'écrit rien sur la commande mais se lit au journal et à la
  *   cloche ; un remboursement hors commande qui sonne aussi.
  *
- * Frontière doublée : la passerelle Stripe — le webhook passe par la vraie
- * route et le vrai contrôleur, mais la vérification de signature est celle du
- * double (la vraie est éprouvée par `stripe-payment-gateway-refunds.spec.ts`).
- * La commande est passée par le vrai chemin (`placeOrder`, plan T) et réglée
- * par la vraie commande de confirmation.
+ * Frontière doublée : le prestataire de carte de `card-payment` — le webhook
+ * passe par la vraie route et le vrai contrôleur, mais la vérification de
+ * signature est celle du double (la vraie est éprouvée par
+ * `stripe-card-provider.spec.ts`). La commande est passée par le vrai chemin
+ * (`placeOrder`, plan T) et réglée par le vrai webhook.
  */
-import {
-  PaymentGateway,
-  type PaymentRefundStatus,
-  type PaymentWebhookEvent,
-} from "../src/b2b/payments/domain/payment-gateway.js";
-import { CommandBus } from "@nestjs/cqrs";
-
-import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
+import type {
+  CardRefundStatus,
+  CreatedIntent,
+} from "../src/card-payment/domain/ports/card-provider-types.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { assertOutsideTransaction } from "../src/platform/database/outside-transaction.js";
 import { PaymentStatus } from "../src/platform/database/client/client.js";
+import { cardPaid, E2eCardProvider, E2eCardProviders } from "./card-payments.js";
 import { bootstrapE2e, daysAgo, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 import { pickupSite, placeOrder } from "./order-factory.js";
 
-/** Le prochain événement que « Stripe » livrera au webhook. */
-let nextWebhook: PaymentWebhookEvent = { kind: "ignored" };
 /** L'intention que la prochaine passation recevra. */
 let nextIntent = "pi_e2e";
-const fakeGateway = {
-  createIntent: () =>
-    Promise.resolve({ paymentIntentId: nextIntent, clientSecret: `${nextIntent}_secret` }),
-  retrieveIntent: () => Promise.reject(new Error("aucune intention dans cette suite")),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: (): PaymentWebhookEvent => nextWebhook,
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+
+/** Le prestataire de carte doublé, qui rend l'intention nommée — aucun appel réseau. */
+class NamedIntentCardProvider extends E2eCardProvider {
+  override createIntent(): Promise<CreatedIntent> {
+    assertOutsideTransaction("e2e.CardProvider.createIntent");
+    this.issued.push(nextIntent);
+    return Promise.resolve({ providerRef: nextIntent, clientSecret: `${nextIntent}_secret` });
+  }
+}
+
+/** Le registre doublé, servi par le prestataire aux intentions nommées. */
+class NamedIntentCardProviders extends E2eCardProviders {
+  override readonly provider = new NamedIntentCardProvider("pi_e2e");
+}
+
+const cards = new NamedIntentCardProviders("pi_e2e");
 
 /** Le total que la passation a tarifé — relu à chaque semis, jamais recopié. */
 let orderTotal = 0;
@@ -50,7 +55,7 @@ const REFUNDED_AT = new Date(daysAgo(1));
 let ctx: E2eContext;
 
 beforeAll(async () => {
-  ctx = await bootstrapE2e({ overrides: [{ token: PaymentGateway, value: fakeGateway }] });
+  ctx = await bootstrapE2e({ overrides: [{ token: CardProviders, value: cards }] });
 });
 
 afterAll(async () => {
@@ -59,7 +64,6 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
-  nextWebhook = { kind: "ignored" };
 });
 
 async function seedPaidOrder(intent: string): Promise<string> {
@@ -71,8 +75,7 @@ async function seedPaidOrder(intent: string): Promise<string> {
     // Dix croissants : le total dépasse le premier remboursement partiel (10 €).
     lines: [{ sku: "VIE-001-1", quantity: 10 }],
   });
-  await ctx.app.get(CommandBus).execute(new ConfirmOrderPaymentCommand(intent, "succeeded"));
-  await ctx.drain();
+  await cardPaid(ctx, intent);
   const row = await ctx.prisma.order.findUniqueOrThrow({
     where: { id: order.id },
     select: { totalCents: true },
@@ -85,24 +88,27 @@ interface Refund {
   readonly id: string;
   readonly intent: string;
   readonly amountCents: number;
-  readonly status?: PaymentRefundStatus;
+  readonly status?: CardRefundStatus;
   readonly currency?: string;
 }
 
+/** Le remboursement, signé par le prestataire doublé et livré à la vraie route du webhook. */
 async function webhook(refund: Refund): Promise<void> {
-  nextWebhook = {
+  const { signature } = cards.provider.sign({
     kind: "refund",
+    eventId: cards.provider.nextEventId(),
+    eventType: "refund.created",
     refundId: refund.id,
-    paymentIntentId: refund.intent,
+    providerRef: refund.intent,
     amountCents: refund.amountCents,
     currency: refund.currency ?? "eur",
     status: refund.status ?? "succeeded",
     createdAt: REFUNDED_AT,
-  };
+  });
   await ctx
     .http()
     .post("/payments/webhook")
-    .set("stripe-signature", "t=1,v1=signé-par-le-doublé")
+    .set("stripe-signature", signature)
     .set("content-type", "application/json")
     .send("{}")
     .expect(200);

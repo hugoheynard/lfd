@@ -8,22 +8,12 @@ import { randomUUID } from "node:crypto";
 
 import type { BillingAddressPayload, DeliveryAddressPayload } from "@lfd/contracts";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { cardProvidersOverride } from "./card-payments.js";
 
 const OWNER = "auth0|owner";
-
-const fakeGateway = {
-  createIntent: () => {
-    const id = `pi_${randomUUID()}`;
-    return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret` });
-  },
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
 
 const POSTAL: BillingAddressPayload = {
   label: "Hôtel",
@@ -38,7 +28,7 @@ let ctx: E2eContext;
 let companyId: string;
 
 beforeAll(async () => {
-  ctx = await bootstrapE2e({ overrides: [{ token: PaymentGateway, value: fakeGateway }] });
+  ctx = await bootstrapE2e({ overrides: [cardProvidersOverride("pi_order_registered_deadline")] });
 });
 
 afterAll(async () => {

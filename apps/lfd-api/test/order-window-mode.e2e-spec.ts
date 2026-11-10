@@ -17,7 +17,6 @@ import {
 } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import {
   bootstrapE2e,
@@ -27,20 +26,10 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { cardProvidersOverride } from "./card-payments.js";
 
 const OWNER = "auth0|owner";
 const SERVICE_DAY = serviceDay();
-
-/** Une intention NEUVE par commande : l'identifiant Stripe est unique en base. */
-const fakeGateway = {
-  createIntent: () => {
-    const id = `pi_${randomUUID()}`;
-    return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret` });
-  },
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -62,7 +51,7 @@ let companyId: string;
 beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
-      { token: PaymentGateway, value: fakeGateway },
+      cardProvidersOverride("pi_order_window_mode"),
       { token: AdminTokenVerifier, value: stubAdminVerifier },
     ],
   });

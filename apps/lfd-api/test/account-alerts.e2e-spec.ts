@@ -18,7 +18,7 @@ import {
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole, type CompanyStatus } from "../src/platform/database/client/client.js";
 import { AccountOrderHistoryReader } from "../src/b2b/alerts/domain/ports/order-history.reader.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import {
   bootstrapE2e,
   E2E_STAFF_ID,
@@ -28,6 +28,7 @@ import {
 } from "./e2e-harness.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { cardGatewayDouble } from "./order-factory.js";
 
 /**
  * Le jour de **service** d'une commande de test. Obligatoire depuis que
@@ -57,26 +58,14 @@ const stubAdminVerifier = {
  * toujours la même valeur ferait échouer la deuxième commande — ce qui
  * n'apprendrait rien sur le produit, seulement sur le double.
  */
-let intentCounter = 0;
-const fakeGateway = {
-  createIntent: () => {
-    intentCounter += 1;
-    return Promise.resolve({
-      paymentIntentId: `pi_e2e_${intentCounter}`,
-      clientSecret: `pi_e2e_${intentCounter}_secret`,
-    });
-  },
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+const fakeGateway = cardGatewayDouble("pi_e2e");
 
 let ctx: E2eContext;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: fakeGateway },
       { token: AdminTokenVerifier, value: stubAdminVerifier },
     ],
   });

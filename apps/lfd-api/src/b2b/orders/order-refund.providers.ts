@@ -17,6 +17,7 @@ import { RefundIssuanceRecorder } from "./application/services/refund-issuance-r
 import { OrderRefundRequestLease } from "./domain/ports/order-refund-request.lease.js";
 import { OrderRefundRequestReader } from "./domain/ports/order-refund-request.reader.js";
 import { OrderRefundRequestRepository } from "./domain/ports/order-refund-request.repository.js";
+import { OnCardProviderRefundEvent } from "./application/handlers/on-card-provider-refund-event.handler.js";
 import { AdminOrderRefundsController } from "./http/admin-order-refunds.controller.js";
 import { OrderRefundSweepController } from "./http/order-refund-sweep.controller.js";
 import { PrismaOrderRefundRequestLease } from "./infrastructure/prisma-order-refund-request.lease.js";
@@ -27,10 +28,13 @@ import { PrismaOrderRefundRequestRepository } from "./infrastructure/prisma-orde
  * Les providers du lot C4 (doc `documentation/commandes/annulation/annulation-par-le-staff.md`) :
  * la demande de remboursement, son exécuteur, son balayage, « Relancer », et
  * les abonnés qui ouvrent ou signalent une demande. À part du module, qui
- * dépasse déjà la taille d'un fichier. Le port `PaymentRefunder` vient de
- * `PaymentsModule`.
+ * dépasse déjà la taille d'un fichier. Le port `CardProviderRefunds` vient du
+ * bloc `card-payment` (module global, plan M2 §4.2, transitoire jusqu'à P1),
+ * comme les événements `refund.*` du prestataire, qu'il relaie par le fait
+ * durable `card_payment.provider_refund_event` ({@link OnCardProviderRefundEvent}).
  */
 export const ORDER_REFUND_PROVIDERS: readonly Provider[] = [
+  OnCardProviderRefundEvent,
   { provide: OrderRefundRequestRepository, useClass: PrismaOrderRefundRequestRepository },
   { provide: OrderRefundRequestLease, useClass: PrismaOrderRefundRequestLease },
   { provide: OrderRefundRequestReader, useClass: PrismaOrderRefundRequestReader },

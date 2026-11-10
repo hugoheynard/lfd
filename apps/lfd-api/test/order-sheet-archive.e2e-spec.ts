@@ -26,25 +26,17 @@ import type { BillingAddressPayload, PlacedOrderResponse } from "@lfd/contracts"
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { DocumentStorageUnavailableError } from "../src/platform/shared/errors/storage-errors.js";
 import { CustomerDocumentStore } from "../src/platform/storage/customer-document-store.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { deleteStorageObject, putStorageObject, storageKeys } from "./storage.js";
+import { cardProvidersOverride } from "./card-payments.js";
 
 const CLIENT = "auth0|client";
-
-/** Passerelle doublée : un e2e n'a pas à joindre Stripe. */
-const fakeGateway = {
-  createIntent: () => Promise.resolve({ paymentIntentId: "pi_e2e", clientSecret: "pi_e2e_secret" }),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
 
 let ctx: E2eContext;
 
 beforeAll(async () => {
-  ctx = await bootstrapE2e({ overrides: [{ token: PaymentGateway, value: fakeGateway }] });
+  ctx = await bootstrapE2e({ overrides: [cardProvidersOverride("pi_e2e")] });
 });
 
 afterAll(async () => {

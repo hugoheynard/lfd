@@ -30,9 +30,9 @@ import {
   type ProductionWorksheetView,
 } from "@lfd/contracts";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { settleCardPayments } from "./card-payments.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { cardProvidersDouble, settleCardPayments } from "./card-payments.js";
 import {
   bootstrapE2e,
   E2E_STAFF_SUB,
@@ -67,19 +67,8 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: token, scopes: [] }),
 };
 
-let intentCount = 0;
-const issuedIntents: string[] = [];
-const fakeGateway = {
-  createIntent: () => {
-    intentCount += 1;
-    const id = `pi_e2e_sup_${String(intentCount)}`;
-    issuedIntents.push(id);
-    return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret` });
-  },
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+/** Le prestataire de carte doublé ; `settleCardPayments` vide ses intentions émises. */
+const cards = cardProvidersDouble("pi_e2e_sup");
 
 /** Les deux lectures rejouées : la porte de la Supervision, et celle du poste. */
 const PAIRS = [
@@ -104,7 +93,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: cards },
     ],
   });
 });
@@ -161,7 +150,7 @@ async function place(lines: readonly { sku: string; quantity: number }[]): Promi
       lines,
     })
     .expect(201);
-  await settleCardPayments(ctx, issuedIntents);
+  await settleCardPayments(ctx, cards.provider.issued);
 }
 
 /**

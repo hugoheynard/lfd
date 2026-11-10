@@ -1,12 +1,6 @@
 import { ServiceDay } from "../../../../../production/channels/commerce/index.js";
 import { CommerceOrderCancelledFact } from "../../../../../delivery/channels/commerce/index.js";
-import {
-  PaymentGateway,
-  type CreatedIntent,
-  type IntentCancellation,
-  type PaymentWebhookEvent,
-  type RetrievedIntent,
-} from "../../../../payments/domain/payment-gateway.js";
+import type { CardPaymentCancellation } from "../../../../../card-payment/channels/requests/index.js";
 import { OrderPaymentFailedEvent } from "../../../domain/events/order-payment-failed.event.js";
 import {
   OrderRepository,
@@ -20,6 +14,7 @@ import {
 import type { SettlementSweepWindow } from "../../../domain/services/settlement-sweep.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
+import { ScriptedCancelGateway } from "../../commands/__tests__/cancellation-doubles.js";
 import { RecordingDurable } from "../../commands/__tests__/durable-doubles.js";
 import { RecordingRedemption } from "../../commands/__tests__/voucher-doubles.js";
 import { PendingSettlementSweep } from "../pending-settlement-sweep.service.js";
@@ -37,37 +32,6 @@ class Unsettled extends UnsettledSettlementReader {
   unsettledOn(window: SettlementSweepWindow): Promise<readonly UnsettledSettlement[]> {
     this.windows.push(window);
     return Promise.resolve(this.rows);
-  }
-}
-
-/** Stripe : une issue d'annulation écrite d'avance, et la séquence des gestes. */
-class ScriptedGateway extends PaymentGateway {
-  constructor(
-    private readonly outcome: IntentCancellation,
-    private readonly calls: string[],
-  ) {
-    super();
-  }
-
-  cancelIntent(paymentIntentId: string): Promise<IntentCancellation> {
-    this.calls.push(`cancel:${paymentIntentId}`);
-    return Promise.resolve(this.outcome);
-  }
-
-  createIntent(): Promise<CreatedIntent> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-
-  retrieveIntent(): Promise<RetrievedIntent> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-
-  publishableKey(): string {
-    return "pk_test";
-  }
-
-  parseWebhook(): PaymentWebhookEvent {
-    return { kind: "ignored" };
   }
 }
 
@@ -116,7 +80,7 @@ class ClosingRepository extends OrderRepository {
 
 interface Scenario {
   readonly rows: readonly UnsettledSettlement[];
-  readonly outcome?: IntentCancellation;
+  readonly outcome?: CardPaymentCancellation;
   readonly crossed?: readonly string[];
 }
 
@@ -128,7 +92,7 @@ function build(scenario: Scenario) {
   const vouchers = new RecordingRedemption();
   const sweep = new PendingSettlementSweep(
     unsettled,
-    new ScriptedGateway(scenario.outcome ?? { kind: "cancelled" }, calls),
+    new ScriptedCancelGateway(scenario.outcome ?? { kind: "cancelled" }, calls),
     new ClosingRepository(
       new Set(scenario.crossed ?? scenario.rows.map((row) => row.orderId)),
       calls,
@@ -166,7 +130,7 @@ describe("PendingSettlementSweep — la clôture coupe les règlements en vol", 
 
     await run();
 
-    expect(calls).toEqual(["cancel:pi_1", "fail:ord_1", "cancel:pi_2", "fail:ord_2"]);
+    expect(calls).toEqual(["stripe:ord_1", "fail:ord_1", "stripe:ord_2", "fail:ord_2"]);
     expect(events.facts).toEqual([
       new OrderPaymentFailedEvent("ord_1", "day_closed").durableFact(),
       new CommerceOrderCancelledFact("ord_1").durableFact(),
@@ -185,7 +149,7 @@ describe("PendingSettlementSweep — la clôture coupe les règlements en vol", 
     expect(calls).toEqual(["fail:ord_1"]);
   });
 
-  it.each<IntentCancellation>([
+  it.each<CardPaymentCancellation>([
     { kind: "unavailable", reason: "ECONNRESET" },
     { kind: "already_cancelled" },
   ])(
@@ -198,7 +162,7 @@ describe("PendingSettlementSweep — la clôture coupe les règlements en vol", 
 
       await expect(run()).resolves.toBeUndefined();
 
-      expect(calls).toEqual(["cancel:pi_1", "fail:ord_1"]);
+      expect(calls).toEqual(["stripe:ord_1", "fail:ord_1"]);
       expect(events.facts).toEqual([
         new OrderPaymentFailedEvent("ord_1", "day_closed").durableFact(),
         new CommerceOrderCancelledFact("ord_1").durableFact(),
@@ -212,7 +176,7 @@ describe("PendingSettlementSweep — la clôture coupe les règlements en vol", 
    * un client à qui l'on écrivait « rien n'a été débité » (corrigé le
    * 2026-09-26, avant tout déploiement).
    */
-  it.each<IntentCancellation>([{ kind: "already_paid" }, { kind: "in_progress" }])(
+  it.each<CardPaymentCancellation>([{ kind: "already_paid" }, { kind: "in_progress" }])(
     "épargne une commande dont l'argent est pris ou en route (%o)",
     async (outcome) => {
       const { run, calls, events } = build({
@@ -222,7 +186,7 @@ describe("PendingSettlementSweep — la clôture coupe les règlements en vol", 
 
       await run();
 
-      expect(calls).toEqual(["cancel:pi_1"]);
+      expect(calls).toEqual(["stripe:ord_1"]);
       expect(events.facts).toEqual([]);
     },
   );

@@ -24,26 +24,16 @@ import {
   CustomerRole,
   DeferredTerm,
 } from "../src/platform/database/client/client.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { cardGatewayDouble } from "./order-factory.js";
 
 const MEMBER = "auth0|membre-o3";
 const STAFF = "staff-e2e";
 const ROUTE = "/admin/order-cutoff-settings";
 
-const fakeGateway = {
-  createIntent: () => Promise.resolve({ paymentIntentId: "pi_o3", clientSecret: "pi_o3_secret" }),
-  retrieveIntent: (id: string) =>
-    Promise.resolve({
-      paymentIntentId: id,
-      clientSecret: `${id}_s`,
-      state: "awaiting_payment" as const,
-    }),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+const fakeGateway = cardGatewayDouble("pi_o3");
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -58,7 +48,7 @@ let buyerId = "";
 beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: fakeGateway },
       { token: AdminTokenVerifier, value: stubAdminVerifier },
     ],
   });

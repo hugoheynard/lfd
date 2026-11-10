@@ -22,13 +22,13 @@ import {
 } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { placeLateByStaff } from "./staff-late-order.js";
 import { createUser } from "./factories.js";
-import { settleCardPayments } from "./card-payments.js";
+import { cardProvidersDouble, settleCardPayments } from "./card-payments.js";
 import { E2E_FAMILIES } from "./catalog-fixture.js";
 
 const MEMBER = "auth0|member";
@@ -55,20 +55,8 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: STAFF, scopes: [] }),
 };
 
-let intentCount = 0;
-/** Les intentions émises et pas encore réglées — vidées par `settleCardPayments`. */
-const issuedIntents: string[] = [];
-const fakeGateway = {
-  createIntent: () => {
-    intentCount += 1;
-    const id = `pi_e2e_${String(intentCount)}`;
-    issuedIntents.push(id);
-    return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret` });
-  },
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+/** Le prestataire de carte doublé ; `settleCardPayments` vide ses intentions émises. */
+const cards = cardProvidersDouble("pi_e2e");
 
 /**
  * L'horloge du serveur, figée à MAINTENANT avant chaque test — jamais à une
@@ -83,7 +71,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: cards },
       { token: Clock, value: clock },
     ],
   });
@@ -119,7 +107,7 @@ async function place(sku: string, quantity: number): Promise<void> {
       lines: [{ sku, quantity }],
     })
     .expect(201);
-  await settleCardPayments(ctx, issuedIntents);
+  await settleCardPayments(ctx, cards.provider.issued);
 }
 
 /** La retardataire, saisie par l'équipe — un client ne passe plus après l'arrêt (O3, §8.3). */

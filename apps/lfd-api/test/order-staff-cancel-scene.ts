@@ -1,10 +1,8 @@
 import type request from "supertest";
 
 import { SitedDayOrders } from "../src/b2b/orders/application/services/sited-day-orders.service.js";
-import {
-  PaymentGateway,
-  type IntentCancellation,
-} from "../src/b2b/payments/domain/payment-gateway.js";
+import type { CardPaymentCancellation } from "../src/card-payment/channels/requests/index.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { OutboxRelay } from "../src/platform/outbox/outbox-relay.js";
 import { ProductionOrderWithdrawalDesk } from "../src/production/application/services/production-order-withdrawal.desk.js";
@@ -15,6 +13,7 @@ import {
   type OrderWithdrawalAllowance,
   type ServiceDay,
 } from "../src/production/channels/commerce/index.js";
+import { cardProvidersDouble } from "./card-payments.js";
 import { started, untilBlocked } from "./day-lock-race.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import {
@@ -30,8 +29,9 @@ import {
  * `documentation/commandes/annulation/annulation-par-le-staff.md`, lot C3) — partagée par
  * les deux suites, celle des gestes et celle des courses.
  *
- * Doublés : la signature des jetons (le jeton EST le `sub`), Stripe (une issue
- * d'annulation écrite d'avance), le courrier (enregistré). Et deux
+ * Doublés : la signature des jetons (le jeton EST le `sub`), le prestataire de
+ * carte (une issue d'annulation écrite d'avance, sur le jeton `CardProviders`
+ * du bloc `card-payment`, lot P0.c2), le courrier (enregistré). Et deux
  * ENVELOPPES, qui délèguent au vrai code : la lecture des commandes du
  * fournil (pour glisser une annulation entre sa lecture et son verrou) et le
  * guichet du retrait (pour faire tomber la transaction après Stripe). Tout le
@@ -44,10 +44,20 @@ import {
 
 export const DAY = serviceDay();
 
+/** Le prestataire de carte doublé : ses intentions s'appellent `pi_passation_<n>`. */
+const cards = cardProvidersDouble("pi_passation");
+
 export const scene = {
   ctx: null as E2eContext | null,
-  cancellation: { kind: "cancelled" } as IntentCancellation,
-  cancelledIntents: [] as string[],
+  /** L'issue de la prochaine annulation d'intention — portée par le prestataire doublé. */
+  get cancellation(): CardPaymentCancellation {
+    return cards.provider.cancellation;
+  },
+  set cancellation(outcome: CardPaymentCancellation) {
+    cards.provider.cancellation = outcome;
+  },
+  /** Les intentions dont l'annulation a été demandée au prestataire. */
+  cancelledIntents: cards.provider.cancelled,
   mails: [] as { readonly to: string; readonly template: string; readonly data: unknown }[],
   /** Joué une fois, juste après la lecture des commandes par la clôture ou le retirage. */
   afterProducibleRead: null as (() => Promise<void>) | null,
@@ -61,22 +71,6 @@ export function context(): E2eContext {
   }
   return scene.ctx;
 }
-
-let created = 0;
-const fakeGateway = {
-  createIntent: () => {
-    created += 1;
-    const id = `pi_passation_${String(created)}`;
-    return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret` });
-  },
-  retrieveIntent: () => Promise.reject(new Error("non utilisé")),
-  cancelIntent: (id: string) => {
-    scene.cancelledIntents.push(id);
-    return Promise.resolve(scene.cancellation);
-  },
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-};
 
 const recordingMailer = {
   enabled: true,
@@ -121,7 +115,7 @@ export async function bootScene(extra: readonly E2eOverride[] = []): Promise<E2e
   scene.ctx = await bootstrapE2e({
     overrides: [
       ADMIN_VERIFIER_OVERRIDE,
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: cards },
       { token: MAILER, value: recordingMailer },
       { token: DayOrdersReader, value: dayOrders },
       { token: OrderWithdrawalDesk, value: flakyDesk },

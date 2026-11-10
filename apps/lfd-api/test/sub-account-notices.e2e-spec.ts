@@ -17,15 +17,12 @@ import { randomUUID } from "node:crypto";
  */
 import { WORKSPACE_HEADER } from "@lfd/contracts";
 
-import { CommandBus } from "@nestjs/cqrs";
-
-import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { NotifyPrincipalOnOrderPlaced } from "../src/b2b/sub-account-notices/application/handlers/notify-principal-on-order-placed.handler.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { COMMERCE_ORDER_PLACED } from "../src/delivery/channels/commerce/commerce-order-placed.fact.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";
+import { cardFailed, cardPaid, cardProvidersOverride } from "./card-payments.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import {
   bootstrapE2e,
@@ -40,20 +37,6 @@ import { enableNotices } from "./sub-account-notice-scene.js";
 
 const SERVICE_DAY = serviceDay();
 const TEMPLATE = "customer.sub-account-activity";
-
-let intents = 0;
-const fakeGateway = {
-  createIntent: () => {
-    intents += 1;
-    return Promise.resolve({
-      paymentIntentId: `pi_n2_${String(intents)}`,
-      clientSecret: `pi_n2_${String(intents)}_secret`,
-    });
-  },
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
 
 interface SentMail {
   readonly to: string;
@@ -77,7 +60,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       ADMIN_VERIFIER_OVERRIDE,
-      { token: PaymentGateway, value: fakeGateway },
+      cardProvidersOverride("pi_n2"),
       { token: MAILER, value: recordingMailer },
     ],
   });
@@ -335,16 +318,13 @@ describe("une commande annulée", () => {
   });
 });
 
-/** Le webhook Stripe, rejoué par sa commande — comme `order-payment-reprise`. */
+/** Le webhook du prestataire, rejoué par la commande de `card-payment` — comme `order-payment-reprise`. */
 async function settleCard(orderId: string, outcome: "succeeded" | "failed"): Promise<void> {
   const { stripePaymentIntentId } = await ctx.prisma.order.findUniqueOrThrow({
     where: { id: orderId },
     select: { stripePaymentIntentId: true },
   });
-  await ctx.app
-    .get(CommandBus)
-    .execute(new ConfirmOrderPaymentCommand(stripePaymentIntentId ?? "", outcome));
-  await ctx.drain();
+  await (outcome === "succeeded" ? cardPaid : cardFailed)(ctx, stripePaymentIntentId ?? "");
 }
 
 describe("une commande CARTE d'un site (Hugo, 2026-10-20)", () => {

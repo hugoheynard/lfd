@@ -14,7 +14,7 @@
 import type { GpsPoint, ProductionDueThresholdsView } from "@lfd/contracts";
 
 import { RoadTravelTimeReader } from "../src/delivery/channels/commerce/index.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { DayOrdersReader, ServiceDay } from "../src/production/channels/commerce/index.js";
 import {
@@ -53,7 +53,7 @@ beforeAll(async () => {
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
       { token: RoadTravelTimeReader, value: road },
-      { token: PaymentGateway, value: cardGatewayDouble("pi_echeance") },
+      { token: CardProviders, value: cardGatewayDouble("pi_echeance") },
     ],
   });
 });

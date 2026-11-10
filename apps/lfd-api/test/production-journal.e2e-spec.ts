@@ -18,8 +18,8 @@ import { randomUUID } from "node:crypto";
  * qui refuse précisément le fait attendu, plutôt qu'un double du port.
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
-import { settleCardPayments } from "./card-payments.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { cardProvidersDouble, settleCardPayments } from "./card-payments.js";
 import {
   bootstrapE2e,
   E2E_STAFF_ID,
@@ -50,19 +50,8 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
 };
 
-let intentCount = 0;
-const issuedIntents: string[] = [];
-const fakeGateway = {
-  createIntent: () => {
-    intentCount += 1;
-    const id = `pi_e2e_journal_${String(intentCount)}`;
-    issuedIntents.push(id);
-    return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret` });
-  },
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+/** Le prestataire de carte doublé ; `settleCardPayments` vide ses intentions émises. */
+const cards = cardProvidersDouble("pi_e2e_journal");
 
 let ctx: E2eContext;
 
@@ -70,7 +59,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: cards },
     ],
   });
 });
@@ -130,7 +119,7 @@ async function place(quantity: number): Promise<void> {
       lines: [{ sku: CROISSANT, quantity }],
     })
     .expect(201);
-  await settleCardPayments(ctx, issuedIntents);
+  await settleCardPayments(ctx, cards.provider.issued);
 }
 
 /** La retardataire, saisie par l'équipe — un client ne passe plus après l'arrêt (O3, §8.3). */

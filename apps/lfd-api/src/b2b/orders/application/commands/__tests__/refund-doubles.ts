@@ -4,12 +4,14 @@ import {
   type StaffNotice,
 } from "../../../../../staff/notifications/domain/ports/staff-notifier.js";
 import {
-  PaymentRefunder,
+  type CardPaymentLine,
+  CardProviderRefunds,
   type IssuedRefund,
   type RefundIssuance,
   type RefundLookup,
-  type RefundRequestParams,
-} from "../../../../payments/domain/payment-refunder.js";
+  type RefundRemainderParams,
+} from "../../../../../card-payment/channels/requests/index.js";
+import { OrderCardAdoption } from "../../../domain/ports/order-card-payments.js";
 import {
   OrderRefundLedger,
   type LedgerPaymentStatus,
@@ -188,9 +190,9 @@ export class InMemoryLedgers extends OrderRefundRepository {
  * Stripe : des issues écrites d'avance, rendues dans l'ordre, et les appels
  * vus. 🔴 Refuse d'être appelé sous une transaction ambiante (C4.7).
  */
-export class ScriptedRefunder extends PaymentRefunder {
-  readonly calls: RefundRequestParams[] = [];
-  readonly lookups: RefundRequestParams[] = [];
+export class ScriptedRefunder extends CardProviderRefunds {
+  readonly calls: RefunderCall[] = [];
+  readonly lookups: RefunderCall[] = [];
   /** Joué pendant l'appel — pour faire avancer l'horloge murale, par exemple. */
   during: (() => void) | null = null;
 
@@ -201,18 +203,60 @@ export class ScriptedRefunder extends PaymentRefunder {
     super();
   }
 
-  refundRemainder(params: RefundRequestParams): Promise<RefundIssuance> {
+  refundRemainder(
+    account: string,
+    providerRef: string,
+    params: RefundRemainderParams,
+  ): Promise<RefundIssuance> {
     if (currentTransaction() !== undefined) {
       return Promise.reject(new Error("Stripe appelé sous une transaction"));
     }
-    this.calls.push(params);
+    this.calls.push({ account, providerRef, ...params });
     this.during?.();
     return Promise.resolve(this.issuances.shift() ?? { kind: "unavailable", reason: "épuisé" });
   }
 
-  findRefund(params: RefundRequestParams): Promise<RefundLookup> {
-    this.lookups.push(params);
+  findRefund(
+    account: string,
+    providerRef: string,
+    params: RefundRemainderParams,
+  ): Promise<RefundLookup> {
+    this.lookups.push({ account, providerRef, ...params });
     return Promise.resolve(this.found);
+  }
+}
+
+/** Un appel vu par le prestataire doublé : le compte et la référence de la ligne, et la clé. */
+export interface RefunderCall extends RefundRemainderParams {
+  readonly account: string;
+  readonly providerRef: string;
+}
+
+/** Le compte que la ligne du premier paiement porte, dans les doubles. */
+export const CARD_ACCOUNT = "lfc-stripe";
+
+/**
+ * Le premier paiement de la commande, tel que le bloc `card-payment` le
+ * rendrait (plan M2, P0.c2) — sur `providerRef`, ou aucun (`null`).
+ */
+export class FixedCardAdoption extends OrderCardAdoption {
+  constructor(private readonly providerRef: string | null) {
+    super();
+  }
+
+  ensureFirst(): Promise<CardPaymentLine | null> {
+    if (this.providerRef === null) {
+      return Promise.resolve(null);
+    }
+    return Promise.resolve({
+      paymentId: "pay_1",
+      account: CARD_ACCOUNT,
+      providerRef: this.providerRef,
+      role: "first",
+      state: "paid",
+      amountCents: 2_340,
+      paidAt: null,
+    });
   }
 }
 

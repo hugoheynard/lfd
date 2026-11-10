@@ -8,7 +8,6 @@ import { OrderCutoffsInForce } from "../order-cutoffs/domain/order-cutoffs-in-fo
 import { OrderCutoffsModule } from "../order-cutoffs/order-cutoffs.module.js";
 import { OrderWaiversModule } from "../order-waivers/order-waivers.module.js";
 import { PlatformContentModule } from "../content/content.module.js";
-import { PaymentsModule } from "../payments/payments.module.js";
 import { PricerModule } from "../pricing/pricer.module.js";
 import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
 import { MarkOrderFulfilledHandler } from "./application/commands/mark-order-fulfilled.handler.js";
@@ -113,7 +112,16 @@ import { OnPackingShortfallReported } from "./application/handlers/on-packing-sh
 import { OnPackingShortfallCleared } from "./application/handlers/on-packing-shortfall-cleared.handler.js";
 import { PrismaCancellationSubjectReader } from "./infrastructure/prisma-cancellation-subject.reader.js";
 import { PrismaOrderCancellationRepository } from "./infrastructure/prisma-order-cancellation.repository.js";
-import { ConfirmOrderPaymentHandler } from "./application/commands/confirm-order-payment.handler.js";
+import { AdoptOrderPaymentHandler } from "./application/commands/adopt-order-payment.handler.js";
+import { OrderCardPayments } from "./application/services/order-card-payments.js";
+import { OrderSubjectSettlement } from "./application/services/order-subject-settlement.js";
+import { OrderCardStandingReader } from "./domain/ports/order-card-standing.reader.js";
+import {
+  OrderCardAdoption,
+  OrderCardCancellation,
+  OrderCardRetrieval,
+} from "./domain/ports/order-card-payments.js";
+import { PrismaOrderCardStandingReader } from "./infrastructure/prisma-order-card-standing.reader.js";
 import { DiscardOrderDraftHandler } from "./application/commands/discard-order-draft.handler.js";
 import { PlaceOrderForCustomerHandler } from "./application/commands/place-order-for-customer.handler.js";
 import { SaveOrderDraftHandler } from "./application/commands/save-order-draft.handler.js";
@@ -326,7 +334,6 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     OrderWaiversModule,
     // Les CGV en vigueur, figées à la passation (plan des CGV, C4′).
     PlatformContentModule,
-    PaymentsModule,
     CatalogModule,
     // La caisse passe par LA porte du prix depuis le 2026-09-09, plus par le
     // chargeur : elle avait sa propre chorégraphie, comme les trois autres
@@ -418,8 +425,18 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     GetGuestOrderAdmissionHandler,
     PlaceOrderHandler,
     PlaceOrderForCustomerHandler,
-    ConfirmOrderPaymentHandler,
     AbandonOrderHandler,
+    // Le paiement par carte, par le bloc `card-payment` (plan M2, lot P0.c2) :
+    // les gestes du commerce sur le premier paiement, l'adoption d'une
+    // intention d'avant le bloc, et l'implémentation `order` du canal retour
+    // — reliée par `appBootstrap/card-payment-feed.module.ts`.
+    OrderCardPayments,
+    { provide: OrderCardCancellation, useExisting: OrderCardPayments },
+    { provide: OrderCardRetrieval, useExisting: OrderCardPayments },
+    { provide: OrderCardAdoption, useExisting: OrderCardPayments },
+    AdoptOrderPaymentHandler,
+    { provide: OrderCardStandingReader, useClass: PrismaOrderCardStandingReader },
+    OrderSubjectSettlement,
     // L'annulation par l'équipe (doc `documentation/commandes/annulation/annulation-par-le-staff.md`,
     // C3) : le geste, son courriel, et ses deux ports — lire et écrire (ISP).
     // Le guichet du fournil vient de `ProductionDeskFeedModule`.
@@ -696,6 +713,9 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     PrismaHandoverSubjectReader,
     PrismaPendingOrdersReader,
     PendingSettlementSweep,
+    // L'implémentation `order` du canal retour de `card-payment` (plan M2,
+    // §3.3), RELIÉE par la racine de composition — le bloc ne l'importe pas.
+    OrderSubjectSettlement,
     DueThresholds,
     PrismaOrderPrintColors,
     PackingOrderBagLabelReader,

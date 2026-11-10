@@ -6,7 +6,7 @@ import { FulfillmentWindowRequiredError } from "../src/b2b/orders/domain/errors/
 import { PlaceShopOrderHandler } from "../src/b2b/orders/application/commands/place-shop-order.handler.js";
 import { LoyaltySettings } from "../src/b2b/loyalty/domain/value-objects/loyalty-settings.js";
 import { PrismaLoyaltySettingsStore } from "../src/b2b/loyalty/infrastructure/prisma-loyalty-settings.store.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { cardProvidersOverride } from "./card-payments.js";
 import { bootstrapE2e, E2E_STAFF_ID, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { placeShopOrderSeeingTotal, type Unseen } from "./seen-total-shop-command.js";
 import { createUser } from "./factories.js";
@@ -36,38 +36,10 @@ import { createUser } from "./factories.js";
  * pour ne pas créer d'intention de paiement par HTTP.
  */
 
-/**
- * Passerelle de paiement doublée : aucun appel réseau, et **une intention
- * distincte par appel**.
- *
- * Le compteur n'est pas de la coquetterie : `orders.stripe_payment_intent_id`
- * est unique en base, et un double qui rendrait deux fois le même identifiant
- * ferait échouer la seconde commande sur une contrainte que la production ne
- * rencontre jamais — Stripe crée une intention par appel. Un double qui se
- * répète ne joue pas le port qu'il prétend jouer.
- */
-let intentSeq = 0;
-const fakeGateway = {
-  createIntent: () => {
-    intentSeq += 1;
-    const paymentIntentId = `pi_public_${String(intentSeq)}`;
-    return Promise.resolve({ paymentIntentId, clientSecret: `${paymentIntentId}_secret` });
-  },
-  retrieveIntent: () =>
-    Promise.resolve({
-      paymentIntentId: "pi_public_1",
-      clientSecret: "pi_public_1_secret",
-      state: "awaiting_payment" as const,
-    }),
-  publishableKey: () => "pk_public",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
-
 let ctx: E2eContext;
 
 beforeAll(async () => {
-  ctx = await bootstrapE2e({ overrides: [{ token: PaymentGateway, value: fakeGateway }] });
+  ctx = await bootstrapE2e({ overrides: [cardProvidersOverride("pi_public")] });
 });
 
 afterAll(async () => {
@@ -300,7 +272,7 @@ describe("la commande sans compte — la commande produite", () => {
     // Champ par champ : `expect.any` et `expect.stringMatching` rendent de
     // l'`any`, que le lint refuse à juste titre — un doublé qui dérive du port
     // passerait sous un matcher qui accepte tout.
-    expect(placed.payment?.publishableKey).toBe("pk_public");
+    expect(placed.payment?.publishableKey).toBe("pk_e2e");
     expect(placed.payment?.clientSecret).toMatch(/_secret$/u);
     expect(placed.payment?.amountCents).toBeGreaterThan(0);
   });

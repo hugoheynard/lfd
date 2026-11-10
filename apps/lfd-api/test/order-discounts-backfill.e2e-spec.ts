@@ -18,7 +18,7 @@ import { htMillicentsOf } from "@lfd/pim-contracts";
 import { randomUUID } from "node:crypto";
 
 import { PrismaOrderDiscountBackfill } from "../src/b2b/orders/infrastructure/prisma-order-discount-backfill.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   CompanyStatus,
@@ -37,6 +37,7 @@ import {
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { asPlacedBeforeM3, withoutDiscountControl } from "./order-discount-fixtures.js";
 import { poseSiteDiscount } from "./promotion-fixtures.js";
+import { cardGatewayDouble } from "./order-factory.js";
 
 const DAY = serviceDay(7);
 const PERSON = "auth0|particulier-reprise";
@@ -49,25 +50,7 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
 };
 
-let intents = 0;
-const fakeGateway = {
-  createIntent: () => {
-    intents += 1;
-    return Promise.resolve({
-      paymentIntentId: `pi_reprise_${intents}`,
-      clientSecret: `pi_reprise_${intents}_s`,
-    });
-  },
-  retrieveIntent: (id: string) =>
-    Promise.resolve({
-      paymentIntentId: id,
-      clientSecret: `${id}_s`,
-      state: "awaiting_payment" as const,
-    }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-};
+const fakeGateway = cardGatewayDouble("pi_reprise");
 
 let ctx: E2eContext;
 let pickupId = "";
@@ -75,7 +58,7 @@ let pickupId = "";
 beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: fakeGateway },
       { token: AdminTokenVerifier, value: stubAdminVerifier },
     ],
   });

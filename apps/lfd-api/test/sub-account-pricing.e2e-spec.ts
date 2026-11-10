@@ -16,7 +16,7 @@ import type { PricedLot } from "../src/b2b/pricing/application/priced-lot.js";
 import { Pricer } from "../src/b2b/pricing/application/pricer.js";
 import { CustomerVolumeReader } from "../src/b2b/pricing/domain/ports/customer-volume.reader.js";
 import { ProductCatalogReader } from "../src/b2b/catalog/domain/ports/product-catalog.reader.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
@@ -37,7 +37,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: cardGatewayDouble("pi_club") },
+      { token: CardProviders, value: cardGatewayDouble("pi_club") },
     ],
   });
   pricer = ctx.app.get(Pricer);

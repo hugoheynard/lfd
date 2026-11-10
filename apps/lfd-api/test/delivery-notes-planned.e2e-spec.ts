@@ -21,7 +21,7 @@ import {
   ON_PRODUCTION_DAY_CLOSED,
   OnProductionDayClosed,
 } from "../src/b2b/orders/application/handlers/on-production-day-closed.handler.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   CompanyStatus,
@@ -37,27 +37,12 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { cardGatewayDouble } from "./order-factory.js";
 
 const DAY = serviceDay(7);
 const BUYER = "auth0|acheteur-bon-de-livraison";
 
-let intentCounter = 0;
-const fakeGateway = {
-  createIntent: () => {
-    intentCounter += 1;
-    const id = `pi_bl_${String(intentCounter)}`;
-    return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret` });
-  },
-  retrieveIntent: (id: string) =>
-    Promise.resolve({
-      paymentIntentId: id,
-      clientSecret: `${id}_secret`,
-      state: "awaiting_payment",
-    }),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+const fakeGateway = cardGatewayDouble("pi_bl");
 
 let ctx: E2eContext;
 
@@ -71,7 +56,7 @@ beforeAll(async () => {
             Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
         },
       },
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: fakeGateway },
     ],
   });
 });

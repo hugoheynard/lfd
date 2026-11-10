@@ -24,7 +24,6 @@ import {
   type BillingAddressPayload,
 } from "@lfd/contracts";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
@@ -38,19 +37,7 @@ import {
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { poseSiteDiscount } from "./promotion-fixtures.js";
-
-const fakeGateway = {
-  createIntent: () => Promise.resolve({ paymentIntentId: "pi_est", clientSecret: "pi_est_secret" }),
-  retrieveIntent: (id: string) =>
-    Promise.resolve({
-      paymentIntentId: id,
-      clientSecret: `${id}_secret`,
-      state: "awaiting_payment" as const,
-    }),
-  publishableKey: () => "pk_est",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+import { cardProvidersOverride } from "./card-payments.js";
 
 const MINUTE_MS = 60_000;
 const CROISSANT = "VIE-001-1";
@@ -85,7 +72,7 @@ beforeAll(async () => {
     overrides: [
       ADMIN_VERIFIER_OVERRIDE,
       { token: Clock, value: clock },
-      { token: PaymentGateway, value: fakeGateway },
+      cardProvidersOverride("pi_est"),
     ],
   });
 });

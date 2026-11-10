@@ -1,6 +1,9 @@
 import type { OrderSettlement } from "@lfd/contracts";
 
-import type { PaymentGateway } from "../../../payments/domain/payment-gateway.js";
+import type {
+  CardPaymentPreparation,
+  CardPayments,
+} from "../../../../card-payment/channels/requests/index.js";
 import type { Order } from "../../domain/entities/order.js";
 import { TermsNotGrantedError } from "../../domain/errors/order-errors.js";
 import type { OrderCompanyStatus } from "../../domain/ports/company-status.reader.js";
@@ -8,26 +11,21 @@ import type {
   AccountSettlementStanding,
   OrderGuardReader,
 } from "../../domain/ports/order-guard.reader.js";
-
-/** Devise unique de la plateforme (montants en centimes d'euro). */
-const CURRENCY = "eur";
-
-/** L'intention Stripe créée pour la commande — de quoi la rendre au client, ou l'annuler. */
-export interface CreatedIntent {
-  readonly paymentIntentId: string;
-  readonly clientSecret: string;
-}
+import { ORDER_CARD_SUBJECT_TYPE, orderCardTag } from "./order-card-subject.js";
 
 /** Les deux ports dont la décision de règlement a besoin, et eux seuls. */
 export interface SettlementPorts {
   readonly guard: Pick<OrderGuardReader, "companyStatusOf" | "settlesOnAccount">;
-  readonly payments: Pick<PaymentGateway, "createIntent">;
+  readonly payments: Pick<CardPayments, "prepare">;
 }
 
 /**
- * Décide le règlement de l'agrégat et crée l'intention Stripe si une carte est
- * requise (total > 0). Renvoie l'intention (pour le `clientSecret`) ou `null`
- * (différé / gratuit). L'intention est dimensionnée sur `order.totalCents`.
+ * Décide le règlement de l'agrégat et PRÉPARE l'intention de carte si une
+ * carte est requise (total > 0) — hors transaction, par le bloc
+ * `card-payment` (plan M2, §4.2), qui choisit le compte. Renvoie la
+ * préparation (le `clientSecret`, la clé publique, et ce que la passation
+ * rattachera dans sa transaction) ou `null` (différé / gratuit). L'intention
+ * est dimensionnée sur `order.totalCents`.
  *
  * La transition elle-même (`payByCard` / `deferPayment`) reste à l'agrégat :
  * ce module ne fait que choisir laquelle appeler.
@@ -37,7 +35,7 @@ export async function settleOrder(
   order: Order,
   companyId: string | null,
   settlement: OrderSettlement | null,
-): Promise<CreatedIntent | null> {
+): Promise<CardPaymentPreparation | null> {
   const requiresCard =
     (await requiresCardFor(
       ports.guard,
@@ -48,13 +46,15 @@ export async function settleOrder(
     order.deferPayment();
     return null;
   }
-  const intent = await ports.payments.createIntent({
-    amountCents: order.totalCents,
-    currency: CURRENCY,
-    companyId,
-  });
-  order.payByCard(intent.paymentIntentId);
-  return { paymentIntentId: intent.paymentIntentId, clientSecret: intent.clientSecret };
+  const preparation = await ports.payments.prepare(
+    ORDER_CARD_SUBJECT_TYPE,
+    order.totalCents,
+    orderCardTag(companyId),
+  );
+  // `orders.stripe_payment_intent_id` reste écrit (§4.2) : la compatibilité
+  // jusqu'à P2, et la clé de `markPaid`.
+  order.payByCard(preparation.prepared.providerRef);
+  return preparation;
 }
 
 /**

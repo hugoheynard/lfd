@@ -13,27 +13,18 @@ import type {
   MyDeliveryRoundView,
 } from "@lfd/contracts";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { bootstrapE2e, E2E_STAFF_ID, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { ADMIN_VERIFIER_OVERRIDE, admin } from "./delivery-rounds-scene.js";
 import { MY_ROUND, seedDriverRole } from "./delivery-driver-scene.js";
 import { ROAD_ROUTING_OVERRIDES } from "./delivery-routing-scene.js";
 import { seedWeighedArticles } from "./weighed-catalog-scene.js";
+import { cardGatewayDouble } from "./order-factory.js";
 
 const RELOAD = "/admin/dev/seed/reload";
 
-let intentCount = 0;
 /** Stripe, la seule frontière doublée en plus de la signature : le semis paie des commandes. */
-const fakeGateway = {
-  createIntent: () => {
-    intentCount += 1;
-    const id = `pi_e2e_dev_seed_${String(intentCount)}`;
-    return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret` });
-  },
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+const fakeGateway = cardGatewayDouble("pi_e2e_dev_seed");
 
 let ctx: E2eContext;
 
@@ -43,7 +34,7 @@ beforeAll(async () => {
     // le double routier, la CI — qui n'a pas d'OSRM — répond 409 (2026-10-14).
     overrides: [
       ADMIN_VERIFIER_OVERRIDE,
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: fakeGateway },
       ...ROAD_ROUTING_OVERRIDES,
     ],
   });

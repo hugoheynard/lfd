@@ -1,13 +1,8 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { CommerceOrderCancelledFact } from "../../../../../delivery/channels/commerce/index.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
-import {
-  PaymentGateway,
-  type CreatedIntent,
-  type IntentCancellation,
-  type PaymentWebhookEvent,
-  type RetrievedIntent,
-} from "../../../../payments/domain/payment-gateway.js";
+import type { CardPaymentCancellation } from "../../../../../card-payment/channels/requests/index.js";
+import { OrderCardCancellation } from "../../../domain/ports/order-card-payments.js";
 import { OrderPaymentFailedEvent } from "../../../domain/events/order-payment-failed.event.js";
 import { UnsettledShopOrderCanceller } from "../../../domain/ports/unsettled-shop-order.canceller.js";
 import { UnsettledShopOrderReader } from "../../../domain/ports/unsettled-shop-order.reader.js";
@@ -84,40 +79,28 @@ class Canceller extends UnsettledShopOrderCanceller {
   }
 }
 
-/** Stripe : une issue par intention, `cancelled` par défaut. */
-class ScriptedGateway extends PaymentGateway {
+/**
+ * La carte : une issue par commande, `cancelled` par défaut. L'annulation se
+ * demande par la commande, le bloc `card-payment` retrouve son intention
+ * (lot P0.c2).
+ */
+class ScriptedCards extends OrderCardCancellation {
   constructor(
-    private readonly outcomes: ReadonlyMap<string, IntentCancellation>,
+    private readonly outcomes: ReadonlyMap<string, CardPaymentCancellation>,
     private readonly calls: string[],
   ) {
     super();
   }
 
-  cancelIntent(paymentIntentId: string): Promise<IntentCancellation> {
-    this.calls.push(`cancel-intent:${paymentIntentId}`);
-    return Promise.resolve(this.outcomes.get(paymentIntentId) ?? { kind: "cancelled" });
-  }
-
-  createIntent(): Promise<CreatedIntent> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-
-  retrieveIntent(): Promise<RetrievedIntent> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-
-  publishableKey(): string {
-    return "pk_test";
-  }
-
-  parseWebhook(): PaymentWebhookEvent {
-    return { kind: "ignored" };
+  cancelFirst(orderId: string): Promise<CardPaymentCancellation> {
+    this.calls.push(`cancel-card:${orderId}`);
+    return Promise.resolve(this.outcomes.get(orderId) ?? { kind: "cancelled" });
   }
 }
 
 interface Scenario {
   readonly rows: readonly Row[];
-  readonly outcomes?: ReadonlyMap<string, IntentCancellation>;
+  readonly outcomes?: ReadonlyMap<string, CardPaymentCancellation>;
   readonly crossed?: readonly string[];
   /** La tenue du stock réglée en admin (lot L4) ; 30 minutes par défaut. */
   readonly shelfHoldMinutes?: number;
@@ -131,7 +114,7 @@ function build(scenario: Scenario) {
   const expiry = new UnsettledShopOrderExpiry(
     new Unsettled(scenario.rows),
     new Canceller(new Set(scenario.crossed ?? scenario.rows.map((r) => r.orderId)), calls),
-    new ScriptedGateway(scenario.outcomes ?? new Map(), calls),
+    new ScriptedCards(scenario.outcomes ?? new Map(), calls),
     events,
     new DirectUnitOfWork(),
     vouchers,
@@ -148,7 +131,7 @@ describe("UnsettledShopOrderExpiry — l'expiration à trente minutes", () => {
     const report = await expiry.expireLapsed();
 
     expect(report).toEqual({ cancelled: 1, kept: 0 });
-    expect(calls).toEqual(["cancel-intent:pi_old", "cancel-order:old"]);
+    expect(calls).toEqual(["cancel-card:old", "cancel-order:old"]);
     expect(events.facts).toEqual([
       new OrderPaymentFailedEvent("old", "expired").durableFact(),
       new CommerceOrderCancelledFact("old").durableFact(),
@@ -158,30 +141,30 @@ describe("UnsettledShopOrderExpiry — l'expiration à trente minutes", () => {
   it("n'écrit pas quand le paiement est en cours ou déjà pris chez Stripe", async () => {
     const { expiry, calls, events } = build({
       rows: [row("paying", 40), row("paid", 40)],
-      outcomes: new Map<string, IntentCancellation>([
-        ["pi_paying", { kind: "in_progress" }],
-        ["pi_paid", { kind: "already_paid" }],
+      outcomes: new Map<string, CardPaymentCancellation>([
+        ["paying", { kind: "in_progress" }],
+        ["paid", { kind: "already_paid" }],
       ]),
     });
 
     const report = await expiry.expireLapsed();
 
     expect(report).toEqual({ cancelled: 0, kept: 2 });
-    expect(calls).toEqual(["cancel-intent:pi_paying", "cancel-intent:pi_paid"]);
+    expect(calls).toEqual(["cancel-card:paying", "cancel-card:paid"]);
     expect(events.facts).toEqual([]);
   });
 
   it("n'écrit pas quand Stripe est injoignable : le passage suivant réessaie", async () => {
     const { expiry, calls } = build({
       rows: [row("old", 40)],
-      outcomes: new Map<string, IntentCancellation>([
-        ["pi_old", { kind: "unavailable", reason: "ECONNRESET" }],
+      outcomes: new Map<string, CardPaymentCancellation>([
+        ["old", { kind: "unavailable", reason: "ECONNRESET" }],
       ]),
     });
 
     await expiry.expireLapsed();
 
-    expect(calls).toEqual(["cancel-intent:pi_old"]);
+    expect(calls).toEqual(["cancel-card:old"]);
   });
 
   it("ne publie rien quand la base n'a pas franchi (payée entre-temps)", async () => {
@@ -215,7 +198,7 @@ describe("UnsettledShopOrderExpiry — le remplacement par une nouvelle passatio
     const report = await expiry.replaceEarlier("new");
 
     expect(report).toEqual({ cancelled: 1, kept: 0 });
-    expect(calls).toEqual(["cancel-intent:pi_mine", "cancel-order:mine"]);
+    expect(calls).toEqual(["cancel-card:mine", "cancel-order:mine"]);
     expect(events.facts).toEqual([
       new OrderPaymentFailedEvent("mine", "replaced").durableFact(),
       new CommerceOrderCancelledFact("mine").durableFact(),
@@ -225,7 +208,7 @@ describe("UnsettledShopOrderExpiry — le remplacement par une nouvelle passatio
   it("garde la précédente quand elle est en train d'être payée (§4.4)", async () => {
     const { expiry, events } = build({
       rows: [row("mine", 5, "u_1"), row("new", 0, "u_1")],
-      outcomes: new Map<string, IntentCancellation>([["pi_mine", { kind: "in_progress" }]]),
+      outcomes: new Map<string, CardPaymentCancellation>([["mine", { kind: "in_progress" }]]),
     });
 
     const report = await expiry.replaceEarlier("new");
@@ -259,7 +242,7 @@ describe("UnsettledShopOrderExpiry — la tenue du stock d'une commande sur stoc
     const report = await expiry.expireLapsed();
 
     expect(report).toEqual({ cancelled: 1, kept: 0 });
-    expect(calls).toEqual(["cancel-intent:pi_held_out", "cancel-order:held_out"]);
+    expect(calls).toEqual(["cancel-card:held_out", "cancel-order:held_out"]);
   });
 
   it("suit la durée réglée quand elle dépasse trente minutes", async () => {
@@ -270,19 +253,19 @@ describe("UnsettledShopOrderExpiry — la tenue du stock d'une commande sur stoc
 
     await expiry.expireLapsed();
 
-    expect(calls).toEqual(["cancel-intent:pi_shop", "cancel-order:shop"]);
+    expect(calls).toEqual(["cancel-card:shop", "cancel-order:shop"]);
   });
 
   it("garde une commande sur stock dont le paiement est en cours chez Stripe", async () => {
     const { expiry, calls } = build({
       rows: [shelfRow("paying", 40)],
-      outcomes: new Map([["pi_paying", { kind: "in_progress" }]]),
+      outcomes: new Map([["paying", { kind: "in_progress" }]]),
     });
 
     const report = await expiry.expireLapsed();
 
     expect(report).toEqual({ cancelled: 0, kept: 1 });
-    expect(calls).toEqual(["cancel-intent:pi_paying"]);
+    expect(calls).toEqual(["cancel-card:paying"]);
   });
 });
 
@@ -303,7 +286,7 @@ describe("UnsettledShopOrderExpiry — les bornes du délai", () => {
       const report = await expiry.expireLapsed();
 
       expect(report).toEqual({ cancelled: 1, kept: 0 });
-      expect(calls).toEqual(["cancel-intent:pi_past", "cancel-order:past"]);
+      expect(calls).toEqual(["cancel-card:past", "cancel-order:past"]);
     },
   );
 
@@ -315,7 +298,7 @@ describe("UnsettledShopOrderExpiry — les bornes du délai", () => {
 
     await expiry.expireLapsed();
 
-    expect(calls).toEqual(["cancel-intent:pi_shop_31", "cancel-order:shop_31"]);
+    expect(calls).toEqual(["cancel-card:shop_31", "cancel-order:shop_31"]);
   });
 
   it("une vitrine réglée à 5 minutes n'abrège pas la boutique fabriquée", async () => {
@@ -327,7 +310,7 @@ describe("UnsettledShopOrderExpiry — les bornes du délai", () => {
     const report = await expiry.expireLapsed();
 
     expect(report).toEqual({ cancelled: 1, kept: 0 });
-    expect(calls).toEqual(["cancel-intent:pi_shelf_10", "cancel-order:shelf_10"]);
+    expect(calls).toEqual(["cancel-card:shelf_10", "cancel-order:shelf_10"]);
   });
 
   it("un passage compte ensemble une commande fabriquée et une commande sur stock", async () => {

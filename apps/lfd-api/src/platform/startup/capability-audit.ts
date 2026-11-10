@@ -38,6 +38,7 @@ export interface CapabilitySnapshot {
   /** Le stockage des papiers du fournil — fiches atelier, compte à produire. */
   readonly hasProductionStorage: boolean;
   readonly hasStripe: boolean;
+  readonly hasStripeLinksWebhookSecret: boolean;
   readonly hasClientBaseUrl: boolean;
   readonly hasAdminBaseUrl: boolean;
   /** L'adresse de la Base Adresse Nationale : « Situer les arrêts » (livraison, lot 7). */
@@ -177,6 +178,19 @@ const CHECKS: readonly Check[] = [
     consequence: "le paiement par carte au checkout est indisponible",
     severity: "blocking",
     present: (s) => s.hasStripe,
+  },
+  {
+    capability: "Liens de paiement — retour de Stripe",
+    setting: "STRIPE_LINKS_WEBHOOK_SECRET",
+    // Depuis P0 du plan M2 (2026-11-09), les pages Checkout des sociétés ont
+    // leur propre endpoint chez Stripe, avec sa propre clé de signature. Sans
+    // elle, la route `/payments/links/webhook` répond 400 et Stripe réessaie :
+    // un lien payé reste « en attente » chez nous tant que la clé manque — ou
+    // tant que l'ancien endpoint relaie encore les `checkout.*` (jusqu'à P2).
+    consequence:
+      "les paiements par lien ne sont pas constatés par leur propre webhook — un lien payé reste en attente tant que l'ancien endpoint ne le relaie pas",
+    severity: "degraded",
+    present: (s) => s.hasStripeLinksWebhookSecret,
   },
   {
     capability: "Stockage des KBIS",

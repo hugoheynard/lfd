@@ -1,13 +1,7 @@
 import type { OrderStatus, PaymentStatus } from "@lfd/contracts";
 
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
-import {
-  PaymentGateway,
-  type CreatedIntent,
-  type IntentCancellation,
-  type PaymentWebhookEvent,
-  type RetrievedIntent,
-} from "../../../../payments/domain/payment-gateway.js";
+import type { CardPaymentCancellation } from "../../../../../card-payment/channels/requests/index.js";
 import {
   OrderAbandonNotAuthorError,
   OrderAbandonUnavailableError,
@@ -30,6 +24,7 @@ import { AbandonOrderCommand } from "../abandon-order.command.js";
 import { AbandonOrderHandler } from "../abandon-order.handler.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
+import { ScriptedCancelGateway } from "./cancellation-doubles.js";
 import { RecordingDurable } from "./durable-doubles.js";
 import { RecordingRedemption } from "./voucher-doubles.js";
 import { AT_PLACEMENT } from "../../../domain/services/order-sheet.js";
@@ -42,36 +37,6 @@ class OneRoleGuard extends OrderAccessReader {
 
   accessToOrder(): Promise<OrderRole | null> {
     return Promise.resolve(this.role);
-  }
-}
-
-/** Le prestataire : une issue d'annulation écrite d'avance, et les appels vus. */
-class ScriptedGateway extends PaymentGateway {
-  readonly cancelled: string[] = [];
-
-  constructor(private readonly outcome: IntentCancellation) {
-    super();
-  }
-
-  cancelIntent(paymentIntentId: string): Promise<IntentCancellation> {
-    this.cancelled.push(paymentIntentId);
-    return Promise.resolve(this.outcome);
-  }
-
-  createIntent(): Promise<CreatedIntent> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-
-  retrieveIntent(): Promise<RetrievedIntent> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-
-  publishableKey(): string {
-    return "pk_test";
-  }
-
-  parseWebhook(): PaymentWebhookEvent {
-    return { kind: "ignored" };
   }
 }
 
@@ -124,14 +89,14 @@ interface Scenario {
   readonly author?: string;
   readonly intent?: string | null;
   readonly role?: OrderRole | null;
-  readonly outcome?: IntentCancellation;
+  readonly outcome?: CardPaymentCancellation;
   readonly written?: AbandonedSettlement | null;
   readonly clientele?: "pro" | "public" | null;
   readonly voucher?: string | null;
 }
 
 function build(scenario: Scenario = {}) {
-  const gateway = new ScriptedGateway(scenario.outcome ?? { kind: "cancelled" });
+  const gateway = new ScriptedCancelGateway(scenario.outcome ?? { kind: "cancelled" });
   const repository = new AbandonRepository(
     scenario.written === undefined ? "cancelled" : scenario.written,
   );
@@ -176,7 +141,8 @@ describe("AbandonOrderHandler — l'ordre des gestes", () => {
 
     await abandon();
 
-    expect(gateway.cancelled).toEqual(["pi_1"]);
+    // L'annulation se demande par la commande ; le bloc retrouve son intention (P0.c2).
+    expect(gateway.cancelled).toEqual(["order_1"]);
     expect(repository.abandoned).toEqual(["order_1"]);
     expect(durable.facts).toEqual([
       {

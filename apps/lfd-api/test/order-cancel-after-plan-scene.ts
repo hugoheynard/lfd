@@ -1,10 +1,10 @@
 import type request from "supertest";
 
 import {
-  PaymentRefunder,
+  CardProviderRefunds,
   type RefundIssuance,
   type RefundLookup,
-} from "../src/b2b/payments/domain/payment-refunder.js";
+} from "../src/card-payment/channels/requests/index.js";
 import { E2E_STAFF_SUB, jsonBody, type E2eContext, type E2eOverride } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 import { pickupSite, placeOrder } from "./order-factory.js";
@@ -28,7 +28,7 @@ import {
  */
 
 /** Stripe hors scène : l'exécuteur laisse la demande en attente, rien n'est émis. */
-class SilentRefunder extends PaymentRefunder {
+class SilentRefunder extends CardProviderRefunds {
   refundRemainder(): Promise<RefundIssuance> {
     return Promise.resolve({ kind: "unavailable", reason: "e2e : Stripe hors scène" });
   }
@@ -42,7 +42,7 @@ export async function bootAfterPlanScene(
   extra: readonly E2eOverride[] = [],
 ): Promise<{ ctx: E2eContext; issued: string[] }> {
   return bootstrapProductionDay([
-    { token: PaymentRefunder, value: new SilentRefunder() },
+    { token: CardProviderRefunds, value: new SilentRefunder() },
     ...extra,
   ]);
 }

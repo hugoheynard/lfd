@@ -8,7 +8,15 @@ import { DomainEventPublisher } from "../../../../platform/events/domain-event-p
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { CommerceOrderPlacedFact } from "../../../../delivery/channels/commerce/index.js";
-import { PaymentGateway } from "../../../payments/domain/payment-gateway.js";
+import {
+  CardPayments,
+  type PreparedCardPayment,
+} from "../../../../card-payment/channels/requests/index.js";
+import {
+  ORDER_CARD_SUBJECT_TYPE,
+  orderCardSubject,
+  orderCardTag,
+} from "../services/order-card-subject.js";
 import type { Order } from "../../domain/entities/order.js";
 import { OrderPlacedEvent } from "../../domain/events/order-placed.event.js";
 import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
@@ -24,14 +32,6 @@ import {
   PlaceOrderForCustomerCommand,
   type PlaceOrderForCustomerResult,
 } from "./place-order-for-customer.command.js";
-
-/** Devise unique de la plateforme (montants en centimes d'euro). */
-const CURRENCY = "eur";
-
-/** L'intention du lien de règlement, créée avant l'écriture : à annuler si elle échoue. */
-interface CreatedLink {
-  readonly paymentIntentId: string;
-}
 
 /**
  * Passe une commande **au nom d'un client**, depuis le back-office.
@@ -61,7 +61,7 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
     private readonly guard: OrderGuardReader,
     private readonly drafting: OrderDrafting,
     private readonly orders: OrderRepository,
-    private readonly payments: PaymentGateway,
+    private readonly payments: CardPayments,
     private readonly events: DomainEventPublisher,
     private readonly config: AppConfig,
     private readonly waivers: OrderCutoffWaiverGate,
@@ -131,18 +131,21 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
   private async persist(
     order: Order,
     requestedDeliveryDate: string | null,
-    intent: CreatedLink | null,
+    intent: PreparedCardPayment | null,
   ): Promise<PlacedOrder> {
     try {
       return await this.unitOfWork.run(async () => {
         await this.drafting.holdSupply(order, requestedDeliveryDate);
         const written = await this.orders.place(order);
+        if (intent !== null) {
+          await this.payments.attach(orderCardSubject(written.id), intent, "first");
+        }
         await this.durable.publish(new CommerceOrderPlacedFact(written.id).durableFact());
         return written;
       });
     } catch (error) {
       if (intent !== null) {
-        await this.payments.cancelIntent(intent.paymentIntentId);
+        await this.payments.release(intent);
       }
       throw error;
     }
@@ -159,7 +162,7 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
     settlement: PlaceOrderForCustomerCommand["payload"]["settlement"],
     companyId: string,
     atCounter: boolean,
-  ): Promise<CreatedLink | null> {
+  ): Promise<PreparedCardPayment | null> {
     // Le prédicat que l'estimation partage (lot P2) : ici, il refuse.
     const refusal = await staffSettlementRefusal(
       { guard: this.guard, shelf: this.shelf },
@@ -177,12 +180,12 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
       order.deferPayment();
       return null;
     }
-    const intent = await this.payments.createIntent({
-      amountCents: order.totalCents,
-      currency: CURRENCY,
-      companyId,
-    });
-    order.payByCard(intent.paymentIntentId);
-    return { paymentIntentId: intent.paymentIntentId };
+    const { prepared } = await this.payments.prepare(
+      ORDER_CARD_SUBJECT_TYPE,
+      order.totalCents,
+      orderCardTag(companyId),
+    );
+    order.payByCard(prepared.providerRef);
+    return prepared;
   }
 }

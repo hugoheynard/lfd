@@ -13,13 +13,11 @@
  * Les commandes sont passées par le vrai chemin (`placeOrder`, plan T), carte
  * en attente — l'état même que l'abandon reprend.
  */
-import { CommandBus } from "@nestjs/cqrs";
-
-import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
-import {
-  PaymentGateway,
-  type IntentCancellation,
-} from "../src/b2b/payments/domain/payment-gateway.js";
+import type {
+  IntentCancellation,
+  RetrievedIntent,
+} from "../src/card-payment/domain/ports/card-provider-types.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import {
   CustomerRole,
   OrderClientele,
@@ -28,20 +26,30 @@ import {
 } from "../src/platform/database/client/client.js";
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { cardFailed, cardPaid, E2eCardProvider, E2eCardProviders } from "./card-payments.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
-import { cardGatewayDouble, pickupSite, placeOrder } from "./order-factory.js";
+import { pickupSite, placeOrder } from "./order-factory.js";
 
-/** L'issue que Stripe rendra à la prochaine annulation — remise à « annulée » avant chaque test. */
-let cancellation: IntentCancellation = { kind: "cancelled" };
-const cancelledIntents: string[] = [];
-const fakeGateway = {
-  ...cardGatewayDouble("pi_abandon"),
-  retrieveIntent: () => Promise.reject(new Error("non utilisé")),
-  cancelIntent: (id: string) => {
-    cancelledIntents.push(id);
-    return Promise.resolve(cancellation);
-  },
-};
+/** Le prestataire des e2e, à qui l'abandon ne demande jamais de relire une intention. */
+class NoRetrievalCardProvider extends E2eCardProvider {
+  override retrieveIntent(): Promise<RetrievedIntent> {
+    return Promise.reject(new Error("non utilisé"));
+  }
+}
+
+/** Le registre doublé, servi par le prestataire qui refuse la relecture. */
+class NoRetrievalCardProviders extends E2eCardProviders {
+  override readonly provider: NoRetrievalCardProvider;
+
+  constructor(prefix: string) {
+    super(prefix);
+    this.provider = new NoRetrievalCardProvider(prefix);
+  }
+}
+
+const fakeGateway = new NoRetrievalCardProviders("pi_abandon");
+/** Les intentions dont l'annulation a été demandée — vidées avant chaque test. */
+const cancelledIntents = fakeGateway.provider.cancelled;
 
 interface SentMail {
   readonly to: string;
@@ -61,7 +69,7 @@ let ctx: E2eContext;
 beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: fakeGateway },
       { token: MAILER, value: recordingMailer },
     ],
   });
@@ -73,7 +81,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
-  cancellation = { kind: "cancelled" };
+  fakeGateway.provider.cancellation = { kind: "cancelled" };
   cancelledIntents.splice(0);
   sentMails.splice(0);
 });
@@ -153,7 +161,7 @@ describe("POST /orders/:id/abandon — ce que la base retient", () => {
   it("l'intention d'un pro reste vivante : Stripe n'est pas appelé (Q8)", async () => {
     const { orderId } = await seedOrder(OrderClientele.pro);
     // Même une panne Stripe ne refuse pas son abandon : on ne l'appelle pas.
-    cancellation = { kind: "unavailable", reason: "ECONNRESET" };
+    fakeGateway.provider.cancellation = { kind: "unavailable", reason: "ECONNRESET" };
 
     await abandon(orderId).then((response) => expect(response.status).toBe(204));
 
@@ -163,7 +171,7 @@ describe("POST /orders/:id/abandon — ce que la base retient", () => {
   it("le second clic rend 204, sans rien réécrire ni resonner", async () => {
     const { orderId } = await seedOrder(OrderClientele.pro);
     await abandon(orderId);
-    cancellation = { kind: "already_cancelled" };
+    fakeGateway.provider.cancellation = { kind: "already_cancelled" };
 
     await abandon(orderId).then((response) => expect(response.status).toBe(204));
 
@@ -211,7 +219,7 @@ describe("POST /orders/:id/abandon — Stripe n'a pas confirmé la mort de l'int
     [{ kind: "unavailable", reason: "ECONNRESET" }, "orders.abandon.provider_unavailable"],
   ])("%o → 409 nommé, rien n'est écrit", async (outcome, code) => {
     const { orderId } = await seedOrder(OrderClientele.public);
-    cancellation = outcome;
+    fakeGateway.provider.cancellation = outcome;
 
     const response = await abandon(orderId);
 
@@ -235,8 +243,7 @@ describe("un encaissement tardif sur une commande abandonnée (6 bis minimal)", 
     const { orderId, intent } = await seedOrder(OrderClientele.public);
     await abandon(orderId);
 
-    await ctx.app.get(CommandBus).execute(new ConfirmOrderPaymentCommand(intent, "succeeded"));
-    await ctx.drain();
+    await cardPaid(ctx, intent);
 
     expect(await stateOf(orderId)).toEqual({
       status: OrderStatus.cancelled,
@@ -281,8 +288,7 @@ describe("ce que l'abandon fait dire (lot 5)", () => {
   it("une carte pro refusée par la banque sonne aussi, et le client reçoit le refus", async () => {
     const { intent } = await seedOrder(OrderClientele.pro);
 
-    await ctx.app.get(CommandBus).execute(new ConfirmOrderPaymentCommand(intent, "failed"));
-    await ctx.drain();
+    await cardFailed(ctx, intent);
 
     expect(sentMails.map((mail) => mail.template)).toEqual(["customer.payment-failed"]);
     expect(await bells()).toBe(1);

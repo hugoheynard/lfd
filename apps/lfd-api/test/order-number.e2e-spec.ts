@@ -9,7 +9,6 @@ import { randomUUID } from "node:crypto";
  */
 import type { AdminOrdersPage } from "@lfd/contracts";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import {
   bootstrapE2e,
@@ -19,6 +18,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { cardProvidersOverride } from "./card-payments.js";
 
 const SERVICE_DAY = serviceDay();
 const SOLO = "auth0|solo";
@@ -26,27 +26,12 @@ const SOLO = "auth0|solo";
 const LEGACY_NUMBER = "ORD-MV84O2XA-Y9W3";
 const CONCURRENT_PLACEMENTS = 6;
 
-/** Un identifiant d'intention par appel : la colonne est `@unique`. */
-let intentCounter = 0;
-const fakeGateway = {
-  createIntent: () => {
-    intentCounter += 1;
-    return Promise.resolve({
-      paymentIntentId: `pi_number_${intentCounter}`,
-      clientSecret: `pi_number_${intentCounter}_secret`,
-    });
-  },
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
-
 let ctx: E2eContext;
 let pickupId = "pickup_absent";
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [ADMIN_VERIFIER_OVERRIDE, { token: PaymentGateway, value: fakeGateway }],
+    overrides: [ADMIN_VERIFIER_OVERRIDE, cardProvidersOverride("pi_number")],
   });
 });
 

@@ -19,12 +19,12 @@ import { addDays, localToInstant, type ProductionForecastView } from "@lfd/contr
 
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { grantAccount, placeByStaff } from "./staff-late-order.js";
-import { settleCardPayments } from "./card-payments.js";
+import { cardProvidersDouble, settleCardPayments } from "./card-payments.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
 const MEMBER = "auth0|member";
@@ -49,26 +49,8 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: "staff-e2e", scopes: [] }),
 };
 
-/**
- * La passerelle de paiement, doublée. Un identifiant NEUF à chaque appel :
- * `orders.stripe_payment_intent_id` est `@unique`, et cette suite place
- * plusieurs commandes — un doublé à valeur constante ferait échouer la seconde
- * sur une contrainte qui n'a rien à voir avec ce qu'on éprouve ici.
- */
-let intentCount = 0;
-/** Les intentions émises et pas encore réglées — vidées par `settleCardPayments`. */
-const issuedIntents: string[] = [];
-const fakeGateway = {
-  createIntent: () => {
-    intentCount += 1;
-    const id = `pi_e2e_forecast_${String(intentCount)}`;
-    issuedIntents.push(id);
-    return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret` });
-  },
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+/** Le prestataire de carte doublé ; `settleCardPayments` vide ses intentions émises. */
+const cards = cardProvidersDouble("pi_e2e_forecast");
 
 let ctx: E2eContext;
 
@@ -79,7 +61,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: cards },
       { token: Clock, value: clock },
     ],
   });
@@ -160,7 +142,7 @@ async function placeOrder(
     .expect(201);
   // Un règlement en vol ne produit plus, pro compris (D2, 2026-09-22) : la
   // commande qu'on veut voir au prévisionnel est payée, comme par un vrai client.
-  await settleCardPayments(ctx, issuedIntents);
+  await settleCardPayments(ctx, cards.provider.issued);
 }
 
 /** La même commande, saisie par l'équipe pour le membre de la société. */

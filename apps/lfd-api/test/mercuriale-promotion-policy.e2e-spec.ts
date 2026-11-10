@@ -18,23 +18,17 @@ import type {
 } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { onlyVariant, posePromotion, promotionTerms } from "./promotion-fixtures.js";
+import { cardGatewayDouble } from "./order-factory.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
     Promise.resolve({ subject: "staff-e2e", scopes: [] }),
 };
-let intentCounter = 0;
-const fakeGateway = {
-  createIntent: () => {
-    intentCounter += 1;
-    return Promise.resolve({ id: `pi_mp_${String(intentCounter)}`, clientSecret: "secret" });
-  },
-  publishableKey: () => "pk_test",
-};
+const fakeGateway = cardGatewayDouble("pi_mp");
 
 let ctx: E2eContext;
 
@@ -42,7 +36,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: fakeGateway },
     ],
   });
 });

@@ -21,7 +21,7 @@ import type {
 } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import {
   CompanyStatus,
   CustomerRole,
@@ -30,6 +30,7 @@ import {
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { E2E_FAMILIES } from "./catalog-fixture.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { cardGatewayDouble } from "./order-factory.js";
 
 /** L'id que le PIM a donné à la famille de la panne — un UUIDv7, inconnu du code. */
 const UNKNOWN_FAMILY = "01a031ff-146f-756f-a21b-4a2759a35e85";
@@ -44,25 +45,7 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: "staff-e2e", scopes: [] }),
 };
 
-let intentCounter = 0;
-const fakeGateway = {
-  createIntent: () => {
-    intentCounter += 1;
-    return Promise.resolve({
-      paymentIntentId: `pi_orphan_${intentCounter}`,
-      clientSecret: `pi_orphan_${intentCounter}_secret`,
-    });
-  },
-  retrieveIntent: (id: string) =>
-    Promise.resolve({
-      paymentIntentId: id,
-      clientSecret: `${id}_secret`,
-      state: "awaiting_payment" as const,
-    }),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+const fakeGateway = cardGatewayDouble("pi_orphan");
 
 let ctx: E2eContext;
 
@@ -70,7 +53,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: fakeGateway },
     ],
   });
 });

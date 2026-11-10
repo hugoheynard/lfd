@@ -4,13 +4,13 @@ import { CommerceOrderCancelledFact } from "../../../../delivery/channels/commer
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { PaymentGateway } from "../../../payments/domain/payment-gateway.js";
 import { OrderPaymentFailedEvent } from "../../domain/events/order-payment-failed.event.js";
 import { LoyaltyVoucherRedemption } from "../../domain/ports/loyalty-voucher-redemption.js";
 import { UnsettledShopOrderCanceller } from "../../domain/ports/unsettled-shop-order.canceller.js";
 import { UnsettledShopOrderReader } from "../../domain/ports/unsettled-shop-order.reader.js";
 import type { UnsettledSettlement } from "../../domain/ports/unsettled-settlement.reader.js";
 import { SameDayOrderReader } from "../../domain/ports/same-day-order.reader.js";
+import { OrderCardCancellation } from "../../domain/ports/order-card-payments.js";
 import {
   shelfOrderHoldCutoff,
   unsettledShopOrderCutoff,
@@ -85,7 +85,7 @@ export class UnsettledShopOrderExpiry {
   constructor(
     private readonly unsettled: UnsettledShopOrderReader,
     private readonly canceller: UnsettledShopOrderCanceller,
-    private readonly payments: PaymentGateway,
+    private readonly cards: OrderCardCancellation,
     private readonly durable: DurablePublisher,
     private readonly unitOfWork: UnitOfWork,
     private readonly vouchers: LoyaltyVoucherRedemption,
@@ -129,7 +129,7 @@ export class UnsettledShopOrderExpiry {
 
   private async cut(settlement: UnsettledSettlement, cause: ExpiryCause): Promise<boolean> {
     if (settlement.paymentIntentId !== null) {
-      const dead = await this.intentIsDead(settlement.orderId, settlement.paymentIntentId, cause);
+      const dead = await this.intentIsDead(settlement.orderId, cause);
       if (!dead) {
         return false;
       }
@@ -152,13 +152,9 @@ export class UnsettledShopOrderExpiry {
     return crossed;
   }
 
-  /** Annule l'intention, et dit si elle est morte. `cancelIntent` ne lève jamais. */
-  private async intentIsDead(
-    orderId: string,
-    paymentIntentId: string,
-    cause: ExpiryCause,
-  ): Promise<boolean> {
-    const outcome = await this.payments.cancelIntent(paymentIntentId);
+  /** Annule l'intention, et dit si elle est morte. `cancelFirst` ne lève jamais. */
+  private async intentIsDead(orderId: string, cause: ExpiryCause): Promise<boolean> {
+    const outcome = await this.cards.cancelFirst(orderId);
     if (outcome.kind === "cancelled" || outcome.kind === "already_cancelled") {
       return true;
     }

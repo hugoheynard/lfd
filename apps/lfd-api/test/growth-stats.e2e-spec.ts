@@ -5,13 +5,11 @@
  */
 import type { GrowthStatsView } from "@lfd/contracts";
 
-import { CommandBus } from "@nestjs/cqrs";
-
-import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createUser } from "./factories.js";
+import { cardFailed } from "./card-payments.js";
 import { cardGatewayDouble, payByCard, pickupSite, placeOrder } from "./order-factory.js";
 import type { InputJsonObject } from "../src/platform/database/client/internal/prismaNamespace.js";
 
@@ -27,7 +25,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: cardGatewayDouble("pi_croissance") },
+      { token: CardProviders, value: cardGatewayDouble("pi_croissance") },
     ],
   });
 });
@@ -144,10 +142,7 @@ describe("l'état du portefeuille", () => {
       lines: [{ sku: "VIE-001-1", quantity: input.units }],
     });
     if (input.paymentStatus === "failed") {
-      await ctx.app
-        .get(CommandBus)
-        .execute(new ConfirmOrderPaymentCommand(placed.paymentIntentId ?? "", "failed"));
-      await ctx.drain();
+      await cardFailed(ctx, placed.paymentIntentId ?? "");
       return;
     }
     await payByCard(ctx, placed);

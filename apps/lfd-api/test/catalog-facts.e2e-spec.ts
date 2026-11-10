@@ -12,7 +12,7 @@ import { randomUUID } from "node:crypto";
 
 import type { CatalogReemissionView } from "@lfd/pim-contracts";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import {
   CatalogReemissionJob,
   INTERRUPTED_BY_RESTART,
@@ -42,19 +42,15 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { cardGatewayDouble } from "./order-factory.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
     Promise.resolve({ subject: token, scopes: [] }),
 };
 
-/** Passerelle de paiement doublée : intention fixe, aucun appel réseau. */
-const fakeGateway = {
-  createIntent: () => Promise.resolve({ paymentIntentId: "pi_e2e", clientSecret: "pi_e2e_secret" }),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+/** Prestataire de carte doublé : une intention par passation, aucun appel réseau. */
+const fakeGateway = cardGatewayDouble("pi_e2e");
 
 const PRODUCTS = "/pim/catalogue/products";
 /** Une décision de prix pro posée sur la plateforme, en millicentimes HT. */
@@ -68,7 +64,7 @@ beforeAll(async () => {
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
       { token: OutboxRelayTrigger, value: SILENT_TRIGGER },
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: fakeGateway },
     ],
   });
 });

@@ -12,7 +12,7 @@
 import type { AdminPlacedOrderResponse } from "@lfd/contracts";
 
 import { PrismaOrderDiscountBackfill } from "../src/b2b/orders/infrastructure/prisma-order-discount-backfill.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   CompanyStatus,
@@ -31,16 +31,12 @@ import {
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { asPlacedBeforeM3 } from "./order-discount-fixtures.js";
 import { poseSiteDiscount } from "./promotion-fixtures.js";
+import { cardGatewayDouble } from "./order-factory.js";
 
 const DAY = serviceDay(7);
 const BUYER = "auth0|acheteur-reprise-bons";
 
-const fakeGateway = {
-  createIntent: () => Promise.resolve({ paymentIntentId: "pi_rb", clientSecret: "pi_rb_s" }),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+const fakeGateway = cardGatewayDouble("pi_rb");
 
 let ctx: E2eContext;
 
@@ -54,7 +50,7 @@ beforeAll(async () => {
             Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
         },
       },
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: fakeGateway },
     ],
   });
 });

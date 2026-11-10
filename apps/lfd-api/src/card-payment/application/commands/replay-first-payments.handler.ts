@@ -198,14 +198,16 @@ export class ReplayFirstPaymentsHandler implements ICommandHandler<
 
   /**
    * Encaissée après l'annulation (§4.3) : la ligne dit `paid`, le sujet
-   * annulé dit `failed` — il ne peut pas le savoir. C'est juste, pas un écart.
+   * annulé dit `closed` (une annulée se dit `closed` avant tout, comme dans la
+   * reprise SQL — `orderCardSettled`, relu le 2026-11-09) — il ne peut pas
+   * savoir que l'argent est arrivé. C'est juste, pas un écart.
    */
   private async paidAfterCancellation(
     settlement: SubjectSettlement,
     payment: CardPayment,
     reference: SubjectReference,
   ): Promise<boolean> {
-    if (payment.state !== "paid" || reference.settled !== "failed") {
+    if (payment.state !== "paid" || reference.settled !== "closed") {
       return false;
     }
     return settlement.isCancelled(reference.subject);

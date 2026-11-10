@@ -1,7 +1,6 @@
 import type { OrderPaymentIntent } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
-import { PaymentGateway } from "../../../payments/domain/payment-gateway.js";
 import { OrderNotFoundError, OrderNotPayableError } from "../../domain/errors/order-errors.js";
 import {
   CancelledOrderNotPayableError,
@@ -11,6 +10,7 @@ import { OrderAccessReader } from "../../domain/ports/order-access.reader.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
 import { ensureOrderVisible } from "../../domain/services/order-access.js";
 import { awaitsCardPayment } from "../../domain/services/payment-link.js";
+import { OrderCardRetrieval } from "../../domain/ports/order-card-payments.js";
 import { GetOrderPaymentQuery } from "./get-order-payment.query.js";
 
 /**
@@ -41,6 +41,13 @@ import { GetOrderPaymentQuery } from "./get-order-payment.query.js";
  * déjà encaissé (le webhook n'est pas encore arrivé). Dans les deux cas le
  * secret ne se sert pas (plan `documentation/commandes/reglement/architecture-abandon-du-reglement.md`,
  * §5 « Le trou que l'ordre ne ferme pas » et §9 bis, B3).
+ *
+ * Depuis le lot P0.c2 du plan M2 (2026-11-09), l'intention se relit par le
+ * bloc `card-payment`, sur le compte de SA ligne. Une intention d'avant le
+ * bloc n'a pas de ligne : la page la dit « à adopter » (409) et n'écrit rien
+ * — une lecture n'adopte pas (§4.6) ; l'écran envoie l'adoption, puis relit.
+ *
+ * @throws {OrderPaymentAwaitsAdoptionError} intention sans ligne de paiement.
  */
 @QueryHandler(GetOrderPaymentQuery)
 export class GetOrderPaymentHandler implements IQueryHandler<
@@ -50,7 +57,7 @@ export class GetOrderPaymentHandler implements IQueryHandler<
   constructor(
     private readonly access: OrderAccessReader,
     private readonly orders: OrderReader,
-    private readonly payments: PaymentGateway,
+    private readonly cards: OrderCardRetrieval,
   ) {}
 
   async execute(query: GetOrderPaymentQuery): Promise<OrderPaymentIntent> {
@@ -79,13 +86,13 @@ export class GetOrderPaymentHandler implements IQueryHandler<
       throw new OrderNotPayableError(owned.view.paymentStatus);
     }
 
-    const intent = await this.payments.retrieveIntent(owned.stripePaymentIntentId);
+    const intent = await this.cards.retrieveFirst(owned.view.id);
     if (intent.state === "canceled" || intent.state === "succeeded") {
       throw new PaymentIntentClosedError(intent.state);
     }
     return {
       clientSecret: intent.clientSecret,
-      publishableKey: this.payments.publishableKey(),
+      publishableKey: intent.publishableKey,
       amountCents: owned.view.totalCents,
     };
   }

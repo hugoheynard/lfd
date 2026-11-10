@@ -7,10 +7,10 @@ import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { WallClock } from "../../../../platform/time/wall-clock.js";
 import {
-  PaymentRefunder,
+  CardProviderRefunds,
   type RefundIssuance,
-  type RefundRequestParams,
-} from "../../../payments/domain/payment-refunder.js";
+  type RefundRemainderParams,
+} from "../../../../card-payment/channels/requests/index.js";
 import {
   refundRequestStateOf,
   type OrderRefundRequest,
@@ -19,6 +19,7 @@ import { OrderRefundRequestLease } from "../../domain/ports/order-refund-request
 import { OrderRefundRequestReader } from "../../domain/ports/order-refund-request.reader.js";
 import { OrderRefundRequestRepository } from "../../domain/ports/order-refund-request.repository.js";
 import { OrderRefundRepository } from "../../domain/ports/order-refund.repository.js";
+import { OrderCardAdoption } from "../../domain/ports/order-card-payments.js";
 import { RefundAttentionBell } from "../services/refund-attention-bell.js";
 import { RefundIssuanceRecorder } from "../services/refund-issuance-recorder.js";
 import { IssueOrderRefundCommand } from "./issue-order-refund.command.js";
@@ -33,6 +34,16 @@ export const REFUND_LEASE_MS = 5 * 60 * 1000;
 const NO_INTENT = "no_payment_intent";
 
 /**
+ * Un appel au prestataire : le compte et la référence lus sur la ligne du
+ * premier paiement (plan M2, §4.2 — jamais un compte choisi ici), et la clé.
+ */
+interface RefundCall {
+  readonly account: string;
+  readonly providerRef: string;
+  readonly params: RefundRemainderParams;
+}
+
+/**
  * **L'exécuteur des remboursements** (doc
  * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.7).
  *
@@ -43,7 +54,9 @@ const NO_INTENT = "no_payment_intent";
  * 1. prendre le bail (écriture validée seule, à l'horloge MURALE), puis lire
  *    l'état sous le verrou `orders` : rien à faire si remboursé ou émis ;
  *    génération suivante si le `re_…` courant a échoué ;
- * 2. hors de toute transaction : chercher, puis créer, chez Stripe ;
+ * 2. hors de toute transaction : chercher, puis créer, chez le prestataire —
+ *    par `CardProviderRefunds` (plan M2, §4.2, transitoire jusqu'à P1), sur
+ *    le compte de la ligne du premier paiement ;
  * 3. une transaction courte écrit l'issue (`RefundIssuanceRecorder`).
  *
  * Un `COMMIT` du 3. qui échoue après un `re_…` créé : le bail expire,
@@ -58,7 +71,8 @@ export class IssueOrderRefundHandler implements ICommandHandler<IssueOrderRefund
     private readonly requests: OrderRefundRequestRepository,
     private readonly reader: OrderRefundRequestReader,
     private readonly ledgers: OrderRefundRepository,
-    private readonly refunder: PaymentRefunder,
+    private readonly refunder: CardProviderRefunds,
+    private readonly cards: OrderCardAdoption,
     private readonly recorder: RefundIssuanceRecorder,
     private readonly bell: RefundAttentionBell,
     private readonly events: DomainEventPublisher,
@@ -75,15 +89,15 @@ export class IssueOrderRefundHandler implements ICommandHandler<IssueOrderRefund
     if (!(await this.lease.claim(command.orderId, token, until, wallNow))) {
       return;
     }
-    const params = await this.prepare(command.orderId, token);
-    if (params === null) {
+    const call = await this.prepare(command.orderId, token);
+    if (call === null) {
       return;
     }
-    const issuance = await this.callStripe(params);
+    const issuance = await this.callStripe(call);
     const rejected = await this.recorder.record({
       orderId: command.orderId,
       token,
-      generation: params.generation,
+      generation: call.params.generation,
       issuance,
     });
     if (rejected !== null) {
@@ -94,8 +108,10 @@ export class IssueOrderRefundHandler implements ICommandHandler<IssueOrderRefund
   /**
    * Sous le verrou `orders` : l'état de la demande, lu au carnet. Rend les
    * paramètres de l'appel, ou `null` quand il n'y a rien à faire (bail relâché).
+   * Le premier paiement d'une commande d'avant le bloc `card-payment` est
+   * adopté ici, dans la même transaction (§4.6) : c'est une commande.
    */
-  private prepare(orderId: string, token: string): Promise<RefundRequestParams | null> {
+  private prepare(orderId: string, token: string): Promise<RefundCall | null> {
     return this.unitOfWork.run(async () => {
       const ledger = await this.ledgers.loadByOrder(orderId);
       const request = await this.requests.load(orderId);
@@ -104,7 +120,13 @@ export class IssueOrderRefundHandler implements ICommandHandler<IssueOrderRefund
       }
       const state = refundRequestStateOf(request, ledger.view());
       const intent = await this.reader.paymentIntentOf(orderId);
-      if (state === "refunded" || state === "issued" || intent === null) {
+      const first = intent === null ? null : await this.cards.ensureFirst(orderId);
+      if (
+        state === "refunded" ||
+        state === "issued" ||
+        first === null ||
+        first.providerRef === null
+      ) {
         await this.standDown(request, ledger.orderNumber, state === "to_issue");
         return null;
       }
@@ -114,10 +136,9 @@ export class IssueOrderRefundHandler implements ICommandHandler<IssueOrderRefund
         await this.requests.save(request);
       }
       return {
-        paymentIntentId: intent,
-        key: request.key(),
-        requestId: orderId,
-        generation: request.generation,
+        account: first.account,
+        providerRef: first.providerRef,
+        params: { key: request.key(), requestId: orderId, generation: request.generation },
       };
     });
   }
@@ -150,8 +171,8 @@ export class IssueOrderRefundHandler implements ICommandHandler<IssueOrderRefund
    * Stripe, hors transaction. `nothing_left` relance la RECHERCHE (C4.7) :
    * un `re_…` de la génération trouvé vaut émission.
    */
-  private async callStripe(params: RefundRequestParams): Promise<RefundIssuance> {
-    const issuance = await this.refunder.refundRemainder(params);
+  private async callStripe({ account, providerRef, params }: RefundCall): Promise<RefundIssuance> {
+    const issuance = await this.refunder.refundRemainder(account, providerRef, params);
     if (issuance.kind === "unavailable") {
       this.logger.warn(
         `Remboursement non émis (commande ${params.requestId}) : ${issuance.reason}`,
@@ -160,7 +181,7 @@ export class IssueOrderRefundHandler implements ICommandHandler<IssueOrderRefund
     if (issuance.kind !== "nothing_left") {
       return issuance;
     }
-    const lookup = await this.refunder.findRefund(params);
+    const lookup = await this.refunder.findRefund(account, providerRef, params);
     return lookup.kind === "found" ? { kind: "issued", refund: lookup.refund } : issuance;
   }
 }

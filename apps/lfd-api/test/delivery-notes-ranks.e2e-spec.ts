@@ -18,7 +18,7 @@ import { DeliveryNoteRepository } from "../src/b2b/delivery-notes/domain/ports/d
 import { ORDER_TERMS } from "../src/b2b/delivery-notes/domain/value-objects/__tests__/delivery-note-terms.fixture.js";
 import { MarkOrderFulfilledCommand } from "../src/b2b/orders/application/commands/mark-order-fulfilled.command.js";
 import { MarkOrderReadyCommand } from "../src/b2b/orders/application/commands/mark-order-ready.command.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { DurablePublisher } from "../src/platform/outbox/durable-publisher.js";
 import { PackingOrderPackedEvent } from "../src/production/channels/commerce/index.js";
@@ -37,28 +37,13 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { cardGatewayDouble } from "./order-factory.js";
 
 const DAY = serviceDay(7);
 const NEXT_DAY = serviceDay(8);
 const BUYER = "auth0|acheteur-bl-rangs";
 
-let intentCounter = 0;
-const fakeGateway = {
-  createIntent: () => {
-    intentCounter += 1;
-    const id = `pi_blr_${String(intentCounter)}`;
-    return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret` });
-  },
-  retrieveIntent: (id: string) =>
-    Promise.resolve({
-      paymentIntentId: id,
-      clientSecret: `${id}_secret`,
-      state: "awaiting_payment",
-    }),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+const fakeGateway = cardGatewayDouble("pi_blr");
 
 let ctx: E2eContext;
 
@@ -72,7 +57,7 @@ beforeAll(async () => {
             Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
         },
       },
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: fakeGateway },
     ],
   });
 });

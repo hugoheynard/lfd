@@ -17,7 +17,7 @@ import { WORKSPACE_HEADER, type CreatedIdResponse } from "@lfd/contracts";
 
 import { NotifyPrincipalOnOrderProblemReported } from "../src/b2b/sub-account-notices/application/handlers/notify-principal-on-order-problem-reported.handler.js";
 import { ORDER_PROBLEM_REPORTED } from "../src/b2b/contact/domain/order-problem-reported.fact.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
@@ -54,7 +54,7 @@ beforeAll(async () => {
     overrides: [
       ADMIN_VERIFIER_OVERRIDE,
       { token: MAILER, value: recordingMailer },
-      { token: PaymentGateway, value: cardGatewayDouble("pi_n4a") },
+      { token: CardProviders, value: cardGatewayDouble("pi_n4a") },
     ],
   });
 });

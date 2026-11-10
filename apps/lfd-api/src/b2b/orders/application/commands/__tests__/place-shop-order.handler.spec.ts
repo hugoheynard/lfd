@@ -28,9 +28,13 @@ import { DeliveryAvailabilityReader } from "../../../../delivery-availability/do
 import { zoneFees } from "../../../../delivery-zones/application/__tests__/delivery-zone-fee.doubles.js";
 import type { DeliveryZoneFeeReader } from "../../../domain/ports/delivery-zone-fee.reader.js";
 import {
-  PaymentGateway,
-  type CreateIntentParams,
-} from "../../../../payments/domain/payment-gateway.js";
+  type AttachedCardPayment,
+  type CardPaymentCancellation,
+  type CardPaymentPreparation,
+  CardPayments,
+  type PreparedCardPayment,
+  type RetrievedCardPayment,
+} from "../../../../../card-payment/channels/requests/index.js";
 import { PickupAddressRepository } from "../../../../pickup-addresses/domain/pickup-address.repository.js";
 import { PreferredPickupReader } from "../../../domain/ports/preferred-pickup.reader.js";
 import { Pricer } from "../../../../pricing/application/pricer.js";
@@ -346,35 +350,67 @@ class FakeRegistrar extends GuestBuyerRegistrar {
   }
 }
 
+/** Ce que la passation demande au bloc `card-payment` en préparant une carte. */
+interface CardPreparationRequest {
+  readonly subjectType: string;
+  readonly amountCents: number;
+  readonly tag: string;
+}
+
 /** Ce que les doubles de paiement ont vu passer. */
 interface PaymentCalls {
-  intent: CreateIntentParams | null;
+  intent: CardPreparationRequest | null;
   retrieved: number;
+  /** Les intentions rendues après coup (lot L4 : refus sous le verrou du stock). */
   cancelled?: string[];
 }
 
-function payments(sink: PaymentCalls): PaymentGateway {
-  return {
-    // Les intentions annulées après coup (lot L4 : refus sous le verrou du stock).
-    createIntent: (params) => {
-      sink.intent = params;
-      return Promise.resolve({ paymentIntentId: "pi_public", clientSecret: "pi_public_secret" });
-    },
-    retrieveIntent: () => {
-      sink.retrieved += 1;
-      return Promise.resolve({
-        paymentIntentId: "pi_public",
-        clientSecret: "pi_public_secret",
-        state: "awaiting_payment",
-      });
-    },
-    cancelIntent: (paymentIntentId) => {
-      sink.cancelled?.push(paymentIntentId);
-      return Promise.resolve({ kind: "cancelled" });
-    },
-    publishableKey: () => "pk_test_123",
-    parseWebhook: () => ({ kind: "ignored" }),
-  };
+/** Le bloc `card-payment` doublé, côté passation (lot P0.c2) : sans réseau. */
+class PreparingCardPayments extends CardPayments {
+  constructor(private readonly sink: PaymentCalls) {
+    super();
+  }
+
+  prepare(subjectType: string, amountCents: number, tag: string): Promise<CardPaymentPreparation> {
+    this.sink.intent = { subjectType, amountCents, tag };
+    return Promise.resolve({
+      prepared: { account: "lfc-stripe", providerRef: "pi_public", amountCents },
+      clientSecret: "pi_public_secret",
+      publishableKey: "pk_test_123",
+    });
+  }
+
+  attach(_subject: unknown, prepared: PreparedCardPayment): Promise<AttachedCardPayment> {
+    return Promise.resolve({ paymentId: "pay_public", providerRef: prepared.providerRef });
+  }
+
+  release(prepared: PreparedCardPayment): Promise<void> {
+    this.sink.cancelled?.push(prepared.providerRef);
+    return Promise.resolve();
+  }
+
+  retrieve(paymentId: string): Promise<RetrievedCardPayment> {
+    this.sink.retrieved += 1;
+    return Promise.resolve({
+      paymentId,
+      providerRef: "pi_public",
+      clientSecret: "pi_public_secret",
+      publishableKey: "pk_test_123",
+      state: "awaiting_payment",
+    });
+  }
+
+  cancel(): Promise<CardPaymentCancellation> {
+    return Promise.reject(new Error("non utilisé"));
+  }
+
+  adopt(): Promise<string> {
+    return Promise.reject(new Error("non utilisé"));
+  }
+}
+
+function payments(sink: PaymentCalls): CardPayments {
+  return new PreparingCardPayments(sink);
 }
 
 function capturingRepo(sink: { placed: OrderToPlace | null }): OrderRepository {
@@ -659,9 +695,9 @@ describe("PlaceShopOrderHandler — le règlement", () => {
     const placed = await handler.execute(new PlaceShopOrderCommand(payload()));
 
     expect(paid.intent).toEqual({
+      subjectType: "order",
       amountCents: sink.placed?.totalCents,
-      currency: "eur",
-      companyId: null,
+      tag: "personal",
     });
     expect(placed.payment).toEqual({
       clientSecret: "pi_public_secret",

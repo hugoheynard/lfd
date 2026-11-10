@@ -11,14 +11,12 @@
  * Les commandes sont passées par le vrai chemin (plan T) — saisies par
  * l'équipe (`placeOrderForCustomer`) ou par le client (`placeOrder`), cinq jours
  * avant leur journée pour passer sous l'heure limite ; le règlement, le refus et
- * l'annulation passent par les vraies commandes. Seule la passerelle de carte
- * est doublée.
+ * l'annulation passent par les vraies commandes. Seul le prestataire de carte
+ * est doublé.
  */
 import { CommandBus } from "@nestjs/cqrs";
 
 import { CancelOrderCommand } from "../src/b2b/orders/application/commands/cancel-order.command.js";
-import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { CustomerRole, DeferredTerm } from "../src/platform/database/client/client.js";
 import {
   bootstrapE2e,
@@ -28,6 +26,7 @@ import {
   serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
+import { cardFailed, cardPaid, cardProvidersOverride } from "./card-payments.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { pickupSite, placeOrder, placeOrderForCustomer } from "./order-factory.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
@@ -45,19 +44,8 @@ const PLACED_DAYS_AGO = 5;
 let ctx: E2eContext;
 let seq = 0;
 
-/** Passerelle de carte doublée : une intention par passation, rien d'autre. */
-const fakeGateway = {
-  createIntent: () => {
-    const paymentIntentId = `pi_rappel_${String(seq)}`;
-    return Promise.resolve({ paymentIntentId, clientSecret: `${paymentIntentId}_secret` });
-  },
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
-
 beforeAll(async () => {
-  ctx = await bootstrapE2e({ overrides: [{ token: PaymentGateway, value: fakeGateway }] });
+  ctx = await bootstrapE2e({ overrides: [cardProvidersOverride("pi_rappel")] });
 });
 
 afterAll(async () => {
@@ -127,8 +115,7 @@ async function settle(
 ): Promise<void> {
   const bus = ctx.app.get(CommandBus);
   if (outcome !== "pending" && order.paymentIntentId !== null) {
-    const card = outcome === "paid" ? "succeeded" : "failed";
-    await bus.execute(new ConfirmOrderPaymentCommand(order.paymentIntentId, card));
+    await (outcome === "paid" ? cardPaid : cardFailed)(ctx, order.paymentIntentId);
   }
   if (outcome === "cancelled") {
     await bus.execute(new CancelOrderCommand(order.id, E2E_STAFF_ID, "Le client renonce."));

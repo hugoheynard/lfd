@@ -13,7 +13,7 @@ import { randomUUID } from "node:crypto";
  */
 import type request from "supertest";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { DeliveryOrdersBroughtBackFact } from "../src/delivery/channels/handover/index.js";
 import { ShipmentRef } from "../src/production/channels/delivery/index.js";
 import { DurablePublisher } from "../src/platform/outbox/durable-publisher.js";
@@ -21,6 +21,7 @@ import { PrismaService } from "../src/platform/database/prisma.service.js";
 import { currentTransaction } from "../src/platform/database/transaction.store.js";
 import { PrismaUnitOfWork, UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { settleCardPayments } from "./card-payments.js";
+import { cardGatewayDouble } from "./order-factory.js";
 import { ADMIN_VERIFIER_OVERRIDE, addVehicle, assign, openRound } from "./delivery-rounds-scene.js";
 import { binTypeId, depart, loadBin } from "./delivery-loading-scene.js";
 import {
@@ -48,17 +49,9 @@ const SITE = {
   pays: "France",
 };
 
-const issuedIntents: string[] = [];
-const fakeGateway = {
-  createIntent: () => {
-    const id = `pi_e2e_custody_${String(issuedIntents.length + 1)}`;
-    issuedIntents.push(id);
-    return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret` });
-  },
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+const fakeGateway = cardGatewayDouble("pi_e2e_custody");
+/** Les intentions émises par le prestataire doublé — `settleCardPayments` les règle et vide la file. */
+const issuedIntents = fakeGateway.provider.issued;
 
 /**
  * La vraie unité de travail, que le test fait échouer APRÈS le travail de
@@ -93,7 +86,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       ADMIN_VERIFIER_OVERRIDE,
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: fakeGateway },
       { token: UnitOfWork, value: unitOfWork },
     ],
   });

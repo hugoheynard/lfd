@@ -5,51 +5,52 @@
  * qu'elle est vivante chez Stripe, et un encaissement qui suit solde la
  * commande (`settle` accepte `failed → paid` depuis 3b8598fdf).
  *
- * Seule frontière doublée : la passerelle de paiement. Son `retrieveIntent`
+ * Seule frontière doublée : le prestataire de carte. Son `retrieveIntent`
  * rend l'état que la suite lui fixe, comme Stripe après un refus
  * (`requires_payment_method`, donc `awaiting_payment`).
  *
  * Les commandes sont passées par le vrai chemin (`placeOrder`, plan T).
  */
 import type { OrderPaymentIntent } from "@lfd/contracts";
-import { CommandBus } from "@nestjs/cqrs";
 
-import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
-import {
-  PaymentGateway,
-  type PaymentIntentState,
-} from "../src/b2b/payments/domain/payment-gateway.js";
+import type { CreatedIntent } from "../src/card-payment/domain/ports/card-provider-types.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { assertOutsideTransaction } from "../src/platform/database/outside-transaction.js";
 import { PaymentStatus } from "../src/platform/database/client/client.js";
+import { cardFailed, cardPaid, E2eCardProvider, E2eCardProviders } from "./card-payments.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 import { pickupSite, placeOrder } from "./order-factory.js";
 
 const BUYER = "auth0|reprise";
 
-/** L'état que Stripe rendrait pour l'intention, fixé par chaque test. */
-let intentState: PaymentIntentState = "awaiting_payment";
-
 /** L'intention que la prochaine passation recevra, fixée par chaque test. */
 let nextIntent = "pi_e2e";
 
-const fakeGateway = {
-  createIntent: () =>
-    Promise.resolve({ paymentIntentId: nextIntent, clientSecret: `${nextIntent}_secret` }),
-  retrieveIntent: (paymentIntentId: string) =>
-    Promise.resolve({
-      paymentIntentId,
-      clientSecret: `${paymentIntentId}_secret`,
-      state: intentState,
-    }),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+/**
+ * Le prestataire de carte doublé, qui rend l'intention nommée. L'état qu'il
+ * rend à la relecture est celui que chaque test fixe dans `states` (absent :
+ * `awaiting_payment`, comme Stripe après un refus).
+ */
+class NamedIntentCardProvider extends E2eCardProvider {
+  override createIntent(): Promise<CreatedIntent> {
+    assertOutsideTransaction("e2e.CardProvider.createIntent");
+    this.issued.push(nextIntent);
+    return Promise.resolve({ providerRef: nextIntent, clientSecret: `${nextIntent}_secret` });
+  }
+}
+
+/** Le registre doublé, servi par le prestataire aux intentions nommées. */
+class NamedIntentCardProviders extends E2eCardProviders {
+  override readonly provider = new NamedIntentCardProvider("pi_e2e");
+}
+
+const cards = new NamedIntentCardProviders("pi_e2e");
 
 let ctx: E2eContext;
 
 beforeAll(async () => {
-  ctx = await bootstrapE2e({ overrides: [{ token: PaymentGateway, value: fakeGateway }] });
+  ctx = await bootstrapE2e({ overrides: [{ token: CardProviders, value: cards }] });
 });
 
 afterAll(async () => {
@@ -58,7 +59,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
-  intentState = "awaiting_payment";
+  cards.provider.states.clear();
 });
 
 /** Une commande personnelle, carte en attente sur l'intention `intent`. */
@@ -72,9 +73,9 @@ async function seedPendingOrder(intent: string): Promise<string> {
   return order.id;
 }
 
+/** L'issue livrée par le webhook de `card-payment`, puis drainée. */
 async function webhook(intent: string, outcome: "succeeded" | "failed"): Promise<void> {
-  await ctx.app.get(CommandBus).execute(new ConfirmOrderPaymentCommand(intent, outcome));
-  await ctx.drain();
+  await (outcome === "succeeded" ? cardPaid : cardFailed)(ctx, intent);
 }
 
 async function paymentStatusOf(orderId: string): Promise<PaymentStatus> {
@@ -113,7 +114,7 @@ describe("GET /orders/:id/payment après un refus de carte", () => {
   it("refuse la page quand l'intention a été annulée chez Stripe", async () => {
     const orderId = await seedPendingOrder("pi_morte");
     await webhook("pi_morte", "failed");
-    intentState = "canceled";
+    cards.provider.states.set("pi_morte", "canceled");
 
     await ctx.asSub(BUYER).get(`/orders/${orderId}/payment`).expect(409);
   });

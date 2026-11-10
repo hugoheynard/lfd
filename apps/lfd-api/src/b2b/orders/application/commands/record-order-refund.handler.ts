@@ -1,5 +1,6 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { AfterCommit } from "../../../../platform/database/after-commit.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
@@ -51,9 +52,20 @@ type Outcome =
  *   `RefundWithoutOrderEvent`, que les paiements notent et font sonner.
  *
  * ⚠️ Pas de `publishTraced` : c'est la projection d'un événement Stripe, pas
- * un acte dont un humain répond (même règle que `ConfirmOrderPaymentHandler`).
+ * un acte dont un humain répond (même règle que `RecordProviderEventHandler`
+ * du bloc `card-payment`, qui relaie l'événement depuis le lot P0.c2 du plan
+ * M2).
  * Le journal s'écrit par `Journal.append`, parce que la trace d'un argent
  * rendu doit, elle, être opposable.
+ *
+ * 🔴 Les deux événements en mémoire partent par `AfterCommit`. Depuis P0.c2,
+ * cette commande est appelée par un abonné DURABLE, donc DANS la transaction
+ * du reçu de la boîte d'envoi ; publiés à la sortie de `unitOfWork.run`, ils
+ * partaient encore dans cette transaction, et la cloche de
+ * `RingRefundRejected`, lancée en fond, s'exécutait après sa fermeture
+ * (« Transaction already closed », relevé en e2e le 2026-11-09 — l'objection
+ * de `vitruve` au §15 ter du plan M2). Hors de toute transaction, `AfterCommit`
+ * publie tout de suite : le chemin d'avant est inchangé.
  */
 @CommandHandler(RecordOrderRefundCommand)
 export class RecordOrderRefundHandler implements ICommandHandler<RecordOrderRefundCommand, void> {
@@ -65,15 +77,19 @@ export class RecordOrderRefundHandler implements ICommandHandler<RecordOrderRefu
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly durable: DurablePublisher,
+    private readonly afterCommit: AfterCommit,
   ) {}
 
   async execute(command: RecordOrderRefundCommand): Promise<void> {
     const outcome = await this.unitOfWork.run(() => this.record(command));
     if (outcome.kind === "unmatched") {
-      this.events.publish(new RefundWithoutOrderEvent(command.report));
+      this.afterCommit.defer(
+        () => this.events.publish(new RefundWithoutOrderEvent(command.report)),
+        "order.refund_without_order",
+      );
     }
     if (outcome.kind === "rejected") {
-      this.events.publish(outcome.event);
+      this.afterCommit.defer(() => this.events.publish(outcome.event), "order.refund_rejected");
     }
   }
 

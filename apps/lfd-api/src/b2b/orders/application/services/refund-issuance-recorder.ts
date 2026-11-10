@@ -7,7 +7,10 @@ import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.
 import { nextAttemptAt } from "../../../../platform/outbox/retry-policy.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { WallClock } from "../../../../platform/time/wall-clock.js";
-import type { IssuedRefund, RefundIssuance } from "../../../payments/domain/payment-refunder.js";
+import type {
+  IssuedRefund,
+  RefundIssuance,
+} from "../../../../card-payment/channels/requests/index.js";
 import type { OrderRefundLedger } from "../../domain/entities/order-refund-ledger.js";
 import type { OrderRefundRequest } from "../../domain/entities/order-refund-request.js";
 import { RefundRejectedError } from "../../domain/errors/order-refund-errors.js";

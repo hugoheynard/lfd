@@ -16,7 +16,7 @@
 import type { CompanyPricingView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { randomUUID } from "node:crypto";
 
@@ -28,14 +28,10 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { cardGatewayDouble } from "./order-factory.js";
 
-/** Passerelle de paiement doublée : intention fixe, aucun appel réseau. */
-const fakeGateway = {
-  createIntent: () => Promise.resolve({ paymentIntentId: "pi_e2e", clientSecret: "pi_e2e_secret" }),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+/** Prestataire de carte doublé : une intention par passation, aucun appel réseau. */
+const fakeGateway = cardGatewayDouble("pi_e2e");
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -51,7 +47,7 @@ beforeAll(async () => {
       // La seule frontière SORTANTE de cette suite : Stripe. Un cas y passe une
       // vraie commande — c'est la caisse qui fige la trace, et la trace est ce
       // qu'on éprouve — et la passation crée une intention de paiement.
-      { token: PaymentGateway, value: fakeGateway },
+      { token: CardProviders, value: fakeGateway },
     ],
   });
 });

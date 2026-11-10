@@ -8,14 +8,24 @@
  * suit.
  *
  * Les commandes sont passées par le vrai chemin (`placeOrder`, plan T) ; seule
- * la passerelle de carte est doublée, et elle rend l'intention que le test
- * nomme. Le règlement passe par la vraie commande du commerce.
+ * le prestataire de carte est doublé, et il rend l'intention que le test
+ * nomme. Le règlement passe par le vrai webhook de `card-payment`.
  */
 import { CommandBus } from "@nestjs/cqrs";
 
-import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { RecordProviderEventCommand } from "../src/card-payment/application/commands/record-provider-event.command.js";
+import type { CreatedIntent } from "../src/card-payment/domain/ports/card-provider-types.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { assertOutsideTransaction } from "../src/platform/database/outside-transaction.js";
 import { PaymentStatus } from "../src/platform/database/client/client.js";
+import {
+  cardFailed,
+  cardPaid,
+  E2E_CARD_ACCOUNT,
+  E2eCardProvider,
+  E2eCardProviders,
+  e2eCardProviders,
+} from "./card-payments.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 import { pickupSite, placeOrder } from "./order-factory.js";
@@ -23,19 +33,26 @@ import { pickupSite, placeOrder } from "./order-factory.js";
 /** L'intention que la prochaine passation recevra, fixée par chaque test. */
 let nextIntent = "pi_e2e";
 
-/** Passerelle de carte doublée : elle rend l'intention nommée, aucun appel réseau. */
-const fakeGateway = {
-  createIntent: () =>
-    Promise.resolve({ paymentIntentId: nextIntent, clientSecret: `${nextIntent}_secret` }),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+/** Le prestataire de carte doublé, qui rend l'intention nommée — aucun appel réseau. */
+class NamedIntentCardProvider extends E2eCardProvider {
+  override createIntent(): Promise<CreatedIntent> {
+    assertOutsideTransaction("e2e.CardProvider.createIntent");
+    this.issued.push(nextIntent);
+    return Promise.resolve({ providerRef: nextIntent, clientSecret: `${nextIntent}_secret` });
+  }
+}
+
+/** Le registre doublé, servi par le prestataire aux intentions nommées. */
+class NamedIntentCardProviders extends E2eCardProviders {
+  override readonly provider = new NamedIntentCardProvider("pi_e2e");
+}
 
 let ctx: E2eContext;
 
 beforeAll(async () => {
-  ctx = await bootstrapE2e({ overrides: [{ token: PaymentGateway, value: fakeGateway }] });
+  ctx = await bootstrapE2e({
+    overrides: [{ token: CardProviders, value: new NamedIntentCardProviders("pi_e2e") }],
+  });
 });
 
 afterAll(async () => {
@@ -57,9 +74,9 @@ async function seedPendingOrder(intent: string): Promise<string> {
   return order.id;
 }
 
+/** L'issue livrée par le webhook de `card-payment`, puis drainée. */
 async function webhook(intent: string, outcome: "succeeded" | "failed"): Promise<void> {
-  await ctx.app.get(CommandBus).execute(new ConfirmOrderPaymentCommand(intent, outcome));
-  await ctx.drain();
+  await (outcome === "succeeded" ? cardPaid : cardFailed)(ctx, intent);
 }
 
 async function paymentOf(
@@ -117,8 +134,27 @@ describe("un refus de carte, puis une autre carte qui passe", () => {
 });
 
 describe("un webhook livré deux fois EN MÊME TEMPS", () => {
-  const outcomeNow = (intent: string, outcome: "succeeded" | "failed") =>
-    ctx.app.get(CommandBus).execute(new ConfirmOrderPaymentCommand(intent, outcome));
+  /**
+   * L'issue livrée par le webhook de `card-payment` SANS drainer : deux
+   * livraisons doivent pouvoir se croiser dans la commande elle-même.
+   */
+  const outcomeNow = async (intent: string, outcome: "succeeded" | "failed"): Promise<void> => {
+    const { provider } = e2eCardProviders(ctx);
+    const eventId = provider.nextEventId();
+    const { rawBody, signature } = provider.sign(
+      outcome === "succeeded"
+        ? { kind: "paid", eventId, eventType: "payment_intent.succeeded", providerRef: intent }
+        : {
+            kind: "payment_failed",
+            eventId,
+            eventType: "payment_intent.payment_failed",
+            providerRef: intent,
+          },
+    );
+    await ctx.app
+      .get(CommandBus)
+      .execute(new RecordProviderEventCommand(E2E_CARD_ACCOUNT, rawBody, signature));
+  };
 
   /**
    * Stripe réémet jusqu'au 2xx : deux livraisons peuvent se croiser. La garde

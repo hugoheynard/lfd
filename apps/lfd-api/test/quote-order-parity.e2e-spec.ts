@@ -31,7 +31,6 @@ import { randomUUID } from "node:crypto";
 import type { BillingAddressPayload, ShopQuotePayload, ShopQuoteView } from "@lfd/contracts";
 import request from "supertest";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   bootstrapE2e,
@@ -41,14 +40,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { poseSiteDiscount } from "./promotion-fixtures.js";
-
-/** Passerelle doublée : une commande personnelle se règle par carte. */
-const fakeGateway = {
-  createIntent: () => Promise.resolve({ paymentIntentId: "pi_e2e", clientSecret: "pi_e2e_secret" }),
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
-  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
-};
+import { cardProvidersOverride } from "./card-payments.js";
 
 let ctx: E2eContext;
 let pickupId = "pickup_absent";
@@ -58,7 +50,7 @@ beforeAll(async () => {
   // jeton est doublé.
   ctx = await bootstrapE2e({
     overrides: [
-      { token: PaymentGateway, value: fakeGateway },
+      cardProvidersOverride("pi_e2e"),
       {
         token: AdminTokenVerifier,
         value: {

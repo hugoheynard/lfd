@@ -24,7 +24,7 @@ import type {
 } from "@lfd/contracts";
 import request from "supertest";
 
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
@@ -57,7 +57,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: cardGatewayDouble("pi_fidele") },
+      { token: CardProviders, value: cardGatewayDouble("pi_fidele") },
     ],
   });
 });

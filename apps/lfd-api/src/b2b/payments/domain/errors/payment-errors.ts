@@ -24,3 +24,21 @@ export class InvalidWebhookSignatureError extends DomainError {
     super("payments.webhook.invalid_signature", "Signature de webhook invalide.", cause);
   }
 }
+
+/**
+ * Un webhook arrive sur l'endpoint des **liens de paiement**
+ * (`POST /payments/links/webhook`) alors que son secret
+ * (`STRIPE_LINKS_WEBHOOK_SECRET`) n'est pas posé — **400**, journalisé, jamais
+ * 500 (plan M2, §4.5) : rien ne prouve l'origine, rien n'est traité, et
+ * Stripe réessaie. Le secret naît chez Stripe à la création de l'endpoint,
+ * puis se pose par `wrangler secret put` ; d'ici là, les `checkout.*`
+ * arrivent par le relais du webhook des cartes.
+ */
+export class PaymentLinksWebhookNotConfiguredError extends DomainError {
+  constructor() {
+    super(
+      "payments.links_webhook.not_configured",
+      "Webhook des liens de paiement refusé : STRIPE_LINKS_WEBHOOK_SECRET n'est pas configuré.",
+    );
+  }
+}

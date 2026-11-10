@@ -2,7 +2,7 @@ import { FixedHandoverHistory } from "./handover-history-double.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { CommerceOrderCancelledFact } from "../../../../../delivery/channels/commerce/index.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
-import type { IntentCancellation } from "../../../../payments/domain/payment-gateway.js";
+import type { CardPaymentCancellation } from "../../../../../card-payment/channels/requests/index.js";
 import type { OrderWithdrawalOutcome } from "../../../../../production/channels/commerce/index.js";
 import {
   CancellationReasonRequiredError,
@@ -58,7 +58,7 @@ const STAFF = "fiche-marie";
 
 interface Scene {
   readonly subject?: CancellationSubject;
-  readonly stripe?: IntentCancellation;
+  readonly stripe?: CardPaymentCancellation;
   readonly desk?: OrderWithdrawalOutcome;
   readonly failures?: number;
   readonly restitution?: VoucherRestitution;
@@ -148,7 +148,7 @@ describe("CancelOrderHandler — carte non payée (décision 7)", () => {
     await handler.execute(cancel());
 
     expect(trace).toEqual([
-      "stripe:pi_1",
+      "stripe:ord_1",
       "lock:ord_1",
       "withdraw:2026-10-13:ord_1",
       "cancel:ord_1",
@@ -187,7 +187,7 @@ describe("CancelOrderHandler — carte non payée (décision 7)", () => {
     expect(durable.facts).toEqual([]);
   });
 
-  it.each<[string, IntentCancellation, new (...args: never[]) => Error]>([
+  it.each<[string, CardPaymentCancellation, new (...args: never[]) => Error]>([
     ["payée entre-temps", { kind: "already_paid" }, OrderNotCancellableError],
     ["paiement en traitement", { kind: "in_progress" }, OrderCancellationPaymentInProgressError],
     [
@@ -202,7 +202,7 @@ describe("CancelOrderHandler — carte non payée (décision 7)", () => {
 
       await expect(handler.execute(cancel())).rejects.toBeInstanceOf(error);
 
-      expect(trace).toEqual(["stripe:pi_1"]);
+      expect(trace).toEqual(["stripe:ord_1"]);
       expect(durable.facts).toEqual([]);
     },
   );
@@ -471,7 +471,7 @@ describe("CancelOrderHandler — la transaction qui échoue après Stripe (C3.4 
 
     await handler.execute(cancel());
 
-    expect(trace.filter((step) => step === "stripe:pi_1")).toHaveLength(1);
+    expect(trace.filter((step) => step === "stripe:ord_1")).toHaveLength(1);
     expect(trace.filter((step) => step === "lock:ord_1")).toHaveLength(2);
     expect(durable.facts).toHaveLength(2);
   });

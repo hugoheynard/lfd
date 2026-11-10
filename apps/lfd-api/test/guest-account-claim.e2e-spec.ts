@@ -21,7 +21,7 @@ import { CustomerIdentityPort } from "../src/b2b/account/domain/ports/customer-i
 import { AccountAccessGranter } from "../src/b2b/account/application/services/grant-account-access.service.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { PrincipalResolver } from "../src/platform/auth/principal.resolver.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import type { ProvisionedIdentity } from "../src/platform/shared/identity/provisioned-identity.js";
 import { bootstrapE2e, E2E_STAFF_ID, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 import { createCompany, createGuest } from "./factories.js";
@@ -64,7 +64,7 @@ beforeAll(async () => {
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
       { token: CustomerIdentityPort, value: identityDouble },
-      { token: PaymentGateway, value: cardGatewayDouble("pi_rattache") },
+      { token: CardProviders, value: cardGatewayDouble("pi_rattache") },
     ],
   });
 });

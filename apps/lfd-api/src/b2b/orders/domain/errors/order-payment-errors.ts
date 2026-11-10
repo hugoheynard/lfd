@@ -1,4 +1,4 @@
-import { BusinessError } from "../../../../platform/shared/errors/app-error.js";
+import { BusinessError, TechnicalError } from "../../../../platform/shared/errors/app-error.js";
 
 /**
  * On demande de quoi régler une commande **annulée**. Refus métier (409) : la
@@ -38,6 +38,39 @@ export class PaymentIntentClosedError extends BusinessError {
             "quelques instants. Ne payez pas une seconde fois."
         : "Le paiement de cette commande a été annulé et ne peut plus être repris. " +
             "Passez une nouvelle commande, ou contactez-nous si vous pensez qu'il s'agit d'une erreur.",
+    );
+  }
+}
+
+/**
+ * La commande porte une intention que le bloc `card-payment` ne connaît pas
+ * encore : elle a été créée par l'image d'avant le bloc (plan M2, §4.6). Une
+ * lecture n'écrit rien (409) — l'écran envoie l'adoption
+ * (`POST /orders/:id/payment/adopt`) puis relit ; le rattrapage horaire la
+ * fait aussi, seul, dans l'heure.
+ */
+export class OrderPaymentAwaitsAdoptionError extends BusinessError {
+  constructor(readonly orderId: string) {
+    super(
+      "orders.payment.awaits_adoption",
+      "Le paiement de cette commande a été ouvert avant la dernière mise à jour et doit " +
+        "être repris avant d'être réglé. Rechargez la page ; si le message revient, " +
+        "réessayez dans une heure ou contactez-nous.",
+    );
+  }
+}
+
+/**
+ * Le bloc `card-payment` annonce un paiement pour une commande qui ne porte
+ * aucune intention — incohérence de base (500) : une ligne de paiement ne naît
+ * que dans la transaction de la passation qui a posé l'intention.
+ */
+export class OrderCardSubjectWithoutIntentError extends TechnicalError {
+  constructor(readonly orderId: string) {
+    super(
+      "orders.payment.subject_without_intent",
+      `La commande ${orderId} reçoit un paiement par carte sans porter d'intention : ` +
+        "rapprocher à la main la commande et le paiement chez Stripe.",
     );
   }
 }

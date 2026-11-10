@@ -20,10 +20,9 @@
 import { CommandBus } from "@nestjs/cqrs";
 
 import { billableOrderWhere } from "../src/b2b/accounting/infrastructure/billable-order-criterion.js";
-import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
 import { MarkOrderFulfilledCommand } from "../src/b2b/orders/application/commands/mark-order-fulfilled.command.js";
 import { RecordOrderRefundCommand } from "../src/b2b/orders/application/commands/record-order-refund.command.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { OutboxRelay } from "../src/platform/outbox/outbox-relay.js";
@@ -35,6 +34,7 @@ import {
   createUser,
   markDelivered,
 } from "./factories.js";
+import { cardPaid } from "./card-payments.js";
 import { cardGatewayDouble, pickupSite, placeOrder } from "./order-factory.js";
 
 const ENTITIES = "/admin/accounting/legal-entities";
@@ -52,7 +52,7 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: PaymentGateway, value: cardGatewayDouble("pi_e5") },
+      { token: CardProviders, value: cardGatewayDouble("pi_e5") },
     ],
   });
 });
@@ -184,7 +184,7 @@ async function handOver(order: Seeded): Promise<void> {
 }
 
 async function pay(order: Seeded): Promise<void> {
-  await ctx.app.get(CommandBus).execute(new ConfirmOrderPaymentCommand(order.intent, "succeeded"));
+  await cardPaid(ctx, order.intent);
   await settle();
 }
 

@@ -142,10 +142,10 @@ describe("ReplayFirstPaymentsHandler", () => {
     ]);
   });
 
-  it("une annulée encaissée (ligne `paid`, sujet `failed`) est juste, pas un écart", async () => {
+  it("une annulée encaissée (ligne `paid`, sujet `closed`) est juste, pas un écart", async () => {
     const { repo, settlement, replay } = harness();
     repo.seed(line("ord_c", "pi_c", "paid"));
-    settlement.references = [reference("ord_c", "pi_c", "failed")];
+    settlement.references = [reference("ord_c", "pi_c", "closed")];
     settlement.cancelled.add("ord_c");
 
     const report = replayed(await replay());
@@ -157,7 +157,16 @@ describe("ReplayFirstPaymentsHandler", () => {
   it("la même chose sur un sujet NON annulé est un écart signalé", async () => {
     const { repo, settlement, replay } = harness();
     repo.seed(line("ord_c", "pi_c", "paid"));
+    settlement.references = [reference("ord_c", "pi_c", "closed")];
+
+    expect(replayed(await replay()).diverged).toHaveLength(1);
+  });
+
+  it("une annulée que le sujet dit `failed` avec une ligne `paid` reste un écart (le sujet dit `closed` pour une annulée)", async () => {
+    const { repo, settlement, replay } = harness();
+    repo.seed(line("ord_c", "pi_c", "paid"));
     settlement.references = [reference("ord_c", "pi_c", "failed")];
+    settlement.cancelled.add("ord_c");
 
     expect(replayed(await replay()).diverged).toHaveLength(1);
   });

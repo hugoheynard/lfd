@@ -1,6 +1,9 @@
 import type { StaffNotice } from "../../../../../staff/notifications/domain/ports/staff-notifier.js";
 import { StaffNotifier } from "../../../../../staff/notifications/domain/ports/staff-notifier.js";
-import { PaymentGatewayUnavailableError } from "../../../domain/errors/payment-errors.js";
+import {
+  InvalidWebhookSignatureError,
+  PaymentGatewayUnavailableError,
+} from "../../../domain/errors/payment-errors.js";
 import { PaymentLink, type CheckoutSession } from "../../../domain/entities/payment-link.js";
 import {
   AccountingSettingsReader,
@@ -9,6 +12,7 @@ import {
 import {
   CheckoutGateway,
   type CheckoutSessionRequest,
+  type PaymentLinkWebhookEvent,
 } from "../../../domain/ports/checkout-gateway.js";
 import { PaymentLinkCompanyReader } from "../../../domain/ports/payment-link-company.reader.js";
 import { PaymentLinkRepository } from "../../../domain/ports/payment-link.repository.js";
@@ -79,6 +83,16 @@ export class RecordingCheckout extends CheckoutGateway {
     }
     this.expired.push(sessionId);
     return Promise.resolve();
+  }
+
+  /** L'événement que le prochain webhook des liens rendra ; la signature `bad` est refusée. */
+  linkEvent: PaymentLinkWebhookEvent = { kind: "ignored" };
+
+  parseLinkWebhook(_rawBody: Buffer, signature: string): PaymentLinkWebhookEvent {
+    if (signature === "bad") {
+      throw new InvalidWebhookSignatureError();
+    }
+    return this.linkEvent;
   }
 }
 

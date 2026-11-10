@@ -23,7 +23,8 @@ const PAYMENT_LINKS_SCREEN = "/comptabilite/liens-de-paiement";
  * C'est elle qui décide quoi faire de l'argent — rembourser ou l'imputer.
  *
  * `@sans-journal` projection d'un événement Stripe, pas un acte dont un humain
- * répond — même règle que `ConfirmOrderPaymentHandler`. Le fait reste lisible
+ * répond — même règle que `RecordProviderEventHandler` (bloc `card-payment`,
+ * depuis le lot P0.c2 du plan M2). Le fait reste lisible
  * sur la ligne (`paid_at`) et chez Stripe.
  */
 @CommandHandler(SettlePaymentLinkCommand)

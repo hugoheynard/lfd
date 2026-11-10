@@ -80,6 +80,7 @@ export class AppConfig {
   private readonly clientBaseUrlValue: string | null;
   private readonly management: Auth0ManagementCredentials | null;
   private readonly stripeValue: StripeConfig | null;
+  private readonly stripeLinksWebhookSecretValue: string | null;
   private readonly cardAccountSecretsValue: ReadonlyMap<CardAccountName, CardAccountSecrets | null>;
   private readonly analyticsValue: AnalyticsConfig | null;
   private readonly containerApplicationIdValue: string | null;
@@ -117,6 +118,7 @@ export class AppConfig {
     this.clientBaseUrlValue = optionalString("CLIENT_BASE_URL");
     this.management = optionalManagementCredentials();
     this.stripeValue = optionalStripeConfig();
+    this.stripeLinksWebhookSecretValue = optionalString("STRIPE_LINKS_WEBHOOK_SECRET");
     this.cardAccountSecretsValue = new Map(
       CARD_ACCOUNTS.map((account) => [account.name, optionalCardAccountSecrets(account.env)]),
     );
@@ -463,8 +465,10 @@ export class AppConfig {
    *
    * Optionnel comme le M2M et le stockage : l'API démarre sans (le reste de la
    * plateforme — panier, commandes sur terme différé — fonctionne). C'est
-   * l'adaptateur `StripePaymentGateway` qui **refuse** explicitement de créer une
-   * intention ou de vérifier un webhook quand c'est `null`, jamais le boot.
+   * l'adaptateur des liens (`StripeCheckoutGateway`) qui **refuse** explicitement
+   * d'ouvrir une page quand c'est `null`, jamais le boot ; les cartes, elles,
+   * lisent les mêmes variables par le registre des comptes
+   * (`cardAccountSecrets`, plan M2 §3.2).
    *
    * Les trois valeurs vont ensemble : la clé secrète (`sk_…`) signe les appels
    * serveur, le secret de webhook (`whsec_…`) authentifie les événements reçus, la
@@ -473,6 +477,20 @@ export class AppConfig {
    */
   stripeConfig(): StripeConfig | null {
     return this.stripeValue;
+  }
+
+  /**
+   * Le secret (`whsec_…`) de l'endpoint Stripe **des liens de paiement**
+   * (`POST /payments/links/webhook`, plan M2 §4.5), ou `null`.
+   *
+   * Optionnel, et hors de `stripeConfig()` (« les trois ou aucune ») : il naît
+   * APRÈS le déploiement qui le déclare — c'est Stripe qui le génère quand on
+   * crée l'endpoint. Absent, la route des liens refuse tout (400 journalisé)
+   * et Stripe réessaie ; les `checkout.*` arrivent alors par le relais du
+   * webhook des cartes.
+   */
+  stripeLinksWebhookSecret(): string | null {
+    return this.stripeLinksWebhookSecretValue;
   }
 
   /**
