@@ -25,20 +25,22 @@ familles viendront sur le même socle (§4).
 l'exposition. Les traces d'une fiche se rangent en trois familles :
 
 **1. Ce qui RETIENT** (la fiche ne s'efface pas) — toute trace d'une vente ou
-de ce qui en découle, et les liens de parenté :
+de ce qui en découle :
 
-| Retenue                                                              | Où ça se lit                                                                         |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| elle n'est pas archivée                                              | `product.status ≠ archived`                                                          |
-| un de ses SKU (fiche ou déclinaisons) est dans une ligne de commande | `public.order_lines.sku` (texte, sans clé)                                           |
-| …dans une réservation du miroir                                      | `public.catalog_item_reservation` (clé `RESTRICT` vers l'article)                    |
-| …dans le fournil, le colisage, la livraison, la croissance           | les tables à `sku` de `production`, `packing`, `delivery`, `growth`                  |
-| …dans un abonnement, un réassort, un bon de livraison                | `subscriptions`, `resupply`, `delivery_notes`                                        |
-| elle est l'origine ou le fruit d'un détachement de déclinaison       | `product.origin_variant_id`, `product_variant.detached_to_product` (clés `RESTRICT`) |
+| Retenue                                                                                              | Où ça se lit                                                        |
+| ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| elle n'est pas archivée                                                                              | `product.status ≠ archived`                                         |
+| un de ses SKU (fiche ou déclinaisons) est dans une ligne de commande                                 | `public.order_lines.sku` (texte, sans clé)                          |
+| …dans une **exclusivité** accordée à une société (« réservation » aujourd'hui, renommage au lexique) | `public.catalog_item_reservations` (clé `RESTRICT` vers l'article)  |
+| …dans le fournil, le colisage, la livraison, la croissance                                           | les tables à `sku` de `production`, `packing`, `delivery`, `growth` |
+| …dans un abonnement, un réassort, un bon de livraison                                                | `subscriptions`, `resupply`, `delivery_notes`                       |
 
 **2. Ce qui SE NETTOIE avec elle** — ce que le référentiel et le miroir de la
 plateforme possèdent : la fiche, ses déclinaisons et leurs satellites ; le
-**binding** de publication ; et, côté plateforme, ses lignes du miroir
+**binding** de publication ; **le lien de détachement** (Hugo, 2026-11-10 :
+`origin_variant_id` / `detached_to_product` sont des clés `RESTRICT` qui ne
+servent qu'à l'écran de lignée — l'effacement **coupe le lien** de l'autre
+côté, et le fait `product.deleted` garde la lignée) ; et, côté plateforme, ses lignes du miroir
 (`catalog_items`, `catalog_entries`, `catalog_price_history`, les décisions
 par article `catalog_item_override` en cascade) — par un fait durable
 `pim.catalog_product_deleted` que `b2b/catalog` écoute, avec le signal
@@ -72,8 +74,8 @@ que **chaque bloc qui range un SKU implémente pour ses tables** (`b2b` :
 commandes, miroir, tarifs, promotions, vitrine, suggestions, abonnements,
 réassort ; `production` ; `packing` ; `delivery` ; `growth`) et
 qu'`appBootstrap` compose en un seul lecteur (`composite`, la figure de
-`composite-media-carriers.ts`). Le référentiel ajoute sa propre retenue (le détachement) et ses propres
-avertissements (opération, limite de commande). Le même port rend les
+`composite-media-carriers.ts`). Le référentiel ajoute ses propres avertissements (opération, limite de
+commande) ; il n'a aucune retenue propre. Le même port rend les
 **avertissements** avec leur `kind`, et c'est le genre qui dit s'il retient
 ou s'il avertit — la liste est écrite dans le canal, pas dans la page. Un bloc qui
 n'implémente pas le port n'est **pas** interrogé : c'est donc le bâti qui
@@ -93,7 +95,9 @@ transaction :
 3. journalise **avant** d'effacer : `product.deleted` avec l'instantané
    (SKU, nom, famille, SKU des déclinaisons, auteur) — la trace survit à
    l'objet, comme pour l'archivage ;
-4. efface les satellites dans l'ordre des clés : déclinaisons (allergènes,
+4. coupe les liens de détachement (le fruit perd son `origin_variant_id`,
+   une déclinaison d'origine perd son `detached_to_product`), puis efface
+   les satellites dans l'ordre des clés : déclinaisons (allergènes,
    nutrition, déclaration, conditionnements, puis la déclinaison), readiness,
    TVA par contexte, ingrédients, médias **du produit** (la ligne de liaison ;
    le visuel de la médiathèque reste — il peut servir ailleurs), éditorial,
