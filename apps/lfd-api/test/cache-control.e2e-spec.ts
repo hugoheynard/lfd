@@ -42,6 +42,11 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
   });
+  // Sans ce `reset()`, la suite n'a aucun opérateur semé : elle ne tenait que
+  // par une fiche `staff-e2e` laissée par une suite voisine dans la même base.
+  // Sur une base migrée à neuf (la CI, shard réordonné le 2026-11-10), la
+  // création d'un point de retrait répondait 403.
+  await ctx.reset();
 });
 
 afterAll(async () => {
