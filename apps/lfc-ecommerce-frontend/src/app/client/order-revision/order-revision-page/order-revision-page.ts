@@ -12,6 +12,8 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import type { CustomerOrderDetailView } from '@lfd/contracts';
 import { instantToLocal } from '@lfd/contracts';
+// Par le sous-chemin sans zod, comme la passation (`ClientOrders`).
+import { ORDER_TOTAL_CHANGED } from '@lfd/contracts/shop-values';
 import {
   FoldButtonComponent,
   FoldButtonIconComponent,
@@ -128,6 +130,30 @@ export class OrderRevisionPage {
   protected readonly quote = signal<QuoteState>({ kind: 'idle' });
   protected readonly submitting = signal(false);
   protected readonly submitRefusal = signal<SubmitRefusal | null>(null);
+
+  /**
+   * Le total vu au clic, quand le serveur l'a refusé (409 `orders.total_changed`,
+   * plan S2, R14 bis). Le devis se redemande ; une fois le neuf arrivé,
+   * l'écran dit l'avertissement de la passation (« Le total est passé de X à
+   * Y ») et le client revalide au nouveau total. Remis à `null` par un
+   * brouillon qui change, un rechargement ou une nouvelle validation.
+   */
+  private readonly refusedTotalCents = signal<number | null>(null);
+
+  /** L'avertissement de la passation, une fois le devis neuf rendu et différent. */
+  protected readonly totalChanged = computed(() => {
+    const before = this.refusedTotalCents();
+    const quote = this.quote();
+    if (before === null || quote.kind !== 'ready' || quote.quote.totalCents === before) {
+      return null;
+    }
+    const c = this.t().cart;
+    return fill(c.totalChanged, {
+      before: formatCents(before),
+      after: formatCents(quote.quote.totalCents),
+      changes: c.changeOther,
+    });
+  });
 
   /** L'heure limite est passée, la commande pas au plan : on demande au lieu de modifier (M4). */
   protected readonly requesting = computed(() => {
@@ -274,6 +300,7 @@ export class OrderRevisionPage {
       // Le mode compte aussi : une demande a son propre devis, indicatif.
       this.requesting();
       untracked(() => {
+        this.refusedTotalCents.set(null);
         this.scheduleQuote(content === null);
       });
     });
@@ -287,6 +314,7 @@ export class OrderRevisionPage {
   protected async load(): Promise<void> {
     this.state.set({ kind: 'loading' });
     this.submitRefusal.set(null);
+    this.refusedTotalCents.set(null);
     const order = await this.gateway.order(this.orderId());
     if (order === null) {
       this.state.set({ kind: 'failed' });
@@ -338,11 +366,20 @@ export class OrderRevisionPage {
     }
     this.submitting.set(true);
     this.submitRefusal.set(null);
+    this.refusedTotalCents.set(null);
+    // Le total envoyé est celui du devis À L'ÉCRAN : tout changement du
+    // brouillon repasse le devis en `loading`, et `canSubmit` exige `ready`.
     const outcome = await this.gateway.revise(this.orderId(), {
       ...content,
       expectedRevision: quote.quote.revision,
+      expectedTotalCents: quote.quote.totalCents,
     });
     this.submitting.set(false);
+    if (outcome.kind === 'refused' && outcome.refusal.code === ORDER_TOTAL_CHANGED) {
+      this.refusedTotalCents.set(quote.quote.totalCents);
+      this.scheduleQuote(this.content() === null);
+      return;
+    }
     if (outcome.kind === 'ok') {
       this.notify.success(this.c().revisedToast);
       // Le tiroir de la commande relit l'historique : la nouvelle composition s'y lit.

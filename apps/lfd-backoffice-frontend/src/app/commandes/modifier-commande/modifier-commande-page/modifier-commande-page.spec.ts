@@ -165,7 +165,11 @@ describe('modifier une commande depuis le back-office', () => {
     await page['validate']();
     expect(revise).toHaveBeenCalledWith(
       'ord_1',
-      expect.objectContaining({ expectedRevision: 3, lines: [{ sku: 'BAG', quantity: 15 }] }),
+      expect.objectContaining({
+        expectedRevision: 3,
+        expectedTotalCents: QUOTE.totalCents,
+        lines: [{ sku: 'BAG', quantity: 15 }],
+      }),
     );
     expect(navigate).toHaveBeenCalledWith(['/commandes', 'ord_1']);
   });
@@ -220,6 +224,36 @@ describe('modifier une commande depuis le back-office', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('[data-revise-refusal]')?.textContent).toContain('modifiée ailleurs');
     expect(el.querySelector('[data-revise-refusal]')?.textContent).toContain('Relire la commande');
+  });
+
+  it('le total refusé (409 orders.total_changed) : relit le devis, dit le nouveau total, revalide', async () => {
+    const changed = new HttpErrorResponse({
+      status: 409,
+      error: { code: 'orders.total_changed', message: 'Le total a changé.' },
+    });
+    const { fixture, page, quoteRevision, revise } = await mount(() => Promise.reject(changed));
+    await page['askQuote']();
+    quoteRevision.mockResolvedValueOnce({ ...QUOTE, totalCents: QUOTE.totalCents + 150 });
+    await page['validate']();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(revise).toHaveBeenCalledWith(
+      'ord_1',
+      expect.objectContaining({ expectedTotalCents: QUOTE.totalCents }),
+    );
+    expect(quoteRevision).toHaveBeenCalledTimes(2);
+    expect(page['refusal']()).toBeNull();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-total-changed]')?.textContent).toContain(
+      'Le total TTC est passé',
+    );
+    expect(el.querySelector<HTMLButtonElement>('[data-validate]')?.disabled).toBe(false);
+    revise.mockResolvedValueOnce({ totalCents: QUOTE.totalCents + 150 });
+    await page['validate']();
+    expect(revise).toHaveBeenLastCalledWith(
+      'ord_1',
+      expect.objectContaining({ expectedTotalCents: QUOTE.totalCents + 150 }),
+    );
   });
 
   it('affiche le refus du serveur dans ses mots', async () => {

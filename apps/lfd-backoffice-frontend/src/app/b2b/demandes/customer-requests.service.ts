@@ -4,6 +4,7 @@ import type {
   CustomerRequestStatus,
   CustomerRequestView,
   OrderChangeAppliedResponse,
+  OrderChangeApplyPayload,
   OrderChangeRefusalPayload,
   OrderRevisionQuoteView,
   RequestKind,
@@ -47,10 +48,15 @@ export class CustomerRequestsService {
     return firstValueFrom(this.http.get<OrderRevisionQuoteView>(`${this.orderChange(id)}/quote`));
   }
 
-  /** Applique la modification demandée : une révision au nom de l'équipe. Rend la révision produite. */
-  applyOrderChange(id: string): Promise<OrderChangeAppliedResponse> {
+  /**
+   * Applique la modification demandée : une révision au nom de l'équipe. Rend
+   * la révision produite. `expectedTotalCents` est le total du devis que
+   * l'équipe a vu (plan S2, R14) : s'il a bougé, `409 orders.total_changed`.
+   */
+  applyOrderChange(id: string, expectedTotalCents: number): Promise<OrderChangeAppliedResponse> {
+    const body: OrderChangeApplyPayload = { expectedTotalCents };
     return firstValueFrom(
-      this.http.post<OrderChangeAppliedResponse>(`${this.orderChange(id)}/apply`, null),
+      this.http.post<OrderChangeAppliedResponse>(`${this.orderChange(id)}/apply`, body),
     );
   }
 

@@ -6,6 +6,7 @@ import type {
   OrderRevisionQuoteView,
   AudiencePickupAddressView,
 } from '@lfd/contracts';
+import { ORDER_TOTAL_CHANGED } from '@lfd/contracts/shop-values';
 import { By } from '@angular/platform-browser';
 import { FoldNumberInputComponent } from 'fold-ng';
 import { of } from 'rxjs';
@@ -183,7 +184,11 @@ describe('OrderRevisionPage', () => {
     await fixture.whenStable();
     expect(gateway.revise).toHaveBeenCalledWith(
       'ord_9',
-      expect.objectContaining({ expectedRevision: 3, lines: [{ sku: 'VIE-001', quantity: 3 }] }),
+      expect.objectContaining({
+        expectedRevision: 3,
+        expectedTotalCents: 1_200,
+        lines: [{ sku: 'VIE-001', quantity: 3 }],
+      }),
     );
     expect(success).toHaveBeenCalled();
     expect(navigate).toHaveBeenCalledWith(['/mes-commandes', 'ord_9']);
@@ -242,6 +247,45 @@ describe('OrderRevisionPage', () => {
     fixture.detectChanges();
     expect(el.querySelector('[data-submit-refused]')?.textContent).toContain('modifiée ailleurs');
     expect(el.querySelector('[data-reload]')).not.toBeNull();
+  });
+
+  it('envoie le total du devis affiché ; refusé, relit le devis, dit le nouveau total et laisse revalider', async () => {
+    let calls = 0;
+    const { fixture, el, gateway } = await mount({
+      quote: () => {
+        calls += 1;
+        // Le devis affiché au clic dit 12 € ;
+        // celui relu après le refus dit 13,50 €.
+        return {
+          kind: 'ok',
+          value: { ...quoteOf(['lines']), totalCents: calls <= 1 ? 1_200 : 1_350 },
+        };
+      },
+      revise: {
+        kind: 'refused',
+        refusal: { code: ORDER_TOTAL_CHANGED, message: 'Le total a changé.' },
+      },
+    });
+    el.querySelector<HTMLButtonElement>('[data-submit]')?.click();
+    await fixture.whenStable();
+    expect(gateway.revise).toHaveBeenCalledWith(
+      'ord_9',
+      expect.objectContaining({ expectedTotalCents: 1_200 }),
+    );
+    await settle();
+    fixture.detectChanges();
+    expect(gateway.quote).toHaveBeenCalledTimes(2);
+    const said = el.querySelector('[data-total-changed]')?.textContent ?? '';
+    expect(said).toContain('12,00');
+    expect(said).toContain('13,50');
+    expect(el.querySelector('[data-submit-refused]')).toBeNull();
+    expect(el.querySelector<HTMLButtonElement>('[data-submit]')?.disabled).toBe(false);
+    el.querySelector<HTMLButtonElement>('[data-submit]')?.click();
+    await fixture.whenStable();
+    expect(gateway.revise).toHaveBeenLastCalledWith(
+      'ord_9',
+      expect.objectContaining({ expectedTotalCents: 1_350 }),
+    );
   });
 
   it('dit le refus du devis par la phrase du serveur', async () => {

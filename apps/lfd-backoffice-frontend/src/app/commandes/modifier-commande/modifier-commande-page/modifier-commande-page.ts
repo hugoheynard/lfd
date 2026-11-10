@@ -68,6 +68,7 @@ import {
   revisionContentOf,
   revisionDraftOf,
 } from '../revision-draft';
+import { isTotalChangedRefusal } from '../../nouvelle-commande/total-changed-refusal';
 import { hasRefusal, refusalsBySku } from '../revision-refusals';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -186,6 +187,29 @@ export class ModifierCommandePage {
   protected readonly refusal = signal<string | null>(null);
   /** Le refus était « modifiée ailleurs » : seule la relecture en sort. */
   protected readonly stale = signal(false);
+  /**
+   * Le total vu au clic, refusé par le serveur (409 `orders.total_changed`,
+   * plan S2, R14 bis), et la commande voulue qu'il chiffrait. Le devis se
+   * relit ; tant qu'il chiffre la même commande, l'écran dit l'écart avec les
+   * mots de la saisie, et « Valider » repart au nouveau total.
+   */
+  private readonly refusedTotal = signal<{
+    readonly cents: number;
+    readonly content: string;
+  } | null>(null);
+
+  /** « Le total TTC est passé de X à Y » — une fois le devis relu, et seulement s'il a bougé. */
+  protected readonly totalChanged = computed(() => {
+    const refused = this.refusedTotal();
+    const quoted = this.quoted();
+    const quote = this.quote();
+    if (refused === null || quote === null || quoted?.content !== refused.content) {
+      return null;
+    }
+    return quote.totalCents === refused.cents
+      ? null
+      : `Le total TTC est passé de ${formatCents(refused.cents)} à ${formatCents(quote.totalCents)} : les prix ont été mis à jour. Vérifiez le devis, puis validez à nouveau.`;
+  });
 
   protected readonly addresses = computed<readonly DeliveryAddressView[]>(
     () => this.customer()?.addresses ?? [],
@@ -326,6 +350,7 @@ export class ModifierCommandePage {
     this.quoted.set(null);
     this.refusal.set(null);
     this.stale.set(false);
+    this.refusedTotal.set(null);
     try {
       const order = await this.orders.byId(id);
       const companyId = order.companyId;
@@ -400,14 +425,25 @@ export class ModifierCommandePage {
     }
     this.submitting.set(true);
     this.refusal.set(null);
+    this.refusedTotal.set(null);
     try {
+      // Le total envoyé est celui du devis affiché : `quote()` n'existe que
+      // pour la commande voulue qu'il chiffre.
       const revised = await this.orders.revise(this.orderId(), {
         ...content,
         expectedRevision: quote.revision,
+        expectedTotalCents: quote.totalCents,
       });
       this.notify.success(`Commande modifiée — nouveau total ${formatCents(revised.totalCents)}.`);
       await this.router.navigate(this.back());
     } catch (error) {
+      if (isTotalChangedRefusal(error)) {
+        // Pas une panne : un écart à montrer. Le devis se relit.
+        this.refusedTotal.set({ cents: quote.totalCents, content: JSON.stringify(content) });
+        this.quoted.set(null);
+        void this.askQuote();
+        return;
+      }
       this.refuse(error, "La modification n'a pas abouti. Réessayez.");
     } finally {
       this.submitting.set(false);

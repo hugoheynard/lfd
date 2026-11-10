@@ -120,6 +120,11 @@
                 </fold-callout>
               }
 
+              @if (totalChanged(); as message) {
+                <fold-callout variant="warning" announce data-total-changed>{{
+                  message
+                }}</fold-callout>
+              }
               @if (refusal(); as message) {
                 <fold-callout variant="alert" announce data-revise-refusal>
                   {{ message }}

@@ -31,6 +31,7 @@ import { ORDER_REVISION_CHANGE } from '../../../shared/journal/values/orders-val
 import { CustomerRequestsInbox } from '../customer-requests-inbox.store';
 import { CustomerRequestsService } from '../customer-requests.service';
 import { hasRefusal, refusalsBySku } from '../../../commandes/modifier-commande/revision-refusals';
+import { isTotalChangedRefusal } from '../../../commandes/nouvelle-commande/total-changed-refusal';
 
 /** L'écart, tel que le serveur le calcule — ou la phrase de la règle qui refuse. */
 type QuoteState =
@@ -116,6 +117,19 @@ export class OrderChangeDetails {
     (this.ready()?.changes ?? []).map((change) => ORDER_REVISION_CHANGE.labels[change] ?? change),
   );
 
+  /**
+   * Le total vu au clic « Appliquer », refusé par le serveur (409
+   * `orders.total_changed`, plan S2, R14 bis) : le devis se relit, et l'écran
+   * dit l'écart avant que l'équipe applique au nouveau total.
+   */
+  private readonly refusedTotalCents = signal<number | null>(null);
+  protected readonly totalChanged = computed(() => {
+    const before = this.refusedTotalCents();
+    const view = this.ready();
+    if (before === null || view === null || view.totalCents === before) return null;
+    return `Le total TTC est passé de ${formatCents(before)} à ${formatCents(view.totalCents)} : les prix ont été mis à jour. Vérifiez l'écart, puis appliquez à nouveau.`;
+  });
+
   protected readonly refusing = signal(false);
   protected readonly reason = signal('');
   protected readonly busy = signal<'apply' | 'refuse' | null>(null);
@@ -134,14 +148,23 @@ export class OrderChangeDetails {
   }
 
   protected async apply(): Promise<void> {
-    if (this.busy() !== null || this.ready() === null || this.stale() || this.refused()) return;
+    const view = this.ready();
+    if (this.busy() !== null || view === null || this.stale() || this.refused()) return;
     this.busy.set('apply');
     this.error.set(null);
+    this.refusedTotalCents.set(null);
     try {
-      const { revision } = await this.api.applyOrderChange(this.requestId());
+      // Le total du devis affiché : celui que l'équipe a vu (R14).
+      const { revision } = await this.api.applyOrderChange(this.requestId(), view.totalCents);
       this.notify.success(`Modification appliquée : la commande passe en révision ${revision}.`);
       this.inbox.noteAnswered();
     } catch (error) {
+      if (isTotalChangedRefusal(error)) {
+        // Pas une panne : un écart à montrer. Le devis se relit.
+        this.refusedTotalCents.set(view.totalCents);
+        void this.loadQuote(this.requestId());
+        return;
+      }
       this.error.set(httpErrorMessage(error, "La modification n'a pas pu être appliquée."));
     } finally {
       this.busy.set(null);

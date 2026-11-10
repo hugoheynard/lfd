@@ -155,6 +155,11 @@
             @if (unchanged()) {
               <p class="fact" data-unchanged>{{ c().unchangedNote }}</p>
             }
+            @if (totalChanged(); as message) {
+              <fold-callout variant="warning" announce data-total-changed>{{
+                message
+              }}</fold-callout>
+            }
             @if (submitRefusal(); as refusal) {
               <fold-callout variant="alert" announce data-submit-refused>
                 {{ refusal.message }}

@@ -91,8 +91,8 @@ async function mount(
             calls.push(`quote ${id}`);
             return (wire.quote ?? (() => Promise.resolve(QUOTE)))();
           },
-          applyOrderChange: (id: string) => {
-            calls.push(`apply ${id}`);
+          applyOrderChange: (id: string, expectedTotalCents: number) => {
+            calls.push(`apply ${id} ${expectedTotalCents}`);
             return (wire.apply ?? (() => Promise.resolve({ revision: 2 })))();
           },
           refuseOrderChange: (id: string, reason: string) => {
@@ -142,7 +142,8 @@ describe('OrderChangeDetails', () => {
     const { fixture, calls, inbox } = await mount(DETAILS);
     click(fixture, '[data-apply]');
     await settle(fixture);
-    expect(calls).toContain('apply cr_1');
+    // Le total envoyé est celui du devis affiché (R14).
+    expect(calls).toContain(`apply cr_1 ${QUOTE.totalCents}`);
     expect(inbox.answered()).toBe(1);
   });
 
@@ -194,6 +195,37 @@ describe('OrderChangeDetails', () => {
     expect(host(fixture).querySelector<HTMLButtonElement>('button[data-apply]')?.disabled).toBe(
       true,
     );
+  });
+
+  it('le total a changé (409) : relit le devis, dit le nouveau total, réapplique au nouveau', async () => {
+    const changed = new HttpErrorResponse({
+      status: 409,
+      error: { code: 'orders.total_changed', message: 'Le total a changé.' },
+    });
+    let quotes = 0;
+    let applies = 0;
+    const { fixture, calls, inbox } = await mount(DETAILS, {
+      quote: () => {
+        quotes += 1;
+        return Promise.resolve({ ...QUOTE, totalCents: QUOTE.totalCents + (quotes > 1 ? 150 : 0) });
+      },
+      apply: () => {
+        applies += 1;
+        return applies === 1 ? Promise.reject(changed) : Promise.resolve({ revision: 2 });
+      },
+    });
+    click(fixture, '[data-apply]');
+    await settle(fixture);
+    expect(calls).toEqual(['quote cr_1', `apply cr_1 ${QUOTE.totalCents}`, 'quote cr_1']);
+    expect(host(fixture).querySelector('[data-total-changed]')?.textContent).toContain(
+      'Le total TTC est passé',
+    );
+    expect(host(fixture).querySelector('[data-answer-error]')).toBeNull();
+    expect(inbox.answered()).toBe(0);
+    click(fixture, '[data-apply]');
+    await settle(fixture);
+    expect(calls).toContain(`apply cr_1 ${QUOTE.totalCents + 150}`);
+    expect(inbox.answered()).toBe(1);
   });
 
   it('un refus d’appliquer se dit par la phrase du serveur', async () => {

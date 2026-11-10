@@ -19,7 +19,9 @@ import { AuthFacade } from '../../auth/auth.facade';
 
 /**
  * Un refus du serveur, tel qu'il l'a dit : le code pour brancher, la phrase
- * pour l'écran — elle est écrite pour le client (`orders.revise.*`).
+ * pour l'écran — elle est écrite pour le client (`orders.revise.*`). Le
+ * refus `orders.total_changed` (le total vu n'est plus le bon, plan S2,
+ * R14 bis) passe par le même canal : l'écran le reconnaît à son code.
  */
 export interface RevisionRefusal {
   readonly code: string | null;
@@ -89,7 +91,10 @@ export class OrderRevisionGateway {
     );
   }
 
-  /** `POST /orders/:id/revisions` — la modification, avec la révision qu'elle corrige. */
+  /**
+   * `POST /orders/:id/revisions` — la modification, avec la révision qu'elle
+   * corrige et le total que le client a vu (`expectedTotalCents`, R14).
+   */
   revise(
     orderId: string,
     payload: OrderRevisionPayload,

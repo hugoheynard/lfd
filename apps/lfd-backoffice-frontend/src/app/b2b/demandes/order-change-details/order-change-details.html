@@ -42,6 +42,9 @@
               demande en invitant le client à la renouveler.
             </fold-callout>
           }
+          @if (totalChanged(); as message) {
+            <fold-callout variant="warning" announce data-total-changed>{{ message }}</fold-callout>
+          }
           <fold-field-list>
             <fold-field label="Total actuel">{{ cents(q.previousTotalCents) }}</fold-field>
             <fold-field label="Total demandé">{{ cents(q.totalCents) }}</fold-field>
