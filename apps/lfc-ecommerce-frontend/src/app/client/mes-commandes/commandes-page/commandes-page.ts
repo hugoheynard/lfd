@@ -204,6 +204,11 @@ export class CommandesPage {
     this.chrome.back.set(null);
     this.chrome.menu.set(true);
     this.chrome.barOnDesktop.set(true);
+    // La liste vit dans un service de l'application, lu une fois par espace :
+    // on revient ici après une modification ou une passation, et la page
+    // montrerait la commande d'avant. Chaque ouverture la relit ; la liste
+    // gardée s'affiche pendant ce temps.
+    this.history_.reload();
   }
 
   /** Le filtre est RELU au serveur (`?site=`) : le mur est dans sa requête. */
