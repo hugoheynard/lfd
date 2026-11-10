@@ -3,8 +3,8 @@ import {
   PackingSheetNotYetDrawnError,
   QuantitiesOnlyAfterArrestError,
 } from "../../../domain/errors/order-revision-errors.js";
-import { ReviseOrderCommand } from "../revise-order.command.js";
 import { content, DAY, placedOrder, reviseScene } from "./revision-scene.js";
+import { refusedEarly } from "./revision-seen.js";
 
 /**
  * **Changer les quantités d'une commande inscrite** (plan A2,
@@ -21,11 +21,11 @@ const FEWER = content({ lines: [{ sku: "VIE-001", quantity: 4 }] });
 describe("ReviseOrderHandler — après l'arrêt du plan (plan A2)", () => {
   it("une hausse : fournil sous `staff_quantities`, colisage, écriture, compte, puis le BL", async () => {
     const order = await placedOrder();
-    const { handler, trace, desk, packing, notes, revisions } = reviseScene(order, {
+    const { handler, asSeen, trace, desk, packing, notes, revisions } = reviseScene(order, {
       desk: "raised",
     });
 
-    await handler.execute(new ReviseOrderCommand("ord_1", STAFF, 0, MORE));
+    await handler.execute(await asSeen("ord_1", STAFF, 0, MORE));
 
     expect(trace.slice(0, 4)).toEqual(["lock:ord_1", `desk:${DAY}`, `packing:${DAY}`, "save:r1"]);
     expect(desk.noted[0]).toMatchObject({
@@ -41,9 +41,9 @@ describe("ReviseOrderHandler — après l'arrêt du plan (plan A2)", () => {
 
   it("une baisse : même chemin — le colisage et le BL suivent, le four n'en sait rien de plus", async () => {
     const order = await placedOrder();
-    const { handler, packing, notes } = reviseScene(order, { desk: "unchanged" });
+    const { handler, asSeen, packing, notes } = reviseScene(order, { desk: "unchanged" });
 
-    await handler.execute(new ReviseOrderCommand("ord_1", STAFF, 0, FEWER));
+    await handler.execute(await asSeen("ord_1", STAFF, 0, FEWER));
 
     expect(packing.revised[0]?.lines).toEqual([{ sku: "VIE-001", quantity: 4 }]);
     expect(notes.calls).toEqual(["follow-revision:ord_1"]);
@@ -51,9 +51,9 @@ describe("ReviseOrderHandler — après l'arrêt du plan (plan A2)", () => {
 
   it("avant l'arrêt, rien ne change : la note seule, ni colisage ni BL", async () => {
     const order = await placedOrder();
-    const { handler, packing, notes } = reviseScene(order);
+    const { handler, asSeen, packing, notes } = reviseScene(order);
 
-    await handler.execute(new ReviseOrderCommand("ord_1", STAFF, 0, MORE));
+    await handler.execute(await asSeen("ord_1", STAFF, 0, MORE));
 
     expect(packing.revised).toEqual([]);
     expect(notes.calls).toEqual([]);
@@ -61,21 +61,21 @@ describe("ReviseOrderHandler — après l'arrêt du plan (plan A2)", () => {
 
   it("le client n'y a pas droit : `before_inscription`, et le refus « inscrite » d'avant", async () => {
     const order = await placedOrder();
-    const { handler, desk, revisions } = reviseScene(order, { desk: "raised" });
+    const { handler, asSeen, desk, revisions } = reviseScene(order, { desk: "raised" });
 
-    await expect(
-      handler.execute(new ReviseOrderCommand("ord_1", CUSTOMER, 0, MORE)),
-    ).rejects.toThrow(OrderNotRevisableError);
+    await expect(handler.execute(await asSeen("ord_1", CUSTOMER, 0, MORE))).rejects.toThrow(
+      OrderNotRevisableError,
+    );
     expect(desk.noted[0]?.allowance).toBe("before_inscription");
     expect(revisions.saved).toEqual([]);
   });
 
   it("autre chose que des quantités, découvert sous le verrou du fournil : refus nommé, rien d'écrit", async () => {
     const order = await placedOrder();
-    const { handler, desk, packing, revisions } = reviseScene(order, { desk: "raised" });
+    const { handler, asSeen, desk, packing, revisions } = reviseScene(order, { desk: "raised" });
 
     await expect(
-      handler.execute(new ReviseOrderCommand("ord_1", STAFF, 0, content({ note: "x" }))),
+      handler.execute(await asSeen("ord_1", STAFF, 0, content({ note: "x" }))),
     ).rejects.toThrow(QuantitiesOnlyAfterArrestError);
     expect(desk.noted[0]?.allowance).toBe("before_inscription");
     expect(packing.revised).toEqual([]);
@@ -101,30 +101,30 @@ describe("ReviseOrderHandler — après l'arrêt du plan (plan A2)", () => {
       const order = await placedOrder({ status: "confirmed" });
       const { handler, desk } = reviseScene(order, { desk: "raised" });
 
-      await expect(
-        handler.execute(new ReviseOrderCommand("ord_1", STAFF, 0, wanted)),
-      ).rejects.toThrow(QuantitiesOnlyAfterArrestError);
+      await expect(handler.execute(await refusedEarly("ord_1", STAFF, 0, wanted))).rejects.toThrow(
+        QuantitiesOnlyAfterArrestError,
+      );
       expect(desk.noted).toEqual([]);
     },
   );
 
   it("statut déjà inscrit (`confirmed`) : les quantités passent, et s'écrivent", async () => {
     const order = await placedOrder({ status: "confirmed" });
-    const { handler, revisions } = reviseScene(order, { desk: "raised" });
+    const { handler, asSeen, revisions } = reviseScene(order, { desk: "raised" });
 
-    await handler.execute(new ReviseOrderCommand("ord_1", STAFF, 0, MORE));
+    await handler.execute(await asSeen("ord_1", STAFF, 0, MORE));
 
     expect(revisions.saved).toHaveLength(1);
   });
 
   it("la feuille du colisage n'est pas encore écrite : refus temporaire, rien d'écrit", async () => {
     const order = await placedOrder();
-    const { handler, revisions, notes, durable } = reviseScene(order, {
+    const { handler, asSeen, revisions, notes, durable } = reviseScene(order, {
       desk: "raised",
       packing: "sheet_missing",
     });
 
-    await expect(handler.execute(new ReviseOrderCommand("ord_1", STAFF, 0, MORE))).rejects.toThrow(
+    await expect(handler.execute(await asSeen("ord_1", STAFF, 0, MORE))).rejects.toThrow(
       PackingSheetNotYetDrawnError,
     );
     expect(revisions.saved).toEqual([]);
@@ -137,11 +137,9 @@ describe("ReviseOrderHandler — après l'arrêt du plan (plan A2)", () => {
     ["delivery_bin", "bac de livraison"],
   ] as const)("le colisage répond « %s » : refus nommé, rien d'écrit", async (outcome, words) => {
     const order = await placedOrder();
-    const { handler, revisions } = reviseScene(order, { desk: "raised", packing: outcome });
+    const { handler, asSeen, revisions } = reviseScene(order, { desk: "raised", packing: outcome });
 
-    await expect(handler.execute(new ReviseOrderCommand("ord_1", STAFF, 0, MORE))).rejects.toThrow(
-      words,
-    );
+    await expect(handler.execute(await asSeen("ord_1", STAFF, 0, MORE))).rejects.toThrow(words);
     expect(revisions.saved).toEqual([]);
   });
 });

@@ -20,11 +20,16 @@ export interface AppliedOrderChange {
  * Ses refus remontent tels quels, avec leur phrase.
  */
 export abstract class OrderChangeApplier {
-  /** Rend la révision produite et ses totaux. */
+  /**
+   * Rend la révision produite et ses totaux. `expectedTotalCents` est le TTC
+   * que l'équipe a vu au devis (plan `plan-s2-la-hausse.md`, R14) : un écart
+   * refuse, et l'adaptateur ne le recalcule jamais.
+   */
   abstract apply(
     orderId: string,
     staffUserId: string,
     baseRevision: number,
     change: RequestedOrderChange,
+    expectedTotalCents: number,
   ): Promise<AppliedOrderChange>;
 }

@@ -81,23 +81,39 @@ describe("ApplyOrderChangeHandler", () => {
     const events = new RecordingPublisher();
 
     const revision = await applying(requests, applier, events).execute(
-      new ApplyOrderChangeCommand("q1", "staff_1"),
+      new ApplyOrderChangeCommand("q1", "staff_1", APPLIED_TOTAL_CENTS),
     );
 
     expect(revision).toBe(2);
     expect(log).toEqual(["lock q1", "revise o1@1", "save q1"]);
     expect(applier.applied).toEqual([
-      { orderId: "o1", staffUserId: "staff_1", baseRevision: 1, change: CHANGE },
+      {
+        orderId: "o1",
+        staffUserId: "staff_1",
+        baseRevision: 1,
+        change: CHANGE,
+        expectedTotalCents: APPLIED_TOTAL_CENTS,
+      },
     ]);
     expect(requests.saved[0]?.toPersistence().handling?.by.name).toBe("Camille Durand");
     expect(events.factTypes()).toEqual(["order.change_applied"]);
     expect(events.traced[0]).toBeInstanceOf(OrderChangeAppliedEvent);
   });
 
+  /** Plan S2, R14 : le total vu est celui de l'équipe, jamais recalculé en chemin. */
+  it("transmet à la révision le total que l'équipe a vu, tel quel", async () => {
+    const applier = new RecordingApplier();
+    const seenByStaff = APPLIED_TOTAL_CENTS - 1;
+    await applying(new MemoryRequests([orderChange()]), applier, new RecordingPublisher()).execute(
+      new ApplyOrderChangeCommand("q1", "staff_1", seenByStaff),
+    );
+    expect(applier.applied.map((call) => call.expectedTotalCents)).toEqual([seenByStaff]);
+  });
+
   it("le fait publié porte les totaux de la révision appliquée, tels qu'elle les rend", async () => {
     const events = new RecordingPublisher();
     await applying(new MemoryRequests([orderChange()]), new RecordingApplier(), events).execute(
-      new ApplyOrderChangeCommand("q1", "staff_1"),
+      new ApplyOrderChangeCommand("q1", "staff_1", APPLIED_TOTAL_CENTS),
     );
     const applied = events.traced[0];
     expect(applied).toBeInstanceOf(OrderChangeAppliedEvent);
@@ -117,7 +133,7 @@ describe("ApplyOrderChangeHandler", () => {
       new RecordingPublisher(),
       uow,
       mails,
-    ).execute(new ApplyOrderChangeCommand("q1", "staff_1"));
+    ).execute(new ApplyOrderChangeCommand("q1", "staff_1", APPLIED_TOTAL_CENTS));
     expect(mails.queued).toEqual([
       expect.objectContaining({
         template: "customer.order-change-applied",
@@ -141,7 +157,7 @@ describe("ApplyOrderChangeHandler", () => {
     const requests = new MemoryRequests([orderChange()]);
     await expect(
       applying(requests, new RecordingApplier(), events, uow, mails).execute(
-        new ApplyOrderChangeCommand("q1", "staff_1"),
+        new ApplyOrderChangeCommand("q1", "staff_1", APPLIED_TOTAL_CENTS),
       ),
     ).rejects.toThrow("boîte d'envoi indisponible");
     expect(events.traced).toHaveLength(0);
@@ -153,7 +169,7 @@ describe("ApplyOrderChangeHandler", () => {
     const events = new RecordingPublisher();
     await expect(
       applying(requests, new RecordingApplier([], true), events).execute(
-        new ApplyOrderChangeCommand("q1", "staff_1"),
+        new ApplyOrderChangeCommand("q1", "staff_1", APPLIED_TOTAL_CENTS),
       ),
     ).rejects.toThrow(RevisionRefused);
     expect(requests.saved).toHaveLength(0);
@@ -167,7 +183,7 @@ describe("ApplyOrderChangeHandler", () => {
     const applier = new RecordingApplier();
     await expect(
       applying(new MemoryRequests([request]), applier, new RecordingPublisher()).execute(
-        new ApplyOrderChangeCommand("q1", "staff_1"),
+        new ApplyOrderChangeCommand("q1", "staff_1", APPLIED_TOTAL_CENTS),
       ),
     ).rejects.toThrow("déjà traitée");
     expect(applier.applied).toHaveLength(0);
@@ -177,12 +193,12 @@ describe("ApplyOrderChangeHandler", () => {
     const applier = new RecordingApplier();
     await expect(
       applying(new MemoryRequests([contactRequest()]), applier, new RecordingPublisher()).execute(
-        new ApplyOrderChangeCommand("q1", "staff_1"),
+        new ApplyOrderChangeCommand("q1", "staff_1", APPLIED_TOTAL_CENTS),
       ),
     ).rejects.toThrow(NotAnOrderChangeRequestError);
     await expect(
       applying(new MemoryRequests(), applier, new RecordingPublisher()).execute(
-        new ApplyOrderChangeCommand("q404", "staff_1"),
+        new ApplyOrderChangeCommand("q404", "staff_1", APPLIED_TOTAL_CENTS),
       ),
     ).rejects.toThrow(CustomerRequestNotFoundError);
     expect(applier.applied).toHaveLength(0);

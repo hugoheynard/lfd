@@ -1235,7 +1235,11 @@ export type {
   ReplacedCompositionView,
   ReplacedLineView,
 } from "./order-revision-history.js";
-export { orderRevisionPayloadSchema, orderRevisionQuotePayloadSchema } from "./order-revision.js";
+export {
+  orderRevisionPayloadSchema,
+  orderRevisionQuotePayloadSchema,
+  requestedOrderRevisionSchema,
+} from "./order-revision.js";
 export type {
   OrderRevisedResponse,
   OrderRevisionDiscountRefusal,
@@ -2288,6 +2292,7 @@ export {
   contactSettingsPayloadSchema,
   customerRequestKindFilterSchema,
   customerRequestStatusSchema,
+  orderChangeApplyPayloadSchema,
   orderChangeRefusalPayloadSchema,
   orderChangeRequestPayloadSchema,
   orderProblemPayloadSchema,
@@ -2313,6 +2318,7 @@ export type {
   EmailReplyAttachmentView,
   EmailReplyDetailsView,
   OrderChangeAppliedResponse,
+  OrderChangeApplyPayload,
   OrderChangeDecisionView,
   OrderChangeDetailsView,
   OrderChangeRefusalPayload,

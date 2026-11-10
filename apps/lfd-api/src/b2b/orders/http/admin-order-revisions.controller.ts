@@ -75,13 +75,14 @@ export class AdminOrderRevisionsController {
     @StaffUserId() staffUserId: string,
     @Body(new ZodBody(orderRevisionPayloadSchema)) payload: OrderRevisionPayload,
   ): Promise<OrderRevisedResponse> {
-    const { expectedRevision, ...content } = payload;
+    const { expectedRevision, expectedTotalCents, ...content } = payload;
     return this.commands.execute<ReviseOrderCommand, ReviseOrderResult>(
       new ReviseOrderCommand(
         id,
         { kind: "staff", staffId: staffUserId },
         expectedRevision,
         content,
+        expectedTotalCents,
       ),
     );
   }

@@ -1,7 +1,8 @@
 import { z } from "zod";
 
 import { CONTACT_BOUNDS } from "./contact.values.js";
-import { orderRevisionPayloadSchema } from "./order-revision.js";
+import { expectedTotalCentsSchema } from "./order.js";
+import { requestedOrderRevisionSchema } from "./order-revision.js";
 
 /**
  * Contrat de fil des **demandes clients** (`documentation/demandes-client/demandes-clients.md`) :
@@ -160,14 +161,14 @@ export type OrderProblemPayload = z.infer<typeof orderProblemPayloadSchema>;
 /**
  * `POST /me/orders/:id/change-request` — **demander une modification** après
  * l'heure limite (plan `documentation/commandes/modification/plan-modifier-une-commande.md`,
- * M4). `change` est EXACTEMENT le corps d'une révision
- * (`orderRevisionPayloadSchema`) : la commande voulue, entière, et la révision
+ * M4). `change` est le corps d'une révision sans son total vu
+ * (`requestedOrderRevisionSchema`) : la commande voulue, entière, et la révision
  * sur laquelle le client a composé — c'est elle que le commerce appliquera.
  * Le mot est facultatif ; nom et e-mail sont pris au compte.
  */
 export const orderChangeRequestPayloadSchema = z
   .object({
-    change: orderRevisionPayloadSchema,
+    change: requestedOrderRevisionSchema,
     message: bounded(CONTACT_BOUNDS.message).default(""),
   })
   .strict();
@@ -181,3 +182,16 @@ export const orderChangeRefusalPayloadSchema = z
   .object({ reason: bounded(CONTACT_BOUNDS.changeRefusal) })
   .strict();
 export type OrderChangeRefusalPayload = z.infer<typeof orderChangeRefusalPayloadSchema>;
+
+/**
+ * `POST /admin/customer-requests/:id/order-change/apply` — le TTC du devis que
+ * l'équipe a sous les yeux (plan
+ * `documentation/commandes/modification/plan-s2-la-hausse.md`, R14) :
+ * appliquer est une délégation, le total vu est celui de l'équipe. Un écart
+ * refuse (`409` `orders.total_changed`) ; jamais recalculé par le serveur,
+ * une comparaison avec son propre calcul serait vide.
+ */
+export const orderChangeApplyPayloadSchema = z
+  .object({ expectedTotalCents: expectedTotalCentsSchema })
+  .strict();
+export type OrderChangeApplyPayload = z.infer<typeof orderChangeApplyPayloadSchema>;

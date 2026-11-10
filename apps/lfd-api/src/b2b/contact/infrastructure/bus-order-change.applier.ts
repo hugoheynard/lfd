@@ -16,6 +16,9 @@ import {
  * commande par l'équipe : `ReviseOrderCommand`, par le bus — le même handler
  * que `POST /admin/orders/:id/revisions`, ses règles et ses refus. Appelé
  * dans l'unité de travail de la réponse, il la rejoint.
+ *
+ * Le total vu est celui que l'équipe a lu au devis, transmis tel quel (plan
+ * `plan-s2-la-hausse.md`, R14) : le recalculer ici rendrait la comparaison vide.
  */
 @Injectable()
 export class BusOrderChangeApplier extends OrderChangeApplier {
@@ -28,6 +31,7 @@ export class BusOrderChangeApplier extends OrderChangeApplier {
     staffUserId: string,
     baseRevision: number,
     change: RequestedOrderChange,
+    expectedTotalCents: number,
   ): Promise<AppliedOrderChange> {
     const result = await this.commands.execute<ReviseOrderCommand, ReviseOrderResult>(
       new ReviseOrderCommand(
@@ -35,6 +39,7 @@ export class BusOrderChangeApplier extends OrderChangeApplier {
         { kind: "staff", staffId: staffUserId },
         baseRevision,
         change,
+        expectedTotalCents,
       ),
     );
     return {

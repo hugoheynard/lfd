@@ -12,6 +12,7 @@
  * Doublés : la signature des jetons (le jeton EST le `sub`) et Stripe.
  */
 import {
+  ORDER_TOTAL_CHANGED,
   PERSONAL_WORKSPACE,
   WORKSPACE_HEADER,
   type AdminPlacedOrderResponse,
@@ -516,5 +517,41 @@ describe("le devis de révision", () => {
     expect(quote.revision).toBe(0);
     expect(quote.differenceCents).toBeGreaterThan(0);
     expect((await ctx.prisma.order.findUniqueOrThrow({ where: { id: orderId } })).revision).toBe(0);
+  });
+});
+
+describe("le total vu (plan S2, R14)", () => {
+  it("refuse une modification dont le total n'est plus celui du devis (409), la commande intacte", async () => {
+    const { orderId, pickupId } = await scene();
+    const wanted = content(pickupId, { lines: [{ sku: "VIE-001-1", quantity: 20 }] });
+    const quote = jsonBody<{ totalCents: number }>(
+      await buyer().post(`/orders/${orderId}/revisions/quote`).send(wanted).expect(200),
+    );
+    const before = await ctx.prisma.order.findUniqueOrThrow({ where: { id: orderId } });
+    const stale = quote.totalCents - 1;
+
+    const refused = await buyer()
+      .post(`/orders/${orderId}/revisions`)
+      .send({ expectedRevision: 0, expectedTotalCents: stale, ...wanted })
+      .expect(409);
+
+    expect(refused.body).toMatchObject({
+      code: ORDER_TOTAL_CHANGED,
+      expectedTotalCents: stale,
+      totalCents: quote.totalCents,
+    });
+    const after = await ctx.prisma.order.findUniqueOrThrow({ where: { id: orderId } });
+    expect(after).toMatchObject({ revision: 0, totalCents: before.totalCents });
+    expect(await ctx.prisma.orderRevisionEntry.count({ where: { orderId } })).toBe(0);
+  });
+
+  it("refuse une modification sans total vu (400) : le champ est obligatoire", async () => {
+    const { orderId, pickupId } = await scene();
+    const agent = buyer();
+    // Le corps porte un total explicite invalide : l'agent du harnais ne le complète pas.
+    await agent
+      .post(`/orders/${orderId}/revisions`)
+      .send({ expectedRevision: 0, expectedTotalCents: -1, ...content(pickupId, { note: "x" }) })
+      .expect(400);
   });
 });

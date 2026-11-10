@@ -14,6 +14,7 @@ import { OrderRevisedEvent } from "../../domain/events/order-revised.event.js";
 import { AccountOrderRevaluation } from "../../domain/ports/account-order-revaluation.js";
 import { DeliveryNoteFollowing } from "../../domain/ports/delivery-note-following.js";
 import { OrderRevisionRepository } from "../../domain/ports/order-revision.repository.js";
+import { ensureTotalSeen } from "../../domain/services/seen-total.js";
 import {
   isQuantitiesOnly,
   type RevisionScope,
@@ -30,8 +31,9 @@ import { ReviseOrderCommand, type ReviseOrderResult } from "./revise-order.comma
  * ## L'ordre des gestes
  *
  * 1. Hors verrou : le mur, la révision attendue (R7), la règle (R1), puis la
- *    recomposition entière ({@link OrderRevising}) — tous les refus avant
- *    toute écriture, aucun appel d'un autre bloc sous un verrou.
+ *    recomposition entière ({@link OrderRevising}), puis le total vu (plan
+ *    `plan-s2-la-hausse.md`, R14 — après les refus de règlement, R15) — tous
+ *    les refus avant toute écriture, aucun appel d'un autre bloc sous un verrou.
  * 2. La transaction : ligne `orders` verrouillée et relue, révision et règle
  *    rejugées sous le verrou, puis le guichet du fournil sous le verrou de
  *    chaque journée touchée (§9.1 — « inscrite » refuse et annule tout), la
@@ -75,6 +77,9 @@ export class ReviseOrderHandler implements ICommandHandler<ReviseOrderCommand, R
       requireChange: true,
     });
     ensureWithinScope(current, revision, scope);
+    // R14, R15 (plan S2) : le règlement a parlé (ensureRevisable, compose) ;
+    // on ne fait pas revalider un montant qu'on refuserait de toute façon.
+    ensureTotalSeen(revision.totalAfterCents, command.expectedTotalCents);
     await this.unitOfWork.run(() => this.record(command, revision));
     return {
       id: revision.orderId,

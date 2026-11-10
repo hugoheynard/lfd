@@ -1,6 +1,8 @@
 import { ORDER_TOTAL_CHANGED } from "@lfd/contracts";
 import type request from "supertest";
 
+import { isSeenRevision, quotedRevisionTotal, revisionBodyOf } from "./seen-revision-total.js";
+
 /**
  * **Le total vu, confirmé pour les suites qui éprouvent autre chose** — plan
  * `documentation/pricing/centime-et-tva/le-prix-d-un-panier.md`, lot T3.
@@ -14,6 +16,9 @@ import type request from "supertest";
  * le total qu'elle compose (une tentative à un total qu'aucune commande
  * n'atteint, qui ne laisse rien derrière elle — le refus précède le
  * règlement et rend la clé), puis envoie la vraie requête à ce total.
+ *
+ * Les modifications (plan S2, R14) passent par le même habillage, mais lisent
+ * leur DEVIS au lieu d'une tentative (`seen-revision-total.ts`).
  *
  * Ce qu'il ne fait PAS : toucher un corps qui porte déjà son total. Les
  * suites du total vu (`order-total-seen.e2e-spec.ts`) l'envoient elles-mêmes,
@@ -58,16 +63,40 @@ export function seeingTotals(agent: request.Agent, fresh: () => request.Agent): 
   return Object.assign(agent, {
     post: (url: string): request.Test => {
       const test = post(url);
-      return ORDER_PLACEMENTS.has(url) ? confirmingTotal(test, url, fresh) : test;
+      if (isSeenRevision(url)) {
+        return confirmingTotal(test, {
+          bodyOf: revisionBodyOf,
+          totalOf: (headers, body) => quotedRevisionTotal(fresh, url, headers, body),
+          cacheKeyOf: () => null,
+        });
+      }
+      return ORDER_PLACEMENTS.has(url)
+        ? confirmingTotal(test, {
+            bodyOf: (body) => body,
+            totalOf: (headers, body) => composedTotal(fresh, url, headers, body),
+            cacheKeyOf: (headers, body) => JSON.stringify([url, [...headers], body]),
+          })
+        : test;
     },
   });
 }
 
-function confirmingTotal(
-  test: request.Test,
-  url: string,
-  fresh: () => request.Agent,
-): request.Test {
+/** Comment une route trouve son total vu, et si un renvoi identique le réutilise. */
+interface TotalSource {
+  /** Le corps à compléter — `null` : la route n'a rien à confirmer. */
+  readonly bodyOf: (body: Record<string, unknown> | null) => Record<string, unknown> | null;
+  readonly totalOf: (
+    headers: ReadonlyMap<string, string>,
+    body: Record<string, unknown>,
+  ) => Promise<number>;
+  /** `null` : jamais de cache. */
+  readonly cacheKeyOf: (
+    headers: ReadonlyMap<string, string>,
+    body: Record<string, unknown>,
+  ) => string | null;
+}
+
+function confirmingTotal(test: request.Test, source: TotalSource): request.Test {
   const headers = new Map<string, string>();
   let body: Record<string, unknown> | null = null;
   const set = test.set.bind(test);
@@ -97,19 +126,21 @@ function confirmingTotal(
       return send(data as string);
     },
     end: (fn?: Parameters<request.Test["end"]>[0]): request.Test => {
-      const seen = body;
+      const seen = source.bodyOf(body);
       if (seen === null || "expectedTotalCents" in seen) {
         return end(fn);
       }
-      const key = JSON.stringify([url, [...headers], seen]);
-      const known = confirmedByKey.get(key);
+      const key = source.cacheKeyOf(headers, seen);
+      const known = key === null ? undefined : confirmedByKey.get(key);
       if (known !== undefined) {
         send({ expectedTotalCents: known });
         return end(fn);
       }
-      void composedTotal(fresh, url, headers, seen).then(
+      void source.totalOf(headers, seen).then(
         (expectedTotalCents) => {
-          confirmedByKey.set(key, expectedTotalCents);
+          if (key !== null) {
+            confirmedByKey.set(key, expectedTotalCents);
+          }
           send({ expectedTotalCents });
           end(fn);
         },

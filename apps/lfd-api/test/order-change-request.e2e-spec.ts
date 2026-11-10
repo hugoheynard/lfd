@@ -25,6 +25,7 @@ import type {
   OrderRevisionQuoteView,
   RequestReasonPayload,
 } from "@lfd/contracts";
+import { ORDER_TOTAL_CHANGED } from "@lfd/contracts";
 
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -297,8 +298,10 @@ describe("la boîte des demandes — l'équipe répond", () => {
     expect(quote).toMatchObject({ revision: 0, changes: ["lines"] });
     expect(quote.differenceCents).toBeGreaterThan(0);
 
+    // L'écran envoie le total de SON devis (plan S2, R14).
     const applied = await staff()
       .post(`/admin/customer-requests/${id}/order-change/apply`)
+      .send({ expectedTotalCents: quote.totalCents })
       .expect(200);
     expect(jsonBody<{ revision: number }>(applied).revision).toBe(1);
 
@@ -331,6 +334,31 @@ describe("la boîte des demandes — l'équipe répond", () => {
 
     // Répondue, elle ne se répond plus.
     await staff().post(`/admin/customer-requests/${id}/order-change/apply`).expect(409);
+  });
+
+  /** Plan S2, R14 : le total vu d'une demande appliquée est celui de l'équipe. */
+  it("« Appliquer » sur un total qui n'est plus celui du devis : 409, commande et demande intactes", async () => {
+    const s = await scene();
+    const id = await requested(s);
+    const quote = jsonBody<OrderRevisionQuoteView>(
+      await staff().get(`/admin/customer-requests/${id}/order-change/quote`).expect(200),
+    );
+    const stale = quote.totalCents + 1;
+
+    const refused = await staff()
+      .post(`/admin/customer-requests/${id}/order-change/apply`)
+      .send({ expectedTotalCents: stale })
+      .expect(409);
+
+    expect(refused.body).toMatchObject({
+      code: ORDER_TOTAL_CHANGED,
+      expectedTotalCents: stale,
+      totalCents: quote.totalCents,
+    });
+    expect(await quantities(s.orderId)).toEqual([{ sku: "VIE-001-1", quantity: 10 }]);
+    expect(await ctx.prisma.orderRevisionEntry.count({ where: { orderId: s.orderId } })).toBe(0);
+    const row = await ctx.prisma.customerRequest.findUniqueOrThrow({ where: { id } });
+    expect(row).toMatchObject({ changeAppliedRevision: null, handledAt: null });
   });
 
   it("« Refuser » avec un mot : la commande intacte, le client lit le mot", async () => {

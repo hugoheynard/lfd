@@ -13,7 +13,6 @@ import {
 } from "../../../domain/errors/order-revision-errors.js";
 import { PastOrderCutoffError } from "../../../domain/errors/order-errors.js";
 import { ProductionPlanClosedError } from "../../../domain/errors/production-plan-closed.error.js";
-import { ReviseOrderCommand } from "../revise-order.command.js";
 import { FixedClosedPlans, gateOf, RecordingAdmissionDesk } from "./plan-doubles.js";
 import {
   AFTER_CUTOFF,
@@ -25,6 +24,7 @@ import {
   placedOrder,
   reviseScene,
 } from "./revision-scene.js";
+import { refusedEarly } from "./revision-seen.js";
 
 /** Le retrait du Labo devient une livraison à échéance (« avant 10 h »). */
 const TO_DELIVERY = {
@@ -61,15 +61,10 @@ const STAFF = { kind: "staff", staffId: "stf_1" } as const;
 describe("ReviseOrderHandler — le geste", () => {
   it("verrouille, note au fournil, écrit, recale le compte, publie — dans cet ordre", async () => {
     const order = await placedOrder();
-    const { handler, trace, revaluation, durable } = reviseScene(order);
+    const { handler, asSeen, trace, revaluation, durable } = reviseScene(order);
 
     const result = await handler.execute(
-      new ReviseOrderCommand(
-        "ord_1",
-        CUSTOMER,
-        0,
-        content({ lines: [{ sku: "VIE-001", quantity: 20 }] }),
-      ),
+      await asSeen("ord_1", CUSTOMER, 0, content({ lines: [{ sku: "VIE-001", quantity: 20 }] })),
     );
 
     expect(trace).toEqual([
@@ -105,10 +100,10 @@ describe("ReviseOrderHandler — le geste", () => {
       ...placed,
       lines: placed.lines.map((line) => ({ ...line, unitPriceMillicents: 180_000, pricing: null })),
     };
-    const { handler, revisions } = reviseScene(order);
+    const { handler, asSeen, revisions } = reviseScene(order);
 
     await handler.execute(
-      new ReviseOrderCommand(
+      await asSeen(
         "ord_1",
         STAFF,
         0,
@@ -140,15 +135,10 @@ describe("ReviseOrderHandler — le geste", () => {
       ...placed,
       lines: placed.lines.map((line) => ({ ...line, unitPriceMillicents: 180_000, pricing: null })),
     };
-    const { handler, revisions } = reviseScene(order);
+    const { handler, asSeen, revisions } = reviseScene(order);
 
     const attempt = handler.execute(
-      new ReviseOrderCommand(
-        "ord_1",
-        STAFF,
-        0,
-        content({ lines: [{ sku: "VIE-001", quantity: 12 }] }),
-      ),
+      await asSeen("ord_1", STAFF, 0, content({ lines: [{ sku: "VIE-001", quantity: 12 }] })),
     );
 
     await expect(attempt).rejects.toBeInstanceOf(RevisedLinePriceChangedError);
@@ -167,15 +157,10 @@ describe("ReviseOrderHandler — le geste", () => {
       principal: null,
       buyerKind: "guest" as const,
     };
-    const { handler, revisions } = reviseScene(guest);
+    const { handler, asSeen, revisions } = reviseScene(guest);
 
     await handler.execute(
-      new ReviseOrderCommand(
-        "ord_1",
-        STAFF,
-        0,
-        content({ lines: [{ sku: "VIE-001", quantity: 12 }] }),
-      ),
+      await asSeen("ord_1", STAFF, 0, content({ lines: [{ sku: "VIE-001", quantity: 12 }] })),
     );
 
     expect(revisions.saved[0]?.revision.state.buyerKind).toBe("guest");
@@ -184,9 +169,9 @@ describe("ReviseOrderHandler — le geste", () => {
   it("passer du retrait à la livraison ajoute les frais de zone (commande sans remise)", async () => {
     // Sans remise avant ni après : L9 (§ 13.8) n'a rien à refuser.
     const order = await placedOrder({ discountAdjustment: null, discountCents: 0 });
-    const { handler, revisions, durable } = reviseScene(order);
+    const { handler, asSeen, revisions, durable } = reviseScene(order);
 
-    await handler.execute(new ReviseOrderCommand("ord_1", STAFF, 0, content(TO_DELIVERY)));
+    await handler.execute(await asSeen("ord_1", STAFF, 0, content(TO_DELIVERY)));
 
     const saved = revisions.saved[0]?.revision;
     expect(saved?.state).toMatchObject({ discountCents: 0, deliveryFeeCents: 500 });
@@ -205,17 +190,17 @@ describe("ReviseOrderHandler — le geste", () => {
     const { handler, revisions } = reviseScene(order);
 
     await expect(
-      handler.execute(new ReviseOrderCommand("ord_1", STAFF, 0, content(TO_DELIVERY))),
+      handler.execute(await refusedEarly("ord_1", STAFF, 0, content(TO_DELIVERY))),
     ).rejects.toThrow(FulfillmentChangeAltersPromotionError);
     expect(revisions.saved).toHaveLength(0);
   });
 
   it("une date qui change fait tenir les DEUX journées au fournil", async () => {
     const order = await placedOrder();
-    const { handler, desk } = reviseScene(order);
+    const { handler, asSeen, desk } = reviseScene(order);
 
     await handler.execute(
-      new ReviseOrderCommand("ord_1", STAFF, 0, content({ requestedDeliveryDate: NEXT_DAY })),
+      await asSeen("ord_1", STAFF, 0, content({ requestedDeliveryDate: NEXT_DAY })),
     );
 
     expect(desk.noted).toEqual([
@@ -236,7 +221,7 @@ describe("ReviseOrderHandler — les refus", () => {
     const { handler, trace } = reviseScene(order);
 
     await expect(
-      handler.execute(new ReviseOrderCommand("ord_1", CUSTOMER, 0, content({ note: "x" }))),
+      handler.execute(await refusedEarly("ord_1", CUSTOMER, 0, content({ note: "x" }))),
     ).rejects.toThrow(CardOrderNotRevisableError);
     expect(trace).toEqual([]);
   });
@@ -246,39 +231,39 @@ describe("ReviseOrderHandler — les refus", () => {
     const { handler, trace } = reviseScene(order);
 
     await expect(
-      handler.execute(new ReviseOrderCommand("ord_1", STAFF, 0, content({ note: "x" }))),
+      handler.execute(await refusedEarly("ord_1", STAFF, 0, content({ note: "x" }))),
     ).rejects.toThrow(ShortfallDecidedRevisionError);
     expect(trace).toEqual([]);
   });
 
   it("R7 : une révision attendue qui n'est plus la courante est refusée (409)", async () => {
     const order = await placedOrder({ revision: 2 });
-    const { handler, trace } = reviseScene(order);
+    const { handler, asSeen, trace } = reviseScene(order);
 
     await expect(
-      handler.execute(new ReviseOrderCommand("ord_1", STAFF, 1, content({ note: "x" }))),
+      handler.execute(await asSeen("ord_1", STAFF, 1, content({ note: "x" }))),
     ).rejects.toThrow(OrderRevisedElsewhereError);
     expect(trace).toEqual([]);
   });
 
   it("R7 : une révision passée ailleurs entre le premier regard et le verrou est refusée", async () => {
     const order = await placedOrder();
-    const { handler, trace } = reviseScene(order, { underLock: { ...order, revision: 1 } });
+    const { handler, asSeen, trace } = reviseScene(order, { underLock: { ...order, revision: 1 } });
 
     await expect(
-      handler.execute(new ReviseOrderCommand("ord_1", STAFF, 0, content({ note: "x" }))),
+      handler.execute(await asSeen("ord_1", STAFF, 0, content({ note: "x" }))),
     ).rejects.toThrow(OrderRevisedElsewhereError);
     expect(trace).toEqual(["lock:ord_1"]);
   });
 
   it("R1 : une commande annulée sous le verrou ne se modifie plus", async () => {
     const order = await placedOrder();
-    const { handler, revisions } = reviseScene(order, {
+    const { handler, asSeen, revisions } = reviseScene(order, {
       underLock: { ...order, status: "cancelled" },
     });
 
     await expect(
-      handler.execute(new ReviseOrderCommand("ord_1", STAFF, 0, content({ note: "x" }))),
+      handler.execute(await asSeen("ord_1", STAFF, 0, content({ note: "x" }))),
     ).rejects.toThrow(OrderNotRevisableError);
     expect(revisions.saved).toEqual([]);
   });
@@ -295,7 +280,7 @@ describe("ReviseOrderHandler — les refus", () => {
     });
 
     await expect(
-      handler.execute(new ReviseOrderCommand("ord_1", STAFF, 0, content({ note: "x" }))),
+      handler.execute(await refusedEarly("ord_1", STAFF, 0, content({ note: "x" }))),
     ).rejects.toThrow(OrderNotRevisableError);
   });
 
@@ -303,10 +288,10 @@ describe("ReviseOrderHandler — les refus", () => {
   // le refus « quantités seulement » (cas suivant) : le client reste le cas d'origine.
   it("§9.1 : une commande inscrite au fournil sous le verrou est refusée, rien n'est écrit", async () => {
     const order = await placedOrder();
-    const { handler, revisions, durable } = reviseScene(order, { desk: "inscribed" });
+    const { handler, asSeen, revisions, durable } = reviseScene(order, { desk: "inscribed" });
 
     await expect(
-      handler.execute(new ReviseOrderCommand("ord_1", CUSTOMER, 0, content({ note: "x" }))),
+      handler.execute(await asSeen("ord_1", CUSTOMER, 0, content({ note: "x" }))),
     ).rejects.toThrow("Le fournil a déjà inscrit cette commande");
     expect(revisions.saved).toEqual([]);
     expect(durable.facts).toEqual([]);
@@ -314,11 +299,11 @@ describe("ReviseOrderHandler — les refus", () => {
 
   it("R6 : une modification qui ne change rien est refusée", async () => {
     const order = await placedOrder();
-    const { handler } = reviseScene(order);
+    const { handler, asSeen } = reviseScene(order);
 
-    await expect(
-      handler.execute(new ReviseOrderCommand("ord_1", STAFF, 0, content())),
-    ).rejects.toThrow(UnchangedOrderRevisionError);
+    await expect(handler.execute(await asSeen("ord_1", STAFF, 0, content()))).rejects.toThrow(
+      UnchangedOrderRevisionError,
+    );
   });
 
   it("le mur : un client étranger à la société ne trouve pas la commande (404)", async () => {
@@ -326,7 +311,7 @@ describe("ReviseOrderHandler — les refus", () => {
     const { handler } = reviseScene(order, { role: null });
 
     await expect(
-      handler.execute(new ReviseOrderCommand("ord_1", CUSTOMER, 0, content({ note: "x" }))),
+      handler.execute(await refusedEarly("ord_1", CUSTOMER, 0, content({ note: "x" }))),
     ).rejects.toThrow(OrderNotFoundError);
   });
 });
@@ -337,16 +322,16 @@ describe("ReviseOrderHandler — R1 et R5, l'heure et la journée", () => {
     const { handler } = reviseScene(order, { clock: new FixedClock(AFTER_CUTOFF) });
 
     await expect(
-      handler.execute(new ReviseOrderCommand("ord_1", CUSTOMER, 0, content({ note: "x" }))),
+      handler.execute(await refusedEarly("ord_1", CUSTOMER, 0, content({ note: "x" }))),
     ).rejects.toThrow(PastOrderCutoffError);
   });
 
   it("laisse l'équipe modifier après l'heure limite", async () => {
     const order = await placedOrder();
-    const { handler } = reviseScene(order, { clock: new FixedClock(AFTER_CUTOFF) });
+    const { handler, asSeen } = reviseScene(order, { clock: new FixedClock(AFTER_CUTOFF) });
 
     const result = await handler.execute(
-      new ReviseOrderCommand("ord_1", STAFF, 0, content({ note: "Sonner" })),
+      await asSeen("ord_1", STAFF, 0, content({ note: "Sonner" })),
     );
 
     expect(result.revision).toBe(1);
@@ -360,19 +345,19 @@ describe("ReviseOrderHandler — R1 et R5, l'heure et la journée", () => {
 
     await expect(
       handler.execute(
-        new ReviseOrderCommand("ord_1", STAFF, 0, content({ requestedDeliveryDate: NEXT_DAY })),
+        await refusedEarly("ord_1", STAFF, 0, content({ requestedDeliveryDate: NEXT_DAY })),
       ),
     ).rejects.toThrow(RevisionIntoClosedDayError);
   });
 
   it("sous le verrou, une journée arrêtée entre-temps refuse le client", async () => {
     const order = await placedOrder();
-    const { handler, revisions } = reviseScene(order, {
+    const { handler, asSeen, revisions } = reviseScene(order, {
       plans: gateOf(new FixedClosedPlans(), new RecordingAdmissionDesk([DAY])),
     });
 
     await expect(
-      handler.execute(new ReviseOrderCommand("ord_1", CUSTOMER, 0, content({ note: "x" }))),
+      handler.execute(await asSeen("ord_1", CUSTOMER, 0, content({ note: "x" }))),
     ).rejects.toThrow(ProductionPlanClosedError);
     expect(revisions.saved).toEqual([]);
   });

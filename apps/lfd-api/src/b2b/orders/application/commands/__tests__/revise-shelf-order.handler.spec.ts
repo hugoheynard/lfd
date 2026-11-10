@@ -20,7 +20,8 @@ import {
 } from "../../services/__tests__/shelf-circuit-doubles.js";
 import { revisionBlockReasonOf } from "../../../domain/services/order-revisability.js";
 import { OrderPlanGate } from "../../services/order-plan-gate.service.js";
-import { ReviseOrderCommand } from "../revise-order.command.js";
+import type { ReviseOrderCommand } from "../revise-order.command.js";
+import type { SeenRevision } from "./revision-seen.js";
 import { FixedClosedPlans, FixedSameDay, RecordingAdmissionDesk } from "./plan-doubles.js";
 import {
   content,
@@ -32,6 +33,7 @@ import {
   reviseScene,
   revisingAt,
 } from "./revision-scene.js";
+import { refusedEarly } from "./revision-seen.js";
 
 /**
  * **Modifier une commande prise sur la vitrine** (plan
@@ -97,24 +99,24 @@ function shelfOrder(over: Partial<RevisableOrder> = {}): Promise<RevisableOrder>
   return placedOrder({ supply: "shelf", ...over });
 }
 
-function revise(actor: typeof CUSTOMER | typeof STAFF, quantity: number, more = {}) {
-  return new ReviseOrderCommand(
-    "ord_1",
-    actor,
-    0,
-    content({ lines: [{ sku: "VIE-001", quantity }], ...more }),
-  );
+function revise(
+  asSeen: SeenRevision,
+  actor: typeof CUSTOMER | typeof STAFF,
+  quantity: number,
+  more = {},
+): Promise<ReviseOrderCommand> {
+  return asSeen("ord_1", actor, 0, content({ lines: [{ sku: "VIE-001", quantity }], ...more }));
 }
 
 describe("ReviseOrderHandler — une commande sur stock (L5)", () => {
   it("une hausse dans la limite du reste : écrite sous le verrou du stock, sans fournil ni journée", async () => {
     const mount = shelfMount({ left: 5 });
-    const { handler, trace, desk, notes, revisions } = reviseScene(await shelfOrder(), {
+    const { handler, asSeen, trace, desk, notes, revisions } = reviseScene(await shelfOrder(), {
       plans: mount.plans,
       shelf: mount.shelf,
     });
 
-    await handler.execute(revise(STAFF, 15));
+    await handler.execute(await revise(asSeen, STAFF, 15));
 
     expect(revisions.saved).toHaveLength(1);
     expect(mount.lock.taken).toEqual([`${DAY}:${LABO_POINT.id}`]);
@@ -126,46 +128,51 @@ describe("ReviseOrderHandler — une commande sur stock (L5)", () => {
 
   it("le client pro en ligne aussi, sur un plan arrêté : le circuit remplace l'arrêt", async () => {
     const mount = shelfMount({ left: 5 });
-    const { handler, revisions } = reviseScene(await shelfOrder(), {
+    const { handler, asSeen, revisions } = reviseScene(await shelfOrder(), {
       plans: mount.plans,
       shelf: mount.shelf,
     });
 
-    await handler.execute(revise(CUSTOMER, 12));
+    await handler.execute(await revise(asSeen, CUSTOMER, 12));
 
     expect(revisions.saved).toHaveLength(1);
   });
 
   it("une hausse au-delà du reste est refusée, rien n'est écrit", async () => {
     const mount = shelfMount({ left: 5 });
-    const { handler, revisions } = reviseScene(await shelfOrder(), {
+    const { handler, asSeen, revisions } = reviseScene(await shelfOrder(), {
       plans: mount.plans,
       shelf: mount.shelf,
     });
 
-    await expect(handler.execute(revise(STAFF, 16))).rejects.toBeInstanceOf(ShelfStockShortError);
+    await expect(handler.execute(await revise(asSeen, STAFF, 16))).rejects.toBeInstanceOf(
+      ShelfStockShortError,
+    );
     expect(revisions.saved).toEqual([]);
   });
 
   it("une baisse rend le stock, même vitrine vide", async () => {
     const mount = shelfMount({ left: 0 });
-    const { handler, revisions } = reviseScene(await shelfOrder(), {
+    const { handler, asSeen, revisions } = reviseScene(await shelfOrder(), {
       plans: mount.plans,
       shelf: mount.shelf,
     });
 
-    await handler.execute(revise(STAFF, 4));
+    await handler.execute(await revise(asSeen, STAFF, 4));
 
     expect(revisions.saved).toHaveLength(1);
   });
 
   it("un article absent de la vitrine ne s'ajoute pas", async () => {
     const mount = shelfMount({ left: 5 });
-    const { handler } = reviseScene(await shelfOrder(), { plans: mount.plans, shelf: mount.shelf });
+    const { handler, asSeen } = reviseScene(await shelfOrder(), {
+      plans: mount.plans,
+      shelf: mount.shelf,
+    });
 
     await expect(
       handler.execute(
-        new ReviseOrderCommand(
+        await asSeen(
           "ord_1",
           STAFF,
           0,
@@ -182,20 +189,26 @@ describe("ReviseOrderHandler — une commande sur stock (L5)", () => {
 
   it("changer la journée est refusé", async () => {
     const mount = shelfMount();
-    const { handler } = reviseScene(await shelfOrder(), { plans: mount.plans, shelf: mount.shelf });
+    const { handler } = reviseScene(await shelfOrder(), {
+      plans: mount.plans,
+      shelf: mount.shelf,
+    });
 
     await expect(
-      handler.execute(revise(STAFF, 10, { requestedDeliveryDate: NEXT_DAY })),
+      handler.execute(await revise(refusedEarly, STAFF, 10, { requestedDeliveryDate: NEXT_DAY })),
     ).rejects.toMatchObject({ code: "orders.revise.shelf_route", change: "date" });
   });
 
   it("passer en livraison est refusé", async () => {
     const mount = shelfMount();
-    const { handler } = reviseScene(await shelfOrder(), { plans: mount.plans, shelf: mount.shelf });
+    const { handler } = reviseScene(await shelfOrder(), {
+      plans: mount.plans,
+      shelf: mount.shelf,
+    });
 
     await expect(
       handler.execute(
-        revise(STAFF, 10, {
+        await revise(refusedEarly, STAFF, 10, {
           fulfillmentMethod: "delivery",
           pickupAddressId: null,
           requestedWindow: { start: null, end: "10:00" },
@@ -222,7 +235,7 @@ describe("ReviseOrderHandler — une commande sur stock (L5)", () => {
     });
     const { handler } = reviseScene(order, { plans: mount.plans, shelf: mount.shelf });
 
-    await expect(handler.execute(revise(STAFF, 11))).rejects.toBeInstanceOf(
+    await expect(handler.execute(await revise(refusedEarly, STAFF, 11))).rejects.toBeInstanceOf(
       CardOrderNotRevisableError,
     );
     expect(mount.lock.taken).toEqual([]);
@@ -230,32 +243,38 @@ describe("ReviseOrderHandler — une commande sur stock (L5)", () => {
 
   it("la clientèle que le réglage ferme ne modifie pas", async () => {
     const mount = shelfMount({ sameDay: { sameDayProAllowed: true, sameDayProOnline: false } });
-    const { handler } = reviseScene(await shelfOrder(), { plans: mount.plans, shelf: mount.shelf });
+    const { handler } = reviseScene(await shelfOrder(), {
+      plans: mount.plans,
+      shelf: mount.shelf,
+    });
 
-    await expect(handler.execute(revise(CUSTOMER, 11))).rejects.toBeInstanceOf(
+    await expect(handler.execute(await revise(refusedEarly, CUSTOMER, 11))).rejects.toBeInstanceOf(
       SameDayOrderClosedError,
     );
   });
 
   it("le pro en ligne, fenêtre de retrait finie : refusé ; l'équipe au comptoir, non", async () => {
     const mount = shelfMount({ proPickupEnd: "09:00" });
-    const { handler, revisions } = reviseScene(await shelfOrder(), {
+    const { handler, asSeen, revisions } = reviseScene(await shelfOrder(), {
       plans: mount.plans,
       shelf: mount.shelf,
     });
 
-    await expect(handler.execute(revise(CUSTOMER, 11))).rejects.toBeInstanceOf(
+    await expect(handler.execute(await revise(refusedEarly, CUSTOMER, 11))).rejects.toBeInstanceOf(
       NoPickupLeftTodayError,
     );
-    await handler.execute(revise(STAFF, 11));
+    await handler.execute(await revise(asSeen, STAFF, 11));
     expect(revisions.saved).toHaveLength(1);
   });
 
   it("une commande sur stock d'un jour passé ne se modifie plus", async () => {
     const mount = shelfMount({ now: new Date("2026-11-11T09:00:00.000Z") });
-    const { handler } = reviseScene(await shelfOrder(), { plans: mount.plans, shelf: mount.shelf });
+    const { handler } = reviseScene(await shelfOrder(), {
+      plans: mount.plans,
+      shelf: mount.shelf,
+    });
 
-    await expect(handler.execute(revise(STAFF, 11))).rejects.toBeInstanceOf(
+    await expect(handler.execute(await revise(refusedEarly, STAFF, 11))).rejects.toBeInstanceOf(
       ShelfOrderNotTodayError,
     );
   });
@@ -270,7 +289,7 @@ describe("ReviseOrderHandler — une commande sur stock, aux bornes de la journ�
       shelf: mount.shelf,
     });
 
-    await expect(handler.execute(revise(STAFF, 11))).rejects.toBeInstanceOf(
+    await expect(handler.execute(await revise(refusedEarly, STAFF, 11))).rejects.toBeInstanceOf(
       ShelfOrderNotTodayError,
     );
     expect(revisions.saved).toEqual([]);
@@ -292,19 +311,19 @@ describe("ReviseOrderHandler — une commande sur stock, aux bornes de la journ�
 
   it("une hausse égale au reste passe, d'une pièce de plus elle est refusée", async () => {
     const mount = shelfMount({ left: 1 });
-    const { handler, revisions } = reviseScene(await shelfOrder(), {
+    const { handler, asSeen, revisions } = reviseScene(await shelfOrder(), {
       plans: mount.plans,
       shelf: mount.shelf,
     });
 
-    await handler.execute(revise(STAFF, 11));
+    await handler.execute(await revise(asSeen, STAFF, 11));
     expect(revisions.saved).toHaveLength(1);
 
     const refused = shelfMount({ left: 1 });
     const scene = reviseScene(await shelfOrder(), { plans: refused.plans, shelf: refused.shelf });
-    await expect(scene.handler.execute(revise(STAFF, 12))).rejects.toBeInstanceOf(
-      ShelfStockShortError,
-    );
+    await expect(
+      scene.handler.execute(await revise(scene.asSeen, STAFF, 12)),
+    ).rejects.toBeInstanceOf(ShelfStockShortError);
     expect(scene.revisions.saved).toEqual([]);
   });
 });

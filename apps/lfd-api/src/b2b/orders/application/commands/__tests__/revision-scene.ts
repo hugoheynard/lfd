@@ -73,6 +73,7 @@ import { openPlanGate } from "./plan-doubles.js";
 import { FixedDeliveryVat } from "./fixed-delivery-vat.js";
 import type { OrderIntake } from "../../services/order-intake.service.js";
 import { intakeAt } from "./intake-doubles.js";
+import { seenRevisions } from "./revision-seen.js";
 import { CatalogViewers } from "../../../../catalog/application/catalog-viewers.service.js";
 import { InMemoryServedCompanies } from "../../../../catalog/infrastructure/in-memory-served-companies.js";
 import { noLinePromotionSupply } from "../../../../promotions/application/__tests__/promotion-supply.doubles.js";
@@ -570,17 +571,19 @@ export function reviseScene(
   const notes = new RecordingDeliveryNoteFollowing();
   const revaluation = new RecordingRevaluation(trace);
   const durable = new RecordingDurable();
+  const wall = new RevisionWall(
+    new FixedRevisableOrders(order),
+    new OneRoleAccess(options.role === undefined ? "orders" : options.role),
+  );
+  const revising = revisingAt(clock, {
+    ...(options.plans === undefined ? {} : { plans: options.plans }),
+    ...(options.engagements === undefined ? {} : { engagements: options.engagements }),
+    ...(options.catalogItems === undefined ? {} : { catalogItems: options.catalogItems }),
+    ...(options.shelf === undefined ? {} : { shelf: options.shelf }),
+  });
   const handler = new ReviseOrderHandler(
-    new RevisionWall(
-      new FixedRevisableOrders(order),
-      new OneRoleAccess(options.role === undefined ? "orders" : options.role),
-    ),
-    revisingAt(clock, {
-      ...(options.plans === undefined ? {} : { plans: options.plans }),
-      ...(options.engagements === undefined ? {} : { engagements: options.engagements }),
-      ...(options.catalogItems === undefined ? {} : { catalogItems: options.catalogItems }),
-      ...(options.shelf === undefined ? {} : { shelf: options.shelf }),
-    }),
+    wall,
+    revising,
     revisions,
     new OrderWorkshopRevision(desk, packing),
     revaluation,
@@ -589,5 +592,6 @@ export function reviseScene(
     new DirectUnitOfWork(),
     clock,
   );
-  return { handler, trace, revisions, desk, packing, notes, revaluation, durable };
+  const asSeen = seenRevisions(wall, revising);
+  return { handler, asSeen, trace, revisions, desk, packing, notes, revaluation, durable };
 }

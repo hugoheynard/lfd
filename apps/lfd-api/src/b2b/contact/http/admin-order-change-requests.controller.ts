@@ -1,5 +1,7 @@
 import {
   type OrderChangeAppliedResponse,
+  type OrderChangeApplyPayload,
+  orderChangeApplyPayloadSchema,
   type OrderChangeRefusalPayload,
   orderChangeRefusalPayloadSchema,
   type OrderRevisionQuoteView,
@@ -39,15 +41,19 @@ export class AdminOrderChangeRequestsController {
     );
   }
 
-  /** `200` avec la révision produite ; `409` avec la phrase de la règle (inscrite, modifiée ailleurs…). */
+  /**
+   * `200` avec la révision produite ; `409` avec la phrase de la règle
+   * (inscrite, modifiée ailleurs, total changé depuis le devis vu…).
+   */
   @Post("apply")
   @HttpCode(HttpStatus.OK)
   async apply(
     @Param("id") id: string,
     @StaffUserId() staffUserId: string,
+    @Body(new ZodBody(orderChangeApplyPayloadSchema)) payload: OrderChangeApplyPayload,
   ): Promise<OrderChangeAppliedResponse> {
     const revision = await this.commands.execute<ApplyOrderChangeCommand, number>(
-      new ApplyOrderChangeCommand(id, staffUserId),
+      new ApplyOrderChangeCommand(id, staffUserId, payload.expectedTotalCents),
     );
     return { revision };
   }

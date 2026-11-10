@@ -85,6 +85,7 @@ export class RecordingApplier extends OrderChangeApplier {
     readonly staffUserId: string;
     readonly baseRevision: number;
     readonly change: RequestedOrderChange;
+    readonly expectedTotalCents: number;
   }[] = [];
 
   constructor(
@@ -99,12 +100,13 @@ export class RecordingApplier extends OrderChangeApplier {
     staffUserId: string,
     baseRevision: number,
     change: RequestedOrderChange,
+    expectedTotalCents: number,
   ): Promise<AppliedOrderChange> {
     this.log.push(`revise ${orderId}@${String(baseRevision)}`);
     if (this.refuse) {
       return Promise.reject(new RevisionRefused());
     }
-    this.applied.push({ orderId, staffUserId, baseRevision, change });
+    this.applied.push({ orderId, staffUserId, baseRevision, change, expectedTotalCents });
     return Promise.resolve({
       revision: baseRevision + 1,
       totalCents: APPLIED_TOTAL_CENTS,

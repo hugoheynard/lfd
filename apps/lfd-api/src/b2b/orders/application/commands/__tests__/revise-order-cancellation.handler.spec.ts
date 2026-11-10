@@ -1,5 +1,4 @@
 import { customerCancellationDeadlineOf } from "../../../domain/services/customer-cancellation-window.js";
-import { ReviseOrderCommand } from "../revise-order.command.js";
 import { content, DAY, NEXT_DAY, placedOrder, reviseScene } from "./revision-scene.js";
 
 /**
@@ -19,10 +18,10 @@ describe("ReviseOrderHandler — le délai d'annulation figé", () => {
         windowStart: "07:00",
       }),
     });
-    const { handler, revisions } = reviseScene(order);
+    const { handler, asSeen, revisions } = reviseScene(order);
 
     await handler.execute(
-      new ReviseOrderCommand(
+      await asSeen(
         "ord_1",
         STAFF,
         0,
@@ -42,10 +41,10 @@ describe("ReviseOrderHandler — le délai d'annulation figé", () => {
 
   it("figée sans délai : la révision la laisse sans délai ni instant", async () => {
     const order = await placedOrder({ customerCancellation: { kind: "no_delay" } });
-    const { handler, revisions } = reviseScene(order);
+    const { handler, asSeen, revisions } = reviseScene(order);
 
     await handler.execute(
-      new ReviseOrderCommand("ord_1", STAFF, 0, content({ requestedDeliveryDate: NEXT_DAY })),
+      await asSeen("ord_1", STAFF, 0, content({ requestedDeliveryDate: NEXT_DAY })),
     );
 
     const state = revisions.saved[0]?.revision.state;
@@ -55,10 +54,10 @@ describe("ReviseOrderHandler — le délai d'annulation figé", () => {
 
   it("non figée : inchangée, le réglage du jour jugera à l'annulation", async () => {
     const order = await placedOrder();
-    const { handler, revisions } = reviseScene(order);
+    const { handler, asSeen, revisions } = reviseScene(order);
 
     await handler.execute(
-      new ReviseOrderCommand("ord_1", STAFF, 0, content({ requestedDeliveryDate: NEXT_DAY })),
+      await asSeen("ord_1", STAFF, 0, content({ requestedDeliveryDate: NEXT_DAY })),
     );
 
     const state = revisions.saved[0]?.revision.state;

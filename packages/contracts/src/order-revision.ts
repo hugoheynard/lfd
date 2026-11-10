@@ -4,6 +4,7 @@ import type { DiscountLabelView } from "./discount-label.js";
 import type { OrderRevisionChange } from "./order-revision.values.js";
 import {
   deliveryAddressIssue,
+  expectedTotalCentsSchema,
   hasAddressWhenDelivered,
   hasPickupPointWhenPickedUp,
   orderContentShape,
@@ -32,16 +33,36 @@ export const orderRevisionQuotePayloadSchema = z
   .refine(hasPickupPointWhenPickedUp, pickupPointIssue());
 export type OrderRevisionQuotePayload = z.infer<typeof orderRevisionQuotePayloadSchema>;
 
+/** La commande voulue et la révision qu'elle corrige (R7) — commun à la modification et à sa demande. */
+const revisedOrderShape = {
+  expectedRevision: z.number().int().nonnegative(),
+  ...orderContentShape,
+};
+
+/**
+ * **La composition d'une demande de modification** (M4) : la commande voulue
+ * et la révision corrigée, SANS total vu. La demande ne modifie rien : le
+ * total qui compte est celui que l'équipe voit au moment d'appliquer
+ * (`orderChangeApplyPayloadSchema`, plan `plan-s2-la-hausse.md`, R14) — le
+ * garder ici le rangerait dans la composition demandée.
+ */
+export const requestedOrderRevisionSchema = z
+  .object(revisedOrderShape)
+  .refine(hasAddressWhenDelivered, deliveryAddressIssue())
+  .refine(hasPickupPointWhenPickedUp, pickupPointIssue());
+
 /**
  * **La modification elle-même** : la commande voulue, et la révision qu'elle
  * corrige (R7) — celle que le devis a rendue. Si la commande a été modifiée
  * ailleurs entre-temps, le serveur refuse (409) plutôt que d'écraser.
+ *
+ * `expectedTotalCents` est le TTC du devis affiché, obligatoire (plan
+ * `documentation/commandes/modification/plan-s2-la-hausse.md`, R14) : une
+ * modification ne fixe jamais un montant que personne n'a vu — `409`
+ * `orders.total_changed`, comme la passation.
  */
 export const orderRevisionPayloadSchema = z
-  .object({
-    expectedRevision: z.number().int().nonnegative(),
-    ...orderContentShape,
-  })
+  .object({ ...revisedOrderShape, expectedTotalCents: expectedTotalCentsSchema })
   .refine(hasAddressWhenDelivered, deliveryAddressIssue())
   .refine(hasPickupPointWhenPickedUp, pickupPointIssue());
 export type OrderRevisionPayload = z.infer<typeof orderRevisionPayloadSchema>;

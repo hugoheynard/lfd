@@ -1,7 +1,9 @@
 import { QuantityBelowMinimumError } from "../../../domain/errors/sale-quantity-errors.js";
 import type { UnsealedCatalogItem } from "../../../../catalog/domain/ports/product-catalog.reader.js";
-import { ReviseOrderCommand } from "../revise-order.command.js";
+import type { ReviseOrderCommand } from "../revise-order.command.js";
+import type { SeenRevision } from "./revision-seen.js";
 import { CATALOG, content, placedOrder, reviseScene } from "./revision-scene.js";
+import { refusedEarly } from "./revision-seen.js";
 
 /**
  * **Le minimum d'une ligne GARDÉE qu'on change** — dérogation à R3 décidée par
@@ -32,8 +34,11 @@ function withMinimum(proMinimum: number): readonly UnsealedCatalogItem[] {
 /** Le croissant sorti du catalogue depuis la commande : seul le pain y reste. */
 const WITHOUT_CROISSANT = CATALOG.filter((item) => item.sku !== "VIE-001");
 
-function revise(lines: readonly { sku: string; quantity: number }[]) {
-  return new ReviseOrderCommand("ord_1", STAFF, 0, content({ lines: [...lines] }));
+function revise(
+  asSeen: SeenRevision,
+  lines: readonly { sku: string; quantity: number }[],
+): Promise<ReviseOrderCommand> {
+  return asSeen("ord_1", STAFF, 0, content({ lines: [...lines] }));
 }
 
 describe("ReviseOrderHandler — le minimum d'une ligne gardée", () => {
@@ -43,29 +48,29 @@ describe("ReviseOrderHandler — le minimum d'une ligne gardée", () => {
     });
 
     await expect(
-      handler.execute(revise([{ sku: "VIE-001", quantity: PRO_MINIMUM - 1 }])),
+      handler.execute(await revise(refusedEarly, [{ sku: "VIE-001", quantity: PRO_MINIMUM - 1 }])),
     ).rejects.toBeInstanceOf(QuantityBelowMinimumError);
     expect(revisions.saved).toEqual([]);
   });
 
   it("laisse passer une ligne gardée baissée jusqu'au minimum", async () => {
-    const { handler, revisions } = reviseScene(await placedOrder(), {
+    const { handler, asSeen, revisions } = reviseScene(await placedOrder(), {
       catalogItems: withMinimum(PRO_MINIMUM),
     });
 
-    await handler.execute(revise([{ sku: "VIE-001", quantity: PRO_MINIMUM }]));
+    await handler.execute(await revise(asSeen, [{ sku: "VIE-001", quantity: PRO_MINIMUM }]));
 
     expect(revisions.saved).toHaveLength(1);
   });
 
   it("ne relit pas le minimum d'une ligne gardée inchangée : les autres lignes restent révisables", async () => {
     // Un minimum posé APRÈS la commande, au-dessus de ses 10 croissants.
-    const { handler, revisions } = reviseScene(await placedOrder(), {
+    const { handler, asSeen, revisions } = reviseScene(await placedOrder(), {
       catalogItems: withMinimum(12),
     });
 
     await handler.execute(
-      revise([
+      await revise(asSeen, [
         { sku: "VIE-001", quantity: 10 },
         { sku: "PAI-001", quantity: 2 },
       ]),
@@ -81,11 +86,13 @@ describe("ReviseOrderHandler — le minimum d'une ligne gardée", () => {
    * quantité est refusé par son nom ; le garder tel quel, ou le retirer, passe.
    */
   it("refuse de changer la quantité d'une ligne gardée dont l'article est sorti du catalogue", async () => {
-    const { handler, revisions } = reviseScene(await placedOrder(), {
+    const { handler, asSeen, revisions } = reviseScene(await placedOrder(), {
       catalogItems: WITHOUT_CROISSANT,
     });
 
-    await expect(handler.execute(revise([{ sku: "VIE-001", quantity: 1 }]))).rejects.toThrow(
+    await expect(
+      handler.execute(await revise(asSeen, [{ sku: "VIE-001", quantity: 1 }])),
+    ).rejects.toThrow(
       "« Croissant » n'est plus vendu : gardez la quantité commandée ou retirez-le.",
     );
     expect(revisions.saved).toEqual([]);
@@ -93,12 +100,12 @@ describe("ReviseOrderHandler — le minimum d'une ligne gardée", () => {
 
   it("une ligne gardée dont l'article est sorti du catalogue se retire, ou se garde telle quelle", async () => {
     const removed = reviseScene(await placedOrder(), { catalogItems: WITHOUT_CROISSANT });
-    await removed.handler.execute(revise([{ sku: "PAI-001", quantity: 1 }]));
+    await removed.handler.execute(await revise(removed.asSeen, [{ sku: "PAI-001", quantity: 1 }]));
     expect(removed.revisions.saved).toHaveLength(1);
 
     const kept = reviseScene(await placedOrder(), { catalogItems: WITHOUT_CROISSANT });
     await kept.handler.execute(
-      revise([
+      await revise(kept.asSeen, [
         { sku: "VIE-001", quantity: 10 },
         { sku: "PAI-001", quantity: 1 },
       ]),
