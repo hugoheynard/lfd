@@ -174,7 +174,7 @@ export class CardComplementPayment {
     const { publishableKey, clientSecret } = this.complement();
     const stripe = await this.stripeLoader.load(publishableKey);
     if (stripe === null) {
-      this.phase.set('unavailable');
+      this.settleLoading('unavailable');
       return;
     }
     try {
@@ -183,11 +183,21 @@ export class CardComplementPayment {
       this.mountedLocale = locale;
       this.elements = stripe.elements({ clientSecret, locale });
       this.elements.create('payment', PAYMENT_ELEMENT_OPTIONS).mount(this.mountRef().nativeElement);
-      if (this.phase() === 'loading') {
-        this.phase.set('ready');
-      }
+      this.settleLoading('ready');
     } catch {
-      this.phase.set('unavailable');
+      this.settleLoading('unavailable');
+    }
+  }
+
+  /**
+   * La fin du chargement ne remplace qu'un chargement : le délai a pu passer
+   * pendant que Stripe se montait, et « délai écoulé » l'emporte alors sur
+   * « prêt » comme sur « indisponible » (régression vue en CI le 2026-11-10 :
+   * un montage de Stripe en échec rouvrait l'écran d'un délai déjà passé).
+   */
+  private settleLoading(next: 'ready' | 'unavailable'): void {
+    if (this.phase() === 'loading') {
+      this.phase.set(next);
     }
   }
 
