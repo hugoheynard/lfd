@@ -71,7 +71,7 @@ Chemins relatifs à `apps/lfd-api/` ; lignes lues le 2026-11-05.
 
 ## La mémoire
 
-`src/b2b/account/infrastructure/cached-principal.resolver.ts` —
+`src/lafoliecoffee/account/infrastructure/cached-principal.resolver.ts` —
 `CachedPrincipalResolver` (l. 57) enveloppe le résolveur ordinaire, sur le même
 port `PrincipalResolver`.
 
@@ -92,7 +92,7 @@ port `PrincipalResolver`.
   (`wouldRecord`), l'appel repasse par le résolveur ordinaire, qui l'écrit.
 - Sans ligne d'estampille (`no-stamp`, l. 78), la mémoire n'est pas utilisée.
 
-`src/b2b/account/infrastructure/principal-memory.ts` — `PrincipalMemory`
+`src/lafoliecoffee/account/infrastructure/principal-memory.ts` — `PrincipalMemory`
 (l. 24), pure (l'heure lui est donnée) : `take` (l. 33) ne rend que sous la
 même estampille et dans la durée ; `missReason` (l. 52) dit pourquoi on relit
 (`absent`, `stamp`, `expired`) ; `keep` (l. 67) refuse d'écraser une entrée
@@ -101,11 +101,11 @@ rangée sous une estampille plus récente (l. 69) ; `storedPart` (l. 96) retire
 
 ## Quand le principal n'est pas gardé
 
-`src/b2b/account/infrastructure/tracked-principal.resolver.ts` —
+`src/lafoliecoffee/account/infrastructure/tracked-principal.resolver.ts` —
 `PrincipalResolution.storable` (l. 12) : la résolution dit si elle peut être
 gardée.
 
-`src/b2b/account/infrastructure/customer-principal.resolver.ts`, l. 130–134 :
+`src/lafoliecoffee/account/infrastructure/customer-principal.resolver.ts`, l. 130–134 :
 `storable` n'est vrai que si **rien n'a été écrit** (ni compte créé, ni
 invitation acceptée, ni preuve recopiée, ni première entrée) **et** qu'aucune
 adhésion n'attend son acceptation. C'est la seule part du principal qui
@@ -114,8 +114,8 @@ l'estampille. Tout autre cas passe par le résolveur ordinaire, à chaque fois.
 
 ## L'estampille et ses déclencheurs
 
-- **Lecture** : port `src/b2b/account/domain/ports/principal-stamp.reader.ts`,
-  adaptateur `src/b2b/account/infrastructure/prisma-principal-stamp.reader.ts`
+- **Lecture** : port `src/lafoliecoffee/account/domain/ports/principal-stamp.reader.ts`,
+  adaptateur `src/lafoliecoffee/account/infrastructure/prisma-principal-stamp.reader.ts`
   (`PrismaPrincipalStampReader`, l. 15) qui lit l'unique ligne
   (`PRINCIPAL_STAMP_ROW = 1`, l. 7) de `public.principal_stamp`. Aucun code ne
   l'écrit.
@@ -138,7 +138,7 @@ figure dans le `SET`, même à valeur égale ; une instruction à zéro ligne au
 
 ## La liste des colonnes, tenue par un test
 
-`src/b2b/account/infrastructure/__tests__/principal-stamp-columns.spec.ts`
+`src/lafoliecoffee/account/infrastructure/__tests__/principal-stamp-columns.spec.ts`
 lit les sources de la résolution, en tire chaque champ de ces trois modèles,
 et exige qu'il soit dans la migration ou exempté avec sa raison (l. 39–46) :
 `users.first_login_at` (première entrée, jamais gardée),
@@ -150,7 +150,7 @@ les déclencheurs sur la base migrée.
 
 ## La société ne réécrit plus son statut
 
-`src/b2b/account/domain/entities/company.ts`, l. 195 : `statusChange` porte le
+`src/lafoliecoffee/account/domain/entities/company.ts`, l. 195 : `statusChange` porte le
 statut **seulement s'il a bougé** depuis le chargement (toujours pour une
 société neuve). `prisma-company.repository.ts` (l. 280–282) n'écrit `status`
 que par lui. Avant (corrigé le 2026-11-05), chaque sauvegarde de l'agrégat
@@ -163,7 +163,7 @@ le monde. Test : `domain/entities/__tests__/company-status-change.spec.ts`.
 `users.nav_prefs`, elles auraient fait monter l'estampille à chaque clic.
 Elles vivent dans `public.user_nav_prefs` (une ligne par personne, sans
 déclencheur), copiées par la migration `20261104120000` ;
-`src/b2b/account/infrastructure/prisma-nav-preferences.repository.ts` y écrit
+`src/lafoliecoffee/account/infrastructure/prisma-nav-preferences.repository.ts` y écrit
 par `INSERT … ON CONFLICT … prefs || excluded.prefs`. `users.nav_prefs` reste
 en base, sans lecteur ni écrivain (une colonne morte reste, CLAUDE.md §0).
 Test : `test/user-nav-prefs.e2e-spec.ts`.

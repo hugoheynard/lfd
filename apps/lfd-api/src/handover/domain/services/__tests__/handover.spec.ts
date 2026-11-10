@@ -8,7 +8,7 @@ import {
 /**
  * La règle de retrait, éprouvée là où elle vit maintenant.
  *
- * 🔴 Ces cas viennent de `b2b/orders/domain/services/__tests__/handover.spec.ts`
+ * 🔴 Ces cas viennent de `lafoliecoffee/orders/domain/services/__tests__/handover.spec.ts`
  * et ont suivi la règle au fournil le 2026-09-07. Deux d'entre eux ont disparu
  * au passage, et c'est délibéré : ils portaient sur `fulfillmentMethod`, que la
  * règle ne reçoit plus. Un test qui prouve qu'un champ absent ne pèse pas

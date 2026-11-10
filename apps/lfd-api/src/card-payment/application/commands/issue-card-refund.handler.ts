@@ -23,7 +23,7 @@ export const CARD_REFUND_LEASE_MS = 5 * 60 * 1000;
 
 /**
  * **L'exécuteur des remboursements** (plan M2, §3.5, §3.6) — déménagé
- * d'`IssueOrderRefundHandler` (`b2b/orders`), retiré au lot P1.c : c'est le
+ * d'`IssueOrderRefundHandler` (`lafoliecoffee/orders`), retiré au lot P1.c : c'est le
  * seul exécuteur des remboursements par carte.
  *
  * 🔴 Jamais dans une transaction ni dans un abonné durable : le prestataire y

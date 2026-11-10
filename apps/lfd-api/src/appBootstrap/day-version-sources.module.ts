@@ -1,7 +1,7 @@
 import { Global, Module } from "@nestjs/common";
 
-import { OrdersDayVersionSource } from "../b2b/orders/application/services/orders-day-version.source.js";
-import { OrdersModule } from "../b2b/orders/orders.module.js";
+import { OrdersDayVersionSource } from "../lafoliecoffee/orders/application/services/orders-day-version.source.js";
+import { OrdersModule } from "../lafoliecoffee/orders/orders.module.js";
 import { DeliveryDayVersionSource } from "../delivery/application/delivery-day-version.source.js";
 import { MyRoundDayVersionSource } from "../delivery/application/my-round-day-version.source.js";
 import { DeliveryModule } from "../delivery/delivery.module.js";

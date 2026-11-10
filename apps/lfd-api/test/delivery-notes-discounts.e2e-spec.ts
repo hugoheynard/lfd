@@ -19,11 +19,11 @@
 import { discountCentsOf, type CartAdjustment } from "@lfd/contracts";
 import { lineTotalCents, saleQuantity, ttcCentsFromHtMillicents } from "@lfd/money";
 
-import { DeliveryNote } from "../src/b2b/delivery-notes/domain/entities/delivery-note.js";
-import { DeliveryNoteRepository } from "../src/b2b/delivery-notes/domain/ports/delivery-note.repository.js";
-import { remainderAdjustmentsOf } from "../src/b2b/delivery-notes/domain/services/remainder-decision-source.js";
-import { DeliveryNoteTerms } from "../src/b2b/delivery-notes/domain/value-objects/delivery-note-terms.js";
-import { ShortfallDecisionReader } from "../src/b2b/orders/domain/ports/shortfall-decision.reader.js";
+import { DeliveryNote } from "../src/lafoliecoffee/delivery-notes/domain/entities/delivery-note.js";
+import { DeliveryNoteRepository } from "../src/lafoliecoffee/delivery-notes/domain/ports/delivery-note.repository.js";
+import { remainderAdjustmentsOf } from "../src/lafoliecoffee/delivery-notes/domain/services/remainder-decision-source.js";
+import { DeliveryNoteTerms } from "../src/lafoliecoffee/delivery-notes/domain/value-objects/delivery-note-terms.js";
+import { ShortfallDecisionReader } from "../src/lafoliecoffee/orders/domain/ports/shortfall-decision.reader.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { DurablePublisher } from "../src/platform/outbox/durable-publisher.js";
 import { PackingOrderPackedEvent } from "../src/production/channels/commerce/index.js";

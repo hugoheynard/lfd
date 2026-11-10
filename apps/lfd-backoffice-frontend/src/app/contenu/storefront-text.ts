@@ -12,7 +12,7 @@ export type InfoContent = Extract<StorefrontContent, { kind: 'info' }>;
 /**
  * Les longueurs que le serveur tient, champ par champ et dans chaque langue.
  *
- * 🔴 **Recopiées** de `apps/lfd-api/src/b2b/storefront/domain/storefront-text.ts`
+ * 🔴 **Recopiées** de `apps/lfd-api/src/lafoliecoffee/storefront/domain/storefront-text.ts`
  * (`STOREFRONT_TEXT_FIELDS`, lu le 2026-09-24) : le contrat ne les porte pas, et
  * `@lfd/storefront-layout` non plus. Le serveur reste l'autorité — ces bornes ne
  * font que refuser avant d'envoyer. Si elles divergent, c'est le refus du

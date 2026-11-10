@@ -211,7 +211,7 @@ D'où l'ordre retenu, **backend d'abord** :
 | **B0** | Renommer l'app en `lfd-api` — **seul**, avant toute fusion                                                                              | faible                       | oui        |
 | **B1** | Les **deux gates** (frontières de contexte, jointures inter-schéma)                                                                     | nul                          | —          |
 | **B2** | Un processus, deux clients Prisma, **deux bases inchangées**. Le PIM devient `pim/`, le fil devient un port, les deux audiences restent | faible                       | oui        |
-| **B3** | `b2b/catalog/` fond — la parité reste en garde-fou explicite                                                                            | faible                       | oui        |
+| **B3** | `lafoliecoffee/catalog/` fond — la parité reste en garde-fou explicite                                                                  | faible                       | oui        |
 | **B4** | Une base, **un schéma par besoin** — c'est désormais LA stratégie (cf. ci-dessous), plus une option                                     | moyen — migration de données | par dump   |
 | **B5** | T1→T3, puis l'audience unique                                                                                                           | moyen                        | non        |
 | **B6** | Le front — PIM greffé sur l'admin ; le shell **reste** (cf. ci-dessous)                                                                 | faible                       | oui        |
@@ -636,7 +636,7 @@ package s'appelle « les contrats », tout finit dedans, et la frontière dispar
 du côté où elle se voyait le mieux. Trois contextes, trois paquets de contrats,
 et l'import dit à qui l'on parle.
 
-### Ce que devient `b2b/catalog/`
+### Ce que devient `lafoliecoffee/catalog/`
 
 Aujourd'hui il porte l'ingestion, la parité, les décisions d'ingestion, la
 projection de catégories et l'historique du prix canonique — une vingtaine de

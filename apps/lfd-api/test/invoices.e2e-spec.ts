@@ -12,27 +12,27 @@
  * contenu d'une facture est le sujet d'E1, ici on éprouve sa persistance. Les
  * dates d'émission ne sont comparées qu'entre elles, jamais à l'horloge.
  */
-import { InvoiceFontsUnavailableError } from "../src/b2b/accounting/domain/errors/invoice-document-errors.js";
+import { InvoiceFontsUnavailableError } from "../src/lafoliecoffee/accounting/domain/errors/invoice-document-errors.js";
 import {
   InvoiceFontSource,
   type InvoicePdfFonts,
-} from "../src/b2b/accounting/domain/ports/invoice-font-source.js";
-import { Invoice } from "../src/b2b/accounting/domain/entities/invoice.js";
+} from "../src/lafoliecoffee/accounting/domain/ports/invoice-font-source.js";
+import { Invoice } from "../src/lafoliecoffee/accounting/domain/entities/invoice.js";
 import {
   breakdownOf,
   issueInput,
   line,
-} from "../src/b2b/accounting/domain/entities/__tests__/invoice-fixtures.js";
-import type { InvoiceOrderReference } from "../src/b2b/accounting/domain/entities/invoice.types.js";
+} from "../src/lafoliecoffee/accounting/domain/entities/__tests__/invoice-fixtures.js";
+import type { InvoiceOrderReference } from "../src/lafoliecoffee/accounting/domain/entities/invoice.types.js";
 import {
   InvoiceDocumentAlreadyAttachedError,
   InvoiceIssuanceBlockedError,
   InvoiceIssuedBeforePreviousError,
-} from "../src/b2b/accounting/domain/errors/invoice-errors.js";
-import { InvoiceReader } from "../src/b2b/accounting/domain/ports/invoice.reader.js";
-import { InvoiceRepository } from "../src/b2b/accounting/domain/ports/invoice.repository.js";
-import { InvoiceIssuer } from "../src/b2b/accounting/application/services/invoice-issuer.js";
-import type { InvoiceNumber } from "../src/b2b/accounting/domain/value-objects/invoice-number.js";
+} from "../src/lafoliecoffee/accounting/domain/errors/invoice-errors.js";
+import { InvoiceReader } from "../src/lafoliecoffee/accounting/domain/ports/invoice.reader.js";
+import { InvoiceRepository } from "../src/lafoliecoffee/accounting/domain/ports/invoice.repository.js";
+import { InvoiceIssuer } from "../src/lafoliecoffee/accounting/application/services/invoice-issuer.js";
+import type { InvoiceNumber } from "../src/lafoliecoffee/accounting/domain/value-objects/invoice-number.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 

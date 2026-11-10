@@ -51,7 +51,7 @@ faux. Le rayon de la boutique écrit donc « quantité 1 » noir sur blanc.
 
 ## 1. L'objet
 
-`LoadedPricer` (`b2b/pricing/domain/loaded-pricer.ts`) : **pur**, matériaux en
+`LoadedPricer` (`lafoliecoffee/pricing/domain/loaded-pricer.ts`) : **pur**, matériaux en
 main, ne lit rien. **Seul appelant de `resolvePrice`** du dépôt, tenu par
 `lint:price-pipeline` (une entrée : `loaded-pricer.ts`, plus la définition
 `resolve-price.ts`).
@@ -60,7 +60,7 @@ main, ne lit rien. **Seul appelant de `resolvePrice`** du dépôt, tenu par
   appelé seulement par la fabrique `pricerOver`
   (`pricing/application/pricer-over.ts`), où la **lentille** décide à la fois
   des engagements chargés et des preuves admises.
-- Hors de `b2b/pricing/`, on n'y accède que par la porte `Pricer.load`, qui
+- Hors de `lafoliecoffee/pricing/`, on n'y accède que par la porte `Pricer.load`, qui
   rend un `PricedLot` (`lint:price-door`).
 
 ## 2. Les questions

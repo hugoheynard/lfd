@@ -30,7 +30,7 @@ c'est la seule forme qu'elle comprenne.
 
 ## 2. Ce que la porte voit, et ce qu'elle ne voit pas
 
-`lint:business-day` ne lit que la tarification (`b2b/pricing`, les écrans de
+`lint:business-day` ne lit que la tarification (`lafoliecoffee/pricing`, les écrans de
 tarifs) et les opérations datées. Elle ne voit **ni** la comptabilité, **ni**
 les commandes, la croissance, le retrait, les abonnements, la médiathèque ou la
 production. Son silence n'y prouve rien. Elle ne voit pas non plus le sens
@@ -64,11 +64,11 @@ inverse — un instant ramené à un jour par `.toISOString().slice(0, 10)`.
 
 **a. Des libellés qui affichent la veille (argent : messages de refus).**
 
-| Site                                                                 | Ce qui s'affiche                                                          |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `b2b/pricing/application/pricer.ts` (~l. 224–227)                    | « le tarif de X au … est inconnu », « l'historique ne commence que le … » |
-| `b2b/pricing/domain/errors/mercuriale-errors.ts`, `shared-errors.ts` | bornes de validité dans les messages de refus                             |
-| `b2b/loyalty/domain/errors/loyalty-errors.ts` (~l. 203, 272)         | « ce bon a expiré le … »                                                  |
+| Site                                                                           | Ce qui s'affiche                                                          |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| `lafoliecoffee/pricing/application/pricer.ts` (~l. 224–227)                    | « le tarif de X au … est inconnu », « l'historique ne commence que le … » |
+| `lafoliecoffee/pricing/domain/errors/mercuriale-errors.ts`, `shared-errors.ts` | bornes de validité dans les messages de refus                             |
+| `lafoliecoffee/loyalty/domain/errors/loyalty-errors.ts` (~l. 203, 272)         | « ce bon a expiré le … »                                                  |
 
 Les fenêtres tarifaires sont posées à **minuit de Paris** par le front
 (`businessDayStart`). `toISOString().slice(0, 10)` les relit en UTC : une
@@ -78,7 +78,7 @@ jour. Pour un bon de fidélité, l'écart ne touche que les échéances tombées
 entre 22 h et minuit.
 
 **b. Les écrans d'analyse découpent en jours UTC.** `weekStart`, `dayKey`,
-`weekStarts`, `dayRange` (`b2b/growth`) et les quatre lecteurs
+`weekStarts`, `dayRange` (`lafoliecoffee/growth`) et les quatre lecteurs
 (`prisma-order-metrics`, `-acquisition-metrics`, `-market-volume`,
 `-sector-revenue`) bornent et rangent **en UTC, des deux côtés** : le calcul est
 **cohérent avec lui-même** (la question de l'ancien §2 est tranchée). L'écart

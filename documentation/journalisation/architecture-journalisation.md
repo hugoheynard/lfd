@@ -55,15 +55,15 @@ module n'est pas un emplacement, c'est un **filtre** dérivé du préfixe du typ
 de fait (§8).
 
 Mais tous les faits ne coûtent pas la même chose s'ils se perdent. Le port
-`ActivityRecorder` (`b2b/growth/domain/ports/activity-recorder.ts`) offre donc
+`ActivityRecorder` (`lafoliecoffee/growth/domain/ports/activity-recorder.ts`) offre donc
 **deux garanties**, et c'est l'émetteur qui choisit :
 
-|               | `record` — **analytique**                                                        | `recordOrFail` — **opposable**                                 |
-| ------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| Une panne     | journalisée puis **avalée** : le geste réussit quand même                        | **remonte** : la transaction du geste est annulée              |
-| Pour          | une étape franchie, une commande prête, un lead capté                            | une fiche modifiée, un droit accordé, un prix posé             |
-| Pourquoi      | perdre la trace dégrade une statistique ; casser le geste dégraderait le service | une trace manquée en silence laisse croire que rien n'a changé |
-| Qui l'emploie | les abonnés de `b2b/growth/application/handlers/` et commandes de croissance     | tout ce qui passe par le port `Journal` (§3)                   |
+|               | `record` — **analytique**                                                              | `recordOrFail` — **opposable**                                 |
+| ------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Une panne     | journalisée puis **avalée** : le geste réussit quand même                              | **remonte** : la transaction du geste est annulée              |
+| Pour          | une étape franchie, une commande prête, un lead capté                                  | une fiche modifiée, un droit accordé, un prix posé             |
+| Pourquoi      | perdre la trace dégrade une statistique ; casser le geste dégraderait le service       | une trace manquée en silence laisse croire que rien n'a changé |
+| Qui l'emploie | les abonnés de `lafoliecoffee/growth/application/handlers/` et commandes de croissance | tout ce qui passe par le port `Journal` (§3)                   |
 
 **Pourquoi la table vit dans le schéma `growth`.** Le journal est né comme un
 journal d'événements **analytiques** de la croissance (lead capté, commande
@@ -106,7 +106,7 @@ flowchart LR
       GROW["Croissance<br/>abonnés d'événements"]
     end
     J["Journal (platform)<br/>append — bloquant"]
-    R["ActivityRecorder<br/>(b2b/growth)"]
+    R["ActivityRecorder<br/>(lafoliecoffee/growth)"]
     T[("growth.activity_events")]
     PE[("public.pricing_events")]
 
@@ -132,7 +132,7 @@ Détail : [`../pim/journalisation-et-tracabilite.md`](../pim/journalisation-et-t
 > réagir un autre bloc passe par la boîte d'envoi
 > ([`plan-evenements-durables.md`](plan-evenements-durables.md)).
 
-**2. Les actes nommés (`b2b/account`, zones, points de retrait, heures limites,
+**2. Les actes nommés (`lafoliecoffee/account`, zones, points de retrait, heures limites,
 mandats…)** — l'événement de domaine **est** le fait : il implémente
 `JournaledEvent.journalFact()` (`platform/journal/journal-fact.ts`), et
 `publishTraced(event)` écrit au journal **puis** publie sur le bus
@@ -193,7 +193,7 @@ L'**acteur** d'une requête est posé une fois, dans le contexte de requête
 | une tâche       | `RecomputeGuard`, ou rien (hors requête)         | `null` / un marqueur, `actor_type = system` |
 
 Le **nom et la fonction** sont résolus par `ActorNamer`
-(`b2b/growth/infrastructure/prisma-actor-namer.ts`) **au moment de l'acte**, et
+(`lafoliecoffee/growth/infrastructure/prisma-actor-namer.ts`) **au moment de l'acte**, et
 figés dans `actor_name` / `actor_role` : le journal dit qui a agi ce jour-là et
 à quel titre, pas qui porte ce nom aujourd'hui. Une panne de résolution n'empêche
 pas d'écrire — un fait anonyme vaut mieux qu'un fait perdu. Un client sans nom
@@ -216,7 +216,7 @@ règle : [§12](#s12).
 ## 6. L'idempotence
 
 La clé est `type:subjectId:traceId`, dérivée par
-`b2b/growth/domain/activity-event.ts`, unique en base. Un fait rejoué **par la
+`lafoliecoffee/growth/domain/activity-event.ts`, unique en base. Un fait rejoué **par la
 même requête** (même `traceparent`) retombe sur la même clé, et l'`INSERT`
 **n'écrit rien, sans erreur** : `createMany({ skipDuplicates: true })`, soit
 `INSERT … ON CONFLICT DO NOTHING`.
@@ -241,7 +241,7 @@ seconde, venus de deux requêtes, sont deux faits.
 Un acte tarifaire (poser, suspendre, reprendre, archiver une règle, un plancher,
 un barème, un engagement, une mercuriale) s'écrit **deux fois, dans la même
 transaction que l'état**, par `PricingActWriter`
-(`b2b/pricing/infrastructure/pricing-act.writer.ts`) :
+(`lafoliecoffee/pricing/infrastructure/pricing-act.writer.ts`) :
 
 - dans **`public.pricing_events`**, le journal **du domaine** : append-only,
   aucune colonne mutable, aucun port qui mette à jour ou efface — sur un prix
@@ -266,12 +266,12 @@ Elle est écrite dans le JSDoc du modèle, et ne vaut pas précédent.
 
 ## 8. La lecture : l'écran Journal
 
-`GET /admin/activity` (`b2b/growth/http/admin-activity.controller.ts`), sous la
+`GET /admin/activity` (`lafoliecoffee/growth/http/admin-activity.controller.ts`), sous la
 permission `activity:read` — réservée à `admin` : le journal traverse tous les
 modules, et le ranger sous l'un d'eux donnerait à son audience l'activité des
 autres par la bande.
 
-- **Module** — dérivé du préfixe du `type` (`b2b/growth/domain/activity-module.ts`),
+- **Module** — dérivé du préfixe du `type` (`lafoliecoffee/growth/domain/activity-module.ts`),
   pas stocké : `pim`, `commercial` (dont les prix négociés), `commandes`,
   `comptes`, `equipe`, `production`, `comptabilite`. Un type qui ne se range
   plus sous un préfixe se renomme. Depuis le 2026-09-19, les règles comptables
@@ -309,10 +309,10 @@ autres par la bande.
 
 ### La tranche fiscale
 
-`GET /admin/activity/tax` (`b2b/growth/http/admin-tax-activity.controller.ts`,
+`GET /admin/activity/tax` (`lafoliecoffee/growth/http/admin-tax-activity.controller.ts`,
 2026-09-19) : la même page que le journal — mêmes filtres **sauf `module`**,
 même recherche, mêmes pages figées —, bornée **au serveur** à une liste fermée
-de types (`TAX_JOURNAL_SLICE`, `b2b/growth/domain/activity-slice.ts`). Hugo,
+de types (`TAX_JOURNAL_SLICE`, `lafoliecoffee/growth/domain/activity-slice.ts`). Hugo,
 2026-09-19 : « la compta doit voir tout ce qui touche au taux ».
 
 | Dans la tranche                                       | Pourquoi                                                                                                                                                                                                                                                                                                                                                           |
@@ -383,14 +383,14 @@ La journalisation repose sur une discipline, et une discipline se perd sans
 bruit — la faute ne se voit que le jour où l'on demande « qui a changé ça ».
 Ce qui la tient, du plus fort au plus faible :
 
-| Garde-fou                                       | Ce qu'il tient                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Le laissez-passer `WriteTicket`                 | un dépôt du référentiel n'écrit pas sans trace — **le compilateur** refuse                                                                                                                                                                                                                                                                                                                                                                |
-| `lint:journal-tracked`                          | tout handler de commande du PIM, de `staff/` et — depuis le 2026-09-19 — de `b2b/account/` (gestes du client compris, sans coordonnées), `b2b/subscriptions/`, `b2b/order-waivers/`, `b2b/payments/` (client compris), `b2b/catalog/` et `production/` (les gestes d'atelier et le colisage déclarent `@sans-journal`) journalise sous `UnitOfWork` — ou déclare `@sans-journal <raison>` / `@hors-transaction <raison>`, qui se greppent |
-| `lint:events-tracked`                           | un abonné d'événement s'inscrit au travail de fond : sans ça, son écriture au journal échappe à `drain()` et à la gestion d'erreur                                                                                                                                                                                                                                                                                                        |
-| `lint:subject-readers`, `lint:auth0-id-readers` | le `sub` Auth0 ne redevient pas un auteur, ni ne s'écrit dans un message                                                                                                                                                                                                                                                                                                                                                                  |
-| La transaction du geste                         | un fait opposable et son geste tombent ensemble ou tiennent ensemble                                                                                                                                                                                                                                                                                                                                                                      |
-| Le catalogue des faits (§13)                    | un type hors catalogue ne compile pas ; une charge qui ne suit pas son schéma lève sous les harnais de test                                                                                                                                                                                                                                                                                                                               |
+| Garde-fou                                       | Ce qu'il tient                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Le laissez-passer `WriteTicket`                 | un dépôt du référentiel n'écrit pas sans trace — **le compilateur** refuse                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `lint:journal-tracked`                          | tout handler de commande du PIM, de `staff/` et — depuis le 2026-09-19 — de `lafoliecoffee/account/` (gestes du client compris, sans coordonnées), `lafoliecoffee/subscriptions/`, `lafoliecoffee/order-waivers/`, `lafoliecoffee/payments/` (client compris), `lafoliecoffee/catalog/` et `production/` (les gestes d'atelier et le colisage déclarent `@sans-journal`) journalise sous `UnitOfWork` — ou déclare `@sans-journal <raison>` / `@hors-transaction <raison>`, qui se greppent |
+| `lint:events-tracked`                           | un abonné d'événement s'inscrit au travail de fond : sans ça, son écriture au journal échappe à `drain()` et à la gestion d'erreur                                                                                                                                                                                                                                                                                                                                                          |
+| `lint:subject-readers`, `lint:auth0-id-readers` | le `sub` Auth0 ne redevient pas un auteur, ni ne s'écrit dans un message                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| La transaction du geste                         | un fait opposable et son geste tombent ensemble ou tiennent ensemble                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Le catalogue des faits (§13)                    | un type hors catalogue ne compile pas ; une charge qui ne suit pas son schéma lève sous les harnais de test                                                                                                                                                                                                                                                                                                                                                                                 |
 
 **La règle pour ajouter un émetteur** : un fait mérite le journal quand il
 change ce qui est vendu, facturé, ou ce que quelqu'un a le droit de voir. Le
@@ -417,21 +417,21 @@ Pour ne pas les confondre :
 
 ## 11. Où est le code
 
-| Quoi                             | Où                                                                                                                                       |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Le port des blocs métier         | `apps/lfd-api/src/platform/journal/journal.ts`, `journal-fact.ts`                                                                        |
-| Le branchement                   | `apps/lfd-api/src/appBootstrap/journal.module.ts`                                                                                        |
-| Le recorder, ses deux garanties  | `apps/lfd-api/src/b2b/growth/domain/ports/activity-recorder.ts`, `infrastructure/prisma-activity-recorder.ts`                            |
-| La ligne et sa clé d'idempotence | `apps/lfd-api/src/b2b/growth/domain/activity-event.ts`                                                                                   |
-| L'auteur figé                    | `apps/lfd-api/src/b2b/growth/infrastructure/prisma-actor-namer.ts`                                                                       |
-| `publishTraced`                  | `apps/lfd-api/src/platform/events/cqrs-domain-event-publisher.ts`                                                                        |
-| Le référentiel                   | `apps/lfd-api/src/pim/journal/`                                                                                                          |
-| La tarification                  | `apps/lfd-api/src/b2b/pricing/infrastructure/pricing-act.writer.ts`                                                                      |
-| La lecture                       | `apps/lfd-api/src/b2b/growth/http/admin-activity.controller.ts`, `infrastructure/activity-journal.where.ts`, `domain/activity-module.ts` |
-| La tranche fiscale               | `apps/lfd-api/src/b2b/growth/http/admin-tax-activity.controller.ts`, `domain/activity-slice.ts`                                          |
-| Le contrat                       | `packages/contracts/src/activity-journal.ts`                                                                                             |
-| Le catalogue des faits (§13)     | `packages/contracts/src/journal-facts/`, `apps/lfd-api/src/platform/journal/journal-fact-check.ts`                                       |
-| La table                         | `apps/lfd-api/prisma/schema/growth.prisma` (`ActivityEvent`)                                                                             |
+| Quoi                             | Où                                                                                                                                                 |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Le port des blocs métier         | `apps/lfd-api/src/platform/journal/journal.ts`, `journal-fact.ts`                                                                                  |
+| Le branchement                   | `apps/lfd-api/src/appBootstrap/journal.module.ts`                                                                                                  |
+| Le recorder, ses deux garanties  | `apps/lfd-api/src/lafoliecoffee/growth/domain/ports/activity-recorder.ts`, `infrastructure/prisma-activity-recorder.ts`                            |
+| La ligne et sa clé d'idempotence | `apps/lfd-api/src/lafoliecoffee/growth/domain/activity-event.ts`                                                                                   |
+| L'auteur figé                    | `apps/lfd-api/src/lafoliecoffee/growth/infrastructure/prisma-actor-namer.ts`                                                                       |
+| `publishTraced`                  | `apps/lfd-api/src/platform/events/cqrs-domain-event-publisher.ts`                                                                                  |
+| Le référentiel                   | `apps/lfd-api/src/pim/journal/`                                                                                                                    |
+| La tarification                  | `apps/lfd-api/src/lafoliecoffee/pricing/infrastructure/pricing-act.writer.ts`                                                                      |
+| La lecture                       | `apps/lfd-api/src/lafoliecoffee/growth/http/admin-activity.controller.ts`, `infrastructure/activity-journal.where.ts`, `domain/activity-module.ts` |
+| La tranche fiscale               | `apps/lfd-api/src/lafoliecoffee/growth/http/admin-tax-activity.controller.ts`, `domain/activity-slice.ts`                                          |
+| Le contrat                       | `packages/contracts/src/activity-journal.ts`                                                                                                       |
+| Le catalogue des faits (§13)     | `packages/contracts/src/journal-facts/`, `apps/lfd-api/src/platform/journal/journal-fact-check.ts`                                                 |
+| La table                         | `apps/lfd-api/prisma/schema/growth.prisma` (`ActivityEvent`)                                                                                       |
 
 ---
 
@@ -473,7 +473,7 @@ id de fiche, par `sub` actuel, ou par un `sub` ancien de la table des `sub` ; le
 port `StaffAuthorReferences` rend tous les identifiants d'une personne, et le
 filtre par acteur du journal devient `actor_id IN (…)` — l'histoire d'une
 personne ne se coupe pas. `b2b` n'y lit pas `staff_users` : il passe par ces
-ports (`b2b/account/infrastructure/staff-block-directory.ts`, `ActorNamer`).
+ports (`lafoliecoffee/account/infrastructure/staff-block-directory.ts`, `ActorNamer`).
 
 **D5 — La table des `sub`.** `staff_subject_aliases (sub, staff_user_id, source,
 recorded_at)` garde **chaque** `sub` qu'une fiche a porté : semée des

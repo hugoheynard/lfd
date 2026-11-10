@@ -16,13 +16,13 @@
  */
 import { CommandBus } from "@nestjs/cqrs";
 
-import { InvoiceReader } from "../src/b2b/accounting/domain/ports/invoice.reader.js";
+import { InvoiceReader } from "../src/lafoliecoffee/accounting/domain/ports/invoice.reader.js";
 import {
   drawnUnicodeText,
   streamsWith,
-} from "../src/b2b/accounting/domain/services/__tests__/pdf-objects.js";
-import { renderFacturXml } from "../src/b2b/accounting/domain/services/facturx-xml.js";
-import { MarkOrderFulfilledCommand } from "../src/b2b/orders/application/commands/mark-order-fulfilled.command.js";
+} from "../src/lafoliecoffee/accounting/domain/services/__tests__/pdf-objects.js";
+import { renderFacturXml } from "../src/lafoliecoffee/accounting/domain/services/facturx-xml.js";
+import { MarkOrderFulfilledCommand } from "../src/lafoliecoffee/orders/application/commands/mark-order-fulfilled.command.js";
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";

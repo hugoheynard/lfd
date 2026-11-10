@@ -23,8 +23,8 @@ import type {
 import { instantToLocal, localToInstant } from "@lfd/contracts";
 
 import { placeShopOrderSeeingTotal, type Unseen } from "./seen-total-shop-command.js";
-import { PlaceShopOrderHandler } from "../src/b2b/orders/application/commands/place-shop-order.handler.js";
-import { UnsettledShopOrderExpiry } from "../src/b2b/orders/application/services/unsettled-shop-order-expiry.service.js";
+import { PlaceShopOrderHandler } from "../src/lafoliecoffee/orders/application/commands/place-shop-order.handler.js";
+import { UnsettledShopOrderExpiry } from "../src/lafoliecoffee/orders/application/services/unsettled-shop-order-expiry.service.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { CompanyStatus } from "../src/platform/database/client/client.js";
 import { Clock } from "../src/platform/time/clock.js";

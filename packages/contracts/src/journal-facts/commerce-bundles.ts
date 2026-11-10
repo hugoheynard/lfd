@@ -5,7 +5,7 @@ import { changes, fact, fromTo, payload, subjectLabel, type JournalFactFamily } 
 /**
  * **Les formules** — des groupes d'articles au choix, vendues ensemble
  * (`documentation/formules/plan-les-formules.md`, lot F2a, 2026-10-19).
- * Écrits par les handlers de `b2b/bundles/`, par `publishTraced`. Rangés dans
+ * Écrits par les handlers de `lafoliecoffee/bundles/`, par `publishTraced`. Rangés dans
  * la famille `commerce` : composer une offre est le même métier que la vitrine
  * et les suggestions.
  *

@@ -12,7 +12,7 @@ import type { MailSectionOrders } from "../sections/mail-layout-scope.js";
 
 /*
  * La rédaction de la lettre de manque, sortie de
- * `b2b/orders/.../get-shortfall-letter-draft.handler.ts` au lot S3b : ses
+ * `lafoliecoffee/orders/.../get-shortfall-letter-draft.handler.ts` au lot S3b : ses
  * assertions de texte y vivaient, elles vivent ici avec elle.
  */
 

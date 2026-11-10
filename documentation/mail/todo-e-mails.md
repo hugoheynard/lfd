@@ -59,7 +59,7 @@
   celles que le Support reçoit. ⚠️ **Pas vierge** : le plan
   [`../demandes-client/plan-reponses-par-e-mail.md`](../demandes-client/plan-reponses-par-e-mail.md)
   (2026-10-28, contredit par vitruve) couvre la réception, et le webhook
-  remet déjà `email.received` à la boîte des demandes (`b2b/contact`). Le
+  remet déjà `email.received` à la boîte des demandes (`lafoliecoffee/contact`). Le
   relire contre le code avant d'écrire quoi que ce soit ; route publique et
   données personnelles : `vitruve` avant Hugo.
 - **Les faits `mail.delivered` / `mail.bounced`** publiés aux autres blocs,

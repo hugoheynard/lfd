@@ -51,7 +51,7 @@ de calculer un prix (`lint:front-money-reads`).
 ## 1. Ce qui existe (relu le 2026-11-04)
 
 - Le kilo saisi est posé sur le rayon **après** le prix, par
-  `withPricesPerKg` (`apps/lfd-api/src/b2b/catalog/application/shop-catalogue-price-per-kg.ts`),
+  `withPricesPerKg` (`apps/lfd-api/src/lafoliecoffee/catalog/application/shop-catalogue-price-per-kg.ts`),
   appelé dans `ShopCataloguePricing` (`shop-catalogue-pricing.service.ts`) :
   `proPricePerKgMillicents` pour un rayon pro (HT, millicentimes),
   `publicPricePerKgTtcCents` pour un rayon public (TTC, centimes), l'autre à
@@ -97,7 +97,7 @@ Pour l'audience servie, dans son unité :
   kilo **saisi** de son côté : l'export de grille de prix
   (`catalog-price-grid-shelf.reader.ts`, `enteredPerKg`). Sans décision, le
   rayon et la grille du même acheteur type montreraient deux kilos à la même
-  date (question 2, § 7). La vitrine (`b2b/vitrine`) n'a pas été relue ;
+  date (question 2, § 7). La vitrine (`lafoliecoffee/vitrine`) n'a pas été relue ;
 - deux champs neufs, absents du fil dans le cas ordinaire comme le barré :
   `catalogPricePerKgTtcCents` (public) et `catalogPricePerKgMillicents` (pro),
   posés exactement quand `catalogPriceTtcCents` / `catalogPriceMillicents` le
@@ -148,7 +148,7 @@ plus seulement par l'écran.
   `struck`) ET la présence d'une promotion (posée par `withPromotionNames`,
   APRÈS `struck`). `withPricesPerKg` passe en dernier dans `pricedFor` : il a
   les trois sur l'article, sans rien recalculer. La règle pure vit dans
-  `apps/lfd-api/src/b2b/catalog/application/shop-catalogue-promoted-per-kg.ts`
+  `apps/lfd-api/src/lafoliecoffee/catalog/application/shop-catalogue-promoted-per-kg.ts`
   (`servedPricePerKg`, `proportional` en `bigint`), appelée par
   `withPricesPerKg`.
 - **Une promotion sans `labels`** (trace d'avant L8b) ne pose pas
@@ -188,7 +188,7 @@ mercuriale **tombent**. L'export de grille n'est pas touché.
 
 - que la réglementation française exige que le prix à l'unité de mesure suive
   le prix de vente pratiqué pendant une promotion : probable, non relu ;
-- la vitrine (`b2b/vitrine/…/vitrine-item.ts`, `vitrine-xml-shapes.ts`) : lit-elle `ShopItemView` ou le kilo saisi ? ;
+- la vitrine (`lafoliecoffee/vitrine/…/vitrine-item.ts`, `vitrine-xml-shapes.ts`) : lit-elle `ShopItemView` ou le kilo saisi ? ;
 - le cache des rayons en cours de bâtisse (C2 du cache du catalogue) : le kilo
   servi y est rangé avec le rayon, sans effet attendu ;
 - le devis, le panier, la commande et les documents ne montrent pas le kilo :

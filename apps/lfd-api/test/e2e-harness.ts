@@ -44,10 +44,10 @@ import { BackgroundWork } from "../src/platform/events/background-work.js";
 import { PrismaService } from "../src/platform/database/prisma.service.js";
 import { AppErrorFilter } from "../src/platform/shared/http/app-error.filter.js";
 import type { VerifiedToken } from "../src/platform/auth/principal.js";
-import { PricingMaterialsCache } from "../src/b2b/pricing/infrastructure/pricing-materials.cache.js";
-import { PublicShelfFlagMemory } from "../src/b2b/catalog/application/public-shelf-flag-memory.js";
+import { PricingMaterialsCache } from "../src/lafoliecoffee/pricing/infrastructure/pricing-materials.cache.js";
+import { PublicShelfFlagMemory } from "../src/lafoliecoffee/catalog/application/public-shelf-flag-memory.js";
 import { CachedPublishedMailCopyReader } from "../src/mail/copy/infrastructure/cached-published-mail-copy.reader.js";
-import { CachedPublishedShopCopyReader } from "../src/b2b/shop-copy/infrastructure/cached-published-shop-copy.reader.js";
+import { CachedPublishedShopCopyReader } from "../src/lafoliecoffee/shop-copy/infrastructure/cached-published-shop-copy.reader.js";
 import { StaffAccessResolver } from "../src/platform/auth/staff-access.resolver.js";
 import { prismaSchemaSource } from "../src/platform/database/prisma-schema-source.js";
 import { addDays, instantToLocal, localToInstant } from "@lfd/contracts";
@@ -62,13 +62,13 @@ import {
   OfflineEstablishmentDirectory,
   OfflineMarketDirectory,
 } from "./offline-network.js";
-import { EstablishmentDirectory } from "../src/b2b/account/domain/ports/establishment-directory.js";
-import { MarketDirectory } from "../src/b2b/growth/domain/ports/market-directory.js";
+import { EstablishmentDirectory } from "../src/lafoliecoffee/account/domain/ports/establishment-directory.js";
+import { MarketDirectory } from "../src/lafoliecoffee/growth/domain/ports/market-directory.js";
 import { BootStopwatch } from "./e2e-boot-log.js";
 import { ensureTestBucket, resetStorage } from "./storage.js";
 import { seedE2eCatalog } from "./catalog-fixture.js";
-import { CachedPrincipalResolver } from "../src/b2b/account/infrastructure/cached-principal.resolver.js";
-import { CatalogueSnapshotStore } from "../src/b2b/catalog/infrastructure/catalogue-snapshot/catalogue-snapshot.store.js";
+import { CachedPrincipalResolver } from "../src/lafoliecoffee/account/infrastructure/cached-principal.resolver.js";
+import { CatalogueSnapshotStore } from "../src/lafoliecoffee/catalog/infrastructure/catalogue-snapshot/catalogue-snapshot.store.js";
 import { resetRolesToSeed } from "../src/dev/seeding/roles.seed.js";
 
 /**

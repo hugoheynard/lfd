@@ -25,7 +25,7 @@ import { CardSettlementReader } from "../src/card-payment/channels/requests/inde
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { b2bMailTemplates, type B2bMails } from "../src/mail/templates/mail-templates.js";
-import { CardIncreaseProposalRepository } from "../src/b2b/orders/revision/domain/ports/card-increase-proposal.repository.js";
+import { CardIncreaseProposalRepository } from "../src/lafoliecoffee/orders/revision/domain/ports/card-increase-proposal.repository.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { OutboxRelay } from "../src/platform/outbox/outbox-relay.js";

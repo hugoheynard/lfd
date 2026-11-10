@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
-import { StorefrontImageRepointing } from "../b2b/storefront/channels/media/storefront-image-repointing.js";
-import { StorefrontMediaUsage } from "../b2b/storefront/channels/media/storefront-media-usage.js";
+import { StorefrontImageRepointing } from "../lafoliecoffee/storefront/channels/media/storefront-image-repointing.js";
+import { StorefrontMediaUsage } from "../lafoliecoffee/storefront/channels/media/storefront-media-usage.js";
 import {
   MediaCarriers,
   type Carrier,

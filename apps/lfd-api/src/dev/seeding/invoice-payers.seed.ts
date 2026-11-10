@@ -1,10 +1,10 @@
-import { GrantTermsCommand } from "../../b2b/account/application/commands/grant-terms.command.js";
-import { SetPayerBillingModeCommand } from "../../b2b/accounting/application/commands/set-payer-billing-mode.command.js";
-import { AttachMandateProofCommand } from "../../b2b/payments/application/commands/attach-mandate-proof.command.js";
-import { MintMandateCommand } from "../../b2b/payments/application/commands/mint-mandate.command.js";
-import { SetCompanyBankAccountCommand } from "../../b2b/payments/application/commands/set-company-bank-account.command.js";
-import { SignMandateCommand } from "../../b2b/payments/application/commands/sign-mandate.command.js";
-import { proofRevisionOf } from "../../b2b/payments/domain/services/proof-revision.js";
+import { GrantTermsCommand } from "../../lafoliecoffee/account/application/commands/grant-terms.command.js";
+import { SetPayerBillingModeCommand } from "../../lafoliecoffee/accounting/application/commands/set-payer-billing-mode.command.js";
+import { AttachMandateProofCommand } from "../../lafoliecoffee/payments/application/commands/attach-mandate-proof.command.js";
+import { MintMandateCommand } from "../../lafoliecoffee/payments/application/commands/mint-mandate.command.js";
+import { SetCompanyBankAccountCommand } from "../../lafoliecoffee/payments/application/commands/set-company-bank-account.command.js";
+import { SignMandateCommand } from "../../lafoliecoffee/payments/application/commands/sign-mandate.command.js";
+import { proofRevisionOf } from "../../lafoliecoffee/payments/domain/services/proof-revision.js";
 import { InvoiceSeedStepError } from "./invoice-seed-errors.js";
 import { asStaff, isoDay, type SeedContext } from "./order-placing.seed.js";
 

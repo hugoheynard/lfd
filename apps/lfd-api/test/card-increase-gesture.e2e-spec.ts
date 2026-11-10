@@ -21,8 +21,8 @@ import {
 
 import { CardPayments } from "../src/card-payment/channels/requests/index.js";
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
-import { CardIncreaseProposal } from "../src/b2b/orders/revision/domain/entities/card-increase-proposal.js";
-import { CardIncreaseProposalRepository } from "../src/b2b/orders/revision/domain/ports/card-increase-proposal.repository.js";
+import { CardIncreaseProposal } from "../src/lafoliecoffee/orders/revision/domain/entities/card-increase-proposal.js";
+import { CardIncreaseProposalRepository } from "../src/lafoliecoffee/orders/revision/domain/ports/card-increase-proposal.repository.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { cardProvidersDouble } from "./card-payments.js";

@@ -64,7 +64,7 @@ rien d'autre : ni les règles écartées, ni les noms des autres étages.
 | `pricing_rejected` | les règles regardées puis écartées : `{ stage, ruleId, label, scope, cause }` (`Json?`) |
 
 - `RejectedRule` et `RejectionCause` sont dans
-  `b2b/pricing/domain/price-rule.ts`. Sept causes : `expired`, `suspended`,
+  `lafoliecoffee/pricing/domain/price-rule.ts`. Sept causes : `expired`, `suspended`,
   `out_of_scope`, `out_of_audience`, `below_threshold` (les conjonctions
   d'`applies`, dans son ordre), puis `superseded` et `sealed`. Les cinq
   premières sont rares en production, puisque le chargement écarte déjà ces
@@ -101,7 +101,7 @@ rien d'autre : ni les règles écartées, ni les noms des autres étages.
 ## 3. Ce qui se reconstruit
 
 `GET /admin/orders/:id/lines/:sku/rules` → `ReconstructLineRulesQuery`
-(`b2b/orders/application/queries/reconstruct-line-rules.handler.ts`) :
+(`lafoliecoffee/orders/application/queries/reconstruct-line-rules.handler.ts`) :
 
 - relit le **tableau de tarification daté** à `placedAt` (le même lecteur que
   l'écran de tarification, plutôt qu'une seconde réponse à « qu'est-ce qui

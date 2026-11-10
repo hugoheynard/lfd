@@ -71,7 +71,7 @@ rien ne peut constater :
 
 | Attestation                          | Pourquoi aucune donnée ne la porte                                                                                                                                                                                                                                                                     |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **« Contrôle CSV relu »**            | le téléchargement de `audit.csv` n'écrit rien (une requête, `apps/lfd-api/src/b2b/accounting/http/admin-collection-batches.controller.ts:133`) ; et avoir téléchargé n'est pas avoir relu                                                                                                              |
+| **« Contrôle CSV relu »**            | le téléchargement de `audit.csv` n'écrit rien (une requête, `apps/lfd-api/src/lafoliecoffee/accounting/http/admin-collection-batches.controller.ts:133`) ; et avoir téléchargé n'est pas avoir relu                                                                                                    |
 | **« Remise signée sur CENET »**      | la signature est sur le portail (procédure § 2.8) ; l'outil ne connaît que « Marquer déposé », qui la **précède** (§ 2.7)                                                                                                                                                                              |
 | **« Accusés PSR lus »**              | les PSR ne sont que sur CENET (procédure § 2.9, réponse 24)                                                                                                                                                                                                                                            |
 | **« Retours contrôlés jusqu'au … »** | un import qui ne trouve **aucun** impayé n'écrit rien : la confirmation ne rend que les retours enregistrés (`CollectionReturnImportResultView.recordedIds`, `packages/contracts/src/collection-return.ts:149`), et aucune table ne garde les fichiers importés. Or « aucun impayé » est le cas normal |
@@ -90,7 +90,7 @@ Ce qui **n'est pas** noté, alors que la demande y fait penser :
   l'enchaînement — « Marquer déposé » le suppose.
 
 **Où les noter** : une table `collection_batch_attestation` (schéma `public`,
-bloc `b2b/accounting`), une ligne par lot et par attestation — `batch_id`,
+bloc `lafoliecoffee/accounting`), une ligne par lot et par attestation — `batch_id`,
 `kind` (`audit_reviewed`, `remittance_signed`, `psr_read`), `attested_at`,
 `attested_by_staff_id` (au registre RGPD, `lint:rgpd-staff`), `note`
 facultative. Les retours contrôlés n'y vont pas : ce n'est pas un fait du
@@ -104,7 +104,7 @@ identique et `withdrawn = true`, note obligatoire. **La dernière ligne par
 (lot, kind) fait foi** — c'est la seule règle de lecture, et S1 la tient.
 
 Une attestation n'est **jamais** une condition d'un geste du domaine :
-« Marquer déposé » reste gardé par sa relecture (`apps/lfd-api/src/b2b/accounting/domain/entities/collection-batch.ts:212`),
+« Marquer déposé » reste gardé par sa relecture (`apps/lfd-api/src/lafoliecoffee/accounting/domain/entities/collection-batch.ts:212`),
 pas par « Contrôle CSV relu ». Les attestations ne gouvernent que l'écran.
 Sinon, un oubli de case bloquerait un dépôt avant la limite.
 
@@ -112,12 +112,12 @@ Sinon, un oubli de case bloquerait un dépôt avant la limite.
 
 Trois mailles, pas une, parce que les quatre étapes n'ont pas le même sujet :
 
-| Onglet    | Sujet                                  | Pourquoi                                                                                                                                                                                |
-| --------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1 Comptes | **l'entité**                           | un compte s'importe une fois, quel que soit le lot (prérequis-export-ribs § 8) ; il n'a pas d'échéance                                                                                  |
-| 2 Mandats | **l'entité**                           | idem (`prerequis-export-mandats.md:90-94`)                                                                                                                                              |
-| 3 Fichier | **le lot** = entité × schéma × clôture | un lot est un fichier, une échéance (procédure § 2, `apps/lfd-api/src/b2b/accounting/domain/services/pain008-document.ts:185`) ; « un fichier par schéma et par échéance » (réponse 18) |
-| 4 Retours | **l'entité et le jour**                | un fichier d'impayés est quotidien et peut porter des lignes de plusieurs lots (retours-bancaires.md:3-6)                                                                               |
+| Onglet    | Sujet                                  | Pourquoi                                                                                                                                                                                          |
+| --------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 Comptes | **l'entité**                           | un compte s'importe une fois, quel que soit le lot (prérequis-export-ribs § 8) ; il n'a pas d'échéance                                                                                            |
+| 2 Mandats | **l'entité**                           | idem (`prerequis-export-mandats.md:90-94`)                                                                                                                                                        |
+| 3 Fichier | **le lot** = entité × schéma × clôture | un lot est un fichier, une échéance (procédure § 2, `apps/lfd-api/src/lafoliecoffee/accounting/domain/services/pain008-document.ts:185`) ; « un fichier par schéma et par échéance » (réponse 18) |
+| 4 Retours | **l'entité et le jour**                | un fichier d'impayés est quotidien et peut porter des lignes de plusieurs lots (retours-bancaires.md:3-6)                                                                                         |
 
 **Les trois rythmes d'un même mois** ne sont pas trois procédures : ce sont
 jusqu'à cinq clôtures (procédure § 2), donc jusqu'à cinq lots par schéma. La
@@ -281,7 +281,7 @@ deux pages — c'est un déplacement, pas une copie.
 ### 3.4 Onglet 4 — Le contrôle des retours
 
 Verrouillé tant que le lot n'est pas déposé (un retour exige un lot déposé,
-`apps/lfd-api/src/b2b/accounting/domain/entities/collection-return.ts:111-112`) — **et seulement par
+`apps/lfd-api/src/lafoliecoffee/accounting/domain/entities/collection-return.ts:111-112`) — **et seulement par
 là** : l'attestation de signature n'y entre pas, sinon une case oubliée
 fermerait l'import des impayés d'un lot réellement débité.
 
@@ -439,7 +439,7 @@ procédure par lot. S1 est une lecture ; elle n'écrit rien (CQRS).
    **Bâti le 2026-10-23** (non commité à l'écriture) : S1
    `GET admin/accounting/collection-procedure?legalEntityId=&batchId=`
    (`GetCollectionProcedureHandler`, état pur dans
-   `apps/lfd-api/src/b2b/accounting/domain/services/collection-procedure.ts`), S5 (`CollectionBatchGestures`,
+   `apps/lfd-api/src/lafoliecoffee/accounting/domain/services/collection-procedure.ts`), S5 (`CollectionBatchGestures`,
    partagé avec « Prélèvement du mois »), sortie `changed` des deux cartes
    d'export, la page et son entrée de menu, l'avertissement « moins de 2 jours
    ouvrés » (`tightDepositMargin`) sur la carte « Prélèvement automatique » et
@@ -463,7 +463,7 @@ procédure par lot. S1 est une lecture ; elle n'écrit rien (CQRS).
      Paris, auteur au registre RGPD, instant ; un retrait est une ligne
      `withdrawn` de plus avec sa note, la base refuse UPDATE et DELETE par
      déclencheur ; la dernière ligne d'un jour fait foi,
-     `apps/lfd-api/src/b2b/accounting/domain/services/bank-return-checks.ts`).
+     `apps/lfd-api/src/lafoliecoffee/accounting/domain/services/bank-return-checks.ts`).
      Gestes `POST admin/accounting/bank-return-checks` et `…/withdrawn`, faits
      `bank_return_check.attested` / `.withdrawn` (sujet : l'entité). **Écarts
      au § 1.2** : pas de colonne `outcome` (la liste de Hugo ne la porte pas),
@@ -496,7 +496,7 @@ procédure par lot. S1 est une lecture ; elle n'écrit rien (CQRS).
    auteur au registre RGPD, instant ; un retrait est une ligne `withdrawn` de
    plus avec sa note, la base refuse UPDATE et DELETE par déclencheur ; la
    dernière ligne d'un (lot, sorte) fait foi,
-   `apps/lfd-api/src/b2b/accounting/domain/services/collection-batch-attestations.ts`).
+   `apps/lfd-api/src/lafoliecoffee/accounting/domain/services/collection-batch-attestations.ts`).
    Agrégat `CollectionBatchAttestations` : il tient l'ordre du § 3.3 (la
    remise ne se signe qu'un lot déposé, les PSR ne se lisent qu'après un
    dépôt, un lot annulé n'atteste rien). Gestes
@@ -521,7 +521,7 @@ procédure par lot. S1 est une lecture ; elle n'écrit rien (CQRS).
    des autres lots vivants de la procédure, le serveur dit si le compte du
    débiteur et son mandat sont importés dans CENET, sous l'empreinte du compte
    actuel du mandat, par les deux sélections des exports sans en recopier la
-   règle (`apps/lfd-api/src/b2b/accounting/domain/services/lot-debtor-bank-standing.ts`,
+   règle (`apps/lfd-api/src/lafoliecoffee/accounting/domain/services/lot-debtor-bank-standing.ts`,
    port `LotDebtorsReader`, champ `file.debtorsNotImported` du contrat). L'onglet 3 dit
    « N débiteur(s) de ce lot n'ont pas leur compte ou leur mandat importé
    dans CENET : la banque ne le contrôle pas au dépôt (réponse 15), mais
@@ -704,8 +704,8 @@ intéressant par période ».
 ### 12.1 L'état, calculé au serveur
 
 `CollectionProcedureView.invoices` (`packages/contracts/src/collection-procedure-invoices.ts`),
-calculé par `ProcedureInvoicesStep` (`apps/lfd-api/src/b2b/accounting/application/services/procedure-invoices-step.ts`)
-et décidé par `invoicesStatus` (`apps/lfd-api/src/b2b/accounting/domain/services/collection-procedure-invoices.ts`) :
+calculé par `ProcedureInvoicesStep` (`apps/lfd-api/src/lafoliecoffee/accounting/application/services/procedure-invoices-step.ts`)
+et décidé par `invoicesStatus` (`apps/lfd-api/src/lafoliecoffee/accounting/domain/services/collection-procedure-invoices.ts`) :
 
 | État       | Raison                         | Quand                                                                                        |
 | ---------- | ------------------------------ | -------------------------------------------------------------------------------------------- |

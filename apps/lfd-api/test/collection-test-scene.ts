@@ -19,7 +19,7 @@
  * jamais écrite en dur.
  */
 import type { CollectionTestDebtorsView } from "@lfd/contracts";
-import { sha256Of } from "../src/b2b/accounting/domain/services/collection-batch-file.js";
+import { sha256Of } from "../src/lafoliecoffee/accounting/domain/services/collection-batch-file.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";

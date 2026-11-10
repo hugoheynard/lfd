@@ -27,10 +27,10 @@
  * celle de Prisma. La course est réelle : un passage sans mutation peut
  * sérialiser par hasard, d'où le second test, déterministe.
  */
-import { CollectionBatchChangedConcurrentlyError } from "../src/b2b/accounting/domain/errors/collection-errors.js";
-import { CollectionBatchRepository } from "../src/b2b/accounting/domain/ports/collection-batch.repository.js";
-import { invoicingMomentOf } from "../src/b2b/accounting/domain/services/invoicing-closures.js";
-import { StatementMonth } from "../src/b2b/accounting/domain/value-objects/statement-month.js";
+import { CollectionBatchChangedConcurrentlyError } from "../src/lafoliecoffee/accounting/domain/errors/collection-errors.js";
+import { CollectionBatchRepository } from "../src/lafoliecoffee/accounting/domain/ports/collection-batch.repository.js";
+import { invoicingMomentOf } from "../src/lafoliecoffee/accounting/domain/services/invoicing-closures.js";
+import { StatementMonth } from "../src/lafoliecoffee/accounting/domain/value-objects/statement-month.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { Clock } from "../src/platform/time/clock.js";

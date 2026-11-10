@@ -3,7 +3,7 @@
 // `documentation/comptabilite/facturation/le-prelevement-suit-la-facture.md` (F3).
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// Propriétaire : `src/b2b/accounting/`. Un arrêté par ligne de débit, écrit
+// Propriétaire : `src/lafoliecoffee/accounting/`. Un arrêté par ligne de débit, écrit
 // dans la transaction de la constitution du lot ; son total TTC EST le
 // montant de la ligne.
 //

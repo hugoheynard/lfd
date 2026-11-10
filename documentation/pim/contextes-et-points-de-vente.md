@@ -673,7 +673,7 @@ façon ; `channel_key`, lui, bloquait l'ajout d'une simple ligne de donnée.
 | La résolution du taux (fiche par-dessus famille) | `pim/catalogue/shared/domain/value-objects/context-vat.ts`                    |
 | Les invariants de la famille                     | `pim/catalogue/category/domain/entities/category.ts`                          |
 | Adaptateur plateforme pro (pur) / transport      | `pim/channels/b2b-platform/products/projection.ts` · driver.ts (retiré en X2) |
-| Taux facturé côté boutique pro                   | `b2b/catalog/infrastructure/prisma-catalog.reader.ts`                         |
-| TVA d'une commande, livraison comprise           | `b2b/orders/domain/services/vat.ts`                                           |
+| Taux facturé côté boutique pro                   | `lafoliecoffee/catalog/infrastructure/prisma-catalog.reader.ts`               |
+| TVA d'une commande, livraison comprise           | `lafoliecoffee/orders/domain/services/vat.ts`                                 |
 
 Les chemins backend sont relatifs à `apps/lfd-api/src/`.

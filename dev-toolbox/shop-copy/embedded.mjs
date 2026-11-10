@@ -18,7 +18,7 @@ import { ROOT } from "./load-ts.mjs";
 /** Le fichier des renommages, tenu à la main à côté des dictionnaires. */
 export const RENAMES_PATH = `${COPY_DIR}/shop-copy-renames.json`;
 
-const API_EMBEDDED_DIR = "apps/lfd-api/src/b2b/shop-copy/infrastructure/embedded";
+const API_EMBEDDED_DIR = "apps/lfd-api/src/lafoliecoffee/shop-copy/infrastructure/embedded";
 
 /** Source → copie embarquée par l'API. */
 export const EMBEDDED_COPIES = [

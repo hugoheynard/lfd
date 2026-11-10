@@ -14,10 +14,10 @@ pris se réduit ici à un renvoi vers son plan ou son commit (convention du
   second **sans erreur**. Contourné ce jour-là par un fait unique pour le geste,
   `DeliveryRoundRemovedEvent`, qui porte la liste des commandes.
 - **Fichiers** :
-  - `apps/lfd-api/src/b2b/growth/domain/activity-event.ts` —
+  - `apps/lfd-api/src/lafoliecoffee/growth/domain/activity-event.ts` —
     `buildActivityEventRow`, qui construit la clé par défaut
     (`` `${input.type}:${input.subjectId}:${context.traceId}` ``) ;
-  - `apps/lfd-api/src/b2b/growth/infrastructure/prisma-activity-recorder.ts` —
+  - `apps/lfd-api/src/lafoliecoffee/growth/infrastructure/prisma-activity-recorder.ts` —
     l'écriture `skipDuplicates`, qui rend la collision muette ;
   - `apps/lfd-api/src/delivery/domain/events/delivery-round.events.ts` — le
     contournement (`DeliveryRoundRemovedEvent`, son JSDoc le dit).

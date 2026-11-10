@@ -38,7 +38,7 @@ const BLOCK_OF = {
   staff: "staff",
 
   // ▸ LA PLATEFORME MARCHANDE.
-  b2b: "b2b",
+  lafoliecoffee: "lafoliecoffee",
 
   // ▸ LE RÉFÉRENTIEL — arrivé en B2c, avec sa base et ses canaux.
   pim: "pim",
@@ -170,7 +170,7 @@ const ALLOWED = {
   media: new Set(["staff", "platform", "pim", "mail"]),
   // `packing` depuis le 2026-10-21 (réassort, R3b) : par son canal SEULEMENT
   // (`PORT_SURFACE`) — le commerce lit la quantité emballée d'un réassort.
-  b2b: new Set([
+  lafoliecoffee: new Set([
     "staff",
     "pim",
     "platform",
@@ -214,7 +214,7 @@ const ALLOWED = {
   root: new Set([
     "staff",
     "pim",
-    "b2b",
+    "lafoliecoffee",
     "platform",
     "ops",
     "production",
@@ -232,7 +232,7 @@ const MAIL_CLIENTS = [
   "staff",
   "pim",
   "media",
-  "b2b",
+  "lafoliecoffee",
   "production",
   "handover",
   "delivery",
@@ -261,7 +261,7 @@ const MAIL_CLIENTS = [
  * @type {Record<string, string>}
  */
 const PORT_SURFACE = {
-  "b2b→pim": "pim/channels/b2b-platform/",
+  "lafoliecoffee→pim": "pim/channels/b2b-platform/",
   // Même motif, sens inverse : c'est le COMMERCE qui implémente ce que la
   // production déclare. `production/channels/commerce/` ne porte que des classes
   // abstraites et les faits qu'elles rendent ; l'intérieur du fournil — son
@@ -270,7 +270,7 @@ const PORT_SURFACE = {
   // ⚠️ La production, elle, n'atteint JAMAIS `b2b` : c'est ce que la ligne
   // `production: new Set(["staff", "platform"])` interdit. Un contexte qui
   // publie un port ne doit pas connaître ceux qui le branchent.
-  "b2b→production": "production/channels/commerce/",
+  "lafoliecoffee→production": "production/channels/commerce/",
   // Le commerce implémente ce que la REMISE déclare (`HandoverSubjectReader`) et
   // consomme le fait qu'elle publie (`OrderHandedOverEvent`). Deux natures, une
   // seule surface : un événement qu'un autre bloc consomme fait partie de ce
@@ -281,7 +281,7 @@ const PORT_SURFACE = {
   // porte (`HandoverProofReader`, 2026-10-02) et, depuis le 2026-10-08, le
   // retrait de chaque bon pour le dossier de facturation
   // (`OrderHandoverHistoryReader`, DF3). Le commerce n'y lit aucune table.
-  "b2b→handover": "handover/channels/commerce/",
+  "lafoliecoffee→handover": "handover/channels/commerce/",
   // 🔴 Le seul port du dossier que la remise CONSOMME. La production déclare
   // « quelles références ont été attestées depuis ma clôture » ; la remise
   // l'implémente, donc c'est ELLE qui importe. Le sens de la flèche est celui
@@ -299,7 +299,7 @@ const PORT_SURFACE = {
   // IMPLÉMENTE aussi `OrderDeliveryHistoryReader`, que la comptabilité du
   // commerce lit pour l'historique des bons du dossier de facturation — sur
   // le modèle de `ContainerManagedOrders` (`packing/channels/delivery/`).
-  "b2b→delivery": "delivery/channels/commerce/",
+  "lafoliecoffee→delivery": "delivery/channels/commerce/",
   // Le commerce LIT la quantité réellement emballée d'un réassort, pour
   // pré-remplir sa réception (2026-10-21, réassort R3b,
   // `reassort-boutiques/README.md`) : le
@@ -307,7 +307,7 @@ const PORT_SURFACE = {
   // `OrderHandoverHistoryReader`. Le commerce ne lit aucune table du colisage.
   //
   // ⚠️ `packing → b2b` reste INTERDIT : le colisage ne sait pas qui le lit.
-  "b2b→packing": "packing/channels/commerce/",
+  "lafoliecoffee→packing": "packing/channels/commerce/",
   // Le RETRAIT implémente ce que la livraison déclare (2026-10-01,
   // `a-la-porte.md`, BQ) : « lesquelles sont retenues ? » au départ, et
   // « elles sont parties » après lui. La garde passe au livreur au départ, et
@@ -371,7 +371,7 @@ const PORT_SURFACE = {
   // le canal retour qu'il déclare (`channels/subjects/`) — la figure de
   // `b2b→production` (2026-11-09, plan M2, §3.3). `card-payment → b2b` reste
   // INTERDIT : il ne sait pas pour qui il encaisse.
-  "b2b→card-payment": "card-payment/channels/",
+  "lafoliecoffee→card-payment": "card-payment/channels/",
 };
 
 /**

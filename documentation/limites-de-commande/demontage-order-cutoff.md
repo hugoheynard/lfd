@@ -30,7 +30,7 @@ Le retrait de `OrderCutoff` n'est pas la suppression d'un code mort. C'est,
 aujourd'hui encore, **la seule règle qui refuse une commande en retard** pour
 tout article dont le référentiel ne dit rien.
 
-`ensureWithinOrderCutoff` (`src/b2b/orders/domain/services/order-cutoff-guard.ts`)
+`ensureWithinOrderCutoff` (`src/lafoliecoffee/orders/domain/services/order-cutoff-guard.ts`)
 tranche ligne par ligne :
 
 - l'article porte une limite venue du fil → elle décide **seule** ;
@@ -196,7 +196,7 @@ matrice de rôles : ils se reportent sur une autre route `b2b_settings`.
 - back-office : `reglages/commandes/cutoffs-section/` et
   `order-cutoffs.service.ts` (Réglages › Commandes › Heure limite depuis le
   2026-10-13, qui n'édite plus que la ligne générale — `plan-reglages-commandes.md`) ;
-- backend : `src/b2b/order-cutoffs/` en entier — contrôleur
+- backend : `src/lafoliecoffee/order-cutoffs/` en entier — contrôleur
   (`@Controller("admin/order-cutoffs")`), handlers, repository, module, et son
   entrée dans `app.module.ts` ;
 - contrats : 🔴 **`order-cutoff.ts` ne se supprime pas.** Le fichier porte, sous

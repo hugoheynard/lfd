@@ -14,8 +14,8 @@ import { setTimeout as sleep } from "node:timers/promises";
 
 import type { BillingAddressPayload, DeliveryAddressPayload } from "@lfd/contracts";
 
-import { DELIVERY_ADDRESS_ADDED } from "../src/b2b/account/domain/events/site-gesture.fact.js";
-import { NotifyPrincipalOnDeliveryAddressAdded } from "../src/b2b/sub-account-notices/application/handlers/notify-principal-on-delivery-address-added.handler.js";
+import { DELIVERY_ADDRESS_ADDED } from "../src/lafoliecoffee/account/domain/events/site-gesture.fact.js";
+import { NotifyPrincipalOnDeliveryAddressAdded } from "../src/lafoliecoffee/sub-account-notices/application/handlers/notify-principal-on-delivery-address-added.handler.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";

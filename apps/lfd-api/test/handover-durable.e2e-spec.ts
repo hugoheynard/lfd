@@ -13,11 +13,11 @@
  */
 import { instantToLocal, type SetLoyaltySettingsPayload } from "@lfd/contracts";
 
-import { ON_ORDER_HANDED_OVER } from "../src/b2b/orders/application/handlers/on-order-handed-over.handler.js";
-import { CREDIT_POINTS_ON_HANDOVER } from "../src/b2b/loyalty/application/handlers/credit-points-on-handover.handler.js";
-import { LoyaltySettingsReader } from "../src/b2b/loyalty/domain/ports/loyalty-settings.store.js";
-import type { LoyaltySettings } from "../src/b2b/loyalty/domain/value-objects/loyalty-settings.js";
-import { PrismaLoyaltySettingsStore } from "../src/b2b/loyalty/infrastructure/prisma-loyalty-settings.store.js";
+import { ON_ORDER_HANDED_OVER } from "../src/lafoliecoffee/orders/application/handlers/on-order-handed-over.handler.js";
+import { CREDIT_POINTS_ON_HANDOVER } from "../src/lafoliecoffee/loyalty/application/handlers/credit-points-on-handover.handler.js";
+import { LoyaltySettingsReader } from "../src/lafoliecoffee/loyalty/domain/ports/loyalty-settings.store.js";
+import type { LoyaltySettings } from "../src/lafoliecoffee/loyalty/domain/value-objects/loyalty-settings.js";
+import { PrismaLoyaltySettingsStore } from "../src/lafoliecoffee/loyalty/infrastructure/prisma-loyalty-settings.store.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";

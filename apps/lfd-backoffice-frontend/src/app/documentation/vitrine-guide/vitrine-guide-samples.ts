@@ -9,7 +9,7 @@ import { toVitrineXml } from './vitrine-xml';
  *
  * Les VALEURS sont inventées (un croissant, une promotion) ; les formes ne le
  * sont pas. Le code de vérification reproduit `verifyVitrineSignature`
- * (`apps/lfd-api/src/b2b/vitrine/domain/services/vitrine-signature.ts`, relu
+ * (`apps/lfd-api/src/lafoliecoffee/vitrine/domain/services/vitrine-signature.ts`, relu
  * le 2026-10-18) : `<t>.<corps brut>`, HMAC-SHA256 en hexadécimal, 300 s.
  */
 

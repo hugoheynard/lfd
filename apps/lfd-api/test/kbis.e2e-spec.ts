@@ -8,7 +8,7 @@
  * même : le mur via `memberships`, les métadonnées en base, le contrat HTTP.
  */
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
-import type { AccountView } from "../src/b2b/account/domain/ports/account.reader.js";
+import type { AccountView } from "../src/lafoliecoffee/account/domain/ports/account.reader.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { storageKeys } from "./storage.js";

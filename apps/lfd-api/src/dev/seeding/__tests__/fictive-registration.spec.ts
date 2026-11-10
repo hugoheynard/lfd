@@ -1,5 +1,5 @@
-import { isLuhnValid } from "../../../b2b/account/domain/value-objects/luhn.js";
-import { Siret } from "../../../b2b/account/domain/value-objects/siret.js";
+import { isLuhnValid } from "../../../lafoliecoffee/account/domain/value-objects/luhn.js";
+import { Siret } from "../../../lafoliecoffee/account/domain/value-objects/siret.js";
 import { fictiveRegistration, luhnCheckDigit } from "../fictive-registration.js";
 
 describe("fictiveRegistration", () => {

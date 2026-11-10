@@ -55,7 +55,7 @@ mêmes paliers, jusqu'à la fin réelle de l'ancien prix.
   **lignes ouvertes** (un article, ses paliers), ses **articles arrêtés**
   (`endedSkus`), éventuellement une politique de promotions, et son origine
   (`{ kind: "detached", fromSku, fromMercurialeId }` pour un report).
-- **Domaine** (`b2b/pricing/domain/entities/`) : les formes
+- **Domaine** (`lafoliecoffee/pricing/domain/entities/`) : les formes
   (`mercuriale-amendment.ts`), la composition à une date
   (`mercuriale-segments.ts`, `linesAt`), les refus
   (`mercuriale-amendment-checks.ts`), le geste (`CompanyMercuriale.amend`,

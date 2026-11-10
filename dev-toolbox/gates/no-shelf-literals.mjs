@@ -62,7 +62,7 @@ const NAME_ROOTS = ["apps/lfd-api/src", "apps/lfd-api/test", "packages"];
 
 /** Où les littéraux de rayon sont refusés. */
 const LITERAL_ROOTS = [
-  "apps/lfd-api/src/b2b",
+  "apps/lfd-api/src/lafoliecoffee",
   "apps/lfd-api/src/production",
   "apps/lfd-api/test",
   "packages/contracts/src",
@@ -75,11 +75,11 @@ const LITERAL_ROOTS = [
  */
 const LITERAL_ALLOWED = new Map([
   [
-    "apps/lfd-api/src/b2b/catalog/domain/legacy-shelf-codes.ts",
+    "apps/lfd-api/src/lafoliecoffee/catalog/domain/legacy-shelf-codes.ts",
     "le seul lecteur des anciennes clés du journal et des traces figées",
   ],
   [
-    "apps/lfd-api/src/b2b/pricing/application/__tests__/scope-names.spec.ts",
+    "apps/lfd-api/src/lafoliecoffee/pricing/application/__tests__/scope-names.spec.ts",
     "éprouve la lecture d'une portée passée en ancien code",
   ],
   [

@@ -5,13 +5,13 @@
  * Découpé de `collection-batches.e2e-spec.ts` le 2026-10-23 ; la scène
  * commune (entité, payeurs, bons, plancher) vit dans `collection-batch-scene.ts`.
  */
-import { CollectionCalendarReader } from "../src/b2b/accounting/domain/ports/collection-calendar.reader.js";
-import { CollectionCandidatesReader } from "../src/b2b/accounting/domain/ports/collection-candidates.reader.js";
+import { CollectionCalendarReader } from "../src/lafoliecoffee/accounting/domain/ports/collection-calendar.reader.js";
+import { CollectionCandidatesReader } from "../src/lafoliecoffee/accounting/domain/ports/collection-candidates.reader.js";
 import {
   depositDeadlineOf,
   frozenCollectionDay,
-} from "../src/b2b/accounting/domain/services/collection-calendar.js";
-import { simulateInvoiceDossier } from "../src/b2b/accounting/domain/services/invoice-dossier.js";
+} from "../src/lafoliecoffee/accounting/domain/services/collection-calendar.js";
+import { simulateInvoiceDossier } from "../src/lafoliecoffee/accounting/domain/services/invoice-dossier.js";
 import { daysAgo } from "./e2e-harness.js";
 import {
   BASE,

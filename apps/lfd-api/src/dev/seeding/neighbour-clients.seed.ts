@@ -1,13 +1,13 @@
-import { ActivateCompanyByStaffCommand } from "../../b2b/account/application/commands/activate-company.command.js";
+import { ActivateCompanyByStaffCommand } from "../../lafoliecoffee/account/application/commands/activate-company.command.js";
 import {
   AddDeliveryAddressCommand,
   SaveBillingAddressCommand,
   UpdateDeliveryAddressCommand,
-} from "../../b2b/account/application/commands/address-commands.js";
-import { AddDeliveryStepCommand } from "../../b2b/account/application/commands/delivery-procedure-commands.js";
-import { CreateCompanyCommand } from "../../b2b/account/application/commands/create-company.command.js";
-import { GrantTermsCommand } from "../../b2b/account/application/commands/grant-terms.command.js";
-import { UpdateMyProfileCommand } from "../../b2b/account/application/commands/update-my-profile.command.js";
+} from "../../lafoliecoffee/account/application/commands/address-commands.js";
+import { AddDeliveryStepCommand } from "../../lafoliecoffee/account/application/commands/delivery-procedure-commands.js";
+import { CreateCompanyCommand } from "../../lafoliecoffee/account/application/commands/create-company.command.js";
+import { GrantTermsCommand } from "../../lafoliecoffee/account/application/commands/grant-terms.command.js";
+import { UpdateMyProfileCommand } from "../../lafoliecoffee/account/application/commands/update-my-profile.command.js";
 import { runWithRequestContext } from "../../platform/context/request-context.store.js";
 import { newTraceId } from "../../platform/context/trace-context.js";
 import { CompanyStatus, DeferredTerm, UserStatus } from "../../platform/database/client/client.js";

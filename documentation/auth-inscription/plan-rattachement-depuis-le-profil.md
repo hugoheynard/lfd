@@ -208,7 +208,7 @@ produirait plus jamais de jeton — et personne ne l'aurait su.
 | `Auth0ManagementClient.call(method, path, body)` est **générique** : `DELETE` passe sans rien ajouter                                                                                                                                                                                                        | `platform/identity/auth0-management.client.ts`                                                       |
 | `update:users` est **déjà** dans `REQUIRED_MANAGEMENT_SCOPES` — link et unlink n'en demandent pas d'autre                                                                                                                                                                                                    | `platform/identity/identity-diagnosis.ts:30`                                                         |
 | ⚠️ `Auth0IdentityGateway` lit le tableau `identities`, mais par une fonction **privée de module** qui ne rend que des **noms de connexion** (`connectionsOf`). R6 a besoin de `provider` + `user_id` : **rien ne les lit aujourd'hui**                                                                       | `platform/identity/auth0-identity.gateway.ts`                                                        |
-| `Principal.subject` existe et est **déjà** lu par une commande de `/me` (`UpdateMyProfileCommand`)                                                                                                                                                                                                           | `platform/auth/principal.ts:50`, `b2b/account/http/me.controller.ts:64`                              |
+| `Principal.subject` existe et est **déjà** lu par une commande de `/me` (`UpdateMyProfileCommand`)                                                                                                                                                                                                           | `platform/auth/principal.ts:50`, `lafoliecoffee/account/http/me.controller.ts:64`                    |
 | 🔴 Un lecteur de plus de `Principal.subject` **fait échouer `lint:subject-readers`** tant qu'il n'est pas inscrit dans sa liste admise **avec sa raison**                                                                                                                                                    | `dev-toolbox/gates/subject-readers.mjs`                                                              |
 | `@auth0/auth0-spa-js` **2.24.1** accepte un `cache` custom (`ICache`) — une seconde instance `Auth0Client` avec `new InMemoryCache()` est **isolée** du cache de l'instance Angular                                                                                                                          | paquet `@auth0/auth0-spa-js` 2.24.1, ses déclarations de types — `ICache` l. 166 et son export l. 24 |
 | La clé de transaction est `a0.spajs.txs.<clientId>`, partagée — mais **inoffensive ici** : `loginWithPopup` n'appelle jamais `transactionManager.create`, seul `loginWithRedirect` le fait (corrigé le 2026-09-22)                                                                                           | même paquet, bundle de développement, l. 1926-1932                                                   |
@@ -234,7 +234,7 @@ Google produit un jeton dont le `sub` est **celui du compte principal**.
 `users.auth0_sub` ne bouge pas, `CustomerPrincipalResolver` ne bouge pas, le mur
 tenant ne bouge pas.
 
-> **Aucune migration Prisma. Aucun registre. Aucune ligne dans `b2b/account/domain`.**
+> **Aucune migration Prisma. Aucun registre. Aucune ligne dans `lafoliecoffee/account/domain`.**
 
 Le plan complet prévoyait `user_identities` parce qu'il visait la porte
 d'entrée, où il faut décider AVANT de connaître la personne. Ici on la connaît.
@@ -713,7 +713,7 @@ Le sujet est la **personne**, et `user.` existe déjà sous le module `comptes`
 (`user.profile_updated`). D'où `user.identity_linked` / `user.identity_revoked`.
 
 C'est exactement le genre d'erreur qu'un plan produit : nommer un fait d'après
-le **dossier du code** (`b2b/account/`) plutôt que d'après ce que la **donnée**
+le **dossier du code** (`lafoliecoffee/account/`) plutôt que d'après ce que la **donnée**
 dit. Le dossier n'est pas le module.
 
 ### 10.2 `proof_expired` reste en 400, pas en 409

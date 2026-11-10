@@ -1,7 +1,7 @@
 import { audienceOf, type AcceptedSalesTerms } from "@lfd/contracts";
 
-import { SALES_TERMS_ROW_KEYS } from "../../b2b/content/infrastructure/legal-document-file.mapper.js";
-import { salesTermsOf } from "../../b2b/orders/domain/services/sales-terms-of.js";
+import { SALES_TERMS_ROW_KEYS } from "../../lafoliecoffee/content/infrastructure/legal-document-file.mapper.js";
+import { salesTermsOf } from "../../lafoliecoffee/orders/domain/services/sales-terms-of.js";
 import type { PrismaClient } from "../../platform/database/client/client.js";
 
 /**

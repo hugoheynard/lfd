@@ -6,7 +6,7 @@
  * commune vit dans `collection-test-scene.ts`.
  */
 import type { OwnEstablishmentsView } from "@lfd/contracts";
-import { signatureDateCell } from "../src/b2b/accounting/domain/services/mandate-bank-export-values.js";
+import { signatureDateCell } from "../src/lafoliecoffee/accounting/domain/services/mandate-bank-export-values.js";
 import { E2E_STAFF_ID, jsonBody } from "./e2e-harness.js";
 import {
   ACCOUNTANT,

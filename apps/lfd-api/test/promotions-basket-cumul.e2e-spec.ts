@@ -18,19 +18,19 @@
 import type { MyShopQuoteView } from "@lfd/contracts";
 import { QueryBus } from "@nestjs/cqrs";
 
-import { QuoteMyShopCartQuery } from "../src/b2b/orders/application/queries/quote-my-shop-cart.handler.js";
-import { issueInput } from "../src/b2b/accounting/domain/entities/__tests__/invoice-fixtures.js";
-import { Invoice } from "../src/b2b/accounting/domain/entities/invoice.js";
-import { facturXArithmeticViolations } from "../src/b2b/accounting/domain/services/facturx-arithmetic.js";
-import { renderFacturXml } from "../src/b2b/accounting/domain/services/facturx-xml.js";
-import { BASKET_PROMOTION_PREFIX } from "../src/b2b/accounting/domain/services/invoice-discount-allowances.js";
-import { simulateInvoiceDossier } from "../src/b2b/accounting/domain/services/invoice-dossier.js";
-import type { FrozenInvoiceOrder } from "../src/b2b/accounting/domain/services/invoice-dossier.types.js";
+import { QuoteMyShopCartQuery } from "../src/lafoliecoffee/orders/application/queries/quote-my-shop-cart.handler.js";
+import { issueInput } from "../src/lafoliecoffee/accounting/domain/entities/__tests__/invoice-fixtures.js";
+import { Invoice } from "../src/lafoliecoffee/accounting/domain/entities/invoice.js";
+import { facturXArithmeticViolations } from "../src/lafoliecoffee/accounting/domain/services/facturx-arithmetic.js";
+import { renderFacturXml } from "../src/lafoliecoffee/accounting/domain/services/facturx-xml.js";
+import { BASKET_PROMOTION_PREFIX } from "../src/lafoliecoffee/accounting/domain/services/invoice-discount-allowances.js";
+import { simulateInvoiceDossier } from "../src/lafoliecoffee/accounting/domain/services/invoice-dossier.js";
+import type { FrozenInvoiceOrder } from "../src/lafoliecoffee/accounting/domain/services/invoice-dossier.types.js";
 import {
   BILLABLE_INVOICE_ORDER_SELECT,
   toBillableInvoiceOrder,
-} from "../src/b2b/accounting/infrastructure/billable-invoice-order.mapper.js";
-import { PricingMaterialsCache } from "../src/b2b/pricing/infrastructure/pricing-materials.cache.js";
+} from "../src/lafoliecoffee/accounting/infrastructure/billable-invoice-order.mapper.js";
+import { PricingMaterialsCache } from "../src/lafoliecoffee/pricing/infrastructure/pricing-materials.cache.js";
 import { jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { handOver, pickupSite } from "./order-factory.js";
 import { bootstrapProductionDay, closeOrder, CROISSANT, STAFF } from "./production-day-fixture.js";

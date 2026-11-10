@@ -31,7 +31,7 @@
 - `slots` est **obligatoire** dans le contrat (`address.ts:219`).
 - Depuis CA3b, le serveur **dérive** `slots` de `slotList` à chaque écriture
   qui porte une liste (`withSlotList`,
-  `b2b/account/domain/services/delivery-slot-list.ts`). Une écriture sans
+  `lafoliecoffee/account/domain/services/delivery-slot-list.ts`). Une écriture sans
   `slotList` (ancien front) garde la liste rangée.
 - **Les lecteurs** passent par `slotsFor` (`packages/contracts/src/preferred-slots.ts`) :
   `slotList` si elle existe, sinon `slots` lu comme une liste d'un élément.

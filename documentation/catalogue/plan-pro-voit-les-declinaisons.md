@@ -343,7 +343,7 @@ C). Le commerce range `detached_from_sku` sur **chaque** article de la fiche
 née : quand elle en porte plusieurs, le successeur est son article par
 défaut ; sans défaut unique, rien n'est regroupé (deux lignes plutôt qu'un
 choix inventé). La lignée se lit retirés compris : c'est une filiation, pas
-une mise en vente. Port `SaleReferenceSuccessionReader` (`b2b/catalog`),
+une mise en vente. Port `SaleReferenceSuccessionReader` (`lafoliecoffee/catalog`),
 relu par la recommandation au travers de son propre port
 (`LatestSaleReferenceReader`), comme ses autres lectures du catalogue.
 
@@ -362,7 +362,7 @@ regroupement : on part du SKU du panier et on remonte à ses ANCÊTRES (A → B
 → C : C lit aussi B et A), même borne (`MAX_SUCCESSION_DEPTH`) et même arrêt
 sur cycle ; un article n'hérite que s'il est le successeur retenu de sa
 référence d'origine (seul article, ou défaut unique), comme pour le
-regroupement. Port `SaleReferenceLineageReader.ancestorsOf` (`b2b/catalog`,
+regroupement. Port `SaleReferenceLineageReader.ancestorsOf` (`lafoliecoffee/catalog`,
 distinct du port de succession : ISP), relu par les alertes au travers de
 leur propre port `SkuLineageReader`. `EvaluateBasket` lit la lignée, puis
 `AccountOrderHistoryReader.read` reçoit `ancestors` et rend chaque ligne

@@ -11,7 +11,7 @@
  * le bloc carte est adoptée puis remboursée ; une baisse qui touche deux
  * paiements écrit deux demandes dans la même transaction ; le bon refuse.
  */
-import { ConvertLoyaltyPointsCommand } from "../src/b2b/loyalty/application/commands/convert-loyalty-points.command.js";
+import { ConvertLoyaltyPointsCommand } from "../src/lafoliecoffee/loyalty/application/commands/convert-loyalty-points.command.js";
 import { CommandBus } from "@nestjs/cqrs";
 
 import { E2E_STAFF_SUB } from "./e2e-harness.js";

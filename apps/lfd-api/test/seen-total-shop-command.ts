@@ -3,9 +3,9 @@ import type { PlaceShopOrderPayload } from "@lfd/contracts";
 import {
   PlaceShopOrderCommand,
   type PlaceShopOrderResult,
-} from "../src/b2b/orders/application/commands/place-shop-order.command.js";
-import type { PlaceShopOrderHandler } from "../src/b2b/orders/application/commands/place-shop-order.handler.js";
-import { OrderTotalChangedError } from "../src/b2b/orders/domain/errors/order-total-changed.error.js";
+} from "../src/lafoliecoffee/orders/application/commands/place-shop-order.command.js";
+import type { PlaceShopOrderHandler } from "../src/lafoliecoffee/orders/application/commands/place-shop-order.handler.js";
+import { OrderTotalChangedError } from "../src/lafoliecoffee/orders/domain/errors/order-total-changed.error.js";
 
 /** Un payload de passation dont le total vu est laissé à la confirmation. */
 export type Unseen<T extends { readonly expectedTotalCents: number }> = Omit<

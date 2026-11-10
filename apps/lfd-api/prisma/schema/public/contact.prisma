@@ -2,7 +2,7 @@
 // Les DEMANDES CLIENTS — motifs, demandes (« Nous écrire », « Signaler un
 // problème »), photos ; et la carte de contact de la boutique et ses numéros
 // (`documentation/demandes-client/demandes-clients.md`, 2026-10-09).
-// Contexte `src/b2b/contact/`.
+// Contexte `src/lafoliecoffee/contact/`.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// À qui un motif ou un numéro est proposé ; pour une demande, `b2b` ou `b2c`

@@ -2320,7 +2320,7 @@
       "conservation": {
         "jours": 365
       },
-      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "purge": "apps/lfd-api/src/lafoliecoffee/contact/application/commands/anonymize-customer-requests.handler.ts",
       "information": false
     },
     {
@@ -2331,7 +2331,7 @@
       "conservation": {
         "jours": 365
       },
-      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "purge": "apps/lfd-api/src/lafoliecoffee/contact/application/commands/anonymize-customer-requests.handler.ts",
       "information": false
     },
     {
@@ -2342,7 +2342,7 @@
       "conservation": {
         "jours": 365
       },
-      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "purge": "apps/lfd-api/src/lafoliecoffee/contact/application/commands/anonymize-customer-requests.handler.ts",
       "information": false
     },
     {
@@ -2353,7 +2353,7 @@
       "conservation": {
         "jours": 365
       },
-      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "purge": "apps/lfd-api/src/lafoliecoffee/contact/application/commands/anonymize-customer-requests.handler.ts",
       "information": false
     },
     {
@@ -2364,7 +2364,7 @@
       "conservation": {
         "jours": 365
       },
-      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "purge": "apps/lfd-api/src/lafoliecoffee/contact/application/commands/anonymize-customer-requests.handler.ts",
       "information": false
     },
     {
@@ -2375,7 +2375,7 @@
       "conservation": {
         "jours": 365
       },
-      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "purge": "apps/lfd-api/src/lafoliecoffee/contact/application/commands/anonymize-customer-requests.handler.ts",
       "information": false
     },
     {
@@ -2386,7 +2386,7 @@
       "conservation": {
         "jours": 365
       },
-      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "purge": "apps/lfd-api/src/lafoliecoffee/contact/application/commands/anonymize-customer-requests.handler.ts",
       "information": false
     },
     {
@@ -2397,7 +2397,7 @@
       "conservation": {
         "jours": 365
       },
-      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "purge": "apps/lfd-api/src/lafoliecoffee/contact/application/commands/anonymize-customer-requests.handler.ts",
       "information": false
     },
     {
@@ -2408,7 +2408,7 @@
       "conservation": {
         "jours": 365
       },
-      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "purge": "apps/lfd-api/src/lafoliecoffee/contact/application/commands/anonymize-customer-requests.handler.ts",
       "information": false
     },
     {
@@ -2419,7 +2419,7 @@
       "conservation": {
         "jours": 365
       },
-      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "purge": "apps/lfd-api/src/lafoliecoffee/contact/application/commands/anonymize-customer-requests.handler.ts",
       "information": false
     },
     {
@@ -2430,7 +2430,7 @@
       "conservation": {
         "jours": 365
       },
-      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "purge": "apps/lfd-api/src/lafoliecoffee/contact/application/commands/anonymize-customer-requests.handler.ts",
       "information": false
     },
     {
@@ -2441,7 +2441,7 @@
       "conservation": {
         "jours": 365
       },
-      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "purge": "apps/lfd-api/src/lafoliecoffee/contact/application/commands/anonymize-customer-requests.handler.ts",
       "information": false
     },
     {
@@ -2461,7 +2461,7 @@
       "conservation": {
         "jours": 365
       },
-      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "purge": "apps/lfd-api/src/lafoliecoffee/contact/application/commands/anonymize-customer-requests.handler.ts",
       "information": false
     },
     {
@@ -2472,7 +2472,7 @@
       "conservation": {
         "jours": 365
       },
-      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "purge": "apps/lfd-api/src/lafoliecoffee/contact/application/commands/anonymize-customer-requests.handler.ts",
       "information": false
     },
     {
@@ -2483,7 +2483,7 @@
       "conservation": {
         "jours": 365
       },
-      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "purge": "apps/lfd-api/src/lafoliecoffee/contact/application/commands/anonymize-customer-requests.handler.ts",
       "information": false
     },
     {

@@ -27,7 +27,7 @@ import { localToInstant } from "@lfd/contracts";
 import { RoadTravelTimeReader } from "../src/delivery/channels/commerce/index.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
-import { RECORD_DEPARTURE_ON_TRANSFER_DEPARTED } from "../src/b2b/resupply/application/record-departure-on-transfer-departed.handler.js";
+import { RECORD_DEPARTURE_ON_TRANSFER_DEPARTED } from "../src/lafoliecoffee/resupply/application/record-departure-on-transfer-departed.handler.js";
 import { daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { MY_ROUND, seedDriverRole, staffWithRole } from "./delivery-driver-scene.js";
 import { binTypeId, depart, loadBin } from "./delivery-loading-scene.js";

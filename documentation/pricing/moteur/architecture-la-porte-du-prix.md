@@ -60,7 +60,7 @@ lot.tiers("VIE-001", 12); // la grille des paliers
 lot.projectAt("VIE-001", 10_000); // « si le cumul valait N »
 ```
 
-`LotRequest` est dans `b2b/pricing/application/pricer.ts`. `buyerKind` vaut
+`LotRequest` est dans `lafoliecoffee/pricing/application/pricer.ts`. `buyerKind` vaut
 `guest` sur une route publique, `registered` derrière un client reconnu,
 `unknown` pour l'équipe, `previewed` pour un aperçu d'audience. L'acheteur
 `typical` (un pro type) ne se fabrique que dans l'export de grille
@@ -117,12 +117,12 @@ relecture datée, rescellée à l'historique du tarif **pro**. C'est arrivé le
 L'ordre du dépôt : _inexprimable > refusé en base > refusé par l'agrégat >
 porte CI > relecture_.
 
-| Garantie                                                 | Cran                    | Ce qui reste possible                                                                                |
-| -------------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------- |
-| l'article est scellé par le catalogue (`CatalogArticle`) | inexprimable + porte CI | `{ … } as CatalogArticle` compile ; `lint:catalogue-authority` le voit                               |
-| le lot ne tarife que ses articles                        | refusé à l'exécution    | rien : `ArticleNotInLotError`                                                                        |
-| les rouages sont internes                                | porte CI                | `lint:price-door` (aucun code servi hors de `b2b/pricing/` n'atteint le chargeur ni le tarificateur) |
-| une seule entrée de `resolvePrice`                       | porte CI                | `lint:price-pipeline`                                                                                |
+| Garantie                                                 | Cran                    | Ce qui reste possible                                                                                          |
+| -------------------------------------------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------- |
+| l'article est scellé par le catalogue (`CatalogArticle`) | inexprimable + porte CI | `{ … } as CatalogArticle` compile ; `lint:catalogue-authority` le voit                                         |
+| le lot ne tarife que ses articles                        | refusé à l'exécution    | rien : `ArticleNotInLotError`                                                                                  |
+| les rouages sont internes                                | porte CI                | `lint:price-door` (aucun code servi hors de `lafoliecoffee/pricing/` n'atteint le chargeur ni le tarificateur) |
+| une seule entrée de `resolvePrice`                       | porte CI                | `lint:price-pipeline`                                                                                          |
 
 ## 6. Ce qui l'éprouve
 

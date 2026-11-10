@@ -7,7 +7,7 @@
 ## Le constat (vérifié le 2026-09-19)
 
 Une dérogation d'accès ouvre une fonctionnalité à **une adresse e-mail**, en
-dehors du niveau d'accès général (`b2b/feature-access/`, modèle
+dehors du niveau d'accès général (`lafoliecoffee/feature-access/`, modèle
 `FeatureAccessExemption` : `key`, `email`, auteur, date).
 
 - Ses faits (`feature_access.exemption_added` / `_removed`) écrivent

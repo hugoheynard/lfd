@@ -1,11 +1,11 @@
 import type { CartAdjustment } from "@lfd/contracts";
 import type { CommandBus } from "@nestjs/cqrs";
 
-import { PosePromotionCommand } from "../../b2b/promotions/application/commands/pose-promotion.command.js";
-import type { PromotionAudience } from "../../b2b/promotions/domain/promotion-audience.js";
-import { PromotionAudienceSet } from "../../b2b/promotions/domain/promotion-audience-set.js";
-import type { PromotionEffect } from "../../b2b/promotions/domain/promotion-effect.js";
-import type { PromotionTerms } from "../../b2b/promotions/domain/promotion-terms.js";
+import { PosePromotionCommand } from "../../lafoliecoffee/promotions/application/commands/pose-promotion.command.js";
+import type { PromotionAudience } from "../../lafoliecoffee/promotions/domain/promotion-audience.js";
+import { PromotionAudienceSet } from "../../lafoliecoffee/promotions/domain/promotion-audience-set.js";
+import type { PromotionEffect } from "../../lafoliecoffee/promotions/domain/promotion-effect.js";
+import type { PromotionTerms } from "../../lafoliecoffee/promotions/domain/promotion-terms.js";
 
 /**
  * L'auteur des promotions semées : un acteur système nommé, comme la reprise

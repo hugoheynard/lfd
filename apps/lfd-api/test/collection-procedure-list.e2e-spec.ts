@@ -5,7 +5,7 @@
  * commune vit dans `collection-procedure-scene.ts`.
  */
 import type { CollectionProcedureListView, CollectionProcedureView } from "@lfd/contracts";
-import { cycleToConstitute } from "../src/b2b/accounting/domain/services/billing-cycle.js";
+import { cycleToConstitute } from "../src/lafoliecoffee/accounting/domain/services/billing-cycle.js";
 import { jsonBody } from "./e2e-harness.js";
 import {
   ctx,

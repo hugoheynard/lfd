@@ -12,7 +12,7 @@ import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import type { CreatedCompanyResponse } from "../src/b2b/account/http/companies.controller.js";
+import type { CreatedCompanyResponse } from "../src/lafoliecoffee/account/http/companies.controller.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";

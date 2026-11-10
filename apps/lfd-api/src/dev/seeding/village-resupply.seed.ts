@@ -1,7 +1,7 @@
 import { BusinessError } from "../../platform/shared/errors/app-error.js";
-import { AddSiteResupplyLineCommand } from "../../b2b/resupply/application/add-site-resupply-line.command.js";
-import { NameSiteResupplyCommand } from "../../b2b/resupply/application/name-site-resupply.command.js";
-import { SendSiteResupplyCommand } from "../../b2b/resupply/application/send-site-resupply.command.js";
+import { AddSiteResupplyLineCommand } from "../../lafoliecoffee/resupply/application/add-site-resupply-line.command.js";
+import { NameSiteResupplyCommand } from "../../lafoliecoffee/resupply/application/name-site-resupply.command.js";
+import { SendSiteResupplyCommand } from "../../lafoliecoffee/resupply/application/send-site-resupply.command.js";
 import { VILLAGE } from "./counter-day.seed.js";
 import { asStaff, atHour, SEED_STAFF_SUB, type SeedLine } from "./order-placing.seed.js";
 

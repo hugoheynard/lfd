@@ -12,7 +12,7 @@
 > 🔴 **Ordre entre les lots.** C7 se bâtit **après** le correctif du délai des
 > particuliers (« délai actif par défaut »), en cours chez un autre agent. Ce
 > correctif touche `prisma/schema/public/settings.prisma` et
-> `b2b/order-opening/domain/customer-cancellation-settings.ts`, que C7
+> `lafoliecoffee/order-opening/domain/customer-cancellation-settings.ts`, que C7
 > modifie aussi. Bâtir les deux en parallèle ferait deux migrations sur la
 > même table.
 

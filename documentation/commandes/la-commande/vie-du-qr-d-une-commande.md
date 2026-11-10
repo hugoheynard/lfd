@@ -22,13 +22,13 @@ une référence de production.
 ## 1. Naissance : un jeton à la création
 
 Le jeton est tiré à la création de la commande, une fois, et ne change jamais
-(`apps/lfd-api/src/b2b/orders/infrastructure/prisma-order.repository.ts`,
+(`apps/lfd-api/src/lafoliecoffee/orders/infrastructure/prisma-order.repository.ts`,
 `issuesHandoverToken()` vrai pour toute commande —
-`b2b/orders/domain/services/handover.ts`). Aucune autre écriture de
+`lafoliecoffee/orders/domain/services/handover.ts`). Aucune autre écriture de
 `handover_token` n'existe.
 
 Le QR encode une URL **du back-office** : `{ADMIN_BASE_URL}/retrait/{jeton}`,
-fabriquée en un seul endroit (`b2b/orders/domain/services/handover-url.ts`).
+fabriquée en un seul endroit (`lafoliecoffee/orders/domain/services/handover-url.ts`).
 C'est l'équipe qui le scanne, pas le client. Sans origine admin configurée, aucun
 QR n'est imprimé.
 

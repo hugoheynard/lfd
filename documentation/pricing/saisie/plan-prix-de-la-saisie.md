@@ -30,7 +30,7 @@ n'est connu qu'une fois la commande passée.
 ## 2. Ce qui existe déjà et qu'on réutilise
 
 - **La boutique a le décompte complet.** `ShopCartQuoting.quote`
-  (`b2b/orders/application/services/shop-cart-quoting.service.ts`) prend un
+  (`lafoliecoffee/orders/application/services/shop-cart-quoting.service.ts`) prend un
   acheminement (`shopQuoteFulfillmentSchema` : `pickup` + point, ou `delivery`
   - code postal), le jour et le créneau, et rend sous-total, remise, frais,
     TVA par taux et TTC (`ShopQuoteView`). Il accepte une société
@@ -45,7 +45,7 @@ n'est connu qu'une fois la commande passée.
   `ShopCartQuoting` (vérifié dans les constructeurs le 2026-11-03).
 - **La vitrine sait chiffrer un catalogue pour une société.**
   `ShopCataloguePricing.priced(companyId, buyerKind, language)`
-  (`b2b/catalog/application/shop-catalogue-pricing.service.ts`) rend chaque
+  (`lafoliecoffee/catalog/application/shop-catalogue-pricing.service.ts`) rend chaque
   article « au prix qui sera facturé », promotions comprises.
 
 ## 3. Ce qu'on bâtit

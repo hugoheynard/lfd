@@ -4,7 +4,7 @@
 // § 1.2, P3).
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// Propriétaire : `src/b2b/accounting/`. Un REGISTRE D'AJOUTS : aucune ligne ne
+// Propriétaire : `src/lafoliecoffee/accounting/`. Un REGISTRE D'AJOUTS : aucune ligne ne
 // se modifie ni ne s'efface (déclencheur `bank_return_check_append_only`) ; la
 // dernière ligne d'un (entité, jour) fait foi. Contraintes INVISIBLES ici —
 // dans la migration `20261024080000_le_controle_des_retours_de_la_banque` :

@@ -10,7 +10,7 @@ import {
   verdict,
 } from "../gates/network-outside-transaction.mjs";
 
-const PATH = "apps/lfd-api/src/b2b/x/infrastructure/thing.client.ts";
+const PATH = "apps/lfd-api/src/lafoliecoffee/x/infrastructure/thing.client.ts";
 const UNGUARDED = [
   "export class Thing {",
   "  async go() {",

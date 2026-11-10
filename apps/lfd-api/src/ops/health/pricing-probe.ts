@@ -6,7 +6,7 @@ import type { PricingProbeRow, PricingProbeState } from "@lfd/ops-contract";
  *
  * `ops` ne connaît pas le commerce : il lit des mesures rangées sous un NOM,
  * avec deux étiquettes. Le nom est recopié du producteur
- * (`b2b/pricing/application/pricing-caller.ts`, `PRICING_RESOLVE_TIMING`),
+ * (`lafoliecoffee/pricing/application/pricing-caller.ts`, `PRICING_RESOLVE_TIMING`),
  * qu'`ops` n'a pas le droit d'importer (vérifié le 2026-10-15 :
  * `pricing.resolve`).
  */

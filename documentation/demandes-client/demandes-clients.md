@@ -73,10 +73,10 @@ erDiagram
     }
 ```
 
-Code : `apps/lfd-api/src/b2b/contact/` — agrégats `RequestReason`
-(`apps/lfd-api/src/b2b/contact/domain/request-reason.ts`) et `CustomerRequest` (`apps/lfd-api/src/b2b/contact/domain/customer-request.ts`,
+Code : `apps/lfd-api/src/lafoliecoffee/contact/` — agrégats `RequestReason`
+(`apps/lfd-api/src/lafoliecoffee/contact/domain/request-reason.ts`) et `CustomerRequest` (`apps/lfd-api/src/lafoliecoffee/contact/domain/customer-request.ts`,
 factories `contact()` et `orderProblem()`, `attachPhoto`, `markHandled`,
-`anonymize`), détails par type dans `apps/lfd-api/src/b2b/contact/domain/customer-request-details.ts`. Ports
+`anonymize`), détails par type dans `apps/lfd-api/src/lafoliecoffee/contact/domain/customer-request-details.ts`. Ports
 de lecture et d'écriture séparés, un handler par cas. Schéma
 `prisma/schema/public/contact.prisma`, migration `20261009180000_les_demandes_clients`
 (elle remplace quatre migrations du même jour, jamais poussées). Contrats
@@ -171,7 +171,7 @@ la priorité, la cloche, le compteur et l'anonymisation ne bougent pas.
 Back-office : `/commercial/demandes` depuis le 2026-10-17 (Hugo), une vue du
 Commercial sous `b2b_contact:read` (plus le mur `b2b_companies:read` de la
 coquille ; celui de `b2b_settings` est tombé avec l'espace E-commerce). Les
-anciennes `/b2b/demandes` et `/b2b/contact/messages` y redirigent, et
+anciennes `/b2b/demandes` et `/lafoliecoffee/contact/messages` y redirigent, et
 `?demande=<id>` ouvre la demande. La carte de contact vit à `/contact`. Les motifs vivent depuis le
 2026-10-13 dans **Réglages › Commercial**,
 `/reglages/commercial/motifs-des-demandes` (les anciennes

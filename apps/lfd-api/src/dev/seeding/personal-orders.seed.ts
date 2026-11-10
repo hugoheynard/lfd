@@ -1,6 +1,6 @@
 import { addressKeyOf } from "../../delivery/domain/services/address-key.js";
 import { geocodeFingerprint } from "../../delivery/infrastructure/geocode-fingerprint.js";
-import { UpdateDeliveryAvailabilityCommand } from "../../b2b/delivery-availability/application/commands/update-delivery-availability.command.js";
+import { UpdateDeliveryAvailabilityCommand } from "../../lafoliecoffee/delivery-availability/application/commands/update-delivery-availability.command.js";
 import { asStaff, SEED_STAFF_SUB, type SeedContext, type Target } from "./order-placing.seed.js";
 
 /**

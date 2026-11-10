@@ -9,7 +9,7 @@
 ## 0. Ce qui existe (ouvert le 2026-10-23)
 
 - La règle est écrite et testée, jamais importée :
-  `b2b/shared/company-standing/domain/effective-role.ts` (à l'époque sous `b2b/account/domain/services/`) — rôle effectif dans X =
+  `lafoliecoffee/shared/company-standing/domain/effective-role.ts` (à l'époque sous `lafoliecoffee/account/domain/services/`) — rôle effectif dans X =
   membership(X), sinon min(membership(P), admin) si X.parent = P et ce rôle ∈
   {owner, admin}, sinon aucun ; le cumul se fait par MAX.
 - **Le mur n'a pas deux voies mais une dizaine** : `resolveCompany`
@@ -27,7 +27,7 @@
 
 ## 1. Les règles
 
-- **R1 — Une seule requête de rôle effectif**, dans `b2b/shared/` (le dossier
+- **R1 — Une seule requête de rôle effectif**, dans `lafoliecoffee/shared/` (le dossier
   partagé du bloc commerce, `CLAUDE.md` §3) : (personne, société) → rôle
   effectif, membership propre ou héritée, avec ses conditions (membership
   acceptée, principal **actif**, site lié au principal, site non suspendu).
@@ -61,7 +61,7 @@
   du site (transfert, second détenteur) ne lui est ouvert.
 - **Q2 — les courriels se paramètrent sur la page du sous-compte** (« je crois
   qu'on a déjà ça ») : vérifier les avis de sous-compte existants
-  (`b2b/sub-account-notices/`, réglages par sous-compte) ; si le réglage
+  (`lafoliecoffee/sub-account-notices/`, réglages par sous-compte) ; si le réglage
   existe, R7 le lit ; sinon, le dire avant de bâtir.
 - **Une porte verrouille la frontière** (« on doit verrouiller ça avec un
   lint ») : `lint:company-role-readers` refuse toute lecture de rôle d'une
@@ -85,8 +85,8 @@ boutique, et les e2e. Un lot serveur, puis un lot boutique.
 
 ## 5. État (2026-10-23) — lot serveur bâti
 
-- **R1** : `b2b/shared/company-standing/` — `effectiveRole` (déplacée depuis
-  `b2b/account/`), `standingRole` (les gestes), `billingReadingRole` (Q1), et
+- **R1** : `lafoliecoffee/shared/company-standing/` — `effectiveRole` (déplacée depuis
+  `lafoliecoffee/account/`), `standingRole` (les gestes), `billingReadingRole` (Q1), et
   la requête `readCompanyStanding` (+ `inheritedSiteWhere`,
   `readReachableSites`). Lecteurs branchés : `PrismaMembershipReader`
   (37 handlers, dont `SubscriptionGestures`), `PrismaOrderGuardReader`,
@@ -101,7 +101,7 @@ boutique, et les e2e. Un lot serveur, puis un lot boutique.
 - **R5 (part serveur)** : `GET /me` rend `reachableSites` (« via » le
   principal) ; `PATCH /me/nav-prefs` admet un site atteint comme espace.
 - **R7 / Q2** : le réglage existe, mais PAS par sous-compte — les avis au
-  principal (`b2b/sub-account-notices/`) se règlent par PRINCIPAL, côté
+  principal (`lafoliecoffee/sub-account-notices/`) se règlent par PRINCIPAL, côté
   staff seulement (`/admin/companies/:id/sub-account-notices` : interrupteur
   - tableau sorte d'avis × rôle), et vont à ses memberships acceptées
     (`AcceptedMembersReader`, vérifié le 2026-10-23). Rien n'y est changé :
@@ -139,7 +139,7 @@ boutique, et les e2e. Un lot serveur, puis un lot boutique.
   `ReachableSiteView` = `{ company: CompanyView; via: { companyId, name };
 canReadBilling: boolean }`. `company` a la forme exacte d'une société de
   `companies` (même sélection et même mapper,
-  `apps/lfd-api/src/b2b/account/infrastructure/company-view.mapper.ts`), son `role` est le rôle
+  `apps/lfd-api/src/lafoliecoffee/account/infrastructure/company-view.mapper.ts`), son `role` est le rôle
   **effectif** (`standingRole` : `admin`, plafonné), et `canReadBilling` porte
   Q1 (`billingReadingRole` : vrai pour le détenteur du principal seul) — le
   `role` ne peut pas le dire, il vaut `admin` dans les deux cas. Les deux sont

@@ -30,13 +30,13 @@ import { StripeRefundCalls } from "./stripe-refund-calls.js";
 /**
  * Les moyens de paiement acceptés : **la carte, et elle seule** (Hugo,
  * 2026-10-09) — Apple Pay et Google Pay en sont des portefeuilles. Copié de
- * `b2b/payments/infrastructure/accepted-payment-methods.ts` le 2026-11-09.
+ * `lafoliecoffee/payments/infrastructure/accepted-payment-methods.ts` le 2026-11-09.
  */
 const ACCEPTED_PAYMENT_METHOD_TYPES = ["card"] as const;
 
 /**
  * **L'adaptateur Stripe d'UN compte** (plan M2, §3.2) — copié de
- * `StripePaymentGateway` et `StripePaymentRefunder` (`b2b/payments/`) le
+ * `StripePaymentGateway` et `StripePaymentRefunder` (`lafoliecoffee/payments/`) le
  * 2026-11-09 ; le lot c2 retire les originaux.
  *
  * Il naît avec les secrets de son compte : `RegistryCardProviders` ne

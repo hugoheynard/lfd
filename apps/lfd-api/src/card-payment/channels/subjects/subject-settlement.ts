@@ -3,7 +3,7 @@ import type { SubjectRefundOutcome } from "./refund-outcome.js";
 /**
  * **Le canal retour** : ce que `card-payment` demande au bloc qui possède un
  * type de sujet (plan M2, §3.3). DÉCLARÉ ici, IMPLÉMENTÉ par le bloc métier
- * (`b2b/orders` pour `order`, lot P0.c2), relié par `appBootstrap/` — la
+ * (`lafoliecoffee/orders` pour `order`, lot P0.c2), relié par `appBootstrap/` — la
  * figure de `production/channels/commerce/`. `card-payment` ne sait pas ce
  * qu'est une commande : il sait qu'un implémenteur en répond.
  */

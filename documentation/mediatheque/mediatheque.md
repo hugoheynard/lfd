@@ -131,7 +131,7 @@ flowchart LR
     subgraph pim["pim/ — le référentiel"]
         PM[(product_media<br/>category_media<br/>operation)]
     end
-    subgraph b2b["b2b/storefront — la vitrine"]
+    subgraph b2b["lafoliecoffee/storefront — la vitrine"]
         SF[(objets de vitrine)]
     end
     APP{{appBootstrap/}}
@@ -397,7 +397,7 @@ sequenceDiagram
     participant BO as Back-office (fiche)
     participant PIM as pim — set-product-media
     participant OB as Boîte d'envoi (outbox)
-    participant B2B as b2b/catalog — on-product-media-changed
+    participant B2B as lafoliecoffee/catalog — on-product-media-changed
     participant CI as public.catalog_items
     participant SHOP as Boutique
     participant CDN as media.lafoliecoffee.info
@@ -455,9 +455,9 @@ sequenceDiagram
     participant MED as media — SaveMediaDetails / ReplaceMedia
     participant OB as Boîte d'envoi
     participant RB as appBootstrap — storefront.refocus-images
-    participant SF as b2b/storefront — Storefront.refocus
+    participant SF as lafoliecoffee/storefront — Storefront.refocus
     participant OP as pim — pim.reannounce-operation-media
-    participant CO as b2b/catalog — catalog.project-operation-image
+    participant CO as lafoliecoffee/catalog — catalog.project-operation-image
     participant SHOP as Boutique
 
     ED->>SF: enregistrer {url, alt, focal} (focal lu au choix dans la médiathèque)

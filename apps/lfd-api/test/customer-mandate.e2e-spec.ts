@@ -21,10 +21,10 @@ import { Buffer } from "node:buffer";
 
 import type { CustomerMandateView, MandateSectionView } from "@lfd/contracts";
 
-import { drawnText } from "../src/b2b/accounting/domain/services/__tests__/pdf-drawn-text.js";
-import { mintMandate } from "../src/b2b/payments/domain/entities/payment-mandate.js";
-import { MandateDraftAlreadyExistsError } from "../src/b2b/payments/domain/errors/mandate-errors.js";
-import { PaymentMandateRepository } from "../src/b2b/payments/domain/payment-mandate.repository.js";
+import { drawnText } from "../src/lafoliecoffee/accounting/domain/services/__tests__/pdf-drawn-text.js";
+import { mintMandate } from "../src/lafoliecoffee/payments/domain/entities/payment-mandate.js";
+import { MandateDraftAlreadyExistsError } from "../src/lafoliecoffee/payments/domain/errors/mandate-errors.js";
+import { PaymentMandateRepository } from "../src/lafoliecoffee/payments/domain/payment-mandate.repository.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";

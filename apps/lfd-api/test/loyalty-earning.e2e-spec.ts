@@ -16,8 +16,8 @@
  */
 import type { SetLoyaltySettingsPayload } from "@lfd/contracts";
 
-import { LoyaltySettings } from "../src/b2b/loyalty/domain/value-objects/loyalty-settings.js";
-import { PrismaLoyaltySettingsStore } from "../src/b2b/loyalty/infrastructure/prisma-loyalty-settings.store.js";
+import { LoyaltySettings } from "../src/lafoliecoffee/loyalty/domain/value-objects/loyalty-settings.js";
+import { PrismaLoyaltySettingsStore } from "../src/lafoliecoffee/loyalty/infrastructure/prisma-loyalty-settings.store.js";
 
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";

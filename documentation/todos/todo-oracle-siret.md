@@ -7,7 +7,7 @@
 
 `POST /companies` et la mise à jour d'identité d'une société répondent **409**
 « Une entreprise portant ce SIRET est déjà enregistrée. » quand le SIRET envoyé
-existe déjà (`b2b/account/domain/errors/account-errors.ts`,
+existe déjà (`lafoliecoffee/account/domain/errors/account-errors.ts`,
 `SiretAlreadyRegisteredError` ; traduction de la violation d'unicité dans
 `prisma-company.repository.ts`, `translateSiretClash`). Vérifié le 2026-09-14.
 

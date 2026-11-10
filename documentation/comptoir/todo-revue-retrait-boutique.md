@@ -10,7 +10,7 @@ dans la journée**. Elles sont corrigées (commit `1c605441`) et ne figurent ici
 que pour ce qu'elles apprennent — dernière section.
 
 Périmètre relu : `apps/lfd-backoffice-frontend/src/app/handover-shop/`,
-`apps/lfd-api/src/handover/`, la part de `apps/lfd-api/src/b2b/orders/` qui sert
+`apps/lfd-api/src/handover/`, la part de `apps/lfd-api/src/lafoliecoffee/orders/` qui sert
 la remise, `packages/contracts/src/order-handover.ts`.
 
 ---
@@ -343,7 +343,7 @@ typechecker. Un doublé pouvait dériver de son port sans que rien ne rougisse.
 ### 🔴 Ce que le premier plan faisait de travers
 
 J'avais proposé de DÉCOUPER le port en ports par usager — `HandoverOrders`,
-`ProductionOrders`, `AdminOrders` — publiés par `b2b/orders`. Hugo a objecté que
+`ProductionOrders`, `AdminOrders` — publiés par `lafoliecoffee/orders`. Hugo a objecté que
 le commerce deviendrait alors « connaisseur des besoins des autres contextes ».
 
 Il avait raison, et l'objection invalide le plan. Un contexte qui publie un port

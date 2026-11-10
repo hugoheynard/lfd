@@ -12,7 +12,7 @@ export const COMMERCE_ORDER_CANCELLED = "commerce.order_cancelled";
  *
  * Même figure que `CommerceOrderPlacedFact`, et pour la même raison : les faits
  * d'annulation du commerce (`order.cancelled`, `order.payment_failed`) vivent
- * dans `b2b/orders/domain/`, que la livraison ne peut pas lire (`delivery →
+ * dans `lafoliecoffee/orders/domain/`, que la livraison ne peut pas lire (`delivery →
  * b2b` est interdit). Le fait vit donc dans SON canal. Il est écrit par TOUS
  * les chemins qui posent `cancelled` (vérifié le 2026-10-13) : l'annulation
  * (équipe, client, invité), l'abandon du règlement, l'expiration d'une

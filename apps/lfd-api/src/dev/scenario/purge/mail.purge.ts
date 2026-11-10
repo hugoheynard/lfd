@@ -3,7 +3,7 @@ import type { PurgeClient, ScenarioScope } from "./scenario-scope.js";
 /**
  * Le morceau de clé d'idempotence qui désigne une commande : les e-mails d'une
  * commande portent `order.placed:<id>` ou `order.ready:<id>[suffixe de rang]`
- * (`b2b/orders/application/handlers/send-order-*-mail.handler.ts`, vérifié le
+ * (`lafoliecoffee/orders/application/handlers/send-order-*-mail.handler.ts`, vérifié le
  * 2026-11-06). Un identifiant de commande est un cuid : le morceau ne peut
  * désigner une autre commande.
  */

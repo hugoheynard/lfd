@@ -1,6 +1,6 @@
 import type request from "supertest";
 
-import { SitedDayOrders } from "../src/b2b/orders/application/services/sited-day-orders.service.js";
+import { SitedDayOrders } from "../src/lafoliecoffee/orders/application/services/sited-day-orders.service.js";
 import type { CardPaymentCancellation } from "../src/card-payment/channels/requests/index.js";
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";

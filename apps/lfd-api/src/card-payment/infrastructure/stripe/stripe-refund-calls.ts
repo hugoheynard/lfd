@@ -10,7 +10,7 @@ import {
   type RefundParams,
 } from "../../domain/ports/card-provider-types.js";
 
-// Copié de `b2b/payments/infrastructure/stripe-refund-calls.ts` le 2026-11-09
+// Copié de `lafoliecoffee/payments/infrastructure/stripe-refund-calls.ts` le 2026-11-09
 // (plan M2, §4.2 : P0 copie, le lot c2 retire l'original), l'intention passée
 // à part (`providerRef`). La garde réseau est posée ICI, sur chaque appel,
 // plutôt que chez l'appelant : ce fichier fait les appels.

@@ -29,9 +29,9 @@ import type {
 import { CommandBus } from "@nestjs/cqrs";
 import request from "supertest";
 
-import { MarkOrderFulfilledCommand } from "../src/b2b/orders/application/commands/mark-order-fulfilled.command.js";
-import { ConvertLoyaltyPointsCommand } from "../src/b2b/loyalty/application/commands/convert-loyalty-points.command.js";
-import { PendingSettlementSweep } from "../src/b2b/orders/application/services/pending-settlement-sweep.service.js";
+import { MarkOrderFulfilledCommand } from "../src/lafoliecoffee/orders/application/commands/mark-order-fulfilled.command.js";
+import { ConvertLoyaltyPointsCommand } from "../src/lafoliecoffee/loyalty/application/commands/convert-loyalty-points.command.js";
+import { PendingSettlementSweep } from "../src/lafoliecoffee/orders/application/services/pending-settlement-sweep.service.js";
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { OrderStatus, PaymentStatus } from "../src/platform/database/client/client.js";

@@ -12,8 +12,8 @@ import type { AdminOrderView, PlacedOrderResponse, RoleGrant } from "@lfd/contra
 import { CommandBus } from "@nestjs/cqrs";
 import type request from "supertest";
 
-import { ConvertLoyaltyPointsCommand } from "../src/b2b/loyalty/application/commands/convert-loyalty-points.command.js";
-import { OrderRepository } from "../src/b2b/orders/domain/ports/order.repository.js";
+import { ConvertLoyaltyPointsCommand } from "../src/lafoliecoffee/loyalty/application/commands/convert-loyalty-points.command.js";
+import { OrderRepository } from "../src/lafoliecoffee/orders/domain/ports/order.repository.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import {
   OrderClientele,

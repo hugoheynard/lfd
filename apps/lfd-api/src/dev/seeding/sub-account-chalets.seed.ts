@@ -1,11 +1,11 @@
 import type { DeliveryAddressPayload } from "@lfd/contracts";
 
-import { ActivateCompanyByStaffCommand } from "../../b2b/account/application/commands/activate-company.command.js";
-import { AddContactByStaffCommand } from "../../b2b/account/application/commands/add-contact-by-staff.command.js";
-import { CreateSubAccountCommand } from "../../b2b/account/application/commands/create-sub-account.command.js";
-import { UpdateDeliveryAddressByStaffCommand } from "../../b2b/account/application/commands/update-delivery-address-by-staff.command.js";
-import { SetCompanyBankAccountCommand } from "../../b2b/payments/application/commands/set-company-bank-account.command.js";
-import { SetMandateOptionsCommand } from "../../b2b/payments/application/commands/set-mandate-options.command.js";
+import { ActivateCompanyByStaffCommand } from "../../lafoliecoffee/account/application/commands/activate-company.command.js";
+import { AddContactByStaffCommand } from "../../lafoliecoffee/account/application/commands/add-contact-by-staff.command.js";
+import { CreateSubAccountCommand } from "../../lafoliecoffee/account/application/commands/create-sub-account.command.js";
+import { UpdateDeliveryAddressByStaffCommand } from "../../lafoliecoffee/account/application/commands/update-delivery-address-by-staff.command.js";
+import { SetCompanyBankAccountCommand } from "../../lafoliecoffee/payments/application/commands/set-company-bank-account.command.js";
+import { SetMandateOptionsCommand } from "../../lafoliecoffee/payments/application/commands/set-mandate-options.command.js";
 import { CompanyStatus } from "../../platform/database/client/client.js";
 import type { ClientContext } from "./client.seed.js";
 import { type NeighbourClient, seedFictiveClients } from "./neighbour-clients.seed.js";

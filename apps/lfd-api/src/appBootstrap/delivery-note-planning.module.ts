@@ -1,10 +1,10 @@
 import { Global, Module } from "@nestjs/common";
 
-import { DeliveryNotesModule } from "../b2b/delivery-notes/delivery-notes.module.js";
-import { DeliveryNoteFollower } from "../b2b/delivery-notes/application/services/delivery-note-follower.js";
-import { DeliveryNoteFollowing } from "../b2b/orders/domain/ports/delivery-note-following.js";
-import { PrismaDeliveryNoteReprintsReader } from "../b2b/delivery-notes/infrastructure/prisma-delivery-note-reprints.reader.js";
-import { PrismaShortfallAftermathReader } from "../b2b/orders/infrastructure/prisma-shortfall-aftermath.reader.js";
+import { DeliveryNotesModule } from "../lafoliecoffee/delivery-notes/delivery-notes.module.js";
+import { DeliveryNoteFollower } from "../lafoliecoffee/delivery-notes/application/services/delivery-note-follower.js";
+import { DeliveryNoteFollowing } from "../lafoliecoffee/orders/domain/ports/delivery-note-following.js";
+import { PrismaDeliveryNoteReprintsReader } from "../lafoliecoffee/delivery-notes/infrastructure/prisma-delivery-note-reprints.reader.js";
+import { PrismaShortfallAftermathReader } from "../lafoliecoffee/orders/infrastructure/prisma-shortfall-aftermath.reader.js";
 import {
   DeliveryNoteReprintsReader,
   ShortfallAftermathReader,

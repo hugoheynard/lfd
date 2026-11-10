@@ -82,7 +82,7 @@ reste : aucun client ne doit signer le texte CORE.
 - Tests : le PDF rendu contient « interentreprises » et ne contient plus « 8
   semaines » ; le lot et le formulaire lisent la même valeur.
 
-**Lot A — API** : un nouveau contrôleur client dans `b2b/payments/http/`
+**Lot A — API** : un nouveau contrôleur client dans `lafoliecoffee/payments/http/`
 (bus seulement), queries/commands « My… » qui murent (port de rôle comme
 `BankAccountGuardReader`) puis délèguent ; route PDF nominative ; dépôt de la
 preuve ; faits au journal ; notification staff ; clé `customerMandate` au

@@ -27,7 +27,7 @@
 - **L'annulation** a son propre mur : `PrismaCancellingMemberReader.mayCancelFor`
   (membership acceptée, société active, « sans héritage vers les sites »).
 - **La règle d'héritage existe, débranchée** :
-  `b2b/shared/company-standing/domain/effective-role.ts` (déplacée là par S6, 2026-10-23) — seuls `owner` et `admin`
+  `lafoliecoffee/shared/company-standing/domain/effective-role.ts` (déplacée là par S6, 2026-10-23) — seuls `owner` et `admin`
   du principal héritent, plafonnés à `admin` dans le site ; un rôle propre
   plus haut l'emporte (MAX) ; jamais dans l'autre sens. « PAS ENCORE
   BRANCHÉE (S6) ». Décidée par Hugo le 2026-10-05.
@@ -167,8 +167,8 @@ le site et par l'équipe. Une annulation par un membre du site garde son texte.
 **Ce qui existe désormais :**
 
 - **`OrderAccessReader.accessToOrder(userId, order)`**
-  (`apps/lfd-api/src/b2b/orders/domain/ports/order-access.reader.ts`, adaptateur
-  `apps/lfd-api/src/b2b/orders/infrastructure/prisma-order-access.reader.ts`) : rôle effectif dans la société DE LA
+  (`apps/lfd-api/src/lafoliecoffee/orders/domain/ports/order-access.reader.ts`, adaptateur
+  `apps/lfd-api/src/lafoliecoffee/orders/infrastructure/prisma-order-access.reader.ts`) : rôle effectif dans la société DE LA
   COMMANDE, en une lecture — membership propre (`openingMembership`) et
   membership du principal ACTUEL, acceptée, principal `active`, passées à
   `effectiveRole`. Le lisent : détail, bon, PDF, règlement, abandon (le mur

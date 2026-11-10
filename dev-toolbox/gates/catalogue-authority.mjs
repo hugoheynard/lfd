@@ -25,7 +25,7 @@
  *
  * ## Ce qu'elle refuse, exactement
  *
- * Deux gestes, hors de `b2b/catalog/` :
+ * Deux gestes, hors de `lafoliecoffee/catalog/` :
  *
  * 1. appeler `catalogueArticle(` — la frappe ;
  * 2. écrire `as CatalogArticle` — la contrefaçon.
@@ -56,7 +56,7 @@ const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const API = join(ROOT, "apps", "lfd-api");
 
 /** Le seul contexte autorisé à frapper : celui qui LIT le catalogue. */
-const AUTHORITY = join("src", "b2b", "catalog") + sep;
+const AUTHORITY = join("src", "lafoliecoffee", "catalog") + sep;
 
 const FORGE = [
   { pattern: /\bcatalogueArticle\s*\(/g, what: "frappe un article scellé" },
@@ -109,7 +109,7 @@ for (const root of ["src", "test"]) {
 if (failures.length > 0) {
   console.error("\n✗ catalogue-authority\n");
   for (const [file, what, hits] of failures) {
-    console.error(`  ${file}  ${what} (${String(hits)}×) — hors de b2b/catalog/`);
+    console.error(`  ${file}  ${what} (${String(hits)}×) — hors de lafoliecoffee/catalog/`);
   }
   console.error(
     "\n  Le prix d'entrée d'un article se LIT du catalogue, il ne se fabrique pas.\n" +
@@ -119,7 +119,7 @@ if (failures.length > 0) {
 }
 
 console.log(
-  `✓ catalogue-authority : la frappe vit dans b2b/catalog/, ${String(inside)} usage(s).\n` +
+  `✓ catalogue-authority : la frappe vit dans lafoliecoffee/catalog/, ${String(inside)} usage(s).\n` +
     `  Aucun code servi ne fabrique un prix d'entrée ; ${String(inSpecs)} usage(s) en suites,\n` +
     `  où déclarer son catalogue ne facture personne.`,
 );

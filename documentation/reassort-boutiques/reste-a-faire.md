@@ -11,13 +11,13 @@
 
 ## 1. Décidé « plus tard » par Hugo
 
-| Point                                                                                                                                                                                                                                                                                                                                                      | Décision                                                                                                                             | Date       |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ---------- |
-| **Une rupture bloque la vente en ligne du jour, un stock faible avertit le client.** Aujourd'hui, `StockAlert` n'est lu que dans `b2b/resupply/` : aucune passation, aucune vitrine de la boutique ne le consulte. Le reste calculé (reçus − prélèvements) borne déjà la vente du jour ; reste à dire si une alerte déclarée doit encore peser par-dessus. | « ce qui permettrait déjà de bloquer les commandes, avertir » — « pas forcément pour aujourd'hui » ; renvoyé au circuit du jour même | 2026-10-21 |
-| **Le réassort récurrent** (« le réassort habituel du mardi », pré-rempli). Le nom libre (« Vitrine du matin ») et les noms employés proposés en sont le premier pas, sans le décider.                                                                                                                                                                      | plus tard (Q-C1)                                                                                                                     | 2026-10-21 |
-| **Le signalement d'un écart au fournil** (moins reçu qu'emballé). Aujourd'hui un écart se corrige sur la ligne à la réception, et rien ne remonte.                                                                                                                                                                                                         | plus tard (Q-C2)                                                                                                                     | 2026-10-21 |
-| **Le droit par site** : qui tient `handover_counter` agit pour tout point. Le dépôt ne rattache pas un membre du staff à un point.                                                                                                                                                                                                                         | « on verra la granularité du droit plus tard »                                                                                       | 2026-10-21 |
-| **Un coût interne du réassort** (valorisation du stock d'un site). Aucun montant n'existe nulle part ; ce serait un plan d'argent à part.                                                                                                                                                                                                                  | proposé « non » (Q-R5), jamais rouvert                                                                                               | 2026-10-14 |
+| Point                                                                                                                                                                                                                                                                                                                                                                | Décision                                                                                                                             | Date       |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ---------- |
+| **Une rupture bloque la vente en ligne du jour, un stock faible avertit le client.** Aujourd'hui, `StockAlert` n'est lu que dans `lafoliecoffee/resupply/` : aucune passation, aucune vitrine de la boutique ne le consulte. Le reste calculé (reçus − prélèvements) borne déjà la vente du jour ; reste à dire si une alerte déclarée doit encore peser par-dessus. | « ce qui permettrait déjà de bloquer les commandes, avertir » — « pas forcément pour aujourd'hui » ; renvoyé au circuit du jour même | 2026-10-21 |
+| **Le réassort récurrent** (« le réassort habituel du mardi », pré-rempli). Le nom libre (« Vitrine du matin ») et les noms employés proposés en sont le premier pas, sans le décider.                                                                                                                                                                                | plus tard (Q-C1)                                                                                                                     | 2026-10-21 |
+| **Le signalement d'un écart au fournil** (moins reçu qu'emballé). Aujourd'hui un écart se corrige sur la ligne à la réception, et rien ne remonte.                                                                                                                                                                                                                   | plus tard (Q-C2)                                                                                                                     | 2026-10-21 |
+| **Le droit par site** : qui tient `handover_counter` agit pour tout point. Le dépôt ne rattache pas un membre du staff à un point.                                                                                                                                                                                                                                   | « on verra la granularité du droit plus tard »                                                                                       | 2026-10-21 |
+| **Un coût interne du réassort** (valorisation du stock d'un site). Aucun montant n'existe nulle part ; ce serait un plan d'argent à part.                                                                                                                                                                                                                            | proposé « non » (Q-R5), jamais rouvert                                                                                               | 2026-10-14 |
 
 ## 2. Questions ouvertes
 
@@ -32,7 +32,7 @@
   non tranché)
 - **« Monté » à un point servi par transfert** : seul l'écran le réserve aux
   points servis sur place ; le serveur l'accepte
-  (`b2b/resupply/application/mark-resupply-mounted.handler.ts:32`). Choix du
+  (`lafoliecoffee/resupply/application/mark-resupply-mounted.handler.ts:32`). Choix du
   bâtisseur faute d'écrit (2026-10-22) : faut-il le refuser ?
 - **L'arrêt relit toute la liste des réassorts sous le verrou de la
   journée** (lecture d'un autre bloc, verrou tenu) plutôt que « lire avant,
@@ -164,9 +164,9 @@ les lignes d'un reçu écrites par différence ; l'index `(site_id, name)`
 `0a5eef1ce`, retour dans `prisma/rollback/`) ; le `:sku` du chemin validé ; les gestes du sans
 commande renommés `*UnorderedReceiptLine*` ; `site-resupply.spec.ts`
 découpé en partie — il garde 173 lignes au 2026-11-03 (les gardes dans
-`apps/lfd-api/src/b2b/resupply/domain/__tests__/site-resupply-gates.spec.ts`,
+`apps/lfd-api/src/lafoliecoffee/resupply/domain/__tests__/site-resupply-gates.spec.ts`,
 les données communes dans
-`apps/lfd-api/src/b2b/resupply/domain/__tests__/site-resupply-fixtures.ts`).
+`apps/lfd-api/src/lafoliecoffee/resupply/domain/__tests__/site-resupply-fixtures.ts`).
 
 Laissé, et pourquoi :
 
@@ -285,8 +285,8 @@ Corrigé, chacun avec son test de régression :
   `apps/lfd-api/src/appBootstrap/shelf-draws-feed.module.ts` ; les adaptateurs du fournil
   (`ProductionDayResupplies`, `ProductionRangeResupplies`) sont rangés en
   `infrastructure/`.
-- Specs : plus aucune au-delà de 300 lignes dans `b2b/resupply` ; un jeu
-  d'articles partagé (`apps/lfd-api/src/b2b/resupply/application/__tests__/resupply-articles.ts`) ; plus d'horloge murale.
+- Specs : plus aucune au-delà de 300 lignes dans `lafoliecoffee/resupply` ; un jeu
+  d'articles partagé (`apps/lfd-api/src/lafoliecoffee/resupply/application/__tests__/resupply-articles.ts`) ; plus d'horloge murale.
 
 Choix assumé, pas une dette :
 
@@ -303,7 +303,7 @@ Laissé, et pourquoi :
   2026-11-03). C'est une décision de dépôt — un point d'entrée sans Zod
   pour les types et les fonctions pures —, pas une correction du réassort.
 - **Les quatre lecteurs de la table `site`** restent en Prisma direct : même
-  bloc `b2b`, un seul écrivain (`b2b/sites`), la raison est écrite et datée
+  bloc `b2b`, un seul écrivain (`lafoliecoffee/sites`), la raison est écrite et datée
   au-dessus de chacun.
 - **La levée des alertes à la réception** sauve alerte par alerte : chacune
   sous sa version, dans la transaction de l'appelant ; un lot perdrait le

@@ -18,7 +18,7 @@ import { join } from "node:path";
 
 import type { CreatedPickupResponse, PromotionTermsPayload, PromotionView } from "@lfd/contracts";
 
-import { PricingMaterialsCache } from "../src/b2b/pricing/infrastructure/pricing-materials.cache.js";
+import { PricingMaterialsCache } from "../src/lafoliecoffee/pricing/infrastructure/pricing-materials.cache.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { posePromotion, promotionTerms } from "./promotion-fixtures.js";

@@ -6,9 +6,9 @@
  */
 import { CommandBus } from "@nestjs/cqrs";
 
-import { ExpireLoyaltyVouchersCommand } from "../src/b2b/loyalty/application/commands/expire-loyalty-vouchers.command.js";
-import { LoyaltyVoucher } from "../src/b2b/loyalty/domain/entities/loyalty-voucher.js";
-import { LoyaltyVoucherRepository } from "../src/b2b/loyalty/domain/ports/loyalty-voucher.repository.js";
+import { ExpireLoyaltyVouchersCommand } from "../src/lafoliecoffee/loyalty/application/commands/expire-loyalty-vouchers.command.js";
+import { LoyaltyVoucher } from "../src/lafoliecoffee/loyalty/domain/entities/loyalty-voucher.js";
+import { LoyaltyVoucherRepository } from "../src/lafoliecoffee/loyalty/domain/ports/loyalty-voucher.repository.js";
 import { OrderStatus } from "../src/platform/database/client/client.js";
 import type { E2eContext } from "./e2e-harness.js";
 import { cancelRequest, orderState, resetScene } from "./order-staff-cancel-scene.js";

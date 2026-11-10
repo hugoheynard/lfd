@@ -9,8 +9,8 @@
  */
 import { CommandBus } from "@nestjs/cqrs";
 
-import { RecomputeProductNormsCommand } from "../src/b2b/alerts/application/commands/recompute-product-norms.command.js";
-import { EvaluateBasket } from "../src/b2b/alerts/application/handlers/evaluate-basket.service.js";
+import { RecomputeProductNormsCommand } from "../src/lafoliecoffee/alerts/application/commands/recompute-product-norms.command.js";
+import { EvaluateBasket } from "../src/lafoliecoffee/alerts/application/handlers/evaluate-basket.service.js";
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";

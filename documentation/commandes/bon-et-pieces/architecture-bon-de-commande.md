@@ -51,7 +51,7 @@ flowchart LR
   C --> M["courriels<br/>order-placed · order-ready"]
 ```
 
-La projection est **côté serveur** (`apps/lfd-api/src/b2b/orders/domain/services/order-sheet.ts`) :
+La projection est **côté serveur** (`apps/lfd-api/src/lafoliecoffee/orders/domain/services/order-sheet.ts`) :
 une projection front laisserait descendre l'`OrderView` complet, et un client qui
 empile trois commandes reconstituerait la grille tarifaire. Le contrat est
 `packages/contracts/src/order-sheet.ts` (`ClientSheet`, `StaffSheet`,
@@ -160,7 +160,7 @@ date. `revision` compte les avenants appliqués (0 partout aujourd'hui).
 Un bon d'audience `client` porte des montants mais **n'est pas une facture** (pas
 de numéro de série) ; son pied le dit. **Les factures existent maintenant** : la
 facturation émet des factures carte (modèle `Invoice`,
-`apps/lfd-api/src/b2b/accounting/`, `issue-card-invoice-on-paid` et
+`apps/lfd-api/src/lafoliecoffee/accounting/`, `issue-card-invoice-on-paid` et
 `-on-fulfilled`) et le prélèvement du compte ;
 [`../../b2b/architecture-facturation.md`](../../b2b/architecture-facturation.md). Le bon
 n'y est pas substitué.

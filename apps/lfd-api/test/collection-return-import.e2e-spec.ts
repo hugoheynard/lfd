@@ -12,7 +12,7 @@ import type {
 import {
   camt054,
   pain002,
-} from "../src/b2b/accounting/domain/services/__tests__/bank-return-file-fixtures.js";
+} from "../src/lafoliecoffee/accounting/domain/services/__tests__/bank-return-file-fixtures.js";
 import { daysAgo, jsonBody } from "./e2e-harness.js";
 import { invoicedPayer, readerStaff, setUpEntity } from "./collection-returns-scene.js";
 import {

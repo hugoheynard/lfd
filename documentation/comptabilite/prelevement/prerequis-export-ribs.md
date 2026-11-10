@@ -144,7 +144,7 @@ ouvert le 2026-10-23 avec `iconv -f ISO-8859-1` et `od -c` :
   `iban_last4` en clair pour l'écran (l. 317), **BIC en clair** (l. 321 : il
   figure sur tout virement). Un RIB par société ; les sites peuvent garder
   celui du principal (commentaire l. 345-347).
-- **Validation** : `Iban` (`apps/lfd-api/src/b2b/accounting/domain/value-objects/iban.ts:4-5`)
+- **Validation** : `Iban` (`apps/lfd-api/src/lafoliecoffee/accounting/domain/value-objects/iban.ts:4-5`)
   accepte **15 à 34** caractères — donc un IBAN **non français** de la zone
   SEPA est possible.
 - **Mandat actif** : le client ne peut plus remplacer son RIB (409) ; le
@@ -156,7 +156,7 @@ ouvert le 2026-10-23 avec `iconv -f ISO-8859-1` et `od -c` :
 ### 0.5 L'export des mandats — le calque
 
 Doc d'état : [`../mandat/export-des-mandats-pour-la-banque.md`](../mandat/export-des-mandats-pour-la-banque.md).
-Sous `apps/lfd-api/src/b2b/accounting/` :
+Sous `apps/lfd-api/src/lafoliecoffee/accounting/` :
 
 | Pièce                                                            | Ce qu'elle fait                                                                                                                                                                                              |
 | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -187,7 +187,7 @@ banque refuserait un même IBAN deux fois, réponse 8).
 | ---- | ------------------------------------ | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | A    | Type format                          | `I`                                                          | constante                                                                                                                                       | —                                     | MONTRÉ (`I` pour IBAN)                                                                                           |
 | B    | Nom                                  | le **titulaire du compte**                                   | `company_bank_accounts.holder` (`accounting.prisma:298-302` : « tels que la banque du client les connaît », peut différer de la raison sociale) | `sepa()`, 140 car. au plus            | DIT 140 (réponse 11, nuance § 0.2) ; la source est la décision R6                                                |
-| C    | Siren                                | 9 chiffres                                                   | `Company.siren` (`apps/lfd-api/src/b2b/account/domain/entities/company.ts:326`), **nullable**                                                   | vide si `null`                        | SUPPOSÉ (facultatif ?)                                                                                           |
+| C    | Siren                                | 9 chiffres                                                   | `Company.siren` (`apps/lfd-api/src/lafoliecoffee/account/domain/entities/company.ts:326`), **nullable**                                         | vide si `null`                        | SUPPOSÉ (facultatif ?)                                                                                           |
 | D    | Adresse 1                            | `addressLine1`                                               | l'adresse **du titulaire**, sur le RIB (`accounting.prisma:307-311`) — pas l'adresse de facturation                                             | `sepa()`, longueur ❓                 | SUPPOSÉ (consigne coupée, Q-B1)                                                                                  |
 | E    | Adresse 2                            | `addressLine2` (vide si vide)                                | idem                                                                                                                                            | idem                                  | SUPPOSÉ                                                                                                          |
 | F    | Adresse 3                            | `postalCode city`                                            | idem                                                                                                                                            | idem                                  | SUPPOSÉ                                                                                                          |
@@ -212,7 +212,7 @@ banque refuserait un même IBAN deux fois, réponse 8).
 - **Un caractère hors Latin-1** (un `œ`, un `€`, une apostrophe typographique,
   un caractère d'un autre alphabet) : il ne peut pas s'écrire. Proposition :
   passer **tous** les champs texte par le `sepa()` existant
-  (`apps/lfd-api/src/b2b/accounting/domain/services/pain008-document.ts:295-302`,
+  (`apps/lfd-api/src/lafoliecoffee/accounting/domain/services/pain008-document.ts:295-302`,
   alphabet `A-Za-z0-9/-?:().,'+ ` l. 25) — on perd les accents, mais le nom
   est alors **identique** à celui du fichier des mandats et du `pain.008`.
   SUPPOSÉ acceptable (Q-B6). ⚠️ `sepa()` remplace aussi `&`, `°`, `_`… par
@@ -339,7 +339,7 @@ de la ligne d'un export déposé** :
   `account_bank_export.account_rejected` (la société, `rejectionReason`).
 - **Une correction par ligne** ; la première fait foi.
 - **La fenêtre : 30 jours après le dépôt** (`BANK_REPORT_WINDOW_DAYS`,
-  `apps/lfd-api/src/b2b/accounting/domain/entities/bank-line-correction.ts`). Choisie plutôt que « tant que
+  `apps/lfd-api/src/lafoliecoffee/accounting/domain/entities/bank-line-correction.ts`). Choisie plutôt que « tant que
   l'export est le dernier déposé » : deux fichiers déposés le même jour se
   fermeraient l'un l'autre avant qu'on ait lu le premier compte rendu, et la
   règle demanderait à l'agrégat de lire les autres exports.
@@ -367,7 +367,7 @@ flowchart LR
   C -->|rejeté| P
 ```
 
-- **Domaine** (`apps/lfd-api/src/b2b/accounting/domain/`) : l'agrégat
+- **Domaine** (`apps/lfd-api/src/lafoliecoffee/accounting/domain/`) : l'agrégat
   `AccountBankExport` (≥ 1, ≤ 200, chaque empreinte une fois, clos une fois :
   importé **ou** abandonné ; un abandonné ne se télécharge plus) ;
   `KnownBankAccount` (refuse une empreinte connue ou en vol) ; la sélection

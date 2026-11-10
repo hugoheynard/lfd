@@ -1,4 +1,4 @@
-/// **Une promotion** — l'agrégat `Promotion` de `src/b2b/promotions/` (`documentation/promotions/promotions.md`, § 2.1, lot L3). Trois axes — public, acheminement, portée — et une liste
+/// **Une promotion** — l'agrégat `Promotion` de `src/lafoliecoffee/promotions/` (`documentation/promotions/promotions.md`, § 2.1, lot L3). Trois axes — public, acheminement, portée — et une liste
 /// de conditions. Aucun lecteur de prix ne la lit encore (L5).
 ///
 /// Les colonnes de sorte sont du TEXTE tenu par des CHECK (migration

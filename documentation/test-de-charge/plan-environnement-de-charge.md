@@ -280,14 +280,14 @@ fois avec le créneau, puis `POST /orders`.
 
 Vérifié dans le code le 2026-11-05 :
 
-- `POST /orders` ([`orders.controller.ts`](../../apps/lfd-api/src/b2b/orders/http/orders.controller.ts)),
+- `POST /orders` ([`orders.controller.ts`](../../apps/lfd-api/src/lafoliecoffee/orders/http/orders.controller.ts)),
   corps `placeOrderPayloadSchema` : `idempotencyKey` (UUID, un par itération),
   `settlement` (`card` | `account` | `null`), `salesTerms` (requis, nullable),
   `expectedTotalCents` (lu sur `totalCents` du devis), plus le contenu
   (`lines`, `fulfillmentMethod`, `pickupAddressId`, `requestedDeliveryDate`,
   `requestedWindow`). La société vient de l'en-tête d'espace.
 - Le handler crée l'intention **Stripe avant** la persistance pour une carte
-  ([`place-order.handler.ts`](../../apps/lfd-api/src/b2b/orders/application/commands/place-order.handler.ts)).
+  ([`place-order.handler.ts`](../../apps/lfd-api/src/lafoliecoffee/orders/application/commands/place-order.handler.ts)).
   Défaut du script : `account` (sociétés aux termes accordés, pas de Stripe).
   `card` n'est admis qu'avec des clés `sk_test_` — le code ne le vérifie pas.
 

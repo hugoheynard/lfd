@@ -27,7 +27,7 @@ manque.** Les mentions dépendent du schéma de l'émetteur
 
 ## 2. La règle unique
 
-`mintBlockers` (`b2b/payments/domain/services/mint-blockers.ts`) est **la
+`mintBlockers` (`lafoliecoffee/payments/domain/services/mint-blockers.ts`) est **la
 seule** fonction qui décide : la frappe (staff et client) la lit pour
 refuser, les lectures pour l'annoncer.
 
@@ -48,7 +48,7 @@ refuser, les lectures pour l'annoncer.
 ## 3. Le SIREN de la société
 
 - **Saisi à part**, pas déduit du SIRET (Hugo, 2026-09-15). VO `Siren` dans
-  `b2b/account/` (9 chiffres, clé de Luhn), colonne `companies.siren`, index
+  `lafoliecoffee/account/` (9 chiffres, clé de Luhn), colonne `companies.siren`, index
   non unique (plusieurs établissements partagent un SIREN).
 - **Invariant** : si le SIRET est connu, le SIREN est ses 9 premiers
   chiffres ; `Company` refuse une paire contradictoire

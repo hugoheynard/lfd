@@ -1,7 +1,7 @@
 /**
  * **La forme d'une couleur de site, jugée à la saisie.**
  *
- * Copie de la règle du serveur (`apps/lfd-api/src/b2b/sites/domain/site-color.ts`,
+ * Copie de la règle du serveur (`apps/lfd-api/src/lafoliecoffee/sites/domain/site-color.ts`,
  * relue le 2026-10-13) : `#rrggbb`, normalisée en minuscules. Aucune teinte
  * n'est refusée (Hugo, 2026-10-13 : couleurs entièrement libres, l'équipe
  * s'organise). Le serveur reste l'AUTORITÉ : ce jugement n'annonce le refus

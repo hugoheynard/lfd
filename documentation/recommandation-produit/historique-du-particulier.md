@@ -37,11 +37,11 @@ le panier d'une seule personne.
 
 ## 2. Ce que la base sait déjà d'un particulier
 
-| Qui                      | Ce qui le relie à ses commandes                                                                                                                                                                                                                                                                    | Lisible pour recommander ?                                                |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| **Client connecté**      | `Order.placedByUserId`, obligatoire, « le mur sans entreprise » (`apps/lfd-api/prisma/schema/public/orders.prisma:71-74`, `:89`)                                                                                                                                                                   | oui, techniquement : une requête par `placedByUserId`                     |
-| **Invité** (sans compte) | une ligne `users` **sans identité de connexion** (`auth0_sub` nul), créée au panier avec prénom, e-mail, téléphone (`apps/lfd-api/src/b2b/orders/infrastructure/prisma-guest-buyer.registrar.ts`, `register`) ; une seconde commande sous la **même adresse** réutilise la même fiche (`guestFor`) | non : il n'a pas de session, donc personne à qui montrer quoi que ce soit |
-| **Invité devenu compte** | à sa première connexion, si la connexion prouve la boîte et qu'**une seule** fiche invité porte l'adresse, le compte **reprend** cette fiche : ses commandes (et ses points) le suivent (`apps/lfd-api/src/b2b/account/infrastructure/guest-account-claim.ts`, en-tête)                            | oui, dès qu'il est connecté — son passé d'invité compris                  |
+| Qui                      | Ce qui le relie à ses commandes                                                                                                                                                                                                                                                                              | Lisible pour recommander ?                                                |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| **Client connecté**      | `Order.placedByUserId`, obligatoire, « le mur sans entreprise » (`apps/lfd-api/prisma/schema/public/orders.prisma:71-74`, `:89`)                                                                                                                                                                             | oui, techniquement : une requête par `placedByUserId`                     |
+| **Invité** (sans compte) | une ligne `users` **sans identité de connexion** (`auth0_sub` nul), créée au panier avec prénom, e-mail, téléphone (`apps/lfd-api/src/lafoliecoffee/orders/infrastructure/prisma-guest-buyer.registrar.ts`, `register`) ; une seconde commande sous la **même adresse** réutilise la même fiche (`guestFor`) | non : il n'a pas de session, donc personne à qui montrer quoi que ce soit |
+| **Invité devenu compte** | à sa première connexion, si la connexion prouve la boîte et qu'**une seule** fiche invité porte l'adresse, le compte **reprend** cette fiche : ses commandes (et ses points) le suivent (`apps/lfd-api/src/lafoliecoffee/account/infrastructure/guest-account-claim.ts`, en-tête)                            | oui, dès qu'il est connecté — son passé d'invité compris                  |
 
 Depuis le 2026-10-18 (lot A3 des audiences), chaque commande porte aussi la
 **langue de la boutique** au moment où elle a été passée (`orders.locale`) —
@@ -52,7 +52,7 @@ la montre ni ne s'en sert pour une personne.
 
 ⚠️ **Une justification à corriger** : le port dit « 🔴 Toujours une ligne
 neuve, jamais une réconciliation par adresse »
-(`apps/lfd-api/src/b2b/orders/domain/ports/guest-buyer.registrar.ts`, JSDoc de
+(`apps/lfd-api/src/lafoliecoffee/orders/domain/ports/guest-buyer.registrar.ts`, JSDoc de
 `register`), alors que son adaptateur **réutilise** la fiche invité de même
 adresse (`prisma-guest-buyer.registrar.ts`, `guestFor`, vérifié le
 2026-10-18). Le code fait foi ; la phrase du port a été corrigée le 2026-10-18.
@@ -117,7 +117,7 @@ plan écrit (§1.2) ; il est confirmé par le code.
 ### 3.5 Une durée
 
 La fenêtre de calcul est de **12 mois** (celle de `CustomerSkuReader`,
-`apps/lfd-api/src/b2b/orders/domain/ports/customer-sku.reader.ts:2`). La
+`apps/lfd-api/src/lafoliecoffee/orders/domain/ports/customer-sku.reader.ts:2`). La
 recommandation ne **conserve** rien : elle lit les commandes, qui sont gardées
 10 ans pour la comptabilité (`texte-politique-de-confidentialite.md`, durées).
 Le texte doit dire « 12 derniers mois » pour que la promesse corresponde au

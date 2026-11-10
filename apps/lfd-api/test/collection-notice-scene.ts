@@ -22,7 +22,7 @@ import {
   type ConstitutedBatchesView,
 } from "@lfd/contracts";
 import type { SendMailArgs } from "@lfd/mailer";
-import { cycleToConstitute } from "../src/b2b/accounting/domain/services/billing-cycle.js";
+import { cycleToConstitute } from "../src/lafoliecoffee/accounting/domain/services/billing-cycle.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import type { B2bMails } from "../src/mail/templates/mail-templates.js";

@@ -59,7 +59,7 @@ consommateur n'est pas un paquet mais le **front**, qui lit l'endpoint.
 | 1   | `pim/catalogue/shared/http/reference.controller.ts`                       | `allergenReference()`                               | ✅ se rebranche sur une query |
 | 2   | le **front admin** — `reference-api.ts`, `product-form-store.ts`          | `GET /pim/reference/allergens`                      | ⚠️ problème 3                 |
 | 3   | `pim/catalogue/product/domain/value-objects/nutrition-declaration.ts:107` | `findMapping()` **dans un value object de domaine** | 🔴 problème 1                 |
-| 4   | `b2b/catalog/infrastructure/prisma-catalog-admin.reader.ts:101`           | `findMapping()` + `toInco()`                        | 🔴 problème 2                 |
+| 4   | `lafoliecoffee/catalog/infrastructure/prisma-catalog-admin.reader.ts:101` | `findMapping()` + `toInco()`                        | 🔴 problème 2                 |
 
 **Problème 1 — la pureté du domaine.** `NutritionDeclaration` valide
 aujourd'hui les codes par un `findMapping()` synchrone sur une constante
@@ -538,7 +538,7 @@ range dans `catalog_items.allergen_texts` (migration additive
 `20261027150000_les_libelles_d_allergenes_par_langue`) et la vue publique
 `ShopItemView` gagne `allergens?: { state: 'declared' | 'none' |
 'precautionary', contains, mayContain }`, dans la langue de la requête
-(`shopAllergensOf`, `b2b/catalog/domain/shop-allergens.ts`). La clé est
+(`shopAllergensOf`, `lafoliecoffee/catalog/domain/shop-allergens.ts`). La clé est
 **absente** quand le commerce ne sait pas : ligne d'avant le champ, aucune
 fiche, ou liste amputée d'un code innommable (`incomplete`) — jamais
 « aucun allergène » par défaut. La fiche boutique dit « Allergènes » (liste),
@@ -781,7 +781,7 @@ fonctions pures.
 ⚠️ Pas dans `B2bCatalogPushService`, comme une première rédaction le disait :
 le push ne projette pas, il délègue à `B2bCatalogFeedPreview.preview()`. Y faire
 entrer le référentiel aurait demandé de changer la signature de ce port — dont
-le second consommateur est b2b/catalog/application/check-catalog-parity.service.ts (retiré en X2),
+le second consommateur est lafoliecoffee/catalog/application/check-catalog-parity.service.ts (retiré en X2),
 qui aurait alors dû se procurer le projecteur PIM. C'est-à-dire exactement ce
 que D6 interdit. La lecture vit donc dans ce qui projette.
 

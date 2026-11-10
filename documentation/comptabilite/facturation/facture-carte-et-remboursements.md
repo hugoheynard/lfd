@@ -36,7 +36,7 @@ ligne par remboursement Stripe, `stripe_refund_id` unique (idempotence),
   (`stripe-card-provider.ts`) ; `charge.refunded` est ignoré. Un remboursement
   sans intention ou sous un statut inconnu est ignoré. La commande se retrouve
   par son unique intention (`orders.stripe_payment_intent_id`).
-- **L'agrégat** `OrderRefundLedger` (`b2b/orders/domain/entities/`) ;
+- **L'agrégat** `OrderRefundLedger` (`lafoliecoffee/orders/domain/entities/`) ;
   `RecordOrderRefundHandler` charge sous verrou de la commande, applique, sauve
   et journalise dans une unité de travail.
 - **Statuts** : depuis une attente, tout s'applique ; depuis `succeeded`, seul
@@ -49,7 +49,7 @@ ligne par remboursement Stripe, `stripe_refund_id` unique (idempotence),
   sur la commande, `order.refund_rejected` au journal et à la cloche ; le webhook
   répond 200.
 - **Hors commande** (lien libre) : `RefundWithoutOrderEvent` →
-  `OnRefundWithoutOrder` (`b2b/payments`), `payment_refund.unmatched`, cloche vers
+  `OnRefundWithoutOrder` (`lafoliecoffee/payments`), `payment_refund.unmatched`, cloche vers
   « Liens libres ». Pas d'avoir automatique.
 - **Journal** : `order.refund_recorded`, `order.fully_refunded`,
   `order.refund_rejected` — sans identifiant Stripe.
@@ -77,7 +77,7 @@ flowchart LR
 - **Deux faits durables côté commandes**, écrits dans la transaction de leur
   écriture : `order.paid` (par `ConfirmOrderPaymentHandler`, au franchissement
   de `markPaid`) et `order.refund_succeeded` (par `RecordOrderRefundHandler`).
-  Abonnés dans `b2b/accounting` : `issue-card-invoice-on-fulfilled`,
+  Abonnés dans `lafoliecoffee/accounting` : `issue-card-invoice-on-fulfilled`,
   `issue-card-invoice-on-paid`, `reconcile-refunds-on-refund`. Le retrait écouté
   est `order.fulfilled` (un par commande), jamais `handover.handed_over`.
 - **`IssueCardInvoice`** est sans effet si une 380 couvre déjà le bon. **Tout

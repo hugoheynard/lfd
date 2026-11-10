@@ -439,7 +439,7 @@ niveaux différents — et non l'un _ou_ l'autre.
 
 1. **Entre étages, un ordre déclaré.** `PRICE_STAGES = ["mercuriale", "volume",
 "promotion", "geste"]`, écrit **dans le domaine**
-   (`b2b/pricing/domain/price-rule.ts`) et jamais dans le schéma, que son propre
+   (`lafoliecoffee/pricing/domain/price-rule.ts`) et jamais dans le schéma, que son propre
    commentaire renvoie au domaine. La résolution les parcourt dans cet ordre.
 2. **Dans un étage, la spécificité tranche.** `compareSpecificity` désigne **une
    gagnante par étage** — « elles ne s'additionnent pas, l'une gagne ».

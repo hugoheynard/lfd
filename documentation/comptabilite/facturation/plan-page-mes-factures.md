@@ -11,7 +11,7 @@
   (cartes bureau et mobile, panneau, dialogue d'une pièce) ; `/mes-factures`
   redirige vers `/mon-compte#compte-invoices` (`app.routes.ts`).
 - **La route** `GET /companies/:companyId/invoices`
-  (`b2b/accounting/http/company-invoices.controller.ts`) →
+  (`lafoliecoffee/accounting/http/company-invoices.controller.ts`) →
   `ListMyCompanyInvoicesQuery` ; mur des rôles `owner|billing`
   (`domain/services/invoice-access.ts`), mur de données dans
   `PrismaCompanyInvoicesReader.visibleTo` (payeur OU pièce couvrant un bon de la
@@ -171,7 +171,7 @@ seule lecture `visibleTo` filtrée par les ids.
   `MyIssuedInvoicesView`, et `myInvoicesQuerySchema` (`year`, `month`,
   `kind` ; un mois sans année est refusé). `IssuedInvoiceSummaryView` n'a
   pas bougé : le back-office lit toujours `IssuedInvoicesView`.
-- **Le statut**, pur : `apps/lfd-api/src/b2b/accounting/domain/services/invoice-settlement.ts`,
+- **Le statut**, pur : `apps/lfd-api/src/lafoliecoffee/accounting/domain/services/invoice-settlement.ts`,
   la table du §7.1 dans son ordre. À instant de constitution égal, le lot
   d'id le plus grand (ULID) l'emporte.
 - **« Bloquée »**, lue ainsi : la facture n'a AUCUNE ligne dans un lot non
@@ -180,21 +180,21 @@ seule lecture `visibleTo` filtrée par les ids.
   soit la raison, pas seulement `no_mandate` / `invoice_split`),
   `settled_otherwise`, `cancelled`, ou un état de lot sans ligne de facture.
   L'absence de ligne `order_collection` vaut `due`.
-- **Le total dû et les filtres**, purs : `apps/lfd-api/src/b2b/accounting/domain/services/my-invoices-ledger.ts`.
+- **Le total dû et les filtres**, purs : `apps/lfd-api/src/lafoliecoffee/accounting/domain/services/my-invoices-ledger.ts`.
   Le total compte `collection_planned`, `collection_rejected` **et
   `recollection_planned`** (voir écarts) ; il est calculé sur toutes les
   pièces visibles, AVANT le filtre. Le filtre porte sur l'année et le mois
   d'**émission**. L'ordre : numéro décroissant.
-- **La lecture** : port `apps/lfd-api/src/b2b/accounting/domain/ports/invoice-settlement-facts.reader.ts`,
-  adaptateur `apps/lfd-api/src/b2b/accounting/infrastructure/prisma-invoice-settlement-facts.reader.ts` —
+- **La lecture** : port `apps/lfd-api/src/lafoliecoffee/accounting/domain/ports/invoice-settlement-facts.reader.ts`,
+  adaptateur `apps/lfd-api/src/lafoliecoffee/accounting/infrastructure/prisma-invoice-settlement-facts.reader.ts` —
   deux requêtes pour toutes les pièces (lignes + lot + avis + retour + nombre
   de factures de la ligne ; bons sortis de `due`). Lots annulés lus, écartés
   par le domaine.
 - **La route** `GET /companies/:companyId/invoices?year&month&kind` rend
   `MyIssuedInvoicesView` ; le mur des rôles (`owner|billing`) n'a pas bougé.
 - **L'ordre** : `PrismaCompanyInvoicesReader.visibleTo` lit `year desc, rank desc`.
-- **Tests** : domaine (`apps/lfd-api/src/b2b/accounting/domain/services/__tests__/invoice-settlement.spec.ts`,
-  `apps/lfd-api/src/b2b/accounting/domain/services/__tests__/my-invoices-ledger.spec.ts`),
+- **Tests** : domaine (`apps/lfd-api/src/lafoliecoffee/accounting/domain/services/__tests__/invoice-settlement.spec.ts`,
+  `apps/lfd-api/src/lafoliecoffee/accounting/domain/services/__tests__/my-invoices-ledger.spec.ts`),
   application (`issued-invoice.handlers.spec.ts`, un double
   `FixedSettlementFacts`), e2e `apps/lfd-api/test/my-invoices.e2e-spec.ts` (émise → en lot
   → déposée → rejetée, bon réglé autrement, filtres, 403 / 404), contrat
@@ -224,7 +224,7 @@ seule lecture `visibleTo` filtrée par les ids.
 - **Le mur** : `ensureInvoiceAccess` (`owner|billing`), puis UNE lecture
   `CompanyInvoicesReader.visibleTo(companyId, onlyIds?)` — la sélection est
   dans le `where` de la même requête que le mur. Rien n'est lu sur 403/404.
-- **Les règles**, pures : `apps/lfd-api/src/b2b/accounting/domain/services/invoice-archive.ts`
+- **Les règles**, pures : `apps/lfd-api/src/lafoliecoffee/accounting/domain/services/invoice-archive.ts`
   — plafond `INVOICE_ARCHIVE_MAX_PIECES = 200` ; refus nommés
   (`domain/errors/invoice-archive-errors.ts`) : id non visible (404, les ids),
   rien à zipper (409), plus de 200 (409, le compte), PDF pas rendu (409, les

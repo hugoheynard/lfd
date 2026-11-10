@@ -14,8 +14,8 @@ import { setTimeout as sleep } from "node:timers/promises";
 
 import { PERSONAL_WORKSPACE, WORKSPACE_HEADER } from "@lfd/contracts";
 
-import { SUBSCRIPTION_CREATED } from "../src/b2b/account/domain/events/site-gesture.fact.js";
-import { NotifyPrincipalOnSubscriptionCreated } from "../src/b2b/sub-account-notices/application/handlers/notify-principal-on-subscription-created.handler.js";
+import { SUBSCRIPTION_CREATED } from "../src/lafoliecoffee/account/domain/events/site-gesture.fact.js";
+import { NotifyPrincipalOnSubscriptionCreated } from "../src/lafoliecoffee/sub-account-notices/application/handlers/notify-principal-on-subscription-created.handler.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";

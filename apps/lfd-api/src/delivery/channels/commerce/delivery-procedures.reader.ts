@@ -8,7 +8,7 @@
  * (adresse, contact, fenêtre) est ce qui a été PROMIS ; la procédure est un
  * mode d'emploi.
  *
- * La livraison DÉCLARE, le commerce implémente (`b2b/orders/infrastructure/`),
+ * La livraison DÉCLARE, le commerce implémente (`lafoliecoffee/orders/infrastructure/`),
  * relié dans `appBootstrap/delivery-feed.module.ts`. Le commerce lit sous le
  * mur `(adresse, société)` : une adresse qui n'est pas à la société de la
  * commande ne rend aucune étape.

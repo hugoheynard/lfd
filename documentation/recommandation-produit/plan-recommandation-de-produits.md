@@ -4,7 +4,7 @@
 >
 > | Lot                                 | État                                                                                                                                                                                                            |
 > | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-> | **R0** — socle                      | ✅ bâti : contexte `b2b/recommendations/`, filtre R4, compteurs d'audience anonymes (R5 bis)                                                                                                                    |
+> | **R0** — socle                      | ✅ bâti : contexte `lafoliecoffee/recommendations/`, filtre R4, compteurs d'audience anonymes (R5 bis)                                                                                                          |
 > | **RS** — suggestions du staff       | 🟡 en cours : panier, fiche, accueil, après-ajout, aperçu, chiffres bâtis ([`suggestions-du-staff.md`](suggestions-du-staff.md)) ; la suite dans [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md) |
 > | **R2** — « souvent pris avec »      | ✅ bâti le 2026-10-18 au panier ([`suggestions-calculees.md`](suggestions-calculees.md)) ; chiffres du calculé bâtis (question tranchée le 2026-10-18 : dans le même partage) ; restent la fiche et l'accueil   |
 > | **A1** — tableau des audiences      | à faire ([`plan-audiences.md`](plan-audiences.md))                                                                                                                                                              |
@@ -53,16 +53,16 @@ Garde-fous : ne recommander que ce qui se vend à CE client ; mesurer l'effet
 
 ### 1.1 L'historique par client et par SKU — il existe déjà, pour les pros
 
-- **`CustomerSkuReader`** — port de `b2b/orders`, fenêtre glissante de
-  **12 mois** (`apps/lfd-api/src/b2b/orders/domain/ports/customer-sku.reader.ts:2`).
+- **`CustomerSkuReader`** — port de `lafoliecoffee/orders`, fenêtre glissante de
+  **12 mois** (`apps/lfd-api/src/lafoliecoffee/orders/domain/ports/customer-sku.reader.ts:2`).
 - Son adaptateur lit les lignes de commande **sous le mur** :
   `where: { order: { companyId, createdAt: { gte: … } } }`
-  (`apps/lfd-api/src/b2b/orders/infrastructure/prisma-customer-sku.reader.ts:48`),
+  (`apps/lfd-api/src/lafoliecoffee/orders/infrastructure/prisma-customer-sku.reader.ts:48`),
   la fenêtre comptée depuis le `Clock` (`…:61-65`), trié par réemploi puis
   récence (`…:57`).
 - **`ListCustomerSkusHandler`** rejoint ces habitudes au catalogue
   **d'aujourd'hui**, en un lot, audience `"pro"` écrite en dur
-  (`apps/lfd-api/src/b2b/orders/application/queries/list-customer-skus.handler.ts:35-38`),
+  (`apps/lfd-api/src/lafoliecoffee/orders/application/queries/list-customer-skus.handler.ts:35-38`),
   et **garde** le SKU disparu avec `stillAvailable: false` (`…:16-18`, `…:49`)
   — c'est le bon choix pour un commercial au téléphone, le **mauvais** pour une
   vitrine : une recommandation ne montre jamais un article qu'on ne peut pas
@@ -78,7 +78,7 @@ Garde-fous : ne recommander que ce qui se vend à CE client ; mesurer l'effet
   entreprise » (`apps/lfd-api/prisma/schema/public/orders.prisma:71-74`).
 - `placedByUserId` est **obligatoire** (`orders.prisma:89`) : même un invité a
   une ligne `User`, inscrite par `GuestBuyerRegistrar`
-  (`apps/lfd-api/src/b2b/orders/application/commands/place-shop-order.handler.ts:17`).
+  (`apps/lfd-api/src/lafoliecoffee/orders/application/commands/place-shop-order.handler.ts:17`).
   Comment un invité est reconnu d'une commande à l'autre : **non vérifié**.
 - Conséquence : l'historique d'un **particulier connecté** se lit par
   `placedByUserId` ; celui d'un **invité** n'est pas une base de
@@ -87,7 +87,7 @@ Garde-fous : ne recommander que ce qui se vend à CE client ; mesurer l'effet
 
 ### 1.3 Ce que `growth` et `alerts` font déjà
 
-- **`product.first_order`** (`apps/lfd-api/src/b2b/alerts/domain/detectors/first-order.ts:13-31`)
+- **`product.first_order`** (`apps/lfd-api/src/lafoliecoffee/alerts/domain/detectors/first-order.ts:13-31`)
   : détecte, **sur une commande passée**, les lignes jamais commandées par ce
   compte (`everOrdered`), et se tait sur les premières commandes
   (`…:19`). C'est l'**inverse** de l'usage 4 : il constate un premier essai, il
@@ -96,12 +96,12 @@ Garde-fous : ne recommander que ce qui se vend à CE client ; mesurer l'effet
 - **Le « moteur de reco » commercial** (`documentation/b2b/espace-commercial-prospects-leads.md` §8)
   recommande des **coups commerciaux** (verrouille / rescousse / upgrade /
   win-back) sur des **prospects et comptes**, pas des produits. Ce qui en est
-  bâti : le cockpit lit un top 5 (`apps/lfd-api/src/b2b/growth/application/queries/get-cockpit.handler.ts:12`)
+  bâti : le cockpit lit un top 5 (`apps/lfd-api/src/lafoliecoffee/growth/application/queries/get-cockpit.handler.ts:12`)
   et **journalise `reco.shown`**, best-effort, idempotent par (sujet, fenêtre de
   recalcul) (`…:15-20`). La boucle `action → issue → recalibrage` est annoncée
   « Phase 2 » (`…:17`) : **non bâtie**. Le moteur d'offre (« croissants 5×/sem →
   abonnement ») du §8 n'existe pas.
-- **`ActivityRecorder`** (`apps/lfd-api/src/b2b/growth/domain/ports/activity-recorder.ts:10-29`)
+- **`ActivityRecorder`** (`apps/lfd-api/src/lafoliecoffee/growth/domain/ports/activity-recorder.ts:10-29`)
   offre deux garanties ; `record()` est best-effort et idempotent, et son
   JSDoc cite **« une reco affichée »** comme cas d'usage (`…:12-15`). La mesure
   a donc déjà son port et son précédent (`reco.shown`).
@@ -110,23 +110,23 @@ Garde-fous : ne recommander que ce qui se vend à CE client ; mesurer l'effet
 
 - **`servedTo(item, viewer)`** est la règle unique : audience de l'article
   (`pro | public | both`, `null` lu `both`) ET pas masqué pour ce lecteur ET
-  validé pour lui (`apps/lfd-api/src/b2b/catalog/domain/served-to.ts:46-54`).
+  validé pour lui (`apps/lfd-api/src/lafoliecoffee/catalog/domain/served-to.ts:46-54`).
   Son JSDoc nomme les quatre lecteurs qu'elle a remplacés (`…:41-44`) : une
   recommandation sera le cinquième, et **ne doit pas** relire le masquage
   elle-même.
 - **`ProductCatalogReader.resolveMany(skus, audience)`**
-  (`apps/lfd-api/src/b2b/catalog/domain/ports/product-catalog.reader.ts:110`)
+  (`apps/lfd-api/src/lafoliecoffee/catalog/domain/ports/product-catalog.reader.ts:110`)
   résout un lot de SKU pour une audience ; `CatalogItem.orderTimeLimit` porte la
   limite de commande de l'article (`…:38-47`).
 - **La mise en avant existe** : `SetCatalogFeaturedCommand(sku, audience, featured, decidedBy)`
-  (`apps/lfd-api/src/b2b/catalog/application/commands/set-catalog-featured.command.ts`),
+  (`apps/lfd-api/src/lafoliecoffee/catalog/application/commands/set-catalog-featured.command.ts`),
   une décision **par audience** depuis le 2026-10-18 — la pastille
   « Incontournable », page Gestion Boutique › Mise en avant
   ([`catalogue-synchronise.md`](../catalogue/catalogue-synchronise.md)).
   L'usage 3 « Nouveau / De saison » a donc déjà son geste manuel ; reste à
   savoir s'il suffit (Q4).
-- La rupture et l'heure limite par jour : leurs lecteurs (`b2b/order-cutoffs`,
-  `b2b/order-opening`) existent en dossiers ; leur API n'a **pas été ouverte**
+- La rupture et l'heure limite par jour : leurs lecteurs (`lafoliecoffee/order-cutoffs`,
+  `lafoliecoffee/order-opening`) existent en dossiers ; leur API n'a **pas été ouverte**
   pour ce plan — à lire au lot R1.
 
 ### 1.5 Ce que la boutique affiche déjà
@@ -144,9 +144,9 @@ Garde-fous : ne recommander que ce qui se vend à CE client ; mesurer l'effet
 
 ## 2. Décisions proposées
 
-**R1 — Le calcul vit dans `b2b/`, contexte neuf `b2b/recommendations/`.**
-Tout ce qu'il lit est déjà du commerce : les lignes de commande (`b2b/orders`)
-et le catalogue servi (`b2b/catalog`). Aucune arête nouvelle dans la matrice du
+**R1 — Le calcul vit dans `b2b/`, contexte neuf `lafoliecoffee/recommendations/`.**
+Tout ce qu'il lit est déjà du commerce : les lignes de commande (`lafoliecoffee/orders`)
+et le catalogue servi (`lafoliecoffee/catalog`). Aucune arête nouvelle dans la matrice du
 §3 : `b2b → pim` reste interdit et inutile, `servedTo` suffit. Il ne vit **ni**
 dans `growth` (qui parle de prospects et de coups commerciaux) **ni** dans
 `orders` (dont l'agrégat n'a rien à garder ici) ; il **déclare** ses ports de
@@ -230,10 +230,10 @@ anonymes déjà bâtis (`RecordProductAudienceCommand`, R5 bis).
 
 ```mermaid
 flowchart LR
-    OL["Lignes de commande<br/>(b2b/orders, sous le mur)"] --> H["PurchaseHistoryReader<br/>rythme · fréquence"]
+    OL["Lignes de commande<br/>(lafoliecoffee/orders, sous le mur)"] --> H["PurchaseHistoryReader<br/>rythme · fréquence"]
     OL --> C["CoPurchaseReader<br/>paires (anonymes)"]
     F["Mise en avant<br/>(featured)"] --> Q
-    H --> Q["Query de recommandation<br/>(b2b/recommendations)"]
+    H --> Q["Query de recommandation<br/>(lafoliecoffee/recommendations)"]
     C --> Q
     Q --> S["resolveMany + servedTo<br/>+ limite du jour − panier"]
     S --> UI["Boutique : habituels / pris avec<br/>Back-office : jamais essayé"]
@@ -258,16 +258,16 @@ flowchart LR
 
 Dans l'ordre retenu le 2026-10-18 :
 
-| Lot    | Contenu                                                                                                                            | Dépend de   | État                                                                                     |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------- |
-| **R0** | contexte `b2b/recommendations/`, filtre R4, compteurs anonymes R5 bis (table, route de la boutique, vue de fiche, ajout au panier) | —           | ✅ bâti                                                                                  |
-| **RS** | suggestions décidées par le staff (§2 bis)                                                                                         | R0          | 🟡 en cours — [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md)             |
-| **R2** | « Souvent pris avec » au panier, après la place du staff, sous le seuil d'anonymat                                                 | R0, RS      | ✅ bâti au panier le 2026-10-18 — [`suggestions-calculees.md`](suggestions-calculees.md) |
-| **A1** | tableau de bord des audiences ([`plan-audiences.md`](plan-audiences.md))                                                           | R0          | à faire                                                                                  |
-| **R1** | « Vos habituels » (pros), rythme hebdomadaire + fréquence ; rangée d'accueil                                                       | R0          | ✅ bâti le 2026-10-18 — [`suggestions-calculees.md`](suggestions-calculees.md) §8        |
-| **R3** | « Vos habituels » pour le particulier connecté (`placedByUserId`)                                                                  | R1, cabinet | après l'avis du cabinet                                                                  |
-| **R4** | « Jamais essayé » au back-office (sociétés du même secteur)                                                                        | R1          | plus tard                                                                                |
-| **R5** | « Nouveau / De saison » si la mise en avant manuelle ne suffit pas (Q4)                                                            | R0          | plus tard                                                                                |
+| Lot    | Contenu                                                                                                                                      | Dépend de   | État                                                                                     |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------- |
+| **R0** | contexte `lafoliecoffee/recommendations/`, filtre R4, compteurs anonymes R5 bis (table, route de la boutique, vue de fiche, ajout au panier) | —           | ✅ bâti                                                                                  |
+| **RS** | suggestions décidées par le staff (§2 bis)                                                                                                   | R0          | 🟡 en cours — [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md)             |
+| **R2** | « Souvent pris avec » au panier, après la place du staff, sous le seuil d'anonymat                                                           | R0, RS      | ✅ bâti au panier le 2026-10-18 — [`suggestions-calculees.md`](suggestions-calculees.md) |
+| **A1** | tableau de bord des audiences ([`plan-audiences.md`](plan-audiences.md))                                                                     | R0          | à faire                                                                                  |
+| **R1** | « Vos habituels » (pros), rythme hebdomadaire + fréquence ; rangée d'accueil                                                                 | R0          | ✅ bâti le 2026-10-18 — [`suggestions-calculees.md`](suggestions-calculees.md) §8        |
+| **R3** | « Vos habituels » pour le particulier connecté (`placedByUserId`)                                                                            | R1, cabinet | après l'avis du cabinet                                                                  |
+| **R4** | « Jamais essayé » au back-office (sociétés du même secteur)                                                                                  | R1          | plus tard                                                                                |
+| **R5** | « Nouveau / De saison » si la mise en avant manuelle ne suffit pas (Q4)                                                                      | R0          | plus tard                                                                                |
 
 ## 6. Risques
 
@@ -313,4 +313,4 @@ Dans l'ordre retenu le 2026-10-18 :
    qui existe déjà (`SetCatalogFeaturedCommand`)._ Dériver « nouveau » d'une
    date d'activation suppose de la lire ; elle n'a pas été trouvée côté
    plateforme ce jour (non vérifié au-delà d'une recherche dans
-   `b2b/catalog/domain`).
+   `lafoliecoffee/catalog/domain`).

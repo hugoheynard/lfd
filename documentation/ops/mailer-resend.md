@@ -50,7 +50,7 @@ démarches, qui partent toutes du **même** mailer :
 **Auth0 n'envoie aucun de ces e-mails.** Il fabrique seulement le lien à usage
 unique (`passwordSetupUrl`, un ticket de la Management API) ; c'est notre backend
 qui le met en page et l'expédie
-([`grant-account-access.service.ts`](../../apps/lfd-api/src/b2b/account/application/services/grant-account-access.service.ts),
+([`grant-account-access.service.ts`](../../apps/lfd-api/src/lafoliecoffee/account/application/services/grant-account-access.service.ts),
 [`invite-staff-user.handler.ts`](../../apps/lfd-api/src/staff/invitations/invite-staff-user.handler.ts)).
 Une seule adresse d'expédition couvre donc réellement les deux mondes — il n'y a
 pas de fournisseur d'e-mail à configurer côté Auth0.

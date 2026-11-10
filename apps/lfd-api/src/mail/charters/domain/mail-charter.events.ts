@@ -7,7 +7,7 @@ import type { JournalFact, JournaledEvent } from "../../../platform/journal/jour
  * Les faits de la charte d'un espace (plan `plan-editeur-par-blocs.md`,
  * § 25, C1). Rangés sous le préfixe `mail_copy.` — le même métier que les
  * textes et les documents des e-mails, et le même rangement côté serveur
- * (`b2b/growth/domain/activity-module.ts`).
+ * (`lafoliecoffee/growth/domain/activity-module.ts`).
  */
 export const MAIL_CHARTER_FACTS = {
   saved: "mail_copy.charter_saved",

@@ -2,7 +2,7 @@ import { InvalidRecipientEmailError } from "../errors/dossier-recipient-errors.j
 
 /**
  * Contrôle **délibérément permissif**, le même que l'adresse d'un compte
- * client (`b2b/account/…/email-address.ts`, relu le 2026-10-06) : une arobase,
+ * client (`lafoliecoffee/account/…/email-address.ts`, relu le 2026-10-06) : une arobase,
  * du texte de chaque côté, un point dans le domaine, aucun espace. Recopié et
  * non importé : le fournil n'importe pas le commerce (`CLAUDE.md` §3).
  */

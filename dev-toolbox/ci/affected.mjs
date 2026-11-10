@@ -61,7 +61,7 @@ const AREAS = {
  */
 const PATH_AREAS = {
   facturx: (file) =>
-    file.startsWith("apps/lfd-api/src/b2b/accounting/") ||
+    file.startsWith("apps/lfd-api/src/lafoliecoffee/accounting/") ||
     file.startsWith("packages/money/") ||
     file.startsWith("dev-toolbox/ci/facturx-mustang/") ||
     file === "apps/lfd-api/package.json" ||

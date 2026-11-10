@@ -21,11 +21,11 @@ flowchart LR
 ```
 
 L'agrégat `ResupplyReceipt`
-(`apps/lfd-api/src/b2b/resupply/domain/resupply-receipt.ts:67`) a deux
+(`apps/lfd-api/src/lafoliecoffee/resupply/domain/resupply-receipt.ts:67`) a deux
 sortes, une seule règle — seul le reçu compte au stock :
 
 - **le reçu d'un réassort envoyé** : `expecting` (l. 88) le fait naître
-  attendu (`expectedLinesOf`, `apps/lfd-api/src/b2b/resupply/domain/resupply-receipt-expected.ts:35` : l'emballé lu par
+  attendu (`expectedLinesOf`, `apps/lfd-api/src/lafoliecoffee/resupply/domain/resupply-receipt-expected.ts:35` : l'emballé lu par
   `PackedResuppliesReader` si la fiche du colisage est close, sinon le
   demandé) ; `receiveAll` (l. 156) recopie l'attendu en reçu d'un geste ;
   une ligne ne se corrige (`correct`, l. 189) qu'**après**
@@ -56,7 +56,7 @@ sortes, une seule règle — seul le reçu compte au stock :
 
 Le reçu n'est écrit en base qu'une fois reçu : avant, l'attendu se lit du
 réassort. Ses lignes s'écrivent par différence avec la base
-(`apps/lfd-api/src/b2b/resupply/infrastructure/resupply-receipt-lines.writer.ts`) : une correction n'en
+(`apps/lfd-api/src/lafoliecoffee/resupply/infrastructure/resupply-receipt-lines.writer.ts`) : une correction n'en
 réécrit qu'une. Une ligne relue dont un geste daté n'a pas son auteur entier
 est refusée (`resupply.row.unreadable`, 500), jamais comblée de chaînes
 vides. Le stock ne monte qu'à la réception, jamais à l'envoi ni à
@@ -92,7 +92,7 @@ ligne. Le reçu sans commande est dans le menu de chaque ligne de la table.
   **réceptionnés** seulement, moins ce que les commandes « sur stock » du
   jour ont pris. Sans reçu, pas de stock — **jamais un stock inventé**.
 - **Un seul calcul** : `estimateStock(receipts, draws)`, pure
-  (`b2b/resupply/domain/estimated-stock.ts:50`), **par (article, unité)**
+  (`lafoliecoffee/resupply/domain/estimated-stock.ts:50`), **par (article, unité)**
   (`stockKeyOf`, `domain/stock-tally.ts:4`) — jamais pièces et grammes ensemble ; un article au
   poids a un stock en grammes entiers (Hugo, 2026-11-02). `DayShelfStock`
   (`application/day-shelf-stock.ts:20`) est le seul à lui passer les

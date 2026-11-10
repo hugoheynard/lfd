@@ -47,7 +47,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
-const B2B = join(ROOT, "apps", "lfd-api", "src", "b2b");
+const B2B = join(ROOT, "apps", "lfd-api", "src", "lafoliecoffee");
 const DOMAIN = join(B2B, "pricing", "domain");
 const MATERIALS = join(DOMAIN, "pricing-materials.ts");
 

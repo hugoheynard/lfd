@@ -75,7 +75,7 @@ const ENTRIES = [
   // de cet objet, pas des entrées de plus : `tiers` pour la grille des paliers,
   // `priceAtCumulative` pour la projection, `mercurialeAlone` pour le
   // comparatif de marché — chacune avec sa raison, écrite au-dessus d'elle.
-  "src/b2b/pricing/domain/loaded-pricer.ts",
+  "src/lafoliecoffee/pricing/domain/loaded-pricer.ts",
 ];
 
 function isEntry(relPath) {
@@ -115,7 +115,7 @@ for (const file of sourceFiles(root)) {
   const rel = relative(ROOT, file);
   const source = withoutComments(readFileSync(file, "utf8"));
   // La définition elle-même n'est pas une entrée.
-  if (rel.endsWith("src/b2b/pricing/domain/resolve-price.ts")) {
+  if (rel.endsWith("src/lafoliecoffee/pricing/domain/resolve-price.ts")) {
     continue;
   }
   if (!CALL.test(source)) {

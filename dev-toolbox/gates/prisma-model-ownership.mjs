@@ -63,7 +63,7 @@ const SKIP_DIRS = new Set([
 const BLOCKS = new Set([
   "staff",
   "pim",
-  "b2b",
+  "lafoliecoffee",
   "production",
   "handover",
   "platform",

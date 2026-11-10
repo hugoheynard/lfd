@@ -104,7 +104,7 @@ Vérifié dans le code le 2026-11-05.
 
 ## La résolution
 
-[`delivery-fee-resolution.ts`](../../apps/lfd-api/src/b2b/delivery-zones/domain/delivery-fee-resolution.ts) :
+[`delivery-fee-resolution.ts`](../../apps/lfd-api/src/lafoliecoffee/delivery-zones/domain/delivery-fee-resolution.ts) :
 
 - `resolvedDeliveryFee` : `zone.audienceTerms[a].fee ?? global[a].fee ?? zone.fee`.
   L'ancien frais (`fee_mode`/`fee_value`) est NOT NULL : la résolution rend
@@ -120,7 +120,7 @@ les remplacements d'une zone sont des colonnes nullables de `delivery_zones`.
 ## La route publique des zones (lot 0c, serveur — 2026-11-05)
 
 `GET /delivery-zones?audience=b2b|b2c`
-([`delivery-zones.controller.ts`](../../apps/lfd-api/src/b2b/delivery-zones/http/delivery-zones.controller.ts))
+([`delivery-zones.controller.ts`](../../apps/lfd-api/src/lafoliecoffee/delivery-zones/http/delivery-zones.controller.ts))
 sert pour chaque zone un `AudienceDeliveryZoneView` : `fee` est le frais
 **résolu** pour la clientèle déclarée, `freeDeliveryThresholdCents` le seuil
 résolu (`null` = pas de livraison offerte), tous deux par
@@ -153,13 +153,13 @@ L'audience d'un acheteur — `pending` compris côté pro — est tenue par
 Une seule arithmétique : le frais n'est calculé que dans `price-basket.ts`, et
 le jugement dans une fonction pure.
 
-- [`basket-terms.ts`](../../apps/lfd-api/src/b2b/orders/domain/services/basket-terms.ts)
+- [`basket-terms.ts`](../../apps/lfd-api/src/lafoliecoffee/orders/domain/services/basket-terms.ts)
   calcule la base `goodsNetHtCents` :
   - pro (`line_ht`) : `subtotalCents − discountCents` ;
   - particulier (`exact_ht`) : Σ HT des lignes composées − HT des remises.
     Le bon de fidélité n'entre pas dans `priceBasket` : il ne peut pas faire
     perdre la livraison offerte.
-- [`free-delivery-judgement.ts`](../../apps/lfd-api/src/b2b/orders/domain/services/free-delivery-judgement.ts),
+- [`free-delivery-judgement.ts`](../../apps/lfd-api/src/lafoliecoffee/orders/domain/services/free-delivery-judgement.ts),
   `judgedFreeDelivery` : `null` sans seuil, sous le seuil (`goodsNetHtCents < thresholdCents`),
   ou quand le frais vaut 0 HT et 0 TTC. Sinon, la livraison offerte avec le
   montant offert.
@@ -184,7 +184,7 @@ seuil figé — d'où la ligne (1) du tableau des révisions.
 ## La révision
 
 `PricingContext.routeOf`
-([`pricing-context.service.ts`](../../apps/lfd-api/src/b2b/orders/application/services/pricing-context.service.ts)) :
+([`pricing-context.service.ts`](../../apps/lfd-api/src/lafoliecoffee/orders/application/services/pricing-context.service.ts)) :
 
 ```ts
 const tariff = frozenFee !== null && frozenFee.zoneId === zoneId ? frozenFee : zone.value;

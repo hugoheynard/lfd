@@ -17,7 +17,7 @@ import type { AdminPlacedOrderResponse, PlacedOrderResponse } from "@lfd/contrac
 import { htMillicentsOf } from "@lfd/pim-contracts";
 import { randomUUID } from "node:crypto";
 
-import { PrismaOrderDiscountBackfill } from "../src/b2b/orders/infrastructure/prisma-order-discount-backfill.js";
+import { PrismaOrderDiscountBackfill } from "../src/lafoliecoffee/orders/infrastructure/prisma-order-discount-backfill.js";
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {

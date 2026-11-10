@@ -62,7 +62,7 @@ si la mercuriale est close.
 
 ## 1. L'objet
 
-- **Agrégat** : `CompanyMercuriale` (`b2b/pricing/domain/entities/company-mercuriale.ts`),
+- **Agrégat** : `CompanyMercuriale` (`lafoliecoffee/pricing/domain/entities/company-mercuriale.ts`),
   **une ligne** par mercuriale (`company_mercuriales`), sa grille en `jsonb`
   (articles et paliers), sa fenêtre, son cycle de vie, sa politique de
   promotions, ses avenants (`company_mercuriale_amendments`).
@@ -116,7 +116,7 @@ grille mais qu'aucun palier n'est atteint, `missesTierFor` le dit. Elle passe pa
 | Avenant                                               | arrêter une ligne qui ne court pas, ou la même deux fois ; un article déjà négocié sur la période                                      | `NoNegotiatedLineToEndError`, `DuplicateEndedSkuError`, `SkuAlreadyNegotiatedError` (`mercuriale-amendment-checks.ts`)          |
 | Règle de prix écrite à la main à l'étage `mercuriale` | un pourcentage ; une audience autre qu'une société ; `stacksOverMercuriale`                                                            | `MercurialeMustPoseAPriceError`, `MercurialeTargetsOneCompanyError`, `MercurialeCannotStackOverItselfError` (`pricing-rule.ts`) |
 
-Les erreurs sont dans `b2b/pricing/domain/errors/mercuriale-errors.ts` et
+Les erreurs sont dans `lafoliecoffee/pricing/domain/errors/mercuriale-errors.ts` et
 `mercuriale-amendment-errors.ts`.
 
 ## 4. L'avenant

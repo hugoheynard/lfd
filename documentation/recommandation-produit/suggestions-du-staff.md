@@ -14,7 +14,7 @@ accord, la saison, une nouveauté, un stock à écouler) là où la suggestion
 **calculée** dira ce que les clients **font**. Elle ne change aucun prix :
 l'article sort au prix que la boutique résout déjà.
 
-Code : `apps/lfd-api/src/b2b/recommendations/` (backend),
+Code : `apps/lfd-api/src/lafoliecoffee/recommendations/` (backend),
 `apps/lfd-backoffice-frontend/src/app/suggestions/` (écran),
 `apps/lfc-ecommerce-frontend/src/app/client/suggestions/` et
 `client/cart/staff-cart-suggestion.service.ts` (boutique). Contrats :
@@ -92,13 +92,13 @@ déclencheur. Value object `domain/value-objects/suggestion-conditions.ts`,
 porte `domain/services/suggestion-conditions-gate.ts`, refus
 `domain/errors/suggestion-condition-errors.ts`.
 
-| Condition                      | Ce qu'elle porte                                                                                             | Jugée…                                                                                          | Refusée si…                                                                   |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| **Jours de la semaine**        | un sous-ensemble de lundi–dimanche ; les sept valent « aucune condition »                                    | au jour métier de l'**affichage** (Paris, `Clock`), pas au jour de retrait                      | liste vide, jour inconnu, doublon                                             |
-| **Plage horaire**              | `HH:MM` → `HH:MM`, heure de Paris, début compris, fin exclue                                                 | à l'heure de l'affichage (`instantToLocal(clock.now())`)                                        | heure mal formée ; fin pas après le début — **pas de plage qui passe minuit** |
-| **Montant minimum du panier**  | des **centimes** entiers, de 0,01 € à 10 000 €                                                               | contre le total que le client **lit** au panier ; un panier pas encore chiffré ne l'atteint pas | non entier, ≤ 0, au-delà ; posé ailleurs qu'au panier                         |
-| **Sans article d'une famille** | un id de famille du catalogue servi (« sans boisson »), sous-familles comprises                              | sur la lignée des articles du panier, après le déclencheur                                      | famille inconnue ; ailleurs qu'au panier ; la même que celle qui déclenche    |
-| **Points de retrait**          | 1 à 20 ids de `pickup_addresses` (les sites du commerce, `b2b/sites`), ouverts (non archivés, qui remettent) | au point du jour visé ; **pas encore choisi** ou **en livraison** : la règle ne paraît pas      | liste vide, doublon, plus de 20 ; point inconnu, archivé ou qui ne remet pas  |
+| Condition                      | Ce qu'elle porte                                                                                                       | Jugée…                                                                                          | Refusée si…                                                                   |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **Jours de la semaine**        | un sous-ensemble de lundi–dimanche ; les sept valent « aucune condition »                                              | au jour métier de l'**affichage** (Paris, `Clock`), pas au jour de retrait                      | liste vide, jour inconnu, doublon                                             |
+| **Plage horaire**              | `HH:MM` → `HH:MM`, heure de Paris, début compris, fin exclue                                                           | à l'heure de l'affichage (`instantToLocal(clock.now())`)                                        | heure mal formée ; fin pas après le début — **pas de plage qui passe minuit** |
+| **Montant minimum du panier**  | des **centimes** entiers, de 0,01 € à 10 000 €                                                                         | contre le total que le client **lit** au panier ; un panier pas encore chiffré ne l'atteint pas | non entier, ≤ 0, au-delà ; posé ailleurs qu'au panier                         |
+| **Sans article d'une famille** | un id de famille du catalogue servi (« sans boisson »), sous-familles comprises                                        | sur la lignée des articles du panier, après le déclencheur                                      | famille inconnue ; ailleurs qu'au panier ; la même que celle qui déclenche    |
+| **Points de retrait**          | 1 à 20 ids de `pickup_addresses` (les sites du commerce, `lafoliecoffee/sites`), ouverts (non archivés, qui remettent) | au point du jour visé ; **pas encore choisi** ou **en livraison** : la règle ne paraît pas      | liste vide, doublon, plus de 20 ; point inconnu, archivé ou qui ne remet pas  |
 
 **Le montant, tranché à la règle d'affichage du panier.** Le panier ne
 multiplie rien : ses montants viennent du devis du serveur (`/shop/quote`). Le
@@ -251,7 +251,7 @@ tarificateur est réduit à ces articles, sous l'appelant `suggestions` de la
 sonde. Avant, chaque carte tarifait le rayon entier pour en garder deux ou
 trois articles, soit trois à quatre tarifications complètes par changement
 d'espace. L'équivalence avec le rayon filtré est tenue par
-`apps/lfd-api/src/b2b/catalog/application/__tests__/shop-catalogue-priced-items.spec.ts`.
+`apps/lfd-api/src/lafoliecoffee/catalog/application/__tests__/shop-catalogue-priced-items.spec.ts`.
 
 ## 7. L'aperçu de l'écran
 
@@ -352,7 +352,7 @@ jour métier × un article :
 
 Les ventes se lisent par `SuggestedSkuSalesReader`, port déclaré par la
 recommandation et implémenté par la commande
-(`apps/lfd-api/src/b2b/orders/infrastructure/prisma-suggested-sku-sales.reader.ts`) :
+(`apps/lfd-api/src/lafoliecoffee/orders/infrastructure/prisma-suggested-sku-sales.reader.ts`) :
 un `GROUP BY` jour × article sur le jour de passation à Paris. Rien d'autre ne
 sort — ni commande, ni société, ni client.
 

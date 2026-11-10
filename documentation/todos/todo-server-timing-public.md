@@ -40,5 +40,5 @@ Touche la frontière de sécurité : `vitruve` avant le bâti.
 - `apps/lfd-api/src/platform/metrics/server-timing.ts` — les marques de Nest.
 - `apps/lfd-api/container/server-timing.ts` et `gateway/src/server-timing.ts` —
   `container`, `worker`, `gateway`.
-- `apps/lfd-api/src/b2b/catalog/http/public-shelf-cache-headers.ts` —
+- `apps/lfd-api/src/lafoliecoffee/catalog/http/public-shelf-cache-headers.ts` —
   `X-Shelf-Cache`.

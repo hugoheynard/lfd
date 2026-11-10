@@ -19,14 +19,14 @@
  */
 import { htMillicentsOf } from "@lfd/pim-contracts";
 
-import { issueInput } from "../src/b2b/accounting/domain/entities/__tests__/invoice-fixtures.js";
-import { MonthlyInvoicingReader } from "../src/b2b/accounting/domain/ports/monthly-invoicing.reader.js";
-import { TEST_FONTS } from "../src/b2b/accounting/domain/services/__tests__/invoice-fonts-fixture.js";
-import { drawnUnicodeText } from "../src/b2b/accounting/domain/services/__tests__/pdf-objects.js";
-import { renderFacturXml } from "../src/b2b/accounting/domain/services/facturx-xml.js";
-import { simulateInvoiceDossier } from "../src/b2b/accounting/domain/services/invoice-dossier.js";
-import { invoiceFromDossier } from "../src/b2b/accounting/domain/services/invoice-from-dossier.js";
-import { renderInvoicePdf } from "../src/b2b/accounting/domain/services/invoice-pdf.js";
+import { issueInput } from "../src/lafoliecoffee/accounting/domain/entities/__tests__/invoice-fixtures.js";
+import { MonthlyInvoicingReader } from "../src/lafoliecoffee/accounting/domain/ports/monthly-invoicing.reader.js";
+import { TEST_FONTS } from "../src/lafoliecoffee/accounting/domain/services/__tests__/invoice-fonts-fixture.js";
+import { drawnUnicodeText } from "../src/lafoliecoffee/accounting/domain/services/__tests__/pdf-objects.js";
+import { renderFacturXml } from "../src/lafoliecoffee/accounting/domain/services/facturx-xml.js";
+import { simulateInvoiceDossier } from "../src/lafoliecoffee/accounting/domain/services/invoice-dossier.js";
+import { invoiceFromDossier } from "../src/lafoliecoffee/accounting/domain/services/invoice-from-dossier.js";
+import { renderInvoicePdf } from "../src/lafoliecoffee/accounting/domain/services/invoice-pdf.js";
 import type { E2eContext } from "./e2e-harness.js";
 import type { OrderLineSeed } from "./order-factory.js";
 import {

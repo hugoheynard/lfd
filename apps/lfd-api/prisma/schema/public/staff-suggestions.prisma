@@ -1,6 +1,6 @@
 /// **Les suggestions décidées par le staff** — « quand le client fait ceci,
 /// montre-lui cela » (`documentation/recommandation-produit/plan-suggestions-du-staff.md`,
-/// RS1, 2026-10-18). L'agrégat `StaffSuggestionRule` de `b2b/recommendations`
+/// RS1, 2026-10-18). L'agrégat `StaffSuggestionRule` de `lafoliecoffee/recommendations`
 /// en est le seul écrivain.
 ///
 /// Dans `public` et non dans `growth` : une règle est une DÉCISION du commerce

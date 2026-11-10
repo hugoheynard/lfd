@@ -199,7 +199,7 @@ sequenceDiagram
 ```
 
 - Geste : `ReviseOrderCommand` / `ReviseOrderHandler`
-  (`b2b/orders/application/commands/`) ; devis : `QuoteOrderRevisionQuery`.
+  (`lafoliecoffee/orders/application/commands/`) ; devis : `QuoteOrderRevisionQuery`.
   Routes `POST /orders/:id/revisions` (+ `/quote`) côté client, sous le mur
   de `GET /orders/:id` (`RevisionWall`), et `POST /admin/orders/:id/revisions`
   (+ `/quote`) côté équipe, droit `b2b_place_order:write`.
@@ -288,7 +288,7 @@ Le §7 du plan A2 l'a emporté sur ses §§1 à 5, et c'est lui que le code tien
 
 ### 2.5 La demande après l'heure limite (M4)
 
-- Type `order_change` de `CustomerRequest` (`b2b/contact/`), colonnes
+- Type `order_change` de `CustomerRequest` (`lafoliecoffee/contact/`), colonnes
   `change_base_revision`, `change_content`, `change_applied_revision`,
   `change_refusal`, et un index unique partiel : une demande en attente par
   commande. Seul `past_cutoff` admet la demande ; une commande carte ne
@@ -299,7 +299,7 @@ Le §7 du plan A2 l'a emporté sur ses §§1 à 5, et c'est lui que le code tien
   d'écrit, aucun montant rangé dans la demande).
 - Répondre : `/admin/customer-requests/:id/order-change/{quote,apply,refuse}`.
   « Appliquer » est `ApplyOrderChangeCommand` → `BusOrderChangeApplier`
-  (`b2b/contact/infrastructure/bus-order-change.applier.ts`) →
+  (`lafoliecoffee/contact/infrastructure/bus-order-change.applier.ts`) →
   `ReviseOrderCommand` au nom de l'équipe, dans une seule transaction avec la
   réponse. Le total vu transmis est **celui du devis de l'équipe**
   (`expectedTotalCents` du corps de `apply`), jamais recalculé par
@@ -313,7 +313,7 @@ Le §7 du plan A2 l'a emporté sur ses §§1 à 5, et c'est lui que le code tien
 La facture lit les lignes de la commande au mois de sa livraison, donc la
 dernière révision. L'encaissement au compte est recalculé dans la même
 transaction : port `AccountOrderRevaluation` →
-`b2b/accounting/application/services/account-order-revaluing.ts` →
+`lafoliecoffee/accounting/application/services/account-order-revaluing.ts` →
 `OrderCollection.revalue()`, seulement si l'encaissement n'est pas engagé
 (sinon la frontière commune refuse). Le prélèvement suit la facture.
 
@@ -324,7 +324,7 @@ chemins. La **hausse** passe par un projet que le client paie (§2.7.1 à
 §2.7.11). La **baisse** et le **total égal** passent par le chemin de M1,
 `ReviseOrderCommand`, qui écrit la révision et demande le remboursement dans
 la même transaction (§2.7.12) ; une hausse y est refusée
-(`CardOrderNotRevisableError`, avec sa raison). Fichiers sous `b2b/orders/`
+(`CardOrderNotRevisableError`, avec sa raison). Fichiers sous `lafoliecoffee/orders/`
 sauf mention.
 
 #### 2.7.1 Le projet — `order_revision_proposal`
@@ -652,17 +652,17 @@ demanderait de chiffrer la demande avant de la recevoir — reprise avec S3.
 - **Bon de commande** : la clé d'archive `r<n>` suit `orders.revision`
   (`domain/services/order-sheet.ts`) ; le bon révisé se produit à la demande.
 - **BL** : le BL prévu suit la révision (`DeliveryNoteFollowing.followRevision`,
-  `b2b/delivery-notes/application/services/delivery-note-follower.ts`).
+  `lafoliecoffee/delivery-notes/application/services/delivery-note-follower.ts`).
 - **Journal** : `order.revised` (auteur, révision, changements, totaux),
   `order.change_requested` / `order.change_applied` / `order.change_refused`,
   `production.order_quantities_raised`, `packing_sheet.revised`, avec leurs
   libellés au back-office.
 - **E-mail au client** : `SendOrderRevisedMail`
-  (`apps/lfd-api/src/b2b/orders/revision/application/handlers/send-order-revised-mail.handler.ts`), un
+  (`apps/lfd-api/src/lafoliecoffee/orders/revision/application/handlers/send-order-revised-mail.handler.ts`), un
   `@DurableHandler` sur `order.revised`, écrit `customer.order-revised` au
   titulaire (`placedByUserId`) : la feuille projetée de la révision courante,
   le bon joint par référence, les deux totaux du fait, et la phrase sur
-  l'argent (`revisionMoneyNoteOf`, `apps/lfd-api/src/b2b/orders/revision/domain/services/revision-money-note.ts` :
+  l'argent (`revisionMoneyNoteOf`, `apps/lfd-api/src/lafoliecoffee/orders/revision/domain/services/revision-money-note.ts` :
   au compte ou à total nul → facture ; carte en hausse → réglée ; carte en
   baisse → remboursée ; total égal → rien). Les totaux s'écrivent selon la
   clientèle (`variant` de la feuille) et le règlement

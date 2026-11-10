@@ -13,7 +13,7 @@ import type {
 /**
  * **Un prestataire de carte, pour UN compte** (plan M2, §3.2, §4.2) — l'union
  * de `PaymentGateway` et de `PaymentRefunder` d'aujourd'hui
- * (`b2b/payments/domain/`), que le lot c2 retirera.
+ * (`lafoliecoffee/payments/domain/`), que le lot c2 retirera.
  *
  * Une seule interface parce qu'un adaptateur par TYPE de prestataire sert
  * l'encaissement ET le remboursement d'un même compte, avec les mêmes

@@ -11,7 +11,7 @@ export interface DepartureCandidate {
 /**
  * **Les points de retrait candidats au départ des tournées** — ce que la
  * livraison DÉCLARE et que le commerce implémente
- * (`b2b/pickup-addresses/infrastructure/`), relié dans `appBootstrap`.
+ * (`lafoliecoffee/pickup-addresses/infrastructure/`), relié dans `appBootstrap`.
  *
  * La livraison ne lit pas `pickup_addresses` : l'adresse du labo n'a qu'une
  * source, et la recopier ferait deux vérités qui divergeraient au premier

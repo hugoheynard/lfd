@@ -19,8 +19,8 @@
  * moment — un renommage après coup ne réécrit pas la ligne.
  */
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
-import { IdentityWithoutLoginMethods } from "../src/b2b/account/domain/ports/__tests__/login-method-doubles.js";
-import { CustomerIdentityPort } from "../src/b2b/account/domain/ports/customer-identity.port.js";
+import { IdentityWithoutLoginMethods } from "../src/lafoliecoffee/account/domain/ports/__tests__/login-method-doubles.js";
+import { CustomerIdentityPort } from "../src/lafoliecoffee/account/domain/ports/customer-identity.port.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole, UserStatus } from "../src/platform/database/client/client.js";
 import type { ProvisionedIdentity } from "../src/platform/shared/identity/provisioned-identity.js";

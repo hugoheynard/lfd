@@ -73,7 +73,7 @@ flowchart TD
 
 Le parcours est le même pour tous ; ce qui change, c'est **comment le client
 règle**. Le régime est figé à la passation (`settlementRegimeOf`,
-`b2b/orders/domain/services/settlement-regime.ts`) : `account`
+`lafoliecoffee/orders/domain/services/settlement-regime.ts`) : `account`
 (`not_required`, total > 0), `free` (`not_required`, total nul), `due`
 (`pending` ou `failed`), `paid` (`paid`, `refunded`).
 
@@ -93,12 +93,12 @@ clientèles.
 
 Le staff et le client passent par **le même service applicatif**,
 `OrderCancellation.cancel(orderId, intent)`
-(`b2b/orders/cancellation/application/services/order-cancellation.service.ts`). Le handler
+(`lafoliecoffee/orders/cancellation/application/services/order-cancellation.service.ts`). Le handler
 staff (`CancelOrderHandler`) l'appelle directement ; les deux handlers client
 (`CancelOrderByCustomerHandler`, `CancelGuestOrderHandler`) passent par
 `CustomerOrderCancellation`, qui ajoute les refus du client puis l'appelle.
 Aucun handler n'en appelle un autre par le bus. L'intention porte l'**acteur**
-(`CancellationActor`, `b2b/orders/cancellation/domain/services/cancellation-actor.ts`) :
+(`CancellationActor`, `lafoliecoffee/orders/cancellation/domain/services/cancellation-actor.ts`) :
 
 | Acteur     | `orders.cancelled_by_kind` | Colonne d'auteur                                 |
 | ---------- | -------------------------- | ------------------------------------------------ |
@@ -106,7 +106,7 @@ Aucun handler n'en appelle un autre par le bus. L'intention porte l'**acteur**
 | `customer` | `customer`                 | `cancelled_by_user_id`                           |
 | `guest`    | `guest`                    | `cancelled_by_user_id` (la fiche invité)         |
 
-La règle (`cancellationOf`, `b2b/orders/cancellation/domain/services/order-cancellation.ts`)
+La règle (`cancellationOf`, `lafoliecoffee/orders/cancellation/domain/services/order-cancellation.ts`)
 est la même pour tous : un client a **moins** de droits, jamais plus — il
 ajoute ses refus devant elle (voir la doc client).
 
@@ -329,7 +329,7 @@ Aucune transition comptable n'accepte cet état. « Régler autrement » prend
 
 `AccountOrderEngagement` (écriture : `engagementOf`, `closeForCancellation`)
 et `AccountOrderEngagementReader` (lecture, pour l'aperçu), déclarés par
-`b2b/orders`, implémentés par la comptabilité (`AccountOrderEngaging`, relié
+`lafoliecoffee/orders`, implémentés par la comptabilité (`AccountOrderEngaging`, relié
 par `appBootstrap/account-order-engagement.module.ts`), exécutés dans l'unité
 de travail de l'annulation. Pour `account`, un engagement illisible refuse
 (`engagement_unknown`), jamais « annulable ».
@@ -402,7 +402,7 @@ Stripe) → annulée **sans** demande. 🔴 Ce qui protège l'argent est l'appel
 
 ### C4.5 La demande : `order_refund_request`
 
-Table de `b2b/orders` (migration `20261012950000_la_demande_de_remboursement`),
+Table de `lafoliecoffee/orders` (migration `20261012950000_la_demande_de_remboursement`),
 **une demande par commande** (`order_id` PK). Cause `OrderRefundCause` :
 `cancellation`, `paid_after_cancellation`, `refund_reversed`. Elle garde ce
 qui a été **promis** (`announced_cents`) et **tenté** (`generation`, `round`,

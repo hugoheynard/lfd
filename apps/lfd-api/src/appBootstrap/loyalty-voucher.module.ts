@@ -1,16 +1,16 @@
 import { Global, Module } from "@nestjs/common";
 
-import { LoyaltyEarningPreviewing } from "../b2b/loyalty/application/services/loyalty-earning-previewing.js";
-import { LoyaltyVoucherQuoting } from "../b2b/loyalty/application/services/loyalty-voucher-quoting.js";
-import { LoyaltyVoucherRestitutionPreviewing } from "../b2b/loyalty/application/services/loyalty-voucher-restitution-previewing.js";
-import { LoyaltyVoucherRedeeming } from "../b2b/loyalty/application/services/loyalty-voucher-redeeming.js";
-import { WelcomeBonusPreviewing } from "../b2b/loyalty/application/services/welcome-bonus-previewing.js";
-import { LoyaltyModule } from "../b2b/loyalty/loyalty.module.js";
-import { LoyaltyEarningPreview } from "../b2b/orders/domain/ports/loyalty-earning-preview.js";
-import { LoyaltyVoucherQuoteReader } from "../b2b/orders/domain/ports/loyalty-voucher-quote.reader.js";
-import { LoyaltyVoucherRedemption } from "../b2b/orders/domain/ports/loyalty-voucher-redemption.js";
-import { VoucherRestitutionPreview } from "../b2b/orders/domain/ports/voucher-restitution-preview.js";
-import { WelcomeBonusPreview } from "../b2b/orders/domain/ports/welcome-bonus-preview.js";
+import { LoyaltyEarningPreviewing } from "../lafoliecoffee/loyalty/application/services/loyalty-earning-previewing.js";
+import { LoyaltyVoucherQuoting } from "../lafoliecoffee/loyalty/application/services/loyalty-voucher-quoting.js";
+import { LoyaltyVoucherRestitutionPreviewing } from "../lafoliecoffee/loyalty/application/services/loyalty-voucher-restitution-previewing.js";
+import { LoyaltyVoucherRedeeming } from "../lafoliecoffee/loyalty/application/services/loyalty-voucher-redeeming.js";
+import { WelcomeBonusPreviewing } from "../lafoliecoffee/loyalty/application/services/welcome-bonus-previewing.js";
+import { LoyaltyModule } from "../lafoliecoffee/loyalty/loyalty.module.js";
+import { LoyaltyEarningPreview } from "../lafoliecoffee/orders/domain/ports/loyalty-earning-preview.js";
+import { LoyaltyVoucherQuoteReader } from "../lafoliecoffee/orders/domain/ports/loyalty-voucher-quote.reader.js";
+import { LoyaltyVoucherRedemption } from "../lafoliecoffee/orders/domain/ports/loyalty-voucher-redemption.js";
+import { VoucherRestitutionPreview } from "../lafoliecoffee/orders/domain/ports/voucher-restitution-preview.js";
+import { WelcomeBonusPreview } from "../lafoliecoffee/orders/domain/ports/welcome-bonus-preview.js";
 
 /**
  * Le fil qui relie **la commande au bon de fidélité** (plan

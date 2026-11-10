@@ -14,8 +14,8 @@
 import { Buffer } from "node:buffer";
 import { setTimeout as sleep } from "node:timers/promises";
 
-import { BANK_ACCOUNT_CHANGED } from "../src/b2b/account/domain/events/site-gesture.fact.js";
-import { NotifyPrincipalOnBankAccountChanged } from "../src/b2b/sub-account-notices/application/handlers/notify-principal-on-bank-account-changed.handler.js";
+import { BANK_ACCOUNT_CHANGED } from "../src/lafoliecoffee/account/domain/events/site-gesture.fact.js";
+import { NotifyPrincipalOnBankAccountChanged } from "../src/lafoliecoffee/sub-account-notices/application/handlers/notify-principal-on-bank-account-changed.handler.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";

@@ -142,7 +142,7 @@ lot est-il vivant ? », `rejected_by_bank` se lit **comme `cancelled`**. Il ne
 diffère qu'à l'affichage et dans la trace. Les lecteurs qui écrivent
 aujourd'hui `status: { not: "cancelled" }` (vérifié le 2026-10-23) :
 
-| Lecteur (`b2b/accounting/infrastructure/`)                                                                                                              | Ce qu'il décide                                   | Avec un lot rejeté                                                                                  |
+| Lecteur (`lafoliecoffee/accounting/infrastructure/`)                                                                                                    | Ce qu'il décide                                   | Avec un lot rejeté                                                                                  |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | `prisma-batched-mandates.reader.ts:18`                                                                                                                  | mandat déjà présenté → séquence `RCUR`            | **exclu** : jamais présenté, le lot suivant repart en `FRST` [Q1]                                   |
 | `prisma-collection-candidates.reader.ts:172`                                                                                                            | `previousClosure` (chaînage des cycles)           | exclu, comme un lot annulé                                                                          |

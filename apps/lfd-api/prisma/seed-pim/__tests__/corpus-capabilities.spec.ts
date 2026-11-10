@@ -1,4 +1,4 @@
-import { ensureSaleQuantity } from "../../../src/b2b/orders/domain/services/sale-quantity-rules.js";
+import { ensureSaleQuantity } from "../../../src/lafoliecoffee/orders/domain/services/sale-quantity-rules.js";
 import { DELIVERY_DAY, WEIGHED_SKUS } from "../../../src/dev/seeding/delivery-day.seed.js";
 import { saleTerms } from "../../../src/pim/catalogue/product/domain/value-objects/sale-terms.js";
 import { minQuantities } from "../../../src/pim/catalogue/product/domain/value-objects/min-quantities.js";

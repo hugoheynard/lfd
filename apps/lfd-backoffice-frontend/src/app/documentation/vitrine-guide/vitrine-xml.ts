@@ -1,6 +1,6 @@
 /**
  * **Le XML de la vitrine, pour l'exemple du guide** — le serveur le sert
- * depuis le 2026-10-18 (`apps/lfd-api/src/b2b/vitrine/http/xml/`).
+ * depuis le 2026-10-18 (`apps/lfd-api/src/lafoliecoffee/vitrine/http/xml/`).
  *
  * Écrit pour que l'exemple XML du guide de l'agence soit DÉRIVÉ de l'exemple
  * JSON plutôt que recopié à la main. Les règles sont celles que Hugo a fixées

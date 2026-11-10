@@ -28,7 +28,7 @@ flowchart LR
 
 ## 2. Le serveur
 
-`GET /admin/orders` (`b2b/orders/http/admin-orders.controller.ts`, garde
+`GET /admin/orders` (`lafoliecoffee/orders/http/admin-orders.controller.ts`, garde
 `b2b_orders:read`) rend **toujours** `{ rows, nextCursor }` (`AdminOrdersPage`,
 module `admin-order-list` de `@lfd/contracts`). Les appelants — les écrans et
 l'outil agent `account_orders` — lisent `.rows`.

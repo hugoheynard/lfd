@@ -1,7 +1,7 @@
-import { OrderRowsLock } from "../src/b2b/accounting/domain/ports/order-rows-lock.js";
-import { invoicingMomentOf } from "../src/b2b/accounting/domain/services/invoicing-closures.js";
-import { StatementMonth } from "../src/b2b/accounting/domain/value-objects/statement-month.js";
-import { PrismaOrderRowsLock } from "../src/b2b/accounting/infrastructure/prisma-order-rows-lock.js";
+import { OrderRowsLock } from "../src/lafoliecoffee/accounting/domain/ports/order-rows-lock.js";
+import { invoicingMomentOf } from "../src/lafoliecoffee/accounting/domain/services/invoicing-closures.js";
+import { StatementMonth } from "../src/lafoliecoffee/accounting/domain/value-objects/statement-month.js";
+import { PrismaOrderRowsLock } from "../src/lafoliecoffee/accounting/infrastructure/prisma-order-rows-lock.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { PrismaService } from "../src/platform/database/prisma.service.js";
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";

@@ -177,18 +177,18 @@ Le canal publie **dix classes abstraites et deux faits durables** (relevés dans
 déclarées **par la livraison**, implémentées **par le commerce**, et reliées
 dans `appBootstrap/delivery-feed.module.ts` :
 
-| Port                            | Méthodes                                                                       | Implémenté par                                                 | Pour quoi                                                                                           |
-| ------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `DeliveryOrdersReader`          | `expectedOn(day)`, `byIds(ids)`, `departureSheetsOf(ids)`, `stopPointsOf(ids)` | `b2b/orders/…/prisma-delivery-orders.reader.ts`                | les commandes à livrer un jour, leurs faits, leur fiche de départ, leur point GPS                   |
-| `DeliveryOrderLinesReader`      | `linesOf(orderId)`                                                             | `b2b/orders/…/prisma-delivery-order-lines.reader.ts`           | les lignes d'une commande, pour proposer le colisage et estimer sa demande en bacs (CA4)            |
-| `DeliveryProductsReader`        | `sold()`                                                                       | `b2b/catalog/…/catalog-delivery-products.reader.ts`            | les produits vendus et leur **froid**, pour les contenances                                         |
-| `DepartureCandidatesReader`     | `list()`                                                                       | `b2b/pickup-addresses/…/pickup-departure-candidates.reader.ts` | les points de retrait qui peuvent servir de départ                                                  |
-| `DeliveryProceduresReader`      | `proceduresOf(orderIds)`                                                       | `b2b/orders/…/prisma-delivery-procedures.reader.ts`            | la procédure de l'adresse d'une commande, lue vivante pour le livreur                               |
-| `DeliveryStepPhotosReader`      | `photoOf(orderId, stepId)`                                                     | `b2b/orders/…/prisma-delivery-step-photos.reader.ts`           | la photo d'une étape de cette procédure                                                             |
-| `DeliveryOrderStatesReader`     | `statesOf(orderIds)`                                                           | `b2b/orders/…/prisma-delivery-order-states.reader.ts`          | où en est la commande d'un arrêt, vue de la porte                                                   |
-| `CommerceDayVersionReader`      | `versionOf(day)`                                                               | `b2b/orders/…/prisma-commerce-day-version.reader.ts`           | la version de journée du commerce, pour « Ma tournée » (§ 5)                                        |
-| `DeliveryAddressPointsReader`   | `addressesOfOrders(orderIds)`                                                  | `b2b/orders/…/prisma-delivery-address-points.reader.ts`        | l'adresse du carnet derrière une commande livrée, et ses deux points (suggestions de correction)    |
-| `DeliveryAddressPointCorrector` | `correct(correction)`                                                          | `b2b/account/…/commerce-delivery-address-point-corrector.ts`   | « corrige ce point du carnet » : le carnet décide et écrit, dans l'unité de travail de la livraison |
+| Port                            | Méthodes                                                                       | Implémenté par                                                           | Pour quoi                                                                                           |
+| ------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| `DeliveryOrdersReader`          | `expectedOn(day)`, `byIds(ids)`, `departureSheetsOf(ids)`, `stopPointsOf(ids)` | `lafoliecoffee/orders/…/prisma-delivery-orders.reader.ts`                | les commandes à livrer un jour, leurs faits, leur fiche de départ, leur point GPS                   |
+| `DeliveryOrderLinesReader`      | `linesOf(orderId)`                                                             | `lafoliecoffee/orders/…/prisma-delivery-order-lines.reader.ts`           | les lignes d'une commande, pour proposer le colisage et estimer sa demande en bacs (CA4)            |
+| `DeliveryProductsReader`        | `sold()`                                                                       | `lafoliecoffee/catalog/…/catalog-delivery-products.reader.ts`            | les produits vendus et leur **froid**, pour les contenances                                         |
+| `DepartureCandidatesReader`     | `list()`                                                                       | `lafoliecoffee/pickup-addresses/…/pickup-departure-candidates.reader.ts` | les points de retrait qui peuvent servir de départ                                                  |
+| `DeliveryProceduresReader`      | `proceduresOf(orderIds)`                                                       | `lafoliecoffee/orders/…/prisma-delivery-procedures.reader.ts`            | la procédure de l'adresse d'une commande, lue vivante pour le livreur                               |
+| `DeliveryStepPhotosReader`      | `photoOf(orderId, stepId)`                                                     | `lafoliecoffee/orders/…/prisma-delivery-step-photos.reader.ts`           | la photo d'une étape de cette procédure                                                             |
+| `DeliveryOrderStatesReader`     | `statesOf(orderIds)`                                                           | `lafoliecoffee/orders/…/prisma-delivery-order-states.reader.ts`          | où en est la commande d'un arrêt, vue de la porte                                                   |
+| `CommerceDayVersionReader`      | `versionOf(day)`                                                               | `lafoliecoffee/orders/…/prisma-commerce-day-version.reader.ts`           | la version de journée du commerce, pour « Ma tournée » (§ 5)                                        |
+| `DeliveryAddressPointsReader`   | `addressesOfOrders(orderIds)`                                                  | `lafoliecoffee/orders/…/prisma-delivery-address-points.reader.ts`        | l'adresse du carnet derrière une commande livrée, et ses deux points (suggestions de correction)    |
+| `DeliveryAddressPointCorrector` | `correct(correction)`                                                          | `lafoliecoffee/account/…/commerce-delivery-address-point-corrector.ts`   | « corrige ce point du carnet » : le carnet décide et écrit, dans l'unité de travail de la livraison |
 
 La onzième, qui allait **dans l'autre sens** (`DeliveryOrderPlacedListener`,
 appelée par un abonné en mémoire du commerce), est retirée le 2026-10-07 : la
@@ -333,7 +333,7 @@ jamais `delivery.day_change`.
 **« Ma tournée » a besoin des deux** (2026-10-01, PL4) : sa route de version
 additionne le numéro de la livraison et celui du commerce, lu par le port
 `CommerceDayVersionReader` (déclaré dans `delivery/channels/commerce/`,
-implémenté par `b2b/orders/` depuis `public.day_change`).
+implémenté par `lafoliecoffee/orders/` depuis `public.day_change`).
 
 **Un écran qui a besoin des deux les suit toutes les deux.** Le poste de
 colisage suit `production` et `delivery` depuis le 2026-10-02, quand le poste

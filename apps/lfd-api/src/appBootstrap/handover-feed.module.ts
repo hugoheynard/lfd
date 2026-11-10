@@ -1,12 +1,12 @@
 import { Global, Module } from "@nestjs/common";
 
-import { OrdersModule } from "../b2b/orders/orders.module.js";
-import { SiteRunSheetColorsReader } from "../b2b/sites/infrastructure/site-run-sheet-colors.reader.js";
-import { SitesModule } from "../b2b/sites/sites.module.js";
-import { PrismaDeliveryRunSheetReader } from "../b2b/orders/infrastructure/prisma-delivery-run-sheet.reader.js";
-import { PrismaHandoverQueueReader } from "../b2b/orders/infrastructure/prisma-handover-queue.reader.js";
-import { PrismaHandoverOrderLock } from "../b2b/orders/infrastructure/prisma-handover-order.lock.js";
-import { PrismaHandoverSubjectReader } from "../b2b/orders/infrastructure/prisma-handover-subject.reader.js";
+import { OrdersModule } from "../lafoliecoffee/orders/orders.module.js";
+import { SiteRunSheetColorsReader } from "../lafoliecoffee/sites/infrastructure/site-run-sheet-colors.reader.js";
+import { SitesModule } from "../lafoliecoffee/sites/sites.module.js";
+import { PrismaDeliveryRunSheetReader } from "../lafoliecoffee/orders/infrastructure/prisma-delivery-run-sheet.reader.js";
+import { PrismaHandoverQueueReader } from "../lafoliecoffee/orders/infrastructure/prisma-handover-queue.reader.js";
+import { PrismaHandoverOrderLock } from "../lafoliecoffee/orders/infrastructure/prisma-handover-order.lock.js";
+import { PrismaHandoverSubjectReader } from "../lafoliecoffee/orders/infrastructure/prisma-handover-subject.reader.js";
 import {
   DeliveryRunSheetReader,
   HandoverOrderLock,

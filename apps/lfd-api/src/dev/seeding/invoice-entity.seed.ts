@@ -2,7 +2,7 @@ import {
   CorrectLegalEntityCommand,
   SetInvoicePaymentTermsCommand,
   SetInvoicePrefixCommand,
-} from "../../b2b/accounting/application/commands/legal-entity-commands.js";
+} from "../../lafoliecoffee/accounting/application/commands/legal-entity-commands.js";
 import { InvoiceSeedPrerequisiteError } from "./invoice-seed-errors.js";
 import { asStaff, type SeedContext } from "./order-placing.seed.js";
 

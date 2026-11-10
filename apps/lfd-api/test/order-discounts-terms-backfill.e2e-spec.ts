@@ -9,8 +9,8 @@
  */
 import type { AdminPlacedOrderResponse, CreatedPickupResponse } from "@lfd/contracts";
 
-import { PrismaOrderDiscountTermsBackfill } from "../src/b2b/orders/infrastructure/prisma-order-discount-terms-backfill.js";
-import { PricingMaterialsCache } from "../src/b2b/pricing/infrastructure/pricing-materials.cache.js";
+import { PrismaOrderDiscountTermsBackfill } from "../src/lafoliecoffee/orders/infrastructure/prisma-order-discount-terms-backfill.js";
+import { PricingMaterialsCache } from "../src/lafoliecoffee/pricing/infrastructure/pricing-materials.cache.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   CompanyStatus,

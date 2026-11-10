@@ -13,12 +13,12 @@
  */
 import { type CatalogSnapshot } from "@lfd/catalog-sync";
 
-import { CanonicalPriceHistoryReader } from "../src/b2b/catalog/domain/ports/canonical-price-history.reader.js";
-import { CatalogReader } from "../src/b2b/catalog/domain/ports/catalog.reader.js";
+import { CanonicalPriceHistoryReader } from "../src/lafoliecoffee/catalog/domain/ports/canonical-price-history.reader.js";
+import { CatalogReader } from "../src/lafoliecoffee/catalog/domain/ports/catalog.reader.js";
 import { CATEGORY, snapshotOf } from "./catalog-ingest-fixtures.js";
 import { deliverAsFacts } from "./catalog-facts-delivery.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
-import { PUBLIC_VIEWER, staffViewer } from "../src/b2b/catalog/domain/catalog-viewer.js";
+import { PUBLIC_VIEWER, staffViewer } from "../src/lafoliecoffee/catalog/domain/catalog-viewer.js";
 
 let ctx: E2eContext;
 

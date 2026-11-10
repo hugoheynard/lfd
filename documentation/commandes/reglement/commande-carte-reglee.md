@@ -38,18 +38,18 @@ stateDiagram-v2
     Annulée --> [*]: invisible au client · intention Stripe annulée
 ```
 
-| Ce qui se passe                      | Où                                                                                                                                                       |
-| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Le panier n'est vidé qu'au paiement  | `client-orders.service.ts` (`CART_AWAITING_KEY`, `markPaid`)                                                                                             |
-| Expiration à 30 min                  | `UnsettledShopOrderExpiry` (`b2b/orders/application/services/`), cron `*/5` de `container/worker.ts` → `POST /admin/orders/unsettled-shop-orders/expire` |
-| Remplacement à la nouvelle passation | `replace-unsettled-shop-orders.handler.ts` (abonné à `OrderPlacedEvent`, ne refuse jamais la passation)                                                  |
-| Causes `expired` / `replaced`        | `order-payment-failed.event.ts` — **aucun courriel** pour elles                                                                                          |
-| Ni liste ni suivi au client          | `CUSTOMER_VISIBLE` (`prisma-order.reader.ts`) : `paymentStatus` ∉ { pending, failed }                                                                    |
-| Pas de jeton de retrait exposé       | `exposedHandoverToken` — vue client, bons PDF client et admin, courriels                                                                                 |
-| Bon PDF sans QR jamais archivé       | `order-sheet-archive.service.ts` : rendu à la demande tant qu'il n'y a pas de jeton                                                                      |
-| Refus au comptoir, absent de la file | `handoverBlocker` (`handover/domain/services/handover.ts`) ; `HandoverSubject.settled` par le canal `handover/channels/commerce/`                        |
-| Courriel de confirmation + bon       | au paiement, sur le fait DURABLE `order.paid` (`send-order-settled-mail.handler.ts`, lot E4a du 2026-10-10), jamais à la passation d'une carte           |
-| Chiffre d'affaires du cockpit        | `REVENUE_PAYMENT_STATUSES` (`b2b/growth/domain/revenue-scope.ts`) : `not_required`, `paid`                                                               |
+| Ce qui se passe                      | Où                                                                                                                                                                 |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Le panier n'est vidé qu'au paiement  | `client-orders.service.ts` (`CART_AWAITING_KEY`, `markPaid`)                                                                                                       |
+| Expiration à 30 min                  | `UnsettledShopOrderExpiry` (`lafoliecoffee/orders/application/services/`), cron `*/5` de `container/worker.ts` → `POST /admin/orders/unsettled-shop-orders/expire` |
+| Remplacement à la nouvelle passation | `replace-unsettled-shop-orders.handler.ts` (abonné à `OrderPlacedEvent`, ne refuse jamais la passation)                                                            |
+| Causes `expired` / `replaced`        | `order-payment-failed.event.ts` — **aucun courriel** pour elles                                                                                                    |
+| Ni liste ni suivi au client          | `CUSTOMER_VISIBLE` (`prisma-order.reader.ts`) : `paymentStatus` ∉ { pending, failed }                                                                              |
+| Pas de jeton de retrait exposé       | `exposedHandoverToken` — vue client, bons PDF client et admin, courriels                                                                                           |
+| Bon PDF sans QR jamais archivé       | `order-sheet-archive.service.ts` : rendu à la demande tant qu'il n'y a pas de jeton                                                                                |
+| Refus au comptoir, absent de la file | `handoverBlocker` (`handover/domain/services/handover.ts`) ; `HandoverSubject.settled` par le canal `handover/channels/commerce/`                                  |
+| Courriel de confirmation + bon       | au paiement, sur le fait DURABLE `order.paid` (`send-order-settled-mail.handler.ts`, lot E4a du 2026-10-10), jamais à la passation d'une carte                     |
+| Chiffre d'affaires du cockpit        | `REVENUE_PAYMENT_STATUSES` (`lafoliecoffee/growth/domain/revenue-scope.ts`) : `not_required`, `paid`                                                               |
 
 ## 3. Le périmètre de l'expiration et du remplacement
 

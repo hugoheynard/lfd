@@ -3,7 +3,7 @@
 // `documentation/comptabilite/prelevement/lot-de-prelevement-fige.md`.
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// Propriétaire : `src/b2b/accounting/`. Le fichier `pain.008` y est STOCKÉ,
+// Propriétaire : `src/lafoliecoffee/accounting/`. Le fichier `pain.008` y est STOCKÉ,
 // rendu une fois à la constitution, et relu (empreinte vérifiée) à chaque
 // téléchargement.
 //

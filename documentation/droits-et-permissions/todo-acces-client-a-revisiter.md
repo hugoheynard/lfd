@@ -49,7 +49,7 @@ ensemble évite de refaire le modèle deux fois.
 
 - `AttachAccountHolderHandler` ne rattache un détenteur qu'à une société qui
   n'en a pas (`company.attachHolder` refuse sinon) ;
-- `CompanyAlreadyHasOwnerError` (`b2b/account/domain/errors/account-errors.ts`)
+- `CompanyAlreadyHasOwnerError` (`lafoliecoffee/account/domain/errors/account-errors.ts`)
   l'écrit en toutes lettres : « Transférer la détention est un autre geste, qui
   n'existe pas encore » ;
 - le correctif B2 du même jour rend la rétrogradation d'un rattachement `owner`

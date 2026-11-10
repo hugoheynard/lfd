@@ -10,8 +10,8 @@
  */
 import type { CompanyAddressesView, DeliveryAddressPayload } from "@lfd/contracts";
 
-import { DeliveryAddressBookStaleError } from "../src/b2b/account/domain/errors/account-errors.js";
-import { CompanyAddressRepository } from "../src/b2b/account/domain/ports/company-address.repository.js";
+import { DeliveryAddressBookStaleError } from "../src/lafoliecoffee/account/domain/errors/account-errors.js";
+import { CompanyAddressRepository } from "../src/lafoliecoffee/account/domain/ports/company-address.repository.js";
 import { AddressKind, CustomerRole } from "../src/platform/database/client/client.js";
 import { IdGenerator } from "../src/platform/id/id-generator.js";
 import {

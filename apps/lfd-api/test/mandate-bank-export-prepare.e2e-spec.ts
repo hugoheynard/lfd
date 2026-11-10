@@ -6,7 +6,7 @@
  * commune vit dans `mandate-bank-export-scene.ts`.
  */
 import type { MandateBankExportsView } from "@lfd/contracts";
-import { signatureDateCell } from "../src/b2b/accounting/domain/services/mandate-bank-export-values.js";
+import { signatureDateCell } from "../src/lafoliecoffee/accounting/domain/services/mandate-bank-export-values.js";
 import { jsonBody } from "./e2e-harness.js";
 import {
   ctx,

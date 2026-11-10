@@ -12,9 +12,9 @@
 import type { AdminPlacedOrderResponse } from "@lfd/contracts";
 import { CommandBus } from "@nestjs/cqrs";
 
-import { MarkOrderFulfilledCommand } from "../src/b2b/orders/application/commands/mark-order-fulfilled.command.js";
-import { MarkOrderReadyCommand } from "../src/b2b/orders/application/commands/mark-order-ready.command.js";
-import type { DeliveryNoteReconciliationReport } from "../src/b2b/delivery-notes/application/commands/reconcile-delivery-notes.command.js";
+import { MarkOrderFulfilledCommand } from "../src/lafoliecoffee/orders/application/commands/mark-order-fulfilled.command.js";
+import { MarkOrderReadyCommand } from "../src/lafoliecoffee/orders/application/commands/mark-order-ready.command.js";
+import type { DeliveryNoteReconciliationReport } from "../src/lafoliecoffee/delivery-notes/application/commands/reconcile-delivery-notes.command.js";
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {

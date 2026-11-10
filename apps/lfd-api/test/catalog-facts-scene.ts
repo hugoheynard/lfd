@@ -1,6 +1,6 @@
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { OutboxRelay } from "../src/platform/outbox/outbox-relay.js";
-import { OnCatalogProductChangedHandler } from "../src/b2b/catalog/application/handlers/on-catalog-product-changed.handler.js";
+import { OnCatalogProductChangedHandler } from "../src/lafoliecoffee/catalog/application/handlers/on-catalog-product-changed.handler.js";
 import type { E2eContext } from "./e2e-harness.js";
 import { jsonBody } from "./e2e-harness.js";
 

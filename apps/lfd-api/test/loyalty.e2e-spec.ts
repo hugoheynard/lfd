@@ -20,14 +20,14 @@ import type {
 } from "@lfd/contracts";
 import { CommandBus } from "@nestjs/cqrs";
 
-import { ConvertLoyaltyPointsCommand } from "../src/b2b/loyalty/application/commands/convert-loyalty-points.command.js";
-import { LoyaltyVoucher } from "../src/b2b/loyalty/domain/entities/loyalty-voucher.js";
+import { ConvertLoyaltyPointsCommand } from "../src/lafoliecoffee/loyalty/application/commands/convert-loyalty-points.command.js";
+import { LoyaltyVoucher } from "../src/lafoliecoffee/loyalty/domain/entities/loyalty-voucher.js";
 import {
   InsufficientLoyaltyPointsError,
   LoyaltyProgramClosedError,
-} from "../src/b2b/loyalty/domain/errors/loyalty-errors.js";
-import { LoyaltyVoucherRepository } from "../src/b2b/loyalty/domain/ports/loyalty-voucher.repository.js";
-import { LoyaltyReason } from "../src/b2b/loyalty/domain/value-objects/loyalty-reason.js";
+} from "../src/lafoliecoffee/loyalty/domain/errors/loyalty-errors.js";
+import { LoyaltyVoucherRepository } from "../src/lafoliecoffee/loyalty/domain/ports/loyalty-voucher.repository.js";
+import { LoyaltyReason } from "../src/lafoliecoffee/loyalty/domain/value-objects/loyalty-reason.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   DuplicateResourceError,

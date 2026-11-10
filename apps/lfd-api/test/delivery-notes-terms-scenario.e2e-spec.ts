@@ -9,7 +9,7 @@
  */
 import type { DevScenarioResetReport } from "@lfd/contracts";
 
-import type { DeliveryNoteReconciliationReport } from "../src/b2b/delivery-notes/application/commands/reconcile-delivery-notes.command.js";
+import type { DeliveryNoteReconciliationReport } from "../src/lafoliecoffee/delivery-notes/application/commands/reconcile-delivery-notes.command.js";
 import { bootstrapE2e, jsonBody, watchSeed, type E2eContext } from "./e2e-harness.js";
 import { ADMIN_VERIFIER_OVERRIDE, admin } from "./delivery-rounds-scene.js";
 import { seedDriverRole } from "./delivery-driver-scene.js";

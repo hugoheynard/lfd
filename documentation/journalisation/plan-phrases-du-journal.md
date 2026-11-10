@@ -253,7 +253,7 @@ désormais `pickupAddress: namedOrBare("pickup_address").nullable()` — le nom 
 site figé à l'écriture, l'id seul pour un point inconnu —, l'ancienne forme
 restant lisible en version antérieure : la figure des heures limites (lot B).
 Côté API, les comptes déclarent le port `PickupPointNames`
-(`b2b/account/domain/ports/pickup-point-names.ts`), que les points de retrait
+(`lafoliecoffee/account/domain/ports/pickup-point-names.ts`), que les points de retrait
 implémentent par les sites (`SitePickupPointNames`, archivés compris) ; tout
 reste dans le bloc `b2b`, sans passer par `appBootstrap`. Le back-office dit
 « en retrait à « Nom du site » », et « en retrait » sans lieu sur les lignes

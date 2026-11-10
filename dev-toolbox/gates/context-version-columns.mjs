@@ -47,7 +47,7 @@ import { join } from "node:path";
 import { PRISMA_SCHEMA_DIR, prismaSchemaSource } from "./lib/prisma-schema.mjs";
 
 const ROOT = process.cwd();
-const CATALOG_DIR = "apps/lfd-api/src/b2b/catalog/infrastructure";
+const CATALOG_DIR = "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure";
 export const CONSTANT_PATH = `${CATALOG_DIR}/catalogue-snapshot-columns.ts`;
 export const REGISTRY_PATH = `${CATALOG_DIR}/catalogue-snapshot-registry.json`;
 const MIGRATIONS_DIR = "apps/lfd-api/prisma/migrations";

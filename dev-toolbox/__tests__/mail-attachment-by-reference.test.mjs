@@ -20,16 +20,19 @@ const STORED = SENDER('pdfStored: { store: "customer-documents", key }');
 const NONE = new Map();
 
 test("refuse : des octets dans une demande hors du bloc, avec fichier:ligne et la sortie", () => {
-  const { failures } = verdict([{ path: "apps/lfd-api/src/b2b/x.ts", source: BYTES }], NONE);
+  const { failures } = verdict(
+    [{ path: "apps/lfd-api/src/lafoliecoffee/x.ts", source: BYTES }],
+    NONE,
+  );
   assert.equal(failures.length, 1);
-  assert.match(failures[0], /^apps\/lfd-api\/src\/b2b\/x\.ts:4 /);
+  assert.match(failures[0], /^apps\/lfd-api\/src\/lafoliecoffee\/x\.ts:4 /);
   assert.match(failures[0], /CustomerDocumentStore\.save/);
   assert.match(failures[0], /pdfStored/);
 });
 
 test("admet : la référence au stockage", () => {
   assert.deepEqual(
-    verdict([{ path: "apps/lfd-api/src/b2b/x.ts", source: STORED }], NONE).failures,
+    verdict([{ path: "apps/lfd-api/src/lafoliecoffee/x.ts", source: STORED }], NONE).failures,
     [],
   );
 });

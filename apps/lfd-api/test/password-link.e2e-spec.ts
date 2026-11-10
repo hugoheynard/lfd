@@ -9,12 +9,12 @@
  * porte **aucun lien**, et que le fait atterrit bien en base.
  */
 import { AppConfig } from "../src/platform/config/app-config.js";
-import { CustomerIdentityPort } from "../src/b2b/account/domain/ports/customer-identity.port.js";
+import { CustomerIdentityPort } from "../src/lafoliecoffee/account/domain/ports/customer-identity.port.js";
 import type {
   IdentityToProvision,
   LoginMethod,
   ProvisionedIdentity,
-} from "../src/b2b/account/domain/ports/customer-identity.port.js";
+} from "../src/lafoliecoffee/account/domain/ports/customer-identity.port.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 

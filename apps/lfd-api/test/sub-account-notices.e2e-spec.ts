@@ -18,7 +18,7 @@ import { randomUUID } from "node:crypto";
 import { WORKSPACE_HEADER } from "@lfd/contracts";
 
 import { CustomerRole } from "../src/platform/database/client/client.js";
-import { NotifyPrincipalOnOrderPlaced } from "../src/b2b/sub-account-notices/application/handlers/notify-principal-on-order-placed.handler.js";
+import { NotifyPrincipalOnOrderPlaced } from "../src/lafoliecoffee/sub-account-notices/application/handlers/notify-principal-on-order-placed.handler.js";
 import { COMMERCE_ORDER_PLACED } from "../src/delivery/channels/commerce/commerce-order-placed.fact.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";

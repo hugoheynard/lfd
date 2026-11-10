@@ -4,7 +4,7 @@ import { percentile, type PricingSample } from "./pricing-probe.js";
 
 /**
  * Les noms des mesures de l'appel à l'objet des rayons, recopiés du producteur
- * (`b2b/catalog/application/shelf-call-guard.ts`, `SHELF_ROUND_TRIP_TIMING` et
+ * (`lafoliecoffee/catalog/application/shelf-call-guard.ts`, `SHELF_ROUND_TRIP_TIMING` et
  * `SHELF_LATE_FINISH_TIMING`), qu'`ops` n'a pas le droit d'importer (vérifié
  * le 2026-11-05).
  */

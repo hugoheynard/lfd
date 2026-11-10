@@ -10,12 +10,12 @@
 import type { CreatedPickupResponse } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { PUBLIC_PICKUPS_CACHE_CONTROL } from "../src/b2b/pickup-addresses/http/public-pickup-cache-headers.js";
+import { PUBLIC_PICKUPS_CACHE_CONTROL } from "../src/lafoliecoffee/pickup-addresses/http/public-pickup-cache-headers.js";
 import {
   PUBLIC_SETTINGS_CACHE_CONTROL,
   PUBLIC_SETTINGS_CACHE_TAG,
-} from "../src/b2b/shared/public-settings-cache/http/public-settings-cache-headers.js";
-import { SHOP_COPY_CACHE_CONTROL } from "../src/b2b/shop-copy/http/shop-copy-cache-headers.js";
+} from "../src/lafoliecoffee/shared/public-settings-cache/http/public-settings-cache-headers.js";
+import { SHOP_COPY_CACHE_CONTROL } from "../src/lafoliecoffee/shop-copy/http/shop-copy-cache-headers.js";
 import {
   ANONYMOUS_CACHE_CONTROL,
   PERSONAL_CACHE_CONTROL,

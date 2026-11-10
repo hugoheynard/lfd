@@ -26,8 +26,8 @@ import {
   type ShopQuoteView,
 } from "@lfd/contracts";
 
-import { OrderLineClassificationReader } from "../src/b2b/orders/domain/ports/order-line-classification.reader.js";
-import { PricingMaterialsCache } from "../src/b2b/pricing/infrastructure/pricing-materials.cache.js";
+import { OrderLineClassificationReader } from "../src/lafoliecoffee/orders/domain/ports/order-line-classification.reader.js";
+import { PricingMaterialsCache } from "../src/lafoliecoffee/pricing/infrastructure/pricing-materials.cache.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { IdGenerator } from "../src/platform/id/id-generator.js";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";

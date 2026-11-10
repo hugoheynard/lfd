@@ -13,8 +13,8 @@
 import type { MandateSectionView, PaymentMandateView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { MandateProofChangedError } from "../src/b2b/payments/domain/errors/mandate-proof-errors.js";
-import { PaymentMandateRepository } from "../src/b2b/payments/domain/payment-mandate.repository.js";
+import { MandateProofChangedError } from "../src/lafoliecoffee/payments/domain/errors/mandate-proof-errors.js";
+import { PaymentMandateRepository } from "../src/lafoliecoffee/payments/domain/payment-mandate.repository.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
 import { storageKeys } from "./storage.js";

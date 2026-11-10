@@ -48,9 +48,9 @@ export const ADMITTED = {
 /**
  * Les envoyeurs qui injectent encore le mailer (relevés le 2026-11-06, lot S1).
  * En retirer un = l'avoir fait passer par la porte `Mail` (lot S2). S2a a rayé
- * les 11 de `b2b/orders` (2026-11-06), S2b les 5 de `b2b/account`, S2c les
- * 3 de `b2b/contact`, S2d les 2 de `b2b/accounting`, S2e le mandat de
- * `b2b/payments`, S2f le dossier de `production`, S2g les 2 de `staff`, S2h
+ * les 11 de `lafoliecoffee/orders` (2026-11-06), S2b les 5 de `lafoliecoffee/account`, S2c les
+ * 3 de `lafoliecoffee/contact`, S2d les 2 de `lafoliecoffee/accounting`, S2e le mandat de
+ * `lafoliecoffee/payments`, S2f le dossier de `production`, S2g les 2 de `staff`, S2h
  * les 6 isolés — la sonde de déploiement comprise, entrée dans le bloc
  * (2026-11-06). Liste VIDE : tout envoyeur neuf hors du bloc échoue.
  */

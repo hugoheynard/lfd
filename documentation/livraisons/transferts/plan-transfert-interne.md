@@ -290,7 +290,7 @@ sequenceDiagram
 
 ## 7. L'échéance : figée à la clôture, marges intactes
 
-`deadlineThresholds` (`b2b/orders/domain/services/deadline-thresholds.ts`,
+`deadlineThresholds` (`lafoliecoffee/orders/domain/services/deadline-thresholds.ts`,
 l. 87–127) garde **ses deux interrupteurs** : `deliveryMinutes` et
 `pickupMinutes` ; si l'un est `null`, toute la journée passe en seuil unique
 (`UNDATED`). **`pickupMarginMinutes` reste intact** et reste un nombre servi
@@ -308,7 +308,7 @@ Ce qui s'ajoute :
   (`plan-intake-reading.ts:57`, sous le verrou de l'arrêt, et `run-auto-close-round.handler.ts:150`)
   et **avant** (fiche d'atelier, `production-worksheet-reading.service.ts:53`) —
   une table posée « à la clôture » n'existerait pas encore quand il la lit.
-  `dueAtOf` (`b2b/orders/infrastructure/prisma-day-orders.source.ts`,
+  `dueAtOf` (`lafoliecoffee/orders/infrastructure/prisma-day-orders.source.ts`,
   l. 113–119) calcule donc l'heure depuis les réglages du site (ouverture,
   mise en place, trajet), et la clôture la fige comme elle fige déjà le
   reste : dans `production_order.due_at` (`production.prisma`, l. 103),
@@ -347,7 +347,7 @@ L'échéance d'une commande, en minutes avant laquelle sortir :
 depuis les réglages du site, par la même fonction que `dueAtOf`) ; `dueMinute` le préfère à la fenêtre
 quand il est posé. **Le snapshot du colisage suit la même règle** :
 `ProducibleOrder.dueAt`, écrit par `dueAtOf`
-(`b2b/orders/infrastructure/prisma-day-orders.source.ts`, l. 113–119, qui ne
+(`lafoliecoffee/orders/infrastructure/prisma-day-orders.source.ts`, l. 113–119, qui ne
 lit aujourd'hui que la fenêtre), lit la même fonction. Lot **T0**.
 
 ## 8. Le colisage
@@ -686,7 +686,7 @@ vocabulaire « réapprovisionnement », Hugo, 2026-10-13 ; aucune donnée).
   implémenté par la livraison dans `delivery/channels/handover/`, comme
   `TransferStatusReader`.
 - **F3 — aucun geste du commerce ne change le jour ou le site d'une commande**
-  (vérifié le 2026-10-13 : aucune commande `b2b/orders/application/commands/`
+  (vérifié le 2026-10-13 : aucune commande `lafoliecoffee/orders/application/commands/`
   ne le fait). `TransferMembership` traite ce cas (`moved`) dès qu'un fait le
   déclenchera ; aujourd'hui seules la passation et l'annulation le déclenchent.
 - ~~**F4**~~ — traitée au lot T3 (2026-10-13) : refusée au comptoir. **F4 — une commande d'un site `transfer` qu'aucun transfert ne porte encore**
@@ -810,7 +810,7 @@ sequenceDiagram
 après S2 ([`../../sites/sites.md`](../../sites/sites.md) §7) :
 
 - la fonction pure `transferDeparture`
-  (`b2b/orders/domain/services/transfer-departure.ts`), et la prise en compte
+  (`lafoliecoffee/orders/domain/services/transfer-departure.ts`), et la prise en compte
   du site dans `deadlineThresholds` (marges et interrupteur des vagues
   intacts) ; `DeadlineSite` de genre `transfer` porte le départ **et**
   l'arrivée requis ;
@@ -818,7 +818,7 @@ après S2 ([`../../sites/sites.md`](../../sites/sites.md) §7) :
   (`delivery/channels/commerce/road-travel-time.reader.ts`, OSRM, `null` si
   le calcul est indisponible — aucune durée inventée) ;
 - le service applicatif `SiteDeadlines`
-  (`b2b/orders/application/services/site-deadlines.service.ts`) : pour un
+  (`lafoliecoffee/orders/application/services/site-deadlines.service.ts`) : pour un
   jour, il lit les sites des retraits (`SiteDaySettingsReader`, port du
   commerce : rôle, mise en place, ouverture pros, créneaux publics et
   fermetures du jour, GPS — archivés compris), le départ des tournées

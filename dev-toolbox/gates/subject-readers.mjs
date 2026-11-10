@@ -52,26 +52,26 @@ const IDENTITY_HOMES = ["apps/lfd-api/src/platform/auth/", "apps/lfd-api/src/pla
  */
 const ADMITTED = new Map([
   [
-    "apps/lfd-api/src/b2b/account/http/me.controller.ts",
+    "apps/lfd-api/src/lafoliecoffee/account/http/me.controller.ts",
     "changer l'adresse de connexion chez le fournisseur, qui ne connaît que le `sub`",
   ],
   [
-    "apps/lfd-api/src/b2b/account/infrastructure/customer-principal.resolver.ts",
+    "apps/lfd-api/src/lafoliecoffee/account/infrastructure/customer-principal.resolver.ts",
     "l'adaptateur du port PrincipalResolver : rapproche le `sub` prouvé du `User` " +
       "local (provisionnement, invité sans compte qui se connecte, accès en attente)",
   ],
   [
-    "apps/lfd-api/src/b2b/account/infrastructure/cached-principal.resolver.ts",
+    "apps/lfd-api/src/lafoliecoffee/account/infrastructure/cached-principal.resolver.ts",
     "le principal gardé en mémoire (L4, 2026-11-04) : le `sub` du jeton est la clé de " +
       "la mémoire, et repris dans le principal rendu ; ni écrit ni journalisé",
   ],
   [
-    "apps/lfd-api/src/b2b/account/infrastructure/unknown-subject-admission.ts",
+    "apps/lfd-api/src/lafoliecoffee/account/infrastructure/unknown-subject-admission.ts",
     "un `sub` inconnu sous une adresse connue : refus d'un second compte, ou première " +
       "entrée d'un invité rattachée à ce `sub` (2026-10-09) ; le `sub` n'est ni rendu ni journalisé",
   ],
   [
-    "apps/lfd-api/src/b2b/account/infrastructure/guest-account-claim.ts",
+    "apps/lfd-api/src/lafoliecoffee/account/infrastructure/guest-account-claim.ts",
     "première entrée d'un `sub` inconnu : son préfixe dit la connexion (code e-mail, Google), " +
       "et il est posé sur l'unique fiche invité de l'adresse (R1, 2026-10-11) ; ni rendu ni journalisé",
   ],

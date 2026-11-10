@@ -5,10 +5,10 @@
  * société ENTIÈRE chargée avant l'appel à l'API entreprises — une activation et
  * un terme posés entre-temps repartaient en `pending`, sans terme.
  */
-import { CompanyNafWriter } from "../src/b2b/account/domain/ports/company-naf.writer.js";
-import { CompanyRepository } from "../src/b2b/account/domain/ports/company.repository.js";
+import { CompanyNafWriter } from "../src/lafoliecoffee/account/domain/ports/company-naf.writer.js";
+import { CompanyRepository } from "../src/lafoliecoffee/account/domain/ports/company.repository.js";
 import { CompanyStatus } from "../src/platform/database/client/client.js";
-import { EstablishmentDirectory } from "../src/b2b/account/domain/ports/establishment-directory.js";
+import { EstablishmentDirectory } from "../src/lafoliecoffee/account/domain/ports/establishment-directory.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 import { OfflineEstablishmentDirectory, OutboundNetworkInE2eError } from "./offline-network.js";
 import { createCompany } from "./factories.js";

@@ -41,19 +41,19 @@ const SRC = "apps/lfd-api/src";
 /** Les gestes du staff qui envoient un e-mail (relevés le 2026-11-06) : commande, classe, contrôleur. */
 export const GESTURES = [
   [
-    "b2b/account/application/commands/attach-account-holder.command.ts",
+    "lafoliecoffee/account/application/commands/attach-account-holder.command.ts",
     "AttachAccountHolderCommand",
-    "b2b/account/http/admin-companies.controller.ts",
+    "lafoliecoffee/account/http/admin-companies.controller.ts",
   ],
   [
-    "b2b/account/application/commands/create-company-by-staff.command.ts",
+    "lafoliecoffee/account/application/commands/create-company-by-staff.command.ts",
     "CreateCompanyByStaffCommand",
-    "b2b/account/http/admin-companies.controller.ts",
+    "lafoliecoffee/account/http/admin-companies.controller.ts",
   ],
   [
-    "b2b/account/application/commands/invite-company-member.command.ts",
+    "lafoliecoffee/account/application/commands/invite-company-member.command.ts",
     "InviteCompanyMemberCommand",
-    "b2b/account/http/admin-company-members.controller.ts",
+    "lafoliecoffee/account/http/admin-company-members.controller.ts",
   ],
   [
     "staff/directory/application/staff-user.commands.ts",
@@ -71,19 +71,19 @@ export const GESTURES = [
     "staff/directory/http/admin-staff-users.controller.ts",
   ],
   [
-    "b2b/payments/application/commands/send-mandate.command.ts",
+    "lafoliecoffee/payments/application/commands/send-mandate.command.ts",
     "SendMandateCommand",
-    "b2b/payments/http/admin-mandates.controller.ts",
+    "lafoliecoffee/payments/http/admin-mandates.controller.ts",
   ],
   [
-    "b2b/accounting/application/commands/resend-invoice-notice.command.ts",
+    "lafoliecoffee/accounting/application/commands/resend-invoice-notice.command.ts",
     "ResendInvoiceNoticeCommand",
-    "b2b/accounting/http/admin-issued-invoices.controller.ts",
+    "lafoliecoffee/accounting/http/admin-issued-invoices.controller.ts",
   ],
   [
-    "b2b/orders/application/commands/resend-order-payment-link.command.ts",
+    "lafoliecoffee/orders/application/commands/resend-order-payment-link.command.ts",
     "ResendOrderPaymentLinkCommand",
-    "b2b/orders/http/admin-order-payment-links.controller.ts",
+    "lafoliecoffee/orders/http/admin-order-payment-links.controller.ts",
   ],
   [
     "mail/copy/application/commands/send-mail-copy-trial.command.ts",
@@ -110,9 +110,9 @@ export const GESTURES = [
 export const RANDOM_ADMITTED = {
   [`${SRC}/mail/requests/application/check-mail-delivery.handler.ts`]:
     "2026-11-06 — la sonde de déploiement : chaque appel EST un essai neuf, aucun écran ne clique (la clé passe par `callKey`, suivie depuis le 2026-11-07)",
-  [`${SRC}/b2b/account/infrastructure/auth0-customer-identity.ts`]:
+  [`${SRC}/lafoliecoffee/account/infrastructure/auth0-customer-identity.ts`]:
     "2026-11-06 — « mot de passe oublié » du CLIENT, pas un geste du staff : hors du cas 4, signalé dans son rapport",
-  [`${SRC}/b2b/account/infrastructure/dev-customer-identity.ts`]:
+  [`${SRC}/lafoliecoffee/account/infrastructure/dev-customer-identity.ts`]:
     "2026-11-06 — double de dev du même « mot de passe oublié » : même forme que l'adaptateur Auth0",
 };
 

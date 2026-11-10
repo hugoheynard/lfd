@@ -6,7 +6,7 @@
 Recommander, c'est choisir **quels articles montrer** à un client, et lui dire
 pourquoi. Aucun prix ne bouge : l'article sort toujours au prix que la boutique
 résout déjà. Tout vit dans le commerce, contexte
-`apps/lfd-api/src/b2b/recommendations/` (sauf la mise en avant, qui est une
+`apps/lfd-api/src/lafoliecoffee/recommendations/` (sauf la mise en avant, qui est une
 décision du catalogue).
 
 ## 1. Trois sources d'une suggestion

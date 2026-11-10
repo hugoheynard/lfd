@@ -23,7 +23,7 @@ Le référentiel fait saisir une **étiquette TTC** ; le système en dérive un
 **HT en millicentimes** à la lecture, au taux du contexte
 ([`chemin-du-prix-public.md`](../boutique-et-panier/chemin-du-prix-public.md)), puis applique les
 promotions et paliers en HT (`resolvePrice`). Une ligne de commande ne reçoit
-que ce HT (`apps/lfd-api/src/b2b/orders/domain/value-objects/order-line.ts`).
+que ce HT (`apps/lfd-api/src/lafoliecoffee/orders/domain/value-objects/order-line.ts`).
 
 ```mermaid
 flowchart LR
@@ -35,14 +35,14 @@ flowchart LR
     V --> P["Total payé<br/>239 c"]
 ```
 
-| Étape                        | Fichier                                                                                |
-| ---------------------------- | -------------------------------------------------------------------------------------- |
-| HT de ligne, un arrondi      | `packages/money/src/millicents.ts` (`lineTotalCents`)                                  |
-| TTC de ligne scellé (public) | `order-line.ts` → `ttcCentsOf` (`packages/money/src/vat.ts`)                           |
-| TVA par taux sur l'assiette  | `ventilateVat` (`vat.ts`) ← `computeOrderTotals` (`b2b/orders/domain/services/vat.ts`) |
-| Devis du panier              | `b2b/orders/application/services/shop-cart-quoting.service.ts`                         |
-| Montant Stripe               | `place-shop-order.handler.ts` (`order.totalCents`)                                     |
-| Ce que le front affiche      | `cart-summary.ts` : les lignes TTC, puis le **total serveur** — il n'additionne rien   |
+| Étape                        | Fichier                                                                                          |
+| ---------------------------- | ------------------------------------------------------------------------------------------------ |
+| HT de ligne, un arrondi      | `packages/money/src/millicents.ts` (`lineTotalCents`)                                            |
+| TTC de ligne scellé (public) | `order-line.ts` → `ttcCentsOf` (`packages/money/src/vat.ts`)                                     |
+| TVA par taux sur l'assiette  | `ventilateVat` (`vat.ts`) ← `computeOrderTotals` (`lafoliecoffee/orders/domain/services/vat.ts`) |
+| Devis du panier              | `lafoliecoffee/orders/application/services/shop-cart-quoting.service.ts`                         |
+| Montant Stripe               | `place-shop-order.handler.ts` (`order.totalCents`)                                               |
+| Ce que le front affiche      | `cart-summary.ts` : les lignes TTC, puis le **total serveur** — il n'additionne rien             |
 
 La TVA ligne à ligne vaut 10 + 3 = 13 c ; sur l'assiette, 12 c. Les lignes
 disent 2,40, la commande 2,39.

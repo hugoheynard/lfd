@@ -41,7 +41,7 @@ partir d'une pièce**.
 **La caisse convertit les barèmes en règles avant de résoudre :**
 
 ```ts
-// b2b/orders/domain/services/price-line.ts
+// lafoliecoffee/orders/domain/services/price-line.ts
 const volumeRules = ladders.map((ladder) => ladderAsRule(ladder, context))…
 resolvePrice(canonical, [...rules, ...volumeRules], context, floor);
 ```
@@ -49,7 +49,7 @@ resolvePrice(canonical, [...rules, ...volumeRules], context, floor);
 **L'écran ne le fait pas :**
 
 ```ts
-// b2b/pricing/application/board-item.ts
+// lafoliecoffee/pricing/application/board-item.ts
 resolvePrice(article.canonicalMillicents, materials.rules, context, applied);
 //                                        ^^^^^^^^^^^^^^^ les règles SEULES
 ```

@@ -22,7 +22,7 @@
 ## 2. Où ça se décide (vérifié le 2026-11-03)
 
 - **Le prix** : une seule règle pure, `companyServiceOf`
-  (`apps/lfd-api/src/b2b/catalog/domain/company-service.ts`) — « LA décision
+  (`apps/lfd-api/src/lafoliecoffee/catalog/domain/company-service.ts`) — « LA décision
   pro ou pas », prise une fois sur le statut relu en base. `suspended` passe
   de `public` à `pro`. Lecteurs : `catalog-viewers.service.ts`,
   `promotions/domain/promotion-targeting.ts`,

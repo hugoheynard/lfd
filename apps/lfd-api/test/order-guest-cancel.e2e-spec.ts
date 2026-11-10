@@ -6,8 +6,8 @@
  */
 import type { GuestOrderCancellationView } from "@lfd/contracts";
 
-import { OrderPlacedMail } from "../src/b2b/orders/application/services/order-placed-mail.service.js";
-import { CancellationLinkSigner } from "../src/b2b/orders/cancellation/domain/ports/cancellation-link-signer.js";
+import { OrderPlacedMail } from "../src/lafoliecoffee/orders/application/services/order-placed-mail.service.js";
+import { CancellationLinkSigner } from "../src/lafoliecoffee/orders/cancellation/domain/ports/cancellation-link-signer.js";
 import { OrderStatus, PaymentStatus } from "../src/platform/database/client/client.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { jsonBody, type E2eContext } from "./e2e-harness.js";

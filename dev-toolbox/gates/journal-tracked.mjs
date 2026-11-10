@@ -24,7 +24,7 @@
  * — mais le laissez-passer (`WriteTicket`), lui, l'oblige, et il est tenu par le
  * compilateur.
  *
- * **Les comptes clients** (`src/b2b/account/**`) : tout handler — acte du
+ * **Les comptes clients** (`src/lafoliecoffee/account/**`) : tout handler — acte du
  * staff ou geste du client sur son propre compte, depuis le 2026-09-19 — doit
  * APPELER `publishTraced` — pas seulement injecter quelque chose. La
  * discipline y est différente parce que le besoin l'est : les faits des comptes
@@ -50,16 +50,16 @@
  * `journal.append` sous `UnitOfWork`, ou déléguer à `OpenStaffAccess` qui le
  * fait — cf. `STAFF_ZONE` plus bas.
  *
- * **L'argent** (`b2b/order-waivers/**`, `b2b/payments/**`, depuis le
+ * **L'argent** (`lafoliecoffee/order-waivers/**`, `lafoliecoffee/payments/**`, depuis le
  * 2026-09-19) : tout `@CommandHandler`, staff ou client, doit APPELER
  * `publishTraced` sous `UnitOfWork`, ou déléguer à une séquence partagée qui
  * le fait — cf. `MONEY_ZONES` plus bas.
  *
- * **Le catalogue B2B** (`b2b/catalog/**`, depuis le 2026-09-19) : tout
+ * **Le catalogue B2B** (`lafoliecoffee/catalog/**`, depuis le 2026-09-19) : tout
  * `@CommandHandler` doit APPELER `publishTraced` sous `UnitOfWork` — cf.
  * `CATALOG_ZONE` plus bas.
  *
- * **Les paniers récurrents** (`b2b/subscriptions/**`, depuis le 2026-09-19) :
+ * **Les paniers récurrents** (`lafoliecoffee/subscriptions/**`, depuis le 2026-09-19) :
  * même discipline — cf. `SUBSCRIPTIONS_ZONE` plus bas.
  *
  * **Le fournil** (`production/**`, depuis le 2026-09-19) : tout
@@ -83,7 +83,7 @@ const SRC = join(ROOT, "apps", "lfd-api", "src");
 const SKIP_DIRS = new Set(["__tests__", "node_modules", "dist", "client"]);
 
 /**
- * **Les comptes clients** : TOUS les handlers de `b2b/account`, depuis le
+ * **Les comptes clients** : TOUS les handlers de `lafoliecoffee/account`, depuis le
  * 2026-09-19 (lot 1 du plan du journal, tranche (c)).
  *
  * La zone a été bornée, jusque-là, aux handlers dont le NOM disait qu'un agent
@@ -105,7 +105,7 @@ const ACCOUNT_ZONE = "account";
  *
  * Tous leurs handlers sont concernés, sans exception de nom : ces modules
  * n'ont pas de chemin client — un client ne pose pas une zone de livraison. Là
- * où `b2b/account` mêle les deux et doit trier, ici tout est staff.
+ * où `lafoliecoffee/account` mêle les deux et doit trier, ici tout est staff.
  */
 const SETTINGS_ZONES = ["delivery-zones", "pickup-addresses", "sites", "order-cutoffs"];
 
@@ -210,7 +210,7 @@ const MONEY_ZONES = ["order-waivers", "payments", "loyalty"];
 /**
  * **L'argent carte, à la racine** (2026-11-09, plan M2,
  * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`
- * §4.1) : le bloc `card-payment` est de premier niveau, pas sous `src/b2b/` —
+ * §4.1) : le bloc `card-payment` est de premier niveau, pas sous `src/lafoliecoffee/` —
  * `MONEY_ZONES` ne peut donc pas le viser. Armée AVANT que le dossier existe :
  * sans cette entrée, l'argent carte sortirait de l'audit en silence au
  * déménagement. Tant que `src/card-payment/` n'existe pas, la zone est vide
@@ -275,38 +275,44 @@ const CARD_PAYMENT_JOURNALS = new Map([
 const MONEY_DELEGATES = new Map([
   [
     "recordCompanyBankAccount",
-    join("b2b", "payments", "application", "commands", "record-company-bank-account.ts"),
+    join("lafoliecoffee", "payments", "application", "commands", "record-company-bank-account.ts"),
   ],
   [
     "recordMandateOptions",
-    join("b2b", "payments", "application", "commands", "record-mandate-options.ts"),
+    join("lafoliecoffee", "payments", "application", "commands", "record-mandate-options.ts"),
   ],
-  ["mintDraftMandate", join("b2b", "payments", "application", "mint-mandate-support.ts")],
-  ["attachProofToDraft", join("b2b", "payments", "application", "mandate-proof-support.ts")],
+  ["mintDraftMandate", join("lafoliecoffee", "payments", "application", "mint-mandate-support.ts")],
+  [
+    "attachProofToDraft",
+    join("lafoliecoffee", "payments", "application", "mandate-proof-support.ts"),
+  ],
   // Le gain d'une commande définitive, partagé par l'abonné et le rattrapage
   // de la fidélité (plan des points, D3, 2026-09-26) : il trace
   // `loyalty.points_earned` dans la transaction qui écrit la ligne.
   [
     "creditEarnedPoints",
-    join("b2b", "loyalty", "application", "services", "order-points-crediting.ts"),
+    join("lafoliecoffee", "loyalty", "application", "services", "order-points-crediting.ts"),
   ],
   // Le même gain, par lot : le rattrapage de nuit et le crédit immédiat d'un
   // invité rattaché (plan bienvenue, lot A, 2026-10-11) passent par lui ; il
   // appelle `creditEarnedPoints`, donc trace dans la même transaction.
-  ["creditPending", join("b2b", "loyalty", "application", "services", "order-points-crediting.ts")],
+  [
+    "creditPending",
+    join("lafoliecoffee", "loyalty", "application", "services", "order-points-crediting.ts"),
+  ],
   // Le bonus de bienvenue, partagé par les deux abonnés et la passe de nuit
   // (plan bienvenue, lot C, 2026-10-11) : il trace
   // `loyalty.welcome_bonus_credited` dans la transaction qui écrit la ligne.
   [
     "creditWelcomeBonus",
-    join("b2b", "loyalty", "application", "services", "welcome-bonus-crediting.ts"),
+    join("lafoliecoffee", "loyalty", "application", "services", "welcome-bonus-crediting.ts"),
   ],
   // Le reliquat d'un bon consommé, partagé par la passation (commande sans
   // règlement) et le rattrapage de nuit (plan des points, C5, 2026-09-27) : il
   // trace `loyalty.voucher_remainder_issued` dans la transaction qui l'écrit.
   [
     "settleRemainder",
-    join("b2b", "loyalty", "application", "services", "loyalty-voucher-redeeming.ts"),
+    join("lafoliecoffee", "loyalty", "application", "services", "loyalty-voucher-redeeming.ts"),
   ],
 ]);
 
@@ -373,7 +379,10 @@ function auditDelivery(source, index, params, handler) {
 
 /** Ce qui ouvre l'unité de travail pour une délégation — sans journaliser pour elle. */
 const TRANSACTION_OPENERS = new Map([
-  ["writeVoidingDraft", join("b2b", "payments", "application", "draft-mandate-voiding.ts")],
+  [
+    "writeVoidingDraft",
+    join("lafoliecoffee", "payments", "application", "draft-mandate-voiding.ts"),
+  ],
 ]);
 
 /*
@@ -646,15 +655,15 @@ const ZONES = [
   //   que le déménagement a supprimée.
   { root: join(SRC, "media"), audit: auditWithTicket("MediaJournal") },
   {
-    root: join(SRC, "b2b", ACCOUNT_ZONE),
+    root: join(SRC, "lafoliecoffee", ACCOUNT_ZONE),
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
   },
   {
-    root: join(SRC, "b2b", STOREFRONT_ZONE),
+    root: join(SRC, "lafoliecoffee", STOREFRONT_ZONE),
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
   },
   {
-    root: join(SRC, "b2b", SHOP_COPY_ZONE),
+    root: join(SRC, "lafoliecoffee", SHOP_COPY_ZONE),
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
   },
   {
@@ -662,25 +671,25 @@ const ZONES = [
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
   },
   ...SETTINGS_ZONES.map((zone) => ({
-    root: join(SRC, "b2b", zone),
+    root: join(SRC, "lafoliecoffee", zone),
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
   })),
   {
-    root: join(SRC, "b2b", FEATURE_ACCESS_ZONE),
+    root: join(SRC, "lafoliecoffee", FEATURE_ACCESS_ZONE),
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
   },
   {
-    root: join(SRC, "b2b", CLIENT_NOTES_ZONE),
+    root: join(SRC, "lafoliecoffee", CLIENT_NOTES_ZONE),
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
   },
-  ...MONEY_ZONES.map((zone) => ({ root: join(SRC, "b2b", zone), audit: auditMoney })),
+  ...MONEY_ZONES.map((zone) => ({ root: join(SRC, "lafoliecoffee", zone), audit: auditMoney })),
   ...(existsSync(CARD_PAYMENT_ZONE) ? [{ root: CARD_PAYMENT_ZONE, audit: auditCardPayment }] : []),
   {
-    root: join(SRC, "b2b", CATALOG_ZONE),
+    root: join(SRC, "lafoliecoffee", CATALOG_ZONE),
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
   },
   {
-    root: join(SRC, "b2b", SUBSCRIPTIONS_ZONE),
+    root: join(SRC, "lafoliecoffee", SUBSCRIPTIONS_ZONE),
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
   },
   {
@@ -692,7 +701,7 @@ const ZONES = [
     audit: (source, index, params, handler) => auditDelivery(source, index, params, handler),
   },
   {
-    root: join(SRC, "b2b", "pricing"),
+    root: join(SRC, "lafoliecoffee", "pricing"),
     audit: (source, index, params, handler) =>
       PRICING_ACT.test(handler) ? auditTraced(source, index, params, handler) : null,
   },

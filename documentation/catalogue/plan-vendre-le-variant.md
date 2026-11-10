@@ -2,7 +2,7 @@
 
 > **Non bâti** (vérifié le 2026-10-16) : l'adaptateur présente encore la
 > déclinaison par défaut sous le SKU produit
-> (`apps/lfd-api/src/b2b/catalog/infrastructure/catalog-backed-product-catalog.ts:64`,
+> (`apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/catalog-backed-product-catalog.ts:64`,
 > `:81`). Les comptes du §3 et du §10 sont ceux du 2026-09-13, sur la base de
 > dev.
 
@@ -181,7 +181,7 @@ il tombera en panne **muette**, l'article sortant au prix canonique.
   pour les clés déjà posées.
 - **`ProductNorm` à zéro ligne ne prouve rien** : elle est recalculée par
   SKU de ligne de commande sur une fenêtre glissante (lignes lues par `sku`,
-  découpées en mémoire — `apps/lfd-api/src/b2b/alerts/infrastructure/prisma-order-history.reader.ts:52-56`). À cheval sur la bascule, le même
+  découpées en mémoire — `apps/lfd-api/src/lafoliecoffee/alerts/infrastructure/prisma-order-history.reader.ts:52-56`). À cheval sur la bascule, le même
   article existe sous deux clés, la médiane se calcule sur deux populations
   coupées, et les alertes de déviation se taisent ou crient.
 

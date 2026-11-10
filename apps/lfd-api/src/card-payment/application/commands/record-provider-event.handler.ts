@@ -44,9 +44,9 @@ type Recording<E extends CardProviderEvent> = (account: PaymentAccount, event: E
  *   dans l'ordre du §3.6 (`IntentOutcomeRecorder`) ; personne : `unmatched` ;
  * - **remboursement** : constaté par le bloc lui-même (`CardRefundObservation`,
  *   §6.3), dans l'ordre du §3.6 — plus de relais `provider_refund_event`
- *   vers `b2b/orders` depuis P1 ; un paiement qu'aucun sujet ne porte :
- *   `unmatched`, que `b2b/payments` sonne ;
- * - **page hébergée d'un lien** : relayée à `b2b/payments` (`checkout_event`,
+ *   vers `lafoliecoffee/orders` depuis P1 ; un paiement qu'aucun sujet ne porte :
+ *   `unmatched`, que `lafoliecoffee/payments` sonne ;
+ * - **page hébergée d'un lien** : relayée à `lafoliecoffee/payments` (`checkout_event`,
  *   §4.5) — jamais un 200 muet ;
  * - **tout le reste** : `unmatched`, avec son type.
  *

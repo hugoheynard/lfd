@@ -1,7 +1,7 @@
 /**
  * **La version d'une journée du COMMERCE, vue par la livraison**
  * (`documentation/livraisons/livreur/parcours-du-livreur.md`, PL4) — ce que la
- * livraison DÉCLARE et que le commerce implémente (`b2b/orders/infrastructure/`,
+ * livraison DÉCLARE et que le commerce implémente (`lafoliecoffee/orders/infrastructure/`,
  * depuis son journal `public.day_change`), relié dans
  * `appBootstrap/delivery-feed.module.ts`.
  *

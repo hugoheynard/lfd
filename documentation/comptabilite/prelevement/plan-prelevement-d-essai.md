@@ -24,7 +24,7 @@
 
 ## 0. Ce qui existe (ouvert le 2026-10-22)
 
-- **Le générateur `pain.008`** (`apps/lfd-api/src/b2b/accounting/domain/services/pain008-document.ts`,
+- **Le générateur `pain.008`** (`apps/lfd-api/src/lafoliecoffee/accounting/domain/services/pain008-document.ts`,
   `pain008.ts`, `pain008-audit.ts`) : fonction pure ; `ReqdColltnDt` (date
   d'échéance) en paramètre ; schéma `CORE` | `B2B` (`value-objects/sepa-scheme.ts`).
 - **Les séquences** : `RCUR` (mandat récurrent) et `OOFF` (mandat ponctuel),

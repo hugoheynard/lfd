@@ -21,7 +21,7 @@
   (`mail-templates.ts`, 928 lignes).
 - **Le modèle à suivre existe** pour les textes de la boutique
   ([`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md)) :
-  `b2b/shop-copy/` (entrées en brouillon puis publiées, `shop_copy_entries`,
+  `lafoliecoffee/shop-copy/` (entrées en brouillon puis publiées, `shop_copy_entries`,
   `shop_copy_publication`), l'écran `textes-boutique/` du back-office, au
   premier niveau de Communication, droit `b2b_storefront`.
 
@@ -118,7 +118,7 @@ anglais et en italien :
 ## 2 ter. E2 — bâti le 2026-10-23 (non commité à l'écriture)
 
 - **Le stockage** est un contexte du commerce, `apps/lfd-api/src/mail/copy/`,
-  sur le modèle de `b2b/shop-copy/` : `mail_copy_entries` (une ligne par
+  sur le modèle de `lafoliecoffee/shop-copy/` : `mail_copy_entries` (une ligne par
   e-mail, chemin, langue ; brouillon à trois états, révision) et
   `mail_copy_publication` (une ligne, la version), migration additive
   `20261023180000_les_textes_des_e_mails`, aucun droit accordé.
@@ -208,7 +208,7 @@ traduction en retard (C4) — un avertissement, jamais un refus.
 { previousDefault: string } | null` (le texte d'aujourd'hui reste
   `default`), et `MailCopyAdminView.defaultChangedCount`. L'écran reste à
   faire.
-- ⚠️ **Les textes de la boutique ont la même faiblesse** (`b2b/shop-copy`, vu
+- ⚠️ **Les textes de la boutique ont la même faiblesse** (`lafoliecoffee/shop-copy`, vu
   le 2026-10-23) : rien n'y note le texte du code au moment de la
   modification. Non corrigé.
 

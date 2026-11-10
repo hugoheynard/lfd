@@ -5,7 +5,7 @@ import { fact, payload, subjectLabel, type JournalFactFamily } from "./fact.js";
 /**
  * **Les articles sur mesure et leur réservation** (plan
  * `documentation/catalogue/plan-articles-sur-mesure.md`, lot L1a, 2026-10-30).
- * Écrits par les handlers de `b2b/catalog/`, par `publishTraced`, comme les
+ * Écrits par les handlers de `lafoliecoffee/catalog/`, par `publishTraced`, comme les
  * autres décisions de catalogue.
  *
  * Le sujet est l'article (`catalog_item`, par son SKU) ; `subjectLabel` son

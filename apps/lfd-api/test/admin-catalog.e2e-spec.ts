@@ -790,7 +790,7 @@ describe("GET /admin/catalog/summary", () => {
 /**
  * 🔴 **Régression : cette route n'existait pas, et personne ne pouvait le voir.**
  *
- * `b2b/orders/http/admin-catalog.controller.ts` la déclarait sous `@Get()`, avec
+ * `lafoliecoffee/orders/http/admin-catalog.controller.ts` la déclarait sous `@Get()`, avec
  * le même `@Controller("admin/catalog")` que le contrôleur du catalogue
  * ci-dessus. Nest sert le premier enregistré : celle-ci n'a jamais répondu
  * depuis le découpage en blocs. Aucun signal — ni typecheck, ni démarrage, ni

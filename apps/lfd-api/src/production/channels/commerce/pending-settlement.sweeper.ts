@@ -17,7 +17,7 @@ import type { ServiceDay } from "../../domain/value-objects/service-day.value-ob
  *
  * Rien, et c'est voulu : il demande « tranche ce qui n'est pas payé pour ce
  * jour-là », le commerce seul sait ce qu'un règlement veut dire. Déclaré ici,
- * implémenté par `b2b/orders`, relié par `appBootstrap` — le sens de
+ * implémenté par `lafoliecoffee/orders`, relié par `appBootstrap` — le sens de
  * `DayOrdersReader` : `production → b2b` reste interdit.
  *
  * ## Le contrat que la clôture attend

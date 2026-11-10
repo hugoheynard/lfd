@@ -12,7 +12,7 @@ import { b2bMailTemplates } from "./mail-templates.js";
 /**
  * L'aperçu par le registre MÊME de l'envoi, avec la marque même du mailer
  * (`mailBrandingOf`) : l'aperçu et l'e-mail ne peuvent pas diverger. Repris
- * tel quel de `b2b/vitrine/infrastructure/template-vitrine-notice-mail.renderer.ts`
+ * tel quel de `lafoliecoffee/vitrine/infrastructure/template-vitrine-notice-mail.renderer.ts`
  * au lot S3b, qui ne voit plus que le port.
  */
 @Injectable()

@@ -24,12 +24,12 @@
 
 ## Quatre documents
 
-| Document                     | Dit                                                | Naît                                                     | Code                                                      |
-| ---------------------------- | -------------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------------- |
-| **Confirmation de commande** | ce que le client a demandé ; porte le QR           | à la passation                                           | `b2b/orders/domain/services/order-sheet*.ts`              |
-| **Fiche d'atelier**          | ce qu'il faut produire, sans prix                  | à l'arrêt du plan                                        | `atelierSheetOf` (même fichier)                           |
-| **Bon de livraison** (BL)    | ce qui part, en une fois                           | à l'arrêt du plan (prévu), ou au premier geste hors plan | `b2b/delivery-notes/`                                     |
-| **Facture**                  | ce qu'on fait payer : les **montants facturables** | à l'émission                                             | `b2b/accounting/` (lit `orders.billable_*`, `settled_on`) |
+| Document                     | Dit                                                | Naît                                                     | Code                                                                |
+| ---------------------------- | -------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------- |
+| **Confirmation de commande** | ce que le client a demandé ; porte le QR           | à la passation                                           | `lafoliecoffee/orders/domain/services/order-sheet*.ts`              |
+| **Fiche d'atelier**          | ce qu'il faut produire, sans prix                  | à l'arrêt du plan                                        | `atelierSheetOf` (même fichier)                                     |
+| **Bon de livraison** (BL)    | ce qui part, en une fois                           | à l'arrêt du plan (prévu), ou au premier geste hors plan | `lafoliecoffee/delivery-notes/`                                     |
+| **Facture**                  | ce qu'on fait payer : les **montants facturables** | à l'émission                                             | `lafoliecoffee/accounting/` (lit `orders.billable_*`, `settled_on`) |
 
 La « confirmation de commande » est l'ancien « bon de commande » : seuls les
 **libellés** ont changé (lot E5b, `473093bdf`) ; les identifiants du code
@@ -121,7 +121,7 @@ flowchart TD
   réécrit. Un refus du domaine (numéro atypique, commande sans ligne) est
   sauté et journalisé : il n'annule pas la confirmation.
 - **Le BL suit la commande** (`application/services/delivery-note-follower.ts`)
-  par le port `DeliveryNoteFollowing` (`b2b/orders/domain/ports/`), relié par
+  par le port `DeliveryNoteFollowing` (`lafoliecoffee/orders/domain/ports/`), relié par
   `appBootstrap/delivery-note-planning.module.ts`. Une commande prête ou remise
   **hors plan**, sans BL, en reçoit un plein à ce moment (Q-E5).
 - **Le réconciliateur** (`application/commands/reconcile-delivery-notes.handler.ts`)
@@ -172,7 +172,7 @@ manager ». Le signal ne bloque rien d'autre.
 **La décision (E6b).** `POST admin/orders/:id/shortfall-decision`, sous
 `b2b_orders_shortfall:write` (migration `20261025140000` ; la ressource
 s'accorde à l'écran, cf. runbook). L'agrégat `ShortfallDecision`
-(`b2b/orders/domain/entities/shortfall-decision.ts`), une par commande et
+(`lafoliecoffee/orders/domain/entities/shortfall-decision.ts`), une par commande et
 définitive (table `order_shortfall_decision`, unique par `order_id`), refuse :
 
 | Refus                             | Cas                                                                    |
@@ -229,9 +229,9 @@ flowchart TD
 ```
 
 - **Le solde** est un agrégat à part, `OrderBilling`
-  (`b2b/orders/domain/entities/order-billing.ts`), sur la ligne `orders` :
+  (`lafoliecoffee/orders/domain/entities/order-billing.ts`), sur la ligne `orders` :
   `Order` est l'agrégat de passation et ne se recharge pas. Deux écrivains,
-  `OrderBillingCloser` (`b2b/delivery-notes/application/services/`) à la
+  `OrderBillingCloser` (`lafoliecoffee/delivery-notes/application/services/`) à la
   remise et le réconciliateur, exclus l'un de l'autre par le
   `WHERE billable_total_cents IS NULL` de la pose.
 - **Les colonnes** (migration `20261025140100`) : `billable_subtotal_cents`,
@@ -285,7 +285,7 @@ forme du bon de commande
   n'est pas imprimée ; « Non livré : 3 × Gros florentin lait, … » la dit
   sous le tableau (grammes pour le poids). Le manque est commandé − Σ des BL
   non annulés de rang ≤ celui-ci, par article (`undeliveredOf`,
-  `apps/lfd-api/src/b2b/delivery-notes/domain/services/undelivered-lines.ts`) : un reliquat dit ce qui manque
+  `apps/lfd-api/src/lafoliecoffee/delivery-notes/domain/services/undelivered-lines.ts`) : un reliquat dit ce qui manque
   encore après lui. Le dossier du jour du fournil l'imprime aussi.
 - **Chaque page** (Hugo, 2026-11-03) reprend l'en-tête complet (logo, titre,
   numéro, dates) puis les titres de colonnes, et porte au pied « Bon de
@@ -320,7 +320,7 @@ forme du bon de commande
   (`totalUnits`, lignes de `OrderHandoverView`) — le commerce les sert par
   `HandoverQueueReader` / `HandoverSubjectReader` (déclarés par le retrait,
   `handover/channels/commerce/`), via `departureOf`
-  (`b2b/orders/infrastructure/handover-order.query.ts`), qui réutilise
+  (`lafoliecoffee/orders/infrastructure/handover-order.query.ts`), qui réutilise
   `abandonedOf` et `decisionMarkOf`. Au retrait : « Commande incomplète — ces
   articles ne sont pas dans le sac : <n> <produit> » ; en livraison :
   « Départ incomplet. Ces articles ne partent pas : ». Il informe le vendeur ;

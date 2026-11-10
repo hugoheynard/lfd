@@ -15,8 +15,8 @@
  */
 import { WORKSPACE_HEADER, type CreatedIdResponse } from "@lfd/contracts";
 
-import { NotifyPrincipalOnOrderProblemReported } from "../src/b2b/sub-account-notices/application/handlers/notify-principal-on-order-problem-reported.handler.js";
-import { ORDER_PROBLEM_REPORTED } from "../src/b2b/contact/domain/order-problem-reported.fact.js";
+import { NotifyPrincipalOnOrderProblemReported } from "../src/lafoliecoffee/sub-account-notices/application/handlers/notify-principal-on-order-problem-reported.handler.js";
+import { ORDER_PROBLEM_REPORTED } from "../src/lafoliecoffee/contact/domain/order-problem-reported.fact.js";
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";

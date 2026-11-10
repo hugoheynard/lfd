@@ -54,7 +54,7 @@ facturé ne l'est pas.
 
 ## 2. Quand ranger borne la fenêtre
 
-`closingWindowAt(fenêtre, suspendedFrom, at)` (`b2b/pricing/domain/rule-lifecycle.ts`)
+`closingWindowAt(fenêtre, suspendedFrom, at)` (`lafoliecoffee/pricing/domain/rule-lifecycle.ts`)
 décide, une fois pour tous les agrégats :
 
 | Cas                                            | Réponse                  | Ce que ça évite                                                                                    |
@@ -67,7 +67,7 @@ décide, une fois pour tous les agrégats :
 
 ## 3. La lecture datée
 
-- **L'époque** (`PriceEpoch`, `b2b/pricing/domain/price-epoch.ts`) :
+- **L'époque** (`PriceEpoch`, `lafoliecoffee/pricing/domain/price-epoch.ts`) :
   `current` ou `replay`, décidée **une fois** dans `Pricer.load`
   (`epochOf(at, now)`). À ne pas confondre avec la **lentille**, qui dit ce
   que la question a le droit de prouver.

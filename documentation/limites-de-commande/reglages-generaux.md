@@ -42,7 +42,7 @@ une règle par couple (point, jour), la plus spécifique l'emportant. La
 conversion en instant passe explicitement par `Europe/Paris` (fuseau : §10 de
 [`architecture-heure-limite-de-commande.md`](architecture-heure-limite-de-commande.md)).
 
-**Une ressource, deux routes** (`b2b/order-cutoffs/http/admin-order-cutoffs.controller.ts`,
+**Une ressource, deux routes** (`lafoliecoffee/order-cutoffs/http/admin-order-cutoffs.controller.ts`,
 sous `@AdminSurface("lfc_order_settings")`) : `GET admin/order-cutoffs/general`
 rend `{ rule }` (`null` tant qu'elle n'est pas posée) ; `PUT
 admin/order-cutoffs/general` la pose ou la règle (entité `GeneralOrderCutoffRule`,
@@ -103,7 +103,7 @@ L'heure limite générale déclenche l'arrêt du plan du fournil
 ([`plan-une-seule-heure.md`](plan-une-seule-heure.md) §5) : une heure limite
 qu'on coupe ne l'arrêterait plus. Elle est donc **toujours en vigueur** dès
 qu'elle est posée : `OrderCutoffsInForce`
-(`b2b/order-cutoffs/domain/order-cutoffs-in-force.ts`, implémenté par
+(`lafoliecoffee/order-cutoffs/domain/order-cutoffs-in-force.ts`, implémenté par
 `GeneralOrderCutoffInForce`) rend la règle générale enregistrée sans lire
 `enabled`, pour la passation (`OrderCutoffReader`, donc aussi la relance de
 règlement), la boutique (`ListFulfillmentDaysHandler`, catalogue) et le fournil
@@ -131,7 +131,7 @@ commande (`used_by_order_id`, `used_at`), jamais supprimée. L'index partiel
 même société et la même journée. Accordée pendant la saisie d'une commande par
 l'équipe ; listée (journées non passées) par `GET admin/order-cutoff-waivers`,
 lue par société, révoquée par `DELETE …/:id` — sous `b2b_order_waivers`
-(`b2b/order-waivers/http/admin-order-cutoff-waivers.controller.ts`). Une
+(`lafoliecoffee/order-waivers/http/admin-order-cutoff-waivers.controller.ts`). Une
 commande sans société n'a pas de dérogation possible.
 
 Une dérogation utilisée déclenche la **surtaxe de retard** : §8 de
@@ -169,7 +169,7 @@ aucune décision — colonne morte, gardée en base (§1). La vue et le `PATCH` 
 portent encore, et l'écran aussi : c'est au lot L6 (back-office) de ne garder
 qu'un interrupteur par clientèle.
 
-La règle (`sameDayOpenTo`, `b2b/order-cutoffs/domain/same-day-doors.ts`) se
+La règle (`sameDayOpenTo`, `lafoliecoffee/order-cutoffs/domain/same-day-doors.ts`) se
 lit par **porte** : un particulier en ligne suit « particuliers » ; un pro en
 ligne, « pros » **et** « en ligne » ; l'équipe (comptoir, Commercial) suit
 « pros ». Fermée (le défaut) : aujourd'hui n'est pas proposé par la boutique
@@ -195,7 +195,7 @@ pour le lendemain »). Voir [`../fournil/arret-du-plan.md`](../fournil/arret-du-
 
 ## 6. `/fulfillment-days` et ce que la boutique en dit
 
-`ListFulfillmentDaysHandler` (`b2b/order-cutoffs/application/`) rend, pour la
+`ListFulfillmentDaysHandler` (`lafoliecoffee/order-cutoffs/application/`) rend, pour la
 livraison (en tête) puis pour chaque point de retrait, **la première journée
 proposable** : dans les délais des règles en vigueur, hors plans arrêtés, hors
 aujourd'hui si le jour même n'est pas ouvert à la clientèle demandée

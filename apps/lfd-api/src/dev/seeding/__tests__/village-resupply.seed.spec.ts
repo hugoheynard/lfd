@@ -1,8 +1,8 @@
 import { instantToLocal } from "@lfd/contracts";
 
-import { AddSiteResupplyLineCommand } from "../../../b2b/resupply/application/add-site-resupply-line.command.js";
-import { NameSiteResupplyCommand } from "../../../b2b/resupply/application/name-site-resupply.command.js";
-import { SendSiteResupplyCommand } from "../../../b2b/resupply/application/send-site-resupply.command.js";
+import { AddSiteResupplyLineCommand } from "../../../lafoliecoffee/resupply/application/add-site-resupply-line.command.js";
+import { NameSiteResupplyCommand } from "../../../lafoliecoffee/resupply/application/name-site-resupply.command.js";
+import { SendSiteResupplyCommand } from "../../../lafoliecoffee/resupply/application/send-site-resupply.command.js";
 import { currentRequestContext } from "../../../platform/context/request-context.store.js";
 import type { SeedLine } from "../order-placing.seed.js";
 import { scenarioDayOf } from "../today.seed.js";

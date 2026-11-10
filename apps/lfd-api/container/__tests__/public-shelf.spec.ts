@@ -1,9 +1,9 @@
 import {
   PUBLIC_SHELF_CACHE_CONTROL,
   PUBLIC_SHELF_CACHE_TAG,
-} from "../../src/b2b/catalog/http/public-shelf-cache-headers";
-import { PUBLIC_SETTINGS_CACHE_TAG } from "../../src/b2b/shared/public-settings-cache/domain/ports/public-settings-edge-cache";
-import { SHOP_COPY_CACHE_TAG } from "../../src/b2b/shop-copy/domain/ports/shop-copy-edge-cache";
+} from "../../src/lafoliecoffee/catalog/http/public-shelf-cache-headers";
+import { PUBLIC_SETTINGS_CACHE_TAG } from "../../src/lafoliecoffee/shared/public-settings-cache/domain/ports/public-settings-edge-cache";
+import { SHOP_COPY_CACHE_TAG } from "../../src/lafoliecoffee/shop-copy/domain/ports/shop-copy-edge-cache";
 import {
   isPublicPurgeCall,
   isPublicPurgeRelay,

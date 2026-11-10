@@ -77,7 +77,7 @@ le fait durable **`pim.catalog_rules_changed`**
 (`pim/channels/b2b-platform/products/catalog-rules-changed.fact.ts`) : ce sont
 les **règles** qui traversent, pas des limites résolues — et, depuis le
 2026-10-21, les seules règles de produit (`B2bCatalogRulesEmitter` filtre). Le commerce
-(`OnCatalogRulesChangedHandler`, `b2b/catalog/application/handlers/`) les range
+(`OnCatalogRulesChangedHandler`, `lafoliecoffee/catalog/application/handlers/`) les range
 dans `public.catalog_rules` si le fait est plus récent (`applied_seq`), puis
 `OrderLimitsRefresher` les **descend sur chaque article en vente** (la règle de
 son produit seulement, depuis le 2026-10-21) — colonnes
@@ -111,7 +111,7 @@ plus (§1).
 
 `ShopItemView.orderTimeLimit` (`packages/contracts/src/shop-catalogue.ts`),
 **facultatif** : `{ daysBefore, time }`, **jamais la grâce**. Posé par
-`withOrderLimits` (`b2b/catalog/application/shop-catalogue-order-limits.ts`)
+`withOrderLimits` (`lafoliecoffee/catalog/application/shop-catalogue-order-limits.ts`)
 sur `/shop/catalogue` et `/shop/catalogue/mine`, à partir de la limite résolue
 de l'unité vendue par défaut.
 
@@ -132,7 +132,7 @@ propre à un jour ou à un point n'entre pas dans la comparaison.
 **La vitrine des agences** partage la vue (`VitrineItemView` dérive de
 `ShopItemView`) : `/vitrine/*` sert aussi `orderTimeLimit`, en XML
 `<orderTimeLimit><daysBefore/><time/></orderTimeLimit>`, facultatif dans le XSD
-(`b2b/vitrine/http/xml/vitrine-xml-shapes.ts`).
+(`lafoliecoffee/vitrine/http/xml/vitrine-xml-shapes.ts`).
 
 ## 5. La phrase, et ses trois formes
 

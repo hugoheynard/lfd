@@ -81,7 +81,7 @@ export function splitArchived(views: readonly CommerceOperationView[]): {
 /**
  * Un refus du serveur, TEL QUEL : les erreurs des opérations du commerce
  * nomment déjà le cas et le geste de sortie, en français
- * (`b2b/operations/domain/errors/operation-errors.ts`, lu le 2026-10-16). Le
+ * (`lafoliecoffee/operations/domain/errors/operation-errors.ts`, lu le 2026-10-16). Le
  * repli ne sert qu'à une panne sans enveloppe.
  */
 export function refusalOf(error: unknown, fallback: string): string {

@@ -20,7 +20,7 @@ class BrandConfig extends AppConfig {
 
 describe("l'aperçu d'un modèle par le canal (S3b)", () => {
   /*
-   * L'aperçu de l'avis de vitrine passait par le registre dans `b2b/vitrine` ;
+   * L'aperçu de l'avis de vitrine passait par le registre dans `lafoliecoffee/vitrine` ;
    * il passe par ce port. Ce qu'on relit doit rester ce qui part : même
    * gabarit, même marque que le mailer.
    */

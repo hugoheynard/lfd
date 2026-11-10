@@ -13,7 +13,7 @@ Pour chaque canal qui prévient quelqu'un hors d'un e-mail :
 
 - la **cloche du back-office** (`apps/lfd-api/src/staff/notifications/`) ;
 - les **notifications push** (clés VAPID) ;
-- les **alertes** (`apps/lfd-api/src/b2b/alerts/`), hors leur e-mail ;
+- les **alertes** (`apps/lfd-api/src/lafoliecoffee/alerts/`), hors leur e-mail ;
 - tout autre envoi vers l'extérieur (SMS, webhooks sortants…) s'il en existe.
 
 … dire **qui envoie**, **en direct ou par un abonné durable**, et **ce qui est

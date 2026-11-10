@@ -3,7 +3,7 @@
  *
  * Pourquoi dans le **contrat partagé** : trois sujets en ont besoin — les
  * créneaux de rendez-vous, les heures limites de commande, et les écrans qui
- * affichent les deux. Le module a d'abord vécu dans `b2b/growth/domain/`, au
+ * affichent les deux. Le module a d'abord vécu dans `lafoliecoffee/growth/domain/`, au
  * motif que « les horaires du commercial sont ceux de Paris » en faisait une
  * règle métier. C'était vrai et trop étroit : le fuseau n'appartient pas au
  * commercial, il appartient à la maison. Une seconde implémentation aurait

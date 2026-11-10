@@ -8,7 +8,7 @@
 ## Le constat
 
 - `lint:prisma-model-ownership` (`dev-toolbox/gates/prisma-model-ownership.mjs`,
-  `BLOCKS`) raisonne par **bloc** : à l'intérieur de `src/b2b/`, n'importe
+  `BLOCKS`) raisonne par **bloc** : à l'intérieur de `src/lafoliecoffee/`, n'importe
   quel contexte peut lire en Prisma les tables d'un autre.
 - `lint:cross-schema-join` ne lit que le SQL écrit à la main ; il ignore les
   lectures Prisma. Mettre un contexte dans son propre schéma Postgres
@@ -24,7 +24,7 @@
 ## Ce qu'il faudrait
 
 1. Apprendre à la porte un **propriétaire par table au niveau du contexte**
-   (`b2b/orders`, `b2b/promotions`, `b2b/accounting`…), lu dans la même source
+   (`lafoliecoffee/orders`, `lafoliecoffee/promotions`, `lafoliecoffee/accounting`…), lu dans la même source
    que les blocs.
 2. Toute lecture Prisma d'une table par un autre contexte est **comptée et
    affichée**, en dette décroissante (comme `lint:controller-buses`) ; un

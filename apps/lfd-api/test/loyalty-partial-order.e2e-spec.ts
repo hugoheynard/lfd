@@ -14,8 +14,8 @@
  * aujourd'hui latent, et ce test le tient avant qu'un des deux chemins
  * n'ouvre la porte.
  */
-import { LoyaltySettings } from "../src/b2b/loyalty/domain/value-objects/loyalty-settings.js";
-import { PrismaLoyaltySettingsStore } from "../src/b2b/loyalty/infrastructure/prisma-loyalty-settings.store.js";
+import { LoyaltySettings } from "../src/lafoliecoffee/loyalty/domain/value-objects/loyalty-settings.js";
+import { PrismaLoyaltySettingsStore } from "../src/lafoliecoffee/loyalty/infrastructure/prisma-loyalty-settings.store.js";
 import { E2E_STAFF_ID, type E2eContext } from "./e2e-harness.js";
 import { handOver } from "./order-factory.js";
 import { bootstrapProductionDay, closeOrder } from "./production-day-fixture.js";

@@ -94,7 +94,7 @@ Le cycle :
 2. lancer `pnpm tool rgaa:digest`
    ([`dev-toolbox/rgaa-digest.mjs`](../../dev-toolbox/rgaa-digest.mjs)) : il valide les entrées et
    écrit la part publique dans l'API
-   (`apps/lfd-api/src/b2b/content/infrastructure/embedded/accessibility-follow-up.json`) ;
+   (`apps/lfd-api/src/lafoliecoffee/content/infrastructure/embedded/accessibility-follow-up.json`) ;
 3. commiter la grille et le fichier généré ensemble — `pnpm gate rgaa-digest` refuse un fichier
    embarqué qui ne suit plus la grille ;
 4. déployer l'API : c'est elle qui sert `GET /content/accessibility-follow-up`.

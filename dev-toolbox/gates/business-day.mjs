@@ -58,7 +58,7 @@ const SCAN_ROOTS = [
   "apps/lfd-backoffice-frontend/src/app/b2b/tarification",
   "apps/lfd-backoffice-frontend/src/app/commercial/tarification",
   "apps/lfd-backoffice-frontend/src/app/fiche-client/tarifs",
-  "apps/lfd-api/src/b2b/pricing",
+  "apps/lfd-api/src/lafoliecoffee/pricing",
   // Les opérations datées du référentiel (`pim/operations`, 2026-09-24) y
   // figuraient : parties en X4 (2026-10-17) — elles s'écrivent au commerce,
   // couvert plus bas.
@@ -66,11 +66,11 @@ const SCAN_ROOTS = [
   // du même plan, 2026-09-24) : la clôture effective y est `min(PIM,
   // surcharge)`, et le lot 3 y comparera un jour de retrait aux bornes d'une
   // opération.
-  "apps/lfd-api/src/b2b/catalog",
+  "apps/lfd-api/src/lafoliecoffee/catalog",
   // L'opération tenue AU COMMERCE (lot 1 de `plan-l-operation-passe-au-commerce.md`,
   // 2026-10-15) : son agrégat reprend la saisie au fuseau de Paris et `fin(jour)`
   // par `localToInstant` — le plan demande que la porte couvre son dossier.
-  "apps/lfd-api/src/b2b/operations",
+  "apps/lfd-api/src/lafoliecoffee/operations",
   // L'écran du commerce (lot 3 bis, 2026-10-16) : la saisie au fuseau de Paris
   // (`operation-schedule.ts`) y a déménagé, et ses formulaires l'emploient.
   // L'écran du référentiel (`pim/operations`) est retiré le même jour.

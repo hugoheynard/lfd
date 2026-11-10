@@ -8,14 +8,14 @@
  * tu ; la ligne d'encaissement suit le solde ; le gel refuse de réécrire les
  * montants d'une commande engagée.
  */
-import { BillableOrdersReader } from "../src/b2b/accounting/domain/ports/billable-orders.reader.js";
-import { CollectionCandidatesReader } from "../src/b2b/accounting/domain/ports/collection-candidates.reader.js";
-import { CycleOrdersReader } from "../src/b2b/accounting/domain/ports/cycle-orders.reader.js";
-import { InvoiceDossierReader } from "../src/b2b/accounting/domain/ports/invoice-dossier.reader.js";
-import { MonthlyInvoicingReader } from "../src/b2b/accounting/domain/ports/monthly-invoicing.reader.js";
-import { OrderCollectionRepository } from "../src/b2b/accounting/domain/ports/order-collection.repository.js";
-import { ProcedureOrdersReader } from "../src/b2b/accounting/domain/ports/procedure-orders.reader.js";
-import { UnconfirmedDeliveriesReader } from "../src/b2b/accounting/domain/ports/unconfirmed-deliveries.reader.js";
+import { BillableOrdersReader } from "../src/lafoliecoffee/accounting/domain/ports/billable-orders.reader.js";
+import { CollectionCandidatesReader } from "../src/lafoliecoffee/accounting/domain/ports/collection-candidates.reader.js";
+import { CycleOrdersReader } from "../src/lafoliecoffee/accounting/domain/ports/cycle-orders.reader.js";
+import { InvoiceDossierReader } from "../src/lafoliecoffee/accounting/domain/ports/invoice-dossier.reader.js";
+import { MonthlyInvoicingReader } from "../src/lafoliecoffee/accounting/domain/ports/monthly-invoicing.reader.js";
+import { OrderCollectionRepository } from "../src/lafoliecoffee/accounting/domain/ports/order-collection.repository.js";
+import { ProcedureOrdersReader } from "../src/lafoliecoffee/accounting/domain/ports/procedure-orders.reader.js";
+import { UnconfirmedDeliveriesReader } from "../src/lafoliecoffee/accounting/domain/ports/unconfirmed-deliveries.reader.js";
 import type { E2eContext } from "./e2e-harness.js";
 import { receivedColumns } from "./factories.js";
 import { handOver } from "./order-factory.js";

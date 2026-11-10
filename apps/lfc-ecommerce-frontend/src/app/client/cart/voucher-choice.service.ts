@@ -8,7 +8,7 @@ import { ClientContext } from '../client-context.service';
 /**
  * Le préfixe des refus d'un bon de fidélité — expiré, déjà utilisé, disputé
  * par un autre onglet. Le préfixe plutôt que la liste : les codes vivent dans
- * `apps/lfd-api/src/b2b/loyalty/domain/errors/loyalty-errors.ts`, et les
+ * `apps/lfd-api/src/lafoliecoffee/loyalty/domain/errors/loyalty-errors.ts`, et les
  * recopier un à un en ferait une liste qui dérive.
  */
 export const LOYALTY_REFUSAL_PREFIX = 'loyalty.';

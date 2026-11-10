@@ -1,8 +1,8 @@
 import { Global, Module } from "@nestjs/common";
 
-import { CatalogModule as CommerceCatalogModule } from "../b2b/catalog/catalog.module.js";
-import { CommerceOperationsModule } from "../b2b/operations/operations.module.js";
-import { StorefrontModule } from "../b2b/storefront/storefront.module.js";
+import { CatalogModule as CommerceCatalogModule } from "../lafoliecoffee/catalog/catalog.module.js";
+import { CommerceOperationsModule } from "../lafoliecoffee/operations/operations.module.js";
+import { StorefrontModule } from "../lafoliecoffee/storefront/storefront.module.js";
 import { MediaCarriers } from "../media/channels/carriers/media-carriers.js";
 import { CatalogueModule } from "../pim/catalogue/catalogue.module.js";
 import { PrismaMediaCarriers } from "../pim/catalogue/shared/infrastructure/prisma-media-carriers.js";

@@ -313,7 +313,7 @@ des promotions.
   montant ou en pourcentage — au lieu de `fee_mode` / `fee_value` uniques.
 - L'écran **Réglages › Livraison › Zones** n'affiche que les audiences
   ouvertes dans la **disponibilité de la livraison**
-  (`b2b/delivery-availability/`, `openToB2b` / `openToB2c`). Ouvrir une
+  (`lafoliecoffee/delivery-availability/`, `openToB2b` / `openToB2c`). Ouvrir une
   audience demande que chaque zone ait son frais pour elle.
 - **Migration** : les zones existantes recopient leur frais actuel dans les
   deux audiences (le tarif d'aujourd'hui est le même pour tous) ; l'ancienne

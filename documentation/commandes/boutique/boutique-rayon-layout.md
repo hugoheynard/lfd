@@ -15,7 +15,7 @@
 | Pièce                                                                 | État                          | Où                                                                                                                                                                             |
 | --------------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Les règles — formes, collision, côtés d'image, tons, pile, défilement | ✅                            | paquet `@lfd/storefront-layout` (`44d8948cc`)                                                                                                                                  |
-| Le modèle, le droit `b2b_storefront`, le verrou, la lecture publique  | ✅                            | `apps/lfd-api/src/b2b/storefront/` (`44d8948cc`)                                                                                                                               |
+| Le modèle, le droit `b2b_storefront`, le verrou, la lecture publique  | ✅                            | `apps/lfd-api/src/lafoliecoffee/storefront/` (`44d8948cc`)                                                                                                                     |
 | La vitrine porteur d'images de la médiathèque                         | ✅                            | `apps/lfd-api/src/appBootstrap/` (`568804d92`)                                                                                                                                 |
 | L'éditeur, en état local                                              | ✅                            | `apps/lfd-backoffice-frontend/src/app/contenu/` (`40b6bd33e`, `0932c542d`)                                                                                                     |
 | L'éditeur branché sur le serveur, contenus associés                   | ✅                            | lot 3 du plan (`a5f2eb71f`) ; multi-contenu en onglets (2026-09-24)                                                                                                            |
@@ -192,7 +192,7 @@ flowchart LR
   T -.->|"porteur d'images"| M["médiathèque : composite de MediaCarriers"]
 ```
 
-- **Un contexte `b2b/storefront`** (`apps/lfd-api/src/b2b/storefront/`), un
+- **Un contexte `lafoliecoffee/storefront`** (`apps/lfd-api/src/lafoliecoffee/storefront/`), un
   **agrégat** : la vitrine entière (pages, objets, gabarits), chargée et
   enregistrée d'un bloc. Un objet partagé paraît sur N rayons à la même position,
   donc la collision se vérifie sur chacun ; deux agrégats « page » ne peuvent pas

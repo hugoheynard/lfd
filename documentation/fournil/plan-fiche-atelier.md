@@ -23,7 +23,7 @@ confondus » — est exactement la liste que la fiche affiche. Le handoff propos
 commerce : ce serait une **seconde** agrégation du même fait, avec l'occasion de
 diverger de la première.
 
-Conséquence : la fiche se sert du bloc `production`, pas de `b2b/orders`.
+Conséquence : la fiche se sert du bloc `production`, pas de `lafoliecoffee/orders`.
 
 ### 1.2 L'heure de tirage existe déjà — c'est `closedAt`
 
@@ -245,7 +245,7 @@ motif que `DayOrdersReader` ; aucune migration, aucune copie de la catégorie.
 
 Deux faits, lus dans le code (vérifié le 2026-09-14) :
 
-- l'adaptateur (`b2b/catalog/infrastructure/catalog-workshop-shelves.reader.ts`)
+- l'adaptateur (`lafoliecoffee/catalog/infrastructure/catalog-workshop-shelves.reader.ts`)
   lit `CatalogReader.listDefaultsByProductSkus`, la même source que
   `resolveMany`, qui **écarte les articles masqués et ceux sans taux de TVA**.
   Un article masqué à la vente mais fabriqué ce jour-là tombe donc en « Hors

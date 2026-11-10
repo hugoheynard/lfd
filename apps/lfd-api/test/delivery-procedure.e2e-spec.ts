@@ -18,9 +18,9 @@ import type {
 } from "@lfd/contracts";
 import type request from "supertest";
 
-import { DeliveryProcedure } from "../src/b2b/account/domain/entities/delivery-procedure.js";
-import { DeliveryProcedureRepository } from "../src/b2b/account/domain/ports/delivery-procedure.repository.js";
-import { DeliveryStepContent } from "../src/b2b/account/domain/value-objects/delivery-step-content.js";
+import { DeliveryProcedure } from "../src/lafoliecoffee/account/domain/entities/delivery-procedure.js";
+import { DeliveryProcedureRepository } from "../src/lafoliecoffee/account/domain/ports/delivery-procedure.repository.js";
+import { DeliveryStepContent } from "../src/lafoliecoffee/account/domain/value-objects/delivery-step-content.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { IdGenerator } from "../src/platform/id/id-generator.js";

@@ -1,8 +1,8 @@
 import type { DayComposer } from "../../delivery/application/day-composer.js";
 import type { S3StorageConfig } from "@lfd/storage";
 
-import { shopSkuOf } from "../../b2b/catalog/domain/shop-sku.js";
-import { STILL_SOLD } from "../../b2b/catalog/infrastructure/sellable-filter.js";
+import { shopSkuOf } from "../../lafoliecoffee/catalog/domain/shop-sku.js";
+import { STILL_SOLD } from "../../lafoliecoffee/catalog/infrastructure/sellable-filter.js";
 import { purgeScenario, type ScenarioPurgeReport } from "../scenario/purge/scenario-purge.js";
 import { resolveScenarioScope } from "../scenario/purge/scenario-scope.js";
 import { COUNTER, PICKUP_WINDOW } from "./counter-day.seed.js";
@@ -25,7 +25,7 @@ import { featureSeededItems } from "./featured.seed.js";
 import { paintSeededSites } from "./site-colors.seed.js";
 import { placeTomorrowRounds, TOMORROW_ROUNDS_SKUS } from "./tomorrow-rounds.seed.js";
 import { prepareClients, type ScenarioClients } from "./scenario-clients.seed.js";
-import { ApproveReviewCommand } from "../../b2b/catalog/application/commands/approve-review.command.js";
+import { ApproveReviewCommand } from "../../lafoliecoffee/catalog/application/commands/approve-review.command.js";
 
 export type { SeedContext } from "./order-placing.seed.js";
 

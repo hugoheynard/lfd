@@ -4,8 +4,8 @@
 > écrit, aucune règle ne change.
 >
 > 🟦 **Bâti le 2026-10-31** (non commité) : `ExportPriceGridQuery` et
-> `ListPriceGridPromotionsQuery` (`apps/lfd-api/src/b2b/pricing/`, module
-> `apps/lfd-api/src/b2b/pricing/price-grid.module.ts`), routes `POST /admin/pricing/price-grid/{promotions,export}`
+> `ListPriceGridPromotionsQuery` (`apps/lfd-api/src/lafoliecoffee/pricing/`, module
+> `apps/lfd-api/src/lafoliecoffee/pricing/price-grid.module.ts`), routes `POST /admin/pricing/price-grid/{promotions,export}`
 > sous `b2b_pricing:read`, contrat `@lfd/contracts` (`packages/contracts/src/price-grid.ts`), panneau
 > « Exporter une grille de prix » sur `/pim/catalogue`. **Écarts au plan**, chacun
 > en suspens chez Hugo :
@@ -73,7 +73,7 @@ indicatif, non contractuel. »
 ## 4. Comment
 
 - **Serveur** : une requête de lecture (`ExportPriceGridQuery`) dans
-  `b2b/pricing`, qui résout chaque prix par la **porte du prix** (le
+  `lafoliecoffee/pricing`, qui résout chaque prix par la **porte du prix** (le
   `Pricer`, `lint:price-door`) avec les faits d'audience du public choisi,
   à la date choisie, puis applique les remises de panier retenues par la
   **règle même** de la caisse (`basket-promotion-choice` / la portée
@@ -127,9 +127,9 @@ sans identité, `b2bPending`, `b2c`).
 ## 8. Après vitruve (2026-10-31) — fait foi sur le § 7
 
 > 🟦 **Bâti le 2026-10-31** (non commité). `TypicalBuyer`
-> (`apps/lfd-api/src/b2b/promotions/domain/lot-buyer.ts`, constructeur privé,
+> (`apps/lfd-api/src/lafoliecoffee/promotions/domain/lot-buyer.ts`, constructeur privé,
 > classe nominale) et sa fabrique `priceGridTypicalBuyer`
-> (`apps/lfd-api/src/b2b/pricing/application/price-grid-typical-buyer.ts`) ; `LotRequest.buyer`
+> (`apps/lfd-api/src/lafoliecoffee/pricing/application/price-grid-typical-buyer.ts`) ; `LotRequest.buyer`
 > et `LotBuyer` = `real | typical` ; `lotBuyerFacts` (le `switch` du point
 > ligne et du rayon) ; `TYPICAL_BUYER` dans `promotion-targeting.ts` ; ports
 > `PriceGridViewerReader` et `PriceGridShelfReader.shelfFor(viewer)` ; contrat

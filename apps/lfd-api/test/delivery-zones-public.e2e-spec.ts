@@ -15,8 +15,8 @@ import {
   type ShopQuoteView,
 } from "@lfd/contracts";
 
-import { PUBLIC_SETTINGS_CACHE_TAG } from "../src/b2b/shared/public-settings-cache/domain/ports/public-settings-edge-cache.js";
-import { PUBLIC_SETTINGS_CACHE_CONTROL } from "../src/b2b/shared/public-settings-cache/http/public-settings-cache-headers.js";
+import { PUBLIC_SETTINGS_CACHE_TAG } from "../src/lafoliecoffee/shared/public-settings-cache/domain/ports/public-settings-edge-cache.js";
+import { PUBLIC_SETTINGS_CACHE_CONTROL } from "../src/lafoliecoffee/shared/public-settings-cache/http/public-settings-cache-headers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 

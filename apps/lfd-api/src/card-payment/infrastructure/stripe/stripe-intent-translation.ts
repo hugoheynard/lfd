@@ -5,7 +5,7 @@ import type {
   IntentCancellation,
 } from "../../domain/ports/card-provider-types.js";
 
-// Copié de `b2b/payments/infrastructure/stripe-intent-translation.ts` le
+// Copié de `lafoliecoffee/payments/infrastructure/stripe-intent-translation.ts` le
 // 2026-11-09 (plan M2, §4.2 : P0 copie, le lot c2 retire l'original).
 
 /**

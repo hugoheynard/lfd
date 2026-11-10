@@ -16,19 +16,19 @@
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { PrincipalResolver } from "../src/platform/auth/principal.resolver.js";
 import type { VerifiedToken } from "../src/platform/auth/principal.js";
-import { CustomerIdentityPort } from "../src/b2b/account/domain/ports/customer-identity.port.js";
+import { CustomerIdentityPort } from "../src/lafoliecoffee/account/domain/ports/customer-identity.port.js";
 import type {
   IdentityToProvision,
   LoginMethod,
   ProvisionedIdentity,
-} from "../src/b2b/account/domain/ports/customer-identity.port.js";
+} from "../src/lafoliecoffee/account/domain/ports/customer-identity.port.js";
 import { CustomerRole, UserStatus } from "../src/platform/database/client/client.js";
 import { StaffIdentityPort } from "../src/staff/invitations/staff-identity.port.js";
 import { randomUUID } from "node:crypto";
 import { placeOrderPayloadSchema } from "@lfd/contracts";
 import { CommandBus } from "@nestjs/cqrs";
 
-import { PlaceOrderCommand } from "../src/b2b/orders/application/commands/place-order.command.js";
+import { PlaceOrderCommand } from "../src/lafoliecoffee/orders/application/commands/place-order.command.js";
 import {
   bootstrapE2e,
   daysAgo,

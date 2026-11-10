@@ -1,6 +1,6 @@
-import { SetCatalogFeaturedCommand } from "../../b2b/catalog/application/commands/set-catalog-featured.command.js";
-import type { ShopAudience } from "../../b2b/catalog/domain/ports/catalog.reader.js";
-import { STILL_SOLD } from "../../b2b/catalog/infrastructure/sellable-filter.js";
+import { SetCatalogFeaturedCommand } from "../../lafoliecoffee/catalog/application/commands/set-catalog-featured.command.js";
+import type { ShopAudience } from "../../lafoliecoffee/catalog/domain/ports/catalog.reader.js";
+import { STILL_SOLD } from "../../lafoliecoffee/catalog/infrastructure/sellable-filter.js";
 import { asStaff, SEED_STAFF_SUB, type SeedContext } from "./order-placing.seed.js";
 
 /**

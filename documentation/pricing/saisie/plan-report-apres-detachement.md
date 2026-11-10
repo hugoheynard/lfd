@@ -14,16 +14,16 @@
 ## 0. Ce que dit le code aujourd'hui (ouvert le 2026-10-30)
 
 - Le report n'existe que pour la mercuriale. `carryOverDraft`
-  (`apps/lfd-api/src/b2b/pricing/domain/entities/mercuriale-carry-over.ts:28-45`)
+  (`apps/lfd-api/src/lafoliecoffee/pricing/domain/entities/mercuriale-carry-over.ts:28-45`)
   copie les paliers de la ligne en cours de l'ancienne référence, pose
   `validFrom = max(maintenant, début de la ligne)` (`:40`), `validTo` = fin
   réelle de la ligne (`:41`) et `origin: { kind: "detached", fromSku, fromMercurialeId }` (`:43`).
-- Le handler (`apps/lfd-api/src/b2b/pricing/application/commands/carry-over-mercuriale-line.handler.ts`)
+- Le handler (`apps/lfd-api/src/lafoliecoffee/pricing/application/commands/carry-over-mercuriale-line.handler.ts`)
   garde la filiation (`detachedFromOf(toSku) === fromSku`, `:53-56`), la vente
   aux pros (`assertOnSale`, `:57`), la réservation (`:68`), et écrit sous
   verrou dans une seule `uow.run` (`:61-87`).
 - La liste des décisions d'une référence
-  (`apps/lfd-api/src/b2b/pricing/infrastructure/prisma-sale-reference-decisions.reader.ts`)
+  (`apps/lfd-api/src/lafoliecoffee/pricing/infrastructure/prisma-sale-reference-decisions.reader.ts`)
   connaît six familles : `mercuriale` (`:67`), `price_rule` (`:77-91`),
   `price_floor` (`:93-108`, `companyId: null`, sans pause), `volume_ladder`
   (`:110-124`), `volume_commitment` (`:126-145`, `companyId` propre,
@@ -272,13 +272,13 @@ offert qu'au staff qui a `lfc_price_limits`.
   `price_floors`, `volume_ladders`, `volume_commitments`~~ — ✅ bâti le
   2026-10-30 : `20261030230000_l_origine_des_decisions_reportees`
   (`lock_timeout` 5 s), lue par `decisionOriginFromJson`
-  (`apps/lfd-api/src/b2b/pricing/infrastructure/decision-origin-rows.ts`), rendue par le lecteur de
+  (`apps/lfd-api/src/lafoliecoffee/pricing/infrastructure/decision-origin-rows.ts`), rendue par le lecteur de
   décisions (`SaleReferenceDecisionView.origin`). `lecteur-de-migrations`
   avant main reste à faire.
 - ~~**R1** — règles~~ — ✅ bâti le 2026-10-30 : `PricingRule.carriedFrom`
-  (+ `apps/lfd-api/src/b2b/pricing/domain/entities/pricing-rule-carry-over.ts`), `CarryOverPriceRuleHandler`, acte
+  (+ `apps/lfd-api/src/lafoliecoffee/pricing/domain/entities/pricing-rule-carry-over.ts`), `CarryOverPriceRuleHandler`, acte
   `posed` avec le motif. ⚠️ La route est dans
-  `apps/lfd-api/src/b2b/pricing/http/admin-pricing-carry-over.controller.ts`, **même surface**
+  `apps/lfd-api/src/lafoliecoffee/pricing/http/admin-pricing-carry-over.controller.ts`, **même surface**
   `b2b_pricing`, et non dans `admin-pricing.controller.ts`, qui dépassait déjà
   300 lignes.
 - ~~**R2** — planchers~~ — ✅ bâti le 2026-10-30 : `PricingFloor.carriedFrom`,
@@ -371,4 +371,4 @@ seule. Deux règles distinctes de l'ancienne référence (ex. une promotion et
 un geste pour la même société) se reportent donc toutes deux ; la même deux
 fois reste refusée (409). Le **barème** garde l'audience : son exclusion
 (`volume_ladders_no_overlap`) ne porte que portée et audience. Tenu par
-`ruleCarryKey` (`apps/lfd-api/src/b2b/pricing/domain/entities/decision-carry-over.ts`).
+`ruleCarryKey` (`apps/lfd-api/src/lafoliecoffee/pricing/domain/entities/decision-carry-over.ts`).

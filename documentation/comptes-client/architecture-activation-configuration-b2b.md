@@ -13,7 +13,7 @@ depuis un écran : une case cochée un mardi soir changeait la définition de
 que personne puisse dire le lendemain pourquoi un compte était passé.
 
 La règle vit désormais dans **une seule fonction**, `activationGate`
-(`apps/lfd-api/src/b2b/account/domain/services/activation-gate.ts`),
+(`apps/lfd-api/src/lafoliecoffee/account/domain/services/activation-gate.ts`),
 pure, testée, et lue par les deux chemins qui comptent : la fiche staff (qui
 l'affiche) et la commande d'activation (qui refuse). L'écran n'a plus le droit
 de la rejouer.
@@ -101,7 +101,7 @@ coûteux au moins pressant :
 | `kbis_a_verifier`    | l'extrait est là, personne ne l'a ouvert                         | dépôt de l'extrait               |
 
 Le calcul est **une fonction pure côté serveur**, `companyWarnings`
-(`apps/lfd-api/src/b2b/account/domain/services/company-warnings.ts`), à côté
+(`apps/lfd-api/src/lafoliecoffee/account/domain/services/company-warnings.ts`), à côté
 de `activationGate` dont elle reprend la règle du sous-compte. Elle rend un
 tableau **ordonné** (le plus grave d'abord, à gravité égale le plus vieux), et
 `AdminCompanyView` le porte en `warnings` (`packages/contracts/src/admin-company.ts`)

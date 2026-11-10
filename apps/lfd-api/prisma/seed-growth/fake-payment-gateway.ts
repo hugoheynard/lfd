@@ -5,7 +5,7 @@ import {
   type IntentCancellation,
   type PaymentWebhookEvent,
   type RetrievedIntent,
-} from "../../src/b2b/payments/domain/payment-gateway.js";
+} from "../../src/lafoliecoffee/payments/domain/payment-gateway.js";
 
 /**
  * `PaymentGateway` **factice** pour le seed : le vrai handler de commande tourne

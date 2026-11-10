@@ -1,6 +1,6 @@
 /**
  * **Les SKU de vente froids, vus par la livraison** — ce que la livraison
- * DÉCLARE et que le commerce implémente (`b2b/catalog/infrastructure/`),
+ * DÉCLARE et que le commerce implémente (`lafoliecoffee/catalog/infrastructure/`),
  * relié dans `appBootstrap`.
  *
  * Un port à part de `DeliveryProductsReader` (ISP) : celui-là sert la grille

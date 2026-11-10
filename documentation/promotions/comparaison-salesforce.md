@@ -4,7 +4,7 @@ Comparé à : [promotions.md](promotions.md)
 
 > 📝 **Étude du 2026-10-31** (demande de Hugo : « voir ce qui est au niveau
 > Salesforce »). Notre côté : `promotions.md` et le code de
-> `apps/lfd-api/src/b2b/promotions/domain/` ouverts le 2026-10-31. Côté
+> `apps/lfd-api/src/lafoliecoffee/promotions/domain/` ouverts le 2026-10-31. Côté
 > Salesforce : chaque affirmation renvoie à une source du § 5 ; ce qui n'a pas
 > pu être vérifié est marqué **(non vérifié)**. La référence est **B2C Commerce
 > Cloud** (ex-Demandware, Business Manager) ; Salesforce Commerce « on Core »

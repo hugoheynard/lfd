@@ -18,8 +18,8 @@
  *    suite, en nommant l'URL — le prochain adaptateur réseau oublié se verra
  *    au premier passage, pas au hasard d'une CI lente.
  */
-import { EstablishmentDirectory } from "../src/b2b/account/domain/ports/establishment-directory.js";
-import { MarketDirectory } from "../src/b2b/growth/domain/ports/market-directory.js";
+import { EstablishmentDirectory } from "../src/lafoliecoffee/account/domain/ports/establishment-directory.js";
+import { MarketDirectory } from "../src/lafoliecoffee/growth/domain/ports/market-directory.js";
 
 /** Les hôtes qu'une e2e peut joindre : la machine qui la fait tourner. */
 const LOCAL_HOSTS: ReadonlySet<string> = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);

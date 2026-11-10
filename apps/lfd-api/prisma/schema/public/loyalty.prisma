@@ -2,7 +2,7 @@
 // La fidélité — le grand livre de points, les bons d'achat, le réglage
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// Propriétaire : `src/b2b/loyalty/`. Plan
+// Propriétaire : `src/lafoliecoffee/loyalty/`. Plan
 // `documentation/comptabilite/fidelite/plan-points-de-fidelite.md` (lot A).
 //
 // 🔴 Plusieurs contraintes vivent dans la migration `20260926160000_la_fidelite`

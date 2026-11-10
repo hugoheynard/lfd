@@ -1,17 +1,17 @@
 import { Global, Module } from "@nestjs/common";
 
-import { DebtorMandateReader } from "../b2b/accounting/domain/ports/debtor-mandate.reader.js";
-import { CollectionMandatesReader } from "../b2b/accounting/domain/ports/collection-mandates.reader.js";
-import { MandateRecheckReader } from "../b2b/accounting/domain/ports/mandate-recheck.reader.js";
-import { AccountsForBankExportReader } from "../b2b/accounting/domain/ports/accounts-for-bank-export.reader.js";
-import { MandatesForBankExportReader } from "../b2b/accounting/domain/ports/mandates-for-bank-export.reader.js";
+import { DebtorMandateReader } from "../lafoliecoffee/accounting/domain/ports/debtor-mandate.reader.js";
+import { CollectionMandatesReader } from "../lafoliecoffee/accounting/domain/ports/collection-mandates.reader.js";
+import { MandateRecheckReader } from "../lafoliecoffee/accounting/domain/ports/mandate-recheck.reader.js";
+import { AccountsForBankExportReader } from "../lafoliecoffee/accounting/domain/ports/accounts-for-bank-export.reader.js";
+import { MandatesForBankExportReader } from "../lafoliecoffee/accounting/domain/ports/mandates-for-bank-export.reader.js";
 import {
   PrismaCollectionMandatesReader,
   PrismaMandateRecheckReader,
-} from "../b2b/payments/infrastructure/prisma-collection-mandates.reader.js";
-import { PrismaDebtorMandateReader } from "../b2b/payments/infrastructure/prisma-debtor-mandate.reader.js";
-import { PrismaAccountsForBankExportReader } from "../b2b/payments/infrastructure/prisma-accounts-for-bank-export.reader.js";
-import { PrismaMandatesForBankExportReader } from "../b2b/payments/infrastructure/prisma-mandates-for-bank-export.reader.js";
+} from "../lafoliecoffee/payments/infrastructure/prisma-collection-mandates.reader.js";
+import { PrismaDebtorMandateReader } from "../lafoliecoffee/payments/infrastructure/prisma-debtor-mandate.reader.js";
+import { PrismaAccountsForBankExportReader } from "../lafoliecoffee/payments/infrastructure/prisma-accounts-for-bank-export.reader.js";
+import { PrismaMandatesForBankExportReader } from "../lafoliecoffee/payments/infrastructure/prisma-mandates-for-bank-export.reader.js";
 
 /**
  * Le fil qui relie **le lot de prélèvement aux mandats**.

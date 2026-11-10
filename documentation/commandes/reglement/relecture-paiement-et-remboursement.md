@@ -16,7 +16,7 @@
 > (ports `CardPayments` / `CardSettlementReader`, canal `SubjectSettlement`
 > implémenté par `orders`, webhook par compte) ; `PaymentGateway`,
 > `PaymentRefunder`, `ConfirmOrderPaymentCommand` et le webhook de
-> `b2b/payments` n'existent plus — les chemins cités ci-dessous ont été
+> `lafoliecoffee/payments` n'existent plus — les chemins cités ci-dessous ont été
 > repointés vers leurs successeurs, la prose décrit toujours le mécanisme
 > d'avant. Le **remboursement** (carnet, demande, exécuteur, constat), lui,
 > n'a pas bougé : il déménage en P1.

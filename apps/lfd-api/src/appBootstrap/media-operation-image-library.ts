@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import {
   OperationImageLibrary,
   type LibraryImage,
-} from "../b2b/operations/channels/media/operation-image-library.js";
+} from "../lafoliecoffee/operations/channels/media/operation-image-library.js";
 import { ImageCatalogue } from "../pim/channels/media/image-catalogue.js";
 
 /**

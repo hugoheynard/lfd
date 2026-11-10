@@ -9,11 +9,11 @@
  * Les dates sont des fenêtres comparées entre elles, jamais à l'horloge :
  * aucun lecteur de prix ne lit les promotions dans ce lot.
  */
-import { PromotionRepository } from "../src/b2b/promotions/domain/ports/promotion.repository.js";
-import { promotionActOf } from "../src/b2b/promotions/domain/promotion-act.js";
-import { Promotion } from "../src/b2b/promotions/domain/promotion.js";
-import { PromotionAudienceSet } from "../src/b2b/promotions/domain/promotion-audience-set.js";
-import type { PromotionTerms } from "../src/b2b/promotions/domain/promotion-terms.js";
+import { PromotionRepository } from "../src/lafoliecoffee/promotions/domain/ports/promotion.repository.js";
+import { promotionActOf } from "../src/lafoliecoffee/promotions/domain/promotion-act.js";
+import { Promotion } from "../src/lafoliecoffee/promotions/domain/promotion.js";
+import { PromotionAudienceSet } from "../src/lafoliecoffee/promotions/domain/promotion-audience-set.js";
+import type { PromotionTerms } from "../src/lafoliecoffee/promotions/domain/promotion-terms.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 import { seedPickupPoint } from "./promotion-fixtures.js";
 

@@ -7,7 +7,7 @@ import type { StoredDocument } from "../../platform/storage/document-store.js";
 /**
  * Le transport des photos de contrôle : lire un multipart, servir une image.
  *
- * Réécrit ici plutôt qu'emprunté aux cartes à photo (`b2b/shared/photo-cards`),
+ * Réécrit ici plutôt qu'emprunté aux cartes à photo (`lafoliecoffee/shared/photo-cards`),
  * que la production n'a pas le droit d'importer (`CLAUDE.md` §3, plan
  * `plan-controle-qualite.md`, D8). Même mécanique, bornes à elle.
  */

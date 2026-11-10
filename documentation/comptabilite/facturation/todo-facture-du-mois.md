@@ -9,7 +9,7 @@
 
 **Même automatique, pas de facture si pas de commande** (Hugo, 2026-10-09).
 La facture du mois part des **bons du mois**, regroupés par payeur légal
-(`ordersByPayer`, `b2b/accounting/domain/services/monthly-invoicing.ts`) : un
+(`ordersByPayer`, `lafoliecoffee/accounting/domain/services/monthly-invoicing.ts`) : un
 client qui n'a rien commandé au compte n'apparaît pas — ni facture, ni
 signalement, quelle que soit sa fiche. Tenu par le test « sans aucun bon du
 mois : ni facture, ni payeur signalé » (`monthly-invoicing.spec.ts`).
@@ -24,12 +24,12 @@ mois : ni facture, ni payeur signalé » (`monthly-invoicing.spec.ts`).
       clients au compte. Requête de contrôle :
 
       ```sql
-                          SELECT count(*) FROM public.companies c
-                          WHERE NOT EXISTS (
-                            SELECT 1 FROM public.addresses a
-                            WHERE a.company_id = c.id AND a.kind = 'billing' AND a.archived_at IS NULL
-                          );
-                          ```
+                              SELECT count(*) FROM public.companies c
+                              WHERE NOT EXISTS (
+                                SELECT 1 FROM public.addresses a
+                                WHERE a.company_id = c.id AND a.kind = 'billing' AND a.archived_at IS NULL
+                              );
+                              ```
 
 - [ ] **Mentions de paiement de l'entité** (pénalités de retard, indemnité de
       40 €) : sans elles, aucune facture ne part (`payment_terms_missing`).

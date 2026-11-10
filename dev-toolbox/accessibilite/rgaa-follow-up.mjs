@@ -16,7 +16,7 @@ import { fileURLToPath } from "node:url";
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 export const GRID_PATH = "documentation/accessibilite/grille-audit-rgaa.json";
 export const EMBEDDED_PATH =
-  "apps/lfd-api/src/b2b/content/infrastructure/embedded/accessibility-follow-up.json";
+  "apps/lfd-api/src/lafoliecoffee/content/infrastructure/embedded/accessibility-follow-up.json";
 export const REGENERATE = "pnpm tool rgaa:digest";
 
 const THEMES = 13;

@@ -1,7 +1,7 @@
 import { Global, Module } from "@nestjs/common";
 
-import { CommerceGeneralOrderCutoffReader } from "../b2b/order-cutoffs/infrastructure/pim-general-order-cutoff.reader.js";
-import { OrderCutoffsInForceModule } from "../b2b/order-cutoffs/order-cutoffs-in-force.module.js";
+import { CommerceGeneralOrderCutoffReader } from "../lafoliecoffee/order-cutoffs/infrastructure/pim-general-order-cutoff.reader.js";
+import { OrderCutoffsInForceModule } from "../lafoliecoffee/order-cutoffs/order-cutoffs-in-force.module.js";
 import { GeneralOrderCutoffReader } from "../pim/channels/b2b-platform/general-order-cutoff/general-order-cutoff.reader.js";
 
 /**

@@ -58,7 +58,7 @@ flowchart LR
 
 Le modèle est un `sub` par personne (`users.auth0_sub` unique). Un sujet
 inconnu passe par `UnknownSubjectAdmission`
-(`b2b/account/infrastructure/unknown-subject-admission.ts`) avant qu'un compte
+(`lafoliecoffee/account/infrastructure/unknown-subject-admission.ts`) avant qu'un compte
 lui soit créé :
 
 | Le jeton            | Les comptes connectables sous l'adresse | Issue                                                           |

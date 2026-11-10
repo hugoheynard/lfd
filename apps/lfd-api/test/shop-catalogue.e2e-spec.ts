@@ -16,8 +16,8 @@ import { DurablePublisher } from "../src/platform/outbox/durable-publisher.js";
 import { deliverAsFacts } from "./catalog-facts-delivery.js";
 import { CATEGORY, PUBLIC_LABEL, snapshotOf } from "./catalog-ingest-fixtures.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { InMemoryPublicShelf } from "../src/b2b/catalog/application/__tests__/public-shelf-doubles.js";
-import { PublicShelfStateReader } from "../src/b2b/catalog/domain/ports/public-shelf-state.reader.js";
+import { InMemoryPublicShelf } from "../src/lafoliecoffee/catalog/application/__tests__/public-shelf-doubles.js";
+import { PublicShelfStateReader } from "../src/lafoliecoffee/catalog/domain/ports/public-shelf-state.reader.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { posePromotion, promotionTerms } from "./promotion-fixtures.js";
 

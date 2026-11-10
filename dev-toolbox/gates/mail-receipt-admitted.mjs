@@ -48,25 +48,25 @@ const SELF = "dev-toolbox/gates/mail-receipt-admitted.mjs";
 
 /** Les appelants admis de `sendAndAwaitReceipt`, chacun avec sa raison (relevés le 2026-11-06). */
 export const ADMITTED = {
-  [`${SRC}/b2b/orders/application/commands/resend-order-payment-link.handler.ts`]:
+  [`${SRC}/lafoliecoffee/orders/application/commands/resend-order-payment-link.handler.ts`]:
     "2026-11-06, S2a — le staff renvoie le lien de paiement et lit à l'écran s'il est parti",
-  [`${SRC}/b2b/account/application/services/grant-account-access.service.ts`]:
+  [`${SRC}/lafoliecoffee/account/application/services/grant-account-access.service.ts`]:
     "2026-11-06, S2b — ouverture d'accès client : le staff lit `mailSent` à l'écran",
-  [`${SRC}/b2b/account/infrastructure/auth0-customer-identity.ts`]:
+  [`${SRC}/lafoliecoffee/account/infrastructure/auth0-customer-identity.ts`]:
     "2026-11-06, S2b — réinitialisation du mot de passe : le lien ne doit pas dormir 30 jours dans l'outbox",
-  [`${SRC}/b2b/account/infrastructure/dev-customer-identity.ts`]:
+  [`${SRC}/lafoliecoffee/account/infrastructure/dev-customer-identity.ts`]:
     "2026-11-06, S2b — double de dev de la réinitialisation : même geste que l'adaptateur Auth0",
-  [`${SRC}/b2b/accounting/application/services/collection-notice-sender.ts`]:
+  [`${SRC}/lafoliecoffee/accounting/application/services/collection-notice-sender.ts`]:
     "2026-11-06, S2d — avis de prélèvement : l'issue écrite par l'appelant lit le reçu",
-  [`${SRC}/b2b/accounting/application/services/invoice-notice-sender.ts`]:
+  [`${SRC}/lafoliecoffee/accounting/application/services/invoice-notice-sender.ts`]:
     "2026-11-06, S2d — renvoi de facture par le staff : il attend la réponse",
-  [`${SRC}/b2b/payments/application/commands/send-mandate.handler.ts`]:
+  [`${SRC}/lafoliecoffee/payments/application/commands/send-mandate.handler.ts`]:
     "2026-11-06, S2e — mandat : le fait publié lit le reçu, PDF en octets",
   [`${SRC}/production/application/services/dossier-dispatch.service.ts`]:
     "2026-11-06, S2f — dossier du fournil : le fait lit le reçu, PDF en octets",
   [`${SRC}/staff/invitations/open-staff-access.service.ts`]:
     "2026-11-06, S2g — ouverture d'accès d'équipe : le staff lit le résultat à l'écran",
-  [`${SRC}/b2b/vitrine/application/services/vitrine-notice-dispatcher.ts`]:
+  [`${SRC}/lafoliecoffee/vitrine/application/services/vitrine-notice-dispatcher.ts`]:
     "2026-11-06, S2h — vitrine : chaque avis lit son reçu pour écrire son issue",
 };
 

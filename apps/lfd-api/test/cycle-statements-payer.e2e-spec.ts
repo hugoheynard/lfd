@@ -17,8 +17,8 @@ import type { CycleStatementView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
-import type { BillingCycle } from "../src/b2b/accounting/domain/services/billing-cycle.js";
-import { StatementMonth } from "../src/b2b/accounting/domain/value-objects/statement-month.js";
+import type { BillingCycle } from "../src/lafoliecoffee/accounting/domain/services/billing-cycle.js";
+import { StatementMonth } from "../src/lafoliecoffee/accounting/domain/value-objects/statement-month.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser, markDelivered } from "./factories.js";
 import { pickupSite, placeOrder } from "./order-factory.js";

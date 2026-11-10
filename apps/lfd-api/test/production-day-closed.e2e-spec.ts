@@ -13,16 +13,16 @@ import { PrismaService } from "../src/platform/database/prisma.service.js";
 import { IdGenerator } from "../src/platform/id/id-generator.js";
 import { SecretGenerator } from "../src/platform/secret/secret-generator.js";
 import { Clock } from "../src/platform/time/clock.js";
-import type { Order } from "../src/b2b/orders/domain/entities/order.js";
+import type { Order } from "../src/lafoliecoffee/orders/domain/entities/order.js";
 import {
   OrderRepository,
   type AbandonedSettlement,
   type PlacedOrder,
-} from "../src/b2b/orders/domain/ports/order.repository.js";
-import type { HandoverVia } from "../src/b2b/orders/domain/services/handover.js";
-import type { FirstHandoverStatus } from "../src/b2b/orders/domain/services/shipment-settlement.js";
-import { ON_PRODUCTION_DAY_CLOSED } from "../src/b2b/orders/application/handlers/on-production-day-closed.handler.js";
-import { PrismaOrderRepository } from "../src/b2b/orders/infrastructure/prisma-order.repository.js";
+} from "../src/lafoliecoffee/orders/domain/ports/order.repository.js";
+import type { HandoverVia } from "../src/lafoliecoffee/orders/domain/services/handover.js";
+import type { FirstHandoverStatus } from "../src/lafoliecoffee/orders/domain/services/shipment-settlement.js";
+import { ON_PRODUCTION_DAY_CLOSED } from "../src/lafoliecoffee/orders/application/handlers/on-production-day-closed.handler.js";
+import { PrismaOrderRepository } from "../src/lafoliecoffee/orders/infrastructure/prisma-order.repository.js";
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { placeLateByStaff } from "./staff-late-order.js";

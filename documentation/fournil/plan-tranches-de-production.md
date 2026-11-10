@@ -24,7 +24,7 @@
 
 - **Les tranches calculées existent déjà, en prévision** (lot V0, commit
   `5047c33b1`, §7).
-  - La fonction pure `apps/lfd-api/src/b2b/orders/domain/services/deadline-thresholds.ts`
+  - La fonction pure `apps/lfd-api/src/lafoliecoffee/orders/domain/services/deadline-thresholds.ts`
     calcule, pour chaque commande, son échéance : le début du créneau s'il y en
     a un, sinon sa fin. Elle retire ensuite la marge de livraison ou de retrait.
     Un retrait servi par transfert prend le départ requis du transfert ; un

@@ -13,8 +13,8 @@
  */
 import type { LegalEntityView } from "@lfd/contracts";
 
-import { cycleAt } from "../src/b2b/accounting/domain/services/billing-cycle.js";
-import { collectionCalendar } from "../src/b2b/accounting/domain/services/collection-calendar.js";
+import { cycleAt } from "../src/lafoliecoffee/accounting/domain/services/billing-cycle.js";
+import { collectionCalendar } from "../src/lafoliecoffee/accounting/domain/services/collection-calendar.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 

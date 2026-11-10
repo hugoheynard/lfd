@@ -14,7 +14,7 @@
  * dont la mise en place est reprise. Aucune date absolue.
  */
 import type { CollectionProcedureView } from "@lfd/contracts";
-import { sha256Of } from "../src/b2b/accounting/domain/services/collection-batch-file.js";
+import { sha256Of } from "../src/lafoliecoffee/accounting/domain/services/collection-batch-file.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { E2E_STAFF_ID, bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";

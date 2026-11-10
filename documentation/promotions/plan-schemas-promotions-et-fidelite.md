@@ -28,11 +28,11 @@ Aucun **bloc** neuf : un bloc à part casserait cette atomicité.
 - **Promotions** (`prisma/schema/public/promotions.prisma`) : `promotions`,
   `promotion_scope_rules`, `promotion_audience_targets`,
   `promotion_pickup_points`, `promotion_delivery_zones`, `promotion_settings`.
-  Un seul écrivain : `b2b/promotions`. Lecteurs Prisma hors du contexte :
-  `b2b/orders/infrastructure/prisma-order-discount-terms-backfill.ts`,
-  `PrismaPromotionPolicyBackfill` dans `b2b/pricing/infrastructure/` (retiré
+  Un seul écrivain : `lafoliecoffee/promotions`. Lecteurs Prisma hors du contexte :
+  `lafoliecoffee/orders/infrastructure/prisma-order-discount-terms-backfill.ts`,
+  `PrismaPromotionPolicyBackfill` dans `lafoliecoffee/pricing/infrastructure/` (retiré
   le 2026-11-01 avec son opération après déploiement),
-  `b2b/pricing/infrastructure/prisma-policy-promotion-names.reader.ts`.
+  `lafoliecoffee/pricing/infrastructure/prisma-policy-promotion-names.reader.ts`.
   `order_discounts.promotion_id` n'a **pas** de clé étrangère vers
   `promotions` (`order-discounts.prisma:26`, vérifié). Les tables de liaison
   ont des clés vers `pickup_addresses` (RESTRICT) et `delivery_zones`
@@ -41,7 +41,7 @@ Aucun **bloc** neuf : un bloc à part casserait cette atomicité.
   en Postgres ; `lint:cross-schema-join` ne lit que le SQL écrit à la main).
 - **Fidélité** (`prisma/schema/public/loyalty.prisma`) : `loyalty_settings`,
   `loyalty_ledger_entries`, `loyalty_vouchers`. Écrites et lues par
-  `b2b/loyalty` seul (et le semis) ; `orders` passe par des ports
+  `lafoliecoffee/loyalty` seul (et le semis) ; `orders` passe par des ports
   (`LoyaltyVoucherQuoteReader`, `LoyaltyVoucherRedemption`). Clés étrangères
   sortantes (vers `companies`, `orders` ?) à relever.
 - **Précédent** : `20260930140000_la_livraison_a_son_schema` — `ALTER TABLE …

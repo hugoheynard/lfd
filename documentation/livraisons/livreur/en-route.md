@@ -45,7 +45,7 @@ sequenceDiagram
   écrit toujours `delivery_round.departed`. Un fait de journal et un fait
   durable sont deux classes.
 - **L'abonné du commerce** : `MailDeliveryEnRoute`
-  (`b2b/orders/application/handlers/mail-delivery-en-route.handler.ts`),
+  (`lafoliecoffee/orders/application/handlers/mail-delivery-en-route.handler.ts`),
   abonné `b2b.mail-delivery-en-route` — nom stable depuis le premier
   déploiement de DD1, c'est la clé de son reçu dans la boîte d'envoi. La
   garde du relais (`DurableDeliveryGuard`) le fait tourner dans la
@@ -69,7 +69,7 @@ sequenceDiagram
   clients déjà servis », ce que contredisait la clé ci-dessous. Même
   correction, le même jour, pour l'envoi du dossier de production.
 - **L'envoi** : `DeliveryEnRouteMail`
-  (`b2b/orders/application/services/delivery-en-route-mail.service.ts`). Clé
+  (`lafoliecoffee/orders/application/services/delivery-en-route-mail.service.ts`). Clé
   Resend `delivery.en_route:<orderId>:<roundId>` : une relivraison du fait
   n'en fait pas partir un second, une commande rapportée qui repart dans une
   autre tournée a le sien.

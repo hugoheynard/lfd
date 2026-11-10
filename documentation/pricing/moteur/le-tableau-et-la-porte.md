@@ -42,7 +42,7 @@ affiché au tableau est donc celui que la caisse ferait, à engagement près
 
 ## 1. La lecture des décisions
 
-`PricingDecisionsReader` (`b2b/pricing/application/ports/pricing-decisions.reader.ts`),
+`PricingDecisionsReader` (`lafoliecoffee/pricing/application/ports/pricing-decisions.reader.ts`),
 implémenté par `PrismaPricingDecisionsReader` :
 
 - `decisionsAt(at, audience, articles)` rend les règles et les planchers **datés**

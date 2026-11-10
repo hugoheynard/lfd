@@ -21,7 +21,7 @@
 > dit.** Le premier consommateur est arrivé par
 > [`../auth-inscription/plan-inscription-pro-seule.md`](../auth-inscription/plan-inscription-pro-seule.md) : un seul
 > flag, **boutique** (`closed` · `browse` · `order`), sous le nom
-> **« accès aux fonctionnalités »** (`b2b/feature-access/`, contrat
+> **« accès aux fonctionnalités »** (`lafoliecoffee/feature-access/`, contrat
 > `feature-access`). Ce qui suit reste le design d'origine ; voici ce qui en
 > diffère dans le code, décidé ce jour-là :
 >

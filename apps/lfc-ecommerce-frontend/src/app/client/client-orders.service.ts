@@ -217,7 +217,7 @@ const IN_FLIGHT = 'orders.idempotency.in_flight';
 /**
  * Les refus du circuit du jour J (`orders.shelf.*` : plus de créneau, reste
  * insuffisant ; `orders.same_day_closed` : clientèle fermée) — codes de
- * `apps/lfd-api/src/b2b/orders/domain/errors/shelf-circuit-errors.ts` et
+ * `apps/lfd-api/src/lafoliecoffee/orders/domain/errors/shelf-circuit-errors.ts` et
  * `same-day-order-closed.error.ts`, qu'aucun sous-chemin sans zod de
  * `@lfd/contracts` n'exporte (vérifié le 2026-11-02). Leurs messages sont
  * écrits pour le client et se montrent tels quels.

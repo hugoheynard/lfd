@@ -294,7 +294,7 @@ Le coût d'entrée, compté porte par porte :
   un `src/delivery/` qui n'y figure pas est **ignoré**, ni écrivain ni lecteur.
   C'est le piège déjà raconté pour `media`. L'y inscrire dans le même commit ;
 - `journal-tracked.mjs` ne couvre que `src/pim/**`, la médiathèque et
-  `src/b2b/account/**` : y ajouter `src/delivery/**` (voir « journal ») ;
+  `src/lafoliecoffee/account/**` : y ajouter `src/delivery/**` (voir « journal ») ;
 - le **schéma Postgres** : ajouté à `datasource.prisma`, `CREATE SCHEMA` dans
   la migration, fichier selon `prisma-schema-layout.mjs` (Q10) ;
 - la matrice de `CLAUDE.md` §3 : une colonne et une ligne `delivery`.
@@ -579,7 +579,7 @@ et que le commerce implémente, dans `delivery/channels/commerce/` (qui porte
 déjà les points de départ) : `DeliveryOrdersReader`, qui rend pour un jour les
 livraisons attendues — **identifiant, statut, jour demandé**, rien d'autre — et
 pour une liste d'identifiants, leur jour et leur statut. L'adaptateur, dans
-`b2b/orders/infrastructure/`, **réutilise `expectedOnWhere`** : c'est le même
+`lafoliecoffee/orders/infrastructure/`, **réutilise `expectedOnWhere`** : c'est le même
 filtre que la file du comptoir et la feuille de route, écrit une fois. Deux
 lecteurs, une vérité.
 
@@ -3035,7 +3035,7 @@ suivants.
   (`prisma-order-handover.repository.ts`, `prisma-handover-attestations.reader.ts`) :
   un dépôt relu serait devenu une « saisie à la main », et `republish()` l'aurait
   propagé. Le type existe aussi en copie dans le commerce
-  (`b2b/orders/domain/services/handover.ts`) et dans le journal
+  (`lafoliecoffee/orders/domain/services/handover.ts`) et dans le journal
   (`z.enum(["scan","manual"])`, `journal-facts/orders-production.ts`). Tous
   sont mis à jour ensemble ; les fronts affichent une valeur inconnue comme
   « autre », jamais comme `scan`. ⚠️ **Irréversible** dès le premier dépôt écrit

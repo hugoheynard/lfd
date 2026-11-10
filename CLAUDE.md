@@ -82,7 +82,7 @@
 >   mentir. Et **48** le même jour avec `lint:company-role-readers` : le rôle
 >   d'une personne dans une société — propre, ou hérité du principal par ses
 >   sites — ne se lit que par la requête partagée `readCompanyStanding`
->   (`apps/lfd-api/src/b2b/shared/company-standing/`) ; une dizaine de
+>   (`apps/lfd-api/src/lafoliecoffee/shared/company-standing/`) ; une dizaine de
 >   lecteurs en recopiaient chacun la condition, et chaque copie oubliée
 >   était une fuite entre frères. Et **49** depuis le 2026-10-26
 >   avec `lint:rgaa-digest` : le suivi des corrections d'accessibilité publié
@@ -277,7 +277,7 @@ depuis B4 (`test/setup-test-database.ts` le dit à sa première ligne de
 commentaire).
 
 **Ce que ça change, et c'est tout le sujet :** la frontière n'est plus tenue par
-la physique. Une jointure `b2b` → `pim` **marcherait**. Elle reste interdite,
+la physique. Une jointure `lafoliecoffee` → `pim` **marcherait**. Elle reste interdite,
 mais par **discipline**, et une discipline se perd là où une impossibilité tient
 toute seule. Écrire que c'est impossible est la meilleure façon que ça revienne
 le jour où quelqu'un constatera que ça marche.
@@ -289,14 +289,14 @@ jointure ni par import de modèle Prisma.
 
 Depuis le **2026-09-03**, les deux portes le tiennent pour de bon :
 
-- `lint:context-boundaries` n'autorise plus `b2b → pim` que par
+- `lint:context-boundaries` n'autorise plus `lafoliecoffee → pim` que par
   `pim/channels/b2b-platform/` — le canal que le référentiel publie POUR la
   plateforme, et où tout est classe abstraite. Atteindre l'intérieur du PIM
   échoue en nommant la surface légitime. Deux exceptions datées subsistent
   (le recalcul des mentions d'allergènes), chacune avec sa raison ; la liste ne
   grandit pas, elle se vide.
 - `lint:cross-schema-join` **lit** désormais les schémas dans le `datasource`
-  au lieu de les recopier. Sa liste en dur portait `staff` et `b2b`, qui n'ont
+  au lieu de les recopier. Sa liste en dur portait `staff` et `lafoliecoffee`, qui n'ont
   jamais été des schémas Postgres, et ignorait `ops`, qui en est un : une même
   requête `public × ops` passait sous l'ancienne liste et échoue sous la
   nouvelle.
@@ -342,8 +342,8 @@ langages. Un type partagé n'est légitime que s'il est vraiment transverse
 ## 3. DDD — découpage et couches
 
 Un dossier de `src/` est un **bloc** ; à l'intérieur, un sous-dossier est un
-**bounded context** nommé dans le langage métier — `b2b/account/`,
-`b2b/orders/`, `pim/catalogue/`, `production/`. À l'intérieur d'un contexte,
+**bounded context** nommé dans le langage métier — `lafoliecoffee/account/`,
+`lafoliecoffee/orders/`, `pim/catalogue/`, `production/`. À l'intérieur d'un contexte,
 quatre couches et une seule direction de dépendance :
 
 ⚠️ Cette phrase citait `catalogue/`, `channels/` et `orders/` comme s'ils
@@ -390,7 +390,9 @@ src/
 │                   Sortie du référentiel le 2026-09-23 : les fiches en
 │                   portent, les familles aussi, la vitrine en portera — aucun
 │                   d'eux ne la possède. DEUX canaux, un par sens (cf. plus bas)
-├── b2b/          ▸ LA PLATEFORME MARCHANDE — account, orders, pricing, catalog…
+├── lafoliecoffee/ ▸ L'APPLICATION LA FOLIE COFFEE — account, orders, pricing, catalog…
+│                   Nommée ainsi par Hugo le 2026-11-10 : elle vend aussi aux
+│                   particuliers. Les valeurs écrites `b2b.…` gardent leur nom
 ├── production/   ▸ LE FOURNIL — schéma `production`, ses tables, son agrégat
 │                   channels/commerce/ = la porte que le commerce implémente
 ├── handover/     ▸ LE RETRAIT — le transfert de garde, comptoir ou livraison
@@ -428,22 +430,22 @@ src/
 └── main.ts
 ```
 
-| Depuis ↓ vers →    | `staff`          | `pim`               | `media`             | `b2b` | `production`        | `handover`          | `ops` | `delivery`          | `packing`           | `mail`              | `card-payment`      | `platform` |
-| ------------------ | ---------------- | ------------------- | ------------------- | ----- | ------------------- | ------------------- | ----- | ------------------- | ------------------- | ------------------- | ------------------- | ---------- |
-| **`staff`**        | —                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | **port uniquement** | ✗                   | ✓          |
-| **`pim`**          | ✓ (autorisation) | —                   | **port uniquement** | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | **port uniquement** | ✗                   | ✓          |
-| **`media`**        | ✓ (autorisation) | **port uniquement** | —                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | **port uniquement** | ✗                   | ✓          |
-| **`b2b`**          | ✓ (autorisation) | **port uniquement** | ✗                   | —     | **port uniquement** | **port uniquement** | ✗     | **port uniquement** | **port uniquement** | **port uniquement** | **port uniquement** | ✓          |
-| **`production`**   | ✓ (autorisation) | ✗                   | ✗                   | **✗** | —                   | ✗                   | ✗     | ✗                   | **✗**               | **port uniquement** | ✗                   | ✓          |
-| **`handover`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | **port uniquement** | —                   | ✗     | **port uniquement** | ✗                   | **port uniquement** | ✗                   | ✓          |
-| **`delivery`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | **port uniquement** | ✗                   | ✗     | —                   | **port uniquement** | **port uniquement** | ✗                   | ✓          |
-| **`packing`**      | ✓ (autorisation) | ✗                   | ✗                   | ✗     | **port uniquement** | **port uniquement** | ✗     | ✗                   | —                   | **port uniquement** | ✗                   | ✓          |
-| **`mail`**         | ✓ (autorisation) | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | —                   | ✗                   | ✓          |
-| **`card-payment`** | ✓ (autorisation) | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗                   | —                   | ✓          |
-| **`ops`**          | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | —     | ✗                   | ✗                   | ✗                   | ✗                   | ✓          |
-| **`platform`**     | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗                   | ✗                   | —          |
-| **`appBootstrap`** | ✓                | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓                   | ✓                   | ✓          |
-| **`dev`**          | ✓                | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓                   | ✓                   | ✓          |
+| Depuis ↓ vers →     | `staff`          | `pim`               | `media`             | `lafoliecoffee` | `production`        | `handover`          | `ops` | `delivery`          | `packing`           | `mail`              | `card-payment`      | `platform` |
+| ------------------- | ---------------- | ------------------- | ------------------- | --------------- | ------------------- | ------------------- | ----- | ------------------- | ------------------- | ------------------- | ------------------- | ---------- |
+| **`staff`**         | —                | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | **port uniquement** | ✗                   | ✓          |
+| **`pim`**           | ✓ (autorisation) | —                   | **port uniquement** | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | **port uniquement** | ✗                   | ✓          |
+| **`media`**         | ✓ (autorisation) | **port uniquement** | —                   | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | **port uniquement** | ✗                   | ✓          |
+| **`lafoliecoffee`** | ✓ (autorisation) | **port uniquement** | ✗                   | —               | **port uniquement** | **port uniquement** | ✗     | **port uniquement** | **port uniquement** | **port uniquement** | **port uniquement** | ✓          |
+| **`production`**    | ✓ (autorisation) | ✗                   | ✗                   | **✗**           | —                   | ✗                   | ✗     | ✗                   | **✗**               | **port uniquement** | ✗                   | ✓          |
+| **`handover`**      | ✓ (autorisation) | ✗                   | ✗                   | **✗**           | **port uniquement** | —                   | ✗     | **port uniquement** | ✗                   | **port uniquement** | ✗                   | ✓          |
+| **`delivery`**      | ✓ (autorisation) | ✗                   | ✗                   | **✗**           | **port uniquement** | ✗                   | ✗     | —                   | **port uniquement** | **port uniquement** | ✗                   | ✓          |
+| **`packing`**       | ✓ (autorisation) | ✗                   | ✗                   | ✗               | **port uniquement** | **port uniquement** | ✗     | ✗                   | —                   | **port uniquement** | ✗                   | ✓          |
+| **`mail`**          | ✓ (autorisation) | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | —                   | ✗                   | ✓          |
+| **`card-payment`**  | ✓ (autorisation) | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗                   | —                   | ✓          |
+| **`ops`**           | ✗                | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | —     | ✗                   | ✗                   | ✗                   | ✗                   | ✓          |
+| **`platform`**      | ✗                | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗                   | ✗                   | —          |
+| **`appBootstrap`**  | ✓                | ✓                   | ✓                   | ✓               | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓                   | ✓                   | ✓          |
+| **`dev`**           | ✓                | ✓                   | ✓                   | ✓               | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓                   | ✓                   | ✓          |
 
 🔴 **`pim` et `media` sont les deux aux DEUX CÔTÉS d'un canal** — le cas que
 `handover` était seul à connaître. Chacun déclare ce dont il a besoin et
@@ -488,14 +490,14 @@ lecteurs que le commerce implémente, et porte aussi un lecteur **déclaré et
 implémenté par le bloc lui-même**, que la comptabilité du commerce lit pour le
 dossier de facturation (`OrderHandoverHistoryReader`, `OrderDeliveryHistoryReader` —
 [`documentation/comptabilite/facturation/simulateur-dossier-de-facturation.md`](documentation/comptabilite/facturation/simulateur-dossier-de-facturation.md)).
-Lectures synchrones, par lot ; `handover → b2b` et `delivery → b2b` restent interdits.
+Lectures synchrones, par lot ; `handover → lafoliecoffee` et `delivery → lafoliecoffee` restent interdits.
 
 Depuis le 2026-10-21, `packing/channels/commerce/` porte un lecteur de la même
 forme : `PackedResuppliesReader`, **déclaré et implémenté par le colisage**,
 que la réception d'un réassort lit pour se pré-remplir de la quantité
 réellement emballée (plan
 [`documentation/reassort-boutiques/README.md`](documentation/reassort-boutiques/README.md), R3b).
-D'où la case `b2b → packing : port uniquement` ; `packing → b2b` reste interdit.
+D'où la case `lafoliecoffee → packing : port uniquement` ; `packing → lafoliecoffee` reste interdit.
 
 🔴 **`delivery` écoute la clôture du fournil par un canal** (2026-10-04,
 Hugo, option B — `documentation/livraisons/tournees/composition-automatique.md`,
@@ -563,7 +565,7 @@ l'atteint pas.
 §3.1). Agnostique du contexte : il ne sait pas ce qu'est une commande, seulement
 `(subject_type, subject_id)`. Comme `mail`, il n'a pas de métier propre et les
 blocs métier ne l'atteignent que par son canal (`card-payment/channels/`) —
-aujourd'hui le seul `b2b`, d'où la case `port uniquement`. Comme `production`
+aujourd'hui le seul `lafoliecoffee`, d'où la case `port uniquement`. Comme `production`
 avec `channels/commerce/`, il DÉCLARE `card-payment/channels/subjects/`, que
 chaque bloc métier sujet implémente et qu'`appBootstrap` relie.
 `card-payment` n'importe que `staff` (autorisation) et `platform` ;
@@ -571,14 +573,14 @@ chaque bloc métier sujet implémente et qu'`appBootstrap` relie.
 prélèvements SEPA, ni virements, ni liens de paiement. Portes armées le
 2026-11-09, avant que le dossier existe (lot P0.a).
 
-🔴 **`production → b2b` est INTERDIT**, et c'est le sens qui compte. Le fournil
+🔴 **`production → lafoliecoffee` est INTERDIT**, et c'est le sens qui compte. Le fournil
 DÉCLARE ce dont il a besoin (`production/channels/commerce/`) et le commerce
 l'implémente ; `appBootstrap` les relie. Un contexte qui publie un port ne doit
 pas connaître ceux qui le branchent — sans quoi la dépendance revient par
 l'autre bout, et on a deux blocs qui se tiennent l'un l'autre.
 
 La production ne connaît une commande que par un **identifiant opaque + un
-snapshot**, exactement comme `b2b` connaît un SKU du référentiel. Elle a son
+snapshot**, exactement comme `lafoliecoffee` connaît un SKU du référentiel. Elle a son
 propre schéma Postgres, et aucune clé étrangère ne traverse : une commande
 annulée ne fait pas disparaître ce qu'on a fabriqué.
 
@@ -588,7 +590,7 @@ fait métier — résoudre un principal, un accès staff — elle déclare un **
 et c'est `appBootstrap/` qui le relie à son adaptateur. Personne n'importe
 `appBootstrap`.
 
-🔴 **`src/b2b/shared/` est le premier dossier partagé au niveau d'un bloc
+🔴 **`src/lafoliecoffee/shared/` est le premier dossier partagé au niveau d'un bloc
 métier** (2026-09-15, `shared/photo-cards/` — doc
 [`documentation/comptes-client/notes-du-commercial.md`](documentation/comptes-client/notes-du-commercial.md)).
 Il est admis parce que la **règle** est commune, pas seulement le code : une
@@ -598,8 +600,8 @@ Ce qui diverge — borne, côté d'ajout, longueurs, mots des refus, identité,
 verrou, clé de stockage, trace — y entre en **paramètre**, et chaque contexte
 garde son vocabulaire public (`DeliveryProcedure.addStep` délègue, il ne
 disparaît pas). Du code seulement semblable n'y a pas sa place : deux usages
-qui divergeront se dupliquent. Il reste dans le bloc — `b2b/shared` n'est
-importé que par `b2b/`, et n'importe que `platform/`.
+qui divergeront se dupliquent. Il reste dans le bloc — `lafoliecoffee/shared` n'est
+importé que par `lafoliecoffee/`, et n'importe que `platform/`.
 
 ⚠️ **Une frontière qu'on ne franchit qu'en SQL est franchie quand même.** Le
 gate lit les imports ; il ne verra pas une classe de `platform/` qui interroge
@@ -686,7 +688,7 @@ charger l'agrégat (repo.load → toDomain)
 - La **factory nomme l'intention** (`Company.declare()`, pas `new Company()`) et
   refuse un état initial invalide.
 
-**Référence à suivre :** `src/b2b/account/` — `Company.declare()`, ~11 value
+**Référence à suivre :** `src/lafoliecoffee/account/` — `Company.declare()`, ~11 value
 objects, et `create-company.handler` qui construit l'agrégat et le passe au port.
 
 ⚠️ **Ce paragraphe a affirmé le contraire jusqu'au 2026-09-03.** Il disait que

@@ -9,7 +9,7 @@ import type { StaffSuggestionPhrase } from "./staff-suggestions.js";
  * RS2, panier seulement (`documentation/recommandation-produit/suggestions-du-staff.md`).
  * Ce contrat ne valide que la **forme** : quelles règles s'appliquent, le
  * déclencheur, le filtre de ce qui se commande et la place bornée sont tenus
- * par le commerce (`b2b/recommendations`).
+ * par le commerce (`lafoliecoffee/recommendations`).
  *
  * Routes, sur le modèle du devis (`/shop/quote`) :
  *

@@ -292,7 +292,7 @@ model Company {
   bankAccount             CompanyBankAccount?
   // Les liens de paiement libres adressés à ce client (cf. payments/).
   paymentLinks            PaymentLink[]
-  // Le grand livre de fidélité et les bons de ce client (cf. b2b/loyalty/).
+  // Le grand livre de fidélité et les bons de ce client (cf. lafoliecoffee/loyalty/).
   loyaltyEntries          LoyaltyLedgerEntry[]
   loyaltyVouchers         LoyaltyVoucher[]
 
@@ -302,7 +302,7 @@ model Company {
   /// Alertes déclenchées sur ce compte (cf. alerts/).
   alerts AccountAlert[]
 
-  /// Le carnet de notes du commercial — au plus un (cf. b2b/client-notes/).
+  /// Le carnet de notes du commercial — au plus un (cf. lafoliecoffee/client-notes/).
   clientNotebook ClientNotebook?
 
   // Unicité du SIRET : index PARTIEL (`siret <> ''`), donc invisible du schéma
@@ -460,7 +460,7 @@ model User {
   // Un panier par espace de travail : le perso, puis un par société.
   shopCarts             ShopCart[]
   orderIdempotency      OrderIdempotency[]
-  // La fidélité (cf. b2b/loyalty/) : le livre et les bons dont la personne est
+  // La fidélité (cf. lafoliecoffee/loyalty/) : le livre et les bons dont la personne est
   // titulaire, et les lignes dont elle est l'auteur.
   loyaltyEntries        LoyaltyLedgerEntry[]   @relation("LoyaltyEntryHolder")
   loyaltyActs           LoyaltyLedgerEntry[]   @relation("LoyaltyEntryActor")

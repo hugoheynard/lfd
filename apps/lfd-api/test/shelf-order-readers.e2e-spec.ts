@@ -18,15 +18,15 @@
 import type { DaySupervisionView } from "@lfd/contracts";
 import { millicentsFromCents } from "@lfd/money";
 
-import { Order } from "../src/b2b/orders/domain/entities/order.js";
-import type { PricedDraftInput } from "../src/b2b/orders/domain/entities/order-priced-draft.js";
-import { pricedInput } from "../src/b2b/orders/domain/entities/__tests__/priced-input.fixture.js";
-import { DayOrdersSource } from "../src/b2b/orders/domain/ports/day-orders.source.js";
-import { DeadlineOrdersReader } from "../src/b2b/orders/domain/ports/deadline-orders.reader.js";
-import { OrderReader } from "../src/b2b/orders/domain/ports/order.reader.js";
-import { OrderRepository } from "../src/b2b/orders/domain/ports/order.repository.js";
-import { SiteArrivalOrdersReader } from "../src/b2b/orders/domain/ports/site-arrival-orders.reader.js";
-import type { OrderSupplyDecision } from "../src/b2b/orders/domain/value-objects/order-supply.js";
+import { Order } from "../src/lafoliecoffee/orders/domain/entities/order.js";
+import type { PricedDraftInput } from "../src/lafoliecoffee/orders/domain/entities/order-priced-draft.js";
+import { pricedInput } from "../src/lafoliecoffee/orders/domain/entities/__tests__/priced-input.fixture.js";
+import { DayOrdersSource } from "../src/lafoliecoffee/orders/domain/ports/day-orders.source.js";
+import { DeadlineOrdersReader } from "../src/lafoliecoffee/orders/domain/ports/deadline-orders.reader.js";
+import { OrderReader } from "../src/lafoliecoffee/orders/domain/ports/order.reader.js";
+import { OrderRepository } from "../src/lafoliecoffee/orders/domain/ports/order.repository.js";
+import { SiteArrivalOrdersReader } from "../src/lafoliecoffee/orders/domain/ports/site-arrival-orders.reader.js";
+import type { OrderSupplyDecision } from "../src/lafoliecoffee/orders/domain/value-objects/order-supply.js";
 import {
   TransferOrderContentsReader,
   TransferOrdersReader,

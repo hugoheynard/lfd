@@ -1,7 +1,7 @@
 import { Global, Module } from "@nestjs/common";
 
-import { PackingOrderBagLabelReader } from "../b2b/orders/infrastructure/packing-order-bag-label.reader.js";
-import { OrdersModule } from "../b2b/orders/orders.module.js";
+import { PackingOrderBagLabelReader } from "../lafoliecoffee/orders/infrastructure/packing-order-bag-label.reader.js";
+import { OrdersModule } from "../lafoliecoffee/orders/orders.module.js";
 import { OrderBagLabelReader } from "../packing/channels/commerce/index.js";
 
 /**

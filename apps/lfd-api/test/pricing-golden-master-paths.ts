@@ -13,8 +13,8 @@ import { PERSONAL_WORKSPACE } from "@lfd/contracts";
 import { CommandBus } from "@nestjs/cqrs";
 import type request from "supertest";
 
-import { ConvertLoyaltyPointsCommand } from "../src/b2b/loyalty/application/commands/convert-loyalty-points.command.js";
-import { PricingMaterialsCache } from "../src/b2b/pricing/infrastructure/pricing-materials.cache.js";
+import { ConvertLoyaltyPointsCommand } from "../src/lafoliecoffee/loyalty/application/commands/convert-loyalty-points.command.js";
+import { PricingMaterialsCache } from "../src/lafoliecoffee/pricing/infrastructure/pricing-materials.cache.js";
 import { E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 import {
   contentOf,

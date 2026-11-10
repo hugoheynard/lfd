@@ -15,7 +15,7 @@
  *
  * Ce module ne connaît ni règle, ni étage : il additionne, multiplie et divise.
  *
- * ## Pourquoi c'est un paquet, et plus un fichier de `b2b/pricing`
+ * ## Pourquoi c'est un paquet, et plus un fichier de `lafoliecoffee/pricing`
  *
  * Il y a vécu tant qu'un seul contexte en avait besoin. Le référentiel en a
  * besoin à son tour — convertir un prix d'étiquette en hors taxe est une

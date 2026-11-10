@@ -57,7 +57,7 @@ export function sourceRoots(root) {
 /** Fichiers admis, chacun avec sa raison (vérifié le 2026-11-06). */
 export const ADMITTED = new Map([
   [
-    "apps/lfd-api/src/b2b/account/infrastructure/dev-customer-identity.ts",
+    "apps/lfd-api/src/lafoliecoffee/account/infrastructure/dev-customer-identity.ts",
     "identité de développement, jamais en production : le journal est sa seule sortie",
   ],
   [

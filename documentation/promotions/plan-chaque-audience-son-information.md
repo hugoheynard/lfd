@@ -123,7 +123,7 @@ une fois connectés. Donc :
   `ListMyShopPickupsQuery` (`/mine`, audience établie) rendent
   `AudiencePickupAddressView` (`packages/contracts/src/pickup.ts`), fabriquée
   champ par champ par `audiencePickupAddressOf`
-  (`apps/lfd-api/src/b2b/pickup-addresses/application/audience-pickup-address.ts`). Les
+  (`apps/lfd-api/src/lafoliecoffee/pickup-addresses/application/audience-pickup-address.ts`). Les
   requêtes de l'équipe (`ListPickupAddressesQuery`,
   `ListCustomerPickupsQuery`) gardent la vue complète.
 - **Boutique** : les lecteurs lisent `point.discount` ; la clé d'annonce

@@ -19,7 +19,7 @@ import request from "supertest";
 
 import { CommandBus } from "@nestjs/cqrs";
 
-import { CancelOrderCommand } from "../src/b2b/orders/cancellation/application/commands/cancel-order.command.js";
+import { CancelOrderCommand } from "../src/lafoliecoffee/orders/cancellation/application/commands/cancel-order.command.js";
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { attachTo, createCompany, createUser } from "./factories.js";

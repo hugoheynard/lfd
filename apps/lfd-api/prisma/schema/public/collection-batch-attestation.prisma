@@ -5,7 +5,7 @@
 // § 1.2, P3).
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// Propriétaire : `src/b2b/accounting/`. Un REGISTRE D'AJOUTS : aucune ligne ne
+// Propriétaire : `src/lafoliecoffee/accounting/`. Un REGISTRE D'AJOUTS : aucune ligne ne
 // se modifie ni ne s'efface (déclencheur
 // `collection_batch_attestation_append_only`) ; la dernière ligne d'un (lot,
 // sorte) fait foi. Contraintes INVISIBLES ici — dans la migration

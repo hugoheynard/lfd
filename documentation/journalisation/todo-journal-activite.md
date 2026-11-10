@@ -91,7 +91,7 @@ en bâtissant la tranche (c) du lot 1, `subscription.created` (sur le sujet
 `user`, lu tel quel par le score des leads), `company.declared`,
 `support.requested`, `support.handled` — sont écrits par des abonnés en
 **best-effort**, hors de la transaction du geste
-(`b2b/growth/application/handlers/`) : une panne du journal les perd en
+(`lafoliecoffee/growth/application/handlers/`) : une panne du journal les perd en
 silence. Leurs handlers déclarent `@sans-journal` en renvoyant à l'abonné.
 Les rendre opposables demande de les écrire dans la transaction du geste, avec
 **un seul écrivain** par fait (retirer l'abonné, ou changer ce que lit la

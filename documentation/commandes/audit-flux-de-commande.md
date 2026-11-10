@@ -5,7 +5,7 @@
 > - **T4 / T7** : `cancelled` **s'écrit** (`markAbandoned`, `failAtClosing`,
 >   expiration des impayés de la boutique : `prisma-order.repository.ts`,
 >   `prisma-unsettled-shop-order.canceller.ts`).
-> - **T8** : les factures carte sont **émises** par `b2b/accounting`
+> - **T8** : les factures carte sont **émises** par `lafoliecoffee/accounting`
 >   (`issue-card-invoice-on-paid.handler.ts`,
 >   `issue-card-invoice-on-fulfilled.handler.ts`).
 > - **T13** : il y a **trois** listes de statuts, dont
@@ -102,7 +102,7 @@ fournil ». C'est vrai, et ça le restera jusqu'à l'annulation.
 **La moitié du constat d'origine est tombée par décision, pas par construction.**
 Nous n'émettons pas de facture : le comptable importe nos commandes et sort la
 facture mensuelle (2026-09-10, [`../comptabilite/prelevement/prelevement-sepa.md`](../comptabilite/prelevement/prelevement-sepa.md)).
-Il n'y aura donc pas d'agrégat facture dans `b2b/accounting`.
+Il n'y aura donc pas d'agrégat facture dans `lafoliecoffee/accounting`.
 
 Ce qui reste vrai, et qui coûte :
 
@@ -128,12 +128,12 @@ disent quelles commandes « comptent » ne l'ont jamais appris (vérifié le
 2026-09-18) :
 
 - `REVENUE_ORDER_STATUSES`
-  ([`revenue-scope.ts`](../../apps/lfd-api/src/b2b/growth/domain/revenue-scope.ts)) —
+  ([`revenue-scope.ts`](../../apps/lfd-api/src/lafoliecoffee/growth/domain/revenue-scope.ts)) —
   `placed, confirmed, in_production, fulfilled`. Lue par **quatre** lecteurs de
   la croissance : métriques de commande, portefeuille, chiffre par secteur,
   volume de marché ;
 - `COUNTED_STATUSES`
-  ([`prisma-order-history.reader.ts:19`](../../apps/lfd-api/src/b2b/alerts/infrastructure/prisma-order-history.reader.ts)) —
+  ([`prisma-order-history.reader.ts:19`](../../apps/lfd-api/src/lafoliecoffee/alerts/infrastructure/prisma-order-history.reader.ts)) —
   la même liste, recopiée, pour les alertes.
 
 **Ce que ça coûte.** Une commande colisée et pas encore retirée disparaît des
@@ -154,7 +154,7 @@ c'est un trou d'aujourd'hui, pas de demain.
 
 Rien n'empêche un compte dont l'adresse est vide de passer commande. Le lecteur
 de destinataire
-([`prisma-order-recipient.reader.ts:23`](../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-order-recipient.reader.ts))
+([`prisma-order-recipient.reader.ts:23`](../../apps/lfd-api/src/lafoliecoffee/orders/infrastructure/prisma-order-recipient.reader.ts))
 rend alors `null` — à juste titre, un envoi voué au refus compterait comme parti —
 et l'accusé ne part pas, **sans erreur ni trace**. Or c'est ce courriel qui porte
 le QR de retrait. Le client n'a plus que l'écran de son espace.
@@ -210,9 +210,9 @@ l'information affichée. **Elle ne tient plus** :
 
 Inchangé. `fromSubscriptionId` et `recurringDeltas` sont **lus** — l'origine
 d'une commande
-([`order-origin.ts`](../../apps/lfd-api/src/b2b/orders/domain/services/order-origin.ts)),
+([`order-origin.ts`](../../apps/lfd-api/src/lafoliecoffee/orders/domain/services/order-origin.ts)),
 la part récurrente du tableau de bord
-([`order-metrics.ts`](../../apps/lfd-api/src/b2b/growth/domain/order-metrics.ts)) —
+([`order-metrics.ts`](../../apps/lfd-api/src/lafoliecoffee/growth/domain/order-metrics.ts)) —
 et **écrits nulle part**. Il n'y a ni `@Cron`, ni `ScheduleModule`, ni aucun
 planificateur dans l'API (vérifié le 2026-09-18).
 

@@ -9,7 +9,7 @@
 
 ### Ce que fait le code (lu le 2026-09-14)
 
-- `UpdateMyProfileHandler` (`b2b/account/application/commands/update-my-profile.handler.ts`)
+- `UpdateMyProfileHandler` (`lafoliecoffee/account/application/commands/update-my-profile.handler.ts`)
   refuse une adresse déjà prise, **propage d'abord à Auth0**, puis écrit chez nous :
   un échec d'Auth0 ne laisse rien.
 - `Auth0IdentityGateway.changeEmail` (`platform/identity/auth0-identity.gateway.ts`)

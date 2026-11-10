@@ -1,6 +1,6 @@
 import type { SiteColorsPayload } from "@lfd/contracts";
 
-import { SetSiteColorsCommand } from "../../b2b/sites/application/set-site-colors.command.js";
+import { SetSiteColorsCommand } from "../../lafoliecoffee/sites/application/set-site-colors.command.js";
 import { LABO, VILLAGE } from "./counter-day.seed.js";
 import { asStaff, type SeedContext } from "./order-placing.seed.js";
 

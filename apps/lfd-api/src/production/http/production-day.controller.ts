@@ -42,7 +42,7 @@ const DAY = new ZodParam(productionBatchQuerySchema.shape.date, "date");
 /**
  * **La journée de fabrication, côté fournil.**
  *
- * 🔴 Cette route vivait dans `b2b/orders/http/` — une surface de production
+ * 🔴 Cette route vivait dans `lafoliecoffee/orders/http/` — une surface de production
  * hébergée par le commerce, sous un chemin qui disait déjà `admin/production`.
  * C'était le symptôme le plus visible d'une frontière qui n'existait que dans
  * les noms de dossiers : le fournil décidait qu'une journée bascule, mais depuis

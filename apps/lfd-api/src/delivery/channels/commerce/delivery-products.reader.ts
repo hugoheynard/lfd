@@ -13,7 +13,7 @@ export interface DeliveryProduct {
 /**
  * **Les produits vendus, vus par la livraison** (lot 4 bis, v2-2) — ce que la
  * livraison DÉCLARE et que le commerce implémente
- * (`b2b/catalog/infrastructure/`), relié dans `appBootstrap`.
+ * (`lafoliecoffee/catalog/infrastructure/`), relié dans `appBootstrap`.
  *
  * La grille des contenances a besoin d'une liste de produits et de leurs noms.
  * La livraison ne lit ni le référentiel ni le miroir du catalogue : le

@@ -45,39 +45,39 @@ const IGNORED = join(ROOT, SCAN, "platform", "database", "client");
 
 /** Les seuls fichiers qui ont le droit de lire les articles du catalogue. */
 const ALLOWED = new Set([
-  "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-catalog.reader.ts",
-  "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-catalog-admin.reader.ts",
-  "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-catalog-item.repository.ts",
+  "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/prisma-catalog.reader.ts",
+  "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/prisma-catalog-admin.reader.ts",
+  "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/prisma-catalog-item.repository.ts",
   // Le froid relayé à la livraison (lot 4 bis, 2026-09-29) : il PORTE le
   // filtre (`...STILL_SOLD`) — un article retiré n'a plus à être chargé froid.
-  "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-catalog-cold.reader.ts",
+  "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/prisma-catalog-cold.reader.ts",
   // Les prix au kilo du rayon (`plan-prix-au-kilo.md`, K3, 2026-10-28) : il
   // PORTE le filtre (`...STILL_SOLD`) — un article retiré n'est pas au rayon.
-  "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-catalog-price-per-kg.reader.ts",
+  "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/prisma-catalog-price-per-kg.reader.ts",
   // Le rangement des SKU de commande (plan des exclusions de la remise de
   // retrait, V4, 2026-10-22) : il PORTE le filtre (`...STILL_SOLD`) — la
   // caisse ne range que ce qu'elle vend, un article retiré n'a pas de ligne.
-  "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-order-line-classification.reader.ts",
+  "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/prisma-order-line-classification.reader.ts",
   // La descente des limites de commande (lot 2b du catalogue synchronisé,
   // 2026-10-15) : elle PORTE le filtre — un article retiré reçoit ses limites
   // quand le fait de sa fiche le remet en vente.
-  "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-catalog-order-limits.ts",
+  "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/prisma-catalog-order-limits.ts",
   // La vue « Catalogue publié » (lot 3 du catalogue synchronisé, 2026-10-15) :
   // elle PORTE le filtre — une déclinaison retirée n'y paraît que par les
   // manques que le fait de sa fiche déclare, jamais comme article en vente.
-  "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-published-catalog.reader.ts",
+  "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/prisma-published-catalog.reader.ts",
   // Le retraçage du prix (lot D du catalogue synchronisé, 2026-10-15) : il
   // PORTE le filtre (`...STILL_SOLD`) — un article retiré ne se vend plus, sa
   // trace n'a pas à suivre le référentiel.
-  "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-catalog-price-retracer.ts",
+  "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/prisma-catalog-price-retracer.ts",
   // La sélection d'une opération au commerce (lot 1 de
   // `plan-l-operation-passe-au-commerce.md`, 2026-10-15) : elle demande si un
   // SKU EXISTE, pas s'il se vend — exemptée sur l'appel, avec sa raison.
-  "apps/lfd-api/src/b2b/operations/infrastructure/prisma-operation-sku.catalogue.ts",
+  "apps/lfd-api/src/lafoliecoffee/operations/infrastructure/prisma-operation-sku.catalogue.ts",
   // Les articles RETIRÉS, que la tarification nomme dans son refus (L5 de
   // `plan-pro-voit-les-declinaisons.md`, 2026-10-29) : exemptée sur l'appel —
   // elle cherche précisément ce que le filtre écarte.
-  "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-withdrawn-shop-skus.reader.ts",
+  "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/prisma-withdrawn-shop-skus.reader.ts",
   // Le semis de développement, et il PORTE le filtre : sa lecture demande
   // `withdrawnAt: null` explicitement (`ensureSkusExist`). Elle ne sert pas à
   // vendre — elle vérifie AVANT d'écrire que les SKU du corpus existent, pour
@@ -91,24 +91,24 @@ const ALLOWED = new Set([
   "apps/lfd-api/src/dev/seeding/featured.seed.ts",
   // La tuile de la vitrine sous la référence du défaut (bascule L3,
   // 2026-10-29) : elle PORTE le filtre (`...STILL_SOLD`).
-  "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-default-sale-reference.reader.ts",
+  "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/prisma-default-sale-reference.reader.ts",
   // La filiation d'un article né d'un détachement, que le report d'un prix
   // négocié vérifie (`documentation/pricing/mercuriales/l-avenant-date.md`, § 6, 2026-10-30) :
   // elle PORTE le filtre (`...STILL_SOLD`) — on ne reporte pas sur un retiré.
-  "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-detachment-origin.reader.ts",
+  "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/prisma-detachment-origin.reader.ts",
   // La lignée de détachement sous laquelle les rapports par article
   // regroupent (`plan-pro-voit-les-declinaisons.md`, L7d-bis, 2026-10-30) :
   // exempte et écrite — une filiation, pas une mise en vente ; la référence
   // la plus récente d'un historique peut être retirée.
-  "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-sale-reference-succession.reader.ts",
+  "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/prisma-sale-reference-succession.reader.ts",
   // La même lignée remontée vers les anciennes références, que les alertes
   // lisent (L7d-bis, 2026-10-30) : exempte et écrite — un ancêtre est retiré
   // par construction (le détachement archive l'origine).
-  "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-sale-reference-lineage.reader.ts",
+  "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/prisma-sale-reference-lineage.reader.ts",
   // Le réglage sur mesure vu du back-office (`plan-articles-sur-mesure.md`,
   // L1a, 2026-10-30) : il PORTE le filtre (`...STILL_SOLD`) sur ses deux
   // lectures d'articles — on ne règle pas un article retiré.
-  "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-made-to-order-admin.reader.ts",
+  "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/prisma-made-to-order-admin.reader.ts",
   // La traduction des références du semis (bascule L3) : exempte et écrite
   // (`withdrawn-filter: exempt`) — un nom traduit, pas une mise en vente ;
   // le handler refuse ensuite un article retiré.
@@ -116,7 +116,7 @@ const ALLOWED = new Set([
   // Le chargeur de l'instantané du catalogue (`le-catalogue-en-memoire.md`,
   // M1b, 2026-11-06) : il PORTE le filtre (`where: STILL_SOLD`) — un article
   // retiré est absent de l'instantané, donc d'aucune vue du devis.
-  "apps/lfd-api/src/b2b/catalog/infrastructure/catalogue-snapshot/catalogue-snapshot.loader.ts",
+  "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/catalogue-snapshot/catalogue-snapshot.loader.ts",
 ]);
 
 /** Les opérations qui LISENT. Les autres écrivent, et doivent voir toute la table. */

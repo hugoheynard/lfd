@@ -71,7 +71,7 @@ Graine : `A` admin · `Co` commercial · `Cp` comptabilité · `Ct` vendeur comp
 ## `b2b_orders` — Commandes
 
 Le droit de **lire** les commandes de toutes les sociétés. Contrôleur
-`AdminOrdersController` (`apps/lfd-api/src/b2b/orders/http/admin-orders.controller.ts`,
+`AdminOrdersController` (`apps/lfd-api/src/lafoliecoffee/orders/http/admin-orders.controller.ts`,
 `@AdminSurface("b2b_orders")`), plus deux contrôleurs voisins sous la même
 ressource.
 

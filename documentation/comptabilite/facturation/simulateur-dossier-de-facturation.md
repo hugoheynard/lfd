@@ -72,7 +72,7 @@ L'« arrondi des lignes » n'existe plus depuis F6 (nul par construction).
 
 | Quoi    | Où                                                                                                                                        |
 | ------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Calcul  | `b2b/accounting/domain/services/invoice-dossier.ts`, `invoice-order-consistency.ts`                                                       |
+| Calcul  | `lafoliecoffee/accounting/domain/services/invoice-dossier.ts`, `invoice-order-consistency.ts`                                             |
 | Lecture | port `InvoiceDossierReader` (même critère de facturation que le lot)                                                                      |
 | Route   | `GET admin/accounting/invoice-dossiers/companies/:companyId?month=` + `invoice.csv`, `orders.csv`, `gaps.csv`, sous `b2b_accounting:read` |
 | Écran   | Comptabilité › Dossier de facturation (`comptabilite/invoice-dossier/`)                                                                   |

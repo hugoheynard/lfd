@@ -17,7 +17,7 @@ flowchart LR
 
 ## 1. L'agrégat `SiteResupply`
 
-`apps/lfd-api/src/b2b/resupply/domain/site-resupply.ts:71` — un point, une
+`apps/lfd-api/src/lafoliecoffee/resupply/domain/site-resupply.ts:71` — un point, une
 visée (`tomorrow` | `asap`), une **journée déduite** de l'instant du geste à
 l'heure de Paris (demain ou aujourd'hui), jamais saisie ; des lignes (SKU,
 libellé figé du catalogue publié, **unité** `piece` | `weight`, quantité
@@ -43,7 +43,7 @@ jour : `addLine` refuse le 201ᵉ article (`resupply.order.too_many_lines`,
 borne `SITE_RESUPPLY_MAX_LINES` = 200, celle du brouillon du fournil) ;
 `place`, `cancel` et `markMounted` reçoivent ce que l'appelant a lu sous
 verrou en objet NOMMÉ (`PlacementCheck`, `CancellationCheck`, `MountCheck`,
-`apps/lfd-api/src/b2b/resupply/domain/site-resupply-checks.ts`), plus en booléens positionnels ; `restore`
+`apps/lfd-api/src/lafoliecoffee/resupply/domain/site-resupply-checks.ts`), plus en booléens positionnels ; `restore`
 (l. 134) refuse un brouillon qui porterait une annulation, une arrivée, un
 lancement ou un départ (`resupply.order.impossible_state`, 500).
 
@@ -193,7 +193,7 @@ refusée en 409 (`resupply.sending_key.taken`,
 `resupply.bakehouse_draft.key_taken`) — jamais rendue. La clé se relit
 AVANT le point et le catalogue (2026-11-03) : un rejeu après le retrait d'un
 article rend la clé au lieu d'un 404
-(`apps/lfd-api/src/b2b/resupply/application/resupply-sending-key.ts`, partagé
+(`apps/lfd-api/src/lafoliecoffee/resupply/application/resupply-sending-key.ts`, partagé
 avec la réserve). La journée,
 puis l'heure du réassort, s'établissent sous le verrou de la journée, à
 l'écriture.

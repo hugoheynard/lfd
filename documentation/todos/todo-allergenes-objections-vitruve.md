@@ -42,7 +42,7 @@ consommateur front aujourd'hui, mais le paquet est publié.
 
 ### B2 — Le lot 4 est marqué ✅ alors que D6 est fait à moitié
 
-`apps/lfd-api/src/b2b/catalog/infrastructure/prisma-catalog-admin.reader.ts`
+`apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/prisma-catalog-admin.reader.ts`
 importe toujours `findMapping` et `toInco` de `pim/allergens/`, et `allergensOf()`
 reprojette côté B2B.
 

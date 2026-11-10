@@ -6,7 +6,7 @@ commerce — le compte client, la commande, le catalogue — vit dans
 
 Ce dossier a été ouvert le **2026-09-10**, en sortant deux documents de `b2b/`.
 Ils y étaient rangés par projet ; ils se lisent par sujet, et ce sujet-là a
-gagné son propre contexte dans le code (`apps/lfd-api/src/b2b/accounting/`), son
+gagné son propre contexte dans le code (`apps/lfd-api/src/lafoliecoffee/accounting/`), son
 propre droit staff (`b2b_accounting`) et son propre espace dans le back-office.
 
 > **État des moyens de paiement au 2026-10-14 (Hugo).**
@@ -93,7 +93,7 @@ plans, ses docs d'état et ses todos (les todos vivent **ici** et non dans
 
 ### L'entité juridique émettrice (`LegalEntity`) — en service
 
-Code : `apps/lfd-api/src/b2b/accounting/`. Écran : Comptabilité › Entités
+Code : `apps/lfd-api/src/lafoliecoffee/accounting/`. Écran : Comptabilité › Entités
 juridiques. Ouvert à l'écran le 2026-09-12, il fonctionne.
 
 - **Trois ports sur une seule table**, et un seul est exporté. `CreditorReader`
@@ -114,21 +114,21 @@ juridiques. Ouvert à l'écran le 2026-09-12, il fonctionne.
 
 | Ce qui existe                   | Où                                               | État                                                                                                                                                                                                                     |
 | ------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Le mandat **Stripe**            | `src/b2b/payments/`                              | **supprimé** le 2026-09-19 — aucun mandat Stripe en production (Hugo) ; ses deux colonnes restent en base, ni lues ni écrites ([`mandat/todo-mandat-restes-de-la-frappe.md`](mandat/todo-mandat-restes-de-la-frappe.md)) |
+| Le mandat **Stripe**            | `src/lafoliecoffee/payments/`                    | **supprimé** le 2026-09-19 — aucun mandat Stripe en production (Hugo) ; ses deux colonnes restent en base, ni lues ni écrites ([`mandat/todo-mandat-restes-de-la-frappe.md`](mandat/todo-mandat-restes-de-la-frappe.md)) |
 | Le **mandat imprimé**           | `accounting/domain/services/sepa-mandate-pdf.ts` | **livré** — CORE ou interentreprises selon le mandat ; marqué EXEMPLE sans RUM, signable avec                                                                                                                            |
-| Le mandat **direct**, nominatif | `src/b2b/payments/`                              | **livré** — frappé, imprimé, envoyé, activé sur preuve ; restes dans [`mandat/todo-mandat-restes-de-la-frappe.md`](mandat/todo-mandat-restes-de-la-frappe.md)                                                            |
+| Le mandat **direct**, nominatif | `src/lafoliecoffee/payments/`                    | **livré** — frappé, imprimé, envoyé, activé sur preuve ; restes dans [`mandat/todo-mandat-restes-de-la-frappe.md`](mandat/todo-mandat-restes-de-la-frappe.md)                                                            |
 
 ### La RUM
 
 Frappée à chaque mandat par `Rum.mint`
-(`src/b2b/accounting/domain/value-objects/rum.ts`) — sa forme et ses bornes sont
+(`src/lafoliecoffee/accounting/domain/value-objects/rum.ts`) — sa forme et ses bornes sont
 dans [`mandat/rum.md`](mandat/rum.md).
 
 ## Ce qui n'est pas ici
 
 - **La facturation** — [`../b2b/architecture-facturation.md`](../b2b/architecture-facturation.md),
   dont le document unique périme la tranche 7 et la §6. Elle déménagera ici le
-  jour où son code rejoindra `b2b/accounting/`, pas avant : un doc qu'on range
+  jour où son code rejoindra `lafoliecoffee/accounting/`, pas avant : un doc qu'on range
   d'après un plan décrit un dépôt qui n'existe pas.
 - **Les alertes de compte client**, la **commande**, le **catalogue** — dans
   `../b2b/` et `../commandes/`.

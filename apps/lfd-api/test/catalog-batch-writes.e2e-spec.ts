@@ -18,7 +18,7 @@ import {
   type SyncProduct,
 } from "@lfd/catalog-sync";
 
-import { CatalogItemRepository } from "../src/b2b/catalog/domain/ports/catalog-item.repository.js";
+import { CatalogItemRepository } from "../src/lafoliecoffee/catalog/domain/ports/catalog-item.repository.js";
 import { SchemaOpsCounter } from "../src/platform/database/schema-ops.counter.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { OutboxRelayTrigger } from "../src/platform/outbox/outbox-relay-trigger.js";

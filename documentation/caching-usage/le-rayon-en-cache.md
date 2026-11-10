@@ -135,7 +135,7 @@ Chemins relatifs à la racine du dépôt. Les lignes de la carte
 | Lot     | Ce qu'il a posé                                                                                                                                                               | Commit                   |
 | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
 | C0b     | `enable_ctx_exports` (sans avancer la date de compatibilité), `ContainerProxy` exporté, porte `lint:container-start`                                                          | `8aaa1f638`              |
-| C1      | le port `ShelfChanges` (`apps/lfd-api/src/b2b/shared/shelf-changes/`), la fenêtre d'une seconde, les écrivains, la porte `lint:shelf-writes`                                  | `7a62edd7f`              |
+| C1      | le port `ShelfChanges` (`apps/lfd-api/src/lafoliecoffee/shared/shelf-changes/`), la fenêtre d'une seconde, les écrivains, la porte `lint:shelf-writes`                        | `7a62edd7f`              |
 | C2      | l'objet `ProShelves`, le port `ShopShelfCache`, le repli (délai, disjoncteur), la purge société + sites, le rayon rangé compressé                                             | `a8c07257f`              |
 | C3      | Workers Cache sur `/shop/catalogue` et `/shop/featured`, derrière un drapeau public ; `lint:cache-control` étendue au container                                               | 2026-11-04               |
 | C4      | le rayon relu au retour sur l'onglet **seulement si le panier est vide** et la photo a une minute (`ShelfRefreshOnReturn`, `ShopCatalogue.refreshIfStale`) — option b de Hugo | 2026-11-04               |
@@ -163,7 +163,7 @@ Chemins relatifs à la racine du dépôt. Les lignes de la carte
 - Activé par `"cache": { "enabled": true }` (`apps/lfd-api/wrangler.jsonc`).
   Les réponses de `/shop/catalogue` et `/shop/featured` portent
   `public, max-age=30` et `Cache-Tag: rayon-public`
-  (`apps/lfd-api/src/b2b/catalog/http/public-shelf-cache-headers.ts`) ;
+  (`apps/lfd-api/src/lafoliecoffee/catalog/http/public-shelf-cache-headers.ts`) ;
   toute autre réponse garde le `private` du middleware
   ([`aucune-reponse-personnelle-en-cache.md`](aucune-reponse-personnelle-en-cache.md)).
 - **Ces deux routes ne lisent jamais l'appelant** (`read-shop-catalogue.ts`,
@@ -231,7 +231,7 @@ local le 2026-11-04). Elle est tenue par `lint:container-start`.
 ## § 4 ter. Un port, pour pouvoir changer de magasin
 
 Le service du rayon parle au port `ShopShelfCache`
-(`apps/lfd-api/src/b2b/catalog/domain/ports/shop-shelf-cache.ts`), relié dans
+(`apps/lfd-api/src/lafoliecoffee/catalog/domain/ports/shop-shelf-cache.ts`), relié dans
 `apps/lfd-api/src/appBootstrap/shop-shelf-cache.module.ts` à
 `DurableObjectShopShelfCache` ou `NoShopShelfCache` ; les tests d'application
 tournent contre `InMemoryShopShelfCache`. Passer à Redis serait un adaptateur
@@ -292,7 +292,7 @@ gestes `shelf-store.ts` ; journaux `shelf_cache.switched` et
 ## § 6. La durée
 
 `recognisedShelfExpiry`
-(`apps/lfd-api/src/b2b/catalog/application/recognised-shelf.service.ts`) :
+(`apps/lfd-api/src/lafoliecoffee/catalog/application/recognised-shelf.service.ts`) :
 `min(now + 5 min, prochain instant d'opération datée du rayon)` —
 `RECOGNISED_SHELF_LIFETIME_MS = 5 * 60_000`. Les quatre instants d'une
 opération (`announceFrom`, `orderFrom ?? announceFrom`, `orderUntil`, fin du
@@ -324,7 +324,7 @@ qu'avec le précalcul (§ 8).
 
 ### § 6.3 Tests
 
-`apps/lfd-api/src/b2b/catalog/domain/__tests__/next-operation-change.spec.ts`,
+`apps/lfd-api/src/lafoliecoffee/catalog/domain/__tests__/next-operation-change.spec.ts`,
 `apps/lfd-api/container/__tests__/shelf-store.spec.ts` (deux révisions, deux
 clés), `apps/lfd-api/test/recognised-shelf-cache.e2e-spec.ts` (servi au second
 appel, expiration à l'opération).

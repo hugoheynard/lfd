@@ -12,7 +12,7 @@
 /**
  * 🚩 **Le XML est servi** depuis le 2026-10-18 : `Accept: application/xml`,
  * `?format=xml` et `GET /vitrine/schema.xsd` répondent
- * (`apps/lfd-api/src/b2b/vitrine/http/vitrine.controller.ts`). Le drapeau
+ * (`apps/lfd-api/src/lafoliecoffee/vitrine/http/vitrine.controller.ts`). Le drapeau
  * reste pour qu'un retrait se fasse en une ligne — la page et le Markdown le
  * lisent tous deux.
  */

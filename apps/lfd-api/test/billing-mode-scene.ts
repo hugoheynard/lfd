@@ -17,8 +17,8 @@
  * depuis l'instant présent.
  */
 import type { LegalEntityView } from "@lfd/contracts";
-import { nextClosureAfter } from "../src/b2b/accounting/domain/services/billing-cycle.js";
-import { BillingRhythm } from "../src/b2b/accounting/domain/value-objects/billing-rhythm.js";
+import { nextClosureAfter } from "../src/lafoliecoffee/accounting/domain/services/billing-cycle.js";
+import { BillingRhythm } from "../src/lafoliecoffee/accounting/domain/value-objects/billing-rhythm.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 

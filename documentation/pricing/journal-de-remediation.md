@@ -36,15 +36,15 @@ l'écran.
 ### 1. Le constat, retrouvé dans le code
 
 `priceAtCumulative(item, N)`
-([`loaded-pricer.ts:196`](../../apps/lfd-api/src/b2b/pricing/domain/loaded-pricer.ts))
+([`loaded-pricer.ts:196`](../../apps/lfd-api/src/lafoliecoffee/pricing/domain/loaded-pricer.ts))
 construit un contexte où `quantity` **et** `cumulativeQuantity` valent `N`, puis
-`resolve()` ([`loaded-pricer.ts:388`](../../apps/lfd-api/src/b2b/pricing/domain/loaded-pricer.ts))
+`resolve()` ([`loaded-pricer.ts:388`](../../apps/lfd-api/src/lafoliecoffee/pricing/domain/loaded-pricer.ts))
 juge la porte du plancher dynamique sur `context.quantity` — c'est-à-dire sur
 `N`.
 
 Avec une politique `{ minQuantity: 50, minVolumeRatioBp: null }` — légale, seules
 les **deux** conditions nulles sont refusées à la saisie — `decideFloor`
-([`floor-policy.ts:75`](../../apps/lfd-api/src/b2b/pricing/domain/floor-policy.ts))
+([`floor-policy.ts:75`](../../apps/lfd-api/src/lafoliecoffee/pricing/domain/floor-policy.ts))
 calcule `volumeMet = true` (condition absente réputée remplie) et
 `quantityMet = 10 000 >= 50`. **La porte s'ouvre**, et la courbe du banc d'essai
 affiche un prix sous le mur dur — que la commande réelle ne servira pas, sauf à
@@ -253,9 +253,9 @@ avant d'être technique.**
 ### 1. Le constat, retrouvé dans le code
 
 `commitmentOf`
-([`loaded-pricer.ts`](../../apps/lfd-api/src/b2b/pricing/domain/loaded-pricer.ts))
+([`loaded-pricer.ts`](../../apps/lfd-api/src/lafoliecoffee/pricing/domain/loaded-pricer.ts))
 calcule `orderedBySku.get(item.sku) + quantity`, et le chargeur
-([`pricing-materials.loader.ts`](../../apps/lfd-api/src/b2b/pricing/application/pricing-materials.loader.ts))
+([`pricing-materials.loader.ts`](../../apps/lfd-api/src/lafoliecoffee/pricing/application/pricing-materials.loader.ts))
 lit `customerVolumes.volumesFor(companyId, skus, window)` — une `Map` **par
 SKU**, bornée aux SKU du panier.
 
@@ -591,7 +591,7 @@ promotion que personne ne voit ne fait pas vendre.
 ### 1. Le constat, et ce qui l'a caché
 
 `ReadShopCatalogueHandler`
-(`apps/lfd-api/src/b2b/catalog/application/queries/read-shop-catalogue.ts`) sert
+(`apps/lfd-api/src/lafoliecoffee/catalog/application/queries/read-shop-catalogue.ts`) sert
 `item.unitPriceMillicents` du miroir — le **canonique**, jamais résolu. Une
 promotion publique (`audience: all`, −10 % sur les viennoiseries) est donc
 invisible au rayon et n'apparaît qu'au panier, où `/shop/quote` la résout.
@@ -624,7 +624,7 @@ une qui croit avoir mesuré que c'était inutile.
 `PricedItem.category` n'est **pas** le `shelfId` de la vitrine. La vitrine
 expose `shelfId = categoryId` (la famille du PIM, `cat_vien`), tandis que le
 tarificateur attend le **rayon** (`viennoiserie`), dérivé par
-`SHELF_BY_PIM_CATEGORY` dans `apps/lfd-api/src/b2b/catalog/infrastructure/catalog-backed-product-catalog.ts`
+`SHELF_BY_PIM_CATEGORY` dans `apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/catalog-backed-product-catalog.ts`
 — dont le commentaire prévient : « un rayon faux ferait appliquer les règles de
 prix d'une AUTRE famille ».
 
@@ -642,7 +642,7 @@ les deux routes ; **pas de barré quand il n'y a pas d'écart**.
 
 **Une seule logique, deux appelants qui ne diffèrent que par `companyId`.**
 
-Un service `ShopCataloguePricing` dans `b2b/catalog/application/` :
+Un service `ShopCataloguePricing` dans `lafoliecoffee/catalog/application/` :
 
 ```
 listSellable → shopCatalogueOf → PricingMaterialsLoader.pricerFor(items, {companyId}, at)
@@ -673,7 +673,7 @@ dans `orders/`, et la route publique ne pourrait pas l'atteindre sans cycle.
 ### 5. Le coût, et ce qu'on ne fait pas
 
 **Quatre lectures de plus sur la seule route anonyme** (60/min/IP, aucun cache
-dans `b2b/catalog` aujourd'hui). À `companyId: null` la réponse est **identique
+dans `lafoliecoffee/catalog` aujourd'hui). À `companyId: null` la réponse est **identique
 pour tous les visiteurs** — un cache d'une entrée suffirait. **On ne le pose
 pas** : il amènerait l'invalidation, et une promotion posée doit apparaître au
 rayon immédiatement, ce que `price-rules.e2e-spec.ts` exige déjà pour les
@@ -1109,7 +1109,7 @@ une spec a suivi son code, comme `lint:tests-colocated` l'exige.
 
 ### 5. Ce qui le prouve
 
-- **1 239 tests** de `src/b2b`, 142 suites, sans une assertion modifiée ;
+- **1 239 tests** de `src/lafoliecoffee`, 142 suites, sans une assertion modifiée ;
 - `lint:import-cycles` — aucun cycle ; `lint:context-boundaries` — tenues sans
   exception ; `lint:tests-colocated` — 278 specs ; `lint:price-pipeline` —
   toujours **1 entrée**, le moteur n'a pas été touché.
@@ -1150,7 +1150,7 @@ pas ». Essayé, le 2026-09-09 :
 
 `lint:no-type-escapes` ne refuse que `as unknown as`. La marque bloque donc
 **l'accident** — le cas réel — et pas la **fraude**. D'où
-`lint:catalogue-authority`, qui refuse hors de `b2b/catalog/` la frappe **et**
+`lint:catalogue-authority`, qui refuse hors de `lafoliecoffee/catalog/` la frappe **et**
 `as CatalogArticle`. Cran 1 de la hiérarchie pour ce qui se fait par mégarde,
 cran 4 pour ce qui se ferait exprès.
 
@@ -1275,7 +1275,7 @@ historique, ce que seule la lentille sait nommer.
 
 ### 4. `lint:price-door` — ce qui rend le contournement inexprimable
 
-Aucun code servi hors de `b2b/pricing/` n'atteint `PricingMaterialsLoader` ni
+Aucun code servi hors de `lafoliecoffee/pricing/` n'atteint `PricingMaterialsLoader` ni
 `LoadedPricer`. La porte lit les **imports** seulement, jamais la prose : un
 JSDoc qui nomme `LoadedPricer` pour dire où il vit est utile, et le compter
 ferait de cette porte un bruit qu'on apprend à ignorer.

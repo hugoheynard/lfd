@@ -55,13 +55,13 @@ champ de TVA mêlées à d'autres taux, sous-traitance, mandat).
 
 ## 3. Ce que le code produit (lu le 2026-10-22)
 
-| Élément                    | Valeur                                                                                                                    | Où                                                               |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| Syntaxe                    | CII D16B                                                                                                                  | `apps/lfd-api/src/b2b/accounting/domain/services/facturx-xml.ts` |
-| Profil dans le XML (BT-24) | `urn:cen.eu:en16931:2017`                                                                                                 | `facturx-xml.ts`, `FACTURX_EN16931_PROFILE`                      |
-| Profil dans le XMP         | `ConformanceLevel` = `EN 16931`, espace `…:invoice:1p0#`                                                                  | `facturx-xmp.ts`                                                 |
-| Contenant                  | PDF/A-3**b** (pas « a » : `pdfkit` ne balise pas le document)                                                             | `facturx-pdf-document.ts`                                        |
-| Version Factur-X visée     | 1.07 dans les commentaires ; la FNFE-MPE publie 1.08 (en vigueur depuis le 15/01/2026, compatible D16B) et annonce 1.09.2 | à trancher par le lot de conformité                              |
+| Élément                    | Valeur                                                                                                                    | Où                                                                         |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Syntaxe                    | CII D16B                                                                                                                  | `apps/lfd-api/src/lafoliecoffee/accounting/domain/services/facturx-xml.ts` |
+| Profil dans le XML (BT-24) | `urn:cen.eu:en16931:2017`                                                                                                 | `facturx-xml.ts`, `FACTURX_EN16931_PROFILE`                                |
+| Profil dans le XMP         | `ConformanceLevel` = `EN 16931`, espace `…:invoice:1p0#`                                                                  | `facturx-xmp.ts`                                                           |
+| Contenant                  | PDF/A-3**b** (pas « a » : `pdfkit` ne balise pas le document)                                                             | `facturx-pdf-document.ts`                                                  |
+| Version Factur-X visée     | 1.07 dans les commentaires ; la FNFE-MPE publie 1.08 (en vigueur depuis le 15/01/2026, compatible D16B) et annonce 1.09.2 | à trancher par le lot de conformité                                        |
 
 ## 4. Les arrondis — par ligne, ou un seul à la fin ?
 
@@ -85,7 +85,7 @@ norme n'impose pas le sens de l'arrondi (BR-S-09 tolère le centime).
 - **le HT d'une ligne de facture reprend les bons** : c'est la somme des HT figés
   des bons qu'elle regroupe, pas `arrondi(Σ quantité × prix)` — un client qui
   rapproche ses bons et sa facture retrouve le centime (Hugo, 2026-10-08 ;
-  `apps/lfd-api/src/b2b/accounting/domain/services/invoice-lines.ts`). Le
+  `apps/lfd-api/src/lafoliecoffee/accounting/domain/services/invoice-lines.ts`). Le
   Schematron EN 16931 ne vérifie pas quantité × prix sur une ligne ; Peppol le
   tolère à 0,02 ; **les règles françaises ne l'ont pas encore été** (lot en
   cours) ;

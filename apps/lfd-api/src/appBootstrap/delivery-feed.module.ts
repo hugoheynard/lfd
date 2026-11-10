@@ -1,33 +1,33 @@
 import { Global, Module } from "@nestjs/common";
 
-import { AccountModule } from "../b2b/account/account.module.js";
-import { CommerceDeliveryAddressPointCorrector } from "../b2b/account/application/services/commerce-delivery-address-point-corrector.js";
-import { CatalogModule } from "../b2b/catalog/catalog.module.js";
-import { CatalogDeliveryColdSkusReader } from "../b2b/catalog/infrastructure/catalog-delivery-cold-skus.reader.js";
-import { CatalogDeliveryProductsReader } from "../b2b/catalog/infrastructure/catalog-delivery-products.reader.js";
-import { OrdersModule } from "../b2b/orders/orders.module.js";
-import { PrismaCommerceDayVersionReader } from "../b2b/orders/infrastructure/prisma-commerce-day-version.reader.js";
-import { PrismaDeliveryOrderStatesReader } from "../b2b/orders/infrastructure/prisma-delivery-order-states.reader.js";
-import { PrismaDeliveryNoteNumbersReader } from "../b2b/delivery-notes/infrastructure/prisma-delivery-note-numbers.reader.js";
-import { PrismaDeliveryDeparturesReader } from "../b2b/orders/infrastructure/prisma-delivery-departures.reader.js";
-import { PrismaDeliveryOrderLinesReader } from "../b2b/orders/infrastructure/prisma-delivery-order-lines.reader.js";
-import { PrismaDeliveryAddressPointsReader } from "../b2b/orders/infrastructure/prisma-delivery-address-points.reader.js";
-import { PrismaDeliveryOrdersReader } from "../b2b/orders/infrastructure/prisma-delivery-orders.reader.js";
-import { PrismaDeliveryProceduresReader } from "../b2b/orders/infrastructure/prisma-delivery-procedures.reader.js";
-import { PrismaDeliveryStepPhotosReader } from "../b2b/orders/infrastructure/prisma-delivery-step-photos.reader.js";
+import { AccountModule } from "../lafoliecoffee/account/account.module.js";
+import { CommerceDeliveryAddressPointCorrector } from "../lafoliecoffee/account/application/services/commerce-delivery-address-point-corrector.js";
+import { CatalogModule } from "../lafoliecoffee/catalog/catalog.module.js";
+import { CatalogDeliveryColdSkusReader } from "../lafoliecoffee/catalog/infrastructure/catalog-delivery-cold-skus.reader.js";
+import { CatalogDeliveryProductsReader } from "../lafoliecoffee/catalog/infrastructure/catalog-delivery-products.reader.js";
+import { OrdersModule } from "../lafoliecoffee/orders/orders.module.js";
+import { PrismaCommerceDayVersionReader } from "../lafoliecoffee/orders/infrastructure/prisma-commerce-day-version.reader.js";
+import { PrismaDeliveryOrderStatesReader } from "../lafoliecoffee/orders/infrastructure/prisma-delivery-order-states.reader.js";
+import { PrismaDeliveryNoteNumbersReader } from "../lafoliecoffee/delivery-notes/infrastructure/prisma-delivery-note-numbers.reader.js";
+import { PrismaDeliveryDeparturesReader } from "../lafoliecoffee/orders/infrastructure/prisma-delivery-departures.reader.js";
+import { PrismaDeliveryOrderLinesReader } from "../lafoliecoffee/orders/infrastructure/prisma-delivery-order-lines.reader.js";
+import { PrismaDeliveryAddressPointsReader } from "../lafoliecoffee/orders/infrastructure/prisma-delivery-address-points.reader.js";
+import { PrismaDeliveryOrdersReader } from "../lafoliecoffee/orders/infrastructure/prisma-delivery-orders.reader.js";
+import { PrismaDeliveryProceduresReader } from "../lafoliecoffee/orders/infrastructure/prisma-delivery-procedures.reader.js";
+import { PrismaDeliveryStepPhotosReader } from "../lafoliecoffee/orders/infrastructure/prisma-delivery-step-photos.reader.js";
 import {
   PrismaTransferOrderContentsReader,
   PrismaTransferOrdersReader,
-} from "../b2b/orders/infrastructure/prisma-transfer-orders.reader.js";
-import { CommerceTransferSites } from "../b2b/orders/application/services/commerce-transfer-sites.service.js";
-import { PickupAddressesModule } from "../b2b/pickup-addresses/pickup-addresses.module.js";
-import { PickupDepartureCandidatesReader } from "../b2b/pickup-addresses/infrastructure/pickup-departure-candidates.reader.js";
-import { SiteTransferPlacesReader } from "../b2b/pickup-addresses/infrastructure/site-transfer-places.reader.js";
-import { DeliveryTransferOrderColorsReader } from "../b2b/orders/infrastructure/delivery-transfer-order-colors.reader.js";
-import { DeliveryBinLabelColorsReader } from "../b2b/orders/infrastructure/delivery-bin-label-colors.reader.js";
-import { SiteDeliveryColorsReader } from "../b2b/sites/infrastructure/site-delivery-colors.reader.js";
-import { SiteTransferColorsReader } from "../b2b/sites/infrastructure/site-transfer-colors.reader.js";
-import { SitesModule } from "../b2b/sites/sites.module.js";
+} from "../lafoliecoffee/orders/infrastructure/prisma-transfer-orders.reader.js";
+import { CommerceTransferSites } from "../lafoliecoffee/orders/application/services/commerce-transfer-sites.service.js";
+import { PickupAddressesModule } from "../lafoliecoffee/pickup-addresses/pickup-addresses.module.js";
+import { PickupDepartureCandidatesReader } from "../lafoliecoffee/pickup-addresses/infrastructure/pickup-departure-candidates.reader.js";
+import { SiteTransferPlacesReader } from "../lafoliecoffee/pickup-addresses/infrastructure/site-transfer-places.reader.js";
+import { DeliveryTransferOrderColorsReader } from "../lafoliecoffee/orders/infrastructure/delivery-transfer-order-colors.reader.js";
+import { DeliveryBinLabelColorsReader } from "../lafoliecoffee/orders/infrastructure/delivery-bin-label-colors.reader.js";
+import { SiteDeliveryColorsReader } from "../lafoliecoffee/sites/infrastructure/site-delivery-colors.reader.js";
+import { SiteTransferColorsReader } from "../lafoliecoffee/sites/infrastructure/site-transfer-colors.reader.js";
+import { SitesModule } from "../lafoliecoffee/sites/sites.module.js";
 import {
   CommerceDayVersionReader,
   DeliveryAddressPointCorrector,

@@ -17,7 +17,7 @@ Le cycle de vie d'une commande — l'énuméré, les transitions, qui les écrit
 
 ## Ce que c'est aujourd'hui
 
-La production **n'a rien à elle**. Elle vit dans `b2b/orders` et lit les tables
+La production **n'a rien à elle**. Elle vit dans `lafoliecoffee/orders` et lit les tables
 de commerce en direct : `OrderReader.listForProduction(date)` et
 `findForPacking(reference)`, dont l'adaptateur compose la feuille d'atelier en
 joignant `orders`, `order_lines` et `companies`.
@@ -188,7 +188,7 @@ au même titre qu'un port — il vit donc dans `channels/commerce/`, pas dans
 
 |                          | Aujourd'hui                          | Cible                             |
 | ------------------------ | ------------------------------------ | --------------------------------- |
-| Où vit la production     | `b2b/orders`                         | `src/production/`                 |
+| Où vit la production     | `lafoliecoffee/orders`               | `src/production/`                 |
 | Ses tables               | aucune — elle lit celles du commerce | schéma `production`               |
 | La feuille d'atelier     | composée à la volée depuis `orders`  | **possédée**, produite par elle   |
 | Le compte à produire     | n'existe pas                         | **possédé**, arrêté à la clôture  |

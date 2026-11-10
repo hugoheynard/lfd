@@ -1,18 +1,18 @@
 import type { CommandBus } from "@nestjs/cqrs";
 
-import { ActivateCompanyByStaffCommand } from "../../b2b/account/application/commands/activate-company.command.js";
-import { GrantTermsCommand } from "../../b2b/account/application/commands/grant-terms.command.js";
+import { ActivateCompanyByStaffCommand } from "../../lafoliecoffee/account/application/commands/activate-company.command.js";
+import { GrantTermsCommand } from "../../lafoliecoffee/account/application/commands/grant-terms.command.js";
 import {
   AddDeliveryAddressCommand,
   UpdateDeliveryAddressCommand,
   SaveBillingAddressCommand,
-} from "../../b2b/account/application/commands/address-commands.js";
-import { PreferFulfillmentCommand } from "../../b2b/account/application/commands/company-settings-commands.js";
-import { AddCompanyContactCommand } from "../../b2b/account/application/commands/contact-commands.js";
-import { CreateCompanyCommand } from "../../b2b/account/application/commands/create-company.command.js";
-import { UpdateMyProfileCommand } from "../../b2b/account/application/commands/update-my-profile.command.js";
-import { SetCompanyBankAccountCommand } from "../../b2b/payments/application/commands/set-company-bank-account.command.js";
-import { SetMandateOptionsCommand } from "../../b2b/payments/application/commands/set-mandate-options.command.js";
+} from "../../lafoliecoffee/account/application/commands/address-commands.js";
+import { PreferFulfillmentCommand } from "../../lafoliecoffee/account/application/commands/company-settings-commands.js";
+import { AddCompanyContactCommand } from "../../lafoliecoffee/account/application/commands/contact-commands.js";
+import { CreateCompanyCommand } from "../../lafoliecoffee/account/application/commands/create-company.command.js";
+import { UpdateMyProfileCommand } from "../../lafoliecoffee/account/application/commands/update-my-profile.command.js";
+import { SetCompanyBankAccountCommand } from "../../lafoliecoffee/payments/application/commands/set-company-bank-account.command.js";
+import { SetMandateOptionsCommand } from "../../lafoliecoffee/payments/application/commands/set-mandate-options.command.js";
 import { runWithRequestContext } from "../../platform/context/request-context.store.js";
 import { newTraceId } from "../../platform/context/trace-context.js";
 import {

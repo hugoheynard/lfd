@@ -1,13 +1,13 @@
 import { Global, Module } from "@nestjs/common";
 
-import { IssuedDraftMandates } from "../b2b/accounting/domain/ports/issued-draft-mandates.js";
-import { IssuedMandatesReader } from "../b2b/accounting/domain/ports/issued-mandates.reader.js";
-import { IssuerDraftVoiding } from "../b2b/payments/application/issuer-draft-voiding.js";
-import { PaymentMandateRepository } from "../b2b/payments/domain/payment-mandate.repository.js";
-import { IssuedDraftsReader } from "../b2b/payments/domain/ports/issued-drafts.reader.js";
-import { PrismaIssuedDraftsReader } from "../b2b/payments/infrastructure/prisma-issued-drafts.reader.js";
-import { PrismaIssuedMandatesReader } from "../b2b/payments/infrastructure/prisma-issued-mandates.reader.js";
-import { PrismaPaymentMandateRepository } from "../b2b/payments/infrastructure/prisma-payment-mandate.repository.js";
+import { IssuedDraftMandates } from "../lafoliecoffee/accounting/domain/ports/issued-draft-mandates.js";
+import { IssuedMandatesReader } from "../lafoliecoffee/accounting/domain/ports/issued-mandates.reader.js";
+import { IssuerDraftVoiding } from "../lafoliecoffee/payments/application/issuer-draft-voiding.js";
+import { PaymentMandateRepository } from "../lafoliecoffee/payments/domain/payment-mandate.repository.js";
+import { IssuedDraftsReader } from "../lafoliecoffee/payments/domain/ports/issued-drafts.reader.js";
+import { PrismaIssuedDraftsReader } from "../lafoliecoffee/payments/infrastructure/prisma-issued-drafts.reader.js";
+import { PrismaIssuedMandatesReader } from "../lafoliecoffee/payments/infrastructure/prisma-issued-mandates.reader.js";
+import { PrismaPaymentMandateRepository } from "../lafoliecoffee/payments/infrastructure/prisma-payment-mandate.repository.js";
 
 /**
  * Le fil qui relie **les réglages de l'entité émettrice aux mandats qu'elle a

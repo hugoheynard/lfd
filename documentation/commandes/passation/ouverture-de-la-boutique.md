@@ -184,10 +184,10 @@ elles restent ouvertes aux professionnels ».
 
 ## Code
 
-- `apps/lfd-api/src/b2b/order-opening/` — le réglage (domaine, ports, routes).
-- `apps/lfd-api/src/b2b/orders/application/services/order-intake.service.ts`
+- `apps/lfd-api/src/lafoliecoffee/order-opening/` — le réglage (domaine, ports, routes).
+- `apps/lfd-api/src/lafoliecoffee/orders/application/services/order-intake.service.ts`
   — la garde ; l'erreur dans `domain/errors/orders-closed-for-audience.error.ts`.
-- `apps/lfd-api/src/b2b/order-opening/domain/order-opening-exemption.ts` —
+- `apps/lfd-api/src/lafoliecoffee/order-opening/domain/order-opening-exemption.ts` —
   l'agrégat des exemptions ; `order-admission.ts` — la règle de passation.
 - `packages/contracts/src/order-opening-exemptions.ts` — vue, forme de l'ajout,
   codes de refus.
@@ -198,7 +198,7 @@ elles restent ouvertes aux professionnels ».
   `grant-exemption-panel/` — Réglages ›
   Commandes › Ouverture du e-commerce (`/reglages/commandes/ouverture`), sous
   `lfc_order_opening` depuis le 2026-10-13 (`plan-reglages-commandes.md`).
-- `apps/lfd-api/src/b2b/orders/http/order-admission.controller.ts` et
+- `apps/lfd-api/src/lafoliecoffee/orders/http/order-admission.controller.ts` et
   `application/queries/get-{my,guest}-order-admission.*` — « puis-je
   commander ? » (2026-10-26).
 - Boutique : `client/shop/order-opening.store.ts`,

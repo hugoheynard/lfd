@@ -1,11 +1,11 @@
 import {
   OperationImageRepointing,
   type OperationImageChange,
-} from "../../b2b/operations/channels/media/operation-image-repointing.js";
+} from "../../lafoliecoffee/operations/channels/media/operation-image-repointing.js";
 import {
   OperationMediaUsage,
   type OperationMediaUsageEntry,
-} from "../../b2b/operations/channels/media/operation-media-usage.js";
+} from "../../lafoliecoffee/operations/channels/media/operation-media-usage.js";
 import { MediaCarriers } from "../../media/channels/carriers/media-carriers.js";
 import { RecordingMediaJournal } from "../../media/journal/__tests__/recording-media-journal.js";
 import { CommerceOperationMediaCarriers } from "../commerce-operation-media-carriers.js";

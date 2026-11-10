@@ -1,8 +1,8 @@
 import { Global, Injectable, Module } from "@nestjs/common";
 
-import { GrowthModule } from "../b2b/growth/growth.module.js";
-import { ActivityRecorder } from "../b2b/growth/domain/ports/activity-recorder.js";
-import type { RecordActivityInput } from "../b2b/growth/domain/activity-event.js";
+import { GrowthModule } from "../lafoliecoffee/growth/growth.module.js";
+import { ActivityRecorder } from "../lafoliecoffee/growth/domain/ports/activity-recorder.js";
+import type { RecordActivityInput } from "../lafoliecoffee/growth/domain/activity-event.js";
 import { Journal } from "../platform/journal/journal.js";
 import type { JournalFact } from "../platform/journal/journal-fact.js";
 import {

@@ -13,7 +13,7 @@
 import { addDays, instantToLocal, localToInstant } from "@lfd/contracts";
 import { htMillicentsOf } from "@lfd/pim-contracts";
 
-import { PricingMaterialsCache } from "../src/b2b/pricing/infrastructure/pricing-materials.cache.js";
+import { PricingMaterialsCache } from "../src/lafoliecoffee/pricing/infrastructure/pricing-materials.cache.js";
 import {
   CompanyStatus,
   CustomerRole,

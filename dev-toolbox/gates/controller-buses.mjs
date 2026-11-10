@@ -69,29 +69,29 @@ const SCOPE = [
   // (`ListCatalogQuery`, `GetCatalogSummaryQuery`, `ExportCatalogCsvQuery`), le
   // contrôleur n'injecte plus que ses bus, et il entre ici pour que le retour
   // en arrière échoue.
-  "apps/lfd-api/src/b2b/catalog/http/admin-catalog.controller.ts",
+  "apps/lfd-api/src/lafoliecoffee/catalog/http/admin-catalog.controller.ts",
   // Drainé le 2026-09-09 (dernière tranche de R21) : `PricingBoardReader`, `BoardComparisonService`,
   // `PriceProjectionQuery` et `Clock` — l'horloge est descendue dans le handler
   // de la projection, un contrôleur ne décide pas d'un instant.
-  "apps/lfd-api/src/b2b/pricing/http/admin-pricing.controller.ts",
+  "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-pricing.controller.ts",
   // Drainé le 2026-09-09 : `CompanyPricingQuery` et `MercurialeDraftStore` — les
   // deux écritures du brouillon passent par `CommandBus`, sa lecture par `QueryBus`.
-  "apps/lfd-api/src/b2b/pricing/http/admin-company-pricing.controller.ts",
+  "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-company-pricing.controller.ts",
   // Drainé le 2026-09-09 : `PricingJournalReader`, et le mapping `journalView`
   // avec lui — un contrôleur traduit du HTTP, il ne transforme pas un acte.
-  "apps/lfd-api/src/b2b/pricing/http/admin-pricing-journal.controller.ts",
+  "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-pricing-journal.controller.ts",
   // Drainé le 2026-09-09 : `PriceTemplatesQuery` et `MercurialeBenchmarkQuery`.
   // Le `NotFoundException` reste au contrôleur, sur le `null` rendu : le lever
   // au handler changerait la forme du corps servi à un front en service.
-  "apps/lfd-api/src/b2b/pricing/http/admin-price-templates.controller.ts",
+  "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-price-templates.controller.ts",
   // Drainé le 2026-09-09 : `VolumeCommitmentsQuery`.
-  "apps/lfd-api/src/b2b/pricing/http/admin-volume-commitments.controller.ts",
+  "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-volume-commitments.controller.ts",
   // Le SIXIÈME de `pricing/`, et il était déjà propre : il n'injecte que
   // `CommandBus`. Il entre le 2026-09-09 avec les cinq autres, parce qu'un
   // fichier conforme mais hors liste n'est pas protégé — la porte ne compte
   // que ce qu'elle voit fauter, et rien n'aurait rougi le jour où quelqu'un y
   // aurait injecté un port. Être vert et être tenu sont deux choses.
-  "apps/lfd-api/src/b2b/pricing/http/admin-price-floors.controller.ts",
+  "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-price-floors.controller.ts",
   "apps/lfd-api/src/ops/traffic/admin-traffic.controller.ts",
   "apps/lfd-api/src/pim/sales-contexts/http/sales-context.controller.ts",
   // Déménagé le 2026-11-08 (suivi des e-mails, T1) depuis `platform/mailer/webhook/`.
@@ -108,7 +108,7 @@ const SCOPE = [
   "apps/lfd-api/src/card-payment/http/card-refund-sweep.controller.ts",
   // Né drainé le 2026-11-09 (plan M2, lot P0.c2) : le webhook des liens de
   // paiement, son endpoint et son secret — une commande, comme celui des cartes.
-  "apps/lfd-api/src/b2b/payments/http/payment-links-webhook.controller.ts",
+  "apps/lfd-api/src/lafoliecoffee/payments/http/payment-links-webhook.controller.ts",
 ];
 
 /** Tout le reste, pour que le solde restant soit visible et non silencieux. */

@@ -9,8 +9,8 @@
  */
 import type { ShopFeaturedView } from "@lfd/contracts";
 
-import { InMemoryPublicShelf } from "../src/b2b/catalog/application/__tests__/public-shelf-doubles.js";
-import { PublicShelfStateReader } from "../src/b2b/catalog/domain/ports/public-shelf-state.reader.js";
+import { InMemoryPublicShelf } from "../src/lafoliecoffee/catalog/application/__tests__/public-shelf-doubles.js";
+import { PublicShelfStateReader } from "../src/lafoliecoffee/catalog/domain/ports/public-shelf-state.reader.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { OutboxRelayTrigger } from "../src/platform/outbox/outbox-relay-trigger.js";
 import { anActiveFiche, relayAll, SILENT_TRIGGER, type Fiche } from "./catalog-facts-scene.js";

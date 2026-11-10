@@ -58,7 +58,7 @@ Papier **vivant** : chaque tirage relit tout, rien n'est archivé.
 
 Query `GetDayRoundsDossierPdfQuery` ; lecteurs du bloc livraison seulement,
 plus un canal neuf `TransferSiteColorsReader` (déclaré par la livraison,
-implémenté par `b2b/sites`, relié dans `appBootstrap/delivery-feed.module.ts`).
+implémenté par `lafoliecoffee/sites`, relié dans `appBootstrap/delivery-feed.module.ts`).
 
 Exemple : `admin/document-specimens/rounds-dossier.pdf`
 ([planche des documents](../../comptabilite/planche-des-documents.md)).

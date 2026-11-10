@@ -5,8 +5,8 @@ import { htMillicentsOf } from "@lfd/pim-contracts";
  * bon rendu, le reliquat refondu, le bon échu, les refus, la chaîne, et
  * l'index partiel. Les courses sont dans `order-staff-cancel-voucher-races`.
  */
-import { LoyaltyVoucherRepository } from "../src/b2b/loyalty/domain/ports/loyalty-voucher.repository.js";
-import { LoyaltyReason } from "../src/b2b/loyalty/domain/value-objects/loyalty-reason.js";
+import { LoyaltyVoucherRepository } from "../src/lafoliecoffee/loyalty/domain/ports/loyalty-voucher.repository.js";
+import { LoyaltyReason } from "../src/lafoliecoffee/loyalty/domain/value-objects/loyalty-reason.js";
 import { OrderStatus } from "../src/platform/database/client/client.js";
 import { E2E_STAFF_ID, jsonBody, type E2eContext } from "./e2e-harness.js";
 import {

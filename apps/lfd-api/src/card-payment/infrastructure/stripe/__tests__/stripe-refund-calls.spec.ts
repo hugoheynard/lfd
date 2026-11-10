@@ -49,7 +49,7 @@ class FakeStripeHttp {
   };
 }
 
-// Copié de `b2b/payments/infrastructure/__tests__/` le 2026-11-09 (plan M2,
+// Copié de `lafoliecoffee/payments/infrastructure/__tests__/` le 2026-11-09 (plan M2,
 // P0) : l'intention passe à part (`PI`), la recherche et la création restent.
 const PI = "pi_1";
 

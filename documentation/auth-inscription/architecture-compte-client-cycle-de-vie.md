@@ -445,7 +445,7 @@ vide) : elle se contrôle en production (`documentation/ops/runbook.md`).
   Sans invitation à renouveler : 404 `account.invitation.not_found`.
 - **Le mur n'est pas que dans le `Principal`** (trouvé en bâtissant, fermé
   le même jour). Une seule définition côté requête,
-  `openingMembership(now)` (dans `b2b/shared`, même borne que `isInvitationAlive`), portée par les six gardes qui relisent
+  `openingMembership(now)` (dans `lafoliecoffee/shared`, même borne que `isInvitationAlive`), portée par les six gardes qui relisent
   le rattachement en base (`roleOf` de `prisma-membership.reader.ts`,
   `prisma-order-guard.reader.ts`, `prisma-unpaid-access.reader.ts`,
   `prisma-bank-account-guard.reader.ts`, `prisma-loyalty-conversion.gate.ts`,
@@ -580,7 +580,7 @@ Un écran Ops « état des canaux » (identité : configurée / e-mail : pas de 
 
 | Quoi                  | Où                                                                   |
 | --------------------- | -------------------------------------------------------------------- |
-| Domaine + CQRS        | `apps/lfd-api/src/b2b/account/`                                      |
+| Domaine + CQRS        | `apps/lfd-api/src/lafoliecoffee/account/`                            |
 | Verdict d'activation  | `.../account/domain/services/activation-gate.ts`                     |
 | Échéance d'invitation | `.../platform/shared/invitation/invitation-expiry.ts`                |
 | Ouverture d'accès     | `.../account/application/services/grant-account-access.service.ts`   |

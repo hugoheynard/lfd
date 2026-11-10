@@ -5,7 +5,7 @@
 > a dit, ce que son modèle montre, ce que le code écrit, et ce que nous
 > supposons encore. Les citations de code (`fichier:ligne`) ont été **ouvertes
 > le 2026-10-23**, après la correction de l'export faite ce jour-là, sous
-> `apps/lfd-api/src/b2b/accounting/`.
+> `apps/lfd-api/src/lafoliecoffee/accounting/`.
 >
 > Sources : les questions ([`question-banque.md`](question-banque.md)), les
 > réponses ([`reponses-de-la-banque.md`](reponses-de-la-banque.md), réponses 10
@@ -124,7 +124,7 @@ n'ont pas eu de réponse explicite : la vérification CENET le dira.
   que la banque rejette en entier dès qu'un mandat lui est connu).
 - **200 lignes au plus** (réponse 12) : **découpage**, pas refus. Préparer un
   export prend les 200 premiers mandats à exporter, dans l'ordre des RUM
-  (`apps/lfd-api/src/b2b/payments/infrastructure/prisma-mandates-for-bank-export.reader.ts:48`),
+  (`apps/lfd-api/src/lafoliecoffee/payments/infrastructure/prisma-mandates-for-bank-export.reader.ts:48`),
   et les suivants restent « à exporter » pour l'export d'après
   (`application/commands/export-mandates-for-bank.handler.ts:68-69`). L'agrégat
   refuse un export de plus de 200 (`domain/entities/mandate-bank-export.ts:51`),

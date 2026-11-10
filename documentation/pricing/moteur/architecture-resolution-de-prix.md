@@ -4,7 +4,7 @@
 > version précédente (1 474 lignes, depuis le 2026-08-17) mêlait le modèle, sa
 > mise en œuvre et l'histoire du chantier S1 à S5 ; l'histoire reste dans
 > l'historique git. **Les exemples chiffrés de ce document sont ceux que
-> `b2b/pricing/domain/__tests__/resolve-price.spec.ts` vérifie** : si l'un
+> `lafoliecoffee/pricing/domain/__tests__/resolve-price.spec.ts` vérifie** : si l'un
 > tombe, c'est ce document qui ment. Partie 1 : comprendre. Partie 2 : le
 > code.
 
@@ -82,11 +82,11 @@ le mur dur qui s'applique : par défaut, on protège.
 ## 1. La fonction
 
 `resolvePrice(tarif, matériaux, contexte, plancher)`
-(`b2b/pricing/domain/resolve-price.ts`) : **pure**, calcule en rationnel
+(`lafoliecoffee/pricing/domain/resolve-price.ts`) : **pure**, calcule en rationnel
 exact, arrondit une fois. Appelée par le seul `LoadedPricer`
 ([`architecture-pricer.md`](architecture-pricer.md)).
 
-## 2. Les types (`b2b/pricing/domain/price-rule.ts`)
+## 2. Les types (`lafoliecoffee/pricing/domain/price-rule.ts`)
 
 | Notion            | Type                 | Valeurs                                                                                                                 |
 | ----------------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------- |

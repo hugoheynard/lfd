@@ -13,8 +13,8 @@
  * feuille par le fait du fournil, ses pièces par l'agrégat de la feuille : les
  * routes du poste ne portent pas encore de rang (L8).
  */
-import { DeliveryNote } from "../src/b2b/delivery-notes/domain/entities/delivery-note.js";
-import { DeliveryNoteRepository } from "../src/b2b/delivery-notes/domain/ports/delivery-note.repository.js";
+import { DeliveryNote } from "../src/lafoliecoffee/delivery-notes/domain/entities/delivery-note.js";
+import { DeliveryNoteRepository } from "../src/lafoliecoffee/delivery-notes/domain/ports/delivery-note.repository.js";
 import { CommandBus } from "@nestjs/cqrs";
 import { OnPackingListDrawn } from "../src/packing/application/handlers/on-packing-list-drawn.handler.js";
 import { ClosePackingOrderCommand } from "../src/packing/application/station/close-packing-order.command.js";

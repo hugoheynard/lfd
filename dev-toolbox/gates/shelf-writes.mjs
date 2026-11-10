@@ -97,9 +97,15 @@ const ADMITTED = [
   // `prisma-catalog-item.repository.ts` (les trois) et
   // `prisma-catalog-product-facts.projection.ts` (`upsertCatalogItems`).
   // Un appelant de plus se vérifie à la main ; la porte ne le voit pas.
-  { file: "src/b2b/catalog/infrastructure/catalog-item-upsert.ts", since: "2026-11-04" },
-  { file: "src/b2b/catalog/infrastructure/catalog-decision-writes.ts", since: "2026-11-04" },
-  { file: "src/b2b/catalog/infrastructure/catalog-review-states.ts", since: "2026-11-04" },
+  { file: "src/lafoliecoffee/catalog/infrastructure/catalog-item-upsert.ts", since: "2026-11-04" },
+  {
+    file: "src/lafoliecoffee/catalog/infrastructure/catalog-decision-writes.ts",
+    since: "2026-11-04",
+  },
+  {
+    file: "src/lafoliecoffee/catalog/infrastructure/catalog-review-states.ts",
+    since: "2026-11-04",
+  },
 ];
 
 const WRITE_METHODS = [

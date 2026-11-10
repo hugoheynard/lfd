@@ -80,8 +80,8 @@ flowchart LR
 ## Où ça vit
 
 - **Lecture par créancier** : port `MandatesForBankExportReader.activeOf(creditorId)`,
-  déclaré par la comptabilité (`b2b/accounting/domain/ports/`), implémenté par
-  `b2b/payments` (`PrismaMandatesForBankExportReader`, même `FieldCipher` et
+  déclaré par la comptabilité (`lafoliecoffee/accounting/domain/ports/`), implémenté par
+  `lafoliecoffee/payments` (`PrismaMandatesForBankExportReader`, même `FieldCipher` et
   même `debitedAccounts` que le lot), relié dans
   `appBootstrap/debtor-mandate.module.ts`. L'ICS vient de l'entité, le nom du
   débiteur de `CompanyNamesReader.companyNames` (port étroit sorti de

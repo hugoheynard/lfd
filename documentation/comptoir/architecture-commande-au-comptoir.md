@@ -28,7 +28,7 @@ flowchart LR
 
 ## 2. Ce qui existe
 
-- **Serveur** (`apps/lfd-api/src/b2b/account/`) :
+- **Serveur** (`apps/lfd-api/src/lafoliecoffee/account/`) :
   `http/admin-counter-customers.controller.ts`, `@Controller("admin/counter/customers")`,
   `@AdminSurface("b2b_counter")` ; deux lectures — la liste (cartes des sociétés
   **actives seulement**, rien de crédit ni de propriétaire) et le détail

@@ -16,9 +16,9 @@ ce panier. Elle ne vise personne — c'est le régime du **collectif**
 comptes de paires, sous un seuil d'anonymat, aucun identifiant stocké. Elle ne
 change aucun prix.
 
-Code : `apps/lfd-api/src/b2b/recommendations/` (`domain/services/bought-with.ts`,
+Code : `apps/lfd-api/src/lafoliecoffee/recommendations/` (`domain/services/bought-with.ts`,
 `domain/ports/co-purchase.reader.ts`, `application/services/bought-with-showcase.ts`),
-l'adaptateur `apps/lfd-api/src/b2b/orders/infrastructure/prisma-co-purchase.reader.ts`,
+l'adaptateur `apps/lfd-api/src/lafoliecoffee/orders/infrastructure/prisma-co-purchase.reader.ts`,
 la carte partagée de la boutique (`client/suggestions/staff-suggestion-card/`).
 Contrat : `packages/contracts/src/cart-suggestions.ts`.
 
@@ -27,7 +27,7 @@ Contrat : `packages/contracts/src/cart-suggestions.ts`.
 ```mermaid
 flowchart TD
     P["Panier : ses articles"] --> S["Le décidé d'abord<br/>StaffSuggestionShowcase<br/>1 place"]
-    S --> Q["Les paires du panier<br/>CoPurchaseReader (b2b/orders)<br/>90 jours · clientèle du lecteur"]
+    S --> Q["Les paires du panier<br/>CoPurchaseReader (lafoliecoffee/orders)<br/>90 jours · clientèle du lecteur"]
     Q -->|"moins de 5 clients distincts"| X1["ne sort pas de la base"]
     Q --> R["Classement<br/>rankBoughtWith : soutien, puis SKU<br/>sans le panier ni l'article du staff"]
     R --> F{"Filtre commun R4<br/>servi · commandable au jour visé ·<br/>absent du panier"}
@@ -186,17 +186,17 @@ D'où deux bornes : **pros seulement** (un particulier attend l'avis du
 cabinet, lot R3, [`historique-du-particulier.md`](historique-du-particulier.md)),
 et **route murée seule**.
 
-Code : `apps/lfd-api/src/b2b/recommendations/` (`domain/services/usuals.ts`,
+Code : `apps/lfd-api/src/lafoliecoffee/recommendations/` (`domain/services/usuals.ts`,
 `domain/ports/purchase-history.reader.ts`, `application/queries/list-my-usuals.*`,
 `http/my-shop-usual-suggestions.controller.ts`), l'adaptateur
-`apps/lfd-api/src/b2b/orders/infrastructure/prisma-purchase-history.reader.ts`,
+`apps/lfd-api/src/lafoliecoffee/orders/infrastructure/prisma-purchase-history.reader.ts`,
 la rangée de la boutique (`client/suggestions/usual-picks/`). Contrat :
 `packages/contracts/src/usual-suggestions.ts`.
 
 ```mermaid
 flowchart TD
     R["POST /shop/suggestions/usuals/mine<br/>société de l'espace courant (résolue en base)"] -->|"sans société"| V0["liste vide"]
-    R --> H["PurchaseHistoryReader (b2b/orders)<br/>company_id dans le WHERE · 12 mois<br/>un jour par commande et par article"]
+    R --> H["PurchaseHistoryReader (lafoliecoffee/orders)<br/>company_id dans le WHERE · 12 mois<br/>un jour par commande et par article"]
     H --> K["rankUsuals : 3 commandes au moins<br/>plus repris, plus récent, SKU<br/>sans le panier"]
     K --> F{"Filtre commun R4<br/>servi au pro · commandable au jour visé ·<br/>absent du panier"}
     F -->|non| X["cède la place"]

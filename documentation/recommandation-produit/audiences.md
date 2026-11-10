@@ -92,7 +92,7 @@ flowchart LR
 - **À part** : les commandes d'abonnement, dont le moment est celui du
   planificateur et la fréquence automatique — une seule case, sous le même seuil.
 
-Code : `apps/lfd-api/src/b2b/audiences/domain/audience-scope.ts`.
+Code : `apps/lfd-api/src/lafoliecoffee/audiences/domain/audience-scope.ts`.
 
 ## 4. Le regroupement NAF — ✅ validé par Hugo le 2026-10-18 (Q4)
 
@@ -105,25 +105,25 @@ Code : `apps/lfd-api/src/b2b/audiences/domain/audience-scope.ts`.
 | Autre activité          | tout autre code renseigné                               |
 | Activité non renseignée | code vide, ou commande pro sans société                 |
 
-Une table de préfixes, `apps/lfd-api/src/b2b/audiences/domain/activity-families.ts` ;
+Une table de préfixes, `apps/lfd-api/src/lafoliecoffee/audiences/domain/activity-families.ts` ;
 la changer ne touche ni la requête ni l'écran.
 
 ## 5. Où ça vit
 
-| Couche      | Fichier                                                                                       |
-| ----------- | --------------------------------------------------------------------------------------------- |
-| Contrat     | `packages/contracts/src/audiences.ts` — `GET /admin/audiences?days=&dimension=`               |
-| Domaine     | `b2b/audiences/domain/` — seuil (`AUDIENCE_MIN_CLIENTS`), coupes, tranches, paliers, NAF      |
-| Application | `b2b/audiences/application/queries/get-audiences.*`                                           |
-| Lecture SQL | `b2b/orders/infrastructure/prisma-audience-order.reader.ts` — un `GROUP BY` par lecture       |
-| Langue      | `orders.locale`, `b2b/orders/domain/value-objects/order-locale.ts`                            |
-| Séjour      | `b2b/audiences/domain/stay-profiles.ts` — la règle et ses constantes                          |
-| Familles    | `b2b/audiences/infrastructure/catalog-audience-family.reader.ts` (catalogue pro, puis public) |
-| HTTP        | `b2b/audiences/http/admin-audiences.controller.ts`, sous `b2b_growth`                         |
-| Écran       | `apps/lfd-backoffice-frontend/src/app/analytics/audiences/`                                   |
-| Outil agent | `audiences_read` (`agent/audience-agent-tools.ts`), sous `b2b_growth:read`                    |
+| Couche      | Fichier                                                                                                 |
+| ----------- | ------------------------------------------------------------------------------------------------------- |
+| Contrat     | `packages/contracts/src/audiences.ts` — `GET /admin/audiences?days=&dimension=`                         |
+| Domaine     | `lafoliecoffee/audiences/domain/` — seuil (`AUDIENCE_MIN_CLIENTS`), coupes, tranches, paliers, NAF      |
+| Application | `lafoliecoffee/audiences/application/queries/get-audiences.*`                                           |
+| Lecture SQL | `lafoliecoffee/orders/infrastructure/prisma-audience-order.reader.ts` — un `GROUP BY` par lecture       |
+| Langue      | `orders.locale`, `lafoliecoffee/orders/domain/value-objects/order-locale.ts`                            |
+| Séjour      | `lafoliecoffee/audiences/domain/stay-profiles.ts` — la règle et ses constantes                          |
+| Familles    | `lafoliecoffee/audiences/infrastructure/catalog-audience-family.reader.ts` (catalogue pro, puis public) |
+| HTTP        | `lafoliecoffee/audiences/http/admin-audiences.controller.ts`, sous `b2b_growth`                         |
+| Écran       | `apps/lfd-backoffice-frontend/src/app/analytics/audiences/`                                             |
+| Outil agent | `audiences_read` (`agent/audience-agent-tools.ts`), sous `b2b_growth:read`                              |
 
-Un contexte `b2b/audiences/` à lui plutôt qu'un coin de `b2b/recommendations/` :
+Un contexte `lafoliecoffee/audiences/` à lui plutôt qu'un coin de `lafoliecoffee/recommendations/` :
 décrire la clientèle n'est pas recommander, et les suggestions par segment (A4)
 liront d'ici par un port. Le port `AudienceOrderReader` est déclaré par les
 audiences et implémenté par la commande, comme `SuggestedSkuSalesReader` (RS6).

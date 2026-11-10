@@ -5,8 +5,8 @@
  * `documentation/commandes/plan-t-commandes-de-test-par-le-vrai-chemin.md`).**
  * Cet en-tête disait qu'elles écrivaient par Prisma « parce que le contexte
  * commerce n'a pas encore d'agrégat de domaine ». C'était faux : `Company`
- * (`b2b/account/domain/entities/company.ts`, `Company.declare`) et `Order`
- * (`b2b/orders/domain/entities/order.ts`) existent depuis au moins le
+ * (`lafoliecoffee/account/domain/entities/company.ts`, `Company.declare`) et `Order`
+ * (`lafoliecoffee/orders/domain/entities/order.ts`) existent depuis au moins le
  * 2026-08-19 (vérifié le 2026-10-24).
  *
  * Ce qui est vrai à cette date :
@@ -36,8 +36,8 @@ import {
   type Membership,
   type User,
 } from "../src/platform/database/client/client.js";
-import { Siren } from "../src/b2b/account/domain/value-objects/siren.js";
-import { Siret } from "../src/b2b/account/domain/value-objects/siret.js";
+import { Siren } from "../src/lafoliecoffee/account/domain/value-objects/siren.js";
+import { Siret } from "../src/lafoliecoffee/account/domain/value-objects/siret.js";
 import type { PrismaService } from "../src/platform/database/prisma.service.js";
 
 /** Ce qu'un test peut vouloir imposer sur une société. */

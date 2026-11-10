@@ -1,11 +1,11 @@
 import { Global, Module } from "@nestjs/common";
 
-import { OperationImageLibrary } from "../b2b/operations/channels/media/operation-image-library.js";
+import { OperationImageLibrary } from "../lafoliecoffee/operations/channels/media/operation-image-library.js";
 import { MediaOperationImageLibrary } from "./media-operation-image-library.js";
 
 /**
  * **Le fil des images des opérations du commerce, relié** — le pendant
- * d'`ImageCatalogueModule` pour `b2b/operations` (plan
+ * d'`ImageCatalogueModule` pour `lafoliecoffee/operations` (plan
  * `documentation/operations-datees/plan-l-operation-passe-au-commerce.md`, O3).
  *
  * `@Global` pour la raison des autres fils : le consommateur du port est

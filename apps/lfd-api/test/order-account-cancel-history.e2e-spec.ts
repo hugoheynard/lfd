@@ -13,9 +13,9 @@
  */
 import type request from "supertest";
 
-import { OrderCollection } from "../src/b2b/accounting/domain/entities/order-collection.js";
-import { DetachedUnpaidReader } from "../src/b2b/accounting/domain/ports/detached-unpaid.reader.js";
-import { OrderCollectionRepository } from "../src/b2b/accounting/domain/ports/order-collection.repository.js";
+import { OrderCollection } from "../src/lafoliecoffee/accounting/domain/entities/order-collection.js";
+import { DetachedUnpaidReader } from "../src/lafoliecoffee/accounting/domain/ports/detached-unpaid.reader.js";
+import { OrderCollectionRepository } from "../src/lafoliecoffee/accounting/domain/ports/order-collection.repository.js";
 import { daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import {
   account,

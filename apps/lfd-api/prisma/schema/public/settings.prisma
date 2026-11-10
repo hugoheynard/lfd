@@ -11,7 +11,7 @@
 ///
 /// Plusieurs sites, un seul `isDefault`. Une commande en retrait fige un
 /// snapshot de l'adresse choisie. Les invariants (rôles, couleurs, archivage,
-/// défaut) sont portés par l'agrégat `Site` (`b2b/sites/domain/site.ts`).
+/// défaut) sont portés par l'agrégat `Site` (`lafoliecoffee/sites/domain/site.ts`).
 model Site {
   id String @id @default(cuid())
 
@@ -234,7 +234,7 @@ model DeliveryZone {
 /// réglage global**, et chaque colonne nullable dit « rien de réglé » pour son
 /// audience. Sa propre table et non `delivery_settings`, dont chaque geste
 /// réécrit la ligne entière. Auteur figé comme `OrderOpening`. Propriétaire :
-/// `src/b2b/delivery-zones/`. Posé en 0a, lu par le calcul au 0b.
+/// `src/lafoliecoffee/delivery-zones/`. Posé en 0a, lu par le calcul au 0b.
 model DeliveryPricing {
   /// Toujours `delivery` : il n'y a qu'un réglage.
   key String @id
@@ -269,7 +269,7 @@ enum DeliveryWindowMode {
 ///
 /// Ligne absente = ouverte aux deux : c'est l'existant, et aucun semis n'est
 /// nécessaire pour le reproduire. Clé NATURELLE comme `PlatformContent` ; auteur
-/// figé comme `FeatureAccessOverride`. Propriétaire : `src/b2b/delivery-availability/`.
+/// figé comme `FeatureAccessOverride`. Propriétaire : `src/lafoliecoffee/delivery-availability/`.
 /// Cf. `documentation/livraisons/clientele/plan-remise-et-livraison-par-clientele.md`, D4.
 model DeliveryAvailability {
   /// Toujours `delivery` : il n'y a qu'un réglage, et son nom est connu d'avance.

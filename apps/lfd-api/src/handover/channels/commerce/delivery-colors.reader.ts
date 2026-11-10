@@ -10,7 +10,7 @@ export interface RunSheetDeliveryColors {
 /**
  * **Les couleurs de livraison du site de départ, pour la feuille de route**
  * (plan `commandes/back-office/tri-depart-et-couleurs.md`, L5). Déclaré par le
- * retrait, implémenté par le commerce (`b2b/sites/`), relié dans
+ * retrait, implémenté par le commerce (`lafoliecoffee/sites/`), relié dans
  * `appBootstrap`.
  *
  * La feuille s'ouvre sous `delivery_run_sheet`, qui n'ouvre pas la palette de

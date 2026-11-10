@@ -9,8 +9,8 @@
  */
 import type { StorefrontPayloadInput } from "@lfd/contracts";
 
-import { StorefrontMediaUsage } from "../src/b2b/storefront/channels/media/storefront-media-usage.js";
-import { PrismaStorefrontMediaUsage } from "../src/b2b/storefront/infrastructure/prisma-storefront-media-usage.js";
+import { StorefrontMediaUsage } from "../src/lafoliecoffee/storefront/channels/media/storefront-media-usage.js";
+import { PrismaStorefrontMediaUsage } from "../src/lafoliecoffee/storefront/infrastructure/prisma-storefront-media-usage.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { PrismaService } from "../src/platform/database/prisma.service.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";

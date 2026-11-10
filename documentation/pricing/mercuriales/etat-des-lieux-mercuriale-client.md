@@ -62,7 +62,7 @@ grille refusée d'un côté l'est aussi de l'autre.
 Deux natures de gabarit partagent ces écrans, `mercuriale` et `devis`
 (`…/devis-templates`) ; la nature vient de la route. Seul `mercuriale` se pose.
 
-## 2. Le serveur (`apps/lfd-api/src/b2b/pricing/`)
+## 2. Le serveur (`apps/lfd-api/src/lafoliecoffee/pricing/`)
 
 | Geste                  | Route                                                                                 | Handler                                                                        |
 | ---------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |

@@ -12,16 +12,16 @@
 import { millicentsFromCents } from "@lfd/money";
 import type { CreatedIdResponse, PricingJournalPageView } from "@lfd/contracts";
 
-import type { PricedLot } from "../src/b2b/pricing/application/priced-lot.js";
-import { Pricer } from "../src/b2b/pricing/application/pricer.js";
-import { CustomerVolumeReader } from "../src/b2b/pricing/domain/ports/customer-volume.reader.js";
-import { ProductCatalogReader } from "../src/b2b/catalog/domain/ports/product-catalog.reader.js";
+import type { PricedLot } from "../src/lafoliecoffee/pricing/application/priced-lot.js";
+import { Pricer } from "../src/lafoliecoffee/pricing/application/pricer.js";
+import { CustomerVolumeReader } from "../src/lafoliecoffee/pricing/domain/ports/customer-volume.reader.js";
+import { ProductCatalogReader } from "../src/lafoliecoffee/catalog/domain/ports/product-catalog.reader.js";
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble, payByCard, pickupSite, placeOrder } from "./order-factory.js";
-import { staffViewer } from "../src/b2b/catalog/domain/catalog-viewer.js";
+import { staffViewer } from "../src/lafoliecoffee/catalog/domain/catalog-viewer.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>

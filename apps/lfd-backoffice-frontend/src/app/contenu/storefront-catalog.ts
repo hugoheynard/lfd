@@ -1,7 +1,7 @@
 import type { StorefrontCatalogOperation, StorefrontCatalogView } from '@lfd/contracts';
 import type { ShelfKey } from '@lfd/storefront-layout';
 
-/** Le rayon « Tout » — la clé que le serveur réserve (`b2b/storefront/domain/shelf-key.ts`). */
+/** Le rayon « Tout » — la clé que le serveur réserve (`lafoliecoffee/storefront/domain/shelf-key.ts`). */
 export const ALL_SHELVES: ShelfKey = 'all';
 
 export interface ShelfOption {
@@ -33,7 +33,7 @@ export interface StorefrontCatalog {
  *
  * Le serveur a déjà réduit le catalogue à ce que la vitrine désigne — SKU du
  * PRODUIT, une fois par produit ; familles qui portent un article servi, dans
- * l'ordre du catalogue (`b2b/storefront/infrastructure/
+ * l'ordre du catalogue (`lafoliecoffee/storefront/infrastructure/
  * catalog-backed-storefront-catalog.reader.ts`, 2026-09-24). Il ne reste ici
  * qu'à poser « Tout » en tête et à écarter les articles masqués des deux
  * boutiques : aucune ne les résoudra, et leur case retomberait au reste du

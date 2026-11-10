@@ -49,7 +49,7 @@ Tout ce paragraphe a été ouvert, pas rappelé de mémoire.
 | L'agrégat, son dépôt, son service d'attestation et son contrôleur aussi                | `production/{domain,application,http}/`                                                                                             |
 | Le fournil déclare **trois ports** vers le commerce, dont `HandoverSubjectReader`      | [`production/channels/commerce/`](../../apps/lfd-api/src/production/channels/commerce/index.ts)                                     |
 | Le commerce garde un **snapshot** de le retrait : `handed_over_at/by/via` sur `orders` | [`prisma/schema/public/orders.prisma`](../../apps/lfd-api/prisma/schema/public/orders.prisma)                                       |
-| Le **jeton** (`handover_token`) est sur `orders`, émis à la passation                  | idem, et [`prisma-order.repository.ts:49`](../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-order.repository.ts)             |
+| Le **jeton** (`handover_token`) est sur `orders`, émis à la passation                  | idem, et [`prisma-order.repository.ts:49`](../../apps/lfd-api/src/lafoliecoffee/orders/infrastructure/prisma-order.repository.ts)   |
 | Le back-office est **en service depuis le 2026-08-17**                                 | `CLAUDE.md` §0                                                                                                                      |
 | 🔴 **Le retrait est DÉPLOYÉE** — `c4dbee9a`, `2c25c5ec`, `67700893` sont dans `main`   | vérifié par `git branch --contains`, 2026-09-10                                                                                     |
 
@@ -96,7 +96,7 @@ sienne. Cf. tranche 3.
 
 🔴 **Un commentaire faux, en DEUX endroits.** « Émis à la passation pour les
 seules commandes `pickup` » ([`public/orders.prisma`](../../apps/lfd-api/prisma/schema/public/orders.prisma)),
-et « Seul le retrait en reçoit un » ([`prisma-order.repository.ts:48`](../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-order.repository.ts)).
+et « Seul le retrait en reçoit un » ([`prisma-order.repository.ts:48`](../../apps/lfd-api/src/lafoliecoffee/orders/infrastructure/prisma-order.repository.ts)).
 Faux depuis le 2026-09-07 : `issuesHandoverToken()` n'a plus de paramètre et rend
 `true` sans condition, précisément parce que la livraison passe par le même scan.
 Deux commentaires ont survécu à la fonction qu'ils décrivent.
@@ -633,7 +633,7 @@ readonly window: FulfillmentDecision<FulfillmentWindow | null>;
 ```
 
 Le bon de commande l'imprime déjà
-([`order-sheet.ts:75`](../../apps/lfd-api/src/b2b/orders/domain/services/order-sheet.ts)),
+([`order-sheet.ts:75`](../../apps/lfd-api/src/lafoliecoffee/orders/domain/services/order-sheet.ts)),
 et la colonne porte sa propre justification : « Figé comme les prix : le contact
 d'une adresse, ses heures ou son exigence de signature peuvent changer demain, et
 un bon déjà imprimé ne doit pas se mettre à dire autre chose que le papier parti

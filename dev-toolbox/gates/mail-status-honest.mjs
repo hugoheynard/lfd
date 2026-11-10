@@ -76,29 +76,30 @@ const STAGE_NAMES = ["mailRequested", "mailAccepted", "mailDelivered"];
  * baisser.
  */
 export const DEBT = {
-  "apps/lfd-api/src/b2b/account/application/commands/attach-account-holder.handler.ts": {
+  "apps/lfd-api/src/lafoliecoffee/account/application/commands/attach-account-holder.handler.ts": {
     count: 2,
     reason: "2026-11-08 — rattachement du détenteur : mailSent servi = acceptée",
   },
-  "apps/lfd-api/src/b2b/account/application/commands/create-company-by-staff.handler.ts": {
-    count: 6,
-    reason:
-      "2026-11-08 — ouverture de compte : mailSent servi = acceptée (+ codec de rejeu d'intention)",
-  },
-  "apps/lfd-api/src/b2b/account/application/commands/invite-company-member.handler.ts": {
+  "apps/lfd-api/src/lafoliecoffee/account/application/commands/create-company-by-staff.handler.ts":
+    {
+      count: 6,
+      reason:
+        "2026-11-08 — ouverture de compte : mailSent servi = acceptée (+ codec de rejeu d'intention)",
+    },
+  "apps/lfd-api/src/lafoliecoffee/account/application/commands/invite-company-member.handler.ts": {
     count: 5,
     reason:
       "2026-11-08 — invitation d'un membre : mailSent servi = acceptée (+ codec de rejeu d'intention)",
   },
-  "apps/lfd-api/src/b2b/account/application/services/grant-account-access.service.ts": {
+  "apps/lfd-api/src/lafoliecoffee/account/application/services/grant-account-access.service.ts": {
     count: 2,
     reason: "2026-11-08 — ouverture d'accès : mailSent = providerId non nul",
   },
-  "apps/lfd-api/src/b2b/vitrine/application/commands/sweep-vitrine.command.ts": {
+  "apps/lfd-api/src/lafoliecoffee/vitrine/application/commands/sweep-vitrine.command.ts": {
     count: 1,
     reason: "2026-11-08 — bilan du balayeur de la vitrine : notified = avis acceptés",
   },
-  "apps/lfd-api/src/b2b/vitrine/application/commands/sweep-vitrine.handler.ts": {
+  "apps/lfd-api/src/lafoliecoffee/vitrine/application/commands/sweep-vitrine.handler.ts": {
     count: 1,
     reason: "2026-11-08 — même bilan, son accumulateur",
   },

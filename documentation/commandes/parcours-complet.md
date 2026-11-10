@@ -143,16 +143,16 @@ flowchart TD
     classDef sad fill:#ffebee,stroke:#c62828
 ```
 
-| Décision             | Qui décide                                                  | Ce qui se passe                                                                           | État |
-| -------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ---- |
-| Une carte non réglée | `pending-settlement-sweep.service.ts`                       | annulée à l'arrêt, sauf si Stripe refuse d'annuler (elle vient d'être payée)              | ✅   |
-| Qui entre au plan    | `production-plan.ts` (`absorbedByPlan`) et `plan-filter.ts` | statut `placed` et règlement ni `pending`, ni `failed`, ni `refunded`                     | ✅   |
-| Le jour vide         | `ProductionDay.close`                                       | refusé s'il n'y a ni commande, ni réassort                                                | ✅   |
-| Retirage             | `ProductionDay.retake`                                      | une arrivée après l'arrêt est absorbée ; rien de neuf, rien d'écrit                       | ✅   |
-| Réouverture          | `production-day.reopening.ts`                               | seulement si rien n'est cuit, colisé ou parti ; le commerce rend les commandes à `placed` | ✅   |
-| Réassort             | `ProductionDay.launchResupply`                              | un réassort lancé arrête le jour s'il était ouvert                                        | ✅   |
-| BL-1 prévu           | `DeliveryNotePlanner.planConfirmed` (`b2b/delivery-notes/`) | chaque commande que l'arrêt confirme (`confirmedAt = closedAt`) ; un refus est journalisé | ✅   |
-| Réouverture, décidée | `prisma-order-plan-release.ts` (`releaseFromPlan`)          | une commande au départ décidé n'est pas rendue à `placed`                                 | ✅   |
+| Décision             | Qui décide                                                            | Ce qui se passe                                                                           | État |
+| -------------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ---- |
+| Une carte non réglée | `pending-settlement-sweep.service.ts`                                 | annulée à l'arrêt, sauf si Stripe refuse d'annuler (elle vient d'être payée)              | ✅   |
+| Qui entre au plan    | `production-plan.ts` (`absorbedByPlan`) et `plan-filter.ts`           | statut `placed` et règlement ni `pending`, ni `failed`, ni `refunded`                     | ✅   |
+| Le jour vide         | `ProductionDay.close`                                                 | refusé s'il n'y a ni commande, ni réassort                                                | ✅   |
+| Retirage             | `ProductionDay.retake`                                                | une arrivée après l'arrêt est absorbée ; rien de neuf, rien d'écrit                       | ✅   |
+| Réouverture          | `production-day.reopening.ts`                                         | seulement si rien n'est cuit, colisé ou parti ; le commerce rend les commandes à `placed` | ✅   |
+| Réassort             | `ProductionDay.launchResupply`                                        | un réassort lancé arrête le jour s'il était ouvert                                        | ✅   |
+| BL-1 prévu           | `DeliveryNotePlanner.planConfirmed` (`lafoliecoffee/delivery-notes/`) | chaque commande que l'arrêt confirme (`confirmedAt = closedAt`) ; un refus est journalisé | ✅   |
+| Réouverture, décidée | `prisma-order-plan-release.ts` (`releaseFromPlan`)                    | une commande au départ décidé n'est pas rendue à `placed`                                 | ✅   |
 
 ## 3. Le colisage
 
@@ -424,7 +424,7 @@ stateDiagram-v2
 Le cycle de vie du bon de livraison (`planned` → `prepared` → `handed_over`,
 ou `voided`) est dessiné dans [`bon-de-livraison.md`](bon-de-livraison.md).
 
-| Transition                           | Écrivain (`src/b2b/orders/infrastructure/`)                                                                             |
+| Transition                           | Écrivain (`src/lafoliecoffee/orders/infrastructure/`)                                                                   |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
 | → `placed`                           | `prisma-order.repository.ts` `place`                                                                                    |
 | `placed` → `confirmed`               | `absorbIntoPlan`, sur le fait `production.day_closed`                                                                   |

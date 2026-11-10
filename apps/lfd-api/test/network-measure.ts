@@ -26,15 +26,15 @@ import { relative } from "node:path";
 
 import type { INestApplication } from "@nestjs/common";
 
-import { CustomerIdentityPort } from "../src/b2b/account/domain/ports/customer-identity.port.js";
-import { EstablishmentDirectory } from "../src/b2b/account/domain/ports/establishment-directory.js";
-import { PublicShelfStateReader } from "../src/b2b/catalog/domain/ports/public-shelf-state.reader.js";
-import { ShopShelfCache } from "../src/b2b/catalog/domain/ports/shop-shelf-cache.js";
-import { ShopShelfSwitch } from "../src/b2b/catalog/domain/ports/shop-shelf-switch.js";
-import { MarketDirectory } from "../src/b2b/growth/domain/ports/market-directory.js";
-import { CheckoutGateway } from "../src/b2b/payments/domain/ports/checkout-gateway.js";
-import { PublicSettingsEdgeCache } from "../src/b2b/shared/public-settings-cache/domain/ports/public-settings-edge-cache.js";
-import { ShopCopyEdgeCache } from "../src/b2b/shop-copy/domain/ports/shop-copy-edge-cache.js";
+import { CustomerIdentityPort } from "../src/lafoliecoffee/account/domain/ports/customer-identity.port.js";
+import { EstablishmentDirectory } from "../src/lafoliecoffee/account/domain/ports/establishment-directory.js";
+import { PublicShelfStateReader } from "../src/lafoliecoffee/catalog/domain/ports/public-shelf-state.reader.js";
+import { ShopShelfCache } from "../src/lafoliecoffee/catalog/domain/ports/shop-shelf-cache.js";
+import { ShopShelfSwitch } from "../src/lafoliecoffee/catalog/domain/ports/shop-shelf-switch.js";
+import { MarketDirectory } from "../src/lafoliecoffee/growth/domain/ports/market-directory.js";
+import { CheckoutGateway } from "../src/lafoliecoffee/payments/domain/ports/checkout-gateway.js";
+import { PublicSettingsEdgeCache } from "../src/lafoliecoffee/shared/public-settings-cache/domain/ports/public-settings-edge-cache.js";
+import { ShopCopyEdgeCache } from "../src/lafoliecoffee/shop-copy/domain/ports/shop-copy-edge-cache.js";
 import { DistanceMatrix } from "../src/delivery/domain/ports/distance-matrix.js";
 import { Geocoder } from "../src/delivery/domain/ports/geocoder.js";
 import { RoadRoutingWaker } from "../src/delivery/domain/ports/road-routing-waker.js";

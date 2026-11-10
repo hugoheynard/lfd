@@ -17,7 +17,7 @@ import {
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole, type CompanyStatus } from "../src/platform/database/client/client.js";
-import { AccountOrderHistoryReader } from "../src/b2b/alerts/domain/ports/order-history.reader.js";
+import { AccountOrderHistoryReader } from "../src/lafoliecoffee/alerts/domain/ports/order-history.reader.js";
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import {
   bootstrapE2e,

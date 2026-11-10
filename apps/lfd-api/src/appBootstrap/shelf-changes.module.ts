@@ -1,15 +1,15 @@
 import { Global, Module } from "@nestjs/common";
 
-import { ProShelfPurge } from "../b2b/catalog/application/pro-shelf-purge.js";
-import { PublicShelfPurge } from "../b2b/catalog/application/public-shelf-purge.js";
-import { DeferredShelfChanges } from "../b2b/shared/shelf-changes/application/deferred-shelf-changes.js";
-import { FanOutShelfPurge } from "../b2b/shared/shelf-changes/application/fan-out-shelf-purge.js";
-import { ShelfChangeWindow } from "../b2b/shared/shelf-changes/application/shelf-change-window.js";
-import { ShelfChanges } from "../b2b/shared/shelf-changes/domain/ports/shelf-changes.js";
-import { ShelfPurge } from "../b2b/shared/shelf-changes/domain/ports/shelf-purge.js";
-import { ShelfWindowTimer } from "../b2b/shared/shelf-changes/domain/ports/shelf-window-timer.js";
-import { LoggingShelfPurge } from "../b2b/shared/shelf-changes/infrastructure/logging-shelf-purge.js";
-import { NodeShelfWindowTimer } from "../b2b/shared/shelf-changes/infrastructure/node-shelf-window-timer.js";
+import { ProShelfPurge } from "../lafoliecoffee/catalog/application/pro-shelf-purge.js";
+import { PublicShelfPurge } from "../lafoliecoffee/catalog/application/public-shelf-purge.js";
+import { DeferredShelfChanges } from "../lafoliecoffee/shared/shelf-changes/application/deferred-shelf-changes.js";
+import { FanOutShelfPurge } from "../lafoliecoffee/shared/shelf-changes/application/fan-out-shelf-purge.js";
+import { ShelfChangeWindow } from "../lafoliecoffee/shared/shelf-changes/application/shelf-change-window.js";
+import { ShelfChanges } from "../lafoliecoffee/shared/shelf-changes/domain/ports/shelf-changes.js";
+import { ShelfPurge } from "../lafoliecoffee/shared/shelf-changes/domain/ports/shelf-purge.js";
+import { ShelfWindowTimer } from "../lafoliecoffee/shared/shelf-changes/domain/ports/shelf-window-timer.js";
+import { LoggingShelfPurge } from "../lafoliecoffee/shared/shelf-changes/infrastructure/logging-shelf-purge.js";
+import { NodeShelfWindowTimer } from "../lafoliecoffee/shared/shelf-changes/infrastructure/node-shelf-window-timer.js";
 
 /**
  * **Le signal des rayons** (`documentation/caching-usage/le-rayon-en-cache.md`, C1).

@@ -124,7 +124,7 @@ model CardPaymentTakeover {
 // LE REMBOURSEMENT — lot P1 (2026-11-10)
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// Plan M2, §3.4, §3.5, §5.1. Les demandes et le carnet quittent `b2b/orders`
+// Plan M2, §3.4, §3.5, §5.1. Les demandes et le carnet quittent `lafoliecoffee/orders`
 // (`public.order_refund_request`, `public.order_refund`) pour ce schéma ; la
 // copie de l'existant est une migration à part, sans DDL
 // (`20261110010200_la_copie_des_remboursements`). Les anciennes tables restent

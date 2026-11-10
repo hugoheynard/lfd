@@ -15,20 +15,20 @@
  * Une écriture brute, datée (2026-10-26), celle de `loyalty-partial-order` :
  * le passage à `paid`, qu'aucune route ne fait pour une commande au compte.
  */
-import { MonthlyInvoicingReader } from "../src/b2b/accounting/domain/ports/monthly-invoicing.reader.js";
+import { MonthlyInvoicingReader } from "../src/lafoliecoffee/accounting/domain/ports/monthly-invoicing.reader.js";
 import {
   ProcedureOrdersReader,
   type ProcedureOrderRow,
-} from "../src/b2b/accounting/domain/ports/procedure-orders.reader.js";
+} from "../src/lafoliecoffee/accounting/domain/ports/procedure-orders.reader.js";
 import {
   invoicesStatus,
   procedureOrderStatus,
-} from "../src/b2b/accounting/domain/services/collection-procedure-invoices.js";
-import { UnconfirmedDeliveriesReader } from "../src/b2b/accounting/domain/ports/unconfirmed-deliveries.reader.js";
-import { DeliveryNote } from "../src/b2b/delivery-notes/domain/entities/delivery-note.js";
-import { DeliveryNoteRepository } from "../src/b2b/delivery-notes/domain/ports/delivery-note.repository.js";
-import { LoyaltySettings } from "../src/b2b/loyalty/domain/value-objects/loyalty-settings.js";
-import { PrismaLoyaltySettingsStore } from "../src/b2b/loyalty/infrastructure/prisma-loyalty-settings.store.js";
+} from "../src/lafoliecoffee/accounting/domain/services/collection-procedure-invoices.js";
+import { UnconfirmedDeliveriesReader } from "../src/lafoliecoffee/accounting/domain/ports/unconfirmed-deliveries.reader.js";
+import { DeliveryNote } from "../src/lafoliecoffee/delivery-notes/domain/entities/delivery-note.js";
+import { DeliveryNoteRepository } from "../src/lafoliecoffee/delivery-notes/domain/ports/delivery-note.repository.js";
+import { LoyaltySettings } from "../src/lafoliecoffee/loyalty/domain/value-objects/loyalty-settings.js";
+import { PrismaLoyaltySettingsStore } from "../src/lafoliecoffee/loyalty/infrastructure/prisma-loyalty-settings.store.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { DurablePublisher } from "../src/platform/outbox/durable-publisher.js";
 import { PackingOrderPackedEvent } from "../src/production/channels/commerce/index.js";

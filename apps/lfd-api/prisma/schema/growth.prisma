@@ -415,7 +415,7 @@ model BookingPolicySettings {
 /// quelqu'un changerait le régime du traitement, pas seulement le schéma.
 ///
 /// Dans `growth` (Hugo, 2026-10-18) : analytique et dérivée comme le journal,
-/// donc déménageable avec lui. Écrite par `b2b/recommendations` seul, par un
+/// donc déménageable avec lui. Écrite par `lafoliecoffee/recommendations` seul, par un
 /// `INSERT … ON CONFLICT DO UPDATE` (incrément sans perte sous concurrence).
 /// Les CHECK (événements admis, emplacement, compte positif) vivent dans la
 /// migration `20261018140000_les_compteurs_d_audience` ; ceux de la source

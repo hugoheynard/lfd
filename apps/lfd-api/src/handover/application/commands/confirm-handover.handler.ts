@@ -10,7 +10,7 @@ import { ConfirmHandoverCommand } from "./confirm-handover.command.js";
 /**
  * **Le retrait scanné** : résoudre le jeton, puis attester.
  *
- * 🔴 Ce handler vivait dans `b2b/orders/application/commands/` jusqu'au
+ * 🔴 Ce handler vivait dans `lafoliecoffee/orders/application/commands/` jusqu'au
  * 2026-09-07, et il écrivait `orders.handed_over_*` en direct. C'est au labo
  * qu'on retire : celui qui voit le client partir avec son sac est le seul à
  * pouvoir l'attester, et il écrit désormais dans SES tables. Le commerce

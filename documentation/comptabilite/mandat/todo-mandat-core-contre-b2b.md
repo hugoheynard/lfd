@@ -31,7 +31,7 @@ courriel.
 > ✅ **Bascule FAITE le 2026-09-14** (lot 0 du plan, version simple du §8 — le
 > §7 et sa colonne `scheme` par mandat ont été abandonnés : aucun mandat en
 > production, dit par Hugo le même jour). Le schéma est une constante unique,
-> `SEPA_SCHEME` (`b2b/accounting/domain/value-objects/sepa-scheme.ts`), lue par
+> `SEPA_SCHEME` (`lafoliecoffee/accounting/domain/value-objects/sepa-scheme.ts`), lue par
 > `pain008.ts` ET par `sepa-mandate-pdf.ts` ; le texte du formulaire vit dans
 > `sepa-mandate-wording.ts`, indexé par le schéma. Le formulaire porte
 > « interentreprises » dans ses deux titres, le texte d'autorisation B2B et la

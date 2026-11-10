@@ -85,7 +85,7 @@ appellent un port vers un autre bloc, et sont donc en A.
 
 **Homonymes.** Deux `OrderHandedOverEvent` coexistent : celui du retrait
 (`handover/channels/commerce/`, qu'écoute #28) et celui du commerce
-(`b2b/orders/domain/events/`, qu'écoutent #11 et #21). Durables, ils prendront
+(`lafoliecoffee/orders/domain/events/`, qu'écoutent #11 et #21). Durables, ils prendront
 deux `type` distincts (`handover.handed_over`, `order.fulfilled`) : un même nom
 pour deux faits ferait livrer l'un aux abonnés de l'autre.
 
@@ -296,8 +296,8 @@ fait durable et bascule l'abonné qui compte.
 | --- | --------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------- |
 | 25  | `SendOrderPlacedMail`             | `commerce.order_placed` (`delivery/channels/commerce/`, existe déjà)         | les trois passations — **déjà** écrit (CA0)               |
 | 26  | `SendGuestOrderNotice`            | idem                                                                         | idem                                                      |
-| 27  | `SendOrderReadyMail`              | `order.ready` (neuf, `b2b/orders/domain/events/`)                            | `MarkOrderReadyHandler`, au franchissement                |
-| 13  | `SendLoginMethodLinkedMail`       | `account.login_method_linked` (neuf, `b2b/account/domain/events/`)           | `LinkLoginMethodHandler`, avec l'écriture du rattachement |
+| 27  | `SendOrderReadyMail`              | `order.ready` (neuf, `lafoliecoffee/orders/domain/events/`)                  | `MarkOrderReadyHandler`, au franchissement                |
+| 13  | `SendLoginMethodLinkedMail`       | `account.login_method_linked` (neuf, `lafoliecoffee/account/domain/events/`) | `LinkLoginMethodHandler`, avec l'écriture du rattachement |
 | 12  | `OnProductMediaChanged` (catalog) | `pim.product_media_changed` (neuf, DÉCLARÉ par `pim/channels/b2b-platform/`) | `SetProductMedia`, dans son `uow.run`                     |
 
 - **Pas de nouveau fait de passation** : `commerce.order_placed` dit déjà

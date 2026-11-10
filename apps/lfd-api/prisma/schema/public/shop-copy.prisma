@@ -3,7 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 //
 // Plan : documentation/contenu-ecommerce/plan-textes-de-la-boutique.md (§2, §3,
-// §10). Écrites et lues par `b2b/shop-copy` seul. Le code de la boutique reste
+// §10). Écrites et lues par `lafoliecoffee/shop-copy` seul. Le code de la boutique reste
 // la source de chaque texte : une ligne ne dit que ce qui le REMPLACE, et une
 // base vide rend la boutique d'aujourd'hui.
 //

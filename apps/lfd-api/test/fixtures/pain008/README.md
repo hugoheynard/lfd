@@ -2,7 +2,7 @@
 
 Ce fichier est recopié **tel quel**, sans aucune modification, depuis le
 dépôt ISO 20022. Les specs
-`src/b2b/accounting/domain/services/__tests__/pain008-xsd.spec.ts` s'en
+`src/lafoliecoffee/accounting/domain/services/__tests__/pain008-xsd.spec.ts` s'en
 servent pour valider le fichier d'un lot réel et celui d'un prélèvement
 d'essai. Doc : `documentation/comptabilite/prelevement/prelevement-sepa.md`.
 

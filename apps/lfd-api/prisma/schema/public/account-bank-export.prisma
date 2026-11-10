@@ -3,7 +3,7 @@
 // `documentation/comptabilite/prelevement/prerequis-export-ribs.md`.
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// Propriétaire : `src/b2b/accounting/`. Un export fige quels comptes sont
+// Propriétaire : `src/lafoliecoffee/accounting/`. Un export fige quels comptes sont
 // partis, par qui, et ce que la banque en a dit (importé, ou rejeté et
 // abandonné). Le fichier CSV n'est PAS stocké : il n'est fait que d'IBAN en
 // clair, et se recalcule à chaque téléchargement.

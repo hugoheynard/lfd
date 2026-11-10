@@ -161,7 +161,7 @@ commande, hors remise, taux par réglage.
      d'addition, absente quand le montant est nul ; le bon PDF
      (`order-sheet-pdf-totals.ts`) et le texte (`order-sheet-text.ts`) ;
    - la **facture du mois** : `invoice-order-split.ts` et
-     `invoice-dossier.ts` (`b2b/accounting/`) découpent chaque terme par taux
+     `invoice-dossier.ts` (`lafoliecoffee/accounting/`) découpent chaque terme par taux
      (`lateFeeOf`, `standardDeliveryOf`) ; le contrôle de cohérence
      (`invoice-order-consistency.ts`) recompose le total d'un bon terme par
      terme ;

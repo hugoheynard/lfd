@@ -16,7 +16,7 @@
  */
 import { CommandBus } from "@nestjs/cqrs";
 
-import { CancelOrderCommand } from "../src/b2b/orders/cancellation/application/commands/cancel-order.command.js";
+import { CancelOrderCommand } from "../src/lafoliecoffee/orders/cancellation/application/commands/cancel-order.command.js";
 import { CustomerRole, DeferredTerm } from "../src/platform/database/client/client.js";
 import {
   bootstrapE2e,

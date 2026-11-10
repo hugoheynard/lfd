@@ -38,20 +38,20 @@ const SKIP_DIRS = new Set(["node_modules", "dist", "coverage", ".turbo", "__test
 
 /** La seule implémentation servie du port. */
 export const DEFERRED =
-  "apps/lfd-api/src/b2b/shared/shelf-changes/application/deferred-shelf-changes.ts";
+  "apps/lfd-api/src/lafoliecoffee/shared/shelf-changes/application/deferred-shelf-changes.ts";
 
 /**
  * Qui peut atteindre la fenêtre et la purge — la plomberie du signal
  * (relevé le 2026-11-06). Un préfixe finissant par `/` admet un dossier.
  */
 export const ADMITTED = {
-  "apps/lfd-api/src/b2b/shared/shelf-changes/":
+  "apps/lfd-api/src/lafoliecoffee/shared/shelf-changes/":
     "le signal lui-même : port, file, fenêtre, éventail des purges",
   "apps/lfd-api/src/appBootstrap/shelf-changes.module.ts":
     "la racine de composition relie le port, la fenêtre et les purges",
-  "apps/lfd-api/src/b2b/catalog/application/pro-shelf-purge.ts":
+  "apps/lfd-api/src/lafoliecoffee/catalog/application/pro-shelf-purge.ts":
     "une purge (le magasin des rayons pro), appelée par l'éventail seulement",
-  "apps/lfd-api/src/b2b/catalog/application/public-shelf-purge.ts":
+  "apps/lfd-api/src/lafoliecoffee/catalog/application/public-shelf-purge.ts":
     "une purge (Workers Cache, le rayon public), appelée par l'éventail seulement",
 };
 

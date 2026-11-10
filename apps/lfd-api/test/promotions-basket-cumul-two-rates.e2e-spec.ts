@@ -27,18 +27,18 @@ import {
   issueInput,
   SELLER,
   SELLER_FACTS,
-} from "../src/b2b/accounting/domain/entities/__tests__/invoice-fixtures.js";
-import { MonthlyInvoicingReader } from "../src/b2b/accounting/domain/ports/monthly-invoicing.reader.js";
+} from "../src/lafoliecoffee/accounting/domain/entities/__tests__/invoice-fixtures.js";
+import { MonthlyInvoicingReader } from "../src/lafoliecoffee/accounting/domain/ports/monthly-invoicing.reader.js";
 import {
   compiledSchematron,
   schematronFailures,
   SCHEMATRON_COMPILE_TIMEOUT_MS,
-} from "../src/b2b/accounting/domain/services/__tests__/en16931-schematron.js";
-import { facturXArithmeticViolations } from "../src/b2b/accounting/domain/services/facturx-arithmetic.js";
-import { renderFacturXml } from "../src/b2b/accounting/domain/services/facturx-xml.js";
-import { simulateInvoiceDossier } from "../src/b2b/accounting/domain/services/invoice-dossier.js";
-import { invoiceFromDossier } from "../src/b2b/accounting/domain/services/invoice-from-dossier.js";
-import { PricingMaterialsCache } from "../src/b2b/pricing/infrastructure/pricing-materials.cache.js";
+} from "../src/lafoliecoffee/accounting/domain/services/__tests__/en16931-schematron.js";
+import { facturXArithmeticViolations } from "../src/lafoliecoffee/accounting/domain/services/facturx-arithmetic.js";
+import { renderFacturXml } from "../src/lafoliecoffee/accounting/domain/services/facturx-xml.js";
+import { simulateInvoiceDossier } from "../src/lafoliecoffee/accounting/domain/services/invoice-dossier.js";
+import { invoiceFromDossier } from "../src/lafoliecoffee/accounting/domain/services/invoice-from-dossier.js";
+import { PricingMaterialsCache } from "../src/lafoliecoffee/pricing/infrastructure/pricing-materials.cache.js";
 import type { E2eContext } from "./e2e-harness.js";
 import { handOver, pickupSite } from "./order-factory.js";
 import {

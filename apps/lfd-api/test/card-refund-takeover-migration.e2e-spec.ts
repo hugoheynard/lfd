@@ -12,15 +12,15 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { InvoiceIssuer } from "../src/b2b/accounting/application/services/invoice-issuer.js";
-import { Invoice } from "../src/b2b/accounting/domain/entities/invoice.js";
-import { issueInput } from "../src/b2b/accounting/domain/entities/__tests__/invoice-fixtures.js";
-import { InvoiceFontsUnavailableError } from "../src/b2b/accounting/domain/errors/invoice-document-errors.js";
+import { InvoiceIssuer } from "../src/lafoliecoffee/accounting/application/services/invoice-issuer.js";
+import { Invoice } from "../src/lafoliecoffee/accounting/domain/entities/invoice.js";
+import { issueInput } from "../src/lafoliecoffee/accounting/domain/entities/__tests__/invoice-fixtures.js";
+import { InvoiceFontsUnavailableError } from "../src/lafoliecoffee/accounting/domain/errors/invoice-document-errors.js";
 import {
   InvoiceFontSource,
   type InvoicePdfFonts,
-} from "../src/b2b/accounting/domain/ports/invoice-font-source.js";
-import type { InvoiceNumber } from "../src/b2b/accounting/domain/value-objects/invoice-number.js";
+} from "../src/lafoliecoffee/accounting/domain/ports/invoice-font-source.js";
+import type { InvoiceNumber } from "../src/lafoliecoffee/accounting/domain/value-objects/invoice-number.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { LATEST_DELIVERY_FULFILLMENT } from "./delivery-deadline-fixture.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";

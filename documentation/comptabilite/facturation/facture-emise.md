@@ -73,7 +73,7 @@ compte actif sans SIREN reste actif.
 
 ## L'agrégat `Invoice`
 
-`b2b/accounting/domain/entities/invoice.ts` (+ `invoice.types.ts`,
+`lafoliecoffee/accounting/domain/entities/invoice.ts` (+ `invoice.types.ts`,
 `invoice-invariants.ts`, `invoice-parties.ts`), `value-objects/invoice-number.ts`,
 `value-objects/invoice-quantity.ts`, `services/invoice-from-dossier.ts`.
 
@@ -241,16 +241,16 @@ pas.
 
 **Le relevé suit la facture** (Hugo, 2026-10-22) : le relevé et le dossier
 d'un cycle montrent les bons que SA facture porte ou portera, et eux seuls
-(`apps/lfd-api/src/b2b/accounting/infrastructure/cycle-order-membership.ts`). Un bon facturé est au cycle de
+(`apps/lfd-api/src/lafoliecoffee/accounting/infrastructure/cycle-order-membership.ts`). Un bon facturé est au cycle de
 sa facture 380 (l'issue `issued` de même clôture), quel que soit son jour de
 livraison. Un bon pas encore facturé est au cycle dont la facture le prendra
-(`apps/lfd-api/src/b2b/accounting/domain/services/pending-order-cycle.ts`) : avec `R` la dernière clôture où
+(`apps/lfd-api/src/lafoliecoffee/accounting/domain/services/pending-order-cycle.ts`) : avec `R` la dernière clôture où
 la facture est passée (une issue rangée, ou une tentative « émise » / « rien à
 facturer »), le cycle `[s, c[` le porte s'il est livré avant `c`, que `c > R`,
 et qu'il est livré dans le cycle ou que `s ≤ R`. Le bon livré le 31 et constaté
 après l'émission d'octobre est donc au relevé de novembre, jamais à celui
 d'octobre ; la partition (un cycle, ni deux ni aucun) est éprouvée jour par
-jour par `apps/lfd-api/src/b2b/accounting/domain/services/__tests__/pending-order-cycle.spec.ts`. Un bon livré avant `invoicing_floor`
+jour par `apps/lfd-api/src/lafoliecoffee/accounting/domain/services/__tests__/pending-order-cycle.spec.ts`. Un bon livré avant `invoicing_floor`
 reste dans le cycle de sa livraison. Le lot, lui, écarte un bon dont la
 facture se clôt après lui (`PrismaCollectionCandidatesReader.invoicedAfter`) :
 constitué en retard, il ne prélève pas la facture suivante.
@@ -379,7 +379,7 @@ qui n'a pas pu être récupéré dans son `README.md` :
 | Schematron Factur-X EN 16931          | 1.09.2 (paquet FNFE `fixFR04`)               | aucun refus ; un avertissement, `PEPPOL-EN16931-R008`    |
 | Schematron **BR-FR Flux 2** (CIUS-FR) | **v1.4.0.04** du 2026-09-04, mode `FATAL`    | refus restants = les manques de donnée ci-dessous        |
 
-Spec : `apps/lfd-api/src/b2b/accounting/domain/services/__tests__/facturx-fr-conformance.spec.ts` (Jest
+Spec : `apps/lfd-api/src/lafoliecoffee/accounting/domain/services/__tests__/facturx-fr-conformance.spec.ts` (Jest
 unitaire ; libxml2 en WebAssembly, `xmllint-wasm`, rien à installer sur le poste depuis le 2026-10-22). Elle énumère les manques un
 par un : une règle qui se met à passer la fait rougir autant qu'une faute
 nouvelle.
@@ -401,7 +401,7 @@ nouvelle.
 **Mustang en CI** (depuis le 2026-11-01, demande de Hugo). Mustang 2.26.0,
 validateur tiers, ne se lance plus à la main : le job `facturx-mustang` de
 `ci.yml` écrit les témoins (`pnpm --filter lfd-api facturx:samples <dossier>`,
-`apps/lfd-api/src/b2b/accounting/domain/services/__tests__/facturx-samples.write.ts` — le XML du vrai générateur et le PDF/A-3
+`apps/lfd-api/src/lafoliecoffee/accounting/domain/services/__tests__/facturx-samples.write.ts` — le XML du vrai générateur et le PDF/A-3
 qui l'embarque) et passe chacun, PDF et XML, à `--action validate`
 (`dev-toolbox/ci/facturx-mustang/validate.mjs`). Il échoue sur un statut autre
 que `valid`, une `<error`, ou un avertissement dont l'ID n'est pas dans
@@ -409,7 +409,7 @@ que `valid`, une `<error`, ou un avertissement dont l'ID n'est pas dans
 `BR-FR-12_BT-49`, `BR-FR-13_BT-34`, `BR-FR-CO-05_BT-3` (les manques ci-dessous ;
 une entrée se retire quand le manque est comblé). Un avertissement **sans ID**
 n'est jamais admis. Le jar est vérifié par sa SHA-256 à chaque run. Il tourne
-quand le diff touche `src/b2b/accounting/`, `packages/money/`, le script ou le
+quand le diff touche `src/lafoliecoffee/accounting/`, `packages/money/`, le script ou le
 workflow.
 
 Premier passage (2026-11-01) : 20/20 `valid`, après une correction qu'il a
@@ -420,7 +420,7 @@ appelaient `Invoice.issue` sans le rattrapage `billedUnitPriceMillicents` que
 fait `invoiceFromDossier` en production. Mustang recalcule les lignes depuis
 le prix et l'a vu ; le Schematron CEN (sans R120) et
 `facturXArithmeticViolations` (qui ne lit que BT-131) ne le pouvaient pas.
-`apps/lfd-api/src/b2b/accounting/domain/services/__tests__/facturx-line-recomposition.spec.ts` le tient désormais en Jest :
+`apps/lfd-api/src/lafoliecoffee/accounting/domain/services/__tests__/facturx-line-recomposition.spec.ts` le tient désormais en Jest :
 |BT-129 × BT-146 − BT-131| ≤ 0,02 € sur chaque ligne de chaque témoin.
 
 **Les manques de donnée** — règles BR-FR laissées rouges, rien d'inventé :

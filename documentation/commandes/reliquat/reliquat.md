@@ -48,7 +48,7 @@ flowchart LR
 `src/packing/domain/entities/packing-sheet.ts`) fige les quantités au bac par
 article et publie `packing.shortfall_reported` par `packing/channels/commerce/`.
 Le commerce le tient **par envoi** dans l'agrégat `OrderShortfall`
-(`b2b/orders/domain/entities/order-shortfall.ts`, table `order_shortfall`, clé
+(`lafoliecoffee/orders/domain/entities/order-shortfall.ts`, table `order_shortfall`, clé
 `(order_id, rank)`). La page Commandes, la fiche commande et la Supervision le
 montrent. Refermer le bac complet efface le signal
 (`packing.shortfall_cleared`). Tant que le commerce n'a pas décidé, un bac
@@ -58,11 +58,11 @@ côté bon : [`../bon-de-livraison.md`](../bon-de-livraison.md#le-départ-incomp
 ## 2. La décision du départ
 
 Une décision par envoi (`ShortfallDecision`,
-`b2b/orders/domain/entities/shortfall-decision.ts`, table
+`lafoliecoffee/orders/domain/entities/shortfall-decision.ts`, table
 `order_shortfall_decision`, unique par `(order_id, rank)`), définitive. Le
 sort du reste ne prend qu'une valeur : `abandoned` (`shortfallRemainderSchema`,
 `packages/contracts/src/admin-order-detail.ts`). Deux chemins écrivent la même
-décision par `shortfall-departure.ts` (`b2b/orders/application/services/`).
+décision par `shortfall-departure.ts` (`lafoliecoffee/orders/application/services/`).
 
 ### 2.1 Le manager
 
@@ -105,7 +105,7 @@ verrou.
 
 Chaque bloc expose sa règle « rendue au lieu de levée », partagée par l'aperçu
 et le geste : `packing/domain/services/shortfall-standing.ts`,
-`b2b/orders/domain/services/shortfall-decidability.ts`,
+`lafoliecoffee/orders/domain/services/shortfall-decidability.ts`,
 `handover/domain/services/counter-reach.ts`.
 
 #### 2.2.2 Le geste — une transaction, dans le commerce
@@ -179,14 +179,14 @@ paie en ligne par carte (noté par Hugo le 2026-11-03).
 > **Note du 2026-11-10.** Le remboursement d'un montant existe désormais :
 > `CardRefunds.requestAmount` (`src/card-payment/channels/requests/card-refunds.ts`,
 > lot P1 du bloc `card-payment`) et la répartition d'une baisse sur les
-> paiements (`b2b/orders/revision/domain/services/revision-card-refund.ts`, lot S1 de
+> paiements (`lafoliecoffee/orders/revision/domain/services/revision-card-refund.ts`, lot S1 de
 > la modification de commande), tous deux sur `main`. Le départ incomplet ne
 > s'en sert pas : le refus `card` tient. Ce qu'il faudrait :
 > [`todo-reliquat.md`](todo-reliquat.md#1-le-départ-incomplet-dune-commande-carte-e9).
 
 ## 4. Le bon de livraison de ce qui part
 
-`departingSourceOf` (`b2b/delivery-notes/domain/services/departing-source.ts`)
+`departingSourceOf` (`lafoliecoffee/delivery-notes/domain/services/departing-source.ts`)
 réduit les lignes aux quantités décidées (une ligne qui ne part pas reste, à
 zéro) et recompose l'en-tête par les mêmes fonctions que la passation : les
 ajustements figés réappliqués aux lignes livrées. Un BL décidé n'est jamais
@@ -201,7 +201,7 @@ Tout le détail : [`../bon-de-livraison.md`](../bon-de-livraison.md).
 (`write-shortfall-letter.handler.ts`) : `GET admin/orders/:id/shortfall-letter`
 rend une proposition, `POST` envoie le texte relu par le bloc `mail`, sous
 `b2b_orders_shortfall:write`. L'agrégat `ShortfallNotice`
-(`b2b/orders/domain/entities/shortfall-notice.ts`) tient « une fois par
+(`lafoliecoffee/orders/domain/entities/shortfall-notice.ts`) tient « une fois par
 décision » (clé `order-shortfall:<décision>`) et trace qui, quand. « Prévenu »
 veut dire « le courriel est demandé » ; son issue se lit au suivi des e-mails.
 
@@ -220,12 +220,12 @@ de vie **par bon** plutôt qu'une commande de suite (« A »).
   `:r<rang>` au-delà du rang 1. Le rang est en base au fournil, au colisage,
   à la livraison et au retrait (migrations `20261026070000` à `20261026090000`).
 - **Son bon et son jour.** `DeliveryNote.planRemainder`
-  (`b2b/delivery-notes/domain/entities/delivery-note.ts`) fabrique un BL de
+  (`lafoliecoffee/delivery-notes/domain/entities/delivery-note.ts`) fabrique un BL de
   rang > 1 avec son `service_day` (`RemainderSchedule` refuse un rang ≤ 1 ou
   un jour antérieur à celui de la commande). Ses montants : les lignes du
   reste seul, les pourcentages de remise réappliqués, port, surtaxe et remise
   fixe à zéro (`remainderAdjustmentsOf`,
-  `b2b/delivery-notes/domain/services/remainder-decision-source.ts`) — un
+  `lafoliecoffee/delivery-notes/domain/services/remainder-decision-source.ts`) — un
   reste ne paie pas de livraison (Hugo, 2026-10-26).
 - **Prêt et retrait.** Un reste colisé prépare son BL
   (`prepare-remainder-note.handler.ts`) ; le retrait se juge par envoi, la
@@ -236,7 +236,7 @@ de vie **par bon** plutôt qu'une commande de suite (« A »).
   (`RemainderShipmentReader`).
 - **Le solde.** La remise du rang 1 écrit `partially_handed_over` si un reste
   vivant attend, sinon `fulfilled` (`statusAfterFirstHandover`,
-  `b2b/orders/domain/services/shipment-settlement.ts`) ; le dernier reste
+  `lafoliecoffee/orders/domain/services/shipment-settlement.ts`) ; le dernier reste
   remis solde la commande (`OrderRemainderSettler`). Un reste abandonné n'est
   pas vivant (Q-R3). Annuler annule tous les BL vivants et refuse dès qu'un
   envoi est retiré. Le client voit « En partie retirée / livrée ».
@@ -258,11 +258,11 @@ remis une fois le sort du reste décidé ; une commande `partially_handed_over`
 n'a rien de facturable, et l'onglet Factures la montre « Partielle — reste à
 relivrer ». Les points de fidélité portent sur les mêmes montants, au solde.
 Les livraisons non confirmées nomment une commande en partie remise « en
-attente du reste » (`b2b/accounting/domain/ports/unconfirmed-deliveries.reader.ts`).
+attente du reste » (`lafoliecoffee/accounting/domain/ports/unconfirmed-deliveries.reader.ts`).
 Le gel et l'engagement : [`../bon-de-livraison.md`](../bon-de-livraison.md#les-montants-facturables-et-leur-gel).
 
 La facture **carte** garde les totaux de la **commande**
-(`b2b/accounting/infrastructure/prisma-card-invoicing.reader.ts`) : c'est
+(`lafoliecoffee/accounting/infrastructure/prisma-card-invoicing.reader.ts`) : c'est
 juste tant qu'une commande carte ne part jamais incomplète (§ 3).
 
 ## 8. La fiche de colis après la remise

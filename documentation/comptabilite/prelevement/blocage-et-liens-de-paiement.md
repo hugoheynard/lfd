@@ -23,7 +23,7 @@ flowchart LR
   G -->|"none"| K2["Carte"]
 ```
 
-- **Modèle** (`b2b/account/`, table `companies`) :
+- **Modèle** (`lafoliecoffee/account/`, table `companies`) :
   `direct_debit_blocked_at`, `_blocked_by` (fiche staff), `_block_reason` ;
   toutes nulles ou toutes renseignées (CHECK
   `companies_direct_debit_block_complete`).
@@ -68,7 +68,7 @@ refusé en le disant.
 
 `GET admin/accounting/payment-links/orders`,
 `POST admin/accounting/payment-links/orders/:orderId/resend`
-(`b2b/orders/http/admin-order-payment-links.controller.ts`).
+(`lafoliecoffee/orders/http/admin-order-payment-links.controller.ts`).
 
 ### 2b. Les liens libres
 
@@ -76,7 +76,7 @@ Un montant demandé hors commande (« Régularisation août »), payé sur une p
 **Stripe Checkout hébergée** : le comptable du client n'a pas besoin de
 compte chez nous.
 
-- **Agrégat** `PaymentLink` (`b2b/payments/domain/entities/payment-link.ts`) :
+- **Agrégat** `PaymentLink` (`lafoliecoffee/payments/domain/entities/payment-link.ts`) :
   société, montant en centimes (> 0), libellé, session Stripe, URL ; états
   `open → paid | cancelled | expired`.
 - **Payé** seulement sur `checkout.session.completed` avec `payment_status =
@@ -91,7 +91,7 @@ paid` (ou `async_payment_succeeded`) ; **expiré** sur
 
 `GET`/`POST admin/accounting/payment-links`,
 `POST admin/accounting/payment-links/:id/cancel`
-(`b2b/payments/http/admin-payment-links.controller.ts`).
+(`lafoliecoffee/payments/http/admin-payment-links.controller.ts`).
 
 ## 3. Ce qui reste ouvert
 

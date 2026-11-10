@@ -22,12 +22,12 @@ import type {
   PaymentLinkView,
 } from "@lfd/contracts";
 
-import { PaymentLink } from "../src/b2b/payments/domain/entities/payment-link.js";
-import { CheckoutGateway } from "../src/b2b/payments/domain/ports/checkout-gateway.js";
-import { PaymentLinkRepository } from "../src/b2b/payments/domain/ports/payment-link.repository.js";
-import { PaymentLinkTerms } from "../src/b2b/payments/domain/value-objects/payment-link-terms.js";
+import { PaymentLink } from "../src/lafoliecoffee/payments/domain/entities/payment-link.js";
+import { CheckoutGateway } from "../src/lafoliecoffee/payments/domain/ports/checkout-gateway.js";
+import { PaymentLinkRepository } from "../src/lafoliecoffee/payments/domain/ports/payment-link.repository.js";
+import { PaymentLinkTerms } from "../src/lafoliecoffee/payments/domain/value-objects/payment-link-terms.js";
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
-import { OrderMailOrigins } from "../src/b2b/orders/domain/ports/order-mail-origins.js";
+import { OrderMailOrigins } from "../src/lafoliecoffee/orders/domain/ports/order-mail-origins.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
 import { IdGenerator } from "../src/platform/id/id-generator.js";
@@ -175,7 +175,7 @@ interface LinkWebhook {
 
 /**
  * La page d'un lien, signée par le prestataire doublé et livrée à la vraie
- * route du webhook des cartes, qui la relaie à `b2b/payments` par un fait
+ * route du webhook des cartes, qui la relaie à `lafoliecoffee/payments` par un fait
  * durable (plan M2, §4.5) — d'où le drainage.
  */
 async function webhook(event: LinkWebhook): Promise<void> {

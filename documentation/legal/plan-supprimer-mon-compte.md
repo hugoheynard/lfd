@@ -27,7 +27,7 @@
   par courriel, qui ne se tient aujourd'hui qu'en SQL.
 - `public.users` : `email` (sans contrainte d'unicité), `auth0_sub`
   **unique** et nullable — le lien avec le fournisseur d'identité.
-- Le port `CustomerIdentity` (`b2b/account/domain/ports/customer-identity.port.ts`)
+- Le port `CustomerIdentity` (`lafoliecoffee/account/domain/ports/customer-identity.port.ts`)
   sait délier une méthode de connexion ; il ne sait **pas** supprimer un
   utilisateur chez Auth0.
 - Une purge des preuves de retrait par ancienneté existe déjà

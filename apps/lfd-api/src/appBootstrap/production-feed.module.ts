@@ -1,28 +1,28 @@
 import { Global, Module } from "@nestjs/common";
 
-import { CatalogModule } from "../b2b/catalog/catalog.module.js";
+import { CatalogModule } from "../lafoliecoffee/catalog/catalog.module.js";
 import {
   ProductionPlannedDeliveryNotesReader,
   ProductionSpecimenDeliveryNoteReader,
-} from "../b2b/delivery-notes/infrastructure/production-planned-delivery-notes.reader.js";
-import { DeliveryNotesModule } from "../b2b/delivery-notes/delivery-notes.module.js";
-import { CatalogWorkshopShelvesReader } from "../b2b/catalog/infrastructure/catalog-workshop-shelves.reader.js";
-import { CatalogSellableArticlesReader } from "../b2b/catalog/infrastructure/catalog-sellable-articles.reader.js";
-import { ProductionOrderCutoffRulesReader } from "../b2b/order-cutoffs/infrastructure/production-order-cutoff-rules.reader.js";
-import { ProductionResupplyCutoffTimeReader } from "../b2b/order-cutoffs/infrastructure/production-resupply-cutoff-time.reader.js";
-import { OrderCutoffsModule } from "../b2b/order-cutoffs/order-cutoffs.module.js";
-import { OrdersModule } from "../b2b/orders/orders.module.js";
-import { PendingSettlementSweep } from "../b2b/orders/application/services/pending-settlement-sweep.service.js";
-import { DueThresholds } from "../b2b/orders/application/services/due-thresholds.service.js";
-import { SitedDayOrders } from "../b2b/orders/application/services/sited-day-orders.service.js";
-import { PrismaExpectedProductionReader } from "../b2b/orders/infrastructure/prisma-expected-production.reader.js";
-import { ProductionOrderPrintColorsReader } from "../b2b/orders/infrastructure/production-order-print-colors.reader.js";
-import { PrismaPendingOrdersReader } from "../b2b/orders/infrastructure/prisma-pending-orders.reader.js";
-import { ProductionDayResupplies } from "../b2b/resupply/infrastructure/production-day-resupplies.js";
-import { ProductionRangeResupplies } from "../b2b/resupply/infrastructure/production-range-resupplies.js";
-import { ResupplyModule } from "../b2b/resupply/resupply.module.js";
-import { SiteResupplyPrintColorsReader } from "../b2b/sites/infrastructure/site-resupply-print-colors.reader.js";
-import { SitesModule } from "../b2b/sites/sites.module.js";
+} from "../lafoliecoffee/delivery-notes/infrastructure/production-planned-delivery-notes.reader.js";
+import { DeliveryNotesModule } from "../lafoliecoffee/delivery-notes/delivery-notes.module.js";
+import { CatalogWorkshopShelvesReader } from "../lafoliecoffee/catalog/infrastructure/catalog-workshop-shelves.reader.js";
+import { CatalogSellableArticlesReader } from "../lafoliecoffee/catalog/infrastructure/catalog-sellable-articles.reader.js";
+import { ProductionOrderCutoffRulesReader } from "../lafoliecoffee/order-cutoffs/infrastructure/production-order-cutoff-rules.reader.js";
+import { ProductionResupplyCutoffTimeReader } from "../lafoliecoffee/order-cutoffs/infrastructure/production-resupply-cutoff-time.reader.js";
+import { OrderCutoffsModule } from "../lafoliecoffee/order-cutoffs/order-cutoffs.module.js";
+import { OrdersModule } from "../lafoliecoffee/orders/orders.module.js";
+import { PendingSettlementSweep } from "../lafoliecoffee/orders/application/services/pending-settlement-sweep.service.js";
+import { DueThresholds } from "../lafoliecoffee/orders/application/services/due-thresholds.service.js";
+import { SitedDayOrders } from "../lafoliecoffee/orders/application/services/sited-day-orders.service.js";
+import { PrismaExpectedProductionReader } from "../lafoliecoffee/orders/infrastructure/prisma-expected-production.reader.js";
+import { ProductionOrderPrintColorsReader } from "../lafoliecoffee/orders/infrastructure/production-order-print-colors.reader.js";
+import { PrismaPendingOrdersReader } from "../lafoliecoffee/orders/infrastructure/prisma-pending-orders.reader.js";
+import { ProductionDayResupplies } from "../lafoliecoffee/resupply/infrastructure/production-day-resupplies.js";
+import { ProductionRangeResupplies } from "../lafoliecoffee/resupply/infrastructure/production-range-resupplies.js";
+import { ResupplyModule } from "../lafoliecoffee/resupply/resupply.module.js";
+import { SiteResupplyPrintColorsReader } from "../lafoliecoffee/sites/infrastructure/site-resupply-print-colors.reader.js";
+import { SitesModule } from "../lafoliecoffee/sites/sites.module.js";
 import {
   DayOrdersReader,
   DayResuppliesReader,

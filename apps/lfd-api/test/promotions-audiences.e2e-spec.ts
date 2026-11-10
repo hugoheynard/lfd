@@ -24,9 +24,9 @@ import type {
 } from "@lfd/contracts";
 
 import { placeShopOrderSeeingTotal } from "./seen-total-shop-command.js";
-import { PlaceShopOrderHandler } from "../src/b2b/orders/application/commands/place-shop-order.handler.js";
-import { pdfText } from "../src/b2b/orders/domain/services/__tests__/pdf-text.js";
-import { PricingMaterialsCache } from "../src/b2b/pricing/infrastructure/pricing-materials.cache.js";
+import { PlaceShopOrderHandler } from "../src/lafoliecoffee/orders/application/commands/place-shop-order.handler.js";
+import { pdfText } from "../src/lafoliecoffee/orders/domain/services/__tests__/pdf-text.js";
+import { PricingMaterialsCache } from "../src/lafoliecoffee/pricing/infrastructure/pricing-materials.cache.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   CompanyStatus,

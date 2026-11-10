@@ -65,13 +65,13 @@ personne. On n'invente jamais un prix ni un taux.
 
 ## 2. Le choix du prix servi
 
-`servedPriceOf` (`b2b/catalog/infrastructure/prisma-catalog.reader.ts`) est
+`servedPriceOf` (`lafoliecoffee/catalog/infrastructure/prisma-catalog.reader.ts`) est
 **le seul endroit** où l'audience change le prix d'entrée :
 
-| Audience | Prix d'entrée                                                                                              | Taux                                  | Vendu si              |
-| -------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------- | --------------------- |
-| `pro`    | `price_millicents`                                                                                         | le taux de l'article (`billableRate`) | prix et taux présents |
-| `public` | `public_by_context.takeaway.htMillicents` (`PUBLIC_SALES_CONTEXT`, `b2b/catalog/domain/public-context.ts`) | le taux de ce contexte                | l'entrée existe       |
+| Audience | Prix d'entrée                                                                                                        | Taux                                  | Vendu si              |
+| -------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | --------------------- |
+| `pro`    | `price_millicents`                                                                                                   | le taux de l'article (`billableRate`) | prix et taux présents |
+| `public` | `public_by_context.takeaway.htMillicents` (`PUBLIC_SALES_CONTEXT`, `lafoliecoffee/catalog/domain/public-context.ts`) | le taux de ce contexte                | l'entrée existe       |
 
 L'audience se décide sur la société : sans société, `public` ; avec une
 société, c'est son statut qui tranche (`CatalogViewers.forCompany`,
@@ -86,7 +86,7 @@ résolution pour les deux audiences
 [`architecture-prix-boutique.md`](architecture-prix-boutique.md)) sert, par
 article, un prix hors taxe (`unitPriceMillicents`), son taux, et le **TTC
 d'une pièce** (`unitPriceTtcCents`) calculé par
-`ttcCentsFromHtMillicentsFor` (`b2b/catalog/application/shop-catalogue-view.ts`) :
+`ttcCentsFromHtMillicentsFor` (`lafoliecoffee/catalog/application/shop-catalogue-view.ts`) :
 
 - public : `ttcCentsFromHtMillicents` (`packages/money/src/tax.ts`), l'inverse
   exact de `htMillicentsOf` — l'étiquette saisie ;

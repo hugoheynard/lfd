@@ -25,7 +25,7 @@ export interface DeliveryOrderAddress {
 
 /**
  * **Les adresses du carnet derrière des commandes** — ce que la livraison
- * DÉCLARE et que le commerce implémente (`b2b/orders/infrastructure/`),
+ * DÉCLARE et que le commerce implémente (`lafoliecoffee/orders/infrastructure/`),
  * relié dans `appBootstrap/delivery-feed.module.ts`.
  *
  * Une interface à part (ISP) : seules les suggestions de correction en

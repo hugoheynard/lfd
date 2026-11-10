@@ -9,7 +9,7 @@
  * l'article l'emporte : déclinaison > produit > famille la plus proche > mode.
  *
  * Pure, et sans dépendance (ni zod) : UNE copie pour ses deux lecteurs — le
- * moteur (`apps/lfd-api/src/b2b/promotions/domain/promotion-scope.ts` la
+ * moteur (`apps/lfd-api/src/lafoliecoffee/promotions/domain/promotion-scope.ts` la
  * réexporte) et le compteur « N articles concernés » du back-office, qui
  * l'importe par le sous-chemin `@lfd/contracts/promotion-scope` sans
  * embarquer le baril. Deux copies se seraient séparées à la première règle.

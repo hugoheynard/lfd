@@ -2,7 +2,7 @@
 /**
  * Gate : **le pro type ne se fabrique que dans l'export de la grille de prix.**
  *
- * `TypicalBuyer` (`apps/lfd-api/src/b2b/promotions/domain/lot-buyer.ts`) est
+ * `TypicalBuyer` (`apps/lfd-api/src/lafoliecoffee/promotions/domain/lot-buyer.ts`) est
  * un acheteur DÉCLARÉ par le staff : une société active, ou en cours
  * d'inscription, qui n'existe pas. La porte du prix le tarife comme un pro,
  * avec les promotions de sa clientèle. Fabriqué depuis une route de la
@@ -14,9 +14,9 @@
  * appeler. D'où la porte :
  *
  * - `lot-buyer.js` ne s'importe en VALEUR que par la fabrique
- *   `b2b/pricing/application/price-grid-typical-buyer.ts` ;
+ *   `lafoliecoffee/pricing/application/price-grid-typical-buyer.ts` ;
  * - la fabrique ne s'importe en VALEUR que par
- *   `b2b/pricing/application/price-grid-*` — l'export staff, sous
+ *   `lafoliecoffee/pricing/application/price-grid-*` — l'export staff, sous
  *   `b2b_pricing:read`.
  *
  * `import type` est libre (élidé à la compilation, `verbatimModuleSyntax`) :
@@ -34,7 +34,7 @@ const ROOT = process.cwd();
 const SCAN_ROOT = "apps/lfd-api/src";
 const SKIP_DIRS = new Set(["node_modules", "dist", "client", "coverage", ".turbo", "__tests__"]);
 
-const PRICING_APP = "apps/lfd-api/src/b2b/pricing/application/";
+const PRICING_APP = "apps/lfd-api/src/lafoliecoffee/pricing/application/";
 const FACTORY = `${PRICING_APP}price-grid-typical-buyer.ts`;
 
 /** Ce qui est gardé : le module, et qui peut l'importer en valeur. */
@@ -50,7 +50,7 @@ const GUARDED = [
     name: "price-grid-typical-buyer.js (la fabrique)",
     admits: (rel) =>
       rel.startsWith(PRICING_APP) && /^price-grid-[^/]*\.ts$/u.test(rel.slice(PRICING_APP.length)),
-    door: "b2b/pricing/application/price-grid-* — l'export staff",
+    door: "lafoliecoffee/pricing/application/price-grid-* — l'export staff",
   },
 ];
 
@@ -92,7 +92,8 @@ export function violationsOf(rel, source) {
  * cassé ne refuse plus rien, et le dit en vert.
  */
 function selfCheck() {
-  const SHOP = "apps/lfd-api/src/b2b/catalog/application/shop-catalogue-pricing.service.ts";
+  const SHOP =
+    "apps/lfd-api/src/lafoliecoffee/catalog/application/shop-catalogue-pricing.service.ts";
   const CONTEXT = `${PRICING_APP}price-grid-context.ts`;
   const cases = [
     // Une route de la boutique qui fabrique un pro type : refusé.

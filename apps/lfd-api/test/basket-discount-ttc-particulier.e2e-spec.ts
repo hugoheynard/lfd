@@ -25,7 +25,7 @@ import type {
   CreatedIntent,
 } from "../src/card-payment/domain/ports/card-provider-types.js";
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
-import { PricingMaterialsCache } from "../src/b2b/pricing/infrastructure/pricing-materials.cache.js";
+import { PricingMaterialsCache } from "../src/lafoliecoffee/pricing/infrastructure/pricing-materials.cache.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   bootstrapE2e,

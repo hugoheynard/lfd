@@ -47,7 +47,7 @@
 - En base commerce, `catalog_items.price_millicents` est `NOT NULL` ;
   `public_ttc_cents` et `public_by_context` sont nullables.
 - La boutique sait déjà ne pas servir un article sans prix pour un lecteur :
-  `servedPriceOf` (`b2b/catalog/infrastructure/prisma-catalog.reader.ts`) rend
+  `servedPriceOf` (`lafoliecoffee/catalog/infrastructure/prisma-catalog.reader.ts`) rend
   `null`, et `null` écarte l'article — il ne l'invente jamais gratuit.
 
 ## 2. La règle
@@ -117,7 +117,7 @@ flowchart LR
   (`catalog-fact-mapping.ts`) et les colonnes suivent.
 - `servedPriceOf` : prix pro `null` → l'article n'est pas servi aux pros (même
   chemin qu'un taux absent). Rien n'est inventé.
-- **Chaque** lecteur de `priceMillicents` sous `src/b2b` est relu — quinze
+- **Chaque** lecteur de `priceMillicents` sous `src/lafoliecoffee` est relu — quinze
   fichiers hors tests au 2026-10-27 (recompte de vitruve), dont la trace des
   prix (`catalog-price-trace.ts`, `prisma-catalog-price-retracer.ts`,
   `prisma-canonical-price-history.reader.ts`), les faits produit
@@ -125,7 +125,7 @@ flowchart LR
   la vue publiée, l'admin, l'upsert en SQL brut (`catalog-item-upsert.ts`, que
   le typecheck ne voit pas), la mercuriale, l'export CSV, les bundles et les
   recommandations. Un `null` y vaut « non vendable aux pros », jamais `0`. La
-  liste se refait par `grep -rln priceMillicents src/b2b` au moment de bâtir,
+  liste se refait par `grep -rln priceMillicents src/lafoliecoffee` au moment de bâtir,
   pas de mémoire.
 - **La trace des prix saute la ligne** d'un article sans prix pro :
   `catalog_price_history.price_millicents` reste `NOT NULL`, aucune ligne

@@ -25,7 +25,7 @@ commande**.
 | non-membre de la société       | 404         | 404                   |
 
 Le mur est une fonction pure, `ensureBankAccountAccess`
-(`apps/lfd-api/src/b2b/payments/domain/services/bank-account-access.ts`) :
+(`apps/lfd-api/src/lafoliecoffee/payments/domain/services/bank-account-access.ts`) :
 même partage que `ensureCompanyAdmin`, 404 non divulguant puis 403. Le front
 ne montre la section qu'à `owner`, `admin` et `billing` (`BANK_ROLES`,
 `client/mon-compte/compte-page/compte-page.ts`) ; l'API refuse de toute façon.
@@ -55,7 +55,7 @@ sequenceDiagram
 
 ## 3. L'API
 
-`apps/lfd-api/src/b2b/payments/http/company-bank-account.controller.ts`,
+`apps/lfd-api/src/lafoliecoffee/payments/http/company-bank-account.controller.ts`,
 `@Controller("companies")`, bus seulement :
 
 | Route                         | Cas d'usage                                                                                                      |

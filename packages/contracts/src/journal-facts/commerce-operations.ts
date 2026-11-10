@@ -15,7 +15,7 @@ import {
 /**
  * **Les opérations datées tenues au commerce** — Noël, Pâques, la galette
  * (`documentation/operations-datees/plan-l-operation-passe-au-commerce.md`,
- * O6, lot 1). Écrits par les handlers de `b2b/operations/`, par
+ * O6, lot 1). Écrits par les handlers de `lafoliecoffee/operations/`, par
  * `publishTraced`. Rangés dans la famille `commerce`.
  *
  * Mêmes gestes que les faits `operation.*` du référentiel, qui restent

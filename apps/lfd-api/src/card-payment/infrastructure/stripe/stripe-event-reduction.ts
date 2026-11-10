@@ -10,7 +10,7 @@ import type {
 import { CARD_REFUND_STATUSES } from "../../domain/ports/card-provider-types.js";
 import { REFUND_METADATA } from "./stripe-refund-calls.js";
 
-// Réduction copiée de `b2b/payments/infrastructure/stripe-payment-gateway.ts`
+// Réduction copiée de `lafoliecoffee/payments/infrastructure/stripe-payment-gateway.ts`
 // le 2026-11-09 (plan M2, §4.2), à deux différences près : chaque événement
 // garde son identité et son type (la clé des faits qu'il fait naître), et ce
 // que l'original rendait `ignored` est rendu `other` — le bloc en fait un
@@ -21,7 +21,7 @@ const MS_PER_SECOND = 1000;
 
 /**
  * La métadonnée qui marque une page hébergée ouverte par un LIEN de paiement
- * (`b2b/payments/infrastructure/stripe-checkout-gateway.ts`, vérifié le
+ * (`lafoliecoffee/payments/infrastructure/stripe-checkout-gateway.ts`, vérifié le
  * 2026-11-09) — 🔴 valeur posée chez Stripe, qui ne se renomme pas.
  */
 export const PAYMENT_LINK_METADATA_KEY = "paymentLinkId";

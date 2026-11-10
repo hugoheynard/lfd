@@ -17,12 +17,12 @@
 import { AppConfig } from "../src/platform/config/app-config.js";
 import { FixedIdGenerator } from "../src/platform/id/fixed-id-generator.js";
 import { RecordingMail } from "../src/mail/channels/requests/__tests__/recording-mail.js";
-import { DevCustomerIdentity } from "../src/b2b/account/infrastructure/dev-customer-identity.js";
-import { CustomerIdentityPort } from "../src/b2b/account/domain/ports/customer-identity.port.js";
+import { DevCustomerIdentity } from "../src/lafoliecoffee/account/infrastructure/dev-customer-identity.js";
+import { CustomerIdentityPort } from "../src/lafoliecoffee/account/domain/ports/customer-identity.port.js";
 import {
   IdentityProofVerifier,
   type IdentityProof,
-} from "../src/b2b/account/domain/ports/identity-proof.verifier.js";
+} from "../src/lafoliecoffee/account/domain/ports/identity-proof.verifier.js";
 import type { LoginMethodsView } from "@lfd/contracts";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";

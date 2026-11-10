@@ -2,7 +2,7 @@
 
 > **Bâti le 2026-10-22, non commité à l'écriture de cette ligne** :
 > `packages/money/src/order-vat-split.ts`,
-> `apps/lfd-api/src/b2b/accounting/domain/services/invoice-order-split.ts` côté
+> `apps/lfd-api/src/lafoliecoffee/accounting/domain/services/invoice-order-split.ts` côté
 > facturation. Ce qui suit était le plan.
 >
 > **Doc-first, 2026-10-22.** Touche **l'argent** (TVA par taux
@@ -12,7 +12,7 @@
 ## 0. Le problème (ouvert le 2026-10-22)
 
 Chaque bon ventile ses remises par taux au moment de sa passation
-(`computeOrderTotals`, `b2b/orders/domain/services/vat.ts`) : la remise de
+(`computeOrderTotals`, `lafoliecoffee/orders/domain/services/vat.ts`) : la remise de
 retrait sur ses seules lignes éligibles, puis le bon de fidélité sur le net.
 Ses parts de TVA sont figées (`vatShares`).
 

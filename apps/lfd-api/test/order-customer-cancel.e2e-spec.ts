@@ -35,7 +35,7 @@ import {
   withdrawals,
 } from "./order-staff-cancel-scene.js";
 import { seedOrder } from "./order-staff-cancel-orders.js";
-import { customerCancellationDeadlineOf } from "../src/b2b/orders/cancellation/domain/services/customer-cancellation-window.js";
+import { customerCancellationDeadlineOf } from "../src/lafoliecoffee/orders/cancellation/domain/services/customer-cancellation-window.js";
 
 let ctx: E2eContext;
 

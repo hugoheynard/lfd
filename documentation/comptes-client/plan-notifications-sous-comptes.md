@@ -105,7 +105,7 @@ sub_account_notice_sends
   event_id, user_id, sent_at   unique (event_id, user_id)
 ```
 
-**Où vit l'abonné** : un contexte `b2b/sub-account-notices/`. Il lit les
+**Où vit l'abonné** : un contexte `lafoliecoffee/sub-account-notices/`. Il lit les
 membres et les dérogations par des ports que `account/` déclare et
 implémente, et le résumé de la commande par un port que `orders/` implémente —
 jamais les tables d'un autre contexte (`lint:prisma-model-ownership`). Tout
@@ -113,7 +113,7 @@ reste dans le bloc `b2b` : ni `durable-cross-block` ni `context-boundaries`
 ne sont franchis.
 
 Pas de ligne = le défaut du §1. Le défaut vit dans le domaine
-(`apps/lfd-api/src/b2b/sub-account-notices/domain/sub-account-notice-defaults.ts`), pas en base : changer
+(`apps/lfd-api/src/lafoliecoffee/sub-account-notices/domain/sub-account-notice-defaults.ts`), pas en base : changer
 le défaut ne demande pas de migration, et une dérogation posée reste la
 volonté du staff.
 
@@ -151,8 +151,8 @@ touche cinq contextes qui ne publient aujourd'hui qu'au journal.
 - Migration `20261020110000_les_avis_au_principal` (additive, lue par
   `lecteur-de-migrations`). Copie à la passation par `OrderPayerReader`, qui
   rend aussi `principalId` et `followsPricing` (même lecture que le payeur) ;
-  règle pure `apps/lfd-api/src/b2b/orders/domain/services/order-principal.ts`.
-- `b2b/account/` déclare et implémente QUATRE ports, pas deux :
+  règle pure `apps/lfd-api/src/lafoliecoffee/orders/domain/services/order-principal.ts`.
+- `lafoliecoffee/account/` déclare et implémente QUATRE ports, pas deux :
   `AcceptedMembersReader`, `SubAccountNoticeRulesReader`, et en plus
   `SubAccountNoticeRulesWriter` (lecture et écriture séparées) et
   `CompanyParentReader` (la garde « est un principal »).
@@ -169,9 +169,9 @@ touche cinq contextes qui ne publient aujourd'hui qu'au journal.
 
 ### N2 bâti (2026-10-20) — et ses écarts
 
-- Trois `@DurableHandler` dans `b2b/sub-account-notices/application/handlers/`,
+- Trois `@DurableHandler` dans `lafoliecoffee/sub-account-notices/application/handlers/`,
   un service commun (`SubAccountNoticeDispatcher`) et des règles pures
-  (`apps/lfd-api/src/b2b/sub-account-notices/domain/notice-recipients.ts`). Gabarit `customer.sub-account-activity`
+  (`apps/lfd-api/src/lafoliecoffee/sub-account-notices/domain/notice-recipients.ts`). Gabarit `customer.sub-account-activity`
   (`apps/lfd-api/src/mail/templates/sub-account-activity-mail.ts`), français seul. e2e
   `apps/lfd-api/test/sub-account-notices.e2e-spec.ts`.
 - **La passation n'a pas de fait `order.placed` durable** : le seul fait
@@ -399,9 +399,9 @@ orders`. `payments → account` : un fichier implémente déjà un port
 
 🔴 **Dette nommée (2026-10-20) : rien ne purge ces deux traces.** Les demandes
 clients s'anonymisent à douze mois par une commande à elles
-(`apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts`,
+(`apps/lfd-api/src/lafoliecoffee/contact/application/commands/anonymize-customer-requests.handler.ts`,
 durée `CUSTOMER_REQUEST_RETENTION_MONTHS` dans
-`apps/lfd-api/src/b2b/contact/domain/contact-retention.ts`). Aucune purge
+`apps/lfd-api/src/lafoliecoffee/contact/domain/contact-retention.ts`). Aucune purge
 n'existe ni pour `sub_account_notice_sends`, ni pour la boîte d'envoi
 `platform.outbox` (seul le semis de démonstration en vide une,
 `apps/lfd-api/src/dev/scenario/purge/outbox.purge.ts`). La durée décidée
@@ -426,7 +426,7 @@ pas à la même chose :
 #### N4a bâti (2026-10-20) — et ses écarts
 
 - **Socle** : `PrincipalNoticeSender`
-  (`apps/lfd-api/src/b2b/sub-account-notices/application/services/principal-notice.sender.ts`),
+  (`apps/lfd-api/src/lafoliecoffee/sub-account-notices/application/services/principal-notice.sender.ts`),
   la fin commune ; `SubAccountNoticeDispatcher` (commande) et
   `GestureNoticeDispatcher` (gestes) n'en sont plus que la lecture. Gabarit
   `customer.sub-account-gesture`
@@ -435,7 +435,7 @@ pas à la même chose :
   `SUB_ACCOUNT_NOTICE_KINDS_WITH_MAIL` (`packages/contracts/src/sub-account-notices.ts`),
   lue par la carte N3 : la ligne « Problème de commande signalé » s'affiche.
 - **Problème signalé** : fait `order.problem_reported`
-  (`apps/lfd-api/src/b2b/contact/domain/order-problem-reported.fact.ts`),
+  (`apps/lfd-api/src/lafoliecoffee/contact/domain/order-problem-reported.fact.ts`),
   écrit avec la demande dans une `UnitOfWork` neuve, sur une commande
   d'entreprise seulement. Le site et le principal COPIÉ sont lus par
   `OrderReportableOrderReader` via `OrderNoticeSummaryReader` (exporté par
@@ -454,23 +454,23 @@ pas à la même chose :
 #### N4b bâti (2026-10-20) — et ses écarts
 
 - **Le port « principal sous verrou »** : `SitePrincipalLock`
-  (`apps/lfd-api/src/b2b/account/domain/ports/site-principal.lock.ts`),
+  (`apps/lfd-api/src/lafoliecoffee/account/domain/ports/site-principal.lock.ts`),
   adaptateur `SELECT parent_company_id … FOR UPDATE` qui **refuse d'être
   appelé hors d'une unité de travail**
-  (`apps/lfd-api/src/b2b/account/infrastructure/prisma-site-principal.lock.ts`).
+  (`apps/lfd-api/src/lafoliecoffee/account/infrastructure/prisma-site-principal.lock.ts`).
   Le carnet prend déjà ce verrou en sauvant ; le reprendre dans la même
   transaction ne coûte rien, et les lots suivants (contacts, RIB, abonnements),
   qui ne le prennent pas, l'auront par ce port.
 - **L'annonce** : `SiteGesturePublisher`
-  (`apps/lfd-api/src/b2b/account/application/services/site-gesture.publisher.ts`)
+  (`apps/lfd-api/src/lafoliecoffee/account/application/services/site-gesture.publisher.ts`)
   lit le principal sous verrou, tire un id de geste et écrit un
-  `SiteGestureFact` (`apps/lfd-api/src/b2b/account/domain/events/site-gesture.fact.ts`)
+  `SiteGestureFact` (`apps/lfd-api/src/lafoliecoffee/account/domain/events/site-gesture.fact.ts`)
   sous le nom du journal : `company.delivery_address_added|updated|removed`,
   `company.default_delivery_set`. Charge : site, nom, principal, auteur,
   `byTeam`, et l'id de l'adresse — **rien d'autre**. Appelé dans le
   `uow.run` des huit handlers (quatre client, quatre équipe).
 - **Les abonnés** : quatre, un par type, qui partagent
-  `apps/lfd-api/src/b2b/sub-account-notices/application/handlers/site-gesture-notice.ts` ;
+  `apps/lfd-api/src/lafoliecoffee/sub-account-notices/application/handlers/site-gesture-notice.ts` ;
   le gabarit gagne quatre gestes, sans rien de l'adresse.
 - **L'écran N3** montre la ligne `delivery_address_changed` (liste partagée).
 - **Le rattachement concurrent** est éprouvé en e2e : une transaction qui
@@ -517,7 +517,7 @@ principal, désactivé par défaut**.
   N2. `updated_by` est au registre RGPD (`lint:rgpd-staff` l'exige). La
   remise à blanc de dev la vide avant les sociétés (clé `Restrict`).
 - **Ports** d'`account/` : `SubAccountNoticeSwitchReader` / `Writer`
-  (`apps/lfd-api/src/b2b/account/domain/ports/sub-account-notice-switch.ts`).
+  (`apps/lfd-api/src/lafoliecoffee/account/domain/ports/sub-account-notice-switch.ts`).
 - **Envoi** : `PrincipalNoticeSender` lit l'interrupteur du principal FIGÉ
   avant tout le reste — commandes (N2) comme gestes (N4) passent par lui.
   Coupé : ni mail, ni ligne au journal d'envoi. 🔴 **Un geste fait pendant la
@@ -539,7 +539,7 @@ principal, désactivé par défaut**.
 #### N4d bâti (2026-10-20) — et ses écarts
 
 - **RIB** : `recordCompanyBankAccount`
-  (`apps/lfd-api/src/b2b/payments/application/commands/record-company-bank-account.ts`)
+  (`apps/lfd-api/src/lafoliecoffee/payments/application/commands/record-company-bank-account.ts`)
   reçoit désormais l'auteur (`GestureActor`) au lieu du seul `via`, qui en
   est dérivé, et écrit `company.bank_account_changed` en durable dans la
   closure qui sauve le RIB. Ses deux appelants (client, équipe) le passent.
@@ -574,7 +574,7 @@ principal, désactivé par défaut**.
 modèle `Subscription`) appartient à une PERSONNE (`placed_by_user_id`), pas à
 une société : aucune colonne `company_id`. Le mur est la personne — `load(id,
 ownerUserId)` filtre sur `placedByUserId`
-(`apps/lfd-api/src/b2b/subscriptions/infrastructure/prisma-subscription.repository.ts`).
+(`apps/lfd-api/src/lafoliecoffee/subscriptions/infrastructure/prisma-subscription.repository.ts`).
 La vue staff rattache par les rattachements de la personne
 (`listForCompany`, `placedBy.memberships.some(companyId)`,
 `prisma-subscription.reader.ts`). Le staff ne fait AUCUN geste : son
@@ -696,7 +696,7 @@ dans N4e) :
 **Ce que `vitruve` a changé à N4e (2026-10-20)** :
 
 - **`subscription.created` a déjà un auteur au journal** : l'abonné de
-  croissance en mémoire (`b2b/growth/application/handlers/on-subscription-created.handler.ts`).
+  croissance en mémoire (`lafoliecoffee/growth/application/handlers/on-subscription-created.handler.ts`).
   Le fait durable du même nom vit dans la boîte d'envoi, un AUTRE registre ;
   il n'écrit rien au journal. Une seule écriture `subscription.created` au
   journal reste celle de la croissance — éprouvé en e2e (une ligne d'activité,
@@ -729,7 +729,7 @@ dans N4e) :
   réécrit). Hors requête, la société est confrontée aux rattachements comme
   pour une commande. Contrat HTTP et écrans inchangés.
 - **Le mur et l'annonce** : `SubscriptionGestures`
-  (`apps/lfd-api/src/b2b/subscriptions/application/services/subscription-gestures.ts`)
+  (`apps/lfd-api/src/lafoliecoffee/subscriptions/application/services/subscription-gestures.ts`)
   — `loadManaged` (404 `SubscriptionNotFoundError`, 403
   `SubscriptionSiteMembershipLostError` pour un ancien membre) et `announce`
   (fait durable dans l'unité de travail du geste). Lit deux ports d'`account/`

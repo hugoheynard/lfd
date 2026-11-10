@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 
-import { RefocusStorefrontImageCommand } from "../b2b/storefront/application/refocus-storefront-image.command.js";
+import { RefocusStorefrontImageCommand } from "../lafoliecoffee/storefront/application/refocus-storefront-image.command.js";
 import {
   MEDIA_ASSET_DESCRIBED,
   MediaAssetDescribedFact,

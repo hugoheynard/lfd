@@ -3,7 +3,7 @@
 // `documentation/comptabilite/mandat/export-des-mandats-pour-la-banque.md`.
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// Propriétaire : `src/b2b/accounting/`. Un export est une ÉCRITURE : il fige
+// Propriétaire : `src/lafoliecoffee/accounting/`. Un export est une ÉCRITURE : il fige
 // quels mandats sont partis, sous quel compte, et par qui. Le fichier CSV,
 // lui, n'est PAS stocké — il porte des IBAN en clair, et se recalcule à chaque
 // téléchargement depuis les mandats de l'export.

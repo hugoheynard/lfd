@@ -12,7 +12,7 @@
  */
 import type { BillingRhythmsCalendarView } from "@lfd/contracts";
 
-import { depositDeadlineOf } from "../src/b2b/accounting/domain/services/collection-calendar.js";
+import { depositDeadlineOf } from "../src/lafoliecoffee/accounting/domain/services/collection-calendar.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 

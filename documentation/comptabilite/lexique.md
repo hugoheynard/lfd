@@ -46,7 +46,7 @@ RUM. Voir [`prelevement/prelevement-sepa.md`](prelevement/prelevement-sepa.md).
 
 ⚠️ **« B2B » veut dire deux choses dans ce dépôt**, et elles n'ont aucun
 rapport : la plateforme de vente aux professionnels
-(`apps/lfc-ecommerce-frontend`, `src/b2b/`), et le schéma de prélèvement entre
+(`apps/lfc-ecommerce-frontend`, `src/lafoliecoffee/`), et le schéma de prélèvement entre
 professionnels. Le contexte
 tranche toujours, mais il faut le savoir une fois.
 

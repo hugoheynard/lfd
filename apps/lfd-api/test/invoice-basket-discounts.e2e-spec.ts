@@ -21,20 +21,20 @@ import { randomUUID } from "node:crypto";
 
 import { ttcCentsFromHtMillicents } from "@lfd/money";
 
-import { issueInput } from "../src/b2b/accounting/domain/entities/__tests__/invoice-fixtures.js";
-import { Invoice } from "../src/b2b/accounting/domain/entities/invoice.js";
-import { facturXArithmeticViolations } from "../src/b2b/accounting/domain/services/facturx-arithmetic.js";
-import { renderFacturXml } from "../src/b2b/accounting/domain/services/facturx-xml.js";
-import { BASKET_PROMOTION_PREFIX } from "../src/b2b/accounting/domain/services/invoice-discount-allowances.js";
+import { issueInput } from "../src/lafoliecoffee/accounting/domain/entities/__tests__/invoice-fixtures.js";
+import { Invoice } from "../src/lafoliecoffee/accounting/domain/entities/invoice.js";
+import { facturXArithmeticViolations } from "../src/lafoliecoffee/accounting/domain/services/facturx-arithmetic.js";
+import { renderFacturXml } from "../src/lafoliecoffee/accounting/domain/services/facturx-xml.js";
+import { BASKET_PROMOTION_PREFIX } from "../src/lafoliecoffee/accounting/domain/services/invoice-discount-allowances.js";
 import {
   COMPANY_DISCOUNT,
   simulateInvoiceDossier,
-} from "../src/b2b/accounting/domain/services/invoice-dossier.js";
-import type { FrozenInvoiceOrder } from "../src/b2b/accounting/domain/services/invoice-dossier.types.js";
+} from "../src/lafoliecoffee/accounting/domain/services/invoice-dossier.js";
+import type { FrozenInvoiceOrder } from "../src/lafoliecoffee/accounting/domain/services/invoice-dossier.types.js";
 import {
   BILLABLE_INVOICE_ORDER_SELECT,
   toBillableInvoiceOrder,
-} from "../src/b2b/accounting/infrastructure/billable-invoice-order.mapper.js";
+} from "../src/lafoliecoffee/accounting/infrastructure/billable-invoice-order.mapper.js";
 import type { E2eContext } from "./e2e-harness.js";
 import { asPlacedBeforeM3 } from "./order-discount-fixtures.js";
 import { handOver, pickupSite } from "./order-factory.js";

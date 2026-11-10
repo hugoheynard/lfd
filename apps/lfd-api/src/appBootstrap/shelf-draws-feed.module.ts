@@ -1,7 +1,7 @@
 import { Global, Module } from "@nestjs/common";
 
-import { PrismaShelfDrawsReader } from "../b2b/orders/infrastructure/prisma-shelf-draws.reader.js";
-import { ShelfDrawsReader } from "../b2b/resupply/domain/shelf-draws.reader.js";
+import { PrismaShelfDrawsReader } from "../lafoliecoffee/orders/infrastructure/prisma-shelf-draws.reader.js";
+import { ShelfDrawsReader } from "../lafoliecoffee/resupply/domain/shelf-draws.reader.js";
 
 /**
  * **Les prélèvements de la vitrine, reliés** (le stock du jour décompté, L2 —

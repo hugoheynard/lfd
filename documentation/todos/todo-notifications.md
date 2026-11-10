@@ -18,7 +18,7 @@
 > **Ce qui reste ouvert est plus étroit que ce document ne le laissait croire** :
 > les DEUX points d'appel listés ci-dessous — rendez-vous pris, demande de
 > contact déposée — ne sont toujours pas branchés. Vérifié : aucun envoi dans
-> `b2b/growth`, aucun sur la demande de support.
+> `lafoliecoffee/growth`, aucun sur la demande de support.
 >
 > Audit : [`../b2b/audit-flux-plateforme-admin.md`](../b2b/audit-flux-plateforme-admin.md) §P0-3.
 > Jalon : [`../release-plan-2026-08.md`](../release-plan-2026-08.md) J2.

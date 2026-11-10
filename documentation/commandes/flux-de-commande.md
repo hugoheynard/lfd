@@ -60,11 +60,11 @@ Le dépôt ne connaît pas quatre « types de client ». Il connaît **trois
 questions**, posées à des moments différents, et c'est leur combinaison qui
 fabrique les parcours :
 
-| La question                       | Qui y répond                 | Où                                                                               |
-| --------------------------------- | ---------------------------- | -------------------------------------------------------------------------------- |
-| Y a-t-il un jeton ?               | Auth0, puis le guard global  | `apps/lfd-api/src/platform/auth/auth.guard.ts`                                   |
-| Y a-t-il un espace de travail ?   | le front, après `/me`        | `apps/lfc-ecommerce-frontend/src/app/client/client-workspace.service.ts`         |
-| Y a-t-il une société **active** ? | le serveur, à chaque requête | `apps/lfd-api/src/b2b/orders/application/services/customer-audiences.service.ts` |
+| La question                       | Qui y répond                 | Où                                                                                         |
+| --------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------ |
+| Y a-t-il un jeton ?               | Auth0, puis le guard global  | `apps/lfd-api/src/platform/auth/auth.guard.ts`                                             |
+| Y a-t-il un espace de travail ?   | le front, après `/me`        | `apps/lfc-ecommerce-frontend/src/app/client/client-workspace.service.ts`                   |
+| Y a-t-il une société **active** ? | le serveur, à chaque requête | `apps/lfd-api/src/lafoliecoffee/orders/application/services/customer-audiences.service.ts` |
 
 La troisième décide la **clientèle** (`b2b` / `b2c`), et donc la remise et le
 prix. Elle est **déduite, jamais déclarée** : ni un corps ni un en-tête ne la
@@ -138,7 +138,7 @@ lieu d'être.
 réglage admin « Livraison » (`openToB2b` / `openToB2c`), qui ferme une clientèle
 entière ; le devis et la passation — avec ou sans compte — refusent la même
 chose en 409 (`client/shop/order-doors.ts`,
-`b2b/orders/application/services/cart-adjustments.service.ts`). La clé d'admin
+`lafoliecoffee/orders/application/services/cart-adjustments.service.ts`). La clé d'admin
 `publicDelivery` qui s'y ajoutait pour les particuliers a été **retirée le
 2026-10-09** : deux réglages pour une même porte se contredisaient.
 
@@ -174,12 +174,12 @@ refuse encore une commande est au serveur — l'horaire, la zone, le réglage
 
 Quatre routes publiques couvrent tout le parcours **jusqu'au règlement** :
 
-| Route                                | Fichier                                                                     | Ce qu'elle rend                                 |
-| ------------------------------------ | --------------------------------------------------------------------------- | ----------------------------------------------- |
-| `GET /shop/catalogue`                | `apps/lfd-api/src/b2b/catalog/http/shop-catalogue.controller.ts`            | le catalogue au prix résolu à `companyId: null` |
-| `POST /shop/quote`                   | `apps/lfd-api/src/b2b/orders/http/shop-quote.controller.ts`                 | le **total exact** du panier, TVA ventilée      |
-| `GET /pickup-addresses`              | `apps/lfd-api/src/b2b/pickup-addresses/http/pickup-addresses.controller.ts` | les maisons                                     |
-| `GET /pickup-addresses/:id/creneaux` | même fichier                                                                | les créneaux, contre l'horloge **serveur**      |
+| Route                                | Fichier                                                                               | Ce qu'elle rend                                 |
+| ------------------------------------ | ------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `GET /shop/catalogue`                | `apps/lfd-api/src/lafoliecoffee/catalog/http/shop-catalogue.controller.ts`            | le catalogue au prix résolu à `companyId: null` |
+| `POST /shop/quote`                   | `apps/lfd-api/src/lafoliecoffee/orders/http/shop-quote.controller.ts`                 | le **total exact** du panier, TVA ventilée      |
+| `GET /pickup-addresses`              | `apps/lfd-api/src/lafoliecoffee/pickup-addresses/http/pickup-addresses.controller.ts` | les maisons                                     |
+| `GET /pickup-addresses/:id/creneaux` | même fichier                                                                          | les créneaux, contre l'horloge **serveur**      |
 
 Les quatre sont `@Public()` et bornées à 60 appels/minute.
 
@@ -227,7 +227,7 @@ d'un refus serveur, et faux de ces deux-là** — personne ne les a dits. Le
 visiteur clique, et rien ne bouge.
 
 Côté serveur, `POST /orders`
-(`apps/lfd-api/src/b2b/orders/http/orders.controller.ts`) n'est pas public :
+(`apps/lfd-api/src/lafoliecoffee/orders/http/orders.controller.ts`) n'est pas public :
 il prend `@CurrentUser() user: Principal` et la société vient du **contexte**,
 jamais du corps.
 
@@ -240,11 +240,11 @@ jamais du corps.
 Le §6 du plan pose : « un prix résolu sans société est le **prix pro** », et en
 fait un verrou technique bloquant. **Le code ne dit pas ça.**
 
-- `matchesAudience` (`apps/lfd-api/src/b2b/pricing/domain/specificity.ts`) :
+- `matchesAudience` (`apps/lfd-api/src/lafoliecoffee/pricing/domain/specificity.ts`) :
   une règle `all` s'applique toujours ; une règle `segment` ou `company` exige
   une correspondance — donc `companyId: null` n'en déclenche aucune.
 - Sans société, **aucune mercuriale** n'entre dans la chaîne
-  (`apps/lfd-api/src/b2b/pricing/domain/resolve-price.ts`).
+  (`apps/lfd-api/src/lafoliecoffee/pricing/domain/resolve-price.ts`).
 - Et la vitrine publique **sert déjà** ce prix-là à des prospects depuis le
   2026-09-09, en l'assumant par écrit (`shop-catalogue.controller.ts`).
 

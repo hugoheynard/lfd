@@ -133,7 +133,7 @@ dans le modèle, et la boutique l'affiche depuis L10.
   `ShopItemView.promotionNames` porte le libellé des promotions « dans le
   prix affiché » qui ont baissé le prix barré, lu dans la trace du
   tarificateur (étage `promotion`,
-  `apps/lfd-api/src/b2b/catalog/application/shop-catalogue-promotion-names.ts`),
+  `apps/lfd-api/src/lafoliecoffee/catalog/application/shop-catalogue-promotion-names.ts`),
   dans la langue du rayon et l'audience du lecteur (libellé Particuliers
   ou Pros, repli sur le commun). Une baisse venue d'une mercuriale, d'un
   palier ou d'un engagement n'a **aucun nom** : la clé est absente, et
@@ -167,7 +167,7 @@ dans le modèle, et la boutique l'affiche depuis L10.
 
 ## Partie 2 — pour aller plus loin
 
-Le contexte est `apps/lfd-api/src/b2b/promotions/` (domain, application,
+Le contexte est `apps/lfd-api/src/lafoliecoffee/promotions/` (domain, application,
 infrastructure, http). Les citations `fichier:ligne` des §§ 2.1 à 2.10 ont
 été ouvertes le 2026-10-30 ; celles des ajouts du 2026-10-31 (L10, L12, cumul,
 multi-remise) l'ont été le 2026-10-31.
@@ -195,7 +195,7 @@ point ligne).
 **Nom interne et description** (2026-10-31) : le nom interne est obligatoire ;
 la **description** (`promotions.description`, nullable, migration
 `20261031220000_la_description_des_promotions`) est un texte libre pour
-l'équipe — le client ne la voit jamais. `apps/lfd-api/src/b2b/promotions/domain/promotion-description.ts` la
+l'équipe — le client ne la voit jamais. `apps/lfd-api/src/lafoliecoffee/promotions/domain/promotion-description.ts` la
 met en forme (espaces de bord retirés, vide → `null`) et la borne à 1 000
 caractères (`PromotionDescriptionTooLongError`, 400) ; un CHECK en base tient
 la même forme. La changer **est** une révision (`sameTerms`), journalisée :
@@ -276,7 +276,7 @@ Deux barrières, et chacune a sa clé :
   OBLIGATOIRE, `extendsToWeight`, calculé par promotion
   (`promotionExtendsToWeight(effectKind, hasMinQuantity)`). Le typecheck
   force chaque appelant : le prix (`promotion-as-rule.ts`), le refus de
-  chevauchement (`apps/lfd-api/src/b2b/promotions/domain/promotion-shared-article.ts`), l'offre de connexion
+  chevauchement (`apps/lfd-api/src/lafoliecoffee/promotions/domain/promotion-shared-article.ts`), l'offre de connexion
   (`promotion-offers.ts`, `touches`) et le compteur du back-office
   (`targeted-promotions/scope-count.ts`, `pointOf` — une unité inconnue ne
   s'étend jamais) ;
@@ -294,7 +294,7 @@ arrondit une fois (−10 % sur 23,90 €/kg, 1 250 g → 26,89 €).
 
 **Recouvrement.** L'extension peut faire naître un chevauchement entre deux
 promotions de ligne déjà posées, sur un article au poids.
-`weightExtensionConflicts` (`apps/lfd-api/src/b2b/promotions/domain/promotion-weight-conflicts.ts`) en dresse
+`weightExtensionConflicts` (`apps/lfd-api/src/lafoliecoffee/promotions/domain/promotion-weight-conflicts.ts`) en dresse
 la liste ; sur le semis de démo, elle est vide (il ne pose que des remises de
 point, au panier — `apps/lfd-api/src/dev/seeding/__tests__/station-promotions.seed.spec.ts`).
 Un tel conflit ne casse aucun prix (`winnerOf` départage deux promotions par
@@ -440,7 +440,7 @@ et le panier, la confirmation et le ticket de « Mes commandes » écrivent
 | Écran                                                       | Front                                                       | API                                   | Droit                                                               |
 | ----------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------- |
 | Promotions (liste, page d'une promotion, arbre des publics) | `apps/lfd-backoffice-frontend/src/app/targeted-promotions/` | `http/admin-promotions.controller.ts` | `b2b_pricing` (`:61`) ; lecture aussi sous `lfc_site_settings:read` |
-| Règles de prix (ancienne grille)                            | —                                                           | `b2b/pricing/http/`                   | `b2b_pricing`                                                       |
+| Règles de prix (ancienne grille)                            | —                                                           | `lafoliecoffee/pricing/http/`         | `b2b_pricing`                                                       |
 
 Il n'y a plus de **surface** (d'où une promotion est réglée) depuis le
 2026-10-31 : la route `admin/sites/:pickupId/promotions` (sous
@@ -468,7 +468,7 @@ crée jamais (`promotion-decimals-callout/`). Un avertissement, jamais un
 refus. La lecture est `POST admin/promotions/decimals`
 (`GetPromotionDecimalsQuery`, sous `b2b_pricing:read`) : le prix pro de
 chaque article (`PromotionProPricesReader`, implémenté par le catalogue)
-passe par `promotionDecimalNets` (`apps/lfd-api/src/b2b/pricing/domain/promotion-decimals.ts`),
+passe par `promotionDecimalNets` (`apps/lfd-api/src/lafoliecoffee/pricing/domain/promotion-decimals.ts`),
 qui présente la promotion en règle (`promotionAsRule`) et l'applique par
 `applyRule` puis l'arrondi unique, comme la porte du prix — sans plancher
 ni cumul, ni mercuriale, palier ou grille : le callout le dit. Elle porte
@@ -496,7 +496,7 @@ remonte après la valeur) :
    client. En lecture seule, les deux choix sont désactivés.
 3. **« Que reçoit le client (valeur de la réduction) ? »** — les effets que le
    genre admet, ceux d'`EFFECTS_AT` côté serveur
-   (`apps/lfd-api/src/b2b/promotions/domain/promotion-effect.ts`) : pourcentage,
+   (`apps/lfd-api/src/lafoliecoffee/promotions/domain/promotion-effect.ts`) : pourcentage,
    montant à l'unité ou prix posé pour baisser le prix ; pourcentage ou montant
    sur le panier pour la remise sur le panier. Puis les libellés.
 4. **« Quand, et à quelles conditions ? »** — période, quantité minimum,

@@ -12,7 +12,7 @@ choisit.
 
 ## 1. Le modèle
 
-Contexte `apps/lfd-api/src/b2b/client-notes/`, agrégat **`ClientNotebook`** :
+Contexte `apps/lfd-api/src/lafoliecoffee/client-notes/`, agrégat **`ClientNotebook`** :
 le carnet d'UNE société. Il naît à la première note et ne se supprime jamais.
 
 | Règle       | Valeur                                                                                      | Où                                       |
@@ -37,9 +37,9 @@ note touchée et la position des lignes qui ont bougé.
 
 ## 2. Le socle partagé : les cartes photo ordonnées
 
-`src/b2b/shared/photo-cards/` est le premier dossier partagé au niveau d'un
+`src/lafoliecoffee/shared/photo-cards/` est le premier dossier partagé au niveau d'un
 bloc métier (`CLAUDE.md` §3). Il porte la mécanique commune aux **étapes d'une
-procédure de livraison** (`DeliveryProcedure`, `b2b/account/`) et aux **notes** ;
+procédure de livraison** (`DeliveryProcedure`, `lafoliecoffee/account/`) et aux **notes** ;
 chaque agrégat garde son vocabulaire public et délègue.
 
 | Couche      | Dans le socle                                                                                                    | En paramètre, propre à chaque usage                                                           |

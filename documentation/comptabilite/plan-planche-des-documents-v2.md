@@ -34,7 +34,7 @@ les factures** (ni avoirs) : pièces comptables, sans couleur de destination
   facture Factur-X. Données d'exemple **fixes et inventées** (« EXEMPLE »,
   numéros en `999…`), un fichier par bloc (`…/document-specimens/specimen-data.ts`),
   chaque bloc sert les siens.
-- **Les couleurs de site** (`b2b/sites/domain/site-color.ts`, `#rrggbb` libre) :
+- **Les couleurs de site** (`lafoliecoffee/sites/domain/site-color.ts`, `#rrggbb` libre) :
   le **vrai** bon de commande trace un trait de la couleur de la commande sous
   son titre (`order-sheet-pdf-header.ts`, L5 de `tri-depart-et-couleurs.md`)
   ; la planche passe `color = null`, donc ne le montre jamais. La **fiche
@@ -91,7 +91,7 @@ Constats :
   > `resupply_color` sur le site (migration `20261022240000`), réglée sous
   > « Approvisionné » dans Réglages › Sites, lue au tirage par le port
   > `ResupplyPrintColorsReader` (`production/channels/commerce/`, implémenté
-  > par `b2b/sites`). Un réassort prend la teinte de son site destinataire
+  > par `lafoliecoffee/sites`). Un réassort prend la teinte de son site destinataire
   > dans le camembert ; gris si le site n'en a pas. Le compte à produire
   > d'exemple de la planche en montre une.
   > ~~Les bons de réassort du dossier du jour n'ont pas de référence : ils ne

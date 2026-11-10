@@ -54,60 +54,62 @@ export const SNAPSHOT_MODELS = {
 };
 
 /** Le chargeur de l'instantané. */
-export const LOADER = "b2b/catalog/infrastructure/catalogue-snapshot/catalogue-snapshot.loader.ts";
+export const LOADER =
+  "lafoliecoffee/catalog/infrastructure/catalogue-snapshot/catalogue-snapshot.loader.ts";
 
 /** Les replis : lus hors de la portée, remplacés dans la portée (relevé le 2026-11-06). */
 export const FALLBACKS = {
-  "b2b/catalog/infrastructure/prisma-catalog.reader.ts":
+  "lafoliecoffee/catalog/infrastructure/prisma-catalog.reader.ts":
     "lectures A, B, D et la lignée — `SnapshotCatalogReader`, `SnapshotCatalogOperationsReader`",
-  "b2b/catalog/infrastructure/prisma-catalog-operations.reader.ts":
+  "lafoliecoffee/catalog/infrastructure/prisma-catalog-operations.reader.ts":
     "les opérations en vente — `SnapshotCatalogOperationsReader` (M2)",
-  "b2b/catalog/infrastructure/prisma-catalog-price-per-kg.reader.ts":
+  "lafoliecoffee/catalog/infrastructure/prisma-catalog-price-per-kg.reader.ts":
     "lecture E — `SnapshotCatalogPricePerKgReader` (M2)",
-  "b2b/catalog/infrastructure/prisma-default-sale-reference.reader.ts":
+  "lafoliecoffee/catalog/infrastructure/prisma-default-sale-reference.reader.ts":
     "le défaut des tuiles de la vitrine — `SnapshotDefaultSaleReferenceReader` (M2)",
-  "b2b/catalog/infrastructure/prisma-order-line-classification.reader.ts":
+  "lafoliecoffee/catalog/infrastructure/prisma-order-line-classification.reader.ts":
     "lecture C — `SnapshotOrderLineClassificationReader`",
-  "b2b/order-cutoffs/infrastructure/prisma-stored-order-cutoff.reader.ts":
+  "lafoliecoffee/order-cutoffs/infrastructure/prisma-stored-order-cutoff.reader.ts":
     "l'heure limite générale — `SnapshotStoredOrderCutoffReader`",
 };
 
 /** Hors des chemins de l'instantané — chacun avec sa raison (relevé le 2026-11-06). */
 export const ADMITTED = {
-  "b2b/catalog/infrastructure/prisma-catalog-admin.reader.ts":
+  "lafoliecoffee/catalog/infrastructure/prisma-catalog-admin.reader.ts":
     "administration : le catalogue du personnel, retirés et en revue compris",
-  "b2b/catalog/infrastructure/prisma-made-to-order-admin.reader.ts":
+  "lafoliecoffee/catalog/infrastructure/prisma-made-to-order-admin.reader.ts":
     "administration : l'écran du sur mesure",
-  "b2b/catalog/infrastructure/prisma-published-catalog.reader.ts":
+  "lafoliecoffee/catalog/infrastructure/prisma-published-catalog.reader.ts":
     "administration : le catalogue publié (`admin-catalog.controller.ts`)",
-  "b2b/catalog/infrastructure/prisma-received-operations.reader.ts":
+  "lafoliecoffee/catalog/infrastructure/prisma-received-operations.reader.ts":
     "administration : l'éditeur de vitrine voit tout le miroir des opérations",
-  "b2b/catalog/infrastructure/prisma-withdrawn-shop-skus.reader.ts":
+  "lafoliecoffee/catalog/infrastructure/prisma-withdrawn-shop-skus.reader.ts":
     "administration : les décisions tarifaires nomment un article RETIRÉ, absent de l'instantané (§ 2.4)",
-  "b2b/catalog/infrastructure/prisma-detachment-origin.reader.ts":
+  "lafoliecoffee/catalog/infrastructure/prisma-detachment-origin.reader.ts":
     "administration : le report d'un prix négocié vérifie la filiation",
-  "b2b/catalog/infrastructure/prisma-sale-reference-lineage.reader.ts":
+  "lafoliecoffee/catalog/infrastructure/prisma-sale-reference-lineage.reader.ts":
     "passation et alertes : la filiation (F), relue pour ce qu'on écrit (§ 2.5)",
-  "b2b/catalog/infrastructure/prisma-sale-reference-succession.reader.ts":
+  "lafoliecoffee/catalog/infrastructure/prisma-sale-reference-succession.reader.ts":
     "rapports par article : la lignée de détachement",
-  "b2b/catalog/infrastructure/prisma-catalog-cold.reader.ts":
+  "lafoliecoffee/catalog/infrastructure/prisma-catalog-cold.reader.ts":
     "livraison : le froid des produits, relayé à la tournée",
-  "b2b/catalog/infrastructure/prisma-catalog-item.repository.ts":
+  "lafoliecoffee/catalog/infrastructure/prisma-catalog-item.repository.ts":
     "écriture : charge l'agrégat qu'elle enregistre",
-  "b2b/catalog/infrastructure/prisma-catalog-order-limits.ts":
+  "lafoliecoffee/catalog/infrastructure/prisma-catalog-order-limits.ts":
     "écriture : la descente des limites de commande",
-  "b2b/catalog/infrastructure/prisma-catalog-price-retracer.ts": "écriture : la trace des prix",
-  "b2b/operations/infrastructure/prisma-operation.repository.ts":
+  "lafoliecoffee/catalog/infrastructure/prisma-catalog-price-retracer.ts":
+    "écriture : la trace des prix",
+  "lafoliecoffee/operations/infrastructure/prisma-operation.repository.ts":
     "écriture : charge l'opération qu'elle enregistre",
-  "b2b/operations/infrastructure/prisma-operation.reader.ts":
+  "lafoliecoffee/operations/infrastructure/prisma-operation.reader.ts":
     "administration : les écrans des opérations",
-  "b2b/operations/infrastructure/prisma-operation-sku.catalogue.ts":
+  "lafoliecoffee/operations/infrastructure/prisma-operation-sku.catalogue.ts":
     "administration : les articles qu'une opération peut sélectionner",
-  "b2b/operations/infrastructure/prisma-operation-media-usage.ts":
+  "lafoliecoffee/operations/infrastructure/prisma-operation-media-usage.ts":
     "médiathèque : qui affiche cette image",
-  "b2b/order-cutoffs/infrastructure/prisma-general-order-cutoff.repository.ts":
+  "lafoliecoffee/order-cutoffs/infrastructure/prisma-general-order-cutoff.repository.ts":
     "écriture : charge la règle générale qu'elle enregistre",
-  "b2b/order-cutoffs/infrastructure/prisma-order-cutoff-settings.reader.ts":
+  "lafoliecoffee/order-cutoffs/infrastructure/prisma-order-cutoff-settings.reader.ts":
     "⚠️ lu SUR le chemin du devis (jour même), décidé au § 12 : son port rend aussi la garde en rayon, à resserrer avant de le servir depuis l'instantané",
   "dev/": "semis de démonstration, hors requête",
 };

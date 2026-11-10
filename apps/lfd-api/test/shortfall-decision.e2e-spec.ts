@@ -18,7 +18,7 @@ import type {
   StaffNote,
 } from "@lfd/contracts";
 
-import { OrderPlanRelease } from "../src/b2b/orders/domain/ports/order-plan-release.js";
+import { OrderPlanRelease } from "../src/lafoliecoffee/orders/domain/ports/order-plan-release.js";
 import { PackingListWithdrawal } from "../src/packing/domain/ports/packing-list-withdrawal.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { jsonBody, type E2eContext } from "./e2e-harness.js";

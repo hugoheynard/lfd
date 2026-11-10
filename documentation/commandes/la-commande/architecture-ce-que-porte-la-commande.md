@@ -18,9 +18,9 @@ ni le calcul d'un prix de ligne (voir [`../../pricing/README.md`](../../pricing/
 > détail.
 
 Sources lues : [`orders.prisma`](../../../apps/lfd-api/prisma/schema/public/orders.prisma),
-[`order.ts`](../../../apps/lfd-api/src/b2b/orders/domain/entities/order.ts),
-[`order-drafting.service.ts`](../../../apps/lfd-api/src/b2b/orders/application/services/order-drafting.service.ts),
-[`prisma-order.repository.ts`](../../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-order.repository.ts).
+[`order.ts`](../../../apps/lfd-api/src/lafoliecoffee/orders/domain/entities/order.ts),
+[`order-drafting.service.ts`](../../../apps/lfd-api/src/lafoliecoffee/orders/application/services/order-drafting.service.ts),
+[`prisma-order.repository.ts`](../../../apps/lfd-api/src/lafoliecoffee/orders/infrastructure/prisma-order.repository.ts).
 
 ---
 
@@ -84,7 +84,7 @@ sequenceDiagram
 Le colisage n'est plus une route du commerce : le poste de colisage
 (`packing/application/station/close-packing-order.handler.ts`) publie
 `packing.order_packed`, et `OnPackingOrderPacked`
-(`b2b/orders/application/handlers/on-packing-order-packed.handler.ts`, abonné
+(`lafoliecoffee/orders/application/handlers/on-packing-order-packed.handler.ts`, abonné
 durable `b2b.orders.mark-ready-from-packing`) écrit `ready` (vérifié le
 2026-10-12).
 
@@ -348,7 +348,7 @@ stateDiagram-v2
 | `loyaltyVoucherId`                 | le bon engagé (unique parmi les commandes non annulées, index partiel à la main de `20260927100000`)                                                                                                       | la passation                                       |
 | `deliveryVatMode`                  | le mode de TVA du port, figé : `standard` ou `follows_goods` ; `NULL` = avant le réglage = taux normal ([`architecture-tva-des-frais-de-port.md`](../bon-et-pieces/architecture-tva-des-frais-de-port.md)) | `OrderDrafting`, depuis le réglage global          |
 | relation `refunds` (`OrderRefund`) | les remboursements Stripe constatés sur la commande                                                                                                                                                        | `record-order-refund.handler` (retiré au lot P1.c) |
-| relation `cardInvoiceOutcome`      | l'issue de la facture carte, s'il y en a une                                                                                                                                                               | la comptabilité (`b2b/accounting`)                 |
+| relation `cardInvoiceOutcome`      | l'issue de la facture carte, s'il y en a une                                                                                                                                                               | la comptabilité (`lafoliecoffee/accounting`)       |
 
 ### 3.9 La note
 
@@ -360,7 +360,7 @@ coche au comptoir.
 Le courriel ne porte **pas** d'adresse figée sur la commande : il est écrit à
 `placedByUserId`, dont `OrderRecipientReader.findById` relit le prénom et
 l'adresse **dans l'annuaire au moment de l'envoi**
-(`b2b/orders/domain/ports/order-recipient.reader.ts`). Sept appelants :
+(`lafoliecoffee/orders/domain/ports/order-recipient.reader.ts`). Sept appelants :
 `order-placed-mail.service.ts`, `send-order-placed-mail.handler.ts`,
 `order-ready-mail.service.ts` (celui qui porte le QR),
 `delivery-en-route-mail.service.ts`, `send-payment-expired-mail.handler.ts`,

@@ -14,7 +14,7 @@ import { PERSONAL_WORKSPACE } from "@lfd/contracts";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createGuest, createUser } from "./factories.js";
 import { CustomerRole, UserStatus } from "../src/platform/database/client/client.js";
-import type { AccountView } from "../src/b2b/account/domain/ports/account.reader.js";
+import type { AccountView } from "../src/lafoliecoffee/account/domain/ports/account.reader.js";
 import { PrincipalResolver } from "../src/platform/auth/principal.resolver.js";
 
 const SUB = "auth0|lifecycle";

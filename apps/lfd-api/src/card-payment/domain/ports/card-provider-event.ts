@@ -51,7 +51,7 @@ export interface RefundMetadata {
 
 /**
  * La page hébergée d'un **lien de paiement** (`checkout.session.*`), relayée
- * à `b2b/payments` jusqu'à ce que son propre endpoint la reçoive (§4.5) :
+ * à `lafoliecoffee/payments` jusqu'à ce que son propre endpoint la reçoive (§4.5) :
  * `paid` (encaissée), `expired` (morte sans règlement).
  */
 export interface CheckoutEvent extends ProviderEventOrigin {

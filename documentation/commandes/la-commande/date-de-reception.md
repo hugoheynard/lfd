@@ -14,7 +14,7 @@ aurait disparu de toute facture, en silence.
 
 ## La règle
 
-`receivedOnOf` (`src/b2b/accounting/domain/services/monthly-invoicing.ts`) :
+`receivedOnOf` (`src/lafoliecoffee/accounting/domain/services/monthly-invoicing.ts`) :
 
 1. pas de remise : `null` ;
 2. remise **à la porte** : le jour de service du dernier arrêt parti, clos et
@@ -49,11 +49,11 @@ sequenceDiagram
 ```
 
 `MarkOrderFulfilledHandler`
-(`src/b2b/orders/application/commands/mark-order-fulfilled.handler.ts`) lit les
+(`src/lafoliecoffee/orders/application/commands/mark-order-fulfilled.handler.ts`) lit les
 deux canaux que le commerce implémente (`handover/channels/commerce/`,
 `delivery/channels/commerce/`), applique la règle, puis appelle
 `OrderRepository.markFulfilled(reference, at, by, via, receivedOn)`
-(`src/b2b/orders/infrastructure/prisma-order.repository.ts`). Cet appel écrit
+(`src/lafoliecoffee/orders/infrastructure/prisma-order.repository.ts`). Cet appel écrit
 `handed_over_at`, `handed_over_by`, `handed_over_via`, le statut `fulfilled` et
 `received_on` dans **un seul `updateMany`**, conditionné par
 `handed_over_at IS NULL` et un statut non annulé. C'est ce qui rend les CHECK
@@ -89,15 +89,15 @@ une heure de Paris et rendrait le jour de la session.
 
 ## Les lecteurs
 
-| Lecteur                                                                     | Usage                                                               |
-| --------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `src/b2b/accounting/infrastructure/billable-order-criterion.ts`             | l'assiette facture / relevé / lot : `received_on` dans `[from, to[` |
-| `src/b2b/accounting/infrastructure/cycle-order-membership.ts`               | appartenance d'un bon au cycle                                      |
-| `src/b2b/accounting/infrastructure/prisma-monthly-invoicing.reader.ts`      | le jour copié dans la ligne de facture                              |
-| `src/b2b/accounting/infrastructure/prisma-unconfirmed-deliveries.reader.ts` | « Bons à constater » : pas de date égale pas remis                  |
-| `src/b2b/accounting/infrastructure/prisma-procedure-orders.reader.ts`       | statut de l'onglet Factures                                         |
-| `src/b2b/accounting/application/card-invoice-support.ts`                    | facture carte : lit la colonne, sans recalcul                       |
-| `src/b2b/accounting/domain/services/facturx-xml.ts`, `facturx-mentions.ts`  | BT-72 `ActualDeliverySupplyChainEvent` et « reçue le … »            |
+| Lecteur                                                                               | Usage                                                               |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `src/lafoliecoffee/accounting/infrastructure/billable-order-criterion.ts`             | l'assiette facture / relevé / lot : `received_on` dans `[from, to[` |
+| `src/lafoliecoffee/accounting/infrastructure/cycle-order-membership.ts`               | appartenance d'un bon au cycle                                      |
+| `src/lafoliecoffee/accounting/infrastructure/prisma-monthly-invoicing.reader.ts`      | le jour copié dans la ligne de facture                              |
+| `src/lafoliecoffee/accounting/infrastructure/prisma-unconfirmed-deliveries.reader.ts` | « Bons à constater » : pas de date égale pas remis                  |
+| `src/lafoliecoffee/accounting/infrastructure/prisma-procedure-orders.reader.ts`       | statut de l'onglet Factures                                         |
+| `src/lafoliecoffee/accounting/application/card-invoice-support.ts`                    | facture carte : lit la colonne, sans recalcul                       |
+| `src/lafoliecoffee/accounting/domain/services/facturx-xml.ts`, `facturx-mentions.ts`  | BT-72 `ActualDeliverySupplyChainEvent` et « reçue le … »            |
 
 **La copie figée** : `invoice_order.received_on` est écrite à l'émission et ne
 bouge plus. Une ligne émise avant le lot ZL garde `NULL` et ses mentions sans

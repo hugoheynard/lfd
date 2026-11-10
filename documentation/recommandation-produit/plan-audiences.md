@@ -227,7 +227,7 @@ Dans cet ordre : **vacancier** = signal étranger ET écart ≤ 10 jours ;
 **saisonnier** = 3 semaines distinctes ou plus ET signal étranger ;
 **résident** = 3 semaines distinctes ou plus sans signal étranger ;
 **indéterminé** sinon. Constantes dans
-`apps/lfd-api/src/b2b/audiences/domain/stay-profiles.ts`.
+`apps/lfd-api/src/lafoliecoffee/audiences/domain/stay-profiles.ts`.
 
 **Le saisonnier est la case la plus fragile, et c'est dit à l'écran** : sur
 90 jours au plus, un saisonnier et un résident se ressemblent, et seul le

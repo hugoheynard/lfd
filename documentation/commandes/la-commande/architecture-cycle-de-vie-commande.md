@@ -85,7 +85,7 @@ sequenceDiagram
     participant PR as production/
     participant PK as packing/
     participant HO as handover/
-    participant CO as b2b/orders
+    participant CO as lafoliecoffee/orders
     participant J as Journal + courriels
 
     E->>PR: POST /admin/production/batch/:date/close

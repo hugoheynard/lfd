@@ -48,7 +48,7 @@
 >   invité, commande saisie par l'équipe ; au compte, total nul ou carte payée.
 >   Un compte arrive sur SA commande dans Mes commandes (connexion demandée) ;
 >   l'invité sur la page /annuler. Éprouvé par
->   `apps/lfd-api/src/b2b/orders/application/handlers/__tests__/order-placed-mail-manage-link.spec.ts`.
+>   `apps/lfd-api/src/lafoliecoffee/orders/application/handlers/__tests__/order-placed-mail-manage-link.spec.ts`.
 >
 > ⚠️ **Décidé par Hugo le 2026-10-13, PAS ENCORE BÂTI** :
 >
@@ -95,7 +95,7 @@ flowchart TD
 
 ## C6.2 Qui peut annuler — le mur
 
-`CancellationWall` (`b2b/orders/cancellation/application/services/cancellation-wall.ts`) :
+`CancellationWall` (`lafoliecoffee/orders/cancellation/application/services/cancellation-wall.ts`) :
 
 - **commande personnelle** : son auteur (`placedByUserId`), et lui seul ;
 - **commande de société** (saisie par l'équipe comprise) : un rattachement
@@ -166,7 +166,7 @@ Le booléen existe pour une seule raison : distinguer « passée **sans délai**
 (figée, heures NULL) de « passée **avant les colonnes** » (non figée), que
 l'instant seul confondait. Les trois sont écrits par la passation et par la
 révision (`PrismaOrderRepository`, `PrismaOrderRevisionRepository`), lus par
-`apps/lfd-api/src/b2b/orders/cancellation/infrastructure/customer-cancellation.columns.ts` et nulle part ailleurs.
+`apps/lfd-api/src/lafoliecoffee/orders/cancellation/infrastructure/customer-cancellation.columns.ts` et nulle part ailleurs.
 
 ### Les quatre cas
 
@@ -274,7 +274,7 @@ clé))`, la clé **dérivée** de `FIELD_ENCRYPTION_KEY` par HKDF sous
 
 ## C6.5 Le réglage — « Réglages › Commandes »
 
-Un CRUD honnête dans `b2b/order-opening/` (aucune règle ne refuse son
+Un CRUD honnête dans `lafoliecoffee/order-opening/` (aucune règle ne refuse son
 écriture), table `public.customer_cancellation_settings`, une ligne `orders` :
 `open_to_b2c` — dans le code `delayEnabled` : **un délai est imposé aux
 particuliers** (défaut **actif** ; la colonne garde son nom d'origine, une

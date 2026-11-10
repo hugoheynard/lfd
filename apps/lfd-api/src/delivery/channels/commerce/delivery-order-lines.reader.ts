@@ -14,7 +14,7 @@ export interface DeliveryOrderLine {
 /**
  * **Les lignes d'une commande, vues par le colisage** (lot 4 bis, L4b-C4) —
  * ce que la livraison DÉCLARE et que le commerce implémente
- * (`b2b/orders/infrastructure/`), relié dans `appBootstrap`.
+ * (`lafoliecoffee/orders/infrastructure/`), relié dans `appBootstrap`.
  *
  * Un port à lui plutôt qu'une méthode de plus sur `DeliveryOrdersReader` : le
  * colisage est son seul lecteur, et la composition n'a que faire des lignes

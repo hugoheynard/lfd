@@ -1,4 +1,4 @@
-import { UpdateMyProfileCommand } from "../../b2b/account/application/commands/update-my-profile.command.js";
+import { UpdateMyProfileCommand } from "../../lafoliecoffee/account/application/commands/update-my-profile.command.js";
 import { runWithRequestContext } from "../../platform/context/request-context.store.js";
 import { newTraceId } from "../../platform/context/trace-context.js";
 import { CustomerRole, UserStatus } from "../../platform/database/client/client.js";

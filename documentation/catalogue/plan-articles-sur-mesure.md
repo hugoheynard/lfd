@@ -14,7 +14,7 @@ le 2026-10-30 :
 
 - **Le PIM ne change pas.** La fiche est une fiche normale, en audience `pro`.
   Le PIM ne connaît pas les sociétés (pim → b2b interdit, CLAUDE.md §3).
-- **Côté commerce** (`src/b2b/catalog`), un article peut être marqué
+- **Côté commerce** (`src/lafoliecoffee/catalog`), un article peut être marqué
   **« sur mesure »** et **réservé** à une liste de sociétés. Sans réservation,
   il reste ouvert à tous les pros, comme aujourd'hui.
 - **Visibilité réglée article par article au back-office** (Hugo : « visibilité
@@ -35,13 +35,13 @@ le 2026-10-30 :
 ### Le mur d'aujourd'hui ne lit que l'audience
 
 - `servedTo(item, viewer)` est la règle unique du masquage : audience,
-  masquages, attentes de validation (`src/b2b/catalog/domain/served-to.ts:46-54`).
+  masquages, attentes de validation (`src/lafoliecoffee/catalog/domain/served-to.ts:46-54`).
   Son JSDoc dit « quatre lectures directes » mais en énumère **cinq** — le
   rayon, la fiche et le lot de SKU (donc la commande), l'éditeur de vitrine, le
   résumé « en vente », l'export (`served-to.ts:41-44`, ouvert le 2026-10-30).
   Le L1 corrige le compte en y ajoutant la réservation.
 - `PrismaCatalogReader` l'applique dans `findSku`
-  (`src/b2b/catalog/infrastructure/prisma-catalog.reader.ts:122-132`),
+  (`src/lafoliecoffee/catalog/infrastructure/prisma-catalog.reader.ts:122-132`),
   `findByShopSku` (:135-148), `listByShopSkus` (:150-171) et `listSellable`
   (:173-211), via `servedToViewer` (:249-260).
 - **Aucune de ces méthodes ne reçoit de société** : leur seul paramètre est
@@ -66,25 +66,25 @@ le 2026-10-30 :
 ### Les deux rayons pro
 
 - **Rayon pro anonyme** (landing `/pro`) : servi « sans société », par
-  construction (`src/b2b/catalog/application/queries/read-shop-catalogue.ts:45-53`).
+  construction (`src/lafoliecoffee/catalog/application/queries/read-shop-catalogue.ts:45-53`).
 - **La mise en avant n'a pas de société** : `GET /shop/featured` est
   `@Public()` et reçoit l'audience en paramètre de requête
-  (`src/b2b/catalog/http/shop-featured.controller.ts:40-52`). La version 1 de
+  (`src/lafoliecoffee/catalog/http/shop-featured.controller.ts:40-52`). La version 1 de
   ce plan la rangeait parmi les chemins « avec société » : faux.
-- **Rayon reconnu** : `src/b2b/orders/http/my-shop-catalogue.controller.ts:36-38`,
+- **Rayon reconnu** : `src/lafoliecoffee/orders/http/my-shop-catalogue.controller.ts:36-38`,
   avec `@ActingCompany()`.
 - Les deux passent par `ShopCataloguePricing.priced(companyId)`
-  (`src/b2b/catalog/application/shop-catalogue-pricing.service.ts:108-113`),
+  (`src/lafoliecoffee/catalog/application/shop-catalogue-pricing.service.ts:108-113`),
   puis `listSellable(audience)` (:148).
 
 ### Le chemin qui facture
 
-- Devis : `src/b2b/orders/http/my-shop-quote.controller.ts:49-55`, avec
+- Devis : `src/lafoliecoffee/orders/http/my-shop-quote.controller.ts:49-55`, avec
   `@ActingCompany()`.
 - Devis et commande résolvent le catalogue en un lot par
   `ProductCatalogReader.resolveMany(skus, audience)`. L'audience est déduite de
   `parties.companyId === null`
-  (`src/b2b/orders/application/services/order-line-pricing.service.ts:124-125`
+  (`src/lafoliecoffee/orders/application/services/order-line-pricing.service.ts:124-125`
   minimums d'une révision, :152-156 devis, :215-216 `priceAll`).
 - Un SKU absent est refusé avant toute lecture de prix (`foundOrRefused`,
   :217-228).
@@ -103,7 +103,7 @@ L'inventaire complet, appelant par appelant, est au § 6 (grep refait le
 
 ### Les abonnements (ouvert le 2026-10-30)
 
-- La création (`src/b2b/subscriptions/application/commands/create-subscription.handler.ts:60-94`)
+- La création (`src/lafoliecoffee/subscriptions/application/commands/create-subscription.handler.ts:60-94`)
   ne résout **pas** le catalogue : elle demande seulement les SKU vendus par
   opération (`sale.operationOnlyAmong`, :64) et au poids
   (`saleUnits.weightSoldAmong`, :69), puis construit l'agrégat. Aucun mur
@@ -114,14 +114,14 @@ L'inventaire complet, appelant par appelant, est au § 6 (grep refait le
 - **La génération des occurrences en commandes n'existe pas dans le code** :
   `fromSubscriptionId` n'est écrit que par le semis
   (`prisma/seed-growth/phase-revenue.ts:93`) ; aucun service de
-  `src/b2b/subscriptions/` ni de `src/b2b/orders/` n'appelle `priceAll` pour
+  `src/lafoliecoffee/subscriptions/` ni de `src/lafoliecoffee/orders/` n'appelle `priceAll` pour
   un abonnement (grep du 2026-10-30).
 
 ### Sites et principal
 
 - `readCompanyStanding` donne le **rôle d'une personne** dans une société ;
   l'héritage passe par `parentCompany`
-  (`src/b2b/shared/company-standing/infrastructure/read-company-standing.ts:62-88`),
+  (`src/lafoliecoffee/shared/company-standing/infrastructure/read-company-standing.ts:62-88`),
   exposé en `via` (`domain/company-standing.ts:36-37`).
 - ⚠️ `via` n'est rempli que si la personne hérite son rôle du principal
   (`read-company-standing.ts:112-125`) : un membre **propre** d'un site a
@@ -232,7 +232,7 @@ mercuriale : `companyId` opaque, sans clé étrangère (`pricing.prisma:289-298`
 Aucun invariant entre lignes : existence du SKU et unicité du couple. Des
 commandes CQRS (`ReserveArticleCommand`, `ReleaseArticleCommand`,
 `SetMadeToOrderCommand`, `SetReservedVisibilityCommand`) sur le modèle de
-`SetMaskingCommand` (`src/b2b/catalog/application/commands/set-masking.command.ts:8-15`).
+`SetMaskingCommand` (`src/lafoliecoffee/catalog/application/commands/set-masking.command.ts:8-15`).
 Chaque geste est journalisé et vide le cache des matériaux de prix s'il en
 dépend.
 
@@ -293,13 +293,13 @@ lecture de plus par requête pro reconnue — sauf à la fondre dans la résolut
 d'accès, qui vit dans `platform/` et ne doit rien savoir du commerce.
 
 - Requête partagée **`readReservationHolders(prisma, companyId)`**, dans
-  `src/b2b/shared/company-standing/infrastructure/` à côté de
+  `src/lafoliecoffee/shared/company-standing/infrastructure/` à côté de
   `readCompanyStanding`, pour que `lint:company-role-readers` tienne la
   relation site → principal en un seul endroit. Elle rend `activePrincipalId`
   **seulement si le principal est `active`**, comme `inheritedSiteWhere`
   (`read-company-standing.ts:36-40`). Le L1 vérifie que la porte l'admet et
   que `lint:prisma-model-ownership` accepte la lecture de `Company` depuis
-  `b2b/shared`.
+  `lafoliecoffee/shared`.
 - **Budget** (`test/pricing-budget.e2e-spec.ts`) : `COLD_QUOTE_OPS = 7`
   (:172) mesure `POST /shop/quote` **sans jeton** (:213-217), donc sans
   société. Il **ne bouge pas** : le lecteur public n'a pas de principal à lire,
@@ -335,7 +335,7 @@ articles non réservés.
 Règle : **`staff` seulement derrière une route protégée par une permission
 staff, ou pour un usage interne qui ne rend rien à un client** (fournil,
 production, livraison). Tout ce qui rend un article à un client passe la
-société. Grep refait le 2026-10-30 ; chemins relatifs à `apps/lfd-api/src/b2b/`.
+société. Grep refait le 2026-10-30 ; chemins relatifs à `apps/lfd-api/src/lafoliecoffee/`.
 
 ### Ce qui sert un client
 
@@ -514,7 +514,7 @@ naturellement ».
   dans `CatalogReader` et `ProductCatalogReader` (`findSku` retiré du port) ;
   `servedToViewer` pur (`catalog/domain/served-to-viewer.ts`) ; S3 dans
   `servedTo` et `servedToAnyone` ; `readReservationHolders` dans
-  `b2b/shared/company-standing` (la fiche « Articles réservés » lit le
+  `lafoliecoffee/shared/company-standing` (la fiche « Articles réservés » lit le
   principal par `readSitePrincipal`, même fichier) ; `CatalogViewers`, seule
   fabrique d'un lecteur pro reconnu ; `ReservedArticleRefusedError` (409,
   code `catalog.reserved_article`) ; lignes gardées par `keptLinesViewer` ;
@@ -576,7 +576,7 @@ part sur `main` entre les deux sans que Hugo le sache.~~ Levé au L1b
 | B2  | Abonnements non inventoriés.                                                                                                                                     | Ouverts (§ 2, § 6) : la création ne lit pas le catalogue, la génération n'existe pas. Mur à la création et à la dérogation ; règle posée pour la génération future, Q7 pour Hugo. |
 | B3  | Révision : les lignes gardées seraient re-refusées.                                                                                                              | Elles ne passent pas `priceAll` ; seul `minimumsOf` les relit, avec `waiveReservation` (§ 5). Q4 tranchée.                                                                        |
 | S   | Budget « zéro requête » non tenu.                                                                                                                                | `include` + `_count` = une opération ; `COLD_QUOTE_OPS` (anonyme) ne bouge pas ; +1 constante sur les chemins reconnus (le parent), épinglée et datée au L4.                      |
-| S   | Principal non actif.                                                                                                                                             | `readReservationHolders` dans `b2b/shared/company-standing`, principal `active` seulement.                                                                                        |
+| S   | Principal non actif.                                                                                                                                             | `readReservationHolders` dans `lafoliecoffee/shared/company-standing`, principal `active` seulement.                                                                              |
 | S   | `findSku` ?                                                                                                                                                      | Aucun appelant de production : retiré du port.                                                                                                                                    |
 | S   | `visible_locked` fuit vers d'autres lecteurs.                                                                                                                    | S7 : seuls rayon reconnu et habituels ; les autres reçoivent `absent` du port.                                                                                                    |
 | S   | S3 ne couvre pas tous les chemins publics.                                                                                                                       | Tenu dans `servedTo`, `servedToAnyone` (réécrite) et `listSellable("public")` des coffrets (§ 3).                                                                                 |
@@ -630,7 +630,7 @@ ne jugeait que la réservation et laissait passer audience et SKU inconnu.
 Aujourd'hui, le marqueur vit côté commerce (`catalog_item_overrides.is_made_to_order`,
 `prisma/schema/public/catalog.prisma:647`), réglé par le bouton « Sur mesure… »
 de Catalogue publié, et **il ne restreint rien chez les pros** (S4 ;
-`servedTo`, `src/b2b/catalog/domain/served-to.ts:61-63` : la branche pro ne lit
+`servedTo`, `src/lafoliecoffee/catalog/domain/served-to.ts:61-63` : la branche pro ne lit
 ni `isMadeToOrder` ni `isReserved`). Une fiche pro arrive en attente de
 validation (`awaitsReview`, posé à la création seulement,
 `prisma-catalog-product-facts.projection.ts:118-131`) ; la fenêtre d'erreur est
@@ -644,8 +644,8 @@ expose à tous les pros une recette faite pour un client.
   traverse le fil vers le commerce comme `operationOnly` le fait déjà —
   précédent exact : `pim/catalogue/product/application/set-product-operation-only.ts`
   → `pim/channels/b2b-platform/products/catalog-facts.ts:67,231`
-  → `b2b/catalog/application/handlers/catalog-fact-mapping.ts:65`
-  → `b2b/catalog/infrastructure/catalog-item-columns.ts:99`
+  → `lafoliecoffee/catalog/application/handlers/catalog-fact-mapping.ts:65`
+  → `lafoliecoffee/catalog/infrastructure/catalog-item-columns.ts:99`
   → `catalog_items.operation_only` (`catalog.prisma:371`). Le référentiel ne
   connaît aucune société (CLAUDE.md §3, pim → b2b interdit) : rien ne change là.
 - **D2. L'attribution reste au commerce.** Réserver à des comptes et régler la

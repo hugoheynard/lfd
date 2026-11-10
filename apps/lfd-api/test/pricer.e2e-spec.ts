@@ -30,16 +30,19 @@
  */
 import { millicentsFromCents } from "@lfd/money";
 
-import { EmptyLotError, type PricedLot } from "../src/b2b/pricing/application/priced-lot.js";
-import { Pricer } from "../src/b2b/pricing/application/pricer.js";
-import { DuplicateArticleError } from "../src/b2b/pricing/domain/pricing-errors.js";
-import { ProductCatalogReader } from "../src/b2b/catalog/domain/ports/product-catalog.reader.js";
+import {
+  EmptyLotError,
+  type PricedLot,
+} from "../src/lafoliecoffee/pricing/application/priced-lot.js";
+import { Pricer } from "../src/lafoliecoffee/pricing/application/pricer.js";
+import { DuplicateArticleError } from "../src/lafoliecoffee/pricing/domain/pricing-errors.js";
+import { ProductCatalogReader } from "../src/lafoliecoffee/catalog/domain/ports/product-catalog.reader.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { SchemaOpsCounter } from "../src/platform/database/schema-ops.counter.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { posePromotion, promotionTerms } from "./promotion-fixtures.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
-import { PUBLIC_VIEWER, staffViewer } from "../src/b2b/catalog/domain/catalog-viewer.js";
+import { PUBLIC_VIEWER, staffViewer } from "../src/lafoliecoffee/catalog/domain/catalog-viewer.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>

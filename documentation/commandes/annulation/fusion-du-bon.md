@@ -52,7 +52,7 @@ flowchart TD
 ### C3b.3 La règle, et ses six issues
 
 `voucherRestitutionOf(parent, remainder, now)`
-(`b2b/loyalty/domain/services/voucher-restitution.ts`), pure, lue par
+(`lafoliecoffee/loyalty/domain/services/voucher-restitution.ts`), pure, lue par
 l'aperçu (sans verrou) et par le geste (sous le verrou du titulaire) :
 
 | #   | État lu                                       | Issue      | Effet                                                                  |

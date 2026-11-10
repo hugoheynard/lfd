@@ -7,16 +7,16 @@ import request from "supertest";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
-import { ProductCatalogReader } from "../src/b2b/catalog/domain/ports/product-catalog.reader.js";
-import { OrderOperations } from "../src/b2b/orders/application/services/order-operations.service.js";
-import { OperationDayRequiredError } from "../src/b2b/orders/domain/errors/order-operation-errors.js";
+import { ProductCatalogReader } from "../src/lafoliecoffee/catalog/domain/ports/product-catalog.reader.js";
+import { OrderOperations } from "../src/lafoliecoffee/orders/application/services/order-operations.service.js";
+import { OperationDayRequiredError } from "../src/lafoliecoffee/orders/domain/errors/order-operation-errors.js";
 import { WorkshopShelvesReader } from "../src/production/channels/commerce/workshop-shelves.reader.js";
 import { deliverAsFacts } from "./catalog-facts-delivery.js";
 import { snapshotOf } from "./catalog-ingest-fixtures.js";
 import { prepareAtCommerce } from "./operations-at-commerce-seed.js";
 import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
-import { staffViewer } from "../src/b2b/catalog/domain/catalog-viewer.js";
+import { staffViewer } from "../src/lafoliecoffee/catalog/domain/catalog-viewer.js";
 import { cardGatewayDouble } from "./order-factory.js";
 
 /**

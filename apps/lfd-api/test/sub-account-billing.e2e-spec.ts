@@ -30,7 +30,7 @@ import {
   type DetachedUnpaidOrdersView,
 } from "@lfd/contracts";
 
-import { cycleToConstitute } from "../src/b2b/accounting/domain/services/billing-cycle.js";
+import { cycleToConstitute } from "../src/lafoliecoffee/accounting/domain/services/billing-cycle.js";
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";

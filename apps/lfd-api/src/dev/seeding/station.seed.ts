@@ -7,9 +7,9 @@ import {
 } from "@lfd/contracts";
 import type { CommandBus } from "@nestjs/cqrs";
 
-import { DefineGeneralOrderCutoffCommand } from "../../b2b/order-cutoffs/application/define-general-order-cutoff.command.js";
-import { CreatePickupAddressCommand } from "../../b2b/pickup-addresses/application/create-pickup-address.command.js";
-import { CreateDeliveryZoneCommand } from "../../b2b/delivery-zones/application/create-delivery-zone.command.js";
+import { DefineGeneralOrderCutoffCommand } from "../../lafoliecoffee/order-cutoffs/application/define-general-order-cutoff.command.js";
+import { CreatePickupAddressCommand } from "../../lafoliecoffee/pickup-addresses/application/create-pickup-address.command.js";
+import { CreateDeliveryZoneCommand } from "../../lafoliecoffee/delivery-zones/application/create-delivery-zone.command.js";
 import type { PrismaClient } from "../../platform/database/client/client.js";
 import { posePointDiscount } from "./station-promotions.seed.js";
 

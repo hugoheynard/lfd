@@ -9,8 +9,8 @@ import { CatalogProductChangedFact } from "../src/pim/channels/b2b-platform/prod
 import { CatalogRulesChangedFact } from "../src/pim/channels/b2b-platform/products/catalog-rules-changed.fact.js";
 import { CommandBus } from "@nestjs/cqrs";
 
-import { ApproveReviewCommand } from "../src/b2b/catalog/application/commands/approve-review.command.js";
-import { CatalogItemRepository } from "../src/b2b/catalog/domain/ports/catalog-item.repository.js";
+import { ApproveReviewCommand } from "../src/lafoliecoffee/catalog/application/commands/approve-review.command.js";
+import { CatalogItemRepository } from "../src/lafoliecoffee/catalog/domain/ports/catalog-item.repository.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { DurablePublisher } from "../src/platform/outbox/durable-publisher.js";
 import type { DurableFact } from "../src/platform/outbox/durable-event.js";

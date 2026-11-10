@@ -40,7 +40,7 @@ tout de suite — sauf sur le bon de commande, figé à la passation.
 
 ```mermaid
 flowchart LR
-  subgraph b2b["b2b/sites"]
+  subgraph b2b["lafoliecoffee/sites"]
     Palette["GET admin/sites/palette<br/>GetSitePaletteQuery"]
     Dep["DepartureDeliveryColors"]
     Sheet["OrderSheetColorSource<br/>(bon de commande)"]

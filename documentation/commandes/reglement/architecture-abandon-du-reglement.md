@@ -41,7 +41,7 @@ flowchart LR
   subgraph front["boutique"]
     P["/reglement/:id<br/>« Abandonner ma commande »"]
   end
-  subgraph orders["b2b/orders"]
+  subgraph orders["lafoliecoffee/orders"]
     A["AbandonOrderHandler<br/>POST /orders/:id/abandon"]
     W["ConfirmOrderPaymentHandler<br/>webhook Stripe"]
     S["PendingSettlementSweep"]
@@ -62,14 +62,14 @@ flowchart LR
 
 ## 2. La règle de production — un règlement en attente ne produit pas
 
-[`production-plan.ts:96-124`](../../../apps/lfd-api/src/b2b/orders/domain/services/production-plan.ts) :
+[`production-plan.ts:96-124`](../../../apps/lfd-api/src/lafoliecoffee/orders/domain/services/production-plan.ts) :
 `settlementAllowsProduction` refuse `PAYMENTS_REFUSED` (`failed`, `refunded`)
 **et** `PAYMENTS_AWAITING` (`pending`). La clientèle n'entre plus dans la
 règle : jusqu'au 2026-09-22, le `pending` d'un pro ou d'une clientèle `NULL`
 restait produit (D2).
 
 La traduction Prisma est
-[`plan-filter.ts:64-68`](../../../apps/lfd-api/src/b2b/orders/infrastructure/plan-filter.ts) :
+[`plan-filter.ts:64-68`](../../../apps/lfd-api/src/lafoliecoffee/orders/infrastructure/plan-filter.ts) :
 `paymentStatus notIn [failed, refunded, pending]`, sans plus aucun `OR` sur la
 clientèle. `planWhere()` y ajoute `status: placed`. Les lecteurs qui l'épandent
 n'ont pas changé.
@@ -87,7 +87,7 @@ sans elle, une carte simplement abandonnée n'émet rien chez Stripe.
 
 Deux colonnes, `status` (fabrication) et `paymentStatus` (argent). Toutes les
 écritures ci-dessous sont des `updateMany` conditionnés en base
-([`prisma-order.repository.ts`](../../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-order.repository.ts)) :
+([`prisma-order.repository.ts`](../../../apps/lfd-api/src/lafoliecoffee/orders/infrastructure/prisma-order.repository.ts)) :
 une bascule qui ne trouve pas sa ligne ne publie rien, et un second passage est
 sans effet.
 
@@ -126,10 +126,10 @@ stateDiagram-v2
 - **Une commande annulée ne se rouvre jamais** : `settle` exclut
   `status = cancelled`. Quand un `succeeded` ne franchit rien et que l'intention
   appartient à une commande annulée,
-  [`ConfirmOrderPaymentHandler`](../../../apps/lfd-api/src/b2b/orders/application/services/order-subject-settlement.ts)
+  [`ConfirmOrderPaymentHandler`](../../../apps/lfd-api/src/lafoliecoffee/orders/application/services/order-subject-settlement.ts)
   publie `OrderPaidAfterCancellationEvent`. Depuis le lot C4 du
   [l'annulation par le staff](../annulation/annulation-par-le-staff.md) (2026-10-12, C4.11),
-  [`RefundPaidAfterCancellation`](../../../apps/lfd-api/src/b2b/orders/cancellation/application/handlers/refund-paid-after-cancellation.handler.ts)
+  [`RefundPaidAfterCancellation`](../../../apps/lfd-api/src/lafoliecoffee/orders/cancellation/application/handlers/refund-paid-after-cancellation.handler.ts)
   ouvre une demande de remboursement, que l'exécuteur porte chez Stripe, pour
   toutes les clientèles ; la cloche « à rembourser » (`RingRefundDue`) est
   retirée, une cloche ne sonne plus que sur incident.
@@ -143,14 +143,14 @@ stateDiagram-v2
 ### La route et le mur
 
 `POST /orders/:id/abandon`, `204` y compris au second clic
-([`orders.controller.ts:231`](../../../apps/lfd-api/src/b2b/orders/http/orders.controller.ts)).
-[`AbandonOrderHandler`](../../../apps/lfd-api/src/b2b/orders/application/commands/abandon-order.handler.ts)
+([`orders.controller.ts:231`](../../../apps/lfd-api/src/lafoliecoffee/orders/http/orders.controller.ts)).
+[`AbandonOrderHandler`](../../../apps/lfd-api/src/lafoliecoffee/orders/application/commands/abandon-order.handler.ts)
 pose deux murs, dans cet ordre :
 
 1. le mur de lecture (`ensureOrderVisible`) : `404` à qui ne voit pas la
    commande ;
 2. **le mur de l'auteur** (`ensureOrderAuthor`,
-   [`order-abandon.ts:44`](../../../apps/lfd-api/src/b2b/orders/domain/services/order-abandon.ts)) :
+   [`order-abandon.ts:44`](../../../apps/lfd-api/src/lafoliecoffee/orders/domain/services/order-abandon.ts)) :
    seul `placedByUserId` abandonne (Q2). Un collègue qui voit la commande reçoit
    `403 orders.abandon.not_author`. Pour une commande saisie par l'équipe,
    l'auteur est le client pour qui elle a été saisie.
@@ -202,7 +202,7 @@ Sur une écriture qui a franchi, et sur elle seule :
 - `OrderPaymentFailedEvent(orderId, "abandoned")` : la cloche d'un pro (§7) ;
   aucun mail, le client vient de cliquer ;
 - `OrderAbandonedEvent`, que
-  [`OnOrderAbandoned`](../../../apps/lfd-api/src/b2b/growth/application/handlers/on-order-abandoned.handler.ts)
+  [`OnOrderAbandoned`](../../../apps/lfd-api/src/lafoliecoffee/growth/application/handlers/on-order-abandoned.handler.ts)
   inscrit au journal en `order.abandoned`, sujet l'auteur, avec
   `outcome: cancelled | failed`.
 
@@ -215,11 +215,11 @@ balayage préalable, une journée où personne n'a payé ne se fermait jamais, e
 ses règlements en vol ne mouraient jamais. `production → b2b` étant interdit,
 le fournil **déclare** un port synchrone et le commerce l'implémente :
 
-| Pièce                                                                                                                             | Bloc                                     |
-| --------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| [`PendingSettlementSweeper`](../../../apps/lfd-api/src/production/channels/commerce/pending-settlement.sweeper.ts) (`sweep(day)`) | `production`, déclaré                    |
-| [`PendingSettlementSweep`](../../../apps/lfd-api/src/b2b/orders/application/services/pending-settlement-sweep.service.ts)         | `b2b/orders`, implémenté                 |
-| `{ provide: PendingSettlementSweeper, useExisting: PendingSettlementSweep }`                                                      | `appBootstrap/production-feed.module.ts` |
+| Pièce                                                                                                                               | Bloc                                     |
+| ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| [`PendingSettlementSweeper`](../../../apps/lfd-api/src/production/channels/commerce/pending-settlement.sweeper.ts) (`sweep(day)`)   | `production`, déclaré                    |
+| [`PendingSettlementSweep`](../../../apps/lfd-api/src/lafoliecoffee/orders/application/services/pending-settlement-sweep.service.ts) | `lafoliecoffee/orders`, implémenté       |
+| `{ provide: PendingSettlementSweeper, useExisting: PendingSettlementSweep }`                                                        | `appBootstrap/production-feed.module.ts` |
 
 [`CloseProductionDayHandler`](../../../apps/lfd-api/src/production/application/commands/close-production-day.handler.ts)
 appelle `sweep(day)` en **première** ligne (l. 94) : avant de charger la
@@ -228,13 +228,13 @@ comptage `producibleFor` vient après.
 
 ### La fenêtre du jour (Q5)
 
-[`PrismaUnsettledSettlementReader`](../../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-unsettled-settlement.reader.ts)
+[`PrismaUnsettledSettlementReader`](../../../apps/lfd-api/src/lafoliecoffee/orders/infrastructure/prisma-unsettled-settlement.reader.ts)
 prend les commandes `placed`, règlement `pending` **ou** `failed`, qui :
 
 - ont `requestedDeliveryDate` = le jour clos ;
 - **ou** n'ont pas de jour de retrait, et ont été passées ce jour-là, de minuit
   à minuit **à l'heure de Paris**
-  ([`settlement-sweep.ts`](../../../apps/lfd-api/src/b2b/orders/domain/services/settlement-sweep.ts),
+  ([`settlement-sweep.ts`](../../../apps/lfd-api/src/lafoliecoffee/orders/domain/services/settlement-sweep.ts),
   `localToInstant` ; 23 ou 25 heures les jours de bascule).
 
 Aucun mur `company_id` : c'est une passe d'exploitation sur toute la journée.
@@ -269,7 +269,7 @@ s'il n'y a rien d'autre.
 
 ### Ce que le serveur sert
 
-[`GetOrderPaymentHandler`](../../../apps/lfd-api/src/b2b/orders/application/queries/get-order-payment.handler.ts),
+[`GetOrderPaymentHandler`](../../../apps/lfd-api/src/lafoliecoffee/orders/application/queries/get-order-payment.handler.ts),
 `GET /orders/:id/payment`, même mur que la lecture de la commande :
 
 | Cas                                                       | Réponse                                        |
@@ -323,7 +323,7 @@ rien de la commande (corrigé le 2026-09-26, avant tout déploiement).
 ## 7. Les causes et leurs effets
 
 `OrderPaymentFailedEvent` porte `cause: "refused" | "abandoned" | "day_closed"`
-([`order-payment-failed.event.ts`](../../../apps/lfd-api/src/b2b/orders/domain/events/order-payment-failed.event.ts)).
+([`order-payment-failed.event.ts`](../../../apps/lfd-api/src/lafoliecoffee/orders/domain/events/order-payment-failed.event.ts)).
 Les abonnés s'accrochent à l'événement, pas aux appelants : tout ce qui écrit un
 règlement mort les déclenche.
 
@@ -334,7 +334,7 @@ règlement mort les déclenche.
 | `day_closed` | `PendingSettlementSweep`        | `customer.payment-expired` (`send-payment-expired-mail`), sans bouton | « n'a pas abouti avant la clôture… annulée, à ressaisir »         | —                              |
 
 La cloche
-([`ring-failed-pro-settlement.handler.ts`](../../../apps/lfd-api/src/b2b/orders/application/handlers/ring-failed-pro-settlement.handler.ts))
+([`ring-failed-pro-settlement.handler.ts`](../../../apps/lfd-api/src/lafoliecoffee/orders/application/handlers/ring-failed-pro-settlement.handler.ts))
 sonne `order.payment_failed`, « Règlement tombé — {société} », lien vers la
 commande, sans destinataire nommé : « le commercial » est un rôle, et la cloche
 est visible de tout le back-office. Clé d'idempotence par commande **et** par

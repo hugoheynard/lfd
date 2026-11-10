@@ -353,7 +353,7 @@ function taxOf(base: Exact, rate: number): number {
  * lignes TTC ne peut donc pas les additionner pour retrouver le total ; c'est le
  * serveur qui dit le total, et lui seul.
  *
- * Arrivée de `b2b/catalog/application/shop-catalogue-view.ts` le 2026-09-21, quand
+ * Arrivée de `lafoliecoffee/catalog/application/shop-catalogue-view.ts` le 2026-09-21, quand
  * le devis de la boutique en a eu besoin pour dire ses lignes en TTC : deux
  * définitions de « combien ça coûte taxe comprise » auraient divergé d'un centime
  * entre le rayon et le panier, ce qui est exactement l'écart qu'on répare.

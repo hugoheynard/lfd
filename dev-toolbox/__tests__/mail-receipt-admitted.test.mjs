@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 
 import { ADMITTED, callsIn, misnamedInjections, verdict } from "../gates/mail-receipt-admitted.mjs";
 
-const PATH = "apps/lfd-api/src/b2b/x/sender.ts";
+const PATH = "apps/lfd-api/src/lafoliecoffee/x/sender.ts";
 const CALLER = [
   "export class X {",
   "  async go() {",
@@ -21,7 +21,7 @@ test("admet : un appel depuis un fichier admis", () => {
 test("refuse : un appel hors liste, en disant quoi faire", () => {
   const { failures } = verdict([{ path: PATH, source: CALLER }], {});
   assert.equal(failures.length, 1);
-  assert.match(failures[0], /apps\/lfd-api\/src\/b2b\/x\/sender\.ts:3 /);
+  assert.match(failures[0], /apps\/lfd-api\/src\/lafoliecoffee\/x\/sender\.ts:3 /);
   assert.match(failures[0], /mail\.sendAndAwaitReceipt hors liste/);
   assert.match(failures[0], /modèle « t »/);
   assert.match(failures[0], /sans outbox/);

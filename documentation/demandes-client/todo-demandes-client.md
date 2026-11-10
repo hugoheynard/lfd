@@ -17,7 +17,7 @@ doit le retrouver à la main.
 commande (`orderId`, `apps/lfd-api/prisma/schema/public/contact.prisma`) ; aucune
 colonne vers un abonnement. Le concept existe toujours : `Subscription`,
 `SubscriptionOccurrence` (`prisma/schema/public/subscriptions.prisma`, statut
-`active | paused`) et le contexte `apps/lfd-api/src/b2b/subscriptions/`.
+`active | paused`) et le contexte `apps/lfd-api/src/lafoliecoffee/subscriptions/`.
 
 **La piste.** Un `kind` de plus (cf. `demandes-clients.md`, « Ajouter un
 type ») plutôt qu'une colonne de plus sur l'enveloppe : les détails propres au

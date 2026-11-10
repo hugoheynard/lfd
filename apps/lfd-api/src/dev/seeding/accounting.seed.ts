@@ -7,7 +7,7 @@ import {
   SetCreditorAccountCommand,
   SetMandateDefaultsCommand,
   SetLegalEntityLogoCommand,
-} from "../../b2b/accounting/application/commands/legal-entity-commands.js";
+} from "../../lafoliecoffee/accounting/application/commands/legal-entity-commands.js";
 import type { PrismaClient } from "../../platform/database/client/client.js";
 import { DocumentStorageUnavailableError } from "../../platform/shared/errors/storage-errors.js";
 import { BRAND_LOGO_BW, BRAND_LOGO_FILE_NAME } from "./brand-logo.js";

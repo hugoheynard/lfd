@@ -16,7 +16,7 @@
  */
 import type { LegalEntityView } from "@lfd/contracts";
 
-import { LegalEntityRepository } from "../src/b2b/accounting/domain/ports/legal-entity.repository.js";
+import { LegalEntityRepository } from "../src/lafoliecoffee/accounting/domain/ports/legal-entity.repository.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";

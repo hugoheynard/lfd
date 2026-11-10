@@ -31,15 +31,15 @@ import {
 import { CommandBus } from "@nestjs/cqrs";
 import { randomUUID } from "node:crypto";
 
-import { MarkOrderFulfilledCommand } from "../src/b2b/orders/application/commands/mark-order-fulfilled.command.js";
+import { MarkOrderFulfilledCommand } from "../src/lafoliecoffee/orders/application/commands/mark-order-fulfilled.command.js";
 import {
   PlaceOrderForCustomerCommand,
   type PlaceOrderForCustomerResult,
-} from "../src/b2b/orders/application/commands/place-order-for-customer.command.js";
+} from "../src/lafoliecoffee/orders/application/commands/place-order-for-customer.command.js";
 import {
   PlaceOrderCommand,
   type PlaceOrderResult,
-} from "../src/b2b/orders/application/commands/place-order.command.js";
+} from "../src/lafoliecoffee/orders/application/commands/place-order.command.js";
 import { runWithRequestContext } from "../src/platform/context/request-context.store.js";
 import { newTraceId } from "../src/platform/context/trace-context.js";
 import type { PrismaService } from "../src/platform/database/prisma.service.js";

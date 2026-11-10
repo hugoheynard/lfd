@@ -22,7 +22,7 @@ import type {
 
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { ArchiveOperationCommand } from "../src/b2b/operations/application/commands/archive-operation.command.js";
+import { ArchiveOperationCommand } from "../src/lafoliecoffee/operations/application/commands/archive-operation.command.js";
 import { MediaStore } from "../src/platform/storage/media-store.js";
 import { deliverAsFacts } from "./catalog-facts-delivery.js";
 import { snapshotOf } from "./catalog-ingest-fixtures.js";

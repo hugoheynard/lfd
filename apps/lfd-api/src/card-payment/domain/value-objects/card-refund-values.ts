@@ -66,7 +66,7 @@ const OPEN_STATUSES: ReadonlySet<CardRefundStatus> = new Set(["pending", "requir
 
 /**
  * **Un statut ne régresse pas** — la règle de `refundTransition`
- * (`b2b/orders/domain/entities/order-refund.ts`, recopiée le 2026-11-10 ;
+ * (`lafoliecoffee/orders/domain/entities/order-refund.ts`, recopiée le 2026-11-10 ;
  * ce fichier est retiré au lot P1.c, la règle ne vit plus qu'ici) et
  * du déclencheur `card_payment.refund_guard` :
  *

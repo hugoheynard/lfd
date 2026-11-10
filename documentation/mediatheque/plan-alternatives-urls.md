@@ -18,10 +18,10 @@ Rien n'est réécrit en base : **chaque lecture** traite une alternative qui ne
 décrit rien — URL, chemin, nom de fichier, règle `isDescriptiveAltText` de
 `packages/pim-contracts/src/media-alt.ts` — comme absente.
 
-| Où                                         | Qui lit                                                                                                                   | Ce qui est servi                          |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `media.media_asset.alt`                    | `storedAlt` (`apps/lfd-api/src/media/domain/value-objects/alt-text.ts`)                                                   | `{ fr: "" }`, l'absence de la médiathèque |
-| `catalog_items.image_alt`, `thumbnail_alt` | `servedImageAlt` (`apps/lfd-api/src/b2b/catalog/infrastructure/catalog-image-alt.ts`), par les deux lecteurs du catalogue | `""`, l'absence que le commerce sert déjà |
+| Où                                         | Qui lit                                                                                                                             | Ce qui est servi                          |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `media.media_asset.alt`                    | `storedAlt` (`apps/lfd-api/src/media/domain/value-objects/alt-text.ts`)                                                             | `{ fr: "" }`, l'absence de la médiathèque |
+| `catalog_items.image_alt`, `thumbnail_alt` | `servedImageAlt` (`apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/catalog-image-alt.ts`), par les deux lecteurs du catalogue | `""`, l'absence que le commerce sert déjà |
 
 À l'écriture, une URL ou un nom de fichier est refusé comme description
 (`NonDescriptiveAltError`, 400), et l'absence se range en source vide.

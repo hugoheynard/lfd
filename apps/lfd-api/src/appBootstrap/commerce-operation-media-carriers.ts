@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
-import { OperationImageRepointing } from "../b2b/operations/channels/media/operation-image-repointing.js";
-import { OperationMediaUsage } from "../b2b/operations/channels/media/operation-media-usage.js";
+import { OperationImageRepointing } from "../lafoliecoffee/operations/channels/media/operation-image-repointing.js";
+import { OperationMediaUsage } from "../lafoliecoffee/operations/channels/media/operation-media-usage.js";
 import {
   MediaCarriers,
   type Carrier,

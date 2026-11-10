@@ -67,7 +67,7 @@ réel — le montage de `B2bCatalogDriver`, pour la même raison.
 
 **Le port a été promu en `platform/` le 2026-08-25**, comme ce doc l'avait prévu :
 « au troisième bloc émetteur ». Le troisième est arrivé — les actes du staff sur
-un compte client (`b2b/account`) — et la fiction « la croissance possède le
+un compte client (`lafoliecoffee/account`) — et la fiction « la croissance possède le
 journal » a cessé de tenir. `platform/journal/` porte le fait nu et l'écriture
 bloquante ; `pim/journal/` garde ce qui lui est propre, le laissez-passer et la
 portée.

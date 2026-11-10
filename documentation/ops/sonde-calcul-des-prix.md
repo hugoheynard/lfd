@@ -20,7 +20,7 @@ ce que coûte **le calcul lui-même**, et combien de fois on le fait.
 ## Ce qu'elle mesure
 
 À chaque résolution d'un lot de prix, une mesure. Elle est prise dans
-`Pricer.load` (`b2b/pricing/application/pricer.ts`), qui est la porte unique :
+`Pricer.load` (`lafoliecoffee/pricing/application/pricer.ts`), qui est la porte unique :
 il appelle `PricingMaterialsLoader` et tend le tarificateur. Le calcul de
 chaque ligne qui suit est synchrone et en mémoire (`PricedLot`) ; il n'est
 **pas** dans la durée. Un lot refusé (vide, SKU en double) n'est pas mesuré.
@@ -74,7 +74,7 @@ Donc :
   `ops/vitals/vitals.store.ts` : fenêtre glissante de 30 minutes, 2 000
   mesures au plus par nom. `MetricsModule` (global) fait pointer les deux
   ports sur la même instance ;
-- `b2b/pricing` enregistre sous le nom `pricing.resolve` ;
+- `lafoliecoffee/pricing` enregistre sous le nom `pricing.resolve` ;
 - `ops/health` lit la fenêtre (`ReadPricingProbeHandler`, route
   `GET /admin/ops/health/pricing`, surface `ops_health`, contrat
   `PricingProbeReport` dans `@lfd/ops-contract`) : nombre de lots, p50 et p95

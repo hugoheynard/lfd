@@ -16,7 +16,7 @@
 - **Les contextes de vente** sont une donnée du référentiel (`pim.sales_context`) :
   `takeaway` (À emporter), `eatIn` (Sur place), `b2b` (B2B), relus en base de dev.
 - **La boutique publique sert `takeaway`** (`PUBLIC_SALES_CONTEXT`,
-  `apps/lfd-api/src/b2b/catalog/domain/public-context.ts`), et le prix public
+  `apps/lfd-api/src/lafoliecoffee/catalog/domain/public-context.ts`), et le prix public
   arrive déjà au commerce **par contexte** (`CatalogItem.publicByContext`, une
   carte indexée par clé de contexte).
 - **L'audience** se règle à la fiche par sa propre route, hors de « Tout

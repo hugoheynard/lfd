@@ -10,7 +10,7 @@
  * Le fournisseur d'identité n'est pas doublé : la route n'a pas à l'appeler,
  * et un double qui enregistrerait zéro appel ne prouverait rien de plus.
  */
-import type { DeclaredEstablishmentResponse } from "../src/b2b/account/http/me.controller.js";
+import type { DeclaredEstablishmentResponse } from "../src/lafoliecoffee/account/http/me.controller.js";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";

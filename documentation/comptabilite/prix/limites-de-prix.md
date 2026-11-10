@@ -37,7 +37,7 @@ flowchart LR
 ## 2. Le modèle
 
 `PriceFloor`, table `price_floors` (`prisma/schema/public/pricing.prisma`,
-contexte `b2b/pricing`) :
+contexte `lafoliecoffee/pricing`) :
 
 | Champ                                        | Sens                                                                                           |
 | -------------------------------------------- | ---------------------------------------------------------------------------------------------- |

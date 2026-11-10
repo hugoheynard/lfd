@@ -39,7 +39,7 @@ d'actualité ou de saison (« La bûche se commande jusqu'au 20 », « Fermé le
 
 ## Ce qui existe et peut servir
 
-- Le pied de page éditable (`apps/lfd-api/src/b2b/content/`), servi par une
+- Le pied de page éditable (`apps/lfd-api/src/lafoliecoffee/content/`), servi par une
   route publique en cache et purgé à chaque écriture : le même chemin
   conviendrait.
 - L'éditeur des textes de la boutique

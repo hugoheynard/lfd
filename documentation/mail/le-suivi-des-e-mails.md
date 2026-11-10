@@ -104,7 +104,7 @@ flowchart LR
    passée à `EffectiveCopyMailer`.
 6. **Les ports.** Le webhook vit dans le bloc `mail` et relaie
    `email.received` au port `InboundMailSink` de `platform/`, que
-   `b2b/contact` implémente (inchangé). `MailJournal` ne porte plus que
+   `lafoliecoffee/contact` implémente (inchangé). `MailJournal` ne porte plus que
    `rememberEvent`, que seul `send-guest-order-notice` lit.
 7. **La révélation, en deux temps.** `POST
 /admin/mail/sends/:id/recipient-reveal` range la consultation et publie

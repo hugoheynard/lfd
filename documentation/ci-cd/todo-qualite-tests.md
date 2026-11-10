@@ -35,7 +35,7 @@
 de test n'est contrôlé par personne.
 
 Ce n'est pas théorique. `test/activations.e2e-spec.ts` importait
-`ActivationView` depuis `apps/lfd-api/src/b2b/growth/domain/activation.js`,
+`ActivationView` depuis `apps/lfd-api/src/lafoliecoffee/growth/domain/activation.js`,
 **qui ne l'exporte
 pas** — le type valait donc `any` et l'assertion ne garantissait rien. Trouvé en
 lançant ESLint (type-aware, lui, sur `tsconfig.test.json`), corrigé le

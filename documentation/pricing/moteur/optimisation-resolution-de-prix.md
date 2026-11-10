@@ -51,7 +51,7 @@ une par article.
 
 ## 1. Les lectures d'un lot
 
-`PricingMaterialsLoader` (`b2b/pricing/application/pricing-materials.loader.ts`)
+`PricingMaterialsLoader` (`lafoliecoffee/pricing/application/pricing-materials.loader.ts`)
 lit **six familles en parallèle**, une fois par lot, quelle que soit sa
 taille : règles, planchers, barèmes, engagements, mercuriale, promotions. En
 relecture datée (`replay`), il appelle les lecteurs datés (`inScopesAt`,
@@ -61,7 +61,7 @@ dynamique) se lisent ensuite, **par engagement** et non par article.
 
 ## 2. Le cache des matériaux
 
-`PricingMaterialsCache` (`b2b/pricing/infrastructure/pricing-materials.cache.ts`),
+`PricingMaterialsCache` (`lafoliecoffee/pricing/infrastructure/pricing-materials.cache.ts`),
 en mémoire, **par instance de l'API** :
 
 - il garde les **tables entières** non rangées (le lecteur de planchers lit
@@ -114,7 +114,7 @@ règles qui tiennent toujours :
 - **L'index par portée n'est pas un gain de vitesse, c'est une assurance.**
   Charger toutes les règles d'un coup aurait obligé à rebalayer l'ensemble pour
   chaque article — échanger des lectures contre du calcul `articles × règles`.
-  `indexByScope` / `candidatesIn` (`b2b/pricing/domain/scope-index.ts`)
+  `indexByScope` / `candidatesIn` (`lafoliecoffee/pricing/domain/scope-index.ts`)
   reconstruisent en mémoire, pour chaque article, le petit tableau que la
   lecture SQL rendait : le calcul par article ne bouge pas, seules les
   lectures tombent. Ce qui ressemble à de la vitesse est du maintien.

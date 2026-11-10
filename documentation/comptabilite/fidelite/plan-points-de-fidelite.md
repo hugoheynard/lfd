@@ -129,7 +129,7 @@ sur le bon.
 ### D2 — Le grand livre
 
 Nouvelle table `loyalty_ledger_entries` (schéma `public`, contexte
-`b2b/loyalty/`) :
+`lafoliecoffee/loyalty/`) :
 
 - le titulaire (D1) ;
 - `kind`, `points` (entier **signé**), `order_id` et `voucher_id`
@@ -173,14 +173,14 @@ Règles :
   aujourd'hui, et ouvrir `openToPro` sans lui n'est pas permis (lot F).
 - **Pas de transaction partagée avec `orders`.** `markFulfilled` et
   `settle` écrivent en autocommit (`prisma-order.repository.ts:154-260`).
-  Les faire écrire dans les tables de `b2b/loyalty/` ferait lire à une classe
+  Les faire écrire dans les tables de `lafoliecoffee/loyalty/` ferait lire à une classe
   les tables d'un autre contexte en Prisma direct (`CLAUDE.md` §3).
-- **Le mécanisme** : `b2b/loyalty/` crédite de deux façons, toutes deux
+- **Le mécanisme** : `lafoliecoffee/loyalty/` crédite de deux façons, toutes deux
   idempotentes par l'unicité `(order_id)` sur `earned` :
   1. **au fil de l'eau**, un abonné à l'événement de remise et à celui de
      règlement. Au bout, il se déclenche sur le **second** des deux. Il écoute
      la classe publiée **par le commerce**
-     (`b2b/orders/domain/events/order-handed-over.event.ts`), et non celle du
+     (`lafoliecoffee/orders/domain/events/order-handed-over.event.ts`), et non celle du
      canal `handover` ;
   2. **par rattrapage**, une tâche périodique qui **écrit** le crédit des
      commandes `fulfilled` et `paid`, d'une clientèle ouverte, qui n'ont pas
@@ -334,15 +334,15 @@ qu'une annulation ne rende le bon d'origine : on aurait alors les deux.
 
 ## 4. Les lots
 
-| Lot | Contenu                                                                                                                                                                                                                                                                                                                                        |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A   | ✅ bâti le 2026-09-26, `1057ecfa3` — migration additive : `loyalty_settings`, `loyalty_ledger_entries`, `loyalty_vouchers`, avec le CHECK de titulaire et les `RESTRICT`. Contexte `b2b/loyalty/` : le livre, le verrou, la conversion, le bon en états `available`, `expired` et `cancelled` seulement. Journal. Tests aux trois niveaux.     |
-| B   | ✅ bâti le 2026-09-26, `1057ecfa3` (routes) et `b862ee9fb` (écran) — Comptabilité › Fidélité : le réglage, une vue des soldes et des bons, l'ajustement motivé, l'annulation d'un bon.                                                                                                                                                         |
-| D   | ✅ bâti le 2026-09-26, `9f1ebf2c8`. le rattrapage et l'expiration passent **chaque nuit à 02 h UTC** (`0 2 * * *`, `wrangler.jsonc` et `LOYALTY_SWEEP_CRON` dans `container/worker.ts`) — le crédit : l'abonné et la tâche de rattrapage, par un port de lecture d'`orders` ; l'inventaire des chemins vers `paid`.                            |
-| E1  | ✅ bâti le 2026-09-27, `4e3db4912` (conception §12, entrée « Ma fidélité » à part, rien en espace pro) — boutique : le solde, « vous gagnerez N points », et la conversion en bon.                                                                                                                                                             |
-| C   | ✅ bâti le 2026-09-27, `562d929b0` (conception §11, corrigée §11 bis). **D6 tranché : rabais** (Hugo, 2026-09-27, §10). L'état `reserved`, la réservation à la passation, la libération à l'annulation, l'effet sur le total et sur l'assiette. Avant de bâtir : l'inventaire de tous les lecteurs du total. Ensuite, un passage de `vitruve`. |
-| E2  | ✅ bâti le 2026-09-27, `10dfa6654` (conception §13, ligne HT + mention de l'effet TTC) — boutique : utiliser un bon au paiement.                                                                                                                                                                                                               |
-| F   | ✅ le serveur **refuse** déjà `openToPro` (`LoyaltyProNotYetOpenableError`, `9f1ebf2c8`) ; ce lot lève le refus — ouvrir aux pros : un signal « facture réglée » avant tout `openToPro`.                                                                                                                                                       |
+| Lot | Contenu                                                                                                                                                                                                                                                                                                                                              |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A   | ✅ bâti le 2026-09-26, `1057ecfa3` — migration additive : `loyalty_settings`, `loyalty_ledger_entries`, `loyalty_vouchers`, avec le CHECK de titulaire et les `RESTRICT`. Contexte `lafoliecoffee/loyalty/` : le livre, le verrou, la conversion, le bon en états `available`, `expired` et `cancelled` seulement. Journal. Tests aux trois niveaux. |
+| B   | ✅ bâti le 2026-09-26, `1057ecfa3` (routes) et `b862ee9fb` (écran) — Comptabilité › Fidélité : le réglage, une vue des soldes et des bons, l'ajustement motivé, l'annulation d'un bon.                                                                                                                                                               |
+| D   | ✅ bâti le 2026-09-26, `9f1ebf2c8`. le rattrapage et l'expiration passent **chaque nuit à 02 h UTC** (`0 2 * * *`, `wrangler.jsonc` et `LOYALTY_SWEEP_CRON` dans `container/worker.ts`) — le crédit : l'abonné et la tâche de rattrapage, par un port de lecture d'`orders` ; l'inventaire des chemins vers `paid`.                                  |
+| E1  | ✅ bâti le 2026-09-27, `4e3db4912` (conception §12, entrée « Ma fidélité » à part, rien en espace pro) — boutique : le solde, « vous gagnerez N points », et la conversion en bon.                                                                                                                                                                   |
+| C   | ✅ bâti le 2026-09-27, `562d929b0` (conception §11, corrigée §11 bis). **D6 tranché : rabais** (Hugo, 2026-09-27, §10). L'état `reserved`, la réservation à la passation, la libération à l'annulation, l'effet sur le total et sur l'assiette. Avant de bâtir : l'inventaire de tous les lecteurs du total. Ensuite, un passage de `vitruve`.       |
+| E2  | ✅ bâti le 2026-09-27, `10dfa6654` (conception §13, ligne HT + mention de l'effet TTC) — boutique : utiliser un bon au paiement.                                                                                                                                                                                                                     |
+| F   | ✅ le serveur **refuse** déjà `openToPro` (`LoyaltyProNotYetOpenableError`, `9f1ebf2c8`) ; ce lot lève le refus — ouvrir aux pros : un signal « facture réglée » avant tout `openToPro`.                                                                                                                                                             |
 
 Le cycle du bon s'arrête volontairement à `available` dans le lot A.
 L'imputation dépend de D6 : avec le traitement B, le bon devient un

@@ -5,7 +5,7 @@
 > est acceptée — il retire `b2b_catalog` à l'écran, puis déploie L2 dans la
 > foulée (runbook, « Transférer le droit du catalogue », étape 5).
 >
-> - **Gardes** : les quatre `@AdminSurface` de `b2b/catalog/http/` sur
+> - **Gardes** : les quatre `@AdminSurface` de `lafoliecoffee/catalog/http/` sur
 >   `lfc_catalog` ; front : `permissionGuard` de `/b2b/reception`, rail
 >   (`workspaces.ts`), les deux `*appCan`, et leurs specs. Commentaires
 >   porteurs redatés.
@@ -92,7 +92,7 @@ choisit sa sélection dans `GET /admin/catalog`, gardé par `b2b_catalog`.
   commercial et à deux autres rôles (`staff-access.ts:772`, `:866`, `:935` en
   lecture).
 - **Les gardes serveur** : `@AdminSurface("b2b_catalog")` sur quatre
-  contrôleurs de `b2b/catalog/http/` (`admin-catalog`, `admin-catalog-parity`,
+  contrôleurs de `lafoliecoffee/catalog/http/` (`admin-catalog`, `admin-catalog-parity`,
   `admin-catalog-operations`, `admin-catalog-delivery`). D'autres fichiers ne
   la citent qu'en commentaire (`ops-catalog-health`, `admin-storefront`,
   `check-catalog-parity.service`, `admin-operations`).

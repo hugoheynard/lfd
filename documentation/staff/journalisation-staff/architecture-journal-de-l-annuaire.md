@@ -37,7 +37,7 @@
 Les types vivent dans `staff/directory/domain/staff-facts.ts` (`STAFF_FACTS`) et
 `staff/permissions/domain/staff-role-facts.ts`, sur le modèle d'`ACCOUNT_FACTS`.
 Ils se rangent dans le module **« Équipe »** du journal, par leurs préfixes
-`staff_user.` et `staff_role.` (`b2b/growth/domain/activity-module.ts`).
+`staff_user.` et `staff_role.` (`lafoliecoffee/growth/domain/activity-module.ts`).
 
 | Type                                | Le geste                                                                                                                        | Sujet              |
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------ |

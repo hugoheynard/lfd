@@ -3,7 +3,7 @@
 // `documentation/comptabilite/facturation/facture-emise.md` (E2).
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// Propriétaire : `src/b2b/accounting/`. Une pièce : écrite une fois, dans la
+// Propriétaire : `src/lafoliecoffee/accounting/`. Une pièce : écrite une fois, dans la
 // transaction de l'émission qui a pris son numéro, puis seulement complétée
 // de son document rendu.
 //
@@ -230,7 +230,7 @@ model InvoicingFloor {
 /// **L'issue de la facture carte d'une commande** : émise, ou signalée — une
 /// facture impossible (acheteur sans SIREN, pas d'émetteur…) est RANGÉE ici,
 /// l'écran la montre et le bouton « Réessayer » la rejoue. Propriétaire :
-/// `src/b2b/accounting/`.
+/// `src/lafoliecoffee/accounting/`.
 model CardInvoiceOutcome {
   orderId        String       @id @map("order_id")
   order          Order        @relation(fields: [orderId], references: [id], onDelete: Restrict)
@@ -270,7 +270,7 @@ enum RefundCreditReason {
 /// `order_refund.credit_note_id` : la comptabilité vit dans `public`, le
 /// carnet dans `card_payment`.
 ///
-/// Propriétaire : `src/b2b/accounting/` (lot P1.b). Une ligne par
+/// Propriétaire : `src/lafoliecoffee/accounting/` (lot P1.b). Une ligne par
 /// remboursement rapproché, écrite une fois.
 ///
 /// 🔴 `refund_id` est un identifiant OPAQUE de `card_payment.refund`, SANS clé

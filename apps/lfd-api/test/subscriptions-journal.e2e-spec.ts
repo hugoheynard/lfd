@@ -10,7 +10,7 @@
  * `order-waivers-journal` : une contrainte SQL qui refuse précisément le fait
  * attendu.
  */
-import type { CreatedSubscription } from "../src/b2b/subscriptions/domain/ports/subscription.repository.js";
+import type { CreatedSubscription } from "../src/lafoliecoffee/subscriptions/domain/ports/subscription.repository.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 

@@ -4,11 +4,12 @@ import assert from "node:assert/strict";
 
 import { snapshotReadsOf, verdict } from "../gates/catalogue-door.mjs";
 
-const LOADER = "b2b/catalog/infrastructure/catalogue-snapshot/catalogue-snapshot.loader.ts";
+const LOADER =
+  "lafoliecoffee/catalog/infrastructure/catalogue-snapshot/catalogue-snapshot.loader.ts";
 const LOADER_SOURCE = "await prisma.catalogItem.findMany({ select: S });";
-const FALLBACK = "b2b/catalog/infrastructure/prisma-x.reader.ts";
+const FALLBACK = "lafoliecoffee/catalog/infrastructure/prisma-x.reader.ts";
 const FALLBACK_SOURCE = "return this.prisma.catalogOperation.findMany({});";
-const WRAPPER = "b2b/catalog/infrastructure/catalogue-snapshot/snapshot-x.reader.ts";
+const WRAPPER = "lafoliecoffee/catalog/infrastructure/catalogue-snapshot/snapshot-x.reader.ts";
 const WRAPPER_SOURCE = 'import { PrismaXReader } from "../prisma-x.reader.js";';
 
 /** Le dépôt minimal : le chargeur, un repli enveloppé, un admis. */
@@ -50,7 +51,7 @@ test("un dépôt classé passe", () => {
 
 test("refuse : un lecteur neuf, non classé, sur une table de l'instantané", () => {
   const extra = [
-    { path: "b2b/orders/new.reader.ts", source: "this.prisma.catalogItem.findMany({});" },
+    { path: "lafoliecoffee/orders/new.reader.ts", source: "this.prisma.catalogItem.findMany({});" },
   ];
   const { failures } = verdict(files(extra), LISTS);
   assert.equal(failures.length, 1);

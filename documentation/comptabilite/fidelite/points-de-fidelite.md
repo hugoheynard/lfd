@@ -22,12 +22,12 @@ programme est **fermé** : rien ne se gagne, et rien ne se convertit.
 
 ```mermaid
 flowchart LR
-  subgraph orders["b2b/orders"]
+  subgraph orders["lafoliecoffee/orders"]
     H["remise<br/>OrderHandedOverEvent"]
     P["règlement Stripe<br/>OrderPaymentSettledEvent"]
     R["CompletedOrderReader<br/>fulfilled ∧ paid"]
   end
-  subgraph loyalty["b2b/loyalty"]
+  subgraph loyalty["lafoliecoffee/loyalty"]
     C["OrderPointsCrediting<br/>verrou du titulaire"]
     L[("loyalty_ledger_entries")]
     V[("loyalty_vouchers")]
@@ -464,13 +464,13 @@ La boutique vendra aussi des **cartes cadeaux** (Hugo, 2026-09-26). Ce sont
 deux objets distincts, avec deux régimes, et ils ne partagent **ni table, ni
 code, ni mot** :
 
-|                 | **Bon de fidélité** (ce contexte)      | **Carte cadeau** (chantier à ouvrir)                                                           |
-| --------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Origine         | **offert**, né de points               | **vendu** au client                                                                            |
-| Valeur          | un montant **HT**                      | un montant **TTC** : un moyen de paiement n'a pas de HT                                        |
-| Sur la commande | une **remise** : réduit la base de TVA | un **règlement** : paie une partie du TTC, ne touche pas la TVA                                |
-| TVA             | à l'utilisation, sur le prix remisé    | bon à usages multiples (5,5 % et 20 %) : due à l'utilisation, pas à la vente — **à confirmer** |
-| Code            | `b2b/loyalty/`, `LoyaltyVoucher`       | son propre contexte ; jamais `LoyaltyVoucher`                                                  |
+|                 | **Bon de fidélité** (ce contexte)          | **Carte cadeau** (chantier à ouvrir)                                                           |
+| --------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| Origine         | **offert**, né de points                   | **vendu** au client                                                                            |
+| Valeur          | un montant **HT**                          | un montant **TTC** : un moyen de paiement n'a pas de HT                                        |
+| Sur la commande | une **remise** : réduit la base de TVA     | un **règlement** : paie une partie du TTC, ne touche pas la TVA                                |
+| TVA             | à l'utilisation, sur le prix remisé        | bon à usages multiples (5,5 % et 20 %) : due à l'utilisation, pas à la vente — **à confirmer** |
+| Code            | `lafoliecoffee/loyalty/`, `LoyaltyVoucher` | son propre contexte ; jamais `LoyaltyVoucher`                                                  |
 
 🔴 **« Bon d'achat » n'est plus employé** : le mot aurait désigné les deux. On
 dit « bon de fidélité » et « carte cadeau ».
@@ -522,11 +522,11 @@ runtime Cloudflare. Son premier passage en production en sera la preuve.
 
 ## 11. Où c'est éprouvé
 
-| Fichier                                            | Ce qu'il prouve                                                                                                                                                                            |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `src/b2b/loyalty/domain/**/__tests__/`             | ratio, titulaire, motif, grand livre, bon, règle de gain                                                                                                                                   |
-| `src/b2b/loyalty/application/commands/__tests__/`  | chaque commande avec ses ports doublés, dont le refus d'ouvrir les pros                                                                                                                    |
-| `test/loyalty.e2e-spec.ts`                         | deux conversions concurrentes (une seule passe), `CHECK` du titulaire, paliers entiers, programme fermé, annulation qui recrédite une seule fois, journal                                  |
-| `test/loyalty-earning.e2e-spec.ts`                 | crédit dans les deux ordres, jamais deux fois, `not_required`, `pending`, invité, société disparue, programme fermé, port et surtaxe exclus, rattrapage, 401 sans jeton                    |
-| `test/loyalty-welcome.e2e-spec.ts`                 | bonus à l'inscription par code et au rattachement, une seule ligne, bonus allumé après coup → rien, adresse prouvée plus tard → la nuit crédite, deux passages simultanés, solde du relevé |
-| `apps/lfd-backoffice-frontend/src/app/fidelite/**` | l'écran : réglage, soldes, bons, lecture seule sans le droit d'écriture                                                                                                                    |
+| Fichier                                                     | Ce qu'il prouve                                                                                                                                                                            |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/lafoliecoffee/loyalty/domain/**/__tests__/`            | ratio, titulaire, motif, grand livre, bon, règle de gain                                                                                                                                   |
+| `src/lafoliecoffee/loyalty/application/commands/__tests__/` | chaque commande avec ses ports doublés, dont le refus d'ouvrir les pros                                                                                                                    |
+| `test/loyalty.e2e-spec.ts`                                  | deux conversions concurrentes (une seule passe), `CHECK` du titulaire, paliers entiers, programme fermé, annulation qui recrédite une seule fois, journal                                  |
+| `test/loyalty-earning.e2e-spec.ts`                          | crédit dans les deux ordres, jamais deux fois, `not_required`, `pending`, invité, société disparue, programme fermé, port et surtaxe exclus, rattrapage, 401 sans jeton                    |
+| `test/loyalty-welcome.e2e-spec.ts`                          | bonus à l'inscription par code et au rattachement, une seule ligne, bonus allumé après coup → rien, adresse prouvée plus tard → la nuit crédite, deux passages simultanés, solde du relevé |
+| `apps/lfd-backoffice-frontend/src/app/fidelite/**`          | l'écran : réglage, soldes, bons, lecture seule sans le droit d'écriture                                                                                                                    |

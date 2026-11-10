@@ -43,7 +43,7 @@
 Dans la relecture. En une ligne : un paiement par commande
 (`orders.stripe_payment_intent_id`), une demande de remboursement par
 commande, un état déduit à chaque lecture, un remboursement sans montant, un
-plafond sur `total_cents`, le remboursement rangé dans `b2b/orders` (14
+plafond sur `total_cents`, le remboursement rangé dans `lafoliecoffee/orders` (14
 fichiers lisent les ports de la demande, 18 avec l'entité ; 10 le carnet ; 24
 lisent `stripe_payment_intent_id` — comptes de `vitruve`), la comptabilité qui
 **écrit** `order_refund.credit_note_id`, une relation Prisma `Invoice.refunds`,
@@ -85,7 +85,7 @@ carte** et, **pour les cartes**, c'est lui seul qui parle au prestataire.
 
 **Il ne sait pas** ce qu'est une commande, une facture, un bon, un total dû.
 **Il n'inclut pas** les prélèvements SEPA ni les mandats, ni les virements,
-ni — **daté** — les **liens de paiement** de société (`b2b/payments`, qui
+ni — **daté** — les **liens de paiement** de société (`lafoliecoffee/payments`, qui
 gardent leur client Stripe, leur endpoint et leur secret jusqu'au jour où un
 lien devient un sujet ; d'ici là, `lfc-stripe` du registre **pointe sur les
 mêmes variables** qu'eux, pour qu'une rotation de clé n'ait qu'un endroit).
@@ -205,14 +205,14 @@ règlement tel que le sujet le voit** (`payment_status`), rien de plus (§4.3,
 `card_payment.refund_succeeded`, `card_payment.refund_failed`,
 `card_payment.refund_reversed`, `card_payment.fully_refunded`,
 `card_payment.unmatched` (avec le **type d'événement** : « hors de mes
-sujets » — pas une anomalie en soi ; `b2b/payments` l'écoute et **ne sonne
+sujets » — pas une anomalie en soi ; `lafoliecoffee/payments` l'écoute et **ne sonne
 que sur un remboursement**, comme `OnRefundWithoutOrder` aujourd'hui, qui
 passe `@DurableHandler` **en P0**), `card_payment.checkout_event` (relais
 transitoire, §4.5) et, **transitoire P0**, `card_payment.provider_refund_event`
 (§4.2). **Aucun abonné existant ne change de type ni de bloc** : les faits
 `order.*` (`order.paid`, `order.payment_failed`, `order.paid_after_cancellation`,
 `order.refund_succeeded | _failed | _reversed`, et l'événement en mémoire
-`OrderRefundRejectedEvent`) **restent publiés par `b2b/orders`** depuis le
+`OrderRefundRejectedEvent`) **restent publiés par `lafoliecoffee/orders`** depuis le
 canal (`onPaid`, `onRefundOutcome`), et leurs abonnés **restent dans `b2b`** : `refund-paid-after-cancellation`
 (appelle `CardRefunds.requestRemainder`), `ring-refund-rejected`
 (`@EventsHandler` ; `StaffNotifier`, `Clock`, `BackgroundWork` : la cloche de la commande),
@@ -224,7 +224,7 @@ et `ring-refund-failed` — `card-payment` sonne, une seule cloche par incident
 avec l'ancienne cloche, boutique fermée). Pas de relais (v10 : aucun port n'expose le constat à `b2b`, et un relais
 rappellerait le constat sur la propre sortie de P1) ; pas de fenêtre à fermer
 (v11, §5.2). Les abonnés
-**entre blocs** sont nommés et `@DurableHandler` : `b2b/payments` sur
+**entre blocs** sont nommés et `@DurableHandler` : `lafoliecoffee/payments` sur
 `card_payment.unmatched` et `checkout_event` ; (v11) `provider_refund_event` et son abonné d'`orders` sont **retirés en
 P1** : boutique fermée et boîte d'envoi vide au déploiement (§5.2), il n'y a
 rien à livrer ; le webhook appelle le constat en direct. Un
@@ -396,11 +396,11 @@ canal ; `orders`, au canal, publie alors **son** fait `order.paid_after_cancella
 `prisma-model-ownership.mjs` : `"card-payment"` dans `BLOCKS` ;
 `context-boundaries.mjs` : `BLOCK_OF`, `ALLOWED` (`card-payment: {staff,
 platform}`, `b2b` gagne `card-payment`), `PORT_SURFACE` (`"b2b→card-payment":
-"card-payment/channels/"`) ; `journal-tracked.mjs` : `MONEY_ZONES` est joint sous `src/b2b/` — il lui
+"card-payment/channels/"`) ; `journal-tracked.mjs` : `MONEY_ZONES` est joint sous `src/lafoliecoffee/` — il lui
 faut une **racine par zone** pour viser `src/card-payment/` (sinon l'argent
 carte **sort de l'audit en silence**, ou la porte plante) ; `context-boundaries.mjs` :
 le jeu `root` gagne `card-payment` ;
-`network-outside-transaction.mjs` : ses chemins `b2b/payments/*` suivent ;
+`network-outside-transaction.mjs` : ses chemins `lafoliecoffee/payments/*` suivent ;
 `datasource.prisma` : schéma `card_payment` ; `prisma-schema-layout`,
 `schema-ops.counter.ts` (`NON_PUBLIC_SCHEMA_OF_MODEL`), `purge-coverage.ts`
 (tables sans FK vers `public` : déclarées) ; `rgpd-staff` (`requested_by`,
@@ -427,7 +427,7 @@ clé de carte sur l'écran SEPA parce que l'écran l'affiche, pas parce que le
 bloc l'encaisse ; `prepare` prend un `tag` opaque (`companyId` ou
 `personal`, la métadonnée d'aujourd'hui) que l'adaptateur pose chez le
 prestataire. **Le remboursement ne bouge
-pas** : il reste dans `b2b/orders`, sur ses tables, et atteint le prestataire
+pas** : il reste dans `lafoliecoffee/orders`, sur ses tables, et atteint le prestataire
 par **`CardProviderRefunds`**, port **transitoire et daté** (= `PaymentRefunder`
 d'aujourd'hui, **par `(account, providerRef)`**, sur `card-payment/channels/`,
 retiré en P1), et reçoit les
@@ -468,7 +468,7 @@ total_cents` (plausible : `CardOrderNotRevisableError`), `state` : `paid` si
 
 ### 4.4 Le canal, côté commerce
 
-`b2b/orders` implémente `SubjectSettlement` pour `order` : `onPaid` =
+`lafoliecoffee/orders` implémente `SubjectSettlement` pour `order` : `onPaid` =
 `markPaid` + `order.paid` ; `refused` si rien n'a franchi **et** la commande
 est annulée ; `already_applied` si rien n'a franchi parce qu'elle est déjà
 `paid` (le `cancelledOrderOf` d'aujourd'hui, inversé) ; `onPaymentFailed` ;
@@ -485,11 +485,11 @@ contrôleur des liens rend 400 et Stripe réessaie) ; (1 bis) créer l'endpoint
 chez Stripe, qui **génère** le secret, puis `wrangler secret put` ; pendant
 ce temps les `checkout.*` arrivent par les deux chemins, et
 `settle-payment-link` est idempotent (`already_paid`) ; le contrôleur des cartes
-**continue de router** `checkout.session.*` vers `b2b/payments` par le fait
+**continue de router** `checkout.session.*` vers `lafoliecoffee/payments` par le fait
 `card_payment.unmatched`-like dédié `card_payment.checkout_event` **tant que
 l'étape (2) n'est pas faite** — jamais un 200 muet ; (2) vérifier qu'un `checkout.*` passe par le nouvel endpoint ; (3) restreindre les événements de chaque endpoint ; (4)
 retirer le relais (P2). Un remboursement d'un paiement par lien arrive sur
-l'endpoint des cartes et finit `unmatched` : **normal**, `b2b/payments`
+l'endpoint des cartes et finit `unmatched` : **normal**, `lafoliecoffee/payments`
 sonne comme aujourd'hui (`OnRefundWithoutOrder`, en `@DurableHandler`). P0
 **n'est pas réversible par le code seul** (configuration Stripe, table,
 schéma) — dit.
@@ -609,7 +609,7 @@ les anciennes tables pendant cette minute serait perdu — d'où les règles 1
 à 4, qui rendent cette minute **vide** :
 
 1. **boutique fermée** (le réglage de la vitrine), aucune exemption
-   d'ouverture active (`b2b/order-opening`), aucune commande en cours de
+   d'ouverture active (`lafoliecoffee/order-opening`), aucune commande en cours de
    passation ; **aucun geste d'équipe sur une commande carte** (annulation,
    relance, rendu autrement) et **aucun geste dans le tableau de bord
    Stripe** (remboursement manuel) **du début de la condition à la
@@ -811,7 +811,7 @@ Ce que le plan ne disait pas, tranché au plus simple :
 - **Journal** : `card_payment.retried` ajouté (geste d'équipe, la liste du
   §3.3 n'en avait pas) ; `card_payment.unmatched` s'écrit pour TOUT événement
   hors de nos sujets — un remboursement hors commande a donc deux lignes,
-  celle-ci et `payment_refund.unmatched` de `b2b/payments`.
+  celle-ci et `payment_refund.unmatched` de `lafoliecoffee/payments`.
 - **Cloches** : aucune de `card-payment` sur un `rejected` (le commerce sonne,
   une cloche par incident) ; sans demande, `…refund_reversed:<type>:<id>:<re_…>`
   (§6.2) et `…refund_unattributed:<type>:<id>:<re_…>` (la cloche « hors
@@ -952,7 +952,7 @@ du sujet, **sur son compte** ; compare ; affiche ; n'écrit rien d'autre.
 `watch-card-payments` (horaire, `card-payment`, sur les paiements des
 **60 derniers jours**) : `issued` > 7 j ; `stopped` > 24 h ; `to_issue` à
 échéance dépassée > 1 h ; `pending` `complement` > 15 min. `watch-order-settlement`
-(horaire, `b2b/orders`, même périmètre) : `placed` + `pending` dont le jour
+(horaire, `lafoliecoffee/orders`, même périmètre) : `placed` + `pending` dont le jour
 est passé ; les deux vérités divergentes ; projet `awaiting_payment` > 15 min
 ou `ready` > 1 h (S2) ; G3 sur les commandes soldées. Cloche + journal.
 
@@ -985,7 +985,7 @@ annoncé = encaissé − réussi − annoncé des `amount` non terminales.
 
 > ✅ **En production depuis le 2026-11-10** (`f55ad8e6a`). L'état bâti est décrit dans [`modifier-une-commande.md`](modifier-une-commande.md), §2.7 (le plan S2 qui détaillait ce lot est retiré) : ce qui suit est l'esquisse d'origine, que le bâti corrige (rendu en `adjustment`, rattrapage chez le prestataire, routage par rôle) et qui **ne fait pas foi**.
 
-Le projet (`b2b/orders`, `order_revision_proposal`) : contenu saisi et
+Le projet (`lafoliecoffee/orders`, `order_revision_proposal`) : contenu saisi et
 révision composée, total visé, `complement_cents`, auteur, `payment_id`,
 `state`, colonnes de reprise.
 

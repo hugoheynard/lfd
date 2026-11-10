@@ -1,8 +1,8 @@
 import { Global, Module } from "@nestjs/common";
 
-import { PublicSettingsEdgeCache } from "../b2b/shared/public-settings-cache/domain/ports/public-settings-edge-cache.js";
-import { InternalPublicSettingsEdgeCache } from "../b2b/shared/public-settings-cache/infrastructure/internal-public-settings-edge-cache.js";
-import { NoPublicSettingsEdgeCache } from "../b2b/shared/public-settings-cache/infrastructure/no-public-settings-edge-cache.js";
+import { PublicSettingsEdgeCache } from "../lafoliecoffee/shared/public-settings-cache/domain/ports/public-settings-edge-cache.js";
+import { InternalPublicSettingsEdgeCache } from "../lafoliecoffee/shared/public-settings-cache/infrastructure/internal-public-settings-edge-cache.js";
+import { NoPublicSettingsEdgeCache } from "../lafoliecoffee/shared/public-settings-cache/infrastructure/no-public-settings-edge-cache.js";
 import { AppConfig } from "../platform/config/app-config.js";
 
 /**

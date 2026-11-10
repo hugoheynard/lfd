@@ -28,16 +28,16 @@
 >
 > 🏗️ **S2a bâti le 2026-11-06** (§ 9) : les fondations (`request` rend
 > l'identifiant, pièces jointes par référence au stockage, `order-placed`
-> ouvert à `request`) et le bloc `b2b/orders` (11 envoyeurs) passé par la
+> ouvert à `request`) et le bloc `lafoliecoffee/orders` (11 envoyeurs) passé par la
 > porte. Dette de `lint:mail-through-block` : **20**.
 >
-> 🏗️ **S2b bâti le 2026-11-06** (§ 10) : le bloc `b2b/account` (5 envoyeurs)
+> 🏗️ **S2b bâti le 2026-11-06** (§ 10) : le bloc `lafoliecoffee/account` (5 envoyeurs)
 > passé par la porte. Dette : **15**.
 >
-> 🏗️ **S2c bâti le 2026-11-06** (§ 11) : le bloc `b2b/contact` (3 envoyeurs)
+> 🏗️ **S2c bâti le 2026-11-06** (§ 11) : le bloc `lafoliecoffee/contact` (3 envoyeurs)
 > passé par la porte ; la demande porte un `replyTo`. Dette : **12**.
 >
-> 🏗️ **S2e bâti le 2026-11-06** (§ 15) : le mandat de `b2b/payments` passé
+> 🏗️ **S2e bâti le 2026-11-06** (§ 15) : le mandat de `lafoliecoffee/payments` passé
 > par la porte, en `sendNow` (corrigé : `request` prévu). Dette : **9**.
 
 ## Partie 1 — Comprendre
@@ -98,7 +98,7 @@ flowchart LR
 ### 1. L'existant (ouvert le 2026-11-06)
 
 - **31 fichiers** de `apps/lfd-api/src` injectent `MAILER` (hors tests) :
-  `b2b/orders` 11, `b2b/account` 5, `b2b/contact` 3, `b2b/accounting` 2, et un
+  `lafoliecoffee/orders` 11, `lafoliecoffee/account` 5, `lafoliecoffee/contact` 3, `lafoliecoffee/accounting` 2, et un
   chacun dans `alerts`, `growth`, `mail-copy`, `payments`,
   `sub-account-notices`, `vitrine`, `production`, `staff/directory`,
   `staff/invitations`, `platform/mailer`. **6** seulement sont des
@@ -210,11 +210,11 @@ flowchart LR
 | **S1b** | ✅ bâti le 2026-11-06 (`0ebe1daec`, raccord `dacdfa77d`). L'envoi sort de la transaction de livraison : état `sending`, envoi après validation, résultat dans une écriture courte, balayeur borné par la fenêtre d'idempotence de Resend (§ 8)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | rien                                                                                                                    |
 | **P**   | ✅ bâti le 2026-11-06 (`71f95d36f`), **à blanc** : purges de l'outbox (30 j après livraison) et du suivi (1 an), catégorie RGPD `client` ; rien n'est supprimé tant que Hugo n'active pas (§ 7)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | rien                                                                                                                    |
 | **S2**  | ✅ terminé le 2026-11-06 (S2a à S2h, dette de `lint:mail-through-block` à 0). Faire passer les 31 envoyeurs par la porte, bloc par bloc : `sendNow` pour les ~6 producteurs de `mailSent`, l'essai (`specimen-mail-trial`) et la sonde (`admin-mail-check`) ; `request` pour le reste. Les PDF passent au stockage                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | les e-mails des abonnés en mémoire deviennent durables ; délai à mesurer sur « commande prête » et « livreur en route » |
-| **S2a** | ✅ bâti le 2026-11-06 (`6abe4d3ee`, § 9) : les fondations (`request` rend l'identifiant de la demande, pièces jointes par référence au stockage — `pdfStored` remplace `pdfBase64` dans les données —, la porte servie par un module global) puis le bloc `b2b/orders` (11 envoyeurs) ; dette 31 → 20                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | les e-mails des commandes partent après la validation, par le bloc                                                      |
-| **S2b** | ✅ bâti le 2026-11-06 (`851cb1037`, § 10) : le bloc `b2b/account` (5 envoyeurs) ; `sendNow` pour l'ouverture d'accès et le lien de mot de passe, `request` pour le reste ; dette 20 → 15                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | la demande de rappel et l'alerte de rattachement partent après la validation, par le bloc                               |
-| **S2c** | ✅ bâti le 2026-11-06 (`17ff8fb12`, § 11) : le bloc `b2b/contact` (3 envoyeurs), tous en `request` depuis la transaction du geste qui publie ; la demande gagne `replyTo` ; dette 15 → 12                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | la demande client et la réponse à une modification partent après la validation, par le bloc                             |
-| **S2d** | ✅ bâti le 2026-11-06 (`a883de137`, § 12) : le bloc `b2b/accounting` (2 envoyeurs) ; `sendNow` pour l'avis de prélèvement (le dépôt du lot lit son issue), `request` pour « Votre facture » (facture par référence à la clé où le rendu Factur-X l'a rangée), `sendNow` pour son renvoi ; `customer.invoice-issued` ouvert à `request` ; dette 12 → 10                                                                                                                                                                                                                                                                                                                                                                                                                                           | « Votre facture » part après la validation, par le bloc                                                                 |
-| **S2e** | ✅ bâti le 2026-11-06 (`291febd07`, § 15) : le bloc `b2b/payments` (1 envoyeur, le mandat à signer) en **`sendNow`**, contre le plan : le fait `payment_mandate.sent` porte l'identifiant du fournisseur et le refus s'affiche au staff ; le PDF reste en octets, `customer.mandate-to-sign` reste fermé à `request` ; une clé par geste ; dette 10 → 9                                                                                                                                                                                                                                                                                                                                                                                                                                          | le mandat part par le bloc, sur-le-champ (suivi au bloc)                                                                |
+| **S2a** | ✅ bâti le 2026-11-06 (`6abe4d3ee`, § 9) : les fondations (`request` rend l'identifiant de la demande, pièces jointes par référence au stockage — `pdfStored` remplace `pdfBase64` dans les données —, la porte servie par un module global) puis le bloc `lafoliecoffee/orders` (11 envoyeurs) ; dette 31 → 20                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | les e-mails des commandes partent après la validation, par le bloc                                                      |
+| **S2b** | ✅ bâti le 2026-11-06 (`851cb1037`, § 10) : le bloc `lafoliecoffee/account` (5 envoyeurs) ; `sendNow` pour l'ouverture d'accès et le lien de mot de passe, `request` pour le reste ; dette 20 → 15                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | la demande de rappel et l'alerte de rattachement partent après la validation, par le bloc                               |
+| **S2c** | ✅ bâti le 2026-11-06 (`17ff8fb12`, § 11) : le bloc `lafoliecoffee/contact` (3 envoyeurs), tous en `request` depuis la transaction du geste qui publie ; la demande gagne `replyTo` ; dette 15 → 12                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | la demande client et la réponse à une modification partent après la validation, par le bloc                             |
+| **S2d** | ✅ bâti le 2026-11-06 (`a883de137`, § 12) : le bloc `lafoliecoffee/accounting` (2 envoyeurs) ; `sendNow` pour l'avis de prélèvement (le dépôt du lot lit son issue), `request` pour « Votre facture » (facture par référence à la clé où le rendu Factur-X l'a rangée), `sendNow` pour son renvoi ; `customer.invoice-issued` ouvert à `request` ; dette 12 → 10                                                                                                                                                                                                                                                                                                                                                                                                                                 | « Votre facture » part après la validation, par le bloc                                                                 |
+| **S2e** | ✅ bâti le 2026-11-06 (`291febd07`, § 15) : le bloc `lafoliecoffee/payments` (1 envoyeur, le mandat à signer) en **`sendNow`**, contre le plan : le fait `payment_mandate.sent` porte l'identifiant du fournisseur et le refus s'affiche au staff ; le PDF reste en octets, `customer.mandate-to-sign` reste fermé à `request` ; une clé par geste ; dette 10 → 9                                                                                                                                                                                                                                                                                                                                                                                                                                | le mandat part par le bloc, sur-le-champ (suivi au bloc)                                                                |
 | **S2f** | ✅ bâti le 2026-11-06 (`d985850b9`, § 16) : le bloc `production` (1 envoyeur, le dossier du jour) en **`sendNow`**, contre le plan : la trace d'envoi, le fait `production_day.dossier_sent` et la cloche lisent l'issue de chaque envoi ; `deliver` tournait déjà hors transaction ; le PDF reste en octets, `staff.production-dossier` reste fermé à `request` ; clé inchangée (par occasion et par ligne) ; dette 9 → 8                                                                                                                                                                                                                                                                                                                                                                       | le dossier part par le bloc, sur-le-champ (suivi au bloc)                                                               |
 | **S2g** | ✅ bâti le 2026-11-06 (`d2a80194f`, § 17) : le bloc `staff` (2 envoyeurs) ; `sendNow` pour ouvrir un accès (l'écran lit `mailSent`, le lien est un secret), `request` pour la suspension et le rétablissement, depuis leur transaction ; une clé par geste ; dette 8 → 6                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | la suspension et le rétablissement partent après la validation, par le bloc                                             |
 | **S2h** | ✅ bâti le 2026-11-06 (`2a6611246`, § 18) : les 6 isolés ; `request` pour l'alerte de compte, le rendez-vous pris (chacun dans sa propre unité de travail, best-effort gardé) et les avis aux comptes principaux (abonnés durables) ; `sendNow` pour l'annonce de la vitrine, l'essai d'un e-mail et la sonde de déploiement, **entrée dans le bloc `mail`** (même route) ; dette 6 → 0                                                                                                                                                                                                                                                                                                                                                                                                          | l'alerte de compte, le rendez-vous et les avis aux principaux partent après la validation, par le bloc                  |
@@ -295,35 +295,35 @@ pourquoi. Chemins sous `apps/lfd-api/src/`.
 
 | Lot | Fichier                                                                                                                | Geste prévu                                                                                                                          | État |
 | --- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ---- |
-| S2a | `b2b/orders/application/commands/resend-order-payment-link.handler.ts`                                                 | `sendNow` — geste du staff sans écriture, l'échec s'affiche à l'agent                                                                | ✅   |
-| S2a | `b2b/orders/application/commands/warn-customer-of-delay.handler.ts`                                                    | `request`                                                                                                                            | ✅   |
-| S2a | `b2b/orders/application/commands/write-shortfall-letter.handler.ts`                                                    | `request`                                                                                                                            | ✅   |
-| S2a | `b2b/orders/application/handlers/send-guest-order-notice.handler.ts`                                                   | `request` (abonné durable)                                                                                                           | ✅   |
-| S2a | `b2b/orders/cancellation/application/handlers/send-order-cancelled-mail.handler.ts`                                    | `request` (abonné durable)                                                                                                           | ✅   |
-| S2a | `b2b/orders/application/handlers/send-order-placed-mail.handler.ts`                                                    | `request` (abonné durable, PDF par référence)                                                                                        | ✅   |
-| S2a | `b2b/orders/application/handlers/send-payment-expired-mail.handler.ts`                                                 | `request` (abonné durable)                                                                                                           | ✅   |
-| S2a | `b2b/orders/application/handlers/send-payment-failed-mail.handler.ts`                                                  | `request` (abonné durable)                                                                                                           | ✅   |
-| S2a | `b2b/orders/application/services/delivery-en-route-mail.service.ts`                                                    | `request` — délai à mesurer                                                                                                          | ✅   |
-| S2a | `b2b/orders/application/services/order-placed-mail.service.ts`                                                         | `request` (PDF par référence)                                                                                                        | ✅   |
-| S2a | `b2b/orders/application/services/order-ready-mail.service.ts`                                                          | `request` — délai à mesurer                                                                                                          | ✅   |
-| S2b | `b2b/account/application/services/support-requested-mail.service.ts` (ex-abonné `MailSupportRequested`)                | `request` — depuis la commande du dépôt, plus d'abonné en mémoire (§ 10)                                                             | ✅   |
-| S2b | `b2b/account/application/handlers/send-login-method-linked-mail.handler.ts`                                            | `request` (abonné durable)                                                                                                           | ✅   |
-| S2b | `b2b/account/application/services/grant-account-access.service.ts`                                                     | `sendNow` (l'écran lit `mailSent`)                                                                                                   | ✅   |
-| S2b | `b2b/account/infrastructure/auth0-customer-identity.ts`                                                                | `sendNow` — tranché : le lien de mot de passe (§ 10)                                                                                 | ✅   |
-| S2b | `b2b/account/infrastructure/dev-customer-identity.ts`                                                                  | `sendNow` — même forme que l'adaptateur Auth0                                                                                        | ✅   |
-| S2c | `b2b/contact/application/services/customer-request-mail.service.ts` (ex-abonné `MailCustomerRequest`)                  | `request` (`replyTo`) — depuis les trois commandes de dépôt (§ 11)                                                                   | ✅   |
-| S2c | `b2b/contact/application/services/order-change-applied-mail.service.ts` (ex-abonné)                                    | `request` — depuis la transaction d'« Appliquer » (§ 11)                                                                             | ✅   |
-| S2c | `b2b/contact/application/services/order-change-refused-mail.service.ts` (ex-abonné)                                    | `request` — depuis la transaction de « Refuser » (§ 11)                                                                              | ✅   |
-| S2d | `b2b/accounting/application/services/collection-notice-sender.ts`                                                      | **`sendNow`** — corrigé : le dépôt du lot exige l'issue du fournisseur (§ 12)                                                        | ✅   |
-| S2d | `b2b/accounting/application/services/invoice-notice-sender.ts`                                                         | `request` (facture par référence) ; `sendNow` pour le renvoi du staff (§ 12)                                                         | ✅   |
-| S2e | `b2b/payments/application/commands/send-mandate.handler.ts`                                                            | **`sendNow`** — corrigé : le fait lit le reçu, le staff lit le refus (§ 15)                                                          | ✅   |
+| S2a | `lafoliecoffee/orders/application/commands/resend-order-payment-link.handler.ts`                                       | `sendNow` — geste du staff sans écriture, l'échec s'affiche à l'agent                                                                | ✅   |
+| S2a | `lafoliecoffee/orders/application/commands/warn-customer-of-delay.handler.ts`                                          | `request`                                                                                                                            | ✅   |
+| S2a | `lafoliecoffee/orders/application/commands/write-shortfall-letter.handler.ts`                                          | `request`                                                                                                                            | ✅   |
+| S2a | `lafoliecoffee/orders/application/handlers/send-guest-order-notice.handler.ts`                                         | `request` (abonné durable)                                                                                                           | ✅   |
+| S2a | `lafoliecoffee/orders/cancellation/application/handlers/send-order-cancelled-mail.handler.ts`                          | `request` (abonné durable)                                                                                                           | ✅   |
+| S2a | `lafoliecoffee/orders/application/handlers/send-order-placed-mail.handler.ts`                                          | `request` (abonné durable, PDF par référence)                                                                                        | ✅   |
+| S2a | `lafoliecoffee/orders/application/handlers/send-payment-expired-mail.handler.ts`                                       | `request` (abonné durable)                                                                                                           | ✅   |
+| S2a | `lafoliecoffee/orders/application/handlers/send-payment-failed-mail.handler.ts`                                        | `request` (abonné durable)                                                                                                           | ✅   |
+| S2a | `lafoliecoffee/orders/application/services/delivery-en-route-mail.service.ts`                                          | `request` — délai à mesurer                                                                                                          | ✅   |
+| S2a | `lafoliecoffee/orders/application/services/order-placed-mail.service.ts`                                               | `request` (PDF par référence)                                                                                                        | ✅   |
+| S2a | `lafoliecoffee/orders/application/services/order-ready-mail.service.ts`                                                | `request` — délai à mesurer                                                                                                          | ✅   |
+| S2b | `lafoliecoffee/account/application/services/support-requested-mail.service.ts` (ex-abonné `MailSupportRequested`)      | `request` — depuis la commande du dépôt, plus d'abonné en mémoire (§ 10)                                                             | ✅   |
+| S2b | `lafoliecoffee/account/application/handlers/send-login-method-linked-mail.handler.ts`                                  | `request` (abonné durable)                                                                                                           | ✅   |
+| S2b | `lafoliecoffee/account/application/services/grant-account-access.service.ts`                                           | `sendNow` (l'écran lit `mailSent`)                                                                                                   | ✅   |
+| S2b | `lafoliecoffee/account/infrastructure/auth0-customer-identity.ts`                                                      | `sendNow` — tranché : le lien de mot de passe (§ 10)                                                                                 | ✅   |
+| S2b | `lafoliecoffee/account/infrastructure/dev-customer-identity.ts`                                                        | `sendNow` — même forme que l'adaptateur Auth0                                                                                        | ✅   |
+| S2c | `lafoliecoffee/contact/application/services/customer-request-mail.service.ts` (ex-abonné `MailCustomerRequest`)        | `request` (`replyTo`) — depuis les trois commandes de dépôt (§ 11)                                                                   | ✅   |
+| S2c | `lafoliecoffee/contact/application/services/order-change-applied-mail.service.ts` (ex-abonné)                          | `request` — depuis la transaction d'« Appliquer » (§ 11)                                                                             | ✅   |
+| S2c | `lafoliecoffee/contact/application/services/order-change-refused-mail.service.ts` (ex-abonné)                          | `request` — depuis la transaction de « Refuser » (§ 11)                                                                              | ✅   |
+| S2d | `lafoliecoffee/accounting/application/services/collection-notice-sender.ts`                                            | **`sendNow`** — corrigé : le dépôt du lot exige l'issue du fournisseur (§ 12)                                                        | ✅   |
+| S2d | `lafoliecoffee/accounting/application/services/invoice-notice-sender.ts`                                               | `request` (facture par référence) ; `sendNow` pour le renvoi du staff (§ 12)                                                         | ✅   |
+| S2e | `lafoliecoffee/payments/application/commands/send-mandate.handler.ts`                                                  | **`sendNow`** — corrigé : le fait lit le reçu, le staff lit le refus (§ 15)                                                          | ✅   |
 | S2f | `production/application/services/dossier-dispatch.service.ts`                                                          | **`sendNow`** — corrigé : la trace, le journal et la cloche lisent l'issue (§ 16)                                                    | ✅   |
 | S2g | `staff/directory/application/set-staff-status.handler.ts`                                                              | **`request`** — tranché : depuis la transaction du geste, aucun écran ne lit (§ 17)                                                  | ✅   |
 | S2g | `staff/invitations/open-staff-access.service.ts`                                                                       | `sendNow` — confirmé : l'écran lit `mailSent`, le lien est un secret (§ 17)                                                          | ✅   |
-| S2h | `b2b/alerts/application/handlers/dispatch-alert-channels.service.ts`                                                   | `request` — confirmé : dans sa propre unité de travail, pas celle du journal des alertes (§ 18)                                      | ✅   |
-| S2h | `b2b/growth/infrastructure/mail-appointment-booked-alert.ts`                                                           | `request` — confirmé : dans sa propre unité de travail, après le rendez-vous (§ 18)                                                  | ✅   |
-| S2h | `b2b/sub-account-notices/application/services/principal-notice.sender.ts`                                              | `request` — confirmé : appelants tous durables (§ 18)                                                                                | ✅   |
-| S2h | `b2b/vitrine/application/services/vitrine-notice-dispatcher.ts`                                                        | `sendNow` — confirmé : l'annonce consigne chaque issue, l'écran la lit (§ 18)                                                        | ✅   |
+| S2h | `lafoliecoffee/alerts/application/handlers/dispatch-alert-channels.service.ts`                                         | `request` — confirmé : dans sa propre unité de travail, pas celle du journal des alertes (§ 18)                                      | ✅   |
+| S2h | `lafoliecoffee/growth/infrastructure/mail-appointment-booked-alert.ts`                                                 | `request` — confirmé : dans sa propre unité de travail, après le rendez-vous (§ 18)                                                  | ✅   |
+| S2h | `lafoliecoffee/sub-account-notices/application/services/principal-notice.sender.ts`                                    | `request` — confirmé : appelants tous durables (§ 18)                                                                                | ✅   |
+| S2h | `lafoliecoffee/vitrine/application/services/vitrine-notice-dispatcher.ts`                                              | `sendNow` — confirmé : l'annonce consigne chaque issue, l'écran la lit (§ 18)                                                        | ✅   |
 | S2h | `mail/copy/infrastructure/specimen-mail-trial.sender.ts` (`b2b/mail-copy/` avant S3)                                   | `sendNow` — confirmé : l'essai, une clé par essai (§ 18)                                                                             | ✅   |
 | S2h | `apps/lfd-api/src/mail/requests/http/mail-check.controller.ts` (ex-`admin-mail-check.controller` de `platform/mailer`) | `sendNow` — confirmé ; **déplacée** dans le bloc (`apps/lfd-api/src/mail/requests/http/mail-check.controller.ts`), même route (§ 18) | ✅   |
 
@@ -474,7 +474,7 @@ sending` tant que la première tentative a moins de **23 h** et que le
 - **Les nombres** (10 essais, 10 minutes, lots de 20) sont des choix du
   bâti, pas du plan.
 
-## 9. S2a — bâti le 2026-11-06 : les fondations, puis `b2b/orders`
+## 9. S2a — bâti le 2026-11-06 : les fondations, puis `lafoliecoffee/orders`
 
 ### Les fondations
 
@@ -502,7 +502,7 @@ sending` tant que la première tentative a moins de **23 h** et que le
   d'importer que `mail/channels/requests/` (« port uniquement ») ; importer
   `MailModule` lui ferait franchir la matrice.
 
-### `b2b/orders` — le geste de chaque envoyeur
+### `lafoliecoffee/orders` — le geste de chaque envoyeur
 
 | Fichier                                                     | Geste     | Raison                                                                                                                |
 | ----------------------------------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------- |
@@ -552,7 +552,7 @@ désormais dans sa transaction, via `OrderReadyMail`.
 **Non mesuré** : le délai ajouté sur « commande prête » et « livreur en
 route » (un saut de plus par la boîte d'envoi).
 
-## 10. S2b — bâti le 2026-11-06 : `b2b/account`
+## 10. S2b — bâti le 2026-11-06 : `lafoliecoffee/account`
 
 | Fichier                                                                | Geste     | Raison                                                                                                                                                                                                                                                                             |
 | ---------------------------------------------------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -596,7 +596,7 @@ route » (un saut de plus par la boîte d'envoi).
   désormais l'accès par `AccountAccessOpener.open`, enregistre, puis n'envoie
   l'e-mail (`announce`) qu'après la validation.
 
-## 11. S2c — bâti le 2026-11-06 : `b2b/contact`
+## 11. S2c — bâti le 2026-11-06 : `lafoliecoffee/contact`
 
 Les trois envoyeurs étaient des **abonnés en mémoire** (`@EventsHandler`), qui
 envoyaient en fond après la réponse HTTP. Appeler `MailRequests` depuis là est
@@ -647,7 +647,7 @@ publié, après la validation, pour elle seule.
   l'ancien chemin de l'abonné « modification appliquée » : repointé vers le
   service (`lint:doc-references`).
 
-## 12. S2d — bâti le 2026-11-06 : `b2b/accounting`
+## 12. S2d — bâti le 2026-11-06 : `lafoliecoffee/accounting`
 
 | Fichier                          | Geste                                 | Raison                                                                                                                                                                                                                                                                                                                                         |
 | -------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -725,7 +725,7 @@ Ce que l'e-mail impose, à trancher au plan de S4 :
 - Un bloc système (récapitulatif, QR) ne va pas dans une colonne : il reste
   sur toute la largeur.
 
-## 15. S2e — bâti le 2026-11-06 : `b2b/payments`
+## 15. S2e — bâti le 2026-11-06 : `lafoliecoffee/payments`
 
 | Fichier                | Geste                                 | Raison                                                                                                                                                                                                                                                                                                                                                         |
 | ---------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -860,14 +860,14 @@ Relu le 2026-11-06 :
 
 ## 18. S2h — bâti le 2026-11-06 : les isolés
 
-| Fichier                                                     | Geste                | Raison                                                                                                                                                                                                                                                                                       |
-| ----------------------------------------------------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `b2b/alerts/…/dispatch-alert-channels.service`              | `request` (confirmé) | aucun écran ne lit l'issue ; appelé hors transaction (évaluation en fond) ; la demande prend **sa propre** unité de travail : dans celle du journal des alertes, une demande refusée annulerait la trace, et la règle écrite du service — un e-mail perdu n'emporte pas l'alerte — tomberait |
-| `b2b/growth/infrastructure/mail-appointment-booked-alert`   | `request` (confirmé) | aucun écran ne lit l'issue ; sa propre unité de travail, après l'écriture du rendez-vous : le port promet le best-effort, une demande refusée ne doit pas annuler la réservation                                                                                                             |
-| `b2b/sub-account-notices/…/principal-notice.sender`         | `request` (confirmé) | ses appelants sont les dix-huit `@DurableHandler` du bloc, par ses deux dispatchers (relu le 2026-11-06) : la demande entre dans la transaction de la livraison, avec la ligne du journal d'envoi ; clé inchangée (`sub-account-notice:<fait>:<personne>`)                                   |
-| `b2b/vitrine/…/vitrine-notice-dispatcher`                   | `sendNow` (confirmé) | chaque issue est consignée sur l'annonce (`recordAttempt`) et l'écran la lit ; envoi et reprise n'ouvrent pas d'unité de travail ; clé inchangée, la même à l'envoi et à la reprise                                                                                                          |
-| `b2b/mail-copy/infrastructure/specimen-mail-trial.sender`   | `sendNow` (confirmé) | le staff lit l'issue de l'essai ; envoyé hors de l'unité de travail du geste ; le bloc envoie dans la même chaîne asynchrone, donc sous le périmètre du brouillon                                                                                                                            |
-| `platform/mailer/admin-mail-check.controller` → bloc `mail` | `sendNow` (confirmé) | voir « La sonde » ci-dessous                                                                                                                                                                                                                                                                 |
+| Fichier                                                             | Geste                | Raison                                                                                                                                                                                                                                                                                       |
+| ------------------------------------------------------------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lafoliecoffee/alerts/…/dispatch-alert-channels.service`            | `request` (confirmé) | aucun écran ne lit l'issue ; appelé hors transaction (évaluation en fond) ; la demande prend **sa propre** unité de travail : dans celle du journal des alertes, une demande refusée annulerait la trace, et la règle écrite du service — un e-mail perdu n'emporte pas l'alerte — tomberait |
+| `lafoliecoffee/growth/infrastructure/mail-appointment-booked-alert` | `request` (confirmé) | aucun écran ne lit l'issue ; sa propre unité de travail, après l'écriture du rendez-vous : le port promet le best-effort, une demande refusée ne doit pas annuler la réservation                                                                                                             |
+| `lafoliecoffee/sub-account-notices/…/principal-notice.sender`       | `request` (confirmé) | ses appelants sont les dix-huit `@DurableHandler` du bloc, par ses deux dispatchers (relu le 2026-11-06) : la demande entre dans la transaction de la livraison, avec la ligne du journal d'envoi ; clé inchangée (`sub-account-notice:<fait>:<personne>`)                                   |
+| `lafoliecoffee/vitrine/…/vitrine-notice-dispatcher`                 | `sendNow` (confirmé) | chaque issue est consignée sur l'annonce (`recordAttempt`) et l'écran la lit ; envoi et reprise n'ouvrent pas d'unité de travail ; clé inchangée, la même à l'envoi et à la reprise                                                                                                          |
+| `b2b/mail-copy/infrastructure/specimen-mail-trial.sender`           | `sendNow` (confirmé) | le staff lit l'issue de l'essai ; envoyé hors de l'unité de travail du geste ; le bloc envoie dans la même chaîne asynchrone, donc sous le périmètre du brouillon                                                                                                                            |
+| `platform/mailer/admin-mail-check.controller` → bloc `mail`         | `sendNow` (confirmé) | voir « La sonde » ci-dessous                                                                                                                                                                                                                                                                 |
 
 ### La sonde
 
@@ -914,7 +914,7 @@ le bloc** : `apps/lfd-api/src/mail/requests/http/mail-check.controller.ts` (bus 
 
 ### Ce qui a déménagé
 
-- **Le contexte des textes** : `apps/lfd-api/src/b2b/mail-copy/` →
+- **Le contexte des textes** : `apps/lfd-api/src/lafoliecoffee/mail-copy/` →
   `apps/lfd-api/src/mail/copy/` (`git mv`, 70 fichiers, même profondeur :
   aucun import interne ne change). Il est désormais l'écrivain de
   `public.mail_copy_entries`, `public.mail_copy_publication` et
@@ -943,16 +943,16 @@ les spécimens restent dans `platform/mailer/`. **Des blocs métier les lisent**
 `mail/channels/` :
 
 - **du comportement** :
-  `b2b/vitrine/infrastructure/template-vitrine-notice-mail.renderer.ts` rend
+  `lafoliecoffee/vitrine/infrastructure/template-vitrine-notice-mail.renderer.ts` rend
   l'aperçu par `b2bMailTemplates` + `mailBrandingOf` ;
-  `b2b/orders/application/queries/get-shortfall-letter-draft.handler.ts`
+  `lafoliecoffee/orders/application/queries/get-shortfall-letter-draft.handler.ts`
   rédige le brouillon par `draftOrderShortfallMessage`, `withMailCopyOverlay`
   et `PublishedMailCopyReader` ;
 - **des types et constantes** : `DEFAULT_MAIL_LOCALE` (dix fichiers de
-  `b2b/orders`, `b2b/contact`, `b2b/accounting`), les données des modèles
+  `lafoliecoffee/orders`, `lafoliecoffee/contact`, `lafoliecoffee/accounting`), les données des modèles
   (`InvoiceIssuedMailData`, `OrderCancelledMailData`, `OrderSheetMailDocument`,
   `SubAccountGesture`, `SubAccountActivity`), `staff-mail-labels`
-  (`b2b/account`, `b2b/growth`), et `B2bMails` dans des doubles de tests
+  (`lafoliecoffee/account`, `lafoliecoffee/growth`), et `B2bMails` dans des doubles de tests
   (`b2b/*`, `production`, `staff`).
 
 Les déplacer dans `mail/templates/` rougirait la porte. Le plan ne dit pas
@@ -988,8 +988,8 @@ des modèles, `DEFAULT_MAIL_LOCALE`, les libellés de l'équipe) sont le
 `MailRequests` est déjà typée par `B2bMails`). Les deux lectures de
 comportement passent par des ports que le bloc implémente :
 
-- l'aperçu de l'avis de vitrine (`b2b/vitrine`, rendu par les gabarits) ;
-- le brouillon de la lettre de manque (`b2b/orders`, rédigé avec le texte
+- l'aperçu de l'avis de vitrine (`lafoliecoffee/vitrine`, rendu par les gabarits) ;
+- le brouillon de la lettre de manque (`lafoliecoffee/orders`, rédigé avec le texte
   publié).
 
 Ouvrir `mail/templates/` aux blocs métier (voie 2) aurait rendu le bloc
@@ -1030,7 +1030,7 @@ lisible de l'intérieur, contre la règle « port uniquement ». Lot **S3b**.
   types seulement.
 - `mail-locale.ts` : `DEFAULT_MAIL_LOCALE` (le dictionnaire la réexporte).
 - `staff-mail-labels.ts` : les libellés du motif et du canal d'un échange
-  (`b2b/account`, `b2b/growth`).
+  (`lafoliecoffee/account`, `lafoliecoffee/growth`).
 - `MailRequests` (`mail/channels/requests/`) et les doubles de tests des
   blocs (`b2b/*`, `production`, `staff`) lisent `B2bMails` au canal.
 
@@ -1038,7 +1038,7 @@ lisible de l'intérieur, contre la règle « port uniquement ». Lot **S3b**.
 
 - **`MailTemplatePreview`** (« rends-moi l'aperçu de ce modèle avec ces
   données ») : `RegistryMailTemplatePreview`, le registre et la marque de
-  l'envoi (`mailBrandingOf`). `b2b/vitrine`
+  l'envoi (`mailBrandingOf`). `lafoliecoffee/vitrine`
   (`TemplateVitrineNoticeMailRenderer`) ne voit plus que le port.
 - **`ShortfallLetterDrafter`** (« rédige la proposition de la lettre de
   manque ») : `PublishedShortfallLetterDrafter`, le dictionnaire sous les

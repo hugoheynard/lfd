@@ -8,7 +8,7 @@
 
 **Ce qui manque.** Une commande réglée par carte (`due`, `paid`) ne part
 jamais incomplète : `termsRefusalOf` rend `card`
-(`apps/lfd-api/src/b2b/orders/domain/services/shortfall-decidability.ts`) et
+(`apps/lfd-api/src/lafoliecoffee/orders/domain/services/shortfall-decidability.ts`) et
 `CardOrderShortfallError` renvoie à « E9 ». Un particulier ne peut donc pas
 emporter un sac incomplet.
 
@@ -16,7 +16,7 @@ emporter un sac incomplet.
 existe (`CardRefunds.requestAmount`,
 `apps/lfd-api/src/card-payment/channels/requests/card-refunds.ts`, lot P1), et
 la baisse d'une commande carte le répartit déjà sur ses paiements
-(`apps/lfd-api/src/b2b/orders/revision/domain/services/revision-card-refund.ts`, lot S1).
+(`apps/lfd-api/src/lafoliecoffee/orders/revision/domain/services/revision-card-refund.ts`, lot S1).
 
 **Ce qu'il faut trancher avant de bâtir** (argent : `vitruve`) :
 
@@ -24,9 +24,9 @@ la baisse d'une commande carte le répartit déjà sur ses paiements
   demandé dans la transaction de la décision, avec une clé par décision.
 - **La facture carte.** Elle compare encaissé − remboursé d'ajustement au
   **total de la commande** (`moneySquares`,
-  `apps/lfd-api/src/b2b/accounting/domain/services/card-invoicing.ts`) et
+  `apps/lfd-api/src/lafoliecoffee/accounting/domain/services/card-invoicing.ts`) et
   facture les totaux de la commande (`frozen: toFrozenInvoiceOrder(order)`,
-  `apps/lfd-api/src/b2b/accounting/infrastructure/prisma-card-invoicing.reader.ts`).
+  `apps/lfd-api/src/lafoliecoffee/accounting/infrastructure/prisma-card-invoicing.reader.ts`).
   Une baisse S1 réécrit la commande, donc l'égalité tient ; un départ
   incomplet **laisse la commande intacte** : remboursé, la facture resterait
   `blocked` pour toujours, et elle porterait des lignes non livrées. Il faut

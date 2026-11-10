@@ -17,11 +17,11 @@ import type {
   ShelfKey,
   ShelfToStore,
   StoreOutcome,
-} from "../src/b2b/catalog/domain/ports/shop-shelf-cache.js";
-import { ShopShelfCache } from "../src/b2b/catalog/domain/ports/shop-shelf-cache.js";
-import { InMemoryShopShelfCache } from "../src/b2b/catalog/infrastructure/in-memory-shop-shelf-cache.js";
-import { RECOGNISED_SHELF_LIFETIME_MS } from "../src/b2b/catalog/application/recognised-shelf.service.js";
-import { ShelfWindowTimer } from "../src/b2b/shared/shelf-changes/domain/ports/shelf-window-timer.js";
+} from "../src/lafoliecoffee/catalog/domain/ports/shop-shelf-cache.js";
+import { ShopShelfCache } from "../src/lafoliecoffee/catalog/domain/ports/shop-shelf-cache.js";
+import { InMemoryShopShelfCache } from "../src/lafoliecoffee/catalog/infrastructure/in-memory-shop-shelf-cache.js";
+import { RECOGNISED_SHELF_LIFETIME_MS } from "../src/lafoliecoffee/catalog/application/recognised-shelf.service.js";
+import { ShelfWindowTimer } from "../src/lafoliecoffee/shared/shelf-changes/domain/ports/shelf-window-timer.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";

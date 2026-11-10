@@ -148,9 +148,9 @@ ce qui sera **fabriqué pour lui**.
 - la règle : `packages/contracts/src/order-cutoff.ts` — cinq champs
   (`pickupAddressId`, `weekday`, `daysBefore`, `time`, `graceMinutes`) ;
 - l'ouverture de l'écran :
-  `apps/lfd-api/src/b2b/order-cutoffs/application/list-fulfillment-days.handler.ts` ;
+  `apps/lfd-api/src/lafoliecoffee/order-cutoffs/application/list-fulfillment-days.handler.ts` ;
 - le refus à la caisse :
-  `apps/lfd-api/src/b2b/orders/domain/services/order-cutoff-guard.ts` ;
+  `apps/lfd-api/src/lafoliecoffee/orders/domain/services/order-cutoff-guard.ts` ;
 - l'unicité, tenue par **quatre** objets :
   `@@unique([pickupAddressId, weekday])` dans
   `apps/lfd-api/prisma/schema/public/orders.prisma`, plus trois index partiels
@@ -357,7 +357,7 @@ affirme que sa réponse est « la même pour tout le monde ». Une clientèle ca
 cette propriété.
 
 Le précédent à suivre n'est pas `/mine` mais
-`apps/lfd-api/src/b2b/delivery-availability/http/delivery-availability.controller.ts` :
+`apps/lfd-api/src/lafoliecoffee/delivery-availability/http/delivery-availability.controller.ts` :
 public, sans paramètre, il sert **les deux clientèles** (`{openToB2b,
 openToB2c}`), le front applique la sienne et le serveur refuse quand même à la
 caisse. `FulfillmentDayView` porte donc **une date par clientèle** : une seule

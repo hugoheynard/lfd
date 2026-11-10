@@ -75,7 +75,7 @@ import { UnappliedMailDeliveries } from "./requests/domain/ports/unapplied-mail-
  * Depuis S3b, le rendu aussi : les gabarits, le dictionnaire, le texte
  * effectif et le mailer qui les charge (`mail/templates/`).
  *
- * Les envoyeurs y passent bloc par bloc (S2 ; `b2b/orders` le premier, lot
+ * Les envoyeurs y passent bloc par bloc (S2 ; `lafoliecoffee/orders` le premier, lot
  * S2a). **Global** : un bloc métier n'a le droit d'importer que le canal
  * (`mail/channels/requests/`), pas ce module — la matrice du § 3 de
  * `CLAUDE.md` dit « port uniquement ». `AppModule` l'importe une fois, et la

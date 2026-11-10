@@ -71,7 +71,7 @@ Commande **personnelle**, étape `ready` :
    `packed` ; un contenant porte un bac de livraison vivant → `delivery_bin`.
    Une feuille dont le **départ incomplet est autorisé** ne peut pas exister
    ici : `ShortfallDecision.decide` refuse une commande payée par carte
-   (`b2b/orders/domain/errors/shortfall-decision-errors.ts`, `CardOrderShortfallError`) et
+   (`lafoliecoffee/orders/domain/errors/shortfall-decision-errors.ts`, `CardOrderShortfallError`) et
    un particulier paie par carte ;
 5. `updateMany` conditionné ; 0 ligne → `state_changed`, tout s'annule.
 
@@ -132,7 +132,7 @@ pour qu'une méthode ajoutée demain sans garde fasse rougir.
 
 ### 2.4 L'ordre des verrous
 
-Lu dans `b2b/orders/cancellation/application/services/order-cancellation.service.ts` :
+Lu dans `lafoliecoffee/orders/cancellation/application/services/order-cancellation.service.ts` :
 ligne `orders` → journée du fournil (`withdrawFromBakery`) → **feuille → bac
 (`BinDesk`) → réserve, triée par SKU** (neuf, A1) → BL (`voidLiveFor`) → bon
 → remboursement. Les autres chemins qui prennent la feuille :

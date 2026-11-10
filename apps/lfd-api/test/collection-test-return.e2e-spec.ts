@@ -9,7 +9,7 @@ import type {
   CollectionTestCreatedView,
   CollectionTestsView,
 } from "@lfd/contracts";
-import { pain002 } from "../src/b2b/accounting/domain/services/__tests__/bank-return-file-fixtures.js";
+import { pain002 } from "../src/lafoliecoffee/accounting/domain/services/__tests__/bank-return-file-fixtures.js";
 import { jsonBody } from "./e2e-harness.js";
 import {
   declare,

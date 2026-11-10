@@ -210,7 +210,7 @@ cause.
 
 > ✅ **Bâti le 2026-11-01** (`3c5717bbf`, puis repris le même jour) :
 > `POST admin/promotions/decimals`, `promotionDecimalNets`
-> (`apps/lfd-api/src/b2b/pricing/domain/promotion-decimals.ts`), callout
+> (`apps/lfd-api/src/lafoliecoffee/pricing/domain/promotion-decimals.ts`), callout
 > `targeted-promotions/promotion-decimals-callout/`. Avertit sur la SAISIE en
 > cours, relue après chaque frappe — la première version ne lisait que la
 > promotion enregistrée, et l'avertissement arrivait après le choix qu'il

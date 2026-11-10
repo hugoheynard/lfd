@@ -21,9 +21,9 @@
 
 - Les cinq mentions vivent dans `public.platform_content` (`key`, `content`
   JSON, `revision`), clé `sales-terms` pour les CGV
-  (`b2b/content/infrastructure/prisma-platform-content.repository.ts:38-44`).
+  (`lafoliecoffee/content/infrastructure/prisma-platform-content.repository.ts:38-44`).
   Elles s'éditent **par paragraphe** (`add/edit/move/remove-legal-document-paragraph`,
-  `b2b/content/application/`), chaque écriture fait monter `revision`.
+  `lafoliecoffee/content/application/`), chaque écriture fait monter `revision`.
 - La boutique sert **un seul** texte à tout le monde
   (`lfc-ecommerce-frontend/src/app/client/client-legal-documents.service.ts`).
 - **Aucune commande n'enregistre la version des CGV** en vigueur à la

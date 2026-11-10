@@ -49,7 +49,7 @@ const SKIP_DIRS = new Set(["node_modules", "dist", "client", "coverage", ".turbo
 const IDENTITY_HOMES = ["apps/lfd-api/src/platform/auth/", "apps/lfd-api/src/platform/identity/"];
 
 const STAFF_DIR = "apps/lfd-api/src/staff/";
-const ACCOUNT_DIR = "apps/lfd-api/src/b2b/account/";
+const ACCOUNT_DIR = "apps/lfd-api/src/lafoliecoffee/account/";
 
 /**
  * Les lecteurs admis hors de ces dossiers, **et pourquoi**. Vérifiés le
@@ -90,21 +90,21 @@ const ADMITTED = new Map([
     "l'impersonation de développement, inerte en production",
   ],
   [
-    "apps/lfd-api/src/b2b/orders/infrastructure/prisma-guest-buyer.registrar.ts",
+    "apps/lfd-api/src/lafoliecoffee/orders/infrastructure/prisma-guest-buyer.registrar.ts",
     "`auth0_sub IS NULL` est ce qui FAIT l'invité sans compte",
   ],
   [
-    "apps/lfd-api/src/b2b/orders/infrastructure/prisma-guest-order-notice.reader.ts",
+    "apps/lfd-api/src/lafoliecoffee/orders/infrastructure/prisma-guest-order-notice.reader.ts",
     "distingue l'invité (sans `sub`) de la personne qui a un compte",
   ],
   [
-    "apps/lfd-api/src/b2b/orders/infrastructure/prisma-completed-order.reader.ts",
+    "apps/lfd-api/src/lafoliecoffee/orders/infrastructure/prisma-completed-order.reader.ts",
     "dit si l'acheteur d'une commande définitive est un invité — seul un invité ne " +
       "gagne pas de points (plan des points de fidélité, D1, 2026-09-26) ; " +
       "un booléen en sort, le `sub` jamais",
   ],
   [
-    "apps/lfd-api/src/b2b/orders/cancellation/infrastructure/prisma-customer-cancellation-subject.reader.ts",
+    "apps/lfd-api/src/lafoliecoffee/orders/cancellation/infrastructure/prisma-customer-cancellation-subject.reader.ts",
     "dit si l'acheteur peut se connecter : le lien d'annulation d'un invité ne vaut que sans " +
       "compte (plan d'annulation, C6.4, S3, 2026-10-13) ; un booléen en sort, le `sub` jamais",
   ],

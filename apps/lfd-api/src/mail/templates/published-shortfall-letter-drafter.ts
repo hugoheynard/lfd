@@ -17,7 +17,7 @@ import { draftOrderShortfallMessage } from "./order-shortfall-mail.js";
  * textes PUBLIÉS à l'écran des textes, comme à l'envoi ; une lecture du publié
  * qui échoue rend la proposition du code, et le dit au journal de l'API.
  *
- * Sortie de `b2b/orders/application/queries/get-shortfall-letter-draft.handler.ts`
+ * Sortie de `lafoliecoffee/orders/application/queries/get-shortfall-letter-draft.handler.ts`
  * au lot S3b : le dictionnaire et le publié sont l'intérieur du bloc `mail`.
  */
 @Injectable()

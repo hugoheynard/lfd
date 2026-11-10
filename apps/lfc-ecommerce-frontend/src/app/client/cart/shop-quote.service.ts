@@ -94,7 +94,7 @@ const FULFILLMENT_REFUSALS: Readonly<Record<string, string>> = {
  * par le serveur, pour être montrés tels quels.
  *
  * Le préfixe plutôt que la liste : les codes vivent dans
- * `apps/lfd-api/src/b2b/orders/domain/errors/order-operation-errors.ts`, et
+ * `apps/lfd-api/src/lafoliecoffee/orders/domain/errors/order-operation-errors.ts`, et
  * aucun sous-chemin sans zod de `@lfd/contracts` ne les exporte (vérifié le
  * 2026-09-24) ; les recopier un à un en ferait une liste qui dérive.
  */

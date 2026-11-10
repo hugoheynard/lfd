@@ -7,15 +7,15 @@
  * recorder retombe sur l'acteur `system` + une trace neuve — c'est ce qu'on
  * vérifie ici (les émetteurs réels, en requête, porteront customer/staff).
  */
-import { ActivityRecorder } from "../src/b2b/growth/domain/ports/activity-recorder.js";
-import { ActorNamer } from "../src/b2b/growth/domain/ports/actor-namer.js";
-import { PrismaActivityRecorder } from "../src/b2b/growth/infrastructure/prisma-activity-recorder.js";
+import { ActivityRecorder } from "../src/lafoliecoffee/growth/domain/ports/activity-recorder.js";
+import { ActorNamer } from "../src/lafoliecoffee/growth/domain/ports/actor-namer.js";
+import { PrismaActivityRecorder } from "../src/lafoliecoffee/growth/infrastructure/prisma-activity-recorder.js";
 import { PrismaService } from "../src/platform/database/prisma.service.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { IdGenerator } from "../src/platform/id/id-generator.js";
 import { JournalFactCheck } from "../src/platform/journal/journal-fact-check.js";
 import { Clock } from "../src/platform/time/clock.js";
-import type { RecordActivityInput } from "../src/b2b/growth/domain/activity-event.js";
+import type { RecordActivityInput } from "../src/lafoliecoffee/growth/domain/activity-event.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 
 let ctx: E2eContext;

@@ -366,7 +366,7 @@ temps d'arrêt de l'adresse`, sans nouvel appel ; après ETA3 seulement.
 - Il n'existe **aucun `CancelOrder`** de bureau ; `cancelled` a deux
   écrivains, tous deux au sens de « règlement mort »
   (`prisma-order.repository.ts:266,289`, vitruve), l'assiette du prélèvement
-  l'exclut (`b2b/accounting/infrastructure/billable-order-criterion.ts:43`,
+  l'exclut (`lafoliecoffee/accounting/infrastructure/billable-order-criterion.ts:43`,
   vitruve), et un webhook Stripe rejoué sur une annulée sonne « à rembourser »
   (`confirm-order-payment.handler.ts:63-67`, vitruve). Les **avenants** étaient
   conçus et pas codés — abandonnés depuis au profit de la révision

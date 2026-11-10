@@ -18,8 +18,8 @@ import { randomUUID } from "node:crypto";
 
 import { millicentsFromCents } from "@lfd/money";
 
-import { Pricer } from "../src/b2b/pricing/application/pricer.js";
-import { ProductCatalogReader } from "../src/b2b/catalog/domain/ports/product-catalog.reader.js";
+import { Pricer } from "../src/lafoliecoffee/pricing/application/pricer.js";
+import { ProductCatalogReader } from "../src/lafoliecoffee/catalog/domain/ports/product-catalog.reader.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import {
@@ -31,7 +31,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
-import { staffViewer } from "../src/b2b/catalog/domain/catalog-viewer.js";
+import { staffViewer } from "../src/lafoliecoffee/catalog/domain/catalog-viewer.js";
 import { cardProvidersOverride } from "./card-payments.js";
 
 const stubAdminVerifier = {

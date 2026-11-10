@@ -56,7 +56,7 @@ Légende, sur chaque geste :
   sont plus qu'un renvoi vers la procédure depuis le 2026-10-24) ;
 - **Prélèvement d'essai** — `/comptabilite/prelevement-d-essai`.
 
-Routes API sous `apps/lfd-api/src/b2b/accounting/http/` (abrégé `http/`).
+Routes API sous `apps/lfd-api/src/lafoliecoffee/accounting/http/` (abrégé `http/`).
 
 ## Le cycle
 
@@ -113,7 +113,7 @@ conciliées (décision D4, [`reponses-de-la-banque.md`](reponses-de-la-banque.md
 § 4). La proposition écrite là-bas — **2 jours ouvrés, 13:45** — tient les deux
 lectures ; elle n'est **pas confirmée par la banque**. Tant qu'elle n'est pas
 renseignée, l'écran n'affiche aucune date limite (`depositDeadlineOf` rend
-`null`, `apps/lfd-api/src/b2b/accounting/domain/services/collection-calendar.ts:83`)
+`null`, `apps/lfd-api/src/lafoliecoffee/accounting/domain/services/collection-calendar.ts:83`)
 et **rien ne prévient d'un dépôt tardif**.
 
 _Si on l'oublie_ : sans contrat, le fichier est inutilisable ; sans limite, un
@@ -185,7 +185,7 @@ mois, hebdomadaire, réglé par mode sur l'entité, le client choisissant un mod
 [`../facturation/plan-rythme-de-facturation.md`](../facturation/plan-rythme-de-facturation.md)
 § 16 et § 17). D'où **jusqu'à cinq remises par mois**. Chaque clôture donne
 **un lot par entité et par schéma** ; chaque lot est **un fichier**, avec une
-seule échéance (`ReqdColltnDt`, `apps/lfd-api/src/b2b/accounting/domain/services/pain008-document.ts:185`) —
+seule échéance (`ReqdColltnDt`, `apps/lfd-api/src/lafoliecoffee/accounting/domain/services/pain008-document.ts:185`) —
 ce que la banque exige (« un fichier par schéma et par échéance », réponse 18).
 
 ### 2.1 Les factures sont émises — ✅ automatique
@@ -257,7 +257,7 @@ ce que la banque exige (« un fichier par schéma et par échéance », réponse
   `envoyé`. **Tout autre état bloque le dépôt** — `échec`, `impossible`, mais
   aussi `en attente` (l'envoi n'a pas encore abouti : recharger la page,
   `pending-batch/pending-batch.html:40-45`)
-  (`CollectionNoticesNotSentError`, `apps/lfd-api/src/b2b/accounting/domain/entities/collection-batch.ts:253`).
+  (`CollectionNoticesNotSentError`, `apps/lfd-api/src/lafoliecoffee/accounting/domain/entities/collection-batch.ts:253`).
   Il n'y a **pas de bouton « renvoyer »** : corriger le contact, puis annuler et
   préparer de nouveau (§ 2.4).
 
@@ -594,7 +594,7 @@ de fichier qui dit ce qu'il porte.
 | `PRL-270201-HM` | le lundi 1er février 2027 : l'hebdomadaire et le mensuel tombent le même jour     |
 
 - **Calculé, jamais rangé ni compté** : `procedureCodeOf`
-  (`apps/lfd-api/src/b2b/accounting/domain/services/collection-procedure-code.ts`),
+  (`apps/lfd-api/src/lafoliecoffee/accounting/domain/services/collection-procedure-code.ts`),
   depuis le jour de clôture et les **rythmes de la procédure**
   (`procedureRhythms`, ci-dessous). `H` hebdomadaire, `B` deux fois par mois,
   `M` mensuel ; plusieurs lettres **triées** (`B` < `H` < `M`). Une clôture
@@ -605,9 +605,9 @@ de fichier qui dit ce qu'il porte.
   jour-là (`InvoicingCalendar.modesClosingAt`), et un lundi 1er devenait
   « `HM` / Mutualisée » sans aucun client mensuel. Une seule fonction,
   `procedureRhythms`
-  (`apps/lfd-api/src/b2b/accounting/domain/services/procedure-rhythms.ts`),
+  (`apps/lfd-api/src/lafoliecoffee/accounting/domain/services/procedure-rhythms.ts`),
   liée aux lots et aux clients par `procedureRhythmsOf`
-  (`apps/lfd-api/src/b2b/accounting/application/procedure-rhythms-support.ts`), sert la table, le détail, le
+  (`apps/lfd-api/src/lafoliecoffee/accounting/application/procedure-rhythms-support.ts`), sert la table, le détail, le
   tableau de bord des rythmes et le nom des fichiers `pain.008` :
   - **un lot existe** pour la clôture : les rythmes des clients **du lot**
     (`lotPayerModes`, réunis sur les lots vivants CORE et B2B ; à défaut de
@@ -669,7 +669,7 @@ UPDATE … RETURNING`, comme `ORD-<n>`), et **figé** sur l'export
 
 Le portail n'importe que 200 lignes par fichier ; une file plus longue part en
 plusieurs fichiers, déposés l'un après l'autre. À la préparation
-(`exportPartOf`, `apps/lfd-api/src/b2b/accounting/domain/services/bank-export-reference.ts`) :
+(`exportPartOf`, `apps/lfd-api/src/lafoliecoffee/accounting/domain/services/bank-export-reference.ts`) :
 
 - **k** = k' + 1 si le dernier export **non abandonné** de l'entité était le
   fichier k' d'une série de N' > k' fichiers ; sinon 1 ;
@@ -690,7 +690,7 @@ puis « EXC-13 · Fichier 2 sur 2 — 37 comptes. ».
 
 ASCII, sans espace, **figés par export** (un second téléchargement redonne le
 même nom), servis en `Content-Disposition`
-(`apps/lfd-api/src/b2b/accounting/domain/services/bank-file-names.ts`). La date est
+(`apps/lfd-api/src/lafoliecoffee/accounting/domain/services/bank-file-names.ts`). La date est
 celle de la **préparation**, à Paris.
 
 | Fichier               | Nom                                                        |

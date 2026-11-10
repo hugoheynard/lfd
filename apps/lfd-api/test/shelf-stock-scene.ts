@@ -10,10 +10,10 @@ import type { ResupplyArticleView } from "@lfd/contracts";
 import { instantToLocal } from "@lfd/contracts";
 import { millicentsFromCents } from "@lfd/money";
 
-import { Order } from "../src/b2b/orders/domain/entities/order.js";
-import type { PricedDraftInput } from "../src/b2b/orders/domain/entities/order-priced-draft.js";
-import { pricedInput } from "../src/b2b/orders/domain/entities/__tests__/priced-input.fixture.js";
-import { OrderRepository } from "../src/b2b/orders/domain/ports/order.repository.js";
+import { Order } from "../src/lafoliecoffee/orders/domain/entities/order.js";
+import type { PricedDraftInput } from "../src/lafoliecoffee/orders/domain/entities/order-priced-draft.js";
+import { pricedInput } from "../src/lafoliecoffee/orders/domain/entities/__tests__/priced-input.fixture.js";
+import { OrderRepository } from "../src/lafoliecoffee/orders/domain/ports/order.repository.js";
 import type { Clock } from "../src/platform/time/clock.js";
 import { E2E_STAFF_ID, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";

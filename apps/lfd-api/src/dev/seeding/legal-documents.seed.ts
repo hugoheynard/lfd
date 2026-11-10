@@ -8,9 +8,9 @@ import {
 } from "@lfd/contracts";
 import type { CommandBus } from "@nestjs/cqrs";
 
-import { AddLegalDocumentParagraphCommand } from "../../b2b/content/application/add-legal-document-paragraph.command.js";
-import { AddRequiredLegalSectionCommand } from "../../b2b/content/application/add-required-legal-section.command.js";
-import { SetLegalDocumentTitleCommand } from "../../b2b/content/application/set-legal-document-title.command.js";
+import { AddLegalDocumentParagraphCommand } from "../../lafoliecoffee/content/application/add-legal-document-paragraph.command.js";
+import { AddRequiredLegalSectionCommand } from "../../lafoliecoffee/content/application/add-required-legal-section.command.js";
+import { SetLegalDocumentTitleCommand } from "../../lafoliecoffee/content/application/set-legal-document-title.command.js";
 import type { PrismaClient } from "../../platform/database/client/client.js";
 
 /**

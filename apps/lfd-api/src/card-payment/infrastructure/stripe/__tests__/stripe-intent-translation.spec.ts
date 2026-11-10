@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 
-// Copié de `b2b/payments/infrastructure/__tests__/` le 2026-11-09 (plan M2, P0).
+// Copié de `lafoliecoffee/payments/infrastructure/__tests__/` le 2026-11-09 (plan M2, P0).
 
 import {
   cancellationFromError,

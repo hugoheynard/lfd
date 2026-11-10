@@ -97,8 +97,8 @@ l'e-mail transactionnel `customer.marketing-confirm`), désinscription,
 réinscription, `askable` (connecté seulement, sur SES adresses), `moveAddress`.
 Il ne dit jamais à l'appelant ce qu'il a fait : pas d'oracle. Le commerce
 l'appelle **après** la validation de la commande
-(`b2b/orders/application/services/order-marketing-consent.ts`) et du compte
-(`b2b/account/application/services/account-marketing-consent.ts`) ; la réponse
+(`lafoliecoffee/orders/application/services/order-marketing-consent.ts`) et du compte
+(`lafoliecoffee/account/application/services/account-marketing-consent.ts`) ; la réponse
 ne change pas l'empreinte d'idempotence de la commande.
 
 ### Les routes publiques (U2, C1, C5 ; règle 5, B1)

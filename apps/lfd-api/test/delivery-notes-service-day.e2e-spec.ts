@@ -14,9 +14,9 @@ import type { AdminPlacedOrderResponse } from "@lfd/contracts";
 import {
   DeliveryNote,
   type DeliveryNoteRemainderSource,
-} from "../src/b2b/delivery-notes/domain/entities/delivery-note.js";
-import { DeliveryNoteRepository } from "../src/b2b/delivery-notes/domain/ports/delivery-note.repository.js";
-import { ORDER_TERMS } from "../src/b2b/delivery-notes/domain/value-objects/__tests__/delivery-note-terms.fixture.js";
+} from "../src/lafoliecoffee/delivery-notes/domain/entities/delivery-note.js";
+import { DeliveryNoteRepository } from "../src/lafoliecoffee/delivery-notes/domain/ports/delivery-note.repository.js";
+import { ORDER_TERMS } from "../src/lafoliecoffee/delivery-notes/domain/value-objects/__tests__/delivery-note-terms.fixture.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   CompanyStatus,

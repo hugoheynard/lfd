@@ -28,7 +28,7 @@
 > « Déplace fidélité dans Gestion Boutique, avec les routes `/fidelite`, un
 > droit dédié `lfc_` — je ne sais plus quel mot anglais on a mis. »
 
-Le mot est `loyalty` (le contexte serveur est `src/b2b/loyalty/`).
+Le mot est `loyalty` (le contexte serveur est `src/lafoliecoffee/loyalty/`).
 
 ## 1. Ce qui existe (ouvert le 2026-10-16)
 
@@ -39,7 +39,7 @@ Le mot est `loyalty` (le contexte serveur est `src/b2b/loyalty/`).
 - **Rail** : l'entrée `fidelite` (`shared/workspace-rail/workspaces.ts:801-806`),
   sous `b2b_accounting:read`, dans l'espace Comptabilité.
 - **Serveur** : `admin/accounting/loyalty`
-  (`b2b/loyalty/http/admin-loyalty.controller.ts:31-32`), `@AdminSurface("b2b_accounting")`.
+  (`lafoliecoffee/loyalty/http/admin-loyalty.controller.ts:31-32`), `@AdminSurface("b2b_accounting")`.
   Les deux autres contrôleurs du contexte (`my-loyalty`, `loyalty-sweep`)
   ne sont pas des surfaces staff.
 - **Le précédent** : `lfc_catalog` (même jour) et `lfc_operations`, ajoutés

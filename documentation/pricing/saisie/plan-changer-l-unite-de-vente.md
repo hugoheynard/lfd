@@ -94,7 +94,7 @@ répond par une liste typée de blocages ; le domaine lève l'erreur qui les nom
 **BLOQUANTS**
 
 1. **La facture du mois casse** : `assertOneUnit`
-   (`b2b/accounting/domain/services/invoice-lines.ts:98-110`) refuse un dossier
+   (`lafoliecoffee/accounting/domain/services/invoice-lines.ts:98-110`) refuse un dossier
    où un même SKU apparaît à la pièce et au poids — les commandes REMISES y
    restent. La facture est figée par ligne, pas par dossier (§ 1 faux).
 2. **Les décisions larges changent le prix en silence** : `coversManyArticles`

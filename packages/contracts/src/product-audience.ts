@@ -9,7 +9,7 @@ import { PRODUCT_AUDIENCE_SOURCES } from "./product-audience-sources.values.js";
 /**
  * Contrat de fil des **compteurs d'audience anonymes** : la FORME du lot et de
  * la période relue. Les règles (emplacement selon le geste, SKU servi) vivent
- * dans le domaine de `b2b/recommendations`.
+ * dans le domaine de `lafoliecoffee/recommendations`.
  */
 export {
   MAX_AUDIENCE_EVENTS_PER_BATCH,

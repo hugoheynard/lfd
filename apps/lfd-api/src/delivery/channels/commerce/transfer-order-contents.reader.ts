@@ -16,7 +16,7 @@ export interface TransferOrderCategory {
  * **Ce que contiennent les commandes d'un transfert interne** — décision de
  * Hugo du 2026-10-13 : « on doit savoir ce qu'on transporte ». Ce que la
  * livraison DÉCLARE et que le commerce implémente
- * (`b2b/orders/infrastructure/`), relié dans `appBootstrap`.
+ * (`lafoliecoffee/orders/infrastructure/`), relié dans `appBootstrap`.
  *
  * Lecteur PAR LOT, à lui (ISP) : `DeliveryOrderLinesReader` lit une commande à
  * la fois pour le colisage, et le manifeste en lit des dizaines. **Aucun

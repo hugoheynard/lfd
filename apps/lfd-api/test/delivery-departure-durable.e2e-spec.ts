@@ -17,7 +17,7 @@ import { HandedOverOrdersReader } from "../src/handover/domain/ports/handed-over
 import { OrderDepartureRepository } from "../src/handover/domain/ports/order-departure.repository.js";
 import { PrismaHandedOverOrdersReader } from "../src/handover/infrastructure/prisma-handed-over-orders.reader.js";
 import { RECORD_ROUND_DEPARTED } from "../src/handover/application/handlers/record-round-departed.handler.js";
-import { MAIL_DELIVERY_EN_ROUTE } from "../src/b2b/orders/application/handlers/mail-delivery-en-route.handler.js";
+import { MAIL_DELIVERY_EN_ROUTE } from "../src/lafoliecoffee/orders/application/handlers/mail-delivery-en-route.handler.js";
 import { DeliveryOrdersBroughtBackFact } from "../src/delivery/channels/handover/index.js";
 import { ShipmentRef } from "../src/production/channels/delivery/index.js";
 import { PrismaService } from "../src/platform/database/prisma.service.js";

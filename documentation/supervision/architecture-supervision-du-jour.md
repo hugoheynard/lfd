@@ -42,12 +42,12 @@ flowchart LR
   F --> Q["quality : /admin/production/quality…<br/>contrôle qualité"]
 ```
 
-| Colonne         | Route                                      | Bloc         | Garde                                                   |
-| --------------- | ------------------------------------------ | ------------ | ------------------------------------------------------- |
-| jour, retards   | `GET /admin/supervision/day` (+ `version`) | `b2b/orders` | `b2b_supervision`                                       |
-| 1 · Préparation | `GET /admin/supervision/preparation`       | `production` | `b2b_supervision`                                       |
-| 2 · Colisage    | `GET /admin/packing/:date/board`           | `packing`    | `production_packing:read` **ou** `b2b_supervision:read` |
-| 3 · Retrait     | `GET /admin/supervision/handover`          | `handover`   | `b2b_supervision`                                       |
+| Colonne         | Route                                      | Bloc                   | Garde                                                   |
+| --------------- | ------------------------------------------ | ---------------------- | ------------------------------------------------------- |
+| jour, retards   | `GET /admin/supervision/day` (+ `version`) | `lafoliecoffee/orders` | `b2b_supervision`                                       |
+| 1 · Préparation | `GET /admin/supervision/preparation`       | `production`           | `b2b_supervision`                                       |
+| 2 · Colisage    | `GET /admin/packing/:date/board`           | `packing`              | `production_packing:read` **ou** `b2b_supervision:read` |
+| 3 · Retrait     | `GET /admin/supervision/handover`          | `handover`             | `b2b_supervision`                                       |
 
 ⚠️ **La colonne Colisage a changé de route** : le plan lisait
 `/admin/supervision/packing` (le colisage était dans le fournil). Depuis que le

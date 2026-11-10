@@ -10,7 +10,7 @@
 ## 1. Ce qui existe (ouvert le 2026-10-29)
 
 - La vitrine ne compose que l'article par défaut : `shopCatalogueOf` saute
-  `!item.isDefault` (`apps/lfd-api/src/b2b/catalog/application/shop-catalogue-view.ts`),
+  `!item.isDefault` (`apps/lfd-api/src/lafoliecoffee/catalog/application/shop-catalogue-view.ts`),
   et ses quatre décorations (prix au kilo, limites, langue, tarification) se
   réindexent toutes par SKU **produit** via l'article par défaut.
 - `ShopItemView.sku` est le SKU **produit** (`packages/contracts/src/shop-catalogue.ts`).

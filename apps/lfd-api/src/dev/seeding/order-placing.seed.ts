@@ -7,8 +7,8 @@ import { addDays, addMinutes, instantToLocal, localToInstant } from "@lfd/contra
 import type { CommandBus } from "@nestjs/cqrs";
 import { randomUUID } from "node:crypto";
 
-import { PlaceOrderCommand } from "../../b2b/orders/application/commands/place-order.command.js";
-import { OrderTotalChangedError } from "../../b2b/orders/domain/errors/order-total-changed.error.js";
+import { PlaceOrderCommand } from "../../lafoliecoffee/orders/application/commands/place-order.command.js";
+import { OrderTotalChangedError } from "../../lafoliecoffee/orders/domain/errors/order-total-changed.error.js";
 import { runWithRequestContext } from "../../platform/context/request-context.store.js";
 import { newTraceId } from "../../platform/context/trace-context.js";
 import { TechnicalError } from "../../platform/shared/errors/app-error.js";

@@ -2,7 +2,7 @@
 // Accès aux fonctionnalités — les ÉCARTS au catalogue du code
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// Propriétaire : `src/b2b/feature-access/`. Plan :
+// Propriétaire : `src/lafoliecoffee/feature-access/`. Plan :
 // `documentation/auth-inscription/plan-inscription-pro-seule.md` §2.1.
 //
 // Le catalogue (clés, niveaux ordonnés, défauts) vit dans `@lfd/contracts`. Ces

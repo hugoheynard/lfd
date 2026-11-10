@@ -23,10 +23,10 @@ celui qu'on rate sous pression.
 
 - Deux reprises en attente pour le prochain déploiement, déjà découpées en
   « décider » / « écrire » :
-  - `PrismaPromotionPolicyBackfill` (`b2b/pricing/infrastructure/`, retiré le 2026-11-01, § 8) :
+  - `PrismaPromotionPolicyBackfill` (`lafoliecoffee/pricing/infrastructure/`, retiré le 2026-11-01, § 8) :
     `plan()` rend les décisions, `apply(decision)` écrit une décision dans sa
     transaction et rend `false` si la ligne a bougé ;
-  - `PrismaOrderDiscountTermsBackfill` (`b2b/orders/infrastructure/prisma-order-discount-terms-backfill.ts`) :
+  - `PrismaOrderDiscountTermsBackfill` (`lafoliecoffee/orders/infrastructure/prisma-order-discount-terms-backfill.ts`) :
     `pendingDiscountIds()` puis `fill(id, write)`.
   - Les deux sont rejouables : une ligne déjà reprise n'est plus candidate.
 - `ops` n'importe aucun bloc métier et personne ne l'importe (`CLAUDE.md`, § 3).

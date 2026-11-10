@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 
 import { DEBT, inScope, stageFields, verdict } from "../gates/mail-status-honest.mjs";
 
-const PATH = "apps/lfd-api/src/b2b/x/application/open.handler.ts";
+const PATH = "apps/lfd-api/src/lafoliecoffee/x/application/open.handler.ts";
 const run = (source, debt = {}, path = PATH) => verdict([{ path, source }], debt).failures;
 
 test("admet : un champ qui nomme l'étape acceptée, tiré du reçu", () => {
@@ -75,9 +75,9 @@ test("ignore : un paramètre de constructeur et un commentaire", () => {
 test("portée : contrats et couches servies, pas le domaine ni l'infrastructure ni les tests", () => {
   assert.equal(inScope("packages/contracts/src/x.ts"), true);
   assert.equal(inScope("apps/lfd-api/src/staff/invitations/open.ts"), true);
-  assert.equal(inScope("apps/lfd-api/src/b2b/x/domain/n.ts"), false);
-  assert.equal(inScope("apps/lfd-api/src/b2b/x/infrastructure/n.ts"), false);
-  assert.equal(inScope("apps/lfd-api/src/b2b/x/application/__tests__/n.ts"), false);
+  assert.equal(inScope("apps/lfd-api/src/lafoliecoffee/x/domain/n.ts"), false);
+  assert.equal(inScope("apps/lfd-api/src/lafoliecoffee/x/infrastructure/n.ts"), false);
+  assert.equal(inScope("apps/lfd-api/src/lafoliecoffee/x/application/__tests__/n.ts"), false);
   assert.equal(inScope("apps/lfd-api/src/platform/database/client/models/V.ts"), false);
 });
 

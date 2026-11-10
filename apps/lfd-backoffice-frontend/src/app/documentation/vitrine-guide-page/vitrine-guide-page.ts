@@ -45,7 +45,7 @@ import { VitrineSequenceDiagram } from '../vitrine-sequence-diagram/vitrine-sequ
  * que ce gabarit (`../vitrine-guide/`), pour qu'aucun texte n'existe deux fois.
  *
  * Sources relues le 2026-10-18 : `packages/contracts/src/vitrine.ts`,
- * `shop-catalogue.ts`, `apps/lfd-api/src/b2b/vitrine/` (contrôleur, signature,
+ * `shop-catalogue.ts`, `apps/lfd-api/src/lafoliecoffee/vitrine/` (contrôleur, signature,
  * relais, livraison) et `platform/outbox/retry-policy.ts`. Un changement de
  * l'un d'eux laisse cette page dire l'ancien contrat : la relire alors.
  */

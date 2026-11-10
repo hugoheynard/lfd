@@ -23,8 +23,11 @@
 import type { PricingJournalEntryView, PricingJournalPageView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import type { PricingAct, PricingSubjectType } from "../src/b2b/pricing/domain/pricing-act.js";
-import { eventRow } from "../src/b2b/pricing/infrastructure/pricing-journal.writer.js";
+import type {
+  PricingAct,
+  PricingSubjectType,
+} from "../src/lafoliecoffee/pricing/domain/pricing-act.js";
+import { eventRow } from "../src/lafoliecoffee/pricing/infrastructure/pricing-journal.writer.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_ID, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */

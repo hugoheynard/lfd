@@ -101,24 +101,24 @@ flowchart LR
   demande, de reçu, du fournil et du colisage ; le réassort au poids traverse
   fournil, colisage et transfert ([`../pricing/vente-au-poids.md`](../pricing/vente-au-poids.md)).
 - **Un seul calcul** : `estimateStock(receipts, draws)` reste pure
-  (`b2b/resupply/domain/estimated-stock.ts:46`) ; `DayShelfStock`
-  (`b2b/resupply/application/day-shelf-stock.ts:19`) est le seul endroit qui
+  (`lafoliecoffee/resupply/domain/estimated-stock.ts:46`) ; `DayShelfStock`
+  (`lafoliecoffee/resupply/application/day-shelf-stock.ts:19`) est le seul endroit qui
   lui passe les prélèvements, lus par le port `ShelfDrawsReader`
-  (`b2b/resupply/domain/shelf-draws.reader.ts:24`), déclaré par le réassort et
-  implémenté par les commandes (`b2b/orders/infrastructure/prisma-shelf-draws.reader.ts:25`),
+  (`lafoliecoffee/resupply/domain/shelf-draws.reader.ts:24`), déclaré par le réassort et
+  implémenté par les commandes (`lafoliecoffee/orders/infrastructure/prisma-shelf-draws.reader.ts:25`),
   relié par `apps/lfd-api/src/appBootstrap/shelf-draws-feed.module.ts` (2026-11-03).
 - **Toute baisse d'une quantité reçue** (corriger une ligne réceptionnée,
   corriger ou retirer une ligne du réassort sans commande) passe par
-  `ReceivedStockLowering.lower` (`b2b/resupply/application/received-stock-lowering.ts:34`),
+  `ReceivedStockLowering.lower` (`lafoliecoffee/resupply/application/received-stock-lowering.ts:34`),
   sous le verrou, et refuse de descendre sous le déjà-pris.
 
 ## 4. Le verrou, et pourquoi il n'interbloque pas
 
-- `ShelfStockLock` (`b2b/resupply/domain/shelf-stock-lock.ts:18`), propriété
+- `ShelfStockLock` (`lafoliecoffee/resupply/domain/shelf-stock-lock.ts:18`), propriété
   du réassort ; adaptateur `PrismaShelfStockLock`
-  (`b2b/resupply/infrastructure/prisma-shelf-stock-lock.ts:27`) :
+  (`lafoliecoffee/resupply/infrastructure/prisma-shelf-stock-lock.ts:27`) :
   `pg_advisory_xact_lock` par (jour, point), relâché au `COMMIT` — la forme de
-  `b2b/accounting`.
+  `lafoliecoffee/accounting`.
 - **Le verrou du stock et le verrou de journée du fournil ne sont jamais tenus
   ensemble.** La passation choisit l'un OU l'autre selon la marque
   (`OrderDrafting.holdSupply`, `order-drafting.service.ts:280`), en premier
@@ -132,7 +132,7 @@ flowchart LR
 ## 5. La passation
 
 - **Qui décide `shelf`** — `ShelfCircuit.decide`
-  (`b2b/orders/application/services/shelf-circuit.service.ts:71`) :
+  (`lafoliecoffee/orders/application/services/shelf-circuit.service.ts:71`) :
   - un **client** (particulier, invité, pro en ligne) pour **aujourd'hui** sur
     un plan **arrêté** → `shelf` ; plan ouvert ou rouvert → `planned`, le
     fournil la prend (l. 81 ; confirmé par Hugo le 2026-11-02) ;
@@ -140,7 +140,7 @@ flowchart LR
     `adminPlaceOrderPayloadSchema` et de `orderQuotePayloadSchema`, absent =
     `planned`).
 - **L'agrégat porte l'invariant** (`ensureSupplyFits`,
-  `b2b/orders/domain/services/order-supply-rules.ts:25`) : une `shelf` est un
+  `lafoliecoffee/orders/domain/services/order-supply-rules.ts:25`) : une `shelf` est un
   retrait, pour **aujourd'hui** (reçu en paramètre), à un point.
 - **Les gardes se séparent sur la marque** dans `OrderDrafting.draft`
   (`order-drafting.service.ts:157-176`, `:253-261`) :
@@ -153,10 +153,10 @@ flowchart LR
   | reste sous `ShelfStockLock`                 | —         | oui (`ensureShelfStockCovers`)                     |
 
 - **La clientèle** : `sameDayDoorOf` / `sameDayOpenTo`
-  (`b2b/order-cutoffs/domain/same-day-doors.ts:24`, `:40`) — trois portes :
+  (`lafoliecoffee/order-cutoffs/domain/same-day-doors.ts:24`, `:40`) — trois portes :
   particulier, pro en ligne, comptoir.
 - **Le créneau restant** : `pickupLeftToday`
-  (`b2b/orders/domain/services/shelf-circuit.ts:37`) — créneaux publics et
+  (`lafoliecoffee/orders/domain/services/shelf-circuit.ts:37`) — créneaux publics et
   fermetures pour le particulier (un créneau dont le début est après
   maintenant), fenêtre pro non finie pour le pro en ligne, aucune garde au
   comptoir. Un site sans créneau ni fenêtre pour cette clientèle ne propose
@@ -177,7 +177,7 @@ flowchart LR
 - **La tenue** : au-delà de `shelf_hold_minutes`, l'expiration annule une
   `shelf` non réglée qui porte une intention de paiement — client **ou**
   équipe au lien (Hugo, 2026-11-02) — et sa part revient
-  (`unsettledShelfOrderWhere`, `b2b/orders/infrastructure/unsettled-shop-order.where.ts:42`).
+  (`unsettledShelfOrderWhere`, `lafoliecoffee/orders/infrastructure/unsettled-shop-order.where.ts:42`).
   Une commande au compte n'a pas d'intention : elle n'y entre jamais. Les
   commandes boutique fabriquées gardent leurs 30 minutes.
 - Le balayage des règlements à la clôture ignore les `shelf` (`notFromStock`).
@@ -195,7 +195,7 @@ vitrine ».
   `order-supply-rules.ts:73`, `orders.revise.shelf_route`) : le stock d'un
   autre point est un autre stock, changer de point c'est annuler et refaire.
 - **Gardes du circuit** (`ShelfRevising`,
-  `b2b/orders/revision/application/services/shelf-revising.service.ts:37`) : la porte de
+  `lafoliecoffee/orders/revision/application/services/shelf-revising.service.ts:37`) : la porte de
   qui modifie, le créneau restant, et la journée qui doit être aujourd'hui
   (`orders.shelf.not_today`).
 - **Ni note au fournil ni suivi des BL** : `ReviseOrderHandler` les saute pour
@@ -241,7 +241,7 @@ sequenceDiagram
   `GET /admin/resupply-receipts/:siteId/:day` (`stock[]` = `DayShelfStock`) ;
   le panier refuse ce que la vitrine ne couvre pas, le serveur rejuge.
 - **Le règlement pré-rempli** par le **payeur** : `settlesOnAccount`
-  (`b2b/account/application/queries/get-counter-customer.handler.ts:72`), la
+  (`lafoliecoffee/account/application/queries/get-counter-customer.handler.ts:72`), la
   règle du serveur (`order-settlement.ts:125`). Aucun défaut serveur : la
   soumission exige un `settlement` explicite.
 - **Le raccourci** n'est accepté qu'avec `supply: "shelf"` (`staffSupplyOf`,
@@ -252,7 +252,7 @@ sequenceDiagram
 - **Le bon remis au client** : le BL **de transport**, non chiffré, qu'on
   tend et fait signer (articles, quantités, « Reçu par, le, signature ») —
   `GET /admin/counter/orders/:orderId/delivery-note/carrier.pdf`
-  (`b2b/delivery-notes/http/admin-counter-delivery-notes.controller.ts`),
+  (`lafoliecoffee/delivery-notes/http/admin-counter-delivery-notes.controller.ts`),
   handler `get-counter-carrier-note-pdf.handler.ts`. ⚠️ **Décision du
   2026-11-03 (Hugo)**, qui revient sur celle du 2026-11-02 (BL client chiffré,
   `…/client.pdf`) : « respecter la même logique de chiffre qu'en livraison ».
@@ -262,7 +262,7 @@ sequenceDiagram
   d'impression qu'avant.
   sous `handover_counter:read`, sans numéro ; il sert le BL **remis** d'un
   **retrait** (`counterNoteReach`,
-  `b2b/delivery-notes/domain/services/counter-note-reach.ts:33`). Côté écran :
+  `lafoliecoffee/delivery-notes/domain/services/counter-note-reach.ts:33`). Côté écran :
   `apps/lfd-backoffice-frontend/src/app/comptoir/counter-delivery-note.service.ts`.
 - **Le badge « Sur stock »** : liste des Commandes, Supervision (colonnes
   Retrait / livraison et Colisage, par `DaySupervisionView.shelfOrderIds`).
@@ -272,22 +272,22 @@ sequenceDiagram
 - **« Aujourd'hui » dans le choix du jour** quand `/fulfillment-days` le sert :
   plan d'aujourd'hui arrêté, clientèle ouverte, et au point un créneau restant
   **et** un reste positif pour **tout le panier** (port `ShelfTodaySites`,
-  `b2b/order-cutoffs/domain/shelf-today-sites.ts:29`, implémenté par
-  `b2b/orders/application/services/order-shelf-today-sites.ts`), sans heure
+  `lafoliecoffee/order-cutoffs/domain/shelf-today-sites.ts:29`, implémenté par
+  `lafoliecoffee/orders/application/services/order-shelf-today-sites.ts`), sans heure
   (`orderUntil: null`). Le panier envoie tous ses SKU ; un panier mixte se voit
   proposer demain.
 - **La clientèle se décide au serveur** : un client reconnu lit
-  `GET /fulfillment-days/mine` (`b2b/order-cutoffs/http/my-fulfillment-days.controller.ts:17-22`,
+  `GET /fulfillment-days/mine` (`lafoliecoffee/order-cutoffs/http/my-fulfillment-days.controller.ts:17-22`,
   société par `@ActingCompany()`) ; l'anonyme lit `GET /fulfillment-days`
   (`fulfillment-days.controller.ts:34-51`).
 - **Le reste sur la vignette** : `GET /shelf-stock/today?pickupAddressId=…&audience=…`
-  (`b2b/orders/http/shelf-stock-today.controller.ts:25-31`, public, throttlé) et
+  (`lafoliecoffee/orders/http/shelf-stock-today.controller.ts:25-31`, public, throttlé) et
   `GET /shelf-stock/today/mine?pickupAddressId=…`
   (`my-shelf-stock-today.controller.ts:16-20`, muré). Contrat
   `packages/contracts/src/shelf-stock-today.ts` : `{ sku, saleUnit, left }[]`,
   vide à chaque refus (plan non arrêté, porte fermée, plus de créneau),
   réduit aux articles servis à l'appelant (`shelfLeftFor`,
-  `b2b/orders/domain/services/shelf-left-today.ts:27`).
+  `lafoliecoffee/orders/domain/services/shelf-left-today.ts:27`).
 - **À l'écran** : `ShelfStockToday`
   (`apps/lfc-ecommerce-frontend/src/app/client/shop/shelf-stock-today.store.ts`)
   ne lit que si le retrait choisi vise un point pour aujourd'hui ; la vignette
@@ -331,14 +331,14 @@ elle reste en base, aucune décision ne la lit
 | `delivery_notes.counter.not_yet`      | 404    | remise attestée, BL pas encore écrit — l'écran réessaie    |
 | `delivery_notes.counter.out_of_reach` | 404    | le bon n'est pas celui d'un retrait remis                  |
 
-Définis dans `b2b/orders/domain/errors/shelf-circuit-errors.ts`,
+Définis dans `lafoliecoffee/orders/domain/errors/shelf-circuit-errors.ts`,
 `shelf-order-errors.ts`, `same-day-order-closed.error.ts`,
-`b2b/resupply/domain/resupply-receipt-errors.ts:183` et
-`b2b/delivery-notes/domain/errors/delivery-note-errors.ts:219-234`.
+`lafoliecoffee/resupply/domain/resupply-receipt-errors.ts:183` et
+`lafoliecoffee/delivery-notes/domain/errors/delivery-note-errors.ts:219-234`.
 
 ### Les lecteurs d'une journée
 
-Le filtre est **un seul**, dans `b2b/orders/infrastructure/plan-filter.ts` :
+Le filtre est **un seul**, dans `lafoliecoffee/orders/infrastructure/plan-filter.ts` :
 `notFromStock()` (l. 86) versé dans `planWhere()` (l. 53) et dans
 `productionWhere()` = `settlementWhere` + `notFromStock` (l. 98).
 

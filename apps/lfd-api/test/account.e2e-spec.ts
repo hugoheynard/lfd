@@ -11,11 +11,11 @@
  * permet de vérifier la seule chose qui compte ici — que le changement d'e-mail
  * passe par lui, et dans le bon ordre.
  */
-import { NO_LOGIN_METHODS } from "../src/b2b/account/domain/ports/__tests__/login-method-doubles.js";
-import { CustomerIdentityPort } from "../src/b2b/account/domain/ports/customer-identity.port.js";
-import type { AccountView } from "../src/b2b/account/domain/ports/account.reader.js";
+import { NO_LOGIN_METHODS } from "../src/lafoliecoffee/account/domain/ports/__tests__/login-method-doubles.js";
+import { CustomerIdentityPort } from "../src/lafoliecoffee/account/domain/ports/customer-identity.port.js";
+import type { AccountView } from "../src/lafoliecoffee/account/domain/ports/account.reader.js";
 import { PrincipalResolver } from "../src/platform/auth/principal.resolver.js";
-import type { CreatedCompanyResponse } from "../src/b2b/account/http/companies.controller.js";
+import type { CreatedCompanyResponse } from "../src/lafoliecoffee/account/http/companies.controller.js";
 import { CompanyStatus } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";

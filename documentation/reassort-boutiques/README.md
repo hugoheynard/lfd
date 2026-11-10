@@ -20,7 +20,7 @@ commandes passées pour aujourd'hui
 ## 1. Le modèle — un agrégat à part, jamais une commande
 
 Décidé par Hugo le 2026-10-21 (« pas de prix, part sur B ») : le réassort d'un
-site est `SiteResupply`, un agrégat du contexte `b2b/resupply/`, **sans prix,
+site est `SiteResupply`, un agrégat du contexte `lafoliecoffee/resupply/`, **sans prix,
 sans TVA, sans règlement, sans chiffre d'affaires**. L'option « une `Order`
 dont le client est un site » a été mesurée et écartée le 2026-10-14 : elle
 touchait l'argent à une vingtaine d'endroits, dont dix où un oubli aurait
@@ -70,7 +70,7 @@ flowchart TD
 
 | Bloc        | Ce qu'il tient                                                                   | Chemins                                                                                                                                                                                                  |
 | ----------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| commerce    | demande, envoi, brouillons, réception, alertes, stock du jour, Supervision Stock | `apps/lfd-api/src/b2b/resupply/` (module `resupply.module.ts`)                                                                                                                                           |
+| commerce    | demande, envoi, brouillons, réception, alertes, stock du jour, Supervision Stock | `apps/lfd-api/src/lafoliecoffee/resupply/` (module `resupply.module.ts`)                                                                                                                                 |
 | fournil     | copie figée, « Lancer », dossier du jour, part sur place                         | `apps/lfd-api/src/production/` — `domain/entities/production-day.ts` (`launchResupply`), `domain/services/on-site-share.ts:37`                                                                           |
 | colisage    | fiche de réassort, emballé, réserve d'un lancé                                   | `apps/lfd-api/src/packing/domain/entities/packing-resupply.ts:76`, `packing-stock.ts:158` (`reserve`)                                                                                                    |
 | livraison   | élément `resupply` du transfert, placement, départ, réception                    | `apps/lfd-api/src/delivery/application/transfer-attachment.ts:62` (`attachResupplies`)                                                                                                                   |

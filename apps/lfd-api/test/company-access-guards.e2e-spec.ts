@@ -13,9 +13,9 @@
  * (tenants distants). Le reste — guard, bus, domaine, SQL — est réel.
  */
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
-import { NO_LOGIN_METHODS } from "../src/b2b/account/domain/ports/__tests__/login-method-doubles.js";
-import { CompanyMemberRepository } from "../src/b2b/account/domain/ports/company-member.repository.js";
-import { CustomerIdentityPort } from "../src/b2b/account/domain/ports/customer-identity.port.js";
+import { NO_LOGIN_METHODS } from "../src/lafoliecoffee/account/domain/ports/__tests__/login-method-doubles.js";
+import { CompanyMemberRepository } from "../src/lafoliecoffee/account/domain/ports/company-member.repository.js";
+import { CustomerIdentityPort } from "../src/lafoliecoffee/account/domain/ports/customer-identity.port.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole, UserStatus } from "../src/platform/database/client/client.js";
 import type { ProvisionedIdentity } from "../src/platform/shared/identity/provisioned-identity.js";

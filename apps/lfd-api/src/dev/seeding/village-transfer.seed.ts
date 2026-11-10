@@ -1,4 +1,4 @@
-import { SetSiteRolesCommand } from "../../b2b/sites/application/set-site-roles.command.js";
+import { SetSiteRolesCommand } from "../../lafoliecoffee/sites/application/set-site-roles.command.js";
 import type { RoundsContext } from "./delivery-rounds.seed.js";
 import { asStaff } from "./order-placing.seed.js";
 

@@ -40,7 +40,7 @@ dossier du jour.
 
 L'arrêt lit, **sous le verrou de la journée**, les réassorts « pour demain »
 envoyés et non annulés (`DayResuppliesReader`, implémenté par le commerce,
-`apps/lfd-api/src/b2b/resupply/infrastructure/production-day-resupplies.ts`) et les fige à part
+`apps/lfd-api/src/lafoliecoffee/resupply/infrastructure/production-day-resupplies.ts`) et les fige à part
 des commandes (`production.production_resupply` + `_line`, aucune clé vers
 `public`). Le compte à produire est le **total** commandes + réassorts — les
 fournées se cochent sur lui ; le journal compte toujours les seules

@@ -11,24 +11,24 @@ d'exemple fixes** : jamais une vraie commande, **rien d'écrit en base, rien
 d'archivé, rien d'envoyé**. On choisit un document à gauche, l'aperçu PDF
 s'affiche à droite, et « Ouvrir dans un onglet » sert à l'imprimer.
 
-| Groupe            | Document                        | Route (`GET`)                                           | Bloc qui le sert     | Rendu pur utilisé           |
-| ----------------- | ------------------------------- | ------------------------------------------------------- | -------------------- | --------------------------- |
-| Bons chiffrés     | confirmation de commande pro    | `admin/document-specimens/order-sheet-pro.pdf`          | `b2b/orders`         | `renderOrderSheetPdf`       |
-| Bons chiffrés     | confirmation de commande public | `admin/document-specimens/order-sheet-public.pdf`       | `b2b/orders`         | `renderOrderSheetPdf`       |
-| Bons non chiffrés | fiche d'atelier                 | `admin/document-specimens/atelier-sheet.pdf`            | `production`         | `renderAtelierSheetPdf`     |
-| Bons non chiffrés | feuille de tournée (livreur)    | `admin/document-specimens/round-paper.pdf`              | `delivery`           | `renderRoundPaperPdf`       |
-| Bons non chiffrés | dossier des tournées du jour    | `admin/document-specimens/rounds-dossier.pdf`           | `delivery`           | `renderDayRoundsDossierPdf` |
-| Bons chiffrés     | bon de livraison client pro     | `admin/document-specimens/delivery-note-client-pro.pdf` | `b2b/delivery-notes` | `renderClientNotePdf`       |
-| Bons non chiffrés | bon de livraison transport      | `admin/document-specimens/delivery-note-carrier.pdf`    | `b2b/delivery-notes` | `renderCarrierNotePdf`      |
-| Fournil           | compte à produire               | `admin/document-specimens/production-count.pdf`         | `production`         | `renderProductionCountPdf`  |
-| Fournil           | dossier du jour                 | `admin/document-specimens/day-dossier.pdf`              | `production`         | `renderDayDossierPdf`       |
-| Factures          | facture Factur-X (PDF/A-3)      | `admin/document-specimens/invoice.pdf`                  | `b2b/accounting`     | `renderInvoicePdf`          |
-| Mandats           | mandat SEPA interentreprises    | `admin/document-specimens/sepa-mandate-b2b.pdf`         | `b2b/accounting`     | `renderSepaMandatePdf`      |
-| Mandats           | mandat SEPA CORE                | `admin/document-specimens/sepa-mandate-core.pdf`        | `b2b/accounting`     | `renderSepaMandatePdf`      |
-| Récapitulatifs    | récapitulatif de commandes      | `admin/document-specimens/order-summary.pdf`            | `b2b/orders`         | `renderOrderSummaryPdf`     |
-| Catalogue         | matrice des allergènes          | `admin/document-specimens/allergen-matrix.pdf`          | `pim`                | `renderAllergenMatrixPdf`   |
-| Étiquettes        | étiquette de sac (A6)           | `admin/document-specimens/bag-label.pdf`                | `packing`            | `renderBagLabelsPdf`        |
-| Étiquettes        | étiquette de bac (A6)           | `admin/document-specimens/bin-label.pdf`                | `delivery`           | `renderBinLabelsPdf`        |
+| Groupe            | Document                        | Route (`GET`)                                           | Bloc qui le sert               | Rendu pur utilisé           |
+| ----------------- | ------------------------------- | ------------------------------------------------------- | ------------------------------ | --------------------------- |
+| Bons chiffrés     | confirmation de commande pro    | `admin/document-specimens/order-sheet-pro.pdf`          | `lafoliecoffee/orders`         | `renderOrderSheetPdf`       |
+| Bons chiffrés     | confirmation de commande public | `admin/document-specimens/order-sheet-public.pdf`       | `lafoliecoffee/orders`         | `renderOrderSheetPdf`       |
+| Bons non chiffrés | fiche d'atelier                 | `admin/document-specimens/atelier-sheet.pdf`            | `production`                   | `renderAtelierSheetPdf`     |
+| Bons non chiffrés | feuille de tournée (livreur)    | `admin/document-specimens/round-paper.pdf`              | `delivery`                     | `renderRoundPaperPdf`       |
+| Bons non chiffrés | dossier des tournées du jour    | `admin/document-specimens/rounds-dossier.pdf`           | `delivery`                     | `renderDayRoundsDossierPdf` |
+| Bons chiffrés     | bon de livraison client pro     | `admin/document-specimens/delivery-note-client-pro.pdf` | `lafoliecoffee/delivery-notes` | `renderClientNotePdf`       |
+| Bons non chiffrés | bon de livraison transport      | `admin/document-specimens/delivery-note-carrier.pdf`    | `lafoliecoffee/delivery-notes` | `renderCarrierNotePdf`      |
+| Fournil           | compte à produire               | `admin/document-specimens/production-count.pdf`         | `production`                   | `renderProductionCountPdf`  |
+| Fournil           | dossier du jour                 | `admin/document-specimens/day-dossier.pdf`              | `production`                   | `renderDayDossierPdf`       |
+| Factures          | facture Factur-X (PDF/A-3)      | `admin/document-specimens/invoice.pdf`                  | `lafoliecoffee/accounting`     | `renderInvoicePdf`          |
+| Mandats           | mandat SEPA interentreprises    | `admin/document-specimens/sepa-mandate-b2b.pdf`         | `lafoliecoffee/accounting`     | `renderSepaMandatePdf`      |
+| Mandats           | mandat SEPA CORE                | `admin/document-specimens/sepa-mandate-core.pdf`        | `lafoliecoffee/accounting`     | `renderSepaMandatePdf`      |
+| Récapitulatifs    | récapitulatif de commandes      | `admin/document-specimens/order-summary.pdf`            | `lafoliecoffee/orders`         | `renderOrderSummaryPdf`     |
+| Catalogue         | matrice des allergènes          | `admin/document-specimens/allergen-matrix.pdf`          | `pim`                          | `renderAllergenMatrixPdf`   |
+| Étiquettes        | étiquette de sac (A6)           | `admin/document-specimens/bag-label.pdf`                | `packing`                      | `renderBagLabelsPdf`        |
+| Étiquettes        | étiquette de bac (A6)           | `admin/document-specimens/bin-label.pdf`                | `delivery`                     | `renderBinLabelsPdf`        |
 
 ## Pourquoi chaque bloc sert ses propres exemplaires
 
@@ -109,13 +109,13 @@ n'appartiennent à personne.
   part neutre. Deux rayons d'exemple (Pains, Viennoiseries) ; la tasse n'en a
   aucun et tombe en « Hors catalogue ». Le dossier est arrêté par
   « EXEMPLE — Marie Dupont », jamais retiré, et n'est pas archivé.
-- **Mandats SEPA** (`b2b/accounting/…/specimen-mandate.ts`) : un créancier et
+- **Mandats SEPA** (`lafoliecoffee/accounting/…/specimen-mandate.ts`) : un créancier et
   un débiteur fictifs (SIREN `999999999`, ICS `FR00ZZZ999999`, IBAN en `9…`),
   rendus sous les deux schémas **sans émission** — aucune RUM tirée, aucun
   mandat frappé, le filigrane EXEMPLE posé par le rendu lui-même. Sans logo.
   Distincts de l'exemplaire d'une entité (fiche d'entité juridique), qui
   imprime les réglages d'une entité réelle.
-- **Récapitulatif** (`b2b/orders/…/specimen-order-summary.ts`) : trois fois la
+- **Récapitulatif** (`lafoliecoffee/orders/…/specimen-order-summary.ts`) : trois fois la
   commande pro d'exemple — une pour la société, une pour un de ses sites, une
   annulée —, résumées par `summarizeOrders`, le calcul des vraies sélections.
   On y voit la table d'un site et la liste des commandes hors totaux.

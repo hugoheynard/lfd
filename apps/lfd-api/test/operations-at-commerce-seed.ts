@@ -1,10 +1,10 @@
 import type { SyncOperation } from "@lfd/catalog-sync";
 import { CommandBus } from "@nestjs/cqrs";
 
-import { PrepareOperationCommand } from "../src/b2b/operations/application/commands/prepare-operation.command.js";
-import { SetOperationSelectionCommand } from "../src/b2b/operations/application/commands/set-operation-selection.command.js";
-import { SetOperationVisibilityCommand } from "../src/b2b/operations/application/commands/set-operation-visibility.command.js";
-import { scheduleOf } from "../src/b2b/operations/http/operation-payloads.js";
+import { PrepareOperationCommand } from "../src/lafoliecoffee/operations/application/commands/prepare-operation.command.js";
+import { SetOperationSelectionCommand } from "../src/lafoliecoffee/operations/application/commands/set-operation-selection.command.js";
+import { SetOperationVisibilityCommand } from "../src/lafoliecoffee/operations/application/commands/set-operation-visibility.command.js";
+import { scheduleOf } from "../src/lafoliecoffee/operations/http/operation-payloads.js";
 import type { E2eContext } from "./e2e-harness.js";
 
 /**

@@ -75,7 +75,7 @@ flowchart TB
 | Son numéro                   | `context_versions` (un par contexte : `catalog`, `operations`, `order_cutoffs`) | l'estampille : dernier identifiant de `pricing_events`                                                                                                                                                    |
 | Qui le fait monter           | **la base**, par des déclencheurs sur les colonnes lues                         | **le code** : tout acte tarifaire écrit une ligne de journal (`PricingActWriter`)                                                                                                                         |
 | Une correction SQL à la main | vue : le déclencheur monte                                                      | **pas vue** : redémarrer l'API (`carte-des-caches.md`)                                                                                                                                                    |
-| Le code                      | `apps/lfd-api/src/b2b/catalog/infrastructure/catalogue-snapshot/`               | `apps/lfd-api/src/b2b/pricing/infrastructure/pricing-materials.cache.ts`                                                                                                                                  |
+| Le code                      | `apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/catalogue-snapshot/`     | `apps/lfd-api/src/lafoliecoffee/pricing/infrastructure/pricing-materials.cache.ts`                                                                                                                        |
 
 **Pourquoi deux, et pas une.** Elles appartiennent à deux contextes qui
 changent pour des raisons différentes : le catalogue suit le référentiel et
@@ -141,7 +141,7 @@ empêche l'API de démarrer.
 
 ### 2. La mémoire
 
-- Le code : `apps/lfd-api/src/b2b/catalog/infrastructure/catalogue-snapshot/`
+- Le code : `apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/catalogue-snapshot/`
   — chargeur (`select` explicite tiré de la constante des colonnes), mémoire
   par morceau (`versioned-chunk-memory.ts`), magasin, lecteurs `Snapshot*`.
 - **Les numéros sont lus une fois par requête**, sur le contexte de requête.
@@ -158,7 +158,7 @@ empêche l'API de démarrer.
   collation.
 - **Une portée explicite** décide qui lit la mémoire :
   `withCatalogueSnapshot`
-  (`apps/lfd-api/src/b2b/catalog/application/catalogue-snapshot-scope.ts`),
+  (`apps/lfd-api/src/lafoliecoffee/catalog/application/catalogue-snapshot-scope.ts`),
   posée sur les deux devis de la boutique, l'estimation de la saisie, les
   suggestions du panier, le rayon public (`/shop/catalogue`), le rayon pro
   recalculé (`RecognisedShelf.read`), la vitrine (`/shop/storefront/:key`,

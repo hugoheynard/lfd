@@ -7,14 +7,14 @@
 ## Ce qui se passe (relu le 2026-11-01)
 
 - `CreateCompanyCommand` écrit le rattachement du créateur sans `accepted_at`
-  (`apps/lfd-api/src/b2b/account/infrastructure/prisma-company.repository.ts`,
+  (`apps/lfd-api/src/lafoliecoffee/account/infrastructure/prisma-company.repository.ts`,
   `tx.membership.create`) : `invited_at` prend le défaut de la base, `now()`.
 - C'est la **requête suivante** de cette personne qui l'accepte :
   `customer-principal.resolver.ts` → `membership-acceptance.ts`
   (`acceptLive`), à condition que l'invitation vive encore
   (`isInvitationAlive`, durée `INVITATION_LIFETIME_DAYS`, 7 jours).
 - Toute garde d'accès lit `openingMembership(now)`
-  (`apps/lfd-api/src/b2b/shared/company-standing/infrastructure/opening-membership.ts`) :
+  (`apps/lfd-api/src/lafoliecoffee/shared/company-standing/infrastructure/opening-membership.ts`) :
   accepté, OU invitation vivante. Passé 7 jours sans acceptation, la société
   répond « Entreprise introuvable » (`account.company.not_found`) à son
   propre fondateur.

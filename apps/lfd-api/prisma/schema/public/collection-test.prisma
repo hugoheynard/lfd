@@ -3,7 +3,7 @@
 // `documentation/comptabilite/prelevement/plan-prelevement-d-essai.md`.
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// Propriétaire : `src/b2b/accounting/`. Aucune de ces tables ne touche une
+// Propriétaire : `src/lafoliecoffee/accounting/`. Aucune de ces tables ne touche une
 // facture, un bon, un lot ni un état d'encaissement.
 //
 // 🔴 Contraintes INVISIBLES ici — elles vivent dans la migration

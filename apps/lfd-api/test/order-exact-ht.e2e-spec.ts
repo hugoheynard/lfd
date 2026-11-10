@@ -8,7 +8,7 @@ import type {
 import { htMillicentsOf } from "@lfd/pim-contracts";
 import { CommandBus } from "@nestjs/cqrs";
 
-import { ConvertLoyaltyPointsCommand } from "../src/b2b/loyalty/application/commands/convert-loyalty-points.command.js";
+import { ConvertLoyaltyPointsCommand } from "../src/lafoliecoffee/loyalty/application/commands/convert-loyalty-points.command.js";
 import type {
   CreateIntentParams,
   CreatedIntent,

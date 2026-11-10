@@ -2,7 +2,7 @@
 
 Ces fichiers sont recopiés **tels quels**, sans aucune modification, depuis la
 publication FNFE-MPE. Les specs
-`src/b2b/accounting/domain/services/__tests__/facturx-fr-conformance.spec.ts`
+`src/lafoliecoffee/accounting/domain/services/__tests__/facturx-fr-conformance.spec.ts`
 s'en servent pour valider chaque forme de pièce que l'émission produit
 (`facturx-samples.ts`). Doc : `documentation/comptabilite/facturation/facture-emise.md`.
 

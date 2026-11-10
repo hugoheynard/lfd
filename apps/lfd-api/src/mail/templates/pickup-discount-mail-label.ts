@@ -13,7 +13,7 @@ import { fill } from "./copy/mail-copy.js";
  * quand une ligne en est exclue (« Remise retrait Le Labo (5 %) sur 100,00 €
  * éligibles »).
  *
- * ⚠️ Jumeau de `pickupDiscountLabel` (`b2b/orders/domain/services/`) : le
+ * ⚠️ Jumeau de `pickupDiscountLabel` (`lafoliecoffee/orders/domain/services/`) : le
  * mailer est de `platform/`, il ne connaît aucun contexte et ne peut pas
  * l'importer. Celui-ci parle la langue du destinataire (`Intl`), celui du bon
  * écrit le français à la main, pour un document archivé.

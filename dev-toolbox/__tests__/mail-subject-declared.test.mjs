@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 
 import { callsOf, verdict } from "../gates/mail-subject-declared.mjs";
 
-const PATH = "apps/lfd-api/src/b2b/orders/application/services/x.ts";
+const PATH = "apps/lfd-api/src/lafoliecoffee/orders/application/services/x.ts";
 const NONE = new Map();
 const NO_DEBT = new Set();
 
@@ -69,12 +69,15 @@ test("repère par l'injection : une enveloppe positionnelle d'un service métier
   ].join("\n");
   const service = sender(WITHOUT_SUBJECTS);
   const files = [
-    { path: "apps/lfd-api/src/b2b/orders/application/handlers/h.ts", source: envelope },
+    { path: "apps/lfd-api/src/lafoliecoffee/orders/application/handlers/h.ts", source: envelope },
     { path: PATH, source: service },
   ];
   const { failures } = verdict(files, NONE, NO_DEBT);
   assert.equal(failures.length, 1);
-  assert.match(failures[0], /^apps\/lfd-api\/src\/b2b\/orders\/application\/services\/x\.ts:4/);
+  assert.match(
+    failures[0],
+    /^apps\/lfd-api\/src\/lafoliecoffee\/orders\/application\/services\/x\.ts:4/,
+  );
 });
 
 test("repère un nom d'injection autre que `mail`, et un appel générique", () => {
@@ -106,7 +109,7 @@ test("dette : un inscrit en écart est compté, pas refusé", () => {
 });
 
 test("dette : un inscrit nettoyé échoue, un inscrit disparu aussi", () => {
-  const gone = "apps/lfd-api/src/b2b/gone.ts";
+  const gone = "apps/lfd-api/src/lafoliecoffee/gone.ts";
   const { failures } = verdict(
     [{ path: PATH, source: sender(WITH_SUBJECTS) }],
     NONE,

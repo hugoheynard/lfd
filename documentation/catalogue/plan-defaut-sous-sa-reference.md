@@ -15,7 +15,7 @@
 
 ## 0. Le problème
 
-`shopSkuOf` rend `item.isDefault ? item.productSku : item.sku` (`apps/lfd-api/src/b2b/catalog/domain/shop-sku.ts:13-19`). La référence produit veut donc dire « le défaut du moment ». Depuis le geste G4, tout ce qui est posé sur `PAI-001` glisse vers la nouvelle déclinaison. Et tout ce qui visait la déclinaison promue devient orphelin.
+`shopSkuOf` rend `item.isDefault ? item.productSku : item.sku` (`apps/lfd-api/src/lafoliecoffee/catalog/domain/shop-sku.ts:13-19`). La référence produit veut donc dire « le défaut du moment ». Depuis le geste G4, tout ce qui est posé sur `PAI-001` glisse vers la nouvelle déclinaison. Et tout ce qui visait la déclinaison promue devient orphelin.
 
 **Cible.** `shopSkuOf(item) = item.sku`. La référence produit n'est plus une référence de vente. Elle ne reste qu'une **clé d'entrée ancienne**, résolue par une table d'alias. Tout regroupement passe par cet alias, **jamais par `product_sku`**. Regrouper par `product_sku` fusionnerait `PAI-001-1` et `PAI-001-2`, deux articles distincts du modèle à plat (§ 6, BLOQUANT 1).
 
@@ -87,7 +87,7 @@ Sans tarif, il n'y a plus de cumul d'engagement à recompter. Il reste quatre be
 - les compteurs `growth` (`growth.prisma:426`, `@@id([day, sku, …])` :435) ;
 - les références des constats d'alerte (`public/alerts.prisma:98`, jsonb figé).
 
-**(b) Le fournil du jour de la bascule.** Ce jour-là, des lignes `PAI-001` déjà passées côtoient des lignes `PAI-001-1`. Le lecteur agrège par `line.sku` (`apps/lfd-api/src/b2b/orders/infrastructure/prisma-expected-production.reader.ts:71-100`, clé l. 85-86). Sans alias, il sort deux lignes pour un même article.
+**(b) Le fournil du jour de la bascule.** Ce jour-là, des lignes `PAI-001` déjà passées côtoient des lignes `PAI-001-1`. Le lecteur agrège par `line.sku` (`apps/lfd-api/src/lafoliecoffee/orders/infrastructure/prisma-expected-production.reader.ts:71-100`, clé l. 85-86). Sans alias, il sort deux lignes pour un même article.
 
 **(c) Les entrées anciennes** (§ 5).
 
@@ -106,17 +106,17 @@ Ce qui reste à faire : le nom de la table du journal du référentiel. Je ne l'
 
 On compte 43 fichiers hors tests qui lisent `productSku` ou appellent `shopSkuOf`. Ceux qui **réimplémentent** la règle « le défaut se vend sous la référence produit » sans passer par `shopSkuOf` :
 
-| Fichier:ligne                                                                     | Ce qu'il fait                                                                       | Sort                                                                                                                |
-| --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `b2b/catalog/infrastructure/catalog-sellable-articles.reader.ts:39-46`            | indexe le défaut par `productSku`, `sku: item.productSku`                           | passer par `shopSkuOf`                                                                                              |
-| `b2b/recommendations/infrastructure/catalog-suggestion-catalogue.ts:28-29`, `:45` | même patron ; l'éditeur des suggestions propose `sku: item.productSku`              | passer par `shopSkuOf`                                                                                              |
-| `b2b/catalog/infrastructure/shop-sku-filter.ts:10-12`                             | `productSku IN … AND isDefault` OU `sku IN … AND NOT isDefault AND variantsAsTiles` | une seule branche `sku IN …`, plus la résolution d'alias en amont                                                   |
-| `b2b/recommendations/infrastructure/catalog-not-served-cause.reader.ts:26-37`     | filtre les articles par `item.productSku === sku`                                   | lire par `sku` après passage par l'alias                                                                            |
-| `b2b/pricing/infrastructure/prisma-pricing-board.reader.ts:141-145`               | le commentaire pose que SKU de vente et SKU produit « coïncident pour le défaut »   | après la bascule, ce n'est plus vrai : lire l'historique par `sku` (L1 du plan précédent) ; réécrire le commentaire |
-| `b2b/catalog/application/queries/published-catalog-view.ts:65`, `:78`             | choisit la tête de fiche par `isDefault` et expose `productSku`                     | à garder : c'est une fiche, pas une vente. À relire pour la clé de tuile                                            |
-| `dev/seeding/orders.seed.ts:245`, `:301`, `:321`                                  | sème des commandes sous `productSku` du défaut                                      | suivre `shopSkuOf` (sinon le seed crée des lignes à alias)                                                          |
+| Fichier:ligne                                                                               | Ce qu'il fait                                                                       | Sort                                                                                                                |
+| ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `lafoliecoffee/catalog/infrastructure/catalog-sellable-articles.reader.ts:39-46`            | indexe le défaut par `productSku`, `sku: item.productSku`                           | passer par `shopSkuOf`                                                                                              |
+| `lafoliecoffee/recommendations/infrastructure/catalog-suggestion-catalogue.ts:28-29`, `:45` | même patron ; l'éditeur des suggestions propose `sku: item.productSku`              | passer par `shopSkuOf`                                                                                              |
+| `lafoliecoffee/catalog/infrastructure/shop-sku-filter.ts:10-12`                             | `productSku IN … AND isDefault` OU `sku IN … AND NOT isDefault AND variantsAsTiles` | une seule branche `sku IN …`, plus la résolution d'alias en amont                                                   |
+| `lafoliecoffee/recommendations/infrastructure/catalog-not-served-cause.reader.ts:26-37`     | filtre les articles par `item.productSku === sku`                                   | lire par `sku` après passage par l'alias                                                                            |
+| `lafoliecoffee/pricing/infrastructure/prisma-pricing-board.reader.ts:141-145`               | le commentaire pose que SKU de vente et SKU produit « coïncident pour le défaut »   | après la bascule, ce n'est plus vrai : lire l'historique par `sku` (L1 du plan précédent) ; réécrire le commentaire |
+| `lafoliecoffee/catalog/application/queries/published-catalog-view.ts:65`, `:78`             | choisit la tête de fiche par `isDefault` et expose `productSku`                     | à garder : c'est une fiche, pas une vente. À relire pour la clé de tuile                                            |
+| `dev/seeding/orders.seed.ts:245`, `:301`, `:321`                                            | sème des commandes sous `productSku` du défaut                                      | suivre `shopSkuOf` (sinon le seed crée des lignes à alias)                                                          |
 
-Le froid passe déjà par `shopSkuOf` (`b2b/catalog/infrastructure/prisma-catalog-cold.reader.ts:19-24`). L'ancien L0 est fait. Il basculera seul avec `shopSkuOf`.
+Le froid passe déjà par `shopSkuOf` (`lafoliecoffee/catalog/infrastructure/prisma-catalog-cold.reader.ts:19-24`). L'ancien L0 est fait. Il basculera seul avec `shopSkuOf`.
 
 Les magasins de configuration, clés par SKU de vente, sont **réécrits dans la migration de bascule**. C'est sans danger de collision : avant la bascule, la référence `-1` d'un défaut n'est jamais vendue.
 
@@ -146,7 +146,7 @@ La migration est **transactionnelle**. Elle est aussi **rejouable** : insertions
 | Brouillon staff                         | `OrderDraft.payload` jsonb (`orders.prisma:1025-1028`)                                                                    | idem                                                                                                                                                                                                                                                                                                                                                       | voir Q1                              |
 | `POST /orders`, devis, rejeu idempotent | résolution `prisma-catalog.reader.ts:168`                                                                                 | une référence produit est résolue par `sale_sku_alias`, **pas** par le défaut courant ; la réponse renvoie la référence normalisée ; chaque résolution est comptée                                                                                                                                                                                         | voir Q1                              |
 | Lien de fiche                           | `boutique/${PRODUCT_SEGMENT}/:${PIECE_SKU_PARAM}` (`app.routes.ts:295`, paramètre `sku` : `client/shop/piece-route.ts:6`) | le paramètre est déjà une référence de vente : un `PAI-001` reçu est résolu par l'alias, puis l'adresse est remplacée sans nouvelle entrée d'historique                                                                                                                                                                                                    | permanent (coût nul, liens partagés) |
-| Flux XML de la vitrine                  | `b2b/vitrine/http/vitrine-representation.ts`, `xml/xml-writer.ts` ; `public/vitrine.prisma:66` (`item` = sku)             | les clés `item` publiées sont réécrites dans la migration ; le flux sort la nouvelle référence                                                                                                                                                                                                                                                             | pas d'alias (voir Q3)                |
+| Flux XML de la vitrine                  | `lafoliecoffee/vitrine/http/vitrine-representation.ts`, `xml/xml-writer.ts` ; `public/vitrine.prisma:66` (`item` = sku)   | les clés `item` publiées sont réécrites dans la migration ; le flux sort la nouvelle référence                                                                                                                                                                                                                                                             | pas d'alias (voir Q3)                |
 
 **Normalisation.** Elle se fait toujours vers `target_sku` de la table, jamais vers le défaut courant. Si G4 a joué depuis, un vieux panier ne glisse donc pas.
 
@@ -213,10 +213,10 @@ Tests :
 
 ### Fichiers critiques
 
-- /Users/hugo/WebstormProjects/LaFolieDouce/apps/lfd-api/src/b2b/catalog/domain/shop-sku.ts
-- /Users/hugo/WebstormProjects/LaFolieDouce/apps/lfd-api/src/b2b/catalog/infrastructure/shop-sku-filter.ts
+- /Users/hugo/WebstormProjects/LaFolieDouce/apps/lfd-api/src/lafoliecoffee/catalog/domain/shop-sku.ts
+- /Users/hugo/WebstormProjects/LaFolieDouce/apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/shop-sku-filter.ts
 - /Users/hugo/WebstormProjects/LaFolieDouce/apps/lfd-api/prisma/schema/public/pricing.prisma
-- /Users/hugo/WebstormProjects/LaFolieDouce/apps/lfd-api/src/b2b/orders/infrastructure/prisma-expected-production.reader.ts
+- /Users/hugo/WebstormProjects/LaFolieDouce/apps/lfd-api/src/lafoliecoffee/orders/infrastructure/prisma-expected-production.reader.ts
 - /Users/hugo/WebstormProjects/LaFolieDouce/apps/lfc-ecommerce-frontend/src/app/client/cart/cart.store.ts
 - /Users/hugo/WebstormProjects/LaFolieDouce/.github/workflows/deploy_lfd_api.yml
 
@@ -581,7 +581,7 @@ ou un réglage posés depuis. Au-delà, c'est une nouvelle bascule.
    les compte (`factures_emises`, `arretes_emis`, plus
    `commandes_aux_deux_references`). Aucun lecteur ne rejoint
    `invoice.lines` ou `billing_statement.body` à `catalog_items` par SKU
-   (vérifié le 2026-10-29 dans `b2b/accounting/infrastructure/` : aucun ne lit
+   (vérifié le 2026-10-29 dans `lafoliecoffee/accounting/infrastructure/` : aucun ne lit
    le catalogue). Le retour arrière porte le même refus, sous `PAI-001-1`.
 2. **`sale_sku_alias` reste dans ce déploiement.** La migration
    `20261029180100` qui la supprimait est retirée de la branche. La table est

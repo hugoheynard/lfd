@@ -15,7 +15,7 @@
 import type { ProductHistoryEntryView, ProductHistoryPageView } from "@lfd/pim-contracts";
 import type { Response } from "supertest";
 
-import { ActivityRecorder } from "../src/b2b/growth/domain/ports/activity-recorder.js";
+import { ActivityRecorder } from "../src/lafoliecoffee/growth/domain/ports/activity-recorder.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 

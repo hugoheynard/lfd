@@ -15,7 +15,7 @@ import {
  * Le paquet juge un candidat contre UN nombre de rangées. Un objet partagé
  * paraît sur plusieurs rayons, à la même place, et chacun a sa hauteur : il
  * doit donc tenir sur chacun, jugé avec les rangées de ce rayon-là. C'est la
- * boucle que le serveur fait à l'écriture (`b2b/storefront/domain/composition-rules.ts`,
+ * boucle que le serveur fait à l'écriture (`lafoliecoffee/storefront/domain/composition-rules.ts`,
  * `assertPlacements`, lu le 2026-09-24) ; l'éditeur la fait à la pose, pour
  * refuser avant d'envoyer.
  */

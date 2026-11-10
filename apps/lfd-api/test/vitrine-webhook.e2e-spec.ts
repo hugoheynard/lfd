@@ -33,7 +33,7 @@ import type {
   VitrineTextsView,
 } from "@lfd/contracts";
 
-import { verifyVitrineSignature } from "../src/b2b/vitrine/domain/services/vitrine-signature.js";
+import { verifyVitrineSignature } from "../src/lafoliecoffee/vitrine/domain/services/vitrine-signature.js";
 import {
   WebhookPoster,
   type WebhookPost,

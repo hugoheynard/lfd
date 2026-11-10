@@ -1,6 +1,6 @@
-import { PoseCompanyMercurialeCommand } from "../../b2b/pricing/application/commands/pose-company-mercuriale.command.js";
-import { SetVolumeLadderCommand } from "../../b2b/pricing/application/commands/set-volume-ladder.command.js";
-import { SignVolumeCommitmentCommand } from "../../b2b/pricing/application/commands/sign-volume-commitment.command.js";
+import { PoseCompanyMercurialeCommand } from "../../lafoliecoffee/pricing/application/commands/pose-company-mercuriale.command.js";
+import { SetVolumeLadderCommand } from "../../lafoliecoffee/pricing/application/commands/set-volume-ladder.command.js";
+import { SignVolumeCommitmentCommand } from "../../lafoliecoffee/pricing/application/commands/sign-volume-commitment.command.js";
 import type { ClientContext } from "./client.seed.js";
 import { asStaff, isoDay, monthDay, parisAt, SEED_STAFF_SUB } from "./order-placing.seed.js";
 import { saleSkusOf, withSaleSkus } from "./sale-references.seed.js";

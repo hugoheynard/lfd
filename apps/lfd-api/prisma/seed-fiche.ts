@@ -9,7 +9,7 @@ import {
 } from "../src/platform/database/client/client.js";
 import { PrismaPg } from "@prisma/adapter-pg";
 
-import { localToInstant } from "../src/b2b/growth/domain/paris-time.js";
+import { localToInstant } from "../src/lafoliecoffee/growth/domain/paris-time.js";
 import { refuseNonLocalTarget } from "./local-target.js";
 
 /**

@@ -1,8 +1,8 @@
 import { Global, Module } from "@nestjs/common";
 
-import { OrdersModule } from "../b2b/orders/orders.module.js";
-import { OrderSubjectSettlement } from "../b2b/orders/application/services/order-subject-settlement.js";
-import { ORDER_CARD_SUBJECT_TYPE } from "../b2b/orders/application/services/order-card-subject.js";
+import { OrdersModule } from "../lafoliecoffee/orders/orders.module.js";
+import { OrderSubjectSettlement } from "../lafoliecoffee/orders/application/services/order-subject-settlement.js";
+import { ORDER_CARD_SUBJECT_TYPE } from "../lafoliecoffee/orders/application/services/order-card-subject.js";
 import {
   RegisteredSubjectSettlements,
   SubjectSettlements,

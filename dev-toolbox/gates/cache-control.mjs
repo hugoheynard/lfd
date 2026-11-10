@@ -46,30 +46,30 @@ const SKIP_DIRS = new Set(["node_modules", "dist", "client", "coverage", ".turbo
  */
 const ADMITTED = new Map([
   [
-    "apps/lfd-api/src/b2b/shop-copy/http/shop-copy-cache-headers.ts",
+    "apps/lfd-api/src/lafoliecoffee/shop-copy/http/shop-copy-cache-headers.ts",
     {
       since: "2026-11-02",
       reason:
         "les textes publiés de la boutique, identiques pour tous, étiquetés par version et langue ; " +
         "purgés de Workers Cache à chaque publication (`Cache-Tag: textes-boutique`, 2026-11-04)",
-      readers: ["apps/lfd-api/src/b2b/shop-copy/http/shop-copy.controller.ts"],
+      readers: ["apps/lfd-api/src/lafoliecoffee/shop-copy/http/shop-copy.controller.ts"],
     },
   ],
   [
-    "apps/lfd-api/src/b2b/catalog/http/public-shelf-cache-headers.ts",
+    "apps/lfd-api/src/lafoliecoffee/catalog/http/public-shelf-cache-headers.ts",
     {
       since: "2026-11-04",
       reason:
         "le rayon public (C3) : `public, max-age=30` sur deux routes qui ne lisent jamais l'appelant, " +
         "seulement si le drapeau public est allumé et que la version n'a pas bougé",
       readers: [
-        "apps/lfd-api/src/b2b/catalog/http/shop-catalogue.controller.ts",
-        "apps/lfd-api/src/b2b/catalog/http/shop-featured.controller.ts",
+        "apps/lfd-api/src/lafoliecoffee/catalog/http/shop-catalogue.controller.ts",
+        "apps/lfd-api/src/lafoliecoffee/catalog/http/shop-featured.controller.ts",
       ],
     },
   ],
   [
-    "apps/lfd-api/src/b2b/shared/public-settings-cache/http/public-settings-cache-headers.ts",
+    "apps/lfd-api/src/lafoliecoffee/shared/public-settings-cache/http/public-settings-cache-headers.ts",
     {
       since: "2026-11-05",
       reason:
@@ -77,15 +77,15 @@ const ADMITTED = new Map([
         "identiques pour tous : `public, max-age=30, stale-while-revalidate=60`, purgés de Workers Cache " +
         "à chaque écriture (`Cache-Tag: reglages-publics`)",
       readers: [
-        "apps/lfd-api/src/b2b/content/http/platform-content.controller.ts",
-        "apps/lfd-api/src/b2b/order-opening/http/order-opening.controller.ts",
-        "apps/lfd-api/src/b2b/delivery-zones/http/delivery-zones.controller.ts",
-        "apps/lfd-api/src/b2b/delivery-availability/http/delivery-availability.controller.ts",
+        "apps/lfd-api/src/lafoliecoffee/content/http/platform-content.controller.ts",
+        "apps/lfd-api/src/lafoliecoffee/order-opening/http/order-opening.controller.ts",
+        "apps/lfd-api/src/lafoliecoffee/delivery-zones/http/delivery-zones.controller.ts",
+        "apps/lfd-api/src/lafoliecoffee/delivery-availability/http/delivery-availability.controller.ts",
       ],
     },
   ],
   [
-    "apps/lfd-api/src/b2b/pickup-addresses/http/public-pickup-cache-headers.ts",
+    "apps/lfd-api/src/lafoliecoffee/pickup-addresses/http/public-pickup-cache-headers.ts",
     {
       since: "2026-11-05",
       reason:
@@ -93,7 +93,9 @@ const ADMITTED = new Map([
         "qui ne lit pas l'appelant : `public, max-age=30` SANS stale-while-revalidate (Hugo — une remise " +
         "à horaires reste annoncée 30 s au plus après sa fin), purgée à chaque écriture d'un point, de ses " +
         "rôles ou d'une promotion (`Cache-Tag: reglages-publics`)",
-      readers: ["apps/lfd-api/src/b2b/pickup-addresses/http/pickup-addresses.controller.ts"],
+      readers: [
+        "apps/lfd-api/src/lafoliecoffee/pickup-addresses/http/pickup-addresses.controller.ts",
+      ],
     },
   ],
 ]);
@@ -104,29 +106,29 @@ const ADMITTED = new Map([
  * qu'ils ne lisent pas l'appelant.
  */
 const CALLER_BLIND = [
-  "apps/lfd-api/src/b2b/catalog/http/shop-catalogue.controller.ts",
-  "apps/lfd-api/src/b2b/catalog/http/shop-featured.controller.ts",
-  "apps/lfd-api/src/b2b/catalog/application/queries/read-public-shop-catalogue.handler.ts",
-  "apps/lfd-api/src/b2b/catalog/application/queries/read-public-shop-featured.handler.ts",
-  "apps/lfd-api/src/b2b/catalog/application/queries/read-shop-catalogue.ts",
-  "apps/lfd-api/src/b2b/catalog/application/queries/read-shop-featured.handler.ts",
+  "apps/lfd-api/src/lafoliecoffee/catalog/http/shop-catalogue.controller.ts",
+  "apps/lfd-api/src/lafoliecoffee/catalog/http/shop-featured.controller.ts",
+  "apps/lfd-api/src/lafoliecoffee/catalog/application/queries/read-public-shop-catalogue.handler.ts",
+  "apps/lfd-api/src/lafoliecoffee/catalog/application/queries/read-public-shop-featured.handler.ts",
+  "apps/lfd-api/src/lafoliecoffee/catalog/application/queries/read-shop-catalogue.ts",
+  "apps/lfd-api/src/lafoliecoffee/catalog/application/queries/read-shop-featured.handler.ts",
   // Les réglages publics (2026-11-05) : contrôleurs et lectures.
-  "apps/lfd-api/src/b2b/content/http/platform-content.controller.ts",
-  "apps/lfd-api/src/b2b/order-opening/http/order-opening.controller.ts",
-  "apps/lfd-api/src/b2b/delivery-zones/http/delivery-zones.controller.ts",
-  "apps/lfd-api/src/b2b/delivery-availability/http/delivery-availability.controller.ts",
-  "apps/lfd-api/src/b2b/content/application/get-footer-content.handler.ts",
-  "apps/lfd-api/src/b2b/order-opening/application/queries/get-order-opening.handler.ts",
-  "apps/lfd-api/src/b2b/delivery-zones/application/list-delivery-zones.handler.ts",
-  "apps/lfd-api/src/b2b/delivery-availability/application/queries/get-delivery-availability.handler.ts",
+  "apps/lfd-api/src/lafoliecoffee/content/http/platform-content.controller.ts",
+  "apps/lfd-api/src/lafoliecoffee/order-opening/http/order-opening.controller.ts",
+  "apps/lfd-api/src/lafoliecoffee/delivery-zones/http/delivery-zones.controller.ts",
+  "apps/lfd-api/src/lafoliecoffee/delivery-availability/http/delivery-availability.controller.ts",
+  "apps/lfd-api/src/lafoliecoffee/content/application/get-footer-content.handler.ts",
+  "apps/lfd-api/src/lafoliecoffee/order-opening/application/queries/get-order-opening.handler.ts",
+  "apps/lfd-api/src/lafoliecoffee/delivery-zones/application/list-delivery-zones.handler.ts",
+  "apps/lfd-api/src/lafoliecoffee/delivery-availability/application/queries/get-delivery-availability.handler.ts",
   // La liste publique des points (2026-11-05) : le contrôleur, la lecture,
   // la coupe par audience, le décorateur qui y pose la remise, et l'annonceur.
-  "apps/lfd-api/src/b2b/pickup-addresses/http/pickup-addresses.controller.ts",
-  "apps/lfd-api/src/b2b/pickup-addresses/application/list-shop-pickups.handler.ts",
-  "apps/lfd-api/src/b2b/pickup-addresses/application/audience-pickup-address.ts",
-  "apps/lfd-api/src/b2b/pickup-addresses/infrastructure/announced-pickup-address.repository.ts",
-  "apps/lfd-api/src/b2b/pickup-addresses/infrastructure/prisma-pickup-address.repository.ts",
-  "apps/lfd-api/src/b2b/promotions/application/promotion-pickup-discount.announcer.ts",
+  "apps/lfd-api/src/lafoliecoffee/pickup-addresses/http/pickup-addresses.controller.ts",
+  "apps/lfd-api/src/lafoliecoffee/pickup-addresses/application/list-shop-pickups.handler.ts",
+  "apps/lfd-api/src/lafoliecoffee/pickup-addresses/application/audience-pickup-address.ts",
+  "apps/lfd-api/src/lafoliecoffee/pickup-addresses/infrastructure/announced-pickup-address.repository.ts",
+  "apps/lfd-api/src/lafoliecoffee/pickup-addresses/infrastructure/prisma-pickup-address.repository.ts",
+  "apps/lfd-api/src/lafoliecoffee/promotions/application/promotion-pickup-discount.announcer.ts",
 ];
 
 /** Ce qui lit l'appelant : un décorateur d'identité, la requête brute, un type d'identité. */
@@ -309,7 +311,7 @@ const unix = (path) => path.split("\\").join("/");
  * cassé ne refuse plus rien, et le dit en vert.
  */
 function selfCheck() {
-  const ROUTE = "apps/lfd-api/src/b2b/x/http/x.controller.ts";
+  const ROUTE = "apps/lfd-api/src/lafoliecoffee/x/http/x.controller.ts";
   const ADMITTED_FILE = [...ADMITTED.keys()][0];
   const constants = new Map([
     ["OPEN", { value: "public, max-age=60", rel: ROUTE }],
@@ -339,7 +341,7 @@ function selfCheck() {
     'import { x } from "./cache-control-by-default.js"; headers["Cache-Control"] = v;',
   ).unreadable;
   const gateway = gatewayCachesOf("const c = await caches.open('x'); caches.default.match(r);");
-  const SHELF_HEADERS = "apps/lfd-api/src/b2b/catalog/http/public-shelf-cache-headers.ts";
+  const SHELF_HEADERS = "apps/lfd-api/src/lafoliecoffee/catalog/http/public-shelf-cache-headers.ts";
   const imported = [
     importsOf('import { offerPublicShelf } from "./public-shelf-cache-headers.js";', SHELF_HEADERS),
     importsOf(

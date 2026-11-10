@@ -105,8 +105,8 @@ La frontière autorise déjà la lecture : la matrice du `CLAUDE.md` §3 dit
 motif est **déjà en service**, pas à inventer :
 
 ```
-b2b/catalog/infrastructure/in-process-delivery-facts.reader.ts   (retiré le 2026-10-17)
-b2b/catalog/infrastructure/in-process-catalog.driver.ts
+lafoliecoffee/catalog/infrastructure/in-process-delivery-facts.reader.ts   (retiré le 2026-10-17)
+lafoliecoffee/catalog/infrastructure/in-process-catalog.driver.ts
 ```
 
 Le préfixe `in-process-` est un aveu utile : ces adaptateurs sont nommés pour le

@@ -1,8 +1,8 @@
 import { Global, Module } from "@nestjs/common";
 
-import { PricingFollowJournal } from "../b2b/account/domain/ports/pricing-follow.journal.js";
-import { PricingFollowJournalWriter } from "../b2b/pricing/infrastructure/pricing-follow.journal-writer.js";
-import { PricingAdminModule } from "../b2b/pricing/pricing-admin.module.js";
+import { PricingFollowJournal } from "../lafoliecoffee/account/domain/ports/pricing-follow.journal.js";
+import { PricingFollowJournalWriter } from "../lafoliecoffee/pricing/infrastructure/pricing-follow.journal-writer.js";
+import { PricingAdminModule } from "../lafoliecoffee/pricing/pricing-admin.module.js";
 
 /**
  * **Le suivi d'une mercuriale, inscrit au journal des prix** (`sous-comptes.md`,

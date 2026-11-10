@@ -19,7 +19,7 @@ ses déclinaisons ».
 
 | Lot  | État                | Où ça se voit                                                                                                                                  |
 | ---- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| S1   | ✅ bâti             | migration `20261005100000_les_sous_comptes` ; `src/b2b/account/` (gestes, verrou, `SubAccountFollows`) ; e2e `sub-accounts`                    |
+| S1   | ✅ bâti             | migration `20261005100000_les_sous_comptes` ; `src/lafoliecoffee/account/` (gestes, verrou, `SubAccountFollows`) ; e2e `sub-accounts`          |
 | S2   | ✅ bâti             | `lfd-backoffice-frontend/src/app/fiche-client/` (onglet `sous-comptes`, bandeau, cases « Suivre ») ; badge dans la liste et le cockpit         |
 | S3   | ✅ bâti             | `pricing-parties.resolver.ts`, `followed-pricing-account.reader.ts`, volume Q6 ; e2e `sub-account-pricing`                                     |
 | A1   | hors doc            | son propre plan : [`../commandes/bon-et-pieces/plan-agregation-des-commandes.md`](../commandes/bon-et-pieces/plan-agregation-des-commandes.md) |
@@ -78,7 +78,7 @@ flowchart TB
 | valeur propre qui dort             | adresses / RIB propres gardés, non lus pendant le suivi                                        |
 | `AlignVariantOnDefaultCommand`     | `FollowParentCommand` / `StopFollowingParentCommand` (`aspect`)                                |
 
-Les gestes, tous dans `src/b2b/account/application/commands/` :
+Les gestes, tous dans `src/lafoliecoffee/account/application/commands/` :
 `CreateSubAccount`, `AttachToParent`, `DetachFromParent`, `FollowParent`,
 `StopFollowingParent`, `SetGroupWithoutDelivery`, `SetCollectionForm`. Les
 périodes sont tenues par l'objet de domaine `SubAccountFollows`
@@ -144,7 +144,7 @@ société ou une ligne par site. Côté écran, la carte
 ### 2.1 bis Un sous-compte qui suit `billing` n'a pas d'identité propre
 
 `Company.activate(activatedAt, reachable, by, billingCarrier)`
-(`src/b2b/account/domain/entities/company.ts`) reçoit le principal suivi en
+(`src/lafoliecoffee/account/domain/entities/company.ts`) reçoit le principal suivi en
 `billing`, lu par `ActivateCompanyHandler` sous le verrou. Quand le
 sous-compte est **porté** par un principal actif (`isLegallyCarriedBy`), ni
 `hasLegalIdentity` (raison sociale, forme, SIRET) ni détenteur propre ne sont
@@ -297,7 +297,7 @@ bon de commande lit `billedCompany.raisonSociale`
 (`orders/infrastructure/prisma-order.reader.ts`).
 
 ⚠️ **Non confirmé** : le plan citait « la passation des abonnements » comme
-troisième entrée. `src/b2b/subscriptions/` ne référence ni le payeur ni
+troisième entrée. `src/lafoliecoffee/subscriptions/` ne référence ni le payeur ni
 `OrderDraftingService` ; si un abonnement crée des commandes, ce n'est pas
 par ce chemin, et ce n'a pas été retrouvé.
 
@@ -321,8 +321,8 @@ principal peut être partagé avec un sous-compte.
 
 **Ce qui est bâti (S6 serveur, 2026-10-23).** La règle est écrite une fois,
 en fonction pure — `effectiveRole`
-(`src/b2b/shared/company-standing/domain/effective-role.ts`, déplacée depuis
-`b2b/account/` le 2026-10-23) :
+(`src/lafoliecoffee/shared/company-standing/domain/effective-role.ts`, déplacée depuis
+`lafoliecoffee/account/` le 2026-10-23) :
 
 ```
 rôle effectif dans X =
@@ -337,7 +337,7 @@ Le mur n'avait pas **deux** voies, comme ce paragraphe l'a dit jusqu'au
 2026-10-23, mais **une dizaine** : `resolveCompany`, puis un lecteur de rôle
 par contexte, chacun avec sa copie de la condition. Ils lisent tous, depuis S6,
 **la même requête** — `readCompanyStanding`
-(`src/b2b/shared/company-standing/infrastructure/read-company-standing.ts`) —
+(`src/lafoliecoffee/shared/company-standing/infrastructure/read-company-standing.ts`) —
 et `lint:company-role-readers` refuse un lecteur de plus. La conception et ses
 décisions (Q1 : le détenteur du principal lit la facturation du site ; Q2 :
 les courriels « aux membres » d'un site restent ceux de ses memberships
@@ -500,9 +500,9 @@ une migration de données.
 - **Q6 — Le volume des sous-comptes compte pour l'engagement du
   principal** : oui, pour les sous-comptes qui suivaient `pricing` à la date
   de chaque commande (bâti, §2.2).
-- **Q7 — La fidélité** va au payeur. ⚠️ Non vérifié dans `src/b2b/loyalty/`.
+- **Q7 — La fidélité** va au payeur. ⚠️ Non vérifié dans `src/lafoliecoffee/loyalty/`.
 - **Q8 — Les dérogations au cut-off** restent par sous-compte (c'est une
-  affaire de site). ⚠️ Non vérifié dans `src/b2b/order-waivers/`.
+  affaire de site). ⚠️ Non vérifié dans `src/lafoliecoffee/order-waivers/`.
 - **Q9 — Qui décide du tarif partagé** : le **commercial**. Le geste est
   derrière `@AdminSurface("b2b_pricing")`
   (`AdminCompanyPricingFollowController`) ; il s'écrit au journal des prix

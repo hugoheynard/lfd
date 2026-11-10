@@ -88,7 +88,7 @@ export interface DeliveryStopPoint {
 
 /**
  * **Les livraisons, vues par la composition** — ce que la livraison DÉCLARE et
- * que le commerce implémente (`b2b/orders/infrastructure/`), relié dans
+ * que le commerce implémente (`lafoliecoffee/orders/infrastructure/`), relié dans
  * `appBootstrap` (C4, C15).
  *
  * La livraison ne lit pas `public.orders` : le filtre « attendue ce jour »

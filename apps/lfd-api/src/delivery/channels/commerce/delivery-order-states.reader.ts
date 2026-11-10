@@ -16,7 +16,7 @@ export interface DeliveryOrderState {
 /**
  * **Où en est la commande d'un arrêt** (`documentation/livraisons/livreur/a-la-porte.md`,
  * AP-D2, L6-C11) — ce que la livraison DÉCLARE et que le commerce implémente
- * (`b2b/orders/infrastructure/`), relié dans `appBootstrap/delivery-feed.module.ts`.
+ * (`lafoliecoffee/orders/infrastructure/`), relié dans `appBootstrap/delivery-feed.module.ts`.
  *
  * Un port À PART de `DeliveryOrdersReader` (ISP) : la porte n'a besoin que de
  * savoir si la commande reste à remettre, et la composition n'en a pas besoin.

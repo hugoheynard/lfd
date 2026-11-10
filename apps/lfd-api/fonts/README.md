@@ -17,7 +17,7 @@ Au contraire de `../assets/`. `nest build` ne le copie pas dans `dist/` ; il
 est lu à côté, depuis le dossier de l'app que `pnpm deploy` emporte en entier
 (aucun champ `files`, tenu par `lint:deployed-app-files`) et que
 `.dockerignore` n'exclut pas. L'adaptateur
-(`src/b2b/accounting/infrastructure/disk-invoice-font-source.ts`) remonte de
+(`src/lafoliecoffee/accounting/infrastructure/disk-invoice-font-source.ts`) remonte de
 quatre niveaux depuis son propre fichier, ce qui tombe ici depuis `src/` comme
 depuis `dist/`. Sa spec lit les fichiers par le même chemin.
 

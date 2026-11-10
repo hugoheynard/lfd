@@ -502,7 +502,7 @@ enum PaymentLinkStatus {
 ///
 /// Ce n'est PAS une commande : il n'entre ni au chiffre d'affaires des
 /// commandes ni au cycle de prélèvement, et ne solde aucune commande — le
-/// rapprochement reste humain. Propriétaire : `src/b2b/payments/`. Plan
+/// rapprochement reste humain. Propriétaire : `src/lafoliecoffee/payments/`. Plan
 /// `documentation/comptabilite/prelevement/blocage-et-liens-de-paiement.md`
 ///
 /// Aucun DELETE : un lien se clôt par son statut.
@@ -543,7 +543,7 @@ model PaymentLink {
 ///
 /// Ligne absente = aucun réglage posé, donc aucun plafond. Config sans
 /// transition (CLAUDE.md §3.1) : un CRUD, pas un agrégat. Propriétaire :
-/// `src/b2b/payments/`.
+/// `src/lafoliecoffee/payments/`.
 model AccountingSettings {
   /// Toujours `default` : il n'y a qu'un réglage.
   id String @id

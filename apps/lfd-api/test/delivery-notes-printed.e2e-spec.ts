@@ -12,7 +12,7 @@ import type { AdminPlacedOrderResponse, StaffNote } from "@lfd/contracts";
 import { CommandBus } from "@nestjs/cqrs";
 import type request from "supertest";
 
-import { MarkOrderFulfilledCommand } from "../src/b2b/orders/application/commands/mark-order-fulfilled.command.js";
+import { MarkOrderFulfilledCommand } from "../src/lafoliecoffee/orders/application/commands/mark-order-fulfilled.command.js";
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {

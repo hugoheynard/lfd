@@ -8,7 +8,7 @@ import { INCIDENT_PHOTO_MAX_BYTES } from "../domain/value-objects/incident-photo
  * lire un multipart. La servir reprend `serveStepPhoto` — mêmes en-têtes, et
  * une photo de signalement ne change jamais sous sa clé.
  *
- * Réécrit ici plutôt qu'emprunté aux cartes à photo (`b2b/shared/photo-cards`) :
+ * Réécrit ici plutôt qu'emprunté aux cartes à photo (`lafoliecoffee/shared/photo-cards`) :
  * `delivery → b2b` est interdit (même geste que `quality-photo-http.ts`).
  */
 

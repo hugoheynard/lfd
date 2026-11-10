@@ -17,7 +17,7 @@
       "script": "dev-toolbox/gates/dated-decisions.mjs",
       "holds": "Toute décision qui entre dans la résolution du prix porte une fenêtre de validité.",
       "since": "2026-09-09",
-      "watch": ["apps/lfd-api/src/b2b/**"]
+      "watch": ["apps/lfd-api/src/lafoliecoffee/**"]
     },
     {
       "name": "no-direct-env",
@@ -83,7 +83,7 @@
       "watch": [
         "apps/lfd-backoffice-frontend/src/**",
         "apps/lfc-ecommerce-frontend/src/**",
-        "apps/lfd-api/src/b2b/**"
+        "apps/lfd-api/src/lafoliecoffee/**"
       ]
     },
     {
@@ -103,7 +103,7 @@
     {
       "name": "catalogue-authority",
       "script": "dev-toolbox/gates/catalogue-authority.mjs",
-      "holds": "Seul `b2b/catalog/` frappe un article scellé du catalogue.",
+      "holds": "Seul `lafoliecoffee/catalog/` frappe un article scellé du catalogue.",
       "since": "2026-09-09",
       "watch": ["apps/lfd-api/**"]
     },
@@ -388,7 +388,7 @@
       "since": "2026-10-11",
       "watch": [
         "apps/lfc-ecommerce-frontend/src/app/client/copy/**",
-        "apps/lfd-api/src/b2b/shop-copy/**",
+        "apps/lfd-api/src/lafoliecoffee/shop-copy/**",
         "documentation/contenu-ecommerce/**",
         "dev-toolbox/shop-copy/**",
         "dev-toolbox/shop-copy-digest.mjs"
@@ -401,7 +401,7 @@
       "since": "2026-10-26",
       "watch": [
         "documentation/accessibilite/**",
-        "apps/lfd-api/src/b2b/content/**",
+        "apps/lfd-api/src/lafoliecoffee/content/**",
         "dev-toolbox/accessibilite/**",
         "dev-toolbox/rgaa-digest.mjs",
         "packages/contracts/src/**"
@@ -494,7 +494,10 @@
       "script": "dev-toolbox/gates/context-version-columns.mjs",
       "holds": "Toute colonne d'une table de l'instantané du catalogue est classée face à la version de son contexte.",
       "since": "2026-11-06",
-      "watch": ["apps/lfd-api/src/b2b/catalog/infrastructure/**", "apps/lfd-api/prisma/**"]
+      "watch": [
+        "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/**",
+        "apps/lfd-api/prisma/**"
+      ]
     },
     {
       "name": "shelf-changes-after-commit",

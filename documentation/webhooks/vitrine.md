@@ -31,7 +31,7 @@ minutes font une notification. Sans abonné livrable, **rien** n'est calculé.
 
 | Sujet                | Ce qui existe                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Où vit le code       | `apps/lfd-api/src/b2b/vitrine/` (B2B : commande et handler en fichiers séparés) ; le relais sortant dans `apps/lfd-api/src/platform/outbound/` ; les contrats dans `packages/contracts/src/vitrine.ts` ; l'écran dans `apps/lfd-backoffice-frontend/src/app/vitrine-webhook/` (Admin › « Webhook vitrine », rail secondaire de l'Admin ET lanceur mobile, route `/admin/webhook-vitrine` depuis le 2026-10-19 ; `/webhook-vitrine` redirige).                                |
+| Où vit le code       | `apps/lfd-api/src/lafoliecoffee/vitrine/` (B2B : commande et handler en fichiers séparés) ; le relais sortant dans `apps/lfd-api/src/platform/outbound/` ; les contrats dans `packages/contracts/src/vitrine.ts` ; l'écran dans `apps/lfd-backoffice-frontend/src/app/vitrine-webhook/` (Admin › « Webhook vitrine », rail secondaire de l'Admin ET lanceur mobile, route `/admin/webhook-vitrine` depuis le 2026-10-19 ; `/webhook-vitrine` redirige).                      |
 | Abonné               | Agrégat `VitrineSubscriber` : URL `https` sans `?`, `#` ni identifiants (refus nommés), **ou aucune** — abonné en lecture seule (§4, décision 12) ; secret de signature **scellé** (`FieldCipher`) ; clé de lecture **hachée** (SHA-256) ; secret et clé montrés une fois, à la création et à la rotation. Nom, description (500 caractères) et contact facultatifs. Jamais supprimé : coupé.                                                                                |
 | Cases                | `catalogue` (articles + rayons), `operations`, `texts`, `featured` (« Incontournables » : sans elle, `isFeatured` ne sort pas). Une case ne fait que **retirer** un ensemble ; décocher n'envoie **aucun** retrait.                                                                                                                                                                                                                                                          |
 | Livraison            | Corps `{ subscriber, sequence, at, changed, removed }` ; un essai porte `sequence: 0, test: true`. En-têtes `Vitrine-Signature: t=<s>,v1=<hex HMAC-SHA256 de « t.corps »>` (à la Stripe) et `Vitrine-Delivery: <identifiant d'envoi>`. Relances par `platform/outbox/retry-policy.ts` (la même fonction, pas une copie).                                                                                                                                                     |
@@ -56,7 +56,7 @@ opérations réservées aux pros. L'e2e l'éprouve **sur `/vitrine` elle-même**
 ```mermaid
 sequenceDiagram
     participant W as Worker (cron */5)
-    participant API as lfd-api — b2b/vitrine
+    participant API as lfd-api — lafoliecoffee/vitrine
     participant DB as public.vitrine_*
     participant A as Agence (site vitrine)
     W->>API: POST /admin/vitrine/sweep (RecomputeGuard)
@@ -82,7 +82,7 @@ sequenceDiagram
 
 ## 3. Les tables
 
-Toutes dans `public`, écrites par le seul contexte `b2b/vitrine`, sans DELETE
+Toutes dans `public`, écrites par le seul contexte `lafoliecoffee/vitrine`, sans DELETE
 (clés étrangères en `RESTRICT`). Schéma : `apps/lfd-api/prisma/schema/public/vitrine.prisma`.
 
 ```mermaid
@@ -152,7 +152,7 @@ erDiagram
    `incontournables` (la mise en avant publique). Pas de case `promotions` ni
    `photos` : la promotion est déjà dans le prix, et retirer une photo
    demanderait un second chemin de la vue.
-2. **Les pages éditoriales** de la boutique (`apps/lfd-api/src/b2b/storefront/`)
+2. **Les pages éditoriales** de la boutique (`apps/lfd-api/src/lafoliecoffee/storefront/`)
    restent **hors du webhook** (2026-10-18) : l'agence compose son site à
    partir des articles.
 3. **L'écran multi-abonnés dès le premier lot** (2026-10-18, « non,
@@ -162,7 +162,7 @@ erDiagram
 application/xml` ou `?format=xml` (`json` par défaut, toute autre valeur en
    400 `http.payload.invalid`), décrite par `GET /vitrine/schema.xsd`. Le XSD
    et le sérialiseur sont dérivés des mêmes formes, typées contre le contrat
-   (`apps/lfd-api/src/b2b/vitrine/http/xml/`). Les notifications restent en
+   (`apps/lfd-api/src/lafoliecoffee/vitrine/http/xml/`). Les notifications restent en
    JSON. Une livraison qui absorbe de nouveaux changements repart sous un
    `Vitrine-Delivery` **neuf**, pour qu'une agence qui écarte les doublons par
    lui ne perde pas les ajouts.
@@ -232,7 +232,7 @@ préalable bâti le 2026-10-18) :
 - **La vue publique les sert par un paramètre** : `GET /shop/catalogue?lang=en`
   (`fr` par défaut, une autre langue refusée en 400), en français texte par
   texte quand le référentiel n'a pas traduit
-  (`apps/lfd-api/src/b2b/catalog/domain/catalog-translations.ts`). Appliquée
+  (`apps/lfd-api/src/lafoliecoffee/catalog/domain/catalog-translations.ts`). Appliquée
   après le prix : rien de ce qui se vend ou se tarife ne dépend de la langue.
   La forme de la vue ne change pas ; la boutique déployée lit la même chose.
 - **Le balayage lit trois fois** la vue (une par langue) et en tire une
@@ -298,7 +298,7 @@ L'agence lit le flux XML et a demandé des champs **ajoutés** — rien n'est
 retiré ni renommé, elle lit déjà les autres. Ils sont dans le JSON aussi,
 sous les mêmes noms (décision 4 : même ressource, mêmes noms ; les noms sont
 ceux de l'agence). Calculés par `vitrineItemOf`
-(`apps/lfd-api/src/b2b/vitrine/domain/services/vitrine-item.ts`), dans la vue
+(`apps/lfd-api/src/lafoliecoffee/vitrine/domain/services/vitrine-item.ts`), dans la vue
 de l'abonné et non dans la vue publique de la boutique.
 
 | Élément         | Valeur                                                                                                                                                                                                                                                                              |
@@ -434,7 +434,7 @@ point d'arrivée :
 
 ## Preuves
 
-Domaine (`apps/lfd-api/src/b2b/vitrine/domain/**/__tests__`), application
+Domaine (`apps/lfd-api/src/lafoliecoffee/vitrine/domain/**/__tests__`), application
 (doubles hérités des ports, dont le bail en mémoire), relais
 (`apps/lfd-api/src/platform/outbound/__tests__`), e2e
 `apps/lfd-api/test/vitrine-webhook.e2e-spec.ts` (livraison signée, rejeu

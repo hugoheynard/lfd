@@ -6,7 +6,7 @@
  * dans `collection-batch-scene.ts`.
  */
 import type { CollectionPreviewView } from "@lfd/contracts";
-import { cycleAt } from "../src/b2b/accounting/domain/services/billing-cycle.js";
+import { cycleAt } from "../src/lafoliecoffee/accounting/domain/services/billing-cycle.js";
 import { daysAgo, jsonBody } from "./e2e-harness.js";
 import {
   BASE,

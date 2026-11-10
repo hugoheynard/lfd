@@ -1,11 +1,11 @@
 import { instantToLocal, weekdayOf } from "@lfd/contracts";
 
-import type { RhythmTimeline } from "../../b2b/accounting/domain/services/invoicing-closures.js";
+import type { RhythmTimeline } from "../../lafoliecoffee/accounting/domain/services/invoicing-closures.js";
 import {
   closureAfter,
   previousClosureOf,
-} from "../../b2b/accounting/domain/services/invoicing-closures.js";
-import { defaultDatesOf } from "../../b2b/accounting/domain/value-objects/billing-mode.js";
+} from "../../lafoliecoffee/accounting/domain/services/invoicing-closures.js";
+import { defaultDatesOf } from "../../lafoliecoffee/accounting/domain/value-objects/billing-mode.js";
 import { InvoiceSeedTooEarlyError } from "./invoice-seed-errors.js";
 import { atHour, shiftDays } from "./order-placing.seed.js";
 import { startOfPreviousMonth } from "./sub-account-pricing.seed.js";

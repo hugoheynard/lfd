@@ -1,5 +1,5 @@
-import type { PromotionCatalogueArticle } from "../../../b2b/promotions/domain/ports/promotion-catalogue.reader.js";
-import { weightExtensionConflicts } from "../../../b2b/promotions/domain/promotion-weight-conflicts.js";
+import type { PromotionCatalogueArticle } from "../../../lafoliecoffee/promotions/domain/ports/promotion-catalogue.reader.js";
+import { weightExtensionConflicts } from "../../../lafoliecoffee/promotions/domain/promotion-weight-conflicts.js";
 import { POINT_DISCOUNT_AUDIENCES, pointDiscountTerms } from "../station-promotions.seed.js";
 
 /**

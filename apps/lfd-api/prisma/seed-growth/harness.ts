@@ -3,14 +3,14 @@ import { Test, type TestingModule } from "@nestjs/testing";
 
 import { AppModule } from "../../src/appBootstrap/app.module.js";
 import { BackgroundWork } from "../../src/platform/events/background-work.js";
-import { EstablishmentDirectory } from "../../src/b2b/account/domain/ports/establishment-directory.js";
+import { EstablishmentDirectory } from "../../src/lafoliecoffee/account/domain/ports/establishment-directory.js";
 import { DocumentStore } from "../../src/platform/storage/document-store.js";
 import { PrincipalResolver } from "../../src/platform/auth/principal.resolver.js";
 import type { Actor } from "../../src/platform/context/request-context.js";
 import { runWithRequestContext } from "../../src/platform/context/request-context.store.js";
 import { newTraceId } from "../../src/platform/context/trace-context.js";
 import { PrismaService } from "../../src/platform/database/prisma.service.js";
-import { PaymentGateway } from "../../src/b2b/payments/domain/payment-gateway.js";
+import { PaymentGateway } from "../../src/lafoliecoffee/payments/domain/payment-gateway.js";
 import { FakeEstablishmentDirectory } from "./fake-establishment-directory.js";
 import { FakeDocumentStore } from "./fake-document-store.js";
 import { FakePaymentGateway } from "./fake-payment-gateway.js";

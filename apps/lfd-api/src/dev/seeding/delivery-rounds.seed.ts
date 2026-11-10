@@ -1,7 +1,7 @@
 import type { OpenPackingContainer } from "@lfd/contracts";
 import type { CommandBus } from "@nestjs/cqrs";
 
-import { SetSiteRolesCommand } from "../../b2b/sites/application/set-site-roles.command.js";
+import { SetSiteRolesCommand } from "../../lafoliecoffee/sites/application/set-site-roles.command.js";
 import { ChooseDepartureCommand } from "../../delivery/application/commands/choose-departure.command.js";
 import { LoadDeliveryBinCommand } from "../../delivery/application/commands/load-delivery-bin.command.js";
 import type { PrismaClient } from "../../platform/database/client/client.js";

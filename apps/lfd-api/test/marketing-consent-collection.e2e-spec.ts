@@ -23,9 +23,9 @@ import {
 } from "@lfd/contracts";
 import type { MailReceipt, SendMailArgs } from "@lfd/mailer";
 
-import { PlaceShopOrderHandler } from "../src/b2b/orders/application/commands/place-shop-order.handler.js";
-import { NO_LOGIN_METHODS } from "../src/b2b/account/domain/ports/__tests__/login-method-doubles.js";
-import { CustomerIdentityPort } from "../src/b2b/account/domain/ports/customer-identity.port.js";
+import { PlaceShopOrderHandler } from "../src/lafoliecoffee/orders/application/commands/place-shop-order.handler.js";
+import { NO_LOGIN_METHODS } from "../src/lafoliecoffee/account/domain/ports/__tests__/login-method-doubles.js";
+import { CustomerIdentityPort } from "../src/lafoliecoffee/account/domain/ports/customer-identity.port.js";
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { MarketingConsent } from "../src/mail/channels/marketing/marketing-consent.js";
 import { SpacePublicOrigins } from "../src/mail/marketing/domain/ports/space-public-origins.js";

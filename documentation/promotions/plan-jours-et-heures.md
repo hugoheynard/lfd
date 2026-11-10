@@ -16,7 +16,7 @@ récurrence. » Exemples visés :
 
 ## 2. L'existant (ouvert le 2026-10-31)
 
-- `apps/lfd-api/src/b2b/promotions/domain/promotion-condition.ts` : une union
+- `apps/lfd-api/src/lafoliecoffee/promotions/domain/promotion-condition.ts` : une union
   de conditions, toutes doivent tenir ; une seule bâtie, `min_quantity`. Son
   JSDoc prévoit « jours et heures » comme une variante de plus, « chacune
   sera une variante et son évaluateur, sans toucher aux autres ».

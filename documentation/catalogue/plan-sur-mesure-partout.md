@@ -16,23 +16,23 @@
 - Le marqueur vit côté **commerce**, sur la décision catalogue :
   `CatalogItemOverride.isMadeToOrder Boolean @default(false) @map("is_made_to_order")`
   (`apps/lfd-api/prisma/schema/public/catalog.prisma:647`). Il est lu par le
-  lecteur du catalogue (`apps/lfd-api/src/b2b/catalog/infrastructure/prisma-catalog.reader.ts:101`).
+  lecteur du catalogue (`apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/prisma-catalog.reader.ts:101`).
   Le PIM ne le connaît pas, et ce plan ne change pas ça.
 - La ligne de commande fige déjà ce qu'elle a vendu : « Snapshots au moment de
   la commande : le prix/nom/TVA du PIM peut changer »
   (`apps/lfd-api/prisma/schema/public/orders.prisma:591-593`). Elle fige aussi
   un drapeau booléen tiré d'une règle du commerce, `pickupDiscountEligible`
   (`orders.prisma:724`), calculé à la composition
-  (`apps/lfd-api/src/b2b/orders/domain/services/basket-terms.ts:104`)
+  (`apps/lfd-api/src/lafoliecoffee/orders/domain/services/basket-terms.ts:104`)
   et écrit par la fonction unique d'écriture de ligne
-  (`apps/lfd-api/src/b2b/orders/infrastructure/order-line.data.ts:28`). **C'est
+  (`apps/lfd-api/src/lafoliecoffee/orders/infrastructure/order-line.data.ts:28`). **C'est
   le modèle à copier** : un fait du commerce, scellé à la passation, relu
   jamais recalculé.
 - Le fournil reçoit une ligne par `ProducibleLine` — `sku`, `productName`,
   `quantity`, `saleUnit`, et délibérément aucun montant
   (`apps/lfd-api/src/production/channels/commerce/day-orders.reader.ts:13-25`).
   Le commerce la remplit depuis le snapshot
-  (`apps/lfd-api/src/b2b/orders/infrastructure/prisma-day-orders.source.ts:84,106`).
+  (`apps/lfd-api/src/lafoliecoffee/orders/infrastructure/prisma-day-orders.source.ts:84,106`).
   Le fournil la fige à son tour dans `ProductionOrderLine`
   (`apps/lfd-api/prisma/schema/production.prisma:305-318`) et dans
   `ProductionLineSnapshot` (`apps/lfd-api/src/production/domain/entities/production-day.snapshot.ts:24`).
@@ -40,7 +40,7 @@
   (`apps/lfd-api/src/production/channels/commerce/expected-production.reader.ts:6-12`),
   fusionné **par SKU tous clients confondus** ; l'implémentation reprend le nom
   du catalogue s'il est connu, le snapshot sinon
-  (`apps/lfd-api/src/b2b/orders/infrastructure/prisma-expected-production.reader.ts:87`).
+  (`apps/lfd-api/src/lafoliecoffee/orders/infrastructure/prisma-expected-production.reader.ts:87`).
 - Le colisage reçoit les lignes par le fait durable
   `production.packing_list_drawn`, `PackingListLine { sku, productName, quantity, saleUnit }`
   (`apps/lfd-api/src/production/channels/packing/packing-list-drawn.event.ts:16-26`),
@@ -56,13 +56,13 @@ La porte appelle document toute fonction exportée `render…Pdf|Document`
 | Fiche d'atelier                                          | `production/domain/services/atelier-sheet-pdf.ts:68`                             | oui (`ProductionOrderSnapshot`)                                                   | **oui**                        |
 | Compte à produire                                        | `production/domain/services/atelier-sheet-pdf.ts:167`                            | oui, par SKU                                                                      | **oui**                        |
 | Dossier du jour                                          | `production/domain/services/day-dossier-pdf.ts:83`                               | oui                                                                               | **oui**                        |
-| Bon de livraison transport / client                      | `b2b/delivery-notes/domain/services/delivery-note-pdf.ts:156,239`                | oui                                                                               | à trancher (Q3)                |
-| Confirmation de commande                                 | `b2b/orders/domain/services/order-sheet-pdf.ts:406`                              | oui                                                                               | à trancher (Q3)                |
-| Récapitulatif de commandes                               | `b2b/orders/domain/services/order-summary-pdf.ts:185`                            | oui                                                                               | à trancher (Q3)                |
+| Bon de livraison transport / client                      | `lafoliecoffee/delivery-notes/domain/services/delivery-note-pdf.ts:156,239`      | oui                                                                               | à trancher (Q3)                |
+| Confirmation de commande                                 | `lafoliecoffee/orders/domain/services/order-sheet-pdf.ts:406`                    | oui                                                                               | à trancher (Q3)                |
+| Récapitulatif de commandes                               | `lafoliecoffee/orders/domain/services/order-summary-pdf.ts:185`                  | oui                                                                               | à trancher (Q3)                |
 | Étiquette de sac                                         | `packing/domain/services/bag-labels-pdf.ts:41`                                   | **non** — un sac, son rang (`packages/contracts/src/packing-bag-labels.ts:32-41`) | Q4                             |
 | Étiquette de bac                                         | `delivery/domain/services/bin-labels-pdf.ts:65`                                  | à ouvrir au lot                                                                   | Q4                             |
 | Feuille / dossier de tournée                             | `delivery/domain/services/round-paper-pdf.ts:46`, `day-rounds-dossier-pdf.ts:53` | non visé                                                                          | non                            |
-| Facture, Factur-X, mandats, pain.008, matrice allergènes | `b2b/accounting/…`, `pim/…`                                                      | —                                                                                 | **non** (document légal / PIM) |
+| Facture, Factur-X, mandats, pain.008, matrice allergènes | `lafoliecoffee/accounting/…`, `pim/…`                                            | —                                                                                 | **non** (document légal / PIM) |
 
 La planche (`apps/lfd-backoffice-frontend/src/app/comptabilite/document-specimen-catalogue.ts:23-40`)
 a une clé par document ; aucun document neuf n'est créé ici, donc **aucune clé
@@ -75,7 +75,7 @@ marqueur ne peut **pas** être un `*`.
 
 ### Les rapports
 
-Le CA par secteur existe (`apps/lfd-api/src/b2b/growth/application/queries/get-sector-revenue.handler.ts`).
+Le CA par secteur existe (`apps/lfd-api/src/lafoliecoffee/growth/application/queries/get-sector-revenue.handler.ts`).
 **Aucun rapport « ventes par article » n'a été trouvé** (recherche `ventes par
 article` dans le back-office et `documentation/`, vide le 2026-10-30 — un grep
 vide n'est pas une preuve, à confirmer au lot R). Le tableau de bord de la
@@ -218,12 +218,12 @@ forme ; chaque convention suit un lecteur existant, **ouvert le 2026-10-30**.
 
 **Existence.** Aucun rapport « ventes par article » n'existe : les audiences
 rangent des **familles** par CA HT de lignes, jamais un article par client
-(`apps/lfd-api/src/b2b/orders/infrastructure/prisma-audience-order.reader.ts`,
+(`apps/lfd-api/src/lafoliecoffee/orders/infrastructure/prisma-audience-order.reader.ts`,
 `skuSql`). Les deux rapports sont neufs.
 
 **Commandes retenues.** Le périmètre du chiffre d'affaires de la croissance,
 sans copie : `REVENUE_ORDER_STATUSES` et `REVENUE_PAYMENT_STATUSES`
-(`apps/lfd-api/src/b2b/growth/domain/revenue-scope.ts`, épandus par
+(`apps/lfd-api/src/lafoliecoffee/growth/domain/revenue-scope.ts`, épandus par
 `revenue.where.ts`). Brouillons et **annulées exclus** ; carte en attente,
 refusée ou remboursée exclue ; au compte, gratuite ou encaissée comptée.
 

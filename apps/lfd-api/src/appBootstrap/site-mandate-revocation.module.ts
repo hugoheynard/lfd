@@ -1,8 +1,8 @@
 import { Global, Module } from "@nestjs/common";
 
-import { SiteMandateRevocation } from "../b2b/account/domain/ports/site-mandate-revocation.js";
-import { SiteMandateRevoker } from "../b2b/payments/application/site-mandate-revoker.js";
-import { PaymentsModule } from "../b2b/payments/payments.module.js";
+import { SiteMandateRevocation } from "../lafoliecoffee/account/domain/ports/site-mandate-revocation.js";
+import { SiteMandateRevoker } from "../lafoliecoffee/payments/application/site-mandate-revoker.js";
+import { PaymentsModule } from "../lafoliecoffee/payments/payments.module.js";
 
 /**
  * **Détacher un site révoque ses mandats qui nomment le principal**

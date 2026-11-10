@@ -1,6 +1,6 @@
-import { RecordCollectionReturnCommand } from "../../b2b/accounting/application/commands/record-collection-return.command.js";
-import { RepresentCollectionReturnCommand } from "../../b2b/accounting/application/commands/represent-collection-return.command.js";
-import { SettleCollectionReturnCommand } from "../../b2b/accounting/application/commands/settle-collection-return.command.js";
+import { RecordCollectionReturnCommand } from "../../lafoliecoffee/accounting/application/commands/record-collection-return.command.js";
+import { RepresentCollectionReturnCommand } from "../../lafoliecoffee/accounting/application/commands/represent-collection-return.command.js";
+import { SettleCollectionReturnCommand } from "../../lafoliecoffee/accounting/application/commands/settle-collection-return.command.js";
 import type { CycleActors, PlayedWeek } from "./invoice-cycles.seed.js";
 import { InvoiceSeedStepError } from "./invoice-seed-errors.js";
 import type { WeekFate } from "./invoice-weeks.seed.js";

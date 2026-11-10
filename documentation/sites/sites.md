@@ -14,7 +14,7 @@
 > (le tri et les couleurs de la logistique, plan).
 >
 > **Pourquoi un dossier à part**, et pas sous `livraisons/` : le site
-> appartient au commerce (`b2b/sites/`), le checkout, la remise, les créneaux
+> appartient au commerce (`lafoliecoffee/sites/`), le checkout, la remise, les créneaux
 > publics et le comptoir le lisent autant que la livraison. Le ranger sous la
 > livraison aurait affirmé un propriétaire qu'il n'a pas.
 
@@ -84,7 +84,7 @@ Réglé à l'écran, jamais en dur.
   - `GET /pickup-addresses` (publique, anonyme) ne sert que les sites
     ouverts **aux particuliers** — la clientèle d'un visiteur ;
   - `GET /pickup-addresses/mine` (client reconnu, `MyPickupAddressesController`,
-    `b2b/orders/http/`) sert ceux de la clientèle de l'**espace** agissant
+    `lafoliecoffee/orders/http/`) sert ceux de la clientèle de l'**espace** agissant
     (`audienceOf`, par `CustomerAudiences`) ; la boutique la relit au
     changement d'espace (`PickupListGateway`, `ServicePoints`) ;
   - `GET /admin/pickup-addresses?companyId=` (équipe) sert ceux du client
@@ -172,7 +172,7 @@ Le vocabulaire a été renommé le 2026-10-13 (Hugo, lexique `CLAUDE.md` §8) :
 
 ## 2. L'agrégat `Site` — ce qui peut refuser une écriture
 
-`apps/lfd-api/src/b2b/sites/domain/site.ts`, erreurs dans `site-errors.ts`.
+`apps/lfd-api/src/lafoliecoffee/sites/domain/site.ts`, erreurs dans `site-errors.ts`.
 Factory `Site.declare()` : un site neuf remet, est sur place, ne livre pas,
 n'a pas de couleur.
 
@@ -272,7 +272,7 @@ flowchart LR
     L["/reglages/sites<br/>liste, rôles en badges"]
     P["/reglages/sites/:id · /nouveau<br/>page du site"]
   end
-  subgraph b2b [commerce b2b/sites]
+  subgraph b2b [commerce lafoliecoffee/sites]
     A["admin/sites<br/>@AdminSurface lfc_site_settings"]
     S[(Site<br/>pickup_addresses)]
   end
@@ -288,7 +288,7 @@ flowchart LR
   CPT --> PUB --> S
 ```
 
-**API** `admin/sites` (`b2b/sites/http/admin-sites.controller.ts`, sous
+**API** `admin/sites` (`lafoliecoffee/sites/http/admin-sites.controller.ts`, sous
 `lfc_site_settings`) : `GET`, `GET :id`, `POST`, `PATCH :id` (identité,
 adresse, heures, réduction), `PUT :id/roles` (rôles + `gps`
 facultatif : absent = inchangé, pour que « cocher et poser le point » soit jugé
@@ -407,7 +407,7 @@ notions qui ne sont pas des lieux. Le travail était de **renommer et
 s'appuyait sur un « point de retrait », le JSDoc l'appelait « laboratoire ») :
 le site a corrigé le nom, le modèle était juste.
 
-**Pourquoi au commerce** (`b2b/sites/`) : la ligne y vivait ; checkout, remise,
+**Pourquoi au commerce** (`lafoliecoffee/sites/`) : la ligne y vivait ; checkout, remise,
 créneaux, abonnements et sociétés la lisent en direct dans le même bloc. Au
 bloc `delivery`, checkout et remise (de l'argent) auraient lu un port pour un
 fait de configuration ; `handover → b2b` est interdit ; un bloc neuf aurait
@@ -436,7 +436,7 @@ référentiel reste, lui, ce qui porte le taux de TVA.
 🔴 On ne retire pas « Sur place » à un site qui a des tables :
 `EatInSiteWithTablesError` (`site.ts`). Il faut d'abord ramener leur nombre à 0.
 
-**La grille de tables** est l'agrégat `SiteTables` (`b2b/sites/domain/site-tables.ts`,
+**La grille de tables** est l'agrégat `SiteTables` (`lafoliecoffee/sites/domain/site-tables.ts`,
 table `public.site_table`). Il est séparé de `Site` parce qu'aucune lecture du
 site, checkout compris, n'a à relire jusqu'à 200 lignes :
 
@@ -509,7 +509,7 @@ sur place pour les pros (décidé le 2026-10-17).
     ouvert, ou son préféré, 2026-10-15). Typé `PickupSnapshot`
     (`packages/contracts/src/pickup.ts`), `siteId` **facultatif** : pas de
     rattrapage (Q-S2), les commandes d'avant le lot n'en ont pas, et tout
-    lecteur passe par `siteIdOf` (`b2b/orders/infrastructure/pickup-site.parse.ts`),
+    lecteur passe par `siteIdOf` (`lafoliecoffee/orders/infrastructure/pickup-site.parse.ts`),
     qui rend `null` ;
   - `production_order.site_id text null`, sans clé étrangère (migration
     `20261013600000_la_commande_porte_son_site`), recopié de

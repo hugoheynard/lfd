@@ -3,7 +3,7 @@
 > **Bâti le 2026-10-23, non commité.** Migration
 > `20261023210000_le_numero_de_commande_court` (table `order_number_counter`,
 > une ligne, déclencheur `order_number_counter_forward`), `formatOrderNumber`
-> (`b2b/orders/domain/services/order-number.ts`), rang pris par
+> (`lafoliecoffee/orders/domain/services/order-number.ts`), rang pris par
 > `PrismaOrderRepository.place` dans la transaction de passation — seul
 > écrivain de `order_number` en production, donc client, boutique, staff,
 > devis et semis passent par lui. E2e `test/order-number.e2e-spec.ts`.
@@ -15,7 +15,7 @@
 ## 0. Ce qui existe (ouvert le 2026-10-23)
 
 - Le numéro humain est fabriqué à la passation par
-  `generateOrderNumber` (`apps/lfd-api/src/b2b/orders/infrastructure/prisma-order.repository.ts`) :
+  `generateOrderNumber` (`apps/lfd-api/src/lafoliecoffee/orders/infrastructure/prisma-order.repository.ts`) :
   `ORD-<instant en base 36>-<4 derniers caractères d'un ULID>`, rangé dans
   `orders.order_number` (`@unique`). L'identifiant réel de la commande reste
   son `cuid`.

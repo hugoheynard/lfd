@@ -42,12 +42,12 @@ prix de vente.
 
 | Règle                         | Ce qui la tient                                                                                                                                                                                                                                                                                                                                                                                            |
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Le pas**                    | `weightStepGrams`, réglable par article (ex. 100 g) : une quantité qui n'en est pas un multiple est refusée au domaine (`apps/lfd-api/src/b2b/orders/domain/services/sale-quantity-rules.ts`), jamais arrondie en silence.                                                                                                                                                                                 |
+| **Le pas**                    | `weightStepGrams`, réglable par article (ex. 100 g) : une quantité qui n'en est pas un multiple est refusée au domaine (`apps/lfd-api/src/lafoliecoffee/orders/domain/services/sale-quantity-rules.ts`), jamais arrondie en silence.                                                                                                                                                                       |
 | **Le minimum**                | `weightMinGrams`, facultatif (vide = aucun) : en dessous, refus.                                                                                                                                                                                                                                                                                                                                           |
 | **La garde d'une tonne**      | Pas de limite métier ; `MAX_LINE_WEIGHT_GRAMS` = 1 000 000 (`packages/contracts/src/order.ts`) arrête la faute de frappe. Les pièces gardent `MAX_LINE_QUANTITY` (10 000).                                                                                                                                                                                                                                 |
 | **L'unité figée**             | Le sélecteur est modifiable tant que la référence n'a servi nulle part ; l'écran dit où elle a servi avant qu'on essaie (`GET /pim/catalogue/products/:id/sale-unit-usage`), et `Variant.changeSaleTerms` refuse (`SaleReferenceInUseError`, 409 ; `SaleReferenceUsageUnknownError` si le commerce ne répond pas). Un panier à l'ancienne unité perd la ligne au devis (`removedLines`), jamais convertie. |
 | **Le prix au kilo**           | Les particuliers lisent un TTC au kilo, dérivé du HT au kilo ; la ligne vaut étiquette × grammes ÷ 1000, arrondie au centime ([`obsolete/plan-centime-particuliers.md`](obsolete/plan-centime-particuliers.md) §4).                                                                                                                                                                                        |
-| **Les décisions de prix**     | Une décision qui couvre plusieurs articles — règle, barème ou plancher de portée **globale ou de famille** — ne s'applique pas à un article au poids : `coversManyArticles` (`apps/lfd-api/src/b2b/pricing/domain/specificity.ts`). La mercuriale et les décisions d'un article s'appliquent, au kilo et en grammes.                                                                                       |
+| **Les décisions de prix**     | Une décision qui couvre plusieurs articles — règle, barème ou plancher de portée **globale ou de famille** — ne s'applique pas à un article au poids : `coversManyArticles` (`apps/lfd-api/src/lafoliecoffee/pricing/domain/specificity.ts`). La mercuriale et les décisions d'un article s'appliquent, au kilo et en grammes.                                                                             |
 | **L'affichage**               | Grammes sous le kilo, kilos au-delà : « 500 g », « 1,25 kg », « 12,40 € / kg » (`packages/money/src/sale-quantity-label.ts`). Sur la facture et l'avoir, toujours des kilos à trois décimales.                                                                                                                                                                                                             |
 | **Les totaux multi-articles** | Fiche d'atelier, compte à produire, dossier du jour, camembert, prévisionnel, colisage, comptoir, feuille de route : une ligne au poids compte pour **une pièce** (`pieceTally`, `packages/money/src/sale-quantity-tally.ts`), et pour rien à 0 g.                                                                                                                                                         |
 
@@ -113,18 +113,18 @@ grammes, et part en kilos.
 - Les deux lecteurs des bons portent l'unité, obligatoire, lue sur
   `order_lines.sale_unit` ou `delivery_note_line.sale_unit` ; une valeur
   inconnue arrête la lecture (`TechnicalError`).
-- L'agrégation (`apps/lfd-api/src/b2b/accounting/domain/services/invoice-lines.ts`)
+- L'agrégation (`apps/lfd-api/src/lafoliecoffee/accounting/domain/services/invoice-lines.ts`)
   porte `unitCode` (`H87` | `KGM`) et `quantityThousandths` (pièces × 1000,
   ou les grammes). Un même SKU dans les deux unités sur un dossier lève
   `InvoiceDossierMixedSaleUnitError` (409).
 - Le relevé arrêté est en `body_version` 2 ; un corps v1 se relit en `H87`,
   quantité × 1000 — le seul repli de la chaîne
-  (`apps/lfd-api/src/b2b/accounting/infrastructure/billing-statement-json.schema.ts`).
+  (`apps/lfd-api/src/lafoliecoffee/accounting/infrastructure/billing-statement-json.schema.ts`).
 - **Le prix net (BT-146) s'entend par 1 KGM**, sans `BasisQuantity`. Le
   montant de ligne reste la somme des bons. Quand BT-129 × prix des bons
   s'écarte de BT-131 de plus de 0,02 € (tolérance Peppol R120), le prix net
   est **dérivé** : BT-131 ÷ BT-129, au millicentime
-  (`apps/lfd-api/src/b2b/accounting/domain/services/invoice-net-price.ts`).
+  (`apps/lfd-api/src/lafoliecoffee/accounting/domain/services/invoice-net-price.ts`).
   Seule la pièce émise porte le prix dérivé ; dossier, relevé et CSV gardent
   le prix des bons.
 - Le PDF dit « 1,250 kg » (`invoice-pdf-wording.ts`) ; le XML écrit BT-129

@@ -70,7 +70,7 @@ Il y a **deux** systèmes, et la garde les compose.
 | Comment elle atteint la commande | résolue par `resolveOrderTimeLimit`, figée à l'ingestion dans `CatalogItem.orderLimit*` | lue à chaque passation par `OrderDrafting` (port `OrderCutoffReader`)              |
 
 **La garde** — `ensureWithinOrderCutoff`
-(`apps/lfd-api/src/b2b/orders/domain/services/order-cutoff-guard.ts`) :
+(`apps/lfd-api/src/lafoliecoffee/orders/domain/services/order-cutoff-guard.ts`) :
 ligne par ligne, une limite d'article décide **seule** ; un article sans
 limite retombe sur le commerce (`decideOrderCutoff`,
 `packages/contracts/src/order-cutoff.ts`), calculé une fois par panier ; la
@@ -100,16 +100,16 @@ un réglage : c'est un geste ponctuel. Il n'existe aujourd'hui **aucune** liste
 transverse des dérogations.
 
 **L'ouverture** — `admin/order-opening`
-(`b2b/order-opening/http/admin-order-opening.controller.ts`, GET/PATCH),
+(`lafoliecoffee/order-opening/http/admin-order-opening.controller.ts`, GET/PATCH),
 `@AdminSurface("b2b_settings")` ; agrégat `OrderOpening`
-(`ordersOpenToB2b`, `ordersOpenToB2c`, `b2b/order-opening/domain/order-opening.ts`) ;
+(`ordersOpenToB2b`, `ordersOpenToB2c`, `lafoliecoffee/order-opening/domain/order-opening.ts`) ;
 écran `OrderOpeningPage` à `/b2b/reglages/ouverture-boutique`. Fermée = le
 catalogue et les prix restent visibles, les commandes sont refusées
 ([`ouverture-de-la-boutique.md`](ouverture-de-la-boutique.md)). C'est déjà
 un réglage **par clientèle** : le seul des trois qui l'est aujourd'hui.
 
 **L'annulation par le client** : `admin/customer-cancellation`
-(`b2b/order-opening/http/admin-customer-cancellation.controller.ts`),
+(`lafoliecoffee/order-opening/http/admin-customer-cancellation.controller.ts`),
 `@AdminSurface("b2b_settings")`, écran `CustomerCancellationPage` à
 `/b2b/reglages/commandes`, vue `commandes` de la section « Réglages » de
 l'espace e-commerce (`workspaces.ts`).
@@ -444,7 +444,7 @@ fichier la cite, son usage n'est pas relu).
 > soient pris en compte ? » — Hugo, puis « oui fais-le ».
 
 **Ce qui existe (vérifié le 2026-10-14)** : `ensureWithinOrderCutoff`
-(`b2b/orders/domain/services/order-cutoff-guard.ts`) — un article qui porte
+(`lafoliecoffee/orders/domain/services/order-cutoff-guard.ts`) — un article qui porte
 une limite produit décide seul ; sinon il retombe sur `OrderCutoff` ; **rien
 nulle part → tout passe**. La passation ne lit pas l'état de la journée du
 fournil : une commande a été acceptée sur un plan arrêté (observation O5,

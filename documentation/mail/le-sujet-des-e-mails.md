@@ -54,16 +54,16 @@ flowchart LR
   l'identifiant Resend dans la transaction de l'envoi
   (`MailOutcomeRecorder`). Un même `provider_id` peut porter plusieurs
   fiches.
-- Envoyeurs liés à une commande — `b2b/orders` : placée, réglée, prête (et
+- Envoyeurs liés à une commande — `lafoliecoffee/orders` : placée, réglée, prête (et
   son rappel de retrait, même modèle), en route, annulée, paiement échoué ou
   expiré, lien de paiement renvoyé, retard, lettre de manque, avis à un
-  invité ; `b2b/contact` : modification appliquée ou refusée. Plusieurs
+  invité ; `lafoliecoffee/contact` : modification appliquée ou refusée. Plusieurs
   passent par une enveloppe à arguments positionnels
   (`this.mail.send(fact.orderId)`) avant le vrai `mail.send({…})` d'un
   service (`order-ready-mail.service.ts`, `delivery-en-route-mail.service.ts`).
-  Les avis de facture et de prélèvement vivent dans `b2b/accounting`
+  Les avis de facture et de prélèvement vivent dans `lafoliecoffee/accounting`
   (`invoice-notice-sender.ts`, `collection-notice-sender.ts`) et portent
-  PLUSIEURS commandes. `b2b/contact` porte aussi la demande client
+  PLUSIEURS commandes. `lafoliecoffee/contact` porte aussi la demande client
   (`staff.customer-request`), qui n'est pas une commande.
 - La fiche commande du back-office : `apps/lfd-backoffice-frontend/src/app/commandes/commande-page/` ;
   la lettre de manque affiche « Client prévenu le … »
@@ -117,7 +117,7 @@ type, id }` ; les types, décidés ici : `order`, `account`, `company`,
    « rebondi ».
 5. **Le fait est déclaré par le canal** `mail/channels/deliveries/` :
    `mail.delivery_failed { requestId, template, subjects, delivery, kind,
-at }`, sans adresse. `b2b/orders` s'y abonne en `@DurableHandler` et, pour
+at }`, sans adresse. `lafoliecoffee/orders` s'y abonne en `@DurableHandler` et, pour
    chaque sujet `order`, sonne une cloche adressée au droit `b2b_orders`,
    lien vers la commande, clé **`mail.failed:<requestId>:<orderId>`** : une
    cloche par fiche et par commande — le rappel de retrait et l'e-mail
@@ -176,7 +176,7 @@ n'en affiche aucun (voulu), aucune attente de verrou sur `mail_request` au
 | B1 — trois chemins appliquent un retour, aucun point d'émission                            | règle 4 : l'agrégat décide, le dépôt écrit à l'outbox dans la même unité             |
 | B2 — `complained` puis `bounced` sonne deux fois ; deux fiches « prête » partagent une clé | règle 4 (seule l'entrée dans l'échec émet) ; règle 5 (clé par fiche et par commande) |
 | S3 — une facture, un lot de prélèvement couvrent plusieurs commandes                       | règle 2 : plusieurs sujets, table enfant                                             |
-| S4 — l'inventaire mettait les relances dans `b2b/orders`                                   | « Ce qui existe » corrigé ; la dette est comptée par la porte                        |
+| S4 — l'inventaire mettait les relances dans `lafoliecoffee/orders`                         | « Ce qui existe » corrigé ; la dette est comptée par la porte                        |
 | S5 — la porte lisait le nom `mail.send`, que les enveloppes déguisent                      | règle 3 : elle vise l'injection et exige un littéral `subjects`                      |
 | S6 — le fait doit être déclaré par un canal                                                | règle 5 ; `durable-cross-block` lit le bloc au chemin (vérifié)                      |
 | S7 — « Client prévenu » élargissait une dette en silence                                   | règle 8 : le libellé change, le champ n'entre pas en dette                           |

@@ -1,6 +1,6 @@
 /**
  * **Les formes qu'un prestataire de carte rend**, réduites à ce que la
- * plateforme décide dessus — copiées de `b2b/payments/domain/payment-gateway.ts`
+ * plateforme décide dessus — copiées de `lafoliecoffee/payments/domain/payment-gateway.ts`
  * et `payment-refunder.ts` (plan M2, §4.2 : P0 COPIE, le lot c2 retire les
  * originaux), et rendues agnostiques : une intention s'y nomme `providerRef`,
  * pas `paymentIntentId`.

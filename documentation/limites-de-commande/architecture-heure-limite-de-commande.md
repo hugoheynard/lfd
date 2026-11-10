@@ -142,7 +142,7 @@ donner l'axe qui lui manque. Un écran de réglages qui ne refuse rien est pire
 qu'une absence de règle — quelqu'un le remplit et croit la limite tenue.
 
 **Depuis, la garde existe** : `ensureWithinOrderCutoff`
-(`src/b2b/orders/domain/services/order-cutoff-guard.ts`), appelée par
+(`src/lafoliecoffee/orders/domain/services/order-cutoff-guard.ts`), appelée par
 `OrderDrafting` après la résolution de l'acheminement, sur les deux portes
 d'entrée. Elle refuse en **409 `orders.cutoff.past`** et n'écrit rien.
 
@@ -792,7 +792,7 @@ Les trois gestes, faits, et dans cet ordre :
 
 La conversion n'a pas été réécrite. `paris-time.ts` la portait depuis les
 créneaux de rendez-vous — deux passes, les deux bascules DST traitées, sa propre
-spec. Il vivait dans `b2b/growth/domain/` ; il est **remonté dans
+spec. Il vivait dans `lafoliecoffee/growth/domain/` ; il est **remonté dans
 `@lfd/contracts`**, d'où le contrat des heures limites l'atteint. Une seconde
 implémentation aurait divergé sur la bascule d'octobre, et l'écart ne se serait
 vu qu'un dimanche par an.
@@ -1028,40 +1028,40 @@ Deux écarts subsistent, et ils sont assumés :
 | `OrderCutoff` existe, point × jour, heure locale                             | `apps/lfd-api/prisma/schema/public/orders.prisma:688` (relu le 2026-10-12 ; l'ancienne référence `:250-1092` est périmée)                          |
 | Résolution en quatre rangs, 12 tests                                         | `packages/contracts/src/order-cutoff.ts`, `__tests__/order-cutoff.spec.ts`                                                                         |
 | **Aucun appelant** hors spec                                                 | grep `resolveOrderCutoff\|orderCutoffInstant`, hors client généré                                                                                  |
-| `PlaceOrderHandler` ne vérifie que l'appartenance                            | `src/b2b/orders/application/commands/place-order.handler.ts`                                                                                       |
+| `PlaceOrderHandler` ne vérifie que l'appartenance                            | `src/lafoliecoffee/orders/application/commands/place-order.handler.ts`                                                                             |
 | La page réglages porte déjà retraits + limites + zones                       | `apps/lfd-backoffice-frontend/src/app/b2b/reglages/`                                                                                               |
-| `PickupAddress` (public) et `PointOfSale` (pim) sans lien                    | `public/orders.prisma:250` et `:3124` ; grep `PointOfSale` dans `src/b2b` : vide                                                                   |
+| `PickupAddress` (public) et `PointOfSale` (pim) sans lien                    | `public/orders.prisma:250` et `:3124` ; grep `PointOfSale` dans `src/lafoliecoffee` : vide                                                         |
 | `PriceScopeType` = global/category/product/variant                           | `packages/contracts/src/pricing.ts:83`                                                                                                             |
 | `Category.parentId` auto-relation                                            | `public/pricing.prisma:118-2845`                                                                                                                   |
 | `ProductKind` = daily / made_to_order / resale                               | `public/pricing.prisma:17`                                                                                                                         |
 | Snapshot en version 7 — l'échelle traverse, plus sa résolution               | `packages/catalog-sync/src/snapshot.ts` ; `__tests__/snapshot.spec.ts`                                                                             |
 | Une arrivée v6 en file garde sa limite résolue à la relecture                | `storedCatalogSnapshotSchema` ; `packages/catalog-sync/src/__tests__/snapshot.spec.ts`                                                             |
-| Un changement de limite apparaît au diff d'arrivée                           | `ChangedField` « orderLimit » ; src/b2b/catalog/domain/**tests**/delivery-diff.spec.ts (retiré en X2)                                              |
-| `total = max(0, subtotal − discount) + deliveryFee + lateFee + vat`          | `src/b2b/orders/domain/entities/order.ts`                                                                                                          |
+| Un changement de limite apparaît au diff d'arrivée                           | `ChangedField` « orderLimit » ; src/lafoliecoffee/catalog/domain/**tests**/delivery-diff.spec.ts (retiré en X2)                                    |
+| `total = max(0, subtotal − discount) + deliveryFee + lateFee + vat`          | `src/lafoliecoffee/orders/domain/entities/order.ts`                                                                                                |
 | `CartAdjustmentMode` sert déjà à `DeliveryZone` et `PickupAddress`           | `public/orders.prisma:14, 1040, 1104`                                                                                                              |
-| `DELIVERY_VAT_RATE = 20`, terme non-marchandise à son taux                   | `src/b2b/orders/domain/services/vat.ts`                                                                                                            |
+| `DELIVERY_VAT_RATE = 20`, terme non-marchandise à son taux                   | `src/lafoliecoffee/orders/domain/services/vat.ts`                                                                                                  |
 | `requestedDeliveryDate` **obligatoire** au contrat, colonne nullable         | `packages/contracts/src/order.ts:114-117` ; `prisma/schema/public/orders.prisma`, section `Order`                                                  |
 | « c'est la journée de production » — l'identité que §5 nuance                | `packages/contracts/src/order.ts:114`                                                                                                              |
-| Aucun plan de production n'existe, seulement une lecture par date            | `src/b2b/orders/application/queries/get-production-batch.handler.ts`                                                                               |
-| `placedByStaffId` → origine `back_office`                                    | `src/b2b/orders/domain/services/order-origin.ts`                                                                                                   |
+| Aucun plan de production n'existe, seulement une lecture par date            | `src/lafoliecoffee/orders/application/queries/get-production-batch.handler.ts`                                                                     |
+| `placedByStaffId` → origine `back_office`                                    | `src/lafoliecoffee/orders/domain/services/order-origin.ts`                                                                                         |
 | **Aucun `TZ`** dans le `Dockerfile` ni dans `wrangler.jsonc`                 | `apps/lfd-api/Dockerfile`, `apps/lfd-api/wrangler.jsonc`                                                                                           |
 | `lint:clock-port` ne scanne que `apps/lfd-api/src`                           | `dev-toolbox/gates/clock-port.mjs:36`                                                                                                              |
 | `graceMinutes` par rang, migration additive à `0`                            | `prisma/migrations/20260904100000_grace_apres_heure_limite/`                                                                                       |
 | Les trois états, les deux bornes incluses                                    | `packages/contracts/src/__tests__/order-cutoff.spec.ts`                                                                                            |
-| Deux codes distincts (`cutoff.grace` / `cutoff.past`)                        | `src/b2b/orders/domain/errors/order-errors.ts` ; `test/order-cutoffs.e2e-spec.ts`                                                                  |
+| Deux codes distincts (`cutoff.grace` / `cutoff.past`)                        | `src/lafoliecoffee/orders/domain/errors/order-errors.ts` ; `test/order-cutoffs.e2e-spec.ts`                                                        |
 | Une livraison ne peut matcher aucune règle de point                          | `packages/contracts/src/order-cutoff.ts:131`                                                                                                       |
 | L'échelle et l'héritage champ par champ                                      | `src/pim/order-time-limitation/domain/services/__tests__/`                                                                                         |
 | Une règle globale unique, tenue par `coalesce(scope_id,'')`                  | `test/pim-order-time-limits.e2e-spec.ts`                                                                                                           |
 | Une portée contradictoire refusée par la base                                | idem, `CHECK order_time_limit_scope_id_iff_not_global`                                                                                             |
 | Écrire sans journaliser est inexprimable (`WriteTicket`)                     | `src/pim/order-time-limitation/domain/ports/`                                                                                                      |
-| Une dérogation n'ouvre que la grâce, jamais une journée close                | `src/b2b/orders/domain/services/__tests__/order-cutoff-guard.spec.ts`                                                                              |
+| Une dérogation n'ouvre que la grâce, jamais une journée close                | `src/lafoliecoffee/orders/domain/services/__tests__/order-cutoff-guard.spec.ts`                                                                    |
 | Une seule autorisation ouverte par client et par jour                        | `order_cutoff_waiver_one_open` ; `test/order-cutoffs.e2e-spec.ts`                                                                                  |
 | Une consommée ne rouvre rien et ne se retire pas                             | idem                                                                                                                                               |
 | L'écran a sa propre entrée, section « Général »                              | `src/app/shared/workspace-rail/workspaces.ts` ; `pim.routes.ts`                                                                                    |
 | `Hérité` distinct d'un rattrapage nul explicite                              | `src/app/pim/order-time-limits/__tests__/limit-format.spec.ts`                                                                                     |
 | La boutique lit un mock, pas une route catalogue — **plus vrai depuis `P7`** | apps/lfc-ecommerce-frontend/src/app/client/mock-shop.ts (supprimé)                                                                                 |
-| La surtaxe s'ajoute APRÈS la remise, et n'est pas remisée                    | `src/b2b/orders/domain/entities/__tests__/order.spec.ts`                                                                                           |
-| Une surtaxe sans taux **lève** au lieu de retomber sur un défaut             | `MissingLateFeeVatRateError` ; `src/b2b/orders/domain/services/__tests__/vat.spec.ts`                                                              |
+| La surtaxe s'ajoute APRÈS la remise, et n'est pas remisée                    | `src/lafoliecoffee/orders/domain/entities/__tests__/order.spec.ts`                                                                                 |
+| Une surtaxe sans taux **lève** au lieu de retomber sur un défaut             | `MissingLateFeeVatRateError` ; `src/lafoliecoffee/orders/domain/services/__tests__/vat.spec.ts`                                                    |
 | Un seul réglage de surtaxe, tenu par la base                                 | `CHECK "id" = 'singleton'` ; `20260904190000_surtaxe_de_commande_tardive`                                                                          |
 | Le réglage n'est lu que si une dérogation a servi                            | `OrderDrafting.lateFeeFor` ; `test/order-cutoffs.e2e-spec.ts`                                                                                      |
 | ~~Le rang global ne se retire pas sous les règles qui en dépendent~~         | retiré le 2026-10-21 : le rang global ne se pose plus (`pim.order_time_limit.scope_retired`), `GlobalOrderTimeLimitStillNeededError` n'existe plus |

@@ -25,12 +25,12 @@ import { invoiceVatBreakdown } from "@lfd/money";
 import type { SendMailArgs } from "@lfd/mailer";
 
 import { placeServedOrder, type ServedOrder } from "./served-order.js";
-import { InvoiceIssuer } from "../src/b2b/accounting/application/services/invoice-issuer.js";
-import { Invoice } from "../src/b2b/accounting/domain/entities/invoice.js";
-import { InvoiceReader } from "../src/b2b/accounting/domain/ports/invoice.reader.js";
-import { invoicingMomentOf } from "../src/b2b/accounting/domain/services/invoicing-closures.js";
-import { noticeAmount } from "../src/b2b/accounting/domain/services/collection-notice-wording.js";
-import { StatementMonth } from "../src/b2b/accounting/domain/value-objects/statement-month.js";
+import { InvoiceIssuer } from "../src/lafoliecoffee/accounting/application/services/invoice-issuer.js";
+import { Invoice } from "../src/lafoliecoffee/accounting/domain/entities/invoice.js";
+import { InvoiceReader } from "../src/lafoliecoffee/accounting/domain/ports/invoice.reader.js";
+import { invoicingMomentOf } from "../src/lafoliecoffee/accounting/domain/services/invoicing-closures.js";
+import { noticeAmount } from "../src/lafoliecoffee/accounting/domain/services/collection-notice-wording.js";
+import { StatementMonth } from "../src/lafoliecoffee/accounting/domain/value-objects/statement-month.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import type { B2bMails } from "../src/mail/templates/mail-templates.js";

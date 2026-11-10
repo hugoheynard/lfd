@@ -1,7 +1,7 @@
 import type {
   BackfillReportLine,
   DriftedOrder,
-} from "../src/b2b/orders/infrastructure/prisma-order-discount-backfill.js";
+} from "../src/lafoliecoffee/orders/infrastructure/prisma-order-discount-backfill.js";
 import { refuseNonLocalTarget } from "./local-target.js";
 
 /**

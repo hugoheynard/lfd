@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 
 import { DEFERRED, verdict, violationsIn } from "../gates/shelf-changes-after-commit.mjs";
 
-const WRITER = "apps/lfd-api/src/b2b/x/infrastructure/prisma-x.repository.ts";
+const WRITER = "apps/lfd-api/src/lafoliecoffee/x/infrastructure/prisma-x.repository.ts";
 
 const DEFERRED_SOURCE = [
   'import { AfterCommit } from "../../../../platform/database/after-commit.js";',
@@ -114,7 +114,7 @@ test("refuse : un écrivain qui atteint la fenêtre ou la purge ; la plomberie l
   assert.deepEqual(
     violationsIn(
       window,
-      "apps/lfd-api/src/b2b/shared/shelf-changes/application/deferred-shelf-changes.ts",
+      "apps/lfd-api/src/lafoliecoffee/shared/shelf-changes/application/deferred-shelf-changes.ts",
     ),
     [],
   );

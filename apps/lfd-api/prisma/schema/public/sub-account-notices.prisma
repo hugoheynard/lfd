@@ -16,7 +16,7 @@ enum SubAccountNoticeKind {
 
 /// Une **dérogation** du staff au tableau par défaut des avis d'un principal
 /// (§3). Pas de ligne = le défaut, qui vit dans le domaine
-/// (`b2b/sub-account-notices/domain/`) : changer le défaut ne demande pas de
+/// (`lafoliecoffee/sub-account-notices/domain/`) : changer le défaut ne demande pas de
 /// migration, et une ligne posée reste la volonté du staff.
 model SubAccountNoticeRule {
   principalCompanyId String               @map("principal_company_id")

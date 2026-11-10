@@ -14,10 +14,10 @@
  */
 import { CardPayments } from "../src/card-payment/channels/requests/index.js";
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
-import { OrderSubjectSettlement } from "../src/b2b/orders/application/services/order-subject-settlement.js";
-import { CardIncreaseProposal } from "../src/b2b/orders/revision/domain/entities/card-increase-proposal.js";
-import { ComplementWithoutProposalError } from "../src/b2b/orders/revision/domain/errors/card-increase-proposal-errors.js";
-import { CardIncreaseProposalRepository } from "../src/b2b/orders/revision/domain/ports/card-increase-proposal.repository.js";
+import { OrderSubjectSettlement } from "../src/lafoliecoffee/orders/application/services/order-subject-settlement.js";
+import { CardIncreaseProposal } from "../src/lafoliecoffee/orders/revision/domain/entities/card-increase-proposal.js";
+import { ComplementWithoutProposalError } from "../src/lafoliecoffee/orders/revision/domain/errors/card-increase-proposal-errors.js";
+import { CardIncreaseProposalRepository } from "../src/lafoliecoffee/orders/revision/domain/ports/card-increase-proposal.repository.js";
 import { PaymentStatus } from "../src/platform/database/client/client.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { cardPaid, cardProvidersDouble } from "./card-payments.js";

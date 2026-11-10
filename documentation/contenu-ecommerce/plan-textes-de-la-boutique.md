@@ -316,14 +316,14 @@ ne le peut pas sur une autre origine) quand le navigateur le permet.
 - **Stockage** (schéma `public`, migration `20261011220000_les_textes_de_la_boutique`) :
   `shop_copy_entries` (clé, langue, révision, brouillon à trois états, publié,
   qui/quand pour les deux) et `shop_copy_publication` (une ligne, la version).
-- **API** : `src/b2b/shop-copy/`, à côté de la vitrine et du contenu, sous
+- **API** : `src/lafoliecoffee/shop-copy/`, à côté de la vitrine et du contenu, sous
   `b2b_storefront`. `GET /shop/copy?locale=` (public) ;
   `GET /admin/shop-copy`, `PUT /admin/shop-copy/drafts`,
   `POST /admin/shop-copy/resets`, `POST|GET /admin/shop-copy/publications`.
   Fait `shop_copy.published` (avant/après par texte).
 - **Manifeste embarqué** : `pnpm tool copy:digest` dépose une copie à l'identique
   du manifeste et des renommages sous
-  `apps/lfd-api/src/b2b/shop-copy/infrastructure/embedded/` — l'émission de
+  `apps/lfd-api/src/lafoliecoffee/shop-copy/infrastructure/embedded/` — l'émission de
   l'API part de `src/` et son déploiement n'empaquette qu'elle.
   `lint:shop-copy-digest` refuse une copie qui diffère, et une clé du manifeste
   commité qui disparaît sans renommage.

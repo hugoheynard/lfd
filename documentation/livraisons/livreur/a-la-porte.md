@@ -392,7 +392,7 @@ Repris de « TODO de la porte » (supprimé le 2026-10-06), relu ce jour-là.
 ### Éteint en attendant
 
 - **L'alarme de retard en livraison** (`latenessOf`,
-  `b2b/orders/domain/services/day-supervision.ts`) — elle ne juge que les
+  `lafoliecoffee/orders/domain/services/day-supervision.ts`) — elle ne juge que les
   créneaux **promis** ; la livraison n'en promet pas encore. Le **lot 5**
   (tranche horaire promise) la rallume, et devra recalibrer « prêt avant la
   fenêtre » sur le départ plutôt que sur le comptoir. _(Raison du silence

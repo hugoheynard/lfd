@@ -251,7 +251,7 @@ flowchart LR
 ```
 
 - **Déclencheur** : `OrderPlacedEvent`, qui existe et est déjà écouté par
-  `growth/`. Le contexte `b2b/alerts/` s'y abonne (`on-order-placed.handler.ts`).
+  `growth/`. Le contexte `lafoliecoffee/alerts/` s'y abonne (`on-order-placed.handler.ts`).
 - **Les détecteurs sont purs** : `(context, params) => AlertDraft[]`. Testables
   sans Nest, sans base, sans horloge — c'est là que vit toute la logique.
 - **Un registre** `kind → détecteur` remplace le `switch`. Nouveau type = nouveau
@@ -270,11 +270,11 @@ flowchart LR
 
 ### Découpage DDD
 
-Le bounded context `apps/lfd-api/src/b2b/alerts/` (langage propre : règle,
+Le bounded context `apps/lfd-api/src/lafoliecoffee/alerts/` (langage propre : règle,
 dérogation, détecteur, alerte — ce n'est ni de l'acquisition ni de la commande) :
 
 ```
-src/b2b/alerts/
+src/lafoliecoffee/alerts/
 ├── domain/
 │   ├── alert-rules.ts              # lecture des réglages globaux, repli sur les défauts
 │   ├── account-alert-rules.ts      # resolveAccountRules : dérogation ?? global (pur)
@@ -301,7 +301,7 @@ l'acquittement, est un `updateMany` **conditionné** sur `acknowledgedAt: null`
 l'auteur ni l'instant.
 
 `alerts/` lit les tables de commande **par ses propres adaptateurs**, sans passer
-par `b2b/orders/` : `prisma-order-history.reader.ts`,
+par `lafoliecoffee/orders/` : `prisma-order-history.reader.ts`,
 `prisma-evaluated-order.reader.ts` (Prisma sur `order` / `orderLine`) et
 `prisma-product-norm.store.ts` (SQL `order_lines JOIN orders`) — vérifié le
 2026-10-20. Les deux contextes sont dans le même bloc `b2b`, que la matrice des

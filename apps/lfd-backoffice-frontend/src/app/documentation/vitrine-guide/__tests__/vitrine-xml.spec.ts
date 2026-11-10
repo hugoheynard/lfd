@@ -71,7 +71,7 @@ describe('toVitrineXml', () => {
 
   /**
    * Le même texte que `GUIDE_ITEM_XML` de la spec du serveur
-   * (`apps/lfd-api/src/b2b/vitrine/http/xml/__tests__/vitrine-xml.spec.ts`) :
+   * (`apps/lfd-api/src/lafoliecoffee/vitrine/http/xml/__tests__/vitrine-xml.spec.ts`) :
    * l'exemple du guide EST la sortie servie, à l'octet.
    */
   it("l'exemple XML du guide est la sortie exacte du serveur", () => {

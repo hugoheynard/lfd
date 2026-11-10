@@ -476,7 +476,7 @@ Des dispenses déclarées et greppables. **Il y en avait deux** quand ce
 paragraphe a été écrit ; le grep en rend **quinze** le 2026-09-22 :
 
 ```bash
-grep -rn "@hors-transaction\|@sans-journal" apps/lfd-api/src/b2b/account --include="*.ts" | grep -v __tests__
+grep -rn "@hors-transaction\|@sans-journal" apps/lfd-api/src/lafoliecoffee/account --include="*.ts" | grep -v __tests__
 ```
 
 🔴 **Le tableau nominatif a été retiré plutôt que rallongé, et c'est le fond du
@@ -630,16 +630,16 @@ ORDER BY occurred_at DESC;
 | Routage vers la transaction      | `platform/database/{transaction.store,transactional-prisma}.ts`          |
 | Port générique du journal        | `platform/journal/{journal,journal-fact}.ts`                             |
 | Événement qui EST un fait        | `JournaledEvent` + `DomainEventPublisher.publishTraced`                  |
-| Faits des comptes clients        | `b2b/account/domain/events/account-facts.ts`                             |
+| Faits des comptes clients        | `lafoliecoffee/account/domain/events/account-facts.ts`                   |
 | Faits des réglages commerciaux   | `b2b/{delivery-zones,pickup-addresses,order-cutoffs}/domain/*.events.ts` |
-| Acte tarifaire → fait général    | `b2b/pricing/domain/pricing-act.ts` (`pricingFactOf`)                    |
-| Écriture d'un acte tarifaire     | `b2b/pricing/infrastructure/pricing-act.writer.ts`                       |
+| Acte tarifaire → fait général    | `lafoliecoffee/pricing/domain/pricing-act.ts` (`pricingFactOf`)          |
+| Écriture d'un acte tarifaire     | `lafoliecoffee/pricing/infrastructure/pricing-act.writer.ts`             |
 | **Mécanique du laissez-passer**  | `platform/journal/scoped-journal.ts`                                     |
 | Vocabulaire du référentiel       | `pim/journal/pim-journal.ts`                                             |
 | Vocabulaire de la médiathèque    | `media/journal/media-journal.ts`                                         |
 | Diff `avant → après`             | `platform/journal/changes.ts`                                            |
 | Branchement ports → journal réel | `appBootstrap/journal.module.ts`                                         |
-| Journal réel (append)            | `b2b/growth/infrastructure/prisma-activity-recorder.ts`                  |
+| Journal réel (append)            | `lafoliecoffee/growth/infrastructure/prisma-activity-recorder.ts`        |
 | Table                            | `prisma/schema/growth.prisma` → `model ActivityEvent`                    |
 | Porte CI                         | `dev-toolbox/gates/journal-tracked.mjs`                                  |
 | Preuve d'atomicité               | `apps/lfd-api/test/pim-journal-atomicity.e2e-spec.ts`                    |

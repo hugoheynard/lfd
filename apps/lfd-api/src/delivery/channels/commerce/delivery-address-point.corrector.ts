@@ -11,7 +11,7 @@ export interface DeliveryAddressPointCorrection {
 /**
  * **« Corrige ce point du carnet »** (`gps-y-aller-et-position.md`, §6) —
  * ce que la livraison DÉCLARE et que le commerce implémente
- * (`b2b/account/application/services/`), relié dans
+ * (`lafoliecoffee/account/application/services/`), relié dans
  * `appBootstrap/delivery-feed.module.ts`.
  *
  * La livraison n'écrit jamais au commerce : elle DEMANDE. C'est le carnet

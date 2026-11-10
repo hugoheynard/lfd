@@ -76,7 +76,7 @@ cette écriture ? ». Ici, oui, quatre fois :
 Le pied de page, lui, n'a aucun refus : c'est un `read`/`save` de forme, et son
 absence d'agrégat est juste. Un document de mention en mérite un.
 
-`LegalDocument` (`src/b2b/content/domain/entities/`), **un par mention**, chargé
+`LegalDocument` (`src/lafoliecoffee/content/domain/entities/`), **un par mention**, chargé
 et enregistré sous la clé de sa mention :
 
 ```

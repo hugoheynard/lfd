@@ -5,7 +5,7 @@
  * Sortis de `pain008-audit.ts` le 2026-10-05, quand le relevé de cycle a eu
  * besoin des mêmes : deux CSV du même service qui n'écriraient pas les euros de
  * la même façon s'ouvriraient différemment chez le même lecteur. Montés de
- * `b2b/accounting/` dans `platform/` le 2026-10-21, quand le récapitulatif des
+ * `lafoliecoffee/accounting/` dans `platform/` le 2026-10-21, quand le récapitulatif des
  * commandes en a eu besoin (`documentation/commandes/boutique/plan-recapitulatif-des-commandes.md`,
  * §6.7) : une règle de cellule sans métier, au lieu d'une cinquième copie.
  */

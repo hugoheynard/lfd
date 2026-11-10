@@ -3,7 +3,7 @@
 > 🟡 **2026-10-25 : A1.4 bâti, pas encore commité.** Migration
 > `20261025220000_envoyer_la_reserve_en_boutique` ; `PackingStock.sendToShop`,
 > port `ReserveShopRelease` (`packing/channels/commerce/`), commande
-> `SendReserveToShop` (`b2b/resupply/`), route `POST
+> `SendReserveToShop` (`lafoliecoffee/resupply/`), route `POST
 admin/reserve-shop-releases/:serviceDay`, panneau « Envoyer en boutique » à
 > la Supervision. Vérifié au bâti (§ 1) : `asapToLaunch`, « Réassorts à
 > produire » et l'onglet de Prod manager (donc la carte « Au plus tôt »)
@@ -68,7 +68,7 @@ fournil − au bac − envoyé en boutique − réservé`. Une méthode
   remplies avec ce qui a été rendu, bornées au libre affiché) → envoyer.
   **Geste de superviseur**, sous `production_resupply:write` (droit
   existant, lot R1d), accordé à l'écran des rôles.
-- **Une commande du commerce**, `SendReserveToShop` (`b2b/resupply/`), dans
+- **Une commande du commerce**, `SendReserveToShop` (`lafoliecoffee/resupply/`), dans
   **une** unité de travail :
   1. crée le `SiteResupply` `reserve` envoyé ;
   2. appelle **dans la transaction** un port déclaré et implémenté par le

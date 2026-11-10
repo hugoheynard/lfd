@@ -2,10 +2,10 @@ import { randomUUID } from "node:crypto";
 
 import type { PlaceShopOrderPayload } from "@lfd/contracts";
 
-import { FulfillmentWindowRequiredError } from "../src/b2b/orders/domain/errors/order-errors.js";
-import { PlaceShopOrderHandler } from "../src/b2b/orders/application/commands/place-shop-order.handler.js";
-import { LoyaltySettings } from "../src/b2b/loyalty/domain/value-objects/loyalty-settings.js";
-import { PrismaLoyaltySettingsStore } from "../src/b2b/loyalty/infrastructure/prisma-loyalty-settings.store.js";
+import { FulfillmentWindowRequiredError } from "../src/lafoliecoffee/orders/domain/errors/order-errors.js";
+import { PlaceShopOrderHandler } from "../src/lafoliecoffee/orders/application/commands/place-shop-order.handler.js";
+import { LoyaltySettings } from "../src/lafoliecoffee/loyalty/domain/value-objects/loyalty-settings.js";
+import { PrismaLoyaltySettingsStore } from "../src/lafoliecoffee/loyalty/infrastructure/prisma-loyalty-settings.store.js";
 import { cardProvidersOverride } from "./card-payments.js";
 import { bootstrapE2e, E2E_STAFF_ID, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { placeShopOrderSeeingTotal, type Unseen } from "./seen-total-shop-command.js";

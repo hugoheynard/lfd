@@ -3,7 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 //
 // Plan : documentation/commandes/boutique/boutique-rayon-layout.md (D2, D3, D6).
-// Écrites et lues par `b2b/storefront` seul. L'agrégat est la vitrine ENTIÈRE :
+// Écrites et lues par `lafoliecoffee/storefront` seul. L'agrégat est la vitrine ENTIÈRE :
 // un objet partagé paraît sur plusieurs rayons, et la collision se juge sur
 // chacun — deux agrégats « page » ne pourraient pas la garder ensemble.
 //

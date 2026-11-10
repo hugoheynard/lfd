@@ -19,7 +19,7 @@
 import { randomUUID } from "node:crypto";
 
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
-import { CatalogueSnapshotStore } from "../src/b2b/catalog/infrastructure/catalogue-snapshot/catalogue-snapshot.store.js";
+import { CatalogueSnapshotStore } from "../src/lafoliecoffee/catalog/infrastructure/catalogue-snapshot/catalogue-snapshot.store.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";

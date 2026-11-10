@@ -67,21 +67,21 @@ signer**, et ce n'est pas un oubli : c'est un refus, qui tombera avec la RUM.
 
 ### Ce qui tourne
 
-| Quoi                                                                                          | Où                                                                  | Note                                                                                                            |
-| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| **L'entité juridique émettrice** — ICS, compte créancier, mentions, délai de pré-notification | `src/b2b/accounting/`, écran Comptabilité › Entités juridiques      | Ouvert à l'écran le 2026-09-12 : une entité, ICS posé, « Peut encaisser »                                       |
-| **La fiche de mandat vierge** au modèle EPC/CFONB                                             | `accounting/domain/services/sepa-mandate-pdf.ts`                    | Déterministe, préremplie du bloc créancier, marquée EXEMPLE                                                     |
-| **Le brouillon `pain.008` + son audit CSV**                                                   | `accounting/domain/services/pain008.ts`, `pain008-audit.ts`         | Sortis le 2026-09-12 : XML 2 ko, CSV dont la somme des lignes égale le `CtrlSum`                                |
-| **Le RIB du client**, scellé au champ                                                         | `payments/infrastructure/`, écran Fiche client › Moyens de paiement | Posé le 2026-09-12 : AES-256-GCM, l'IBAN monte et ne redescend jamais                                           |
-| **L'aperçu nominatif du mandat** — les deux blocs remplis                                     | `GET /admin/companies/:id/mandate/preview.pdf`                      | Posé le 2026-09-12 ; toujours marqué EXEMPLE — voir le TODO                                                     |
-| **La frappe d'un mandat** — RUM sous notre ICS, état brouillon                                | `POST /admin/companies/:id/mandate`, bouton en fiche client         | Posée le 2026-09-12 au soir. `MintMandateHandler` appelle `Rum.mint`                                            |
-| **La signature d'un brouillon** — `draft` → `active`                                          | `PaymentMandate.sign()`                                             | Porte la date du PAPIER, refuse une date à venir et une seconde signature                                       |
-| **Le scan du mandat signé** — dépôt, scellement, relecture                                    | `PUT` et `GET /admin/companies/:id/mandate/proof`                   | Scellé AES-256-GCM en binaire ; le bouton « Récupérer » le ressort descellé                                     |
-| **Le `pain.008` alimenté** — RUM, IBAN du débiteur, BIC créancier                             | `pain008.ts` + port `DebtorMandateReader`                           | Le bandeau BROUILLON tombe quand chaque ligne porte son mandat, et pas avant                                    |
-| **Notre IBAN créancier, scellé**                                                              | `legal_entities.creditor_iban_sealed`                               | Palier 1 sur 3 ; la colonne claire subsiste comme retour arrière                                                |
-| **Les réglages de mandat de l'entité** — description du contrat, type de paiement             | `LegalEntity`, écran Entités juridiques                             | Zones 20 et 12 du modèle EPC, posées une fois pour tous les mandats qu'elle émet                                |
-| **Le logo imprimé sur les mandats**                                                           | `POST /admin/accounting/legal-entities/:id/logo`                    | Import à l'écran posé le 2026-09-12 ; sans lui la cellule reste vide et le mandat reste valide                  |
-| **Le mandat Stripe** — enregistrer, prouver, révoquer                                         | `src/b2b/payments/`                                                 | **Gelé** : c'est le mécanisme qu'on quitte — _supprimé le 2026-09-19, aucun mandat Stripe en production (Hugo)_ |
+| Quoi                                                                                          | Où                                                                       | Note                                                                                                            |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| **L'entité juridique émettrice** — ICS, compte créancier, mentions, délai de pré-notification | `src/lafoliecoffee/accounting/`, écran Comptabilité › Entités juridiques | Ouvert à l'écran le 2026-09-12 : une entité, ICS posé, « Peut encaisser »                                       |
+| **La fiche de mandat vierge** au modèle EPC/CFONB                                             | `accounting/domain/services/sepa-mandate-pdf.ts`                         | Déterministe, préremplie du bloc créancier, marquée EXEMPLE                                                     |
+| **Le brouillon `pain.008` + son audit CSV**                                                   | `accounting/domain/services/pain008.ts`, `pain008-audit.ts`              | Sortis le 2026-09-12 : XML 2 ko, CSV dont la somme des lignes égale le `CtrlSum`                                |
+| **Le RIB du client**, scellé au champ                                                         | `payments/infrastructure/`, écran Fiche client › Moyens de paiement      | Posé le 2026-09-12 : AES-256-GCM, l'IBAN monte et ne redescend jamais                                           |
+| **L'aperçu nominatif du mandat** — les deux blocs remplis                                     | `GET /admin/companies/:id/mandate/preview.pdf`                           | Posé le 2026-09-12 ; toujours marqué EXEMPLE — voir le TODO                                                     |
+| **La frappe d'un mandat** — RUM sous notre ICS, état brouillon                                | `POST /admin/companies/:id/mandate`, bouton en fiche client              | Posée le 2026-09-12 au soir. `MintMandateHandler` appelle `Rum.mint`                                            |
+| **La signature d'un brouillon** — `draft` → `active`                                          | `PaymentMandate.sign()`                                                  | Porte la date du PAPIER, refuse une date à venir et une seconde signature                                       |
+| **Le scan du mandat signé** — dépôt, scellement, relecture                                    | `PUT` et `GET /admin/companies/:id/mandate/proof`                        | Scellé AES-256-GCM en binaire ; le bouton « Récupérer » le ressort descellé                                     |
+| **Le `pain.008` alimenté** — RUM, IBAN du débiteur, BIC créancier                             | `pain008.ts` + port `DebtorMandateReader`                                | Le bandeau BROUILLON tombe quand chaque ligne porte son mandat, et pas avant                                    |
+| **Notre IBAN créancier, scellé**                                                              | `legal_entities.creditor_iban_sealed`                                    | Palier 1 sur 3 ; la colonne claire subsiste comme retour arrière                                                |
+| **Les réglages de mandat de l'entité** — description du contrat, type de paiement             | `LegalEntity`, écran Entités juridiques                                  | Zones 20 et 12 du modèle EPC, posées une fois pour tous les mandats qu'elle émet                                |
+| **Le logo imprimé sur les mandats**                                                           | `POST /admin/accounting/legal-entities/:id/logo`                         | Import à l'écran posé le 2026-09-12 ; sans lui la cellule reste vide et le mandat reste valide                  |
+| **Le mandat Stripe** — enregistrer, prouver, révoquer                                         | `src/lafoliecoffee/payments/`                                            | **Gelé** : c'est le mécanisme qu'on quitte — _supprimé le 2026-09-19, aucun mandat Stripe en production (Hugo)_ |
 
 ### Ce qui a été branché le 2026-09-12 au soir
 
@@ -370,7 +370,7 @@ résument dans `RmtInf/Ustrd`, borné à 140 caractères — donc « Commandes d
 ### Les bornes du texte — au 2026-10-23
 
 Tout texte libre passe par **une** règle, `sepaText(valeur, borne)`
-(`apps/lfd-api/src/b2b/accounting/domain/services/sepa-text.ts`) : jeu SEPA
+(`apps/lfd-api/src/lafoliecoffee/accounting/domain/services/sepa-text.ts`) : jeu SEPA
 d'abord (`sepa()`, qui retire aussi `&`, `<`, `>` — rien à échapper ensuite),
 puis coupe à la borne, sans espace final.
 
@@ -822,7 +822,7 @@ déposé, que L écarte (`one_off_consumed`).
   `judgeMandate`.** C'est le compte qui appelle `judgeMandate` tel quel, sur
   un bon fictif que le payeur passerait lui-même à l'instant compté, et ne
   retient que le verdict `debit`. Aucune extraction n'a été nécessaire ; une
-  table des sorties (`apps/lfd-api/src/b2b/accounting/domain/services/__tests__/collection-verdict.spec.ts`, paramétrée) verrouille
+  table des sorties (`apps/lfd-api/src/lafoliecoffee/accounting/domain/services/__tests__/collection-verdict.spec.ts`, paramétrée) verrouille
   désormais le jugement que les deux partagent.
 - _La facture du mois doit rester hors du port._ `monthly-invoicing.ts`
   appelle `effectiveMandateOf`, qui fige le moyen de paiement annoncé

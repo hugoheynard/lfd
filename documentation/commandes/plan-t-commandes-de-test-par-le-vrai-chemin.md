@@ -57,7 +57,7 @@
 - **Sa justification d'exception est fausse.** `apps/lfd-api/test/factories.ts`
   (l. 4-5) : « elles écrivent par Prisma parce que le contexte commerce n'a
   pas encore d'agrégat de domaine ». L'agrégat `Order` existe
-  (`b2b/orders/domain/entities/order.ts`, `Order.draft`, `Order.revise`) au
+  (`lafoliecoffee/orders/domain/entities/order.ts`, `Order.draft`, `Order.revise`) au
   moins depuis le 2026-08-19.
 - **L'ampleur** : 46 fichiers de `test/` créent des commandes par Prisma ;
   128 fichiers de `test/` et `src/` posent un numéro de commande en dur — `CMD-`

@@ -1,6 +1,6 @@
 /// **Les abonnés de la vitrine** — ceux qu'on prévient quand le catalogue
 /// publié change (`documentation/webhooks/vitrine.md`, lot W,
-/// 2026-10-18). L'agrégat `VitrineSubscriber` de `b2b/vitrine` en est le seul
+/// 2026-10-18). L'agrégat `VitrineSubscriber` de `lafoliecoffee/vitrine` en est le seul
 /// écrivain.
 ///
 /// Un abonné est une ORGANISATION (l'agence web) : un nom et une adresse,

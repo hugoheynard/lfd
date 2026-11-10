@@ -125,12 +125,12 @@ récapitulatif des particuliers serait une autre route, en TTC. Hors de ce plan.
 
 - **Filtre de jour** sur `GET /companies/:companyId/orders?from=&to=` :
   `AAAA-MM-JJ` par Zod (`companyOrdersQuerySchema`), jour existant et
-  début ≤ fin vérifiés au handler (`apps/lfd-api/src/b2b/orders/application/queries/company-order-day-range.ts`), bornes
+  début ≤ fin vérifiés au handler (`apps/lfd-api/src/lafoliecoffee/orders/application/queries/company-order-day-range.ts`), bornes
   incluses sur `requested_delivery_date`, en `AND` sous le mur. Une borne
   posée exclut les commandes sans date. ⚠️ **« N sans date » n'est PAS
   servi** : la réponse de la liste est un tableau (servi à C2), et le compter
   demande de changer sa forme ou d'ajouter un canal — à trancher.
-- **Le mur** de C1 est sorti dans `apps/lfd-api/src/b2b/orders/infrastructure/company-order-wall.ts`,
+- **Le mur** de C1 est sorti dans `apps/lfd-api/src/lafoliecoffee/orders/infrastructure/company-order-wall.ts`,
   partagé par la liste et le récapitulatif.
 - **Récapitulatif** `POST /companies/:companyId/orders/summary` (corps
   `{ orderIds, format: "json" }`, `companyOrderSummaryRequestSchema`) : query
@@ -138,14 +138,14 @@ récapitulatif des particuliers serait une autre route, en TTC. Hors de ce plan.
   lecture, sous le mur, SANS `CUSTOMER_VISIBLE` pour pouvoir nommer les
   exclues). Membre puis plafond (`ORDER_SUMMARY_MAX_ORDERS` = 200, 400) avant
   toute lecture ; id hors mur → 404 qui le nomme.
-- **Agrégation pure** `apps/lfd-api/src/b2b/orders/domain/services/order-summary.ts` : une table par
+- **Agrégation pure** `apps/lfd-api/src/lafoliecoffee/orders/domain/services/order-summary.ts` : une table par
   société (la société listée, puis les sites par nom), par SKU quantité + HT
   (`line_total_cents`) ; bas = sommes des colonnes (sous-total, remise, bon,
   livraison, surtaxe, TVA par taux depuis `vat_shares`, TTC = `total_cents`) ;
   une commande sans `vat_shares` voit sa TVA sommée dans
   `unventilatedVatCents`, sans taux inventé ; `amountsAt: "placement"`.
-- Tests : domaine (`apps/lfd-api/src/b2b/orders/domain/services/__tests__/order-summary.spec.ts`), handler
-  (`apps/lfd-api/src/b2b/orders/application/queries/__tests__/summarize-company-orders.handler.spec.ts`, `list-company-orders.handler.spec.ts`),
+- Tests : domaine (`apps/lfd-api/src/lafoliecoffee/orders/domain/services/__tests__/order-summary.spec.ts`), handler
+  (`apps/lfd-api/src/lafoliecoffee/orders/application/queries/__tests__/summarize-company-orders.handler.spec.ts`, `list-company-orders.handler.spec.ts`),
   e2e `apps/lfd-api/test/company-order-summary.e2e-spec.ts`, contrat
   (`packages/contracts/src/__tests__/company-orders.spec.ts`).
 
@@ -154,14 +154,14 @@ récapitulatif des particuliers serait une autre route, en TTC. Hors de ce plan.
 - **Trois formats, une route** : `format` vaut `json` | `pdf` | `csv`
   (`ORDER_SUMMARY_FORMATS`, `packages/contracts/src/company-orders.ts`). Les
   trois passent par `loadCompanyOrderSummary`
-  (`apps/lfd-api/src/b2b/orders/application/queries/company-order-summary-support.ts`) :
+  (`apps/lfd-api/src/lafoliecoffee/orders/application/queries/company-order-summary-support.ts`) :
   mêmes refus (membre, plafond, id hors mur), une seule lecture des commandes.
   Le PDF et le CSV sont des queries à part (`ExportCompanyOrderSummaryPdfQuery`,
   `ExportCompanyOrderSummaryCsvQuery`) qui dessinent le `CompanyOrderSummaryView`
   calculé, sans relecture des commandes ; seule lecture de plus, le nom de la
   société demandeuse (`OrderSummaryRequesterReader`), qu'aucune commande comptée
   ne porte forcément.
-- **PDF A4 portrait** (`apps/lfd-api/src/b2b/orders/domain/services/order-summary-pdf.ts`, `apps/lfd-api/src/b2b/orders/domain/services/order-summary-pdf-frame.ts`) :
+- **PDF A4 portrait** (`apps/lfd-api/src/lafoliecoffee/orders/domain/services/order-summary-pdf.ts`, `apps/lfd-api/src/lafoliecoffee/orders/domain/services/order-summary-pdf-frame.ts`) :
   quatre colonnes y tiennent. Trousse `platform/pdf/paper-pdf-kit.ts`, logo
   `BrandLogoSource`, date de génération au `Clock` (heure de Paris). En-tête,
   société demandeuse, « Sélection de N commandes — M comptées, K exclues »,
@@ -169,10 +169,10 @@ récapitulatif des particuliers serait une autre route, en TTC. Hors de ce plan.
   général — produits répétés seulement s'il y a plusieurs sociétés, sinon son
   seul bas ; les exclues et pourquoi ; titre et barre de titres repris sur
   page neuve (« (suite) »), « Page x/N » en pied.
-- **CSV** (`apps/lfd-api/src/b2b/orders/domain/services/order-summary-csv.ts`) : une ligne par (société, produit),
+- **CSV** (`apps/lfd-api/src/lafoliecoffee/orders/domain/services/order-summary-csv.ts`) : une ligne par (société, produit),
   puis toutes les lignes du bas (même à zéro), le total général sous la même
   forme, puis les exclues. Les cellules viennent de
-  `apps/lfd-api/src/platform/csv/csv-cells.ts`, montée de `b2b/accounting/` (les quatre CSV comptables
+  `apps/lfd-api/src/platform/csv/csv-cells.ts`, montée de `lafoliecoffee/accounting/` (les quatre CSV comptables
   la lisent) : un texte qui commence par `=`, `+`, `-`, `@` prend une
   apostrophe, sauf s'il est un nombre (`-12,50`) ; `csvEuros` n'est jamais
   neutralisé. Les tests comptables (unitaires et e2e) passent inchangés.
@@ -182,8 +182,8 @@ récapitulatif des particuliers serait une autre route, en TTC. Hors de ce plan.
   vue aucune date. Le document dit la SÉLECTION ; dire « du … au … » demande
   d'envoyer les bornes du filtre dans le corps, ou de lire les jours — à trancher.
 - Tests : `apps/lfd-api/src/platform/csv/__tests__/csv-cells.spec.ts`,
-  `apps/lfd-api/src/b2b/orders/domain/services/__tests__/order-summary-papers.spec.ts` (texte du PDF lu),
-  `apps/lfd-api/src/b2b/orders/application/queries/__tests__/export-company-order-summary.handlers.spec.ts`,
+  `apps/lfd-api/src/lafoliecoffee/orders/domain/services/__tests__/order-summary-papers.spec.ts` (texte du PDF lu),
+  `apps/lfd-api/src/lafoliecoffee/orders/application/queries/__tests__/export-company-order-summary.handlers.spec.ts`,
   e2e `apps/lfd-api/test/company-order-summary.e2e-spec.ts` (les trois formats sous le même mur).
 
 ## 9. R3 — bâti le 2026-10-21 (non commité à l'écriture de ces lignes)
@@ -192,10 +192,10 @@ récapitulatif des particuliers serait une autre route, en TTC. Hors de ce plan.
 /companies/:companyId/orders/summary` accepte `period: { from?, to? }`
   (`AAAA-MM-JJ`, `companyOrderSummaryRequestSchema`). Mêmes vérifications que
   le filtre de la liste — jour existant, début ≤ fin
-  (`summaryPeriodOf`, `apps/lfd-api/src/b2b/orders/application/queries/company-order-summary-support.ts`),
+  (`summaryPeriodOf`, `apps/lfd-api/src/lafoliecoffee/orders/application/queries/company-order-summary-support.ts`),
   avant toute lecture. Elle n'élargit ni ne restreint la sélection : les ids
   font foi. Le PDF et le CSV l'impriment en plus de « Sélection de N
-  commandes » (`periodSentence`, `apps/lfd-api/src/b2b/orders/domain/services/order-summary-period.ts`) :
+  commandes » (`periodSentence`, `apps/lfd-api/src/lafoliecoffee/orders/domain/services/order-summary-period.ts`) :
   « Retraits et livraisons du 1er au 15 octobre 2026 », « le … », « à partir
   du … », « jusqu'au … ». Le format `json` l'ignore — l'écran affiche la sienne.
   Ce qui était laissé à trancher au §8 (« la période n'est pas imprimée ») est
@@ -225,9 +225,9 @@ récapitulatif des particuliers serait une autre route, en TTC. Hors de ce plan.
   régénéré (`pnpm tool copy:digest`).
 - ⚠️ **« N sans date » n'est toujours pas servi** (§7) : la phrase de l'écran
   dit la règle, pas le compte.
-- Tests : `apps/lfd-api/src/b2b/orders/domain/services/__tests__/order-summary-period.spec.ts`,
-  `apps/lfd-api/src/b2b/orders/domain/services/__tests__/order-summary-papers.spec.ts`,
-  `apps/lfd-api/src/b2b/orders/application/queries/__tests__/export-company-order-summary.handlers.spec.ts`,
+- Tests : `apps/lfd-api/src/lafoliecoffee/orders/domain/services/__tests__/order-summary-period.spec.ts`,
+  `apps/lfd-api/src/lafoliecoffee/orders/domain/services/__tests__/order-summary-papers.spec.ts`,
+  `apps/lfd-api/src/lafoliecoffee/orders/application/queries/__tests__/export-company-order-summary.handlers.spec.ts`,
   e2e `apps/lfd-api/test/company-order-summary.e2e-spec.ts` (période imprimée
   sans retirer de commande, période mal formée → 400), contrat ; boutique, sous
   `apps/lfc-ecommerce-frontend/src/app/client/mes-commandes/` : `client-order-history.service.spec.ts`,
@@ -260,12 +260,12 @@ final ».
   « remise plafonnée au montant des articles » quand un bon s'est arrêté à
   zéro. Sans écart, pas de ligne.
 - **PDF** : en ANNEXE, sur page neuve après les exclues
-  (`apps/lfd-api/src/b2b/orders/domain/services/order-summary-pdf-orders.ts`) — le récapitulatif garde sa lecture d'une
+  (`apps/lfd-api/src/lafoliecoffee/orders/domain/services/order-summary-pdf-orders.ts`) — le récapitulatif garde sa lecture d'une
   traite, la liste (jusqu'à 200 lignes) sert à pointer. Une sous-section par
   société (son nom en titre), barre de titres reprise sur chaque page avec
   « (suite) », la somme et l'écart sous chaque société, puis « Total HT des
   bons — total général » s'il y a plusieurs sociétés. Mots communs au PDF et
-  au tableur : `apps/lfd-api/src/b2b/orders/domain/services/order-summary-orders.ts`.
+  au tableur : `apps/lfd-api/src/lafoliecoffee/orders/domain/services/order-summary-orders.ts`.
 - **CSV** : un bloc « Bons de commande inclus » après les exclues — une ligne
   par bon (bon, société, jour `JJ/MM/AAAA`, mode, auteur, montant HT), puis
   la somme et l'écart par société, puis le total général s'il y en a
@@ -277,7 +277,7 @@ final ».
   glossaire du back-office (`glossary-orders-summary.ts`).
 - **La ligne « Livraison » du bas** : vérifiée avec une commande livrée, au
   domaine→PDF et en e2e (`Livraison 7,50` lu dans le PDF servi).
-- Tests : `apps/lfd-api/src/b2b/orders/domain/services/__tests__/order-summary-included-orders.spec.ts`,
-  `apps/lfd-api/src/b2b/orders/domain/services/__tests__/order-summary-included-orders-papers.spec.ts`,
+- Tests : `apps/lfd-api/src/lafoliecoffee/orders/domain/services/__tests__/order-summary-included-orders.spec.ts`,
+  `apps/lfd-api/src/lafoliecoffee/orders/domain/services/__tests__/order-summary-included-orders-papers.spec.ts`,
   les deux specs de handlers, e2e `apps/lfd-api/test/company-order-summary.e2e-spec.ts` ;
   boutique `apps/lfc-ecommerce-frontend/src/app/client/mes-commandes/order-summary-orders/order-summary-orders.spec.ts` et `order-summary-panel.spec.ts`.

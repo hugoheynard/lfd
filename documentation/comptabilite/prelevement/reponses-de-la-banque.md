@@ -7,7 +7,7 @@
 > deux pièces jointes y sont depuis le 2026-10-23 ([`modeles-banque/`](modeles-banque/), § 2 bis).
 >
 > Chaque « le code fait » cite un fichier et une ligne **ouverts le
-> 2026-10-23**, sous `apps/lfd-api/src/b2b/accounting/` (abrégé `apps/lfd-api/src/b2b/accounting/`).
+> 2026-10-23**, sous `apps/lfd-api/src/lafoliecoffee/accounting/` (abrégé `apps/lfd-api/src/lafoliecoffee/accounting/`).
 > Rien n'a été modifié dans le code : ce document est un état et une liste.
 
 Les numéros sont ceux du **texte envoyé** (1 à 31), pas ceux des questions
@@ -52,7 +52,7 @@ deux services à paramétrer, l'aller (remises) et le retour (impayés).
   encore, ni le CORE. Signer **au moins** la convention B2B ; la CORE seulement
   si Hugo veut l'avoir prête.
 - _Code_ : rien à faire ; le fichier est déjà un fichier par schéma
-  (`apps/lfd-api/src/b2b/accounting/domain/services/pain008-document.ts:182`, `LclInstrm` = schéma du
+  (`apps/lfd-api/src/lafoliecoffee/accounting/domain/services/pain008-document.ts:182`, `LclInstrm` = schéma du
   document).
 - 🔴 **Hors code, bloquant** : contrat CENET REMISES et convention B2B signés,
   services aller et retour paramétrés.
@@ -65,7 +65,7 @@ service EDI reçoit une alerte et nous sollicite pour vérifier.
   donner trois chiffres, et ils doivent tenir le rythme hebdomadaire (jusqu'à
   cinq remises par mois).
 - _Code_ : aucun plafond n'existe côté lot (`grep` de `plafond|ceiling|cap` sous
-  `apps/lfd-api/src/b2b/accounting/domain/entities/collection-batch.ts` : rien, 2026-10-23).
+  `apps/lfd-api/src/lafoliecoffee/accounting/domain/entities/collection-batch.ts` : rien, 2026-10-23).
 - 🔴 **Décision D1** (les trois chiffres). 🟡 ensuite : un avertissement à la
   constitution d'un lot qui dépasse le plafond par remise ou unitaire —
   utile, pas bloquant, puisque la banque appelle au lieu de rejeter.
@@ -147,12 +147,12 @@ le fichier** (compte rendu d'anomalies, et fichier des comptes à importer si
 des RIB sont inconnus).
 
 - _Code_ :
-  - F écrit `JJ/MM/AAAA` (`apps/lfd-api/src/b2b/accounting/domain/services/mandate-bank-export-values.ts:35-37`) — **faux** ;
+  - F écrit `JJ/MM/AAAA` (`apps/lfd-api/src/lafoliecoffee/accounting/domain/services/mandate-bank-export-values.ts:35-37`) — **faux** ;
   - G écrit `RCUR` / `OOFF` (`mandate-bank-export-values.ts:18-21`) — **faux** ;
   - H écrit `CORE` / `B2B` (`mandate-bank-export-values.ts:24-27`) — **juste**.
 - 🔴 **Bloquant** : corriger F et G. Le module a été écrit pour que ce soit
   « une ligne » (son JSDoc, l. 9-14) ; les specs de l'export
-  (`apps/lfd-api/src/b2b/accounting/application/queries/__tests__/mandate-bank-export.handlers.spec.ts`)
+  (`apps/lfd-api/src/lafoliecoffee/accounting/application/queries/__tests__/mandate-bank-export.handlers.spec.ts`)
   suivront. Le jour reste celui de Paris (`localDay`), seul le format change.
 - _Geste_ : toujours passer par la **vérification CENET** avant l'import réel
   (à écrire dans le runbook de la première remise).
@@ -194,7 +194,7 @@ erreur, et le tableau des lignes en erreur avec leur motif.
   en écrit 17 (A à Q).
 - _Code_ : `BANK_IMPORT_COLUMN_COUNT = 17` (`mandate-bank-export-csv.ts:22`) ;
   I à Q toujours vides (l. 58-72). Les mandats repris sont **écartés** de
-  l'export (`apps/lfd-api/src/b2b/accounting/domain/ports/mandates-for-bank-export.reader.ts:21-26`,
+  l'export (`apps/lfd-api/src/lafoliecoffee/accounting/domain/ports/mandates-for-bank-export.reader.ts:21-26`,
   `taken_over`) ; la révocation n'est pas déclarée.
 - 🔴 **Bloquant, petit** : vérifier sur le modèle reçu le nombre exact de
   colonnes ; si c'est 18, en écrire 18 (un fichier à 17 cellules pourrait être
@@ -218,7 +218,7 @@ un fichier ; seule la saisie en ligne l'exige.
 reportée à 2027, sans calendrier). La `.08` est la plus récente et compatible,
 et gère l'**adresse structurée**, obligatoire hors EEE.
 
-- _Code_ : `.02` (`apps/lfd-api/src/b2b/accounting/domain/services/pain008-document.ts:126`) ; aucune
+- _Code_ : `.02` (`apps/lfd-api/src/lafoliecoffee/accounting/domain/services/pain008-document.ts:126`) ; aucune
   adresse du débiteur (l. 200-218).
 - ⚪ **Rien avant la première remise** ; 🟡 **Décision D2** : quand passer en
   `.08` (pas d'urgence, tous nos clients sont dans l'EEE).
@@ -233,7 +233,7 @@ plus.
 
 - _Code_ : un lot = une entité × un schéma × un cycle, une seule
   `ReqdColltnDt` pour tout le document (`pain008-document.ts:185`,
-  `apps/lfd-api/src/b2b/accounting/domain/entities/collection-batch.ts:134`) ✔. 13 Mo ≈ des dizaines de
+  `apps/lfd-api/src/lafoliecoffee/accounting/domain/entities/collection-batch.ts:134`) ✔. 13 Mo ≈ des dizaines de
   milliers de débits : hors de portée.
 - ⚪ **Rien** ; ❓ à garder en tête si un jour deux échéances devaient
   cohabiter dans un cycle.
@@ -277,9 +277,9 @@ sinon recalculée à J+2. **B2B** : avant **13 h 45**.
   lectures : J-2 est la règle contractuelle et J-1 l'heure de traitement
   tolérée ; ou J-1 est la vraie limite et J-2 une prudence. **Non tranché ici.**
 - _Code_ : la limite de dépôt est un réglage de l'entité, NULL = « à
-  renseigner » (`apps/lfd-api/src/b2b/accounting/domain/value-objects/collection-schedule.ts:42-52`,
+  renseigner » (`apps/lfd-api/src/lafoliecoffee/accounting/domain/value-objects/collection-schedule.ts:42-52`,
   1 à 10 jours ouvrés + `HH:MM`). L'essai propose J+2 ouvrés
-  (`apps/lfd-api/src/b2b/accounting/domain/services/collection-test-file.ts:27`) — compatible avec les deux
+  (`apps/lfd-api/src/lafoliecoffee/accounting/domain/services/collection-test-file.ts:27`) — compatible avec les deux
   lectures.
 - 🔴 **Décision D4** puis **réglage** (pas de code) : renseigner la limite de
   l'entité B2B. La proposition prudente est **2 jours ouvrés, 13:45**, qui
@@ -328,7 +328,7 @@ d'exécution**, avant l'interbancaire.
 - _Pour nous_ : le contrôle de doublon porte sur le `MsgId` + nombre + montant
   (réponse 21) ; la banque nous dit que changer `CreDtTm` suffit.
 - _Code_ : un lot est **figé** — `MsgId` et `CreDtTm` (= l'instant de
-  constitution, `apps/lfd-api/src/b2b/accounting/domain/services/collection-batch-file.ts:87`) ne bougent
+  constitution, `apps/lfd-api/src/lafoliecoffee/accounting/domain/services/collection-batch-file.ts:87`) ne bougent
   pas. Redéposer passe par **annuler puis reconstituer** : nouvel ULID, nouvel
   instant ✔.
 - ⚪ Rien ; ne **jamais** retoucher le XML à la main.
@@ -346,7 +346,7 @@ le suivi des remises CENET ; **pas** d'annulation d'une seule ligne.
 **30. Forme** : fichiers d'impayés **quotidiens**, `pain.002` **ou**
 `camt.054`, téléchargeables.
 
-- _Code_ : l'import lit les deux (`apps/lfd-api/src/b2b/accounting/domain/services/bank-return-file.ts:6`,
+- _Code_ : l'import lit les deux (`apps/lfd-api/src/lafoliecoffee/accounting/domain/services/bank-return-file.ts:6`,
   `pain.002.001.03` et `camt.054.001.02`, l. 38-41), écrit d'après la norme.
 - 🟡 **Décision D6** : lequel paramétrer dans le service « retour » (réponse 1).
   Puis 🟡 éprouver l'import sur un **vrai** fichier (attend le premier retour,
@@ -357,7 +357,7 @@ imputation **globale** du fichier d'impayés ou **unitaire**, au choix ; le
 montant retourné et les frais sont **deux écritures distinctes**.
 
 - _Code_ : un retour porte ses frais à part (`feeCents`,
-  `apps/lfd-api/src/b2b/accounting/domain/entities/collection-return.ts:55`) ✔ ; le rapprochement est par
+  `apps/lfd-api/src/lafoliecoffee/accounting/domain/entities/collection-return.ts:55`) ✔ ; le rapprochement est par
   `EndToEndId`, une ligne à la fois.
 - 🟡 **Décision D7** : imputation **unitaire** (une écriture par impayé, qui
   colle à notre modèle et au rapprochement par ligne) ou globale.
@@ -376,7 +376,7 @@ montant retourné et les frais sont **deux écritures distinctes**.
 Consignes de la feuille : « enregistrer en CSV sans la ligne d'en-tête »,
 « se connecter sur l'interface du client pour importer le fichier »,
 « colonnes en jaune obligatoires ». **Jaunes : A à H, K et L.** Le code écrit
-**17** cellules (`apps/lfd-api/src/b2b/accounting/domain/services/mandate-bank-export-csv.ts:22`), A à H
+**17** cellules (`apps/lfd-api/src/lafoliecoffee/accounting/domain/services/mandate-bank-export-csv.ts:22`), A à H
 remplies, le reste vide (l. 58-72).
 
 | Col. | Intitulé du modèle                    | Oblig.  | Exemple du modèle  | Le code écrit                 | Verdict                                        |
@@ -409,7 +409,7 @@ Ce que ça veut dire :
   mandat est signé chez nous avant l'import) ; **L = `N`** pour un mandat
   frappé par nous, **`O`** pour un mandat repris d'un autre créancier — ceux-là
   sont aujourd'hui écartés de l'export (`taken_over`,
-  `apps/lfd-api/src/b2b/accounting/domain/ports/mandates-for-bank-export.reader.ts:26`). Le sens de K est
+  `apps/lfd-api/src/lafoliecoffee/accounting/domain/ports/mandates-for-bank-export.reader.ts:26`). Le sens de K est
   **à confirmer** (question Q-B2).
 - **18 colonnes, pas 17** : ajouter R vide.
 - **Réponse 14 contre le modèle** : la banque dit « colonnes M à R » pour un

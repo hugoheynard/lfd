@@ -14,7 +14,7 @@ import type {
   StorefrontView,
 } from "@lfd/contracts";
 
-import { StorefrontMediaUsage } from "../src/b2b/storefront/channels/media/storefront-media-usage.js";
+import { StorefrontMediaUsage } from "../src/lafoliecoffee/storefront/channels/media/storefront-media-usage.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   bootstrapE2e,

@@ -273,7 +273,7 @@ L'avaler ferait enregistrer comme appliqué un fait qui ne l'a pas été.
 
 ## 4. La plateforme s'abonne
 
-Trois abonnés, dans `apps/lfd-api/src/b2b/catalog/application/handlers/` :
+Trois abonnés, dans `apps/lfd-api/src/lafoliecoffee/catalog/application/handlers/` :
 
 | Abonné (nom stable)                | Fait                           | Fichier                                     |
 | ---------------------------------- | ------------------------------ | ------------------------------------------- |
@@ -284,13 +284,13 @@ Trois abonnés, dans `apps/lfd-api/src/b2b/catalog/application/handlers/` :
 ### Une fiche reçue
 
 `OnCatalogProductChangedHandler.handle`
-(`apps/lfd-api/src/b2b/catalog/application/handlers/on-catalog-product-changed.handler.ts:61-78`),
+(`apps/lfd-api/src/lafoliecoffee/catalog/application/handlers/on-catalog-product-changed.handler.ts:61-78`),
 dans la transaction de la livraison :
 
 1. **la famille** est créée si la plateforme ne la connaît pas —
    `ON CONFLICT DO NOTHING`, jamais une mise à jour : la fiche peut arriver
    avant le fait de sa famille, et seul celui-ci la met à jour sous son
-   numéro (`apps/lfd-api/src/b2b/catalog/infrastructure/prisma-catalog-product-facts.projection.ts:76-96`) ;
+   numéro (`apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/prisma-catalog-product-facts.projection.ts:76-96`) ;
 2. **l'entrée** `catalog_entries` s'écrit par un `INSERT … ON CONFLICT DO
 UPDATE … WHERE applied_seq < EXCLUDED.applied_seq`
    (`prisma-catalog-product-facts.projection.ts:48-74`). La ligne est
@@ -303,7 +303,7 @@ UPDATE … WHERE applied_seq < EXCLUDED.applied_seq`
    ni sur une modification ni sur un élargissement d'audience
    (`putOnSale`, `prisma-catalog-product-facts.projection.ts:98-135`). **Un
    seul upsert pour toutes les déclinaisons** de la fiche, en SQL
-   (`apps/lfd-api/src/b2b/catalog/infrastructure/catalog-item-upsert.ts`) :
+   (`apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/catalog-item-upsert.ts`) :
    une instruction par article allongeait la transaction de la livraison
    avec la taille de la fiche (P2028, `ee8ba0e75`, 2026-10-17) ;
 4. **tout autre SKU de la fiche** encore en vente est retiré — fiche inactive
@@ -347,7 +347,7 @@ une ligne d'avant le lot sert le français jusqu'à une réémission.
 `GET /shop/catalogue?lang=fr|en|it` (`fr` par défaut, autre valeur refusée
 en 400) rend `name`, `note` et le nom des rayons dans la langue demandée, en
 français texte par texte quand rien n'est traduit
-(`apps/lfd-api/src/b2b/catalog/domain/catalog-translations.ts:33-52`,
+(`apps/lfd-api/src/lafoliecoffee/catalog/domain/catalog-translations.ts:33-52`,
 `application/shop-catalogue-view.ts:98`). La forme de la vue ne change pas
 avec la langue ; les opérations portent déjà leurs trois langues. La route
 reconnue (`/shop/catalogue/mine`) sert le français.
@@ -359,7 +359,7 @@ reconnue.
 
 ### `servedTo` — la règle unique de ce qui est servi
 
-`servedTo(item, viewer)` (`apps/lfd-api/src/b2b/catalog/domain/served-to.ts:46-54`)
+`servedTo(item, viewer)` (`apps/lfd-api/src/lafoliecoffee/catalog/domain/served-to.ts:46-54`)
 exige deux choses : l'audience de l'article contient celle du lecteur
 (décision de **gamme**, prise au référentiel), **et** la plateforme ne l'a ni
 masqué pour lui ni laissé en attente de validation (décision **locale**). Le
@@ -375,11 +375,11 @@ vendrait ce que les autres cachent.
 
 ### Ce que la plateforme décide encore, et ce qu'elle ne décide plus
 
-| Décide encore                                                                                                                                                                                                                                                     | Route                                                                                                  |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| **masquer** un article pour une audience, ou l'y remettre — refusé hors de l'audience du référentiel (`MaskingOutsideAudienceError`, `apps/lfd-api/src/b2b/catalog/domain/entities/catalog-item.ts:605-611`)                                                      | `PUT admin/catalog/:sku/masking` (`apps/lfd-api/src/b2b/catalog/http/admin-catalog.controller.ts:155`) |
-| **mettre en avant** un article **pour une audience** (2026-10-18) — refusé hors de l'audience du référentiel (`FeaturingOutsideAudienceError`) et sur un article masqué pour elle (`CannotFeatureHiddenItemError`) ; masquer une audience éteint sa mise en avant | `PUT admin/catalog/:sku/featured`, `{ audience, featured }` (`admin-catalog.controller.ts:167`)        |
-| **valider une arrivée**, par article et par audience, tout ou rien, journalisé                                                                                                                                                                                    | `POST admin/catalog/review/approve` (`admin-catalog.controller.ts:139`)                                |
+| Décide encore                                                                                                                                                                                                                                                     | Route                                                                                                            |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| **masquer** un article pour une audience, ou l'y remettre — refusé hors de l'audience du référentiel (`MaskingOutsideAudienceError`, `apps/lfd-api/src/lafoliecoffee/catalog/domain/entities/catalog-item.ts:605-611`)                                            | `PUT admin/catalog/:sku/masking` (`apps/lfd-api/src/lafoliecoffee/catalog/http/admin-catalog.controller.ts:155`) |
+| **mettre en avant** un article **pour une audience** (2026-10-18) — refusé hors de l'audience du référentiel (`FeaturingOutsideAudienceError`) et sur un article masqué pour elle (`CannotFeatureHiddenItemError`) ; masquer une audience éteint sa mise en avant | `PUT admin/catalog/:sku/featured`, `{ audience, featured }` (`admin-catalog.controller.ts:167`)                  |
+| **valider une arrivée**, par article et par audience, tout ou rien, journalisé                                                                                                                                                                                    | `POST admin/catalog/review/approve` (`admin-catalog.controller.ts:139`)                                          |
 
 **Valider une arrivée** se fait **sous sa ligne**, dans la table du
 « Catalogue publié » (`4c55f02db`, 2026-10-17 ; la note de ligne
@@ -390,10 +390,10 @@ attente » et « Tout valider ». Côté serveur, la validation d'un lot coûte
 **un nombre de requêtes qui ne croît pas avec le lot** — une lecture
 (`loadManyOrFail`), les écritures d'attente groupées (`saveReviewStates`), le
 journal en une écriture (`publishTracedAll`)
-(`apps/lfd-api/src/b2b/catalog/application/commands/approve-review.handler.ts:33-36`,
+(`apps/lfd-api/src/lafoliecoffee/catalog/application/commands/approve-review.handler.ts:33-36`,
 `565ec8dd1`) : 64 SKU × 2 audiences traités un par un avaient fait expirer la
 transaction en production (P2028). L'écriture d'un lot d'articles par
-l'agrégat (`saveMany`, `apps/lfd-api/src/b2b/catalog/infrastructure/prisma-catalog-item.repository.ts:115`)
+l'agrégat (`saveMany`, `apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/prisma-catalog-item.repository.ts:115`)
 suit la même règle depuis `ee8ba0e75` : un upsert de faits et une écriture de
 décisions pour tout le lot (`catalog-item-upsert.ts`, `catalog-decision-writes.ts`),
 qui ne réécrivent jamais les deux colonnes de prix décidé.
@@ -508,7 +508,7 @@ expliquent des garde-fous encore en place (vérifié ce jour-là) :
   « dit la pièce au MÊME centime que le rayon »,
   `apps/lfd-api/test/shop-quote.e2e-spec.ts:167`), et le bon de commande
   bascule ses colonnes en « PU TTC » quand toutes ses lignes portent un TTC
-  (`sheetShowsTtc`, `apps/lfd-api/src/b2b/orders/domain/services/order-sheet.ts:193`).
+  (`sheetShowsTtc`, `apps/lfd-api/src/lafoliecoffee/orders/domain/services/order-sheet.ts:193`).
 - 🔴 **Les lignes TTC ne s'additionnent pas en le total.** `ventilateVat`
   arrondit une fois par taux sur l'assiette entière ; le pied reste un
   décompte hors taxe puis TVA. Un test fixe la propriété
@@ -516,7 +516,7 @@ expliquent des garde-fous encore en place (vérifié ce jour-là) :
   « répare » le panier en sommant ses lignes. C'est le point à regarder si un
   client se plaint.
 - **D7** — la boutique publique expose `takeaway`, et rien d'autre
-  (`PUBLIC_SALES_CONTEXT`, `apps/lfd-api/src/b2b/catalog/domain/public-context.ts:30`).
+  (`PUBLIC_SALES_CONTEXT`, `apps/lfd-api/src/lafoliecoffee/catalog/domain/public-context.ts:30`).
 - **D9** — pas de facture pour le public : un bon de commande chiffré.
 - **D10 — on ouvre sur ce qui est déclaré**, décision de ne rien bâtir :
   `Product.activate` refuse déjà une fiche sans allergènes déclarés (ci-dessus).
@@ -546,7 +546,7 @@ décisions, qui expliquent l'état actuel :
   ouverts, plus aucune version ne se crée : lire la dernière posée aurait
   cité une livraison que les lignes n'ont pas vue. Les lignes portent leur
   snapshot (prix, nom, TVA) ; `catalogVersionId` est écrit `null`
-  (`b2b/orders/application/services/order-drafting.service.ts`), la colonne
+  (`lafoliecoffee/orders/application/services/order-drafting.service.ts`), la colonne
   reste, les commandes passées gardent la leur.
 - **Un prix s'explique par la trace des lignes**, pas par une version :
   `catalog_price_history`, écrite à la réception de chaque fait (§4).
@@ -668,7 +668,7 @@ hors de toute coquille ; seule la boîte des demandes clients y vit encore,
 
 Dans « Catalogue publié », chaque cellule d'audience a un état parmi
 `inactif`, `en_vente`, `masque`, `pas_vendu`, `en_attente_validation`,
-`incomplet` (`apps/lfd-api/src/b2b/catalog/domain/published-catalog-cells.ts:9-10`) ;
+`incomplet` (`apps/lfd-api/src/lafoliecoffee/catalog/domain/published-catalog-cells.ts:9-10`) ;
 un seul est un geste — en vente ↔ masqué. « Pas vendu » est une lecture : on
 change l'audience dans la fiche du référentiel. L'écran est au premier niveau
 depuis le 2026-10-15 parce qu'il répond à une question de **boutique** — « que

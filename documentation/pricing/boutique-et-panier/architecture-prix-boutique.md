@@ -55,12 +55,12 @@ promotionnel barré : sa mercuriale lui retire de toute façon la promotion.
 
 ## 1. Les routes
 
-| Route                               | Pour qui                                           | Handler                                                                                   |
-| ----------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `GET /shop/catalogue` (`@Public()`) | visiteur ; `?audience=pro` pour le pro sans compte | `ReadShopCatalogueHandler` (`b2b/catalog/application/queries/read-shop-catalogue.ts`)     |
-| `GET /shop/catalogue/mine`          | client reconnu, société prise du `Principal`       | `ReadMyShopCatalogueHandler` (`b2b/orders/application/queries/read-my-shop-catalogue.ts`) |
+| Route                               | Pour qui                                           | Handler                                                                                             |
+| ----------------------------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `GET /shop/catalogue` (`@Public()`) | visiteur ; `?audience=pro` pour le pro sans compte | `ReadShopCatalogueHandler` (`lafoliecoffee/catalog/application/queries/read-shop-catalogue.ts`)     |
+| `GET /shop/catalogue/mine`          | client reconnu, société prise du `Principal`       | `ReadMyShopCatalogueHandler` (`lafoliecoffee/orders/application/queries/read-my-shop-catalogue.ts`) |
 
-Les deux passent par `ShopCataloguePricing` (`b2b/catalog/application/shop-catalogue-pricing.service.ts`) :
+Les deux passent par `ShopCataloguePricing` (`lafoliecoffee/catalog/application/shop-catalogue-pricing.service.ts`) :
 
 - visiteur : `priced(null, "guest", langue)` ;
 - pro sans compte : `pricedWithoutCompany("pro", langue)` — aucune société

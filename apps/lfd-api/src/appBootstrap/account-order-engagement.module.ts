@@ -1,15 +1,15 @@
 import { Global, Module } from "@nestjs/common";
 
-import { AccountingModule } from "../b2b/accounting/accounting.module.js";
-import { AccountOrderEngaging } from "../b2b/accounting/application/services/account-order-engaging.js";
-import { AccountOrderRevaluing } from "../b2b/accounting/application/services/account-order-revaluing.js";
-import { AccountOrderSettling } from "../b2b/accounting/application/services/account-order-settling.js";
+import { AccountingModule } from "../lafoliecoffee/accounting/accounting.module.js";
+import { AccountOrderEngaging } from "../lafoliecoffee/accounting/application/services/account-order-engaging.js";
+import { AccountOrderRevaluing } from "../lafoliecoffee/accounting/application/services/account-order-revaluing.js";
+import { AccountOrderSettling } from "../lafoliecoffee/accounting/application/services/account-order-settling.js";
 import {
   AccountOrderEngagement,
   AccountOrderEngagementReader,
-} from "../b2b/orders/domain/ports/account-order-engagement.js";
-import { AccountOrderRevaluation } from "../b2b/orders/domain/ports/account-order-revaluation.js";
-import { AccountOrderSettlement } from "../b2b/orders/domain/ports/account-order-settlement.js";
+} from "../lafoliecoffee/orders/domain/ports/account-order-engagement.js";
+import { AccountOrderRevaluation } from "../lafoliecoffee/orders/domain/ports/account-order-revaluation.js";
+import { AccountOrderSettlement } from "../lafoliecoffee/orders/domain/ports/account-order-settlement.js";
 
 /**
  * Le fil qui relie **l'annulation d'une commande au compte à la

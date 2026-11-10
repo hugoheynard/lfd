@@ -10,7 +10,7 @@
  *
  * Doublée : la signature des jetons (le jeton EST le `sub`).
  */
-import type { CreatedSubscription } from "../src/b2b/subscriptions/domain/ports/subscription.repository.js";
+import type { CreatedSubscription } from "../src/lafoliecoffee/subscriptions/domain/ports/subscription.repository.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import {

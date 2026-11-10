@@ -92,7 +92,7 @@ Trois choses se lisent dans ces deux blocs, et elles sont la spécification :
 ## 2. Ce n'est pas un choix d'écran : c'est déjà le modèle du serveur
 
 `Order.draft()` compose exactement ce décompte
-([`order.ts:189-207`](../../../apps/lfd-api/src/b2b/orders/domain/entities/order.ts)) :
+([`order.ts:189-207`](../../../apps/lfd-api/src/lafoliecoffee/orders/domain/entities/order.ts)) :
 
 | Terme              | Ce que le domaine en fait                                    |
 | ------------------ | ------------------------------------------------------------ |
@@ -104,7 +104,7 @@ Trois choses se lisent dans ces deux blocs, et elles sont la spécification :
 | `totalCents`       | `(sous-total − remise) + frais + surtaxe + TVA` — le **TTC** |
 
 Et le moteur de TVA
-([`vat.ts`](../../../apps/lfd-api/src/b2b/orders/domain/services/vat.ts)) l'écrit
+([`vat.ts`](../../../apps/lfd-api/src/lafoliecoffee/orders/domain/services/vat.ts)) l'écrit
 en toutes lettres dès sa deuxième phrase : _« Les prix du catalogue sont HT. »_
 Il regroupe par taux, déduit la remise **au prorata de chaque groupe**, applique
 le taux au net, et taxe le transport à `DELIVERY_VAT_RATE = 20` — une constante
@@ -346,9 +346,9 @@ la facture n'emploient.
 
 Les affirmations sur l'existant viennent de ces fichiers, relus le 2026-09-05 :
 
-- `apps/lfd-api/src/b2b/orders/domain/services/vat.ts`
-- `apps/lfd-api/src/b2b/orders/domain/entities/order.ts`
-- `apps/lfd-api/src/b2b/catalog/application/queries/read-shop-catalogue.ts`
+- `apps/lfd-api/src/lafoliecoffee/orders/domain/services/vat.ts`
+- `apps/lfd-api/src/lafoliecoffee/orders/domain/entities/order.ts`
+- `apps/lfd-api/src/lafoliecoffee/catalog/application/queries/read-shop-catalogue.ts`
 - `packages/contracts/src/shop-catalogue.ts`
 - `packages/money/src/millicents.ts`, `packages/money/package.json`
 - `apps/lfc-ecommerce-frontend/src/app/client/cart/cart-total.ts`,

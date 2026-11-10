@@ -11,7 +11,7 @@ import { FIRST_SHIPMENT_RANK } from "../../../production/channels/handover/index
  * est « qu'est-ce que je lui dis ». La raison est donc portée par la règle
  * elle-même, au même endroit que la décision, pour qu'elles ne divergent jamais.
  *
- * 🔴 **Cette règle vivait dans `b2b/orders/domain/services/`** jusqu'au
+ * 🔴 **Cette règle vivait dans `lafoliecoffee/orders/domain/services/`** jusqu'au
  * 2026-09-07. Elle a suivi le fait qu'elle gouverne : c'est au labo qu'on
  * retire, et une règle qui décide d'un geste doit vivre là où le geste se fait.
  */

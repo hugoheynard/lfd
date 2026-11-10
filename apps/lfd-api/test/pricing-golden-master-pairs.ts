@@ -16,11 +16,11 @@
  * concordance est éprouvée sans base (`shelf-circuit-concordance.spec.ts`,
  * `order-cutoff-guard-foreseen.spec.ts`).
  */
-import { ProductCatalogReader } from "../src/b2b/catalog/domain/ports/product-catalog.reader.js";
-import { OrderCutoffGate } from "../src/b2b/orders/application/services/order-cutoff-gate.service.js";
-import { OrderPlanGate } from "../src/b2b/orders/application/services/order-plan-gate.service.js";
-import { OrderCutoffReader } from "../src/b2b/orders/domain/ports/order-cutoff.reader.js";
-import { OrderCutoffWaiverGate } from "../src/b2b/orders/domain/ports/order-cutoff-waiver.gate.js";
+import { ProductCatalogReader } from "../src/lafoliecoffee/catalog/domain/ports/product-catalog.reader.js";
+import { OrderCutoffGate } from "../src/lafoliecoffee/orders/application/services/order-cutoff-gate.service.js";
+import { OrderPlanGate } from "../src/lafoliecoffee/orders/application/services/order-plan-gate.service.js";
+import { OrderCutoffReader } from "../src/lafoliecoffee/orders/domain/ports/order-cutoff.reader.js";
+import { OrderCutoffWaiverGate } from "../src/lafoliecoffee/orders/domain/ports/order-cutoff-waiver.gate.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 import { staffBody, type Agents } from "./pricing-golden-master-bodies.js";

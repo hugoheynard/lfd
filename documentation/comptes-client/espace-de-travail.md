@@ -58,7 +58,7 @@ appelée par `auth.guard.ts` avec les rattachements que
   (`/shop/catalogue/mine`), devis (`/shop/quote/mine`), panier (`/shop/cart`),
   passation (`POST /orders`), et aussi fidélité, messages et signalements de
   commande, vitrine du client, points de retrait et recommandations (relevé le
-  2026-10-20 : `grep -rl ActingCompany apps/lfd-api/src/b2b/*/http`). Les routes `/companies/:companyId/*` passent
+  2026-10-20 : `grep -rl ActingCompany apps/lfd-api/src/lafoliecoffee/*/http`). Les routes `/companies/:companyId/*` passent
   par le rôle, pas par l'espace.
 - **Le perso est ouvert à tout rattaché, sans condition** (Hugo, Q1) : tarif
   catalogue et carte, hors mercuriale, hors engagement de volume, y compris
@@ -127,7 +127,7 @@ appelée par `auth.guard.ts` avec les rattachements que
 | Clientèle (B2B / B2C)                  | déduite de la société agissante par `CustomerAudiences`                                         |
 
 **La clientèle** n'est jamais déclarée : `CustomerAudiences.of(companyId)`
-(`b2b/orders/application/services/customer-audiences.service.ts`) rend B2C pour
+(`lafoliecoffee/orders/application/services/customer-audiences.service.ts`) rend B2C pour
 `null` et B2B pour une société **active** seulement. `CartAdjustments` en tire
 la remise d'un point de retrait et l'ouverture de la livraison
 (`documentation/livraisons/clientele/plan-remise-et-livraison-par-clientele.md`). Une

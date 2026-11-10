@@ -15,12 +15,12 @@
 import type { CustomerSheetView } from "@lfd/contracts";
 import { CommandBus } from "@nestjs/cqrs";
 
-import { AccountOrderHistoryReader } from "../src/b2b/alerts/domain/ports/order-history.reader.js";
-import { revenueWhere } from "../src/b2b/growth/infrastructure/revenue.where.js";
-import { MarkOrderFulfilledCommand } from "../src/b2b/orders/application/commands/mark-order-fulfilled.command.js";
-import { MarkOrderReadyCommand } from "../src/b2b/orders/application/commands/mark-order-ready.command.js";
-import { CustomerVolumeReader } from "../src/b2b/pricing/domain/ports/customer-volume.reader.js";
-import { SkuVolumeReader } from "../src/b2b/pricing/domain/ports/sku-volume.reader.js";
+import { AccountOrderHistoryReader } from "../src/lafoliecoffee/alerts/domain/ports/order-history.reader.js";
+import { revenueWhere } from "../src/lafoliecoffee/growth/infrastructure/revenue.where.js";
+import { MarkOrderFulfilledCommand } from "../src/lafoliecoffee/orders/application/commands/mark-order-fulfilled.command.js";
+import { MarkOrderReadyCommand } from "../src/lafoliecoffee/orders/application/commands/mark-order-ready.command.js";
+import { CustomerVolumeReader } from "../src/lafoliecoffee/pricing/domain/ports/customer-volume.reader.js";
+import { SkuVolumeReader } from "../src/lafoliecoffee/pricing/domain/ports/sku-volume.reader.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, E2E_STAFF_ID, jsonBody, type E2eContext } from "./e2e-harness.js";

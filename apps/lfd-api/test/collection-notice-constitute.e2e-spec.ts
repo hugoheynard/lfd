@@ -5,7 +5,7 @@
  * Découpé de `collection-notices.e2e-spec.ts` le 2026-10-23 ; la scène
  * commune vit dans `collection-notice-scene.ts`.
  */
-import { frozenCollectionDay } from "../src/b2b/accounting/domain/services/collection-calendar.js";
+import { frozenCollectionDay } from "../src/lafoliecoffee/accounting/domain/services/collection-calendar.js";
 import { daysAgo } from "./e2e-harness.js";
 import {
   billingContact,

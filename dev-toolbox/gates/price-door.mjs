@@ -47,7 +47,7 @@ const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const API = join(ROOT, "apps", "lfd-api");
 
 /** Le contexte qui a le droit de connaître ses propres rouages. */
-const INSIDE = join("src", "b2b", "pricing") + sep;
+const INSIDE = join("src", "lafoliecoffee", "pricing") + sep;
 
 /** Les deux rouages, tels qu'un import les nomme. */
 const INTERNALS =
@@ -108,7 +108,7 @@ if (failures.length > 0) {
 }
 
 console.log(
-  `✓ price-door : aucun code servi hors de b2b/pricing/ n'atteint le chargeur\n` +
+  `✓ price-door : aucun code servi hors de lafoliecoffee/pricing/ n'atteint le chargeur\n` +
     `  ni le tarificateur ; ${String(inSpecs)} assemblage(s) en suites, qui montent\n` +
     `  le vrai graphe plutôt que de le contourner.`,
 );

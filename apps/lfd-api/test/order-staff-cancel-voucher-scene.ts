@@ -4,7 +4,7 @@ import type { AdminOrderView, PlacedOrderResponse } from "@lfd/contracts";
 import { CommandBus } from "@nestjs/cqrs";
 import type request from "supertest";
 
-import { ConvertLoyaltyPointsCommand } from "../src/b2b/loyalty/application/commands/convert-loyalty-points.command.js";
+import { ConvertLoyaltyPointsCommand } from "../src/lafoliecoffee/loyalty/application/commands/convert-loyalty-points.command.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { E2E_STAFF_SUB, jsonBody } from "./e2e-harness.js";

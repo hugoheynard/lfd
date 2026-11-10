@@ -1,9 +1,9 @@
-import { ActivateCompanyByStaffCommand } from "../../b2b/account/application/commands/activate-company.command.js";
-import { SaveBillingAddressCommand } from "../../b2b/account/application/commands/address-commands.js";
-import { AttachToParentCommand } from "../../b2b/account/application/commands/attach-to-parent.command.js";
-import { CreateCompanyCommand } from "../../b2b/account/application/commands/create-company.command.js";
-import { FollowParentCommand } from "../../b2b/account/application/commands/follow-parent.command.js";
-import { SetGroupWithoutDeliveryCommand } from "../../b2b/account/application/commands/set-group-without-delivery.command.js";
+import { ActivateCompanyByStaffCommand } from "../../lafoliecoffee/account/application/commands/activate-company.command.js";
+import { SaveBillingAddressCommand } from "../../lafoliecoffee/account/application/commands/address-commands.js";
+import { AttachToParentCommand } from "../../lafoliecoffee/account/application/commands/attach-to-parent.command.js";
+import { CreateCompanyCommand } from "../../lafoliecoffee/account/application/commands/create-company.command.js";
+import { FollowParentCommand } from "../../lafoliecoffee/account/application/commands/follow-parent.command.js";
+import { SetGroupWithoutDeliveryCommand } from "../../lafoliecoffee/account/application/commands/set-group-without-delivery.command.js";
 import { CompanyStatus } from "../../platform/database/client/client.js";
 import type { ClientContext } from "./client.seed.js";
 import { type NeighbourClient, seedFictiveClients } from "./neighbour-clients.seed.js";

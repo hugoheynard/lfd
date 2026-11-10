@@ -8,7 +8,7 @@ export const CARD_PAYMENT_CHECKOUT_EVENT = "card_payment.checkout_event";
 export const CARD_PAYMENT_UNMATCHED = "card_payment.unmatched";
 
 /**
- * Un remboursement annoncé par le prestataire, réduit — ce que `b2b/payments`
+ * Un remboursement annoncé par le prestataire, réduit — ce que `lafoliecoffee/payments`
  * lit d'un remboursement hors de nos sujets (`card_payment.unmatched`), sous
  * des noms agnostiques.
  */
@@ -47,7 +47,7 @@ const CHECKOUT_OUTCOMES: readonly CheckoutOutcome[] = ["paid", "expired"];
 /**
  * **Le relais des liens de paiement** — fait DURABLE et **transitoire** (plan
  * M2, §4.5 ; retiré en P2) : tant que l'endpoint propre des liens ne reçoit
- * pas les `checkout.session.*`, celui des cartes les relaie à `b2b/payments`
+ * pas les `checkout.session.*`, celui des cartes les relaie à `lafoliecoffee/payments`
  * — jamais un 200 muet. La charge est ce que `SettlePaymentLinkCommand`
  * (`paid`) et `ExpirePaymentLinkCommand` (`expired`) lisent : l'id de session.
  */
@@ -91,7 +91,7 @@ export class CardPaymentCheckoutEvent implements DurableEvent {
 /**
  * **Un événement hors de nos sujets** (plan M2, §3.3) — avec son type :
  * aucune ligne ne porte son intention et aucun sujet ne la revendique, ou il
- * ne parle d'aucune intention. Pas une anomalie en soi : `b2b/payments`
+ * ne parle d'aucune intention. Pas une anomalie en soi : `lafoliecoffee/payments`
  * l'écoute et ne sonne que sur un remboursement (`refund` non nul), comme
  * `OnRefundWithoutOrder` aujourd'hui.
  *

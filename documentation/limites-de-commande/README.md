@@ -27,7 +27,7 @@ ne passe ([`reglages-generaux.md`](reglages-generaux.md) §3).
 ## 2. Comment elles se combinent
 
 La garde est `ensureWithinOrderCutoff`
-(`apps/lfd-api/src/b2b/orders/domain/services/order-cutoff-guard.ts`, lue le
+(`apps/lfd-api/src/lafoliecoffee/orders/domain/services/order-cutoff-guard.ts`, lue le
 2026-10-21), appelée par `OrderDrafting.ensureNotTooLate` pour les passations
 client, invité et équipe :
 

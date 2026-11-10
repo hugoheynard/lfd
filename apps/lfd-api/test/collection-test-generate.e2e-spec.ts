@@ -10,10 +10,10 @@ import type {
   CollectionTestsView,
 } from "@lfd/contracts";
 import { instantToLocal } from "@lfd/contracts";
-import { LOOKALIKE_WINDOW_DAYS } from "../src/b2b/accounting/domain/services/collection-test-lookalike.js";
-import { TEST_COLLECTION_MIN_BUSINESS_DAYS } from "../src/b2b/accounting/domain/services/collection-test-file.js";
-import { businessDaysAfter } from "../src/b2b/accounting/domain/services/target2-calendar.js";
-import { pain008XsdErrors } from "../src/b2b/accounting/domain/services/__tests__/pain008-xsd.js";
+import { LOOKALIKE_WINDOW_DAYS } from "../src/lafoliecoffee/accounting/domain/services/collection-test-lookalike.js";
+import { TEST_COLLECTION_MIN_BUSINESS_DAYS } from "../src/lafoliecoffee/accounting/domain/services/collection-test-file.js";
+import { businessDaysAfter } from "../src/lafoliecoffee/accounting/domain/services/target2-calendar.js";
+import { pain008XsdErrors } from "../src/lafoliecoffee/accounting/domain/services/__tests__/pain008-xsd.js";
 import { daysAgo, jsonBody } from "./e2e-harness.js";
 import {
   batchCarrying,

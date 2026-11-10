@@ -281,7 +281,7 @@ le 2026-10-24.
 
 **Le constat.** Une commande `confirmed` ne s'annule ni ne se modifie plus,
 pour personne : `cancellationOf` refuse « inscribed » dès que `status !==
-"placed"` (`b2b/orders/cancellation/domain/services/order-cancellation.ts`), et la révision
+"placed"` (`lafoliecoffee/orders/cancellation/domain/services/order-cancellation.ts`), et la révision
 M1 refuse une commande inscrite au fournil (`standingBlockOf`,
 `order-revisability.ts` ; `noteAtBakery`, `revise-order.handler.ts`). La seule
 issue est de rouvrir toute la journée. Un client qui appelle à 7 h pour annuler
@@ -325,7 +325,7 @@ de l'inventaire est retiré le 2026-11-10, son contenu bâti vit dans
 
 - `markReady` admet une commande `placed`, et le retrait la remet sans
   qu'elle soit passée par l'arrêt du plan
-  (`b2b/orders/infrastructure/prisma-order.repository.ts`, `markReady` :
+  (`lafoliecoffee/orders/infrastructure/prisma-order.repository.ts`, `markReady` :
   `status notIn [cancelled, draft, fulfilled]` ; `handover/domain/services/handover.ts`,
   `handoverBlocker`). C'est voulu pour le comptoir, mais ce n'est ni nommé
   ni tracé comme une exception.

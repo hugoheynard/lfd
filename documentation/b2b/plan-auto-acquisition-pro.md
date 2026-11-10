@@ -35,12 +35,12 @@ facturation, livraison, `company.step_reached`) → `company.activated`.
 voyage dans l'`appState` d'Auth0. Un pro qui abandonne chez Auth0 ne laisse
 aucune trace.
 
-**L'activation** (`b2b/growth/domain/activation.ts`, `deriveActivations`) dérive
+**L'activation** (`lafoliecoffee/growth/domain/activation.ts`, `deriveActivations`) dérive
 du journal, par société déclarée : pièces franchies, jours bloqués, `self` /
 `staff`. Elle est montrée en « second étage » de Prospects.
 
-**Prospects** (`b2b/growth/application/queries/list-prospects.handler.ts`,
-`b2b/growth/domain/prospect.ts`) fusionne deux files :
+**Prospects** (`lafoliecoffee/growth/application/queries/list-prospects.handler.ts`,
+`lafoliecoffee/growth/domain/prospect.ts`) fusionne deux files :
 
 | Température | Ce que c'est, dans le code                                                                                     |
 | ----------- | -------------------------------------------------------------------------------------------------------------- |
@@ -58,7 +58,7 @@ commander une baguette. C'est ce qui rend la page illisible.
 commercial note un établissement rencontré ou appelé, qui n'a pas encore de
 compte. Son e-mail sert de clé : si la personne s'inscrit ensuite,
 `OnUserRegisteredLinkLead` rattache le lead à son compte et le **convertit**
-(`b2b/growth/application/handlers/on-user-registered-link-lead.handler.ts`).
+(`lafoliecoffee/growth/application/handlers/on-user-registered-link-lead.handler.ts`).
 Les étapes « contacté, qualifié, en négociation » se posent depuis la ligne.
 
 ## 1. Ce que le plan fait

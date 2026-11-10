@@ -5,9 +5,9 @@ import assert from "node:assert/strict";
 import { gestureFailures, randomKeys, verdict } from "../gates/intent-key-gestures.mjs";
 
 const GESTURE = {
-  command: "apps/lfd-api/src/b2b/x/send-thing.command.ts",
+  command: "apps/lfd-api/src/lafoliecoffee/x/send-thing.command.ts",
   className: "SendThingCommand",
-  controller: "apps/lfd-api/src/b2b/x/http/things.controller.ts",
+  controller: "apps/lfd-api/src/lafoliecoffee/x/http/things.controller.ts",
 };
 const COMMAND = [
   "export class SendThingCommand {",

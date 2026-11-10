@@ -1,7 +1,7 @@
 import { CommandBus } from "@nestjs/cqrs";
 import { Test } from "@nestjs/testing";
 
-import { RefocusStorefrontImageCommand } from "../../b2b/storefront/application/refocus-storefront-image.command.js";
+import { RefocusStorefrontImageCommand } from "../../lafoliecoffee/storefront/application/refocus-storefront-image.command.js";
 import {
   MEDIA_ASSET_DESCRIBED,
   MediaAssetDescribedPayloadError,

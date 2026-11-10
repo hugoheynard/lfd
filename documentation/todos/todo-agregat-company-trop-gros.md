@@ -4,7 +4,7 @@
 
 ## Le fait
 
-`apps/lfd-api/src/b2b/account/domain/entities/company.ts` fait **673 lignes**.
+`apps/lfd-api/src/lafoliecoffee/account/domain/entities/company.ts` fait **673 lignes**.
 La règle du dépôt est « fichiers ≲300 lignes » (`CLAUDE.md` §6). Il en faisait
 597 avant ce chantier : la limite était déjà franchie, et je l'ai éloignée.
 

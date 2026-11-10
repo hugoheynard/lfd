@@ -16,9 +16,9 @@
  */
 import type { SetLoyaltySettingsPayload } from "@lfd/contracts";
 
-import { NO_LOGIN_METHODS } from "../src/b2b/account/domain/ports/__tests__/login-method-doubles.js";
-import { CustomerIdentityPort } from "../src/b2b/account/domain/ports/customer-identity.port.js";
-import { AccountAccessGranter } from "../src/b2b/account/application/services/grant-account-access.service.js";
+import { NO_LOGIN_METHODS } from "../src/lafoliecoffee/account/domain/ports/__tests__/login-method-doubles.js";
+import { CustomerIdentityPort } from "../src/lafoliecoffee/account/domain/ports/customer-identity.port.js";
+import { AccountAccessGranter } from "../src/lafoliecoffee/account/application/services/grant-account-access.service.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { PrincipalResolver } from "../src/platform/auth/principal.resolver.js";
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";

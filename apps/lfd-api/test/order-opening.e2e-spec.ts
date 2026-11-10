@@ -22,8 +22,8 @@ import type {
 } from "@lfd/contracts";
 
 import { placeShopOrderSeeingTotal } from "./seen-total-shop-command.js";
-import { PlaceShopOrderHandler } from "../src/b2b/orders/application/commands/place-shop-order.handler.js";
-import { OrdersClosedForAudienceError } from "../src/b2b/orders/domain/errors/orders-closed-for-audience.error.js";
+import { PlaceShopOrderHandler } from "../src/lafoliecoffee/orders/application/commands/place-shop-order.handler.js";
+import { OrdersClosedForAudienceError } from "../src/lafoliecoffee/orders/domain/errors/orders-closed-for-audience.error.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
 import {

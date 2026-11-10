@@ -30,14 +30,14 @@ import {
   type StatementCyclesView,
 } from "@lfd/contracts";
 
-import { nextClosureAfter } from "../src/b2b/accounting/domain/services/billing-cycle.js";
+import { nextClosureAfter } from "../src/lafoliecoffee/accounting/domain/services/billing-cycle.js";
 import {
   invoicingMomentOf,
   lastDayOf,
   periodLabelOf,
-} from "../src/b2b/accounting/domain/services/invoicing-closures.js";
-import { BillingRhythm } from "../src/b2b/accounting/domain/value-objects/billing-rhythm.js";
-import { StatementMonth } from "../src/b2b/accounting/domain/value-objects/statement-month.js";
+} from "../src/lafoliecoffee/accounting/domain/services/invoicing-closures.js";
+import { BillingRhythm } from "../src/lafoliecoffee/accounting/domain/value-objects/billing-rhythm.js";
+import { StatementMonth } from "../src/lafoliecoffee/accounting/domain/value-objects/statement-month.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";

@@ -1,11 +1,11 @@
 import {
   StorefrontImageRepointing,
   type StorefrontImageChange,
-} from "../../b2b/storefront/channels/media/storefront-image-repointing.js";
+} from "../../lafoliecoffee/storefront/channels/media/storefront-image-repointing.js";
 import {
   StorefrontMediaUsage,
   type StorefrontMediaUsageEntry,
-} from "../../b2b/storefront/channels/media/storefront-media-usage.js";
+} from "../../lafoliecoffee/storefront/channels/media/storefront-media-usage.js";
 import { RecordingMediaJournal } from "../../media/journal/__tests__/recording-media-journal.js";
 import { StorefrontMediaCarriers } from "../storefront-media-carriers.js";
 

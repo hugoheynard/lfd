@@ -17,7 +17,7 @@ import type {
 } from "@lfd/contracts";
 import type { Response, Test } from "supertest";
 
-import { VitrineShopOrigin } from "../src/b2b/vitrine/domain/ports/vitrine-shop-origin.js";
+import { VitrineShopOrigin } from "../src/lafoliecoffee/vitrine/domain/ports/vitrine-shop-origin.js";
 import { deliverAsFacts } from "./catalog-facts-delivery.js";
 import { snapshotOf } from "./catalog-ingest-fixtures.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";

@@ -19,9 +19,9 @@ import type {
 } from "@lfd/contracts";
 import { millicentsFromCents } from "@lfd/money";
 
-import { ProductCatalogReader } from "../src/b2b/catalog/domain/ports/product-catalog.reader.js";
+import { ProductCatalogReader } from "../src/lafoliecoffee/catalog/domain/ports/product-catalog.reader.js";
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
-import { Pricer } from "../src/b2b/pricing/application/pricer.js";
+import { Pricer } from "../src/lafoliecoffee/pricing/application/pricer.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import {
@@ -34,7 +34,7 @@ import {
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble } from "./order-factory.js";
-import { staffViewer } from "../src/b2b/catalog/domain/catalog-viewer.js";
+import { staffViewer } from "../src/lafoliecoffee/catalog/domain/catalog-viewer.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>

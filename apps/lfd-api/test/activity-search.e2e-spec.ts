@@ -14,7 +14,7 @@
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import type { ActivityEventView, ActivityPageView, CreatedStaffUserResponse } from "@lfd/contracts";
 
-import { ActivityRecorder } from "../src/b2b/growth/domain/ports/activity-recorder.js";
+import { ActivityRecorder } from "../src/lafoliecoffee/growth/domain/ports/activity-recorder.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { StaffIdentityPort } from "../src/staff/invitations/staff-identity.port.js";

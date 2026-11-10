@@ -13,7 +13,7 @@
 import type { CustomerSheetView } from "@lfd/contracts";
 import { CommandBus } from "@nestjs/cqrs";
 
-import { CancelOrderCommand } from "../src/b2b/orders/cancellation/application/commands/cancel-order.command.js";
+import { CancelOrderCommand } from "../src/lafoliecoffee/orders/cancellation/application/commands/cancel-order.command.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -98,7 +98,7 @@ async function placeOrder(
  * Une commande au statut `draft`, écrite en base. **Exception gardée du plan T
  * (2026-10-25)** : aucune route n'écrit plus ce statut — un brouillon de
  * l'équipe vit dans `order_drafts` depuis la saisie staff (vérifié le
- * 2026-10-25 : aucun écrivain de `status: draft` sous `src/b2b/orders`). Les
+ * 2026-10-25 : aucun écrivain de `status: draft` sous `src/lafoliecoffee/orders`). Les
  * lecteurs l'écartent encore, et ce filtre-là ne s'éprouve qu'en le semant.
  * Numéro au format réel, hors de portée de la séquence de la suite.
  */

@@ -323,7 +323,7 @@ Remplace la règle « un second changement remplace le programmé » (R2).
 Bâti : §12 (refus 409 `BillingRhythmChangePendingError`, lu par
 `InvoicedClosuresReader` sur `invoice_autopilot_run`) ; le lot, son
 automatisme, l'aperçu, le brouillon et le calendrier de la fiche au rythme de
-l'entité (`apps/lfd-api/src/b2b/accounting/domain/services/entity-closures.ts`, mensuel au 1er prouvé égal sur
+l'entité (`apps/lfd-api/src/lafoliecoffee/accounting/domain/services/entity-closures.ts`, mensuel au 1er prouvé égal sur
 24 mois) ; la première clôture d'un lot est une clôture du rythme
 (`FirstClosureOffRhythmError`, code inchangé). Pas de migration.
 
@@ -369,7 +369,7 @@ clôtures manquées.
   aucune tentative passée, rien n'est manqué : le déploiement ne signale pas
   l'historique. Un lot couvre toutes les clôtures jusqu'à la sienne (il lit
   les bons depuis le plancher) : c'est ce qui fait reprendre l'automatisme.
-- Pur : `apps/lfd-api/src/b2b/accounting/domain/services/missed-closures.ts` ; lu par le port
+- Pur : `apps/lfd-api/src/lafoliecoffee/accounting/domain/services/missed-closures.ts` ; lu par le port
   `AutopilotCoverageReader` ; migration `20261012300000_la_tentative_manquee`
   (CHECK de l'issue élargi à `missed`).
 - Un lot manuel annulé ne couvre plus : ses clôtures redeviennent manquées.

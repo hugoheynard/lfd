@@ -21,7 +21,7 @@ import type { ServiceDay } from "../value-objects/service-day.value-object.js";
  * gestes ne s'attendent pas entre eux, mais la réouverture les attend.
  *
  * 🔴 **Jamais tenu avec le verrou du stock de la vitrine** (`ShelfStockLock`,
- * `b2b/resupply`) : une commande prise sur la vitrine n'entre jamais au plan,
+ * `lafoliecoffee/resupply`) : une commande prise sur la vitrine n'entre jamais au plan,
  * et aucun chemin ne prend les deux — deux verrous qu'aucune transaction ne
  * tient ensemble ne s'attendent pas en cercle (plan
  * `documentation/limites-de-commande/jour-meme-sur-stock.md`).

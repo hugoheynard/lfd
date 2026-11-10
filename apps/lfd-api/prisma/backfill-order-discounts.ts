@@ -2,11 +2,11 @@ import "dotenv/config";
 
 import { PrismaPg } from "@prisma/adapter-pg";
 
-import { PrismaOrderDiscountBackfill } from "../src/b2b/orders/infrastructure/prisma-order-discount-backfill.js";
+import { PrismaOrderDiscountBackfill } from "../src/lafoliecoffee/orders/infrastructure/prisma-order-discount-backfill.js";
 import {
   PrismaOrderDiscountTermsBackfill,
   termsBackfillReport,
-} from "../src/b2b/orders/infrastructure/prisma-order-discount-terms-backfill.js";
+} from "../src/lafoliecoffee/orders/infrastructure/prisma-order-discount-terms-backfill.js";
 import { PrismaClient } from "../src/platform/database/client/client.js";
 import { UlidGenerator } from "../src/platform/id/ulid-generator.js";
 import { SystemClock } from "../src/platform/time/system-clock.js";

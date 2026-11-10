@@ -395,8 +395,8 @@ sequenceDiagram
 par la livraison n'est pas exprimable. La livraison DÉCLARE donc les deux ports
 dans `delivery/channels/commerce/` — une lecture et une **demande** de
 correction — et le commerce les implémente
-(`apps/lfd-api/src/b2b/orders/infrastructure/prisma-delivery-address-points.reader.ts`,
-`apps/lfd-api/src/b2b/account/application/services/commerce-delivery-address-point-corrector.ts`),
+(`apps/lfd-api/src/lafoliecoffee/orders/infrastructure/prisma-delivery-address-points.reader.ts`,
+`apps/lfd-api/src/lafoliecoffee/account/application/services/commerce-delivery-address-point-corrector.ts`),
 relié dans `appBootstrap/delivery-feed.module.ts`. C'est le carnet qui décide,
 écrit et journalise ; la livraison n'importe rien du commerce.
 

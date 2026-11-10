@@ -9,7 +9,7 @@ export interface StepPhotoResponseHeaders {
 
 /**
  * Les en-têtes de la photo d'une étape servie au livreur — les MÊMES que la
- * route du staff (`b2b/shared/photo-cards/http/photo-card-http.ts`,
+ * route du staff (`lafoliecoffee/shared/photo-cards/http/photo-card-http.ts`,
  * `servePhoto`), recopiés parce que `delivery → b2b` est interdit (même
  * geste que `production/http/quality-photo-http.ts`, vérifié le 2026-10-01).
  *

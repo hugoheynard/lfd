@@ -19,7 +19,7 @@ import type {
 } from "@lfd/contracts";
 
 import { placeShopOrderSeeingTotal } from "./seen-total-shop-command.js";
-import { PlaceShopOrderHandler } from "../src/b2b/orders/application/commands/place-shop-order.handler.js";
+import { PlaceShopOrderHandler } from "../src/lafoliecoffee/orders/application/commands/place-shop-order.handler.js";
 import {
   CompanyStatus,
   CustomerRole,

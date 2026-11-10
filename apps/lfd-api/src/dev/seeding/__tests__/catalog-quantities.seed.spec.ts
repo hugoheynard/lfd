@@ -1,7 +1,7 @@
 import {
   ensureMinimumQuantity,
   ensureSaleQuantity,
-} from "../../../b2b/orders/domain/services/sale-quantity-rules.js";
+} from "../../../lafoliecoffee/orders/domain/services/sale-quantity-rules.js";
 import { seedLineOf, type SeedSaleTerms } from "../catalog-quantities.seed.js";
 
 const PIECE: SeedSaleTerms = {

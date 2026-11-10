@@ -2,7 +2,7 @@
 /**
  * Gate : **le rôle d'une personne dans une société ne se lit que par LA
  * requête partagée** — `readCompanyStanding`
- * (`apps/lfd-api/src/b2b/shared/company-standing/`).
+ * (`apps/lfd-api/src/lafoliecoffee/shared/company-standing/`).
  *
  * Le mur du commerce n'avait pas deux voies mais une dizaine : un lecteur de
  * rôle par contexte, chacun avec sa copie de la condition (« membership qui
@@ -46,9 +46,9 @@ const SKIP_DIRS = new Set(["node_modules", "dist", "client", "coverage", ".turbo
 const TOOLING = "apps/lfd-api/src/dev/";
 
 /** Le dossier de la requête partagée : le seul où la règle s'écrit. */
-const HOME = "apps/lfd-api/src/b2b/shared/company-standing/";
+const HOME = "apps/lfd-api/src/lafoliecoffee/shared/company-standing/";
 const QUERY =
-  "readCompanyStanding (b2b/shared/company-standing/infrastructure/read-company-standing.ts)";
+  "readCompanyStanding (lafoliecoffee/shared/company-standing/infrastructure/read-company-standing.ts)";
 
 /**
  * Les lecteurs par personne admis hors du dossier, **et pourquoi**. Vérifiés le
@@ -56,17 +56,17 @@ const QUERY =
  */
 const ADMITTED = new Map([
   [
-    "apps/lfd-api/src/b2b/account/infrastructure/prisma-invitation-renewal.ts",
+    "apps/lfd-api/src/lafoliecoffee/account/infrastructure/prisma-invitation-renewal.ts",
     "le renvoi d'une invitation par le staff : retrouve le rattachement NON accepté à " +
       "rafraîchir ; il n'ouvre ni ne ferme aucun accès client",
   ],
   [
-    "apps/lfd-api/src/b2b/account/infrastructure/prisma-person-attachment.lock.ts",
+    "apps/lfd-api/src/lafoliecoffee/account/infrastructure/prisma-person-attachment.lock.ts",
     "sous verrou, « cette personne a-t-elle déjà une société ? » pour refuser un second " +
       "rattachement simultané — un comptage, pas un rôle",
   ],
   [
-    "apps/lfd-api/src/b2b/account/infrastructure/prisma-account.reader.ts",
+    "apps/lfd-api/src/lafoliecoffee/account/infrastructure/prisma-account.reader.ts",
     "`GET /me` liste les sociétés PROPRES et leur rôle, tels quels ; les sites atteints " +
       "par héritage y viennent de la requête partagée (`readReachableSites`)",
   ],

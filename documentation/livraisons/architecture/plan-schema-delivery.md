@@ -131,7 +131,7 @@ Côté code, tout dans `src/delivery/` (jamais dans le fournil) :
   `GET admin/delivery/version?date=` ;
 - un port `DeliveryDayChangePruner`, un handler `PruneDeliveryDayChanges`,
   son adaptateur — branchés sur **le même déclencheur d'élagage** que
-  `production` et `b2b/orders` (à nommer en ouvrant le code). Le fournil
+  `production` et `lafoliecoffee/orders` (à nommer en ouvrant le code). Le fournil
   n'efface **jamais** `delivery.day_change` : `lint:prisma-model-ownership`
   le refuserait, à raison.
 

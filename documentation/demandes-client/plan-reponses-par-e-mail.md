@@ -24,14 +24,14 @@
 
 ## 1. Ce qui existe (relu le 2026-10-28)
 
-| Maillon               | Aujourd'hui                                                                                                                                                                                                                                                                                                                                            |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Boîte des demandes    | [`demandes-clients.md`](demandes-clients.md) : `b2b/contact/`, agrégat `CustomerRequest` (enveloppe + détails par `kind` : `contact`, `order_problem`, `order_change`), page Commercial › Demandes clients, droit `b2b_contact`, cloche (`ring-customer-request-received.handler.ts`), anonymisation à 12 mois. « Ajouter un type » y est décrit (§2). |
-| Récepteur Resend      | `POST /webhooks/resend` (`mail/deliveries/http/resend-webhook.controller.ts`), signature Svix vérifiée (`svix-signature.ts`, secret `RESEND_WEBHOOK_SECRET`), idempotence par `svix-id` (`ops.webhook_event`). Il ne connaît que l'**envoi** (`resend-event.ts` : sent, delayed, delivered, complained, bounced) ; un type inconnu est ignoré en 200.  |
-| Client Resend         | `packages/mailer/src/resend-mailer.ts`, SDK `resend` ^6.12, typé pour `emails.send` seulement ; aucune lecture d'un e-mail reçu.                                                                                                                                                                                                                       |
-| `Reply-To`            | `MAILER_REPLY_TO` (`platform/config/env-readers.ts`), appliqué à chaque envoi (`resend-mailer.ts`) ; **vide en production**.                                                                                                                                                                                                                           |
-| Retrouver qui et quoi | un compte par e-mail (`company-member.repository.ts`, `findAccountByEmail`, refus si ambigu) ; une commande par numéro (`ORD-<n>` ou l'ancien `ORD-<8>-<4>`, CHECK `orders_order_number_format`).                                                                                                                                                      |
-| HTML externe          | aucun nettoyeur dans le dépôt ; le back-office n'affiche aucun texte riche venu de l'extérieur.                                                                                                                                                                                                                                                        |
+| Maillon               | Aujourd'hui                                                                                                                                                                                                                                                                                                                                                      |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Boîte des demandes    | [`demandes-clients.md`](demandes-clients.md) : `lafoliecoffee/contact/`, agrégat `CustomerRequest` (enveloppe + détails par `kind` : `contact`, `order_problem`, `order_change`), page Commercial › Demandes clients, droit `b2b_contact`, cloche (`ring-customer-request-received.handler.ts`), anonymisation à 12 mois. « Ajouter un type » y est décrit (§2). |
+| Récepteur Resend      | `POST /webhooks/resend` (`mail/deliveries/http/resend-webhook.controller.ts`), signature Svix vérifiée (`svix-signature.ts`, secret `RESEND_WEBHOOK_SECRET`), idempotence par `svix-id` (`ops.webhook_event`). Il ne connaît que l'**envoi** (`resend-event.ts` : sent, delayed, delivered, complained, bounced) ; un type inconnu est ignoré en 200.            |
+| Client Resend         | `packages/mailer/src/resend-mailer.ts`, SDK `resend` ^6.12, typé pour `emails.send` seulement ; aucune lecture d'un e-mail reçu.                                                                                                                                                                                                                                 |
+| `Reply-To`            | `MAILER_REPLY_TO` (`platform/config/env-readers.ts`), appliqué à chaque envoi (`resend-mailer.ts`) ; **vide en production**.                                                                                                                                                                                                                                     |
+| Retrouver qui et quoi | un compte par e-mail (`company-member.repository.ts`, `findAccountByEmail`, refus si ambigu) ; une commande par numéro (`ORD-<n>` ou l'ancien `ORD-<8>-<4>`, CHECK `orders_order_number_format`).                                                                                                                                                                |
+| HTML externe          | aucun nettoyeur dans le dépôt ; le back-office n'affiche aucun texte riche venu de l'extérieur.                                                                                                                                                                                                                                                                  |
 
 ## 2. Le modèle
 
@@ -80,7 +80,7 @@ sequenceDiagram
     participant C as Client
     participant R as Resend (réception)
     participant P as platform/mailer
-    participant B as b2b/contact
+    participant B as lafoliecoffee/contact
     participant A as Admin
     C->>R: répond à reponses@… (Reply-To)
     R->>P: POST /webhooks/resend, email.received, signé
@@ -93,7 +93,7 @@ sequenceDiagram
 
 - `platform` ne connaît pas `b2b` : il **déclare** le port `InboundMailSink`
   (« un message est arrivé ») et un lecteur technique du message reçu
-  (l'API de réception de Resend) ; `b2b/contact` implémente le premier et
+  (l'API de réception de Resend) ; `lafoliecoffee/contact` implémente le premier et
   lit par le second ; `appBootstrap` les relie.
 - 🔴 **Ne rien perdre.** Aujourd'hui le récepteur consomme le `svix-id` AVANT
   de traiter (`receive-resend-event.handler.ts`, `rememberEvent`) : un
@@ -102,7 +102,7 @@ sequenceDiagram
   l'unicité de l'identifiant du message dans `customer_request`
   (insérer-ou-ignorer), et un échec rend une erreur, que Resend rejoue.
 - L'appel `platform → b2b` est **synchrone, par un port** que `platform`
-  déclare et que `b2b/contact` implémente (`appBootstrap` relie) : la forme
+  déclare et que `lafoliecoffee/contact` implémente (`appBootstrap` relie) : la forme
   admise par la matrice, et la seule qui laisse l'échec remonter à Resend.
 - La lecture du message (`emails.receiving.get` du SDK `resend`, présent en
   6.18.1) vit dans `packages/mailer`, à côté de l'envoi ; le plancher du

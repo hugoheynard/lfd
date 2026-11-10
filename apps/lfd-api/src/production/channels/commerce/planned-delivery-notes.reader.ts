@@ -6,7 +6,7 @@ import type { Doc } from "../../../platform/pdf/paper-pdf-kit.js";
  * porte son propre en-tête (logo, « BON DE LIVRAISON », numéro).
  *
  * Une fonction et non des données : le dessin du BL appartient au commerce
- * (`b2b/delivery-notes`), et `production → b2b` est fermé. Le fournil ne sait
+ * (`lafoliecoffee/delivery-notes`), et `production → b2b` est fermé. Le fournil ne sait
  * rien de ce qu'un BL contient — il lui donne une page, et compte les pages
  * qu'il a prises.
  */
