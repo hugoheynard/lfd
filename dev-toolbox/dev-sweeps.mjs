@@ -30,7 +30,14 @@ export const EVERY_FIVE_MINUTES = [
 ];
 
 /** À chaque heure pile, comme le cron `0 *` du Worker (`hourlySweeps`). */
-export const EVERY_HOUR = ["admin/orders/settlement-reminders", "admin/delivery-notes/sweep"];
+export const EVERY_HOUR = [
+  "admin/orders/settlement-reminders",
+  "admin/delivery-notes/sweep",
+  // Le rattrapage des premiers paiements par carte (plan M2, §4.3) : sans
+  // témoin `card_payment.takeover` il ne fait rien et le dit ; avec, il
+  // rapproche les intentions créées depuis le témoin — en dev comme en prod.
+  "admin/card-payments/first-payments/replay",
+];
 
 /**
  * Ce que le Worker appelle et que le poste de dev ne rejoue PAS. Une route
