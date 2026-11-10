@@ -1,5 +1,5 @@
 import type { BillingAddressPayload, CartAdjustment } from "@lfd/contracts";
-import { millicentsFromCents } from "@lfd/money";
+import { millicentsFromCents, orderPretaxCents } from "@lfd/money";
 
 import { livePromotion } from "../../../../promotions/domain/__tests__/live-promotion.fixture.js";
 import type { LivePromotion } from "../../../../promotions/domain/live-promotion.js";
@@ -164,6 +164,7 @@ export function placed(
     discountTtcCents: state.discountTtcCents,
     activeDiscounts: [],
     totalCents: state.totalCents,
+    pretaxCents: orderPretaxCents(state),
     stripePaymentIntentId: null,
     cancelledAt: null,
     refunds: { refundableCents: 0, inFlightCents: 0 },

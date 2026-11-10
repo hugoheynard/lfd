@@ -26,6 +26,7 @@ import {
 } from "./order-change-answer-mail.js";
 import { renderOrderDelayedMail } from "./order-delayed-mail.js";
 import { renderOrderRevisedMail } from "./order-revised-mail.js";
+import { totalIsPretaxOnly } from "./order-total-form.js";
 import { renderDeliveryEnRouteMail } from "./delivery-en-route-mail.js";
 import { renderProductionDossierMail } from "./production-dossier-mail.js";
 import { renderOrderShortfallMail } from "./order-shortfall-mail.js";
@@ -107,7 +108,7 @@ function recapRows(
     ...(voucherCents === 0
       ? []
       : [{ label: copy.recapVoucher, value: `−${money(voucherCents, locale)}` }]),
-    ...(sheet.money.settlement === "account"
+    ...(totalIsPretaxOnly(sheet)
       ? pretaxTotalRows(sheet, locale)
       : sheet.money.ttcByRate === undefined
         ? [

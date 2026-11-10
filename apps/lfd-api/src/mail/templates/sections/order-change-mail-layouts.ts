@@ -27,6 +27,10 @@ export const ORDER_CHANGE_MAIL_LAYOUTS: Readonly<
           ...texts("intro"),
           ...variants({ totalShift: "Total changé", sameTotal: "Total inchangé" }),
           ...variants({
+            pretaxAmount: "Un total, pro au compte (HT)",
+            bothAmounts: "Un total, pro par carte (TTC puis HT)",
+          }),
+          ...variants({
             invoice: "Au compte ou à total nul",
             cardCharged: "Carte, total en hausse",
             cardRefunded: "Carte, total en baisse",

@@ -46,7 +46,9 @@ function fact(options: {
   readonly before?: number;
   readonly after?: number;
   readonly revision?: number;
+  readonly pretax?: readonly [number, number] | null;
 }) {
+  const pretax = options.pretax === undefined ? ([1_106, 1_296] as const) : options.pretax;
   const event = new OrderRevisedEvent(
     "order_1",
     "ORD-4812",
@@ -57,6 +59,8 @@ function fact(options: {
     options.before ?? 1_167,
     options.after ?? 1_367,
     options.origin ?? "direct",
+    pretax === null ? null : pretax[0],
+    pretax === null ? null : pretax[1],
   );
   return { eventId: "evt_1", ...event.durableFact() };
 }
@@ -127,7 +131,7 @@ describe("SendOrderRevisedMail — « votre commande est modifiée »", () => {
     expect(dataOf(mailer)?.moneyNote).toBe("card_charged");
   });
 
-  it("une baisse carte annonce le remboursement (la baisse n'existe pas encore)", async () => {
+  it("une baisse carte annonce le remboursement", async () => {
     const { run, mailer } = subscriber({ order: view({ settlement: "paid" }) });
 
     await run.handle(fact({ before: 1_567, after: 1_367 }));
@@ -205,5 +209,32 @@ describe("SendOrderRevisedMail — « votre commande est modifiée »", () => {
     await run.handle({ eventId: "evt_0", type: "order.revised", payload: older });
 
     expect(mailer.last?.template).toBe("customer.order-revised");
+  });
+
+  it("passe le HT avant et après du fait : l'e-mail d'un pro le dit", async () => {
+    const { run, mailer } = subscriber({ order: view({ settlement: "paid" }) });
+
+    await run.handle(fact({ pretax: [1_106, 1_296] }));
+
+    expect(dataOf(mailer)).toMatchObject({ previousPretaxCents: 1_106, pretaxCents: 1_296 });
+  });
+
+  it("un fait sans HT n'en invente pas : l'e-mail dira le TTC seul", async () => {
+    const { run, mailer } = subscriber();
+
+    await run.handle(fact({ pretax: null }));
+
+    expect(dataOf(mailer)).toMatchObject({ previousPretaxCents: null, pretaxCents: null });
+  });
+
+  it.each([
+    ["une société : un pro", "co_1", "pro"],
+    ["sans société : un particulier", null, "public"],
+  ] as const)("la clientèle se lit sur la commande — %s", async (_label, companyId, variant) => {
+    const { run, mailer } = subscriber({ order: view({ companyId }) });
+
+    await run.handle(fact({}));
+
+    expect(dataOf(mailer)?.sheet.variant).toBe(variant);
   });
 });

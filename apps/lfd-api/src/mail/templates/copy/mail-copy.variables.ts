@@ -163,6 +163,8 @@ const DECLARED_VARIABLES = {
     intro: ["ref"],
     totalShift: ["previous", "total"],
     sameTotal: ["total"],
+    pretaxAmount: ["pretax"],
+    bothAmounts: ["withTax", "pretax"],
     cardCharged: ["amount"],
     cardRefunded: ["amount"],
   },

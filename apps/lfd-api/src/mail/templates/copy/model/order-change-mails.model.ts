@@ -56,10 +56,18 @@ export interface OrderRevisedCopy {
   readonly title: string;
   /** `{ref}`. */
   readonly intro: string;
-  /** Le total a changé. `{previous}` = l'ancien total TTC, `{total}` = le nouveau. */
+  /**
+   * Le total a changé. `{previous}` = l'ancien total, `{total}` = le nouveau,
+   * chacun écrit seul (particulier), par {@link pretaxAmount} (pro au compte)
+   * ou par {@link bothAmounts} (pro qui paie par carte).
+   */
   readonly totalShift: string;
-  /** Le total n'a pas bougé. `{total}`. */
+  /** Le total n'a pas bougé. `{total}`, écrit comme dans {@link totalShift}. */
   readonly sameTotal: string;
+  /** Un total d'un pro au compte, hors taxe (F5). `{pretax}`. */
+  readonly pretaxAmount: string;
+  /** Un total d'un pro qui paie par carte : le TTC payé d'abord, puis le HT. `{withTax}`, `{pretax}`. */
+  readonly bothAmounts: string;
   /** Au compte, ou à total nul : la facture portera le nouveau total. */
   readonly invoice: string;
   /** Carte, total en hausse : la différence est déjà payée. `{amount}` = l'écart. */

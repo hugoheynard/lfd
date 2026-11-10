@@ -9,6 +9,8 @@ export const ORDER_CHANGE_MAILS_IT: OrderChangeMailsCopy = {
     intro: "Il suo ordine {ref} è stato modificato. Ecco il dettaglio aggiornato.",
     totalShift: "Il totale passa da {previous} a {total}.",
     sameTotal: "Il totale resta di {total}.",
+    pretaxAmount: "{pretax} IVA esclusa",
+    bothAmounts: "{withTax} IVA inclusa ({pretax} IVA esclusa)",
     invoice: "Il nuovo totale comparirà sulla sua fattura.",
     cardCharged: "La differenza di {amount} è stata pagata con carta.",
     cardRefunded: "{amount} le verranno rimborsati sulla carta.",

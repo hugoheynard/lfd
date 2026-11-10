@@ -75,9 +75,6 @@ const CARD_UNSETTLED =
 const CARD_REFUNDED =
   'Cette commande a déjà été remboursée sur la carte du client : elle ne se modifie plus.';
 
-/** Repli d'une raison que le devis ne sert plus (`same_total`, plan S1, Q2). */
-const CARD_NOT_REVISABLE = 'Cette commande payée par carte ne se modifie pas.';
-
 /** Le règlement du devis qui empêche l'équipe de valider, dit ; `null` s'il se règle comme passé. */
 export function settlementRefusalOf(quote: OrderRevisionQuoteView): string | null {
   const settlement = quote.settlement;
@@ -95,8 +92,6 @@ export function settlementRefusalOf(quote: OrderRevisionQuoteView): string | nul
           return CARD_UNSETTLED;
         case 'refunded':
           return CARD_REFUNDED;
-        case 'same_total':
-          return CARD_NOT_REVISABLE;
       }
   }
 }

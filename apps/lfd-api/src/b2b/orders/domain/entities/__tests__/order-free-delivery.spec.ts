@@ -1,5 +1,5 @@
 import type { BillingAddressPayload, CartAdjustment } from "@lfd/contracts";
-import { millicentsFromCents } from "@lfd/money";
+import { millicentsFromCents, orderPretaxCents } from "@lfd/money";
 
 import type { OrderLineInput } from "../../value-objects/order-line.js";
 import { Order } from "../order.js";
@@ -219,6 +219,7 @@ function revisableOf(state: OrderToPlace): RevisableOrder {
     discountTtcCents: state.discountTtcCents,
     activeDiscounts: [],
     totalCents: state.totalCents,
+    pretaxCents: orderPretaxCents(state),
     stripePaymentIntentId: null,
     cancelledAt: null,
     refunds: { refundableCents: 0, inFlightCents: 0 },

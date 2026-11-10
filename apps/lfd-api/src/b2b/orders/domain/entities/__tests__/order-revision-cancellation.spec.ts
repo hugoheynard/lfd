@@ -1,4 +1,4 @@
-import { millicentsFromCents } from "@lfd/money";
+import { millicentsFromCents, orderPretaxCents } from "@lfd/money";
 
 import type { FixedCustomerCancellation } from "../../services/customer-cancellation-window.js";
 import { Order } from "../order.js";
@@ -94,6 +94,7 @@ function placed(
     discountTtcCents: state.discountTtcCents,
     activeDiscounts: [],
     totalCents: state.totalCents,
+    pretaxCents: orderPretaxCents(state),
     stripePaymentIntentId: null,
     cancelledAt: null,
     refunds: { refundableCents: 0, inFlightCents: 0 },

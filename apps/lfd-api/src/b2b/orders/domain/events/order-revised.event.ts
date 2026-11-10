@@ -43,6 +43,12 @@ export class OrderRevisedEvent implements DurableEvent {
     readonly totalBeforeCents: number,
     readonly totalAfterCents: number,
     readonly origin: RevisionOrigin,
+    /**
+     * Le HT avant et après, que l'e-mail d'un pro dit (`orderPretaxCents`).
+     * `null` sur un fait écrit avant ces champs (2026-11-10) : l'e-mail dit alors le TTC seul.
+     */
+    readonly pretaxBeforeCents: number | null,
+    readonly pretaxAfterCents: number | null,
   ) {}
 
   durableFact(): DurableFact {
@@ -59,6 +65,8 @@ export class OrderRevisedEvent implements DurableEvent {
         totalBeforeCents: this.totalBeforeCents,
         totalAfterCents: this.totalAfterCents,
         origin: this.origin,
+        pretaxBeforeCents: this.pretaxBeforeCents,
+        pretaxAfterCents: this.pretaxAfterCents,
       },
     };
   }
@@ -82,6 +90,8 @@ export class OrderRevisedEvent implements DurableEvent {
     const author = authorOf(payload["author"]);
     const changes = changesOf(payload["changes"]);
     const origin = originOf(payload["origin"]);
+    const pretaxBefore = count("pretaxBeforeCents");
+    const pretaxAfter = count("pretaxAfterCents");
     if (
       orderId === null ||
       orderNumber === null ||
@@ -105,6 +115,9 @@ export class OrderRevisedEvent implements DurableEvent {
       before,
       after,
       origin,
+      // Les deux ensemble, ou aucun : un HT sans l'autre ne se compare à rien.
+      pretaxBefore === null || pretaxAfter === null ? null : pretaxBefore,
+      pretaxBefore === null || pretaxAfter === null ? null : pretaxAfter,
     );
   }
 }

@@ -560,22 +560,32 @@
   "customer.order-revised": {
     "account": {
       "subject": "Votre commande ORD-4812 est modifiée",
-      "htmlSha256": "c9efe34d1a7422f6c738b116552d9cbc0634a23c0b296775e9fd94e973b1796e",
+      "htmlSha256": "1f35a5556d0734d86b81d2d8ba8b566aed5711d288d02aa19e2f392843b2a824",
       "attachmentsSha256": "838b72c1e6b0fa1f891b4f73a1992feafd7c9137c0978b32113c919077d6302f"
     },
     "cardCharged": {
       "subject": "Votre commande ORD-4812 est modifiée",
-      "htmlSha256": "7a89591378a23ab56dfb2563ede6b783629083f4d8fe3b985ab42ba3f29f96af",
+      "htmlSha256": "155944a23d1ec24daf43a375da6cfe21a165537e3823a7ebbcb56530ed4e4e06",
       "attachmentsSha256": "838b72c1e6b0fa1f891b4f73a1992feafd7c9137c0978b32113c919077d6302f"
     },
     "cardRefunded": {
       "subject": "Votre commande ORD-4812 est modifiée",
-      "htmlSha256": "f5b4284740959b18a465cb80afeca10b74ffa8aace36e17e1ccab13c4325493a",
+      "htmlSha256": "4ba33d04af1d24453fef50b92dde5f54f63c89507e06422140248faecdc5cc96",
+      "attachmentsSha256": "838b72c1e6b0fa1f891b4f73a1992feafd7c9137c0978b32113c919077d6302f"
+    },
+    "publicCardCharged": {
+      "subject": "Votre commande ORD-4812 est modifiée",
+      "htmlSha256": "7a89591378a23ab56dfb2563ede6b783629083f4d8fe3b985ab42ba3f29f96af",
+      "attachmentsSha256": "838b72c1e6b0fa1f891b4f73a1992feafd7c9137c0978b32113c919077d6302f"
+    },
+    "proWithoutPretax": {
+      "subject": "Votre commande ORD-4812 est modifiée",
+      "htmlSha256": "7a89591378a23ab56dfb2563ede6b783629083f4d8fe3b985ab42ba3f29f96af",
       "attachmentsSha256": "838b72c1e6b0fa1f891b4f73a1992feafd7c9137c0978b32113c919077d6302f"
     },
     "unchangedBare": {
       "subject": "Votre commande ORD-4812 est modifiée",
-      "htmlSha256": "9987a115cd1974f8bd6fddcd9e72e911a5ae4b736a4720da6b7d540231cf8df0",
+      "htmlSha256": "ebe1ef1c7bfc6defb4a9426713bd3686f7a7bf9cb139bc1a7beadc19f3ef7560",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   }

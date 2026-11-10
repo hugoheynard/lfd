@@ -10,6 +10,7 @@ import {
   type OrderStatus,
   type PaymentStatus,
 } from "@lfd/contracts";
+import { orderPretaxCents } from "@lfd/money";
 
 import {
   FrozenLinePriceChangedError,
@@ -62,6 +63,8 @@ export interface RevisableOrder {
   readonly status: OrderStatus;
   readonly paymentStatus: PaymentStatus;
   readonly totalCents: number;
+  /** Le HT de la composition écrite (`orderPretaxCents`), relu pour l'ancien HT de l'e-mail. */
+  readonly pretaxCents: number;
   /**
    * Son départ incomplet est décidé (E6b) : elle ne se modifie plus, pour que
    * la décision et la commande ne divergent jamais. Relu sous le verrou de
@@ -185,6 +188,9 @@ export interface OrderRevisionToSave {
   readonly changes: readonly RevisionChange[];
   readonly totalBeforeCents: number;
   readonly totalAfterCents: number;
+  /** Le HT avant et après (`orderPretaxCents`) — l'e-mail d'un pro le dit. */
+  readonly pretaxBeforeCents: number;
+  readonly pretaxAfterCents: number;
   /**
    * Ce que le chiffrage de la révision a dit en plus des montants — les
    * remises rejouées refusées, les promotions écartées. Jamais persisté.
@@ -252,6 +258,8 @@ export function revisionOf(
     changes,
     totalBeforeCents: order.totalCents,
     totalAfterCents: state.totalCents,
+    pretaxBeforeCents: order.pretaxCents,
+    pretaxAfterCents: orderPretaxCents(state),
     routeChanged: changes.some((change) => ROUTE_CHANGES.has(change)),
     onAccount,
   };

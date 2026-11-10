@@ -372,7 +372,8 @@ limite de la journée ; une heure limite déjà passée refuse
 - `same_settlement` — au compte ou à total nul : le chemin de M1 ;
 - `card_complement` — carte encaissée et hausse : un complément à payer ;
 - `card_not_revisable` — carte, avec la raison : `unsettled` (carte pas
-  encore encaissée), `decrease`, `same_total`.
+  encore encaissée) ou `refunded` (carte déjà rendue en entier). Un total égal
+  ou en baisse se règle par `same_settlement` ou `card_refund`.
 
 `settlementBy` y ajoute l'auteur : une hausse composée par l'équipe devient
 `card_not_revisable` / `increase_by_staff` (Q3 a, Hugo, 2026-11-10), dont le
@@ -607,7 +608,15 @@ Le bon de fidélité sous la différence — lot C-2b, plus tard.
   le bon joint par référence, les deux totaux du fait, et la phrase sur
   l'argent (`revisionMoneyNoteOf`, `apps/lfd-api/src/b2b/orders/domain/services/revision-money-note.ts` :
   au compte ou à total nul → facture ; carte en hausse → réglée ; carte en
-  baisse → remboursée, prête pour la baisse ; total égal → rien). Clé
+  baisse → remboursée ; total égal → rien). Les totaux s'écrivent selon la
+  clientèle (`variant` de la feuille) et le règlement
+  (`apps/lfd-api/src/mail/templates/order-total-form.ts`, Hugo, 2026-11-10) :
+  un pro au compte lit le HT seul — la règle F5 de la confirmation, la même
+  fonction —, un pro qui paie par carte lit le TTC puis le HT (le TTC est ce
+  qu'il paie, se fait rembourser ou complète), un particulier le TTC seul.
+  L'écart de la phrase d'argent est en TTC. Le fait porte le HT avant et après
+  (`pretaxBeforeCents`, `pretaxAfterCents`, `orderPretaxCents`) ; un fait
+  écrit avant ces champs se dit en TTC seul. Clé
   `order.revised:<commande>:<révision>`, sans adresse. Le fait porte une
   **origine** (`direct` | `change_request`) que `ReviseOrderCommand` reçoit de
   son appelant — les deux contrôleurs et l'exécuteur de la hausse

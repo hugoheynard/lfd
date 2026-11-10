@@ -272,6 +272,9 @@ describe("Payé, puis appliqué (§2.6)", () => {
       "customer.order-revised"
     ](data);
     expect(rendered.text).toContain("a été réglée par carte");
+    // Une commande personnelle est un achat de particulier : le TTC seul.
+    expect(data.pretaxCents).not.toBeNull();
+    expect(rendered.text).not.toMatch(/\bHT\b/u);
   });
 
   it("le webhook rejoué ne fait rien de plus", async () => {

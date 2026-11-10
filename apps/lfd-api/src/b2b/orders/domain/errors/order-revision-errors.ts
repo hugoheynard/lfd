@@ -22,12 +22,10 @@ import { revisionRefusalOf } from "../services/order-revision-refusal.js";
  * Pourquoi une révision carte n'a pas de chemin (plan S2, R2 bis, R15 ; plan
  * S1, R2, R12) : un premier paiement pas encore encaissé, une carte déjà
  * rendue en entier, une hausse — que M1 ne fait pas (elle passe par un projet
- * de complément) —, ou une hausse composée par l'équipe (Q3 a). `same_total`
- * n'est plus produit par le tri depuis S1 (Q2 : total égal ouvert), et reste
- * au contrat.
+ * de complément) —, ou une hausse composée par l'équipe (Q3 a). Un total
+ * égal se règle comme la commande (`same_settlement`).
  */
-export type CardRevisionRefusal =
-  "same_total" | "unsettled" | "refunded" | "increase" | "increase_by_staff";
+export type CardRevisionRefusal = "unsettled" | "refunded" | "increase" | "increase_by_staff";
 
 /**
  * R15 (plan S2, Q3 a) : la hausse composée par l'équipe nomme son geste de

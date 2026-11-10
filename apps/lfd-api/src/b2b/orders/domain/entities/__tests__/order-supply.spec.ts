@@ -1,5 +1,5 @@
 import type { BillingAddressPayload } from "@lfd/contracts";
-import { millicentsFromCents } from "@lfd/money";
+import { millicentsFromCents, orderPretaxCents } from "@lfd/money";
 
 import {
   ShelfOrderNotPickupError,
@@ -112,6 +112,7 @@ function placed(
     discountTtcCents: null,
     activeDiscounts: [],
     totalCents: state.totalCents,
+    pretaxCents: orderPretaxCents(state),
     stripePaymentIntentId: null,
     cancelledAt: null,
     refunds: { refundableCents: 0, inFlightCents: 0 },

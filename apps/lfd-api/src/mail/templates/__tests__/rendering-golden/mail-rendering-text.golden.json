@@ -363,16 +363,22 @@
   },
   "customer.order-revised": {
     "account": {
-      "textSha256": "cffe9ca3e5c4656c3ba348ca72a0dc3401e9acc1bf67cb63251c0e6443182578"
+      "textSha256": "437d9e5bb4dbdd34c6cba4a5d4b0cf293f629ca8c27047f07bb1927be6fe378e"
     },
     "cardCharged": {
-      "textSha256": "c712523f8524c3e8619dab2e5a861eb3b01c2860003d5230f0d6f39046e9a220"
+      "textSha256": "434a42575e8e97238eb854c3737b29c6c8a6f11690248a0e72cbc36bd76d5b77"
     },
     "cardRefunded": {
-      "textSha256": "8057b06b19a2278fb055ef668af7a9ef444f88713eefc16dca1fde960ce07031"
+      "textSha256": "1c1e09686531bc786e1b5ce8baeb787294ae52a792603bf5ca5a45e67fb0c4d3"
+    },
+    "publicCardCharged": {
+      "textSha256": "c712523f8524c3e8619dab2e5a861eb3b01c2860003d5230f0d6f39046e9a220"
+    },
+    "proWithoutPretax": {
+      "textSha256": "c712523f8524c3e8619dab2e5a861eb3b01c2860003d5230f0d6f39046e9a220"
     },
     "unchangedBare": {
-      "textSha256": "2d36e0fa9918f49da9afe0c963cf41b58ca2d972c4cc3be3ab33b155c2377607"
+      "textSha256": "111c5ef4e3283710f9ad12eb5a01f033825d4456e526a6e9d506525610e92f7d"
     }
   }
 }

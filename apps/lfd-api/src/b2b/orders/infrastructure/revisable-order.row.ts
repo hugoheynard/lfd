@@ -13,6 +13,7 @@ import {
   type PaymentStatus,
   type SalesTermsDocument,
 } from "@lfd/contracts";
+import { orderPretaxCents } from "@lfd/money";
 
 import type { Prisma } from "../../../platform/database/client/client.js";
 import type { RevisableOrder } from "../domain/entities/order-revision.js";
@@ -91,6 +92,10 @@ export const REVISABLE_ORDER_SELECT = {
   status: true,
   paymentStatus: true,
   totalCents: true,
+  // Les gestes du HT (`orderPretaxCents`) : l'e-mail « commande modifiée » dit l'ancien HT d'un pro.
+  subtotalCents: true,
+  deliveryFeeCents: true,
+  lateFeeCents: true,
   stripePaymentIntentId: true,
   cancelledAt: true,
   requestedDeliveryDate: true,
@@ -155,6 +160,9 @@ export interface RevisableOrderRow {
   readonly status: OrderStatus;
   readonly paymentStatus: PaymentStatus;
   readonly totalCents: number;
+  readonly subtotalCents: number;
+  readonly deliveryFeeCents: number;
+  readonly lateFeeCents: number;
   readonly stripePaymentIntentId: string | null;
   readonly cancelledAt: Date | null;
   readonly requestedDeliveryDate: Date | null;
@@ -215,6 +223,7 @@ export function toRevisableOrder(row: RevisableOrderRow, refunds: RefundPosition
     status: row.status,
     paymentStatus: row.paymentStatus,
     totalCents: row.totalCents,
+    pretaxCents: orderPretaxCents(row),
     shortfallDecided: row.shortfallDecisions.length > 0,
     stripePaymentIntentId: row.stripePaymentIntentId,
     cancelledAt: row.cancelledAt,

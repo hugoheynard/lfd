@@ -507,9 +507,9 @@ export class OrderRevisionPage {
   }
 
   /**
-   * Le refus d'une commande carte, dans la langue du client. `same_total` et
-   * `increase_by_staff` n'atteignent pas la boutique (le total égal se dit
-   * `as_placed`, la hausse du client a son complément) : le repli générique.
+   * Le refus d'une commande carte, dans la langue du client.
+   * `increase_by_staff` n'atteint pas la boutique (la hausse du client a son
+   * complément) : le repli générique.
    */
   private cardNotRevisableSaid(reason: OrderRevisionCardRefusal): string {
     const card = this.c().card;
@@ -518,7 +518,6 @@ export class OrderRevisionPage {
         return card.unsettled;
       case 'refunded':
         return card.refunded;
-      case 'same_total':
       case 'increase_by_staff':
         return this.c().revisionRefused;
     }

@@ -78,6 +78,8 @@ const HANDOVER_URL = `${SPECIMEN_URL}/retrait`;
 const HANDOVER_TOKEN = "specimen-handover";
 /** Le total d'avant une hausse payée par carte, pour « commande modifiée » : 11,67 €. */
 const SPECIMEN_PREVIOUS_TOTAL_CENTS = 1_167;
+/** Son HT avant la hausse (taux 5,5 %) : 11,06 €. */
+const SPECIMEN_PREVIOUS_PRETAX_CENTS = 1_106;
 /** Le complément rendu d'une modification payée non appliquée (plan S2, R13) : 12,00 €. */
 const SPECIMEN_COMPLEMENT_CENTS = 1_200;
 
@@ -113,6 +115,8 @@ export const ORDER_SPECIMENS: Pick<
       sheet: SHEET,
       previousTotalCents: SPECIMEN_PREVIOUS_TOTAL_CENTS,
       totalCents: SHEET.money.totalCents,
+      previousPretaxCents: SPECIMEN_PREVIOUS_PRETAX_CENTS,
+      pretaxCents: SHEET.money.pretaxCents,
       moneyNote: "card_charged",
       orderUrl: ORDER_URL,
       document: { fileName: `bon-${REFERENCE}.pdf`, pdfBase64: SPECIMEN_PDF_BASE64 },

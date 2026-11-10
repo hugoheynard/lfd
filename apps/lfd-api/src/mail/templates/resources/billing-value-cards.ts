@@ -160,7 +160,8 @@ export const BILLING_VALUE_CARDS: Pick<
       "customer.invoice-issued": SAME_SENSE,
       "customer.order-revised": {
         label: "Nouveau total",
-        description: "Le total TTC de la commande après la modification.",
+        description:
+          "Le total de la commande après la modification : TTC pour un particulier, HT pour un pro au compte, TTC puis HT pour un pro qui paie par carte.",
         example: "13,67 €",
       },
     },

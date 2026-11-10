@@ -93,15 +93,10 @@ export type AdminOrderRevisability =
  * plan `documentation/commandes/modification/plan-s1-la-baisse.md`, R12) — un
  * premier paiement pas encore encaissé, une carte déjà remboursée en entier
  * (`refunded`), ou une hausse composée par l'équipe (« demandez au client de
- * modifier sa commande, ou passez une seconde commande »). `same_total` n'est
- * plus servi depuis que le total égal se fait (plan S1, Q2).
+ * modifier sa commande, ou passez une seconde commande »). Un total égal se
+ * règle comme la commande (`as_placed`).
  */
-export const ORDER_REVISION_CARD_REFUSALS = [
-  "same_total",
-  "unsettled",
-  "refunded",
-  "increase_by_staff",
-] as const;
+export const ORDER_REVISION_CARD_REFUSALS = ["unsettled", "refunded", "increase_by_staff"] as const;
 export type OrderRevisionCardRefusal = (typeof ORDER_REVISION_CARD_REFUSALS)[number];
 
 /**

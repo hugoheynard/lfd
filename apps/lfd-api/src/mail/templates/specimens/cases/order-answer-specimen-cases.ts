@@ -1,5 +1,6 @@
 import type { ClientSheet } from "@lfd/contracts";
 
+import { orderTotalFormOf } from "../../order-total-form.js";
 import { SPECIMEN_MARK } from "../mail-specimen.types.js";
 import { PRESENCE, presence, specimenCase, specimenOnly, variantCase } from "./case-builders.js";
 import type { MailCaseTables } from "./mail-specimen-case.types.js";
@@ -144,8 +145,12 @@ export const ORDER_ANSWER_CASE_TABLES: Pick<
   "customer.order-change-refused": specimenOnly("customer.order-change-refused"),
   "customer.order-revised": {
     cases: [
-      specimenCase("customer.order-revised", "Carte, hausse réglée"),
-      variantCase("customer.order-revised", "account", "Au compte, total changé", (data) => ({
+      specimenCase("customer.order-revised", "Pro par carte, hausse réglée"),
+      variantCase("customer.order-revised", "public", "Particulier, hausse réglée", (data) => ({
+        ...data,
+        sheet: { ...data.sheet, variant: "public" },
+      })),
+      variantCase("customer.order-revised", "account", "Pro au compte, total changé", (data) => ({
         ...data,
         sheet: { ...data.sheet, money: { ...data.sheet.money, settlement: "account" } },
         moneyNote: "invoice",
@@ -153,15 +158,24 @@ export const ORDER_ANSWER_CASE_TABLES: Pick<
       variantCase("customer.order-revised", "refund", "Carte, baisse remboursée", (data) => ({
         ...data,
         previousTotalCents: data.totalCents + 800,
+        previousPretaxCents: data.pretaxCents === null ? null : data.pretaxCents + 758,
         moneyNote: "card_refunded",
       })),
       variantCase("customer.order-revised", "unchanged", "Total inchangé", (data) => ({
         ...data,
         previousTotalCents: data.totalCents,
+        previousPretaxCents: data.pretaxCents,
         moneyNote: "none",
       })),
     ],
-    axes: [{ id: "money", values: REVISED_MONEY_NOTES, of: (data) => data.moneyNote }],
+    axes: [
+      { id: "money", values: REVISED_MONEY_NOTES, of: (data) => data.moneyNote },
+      {
+        id: "total",
+        values: ["both", "pretax", "with_tax"],
+        of: (data) => orderTotalFormOf(data.sheet),
+      },
+    ],
   },
   "customer.order-shortfall": specimenOnly("customer.order-shortfall"),
 };

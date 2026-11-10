@@ -2,6 +2,7 @@ import type { ClientSheet, ContentLocale } from "@lfd/contracts";
 import { sanitiseSubject, type LayoutRow, type RenderedMail } from "@lfd/mailer";
 
 import { fill, mailCopyOf } from "./copy/mail-copy.js";
+import { orderTotalFormOf } from "./order-total-form.js";
 import type { OrderChangeAnswerShell } from "./order-change-answer-mail.js";
 import { withAttachments, type OrderSheetMailDocument } from "./order-sheet-mail-document.js";
 
@@ -27,6 +28,12 @@ export interface OrderRevisedMailData {
   readonly previousTotalCents: number;
   /** Total TTC après la révision, en centimes. */
   readonly totalCents: number;
+  /**
+   * Les HT avant et après, en centimes — dits à un pro ({@link orderTotalFormOf}).
+   * `null` quand le fait de la révision ne les porte pas : le TTC seul est dit.
+   */
+  readonly previousPretaxCents: number | null;
+  readonly pretaxCents: number | null;
   readonly moneyNote: OrderRevisedMoneyNote;
   /** « Voir ma commande » : CETTE commande ; vide sans origine connue, et pas de bouton. */
   readonly orderUrl: string;
@@ -74,17 +81,39 @@ export function renderOrderRevisedMail(
   };
 }
 
-/** L'ancien et le nouveau total, ou le total qui reste. */
+/** L'ancien et le nouveau total, ou le total qui reste — écrits selon la clientèle et le règlement. */
 function totalLine(data: OrderRevisedMailData): string {
   const copy = mailCopyOf(data.locale)["customer.order-revised"];
-  const total = euros(data.totalCents, data.locale);
+  const total = amountOf(data, data.totalCents, data.pretaxCents);
   if (data.totalCents === data.previousTotalCents) {
     return fill(copy.sameTotal, { total });
   }
-  return fill(copy.totalShift, { previous: euros(data.previousTotalCents, data.locale), total });
+  const previous = amountOf(data, data.previousTotalCents, data.previousPretaxCents);
+  return fill(copy.totalShift, { previous, total });
 }
 
-/** La phrase sur l'argent ; vide quand rien ne bouge. */
+/**
+ * Un total : le HT seul d'un pro au compte, le TTC puis le HT d'un pro qui
+ * paie par carte, le TTC seul d'un particulier — ou d'un fait sans HT.
+ */
+function amountOf(
+  data: OrderRevisedMailData,
+  withTaxCents: number,
+  pretaxCents: number | null,
+): string {
+  const copy = mailCopyOf(data.locale)["customer.order-revised"];
+  const withTax = euros(withTaxCents, data.locale);
+  const form = orderTotalFormOf(data.sheet);
+  if (pretaxCents === null || form === "with_tax") {
+    return withTax;
+  }
+  const pretax = euros(pretaxCents, data.locale);
+  return form === "pretax"
+    ? fill(copy.pretaxAmount, { pretax })
+    : fill(copy.bothAmounts, { withTax, pretax });
+}
+
+/** La phrase sur l'argent ; vide quand rien ne bouge. L'écart est en TTC : le montant payé ou rendu. */
 function moneyLine(data: OrderRevisedMailData): string {
   const copy = mailCopyOf(data.locale)["customer.order-revised"];
   const amount = euros(Math.abs(data.totalCents - data.previousTotalCents), data.locale);

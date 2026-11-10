@@ -2632,6 +2632,26 @@
         ],
         "fr": "Le total reste de {total}."
       },
+      "pretaxAmount": {
+        "variables": [
+          "pretax"
+        ],
+        "required": [
+          "pretax"
+        ],
+        "fr": "{pretax} HT"
+      },
+      "bothAmounts": {
+        "variables": [
+          "withTax",
+          "pretax"
+        ],
+        "required": [
+          "withTax",
+          "pretax"
+        ],
+        "fr": "{withTax} TTC ({pretax} HT)"
+      },
       "invoice": {
         "variables": [],
         "required": [],

@@ -9,6 +9,8 @@ export const ORDER_CHANGE_MAILS_EN: OrderChangeMailsCopy = {
     intro: "Your order {ref} has been changed. Here are its updated details.",
     totalShift: "The total goes from {previous} to {total}.",
     sameTotal: "The total stays at {total}.",
+    pretaxAmount: "{pretax} excl. VAT",
+    bothAmounts: "{withTax} incl. VAT ({pretax} excl. VAT)",
     invoice: "The new total will appear on your invoice.",
     cardCharged: "The difference of {amount} has been paid by card.",
     cardRefunded: "{amount} will be refunded to your card.",

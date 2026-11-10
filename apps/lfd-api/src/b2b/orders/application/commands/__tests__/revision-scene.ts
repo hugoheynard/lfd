@@ -1,3 +1,4 @@
+import { orderPretaxCents } from "@lfd/money";
 import {
   DEFAULT_DELIVERY_AVAILABILITY,
   type CatalogPricing,
@@ -307,6 +308,7 @@ export async function placedOrder(over: Partial<RevisableOrder> = {}): Promise<R
   return {
     ...seed(),
     totalCents: state.totalCents,
+    pretaxCents: orderPretaxCents(state),
     discountPromotionId: state.discountPromotionId,
     discountAdjustment: state.discountAdjustment,
     discountLabel: state.discountLabel,
@@ -363,6 +365,7 @@ function seed(): RevisableOrder {
     discountCents: 0,
     discountTtcCents: null,
     totalCents: 1,
+    pretaxCents: 1,
     stripePaymentIntentId: null,
     cancelledAt: null,
     refunds: { refundableCents: 0, inFlightCents: 0 },

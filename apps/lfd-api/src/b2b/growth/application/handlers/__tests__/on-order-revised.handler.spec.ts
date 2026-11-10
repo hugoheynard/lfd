@@ -41,6 +41,8 @@ describe("OnOrderRevised", () => {
           2_110,
           3_165,
           "direct",
+          null,
+          null,
         ),
       ),
     );
@@ -72,6 +74,8 @@ describe("OnOrderRevised", () => {
           2_110,
           2_110,
           "direct",
+          null,
+          null,
         ),
       ),
     );

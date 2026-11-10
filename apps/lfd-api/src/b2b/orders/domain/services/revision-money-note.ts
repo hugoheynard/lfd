@@ -8,8 +8,7 @@ import type { SettlementRegime } from "@lfd/contracts";
  * - `invoice` : au compte ou à total nul, la facture portera le nouveau total ;
  * - `card_charged` : carte, total en hausse — la hausse n'est appliquée
  *   qu'une fois son complément payé (§ 2.7.5), la différence est donc réglée ;
- * - `card_refunded` : carte, total en baisse — la différence sera rendue
- *   (la baisse n'est pas encore bâtie, plan S1 : la phrase l'attend).
+ * - `card_refunded` : carte, total en baisse — la différence sera rendue.
  */
 export type RevisionMoneyNote = "invoice" | "card_charged" | "card_refunded" | "none";
 

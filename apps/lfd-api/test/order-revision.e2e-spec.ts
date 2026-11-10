@@ -18,6 +18,7 @@ import {
   type AdminPlacedOrderResponse,
   type OrderRevisedResponse,
 } from "@lfd/contracts";
+import { orderPretaxCents } from "@lfd/money";
 import { randomUUID } from "node:crypto";
 
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";
@@ -256,9 +257,13 @@ describe("POST /orders/:id/revisions — le client modifie sa commande au compte
 
     const mails = sentMails.filter((mail) => mail.template === "customer.order-revised");
     expect(mails).toHaveLength(1);
+    const after = await ctx.prisma.order.findUniqueOrThrow({ where: { id: orderId } });
     expect(mails[0]?.data).toMatchObject({
       previousTotalCents: before.totalCents,
       totalCents: revised.totalCents,
+      // Un pro au compte lit son HT (F5) : le fait porte celui d'avant et d'après.
+      previousPretaxCents: orderPretaxCents(before),
+      pretaxCents: orderPretaxCents(after),
       moneyNote: "invoice",
     });
   });

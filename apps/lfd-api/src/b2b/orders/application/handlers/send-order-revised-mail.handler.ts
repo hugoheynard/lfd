@@ -77,6 +77,8 @@ export class SendOrderRevisedMail implements DurableSubscriber {
         sheet,
         previousTotalCents: event.totalBeforeCents,
         totalCents: event.totalAfterCents,
+        previousPretaxCents: event.pretaxBeforeCents,
+        pretaxCents: event.pretaxAfterCents,
         moneyNote: revisionMoneyNoteOf(
           owned.view.settlement,
           event.totalBeforeCents,
