@@ -74,19 +74,6 @@ export interface IssuedRefund {
 }
 
 /**
- * Ce qu'on demande au prestataire pour rendre le reste d'un paiement — sans
- * montant : il rend ce qui reste remboursable, jamais plus (C4.4).
- */
-export interface RefundRemainderParams {
-  /** `lfd-order-refund:<orderId>:<generation>:<round>` — la clé d'idempotence. */
-  readonly key: string;
-  /** La demande, posée en métadonnée et filtrée par la recherche. */
-  readonly requestId: string;
-  /** Seul un remboursement de CETTE génération est retenu. */
-  readonly generation: number;
-}
-
-/**
  * Ce qu'on demande au prestataire pour une demande de remboursement (plan M2,
  * §3.5) : la clé, la demande et sa génération (posées en métadonnée), le sujet
  * (posé en métadonnée `lfd_order_id`, opaque : `order:ord_1`), et le montant —

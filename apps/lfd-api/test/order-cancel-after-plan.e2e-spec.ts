@@ -125,7 +125,11 @@ describe("étape « prête » : une commande de retrait inscrite se retire", () 
       packed: 0,
     });
     expect(await inscriptionsOf(ctx, order.id)).toBe(1);
-    expect(await ctx.prisma.orderRefundRequest.count({ where: { orderId: order.id } })).toBe(1);
+    expect(
+      await ctx.prisma.cardRefundRequest.count({
+        where: { payment: { subjectType: "order", subjectId: order.id } },
+      }),
+    ).toBe(1);
     expect(
       await ctx.prisma.activityEvent.count({
         where: { type: "packing_container.voided", subjectId: order.id },

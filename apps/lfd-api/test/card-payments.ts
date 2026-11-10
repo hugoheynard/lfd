@@ -14,6 +14,7 @@ import type {
   IntentCancellation,
   RefundIssuance,
   RefundLookup,
+  RefundLookupParams,
   RefundParams,
   RetrievedIntent,
 } from "../src/card-payment/domain/ports/card-provider-types.js";
@@ -29,6 +30,17 @@ export const E2E_CARD_ACCOUNT = "lfc-stripe";
 export interface SignedCardEvent {
   readonly rawBody: Buffer;
   readonly signature: string;
+}
+
+/**
+ * Un remboursement CALCULÉ plutôt qu'écrit d'avance — la scène du
+ * remboursement à l'annulation (`order-staff-cancel-refund-scene.ts`) y tient
+ * le reste remboursable par intention, l'idempotence par clé et la recherche
+ * par métadonnée, comme le prestataire.
+ */
+export interface E2eRefundBehaviour {
+  refund(providerRef: string, params: RefundParams): Promise<RefundIssuance>;
+  findRefund(providerRef: string, params: RefundLookupParams): Promise<RefundLookup>;
 }
 
 /**
@@ -63,6 +75,8 @@ export class E2eCardProvider extends CardProvider {
   /** Les issues des prochains remboursements, dans l'ordre ; vide = `unavailable`. */
   readonly refundIssuances: RefundIssuance[] = [];
   refundLookup: RefundLookup = { kind: "none" };
+  /** Posé : il répond à la place de la file et de `refundLookup` (lot P1.c). */
+  refundBehaviour: E2eRefundBehaviour | null = null;
 
   private readonly signed = new Map<string, CardProviderEvent>();
   private intents = 0;
@@ -110,13 +124,19 @@ export class E2eCardProvider extends CardProvider {
   refund(providerRef: string, params: RefundParams): Promise<RefundIssuance> {
     assertOutsideTransaction("e2e.CardProvider.refund");
     this.refundCalls.push({ providerRef, key: params.key, params });
+    if (this.refundBehaviour !== null) {
+      return this.refundBehaviour.refund(providerRef, params);
+    }
     return Promise.resolve(
       this.refundIssuances.shift() ?? { kind: "unavailable", reason: "double e2e" },
     );
   }
 
-  findRefund(): Promise<RefundLookup> {
+  findRefund(providerRef: string, params: RefundLookupParams): Promise<RefundLookup> {
     assertOutsideTransaction("e2e.CardProvider.findRefund");
+    if (this.refundBehaviour !== null) {
+      return this.refundBehaviour.findRefund(providerRef, params);
+    }
     return Promise.resolve(this.refundLookup);
   }
 

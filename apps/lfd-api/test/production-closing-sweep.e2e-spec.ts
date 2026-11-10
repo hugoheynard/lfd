@@ -308,9 +308,12 @@ describe("un encaissement après la clôture (lot 6 bis)", () => {
     await cardPaid(ctx, late.intent);
 
     expect(await stateOf(late.orderId)).toEqual({ ...CANCELLED, paidAt: null });
-    expect(
-      await ctx.prisma.orderRefundRequest.findMany({ select: { orderId: true, cause: true } }),
-    ).toEqual([{ orderId: late.orderId, cause: "paid_after_cancellation" }]);
+    const requests = await ctx.prisma.cardRefundRequest.findMany({
+      select: { reason: true, payment: { select: { subjectId: true } } },
+    });
+    expect(requests).toEqual([
+      { reason: "paid_after_cancellation", payment: { subjectId: late.orderId } },
+    ]);
     expect(await notices("order.paid_after_cancellation")).toEqual([]);
   });
 });

@@ -149,13 +149,13 @@ requires_action | succeeded | failed | canceled`), `credit_note_id` posé une
 fois (déclencheur `order_refund_credit_note_once`). **Pas de colonne
 intention, pas de cause.**
 
-Agrégat `OrderRefundLedger` (`orders/domain/entities/order-refund-ledger.ts`),
+Agrégat `OrderRefundLedger` (`order-refund-ledger` (retiré au lot P1.c)),
 chargé **sous `FOR UPDATE` de la ligne `orders`** (`loadByPaymentIntent` /
 `loadByOrder`) : idempotent par `re_…`, statut qui ne régresse pas
 (`refundTransition` : `succeeded → failed` admis, `→ canceled` illégal), euros
 seulement, **`Σ succeeded ≤ chargedCents`** où **`chargedCents =
 orders.total_cents`** (deux lecteurs : `prisma-order-refund.repository.ts`,
-`prisma-order-refund-request.reader.ts`), et `settle()` qui bascule le
+`prisma-order-refund-request.reader` (retiré au lot P1.c)), et `settle()` qui bascule le
 règlement.
 
 #### A3. La demande — `order_refund_request`
@@ -167,7 +167,7 @@ posé ⇔ `issued_at`), `attempts`, `last_failure`, `round`, `claimed_until` /
 `claim_token` (le bail), `next_attempt_at`.
 
 **L'état n'est pas stocké** (`refundRequestStateOf`,
-`order-refund-request.ts`) :
+`order-refund-request` (retiré au lot P1.c)) :
 
 | Lu         | Quand                                                                   |
 | ---------- | ----------------------------------------------------------------------- |
@@ -178,11 +178,11 @@ posé ⇔ `issued_at`), `attempts`, `last_failure`, `round`, `claimed_until` /
 
 « Arrêté » (`stopped()` : `declined`, `nothing_left`, `rejected`, `no_payment_intent`)
 n'est **pas** un état : c'est `next_attempt_at = null` + `last_failure` ; la
-demande se **lit** toujours `to_issue`, et « Relancer » (`retry-order-refund.handler.ts`)
+demande se **lit** toujours `to_issue`, et « Relancer » (`retry-order-refund.handler` (retiré au lot P1.c))
 la reprogramme. `unavailable()` pose `last_failure = "unavailable"` et un
 `next_attempt_at` sur la courbe de la boîte d'envoi (30 s, ×2, plafond 6 h).
 
-Le cycle (`issue-order-refund.handler.ts`, C4.7) : **bail** (`updateMany`
+Le cycle (`issue-order-refund.handler` (retiré au lot P1.c), C4.7) : **bail** (`updateMany`
 conditionné, horloge murale, 5 min, hors transaction) → **`prepare()`** sous
 le verrou `orders` (état lu, génération rouverte si `failed`) → **Stripe hors
 transaction** (`refundRemainder` = recherche par métadonnée puis `create`
@@ -227,10 +227,10 @@ commande » (A4).
 | Expiration boutique       | particulier sans société, 30 min (ou durée de la vitrine) : `cancelIntent` puis `cancelled`+`failed` ; `already_paid`/`in_progress` ⇒ gardée               | `unsettled-shop-order-expiry.service.ts`                                     |
 | Clôture du fournil        | toutes clientèles, `placed` + `pending\|failed` du jour : `cancelIntent` (épargne si payé/en cours) puis `cancelled`+`failed`                              | `pending-settlement-sweep.service.ts`                                        |
 | Annulation (staff/client) | régime `due` : `cancelIntent` d'abord ; transaction : verrou `orders`, règle, ateliers, écriture conditionnée, compte fermé, BL, **bon**, **puis** demande | `order-cancellation.service.ts`                                              |
-| Exécuteur                 | A3                                                                                                                                                         | `issue-order-refund.handler.ts`                                              |
-| Constat                   | A4                                                                                                                                                         | `record-order-refund.handler.ts`                                             |
-| Inversion                 | **commande annulée seulement** : demande `refund_reversed` sans échéance, ou génération suivante si c'est son `re_…` ; cloche                              | `reopen-refund-on-reversal.handler.ts`                                       |
-| Relancer                  | sous verrou : refuse bail tenu / remboursée / émise ; `next_attempt_at = maintenant`, exécuteur après validation                                           | `retry-order-refund.handler.ts`                                              |
+| Exécuteur                 | A3                                                                                                                                                         | `issue-order-refund.handler` (retiré au lot P1.c)                            |
+| Constat                   | A4                                                                                                                                                         | `record-order-refund.handler` (retiré au lot P1.c)                           |
+| Inversion                 | **commande annulée seulement** : demande `refund_reversed` sans échéance, ou génération suivante si c'est son `re_…` ; cloche                              | `reopen-refund-on-reversal.handler` (retiré au lot P1.c)                     |
+| Relancer                  | sous verrou : refuse bail tenu / remboursée / émise ; `next_attempt_at = maintenant`, exécuteur après validation                                           | `retry-order-refund.handler` (retiré au lot P1.c)                            |
 | Facture carte             | pro, payée, retirée, non facturée ; **`Σ succeeded ≥ total ⇒ fully_refunded`** (jamais facturée)                                                           | `accounting/domain/services/card-invoicing.ts`                               |
 | Avoir                     | tout `succeeded` sans avoir d'une commande à facture carte, **date du constat indifférente**                                                               | `accounting/application/services/refund-reconciler.ts`                       |
 

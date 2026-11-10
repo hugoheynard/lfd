@@ -433,7 +433,7 @@ ou `voided`) est dessiné dans [`bon-de-livraison.md`](bon-de-livraison.md).
 | → `fulfilled`                        | `markFulfilled`, sur le fait `handover.handed_over`                                                                     |
 | → `cancelled`                        | `prisma-order-cancellation.repository.ts`, `markAbandoned`, `failAtClosing`, `prisma-unsettled-shop-order.canceller.ts` |
 | `pending`/`failed` → `paid`/`failed` | `markPaid`, `markPaymentFailed` (refusés sur une annulée)                                                               |
-| `paid` ↔ `refunded`                  | `prisma-order-refund.repository.ts` `save`                                                                              |
+| `paid` ↔ `refunded`                  | `prisma-order-refund.repository` (retiré au lot P1.c) `save`                                                            |
 
 ## 9. La carte : ce qui existe, ce qui reste
 

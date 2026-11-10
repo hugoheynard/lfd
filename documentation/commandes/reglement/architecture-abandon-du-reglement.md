@@ -1,7 +1,7 @@
 # L'abandon du règlement
 
 > ⚠️ **Relu le 2026-10-12.** Le **remboursement Stripe est constaté** par
-> `record-order-refund.handler.ts` (agrégat `OrderRefundLedger`, relation
+> `record-order-refund.handler` (retiré au lot P1.c) (agrégat `OrderRefundLedger`, relation
 > `Order.refunds`) : seule son **initiation** manque. Le **lot 10 est bâti** :
 > `admin-settlement-reminders.controller.ts`, déclenché par `container/worker.ts`
 > (`triggerSettlementReminders`). La cause `PaymentFailureCause` a deux valeurs
@@ -343,12 +343,12 @@ clientèle `public` ou `NULL` ne sonne pas.
 
 ## 8. Où c'est éprouvé
 
-| Niveau      | Fichiers                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| domaine     | `production-plan.spec.ts`, `order-abandon.spec.ts`, `settlement-sweep.spec.ts`, `stripe-intent-translation.spec.ts`                                                                                                                                                                                                                                                                                                                                    |
-| application | `abandon-order.handler.spec.ts`, `pending-settlement-sweep.service.spec.ts`, `close-production-day.handler.spec.ts`, `get-order-payment.handler.spec.ts`, `order-subject-settlement.spec.ts`, `ring-failed-pro-settlement.handler.spec.ts`, `order-refund-subscribers.spec.ts` (remplace la spec de l’ancienne cloche « à rembourser », lot C4), `payment-failure-mails.spec.ts`, `on-order-abandoned.handler.spec.ts`, `stripe-card-provider.spec.ts` |
-| e2e         | `test/order-abandon.e2e-spec.ts`, `test/production-closing-sweep.e2e-spec.ts`, `test/order-payment-retry.e2e-spec.ts`, `test/order-payment-reprise.e2e-spec.ts`                                                                                                                                                                                                                                                                                        |
-| front       | `client-order-abandon.service.spec.ts`, `reglement-page.spec.ts`, `orders-phrases.spec.ts` (back-office)                                                                                                                                                                                                                                                                                                                                               |
+| Niveau      | Fichiers                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| domaine     | `production-plan.spec.ts`, `order-abandon.spec.ts`, `settlement-sweep.spec.ts`, `stripe-intent-translation.spec.ts`                                                                                                                                                                                                                                                                                                                                                      |
+| application | `abandon-order.handler.spec.ts`, `pending-settlement-sweep.service.spec.ts`, `close-production-day.handler.spec.ts`, `get-order-payment.handler.spec.ts`, `order-subject-settlement.spec.ts`, `ring-failed-pro-settlement.handler.spec.ts`, `order-refund-subscribers.spec` (retiré au lot P1.c) (remplace la spec de l’ancienne cloche « à rembourser », lot C4), `payment-failure-mails.spec.ts`, `on-order-abandoned.handler.spec.ts`, `stripe-card-provider.spec.ts` |
+| e2e         | `test/order-abandon.e2e-spec.ts`, `test/production-closing-sweep.e2e-spec.ts`, `test/order-payment-retry.e2e-spec.ts`, `test/order-payment-reprise.e2e-spec.ts`                                                                                                                                                                                                                                                                                                          |
+| front       | `client-order-abandon.service.spec.ts`, `reglement-page.spec.ts`, `orders-phrases.spec.ts` (back-office)                                                                                                                                                                                                                                                                                                                                                                 |
 
 Stripe n'est jamais atteint : `order-abandon` et `production-closing-sweep`
 substituent un faux `PaymentGateway`.
@@ -364,7 +364,7 @@ substituent un faux `PaymentGateway`.
   la limite de ses articles, donc une règle propre à un point ne décale rien, et
   sans règle par défaut rien ne sonne (🔵 écart à trancher par Hugo s'il compte).
 - **L'initiation du remboursement** : « à rembourser » sonne, le remboursement
-  est **constaté** (`record-order-refund.handler.ts`) mais le geste de le lancer
+  est **constaté** (`record-order-refund.handler` (retiré au lot P1.c)) mais le geste de le lancer
   vers Stripe n'existe pas.
 - **La colonne « Carte » de « Mes commandes »** n'a pas changé : une commande
   `pending` ou annulée l'affiche toujours

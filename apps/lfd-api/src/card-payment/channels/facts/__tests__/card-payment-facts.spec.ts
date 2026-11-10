@@ -2,7 +2,6 @@ import {
   CardPaymentCheckoutEvent,
   CardPaymentFactPayloadError,
   CardPaymentFailedFact,
-  CardPaymentProviderRefundEvent,
   CardPaymentSettledFact,
   CardPaymentUnmatchedFact,
   type ProviderRefund,
@@ -53,21 +52,6 @@ describe("les faits de card-payment — aller-retour par la boîte d'envoi", () 
     expect(CardPaymentFailedFact.fromPayload(throughJson(fact.durableFact().payload))).toEqual(
       fact,
     );
-  });
-
-  it("provider_refund_event", () => {
-    const fact = new CardPaymentProviderRefundEvent(
-      "lfc-stripe",
-      "evt_1",
-      "pay_1",
-      "pi_1",
-      "order",
-      "ord_1",
-      REFUND,
-    );
-    expect(
-      CardPaymentProviderRefundEvent.fromPayload(throughJson(fact.durableFact().payload)),
-    ).toEqual(fact);
   });
 
   it("checkout_event", () => {

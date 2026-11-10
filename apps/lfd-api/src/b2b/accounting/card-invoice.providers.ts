@@ -4,6 +4,7 @@ import { IssueCardInvoiceHandler } from "./application/commands/issue-card-invoi
 import { ReconcileRefundsHandler } from "./application/commands/reconcile-refunds.handler.js";
 import { IssueCardInvoiceOnFulfilled } from "./application/handlers/issue-card-invoice-on-fulfilled.handler.js";
 import { IssueCardInvoiceOnPaid } from "./application/handlers/issue-card-invoice-on-paid.handler.js";
+import { IssueCardInvoiceOnRefundSettled } from "./application/handlers/issue-card-invoice-on-refund-settled.handler.js";
 import { ReconcileRefundsOnRefund } from "./application/handlers/reconcile-refunds-on-refund.handler.js";
 import { RingRefundNotCredited } from "./application/handlers/ring-refund-not-credited.handler.js";
 import { GetCardInvoiceSignalsHandler } from "./application/queries/get-card-invoice-signals.handler.js";
@@ -45,6 +46,7 @@ export const CARD_INVOICE_PROVIDERS: readonly Provider[] = [
   ReconcileRefundsHandler,
   IssueCardInvoiceOnFulfilled,
   IssueCardInvoiceOnPaid,
+  IssueCardInvoiceOnRefundSettled,
   ReconcileRefundsOnRefund,
   RingRefundNotCredited,
   GetCardInvoiceSignalsHandler,

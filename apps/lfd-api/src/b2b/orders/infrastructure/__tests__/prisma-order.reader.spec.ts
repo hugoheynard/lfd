@@ -1,3 +1,4 @@
+import { NO_REFUNDS } from "../order-card-refund-readings.js";
 import { toOrderView, type OrderRow } from "../prisma-order.reader.js";
 
 /**
@@ -49,19 +50,41 @@ function row(overrides: Partial<OrderRow> = {}): OrderRow {
     createdAt: new Date(0),
     lines: [],
     discounts: [],
-    refunds: [],
     ...overrides,
   };
 }
 
 describe("toOrderView — le HT du bon (L6)", () => {
   it("articles moins remise et bon, plus livraison et surtaxe — jamais total moins TVA", () => {
-    expect(toOrderView(row()).pretaxCents).toBe(9_000);
+    expect(toOrderView(row(), NO_REFUNDS).pretaxCents).toBe(9_000);
   });
 
   it("les remises ne font pas descendre les articles sous zéro ; le port et la surtaxe restent", () => {
-    const view = toOrderView(row({ subtotalCents: 1_000, discountCents: 800 }));
+    const view = toOrderView(row({ subtotalCents: 1_000, discountCents: 800 }), NO_REFUNDS);
 
     expect(view.pretaxCents).toBe(500);
+  });
+});
+
+/**
+ * Plan M2, lot P1.c : les remboursements ne sont plus une relation — ils
+ * viennent du bloc `card-payment`, et le cumul est celui de SA position (une
+ * seule arithmétique), jamais recalculé ici depuis la liste.
+ */
+describe("toOrderView — les remboursements lus au bloc `card-payment` (P1.c)", () => {
+  it("recopie la liste et le cumul tels que la lecture les rend", () => {
+    const refunds = [
+      {
+        amountCents: 500,
+        status: "succeeded" as const,
+        refundedAt: "2030-01-10T09:00:00.000Z",
+        source: "manual" as const,
+      },
+    ];
+
+    const view = toOrderView(row(), { refunds, refundedCents: 700 });
+
+    expect(view.refunds).toEqual(refunds);
+    expect(view.refundedCents).toBe(700);
   });
 });

@@ -18,8 +18,7 @@ import type {
  * Une seule interface parce qu'un adaptateur par TYPE de prestataire sert
  * l'encaissement ET le remboursement d'un même compte, avec les mêmes
  * secrets ; les consommateurs, eux, ne la voient pas : ils passent par les
- * ports étroits du canal (`CardPayments`, `CardRefunds`, et le transitoire
- * `CardProviderRefunds`).
+ * ports étroits du canal (`CardPayments`, `CardRefunds`).
  *
  * 🔴 Aucune méthode ne s'appelle sous une transaction : chaque adaptateur pose
  * `assertOutsideTransaction` en tête de ses appels réseau.

@@ -17,6 +17,7 @@ import {
   RefundCreditLinks,
   RefundsToCreditReader,
   type CreditableRefund,
+  type CreditableRefundNature,
 } from "../../../domain/ports/refunds-to-credit.js";
 import type { CardInvoiceCandidate } from "../../../domain/services/card-invoicing.js";
 import type { InvoiceSellerFacts } from "../../../domain/services/invoice-issuance-blockers.js";
@@ -120,12 +121,27 @@ interface RefundRow extends CreditableRefund {
   readonly orderId: string;
 }
 
-/** Les remboursements réussis, et leurs liens vers l'avoir — les deux ports. */
+/**
+ * Les remboursements réussis, et leur rapprochement — les deux ports. Comme
+ * `public.refund_credit` : un rapprochement par remboursement, jamais deux.
+ */
 export class MemoryRefunds extends RefundsToCreditReader {
   rows: RefundRow[] = [];
   readonly links = new MemoryRefundLinks(this);
-  add(orderId: string, refundId: string, amountCents: number): void {
-    this.rows.push({ orderId, refundId, amountCents, creditNoteId: null });
+  add(
+    orderId: string,
+    refundId: string,
+    amountCents: number,
+    nature: CreditableRefundNature | null = "return",
+  ): void {
+    this.rows.push({
+      orderId,
+      refundId,
+      amountCents,
+      nature,
+      creditNoteId: null,
+      reconciled: false,
+    });
   }
   succeededOf(orderId: string): Promise<readonly CreditableRefund[]> {
     return Promise.resolve(this.rows.filter((row) => row.orderId === orderId));
@@ -137,8 +153,18 @@ export class MemoryRefundLinks extends RefundCreditLinks {
     super();
   }
   link(refundId: string, creditNoteId: string): Promise<void> {
+    return this.reconcile(refundId, creditNoteId);
+  }
+  noteAdjustment(refundId: string): Promise<void> {
+    return this.reconcile(refundId, null);
+  }
+  private reconcile(refundId: string, creditNoteId: string | null): Promise<void> {
+    const known = this.refunds.rows.find((row) => row.refundId === refundId);
+    if (known === undefined || known.reconciled) {
+      return Promise.reject(new Error(`rapprochement refusé : ${refundId}`));
+    }
     this.refunds.rows = this.refunds.rows.map((row) =>
-      row.refundId === refundId ? { ...row, creditNoteId } : row,
+      row.refundId === refundId ? { ...row, creditNoteId, reconciled: true } : row,
     );
     return Promise.resolve();
   }

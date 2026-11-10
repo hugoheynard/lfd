@@ -470,8 +470,12 @@ second. Un remboursement émis puis `failed` : cloche, état `failed`,
 
 Un paiement qui arrive sur une commande déjà annulée (`order.paid_after_cancellation`)
 est **remboursé automatiquement** par le même chemin : l'abonné durable
-`orders.refund-paid-after-cancellation` ouvre une demande
-`paid_after_cancellation` si aucune n'existe et que le reste est positif.
+`orders.refund-paid-after-cancellation` prend le verrou de la commande et
+demande au bloc `card-payment` le reste de chaque paiement encaissé
+(`CardRefunds.requestRemainder`, motif `paid_after_cancellation`, depuis le
+lot P1.c du plan
+[`plan-m2-historique-de-transactions.md`](../modification/plan-m2-historique-de-transactions.md)) —
+idempotent : une demande en cours est rendue, jamais doublée.
 Ces commandes restent `cancelled` + `failed` : le statut ne dit rien de
 l'argent, la demande le dit.
 
@@ -480,9 +484,11 @@ l'argent, la demande le dit.
 - le lecteur « encaissé après annulation » ne retient que `paymentStatus =
 failed` : un `succeeded` relivré sur une annulée payée ne rembourse pas deux
   fois ;
-- un remboursement réussi qui échoue ensuite sur une annulée publie
-  `order.refund_reversed` ; l'abonné `orders.reopen-refund-on-reversal` ouvre
-  ou rouvre la demande et sonne ; elle attend le bouton ;
+- un remboursement réussi qui échoue ensuite (une inversion) appartient au
+  bloc `card-payment` depuis le lot P1.c du plan M2 (§6.2) : son constat passe
+  la demande `refunded → stopped`, ou — sans demande, sur une annulée — en
+  crée une née arrêtée, et sonne ; elle attend le bouton. Le commerce publie
+  encore `order.refund_reversed` au canal ;
 - un remboursement fait au tableau de bord dont le webhook n'est pas arrivé
   passe `refund_in_flight` : Stripe ne rend que le reste réel, l'écart va au
   journal (`order.refund_issued`). Assumé.

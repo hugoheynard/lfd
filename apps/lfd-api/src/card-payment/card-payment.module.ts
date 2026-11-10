@@ -9,7 +9,6 @@ import { RetryCardRefundHandler } from "./application/commands/retry-card-refund
 import { SettleCardRefundElsewhereHandler } from "./application/commands/settle-card-refund-elsewhere.handler.js";
 import { SweepCardRefundsHandler } from "./application/commands/sweep-card-refunds.handler.js";
 import { IntentOutcomeRecorder } from "./application/intent-outcome-recorder.js";
-import { ProviderCardRefunds } from "./application/provider-card-refunds.js";
 import { ProviderPaymentResolver } from "./application/provider-payment-resolver.js";
 import { GetCardPublishableKeyHandler } from "./application/queries/get-card-publishable-key.handler.js";
 import { BlockCardRefunds } from "./application/refunds/block-card-refunds.js";
@@ -26,7 +25,6 @@ import { CardRefundOutcomes } from "./application/refunds/card-refund-outcomes.j
 import { CardRefundRetrier } from "./application/refunds/card-refund-retrier.js";
 import { CardRefundScope } from "./application/refunds/card-refund-scope.js";
 import { CardPayments } from "./channels/requests/card-payments.js";
-import { CardProviderRefunds } from "./channels/requests/card-provider-refunds.js";
 import { CardRefunds } from "./channels/requests/card-refunds.js";
 import { CardSettlementReader } from "./channels/requests/card-settlement.reader.js";
 import { CardPaymentRepository } from "./domain/ports/card-payment.repository.js";
@@ -86,7 +84,6 @@ import { RegistryCardProviders } from "./infrastructure/registry-card-providers.
     IntentOutcomeRecorder,
     { provide: CardPayments, useClass: BlockCardPayments },
     { provide: CardSettlementReader, useClass: PrismaCardSettlementReader },
-    { provide: CardProviderRefunds, useClass: ProviderCardRefunds },
     // Le remboursement (lot P1.b) : la demande, le carnet, l'exécuteur, le constat.
     { provide: CardRefundRequestRepository, useClass: PrismaCardRefundRequestRepository },
     { provide: CardRefundRequestLease, useClass: PrismaCardRefundRequestLease },
@@ -110,6 +107,6 @@ import { RegistryCardProviders } from "./infrastructure/registry-card-providers.
     RetryCardRefundHandler,
     SettleCardRefundElsewhereHandler,
   ],
-  exports: [CardPayments, CardSettlementReader, CardRefunds, CardProviderRefunds, CardProviders],
+  exports: [CardPayments, CardSettlementReader, CardRefunds, CardProviders],
 })
 export class CardPaymentModule {}

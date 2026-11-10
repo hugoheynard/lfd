@@ -21,9 +21,8 @@ export const EVERY_FIVE_MINUTES = [
   "admin/production/auto-close",
   "admin/delivery/off-round/sweep",
   "admin/orders/unsettled-shop-orders/expire",
-  "admin/orders/refunds/sweep",
-  // Les remboursements par carte (plan M2, lot P1.b) : à côté de l'ancienne
-  // route jusqu'à ce que l'annulation bascule (P1.c).
+  // Les remboursements par carte (plan M2, lots P1.b et P1.c) : l'annulation
+  // d'une commande payée y passe, l'ancienne route est retirée.
   "admin/card-payments/sweep",
   "admin/vitrine/sweep",
   // Le balayeur des e-mails (S1b) : reprend les envois restés en route.

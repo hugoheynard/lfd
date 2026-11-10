@@ -102,8 +102,18 @@ const STAFF_ORDER: OrderView = {
   readyAt: null,
   handedOverAt: null,
   refunds: [
-    { amountCents: 500, status: "succeeded", refundedAt: "2026-03-02T09:00:00.000Z" },
-    { amountCents: 300, status: "pending", refundedAt: "2026-03-03T09:00:00.000Z" },
+    {
+      amountCents: 500,
+      status: "succeeded",
+      refundedAt: "2026-03-02T09:00:00.000Z",
+      source: "provider",
+    },
+    {
+      amountCents: 300,
+      status: "pending",
+      refundedAt: "2026-03-03T09:00:00.000Z",
+      source: "provider",
+    },
   ],
   refundedCents: 500,
 };

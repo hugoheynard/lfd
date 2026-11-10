@@ -13,7 +13,7 @@ import {
   type OrderWithdrawalAllowance,
   type ServiceDay,
 } from "../src/production/channels/commerce/index.js";
-import { cardProvidersDouble } from "./card-payments.js";
+import { cardProvidersDouble, type E2eCardProvider } from "./card-payments.js";
 import { started, untilBlocked } from "./day-lock-race.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import {
@@ -64,6 +64,11 @@ export const scene = {
   /** Nombre de retraits qui échoueront encore — une panne de base dans la transaction. */
   withdrawalFailures: 0,
 };
+
+/** Le prestataire de carte doublé de la scène — celui du remboursement s'y branche (P1.c). */
+export function sceneCardProvider(): E2eCardProvider {
+  return cards.provider;
+}
 
 export function context(): E2eContext {
   if (scene.ctx === null) {

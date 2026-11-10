@@ -1,6 +1,6 @@
 import type { OrderStatus, PaymentStatus } from "@lfd/contracts";
 
-import type { RefundPosition } from "../entities/order-refund.js";
+import type { RefundPosition } from "../value-objects/refund-position.js";
 import type { OrderSupply } from "../value-objects/order-supply.js";
 
 /**
@@ -39,9 +39,9 @@ export interface CancellationSubject {
   readonly stripePaymentIntentId: string | null;
   readonly loyaltyVoucherId: string | null;
   /**
-   * Ce qui reste à rendre et ce qui est en vol, lu au carnet (`order_refund`)
-   * avec la commande — sous le verrou de sa ligne quand c'est `lock()` qui
-   * lit (lot C4, C4.4, C4.6).
+   * Ce qui reste à rendre et ce qui est en vol, lu à la position du bloc
+   * `card-payment` (lot P1.c) avec la commande — sous le verrou de sa ligne
+   * quand c'est `lock()` qui lit (lot C4, C4.4, C4.6).
    */
   readonly refunds: RefundPosition;
 }

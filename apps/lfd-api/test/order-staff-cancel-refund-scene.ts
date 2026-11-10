@@ -1,32 +1,36 @@
 import { CommandBus } from "@nestjs/cqrs";
 
-import { IssueOrderRefundCommand } from "../src/b2b/orders/application/commands/issue-order-refund.command.js";
-import { RecordOrderRefundCommand } from "../src/b2b/orders/application/commands/record-order-refund.command.js";
-import {
-  CardProviderRefunds,
-  type IssuedRefund,
-  type RefundIssuance,
-  type RefundLookup,
-  type RefundRemainderParams,
-} from "../src/card-payment/channels/requests/index.js";
+import { IssueCardRefundCommand } from "../src/card-payment/application/commands/issue-card-refund.command.js";
+import type {
+  CardRefundStatus,
+  IssuedRefund,
+  RefundIssuance,
+  RefundLookup,
+  RefundLookupParams,
+  RefundParams,
+} from "../src/card-payment/domain/ports/card-provider-types.js";
 import { PaymentStatus } from "../src/platform/database/client/client.js";
 import { currentTransaction } from "../src/platform/database/transaction.store.js";
 import { WallClock } from "../src/platform/time/wall-clock.js";
-import { bootScene, context } from "./order-staff-cancel-scene.js";
+import { RecordProviderEventCommand } from "../src/card-payment/application/commands/record-provider-event.command.js";
+import { E2E_CARD_ACCOUNT, type E2eRefundBehaviour } from "./card-payments.js";
+import { bootScene, context, sceneCardProvider } from "./order-staff-cancel-scene.js";
 import { seedOrder, type OrderSeed } from "./order-staff-cancel-orders.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 
 /**
  * **La scène du remboursement à l'annulation** (doc
- * `documentation/commandes/annulation/annulation-par-le-staff.md`, lot C4) — celle de
- * l'annulation staff, plus deux doublures :
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, lot C4 ; rebâtie
+ * au lot P1.c du plan M2 : l'annulation demande au bloc `card-payment`, dont
+ * l'exécuteur, le balayage, « Relancer » et le constat sont les seuls) — celle
+ * de l'annulation staff, plus deux doublures :
  *
- * - **Stripe** côté remboursement, sur le port transitoire `CardProviderRefunds`
- *   du bloc `card-payment` (plan M2, §4.2 ; lot P0.c2) : un magasin de `re_…` par intention, avec la
- *   recherche par métadonnée, l'idempotence par clé, le « reste remboursable »
- *   — et des issues écrites d'avance. 🔴 Il REFUSE d'être appelé sous une
- *   transaction : un appel sous transaction est compté, et chaque suite le
- *   vérifie nul ;
+ * - **Stripe** côté remboursement, branché sur le prestataire doublé de la
+ *   scène (`refundBehaviour`, jeton `CardProviders`) : un magasin de `re_…`
+ *   par intention, avec la recherche par métadonnée (demande + génération),
+ *   l'idempotence par clé, le « reste remboursable » — et des issues écrites
+ *   d'avance. 🔴 Il REFUSE d'être appelé sous une transaction : un appel sous
+ *   transaction est compté, et chaque suite le vérifie nul ;
  * - **l'horloge murale** : l'heure réelle plus un décalage qu'on avance, pour
  *   faire échoir un bail ou une échéance sans attendre.
  */
@@ -39,44 +43,39 @@ export type ScriptedOutcome =
   /** Émet, mais pour ce montant — un refus du carnet (`exceeds_charge`). */
   | { readonly kind: "issue_amount"; readonly amountCents: number };
 
-/** Le statut d'un `re_…`, tel que le prestataire le rend. */
-type PaymentRefundStatus = IssuedRefund["status"];
-
-/**
- * Un appel reçu : les paramètres de la demande, et l'intention visée — que
- * le port transitoire passe à part, avec le compte (lot P0.c2).
- */
-interface RefundRequestParams extends RefundRemainderParams {
+/** Un appel reçu : l'intention visée et les paramètres de la demande. */
+interface RefundCall extends RefundParams {
   readonly paymentIntentId: string;
 }
 
-interface FakeRefund extends IssuedRefund {
+export interface FakeRefund extends IssuedRefund {
   readonly paymentIntentId: string;
+  /** La demande de `card-payment` qui l'a émis ; vide pour un `re_…` du tableau de bord. */
   readonly requestId: string;
   readonly generation: number;
   readonly key: string;
 }
 
-const DEAD: ReadonlySet<PaymentRefundStatus> = new Set(["failed", "canceled"]);
+const DEAD: ReadonlySet<CardRefundStatus> = new Set(["failed", "canceled"]);
 
 export const stripe = {
   refunds: [] as FakeRefund[],
   charged: new Map<string, number>(),
   script: [] as ScriptedOutcome[],
   /** Le statut des `re_…` émis. */
-  status: "pending" as PaymentRefundStatus,
-  calls: [] as RefundRequestParams[],
+  status: "pending" as CardRefundStatus,
+  calls: [] as RefundCall[],
   underTransaction: 0,
   /** Joué pendant l'appel, avant la réponse — une barrière. */
   during: null as (() => Promise<void>) | null,
   /** Joué une fois le `re_…` créé, avant la réponse — le webhook qui double l'exécuteur. */
-  afterIssue: null as ((refund: IssuedRefund) => Promise<void>) | null,
+  afterIssue: null as ((refund: FakeRefund) => Promise<void>) | null,
 };
 
-function findOurs(params: RefundRequestParams): FakeRefund | undefined {
+function findOurs(paymentIntentId: string, params: RefundLookupParams): FakeRefund | undefined {
   return stripe.refunds.find(
     (refund) =>
-      refund.paymentIntentId === params.paymentIntentId &&
+      refund.paymentIntentId === paymentIntentId &&
       refund.requestId === params.requestId &&
       refund.generation === params.generation &&
       !DEAD.has(refund.status),
@@ -91,10 +90,10 @@ function remainderOf(paymentIntentId: string): number {
   return charged - taken;
 }
 
-function issue(params: RefundRequestParams, amountCents: number): RefundIssuance {
-  const known = stripe.refunds.find((refund) => refund.key === params.key);
+function issue(call: RefundCall, amountCents: number): FakeRefund {
+  const known = stripe.refunds.find((refund) => refund.key === call.key);
   if (known !== undefined) {
-    return { kind: "issued", refund: known };
+    return known;
   }
   const refund: FakeRefund = {
     refundId: `re_e2e_${String(stripe.refunds.length + 1)}`,
@@ -102,37 +101,35 @@ function issue(params: RefundRequestParams, amountCents: number): RefundIssuance
     currency: "eur",
     status: stripe.status,
     createdAt: new Date(),
-    paymentIntentId: params.paymentIntentId,
-    requestId: params.requestId,
-    generation: params.generation,
-    key: params.key,
+    paymentIntentId: call.paymentIntentId,
+    requestId: call.requestId,
+    generation: call.generation,
+    key: call.key,
   };
   stripe.refunds.push(refund);
-  return { kind: "issued", refund };
+  return refund;
 }
 
-class FakeStripeRefunder extends CardProviderRefunds {
-  async refundRemainder(
-    _account: string,
-    providerRef: string,
-    request: RefundRemainderParams,
-  ): Promise<RefundIssuance> {
-    const params: RefundRequestParams = { ...request, paymentIntentId: providerRef };
+/** Le prestataire des remboursements, tel que la scène le joue. */
+class FakeStripeRefunds implements E2eRefundBehaviour {
+  async refund(providerRef: string, params: RefundParams): Promise<RefundIssuance> {
+    const call: RefundCall = { ...params, paymentIntentId: providerRef };
     if (currentTransaction() !== undefined) {
       stripe.underTransaction += 1;
     }
-    stripe.calls.push(params);
+    stripe.calls.push(call);
     const during = stripe.during;
     stripe.during = null;
     await during?.();
-    const found = findOurs(params);
+    const found = findOurs(providerRef, params);
     if (found !== undefined) {
       return { kind: "issued", refund: found };
     }
     const scripted = stripe.script.shift();
     if (scripted === undefined) {
-      const remainder = remainderOf(params.paymentIntentId);
-      return remainder <= 0 ? { kind: "nothing_left" } : this.issued(params, remainder);
+      const remainder = remainderOf(providerRef);
+      const amount = params.amountCents ?? remainder;
+      return remainder <= 0 ? { kind: "nothing_left" } : this.issued(call, amount);
     }
     switch (scripted.kind) {
       case "unavailable":
@@ -142,29 +139,25 @@ class FakeStripeRefunder extends CardProviderRefunds {
       case "nothing_left":
         return { kind: "nothing_left" };
       case "issue_amount":
-        return this.issued(params, scripted.amountCents);
+        return this.issued(call, scripted.amountCents);
     }
   }
 
-  private async issued(params: RefundRequestParams, amountCents: number): Promise<RefundIssuance> {
-    const issuance = issue(params, amountCents);
-    const after = stripe.afterIssue;
-    stripe.afterIssue = null;
-    if (after !== null && issuance.kind === "issued") {
-      await after(issuance.refund);
-    }
-    return issuance;
-  }
-
-  findRefund(
-    _account: string,
-    providerRef: string,
-    request: RefundRemainderParams,
-  ): Promise<RefundLookup> {
-    const found = findOurs({ ...request, paymentIntentId: providerRef });
+  findRefund(providerRef: string, params: RefundLookupParams): Promise<RefundLookup> {
+    const found = findOurs(providerRef, params);
     return Promise.resolve(
       found === undefined ? { kind: "none" } : { kind: "found", refund: found },
     );
+  }
+
+  private async issued(call: RefundCall, amountCents: number): Promise<RefundIssuance> {
+    const refund = issue(call, amountCents);
+    const after = stripe.afterIssue;
+    stripe.afterIssue = null;
+    if (after !== null) {
+      await after(refund);
+    }
+    return { kind: "issued", refund };
   }
 }
 
@@ -179,11 +172,10 @@ export class OffsetWallClock extends WallClock {
 
 export const wall = new OffsetWallClock();
 
-export function bootRefundScene() {
-  return bootScene([
-    { token: CardProviderRefunds, value: new FakeStripeRefunder() },
-    { token: WallClock, value: wall },
-  ]);
+export async function bootRefundScene() {
+  const ctx = await bootScene([{ token: WallClock, value: wall }]);
+  sceneCardProvider().refundBehaviour = new FakeStripeRefunds();
+  return ctx;
 }
 
 export function resetStripe(): void {
@@ -207,50 +199,84 @@ export async function seedPaidOrder(seed: OrderSeed = {}) {
   return order;
 }
 
-/** Un webhook de remboursement, par la vraie commande, comme le contrôleur. */
-export function webhook(
+/**
+ * **Un webhook de remboursement**, par la vraie commande de `card-payment`
+ * (`RecordProviderEventCommand`) : le constat du bloc, sous ses verrous, puis
+ * le canal. Un `re_…` émis par une demande porte sa métadonnée ; un `re_…` du
+ * tableau de bord (`requestId` absent ou vide) n'en porte pas.
+ *
+ * 🔴 SANS `drain()`, à la différence de `recordCardEvent` : il est aussi joué
+ * DEPUIS l'exécuteur (`stripe.afterIssue`), qui est lui-même du travail de
+ * fond — l'attendre là, ce serait s'attendre soi-même. Les suites livrent
+ * ensuite par `deliver()`.
+ */
+export async function webhook(
   paymentIntentId: string,
-  refund: Pick<IssuedRefund, "refundId" | "amountCents" | "createdAt">,
-  status: PaymentRefundStatus,
+  refund: Pick<FakeRefund, "refundId" | "amountCents" | "createdAt"> &
+    Partial<Pick<FakeRefund, "requestId" | "generation">>,
+  status: CardRefundStatus,
 ): Promise<void> {
-  return context()
-    .app.get(CommandBus)
-    .execute(
-      new RecordOrderRefundCommand(paymentIntentId, {
-        stripeRefundId: refund.refundId,
-        amountCents: refund.amountCents,
-        currency: "eur",
-        status,
-        refundedAt: refund.createdAt,
-      }),
-    );
+  const requestId = refund.requestId ?? "";
+  const ctx = context();
+  const provider = sceneCardProvider();
+  const { rawBody, signature } = provider.sign({
+    kind: "refund",
+    eventId: provider.nextEventId(),
+    eventType: "refund.updated",
+    providerRef: paymentIntentId,
+    refundId: refund.refundId,
+    amountCents: refund.amountCents,
+    currency: "eur",
+    status,
+    createdAt: refund.createdAt,
+    ...(requestId === "" ? {} : { ours: { requestId, generation: refund.generation ?? 1 } }),
+  });
+  await ctx.app
+    .get(CommandBus)
+    .execute(new RecordProviderEventCommand(E2E_CARD_ACCOUNT, rawBody, signature));
 }
 
 /** L'exécuteur, tout de suite — comme le ferait le rappel d'après validation. */
-export function issueNow(orderId: string): Promise<void> {
-  return context().app.get(CommandBus).execute(new IssueOrderRefundCommand(orderId));
+export function issueNow(requestId: string): Promise<void> {
+  return context().app.get(CommandBus).execute(new IssueCardRefundCommand(requestId));
 }
 
-export const refundRequestOf = (orderId: string) =>
-  context().prisma.orderRefundRequest.findUnique({ where: { orderId } });
+/** Les paiements par carte de la commande — le sujet `order` du bloc. */
+const ofOrder = (orderId: string) => ({ payment: { subjectType: "order", subjectId: orderId } });
 
-export const ledgerOf = (orderId: string) =>
-  context().prisma.orderRefund.findMany({
-    where: { orderId },
-    orderBy: { recordedAt: "asc" },
-    select: { stripeRefundId: true, amountCents: true, status: true },
+/** La dernière demande de remboursement de la commande, ou `null`. */
+export const refundRequestOf = (orderId: string) =>
+  context().prisma.cardRefundRequest.findFirst({
+    where: ofOrder(orderId),
+    orderBy: [{ requestedAt: "desc" }, { id: "desc" }],
   });
 
+/** Toutes les demandes de la commande, de la plus ancienne à la plus récente. */
+export const refundRequestsOf = (orderId: string) =>
+  context().prisma.cardRefundRequest.findMany({
+    where: ofOrder(orderId),
+    orderBy: [{ requestedAt: "asc" }, { id: "asc" }],
+  });
+
+/** Le carnet de la commande, dans l'ordre du constat. */
+export const ledgerOf = (orderId: string) =>
+  context().prisma.cardRefund.findMany({
+    where: ofOrder(orderId),
+    orderBy: [{ recordedAt: "asc" }, { id: "asc" }],
+    select: { providerRef: true, amountCents: true, status: true },
+  });
+
+/** La cloche de `card-payment` (une par incident). */
 export const attention = () =>
   context().prisma.staffNotification.findMany({
-    where: { kind: "order.refund_attention" },
+    where: { kind: "card_payment.refund_attention" },
     select: { subject: true, body: true },
   });
 
 export const sweepRefunds = () =>
   context()
     .http()
-    .post("/admin/orders/refunds/sweep")
+    .post("/admin/card-payments/sweep")
     .set("x-lfc-recompute-token", TEST_RECOMPUTE_TOKEN);
 
 /** Fait échoir toute échéance : le mur avance d'un jour. */

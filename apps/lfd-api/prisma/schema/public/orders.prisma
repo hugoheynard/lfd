@@ -281,51 +281,51 @@ model Order {
   // La définition vit dans `ventilateVat` (`@lfd/money`), et nulle part
   // ailleurs. Pour ajouter un terme à ce panier :
   // `documentation/pricing/boutique-et-panier/ajouter-un-terme-au-panier.md`.
-  subtotalCents         Int             @map("subtotal_cents")
-  discountCents         Int             @default(0) @map("discount_cents")
+  subtotalCents              Int             @map("subtotal_cents")
+  discountCents              Int             @default(0) @map("discount_cents")
   // L'ajustement (%, ou € fixe) qui a PRODUIT `discountCents`, figé comme les
   // prix : sans lui un document ne peut nommer la remise, seulement la chiffrer.
-  discountAdjustment    Json?           @map("discount_adjustment")
+  discountAdjustment         Json?           @map("discount_adjustment")
   /// La promotion PANIER qui a produit `discountCents` (plan des promotions,
   /// § 13.8) — ajoutée à la bascule (L8), lue par la révision (L9). `NULL` =
   /// aucune, ou une commande que rien n'a encore figée (toute commande
   /// antérieure à L9). Identifiant opaque, sans clé étrangère.
-  discountPromotionId   String?         @map("discount_promotion_id")
+  discountPromotionId        String?         @map("discount_promotion_id")
   /// Le libellé de la promotion panier, `{fr, en, it}`, dans l'audience de
   /// l'acheteur, FIGÉ à la passation (plan des promotions, § 15.8, L8b) : un
   /// document relu plus tard ne dépend pas d'une promotion modifiée depuis.
   /// `NULL` = aucune promotion, ou commande d'avant L8b — le papier retombe
   /// sur « Remise retrait <point> ».
-  discountLabel         Json?           @map("discount_label")
+  discountLabel              Json?           @map("discount_label")
   /// La part du **bon de fidélité** réellement imputée, HT, en centimes — à
   /// part de `discountCents` parce que la facture et l'assiette des points les
   /// distinguent. `0` = aucun bon (et toute commande antérieure au lot C).
-  voucherDiscountCents  Int             @default(0) @map("voucher_discount_cents")
+  voucherDiscountCents       Int             @default(0) @map("voucher_discount_cents")
   /// Le bon engagé sur cette commande. `RESTRICT` : un bon ne s'efface pas
   /// sous une commande. 🔴 Unique **parmi les commandes non annulées**
   /// seulement — index partiel écrit à la main dans
   /// `20260927100000_le_bon_sur_la_commande`, invisible ici : une commande
   /// annulée garde la trace du bon, que la libération rend réutilisable.
-  loyaltyVoucherId      String?         @map("loyalty_voucher_id")
-  loyaltyVoucher        LoyaltyVoucher? @relation(fields: [loyaltyVoucherId], references: [id], onDelete: Restrict)
+  loyaltyVoucherId           String?         @map("loyalty_voucher_id")
+  loyaltyVoucher             LoyaltyVoucher? @relation(fields: [loyaltyVoucherId], references: [id], onDelete: Restrict)
   /// **Comment les montants ont été composés** (plan
   /// `documentation/pricing/obsolete/plan-centime-particuliers.md`, § 7) : `line_ht`
   /// (le calcul pro, et toute commande d'avant le 2026-10-27) ou `exact_ht`
   /// (particulier : composée en TTC, TVA extraite par taux). Décidée une fois
   /// par l'agrégat, relue ensuite — une révision ne la change pas. Tenue par
   /// un CHECK, sans défaut.
-  vatMethod             String          @map("vat_method")
+  vatMethod                  String          @map("vat_method")
   /// Les TTC figés de la remise retrait, du bon et du port — d'une commande
   /// `exact_ht` seulement, `NULL` sinon (CHECK `orders_ttc_terms_iff_exact_ht`).
   /// Positifs, comme leurs HT ; le bon y est sa valeur faciale imputée.
-  discountTtcCents      Int?            @map("discount_ttc_cents")
-  voucherTtcCents       Int?            @map("voucher_ttc_cents")
-  deliveryFeeTtcCents   Int?            @map("delivery_fee_ttc_cents")
+  discountTtcCents           Int?            @map("discount_ttc_cents")
+  voucherTtcCents            Int?            @map("voucher_ttc_cents")
+  deliveryFeeTtcCents        Int?            @map("delivery_fee_ttc_cents")
   /// La part de chaque taux d'une commande `exact_ht`, figée à la passation —
   /// `[{rate, htCents, vatCents, ttcCents}]` ; `NULL` pour `line_ht` (migration
   /// `20261027190000`, plan du centime).
-  ttcByRate             Json?           @map("ttc_by_rate")
-  deliveryFeeCents      Int             @default(0) @map("delivery_fee_cents")
+  ttcByRate                  Json?           @map("ttc_by_rate")
+  deliveryFeeCents           Int             @default(0) @map("delivery_fee_cents")
   /// L'ajustement (%, ou € fixe) de la ZONE qui a produit `deliveryFeeCents`,
   /// figé comme la remise et la surtaxe. C'était le dernier terme du panier à
   /// n'avoir que son montant : `delivery_zones.fee_value` est mutable, donc une
@@ -333,7 +333,7 @@ model Order {
   ///
   /// `NULL` = retrait (aucun frais) ou commande antérieure au 2026-09-09 ; les
   /// deux se distinguent par `delivery_fee_cents`, nul dans le premier cas.
-  deliveryFeeAdjustment Json?           @map("delivery_fee_adjustment")
+  deliveryFeeAdjustment      Json?           @map("delivery_fee_adjustment")
   /// **Le franco figé à la passation** (plan
   /// `documentation/promotions/plan-livraison-offerte.md`, 1a) : le seuil HT
   /// appliqué, et ce que la livraison aurait coûté — HT, et TTC pour une
@@ -342,10 +342,10 @@ model Order {
   /// le barème offert. CHECK `orders_free_delivery_*` (migration
   /// `20261105160000`). Le franco se juge sur le panier COMMANDÉ : un départ
   /// incomplet ne le fait pas perdre.
-  freeDeliveryThresholdCents  Int?      @map("free_delivery_threshold_cents")
-  freeDeliveryWaivedCents     Int?      @map("free_delivery_waived_cents")
-  freeDeliveryWaivedTtcCents  Int?      @map("free_delivery_waived_ttc_cents")
-  vatCents              Int             @default(0) @map("vat_cents")
+  freeDeliveryThresholdCents Int?            @map("free_delivery_threshold_cents")
+  freeDeliveryWaivedCents    Int?            @map("free_delivery_waived_cents")
+  freeDeliveryWaivedTtcCents Int?            @map("free_delivery_waived_ttc_cents")
+  vatCents                   Int             @default(0) @map("vat_cents")
   /// La TVA **par taux**, figée à la passation — `[{ rate, amountCents }]`.
   ///
   /// `vatCents` est le total ; celle-ci en est le DÉTAIL, et elle est figée pour
@@ -355,9 +355,9 @@ model Order {
   ///
   /// `null` = commande antérieure au 2026-09-07. Non rétro-remplie volontairement :
   /// le bon n'affiche alors qu'une ligne « dont TVA », ce qui est vrai.
-  vatShares             Json?           @map("vat_shares")
-  totalCents            Int             @map("total_cents")
-  currency              String          @default("EUR")
+  vatShares                  Json?           @map("vat_shares")
+  totalCents                 Int             @map("total_cents")
+  currency                   String          @default("EUR")
 
   // Règlement. `paymentStatus` est fixé à la passation d'après le terme de la
   // société (cf. enum PaymentStatus). `stripePaymentIntentId` relie la commande
@@ -534,9 +534,6 @@ model Order {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   lines              OrderLine[]
-  refunds            OrderRefund[]
-  /// L'argent à rendre après une annulation (lot C4) — une demande au plus.
-  refundRequest      OrderRefundRequest?
   revisions          OrderRevisionEntry[]
   /// L'issue de sa facture carte (E5a), s'il y en a une.
   cardInvoiceOutcome CardInvoiceOutcome?

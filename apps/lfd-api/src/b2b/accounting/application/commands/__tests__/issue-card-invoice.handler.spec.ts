@@ -33,7 +33,11 @@ function order(overrides: Partial<CardInvoiceCandidate> = {}): CardInvoiceCandid
     handedOverAt: RETRAIT,
     receivedOn: "2026-09-30",
     invoiced: false,
+    chargedCents: 1_000,
     refundedCents: 0,
+    adjustmentRefundedCents: 0,
+    adjustmentPending: false,
+    adjustmentStopped: false,
     follows: [],
     frozen: frozenOrder("ORD-001", PAID),
     deliveryNoteNumbers: ["BL-001-1"],
@@ -170,7 +174,7 @@ describe("IssueCardInvoiceHandler — rien ne boucle", () => {
 
   it("un TTC recalculé qui ne tombe pas sur l'encaissé est signalé, pas facturé", async () => {
     const w = cardWorld(RETRAIT);
-    w.reader.orders.set("o_1", order({ totalCents: 1_001 }));
+    w.reader.orders.set("o_1", order({ totalCents: 1_001, chargedCents: 1_001 }));
 
     expect((await issue(w)).outcome).toBe("blocked");
     expect(w.invoices.inserted).toEqual([]);
@@ -215,5 +219,62 @@ describe("IssueCardInvoiceHandler — les remboursements (A10, E5b)", () => {
     expect(notes.reduce((sum, note) => sum + note.totalHtCents, 0)).toBe(
       w.invoices.inserted[0]?.totalHtCents,
     );
+  });
+});
+
+/**
+ * Plan M2, §6.1, lot P1.c : le rapprochement s'écrit dans `refund_credit` —
+ * un avoir par remboursement, jamais deux ; un ajustement n'appelle pas
+ * d'avoir ; l'argent qui ne tombe pas juste retient la facture.
+ */
+describe("IssueCardInvoiceHandler — le rapprochement par `refund_credit` (plan M2, P1.c)", () => {
+  it("un remboursement d'ajustement est rapproché SANS avoir", async () => {
+    const w = cardWorld(RETRAIT);
+    w.reader.orders.set("o_1", order({ chargedCents: 1_300, adjustmentRefundedCents: 300 }));
+    w.refunds.add("o_1", "r_adj", 300, "adjustment");
+
+    expect((await issue(w)).outcome).toBe("issued");
+
+    expect(w.invoices.inserted.filter((piece) => piece.isCreditNote)).toEqual([]);
+    expect(w.refunds.rows).toMatchObject([
+      { refundId: "r_adj", reconciled: true, creditNoteId: null },
+    ]);
+  });
+
+  it("un remboursement sans nature (fait hors plateforme) appelle un avoir, comme un retour", async () => {
+    const w = cardWorld(RETRAIT);
+    w.refunds.add("o_1", "r_tableau", 200, null);
+    w.reader.orders.set("o_1", order());
+
+    await issue(w);
+
+    const notes = w.invoices.inserted.filter((piece) => piece.isCreditNote);
+    expect(notes.map((note) => note.totalTtcCents)).toEqual([200]);
+    expect(w.refunds.rows[0]).toMatchObject({ reconciled: true, creditNoteId: notes[0]?.id });
+  });
+
+  it("un seul avoir par remboursement : le rapprochement rejoué ne refait rien", async () => {
+    const w = cardWorld(RETRAIT);
+    w.reader.orders.set("o_1", order());
+    await issue(w);
+    w.refunds.add("o_1", "r_1", 400);
+
+    await w.reconcile.execute(new ReconcileRefundsCommand("o_1"));
+    await w.reconcile.execute(new ReconcileRefundsCommand("o_1"));
+    await issue(w);
+
+    expect(w.invoices.inserted.filter((piece) => piece.isCreditNote)).toHaveLength(1);
+  });
+
+  it("un ajustement arrêté retient la facture (`blocked`), avec sa phrase, sans rien ranger", async () => {
+    const w = cardWorld(RETRAIT);
+    w.reader.orders.set("o_1", order({ adjustmentStopped: true }));
+
+    const result = await issue(w);
+
+    expect(result).toMatchObject({ outcome: "blocked", number: null });
+    expect(result.message).toContain("remboursement d'ajustement");
+    expect(w.invoices.inserted).toEqual([]);
+    expect(w.outcomes.rows.size).toBe(0);
   });
 });

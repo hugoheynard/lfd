@@ -46,11 +46,13 @@ export interface AdminOrderView extends OrderView {
    */
   readonly cancellability: AdminOrderCancellability;
   /**
-   * **L'argent à rendre d'une commande annulée** (doc
-   * `documentation/commandes/annulation/annulation-par-le-staff.md`, lot C4, C4.9) —
-   * `null` quand aucun remboursement n'a été demandé.
+   * **Les demandes de remboursement par carte de la commande** (plan
+   * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+   * §5.3) — terminées comprises, de la plus ancienne à la plus récente ; vide
+   * quand aucun remboursement n'a été demandé. Remplace `refund` (une demande
+   * au plus) au lot P1.c : une commande en porte une par paiement encaissé.
    */
-  readonly refund: AdminOrderRefund | null;
+  readonly refundRequests: readonly AdminRefundRequest[];
   /**
    * **Peut-on la modifier, et sinon pourquoi** (plan
    * `documentation/commandes/modification/plan-modifier-une-commande.md`, R1, §6) — la
@@ -170,18 +172,29 @@ export interface AdminOrderShortfallLine {
 }
 
 /**
- * L'état d'un remboursement demandé, LU au carnet (jamais stocké) :
- * `to_issue` pas encore accepté par Stripe ; `issued` envoyé, en attente de
- * la banque ; `refunded` rendu ; `failed` échoué chez Stripe — à relancer ou
- * à régler autrement.
+ * L'état d'une demande de remboursement par carte (plan M2, §3.4) :
+ * `to_issue` pas encore acceptée par le prestataire ; `issued` envoyée, en
+ * attente de la banque ; `refunded` rendue ; `stopped` arrêtée — à relancer
+ * ou à rendre autrement ; `settled_elsewhere` rendue hors de la plateforme.
  */
-export type AdminOrderRefundState = "to_issue" | "issued" | "refunded" | "failed";
+export type AdminRefundRequestState =
+  "to_issue" | "issued" | "refunded" | "stopped" | "settled_elsewhere";
 
-export interface AdminOrderRefund {
-  readonly state: AdminOrderRefundState;
-  /** Ce que l'annulation a promis, en centimes TTC. */
+/** Une demande de remboursement, telle que le bandeau du back-office la lit (§5.3). */
+export interface AdminRefundRequest {
+  readonly id: string;
+  /** Le paiement qu'elle rembourse. */
+  readonly paymentId: string;
+  /** `remainder` : le reste du paiement ; `amount` : un montant exact. */
+  readonly form: "remainder" | "amount";
+  /** `return` : la vente n'a pas lieu ; `adjustment` : le montant dû a baissé. */
+  readonly nature: "return" | "adjustment";
+  /** Le code de la demande (`cancellation`, `paid_after_cancellation`…). */
+  readonly reason: string;
+  readonly state: AdminRefundRequestState;
+  /** Ce qui a été promis, en centimes TTC. */
   readonly announcedCents: number;
-  /** Ce que Stripe a rendu pour la génération courante, `null` avant émission. */
+  /** Ce que le prestataire a rendu pour la génération courante, `null` avant émission. */
   readonly issuedCents: number | null;
   /** Instant ISO 8601. */
   readonly requestedAt: string;
@@ -189,9 +202,11 @@ export interface AdminOrderRefund {
   readonly issuedAt: string | null;
   /** Appels faits pour la génération courante. */
   readonly attempts: number;
+  /** +1 à chaque « Relancer » d'une demande arrêtée. */
+  readonly generation: number;
   /** La phrase du serveur sur le dernier échec, ou `null`. */
   readonly lastFailure: string | null;
-  /** « Relancer » a-t-il un sens maintenant (à émettre ou échoué, et personne ne le traite) ? */
+  /** « Relancer » a-t-il un sens maintenant — toute la règle, bail compris (§3.4). */
   readonly retryable: boolean;
 }
 

@@ -380,10 +380,11 @@ describe("le geste (C6.6, C6.9)", () => {
   it("payée : la demande de remboursement n'a pas d'auteur staff", async () => {
     const pro = await proOrder(CustomerRole.orders, PaymentStatus.paid);
     await customerCancel(pro.other.sub, pro.orderId).expect(204);
-    const request = await ctx.prisma.orderRefundRequest.findUniqueOrThrow({
-      where: { orderId: pro.orderId },
+    // La demande du bloc `card-payment` (plan M2, lot P1.c), par le paiement de la commande.
+    const request = await ctx.prisma.cardRefundRequest.findFirstOrThrow({
+      where: { payment: { subjectType: "order", subjectId: pro.orderId } },
     });
-    expect(request.requestedBy).toBeNull();
+    expect(request).toMatchObject({ reason: "cancellation", nature: "return", requestedBy: null });
   });
 
   it("second clic : `already_cancelled`", async () => {

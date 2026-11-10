@@ -1,4 +1,5 @@
 import type { PrismaClient } from "../../platform/database/client/client.js";
+import { purgeOrderCardPayments } from "../scenario/purge/card-payment.purge.js";
 import { dropOrderRestrictedChildren } from "./order-restricted-children.seed.js";
 
 /**
@@ -19,10 +20,14 @@ import { dropOrderRestrictedChildren } from "./order-restricted-children.seed.js
  * les vivantes et les ambiguës (les rattachées portent `siteId` et sont
  * épargnées par construction).
  *
- * Avec elles partent ce qui les désigne dans le commerce : remboursements et
- * demandes de remboursement, issue de facture carte (clés `Restrict`), alertes
- * de compte, clés de passation, demandes client, écritures de points. Leurs
- * lignes suivent en cascade.
+ * Avec elles partent ce qui les désigne dans le commerce : issue de facture
+ * carte (clé `Restrict`), alertes de compte, clés de passation, demandes
+ * client, écritures de points ; et, au bloc `card-payment`, leurs paiements
+ * et leurs remboursements (plan M2, lot P1.c — par `card-payment.purge.ts`,
+ * dans sa transaction : ils n'ont aucune clé vers la commande, et depuis P0
+ * chaque retrait en laissait d'orphelins). Leurs lignes suivent en cascade.
+ * Les anciennes tables `order_refund*` ne sont plus touchées : sans clé ni
+ * lecteur depuis P1.c, leurs lignes restent jusqu'à P2.
  *
  * 🔴 **Une commande déjà prise en comptabilité est GARDÉE** — rattachée à une
  * facture, un relevé ou un prélèvement. La retirer laisserait une pièce
@@ -55,8 +60,7 @@ export async function dropSitelessPickups(prisma: PrismaClient): Promise<Siteles
     return { removed: 0, keptInAccounting: accounted.size };
   }
   const ofOrders = { orderId: { in: orderIds } };
-  await prisma.orderRefund.deleteMany({ where: ofOrders });
-  await prisma.orderRefundRequest.deleteMany({ where: ofOrders });
+  await prisma.$transaction((tx) => purgeOrderCardPayments(tx, orderIds));
   await prisma.cardInvoiceOutcome.deleteMany({ where: ofOrders });
   await prisma.accountAlert.deleteMany({ where: ofOrders });
   await prisma.orderIdempotency.deleteMany({ where: ofOrders });

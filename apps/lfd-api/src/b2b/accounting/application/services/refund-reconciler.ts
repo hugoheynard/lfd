@@ -33,6 +33,11 @@ export type RefundNotCreditedReason = "account_invoice" | "exceeds_invoice";
  * réussi constaté, **sous le verrou de la commande** que l'appelant a pris :
  * il rattrape donc aussi un remboursement noté avant le retrait.
  *
+ * Un remboursement d'**ajustement** (plan M2, §6.1, lot P1.c — la baisse, S1)
+ * n'appelle pas d'avoir : la facture est faite sur le montant baissé. Il est
+ * rapproché quand même (`refund_credit`, `reason = adjustment`), pour ne plus
+ * être relu. Inerte avant S1 : aucune demande d'ajustement n'existe.
+ *
  * Sans facture : rien (la facture viendra, ou la commande n'en aura pas). Une
  * facture qui n'est PAS une facture carte (la facture du mois) : aucun avoir
  * automatique — le remboursement d'un bon au compte dit autre chose que la
@@ -55,9 +60,8 @@ export class RefundReconciler {
 
   /** @returns le nombre d'avoirs émis. */
   async reconcile(orderId: string): Promise<number> {
-    const pending = (await this.refunds.succeededOf(orderId)).filter(
-      (r) => r.creditNoteId === null,
-    );
+    const unreconciled = (await this.refunds.succeededOf(orderId)).filter((r) => !r.reconciled);
+    const pending = await this.noteAdjustments(unreconciled);
     if (pending.length === 0) {
       return 0;
     }
@@ -76,11 +80,26 @@ export class RefundReconciler {
         continue;
       }
       const credit = await this.issue(orderId, invoice, notes, note);
-      await this.links.link(refund.refundId, credit.id);
+      await this.links.link(refund.refundId, credit.id, this.clock.now());
       notes.push(credit);
       issued += 1;
     }
     return issued;
+  }
+
+  /** Les ajustements rapprochés sans avoir ; rend ce qui en appelle un. */
+  private async noteAdjustments(
+    refunds: readonly CreditableRefund[],
+  ): Promise<readonly CreditableRefund[]> {
+    const credited: CreditableRefund[] = [];
+    for (const refund of refunds) {
+      if (refund.nature === "adjustment") {
+        await this.links.noteAdjustment(refund.refundId, this.clock.now());
+      } else {
+        credited.push(refund);
+      }
+    }
+    return credited;
   }
 
   private creditFor(

@@ -845,7 +845,7 @@ distinguent aucun envoi : `production-day-closed.event.ts:61-67`,
 Classées « commande » sans ligne propre, parce que leur clé ne porte qu'une
 cause de paiement ou de remboursement : `send-payment-failed-mail.handler.ts:105`,
 `send-payment-expired-mail.handler.ts:75`, `ring-failed-pro-settlement.handler.ts:84`,
-`refund-attention-bell.ts:61`, `resend-order-payment-link.handler.ts:69`,
+`refund-attention-bell` (retiré au lot P1.c), `resend-order-payment-link.handler.ts:69`,
 `settle-voucher-remainders.handler.ts:120`. Et deux unicités en base, déjà
 justes : `delivery_note @@unique([orderId, rank])` (`delivery-notes.prisma:69`)
 et l'index `loyalty_ledger_entries_earned_order_key` (un gain par commande,

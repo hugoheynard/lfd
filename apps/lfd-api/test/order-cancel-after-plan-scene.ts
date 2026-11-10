@@ -1,10 +1,5 @@
 import type request from "supertest";
 
-import {
-  CardProviderRefunds,
-  type RefundIssuance,
-  type RefundLookup,
-} from "../src/card-payment/channels/requests/index.js";
 import { E2E_STAFF_SUB, jsonBody, type E2eContext, type E2eOverride } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 import { pickupSite, placeOrder } from "./order-factory.js";
@@ -19,32 +14,20 @@ import {
 /**
  * **La scène du retrait d'une commande inscrite** (plan A1,
  * `documentation/commandes/annulation/plan-a1-retirer-une-commande-inscrite.md`,
- * lot A1.2) — la journée de fournil des suites de production, plus un Stripe
- * de remboursement qui ne répond pas : la demande reste écrite, et c'est elle
- * qu'on regarde (« remboursement demandé »), pas l'argent parti.
+ * lot A1.2) — la journée de fournil des suites de production, dont le
+ * prestataire de carte doublé ne répond pas aux remboursements (sa file vide
+ * rend `unavailable`, `card-payments.ts`) : la demande reste écrite au bloc
+ * `card-payment`, et c'est elle qu'on regarde (« remboursement demandé »),
+ * pas l'argent parti.
  *
  * Tout le reste est réel : la passation par le bus, l'arrêt du plan, la liste
  * à coliser, le poste, l'annulation par ses deux routes.
  */
 
-/** Stripe hors scène : l'exécuteur laisse la demande en attente, rien n'est émis. */
-class SilentRefunder extends CardProviderRefunds {
-  refundRemainder(): Promise<RefundIssuance> {
-    return Promise.resolve({ kind: "unavailable", reason: "e2e : Stripe hors scène" });
-  }
-
-  findRefund(): Promise<RefundLookup> {
-    return Promise.resolve({ kind: "none" });
-  }
-}
-
 export async function bootAfterPlanScene(
   extra: readonly E2eOverride[] = [],
 ): Promise<{ ctx: E2eContext; issued: string[] }> {
-  return bootstrapProductionDay([
-    { token: CardProviderRefunds, value: new SilentRefunder() },
-    ...extra,
-  ]);
+  return bootstrapProductionDay([...extra]);
 }
 
 /** Le réglage « Jusqu'où un particulier peut-il annuler ? », délai coupé. */

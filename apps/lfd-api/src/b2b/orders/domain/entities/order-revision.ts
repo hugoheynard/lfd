@@ -32,7 +32,7 @@ import type {
   OrderEntryShortcut,
   OrderSupply,
 } from "../value-objects/order-supply.js";
-import type { RefundPosition } from "./order-refund.js";
+import type { RefundPosition } from "../value-objects/refund-position.js";
 import type { OrderPricingNotes } from "./order-priced-draft.js";
 import type {
   OrderDiscountLabel,

@@ -1,35 +1,39 @@
 import { Injectable } from "@nestjs/common";
 
+import { CardRefunds } from "../../../../card-payment/channels/requests/index.js";
 import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
 import {
   DurableHandler,
   type DurableSubscriber,
 } from "../../../../platform/outbox/durable-handler.js";
-import { Clock } from "../../../../platform/time/clock.js";
-import { OrderRefundRequest } from "../../domain/entities/order-refund-request.js";
 import {
   ORDER_PAID_AFTER_CANCELLATION,
   OrderPaidAfterCancellationEvent,
 } from "../../domain/events/order-paid-after-cancellation.event.js";
-import { OrderRefundRequestRepository } from "../../domain/ports/order-refund-request.repository.js";
-import { OrderRefundRepository } from "../../domain/ports/order-refund.repository.js";
-import { OrderRefundDispatch } from "../services/order-refund-dispatch.js";
+import { OrderLock } from "../../domain/ports/order-lock.js";
+import { orderCardSubject } from "../services/order-card-subject.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
 export const REFUND_PAID_AFTER_CANCELLATION = "orders.refund-paid-after-cancellation";
 
+/** Le code de la demande — 🔴 une valeur écrite (`card_payment.refund_request.reason`). */
+export const PAID_AFTER_CANCELLATION_REASON = "paid_after_cancellation";
+
 /**
  * **L'encaissé après annulation se rembourse tout seul** (doc
  * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.11 — défaut de
- * Q5). Remplace la cloche « à rembourser depuis Stripe » (`RingRefundDue`) :
- * la commande est annulée et ne sera pas produite, l'argent n'est pas à nous.
+ * Q5 ; plan `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+ * §3.3, §3.6, lot P1.c). La commande est annulée et ne sera pas produite,
+ * l'argent n'est pas à nous.
  *
- * Dans l'unité de travail du reçu : verrou `orders`, carnet relu, et une
- * demande `paid_after_cancellation` SI aucune n'existe et que le reste est
- * positif — un fait relivré ne fait rien. Le reste se calcule sur
- * l'encaissé et les remboursements, jamais sur le statut : le carnet laisse
- * ces commandes `failed` (C4.1, 8). L'exécuteur part après validation ;
- * aucune cloche quand tout va bien.
+ * Dans l'unité de travail du reçu : le verrou `orders` d'abord (§3.3 : « l'abonné
+ * prend le verrou `orders` avant d'appeler `CardRefunds` »), puis une
+ * `remainder` `return` par paiement encaissé qui a encore un reste —
+ * `CardRefunds.requestRemainder` sur le sujet, qui relit sous ses verrous.
+ * Un fait relivré ne fait rien : le port rend la demande en cours, ou rien
+ * quand tout est rendu. Le port ne lève pas sur un sujet (aucun refus
+ * déterministe à absorber) ; une panne se rejoue. L'exécuteur de
+ * `card-payment` part après validation ; aucune cloche quand tout va bien.
  */
 @Injectable()
 @DurableHandler({
@@ -38,33 +42,21 @@ export const REFUND_PAID_AFTER_CANCELLATION = "orders.refund-paid-after-cancella
 })
 export class RefundPaidAfterCancellation implements DurableSubscriber {
   constructor(
-    private readonly ledgers: OrderRefundRepository,
-    private readonly requests: OrderRefundRequestRepository,
-    private readonly dispatch: OrderRefundDispatch,
-    private readonly clock: Clock,
+    private readonly lock: OrderLock,
+    private readonly refunds: CardRefunds,
   ) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
     const event = OrderPaidAfterCancellationEvent.fromPayload(delivery.payload);
-    const ledger = await this.ledgers.loadByOrder(event.orderId);
-    if (ledger === null || (await this.requests.load(event.orderId)) !== null) {
-      return;
-    }
-    const remainder = ledger.position().refundableCents;
-    if (remainder <= 0) {
-      return;
-    }
-    const now = this.clock.now();
-    await this.requests.save(
-      OrderRefundRequest.request({
-        orderId: event.orderId,
-        cause: "paid_after_cancellation",
-        announcedCents: remainder,
-        requestedAt: now,
+    await this.lock.lock(event.orderId);
+    await this.refunds.requestRemainder(
+      { subject: orderCardSubject(event.orderId) },
+      {
+        nature: "return",
+        reason: PAID_AFTER_CANCELLATION_REASON,
+        schedule: "now",
         requestedBy: null,
-        firstAttemptAt: now,
-      }),
+      },
     );
-    this.dispatch.afterCommitFor(event.orderId);
   }
 }

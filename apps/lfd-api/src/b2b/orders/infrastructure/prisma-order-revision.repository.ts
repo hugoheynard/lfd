@@ -14,6 +14,7 @@ import { freeDeliveryColumnsOf } from "./free-delivery.columns.js";
 import { toFulfillmentJson } from "./order-json.js";
 import { identifiedLinesOf, orderDiscountsWriteOf, writeCoverage } from "./order-discounts.data.js";
 import { ttcTermsColumnsOf } from "./order-money-columns.js";
+import { OrderCardRefundReadings } from "./order-card-refund-readings.js";
 import { REVISABLE_ORDER_SELECT, toRevisableOrder } from "./revisable-order.row.js";
 import { revisedCompositionOf } from "./revised-composition.js";
 
@@ -31,6 +32,7 @@ export class PrismaOrderRevisionRepository extends OrderRevisionRepository {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ids: IdGenerator,
+    private readonly refunds: OrderCardRefundReadings,
   ) {
     super();
   }
@@ -49,7 +51,7 @@ export class PrismaOrderRevisionRepository extends OrderRevisionRepository {
       where: { id: orderId },
       select: REVISABLE_ORDER_SELECT,
     });
-    return toRevisableOrder(row);
+    return toRevisableOrder(row, await this.refunds.positionOf(orderId));
   }
 
   /**

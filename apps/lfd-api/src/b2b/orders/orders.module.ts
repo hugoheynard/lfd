@@ -41,7 +41,7 @@ import { PrismaUnsettledShopOrderReader } from "./infrastructure/prisma-unsettle
 import { PrismaUnsettledShopOrderCanceller } from "./infrastructure/prisma-unsettled-shop-order.canceller.js";
 import { CancelledOrderPaymentReader } from "./domain/ports/cancelled-order-payment.reader.js";
 import { PrismaCancelledOrderPaymentReader } from "./infrastructure/prisma-cancelled-order-payment.reader.js";
-import { ORDER_REFUND_CONTROLLERS, ORDER_REFUND_PROVIDERS } from "./order-refund.providers.js";
+import { ORDER_CARD_REFUND_PROVIDERS } from "./order-card-refund.providers.js";
 import {
   ORDER_REVISION_CONTROLLERS,
   ORDER_REVISION_PROVIDERS,
@@ -60,10 +60,7 @@ import {
 import { OrderCancellation } from "./application/services/order-cancellation.service.js";
 import { OrderWorkshopWithdrawal } from "./application/services/order-workshop-withdrawal.js";
 import { OrderWorkshopRevision } from "./application/services/order-workshop-revision.js";
-import { RecordOrderRefundHandler } from "./application/commands/record-order-refund.handler.js";
 import { RingRefundRejected } from "./application/handlers/ring-refund-rejected.handler.js";
-import { OrderRefundRepository } from "./domain/ports/order-refund.repository.js";
-import { PrismaOrderRefundRepository } from "./infrastructure/prisma-order-refund.repository.js";
 import { PendingSettlementSweep } from "./application/services/pending-settlement-sweep.service.js";
 import { SendPaymentFailedMail } from "./application/handlers/send-payment-failed-mail.handler.js";
 import { OrderPlacedMail } from "./application/services/order-placed-mail.service.js";
@@ -351,7 +348,6 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     ResupplyModule,
   ],
   controllers: [
-    ...ORDER_REFUND_CONTROLLERS,
     ...CUSTOMER_CANCELLATION_CONTROLLERS,
     // Modifier une commande (plan `plan-modifier-une-commande.md`, M1).
     ...ORDER_REVISION_CONTROLLERS,
@@ -567,14 +563,12 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     { provide: UnsettledShopOrderCanceller, useClass: PrismaUnsettledShopOrderCanceller },
     // Son prix : une intention restée vivante peut être payée sur une commande
     // annulée. La base ne la rouvre pas ; depuis le lot C4, elle se rembourse
-    // toute seule (`ORDER_REFUND_PROVIDERS`).
+    // toute seule (`ORDER_CARD_REFUND_PROVIDERS`).
     { provide: CancelledOrderPaymentReader, useClass: PrismaCancelledOrderPaymentReader },
-    // Les remboursements Stripe, CONSTATÉS (plan facture carte, lot R1).
-    RecordOrderRefundHandler,
+    // Le refus d'un remboursement constaté par `card-payment` : la cloche de la commande.
     RingRefundRejected,
-    { provide: OrderRefundRepository, useClass: PrismaOrderRefundRepository },
-    // Lot C4 : rembourser une commande payée qu'on annule.
-    ...ORDER_REFUND_PROVIDERS,
+    // Lot C4, par `card-payment` depuis P1.c : rembourser une commande payée qu'on annule.
+    ...ORDER_CARD_REFUND_PROVIDERS,
     // Le composeur de l'accusé, partagé par les deux chemins ci-dessus.
     OrderPlacedMail,
     // Prévient le propriétaire d'une adresse qu'une commande sans compte l'a

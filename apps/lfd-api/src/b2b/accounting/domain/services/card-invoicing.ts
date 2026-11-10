@@ -36,8 +36,19 @@ export interface CardInvoiceCandidate {
   readonly receivedOn: string | null;
   /** Une facture 380 couvre déjà le bon. */
   readonly invoiced: boolean;
-  /** Le cumul des remboursements RÉUSSIS. */
+  /**
+   * **Encaissé** : la somme des paiements par carte réussis (plan M2, §2), lue
+   * à la position du bloc `card-payment`.
+   */
+  readonly chargedCents: number;
+  /** Le cumul des remboursements RÉUSSIS, toute nature — comme avant le plan M2. */
   readonly refundedCents: number;
+  /** Le remboursé d'**ajustement** (la baisse, S1) : la facture est sur le montant baissé. */
+  readonly adjustmentRefundedCents: number;
+  /** Une demande d'ajustement attend son issue (`to_issue`, `issued`). */
+  readonly adjustmentPending: boolean;
+  /** Une demande d'ajustement est arrêtée : à relancer ou à rendre autrement. */
+  readonly adjustmentStopped: boolean;
   /** Les périodes `billing` de la société, pour `billedPayerOf`. */
   readonly follows: readonly BillingFollow[];
   readonly frozen: FrozenInvoiceOrder;
@@ -52,6 +63,10 @@ export interface CardInvoiceCandidate {
  * - `already_invoiced` — une 380 la couvre déjà (rejeu, ou l'autre déclencheur) ;
  * - `not_card` — publique, au compte, gratuite ou annulée : jamais de facture carte ;
  * - `awaiting_payment` / `awaiting_handover` — l'autre déclencheur viendra ;
+ * - `blocked` — l'argent ne tombe pas juste (plan M2, §6.1, G3) : une
+ *   demande d'ajustement attend ou est arrêtée, ou encaissé − remboursé
+ *   d'ajustement ≠ total dû. Le remboursement réglé réveille la facture
+ *   (`issue-card-invoice-on-refund-settled`) ;
  * - `fully_refunded` — remboursée en totalité avant d'être facturée (A10) :
  *   pas de livraison, pas de vente.
  */
@@ -61,6 +76,7 @@ export type CardInvoiceVerdict =
   | "not_card"
   | "awaiting_payment"
   | "awaiting_handover"
+  | "blocked"
   | "fully_refunded";
 
 /** Les règlements d'une commande ENCAISSÉE par carte : le régime `paid`. */
@@ -94,6 +110,9 @@ export function cardInvoiceVerdict(candidate: CardInvoiceCandidate): CardInvoice
   if (CARD_DUE.has(candidate.paymentStatus) || candidate.paidAt === null) {
     return "awaiting_payment";
   }
+  if (!moneySquares(candidate)) {
+    return "blocked";
+  }
   if (candidate.handedOverAt === null) {
     return "awaiting_handover";
   }
@@ -102,6 +121,24 @@ export function cardInvoiceVerdict(candidate: CardInvoiceCandidate): CardInvoice
   }
   return candidate.refundedCents >= candidate.totalCents ? "fully_refunded" : "issuable";
 }
+
+/**
+ * **L'égalité G3** d'une commande vivante (plan M2, §2, §6.1) : rien
+ * d'ajustement en attente ni arrêté, et encaissé − remboursé d'ajustement =
+ * total dû. Un remboursement de nature `return` n'y entre pas : il dit que
+ * la vente n'a pas lieu, et c'est `fully_refunded` qui le lit.
+ */
+function moneySquares(candidate: CardInvoiceCandidate): boolean {
+  return (
+    !candidate.adjustmentPending &&
+    !candidate.adjustmentStopped &&
+    candidate.chargedCents - candidate.adjustmentRefundedCents === candidate.totalCents
+  );
+}
+
+/** La phrase d'une facture carte qui attend que l'argent tombe juste (`blocked`). */
+export const CARD_INVOICE_AWAITS_REFUND =
+  "L'argent de cette commande ne tombe pas encore juste : un remboursement d'ajustement est en cours ou arrêté, ou l'encaissé diffère du total. La facture partira quand il sera rendu.";
 
 /** Le moyen d'une facture carte (BG-16) — le code seul. */
 export const CARD_PAYMENT_MEANS: InvoicePaymentMeans = { code: BANK_CARD };

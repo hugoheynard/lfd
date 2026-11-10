@@ -27,7 +27,7 @@ import {
 } from "./cancellation-doubles.js";
 import { FixedCancellationSettings } from "./customer-cancellation-doubles.js";
 import { RecordingDurable } from "./durable-doubles.js";
-import { InMemoryRefundRequests, RecordingDispatch, RefundStore } from "./refund-doubles.js";
+import { FixedCardAdoption, RecordingCardRefunds } from "./refund-doubles.js";
 import { RecordingRedemption, RETURNED } from "./voucher-doubles.js";
 
 /**
@@ -67,10 +67,7 @@ function scene(input: {
       rule,
       new CancellationAllowanceGate(settings),
       engagements,
-      new CancellationRefundRequester(
-        new InMemoryRefundRequests(new RefundStore()),
-        new RecordingDispatch(),
-      ),
+      new CancellationRefundRequester(new RecordingCardRefunds(), new FixedCardAdoption("pi_1")),
       durable,
       new RecordingNoteVoiding(trace),
       new DirectUnitOfWork(),

@@ -11,8 +11,9 @@ export type OrderRefundFailureType = typeof ORDER_REFUND_FAILED | typeof ORDER_R
 /**
  * **Un remboursement constaté qui n'a pas rendu l'argent** (doc
  * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.7, C4.11 bis) —
- * fait DURABLE, écrit par `RecordOrderRefundHandler` dans la transaction du
- * constat. 🔴 Les deux types sont des valeurs écrites : irréversibles.
+ * fait DURABLE, écrit dans la transaction du constat — par
+ * `OrderRefundOutcomes` depuis que le constat vit dans `card-payment` (plan
+ * M2, lots P1.b et P1.c ; `RecordOrderRefundHandler` est retiré). 🔴 Les deux types sont des valeurs écrites : irréversibles.
  *
  * Clé `<type>:<id de la ligne order_refund>` : un statut terminal ne revient
  * pas, le fait n'est donc écrit qu'une fois par remboursement.

@@ -12,8 +12,6 @@ import {
   type OrderLineView,
   type OrderStatus,
   type OrderView,
-  type OrderRefundStatus,
-  refundedCentsOf,
   type PaymentStatus,
   type SheetCustomer,
   type AtelierSheet,
@@ -30,6 +28,11 @@ import {
 } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { contactOf, pickupLabelOf, type HolderSide } from "./atelier-sheet-parts.js";
+import {
+  NO_REFUNDS,
+  OrderCardRefundReadings,
+  type OrderRefundsReading,
+} from "./order-card-refund-readings.js";
 import { fulfillmentOf } from "./order-fulfillment.parse.js";
 import { siteIdOf } from "./pickup-site.parse.js";
 import {
@@ -106,11 +109,6 @@ export interface OrderRow {
   readonly lines: readonly OrderLineRow[];
   /** Les remises de panier actives, dans l'ordre des rangs (lot M6). */
   readonly discounts: readonly OrderDiscountAmountRow[];
-  readonly refunds: readonly {
-    readonly amountCents: number;
-    readonly status: OrderRefundStatus;
-    readonly refundedAt: Date;
-  }[];
 }
 
 /** Colonnes d'une commande à lire (partagées entreprise / personnel). */
@@ -178,11 +176,8 @@ export const ORDER_SELECT = {
   },
   // Les remises de panier actives (lot M6), lues avec leur repli sur les colonnes.
   discounts: ORDER_DISCOUNT_AMOUNTS_SELECT,
-  // Les remboursements Stripe constatés (lot R1), dans l'ordre du constat.
-  refunds: {
-    select: { amountCents: true, status: true, refundedAt: true },
-    orderBy: { recordedAt: "asc" },
-  },
+  // Les remboursements ne sont plus une relation (plan M2, lot P1.c) : ils se
+  // lisent au bloc `card-payment`, par lot (`OrderCardRefundReadings`).
 } as const;
 
 /**
@@ -205,7 +200,10 @@ export const CUSTOMER_VISIBLE = {
 /** Lecture des commandes (entreprise ou personnel), la plus récente en tête. */
 @Injectable()
 export class PrismaOrderReader extends OrderReader {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly refunds: OrderCardRefundReadings,
+  ) {
     super();
   }
 
@@ -216,7 +214,8 @@ export class PrismaOrderReader extends OrderReader {
       orderBy: { createdAt: "desc" },
       select: ORDER_SELECT,
     });
-    return rows.map((row) => toOrderView(row));
+    const readings = await this.refunds.readingsOf(rows.map((row) => row.id));
+    return rows.map((row) => toOrderView(row, readings.get(row.id) ?? NO_REFUNDS));
   }
 
   async findById(orderId: string): Promise<OwnedOrder | null> {
@@ -244,8 +243,9 @@ export class PrismaOrderReader extends OrderReader {
     if (row === null) {
       return null;
     }
+    const readings = await this.refunds.readingsOf([row.id]);
     return {
-      view: toOrderView(row),
+      view: toOrderView(row, readings.get(row.id) ?? NO_REFUNDS),
       companyId: row.companyId,
       placedByUserId: row.placedByUserId,
       stripePaymentIntentId: row.stripePaymentIntentId,
@@ -522,7 +522,11 @@ function parseAddress(value: Prisma.JsonValue | null): BillingAddressPayload | n
   return value === null ? null : billingAddressPayloadSchema.parse(value);
 }
 
-export function toOrderView(row: OrderRow): OrderView {
+/**
+ * La ligne → la vue. Les remboursements viennent du bloc `card-payment` (plan
+ * M2, lot P1.c), lus par lot à côté de la ligne.
+ */
+export function toOrderView(row: OrderRow, refunds: OrderRefundsReading): OrderView {
   return {
     id: row.id,
     orderNumber: row.orderNumber,
@@ -572,18 +576,9 @@ export function toOrderView(row: OrderRow): OrderView {
     confirmedAt: row.confirmedAt === null ? null : row.confirmedAt.toISOString(),
     readyAt: row.readyAt === null ? null : row.readyAt.toISOString(),
     handedOverAt: row.handedOverAt === null ? null : row.handedOverAt.toISOString(),
-    ...refundsOf(row.refunds),
+    refunds: refunds.refunds,
+    refundedCents: refunds.refundedCents,
   };
-}
-
-/** Les remboursements constatés, et leur cumul réussi (lot R1). */
-function refundsOf(rows: OrderRow["refunds"]): Pick<OrderView, "refunds" | "refundedCents"> {
-  const refunds = rows.map((refund) => ({
-    amountCents: refund.amountCents,
-    status: refund.status,
-    refundedAt: refund.refundedAt.toISOString(),
-  }));
-  return { refunds, refundedCents: refundedCentsOf(refunds) };
 }
 
 /**

@@ -39,7 +39,7 @@
   `capture_method`, donc capturée automatiquement
   (`card-payment/infrastructure/stripe/stripe-card-provider.ts`). Le
   remboursement est une demande persistée, exécutée après coup
-  (`order-refund-request.ts`, `sweep-order-refunds`, `order-refund-dispatch.ts`).
+  (`order-refund-request` (retiré au lot P1.c), `sweep-order-refunds`, `order-refund-dispatch` (retiré au lot P1.c)).
 - **La facture** lit les lignes figées de la commande au mois de sa
   livraison : une commande non livrée n'est sur aucune facture.
 - **Le calcul de la passation** (prix, remise de retrait, frais, surtaxe, bon

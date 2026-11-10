@@ -631,30 +631,14 @@ async function triggerUnsettledShopOrderExpiry(env: Env): Promise<void> {
 }
 
 /**
- * Réveille le container et passe les remboursements dus : une commande payée
- * annulée dont le remboursement n'a pas pu partir après l'annulation (Stripe
- * injoignable, processus mort) est reprise ici, au plus 20 par passage (doc
- * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.7 (b)). Sur le cron
- * de RAFRAÎCHISSEMENT ; même porte et même jeton que la boîte d'envoi ;
- * idempotent — le bail de l'exécuteur exclut deux appels à Stripe.
- */
-async function triggerOrderRefundSweep(env: Env): Promise<void> {
-  const token = env.RECOMPUTE_TOKEN;
-  if (!token) {
-    return;
-  }
-  await postSweep(env, token, "admin/orders/refunds/sweep");
-}
-
-/**
  * Réveille le container et passe les remboursements par carte dus (plan
  * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
  * §6.8, `sweep-card-refunds`) : une demande dont l'exécuteur n'a pas abouti
  * (prestataire injoignable, processus mort) est reprise ici, au plus 20 par
- * passage. Sur le cron de RAFRAÎCHISSEMENT, À CÔTÉ de
- * `admin/orders/refunds/sweep` jusqu'à ce que l'annulation bascule (lot P1.c)
- * ; même porte et même jeton que la boîte d'envoi ; idempotent — le bail de
- * l'exécuteur exclut deux appels au prestataire.
+ * passage — l'annulation d'une commande payée y passe depuis le lot P1.c
+ * (l'ancienne route `admin/orders/refunds/sweep` est retirée). Sur le cron de
+ * RAFRAÎCHISSEMENT ; même porte et même jeton que la boîte d'envoi ;
+ * idempotent — le bail de l'exécuteur exclut deux appels au prestataire.
  */
 async function triggerCardRefundSweep(env: Env): Promise<void> {
   const token = env.RECOMPUTE_TOKEN;
@@ -739,7 +723,6 @@ async function refreshSweeps(env: Env): Promise<void> {
     triggerAutoClose(env),
     triggerRoundsGapBell(env),
     triggerUnsettledShopOrderExpiry(env),
-    triggerOrderRefundSweep(env),
     triggerCardRefundSweep(env),
     triggerVitrineSweep(env),
   ]);

@@ -9,6 +9,11 @@ import {
   type CompanyOrderListScope,
 } from "../domain/ports/company-order-list.reader.js";
 import { companyOrderWallOf } from "./company-order-wall.js";
+import {
+  NO_REFUNDS,
+  OrderCardRefundReadings,
+  type OrderRefundsReading,
+} from "./order-card-refund-readings.js";
 import { CUSTOMER_VISIBLE, ORDER_SELECT, toOrderView } from "./prisma-order.reader.js";
 
 const LIST_SELECT = {
@@ -29,7 +34,10 @@ type ListRow = Prisma.OrderGetPayload<{ select: typeof LIST_SELECT }>;
  */
 @Injectable()
 export class PrismaCompanyOrderListReader extends CompanyOrderListReader {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly refunds: OrderCardRefundReadings,
+  ) {
     super();
   }
 
@@ -41,7 +49,8 @@ export class PrismaCompanyOrderListReader extends CompanyOrderListReader {
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       select: LIST_SELECT,
     });
-    return rows.map((row) => entryOf(row, scope.companyId));
+    const readings = await this.refunds.readingsOf(rows.map((row) => row.id));
+    return rows.map((row) => entryOf(row, scope.companyId, readings.get(row.id) ?? NO_REFUNDS));
   }
 }
 
@@ -73,12 +82,16 @@ function dateColumnOf(day: string): Date {
   return new Date(`${day}T00:00:00.000Z`);
 }
 
-function entryOf(row: ListRow, listedCompanyId: string): CompanyOrderEntry {
+function entryOf(
+  row: ListRow,
+  listedCompanyId: string,
+  refunds: OrderRefundsReading,
+): CompanyOrderEntry {
   const site =
     row.companyId === null || row.companyId === listedCompanyId || row.company === null
       ? null
       : { companyId: row.companyId, name: companyDisplayName(row.company) };
-  return { view: toOrderView(row), site, author: authorOf(row) };
+  return { view: toOrderView(row, refunds), site, author: authorOf(row) };
 }
 
 /** Le nom de celui qui a passé la commande — l'équipe si elle l'a saisie (§7.6). */

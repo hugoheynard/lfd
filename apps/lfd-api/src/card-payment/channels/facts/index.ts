@@ -13,10 +13,8 @@ export {
 } from "./card-payment-settlement.facts.js";
 export {
   CARD_PAYMENT_CHECKOUT_EVENT,
-  CARD_PAYMENT_PROVIDER_REFUND_EVENT,
   CARD_PAYMENT_UNMATCHED,
   CardPaymentCheckoutEvent,
-  CardPaymentProviderRefundEvent,
   CardPaymentUnmatchedFact,
   type CheckoutOutcome,
   type ProviderRefund,

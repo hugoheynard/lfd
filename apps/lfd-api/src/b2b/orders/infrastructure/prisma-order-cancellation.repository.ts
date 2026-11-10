@@ -9,6 +9,7 @@ import {
   type CancellationRecord,
 } from "../domain/ports/order-cancellation.repository.js";
 import { CANCELLATION_SUBJECT_SELECT, toCancellationSubject } from "./cancellation-subject.row.js";
+import { OrderCardRefundReadings } from "./order-card-refund-readings.js";
 
 /** Une carte non encaissée : en attente, ou refusée et encore reprenable. */
 const DUE: readonly PaymentStatus[] = [PaymentStatus.pending, PaymentStatus.failed];
@@ -36,7 +37,10 @@ function cancellableStatusesUnder(allowance: CancellationAllowance): OrderStatus
  */
 @Injectable()
 export class PrismaOrderCancellationRepository extends OrderCancellationRepository {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly refunds: OrderCardRefundReadings,
+  ) {
     super();
   }
 
@@ -54,7 +58,9 @@ export class PrismaOrderCancellationRepository extends OrderCancellationReposito
       where: { id: orderId },
       select: CANCELLATION_SUBJECT_SELECT,
     });
-    return toCancellationSubject(row);
+    // Sous le verrou de la ligne `orders` : la position relue ici est celle
+    // que `card-payment` ne peut plus changer avant la fin (§3.6).
+    return toCancellationSubject(row, await this.refunds.positionOf(orderId));
   }
 
   async cancel(

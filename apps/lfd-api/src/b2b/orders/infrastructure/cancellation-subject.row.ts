@@ -1,5 +1,5 @@
-import { refundPositionOf, type RefundStatus } from "../domain/entities/order-refund.js";
 import type { CancellationSubject } from "../domain/ports/cancellation-subject.reader.js";
+import type { RefundPosition } from "../domain/value-objects/refund-position.js";
 
 /**
  * Ce que l'annulation staff lit d'une commande — partagé par la lecture sans
@@ -21,8 +21,6 @@ export const CANCELLATION_SUBJECT_SELECT = {
   cancelledAt: true,
   stripePaymentIntentId: true,
   loyaltyVoucherId: true,
-  // Lot C4 : le reste à rendre se lit sur les remboursements constatés.
-  refunds: { select: { amountCents: true, status: true } },
 } as const;
 
 interface CancellationSubjectRow {
@@ -39,11 +37,16 @@ interface CancellationSubjectRow {
   readonly cancelledAt: Date | null;
   readonly stripePaymentIntentId: string | null;
   readonly loyaltyVoucherId: string | null;
-  readonly refunds: readonly { readonly amountCents: number; readonly status: RefundStatus }[];
 }
 
-/** La ligne → le sujet. `@db.Date` lu à minuit UTC : on garde le jour tel quel. */
-export function toCancellationSubject(row: CancellationSubjectRow): CancellationSubject {
+/**
+ * La ligne → le sujet. `@db.Date` lu à minuit UTC : on garde le jour tel quel.
+ * Le reste à rendre vient du bloc `card-payment` (lot P1.c), lu à côté.
+ */
+export function toCancellationSubject(
+  row: CancellationSubjectRow,
+  refunds: RefundPosition,
+): CancellationSubject {
   return {
     orderId: row.id,
     orderNumber: row.orderNumber,
@@ -61,6 +64,6 @@ export function toCancellationSubject(row: CancellationSubjectRow): Cancellation
     cancelledAt: row.cancelledAt,
     stripePaymentIntentId: row.stripePaymentIntentId,
     loyaltyVoucherId: row.loyaltyVoucherId,
-    refunds: refundPositionOf(row.totalCents, row.refunds),
+    refunds,
   };
 }

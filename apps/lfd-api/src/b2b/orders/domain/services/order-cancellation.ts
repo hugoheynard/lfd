@@ -1,6 +1,6 @@
 import type { OrderStatus, PaymentStatus } from "@lfd/contracts";
 
-import type { RefundPosition } from "../entities/order-refund.js";
+import type { RefundPosition } from "../value-objects/refund-position.js";
 import type { AccountEngagement } from "../ports/account-order-engagement.js";
 import type { CancellationSubject } from "../ports/cancellation-subject.reader.js";
 import type { CancellationAllowance } from "./cancellation-allowance.js";
@@ -49,7 +49,7 @@ export interface CancellationState {
    * « annulable » (S6).
    */
   readonly engagement: AccountEngagement | null;
-  /** Lot C4 : le reste à rendre et ce qui est en vol, lus au carnet. */
+  /** Lot C4 : le reste à rendre et ce qui est en vol, lus à la position du bloc `card-payment` (P1.c). */
   readonly refunds: RefundPosition;
   /**
    * Plan A1 (lot A1.3) : le colisage a fermé le bac — lu par l'APERÇU, sans

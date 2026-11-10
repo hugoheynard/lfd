@@ -55,8 +55,6 @@ export const SCENARIO_PURGED_TABLES: readonly PurgedTable[] = [
     referencedBy: [
       "public.delivery_note",
       "public.order_discounts",
-      "public.order_refund",
-      "public.order_refund_request",
       "public.order_revision",
       "public.order_shortfall",
       "public.order_shortfall_decision",
@@ -75,8 +73,6 @@ export const SCENARIO_PURGED_TABLES: readonly PurgedTable[] = [
     referencedBy: ["public.order_shortfall_decision"],
   },
   { table: "public.order_revision", purgedIn: COMMERCE, referencedBy: [] },
-  { table: "public.order_refund", purgedIn: COMMERCE, referencedBy: [] },
-  { table: "public.order_refund_request", purgedIn: COMMERCE, referencedBy: [] },
   {
     table: "public.delivery_note",
     purgedIn: COMMERCE,

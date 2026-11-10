@@ -36,7 +36,7 @@ import {
   ReadableSigner,
 } from "./customer-cancellation-doubles.js";
 import { RecordingDurable } from "./durable-doubles.js";
-import { InMemoryRefundRequests, RecordingDispatch, RefundStore } from "./refund-doubles.js";
+import { FixedCardAdoption, RecordingCardRefunds } from "./refund-doubles.js";
 import { RecordingRedemption, RETURNED } from "./voucher-doubles.js";
 
 /**
@@ -69,7 +69,7 @@ export function customerScene(options: CustomerScene) {
   const engagements = new ScriptedEngagements({ kind: "free" }, trace);
   const rule = new CancellationRule(engagements);
   const durable = new RecordingDurable();
-  const refundStore = new RefundStore();
+  const cards = new RecordingCardRefunds(2_340, trace);
   const settings = new FixedCancellationSettings(options.settings ?? {});
   const core = new OrderCancellation(
     subjects,
@@ -81,10 +81,7 @@ export function customerScene(options: CustomerScene) {
     rule,
     new CancellationAllowanceGate(settings),
     engagements,
-    new CancellationRefundRequester(
-      new InMemoryRefundRequests(refundStore),
-      new RecordingDispatch(),
-    ),
+    new CancellationRefundRequester(cards, new FixedCardAdoption("pi_1", trace)),
     durable,
     new RecordingNoteVoiding(),
     new DirectUnitOfWork(),
@@ -97,7 +94,7 @@ export function customerScene(options: CustomerScene) {
     trace,
     rows,
     durable,
-    refundStore,
+    cards,
     settings,
     customers,
     signer,

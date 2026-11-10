@@ -109,7 +109,7 @@ Trois objections bloquantes, que le plan ne sait pas lever sans changer de
 mécanique :
 
 1. **L'exécuteur des remboursements rend TOUT le reste**, pas un montant
-   (`issue-order-refund.handler.ts` → `refundRemainder`, sans `amount` chez
+   (`issue-order-refund.handler` (retiré au lot P1.c) → `refundRemainder`, sans `amount` chez
    Stripe). Une demande `revision` de 3,10 € rembourserait la commande
    entière, marchandise retirée. Il faudrait un montant dans le port, l'appel
    Stripe, l'état de la demande et sa recherche « plus rien à rendre ».
@@ -251,7 +251,7 @@ ou trois lots.
 
 - **Le remboursement ne sait rendre que TOUT le reste d'une intention** :
   `PaymentRefunder.refundRemainder` n'a pas de montant
-  (`card-payment/channels/requests/card-provider-refunds.ts`). C'est la raison du remplacement :
+  (`card-provider-refunds` (retiré au lot P1.c)). C'est la raison du remplacement :
   une ancienne commande remboursée en entier est exactement ce qu'il sait
   faire.
 - **Les causes d'une demande de remboursement** sont `cancellation`,
@@ -496,7 +496,7 @@ non contredit.
   `refund_reversed`.
 - **Le carnet** (`order_refund`, agrégat `OrderRefundLedger`) plafonne
   `Σ succeeded ≤ chargedCents`, et **`chargedCents` est lu sur
-  `orders.total_cents`** (`prisma-order-refund.repository.ts`). Il ne porte
+  `orders.total_cents`** (`prisma-order-refund.repository` (retiré au lot P1.c)). Il ne porte
   ni l'intention ni la cause d'un remboursement. Le constat
   (`RecordOrderRefundCommand`) ne porte que l'intention et le rapport — pas
   la métadonnée.
@@ -619,18 +619,18 @@ flowchart TB
 
 La forme tient ; quatre mécanismes sont à reconcevoir avant de bâtir.
 
-| #   | Bloquant                                                                                                                                                                                                                                                                                                  | Ce qu'il faut à la place                                                                                                                                                                                                                 |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **Une demande de remboursement par commande** : clé `order_id`, bail, clé d'idempotence et recherche Stripe par commande (`order-refund.prisma`, `issue-order-refund.handler.ts`, `stripe-refund-calls.ts`). Une seconde baisse viole la clé ; une seconde demande retrouverait le `re_…` de la première. | La demande devient une **ligne par remboursement à faire** (id propre, commande, **intention**, montant), et tout ce qui la désigne — bail, clé, métadonnée Stripe — prend cet id. Une baisse qui touche deux paiements = deux demandes. |
-| 2   | **L'état d'une demande se lit sur le reste du carnet** (`refundRequestStateOf`) : une demande partielle servie aujourd'hui rendrait tout.                                                                                                                                                                 | Une demande « par montant » est servie quand **son** `re_…` a réussi pour **son** montant ; l'annulation garde « rendre tout le reste de cette intention ». Deux formes, nommées.                                                        |
-| 3   | **La révision appelée depuis un abonné durable** s'exécute dans la transaction du reçu (`durable-delivery-guard.ts`, `unit-of-work.ts` rejoint la transaction) : un refus après écriture laisse un état à moitié écrit, ou fait rejouer sans fin.                                                         | L'abonné ne fait que marquer le projet **prêt** ; un exécuteur à bail (la figure de l'exécuteur des remboursements) l'applique dans **sa** transaction, hors du reçu, et écrit le refus et sa demande dans une seconde.                  |
-| 4   | **Le montant payé et le total appliqué divergent** : `ReviseOrderCommand` recompose les prix à l'application.                                                                                                                                                                                             | Le projet garde la révision **composée** ; l'application la rejuge et **refuse si le total recomposé diffère** du total payé (prix changé pendant l'attente) — remboursement du complément, « les prix ont changé ».                     |
+| #   | Bloquant                                                                                                                                                                                                                                                                                                                    | Ce qu'il faut à la place                                                                                                                                                                                                                 |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Une demande de remboursement par commande** : clé `order_id`, bail, clé d'idempotence et recherche Stripe par commande (`order-refund.prisma`, `issue-order-refund.handler` (retiré au lot P1.c), `stripe-refund-calls.ts`). Une seconde baisse viole la clé ; une seconde demande retrouverait le `re_…` de la première. | La demande devient une **ligne par remboursement à faire** (id propre, commande, **intention**, montant), et tout ce qui la désigne — bail, clé, métadonnée Stripe — prend cet id. Une baisse qui touche deux paiements = deux demandes. |
+| 2   | **L'état d'une demande se lit sur le reste du carnet** (`refundRequestStateOf`) : une demande partielle servie aujourd'hui rendrait tout.                                                                                                                                                                                   | Une demande « par montant » est servie quand **son** `re_…` a réussi pour **son** montant ; l'annulation garde « rendre tout le reste de cette intention ». Deux formes, nommées.                                                        |
+| 3   | **La révision appelée depuis un abonné durable** s'exécute dans la transaction du reçu (`durable-delivery-guard.ts`, `unit-of-work.ts` rejoint la transaction) : un refus après écriture laisse un état à moitié écrit, ou fait rejouer sans fin.                                                                           | L'abonné ne fait que marquer le projet **prêt** ; un exécuteur à bail (la figure de l'exécuteur des remboursements) l'applique dans **sa** transaction, hors du reçu, et écrit le refus et sa demande dans une seconde.                  |
+| 4   | **Le montant payé et le total appliqué divergent** : `ReviseOrderCommand` recompose les prix à l'application.                                                                                                                                                                                                               | Le projet garde la révision **composée** ; l'application la rejuge et **refuse si le total recomposé diffère** du total payé (prix changé pendant l'attente) — remboursement du complément, « les prix ont changé ».                     |
 
 **Sérieux, à intégrer** : le constat d'un remboursement doit retrouver un
 complément (aujourd'hui `unmatched` en silence) et lire la métadonnée ; un
 remboursement `revision` qui s'inverse sur une commande vivante est perdu
 (`reopen-refund-on-reversal` ne vise que l'annulée) ; un remboursement en
-vol bloque l'annulation pendant des jours (`order-refund.ts`) ; le filtre de
+vol bloque l'annulation pendant des jours (`order-refund` (retiré au lot P1.c)) ; le filtre de
 l'avoir et l'égalité de la facture doivent se juger **sur la cause**, pas sur
 la date ; C7 ferme l'intention avant de juger — juger d'abord, et recréer une
 intention si le rejugement refuse ; C13 ne peut pas s'appuyer sur les liens
@@ -693,8 +693,8 @@ le reste du système.
   paie). `orders.charged_cents` fige le montant encaissé du premier à
   `markPaid`.
 - **P2 — L'encaissé.** `charged_cents + Σ order_payment.succeeded` remplace
-  `total_cents` dans les **deux** lecteurs (`prisma-order-refund.repository.ts`,
-  `prisma-order-refund-request.reader.ts`).
+  `total_cents` dans les **deux** lecteurs (`prisma-order-refund.repository` (retiré au lot P1.c),
+  `prisma-order-refund-request.reader` (retiré au lot P1.c)).
 - **P3 — La demande de remboursement a son identité.** `order_refund_request`
   quitte la clé `order_id` pour un **id propre**, et porte l'**intention**
   visée, la **forme** (`remainder` : tout le reste de cette intention — ce
@@ -801,7 +801,7 @@ proposé (à intégrer au §14 avant de bâtir).
    sont sur le premier paiement).
 
 **Sérieux** : l'inversion sur une commande annulée doit retrouver sa demande
-par son `re_…` (`reopen-refund-on-reversal.handler.ts`) ; le complément payé
+par son `re_…` (`reopen-refund-on-reversal.handler` (retiré au lot P1.c)) ; le complément payé
 après l'abandon du projet doit être remboursé (règle C8 perdue) ; H4 doit
 tracer la frontière refus / panne et faire la comparaison des totaux sous les
 verrous dans `record()` ; P5 doit nommer qui refuse la facture
@@ -868,7 +868,7 @@ par conversion de points (`LoyaltyVoucher.issue`, en paliers).
   peut plus être l'id de la demande), la demande et la génération ; la
   cause se lit sur la demande retrouvée, pas sur Stripe.
 - **R6 — L'inversion** retrouve sa demande par le `re_…`
-  (`reopen-refund-on-reversal.handler.ts`), commande annulée ou vivante.
+  (`reopen-refund-on-reversal.handler` (retiré au lot P1.c)), commande annulée ou vivante.
 
 ### 16.3 La hausse — complète H2 à H4 du §14
 
@@ -1164,7 +1164,7 @@ stateDiagram-v2
   cherche chez Stripe (§19.4). `failed → paid` : la carte réessayée sur la
   même intention, comme `PAID_FROM`.
 - **Demande `stopped` n'est PAS terminale** : « Relancer » (le bouton
-  existant, `retry-order-refund.handler.ts`) la remet `to_issue`. Pour en
+  existant, `retry-order-refund.handler` (retiré au lot P1.c)) la remet `to_issue`. Pour en
   sortir sans Stripe, un geste neuf de l'équipe, **« rendu autrement »**
   (virement, espèces), motif obligatoire → `settled_elsewhere`, terminal.
   `issued → to_issue` : génération suivante après un `re_…` mort
@@ -1222,7 +1222,7 @@ stateDiagram-v2
   cloche.
 - **R3 et le verrou** : la révision écrit ses demandes `amount` sous le
   verrou de la ligne `orders`, celui que l'exécuteur prend déjà dans
-  `prepare()` (`issue-order-refund.handler.ts`, carnet chargé sous verrou) :
+  `prepare()` (`issue-order-refund.handler` (retiré au lot P1.c), carnet chargé sous verrou) :
   une `amount` ne peut pas naître entre la prise du bail et l'appel.
 
 ## 20. Le §19 contredit par `vitruve` (2026-11-09)
@@ -1230,8 +1230,8 @@ stateDiagram-v2
 Les cinq bloquants du §18.4 sont levés (la purge sur le papier seulement).
 Quatre neufs : il manque `to_issue → refunded` et `stopped → refunded`
 (l'état « rendu » se déduit aujourd'hui aussi sans `re_…`,
-`order-refund-request.ts`) ; **personne n'écrit `issued → refunded`** (le
-constat `record-order-refund.handler.ts` ne charge aucune demande — l'état
+`order-refund-request` (retiré au lot P1.c)) ; **personne n'écrit `issued → refunded`** (le
+constat `record-order-refund.handler` (retiré au lot P1.c) ne charge aucune demande — l'état
 stocké demande de réécrire tout le cycle C4, dont `refundRequestStateOf`) ;
 le CHECK « `stopped` ⇔ `last_failure` » refuse `unavailable()`, « Relancer »
 et `reopenAfterFailure()` ; une baisse peut viser une intention déjà en

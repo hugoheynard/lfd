@@ -15,10 +15,10 @@ import {
 } from "@lfd/contracts";
 
 import type { Prisma } from "../../../platform/database/client/client.js";
-import { refundPositionOf, type RefundStatus } from "../domain/entities/order-refund.js";
 import type { RevisableOrder } from "../domain/entities/order-revision.js";
 import type { OrderSalesTerms } from "../domain/entities/order-shapes.js";
 import type { OrderLineSnapshot } from "../domain/value-objects/order-line.js";
+import type { RefundPosition } from "../domain/value-objects/refund-position.js";
 import type {
   OrderEntryOrigin,
   OrderEntryShortcut,
@@ -93,7 +93,6 @@ export const REVISABLE_ORDER_SELECT = {
   totalCents: true,
   stripePaymentIntentId: true,
   cancelledAt: true,
-  refunds: { select: { amountCents: true, status: true } },
   requestedDeliveryDate: true,
   supply: true,
   entryShortcut: true,
@@ -158,7 +157,6 @@ export interface RevisableOrderRow {
   readonly totalCents: number;
   readonly stripePaymentIntentId: string | null;
   readonly cancelledAt: Date | null;
-  readonly refunds: readonly { readonly amountCents: number; readonly status: RefundStatus }[];
   readonly requestedDeliveryDate: Date | null;
   readonly supply: OrderSupply;
   readonly entryShortcut: OrderEntryShortcut | null;
@@ -196,8 +194,11 @@ export interface RevisableOrderRow {
   readonly discounts: readonly RevisableOrderDiscountRow[];
 }
 
-/** Ligne → la commande telle qu'on la modifie. Les JSON sont validés, jamais castés. */
-export function toRevisableOrder(row: RevisableOrderRow): RevisableOrder {
+/**
+ * Ligne → la commande telle qu'on la modifie. Les JSON sont validés, jamais
+ * castés. Le reste à rendre vient du bloc `card-payment` (lot P1.c), lu à côté.
+ */
+export function toRevisableOrder(row: RevisableOrderRow, refunds: RefundPosition): RevisableOrder {
   return {
     orderId: row.id,
     orderNumber: row.orderNumber,
@@ -217,7 +218,7 @@ export function toRevisableOrder(row: RevisableOrderRow): RevisableOrder {
     shortfallDecided: row.shortfallDecisions.length > 0,
     stripePaymentIntentId: row.stripePaymentIntentId,
     cancelledAt: row.cancelledAt,
-    refunds: refundPositionOf(row.totalCents, row.refunds),
+    refunds,
     serviceDay:
       row.requestedDeliveryDate === null
         ? null

@@ -1285,7 +1285,8 @@ une page ouverte par le back-office.
 > Le code est prêt ; l'abonnement de l'endpoint de production n'a pas été posé.
 
 Un remboursement se fait **dans le tableau de bord Stripe** ; le backend le
-**constate** (table `order_refund`, règlement `refunded` au total, journal).
+**constate** (table `card_payment.refund` depuis le plan M2, lot P1 —
+`order_refund` avant —, règlement `refunded` au total, journal).
 Comme pour les liens libres, un événement non abonné ne produit **aucune
 erreur** : la commande reste « payée » alors que l'argent est rendu.
 
@@ -1313,6 +1314,168 @@ l'euro, cumul au-delà du total) : il se lit alors à la cloche du back-office e
 au journal (« … n'a pas été noté »), jamais en erreur chez Stripe — un réessai
 ne le rendrait pas plus vrai. Un remboursement sur un paiement qu'aucune
 commande ne porte (un lien libre) sonne aussi la cloche, sans rien écrire.
+
+## Déployer P1 (boutique fermée) — le remboursement passe au bloc `card-payment`
+
+> Plan [`commandes/modification/plan-m2-historique-de-transactions.md`](../commandes/modification/plan-m2-historique-de-transactions.md),
+> §5.2 (la condition de déploiement, décidée par Hugo le 2026-11-10 :
+> pré-release, **boutique fermée**, sans fenêtre de bascule). Écrit au lot
+> P1.c (2026-11-10). **Irréversible** : les migrations
+> `20261110010100_le_remboursement_par_carte`,
+> `20261110010200_la_copie_des_remboursements` et
+> `20261110020000_les_anciennes_tables_du_remboursement_sans_lecteur`
+> tournent AVANT la bascule de l'image (`deploy_lfd_api.yml` : migrer,
+> déployer le Worker, attendre que l'image neuve serve). Ce que l'ancienne
+> image écrirait dans les anciennes tables pendant cette minute serait perdu :
+> les points 1 à 4 rendent cette minute **vide**.
+>
+> ⚠️ Au lancement commercial, une bascule de ce genre redemanderait une
+> fenêtre (relais, rattrapage) : ces gestes-ci ne valent que boutique fermée.
+
+Toutes les requêtes sont en **lecture seule**, sur la base de production,
+colonnes relues dans `prisma/schema/public/order-refund.prisma`,
+`prisma/schema/public/settings.prisma`, `prisma/schema/platform.prisma` et
+`prisma/schema/card_payment.prisma` (2026-11-10).
+
+**1. Boutique fermée, aucun geste sur une commande carte.** Fermer la
+commande aux deux clientèles (Réglages → ouverture de la boutique,
+`/admin/order-opening`), puis vérifier :
+
+```sql
+SELECT orders_open_to_b2b, orders_open_to_b2c
+FROM public.order_opening_settings WHERE key = 'orders';
+-- attendu : une ligne, false / false (ligne ABSENTE = ouverte aux deux)
+
+SELECT count(*) FROM public.order_opening_exemptions WHERE withdrawn_at IS NULL;
+-- attendu : 0 (aucune exemption d'ouverture active)
+```
+
+Fermer la boutique ne gèle que la passation : une commande déjà passée
+s'annule boutique fermée. Donc, **du début de la condition à la
+réouverture** (dix minutes, deux personnes au plus, qui le savent) : aucune
+annulation, aucun « Relancer », aucun « rendu autrement » au back-office,
+et **aucun remboursement dans le tableau de bord Stripe**.
+
+**2. Zéro paiement en attente.** Un webhook tardif irait à l'une ou l'autre
+image ; par l'ancienne, `refund-paid-after-cancellation` écrirait l'ancienne
+table après la copie.
+
+```sql
+SELECT count(*) FROM card_payment.payment WHERE state = 'pending';
+-- attendu : 0 — sinon attendre, ou fermer l'intention, puis relire
+```
+
+**3. Zéro remboursement en vol.** L'ancienne demande n'a pas de colonne
+d'état : il se calcule comme le faisait le code (`refundRequestStateOf`) —
+bail qui court, `re_…` posé sans ligne terminale au carnet, ou `re_…` nul
+avec une échéance et un reste à rendre.
+
+```sql
+SELECT q.order_id,
+       q.claimed_until > now()                                   AS bail_en_cours,
+       q.stripe_refund_id IS NOT NULL AND NOT EXISTS (
+         SELECT 1 FROM public.order_refund r
+         WHERE r.stripe_refund_id = q.stripe_refund_id
+           AND r.status IN ('succeeded', 'failed', 'canceled'))   AS emis_sans_issue,
+       q.stripe_refund_id IS NULL AND q.next_attempt_at IS NOT NULL
+         AND o.total_cents - COALESCE((
+           SELECT sum(r.amount_cents) FROM public.order_refund r
+           WHERE r.order_id = q.order_id AND r.status = 'succeeded'), 0) > 0
+                                                                  AS a_emettre
+FROM public.order_refund_request q
+JOIN public.orders o ON o.id = q.order_id
+WHERE q.claimed_until > now()
+   OR (q.stripe_refund_id IS NOT NULL AND NOT EXISTS (
+         SELECT 1 FROM public.order_refund r
+         WHERE r.stripe_refund_id = q.stripe_refund_id
+           AND r.status IN ('succeeded', 'failed', 'canceled')))
+   OR (q.stripe_refund_id IS NULL AND q.next_attempt_at IS NOT NULL
+       AND o.total_cents - COALESCE((
+         SELECT sum(r.amount_cents) FROM public.order_refund r
+         WHERE r.order_id = q.order_id AND r.status = 'succeeded'), 0) > 0);
+-- attendu : aucune ligne
+
+SELECT count(*) FROM public.order_refund WHERE status IN ('pending', 'requires_action');
+-- attendu : 0 — s'il en reste un, attendre qu'il finisse
+```
+
+**4. Boîte d'envoi vide** pour les cinq abonnés que P1 retire ou dont il
+dépend — par leur nom de reçu, relu dans les fichiers :
+
+```sql
+SELECT d.subscriber, count(*)
+FROM platform.outbox_delivery d
+WHERE d.delivered_at IS NULL
+  AND d.subscriber IN (
+    'b2b.orders.record-refund-from-card-payment',
+    'orders.reopen-refund-on-reversal',
+    'orders.ring-refund-failed',
+    'accounting.reconcile-refunds.on-refund',
+    'orders.refund-paid-after-cancellation')
+GROUP BY 1;
+-- attendu : aucune ligne
+```
+
+`orders.refund-paid-after-cancellation` y est parce que son effet écrivait
+`order_refund_request` : une livraison remise pendant la minute écrirait
+l'ancienne table après la copie.
+
+**5. Relire les comptes du §13 bis le jour même** :
+
+```sql
+SELECT (SELECT count(*) FROM public.order_refund) AS refunds,
+       (SELECT count(*) FROM public.order_refund_request) AS requests,
+       (SELECT count(*) FROM public.order_refund_request WHERE generation > 1) AS retried,
+       (SELECT count(*) FROM public.order_refund r WHERE NOT EXISTS
+          (SELECT 1 FROM card_payment.payment p WHERE p.subject_id = r.order_id)) AS refunds_sans_paiement,
+       (SELECT count(*) FROM public.order_refund_request q WHERE NOT EXISTS
+          (SELECT 1 FROM card_payment.payment p WHERE p.subject_id = q.order_id)) AS requests_sans_paiement;
+-- attendu : refunds_sans_paiement = 0 ET requests_sans_paiement = 0
+-- (sinon la copie échoue sur `payment_id` non nul) ; lu le 2026-11-10 : 1 / 1 / 0 / 0 / 0
+```
+
+**6. Déployer** — l'API (les trois migrations, puis l'image) et le
+back-office du même lot (P1.d) : entre les deux workflows, le bandeau d'une
+annulée est cassé quelques minutes, boutique fermée — accepté (§5.3).
+
+**7. Contrôler**, puis reprendre le point 4 **à nouveau** maintenant que
+l'image neuve sert :
+
+```sql
+SELECT (SELECT count(*) FROM card_payment.refund)          AS nouveaux_remboursements,
+       (SELECT count(*) FROM public.order_refund)          AS anciens_remboursements,
+       (SELECT count(*) FROM card_payment.refund_request)  AS nouvelles_demandes,
+       (SELECT count(*) FROM public.order_refund_request)  AS anciennes_demandes,
+       (SELECT COALESCE(sum(amount_cents), 0) FROM card_payment.refund
+          WHERE status = 'succeeded')                      AS nouveau_rendu,
+       (SELECT COALESCE(sum(amount_cents), 0) FROM public.order_refund
+          WHERE status = 'succeeded')                      AS ancien_rendu,
+       (SELECT count(*) FROM public.refund_credit)         AS rapprochements,
+       (SELECT count(*) FROM public.order_refund
+          WHERE credit_note_id IS NOT NULL)                AS anciens_avoirs;
+-- attendu : chaque paire égale
+
+SELECT conname FROM pg_constraint
+WHERE conname IN ('order_refund_order_id_fkey', 'order_refund_credit_note_id_fkey',
+                  'order_refund_request_order_id_fkey');
+-- attendu : aucune ligne (les clés sont retirées, les tables restent)
+```
+
+**Si ça diverge** : la boutique reste fermée, on lit les deux tables ligne à
+ligne (rapprochées par `id`), et la correction est un `INSERT` écrit à la
+main dans les nouvelles tables — **jamais un retour arrière** : les anciennes
+sont restées intactes, elles font foi jusqu'à P2. **Si le point 4 « après »
+trouve une livraison** : elle finit en lettre morte, visible (l'abonné
+n'existe plus) ; la lire, et appliquer son contenu à la main dans les
+nouvelles tables (un `INSERT` écrit, boutique encore fermée).
+
+**8. Accorder `card_payments` au rôle admin, à l'écran**
+(`/admin/staff-roles`) : une ressource neuve n'est accordée à personne en
+production (la graine `ROLE_GRANTS` ne vaut que pour une base vierge) ; sans
+ça, « Relancer » et « rendu autrement » répondent `403`.
+
+**9. Rouvrir la boutique** (`/admin/order-opening`), puis relire la
+requête du point 1.
 
 ## Le webhook de la vitrine — mise en service, abonné en échec, rotation de clé
 

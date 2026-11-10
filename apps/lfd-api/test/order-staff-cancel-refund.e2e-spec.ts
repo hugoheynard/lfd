@@ -2,7 +2,10 @@
  * E2E de **l'annulation d'une commande PAYÉE, avec remboursement** (doc
  * `documentation/commandes/annulation/annulation-par-le-staff.md`, lot C4) — le geste,
  * la demande persistée, l'exécuteur, le carnet, le courriel, le journal,
- * l'écran, « Relancer », le balayage et le droit.
+ * l'écran, « Relancer », le balayage et le droit. Mêmes scénarios depuis le
+ * lot P1.c du plan M2 : la demande, l'exécuteur, le carnet, « Relancer » et le
+ * balayage sont ceux du bloc `card-payment` (`card_payment.refund_request`,
+ * `card_payment.refund`, `admin/card-payments/…`), par demande.
  *
  * Les courses (deux exécuteurs, webhook avant/après, clôture, `COMMIT` perdu)
  * sont dans `order-staff-cancel-refund-races.e2e-spec.ts` ; « Relancer », le
@@ -21,6 +24,7 @@ import {
   resetScene,
   scene,
 } from "./order-staff-cancel-scene.js";
+import { cardPaid } from "./card-payments.js";
 import { seedOrder } from "./order-staff-cancel-orders.js";
 import {
   advanceWallPastRetries,
@@ -60,8 +64,14 @@ const detail = async (orderId: string) =>
   jsonBody<AdminOrderView>(
     await ctx.asSub(E2E_STAFF_SUB).get(`/admin/orders/${orderId}`).expect(200),
   );
-const retry = (orderId: string, sub = E2E_STAFF_SUB) =>
-  ctx.asSub(sub).post(`/admin/orders/${orderId}/refund/retry`);
+/** « Relancer », PAR DEMANDE (plan M2, §5.3) : la dernière demande de la commande. */
+async function retry(orderId: string, status: number): Promise<void> {
+  const request = (await refundRequestOf(orderId)) ?? fail();
+  await ctx
+    .asSub(E2E_STAFF_SUB)
+    .post(`/admin/card-payments/refund-requests/${request.id}/retry`)
+    .expect(status);
+}
 
 describe("une commande payée s'annule, et l'argent part après", () => {
   it("annulée, une demande, un re_… sans montant imposé, carnet `pending` ; le webhook la dit remboursée", async () => {
@@ -79,21 +89,27 @@ describe("une commande payée s'annule, et l'argent part après", () => {
       status: OrderStatus.cancelled,
       paymentStatus: PaymentStatus.paid,
     });
-    expect(await refundRequestOf(orderId)).toMatchObject({
-      cause: "cancellation",
+    const request = (await refundRequestOf(orderId)) ?? fail();
+    expect(request).toMatchObject({
+      form: "remainder",
+      nature: "return",
+      reason: "cancellation",
+      state: "issued",
       announcedCents: totalCents,
       generation: 1,
       attempts: 1,
-      stripeRefundId: "re_e2e_1",
+      providerRef: "re_e2e_1",
       claimToken: null,
     });
     expect(stripe.calls).toMatchObject([
-      { paymentIntentId: intent, key: `lfd-order-refund:${orderId}:1:1` },
+      { paymentIntentId: intent, key: `lfd-card-refund:${request.id}:1:1`, amountCents: null },
     ]);
     expect(await ledgerOf(orderId)).toEqual([
-      { stripeRefundId: "re_e2e_1", amountCents: totalCents, status: "pending" },
+      { providerRef: "re_e2e_1", amountCents: totalCents, status: "pending" },
     ]);
-    expect((await detail(orderId)).refund).toMatchObject({ state: "issued", retryable: false });
+    expect((await detail(orderId)).refundRequests).toMatchObject([
+      { id: request.id, state: "issued", retryable: false, announcedCents: totalCents },
+    ]);
 
     const [issued] = stripe.refunds;
     await webhook(intent ?? "", issued ?? fail(), "succeeded");
@@ -103,7 +119,7 @@ describe("une commande payée s'annule, et l'argent part après", () => {
     expect(
       await ctx.prisma.outboxMessage.count({ where: { type: "order.refund_succeeded" } }),
     ).toBe(1);
-    expect((await detail(orderId)).refund).toMatchObject({ state: "refunded" });
+    expect((await detail(orderId)).refundRequests).toMatchObject([{ state: "refunded" }]);
     expect(await attention()).toEqual([]);
   });
 
@@ -198,17 +214,16 @@ describe("une commande payée s'annule, et l'argent part après", () => {
   });
 
   it("la carte aboutit pendant le clic : `paid_just_now` ; une fois payée, l'annulation passe par C4", async () => {
-    const { orderId } = await seedOrder();
+    const { orderId, intent, totalCents } = await seedOrder();
     scene.cancellation = { kind: "already_paid" };
 
     const response = await cancelRequest(orderId);
     expect(response.status).toBe(409);
     expect(codeOf(response)).toBe("orders.cancel.paid_just_now");
 
-    await ctx.prisma.order.update({
-      where: { id: orderId },
-      data: { paymentStatus: PaymentStatus.paid },
-    });
+    // Payée par le vrai webhook : la commande ET la ligne de paiement du bloc.
+    await cardPaid(ctx, intent ?? "");
+    stripe.charged.set(intent ?? "", totalCents);
     await cancelRequest(orderId).expect(204);
     await deliver();
     expect(await refundRequestOf(orderId)).not.toBeNull();
@@ -236,13 +251,13 @@ describe("Stripe ne répond pas, ou refuse", () => {
     expect(await refundRequestOf(orderId)).toMatchObject({
       attempts: 4,
       round: 4,
-      stripeRefundId: "re_e2e_1",
+      providerRef: "re_e2e_1",
     });
     expect(await attention()).toHaveLength(1);
     expect(stripe.refunds).toHaveLength(1);
   });
 
-  it("`declined` : cloche, plus d'échéance, le balayage l'ignore ; « Relancer » la reprend (202)", async () => {
+  it("`declined` : arrêtée, cloche, plus d'échéance, le balayage l'ignore ; « Relancer » la reprend (202)", async () => {
     const { orderId } = await seedPaidOrder();
     stripe.script.push({ kind: "declined", code: "charge_disputed" });
 
@@ -253,13 +268,16 @@ describe("Stripe ne répond pas, ou refuse", () => {
 
     expect(stripe.calls).toHaveLength(1);
     expect(await refundRequestOf(orderId)).toMatchObject({
+      state: "stopped",
       nextAttemptAt: null,
       lastFailure: "declined:charge_disputed",
     });
-    expect((await attention())[0]?.subject).toContain("Remboursement refusé par Stripe");
-    expect((await detail(orderId)).refund).toMatchObject({ state: "to_issue", retryable: true });
+    expect((await attention())[0]?.subject).toContain("Remboursement refusé par le prestataire");
+    expect((await detail(orderId)).refundRequests).toMatchObject([
+      { state: "stopped", retryable: true },
+    ]);
 
-    await retry(orderId).expect(202);
+    await retry(orderId, 202);
     await deliver();
     expect(stripe.refunds).toHaveLength(1);
   });
@@ -271,7 +289,7 @@ describe("Stripe ne répond pas, ou refuse", () => {
     await cancelRequest(orderId).expect(204);
     await deliver();
 
-    expect((await attention())[0]?.subject).toContain("Rien à rembourser chez Stripe");
+    expect((await attention())[0]?.subject).toContain("Rien à rembourser chez le prestataire");
   });
 
   it("`refund.failed` puis « Relancer » : génération 2, la recherche ignore l'échoué, un second re_…", async () => {
@@ -283,16 +301,16 @@ describe("Stripe ne répond pas, ou refuse", () => {
     await webhook(intent ?? "", first, "failed");
     await deliver();
 
-    expect((await attention())[0]?.subject).toContain("Remboursement échoué chez Stripe");
-    expect((await detail(orderId)).refund).toMatchObject({ state: "failed", retryable: true });
-    await retry(orderId).expect(202);
+    expect((await attention())[0]?.subject).toContain("Remboursement échoué");
+    expect((await detail(orderId)).refundRequests).toMatchObject([
+      { state: "stopped", retryable: true },
+    ]);
+    await retry(orderId, 202);
     await deliver();
 
-    expect(await refundRequestOf(orderId)).toMatchObject({
-      generation: 2,
-      stripeRefundId: "re_e2e_2",
-    });
-    expect(stripe.calls.at(-1)?.key).toBe(`lfd-order-refund:${orderId}:2:1`);
+    const request = (await refundRequestOf(orderId)) ?? fail();
+    expect(request).toMatchObject({ generation: 2, providerRef: "re_e2e_2" });
+    expect(stripe.calls.at(-1)?.key).toBe(`lfd-card-refund:${request.id}:2:1`);
     expect((await ledgerOf(orderId)).map((refund) => refund.status)).toEqual(["failed", "pending"]);
   });
 });

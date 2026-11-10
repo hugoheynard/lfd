@@ -96,8 +96,6 @@ model Invoice {
   monthlyOutcome  InvoiceMonthlyOutcome?
   cardOutcome     CardInvoiceOutcome?
   collectionLines CollectionBatchLineInvoice[]
-  /// Les remboursements que cet avoir constate (E5b) — un au plus.
-  refunds         OrderRefund[]
   /// Le remboursement par carte que cet avoir constate (plan M2, lot P1) —
   /// un au plus.
   refundCredit    RefundCredit?

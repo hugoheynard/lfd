@@ -4,14 +4,13 @@ import type { DurableEvent, DurableFact } from "../../../platform/outbox/durable
 import { cents, instant, oneOf, optionalRecord, optionalText, text } from "./fact-payload.js";
 
 /** Noms STABLES, clés de routage vers `@DurableHandler`. */
-export const CARD_PAYMENT_PROVIDER_REFUND_EVENT = "card_payment.provider_refund_event";
 export const CARD_PAYMENT_CHECKOUT_EVENT = "card_payment.checkout_event";
 export const CARD_PAYMENT_UNMATCHED = "card_payment.unmatched";
 
 /**
- * Un remboursement annoncé par le prestataire, réduit — exactement ce que
- * `RecordOrderRefundCommand` lit aujourd'hui (`stripeRefundId`, montant,
- * devise, statut, instant ; vérifié le 2026-11-09), sous des noms agnostiques.
+ * Un remboursement annoncé par le prestataire, réduit — ce que `b2b/payments`
+ * lit d'un remboursement hors de nos sujets (`card_payment.unmatched`), sous
+ * des noms agnostiques.
  */
 export interface ProviderRefund {
   readonly refundId: string;
@@ -39,59 +38,6 @@ function refundOf(payload: Readonly<Record<string, unknown>>, type: string): Pro
     status: oneOf(payload, type, "status", CARD_REFUND_STATUSES),
     refundedAt: instant(payload, type, "refundedAt"),
   };
-}
-
-/**
- * **Un remboursement d'un paiement connu** — fait DURABLE et **transitoire**
- * (plan M2, §4.2 ; posé le 2026-11-09, retiré en P1) : en P0, le constat du
- * remboursement reste à `b2b/orders`, qui s'y abonne et appelle
- * `RecordOrderRefundCommand` — rien ne change de type.
- *
- * Clé `…:<compte>:<eventId>` : un même événement rejoué par le prestataire ne
- * s'écrit qu'une fois ; deux événements d'un même remboursement (`created`,
- * puis `updated`) sont deux faits, chacun avec son statut.
- */
-export class CardPaymentProviderRefundEvent implements DurableEvent {
-  constructor(
-    readonly account: string,
-    readonly eventId: string,
-    readonly paymentId: string,
-    readonly providerRef: string,
-    readonly subjectType: string,
-    readonly subjectId: string,
-    readonly refund: ProviderRefund,
-  ) {}
-
-  durableFact(): DurableFact {
-    const type = CARD_PAYMENT_PROVIDER_REFUND_EVENT;
-    return {
-      type,
-      key: `${type}:${this.account}:${this.eventId}`,
-      payload: {
-        account: this.account,
-        eventId: this.eventId,
-        paymentId: this.paymentId,
-        providerRef: this.providerRef,
-        subjectType: this.subjectType,
-        subjectId: this.subjectId,
-        ...refundPayload(this.refund),
-      },
-    };
-  }
-
-  /** @throws {CardPaymentFactPayloadError} charge hors forme — faute d'émetteur. */
-  static fromPayload(payload: Readonly<Record<string, unknown>>): CardPaymentProviderRefundEvent {
-    const type = CARD_PAYMENT_PROVIDER_REFUND_EVENT;
-    return new CardPaymentProviderRefundEvent(
-      text(payload, type, "account"),
-      text(payload, type, "eventId"),
-      text(payload, type, "paymentId"),
-      text(payload, type, "providerRef"),
-      text(payload, type, "subjectType"),
-      text(payload, type, "subjectId"),
-      refundOf(payload, type),
-    );
-  }
 }
 
 /** L'issue d'une page hébergée de lien de paiement. */

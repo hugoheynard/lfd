@@ -297,7 +297,7 @@ stateDiagram-v2
   paiement est en cours ; sur une **`to_issue` dont `attempts > 0`** (en
   attente d'échéance après `unavailable`) ⇒ **même génération**, échéance
   maintenant — c'est le « Relancer » d'aujourd'hui sur une demande à émettre
-  (`retry-order-refund.handler.ts` ne refuse que `refunded`, `issued` et le
+  (`retry-order-refund.handler` (retiré au lot P1.c) ne refuse que `refunded`, `issued` et le
   bail tenu) ; refusé sur `issued`, `refunded`, `settled_elsewhere`, sur une
   `to_issue` jamais tentée, et sous bail. `retryable` (§3.3) dit **toute** cette règle au front, y compris « aucune
   autre `remainder` du même paiement en cours » (v14).
@@ -529,7 +529,7 @@ secret des liens, `RUNTIME_KEYS`), deux endpoints chez Stripe, les imports.
 
 - **§4.6, « la vue rend un champ paiement à adopter »** : le contrat `OrderPaymentIntent` exige un `clientSecret`, et une intention sans ligne ne se relit pas par `retrieve(paymentId)`. La page de règlement et le rejeu répondent **409** `orders.payment.awaits_adoption` ; rien n'est écrit ; le cron horaire rattrape ; l'écran enverra `AdoptOrderPayment` (route posée) quand il viendra.
 - **§4.3, l'état d'une annulée** : la reprise SQL dit `closed` avant `failed` ; la lecture TS (`orderCardSettled`) faisait l'inverse. Alignée sur le SQL — sinon chaque annulation devenait un écart signalé à chaque passage du rattrapage (`closed → failed` n'est pas une transition). L'exception « encaissée après annulation » du rattrapage lit donc `closed`, pas `failed`.
-- **§15 ter, `OrderRefundRejectedEvent` par `AfterCommit`** : valait **déjà en P0**, pas seulement en P1. Le constat d'un remboursement est appelé par un abonné durable, donc dans la transaction du reçu ; sa cloche partait dans cette transaction et s'exécutait après sa fermeture. Trouvé par l'e2e `order-refunds`, corrigé (`record-order-refund.handler.ts`).
+- **§15 ter, `OrderRefundRejectedEvent` par `AfterCommit`** : valait **déjà en P0**, pas seulement en P1. Le constat d'un remboursement est appelé par un abonné durable, donc dans la transaction du reçu ; sa cloche partait dans cette transaction et s'exécutait après sa fermeture. Trouvé par l'e2e `order-refunds`, corrigé (`record-order-refund.handler` (retiré au lot P1.c)).
 - **Le journal de `card-payment`** (`card_payment.unmatched`…) n'est pas écrit en P0 : ses handlers sont `@sans-journal` (motif écrit) ; le catalogue de ses faits de journal arrive avec P1 (§15 bis).
 - **`takeover` ne se purge pas** avec le scénario : l'effacer ferait rebalayer tout l'existant ou plus rien ; seule `payment` est déclarée à `purge-coverage.ts`.
 - **§4.3, « seule la commande TS sait fermer par `retrieve` une intention annulée chez le prestataire »** : pas bâti — le plan ne dit ni quelles lignes ni quand ; le rattrapage n'appelle pas le prestataire. Une `pending` abandonnée chez Stripe reste `pending`, payable. À trancher en P2 ou à abandonner.
@@ -606,7 +606,7 @@ WHERE state = 'pending'` = 0 (pendant la minute, un webhook tardif va à
    l'une ou l'autre image ; par l'ancienne, `refund-paid-after-cancellation`
    écrirait l'ancienne table après la copie) ;
 3. **zéro remboursement en vol**, l'état **calculé** comme le code le fait
-   (`refundRequestStateOf`, `order-refund-request.ts` — la table n'a pas de
+   (`refundRequestStateOf`, `order-refund-request` (retiré au lot P1.c) — la table n'a pas de
    colonne `state`) : une demande est en vol si son bail court
    (`claimed_until > now()`), ou si son `stripe_refund_id` est posé sans
    ligne terminale au carnet (`succeeded`, `failed`, `canceled`), ou si son
@@ -669,7 +669,7 @@ provider`, `request_id` quand une demande porte ce `re_…` **en
 `stripe_refund_id`**, `nature := return` alors seulement ; sinon `request_id`
 et `nature` nuls — ce qui classe « manuel » un `re_…` d'une génération
 antérieure dont `reopenAfterFailure` a effacé le `stripeRefundId`
-(`order-refund-request.ts`) : **accepté**, dit ici, et compté avant de
+(`order-refund-request` (retiré au lot P1.c)) : **accepté**, dit ici, et compté avant de
 déployer (générations > 1, §13 bis ; une ligne ainsi classée n'empêche rien,
 elle est juste sans nature) ; `refund_credit` depuis `credit_note_id` ; `currency` **recopiée** (l'ancienne
 table l'a, les genres `succeeded`/`failed`/`reversed` la portent) ;
@@ -738,7 +738,7 @@ abonnés d'`orders` restent dans `b2b`** (§3.3), sauf les **trois** qui
 disparaissent. (v11) **Disparaissent en P1, sans relais ; la boîte d'envoi
 est vérifiée vide pour eux avant et après la bascule (§5.2, règle 4)** :
 `CardProviderRefunds`, le fait `provider_refund_event` et son abonné
-(`on-card-provider-refund-event.handler.ts`), `reopen-refund-on-reversal`,
+(`on-card-provider-refund-event.handler` (retiré au lot P1.c)), `reopen-refund-on-reversal`,
 `ring-refund-failed`, les relations `Order.refunds` / `Order.refundRequest` /
 `Invoice.refunds` (les clés étrangères tombent avec elles, migration à relire
 par `lecteur-de-migrations`). Ce qui chasse les lecteurs des anciennes
@@ -813,13 +813,50 @@ Ce que le plan ne disait pas, tranché au plus simple :
   `requestRemainder({ subject }, button)` : une `remainder` née arrêtée par
   paiement encaissé qui a un reste.
 
-🔴 **P1.b ne se déploie pas seul.** L'annulation écrit encore les anciennes
-tables par l'ancien exécuteur (P1.c bascule), alors que le webhook ne nourrit
-plus que le nouveau carnet : un remboursement d'annulation y entre sans
-demande (cloche « hors plateforme » à chaque fois), `ring-refund-failed` et
-`reopen-refund-on-reversal` écoutent encore `order.refund_failed | _reversed`
-(deux cloches, une demande dans l'ancienne table). `order-refunds.e2e-spec`
-lit désormais `card_payment.refund`.
+🔴 **P1.b ne se déploie pas seul.** L'annulation écrivait encore les
+anciennes tables par l'ancien exécuteur, alors que le webhook ne nourrissait
+plus que le nouveau carnet. **P1.c** (2026-11-10, sur `dev`) a fait la
+bascule ; ce qu'il a tranché au plus simple :
+
+- **L'annulation** (`cancellation-refund-requester.ts`) : `cards.ensureFirst`
+  (adoption d'une commande d'avant P0 — il n'y en a aucune en production
+  depuis la reprise P0, c'est dit, pas codé), puis
+  `CardRefunds.requestRemainder({ subject }, { nature: 'return', reason:
+'cancellation', schedule: 'now', requestedBy })`, sous le verrou `orders`
+  déjà pris ; l'annonce vaut Σ `announcedCents`, ou `null` sans demande. Le
+  paiement arrivé après annulation (`refund-paid-after-cancellation.handler`)
+  prend `OrderLock.lock` puis `requestRemainder` (motif
+  `paid_after_cancellation`).
+- **Retiré d'`orders`** : l'agrégat `OrderRefund`, le carnet, la demande, les
+  quatre ports, les commandes issue / retry / record / sweep, les abonnés
+  `reopen-refund-on-reversal`, `ring-refund-failed`,
+  `on-card-provider-refund-event`, les adaptateurs Prisma, la route
+  `refund/retry` et le balayage `admin/orders/refunds/sweep` (worker et
+  `dev-sweeps` compris — §6.8 et §10 disaient « relayé jusqu'à P2 », le lot a
+  tranché le retrait). Retiré de `card-payment` : `CardProviderRefunds` et
+  le fait `provider_refund_event`. Le test
+  `card-payment/__tests__/no-legacy-refund-readers.spec.ts` interdit tout
+  lecteur de `orderRefund*` hors du client généré.
+- **Lecteurs** : `refund-position.ts` (value object) et
+  `order-card-refund-readings.ts` (infrastructure d'`orders`, lit
+  `positionOf` / `refundsOf` par lot, l'argent en vol d'une `amount` exclu)
+  composent les lignes des adaptateurs Prisma — pas un port de domaine de
+  plus. La comptabilité injecte `CardSettlementReader` directement.
+- **Contrats** : `AdminOrderDetail.refund` → `refundRequests:
+AdminRefundRequest[]` ; `OrderRefundView.source` ; `refundedCentsOf` reste
+  jusqu'à P1.d. Le back-office est rouge jusqu'à P1.d
+  (`order-refund-banner.ts`).
+- **Comptabilité** : `awaiting_refund` n'est pas ajouté (le `Record`
+  exhaustif du front casserait) — un ajustement en cours tombe dans
+  `blocked`, phrase `CARD_INVOICE_AWAITS_REFUND`, réveillé par l'abonné
+  `accounting.issue-card-invoice.on-refund-settled` ; `refund_credit` écrit
+  par `createMany skipDuplicates`, `count ≠ 1` ⇒ `RefundAlreadyCreditedError`.
+- **Prisma** : les relations `Order.refunds`, `Order.refundRequest`,
+  `Invoice.refunds` et celles d'`order-refund.prisma` sont retirées ; la
+  migration `20261110020000_les_anciennes_tables_du_remboursement_sans_lecteur`
+  ne porte que les trois `DROP CONSTRAINT` (aucune table, colonne ni ligne).
+- **Runbook** : section « Déployer P1 (boutique fermée) » — les neuf points du
+  §5.2 avec leurs requêtes.
 
 ## 6. Ce que le socle tient aussi
 

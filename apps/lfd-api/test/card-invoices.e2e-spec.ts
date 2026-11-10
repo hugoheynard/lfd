@@ -7,8 +7,9 @@
  *   par la vraie boîte d'envoi, dans les deux ordres ; une seule facture ;
  * - la facture acquittée écrite (`prepaid_cents`, `paid_on`, moyen 48) et
  *   relue ; l'issue `card_invoice_outcome` ;
- * - les avoirs d'un partiel puis du reste, liés par `order_refund.credit_note_id`,
- *   dont la somme égale la facture au centime ;
+ * - les avoirs d'un partiel puis du reste, liés par `public.refund_credit`
+ *   (plan M2, lot P1.c — plus `order_refund.credit_note_id`), dont la somme
+ *   égale la facture au centime ;
  * - une facture impossible signalée, puis émise par « Réessayer » ;
  * - le critère de la facture du mois n'attrape jamais une commande carte, et
  *   une commande au compte n'a jamais de facture carte.
@@ -21,7 +22,6 @@ import { CommandBus } from "@nestjs/cqrs";
 
 import { billableOrderWhere } from "../src/b2b/accounting/infrastructure/billable-order-criterion.js";
 import { MarkOrderFulfilledCommand } from "../src/b2b/orders/application/commands/mark-order-fulfilled.command.js";
-import { RecordOrderRefundCommand } from "../src/b2b/orders/application/commands/record-order-refund.command.js";
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
@@ -34,7 +34,7 @@ import {
   createUser,
   markDelivered,
 } from "./factories.js";
-import { cardPaid } from "./card-payments.js";
+import { cardPaid, recordCardEvent } from "./card-payments.js";
 import { cardGatewayDouble, pickupSite, placeOrder } from "./order-factory.js";
 
 const ENTITIES = "/admin/accounting/legal-entities";
@@ -188,17 +188,38 @@ async function pay(order: Seeded): Promise<void> {
   await settle();
 }
 
+/**
+ * Un remboursement réussi fait depuis le tableau de bord, par le vrai webhook
+ * de `card-payment` (plan M2, lot P1.c) : le constat du bloc, puis le canal,
+ * qui publie `order.refund_succeeded` — sans métadonnée, donc sans nature.
+ */
 async function refund(order: Seeded, id: string, amountCents: number): Promise<void> {
-  await ctx.app.get(CommandBus).execute(
-    new RecordOrderRefundCommand(order.intent, {
-      stripeRefundId: id,
-      amountCents,
-      currency: "eur",
-      status: "succeeded",
-      refundedAt: new Date(daysAgo(0)),
-    }),
-  );
+  await recordCardEvent(ctx, (eventId) => ({
+    kind: "refund",
+    eventId,
+    eventType: "refund.updated",
+    providerRef: order.intent,
+    refundId: id,
+    amountCents,
+    currency: "eur",
+    status: "succeeded",
+    createdAt: new Date(daysAgo(0)),
+  }));
   await settle();
+}
+
+/** Les rapprochements des remboursements de la commande, dans l'ordre du constat. */
+async function creditsOf(orderId: string) {
+  const refunds = await ctx.prisma.cardRefund.findMany({
+    where: { payment: { subjectType: "order", subjectId: orderId } },
+    orderBy: [{ recordedAt: "asc" }, { id: "asc" }],
+    select: { id: true },
+  });
+  const credits = await ctx.prisma.refundCredit.findMany({
+    where: { refundId: { in: refunds.map((row) => row.id) } },
+    select: { refundId: true, creditNoteId: true, reason: true },
+  });
+  return refunds.map((row) => credits.find((credit) => credit.refundId === row.id) ?? null);
 }
 
 function piecesOf(orderId: string) {
@@ -295,12 +316,9 @@ describe("l'avoir des remboursements (E5b)", () => {
       notes.reduce((total, note) => total + note[field], 0);
     expect(sum("totalHtCents")).toBe(invoice?.totalHtCents);
     expect(sum("totalVatCents")).toBe(invoice?.totalVatCents);
-    const links = await ctx.prisma.orderRefund.findMany({
-      where: { orderId: order.orderId },
-      orderBy: { recordedAt: "asc" },
-      select: { creditNoteId: true },
-    });
-    expect(links.map((link) => link.creditNoteId)).toEqual(notes.map((note) => note.id));
+    const links = await creditsOf(order.orderId);
+    expect(links.map((link) => link?.creditNoteId)).toEqual(notes.map((note) => note.id));
+    expect(links.map((link) => link?.reason)).toEqual(["credit_note", "credit_note"]);
 
     const listed = await staff()
       .get(`/admin/accounting/orders/${order.orderId}/invoices`)
@@ -310,6 +328,23 @@ describe("l'avoir des remboursements (E5b)", () => {
       "credit_note",
       "credit_note",
     ]);
+  });
+
+  /** Plan M2, §5.1, lot P1.c : un avoir par remboursement — un rejeu ne refait rien. */
+  it("un même remboursement relivré et le rapprochement rejoué : un seul avoir", async () => {
+    await entity();
+    const order = await proOrder();
+    await pay(order);
+    await handOver(order);
+
+    await refund(order, "re_e5_rejeu", 300);
+    await refund(order, "re_e5_rejeu", 300);
+    await staff().post(`/admin/accounting/card-invoices/${order.orderId}/retry`).expect(200);
+    await settle();
+
+    const [, ...notes] = await piecesOf(order.orderId);
+    expect(notes.map((note) => note.totalTtcCents)).toEqual([300]);
+    expect(await ctx.prisma.refundCredit.count()).toBe(1);
   });
 
   it("remboursée en totalité avant le retrait : aucune pièce", async () => {

@@ -39,7 +39,7 @@ import {
 } from "./cancellation-doubles.js";
 import { RecordingDurable } from "./durable-doubles.js";
 import { CancellationRefundRequester } from "../../services/cancellation-refund-requester.js";
-import { InMemoryRefundRequests, RecordingDispatch, RefundStore } from "./refund-doubles.js";
+import { FixedCardAdoption, RecordingCardRefunds } from "./refund-doubles.js";
 import { RecordingRedemption, RETURNED } from "./voucher-doubles.js";
 
 /** La livraison apprend l'annulation (lot T2 du transfert interne), dans la même transaction. */
@@ -71,6 +71,8 @@ interface Scene {
   readonly handedOver?: readonly string[];
   /** Plan E7 reliquat (L5a) : les commandes dont seul un reste est retiré. */
   readonly remaindersHandedOver?: readonly string[];
+  /** Lot C4 (P1.c) : ce que le bloc `card-payment` annonce à rendre ; 0 = rien. */
+  readonly refundAnnouncedCents?: number;
 }
 
 function scene(options: Scene = {}) {
@@ -89,8 +91,7 @@ function scene(options: Scene = {}) {
     options.engagementUnderLock === undefined ? first : options.engagementUnderLock,
   );
   const rule = new CancellationRule(engagements);
-  const refundStore = new RefundStore();
-  const dispatch = new RecordingDispatch();
+  const cards = new RecordingCardRefunds(options.refundAnnouncedCents ?? 2_110, trace);
   const handler = new CancelOrderHandler(
     new OrderCancellation(
       subjects,
@@ -102,7 +103,7 @@ function scene(options: Scene = {}) {
       rule,
       new CancellationAllowanceGate(new FixedCancellationSettings()),
       engagements,
-      new CancellationRefundRequester(new InMemoryRefundRequests(refundStore), dispatch),
+      new CancellationRefundRequester(cards, new FixedCardAdoption("pi_1", trace)),
       durable,
       new RecordingNoteVoiding(),
       new DirectUnitOfWork(),
@@ -110,7 +111,7 @@ function scene(options: Scene = {}) {
       new FixedHandoverHistory(options.handedOver, options.remaindersHandedOver),
     ),
   );
-  return { handler, trace, rows, gateway, vouchers, durable, engagements, refundStore, dispatch };
+  return { handler, trace, rows, gateway, vouchers, durable, engagements, cards };
 }
 
 const cancel = (reason = "Le client a appelé : il part en vacances") =>
@@ -449,10 +450,7 @@ describe("CancelOrderHandler — les refus", () => {
         new CancellationRule(new ScriptedEngagements()),
         new CancellationAllowanceGate(new FixedCancellationSettings()),
         new ScriptedEngagements(),
-        new CancellationRefundRequester(
-          new InMemoryRefundRequests(new RefundStore()),
-          new RecordingDispatch(),
-        ),
+        new CancellationRefundRequester(new RecordingCardRefunds(), new FixedCardAdoption("pi_1")),
         new RecordingDurable(),
         new RecordingNoteVoiding(),
         new DirectUnitOfWork(),
@@ -593,79 +591,87 @@ describe("CancelOrderHandler — carte payée, avec remboursement (lot C4)", () 
     refunds: { refundableCents: 2_110, inFlightCents: 0 },
   });
 
-  it("n'appelle JAMAIS Stripe : la demande s'écrit dans la transaction, l'exécuteur part après", async () => {
-    const { handler, trace, gateway, durable, refundStore, dispatch } = scene({ subject: PAID });
+  /**
+   * Plan M2, lot P1.c : la demande passe par `CardRefunds.requestRemainder`,
+   * SOUS le verrou `orders` déjà pris (l'ordre du §3.6 : le sujet, puis les
+   * lignes de `card-payment`), après l'adoption du premier paiement.
+   */
+  it("n'appelle JAMAIS Stripe : la demande part au bloc sous le verrou, une par paiement encaissé", async () => {
+    const { handler, trace, gateway, durable, cards } = scene({ subject: PAID });
 
     await handler.execute(cancel());
 
     expect(gateway.cancelled).toEqual([]);
-    expect(trace).toEqual(["lock:ord_1", "withdraw:2026-10-13:ord_1", "cancel:ord_1"]);
-    expect(refundStore.request).toMatchObject({
-      orderId: "ord_1",
-      cause: "cancellation",
-      announcedCents: 2_110,
-      requestedAt: NOW,
-      requestedBy: STAFF,
-      generation: 1,
-      round: 1,
-      attempts: 0,
-      stripeRefundId: null,
-      nextAttemptAt: NOW,
-    });
-    expect(dispatch.dispatched).toEqual(["ord_1"]);
+    expect(trace).toEqual([
+      "lock:ord_1",
+      "withdraw:2026-10-13:ord_1",
+      "cancel:ord_1",
+      "adopt:ord_1",
+      "refund:ord_1",
+    ]);
+    expect(cards.remainders).toEqual([
+      {
+        target: { subject: { type: "order", id: "ord_1" } },
+        request: {
+          nature: "return",
+          reason: "cancellation",
+          schedule: "now",
+          requestedBy: STAFF,
+        },
+      },
+    ]);
     expect(durable.facts).toEqual([
       eventOf("paid", null, { announcedCents: 2_110 }).durableFact(),
       WITHDRAWN,
     ]);
   });
 
-  it("le montant promis est celui relu SOUS le verrou, pas au premier regard", async () => {
-    const { handler, rows, refundStore } = scene({ subject: PAID });
-    rows.current = { ...PAID, refunds: { refundableCents: 1_000, inFlightCents: 0 } };
+  it("le montant promis est celui que le bloc annonce, relu sous SES verrous", async () => {
+    const { handler, durable } = scene({ subject: PAID, refundAnnouncedCents: 1_000 });
 
     await handler.execute(cancel());
 
-    expect(refundStore.request?.announcedCents).toBe(1_000);
+    expect(durable.facts[0]).toEqual(
+      eventOf("paid", null, { announcedCents: 1_000 }).durableFact(),
+    );
   });
 
-  it("déjà rendue en entier depuis Stripe : annulée sans demande, le fait dit `refund: null`", async () => {
+  it("déjà rendue en entier depuis Stripe : le bloc ne crée rien, le fait dit `refund: null`", async () => {
     const refunded = cancellationSubject({ paymentStatus: "refunded" });
-    const { handler, refundStore, dispatch, durable } = scene({ subject: refunded });
+    const { handler, cards, durable } = scene({ subject: refunded, refundAnnouncedCents: 0 });
 
     await handler.execute(cancel());
 
-    expect(refundStore.request).toBeNull();
-    expect(dispatch.dispatched).toEqual([]);
+    expect(cards.remainders).toHaveLength(1);
     expect(durable.facts).toEqual([eventOf("paid").durableFact(), WITHDRAWN]);
   });
 
   it("inscrite au fournil : ni demande, ni fait", async () => {
-    const { handler, refundStore, dispatch, durable } = scene({ subject: PAID, desk: "inscribed" });
+    const { handler, cards, durable } = scene({ subject: PAID, desk: "inscribed" });
 
     await expect(handler.execute(cancel())).rejects.toMatchObject({
       code: "orders.cancel.inscribed",
     });
-    expect(refundStore.request).toBeNull();
-    expect(dispatch.dispatched).toEqual([]);
+    expect(cards.remainders).toEqual([]);
     expect(durable.facts).toEqual([]);
   });
 
   it("un bon qui refuse (cas 6) annule tout : ni demande, ni fait", async () => {
-    const { handler, refundStore, durable } = scene({
+    const { handler, cards, durable } = scene({
       subject: { ...PAID, loyaltyVoucherId: "bon_1" },
       restitution: { kind: "blocked", cause: "remainder_cancelled", remainderValueCents: 450 },
     });
 
     await expect(handler.execute(cancel())).rejects.toBeInstanceOf(OrderNotCancellableError);
-    expect(refundStore.request).toBeNull();
+    expect(cards.remainders).toEqual([]);
     expect(durable.facts).toEqual([]);
   });
 
   it("une panne de transaction ne se rejoue pas : Stripe n'a rien fait", async () => {
-    const { handler, trace, refundStore } = scene({ subject: PAID, failures: 1 });
+    const { handler, trace, cards } = scene({ subject: PAID, failures: 1 });
 
     await expect(handler.execute(cancel())).rejects.toThrow("la connexion à la base est tombée");
     expect(trace).toEqual(["lock:ord_1"]);
-    expect(refundStore.request).toBeNull();
+    expect(cards.remainders).toEqual([]);
   });
 });

@@ -6,6 +6,7 @@ import {
   type CancellationSubject,
 } from "../domain/ports/cancellation-subject.reader.js";
 import { CANCELLATION_SUBJECT_SELECT, toCancellationSubject } from "./cancellation-subject.row.js";
+import { OrderCardRefundReadings } from "./order-card-refund-readings.js";
 
 /**
  * La lecture sans verrou. Pas de mur tenant : seul le staff l'appelle, et la
@@ -13,7 +14,10 @@ import { CANCELLATION_SUBJECT_SELECT, toCancellationSubject } from "./cancellati
  */
 @Injectable()
 export class PrismaCancellationSubjectReader extends CancellationSubjectReader {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly refunds: OrderCardRefundReadings,
+  ) {
     super();
   }
 
@@ -22,6 +26,6 @@ export class PrismaCancellationSubjectReader extends CancellationSubjectReader {
       where: { id: orderId },
       select: CANCELLATION_SUBJECT_SELECT,
     });
-    return row === null ? null : toCancellationSubject(row);
+    return row === null ? null : toCancellationSubject(row, await this.refunds.positionOf(orderId));
   }
 }

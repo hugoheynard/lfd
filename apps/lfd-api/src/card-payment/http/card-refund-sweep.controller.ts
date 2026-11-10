@@ -14,8 +14,8 @@ import {
  * `admin/card-payments/first-payments/replay` : le `RecomputeGuard` et son
  * jeton, présentés par le cron de RAFRAÎCHISSEMENT du Worker
  * (`container/worker.ts`, toutes les cinq minutes). Idempotent : le bail
- * exclut deux exécuteurs. L'ancienne route `admin/orders/refunds/sweep`
- * tourne à côté jusqu'à ce que l'annulation bascule (P1.c).
+ * exclut deux exécuteurs. L'ancienne route `admin/orders/refunds/sweep` est
+ * retirée au lot P1.c, avec l'exécuteur d'`orders` qu'elle reprenait.
  */
 @Controller("admin/card-payments/sweep")
 @Public()

@@ -42,8 +42,8 @@ type Applying<K extends SubjectRefundOutcome["kind"]> = (
  * `card-payment` APRÈS qu'il a écrit ses lignes, dans sa transaction, sous le
  * verrou de la commande (`lockSubject`).
  *
- * Ce que faisaient le constat d'`orders` (`RecordOrderRefundHandler`) et
- * `order-refund-facts.ts` côté VUE, par genre — une table, pas un aiguillage :
+ * Ce que faisaient le constat d'`orders` (`RecordOrderRefundHandler`, retiré
+ * au lot P1.c) et `order-refund-facts.ts` côté VUE, par genre — une table, pas un aiguillage :
  *
  * - la vue : `refunded` quand Σ réussi = encaissé ET qu'elle était `paid` (la
  *   règle de `settle()`, qui ne part que de `paid` : une annulée encaissée

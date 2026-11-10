@@ -96,8 +96,10 @@ import { VoucherRestitutionRefusal } from "./voucher-restitution-refusal.js";
  *
  * L'INVERSE de la carte non payée : la base d'abord, Stripe ensuite (C4.3).
  * Aucun appel à Stripe dans la requête ; l'argent à rendre devient une
- * demande persistée, écrite dans la même transaction, et l'exécuteur part
- * après validation. Le rejeu de C3.4 ter ne s'applique pas : Stripe n'a rien
+ * demande persistée, écrite dans la même transaction — par le bloc
+ * `card-payment` depuis le lot P1.c (`CardRefunds.requestRemainder`, une par
+ * paiement encaissé, sous le verrou `orders` déjà pris) —, et son exécuteur
+ * part après validation. Le rejeu de C3.4 ter ne s'applique pas : Stripe n'a rien
  * fait, un échec de transaction rend une erreur simple.
  *
  * ## Ce qu'il ne fait pas
@@ -293,7 +295,7 @@ export class OrderCancellation {
     const voucher = await this.restitute(locked, now);
     // Lot C4 : APRÈS le bon — un bon qui refuse annule tout, demande comprise.
     const refund =
-      regime === "paid" ? await this.refunds.requestFor(locked, staffSheet, now) : null;
+      regime === "paid" ? await this.refunds.requestFor(locked.orderId, staffSheet) : null;
     await this.durable.publish(
       new OrderCancelledEvent(
         locked.orderId,

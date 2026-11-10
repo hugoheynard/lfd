@@ -41,20 +41,32 @@ export function scenarioCardPayments(orderIds: readonly string[]): {
  *
  * @returns le nombre de lignes supprimées, toutes tables confondues.
  */
-export async function purgeCardPayments(tx: PurgeClient, scope: ScenarioScope): Promise<number> {
-  if (scope.orderIds.length === 0) {
+export function purgeCardPayments(tx: PurgeClient, scope: ScenarioScope): Promise<number> {
+  return purgeOrderCardPayments(tx, scope.orderIds);
+}
+
+/**
+ * La même coupe, pour des commandes nommées hors d'un scénario — le retrait
+ * des retraits sans site (`siteless-pickups.seed.ts`, lot P1.c). Dans la
+ * transaction de l'appelant : `SET LOCAL` meurt avec elle.
+ *
+ * @returns le nombre de lignes supprimées, toutes tables confondues.
+ */
+export async function purgeOrderCardPayments(
+  tx: PurgeClient,
+  orderIds: readonly string[],
+): Promise<number> {
+  if (orderIds.length === 0) {
     return 0;
   }
   await tx.$executeRaw`SET LOCAL card_payment.purge = 'on'`;
-  const payments = { payment: scenarioCardPayments(scope.orderIds) };
+  const payments = { payment: scenarioCardPayments(orderIds) };
   const refunds = await tx.cardRefund.findMany({ where: payments, select: { id: true } });
   const credits = await tx.refundCredit.deleteMany({
     where: { refundId: { in: refunds.map((refund) => refund.id) } },
   });
   const ledger = await tx.cardRefund.deleteMany({ where: payments });
   const requests = await tx.cardRefundRequest.deleteMany({ where: payments });
-  const removed = await tx.cardPayment.deleteMany({
-    where: scenarioCardPayments(scope.orderIds),
-  });
+  const removed = await tx.cardPayment.deleteMany({ where: scenarioCardPayments(orderIds) });
   return credits.count + ledger.count + requests.count + removed.count;
 }

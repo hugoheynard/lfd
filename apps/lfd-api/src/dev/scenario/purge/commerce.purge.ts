@@ -71,7 +71,9 @@ async function purgeOrderChildren(
     await tx.orderShortfallDecision.deleteMany({ where: ofOrders }),
     await tx.orderShortfall.deleteMany({ where: ofOrders }),
     await tx.orderRevisionEntry.deleteMany({ where: ofOrders }),
-    await tx.orderRefund.deleteMany({ where: ofOrders }),
-    await tx.orderRefundRequest.deleteMany({ where: ofOrders }),
+    // Les remboursements par carte ne sont plus ici (plan M2, lot P1.c) :
+    // `card-payment.purge.ts` les purge, après ce fichier. Les anciennes
+    // tables `order_refund*` n'ont plus de clé vers `orders` ; leurs lignes
+    // restent orphelines en dev jusqu'à P2, sans lecteur.
   ];
 }

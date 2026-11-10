@@ -27,7 +27,11 @@ function candidate(overrides: Partial<CardInvoiceCandidate> = {}): CardInvoiceCa
     handedOverAt: PLACED,
     receivedOn: "2026-09-15",
     invoiced: false,
+    chargedCents: 1_000,
     refundedCents: 0,
+    adjustmentRefundedCents: 0,
+    adjustmentPending: false,
+    adjustmentStopped: false,
     follows: [],
     frozen: frozenOrder("ORD-001", PLACED),
     deliveryNoteNumbers: ["BL-001-1"],
@@ -72,6 +76,43 @@ describe("cardInvoiceVerdict", () => {
       "fully_refunded",
     );
     expect(cardInvoiceVerdict(candidate({ refundedCents: 400 }))).toBe("issuable");
+  });
+});
+
+/** Plan M2, §6.1 (lot P1.c) : l'égalité G3 avant le retrait — `blocked`. */
+describe("cardInvoiceVerdict — l'argent qui ne tombe pas juste (G3)", () => {
+  it.each<[string, Partial<CardInvoiceCandidate>]>([
+    ["un ajustement attend son issue", { adjustmentPending: true }],
+    ["un ajustement est arrêté", { adjustmentStopped: true }],
+    ["l'encaissé diffère du total", { chargedCents: 1_200 }],
+    ["l'ajustement rendu ne tombe pas sur le total baissé", { adjustmentRefundedCents: 100 }],
+  ])("%s : `blocked`", (_label, overrides) => {
+    expect(cardInvoiceVerdict(candidate(overrides))).toBe("blocked");
+  });
+
+  it("encaissé − ajustement = total dû : la facture part, sur le total baissé", () => {
+    expect(
+      cardInvoiceVerdict(
+        candidate({ totalCents: 700, chargedCents: 1_000, adjustmentRefundedCents: 300 }),
+      ),
+    ).toBe("issuable");
+  });
+
+  it("`blocked` passe AVANT `awaiting_handover`, et APRÈS `awaiting_payment`", () => {
+    expect(cardInvoiceVerdict(candidate({ adjustmentStopped: true, handedOverAt: null }))).toBe(
+      "blocked",
+    );
+    expect(
+      cardInvoiceVerdict(
+        candidate({ adjustmentStopped: true, paymentStatus: "pending", paidAt: null }),
+      ),
+    ).toBe("awaiting_payment");
+  });
+
+  it("un remboursement `return` n'entre pas dans l'égalité : `fully_refunded` le lit", () => {
+    expect(cardInvoiceVerdict(candidate({ paymentStatus: "refunded", refundedCents: 1_000 }))).toBe(
+      "fully_refunded",
+    );
   });
 });
 

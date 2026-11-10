@@ -29,9 +29,8 @@ import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { VoucherRestitution } from "../../../domain/ports/loyalty-voucher-redemption.js";
 import { VoucherRestitutionPreview } from "../../../domain/ports/voucher-restitution-preview.js";
 import { VoucherRestitutionRefusal } from "../../services/voucher-restitution-refusal.js";
-import { FixedWallClock } from "../../../../../platform/time/fixed-wall-clock.js";
 import { AdminOrderRefundView } from "../../services/admin-order-refund-view.js";
-import { InMemoryRefundReader, RefundStore } from "../../commands/__tests__/refund-doubles.js";
+import { FixedCardRefundRequests } from "../../commands/__tests__/refund-doubles.js";
 import { GetAdminOrderHandler } from "../get-admin-order.handler.js";
 import {
   OrderShortfallReader,
@@ -252,7 +251,7 @@ function adminHandler(
   preview: VoucherRestitutionPreview = new FixedRestitutionPreview({ kind: "already" }),
   others: Readonly<Record<string, CancellationSubject>> = {},
   engagement: AccountEngagement | null = { kind: "free" },
-  refunds: RefundStore = new RefundStore(),
+  refunds: FixedCardRefundRequests = new FixedCardRefundRequests(),
   revisable: RevisableOrder | null = PLACED,
   shortfall: OrderShortfallReading | null = null,
   settings: FixedCancellationSettings = new FixedCancellationSettings(),
@@ -270,10 +269,7 @@ function adminHandler(
     preview,
     new VoucherRestitutionRefusal(subjects, inscriptions, rule),
     previewOf(rule, new CancellationAllowanceGate(settings), packing),
-    new AdminOrderRefundView(
-      new InMemoryRefundReader(refunds),
-      new FixedWallClock(VOUCHER_EXPIRES),
-    ),
+    new AdminOrderRefundView(refunds),
     new FixedClock(VOUCHER_EXPIRES),
     new OrderRevisabilityReading(
       new FixedRevisableOrders(revisable),
@@ -305,7 +301,7 @@ describe("GetAdminOrderHandler", () => {
       entryOrigin: null,
       placedBy: { customer: CUSTOMER, company: COMPANY, staffName: null },
       cancellability: { cancellable: true, voucher: null, refund: null },
-      refund: null,
+      refundRequests: [],
       revisability: { revisable: true },
       revision: 2,
       shortfall: null,
@@ -322,7 +318,7 @@ describe("GetAdminOrderHandler", () => {
       new FixedRestitutionPreview({ kind: "already" }),
       {},
       { kind: "free" },
-      new RefundStore(),
+      new FixedCardRefundRequests(),
       PLACED,
       {
         reportedAt: NOW,
@@ -349,7 +345,7 @@ describe("GetAdminOrderHandler", () => {
       new FixedRestitutionPreview({ kind: "already" }),
       {},
       { kind: "free" },
-      new RefundStore(),
+      new FixedCardRefundRequests(),
       PLACED,
       {
         reportedAt: NOW,
@@ -387,7 +383,7 @@ describe("GetAdminOrderHandler", () => {
         undefined,
         {},
         { kind: "free" },
-        new RefundStore(),
+        new FixedCardRefundRequests(),
         free,
       ).execute(new GetAdminOrderQuery("ord_1"));
 
@@ -424,7 +420,7 @@ describe("GetAdminOrderHandler", () => {
         undefined,
         {},
         { kind: "free" },
-        new RefundStore(),
+        new FixedCardRefundRequests(),
         card,
       ).execute(new GetAdminOrderQuery("ord_1"));
 

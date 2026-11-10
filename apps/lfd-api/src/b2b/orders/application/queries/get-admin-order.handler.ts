@@ -76,7 +76,7 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
   ) {}
 
   async execute(query: GetAdminOrderQuery): Promise<AdminOrderView> {
-    const [owned, author, cancellability, refund, revision, shortfall] = await Promise.all([
+    const [owned, author, cancellability, refundRequests, revision, shortfall] = await Promise.all([
       this.orders.findById(query.orderId),
       this.authors.authorOf(query.orderId),
       this.cancellabilityOf(query.orderId),
@@ -101,7 +101,7 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
         staffName: staffAuthors.nameOf(author.placedByStaffId),
       },
       cancellability,
-      refund,
+      refundRequests,
       revisability: revision.revisability,
       revision: revision.revision,
       shortfall: shortfall === null ? null : shortfallViewOf(shortfall, staffAuthors),

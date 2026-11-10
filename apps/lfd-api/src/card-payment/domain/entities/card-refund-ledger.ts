@@ -72,7 +72,8 @@ export type CardRefundRecording =
 
 /**
  * **Le carnet des remboursements d'un paiement** (plan M2, §3.4, §5.1, G2) —
- * l'agrégat qui tient les règles du lot R1, déménagées d'`OrderRefundLedger` :
+ * l'agrégat qui tient les règles du lot R1, déménagées d'`OrderRefundLedger`
+ * (retiré au lot P1.c) :
  *
  * - **idempotent par `re_…`** : un webhook rejoué ne double rien ;
  * - **un statut ne régresse pas** ({@link cardRefundStatusMove}) ; une

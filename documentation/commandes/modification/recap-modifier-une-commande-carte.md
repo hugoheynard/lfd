@@ -121,7 +121,7 @@ première version du plan essayait, et `vitruve` l'a arrêtée le 2026-10-23.
   (`order-subject-settlement.ts`) fait `markPaid` et publie `order.paid`
   durable.
 - **Le remboursement** : `PaymentRefunder.refundRemainder` rend **tout le
-  reste** d'une intention, sans montant (`card-payment/channels/requests/card-provider-refunds.ts`) ;
+  reste** d'une intention, sans montant (`card-provider-refunds` (retiré au lot P1.c)) ;
   la demande est **une par commande** (`order_refund_request`, clé `order_id`),
   causes `cancellation`, `paid_after_cancellation`, `refund_reversed`.
 - **La facture carte** naît au retrait, acquittée du total ; un remboursement

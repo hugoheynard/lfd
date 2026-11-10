@@ -1,6 +1,11 @@
 import { Injectable } from "@nestjs/common";
 
+import {
+  type CardSettlementPosition,
+  CardSettlementReader,
+} from "../../../card-payment/channels/requests/index.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { orderCardSubject } from "../../orders/application/services/order-card-subject.js";
 import { COMMERCIAL_INVOICE } from "../domain/entities/invoice.types.js";
 import { CardInvoicingReader } from "../domain/ports/card-invoicing.reader.js";
 import type { CardInvoiceCandidate } from "../domain/services/card-invoicing.js";
@@ -14,16 +19,21 @@ import { handedOverNoteNumbersOf } from "./billable-invoice-order.mapper.js";
 const DAY_LENGTH = 10;
 
 /**
- * Ce que lit la facture carte (E5a) : la commande, ce qu'elle a figé, ses
- * remboursements réussis, et si une 380 la porte déjà. `invoice_order` n'a
- * pas de relation vers `orders` (l'id est opaque) : lectures séparées.
+ * Ce que lit la facture carte (E5a) : la commande, ce qu'elle a figé, et si
+ * une 380 la porte déjà ; son argent — encaissé, remboursé, ajustements —
+ * à la position du bloc `card-payment` (plan M2, §6.1, lot P1.c ; la relation
+ * `Order.refunds` est retirée). `invoice_order` n'a pas de relation vers
+ * `orders` (l'id est opaque) : lectures séparées.
  *
  * Pas de mur tenant : l'appelant est un abonné durable ou une route staff
  * `b2b_accounting`, jamais un client ; la clé est l'id de la commande.
  */
 @Injectable()
 export class PrismaCardInvoicingReader extends CardInvoicingReader {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cards: CardSettlementReader,
+  ) {
     super();
   }
 
@@ -41,7 +51,6 @@ export class PrismaCardInvoicingReader extends CardInvoicingReader {
         paidAt: true,
         handedOverAt: true,
         receivedOn: true,
-        refunds: { where: { status: "succeeded" }, select: { amountCents: true } },
         deliveryNotes: {
           where: { status: "handed_over" },
           orderBy: { rank: "asc" },
@@ -59,6 +68,7 @@ export class PrismaCardInvoicingReader extends CardInvoicingReader {
       where: { orderId, invoiceType: COMMERCIAL_INVOICE },
     });
     const follows = await this.followsOf(order.companyId);
+    const [position] = await this.cards.positionOf([orderCardSubject(orderId)]);
     return {
       orderId: order.id,
       orderNumber: order.orderNumber,
@@ -74,7 +84,7 @@ export class PrismaCardInvoicingReader extends CardInvoicingReader {
       // `@db.Date` : minuit UTC du jour, dont la date ISO EST le jour de Paris.
       receivedOn: order.receivedOn?.toISOString().slice(0, DAY_LENGTH) ?? null,
       invoiced: invoiced > 0,
-      refundedCents: order.refunds.reduce((sum, refund) => sum + refund.amountCents, 0),
+      ...moneyOf(position),
       follows,
       // La facture carte garde les totaux de la COMMANDE (plan E6c2, § 4) : pas
       // de départ incomplet par carte, et elle part à la remise, avant tout solde.
@@ -106,4 +116,29 @@ export class PrismaCardInvoicingReader extends CardInvoicingReader {
       validTo: row.validTo,
     }));
   }
+}
+
+/** L'argent de la commande, tel que la facture carte le juge (plan M2, §6.1). */
+function moneyOf(
+  position: CardSettlementPosition | undefined,
+): Pick<
+  CardInvoiceCandidate,
+  | "chargedCents"
+  | "refundedCents"
+  | "adjustmentRefundedCents"
+  | "adjustmentPending"
+  | "adjustmentStopped"
+> {
+  const adjustments = (position?.openRequests ?? []).filter(
+    (request) => request.nature === "adjustment",
+  );
+  return {
+    chargedCents: position?.chargedCents ?? 0,
+    refundedCents: position?.refundedCents ?? 0,
+    adjustmentRefundedCents: position?.refundedByNature.adjustment ?? 0,
+    adjustmentPending: adjustments.some(
+      (request) => request.state === "to_issue" || request.state === "issued",
+    ),
+    adjustmentStopped: adjustments.some((request) => request.state === "stopped"),
+  };
 }

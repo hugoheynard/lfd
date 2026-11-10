@@ -1,6 +1,13 @@
 /// Le **statut d'un remboursement chez Stripe**, recopié tel quel
 /// (`Refund.status`). Seul `succeeded` compte dans le cumul remboursé ; les
-/// autres sont notés, jamais supprimés. Propriétaire : `src/b2b/orders/`.
+/// autres sont notés, jamais supprimés.
+///
+/// 🔴 **Sans lecteur ni écrivain depuis le lot P1.c** du plan M2
+/// (`documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+/// §5.1, §5.4) : le remboursement par carte vit dans `card_payment` (copié par
+/// la migration `20261110010200_la_copie_des_remboursements`). Les modèles de
+/// ce fichier restent, SANS relation, pour l'e2e de la copie et le harnais,
+/// jusqu'à P2.
 enum OrderRefundStatus {
   pending
   requires_action
@@ -16,16 +23,17 @@ enum OrderRefundStatus {
 /// CONSTATE, on ne l'initie pas : le geste reste dans le tableau
 /// de bord Stripe.
 ///
-/// Écrite par l'agrégat `OrderRefundLedger` (`src/b2b/orders/`), qui tient
-/// les règles : idempotence par `stripe_refund_id`, statut qui ne régresse
-/// pas, cumul des `succeeded` plafonné au total encaissé. Rien ne se supprime :
-/// un remboursement en échec ou annulé garde sa ligne, sous son statut.
+/// Écrite jusqu'au lot P1.c par l'agrégat `OrderRefundLedger` (retiré) : plus
+/// aucun écrivain. Ses clés étrangères vers `orders` et `invoice` sont
+/// retirées avec les relations (migration
+/// `…_les_anciennes_tables_du_remboursement_sans_lecteur`) ; les colonnes
+/// restent, telles quelles, jusqu'à P2.
 model OrderRefund {
   /// ULID, fabriqué par `IdGenerator`.
   id String @id
 
+  /// Identifiant opaque de la commande — plus de clé étrangère depuis P1.c.
   orderId String @map("order_id")
-  order   Order  @relation(fields: [orderId], references: [id], onDelete: Restrict)
 
   /// `re_…` — la clé d'idempotence du webhook.
   stripeRefundId String @unique @map("stripe_refund_id")
@@ -47,8 +55,8 @@ model OrderRefund {
   /// L'avoir qui l'a constaté (lot E5b) — posé une fois, par la
   /// comptabilité, dans la transaction de l'avoir ; unique (déclencheur
   /// `order_refund_credit_note_once`, migration `20261009000000_la_facture_carte`).
-  creditNoteId String?  @unique @map("credit_note_id")
-  creditNote   Invoice? @relation(fields: [creditNoteId], references: [id], onDelete: Restrict)
+  /// Copié dans `public.refund_credit` au lot P1 ; plus de clé étrangère depuis P1.c.
+  creditNoteId String? @unique @map("credit_note_id")
 
   @@index([orderId])
   @@map("order_refund")
@@ -58,7 +66,7 @@ model OrderRefund {
 /// **Pourquoi de l'argent est à rendre** (plan
 /// `documentation/commandes/annulation/annulation-par-le-staff.md`, lot C4, C4.5,
 /// C4.11, C4.11 bis). 🔴 Valeurs écrites en base : elles ne se renomment que
-/// par migration. Propriétaire : `src/b2b/orders/`.
+/// par migration. Sans écrivain depuis le lot P1.c (plan M2).
 enum OrderRefundCause {
   /// L'équipe a annulé une commande payée par carte.
   cancellation
@@ -77,11 +85,12 @@ enum OrderRefundCause {
 ///
 /// Aucun statut stocké : l'état se lit au carnet (`order_refund`), par
 /// `refundRequestStateOf`. La demande ne dit que ce qui a été promis et ce
-/// qui a été tenté. Écrite par l'agrégat `OrderRefundRequest`.
+/// qui a été tenté. Écrite jusqu'au lot P1.c par l'agrégat
+/// `OrderRefundRequest` (retiré) : plus aucun écrivain, plus de clé
+/// étrangère, colonnes gardées jusqu'à P2 (plan M2, §5.4).
 model OrderRefundRequest {
-  /// Une demande par commande : le second clic ne peut pas en écrire une seconde.
+  /// Une demande par commande — identifiant opaque depuis P1.c.
   orderId String @id @map("order_id")
-  order   Order  @relation(fields: [orderId], references: [id], onDelete: Restrict)
 
   cause          OrderRefundCause
   /// Ce que l'annulation a promis, en centimes (> 0, tenu par l'agrégat ET par un `CHECK`).

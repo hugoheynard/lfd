@@ -1014,9 +1014,10 @@ export interface OrderView {
   readonly refunds: readonly OrderRefundView[];
   /**
    * Le cumul des remboursements RÉUSSIS, en centimes (`0` sans remboursement)
-   * — {@link refundedCentsOf} de `refunds`, calculé au serveur. Il est dans la
-   * vue staff aussi parce que la vue client en est un sous-ensemble
-   * STRUCTUREL : les composants partagés reçoivent l'une ou l'autre.
+   * — lu sur la position du bloc `card-payment` (plan M2, §3.3 : une seule
+   * arithmétique), jamais recalculé depuis `refunds`. Il est dans la vue
+   * staff aussi parce que la vue client en est un sous-ensemble STRUCTUREL :
+   * les composants partagés reçoivent l'une ou l'autre.
    */
   readonly refundedCents: number;
 }
@@ -1031,16 +1032,28 @@ export const orderRefundStatusSchema = z.enum([
 ]);
 export type OrderRefundStatus = z.infer<typeof orderRefundStatusSchema>;
 
-/** Un remboursement Stripe constaté sur une commande. Aucun identifiant Stripe. */
+/** Un remboursement constaté sur une commande. Aucun identifiant du prestataire. */
 export interface OrderRefundView {
   /** Centimes, > 0. */
   readonly amountCents: number;
   readonly status: OrderRefundStatus;
-  /** ISO — l'instant Stripe du remboursement, pas celui de notre constat. */
+  /**
+   * ISO — l'instant du prestataire pour un `provider`, celui du geste de
+   * l'équipe pour un `manual` ; jamais celui de notre constat.
+   */
   readonly refundedAt: string;
+  /**
+   * `provider` : constaté chez le prestataire ; `manual` : « rendu
+   * autrement » par l'équipe, hors de la plateforme (plan M2, §5.5).
+   */
+  readonly source: "provider" | "manual";
 }
 
-/** Le cumul des remboursements RÉUSSIS, en centimes. */
+/**
+ * Le cumul des remboursements RÉUSSIS, en centimes. 🔴 L'API ne s'en sert
+ * plus (plan M2, §3.3 : `refundedCents` vient de la position du bloc) ; le
+ * back-office le lit encore jusqu'au lot P1.d.
+ */
 export function refundedCentsOf(refunds: readonly OrderRefundView[]): number {
   return refunds
     .filter((refund) => refund.status === "succeeded")

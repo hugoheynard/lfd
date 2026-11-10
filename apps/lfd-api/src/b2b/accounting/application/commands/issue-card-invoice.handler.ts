@@ -12,7 +12,10 @@ import { CreditorReader } from "../../domain/ports/creditor.reader.js";
 import { InvoiceIssuersReader } from "../../domain/ports/invoice-issuers.reader.js";
 import { OrderInvoicingLock } from "../../domain/ports/order-invoicing-lock.js";
 import { StatementBuyerReader } from "../../domain/ports/statement-buyer.reader.js";
-import { cardInvoiceVerdict } from "../../domain/services/card-invoicing.js";
+import {
+  CARD_INVOICE_AWAITS_REFUND,
+  cardInvoiceVerdict,
+} from "../../domain/services/card-invoicing.js";
 import { prepareCardInvoice, type CardInvoicePreparation } from "../card-invoice-support.js";
 import { InvoiceIssuer } from "../services/invoice-issuer.js";
 import { RefundReconciler } from "../services/refund-reconciler.js";
@@ -71,7 +74,10 @@ export class IssueCardInvoiceHandler implements ICommandHandler<
           // Le rattrapage d'un rapprochement interrompu ne coûte rien.
           await this.reconciler.reconcile(command.orderId);
         }
-        return { outcome: verdict, number: null, message: null };
+        // `blocked` (plan M2, §6.1) n'est pas rangé : le remboursement réglé
+        // réveille la facture, rien n'est à corriger dans une fiche.
+        const message = verdict === "blocked" ? CARD_INVOICE_AWAITS_REFUND : null;
+        return { outcome: verdict, number: null, message };
       }
       const readers = { creditors: this.creditors, issuers: this.issuers, buyers: this.buyers };
       const prepared = await prepareCardInvoice(
