@@ -12,7 +12,6 @@ import {
 } from "@lfd/contracts";
 
 import {
-  CardOrderNotRevisableError,
   FrozenLinePriceChangedError,
   RevisionBelowVoucherError,
   RevisionFreesAccountOrderError,
@@ -198,20 +197,6 @@ export interface OrderRevisionToSave {
 }
 
 /**
- * **M1 ne modifie que les commandes au compte et à total nul** (§9 du plan) :
- * une commande payable par carte — payée, ou intention en attente — a une
- * seule intention et une seule demande de remboursement, et sa modification
- * est le lot M2, à concevoir.
- *
- * @throws {CardOrderNotRevisableError} règlement par carte attendu ou encaissé.
- */
-export function ensureRevisableSettlement(order: RevisableOrder): void {
-  if (isCardSettlement(order.paymentStatus, order.totalCents)) {
-    throw new CardOrderNotRevisableError(order.orderId);
-  }
-}
-
-/**
  * Une commande dont le départ incomplet est décidé ne se modifie plus (E6b,
  * plan E6 § 12.2) : la décision et la commande ne divergent jamais. Jugé par
  * {@link Order.recompose} et, sous le verrou, par la révision.
@@ -249,6 +234,10 @@ export function revisionOf(
   if (before === "account" && after !== "account") {
     throw new RevisionFreesAccountOrderError(order.orderId);
   }
+  // R2 (plan S2) : sur une commande carte, `deferPayment()` fait passer la
+  // composition pour « au compte » ; les deux gardes ci-dessus restent jugées
+  // sur elle, mais la ligne d'encaissement au compte ne suit jamais une carte.
+  const onAccount = !isCardSettlement(order.paymentStatus, order.totalCents) && after === "account";
   const changes = changesOf(order, state);
   const serviceDay = dayOf(state.requestedDeliveryDate);
   return {
@@ -264,7 +253,7 @@ export function revisionOf(
     totalBeforeCents: order.totalCents,
     totalAfterCents: state.totalCents,
     routeChanged: changes.some((change) => ROUTE_CHANGES.has(change)),
-    onAccount: after === "account",
+    onAccount,
   };
 }
 

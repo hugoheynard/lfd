@@ -21,6 +21,7 @@ import {
 import { CardRefundRequestRepository } from "../../domain/ports/card-refund-request.repository.js";
 import {
   announcedByOpenAmounts,
+  refundableCentsOf,
   remainderInProgress,
 } from "../../domain/services/refund-siblings.js";
 import { CardRefundDispatch } from "./card-refund-dispatch.js";
@@ -65,14 +66,12 @@ export class BlockCardRefunds extends CardRefunds {
 
   async requestAmount(request: AmountRefundRequest): Promise<RequestedCardRefund> {
     const locked = await this.paidPayment(request.paymentId);
-    const siblings = await this.requests.ofPayment(request.paymentId);
-    const inProgress = remainderInProgress(siblings);
-    const available =
-      locked.ledger.remainderCents() -
-      announcedByOpenAmounts(siblings) -
-      (inProgress?.view.announcedCents ?? 0);
+    const available = refundableCentsOf(
+      locked.ledger,
+      await this.requests.ofPayment(request.paymentId),
+    );
     if (request.amountCents > available) {
-      throw new CardRefundAmountExceedsRemainderError(request.amountCents, Math.max(0, available));
+      throw new CardRefundAmountExceedsRemainderError(request.amountCents, available);
     }
     const created = CardRefundRequest.request({
       id: this.ids.next(),

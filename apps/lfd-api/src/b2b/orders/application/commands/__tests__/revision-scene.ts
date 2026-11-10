@@ -299,7 +299,7 @@ export async function placedOrder(over: Partial<RevisableOrder> = {}): Promise<R
     seed(),
     content(),
     { kind: "staff", staffId: "stf_seed" },
-    { requireChange: false },
+    { requireChange: false, decidedAt: NOW },
   );
   const { state } = draft;
   return {
@@ -592,6 +592,6 @@ export function reviseScene(
     new DirectUnitOfWork(),
     clock,
   );
-  const asSeen = seenRevisions(wall, revising);
+  const asSeen = seenRevisions(wall, revising, clock);
   return { handler, asSeen, trace, revisions, desk, packing, notes, revaluation, durable };
 }

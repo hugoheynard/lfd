@@ -27,6 +27,7 @@ function handlerFor(order: RevisableOrder): QuoteOrderRevisionHandler {
   return new QuoteOrderRevisionHandler(
     new RevisionWall(new FixedRevisableOrders(order), new OneRoleAccess("orders")),
     revisingAt(new FixedClock(NOW)),
+    new FixedClock(NOW),
   );
 }
 
@@ -138,7 +139,10 @@ describe("QuoteOrderRevisionHandler", () => {
       ]);
       expect(quote.lines[0]?.refusal).toBeNull();
       await expect(
-        revisingAt(new FixedClock(NOW)).compose(order, smaller, CUSTOMER, { requireChange: true }),
+        revisingAt(new FixedClock(NOW)).compose(order, smaller, CUSTOMER, {
+          requireChange: true,
+          decidedAt: NOW,
+        }),
       ).rejects.toBeInstanceOf(RevisionLosesBasketDiscountError);
     });
   });

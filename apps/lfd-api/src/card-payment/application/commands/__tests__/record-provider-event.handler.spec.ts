@@ -10,7 +10,7 @@ describe("RecordProviderEventHandler — encaissé", () => {
     await receive(PAID);
 
     expect(timeline.steps).toEqual([
-      "channel.onPaid:ord_1:pay_known:2340",
+      "channel.onPaid:ord_1:pay_known:2340:first",
       "repo.load:pay_known",
       "repo.save:pay_known:paid",
       "fact:card_payment.settled",
@@ -75,7 +75,7 @@ describe("RecordProviderEventHandler — refusé", () => {
     await receive(FAILED);
 
     expect(timeline.steps).toEqual([
-      "channel.onPaymentFailed:ord_1:pay_known",
+      "channel.onPaymentFailed:ord_1:pay_known:first",
       "repo.load:pay_known",
       "repo.save:pay_known:failed",
       "fact:card_payment.failed",
@@ -117,7 +117,7 @@ describe("RecordProviderEventHandler — une référence inconnue (§4.6)", () =
       "channel.lockSubject:ord_old",
       "channel.claim:lfc-stripe:pi_1",
       "repo.add:pay_000001:pending",
-      "channel.onPaid:ord_old:pay_000001:1500",
+      "channel.onPaid:ord_old:pay_000001:1500:first",
       "repo.load:pay_000001",
       "repo.save:pay_000001:paid",
       "fact:card_payment.settled",

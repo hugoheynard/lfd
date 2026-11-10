@@ -5,6 +5,7 @@ import {
   type SubjectClaim,
   type SubjectDescription,
   type SubjectPaidOutcome,
+  type SubjectPaymentRole,
   type SubjectReference,
   type SubjectRefundOutcome,
   SubjectSettlement,
@@ -23,6 +24,7 @@ import {
 import { OrderLock } from "../../domain/ports/order-lock.js";
 import { OrderRepository } from "../../domain/ports/order.repository.js";
 import { ORDER_CARD_SUBJECT_TYPE, orderCardSubject } from "./order-card-subject.js";
+import { OrderComplementSettlement } from "./order-complement-settlement.js";
 import { OrderRefundOutcomes } from "./order-refund-outcomes.js";
 
 /** Où l'équipe ouvre une commande au back-office — comme les cloches d'`orders`. */
@@ -58,6 +60,7 @@ export class OrderSubjectSettlement extends SubjectSettlement {
     private readonly cancelled: CancelledOrderPaymentReader,
     private readonly durable: DurablePublisher,
     private readonly refunds: OrderRefundOutcomes,
+    private readonly complements: OrderComplementSettlement,
   ) {
     super();
   }
@@ -72,7 +75,20 @@ export class OrderSubjectSettlement extends SubjectSettlement {
     return this.refunds.apply(subject, outcome);
   }
 
-  async onPaid(subject: CardSubject): Promise<SubjectPaidOutcome> {
+  /**
+   * Route sur le rôle de la ligne (plan S2, §2.5) : le premier suit le chemin
+   * d'aujourd'hui ; un complément ne touche que son projet — il ne marque
+   * JAMAIS la commande payée.
+   */
+  async onPaid(
+    subject: CardSubject,
+    paymentId: string,
+    _amountCents: number,
+    role: SubjectPaymentRole,
+  ): Promise<SubjectPaidOutcome> {
+    if (role === "complement") {
+      return this.complements.onPaid(subject, paymentId);
+    }
     const { standing, providerRef } = await this.withIntent(subject);
     const paid = await this.orders.markPaid(providerRef);
     if (paid !== null) {
@@ -92,7 +108,18 @@ export class OrderSubjectSettlement extends SubjectSettlement {
     return "refused";
   }
 
-  async onPaymentFailed(subject: CardSubject): Promise<void> {
+  /**
+   * Un complément refusé ne touche pas la commande (plan S2, §2.5) : le projet
+   * reste `awaiting_payment`, le client réessaie jusqu'au délai.
+   */
+  async onPaymentFailed(
+    subject: CardSubject,
+    _paymentId: string,
+    role: SubjectPaymentRole,
+  ): Promise<void> {
+    if (role === "complement") {
+      return;
+    }
     const { providerRef } = await this.withIntent(subject);
     const refused = await this.orders.markPaymentFailed(providerRef);
     if (refused !== null) {
@@ -150,11 +177,14 @@ export class OrderSubjectSettlement extends SubjectSettlement {
   }
 }
 
-/** Le premier paiement d'une commande : son total, et son règlement tel qu'elle le voit. */
+/**
+ * Le premier paiement d'une commande : SON montant (plus le total, faux après
+ * une hausse — plan S2, §2.5), et son règlement tel qu'elle le voit.
+ */
 function claimOf(standing: OrderCardStanding): SubjectClaim {
   return {
     subject: orderCardSubject(standing.orderId),
-    amountCents: standing.totalCents,
+    amountCents: standing.firstPaymentCents,
     role: "first",
     settled: standing.settled,
   };

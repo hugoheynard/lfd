@@ -14,6 +14,9 @@ const SELECTED = {
   totalCents: true,
   status: true,
   paymentStatus: true,
+  // Les compléments des hausses APPLIQUÉES (plan S2, §2.5) : ils sont dans le
+  // total, pas dans le premier paiement.
+  revisionProposals: { where: { state: "applied" }, select: { complementCents: true } },
 } as const;
 
 interface StandingRow {
@@ -23,6 +26,7 @@ interface StandingRow {
   readonly totalCents: number;
   readonly status: string;
   readonly paymentStatus: string;
+  readonly revisionProposals: readonly { readonly complementCents: number }[];
 }
 
 function standingOf(row: StandingRow): OrderCardStanding {
@@ -30,7 +34,10 @@ function standingOf(row: StandingRow): OrderCardStanding {
     orderId: row.id,
     orderNumber: row.orderNumber,
     providerRef: row.stripePaymentIntentId,
-    totalCents: row.totalCents,
+    firstPaymentCents: row.revisionProposals.reduce(
+      (first, applied) => first - applied.complementCents,
+      row.totalCents,
+    ),
     cancelled: row.status === "cancelled",
     settled: orderCardSettled(row.status, row.paymentStatus),
   };

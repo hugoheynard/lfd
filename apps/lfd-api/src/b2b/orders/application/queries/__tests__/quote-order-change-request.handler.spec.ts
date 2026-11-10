@@ -51,10 +51,8 @@ function handlerFor(
   } = {},
 ): QuoteOrderChangeRequestHandler {
   const orders = new FixedRevisableOrders(order);
-  const revising = revisingAt(
-    new FixedClock(options.now ?? AFTER_CUTOFF),
-    options.plans === undefined ? {} : { plans: options.plans },
-  );
+  const clock = new FixedClock(options.now ?? AFTER_CUTOFF);
+  const revising = revisingAt(clock, options.plans === undefined ? {} : { plans: options.plans });
   return new QuoteOrderChangeRequestHandler(
     new RevisionWall(
       orders,
@@ -66,6 +64,7 @@ function handlerFor(
       revising,
     ),
     revising,
+    clock,
   );
 }
 

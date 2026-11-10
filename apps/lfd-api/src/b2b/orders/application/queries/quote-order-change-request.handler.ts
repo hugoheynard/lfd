@@ -1,3 +1,4 @@
+import { Clock } from "../../../../platform/time/clock.js";
 import type { OrderRevisionQuoteView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
@@ -35,6 +36,7 @@ export class QuoteOrderChangeRequestHandler implements IQueryHandler<
     private readonly wall: RevisionWall,
     private readonly reading: OrderRevisabilityReading,
     private readonly revising: OrderRevising,
+    private readonly clock: Clock,
   ) {}
 
   async execute(query: QuoteOrderChangeRequestQuery): Promise<OrderRevisionQuoteView> {
@@ -44,6 +46,7 @@ export class QuoteOrderChangeRequestHandler implements IQueryHandler<
     const quoted = await this.revising.quote(current, query.content, author, {
       requireChange: false,
       rulesOf: "staff",
+      decidedAt: this.clock.now(),
     });
     return quoteViewOf(current, quoted);
   }

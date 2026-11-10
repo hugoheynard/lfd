@@ -2,6 +2,7 @@ import type { OrderCutoffDecision } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
+import type { Instant } from "../../../../platform/context/request-context.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { OrderCutoffReader } from "../../domain/ports/order-cutoff.reader.js";
 import { OrderCutoffWaiverGate } from "../../domain/ports/order-cutoff-waiver.gate.js";
@@ -41,6 +42,9 @@ export class OrderCutoffGate {
    * Refuse si l'heure limite de `fulfillmentDate` est passée pour ce panier.
    * Rend la dérogation dépensée (passation seulement), ou `null`.
    *
+   * `at` : l'instant du geste (plan S2, R6) — l'horloge pour la passation et
+   * M1, la création du projet pour une hausse appliquée plus tard.
+   *
    * @throws {OrderCutoffGraceError} la limite est passée, le rattrapage court, sans dérogation.
    * @throws {PastOrderCutoffError} la limite ET le rattrapage sont passés.
    */
@@ -48,10 +52,10 @@ export class OrderCutoffGate {
     skus: readonly string[],
     fulfillmentDate: string,
     companyId: string | null,
-    { withWaiver }: { readonly withWaiver: boolean },
+    { withWaiver, at }: { readonly withWaiver: boolean; readonly at: Instant },
   ): Promise<string | null> {
     return ensureWithinOrderCutoff(
-      await this.inputsOf(skus, fulfillmentDate, withWaiver ? companyId : null),
+      await this.inputsOf(skus, fulfillmentDate, withWaiver ? companyId : null, at),
     );
   }
 
@@ -66,7 +70,7 @@ export class OrderCutoffGate {
     fulfillmentDate: string,
     companyId: string,
   ): Promise<string | null> {
-    return foreseenWaiver(await this.inputsOf(skus, fulfillmentDate, companyId));
+    return foreseenWaiver(await this.inputsOf(skus, fulfillmentDate, companyId, this.clock.now()));
   }
 
   /** Les règles, les limites des articles et la dérogation ouverte, lues ensemble. */
@@ -74,6 +78,7 @@ export class OrderCutoffGate {
     skus: readonly string[],
     fulfillmentDate: string,
     waiverOwner: string | null,
+    now: Instant,
   ): Promise<Parameters<typeof ensureWithinOrderCutoff>[0]> {
     const [fallback, items, waiver] = await Promise.all([
       this.cutoffs.list(),
@@ -90,7 +95,7 @@ export class OrderCutoffGate {
       fallback,
       fulfillmentDate,
       waiver,
-      now: this.clock.now(),
+      now,
     };
   }
 

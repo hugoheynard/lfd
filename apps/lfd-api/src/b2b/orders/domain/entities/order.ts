@@ -18,6 +18,7 @@ import type {
 } from "@lfd/contracts";
 
 import { InvalidOrderPaymentError } from "../errors/order-errors.js";
+import { CardOrderNotRevisableError } from "../errors/order-revision-errors.js";
 
 import { ensureDraftable } from "./order-amount-guards.js";
 import { draftedAmountsOf, type DraftedAmounts } from "./order-amounts.js";
@@ -37,11 +38,15 @@ import { clienteleOf, normalizeFulfillment } from "./order-fulfillment.js";
 import {
   ensureChanged,
   ensureNoShortfallDecision,
-  ensureRevisableSettlement,
   revisionOf,
   type OrderRevisionToSave,
   type RevisableOrder,
 } from "./order-revision.js";
+import {
+  cardRefusalOf,
+  revisionSettlementOf,
+  type RecomposedRevision,
+} from "./revision-settlement.js";
 import type {
   DraftOrderInput,
   OrderDiscountLabel,
@@ -218,23 +223,32 @@ export class Order {
    * refuse la carte), puis se juge contre la révision qu'elle corrige : prix
    * figés tenus (R3), bon imputé couvert (R4), au moins un changement (R6).
    *
-   * @throws {CardOrderNotRevisableError} la commande se règle par carte (lot M2).
+   * @throws {CardOrderNotRevisableError} la commande se règle par carte, avec la raison du tri (R2 bis).
    * @throws {ShortfallDecidedRevisionError} son départ incomplet est décidé (E6b).
    * @throws {UnchangedOrderRevisionError} la modification ne change rien.
    * @throws {FulfillmentChangeAltersPromotionError} le nouvel acheminement sort de la cible figée d'une remise (L9).
    * @throws {ShelfOrderRouteChangeError} une commande sur stock changerait de mode, de journée ou de point.
    */
   static revise(current: RevisableOrder, input: PricedDraftInput): OrderRevisionToSave {
-    const revision = Order.recompose(current, input);
+    const { revision, settlement } = Order.recompose(current, input);
+    // M1 ne fait que `same_settlement` (plan S2, R2 bis) : une hausse carte
+    // passe par un projet de complément, le reste attend S1.
+    const refusal = cardRefusalOf(settlement);
+    if (refusal !== null) {
+      throw new CardOrderNotRevisableError(current.orderId, refusal);
+    }
     ensureChanged(revision);
     return revision;
   }
 
-  /** La même recomposition, sans exiger de changement : ce que le devis de révision montre. */
-  static recompose(current: RevisableOrder, request: PricedDraftInput): OrderRevisionToSave {
+  /**
+   * La même recomposition, sans exiger de changement ni lever sur le
+   * règlement : elle rend la révision ET son règlement (plan S2, R2 bis) — le
+   * tri se fait sur le nouveau total, après la composition, jamais avant.
+   */
+  static recompose(current: RevisableOrder, request: PricedDraftInput): RecomposedRevision {
     // Chiffrée dans la méthode RELUE sur la commande (plan du centime, § 5).
     const { input, notes } = draftInputOf(request, current.vatMethod);
-    ensureRevisableSettlement(current);
     ensureNoShortfallDecision(current);
     // L9 avant les gardes de montant : une remise emportée hors de sa cible
     // se refuse en nommant la promotion (plan des remises acquises, § 10.2).
@@ -261,8 +275,13 @@ export class Order {
         windowStart: current.agreed.window.value?.start ?? null,
       }),
     );
+    // Le règlement de la commande n'est jamais réécrit par la révision
+    // (`revisions.save` n'écrit aucune colonne de paiement) : `deferPayment`
+    // ne sert qu'à composer, et `revisionOf` ne lit plus `onAccount` sur lui
+    // pour une carte (R2).
     revised.deferPayment();
-    return { ...revisionOf(current, revised.toPersistence()), pricingNotes: notes };
+    const revision = { ...revisionOf(current, revised.toPersistence()), pricingNotes: notes };
+    return { revision, settlement: revisionSettlementOf(current, revision.totalAfterCents) };
   }
 
   /**

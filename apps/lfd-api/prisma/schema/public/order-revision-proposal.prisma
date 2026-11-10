@@ -1,0 +1,48 @@
+/// **Un projet de hausse d'une commande payée par carte** (plan
+/// `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.3) : la
+/// modification attend ici que son complément soit payé ; la commande ne
+/// change pas avant. Sept états, tenus par un CHECK ; un seul projet vivant
+/// (`awaiting_payment | ready | stalled`) par commande, tenu par un index
+/// unique partiel écrit dans la migration (Prisma ne sait pas le dire). Jamais
+/// supprimé : un déclencheur refuse le `DELETE`, sauf sous
+/// `SET LOCAL orders.purge = 'on'` (la purge du scénario de dev).
+model OrderRevisionProposal {
+  /// ULID posé par le code (`IdGenerator`).
+  id               String    @id
+  orderId          String    @map("order_id")
+  order            Order     @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  /// La révision que le projet corrige (R7).
+  baseRevision     Int       @map("base_revision")
+  /// Le contenu saisi, recomposé à l'application.
+  content          Json
+  /// Les règles figées de l'auteur au geste (kind, jour de décision, dérogations).
+  rules            Json
+  targetTotalCents Int       @map("target_total_cents")
+  /// Strictement positif (CHECK) : une hausse, jamais une baisse.
+  complementCents  Int       @map("complement_cents")
+  /// `customer` ou `staff` — mêmes noms et même CHECK que `order_revision`.
+  revisedByKind    String    @map("revised_by_kind")
+  revisedByUserId  String?   @map("revised_by_user_id")
+  revisedByStaffId String?   @map("revised_by_staff_id")
+  /// Le paiement du complément dans `card_payment.payment` — un autre bloc :
+  /// unique, sans clé étrangère.
+  paymentId        String    @unique @map("payment_id")
+  state            String
+  expiresAt        DateTime  @map("expires_at") @db.Timestamptz(6)
+  attempts         Int       @default(0)
+  nextAttemptAt    DateTime? @map("next_attempt_at") @db.Timestamptz(6)
+  leasedUntil      DateTime? @map("leased_until") @db.Timestamptz(6)
+  lastFailure      String?   @map("last_failure")
+  /// Les appels de contrôle au prestataire en échec (§2.7) — pas `attempts`.
+  providerChecks   Int       @default(0) @map("provider_checks")
+  /// Le code du refus métier (`refused`), `null` sinon.
+  refusal          String?
+  createdAt        DateTime  @map("created_at") @db.Timestamptz(6)
+  settledAt        DateTime? @map("settled_at") @db.Timestamptz(6)
+  closedAt         DateTime? @map("closed_at") @db.Timestamptz(6)
+
+  @@index([state, nextAttemptAt])
+  @@index([state, expiresAt])
+  @@map("order_revision_proposal")
+  @@schema("public")
+}

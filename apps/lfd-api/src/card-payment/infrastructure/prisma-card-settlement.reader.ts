@@ -16,7 +16,12 @@ import type { CardSubject } from "../channels/subjects/index.js";
 import type { CardPayment } from "../domain/entities/card-payment.js";
 import type { CardRefundLine } from "../domain/entities/card-refund-ledger.js";
 import type { CardRefundRequest } from "../domain/entities/card-refund-request.js";
-import { anotherRemainderInProgress } from "../domain/services/refund-siblings.js";
+import { CardRefundLedger } from "../domain/entities/card-refund-ledger.js";
+import { PaymentSubject } from "../domain/value-objects/payment-subject.js";
+import {
+  anotherRemainderInProgress,
+  refundableCentsOf,
+} from "../domain/services/refund-siblings.js";
 import { toDomain } from "./card-payment-rows.js";
 import { lineOf, requestOf } from "./card-refund-rows.js";
 import { byType, groupBy, positionFrom, subjectKey } from "./settlement-position.js";
@@ -62,6 +67,27 @@ export class PrismaCardSettlementReader extends CardSettlementReader {
         requests: batch.requests.get(key) ?? [],
       });
     });
+  }
+
+  async remainderOf(paymentId: string): Promise<number> {
+    const payment = await this.prisma.cardPayment.findUnique({ where: { id: paymentId } });
+    if (payment === null) {
+      return 0;
+    }
+    const [refunds, requests] = await Promise.all([
+      this.prisma.cardRefund.findMany({ where: { paymentId } }),
+      this.prisma.cardRefundRequest.findMany({ where: { paymentId } }),
+    ]);
+    const ledger = CardRefundLedger.rehydrate({
+      paymentId,
+      subject: PaymentSubject.of(payment.subjectType, payment.subjectId),
+      account: payment.account,
+      paymentRef: payment.providerRef,
+      amountCents: payment.amountCents,
+      paid: payment.state === "paid",
+      lines: refunds.map(lineOf),
+    });
+    return refundableCentsOf(ledger, requests.map(requestOf));
   }
 
   async succeededRefundsOf(subject: CardSubject): Promise<readonly SucceededCardRefund[]> {

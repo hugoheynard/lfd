@@ -53,26 +53,30 @@ describe("OrderPlanGate — l'arrêt du plan", () => {
 
 describe("OrderPlanGate — le jour même (réglage)", () => {
   it("fermé par défaut : refuse aujourd'hui, en nommant la journée", async () => {
-    await expect(gateOf().ensureNotTooSoon(TODAY, "public_online")).rejects.toMatchObject({
-      code: "orders.same_day_closed",
-      fulfillmentDate: TODAY,
-    });
-  });
-
-  it("refuse a fortiori une journée passée", async () => {
-    await expect(gateOf().ensureNotTooSoon("2025-12-31", "counter")).rejects.toBeInstanceOf(
-      SameDayOrderClosedError,
+    await expect(gateOf().ensureNotTooSoon(TODAY, "public_online", GATE_NOW)).rejects.toMatchObject(
+      {
+        code: "orders.same_day_closed",
+        fulfillmentDate: TODAY,
+      },
     );
   });
 
+  it("refuse a fortiori une journée passée", async () => {
+    await expect(
+      gateOf().ensureNotTooSoon("2025-12-31", "counter", GATE_NOW),
+    ).rejects.toBeInstanceOf(SameDayOrderClosedError);
+  });
+
   it("laisse passer demain", async () => {
-    await expect(gateOf().ensureNotTooSoon("2026-01-02", "public_online")).resolves.toBeUndefined();
+    await expect(
+      gateOf().ensureNotTooSoon("2026-01-02", "public_online", GATE_NOW),
+    ).resolves.toBeUndefined();
   });
 
   it("ouvert par le réglage : aujourd'hui passe", async () => {
     const gate = gateOf(new FixedClosedPlans(), new RecordingAdmissionDesk(), true);
 
-    await expect(gate.ensureNotTooSoon(TODAY, "pro_online")).resolves.toBeUndefined();
+    await expect(gate.ensureNotTooSoon(TODAY, "pro_online", GATE_NOW)).resolves.toBeUndefined();
   });
 });
 
@@ -94,11 +98,11 @@ describe("OrderPlanGate — le jour même, par clientèle (L4)", () => {
   it("ouvert aux particuliers seulement : un pro en ligne et le comptoir sont refusés", async () => {
     const gate = gateWith(new FixedSameDay({ sameDayPublicAllowed: true }));
 
-    await expect(gate.ensureNotTooSoon(TODAY, "public_online")).resolves.toBeUndefined();
-    await expect(gate.ensureNotTooSoon(TODAY, "pro_online")).rejects.toBeInstanceOf(
+    await expect(gate.ensureNotTooSoon(TODAY, "public_online", GATE_NOW)).resolves.toBeUndefined();
+    await expect(gate.ensureNotTooSoon(TODAY, "pro_online", GATE_NOW)).rejects.toBeInstanceOf(
       SameDayOrderClosedError,
     );
-    await expect(gate.ensureNotTooSoon(TODAY, "counter")).rejects.toBeInstanceOf(
+    await expect(gate.ensureNotTooSoon(TODAY, "counter", GATE_NOW)).rejects.toBeInstanceOf(
       SameDayOrderClosedError,
     );
   });
@@ -106,8 +110,8 @@ describe("OrderPlanGate — le jour même, par clientèle (L4)", () => {
   it("ouvert aux pros sans l'option « en ligne » : le comptoir seulement", async () => {
     const gate = gateWith(new FixedSameDay({ sameDayProAllowed: true }));
 
-    await expect(gate.ensureNotTooSoon(TODAY, "counter")).resolves.toBeUndefined();
-    await expect(gate.ensureNotTooSoon(TODAY, "pro_online")).rejects.toBeInstanceOf(
+    await expect(gate.ensureNotTooSoon(TODAY, "counter", GATE_NOW)).resolves.toBeUndefined();
+    await expect(gate.ensureNotTooSoon(TODAY, "pro_online", GATE_NOW)).rejects.toBeInstanceOf(
       SameDayOrderClosedError,
     );
   });

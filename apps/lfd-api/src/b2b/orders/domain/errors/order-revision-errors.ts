@@ -18,9 +18,24 @@ import { revisionRefusalOf } from "../services/order-revision-refusal.js";
  * l'équipe et par le client : chacun nomme le cas et le geste de sortie.
  */
 
-/** §9 : M1 ne modifie pas une commande payable par carte — c'est le lot M2. */
+/**
+ * Pourquoi une révision ne se règle pas comme la commande (plan S2, R2 bis) :
+ * une baisse, un total égal, un premier paiement pas encore encaissé, ou une
+ * hausse — que M1 ne fait pas (elle passe par un projet de complément).
+ */
+export type CardRevisionRefusal = "decrease" | "same_total" | "unsettled" | "increase";
+
+/**
+ * §9 : M1 ne modifie pas une commande payable par carte. `reason` : le tri de
+ * l'agrégat (plan S2, R2 bis), `null` quand le refus tombe avant la
+ * composition (la frontière commune, `card_settled`). Le code et le message ne
+ * changent pas : les écrans qui lisent le code le gardent (§2.9).
+ */
 export class CardOrderNotRevisableError extends BusinessError {
-  constructor(readonly orderId: string) {
+  constructor(
+    readonly orderId: string,
+    readonly reason: CardRevisionRefusal | null = null,
+  ) {
     super("orders.revise.card_settled", CARD_SETTLED_REVISION_REFUSAL);
   }
 }

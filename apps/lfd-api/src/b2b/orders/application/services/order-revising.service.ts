@@ -1,4 +1,5 @@
 import type { CustomerAudience } from "@lfd/contracts";
+import type { Instant } from "../../../../platform/context/request-context.js";
 import { Injectable, Logger } from "@nestjs/common";
 
 import { sameDayDoorOf } from "../../../order-cutoffs/domain/same-day-doors.js";
@@ -10,7 +11,9 @@ import {
   type RevisionActor,
   ensureNoShortfallDecision,
 } from "../../domain/entities/order-revision.js";
+import { cardRefusalOf } from "../../domain/entities/revision-settlement.js";
 import {
+  CardOrderNotRevisableError,
   OrderWithoutSalesTermsError,
   RevisionIntoClosedDayError,
   standingRevisionErrorOf,
@@ -229,8 +232,13 @@ export class OrderRevising {
     if (fromShelf) {
       await this.shelf.ensureOpen(order, actor);
     } else {
-      await this.ensureDayOpen(order, content.requestedDeliveryDate, actor);
-      await this.ensureFirstOrderableDay(order, content.requestedDeliveryDate, actor);
+      await this.ensureDayOpen(order, content.requestedDeliveryDate, actor, options.decidedAt);
+      await this.ensureFirstOrderableDay(
+        order,
+        content.requestedDeliveryDate,
+        actor,
+        options.decidedAt,
+      );
     }
     const parties: OrderParties = {
       companyId: order.companyId,
@@ -257,7 +265,7 @@ export class OrderRevising {
       frozenDeliveryFee: frozenDeliveryFeeOf(order),
     });
     if (!fromShelf) {
-      await this.ensureBeforeCutoff(order, content, actor);
+      await this.ensureBeforeCutoff(order, content, actor, options.decidedAt);
     }
     const arranged = await this.composition.arrange(
       content,
@@ -265,6 +273,7 @@ export class OrderRevising {
       loaded.context,
       // É12 (Hugo, 2026-11-03) : la règle de la passation, E1 comprise.
       windowRequesterOf(order.companyId, actor === "staff"),
+      options.decidedAt,
     );
     const input = revisedInputOf(
       order,
@@ -276,7 +285,7 @@ export class OrderRevising {
     );
     const revision = options.requireChange
       ? Order.revise(order, input)
-      : Order.recompose(order, input);
+      : recomposedForQuote(order, input);
     // Les remises rejouées que la révision ferait perdre, lues sur LE calcul
     // de l'agrégat — il n'est plus refait ici (L7, 2026-11-04).
     const notes = revision.pricingNotes;
@@ -328,14 +337,20 @@ export class OrderRevising {
     order: RevisableOrder,
     day: string | null,
     actor: RevisionActor["kind"],
+    decidedAt: Instant,
   ): Promise<void> {
+    // L'arrêt se juge maintenant ; le « jour même », au geste (R6).
     const closed = await this.plans.isClosed(day);
     if (day !== order.serviceDay) {
       if (closed && day !== null) {
         throw new RevisionIntoClosedDayError(day);
       }
       // La porte de la révision : celle de qui modifie (lot L4 du jour J).
-      await this.plans.ensureNotTooSoon(day, sameDayDoorOf(order.companyId, actor === "staff"));
+      await this.plans.ensureNotTooSoon(
+        day,
+        sameDayDoorOf(order.companyId, actor === "staff"),
+        decidedAt,
+      );
       return;
     }
     if (closed && actor === "customer") {
@@ -356,11 +371,17 @@ export class OrderRevising {
     order: RevisableOrder,
     day: string | null,
     actor: RevisionActor["kind"],
+    decidedAt: Instant,
   ): Promise<void> {
     if (actor === "staff" || day === order.serviceDay) {
       return;
     }
-    await this.intake.ensureServiceDayFor(order.companyId, { userId: order.placedByUserId }, day);
+    await this.intake.ensureServiceDayFor(
+      order.companyId,
+      { userId: order.placedByUserId },
+      day,
+      decidedAt,
+    );
   }
 
   /**
@@ -372,6 +393,7 @@ export class OrderRevising {
     order: RevisableOrder,
     content: OrderContent,
     actor: RevisionActor["kind"],
+    decidedAt: Instant,
   ): Promise<void> {
     if (actor === "staff") {
       return;
@@ -382,16 +404,29 @@ export class OrderRevising {
     const days = new Set([order.serviceDay, content.requestedDeliveryDate]);
     for (const day of days) {
       if (day !== null) {
-        await this.cutoffs.ensure(skus, day, order.companyId, { withWaiver: false });
+        await this.cutoffs.ensure(skus, day, order.companyId, {
+          withWaiver: false,
+          at: decidedAt,
+        });
       }
     }
   }
 }
 
-/** `requireChange` : R6 ; `rulesOf` : les règles de qui s'appliquent (cf. {@link OrderRevising.compose}). */
+/**
+ * `requireChange` : R6 ; `rulesOf` : les règles de qui s'appliquent (cf.
+ * {@link OrderRevising.compose}).
+ *
+ * `decidedAt` (plan S2, R6) : l'instant où le geste a été décidé — l'heure
+ * limite, le « jour même », le premier jour commandable et les opérations
+ * datées s'y jugent. M1 et son devis passent l'horloge ; une hausse appliquée
+ * après paiement passera la création de son projet. Restent jugés
+ * MAINTENANT : le chiffrage, l'arrêt du plan et le guichet du fournil.
+ */
 export interface RevisionOptions {
   readonly requireChange: boolean;
   readonly rulesOf?: RevisionActor["kind"];
+  readonly decidedAt: Instant;
 }
 
 /** Une révision chiffrée, et les refus de prix que le devis montre (§ 10.4). */
@@ -473,4 +508,20 @@ function subjectOf(order: RevisableOrder) {
     loyaltyVoucherId: order.voucher?.id ?? null,
     refunds: order.refunds,
   };
+}
+
+/**
+ * Le devis, tant que R2 ter n'est pas livré (plan S2, lot S2.b) : il refuse
+ * comme aujourd'hui tout ce qui n'est pas `same_settlement` — la commande carte
+ * est déjà arrêtée plus tôt par `card_settled`, ceci n'est que le filet.
+ *
+ * @throws {CardOrderNotRevisableError} le règlement n'est pas celui de la commande.
+ */
+function recomposedForQuote(order: RevisableOrder, input: PricedDraftInput): OrderRevisionToSave {
+  const { revision, settlement } = Order.recompose(order, input);
+  const refusal = cardRefusalOf(settlement);
+  if (refusal !== null) {
+    throw new CardOrderNotRevisableError(order.orderId, refusal);
+  }
+  return revision;
 }

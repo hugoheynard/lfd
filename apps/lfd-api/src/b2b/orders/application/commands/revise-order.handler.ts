@@ -75,6 +75,8 @@ export class ReviseOrderHandler implements ICommandHandler<ReviseOrderCommand, R
     const scope = await this.revising.ensureRevisable(current, command.actor.kind);
     const revision = await this.revising.compose(current, command.content, command.actor, {
       requireChange: true,
+      // M1 juge à l'horloge (plan S2, R6).
+      decidedAt: this.clock.now(),
     });
     ensureWithinScope(current, revision, scope);
     // R14, R15 (plan S2) : le règlement a parlé (ensureRevisable, compose) ;

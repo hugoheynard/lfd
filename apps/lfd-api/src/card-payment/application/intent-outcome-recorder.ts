@@ -47,6 +47,8 @@ export class IntentOutcomeRecorder {
       subjectOf(payment),
       payment.id,
       payment.amountCents,
+      // Le rôle lu sur la ligne (plan S2, §2.5) : le sujet route sur lui.
+      payment.role,
     );
     const locked = await this.lock(payment.id);
     const paidAt = this.clock.now();
@@ -64,7 +66,7 @@ export class IntentOutcomeRecorder {
       this.ignoreStale(payment, "failed", eventId);
       return;
     }
-    await this.settlementOf(payment).onPaymentFailed(subjectOf(payment), payment.id);
+    await this.settlementOf(payment).onPaymentFailed(subjectOf(payment), payment.id, payment.role);
     const locked = await this.lock(payment.id);
     if (locked.moveTo("failed") !== "transition") {
       return;

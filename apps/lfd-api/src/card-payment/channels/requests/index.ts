@@ -9,6 +9,7 @@ export {
   type CardPaymentCancellation,
   type CardPaymentPreparation,
   CardPayments,
+  type CardProviderSettlement,
   type PreparedCardPayment,
   type RetrievedCardPayment,
 } from "./card-payments.js";

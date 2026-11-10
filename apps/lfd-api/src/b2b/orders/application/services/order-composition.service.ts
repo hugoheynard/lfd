@@ -1,3 +1,4 @@
+import type { Instant } from "../../../../platform/context/request-context.js";
 import type { OrderFulfillment as AgreedFulfillment, PickupSnapshot } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
@@ -110,17 +111,25 @@ export class OrderComposition {
 
   /**
    * Les opérations datées, les réglages qui préremplissent et l'acheminement
-   * convenu — APRÈS l'heure limite, dans cet ordre.
+   * convenu — APRÈS l'heure limite, dans cet ordre. `at` : l'instant du geste
+   * (plan S2, R6), où se jugent les opérations datées ; les créneaux ne lisent
+   * aucune horloge (`agreeWithWindow`, vérifié le 2026-11-10).
    */
   async arrange(
     content: OrderContent,
     parties: OrderParties,
     context: BasketPricingContext,
     requester: WindowRequester,
+    at: Instant,
   ): Promise<ArrangedContent> {
     // Les deux gardes s'appliquent, c'est le plus tôt qui ferme, et l'équipe ne
     // rouvre pas une opération close (D6 du plan des opérations datées).
-    await this.operations.ensure(content.lines, parties.companyId, content.requestedDeliveryDate);
+    await this.operations.ensure(
+      content.lines,
+      parties.companyId,
+      content.requestedDeliveryDate,
+      at,
+    );
     const defaults = await this.defaultsFor(content, parties);
     const agreed = agreeWithWindow(
       {

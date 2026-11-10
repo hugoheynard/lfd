@@ -41,6 +41,15 @@ export interface RetrievedCardPayment {
 export type { CardIntentState, IntentCancellation as CardPaymentCancellation };
 
 /**
+ * Ce que `settleFromProvider` a constaté chez le prestataire :
+ * - `paid` — l'intention est encaissée, et le chemin du webhook a été rejoué
+ *   (ou l'avait déjà été : la machine de la ligne dédoublonne) ;
+ * - `pending` — rien de décidé (`awaiting_payment`, `processing`) ;
+ * - `closed` — l'intention est annulée, la ligne fermée.
+ */
+export type CardProviderSettlement = "paid" | "pending" | "closed";
+
+/**
  * **Encaisser par carte** (plan M2, §3.3) — déclaré ET implémenté par
  * `card-payment`, appelé par la passation, la page de règlement, l'abandon,
  * l'expiration et la clôture (lot P0.c2).
@@ -93,6 +102,19 @@ export abstract class CardPayments {
    * @throws {CardPaymentNotFoundError} aucun paiement sous cet identifiant.
    */
   abstract cancel(paymentId: string): Promise<IntentCancellation>;
+
+  /**
+   * **Vérifier chez le prestataire** (plan S2, §2.7 ; premier pas du
+   * « Vérifier » du §6.5 du plan M2) — le rattrapage d'un webhook perdu.
+   * 🔴 HORS transaction : relit l'intention sur le compte de la ligne, puis,
+   * si elle est encaissée, rejoue DANS une unité de travail le même
+   * enregistrement que le webhook (le sujet est appelé avec le rôle de la
+   * ligne) ; annulée, ferme la ligne.
+   *
+   * @throws {CardPaymentNotFoundError} aucun paiement sous cet identifiant.
+   * @throws {CardProviderUnavailableError} le prestataire ne répond pas — l'appelant compte l'échec.
+   */
+  abstract settleFromProvider(paymentId: string): Promise<CardProviderSettlement>;
 
   /**
    * **Adopte** une intention que la ligne ne connaît pas (créée par l'image

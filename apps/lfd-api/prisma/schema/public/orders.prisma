@@ -535,6 +535,8 @@ model Order {
 
   lines              OrderLine[]
   revisions          OrderRevisionEntry[]
+  /// Les projets de hausse payée par carte (plan S2, `order_revision_proposal`).
+  revisionProposals  OrderRevisionProposal[]
   /// L'issue de sa facture carte (E5a), s'il y en a une.
   cardInvoiceOutcome CardInvoiceOutcome?
   /// Ses bons de livraison (plan E1, plan E1 (`documentation/commandes/bon-de-livraison.md`)).

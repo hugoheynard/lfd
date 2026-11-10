@@ -148,6 +148,10 @@ export class FixedCardRefundRequests extends CardSettlementReader {
   ): Promise<readonly SubjectCardRefundRequests[]> {
     return Promise.resolve(subjects.map((subject) => ({ subject, requests: this.requests })));
   }
+
+  remainderOf(): Promise<number> {
+    return Promise.resolve(0);
+  }
 }
 
 /** Une demande telle que le bloc la rend ; instants comparés à rien — exception étroite du §5. */

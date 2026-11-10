@@ -9,7 +9,13 @@ import { HeldAfterCommit } from "../../../../../platform/database/__tests__/held
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { RecordingJournal } from "../../../../../platform/journal/__tests__/recording-journal.js";
 import { RecordingDurable } from "../../commands/__tests__/durable-doubles.js";
+import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
+import type { CardIncreaseProposal } from "../../../domain/entities/card-increase-proposal.js";
+import { ComplementWithoutProposalError } from "../../../domain/errors/card-increase-proposal-errors.js";
+import { OrderComplementPaidLateEvent } from "../../../domain/events/order-complement-paid-late.event.js";
+import { OrderComplementSettlement } from "../order-complement-settlement.js";
 import { OrderRefundOutcomes } from "../order-refund-outcomes.js";
+import { proposalAt, RecordingProposals, RecordingWake } from "./card-increase-doubles.js";
 import { OrderSubjectSettlement } from "../order-subject-settlement.js";
 import { RecordingRefundStatus } from "./order-refund-outcome-doubles.js";
 import {
@@ -38,6 +44,8 @@ function build(
     readonly row?: OrderCardStanding | null;
     readonly crossed?: string | null;
     readonly refundDue?: string | null;
+    readonly proposal?: CardIncreaseProposal | null;
+    readonly proposalWritten?: boolean;
   } = {},
 ) {
   const steps = new Steps();
@@ -45,6 +53,13 @@ function build(
   const journal = new RecordingJournal();
   const row = options.row === undefined ? standing() : options.row;
   const standings = new FixedStandings(row === null ? [] : [row]);
+  const proposals = new RecordingProposals(
+    steps,
+    options.proposal ?? null,
+    options.proposalWritten ?? true,
+  );
+  const wake = new RecordingWake();
+  const afterCommit = new HeldAfterCommit();
   const settlement = new OrderSubjectSettlement(
     new RecordingLock(steps),
     standings,
@@ -59,8 +74,16 @@ function build(
       new HeldAfterCommit(),
       new RecordingPublisher(),
     ),
+    new OrderComplementSettlement(
+      new RecordingLock(steps),
+      proposals,
+      durable,
+      afterCommit,
+      wake,
+      new FixedClock(new Date(0)),
+    ),
   );
-  return { steps, durable, journal, standings, settlement };
+  return { steps, durable, journal, standings, settlement, proposals, wake, afterCommit };
 }
 
 /**
@@ -72,7 +95,7 @@ describe("OrderSubjectSettlement — un encaissement", () => {
   it("applied : verrou de la commande d'abord, `markPaid` par l'intention, `order.paid` au franchissement", async () => {
     const { steps, durable, settlement } = build();
 
-    await expect(settlement.onPaid(ORDER)).resolves.toBe("applied");
+    await expect(settlement.onPaid(ORDER, "pay_1", 2_340, "first")).resolves.toBe("applied");
 
     expect(steps.seen).toEqual(["lock:ord_1", "markPaid:pi_1"]);
     expect(durable.facts).toEqual([new OrderPaidFact("ord_1").durableFact()]);
@@ -81,7 +104,9 @@ describe("OrderSubjectSettlement — un encaissement", () => {
   it("🔴 already_applied : rien n'a franchi (déjà payée, webhook rejoué) — RIEN n'est publié", async () => {
     const { durable, settlement } = build({ crossed: null, row: standing({ settled: "paid" }) });
 
-    await expect(settlement.onPaid(ORDER)).resolves.toBe("already_applied");
+    await expect(settlement.onPaid(ORDER, "pay_1", 2_340, "first")).resolves.toBe(
+      "already_applied",
+    );
 
     expect(durable.facts).toEqual([]);
   });
@@ -93,7 +118,7 @@ describe("OrderSubjectSettlement — un encaissement", () => {
       row: standing({ cancelled: true, settled: "failed" }),
     });
 
-    await expect(settlement.onPaid(ORDER)).resolves.toBe("refused");
+    await expect(settlement.onPaid(ORDER, "pay_1", 2_340, "first")).resolves.toBe("refused");
 
     expect(durable.facts).toEqual([new OrderPaidAfterCancellationEvent("ord_1").durableFact()]);
   });
@@ -110,7 +135,7 @@ describe("OrderSubjectSettlement — un encaissement", () => {
       row: standing({ cancelled: true, settled: "paid" }),
     });
 
-    await expect(settlement.onPaid(ORDER)).resolves.toBe("refused");
+    await expect(settlement.onPaid(ORDER, "pay_1", 2_340, "first")).resolves.toBe("refused");
 
     expect(durable.facts).toEqual([]);
   });
@@ -118,7 +143,7 @@ describe("OrderSubjectSettlement — un encaissement", () => {
   it("refuse une commande sans intention : incohérence de base, nommée", async () => {
     const { steps, settlement } = build({ row: standing({ providerRef: null }) });
 
-    await expect(settlement.onPaid(ORDER)).rejects.toBeInstanceOf(
+    await expect(settlement.onPaid(ORDER, "pay_1", 2_340, "first")).rejects.toBeInstanceOf(
       OrderCardSubjectWithoutIntentError,
     );
     expect(steps.seen).toEqual(["lock:ord_1"]);
@@ -127,7 +152,9 @@ describe("OrderSubjectSettlement — un encaissement", () => {
   it("refuse une commande inconnue", async () => {
     const { settlement } = build({ row: null });
 
-    await expect(settlement.onPaid(ORDER)).rejects.toBeInstanceOf(OrderNotFoundError);
+    await expect(settlement.onPaid(ORDER, "pay_1", 2_340, "first")).rejects.toBeInstanceOf(
+      OrderNotFoundError,
+    );
   });
 });
 
@@ -135,7 +162,7 @@ describe("OrderSubjectSettlement — un refus de la banque", () => {
   it("`markPaymentFailed` sous le verrou, et le fait durable du refus avec la COMMANDE", async () => {
     const { steps, durable, settlement } = build();
 
-    await settlement.onPaymentFailed(ORDER);
+    await settlement.onPaymentFailed(ORDER, "pay_1", "first");
 
     expect(steps.seen).toEqual(["lock:ord_1", "markPaymentFailed:pi_1"]);
     expect(durable.facts).toEqual([new OrderPaymentFailedEvent("ord_1", "refused").durableFact()]);
@@ -144,7 +171,7 @@ describe("OrderSubjectSettlement — un refus de la banque", () => {
   it("🔴 un refus rejoué ne franchit rien et ne publie rien — pas deux courriels", async () => {
     const { durable, settlement } = build({ crossed: null });
 
-    await settlement.onPaymentFailed(ORDER);
+    await settlement.onPaymentFailed(ORDER, "pay_1", "first");
 
     expect(durable.facts).toEqual([]);
   });
@@ -167,7 +194,7 @@ describe("OrderSubjectSettlement — ce que le bloc demande", () => {
     });
   });
 
-  it("claim : revendique son intention, au total, en premier paiement, au règlement qu'elle voit", async () => {
+  it("claim : revendique son intention, au montant de son paiement, en premier paiement, au règlement qu'elle voit", async () => {
     const { settlement } = build({ row: standing({ settled: "failed" }) });
 
     await expect(settlement.claim("lfc-stripe", "pi_1")).resolves.toEqual({
@@ -232,5 +259,96 @@ describe("OrderSubjectSettlement — un remboursement", () => {
         payload: { subjectLabel: "ORD-0001", generation: 1, failure: "unavailable" },
       },
     ]);
+  });
+});
+
+/** Plan S2, §2.5 : un complément de hausse, routé sur le rôle de la ligne. */
+describe("OrderSubjectSettlement — un complément encaissé", () => {
+  const complement = (settlement: OrderSubjectSettlement) =>
+    settlement.onPaid(ORDER, "pay_2", 1_200, "complement");
+
+  it("en attente : le projet passe `ready`, et l'exécuteur est réveillé APRÈS validation", async () => {
+    const { steps, settlement, proposals, wake, afterCommit } = build({
+      proposal: proposalAt("awaiting_payment"),
+    });
+
+    await expect(complement(settlement)).resolves.toBe("applied");
+
+    expect(steps.seen).toEqual([
+      "lock:ord_1",
+      "lockProposal:pay_2",
+      "saveProposal:awaiting_payment→ready",
+    ]);
+    expect(proposals.saved).toEqual(["ready"]);
+    expect(wake.woken).toEqual([]);
+    await afterCommit.commit();
+    expect(wake.woken).toEqual(["prop_1"]);
+  });
+
+  /** Régression (vitruve v3) : un complément ne marque jamais le premier paiement. */
+  it("🔴 ne marque jamais la commande payée, ne publie pas `order.paid`", async () => {
+    const { steps, durable, settlement } = build({ proposal: proposalAt("awaiting_payment") });
+
+    await complement(settlement);
+
+    expect(steps.seen.some((step) => step.startsWith("markPaid"))).toBe(false);
+    expect(durable.facts).toEqual([]);
+  });
+
+  it("abandonné : fermé, et le fait durable « payé tard » part avec le projet", async () => {
+    const { settlement, durable, proposals } = build({ proposal: proposalAt("abandoned") });
+
+    await expect(complement(settlement)).resolves.toBe("refused");
+
+    expect(proposals.saved).toEqual(["closed"]);
+    expect(durable.facts).toEqual([
+      new OrderComplementPaidLateEvent("ord_1", "prop_1", "pay_2", 1_200).durableFact(),
+    ]);
+  });
+
+  it.each(["ready", "applied", "refused", "stalled", "closed"] as const)(
+    "%s : un rejeu — rien ne franchit, rien n'est écrit",
+    async (state) => {
+      const { settlement, proposals, durable } = build({ proposal: proposalAt(state) });
+
+      await expect(complement(settlement)).resolves.toBe("already_applied");
+
+      expect(proposals.saved).toEqual([]);
+      expect(durable.facts).toEqual([]);
+    },
+  );
+
+  it("une transition conditionnée qui n'écrit rien est un rejeu, sans réveil", async () => {
+    const { settlement, wake, afterCommit } = build({
+      proposal: proposalAt("awaiting_payment"),
+      proposalWritten: false,
+    });
+
+    await expect(complement(settlement)).resolves.toBe("already_applied");
+    await afterCommit.commit();
+    expect(wake.woken).toEqual([]);
+  });
+
+  /** Régression (vitruve v3) : sans projet, 12 € étaient gardés en silence par le premier. */
+  it("🔴 aucun projet : erreur bruyante, la commande n'est pas touchée", async () => {
+    const { steps, settlement } = build({ proposal: null });
+
+    await expect(complement(settlement)).rejects.toBeInstanceOf(ComplementWithoutProposalError);
+    expect(steps.seen).toEqual(["lock:ord_1", "lockProposal:pay_2"]);
+  });
+
+  it("un projet d'une autre commande : la même erreur", async () => {
+    const { settlement } = build({ proposal: proposalAt("awaiting_payment", "ord_9") });
+
+    await expect(complement(settlement)).rejects.toBeInstanceOf(ComplementWithoutProposalError);
+  });
+
+  it("un refus de la banque sur un complément ne touche pas la commande", async () => {
+    const { steps, durable, settlement } = build({ proposal: proposalAt("awaiting_payment") });
+
+    await settlement.onPaymentFailed(ORDER, "pay_2", "complement");
+
+    expect(steps.seen).toEqual([]);
+    expect(durable.facts).toEqual([]);
   });
 });

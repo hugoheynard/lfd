@@ -1,3 +1,4 @@
+import type { Instant } from "../../../../platform/context/request-context.js";
 import { Injectable } from "@nestjs/common";
 
 import { SaleOperations } from "../../../catalog/application/sale-operations.service.js";
@@ -29,16 +30,18 @@ export class OrderOperations {
    *   pas (refusé pour un article `operationOnly`) ; absent = un devis, qui ne
    *   juge pas le jour mais dit déjà « pas encore ouvert », « clos » ou
    *   « introuvable » — le refus n'attend pas le paiement.
+   * @param at l'instant du geste (plan S2, R6) ; absent = maintenant.
    * @throws cf. `ensureWithinOperation`.
    */
   async ensure(
     lines: readonly { readonly sku: string }[],
     companyId: string | null,
     fulfillmentDate?: string | null,
+    at?: Instant,
   ): Promise<void> {
     const skus = [...new Set(lines.map((line) => line.sku))];
     const audience = companyId === null ? "public" : "pro";
-    const accesses = await this.sale.accessOf(skus, audience, fulfillmentDate);
+    const accesses = await this.sale.accessOf(skus, audience, fulfillmentDate, at);
     ensureWithinOperation(
       skus.flatMap((sku) => {
         const found = accesses.get(sku);

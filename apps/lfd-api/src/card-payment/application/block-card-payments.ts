@@ -8,6 +8,7 @@ import {
   type CardPaymentCancellation,
   type CardPaymentPreparation,
   CardPayments,
+  type CardProviderSettlement,
   type PreparedCardPayment,
   type RetrievedCardPayment,
 } from "../channels/requests/card-payments.js";
@@ -23,6 +24,7 @@ import { CardProviders } from "../domain/ports/card-providers.js";
 import { PaymentAccount } from "../domain/value-objects/payment-account.js";
 import { PaymentSubject } from "../domain/value-objects/payment-subject.js";
 import { CardAccountChoice } from "./card-account-choice.js";
+import { IntentOutcomeRecorder } from "./intent-outcome-recorder.js";
 
 /** Devise unique de la plateforme : les montants sont des centimes d'euro. */
 const CARD_CURRENCY = "eur";
@@ -46,6 +48,7 @@ export class BlockCardPayments extends CardPayments {
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly outcomes: IntentOutcomeRecorder,
   ) {
     super();
   }
@@ -120,6 +123,30 @@ export class BlockCardPayments extends CardPayments {
       await this.uow.run(() => this.close(paymentId));
     }
     return outcome;
+  }
+
+  async settleFromProvider(paymentId: string): Promise<CardProviderSettlement> {
+    const { payment, providerRef } = await this.attached(paymentId);
+    const intent = await this.providers.forAccount(payment.account).retrieveIntent(providerRef);
+    switch (intent.state) {
+      case "succeeded":
+        // L'identifiant ne sert qu'au journal : l'idempotence tient par la
+        // machine de la ligne (`moveTo`, `markPaid`), relue sous verrou.
+        await this.uow.run(async () =>
+          this.outcomes.paid(
+            (await this.attached(paymentId)).payment,
+            providerRef,
+            `provider-check:${paymentId}`,
+          ),
+        );
+        return "paid";
+      case "canceled":
+        await this.uow.run(() => this.close(paymentId));
+        return "closed";
+      case "awaiting_payment":
+      case "processing":
+        return "pending";
+    }
   }
 
   async adopt(

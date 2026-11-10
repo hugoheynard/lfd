@@ -84,6 +84,8 @@ import { RemainderShipmentReader } from "./domain/ports/remainder-shipment.reade
 import { PrismaRemainderShipmentReader } from "./infrastructure/prisma-remainder-shipment.reader.js";
 import { OrderLock } from "./domain/ports/order-lock.js";
 import { PrismaOrderLock } from "./infrastructure/prisma-order-lock.js";
+import { CardIncreaseProposalRepository } from "./domain/ports/card-increase-proposal.repository.js";
+import { PrismaCardIncreaseProposalRepository } from "./infrastructure/prisma-card-increase-proposal.repository.js";
 import { PendingRemaindersReader } from "./domain/ports/pending-remainders.reader.js";
 import { PrismaPendingRemaindersReader } from "./infrastructure/prisma-pending-remainders.reader.js";
 import { SettledOrderWriter } from "./domain/ports/settled-order.writer.js";
@@ -112,6 +114,9 @@ import { PrismaOrderCancellationRepository } from "./infrastructure/prisma-order
 import { AdoptOrderPaymentHandler } from "./application/commands/adopt-order-payment.handler.js";
 import { OrderCardPayments } from "./application/services/order-card-payments.js";
 import { OrderSubjectSettlement } from "./application/services/order-subject-settlement.js";
+import { OrderComplementSettlement } from "./application/services/order-complement-settlement.js";
+import { CardIncreaseWake } from "./domain/ports/card-increase-wake.js";
+import { NoCardIncreaseWake } from "./infrastructure/no-card-increase-wake.js";
 import { OrderRefundOutcomes } from "./application/services/order-refund-outcomes.js";
 import { OrderRefundStatusWriter } from "./domain/ports/order-refund-status.writer.js";
 import { PrismaOrderRefundStatusWriter } from "./infrastructure/prisma-order-refund-status.writer.js";
@@ -521,6 +526,11 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     { provide: OrdersToReconcileDeliveryNotes, useClass: PrismaOrdersToReconcileDeliveryNotes },
     // Le solde dérivé d'une commande à plusieurs envois (plan E7 reliquat, L5b).
     { provide: OrderLock, useClass: PrismaOrderLock },
+    // Plan S2 (la hausse par carte) : le projet, sous le verrou d'`orders`.
+    { provide: CardIncreaseProposalRepository, useClass: PrismaCardIncreaseProposalRepository },
+    // Le réveil de l'exécuteur : vide jusqu'au lot S2.c (plan S2, §2.10).
+    { provide: CardIncreaseWake, useClass: NoCardIncreaseWake },
+    OrderComplementSettlement,
     { provide: PendingRemaindersReader, useClass: PrismaPendingRemaindersReader },
     { provide: SettledOrderWriter, useClass: PrismaSettledOrderWriter },
     { provide: RemainderSettlement, useClass: OrderRemainderSettler },

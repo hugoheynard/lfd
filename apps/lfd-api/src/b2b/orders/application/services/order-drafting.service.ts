@@ -205,6 +205,7 @@ export class OrderDrafting {
       parties,
       loaded.context,
       windowRequesterOf(parties.companyId, parties.placedByStaffId !== null),
+      this.clock.now(),
     );
     // C'est un VERDICT qui a un prix (§ 2.3) : `priceBasket` l'applique au
     // sous-total ; le devis d'une société le prévoit par la même source.
@@ -252,6 +253,7 @@ export class OrderDrafting {
       await this.plans.ensureNotTooSoon(
         day,
         sameDayDoorOf(parties.companyId, parties.placedByStaffId !== null),
+        this.clock.now(),
       );
     }
   }
@@ -317,7 +319,8 @@ export class OrderDrafting {
       content.lines.map((line) => line.sku),
       content.requestedDeliveryDate,
       parties.companyId,
-      { withWaiver: true },
+      // La passation juge à l'horloge (plan S2, R6).
+      { withWaiver: true, at: this.clock.now() },
     );
   }
 

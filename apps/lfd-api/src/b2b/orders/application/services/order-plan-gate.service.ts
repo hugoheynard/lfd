@@ -6,6 +6,7 @@ import {
   PlanAdmissionDesk,
   ServiceDay,
 } from "../../../../production/channels/commerce/index.js";
+import type { Instant } from "../../../../platform/context/request-context.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { type SameDayDoor, sameDayOpenTo } from "../../../order-cutoffs/domain/same-day-doors.js";
 import { SameDayOrderClosedError } from "../../domain/errors/same-day-order-closed.error.js";
@@ -42,12 +43,13 @@ export class OrderPlanGate {
   /**
    * Le réglage « jour même » de CETTE porte (§8.3 ; par clientèle depuis le
    * lot L4) : sans lui, aujourd'hui — et a fortiori une journée passée — est
-   * refusé. Aucun délai n'est codé ici.
+   * refusé. Aucun délai n'est codé ici. `at` : l'instant du geste (plan S2,
+   * R6) — l'horloge pour la passation et M1.
    *
    * @throws {SameDayOrderClosedError} la journée n'est pas après aujourd'hui, et le réglage ne l'ouvre pas à cette porte.
    */
-  async ensureNotTooSoon(day: string | null, door: SameDayDoor): Promise<void> {
-    if (day === null || day > this.today()) {
+  async ensureNotTooSoon(day: string | null, door: SameDayDoor, at: Instant): Promise<void> {
+    if (day === null || day > instantToLocal(at).day) {
       return;
     }
     if (!sameDayOpenTo(await this.sameDay.settings(), door)) {

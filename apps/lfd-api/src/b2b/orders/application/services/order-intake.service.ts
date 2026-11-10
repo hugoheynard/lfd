@@ -1,3 +1,4 @@
+import type { Instant } from "../../../../platform/context/request-context.js";
 import {
   instantToLocal,
   ordersOpenTo,
@@ -140,6 +141,7 @@ export class OrderIntake {
    * **La journée seule** — ce que la révision d'une commande par son client
    * oppose quand la date change (2026-10-28). La fermeture n'y joue pas : une
    * commande déjà passée se modifie boutique fermée, comme elle s'annule.
+   * `at` : l'instant du geste (plan S2, R6) — l'horloge pour M1.
    *
    * @throws {ServiceDayBeforeFirstOrderableDayError} la journée précède le
    *   premier jour commandable de la clientèle, et aucune exemption ne couvre
@@ -149,8 +151,9 @@ export class OrderIntake {
     companyId: string | null,
     buyer: IntakeBuyer,
     serviceDay: string | null,
+    at: Instant,
   ): Promise<void> {
-    ensureDayAdmitted(await this.standingFor(companyId, buyer), serviceDay);
+    ensureDayAdmitted(await this.standingFor(companyId, buyer, at), serviceDay);
   }
 
   /** Ce que la porte sait de qui commande, si la boutique la prend ; sinon le refus. */
@@ -173,10 +176,14 @@ export class OrderIntake {
    * Ouverte et sans premier jour à venir : ni la liste ni l'adresse ne sont
    * lues — c'est le cas de chaque passation tant que personne n'a rien réglé.
    */
-  async standingFor(companyId: string | null, buyer: IntakeBuyer): Promise<IntakeStanding> {
+  async standingFor(
+    companyId: string | null,
+    buyer: IntakeBuyer,
+    at: Instant = this.clock.now(),
+  ): Promise<IntakeStanding> {
     const audience = await this.audiences.of(companyId);
     const opening = await this.opening.current();
-    const today = instantToLocal(this.clock.now()).day;
+    const today = instantToLocal(at).day;
     const ordersOpen = ordersOpenTo(opening, audience);
     const first = firstServiceDayOfAudience(opening, audience);
     if (ordersOpen && (first === null || first <= today)) {

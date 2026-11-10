@@ -1,3 +1,4 @@
+import type { CardRefundLedger } from "../entities/card-refund-ledger.js";
 import type { CardRefundRequest } from "../entities/card-refund-request.js";
 
 /**
@@ -45,4 +46,26 @@ export function announcedByOpenAmounts(siblings: readonly CardRefundRequest[]): 
         request.view.form === "amount" && (request.isInProgress() || request.current === "stopped"),
     )
     .reduce((sum, request) => sum + request.view.announcedCents, 0);
+}
+
+/**
+ * **Ce qu'on peut encore demander de rendre sur un paiement** — le reste du
+ * carnet (encaissé − remboursé réussi), moins ce que les `amount` ouvertes et
+ * la `remainder` en cours annoncent déjà. Jamais négatif. La règle de
+ * `requestAmount` (§7), lue aussi par `CardSettlementReader.remainderOf`
+ * (plan S2, R11) : les deux disent le même reste. Un paiement non encaissé
+ * n'a rien à rendre.
+ */
+export function refundableCentsOf(
+  ledger: CardRefundLedger,
+  siblings: readonly CardRefundRequest[],
+): number {
+  if (!ledger.paid) {
+    return 0;
+  }
+  const available =
+    ledger.remainderCents() -
+    announcedByOpenAmounts(siblings) -
+    (remainderInProgress(siblings)?.view.announcedCents ?? 0);
+  return Math.max(0, available);
 }

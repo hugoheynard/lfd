@@ -4,6 +4,7 @@ import {
   type CardPaymentLine,
   type CardPaymentPreparation,
   CardPayments,
+  type CardProviderSettlement,
   type CardSettlementPosition,
   CardSettlementReader,
   type RetrievedCardPayment,
@@ -40,7 +41,7 @@ export function standing(overrides: Partial<OrderCardStanding> = {}): OrderCardS
     orderId: "ord_1",
     orderNumber: "ORD-0001",
     providerRef: "pi_1",
-    totalCents: 2_340,
+    firstPaymentCents: 2_340,
     cancelled: false,
     settled: "pending" satisfies OrderCardSettled,
     ...overrides,
@@ -166,6 +167,14 @@ export class ScriptedCardPayments extends CardPayments {
     });
     return Promise.resolve("pay_adopted");
   }
+
+  /** Ce que le prestataire dirait d'une intention relue (plan S2, §2.7). */
+  providerSettlement: CardProviderSettlement = "pending";
+
+  settleFromProvider(paymentId: string): Promise<CardProviderSettlement> {
+    this.calls.push(`settleFromProvider:${paymentId}`);
+    return Promise.resolve(this.providerSettlement);
+  }
 }
 
 /** Les positions, lues sur les lignes du double ci-dessus. */
@@ -204,6 +213,12 @@ export class LinePositions extends CardSettlementReader {
     subjects: readonly CardSubject[],
   ): Promise<readonly SubjectCardRefundRequests[]> {
     return Promise.resolve(subjects.map((subject) => ({ subject, requests: [] })));
+  }
+
+  /** Le reste d'un paiement : son montant entier, aucun remboursement n'étant doublé ici. */
+  remainderOf(paymentId: string): Promise<number> {
+    const line = [...this.payments.lines.values()].find((each) => each.paymentId === paymentId);
+    return Promise.resolve(line?.state === "paid" ? line.amountCents : 0);
   }
 }
 

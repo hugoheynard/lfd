@@ -38,7 +38,7 @@ describe("OrderRevising — le premier jour commandable", () => {
         order,
         content({ requestedDeliveryDate: NEXT_DAY }),
         CUSTOMER,
-        { requireChange: true },
+        { requireChange: true, decidedAt: NOW },
       ),
     ).rejects.toBeInstanceOf(ServiceDayBeforeFirstOrderableDayError);
   });
@@ -50,7 +50,7 @@ describe("OrderRevising — le premier jour commandable", () => {
       order,
       content({ requestedDeliveryDate: NEXT_DAY }),
       CUSTOMER,
-      { requireChange: true },
+      { requireChange: true, decidedAt: NOW },
     );
 
     expect(revision.serviceDay).toBe(NEXT_DAY);
@@ -63,7 +63,7 @@ describe("OrderRevising — le premier jour commandable", () => {
       order,
       content({ lines: [{ sku: "VIE-001", quantity: 12 }] }),
       CUSTOMER,
-      { requireChange: true },
+      { requireChange: true, decidedAt: NOW },
     );
 
     expect(revision.serviceDay).toBe(DAY);
@@ -76,7 +76,7 @@ describe("OrderRevising — le premier jour commandable", () => {
       order,
       content({ requestedDeliveryDate: NEXT_DAY }),
       STAFF,
-      { requireChange: true },
+      { requireChange: true, decidedAt: NOW },
     );
 
     expect(revision.serviceDay).toBe(NEXT_DAY);

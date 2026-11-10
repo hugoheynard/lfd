@@ -1,6 +1,3 @@
-import type { BillingAddressPayload } from "@lfd/contracts";
-import { millicentsFromCents } from "@lfd/money";
-
 import {
   CardOrderNotRevisableError,
   FrozenLinePriceChangedError,
@@ -10,11 +7,10 @@ import {
   ShortfallDecidedRevisionError,
   UnchangedOrderRevisionError,
 } from "../../errors/order-revision-errors.js";
-import type { OrderLineInput } from "../../value-objects/order-line.js";
 import { Order } from "../order.js";
-import type { PricedDraftInput } from "../order-priced-draft.js";
 import type { RevisableOrder } from "../order-revision.js";
-import { draftFrom, replayedOf, type DraftSpec } from "./priced-input.fixture.js";
+import type { DraftSpec } from "./priced-input.fixture.js";
+import { DAY, LABO, input, line, placed, revised } from "./revisable-order.fixture.js";
 
 /**
  * **La révision d'une commande, jugée par l'agrégat** (plan
@@ -25,124 +21,6 @@ import { draftFrom, replayedOf, type DraftSpec } from "./priced-input.fixture.js
  * Les jours de service sont des dates absolues comparées entre elles
  * seulement : aucune horloge ici (exception étroite du CLAUDE.md §5).
  */
-
-const LABO: BillingAddressPayload = {
-  label: "Labo",
-  ligne1: "5 rue du Four",
-  ligne2: "",
-  codePostal: "73150",
-  ville: "Val d'Isère",
-  pays: "France",
-};
-
-const DAY = "2026-11-10";
-
-const line = (sku: string, qty: number, priceCents = 200): OrderLineInput => ({
-  sku,
-  productName: sku,
-  unitPriceMillicents: millicentsFromCents(priceCents),
-  vatRate: 5.5,
-  saleUnit: "piece",
-  quantity: qty,
-});
-
-const BASE: DraftSpec = {
-  companyId: "co_1",
-  billedCompanyId: "co_1",
-  principal: null,
-  placedByStaffId: null,
-  buyerKind: "registered",
-  agreed: {
-    window: { value: { start: "07:00", end: "08:00" }, source: "override" },
-    contact: { value: null, source: "default" },
-    signatureRequired: { value: false, source: "default" },
-  },
-  placedByUserId: "usr_1",
-  fulfillment: {
-    method: "pickup",
-    deliveryZoneId: null,
-    deliveryAddress: null,
-    deliveryAddressId: null,
-    pickupAddress: { ...LABO, siteId: "site_1" },
-  },
-  requestedDeliveryDate: new Date(`${DAY}T00:00:00.000Z`),
-  note: "",
-  catalogVersionId: null,
-  lines: [line("VIE-001", 10)],
-  voucher: null,
-  salesTerms: { document: "salesTermsPro", revision: null, fileId: null },
-  locale: null,
-};
-
-/** Une passation : la commande de base, modifiée. */
-function input(over: Partial<DraftSpec> = {}): PricedDraftInput {
-  return draftFrom(BASE, over);
-}
-
-/** Une révision de `order` : la même entrée, ses remises rejouées. */
-function revised(order: RevisableOrder, over: Partial<DraftSpec> = {}): PricedDraftInput {
-  return draftFrom(BASE, { replayed: replayedOf(order), ...over });
-}
-
-/** La commande telle que passée, d'après une entrée : au compte, 10 croissants par défaut. */
-function placed(
-  over: Partial<RevisableOrder> = {},
-  from: PricedDraftInput = input(),
-): RevisableOrder {
-  const order = Order.draft(from);
-  order.deferPayment();
-  const state = order.toPersistence();
-  return {
-    orderId: "ord_1",
-    orderNumber: "ORD-1",
-    revision: 0,
-    vatMethod: state.vatMethod,
-    companyId: state.companyId,
-    billedCompanyId: state.billedCompanyId,
-    principal: null,
-    placedByUserId: state.placedByUserId,
-    placedByStaffId: null,
-    buyerKind: "registered",
-    status: "placed",
-    paymentStatus: "not_required",
-    shortfallDecided: false,
-    discountPromotionId: state.discountPromotionId,
-    discountAdjustment: state.discountAdjustment,
-    discountLabel: state.discountLabel,
-    discountCents: state.discountCents,
-    discountTtcCents: state.discountTtcCents,
-    activeDiscounts: [],
-    totalCents: state.totalCents,
-    stripePaymentIntentId: null,
-    cancelledAt: null,
-    refunds: { refundableCents: 0, inFlightCents: 0 },
-    serviceDay: DAY,
-    supply: state.supply,
-    entryShortcut: state.entryShortcut,
-    entryOrigin: state.entryOrigin,
-    fulfillment: {
-      method: state.fulfillmentMethod,
-      deliveryZoneId: null,
-      deliveryAddress: null,
-      deliveryAddressId: null,
-      pickupAddress: state.pickupAddress,
-    },
-    agreed: state.agreed,
-    note: "",
-    lines: state.lines,
-    deliveryVatMode: state.deliveryVatMode,
-    deliveryFeeAdjustment: state.deliveryFeeAdjustment,
-    freeDeliveryThresholdCents: state.freeDelivery?.thresholdCents ?? null,
-    lateFeeAdjustment: null,
-    voucher: null,
-    salesTerms: state.salesTerms,
-    locale: null,
-    catalogVersionId: null,
-    customerCancellation: state.customerCancellation,
-    customerCancellableUntil: state.customerCancellableUntil,
-    ...over,
-  };
-}
 
 describe("Order.revise — ce que M1 sert", () => {
   it("révise une commande au compte : nouvelle révision, nouveau total, lignes changées", () => {
@@ -226,7 +104,7 @@ describe("Order.revise — R6, une révision change quelque chose", () => {
   });
 
   it("le devis, lui, recompose un panier intact sans refuser", () => {
-    expect(Order.recompose(placed(), revised(placed())).changes).toEqual([]);
+    expect(Order.recompose(placed(), revised(placed())).revision.changes).toEqual([]);
   });
 
   it("nomme ce qui a changé, et dit quand l'acheminement a bougé", () => {

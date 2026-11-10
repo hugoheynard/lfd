@@ -7,6 +7,7 @@ import {
   type SubjectClaim,
   type SubjectDescription,
   type SubjectPaidOutcome,
+  type SubjectPaymentRole,
   type SubjectReference,
   type SubjectRefundOutcome,
   SubjectSettlement,
@@ -14,11 +15,13 @@ import {
 import { CardPayment } from "../../domain/entities/card-payment.js";
 import {
   CardAccountUnavailableError,
+  CardProviderUnavailableError,
   UnknownCardAccountError,
 } from "../../domain/errors/card-payment-errors.js";
 import type { CardProviderEvent } from "../../domain/ports/card-provider-event.js";
 import { CardProvider } from "../../domain/ports/card-provider.js";
 import type {
+  CardIntentState,
   CreateIntentParams,
   CreatedIntent,
   IntentCancellation,
@@ -132,12 +135,18 @@ export class RecordingCardProvider extends CardProvider {
     });
   }
 
+  /** L'état que `retrieveIntent` rend (plan S2, §2.7) ; `null` : le prestataire ne répond pas. */
+  intentState: CardIntentState | null = "awaiting_payment";
+
   retrieveIntent(providerRef: string): Promise<RetrievedIntent> {
     this.calls.push(`retrieveIntent:${providerRef}`);
+    if (this.intentState === null) {
+      return Promise.reject(new CardProviderUnavailableError("réseau"));
+    }
     return Promise.resolve({
       providerRef,
       clientSecret: `${providerRef}_secret`,
-      state: "awaiting_payment",
+      state: this.intentState,
     });
   }
 
@@ -230,13 +239,18 @@ export class TestSubjectSettlement extends SubjectSettlement {
     subject: CardSubject,
     paymentId: string,
     amountCents: number,
+    role: SubjectPaymentRole,
   ): Promise<SubjectPaidOutcome> {
-    this.timeline.note(`channel.onPaid:${subject.id}:${paymentId}:${String(amountCents)}`);
+    this.timeline.note(`channel.onPaid:${subject.id}:${paymentId}:${String(amountCents)}:${role}`);
     return Promise.resolve(this.paidOutcome);
   }
 
-  onPaymentFailed(subject: CardSubject, paymentId: string): Promise<void> {
-    this.timeline.note(`channel.onPaymentFailed:${subject.id}:${paymentId}`);
+  onPaymentFailed(
+    subject: CardSubject,
+    paymentId: string,
+    role: SubjectPaymentRole,
+  ): Promise<void> {
+    this.timeline.note(`channel.onPaymentFailed:${subject.id}:${paymentId}:${role}`);
     return Promise.resolve();
   }
 

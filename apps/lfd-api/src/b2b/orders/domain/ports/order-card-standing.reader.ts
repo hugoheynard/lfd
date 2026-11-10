@@ -9,8 +9,13 @@ export interface OrderCardStanding {
   readonly orderNumber: string;
   /** `orders.stripe_payment_intent_id` — `null` : rien à encaisser par carte. */
   readonly providerRef: string | null;
-  /** Le montant du premier paiement : le total, que l'intention a dimensionné. */
-  readonly totalCents: number;
+  /**
+   * Le montant du PREMIER paiement : le total moins les compléments des
+   * hausses appliquées (plan S2, §2.5) — le total seul serait faux après une
+   * hausse, et l'adoption ou le rattrapage rendraient 52 € pour une intention
+   * de 40 €.
+   */
+  readonly firstPaymentCents: number;
   readonly cancelled: boolean;
   readonly settled: OrderCardSettled;
 }

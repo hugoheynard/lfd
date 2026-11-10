@@ -154,4 +154,13 @@ export abstract class CardSettlementReader {
   abstract refundRequestsOf(
     subjects: readonly CardSubject[],
   ): Promise<readonly SubjectCardRefundRequests[]>;
+
+  /**
+   * **Ce qui reste à rendre sur UN paiement** (plan S2, R11) : encaissé −
+   * remboursé − ce que les demandes non terminales annoncent déjà — le reste
+   * même que `CardRefunds.requestAmount` accepterait. `0` pour un paiement
+   * non encaissé ou inconnu. Lu sous le verrou du sujet que l'appelant tient :
+   * il ne baisse pas avant la demande qui suit.
+   */
+  abstract remainderOf(paymentId: string): Promise<number>;
 }

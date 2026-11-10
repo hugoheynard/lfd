@@ -71,9 +71,21 @@ async function purgeOrderChildren(
     await tx.orderShortfallDecision.deleteMany({ where: ofOrders }),
     await tx.orderShortfall.deleteMany({ where: ofOrders }),
     await tx.orderRevisionEntry.deleteMany({ where: ofOrders }),
+    // Un projet de hausse ne s'efface pas (déclencheur `*_no_delete`), sauf
+    // sous `orders.purge`, posé ici et mort avec la transaction (plan S2).
+    await purgeRevisionProposals(tx, ofOrders),
     // Les remboursements par carte ne sont plus ici (plan M2, lot P1.c) :
     // `card-payment.purge.ts` les purge, après ce fichier. Les anciennes
     // tables `order_refund*` n'ont plus de clé vers `orders` ; leurs lignes
     // restent orphelines en dev jusqu'à P2, sans lecteur.
   ];
+}
+
+/** Les projets de hausse par carte (plan S2, §2.3) : le déclencheur cède à `orders.purge`. */
+async function purgeRevisionProposals(
+  tx: PurgeClient,
+  ofOrders: { readonly orderId: { readonly in: string[] } },
+): Promise<{ readonly count: number }> {
+  await tx.$executeRaw`SET LOCAL orders.purge = 'on'`;
+  return tx.orderRevisionProposal.deleteMany({ where: ofOrders });
 }

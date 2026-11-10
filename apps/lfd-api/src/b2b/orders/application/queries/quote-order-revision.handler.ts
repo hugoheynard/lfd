@@ -1,3 +1,4 @@
+import { Clock } from "../../../../platform/time/clock.js";
 import type { OrderRevisionQuoteView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
@@ -27,6 +28,7 @@ export class QuoteOrderRevisionHandler implements IQueryHandler<
   constructor(
     private readonly wall: RevisionWall,
     private readonly revising: OrderRevising,
+    private readonly clock: Clock,
   ) {}
 
   async execute(query: QuoteOrderRevisionQuery): Promise<OrderRevisionQuoteView> {
@@ -36,6 +38,7 @@ export class QuoteOrderRevisionHandler implements IQueryHandler<
     // acquises, § 10.4) ; la modification, elle, les lève.
     const quoted = await this.revising.quote(current, query.content, query.actor, {
       requireChange: false,
+      decidedAt: this.clock.now(),
     });
     if (scope === "quantities" && !isQuantitiesOnly(current.lines, quoted.revision)) {
       throw new QuantitiesOnlyAfterArrestError(current.orderId);

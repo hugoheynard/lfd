@@ -13,6 +13,7 @@ import {
   type CardPaymentCancellation,
   type CardPaymentPreparation,
   CardPayments,
+  type CardProviderSettlement,
   type PreparedCardPayment,
   type RetrievedCardPayment,
 } from "../../../../../card-payment/channels/requests/index.js";
@@ -309,6 +310,10 @@ class PreparingCardPayments extends CardPayments {
   }
 
   adopt(): Promise<string> {
+    return Promise.reject(new Error("non utilisé"));
+  }
+
+  settleFromProvider(): Promise<CardProviderSettlement> {
     return Promise.reject(new Error("non utilisé"));
   }
 }

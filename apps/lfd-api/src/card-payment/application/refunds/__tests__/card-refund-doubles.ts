@@ -23,6 +23,7 @@ import { CardRefundLedgerRepository } from "../../../domain/ports/card-refund-le
 import { CardRefundRequestLease } from "../../../domain/ports/card-refund-request.lease.js";
 import { CardRefundRequestRepository } from "../../../domain/ports/card-refund-request.repository.js";
 import { CardRefundSweepReader } from "../../../domain/ports/card-refund-sweep.reader.js";
+import { refundableCentsOf } from "../../../domain/services/refund-siblings.js";
 import type { PaymentSubject } from "../../../domain/value-objects/payment-subject.js";
 import { positionFrom } from "../../../infrastructure/settlement-position.js";
 import type { InMemoryCardPayments, Timeline } from "../../__tests__/card-payment-doubles.js";
@@ -262,6 +263,27 @@ export class StorePositions extends CardSettlementReader {
     subjects: readonly CardSubject[],
   ): Promise<readonly SubjectCardRefundRequests[]> {
     return Promise.resolve(subjects.map((subject) => ({ subject, requests: [] })));
+  }
+
+  /** Le reste d'un paiement, par LA règle du lecteur réel (`refundableCentsOf`). */
+  remainderOf(paymentId: string): Promise<number> {
+    const payment = this.store.payments.rows.get(paymentId);
+    if (payment === undefined) {
+      return Promise.resolve(0);
+    }
+    const ledger = CardRefundLedger.rehydrate({
+      paymentId,
+      subject: payment.subject,
+      account: payment.account.name,
+      paymentRef: payment.providerRef,
+      amountCents: payment.amountCents,
+      paid: payment.state === "paid",
+      lines: this.store.linesOf(paymentId),
+    });
+    const siblings = [...this.store.requests.values()]
+      .filter((row) => row.paymentId === paymentId)
+      .map((row) => CardRefundRequest.rehydrate(row));
+    return Promise.resolve(refundableCentsOf(ledger, siblings));
   }
 }
 

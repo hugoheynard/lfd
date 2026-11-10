@@ -1,3 +1,4 @@
+import type { Clock } from "../../../../../platform/time/clock.js";
 import type { RevisionActor } from "../../../domain/entities/order-revision.js";
 import { QuoteOrderRevisionHandler } from "../../queries/quote-order-revision.handler.js";
 import { QuoteOrderRevisionQuery } from "../../queries/quote-order-revision.query.js";
@@ -23,8 +24,12 @@ export type SeenRevision = (
  * Le devis refuse comme la modification avant la composition : un cas de
  * refus qui tombe avant le total vu construit sa commande à la main.
  */
-export function seenRevisions(wall: RevisionWall, revising: OrderRevising): SeenRevision {
-  const quotes = new QuoteOrderRevisionHandler(wall, revising);
+export function seenRevisions(
+  wall: RevisionWall,
+  revising: OrderRevising,
+  clock: Clock,
+): SeenRevision {
+  const quotes = new QuoteOrderRevisionHandler(wall, revising, clock);
   return async (orderId, actor, expectedRevision, content) => {
     const quote = await quotes.execute(new QuoteOrderRevisionQuery(orderId, actor, content));
     return new ReviseOrderCommand(orderId, actor, expectedRevision, content, quote.totalCents);

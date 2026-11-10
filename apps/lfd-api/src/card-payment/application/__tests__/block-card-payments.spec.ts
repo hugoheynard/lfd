@@ -12,18 +12,27 @@ import { PaymentAccount } from "../../domain/value-objects/payment-account.js";
 import { PaymentSubject } from "../../domain/value-objects/payment-subject.js";
 import { BlockCardPayments } from "../block-card-payments.js";
 import { CardAccountChoice } from "../card-account-choice.js";
+import { RegisteredSubjectSettlements } from "../../channels/subjects/index.js";
+import { CardProviderUnavailableError } from "../../domain/errors/card-payment-errors.js";
+import { IntentOutcomeRecorder } from "../intent-outcome-recorder.js";
 import {
   InMemoryCardPayments,
   RecordingCardProvider,
+  RecordingDurable,
   StaticCardProviders,
+  TestSubjectSettlement,
+  Timeline,
 } from "./card-payment-doubles.js";
 
 /** L'instant de l'horloge doublée — rien ne le compare à l'heure réelle. */
 const NOW = new Date("2030-01-10T09:00:00.000Z");
 
 function harness() {
-  const repo = new InMemoryCardPayments();
+  const timeline = new Timeline();
+  const repo = new InMemoryCardPayments(timeline);
   const provider = new RecordingCardProvider("pk_live_x");
+  const settlement = new TestSubjectSettlement(timeline);
+  const durable = new RecordingDurable(timeline);
   const providers = new StaticCardProviders(new Map([["lfc-stripe", provider]]));
   const payments = new BlockCardPayments(
     new CardAccountChoice(new DeclaredCardAccountDefaults({ order: "lfc-stripe" }), providers),
@@ -32,8 +41,14 @@ function harness() {
     new FixedIdGenerator("pay"),
     new FixedClock(NOW),
     new DirectUnitOfWork(),
+    new IntentOutcomeRecorder(
+      repo,
+      new RegisteredSubjectSettlements([settlement]),
+      durable,
+      new FixedClock(NOW),
+    ),
   );
-  return { repo, provider, payments };
+  return { repo, provider, payments, timeline, durable };
 }
 
 function seeded(repo: InMemoryCardPayments, state: CardPaymentState): void {
@@ -188,5 +203,72 @@ describe("BlockCardPayments.adopt", () => {
     ).resolves.toBe("pay_1");
     expect(repo.state("pay_1")).toBe("pending");
     expect(repo.rows.size).toBe(1);
+  });
+});
+
+/** Plan S2, §2.7 : « Vérifier chez le prestataire » — le webhook perdu rattrapé. */
+describe("BlockCardPayments.settleFromProvider", () => {
+  it("encaissée chez le prestataire : rejoue le chemin du webhook, le sujet avec le rôle de la ligne", async () => {
+    const { repo, provider, payments, timeline } = harness();
+    seeded(repo, "pending");
+    provider.intentState = "succeeded";
+
+    await expect(payments.settleFromProvider("pay_1")).resolves.toBe("paid");
+
+    expect(provider.calls).toEqual(["retrieveIntent:pi_1"]);
+    expect(timeline.steps).toContain("channel.onPaid:ord_1:pay_1:2340:first");
+    expect(repo.rows.get("pay_1")?.state).toBe("paid");
+  });
+
+  it("déjà encaissée pour le bloc : rien n'est rejoué (la machine de la ligne dédoublonne)", async () => {
+    const { repo, provider, payments, timeline } = harness();
+    seeded(repo, "paid");
+    provider.intentState = "succeeded";
+
+    await expect(payments.settleFromProvider("pay_1")).resolves.toBe("paid");
+
+    expect(timeline.steps.some((step) => step.startsWith("channel.onPaid"))).toBe(false);
+  });
+
+  it.each(["awaiting_payment", "processing"] as const)(
+    "« %s » : rien n'est décidé, rien n'est écrit",
+    async (state) => {
+      const { repo, provider, payments } = harness();
+      seeded(repo, "pending");
+      provider.intentState = state;
+
+      await expect(payments.settleFromProvider("pay_1")).resolves.toBe("pending");
+
+      expect(repo.rows.get("pay_1")?.state).toBe("pending");
+    },
+  );
+
+  it("annulée chez le prestataire : la ligne se ferme", async () => {
+    const { repo, provider, payments } = harness();
+    seeded(repo, "pending");
+    provider.intentState = "canceled";
+
+    await expect(payments.settleFromProvider("pay_1")).resolves.toBe("closed");
+
+    expect(repo.rows.get("pay_1")?.state).toBe("closed");
+  });
+
+  it("le prestataire ne répond pas : l'erreur remonte, l'appelant compte l'échec", async () => {
+    const { repo, provider, payments } = harness();
+    seeded(repo, "pending");
+    provider.intentState = null;
+
+    await expect(payments.settleFromProvider("pay_1")).rejects.toBeInstanceOf(
+      CardProviderUnavailableError,
+    );
+    expect(repo.rows.get("pay_1")?.state).toBe("pending");
+  });
+
+  it("refuse un paiement inconnu", async () => {
+    const { payments } = harness();
+
+    await expect(payments.settleFromProvider("pay_x")).rejects.toBeInstanceOf(
+      CardPaymentNotFoundError,
+    );
   });
 });

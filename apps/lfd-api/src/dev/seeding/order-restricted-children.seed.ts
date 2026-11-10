@@ -24,4 +24,11 @@ export async function dropOrderRestrictedChildren(
   await prisma.orderDiscount.deleteMany({ where: { order: orders } });
   await prisma.deliveryNoteLine.deleteMany({ where: { note: { order: orders } } });
   await prisma.deliveryNote.deleteMany({ where: { order: orders } });
+  // Les projets de hausse par carte (plan S2) tiennent aussi la commande, et
+  // leur déclencheur refuse le DELETE hors `orders.purge` — un réglage LOCAL,
+  // qui ne vit que dans une transaction.
+  await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SET LOCAL orders.purge = 'on'`;
+    await tx.orderRevisionProposal.deleteMany({ where: { order: orders } });
+  });
 }

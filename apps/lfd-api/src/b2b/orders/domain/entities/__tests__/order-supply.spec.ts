@@ -234,7 +234,7 @@ describe("Order.recompose — une commande sur stock garde son acheminement", ()
   it("une commande fabriquée pour elle change de journée comme avant, et reste `planned`", () => {
     const moved = input({ requestedDeliveryDate: new Date(`${TOMORROW}T00:00:00.000Z`) });
 
-    const revision = Order.recompose(placed({ supply: "planned" }), moved);
+    const { revision } = Order.recompose(placed({ supply: "planned" }), moved);
 
     expect(revision.changes).toContain("date");
     expect(revision.state.supply).toBe("planned");

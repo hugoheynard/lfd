@@ -147,10 +147,12 @@ describe("OrderIntake — le premier jour commandable", () => {
   it("ensureServiceDayFor ne juge que la journée : boutique fermée, la révision passe", async () => {
     const intake = at({ ordersOpenToB2c: false, firstServiceDayB2c: FIRST });
 
-    await expect(intake.ensureServiceDayFor(null, GUEST, FIRST)).resolves.toBeUndefined();
-    await expect(intake.ensureServiceDayFor(null, GUEST, TODAY)).rejects.toBeInstanceOf(
-      ServiceDayBeforeFirstOrderableDayError,
-    );
+    await expect(
+      intake.ensureServiceDayFor(null, GUEST, FIRST, CLOCK.now()),
+    ).resolves.toBeUndefined();
+    await expect(
+      intake.ensureServiceDayFor(null, GUEST, TODAY, CLOCK.now()),
+    ).rejects.toBeInstanceOf(ServiceDayBeforeFirstOrderableDayError);
   });
 });
 

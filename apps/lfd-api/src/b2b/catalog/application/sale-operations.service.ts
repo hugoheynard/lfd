@@ -1,3 +1,4 @@
+import type { Instant } from "../../../platform/context/request-context.js";
 import { Injectable } from "@nestjs/common";
 import { shopSkuOf } from "../domain/shop-sku.js";
 
@@ -61,6 +62,7 @@ export class SaleOperations {
     productSkus: readonly string[],
     audience: ShopAudience,
     fulfillmentDate?: string | null,
+    at?: Instant,
   ): Promise<ReadonlyMap<string, ProductSaleAccess>> {
     const bound = await this.boundItems(productSkus, audience);
     const found = new Map<string, ProductSaleAccess>();
@@ -68,7 +70,8 @@ export class SaleOperations {
       return found;
     }
     const operations = await this.operations.sellableOperations();
-    const now = this.clock.now();
+    // L'instant du geste quand il est donné (plan S2, R6), sinon maintenant.
+    const now = at ?? this.clock.now();
     for (const item of bound) {
       found.set(shopSkuOf(item), {
         productName: item.name,

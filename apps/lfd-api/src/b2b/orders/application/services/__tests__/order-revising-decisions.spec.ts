@@ -19,7 +19,7 @@ import type { OrderContent } from "../order-content.js";
  * É12 (la règle E1 de la passation) et É13 (la clientèle de la commande).
  */
 const STAFF = { kind: "staff", staffId: "stf_1" } as const;
-const CHANGE = { requireChange: true } as const;
+const CHANGE = { requireChange: true, decidedAt: NOW } as const;
 
 /** Le retrait de la scène devient une livraison à l'adresse du carnet, à l'échéance `end`. */
 function toDelivery(end: string): OrderContent {

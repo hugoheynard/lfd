@@ -81,7 +81,7 @@ export class OrderCardPayments
       this.payments.adopt(
         orderCardSubject(orderId),
         providerRef,
-        standing.totalCents,
+        standing.firstPaymentCents,
         "first",
         standing.settled,
       ),

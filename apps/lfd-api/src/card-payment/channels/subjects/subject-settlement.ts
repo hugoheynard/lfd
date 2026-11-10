@@ -66,15 +66,24 @@ export abstract class SubjectSettlement {
    * **Le paiement est encaissé.** Appelé AVANT que `card-payment` écrive sa
    * ligne, dans la même transaction (§3.6) ; le sujet pose sa vue et publie
    * ses faits au franchissement.
+   *
+   * `role` (plan S2, §2.5) : le rôle que la ligne porte — le sujet route sur
+   * lui, jamais sur l'absence d'une autre trace (un complément ne passe pas
+   * pour le premier).
    */
   abstract onPaid(
     subject: CardSubject,
     paymentId: string,
     amountCents: number,
+    role: SubjectPaymentRole,
   ): Promise<SubjectPaidOutcome>;
 
-  /** **Le paiement est refusé par la banque.** Même transaction, même ordre. */
-  abstract onPaymentFailed(subject: CardSubject, paymentId: string): Promise<void>;
+  /** **Le paiement est refusé par la banque.** Même transaction, même ordre, même rôle. */
+  abstract onPaymentFailed(
+    subject: CardSubject,
+    paymentId: string,
+    role: SubjectPaymentRole,
+  ): Promise<void>;
 
   /**
    * **Le verrou du sujet** (§3.3, §3.6, v9) — le sujet prend SON `FOR UPDATE`
