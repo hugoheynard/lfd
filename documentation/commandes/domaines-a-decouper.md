@@ -104,6 +104,22 @@ chiffrage du panier.
 cycle propres ; la passation le transforme en commande. Le plus simple des
 quatre.
 
+**Ce qui ne part PAS avec lui : le chiffrage.** Le prix du panier
+(`QuoteShopCartQuery` → `ShopCartQuoting`) est le prix qu'aurait la
+commande passée maintenant : il utilise le chargement même de la passation
+(prix des lignes, remises, opérations, clientèle, TVA de livraison, bon,
+surtaxe tardive), et le total vu le vérifie. Le déplacer ferait deux calculs
+du même total. Le bloc panier ne garderait que son contenu (enregistrer,
+relire, deux tables : `shop_cart` et, à décider, `order_drafts`) ; le
+chiffrage reste au commerce.
+
+**Pas de fait durable** : personne n'écoute le panier (les « ajouts au
+panier » comptés par les recommandations viennent de l'écran, pas du
+serveur) ; il n'existe qu'un geste, « enregistrer le panier » (le panier
+entier, sans règle). « Ajouter » et « retirer » ne viendraient qu'avec des
+règles à tenir. **Deux lecteurs extérieurs** : « cet article est-il dans un
+panier ? » (`prisma-sale-reference-usage.ts`) et, à vérifier, la passation.
+
 ### 2.5 Ce qui reste dans `orders`, rangé en sous-dossiers
 
 **L'annulation** (environ 60 fichiers) et **la modification** (environ 36,
