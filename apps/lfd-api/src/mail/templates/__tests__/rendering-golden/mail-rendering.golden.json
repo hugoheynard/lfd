@@ -104,6 +104,13 @@
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },
+  "customer.order-modification-failed": {
+    "only": {
+      "subject": "Modification de la commande ORD-4812 non appliquée",
+      "htmlSha256": "34bc245d48f372d01c53d5731c4bc370a09438354f9932640fd448e4a946ac2f",
+      "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    }
+  },
   "customer.order-cancelled": {
     "teamPaid": {
       "subject": "Commande ORD-4812 annulée",

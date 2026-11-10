@@ -25,6 +25,19 @@ export const PAYMENT_MAILS_IT: PaymentMailsCopy = {
     amountLabel: "Importo non addebitato",
     footer: "Un dubbio o un errore? Ci chiami.",
   },
+  "customer.order-modification-failed": {
+    subject: "Modifica dell'ordine {ref} non applicata",
+    kicker: "Modifica non applicata",
+    title: "La sua modifica non ha potuto essere applicata.",
+    intro:
+      "Tra il suo pagamento e la registrazione della modifica, l'ordine non poteva più cambiare: " +
+      "l'infornata era partita, o un prezzo era cambiato.",
+    consequence:
+      "Il suo ordine resta quindi com'era, e il supplemento pagato le viene rimborsato sulla carta. " +
+      "Se ha ancora bisogno di questi articoli, effettui un nuovo ordine.",
+    amountLabel: "Supplemento rimborsato",
+    footer: "Un dubbio o un errore? Ci chiami.",
+  },
   "customer.order-payment-link": {
     kicker: "Pagamento in attesa",
     subject: "Il suo ordine {ref} è ancora da saldare",

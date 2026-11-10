@@ -1,4 +1,7 @@
 import { FixedHandoverHistory } from "./handover-history-double.js";
+import { increaseCancellation } from "./card-increase-scene.js";
+import type { CardIncreaseProposal } from "../../../domain/entities/card-increase-proposal.js";
+import { proposalAt } from "../../services/__tests__/card-increase-doubles.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { CommerceOrderCancelledFact } from "../../../../../delivery/channels/commerce/index.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
@@ -73,6 +76,8 @@ interface Scene {
   readonly remaindersHandedOver?: readonly string[];
   /** Lot C4 (P1.c) : ce que le bloc `card-payment` annonce à rendre ; 0 = rien. */
   readonly refundAnnouncedCents?: number;
+  /** Plan S2, R9 : le projet de hausse vivant de la commande, s'il y en a un. */
+  readonly increase?: CardIncreaseProposal;
 }
 
 function scene(options: Scene = {}) {
@@ -109,6 +114,11 @@ function scene(options: Scene = {}) {
       new DirectUnitOfWork(),
       new FixedClock(NOW),
       new FixedHandoverHistory(options.handedOver, options.remaindersHandedOver),
+      increaseCancellation(
+        options.increase ?? null,
+        // La chronologie n'enregistre le projet que lorsqu'il y en a un (R9).
+        options.increase === undefined ? [] : trace,
+      ).cancellation,
     ),
   );
   return { handler, trace, rows, gateway, vouchers, durable, engagements, cards };
@@ -456,6 +466,7 @@ describe("CancelOrderHandler — les refus", () => {
         new DirectUnitOfWork(),
         new FixedClock(NOW),
         new FixedHandoverHistory(),
+        increaseCancellation().cancellation,
       ),
     );
 
@@ -623,6 +634,27 @@ describe("CancelOrderHandler — carte payée, avec remboursement (lot C4)", () 
     expect(durable.facts).toEqual([
       eventOf("paid", null, { announcedCents: 2_110 }).durableFact(),
       WITHDRAWN,
+    ]);
+  });
+
+  /**
+   * Plan S2, R9 : un complément payé qui attend d'être appliqué est refusé
+   * DANS la transaction de l'annulation, sous son verrou, avant la demande —
+   * qui rend tous les paiements encaissés, complément compris.
+   */
+  it("R9 : un projet de hausse payé est refusé sous le verrou, avant la demande qui rend tout", async () => {
+    const { handler, trace } = scene({ subject: PAID, increase: proposalAt("ready") });
+
+    await handler.execute(cancel());
+
+    expect(trace).toEqual([
+      "lock:ord_1",
+      "withdraw:2026-10-13:ord_1",
+      "cancel:ord_1",
+      "lockLiveProposal:ord_1",
+      "saveProposal:ready→refused",
+      "adopt:ord_1",
+      "refund:ord_1",
     ]);
   });
 

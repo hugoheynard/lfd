@@ -30,6 +30,7 @@ const CHARTERS: PerMail<MailCharter> = {
   "customer.order-delayed": "lfc",
   "customer.payment-failed": "lfc",
   "customer.payment-expired": "lfc",
+  "customer.order-modification-failed": "lfc",
   "customer.order-cancelled": "lfc",
   "customer.order-change-applied": "lfc",
   "customer.order-change-refused": "lfc",
@@ -64,13 +65,15 @@ const CHARTERS: PerMail<MailCharter> = {
  * revérifie au test). Les autres partent en français seul
  * (`DEFAULT_MAIL_LOCALE`) — 21 sur 32, et non 14 comme le plan l'écrivait ;
  * 21 sur 33 depuis `customer.marketing-confirm` (2026-11-08), qui suit la
- * langue de la case cochée.
+ * langue de la case cochée ; 21 sur 34 depuis
+ * `customer.order-modification-failed` (plan S2, R13, 2026-11-10).
  */
 const FOLLOWS_RECIPIENT_LOCALE: ReadonlySet<keyof B2bMails> = new Set<keyof B2bMails>([
   "customer.order-ready",
   "customer.order-placed",
   "customer.payment-failed",
   "customer.payment-expired",
+  "customer.order-modification-failed",
   "customer.invoice-issued",
   "customer.delivery-en-route",
   "customer.order-delayed",
@@ -83,9 +86,10 @@ const FOLLOWS_RECIPIENT_LOCALE: ReadonlySet<keyof B2bMails> = new Set<keyof B2bM
 
 /**
  * **La nature de chaque e-mail** (doc `la-desinscription-et-l-accord.md`,
- * règle 1) : sans valeur par défaut, une clé oubliée ne compile pas. Les 33
+ * règle 1) : sans valeur par défaut, une clé oubliée ne compile pas. Les 34
  * sont des e-mails de service (Hugo, 2026-11-08 ; le 33ᵉ, la confirmation
- * d'inscription de C1, en est un) — l'annonce de la vitrine
+ * d'inscription de C1, en est un ; le 34ᵉ, la modification payée non
+ * appliquée du plan S2, aussi) — l'annonce de la vitrine
  * aussi : elle informe les agences, elle ne vend rien.
  */
 const NATURES: PerMail<MailNature> = {
@@ -96,6 +100,7 @@ const NATURES: PerMail<MailNature> = {
   "customer.order-delayed": "transactional",
   "customer.payment-failed": "transactional",
   "customer.payment-expired": "transactional",
+  "customer.order-modification-failed": "transactional",
   "customer.order-cancelled": "transactional",
   "customer.order-change-applied": "transactional",
   "customer.order-change-refused": "transactional",

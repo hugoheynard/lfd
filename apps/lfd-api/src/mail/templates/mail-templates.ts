@@ -499,6 +499,19 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
         }),
       };
     },
+    "customer.order-modification-failed": (data) => {
+      const copy = mailCopyOf(data.locale)["customer.order-modification-failed"];
+      return {
+        subject: sanitiseSubject(fill(copy.subject, { ref: data.sheet.reference })),
+        ...customerMail({
+          kicker: copy.kicker,
+          title: copy.title,
+          body: `${copy.intro}\n\n${copy.consequence}\n\n${data.sheet.reference}`,
+          rows: [{ label: copy.amountLabel, value: money(data.complementCents, data.locale) }],
+          footer: copy.footer,
+        }),
+      };
+    },
     "customer.order-payment-link": (data) => {
       // Pas de locale : la comptabilité écrit en français (cf. `B2bMails`).
       const copy = local()["customer.order-payment-link"];

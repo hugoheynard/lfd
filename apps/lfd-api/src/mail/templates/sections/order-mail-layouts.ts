@@ -41,6 +41,7 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
     | "customer.order-placed-with-your-email"
     | "customer.payment-failed"
     | "customer.payment-expired"
+    | "customer.order-modification-failed"
     | "customer.order-cancelled"
     | "customer.order-payment-link"
   >
@@ -168,6 +169,16 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
       { id: "body", texts: texts("intro", "consequence") },
       { id: "summary", texts: texts("amountLabel") },
       { id: "cta", texts: texts("cta") },
+      { id: "footer", texts: texts("footer") },
+    ],
+  },
+  "customer.order-modification-failed": {
+    subject: SUBJECT,
+    header: KICKER,
+    sections: [
+      { id: "title", texts: texts("title") },
+      { id: "body", texts: texts("intro", "consequence") },
+      { id: "summary", texts: texts("amountLabel") },
       { id: "footer", texts: texts("footer") },
     ],
   },

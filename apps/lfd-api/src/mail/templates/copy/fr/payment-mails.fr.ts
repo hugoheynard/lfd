@@ -27,6 +27,19 @@ export const PAYMENT_MAILS_FR: PaymentMailsCopy = {
     amountLabel: "Montant non débité",
     footer: "Un doute ou une erreur ? Appelez le fournil.",
   },
+  "customer.order-modification-failed": {
+    subject: "Modification de la commande {ref} non appliquée",
+    kicker: "Modification non appliquée",
+    title: "Votre modification n'a pas pu être appliquée.",
+    intro:
+      "Entre votre paiement et l'enregistrement de votre modification, la commande ne pouvait plus " +
+      "changer : la fournée était lancée, ou un prix avait bougé.",
+    consequence:
+      "Votre commande reste donc telle qu'elle était, et le complément payé vous est rendu sur votre carte. " +
+      "Si vous avez toujours besoin de ces articles, passez une nouvelle commande.",
+    amountLabel: "Complément rendu",
+    footer: "Un doute ou une erreur ? Appelez le fournil.",
+  },
   "customer.order-payment-link": {
     kicker: "Règlement attendu",
     subject: "Votre commande {ref} reste à régler",

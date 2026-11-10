@@ -1,4 +1,5 @@
 import { FixedHandoverHistory } from "./handover-history-double.js";
+import { increaseCancellation } from "./card-increase-scene.js";
 import type { CustomerCancellationStage } from "@lfd/contracts";
 
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
@@ -73,6 +74,7 @@ function scene(input: {
       new DirectUnitOfWork(),
       new FixedClock(NOW),
       new FixedHandoverHistory(),
+      increaseCancellation().cancellation,
     ),
   );
   return { handler, trace, settings, rows, bakery, packing, durable };

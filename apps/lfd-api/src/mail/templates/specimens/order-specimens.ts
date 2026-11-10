@@ -76,6 +76,8 @@ const ORDER_URL = `${SPECIMEN_URL}/commande`;
 const SETTLE_URL = `${SPECIMEN_URL}/regler`;
 const HANDOVER_URL = `${SPECIMEN_URL}/retrait`;
 const HANDOVER_TOKEN = "specimen-handover";
+/** Le complément rendu d'une modification payée non appliquée (plan S2, R13) : 12,00 €. */
+const SPECIMEN_COMPLEMENT_CENTS = 1_200;
 
 export const ORDER_SPECIMENS: Pick<
   MailSpecimens,
@@ -86,6 +88,7 @@ export const ORDER_SPECIMENS: Pick<
   | "customer.order-placed-with-your-email"
   | "customer.payment-failed"
   | "customer.payment-expired"
+  | "customer.order-modification-failed"
   | "customer.order-cancelled"
   | "customer.order-payment-link"
 > = {
@@ -140,6 +143,10 @@ export const ORDER_SPECIMENS: Pick<
   "customer.payment-expired": {
     family: "payment",
     data: (locale) => ({ sheet: SHEET, locale }),
+  },
+  "customer.order-modification-failed": {
+    family: "payment",
+    data: (locale) => ({ sheet: SHEET, complementCents: SPECIMEN_COMPLEMENT_CENTS, locale }),
   },
   "customer.order-cancelled": {
     family: "payment",

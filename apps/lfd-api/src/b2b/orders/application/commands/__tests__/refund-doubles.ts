@@ -149,7 +149,7 @@ export class FixedCardRefundRequests extends CardSettlementReader {
     return Promise.resolve(subjects.map((subject) => ({ subject, requests: this.requests })));
   }
 
-  remainderOf(): Promise<number> {
+  remainderOf(_paymentId: string): Promise<number> {
     return Promise.resolve(0);
   }
 }

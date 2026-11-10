@@ -25,6 +25,19 @@ export const PAYMENT_MAILS_EN: PaymentMailsCopy = {
     amountLabel: "Amount not charged",
     footer: "Unsure, or think this is a mistake? Call us.",
   },
+  "customer.order-modification-failed": {
+    subject: "Change to order {ref} not applied",
+    kicker: "Change not applied",
+    title: "Your change could not be applied.",
+    intro:
+      "Between your payment and the recording of your change, the order could no longer be changed: " +
+      "the batch had started, or a price had moved.",
+    consequence:
+      "Your order therefore stays as it was, and the extra amount you paid is refunded to your card. " +
+      "If you still need these items, please place a new order.",
+    amountLabel: "Amount refunded",
+    footer: "Unsure, or think this is a mistake? Call us.",
+  },
   "customer.order-payment-link": {
     kicker: "Payment due",
     subject: "Your order {ref} is still to be paid",

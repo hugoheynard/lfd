@@ -79,3 +79,66 @@ export function increaseAbandonedFact(
     payload: { ...base, cause },
   };
 }
+
+/** La modification est écrite : `revision` est celle qu'elle a produite. */
+export function increaseAppliedFact(
+  proposal: CardIncreaseProposal,
+  order: IncreaseOrderLabel,
+  revision: number,
+): JournalFact {
+  const { subjectType, subjectId, base } = common(proposal, order);
+  return {
+    type: "order.card_increase_applied",
+    subjectType,
+    subjectId,
+    payload: { ...base, revision },
+  };
+}
+
+/** Plus possible : `refusal` est le code du refus métier ; le complément sera rendu. */
+export function increaseRefusedFact(
+  proposal: CardIncreaseProposal,
+  order: IncreaseOrderLabel,
+  refusal: string,
+): JournalFact {
+  const { subjectType, subjectId, base } = common(proposal, order);
+  return {
+    type: "order.card_increase_refused",
+    subjectType,
+    subjectId,
+    payload: { ...base, refusal },
+  };
+}
+
+/** Pannes répétées : le projet attend « Relancer ». */
+export function increaseStalledFact(
+  proposal: CardIncreaseProposal,
+  order: IncreaseOrderLabel,
+): JournalFact {
+  const { subjectType, subjectId, base } = common(proposal, order);
+  const state = proposal.toPersistence();
+  return {
+    type: "order.card_increase_stalled",
+    subjectType,
+    subjectId,
+    payload: { ...base, attempts: state.attempts, failure: state.lastFailure ?? "panne" },
+  };
+}
+
+/** « Relancer » : l'équipe a rendu le projet à l'exécuteur. */
+export function increaseRelaunchedFact(
+  proposal: CardIncreaseProposal,
+  order: IncreaseOrderLabel,
+): JournalFact {
+  const { subjectType, subjectId, base } = common(proposal, order);
+  return { type: "order.card_increase_relaunched", subjectType, subjectId, payload: base };
+}
+
+/** Le complément à rendre l'était déjà (l'annulation de la commande a tout rendu, R11). */
+export function increaseAlreadyReturnedFact(
+  proposal: CardIncreaseProposal,
+  order: IncreaseOrderLabel,
+): JournalFact {
+  const { subjectType, subjectId, base } = common(proposal, order);
+  return { type: "order.card_increase_already_returned", subjectType, subjectId, payload: base };
+}

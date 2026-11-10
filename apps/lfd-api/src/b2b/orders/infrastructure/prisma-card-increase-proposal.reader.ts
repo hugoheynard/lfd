@@ -21,4 +21,9 @@ export class PrismaCardIncreaseProposalReader extends CardIncreaseProposalReader
     });
     return row === null ? null : proposalOf(row);
   }
+
+  async find(proposalId: string): Promise<CardIncreaseProposal | null> {
+    const row = await this.prisma.orderRevisionProposal.findUnique({ where: { id: proposalId } });
+    return row === null ? null : proposalOf(row);
+  }
 }

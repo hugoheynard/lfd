@@ -51,6 +51,7 @@ export const ORDER_CASE_TABLES: Pick<
   | "customer.order-placed-with-your-email"
   | "customer.payment-failed"
   | "customer.payment-expired"
+  | "customer.order-modification-failed"
   | "customer.order-payment-link"
 > = {
   "customer.order-placed": {
@@ -142,5 +143,6 @@ export const ORDER_CASE_TABLES: Pick<
     axes: [{ id: "settleUrl", values: PRESENCE, of: (data) => presence(data.settleUrl) }],
   },
   "customer.payment-expired": specimenOnly("customer.payment-expired"),
+  "customer.order-modification-failed": specimenOnly("customer.order-modification-failed"),
   "customer.order-payment-link": specimenOnly("customer.order-payment-link"),
 };

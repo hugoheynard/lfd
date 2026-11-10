@@ -49,6 +49,7 @@ const DECLARED_VARIABLES = {
   "customer.order-placed-with-your-email": { title: ["firstName"] },
   "customer.payment-failed": { subject: ["ref"] },
   "customer.payment-expired": { subject: ["ref"] },
+  "customer.order-modification-failed": { subject: ["ref"] },
   "customer.order-payment-link": { subject: ["ref"], intro: ["ref"] },
   "customer.order-cancelled": {
     subject: ["ref"],

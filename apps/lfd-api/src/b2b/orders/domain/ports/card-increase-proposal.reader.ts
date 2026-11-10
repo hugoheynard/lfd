@@ -11,4 +11,7 @@ import type { CardIncreaseProposal } from "../entities/card-increase-proposal.js
 export abstract class CardIncreaseProposalReader {
   /** Le projet vivant de la commande (`awaiting_payment | ready | stalled`), un au plus (R5). */
   abstract liveOf(orderId: string): Promise<CardIncreaseProposal | null>;
+
+  /** Le projet sous cet identifiant, quel que soit son état — l'exécuteur le relit hors verrou (§2.6). */
+  abstract find(proposalId: string): Promise<CardIncreaseProposal | null>;
 }

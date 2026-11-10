@@ -50,6 +50,12 @@ const MAIL_LABELS: Readonly<Record<string, MailLabel>> = {
     recipient: "Le client",
     moment: "quand la clôture de la journée annule sa commande impayée",
   },
+  "customer.order-modification-failed": {
+    title: "Modification non appliquée",
+    recipient: "Le client qui a modifié sa commande",
+    moment:
+      "quand sa modification payée ne peut plus s’appliquer, et que le complément lui est rendu",
+  },
   "customer.order-payment-link": {
     title: "Lien de règlement",
     recipient: "L’acheteur",

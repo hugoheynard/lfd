@@ -65,6 +65,7 @@ import { shelfCircuitOf } from "../../services/__tests__/shelf-circuit-doubles.j
 import type { ShelfCircuit } from "../../services/shelf-circuit.service.js";
 import { ShelfRevising } from "../../services/shelf-revising.service.js";
 import { OrderWorkshopRevision } from "../../services/order-workshop-revision.js";
+import { OrderRevisionRecording } from "../../services/order-revision-recording.js";
 import { RevisionWall } from "../../services/revision-wall.js";
 import { ReviseOrderHandler } from "../revise-order.handler.js";
 import { RecordingDeliveryNoteFollowing } from "./delivery-note-following-double.js";
@@ -581,17 +582,35 @@ export function reviseScene(
     ...(options.catalogItems === undefined ? {} : { catalogItems: options.catalogItems }),
     ...(options.shelf === undefined ? {} : { shelf: options.shelf }),
   });
-  const handler = new ReviseOrderHandler(
-    wall,
+  const recording = new OrderRevisionRecording(
     revising,
     revisions,
     new OrderWorkshopRevision(desk, packing),
     revaluation,
     notes,
     durable,
+    clock,
+  );
+  const handler = new ReviseOrderHandler(
+    wall,
+    revising,
+    revisions,
+    recording,
     new DirectUnitOfWork(),
     clock,
   );
   const asSeen = seenRevisions(wall, revising, clock);
-  return { handler, asSeen, trace, revisions, desk, packing, notes, revaluation, durable };
+  return {
+    handler,
+    asSeen,
+    trace,
+    revisions,
+    recording,
+    revising,
+    desk,
+    packing,
+    notes,
+    revaluation,
+    durable,
+  };
 }

@@ -112,6 +112,7 @@ export const ORDER_CASES: Pick<
   | "customer.order-delayed"
   | "customer.payment-failed"
   | "customer.payment-expired"
+  | "customer.order-modification-failed"
   | "customer.order-cancelled"
   | "customer.order-payment-link"
 > = {
@@ -247,6 +248,9 @@ export const ORDER_CASES: Pick<
     withoutLink: { sheet: DELIVERY, settleUrl: "", locale: "fr" },
   },
   "customer.payment-expired": { only: { sheet: PAID, locale: "fr" } },
+  "customer.order-modification-failed": {
+    only: { sheet: PAID, complementCents: 1_200, locale: "fr" },
+  },
   "customer.order-cancelled": {
     teamPaid: CANCELLED,
     teamAlreadyRefunded: { ...CANCELLED, refund: null, sheet: FREE },

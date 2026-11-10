@@ -38,6 +38,7 @@ import { CancellationAllowanceGate } from "./cancellation-allowance-gate.js";
 import { recordOf, type CancellationIntent } from "./cancellation-intent.js";
 import { CancellationRule } from "./cancellation-rule.js";
 import { CancellationRefundRequester } from "./cancellation-refund-requester.js";
+import { CardIncreaseCancellation } from "./card-increase-cancellation.js";
 import { OrderCardCancellation } from "../../domain/ports/order-card-payments.js";
 import { OrderWorkshopWithdrawal } from "./order-workshop-withdrawal.js";
 import { VoucherRestitutionRefusal } from "./voucher-restitution-refusal.js";
@@ -135,6 +136,7 @@ export class OrderCancellation {
     private readonly unitOfWork: UnitOfWork,
     private readonly clock: Clock,
     private readonly handovers: ShipmentHandoverReader,
+    private readonly increases: CardIncreaseCancellation,
   ) {}
 
   /**
@@ -293,6 +295,11 @@ export class OrderCancellation {
     // prévu ; il s'annule avec elle, dans cette transaction.
     await this.deliveryNotes.voidLiveFor(locked.orderId, now);
     const voucher = await this.restitute(locked, now);
+    // Plan S2, R9 : le projet de hausse vivant sort avant que l'annulation rende tout.
+    await this.increases.settleOnCancellation({
+      orderId: locked.orderId,
+      orderNumber: locked.orderNumber,
+    });
     // Lot C4 : APRÈS le bon — un bon qui refuse annule tout, demande comprise.
     const refund =
       regime === "paid" ? await this.refunds.requestFor(locked.orderId, staffSheet) : null;

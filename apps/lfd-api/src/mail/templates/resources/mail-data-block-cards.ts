@@ -83,6 +83,7 @@ export const MAIL_DATA_BLOCK_CARDS: { readonly [K in keyof B2bMails]: MailDataBl
   "customer.order-placed-with-your-email": {},
   "customer.payment-failed": { summary: ONE_LINE_SUMMARY("le montant à régler") },
   "customer.payment-expired": { summary: ONE_LINE_SUMMARY("le montant non débité") },
+  "customer.order-modification-failed": { summary: ONE_LINE_SUMMARY("le complément rendu") },
   "customer.order-cancelled": {},
   "customer.order-payment-link": { summary: ONE_LINE_SUMMARY("le montant à régler") },
   "customer.invoice-issued": {

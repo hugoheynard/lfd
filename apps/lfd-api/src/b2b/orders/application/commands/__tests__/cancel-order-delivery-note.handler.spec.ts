@@ -1,4 +1,5 @@
 import { FixedHandoverHistory } from "./handover-history-double.js";
+import { increaseCancellation } from "./card-increase-scene.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { OrderWithdrawalOutcome } from "../../../../../production/channels/commerce/index.js";
@@ -58,6 +59,7 @@ function scene(desk: OrderWithdrawalOutcome = "withdrawn") {
       new DirectUnitOfWork(),
       new FixedClock(NOW),
       new FixedHandoverHistory(),
+      increaseCancellation().cancellation,
     ),
   );
   return { handler, trace, notes };

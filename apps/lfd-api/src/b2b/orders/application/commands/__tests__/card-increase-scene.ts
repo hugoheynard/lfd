@@ -11,6 +11,7 @@ import {
 import type { CardSubject } from "../../../../../card-payment/channels/subjects/index.js";
 import { OrderInscriptionReader } from "../../../../../production/channels/commerce/index.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { HeldAfterCommit } from "../../../../../platform/database/__tests__/held-after-commit.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
 import { RecordingJournal } from "../../../../../platform/journal/__tests__/recording-journal.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
@@ -19,6 +20,7 @@ import type { CardIncreaseProposal } from "../../../domain/entities/card-increas
 import type { RevisableOrder } from "../../../domain/entities/order-revision.js";
 import { CardIncreaseProposalReader } from "../../../domain/ports/card-increase-proposal.reader.js";
 import { CardIncreaseAbandonment } from "../../services/card-increase-abandonment.js";
+import { CardIncreaseCancellation } from "../../services/card-increase-cancellation.js";
 import { OrderCutoffGate } from "../../services/order-cutoff-gate.service.js";
 import { RevisionWall } from "../../services/revision-wall.js";
 import { RecordingProposals } from "../../services/__tests__/card-increase-doubles.js";
@@ -52,6 +54,11 @@ export class FixedProposalReader extends CardIncreaseProposalReader {
   liveOf(orderId: string): Promise<CardIncreaseProposal | null> {
     this.steps.seen.push(`liveOf:${orderId}`);
     return Promise.resolve(this.proposal?.live === true ? this.proposal : null);
+  }
+
+  find(proposalId: string): Promise<CardIncreaseProposal | null> {
+    this.steps.seen.push(`find:${proposalId}`);
+    return Promise.resolve(this.proposal?.id === proposalId ? this.proposal : null);
   }
 }
 
@@ -108,7 +115,7 @@ export class IncreaseCardPayments extends CardPayments {
     return Promise.resolve(this.cancellation);
   }
 
-  settleFromProvider(): Promise<CardProviderSettlement> {
+  settleFromProvider(_paymentId: string): Promise<CardProviderSettlement> {
     return Promise.reject(new Error("non utilisé par le geste"));
   }
 
@@ -173,4 +180,27 @@ export function increaseScene(
     new FixedIdGenerator("prop"),
   );
   return { handler, steps, cards, journal, proposals, reader, abandonment, wall, revising };
+}
+
+/**
+ * R9 : le projet de hausse vu par l'annulation de la commande — par défaut,
+ * aucun projet vivant (les suites d'annulation d'avant S2.c).
+ */
+export function increaseCancellation(
+  live: CardIncreaseProposal | null = null,
+  trace: string[] = [],
+) {
+  const steps: Steps = { seen: trace };
+  const proposals = new RecordingProposals(steps, live);
+  const cards = new IncreaseCardPayments(steps);
+  const afterCommit = new HeldAfterCommit();
+  const journal = new RecordingJournal();
+  const cancellation = new CardIncreaseCancellation(
+    proposals,
+    cards,
+    afterCommit,
+    journal,
+    new FixedClock(NOW),
+  );
+  return { cancellation, steps, proposals, cards, afterCommit, journal };
 }

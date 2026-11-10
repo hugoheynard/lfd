@@ -9,7 +9,7 @@ import { b2bMailTemplates, type B2bMails } from "../mail-templates.js";
 import { MAIL_CASES } from "./rendering-golden/mail-rendering.cases.js";
 
 /**
- * **Non-régression de la version texte des 33 e-mails** (2026-11-08) — la
+ * **Non-régression de la version texte des 34 e-mails** (2026-11-08 ; le 34ᵉ, plan S2, le 2026-11-10) — la
  * partie `text/plain` que Resend envoie à côté du HTML.
  *
  * Empreintes à part (`mail-rendering-text.golden.json`) : celles du HTML, de
@@ -51,9 +51,9 @@ function casesOf<K extends keyof B2bMails>(key: K): readonly (readonly [string, 
 
 const KEYS = Object.keys(MAIL_CASES) as readonly (keyof B2bMails)[];
 
-it("couvre les 33 e-mails du registre", () => {
+it("couvre les 34 e-mails du registre", () => {
   expect(Object.keys(GOLDEN).sort()).toEqual(Object.keys(REGISTRY).sort());
-  expect(KEYS).toHaveLength(33);
+  expect(KEYS).toHaveLength(34);
 });
 
 describe.each(KEYS)("la version texte de « %s »", (key) => {

@@ -47,6 +47,7 @@
   "test/bundles.e2e-spec.ts": 12435,
   "test/buyer-kind-migration.e2e-spec.ts": 8401,
   "test/cache-control.e2e-spec.ts": 6815,
+  "test/card-increase-apply.e2e-spec.ts": 23100,
   "test/card-increase-gesture.e2e-spec.ts": 20886,
   "test/card-increase-proposal.e2e-spec.ts": 17071,
   "test/card-invoices.e2e-spec.ts": 16043,

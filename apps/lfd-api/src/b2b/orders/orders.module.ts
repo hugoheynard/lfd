@@ -117,8 +117,7 @@ import { AdoptOrderPaymentHandler } from "./application/commands/adopt-order-pay
 import { OrderCardPayments } from "./application/services/order-card-payments.js";
 import { OrderSubjectSettlement } from "./application/services/order-subject-settlement.js";
 import { OrderComplementSettlement } from "./application/services/order-complement-settlement.js";
-import { CardIncreaseWake } from "./domain/ports/card-increase-wake.js";
-import { NoCardIncreaseWake } from "./infrastructure/no-card-increase-wake.js";
+import { CARD_INCREASE_CONTROLLERS, CARD_INCREASE_PROVIDERS } from "./card-increase.providers.js";
 import { OrderRefundOutcomes } from "./application/services/order-refund-outcomes.js";
 import { OrderRefundStatusWriter } from "./domain/ports/order-refund-status.writer.js";
 import { PrismaOrderRefundStatusWriter } from "./infrastructure/prisma-order-refund-status.writer.js";
@@ -358,6 +357,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     ...CUSTOMER_CANCELLATION_CONTROLLERS,
     // Modifier une commande (plan `plan-modifier-une-commande.md`, M1).
     ...ORDER_REVISION_CONTROLLERS,
+    ...CARD_INCREASE_CONTROLLERS,
     ...ORDER_SHORTFALL_CONTROLLERS,
     OrdersController,
     MyShopCatalogueController,
@@ -459,6 +459,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     OrderWorkshopRevision,
     ...CUSTOMER_CANCELLATION_PROVIDERS,
     ...ORDER_REVISION_PROVIDERS,
+    ...CARD_INCREASE_PROVIDERS,
     ...ORDER_SHORTFALL_PROVIDERS,
     VoucherRestitutionRefusal,
     // Lot C5 : la règle d'annulation et l'engagement comptable — le port est
@@ -532,7 +533,6 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     { provide: CardIncreaseProposalRepository, useClass: PrismaCardIncreaseProposalRepository },
     { provide: CardIncreaseProposalReader, useClass: PrismaCardIncreaseProposalReader },
     // Le réveil de l'exécuteur : vide jusqu'au lot S2.c (plan S2, §2.10).
-    { provide: CardIncreaseWake, useClass: NoCardIncreaseWake },
     OrderComplementSettlement,
     { provide: PendingRemaindersReader, useClass: PrismaPendingRemaindersReader },
     { provide: SettledOrderWriter, useClass: PrismaSettledOrderWriter },

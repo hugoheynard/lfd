@@ -649,6 +649,25 @@ async function triggerCardRefundSweep(env: Env): Promise<void> {
 }
 
 /**
+ * Réveille le container et passe les hausses payées par carte (plan
+ * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.6, §2.7) :
+ * le balayage reprend les compléments payés à appliquer (réveil perdu, panne
+ * à reprendre) et demande au prestataire où en sont ceux qui attendent depuis
+ * plus de cinq minutes (webhook perdu) ; l'expiration abandonne ceux dont le
+ * délai de paiement est passé. Sur le cron de RAFRAÎCHISSEMENT ; même porte
+ * et même jeton que la boîte d'envoi ; idempotents — le bail de l'exécuteur
+ * et les écritures conditionnées excluent les doubles passages.
+ */
+async function triggerCardIncreases(env: Env): Promise<void> {
+  const token = env.RECOMPUTE_TOKEN;
+  if (!token) {
+    return;
+  }
+  await postSweep(env, token, "admin/orders/card-increases/sweep");
+  await postSweep(env, token, "admin/orders/card-increases/expire");
+}
+
+/**
  * Réveille le container et passe le balayage de la vitrine : la vue publique
  * comparée, par abonné, à la dernière empreinte émise, puis les notifications
  * dues envoyées, signées (doc `documentation/webhooks/vitrine.md`,
@@ -724,6 +743,7 @@ async function refreshSweeps(env: Env): Promise<void> {
     triggerRoundsGapBell(env),
     triggerUnsettledShopOrderExpiry(env),
     triggerCardRefundSweep(env),
+    triggerCardIncreases(env),
     triggerVitrineSweep(env),
   ]);
 }

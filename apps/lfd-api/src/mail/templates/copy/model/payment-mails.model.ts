@@ -123,10 +123,28 @@ export interface OrderPaymentLinkCopy {
   readonly footer: string;
 }
 
+/**
+ * Ce que dit le courriel d'une **modification payée qui n'a pas pu être
+ * appliquée** (plan S2, R13) : ce qui s'est passé, que la commande n'a pas
+ * changé, et que le complément est rendu — sans geste de reprise.
+ */
+export interface OrderModificationFailedCopy {
+  /** Objet du message. `{ref}` = le numéro de commande. */
+  readonly subject: string;
+  readonly kicker: string;
+  readonly title: string;
+  readonly intro: string;
+  /** 🔴 La commande reste telle qu'elle était, et le complément est rendu. */
+  readonly consequence: string;
+  readonly amountLabel: string;
+  readonly footer: string;
+}
+
 /** La famille « paiement et annulation », une section par clé du registre. */
 export interface PaymentMailsCopy {
   readonly "customer.payment-failed": PaymentFailedCopy;
   readonly "customer.payment-expired": PaymentExpiredCopy;
+  readonly "customer.order-modification-failed": OrderModificationFailedCopy;
   readonly "customer.order-payment-link": OrderPaymentLinkCopy;
   readonly "customer.order-cancelled": OrderCancelledCopy;
 }

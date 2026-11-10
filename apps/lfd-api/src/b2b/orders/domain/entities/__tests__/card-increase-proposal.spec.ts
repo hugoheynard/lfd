@@ -194,6 +194,26 @@ describe("CardIncreaseProposal — ce que chaque transition écrit", () => {
     expect(late.toPersistence()).toMatchObject({ state: "closed", settledAt: LATER });
   });
 
+  it("un contrôle au prestataire en échec : compté à part des essais, la cloche au 3ᵉ exactement", () => {
+    const awaiting = at("awaiting_payment");
+    const verdicts = [1, 2, 3, 4].map(() => awaiting.recordProviderCheckFailure());
+    expect(verdicts).toEqual([false, false, true, false]);
+    expect(awaiting.toPersistence()).toMatchObject({
+      state: "awaiting_payment",
+      providerChecks: 4,
+      attempts: 0,
+    });
+  });
+
+  it.each(["ready", "abandoned"] as const)(
+    "un projet `%s` n'attend plus son paiement : aucun contrôle à compter",
+    (state) => {
+      expect(() => at(state).recordProviderCheckFailure()).toThrow(
+        CardIncreaseTransitionRefusedError,
+      );
+    },
+  );
+
   it("refuse de relire un état inconnu", () => {
     expect(() =>
       CardIncreaseProposal.rehydrate({ ...proposal().toPersistence(), state: "lost" }),

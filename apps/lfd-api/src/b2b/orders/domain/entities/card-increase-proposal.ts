@@ -58,6 +58,9 @@ export const CARD_INCREASE_PAYMENT_DELAY_MS = 15 * 60 * 1000;
 /** Au 5ᵉ échec de l'exécuteur, le projet passe `stalled` et la cloche sonne (§2.6). */
 export const CARD_INCREASE_MAX_ATTEMPTS = 5;
 
+/** Au 3ᵉ contrôle au prestataire en échec, la cloche sonne (§2.7) — compteur à part des essais. */
+export const CARD_INCREASE_PROVIDER_CHECK_BELL = 3;
+
 /** Les règles figées de l'auteur au geste (§2.3) — relues à l'application (R6, R7). */
 export interface FrozenIncreaseRules {
   readonly rulesOf: RevisionActor["kind"];
@@ -259,6 +262,14 @@ export class CardIncreaseProposal {
       state: stalled ? "stalled" : "ready",
     };
     return stalled;
+  }
+
+  /** Un contrôle au prestataire a échoué (§2.7) ; `true` au 3ᵉ exactement : la cloche sonne une fois. */
+  recordProviderCheckFailure(): boolean {
+    this.ensureIn(["awaiting_payment"], "vérifié chez le prestataire");
+    const providerChecks = this.current.providerChecks + 1;
+    this.current = { ...this.current, providerChecks };
+    return providerChecks === CARD_INCREASE_PROVIDER_CHECK_BELL;
   }
 
   /** « Relancer » (`b2b_orders:write`) : les essais repartent de zéro. */

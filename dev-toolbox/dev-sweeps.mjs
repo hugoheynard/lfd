@@ -24,6 +24,10 @@ export const EVERY_FIVE_MINUTES = [
   // Les remboursements par carte (plan M2, lots P1.b et P1.c) : l'annulation
   // d'une commande payée y passe, l'ancienne route est retirée.
   "admin/card-payments/sweep",
+  // Les hausses payées par carte (plan S2, §2.6, §2.7) : appliquer les
+  // compléments payés, rattraper un webhook perdu, abandonner au délai.
+  "admin/orders/card-increases/sweep",
+  "admin/orders/card-increases/expire",
   "admin/vitrine/sweep",
   // Le balayeur des e-mails (S1b) : reprend les envois restés en route.
   "admin/mail/requests/sweep",

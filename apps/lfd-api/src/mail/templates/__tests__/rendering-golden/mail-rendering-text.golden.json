@@ -74,6 +74,11 @@
       "textSha256": "02c35732e5b90a934b5e149e11ce1266091e793757aae31351023fbf00b163bf"
     }
   },
+  "customer.order-modification-failed": {
+    "only": {
+      "textSha256": "2161411ebbd90c141268184704baeb227d9f33bd2a4f54f1e873907539a3d3fe"
+    }
+  },
   "customer.order-cancelled": {
     "teamPaid": {
       "textSha256": "f91aeee419c4504af67fd3cf6e988f4c431b515231d6ce402eb168c944a3b521"

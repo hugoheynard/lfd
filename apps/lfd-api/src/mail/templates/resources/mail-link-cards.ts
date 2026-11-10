@@ -29,6 +29,7 @@ export const MAIL_LINK_CARDS: { readonly [K in keyof B2bMails]: MailLinkCards } 
   "customer.order-placed-with-your-email": {},
   "customer.payment-failed": { cta: { label: "Reprendre le règlement" } },
   "customer.payment-expired": {},
+  "customer.order-modification-failed": {},
   "customer.order-cancelled": {},
   "customer.order-payment-link": { cta: { label: "Lien de règlement" } },
   "customer.invoice-issued": { cta: { label: "Ses factures" } },

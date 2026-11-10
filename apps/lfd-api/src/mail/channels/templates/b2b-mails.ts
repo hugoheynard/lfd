@@ -137,6 +137,21 @@ export interface B2bMails {
     readonly locale: ContentLocale;
   };
   /**
+   * **La modification payée n'a pas pu être appliquée** (plan
+   * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.6, R13).
+   * Destinataire : le client qui l'a demandée. La commande garde sa
+   * composition, et le complément payé est rendu sur la carte.
+   *
+   * Sans bouton : la commande n'a pas changé, il n'y a rien à reprendre ; le
+   * client peut la modifier de nouveau depuis son espace.
+   */
+  "customer.order-modification-failed": {
+    readonly sheet: ClientSheet;
+    /** Le complément rendu, en centimes TTC. */
+    readonly complementCents: number;
+    readonly locale: ContentLocale;
+  };
+  /**
    * **La commande a été annulée par l'équipe** (doc
    * `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.5). Destinataire :
    * le client. Cf. `order-cancelled-mail.ts`.
