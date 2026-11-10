@@ -9,7 +9,7 @@ import type {
   RevisionActor,
 } from "../../domain/entities/order-revision.js";
 import { OrderRevisedElsewhereError } from "../../domain/errors/order-revision-errors.js";
-import { OrderRevisedEvent } from "../../domain/events/order-revised.event.js";
+import { OrderRevisedEvent, type RevisionOrigin } from "../../domain/events/order-revised.event.js";
 import { AccountOrderRevaluation } from "../../domain/ports/account-order-revaluation.js";
 import { DeliveryNoteFollowing } from "../../domain/ports/delivery-note-following.js";
 import { OrderRevisionRepository } from "../../domain/ports/order-revision.repository.js";
@@ -50,6 +50,7 @@ export class OrderRevisionRecording {
     locked: RevisableOrder,
     revision: OrderRevisionToSave,
     actor: RevisionActor,
+    origin: RevisionOrigin,
   ): Promise<void> {
     // Plan du jour J, §13 : une commande sur stock n'a jamais été inscrite au
     // fournil — ni guichet (et donc ni verrou de journée), ni BL à suivre :
@@ -70,10 +71,14 @@ export class OrderRevisionRecording {
       // Plan A2 : le BL prévu se réécrit sur la commande qu'on vient d'écrire.
       await this.deliveryNotes.followRevision(revision.orderId);
     }
-    await this.publish(revision, actor);
+    await this.publish(revision, actor, origin);
   }
 
-  private async publish(revision: OrderRevisionToSave, actor: RevisionActor): Promise<void> {
+  private async publish(
+    revision: OrderRevisionToSave,
+    actor: RevisionActor,
+    origin: RevisionOrigin,
+  ): Promise<void> {
     await this.durable.publish(
       new OrderRevisedEvent(
         revision.orderId,
@@ -84,6 +89,7 @@ export class OrderRevisionRecording {
         revision.changes,
         revision.totalBeforeCents,
         revision.totalAfterCents,
+        origin,
       ).durableFact(),
     );
     // La livraison reprend une commande qui change d'acheminement (§9) : même transaction.

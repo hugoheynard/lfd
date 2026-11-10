@@ -83,6 +83,7 @@ export class AdminOrderRevisionsController {
         expectedRevision,
         content,
         expectedTotalCents,
+        "direct",
       ),
     );
   }

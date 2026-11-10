@@ -39,6 +39,14 @@ déjà engagée en comptabilité ou dont le départ incomplet est décidé.
 - La remise de retrait, les frais de livraison et la TVA se recalculent sur
   la nouvelle composition, comme à la passation.
 
+### L'e-mail « commande modifiée » (depuis le 2026-11-10)
+
+Une fois la modification appliquée, le client reçoit **« Votre commande ORD-…
+est modifiée »** : le détail à jour, l'ancien et le nouveau total, le bon
+révisé joint, et une phrase sur l'argent (« figurera sur votre facture » au
+compte, « réglée par carte » pour une hausse payée). Une demande appliquée par
+l'équipe ne le déclenche pas : le client reçoit déjà la réponse à sa demande.
+
 ### Le total vu (depuis le 2026-11-10)
 
 Une modification envoie **le total qu'elle a montré**. Si le prix a bougé
@@ -592,6 +600,21 @@ Le bon de fidélité sous la différence — lot C-2b, plus tard.
   `order.change_requested` / `order.change_applied` / `order.change_refused`,
   `production.order_quantities_raised`, `packing_sheet.revised`, avec leurs
   libellés au back-office.
+- **E-mail au client** : `SendOrderRevisedMail`
+  (`apps/lfd-api/src/b2b/orders/application/handlers/send-order-revised-mail.handler.ts`), un
+  `@DurableHandler` sur `order.revised`, écrit `customer.order-revised` au
+  titulaire (`placedByUserId`) : la feuille projetée de la révision courante,
+  le bon joint par référence, les deux totaux du fait, et la phrase sur
+  l'argent (`revisionMoneyNoteOf`, `apps/lfd-api/src/b2b/orders/domain/services/revision-money-note.ts` :
+  au compte ou à total nul → facture ; carte en hausse → réglée ; carte en
+  baisse → remboursée, prête pour la baisse ; total égal → rien). Clé
+  `order.revised:<commande>:<révision>`, sans adresse. Le fait porte une
+  **origine** (`direct` | `change_request`) que `ReviseOrderCommand` reçoit de
+  son appelant — les deux contrôleurs et l'exécuteur de la hausse
+  (`OrderRevisionRecording.record`) passent `direct`, `BusOrderChangeApplier`
+  passe `change_request` — et l'abonné saute `change_request` : la demande
+  M4 a déjà son e-mail (`customer.order-change-applied`, bloc `contact`). Un
+  fait écrit avant ce champ se lit `direct`.
 
 ### 2.9 Ce qui reste ouvert
 

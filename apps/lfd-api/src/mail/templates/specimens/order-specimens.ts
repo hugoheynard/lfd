@@ -76,6 +76,8 @@ const ORDER_URL = `${SPECIMEN_URL}/commande`;
 const SETTLE_URL = `${SPECIMEN_URL}/regler`;
 const HANDOVER_URL = `${SPECIMEN_URL}/retrait`;
 const HANDOVER_TOKEN = "specimen-handover";
+/** Le total d'avant une hausse payée par carte, pour « commande modifiée » : 11,67 €. */
+const SPECIMEN_PREVIOUS_TOTAL_CENTS = 1_167;
 /** Le complément rendu d'une modification payée non appliquée (plan S2, R13) : 12,00 €. */
 const SPECIMEN_COMPLEMENT_CENTS = 1_200;
 
@@ -89,6 +91,7 @@ export const ORDER_SPECIMENS: Pick<
   | "customer.payment-failed"
   | "customer.payment-expired"
   | "customer.order-modification-failed"
+  | "customer.order-revised"
   | "customer.order-cancelled"
   | "customer.order-payment-link"
 > = {
@@ -99,6 +102,19 @@ export const ORDER_SPECIMENS: Pick<
       handoverToken: HANDOVER_TOKEN,
       orderUrl: ORDER_URL,
       handoverUrl: HANDOVER_URL,
+      document: { fileName: `bon-${REFERENCE}.pdf`, pdfBase64: SPECIMEN_PDF_BASE64 },
+      locale,
+    }),
+  },
+  "customer.order-revised": {
+    family: "order",
+    // Une hausse payée par carte : la commande d'exemple, 11,67 € → 13,67 €.
+    data: (locale) => ({
+      sheet: SHEET,
+      previousTotalCents: SPECIMEN_PREVIOUS_TOTAL_CENTS,
+      totalCents: SHEET.money.totalCents,
+      moneyNote: "card_charged",
+      orderUrl: ORDER_URL,
       document: { fileName: `bon-${REFERENCE}.pdf`, pdfBase64: SPECIMEN_PDF_BASE64 },
       locale,
     }),

@@ -3,6 +3,12 @@ import { SAME_SENSE, type MailValueCards } from "./mail-value-card.types.js";
 /** La référence d'une commande, telle que tous les e-mails de commande la placent. */
 const ORDER_REFERENCE = SAME_SENSE;
 
+/** L'ancien total, tel que « commande modifiée » le cite ; l'exemple suit chaque e-mail. */
+const ORDER_PREVIOUS_TOTAL = {
+  label: "Ancien total",
+  description: "Le total TTC de la commande avant la modification.",
+};
+
 /**
  * **Les fiches des valeurs d'une commande** : sa référence, son créneau, son
  * contenu, son argent. Exemples des données d'exemple (`specimens/`), sauf
@@ -43,6 +49,7 @@ export const ORDER_VALUE_CARDS: Pick<
       "customer.order-payment-link": ORDER_REFERENCE,
       "customer.order-cancelled": ORDER_REFERENCE,
       "customer.order-change-applied": ORDER_REFERENCE,
+      "customer.order-revised": ORDER_REFERENCE,
       "customer.order-change-refused": ORDER_REFERENCE,
       "customer.order-shortfall": ORDER_REFERENCE,
       "customer.mandate-to-sign": {
@@ -162,6 +169,10 @@ export const ORDER_VALUE_CARDS: Pick<
     label: "Ancien total",
     description: "Le total TTC de la commande avant la modification.",
     example: "38,00 €",
+    senses: {
+      "customer.order-change-applied": SAME_SENSE,
+      "customer.order-revised": { ...ORDER_PREVIOUS_TOTAL, example: "11,67 €" },
+    },
   },
   product: {
     label: "Produit",

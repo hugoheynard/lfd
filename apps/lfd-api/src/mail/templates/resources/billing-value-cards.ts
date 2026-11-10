@@ -35,6 +35,12 @@ export const BILLING_VALUE_CARDS: Pick<
           "Le montant payé par carte, pas encore remboursé, qui sera rendu sur la carte.",
         example: "13,67 €",
       },
+      "customer.order-revised": {
+        label: "Écart de total",
+        description:
+          "La différence entre le nouveau total TTC et l'ancien : réglée par carte, ou remboursée sur la carte.",
+        example: "2,00 €",
+      },
       "customer.order-change-applied": {
         label: "Écart de total",
         description: "La différence entre le nouveau total TTC et l'ancien, en plus ou en moins.",
@@ -150,5 +156,13 @@ export const BILLING_VALUE_CARDS: Pick<
     label: "Total TTC de la facture",
     description: "Le montant TTC de la facture.",
     example: "1 234,56 €",
+    senses: {
+      "customer.invoice-issued": SAME_SENSE,
+      "customer.order-revised": {
+        label: "Nouveau total",
+        description: "Le total TTC de la commande après la modification.",
+        example: "13,67 €",
+      },
+    },
   },
 };

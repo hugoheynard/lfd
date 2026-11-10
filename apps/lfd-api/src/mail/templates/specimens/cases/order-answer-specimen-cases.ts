@@ -12,6 +12,9 @@ const COMPANY = `${SPECIMEN_MARK} — Hôtel des Trois Ponts`;
 /** La date limite d'un bon d'exemple : une donnée mise en forme, jamais comparée à l'horloge. */
 const VOUCHER_EXPIRY = "2026-12-31T10:00:00.000Z";
 
+/** Les quatre phrases sur l'argent d'une commande modifiée. */
+const REVISED_MONEY_NOTES = ["card_charged", "invoice", "card_refunded", "none"] as const;
+
 function withoutDay(sheet: ClientSheet): ClientSheet {
   return { ...sheet, requestedFor: null, money: { ...sheet.money, settlement: "free" } };
 }
@@ -21,6 +24,7 @@ export const ORDER_ANSWER_CASE_TABLES: Pick<
   | "customer.order-cancelled"
   | "customer.order-change-applied"
   | "customer.order-change-refused"
+  | "customer.order-revised"
   | "customer.order-shortfall"
 > = {
   "customer.order-cancelled": {
@@ -138,5 +142,26 @@ export const ORDER_ANSWER_CASE_TABLES: Pick<
     ],
   },
   "customer.order-change-refused": specimenOnly("customer.order-change-refused"),
+  "customer.order-revised": {
+    cases: [
+      specimenCase("customer.order-revised", "Carte, hausse réglée"),
+      variantCase("customer.order-revised", "account", "Au compte, total changé", (data) => ({
+        ...data,
+        sheet: { ...data.sheet, money: { ...data.sheet.money, settlement: "account" } },
+        moneyNote: "invoice",
+      })),
+      variantCase("customer.order-revised", "refund", "Carte, baisse remboursée", (data) => ({
+        ...data,
+        previousTotalCents: data.totalCents + 800,
+        moneyNote: "card_refunded",
+      })),
+      variantCase("customer.order-revised", "unchanged", "Total inchangé", (data) => ({
+        ...data,
+        previousTotalCents: data.totalCents,
+        moneyNote: "none",
+      })),
+    ],
+    axes: [{ id: "money", values: REVISED_MONEY_NOTES, of: (data) => data.moneyNote }],
+  },
   "customer.order-shortfall": specimenOnly("customer.order-shortfall"),
 };

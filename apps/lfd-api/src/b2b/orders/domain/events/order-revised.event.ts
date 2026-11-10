@@ -10,6 +10,21 @@ import {
 export const ORDER_REVISED = "order.revised";
 
 /**
+ * **D'où vient la révision** — une valeur du fait, lue par l'abonné qui écrit
+ * au client (`SendOrderRevisedMail`) :
+ *
+ * - `direct` : le client ou l'équipe a modifié (M1), ou la hausse payée a été
+ *   appliquée par son exécuteur ;
+ * - `change_request` : l'équipe a appliqué une demande du client (M4). Le
+ *   bloc `contact` lui écrit déjà `customer.order-change-applied`, qui porte
+ *   l'écart : un second e-mail ferait doublon.
+ *
+ * Un fait écrit avant ce champ (2026-11-10) se lit `direct`.
+ */
+export const REVISION_ORIGINS = ["direct", "change_request"] as const;
+export type RevisionOrigin = (typeof REVISION_ORIGINS)[number];
+
+/**
  * **« Une commande a été modifiée »** (voir
  * `documentation/commandes/modification/modifier-une-commande.md`, § 2.8 « Les autres blocs ») — écrit
  * dans la boîte d'envoi dans la transaction de la révision. Le journal en
@@ -27,6 +42,7 @@ export class OrderRevisedEvent implements DurableEvent {
     readonly changes: readonly RevisionChange[],
     readonly totalBeforeCents: number,
     readonly totalAfterCents: number,
+    readonly origin: RevisionOrigin,
   ) {}
 
   durableFact(): DurableFact {
@@ -42,6 +58,7 @@ export class OrderRevisedEvent implements DurableEvent {
         changes: [...this.changes],
         totalBeforeCents: this.totalBeforeCents,
         totalAfterCents: this.totalAfterCents,
+        origin: this.origin,
       },
     };
   }
@@ -64,6 +81,7 @@ export class OrderRevisedEvent implements DurableEvent {
     const after = count("totalAfterCents");
     const author = authorOf(payload["author"]);
     const changes = changesOf(payload["changes"]);
+    const origin = originOf(payload["origin"]);
     if (
       orderId === null ||
       orderNumber === null ||
@@ -72,7 +90,8 @@ export class OrderRevisedEvent implements DurableEvent {
       before === null ||
       after === null ||
       author === null ||
-      changes === null
+      changes === null ||
+      origin === null
     ) {
       throw new OrderRevisedPayloadError();
     }
@@ -85,8 +104,17 @@ export class OrderRevisedEvent implements DurableEvent {
       changes,
       before,
       after,
+      origin,
     );
   }
+}
+
+/** Absente (fait d'avant le 2026-11-10) ⇒ `direct` ; inconnue ⇒ illisible. */
+function originOf(raw: unknown): RevisionOrigin | null {
+  if (raw === undefined) {
+    return "direct";
+  }
+  return REVISION_ORIGINS.find((origin) => origin === raw) ?? null;
 }
 
 function authorOf(raw: unknown): RevisionActor | null {

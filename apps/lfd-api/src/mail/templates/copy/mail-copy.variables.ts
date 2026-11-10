@@ -158,6 +158,14 @@ const DECLARED_VARIABLES = {
     title: ["form"],
     photosValue: ["count"],
   },
+  "customer.order-revised": {
+    subject: ["ref"],
+    intro: ["ref"],
+    totalShift: ["previous", "total"],
+    sameTotal: ["total"],
+    cardCharged: ["amount"],
+    cardRefunded: ["amount"],
+  },
   "customer.order-change-applied": {
     subject: ["ref"],
     intro: ["ref"],

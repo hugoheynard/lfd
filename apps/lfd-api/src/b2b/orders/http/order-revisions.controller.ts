@@ -94,6 +94,7 @@ export class OrderRevisionsController {
         expectedRevision,
         content,
         expectedTotalCents,
+        "direct",
       ),
     );
   }

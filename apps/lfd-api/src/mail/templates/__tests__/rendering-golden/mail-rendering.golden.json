@@ -556,5 +556,27 @@
       "htmlSha256": "c6bc560775d7ea8c1dcd21915ec20fbb0ac5c6b6bad8f2ad80f891769e3ab011",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
+  },
+  "customer.order-revised": {
+    "account": {
+      "subject": "Votre commande ORD-4812 est modifiée",
+      "htmlSha256": "c9efe34d1a7422f6c738b116552d9cbc0634a23c0b296775e9fd94e973b1796e",
+      "attachmentsSha256": "838b72c1e6b0fa1f891b4f73a1992feafd7c9137c0978b32113c919077d6302f"
+    },
+    "cardCharged": {
+      "subject": "Votre commande ORD-4812 est modifiée",
+      "htmlSha256": "7a89591378a23ab56dfb2563ede6b783629083f4d8fe3b985ab42ba3f29f96af",
+      "attachmentsSha256": "838b72c1e6b0fa1f891b4f73a1992feafd7c9137c0978b32113c919077d6302f"
+    },
+    "cardRefunded": {
+      "subject": "Votre commande ORD-4812 est modifiée",
+      "htmlSha256": "f5b4284740959b18a465cb80afeca10b74ffa8aace36e17e1ccab13c4325493a",
+      "attachmentsSha256": "838b72c1e6b0fa1f891b4f73a1992feafd7c9137c0978b32113c919077d6302f"
+    },
+    "unchangedBare": {
+      "subject": "Votre commande ORD-4812 est modifiée",
+      "htmlSha256": "9987a115cd1974f8bd6fddcd9e72e911a5ae4b736a4720da6b7d540231cf8df0",
+      "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    }
   }
 }

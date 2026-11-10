@@ -2,6 +2,19 @@ import type { OrderChangeMailsCopy } from "../model/order-change-mails.model.js"
 
 /** The "change request" family, in English. */
 export const ORDER_CHANGE_MAILS_EN: OrderChangeMailsCopy = {
+  "customer.order-revised": {
+    subject: "Your order {ref} has been changed",
+    kicker: "Order changed",
+    title: "Your order has been changed.",
+    intro: "Your order {ref} has been changed. Here are its updated details.",
+    totalShift: "The total goes from {previous} to {total}.",
+    sameTotal: "The total stays at {total}.",
+    invoice: "The new total will appear on your invoice.",
+    cardCharged: "The difference of {amount} has been paid by card.",
+    cardRefunded: "{amount} will be refunded to your card.",
+    cta: "View my order",
+    footer: "Any doubt or mistake? Call the bakery.",
+  },
   "customer.order-change-applied": {
     kicker: "Order changed",
     subject: "Order {ref} changed as you asked",

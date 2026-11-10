@@ -124,6 +124,13 @@ export const MAIL_DATA_BLOCK_CARDS: { readonly [K in keyof B2bMails]: MailDataBl
     },
   },
   "customer.order-change-applied": { summary: ONE_LINE_SUMMARY("le nouveau total TTC") },
+  "customer.order-revised": {
+    summary: {
+      label: "Le détail à jour",
+      description:
+        "Le récapitulatif de la passation, sur la commande modifiée : le jour, le retrait ou la livraison, le contenu, les remises, la TVA et le total selon le règlement.",
+    },
+  },
   "customer.order-change-refused": { summary: ONE_LINE_SUMMARY("le mot de notre équipe") },
   "customer.order-shortfall": {},
   "staff.appointment-booked": {},

@@ -20,7 +20,9 @@ describe("ReviseOrderHandler — le total vu (R14)", () => {
     const seen = await asSeen("ord_1", CUSTOMER, 0, MORE);
     const stale = seen.expectedTotalCents - 1;
 
-    const attempt = handler.execute(new ReviseOrderCommand("ord_1", CUSTOMER, 0, MORE, stale));
+    const attempt = handler.execute(
+      new ReviseOrderCommand("ord_1", CUSTOMER, 0, MORE, stale, "direct"),
+    );
 
     await expect(attempt).rejects.toBeInstanceOf(OrderTotalChangedError);
     await expect(attempt).rejects.toMatchObject({
@@ -51,7 +53,7 @@ describe("ReviseOrderHandler — le total vu (R14)", () => {
     // Un total faux exprès : le règlement doit parler avant lui.
     const wrongTotal = order.totalCents + 1;
     await expect(
-      handler.execute(new ReviseOrderCommand("ord_1", CUSTOMER, 0, MORE, wrongTotal)),
+      handler.execute(new ReviseOrderCommand("ord_1", CUSTOMER, 0, MORE, wrongTotal, "direct")),
     ).rejects.toBeInstanceOf(CardOrderNotRevisableError);
     expect(trace).toEqual([]);
   });

@@ -42,8 +42,38 @@ export interface OrderChangeRefusedCopy {
   readonly contactSales: string;
 }
 
+/**
+ * « Votre commande est modifiée. » — toute révision appliquée hors d'une
+ * demande (doc `modifier-une-commande.md`, § 2.8) : M1 du client ou de
+ * l'équipe, ou la hausse payée par carte. La phrase sur l'argent dépend du
+ * règlement ; à total égal, aucune.
+ */
+export interface OrderRevisedCopy {
+  /** Objet du message. `{ref}` = le numéro de commande. */
+  readonly subject: string;
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
+  readonly title: string;
+  /** `{ref}`. */
+  readonly intro: string;
+  /** Le total a changé. `{previous}` = l'ancien total TTC, `{total}` = le nouveau. */
+  readonly totalShift: string;
+  /** Le total n'a pas bougé. `{total}`. */
+  readonly sameTotal: string;
+  /** Au compte, ou à total nul : la facture portera le nouveau total. */
+  readonly invoice: string;
+  /** Carte, total en hausse : la différence est déjà payée. `{amount}` = l'écart. */
+  readonly cardCharged: string;
+  /** Carte, total en baisse : la différence sera rendue. `{amount}` = l'écart. */
+  readonly cardRefunded: string;
+  /** Le bouton vers CETTE commande. */
+  readonly cta: string;
+  readonly footer: string;
+}
+
 /** La famille « demande de modification », une section par clé du registre. */
 export interface OrderChangeMailsCopy {
+  readonly "customer.order-revised": OrderRevisedCopy;
   readonly "customer.order-change-applied": OrderChangeAppliedCopy;
   readonly "customer.order-change-refused": OrderChangeRefusedCopy;
 }

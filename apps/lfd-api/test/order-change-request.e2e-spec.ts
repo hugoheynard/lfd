@@ -316,6 +316,10 @@ describe("la boîte des demandes — l'équipe répond", () => {
       where: { orderId: s.orderId },
     });
     const appliedMail = sentMails.find((m) => m.template === "customer.order-change-applied");
+    // Un seul e-mail pour la demande appliquée : la révision (origine
+    // `change_request`) n'écrit pas « commande modifiée » en plus (2026-11-10).
+    expect(sentMails.filter((m) => m.template === "customer.order-change-applied")).toHaveLength(1);
+    expect(sentMails.filter((m) => m.template === "customer.order-revised")).toEqual([]);
     expect(appliedMail?.data).toMatchObject({
       totalCents: entry.totalAfterCents,
       previousTotalCents: entry.totalBeforeCents,

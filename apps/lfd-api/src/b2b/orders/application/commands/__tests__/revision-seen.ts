@@ -32,7 +32,14 @@ export function seenRevisions(
   const quotes = new QuoteOrderRevisionHandler(wall, revising, clock);
   return async (orderId, actor, expectedRevision, content) => {
     const quote = await quotes.execute(new QuoteOrderRevisionQuery(orderId, actor, content));
-    return new ReviseOrderCommand(orderId, actor, expectedRevision, content, quote.totalCents);
+    return new ReviseOrderCommand(
+      orderId,
+      actor,
+      expectedRevision,
+      content,
+      quote.totalCents,
+      "direct",
+    );
   };
 }
 
@@ -44,4 +51,4 @@ export function seenRevisions(
  * des refus aurait changé.
  */
 export const refusedEarly: SeenRevision = (orderId, actor, expectedRevision, content) =>
-  Promise.resolve(new ReviseOrderCommand(orderId, actor, expectedRevision, content, 0));
+  Promise.resolve(new ReviseOrderCommand(orderId, actor, expectedRevision, content, 0, "direct"));

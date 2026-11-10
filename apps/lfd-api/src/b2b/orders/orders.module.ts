@@ -15,6 +15,7 @@ import { MarkOrderReadyHandler } from "./application/commands/mark-order-ready.h
 import { SendGuestOrderNotice } from "./application/handlers/send-guest-order-notice.handler.js";
 import { SendGuestOrderNoticeOnPaid } from "./application/handlers/send-guest-order-notice-on-paid.handler.js";
 import { SendOrderPlacedMail } from "./application/handlers/send-order-placed-mail.handler.js";
+import { SendOrderRevisedMail } from "./application/handlers/send-order-revised-mail.handler.js";
 import { SendOrderReadyMail } from "./application/handlers/send-order-ready-mail.handler.js";
 import { DeliveryEnRouteMail } from "./application/services/delivery-en-route-mail.service.js";
 import { SendOrderSettledMail } from "./application/handlers/send-order-settled-mail.handler.js";
@@ -554,6 +555,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     SendPaymentFailedMail,
     // Le règlement mort à la clôture a son propre courriel ; l'abandon, aucun.
     SendPaymentExpiredMail,
+    // Toute révision appliquée hors d'une demande M4 : « votre commande est modifiée ».
+    SendOrderRevisedMail,
     // Tout règlement pro qui meurt sonne, quelle qu'en soit la cause (D4).
     RingFailedProSettlement,
     { provide: FailedSettlementReader, useClass: PrismaFailedSettlementReader },

@@ -20,6 +20,7 @@ import {
 } from "@lfd/contracts";
 import { randomUUID } from "node:crypto";
 
+import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   CompanyStatus,
@@ -54,6 +55,19 @@ const DAY_LOCK_KEY = `production_day:${DAY}`;
 /** Assez pour mettre deux requêtes en file sur une machine lente. */
 const HOLD_TIMEOUT_MS = 20_000;
 
+/** Les e-mails partis, relevés pour « commande modifiée » (2026-11-10). */
+const sentMails: { readonly template: string; readonly data: Record<string, unknown> }[] = [];
+const recordingMailer = {
+  enabled: true,
+  send: (args: {
+    readonly template: string;
+    readonly data: Record<string, unknown>;
+  }): Promise<{ providerId: null }> => {
+    sentMails.push(args);
+    return Promise.resolve({ providerId: null });
+  },
+};
+
 let ctx: E2eContext;
 
 beforeAll(async () => {
@@ -61,6 +75,7 @@ beforeAll(async () => {
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
       cardProvidersOverride("pi_revision"),
+      { token: MAILER, value: recordingMailer },
     ],
   });
 });
@@ -71,6 +86,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  sentMails.splice(0);
 });
 
 const staff = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);
@@ -221,6 +237,30 @@ describe("POST /orders/:id/revisions — le client modifie sa commande au compte
       revisedByKind: "customer",
     });
     expect(JSON.stringify(history[0]?.composition)).toContain('"quantity":10');
+  });
+
+  it("écrit « commande modifiée » au client, une fois, avec le nouveau total sur sa facture", async () => {
+    const { orderId, pickupId } = await scene();
+    const before = await ctx.prisma.order.findUniqueOrThrow({ where: { id: orderId } });
+
+    const revised = jsonBody<OrderRevisedResponse>(
+      await buyer()
+        .post(`/orders/${orderId}/revisions`)
+        .send({
+          expectedRevision: 0,
+          ...content(pickupId, { lines: [{ sku: "VIE-001-1", quantity: 20 }] }),
+        })
+        .expect(200),
+    );
+    await ctx.drain();
+
+    const mails = sentMails.filter((mail) => mail.template === "customer.order-revised");
+    expect(mails).toHaveLength(1);
+    expect(mails[0]?.data).toMatchObject({
+      previousTotalCents: before.totalCents,
+      totalCents: revised.totalCents,
+      moneyNote: "invoice",
+    });
   });
 
   it("une ligne déjà présente garde son prix d'origine ; une ligne nouvelle prend le prix du jour", async () => {

@@ -1,4 +1,5 @@
 import type { RevisionActor } from "../../domain/entities/order-revision.js";
+import type { RevisionOrigin } from "../../domain/events/order-revised.event.js";
 import type { OrderContent } from "../services/order-content.js";
 
 /**
@@ -12,6 +13,9 @@ import type { OrderContent } from "../services/order-content.js";
  * révision qu'elle corrige (R7) ; `expectedTotalCents` le TTC que l'auteur a
  * vu au devis (doc `documentation/commandes/modification/modifier-une-commande.md`,
  * §2.3 (R14)) — pour une demande appliquée, celui de l'équipe, jamais recalculé.
+ * `origin` dit si la révision applique une demande du client (`change_request`,
+ * M4) : le fait `order.revised` le recopie, et l'e-mail « commande modifiée »
+ * ne part pas — `contact` a déjà écrit le sien.
  */
 export class ReviseOrderCommand {
   constructor(
@@ -20,6 +24,7 @@ export class ReviseOrderCommand {
     readonly expectedRevision: number,
     readonly content: OrderContent,
     readonly expectedTotalCents: number,
+    readonly origin: RevisionOrigin,
   ) {}
 }
 

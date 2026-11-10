@@ -131,7 +131,7 @@ export class ApplyCardIncreaseHandler implements ICommandHandler<ApplyCardIncrea
         revision.totalAfterCents,
       );
     }
-    await this.recording.record(locked, revision, frozen.author);
+    await this.recording.record(locked, revision, frozen.author, "direct");
     live.apply(this.clock.now());
     if (!(await this.proposals.save(live))) {
       throw new CardIncreaseNotWrittenError(live.id, "appliqué");

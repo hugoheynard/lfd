@@ -40,6 +40,7 @@ describe("OnOrderRevised", () => {
           ["lines", "date"],
           2_110,
           3_165,
+          "direct",
         ),
       ),
     );
@@ -70,6 +71,7 @@ describe("OnOrderRevised", () => {
           ["note"],
           2_110,
           2_110,
+          "direct",
         ),
       ),
     );

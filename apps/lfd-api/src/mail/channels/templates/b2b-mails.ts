@@ -13,6 +13,10 @@ import type {
   OrderChangeRefusedMailData,
 } from "../../templates/order-change-answer-mail.js";
 import type { OrderDelayedMailData } from "../../templates/order-delayed-mail.js";
+import type {
+  OrderRevisedMailData,
+  OrderRevisedMoneyNote,
+} from "../../templates/order-revised-mail.js";
 import type { OrderSheetMailDocument } from "../../templates/order-sheet-mail-document.js";
 import type { OrderShortfallMailData } from "../../templates/order-shortfall-mail.js";
 import type { PickupPoint } from "../../templates/pickup-itinerary.js";
@@ -29,7 +33,12 @@ import type { VitrineNoticeMailData } from "../../templates/vitrine-notice-mail.
  * (`mail/templates/`), et chaque forme de données vit à côté du gabarit qui
  * la lit ; le canal la nomme pour ses clients.
  */
-export type { InvoiceIssuedMailData, OrderCancelledMailData, OrderSheetMailDocument };
+export type {
+  InvoiceIssuedMailData,
+  OrderCancelledMailData,
+  OrderRevisedMoneyNote,
+  OrderSheetMailDocument,
+};
 export type { SubAccountActivity } from "../../templates/sub-account-activity-mail.js";
 export type { SubAccountGesture } from "../../templates/sub-account-gesture-mail.js";
 
@@ -164,6 +173,14 @@ export interface B2bMails {
    */
   "customer.order-change-applied": OrderChangeAppliedMailData;
   "customer.order-change-refused": OrderChangeRefusedMailData;
+  /**
+   * **« Votre commande est modifiée »** (doc
+   * `documentation/commandes/modification/modifier-une-commande.md`, § 2.8) —
+   * toute révision appliquée hors d'une demande M4 : M1 du client ou de
+   * l'équipe, la hausse payée par carte. Destinataire : celui qui a passé la
+   * commande. Cf. `order-revised-mail.ts`.
+   */
+  "customer.order-revised": OrderRevisedMailData;
   /**
    * **« Votre commande part incomplète »**, écrit à la main par l'équipe
    * après la décision du départ (plan

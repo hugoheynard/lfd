@@ -40,6 +40,9 @@ export class BusOrderChangeApplier extends OrderChangeApplier {
         baseRevision,
         change,
         expectedTotalCents,
+        // L'e-mail de la réponse part de `contact` (`customer.order-change-applied`) :
+        // la révision ne doit pas en écrire un second.
+        "change_request",
       ),
     );
     return {

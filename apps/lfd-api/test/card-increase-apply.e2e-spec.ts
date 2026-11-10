@@ -23,6 +23,8 @@ import type {
 
 import { CardSettlementReader } from "../src/card-payment/channels/requests/index.js";
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { MAILER } from "../src/mail/templates/mailer.tokens.js";
+import { b2bMailTemplates, type B2bMails } from "../src/mail/templates/mail-templates.js";
 import { CardIncreaseProposalRepository } from "../src/b2b/orders/domain/ports/card-increase-proposal.repository.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
@@ -60,6 +62,16 @@ const stubAdminVerifier = {
     Promise.resolve({ subject, scopes: [] }),
 };
 
+/** Les e-mails partis, relevés pour « commande modifiée » (2026-11-10). */
+const sentMails: { readonly template: string; readonly data: unknown }[] = [];
+const recordingMailer = {
+  enabled: true,
+  send: (args: { readonly template: string; readonly data: unknown }) => {
+    sentMails.push(args);
+    return Promise.resolve({ providerId: null });
+  },
+};
+
 let ctx: E2eContext;
 
 beforeAll(async () => {
@@ -68,6 +80,7 @@ beforeAll(async () => {
       { token: CardProviders, value: cards },
       { token: AdminTokenVerifier, value: stubAdminVerifier },
       { token: WallClock, value: wall },
+      { token: MAILER, value: recordingMailer },
     ],
   });
 });
@@ -79,6 +92,7 @@ afterAll(async () => {
 beforeEach(async () => {
   await ctx.reset();
   wall.offsetMs = 0;
+  sentMails.splice(0);
   cards.provider.cancellation = { kind: "cancelled" };
   cards.provider.states.clear();
 });
@@ -237,6 +251,27 @@ describe("Payé, puis appliqué (§2.6)", () => {
     ]);
     expect(await refundRequestsOf(order.id)).toEqual([]);
     await cardInvoiceHolds(order.id);
+  });
+
+  it("la hausse appliquée écrit « commande modifiée » : la différence réglée par carte", async () => {
+    const order = await paidOrder();
+    const increase = await proposed(order);
+
+    await cardPaid(ctx, increase.providerRef);
+    await deliver();
+
+    const mails = sentMails.filter((mail) => mail.template === "customer.order-revised");
+    expect(mails).toHaveLength(1);
+    const data = mails[0]?.data as B2bMails["customer.order-revised"];
+    expect(data).toMatchObject({
+      previousTotalCents: order.totalCents,
+      totalCents: increase.targetCents,
+      moneyNote: "card_charged",
+    });
+    const rendered = b2bMailTemplates({ supportEmail: "a@lfc.test", backOfficeUrl: "" })[
+      "customer.order-revised"
+    ](data);
+    expect(rendered.text).toContain("a été réglée par carte");
   });
 
   it("le webhook rejoué ne fait rien de plus", async () => {

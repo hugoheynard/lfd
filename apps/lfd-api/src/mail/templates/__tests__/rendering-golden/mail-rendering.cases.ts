@@ -2,6 +2,7 @@ import { CUSTOMER_CASES } from "./customer-cases.js";
 import type { MailCases } from "./mail-cases.type.js";
 import { ORDER_CHANGE_CASES } from "./order-change-cases.js";
 import { ORDER_CASES } from "./order-cases.js";
+import { ORDER_REVISED_CASES } from "./order-revised-cases.js";
 import { ORDER_SHORTFALL_CASES } from "./order-shortfall-cases.js";
 import { TEAM_CASES } from "./team-cases.js";
 
@@ -22,5 +23,6 @@ export const MAIL_CASES: MailCases = {
   ...CUSTOMER_CASES,
   ...TEAM_CASES,
   ...ORDER_CHANGE_CASES,
+  ...ORDER_REVISED_CASES,
   ...ORDER_SHORTFALL_CASES,
 };

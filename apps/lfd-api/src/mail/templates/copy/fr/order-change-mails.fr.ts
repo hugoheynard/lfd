@@ -2,6 +2,19 @@ import type { OrderChangeMailsCopy } from "../model/order-change-mails.model.js"
 
 /** La famille « demande de modification », en français — la langue de référence. */
 export const ORDER_CHANGE_MAILS_FR: OrderChangeMailsCopy = {
+  "customer.order-revised": {
+    subject: "Votre commande {ref} est modifiée",
+    kicker: "Commande modifiée",
+    title: "Votre commande est modifiée.",
+    intro: "Votre commande {ref} a été modifiée. Voici son détail à jour.",
+    totalShift: "Le total passe de {previous} à {total}.",
+    sameTotal: "Le total reste de {total}.",
+    invoice: "Le nouveau total figurera sur votre facture.",
+    cardCharged: "La différence de {amount} a été réglée par carte.",
+    cardRefunded: "{amount} vous seront remboursés sur votre carte.",
+    cta: "Voir ma commande",
+    footer: "Un doute ou une erreur ? Appelez le fournil.",
+  },
   "customer.order-change-applied": {
     kicker: "Commande modifiée",
     subject: "Commande {ref} modifiée à votre demande",

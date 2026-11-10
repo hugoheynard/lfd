@@ -5,7 +5,7 @@ import type { MailCases } from "./mail-cases.type.js";
 
 /** Les cas des e-mails d'une commande : confirmation, retrait, livraison, paiement, annulation. */
 
-function sheet(overrides: Partial<ClientSheet> = {}): ClientSheet {
+export function sheet(overrides: Partial<ClientSheet> = {}): ClientSheet {
   return {
     orderId: "order_1",
     reference: "ORD-4812",

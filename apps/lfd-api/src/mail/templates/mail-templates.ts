@@ -25,6 +25,7 @@ import {
   renderOrderChangeRefusedMail,
 } from "./order-change-answer-mail.js";
 import { renderOrderDelayedMail } from "./order-delayed-mail.js";
+import { renderOrderRevisedMail } from "./order-revised-mail.js";
 import { renderDeliveryEnRouteMail } from "./delivery-en-route-mail.js";
 import { renderProductionDossierMail } from "./production-dossier-mail.js";
 import { renderOrderShortfallMail } from "./order-shortfall-mail.js";
@@ -366,6 +367,13 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
     "customer.order-cancelled": (data) => renderOrderCancelledMail(data, customerMail),
     "customer.order-change-applied": (data) => renderOrderChangeAppliedMail(data, customerMail),
     "customer.order-change-refused": (data) => renderOrderChangeRefusedMail(data, customerMail),
+    // Le détail à jour : le récapitulatif de la passation, sur la feuille révisée.
+    "customer.order-revised": (data) =>
+      renderOrderRevisedMail(
+        data,
+        customerMail,
+        recapRows(data.sheet, data.locale, settlementCopyKeyOf(data.sheet)),
+      ),
     "customer.order-shortfall": (data) => renderOrderShortfallMail(data, customerMail),
     "customer.sub-account-activity": (data) => renderSubAccountActivityMail(data, customerMail),
     "customer.sub-account-gesture": (data) => renderSubAccountGestureMail(data, customerMail),

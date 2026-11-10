@@ -102,8 +102,10 @@ paymentId, amountCents, nature, reason, requestedBy })`
   `RevisionBelowVoucherError` si le total passe sous le bon imputé.
 - **Le chemin de la demande M4** garde `card_settled` sur toute carte
   (purpose `request`, S2 R2 ter) ; `BusOrderChangeApplier` passe par M1.
-- Aucun e-mail client ne confirme aujourd'hui une modification au compte
-  (M1) ; la liste des modèles `customer.*` n'en a pas.
+- Depuis le 2026-11-10, toute révision appliquée hors d'une demande M4
+  écrit `customer.order-revised` au client (`SendOrderRevisedMail`), avec la
+  phrase « {amount} vous seront remboursés sur votre carte » déjà prête pour
+  la baisse (`revisionMoneyNoteOf` → `card_refunded`).
 
 ### 2.2 Les règles
 
@@ -276,10 +278,9 @@ refundCents }`.
 3. **Q3 — La demande après l'heure limite (M4)** sur une commande carte :
    proposé **non dans ce lot** (R11) — l'ouvrir à la seule baisse demande de
    chiffrer la demande avant de la recevoir ; à reprendre avec S3.
-4. **Q4 — Un e-mail** « votre commande est modifiée, 8 € vous seront
-   remboursés » ? Aucune modification n'envoie d'e-mail aujourd'hui, même
-   au compte. Proposé : pas dans ce lot, avec S3 (les e-mails de
-   modification, pour tous les règlements).
+4. **Q4 — Un e-mail** : tranchée et bâtie le 2026-11-10 hors de ce plan
+   (`customer.order-revised`, `modifier-une-commande.md` § 2.8) ; la baisse
+   n'aura qu'à publier `order.revised`.
 5. **Q5 — Un seul déploiement** pour l'API et les deux écrans (le contrat
    du devis change), comme pour le total vu ? Proposé : oui.
 

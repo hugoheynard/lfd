@@ -50,6 +50,7 @@ export const MAIL_LINK_CARDS: { readonly [K in keyof B2bMails]: MailLinkCards } 
   "customer.sub-account-activity": {},
   "customer.sub-account-gesture": {},
   "customer.order-change-applied": {},
+  "customer.order-revised": { cta: { label: "Voir ma commande" } },
   "customer.order-change-refused": {},
   "customer.order-shortfall": {},
   "staff.appointment-booked": { cta: { label: "Le rendez-vous" } },

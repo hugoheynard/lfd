@@ -33,6 +33,7 @@ const CHARTERS: PerMail<MailCharter> = {
   "customer.order-modification-failed": "lfc",
   "customer.order-cancelled": "lfc",
   "customer.order-change-applied": "lfc",
+  "customer.order-revised": "lfc",
   "customer.order-change-refused": "lfc",
   "customer.order-shortfall": "lfc",
   "customer.sub-account-activity": "lfc",
@@ -66,7 +67,8 @@ const CHARTERS: PerMail<MailCharter> = {
  * (`DEFAULT_MAIL_LOCALE`) — 21 sur 32, et non 14 comme le plan l'écrivait ;
  * 21 sur 33 depuis `customer.marketing-confirm` (2026-11-08), qui suit la
  * langue de la case cochée ; 21 sur 34 depuis
- * `customer.order-modification-failed` (plan S2, R13, 2026-11-10).
+ * `customer.order-modification-failed` (plan S2, R13, 2026-11-10) ; 21 sur 35
+ * depuis `customer.order-revised` (2026-11-10).
  */
 const FOLLOWS_RECIPIENT_LOCALE: ReadonlySet<keyof B2bMails> = new Set<keyof B2bMails>([
   "customer.order-ready",
@@ -74,6 +76,7 @@ const FOLLOWS_RECIPIENT_LOCALE: ReadonlySet<keyof B2bMails> = new Set<keyof B2bM
   "customer.payment-failed",
   "customer.payment-expired",
   "customer.order-modification-failed",
+  "customer.order-revised",
   "customer.invoice-issued",
   "customer.delivery-en-route",
   "customer.order-delayed",
@@ -86,10 +89,10 @@ const FOLLOWS_RECIPIENT_LOCALE: ReadonlySet<keyof B2bMails> = new Set<keyof B2bM
 
 /**
  * **La nature de chaque e-mail** (doc `la-desinscription-et-l-accord.md`,
- * règle 1) : sans valeur par défaut, une clé oubliée ne compile pas. Les 34
+ * règle 1) : sans valeur par défaut, une clé oubliée ne compile pas. Les 35
  * sont des e-mails de service (Hugo, 2026-11-08 ; le 33ᵉ, la confirmation
  * d'inscription de C1, en est un ; le 34ᵉ, la modification payée non
- * appliquée du plan S2, aussi) — l'annonce de la vitrine
+ * appliquée du plan S2, aussi, comme le 35ᵉ, la commande modifiée) — l'annonce de la vitrine
  * aussi : elle informe les agences, elle ne vend rien.
  */
 const NATURES: PerMail<MailNature> = {
@@ -103,6 +106,7 @@ const NATURES: PerMail<MailNature> = {
   "customer.order-modification-failed": "transactional",
   "customer.order-cancelled": "transactional",
   "customer.order-change-applied": "transactional",
+  "customer.order-revised": "transactional",
   "customer.order-change-refused": "transactional",
   "customer.order-shortfall": "transactional",
   "customer.sub-account-activity": "transactional",

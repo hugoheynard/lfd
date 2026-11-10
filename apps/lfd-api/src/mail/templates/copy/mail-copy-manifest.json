@@ -2583,6 +2583,89 @@
         "fr": "Vous recevez ce message comme contact d'un abonné au webhook de la vitrine de La Folie Douce."
       }
     },
+    "customer.order-revised": {
+      "subject": {
+        "variables": [
+          "ref"
+        ],
+        "required": [
+          "ref"
+        ],
+        "fr": "Votre commande {ref} est modifiée"
+      },
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Commande modifiée"
+      },
+      "title": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre commande est modifiée."
+      },
+      "intro": {
+        "variables": [
+          "ref"
+        ],
+        "required": [
+          "ref"
+        ],
+        "fr": "Votre commande {ref} a été modifiée. Voici son détail à jour."
+      },
+      "totalShift": {
+        "variables": [
+          "previous",
+          "total"
+        ],
+        "required": [
+          "previous",
+          "total"
+        ],
+        "fr": "Le total passe de {previous} à {total}."
+      },
+      "sameTotal": {
+        "variables": [
+          "total"
+        ],
+        "required": [
+          "total"
+        ],
+        "fr": "Le total reste de {total}."
+      },
+      "invoice": {
+        "variables": [],
+        "required": [],
+        "fr": "Le nouveau total figurera sur votre facture."
+      },
+      "cardCharged": {
+        "variables": [
+          "amount"
+        ],
+        "required": [
+          "amount"
+        ],
+        "fr": "La différence de {amount} a été réglée par carte."
+      },
+      "cardRefunded": {
+        "variables": [
+          "amount"
+        ],
+        "required": [
+          "amount"
+        ],
+        "fr": "{amount} vous seront remboursés sur votre carte."
+      },
+      "cta": {
+        "variables": [],
+        "required": [],
+        "fr": "Voir ma commande"
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Un doute ou une erreur ? Appelez le fournil."
+      }
+    },
     "customer.order-change-applied": {
       "kicker": {
         "variables": [],

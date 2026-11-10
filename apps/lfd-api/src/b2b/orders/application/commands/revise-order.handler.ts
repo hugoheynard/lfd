@@ -95,7 +95,7 @@ export class ReviseOrderHandler implements ICommandHandler<ReviseOrderCommand, R
       revision,
       await this.revising.ensureRevisable(locked, command.actor.kind, "revise"),
     );
-    await this.recording.record(locked, revision, command.actor);
+    await this.recording.record(locked, revision, command.actor, command.origin);
   }
 }
 
