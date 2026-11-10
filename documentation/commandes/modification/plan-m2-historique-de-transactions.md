@@ -979,6 +979,8 @@ annoncé = encaissé − réussi − annoncé des `amount` non terminales.
 
 ## 8. Lot S2 — la hausse
 
+> **Détaillé dans [`plan-s2-la-hausse.md`](plan-s2-la-hausse.md)** (2026-11-10) : ce qui suit est l'esquisse d'origine ; le plan S2 la corrige (rendu en `adjustment`, rattrapage chez le prestataire, routage par rôle).
+
 Le projet (`b2b/orders`, `order_revision_proposal`) : contenu saisi et
 révision composée, total visé, `complement_cents`, auteur, `payment_id`,
 `state`, colonnes de reprise.
