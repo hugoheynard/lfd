@@ -69,6 +69,11 @@ export class OrderReviseSection implements OnInit {
     return offer.kind === 'revise' ? offer.until : null;
   });
 
+  protected readonly cardNote = computed(() => {
+    const offer = this.offer();
+    return offer.kind === 'revise' ? offer.cardNote : null;
+  });
+
   protected readonly requestNote = computed(() => {
     const offer = this.offer();
     return offer.kind === 'request' ? offer.note : '';

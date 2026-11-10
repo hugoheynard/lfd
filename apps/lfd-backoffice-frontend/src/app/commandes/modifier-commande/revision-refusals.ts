@@ -57,3 +57,40 @@ export function refusalsBySku(
 export function hasRefusal(quote: OrderRevisionQuoteView): boolean {
   return quote.discountRefusals.length > 0 || quote.lines.some((line) => line.refusal !== null);
 }
+
+/**
+ * Plan `documentation/commandes/modification/plan-s2-la-hausse.md` (R15, Q3 a) :
+ * l'équipe ne modifie pas une commande payée par carte — une hausse se paie
+ * par le client, une baisse ou un total égal ne se font pas encore. La phrase
+ * de la hausse reprend celle du serveur (`increase_by_staff`).
+ */
+export const STAFF_CARD_INCREASE_REFUSAL =
+  "Cette commande est payée par carte : l'équipe ne peut pas l'augmenter. " +
+  'Demandez au client de modifier sa commande, ou passez une seconde commande.';
+
+const CARD_NOT_YET =
+  "Cette commande est payée par carte : une baisse ou un changement à total égal n'est pas encore possible.";
+
+const CARD_UNSETTLED =
+  "Le paiement par carte de cette commande n'est pas encore encaissé : elle ne se modifie pas.";
+
+/** Le règlement du devis qui empêche l'équipe de valider, dit ; `null` s'il se règle comme passé. */
+export function settlementRefusalOf(quote: OrderRevisionQuoteView): string | null {
+  const settlement = quote.settlement;
+  switch (settlement.kind) {
+    case 'as_placed':
+      return null;
+    case 'card_complement':
+      return STAFF_CARD_INCREASE_REFUSAL;
+    case 'card_not_revisable':
+      switch (settlement.reason) {
+        case 'increase_by_staff':
+          return STAFF_CARD_INCREASE_REFUSAL;
+        case 'unsettled':
+          return CARD_UNSETTLED;
+        case 'decrease':
+        case 'same_total':
+          return CARD_NOT_YET;
+      }
+  }
+}

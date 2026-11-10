@@ -19,6 +19,9 @@
       @if (untilSaid(); as said) {
         <p class="note" data-until>{{ said }}</p>
       }
+      @if (cardNote(); as said) {
+        <p class="note" data-card-increase>{{ said }}</p>
+      }
     </div>
   }
   @case ('request') {

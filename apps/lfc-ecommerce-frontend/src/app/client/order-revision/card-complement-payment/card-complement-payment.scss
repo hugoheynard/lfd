@@ -1,0 +1,26 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.fact {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+/* L'iframe Stripe se dimensionne seule ; on lui réserve sa place. */
+.element {
+  min-height: 3rem;
+}
+
+.element.is-hidden {
+  display: none;
+}
+
+.acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}

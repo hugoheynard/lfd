@@ -61,7 +61,11 @@ const QUOTE: OrderRevisionQuoteView = {
   differenceCents: 380,
   changes: ['lines'],
   discountRefusals: [],
+  settlement: { kind: 'as_placed' },
 };
+
+/** Le devis que rend le serveur — le règlement change selon le test (plan S2). */
+let quoted: OrderRevisionQuoteView = QUOTE;
 
 /** Le strict nécessaire d'un client pro actif : ce que la page lit au chargement. */
 const PRO_CUSTOMER = { status: 'active', addresses: [] } as const;
@@ -82,7 +86,7 @@ async function mount(
   order: object = ORDER,
 ): Promise<Harness> {
   zonesList = vi.fn(async (_audience?: string) => []);
-  const quoteRevision = vi.fn(async () => QUOTE);
+  const quoteRevision = vi.fn(async () => quoted);
   const reviseFn = vi.fn(revise);
   TestBed.configureTestingModule({
     providers: [
@@ -125,6 +129,48 @@ async function mount(
 describe('modifier une commande depuis le back-office', () => {
   beforeEach(() => {
     TestBed.resetTestingModule();
+    quoted = QUOTE;
+  });
+
+  describe('une commande payée par carte (plan S2, R15)', () => {
+    const STAFF =
+      "Cette commande est payée par carte : l'équipe ne peut pas l'augmenter. Demandez au client de modifier sa commande, ou passez une seconde commande.";
+
+    it('dit le refus du serveur avant la saisie', async () => {
+      const { fixture } = await mount(undefined, {
+        ...ORDER,
+        revisability: { revisable: false, reason: STAFF },
+      });
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('[data-revisability-blocked]')?.textContent).toContain(
+        "l'équipe ne peut pas l'augmenter",
+      );
+    });
+
+    it('un devis de hausse carte : la phrase de l’équipe, et « Valider » reste fermé', async () => {
+      quoted = { ...QUOTE, settlement: { kind: 'card_complement', complementCents: 380 } };
+      const { fixture, page, revise } = await mount();
+      await page['askQuote']();
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('[data-settlement-refusal]')?.textContent).toContain(
+        'Demandez au client de modifier sa commande',
+      );
+      expect(el.querySelector<HTMLButtonElement>('[data-validate]')?.disabled).toBe(true);
+      await page['validate']();
+      expect(revise).not.toHaveBeenCalled();
+    });
+
+    it('une baisse carte : pas encore possible', async () => {
+      quoted = { ...QUOTE, settlement: { kind: 'card_not_revisable', reason: 'decrease' } };
+      const { fixture, page } = await mount();
+      await page['askQuote']();
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('[data-settlement-refusal]')?.textContent).toContain(
+        "n'est pas encore possible",
+      );
+    });
   });
 
   /**

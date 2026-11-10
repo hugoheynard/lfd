@@ -1,0 +1,56 @@
+<fold-card padding="md">
+  <fold-element-title variant="title" [title]="c().payTitle" />
+  <div class="body">
+    <p class="fact" data-complement-lead>{{ lead() }}</p>
+    @if (remaining(); as said) {
+      <p class="fact" data-remaining>{{ said }}</p>
+    }
+    @if (phase() === 'loading') {
+      <fold-loading size="sm" [message]="c().preparing" />
+    }
+    <!-- Le nœud de montage du Payment Element reste dans le DOM : le retirer
+         sous les iframes de Stripe casserait le formulaire au lieu de le cacher. -->
+    <div
+      #mount
+      class="element"
+      [class.is-hidden]="phase() !== 'ready' && phase() !== 'paying'"
+    ></div>
+    @switch (phase()) {
+      @case ('confirming') {
+        <fold-loading size="sm" [message]="c().confirming" data-confirming />
+      }
+      @case ('finishing') {
+        <fold-callout variant="info" announce data-finishing>{{ c().finishing }}</fold-callout>
+      }
+      @case ('expired') {
+        <fold-callout variant="warning" announce data-expired>{{ c().expired }}</fold-callout>
+      }
+      @case ('unavailable') {
+        <fold-callout variant="alert" announce data-unavailable>{{ c().unavailable }}</fold-callout>
+      }
+    }
+    @if (error(); as message) {
+      <fold-callout variant="alert" announce data-pay-error>{{ message }}</fold-callout>
+    }
+    <div class="acts">
+      @if (phase() === 'ready' || phase() === 'paying') {
+        <button foldButton type="button" data-pay [disabled]="phase() !== 'ready'" (click)="pay()">
+          {{ payLabel() }}
+        </button>
+      }
+      @if (cancellable()) {
+        <button
+          foldButton
+          emphasis="outline"
+          intent="neutral"
+          type="button"
+          data-cancel-complement
+          [disabled]="cancelling()"
+          (click)="cancel()"
+        >
+          {{ cancelling() ? c().cancellingCta : c().cancelCta }}
+        </button>
+      }
+    </div>
+  </div>
+</fold-card>

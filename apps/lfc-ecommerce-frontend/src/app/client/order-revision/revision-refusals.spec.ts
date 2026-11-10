@@ -36,6 +36,7 @@ function quoteWith(
     differenceCents: 0,
     changes: ['lines'],
     discountRefusals,
+    settlement: { kind: 'as_placed' },
   };
 }
 

@@ -5857,6 +5857,13 @@
           "variables": []
         },
         {
+          "key": "orders.revision.reviseCardIncreaseNote",
+          "fr": "Payée par carte : une modification qui augmente le total se règle en payant la différence ; une baisse n’est pas encore possible.",
+          "en": "Paid by card: a change that raises the total is settled by paying the difference; lowering it is not possible yet.",
+          "it": "Pagato con carta: una modifica che aumenta il totale si regola pagando la differenza; una riduzione non è ancora possibile.",
+          "variables": []
+        },
+        {
           "key": "orders.revision.reviseUntil",
           "fr": "Modifiable jusqu’au {when}.",
           "en": "Can be changed until {when}.",
@@ -6330,6 +6337,160 @@
           "fr": "Demande envoyée : nous vous répondons par e-mail.",
           "en": "Request sent: we will reply by email.",
           "it": "Richiesta inviata: ti rispondiamo via e-mail.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.card.toPay",
+          "fr": "{amount} à payer pour valider la modification.",
+          "en": "{amount} to pay to confirm the change.",
+          "it": "{amount} da pagare per confermare la modifica.",
+          "variables": ["amount"]
+        },
+        {
+          "key": "orders.revision.card.notYet",
+          "fr": "Pas encore possible pour une commande payée par carte : en ligne, seule une modification qui augmente le total se fait, en payant la différence.",
+          "en": "Not possible yet for an order paid by card: online, only a change that raises the total can be made, by paying the difference.",
+          "it": "Non ancora possibile per un ordine pagato con carta: online si fa solo una modifica che aumenta il totale, pagando la differenza.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.card.unsettled",
+          "fr": "Réglez d’abord votre commande : vous pourrez la modifier ensuite.",
+          "en": "Pay for your order first: you can change it afterwards.",
+          "it": "Paga prima il tuo ordine: potrai modificarlo dopo.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.card.submitCta",
+          "fr": "Valider et payer {amount}",
+          "en": "Confirm and pay {amount}",
+          "it": "Conferma e paga {amount}",
+          "variables": ["amount"]
+        },
+        {
+          "key": "orders.revision.card.payTitle",
+          "fr": "Le complément à payer",
+          "en": "The difference to pay",
+          "it": "La differenza da pagare",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.card.payLead",
+          "fr": "{amount} à payer pour valider la modification. Votre commande ne change qu’une fois ce montant payé.",
+          "en": "{amount} to pay to confirm the change. Your order only changes once this amount is paid.",
+          "it": "{amount} da pagare per confermare la modifica. Il tuo ordine cambia solo una volta pagato questo importo.",
+          "variables": ["amount"]
+        },
+        {
+          "key": "orders.revision.card.preparing",
+          "fr": "Préparation du paiement…",
+          "en": "Preparing the payment…",
+          "it": "Preparazione del pagamento…",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.card.remaining",
+          "fr": "Il vous reste {time} pour payer.",
+          "en": "You have {time} left to pay.",
+          "it": "Hai ancora {time} per pagare.",
+          "variables": ["time"]
+        },
+        {
+          "key": "orders.revision.card.expired",
+          "fr": "Le délai pour payer est passé : la modification est abandonnée, votre commande n’a pas changé.",
+          "en": "The time to pay has run out: the change is abandoned, your order has not changed.",
+          "it": "Il tempo per pagare è scaduto: la modifica è abbandonata, il tuo ordine non è cambiato.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.card.unavailable",
+          "fr": "Le paiement n’a pas pu se charger. Rechargez la page dans un instant.",
+          "en": "The payment could not load. Reload the page in a moment.",
+          "it": "Non è stato possibile caricare il pagamento. Ricarica la pagina tra un attimo.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.card.payCta",
+          "fr": "Payer {amount}",
+          "en": "Pay {amount}",
+          "it": "Paga {amount}",
+          "variables": ["amount"]
+        },
+        {
+          "key": "orders.revision.card.payingCta",
+          "fr": "Paiement…",
+          "en": "Paying…",
+          "it": "Pagamento…",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.card.cardRefused",
+          "fr": "Le paiement a été refusé.",
+          "en": "The payment was declined.",
+          "it": "Il pagamento è stato rifiutato.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.card.payFailed",
+          "fr": "Le paiement n’a pas abouti. Réessayez.",
+          "en": "The payment did not go through. Try again.",
+          "it": "Il pagamento non è andato a buon fine. Riprova.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.card.confirming",
+          "fr": "Paiement reçu : nous appliquons votre modification…",
+          "en": "Payment received: we are applying your change…",
+          "it": "Pagamento ricevuto: stiamo applicando la tua modifica…",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.card.finishing",
+          "fr": "Nous finalisons votre modification, vous recevrez un e-mail.",
+          "en": "We are finalising your change, you will receive an e-mail.",
+          "it": "Stiamo finalizzando la tua modifica, riceverai un’e-mail.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.card.cancelCta",
+          "fr": "Annuler la modification",
+          "en": "Cancel the change",
+          "it": "Annulla la modifica",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.card.cancellingCta",
+          "fr": "Annulation…",
+          "en": "Cancelling…",
+          "it": "Annullamento…",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.card.abandonedToast",
+          "fr": "Modification annulée : votre commande n’a pas changé.",
+          "en": "Change cancelled: your order has not changed.",
+          "it": "Modifica annullata: il tuo ordine non è cambiato.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.card.pending",
+          "fr": "Un complément attend déjà d’être payé sur cette commande : rechargez la page pour le reprendre.",
+          "en": "A difference is already waiting to be paid on this order: reload the page to resume it.",
+          "it": "Una differenza attende già di essere pagata su questo ordine: ricarica la pagina per riprenderla.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.card.justPaid",
+          "fr": "Le complément vient d’être payé : la modification est en cours. Rechargez la commande dans un instant.",
+          "en": "The difference has just been paid: the change is in progress. Reload the order in a moment.",
+          "it": "La differenza è appena stata pagata: la modifica è in corso. Ricarica l’ordine tra un attimo.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.card.providerUnavailable",
+          "fr": "Le service de paiement ne répond pas pour le moment : rien n’a changé. Réessayez dans un instant.",
+          "en": "The payment service is not responding right now: nothing has changed. Try again in a moment.",
+          "it": "Il servizio di pagamento non risponde al momento: non è cambiato nulla. Riprova tra un attimo.",
           "variables": []
         },
         {

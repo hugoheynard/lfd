@@ -99,6 +99,9 @@
           <fold-card>
             <fold-element-title cardHeader variant="title" title="Devis de la modification" />
             <div class="mc-stack">
+              @if (revisabilityBlock(); as reason) {
+                <fold-callout variant="alert" data-revisability-blocked>{{ reason }}</fold-callout>
+              }
               @for (blocker of blockers(); track blocker) {
                 <fold-callout variant="warning">{{ blocker }}</fold-callout>
               }
@@ -120,6 +123,11 @@
                 </fold-callout>
               }
 
+              @if (settlementRefusal(); as message) {
+                <fold-callout variant="alert" announce data-settlement-refusal>{{
+                  message
+                }}</fold-callout>
+              }
               @if (totalChanged(); as message) {
                 <fold-callout variant="warning" announce data-total-changed>{{
                   message

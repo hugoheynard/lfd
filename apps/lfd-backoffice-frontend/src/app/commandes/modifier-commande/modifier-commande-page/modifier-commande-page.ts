@@ -69,7 +69,7 @@ import {
   revisionDraftOf,
 } from '../revision-draft';
 import { isTotalChangedRefusal } from '../../nouvelle-commande/total-changed-refusal';
-import { hasRefusal, refusalsBySku } from '../revision-refusals';
+import { hasRefusal, refusalsBySku, settlementRefusalOf } from '../revision-refusals';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -300,10 +300,29 @@ export class ModifierCommandePage {
     return quote === null ? new Map<string, readonly string[]>() : refusalsBySku(quote);
   });
 
+  /**
+   * Le règlement du devis refuse l'équipe (plan S2, R15) : une commande payée
+   * par carte ne se modifie pas d'ici. La phrase, ou `null`.
+   */
+  protected readonly settlementRefusal = computed(() => {
+    const quote = this.quote();
+    return quote === null ? null : settlementRefusalOf(quote);
+  });
+
+  /**
+   * La commande ne se modifie pas, dit par le serveur (`revisability`) — dont
+   * la carte encaissée (`increase_by_staff`, R15) : la phrase avant la saisie,
+   * plutôt qu'au refus de « Valider ».
+   */
+  protected readonly revisabilityBlock = computed(() => {
+    const revisability = this.order()?.revisability;
+    return revisability?.revisable === false ? revisability.reason : null;
+  });
+
   /** Un refus dans le devis : « Valider » reste fermé, le serveur refuserait (409). */
   protected readonly refused = computed(() => {
     const quote = this.quote();
-    return quote !== null && hasRefusal(quote);
+    return quote !== null && (hasRefusal(quote) || this.settlementRefusal() !== null);
   });
 
   protected readonly changes = computed(() =>
@@ -420,7 +439,7 @@ export class ModifierCommandePage {
   protected async validate(): Promise<void> {
     const content = this.content();
     const quote = this.quote();
-    if (content === null || quote === null || hasRefusal(quote)) {
+    if (content === null || quote === null || this.refused()) {
       return;
     }
     this.submitting.set(true);

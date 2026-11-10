@@ -2,6 +2,7 @@ import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import type {
+  CardComplementPaymentView,
   CustomerOrderDetailView,
   OrderRevisionQuoteView,
   AudiencePickupAddressView,
@@ -18,7 +19,12 @@ import { ChangeRequestCard } from '../change-request-card/change-request-card';
 import { OrderDoors } from '../../shop/order-doors';
 import { ServicePoints } from '../../shop/pickup-points.store';
 import { ShopCatalogue } from '../../shop/shop-catalogue.store';
+import { StripeLoader } from '../../stripe-loader.service';
+import { CardComplementPayment } from '../card-complement-payment/card-complement-payment';
 import {
+  CARD_INCREASE_JUST_PAID,
+  CARD_INCREASE_PENDING,
+  CARD_INCREASE_PROVIDER_UNAVAILABLE,
   OrderRevisionGateway,
   type RevisionOutcome,
   STALE_CHANGE_REQUEST,
@@ -66,6 +72,7 @@ function quoteOf(changes: OrderRevisionQuoteView['changes']): OrderRevisionQuote
     differenceCents: 0,
     changes,
     discountRefusals: [],
+    settlement: { kind: 'as_placed' },
   };
 }
 
@@ -83,6 +90,28 @@ const TOO_LATE: CustomerOrderDetailView = {
   revisability: { revisable: false, code: 'too_late', until: null },
 };
 
+/** Payée par carte : seule une hausse se fait, par un complément (plan S2). */
+const CARD_PAID: CustomerOrderDetailView = {
+  ...REVISABLE,
+  revisability: { revisable: true, until: null, cardIncreaseOnly: true },
+};
+
+const COMPLEMENT: CardComplementPaymentView = {
+  proposalId: 'prop_1',
+  complementCents: 600,
+  clientSecret: 'pi_1_secret',
+  publishableKey: 'pk_test',
+  expiresAt: new Date(Date.now() + 10 * 60_000).toISOString(),
+};
+
+/** Un devis de hausse carte : 12 € → 18 €, 6 € à payer. */
+const INCREASE: OrderRevisionQuoteView = {
+  ...quoteOf(['lines']),
+  totalCents: 1_800,
+  differenceCents: 600,
+  settlement: { kind: 'card_complement', complementCents: 600 },
+};
+
 interface Doubles {
   readonly order?: CustomerOrderDetailView | null;
   readonly quote?: (payload: {
@@ -96,6 +125,8 @@ interface Doubles {
   }>;
   readonly requestChange?: RevisionOutcome<{ id: string }>;
   readonly changeQuote?: RevisionOutcome<OrderRevisionQuoteView>;
+  readonly proposeCardIncrease?: RevisionOutcome<CardComplementPaymentView>;
+  readonly complement?: CardComplementPaymentView | null;
 }
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 350));
@@ -112,6 +143,11 @@ async function mount(doubles: Doubles = {}) {
     quote: vi.fn((_id: string, payload: { lines: readonly { quantity: number }[] }) =>
       Promise.resolve(doubles.quote?.(payload) ?? { kind: 'ok' as const, value: quoteOf([]) }),
     ),
+    proposeCardIncrease: vi.fn(() =>
+      Promise.resolve(doubles.proposeCardIncrease ?? { kind: 'ok' as const, value: COMPLEMENT }),
+    ),
+    complement: vi.fn(() => Promise.resolve(doubles.complement ?? null)),
+    abandonComplement: vi.fn(() => Promise.resolve({ kind: 'ok' as const, value: null })),
     revise: vi.fn(() =>
       Promise.resolve(
         doubles.revise ?? {
@@ -122,6 +158,7 @@ async function mount(doubles: Doubles = {}) {
     ),
   };
   const success = vi.fn();
+  const info = vi.fn();
   TestBed.configureTestingModule({
     imports: [OrderRevisionPage],
     providers: [
@@ -140,7 +177,17 @@ async function mount(doubles: Doubles = {}) {
         },
       },
       { provide: OrderDoors, useValue: { askChoice: vi.fn(), askTime: vi.fn() } },
-      { provide: NotifyService, useValue: { success } },
+      { provide: NotifyService, useValue: { success, info } },
+      {
+        provide: StripeLoader,
+        useValue: {
+          load: () =>
+            Promise.resolve({
+              elements: () => ({ create: () => ({ mount: () => undefined }) }),
+              confirmPayment: () => Promise.resolve({ paymentIntent: { status: 'succeeded' } }),
+            }),
+        },
+      },
     ],
   });
   const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
@@ -149,7 +196,7 @@ async function mount(doubles: Doubles = {}) {
   await fixture.whenStable();
   await settle();
   fixture.detectChanges();
-  return { fixture, gateway, navigate, success, el: fixture.nativeElement as HTMLElement };
+  return { fixture, gateway, navigate, success, info, el: fixture.nativeElement as HTMLElement };
 }
 
 describe('OrderRevisionPage', () => {
@@ -367,6 +414,95 @@ describe('OrderRevisionPage', () => {
     fixture.detectChanges();
     expect(el.querySelector('[data-request-refused]')?.textContent).toContain('entre-temps');
     expect(el.querySelector('[data-reload]')).not.toBeNull();
+  });
+
+  describe('commande payée par carte (plan S2)', () => {
+    it('le devis d’une hausse annonce le complément, et « Valider » dit le montant', async () => {
+      const { el } = await mount({
+        order: CARD_PAID,
+        quote: () => ({ kind: 'ok', value: INCREASE }),
+      });
+      expect(el.querySelector('[data-settlement]')?.textContent).toContain(
+        '6,00 € à payer pour valider la modification',
+      );
+      const submit = el.querySelector<HTMLButtonElement>('[data-submit]');
+      expect(submit?.disabled).toBe(false);
+      expect(submit?.textContent).toContain('Valider et payer 6,00');
+    });
+
+    it.each(['decrease', 'same_total'] as const)(
+      'une %s : « pas encore possible », et rien ne se valide',
+      async (reason) => {
+        const { el } = await mount({
+          order: CARD_PAID,
+          quote: () => ({
+            kind: 'ok',
+            value: { ...quoteOf(['lines']), settlement: { kind: 'card_not_revisable', reason } },
+          }),
+        });
+        expect(el.querySelector('[data-settlement]')?.textContent).toContain('Pas encore possible');
+        expect(el.querySelector<HTMLButtonElement>('[data-submit]')?.disabled).toBe(true);
+      },
+    );
+
+    it('« Valider » demande la hausse, monte le formulaire, puis rouvre la commande appliquée', async () => {
+      const { fixture, el, gateway, navigate, success } = await mount({
+        order: CARD_PAID,
+        quote: () => ({ kind: 'ok', value: INCREASE }),
+      });
+      el.querySelector<HTMLButtonElement>('[data-submit]')?.click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(gateway.revise).not.toHaveBeenCalled();
+      expect(gateway.proposeCardIncrease).toHaveBeenCalledWith(
+        'ord_9',
+        expect.objectContaining({ expectedRevision: 3, expectedTotalCents: 1_800 }),
+      );
+      const payment = fixture.debugElement.query(By.directive(CardComplementPayment));
+      expect(payment).not.toBeNull();
+      expect(el.querySelector('[data-line]')).toBeNull();
+      (payment.componentInstance as CardComplementPayment).applied.emit();
+      expect(success).toHaveBeenCalled();
+      expect(navigate).toHaveBeenCalledWith(['/mes-commandes', 'ord_9']);
+    });
+
+    it('au rechargement, un complément vivant reprend son formulaire', async () => {
+      const { fixture, gateway } = await mount({ order: CARD_PAID, complement: COMPLEMENT });
+      expect(gateway.complement).toHaveBeenCalledWith('ord_9');
+      expect(fixture.debugElement.query(By.directive(CardComplementPayment))).not.toBeNull();
+    });
+
+    it('une commande qui ne se règle pas par carte ne cherche aucun complément', async () => {
+      const { gateway } = await mount();
+      expect(gateway.complement).not.toHaveBeenCalled();
+    });
+
+    it('abandonné : la commande se relit, telle qu’elle était', async () => {
+      const { fixture, gateway, info } = await mount({ order: CARD_PAID, complement: COMPLEMENT });
+      const payment = fixture.debugElement.query(By.directive(CardComplementPayment));
+      (payment.componentInstance as CardComplementPayment).abandoned.emit();
+      await fixture.whenStable();
+      expect(info).toHaveBeenCalled();
+      expect(gateway.order).toHaveBeenCalledTimes(2);
+    });
+
+    it.each([
+      [CARD_INCREASE_PENDING, 'attend déjà', true],
+      [CARD_INCREASE_JUST_PAID, 'vient d’être payé', true],
+      [CARD_INCREASE_PROVIDER_UNAVAILABLE, 'ne répond pas', false],
+    ])('le refus %s se dit dans la langue du client', async (code, said, reload) => {
+      const { fixture, el } = await mount({
+        order: CARD_PAID,
+        quote: () => ({ kind: 'ok', value: INCREASE }),
+        proposeCardIncrease: { kind: 'refused', refusal: { code, message: 'server' } },
+      });
+      el.querySelector<HTMLButtonElement>('[data-submit]')?.click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(el.querySelector('[data-submit-refused]')?.textContent).toContain(said);
+      expect(el.querySelector('[data-reload]') !== null).toBe(reload);
+      expect(fixture.debugElement.query(By.directive(CardComplementPayment))).toBeNull();
+    });
   });
 
   it('dit l’échec de lecture de la commande', async () => {

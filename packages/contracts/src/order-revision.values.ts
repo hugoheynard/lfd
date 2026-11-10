@@ -68,10 +68,11 @@ export type OrderRevisability =
        * (R2 ter, R3) : la commande est payée par carte — seule une HAUSSE s'y
        * fait, et elle se paie par un complément (`POST
        * /orders/:id/revisions/card-increase`) ; une baisse ou un changement à
-       * total égal ne sont pas encore possibles. Servi depuis S2.b ; absent du
-       * type tant que les écrans (S2.d) ne le lisent pas — absent = `false`.
+       * total égal ne sont pas encore possibles. Servi seulement quand c'est
+       * vrai (`customerRevisabilityOf`, vérifié le 2026-11-10) : absent =
+       * commande qui ne se règle pas par carte.
        */
-      readonly cardIncreaseOnly?: boolean;
+      readonly cardIncreaseOnly?: true;
     }
   | {
       readonly revisable: false;

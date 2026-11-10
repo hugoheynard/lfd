@@ -56,6 +56,17 @@ describe('OrderReviseSection', () => {
     expect(el.querySelector('[data-until]')).toBeNull();
   });
 
+  it('payée par carte (plan S2) : le bouton, et la phrase de la hausse par complément', async () => {
+    const el = await mount({ revisable: true, until: null, cardIncreaseOnly: true });
+    expect(el.querySelector('[data-revise]')).not.toBeNull();
+    expect(el.querySelector('[data-card-increase]')?.textContent).toContain('payant la différence');
+  });
+
+  it('une commande au compte ne dit rien de la carte', async () => {
+    const el = await mount({ revisable: true, until: null });
+    expect(el.querySelector('[data-card-increase]')).toBeNull();
+  });
+
   it('dit pourquoi une commande carte ne se modifie pas, sans bouton', async () => {
     const el = await mount({ revisable: false, code: 'card_settled', until: null });
     expect(el.querySelector('[data-revise]')).toBeNull();

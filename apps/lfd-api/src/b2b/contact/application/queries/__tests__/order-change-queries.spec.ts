@@ -24,6 +24,7 @@ const QUOTE: OrderRevisionQuoteView = {
   differenceCents: 0,
   changes: ["lines"],
   discountRefusals: [],
+  settlement: { kind: "as_placed" },
 };
 
 /** Les lectures de la demande de modification (M4) : l'écart pour l'équipe, l'état pour le client. */

@@ -1,6 +1,8 @@
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import type {
+  CardComplementPaymentView,
+  CardIncreasePayload,
   CreatedIdResponse,
   CustomerOrderDetailView,
   OrderChangeRequestPayload,
@@ -37,6 +39,18 @@ export type RevisionOutcome<T> =
 
 /** Le refus d'une révision dépassée (R7) : la commande a changé ailleurs. */
 export const STALE_REVISION = 'orders.revise.stale_revision';
+
+/**
+ * Les refus nommés de la hausse par carte (plan
+ * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.4, §2.5) :
+ * un complément attend déjà, le précédent vient d'être payé, le service de
+ * paiement ne répond pas. L'écran les dit dans la langue du client.
+ */
+export const CARD_INCREASE_PENDING = 'orders.card_increase.pending';
+export const CARD_INCREASE_JUST_PAID = 'orders.card_increase.just_paid';
+export const CARD_INCREASE_PROVIDER_UNAVAILABLE = 'orders.card_increase.provider_unavailable';
+/** Plus rien à payer ni à abandonner : payé, abandonné ou expiré. */
+export const CARD_INCREASE_NOTHING_TO_PAY = 'orders.card_increase.nothing_to_pay';
 
 /** Le refus d'une demande composée sur une commande qui a changé depuis (M4). */
 export const STALE_CHANGE_REQUEST = 'contact.order_change.stale_revision';
@@ -100,6 +114,54 @@ export class OrderRevisionGateway {
     payload: OrderRevisionPayload,
   ): Promise<RevisionOutcome<OrderRevisedResponse>> {
     return this.post<OrderRevisedResponse>(`${this.url(orderId)}/revisions`, payload);
+  }
+
+  /**
+   * `POST /orders/:id/revisions/card-increase` — la hausse d'une commande
+   * payée par carte (plan S2, §2.4) : le même corps que `revise`, et la
+   * réponse porte de quoi payer le complément. La commande ne change qu'une
+   * fois le complément payé.
+   */
+  proposeCardIncrease(
+    orderId: string,
+    payload: CardIncreasePayload,
+  ): Promise<RevisionOutcome<CardComplementPaymentView>> {
+    return this.post<CardComplementPaymentView>(
+      `${this.url(orderId)}/revisions/card-increase`,
+      payload,
+    );
+  }
+
+  /**
+   * `GET /orders/:id/complement` — le complément qui attend son paiement, pour
+   * reprendre le formulaire au rechargement (§2.5) ; `null` s'il n'y en a pas
+   * (409 `nothing_to_pay`) ou si la lecture échoue : l'écran reprend la
+   * modification d'une commande telle qu'elle est.
+   */
+  async complement(orderId: string): Promise<CardComplementPaymentView | null> {
+    try {
+      return await firstValueFrom(
+        this.http.get<CardComplementPaymentView>(`${this.url(orderId)}/complement`, {
+          headers: await this.bearer(),
+        }),
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  /** `DELETE /orders/:id/complement` — abandonner le complément ; la commande reste telle quelle. */
+  async abandonComplement(orderId: string): Promise<RevisionOutcome<null>> {
+    try {
+      await firstValueFrom(
+        this.http.delete<void>(`${this.url(orderId)}/complement`, {
+          headers: await this.bearer(),
+        }),
+      );
+      return { kind: 'ok', value: null };
+    } catch (error) {
+      return outcomeOfError(error);
+    }
   }
 
   /**

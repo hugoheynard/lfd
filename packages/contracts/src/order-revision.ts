@@ -157,10 +157,10 @@ export interface OrderRevisionQuoteView {
    * Comment la modification se réglera (plan
    * `documentation/commandes/modification/plan-s2-la-hausse.md`, R3) : comme
    * la commande, par un complément à payer par carte, ou pas encore possible.
-   * Servi depuis S2.b ; facultatif au type tant que les écrans (S2.d) ne le
-   * lisent pas — absent = `as_placed`.
+   * Servi sur tout devis depuis S2.b (`quoteViewOf`, vérifié le
+   * 2026-11-10) ; obligatoire depuis que les écrans le lisent (S2.d).
    */
-  readonly settlement?: OrderRevisionQuoteSettlement;
+  readonly settlement: OrderRevisionQuoteSettlement;
 }
 
 /** Ce que la modification rend : la commande se relit ensuite (`GET :id`). */

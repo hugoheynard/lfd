@@ -12,7 +12,12 @@ import { SHOP_TIME_ZONE } from '../shop-time-zone';
  * commande dit déjà qu'elle est annulée, prête ou retirée.
  */
 export type ReviseOffer =
-  | { readonly kind: 'revise'; readonly until: string | null }
+  | {
+      readonly kind: 'revise';
+      readonly until: string | null;
+      /** Payée par carte (plan S2, R2 ter) : seule une hausse se fait, en payant la différence. */
+      readonly cardNote: string | null;
+    }
   /** L'heure limite est passée, la commande pas encore au plan : on DEMANDE (M4). */
   | { readonly kind: 'request'; readonly note: string }
   | { readonly kind: 'refused'; readonly sentence: string }
@@ -34,6 +39,7 @@ export function reviseOfferOf(
     return {
       kind: 'revise',
       until: until === null ? null : fill(copy.reviseUntil, { when: whenOf(until, locale, copy) }),
+      cardNote: revisability.cardIncreaseOnly === true ? copy.reviseCardIncreaseNote : null,
     };
   }
   const { code, until } = revisability;

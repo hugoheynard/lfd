@@ -27,6 +27,7 @@ const QUOTE: OrderRevisionQuoteView = {
   differenceCents: 420,
   changes: ['lines'],
   discountRefusals: [],
+  settlement: { kind: 'as_placed' },
 };
 
 function mount(quote: QuoteState): HTMLElement {

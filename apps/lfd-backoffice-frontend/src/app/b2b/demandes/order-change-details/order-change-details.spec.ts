@@ -60,6 +60,7 @@ const QUOTE: OrderRevisionQuoteView = {
   differenceCents: 422,
   changes: ['lines'],
   discountRefusals: [],
+  settlement: { kind: 'as_placed' },
 };
 
 interface Wire {
