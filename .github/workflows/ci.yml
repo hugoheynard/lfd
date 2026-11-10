@@ -56,6 +56,12 @@ jobs:
   changes:
     name: Périmètre
     runs-on: ubuntu-latest
+    # `actions: read` : lire les runs verts de la branche (la base du
+    # périmètre). Sans ce droit, l'API répond 403 et TOUT se lancerait à chaque
+    # push — sûr, mais le filtre deviendrait inerte sans que rien le dise.
+    permissions:
+      actions: read
+      contents: read
     outputs:
       packages: ${{ steps.scope.outputs.packages }}
       api: ${{ steps.scope.outputs.api }}
@@ -79,15 +85,26 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Calculer le périmètre
         id: scope
-        # Sur une PR, la base est la branche visée. Sur un push, c'est l'état
-        # d'avant — et au premier push d'une branche il vaut quarante zéros,
-        # que turbo ne sait pas résoudre : le script rend « tout », ce qui est
-        # exactement ce qu'on veut d'une branche neuve.
+        # Sur une PR, la base est la branche visée. Sur un push, c'est le
+        # DERNIER COMMIT VERT de la branche qui soit un ancêtre de HEAD
+        # (`dev-toolbox/ci/last-green-base.mjs`), et non plus l'état d'avant.
+        #
+        # 🔴 Depuis le 2026-11-10 : trois pushes rapprochés ont annulé les runs
+        # du milieu (`cancel-in-progress`), et le dernier, comparé au seul push
+        # précédent, sautait l'API, les contrats et la boutique — des commits
+        # jamais vérifiés, qu'un déploiement aurait laissés passer sur un run
+        # vert. Comparer au dernier vert garantit, de proche en proche, que tout
+        # ce qui part a été vu par au moins un run vert.
+        #
+        # Pas de vert ancêtre (branche neuve, force-push, API muette) : base
+        # vide, et le script rend « tout » — la règle de sûreté.
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             base="origin/${{ github.base_ref }}"
           else
-            base="${{ github.event.before }}"
+            base="$(node dev-toolbox/ci/last-green-base.mjs "${{ github.repository }}" "${{ github.ref_name }}")"
           fi
           node dev-toolbox/ci/affected.mjs "$base" >> "$GITHUB_OUTPUT"
 
