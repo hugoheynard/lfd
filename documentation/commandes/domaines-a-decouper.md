@@ -65,6 +65,39 @@ lisait l'horloge à trois endroits.
 passation, la modification, la hausse et les relances posent la même
 question à la même brique.
 
+**Une piste d'extraction** (2026-11-10, non contredite, appelants non lus un
+par un) :
+
+- **Pas de bloc neuf.** `b2b/order-cutoffs` possède déjà les réglages ; il
+  devient aussi le propriétaire du **jugement**, et `orders` ne l'atteint plus
+  que par une seule question.
+- **La question, unique :**
+
+  ```
+  OrderDeadline.verdict({ lines, serviceDay, buyer, at })
+    → { kind: "open", until }
+    | { kind: "grace", until, lateFee }   // rattrapage, avec la surtaxe
+    | { kind: "closed", reason }          // trop tard, et pourquoi
+  ```
+
+  Les articles (chacun peut porter sa limite, publiée par le référentiel), le
+  jour, l'acheteur (sa clientèle, ses dérogations) et **l'instant** de la
+  décision — ce qui règle d'office le besoin de la hausse.
+
+- **Ce qui déménage** : `order-cutoff-guard`, `OrderCutoffGate`, le jugement
+  de la surtaxe tardive et la tolérance de retard. **Ce qui reste** dans
+  `orders` : appliquer le verdict (refuser, ajouter la surtaxe, passer).
+- **La dérogation** se **dépense** à la passation, et c'est une écriture : le
+  verdict dit « fermé, sauf dérogation disponible », et la passation la
+  dépense par un geste à part, sous son verrou. Une question qui écrit ne
+  serait plus une question.
+- **Les lots** : (1) le verdict écrit dans `order-cutoffs`, fonction pure
+  entourée de ses lectures, éprouvé **contre le jugement actuel** cas par cas
+  — aucune réponse ne doit changer ; (2) un seul appelant basculé, la
+  passation, sous ses e2e et le golden master des prix ; (3) les autres un par
+  un (devis, modification, hausse, vente sur stock, relances, expiration des
+  paniers, avis de fin de commande) ; (4) l'ancien jugement retiré.
+
 ### 2.2 Le départ incomplet — le plus proche du paiement
 
 **Aujourd'hui.** Environ **48 fichiers** dans `orders` : le manque constaté
