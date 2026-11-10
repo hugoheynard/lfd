@@ -303,8 +303,11 @@ Promise<number>` — aucune des quatre méthodes d'aujourd'hui ne raisonne
   avant toute écriture ou préparation de paiement : `OrderTotalChangedError`,
   le même message que la passation. Les trois appelants de M1 l'envoient :
   la boutique (le total du devis affiché), le back-office (idem), et
-  `BusOrderChangeApplier` (le total que l'équipe a vu en appliquant la
-  demande). Les e2e de M1 l'envoient tous. Livré en S2.b, avant la hausse.
+  `BusOrderChangeApplier` — **le total vu est celui de l'équipe** (Hugo,
+  2026-11-10 : « c'est une délégation, le vu est par l'équipe, c'est une
+  responsabilité commerciale ») : l'écran qui applique une demande montre le
+  total de la modification, et c'est lui qu'il envoie ; le client n'a rien à
+  revalider. Les e2e de M1 l'envoient tous. Livré en S2.b, avant la hausse.
 - **R15. L'équipe ne fait pas de hausse carte** (Q3 a) :
   `ProposeCardIncreaseCommand` n'a que la route client ; l'équipe reçoit
   `CardOrderNotRevisableError` (raison `increase_by_staff`) avec le geste de
