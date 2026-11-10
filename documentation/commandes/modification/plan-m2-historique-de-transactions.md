@@ -1,13 +1,14 @@
 # Plan M2 — modifier une commande payée par carte : l'historique de transactions
 
-> **État au 2026-11-10, soir.** P0 ✅ en production (`c481bd3dc`). **P1 ✅ bâti
-> sur `dev`**, poussé (`5f92e5cf1`) : P1.a `f25ed5ecf` (tables, copie,
-> ressource), P1.b `e29a42880` (le remboursement dans `card-payment`), P1.c
-> `0e1655160` (le commerce et la comptabilité basculent, l'ancien module
-> part), P1.d `6be57647f` (le bandeau du back-office) — détail au §5.6.
-> **Reste avant la production** : CI de `dev` verte, puis le déploiement
-> boutique fermée sur l'ordre de Hugo (§5.2, runbook « Déployer P1 »).
-> **Ensuite** : S2 (la hausse) d'abord, sur demande de Hugo, puis S1, S3.
+> **État au 2026-11-10, nuit.** P0 ✅ en production (`c481bd3dc`). **P1 ✅ en
+> production** (`5f92e5cf1`, déployé le 2026-11-10, cinq workflows verts) :
+> P1.a `f25ed5ecf` (tables, copie, ressource), P1.b `e29a42880` (le
+> remboursement dans `card-payment`), P1.c `0e1655160` (le commerce et la
+> comptabilité basculent, l'ancien module part), P1.d `6be57647f` (le bandeau
+> du back-office) — détail au §5.6. Les gestes d'après déploiement du
+> runbook « Déployer P1 » (contrôle de la copie, droit `card_payments` à
+> l'admin, réouverture) sont à faire par Hugo. **S2 (la hausse)** se bâtit
+> sur `dev` ([`plan-s2-la-hausse.md`](plan-s2-la-hausse.md)) ; puis S1, S3.
 
 > **Version 14, 2026-11-10** — P0 est **bâti et déployé en production** (§4.9). `vitruve` sur la v13 : **« rien ne bloque »** ; trois incohérences de texte et des précisions, corrigées ici (§15 nonies). **Le bâti de P1 commence sur cette version.** La v12 a eu un bloquant de spécification (la source du bandeau) et cinq règles manquantes (§15 octies), toutes écrites ici. La v11 a eu un bloquant de détail (une requête sur une colonne qui n'existe pas) et six sérieux de précision (§15 septies) ; `vitruve` y a déclaré conformes l'union `onRefundOutcome` et l'ordre des verrous. **Décision de Hugo (2026-11-10) : P1 se déploie BOUTIQUE FERMÉE, en pré-release** — toute la mécanique de « fenêtre de bascule » des v9 et v10 (relais, rattrapage borné, colonne miroir, abonné déménagé, champ à côté du contrat) est **retirée** et remplacée par une condition de déploiement vérifiée à la main (§5.2) ; ce que `vitruve` avait de structurel sur la v10 (§15 quinquies) est intégré (§15 sexies). Versions 7 à 10 : `599b24732`, `923f4e4cf`, v9 et v10 non commitées. Le plan **unique** de M2, écrit après la
 > relecture complète du paiement et du remboursement
@@ -15,7 +16,8 @@
 > à lire d'abord), des deux portes de frontière, du workflow de déploiement,
 > du registre des abonnés durables et de l'écriture comptable du carnet. Il
 > **remplace** les §9 à §20 de
-> [`plan-modifier-une-commande-payee-par-carte.md`](plan-modifier-une-commande-payee-par-carte.md).
+> l'ancien plan de la modification par carte (retiré le 2026-11-10 ; son §17
+> sur le bon est recopié au §10 ; l'état bâti : [`modifier-une-commande.md`](modifier-une-commande.md)).
 > Versions 1 à 4 et leurs contradictions par `vitruve` : `d2632e136`,
 > `6eef19357`, `ca3b6c0c4`, `d5e5d7a49`, `e1b7f8a75`, `c290188ed`,
 > `eaec69258`, `d87322030`, `68f63d17b`. **P0 est bâti sur `dev`** (§4.9, 2026-11-10) ;
@@ -1019,7 +1021,30 @@ baisse avec le montant rendu ; la hausse réglée sur place ; côté staff :
 
 ## 10. Lot C-2b — le bon (plus tard), et P2 — le resserrement
 
-C-2b : deux bloquants propres (ancien plan §17), plan à part dans `loyalty`.
+C-2b : deux bloquants propres, plan à part dans `loyalty`. Recopiés le
+2026-11-10, mot pour mot, du §17 de l'ancien plan
+(« modifier une commande payée par carte », contradiction de `vitruve`
+du 2026-11-09), qui est retiré :
+
+> 1. **Le bon de modification (V1) ne s'insère pas** : un bon sans parent doit
+>    coûter des points et valoir des paliers entiers
+>    (`loyalty_vouchers_amounts_positive`, `loyalty_vouchers_whole_steps`) ;
+>    « expire à la date du bon d'origine » peut tomber avant l'émission
+>    (`loyalty_vouchers_expires_after_issue`). → assouplir les deux CHECK pour
+>    un bon `credited_from_order_id` (irréversible), et éteindre la
+>    différence quand le bon d'origine est échu, comme un reliquat `lapsed`.
+> 2. **Double rendu du bon** : sur une carte, le reliquat n'est pas émis au
+>    règlement mais par un **balayage différé**
+>    (`settle-voucher-remainders.handler.ts`), qui lit la part imputée
+>    actuelle. → pas de bon de modification tant que le bon d'origine n'est
+>    pas soldé (`remainderSettledAt`) : le reliquat à venir absorbe déjà la
+>    différence.
+
+Et deux sérieux du même §17 qui le concernent : annuler le bon de
+modification demande une transition et une méthode de port propres ; une
+hausse après une baisse sous le bon ne dit pas si le bon d'origine se
+réimpute. D'ici là, une révision sous la part du bon reste refusée
+(`RevisionBelowVoucherError`), au compte comme par carte.
 P2 : retrait de `orders.stripe_payment_intent_id`, des anciennes tables,
 de la route `refund/retry` d'aujourd'hui et de l'ancien nom de route du
 balayage (§6.8), du cron `replay-first-payments` et de son témoin, du relais

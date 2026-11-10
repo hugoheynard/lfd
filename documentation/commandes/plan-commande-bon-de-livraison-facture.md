@@ -16,7 +16,8 @@
 > bâti.**
 >
 > Il remplace la piste « commande de suite liée » de
-> [`modification/plan-commandes-incompletes.md`](modification/plan-commandes-incompletes.md)
+> l'ancien plan des commandes incomplètes (retiré le 2026-11-10 ; état bâti :
+> [`../comptoir/depart-incomplet.md`](../comptoir/depart-incomplet.md))
 > (v1 à v3, contredites trois fois le 2026-10-24) : le reliquat redevient ce
 > que Hugo avait dit d'abord, **la suite de la même commande**.
 

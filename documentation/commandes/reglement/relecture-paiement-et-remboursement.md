@@ -6,8 +6,9 @@
 > en maîtrise totale de l'état de la commande ». Tout ce qui suit a été **lu
 > dans les fichiers ce jour-là** (chemins sous `apps/lfd-api/src/`) ; rien n'est
 > repris de mémoire ni des plans. C'est un **état des lieux**, pas un plan : il
-> prépare le document unique qui remplacera les §9–§20 de
-> [`../modification/plan-modifier-une-commande-payee-par-carte.md`](../modification/plan-modifier-une-commande-payee-par-carte.md).
+> prépare le document unique qui remplacera les §9–§20 de l'ancien plan de la
+> modification par carte (retiré le 2026-11-10 ; état bâti :
+> [`../modification/modifier-une-commande.md`](../modification/modifier-une-commande.md)).
 >
 > ⚠️ **État d'AVANT le lot P0 du plan M2** (bâti le 2026-11-10,
 > [`../modification/plan-m2-historique-de-transactions.md`](../modification/plan-m2-historique-de-transactions.md)

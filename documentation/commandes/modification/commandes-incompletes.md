@@ -1,5 +1,7 @@
 # Le traitement des commandes incomplètes
 
+> ⛔ **Remplacé le 2026-11-10** par [`../../comptoir/depart-incomplet.md`](../../comptoir/depart-incomplet.md) et [`../bon-de-livraison.md`](../bon-de-livraison.md) ; ce document reste le temps de repointer la citation du code ; il ne fait plus foi.
+
 > **Doc-first, écrit le 2026-10-24** à la demande de Hugo : « on a beaucoup
 > travaillé le happy path, mais on ne sait pas déclarer qu'une commande est
 > incomplète et qu'elle doit partir quand même, avec un bon de livraison qui

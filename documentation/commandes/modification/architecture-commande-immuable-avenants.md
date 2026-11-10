@@ -1,5 +1,7 @@
 # La commande est un fait clos — les modifications sont des avenants
 
+> ⛔ **Remplacé le 2026-11-10** par [`modifier-une-commande.md`](modifier-une-commande.md) ; ce document reste le temps de repointer les citations du code ; il ne fait plus foi.
+
 **État : 📐 doc-first.** Rien de ce document n'est codé. Il tranche deux
 questions liées, avant qu'un écran ne fige la mauvaise réponse.
 

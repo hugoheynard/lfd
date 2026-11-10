@@ -1,5 +1,7 @@
 # Plan A2 — changer les quantités d'une commande inscrite au plan
 
+> ⛔ **Remplacé le 2026-11-10** par [`modifier-une-commande.md`](modifier-une-commande.md) ; ce document reste le temps de repointer les citations du code ; il ne fait plus foi.
+
 > 🟡 **2026-10-25 : A2 bâti (A2.1 à A2.3), pas encore commité.** Le § 7
 > fait foi. Fournil : `OrderRevisionDesk.note(days, orderId, revision, lines,
 allowance)`, issues `raised` / `unchanged` sous `staff_quantities` ;

@@ -38,6 +38,11 @@ par Hugo le 2026-11-03). Un particulier paie en ligne par carte : le dialogue
 lui oppose `card`, et seule « Fermer » s'offre. Il faut d'abord le
 remboursement partiel (E9), qui n'est pas bâti.
 
+> **2026-11-10 : E9 est débloqué, pas bâti.** Le remboursement d'un montant
+> existe : `CardRefunds.requestAmount` du bloc `card-payment`, en production
+> depuis le lot P1 (2026-11-10). Le départ incomplet d'une commande carte ne
+> s'en sert pas encore : le refus `card` tient toujours.
+
 ## 3. Le circuit
 
 ```mermaid
@@ -145,7 +150,9 @@ et dit le reste sous le tableau (« Non livré : … ») —
 ## 6. Ce qui reste ouvert
 
 - **Le retrait partiel d'une commande de particulier** : refusé (`card`)
-  tant que le remboursement partiel (E9) n'existe pas (§2).
+  tant que le départ incomplet ne demande pas le remboursement partiel (E9) ;
+  ce remboursement existe depuis le 2026-11-10 (`CardRefunds.requestAmount`,
+  bloc `card-payment`, P1) : E9 est débloqué, pas bâti (§2).
 - Les cas `not_drawn`, `withdrawn`, `sealed`, `counted` et
   `already_authorized` de l'aperçu ne sont éprouvés qu'en unitaire : la scène
   e2e ne les atteint pas au rang 1.
