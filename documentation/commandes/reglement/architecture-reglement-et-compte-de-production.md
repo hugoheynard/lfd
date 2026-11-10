@@ -103,7 +103,7 @@ visible.
 
 ## 4. Le retour de Stripe — et le cas qui ne revient jamais
 
-[`stripe-payment-gateway.ts`](../../../apps/lfd-api/src/b2b/payments/infrastructure/stripe-payment-gateway.ts)
+[`stripe-card-provider.ts`](../../../apps/lfd-api/src/card-payment/infrastructure/stripe/stripe-card-provider.ts)
 ne retient que **deux** événements ; tout le reste est `ignored`.
 
 ```mermaid
@@ -204,7 +204,7 @@ message qu'il recevait jamais. Hugo : « je ne veux pas que pour un paiement
 carte, order placed parte à la passation ».
 
 Les deux retours de Stripe sont désormais **publiés** par
-[`confirm-order-payment.handler.ts`](../../../apps/lfd-api/src/b2b/orders/application/commands/confirm-order-payment.handler.ts)
+[`order-subject-settlement.ts`](../../../apps/lfd-api/src/b2b/orders/application/services/order-subject-settlement.ts)
 — et seulement au franchissement : le dépôt ne bascule que ce qui était encore
 `pending`, donc un webhook rejoué ne publie rien.
 

@@ -230,7 +230,7 @@ le courriel avec son bon — sans témoin.
   porte la clé `order.placed:<orderId>`, la même que l'accusé de passation.
 - `OrderPaymentSettledEvent` est **retiré** : plus aucun abonné. Le
   règlement acquis n'a plus qu'un fait.
-- Éprouvé : `confirm-order-payment.handler.spec.ts` (« ne publie RIEN en
+- Éprouvé : `order-subject-settlement.spec.ts` (« ne publie RIEN en
   mémoire sur un règlement acquis ») ; e2e `card-invoices`, `loyalty-earning`,
   `order-refunds`, `order-payment-retry`, `order-payment-reprise`,
   `order-card-settled-before-all`, `order-abandon` verts.

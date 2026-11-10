@@ -11,7 +11,7 @@
 ## 0. Ce qui existe (ouvert le 2026-10-23)
 
 - **La carte est débitée tout de suite** (intention sans `capture_method`,
-  `b2b/payments/infrastructure/stripe-payment-gateway.ts`) ; une commande porte
+  `card-payment/infrastructure/stripe/stripe-card-provider.ts`) ; une commande porte
   **une** intention (`orders.stripe_payment_intent_id`), par laquelle le
   webhook la retrouve.
 - **Les remboursements constatés** sont une table à plusieurs lignes par
@@ -251,7 +251,7 @@ ou trois lots.
 
 - **Le remboursement ne sait rendre que TOUT le reste d'une intention** :
   `PaymentRefunder.refundRemainder` n'a pas de montant
-  (`payments/domain/payment-refunder.ts`). C'est la raison du remplacement :
+  (`card-payment/channels/requests/card-provider-refunds.ts`). C'est la raison du remplacement :
   une ancienne commande remboursée en entier est exactement ce qu'il sait
   faire.
 - **Les causes d'une demande de remboursement** sont `cancellation`,
@@ -259,7 +259,7 @@ ou trois lots.
   `order-refund.prisma`) ; la demande est **unique par commande** (clé =
   `order_id`), écrite par `CancellationRefundRequester` sous le verrou de la
   ligne `orders`.
-- **Le paiement réussi** (`confirm-order-payment.handler.ts`) fait `markPaid`
+- **Le paiement réussi** (`order-subject-settlement.ts`) fait `markPaid`
   et publie `order.paid` **durable** dans la même unité de travail. Ses
   abonnés : l'accusé (`send-order-settled-mail`), l'avis à l'invité, le
   remboursement d'une commande payée après annulation, les points (seulement

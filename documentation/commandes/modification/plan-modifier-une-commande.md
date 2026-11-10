@@ -37,7 +37,7 @@
   (`domain/services/order-sheet.ts`).
 - **La carte est débitée tout de suite** : l'intention Stripe est créée sans
   `capture_method`, donc capturée automatiquement
-  (`b2b/payments/infrastructure/stripe-payment-gateway.ts`). Le
+  (`card-payment/infrastructure/stripe/stripe-card-provider.ts`). Le
   remboursement est une demande persistée, exécutée après coup
   (`order-refund-request.ts`, `sweep-order-refunds`, `order-refund-dispatch.ts`).
 - **La facture** lit les lignes figées de la commande au mois de sa

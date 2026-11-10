@@ -9,8 +9,8 @@
 > [`plan-modifier-une-commande-payee-par-carte.md`](plan-modifier-une-commande-payee-par-carte.md).
 > Versions 1 à 4 et leurs contradictions par `vitruve` : `d2632e136`,
 > `6eef19357`, `ca3b6c0c4`, `d5e5d7a49`, `e1b7f8a75`, `c290188ed`,
-> `eaec69258`, `d87322030`, `68f63d17b`. Rien n'est bâti. Touche l'argent :
-> `vitruve` avant Hugo.
+> `eaec69258`, `d87322030`, `68f63d17b`. **P0 est bâti sur `dev`** (§4.9, 2026-11-10) ;
+> rien de P1 ne l'est. Touche l'argent : `vitruve` avant Hugo.
 
 ## 0. Les décisions de Hugo
 
@@ -435,6 +435,29 @@ secret des liens, `RUNTIME_KEYS`), deux endpoints chez Stripe, les imports.
 **Aucun écran, aucune route d'équipe, aucune table existante, aucun fait
 `order.*`, aucune ressource de droits.**
 
+### 4.9 P0 — bâti (2026-11-09 → 2026-11-10, sur `dev`, non déployé)
+
+| Lot          | Commit      | Contenu                                                                                                                                                                                                                                  |
+| ------------ | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P0.a         | `da57794c7` | les portes et la matrice du `CLAUDE.md` connaissent `card-payment` avant qu'il existe (§4.1)                                                                                                                                             |
+| P0.b         | `559475809` | schéma `card_payment`, tables `payment` et `takeover`, CHECK, index partiel, déclencheurs, reprise SQL des `first` (§4.3) — relu par `lecteur-de-migrations` : additive, un seul risque (un total ≤ 0 sur une intention ; **0 en prod**) |
+| P0.c1        | `707845fb2` | le bloc, complet et débranché : registre `card-accounts`, porte `lint:card-accounts` (70ᵉ), agrégat, ports, canal, webhook-commande par compte, relais durables, rattrapage, purge                                                       |
+| P0.c2 + P0.d | `661f514cb` | le commerce implémente le canal et bascule ses consommateurs ; webhook des liens ; cron horaire ; anciens adaptateurs retirés ; 140 fichiers de tests migrés                                                                             |
+
+**Ce que le bâti a tranché, et que le plan ne disait pas** (à relire avant P1) :
+
+- **§4.6, « la vue rend un champ paiement à adopter »** : le contrat `OrderPaymentIntent` exige un `clientSecret`, et une intention sans ligne ne se relit pas par `retrieve(paymentId)`. La page de règlement et le rejeu répondent **409** `orders.payment.awaits_adoption` ; rien n'est écrit ; le cron horaire rattrape ; l'écran enverra `AdoptOrderPayment` (route posée) quand il viendra.
+- **§4.3, l'état d'une annulée** : la reprise SQL dit `closed` avant `failed` ; la lecture TS (`orderCardSettled`) faisait l'inverse. Alignée sur le SQL — sinon chaque annulation devenait un écart signalé à chaque passage du rattrapage (`closed → failed` n'est pas une transition). L'exception « encaissée après annulation » du rattrapage lit donc `closed`, pas `failed`.
+- **§15 ter, `OrderRefundRejectedEvent` par `AfterCommit`** : valait **déjà en P0**, pas seulement en P1. Le constat d'un remboursement est appelé par un abonné durable, donc dans la transaction du reçu ; sa cloche partait dans cette transaction et s'exécutait après sa fermeture. Trouvé par l'e2e `order-refunds`, corrigé (`record-order-refund.handler.ts`).
+- **Le journal de `card-payment`** (`card_payment.unmatched`…) n'est pas écrit en P0 : ses handlers sont `@sans-journal` (motif écrit) ; le catalogue de ses faits de journal arrive avec P1 (§15 bis).
+- **`takeover` ne se purge pas** avec le scénario : l'effacer ferait rebalayer tout l'existant ou plus rien ; seule `payment` est déclarée à `purge-coverage.ts`.
+- **§4.3, « seule la commande TS sait fermer par `retrieve` une intention annulée chez le prestataire »** : pas bâti — le plan ne dit ni quelles lignes ni quand ; le rattrapage n'appelle pas le prestataire. Une `pending` abandonnée chez Stripe reste `pending`, payable. À trancher en P2 ou à abandonner.
+- `StripeProbe` ne sonde pas encore tous les comptes du registre (§3.2) ; `claim` d'une commande ignore le compte (une commande ne sait pas qui l'encaisse — à rouvrir au second compte).
+- Dette de tests : des doubles locaux recopiés dans cinq e2e (`NamedIntentCardProvider`, `ParamsRecordingCardProvider`, `RetrieveCountingCardProvider`, `AmountRecordingCardProvider`, `NoRetrievalCardProvider`) à factoriser dans `test/card-payments.ts` ; aucune spec unitaire de passation ne vérifie `attach` dans la transaction ; `payment-links.e2e-spec` passe encore par le relais de l'ancien endpoint, la route `/payments/links/webhook` n'est éprouvée que par sa spec unitaire.
+- `admin-pricing.e2e-spec` comptait des ventes jamais réglées : l'ancien double ne savait pas annuler, et `ReplaceUnsettledShopOrders` ne pouvait pas remplacer les impayées du même client. Ses ventes sont réglées désormais — la règle métier était juste, la fixture mentait.
+
+**Côté Stripe** (2026-11-09) : l'endpoint actuel garde les cartes (même URL, même clé, ses 8 événements) ; une destination `lfd-api production — liens de paiement` existe, **désactivée**, et son secret est dans GitHub (`STRIPE_LINKS_WEBHOOK_SECRET`). Au déploiement : déployer → activer la destination des liens → vérifier qu'un `checkout.*` y arrive → retirer les trois `checkout.session.*` de l'ancienne.
+
 ## 5. Lot P1 — le remboursement déménage (irréversible)
 
 ### 5.1 Les tables
@@ -712,7 +735,7 @@ où ils arriveront — la veille et les cloches les diront.
 
 ## 14. L'ordre, et l'irréversible
 
-Portes, matrice et configuration armées → **P0** (schéma et table additifs,
+Portes, matrice et configuration armées ✅ → **P0** ✅ bâti sur `dev` le 2026-11-10 (§4.9) (schéma et table additifs,
 secret des liens, deux endpoints ; pas réversible par le code seul — dit) →
 déployé, e2e vertes, `claim` et le cron rattrapent la fenêtre → **P1**
 (irréversible : tables, reprise, `refund_credit`, relations retirées, enum

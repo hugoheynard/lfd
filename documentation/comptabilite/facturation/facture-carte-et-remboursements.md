@@ -33,7 +33,7 @@ ligne par remboursement Stripe, `stripe_refund_id` unique (idempotence),
 `failed`, `canceled`), `credit_note_id` posé une fois.
 
 - **Webhook** : `refund.created`, `refund.updated`, `refund.failed`
-  (`stripe-payment-gateway.ts`) ; `charge.refunded` est ignoré. Un remboursement
+  (`stripe-card-provider.ts`) ; `charge.refunded` est ignoré. Un remboursement
   sans intention ou sous un statut inconnu est ignoré. La commande se retrouve
   par son unique intention (`orders.stripe_payment_intent_id`).
 - **L'agrégat** `OrderRefundLedger` (`b2b/orders/domain/entities/`) ;

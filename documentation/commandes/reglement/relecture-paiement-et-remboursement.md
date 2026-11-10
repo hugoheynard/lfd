@@ -8,6 +8,17 @@
 > repris de mémoire ni des plans. C'est un **état des lieux**, pas un plan : il
 > prépare le document unique qui remplacera les §9–§20 de
 > [`../modification/plan-modifier-une-commande-payee-par-carte.md`](../modification/plan-modifier-une-commande-payee-par-carte.md).
+>
+> ⚠️ **État d'AVANT le lot P0 du plan M2** (bâti le 2026-11-10,
+> [`../modification/plan-m2-historique-de-transactions.md`](../modification/plan-m2-historique-de-transactions.md)
+> §4.9). Depuis, le paiement par carte vit dans le bloc `src/card-payment/`
+> (ports `CardPayments` / `CardSettlementReader`, canal `SubjectSettlement`
+> implémenté par `orders`, webhook par compte) ; `PaymentGateway`,
+> `PaymentRefunder`, `ConfirmOrderPaymentCommand` et le webhook de
+> `b2b/payments` n'existent plus — les chemins cités ci-dessous ont été
+> repointés vers leurs successeurs, la prose décrit toujours le mécanisme
+> d'avant. Le **remboursement** (carnet, demande, exécuteur, constat), lui,
+> n'a pas bougé : il déménage en P1.
 
 ## Partie 1 — ce qu'il faut comprendre
 
@@ -126,7 +137,7 @@ dérivé — `production-plan.ts`, `settlement-regime.ts`), `absorbedByPlan` /
 
 **Fichiers** : `orders/domain/entities/order.ts`,
 `orders/infrastructure/prisma-order.repository.ts`,
-`orders/application/commands/confirm-order-payment.handler.ts`,
+`orders/application/services/order-subject-settlement.ts`,
 `abandon-order.handler.ts`, `pending-settlement-sweep.service.ts`,
 `unsettled-shop-order-expiry.service.ts`, `orders/domain/services/production-plan.ts`.
 
@@ -211,7 +222,7 @@ commande » (A4).
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | Passation carte           | composer → `createIntent` (hors transaction) → transaction : journée/stock, bon, `place()`, clé d'idempotence, faits ; échec ⇒ `cancelIntent`              | `place-order.handler.ts` (et `place-shop-order`, `place-order-for-customer`) |
 | Page de règlement         | relit l'intention chez Stripe (`retrieveIntent`) : refuse `canceled` / `succeeded` ; **aucune intention n'est jamais recréée**                             | `get-order-payment.handler.ts`                                               |
-| Webhook payé              | `markPaid` + `order.paid` (durable) dans une unité ; rien franchi + commande annulée ⇒ `order.paid_after_cancellation`                                     | `confirm-order-payment.handler.ts`                                           |
+| Webhook payé              | `markPaid` + `order.paid` (durable) dans une unité ; rien franchi + commande annulée ⇒ `order.paid_after_cancellation`                                     | `order-subject-settlement.ts`                                                |
 | Abandon (client)          | public : `cancelIntent` **puis** `markAbandoned` → `cancelled`+`failed`, bon libéré ; pro : `failed` seulement, intention vivante                          | `abandon-order.handler.ts`                                                   |
 | Expiration boutique       | particulier sans société, 30 min (ou durée de la vitrine) : `cancelIntent` puis `cancelled`+`failed` ; `already_paid`/`in_progress` ⇒ gardée               | `unsettled-shop-order-expiry.service.ts`                                     |
 | Clôture du fournil        | toutes clientèles, `placed` + `pending\|failed` du jour : `cancelIntent` (épargne si payé/en cours) puis `cancelled`+`failed`                              | `pending-settlement-sweep.service.ts`                                        |
@@ -246,17 +257,17 @@ commande » (A4).
 
 ### D. La frontière prestataire
 
-**Ports** (le domaine ne voit que ça) : `payments/domain/payment-gateway.ts`
+**Ports** (le domaine ne voit que ça) : `card-payment/domain/ports/card-provider.ts`
 (`createIntent`, `retrieveIntent`, `cancelIntent`, `publishableKey`,
 `parseWebhook` → événements réduits `succeeded | failed | refund | link_paid |
-link_expired | ignored`), `payments/domain/payment-refunder.ts`
+link_expired | ignored`), `card-payment/channels/requests/card-provider-refunds.ts`
 (`refundRemainder`, `findRefund` — **sans montant**),
 `payments/domain/ports/checkout-gateway.ts`.
 
-**Adaptateurs Stripe** : `stripe-payment-gateway.ts` (223 l.),
+**Adaptateurs Stripe** : `stripe-card-provider.ts` (223 l.),
 `stripe-intent-translation.ts` (90), `stripe-refund-calls.ts` (166),
-`stripe-payment-refunder.ts`, `stripe-checkout-gateway.ts` (81) ; le
-contrôleur `payments-webhook.controller.ts` lit l'en-tête `stripe-signature`.
+`stripe-card-provider.ts`, `stripe-checkout-gateway.ts` (81) ; le
+contrôleur `card-payments-webhook.controller.ts` lit l'en-tête `stripe-signature`.
 Consommateurs du port hors `payments/` : 9 fichiers d'`orders/` + le module
 racine. **Aucun `import Stripe` hors `payments/infrastructure`** (vérifié).
 
@@ -276,7 +287,7 @@ racine. **Aucun `import Stripe` hors `payments/infrastructure`** (vérifié).
 1. **Paiement réussi sur une intention inconnue : silence.** `markPaid` rend
    `null` (aucune ligne), `ringRefundDue` cherche une commande annulée, n'en
    trouve pas, et rien n'est journalisé ni sonné
-   (`confirm-order-payment.handler.ts`). Le remboursement hors commande, lui,
+   (`order-subject-settlement.ts`). Le remboursement hors commande, lui,
    sonne (A4). Avec des compléments (M2), c'est le cas d'un complément dont la
    ligne n'a pas été écrite.
 2. **L'inversion ne vise que l'annulée** : `ReopenRefundOnReversal` sort si

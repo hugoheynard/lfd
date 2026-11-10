@@ -118,10 +118,10 @@ première version du plan essayait, et `vitruve` l'a arrêtée le 2026-10-23.
   (`orders/domain/entities/order-revision.ts`, `isCardSettlement`).
 - **Le paiement** : une intention par commande
   (`orders.stripe_payment_intent_id`), débitée tout de suite ; le webhook
-  (`confirm-order-payment.handler.ts`) fait `markPaid` et publie `order.paid`
+  (`order-subject-settlement.ts`) fait `markPaid` et publie `order.paid`
   durable.
 - **Le remboursement** : `PaymentRefunder.refundRemainder` rend **tout le
-  reste** d'une intention, sans montant (`payments/domain/payment-refunder.ts`) ;
+  reste** d'une intention, sans montant (`card-payment/channels/requests/card-provider-refunds.ts`) ;
   la demande est **une par commande** (`order_refund_request`, clé `order_id`),
   causes `cancellation`, `paid_after_cancellation`, `refund_reversed`.
 - **La facture carte** naît au retrait, acquittée du total ; un remboursement

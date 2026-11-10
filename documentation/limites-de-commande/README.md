@@ -113,7 +113,7 @@ La limite gouverne la **passation**, pas le paiement. Une commande carte
 - **refuser la confirmation du webhook** après la limite laisserait un débit
   Stripe sans commande : c'est exclu. Un paiement déjà capté n'est jamais
   refusé a posteriori, et un encaissement sur une commande annulée sonne « à
-  rembourser » (`confirm-order-payment.handler.ts`).
+  rembourser » (`order-subject-settlement.ts`).
 
 Aucun nouvel état : quand le règlement est mort (expiré, clôturé), l'écran de
 règlement le dit (« Cette commande n'attend plus de paiement en ligne », phase
