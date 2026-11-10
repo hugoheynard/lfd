@@ -458,13 +458,18 @@ second. Un remboursement émis puis `failed` : cloche, état `failed`,
 
 - La confirmation affiche `cancellability.refund.sentence` (« Le client sera
   remboursé de 23,40 € sur sa carte (livraison comprise)… »).
-- `GET /admin/orders/:id` porte `refund` ; le détail d'une annulée montre un
-  **bandeau à quatre états** (`order-refund-banner/`) avec « Relancer le
-  remboursement ».
-- `POST /admin/orders/:id/refund/retry`, **`202`**, même droit
-  `b2b_cancel_order:write`. Elle n'appelle pas Stripe : refus nommés (pas de
-  demande, déjà remboursé, `awaiting_bank`, bail tenu « Stripe traite déjà ce
-  remboursement »), sinon déclenche l'exécuteur après validation.
+- `GET /admin/orders/:id` porte `refundRequests` (depuis le lot P1.c du plan
+  [`plan-m2-historique-de-transactions.md`](../modification/plan-m2-historique-de-transactions.md),
+  §5.3 ; `refund`, une demande au plus, avant) ; le bandeau
+  (`order-refund-banner/`, lot P1.d, 2026-11-10) montre **une ligne par
+  demande** — à envoyer, envoyée, remboursée, arrêtée, rendue autrement — avec
+  « Relancer le remboursement » quand le serveur le dit utile (`retryable`) et
+  « Rendu autrement » (un motif) sur une demande arrêtée.
+- Les deux gestes sont des routes du bloc `card-payment`, PAR DEMANDE, sous
+  `card_payments:write` : `POST /admin/card-payments/refund-requests/:requestId/retry`
+  (**`202`**, n'appelle pas Stripe : refus nommés, sinon l'exécuteur part après
+  validation) et `…/:requestId/settle-elsewhere` (**`204`**, plan M2 §5.5).
+  L'ancienne `POST /admin/orders/:id/refund/retry` est retirée (P1.c).
 
 ### C4.11 L'encaissé après annulation
 

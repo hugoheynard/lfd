@@ -1218,7 +1218,6 @@ export {
   toCustomerQuote,
   toCustomerOrder,
   orderRefundStatusSchema,
-  refundedCentsOf,
 } from "./order.js";
 export { exposedHandoverToken, isSettled } from "./order-settlement.values.js";
 // Modifier une commande passée (plan `commandes/modification/plan-modifier-une-commande.md`, M1).

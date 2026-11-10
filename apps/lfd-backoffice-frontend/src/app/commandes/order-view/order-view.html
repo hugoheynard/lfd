@@ -55,11 +55,11 @@
       <!-- « Écrire au client » (E6d), après la décision : jamais automatique. -->
       <app-order-shortfall-letter [orderId]="o.id" [shortfall]="o.shortfall" (sent)="load()" />
 
-      <!-- L'argent à rendre d'une commande annulée (C4.9) : rien sans demande. -->
-      <app-order-refund-banner [orderId]="o.id" [refund]="o.refund" (retried)="load()" />
+      <!-- L'argent à rendre par carte (C4.9, plan M2 §5.3) : une ligne par demande, rien sans demande. -->
+      <app-order-refund-banner [requests]="o.refundRequests" (changed)="load()" />
 
-      <!-- Les remboursements Stripe constatés : rien quand il n'y en a pas. -->
-      <app-order-refunds-card [refunds]="o.refunds" />
+      <!-- Les remboursements constatés, et le total servi : rien quand il n'y en a pas. -->
+      <app-order-refunds-card [refunds]="o.refunds" [refundedCents]="o.refundedCents" />
 
       <!-- Les bons de livraison (plan E5a, § 3) : rien avant l'arrêt du plan. -->
       <app-order-delivery-notes-card [orderId]="o.id" [refresh]="notesRefresh()" />

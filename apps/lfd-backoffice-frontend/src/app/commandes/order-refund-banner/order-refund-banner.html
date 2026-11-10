@@ -1,49 +1,94 @@
-@if (refund(); as r) {
-  <fold-callout
-    appearance="inset"
-    [variant]="variant()"
-    data-refund-banner
-    [attr.data-state]="r.state"
-  >
-    @switch (r.state) {
-      @case ('issued') {
-        Remboursement de {{ amount() }} — envoyé à Stripe le
-        {{ r.issuedAt | date: "dd/MM 'à' HH:mm" }}, en attente de la banque.
-      }
-      @case ('refunded') {
-        Remboursement de {{ amount() }} — remboursé.
-      }
-      @case ('failed') {
-        Remboursement de {{ amount() }} — <strong>à faire</strong> : {{ r.lastFailure }}
-      }
-      @default {
-        @if (toDo()) {
-          Remboursement de {{ amount() }} — <strong>à faire</strong> : {{ r.lastFailure }}
-        } @else {
-          Remboursement de {{ amount() }} — demandé le
-          {{ r.requestedAt | date: "dd/MM 'à' HH:mm" }}, en cours d'envoi à Stripe.
+@if (rows().length > 0) {
+  <div class="requests">
+    @for (row of rows(); track row.request.id) {
+      @let r = row.request;
+      <fold-callout
+        appearance="inset"
+        [variant]="row.variant"
+        data-refund-banner
+        [attr.data-request]="r.id"
+        [attr.data-state]="r.state"
+      >
+        Remboursement de {{ row.amount }} ({{ row.reason }}) —
+        @switch (r.state) {
+          @case ('issued') {
+            envoyé à Stripe le {{ r.issuedAt | date: "dd/MM 'à' HH:mm" }}, en attente de la banque.
+          }
+          @case ('refunded') {
+            remboursé.
+          }
+          @case ('settled_elsewhere') {
+            rendu autrement, hors de la plateforme.
+          }
+          @default {
+            @if (row.toDo) {
+              <strong>à faire</strong> : {{ r.lastFailure }}
+            } @else {
+              demandé le {{ r.requestedAt | date: "dd/MM 'à' HH:mm" }}, en cours d'envoi à Stripe.
+            }
+          }
         }
+        @if (row.settleable && settling() === r.id) {
+          <fold-textarea
+            label="Comment le client a été remboursé"
+            required
+            [rows]="3"
+            placeholder="Virement du 12/03, avoir déduit de la facture suivante…"
+            [hint]="
+              missing()
+                ? 'Le motif est obligatoire.'
+                : tooLong()
+                  ? 'Au plus ' + maxLength + ' caractères.'
+                  : 'Gardé au journal. Au plus ' + maxLength + ' caractères.'
+            "
+            [(value)]="reason"
+            data-refund-settle-reason
+          />
+        }
+        @if (r.retryable || row.settleable) {
+          <div actions>
+            @if (r.retryable) {
+              <button
+                foldButton
+                size="sm"
+                emphasis="outline"
+                [disabled]="!allowed()"
+                [loading]="saving() === r.id && settling() !== r.id"
+                (click)="retry(r.id)"
+                data-refund-retry
+              >
+                Relancer le remboursement
+              </button>
+            }
+            @if (row.settleable) {
+              <fold-inline-confirm
+                message="Le remboursement sera noté rendu hors de la plateforme. C'est définitif."
+                [labels]="{ confirm: 'Noter rendu autrement', cancel: 'Garder la demande' }"
+                keepOpenOnConfirm
+                [loading]="saving() === r.id"
+                [open]="settling() === r.id"
+                (openChange)="onSettleOpenChange(r.id, $event)"
+                (confirmed)="settle(r.id)"
+              >
+                <button
+                  foldButton
+                  size="sm"
+                  emphasis="outline"
+                  [disabled]="!allowed()"
+                  data-refund-settle
+                >
+                  Rendu autrement
+                </button>
+              </fold-inline-confirm>
+            }
+          </div>
+        }
+      </fold-callout>
+      @if (errorOf(r.id); as message) {
+        <fold-callout appearance="inset" variant="alert" announce data-refund-error>{{
+          message
+        }}</fold-callout>
       }
     }
-    @if (canRetry()) {
-      <div actions>
-        <button
-          foldButton
-          size="sm"
-          emphasis="outline"
-          [disabled]="!allowed() || !r.retryable"
-          [loading]="saving()"
-          (click)="retry()"
-          data-refund-retry
-        >
-          Relancer le remboursement
-        </button>
-      </div>
-    }
-  </fold-callout>
-  @if (error(); as message) {
-    <fold-callout appearance="inset" variant="alert" announce data-refund-error>{{
-      message
-    }}</fold-callout>
-  }
+  </div>
 }

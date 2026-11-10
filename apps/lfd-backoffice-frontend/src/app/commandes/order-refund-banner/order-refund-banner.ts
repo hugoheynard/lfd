@@ -8,85 +8,166 @@ import {
   output,
   signal,
 } from '@angular/core';
-import type { AdminOrderRefund } from '@lfd/contracts';
+import type { AdminRefundRequest, AdminRefundRequestState } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import { formatCents } from '@lfd/b2b-ui/order';
-import { FoldButtonComponent, FoldCalloutComponent, type FoldCalloutVariant } from 'fold-ng';
+import {
+  FoldButtonComponent,
+  FoldCalloutComponent,
+  FoldInlineConfirmComponent,
+  FoldTextareaComponent,
+  type FoldCalloutVariant,
+} from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { AdminOrdersService } from '../orders.service';
 
 /**
- * **Le bandeau du remboursement** d'une commande annulée (doc
- * `documentation/commandes/annulation/annulation-par-le-staff.md`, lot C4, C4.9) : les
- * quatre états LUS au carnet par le serveur, et « Relancer » quand il a un
- * sens.
+ * La borne du motif de « rendu autrement » — celle que l'agrégat
+ * `CardRefundRequest` refuse au-delà (`refund_request_settled_reason_bounded`).
+ */
+export const SETTLE_REASON_MAX_LENGTH = 500;
+
+/** Ce que dit le code de la demande ; un code inconnu se dit tel quel. */
+const REASONS: Readonly<Record<string, string>> = {
+  cancellation: 'annulation',
+  paid_after_cancellation: 'paiement arrivé après l’annulation',
+};
+
+/** Une demande, déjà mise en forme pour le bandeau. */
+interface RequestRow {
+  readonly request: AdminRefundRequest;
+  readonly amount: string;
+  readonly reason: string;
+  readonly variant: FoldCalloutVariant;
+  /** Un humain doit agir : arrêtée, ou pas encore partie après un essai. */
+  readonly toDo: boolean;
+  /** « Rendu autrement » n'a de sens que sur une demande arrêtée. */
+  readonly settleable: boolean;
+}
+
+/** La couleur dit l'issue, et `alert` quand un humain doit agir. */
+const SETTLED_VARIANT: Readonly<Partial<Record<AdminRefundRequestState, FoldCalloutVariant>>> = {
+  refunded: 'success',
+  settled_elsewhere: 'success',
+};
+
+function rowOf(request: AdminRefundRequest): RequestRow {
+  const toDo =
+    request.state === 'stopped' || (request.state === 'to_issue' && request.attempts > 0);
+  return {
+    request,
+    amount: formatCents(request.issuedCents ?? request.announcedCents),
+    reason: REASONS[request.reason] ?? request.reason,
+    variant: SETTLED_VARIANT[request.state] ?? (toDo ? 'alert' : 'info'),
+    toDo,
+    settleable: request.state === 'stopped',
+  };
+}
+
+/** Le refus du dernier geste, rattaché à la demande qu'il visait. */
+interface RequestError {
+  readonly requestId: string;
+  readonly message: string;
+}
+
+/**
+ * **Le bandeau des remboursements par carte** d'une commande (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.9 ; plan
+ * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+ * §5.3, §5.5) : une ligne PAR DEMANDE — une commande en porte une par
+ * paiement encaissé —, son état lu au carnet par le serveur, et ses deux
+ * gestes.
  *
- * « Relancer » n'attend pas Stripe : le serveur répond `202`, l'écran relit.
- * Désactivé sans `b2b_cancel_order:write` — le droit qui a créé la demande —
- * ou quand Stripe la traite déjà (`retryable` faux).
+ * « Relancer » n'apparaît que si le serveur le dit utile (`retryable`, bail
+ * compris, invisible au front) ; il n'attend pas Stripe (`202`), l'écran relit.
+ * « Rendu autrement » n'apparaît que sur une demande arrêtée, et demande un
+ * motif. Les deux sont désactivés sans `card_payments:write`.
  */
 @Component({
   selector: 'app-order-refund-banner',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FoldButtonComponent, FoldCalloutComponent],
+  imports: [
+    DatePipe,
+    FoldButtonComponent,
+    FoldCalloutComponent,
+    FoldInlineConfirmComponent,
+    FoldTextareaComponent,
+  ],
   templateUrl: './order-refund-banner.html',
+  styleUrl: './order-refund-banner.scss',
 })
 export class OrderRefundBanner {
-  readonly orderId = input.required<string>();
-  readonly refund = input.required<AdminOrderRefund | null>();
+  readonly requests = input.required<readonly AdminRefundRequest[]>();
 
-  /** La demande est relancée : au parent de relire le détail. */
-  readonly retried = output<void>();
+  /** Une demande a été relancée ou notée rendue : au parent de relire le détail. */
+  readonly changed = output<void>();
 
   private readonly api = inject(AdminOrdersService);
   private readonly permissions = inject(PermissionsStore);
 
-  protected readonly allowed = computed(() => this.permissions.can('b2b_cancel_order:write'));
-  protected readonly saving = signal(false);
-  protected readonly error = signal<string | null>(null);
+  protected readonly maxLength = SETTLE_REASON_MAX_LENGTH;
+  protected readonly allowed = computed(() => this.permissions.can('card_payments:write'));
+  protected readonly rows = computed(() => this.requests().map(rowOf));
 
-  protected readonly amount = computed(() => {
-    const refund = this.refund();
-    return refund === null ? '' : formatCents(refund.issuedCents ?? refund.announcedCents);
-  });
+  /** La demande dont un geste est en vol, ou `null`. */
+  protected readonly saving = signal<string | null>(null);
+  protected readonly error = signal<RequestError | null>(null);
 
-  /** La couleur dit s'il y a un geste à faire : `alert` quand un humain doit agir. */
-  protected readonly variant = computed<FoldCalloutVariant>(() => {
-    const refund = this.refund();
-    if (refund === null) {
-      return 'neutral';
+  /** La demande dont la confirmation « rendu autrement » est ouverte, ou `null`. */
+  protected readonly settling = signal<string | null>(null);
+  protected readonly reason = signal('');
+  /** Une confirmation tentée sans motif — le champ le dit alors. */
+  protected readonly attempted = signal(false);
+
+  private readonly trimmed = computed(() => this.reason().trim());
+  protected readonly tooLong = computed(() => this.trimmed().length > SETTLE_REASON_MAX_LENGTH);
+  protected readonly missing = computed(() => this.attempted() && this.trimmed() === '');
+
+  protected errorOf(requestId: string): string | null {
+    const error = this.error();
+    return error?.requestId === requestId ? error.message : null;
+  }
+
+  protected async retry(requestId: string): Promise<void> {
+    await this.run(requestId, () => this.api.retryRefund(requestId), {
+      fallback: "La relance n'a pas abouti. Réessayez.",
+    });
+  }
+
+  protected onSettleOpenChange(requestId: string, open: boolean): void {
+    this.settling.set(open ? requestId : null);
+    this.reason.set('');
+    this.attempted.set(false);
+  }
+
+  protected async settle(requestId: string): Promise<void> {
+    this.attempted.set(true);
+    const reason = this.trimmed();
+    if (reason === '' || this.tooLong()) {
+      return;
     }
-    if (refund.state === 'refunded') {
-      return 'success';
-    }
-    return this.toDo() ? 'alert' : 'info';
-  });
+    await this.run(requestId, () => this.api.settleRefundElsewhere(requestId, reason), {
+      fallback: "Le remboursement n'a pas pu être noté rendu. Réessayez.",
+      onSuccess: () => this.onSettleOpenChange(requestId, false),
+    });
+  }
 
-  /** « À faire » : échoué chez Stripe, ou pas encore parti après au moins un essai. */
-  protected readonly toDo = computed(() => {
-    const refund = this.refund();
-    return (
-      refund !== null &&
-      (refund.state === 'failed' || (refund.state === 'to_issue' && refund.attempts > 0))
-    );
-  });
-
-  protected readonly canRetry = computed(() => {
-    const refund = this.refund();
-    return refund !== null && (refund.state === 'to_issue' || refund.state === 'failed');
-  });
-
-  protected async retry(): Promise<void> {
-    this.saving.set(true);
+  private async run(
+    requestId: string,
+    gesture: () => Promise<void>,
+    outcome: { readonly fallback: string; readonly onSuccess?: () => void },
+  ): Promise<void> {
+    this.saving.set(requestId);
     this.error.set(null);
     try {
-      await this.api.retryRefund(this.orderId());
-      this.retried.emit();
+      await gesture();
+      outcome.onSuccess?.();
+      this.changed.emit();
     } catch (caught) {
-      this.error.set(httpErrorMessage(caught, "La relance n'a pas abouti. Réessayez."));
+      this.error.set({ requestId, message: httpErrorMessage(caught, outcome.fallback) });
     } finally {
-      this.saving.set(false);
+      this.saving.set(null);
     }
   }
 }

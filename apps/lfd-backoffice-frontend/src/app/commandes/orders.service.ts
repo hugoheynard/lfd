@@ -253,16 +253,32 @@ export class AdminOrdersService {
   }
 
   /**
-   * **« Relancer le remboursement »** d'une commande annulée (doc
-   * `annulation-par-le-staff.md`, C4.9). `202` : le serveur n'attend pas
-   * Stripe — l'écran relit le détail. Les refus (`404`, `409
-   * orders.refund_request.*`) portent leur phrase.
+   * **« Relancer »** une demande de remboursement par carte (plan
+   * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+   * §3.4, §5.3) — PAR DEMANDE : une commande en porte une par paiement
+   * encaissé. `202` : le serveur n'attend pas Stripe, l'écran relit le détail.
+   * Les refus (`404`, `409`) portent leur phrase.
    */
-  async retryRefund(id: string): Promise<void> {
+  async retryRefund(requestId: string): Promise<void> {
     await firstValueFrom(
       this.http.post<void>(
-        `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/refund/retry`,
+        `${B2B_API_BASE}/admin/card-payments/refund-requests/${encodeURIComponent(requestId)}/retry`,
         {},
+      ),
+    );
+  }
+
+  /**
+   * **« Rendu autrement »** (plan M2, §5.5) : une demande arrêtée est notée
+   * remboursée hors de la plateforme, avec le motif de l'équipe. Les refus
+   * (`400` motif, `404`, `409` pas arrêtée ou plus rien à rendre) portent leur
+   * phrase.
+   */
+  async settleRefundElsewhere(requestId: string, reason: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(
+        `${B2B_API_BASE}/admin/card-payments/refund-requests/${encodeURIComponent(requestId)}/settle-elsewhere`,
+        { reason },
       ),
     );
   }

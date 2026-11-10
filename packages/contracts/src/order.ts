@@ -1049,17 +1049,6 @@ export interface OrderRefundView {
   readonly source: "provider" | "manual";
 }
 
-/**
- * Le cumul des remboursements RÉUSSIS, en centimes. 🔴 L'API ne s'en sert
- * plus (plan M2, §3.3 : `refundedCents` vient de la position du bloc) ; le
- * back-office le lit encore jusqu'au lot P1.d.
- */
-export function refundedCentsOf(refunds: readonly OrderRefundView[]): number {
-  return refunds
-    .filter((refund) => refund.status === "succeeded")
-    .reduce((sum, refund) => sum + refund.amountCents, 0);
-}
-
 // ─── La commande telle qu'un CLIENT la reçoit ────────────────────────────────
 
 /**
