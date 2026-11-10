@@ -1,6 +1,6 @@
 # Plan S2 — modifier à la hausse une commande payée par carte
 
-> **Doc-first, 2026-11-10 — version 6**, après six contradictions de `vitruve`
+> **Doc-first, 2026-11-10 — version 7**, avec les décisions de Hugo du 2026-11-10 (§0), après six contradictions de `vitruve`
 > (v1 : quatre bloquants, v2 : deux, v3 : aucun, v4 : un, v5 : un), toutes
 > intégrées ici, §3. Détaille le §8 du
 > [plan M2](plan-m2-historique-de-transactions.md), avancé avant S1 sur
@@ -9,6 +9,16 @@
 > Tout ce que ce plan affirme de l'existant a été ouvert le 2026-11-10 ;
 > rien n'est bâti. Socle supposé : **P1 déployé** (bloc `card-payment`, le
 > remboursement par demande, `CardRefunds.requestAmount`).
+
+## 0. Les décisions de Hugo (2026-11-10)
+
+| Question                                    | Décision                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Q1 — le délai de paiement                   | **15 minutes**, raccourcies à l'heure limite, automatique                                                                                                                                                                                                                                                                                                |
+| Q2 — un prix qui bouge                      | **Le total vu, sur toute modification** : la modification envoie le total qu'elle a montré, comme la passation (`ensureTotalSeen`) — refus avec l'avertissement de la passation avant de payer ; après paiement, un écart rend le complément (R7). « Il le faudra à la baisse » : la règle est posée pour toute révision, pas pour la seule hausse (R14) |
+| Q3 — l'équipe                               | **(a) pour l'instant** : seul le client fait une hausse carte ; l'équipe ne peut pas augmenter une commande carte (refus nommé, « demandez au client de modifier sa commande, ou passez une seconde commande »). **(b) plus tard** : l'équipe compose, le client paie par un lien reçu par e-mail (§2.12)                                                |
+| Q4 — le délai du lien                       | sans objet tant que (b) n'est pas bâti                                                                                                                                                                                                                                                                                                                   |
+| Q5 — l'arrêt du fournil pendant un paiement | **on rend le complément** (proposé, accepté avec la réponse à Q3 : seul le client fait des hausses)                                                                                                                                                                                                                                                      |
 
 ## Partie 1 — l'explication simple
 
@@ -286,6 +296,20 @@ Promise<number>` — aucune des quatre méthodes d'aujourd'hui ne raisonne
   ce qui va dans le bon sens) ; `CardRefundAmountExceedsRemainderError`
   reste le filet, rejouée comme une panne.
 
+- **R14. Le total vu, sur toute modification** (Q2). `ReviseOrderCommand`
+  et `ProposeCardIncreaseCommand` gagnent `expectedTotalCents`, **obligatoire**
+  au contrat, comparé par `ensureTotalSeen` (`seen-total.ts`, la passation
+  l'appelle aux trois `place-*.handler.ts:181/89`) après la composition et
+  avant toute écriture ou préparation de paiement : `OrderTotalChangedError`,
+  le même message que la passation. Les trois appelants de M1 l'envoient :
+  la boutique (le total du devis affiché), le back-office (idem), et
+  `BusOrderChangeApplier` (le total que l'équipe a vu en appliquant la
+  demande). Les e2e de M1 l'envoient tous. Livré en S2.b, avant la hausse.
+- **R15. L'équipe ne fait pas de hausse carte** (Q3 a) :
+  `ProposeCardIncreaseCommand` n'a que la route client ; l'équipe reçoit
+  `CardOrderNotRevisableError` (raison `increase_by_staff`) avec le geste de
+  sortie. §2.4 « côté équipe » et l'e-mail `customer.order-complement-due`
+  passent au §2.12.
 - **R12. Chaque transition du projet est journalisée**, dans la transaction
   qui l'écrit : `order.card_increase_proposed`, `_paid`, `_applied`,
   `_refused` (avec `refusal`), `_abandoned` (avec la cause : délai, client,
@@ -293,10 +317,9 @@ Promise<number>` — aucune des quatre méthodes d'aujourd'hui ne raisonne
   `_already_returned` ; un fichier neuf dans
   `packages/contracts/src/journal-facts/`, phrases au back-office —
   **`packages` bouge : `pnpm test` à la racine**.
-- **R13. Deux modèles d'e-mail neufs** : `customer.order-complement-due`
-  (le lien, envoyé par l'équipe : clé d'intention de l'écran,
-  `lint:intent-key-gestures`) et `customer.order-modification-failed` (clé
-  déterministe `card-increase-refused:<proposalId>`). Entrées au
+- **R13. Un modèle d'e-mail neuf** : `customer.order-modification-failed`
+  (clé déterministe `card-increase-refused:<proposalId>`) ;
+  `customer.order-complement-due` attend le §2.12. Entrées au
   dictionnaire, `pnpm tool mail-copy:digest`, sujet déclaré
   (`lint:mail-subject-declared`), spécimen sur la planche.
 
@@ -336,12 +359,12 @@ ne porte que le staff, `rgpd-registre.json:1785`).
 
 ### 2.4 Le geste — demander la hausse
 
-`ProposeCardIncreaseCommand` (client `POST orders/:id/revisions/card-increase`,
-équipe `POST admin/orders/:id/revisions/card-increase` sous
-`@AdminSurface("b2b_orders")`, clé d'intention de l'écran) :
+`ProposeCardIncreaseCommand` (client seulement, `POST
+orders/:id/revisions/card-increase`, R15) :
 
 1. **Hors verrou**, comme M1 : mur, R7, `ensureRevisable`, `compose` ;
-   l'agrégat rend `card_complement` (sinon refus nommé).
+   l'agrégat rend `card_complement` (sinon refus nommé) ; **total vu**
+   (R14) avant toute préparation.
 2. **Remplacement** (R5, même auteur) : `cards.cancel(ancien.payment_id)`
    hors transaction. `cancelled | already_cancelled` ⇒ continuer ;
    `already_paid | in_progress` ⇒ refus « votre premier complément vient
@@ -357,9 +380,7 @@ ne porte que le staff, `rgpd-registre.json:1785`).
 6. Réponse : `{ proposalId, complementCents, clientSecret, publishableKey,
 expiresAt }`.
 
-Côté équipe, la réponse n'a pas de secret ; un e-mail
-`customer.order-complement-due` part par `mail.send` (sujet déclaré, clé
-d'intention de l'écran) avec le lien `reglement/:id/complement`.
+L'équipe n'a pas ce geste (R15, §2.12).
 
 ### 2.5 Payer le complément
 
@@ -482,18 +503,20 @@ le délai est un plancher, pas un couperet — écrit tel quel dans l'écran.
   `onPaymentFailed` qui routent sur lui (régression : un complément ne
   marque jamais le premier ; un complément sans projet est une erreur
   bruyante), `claim` qui rend le montant du paiement. **Sans R2 ter** (§2.2).
-- **S2.b — le geste** : R2 ter (et `card_settled` gardé sur le chemin
+- **S2.b — le geste** : **R14 d'abord** (le total vu sur toute
+  modification, ses trois appelants, les e2e de M1), R15, R2 ter (et `card_settled` gardé sur le chemin
   `request`), `ProposeCardIncreaseCommand`, ses routes, le devis et
   `revisabilityOf`, les libellés de `revision-wording.ts`, le refus de M1 et de l'applicateur M4,
-  `GetComplementPaymentQuery`, l'abandon par le client et par l'équipe,
-  l'e-mail du lien.
+  `GetComplementPaymentQuery`, l'abandon par le client (et par l'équipe sur
+  la fiche, `DELETE admin/orders/:id/complement`).
 - **S2.c — appliquer et rendre** : extraction d'`OrderRevisionRecording`,
   exécuteur à bail, balayage, les deux abonnés de remboursement, `stalled`,
   cloche, Relancer, cron d'abandon et ses cinq issues, annulation de la
   commande (R9), courriels.
 - **S2.d — les écrans** (`pablo`) : boutique (formulaire sur l'écran de
-  modification, page du complément par lien, délai) ; back-office (projet
-  sur la fiche, Relancer, Abandonner).
+  modification, délai restant, reprise au rechargement) ; back-office
+  (projet sur la fiche, Relancer, Abandonner ; le refus nommé quand
+  l'équipe tente une hausse carte).
 - **S2.e — les tests** : e2e de bout en bout, prestataire doublé — payé puis
   appliqué ; payé puis refusé (journée inscrite entre-temps) et rendu en
   ajustement, facture carte qui tient ; payé tard et rendu après validation ;
@@ -502,7 +525,16 @@ le délai est un plancher, pas un couperet — écrit tel quel dans l'écran.
   webhook perdu rattrapé ; `stalled` puis Relancer ; demande M4 refusée ;
   baisse carte refusée ; facture carte après une hausse appliquée.
 
-### 2.11 Questions à Hugo
+### 2.12 Plus tard — l'équipe compose, le client paie par un lien (Q3 b)
+
+Noté pour un lot après S3 : `POST admin/orders/:id/revisions/card-increase`
+sous `@AdminSurface("b2b_orders")`, réponse sans secret, e-mail
+`customer.order-complement-due` (clé d'intention de l'écran), page
+`reglement/:id/complement`, délai jusqu'à l'heure limite et au plus 24 h
+(Q4 à reposer à ce moment), Abandonner sur la fiche. Le socle de S2 n'a rien
+à défaire pour l'accueillir.
+
+### 2.11 Questions à Hugo — tranchées le 2026-11-10 (§0)
 
 1. **Q1 — 15 minutes**, bornées par l'heure limite de commande ?
 2. **Q2 — Aucune variation absorbée** (R7) : un prix qui baisse entre la
