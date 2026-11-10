@@ -187,7 +187,7 @@ La famille d'un produit se lit dans son préfixe de SKU (`VIE`/`PAI`/`PAT`/`SAL`
   serveur, et le panier le dit à l'écran. Les recopier donnerait deux
   implémentations de la même règle d'arrondi, donc deux résultats à un centime
   près, et un client qui compare son écran à sa facture (cf.
-  [`architecture-commande-immuable-avenants.md`](../modification/architecture-commande-immuable-avenants.md)).
+  [`modifier-une-commande.md`](../modification/modifier-une-commande.md), le total vu).
 - **Saisir une adresse de livraison à la volée.** Le sélecteur d'acheminement
   propose retrait **ou** coursier, comme le panier du client — mais les adresses
   viennent du **carnet de la société**. Côté client, l'adresse libre sert à

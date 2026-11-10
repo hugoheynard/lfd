@@ -50,8 +50,9 @@ flowchart LR
 Il y a **deux sortes** de colonnes, et on ne les lit pas de la même façon :
 
 - **figées à la passation** — écrites une seule fois, dans la même transaction
-  que la commande, et plus jamais modifiées. Ce qui bouge après passe par un
-  **avenant** ([`architecture-commande-immuable-avenants.md`](../modification/architecture-commande-immuable-avenants.md)) ;
+  que la commande, et plus jamais modifiées. Ce qui bouge après passe par une
+  **révision** de la commande, qui les refige et garde la version d'avant
+  ([`modifier-une-commande.md`](../modification/modifier-une-commande.md)) ;
 - **projetées après** — écrites par un fait qui arrive plus tard (Stripe, le
   fournil, le comptoir). Chacune de ces écritures est **conditionnée en base**
   (`updateMany` + `where`), ce qui la rend idempotente et tranche les courses.

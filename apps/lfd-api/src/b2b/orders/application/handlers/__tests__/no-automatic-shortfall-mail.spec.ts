@@ -3,8 +3,8 @@ import { join, relative } from "node:path";
 
 /**
  * **Avertir le client d'un départ incomplet est un choix du décideur, jamais
- * un envoi automatique** (Hugo, `documentation/commandes/modification/commandes-incompletes.md`
- * § 4, G3 ; plan E6d (`documentation/commandes/bon-de-livraison.md`) § 1).
+ * un envoi automatique** (Hugo, 2026-10-24 ; E6d, la table des décisions de
+ * `documentation/commandes/bon-de-livraison.md`).
  *
  * Le seul chemin vers le client est le geste « Écrire au client »
  * (`WriteShortfallLetterHandler`). Ce test lit les SOURCES : aucun abonné au

@@ -11,7 +11,7 @@
 
 > **Doc-first, 2026-10-23.** Hugo : « on peut annuler mais pas modifier ».
 > Décisions de Hugo du jour, reprises de
-> [`architecture-commande-immuable-avenants.md`](architecture-commande-immuable-avenants.md) :
+> l'architecture des avenants (retirée le 2026-11-10) :
 > le client modifie seul jusqu'à l'heure limite, le staff jusqu'à la
 > préparation ; **tout** se modifie (quantités, articles, date, créneau, point
 > de retrait, retrait ↔ livraison) ; une ligne déjà présente garde son prix

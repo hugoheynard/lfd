@@ -2995,8 +2995,8 @@ suivants.
   ratés, et l'admin choisit — **relivrer** un autre jour, **retrait au
   comptoir**, ou **annuler**. ⚠️ Les trois touchent la commande (le jour, le
   mode d'acheminement) et deux touchent **l'argent** (frais de livraison d'un
-  retrait, remboursement d'une annulation) : ce sont des **avenants du
-  commerce** (`../../commandes/modification/architecture-commande-immuable-avenants.md`),
+  retrait, remboursement d'une annulation) : ce sont des **gestes du
+  commerce** (`../../commandes/modification/modifier-une-commande.md`, la révision),
   à concevoir dans `order/`, avec `vitruve`. La tournée n'en fait qu'une
   **demande**. Lot à part, 6 c.
 

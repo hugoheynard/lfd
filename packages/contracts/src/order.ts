@@ -342,8 +342,9 @@ export type FulfillmentSource = z.infer<typeof fulfillmentSourceSchema>;
  * Figée comme les prix, et pour la même raison : le contact d'une adresse, ses
  * horaires ou son exigence de signature peuvent changer demain. Aller les
  * relire au moment d'imprimer ferait dire à un bon déjà sorti autre chose que
- * le papier qui est au fournil. Une commande est un fait clos ; ce qui bouge
- * après passe par un **avenant** (cf. `architecture-commande-immuable-avenants`).
+ * le papier qui est au fournil. Ce qui bouge ensuite passe par une
+ * **révision** de la commande, qui refige ces valeurs à son tour et garde la
+ * version d'avant en historique (`documentation/commandes/modification/modifier-une-commande.md`).
  */
 export interface FulfillmentDecision<T> {
   readonly value: T;

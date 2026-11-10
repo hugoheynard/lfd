@@ -133,7 +133,7 @@ que le client a en poche.
   passation, `+1` à chaque modification — [`plan-modifier-une-commande.md`](../modification/plan-modifier-une-commande.md), M1) :
   une commande modifiée a un nouveau bon, l'ancien reste rangé sous sa clé.
   Il n'y aura pas d'avenants
-  ([`architecture-commande-immuable-avenants.md`](../modification/architecture-commande-immuable-avenants.md)).
+  ([`modifier-une-commande.md`](../modification/modifier-une-commande.md)).
 - **Qui range** : `OrderSheetArchive` (`application/services/order-sheet-archive.service.ts`)
   relit ou fabrique, partagé par la route client (`GET /orders/:id/bon.pdf`) et la
   route staff (`GET /admin/orders/:id/bon.pdf`) — pas de version staff du bon : le

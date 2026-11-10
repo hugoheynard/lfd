@@ -81,9 +81,8 @@ flowchart LR
 Aucune route n'écrit `cancelled`, aucune n'écrit `refunded` (vérifié le
 2026-09-18 : les seules écritures de statut du dépôt sont `confirmed`, `ready` et
 `fulfilled` dans `prisma-order.repository.ts`, plus le `@default` `placed`).
-Aucun avenant n'est codé ;
-[`architecture-commande-immuable-avenants.md`](modification/architecture-commande-immuable-avenants.md)
-en tranche la conception.
+Il n'y a pas d'avenants : une modification **révise** la commande
+([`modifier-une-commande.md`](modification/modifier-une-commande.md), 2026-11-10).
 
 Le plan existe et a été **contredit par `vitruve` le 2026-09-17 : 4 BLOQUANT,
 7 SÉRIEUX**. Rien ne se bâtit avant qu'il soit refondu sur quatre décisions de

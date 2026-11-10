@@ -368,8 +368,9 @@ temps d'arrêt de l'adresse`, sans nouvel appel ; après ETA3 seulement.
   (`prisma-order.repository.ts:266,289`, vitruve), l'assiette du prélèvement
   l'exclut (`b2b/accounting/infrastructure/billable-order-criterion.ts:43`,
   vitruve), et un webhook Stripe rejoué sur une annulée sonne « à rembourser »
-  (`confirm-order-payment.handler.ts:63-67`, vitruve). Les **avenants** sont
-  conçus et pas codés (`../../commandes/modification/architecture-commande-immuable-avenants.md`),
+  (`confirm-order-payment.handler.ts:63-67`, vitruve). Les **avenants** étaient
+  conçus et pas codés — abandonnés depuis au profit de la révision
+  (`../../commandes/modification/modifier-une-commande.md`, 2026-11-10) —,
   avec une règle : « un avoir ne se crée pas avant livraison », et trois états
   de règlement (dont « indécis » ≠ « sans règlement »). Un retrait **n'a pas
   de frais** (`orders.prisma:209-210`) ; les frais de livraison sont figés

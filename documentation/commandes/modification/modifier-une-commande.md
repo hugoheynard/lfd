@@ -2,7 +2,7 @@
 
 > **Doc d'état, 2026-11-10.** Remplace, pour ce qui est bâti,
 > `plan-modifier-une-commande.md` (M1, M3, M4), `plan-a2-modifier-une-commande-inscrite.md`
-> (A2) et `architecture-commande-immuable-avenants.md`. Chaque phrase de la
+> (A2) et l'architecture des avenants d'août (retirée). Chaque phrase de la
 > partie 2 a été confrontée au code le 2026-11-10. Ce qui est **en cours** —
 > l'argent d'une commande carte — est marqué comme tel et renvoie à son plan.
 
@@ -93,8 +93,7 @@ complètes, changements (`lines`, `date`, `method`…), totaux avant / après,
 auteur client ou fiche staff (tenu par un CHECK), unique par
 `(order_id, replaced_revision)`.
 
-**Pourquoi pas les avenants** (le modèle d'août,
-`architecture-commande-immuable-avenants.md`) : tout ce qui lit une commande
+**Pourquoi pas les avenants** (le modèle d'août, retiré le 2026-11-10) : tout ce qui lit une commande
 — fournil, bon, BL, facture, prélèvement, « Mes commandes », dossier de
 facturation — lit **une** commande. Des avenants auraient obligé chacun à
 additionner « commande + avenants », dix lecteurs et dix façons de se

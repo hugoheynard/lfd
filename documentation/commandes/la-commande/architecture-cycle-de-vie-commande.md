@@ -295,8 +295,8 @@ décision commerciale — par le client qui abandonne, ou par la clôture.
 **L'énuméré ne décrit que la fabrication.** Fusionner le règlement produirait
 une trentaine d'états que personne ne saurait dessiner.
 
-**Ce qui bouge après une commande passée est un avenant**
-([`architecture-commande-immuable-avenants.md`](../modification/architecture-commande-immuable-avenants.md)),
+**Ce qui bouge après une commande passée est une révision**
+([`modifier-une-commande.md`](../modification/modifier-une-commande.md)),
 pas un retour en arrière du statut.
 
 ## 8. Ce que ce document ne tranche pas
