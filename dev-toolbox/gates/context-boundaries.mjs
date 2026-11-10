@@ -321,7 +321,7 @@ const PORT_SURFACE = {
   // d'une fournée, la demande de retour. Contrats et faits, rien de l'agrégat.
   "packing→production": "production/channels/packing/",
   // Le COLISAGE écoute le fait du RETRAIT (2026-11-03, Hugo, option b —
-  // `comptoir/depart-incomplet.md`, §7) : une commande remise
+  // `documentation/commandes/reliquat/reliquat.md`, §8) : une commande remise
   // sans être colisée laissait sa fiche ouverte au poste, et fermer le bac
   // ensuite partait en message mort. Le fait seul, rien du retrait.
   //

@@ -14,8 +14,8 @@ import { GetCounterIncompleteHandoverQuery } from "../application/queries/get-co
 
 /**
  * **« Remettre ce qui est au bac »** — le départ incomplet décidé au comptoir
- * (plan `documentation/commandes/reliquat/depart-incomplet.md`, §4.2
- * et §4.3 — Hugo, 2026-11-03). Une route du COMMERCE : la décision et le BL
+ * (plan `documentation/commandes/reliquat/reliquat.md`, §2.2.2
+ * et §2.2.3 — Hugo, 2026-11-03). Une route du COMMERCE : la décision et le BL
  * sont à lui ; le colisage et le retrait y entrent par leurs guichets.
  *
  * Sous `handover_counter:write` — tout vendeur du comptoir (D2) ; la route

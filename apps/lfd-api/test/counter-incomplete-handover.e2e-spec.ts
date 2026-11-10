@@ -1,7 +1,7 @@
 /**
  * E2E du **départ incomplet décidé au comptoir** (lot C1, plan
- * `documentation/commandes/reliquat/depart-incomplet.md`, §4.2 et
- * §4.3 — Hugo, 2026-11-03) : `POST
+ * `documentation/commandes/reliquat/reliquat.md`, §2.2.2 et
+ * §2.2.3 — Hugo, 2026-11-03) : `POST
  * /admin/counter/orders/:orderId/incomplete-handover`, sous
  * `handover_counter:write`.
  *
