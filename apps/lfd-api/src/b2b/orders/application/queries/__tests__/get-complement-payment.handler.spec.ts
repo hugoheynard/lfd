@@ -17,8 +17,8 @@ import { GetComplementPaymentHandler } from "../get-complement-payment.handler.j
 import { GetComplementPaymentQuery } from "../get-complement-payment.query.js";
 
 /**
- * **Le complément à payer, relu** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.5) — sous le
+ * **Le complément à payer, relu** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.4) — sous le
  * mur de la commande, l'intention relue chez le prestataire, jamais un secret
  * gardé chez nous.
  */

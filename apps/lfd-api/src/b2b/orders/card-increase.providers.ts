@@ -26,8 +26,8 @@ import { PrismaCardIncreaseLease } from "./infrastructure/prisma-card-increase-l
 import { PrismaCardIncreaseSweepReader } from "./infrastructure/prisma-card-increase-sweep.reader.js";
 
 /**
- * Les providers du lot S2.c (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`) : appliquer
+ * Les providers du lot S2.c (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`) : appliquer
  * une hausse payée (l'exécuteur à bail, son réveil, son balayage, « Relancer »),
  * l'abandon au délai, les deux abonnés qui rendent le complément, et le projet
  * vu par l'annulation de la commande (R9). L'écriture de M1

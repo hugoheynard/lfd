@@ -6,7 +6,7 @@ export const ORDER_COMPLEMENT_PAID_LATE = "order.complement_paid_late";
 
 /**
  * Fait de domaine : **le complément d'un projet abandonné a été encaissé**
- * (plan `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.5) —
+ * (doc `documentation/commandes/modification/modifier-une-commande.md`, §2.7.4) —
  * de l'argent reçu pour une modification qui ne sera pas faite.
  *
  * Publié DANS la transaction du webhook, quand le paiement n'est pas encore

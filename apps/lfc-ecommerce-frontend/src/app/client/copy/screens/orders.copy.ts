@@ -29,7 +29,7 @@ export interface RevisionRefusalCopy {
 /**
  * **La hausse d'une commande payée par carte** — le devis, le formulaire de
  * carte sur l'écran de modification, le délai, l'attente de l'application
- * (plan `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.8).
+ * (doc `documentation/commandes/modification/modifier-une-commande.md`, §2.7.10).
  */
 export interface CardIncreaseCopy {
   /** Le devis d'une hausse : `{amount}` reçoit le complément. */

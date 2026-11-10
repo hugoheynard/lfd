@@ -2,8 +2,8 @@ import type request from "supertest";
 
 /**
  * **Le total vu des modifications, confirmé pour les suites qui éprouvent autre
- * chose** — plan `documentation/commandes/modification/plan-s2-la-hausse.md`,
- * R14, lot S2.b0.
+ * chose** — doc `documentation/commandes/modification/modifier-une-commande.md`,
+ * §2.3 (R14), lot S2.b0.
  *
  * Depuis S2.b0, `expectedTotalCents` est OBLIGATOIRE sur `POST
  * /orders/:id/revisions`, `POST /admin/orders/:id/revisions` et `POST

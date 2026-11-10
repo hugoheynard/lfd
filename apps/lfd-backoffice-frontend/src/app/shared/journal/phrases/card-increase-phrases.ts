@@ -15,8 +15,8 @@ import {
 import { CARD_INCREASE_ABANDON_CAUSE } from '../values/orders-values';
 
 /**
- * **La hausse d'une commande payée par carte** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, R12) — le
+ * **La hausse d'une commande payée par carte** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.9) — le
  * miroir de `order-card-increases.ts` dans `@lfd/contracts`. Le client
  * demande, le système encaisse, applique ou rend : la demande et l'abandon se
  * disent à la voix active (l'auteur est celui du geste), le reste au passif.

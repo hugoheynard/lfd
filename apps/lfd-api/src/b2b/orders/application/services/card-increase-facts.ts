@@ -5,8 +5,8 @@ import type {
 import type { JournalFact } from "../../../../platform/journal/journal-fact.js";
 
 /**
- * **Les faits du projet de hausse** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, R12) — écrits
+ * **Les faits du projet de hausse** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.9) — écrits
  * dans la transaction qui écrit la transition. Le sujet est la commande, sous
  * son numéro ; aucun identifiant du prestataire.
  */

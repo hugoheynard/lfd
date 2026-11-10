@@ -1,5 +1,5 @@
-/// **Un projet de hausse d'une commande payée par carte** (plan
-/// `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.3) : la
+/// **Un projet de hausse d'une commande payée par carte** (doc
+/// `documentation/commandes/modification/modifier-une-commande.md`, §2.7.1) : la
 /// modification attend ici que son complément soit payé ; la commande ne
 /// change pas avant. Sept états, tenus par un CHECK ; un seul projet vivant
 /// (`awaiting_payment | ready | stalled`) par commande, tenu par un index

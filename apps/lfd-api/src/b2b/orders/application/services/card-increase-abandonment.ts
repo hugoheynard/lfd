@@ -18,9 +18,8 @@ import { CardIncreaseProposalRepository } from "../../domain/ports/card-increase
 import { increaseAbandonedFact, type IncreaseOrderLabel } from "./card-increase-facts.js";
 
 /**
- * **Abandonner un projet de hausse qui attend son paiement** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.4 étapes 2
- * et 4, §2.5) — partagé par le remplacement (une nouvelle hausse du même
+ * **Abandonner un projet de hausse qui attend son paiement** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.3 étapes 2 et 4, §2.7.4) — partagé par le remplacement (une nouvelle hausse du même
  * auteur) et par « Abandonner » (le client, l'équipe).
  *
  * Toujours en deux temps, jamais l'appel au prestataire sous un verrou :

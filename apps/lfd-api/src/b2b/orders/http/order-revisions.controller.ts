@@ -99,8 +99,8 @@ export class OrderRevisionsController {
   }
 
   /**
-   * **Demander une hausse d'une commande payée par carte** (plan
-   * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.4) — le
+   * **Demander une hausse d'une commande payée par carte** (doc
+   * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.3) — le
    * même corps que la modification, total vu obligatoire (R14). `200` avec le
    * complément à payer et de quoi monter le formulaire de carte ; la commande
    * ne change qu'une fois le complément payé. `409` : baisse ou total égal

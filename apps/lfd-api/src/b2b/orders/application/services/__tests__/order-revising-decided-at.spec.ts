@@ -18,7 +18,7 @@ import {
 
 /**
  * **Le temps se juge au geste ; l'arrêt du fournil, toujours maintenant**
- * (plan `documentation/commandes/modification/plan-s2-la-hausse.md`, R6).
+ * (doc `documentation/commandes/modification/modifier-une-commande.md`, §2.7.5).
  *
  * `decidedAt` est l'instant où l'heure limite et le premier jour commandable
  * se jugent ; l'horloge de la scène, celui du reste. M1 passe l'horloge :

@@ -185,8 +185,8 @@ export type OrderChangeRefusalPayload = z.infer<typeof orderChangeRefusalPayload
 
 /**
  * `POST /admin/customer-requests/:id/order-change/apply` — le TTC du devis que
- * l'équipe a sous les yeux (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, R14) :
+ * l'équipe a sous les yeux (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.3 (R14)) :
  * appliquer est une délégation, le total vu est celui de l'équipe. Un écart
  * refuse (`409` `orders.total_changed`) ; jamais recalculé par le serveur,
  * une comparaison avec son propre calcul serait vide.

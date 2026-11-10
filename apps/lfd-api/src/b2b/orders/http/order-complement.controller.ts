@@ -8,8 +8,8 @@ import { AbandonCardIncreaseCommand } from "../application/commands/abandon-card
 import { GetComplementPaymentQuery } from "../application/queries/get-complement-payment.query.js";
 
 /**
- * **Le complément d'une hausse, côté client** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.5) — le
+ * **Le complément d'une hausse, côté client** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.4) — le
  * relire pour payer, ou l'abandonner. Le mur est celui de la commande
  * (`ensureOrderVisible`) : hors mur, `404`.
  */

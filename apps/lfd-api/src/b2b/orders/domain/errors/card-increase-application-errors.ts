@@ -3,8 +3,8 @@ import { RevisionIntoClosedDayError } from "./order-revision-errors.js";
 import { ProductionPlanClosedError } from "./production-plan-closed.error.js";
 
 /**
- * Les refus de l'**application d'une hausse payée** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.6) — chacun
+ * Les refus de l'**application d'une hausse payée** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.5) — chacun
  * devient le `refusal` du projet, et le complément est rendu (R8). Lus au
  * journal par l'équipe, et par le client dans son e-mail : ils nomment le cas.
  */

@@ -1,6 +1,6 @@
 /**
  * **Appliquer et rendre une hausse payée par carte, sur le vrai Postgres**
- * (plan `documentation/commandes/modification/plan-s2-la-hausse.md`, lot S2.c).
+ * (doc `documentation/commandes/modification/modifier-une-commande.md`, §2.7.5).
  *
  * Ce que seul le vrai chemin prouve : le webhook d'un complément réveille
  * l'exécuteur après validation, qui écrit la révision par le même chemin que

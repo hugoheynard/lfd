@@ -1,6 +1,6 @@
 /**
- * **Le projet de hausse par carte, sur le vrai Postgres** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, lot S2.a).
+ * **Le projet de hausse par carte, sur le vrai Postgres** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7).
  *
  * Ce que seule la base prouve : le `DELETE` refusé, l'index unique partiel
  * (un seul projet vivant par commande), le CHECK du complément, l'écriture

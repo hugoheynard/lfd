@@ -1,8 +1,8 @@
 import type { CardIncreaseProposal } from "../entities/card-increase-proposal.js";
 
 /**
- * **Le dépôt des projets de hausse par carte** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.3) — port
+ * **Le dépôt des projets de hausse par carte** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.1) — port
  * d'écriture : il prend et rend l'agrégat.
  *
  * 🔴 **Ordre des verrous** : l'appelant tient DÉJÀ le verrou de la commande

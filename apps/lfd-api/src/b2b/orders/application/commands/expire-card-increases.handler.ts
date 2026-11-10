@@ -21,8 +21,8 @@ import { CARD_INCREASE_SWEEP_LIMIT } from "./sweep-card-increases.command.js";
 type ExpiryOutcome = "abandoned" | "settled" | "retried" | "skipped";
 
 /**
- * **L'abandon par le délai** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.7) — les
+ * **L'abandon par le délai** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.7) — les
  * projets `awaiting_payment` dont le délai est passé, un à la fois, hors
  * transaction pour le prestataire. Les cinq issues de `cards.cancel` :
  *

@@ -4,8 +4,8 @@ import { ReviseOrderCommand } from "../revise-order.command.js";
 import { content, placedOrder, reviseScene } from "./revision-scene.js";
 
 /**
- * **Le total vu, sur toute modification** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, R14, R15) :
+ * **Le total vu, sur toute modification** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.3 (R14), §2.7.2) :
  * la modification porte le TTC de son devis ; un écart d'un centime refuse
  * avant toute écriture, et le refus de règlement parle d'abord.
  */

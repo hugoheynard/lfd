@@ -284,8 +284,8 @@ export class AdminOrdersService {
   }
 
   /**
-   * **« Abandonner »** le complément qui attend son paiement (plan
-   * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.5) :
+   * **« Abandonner »** le complément qui attend son paiement (doc
+   * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.4) :
    * `204` ; `409` s'il n'y a rien à abandonner ou s'il vient d'être payé.
    */
   async abandonCardIncrease(id: string): Promise<void> {

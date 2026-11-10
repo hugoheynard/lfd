@@ -18,8 +18,8 @@ import { increaseScene } from "./card-increase-scene.js";
 import { content, NOW, placedOrder } from "./revision-scene.js";
 
 /**
- * **Demander une hausse payée par carte** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.4) — l'ordre
+ * **Demander une hausse payée par carte** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.3) — l'ordre
  * exact des six étapes, chaque refus avant le prestataire, le remplacement et
  * ses issues, et l'intention rendue sur tout échec de la transaction.
  */

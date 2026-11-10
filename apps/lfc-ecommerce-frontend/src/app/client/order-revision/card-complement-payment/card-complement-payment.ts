@@ -51,8 +51,8 @@ type Phase =
   'loading' | 'ready' | 'paying' | 'confirming' | 'finishing' | 'expired' | 'unavailable';
 
 /**
- * **Payer le complément d'une hausse, sur l'écran de modification** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.5, §2.8).
+ * **Payer le complément d'une hausse, sur l'écran de modification** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.4, §2.7.10).
  *
  * Le Payment Element se monte comme sur la page de règlement — le même
  * chargeur (`StripeLoader`), les mêmes options, la langue de la boutique —,

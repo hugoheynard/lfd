@@ -35,8 +35,8 @@ import { PrismaRevisableOrderReader } from "./infrastructure/prisma-revisable-or
  * Le guichet du fournil vient de `ProductionDeskFeedModule` ; le recalage de
  * la ligne d'encaissement, de `AccountOrderEngagementModule`.
  *
- * Plus le geste de la hausse payée par carte (plan `plan-s2-la-hausse.md`,
- * lot S2.b) : la demander, relire son complément, l'abandonner. Le dépôt et
+ * Plus le geste de la hausse payée par carte (doc `modifier-une-commande.md`,
+ * §2.7.3) : la demander, relire son complément, l'abandonner. Le dépôt et
  * le lecteur des projets sont déclarés au module, avec le socle (S2.a).
  */
 export const ORDER_REVISION_PROVIDERS: readonly Provider[] = [

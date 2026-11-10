@@ -34,8 +34,8 @@ import {
 } from "./payment-failure-doubles.js";
 
 /**
- * **Rendre le complément, et le dire** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, R8, R11, R13)
+ * **Rendre le complément, et le dire** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.8)
  * — les trois cas du reste, par les deux abonnés : tout, rien (l'annulation
  * a tout rendu), ou une partie (l'équipe en a rendu entre-temps). Toujours un
  * ajustement, jamais `requestRemainder`, sous le verrou `orders`.

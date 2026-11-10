@@ -4,7 +4,7 @@
 > v1 (deux bloquants), la v2 (un) et la v3 (**aucun bloquant**, trois
 > précisions intégrées ici), §3. Détaille le §7 du
 > [plan M2](plan-m2-historique-de-transactions.md), après la hausse
-> ([`plan-s2-la-hausse.md`](plan-s2-la-hausse.md), en production le
+> ([`modifier-une-commande.md`](modifier-une-commande.md), §2.7, en production le
 > 2026-11-10). Touche l'argent : `vitruve` avant Hugo. Tout ce que ce plan
 > affirme de l'existant a été ouvert le 2026-11-10 ; rien n'est bâti.
 

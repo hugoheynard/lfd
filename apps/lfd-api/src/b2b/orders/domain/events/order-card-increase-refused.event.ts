@@ -5,8 +5,8 @@ import { OrderSettlementPayloadError } from "../errors/order-settlement-payload.
 export const ORDER_CARD_INCREASE_REFUSED = "order.card_increase_refused";
 
 /**
- * Fait de domaine : **une hausse payée ne peut plus s'appliquer** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.6 étape 4)
+ * Fait de domaine : **une hausse payée ne peut plus s'appliquer** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.5 étape 4)
  * — le projet est `refused`, la commande garde son total, et le complément
  * encaissé n'est pas à nous.
  *

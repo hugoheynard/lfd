@@ -3,8 +3,8 @@ import { z } from "zod";
 import { cents, count, fact, instant, payload, subjectLabel } from "./fact.js";
 
 /**
- * **La hausse d'une commande payée par carte** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, R12) — chaque
+ * **La hausse d'une commande payée par carte** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.9) — chaque
  * transition du projet de hausse, écrite dans la transaction qui l'écrit.
  *
  * Le sujet est la COMMANDE, son libellé son numéro ; `complementCents` est le

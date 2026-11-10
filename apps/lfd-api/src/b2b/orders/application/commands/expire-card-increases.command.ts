@@ -9,8 +9,8 @@ export interface CardIncreaseExpiryReport {
 }
 
 /**
- * **L'abandon par le délai** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.7) — route
+ * **L'abandon par le délai** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.7) — route
  * machine `admin/orders/card-increases/expire`, cron de cinq minutes.
  */
 export class ExpireCardIncreasesCommand {}

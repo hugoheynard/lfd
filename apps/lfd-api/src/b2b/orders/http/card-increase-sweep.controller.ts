@@ -13,8 +13,8 @@ import {
 } from "../application/commands/sweep-card-increases.command.js";
 
 /**
- * Endpoints **machine** des hausses payées par carte (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.6, §2.7) —
+ * Endpoints **machine** des hausses payées par carte (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.5, §2.7.7) —
  * présentés par le Worker sur son cron de RAFRAÎCHISSEMENT (`*\/5 * * * *`,
  * `container/worker.ts`), avec le jeton du `RecomputeGuard`, comme
  * l'expiration des commandes boutique non réglées. Idempotents : le bail de

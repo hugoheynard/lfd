@@ -17,8 +17,8 @@ import {
 export const ORDER_CANCELLED_REFUSAL = "order_cancelled";
 
 /**
- * **L'annulation d'une commande qui porte un projet de hausse vivant** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, R9) — dans la
+ * **L'annulation d'une commande qui porte un projet de hausse vivant** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.6) — dans la
  * transaction d'`OrderCancellation`, sous SON verrou `orders`, après que
  * l'annulation a franchi :
  *

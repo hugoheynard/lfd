@@ -17,8 +17,8 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { AdminOrdersService } from '../orders.service';
 
 /**
- * **La hausse par carte qui attend**, sur la fiche commande (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.8) : le
+ * **La hausse par carte qui attend**, sur la fiche commande (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.10) : le
  * complément, où il en est, et les deux gestes de l'équipe — « Abandonner »
  * tant qu'il n'est pas payé (§2.5), « Relancer » quand la modification payée
  * est bloquée (§2.6). Rien sans projet vivant. Les deux gestes sont

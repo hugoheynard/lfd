@@ -70,8 +70,8 @@ export interface AdminOrderView extends OrderView {
    */
   readonly shortfall: AdminOrderShortfall | null;
   /**
-   * **La hausse par carte qui attend** (plan
-   * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.8) — le
+   * **La hausse par carte qui attend** (doc
+   * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.10) — le
    * projet vivant (`awaiting_payment | ready | stalled`), ou `null`.
    */
   readonly cardIncrease: AdminOrderCardIncrease | null;

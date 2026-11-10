@@ -15,8 +15,8 @@ import {
 } from "./sweep-card-increases.command.js";
 
 /**
- * **Le balayage des hausses** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.6, §2.7),
+ * **Le balayage des hausses** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.5, §2.7.7),
  * hors de toute transaction, un projet à la fois — l'échec de l'un ne prive
  * pas les suivants de leur tour :
  *

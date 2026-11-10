@@ -10,8 +10,8 @@ import type { OrderContent } from "../services/order-content.js";
  * `actor` vient de la porte (le `Principal`, ou `@StaffUserId()`), jamais du
  * corps. `content` est la commande VOULUE, entière ; `expectedRevision` la
  * révision qu'elle corrige (R7) ; `expectedTotalCents` le TTC que l'auteur a
- * vu au devis (plan `documentation/commandes/modification/plan-s2-la-hausse.md`,
- * R14) — pour une demande appliquée, celui de l'équipe, jamais recalculé.
+ * vu au devis (doc `documentation/commandes/modification/modifier-une-commande.md`,
+ * §2.3 (R14)) — pour une demande appliquée, celui de l'équipe, jamais recalculé.
  */
 export class ReviseOrderCommand {
   constructor(

@@ -41,8 +41,8 @@ export type RevisionOutcome<T> =
 export const STALE_REVISION = 'orders.revise.stale_revision';
 
 /**
- * Les refus nommés de la hausse par carte (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.4, §2.5) :
+ * Les refus nommés de la hausse par carte (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.3, §2.7.4) :
  * un complément attend déjà, le précédent vient d'être payé, le service de
  * paiement ne répond pas. L'écran les dit dans la langue du client.
  */

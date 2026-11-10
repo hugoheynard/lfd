@@ -59,7 +59,7 @@ export function hasRefusal(quote: OrderRevisionQuoteView): boolean {
 }
 
 /**
- * Plan `documentation/commandes/modification/plan-s2-la-hausse.md` (R15, Q3 a) :
+ * Doc `documentation/commandes/modification/modifier-une-commande.md`, §2.7.2 (Q3 a) :
  * l'équipe ne modifie pas une commande payée par carte — une hausse se paie
  * par le client, une baisse ou un total égal ne se font pas encore. La phrase
  * de la hausse reprend celle du serveur (`increase_by_staff`).

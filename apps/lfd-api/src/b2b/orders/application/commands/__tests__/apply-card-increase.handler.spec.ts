@@ -8,8 +8,8 @@ import { FixedClosedPlans, gateOf, RecordingAdmissionDesk } from "./plan-doubles
 import { DAY, NOW, placedOrder } from "./revision-scene.js";
 
 /**
- * **L'exécuteur des hausses payées** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.6) —
+ * **L'exécuteur des hausses payées** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.5) —
  * l'ordre exact des cinq étapes, chaque refus métier rendu `refused` avec son
  * fait durable, la garde propre au projet (plan arrêté), le total payé qui
  * fait foi (R7), et la panne qui reprend puis s'arrête en `stalled`.

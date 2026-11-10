@@ -13,8 +13,8 @@ import {
 } from "./order-revision.js";
 
 /**
- * **Comment la révision se règle** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, R2 bis) — le
+ * **Comment la révision se règle** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.2) — le
  * tri de l'agrégat, APRÈS la composition, sans lever :
  *
  * - `same_settlement` — au compte ou à total nul : comme la commande (M1) ;

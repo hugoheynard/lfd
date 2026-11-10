@@ -1,6 +1,6 @@
 /**
- * **Le geste de la hausse payée par carte, sur le vrai Postgres** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, lot S2.b).
+ * **Le geste de la hausse payée par carte, sur le vrai Postgres** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.3).
  *
  * Ce que seul le vrai chemin prouve : la hausse demandée naît en projet
  * `awaiting_payment` avec sa ligne de paiement `complement` dans la MÊME

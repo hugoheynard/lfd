@@ -9,8 +9,8 @@ import type { RevisableOrder } from "../order-revision.js";
 import { input, line, placed, revised } from "./revisable-order.fixture.js";
 
 /**
- * **Le règlement d'une révision, trié par l'agrégat** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, R2, R2 bis) :
+ * **Le règlement d'une révision, trié par l'agrégat** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.2) :
  * `recompose` rend la révision et son règlement sans lever ; M1 (`revise`)
  * refuse tout ce qui n'est pas `same_settlement`, comme avant.
  */

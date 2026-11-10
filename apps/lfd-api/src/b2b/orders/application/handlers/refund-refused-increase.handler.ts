@@ -22,8 +22,8 @@ export const REFUND_REFUSED_INCREASE = "orders.refund-refused-increase";
 
 /**
  * **Une hausse payée qui ne s'applique plus : le complément rendu, le client
- * prévenu** (plan `documentation/commandes/modification/plan-s2-la-hausse.md`,
- * §2.6 étape 4, R8, R11, R13).
+ * prévenu** (doc `documentation/commandes/modification/modifier-une-commande.md`,
+ * §2.7.5 étape 4, §2.7.8).
  *
  * Dans l'unité de travail du reçu : `orders`, le reste du paiement du
  * complément, la demande d'ajustement (`revision_refused`) — puis l'e-mail

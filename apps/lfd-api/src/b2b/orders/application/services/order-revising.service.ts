@@ -102,7 +102,7 @@ export class OrderRevising {
    * tôt, sous verrou pour faire foi. « Inscrite » se tranche au guichet du
    * fournil, sous le verrou de la journée.
    *
-   * Puis le régime (plan `plan-s2-la-hausse.md`, R2 ter) : sur le chemin
+   * Puis le régime (doc `modifier-une-commande.md`, §2.7.2) : sur le chemin
    * d'une modification (`revise`), une carte pas encore encaissée ; sur celui
    * d'une demande M4 (`request`), toute carte. Une carte encaissée passe :
    * l'agrégat trie son règlement après la composition (R2 bis). Puis les CGV

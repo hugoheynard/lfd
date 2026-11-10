@@ -22,7 +22,7 @@ export interface AppliedOrderChange {
 export abstract class OrderChangeApplier {
   /**
    * Rend la révision produite et ses totaux. `expectedTotalCents` est le TTC
-   * que l'équipe a vu au devis (plan `plan-s2-la-hausse.md`, R14) : un écart
+   * que l'équipe a vu au devis (doc `modifier-une-commande.md`, §2.3 (R14)) : un écart
    * refuse, et l'adaptateur ne le recalcule jamais.
    */
   abstract apply(

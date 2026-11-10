@@ -1,6 +1,6 @@
 /**
- * **Ce que les deux balayages des hausses reprennent** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.6, §2.7) —
+ * **Ce que les deux balayages des hausses reprennent** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.5, §2.7.7) —
  * port de lecture à part (ISP) : des identifiants, triés par échéance,
  * bornés ; chaque reprise relit et rejuge sous ses verrous.
  */

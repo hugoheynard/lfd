@@ -7,9 +7,9 @@ import {
 import type { RevisionActor } from "./order-revision.js";
 
 /**
- * **Le projet de hausse d'une commande payée par carte** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §1, §2.2,
- * §2.3) — la modification attend ici que son complément soit payé ; la
+ * **Le projet de hausse d'une commande payée par carte** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, partie 1, §2.7.2,
+ * §2.7.1) — la modification attend ici que son complément soit payé ; la
  * commande ne change pas avant.
  *
  * L'agrégat tient la machine des sept états, et elle seule :

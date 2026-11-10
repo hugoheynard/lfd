@@ -23,8 +23,8 @@ import {
 } from "./card-increase-facts.js";
 
 /**
- * **Un complément de hausse est encaissé** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.5) — la
+ * **Un complément de hausse est encaissé** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.4) — la
  * branche `complement` de `OrderSubjectSettlement.onPaid`, dans la
  * transaction du webhook.
  *

@@ -137,8 +137,8 @@ export interface B2bMails {
     readonly locale: ContentLocale;
   };
   /**
-   * **La modification payée n'a pas pu être appliquée** (plan
-   * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.6, R13).
+   * **La modification payée n'a pas pu être appliquée** (doc
+   * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.5, §2.7.8).
    * Destinataire : le client qui l'a demandée. La commande garde sa
    * composition, et le complément payé est rendu sur la carte.
    *

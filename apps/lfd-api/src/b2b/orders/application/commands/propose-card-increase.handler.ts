@@ -45,8 +45,8 @@ interface ProposedFrame {
 }
 
 /**
- * **Demander une hausse payée par carte** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.4), dans
+ * **Demander une hausse payée par carte** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.3), dans
  * l'ordre exact du plan :
  *
  * 1. Hors verrou, comme M1 : le mur, la révision corrigée (R7), hors stock

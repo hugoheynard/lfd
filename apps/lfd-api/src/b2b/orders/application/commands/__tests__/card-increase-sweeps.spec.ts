@@ -31,8 +31,8 @@ import { RecordingNotifier } from "./card-increase-apply-scene.js";
 import { FixedProposalReader, IncreaseCardPayments } from "./card-increase-scene.js";
 
 /**
- * **Les balayages des hausses et « Relancer »** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.6, §2.7) —
+ * **Les balayages des hausses et « Relancer »** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.5, §2.7.7) —
  * les cinq issues de l'annulation au délai, la vérification d'un webhook
  * perdu, le compte des contrôles en échec et sa cloche au 3ᵉ, et la relance
  * d'un projet en panne. Le prestataire HORS transaction, toujours.

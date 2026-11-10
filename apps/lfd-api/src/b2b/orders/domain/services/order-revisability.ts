@@ -19,8 +19,8 @@ export type RevisionBlock =
   /**
    * Une commande payable par carte (§ 2.7) : sur le chemin d'une DEMANDE (M4),
    * toute carte ; sur celui d'une modification, une carte pas encore
-   * encaissée (`unsettled`) — encaissée, seule la hausse a un chemin (plan
-   * `plan-s2-la-hausse.md`, R2 ter), et l'agrégat la trie.
+   * encaissée (`unsettled`) — encaissée, seule la hausse a un chemin (doc
+   * `modifier-une-commande.md`, §2.7.2), et l'agrégat la trie.
    */
   | { readonly kind: "card_settled"; readonly unsettled: boolean }
   /** Une commande d'avant les CGV figées n'a pas de quoi être recomposée. */

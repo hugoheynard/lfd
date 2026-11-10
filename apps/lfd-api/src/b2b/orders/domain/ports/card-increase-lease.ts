@@ -1,6 +1,6 @@
 /**
- * **Le bail de l'exécuteur des hausses** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.6) — la
+ * **Le bail de l'exécuteur des hausses** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.5) — la
  * figure de `CardRefundRequestLease` (plan M2, §3.5) : une exclusion
  * mutuelle, pas une règle métier, et un seul consommateur (ISP).
  *

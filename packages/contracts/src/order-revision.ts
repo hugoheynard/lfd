@@ -43,7 +43,7 @@ const revisedOrderShape = {
  * **La composition d'une demande de modification** (M4) : la commande voulue
  * et la révision corrigée, SANS total vu. La demande ne modifie rien : le
  * total qui compte est celui que l'équipe voit au moment d'appliquer
- * (`orderChangeApplyPayloadSchema`, plan `plan-s2-la-hausse.md`, R14) — le
+ * (`orderChangeApplyPayloadSchema`, doc `modifier-une-commande.md`, §2.3 (R14)) — le
  * garder ici le rangerait dans la composition demandée.
  */
 export const requestedOrderRevisionSchema = z
@@ -56,8 +56,8 @@ export const requestedOrderRevisionSchema = z
  * corrige (R7) — celle que le devis a rendue. Si la commande a été modifiée
  * ailleurs entre-temps, le serveur refuse (409) plutôt que d'écraser.
  *
- * `expectedTotalCents` est le TTC du devis affiché, obligatoire (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, R14) : une
+ * `expectedTotalCents` est le TTC du devis affiché, obligatoire (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.3 (R14)) : une
  * modification ne fixe jamais un montant que personne n'a vu — `409`
  * `orders.total_changed`, comme la passation.
  */
@@ -154,8 +154,8 @@ export interface OrderRevisionQuoteView {
   /** Les remises que la modification ferait perdre — vide si aucune (§ 10.4). */
   readonly discountRefusals: readonly OrderRevisionDiscountRefusal[];
   /**
-   * Comment la modification se réglera (plan
-   * `documentation/commandes/modification/plan-s2-la-hausse.md`, R3) : comme
+   * Comment la modification se réglera (doc
+   * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.2) : comme
    * la commande, par un complément à payer par carte, ou pas encore possible.
    * Servi sur tout devis depuis S2.b (`quoteViewOf`, vérifié le
    * 2026-11-10) ; obligatoire depuis que les écrans le lisent (S2.d).
@@ -172,8 +172,8 @@ export interface OrderRevisedResponse {
 }
 
 /**
- * **Demander une hausse payée par carte** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.4) — le
+ * **Demander une hausse payée par carte** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.3) — le
  * corps de `POST /orders/:id/revisions/card-increase` : exactement celui de
  * la modification (`orderRevisionPayloadSchema`), total vu obligatoire (R14).
  */

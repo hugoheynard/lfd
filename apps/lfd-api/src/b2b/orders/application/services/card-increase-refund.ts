@@ -30,8 +30,8 @@ export interface ComplementToReturn {
 export type ComplementReturn = "returned" | "already_returned" | "partly_returned";
 
 /**
- * **Rendre ce qui reste du complément, et le dire** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, R8, R11) —
+ * **Rendre ce qui reste du complément, et le dire** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.8) —
  * partagé par les deux abonnés (`RefundLateComplement`,
  * `RefundRefusedIncrease`), dans l'unité de travail de leur reçu.
  *

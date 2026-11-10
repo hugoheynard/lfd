@@ -7,8 +7,8 @@ import { AbandonCardIncreaseCommand } from "../application/commands/abandon-card
 import { RelaunchCardIncreaseCommand } from "../application/commands/relaunch-card-increase.command.js";
 
 /**
- * **« Abandonner » le complément depuis la fiche** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.5), et
+ * **« Abandonner » le complément depuis la fiche** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.4), et
  * **« Relancer »** celui qui est en panne (§2.6) — sous
  * `b2b_orders:write`, le droit qui modifie une commande. L'auteur vient de la
  * porte (`@StaffUserId()`), jamais du corps ; aucun e-mail ne part.

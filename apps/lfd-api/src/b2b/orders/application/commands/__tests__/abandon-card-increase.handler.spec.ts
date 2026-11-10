@@ -19,8 +19,8 @@ import { FixedProposalReader, IncreaseCardPayments } from "./card-increase-scene
 import { FixedRevisableOrders, NOW, OneRoleAccess, placedOrder } from "./revision-scene.js";
 
 /**
- * **« Abandonner » le complément** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.5) —
+ * **« Abandonner » le complément** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.4) —
  * l'intention annulée hors transaction, puis la transition conditionnée sous
  * `orders`, la cause au journal.
  */

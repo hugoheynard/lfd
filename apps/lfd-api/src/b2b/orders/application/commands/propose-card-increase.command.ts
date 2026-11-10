@@ -2,8 +2,8 @@ import type { RevisionActor } from "../../domain/entities/order-revision.js";
 import type { OrderContent } from "../services/order-content.js";
 
 /**
- * **Demander une hausse d'une commande payée par carte** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.4) — la
+ * **Demander une hausse d'une commande payée par carte** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.3) — la
  * modification attend dans un projet que son complément soit payé ; la
  * commande ne change pas avant.
  *

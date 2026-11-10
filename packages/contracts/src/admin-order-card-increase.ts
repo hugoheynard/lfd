@@ -1,6 +1,6 @@
 /**
- * **Les états d'un projet de hausse VIVANT** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.2, §2.8) —
+ * **Les états d'un projet de hausse VIVANT** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.2, §2.7.10) —
  * ceux que la fiche staff montre : les autres sont terminés, et l'historique
  * les dira (S3).
  */

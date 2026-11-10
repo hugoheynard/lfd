@@ -16,8 +16,8 @@ export type SeenRevision = (
 ) => Promise<ReviseOrderCommand>;
 
 /**
- * **La modification telle qu'un écran l'envoie** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, R14) : le
+ * **La modification telle qu'un écran l'envoie** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.3 (R14)) : le
  * devis d'abord, par le VRAI handler de devis sur la même scène, puis la
  * modification qui porte SON total. Un test n'invente donc jamais le total vu.
  *

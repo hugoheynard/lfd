@@ -26,8 +26,8 @@ import { ReviseOrderCommand, type ReviseOrderResult } from "./revise-order.comma
  * ## L'ordre des gestes
  *
  * 1. Hors verrou : le mur, la révision attendue (R7), la règle (R1), puis la
- *    recomposition entière ({@link OrderRevising}), puis le total vu (plan
- *    `plan-s2-la-hausse.md`, R14 — après les refus de règlement, R15) — tous
+ *    recomposition entière ({@link OrderRevising}), puis le total vu (doc
+ *    `modifier-une-commande.md`, §2.3 (R14) — après les refus de règlement, R15) — tous
  *    les refus avant toute écriture, aucun appel d'un autre bloc sous un verrou.
  * 2. La transaction : ligne `orders` verrouillée et relue, révision et règle
  *    rejugées sous le verrou, puis l'écriture ({@link OrderRevisionRecording},

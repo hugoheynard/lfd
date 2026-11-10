@@ -9,7 +9,7 @@ import { RevisionWall } from "../services/revision-wall.js";
 import { AbandonCardIncreaseCommand } from "./abandon-card-increase.command.js";
 
 /**
- * **« Abandonner » le complément** (plan `plan-s2-la-hausse.md`, §2.5) :
+ * **« Abandonner » le complément** (doc `modifier-une-commande.md`, §2.7.4) :
  *
  * 1. le mur (`ensureOrderVisible` pour le client, la porte staff pour
  *    l'équipe), puis le projet vivant, qui doit attendre son paiement ;

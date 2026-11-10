@@ -3,7 +3,7 @@ import { proposalAt } from "./card-increase-doubles.js";
 
 /**
  * **R9 — l'annulation d'une commande qui porte un projet de hausse vivant**
- * (plan `documentation/commandes/modification/plan-s2-la-hausse.md`) : dans
+ * (doc `documentation/commandes/modification/modifier-une-commande.md`) : dans
  * la transaction de l'annulation, sous son verrou ; l'intention d'un projet
  * qui attend son paiement n'est annulée qu'APRÈS validation ; un projet payé
  * est refusé sans remboursement propre — l'annulation rend tout.

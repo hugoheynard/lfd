@@ -1,6 +1,6 @@
 /**
- * **Réveiller l'exécuteur d'une hausse payée** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.5, §2.6) —
+ * **Réveiller l'exécuteur d'une hausse payée** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.4, §2.7.5) —
  * appelé APRÈS validation, quand un complément vient d'être encaissé.
  *
  * L'adaptateur (`BusCardIncreaseWake`, lot S2.c) lance l'exécuteur à bail

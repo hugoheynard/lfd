@@ -649,8 +649,8 @@ async function triggerCardRefundSweep(env: Env): Promise<void> {
 }
 
 /**
- * Réveille le container et passe les hausses payées par carte (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.6, §2.7) :
+ * Réveille le container et passe les hausses payées par carte (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.5, §2.7.7) :
  * le balayage reprend les compléments payés à appliquer (réveil perdu, panne
  * à reprendre) et demande au prestataire où en sont ceux qui attendent depuis
  * plus de cinq minutes (webhook perdu) ; l'expiration abandonne ceux dont le

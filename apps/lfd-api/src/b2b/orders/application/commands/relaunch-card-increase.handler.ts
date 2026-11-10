@@ -13,7 +13,7 @@ import { IncreaseOrderLabels } from "../services/increase-order-labels.js";
 import { RelaunchCardIncreaseCommand } from "./relaunch-card-increase.command.js";
 
 /**
- * **« Relancer »** (plan `plan-s2-la-hausse.md`, §2.6 étape 5) : sous
+ * **« Relancer »** (doc `modifier-une-commande.md`, §2.7.5 étape 5) : sous
  * `orders` puis le projet, `stalled → ready` (l'agrégat remet les essais à
  * zéro), le journal `_relaunched`, et l'exécuteur réveillé APRÈS validation.
  * L'échéance se pose au MUR : le bail et le balayage l'y comparent.

@@ -64,8 +64,8 @@ export type OrderRevisability =
       readonly revisable: true;
       readonly until: string | null;
       /**
-       * Plan `documentation/commandes/modification/plan-s2-la-hausse.md`
-       * (R2 ter, R3) : la commande est payée par carte — seule une HAUSSE s'y
+       * Doc `documentation/commandes/modification/modifier-une-commande.md`
+       * (§2.7.2) : la commande est payée par carte — seule une HAUSSE s'y
        * fait, et elle se paie par un complément (`POST
        * /orders/:id/revisions/card-increase`) ; une baisse ou un changement à
        * total égal ne sont pas encore possibles. Servi seulement quand c'est
@@ -99,8 +99,7 @@ export type AdminOrderRevisability =
 
 /**
  * **Pourquoi une révision d'une commande payée par carte ne se fait pas**
- * (plan `documentation/commandes/modification/plan-s2-la-hausse.md`, R2 bis,
- * R15) — une baisse, un total égal, un premier paiement pas encore encaissé,
+ * (doc `documentation/commandes/modification/modifier-une-commande.md`, §2.7.2) — une baisse, un total égal, un premier paiement pas encore encaissé,
  * ou une hausse composée par l'équipe (« demandez au client de modifier sa
  * commande, ou passez une seconde commande »).
  */

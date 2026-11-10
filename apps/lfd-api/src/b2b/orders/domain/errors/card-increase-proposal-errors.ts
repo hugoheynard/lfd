@@ -5,8 +5,8 @@ import {
 } from "../../../../platform/shared/errors/app-error.js";
 
 /**
- * Les refus du **projet de hausse payée par carte** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §1, §2.2). Lus
+ * Les refus du **projet de hausse payée par carte** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, partie 1, §2.7.2). Lus
  * par l'équipe et par le client : chacun nomme le cas et le geste de sortie.
  */
 

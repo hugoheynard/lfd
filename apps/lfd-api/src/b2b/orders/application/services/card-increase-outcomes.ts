@@ -28,9 +28,8 @@ export const CARD_INCREASE_RETRY_DELAYS_MS: readonly number[] = [
 const FAILURE_MAX_LENGTH = 500;
 
 /**
- * **Les issues d'un projet que l'exécuteur n'a pas appliqué** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.6 étapes 4
- * et 5) — chacune dans SA transaction, après celle qui a échoué : l'ordre des
+ * **Les issues d'un projet que l'exécuteur n'a pas appliqué** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.5 étapes 4 et 5) — chacune dans SA transaction, après celle qui a échoué : l'ordre des
  * verrous (`orders`, puis le projet `FOR UPDATE`), une transition
  * conditionnée, son journal (R12). Un projet qui n'est plus `ready | stalled`
  * n'est pas touché : un autre geste est passé.

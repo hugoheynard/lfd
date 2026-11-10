@@ -33,8 +33,8 @@ import { ApplyCardIncreaseCommand } from "./apply-card-increase.command.js";
 export const CARD_INCREASE_LEASE_MS = 2 * 60 * 1000;
 
 /**
- * **L'exécuteur des hausses payées** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.6) — la
+ * **L'exécuteur des hausses payées** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.5) — la
  * figure de l'exécuteur des remboursements de `card-payment` (P1.b), dans
  * l'ordre exact du plan :
  *

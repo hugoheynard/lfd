@@ -16,8 +16,8 @@ export interface CardIncreaseSweepReport {
 }
 
 /**
- * **Le balayage des hausses** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.6, §2.7) —
+ * **Le balayage des hausses** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.5, §2.7.7) —
  * route machine `admin/orders/card-increases/sweep`, cron de cinq minutes.
  */
 export class SweepCardIncreasesCommand {}

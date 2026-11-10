@@ -15,9 +15,8 @@ import { CardIncreaseRefund } from "../services/card-increase-refund.js";
 export const REFUND_LATE_COMPLEMENT = "orders.refund-late-complement";
 
 /**
- * **Le complément payé après l'abandon se rend tout seul** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.5, R8,
- * R11) — la figure de `RefundPaidAfterCancellation` : le projet est `closed`,
+ * **Le complément payé après l'abandon se rend tout seul** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.4, §2.7.8) — la figure de `RefundPaidAfterCancellation` : le projet est `closed`,
  * la modification ne sera pas faite, l'argent n'est pas à nous.
  *
  * Après validation du webhook — pendant `onPaid`, le paiement n'est pas encore

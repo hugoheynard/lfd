@@ -2,8 +2,8 @@ import { orderChangeApplyPayloadSchema, orderChangeRequestPayloadSchema } from "
 import { orderRevisionPayloadSchema } from "../order-revision.js";
 
 /**
- * **Le total vu, sur toute modification** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, R14) : la
+ * **Le total vu, sur toute modification** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.3 (R14)) : la
  * modification et l'application d'une demande portent le TTC vu ; la demande
  * du client, qui ne modifie rien, ne le porte pas.
  */

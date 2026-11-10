@@ -7,8 +7,8 @@ import { CardIncreaseBell } from "./card-increase-bell.js";
 import { IncreaseOrderLabels } from "./increase-order-labels.js";
 
 /**
- * **Un contrôle au prestataire a échoué** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.7) —
+ * **Un contrôle au prestataire a échoué** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.7) —
  * l'annulation au délai qui répond `unavailable`, ou la vérification d'un
  * paiement (`settleFromProvider`) qui lève. Partagé par les deux balayages.
  *

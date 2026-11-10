@@ -60,7 +60,7 @@ import { GetAdminOrderQuery } from "./get-admin-order.query.js";
  * Lot E6a (plan E6 (`documentation/commandes/bon-de-livraison.md`) § 3) : et le manque
  * signalé au colisage, en vigueur — « décision attendue ».
  *
- * Plan S2 (`documentation/commandes/modification/plan-s2-la-hausse.md`, §2.8) :
+ * La hausse par carte (`documentation/commandes/modification/modifier-une-commande.md`, §2.7.10) :
  * et la hausse par carte qui attend, le projet vivant — lu par la commande
  * déjà servie, sans autre mur que le sien.
  */

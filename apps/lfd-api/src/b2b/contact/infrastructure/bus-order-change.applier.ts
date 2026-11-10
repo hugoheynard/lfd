@@ -17,8 +17,8 @@ import {
  * que `POST /admin/orders/:id/revisions`, ses règles et ses refus. Appelé
  * dans l'unité de travail de la réponse, il la rejoint.
  *
- * Le total vu est celui que l'équipe a lu au devis, transmis tel quel (plan
- * `plan-s2-la-hausse.md`, R14) : le recalculer ici rendrait la comparaison vide.
+ * Le total vu est celui que l'équipe a lu au devis, transmis tel quel (doc
+ * `modifier-une-commande.md`, §2.3 (R14)) : le recalculer ici rendrait la comparaison vide.
  */
 @Injectable()
 export class BusOrderChangeApplier extends OrderChangeApplier {

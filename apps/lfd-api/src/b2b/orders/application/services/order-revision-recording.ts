@@ -17,8 +17,8 @@ import { OrderRevising } from "./order-revising.service.js";
 import { OrderWorkshopRevision } from "./order-workshop-revision.js";
 
 /**
- * **Écrire une révision jugée** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.6 étape 3) —
+ * **Écrire une révision jugée** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.5 étape 3) —
  * extrait du `record()` de `ReviseOrderHandler`, sans changer son
  * comportement, pour que la hausse payée (`ApplyCardIncreaseHandler`)
  * écrive EXACTEMENT ce qu'écrit M1.

@@ -6,8 +6,8 @@ import type {
 } from "../../domain/entities/card-increase-proposal.js";
 
 /**
- * **Le projet vivant, dans la forme de la fiche staff** (plan
- * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.8). Un
+ * **Le projet vivant, dans la forme de la fiche staff** (doc
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.10). Un
  * projet terminé n'a rien à montrer ici : `null`, comme l'absence de projet —
  * le lecteur (`liveOf`) n'en rend d'ailleurs pas.
  */
