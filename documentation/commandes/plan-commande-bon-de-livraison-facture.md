@@ -5,7 +5,7 @@
 > E6. Ce qui existe est décrit **au présent** dans la doc d'état
 > [`bon-de-livraison.md`](bon-de-livraison.md), qui reprend aussi les
 > décisions des plans de lot retirés. **Restent ouverts** : E3 + E7 (le
-> reliquat, [`reliquat/plan-e7-le-reliquat.md`](reliquat/plan-e7-le-reliquat.md)), E8, E9, et les
+> reliquat, [`reliquat/reliquat.md`](reliquat/reliquat.md)), E8, E9, et les
 > chantiers du § 11 (A1, A2, R1, R2, H1, H2).
 >
 > **Doc-first, 2026-10-24.** Décision de Hugo le même jour : « fais le modèle
@@ -17,7 +17,7 @@
 >
 > Il remplace la piste « commande de suite liée » de
 > l'ancien plan des commandes incomplètes (retiré le 2026-11-10 ; état bâti :
-> [`reliquat/depart-incomplet.md`](reliquat/depart-incomplet.md))
+> [`reliquat/reliquat.md`](reliquat/reliquat.md))
 > (v1 à v3, contredites trois fois le 2026-10-24) : le reliquat redevient ce
 > que Hugo avait dit d'abord, **la suite de la même commande**.
 
@@ -113,7 +113,7 @@ Chaque lot a son plan détaillé et son `vitruve` avant d'être bâti.
 | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
 | E1  | ✅ bâti le 2026-10-24 (`5b49793db`) — **né à l'arrêt du plan, pas à la fermeture du bac** (idée de Hugo, 2026-10-24). Le BL : tables, agrégat, invariants 1–3 et 7 ; **créé à la fermeture du bac** pour toute commande, en ombre (personne ne le lit)                                                               | le document existe avant qu'on s'y appuie |
 | E2  | ✅ bâti le 2026-10-24 (`f17c4d7c5`) — devenu « le BL suit la commande » + un réconciliateur. Rattrapage : un BL par commande déjà remise                                                                                                                                                                             | E3 doit trouver un BL partout             |
-| E3  | 🟧 prévu, repris dans E7.3 ([`reliquat/plan-e7-le-reliquat.md`](reliquat/plan-e7-le-reliquat.md)) ; la date de réception est recopiée sur le BL depuis E2. La date de réception sur le BL ; le retrait et la livraison remettent le BL                                                                               | la facture date des BL                    |
+| E3  | 🟧 prévu, repris dans E7.3 ([`reliquat/reliquat.md`](reliquat/reliquat.md)) ; la date de réception est recopiée sur le BL depuis E2. La date de réception sur le BL ; le retrait et la livraison remettent le BL                                                                                                     | la facture date des BL                    |
 | E4  | 🟡 E4a bâti le 2026-10-24 (`111537375`) ; E4b non bâti — la facture lit les montants facturables de la commande (E6c2). **La facture lit les BL** ; `invoice_delivery_note` ; migration des factures émises avec contrôle au centime                                                                                 | le cœur de l'argent, seul dans son lot    |
 | E5  | 🟡 E5a (`219eac683`) et E5b (`473093bdf`) bâtis le 2026-10-24 ; « commandé / livré / reste » reste à faire. Le PDF du BL ; « commandé / livré / reste » sur les écrans                                                                                                                                               | le client voit ce qui part                |
 | E6  | ✅ bâti le 2026-10-25 : E6a `f934db449`, E6b + E6c1 `05b74b7f6`, E6c2 `58fb48d9e`, E6d `c95188d91` — reste « abandonné » seulement. Le manque : signaler au colisage, décider (permission), BL partiel, reste à livrer — décisions de Hugo du 2026-10-24, reprises dans [`bon-de-livraison.md`](bon-de-livraison.md) | le premier BL partiel                     |
@@ -219,7 +219,7 @@ commandes du comptoir et à 0 €, l'unicité SQL des arrêts.
   2026-10-25 : leurs décisions (Q-E1-1, Q-E6-1 à Q-E6-3, les choix de
   l'assistant) sont au tableau « Les décisions » de
   [`bon-de-livraison.md`](bon-de-livraison.md).
-- Programme E7 : [`reliquat/plan-e7-le-reliquat.md`](reliquat/plan-e7-le-reliquat.md) — le reliquat, un cycle de vie par BL (choix A de Hugo, 2026-10-25).
+- Programme E7 : [`reliquat/reliquat.md`](reliquat/reliquat.md) — le reliquat, un cycle de vie par BL (choix A de Hugo, 2026-10-25).
 - Lot T : [`plan-t-commandes-de-test-par-le-vrai-chemin.md`](plan-t-commandes-de-test-par-le-vrai-chemin.md) — les commandes de test passent par le vrai chemin.
 - E5b bâti le 2026-10-24 : « confirmation de commande » dans les libellés (`473093bdf`).
 
@@ -308,7 +308,7 @@ ne vise que les particuliers, et n'est pas bâti.
 ni manquant ni réserve à la remise ; il n'existe ni avoir partiel ni litige
 (inventaire du 2026-10-24, G4 reporté par Hugo le même jour ; le document
 de l'inventaire est retiré le 2026-11-10, son contenu bâti vit dans
-[`reliquat/depart-incomplet.md`](reliquat/depart-incomplet.md)).
+[`reliquat/reliquat.md`](reliquat/reliquat.md)).
 
 **Ce qu'il faut.**
 

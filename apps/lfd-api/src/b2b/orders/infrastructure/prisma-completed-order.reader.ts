@@ -52,7 +52,7 @@ export interface CompletedRow {
  * Les montants rendus sont les **facturables** (`billable_*`, la somme des BL
  * remis — `OrderBilling.settlementOf`), pas ceux de la commande : un reste
  * abandonné (E6) ne rapporte pas de points (plan
- * `documentation/commandes/reliquat/plan-e7-reliquat-bati.md`, choix 16).
+ * `documentation/commandes/reliquat/reliquat.md`, choix 16).
  */
 @Injectable()
 export class PrismaCompletedOrderReader extends CompletedOrderReader {

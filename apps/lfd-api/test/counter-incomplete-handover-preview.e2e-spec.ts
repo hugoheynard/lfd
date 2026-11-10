@@ -1,6 +1,6 @@
 /**
  * E2E de **l'aperçu du départ incomplet au comptoir** (lot C1b, plan
- * `documentation/commandes/reliquat/depart-incomplet.md`, §4.1 —
+ * `documentation/commandes/reliquat/reliquat.md`, §2.2.1 —
  * Hugo, 2026-11-03) : `GET
  * /admin/counter/orders/:orderId/incomplete-handover`, sous
  * `handover_counter:read`.

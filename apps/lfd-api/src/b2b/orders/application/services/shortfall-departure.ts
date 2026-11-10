@@ -27,7 +27,7 @@ export interface ShortfallDepartureAct {
  * partagé par ses deux portes : la décision des managers
  * (`DecideOrderShortfallHandler`) et le départ décidé au comptoir
  * (`HandOverPackedAtCounterHandler`, plan
- * `documentation/commandes/reliquat/depart-incomplet.md`, §4.2 —
+ * `documentation/commandes/reliquat/reliquat.md`, §2.2.2 —
  * Hugo, 2026-11-03). Extrait plutôt que recopié : un champ ajouté un jour à
  * la décision ne doit pas n'être posé que d'un côté.
  *

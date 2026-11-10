@@ -105,7 +105,7 @@ par un) :
 (`ShortfallNotice`), le courrier, les reliquats et leur expédition
 (`order-remainder-settler`, `remainder-shipment`). Il écoute déjà le
 colisage par des faits (`on-packing-shortfall-reported` / `-cleared`). Doc
-d'état : [`reliquat/depart-incomplet.md`](reliquat/depart-incomplet.md).
+d'état : [`reliquat/reliquat.md`](reliquat/reliquat.md).
 
 **Le signe.** Ses propres agrégats, son propre cycle (constater, décider,
 écrire, relivrer) ; sa clé est la commande, mais son métier est « ce qu'on

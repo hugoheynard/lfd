@@ -14,7 +14,7 @@ import { HandOverPackedAtCounterCommand } from "./hand-over-packed-at-counter.co
 
 /**
  * **Le départ incomplet décidé au comptoir** (plan
- * `documentation/commandes/reliquat/depart-incomplet.md`, §4.2,
+ * `documentation/commandes/reliquat/reliquat.md`, §2.2.2,
  * piste C — Hugo, 2026-11-03, après `vitruve`).
  *
  * UNE transaction, les verrous dans l'ordre établi — commande, puis fiche :

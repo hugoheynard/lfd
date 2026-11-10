@@ -16,7 +16,7 @@ export const ON_ORDER_HANDED_OVER = "packing.leave-handed-over-sheet";
 
 /**
  * **Un envoi remis sort de la liste à coliser** (Hugo, 2026-11-03, option b ;
- * plan `documentation/commandes/reliquat/depart-incomplet.md`, §7).
+ * plan `documentation/commandes/reliquat/reliquat.md`, §8).
  *
  * Une commande remise au comptoir sans être colisée laissait sa fiche ouverte
  * au poste ; fermer le bac ensuite publiait `packing.order_packed`, que le

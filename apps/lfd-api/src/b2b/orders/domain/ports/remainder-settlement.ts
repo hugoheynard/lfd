@@ -12,7 +12,7 @@ export interface RemainderHandoverAct {
 
 /**
  * **Le dernier reste remis solde la commande** (plan
- * `documentation/commandes/reliquat/plan-e7-reliquat-bati.md`, choix 8, lot L5b).
+ * `documentation/commandes/reliquat/reliquat.md`, choix 8, lot L5b).
  *
  * Déclaré par les commandes, appelé par les bons de livraison dans l'unité de
  * travail qui remet le BL du reste, sous le verrou de la commande. Les

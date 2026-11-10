@@ -1,6 +1,6 @@
 /**
  * E2E du **manque par envoi** (plan E7 reliquat, lot LB —
- * `documentation/commandes/reliquat/plan-e7-reliquat-bati.md`, choix 11 et 15).
+ * `documentation/commandes/reliquat/reliquat.md`, choix 11 et 15).
  *
  * Ce que seul le vrai Postgres prouve : la table `order_shortfall` clée par
  * `(commande, rang)`, l'unicité de la décision par envoi et sa clé étrangère

@@ -1,6 +1,6 @@
 /**
  * Le rang de l'envoi en base, au fournil et au colisage (plan
- * `documentation/commandes/reliquat/plan-e7-reliquat-bati.md`, choix 5 et 14, lot
+ * `documentation/commandes/reliquat/reliquat.md`, choix 5 et 14, lot
  * L3b) : un reliquat du même jour a sa ligne de plan et sa feuille, distinctes
  * de celles de la commande, sur les mêmes clés étendues.
  *

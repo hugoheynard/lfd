@@ -14,7 +14,7 @@ export type CounterHandoverPreview =
 /**
  * **« Le comptoir peut-il remettre cette commande ? »** — sans rien écrire
  * ni verrouiller (lot C1b, plan
- * `documentation/commandes/reliquat/depart-incomplet.md`, §4.1 —
+ * `documentation/commandes/reliquat/reliquat.md`, §2.2.1 —
  * Hugo, 2026-11-03). Déclaré ET implémenté par le retrait, lu par le
  * commerce ; à part de {@link CounterHandoverDesk} (ISP) : une lecture ne
  * dépend pas d'un geste. Les mêmes règles que `CounterHandoverDesk.vet` —

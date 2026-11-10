@@ -2,7 +2,7 @@
 
 > **Étude, 2026-10-25. Rien n'est décidé, rien n'est bâti.** Demandée par Hugo
 > (« est-ce que la manière d'arrêter la journée est un frein ? ») avant de
-> reprendre le reliquat ([`reliquat/plan-e7-le-reliquat.md`](reliquat/plan-e7-le-reliquat.md)).
+> reprendre le reliquat ([`reliquat/todo-reliquat.md`](reliquat/todo-reliquat.md)).
 > Règle de Hugo : se rapprocher le plus de la réalité. Touche la production,
 > l'argent (annuler une commande produite) et le reliquat : `vitruve` avant
 > Hugo. Chaque affirmation sur le code a été ouverte le 2026-10-25 ; chemins

@@ -2,7 +2,7 @@ import type { OrderStatus } from "@lfd/contracts";
 
 /**
  * Les deux statuts qu'une remise du rang 1 peut écrire (plan
- * `documentation/commandes/reliquat/plan-e7-reliquat-bati.md`, choix 8, lot L5b).
+ * `documentation/commandes/reliquat/reliquat.md`, choix 8, lot L5b).
  */
 export type FirstHandoverStatus = Extract<OrderStatus, "fulfilled" | "partially_handed_over">;
 

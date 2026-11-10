@@ -37,7 +37,7 @@ export interface CompletedOrder {
   /**
    * Les marchandises **facturables** hors taxe, avant remise — centimes : la
    * somme des BL remis (`billable_*`), pas le total commandé. Un reste
-   * abandonné ne rapporte rien (plan `commandes/plan-e7-reliquat-bati.md`, choix 16).
+   * abandonné ne rapporte rien (plan `documentation/commandes/reliquat/reliquat.md`, choix 16).
    */
   readonly subtotalCents: number;
   /** La remise du point de retrait, **hors taxe** — centimes. */

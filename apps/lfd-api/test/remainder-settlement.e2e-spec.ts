@@ -1,6 +1,6 @@
 /**
  * E2E du **solde dérivé** (plan E7 reliquat, lot L5b —
- * `documentation/commandes/reliquat/plan-e7-reliquat-bati.md`, choix 8 et 18).
+ * `documentation/commandes/reliquat/reliquat.md`, choix 8 et 18).
  *
  * Ce que seul le vrai Postgres prouve : par les vrais gestes — la décision du
  * départ incomplet, le retrait du rang 1 au comptoir, le retrait du reste —,

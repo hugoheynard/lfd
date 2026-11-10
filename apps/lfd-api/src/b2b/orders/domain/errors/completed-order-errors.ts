@@ -5,7 +5,7 @@ import { TechnicalError } from "../../../../platform/shared/errors/app-error.js"
  * le solde aurait dû être posé dans l'unité de travail de la remise (E6c1).
  * Les points se calculent sur ce qui est PARTI, jamais sur ce qui a été
  * commandé — sans solde, on refuse plutôt que d'inventer un repli (plan
- * `documentation/commandes/reliquat/plan-e7-reliquat-bati.md`, choix 16).
+ * `documentation/commandes/reliquat/reliquat.md`, choix 16).
  */
 export class CompletedOrderUnsettledError extends TechnicalError {
   constructor(orderNumber: string) {

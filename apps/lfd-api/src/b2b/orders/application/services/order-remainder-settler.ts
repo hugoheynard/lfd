@@ -14,7 +14,7 @@ import { settlesOnRemainder } from "../../domain/services/shipment-settlement.js
 /**
  * **Le dernier reste remis solde la commande** — l'implémentation de
  * {@link RemainderSettlement} (plan
- * `documentation/commandes/reliquat/plan-e7-reliquat-bati.md`, choix 8, lot L5b).
+ * `documentation/commandes/reliquat/reliquat.md`, choix 8, lot L5b).
  *
  * Dans l'unité de travail de l'appelant, qui tient le verrou de la commande
  * et vient de remettre le BL du reste : la commande en partie retirée passe

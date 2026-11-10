@@ -205,7 +205,7 @@ describe("le crédit au fil de l'eau — remise ET encaissement", () => {
   });
 
   /**
-   * Choix 16 du plan reliquat (`commandes/plan-e7-reliquat-bati.md`) : les
+   * Choix 16 du plan reliquat (`documentation/commandes/reliquat/reliquat.md`) : les
    * points se lisent sur les montants FACTURABLES. Non vérifié au plan : que
    * la remise d'une carte les pose avant le crédit — sans quoi le crédit
    * refuserait. Les deux ordres des faits sont éprouvés.

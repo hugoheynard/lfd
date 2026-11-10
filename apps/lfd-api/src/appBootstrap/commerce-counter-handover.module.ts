@@ -10,7 +10,7 @@ import { HandoverModule } from "../handover/handover.module.js";
 
 /**
  * **Le départ incomplet au comptoir, relié** (plan
- * `documentation/commandes/reliquat/depart-incomplet.md`, §4.2 —
+ * `documentation/commandes/reliquat/reliquat.md`, §2.2.2 —
  * Hugo, 2026-11-03) : le retrait déclare ET implémente `CounterHandoverDesk`,
  * le commerce l'appelle dans la transaction de sa décision.
  *

@@ -21,7 +21,7 @@
  *   soit, est-il déjà retiré ?
  *
  * - `CounterHandoverDesk` (2026-11-03, plan
- *   `documentation/commandes/reliquat/depart-incomplet.md`) : publié
+ *   `documentation/commandes/reliquat/reliquat.md`) : publié
  *   ET implémenté par le retrait, appelé par le commerce dans la transaction
  *   du départ incomplet décidé au comptoir — juger, puis remettre.
  *

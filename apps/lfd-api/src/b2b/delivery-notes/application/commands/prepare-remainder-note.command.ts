@@ -1,6 +1,6 @@
 /**
  * **Le bac d'un reliquat est fermé** : son BL passe préparé (plan
- * `documentation/commandes/reliquat/plan-e7-reliquat-bati.md`, choix 4, lot L4a).
+ * `documentation/commandes/reliquat/reliquat.md`, choix 4, lot L4a).
  *
  * Seul l'abonné du colisage l'envoie, pour un envoi de rang > 1 : le rang 1
  * reste à `MarkOrderReadyCommand`, qui rend la COMMANDE prête et que son BL

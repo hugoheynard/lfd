@@ -11,7 +11,7 @@ import { B2B_API_BASE } from '../api/api-config';
 
 /**
  * **Le départ incomplet, au comptoir** (plan
- * `documentation/commandes/reliquat/depart-incomplet.md`, lot C2) —
+ * `documentation/commandes/reliquat/reliquat.md`, lot C2) —
  * sous `handover_counter`.
  *
  * L'aperçu ne promet rien : le geste rejuge tout sous verrou, et son refus se

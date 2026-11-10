@@ -345,7 +345,7 @@ export class PackingSheet {
   /**
    * **L'envoi est parti sans que le bac soit fermé** — le retrait l'a remis
    * (Hugo, 2026-11-03, option b ; plan
-   * `documentation/commandes/reliquat/depart-incomplet.md`, §7). La
+   * `documentation/commandes/reliquat/reliquat.md`, §8). La
    * fiche n'attend plus rien : elle sort de la liste à coliser, telle quelle.
    *
    * - **Rien au bac** (aucun contenant vivant) : la feuille est RETIRÉE par

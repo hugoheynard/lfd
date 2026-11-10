@@ -141,7 +141,7 @@ export class PlanClosedBeforeOrderCutoffError extends BusinessError {
 
 /**
  * Un envoi mal formé : commande vide, ou rang qui n'est pas un entier ≥ 1
- * (plan `documentation/commandes/reliquat/plan-e7-reliquat-bati.md`, choix 12).
+ * (plan `documentation/commandes/reliquat/reliquat.md`, choix 12).
  */
 export class InvalidShipmentRefError extends DomainError {
   constructor(orderId: string, rank: number) {

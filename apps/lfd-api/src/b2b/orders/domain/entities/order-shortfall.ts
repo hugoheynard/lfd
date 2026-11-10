@@ -142,7 +142,7 @@ export class OrderShortfall {
   /**
    * **Le signal posé par le commerce lui-même**, pour une décision prise
    * dans la même transaction — le départ incomplet au comptoir (plan
-   * `documentation/commandes/reliquat/depart-incomplet.md`, §4.2,
+   * `documentation/commandes/reliquat/reliquat.md`, §2.2.2,
    * étape 4 — Hugo, 2026-11-03). Il remplace un signal du poste en vigueur
    * (« Il manque » pressé juste avant) : le bac vient d'être relu sous le
    * verrou de la fiche, c'est lui qui part.
