@@ -332,8 +332,8 @@ expectedTotalCents)` (`order-change.applier.ts`) → `ReviseOrderCommand`.
   commit et le même push sur `main`**. Les trois workflows de déploiement
   partent en parallèle ; pendant les quelques minutes où l'API est neuve et un
   front ancien, une modification répond 400 — **la casse est admise en
-  pré-release** (`CLAUDE.md` §0) ; à décider par Hugo, sinon passage par un
-  champ optionnel puis obligatoire en deux déploiements.
+  pré-release** (`CLAUDE.md` §0) — **décidé par Hugo le 2026-11-10
+  (« option 1 »)** : un seul déploiement, pas de champ optionnel.
 - **R15. L'équipe ne fait pas de hausse carte** (Q3 a) :
   `ProposeCardIncreaseCommand` n'a que la route client ; l'équipe reçoit
   `CardOrderNotRevisableError` (raison `increase_by_staff`) avec le geste de
