@@ -1,4 +1,4 @@
-# Les domaines à découper dans `b2b/orders`
+# Les domaines à découper dans `lafoliecoffee/orders`
 
 > **Doc-first, 2026-11-10.** Un inventaire, pas un plan : ce qui, dans le bloc
 > des commandes, mériterait d'être isolé comme le paiement l'a été dans
@@ -8,7 +8,7 @@
 
 ## Partie 1 — l'idée simple
 
-`b2b/orders` est le plus gros bloc du dépôt : **716 fichiers** hors tests au
+`lafoliecoffee/orders` est le plus gros bloc du dépôt : **716 fichiers** hors tests au
 2026-11-10. Tout ce qui touche une commande y a été rangé, y compris ce qui a
 son propre métier.
 
@@ -40,7 +40,7 @@ flowchart LR
 ### 2.1 Le délai de commande (l'heure limite) — le plus utile
 
 **Aujourd'hui.** Les **réglages** sont bien rangés : le contexte
-`b2b/order-cutoffs` possède l'heure limite générale, les réglages par jour,
+`lafoliecoffee/order-cutoffs` possède l'heure limite générale, les réglages par jour,
 le « jour même », les jours de livraison. Mais le **jugement** — « est-ce trop
 tard pour ces articles, ce jour, cet acheteur, à cet instant, et qu'en
 fait-on ? » — vit dans `orders` : `OrderCutoffGate`
@@ -68,7 +68,7 @@ question à la même brique.
 **Une piste d'extraction** (2026-11-10, non contredite, appelants non lus un
 par un) :
 
-- **Pas de bloc neuf.** `b2b/order-cutoffs` possède déjà les réglages ; il
+- **Pas de bloc neuf.** `lafoliecoffee/order-cutoffs` possède déjà les réglages ; il
   devient aussi le propriétaire du **jugement**, et `orders` ne l'atteint plus
   que par une seule question.
 - **La question, unique :**
@@ -155,10 +155,11 @@ panier ? » (`prisma-sale-reference-usage.ts`) et, à vérifier, la passation.
 
 ### 2.5 Ce qui reste dans `orders`, rangé en sous-dossiers
 
-**L'annulation** (environ 60 fichiers) et **la modification** (environ 36,
-plus la hausse) agissent sur l'état de la commande à chaque étape : elles
-sont le cœur du bloc. Elles gagneraient un sous-dossier chacune
-(`orders/cancellation/`, `orders/revision/`), pas un contexte.
+**L'annulation** et **la modification** (hausse et baisse comprises) agissent
+sur l'état de la commande à chaque étape : elles sont le cœur du bloc, pas des
+contextes à part. Chacune a son sous-dossier depuis le 2026-11-10 :
+`orders/cancellation/` (87 fichiers) et `orders/revision/` (119 fichiers), aux
+mêmes couches que le reste des commandes.
 
 ## L'ordre proposé
 
