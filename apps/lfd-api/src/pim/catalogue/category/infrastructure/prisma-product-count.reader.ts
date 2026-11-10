@@ -3,8 +3,13 @@ import { Injectable } from "@nestjs/common";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import { ProductCountReader } from "../domain/ports/product-count.reader.js";
 
-/** « Active » = tout sauf archivée. La définition vit ICI, en un seul endroit. */
-const ACTIVE = { status: { not: "archived" } } as const;
+/**
+ * « Active » = tout sauf archivée — et sauf supprimée, qui est absente de tout
+ * le référentiel (`plan-effacer-une-fiche-archivee.md`). La définition vit ICI,
+ * en un seul endroit.
+ */
+const OUT_OF_CATALOGUE: ("archived" | "deleted")[] = ["archived", "deleted"];
+const ACTIVE = { status: { notIn: OUT_OF_CATALOGUE } };
 
 @Injectable()
 export class PrismaProductCountReader extends ProductCountReader {

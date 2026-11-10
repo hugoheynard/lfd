@@ -511,6 +511,8 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
   "product.unpublished": labelled(productOnSale()),
   "product.archived": labelled(skuAndName()),
   "product.restored": labelled(skuAndName()),
+  /** Une fiche archivée supprimée — un soft delete, la ligne reste (2026-11-10). */
+  "product.deleted": labelled(skuAndName()),
   /**
    * Une déclinaison archivée — hors vente, en base pour toujours
    * (`plan-gestes-de-declinaison.md`, D1, 2026-10-29). Né avec `subjectLabel`.

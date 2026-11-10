@@ -191,6 +191,52 @@ export class NotArchivedProductNotRestorableError extends BusinessError {
   }
 }
 
+/** Le statut d'une fiche dans les mots de l'écran, pour les refus qui le nomment. */
+const STATUS_WORDS: Readonly<Record<string, string>> = {
+  draft: "en brouillon",
+  published: "en ligne",
+  archived: "archivée",
+};
+
+function notDeletableMessage(status: string): string {
+  if (status === "deleted") {
+    return "Cette fiche est déjà supprimée : il n'y a plus rien à supprimer.";
+  }
+  return (
+    `Cette fiche est ${STATUS_WORDS[status] ?? status} : seule une fiche archivée se supprime. ` +
+    `L'archiver d'abord depuis la liste des produits.`
+  );
+}
+
+/**
+ * On ne supprime que ce qui est archivé (`plan-effacer-une-fiche-archivee.md`,
+ * v4). Le message nomme le statut réel et le geste de sortie : une fiche en
+ * vente s'archive d'abord, ce qui la retire du commerce.
+ */
+export class NotArchivedProductNotDeletableError extends BusinessError {
+  constructor(
+    readonly productId: string,
+    readonly status: string,
+  ) {
+    super("catalogue.product.not_archived_not_deletable", notDeletableMessage(status));
+  }
+}
+
+/**
+ * Une fiche supprimée ne redevient rien depuis l'écran — ni archivée, ni en
+ * ligne. Si la suppression était une erreur, le fait `product.deleted` du
+ * journal la retrouve, et la remettre en archives est un geste d'entretien.
+ */
+export class DeletedProductNotChangeableError extends BusinessError {
+  constructor(readonly productId: string) {
+    super(
+      "catalogue.product.deleted",
+      "Cette fiche a été supprimée : elle ne s'archive ni ne se publie plus. " +
+        "La remettre en archives demande un geste d'entretien — le journal garde son SKU et son nom.",
+    );
+  }
+}
+
 /**
  * Une dérogation de taux visant un contexte que le registre ne connaît pas.
  *

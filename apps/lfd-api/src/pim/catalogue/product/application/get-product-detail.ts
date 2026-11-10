@@ -3,6 +3,7 @@ import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import { Clock } from "../../../../platform/time/clock.js";
 import { PimJournalReader } from "../../../journal/pim-journal-reader.js";
 import { isContentFact } from "../domain/content-facts.js";
+import { ProductNotFoundError } from "../domain/errors/product-errors.js";
 import { EditorialReader } from "../domain/ports/editorial-reader.js";
 import type { ProductEditorialView, ProductMediaRecord } from "../domain/ports/editorial-reader.js";
 import {
@@ -90,6 +91,12 @@ export class GetProductDetailHandler implements IQueryHandler<
     const product = await this.products.findById(query.id);
     if (product === null) {
       return null;
+    }
+    // Une supprimée est absente partout, son détail compris : un 404 nommé
+    // (`plan-effacer-une-fiche-archivee.md`, point 5). L'inconnue garde son
+    // `null` d'avant — un contrat servi qu'on ne change pas en passant.
+    if (product.status === "deleted") {
+      throw new ProductNotFoundError(query.id);
     }
     const [editorial, media, readiness, contentUpdatedAt, category, lineage] = await Promise.all([
       this.editorials.findByProduct(query.id),

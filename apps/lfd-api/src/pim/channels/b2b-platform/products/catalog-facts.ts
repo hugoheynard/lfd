@@ -35,6 +35,10 @@ const STATUS_OF: Readonly<Record<ProductStatus, CatalogEntryStatus>> = {
   draft: "inactive",
   published: "active",
   archived: "archived",
+  // Une supprimée est une archivée pour le commerce : son miroir l'a déjà
+  // retirée à l'archivage, et n'a pas à connaître la différence
+  // (`plan-effacer-une-fiche-archivee.md`, point 3).
+  deleted: "archived",
 };
 
 /** La famille telle qu'un fait la porte — celle d'une fiche, ou la sienne. */

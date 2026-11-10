@@ -67,6 +67,7 @@ const TOUCHES: Readonly<Record<string, readonly string[] | "changes" | "*">> = {
   [PIM_EVENTS.productUnpublished]: ["status"],
   [PIM_EVENTS.productArchived]: ["status"],
   [PIM_EVENTS.productRestored]: ["status"],
+  [PIM_EVENTS.productDeleted]: ["status"],
   [PIM_EVENTS.productCreated]: "*",
   // Né d'une déclinaison détachée : tout ce qu'il porte vient de ce geste.
   [PIM_EVENTS.productCreatedFromVariant]: "*",

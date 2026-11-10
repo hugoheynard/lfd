@@ -76,6 +76,12 @@ code {
   gap: var(--fold-space-xs);
 }
 
+.name-cell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
 .row-actions {
   display: flex;
   gap: 0.4rem;

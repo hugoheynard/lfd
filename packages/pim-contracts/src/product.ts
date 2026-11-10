@@ -18,8 +18,12 @@ import type { LocalizedText } from "./shared.js";
 export const productKindSchema = z.enum(["daily", "made_to_order", "resale"]);
 export type ProductKind = z.infer<typeof productKindSchema>;
 
-/** État de publication — rendu seulement (jamais un payload). */
-export type ProductStatus = "draft" | "published" | "archived";
+/**
+ * État de publication — rendu seulement (jamais un payload). `deleted` n'est
+ * jamais SERVI par l'API (une supprimée est absente de toute lecture) ; il est
+ * au type parce que c'est l'état de l'agrégat (`plan-effacer-une-fiche-archivee.md`).
+ */
+export type ProductStatus = "draft" | "published" | "archived" | "deleted";
 
 /**
  * Valeurs nutritionnelles pour 100 g en **entrée** — chaque champ optionnel.

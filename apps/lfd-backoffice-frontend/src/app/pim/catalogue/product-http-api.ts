@@ -551,6 +551,11 @@ export class ProductHttpApi {
     return this.put(`products/${id}/archive`, {});
   }
 
+  /** Supprime une fiche ARCHIVÉE (soft delete) ; le serveur refuse tout autre état (409). */
+  async deleteProduct(id: string): Promise<void> {
+    await firstValueFrom(this.http.delete(this.url(`products/${id}`)));
+  }
+
   restore(id: string): Promise<void> {
     return this.put(`products/${id}/restore`, {});
   }

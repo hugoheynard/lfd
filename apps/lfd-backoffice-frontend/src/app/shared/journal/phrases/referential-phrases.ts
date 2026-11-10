@@ -407,6 +407,7 @@ export const REFERENTIAL_PHRASES = {
   'product.unpublished': onSale('a retiré de la vente', ''),
   'product.archived': onProduct('a archivé'),
   'product.restored': onProduct('a restauré'),
+  'product.deleted': onProduct('a supprimé'),
   'product.ingredients_saved': ingredientsSaved,
 
   // La MÉDIATHÈQUE. Rangée ici parce que la bibliothèque vit encore dans le

@@ -12,6 +12,8 @@ export type ProductRecord = ProductSnapshot;
 export type VariantRecord = VariantSnapshot;
 export type VariantNutritionView = VariantNutritionSnapshot;
 export type { ProductKind, ProductStatus } from "../entities/product.js";
+/** Re-exporté : les lecteurs du read model écartent les fiches mortes sans ouvrir l'agrégat. */
+export { isLiveStatus } from "../entities/product.js";
 
 /**
  * Port d'écriture : il rend et reprend l'**agrégat**.

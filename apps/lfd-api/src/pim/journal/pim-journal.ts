@@ -301,6 +301,12 @@ export const PIM_EVENTS = {
   productArchived: "product.archived",
   productRestored: "product.restored",
   /**
+   * **Une fiche archivée supprimée** — un soft delete, la ligne reste
+   * (`plan-effacer-une-fiche-archivee.md`, v4). Le fait porte le SKU et le
+   * nom : c'est par lui qu'on la retrouve si la suppression était une erreur.
+   */
+  productDeleted: "product.deleted",
+  /**
    * **Une déclinaison archivée** — hors vente, en base pour toujours
    * (`plan-gestes-de-declinaison.md`, D1). Préfixé `product.` comme le plan
    * le nomme : les deux gardes exhaustives (`content-facts.ts`,

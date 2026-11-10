@@ -56,7 +56,8 @@ export type StatusFilter =
   | typeof BLOCKING
   | typeof TO_REVIEW
   | typeof PRECAUTIONARY
-  | ProductStatus;
+  // Une supprimée n'est jamais servie : elle n'est pas un état qu'on filtre.
+  | Exclude<ProductStatus, 'deleted'>;
 
 /** Le pire constat d'une fiche, `null` sans constat — lu, jamais jugé ici. */
 export type ComplianceStateOf = (product: Product) => ComplianceState | null;

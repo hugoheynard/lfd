@@ -36,7 +36,7 @@ export interface VariantPropagation {
 export interface ProductPropagation {
   readonly productId: string;
   readonly name: string;
-  readonly status: Exclude<ProductStatus, "archived">;
+  readonly status: Exclude<ProductStatus, "archived" | "deleted">;
   readonly variants: readonly VariantPropagation[];
 }
 

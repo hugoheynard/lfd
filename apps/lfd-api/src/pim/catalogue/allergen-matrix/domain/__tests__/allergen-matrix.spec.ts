@@ -217,6 +217,11 @@ describe("buildAllergenMatrix — le périmètre et les filtres", () => {
     expect(rowsOf([product("a", { status: "archived" })], { scope: "all" })).toEqual([]);
   });
 
+  /** `plan-effacer-une-fiche-archivee.md`, point 5 : une supprimée est absente partout. */
+  it("n'inclut jamais une supprimée, même sur « tous »", () => {
+    expect(rowsOf([product("s", { status: "deleted" })], { scope: "all" })).toEqual([]);
+  });
+
   it("écarte les non renseignés sur demande", () => {
     expect(rowsOf([product("vide"), published], { includeUndeclared: false })).toHaveLength(1);
   });

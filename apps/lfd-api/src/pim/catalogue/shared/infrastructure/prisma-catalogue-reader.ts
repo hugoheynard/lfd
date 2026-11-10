@@ -16,6 +16,7 @@ import {
   type ProductEditorialView,
 } from "../../product/domain/ports/editorial-reader.js";
 import {
+  isLiveStatus,
   ProductRepository,
   type ProductRecord,
 } from "../../product/domain/ports/product.repository.js";
@@ -44,7 +45,8 @@ export class PrismaCatalogueReader extends CatalogueReader {
   }
 
   /**
-   * Un produit archivé n'a rien à faire sur un canal de vente.
+   * Un produit archivé n'a rien à faire sur un canal de vente — une supprimée
+   * encore moins.
    *
    * Le port d'écriture rend des agrégats ; le lecteur en rend l'instantané —
    * une projection n'a rien à muter, et lui tendre des méthodes serait
@@ -52,7 +54,7 @@ export class PrismaCatalogueReader extends CatalogueReader {
    */
   async publishable(): Promise<ProductRecord[]> {
     const all = await this.products.listAll();
-    return all.filter((product) => product.status !== "archived").map((p) => p.snapshot());
+    return all.filter((product) => isLiveStatus(product.status)).map((p) => p.snapshot());
   }
 
   async byIds(ids: readonly string[]): Promise<ProductRecord[]> {

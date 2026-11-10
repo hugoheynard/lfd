@@ -1,7 +1,9 @@
 import {
   ArchivedProductNotPublishableError,
   ArchivedProductNotWithdrawableError,
+  DeletedProductNotChangeableError,
   InvalidProductVariantsError,
+  NotArchivedProductNotDeletableError,
   NotArchivedProductNotRestorableError,
   ProductUnknownContextError,
   VariantNotFoundError,
@@ -46,7 +48,23 @@ import { PricingAlignmentAcrossUnitsError } from "../errors/sale-unit-errors.js"
 import type { CompletenessRules } from "../services/variant-completeness.js";
 
 export type ProductKind = "daily" | "made_to_order" | "resale";
-export type ProductStatus = "draft" | "published" | "archived";
+/**
+ * `deleted` : une fiche archivée qu'on a **supprimée** — elle disparaît de tout
+ * le référentiel, archives comprises, mais la ligne reste en base et son SKU
+ * reste pris (`documentation/pim/plan-effacer-une-fiche-archivee.md`, v4). Un
+ * soft delete, parce que le dépôt n'efface pas un agrégat métier.
+ */
+export type ProductStatus = "draft" | "published" | "archived" | "deleted";
+
+/**
+ * La fiche est-elle **vivante** — brouillon ou en ligne ? Une archivée est
+ * sortie du catalogue, une supprimée de tout. La définition vit ici pour que
+ * chaque lecteur qui écartait `archived` écarte aussi `deleted` sans réécrire
+ * la liste.
+ */
+export function isLiveStatus(status: ProductStatus): boolean {
+  return status === "draft" || status === "published";
+}
 
 /**
  * Ce qu'un verbe de cycle de vie a **réellement** fait.
@@ -507,6 +525,7 @@ export class Product {
     citedAllergens: readonly string[],
     categoryAudience: Audience,
   ): StatusChanged {
+    this.refuseIfDeleted();
     if (this.statusValue === "archived") {
       throw new ArchivedProductNotPublishableError(this.identity);
     }
@@ -550,8 +569,12 @@ export class Product {
   /**
    * Retire de la vente sans supprimer. Idempotent — l'archivage en lot passe par
    * là, et une sélection contient couramment ce qui l'est déjà.
+   *
+   * Refuse une **supprimée** : elle ne redevient rien par l'écran, pas même
+   * archivée. La remettre en archives est un geste d'entretien.
    */
   archive(): StatusChanged {
+    this.refuseIfDeleted();
     if (this.statusValue === "archived") {
       return false;
     }
@@ -573,6 +596,31 @@ export class Product {
     }
     this.statusValue = "draft";
     return true;
+  }
+
+  /**
+   * **Supprime** une fiche archivée — un soft delete : elle sort de tout le
+   * référentiel, la ligne reste, le SKU reste pris.
+   *
+   * Seule une archivée se supprime : une fiche en vente ou en brouillon
+   * s'archive d'abord, ce qui la retire du miroir du commerce. Le refus vaut
+   * aussi pour une fiche déjà supprimée — il n'y a pas de « déjà supprimée »
+   * à taire, puisque l'écran ne la montre plus : la demande vient d'ailleurs.
+   *
+   * @throws {NotArchivedProductNotDeletableError} la fiche n'est pas archivée.
+   */
+  delete(): void {
+    if (this.statusValue !== "archived") {
+      throw new NotArchivedProductNotDeletableError(this.identity, this.statusValue);
+    }
+    this.statusValue = "deleted";
+  }
+
+  /** Une supprimée ne redevient rien depuis l'écran (plan v4, point 2). */
+  private refuseIfDeleted(): void {
+    if (this.statusValue === "deleted") {
+      throw new DeletedProductNotChangeableError(this.identity);
+    }
   }
 
   /**

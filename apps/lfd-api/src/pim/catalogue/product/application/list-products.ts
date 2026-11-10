@@ -57,11 +57,14 @@ export class ListProductsHandler implements IQueryHandler<ListProductsQuery, Pro
    * rattachement cassé ne se maquille pas en héritage.
    */
   async execute(): Promise<ProductListItem[]> {
-    const [products, categories, rules] = await Promise.all([
+    const [all, categories, rules] = await Promise.all([
       this.products.listAll(),
       this.categories.listAll(),
       readCompletenessRules(this.contexts),
     ]);
+    // Les archivées restent (l'onglet « Archivées ») ; les supprimées sortent
+    // de la liste, archives comprises (`plan-effacer-une-fiche-archivee.md`).
+    const products = all.filter((product) => product.status !== "deleted");
     const audiences = new Map<string, Audience>(
       categories.map((category) => [category.id, category.audience]),
     );

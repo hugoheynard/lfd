@@ -133,11 +133,12 @@ const CONTENT_FACTS: Readonly<Record<string, boolean>> = {
   [PIM_EVENTS.productDefaultVariantChanged]: true,
 
   // ── Ce qui ne dit rien du contenu ───────────────────────────────────────
-  // Les quatre transitions de statut. Elles décident de ce que le catalogue
+  // Les cinq transitions de statut. Elles décident de ce que le catalogue
   // fait de la fiche, pas de ce qu'elle dit.
   [PIM_EVENTS.productPublished]: false,
   [PIM_EVENTS.productUnpublished]: false,
   [PIM_EVENTS.productArchived]: false,
+  [PIM_EVENTS.productDeleted]: false,
   [PIM_EVENTS.productRestored]: false,
   // Les visuels, sortis du contenu le 2026-09-23 (voir l'amendement en tête de
   // fichier). Ils restent journalisés, datés et attribués : c'est la relecture

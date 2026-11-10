@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
 import {
+  isLiveStatus,
   ProductRepository,
   type ProductRecord,
 } from "../../product/domain/ports/product.repository.js";
@@ -29,7 +30,7 @@ export class RepositoryAllergenMatrixSource extends AllergenMatrixSource {
 
   async products(): Promise<readonly ProductRecord[]> {
     const all = await this.productRepository.listAll();
-    return all.filter((product) => product.status !== "archived").map((p) => p.snapshot());
+    return all.filter((product) => isLiveStatus(product.status)).map((p) => p.snapshot());
   }
 
   async families(): Promise<readonly MatrixFamilyRecord[]> {

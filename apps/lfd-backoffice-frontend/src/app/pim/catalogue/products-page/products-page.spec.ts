@@ -7,6 +7,7 @@ import type { ProductComplianceFinding, ProductComplianceWarningView } from '@lf
 
 import { CatalogueApi, type Category, type Product } from '../catalogue-api';
 import { NotifyService } from '../../../notify.service';
+import { PermissionsStore } from '../../../auth/permissions.store';
 import type { ProductStatus } from '../../data/models';
 import { ProductsPage } from './products-page';
 
@@ -51,11 +52,22 @@ async function render(
   products: readonly Product[] = PRODUCTS,
   compliance: () => Promise<readonly ProductComplianceWarningView[]> = () => Promise.resolve([]),
   notices: string[] = [],
+  deletion: {
+    readonly canWrite?: boolean;
+    readonly deleteProduct?: (id: string) => Promise<void>;
+  } = {},
 ) {
   TestBed.configureTestingModule({
     imports: [ProductsPage],
     providers: [
       provideRouter([]),
+      {
+        provide: PermissionsStore,
+        useValue: {
+          can: (permission: string) =>
+            permission !== 'pim_catalog:write' || deletion.canWrite === true,
+        },
+      },
       { provide: NotifyService, useValue: { info: (message: string) => notices.push(message) } },
       {
         provide: CatalogueApi,
@@ -65,6 +77,7 @@ async function render(
           listVatRates: () => Promise.resolve([]),
           publishProduct,
           listComplianceWarnings: compliance,
+          deleteProduct: deletion.deleteProduct ?? (() => Promise.resolve()),
         },
       },
       {
@@ -455,5 +468,93 @@ describe('ProductsPage — « Activer la sélection »', () => {
         "Les constats de conformité n'ont pas pu être lus",
       );
     });
+  });
+});
+
+describe('ProductsPage — supprimer une fiche archivée', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  const deleteButtons = (element: HTMLElement): readonly HTMLButtonElement[] => [
+    ...element.querySelectorAll<HTMLButtonElement>('[data-products-delete] button'),
+  ];
+
+  /** Ouvre la confirmation de la première ligne, puis confirme. */
+  async function confirmFirst(element: HTMLElement, settle: () => Promise<void>): Promise<void> {
+    deleteButtons(element)[0]?.click();
+    await settle();
+    const confirm = [
+      ...element.querySelectorAll<HTMLButtonElement>('[data-products-delete] button'),
+    ]
+      .filter((b) => b.textContent?.trim() !== 'Supprimer')
+      .find(
+        (b) =>
+          !/annul|cancel/i.test(`${b.textContent ?? ''} ${b.getAttribute('aria-label') ?? ''}`),
+      );
+    confirm?.click();
+    await settle();
+    await new Promise((resolve) => setTimeout(resolve));
+    await settle();
+  }
+
+  it('n’offre le bouton que sur l’onglet « Archivées »', async () => {
+    const { element } = await render({}, undefined, PRODUCTS, undefined, [], { canWrite: true });
+    expect(deleteButtons(element)).toHaveLength(0);
+  });
+
+  it('n’offre pas le bouton sans le droit d’écrire le catalogue', async () => {
+    const { element } = await render({ etat: 'archived' }, undefined, PRODUCTS, undefined, [], {
+      canWrite: false,
+    });
+    expect(rows(element)).toEqual(['P3', 'V2']);
+    expect(deleteButtons(element)).toHaveLength(0);
+  });
+
+  it('répète SKU et nom, appelle la suppression, et retire la ligne', async () => {
+    const deleteProduct = vi.fn(() => Promise.resolve());
+    const { element, settle } = await render(
+      { etat: 'archived' },
+      undefined,
+      PRODUCTS,
+      undefined,
+      [],
+      {
+        canWrite: true,
+        deleteProduct,
+      },
+    );
+    expect(deleteButtons(element).map((b) => b.textContent?.trim())).toEqual([
+      'Supprimer',
+      'Supprimer',
+    ]);
+    deleteButtons(element)[0]?.click();
+    await settle();
+    expect(element.textContent).toContain('Supprimer P3 — Fiche p3 ?');
+    expect(element.textContent).toContain('Son SKU reste réservé.');
+    await confirmFirst(element, settle);
+    expect(deleteProduct).toHaveBeenCalledWith('p3');
+    expect(rows(element)).toEqual(['V2']);
+  });
+
+  it('affiche le refus sous la ligne, qui reste', async () => {
+    const refusal = new HttpErrorResponse({
+      status: 409,
+      error: { message: 'Seule une fiche archivée peut être supprimée.' },
+    });
+    const { element, settle } = await render(
+      { etat: 'archived' },
+      undefined,
+      PRODUCTS,
+      undefined,
+      [],
+      {
+        canWrite: true,
+        deleteProduct: () => Promise.reject(refusal),
+      },
+    );
+    await confirmFirst(element, settle);
+    expect(rows(element)).toEqual(['P3', 'V2']);
+    expect(element.querySelector('[data-products-delete-error]')?.textContent).toContain(
+      'Seule une fiche archivée peut être supprimée.',
+    );
   });
 });

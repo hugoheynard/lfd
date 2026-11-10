@@ -1,5 +1,5 @@
 import { AllergenCatalogueReader } from "../../../allergens/domain/ports/allergen-catalogue.reader.js";
-import type { Product } from "../domain/entities/product.js";
+import { isLiveStatus, type Product } from "../domain/entities/product.js";
 import { PropagationIngredientNotFoundError } from "../domain/errors/propagation-errors.js";
 import type { CitedIngredient } from "../domain/ports/ingredient-citations.reader.js";
 import { IngredientCitationsReader } from "../domain/ports/ingredient-citations.reader.js";
@@ -53,7 +53,7 @@ export async function loadPropagationPlan(
     })),
   );
   const planned = loaded.flatMap(({ citing, product }) =>
-    product === null || product.status === "archived"
+    product === null || !isLiveStatus(product.status)
       ? []
       : [{ product, propagation: planOf(product, change, citing.otherCited, archived) }],
   );

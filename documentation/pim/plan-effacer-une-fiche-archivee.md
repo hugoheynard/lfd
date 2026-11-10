@@ -80,14 +80,14 @@ partira d'un statut déjà posé.
    statut réel) ; `restore()` refuse une `deleted` avec le même refus
    qu'aujourd'hui (elle n'est pas archivée) ; `archive()` sur une `deleted`
    refuse aussi — une supprimée ne redevient rien par l'écran.
-3. `DeleteProductCommand` + handler (un fichier `delete-product` à créer, colocalisé, style
-   PIM) : `requireProduct` → `product.delete()` → dans `uow.run` : journal
+3. `DeleteProductCommand` + handler (`apps/lfd-api/src/pim/catalogue/product/application/delete-product.ts`,
+   colocalisé, style PIM) : `requireProduct` → `product.delete()` → dans `uow.run` : journal
    `PIM_EVENTS.productDeleted` (`product.deleted`, charge
    `{ subjectLabel, sku, name }`), `save`, `emitProducts([id])` — le fait
    partant porte `STATUS_OF.deleted = "archived"` : le miroir ne connaît pas
    la différence, et n'a pas à la connaître.
 4. Route `DELETE pim/catalogue/products/:id` sous `pim_catalog:write`, dans un
-   contrôleur à part (un fichier `product-deletion.controller` à créer, `@Controller("catalogue/products")`
+   contrôleur à part (`apps/lfd-api/src/pim/catalogue/product/http/product-deletion.controller.ts`, `@Controller("catalogue/products")`
    — `product.controller.ts` dépasse déjà 300 lignes).
 5. **Une supprimée est absente partout** : chaque lecteur de la liste
    ci-dessus est relu ; ceux qui filtrent par `published` ne bougent pas ;

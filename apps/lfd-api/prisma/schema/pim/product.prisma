@@ -10,6 +10,7 @@ enum ProductStatus {
   draft
   published
   archived
+  deleted
 
   @@schema("pim")
 }
@@ -315,10 +316,10 @@ model ProductVariant {
 
   /// Devenue ce produit par détachement (`plan-gestes-de-declinaison.md`, G2) ;
   /// posée avec `is_discontinued`, elle interdit de la désarchiver.
-  detachedToProductId String?   @map("detached_to_product_id")
-  detachedToProduct   Product?  @relation("VariantDetachedToProduct", fields: [detachedToProductId], references: [id], onDelete: Restrict)
+  detachedToProductId   String?          @map("detached_to_product_id")
+  detachedToProduct     Product?         @relation("VariantDetachedToProduct", fields: [detachedToProductId], references: [id], onDelete: Restrict)
   /// Les produits nés d'elle (au plus un).
-  originOf            Product[] @relation("ProductOriginVariant")
+  originOf              Product[]        @relation("ProductOriginVariant")
   /// **La déclinaison d'origine** de celle-ci, quand elle est la copie qu'un
   /// détachement a fait naître (`plan-pro-voit-les-declinaisons.md`, « Trace
   /// de la déclinaison d'origine »). Écrite à la naissance, jamais réécrite :

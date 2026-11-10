@@ -4,9 +4,10 @@ import type { AllergenCategoryView } from "../../../allergens/domain/ports/aller
 import { IncoProjector } from "../../../allergens/domain/services/inco-projector.js";
 import type { IncoCategory } from "../../../allergens/domain/value-objects/inco-category.js";
 import { CategoryNotFoundError } from "../../category/domain/errors/category-errors.js";
-import type {
-  ProductRecord,
-  VariantRecord,
+import {
+  isLiveStatus,
+  type ProductRecord,
+  type VariantRecord,
 } from "../../product/domain/ports/product.repository.js";
 import type { LocalizedText } from "../../shared/domain/value-objects/localized-text.js";
 import {
@@ -140,7 +141,7 @@ function inScope(
 ): boolean {
   const statusOk = filters.scope === "all" || product.status === "published";
   const familyOk = wanted === null || wanted.has(product.categoryId);
-  return product.status !== "archived" && statusOk && familyOk;
+  return isLiveStatus(product.status) && statusOk && familyOk;
 }
 
 /** La famille demandée ET toutes ses descendantes ; `null` = pas de filtre. */

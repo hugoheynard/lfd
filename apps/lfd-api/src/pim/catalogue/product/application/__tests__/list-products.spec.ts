@@ -120,3 +120,18 @@ describe("ListProductsHandler — l'activabilité", () => {
     },
   );
 });
+
+/** `plan-effacer-une-fiche-archivee.md`, point 5 : une supprimée est absente partout. */
+describe("ListProductsHandler — les fiches supprimées", () => {
+  it("garde une archivée (l'onglet « Archivées »)", async () => {
+    const items = await listing(tarte({ status: "archived" }), family("pro")).execute();
+
+    expect(items.map((item) => item.status)).toEqual(["archived"]);
+  });
+
+  it("n'en rend aucune supprimée, archives comprises", async () => {
+    const items = await listing(tarte({ status: "deleted" }), family("pro")).execute();
+
+    expect(items).toEqual([]);
+  });
+});

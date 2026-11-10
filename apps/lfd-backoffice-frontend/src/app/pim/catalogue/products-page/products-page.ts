@@ -15,6 +15,7 @@ import {
   FoldDropdownItemComponent,
   FoldElementTitleComponent,
   FoldInfoComponent,
+  FoldInlineConfirmComponent,
   FoldLinkComponent,
   FoldPageLayoutComponent,
   FoldPaginatorComponent,
@@ -38,6 +39,7 @@ import {
   type ComplianceBadge,
 } from '../product-compliance';
 import { NotifyService } from '../../../notify.service';
+import { PermissionsStore } from '../../../auth/permissions.store';
 import type { ProductComplianceFinding } from '@lfd/pim-contracts';
 import type { ProductStatus } from '../../data/models';
 import {
@@ -79,6 +81,7 @@ import { nextSort, sortRows } from './products-sort';
     FoldPopoverTriggerDirective,
     FoldElementTitleComponent,
     FoldInfoComponent,
+    FoldInlineConfirmComponent,
     FoldLinkComponent,
     FoldButtonIconComponent,
     FoldViewToggleComponent,
@@ -92,6 +95,16 @@ export class ProductsPage {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly notify = inject(NotifyService);
+  private readonly permissions = inject(PermissionsStore);
+
+  /** Supprimer une archivée demande l'écriture du catalogue. */
+  protected readonly canWrite = computed(() => this.permissions.can('pim_catalog:write'));
+  /** Les supprimables : l'onglet « Archivées » seulement, et avec le droit. */
+  protected readonly canDelete = computed(
+    () => this.canWrite() && this.filter().status === 'archived',
+  );
+  /** L'échec d'une suppression, rangé sous la ligne concernée. */
+  protected readonly deleteErrors = signal<ReadonlyMap<string, string>>(new Map());
 
   protected readonly products = signal<Product[]>([]);
   protected readonly categories = signal<Category[]>([]);
@@ -421,6 +434,33 @@ export class ProductsPage {
 
   protected async archive(product: Product): Promise<void> {
     await this.run(() => this.api.archiveProduct(product.id));
+  }
+
+  /** La phrase de confirmation : elle répète SKU et nom, pour qu'on sache laquelle part. */
+  protected deleteMessage(product: Product): string {
+    return `Supprimer ${product.sku} — ${product.name.fr} ? La fiche disparaîtra du référentiel, archives comprises. Son SKU reste réservé.`;
+  }
+
+  /** Au succès la ligne disparaît ; un refus reste sous la ligne, avec le message du serveur. */
+  protected async deleteArchived(product: Product): Promise<void> {
+    this.setDeleteError(product.id, null);
+    try {
+      await this.api.deleteProduct(product.id);
+      this.products.update((list) => list.filter((p) => p.id !== product.id));
+      this.selection.update((keys) => new Set([...keys].filter((key) => key !== product.id)));
+    } catch (caught) {
+      this.setDeleteError(product.id, failureMessageOf(caught));
+    }
+  }
+
+  private setDeleteError(id: string, message: string | null): void {
+    const next = new Map(this.deleteErrors());
+    if (message === null) {
+      next.delete(id);
+    } else {
+      next.set(id, message);
+    }
+    this.deleteErrors.set(next);
   }
 
   // ── Actions groupées (sur la sélection) ──────────────────────────────────

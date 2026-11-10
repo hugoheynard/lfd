@@ -5,7 +5,7 @@ import { ActiveSalesContextsReader } from "../../../sales-contexts/domain/ports/
 import { CatalogueReader } from "../../shared/domain/ports/catalogue-reader.js";
 import type { ComplianceFinding } from "../domain/services/product-compliance.js";
 import { CitedAllergensReader } from "../domain/ports/cited-allergens.reader.js";
-import { ProductRepository } from "../domain/ports/product.repository.js";
+import { isLiveStatus, ProductRepository } from "../domain/ports/product.repository.js";
 import { readCompletenessRules } from "./completeness-support.js";
 import { CategoryNotFoundError } from "../../category/domain/errors/category-errors.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
@@ -48,7 +48,8 @@ export class ListProductComplianceWarningsHandler implements IQueryHandler<
     const audiences = new Map<string, Audience>(
       categories.map((category) => [category.id, category.audience]),
     );
-    const live = all.filter((product) => product.status !== "archived");
+    // Archivées et supprimées n'ont rien à corriger : elles ne partent nulle part.
+    const live = all.filter((product) => isLiveStatus(product.status));
     const [vat, cited] = await Promise.all([
       this.catalogue.vatPercents(live.map((product) => product.snapshot())),
       this.cited.ofProducts(live.map((product) => product.id)),

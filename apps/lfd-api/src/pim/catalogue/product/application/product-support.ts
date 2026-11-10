@@ -28,7 +28,8 @@ export function namedVariant(
 }
 
 /**
- * La seule garde vraiment partagée : charger un produit ou refuser.
+ * La seule garde vraiment partagée : charger un produit ou refuser — une
+ * fiche inconnue ou supprimée est refusée de la même façon (404).
  *
  * `requireVariant` a disparu : l'appartenance d'une déclinaison à son produit
  * n'était pas un invariant d'existence mais un invariant de l'agrégat, et
@@ -37,7 +38,11 @@ export function namedVariant(
  */
 export async function requireProduct(products: ProductRepository, id: string): Promise<Product> {
   const product = await products.findById(id);
-  if (product === null) {
+  // Une fiche supprimée est absente pour TOUS les gestes, pas seulement pour
+  // ceux que l'agrégat garde : renommer, tarifer, déclarer prête passaient
+  // sur elle par une requête forgée (soft delete, 2026-11-10). La refuser ici,
+  // à la seule porte de chargement des commandes, couvre les trente d'un coup.
+  if (product === null || product.status === "deleted") {
     throw new ProductNotFoundError(id);
   }
   return product;

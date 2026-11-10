@@ -113,6 +113,11 @@ export class CatalogueApi {
     await this.productsApi.archive(id);
   }
 
+  /** Supprime une fiche archivée : elle disparaît du référentiel, son SKU reste réservé. */
+  async deleteProduct(id: string): Promise<void> {
+    await this.productsApi.deleteProduct(id);
+  }
+
   /**
    * Sort un produit des archives — il revient en BROUILLON, jamais en ligne.
    *

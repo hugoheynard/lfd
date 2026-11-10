@@ -42,7 +42,9 @@ export class PrismaMediaCarriers extends MediaCarriers {
     const [byProduct, byCategory] = await Promise.all([
       this.prisma.productMedia.groupBy({
         by: ["mediaUrl"],
-        where: { mediaUrl: { in: wanted } },
+        // Une fiche supprimée n'affiche plus rien : la compter garderait une
+        // image « utilisée » par une fiche qu'aucun écran ne retrouve.
+        where: { mediaUrl: { in: wanted }, product: { status: { not: "deleted" } } },
         _count: { _all: true },
       }),
       this.prisma.categoryMedia.groupBy({
@@ -80,7 +82,7 @@ export class PrismaMediaCarriers extends MediaCarriers {
   async carriersOf(url: string): Promise<readonly Carrier[]> {
     const [products, categories] = await Promise.all([
       this.prisma.productMedia.findMany({
-        where: { mediaUrl: url },
+        where: { mediaUrl: url, product: { status: { not: "deleted" } } },
         select: { productId: true, product: { select: { name: true } } },
       }),
       this.prisma.categoryMedia.findMany({

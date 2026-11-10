@@ -137,9 +137,17 @@
            un lien alors que la LIGNE entière est cliquable, parce qu'il dit où
            l'on va — un curseur en main ne le dit pas. `stopPropagation` évite
            que le même clic navigue deux fois et empile deux entrées d'historique. -->
-      <fold-link (clicked)="openProduct(p)" (click)="$event.stopPropagation()">
-        {{ p.name.fr }}
-      </fold-link>
+      <span class="name-cell">
+        <fold-link (clicked)="openProduct(p)" (click)="$event.stopPropagation()">
+          {{ p.name.fr }}
+        </fold-link>
+        <!-- Le refus d'une suppression reste sous la ligne qu'il concerne. -->
+        @if (deleteErrors().get(p.id); as message) {
+          <fold-callout data-products-delete-error appearance="inset" variant="alert" announce>
+            {{ message }}
+          </fold-callout>
+        }
+      </span>
     </ng-template>
 
     <ng-template foldCell="variants" let-p>
@@ -197,6 +205,18 @@
             </fold-dropdown-item>
           }
         </fold-dropdown>
+        <!-- Supprimer n'existe que sur l'onglet « Archivées », et avec le droit
+             d'écrire : une archivée supprimée quitte le référentiel. -->
+        @if (canDelete() && p.status === 'archived') {
+          <fold-inline-confirm
+            data-products-delete
+            intent="danger"
+            [message]="deleteMessage(p)"
+            (confirmed)="deleteArchived(p)"
+          >
+            <button foldButton emphasis="soft" intent="danger" size="sm">Supprimer</button>
+          </fold-inline-confirm>
+        }
       </div>
     </ng-template>
   </fold-data-table>

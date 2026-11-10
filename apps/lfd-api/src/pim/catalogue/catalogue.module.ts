@@ -17,6 +17,7 @@ import { PrismaMediaCarriers } from "./shared/infrastructure/prisma-media-carrie
 import { PimDatabaseModule } from "../infra/database/pim-database.module.js";
 import { ArchiveCategoryHandler } from "./category/application/archive-category.js";
 import { ArchiveProductHandler } from "./product/application/archive-product.js";
+import { DeleteProductHandler } from "./product/application/delete-product.js";
 import { CreateCategoryHandler } from "./category/application/create-category.js";
 import { AddProductVariantHandler } from "./product/application/add-product-variant.js";
 import { RenameProductVariantHandler } from "./product/application/rename-product-variant.js";
@@ -96,6 +97,7 @@ import { ProductSaleUnitUsageController } from "./product/http/product-sale-unit
 import { GetProductSaleUnitUsageHandler } from "./product/application/get-product-sale-unit-usage.js";
 import { ProductMinQuantitiesController } from "./product/http/product-min-quantities.controller.js";
 import { ProductVariantsAsTilesController } from "./product/http/product-variants-as-tiles.controller.js";
+import { ProductDeletionController } from "./product/http/product-deletion.controller.js";
 import { ProductCustomRecipeController } from "./product/http/product-custom-recipe.controller.js";
 import { ProductVariantLifecycleController } from "./product/http/product-variant-lifecycle.controller.js";
 import { ReferenceController } from "./shared/http/reference.controller.js";
@@ -145,6 +147,7 @@ import {
     CatalogRevisionController,
     CategoryController,
     ProductController,
+    ProductDeletionController,
     ProductSaleUnitUsageController,
     ProductMinQuantitiesController,
     ProductVariantsAsTilesController,
@@ -188,6 +191,7 @@ import {
     SaveVariantNutritionHandler,
     ArchiveProductHandler,
     RestoreProductHandler,
+    DeleteProductHandler,
     ListProductsHandler,
     ListProductComplianceWarningsHandler,
     ReadProductIngredientAllergensHandler,

@@ -28,7 +28,11 @@ import type {
 export type { Locale, LocalizedText, TranslatedLocale } from '@lfd/pim-contracts';
 
 export type ProductKind = 'daily' | 'made_to_order' | 'resale';
-export type ProductStatus = 'draft' | 'published' | 'archived';
+/**
+ * `deleted` : une archivée supprimée (soft delete, `plan-effacer-une-fiche-archivee.md`).
+ * La liste ne la sert jamais ; l'état existe ici pour que le type suive le contrat.
+ */
+export type ProductStatus = 'draft' | 'published' | 'archived' | 'deleted';
 
 /**
  * Un **taux de TVA** = un taux. Donnée créable — la base qui porte les

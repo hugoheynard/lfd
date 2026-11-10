@@ -27,6 +27,8 @@ const STATUS_LABELS: Readonly<Record<ProductStatus, string>> = {
   draft: 'Inactive',
   published: 'Active',
   archived: 'Archivée',
+  // Jamais servie par une liste : l'entrée n'existe que pour l'exhaustivité.
+  deleted: 'Supprimée',
 };
 
 /**
@@ -37,6 +39,7 @@ const STATUS_VARIANTS: Readonly<Record<ProductStatus, FoldBadgeVariant>> = {
   draft: 'warning',
   published: 'success',
   archived: 'neutral',
+  deleted: 'neutral',
 };
 
 /** Le libellé français d'un statut de produit. */
