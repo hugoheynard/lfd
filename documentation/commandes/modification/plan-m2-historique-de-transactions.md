@@ -1,5 +1,14 @@
 # Plan M2 — modifier une commande payée par carte : l'historique de transactions
 
+> **État au 2026-11-10, soir.** P0 ✅ en production (`c481bd3dc`). **P1 ✅ bâti
+> sur `dev`**, poussé (`5f92e5cf1`) : P1.a `f25ed5ecf` (tables, copie,
+> ressource), P1.b `e29a42880` (le remboursement dans `card-payment`), P1.c
+> `0e1655160` (le commerce et la comptabilité basculent, l'ancien module
+> part), P1.d `6be57647f` (le bandeau du back-office) — détail au §5.6.
+> **Reste avant la production** : CI de `dev` verte, puis le déploiement
+> boutique fermée sur l'ordre de Hugo (§5.2, runbook « Déployer P1 »).
+> **Ensuite** : S2 (la hausse) d'abord, sur demande de Hugo, puis S1, S3.
+
 > **Version 14, 2026-11-10** — P0 est **bâti et déployé en production** (§4.9). `vitruve` sur la v13 : **« rien ne bloque »** ; trois incohérences de texte et des précisions, corrigées ici (§15 nonies). **Le bâti de P1 commence sur cette version.** La v12 a eu un bloquant de spécification (la source du bandeau) et cinq règles manquantes (§15 octies), toutes écrites ici. La v11 a eu un bloquant de détail (une requête sur une colonne qui n'existe pas) et six sérieux de précision (§15 septies) ; `vitruve` y a déclaré conformes l'union `onRefundOutcome` et l'ordre des verrous. **Décision de Hugo (2026-11-10) : P1 se déploie BOUTIQUE FERMÉE, en pré-release** — toute la mécanique de « fenêtre de bascule » des v9 et v10 (relais, rattrapage borné, colonne miroir, abonné déménagé, champ à côté du contrat) est **retirée** et remplacée par une condition de déploiement vérifiée à la main (§5.2) ; ce que `vitruve` avait de structurel sur la v10 (§15 quinquies) est intégré (§15 sexies). Versions 7 à 10 : `599b24732`, `923f4e4cf`, v9 et v10 non commitées. Le plan **unique** de M2, écrit après la
 > relecture complète du paiement et du remboursement
 > ([`../reglement/relecture-paiement-et-remboursement.md`](../reglement/relecture-paiement-et-remboursement.md),
@@ -780,7 +789,7 @@ sujet publie `order.refund_succeeded`, que la facture se réveille et que
 l'avoir se décide (selon la nature, comme un `re_…`) ; puis publie
 `card_payment.refund_succeeded`.
 
-### 5.6 P1 — ce que le bâti a tranché (P1.b, 2026-11-10, sur `dev`, non commité)
+### 5.6 P1 — ce que le bâti a tranché (P1.a → P1.d, 2026-11-10, sur `dev`)
 
 P1.a (`f25ed5ecf`) a posé les tables ; **P1.b** a bâti le remboursement dans
 `src/card-payment/` (domaine, canal, exécuteur, constat, routes d'équipe,
@@ -857,6 +866,27 @@ AdminRefundRequest[]` ; `OrderRefundView.source` ; `refundedCentsOf` reste
   ne porte que les trois `DROP CONSTRAINT` (aucune table, colonne ni ligne).
 - **Runbook** : section « Déployer P1 (boutique fermée) » — les neuf points du
   §5.2 avec leurs requêtes.
+
+**P1.d** (`6be57647f`) — le back-office :
+
+- **Le bandeau** (`order-refund-banner`) lit `refundRequests` : une ligne par
+  demande, son montant (`issuedCents ?? announcedCents`), son motif, son état
+  (en cours d'envoi, à faire avec la phrase de l'échec, envoyé, remboursé,
+  rendu autrement). « Relancer » n'est montré que si `retryable` ; « Rendu
+  autrement » seulement sur une demande `stopped`, avec un motif obligatoire
+  (confirmation en ligne, comme l'annulation). Les deux sous
+  `card_payments:write` — gardé à part par Hugo le 2026-11-10 : relancer
+  envoie de l'argent, et « rendu autrement » clôt sans Stripe.
+- **Routes** : `POST admin/card-payments/refund-requests/:requestId/retry` et
+  `…/settle-elsewhere`.
+- **La carte des remboursements** affiche le total **servi** par l'API ;
+  `refundedCentsOf` n'a plus de lecteur et quitte `@lfd/contracts`. Une ligne
+  `source: 'manual'` porte le badge « Rendu autrement ».
+- `annulation-par-le-staff.md` §C4.9 décrit l'état réel.
+
+**La migration** des trois clés étrangères a été relue par
+`lecteur-de-migrations` : aucune donnée lue, réécrite ni supprimée ; retour
+arrière à la main par trois `ADD CONSTRAINT`.
 
 ## 6. Ce que le socle tient aussi
 
@@ -1080,8 +1110,10 @@ déployé, e2e vertes, `claim` et le cron rattrapent la fenêtre → **P1**
 (irréversible : tables, reprise, `refund_credit`, relations retirées, enum
 `card_payments`, valeurs des enums ; `lecteur-de-migrations` ; **boutique
 fermée, condition du §5.2**)
+✅ bâti sur `dev` le 2026-11-10 (§5.6), déploiement en attente
 → quelques jours d'annulations ordinaires, « Vérifier » cliqué, la veille
-muette → **S1** → première baisse réelle vérifiée → **S2** → **S3** → **P2**.
+muette → **S2** (avancée avant S1, Hugo, 2026-11-10 : les deux lots sont
+indépendants) → **S1** → **S3** → **P2**.
 §6.7 et C-2b quand leur tour vient.
 
 ## 15. Les contradictions de `vitruve` sur ce plan unique
