@@ -2,14 +2,14 @@ import { Clock } from "../../../../platform/time/clock.js";
 import type { OrderRevisionQuoteView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
-import type { RevisableOrder } from "../../domain/entities/order-revision.js";
+import type { RevisableOrder } from "../../revision/domain/entities/order-revision.js";
 import { OrderChangeNotQuotableError } from "../../domain/errors/order-change-quote-errors.js";
-import { standingRevisionErrorOf } from "../../domain/errors/order-revision-errors.js";
-import type { RevisionVerdict } from "../../domain/services/order-revisability.js";
-import { OrderRevisabilityReading } from "../services/order-revisability-reading.js";
-import { OrderRevising } from "../services/order-revising.service.js";
-import { quoteViewOf } from "../services/revision-quote-view.js";
-import { RevisionWall } from "../services/revision-wall.js";
+import { standingRevisionErrorOf } from "../../revision/domain/errors/order-revision-errors.js";
+import type { RevisionVerdict } from "../../revision/domain/services/order-revisability.js";
+import { OrderRevisabilityReading } from "../../revision/application/services/order-revisability-reading.js";
+import { OrderRevising } from "../../revision/application/services/order-revising.service.js";
+import { quoteViewOf } from "../../revision/application/services/revision-quote-view.js";
+import { RevisionWall } from "../../revision/application/services/revision-wall.js";
 import { QuoteOrderChangeRequestQuery } from "./quote-order-change-request.query.js";
 
 /**

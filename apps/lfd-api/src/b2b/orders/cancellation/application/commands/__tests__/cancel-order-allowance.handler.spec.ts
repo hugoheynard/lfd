@@ -1,5 +1,5 @@
 import { FixedHandoverHistory } from "../../../../application/commands/__tests__/handover-history-double.js";
-import { increaseCancellation } from "../../../../application/commands/__tests__/card-increase-scene.js";
+import { increaseCancellation } from "../../../../revision/application/commands/__tests__/card-increase-scene.js";
 import type { CustomerCancellationStage } from "@lfd/contracts";
 
 import { DirectUnitOfWork } from "../../../../../../platform/database/__tests__/direct-unit-of-work.js";

@@ -1,4 +1,4 @@
-import type { RevisableOrder } from "../entities/order-revision.js";
+import type { RevisableOrder } from "../../revision/domain/entities/order-revision.js";
 import type { OrderFulfillmentInput } from "../entities/order-shapes.js";
 import {
   CounterLinkSettlementRefusedError,

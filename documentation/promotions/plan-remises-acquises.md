@@ -23,7 +23,7 @@ ajouté n'en reçoit pas d'office.
 
 ## 2. L'existant (ouvert le 2026-10-31)
 
-- La révision d'une commande (`orders/application/services/order-revising.service.ts`,
+- La révision d'une commande (`orders/revision/application/services/order-revising.service.ts`,
   `compose`, l. 170-213) recompose toute la commande par la composition de la
   passation, avec trois exceptions écrites en tête du fichier (l. 40-56),
   dont **R3** : « les lignes déjà présentes à leur prix figé ».

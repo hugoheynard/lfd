@@ -2,9 +2,9 @@ import type { CardComplementPaymentView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { CardPayments } from "../../../../card-payment/channels/requests/index.js";
-import { NoComplementAwaitingPaymentError } from "../../domain/errors/card-increase-proposal-errors.js";
-import { CardIncreaseProposalReader } from "../../domain/ports/card-increase-proposal.reader.js";
-import { RevisionWall } from "../services/revision-wall.js";
+import { NoComplementAwaitingPaymentError } from "../../revision/domain/errors/card-increase-proposal-errors.js";
+import { CardIncreaseProposalReader } from "../../revision/domain/ports/card-increase-proposal.reader.js";
+import { RevisionWall } from "../../revision/application/services/revision-wall.js";
 import { GetComplementPaymentQuery } from "./get-complement-payment.query.js";
 
 /**

@@ -4,14 +4,14 @@ import { CardPayments } from "../../../../../card-payment/channels/requests/inde
 import { AfterCommit } from "../../../../../platform/database/after-commit.js";
 import { Journal } from "../../../../../platform/journal/journal.js";
 import { Clock } from "../../../../../platform/time/clock.js";
-import type { CardIncreaseProposal } from "../../../domain/entities/card-increase-proposal.js";
-import { CardIncreaseNotWrittenError } from "../../../domain/errors/card-increase-application-errors.js";
-import { CardIncreaseProposalRepository } from "../../../domain/ports/card-increase-proposal.repository.js";
+import type { CardIncreaseProposal } from "../../../revision/domain/entities/card-increase-proposal.js";
+import { CardIncreaseNotWrittenError } from "../../../revision/domain/errors/card-increase-application-errors.js";
+import { CardIncreaseProposalRepository } from "../../../revision/domain/ports/card-increase-proposal.repository.js";
 import {
   increaseAbandonedFact,
   increaseRefusedFact,
   type IncreaseOrderLabel,
-} from "../../../application/services/card-increase-facts.js";
+} from "../../../revision/application/services/card-increase-facts.js";
 
 /** Le refus d'un projet payé par l'annulation de sa commande — 🔴 une valeur écrite. */
 export const ORDER_CANCELLED_REFUSAL = "order_cancelled";

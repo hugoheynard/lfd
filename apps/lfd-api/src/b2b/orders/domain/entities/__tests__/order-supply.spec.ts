@@ -12,7 +12,7 @@ import type { OrderEntryOrigin, OrderSupplyDecision } from "../../value-objects/
 import { Order, type DraftOrderInput } from "../order.js";
 import type { PricedDraftInput } from "../order-priced-draft.js";
 import { draftFrom, type DraftSpec } from "./priced-input.fixture.js";
-import type { RevisableOrder } from "../order-revision.js";
+import type { RevisableOrder } from "../../../revision/domain/entities/order-revision.js";
 
 /**
  * **La marque d'une commande sur stock** (plan

@@ -658,11 +658,11 @@ demanderait de chiffrer la demande avant de la recevoir — reprise avec S3.
   `production.order_quantities_raised`, `packing_sheet.revised`, avec leurs
   libellés au back-office.
 - **E-mail au client** : `SendOrderRevisedMail`
-  (`apps/lfd-api/src/b2b/orders/application/handlers/send-order-revised-mail.handler.ts`), un
+  (`apps/lfd-api/src/b2b/orders/revision/application/handlers/send-order-revised-mail.handler.ts`), un
   `@DurableHandler` sur `order.revised`, écrit `customer.order-revised` au
   titulaire (`placedByUserId`) : la feuille projetée de la révision courante,
   le bon joint par référence, les deux totaux du fait, et la phrase sur
-  l'argent (`revisionMoneyNoteOf`, `apps/lfd-api/src/b2b/orders/domain/services/revision-money-note.ts` :
+  l'argent (`revisionMoneyNoteOf`, `apps/lfd-api/src/b2b/orders/revision/domain/services/revision-money-note.ts` :
   au compte ou à total nul → facture ; carte en hausse → réglée ; carte en
   baisse → remboursée ; total égal → rien). Les totaux s'écrivent selon la
   clientèle (`variant` de la feuille) et le règlement

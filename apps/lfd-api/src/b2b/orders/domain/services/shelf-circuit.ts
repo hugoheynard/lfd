@@ -1,7 +1,7 @@
 import { saleQuantity, type SaleUnit } from "@lfd/money";
 
 import type { SameDayDoor } from "../../../order-cutoffs/domain/same-day-doors.js";
-import type { RevisableOrder } from "../entities/order-revision.js";
+import type { RevisableOrder } from "../../revision/domain/entities/order-revision.js";
 import type { OrderToPlace } from "../entities/order-shapes.js";
 import { ShelfStockShortError } from "../errors/shelf-circuit-errors.js";
 import type { SiteDaySettings } from "../ports/site-day-settings.reader.js";

@@ -2,7 +2,7 @@ import { ttcCentsFromHtMillicents } from "@lfd/money";
 
 import type { OrderLineInput, OrderLineSnapshot } from "../../value-objects/order-line.js";
 import { keptLineRefusals } from "../kept-line-prices.js";
-import type { KeptQuantityChange } from "../revised-lines.js";
+import type { KeptQuantityChange } from "../../../revision/domain/services/revised-lines.js";
 
 /**
  * **Une modification ne change jamais un prix convenu en silence**

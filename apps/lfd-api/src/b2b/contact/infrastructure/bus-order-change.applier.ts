@@ -4,7 +4,7 @@ import { CommandBus } from "@nestjs/cqrs";
 import {
   ReviseOrderCommand,
   type ReviseOrderResult,
-} from "../../orders/application/commands/revise-order.command.js";
+} from "../../orders/revision/application/commands/revise-order.command.js";
 import type { RequestedOrderChange } from "../domain/customer-request-details.js";
 import {
   type AppliedOrderChange,

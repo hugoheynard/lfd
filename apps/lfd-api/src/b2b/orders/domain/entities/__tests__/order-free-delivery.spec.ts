@@ -3,7 +3,7 @@ import { millicentsFromCents, orderPretaxCents } from "@lfd/money";
 
 import type { OrderLineInput } from "../../value-objects/order-line.js";
 import { Order } from "../order.js";
-import type { RevisableOrder } from "../order-revision.js";
+import type { RevisableOrder } from "../../../revision/domain/entities/order-revision.js";
 import type { OrderToPlace } from "../order-shapes.js";
 import {
   deliveryPromotion,

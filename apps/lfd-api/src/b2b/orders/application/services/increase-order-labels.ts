@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { OrderNotFoundError } from "../../domain/errors/order-errors.js";
 import { OrderCardStandingReader } from "../../domain/ports/order-card-standing.reader.js";
-import type { IncreaseOrderLabel } from "./card-increase-facts.js";
+import type { IncreaseOrderLabel } from "../../revision/application/services/card-increase-facts.js";
 
 /**
  * Le numéro d'une commande, libellé des faits et des cloches d'un projet de

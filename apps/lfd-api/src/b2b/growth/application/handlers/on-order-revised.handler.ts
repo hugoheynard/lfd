@@ -8,7 +8,7 @@ import {
 import {
   ORDER_REVISED,
   OrderRevisedEvent,
-} from "../../../orders/domain/events/order-revised.event.js";
+} from "../../../orders/revision/domain/events/order-revised.event.js";
 import { ACTIVITY_TYPES } from "../../domain/activity-event.js";
 import { ActivityRecorder } from "../../domain/ports/activity-recorder.js";
 import { ActorNamer } from "../../domain/ports/actor-namer.js";

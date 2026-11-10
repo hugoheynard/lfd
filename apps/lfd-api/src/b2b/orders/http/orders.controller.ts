@@ -45,8 +45,8 @@ import {
   type PlaceOrderResult,
 } from "../application/commands/place-order.command.js";
 import { GetOrderCancellabilityQuery } from "../cancellation/application/queries/get-order-cancellability.query.js";
-import type { CustomerRevisionStanding } from "../application/queries/get-order-revisability.handler.js";
-import { GetOrderRevisabilityQuery } from "../application/queries/get-order-revisability.query.js";
+import type { CustomerRevisionStanding } from "../revision/application/queries/get-order-revisability.handler.js";
+import { GetOrderRevisabilityQuery } from "../revision/application/queries/get-order-revisability.query.js";
 import { GetOrderPaymentQuery } from "../application/queries/get-order-payment.query.js";
 import { GetOrderQuery } from "../application/queries/get-order.query.js";
 import { GetOrderSheetQuery } from "../application/queries/get-order-sheet.query.js";

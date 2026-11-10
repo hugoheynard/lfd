@@ -1,15 +1,15 @@
 import { OrderInscriptionReader } from "../../../../../production/channels/commerce/index.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
-import type { RevisableOrder } from "../../../domain/entities/order-revision.js";
+import type { RevisableOrder } from "../../../revision/domain/entities/order-revision.js";
 import { OrderChangeNotQuotableError } from "../../../domain/errors/order-change-quote-errors.js";
 import { OrderNotFoundError } from "../../../domain/errors/order-errors.js";
 import {
   CardOrderNotRevisableError,
   OrderNotRevisableError,
-} from "../../../domain/errors/order-revision-errors.js";
+} from "../../../revision/domain/errors/order-revision-errors.js";
 import type { OrderPlanGate } from "../../services/order-plan-gate.service.js";
-import { OrderRevisabilityReading } from "../../services/order-revisability-reading.js";
-import { RevisionWall } from "../../services/revision-wall.js";
+import { OrderRevisabilityReading } from "../../../revision/application/services/order-revisability-reading.js";
+import { RevisionWall } from "../../../revision/application/services/revision-wall.js";
 import { FixedClosedPlans, gateOf } from "../../commands/__tests__/plan-doubles.js";
 import {
   AFTER_CUTOFF,
@@ -20,7 +20,7 @@ import {
   OneRoleAccess,
   placedOrder,
   revisingAt,
-} from "../../commands/__tests__/revision-scene.js";
+} from "../../../revision/application/commands/__tests__/revision-scene.js";
 import { QuoteOrderChangeRequestHandler } from "../quote-order-change-request.handler.js";
 import { QuoteOrderChangeRequestQuery } from "../quote-order-change-request.query.js";
 

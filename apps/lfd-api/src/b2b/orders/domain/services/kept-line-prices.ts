@@ -2,7 +2,7 @@ import { ttcCentsFromHtMillicents } from "@lfd/money";
 
 import type { OrderLineInput, OrderLineSnapshot } from "../value-objects/order-line.js";
 import type { OrderVatMethod } from "../value-objects/order-vat-method.js";
-import type { KeptQuantityChange } from "./revised-lines.js";
+import type { KeptQuantityChange } from "../../revision/domain/services/revised-lines.js";
 
 /**
  * **Une ligne déjà commandée dont la quantité change garde-t-elle son prix ?**

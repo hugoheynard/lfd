@@ -1,18 +1,18 @@
-import type { CardIncreaseProposal } from "../../../domain/entities/card-increase-proposal.js";
-import { NoComplementAwaitingPaymentError } from "../../../domain/errors/card-increase-proposal-errors.js";
+import type { CardIncreaseProposal } from "../../../revision/domain/entities/card-increase-proposal.js";
+import { NoComplementAwaitingPaymentError } from "../../../revision/domain/errors/card-increase-proposal-errors.js";
 import { OrderNotFoundError } from "../../../domain/errors/order-errors.js";
-import { RevisionWall } from "../../services/revision-wall.js";
-import { proposalAt } from "../../services/__tests__/card-increase-doubles.js";
+import { RevisionWall } from "../../../revision/application/services/revision-wall.js";
+import { proposalAt } from "../../../revision/application/services/__tests__/card-increase-doubles.js";
 import { Steps } from "../../services/__tests__/order-card-doubles.js";
 import {
   FixedProposalReader,
   IncreaseCardPayments,
-} from "../../commands/__tests__/card-increase-scene.js";
+} from "../../../revision/application/commands/__tests__/card-increase-scene.js";
 import {
   FixedRevisableOrders,
   OneRoleAccess,
   placedOrder,
-} from "../../commands/__tests__/revision-scene.js";
+} from "../../../revision/application/commands/__tests__/revision-scene.js";
 import { GetComplementPaymentHandler } from "../get-complement-payment.handler.js";
 import { GetComplementPaymentQuery } from "../get-complement-payment.query.js";
 

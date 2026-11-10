@@ -5,7 +5,7 @@ import {
   NEXT_DAY,
   placedOrder,
   reviseScene,
-} from "../../../../application/commands/__tests__/revision-scene.js";
+} from "../../../../revision/application/commands/__tests__/revision-scene.js";
 
 /**
  * **La révision garde le délai d'annulation d'origine** (Hugo, 2026-10-26) :

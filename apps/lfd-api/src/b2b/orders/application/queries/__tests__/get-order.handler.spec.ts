@@ -32,9 +32,9 @@ import { VoucherRestitutionRefusal } from "../../services/voucher-restitution-re
 import { AdminOrderRefundView } from "../../services/admin-order-refund-view.js";
 import { FixedCardRefundRequests } from "../../commands/__tests__/refund-doubles.js";
 import { GetAdminOrderHandler } from "../get-admin-order.handler.js";
-import type { CardIncreaseProposal } from "../../../domain/entities/card-increase-proposal.js";
-import { FixedProposalReader } from "../../commands/__tests__/card-increase-scene.js";
-import { proposalAt } from "../../services/__tests__/card-increase-doubles.js";
+import type { CardIncreaseProposal } from "../../../revision/domain/entities/card-increase-proposal.js";
+import { FixedProposalReader } from "../../../revision/application/commands/__tests__/card-increase-scene.js";
+import { proposalAt } from "../../../revision/application/services/__tests__/card-increase-doubles.js";
 import { Steps } from "../../services/__tests__/order-card-doubles.js";
 import {
   OrderShortfallReader,
@@ -44,15 +44,15 @@ import { GetAdminOrderQuery } from "../get-admin-order.query.js";
 import { GetOrderHandler } from "../get-order.handler.js";
 import { GetOrderQuery } from "../get-order.query.js";
 import { AT_PLACEMENT } from "../../../domain/services/order-sheet.js";
-import type { RevisableOrder } from "../../../domain/entities/order-revision.js";
-import { OrderRevisabilityReading } from "../../services/order-revisability-reading.js";
+import type { RevisableOrder } from "../../../revision/domain/entities/order-revision.js";
+import { OrderRevisabilityReading } from "../../../revision/application/services/order-revisability-reading.js";
 import {
   FixedEngagements,
   FixedRevisableOrders,
   NOW,
   placedOrder,
   revisingAt,
-} from "../../commands/__tests__/revision-scene.js";
+} from "../../../revision/application/commands/__tests__/revision-scene.js";
 
 const VIEW: OrderView = { ...orderView(), id: "ord_1", orderNumber: "ORD-0001" };
 

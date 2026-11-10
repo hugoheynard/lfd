@@ -1,6 +1,6 @@
 import type { FulfillmentWindow } from "@lfd/contracts";
 
-import { sameValue, type RevisableOrder } from "../entities/order-revision.js";
+import { sameValue, type RevisableOrder } from "../../revision/domain/entities/order-revision.js";
 import type { DraftOrderInput } from "../entities/order-shapes.js";
 import { FulfillmentChangeAltersPromotionError } from "../errors/fulfillment-promotion-errors.js";
 import { replayableDiscountsOf, type RevisableDiscount } from "./basket-discount-replay.js";

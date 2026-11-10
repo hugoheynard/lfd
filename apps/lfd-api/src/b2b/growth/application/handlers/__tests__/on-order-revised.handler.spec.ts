@@ -1,7 +1,7 @@
 import { JOURNAL_FACTS } from "@lfd/contracts/journal-facts";
 
 import type { DurableDelivery } from "../../../../../platform/outbox/durable-event.js";
-import { OrderRevisedEvent } from "../../../../orders/domain/events/order-revised.event.js";
+import { OrderRevisedEvent } from "../../../../orders/revision/domain/events/order-revised.event.js";
 import { RecordingActivityRecorder } from "../../../domain/ports/__tests__/recording-activity-recorder.js";
 import { OnOrderRevised } from "../on-order-revised.handler.js";
 import { TableActors, TableCustomers } from "./order-fact-doubles.js";

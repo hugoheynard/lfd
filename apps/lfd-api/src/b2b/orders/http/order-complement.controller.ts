@@ -4,7 +4,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
-import { AbandonCardIncreaseCommand } from "../application/commands/abandon-card-increase.command.js";
+import { AbandonCardIncreaseCommand } from "../revision/application/commands/abandon-card-increase.command.js";
 import { GetComplementPaymentQuery } from "../application/queries/get-complement-payment.query.js";
 
 /**

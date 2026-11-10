@@ -39,7 +39,7 @@ import {
   sealingBySku,
   type RevisedFrom,
   type RevisedLines,
-} from "./revised-line-pricing.js";
+} from "../../revision/application/services/revised-line-pricing.js";
 
 /** Le panier chargé, et ce que le chargement sait de plus que le calcul. */
 export interface LoadedBasket {

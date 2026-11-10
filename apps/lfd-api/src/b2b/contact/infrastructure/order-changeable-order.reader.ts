@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 
-import type { CustomerRevisionStanding } from "../../orders/application/queries/get-order-revisability.handler.js";
-import { GetOrderRevisabilityQuery } from "../../orders/application/queries/get-order-revisability.query.js";
+import type { CustomerRevisionStanding } from "../../orders/revision/application/queries/get-order-revisability.handler.js";
+import { GetOrderRevisabilityQuery } from "../../orders/revision/application/queries/get-order-revisability.query.js";
 import {
   type ChangeableOrder,
   ChangeableOrderReader,

@@ -15,7 +15,7 @@ import { MarkOrderReadyHandler } from "./application/commands/mark-order-ready.h
 import { SendGuestOrderNotice } from "./application/handlers/send-guest-order-notice.handler.js";
 import { SendGuestOrderNoticeOnPaid } from "./application/handlers/send-guest-order-notice-on-paid.handler.js";
 import { SendOrderPlacedMail } from "./application/handlers/send-order-placed-mail.handler.js";
-import { SendOrderRevisedMail } from "./application/handlers/send-order-revised-mail.handler.js";
+import { SendOrderRevisedMail } from "./revision/application/handlers/send-order-revised-mail.handler.js";
 import { SendOrderReadyMail } from "./application/handlers/send-order-ready-mail.handler.js";
 import { DeliveryEnRouteMail } from "./application/services/delivery-en-route-mail.service.js";
 import { SendOrderSettledMail } from "./application/handlers/send-order-settled-mail.handler.js";
@@ -46,7 +46,7 @@ import { ORDER_CARD_REFUND_PROVIDERS } from "./order-card-refund.providers.js";
 import {
   ORDER_REVISION_CONTROLLERS,
   ORDER_REVISION_PROVIDERS,
-} from "./order-revision.providers.js";
+} from "./revision/order-revision.providers.js";
 import {
   ORDER_SHORTFALL_CONTROLLERS,
   ORDER_SHORTFALL_EXPORTS,
@@ -60,7 +60,7 @@ import {
 } from "./cancellation/customer-cancellation.providers.js";
 import { OrderCancellation } from "./cancellation/application/services/order-cancellation.service.js";
 import { OrderWorkshopWithdrawal } from "./application/services/order-workshop-withdrawal.js";
-import { OrderWorkshopRevision } from "./application/services/order-workshop-revision.js";
+import { OrderWorkshopRevision } from "./revision/application/services/order-workshop-revision.js";
 import { RingRefundRejected } from "./application/handlers/ring-refund-rejected.handler.js";
 import { PendingSettlementSweep } from "./application/services/pending-settlement-sweep.service.js";
 import { SendPaymentFailedMail } from "./application/handlers/send-payment-failed-mail.handler.js";
@@ -85,10 +85,10 @@ import { RemainderShipmentReader } from "./domain/ports/remainder-shipment.reade
 import { PrismaRemainderShipmentReader } from "./infrastructure/prisma-remainder-shipment.reader.js";
 import { OrderLock } from "./domain/ports/order-lock.js";
 import { PrismaOrderLock } from "./infrastructure/prisma-order-lock.js";
-import { CardIncreaseProposalRepository } from "./domain/ports/card-increase-proposal.repository.js";
-import { PrismaCardIncreaseProposalRepository } from "./infrastructure/prisma-card-increase-proposal.repository.js";
-import { CardIncreaseProposalReader } from "./domain/ports/card-increase-proposal.reader.js";
-import { PrismaCardIncreaseProposalReader } from "./infrastructure/prisma-card-increase-proposal.reader.js";
+import { CardIncreaseProposalRepository } from "./revision/domain/ports/card-increase-proposal.repository.js";
+import { PrismaCardIncreaseProposalRepository } from "./revision/infrastructure/prisma-card-increase-proposal.repository.js";
+import { CardIncreaseProposalReader } from "./revision/domain/ports/card-increase-proposal.reader.js";
+import { PrismaCardIncreaseProposalReader } from "./revision/infrastructure/prisma-card-increase-proposal.reader.js";
 import { PendingRemaindersReader } from "./domain/ports/pending-remainders.reader.js";
 import { PrismaPendingRemaindersReader } from "./infrastructure/prisma-pending-remainders.reader.js";
 import { SettledOrderWriter } from "./domain/ports/settled-order.writer.js";
@@ -118,7 +118,10 @@ import { AdoptOrderPaymentHandler } from "./application/commands/adopt-order-pay
 import { OrderCardPayments } from "./application/services/order-card-payments.js";
 import { OrderSubjectSettlement } from "./application/services/order-subject-settlement.js";
 import { OrderComplementSettlement } from "./application/services/order-complement-settlement.js";
-import { CARD_INCREASE_CONTROLLERS, CARD_INCREASE_PROVIDERS } from "./card-increase.providers.js";
+import {
+  CARD_INCREASE_CONTROLLERS,
+  CARD_INCREASE_PROVIDERS,
+} from "./revision/card-increase.providers.js";
 import { OrderRefundOutcomes } from "./application/services/order-refund-outcomes.js";
 import { OrderRefundStatusWriter } from "./domain/ports/order-refund-status.writer.js";
 import { PrismaOrderRefundStatusWriter } from "./infrastructure/prisma-order-refund-status.writer.js";
@@ -160,7 +163,7 @@ import { OrderCutoffNotice } from "./application/services/order-cutoff-notice.se
 import { OrderPlanGate } from "./application/services/order-plan-gate.service.js";
 import { SameDayOrderReader } from "./domain/ports/same-day-order.reader.js";
 import { ShelfCircuit } from "./application/services/shelf-circuit.service.js";
-import { ShelfRevising } from "./application/services/shelf-revising.service.js";
+import { ShelfRevising } from "./revision/application/services/shelf-revising.service.js";
 import { ResupplyModule } from "../resupply/resupply.module.js";
 import { SettingsSameDayOrderReader } from "./infrastructure/settings-same-day-order.reader.js";
 import { OrderLinePricing } from "./application/services/order-line-pricing.service.js";

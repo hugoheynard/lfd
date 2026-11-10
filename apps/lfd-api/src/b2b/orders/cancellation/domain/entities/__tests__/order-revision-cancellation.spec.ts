@@ -4,7 +4,7 @@ import type { FixedCustomerCancellation } from "../../services/customer-cancella
 import { Order } from "../../../../domain/entities/order.js";
 import type { PricedDraftInput } from "../../../../domain/entities/order-priced-draft.js";
 import { pricedInput } from "../../../../domain/entities/__tests__/priced-input.fixture.js";
-import type { RevisableOrder } from "../../../../domain/entities/order-revision.js";
+import type { RevisableOrder } from "../../../../revision/domain/entities/order-revision.js";
 
 /**
  * Une révision du jour ou du créneau recalcule l'instant limite avec le délai

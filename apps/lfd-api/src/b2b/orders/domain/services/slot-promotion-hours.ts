@@ -4,7 +4,7 @@ import {
   schedulePhrase,
   weeklyHoursCover,
 } from "../../../promotions/domain/promotion-weekly-hours.js";
-import type { RevisableOrder } from "../entities/order-revision.js";
+import type { RevisableOrder } from "../../revision/domain/entities/order-revision.js";
 import { SlotOutsidePromotionHoursError } from "../errors/fulfillment-promotion-errors.js";
 import { replayableDiscountsOf } from "./basket-discount-replay.js";
 import { stillApplied, type RevisedFulfillment } from "./fulfillment-promotion.js";

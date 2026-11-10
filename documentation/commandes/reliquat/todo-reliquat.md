@@ -16,7 +16,7 @@ emporter un sac incomplet.
 existe (`CardRefunds.requestAmount`,
 `apps/lfd-api/src/card-payment/channels/requests/card-refunds.ts`, lot P1), et
 la baisse d'une commande carte le répartit déjà sur ses paiements
-(`apps/lfd-api/src/b2b/orders/domain/services/revision-card-refund.ts`, lot S1).
+(`apps/lfd-api/src/b2b/orders/revision/domain/services/revision-card-refund.ts`, lot S1).
 
 **Ce qu'il faut trancher avant de bâtir** (argent : `vitruve`) :
 

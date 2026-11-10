@@ -3,8 +3,8 @@ import { CommandBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
-import { AbandonCardIncreaseCommand } from "../application/commands/abandon-card-increase.command.js";
-import { RelaunchCardIncreaseCommand } from "../application/commands/relaunch-card-increase.command.js";
+import { AbandonCardIncreaseCommand } from "../revision/application/commands/abandon-card-increase.command.js";
+import { RelaunchCardIncreaseCommand } from "../revision/application/commands/relaunch-card-increase.command.js";
 
 /**
  * **« Abandonner » le complément depuis la fiche** (doc

@@ -39,13 +39,13 @@ import {
   revisionOf,
   type RevisableOrder,
   type RevisionActor,
-} from "./order-revision.js";
+} from "../../revision/domain/entities/order-revision.js";
 import {
   ensureSettlementExpected,
   type ExpectedSettlement,
   revisionSettlementOf,
   type RecomposedRevision,
-} from "./revision-settlement.js";
+} from "../../revision/domain/entities/revision-settlement.js";
 import type {
   DraftOrderInput,
   OrderDiscountLabel,

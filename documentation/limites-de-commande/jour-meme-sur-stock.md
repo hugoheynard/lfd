@@ -195,7 +195,7 @@ vitrine ».
   `order-supply-rules.ts:73`, `orders.revise.shelf_route`) : le stock d'un
   autre point est un autre stock, changer de point c'est annuler et refaire.
 - **Gardes du circuit** (`ShelfRevising`,
-  `b2b/orders/application/services/shelf-revising.service.ts:37`) : la porte de
+  `b2b/orders/revision/application/services/shelf-revising.service.ts:37`) : la porte de
   qui modifie, le créneau restant, et la journée qui doit être aujourd'hui
   (`orders.shelf.not_today`).
 - **Ni note au fournil ni suivi des BL** : `ReviseOrderHandler` les saute pour

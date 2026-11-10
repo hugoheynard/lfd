@@ -14,7 +14,7 @@ import {
   type StaffAuthors,
 } from "../../../../staff/directory/domain/staff-author-directory.js";
 import { OrderNotFoundError } from "../../domain/errors/order-errors.js";
-import { CardIncreaseProposalReader } from "../../domain/ports/card-increase-proposal.reader.js";
+import { CardIncreaseProposalReader } from "../../revision/domain/ports/card-increase-proposal.reader.js";
 import { AdminOrderAuthorReader } from "../../domain/ports/admin-order-author.reader.js";
 import { CancellationSubjectReader } from "../../cancellation/domain/ports/cancellation-subject.reader.js";
 import { Clock } from "../../../../platform/time/clock.js";
@@ -30,9 +30,9 @@ import { cancellationRefusalOf } from "../../cancellation/domain/services/order-
 import { cancellationRefundSentenceOf } from "../../cancellation/domain/services/order-cancellation-refund.js";
 import { settlementRegimeOf } from "../../domain/services/settlement-regime.js";
 import type { CancellationSubject } from "../../cancellation/domain/ports/cancellation-subject.reader.js";
-import { adminCardIncreaseOf } from "../services/admin-order-card-increase.js";
+import { adminCardIncreaseOf } from "../../revision/application/services/admin-order-card-increase.js";
 import { AdminOrderRefundView } from "../services/admin-order-refund-view.js";
-import { OrderRevisabilityReading } from "../services/order-revisability-reading.js";
+import { OrderRevisabilityReading } from "../../revision/application/services/order-revisability-reading.js";
 import { CancellationPreview } from "../../cancellation/application/services/cancellation-preview.js";
 import { VoucherRestitutionRefusal } from "../services/voucher-restitution-refusal.js";
 import { GetAdminOrderQuery } from "./get-admin-order.query.js";

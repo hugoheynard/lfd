@@ -2,7 +2,7 @@ import type { OrderRevisionQuoteView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 
-import { QuoteOrderRevisionQuery } from "../../orders/application/queries/quote-order-revision.query.js";
+import { QuoteOrderRevisionQuery } from "../../orders/revision/application/queries/quote-order-revision.query.js";
 import type { RequestedOrderChange } from "../domain/customer-request-details.js";
 import { OrderChangeQuoter } from "../domain/ports/order-change.quoter.js";
 

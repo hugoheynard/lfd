@@ -10,12 +10,12 @@ import {
 import {
   ORDER_CARD_INCREASE_REFUSED,
   OrderCardIncreaseRefusedEvent,
-} from "../../domain/events/order-card-increase-refused.event.js";
-import { CardIncreaseProposalReader } from "../../domain/ports/card-increase-proposal.reader.js";
+} from "../../revision/domain/events/order-card-increase-refused.event.js";
+import { CardIncreaseProposalReader } from "../../revision/domain/ports/card-increase-proposal.reader.js";
 import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
 import { clientSheetOf } from "../../domain/services/order-sheet.js";
-import { CardIncreaseRefund } from "../services/card-increase-refund.js";
+import { CardIncreaseRefund } from "../../revision/application/services/card-increase-refund.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
 export const REFUND_REFUSED_INCREASE = "orders.refund-refused-increase";

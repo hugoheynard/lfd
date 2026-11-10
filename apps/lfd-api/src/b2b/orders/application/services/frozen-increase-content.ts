@@ -1,7 +1,7 @@
 import { orderRevisionQuotePayloadSchema } from "@lfd/contracts";
 
-import type { CardIncreaseProposal } from "../../domain/entities/card-increase-proposal.js";
-import { UnreadableCardIncreaseProposalError } from "../../domain/errors/card-increase-proposal-row.error.js";
+import type { CardIncreaseProposal } from "../../revision/domain/entities/card-increase-proposal.js";
+import { UnreadableCardIncreaseProposalError } from "../../revision/domain/errors/card-increase-proposal-row.error.js";
 import type { OrderContent } from "./order-content.js";
 
 /**

@@ -10,12 +10,16 @@ import { RecordingPublisher } from "../../../../../platform/events/__tests__/rec
 import { RecordingJournal } from "../../../../../platform/journal/__tests__/recording-journal.js";
 import { RecordingDurable } from "../../commands/__tests__/durable-doubles.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
-import type { CardIncreaseProposal } from "../../../domain/entities/card-increase-proposal.js";
-import { ComplementWithoutProposalError } from "../../../domain/errors/card-increase-proposal-errors.js";
+import type { CardIncreaseProposal } from "../../../revision/domain/entities/card-increase-proposal.js";
+import { ComplementWithoutProposalError } from "../../../revision/domain/errors/card-increase-proposal-errors.js";
 import { OrderComplementPaidLateEvent } from "../../../domain/events/order-complement-paid-late.event.js";
 import { OrderComplementSettlement } from "../order-complement-settlement.js";
 import { OrderRefundOutcomes } from "../order-refund-outcomes.js";
-import { proposalAt, RecordingProposals, RecordingWake } from "./card-increase-doubles.js";
+import {
+  proposalAt,
+  RecordingProposals,
+  RecordingWake,
+} from "../../../revision/application/services/__tests__/card-increase-doubles.js";
 import { OrderSubjectSettlement } from "../order-subject-settlement.js";
 import { RecordingRefundStatus } from "./order-refund-outcome-doubles.js";
 import {

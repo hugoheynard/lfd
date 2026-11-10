@@ -1,7 +1,7 @@
 import { FixedHandoverHistory } from "../../../../application/commands/__tests__/handover-history-double.js";
-import { increaseCancellation } from "../../../../application/commands/__tests__/card-increase-scene.js";
-import type { CardIncreaseProposal } from "../../../../domain/entities/card-increase-proposal.js";
-import { proposalAt } from "../../../../application/services/__tests__/card-increase-doubles.js";
+import { increaseCancellation } from "../../../../revision/application/commands/__tests__/card-increase-scene.js";
+import type { CardIncreaseProposal } from "../../../../revision/domain/entities/card-increase-proposal.js";
+import { proposalAt } from "../../../../revision/application/services/__tests__/card-increase-doubles.js";
 import { DirectUnitOfWork } from "../../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { CommerceOrderCancelledFact } from "../../../../../../delivery/channels/commerce/index.js";
 import { FixedClock } from "../../../../../../platform/time/fixed-clock.js";

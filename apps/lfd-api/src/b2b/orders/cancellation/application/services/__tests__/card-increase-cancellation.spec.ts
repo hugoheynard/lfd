@@ -1,5 +1,5 @@
-import { increaseCancellation } from "../../../../application/commands/__tests__/card-increase-scene.js";
-import { proposalAt } from "../../../../application/services/__tests__/card-increase-doubles.js";
+import { increaseCancellation } from "../../../../revision/application/commands/__tests__/card-increase-scene.js";
+import { proposalAt } from "../../../../revision/application/services/__tests__/card-increase-doubles.js";
 
 /**
  * **R9 — l'annulation d'une commande qui porte un projet de hausse vivant**

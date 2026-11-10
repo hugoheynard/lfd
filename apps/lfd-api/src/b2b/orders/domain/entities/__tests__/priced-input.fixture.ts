@@ -22,7 +22,7 @@ import type {
 import type { LineSealing } from "../../services/basket-promotion-choice.js";
 import type { OrderLineInput } from "../../value-objects/order-line.js";
 import type { PricedDraftInput } from "../order-priced-draft.js";
-import type { RevisableOrder } from "../order-revision.js";
+import type { RevisableOrder } from "../../../revision/domain/entities/order-revision.js";
 import type { OrderFulfillmentInput } from "../order-shapes.js";
 
 /**

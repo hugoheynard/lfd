@@ -8,19 +8,19 @@ import { AfterCommit } from "../../../../platform/database/after-commit.js";
 import { Journal } from "../../../../platform/journal/journal.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import type { CardIncreaseProposal } from "../../domain/entities/card-increase-proposal.js";
+import type { CardIncreaseProposal } from "../../revision/domain/entities/card-increase-proposal.js";
 import { OrderNotFoundError } from "../../domain/errors/order-errors.js";
-import { ComplementWithoutProposalError } from "../../domain/errors/card-increase-proposal-errors.js";
+import { ComplementWithoutProposalError } from "../../revision/domain/errors/card-increase-proposal-errors.js";
 import { OrderComplementPaidLateEvent } from "../../domain/events/order-complement-paid-late.event.js";
-import { CardIncreaseProposalRepository } from "../../domain/ports/card-increase-proposal.repository.js";
-import { CardIncreaseWake } from "../../domain/ports/card-increase-wake.js";
+import { CardIncreaseProposalRepository } from "../../revision/domain/ports/card-increase-proposal.repository.js";
+import { CardIncreaseWake } from "../../revision/domain/ports/card-increase-wake.js";
 import { OrderCardStandingReader } from "../../domain/ports/order-card-standing.reader.js";
 import { OrderLock } from "../../domain/ports/order-lock.js";
 import {
   increaseClosedFact,
   increasePaidFact,
   type IncreaseOrderLabel,
-} from "./card-increase-facts.js";
+} from "../../revision/application/services/card-increase-facts.js";
 
 /**
  * **Un complément de hausse est encaissé** (doc
