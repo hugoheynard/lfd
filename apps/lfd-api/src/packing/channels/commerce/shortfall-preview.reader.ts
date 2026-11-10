@@ -29,7 +29,7 @@ export type PackingShortfallPreview =
 /**
  * **« Ce bac peut-il partir incomplet, et avec quoi ? »** — la lecture du
  * départ incomplet au comptoir (lot C1b, plan
- * `documentation/comptoir/depart-incomplet.md`, §4.1 —
+ * `documentation/commandes/reliquat/depart-incomplet.md`, §4.1 —
  * Hugo, 2026-11-03). Déclaré ET implémenté par le colisage, lu par le
  * commerce ; à part de `ShortfallFreezeDesk` (ISP) : une lecture n'a pas à
  * dépendre d'un geste.

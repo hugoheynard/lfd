@@ -57,7 +57,7 @@ tant qu'elle n'est pas lue, aucun retard n'est dit.
 Sur un sac où il manque des pièces, le bouton du rail devient « Procédure
 commande incomplète » : le vendeur remet ce qui est au bac et le reste est
 abandonné, en une transaction ; un départ déjà tranché par un manager se remet
-directement. Tout est dans [`depart-incomplet.md`](depart-incomplet.md).
+directement. Tout est dans [`../commandes/reliquat/depart-incomplet.md`](../commandes/reliquat/depart-incomplet.md).
 
 ## Où lire le reste
 
@@ -71,7 +71,7 @@ directement. Tout est dans [`depart-incomplet.md`](depart-incomplet.md).
 ## Reste à faire
 
 - Le reliquat au comptoir (le client repasse, ou on le lui porte) :
-  [`depart-incomplet.md`](depart-incomplet.md) §5, après L8 d'E7.
+  [`../commandes/reliquat/depart-incomplet.md`](../commandes/reliquat/depart-incomplet.md) §5, après L8 d'E7.
 
 - La revue de l'écran : [`todo-revue-retrait-boutique.md`](todo-revue-retrait-boutique.md).
 - Les statuts du comptoir et la Production sous son propre droit (en suspens) :

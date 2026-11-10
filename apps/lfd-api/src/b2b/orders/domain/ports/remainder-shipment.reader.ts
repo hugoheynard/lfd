@@ -1,6 +1,6 @@
 /**
  * **Un reste de commande, pour les courriels** (plan
- * `documentation/commandes/plan-e7-reliquat-bati.md`, choix 17, lot L4d).
+ * `documentation/commandes/reliquat/plan-e7-reliquat-bati.md`, choix 17, lot L4d).
  *
  * Le courriel d'un envoi de rang > 1 ne peut pas se lire sur la commande :
  * son contenu et son état sont ceux de SON bon de livraison (choix 3). Port

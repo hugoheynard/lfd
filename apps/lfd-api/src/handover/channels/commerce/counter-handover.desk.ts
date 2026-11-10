@@ -1,6 +1,6 @@
 /**
  * **Le guichet du retrait pour un départ décidé au comptoir** (plan
- * `documentation/comptoir/depart-incomplet.md`, §4.2,
+ * `documentation/commandes/reliquat/depart-incomplet.md`, §4.2,
  * étapes 2 et 5 — Hugo, 2026-11-03).
  *
  * Déclaré ET implémenté par le retrait, appelé par le commerce DANS la

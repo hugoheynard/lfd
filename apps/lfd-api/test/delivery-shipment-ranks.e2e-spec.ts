@@ -1,6 +1,6 @@
 /**
  * E2E du **rang à la livraison** (plan E7 reliquat, lot L3c,
- * `documentation/commandes/plan-e7-reliquat-bati.md`) : un arrêt dessert un
+ * `documentation/commandes/reliquat/plan-e7-reliquat-bati.md`) : un arrêt dessert un
  * ENVOI `(commande, rang)`, et le plan arrêté range des envois.
  *
  * Ce que seul le vrai Postgres prouve : que l'index I3 recréé sur

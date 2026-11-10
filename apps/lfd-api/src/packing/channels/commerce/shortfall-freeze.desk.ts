@@ -3,7 +3,7 @@ import type { ShortfallReportedLine } from "./packing-shortfall-reported.event.j
 /**
  * **Figer le bac sans publier** — le geste du colisage qu'appelle le départ
  * incomplet décidé au comptoir (plan
- * `documentation/comptoir/depart-incomplet.md`, §4.2,
+ * `documentation/commandes/reliquat/depart-incomplet.md`, §4.2,
  * étape 3 — Hugo, 2026-11-03).
  *
  * Déclaré ET implémenté par le colisage, appelé par le commerce DANS la

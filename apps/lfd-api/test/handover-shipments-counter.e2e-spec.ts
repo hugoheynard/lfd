@@ -1,6 +1,6 @@
 /**
  * E2E du **comptoir par envoi** (plan E7 reliquat, lot L4c —
- * `documentation/commandes/plan-e7-reliquat-bati.md`, choix 13).
+ * `documentation/commandes/reliquat/plan-e7-reliquat-bati.md`, choix 13).
  *
  * Ce que seul le vrai Postgres prouve : que le jeton de la commande rend ses
  * envois prêts (la commande et son reste colisé), que « Remettre » les remet

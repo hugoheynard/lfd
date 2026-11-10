@@ -8,7 +8,7 @@ import { PackingSheetRepository } from "../../domain/ports/packing-sheet.reposit
 
 /**
  * L'implémentation du geste « figer le bac » (plan
- * `documentation/comptoir/depart-incomplet.md`, §4.2) : la
+ * `documentation/commandes/reliquat/depart-incomplet.md`, §4.2) : la
  * fiche la plus récente de l'envoi, sous verrou, signalée par l'agrégat,
  * réécrite. Tourne dans l'unité de travail du commerce — il n'en ouvre pas,
  * et ne publie rien.

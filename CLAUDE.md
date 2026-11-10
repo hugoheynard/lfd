@@ -516,7 +516,7 @@ sont retirés : le colisage est le seul poste. `production_day.packing_owner`
 reste en base et nomme encore `legacy` les journées colisées avant la bascule.
 
 🔴 **Le colisage écoute le retrait par un canal** (2026-11-03, Hugo, option b ;
-[`documentation/comptoir/depart-incomplet.md`](documentation/comptoir/depart-incomplet.md) §7).
+[`documentation/commandes/reliquat/depart-incomplet.md`](documentation/commandes/reliquat/depart-incomplet.md) §7).
 Le retrait DÉCLARE `handover/channels/packing/` — le fait `handover.handed_over` —
 et le colisage s'y abonne (`@DurableHandler`) pour sortir de sa liste la fiche
 d'un envoi remis sans avoir été colisé. `handover → packing` reste interdit :

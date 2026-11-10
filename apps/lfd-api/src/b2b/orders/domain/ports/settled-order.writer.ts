@@ -1,6 +1,6 @@
 /**
  * Port d'**écriture** du solde d'une commande en partie retirée (plan
- * `documentation/commandes/plan-e7-reliquat-bati.md`, lot L5b).
+ * `documentation/commandes/reliquat/plan-e7-reliquat-bati.md`, lot L5b).
  *
  * Même nature que `OrderRepository.markFulfilled`, et pour la même raison :
  * la projection d'un fait du retrait, conditionnée en base

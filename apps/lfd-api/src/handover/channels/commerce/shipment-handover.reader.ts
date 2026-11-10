@@ -1,6 +1,6 @@
 /**
  * **« Un envoi de cette commande est-il déjà retiré ? »** — la question de
- * l'annulation (plan E7 reliquat, `documentation/commandes/plan-e7-reliquat-bati.md`,
+ * l'annulation (plan E7 reliquat, `documentation/commandes/reliquat/plan-e7-reliquat-bati.md`,
  * §3 bis, fermé en L4c).
  *
  * Le retrait DÉCLARE et IMPLÉMENTE ce port, le commerce le lit — même figure

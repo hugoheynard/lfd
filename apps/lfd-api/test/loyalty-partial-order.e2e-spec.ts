@@ -1,6 +1,6 @@
 /**
  * **Un reste abandonné ne rapporte pas de points** (plan
- * `documentation/commandes/plan-e7-reliquat-bati.md`, lot L-points, choix 16).
+ * `documentation/commandes/reliquat/plan-e7-reliquat-bati.md`, lot L-points, choix 16).
  *
  * Bug de l'existant depuis E6 : le lecteur des commandes définitives rendait
  * les montants COMMANDÉS ; une commande partie incomplète, reste abandonné,

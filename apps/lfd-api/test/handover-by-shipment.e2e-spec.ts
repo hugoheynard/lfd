@@ -1,6 +1,6 @@
 /**
  * E2E du **retrait par envoi** (plan E7 reliquat, lot L4b —
- * `documentation/commandes/plan-e7-reliquat-bati.md`).
+ * `documentation/commandes/reliquat/plan-e7-reliquat-bati.md`).
  *
  * Ce que seul le vrai Postgres prouve : qu'un reliquat se remet sous sa
  * propre attestation (`(commande, rang)` unique, référence `-2`), que la

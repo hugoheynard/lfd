@@ -1,6 +1,6 @@
 /**
  * E2E de l'**alignement par rang** (plan E7, lot L2 —
- * `documentation/commandes/plan-e7-reliquat-bati.md`, choix 3).
+ * `documentation/commandes/reliquat/plan-e7-reliquat-bati.md`, choix 3).
  *
  * Ce que seul le vrai Postgres prouve : qu'un BL-1 remis par les vrais gestes
  * et un reliquat prévu par `planRemainder` cohabitent sans que le

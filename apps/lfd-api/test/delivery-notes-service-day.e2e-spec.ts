@@ -1,6 +1,6 @@
 /**
  * E2E du **jour d'un reliquat** (plan E7, lot L1 —
- * `documentation/commandes/plan-e7-reliquat-bati.md`, choix 2).
+ * `documentation/commandes/reliquat/plan-e7-reliquat-bati.md`, choix 2).
  *
  * Ce que seul le vrai Postgres prouve : que la base refuse un BL de rang > 1
  * sans jour de service, même écrit hors du domaine ; qu'un BL-1 garde

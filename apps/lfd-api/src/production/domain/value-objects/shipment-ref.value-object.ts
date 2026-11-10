@@ -5,7 +5,7 @@ export const FIRST_SHIPMENT_RANK = 1;
 
 /**
  * **Un envoi** — `(commande, rang)` (plan
- * `documentation/commandes/plan-e7-reliquat-bati.md`, §1 et choix 12).
+ * `documentation/commandes/reliquat/plan-e7-reliquat-bati.md`, §1 et choix 12).
  *
  * Le rang 1 est la commande elle-même ; un rang > 1 est un reliquat, né d'une
  * décision de manque. Un value object plutôt qu'une chaîne `orderId#r` : une

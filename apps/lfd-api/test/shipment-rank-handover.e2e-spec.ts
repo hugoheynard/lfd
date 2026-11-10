@@ -1,6 +1,6 @@
 /**
  * Le rang de l'envoi en base, au retrait (plan
- * `documentation/commandes/plan-e7-reliquat-bati.md`, choix 5, 12 et 14, lot
+ * `documentation/commandes/reliquat/plan-e7-reliquat-bati.md`, choix 5, 12 et 14, lot
  * L3d) : l'attestation, la garde passée au livreur et les pièces d'une remise
  * à la porte se tiennent par envoi `(commande, rang)`.
  *

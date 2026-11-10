@@ -1,7 +1,7 @@
 /**
  * E2E — **une commande prête compte** dans le chiffre d'affaires, les volumes
  * et l'historique d'alertes (décision de Hugo du 2026-10-26, plan
- * `documentation/commandes/plan-e7-reliquat-bati.md`, annexe F).
+ * `documentation/commandes/reliquat/plan-e7-reliquat-bati.md`, annexe F).
  *
  * Régression : les cinq listes de statuts « qui comptent » omettaient `ready`.
  * Une commande comptée la veille en `confirmed` disparaissait du CA, du cumul

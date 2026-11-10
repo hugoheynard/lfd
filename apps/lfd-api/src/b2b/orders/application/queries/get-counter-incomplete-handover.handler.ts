@@ -17,7 +17,7 @@ import { GetCounterIncompleteHandoverQuery } from "./get-counter-incomplete-hand
 
 /**
  * **Peut-on proposer un départ incomplet, et sinon pourquoi ?** (lot C1b,
- * plan `documentation/comptoir/depart-incomplet.md`, §4.1 —
+ * plan `documentation/commandes/reliquat/depart-incomplet.md`, §4.1 —
  * Hugo, 2026-11-03). Le dialogue du comptoir (C2) dit les refus AVANT le
  * geste, et montre ce qui partirait et ce qui ne partirait pas.
  *

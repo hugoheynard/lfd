@@ -90,7 +90,7 @@ export class TransferNotYetComposedError extends BusinessError {
 
 /**
  * **La commande est hors de portée du comptoir** (plan
- * `documentation/comptoir/depart-incomplet.md`, §4.3 —
+ * `documentation/commandes/reliquat/depart-incomplet.md`, §4.3 —
  * Hugo, 2026-11-03) : une livraison, ou une commande d'un autre jour. Un
  * 403 : le vendeur a le droit du poste, pas celui de décider pour cette
  * commande-là. La phrase vient de `counterReachBlocker`.

@@ -33,7 +33,7 @@ export const NOT_SERVED_REASON =
 
 /**
  * L'implémentation du guichet (plan
- * `documentation/comptoir/depart-incomplet.md`, §4.2, §4.3) :
+ * `documentation/commandes/reliquat/depart-incomplet.md`, §4.2, §4.3) :
  * la garde du comptoir, puis la règle de `HandoverAttestation` — la même que
  * le scan et la saisie, sous le même verrou de la commande. Tourne dans
  * l'unité de travail du commerce ; n'en ouvre pas.

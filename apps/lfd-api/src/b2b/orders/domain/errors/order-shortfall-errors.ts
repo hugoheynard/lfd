@@ -22,7 +22,7 @@ export class NoShortfallToDecideError extends BusinessError {
 
 /**
  * **Le signal du comptoir arrive après un fait plus récent** (plan
- * `documentation/comptoir/depart-incomplet.md`, §4.2 —
+ * `documentation/commandes/reliquat/depart-incomplet.md`, §4.2 —
  * Hugo, 2026-11-03) : le bac a été signalé ou fermé au colisage au même
  * instant. Les quantités lues ne sont peut-être plus celles du bac ; rien
  * n'est décidé, rien n'est remis.
