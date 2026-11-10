@@ -1,6 +1,6 @@
 # Plan S2 — modifier à la hausse une commande payée par carte
 
-> **Doc-first, 2026-11-10 — version 7**, avec les décisions de Hugo du 2026-11-10 (§0), après six contradictions de `vitruve`
+> **Doc-first, 2026-11-10 — version 8**, avec les décisions de Hugo du 2026-11-10 (§0), après six contradictions de `vitruve`
 > (v1 : quatre bloquants, v2 : deux, v3 : aucun, v4 : un, v5 : un), toutes
 > intégrées ici, §3. Détaille le §8 du
 > [plan M2](plan-m2-historique-de-transactions.md), avancé avant S1 sur
@@ -299,20 +299,50 @@ Promise<number>` — aucune des quatre méthodes d'aujourd'hui ne raisonne
 - **R14. Le total vu, sur toute modification** (Q2). `ReviseOrderCommand`
   et `ProposeCardIncreaseCommand` gagnent `expectedTotalCents`, **obligatoire**
   au contrat, comparé par `ensureTotalSeen` (`seen-total.ts`, la passation
-  l'appelle aux trois `place-*.handler.ts:181/89`) après la composition et
+  l'appelle dans `place-order.handler.ts:181`, `place-shop-order.handler.ts:181`
+  et `place-order-for-customer.handler.ts:89`) après la composition et
   avant toute écriture ou préparation de paiement : `OrderTotalChangedError`,
   le même message que la passation. Les trois appelants de M1 l'envoient :
   la boutique (le total du devis affiché), le back-office (idem), et
   `BusOrderChangeApplier` — **le total vu est celui de l'équipe** (Hugo,
   2026-11-10 : « c'est une délégation, le vu est par l'équipe, c'est une
-  responsabilité commerciale ») : l'écran qui applique une demande montre le
-  total de la modification, et c'est lui qu'il envoie ; le client n'a rien à
-  revalider. Les e2e de M1 l'envoient tous. Livré en S2.b, avant la hausse.
+  responsabilité commerciale »). Aujourd'hui rien ne le transporte : le front
+  poste un corps vide (`customer-requests.service.ts:53`), le contrôleur ne
+  lit aucun corps (`admin-order-change-requests.controller.ts:43-51`), le port
+  n'a pas de champ (`OrderChangeApplier.apply(orderId, staffUserId,
+baseRevision, change)`). La chaîne à poser, de l'écran au handler :
+  l'écran a déjà le devis (`order-change-details.ts:88-170`, `GET …/quote`)
+  et envoie **son** total (`order-change-details.ts:141`) → un corps
+  `{ expectedTotalCents }` au contrat de `POST …/apply` →
+  `ApplyOrderChangeCommand` → `ApplyOrderChangeHandler`
+  (`apply-order-change.handler.ts:59`) → `OrderChangeApplier.apply(…,
+expectedTotalCents)` (`order-change.applier.ts`) → `ReviseOrderCommand`.
+  Doubles : `order-change-doubles.ts`, les appels de
+  `answer-order-change.handlers.spec.ts`. **Jamais recalculé par
+  l'applicateur** : une comparaison avec son propre calcul serait vide.
+- **R14 bis. L'écran dit le refus.** Le code `orders.total_changed`
+  (`packages/contracts/src/seen-total.values.ts:14`) est attrapé par la
+  boutique (`order-revision.gateway.ts`, qui n'attrape aujourd'hui que
+  `orders.revise.*`, l. 22-37) et par le back-office (`orders.service.ts`,
+  l'écran d'une demande) : l'avertissement de la passation, le devis relu,
+  le bouton revalider.
+- **R14 ter. Livré d'un bloc** (lot S2.b0) : l'API, la boutique
+  (`order-revision.gateway.ts`, `revise` l. 93) et le back-office
+  (`orders.service.ts:357`, l'application d'une demande) dans **le même
+  commit et le même push sur `main`**. Les trois workflows de déploiement
+  partent en parallèle ; pendant les quelques minutes où l'API est neuve et un
+  front ancien, une modification répond 400 — **la casse est admise en
+  pré-release** (`CLAUDE.md` §0) ; à décider par Hugo, sinon passage par un
+  champ optionnel puis obligatoire en deux déploiements.
 - **R15. L'équipe ne fait pas de hausse carte** (Q3 a) :
   `ProposeCardIncreaseCommand` n'a que la route client ; l'équipe reçoit
   `CardOrderNotRevisableError` (raison `increase_by_staff`) avec le geste de
-  sortie. §2.4 « côté équipe » et l'e-mail `customer.order-complement-due`
-  passent au §2.12.
+  sortie. Le même refus pour une **demande M4** appliquée par l'équipe dont
+  le résultat serait une hausse carte (l'applicateur passe par M1, qui refuse
+  tout `card_complement`, R2 bis). **Ordre des refus** : le règlement (R2 bis,
+  R15) **avant** le total vu (R14) — on ne demande pas de revalider un
+  montant qu'on refusera de toute façon. L'e-mail
+  `customer.order-complement-due` passe au §2.12.
 - **R12. Chaque transition du projet est journalisée**, dans la transaction
   qui l'écrit : `order.card_increase_proposed`, `_paid`, `_applied`,
   `_refused` (avec `refusal`), `_abandoned` (avec la cause : délai, client,
@@ -506,8 +536,10 @@ le délai est un plancher, pas un couperet — écrit tel quel dans l'écran.
   `onPaymentFailed` qui routent sur lui (régression : un complément ne
   marque jamais le premier ; un complément sans projet est une erreur
   bruyante), `claim` qui rend le montant du paiement. **Sans R2 ter** (§2.2).
-- **S2.b — le geste** : **R14 d'abord** (le total vu sur toute
-  modification, ses trois appelants, les e2e de M1), R15, R2 ter (et `card_settled` gardé sur le chemin
+- **S2.b0 — le total vu, d'un bloc** (R14, R14 bis, R14 ter) : API, la chaîne
+  de la demande appliquée, la boutique et le back-office, leurs specs, tous
+  les e2e qui postent sur `/revisions` ou `/apply` ; un seul push.
+- **S2.b — le geste** : R15, R2 ter (et `card_settled` gardé sur le chemin
   `request`), `ProposeCardIncreaseCommand`, ses routes, le devis et
   `revisabilityOf`, les libellés de `revision-wording.ts`, le refus de M1 et de l'applicateur M4,
   `GetComplementPaymentQuery`, l'abandon par le client (et par l'équipe sur
@@ -528,15 +560,6 @@ le délai est un plancher, pas un couperet — écrit tel quel dans l'écran.
   webhook perdu rattrapé ; `stalled` puis Relancer ; demande M4 refusée ;
   baisse carte refusée ; facture carte après une hausse appliquée.
 
-### 2.12 Plus tard — l'équipe compose, le client paie par un lien (Q3 b)
-
-Noté pour un lot après S3 : `POST admin/orders/:id/revisions/card-increase`
-sous `@AdminSurface("b2b_orders")`, réponse sans secret, e-mail
-`customer.order-complement-due` (clé d'intention de l'écran), page
-`reglement/:id/complement`, délai jusqu'à l'heure limite et au plus 24 h
-(Q4 à reposer à ce moment), Abandonner sur la fiche. Le socle de S2 n'a rien
-à défaire pour l'accueillir.
-
 ### 2.11 Questions à Hugo — tranchées le 2026-11-10 (§0)
 
 1. **Q1 — 15 minutes**, bornées par l'heure limite de commande ?
@@ -551,7 +574,24 @@ sous `@AdminSurface("b2b_orders")`, réponse sans secret, e-mail
    on refuse et on rend, **même pour un projet de l'équipe** (proposé), alors
    que la modification au compte de l'équipe passe aujourd'hui « hors plan » ?
 
+### 2.12 Plus tard — l'équipe compose, le client paie par un lien (Q3 b)
+
+Noté pour un lot après S3 : `POST admin/orders/:id/revisions/card-increase`
+sous `@AdminSurface("b2b_orders")`, réponse sans secret, e-mail
+`customer.order-complement-due` (clé d'intention de l'écran), page
+`reglement/:id/complement`, délai jusqu'à l'heure limite et au plus 24 h
+(Q4 à reposer à ce moment), Abandonner sur la fiche. Le socle de S2 n'a rien
+à défaire pour l'accueillir.
+
 ## 3. Les verdicts de `vitruve`, intégrés
+
+**v7 (un bloquant, trois sérieux)** : le total vu de l'équipe n'avait aucun
+transport → la chaîne de l'écran au handler, nommée fichier par fichier,
+jamais recalculée (R14) ; la livraison cassait la modification entre deux
+lots → S2.b0 d'un bloc, la casse de quelques minutes posée à Hugo (R14
+ter) ; le refus invisible à l'écran → R14 bis ; la demande M4 qui augmente
+une commande carte et l'ordre des refus → R15. Mineurs : lignes des trois
+passations, §2.12 remis après §2.11.
 
 **v4 (un bloquant, cinq sérieux)** : R2 recopiait le régime d'après et
 désarmait deux gardes de M1 au compte → seul `onAccount` change (R2) ; le
