@@ -133,9 +133,11 @@ describe('grantGroups', () => {
    * (plan E6 (`documentation/commandes/bon-de-livraison.md`), E6b). 67 le
    * 2026-10-30 : `lfc_made_to_order`, le sur mesure, détaché de `lfc_catalog`
    * (catalogue/plan-articles-sur-mesure.md). 70 le 2026-11-08 : `mail_sends`,
-   * le suivi des e-mails (mail/le-suivi-des-e-mails.md, T2).
+   * le suivi des e-mails (mail/le-suivi-des-e-mails.md, T2). 71 le 2026-11-10 :
+   * `card_payments`, les paiements par carte
+   * (commandes/modification/plan-m2-historique-de-transactions.md, P1).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(70);
+    expect(RESOURCE_COUNT).toBe(71);
   });
 });

@@ -15,6 +15,10 @@
 // 🔴 Ce que Prisma ne sait pas écrire vit dans le `migration.sql`
 // (`20261109030000_le_schema_de_l_encaissement_par_carte`) : les CHECK, l'index
 // unique partiel, et les deux déclencheurs. Le lire avant de toucher un modèle.
+// Le remboursement (lot P1, plus bas) a les siens dans
+// `20261110010100_le_remboursement_par_carte`. Les clés à l'INTÉRIEUR du schéma
+// sont réelles (`refund` → `payment`, `refund_request` → `payment`, `refund`
+// → `refund_request`) ; aucune ne sort de `card_payment`, aucune n'y entre.
 
 /// L'état d'un paiement (§3.4). Pas d'état `created` : une intention naît hors
 /// transaction et n'a de ligne qu'une fois rattachée à son sujet.
@@ -83,7 +87,15 @@ model CardPayment {
   /// L'instant où le paiement est devenu `paid` ; `null` sinon.
   paidAt      DateTime?        @map("paid_at") @db.Timestamptz(6)
 
+  /// Les demandes de remboursement de ce paiement (lot P1, §5.1).
+  refundRequests CardRefundRequest[]
+  /// Le carnet de ses remboursements (lot P1, §5.1).
+  refunds        CardRefund[]
+
   @@unique([account, providerRef])
+  /// La cible de la clé composée `refund (payment_id, account)` : un
+  /// remboursement porte le compte de SON paiement, et aucun autre (lot P1).
+  @@unique([id, account])
   @@index([subjectType, subjectId])
   @@map("payment")
   @@schema("card_payment")
@@ -105,5 +117,214 @@ model CardPaymentTakeover {
   migratedAt DateTime @map("migrated_at") @db.Timestamptz(6)
 
   @@map("takeover")
+  @@schema("card_payment")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LE REMBOURSEMENT — lot P1 (2026-11-10)
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Plan M2, §3.4, §3.5, §5.1. Les demandes et le carnet quittent `b2b/orders`
+// (`public.order_refund_request`, `public.order_refund`) pour ce schéma ; la
+// copie de l'existant est une migration à part, sans DDL
+// (`20261110010200_la_copie_des_remboursements`). Les anciennes tables restent
+// en base, sans écrivain, jusqu'à P2.
+//
+// 🔴 Ce que Prisma ne sait pas écrire vit dans
+// `20261110010100_le_remboursement_par_carte` : les CHECK, l'index unique
+// partiel d'une `remainder` en cours, les deux machines à états et leurs
+// colonnes immuables, et le refus du DELETE. Le lire avant de toucher un modèle.
+
+/// L'état d'une demande de remboursement (§3.4). 🔴 Valeurs écrites en base.
+enum CardRefundRequestState {
+  /// À émettre : l'exécuteur la prendra à son échéance.
+  to_issue
+  /// Émise chez le prestataire (`re_…` posé), en attente de la banque.
+  issued
+  /// L'argent est rendu — ou il ne restait rien à rendre.
+  refunded
+  /// Arrêtée : un refus, un `re_…` mort, une inversion. Attend « Relancer »
+  /// ou « rendu autrement ».
+  stopped
+  /// Rendue hors plateforme, motif et fiche staff à l'appui (§5.5). Terminal.
+  settled_elsewhere
+
+  @@schema("card_payment")
+}
+
+/// La forme d'une demande (§3.5) : tout le reste du paiement, ou un montant.
+/// 🔴 Valeurs écrites en base.
+enum CardRefundForm {
+  remainder
+  amount
+
+  @@schema("card_payment")
+}
+
+/// La nature d'un remboursement (§3.1) — la seule connaissance métier du bloc,
+/// et elle est agnostique. 🔴 Valeurs écrites en base.
+enum CardRefundNature {
+  /// La vente n'a pas lieu (annulation, paiement tardif).
+  return
+  /// Le montant dû a baissé (révision, lot S1).
+  adjustment
+
+  @@schema("card_payment")
+}
+
+/// D'où vient une ligne du carnet (§5.1). 🔴 Valeurs écrites en base.
+enum CardRefundSource {
+  /// Un remboursement chez le prestataire : il porte son `re_…`.
+  provider
+  /// « Rendu autrement » (§5.5) : aucun argent n'a bougé chez le prestataire.
+  manual
+
+  @@schema("card_payment")
+}
+
+/// Le statut d'un remboursement chez le prestataire, recopié tel quel
+/// (`Refund.status` de Stripe). Seul `succeeded` compte dans le remboursé.
+/// 🔴 Valeurs écrites en base.
+enum CardRefundStatus {
+  pending
+  requires_action
+  succeeded
+  failed
+  canceled
+
+  @@schema("card_payment")
+}
+
+/// **Une demande de remboursement d'un paiement** (§3.4, §3.5, §5.1) — table
+/// `card_payment.refund_request`. L'argent à rendre devenu un ÉTAT PERSISTÉ :
+/// ce qui a été promis, ce qui a été tenté, et où elle en est.
+///
+/// Propriétaire : `src/card-payment/` (à venir, lot P1.b) — aucun autre bloc
+/// n'y écrit ; le commerce passe par `CardRefunds` (§3.3).
+///
+/// Ce que le SQL porte et que ce modèle ne montre pas (G1, §11) :
+/// - `refund_request_amount_matches_form` : `form = 'amount'` ⇔
+///   `amount_cents IS NOT NULL`, et `amount_cents > 0` ;
+/// - `refund_request_remainder_in_progress_key` : index unique PARTIEL sur
+///   `(payment_id) WHERE form = 'remainder' AND state IN ('to_issue',
+///   'issued')` — une seule `remainder` en cours par paiement ;
+/// - `refund_request_settled_elsewhere` : `settled_elsewhere` ⇔ motif ET fiche
+///   staff ; `refund_request_issued_pair` : `provider_ref` et `issued_at`
+///   posés ensemble ; montants positifs, compteurs ≥ 1 / ≥ 0, textes bornés ;
+/// - le déclencheur `refund_request_guard` (`BEFORE UPDATE`) : les transitions
+///   de `state` hors de la machine du §3.4 sont refusées (`(x, x)` admis), et
+///   `payment_id`, `form`, `amount_cents`, `nature`, `reason` sont immuables ;
+/// - le déclencheur `refund_request_no_delete` (`BEFORE DELETE`) : refusé, sauf
+///   sous `SET LOCAL card_payment.purge = 'on'` dans une transaction (purge).
+model CardRefundRequest {
+  /// ULID posé par le code ; une ligne reprise garde l'`order_id` de
+  /// l'ancienne demande (§5.1), la clé d'hier.
+  id             String                 @id
+  paymentId      String                 @map("payment_id")
+  payment        CardPayment            @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  form           CardRefundForm
+  /// Le montant demandé pour une `amount` ; nul pour une `remainder`.
+  amountCents    Int?                   @map("amount_cents")
+  nature         CardRefundNature
+  /// Le motif, opaque pour le bloc, donné par le sujet (`cancellation`,
+  /// `revision`…). Borné à 64 caractères.
+  reason         String
+  state          CardRefundRequestState
+  /// Ce qui a été annoncé au client, en centimes (> 0).
+  announcedCents Int                    @map("announced_cents")
+  /// Ce que le prestataire a accepté pour le `re_…` courant ; nul tant
+  /// qu'aucun n'est connu.
+  issuedCents    Int?                   @map("issued_cents")
+  /// `Clock` — un instant métier.
+  requestedAt    DateTime               @map("requested_at") @db.Timestamptz(6)
+  /// Id de la fiche staff, jamais un `sub` ; nul pour une demande automatique.
+  requestedBy    String?                @map("requested_by")
+
+  /// Entre dans la clé d'idempotence ; +1 à « Relancer » une `stopped`.
+  generation    Int       @default(1)
+  /// Entre dans la clé ; +1 après une issue `unavailable`, remis à 1 par génération.
+  round         Int       @default(1)
+  /// Appels faits pour la génération.
+  attempts      Int       @default(0)
+  /// Le `re_…` de la génération courante.
+  providerRef   String?   @map("provider_ref")
+  issuedAt      DateTime? @map("issued_at") @db.Timestamptz(6)
+  /// Le code brut du dernier échec (`unavailable`, `declined:<code>`…) ; la
+  /// phrase est celle du sujet.
+  lastFailure   String?   @map("last_failure")
+  lastAttemptAt DateTime? @map("last_attempt_at") @db.Timestamptz(6)
+  /// Le bail de l'exécuteur, mesuré à l'horloge MURALE.
+  claimedUntil  DateTime? @map("claimed_until") @db.Timestamptz(6)
+  /// Le jeton du porteur du bail : seul lui relâche et écrit l'issue.
+  claimToken    String?   @map("claim_token")
+  /// Quand le balayage peut la reprendre ; nul quand elle attend le bouton.
+  nextAttemptAt DateTime? @map("next_attempt_at") @db.Timestamptz(6)
+
+  /// « Rendu autrement » (§5.5) : la fiche staff qui l'a constaté.
+  settledByStaffId String? @map("settled_by_staff_id")
+  /// « Rendu autrement » : le motif écrit par l'équipe, borné à 500 caractères.
+  settledReason    String? @map("settled_reason")
+
+  refunds CardRefund[]
+
+  @@index([paymentId])
+  @@index([nextAttemptAt])
+  @@index([providerRef])
+  @@map("refund_request")
+  @@schema("card_payment")
+}
+
+/// **Un remboursement constaté sur un paiement** — le carnet, table
+/// `card_payment.refund` (§5.1). Une ligne par `re_…` chez le prestataire, ou
+/// par « rendu autrement » (`manual`). Rien ne s'efface : un remboursement en
+/// échec ou annulé garde sa ligne, sous son statut.
+///
+/// Propriétaire : `src/card-payment/` (à venir, lot P1.b). L'avoir qui le
+/// constate n'est PAS ici : c'est `public.refund_credit`, à la comptabilité.
+///
+/// Ce que le SQL porte et que ce modèle ne montre pas (G1, §11) :
+/// - la clé `(payment_id, account)` vers `payment (id, account)` : un
+///   remboursement porte le compte de son paiement, donc un compte connu ;
+/// - `refund_amount_positive` : `amount_cents > 0` ;
+/// - `refund_source_matches_provider_ref` : `source = 'provider'` ⇔
+///   `provider_ref IS NOT NULL` ;
+/// - le déclencheur `refund_guard` (`BEFORE UPDATE`) : les transitions de
+///   `status` hors du carnet d'aujourd'hui (`refundTransition`) sont refusées
+///   (`(x, x)` admis), et `payment_id`, `account`, `provider_ref`,
+///   `amount_cents`, `nature`, `source` sont immuables ;
+/// - le déclencheur `refund_no_delete` (`BEFORE DELETE`) : refusé, sauf sous
+///   `SET LOCAL card_payment.purge = 'on'` dans une transaction (purge).
+model CardRefund {
+  /// ULID ; une ligne reprise garde l'`id` de `public.order_refund` (§5.2).
+  id          String            @id
+  paymentId   String            @map("payment_id")
+  /// Recopié du paiement — la clé composée le garantit.
+  account     String
+  payment     CardPayment       @relation(fields: [paymentId, account], references: [id, account], onDelete: Restrict)
+  /// La demande qui l'a émis ; nul pour un `re_…` fait hors plateforme.
+  requestId   String?           @map("request_id")
+  request     CardRefundRequest? @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  /// Celle de sa demande ; nulle quand il n'en a pas.
+  nature      CardRefundNature?
+  source      CardRefundSource
+  /// Le `re_…` chez le prestataire ; nul pour un `manual`. Unique PAR compte.
+  providerRef String?           @map("provider_ref")
+  /// Centimes, entier > 0.
+  amountCents Int               @map("amount_cents")
+  /// Code ISO minuscule, tel que le prestataire l'écrit.
+  currency    String
+  status      CardRefundStatus
+  /// L'instant du prestataire pour un `provider`, celui du geste pour un
+  /// `manual`.
+  refundedAt  DateTime          @map("refunded_at") @db.Timestamptz(6)
+  /// Quand on l'a constaté — l'ordre de lecture du carnet.
+  recordedAt  DateTime          @map("recorded_at") @db.Timestamptz(6)
+  /// Le dernier changement de statut constaté.
+  updatedAt   DateTime          @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([account, providerRef])
+  @@index([paymentId])
+  @@index([requestId])
+  @@map("refund")
   @@schema("card_payment")
 }

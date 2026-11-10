@@ -1728,6 +1728,24 @@
       "information": false
     },
     {
+      "colonne": "card_payment.refund_request.requested_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a demandé un remboursement par carte (annulation, baisse) — reprise de `order_refund_request.requested_by`, plan M2 (`commandes/modification/plan-m2-historique-de-transactions.md`), lot P1.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "card_payment.refund_request.settled_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a dit un remboursement « rendu autrement » (hors plateforme), avec son motif — plan M2, §5.5, lot P1.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.orders.handed_over_by",
       "personne": "livreur",
       "categorie": "auteur-geste",

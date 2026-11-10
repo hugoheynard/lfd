@@ -354,6 +354,11 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     read: "Voir le suivi des e-mails : chaque envoi, son état et le retour du fournisseur, l'adresse masquée. Afficher une adresse en clair, ou chercher les envois d'une adresse, est inscrit au journal et limité à 30 par heure.",
     write: "N'ajoute rien : le suivi des e-mails se lit seulement.",
   },
+  card_payments: {
+    read: "N'ouvre rien seul aujourd'hui : les remboursements d'une commande se lisent sur sa fiche, avec Commandes.",
+    write:
+      "Relancer un remboursement par carte arrêté, le dire rendu autrement (motif obligatoire), vérifier un paiement chez le prestataire et lancer le balayage des remboursements à émettre.",
+  },
   ops_health: {
     read: "Voir la carte de santé de l'écosystème et son trafic.",
     write: "N'ajoute rien : la carte de santé se lit seulement.",

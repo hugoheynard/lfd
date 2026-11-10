@@ -98,6 +98,9 @@ model Invoice {
   collectionLines CollectionBatchLineInvoice[]
   /// Les remboursements que cet avoir constate (E5b) — un au plus.
   refunds         OrderRefund[]
+  /// Le remboursement par carte que cet avoir constate (plan M2, lot P1) —
+  /// un au plus.
+  refundCredit    RefundCredit?
 
   @@unique([legalEntityId, year, rank])
   @@unique([id, type])
@@ -248,5 +251,53 @@ model CardInvoiceOutcome {
 
   @@index([outcome])
   @@map("card_invoice_outcome")
+  @@schema("public")
+}
+
+/// Pourquoi un remboursement par carte est rapproché (plan M2, §5.1, §6.1).
+/// 🔴 Valeurs écrites en base.
+enum RefundCreditReason {
+  /// Un avoir le constate (`credit_note_id` posé).
+  credit_note
+  /// Un remboursement d'ajustement (lot S1) : la facture est faite sur le
+  /// montant baissé, aucun avoir n'est dû.
+  adjustment
+
+  @@schema("public")
+}
+
+/// **Le lien entre un remboursement par carte et l'avoir qui le constate**
+/// (plan `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+/// §5.1, §6.1) — table `public.refund_credit`. Remplace
+/// `order_refund.credit_note_id` : la comptabilité vit dans `public`, le
+/// carnet dans `card_payment`.
+///
+/// Propriétaire : `src/b2b/accounting/` (lot P1.b). Une ligne par
+/// remboursement rapproché, écrite une fois.
+///
+/// 🔴 `refund_id` est un identifiant OPAQUE de `card_payment.refund`, SANS clé
+/// étrangère : l'en-tête de `card_payment.prisma` interdit toute clé qui en
+/// viendrait (§5.1, v13). La table tient `invoice` par `credit_note_id`, et
+/// n'est tenue par personne.
+///
+/// Ce que le SQL porte (`20261110010100_le_remboursement_par_carte`) :
+/// - `refund_credit_reason_matches_credit_note` : `credit_note` ⇔
+///   `credit_note_id IS NOT NULL` — une ligne `adjustment` n'a pas d'avoir ;
+/// - l'unicité de `credit_note_id` (un remboursement par avoir ; les `NULL`
+///   ne se gênent pas), celle de `refund_id` (un avoir par remboursement) ;
+/// - le déclencheur `refund_credit_written_once` (`BEFORE UPDATE`) : une ligne
+///   ne change plus — l'écriture conditionnée d'`order_refund_credit_note_once`,
+///   conservée.
+model RefundCredit {
+  /// L'`id` de `card_payment.refund` — opaque, sans clé étrangère.
+  refundId     String             @id @map("refund_id")
+  /// L'avoir (381) ; nul pour une ligne `adjustment`.
+  creditNoteId String?            @unique @map("credit_note_id")
+  creditNote   Invoice?           @relation(fields: [creditNoteId], references: [id], onDelete: Restrict)
+  reason       RefundCreditReason
+  /// Quand le rapprochement a été écrit — lu du `Clock`.
+  createdAt    DateTime           @map("created_at") @db.Timestamptz(6)
+
+  @@map("refund_credit")
   @@schema("public")
 }

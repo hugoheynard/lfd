@@ -227,6 +227,11 @@ enum StaffResource {
   /// révélée sur demande et tracée (2026-11-08,
   /// `documentation/mail/le-suivi-des-e-mails.md`, T2). Accordée à l'écran.
   mail_sends
+  /// LES PAIEMENTS PAR CARTE — « Relancer » un remboursement, « rendu
+  /// autrement », « Vérifier », le balayage (2026-11-10,
+  /// `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+  /// §3.3, §5.3, lot P1). Accordée à l'écran.
+  card_payments
   ops_health
   /// LES OPÉRATIONS APRÈS DÉPLOIEMENT — simuler (lecture), appliquer
   /// (écriture) une reprise de données (2026-11-01,

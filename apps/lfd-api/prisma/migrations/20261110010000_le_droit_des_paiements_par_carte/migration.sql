@@ -1,0 +1,21 @@
+-- LE DROIT DES PAIEMENTS PAR CARTE — plan
+-- `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+-- lot P1 (§3.3, §5.3, §13.3).
+--
+-- `card_payments` garde les routes d'équipe du bloc `card-payment` :
+-- « Relancer » un remboursement, « rendu autrement », « Vérifier », le
+-- balayage. Les routes arrivent avec le lot P1.b.
+--
+-- 🔴 AUCUN droit accordé ici (`lint:no-role-grants-in-migrations`) : rien
+-- n'est écrit dans `staff_role_definitions` ni `staff_permission_overrides`.
+-- Geste de mise en service (§5.2, règle 8) : l'admin accorde `card_payments`
+-- à l'écran (`/admin/staff-roles`) AVANT de rouvrir la boutique — sans ça,
+-- « Relancer » et « rendu autrement » répondent 403.
+--
+-- SEULE dans sa migration : une valeur d'enum ne s'emploie pas dans la
+-- transaction qui l'ajoute.
+--
+-- ⚠️ IRRÉVERSIBLE, et sans conséquence : un retour arrière la laisse en place,
+-- inutilisée.
+
+ALTER TYPE "public"."StaffResource" ADD VALUE IF NOT EXISTS 'card_payments';
