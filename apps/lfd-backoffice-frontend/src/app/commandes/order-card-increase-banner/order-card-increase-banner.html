@@ -1,0 +1,63 @@
+@if (increase(); as increase) {
+  <fold-callout
+    appearance="inset"
+    [variant]="increase.state === 'stalled' ? 'alert' : 'info'"
+    data-card-increase
+    [attr.data-state]="increase.state"
+  >
+    @switch (increase.state) {
+      @case ('awaiting_payment') {
+        Une modification attend son complément de {{ amount() }}, à payer avant le
+        {{ increase.expiresAt | date: "dd/MM 'à' HH:mm" }}.
+      }
+      @case ('ready') {
+        Complément de {{ amount() }} payé, modification en cours.
+      }
+      @case ('stalled') {
+        Complément de {{ amount() }} payé, <strong>modification bloquée</strong>.
+      }
+    }
+    @if (increase.state === 'awaiting_payment' || increase.state === 'stalled') {
+      <div actions>
+        @if (increase.state === 'awaiting_payment') {
+          <fold-inline-confirm
+            message="Le complément ne pourra plus être payé et la commande reste telle quelle."
+            [labels]="{ confirm: 'Abandonner la modification', cancel: 'Garder' }"
+            keepOpenOnConfirm
+            [loading]="saving()"
+            [open]="confirming()"
+            (openChange)="confirming.set($event)"
+            (confirmed)="abandon()"
+          >
+            <button
+              foldButton
+              size="sm"
+              emphasis="outline"
+              [disabled]="!allowed()"
+              data-card-increase-abandon
+            >
+              Abandonner
+            </button>
+          </fold-inline-confirm>
+        } @else {
+          <button
+            foldButton
+            size="sm"
+            emphasis="outline"
+            [disabled]="!allowed()"
+            [loading]="saving()"
+            (click)="relaunch()"
+            data-card-increase-relaunch
+          >
+            Relancer
+          </button>
+        }
+      </div>
+    }
+  </fold-callout>
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" announce data-card-increase-error>{{
+      message
+    }}</fold-callout>
+  }
+}

@@ -55,6 +55,13 @@
       <!-- « Écrire au client » (E6d), après la décision : jamais automatique. -->
       <app-order-shortfall-letter [orderId]="o.id" [shortfall]="o.shortfall" (sent)="load()" />
 
+      <!-- La hausse par carte qui attend (plan S2, §2.8) : rien sans projet vivant. -->
+      <app-order-card-increase-banner
+        [orderId]="o.id"
+        [increase]="o.cardIncrease"
+        (changed)="load()"
+      />
+
       <!-- L'argent à rendre par carte (C4.9, plan M2 §5.3) : une ligne par demande, rien sans demande. -->
       <app-order-refund-banner [requests]="o.refundRequests" (changed)="load()" />
 

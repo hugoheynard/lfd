@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import type { AdminOrderCardIncrease } from "./admin-order-card-increase.js";
 import type { OrderSaleUnit, OrderView } from "./order.js";
 import type { OrderClientele } from "./order-handover.js";
 import type { AdminOrderRevisability } from "./order-revision.values.js";
@@ -68,6 +69,12 @@ export interface AdminOrderView extends OrderView {
    * colisage a figé au signalement en vigueur ; `null` = aucun manque signalé.
    */
   readonly shortfall: AdminOrderShortfall | null;
+  /**
+   * **La hausse par carte qui attend** (plan
+   * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.8) — le
+   * projet vivant (`awaiting_payment | ready | stalled`), ou `null`.
+   */
+  readonly cardIncrease: AdminOrderCardIncrease | null;
 }
 
 /** Le manque signalé : l'instant ISO, et, par article, la quantité due et celle au bac. */

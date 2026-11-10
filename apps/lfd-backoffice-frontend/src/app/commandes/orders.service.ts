@@ -283,6 +283,27 @@ export class AdminOrdersService {
     );
   }
 
+  /**
+   * **« Abandonner »** le complément qui attend son paiement (plan
+   * `documentation/commandes/modification/plan-s2-la-hausse.md`, §2.5) :
+   * `204` ; `409` s'il n'y a rien à abandonner ou s'il vient d'être payé.
+   */
+  async abandonCardIncrease(id: string): Promise<void> {
+    await firstValueFrom(
+      this.http.delete<void>(`${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/complement`),
+    );
+  }
+
+  /** **« Relancer »** une modification payée et bloquée (plan S2, §2.6) : `204`, ou `409`. */
+  async relaunchCardIncrease(id: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(
+        `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/card-increase/relaunch`,
+        {},
+      ),
+    );
+  }
+
   async sheetPdf(id: string): Promise<Blob> {
     return firstValueFrom(
       this.http.get(`${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/bon.pdf`, {

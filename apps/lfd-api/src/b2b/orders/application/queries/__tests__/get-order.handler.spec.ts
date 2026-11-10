@@ -32,6 +32,10 @@ import { VoucherRestitutionRefusal } from "../../services/voucher-restitution-re
 import { AdminOrderRefundView } from "../../services/admin-order-refund-view.js";
 import { FixedCardRefundRequests } from "../../commands/__tests__/refund-doubles.js";
 import { GetAdminOrderHandler } from "../get-admin-order.handler.js";
+import type { CardIncreaseProposal } from "../../../domain/entities/card-increase-proposal.js";
+import { FixedProposalReader } from "../../commands/__tests__/card-increase-scene.js";
+import { proposalAt } from "../../services/__tests__/card-increase-doubles.js";
+import { Steps } from "../../services/__tests__/order-card-doubles.js";
 import {
   OrderShortfallReader,
   type OrderShortfallReading,
@@ -256,6 +260,7 @@ function adminHandler(
   shortfall: OrderShortfallReading | null = null,
   settings: FixedCancellationSettings = new FixedCancellationSettings(),
   packing: FixedPackingStates = new FixedPackingStates(),
+  increase: CardIncreaseProposal | null = null,
 ): GetAdminOrderHandler {
   const subjects = new FixedSubjects(subject, others);
   const inscriptions = new FixedInscription(inscribedDay);
@@ -277,6 +282,7 @@ function adminHandler(
       revisingAt(new FixedClock(NOW), { engagements: new FixedEngagements(engagement) }),
     ),
     new FixedShortfall(shortfall),
+    new FixedProposalReader(new Steps(), increase),
   );
 }
 
@@ -305,7 +311,29 @@ describe("GetAdminOrderHandler", () => {
       revisability: { revisable: true },
       revision: 2,
       shortfall: null,
+      cardIncrease: null,
     });
+  });
+
+  it("plan S2, §2.8 : dit la hausse par carte qui attend son complément", async () => {
+    const view = await adminHandler(
+      ofCompany("cmp_1"),
+      { customer: CUSTOMER, company: COMPANY, placedByStaffId: null },
+      directory(),
+      cancellationSubject(),
+      null,
+      new FixedRestitutionPreview({ kind: "already" }),
+      {},
+      { kind: "free" },
+      new FixedCardRefundRequests(),
+      PLACED,
+      null,
+      new FixedCancellationSettings(),
+      new FixedPackingStates(),
+      proposalAt("stalled"),
+    ).execute(new GetAdminOrderQuery("ord_1"));
+
+    expect(view.cardIncrease).toMatchObject({ complementCents: 1_200, state: "stalled" });
   });
 
   it("dit le manque signalé au colisage, en vigueur — « décision attendue » (E6a)", async () => {

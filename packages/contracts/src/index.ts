@@ -793,6 +793,10 @@ export type {
   CounterIncompleteHandoverPayload,
   ShortfallRemainder,
 } from "./admin-order-detail.js";
+export type {
+  AdminCardIncreaseState,
+  AdminOrderCardIncrease,
+} from "./admin-order-card-increase.js";
 export {
   adminCancelOrderPayloadSchema,
   adminShortfallDecisionPayloadSchema,

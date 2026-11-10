@@ -14,6 +14,7 @@ import {
   type StaffAuthors,
 } from "../../../../staff/directory/domain/staff-author-directory.js";
 import { OrderNotFoundError } from "../../domain/errors/order-errors.js";
+import { CardIncreaseProposalReader } from "../../domain/ports/card-increase-proposal.reader.js";
 import { AdminOrderAuthorReader } from "../../domain/ports/admin-order-author.reader.js";
 import { CancellationSubjectReader } from "../../domain/ports/cancellation-subject.reader.js";
 import { Clock } from "../../../../platform/time/clock.js";
@@ -29,6 +30,7 @@ import { cancellationRefusalOf } from "../../domain/services/order-cancellation.
 import { cancellationRefundSentenceOf } from "../../domain/services/order-cancellation-refund.js";
 import { settlementRegimeOf } from "../../domain/services/settlement-regime.js";
 import type { CancellationSubject } from "../../domain/ports/cancellation-subject.reader.js";
+import { adminCardIncreaseOf } from "../services/admin-order-card-increase.js";
 import { AdminOrderRefundView } from "../services/admin-order-refund-view.js";
 import { OrderRevisabilityReading } from "../services/order-revisability-reading.js";
 import { CancellationPreview } from "../services/cancellation-preview.js";
@@ -57,6 +59,10 @@ import { GetAdminOrderQuery } from "./get-admin-order.query.js";
  *
  * Lot E6a (plan E6 (`documentation/commandes/bon-de-livraison.md`) § 3) : et le manque
  * signalé au colisage, en vigueur — « décision attendue ».
+ *
+ * Plan S2 (`documentation/commandes/modification/plan-s2-la-hausse.md`, §2.8) :
+ * et la hausse par carte qui attend, le projet vivant — lu par la commande
+ * déjà servie, sans autre mur que le sien.
  */
 @QueryHandler(GetAdminOrderQuery)
 export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, AdminOrderView> {
@@ -73,17 +79,20 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
     private readonly clock: Clock,
     private readonly revisions: OrderRevisabilityReading,
     private readonly shortfalls: OrderShortfallReader,
+    private readonly cardIncreases: CardIncreaseProposalReader,
   ) {}
 
   async execute(query: GetAdminOrderQuery): Promise<AdminOrderView> {
-    const [owned, author, cancellability, refundRequests, revision, shortfall] = await Promise.all([
-      this.orders.findById(query.orderId),
-      this.authors.authorOf(query.orderId),
-      this.cancellabilityOf(query.orderId),
-      this.refunds.of(query.orderId),
-      this.revisions.forStaff(query.orderId),
-      this.shortfalls.of(query.orderId),
-    ]);
+    const [owned, author, cancellability, refundRequests, revision, shortfall, increase] =
+      await Promise.all([
+        this.orders.findById(query.orderId),
+        this.authors.authorOf(query.orderId),
+        this.cancellabilityOf(query.orderId),
+        this.refunds.of(query.orderId),
+        this.revisions.forStaff(query.orderId),
+        this.shortfalls.of(query.orderId),
+        this.cardIncreases.liveOf(query.orderId),
+      ]);
     if (owned === null || author === null || cancellability === null || revision === null) {
       throw new OrderNotFoundError(query.orderId);
     }
@@ -105,6 +114,7 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
       revisability: revision.revisability,
       revision: revision.revision,
       shortfall: shortfall === null ? null : shortfallViewOf(shortfall, staffAuthors),
+      cardIncrease: adminCardIncreaseOf(increase),
     };
   }
 

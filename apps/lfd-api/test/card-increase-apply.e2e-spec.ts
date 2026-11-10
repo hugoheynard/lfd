@@ -15,7 +15,11 @@
  * le prestataire de carte (`E2eCardProvider`). Le mur avance par
  * `OffsetWallClock` : aucune date absolue comparée à l'horloge.
  */
-import type { CardComplementPaymentView, OrderRevisionQuoteView } from "@lfd/contracts";
+import type {
+  AdminOrderView,
+  CardComplementPaymentView,
+  OrderRevisionQuoteView,
+} from "@lfd/contracts";
 
 import { CardSettlementReader } from "../src/card-payment/channels/requests/index.js";
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
@@ -445,4 +449,40 @@ describe("L'annulation de la commande avec un projet vivant (R9)", () => {
       expect(await orderOf(order.id)).toMatchObject({ status: "cancelled", revision: 0 });
     },
   );
+});
+
+describe("La fiche staff voit le projet vivant (§2.8)", () => {
+  const sheet = async (orderId: string): Promise<AdminOrderView> =>
+    jsonBody<AdminOrderView>(await staff().get(`/admin/orders/${orderId}`).expect(200));
+
+  it("en attente de paiement, puis en panne, puis `null` une fois appliqué", async () => {
+    const order = await paidOrder();
+    const increase = await proposed(order);
+    const complementCents = increase.targetCents - order.totalCents;
+
+    expect((await sheet(order.id)).cardIncrease).toEqual({
+      complementCents,
+      state: "awaiting_payment",
+      expiresAt: expect.any(String) as string,
+      refusal: null,
+    });
+
+    wall.offsetMs = -10 * MINUTE_MS;
+    await cardPaid(ctx, increase.providerRef);
+    await deliver();
+    wall.offsetMs = 0;
+    await stall(order.id);
+    expect((await sheet(order.id)).cardIncrease).toMatchObject({ state: "stalled" });
+
+    await staff().post(`/admin/orders/${order.id}/card-increase/relaunch`).expect(204);
+    await deliver();
+
+    expect((await sheet(order.id)).cardIncrease).toBeNull();
+  });
+
+  it("aucun projet : `null`", async () => {
+    const order = await paidOrder();
+
+    expect((await sheet(order.id)).cardIncrease).toBeNull();
+  });
 });
