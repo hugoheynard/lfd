@@ -358,7 +358,7 @@ export class ProductHttpApi {
     return this.put(`products/${id}/identity`, input);
   }
 
-  /** Où chaque déclinaison de la fiche a déjà servi (`plan-changer-l-unite-de-vente.md`, § 8). */
+  /** Où chaque déclinaison de la fiche a déjà servi (`saisir-un-prix.md`, § 3). */
   saleUnitUsage(id: string): Promise<ProductSaleUnitUsageView> {
     return firstValueFrom(
       this.http.get<ProductSaleUnitUsageView>(this.url(`products/${id}/sale-unit-usage`)),

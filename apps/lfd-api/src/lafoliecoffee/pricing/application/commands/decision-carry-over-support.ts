@@ -3,7 +3,7 @@ import { NotDetachedFromError } from "../../domain/pricing-errors.js";
 import { SaleReferenceLineageReader } from "../../domain/ports/sale-reference-lineage.reader.js";
 
 /**
- * **La garde de tout report** (`plan-report-apres-detachement.md`, § 3) : la
+ * **La garde de tout report** (`saisir-un-prix.md`, § 4) : la
  * nouvelle référence est née de l'ancienne au catalogue du commerce. Sans
  * elle, « reporter » poserait une décision sur n'importe quel article sans
  * aucun des contrôles d'une saisie.

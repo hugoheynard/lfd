@@ -106,7 +106,7 @@ export async function accountOrder(
 /**
  * Une livraison part d'une adresse INSCRITE au carnet de la société, qui porte
  * l'échéance demandée : depuis E1 (Hugo, 2026-11-03, P2a 7e93eec00 —
- * `plan-prix-de-la-saisie.md`), la saisie de l'équipe pour un pro ne demande
+ * `commande-passee-par-l-equipe.md`), la saisie de l'équipe pour un pro ne demande
  * qu'une fenêtre inscrite sur l'adresse, comme le pro lui-même. Une adresse
  * dictée n'en porte aucune, et la scène était refusée
  * (`orders.fulfillment.deadline_not_registered`). Le retrait passe tel quel.

@@ -1,6 +1,6 @@
 /**
  * **Le report d'une décision datée, en domaine pur**
- * (`plan-report-apres-detachement.md`, § 1, § 2, § 3) : la fenêtre
+ * (`saisir-un-prix.md`, § 4) : la fenêtre
  * `max(maintenant, début)` → fin réelle, jamais rétroactive ; la portée de
  * l'ancienne, identifiant = la nouvelle référence ; « déjà reportée » par
  * audience. Puis la règle (pause comprise) et le plancher (le pourcentage

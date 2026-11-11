@@ -334,6 +334,25 @@ sortent de la vente par les faits de leurs fiches. Appliquée, elle fait
 redescendre les limites de **tous** les articles — un déplacement de famille
 change la lignée de ses descendantes.
 
+### Le rayon est la famille
+
+Il n'y a pas de table de rayons dans le code : **une famille livrée est un
+rayon**, sans déploiement. `CatalogFamily`
+(`lafoliecoffee/catalog/domain/catalog-family.ts`) prend son `id`, son `name`
+et sa `position` dans `catalog_categories`. Une portée « famille » (règle de
+prix, limite, palier, engagement, heure limite) porte l'**id PIM** de la
+famille et suit son **chemin** (`path`, de la plus proche à la plus
+lointaine, la même lignée que `categoryPathOf`) : une décision posée sur une
+famille vaut pour ses sous-familles, et la plus proche l'emporte.
+
+Les anciens codes de rayon (`viennoiserie`…) ne se lisent plus que pour le
+passé immuable — sujets du journal tarifaire, traces figées des lignes de
+commande — par `legacy-shelf-codes.ts`, leur seul lecteur, qui ne grandit
+plus. `lint:no-shelf-literals` (`dev-toolbox/gates/no-shelf-literals.mjs`)
+refuse le retour d'un code de rayon écrit dans le commerce. Une famille
+inconnue ne met plus le catalogue en erreur
+(`apps/lfd-api/test/catalog-unknown-family.e2e-spec.ts`).
+
 ### Les langues reçues, et la vue publique (2026-10-18)
 
 Le récepteur range les traductions dans trois colonnes `jsonb` nullables —

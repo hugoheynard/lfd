@@ -3,7 +3,7 @@ import type { DecisionOrigin } from "../domain/entities/decision-carry-over.js";
 
 /**
  * **L'origine d'une décision reportée, ligne ↔ domaine** — la colonne
- * `origin jsonb` des quatre tables datées (`plan-report-apres-detachement.md`,
+ * `origin jsonb` des quatre tables datées (`saisir-un-prix.md`,
  * R0). Écrite une fois, ici : une origine illisible LÈVE plutôt que d'être
  * prise pour une saisie — « déjà reporté » se juge sur elle.
  */

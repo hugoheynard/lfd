@@ -9,7 +9,7 @@
  * - `cart` : le panier et son devis ;
  * - `checkout` : la passation — client, boutique ou saisie de l'équipe ;
  * - `estimate` : l'estimation de la saisie de l'équipe, qui compose la
- *   commande sans l'écrire (plan `documentation/pricing/saisie/plan-prix-de-la-saisie.md`,
+ *   commande sans l'écrire (plan `documentation/commandes/passation/commande-passee-par-l-equipe.md`,
  *   lot P2) — une par changement de la saisie, à ne pas compter en passation ;
  * - `back-office` : les écrans de tarification (projection) ;
  * - `suggestions` : les articles suggérés (habitudes, suggestions du staff,

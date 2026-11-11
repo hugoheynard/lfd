@@ -1,12 +1,10 @@
 # La remise générale d'une mercuriale
 
-> ✅ **Décrit le code au 2026-11-11.** Bâtie le même jour (lots R1 à R4), à la
-> demande de Hugo : « tout à −30 % sauf quelques articles », puis « −40 % sur
-> le pain, −30 % sur les viennoiseries ». Le plan, contredit par `vitruve`,
-> reste dans l'historique git. Les repères qu'il donnait et que le code cite
-> sont gardés : **« Un taux par famille »**, les décisions **D1 à D9** et
-> **Q1 à Q3**, les **§ 2.1, § 3, § 4, § 5**. Partie 1 : comprendre. Partie 2 :
-> le code.
+> ✅ **Doc d'état.** Demande de Hugo : « tout à −30 % sauf quelques articles »,
+> puis « −40 % sur le pain, −30 % sur les viennoiseries ». Les repères que le
+> code cite sont gardés : **« Un taux par famille »**, les décisions **D1 à
+> D9** et **Q1 à Q3**, les **§ 2.1, § 3, § 4, § 5**. Partie 1 : comprendre.
+> Partie 2 : le code.
 
 # Partie 1 — Comprendre
 

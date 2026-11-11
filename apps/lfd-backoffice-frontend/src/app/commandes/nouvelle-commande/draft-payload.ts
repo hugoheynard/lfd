@@ -221,7 +221,7 @@ export interface DraftDecisions {
 
 /**
  * **La saisie est-elle assez complète pour qu'une commande se compose ?**
- * (plan `plan-prix-de-la-saisie.md`, lot P2) — au moins une ligne, un
+ * (plan `commande-passee-par-l-equipe.md`, § 8) — au moins une ligne, un
  * interlocuteur, un acheminement résolu (point ou adresse, et la tranche du
  * retrait), un jour, un règlement. Le brouillon qu'on passerait, ou `null`.
  *

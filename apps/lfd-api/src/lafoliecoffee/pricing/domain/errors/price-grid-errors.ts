@@ -5,7 +5,7 @@ import {
 } from "../../../../platform/shared/errors/app-error.js";
 
 /**
- * Les refus de la grille de prix (`plan-export-grille-de-prix.md`). Chacun nomme
+ * Les refus de la grille de prix (`export-grille-de-prix.md`). Chacun nomme
  * le cas et le geste : ils sont lus dans le panneau d'export, par l'équipe.
  */
 

@@ -7,7 +7,7 @@ import { appliedBasketDiscountsOf, type BasketDiscountTrace } from "./order-bask
 
 /**
  * **Les montants d'une commande composée, lus sans la muter** (plan
- * `documentation/pricing/saisie/plan-prix-de-la-saisie.md`, lot P2, BLOQUANT
+ * `documentation/commandes/passation/commande-passee-par-l-equipe.md`, § 8 P2, BLOQUANT
  * `vitruve` n° 1).
  *
  * `toPersistence()` est le seul autre chemin vers ces nombres, et il refuse un

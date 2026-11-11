@@ -280,7 +280,7 @@ model ProductVariant {
   /// **Déjà publiée** : vrai dès que la fiche est mise en vente avec elle, pour
   /// toujours. Elle a figé `saleUnit` jusqu'au 2026-10-29 ; depuis, c'est
   /// l'usage de la référence au commerce qui la fige (`Variant.changeSaleTerms`,
-  /// `plan-changer-l-unite-de-vente.md` § 8), et cette colonne n'est plus lue
+  /// `saisir-un-prix.md`, § 3), et cette colonne n'est plus lue
   /// pour ça (vérifié le 2026-10-29).
   hasBeenPublished Boolean @default(false) @map("has_been_published")
 

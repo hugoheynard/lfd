@@ -1,7 +1,8 @@
 import { ventilateVat } from "../vat.js";
 
 /**
- * 🔴 Le calcul PRO est figé (plan-centime-particuliers, contrainte absolue) :
+ * 🔴 Le calcul PRO est figé (contrainte absolue,
+ * `documentation/pricing/centime-et-tva/le-ttc-fait-foi.md`) :
  * l'arrivée de `composeTtcOrder` ne change pas un centime de `ventilateVat`.
  * Valeurs relevées le 2026-10-27, avant tout branchement.
  */

@@ -41,7 +41,7 @@ import { TYPICAL_BUYER, type PromotionAudienceFacts } from "./promotion-targetin
  *
  * Les faits de ces acheteurs types sont `TYPICAL_BUYER` (`promotion-targeting.ts`),
  * la définition que la grille de prix lit aussi pour son « pro type »
- * (`plan-export-grille-de-prix.md`, § 8.4).
+ * (`export-grille-de-prix.md`, § 6.4).
  *
  * Exact pour les publics qui ne dépendent que du statut de la société —
  * `everyone`, `pros`, `pros_active`, `pros_pending`, `individuals`,

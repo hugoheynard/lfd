@@ -1,7 +1,6 @@
 # Établir une mercuriale pour un compte client
 
-> ✅ **Décrit le code au 2026-11-04**, réécrit ce jour-là contre le code. Ce que
-> fait une mercuriale est dans
+> ✅ **Doc d'état.** Ce que fait une mercuriale est dans
 > [`comprendre-une-mercuriale.md`](comprendre-une-mercuriale.md) ; ce document
 > dit **comment l'équipe en établit une** : par où, avec quels outils, et ce
 > qui reste à construire. Partie 1 : comprendre. Partie 2 : le code.

@@ -401,9 +401,8 @@ remesuré le 2026-10-19) : la chaîne arrondit le HT au centime par ligne
 TTC vaut `H + arrondi(H × taux)` et saute certains centimes. Mesuré le
 2026-09-28 sur des étiquettes de 0,50 € à 10,00 € : 49/951 encaissées à un
 autre montant à 5,5 %, 86/951 à 10 %, 159/951 à 20 %. Symptôme constaté en
-production (1,90 € + 0,50 € encaissés 2,39 €), document dédié :
-[`../pricing/obsolete/ecart-du-centime-particuliers.md`](../pricing/obsolete/ecart-du-centime-particuliers.md),
-qui attend le cabinet (son §6).
+production (1,90 € + 0,50 € encaissés 2,39 €), corrigé depuis : une commande de particulier se compose en TTC
+([`../pricing/centime-et-tva/le-ttc-fait-foi.md`](../pricing/centime-et-tva/le-ttc-fait-foi.md)).
 
 **Avec l'option (a)**, le prix d'un article de formule est un prix d'article :
 il tombe dans les mêmes trous qu'une étiquette, ni plus ni moins. La vue des

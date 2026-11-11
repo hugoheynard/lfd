@@ -689,7 +689,7 @@ export class Variant {
   /**
    * L'unité de vente, le pas et le minimum. L'unité change librement tant que
    * sa référence de vente n'a servi nulle part — même publiée
-   * (`plan-changer-l-unite-de-vente.md`, § 8, Hugo, 2026-10-29) ; le pas et le
+   * (`saisir-un-prix.md`, § 3) ; le pas et le
    * minimum, eux, restent réglables.
    *
    * `clearance` est la réponse du commerce, lue par le handler AVANT l'appel :

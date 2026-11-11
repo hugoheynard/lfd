@@ -1,9 +1,6 @@
 # Le prix, tel que la boutique le montre
 
-> ✅ **Décrit le code au 2026-11-04**, réécrit ce jour-là contre le code. La
-> version d'origine (un plan du 2026-09-03, dont deux décisions ont ensuite été
-> renversées : un rayon muré, un prix barré absent) reste dans l'historique
-> git. Partie 1 : comprendre. Partie 2 : le code.
+> ✅ **Doc d'état.** Partie 1 : comprendre. Partie 2 : le code.
 
 # Partie 1 — Comprendre
 

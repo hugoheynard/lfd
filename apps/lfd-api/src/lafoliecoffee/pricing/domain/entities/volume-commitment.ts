@@ -99,7 +99,7 @@ export class VolumeCommitmentAggregate {
 
   /**
    * **Le report** sur la référence née d'un détachement
-   * (`plan-report-apres-detachement.md`, § 2.1) : la MÊME promesse — même
+   * (`saisir-un-prix.md`, § 4) : la MÊME promesse — même
    * société, même quantité promise, fenêtre `max(maintenant, début)` → fin
    * de l'ancien. La quantité promise fait le prix (`retainedQuantity`) :
    * reporter le reste, ou clore, ferait payer le client plus cher le jour du

@@ -3,7 +3,7 @@ import type { OrderQuoteCutoffView, OrderSaleUnit, VatShareView } from "./order.
 /**
  * **Ce que la saisie de l'équipe coûterait, au centime** — la réponse de
  * `POST /admin/orders/estimate` (plan
- * `documentation/pricing/saisie/plan-prix-de-la-saisie.md`, lot P2).
+ * `documentation/commandes/passation/commande-passee-par-l-equipe.md`, § 8).
  *
  * Le serveur compose la commande que `POST /admin/orders` passerait, avec le
  * même corps, et ne l'écrit pas : chaque montant ci-dessous est lu sur

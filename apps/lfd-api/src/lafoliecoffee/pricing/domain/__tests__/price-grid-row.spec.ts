@@ -8,7 +8,7 @@ import {
 } from "../price-grid-row.js";
 
 /**
- * **Une ligne de la grille de prix** (`plan-export-grille-de-prix.md`, § 5) —
+ * **Une ligne de la grille de prix** (`export-grille-de-prix.md`, § 5) —
  * pure : la remise au panier passe par la règle de la caisse
  * (`outcomeOf`, `chooseBasketPromotion`, `chainBasketDiscounts`), jamais par un
  * calcul de la grille.

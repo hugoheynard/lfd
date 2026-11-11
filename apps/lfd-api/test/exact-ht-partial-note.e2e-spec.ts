@@ -1,6 +1,6 @@
 /**
  * E2E du **bon de livraison partiel d'une commande composée en TTC** — lot C3
- * du plan `documentation/pricing/obsolete/plan-centime-particuliers.md` (§ 5, « Le bon
+ * du plan `documentation/pricing/centime-et-tva/le-ttc-fait-foi.md` (§ 5, « Le bon
  * de livraison partiel »).
  *
  * Ce que seul le vrai Postgres prouve : le BL recomposé s'écrit sous ses

@@ -1168,7 +1168,7 @@ describe("PlaceOrderForCustomerHandler — les CGV en vigueur", () => {
 
 /**
  * **La saisie de l'équipe, comme si le client commandait lui-même** (D4 de
- * Hugo, 2026-11-03 — `documentation/pricing/saisie/plan-prix-de-la-saisie.md` §5).
+ * Hugo, 2026-11-03 — `documentation/commandes/passation/commande-passee-par-l-equipe.md`, § 8.1).
  */
 describe("PlaceOrderForCustomerHandler — la porte de la boutique (E2)", () => {
   /**
@@ -1189,7 +1189,7 @@ describe("PlaceOrderForCustomerHandler — la porte de la boutique (E2)", () => 
 
 /**
  * **L'estimation de la saisie** (`EstimateOrderForCustomerHandler`, plan
- * `documentation/pricing/saisie/plan-prix-de-la-saisie.md`, lot P2) : la même
+ * `documentation/commandes/passation/commande-passee-par-l-equipe.md`, § 8) : la même
  * préparation que la passation, lue sans être écrite. Ici, dans la suite de
  * la passation, parce que c'est la parité avec elle qu'on éprouve.
  */

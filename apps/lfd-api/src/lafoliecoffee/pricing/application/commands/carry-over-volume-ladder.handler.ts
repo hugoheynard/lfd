@@ -24,7 +24,7 @@ import { assertNotReservedElsewhere, assertOnSale } from "./sale-reference-suppo
 
 /**
  * **Reporter un barème de volume** sur la référence née d'un détachement
- * (`plan-report-apres-detachement.md`, R3) : poser un barème NEUF, mêmes
+ * (`saisir-un-prix.md`, § 4) : poser un barème NEUF, mêmes
  * paliers, par le chemin de la pose — agrégat, contrainte d'exclusion, L5,
  * journal —, jamais réécrire l'ancien.
  *

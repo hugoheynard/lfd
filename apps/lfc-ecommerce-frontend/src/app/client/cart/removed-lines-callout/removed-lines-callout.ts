@@ -7,7 +7,7 @@ import { ClientCart } from '../client-cart.service';
 /**
  * **Les lignes que le devis a retirées** — l'article ne se vend plus dans
  * l'unité du panier, et le client doit l'ajouter de nouveau
- * (`documentation/pricing/saisie/plan-changer-l-unite-de-vente.md`, § 8). Jamais
+ * (`documentation/pricing/saisie/saisir-un-prix.md`, § 3). Jamais
  * convertie : « 3 » pièces ne deviennent pas 3 g.
  */
 @Component({

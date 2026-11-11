@@ -18,7 +18,7 @@ import type { OrderLineClassification } from "../../orders/domain/ports/order-li
 import type { CatalogSaleUnit } from "../../catalog/domain/catalog-sale-unit.js";
 
 /**
- * **Une ligne de la grille de prix** — pure (`plan-export-grille-de-prix.md`, § 3).
+ * **Une ligne de la grille de prix** — pure (`export-grille-de-prix.md`, § 3).
  *
  * Elle ne calcule AUCUN prix : le prix affiché vient de la porte du prix, et
  * les remises au panier passent par la règle même de la caisse —

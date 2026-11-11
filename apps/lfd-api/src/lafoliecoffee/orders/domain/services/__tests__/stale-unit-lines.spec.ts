@@ -1,6 +1,6 @@
 import { splitStaleUnitLines } from "../stale-unit-lines.js";
 
-/** Le devis retire, sans convertir, une ligne d'une unité périmée (`plan-changer-l-unite-de-vente.md`, § 8). */
+/** Le devis retire, sans convertir, une ligne d'une unité périmée (`saisir-un-prix.md`, § 3). */
 
 const ARTICLES = new Map([
   ["CRO", { name: "Croissant", saleUnit: "piece" as const }],

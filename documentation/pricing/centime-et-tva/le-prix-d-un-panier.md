@@ -1,17 +1,12 @@
 # Le prix d'un panier : charger, calculer, juger
 
-> ✅ **Doc d'état**, écrite le 2026-11-04 à partir du code, à la clôture du
-> chantier « une seule manière de calculer » (lots L0 à L7, T1 à T3, S1).
-> Elle remplace trois plans supprimés ce jour-là — le prix d'un panier
-> (`plan-un-seul-assemblage`), le total vu (`plan-total-vu`) et les montants
-> lus (`plan-l6-montants-lus`) — qui restent dans l'historique git avec les
-> objections de `vitruve`. Les numéros de section du premier sont gardés : le
-> code les cite.
->
-> Hugo : « je veux une seule manière de calculer » ; « pourquoi on ne suit pas
-> le même flow cart → order ? » ; « ça marchera aussi pour les particuliers ? ».
-> L'inventaire des écarts qui l'a fondé, et que le golden master cite encore
-> (É2 à É18) : [`inventaire-c0-assemblages.md`](inventaire-c0-assemblages.md).
+> ✅ **Doc d'état.** Tout chemin qui chiffre un panier le charge, le calcule
+> et le juge de la même manière. Ses numéros de section sont stables : le code
+> les cite. Hugo : « je veux une seule manière de calculer ». Les écarts que
+> le golden master cite (É2 à É18) :
+> [`inventaire-c0-assemblages.md`](inventaire-c0-assemblages.md). La
+> composition en TTC d'une commande de particulier :
+> [`le-ttc-fait-foi.md`](le-ttc-fait-foi.md).
 
 ## 1. Ce que fait chaque chemin, et une seule fois
 

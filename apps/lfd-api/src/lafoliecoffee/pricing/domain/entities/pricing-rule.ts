@@ -156,7 +156,7 @@ export class PricingRule {
 
   /**
    * **Le report** sur la référence née d'un détachement
-   * (`plan-report-apres-detachement.md`, R1) : même effet, même audience,
+   * (`saisir-un-prix.md`, § 4) : même effet, même audience,
    * portée = la nouvelle référence, fenêtre bornée par l'ancienne. Une règle
    * en pause naît en pause (§ 7 bis) : reporter ne rallume pas un prix coupé.
    *

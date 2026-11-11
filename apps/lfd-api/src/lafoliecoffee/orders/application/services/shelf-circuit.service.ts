@@ -154,7 +154,7 @@ export class ShelfCircuit {
    * **Le reste couvre-t-il la commande, au moment du calcul ?** — le jugement
    * de {@link hold}, par la même prise et le même prédicat, SANS verrou ni
    * refus levé : ce que l'estimation de la saisie dit en avertissement (plan
-   * `documentation/pricing/saisie/plan-prix-de-la-saisie.md`, lot P2). La
+   * `documentation/commandes/passation/commande-passee-par-l-equipe.md`, § 8). La
    * passation reste seule juge, sous verrou.
    *
    * @returns `null` pour une commande fabriquée, ou quand le reste couvre.

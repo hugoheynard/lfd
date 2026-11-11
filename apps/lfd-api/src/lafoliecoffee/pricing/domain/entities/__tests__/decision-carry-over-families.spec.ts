@@ -1,6 +1,6 @@
 /**
  * **Le report — barème, engagement, gabarit**, en domaine pur
- * (`plan-report-apres-detachement.md`, § 2, R3–R5). La fenêtre et la portée
+ * (`saisir-un-prix.md`, § 4). La fenêtre et la portée
  * communes sont éprouvées dans `decision-carry-over.spec.ts`.
  *
  * Toutes les dates sont relatives à l'instant figé `NOW`.

@@ -8,7 +8,7 @@ import type { PriceScope } from "../price-rule.js";
 
 /**
  * Les familles de décisions DATÉES qui se reportent sur la référence née d'un
- * détachement (`plan-report-apres-detachement.md`, § 2). Des valeurs de
+ * détachement (`saisir-un-prix.md`, § 4). Des valeurs de
  * donnée, alignées sur celles du lecteur de décisions. Le gabarit n'y est pas :
  * il ne se reporte pas, il s'édite (§ 2.2).
  */

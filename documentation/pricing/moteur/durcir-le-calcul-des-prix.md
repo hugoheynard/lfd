@@ -1,11 +1,7 @@
 # Durcir le calcul des prix
 
-> ✅ **Relu contre le code le 2026-11-04.** Écrit le 2026-09-08 pour répondre à
-> « que faudrait-il pour passer de 7,5 à 9 ? », réécrit le 2026-09-09 quand
-> quatre de ses cinq chantiers étaient bâtis. La note par axe de l'époque et le
-> récit de ses deux erreurs restent dans l'historique git : ils décrivaient un
-> état, pas le code. Ce qui suit dit ce que ces chantiers ont laissé, et ce qui
-> le tient aujourd'hui. Le travail ouvert vit dans
+> ✅ **Doc d'état.** Ce que les chantiers de durcissement du calcul ont
+> laissé, et ce qui le tient. Le travail ouvert vit dans
 > [`ce-qui-reste-a-faire.md`](../ce-qui-reste-a-faire.md). Partie 1 :
 > comprendre. Partie 2 : le code.
 

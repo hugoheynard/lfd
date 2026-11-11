@@ -58,7 +58,7 @@ const MAX_RESULTS = 8;
 type ListState = 'idle' | 'loading' | 'ready' | 'error';
 
 /**
- * **Exporter une grille de prix** (`plan-export-grille-de-prix.md`, § 2) : pour
+ * **Exporter une grille de prix** (`export-grille-de-prix.md`, § 2) : pour
  * qui, quand, comment il reçoit, quelles remises au panier et quelle partie,
  * et le prix au kilo saisi en option. La liste des promotions se relit à
  * chaque changement du public, du jour ou de l'acheminement.

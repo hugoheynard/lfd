@@ -14,7 +14,7 @@ import type { VariantSnapshot } from "../variant.js";
  * **L'unité de vente d'une déclinaison** (`documentation/pricing/vente-au-poids.md`,
  * lot P1) — pièce par défaut ; au poids, un pas et un minimum en grammes ;
  * libre tant que sa référence n'a servi nulle part, même publiée
- * (`plan-changer-l-unite-de-vente.md`, § 8), figée ensuite.
+ * (`saisir-un-prix.md`, § 3), figée ensuite.
  */
 
 const RATES = { b2b: 5.5 };

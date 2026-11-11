@@ -730,7 +730,7 @@ export const vatSharesSchema = z.array(vatShareSchema);
 
 /**
  * **Les TTC des termes d'une commande composée en TTC** — celle d'un
- * particulier (`exact_ht`, plan `documentation/pricing/obsolete/plan-centime-particuliers.md`,
+ * particulier (`exact_ht`, plan `documentation/pricing/centime-et-tva/le-ttc-fait-foi.md`,
  * § 7) : la remise retrait, le bon imputé et le port, tels que le client les
  * a payés. Absents d'une commande pro ou antérieure : ses documents lisent
  * alors les HT.
@@ -1406,7 +1406,7 @@ export type StaffEntryShortcut = z.infer<typeof staffEntryShortcutSchema>;
 
 /**
  * **D'où vient la saisie de l'équipe** (Hugo, 2026-11-03, E4 étendu — plan
- * `documentation/pricing/saisie/plan-prix-de-la-saisie.md` §5). Le raccourci
+ * `documentation/commandes/passation/commande-passee-par-l-equipe.md`, § 8.1). Le raccourci
  * ne couvre que le « Retrait immédiat » ; une commande PROGRAMMÉE ouverte au
  * comptoir n'envoyait rien qui la distingue de celle du commercial. `counter`
  * fait refuser le lien de règlement, quel que soit l'approvisionnement.

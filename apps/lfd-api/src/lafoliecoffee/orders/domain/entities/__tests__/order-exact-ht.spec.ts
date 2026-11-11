@@ -15,7 +15,7 @@ import { draftFrom, pickupPromotion, type DraftSpec } from "./priced-input.fixtu
 
 /**
  * **La commande d'un particulier, composée en TTC** — plan
- * `documentation/pricing/obsolete/plan-centime-particuliers.md` (§ 4, § 5, lot C2).
+ * `documentation/pricing/centime-et-tva/le-ttc-fait-foi.md` (§ 4, § 5, lot C2).
  * Le client paie Σ quantité × étiquette, moins ses remises, plus son port ;
  * la TVA s'extrait par taux au centime supérieur ; les colonnes HT
  * s'additionnent exactement.

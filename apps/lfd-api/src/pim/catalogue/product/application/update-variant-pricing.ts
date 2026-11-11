@@ -42,7 +42,7 @@ export interface UpdateVariantPricingInput {
    * L'unité de vente, le minimum et le pas en grammes
    * (`vente-au-poids.md`, lot P1). Absent = inchangé ; le domaine refuse
    * de changer l'unité d'une référence qui a déjà servi
-   * (`plan-changer-l-unite-de-vente.md`, § 8).
+   * (`saisir-un-prix.md`, § 3).
    */
   readonly saleUnit?: SaleUnit | undefined;
   readonly weightMinGrams?: number | null | undefined;

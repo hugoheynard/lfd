@@ -1,8 +1,7 @@
 # Comment un prix se fabrique
 
-> ✅ **Décrit le code au 2026-11-04**, réécrit ce jour-là contre le code. Le
-> prix **d'un article**. Le prix d'un **panier** (remises de panier,
-> livraison, TVA, total) est décrit dans
+> ✅ **Doc d'état.** Le prix **d'un article**. Le prix d'un **panier** (remises
+> de panier, livraison, TVA, total) est décrit dans
 > [`centime-et-tva/le-prix-d-un-panier.md`](centime-et-tva/le-prix-d-un-panier.md).
 > Partie 1 : comprendre. Partie 2 : le code.
 

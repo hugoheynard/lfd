@@ -1,11 +1,8 @@
 # Le tableau de tarification et la porte du prix
 
-> ✅ **Décrit le code au 2026-11-04.** Ce document remplace le plan de R21
-> (2026-09-09), qui proposait de faire passer le tableau par la porte du prix :
-> `vitruve` l'a démoli, et ce qui a été bâti à la place est décrit ici (R21,
-> close le 2026-09-09). Le récit est au
-> [journal de remédiation](../journal-de-remediation.md) et dans l'historique
-> git. Partie 1 : comprendre. Partie 2 : le code.
+> ✅ **Doc d'état.** Pourquoi le tableau de tarification ne passe pas par la
+> porte du prix, et ce qu'il fait à la place. Partie 1 : comprendre. Partie 2 :
+> le code.
 
 # Partie 1 — Comprendre
 

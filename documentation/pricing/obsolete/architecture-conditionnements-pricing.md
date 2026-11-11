@@ -17,10 +17,9 @@
 >
 > Tout le raisonnement de ce document repose sur ce point de départ. Le suivre
 > ferait **construire contre le modèle en place**, ce qui est précisément ce
-> qu'une doc périmée coûte. Il n'est pas réécrit de mémoire — ce serait la faute
-> inverse, et plus chère. Il est suivi comme **R14** dans
-> [`ce-qui-reste-a-faire.md`](../ce-qui-reste-a-faire.md) : à réécrire sur
-> l'existant, ou à archiver.
+> qu'une doc périmée coûte. Il reste ici parce que l'entité `Packaging`
+> (`pim/catalogue/product/domain/entities/packaging.ts`) cite sa révision du
+> 2026-08-23 — le conditionnement rattaché à une déclinaison, jamais au produit.
 >
 > **Ce qui vaut toujours** : la question qu'il pose — séparer le **fait produit**
 > (un carton de 50 existe) de la **décision commerciale** (il coûte moins cher à

@@ -8,7 +8,7 @@ import {
 } from "../price-grid-csv.js";
 import type { PriceGridRow } from "../price-grid-row.js";
 
-/** **La grille de prix en CSV** (`plan-export-grille-de-prix.md`, § 3) — pure. */
+/** **La grille de prix en CSV** (`export-grille-de-prix.md`, § 3) — pure. */
 
 const HEADING: PriceGridHeading = {
   audience: "Particuliers inscrits",

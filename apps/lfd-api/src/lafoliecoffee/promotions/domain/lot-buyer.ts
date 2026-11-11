@@ -6,7 +6,7 @@ import {
 
 /**
  * **L'acheteur d'un lot, tel que la porte du prix le connaît** — établi au
- * serveur, jamais reçu (`plan-export-grille-de-prix.md`, § 8.1).
+ * serveur, jamais reçu (`export-grille-de-prix.md`, § 6.1).
  *
  * Deux sortes, et seulement deux :
  *

@@ -24,7 +24,7 @@ export interface StaffOrderPreparationPorts {
  * **La saisie de l'équipe, composée et pas encore écrite** — partagée par la
  * passation (`PlaceOrderForCustomerHandler`) et son estimation
  * (`EstimateOrderForCustomerHandler`), pour qu'elles ne divergent pas (plan
- * `documentation/pricing/saisie/plan-prix-de-la-saisie.md`, lot P2) : une
+ * `documentation/commandes/passation/commande-passee-par-l-equipe.md`, § 8) : une
  * estimation qui composerait autrement annoncerait un prix que la validation
  * contredit.
  *

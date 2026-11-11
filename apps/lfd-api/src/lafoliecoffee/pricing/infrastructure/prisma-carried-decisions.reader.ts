@@ -13,7 +13,7 @@ const REFERENCE_SCOPES = ["product", "variant"];
 
 /**
  * Les décisions d'une famille debout sur `toSku`, venues de `fromSku`
- * (`plan-report-apres-detachement.md`, § 3). L'origine est lue par chemin
+ * (`saisir-un-prix.md`, § 4). L'origine est lue par chemin
  * `jsonb` (`origin->>'fromSku'`) : pas d'unicité en base, c'est le verrou du
  * handler qui sérialise. Les lectures ignorent le mur tenant, et c'est le
  * sujet : la question vaut pour l'article, toutes sociétés confondues — le

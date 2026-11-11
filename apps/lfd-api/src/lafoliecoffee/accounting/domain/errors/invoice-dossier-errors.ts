@@ -41,7 +41,7 @@ export class InvoiceDossierUnreadableVatRateError extends BusinessError {
 /**
  * Un même article arrive dans le dossier à la pièce ET au poids. Son unité ne
  * change plus dès qu'une commande l'a portée (`Variant.changeSaleTerms`,
- * `plan-changer-l-unite-de-vente.md` § 8, vérifié le 2026-10-29) : deux unités
+ * `saisir-un-prix.md`, § 3, vérifié le 2026-10-29) : deux unités
  * disent une ligne de bon fausse, et additionner des pièces et des grammes
  * ferait une quantité qui ne veut rien dire.
  */

@@ -39,7 +39,7 @@ export function saleReferenceUseLabel(use: SaleReferenceUse): string {
 
 /**
  * L'unité de vente d'une déclinaison dont la référence a déjà servi ne change
- * plus (`plan-changer-l-unite-de-vente.md`, § 8, Hugo, 2026-10-29) : des
+ * plus (`saisir-un-prix.md`, § 3) : des
  * commandes, des décisions tarifaires ou des paniers la lisent dans son unité
  * actuelle, et aucune conversion n'existe entre un prix à la pièce et un prix
  * au kilo. Le geste de sortie est une autre déclinaison.

@@ -14,7 +14,7 @@ import type { PricedCartLine } from './cart.store';
 
 /**
  * **L'estimation de la saisie** (plan
- * `documentation/pricing/saisie/plan-prix-de-la-saisie.md`, lot P2) : ce que
+ * `documentation/commandes/passation/commande-passee-par-l-equipe.md`, § 8) : ce que
  * la page demande au serveur, quand, et ce que le panier en affiche.
  *
  * 🔴 Rien n'est calculé ici. Chaque montant vient de `POST

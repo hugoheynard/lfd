@@ -2226,7 +2226,7 @@ export type CarryOverMercurialeLinePayload = z.infer<typeof carryOverMercurialeL
 /**
  * **Reporter une décision** — règle, plancher, barème, engagement — sur la
  * référence née d'un détachement, ou **remplacer** l'ancienne référence par
- * la nouvelle dans un gabarit (`plan-report-apres-detachement.md`, § 4) :
+ * la nouvelle dans un gabarit (`saisir-un-prix.md`, § 4) :
  * `POST admin/pricing/{rules|volume-ladders|floors|commitments|templates}/:id/carry-over`,
  * chaque route sous la surface de SA famille. Répond `CreatedIdResponse` —
  * l'identifiant de la décision posée, ou celui du gabarit édité.

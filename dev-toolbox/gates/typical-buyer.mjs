@@ -7,7 +7,7 @@
  * d'inscription, qui n'existe pas. La porte du prix le tarife comme un pro,
  * avec les promotions de sa clientèle. Fabriqué depuis une route de la
  * boutique, il publierait à n'importe quel visiteur une promotion réservée aux
- * pros (`documentation/pricing/plan-export-grille-de-prix.md`, § 8.1).
+ * pros (`documentation/pricing/export-grille-de-prix.md`, § 6.1).
  *
  * Le type le tient à moitié : constructeur privé, classe nominale — un
  * littéral ne le contrefait pas. Reste la fabrique, que tout fichier pourrait
@@ -166,7 +166,7 @@ if (offenders.length > 0) {
   }
   console.error(
     "\n  Un pro type est une société qui n'existe pas : fabriqué hors de l'export staff,\n" +
-      "  il tarifierait un visiteur comme un pro (plan-export-grille-de-prix.md, § 8.1).\n" +
+      "  il tarifierait un visiteur comme un pro (export-grille-de-prix.md, § 6.1).\n" +
       "  Pour lire le TYPE, écrivez `import type { … }`.\n",
   );
   process.exit(1);

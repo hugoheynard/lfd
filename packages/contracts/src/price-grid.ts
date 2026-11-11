@@ -4,7 +4,7 @@ import type { PromotionEffectKindValue } from "./promotions.js";
 
 /**
  * **La grille de prix d'un public** — l'export d'une plaquette
- * (`documentation/pricing/plan-export-grille-de-prix.md`).
+ * (`documentation/pricing/export-grille-de-prix.md`).
  *
  * Lecture seule : aucun prix n'est écrit, aucune règle ne change. Chaque prix
  * passe par la porte du prix, à la date demandée, pour le public demandé.
@@ -13,7 +13,7 @@ import type { PromotionEffectKindValue } from "./promotions.js";
 /**
  * Pour qui. Les publics que la porte du prix sait servir sans société
  * (particuliers inscrits, invités), un **pro type** (société active, ou en
- * cours d'inscription — plan, § 8 : aucune société, ses faits d'audience
+ * cours d'inscription — § 6 : aucune société, ses faits d'audience
  * déclarés par le staff), ou une société précise — sa mercuriale et son
  * réglage de promotions s'appliquent alors.
  */

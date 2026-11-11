@@ -1,7 +1,7 @@
 import { TypicalBuyer, type TypicalClientele } from "../../promotions/domain/lot-buyer.js";
 
 /**
- * **La fabrique du pro type** (`plan-export-grille-de-prix.md`, § 8.1) — dans
+ * **La fabrique du pro type** (`export-grille-de-prix.md`, § 6.1) — dans
  * le module d'export, et nulle part ailleurs.
  *
  * `lint:typical-buyer` tient le mur : ce fichier n'est importé en valeur que

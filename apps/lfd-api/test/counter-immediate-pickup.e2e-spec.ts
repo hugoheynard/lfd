@@ -244,7 +244,7 @@ describe("« Valider et remettre » (lot L6)", () => {
    * à personne (`showsInQueue`, `commande-carte-reglee.md` §4.4, vérifié le
    * 2026-11-02). Elle y entre à son paiement. Remonté au plan, non tranché ici.
    *
-   * Depuis le 2026-11-03 (E4, `plan-prix-de-la-saisie.md` §5), le « Retrait
+   * Depuis le 2026-11-03 (E4, `commande-passee-par-l-equipe.md`, § 8.1), le « Retrait
    * immédiat » ne se règle plus par lien : la commande au lien est prise ici
    * sur la vitrine SANS le raccourci, le seul chemin du serveur qui la permet.
    */

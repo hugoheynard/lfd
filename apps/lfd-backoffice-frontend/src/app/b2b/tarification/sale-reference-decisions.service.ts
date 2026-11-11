@@ -14,7 +14,7 @@ import { B2B_API_BASE } from '../../api/api-config';
 
 /**
  * La route de report de chaque famille autre que la mercuriale — chacune sous
- * la surface de SA famille (`plan-report-apres-detachement.md`, § 4) : le
+ * la surface de SA famille (`saisir-un-prix.md`, § 4) : le
  * plancher sous les limites de prix, le reste sous la tarification.
  */
 const CARRY_OVER_ROUTES: Readonly<
@@ -60,7 +60,7 @@ export class SaleReferenceDecisionsService {
 
   /**
    * Reporte la décision `id` de `payload.fromSku` sur `payload.toSku` — ou,
-   * pour un gabarit, y remplace l'une par l'autre (`plan-report-apres-detachement.md`).
+   * pour un gabarit, y remplace l'une par l'autre (`saisir-un-prix.md`).
    * La mercuriale garde sa route d'avenant.
    */
   async carryOverDecision(

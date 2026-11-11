@@ -1,5 +1,5 @@
 /**
- * **Reporter un barème, un engagement, un gabarit** sur la référence née d'un détachement (`plan-report-apres-detachement.md`,
+ * **Reporter un barème, un engagement, un gabarit** sur la référence née d'un détachement (`saisir-un-prix.md`,
  * § 3, § 7) : la filiation et la vente AVANT toute écriture, le verrou puis
  * la relecture et « déjà reportée » DANS l'unité de travail, le journal écrit
  * une fois. La règle et le plancher : `carry-over-decisions.handlers.spec.ts`.

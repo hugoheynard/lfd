@@ -65,7 +65,7 @@ n'apparaît qu'avec un palier ouvert **dès la première pièce** — un cas que
 n'interdit, et que le premier essai de barème produit naturellement.
 
 C'est le quatrième exemple de ce que
-[`ecrans-de-tarification.md`](../pricing/saisie/ecrans-de-tarification.md) appelle « un
+[`saisir-un-prix.md`](../pricing/saisie/saisir-un-prix.md) appelle « un
 écran qui recalcule de son côté » ; les trois autres y sont déjà racontés.
 
 ## Ce que ça touche, et qui n'est pas seulement cet écran

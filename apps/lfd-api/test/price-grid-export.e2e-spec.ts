@@ -1,5 +1,5 @@
 /**
- * E2E de **la grille de prix d'un public** (`documentation/pricing/plan-export-grille-de-prix.md`,
+ * E2E de **la grille de prix d'un public** (`documentation/pricing/export-grille-de-prix.md`,
  * § 5) : la parité avec le rayon — le prix après les remises du prix affiché
  * est celui que la vitrine sert au même public, le même jour —, la liste des
  * promotions qui remplit le panneau, et le fichier (BOM, point-virgule, nom) ;
@@ -118,7 +118,7 @@ describe("la grille et le rayon disent le même prix", () => {
   });
 });
 
-describe("le pro type de la grille (plan, § 8)", () => {
+describe("le pro type de la grille (export-grille-de-prix.md, § 6)", () => {
   /**
    * Une société active SANS mercuriale ni conditions propres paie le tarif pro,
    * avec les promotions de sa clientèle : son rayon reconnu est donc le prix du

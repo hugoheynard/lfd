@@ -143,7 +143,7 @@ export class AdminPriceFloorsController {
    */
   /**
    * **Reporter** cette version de plancher sur la référence née d'un
-   * détachement (`plan-report-apres-detachement.md`, R2). ICI, sous
+   * détachement (`saisir-un-prix.md`, § 4). ICI, sous
    * `lfc_price_limits`, et jamais sous le panneau des décisions
    * (`b2b_pricing`) : il donnerait le plancher à qui n'a pas le droit de le
    * poser (§ 4).

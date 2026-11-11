@@ -44,7 +44,7 @@ export interface PricingParties {
   readonly pricingCompanyId: string | null;
   readonly buyerKind: PricedBuyerKind;
   /**
-   * Un pro TYPE de la grille de prix (`plan-export-grille-de-prix.md`, § 8) :
+   * Un pro TYPE de la grille de prix (`export-grille-de-prix.md`, § 6) :
    * aucune société (les deux clés sont `null`), et ses faits d'audience
    * déclarés. Absent pour tout acheteur réel.
    */

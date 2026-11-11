@@ -1,11 +1,8 @@
 # Ce que coûte un prix — les lectures, pas le temps
 
-> ✅ **Relu contre le code le 2026-11-04.** Ouvert le 2026-09-04 sur un constat
-> (trois lectures de base **par article**), il est réécrit sur ce qui l'a
-> remplacé : des lectures **par lot**, un cache en mémoire et une estampille
-> lue une fois par requête. Le récit des deux premières versions est dans
-> l'historique git ; ses leçons sont gardées en partie 1. Partie 1 :
-> comprendre. Partie 2 : le code.
+> ✅ **Doc d'état.** Des lectures **par lot**, un cache en mémoire et une
+> estampille lue une fois par requête. Partie 1 : comprendre. Partie 2 : le
+> code.
 
 # Partie 1 — Comprendre
 

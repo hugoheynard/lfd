@@ -1,5 +1,5 @@
 /**
- * **La scène des reports de décision** (`plan-report-apres-detachement.md`,
+ * **La scène des reports de décision** (`saisir-un-prix.md`,
  * § 7) — partagée par les cinq e2e de famille, calquée sur
  * `mercuriale-carry-over.e2e-spec.ts` : une fiche « Ancolie » et sa
  * déclinaison « part », une décision posée sur la part par l'appelant, puis

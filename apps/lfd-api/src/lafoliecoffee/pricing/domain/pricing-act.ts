@@ -56,7 +56,7 @@ export const PRICING_ACTS = [
   "amended",
   /**
    * **Reporté** — un plancher posé sur la référence née d'un détachement,
-   * depuis celui de l'ancienne (`plan-report-apres-detachement.md`, § 2.3).
+   * depuis celui de l'ancienne (`saisir-un-prix.md`, § 4).
    * Ni `posed` ni `replaced` : il ne remplace rien, et il ne vient pas d'une
    * saisie.
    */

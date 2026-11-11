@@ -533,7 +533,7 @@ describe('l’unité de vente', () => {
   });
 
   // Le verrou suivait `hasBeenPublished` jusqu'au 2026-10-29 ; il suit
-  // désormais l'usage de la référence au commerce (`plan-changer-l-unite-de-vente.md`, § 8).
+  // désormais l'usage de la référence au commerce (`saisir-un-prix.md`, § 3).
   it('publiée mais jamais utilisée : le sélecteur reste ouvert', async () => {
     const { store } = await setup(weighed());
 

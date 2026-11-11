@@ -25,7 +25,7 @@ import { assertNotReservedElsewhere, assertOnSale } from "./sale-reference-suppo
 
 /**
  * **Reporter un engagement de volume** sur la référence née d'un
- * détachement (`plan-report-apres-detachement.md`, § 2.1, R4) : la MÊME
+ * détachement (`saisir-un-prix.md`, § 4) : la MÊME
  * promesse, même société, signée sur la nouvelle référence. L'ancien court
  * jusqu'à sa fin (§ 7 bis) — rien n'est clos.
  *

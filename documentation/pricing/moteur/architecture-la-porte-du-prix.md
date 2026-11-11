@@ -1,9 +1,6 @@
 # La porte du prix
 
-> ✅ **Décrit le code au 2026-11-04**, réécrit ce jour-là contre le code. Le
-> raisonnement, les versions démolies et ce que chaque lot a trouvé sont au
-> [journal de remédiation](../journal-de-remediation.md), § R26. Partie 1 :
-> comprendre. Partie 2 : le code.
+> ✅ **Doc d'état.** Partie 1 : comprendre. Partie 2 : le code.
 
 # Partie 1 — Comprendre
 

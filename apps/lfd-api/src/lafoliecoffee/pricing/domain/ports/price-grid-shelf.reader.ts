@@ -18,7 +18,7 @@ export interface PriceGridShelf {
 }
 
 /**
- * **Ce que ce public trouve en rayon** (`plan-export-grille-de-prix.md`, § 3) :
+ * **Ce que ce public trouve en rayon** (`export-grille-de-prix.md`, § 3) :
  * une ligne par déclinaison vendue — la règle même de la vitrine, opérations
  * datées comprises, jugées à `at`.
  *

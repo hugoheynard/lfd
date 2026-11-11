@@ -21,7 +21,7 @@ export class PricingPartiesResolver {
   /**
    * Les parties de l'acheteur d'un lot — la porte du prix.
    *
-   * Un pro type (`plan-export-grille-de-prix.md`, § 8) n'est AUCUNE société :
+   * Un pro type (`export-grille-de-prix.md`, § 6) n'est AUCUNE société :
    * ni compte de tarif, ni mercuriale, ni engagement ; il porte ses faits
    * d'audience déclarés jusqu'au point ligne.
    */

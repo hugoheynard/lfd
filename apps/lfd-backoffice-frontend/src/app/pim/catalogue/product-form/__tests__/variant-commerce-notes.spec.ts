@@ -398,7 +398,7 @@ describe('<app-detached-decisions>', () => {
     expect(host.textContent).toContain('reportée sur CHO-001-1');
   });
 
-  // `plan-report-apres-detachement.md`, § 5 : toutes les familles se reportent
+  // `saisir-un-prix.md`, § 4 : toutes les familles se reportent
   // (2026-10-30) — cette ligne affirmait l'inverse pour la règle.
   it('propose aussi de reporter une règle, et « Tout reporter » quand il y en a plusieurs', async () => {
     const api = new FakeApi();

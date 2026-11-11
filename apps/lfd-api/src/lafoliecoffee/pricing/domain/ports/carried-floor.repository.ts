@@ -9,7 +9,7 @@ export interface StoredFloor {
 
 /**
  * Port d'**écriture** du report d'un plancher
- * (`plan-report-apres-detachement.md`, § 2.3) — distinct de
+ * (`saisir-un-prix.md`, § 4) — distinct de
  * `PricingFloorRepository`, dont `pose` BORNE la limite en vigueur : un
  * report ne remplace jamais, il ajoute, et l'appelant a déjà refusé s'il y
  * avait quelque chose à remplacer.

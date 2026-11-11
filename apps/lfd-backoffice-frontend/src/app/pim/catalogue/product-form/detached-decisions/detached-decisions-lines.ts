@@ -49,7 +49,7 @@ export interface DetachedDecisionLine {
   readonly text: string;
   /**
    * Elle se reporte sur la nouvelle référence — toutes les familles depuis le
-   * plan de report (`plan-report-apres-detachement.md`, § 5) ; le gabarit, lui,
+   * plan de report (`saisir-un-prix.md`, § 4) ; le gabarit, lui,
    * s'édite (« Remplacer dans le gabarit »).
    */
   readonly carriable: boolean;

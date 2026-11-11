@@ -27,7 +27,7 @@ import { withCatalogueSnapshot } from "../../../catalog/application/catalogue-sn
  * **L'estimation de la saisie de l'équipe** : la commande que
  * `PlaceOrderForCustomerHandler` passerait, composée par la MÊME préparation
  * ({@link prepareStaffOrder}), puis lue sans être écrite (plan
- * `documentation/pricing/saisie/plan-prix-de-la-saisie.md`, lot P2).
+ * `documentation/commandes/passation/commande-passee-par-l-equipe.md`, § 8).
  *
  * Elle s'arrête après la composition : ni vitrine ni journée tenues, ni
  * persistance, ni règlement, ni dérogation consommée, ni événement. Une

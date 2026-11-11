@@ -254,7 +254,7 @@ export class ClientCart {
         return 'shelfLimited';
       }
       // Une pièce de plus ; au poids, un pas de plus — ou le minimum au premier geste.
-      // L'unité se fige au premier ajout (`plan-changer-l-unite-de-vente.md`, § 8).
+      // L'unité se fige au premier ajout (`saisir-un-prix.md`, § 3).
       this.store.setQuantity(productId, next, undefined, saleUnitOf(item));
     }
     return 'applied';

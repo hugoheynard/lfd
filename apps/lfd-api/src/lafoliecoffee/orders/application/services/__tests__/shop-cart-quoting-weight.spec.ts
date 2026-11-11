@@ -165,7 +165,7 @@ describe("ShopCartQuoting — une ligne au poids", () => {
 
   // Le devis refusait tout le panier pour ces lignes (`SaleUnitMismatchError`)
   // jusqu'au 2026-10-29 ; il les retire désormais seules, avec leur motif
-  // (`plan-changer-l-unite-de-vente.md`, § 8). Jamais converties : la passation
+  // (`saisir-un-prix.md`, § 3). Jamais converties : la passation
   // refuse toujours (`ensureSaleQuantity`).
   it("retire une ligne sans unité sur un article au poids — jamais relue en grammes", async () => {
     const { view } = await quoting().quote({

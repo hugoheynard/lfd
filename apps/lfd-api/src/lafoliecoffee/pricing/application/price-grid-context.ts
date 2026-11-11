@@ -95,7 +95,7 @@ function frenchDay(day: string): string {
 
 /**
  * **Qui, quand, comment** — commun aux deux lectures de la grille
- * (`plan-export-grille-de-prix.md`, § 2), pour que la liste des promotions et
+ * (`export-grille-de-prix.md`, § 2), pour que la liste des promotions et
  * le fichier posent exactement la même question.
  */
 @Injectable()

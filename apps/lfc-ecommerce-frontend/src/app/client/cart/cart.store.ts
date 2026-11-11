@@ -53,7 +53,7 @@ function keysOf(workspace: string | null): {
 /**
  * L'unité de chaque ligne, **figée à l'ajout**, dans une clé à part pour la
  * même raison que la date : la forme de `cart` est déjà écrite chez les
- * clients (`plan-changer-l-unite-de-vente.md`, § 8). Une ligne sans unité
+ * clients (`saisir-un-prix.md`, § 3). Une ligne sans unité
  * gardée — un panier d'avant — se lit à l'unité du catalogue.
  */
 const UNITS_KEY = 'cart.units';

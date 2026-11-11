@@ -281,7 +281,7 @@ import { SnapshotOrderLineClassificationReader } from "./infrastructure/catalogu
     // Le prix pro de chaque article, que l'avertissement des décimales lit (§ 18.7).
     { provide: PromotionProPricesReader, useClass: CatalogPromotionProPricesReader },
     // Ce qui fige l'unité de vente d'une déclinaison : le port est au
-    // référentiel, `appBootstrap/` le relie (`plan-changer-l-unite-de-vente.md`, § 8).
+    // référentiel, `appBootstrap/` le relie (`saisir-un-prix.md`, § 3).
     PrismaSaleReferenceUsage,
     // Une fiche montrée sous la référence de vente de son défaut (L3).
     PrismaDefaultSaleReferenceReader,
@@ -317,7 +317,7 @@ import { SnapshotOrderLineClassificationReader } from "./infrastructure/catalogu
     ShopCataloguePricing,
     CatalogViewers,
     RecognisedShelf,
-    // Pour la grille de prix (`plan-export-grille-de-prix.md`) : le rayon d'un
+    // Pour la grille de prix (`export-grille-de-prix.md`) : le rayon d'un
     // public se compose comme la vitrine — opérations datées comprises — et
     // porte le prix au kilo saisi, lu À CÔTÉ de la résolution.
     CatalogOperationsReader,

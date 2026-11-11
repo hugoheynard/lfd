@@ -22,7 +22,7 @@ import { VolumeLadderRepository } from "../../../domain/ports/volume-ladder.repo
 import type { Trace, TracingUnitOfWork } from "./mercuriale-amendment.doubles.js";
 
 /*
- * Les doublés des reports de décision (`plan-report-apres-detachement.md`) :
+ * Les doublés des reports de décision (`saisir-un-prix.md`) :
  * le verrou, la relecture et l'écriture disent s'ils ont eu lieu DANS
  * l'unité de travail.
  */

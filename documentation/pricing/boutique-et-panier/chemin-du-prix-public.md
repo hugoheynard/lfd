@@ -1,10 +1,6 @@
 # Le chemin du prix — du référentiel au rayon, et au panier
 
-> ✅ **Décrit le code au 2026-11-04**, réécrit ce jour-là contre le code. La
-> version du 2026-09-21 (lots A1, A2) décrivait un prix pro dérivé de
-> l'étiquette par un rapport, et un TTC qui pouvait dériver d'un centime :
-> les deux ont disparu depuis (prix pro saisi ; particulier composé en TTC).
-> Partie 1 : comprendre. Partie 2 : le code.
+> ✅ **Doc d'état.** Partie 1 : comprendre. Partie 2 : le code.
 
 # Partie 1 — Comprendre
 

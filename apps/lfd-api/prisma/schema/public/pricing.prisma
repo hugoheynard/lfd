@@ -95,7 +95,7 @@ model PriceRule {
   archiveReason String?   @map("archive_reason")
 
   /// D'où vient la décision quand elle a été REPORTÉE depuis l'ancienne
-  /// référence d'un détachement (`plan-report-apres-detachement.md`, R0) :
+  /// référence d'un détachement (`saisir-un-prix.md`, § 4) :
   /// `{ kind: "detached", fromSku, fromDecisionId }`. `NULL` = saisie.
   origin Json?
 
@@ -213,7 +213,7 @@ model PriceFloor {
   archiveReason String?   @map("archive_reason")
 
   /// D'où vient la décision quand elle a été REPORTÉE depuis l'ancienne
-  /// référence d'un détachement (`plan-report-apres-detachement.md`, R0) :
+  /// référence d'un détachement (`saisir-un-prix.md`, § 4) :
   /// `{ kind: "detached", fromSku, fromDecisionId }`. `NULL` = saisie.
   origin Json?
 
@@ -276,7 +276,7 @@ model VolumeLadder {
   archiveReason String?   @map("archive_reason")
 
   /// D'où vient la décision quand elle a été REPORTÉE depuis l'ancienne
-  /// référence d'un détachement (`plan-report-apres-detachement.md`, R0) :
+  /// référence d'un détachement (`saisir-un-prix.md`, § 4) :
   /// `{ kind: "detached", fromSku, fromDecisionId }`. `NULL` = saisie.
   origin Json?
 
@@ -578,7 +578,7 @@ model VolumeCommitment {
   archiveReason String?   @map("archive_reason")
 
   /// D'où vient la décision quand elle a été REPORTÉE depuis l'ancienne
-  /// référence d'un détachement (`plan-report-apres-detachement.md`, R0) :
+  /// référence d'un détachement (`saisir-un-prix.md`, § 4) :
   /// `{ kind: "detached", fromSku, fromDecisionId }`. `NULL` = saisie.
   origin Json?
 

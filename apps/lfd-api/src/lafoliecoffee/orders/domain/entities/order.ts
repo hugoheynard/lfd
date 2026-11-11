@@ -358,7 +358,7 @@ export class Order {
 
   /**
    * **Les montants de la commande composée, sans rien décider** (plan
-   * `documentation/pricing/saisie/plan-prix-de-la-saisie.md`, lot P2) : ce que
+   * `documentation/commandes/passation/commande-passee-par-l-equipe.md`, § 8) : ce que
    * l'estimation de la saisie rend. Les valeurs mêmes de `toPersistence()`,
    * sans exiger de règlement décidé — un devis n'en décide aucun.
    */

@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { ClientCart } from '../client-cart.service';
 import { RemovedLinesCallout } from './removed-lines-callout';
 
-/** Le motif d'une ligne retirée au devis (`plan-changer-l-unite-de-vente.md`, § 8). */
+/** Le motif d'une ligne retirée au devis (`saisir-un-prix.md`, § 3). */
 function render(lines: readonly ShopQuoteRemovedLineView[]): HTMLElement {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({

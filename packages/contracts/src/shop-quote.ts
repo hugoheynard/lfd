@@ -237,7 +237,7 @@ export interface ShopQuoteView {
   /**
    * Les lignes **retirées** du décompte parce que l'article ne se vend plus
    * dans l'unité du panier (pièce ↔ poids) — jamais converties
-   * (`documentation/pricing/saisie/plan-changer-l-unite-de-vente.md`, § 8).
+   * (`documentation/pricing/saisie/saisir-un-prix.md`, § 3).
    * **Absente** quand rien n'est retiré, comme `pickupDiscountBase`. La
    * boutique dit au client de l'ajouter de nouveau.
    */

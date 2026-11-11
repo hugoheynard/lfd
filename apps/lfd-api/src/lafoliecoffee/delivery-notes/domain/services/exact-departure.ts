@@ -32,7 +32,7 @@ export interface ExactDepartureInput {
 
 /**
  * **Le BL partiel d'une commande composée en TTC** (plan
- * `documentation/pricing/obsolete/plan-centime-particuliers.md`, § 5, « Le bon de
+ * `documentation/pricing/centime-et-tva/le-ttc-fait-foi.md`, § 5, « Le bon de
  * livraison partiel ») — recomposé EN ENTIER par la fonction de la passation
  * (`composeExactOrder`) sur les lignes qui partent : TOUTES ses lignes sont
  * réécrites, celles qui partent en entier comprises, pour que leurs HT

@@ -57,7 +57,7 @@ export class CatalogueOverviewPage {
     void this.load();
   }
 
-  /** La grille de prix d'un public, pour une plaquette (`plan-export-grille-de-prix.md`). */
+  /** La grille de prix d'un public, pour une plaquette (`export-grille-de-prix.md`). */
   protected openPriceGrid(): void {
     this.panelHost.open(PriceGridPanel);
   }

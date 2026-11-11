@@ -3,7 +3,7 @@ import type { CarriedFamily } from "../entities/decision-carry-over.js";
 /**
  * Port de **lecture** : les audiences des décisions d'une famille, debout à
  * `at` sur `toSku` (non archivées, fenêtre ouverte ou close plus tard), dont
- * l'origine dit « reportée depuis `fromSku` » (`plan-report-apres-detachement.md`, § 3).
+ * l'origine dit « reportée depuis `fromSku` » (`saisir-un-prix.md`, § 4).
  *
  * L'audience est la clé du domaine : `ruleCarryKey` pour une règle (étage,
  * audience, seuil), `audienceKey` pour un barème, la clientèle pour un plancher, la société pour un engagement. Une

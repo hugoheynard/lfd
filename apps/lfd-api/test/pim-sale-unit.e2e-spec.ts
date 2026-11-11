@@ -5,7 +5,7 @@
  * ou poids, le pas et le minimum en grammes) se relit sur la fiche ; une
  * déclinaison au poids sans pas n'active pas ; l'unité change même après
  * la mise en vente tant que la référence n'a servi nulle part
- * (`plan-changer-l-unite-de-vente.md`, § 8 — le refus d'une référence
+ * (`saisir-un-prix.md`, § 3 — le refus d'une référence
  * utilisée est éprouvé par `sale-unit-change.e2e-spec.ts`).
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";

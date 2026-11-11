@@ -194,7 +194,7 @@ describe('Le panier par espace', () => {
   });
 });
 
-/** L'unité d'une ligne se fige au premier ajout (`plan-changer-l-unite-de-vente.md`, § 8). */
+/** L'unité d'une ligne se fige au premier ajout (`saisir-un-prix.md`, § 3). */
 describe('L’unité figée d’une ligne', () => {
   beforeEach(() => {
     localStorage.clear();

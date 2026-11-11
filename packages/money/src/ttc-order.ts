@@ -10,7 +10,7 @@ import { DELIVERY_VAT_RATE } from "./vat.js";
 
 /**
  * **La commande d'un particulier, composée en TTC** — plan
- * `documentation/pricing/obsolete/plan-centime-particuliers.md`, § 4 et § 5 (voie B).
+ * `documentation/pricing/centime-et-tva/le-ttc-fait-foi.md`, § 4 et § 5 (voie B).
  *
  * Chaque terme est d'abord un TTC : la ligne vaut quantité × étiquette (au
  * poids : étiquette au kilo × grammes / 1000, arrondie au centime), la
@@ -210,8 +210,7 @@ function deliveryFeeParts(
  *
  * Exportée pour une seule raison : ce paquet ne dépend pas de
  * `@lfd/contracts`, et le doublon est éprouvé là où les deux se voient — un
- * test de l'API compare les deux règles sur un balayage (plan du centime,
- * § 9 bis, lot C2).
+ * test de l'API compare les deux règles sur un balayage (`percent-of-parity.spec.ts`).
  */
 export function percentOf(baseCents: bigint, bp: number): number {
   return Math.max(0, roundToCents(fractionByBasisPoints(fromCents(Number(baseCents)), bp)));

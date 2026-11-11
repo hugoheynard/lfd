@@ -1,6 +1,6 @@
 /**
  * E2E des **remises d'un particulier, composées en TTC, de l'étiquette au
- * règlement** (`documentation/pricing/obsolete/plan-centime-particuliers.md`,
+ * règlement** (`documentation/pricing/centime-et-tva/le-ttc-fait-foi.md`,
  * § 4 et suivants ; `documentation/promotions/promotions.md`, § 2.11) — le
  * pendant de `basket-discount-vat-split-to-invoice.e2e-spec.ts`, qui tient le
  * pro en HT.

@@ -740,7 +740,7 @@ Puisque c'est un élément de la boutique B2B, il ne suffit pas de refuser :
 
 ⚠️ Aujourd'hui la boutique lit client/mock-shop.ts et ne parle à aucune route
 catalogue. Tant que le **lot 1** de
-[`../pricing/obsolete/plan-boutique-sur-api.md`](../pricing/obsolete/plan-boutique-sur-api.md) n'est pas fait, il n'y a
+le plan « boutique sur l'API » (livré le 2026-09-05) n'est pas fait, il n'y a
 rien pour porter cet affichage — l'application côté serveur, elle, ne l'attend
 pas.
 
@@ -885,18 +885,18 @@ c'est déjà le comportement voulu : aucune règle ⇒ aucune limite.
 
 ## 12. Les lots
 
-| #   | Lot                                                                                                                             | Dépend de                                                   |
-| --- | ------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| ✅0 | **Le fuseau** : `TZ`, conversion explicite, runner en `TZ=UTC`                                                                  | —                                                           |
-| ✅1 | **Brancher l'existant** : garde dans `OrderDrafting`, erreur métier, e2e sur le refus                                           | 0                                                           |
-| ✅2 | **La grâce** : trois états, deux codes d'erreur distincts                                                                       | 1                                                           |
-| ✅3 | **Le contexte `order-time-limitation`** : l'échelle, l'héritage champ par champ, les deux contraintes en base, le journal       | —                                                           |
-| ✅4 | **L'écran du référentiel** : poser une limite sur une famille, une fiche, une déclinaison                                       | 3                                                           |
-| ✅5 | **Le fil** : `snapshot` v6 puis **v7** (les règles, plus leur résolution), colonnes miroir, la garde lit la limite de l'article | 1, 3                                                        |
-| ✅6 | **La dérogation** : table, ressource d'accès, geste depuis la saisie back-office                                                | 2                                                           |
-| ✅7 | **La surtaxe** : réglage et son écran, terme de panier, gel sur la commande, TVA réglable (§8)                                  | 6                                                           |
-| 8   | **La boutique** : annonce, grisage des dates, refus ligne à ligne                                                               | 5 + lot 1 de `../pricing/obsolete/plan-boutique-sur-api.md` |
-| 9   | **Démonter `OrderCutoff`** : trois déploiements, l'écran en dernier                                                             | 5                                                           |
+| #   | Lot                                                                                                                             | Dépend de                                        |
+| --- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| ✅0 | **Le fuseau** : `TZ`, conversion explicite, runner en `TZ=UTC`                                                                  | —                                                |
+| ✅1 | **Brancher l'existant** : garde dans `OrderDrafting`, erreur métier, e2e sur le refus                                           | 0                                                |
+| ✅2 | **La grâce** : trois états, deux codes d'erreur distincts                                                                       | 1                                                |
+| ✅3 | **Le contexte `order-time-limitation`** : l'échelle, l'héritage champ par champ, les deux contraintes en base, le journal       | —                                                |
+| ✅4 | **L'écran du référentiel** : poser une limite sur une famille, une fiche, une déclinaison                                       | 3                                                |
+| ✅5 | **Le fil** : `snapshot` v6 puis **v7** (les règles, plus leur résolution), colonnes miroir, la garde lit la limite de l'article | 1, 3                                             |
+| ✅6 | **La dérogation** : table, ressource d'accès, geste depuis la saisie back-office                                                | 2                                                |
+| ✅7 | **La surtaxe** : réglage et son écran, terme de panier, gel sur la commande, TVA réglable (§8)                                  | 6                                                |
+| 8   | **La boutique** : annonce, grisage des dates, refus ligne à ligne                                                               | 5 + lot 1 du plan « boutique sur l'API » (livré) |
+| 9   | **Démonter `OrderCutoff`** : trois déploiements, l'écran en dernier                                                             | 5                                                |
 
 ### Ce que l'écran fait, et ce qu'il ne fait pas
 

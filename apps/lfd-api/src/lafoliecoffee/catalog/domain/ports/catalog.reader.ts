@@ -25,7 +25,7 @@ export interface ResolvedCatalogItem {
   readonly name: string;
   /**
    * Le nom de la **fiche** (fil v16) — lu par la grille de prix, qui range
-   * famille, produit et déclinaison en colonnes (`plan-export-grille-de-prix.md`).
+   * famille, produit et déclinaison en colonnes (`export-grille-de-prix.md`).
    * `null` = non reçu du référentiel ; absent = un lecteur qui ne le porte pas.
    * La vitrine ne l'affiche pas (`shopItemName`).
    */

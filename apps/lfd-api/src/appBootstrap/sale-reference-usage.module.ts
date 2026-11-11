@@ -6,7 +6,7 @@ import { SaleReferenceUsage } from "../pim/channels/b2b-platform/sale-reference-
 
 /**
  * **« Cette référence a-t-elle servi ? », posée par le référentiel au
- * commerce** (`plan-changer-l-unite-de-vente.md`, § 8). Le motif de
+ * commerce** (`saisir-un-prix.md`, § 3). Le motif de
  * `GeneralOrderCutoffModule` : `@Global` parce que le consommateur est `pim/`,
  * qui ne peut pas importer un module du commerce.
  */

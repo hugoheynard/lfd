@@ -15,7 +15,7 @@ type Lookup = (skus: readonly string[]) => Promise<ReadonlySet<string>>;
 
 /**
  * **Où une référence de vente a déjà servi, dans le commerce** — l'implémentation
- * du port que le référentiel déclare (`plan-changer-l-unite-de-vente.md`, § 8).
+ * du port que le référentiel déclare (`saisir-un-prix.md`, § 3).
  *
  * La référence se calcule par `shopSkuOf`, le seul point qui la décide — jamais
  * un SKU produit lu en direct. Les lectures ignorent le mur tenant, et c'est

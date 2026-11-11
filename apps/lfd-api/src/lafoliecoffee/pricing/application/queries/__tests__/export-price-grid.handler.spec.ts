@@ -28,7 +28,7 @@ import { ExportPriceGridHandler } from "../export-price-grid.handler.js";
 import { ExportPriceGridQuery } from "../export-price-grid.query.js";
 
 /**
- * **La grille de prix d'un public** (`plan-export-grille-de-prix.md`, § 5),
+ * **La grille de prix d'un public** (`export-grille-de-prix.md`, § 5),
  * montée sur la VRAIE porte du prix doublée à ses ports. Les dates ne sont
  * comparées qu'à l'horloge figée `NOW` (exception du § 5 de `CLAUDE.md`).
  */

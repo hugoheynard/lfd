@@ -1,11 +1,6 @@
 # Le prix ancré au TTC
 
-> ✅ **Décrit le code au 2026-11-04**, réécrit ce jour-là contre le code. La
-> version d'origine (2026-08-31, relue le 2026-09-06) racontait aussi le
-> chantier qui a posé l'ancrage : un rapport pro qui dérivait le prix pro du
-> prix public, et un ancien canal de vente en ligne. Les deux sont retirés
-> (rapport : 2026-10-27 ; canal : 2026-10-16) ; le récit reste dans
-> l'historique git. Partie 1 : comprendre. Partie 2 : le code.
+> ✅ **Doc d'état.** Partie 1 : comprendre. Partie 2 : le code.
 
 # Partie 1 — Comprendre
 

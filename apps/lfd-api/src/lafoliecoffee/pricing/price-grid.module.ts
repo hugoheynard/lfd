@@ -20,7 +20,7 @@ import { PricerModule } from "./pricer.module.js";
 import { PricingModule } from "./pricing.module.js";
 
 /**
- * **La grille de prix d'un public** (`plan-export-grille-de-prix.md`) — une
+ * **La grille de prix d'un public** (`export-grille-de-prix.md`) — une
  * lecture, et rien d'autre : aucun dépôt d'écriture n'y est fourni.
  *
  * Un module à part plutôt qu'une ligne de plus dans `PricingAdminModule` : la

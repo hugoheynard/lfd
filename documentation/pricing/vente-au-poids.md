@@ -1,9 +1,6 @@
 # La vente au poids, de la fiche à Factur-X
 
-> ✅ **Implémenté** — lots P0 à P7 (du `3ecc02cb1` au `f7d7c08f0`), restes
-> corrigés le 2026-10-29. Ce document décrit l'état du code ; il remplace le
-> plan du 2026-10-28, contredit par vitruve deux fois (le modèle, puis la
-> facture) et tranché par Hugo.
+> ✅ **Doc d'état** — décisions de Hugo du 2026-10-28 et du 2026-10-29.
 
 Certains articles se vendent **en vrac** (graines au chocolat, saumon gravlax).
 Pour eux, **le poids commandé est le poids facturé** : aucune pesée après coup,
@@ -21,11 +18,10 @@ prix de vente.
   Elle change librement, même publiée, **tant que sa référence de vente n'a
   servi nulle part** — commande de tout statut, brouillon, panier gardé,
   abonnement, réassort, lot, gabarit, décision tarifaire en vigueur ou close
-  ([`plan-changer-l-unite-de-vente.md`](saisie/plan-changer-l-unite-de-vente.md) § 8,
+  ([`saisir-un-prix.md`](saisie/saisir-un-prix.md) § 3,
   Hugo, 2026-10-29). Le référentiel le demande au commerce par
   `SaleReferenceUsage` (`pim/channels/b2b-platform/sale-reference-usage/`).
-  Jusqu'à cette date, elle était figée à la première publication
-  (`has_been_published`, qui reste en base et n'est plus lu pour ça). Vendre le
+  La colonne `has_been_published` reste en base et n'est pas lue pour ça. Vendre le
   même produit à la pièce ET au poids, c'est **deux déclinaisons**.
 - **La quantité est un entier dans l'unité de la ligne** : des pièces, ou des
   **grammes** (1,25 kg = 1250). Jamais de décimale. Chaque ligne porte son
@@ -37,6 +33,9 @@ prix de vente.
 - **Le prix d'un article au poids est un prix au kilo** : le prix public TTC
   et le prix pro HT de la fiche s'entendent par kilogramme ; les deux prix au
   kilo informatifs ne s'affichent pas sur cette déclinaison.
+  Le prix au kilo **informatif d'une pièce** (saisi, affiché par audience,
+  barré sous une promotion) est décrit au § 2 de
+  [`saisie/saisir-un-prix.md`](saisie/saisir-un-prix.md).
 
 ## 2. Les règles
 
@@ -46,7 +45,7 @@ prix de vente.
 | **Le minimum**                | `weightMinGrams`, facultatif (vide = aucun) : en dessous, refus.                                                                                                                                                                                                                                                                                                                                           |
 | **La garde d'une tonne**      | Pas de limite métier ; `MAX_LINE_WEIGHT_GRAMS` = 1 000 000 (`packages/contracts/src/order.ts`) arrête la faute de frappe. Les pièces gardent `MAX_LINE_QUANTITY` (10 000).                                                                                                                                                                                                                                 |
 | **L'unité figée**             | Le sélecteur est modifiable tant que la référence n'a servi nulle part ; l'écran dit où elle a servi avant qu'on essaie (`GET /pim/catalogue/products/:id/sale-unit-usage`), et `Variant.changeSaleTerms` refuse (`SaleReferenceInUseError`, 409 ; `SaleReferenceUsageUnknownError` si le commerce ne répond pas). Un panier à l'ancienne unité perd la ligne au devis (`removedLines`), jamais convertie. |
-| **Le prix au kilo**           | Les particuliers lisent un TTC au kilo, dérivé du HT au kilo ; la ligne vaut étiquette × grammes ÷ 1000, arrondie au centime ([`obsolete/plan-centime-particuliers.md`](obsolete/plan-centime-particuliers.md) §4).                                                                                                                                                                                        |
+| **Le prix au kilo**           | Les particuliers lisent un TTC au kilo, dérivé du HT au kilo ; la ligne vaut étiquette × grammes ÷ 1000, arrondie au centime ([`le-ttc-fait-foi.md`](centime-et-tva/le-ttc-fait-foi.md) § 4).                                                                                                                                                                                                              |
 | **Les décisions de prix**     | Une décision qui couvre plusieurs articles — règle, barème ou plancher de portée **globale ou de famille** — ne s'applique pas à un article au poids : `coversManyArticles` (`apps/lfd-api/src/lafoliecoffee/pricing/domain/specificity.ts`). La mercuriale et les décisions d'un article s'appliquent, au kilo et en grammes.                                                                             |
 | **L'affichage**               | Grammes sous le kilo, kilos au-delà : « 500 g », « 1,25 kg », « 12,40 € / kg » (`packages/money/src/sale-quantity-label.ts`). Sur la facture et l'avoir, toujours des kilos à trois décimales.                                                                                                                                                                                                             |
 | **Les totaux multi-articles** | Fiche d'atelier, compte à produire, dossier du jour, camembert, prévisionnel, colisage, comptoir, feuille de route : une ligne au poids compte pour **une pièce** (`pieceTally`, `packages/money/src/sale-quantity-tally.ts`), et pour rien à 0 g.                                                                                                                                                         |
@@ -61,7 +60,7 @@ sequenceDiagram
   participant K as Colisage
   participant L as Livraison
   participant A as Comptabilité
-  PIM->>C: fil v14, unité, pas et minimum
+  PIM->>C: fil version 17, unité, pas et minimum
   C->>C: passation, quantité en grammes validée au pas et au minimum
   C->>F: ligne produisible avec son unité
   F->>F: compte en grammes par article, fournées en grammes
@@ -157,7 +156,7 @@ Aucune pesée réelle, aucun ajustement après la commande.
 
 Changer l'unité d'un article **déjà vendu** : hors champ, il faudrait dater
 l'unité partout (décisions, historique, facturation) — le geste reste une autre
-déclinaison ([`plan-changer-l-unite-de-vente.md`](saisie/plan-changer-l-unite-de-vente.md) § 7).
+déclinaison ([`saisir-un-prix.md`](saisie/saisir-un-prix.md) § 7).
 
 ## 5. Décisions du bâti, validées par Hugo le 2026-10-29
 

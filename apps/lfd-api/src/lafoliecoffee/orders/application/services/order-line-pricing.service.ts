@@ -189,7 +189,7 @@ export class OrderLinePricing {
 
   /**
    * **Le panier sans ses lignes d'une unité périmée, puis son prix** — pour
-   * le devis de la boutique (`plan-changer-l-unite-de-vente.md`, § 8).
+   * le devis de la boutique (`saisir-un-prix.md`, § 3).
    *
    * UNE lecture du catalogue pour les deux : le tri des lignes périmées et la
    * tarification des lignes gardées lisent la même résolution. Les faire

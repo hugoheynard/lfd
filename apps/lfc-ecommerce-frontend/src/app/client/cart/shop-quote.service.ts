@@ -228,7 +228,7 @@ export class ShopQuote {
 
   /**
    * Les lignes que le serveur a RETIRÉES parce que l'article ne se vend plus
-   * dans l'unité du panier (`plan-changer-l-unite-de-vente.md`, § 8) — à dire
+   * dans l'unité du panier (`saisir-un-prix.md`, § 3) — à dire
    * au client, qui l'ajoutera de nouveau. Une ligne rajoutée n'est plus citée.
    */
   readonly removedLines = computed(() => {

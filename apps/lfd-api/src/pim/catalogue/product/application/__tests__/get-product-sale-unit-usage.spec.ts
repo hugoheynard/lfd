@@ -14,7 +14,7 @@ import {
   tarte,
 } from "./audience-doubles.js";
 
-/** Ce que la carte « Tarif » montre avant qu'on essaie (`plan-changer-l-unite-de-vente.md`, § 8). */
+/** Ce que la carte « Tarif » montre avant qu'on essaie (`saisir-un-prix.md`, § 3). */
 
 const SECOND = bareVariant({ id: "prd_tarte_v2", sku: "PAT-7-2", isDefault: false, position: 1 });
 

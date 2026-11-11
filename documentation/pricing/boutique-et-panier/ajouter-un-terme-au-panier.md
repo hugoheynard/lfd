@@ -1,8 +1,7 @@
 # Ajouter un terme au panier
 
-> ✅ **Décrit le code au 2026-11-04**, réécrit ce jour-là contre le code, après
-> la refonte du chiffrage
-> ([`../centime-et-tva/le-prix-d-un-panier.md`](../centime-et-tva/le-prix-d-un-panier.md)).
+> ✅ **Doc d'état.** Le calcul du panier est décrit dans
+> [`../centime-et-tva/le-prix-d-un-panier.md`](../centime-et-tva/le-prix-d-un-panier.md).
 > Partie 1 : comprendre. Partie 2 : le faire.
 
 # Partie 1 — Comprendre

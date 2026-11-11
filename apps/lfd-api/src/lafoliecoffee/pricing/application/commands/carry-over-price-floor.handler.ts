@@ -26,7 +26,7 @@ import { assertOnSale } from "./sale-reference-support.js";
 
 /**
  * **Reporter un plancher** sur la référence née d'un détachement
- * (`plan-report-apres-detachement.md`, § 2.3, R2) — par son chemin propre,
+ * (`saisir-un-prix.md`, § 4) — par son chemin propre,
  * pas `SetPriceFloorHandler` : celui-là pose à maintenant, sans fin, et
  * REMPLACE la limite en vigueur. Le report garde la fin de l'ancien, et
  * refuse s'il y a quelque chose à remplacer. Acte `carried`, sur le sujet de

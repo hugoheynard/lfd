@@ -20,7 +20,7 @@ export interface PriceGridPromotionSet {
 }
 
 /**
- * **Les promotions applicables à une grille** (`plan-export-grille-de-prix.md`,
+ * **Les promotions applicables à une grille** (`export-grille-de-prix.md`,
  * § 2.4) — par les mêmes fabriques que la caisse :
  *
  * - le point ligne par `LinePromotionSupply`, la source même du chargeur des

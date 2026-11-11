@@ -1,12 +1,8 @@
 # Les écarts du chiffrage — É1 à É18
 
-> ✅ **État des écarts au 2026-11-04**, réécrit ce jour-là contre le code.
-> L'inventaire d'origine (2026-11-03, « C0 ») décrivait en détail les cinq
-> façons dont le code chiffrait alors un panier ; ces assemblages ont été
-> remplacés par un seul calcul
-> ([`le-prix-d-un-panier.md`](le-prix-d-un-panier.md)). Le relevé détaillé
-> reste dans l'historique git. Ce document garde ce qui sert encore : **les
-> codes É**, que le code, les tests et le golden master citent.
+> ✅ **Doc d'état des écarts.** Le chiffrage d'un panier n'a qu'un calcul
+> ([`le-prix-d-un-panier.md`](le-prix-d-un-panier.md)) ; ce document garde
+> **les codes É**, que le code, les tests et le golden master citent.
 > Partie 1 : comprendre. Partie 2 : l'état de chaque écart.
 
 # Partie 1 — Comprendre

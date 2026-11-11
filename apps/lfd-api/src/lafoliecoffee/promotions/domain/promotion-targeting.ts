@@ -49,7 +49,7 @@ export type BuyerAudienceFacts = Omit<PromotionAudienceFacts, "fulfillment">;
  * « société » ne la vise), porte d'entrée inconnue : `b2b` active,
  * `b2bPending` en attente, `b2c` sans société.
  *
- * UNE définition, deux lecteurs (`plan-export-grille-de-prix.md`, § 8.4) :
+ * UNE définition, deux lecteurs (`export-grille-de-prix.md`, § 6.4) :
  * l'annonce d'un point de retrait (`pickup-discount-announcement.ts`) et le
  * « pro type » de la grille de prix (`TypicalBuyer`, `lot-buyer.ts`). Deux
  * copies auraient pu dire deux choses d'un même pro.

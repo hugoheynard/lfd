@@ -38,7 +38,7 @@ export interface AmountsFulfillment {
 
 /**
  * **Les montants d'une commande, selon sa méthode** — plan
- * `documentation/pricing/obsolete/plan-centime-particuliers.md` (§ 4, § 6).
+ * `documentation/pricing/centime-et-tva/le-ttc-fait-foi.md` (§ 4, § 6).
  *
  * Deux compositions, une forme de sortie : `line_ht` (ci-dessous, le calcul
  * d'avant la voie B, inchangé) et `exact_ht` (`order-exact-amounts.ts`). Sorti

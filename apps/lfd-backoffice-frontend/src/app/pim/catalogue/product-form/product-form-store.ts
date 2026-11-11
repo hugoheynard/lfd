@@ -634,7 +634,7 @@ export class ProductFormStore {
 
   /**
    * **Où la référence de la déclinaison ouverte a déjà servi**, lu au commerce
-   * par le référentiel (`plan-changer-l-unite-de-vente.md`, § 8). `null` tant
+   * par le référentiel (`saisir-un-prix.md`, § 3). `null` tant
    * que la lecture n'a pas répondu ; `'unverified'` si elle a échoué.
    */
   private readonly saleUnitUsageValue = signal<ProductSaleUnitUsageView | 'unverified' | null>(

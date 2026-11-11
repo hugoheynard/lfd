@@ -1,9 +1,6 @@
 # Comprendre une mercuriale
 
-> ✅ **Décrit le code au 2026-11-04**, réécrit ce jour-là contre le code. La
-> version du 2026-09-08 décrivait encore la mercuriale comme un groupe de
-> règles de prix, avant qu'elle devienne un objet à part entière. Partie 1 :
-> comprendre. Partie 2 : le code.
+> ✅ **Doc d'état.** Partie 1 : comprendre. Partie 2 : le code.
 
 # Partie 1 — Comprendre
 

@@ -14,7 +14,7 @@ import { CarryOverVolumeLadderCommand } from "../application/commands/carry-over
 
 /**
  * **Reporter une règle ou un barème** sur la référence née d'un détachement
- * (`plan-report-apres-detachement.md`, R1, R3).
+ * (`saisir-un-prix.md`, § 4).
  *
  * Sous `b2b_pricing`, la surface de `AdminPricingController` qui pose ces
  * deux familles : reporter, c'est poser (§ 4). Un contrôleur à part parce que

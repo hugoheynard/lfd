@@ -13,7 +13,7 @@ import { EstimateOrderForCustomerQuery } from "../application/queries/estimate-o
 
 /**
  * **Ce que la saisie de l'équipe coûterait, au centime**, avant de la passer
- * (plan `documentation/pricing/saisie/plan-prix-de-la-saisie.md`, lot P2).
+ * (plan `documentation/commandes/passation/commande-passee-par-l-equipe.md`, § 8).
  *
  * Même surface et même droit que `POST /admin/orders` — l'estimation précède
  * la passation, c'est le même geste (5.1 bis du plan des droits par geste).

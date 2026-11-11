@@ -65,7 +65,7 @@ flowchart LR
   déjà passée sous la même clé passe toujours.
 - **La saisie de l'équipe passe la même porte que son client** (Hugo,
   2026-11-03, E2 de
-  [`plan-prix-de-la-saisie.md`](../../pricing/saisie/plan-prix-de-la-saisie.md) §5) :
+  [`commande-passee-par-l-equipe.md`](commande-passee-par-l-equipe.md) §5) :
   `OrderIntake.admitStaffEntry` — la fermeture et le premier jour de la
   clientèle du client porté, exemptions comprises, sans CGV à cocher. Une
   exception passe par une exemption. Jusqu'au 2026-11-03, l'équipe n'y était

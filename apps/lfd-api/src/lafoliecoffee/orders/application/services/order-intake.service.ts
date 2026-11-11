@@ -55,7 +55,7 @@ export interface IntakeStanding {
  * l'équipe et son estimation ({@link admitStaffEntry}) — jamais par
  * `OrderDrafting`. La saisie de l'équipe passait outre la fermeture (Hugo,
  * 2026-10-09) ; Hugo l'a alignée sur le client le 2026-11-03 (E2 du plan
- * `documentation/pricing/saisie/plan-prix-de-la-saisie.md`) : « comme s'il
+ * `documentation/commandes/passation/commande-passee-par-l-equipe.md`) : « comme s'il
  * commandait lui-même », et une exception passe par une exemption, pas par
  * l'équipe.
  *

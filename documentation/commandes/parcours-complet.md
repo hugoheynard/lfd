@@ -59,7 +59,7 @@ flowchart LR
 ## 1. La prise de commande
 
 Documents d'état : [`passation/architecture-flux-commande-zero-friction.md`](passation/architecture-flux-commande-zero-friction.md),
-[`passation/architecture-commande-saisie-par-l-equipe.md`](passation/architecture-commande-saisie-par-l-equipe.md),
+[`passation/commande-passee-par-l-equipe.md`](passation/commande-passee-par-l-equipe.md),
 [`passation/architecture-commande-sans-compte.md`](passation/architecture-commande-sans-compte.md),
 [`../comptoir/architecture-commande-au-comptoir.md`](../comptoir/architecture-commande-au-comptoir.md),
 [`passation/architecture-idempotence-de-passation.md`](passation/architecture-idempotence-de-passation.md),

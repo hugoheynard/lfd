@@ -1,7 +1,7 @@
 /**
  * E2E de la migration **`les_familles_se_lisent_en_donnees`**, sur le vrai
- * Postgres (`documentation/pricing/obsolete/plan-familles-en-donnees.md`, « Lots 1 à 3
- * réunis », point 5, et §4).
+ * Postgres (`documentation/catalogue/catalogue-synchronise.md`,
+ * « Le rayon est la famille »).
  *
  * Elle reprend les décisions de portée famille posées en CODE de rayon
  * (`viennoiserie`) : code → slug → id de la famille dans `catalog_categories`.

@@ -10,7 +10,7 @@ import { assertOnSale } from "./sale-reference-support.js";
 
 /**
  * **Remplacer l'ancienne référence par la nouvelle dans un gabarit**
- * (`plan-report-apres-detachement.md`, § 2.2, R5). Une édition, pas une
+ * (`saisir-un-prix.md`, § 4). Une édition, pas une
  * décision datée : le gabarit n'a ni fenêtre ni société. La filiation est
  * gardée comme pour tout report, et la vente aux pros comme à la saisie
  * (`SavePriceTemplateHandler`).

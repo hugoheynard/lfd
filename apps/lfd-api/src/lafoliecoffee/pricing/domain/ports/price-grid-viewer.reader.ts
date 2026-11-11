@@ -6,7 +6,7 @@ import type { CatalogViewer } from "../../../catalog/domain/catalog-viewer.js";
  * servie en pro, une suspendue au public.
  *
  * Les ports de la grille prennent un LECTEUR, pas un `companyId`
- * (`plan-export-grille-de-prix.md`, § 8.3) : un pro type n'est aucune société,
+ * (`export-grille-de-prix.md`, § 6.3) : un pro type n'est aucune société,
  * et son lecteur — `PRO_ANONYMOUS_VIEWER` — se pose sans rien lire.
  */
 export abstract class PriceGridViewerReader {

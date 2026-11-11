@@ -20,7 +20,7 @@ export interface PriceGridFile {
 const FALLBACK_FILE_NAME = 'grille-de-prix.csv';
 
 /**
- * **La grille de prix d'un public** (`plan-export-grille-de-prix.md`) — deux
+ * **La grille de prix d'un public** (`export-grille-de-prix.md`) — deux
  * lectures sous `b2b_pricing:read`, en `POST` parce que la question est un
  * objet. Rien n'est écrit.
  */

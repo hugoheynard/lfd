@@ -7,7 +7,7 @@ import type { PromotionAudienceFactsResolver } from "./promotion-audience-facts.
  * **Les faits d'audience d'un acheteur de lot, hors acheminement** — le point
  * ligne et le rayon (`LinePromotionSupply`, `ShelfPromotionOffers`).
  *
- * Des `switch` exhaustifs, pas des ternaires (`plan-export-grille-de-prix.md`,
+ * Des `switch` exhaustifs, pas des ternaires (`export-grille-de-prix.md`,
  * § 8.2) : une sorte d'acheteur ajoutée sans sa branche ne compile pas, au
  * lieu de tomber dans « l'autre cas » et d'y lire une société qui n'existe pas.
  *

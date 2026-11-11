@@ -95,7 +95,7 @@ export class VolumeLadderAggregate {
 
   /**
    * **Le report** sur la référence née d'un détachement
-   * (`plan-report-apres-detachement.md`, R3) : mêmes paliers, même audience,
+   * (`saisir-un-prix.md`, § 4) : mêmes paliers, même audience,
    * portée = la nouvelle référence, fenêtre bornée par l'ancienne. Un barème
    * en pause naît en pause (§ 7 bis).
    *

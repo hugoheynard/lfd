@@ -26,7 +26,7 @@ export interface CartLine {
   readonly product: ShopItemView;
   readonly quantity: number;
   /**
-   * L'unité figée à l'ajout (`plan-changer-l-unite-de-vente.md`, § 8) ;
+   * L'unité figée à l'ajout (`saisir-un-prix.md`, § 3) ;
    * absente : un panier d'avant, lu à l'unité du catalogue.
    */
   readonly saleUnit?: OrderSaleUnit;

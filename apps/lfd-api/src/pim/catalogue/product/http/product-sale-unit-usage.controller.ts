@@ -7,7 +7,7 @@ import { GetProductSaleUnitUsageQuery } from "../application/get-product-sale-un
 
 /**
  * **Ce qui fige l'unité de vente des déclinaisons d'une fiche** — lu par la
- * carte « Tarif » avant qu'on essaie (`plan-changer-l-unite-de-vente.md`,
+ * carte « Tarif » avant qu'on essaie (`saisir-un-prix.md`,
  * § 8). Même mur que la fiche.
  */
 @AdminSurface("pim_catalog")

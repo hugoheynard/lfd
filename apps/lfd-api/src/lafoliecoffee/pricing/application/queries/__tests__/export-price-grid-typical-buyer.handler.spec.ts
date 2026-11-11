@@ -23,7 +23,7 @@ import { ListPriceGridPromotionsHandler } from "../list-price-grid-promotions.ha
 import { ListPriceGridPromotionsQuery } from "../list-price-grid-promotions.query.js";
 
 /**
- * **Le pro type de la grille** (`plan-export-grille-de-prix.md`, § 8) : aucune
+ * **Le pro type de la grille** (`export-grille-de-prix.md`, § 6) : aucune
  * société, ses faits d'audience déclarés, le lecteur pro anonyme — tarif pro
  * HT, sans mercuriale. Dates comparées à la seule horloge figée.
  */

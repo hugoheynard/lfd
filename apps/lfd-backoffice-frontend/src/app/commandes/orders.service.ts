@@ -340,7 +340,7 @@ export class AdminOrdersService {
 
   /**
    * **Ce que la saisie coûterait, au centime** (plan
-   * `documentation/pricing/saisie/plan-prix-de-la-saisie.md`, lot P2) : le
+   * `documentation/commandes/passation/commande-passee-par-l-equipe.md`, § 8) : le
    * serveur compose la commande que `place` passerait, avec le même corps, et
    * ne l'écrit pas.
    *

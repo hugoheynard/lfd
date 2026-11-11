@@ -12,7 +12,7 @@ export type SaleReferenceDecisionKind =
 
 /**
  * D'où vient une décision REPORTÉE depuis l'ancienne référence d'un
- * détachement (`plan-report-apres-detachement.md`, R0). L'écran s'en sert pour
+ * détachement (`saisir-un-prix.md`, § 4). L'écran s'en sert pour
  * dire « déjà reportée » sur la ligne de l'ancienne.
  */
 export interface SaleReferenceDecisionOrigin {

@@ -619,7 +619,7 @@ describe("le cache des matériaux, vu d'une autre instance", () => {
 
 /**
  * **Le budget de l'estimation de la saisie** (`POST /admin/orders/estimate`,
- * plan `documentation/pricing/saisie/plan-prix-de-la-saisie.md`, lot P2).
+ * plan `documentation/commandes/passation/commande-passee-par-l-equipe.md`, § 8).
  *
  * Elle compose la commande entière sans l'écrire : le payeur, la porte de la
  * boutique, la marque, la résolution des prix, l'acheminement et sa remise,

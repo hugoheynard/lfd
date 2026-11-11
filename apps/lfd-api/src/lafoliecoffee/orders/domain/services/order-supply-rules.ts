@@ -68,7 +68,7 @@ export function staffSupplyOf(
 /**
  * **La saisie vient-elle du comptoir ?** — l'origine déclarée `counter`, ou le
  * « Retrait immédiat », qui n'existe qu'au comptoir (Hugo, 2026-11-03, E4
- * étendu du plan `documentation/pricing/saisie/plan-prix-de-la-saisie.md`).
+ * étendu du plan `documentation/commandes/passation/commande-passee-par-l-equipe.md`).
  * Le raccourci reste un signal à lui seul : un écran plus ancien qui ne
  * déclare pas l'origine est toujours couvert.
  */
@@ -93,7 +93,7 @@ export function staffEntryOriginOf(
 
 /**
  * **Le comptoir ne règle qu'au compte** (Hugo, 2026-11-03, E4 du plan
- * `documentation/pricing/saisie/plan-prix-de-la-saisie.md`) — sur la vitrine
+ * `documentation/commandes/passation/commande-passee-par-l-equipe.md`) — sur la vitrine
  * comme sur une commande programmée, dès que la saisie vient du comptoir
  * ({@link isCounterEntry}).
  *

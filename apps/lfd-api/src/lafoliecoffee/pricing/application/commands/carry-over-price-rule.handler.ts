@@ -28,7 +28,7 @@ import { assertNotReservedElsewhere, assertOnSale } from "./sale-reference-suppo
 
 /**
  * **Reporter une règle de prix** sur la référence née d'un détachement
- * (`plan-report-apres-detachement.md`, R1) : poser une règle NEUVE par le
+ * (`saisir-un-prix.md`, § 4) : poser une règle NEUVE par le
  * chemin de la pose — agrégat, contrainte d'exclusion, L5, journal —, jamais
  * réécrire l'ancienne.
  *

@@ -643,7 +643,7 @@ publié, après la validation, pour elle seule.
   panne d'envoi était avalée. Un échec d'ENVOI se lit au suivi et se relance.
 - « Nous écrire » n'avait pas d'unité de travail : il en a une, autour de
   l'écriture de la demande et de la demande d'e-mail.
-- `documentation/pricing/obsolete/recensement-montants-de-commande.md` citait
+- le recensement des montants de commande (retiré depuis) citait
   l'ancien chemin de l'abonné « modification appliquée » : repointé vers le
   service (`lint:doc-references`).
 

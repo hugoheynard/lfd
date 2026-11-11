@@ -22,7 +22,7 @@ export interface StaffSettlementPorts {
  * ou `null`.
  *
  * Extrait de `PlaceOrderForCustomerHandler.settle` (plan
- * `documentation/pricing/saisie/plan-prix-de-la-saisie.md`, lot P2) : la
+ * `documentation/commandes/passation/commande-passee-par-l-equipe.md`, § 8) : la
  * passation le lève avant de décider le règlement ; l'estimation de la saisie
  * le dit en avertissement, avec les mêmes mots. Un seul prédicat pour les
  * deux, pour que le panier n'annonce pas un crédit que la validation refuse.

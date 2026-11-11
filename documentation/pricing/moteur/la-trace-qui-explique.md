@@ -1,12 +1,7 @@
 # La trace qui explique — « pourquoi ce prix ? »
 
-> ✅ **Décrit le code au 2026-11-04.** Ce document remplace
-> le plan de R25 (2026-09-09), dont les quatre lots sont bâtis
-> (R25, close le 2026-09-09). Le plan racontait trois formes successives,
-> démolies puis refaites par `vitruve` ; leurs leçons sont au § 5, leur récit
-> dans l'historique git et au
-> [journal de remédiation](../journal-de-remediation.md), § R25. Partie 1 :
-> comprendre. Partie 2 : le code.
+> ✅ **Doc d'état.** Les leçons des formes démolies par `vitruve` sont au
+> § 5. Partie 1 : comprendre. Partie 2 : le code.
 
 # Partie 1 — Comprendre
 

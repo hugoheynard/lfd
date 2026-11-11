@@ -107,7 +107,7 @@ export class ShopCartQuoting {
    */
   async quote(request: ShopCartQuoteRequest): Promise<ShopCartQuote> {
     // Une ligne dont l'article a changé d'unité est RETIRÉE, jamais convertie
-    // (`plan-changer-l-unite-de-vente.md`, § 8) ; le client la rajoute.
+    // (`saisir-un-prix.md`, § 3) ; le client la rajoute.
     const { resolved, kept, removed } = await this.pricing.resolveWithoutStaleUnits(
       request.payload.lines,
       // `null` pour un visiteur : ce n'est pas un trou à combler, c'est le

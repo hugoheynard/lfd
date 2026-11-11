@@ -74,7 +74,7 @@ export class AdminVolumeCommitmentsController {
 
   /**
    * **Reporter** l'engagement sur la référence née d'un détachement
-   * (`plan-report-apres-detachement.md`, R4) : la même promesse, signée sur la
+   * (`saisir-un-prix.md`, § 4) : la même promesse, signée sur la
    * nouvelle. L'ancien court jusqu'à sa fin.
    */
   @Post(":id/carry-over")

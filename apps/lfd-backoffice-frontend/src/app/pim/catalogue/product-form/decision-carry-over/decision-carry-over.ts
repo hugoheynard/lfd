@@ -29,7 +29,7 @@ export function defaultCarryOverReason(fromSku: string): string {
 
 /**
  * **Le droit qu'un report demande** : celui de POSER la famille
- * (`plan-report-apres-detachement.md`, § 4) — un plancher sous les limites de
+ * (`saisir-un-prix.md`, § 4) — un plancher sous les limites de
  * prix, tout le reste sous la tarification.
  */
 export function carryOverPermission(kind: SaleReferenceDecisionKind): StaffPermission {
@@ -55,7 +55,7 @@ const CONSEQUENCES: Readonly<
 
 /**
  * **Reporter une décision sur la référence née d'un détachement**
- * (`documentation/pricing/mercuriales/l-avenant-date.md`, § 6 ; `plan-report-apres-detachement.md`,
+ * (`documentation/pricing/mercuriales/l-avenant-date.md`, § 6 ; `saisir-un-prix.md`,
  * § 5) — mercuriale, règle, plancher, barème, engagement, ou la ligne d'un
  * gabarit à remplacer.
  *

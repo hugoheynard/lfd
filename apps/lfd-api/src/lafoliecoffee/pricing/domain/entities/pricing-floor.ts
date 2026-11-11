@@ -167,7 +167,7 @@ export class PricingFloor {
 
   /**
    * **Le report** sur la référence née d'un détachement
-   * (`plan-report-apres-detachement.md`, § 2.3) — un chemin propre, pas
+   * (`saisir-un-prix.md`, § 4) — un chemin propre, pas
    * `pose` : la fenêtre est `max(maintenant, début)` → fin RÉELLE de
    * l'ancien, et rien n'est remplacé. Un pourcentage reste un pourcentage :
    * il s'applique au canonique de la nouvelle référence (§ 7 bis) ; un

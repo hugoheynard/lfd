@@ -927,7 +927,7 @@ function payloadOf(
     locale,
     note: '',
     // Une ligne au poids dit son unité : sans elle, le serveur lirait des pièces.
-    // Et c'est l'unité FIGÉE à l'ajout qui part (`plan-changer-l-unite-de-vente.md`, § 8).
+    // Et c'est l'unité FIGÉE à l'ajout qui part (`saisir-un-prix.md`, § 3).
     lines: lines.map((line) =>
       requestedLine(line.product.sku, line.quantity, lineTermsOf(line.saleUnit, line.product)),
     ),

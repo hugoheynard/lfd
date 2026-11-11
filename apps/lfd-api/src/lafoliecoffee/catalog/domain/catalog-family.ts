@@ -6,8 +6,8 @@ import type { CatalogFamilyNodeView, CatalogFamilyView } from "@lfd/contracts";
  *
  * Tout vient du miroir `catalog_categories`, reçu du PIM à chaque livraison et
  * jamais édité ici : l'`id` est celui du PIM, `name` et `position` aussi. Il
- * n'y a plus de table de rayons dans le code (plan
- * `documentation/pricing/obsolete/plan-familles-en-donnees.md`) — une famille livrée
+ * n'y a plus de table de rayons dans le code
+ * (`documentation/catalogue/catalogue-synchronise.md`) — une famille livrée
  * EST un rayon, sans déploiement.
  *
  * `path` est ce que la tarification lit : la famille puis ses parentes, **de

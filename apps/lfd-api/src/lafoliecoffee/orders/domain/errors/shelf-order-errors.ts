@@ -76,7 +76,7 @@ export class EntryShortcutOffShelfError extends DomainError {
 
 /**
  * **Au comptoir, la saisie de l'équipe se règle au compte** (Hugo,
- * 2026-11-03, E4 — `documentation/pricing/saisie/plan-prix-de-la-saisie.md`
+ * 2026-11-03, E4 — `documentation/commandes/passation/commande-passee-par-l-equipe.md`
  * §5) : rien ne s'encaisse au comptoir par notre système, et un lien de
  * règlement envoyé à un client qui est devant le vendeur n'a pas de sens.
  * Un pro sans compte ne commande pas au comptoir par la saisie.
@@ -117,7 +117,7 @@ const COUNTER_ACCOUNT_REFUSALS: Readonly<Record<CounterAccountRefusalCause, stri
 
 /**
  * **Au comptoir, le règlement au compte refusé ne laisse aucun règlement**
- * (Hugo, 2026-11-03, plan `documentation/pricing/saisie/plan-prix-de-la-saisie.md`
+ * (Hugo, 2026-11-03, plan `documentation/commandes/passation/commande-passee-par-l-equipe.md`
  * §5) : le lien y est refusé ({@link CounterLinkSettlementRefusedError}). Le
  * refus est distinct de `AccountSettlementNotGrantedError`, dont le geste de
  * sortie — « réglez par lien » — n'existe pas au comptoir ; il dit la cause

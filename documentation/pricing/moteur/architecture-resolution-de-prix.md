@@ -1,9 +1,6 @@
 # La résolution de prix — un empilement d'étages datés
 
-> ✅ **Décrit le code au 2026-11-04**, réécrit ce jour-là contre le code. La
-> version précédente (1 474 lignes, depuis le 2026-08-17) mêlait le modèle, sa
-> mise en œuvre et l'histoire du chantier S1 à S5 ; l'histoire reste dans
-> l'historique git. **Les exemples chiffrés de ce document sont ceux que
+> ✅ **Doc d'état.** **Les exemples chiffrés de ce document sont ceux que
 > `lafoliecoffee/pricing/domain/__tests__/resolve-price.spec.ts` vérifie** : si l'un
 > tombe, c'est ce document qui ment. Partie 1 : comprendre. Partie 2 : le
 > code.

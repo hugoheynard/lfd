@@ -20,7 +20,7 @@ import { ListPriceGridPromotionsQuery } from "../application/queries/list-price-
 
 /**
  * **La grille de prix d'un public** — l'export d'une plaquette
- * (`plan-export-grille-de-prix.md`).
+ * (`export-grille-de-prix.md`).
  *
  * Deux `POST` de LECTURE, sous `b2b_pricing:read` : la question (public,
  * jour, acheminement, remises retenues) est un objet, pas une adresse — et rien

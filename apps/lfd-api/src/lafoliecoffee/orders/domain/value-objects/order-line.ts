@@ -196,7 +196,7 @@ export class OrderLine {
 
   /**
    * **Une ligne d'une commande composée en TTC** (`exact_ht`, plan
-   * `documentation/pricing/obsolete/plan-centime-particuliers.md`, § 4) : son HT est
+   * `documentation/pricing/centime-et-tva/le-ttc-fait-foi.md`, § 4) : son HT est
    * REÇU de la composition (`composeTtcOrder`), pas dérivé du prix.
    *
    * 🔴 L'invariant de {@link create} — « le HT de ligne dérive du prix, jamais
@@ -292,7 +292,7 @@ function labelQuantityOf(line: Pick<OrderLineInput, "saleUnit">): SaleQuantity {
 /**
  * L'étiquette × la quantité, en centimes — la règle de `composeTtcOrder` : à la
  * pièce, un produit exact ; au poids, l'étiquette au kilo × grammes / 1000,
- * arrondie une fois, la moitié vers le haut (`documentation/pricing/obsolete/plan-centime-particuliers.md`, §4).
+ * arrondie une fois, la moitié vers le haut (`documentation/pricing/centime-et-tva/le-ttc-fait-foi.md`, §4).
  */
 function labelTimesQuantity(
   labelCents: number,

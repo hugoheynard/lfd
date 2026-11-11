@@ -1,6 +1,6 @@
 /**
  * 🔴 **L'estimation de la saisie = la commande qu'elle annonce** (plan
- * `documentation/pricing/saisie/plan-prix-de-la-saisie.md`, lot P2).
+ * `documentation/commandes/passation/commande-passee-par-l-equipe.md`, § 8).
  *
  * La même saisie passe par `POST /admin/orders/estimate`, puis par
  * `POST /admin/orders` ; chaque montant estimé est comparé aux COLONNES de la

@@ -7,7 +7,7 @@ import { ListPriceGridPromotionsHandler } from "../list-price-grid-promotions.ha
 import { ListPriceGridPromotionsQuery } from "../list-price-grid-promotions.query.js";
 
 /**
- * **La liste qui remplit le panneau** (`plan-export-grille-de-prix.md`, § 2.4) :
+ * **La liste qui remplit le panneau** (`export-grille-de-prix.md`, § 2.4) :
  * elle dépend du public, de la date et de l'acheminement. Dates comparées à la
  * seule horloge figée.
  */

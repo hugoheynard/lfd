@@ -2,7 +2,7 @@ import type { AdminOrderEstimatePayload } from "@lfd/contracts";
 
 /**
  * **Ce que la saisie de l'équipe coûterait, si on la passait maintenant** (plan
- * `documentation/pricing/saisie/plan-prix-de-la-saisie.md`, lot P2).
+ * `documentation/commandes/passation/commande-passee-par-l-equipe.md`, § 8).
  *
  * Le corps est celui de la passation, règlement compris : c'est lui qui
  * décide des refus de crédit. `staffUserId` vient de la porte, comme pour la

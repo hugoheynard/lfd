@@ -19,7 +19,7 @@ export interface StaleUnitLine {
 
 /**
  * **Les lignes d'un panier dont l'unité n'est plus celle de l'article**
- * (`documentation/pricing/saisie/plan-changer-l-unite-de-vente.md`, § 8).
+ * (`documentation/pricing/saisie/saisir-un-prix.md`, § 3).
  *
  * Au DEVIS seulement : un panier composé à la pièce dont l'article est passé au
  * poids perd la ligne, au lieu que tout le décompte tombe sur

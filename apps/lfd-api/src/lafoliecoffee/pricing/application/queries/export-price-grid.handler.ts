@@ -34,7 +34,7 @@ import { ExportPriceGridQuery, type PriceGridFile } from "./export-price-grid.qu
 const SHELF_QUANTITY = 1;
 
 /**
- * **La grille de prix d'un public** (`plan-export-grille-de-prix.md`, § 4).
+ * **La grille de prix d'un public** (`export-grille-de-prix.md`, § 4).
  *
  * Chaque prix passe par la porte (`Pricer.load`), avec l'acheteur du public
  * choisi — une société servie, un particulier par sa porte d'entrée, ou un pro

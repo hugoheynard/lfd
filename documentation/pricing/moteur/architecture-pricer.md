@@ -1,9 +1,7 @@
 # Le tarificateur — `LoadedPricer`
 
-> ✅ **Décrit le code au 2026-11-04**, réécrit ce jour-là contre le code. La
-> version du 2026-09-09 décrivait aussi une façade `Pricer.for` / `forAll` par
-> SKU, retirée le jour même ; **la porte d'entrée** est décrite dans
-> [`architecture-la-porte-du-prix.md`](architecture-la-porte-du-prix.md). Ce
+> ✅ **Doc d'état.** **La porte d'entrée** est décrite dans
+> [`architecture-la-porte-du-prix.md`](architecture-la-porte-du-prix.md) ; ce
 > document décrit **le tarificateur** qu'elle tend. Partie 1 : comprendre.
 > Partie 2 : le code.
 

@@ -4,7 +4,7 @@ import { CSV_BOM, CSV_SEPARATOR, csvEuros, csvQuoted } from "../../../platform/c
 import type { PriceGridBasis, PriceGridRow } from "./price-grid-row.js";
 
 /**
- * **La grille de prix en CSV** (`plan-export-grille-de-prix.md`, § 3) — pure.
+ * **La grille de prix en CSV** (`export-grille-de-prix.md`, § 3) — pure.
  *
  * Elle recopie des lignes déjà chiffrées : aucun montant n'est recalculé ici.
  * UTF-8 avec BOM, point-virgule, virgule décimale — les cellules de
@@ -143,7 +143,7 @@ function slugOf(text: string): string {
   return slug === "" ? "public" : slug;
 }
 
-/** `grille-<public>-<AAAA-MM-JJ>.csv` (`plan-export-grille-de-prix.md`). */
+/** `grille-<public>-<AAAA-MM-JJ>.csv` (`export-grille-de-prix.md`). */
 export function priceGridFileName(audience: string, day: string): string {
   return `grille-${slugOf(audience)}-${day}.csv`;
 }

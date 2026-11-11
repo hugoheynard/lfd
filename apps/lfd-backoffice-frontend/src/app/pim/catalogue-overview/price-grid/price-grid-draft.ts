@@ -6,7 +6,7 @@ import type {
 } from '@lfd/contracts';
 
 /**
- * **Ce que le panneau d'export tient en main** (`plan-export-grille-de-prix.md`,
+ * **Ce que le panneau d'export tient en main** (`export-grille-de-prix.md`,
  * § 2) — pur : le brouillon des choix, et ce qu'il devient sur le fil.
  */
 
@@ -33,9 +33,10 @@ export const EMPTY_DRAFT: PriceGridDraft = {
 };
 
 /**
- * Les publics proposés (plan, § 7 et § 8). Les deux pros types n'existent pas
- * en base : le serveur les tarife au tarif pro HT, sans mercuriale, avec les
- * promotions de leur clientèle — l'en-tête du fichier dit ses limites.
+ * Les publics proposés (`documentation/pricing/export-grille-de-prix.md`,
+ * § 2 et § 6). Les deux pros types n'existent pas en base : le serveur les
+ * tarife au tarif pro HT, sans mercuriale, avec les promotions de leur
+ * clientèle — l'en-tête du fichier dit ses limites.
  */
 export const AUDIENCE_OPTIONS: readonly { value: PriceGridAudienceChoice; label: string }[] = [
   { value: 'pro_active', label: 'Pros (société active)' },

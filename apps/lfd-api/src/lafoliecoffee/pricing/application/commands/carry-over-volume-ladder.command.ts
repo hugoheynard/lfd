@@ -1,6 +1,6 @@
 /**
  * Reporter un barème de volume de l'ancienne référence `fromSku` sur `toSku`, née d'un
- * détachement de celle-ci (`plan-report-apres-detachement.md`, § 2).
+ * détachement de celle-ci (`saisir-un-prix.md`, § 4).
  */
 export class CarryOverVolumeLadderCommand {
   constructor(

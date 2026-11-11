@@ -29,7 +29,7 @@ export interface LotRequest {
   /** Dans l'ordre où ils seront rendus. Un SKU en double est refusé. */
   readonly articles: readonly { readonly article: CatalogArticle; readonly quantity: number }[];
   /**
-   * **L'acheteur** — union discriminée (`plan-export-grille-de-prix.md`, § 8.1).
+   * **L'acheteur** — union discriminée (`export-grille-de-prix.md`, § 6.1).
    *
    * `real` : la société servie (ou `null`) et **la porte d'entrée**, posée par
    * la route (lot L10 du plan des promotions) : `guest` sur une route publique,

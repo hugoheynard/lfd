@@ -743,7 +743,7 @@ export interface ClientCopy {
     readonly discountOnBase: string;
     /**
      * Une ligne retirée au devis : l'article se vend désormais au poids, ou à
-     * la pièce (`plan-changer-l-unite-de-vente.md`, § 8). `{name}` = l'article.
+     * la pièce (`saisir-un-prix.md`, § 3). `{name}` = l'article.
      */
     readonly unitChangedToWeight: string;
     readonly unitChangedToPiece: string;

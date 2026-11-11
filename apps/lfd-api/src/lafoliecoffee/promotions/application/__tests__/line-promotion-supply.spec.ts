@@ -144,7 +144,7 @@ describe("LinePromotionSupply", () => {
     expect(principals.asked).toEqual([]);
   });
 
-  // Le pro type de la grille de prix (`plan-export-grille-de-prix.md`, § 8) :
+  // Le pro type de la grille de prix (`export-grille-de-prix.md`, § 6) :
   // ses faits sont construits en amont, aucune société n'est lue.
   const BY_CLIENTELE = [
     livePromotion({ id: "tous" }),

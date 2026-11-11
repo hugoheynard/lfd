@@ -225,7 +225,7 @@ describe("fermée aux pros", () => {
     await ctx.asSub(PERSO).post("/orders").send(clientOrder()).expect(201);
     await placeAsGuest();
     // 🔴 L'équipe saisit « comme si le client commandait lui-même » (E2, Hugo,
-    // 2026-11-03, `plan-prix-de-la-saisie.md` §5) : la boutique fermée aux
+    // 2026-11-03, `commande-passee-par-l-equipe.md`, § 8.1) : la boutique fermée aux
     // pros la refuse aussi ; une exception passe par une exemption.
     expect((await staffOrderForPro(SERVICE_DAY, 409)).code).toBe(CLOSED);
     expect(await ctx.prisma.order.count()).toBe(2);

@@ -11,7 +11,7 @@ import { draftFrom, pickupPromotion, type DraftSpec } from "./priced-input.fixtu
 
 /**
  * **`Order.amounts()`** — la lecture des montants que l'estimation de la
- * saisie rend (plan `documentation/pricing/saisie/plan-prix-de-la-saisie.md`,
+ * saisie rend (plan `documentation/commandes/passation/commande-passee-par-l-equipe.md`,
  * lot P2) : les valeurs mêmes que `toPersistence()` écrira, sans règlement
  * décidé. Les jours ne sont comparés qu'entre eux (exception du CLAUDE.md §5).
  */

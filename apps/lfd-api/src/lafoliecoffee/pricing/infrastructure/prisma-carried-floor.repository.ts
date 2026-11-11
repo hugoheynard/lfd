@@ -15,7 +15,7 @@ import { PricingActWriter } from "./pricing-act.writer.js";
 import { pricingFloorFromRow } from "./pricing-floor-rows.js";
 
 /**
- * Le report d'un plancher (`plan-report-apres-detachement.md`, § 2.3) :
+ * Le report d'un plancher (`saisir-un-prix.md`, § 4) :
  * relire une version par son identifiant, et INSÉRER — jamais la clôture de
  * la limite en vigueur que fait `PrismaPricingFloorRepository.pose`. Une
  * course perdue retombe sur `price_floors_no_overlap_by_clientele`.

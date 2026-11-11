@@ -4,7 +4,7 @@ import { FROZEN_FRANCO_PRO_DRAFTS, FROZEN_PRO_DRAFTS } from "./pro-baskets.froze
 
 /**
  * **Le pro ne change pas d'un centime** — plan
- * `documentation/pricing/obsolete/plan-centime-particuliers.md` (§ 9, lot C2).
+ * `documentation/pricing/centime-et-tva/le-ttc-fait-foi.md` (§ 9, lot C2).
  *
  * Vingt paniers de société passés à `Order.draft`. Chaque montant attendu a été
  * RELEVÉ sur le code d'avant la voie B (2026-10-27), puis écrit ici : la

@@ -4,7 +4,7 @@ import { promotionsAdmitted } from "../live-promotion.js";
 import { TYPICAL_BUYER, type PromotionAudienceFacts } from "../promotion-targeting.js";
 
 /**
- * **Le pro type** (`plan-export-grille-de-prix.md`, § 8) — un objet opaque,
+ * **Le pro type** (`export-grille-de-prix.md`, § 6) — un objet opaque,
  * dont les faits sont ceux de l'acheteur type de l'annonce d'un point.
  * Dates comparées entre elles seulement.
  */

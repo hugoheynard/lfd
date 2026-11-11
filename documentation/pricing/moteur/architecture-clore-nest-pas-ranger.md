@@ -1,9 +1,7 @@
 # Clore n'est pas ranger
 
-> ✅ **Décrit le code au 2026-11-04**, réécrit ce jour-là contre le code. La
-> version du 2026-09-09 racontait aussi les quatre versions du plan contredites
-> par `vitruve` ; leur leçon est gardée au § 6, le récit est dans l'historique
-> git. Partie 1 : comprendre. Partie 2 : le code.
+> ✅ **Doc d'état.** La leçon des versions contredites par `vitruve` est gardée
+> au § 6. Partie 1 : comprendre. Partie 2 : le code.
 
 # Partie 1 — Comprendre
 

@@ -79,13 +79,13 @@ flowchart TD
 
 **Une phrase par étape, et c'est tout ce qu'il faut retenir :**
 
-| Étape            | Ce qu'elle décide                                                               | Où c'est écrit                                                                                           |
-| ---------------- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| **Deux portes**  | le client pour lui-même, ou l'équipe pour lui — jamais deux natures de commande | [`architecture-commande-saisie-par-l-equipe.md`](passation/architecture-commande-saisie-par-l-equipe.md) |
-| **Le mur**       | sans société la commande n'est qu'à son auteur ; avec, il faut en être membre   | [`architecture-flux-commande-zero-friction.md`](passation/architecture-flux-commande-zero-friction.md)   |
-| **L'heure**      | jusqu'à quand on prend commande, la grâce, la dérogation et la surtaxe          | [`../limites-de-commande/README.md`](../limites-de-commande/README.md)                                   |
-| **Le clos**      | une commande se corrige par **révision**, sous le même numéro (pas d'avenants)  | [`modifier-une-commande.md`](modification/modifier-une-commande.md)                                      |
-| **L'avancement** | les états, les transitions, et qui a le droit de les écrire                     | [`architecture-cycle-de-vie-commande.md`](la-commande/architecture-cycle-de-vie-commande.md)             |
+| Étape            | Ce qu'elle décide                                                               | Où c'est écrit                                                                                         |
+| ---------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| **Deux portes**  | le client pour lui-même, ou l'équipe pour lui — jamais deux natures de commande | [`commande-passee-par-l-equipe.md`](passation/commande-passee-par-l-equipe.md)                         |
+| **Le mur**       | sans société la commande n'est qu'à son auteur ; avec, il faut en être membre   | [`architecture-flux-commande-zero-friction.md`](passation/architecture-flux-commande-zero-friction.md) |
+| **L'heure**      | jusqu'à quand on prend commande, la grâce, la dérogation et la surtaxe          | [`../limites-de-commande/README.md`](../limites-de-commande/README.md)                                 |
+| **Le clos**      | une commande se corrige par **révision**, sous le même numéro (pas d'avenants)  | [`modifier-une-commande.md`](modification/modifier-une-commande.md)                                    |
+| **L'avancement** | les états, les transitions, et qui a le droit de les écrire                     | [`architecture-cycle-de-vie-commande.md`](la-commande/architecture-cycle-de-vie-commande.md)           |
 
 ---
 
@@ -113,7 +113,7 @@ flowchart TD
 | Le parcours entier, de la prise à la facture, en schémas ?                             | [`parcours-complet.md`](parcours-complet.md) (état, relu contre le code le 2026-10-25 : en service, bâti sur `dev`, prévu)                                                                                                                     |
 | Qu'est-ce qu'un bon de livraison, un départ incomplet, un montant facturable ?         | [`bon-de-livraison.md`](bon-de-livraison.md) (état, 2026-10-25 : E1–E6d bâtis, E1/E2/E4a en production)                                                                                                                                        |
 | Comment on commande sans avoir d'entreprise ?                                          | [`architecture-flux-commande-zero-friction.md`](passation/architecture-flux-commande-zero-friction.md)                                                                                                                                         |
-| Comment un commercial commande **pour** un client ?                                    | [`architecture-commande-saisie-par-l-equipe.md`](passation/architecture-commande-saisie-par-l-equipe.md)                                                                                                                                       |
+| Comment un commercial commande **pour** un client ?                                    | [`commande-passee-par-l-equipe.md`](passation/commande-passee-par-l-equipe.md)                                                                                                                                                                 |
 | Jusqu'à quand on prend commande, et que coûte le retard ?                              | [`../limites-de-commande/README.md`](../limites-de-commande/README.md)                                                                                                                                                                         |
 | Où le staff voit toutes les commandes, filtrées, et le détail d'une commande ?         | [`page-commandes.md`](back-office/page-commandes.md) (état, 2026-10-24)                                                                                                                                                                        |
 | D'où vient la couleur d'une commande, et dans quel ordre le colisage la range ?        | [`tri-depart-et-couleurs.md`](back-office/tri-depart-et-couleurs.md) (état partiel, 2026-10-24)                                                                                                                                                |

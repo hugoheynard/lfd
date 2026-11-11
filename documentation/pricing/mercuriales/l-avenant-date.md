@@ -1,11 +1,8 @@
 # L'avenant daté d'une mercuriale
 
-> ✅ **Doc d'état, écrite le 2026-11-04** à partir du code. Elle remplace le
-> plan « un tarif daté sur une référence » (2026-10-29, bâti du 2026-10-29 au
-> 2026-10-30, lots T1 à T7), supprimé ce jour-là ; il reste dans l'historique
-> git avec les deux contradictions de `vitruve`. Le code cite ses **§ 6** (le
-> report) et ses décisions **Q1 à Q3, B1, B2** : ce document garde ces
-> repères. Partie 1 : comprendre. Partie 2 : le code.
+> ✅ **Doc d'état.** Le code cite ses **§ 6** (le report) et ses décisions
+> **Q1 à Q3, B1, B2** : ces repères sont gardés. Partie 1 : comprendre.
+> Partie 2 : le code.
 
 # Partie 1 — Comprendre
 
@@ -124,7 +121,7 @@ l'**identifiant du document** (B1, § 7) ; la pièce se lit dans le libellé
 - **Écran** : la fiche née du détachement, `pim/catalogue/product-form/decision-carry-over/`
   (bouton « Reporter sur … », motif prérempli, confirmation).
 - Les autres décisions (règles, planchers, barèmes, engagements) ont leur
-  propre report ([`../saisie/plan-report-apres-detachement.md`](../saisie/plan-report-apres-detachement.md)).
+  propre report ([`../saisie/saisir-un-prix.md`](../saisie/saisir-un-prix.md)).
 
 ## 7. Les décisions qui tiennent ce modèle
 

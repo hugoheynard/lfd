@@ -14,7 +14,7 @@ import { PriceGridHttpApi, type PriceGridFile } from '../price-grid-http-api';
 import { PriceGridPanel } from '../price-grid-panel/price-grid-panel';
 
 /**
- * Le panneau d'export (`plan-export-grille-de-prix.md`, § 2) : la liste des
+ * Le panneau d'export (`export-grille-de-prix.md`, § 2) : la liste des
  * promotions suit le public et l'acheminement, les choix partent tels quels,
  * et le fichier se télécharge sous le nom que le serveur lui donne.
  */

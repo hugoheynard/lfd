@@ -109,7 +109,7 @@ export class ShopCartSync {
    * Les termes d'une ligne : l'unité FIGÉE à l'ajout, sinon celle du catalogue
    * (un panier d'avant). Elle était recalculée depuis le catalogue jusqu'au
    * 2026-10-29 : un article passé au poids aurait fait de « 3 » pièces 3 g
-   * (`plan-changer-l-unite-de-vente.md`, § 8).
+   * (`saisir-un-prix.md`, § 3).
    */
   private readonly termsOf = (sku: string): SaleTerms =>
     lineTermsOf(this.store.units()[sku], this.catalogue.itemOf(sku));

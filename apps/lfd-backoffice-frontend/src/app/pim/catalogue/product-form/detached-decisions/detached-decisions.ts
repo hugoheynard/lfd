@@ -37,7 +37,7 @@ type LoadState = 'idle' | 'ready' | 'error';
  * chacune se reporte sur la nouvelle référence : une mercuriale par un avenant
  * daté (`documentation/pricing/mercuriales/l-avenant-date.md`, § 6), les autres familles par
  * une décision neuve, le gabarit en remplaçant sa ligne
- * (`plan-report-apres-detachement.md`, § 5). « Tout reporter » ne reporte que
+ * (`saisir-un-prix.md`, § 4). « Tout reporter » ne reporte que
  * ce que le rôle de la personne permet de poser (Hugo, 2026-10-30).
  *
  * La nouvelle référence est le défaut de cette fiche : la déclinaison
