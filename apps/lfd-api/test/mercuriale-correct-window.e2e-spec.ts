@@ -1,6 +1,6 @@
 /**
  * E2E de **« Corriger les dates »** d'une mercuriale à venir
- * (`documentation/pricing/mercuriales/plan-corriger-les-dates.md`).
+ * (`documentation/pricing/mercuriales/comprendre-une-mercuriale.md`, § 9).
  *
  * Ce que seul ce niveau prouve : la nouvelle fenêtre écrite en base et lue
  * par la caisse (le prix s'applique dès le nouveau début), le mur

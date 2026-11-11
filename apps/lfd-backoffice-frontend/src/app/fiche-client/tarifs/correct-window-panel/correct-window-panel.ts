@@ -16,7 +16,7 @@ import {
 
 import { businessDayStart } from '../../../shared/business-day';
 import { parisToday } from '../../../shared/paris-today';
-import { AMENDMENT_REASON_MAX_LENGTH } from '../amendment-diff';
+import { AMENDMENT_REASON_MAX_LENGTH } from '../amendment-body';
 import { CompanyPricingService } from '../company-pricing.service';
 
 /** La mercuriale à venir dont on corrige les dates, et son client. */
@@ -27,7 +27,7 @@ export interface CorrectWindowPanelData {
 
 /**
  * **« Corriger les dates »** d'une mercuriale qui n'a pas commencé
- * (`documentation/pricing/mercuriales/plan-corriger-les-dates.md`).
+ * (`documentation/pricing/mercuriales/comprendre-une-mercuriale.md`, § 9).
  *
  * Les dates s'appliquent à la saisie et ne ferment rien : le navigateur émet
  * un `valueChange` à chaque morceau tapé. Seul « Corriger » envoie ; un refus

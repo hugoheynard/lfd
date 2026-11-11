@@ -35,7 +35,7 @@ export class CorrectMercurialeWindowHandler implements ICommandHandler<
 
   /**
    * Corrige le début et la fin d'une mercuriale **à venir**
-   * (`documentation/pricing/mercuriales/plan-corriger-les-dates.md`).
+   * (`documentation/pricing/mercuriales/comprendre-une-mercuriale.md`, § 9).
    *
    * Désignée par le mur `company_id` (comme le renommage), puis **verrouillée
    * et relue** : les refus de l'agrégat (C1 à C4), ceux de la pose rejoués

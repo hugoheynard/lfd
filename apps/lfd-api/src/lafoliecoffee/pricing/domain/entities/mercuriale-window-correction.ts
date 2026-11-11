@@ -11,7 +11,7 @@ import type { MercurialeAmendment } from "./mercuriale-amendment.js";
 
 /*
  * **Corriger les dates d'une mercuriale** qui n'a pas commencé
- * (`documentation/pricing/mercuriales/plan-corriger-les-dates.md`, C1 à C4).
+ * (`documentation/pricing/mercuriales/comprendre-une-mercuriale.md`, § 9, C1 à C4).
  *
  * « À venir » est la frontière : une commande est tarifée à son instant de
  * passation, et une mercuriale à venir ne couvre aucun instant passé ni

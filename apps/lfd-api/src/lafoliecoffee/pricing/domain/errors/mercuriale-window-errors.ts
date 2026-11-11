@@ -3,7 +3,7 @@ import { BusinessError, DomainError } from "../../../../platform/shared/errors/a
 
 /**
  * **Les refus de « Corriger les dates »** d'une mercuriale
- * (`documentation/pricing/mercuriales/plan-corriger-les-dates.md`, C1 à C7).
+ * (`documentation/pricing/mercuriales/comprendre-une-mercuriale.md`, § 9, C1 à C7).
  *
  * Le geste ne vaut que tant qu'elle n'a pas commencé : aucune commande ne peut
  * alors l'avoir citée. Chaque refus nomme le cas et le geste de sortie — il est

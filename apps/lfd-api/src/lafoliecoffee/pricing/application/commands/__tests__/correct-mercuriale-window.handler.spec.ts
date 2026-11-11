@@ -1,5 +1,5 @@
 /**
- * **Corriger les dates d'une mercuriale** (`plan-corriger-les-dates.md`) :
+ * **Corriger les dates d'une mercuriale** (`comprendre-une-mercuriale.md`, § 9) :
  * le mur `company_id` à la désignation, le verrou, les refus de la pose
  * rejoués sur la nouvelle période (C5), l'avenant passé entre-temps (C6),
  * l'acte au journal (C7) — et rien d'écrit quand un refus tombe.

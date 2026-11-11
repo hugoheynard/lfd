@@ -2084,7 +2084,7 @@ export type RenameCompanyMercurialePayload = z.infer<typeof renameCompanyMercuri
 /**
  * **Corriger les dates d'une mercuriale à venir** — `PATCH admin/pricing/
  * companies/:companyId/mercuriale/:mercurialeId/window`
- * (`documentation/pricing/mercuriales/plan-corriger-les-dates.md`).
+ * (`documentation/pricing/mercuriales/comprendre-une-mercuriale.md`, § 9).
  *
  * Possible tant qu'elle n'a pas commencé, ni close ni en pause. Le nouveau
  * début est aujourd'hui ou plus tard, la fin vide ou après lui, et chaque

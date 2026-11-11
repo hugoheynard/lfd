@@ -11,7 +11,7 @@ import {
 } from "../../pricing-errors.js";
 
 /**
- * **Corriger les dates d'une mercuriale** (`plan-corriger-les-dates.md`,
+ * **Corriger les dates d'une mercuriale** (`comprendre-une-mercuriale.md`, § 9,
  * C1 à C4, C7). Les dates ne sont comparées qu'entre elles et à `NOW`, un
  * instant de la fixture passé en paramètre : aucune ne rencontre l'horloge.
  */

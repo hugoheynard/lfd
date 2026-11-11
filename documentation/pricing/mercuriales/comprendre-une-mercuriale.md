@@ -41,13 +41,14 @@ flowchart LR
 
 ## Sa vie
 
-| Geste               | Ce qui se passe                                                                                                                      |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| **Poser**           | on crée la mercuriale du client, avec sa grille et sa période                                                                        |
-| **Amender**         | un **avenant daté** ajoute, change ou arrête un prix, ou change la politique de promotions, à partir d'une date ; rien n'est réécrit |
-| **Mettre en pause** | ses prix ne s'appliquent plus le temps de la pause                                                                                   |
-| **Clore**           | elle s'arrête ; elle n'est jamais supprimée                                                                                          |
-| **Reporter**        | quand un article est détaché en fiche à part, son prix négocié peut être reporté sur la nouvelle référence                           |
+| Geste                  | Ce qui se passe                                                                                                                      |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **Poser**              | on crée la mercuriale du client, avec sa grille et sa période                                                                        |
+| **Amender**            | un **avenant daté** ajoute, change ou arrête un prix, ou change la politique de promotions, à partir d'une date ; rien n'est réécrit |
+| **Corriger les dates** | tant qu'elle **n'a pas commencé**, son début et sa fin se corrigent (§ 9)                                                            |
+| **Mettre en pause**    | ses prix ne s'appliquent plus le temps de la pause                                                                                   |
+| **Clore**              | elle s'arrête ; elle n'est jamais supprimée                                                                                          |
+| **Reporter**           | quand un article est détaché en fiche à part, son prix négocié peut être reporté sur la nouvelle référence                           |
 
 **Une seule mercuriale court à la fois chez un client** ; on peut en préparer
 une pour la période suivante.
@@ -188,3 +189,29 @@ corrige directement : il ne participe à aucun calcul.
   pas courir en même temps (une seule par client et par période).
 - Le **volume prévu** d'une simulation appartient au gabarit, pas au client
   (registre, R11).
+
+## 9. Corriger les dates
+
+Une mercuriale **à venir** — ni commencée, ni close, ni en pause — voit son
+début et sa fin se corriger sans la clore ni la reposer : grille, remise et
+avenants restent. Une commande est tarifée à sa passation, et une mercuriale
+à venir ne couvre aucun instant passé : aucune commande ne peut l'avoir
+citée. Une mercuriale commencée garde ses dates (la clore, puis en reposer
+une).
+
+| #   | Règle                                                                                                                                                                                                            |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| C1  | À venir à l'instant de la correction, ni close, ni en pause (`MercurialeAlreadyStartedError`, `PausedMercurialeWindowError`).                                                                                    |
+| C2  | Le nouveau début est aujourd'hui ou plus tard, en jour de Paris (`PastCorrectedStartError`).                                                                                                                     |
+| C3  | La fin est vide ou après le début (`ReversedValidityWindowError`).                                                                                                                                               |
+| C4  | Chaque avenant non rangé reste dans la nouvelle période ; rien n'est déplacé (`AmendmentOutsideCorrectedWindowError`).                                                                                           |
+| C5  | Les refus de la pose sont rejoués : chevauchement (`RunningMercurialeError`, contrainte d'exclusion traduite), close qui a facturé (`PricedPeriodIsSealedError`), engagement de volume sous une remise générale. |
+| C6  | Un avenant passé entre-temps fait refuser (`basedOnAmendmentId`, `MercurialeAmendedMeanwhileError`).                                                                                                             |
+| C7  | Motif obligatoire, au journal (acte `amended`, résumé « Dates corrigées : du … → du … »).                                                                                                                        |
+
+Code : `CompanyMercuriale.correctWindow` (`mercuriale-window-correction.ts`),
+`correct-mercuriale-window.handler.ts`, route
+`PATCH admin/pricing/companies/:companyId/mercuriale/:mercurialeId/window`,
+le dépôt écrit les deux colonnes, l'acte, et purge les rayons du client et de
+ses sites. Écran : « Corriger les dates » sur une mercuriale « À venir »
+(`fiche-client/tarifs/correct-window-panel/`).
