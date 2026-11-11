@@ -93,45 +93,6 @@ describe("Product — le prix pro HT dans la mutation de tarif", () => {
   });
 });
 
-describe("Product.prefillProPrice — seulement là où rien n'est saisi", () => {
-  it("écrit sur une déclinaison à tarif propre, sans saisie", () => {
-    const product = aProduct();
-
-    expect(product.prefillProPrice("var_1", ProPriceHt.fromMillicents(912_345))).toBe(true);
-    expect(variantOf(product, "var_1")?.proPriceMillicents).toBe(912_345);
-  });
-
-  it("n'écrase jamais une saisie", () => {
-    const product = aProduct();
-    product.priceVariant("var_1", {
-      priceCents: 1_200,
-      weightGrams: null,
-      proPrice: ProPriceHt.fromEuros("10"),
-    });
-
-    expect(product.prefillProPrice("var_1", ProPriceHt.fromMillicents(1))).toBe(false);
-    expect(variantOf(product, "var_1")?.proPriceMillicents).toBe(1_000_000);
-  });
-
-  it("n'écrit rien sur une déclinaison qui suit le tarif du défaut", () => {
-    const product = aProduct();
-    product.alignVariant("var_2", "pricing", true);
-
-    expect(product.prefillProPrice("var_2", ProPriceHt.fromMillicents(1))).toBe(false);
-    const own = product.persistenceSnapshot().variants.find((v) => v.id === "var_2");
-    expect(own?.proPriceMillicents).toBeNull();
-  });
-
-  it("garde le prix public et le poids", () => {
-    const product = aProduct();
-    product.priceVariant("var_1", { priceCents: 1_200, weightGrams: 80 });
-
-    product.prefillProPrice("var_1", ProPriceHt.fromMillicents(1));
-
-    expect(variantOf(product, "var_1")).toMatchObject({ priceCents: 1_200, weightGrams: 80 });
-  });
-});
-
 describe("Product.activate — le prix pro saisi, seule source (lot R3)", () => {
   const RATES = { b2b: 20, takeaway: 5.5 } as const;
   const RULES: CompletenessRules = { activeContextKeys: ["b2b", "takeaway"] };

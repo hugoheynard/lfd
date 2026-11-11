@@ -25,7 +25,6 @@ import type { ContextVat } from "../../../shared/domain/value-objects/context-va
 import type { AllergenDeclaration } from "../value-objects/nutrition-declaration.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
 import type { SaleUnitClearance } from "../value-objects/sale-reference-usage.js";
-import type { ProPriceHt } from "../value-objects/pro-price-ht.js";
 import { NO_MIN_QUANTITIES, type MinQuantities } from "../value-objects/min-quantities.js";
 import { effectiveAudience, type Audience } from "../../../shared/domain/value-objects/audience.js";
 import type { CategoryVatPercents } from "../../../shared/domain/ports/catalogue-reader.js";
@@ -664,26 +663,6 @@ export class Product {
     if (stray !== undefined) {
       throw new PricingAlignmentAcrossUnitsError(stray.sku);
     }
-  }
-
-  /**
-   * **Pré-remplit le prix pro HT** d'une déclinaison (lot P, P5) — et
-   * seulement là où rien n'est saisi.
-   *
-   * Deux refus silencieux, tenus ICI plutôt que dans le handler : une
-   * déclinaison qui suit le tarif du défaut n'a pas de prix à elle (lui en
-   * écrire un dormirait sous le drapeau et se réveillerait au désalignement),
-   * et une saisie existante ne s'écrase jamais. Rend `true` si la déclinaison
-   * a changé.
-   */
-  prefillProPrice(variantId: string, price: ProPriceHt): boolean {
-    const target = this.variant(variantId);
-    if (target.pricingFollowsDefault || target.hasOwnProPrice) {
-      return false;
-    }
-    const own = target.snapshot();
-    target.price({ priceCents: own.priceCents, weightGrams: own.weightGrams, proPrice: price });
-    return true;
   }
 
   /**
