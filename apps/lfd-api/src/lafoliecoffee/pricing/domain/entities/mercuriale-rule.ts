@@ -4,7 +4,7 @@ import { volumeQuantityOf } from "../price-rule.js";
 import type { PriceRule, PricingContext } from "../price-rule.js";
 import { suspendedFromOf, type RuleLifecycle } from "../rule-lifecycle.js";
 import type { AmendedGrid, LineSegment } from "./mercuriale-amendment.js";
-import { segmentAt } from "./mercuriale-segments.js";
+import { covers, segmentAt } from "./mercuriale-segments.js";
 import { admissionAt, type PromotionAdmission } from "./mercuriale-promotion-policy.js";
 import {
   generalDiscountAt,
@@ -98,9 +98,18 @@ export function mercurialeRuleFor(
     return null;
   }
   const segment = segmentFor(mercuriale, context);
-  if (segment === null) {
-    return generalDiscountRuleFor(mercuriale, context, context.companyId);
+  // Un prix ferme qui COUVRE l'instant l'emporte, même sans palier atteint (D2).
+  if (segment !== null && covers(segment, context.at)) {
+    return firmPriceRuleFor(mercuriale, context, context.companyId, segment);
   }
+  // Un prix ferme arrêté, terminé ou pas encore ouvert laisse la remise
+  // générale parler (Q1, `la-remise-generale.md`).
+  const discounted = generalDiscountRuleFor(mercuriale, context, context.companyId);
+  if (discounted !== null || segment === null) {
+    return discounted;
+  }
+  // Sans remise, la ligne hors fenêtre est rendue telle quelle : la
+  // résolution dit « expirée » ou « pas encore » au lieu de se taire.
   return firmPriceRuleFor(mercuriale, context, context.companyId, segment);
 }
 

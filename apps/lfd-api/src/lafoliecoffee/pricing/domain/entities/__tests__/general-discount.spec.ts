@@ -319,6 +319,25 @@ describe("la pause et les avenants", () => {
     expect(discountBp(amended.asRuleFor(context()))).toBe(3_000);
   });
 
+  /**
+   * Régression : un prix ferme arrêté par avenant faisait retomber l'article
+   * sur la chaîne (le catalogue) au lieu de la remise générale (Q1).
+   */
+  it("un prix ferme arrêté par avenant passe à la remise générale (Q1)", () => {
+    const firm = pose({
+      lines: [{ sku: "VIE-001", tiers: [{ minQuantity: 1, unitPriceMillicents: 90_000 }] }],
+    });
+    const amended = firm.amend(
+      "am_1",
+      amendment({ validTo: null, endedSkus: ["VIE-001"] }),
+      "auth0|staff",
+      FEBRUARY,
+    );
+
+    expect(amended.asRuleFor(context())).toMatchObject({ nature: "replace" });
+    expect(discountBp(amended.asRuleFor(context({ at: MARCH_10 })))).toBe(3_000);
+  });
+
   it("un avenant qui ne fait que changer la remise n'est pas vide", () => {
     expect(() =>
       pose().amend("am_1", amendment({ generalDiscount: { set: null } }), "auth0|staff", FEBRUARY),
