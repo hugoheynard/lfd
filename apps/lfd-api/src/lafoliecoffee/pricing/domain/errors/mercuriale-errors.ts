@@ -1,3 +1,5 @@
+import { describeDay } from "../pricing-act-summary.js";
+
 /**
  * **Les refus d'une MERCURIALE.**
  *
@@ -105,8 +107,8 @@ export class RunningMercurialeError extends BusinessError {
     super(
       "pricing.mercuriale.running",
       `Une mercuriale « ${label} » couvre déjà cette période (du ` +
-        `${validFrom.toISOString().slice(0, 10)} ${
-          validTo === null ? "sans terme" : `au ${validTo.toISOString().slice(0, 10)}`
+        `${describeDay(validFrom)} ${
+          validTo === null ? "sans terme" : `au ${describeDay(validTo)}`
         }). Il faut la clore avant d'en poser une autre.`,
     );
   }
