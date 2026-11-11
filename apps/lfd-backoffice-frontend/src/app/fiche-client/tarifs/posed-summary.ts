@@ -1,7 +1,7 @@
 import type { GeneralDiscountView } from '@lfd/contracts';
 
 import { impactLabel } from '../../commercial/tarification/grille/mercuriale-row';
-import { discountLabel } from './general-discount';
+import { discountLabel } from './general-discount-reading';
 
 /**
  * **Le résumé d'une mercuriale posée**, en trois blocs lisibles d'un coup

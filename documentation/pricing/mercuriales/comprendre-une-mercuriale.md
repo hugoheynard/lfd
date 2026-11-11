@@ -74,7 +74,7 @@ si la mercuriale est close.
   partielle sur les lignes non rangées (migration `20260908160000_mercuriale_objet`).
   Deux mercuriales qui se recouvrent chez un même client sont inexprimables.
 - **Les fenêtres** s'ouvrent à minuit à Paris : l'écran convertit un jour par
-  `businessDayStart` (`fiche-client/tarifs/amendment-diff.ts`),
+  `businessDayStart` (`fiche-client/tarifs/amendment-body.ts`),
   et `lint:business-day` refuse une conversion en minuit UTC.
 
 ## 2. Comment elle entre dans le calcul

@@ -52,7 +52,8 @@ import {
 } from '../promotion-policy';
 import { discountSummary, firmSummary } from '../posed-summary';
 import { mercurialeCsv, mercurialeFileName, type DiscountedCsvRow } from '../mercuriale-csv';
-import { discountArticlesOf, discountedArticles, discountNames } from '../general-discount';
+import { discountNames } from '../general-discount-lines';
+import { discountArticlesOf, discountedArticles } from '../general-discount-pricing';
 import { MercurialeAmendments } from '../mercuriale-amendments/mercuriale-amendments';
 import {
   CorrectWindowPanel,

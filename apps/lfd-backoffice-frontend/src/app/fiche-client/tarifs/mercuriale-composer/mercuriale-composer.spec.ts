@@ -6,7 +6,7 @@ import { PromotionsService } from '../../../targeted-promotions/promotions.servi
 import { CompanyPricingService } from '../company-pricing.service';
 import { NO_PROMOTION_POLICY, type PromotionPolicyForm } from '../promotion-policy';
 import type { DraftPrices } from '../draft-prices';
-import type { GeneralDiscountForm } from '../general-discount';
+import type { GeneralDiscountForm } from '../general-discount-form';
 import { MercurialeComposer } from './mercuriale-composer';
 
 /** La pose n'est offerte qu'avec un nom, deux dates et au moins un prix. */

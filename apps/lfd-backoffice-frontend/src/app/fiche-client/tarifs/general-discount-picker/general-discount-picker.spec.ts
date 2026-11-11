@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import type { CompanyPricingCategoryView } from '@lfd/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import type { GeneralDiscountForm } from '../general-discount';
+import type { GeneralDiscountForm } from '../general-discount-form';
 import { GeneralDiscountPicker } from './general-discount-picker';
 
 const CATEGORIES: CompanyPricingCategoryView[] = [

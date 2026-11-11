@@ -1,6 +1,6 @@
 import type { PosedMercurialeAmendmentView, PromotionView } from '@lfd/contracts';
 
-import { discountPhrase } from '../general-discount';
+import { discountPhrase } from '../general-discount-reading';
 import { POLICY_SUMMARY_LABEL, policyPhrase } from '../promotion-policy';
 
 const DAY = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeZone: 'Europe/Paris' });

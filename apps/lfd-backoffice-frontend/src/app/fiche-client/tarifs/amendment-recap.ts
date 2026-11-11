@@ -7,17 +7,14 @@ import { formatEuros } from '@lfd/catalog-ui';
 
 import {
   discountAfter,
-  rowLabel,
   type AmendmentDiff,
   type AmendmentEdit,
   type AmendmentState,
 } from './amendment-diff';
-import {
-  DISCOUNT_MODE_LABELS,
-  discountBpFor,
-  discountLabel,
-  type DiscountArticle,
-} from './general-discount';
+import { rowLabel } from './amendment-row-label';
+import { DISCOUNT_MODE_LABELS } from './general-discount-form';
+import { discountBpFor, type DiscountArticle } from './general-discount-pricing';
+import { discountLabel } from './general-discount-reading';
 import { POLICY_SUMMARY_LABEL, policyPhrase } from './promotion-policy';
 
 /**

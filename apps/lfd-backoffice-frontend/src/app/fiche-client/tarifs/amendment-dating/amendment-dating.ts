@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
 import { FoldDateComponent, FoldTextareaComponent } from 'fold-ng';
 
-import { AMENDMENT_REASON_MAX_LENGTH, NO_END_REASON } from '../amendment-diff';
+import { AMENDMENT_REASON_MAX_LENGTH } from '../amendment-body';
+import { NO_END_REASON } from '../amendment-effect';
 
 /**
  * **Dater l'avenant** (étape 3) : la date d'effet — aujourd'hui par défaut,

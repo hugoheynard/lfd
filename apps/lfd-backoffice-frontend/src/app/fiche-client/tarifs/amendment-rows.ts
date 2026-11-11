@@ -3,16 +3,15 @@ import { formatEuros } from '@lfd/catalog-ui';
 
 import {
   discountAfter,
-  localAfter,
-  rowLabel,
   tieredSkusOf,
   type AmendmentDiff,
   type AmendmentEdit,
   type AmendmentState,
-  type RowLabel,
 } from './amendment-diff';
+import type { DearerArticle } from './amendment-recap';
+import { localAfter, rowLabel, type RowLabel } from './amendment-row-label';
 import { eurosIn } from './draft-prices';
-import { discountArticlesOf } from './general-discount';
+import { discountArticlesOf } from './general-discount-pricing';
 
 /** Le prix d'après tel que la table l'affiche. */
 export type AfterCell =
@@ -101,5 +100,20 @@ export function amendmentRows(
         },
       ];
     }),
+  );
+}
+
+/** Les articles que l'avenant rend plus chers qu'avant, pour l'avertissement du récapitulatif. */
+export function dearerArticles(rows: readonly AmendmentRow[]): readonly DearerArticle[] {
+  return rows.flatMap((row) =>
+    row.dearer && row.after.kind === 'price' && row.beforeMillicents !== null
+      ? [
+          {
+            name: row.name,
+            beforeMillicents: row.beforeMillicents,
+            afterMillicents: row.after.millicents,
+          },
+        ]
+      : [],
   );
 }

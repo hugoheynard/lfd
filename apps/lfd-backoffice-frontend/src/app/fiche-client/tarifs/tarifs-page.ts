@@ -20,7 +20,7 @@ import { PricingFollow } from '../pricing-follow/pricing-follow';
 import { CompanyPricingService } from './company-pricing.service';
 import { draftFromLines, draftFromView, type DraftPrices } from './draft-prices';
 import { NO_PROMOTION_POLICY, type PromotionPolicyForm } from './promotion-policy';
-import { discountFormOf, type GeneralDiscountForm } from './general-discount';
+import { discountFormOf, type GeneralDiscountForm } from './general-discount-form';
 import { MercurialeAmendment } from './mercuriale-amendment/mercuriale-amendment';
 import { MercurialeComposer } from './mercuriale-composer/mercuriale-composer';
 import type { HasPendingChanges } from '../../pim/catalogue/product-form/pending-changes.guard';

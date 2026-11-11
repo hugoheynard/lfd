@@ -5,7 +5,6 @@ import {
   Injector,
   type OnInit,
   afterNextRender,
-  computed,
   effect,
   inject,
   input,
@@ -23,34 +22,14 @@ import {
   FoldInlineConfirmComponent,
   FoldLoadingStateComponent,
 } from 'fold-ng';
-import type {
-  AmendCompanyMercurialePayload,
-  CompanyPricingCategoryView,
-  MercurialeAmendmentPreviewView,
-  PosedMercurialeView,
-  PromotionView,
-} from '@lfd/contracts';
-import { httpErrorCode, httpErrorMessage } from '@lfd/endpoints';
+import type { CompanyPricingCategoryView, PosedMercurialeView } from '@lfd/contracts';
 
 import { NotifyService } from '../../../notify.service';
 import { parisToday } from '../../../shared/paris-today';
 import { PromotionsService } from '../../../targeted-promotions/promotions.service';
 import { CompanyPricingService } from '../company-pricing.service';
-import {
-  amendmentBody,
-  amendmentDiff,
-  changeCount,
-  defaultEffectDay,
-  editOf,
-  effectFrom,
-  endAllowed,
-  previewBody,
-  type AmendmentEdit,
-} from '../amendment-diff';
-import { amendmentRecap } from '../amendment-recap';
-import { amendmentRows } from '../amendment-rows';
-import { withEuros } from '../draft-prices';
-import { discountArticlesOf, discountNames, type GeneralDiscountForm } from '../general-discount';
+import { AmendmentEditor } from '../amendment-editor';
+import type { GeneralDiscountForm } from '../general-discount-form';
 import type { PromotionPolicyForm } from '../promotion-policy';
 import { AmendmentDating } from '../amendment-dating/amendment-dating';
 import {
@@ -61,9 +40,6 @@ import {
 import { AmendmentTable, type FirmPriceEdit } from '../amendment-table/amendment-table';
 import { GeneralDiscountPicker } from '../general-discount-picker/general-discount-picker';
 import { PromotionPolicyPicker } from '../promotion-policy-picker/promotion-policy-picker';
-
-/** Le refus d'un avenant quand un autre est passé entre-temps (§ 2.2). */
-const AMENDED_MEANWHILE = 'pricing.mercuriale.amendment.amended_meanwhile';
 
 /** La phrase d'une ligne qui dit quoi faire, par étape. */
 const STEP_HINTS: Readonly<Record<AmendmentStep, string>> = {
@@ -78,11 +54,8 @@ const STEP_HINTS: Readonly<Record<AmendmentStep, string>> = {
  * trois étapes — Modifier, Vérifier, Dater et enregistrer. Un seul avenant,
  * quel que soit le nombre de changements.
  *
- * L'état de référence et les prix d'après viennent de l'aperçu du serveur,
- * appelé à l'ouverture, à la vérification, sur « Recalculer » et quand la
- * date d'effet change — jamais à la frappe. Rien n'est écrit avant
- * « Enregistrer l'avenant », et aucun brouillon n'est gardé : une saisie
- * perdue au rechargement est un choix assumé.
+ * L'état, l'aperçu et l'envoi vivent dans {@link AmendmentEditor} ; le
+ * composant lie le gabarit, mène les étapes, annonce et place le focus.
  */
 @Component({
   selector: 'app-mercuriale-amendment',
@@ -117,242 +90,97 @@ export class MercurialeAmendment implements OnInit {
   /** Des changements non enregistrés existent — pour la garde de navigation. */
   readonly dirtyChange = output<boolean>();
 
-  private readonly pricing = inject(CompanyPricingService);
-  private readonly promotionsApi = inject(PromotionsService);
   private readonly notify = inject(NotifyService);
   private readonly injector = inject(Injector);
+  private readonly promotionsApi = inject(PromotionsService);
 
-  protected readonly today = parisToday();
+  private readonly editor = new AmendmentEditor({
+    api: inject(CompanyPricingService),
+    listPromotions: () => this.promotionsApi.list(),
+    companyId: this.companyId,
+    mercuriale: this.mercuriale,
+    categories: this.categories,
+    today: parisToday(),
+  });
+
   protected readonly stepNames = AMENDMENT_STEPS;
   protected readonly stepHints = STEP_HINTS;
-
-  protected readonly loadState = signal<'loading' | 'ready' | 'error'>('loading');
   protected readonly step = signal<AmendmentStep>(1);
   protected readonly announcement = signal('');
-  protected readonly preview = signal<MercurialeAmendmentPreviewView | null>(null);
-  /** Le corps sur lequel l'aperçu a été calculé : « Après » ne le lit que s'il est à jour. */
-  private readonly previewKey = signal<string | null>(null);
-  protected readonly checking = signal(false);
-  protected readonly previewFailed = signal(false);
-  protected readonly edit = signal<AmendmentEdit | null>(null);
   protected readonly onlyChanged = signal(false);
-  protected readonly fromDay = signal(this.today);
-  /** Le champ de la date d'effet est ouvert sur place (étapes 1 et 2). */
-  protected readonly editingDate = signal(false);
-  /** La date en cours de saisie, appliquée seulement par « Appliquer ». */
-  protected readonly draftDay = signal('');
 
-  protected openDate(): void {
-    this.draftDay.set(this.fromDay());
-    this.editingDate.set(true);
-  }
-  /** Le premier jour possible : aujourd'hui, ou le début de la mercuriale s'il est à venir. */
-  protected readonly minDay = computed(() =>
-    defaultEffectDay(this.mercuriale().validFrom, this.today),
-  );
-  /** La date d'effet, lue : « aujourd'hui, dès l'enregistrement » ou le jour. */
-  protected readonly effectLabel = computed(() =>
-    this.fromDay() === this.today
-      ? 'aujourd’hui, dès l’enregistrement'
-      : `le ${new Date(`${this.fromDay()}T12:00:00`).toLocaleDateString('fr-FR')}`,
-  );
-  protected readonly toDay = signal('');
-  protected readonly reason = signal('');
-  protected readonly saving = signal(false);
-  /** Un refus de l'écran ou du serveur, dit en clair. */
-  protected readonly refusal = signal<string | null>(null);
-  /** Un autre avenant est passé entre-temps : on propose de recharger. */
-  protected readonly amendedMeanwhile = signal(false);
-  private readonly promotions = signal<readonly PromotionView[] | null>(null);
+  protected readonly loadState = this.editor.loadState;
+  protected readonly checking = this.editor.checking;
+  protected readonly previewFailed = this.editor.previewFailed;
+  protected readonly edit = this.editor.edit;
+  protected readonly fromDay = this.editor.fromDay;
+  protected readonly editingDate = this.editor.editingDate;
+  protected readonly draftDay = this.editor.draftDay;
+  protected readonly minDay = this.editor.minDay;
+  protected readonly effectLabel = this.editor.effectLabel;
+  protected readonly beforeLabel = this.editor.beforeLabel;
+  protected readonly toDay = this.editor.toDay;
+  protected readonly reason = this.editor.reason;
+  protected readonly saving = this.editor.saving;
+  protected readonly refusal = this.editor.refusal;
+  protected readonly amendedMeanwhile = this.editor.amendedMeanwhile;
+  protected readonly changes = this.editor.changes;
+  protected readonly endAllowed = this.editor.endAllowed;
+  protected readonly rows = this.editor.rows;
+  protected readonly shelfOptions = this.editor.shelfOptions;
+  protected readonly firmSkus = this.editor.firmSkus;
+  protected readonly recap = this.editor.recap;
+  protected readonly previewRefused = this.editor.previewRefused;
+  protected readonly refusalWarning = this.editor.refusalWarning;
 
   private readonly heading = viewChild<ElementRef<HTMLElement>>('stepHeading');
   private readonly verifyButton = viewChild<ElementRef<HTMLElement>>('verifyButton');
-
-  protected readonly state = computed(() => this.preview()?.state ?? null);
-  protected readonly diff = computed(() => {
-    const state = this.state();
-    const edit = this.edit();
-    return state === null || edit === null ? null : amendmentDiff(state, edit);
-  });
-  protected readonly changes = computed(() => {
-    const diff = this.diff();
-    return diff === null ? 0 : changeCount(diff);
-  });
-  protected readonly endAllowed = computed(() => {
-    const diff = this.diff();
-    return diff === null || endAllowed(diff);
-  });
-
-  private readonly body = computed(() => {
-    const diff = this.diff();
-    return diff === null ? null : previewBody(diff, this.fromDay(), this.today);
-  });
-  private readonly fresh = computed(() => {
-    const body = this.body();
-    return body !== null && JSON.stringify(body) === this.previewKey();
-  });
-
-  protected readonly rows = computed(() => {
-    const state = this.state();
-    const edit = this.edit();
-    const diff = this.diff();
-    return state === null || edit === null || diff === null
-      ? []
-      : amendmentRows(this.categories(), state, edit, diff, this.preview(), this.fresh());
-  });
-  protected readonly shelfOptions = computed(() => [
-    { value: 'all', label: 'Toutes' },
-    ...this.categories().map((category) => ({ value: category.id, label: category.name })),
-  ]);
-  protected readonly beforeLabel = computed(() =>
-    this.fromDay() === this.today
-      ? 'Aujourd’hui'
-      : `Au ${new Date(`${this.fromDay()}T12:00:00`).toLocaleDateString('fr-FR')}`,
-  );
-  protected readonly firmSkus = computed<ReadonlySet<string>>(
-    () => new Set(this.edit()?.firm.keys() ?? []),
-  );
-  protected readonly recap = computed(() => {
-    const state = this.state();
-    const edit = this.edit();
-    const diff = this.diff();
-    if (state === null || edit === null || diff === null) {
-      return null;
-    }
-    return amendmentRecap(diff, state, edit, {
-      articles: discountArticlesOf(this.categories()),
-      names: discountNames(this.categories()),
-      promotions: this.promotions(),
-      preview: this.fresh() ? this.preview() : null,
-      dearer: this.rows().flatMap((row) =>
-        row.dearer && row.after.kind === 'price' && row.beforeMillicents !== null
-          ? [
-              {
-                name: row.name,
-                beforeMillicents: row.beforeMillicents,
-                afterMillicents: row.after.millicents,
-              },
-            ]
-          : [],
-      ),
-    });
-  });
-  /** Un refus de l'aperçu : l'avenant serait refusé, on ne continue pas. */
-  protected readonly previewRefused = computed(
-    () => this.fresh() && (this.preview()?.refusals.length ?? 0) > 0,
-  );
-
-  /** Le refus de l'aperçu, rappelé à l'étape 3 : c'est le premier avertissement. */
-  protected readonly refusalWarning = computed(() =>
-    this.previewRefused() ? (this.recap()?.warnings[0] ?? null) : null,
-  );
 
   constructor() {
     effect(() => this.dirtyChange.emit(this.changes() > 0));
   }
 
   ngOnInit(): void {
-    this.fromDay.set(defaultEffectDay(this.mercuriale().validFrom, this.today));
-    void this.open();
-    this.promotionsApi.list().then(
-      (list) => this.promotions.set(list.promotions),
-      () => this.promotions.set(null),
-    );
+    void this.editor.start();
   }
 
-  /** L'état de départ : la mercuriale à la date d'effet, avant tout changement. */
-  protected async open(): Promise<void> {
-    this.loadState.set('loading');
-    try {
-      const preview = await this.pricing.previewAmendment(this.companyId(), this.mercuriale().id, {
-        ...effectFrom(this.fromDay(), this.today),
-        validTo: null,
-        reason: 'Aperçu',
-        lines: [],
-        endedSkus: [],
-      });
-      this.preview.set(preview);
-      this.previewKey.set(null);
-      this.edit.set(editOf(preview.state));
-      this.loadState.set('ready');
-    } catch {
-      this.loadState.set('error');
-    }
+  protected open(): Promise<void> {
+    return this.editor.open();
   }
 
-  /** Relance l'aperçu sur la saisie : il rend l'état à la date d'effet ET les prix d'après. */
-  protected async recompute(): Promise<boolean> {
-    const body = this.body();
-    if (body === null) {
-      return false;
-    }
-    this.checking.set(true);
-    try {
-      const preview = await this.pricing.previewAmendment(
-        this.companyId(),
-        this.mercuriale().id,
-        body,
-      );
-      this.preview.set(preview);
-      // La clé est le corps ENVOYÉ : si l'état de référence a bougé (autre
-      // date, autre avenant), l'écart se recalcule et « Après » redevient local.
-      this.previewKey.set(JSON.stringify(body));
-      this.previewFailed.set(false);
-      return true;
-    } catch {
-      this.previewFailed.set(true);
-      return false;
-    } finally {
-      this.checking.set(false);
-    }
+  protected recompute(): Promise<boolean> {
+    return this.editor.recompute();
+  }
+
+  protected openDate(): void {
+    this.editor.openDate();
   }
 
   protected setPrice(change: FirmPriceEdit): void {
-    this.edit.update((edit) =>
-      edit === null ? edit : { ...edit, firm: withEuros(edit.firm, change.sku, change.euros) },
-    );
+    this.editor.setPrice(change.sku, change.euros);
   }
 
   protected setTiered(change: { readonly sku: string; readonly removed: boolean }): void {
-    this.edit.update((edit) => {
-      if (edit === null) {
-        return edit;
-      }
-      const removed = new Set(edit.removedTiered);
-      if (change.removed) {
-        removed.add(change.sku);
-      } else {
-        removed.delete(change.sku);
-      }
-      return { ...edit, removedTiered: removed };
-    });
+    this.editor.setTiered(change.sku, change.removed);
   }
 
   protected setDiscount(discount: GeneralDiscountForm | null): void {
-    this.edit.update((edit) => (edit === null ? edit : { ...edit, discount }));
+    this.editor.setDiscount(discount);
   }
 
   protected setPolicy(policy: PromotionPolicyForm): void {
-    this.edit.update((edit) => (edit === null ? edit : { ...edit, policy }));
+    this.editor.setPolicy(policy);
   }
 
-  /** « Vérifier l'avenant » : rien à vérifier sans changement, ni avec une saisie incomplète. */
+  protected setFromDay(day: string): Promise<void> {
+    return this.editor.setFromDay(day);
+  }
+
+  /** « Vérifier l'avenant » : l'étape 2 seulement si l'éditeur l'accepte. */
   protected async verify(): Promise<void> {
-    const diff = this.diff();
-    if (diff === null) {
-      return;
+    if (await this.editor.verify()) {
+      this.goTo(2);
     }
-    if (diff.problem !== null) {
-      this.refusal.set(diff.problem);
-      return;
-    }
-    if (changeCount(diff) === 0) {
-      this.refusal.set('L’avenant ne change rien : modifiez un prix, la remise ou les promotions.');
-      return;
-    }
-    this.refusal.set(null);
-    await this.recompute();
-    this.goTo(2);
   }
 
   protected backToTable(): void {
@@ -365,61 +193,18 @@ export class MercurialeAmendment implements OnInit {
     this.goTo(3);
   }
 
-  /** Changer la date d'effet relance l'aperçu : l'état de référence est celui de cette date. */
-  protected async setFromDay(day: string): Promise<void> {
-    this.fromDay.set(day === '' ? this.minDay() : day);
-    this.editingDate.set(false);
-    if (!this.endAllowed()) {
-      this.toDay.set('');
-    }
-    await this.recompute();
-  }
-
-  /** « Recharger » après un 409 : l'aperçu repart du dernier avenant, et l'écart se recalcule. */
+  /** « Recharger » après un 409 : revient à la vérification si l'aperçu a répondu. */
   protected async reload(): Promise<void> {
-    this.amendedMeanwhile.set(false);
-    this.refusal.set(null);
-    if (await this.recompute()) {
+    if (await this.editor.reload()) {
       this.goTo(2);
     }
   }
 
   protected async save(): Promise<void> {
-    const diff = this.diff();
-    if (diff === null || this.saving()) {
-      return;
-    }
-    const draft = amendmentBody(diff, {
-      fromDay: this.fromDay(),
-      toDay: this.endAllowed() ? this.toDay() : '',
-      reason: this.reason(),
-      today: this.today,
-      basedOnAmendmentId: this.preview()?.basedOnAmendmentId ?? null,
-    });
-    if (!draft.ok) {
-      this.refusal.set(draft.refusal);
-      return;
-    }
-    await this.send(draft.payload);
-  }
-
-  private async send(payload: AmendCompanyMercurialePayload): Promise<void> {
-    this.saving.set(true);
-    this.refusal.set(null);
-    this.amendedMeanwhile.set(false);
-    try {
-      await this.pricing.amend(this.companyId(), this.mercuriale().id, payload);
+    if (await this.editor.save()) {
       this.notify.success('Avenant enregistré.');
       this.dirtyChange.emit(false);
       this.saved.emit();
-    } catch (error) {
-      if (httpErrorCode(error) === AMENDED_MEANWHILE) {
-        this.amendedMeanwhile.set(true);
-      } else {
-        this.refusal.set(httpErrorMessage(error, 'L’avenant n’a pas pu être enregistré.'));
-      }
-    } finally {
-      this.saving.set(false);
     }
   }
 

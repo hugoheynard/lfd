@@ -19,15 +19,11 @@ import {
   FoldInfoComponent,
   FoldPopoverComponent,
   FoldPopoverTriggerDirective,
-  type FoldTableColumn,
-  type FoldTableEmpty,
-  type FoldTableTone,
 } from 'fold-ng';
-import type { CompanyPricingCategoryView, GeneralDiscountPayload } from '@lfd/contracts';
+import type { CompanyPricingCategoryView } from '@lfd/contracts';
 import { formatEuros } from '@lfd/catalog-ui';
 
 import { NotifyService } from '../../../notify.service';
-import { businessDayStart } from '../../../shared/business-day';
 import { PricePath } from '../../../b2b/tarification/price-path/price-path';
 import { VolumeEffort } from '../../../b2b/tarification/volume-effort/volume-effort';
 import { PriceTemplatesService } from '../../../commercial/tarification/templates.service';
@@ -38,30 +34,38 @@ import {
 } from '../../../commercial/tarification/grille/mercuriale-row';
 import { CompanyPricingService } from '../company-pricing.service';
 import { toLines, withEuros, type DraftPrices } from '../draft-prices';
-import { policyPayload, policyProblem, type PromotionPolicyForm } from '../promotion-policy';
+import { policyProblem, type PromotionPolicyForm } from '../promotion-policy';
 import { PromotionPolicyPicker } from '../promotion-policy-picker/promotion-policy-picker';
 import {
-  discountArticlesOf,
-  discountedArticles,
-  discountLabel,
-  discountPayload,
   discountProblem,
   discountViewOf,
-  flooredNames,
   type GeneralDiscountForm,
-} from '../general-discount';
+} from '../general-discount-form';
+import { discountArticlesOf, discountedArticles, flooredNames } from '../general-discount-pricing';
+import { discountLabel } from '../general-discount-reading';
 import { GeneralDiscountPicker } from '../general-discount-picker/general-discount-picker';
 import { FirmPriceField } from '../firm-price-field/firm-price-field';
 import { TarifFilterBar } from '../tarif-filter-bar/tarif-filter-bar';
 import { tarifShelves, type TarifRow, type TarifShelf } from '../tarif-shelves';
 import { ALL_SHELVES, filterTarifRows, type FilteredTarifRow } from '../tarif-filter';
+import {
+  canPoseComposition,
+  COMPOSER_EMPTY,
+  composerRowTone,
+  composerColumns,
+  draftPayload,
+  posePayload,
+  templatePayload,
+  templateRefusal,
+  type Composition,
+} from '../mercuriale-composition';
 
 /**
  * **La composition d'une mercuriale** : le nom, la fenêtre, la grille de
  * saisie rayon par rayon, et les gestes qui l'écrivent (poser, brouillon,
  * gabarit, jeter).
  *
- * Sortie de `ClientTarifsPage` le 2026-10-30, sans changement de comportement.
+ * Les conditions et les corps envoyés sont dans `mercuriale-composition.ts`.
  * 🔴 Le brouillon, le nom et les dates restent **chez le parent** (`model`) :
  * ils survivent à une clôture ou à un renommage, qui démontent cette grille le
  * temps de relire la vue — c'est la raison d'être de `reload(…, false)`.
@@ -184,74 +188,33 @@ export class MercurialeComposer {
   /** Ce que la grille pèse — les mêmes chiffres que sur la grille d'un gabarit. */
   protected readonly summary = computed(() => tally(this.shelves().flatMap((shelf) => shelf.rows)));
 
-  /**
-   * Les colonnes, de gauche à droite comme la négociation se mène. Aucune n'est
-   * triable : l'ordre du catalogue est le seul repère pour retrouver un article
-   * deux minutes plus tard, et le perdre coûte plus qu'un tri ne rapporte.
-   */
-  protected readonly columns = computed((): readonly FoldTableColumn<FilteredTarifRow>[] => [
-    { key: 'article', label: 'Article' },
-    // En « Toutes », la famille garde le repère qu'avaient les tables par rayon.
-    ...(this.shelfFilter() === ALL_SHELVES
-      ? [{ key: 'shelf', label: 'Famille', width: '10rem' }]
-      : []),
-    { key: 'catalog', label: 'Prix base pro HT (sans réductions)', width: '10rem' },
-    { key: 'current', label: this.currentLabel(), width: '10rem' },
-    { key: 'limit', label: 'Limite', width: '8rem' },
-    { key: 'price', label: 'Prix ferme', width: '12rem' },
-    { key: 'room', label: 'Marge de négoce', width: '9rem' },
-    { key: 'effort', label: this.effortLabel(), width: '12rem' },
-  ]);
-
-  /**
-   * « Sans mercuriale » n'est vrai que si aucune ne fixe déjà un prix : la
-   * composition s'ouvre aussi quand une mercuriale court encore, et ses prix
-   * négociés sont alors dans ce chiffre. La ligne concernée le dit aussi.
-   */
-  private readonly currentLabel = computed(() =>
-    this.shelves().some((shelf) => shelf.rows.some((row) => row.negotiated))
-      ? 'Prix de ce client HT'
-      : 'Prix de ce client HT (sans mercuriale)',
+  /** Les colonnes de la grille (`composerColumns`). */
+  protected readonly columns = computed(() =>
+    composerColumns({
+      allShelves: this.shelfFilter() === ALL_SHELVES,
+      negotiated: this.shelves().some((shelf) => shelf.rows.some((row) => row.negotiated)),
+      hasFirmPrices: this.lines().length > 0,
+    }),
   );
 
-  /**
-   * Ce que l'effort compare : le prix de base au prix de ce client, puis au
-   * prix ferme sur chaque ligne où l'on en a tapé un (`liveEffort`).
-   */
-  private readonly effortLabel = computed(() =>
-    this.lines().length > 0
-      ? 'Effort de vente (prix base / prix ferme, sinon prix de ce client)'
-      : 'Effort de vente (prix base / prix de ce client)',
-  );
-
-  protected readonly empty: FoldTableEmpty = {
-    title: 'Aucun article ne correspond au filtre',
-    subtitle: 'Changez de famille, effacez la recherche ou décochez « Seulement les prix fermes ».',
-  };
-
+  protected readonly empty = COMPOSER_EMPTY;
   protected readonly rowKey = (row: TarifRow): string => row.sku;
-
-  /**
-   * **Le ton de ligne dit que le prix saisi ne sera pas celui facturé.**
-   *
-   * Ambre quand la limite a relevé la saisie — le seul fait de cette table qui
-   * appelle un geste, et le seul moyen de le retrouver dans quatre-vingt-douze
-   * lignes. Il est aussi **écrit** dans la cellule, donc la couleur ne le porte
-   * jamais seule.
-   */
-  protected readonly rowTone = (row: TarifRow): FoldTableTone => (row.floored ? 'warning' : null);
+  protected readonly rowTone = composerRowTone;
 
   /** Un « Seulement celles choisies » vide ne se pose pas : le domaine le refuserait. */
   protected readonly policyProblem = computed(() => policyProblem(this.promotionPolicy()));
 
+  private readonly composition = computed<Composition>(() => ({
+    label: this.label(),
+    validFrom: this.validFrom(),
+    validTo: this.validTo(),
+    lines: this.lines(),
+    policy: this.promotionPolicy(),
+    discount: this.generalDiscount(),
+  }));
+
   protected readonly canPose = computed(
-    () =>
-      this.label().trim() !== '' &&
-      this.validFrom() !== '' &&
-      (this.lines().length > 0 || this.discountView() !== null) &&
-      this.discountProblem() === null &&
-      this.policyProblem() === null &&
-      !this.busy(),
+    () => canPoseComposition(this.composition()) && !this.busy(),
   );
 
   /**
@@ -271,72 +234,31 @@ export class MercurialeComposer {
     if (!this.canPose()) {
       return;
     }
-    this.busy.set(true);
-    try {
-      const { affectedRules } = await this.pricing.pose(this.companyId(), {
-        label: this.label().trim(),
-        // Minuit **à Paris**. Cf. `business-day.ts` : minuit UTC ouvrait la
-        // mercuriale à 01 h ou 02 h du matin selon la saison, et le client
-        // payait le tarif d'avant pendant ce temps-là.
-        validFrom: businessDayStart(this.validFrom()) ?? '',
-        // Vide : sans fin, jusqu'à ce qu'on la close.
-        validTo: this.validTo() === '' ? null : (businessDayStart(this.validTo()) ?? null),
-        lines: [...this.lines()],
-        promotionPolicy: policyPayload(this.promotionPolicy()),
-        generalDiscount: this.discountBody(),
-      });
+    await this.run(async () => {
+      const { affectedRules } = await this.pricing.pose(
+        this.companyId(),
+        posePayload(this.composition()),
+      );
       this.notify.success(`Mercuriale posée — ${String(affectedRules)} article(s).`);
       this.posed.emit();
-    } catch (error) {
-      this.notify.error(error, "La mercuriale n'a pas pu être posée.");
-    } finally {
-      this.busy.set(false);
-    }
+    }, "La mercuriale n'a pas pu être posée.");
   }
 
   /**
    * **Garder la grille comme gabarit**, pour la reposer ailleurs.
    *
-   * Elle part sous la forme des gabarits — un palier à partir de 1 par article —
-   * parce que c'est ce qu'un gabarit stocke. Ce qui est fixe ici le reste
-   * là-bas ; ce n'est pas une conversion, c'est la même grille écrite dans la
-   * forme que l'autre écran sait relire.
+   * Le corps et le refus sont ceux de `templatePayload` / `templateRefusal`.
    */
   protected async saveAsTemplate(): Promise<void> {
-    const label = this.label().trim();
-    // 🔴 Le refus nomme CE QUI MANQUE, et les deux causes sont dites
-    // séparément. Une seule phrase couvrant les deux — « Nommez la grille » —
-    // accusait le nom alors que la grille était vide neuf fois sur dix : on
-    // nomme sa mercuriale d'abord, puis on la garde, avant d'avoir tapé un
-    // prix. Le message envoyait donc corriger le seul champ qui était rempli.
-    if (label === '') {
-      this.notify.refused(null, 'Nommez la grille avant de la garder comme gabarit.');
+    const refusal = templateRefusal(this.label(), this.lines());
+    if (refusal !== null) {
+      this.notify.refused(null, refusal);
       return;
     }
-    if (this.lines().length === 0) {
-      this.notify.refused(
-        null,
-        'Aucun prix saisi : un gabarit vide ne se repose nulle part. Renseignez au moins un article.',
-      );
-      return;
-    }
-    this.busy.set(true);
-    try {
-      await this.templates.compose({
-        kind: 'mercuriale',
-        label,
-        lines: this.lines().map((line) => ({
-          sku: line.sku,
-          tiers: [{ minQuantity: 1, unitPriceMillicents: line.unitPriceMillicents }],
-          plannedVolume: null,
-        })),
-      });
+    await this.run(async () => {
+      await this.templates.compose(templatePayload(this.label(), this.lines()));
       this.notify.success('Grille enregistrée dans les gabarits de mercuriale.');
-    } catch (error) {
-      this.notify.error(error, "La grille n'a pas pu être enregistrée.");
-    } finally {
-      this.busy.set(false);
-    }
+    }, "La grille n'a pas pu être enregistrée.");
   }
 
   /**
@@ -352,52 +274,30 @@ export class MercurialeComposer {
       this.notify.refused(null, problem);
       return;
     }
-    this.busy.set(true);
-    try {
-      await this.pricing.saveDraft(this.companyId(), {
-        label: this.label().trim(),
-        validFrom: isoDay(this.validFrom()),
-        validTo: isoDay(this.validTo()),
-        lines: [...this.lines()],
-        promotionPolicy: policyPayload(this.promotionPolicy()),
-        generalDiscount: this.discountBody(),
-      });
+    await this.run(async () => {
+      await this.pricing.saveDraft(this.companyId(), draftPayload(this.composition()));
       this.notify.success('Brouillon enregistré.');
-    } catch (error) {
-      this.notify.error(error, "Le brouillon n'a pas pu être enregistré.");
-    } finally {
-      this.busy.set(false);
-    }
-  }
-
-  private discountBody(): GeneralDiscountPayload | null {
-    const form = this.generalDiscount();
-    return form === null ? null : discountPayload(form);
+    }, "Le brouillon n'a pas pu être enregistré.");
   }
 
   /** Jeter le brouillon ; le parent referme la composition et relit. */
   protected async discardDraft(): Promise<void> {
-    this.busy.set(true);
-    try {
+    await this.run(async () => {
       await this.pricing.discardDraft(this.companyId());
       this.discarded.emit();
       this.notify.success('Brouillon jeté.');
+    }, "Le brouillon n'a pas pu être jeté.");
+  }
+
+  /** Un geste vers le serveur : la grille est occupée le temps qu'il dure, et l'échec est dit. */
+  private async run(gesture: () => Promise<void>, failure: string): Promise<void> {
+    this.busy.set(true);
+    try {
+      await gesture();
     } catch (error) {
-      this.notify.error(error, "Le brouillon n'a pas pu être jeté.");
+      this.notify.error(error, failure);
     } finally {
       this.busy.set(false);
     }
   }
-}
-
-/**
- * `2026-01-01` → l'instant ISO de minuit **à Paris**, ou `null` si le champ est
- * vide.
- *
- * C'était minuit UTC jusqu'au 2026-09-08 — le trou T7 de l'état des lieux. La
- * brique existait déjà et servait les créneaux et les heures limites ; elle ne
- * servait simplement pas la tarification.
- */
-function isoDay(day: string): string | null {
-  return day === '' ? null : businessDayStart(day);
 }

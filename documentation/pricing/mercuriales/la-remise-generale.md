@@ -157,9 +157,12 @@ reçoit la règle sans rien changer.
 - `general-discount-picker/` : la case, le mode, le taux de base, une carte
   par ligne (taux ou exclue), l'ajout d'une famille ou d'un article, le
   compteur. Sert à la composition et à l'avenant.
-- `general-discount.ts` : fonctions pures — le taux d'un article
-  (`decidingScopeRule`), le prix remisé par l'arithmétique de la caisse
-  (`@lfd/money`), les articles relevés par la limite (Q3).
+- fonctions pures, une raison par fichier : `general-discount-pricing.ts`
+  (le taux d'un article par `decidingScopeRule`, le prix remisé par
+  l'arithmétique de la caisse `@lfd/money`, les articles relevés par la
+  limite — Q3), `general-discount-form.ts` (le formulaire et ses refus),
+  `general-discount-lines.ts` (les lignes du sélecteur),
+  `general-discount-reading.ts` (les phrases).
 - Composition : le prix remisé en gris sous un prix ferme vide.
 - Mercuriale posée : la remise en vigueur, « Changer la remise générale » et
   « Arrêter la remise » par avenant daté ; Q1 sur « Arrêter une ligne ».

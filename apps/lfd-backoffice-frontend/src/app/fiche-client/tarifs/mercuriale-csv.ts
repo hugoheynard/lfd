@@ -2,7 +2,8 @@ import type { PosedMercurialeView } from '@lfd/contracts';
 import { gapBp } from '@lfd/money';
 
 import { staffAuthor } from '../../shared/staff-author';
-import { discountLabel, discountPhrase, type ArticleDiscount } from './general-discount';
+import type { ArticleDiscount } from './general-discount-pricing';
+import { discountLabel, discountPhrase } from './general-discount-reading';
 import type { MercurialeRowView } from './mercuriale-rows';
 
 /**

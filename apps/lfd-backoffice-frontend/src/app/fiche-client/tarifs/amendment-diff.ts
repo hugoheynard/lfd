@@ -1,5 +1,4 @@
 import type {
-  AmendCompanyMercurialePayload,
   CompanyMercurialeLinePayload,
   GeneralDiscountPayload,
   GeneralDiscountView,
@@ -8,21 +7,15 @@ import type {
 } from '@lfd/contracts';
 
 import { millicentsField } from '../../commercial/tarification/grille/price-field';
-import { businessDayStart } from '../../shared/business-day';
-import { parisToday } from '../../shared/paris-today';
 import { toLines, type DraftPrices } from './draft-prices';
 import {
-  articleDiscount,
-  discountBpFor,
   discountFormOf,
-  discountLabel,
   discountPayload,
   discountProblem,
   discountViewOf,
   sameDiscount,
-  type DiscountArticle,
   type GeneralDiscountForm,
-} from './general-discount';
+} from './general-discount-form';
 import {
   policyPayload,
   policyProblem,
@@ -33,8 +26,8 @@ import {
 /**
  * **L'écart d'un avenant** (`documentation/pricing/mercuriales/l-avenant-date.md`,
  * § 1) : de l'état de la mercuriale à la date d'effet — rendu par l'aperçu —
- * et de ce qu'on a saisi dans la table, le corps de l'avenant, l'étiquette de
- * chaque ligne et le prix d'après quand l'écran sait le faire. Pur.
+ * et de ce qu'on a saisi dans la table, ce que l'avenant change, article par
+ * article, pour la remise et pour les promotions. Pur.
  *
  * L'état de référence vient du serveur (`state`) : la composition des
  * segments datés reste chez lui, l'écran ne la refait pas.
@@ -42,13 +35,6 @@ import {
 
 /** La mercuriale à la date d'effet, avant l'avenant. */
 export type AmendmentState = MercurialeAmendmentPreviewView['state'];
-
-/** La borne du motif — celle du contrat (`amendCompanyMercurialePayloadSchema`). */
-export const AMENDMENT_REASON_MAX_LENGTH = 500;
-
-/** La phrase de F1 : ce qui ne revient pas de soi-même à la fin d'un avenant. */
-export const NO_END_REASON =
-  'Un prix changé ou retiré, et les promotions, ne reviennent pas d’eux-mêmes à une date : faites un second avenant à cette date.';
 
 /** Ce qu'on a saisi dans la table. */
 export interface AmendmentEdit {
@@ -176,206 +162,10 @@ export function changeCount(diff: AmendmentDiff): number {
   );
 }
 
-/**
- * **F1** : une fin n'est proposée que si l'avenant n'arrête aucun prix et ne
- * touche pas aux promotions — ni l'un ni l'autre ne revient à sa fin.
- */
-export function endAllowed(diff: AmendmentDiff): boolean {
-  return diff.endedSkus.length === 0 && diff.promotionPolicy === null;
-}
-
 /** La remise qui vaudra après l'avenant : la saisie si elle change, sinon celle en vigueur. */
 export function discountAfter(
   state: AmendmentState,
   diff: AmendmentDiff,
 ): GeneralDiscountView | null {
   return diff.generalDiscount === null ? state.generalDiscount : diff.generalDiscount.set;
-}
-
-/** Ce qu'il faut pour dater l'avenant et l'enregistrer (étape 3). */
-export interface AmendmentDating {
-  /** `AAAA-MM-JJ` ; vide ou aujourd'hui = maintenant. */
-  readonly fromDay: string;
-  /** `AAAA-MM-JJ` ; vide = jusqu'à la fin de la mercuriale. */
-  readonly toDay: string;
-  readonly reason: string;
-  /** Aujourd'hui à Paris, `AAAA-MM-JJ`. */
-  readonly today: string;
-  readonly basedOnAmendmentId: string | null;
-}
-
-export type AmendmentDraft =
-  | { readonly ok: true; readonly payload: AmendCompanyMercurialePayload }
-  | { readonly ok: false; readonly refusal: string };
-
-/**
- * `validFrom` : **absent** pour « maintenant » — aujourd'hui compris, dont le
- * minuit est déjà passé et serait refusé comme rétroactif.
- */
-export function effectFrom(fromDay: string, today: string): { validFrom?: string } {
-  const from = fromDay === '' || fromDay === today ? null : businessDayStart(fromDay);
-  return from === null ? {} : { validFrom: from };
-}
-
-function changesOf(diff: AmendmentDiff): Omit<AmendCompanyMercurialePayload, 'reason' | 'validTo'> {
-  return {
-    lines: [...diff.lines],
-    endedSkus: [...diff.endedSkus],
-    ...(diff.promotionPolicy === null ? {} : { promotionPolicy: diff.promotionPolicy }),
-    ...(diff.generalDiscount === null ? {} : { generalDiscount: diff.generalDiscount }),
-  };
-}
-
-/** Le refus de la date, ou `null`. */
-function datingProblem(diff: AmendmentDiff, dating: AmendmentDating): string | null {
-  const from = dating.fromDay === '' ? dating.today : dating.fromDay;
-  if (from < dating.today) {
-    return 'La date d’effet ne peut pas être passée : un avenant n’est jamais rétroactif.';
-  }
-  if (dating.toDay !== '' && !endAllowed(diff)) {
-    return NO_END_REASON;
-  }
-  if (dating.toDay !== '' && dating.toDay <= from) {
-    return 'La fin doit venir après la date d’effet.';
-  }
-  return null;
-}
-
-/** **Le corps de l'avenant**, ou ce qui l'empêche de partir. */
-export function amendmentBody(diff: AmendmentDiff, dating: AmendmentDating): AmendmentDraft {
-  if (diff.problem !== null) {
-    return { ok: false, refusal: diff.problem };
-  }
-  if (changeCount(diff) === 0) {
-    return { ok: false, refusal: 'L’avenant ne change rien.' };
-  }
-  const datingIssue = datingProblem(diff, dating);
-  if (datingIssue !== null) {
-    return { ok: false, refusal: datingIssue };
-  }
-  const reason = dating.reason.trim();
-  if (reason === '') {
-    return { ok: false, refusal: 'Le motif est obligatoire : il reste au journal de l’accord.' };
-  }
-  if (reason.length > AMENDMENT_REASON_MAX_LENGTH) {
-    return {
-      ok: false,
-      refusal: `Le motif tient en ${String(AMENDMENT_REASON_MAX_LENGTH)} caractères au plus.`,
-    };
-  }
-  const to = dating.toDay === '' ? null : businessDayStart(dating.toDay);
-  return {
-    ok: true,
-    payload: {
-      ...effectFrom(dating.fromDay, dating.today),
-      validTo: to,
-      reason,
-      ...changesOf(diff),
-      basedOnAmendmentId: dating.basedOnAmendmentId,
-    },
-  };
-}
-
-/** Le motif que l'aperçu exige du contrat ; il n'est jamais écrit. */
-const PREVIEW_REASON = 'Aperçu';
-
-/**
- * **Le corps de l'aperçu** : les changements, à la date d'effet, sans fin —
- * l'aperçu résout chaque prix à `validFrom`, où la fin ne change rien.
- */
-export function previewBody(
-  diff: AmendmentDiff,
-  fromDay: string,
-  today: string,
-): AmendCompanyMercurialePayload {
-  return {
-    ...effectFrom(fromDay, today),
-    validTo: null,
-    reason: PREVIEW_REASON,
-    ...changesOf(diff),
-  };
-}
-
-/** L'étiquette d'une ligne de la table ; `changed: false` = un repère, pas un changement. */
-export interface RowLabel {
-  readonly label: string;
-  readonly changed: boolean;
-}
-
-/**
- * **L'étiquette d'une ligne** : « prix changé », « prix ajouté », « prix
- * retiré », « suit la remise » (un prix retiré que la remise couvre — Q1),
- * « passe à −35 % », « sort de la remise », ou le repère « à paliers ».
- * `null` = rien à dire.
- */
-export function rowLabel(
-  article: Pick<DiscountArticle, 'sku' | 'categoryPath'>,
-  state: AmendmentState,
-  edit: AmendmentEdit,
-  diff: AmendmentDiff,
-): RowLabel | null {
-  const after = discountAfter(state, diff);
-  const bpAfter = after === null ? null : discountBpFor(after, article);
-  const change = diff.firm.get(article.sku);
-  if (change !== undefined) {
-    if (change.kind === 'changed') {
-      return { label: 'prix changé', changed: true };
-    }
-    if (change.kind === 'added') {
-      return { label: 'prix ajouté', changed: true };
-    }
-    return { label: bpAfter === null ? 'prix retiré' : 'suit la remise', changed: true };
-  }
-  if (tieredSkusOf(state).has(article.sku)) {
-    return { label: 'à paliers', changed: false };
-  }
-  if (edit.firm.has(article.sku)) {
-    return null;
-  }
-  const before = state.generalDiscount;
-  const bpBefore = before === null ? null : discountBpFor(before, article);
-  if (bpBefore === bpAfter) {
-    return null;
-  }
-  return bpAfter === null
-    ? { label: 'sort de la remise', changed: true }
-    : { label: `passe à ${discountLabel(bpAfter)}`, changed: true };
-}
-
-/** Le prix d'après calculé à l'écran, avec la limite. */
-export interface LocalAfter {
-  readonly millicents: number;
-  readonly floored: boolean;
-}
-
-/**
- * **« Après l'avenant » à l'étape 1**, pour les seuls prix que la mercuriale
- * fait : le prix ferme saisi, ou la remise sur le prix de base, relevés par la
- * limite — l'arithmétique de la caisse (`@lfd/money`, via `articleDiscount`).
- * `null` = l'article sort de la mercuriale : seule la caisse sait son prix
- * (recalculé à la vérification).
- */
-export function localAfter(
-  article: DiscountArticle,
-  edit: AmendmentEdit,
-  after: GeneralDiscountView | null,
-): LocalAfter | null {
-  const typed = toLines(edit.firm).find((line) => line.sku === article.sku);
-  if (typed !== undefined) {
-    const floor = article.floorMillicents;
-    const floored = floor !== null && typed.unitPriceMillicents < floor;
-    return { millicents: floored ? floor : typed.unitPriceMillicents, floored };
-  }
-  const cut = after === null ? null : articleDiscount(after, article);
-  return cut === null ? null : { millicents: cut.finalMillicents, floored: cut.floored };
-}
-
-/**
- * **La date d'effet par défaut** : le plus tard entre aujourd'hui et le
- * premier jour de la mercuriale. Une mercuriale qui n'a pas commencé ne
- * s'amende pas avant son début — « maintenant » y serait refusé.
- */
-export function defaultEffectDay(mercurialeValidFrom: string, today: string): string {
-  const start = parisToday(new Date(mercurialeValidFrom));
-  return start > today ? start : today;
 }

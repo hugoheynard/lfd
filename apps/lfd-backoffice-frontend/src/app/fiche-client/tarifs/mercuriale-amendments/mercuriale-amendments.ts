@@ -7,7 +7,7 @@ import type {
 import { FoldElementTitleComponent, FoldTimelineComponent, type FoldTimelineNode } from 'fold-ng';
 
 import { amendmentEntry, type AmendmentEntry } from './amendment-lines';
-import { discountNames } from '../general-discount';
+import { discountNames } from '../general-discount-lines';
 
 /**
  * **Les avenants passés d'une mercuriale**, en lecture, sous sa grille : quand,

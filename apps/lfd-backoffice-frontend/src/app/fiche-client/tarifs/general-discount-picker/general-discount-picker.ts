@@ -17,20 +17,17 @@ import {
   DISCOUNT_MODE_LABELS,
   NEW_GENERAL_DISCOUNT,
   bpOfPercent,
-  discountArticlesOf,
-  discountFamiliesOf,
-  discountLineRows,
-  discountNames,
   discountProblem,
   discountViewOf,
-  discountedArticles,
   percentOfBp,
   withDiscountLine,
   withDiscountLineChange,
   withoutDiscountLine,
   type DiscountLineForm,
   type GeneralDiscountForm,
-} from '../general-discount';
+} from '../general-discount-form';
+import { discountFamiliesOf, discountLineRows, discountNames } from '../general-discount-lines';
+import { discountArticlesOf, discountedArticles } from '../general-discount-pricing';
 
 const MODES: readonly GeneralDiscountModeValue[] = ['all_except', 'only'];
 
