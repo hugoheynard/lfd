@@ -103,16 +103,8 @@ async function main(): Promise<void> {
 async function summarize(harness: SeedHarness): Promise<void> {
   const journal = await harness.prisma.activityEvent.groupBy({ by: ["type"], _count: true });
   const leads = await harness.prisma.lead.groupBy({ by: ["status"], _count: true });
-  const line = (rows: { _count: number }[], key: (r: { _count: number }) => string): string =>
-    rows.map(key).join("  ");
-  console.log(
-    "  journal :",
-    line(journal, (r) => `${(r as { type: string })["type"]}=${r._count}`),
-  );
-  console.log(
-    "  leads   :",
-    line(leads, (r) => `${(r as { status: string })["status"]}=${r._count}`),
-  );
+  console.log("  journal :", journal.map((r) => `${r.type}=${String(r._count)}`).join("  "));
+  console.log("  leads   :", leads.map((r) => `${r.status}=${String(r._count)}`).join("  "));
 }
 
 function settle(ms: number): Promise<void> {
@@ -166,7 +158,7 @@ async function advanceLead(
   i: number,
   from: Date,
 ): Promise<void> {
-  const target = LEAD_STAGES[i % LEAD_STAGES.length];
+  const target = LEAD_STAGES[i % LEAD_STAGES.length] ?? "converted";
   const path = stagesUpTo(target);
   let when = from;
   for (const status of path) {

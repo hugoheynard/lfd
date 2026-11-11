@@ -10,15 +10,15 @@ import type { Actor } from "../../src/platform/context/request-context.js";
 import { runWithRequestContext } from "../../src/platform/context/request-context.store.js";
 import { newTraceId } from "../../src/platform/context/trace-context.js";
 import { PrismaService } from "../../src/platform/database/prisma.service.js";
-import { PaymentGateway } from "../../src/lafoliecoffee/payments/domain/payment-gateway.js";
+import { CardProviders } from "../../src/card-payment/domain/ports/card-providers.js";
 import { FakeEstablishmentDirectory } from "./fake-establishment-directory.js";
 import { FakeDocumentStore } from "./fake-document-store.js";
-import { FakePaymentGateway } from "./fake-payment-gateway.js";
+import { FakeCardProviders } from "./fake-card-providers.js";
 import { refuseNonLocalTarget } from "../local-target.js";
 
 /**
  * Harnais du seed **growth** : un contexte applicatif Nest **réel** (vrais
- * `CommandBus` / resolver / repos) où seul `PaymentGateway` est simulé. On passe
+ * `CommandBus` / resolver / repos) où seul le prestataire de carte (`CardProviders`) est simulé. On passe
  * par le module de test uniquement pour l'`overrideProvider` — le reste est
  * l'application telle qu'elle tourne. `runAt` exécute une opération dans un
  * **contexte de requête daté** : le `Clock` lit ce `now`, donc les événements du
@@ -61,8 +61,8 @@ export async function bootstrapHarness(): Promise<SeedHarness> {
     "le seed écrit par les vrais handlers.",
   );
   const module = await Test.createTestingModule({ imports: [AppModule] })
-    .overrideProvider(PaymentGateway)
-    .useClass(FakePaymentGateway)
+    .overrideProvider(CardProviders)
+    .useClass(FakeCardProviders)
     .overrideProvider(DocumentStore)
     .useClass(FakeDocumentStore)
     .overrideProvider(EstablishmentDirectory)

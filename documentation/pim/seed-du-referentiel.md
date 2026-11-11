@@ -140,9 +140,9 @@ l'`AppModule`, donc la DI Nest **par type**, donc `design:paramtypes` :
   `CreateCategoryHandler (?, UuidGenerator)` ;
 - `ts-node` 10.9 ne tourne plus sur le TypeScript 6.x épinglé ici.
 
-⚠️ C'est la seconde raison qui a cassé **`pnpm seed:growth`**, aujourd'hui
-inutilisable pour deux motifs indépendants : son runner, et un import de
-platform/auth/customer-user.resolver.js, supprimé depuis. Non traité ici.
+`pnpm seed:growth` (et `seed:growth:reset`) passe par la même compilation :
+`prisma/seed-growth*` est dans `tsconfig.seed.json`, donc un port qui change
+sans que son double suive (`FakeCardProviders`) rougit au typecheck du semis.
 
 `tsconfig.seed.json` sert aussi de garde de types : `tsconfig.json` n'inclut que
 `src`, donc **rien dans `prisma/` n'était typé** jusqu'à ce chantier. ESLint ne

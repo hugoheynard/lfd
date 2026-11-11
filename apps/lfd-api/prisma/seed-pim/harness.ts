@@ -28,7 +28,7 @@ import { refuseNonLocalTarget } from "../local-target.js";
  *
  * ## Pourquoi pas le harnais de `seed-growth`
  *
- * Le sien double aussi `PaymentGateway` et `EstablishmentDirectory` — dont le
+ * Le sien double aussi `CardProviders` et `EstablishmentDirectory` — dont le
  * cycle du référentiel n'approche jamais — et il **ne compile plus** : il
  * importe `platform/auth/customer-user.resolver.js`, supprimé depuis. Le
  * réparer dépasse ce chantier ; s'appuyer dessus l'aurait bloqué.

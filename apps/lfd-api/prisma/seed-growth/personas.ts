@@ -42,7 +42,7 @@ interface Sector {
   readonly venues: readonly string[];
 }
 
-const SECTORS: Readonly<Record<string, Sector>> = {
+const SECTORS = {
   restaurant: {
     key: "restaurant",
     naf: "56.10A",
@@ -132,7 +132,7 @@ const SECTORS: Readonly<Record<string, Sector>> = {
       "Snack La Face",
     ],
   },
-};
+} satisfies Readonly<Record<string, Sector>>;
 
 /**
  * Séquence pondérée des secteurs : en station, restaurants et bars dominent, la
@@ -199,13 +199,22 @@ export interface Persona {
   readonly ville: string;
 }
 
+/** L'élément de rang `i` d'une liste non vide, en boucle. */
+function cycled<T>(list: readonly T[], i: number): T {
+  const item = list[i % list.length];
+  if (item === undefined) {
+    throw new Error("Liste de personas vide : rien à faire tourner.");
+  }
+  return item;
+}
+
 /** Persona déterministe pour l'index `i` (valide sur tous les offsets du seed). */
 export function persona(i: number): Persona {
-  const sector = SECTOR_SEQUENCE[i % SECTOR_SEQUENCE.length];
-  const venue = sector.venues[Math.floor(i / SECTOR_SEQUENCE.length) % sector.venues.length];
-  const station = STATIONS[i % STATIONS.length];
-  const first = FIRST_NAMES[i % FIRST_NAMES.length];
-  const last = LAST_NAMES[Math.floor(i / FIRST_NAMES.length) % LAST_NAMES.length];
+  const sector = cycled(SECTOR_SEQUENCE, i);
+  const venue = cycled(sector.venues, Math.floor(i / SECTOR_SEQUENCE.length));
+  const station = cycled(STATIONS, i);
+  const first = cycled(FIRST_NAMES, i);
+  const last = cycled(LAST_NAMES, Math.floor(i / FIRST_NAMES.length));
   const n = String(i).padStart(4, "0");
   return {
     index: i,

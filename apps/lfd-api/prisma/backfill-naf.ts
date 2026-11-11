@@ -5,10 +5,10 @@ import { Test } from "@nestjs/testing";
 import { EstablishmentDirectory } from "../src/lafoliecoffee/account/domain/ports/establishment-directory.js";
 import { KbisStore } from "../src/lafoliecoffee/account/domain/ports/kbis-store.js";
 import { PrismaService } from "../src/platform/database/prisma.service.js";
-import { PaymentGateway } from "../src/lafoliecoffee/payments/domain/payment-gateway.js";
+import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { AppModule } from "../src/appBootstrap/app.module.js";
 import { FakeKbisStore } from "./seed-growth/fake-kbis-store.js";
-import { FakePaymentGateway } from "./seed-growth/fake-payment-gateway.js";
+import { FakeCardProviders } from "./seed-growth/fake-card-providers.js";
 import { refuseNonLocalTarget } from "./local-target.js";
 
 /**
@@ -25,8 +25,8 @@ async function main(): Promise<void> {
     "le backfill réécrit le code NAF des sociétés.",
   );
   const module = await Test.createTestingModule({ imports: [AppModule] })
-    .overrideProvider(PaymentGateway)
-    .useClass(FakePaymentGateway)
+    .overrideProvider(CardProviders)
+    .useClass(FakeCardProviders)
     .overrideProvider(KbisStore)
     .useClass(FakeKbisStore)
     .compile();

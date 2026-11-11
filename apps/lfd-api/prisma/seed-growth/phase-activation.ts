@@ -94,7 +94,7 @@ async function provisionOwner(
       new UpdateMyProfileCommand(
         user.id,
         who.authSub,
-        firstName,
+        firstName ?? "Prénom",
         lastName ?? "Nom",
         who.email,
         who.phone,
@@ -141,6 +141,11 @@ async function advancePieces(
     const payload: UpdateIdentityPayload = {
       enseigne: "",
       vatNumber: `FR${validSiret(1).slice(0, 11)}`,
+      // Vides : un champ légal vide ne réécrit rien côté client.
+      raisonSociale: "",
+      formeJuridique: "",
+      siret: "",
+      siren: "",
     };
     await step(() =>
       harness.commands.execute<UpdateCompanyIdentityCommand, void>(
@@ -173,7 +178,7 @@ async function advancePieces(
     when = new Date(when.getTime() + 3 * DAY_MS);
     await harness.runAt(when, SEED_STAFF, () =>
       harness.commands.execute<ActivateCompanyByStaffCommand, void>(
-        new ActivateCompanyByStaffCommand(companyId),
+        new ActivateCompanyByStaffCommand(companyId, SEED_STAFF.id ?? "seed-staff"),
       ),
     );
   }
@@ -210,6 +215,7 @@ function deliveryPayload(who: ReturnType<typeof persona>): DeliveryAddressPayloa
       slotList: { mode: "everyday", slots: [] },
       deliveryContact: null,
       gps: null,
+      signatureRequired: null,
     },
   };
 }
