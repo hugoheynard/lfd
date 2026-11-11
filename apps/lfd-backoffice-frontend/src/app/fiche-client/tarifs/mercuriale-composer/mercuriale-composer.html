@@ -13,20 +13,22 @@
     (valueChange)="label.set($event)"
   />
 
-  <div class="tf-pose-field">
-    <label class="tf-pose-label" for="tf-from">À partir du</label>
-    <input
-      id="tf-from"
-      type="date"
-      [value]="validFrom()"
-      (change)="validFrom.set(nativeValue($event))"
-    />
-  </div>
-
-  <div class="tf-pose-field">
-    <label class="tf-pose-label" for="tf-to">Jusqu'au (facultatif)</label>
-    <input id="tf-to" type="date" [value]="validTo()" (change)="validTo.set(nativeValue($event))" />
-  </div>
+  <fold-date
+    label="À partir du"
+    required
+    [value]="validFrom()"
+    (valueChange)="validFrom.set($event)"
+    data-pose-from
+  />
+  <fold-date
+    label="Jusqu'au"
+    optional
+    optionalLabel="vide : sans fin"
+    [min]="validFrom()"
+    [value]="validTo()"
+    (valueChange)="validTo.set($event)"
+    data-pose-to
+  />
 
   <app-promotion-policy-picker class="tf-pose-policy" [(policy)]="promotionPolicy" />
   @if (policyProblem(); as problem) {

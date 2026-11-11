@@ -37,17 +37,6 @@
   flex: 1 1 100%;
 }
 
-.tf-pose-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.tf-pose-label {
-  font-size: var(--fold-text-xs, 0.75rem);
-  color: var(--fold-color-text-muted);
-}
-
 .tf-pose-actions {
   display: flex;
   gap: var(--fold-space-sm, 0.5rem);

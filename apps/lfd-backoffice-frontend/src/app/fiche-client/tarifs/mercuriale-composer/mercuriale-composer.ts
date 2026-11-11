@@ -15,6 +15,7 @@ import {
   FoldDataTableComponent,
   FoldElementTitleComponent,
   FoldInputComponent,
+  FoldDateComponent,
   FoldInfoComponent,
   FoldPopoverComponent,
   FoldPopoverTriggerDirective,
@@ -26,7 +27,6 @@ import type { CompanyPricingCategoryView, GeneralDiscountPayload } from '@lfd/co
 import { formatEuros } from '@lfd/catalog-ui';
 
 import { NotifyService } from '../../../notify.service';
-import { nativeValue } from '../../../shared/native-input';
 import { businessDayStart } from '../../../shared/business-day';
 import { PricePath } from '../../../b2b/tarification/price-path/price-path';
 import { VolumeEffort } from '../../../b2b/tarification/volume-effort/volume-effort';
@@ -78,6 +78,7 @@ import { ALL_SHELVES, filterTarifRows, type FilteredTarifRow } from '../tarif-fi
     FoldDataTableCellDirective,
     FoldElementTitleComponent,
     FoldInputComponent,
+    FoldDateComponent,
     FoldInfoComponent,
     FoldPopoverComponent,
     FoldPopoverTriggerDirective,
@@ -117,8 +118,6 @@ export class MercurialeComposer {
   protected readonly euros = formatEuros;
   protected readonly percent = impactLabel;
   protected readonly direction = impactDirection;
-  // `nativeValue` et non `$any($event.target)` : le second ment au compilateur.
-  protected readonly nativeValue = nativeValue;
   protected readonly busy = signal(false);
 
   protected readonly lines = computed(() => toLines(this.draft()));
