@@ -139,6 +139,13 @@ export class MercurialeAmendment implements OnInit {
   protected readonly fromDay = signal(this.today);
   /** Le champ de la date d'effet est ouvert sur place (étapes 1 et 2). */
   protected readonly editingDate = signal(false);
+  /** La date en cours de saisie, appliquée seulement par « Appliquer ». */
+  protected readonly draftDay = signal('');
+
+  protected openDate(): void {
+    this.draftDay.set(this.fromDay());
+    this.editingDate.set(true);
+  }
   /** Le premier jour possible : aujourd'hui, ou le début de la mercuriale s'il est à venir. */
   protected readonly minDay = computed(() =>
     defaultEffectDay(this.mercuriale().validFrom, this.today),

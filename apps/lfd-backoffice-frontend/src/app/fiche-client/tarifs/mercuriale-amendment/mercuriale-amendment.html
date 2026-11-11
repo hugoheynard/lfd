@@ -61,13 +61,28 @@
     @if (step() !== 3) {
       <div class="am-effect" data-amend-effect>
         @if (editingDate()) {
+          <!-- La date se saisit d'abord, puis s'applique : le navigateur émet
+               une valeur à chaque morceau tapé (jour, mois, année), et
+               appliquer à chaque émission refermait le champ à la première
+               touche et relançait l'aperçu sur une date à moitié saisie. -->
           <fold-date
             label="Date d’effet"
-            hint="Les prix « avant » et « après » sont recalculés à cette date."
+            hint="Les prix « avant » et « après » seront recalculés à cette date."
             [min]="minDay()"
-            [value]="fromDay()"
-            (valueChange)="setFromDay($event)"
+            [value]="draftDay()"
+            (valueChange)="draftDay.set($event)"
+            data-amend-effect-date
           />
+          <button
+            foldButton
+            size="sm"
+            type="button"
+            [disabled]="draftDay() === ''"
+            (click)="setFromDay(draftDay())"
+            data-amend-apply-date
+          >
+            Appliquer
+          </button>
           <button
             foldButton
             size="sm"
@@ -75,7 +90,7 @@
             type="button"
             (click)="editingDate.set(false)"
           >
-            Fermer
+            Annuler
           </button>
         } @else {
           <p class="am-effect-text">
@@ -86,7 +101,7 @@
             size="sm"
             emphasis="outline"
             type="button"
-            (click)="editingDate.set(true)"
+            (click)="openDate()"
             data-amend-change-date
           >
             Changer
