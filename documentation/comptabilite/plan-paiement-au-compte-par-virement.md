@@ -85,7 +85,7 @@ flowchart TD
   C -->|oui| E["1 · Échéance de facturation"]
   E --> F["2 · Prélèvement SEPA ou Virement bancaire"]
   F -->|prélèvement| G["3 · RIB → mandat → activation"]
-  F -->|virement| H["3 · Délai, nos coordonnées, factures à régler"]
+  F -->|virement| H["3 · Nos coordonnées, l'échéance du cycle, factures à régler"]
 ```
 
 - La carte « mode de facturation » séparée disparaît : l'échéance devient
