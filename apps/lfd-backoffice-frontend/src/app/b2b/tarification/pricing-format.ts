@@ -482,7 +482,9 @@ export function pathOf(chain: PriceChain): readonly PricePathLeg[] {
   let entering = item.canonicalMillicents;
   item.steps.forEach((step, index) => {
     const relative = relativeLabel(entering, step.resultMillicents);
-    const notes: PricePathNote[] = [];
+    // Le nom de ce qui a agi — la promotion, la mercuriale, la règle — en
+    // premier : « Promotion −20 % » dit l'étage, pas laquelle des promotions.
+    const notes: PricePathNote[] = [{ text: step.label, tone: 'muted' }];
     // « Absorbé » ne se déduit ni de `floored` seul ni de l'étape seule : c'est
     // l'écart entre ce que le DERNIER étage a produit et ce que la limite a
     // laissé passer. Le cas est celui qu'on ne voyait pas — une règle posée qui

@@ -154,6 +154,15 @@ describe('ce que la limite a repris', () => {
 });
 
 describe('le chemin du prix', () => {
+  it("nomme ce qui a agi sur chaque étage, pas seulement l'étage", () => {
+    const legs = pricePath(
+      item({ steps: [step({ label: 'Remise La Folie Coffee' })], finalMillicents: 123_000 }),
+    );
+    const stage = legs.find((leg) => leg.kind === 'stage');
+
+    expect(stage?.notes[0]).toEqual({ text: 'Remise La Folie Coffee', tone: 'muted' });
+  });
+
   it('déplie le tarif d’entrée, chaque étage, la limite et le prix final', () => {
     const legs = pricePath(absorbedGesture());
 
