@@ -21,6 +21,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { E2E_FAMILIES } from "./catalog-fixture.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -94,6 +95,7 @@ beforeEach(async () => {
 function pose(body: Record<string, unknown>, company = companyId) {
   return staff()
     .post(`/admin/pricing/companies/${company}/mercuriale`)
+    .set(INTENT_KEY, freshIntent())
     .send({ label: "Remise 2026", validFrom: daysAgo(30), validTo: null, lines: [], ...body });
 }
 
@@ -215,6 +217,7 @@ describe("le prix du client", () => {
 
     await staff()
       .post(`/admin/pricing/companies/${neighbourId}/mercuriale/${id}/amendments`)
+      .set(INTENT_KEY, freshIntent())
       .send({ reason: "Essai", generalDiscount: { set: null } })
       .expect(404);
   });
@@ -224,6 +227,7 @@ describe("l'avenant daté", () => {
   const amend = (body: Record<string, unknown>, id: string) =>
     staff()
       .post(`/admin/pricing/companies/${companyId}/mercuriale/${id}/amendments`)
+      .set(INTENT_KEY, freshIntent())
       .send({ reason: "Geste commercial", lines: [], endedSkus: [], ...body });
 
   it("change le taux sur sa fenêtre seulement : pas avant son début, à partir de lui", async () => {
@@ -281,6 +285,7 @@ describe("Q2 — pas de remise générale sous engagement de volume", () => {
 
     await staff()
       .post(`/admin/pricing/companies/${companyId}/mercuriale/${await posedId()}/amendments`)
+      .set(INTENT_KEY, freshIntent())
       .send({ reason: "Remise", generalDiscount: { set: DISCOUNT } })
       .expect(409);
   });
@@ -309,6 +314,7 @@ describe("la base tient la forme", () => {
     await pose({ generalDiscount: DISCOUNT }).expect(201);
     await staff()
       .post(`/admin/pricing/companies/${companyId}/mercuriale/${await posedId()}/amendments`)
+      .set(INTENT_KEY, freshIntent())
       .send({ reason: "Fin de remise", generalDiscount: { set: null } })
       .expect(201);
 

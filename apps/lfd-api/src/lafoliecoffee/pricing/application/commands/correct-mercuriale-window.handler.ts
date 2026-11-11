@@ -1,6 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import type { CompanyMercuriale } from "../../domain/entities/company-mercuriale.js";
 import { checkedWindowCorrectionReason } from "../../domain/entities/mercuriale-window-correction.js";
@@ -18,6 +19,7 @@ import {
 import { designated } from "./company-mercuriale-support.js";
 import { CorrectMercurialeWindowCommand } from "./correct-mercuriale-window.command.js";
 import { assertNoVolumeCommitmentUnder } from "./general-discount-support.js";
+import { MERCURIALE_GESTURES } from "./mercuriale-intent-support.js";
 
 @CommandHandler(CorrectMercurialeWindowCommand)
 export class CorrectMercurialeWindowHandler implements ICommandHandler<
@@ -31,6 +33,7 @@ export class CorrectMercurialeWindowHandler implements ICommandHandler<
     private readonly commitments: VolumeCommitmentReader,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly intents: OncePerIntent,
   ) {}
 
   /**
@@ -50,8 +53,30 @@ export class CorrectMercurialeWindowHandler implements ICommandHandler<
    * @throws {GeneralDiscountOverVolumeCommitmentError} une remise générale tomberait
    *   sur un engagement de volume (Q2).
    * @throws {MercurialeAmendedMeanwhileError} un avenant a été écrit depuis celui annoncé.
+   * @throws {GestureInFlightError} la même clé est encore en vol.
+   * @throws {IntentKeyReusedError} la clé a servi pour un autre geste ou une autre mercuriale.
+   *
+   * Une fois par intention, sujet la mercuriale : un second envoi de même clé
+   * ne corrige rien et ne réécrit pas l'acte. La clé est résolue dans la
+   * transaction de la correction.
    */
-  async execute(command: CorrectMercurialeWindowCommand): Promise<void> {
+  execute(command: CorrectMercurialeWindowCommand): Promise<void> {
+    return this.intents.runSealed(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: MERCURIALE_GESTURES.correctWindow,
+        subject: command.mercurialeId,
+      },
+      NOTHING_TO_REPLAY,
+      (seal) => this.correct(command, seal),
+    );
+  }
+
+  private async correct(
+    command: CorrectMercurialeWindowCommand,
+    seal: () => Promise<void>,
+  ): Promise<void> {
     const { companyId, mercurialeId, payload, staffUserId } = command;
     const target = await designated(this.reader, companyId, { id: mercurialeId });
     const reason = checkedWindowCorrectionReason(payload.reason);
@@ -78,6 +103,7 @@ export class CorrectMercurialeWindowHandler implements ICommandHandler<
         summary: describeCorrection(mercuriale, corrected),
         subjectLabel: corrected.label,
       } satisfies PricingAct);
+      await seal();
     });
   }
 

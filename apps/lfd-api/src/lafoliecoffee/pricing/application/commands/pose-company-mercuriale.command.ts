@@ -6,5 +6,10 @@ export class PoseCompanyMercurialeCommand {
     readonly companyId: string,
     readonly payload: PoseCompanyMercurialePayload,
     readonly staffUserId: string,
+    /**
+     * La clé d'intention de l'écran (en-tête `Idempotency-Key`) : un second
+     * envoi de même clé rend la réponse d'origine sans rien réécrire.
+     */
+    readonly intentKey: string,
   ) {}
 }

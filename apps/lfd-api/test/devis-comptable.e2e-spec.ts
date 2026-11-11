@@ -40,6 +40,7 @@ import {
 } from "./devis-comptable-fixture.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -85,6 +86,7 @@ beforeEach(async () => {
   await ctx
     .asSub("staff-e2e")
     .post(`/admin/pricing/companies/${companyId}/mercuriale`)
+    .set(INTENT_KEY, freshIntent())
     .send({
       label: "Devis de saison",
       validFrom: relativeDay(-1),

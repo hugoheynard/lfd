@@ -17,7 +17,11 @@ export class TracingUnitOfWork extends UnitOfWork {
   constructor(private readonly trace: Trace) {
     super();
   }
+  /** Déjà ouverte, elle REJOINT l'unité en cours, comme `PrismaUnitOfWork`. */
   async run<T>(work: () => Promise<T>): Promise<T> {
+    if (this.open) {
+      return work();
+    }
     this.trace.push("begin");
     this.open = true;
     try {
@@ -31,6 +35,9 @@ export class TracingUnitOfWork extends UnitOfWork {
 
 export class LockingMercuriales extends CompanyMercurialeRepository {
   readonly written: { mercuriale: CompanyMercuriale; amendmentId: string; act: PricingAct }[] = [];
+  /** Les poses et les corrections de dates, pour les gestes qui en écrivent. */
+  readonly saved: CompanyMercuriale[] = [];
+  readonly corrected: CompanyMercuriale[] = [];
   constructor(
     private readonly trace: Trace,
     private readonly uow: TracingUnitOfWork,
@@ -47,7 +54,8 @@ export class LockingMercuriales extends CompanyMercurialeRepository {
     this.written.push({ mercuriale, amendmentId, act });
     return Promise.resolve();
   }
-  save(): Promise<void> {
+  save(mercuriale: CompanyMercuriale): Promise<void> {
+    this.saved.push(mercuriale);
     return Promise.resolve();
   }
   update(): Promise<void> {
@@ -56,7 +64,8 @@ export class LockingMercuriales extends CompanyMercurialeRepository {
   rename(): Promise<void> {
     return Promise.resolve();
   }
-  correctWindow(): Promise<void> {
+  correctWindow(mercuriale: CompanyMercuriale): Promise<void> {
+    this.corrected.push(mercuriale);
     return Promise.resolve();
   }
   load(): Promise<CompanyMercuriale | null> {

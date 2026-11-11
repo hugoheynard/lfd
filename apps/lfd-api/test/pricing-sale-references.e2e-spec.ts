@@ -15,6 +15,7 @@ import { OutboxRelayTrigger } from "../src/platform/outbox/outbox-relay-trigger.
 import { anActiveFiche, relayAll, SILENT_TRIGGER } from "./catalog-facts-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -84,6 +85,7 @@ describe("la mercuriale d'un client", () => {
   const pose = (companyId: string, skus: readonly string[]) =>
     staff()
       .post(`/admin/pricing/companies/${companyId}/mercuriale`)
+      .set(INTENT_KEY, freshIntent())
       .send({
         label: "Mercuriale L5",
         validFrom: FROM,

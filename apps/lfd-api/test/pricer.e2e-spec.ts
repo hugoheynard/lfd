@@ -43,6 +43,7 @@ import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from 
 import { posePromotion, promotionTerms } from "./promotion-fixtures.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { PUBLIC_VIEWER, staffViewer } from "../src/lafoliecoffee/catalog/domain/catalog-viewer.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -200,6 +201,7 @@ function poseMercuriale(
 ) {
   return staff()
     .post(`/admin/pricing/companies/${companyId}/mercuriale`)
+    .set(INTENT_KEY, freshIntent())
     .send({
       label: "Mercuriale du test",
       validFrom: window.from,

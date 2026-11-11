@@ -4,7 +4,9 @@ import { NO_PROMOTION_ADMITTED } from "../../domain/entities/mercuriale-promotio
 import { PolicyPromotionNamesReader } from "../../domain/ports/policy-promotion-names.reader.js";
 import { namedPolicy } from "./promotion-policy-support.js";
 import { PricedDecisionsReader } from "../../domain/ports/priced-decisions.reader.js";
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
+import { OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import { PricedCompanyReader } from "../../domain/ports/priced-company.reader.js";
 import { CompanyMercuriale } from "../../domain/entities/company-mercuriale.js";
 import { CompanyMercurialeRepository } from "../../domain/ports/company-mercuriale.repository.js";
@@ -13,6 +15,7 @@ import {
   PricedPeriodIsSealedError,
   RunningMercurialeError,
 } from "../../domain/pricing-errors.js";
+import type { PricingAct } from "../../domain/pricing-act.js";
 import { MercurialeDraftStore } from "../ports/mercuriale-draft.store.js";
 import { describeMercuriale } from "./company-mercuriale-support.js";
 import { SaleReferenceReader } from "../../domain/ports/sale-reference.reader.js";
@@ -21,6 +24,7 @@ import { ReservedElsewhereReader } from "../../domain/ports/reserved-elsewhere.r
 import { PoseCompanyMercurialeCommand } from "./pose-company-mercuriale.command.js";
 import { VolumeCommitmentReader } from "../../domain/ports/volume-commitment.reader.js";
 import { assertNoVolumeCommitmentUnder, generalDiscountOf } from "./general-discount-support.js";
+import { MERCURIALE_GESTURES, POSED_LINES_REPLAY } from "./mercuriale-intent-support.js";
 
 @CommandHandler(PoseCompanyMercurialeCommand)
 export class PoseCompanyMercurialeHandler implements ICommandHandler<
@@ -37,6 +41,8 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
     private readonly reservations: ReservedElsewhereReader,
     private readonly promotionNames: PolicyPromotionNamesReader,
     private readonly commitments: VolumeCommitmentReader,
+    private readonly uow: UnitOfWork,
+    private readonly intents: OncePerIntent,
   ) {}
 
   /**
@@ -67,8 +73,33 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
    * @throws les refus de `namedPolicy` (politique de promotions de départ).
    * @throws {GeneralDiscountOverVolumeCommitmentError} une remise générale chez
    *   un client dont un engagement de volume recouvre la période (Q2).
+   *
+   * ## Une fois par intention
+   *
+   * Sujet : la société. Un second envoi de même clé rend le nombre d'origine
+   * sans reposer ni réécrire le journal ; la clé est résolue dans la même
+   * transaction que la pose.
+   *
+   * @throws {GestureInFlightError} la même clé est encore en vol.
+   * @throws {IntentKeyReusedError} la clé a servi pour un autre geste ou une autre société.
    */
-  async execute(command: PoseCompanyMercurialeCommand): Promise<number> {
+  execute(command: PoseCompanyMercurialeCommand): Promise<number> {
+    return this.intents.runSealed(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: MERCURIALE_GESTURES.pose,
+        subject: command.companyId,
+      },
+      POSED_LINES_REPLAY,
+      (seal) => this.pose(command, seal),
+    );
+  }
+
+  private async pose(
+    command: PoseCompanyMercurialeCommand,
+    seal: (posedLines: number) => Promise<void>,
+  ): Promise<number> {
     const { companyId, payload, staffUserId } = command;
     await this.assertCompanyExists(companyId);
     // Une ligne sur une référence hors vente ne mordrait jamais (L5).
@@ -145,24 +176,18 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
       staffUserId,
     );
 
-    await this.mercuriales.save(mercuriale, {
-      subjectType: "mercuriale",
-      subjectId: mercuriale.id,
-      kind: "posed",
-      actor: staffUserId,
-      at: mercuriale.toPersistence().validFrom,
-      // Aucun motif : l'écran n'en demande pas pour ce geste. La paraphrase
-      // que l'API écrivait ici (« Mercuriale « X » posée… ») n'en était pas un —
-      // elle redisait l'acte, que le type et la phrase disent déjà (TODO des
-      // phrases du journal, 2026-09-19). Les lignes d'avant la gardent.
-      reason: null,
-      summary: `${describeMercuriale(mercuriale)} ; ${promotions.phrase}`,
-      subjectLabel: mercuriale.label,
+    await this.uow.run(async () => {
+      await this.mercuriales.save(
+        mercuriale,
+        actOfPose(mercuriale, staffUserId, promotions.phrase),
+      );
+      await seal(mercuriale.lines.length);
     });
 
     // Le brouillon a servi : il est devenu une décision. APRÈS l'écriture,
     // jamais avant — jeter un brouillon n'est pas ce qu'on veut annuler si la
-    // pose échoue ; c'est au contraire le moment où il faut le garder.
+    // pose échoue ; c'est au contraire le moment où il faut le garder. Hors
+    // de la transaction aussi : un brouillon qui résiste ne défait pas la pose.
     await this.drafts.discard(companyId);
     return mercuriale.lines.length;
   }
@@ -180,4 +205,24 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
       throw new PricedCompanyNotFoundError(companyId);
     }
   }
+}
+
+/** L'acte `posed`, daté de la prise d'effet. */
+function actOfPose(
+  mercuriale: CompanyMercuriale,
+  actor: string,
+  promotionPhrase: string,
+): PricingAct {
+  return {
+    subjectType: "mercuriale",
+    subjectId: mercuriale.id,
+    kind: "posed",
+    actor,
+    at: mercuriale.toPersistence().validFrom,
+    // Aucun motif : l'écran n'en demande pas pour ce geste ; la phrase et le
+    // type disent déjà l'acte.
+    reason: null,
+    summary: `${describeMercuriale(mercuriale)} ; ${promotionPhrase}`,
+    subjectLabel: mercuriale.label,
+  };
 }

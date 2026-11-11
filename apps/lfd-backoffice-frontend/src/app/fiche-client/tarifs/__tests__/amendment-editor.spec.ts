@@ -40,13 +40,15 @@ const PREVIEW: MercurialeAmendmentPreviewView = {
 class StubApi implements AmendmentApi {
   readonly previews: AmendCompanyMercurialePayload[] = [];
   readonly sent: AmendCompanyMercurialePayload[] = [];
+  readonly keys: string[] = [];
   failure: unknown = null;
   previewAmendment(_c: string, _m: string, body: AmendCompanyMercurialePayload) {
     this.previews.push(body);
     return Promise.resolve(PREVIEW);
   }
-  amend(_c: string, _m: string, body: AmendCompanyMercurialePayload) {
+  amend(_c: string, _m: string, body: AmendCompanyMercurialePayload, intentKey: string) {
     this.sent.push(body);
+    this.keys.push(intentKey);
     return this.failure === null ? Promise.resolve({}) : Promise.reject(this.failure);
   }
 }
@@ -111,5 +113,30 @@ describe('AmendmentEditor', () => {
     expect(editor.amendedMeanwhile()).toBe(true);
     expect(await editor.reload()).toBe(true);
     expect(editor.amendedMeanwhile()).toBe(false);
+  });
+
+  it('renvoie la même clé d’intention après un refus, et une neuve après un succès', async () => {
+    const { api, editor } = await started();
+    api.failure = { error: { code: 'x', message: 'Indisponible' }, status: 503 };
+    editor.setPrice('BRI', 1.8);
+    editor.reason.set('Renégociation');
+    expect(await editor.save()).toBe(false);
+    api.failure = null;
+    expect(await editor.save()).toBe(true);
+    expect(api.keys[1]).toBe(api.keys[0]);
+
+    expect(await editor.save()).toBe(true);
+    expect(api.keys[2]).not.toBe(api.keys[1]);
+  });
+
+  it('une saisie qui change entre deux essais fait une clé neuve', async () => {
+    const { api, editor } = await started();
+    api.failure = { error: { code: 'x', message: 'Indisponible' }, status: 503 };
+    editor.setPrice('BRI', 1.8);
+    editor.reason.set('Renégociation');
+    await editor.save();
+    editor.reason.set('Autre motif');
+    await editor.save();
+    expect(api.keys[1]).not.toBe(api.keys[0]);
   });
 });

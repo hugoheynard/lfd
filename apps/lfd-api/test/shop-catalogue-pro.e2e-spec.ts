@@ -12,6 +12,7 @@ import type { ShopCatalogueView, ShopItemView } from "@lfd/contracts";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -53,6 +54,7 @@ async function poseMercuriale(): Promise<void> {
   await ctx
     .asSub("staff-e2e")
     .post(`/admin/pricing/companies/${company.id}/mercuriale`)
+    .set(INTENT_KEY, freshIntent())
     .send({
       label: "Mercuriale négociée",
       validFrom: daysAgo(30),

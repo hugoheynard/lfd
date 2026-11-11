@@ -23,6 +23,7 @@ import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { onlyVariant, posePromotion, promotionTerms } from "./promotion-fixtures.js";
 import { cardGatewayDouble } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -83,6 +84,7 @@ beforeEach(async () => {
 async function poseMercuriale(promotionPolicy?: MercurialePromotionPolicyPayload): Promise<void> {
   await staff()
     .post(`/admin/pricing/companies/${companyId}/mercuriale`)
+    .set(INTENT_KEY, freshIntent())
     .send({
       label: "Mercuriale négociée",
       validFrom: daysAgo(30),
@@ -101,6 +103,7 @@ async function poseMercuriale(promotionPolicy?: MercurialePromotionPolicyPayload
 function amendPolicy(policy: MercurialePromotionPolicyPayload, validFrom?: string) {
   return staff()
     .post(`/admin/pricing/companies/${companyId}/mercuriale/${mercurialeId}/amendments`)
+    .set(INTENT_KEY, freshIntent())
     .send({
       reason: "Le client profite désormais des promotions",
       lines: [],

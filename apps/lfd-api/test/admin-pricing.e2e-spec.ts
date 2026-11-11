@@ -27,6 +27,7 @@ import { attachTo, createCompany, createUser } from "./factories.js";
 import { E2E_FAMILIES } from "./catalog-fixture.js";
 import { cardPaid } from "./card-payments.js";
 import { cardGatewayDouble } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
 const stubAdminVerifier = {
@@ -1013,6 +1014,7 @@ describe("l'écran de tarification", () => {
     const client = await createCompany(ctx.prisma);
     await staff()
       .post(`/admin/pricing/companies/${client.id}/mercuriale`)
+      .set(INTENT_KEY, freshIntent())
       .send({
         label: "Mercuriale Dupont",
         validFrom: daysFromToday(-1),

@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { PoseCompanyMercurialeCommand } from "../../lafoliecoffee/pricing/application/commands/pose-company-mercuriale.command.js";
 import { SetVolumeLadderCommand } from "../../lafoliecoffee/pricing/application/commands/set-volume-ladder.command.js";
 import { SignVolumeCommitmentCommand } from "../../lafoliecoffee/pricing/application/commands/sign-volume-commitment.command.js";
@@ -85,6 +87,8 @@ async function poseMercuriale(
       companyId,
       { label, validFrom: from.toISOString(), validTo: to.toISOString(), lines },
       SEED_STAFF_SUB,
+      // Une intention par pose semée : le semis se garde déjà par le compte ci-dessus.
+      randomUUID(),
     ),
   );
 }

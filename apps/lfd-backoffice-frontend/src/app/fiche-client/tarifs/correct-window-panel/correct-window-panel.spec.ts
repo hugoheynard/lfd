@@ -36,13 +36,16 @@ const MERCURIALE: PosedMercurialeView = {
 
 class FakePricing {
   readonly sent: CorrectMercurialeWindowPayload[] = [];
+  readonly keys: string[] = [];
   refuse: unknown = null;
   correctWindow(
     _companyId: string,
     _mercurialeId: string,
     payload: CorrectMercurialeWindowPayload,
+    intentKey: string,
   ): Promise<void> {
     this.sent.push(payload);
+    this.keys.push(intentKey);
     return this.refuse === null ? Promise.resolve() : Promise.reject(this.refuse);
   }
 }
@@ -124,5 +127,19 @@ describe('CorrectWindowPanel', () => {
     expect(element().querySelector('[data-correct-refusal]')?.textContent).toContain(
       'clôturez-la, puis posez-en une autre',
     );
+  });
+
+  it('renvoie la même clé d’intention au réessai du même envoi, neuve si la saisie change', async () => {
+    const api = new FakePricing();
+    api.refuse = new HttpErrorResponse({ status: 503, error: { message: 'Indisponible' } });
+    const { type, submit } = await render(api);
+    await type('[data-correct-reason] textarea', 'Erreur de saisie');
+    await submit();
+    await submit();
+    await type('[data-correct-reason] textarea', 'Autre motif');
+    await submit();
+    expect(api.keys).toHaveLength(3);
+    expect(api.keys[1]).toBe(api.keys[0]);
+    expect(api.keys[2]).not.toBe(api.keys[1]);
   });
 });

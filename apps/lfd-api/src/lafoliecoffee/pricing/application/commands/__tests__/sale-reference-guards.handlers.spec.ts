@@ -7,6 +7,8 @@
  * Ports doublés par de vraies sous-classes. Les dates ne sont comparées qu'à la
  * fixture, jamais au mur.
  */
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { InMemoryPolicyPromotionNames } from "../../../infrastructure/in-memory-policy-promotion-names.js";
 import type { CreateVolumeCommitmentPayload, PoseCompanyMercurialePayload } from "@lfd/contracts";
 
@@ -153,6 +155,8 @@ function poseMercuriale(skus: readonly string[], reservations = new InMemoryRese
     reservations,
     new InMemoryPolicyPromotionNames(),
     new InMemoryVolumeCommitments(),
+    new DirectUnitOfWork(),
+    inMemoryIntents(),
   );
   const payload: PoseCompanyMercurialePayload = {
     label: "Été",
@@ -162,7 +166,8 @@ function poseMercuriale(skus: readonly string[], reservations = new InMemoryRese
   };
   return {
     mercuriales,
-    run: () => handler.execute(new PoseCompanyMercurialeCommand("co_1", payload, "staff_1")),
+    run: () =>
+      handler.execute(new PoseCompanyMercurialeCommand("co_1", payload, "staff_1", randomUUID())),
   };
 }
 

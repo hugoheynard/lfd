@@ -18,6 +18,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
 import { onlyVariant, posePromotion, promotionTerms } from "./promotion-fixtures.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -72,6 +73,7 @@ beforeEach(async () => {
 async function pose(body: Record<string, unknown>, company = companyId): Promise<string> {
   await staff()
     .post(`/admin/pricing/companies/${company}/mercuriale`)
+    .set(INTENT_KEY, freshIntent())
     .send({ label: "Mercuriale négociée", validFrom: daysAgo(30), validTo: null, ...body })
     .expect(201);
   const row = await ctx.prisma.companyMercuriale.findFirstOrThrow({
@@ -100,6 +102,7 @@ async function preview(
 function amend(mercurialeId: string, body: Record<string, unknown>) {
   return staff()
     .post(`/admin/pricing/companies/${companyId}/mercuriale/${mercurialeId}/amendments`)
+    .set(INTENT_KEY, freshIntent())
     .send({ reason: "Renégociation", ...body });
 }
 

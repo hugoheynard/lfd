@@ -22,6 +22,7 @@ import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from 
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble, payByCard, pickupSite, placeOrder } from "./order-factory.js";
 import { staffViewer } from "../src/lafoliecoffee/catalog/domain/catalog-viewer.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -108,6 +109,7 @@ async function followedSince(companyId: string): Promise<Date> {
 function poseMercuriale(companyId: string, cents: number) {
   return staff()
     .post(`/admin/pricing/companies/${companyId}/mercuriale`)
+    .set(INTENT_KEY, freshIntent())
     .send({
       label: "Mercuriale négociée",
       validFrom: daysAgo(30),

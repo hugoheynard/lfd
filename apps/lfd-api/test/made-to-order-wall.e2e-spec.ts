@@ -33,6 +33,7 @@ import {
 import { markCustomRecipe } from "./custom-recipe-fixture.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (sub: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -395,6 +396,7 @@ describe("la mercuriale (Q1)", () => {
 
     const refused = await staff()
       .post(`/admin/pricing/companies/${b}/mercuriale`)
+      .set(INTENT_KEY, freshIntent())
       .send({
         label: "Mercuriale B",
         validFrom: daysAgo(1),
@@ -408,6 +410,7 @@ describe("la mercuriale (Q1)", () => {
   it("une ligne posée avant la réservation reste, étiquetée « réservé à un autre compte »", async () => {
     await staff()
       .post(`/admin/pricing/companies/${b}/mercuriale`)
+      .set(INTENT_KEY, freshIntent())
       .send({
         label: "Mercuriale B",
         validFrom: daysAgo(1),

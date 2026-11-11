@@ -17,6 +17,7 @@ import { OutboxRelayTrigger } from "../src/platform/outbox/outbox-relay-trigger.
 import { anActiveFiche, relayAll, SILENT_TRIGGER } from "./catalog-facts-scene.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -108,6 +109,7 @@ async function detachedWithMercuriale(): Promise<{
   const company = await createCompany(ctx.prisma, { status: CompanyStatus.active });
   await staff()
     .post(`/admin/pricing/companies/${company.id}/mercuriale`)
+    .set(INTENT_KEY, freshIntent())
     .send({
       label: "Mercuriale Ancolie",
       validFrom: daysAgo(1),
@@ -189,6 +191,7 @@ describe("le report d'une mercuriale sur la référence détachée (L7c)", () =>
     const endsAt = daysAgo(-10);
     await staff()
       .post(`/admin/pricing/companies/${companyId}/mercuriale/${mercurialeId}/amendments`)
+      .set(INTENT_KEY, freshIntent())
       .send({ reason: "Fin du prix négocié", validFrom: endsAt, endedSkus: [oldSku] })
       .expect(201);
 

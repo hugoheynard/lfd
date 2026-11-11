@@ -35,6 +35,7 @@ import {
 } from "./e2e-harness.js";
 import { cardGatewayDouble, payByCard, pickupSite, placeOrder } from "./order-factory.js";
 import { stubAdminVerifier } from "./operations-at-commerce-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 let ctx: E2eContext;
 let seq = 0;
@@ -181,6 +182,7 @@ describe("vos habituels (R1)", () => {
     await ctx
       .asSub(E2E_STAFF_SUB)
       .post(`/admin/pricing/companies/${companyA}/mercuriale`)
+      .set(INTENT_KEY, freshIntent())
       .send({
         label: "Mercuriale des habitudes",
         validFrom: daysAgo(30),

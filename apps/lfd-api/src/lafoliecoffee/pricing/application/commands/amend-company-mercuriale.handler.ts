@@ -4,6 +4,7 @@ import { PolicyPromotionNamesReader } from "../../domain/ports/policy-promotion-
 import { namedPolicy } from "./promotion-policy-support.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
+import { OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import type {
   CompanyMercuriale,
@@ -23,6 +24,7 @@ import { ReservedElsewhereReader } from "../../domain/ports/reserved-elsewhere.r
 import { VolumeCommitmentReader } from "../../domain/ports/volume-commitment.reader.js";
 import { assertNoVolumeCommitmentUnder } from "./general-discount-support.js";
 import { amendmentDraftOf } from "./amendment-draft-support.js";
+import { AMENDMENT_ID_REPLAY, MERCURIALE_GESTURES } from "./mercuriale-intent-support.js";
 
 @CommandHandler(AmendCompanyMercurialeCommand)
 export class AmendCompanyMercurialeHandler implements ICommandHandler<
@@ -39,6 +41,7 @@ export class AmendCompanyMercurialeHandler implements ICommandHandler<
     private readonly reservations: ReservedElsewhereReader,
     private readonly promotionNames: PolicyPromotionNamesReader,
     private readonly commitments: VolumeCommitmentReader,
+    private readonly intents: OncePerIntent,
   ) {}
 
   /**
@@ -63,8 +66,30 @@ export class AmendCompanyMercurialeHandler implements ICommandHandler<
    * @throws {GeneralDiscountOverVolumeCommitmentError} l'avenant pose ou change
    *   une remise générale sur une fenêtre qu'un engagement de volume recouvre (Q2).
    * @throws les refus de `CompanyMercuriale.amend`.
+   * @throws {GestureInFlightError} la même clé est encore en vol.
+   * @throws {IntentKeyReusedError} la clé a servi pour un autre geste ou une autre mercuriale.
+   *
+   * Une fois par intention, sujet la mercuriale : un second envoi de même clé
+   * rend l'avenant d'origine sans en écrire un second. La clé est résolue dans
+   * la transaction de l'avenant, après son écriture.
    */
-  async execute(command: AmendCompanyMercurialeCommand): Promise<string> {
+  execute(command: AmendCompanyMercurialeCommand): Promise<string> {
+    return this.intents.runSealed(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: MERCURIALE_GESTURES.amend,
+        subject: command.mercurialeId,
+      },
+      AMENDMENT_ID_REPLAY,
+      (seal) => this.amend(command, seal),
+    );
+  }
+
+  private async amend(
+    command: AmendCompanyMercurialeCommand,
+    seal: (amendmentId: string) => Promise<void>,
+  ): Promise<string> {
     const { companyId, mercurialeId, staffUserId } = command;
     if (!(await this.companies.exists(companyId))) {
       throw new PricedCompanyNotFoundError(companyId);
@@ -112,6 +137,7 @@ export class AmendCompanyMercurialeHandler implements ICommandHandler<
         amendmentId,
         actOf(amended, draft, staffUserId, promotions?.phrase ?? null),
       );
+      await seal(amendmentId);
     });
     return amendmentId;
   }

@@ -17,6 +17,9 @@ export interface IntentCodec<R> {
   read(record: IntentRecord, gesture: string): R;
 }
 
+/** L'intention est réclamée : le geste s'exécute. */
+const NOT_REPLAYED = Symbol("not-replayed");
+
 /** Le codec d'un geste qui ne rend rien. */
 export const NOTHING_TO_REPLAY: IntentCodec<void> = {
   write: () => ({}),
@@ -91,15 +94,9 @@ export class OncePerIntent {
     codec: IntentCodec<R>,
     gesture: () => Promise<R>,
   ): Promise<R> {
-    const claim = await this.ledger.claim(intent, this.clock.now());
-    if (claim.kind === "mismatch") {
-      throw new IntentKeyReusedError();
-    }
-    if (claim.kind === "in_flight") {
-      throw new GestureInFlightError();
-    }
-    if (claim.kind === "replayed") {
-      return codec.read(claim.result, intent.gesture);
+    const replayed = await this.claim(intent, codec);
+    if (replayed !== NOT_REPLAYED) {
+      return replayed.result;
     }
     let result: R;
     try {
@@ -110,5 +107,66 @@ export class OncePerIntent {
     }
     await this.ledger.resolve(intent, codec.write(result), this.clock.now());
     return result;
+  }
+
+  /**
+   * Comme {@link run}, pour un geste qui écrit en base : le geste reçoit
+   * `seal`, qu'il appelle **dans sa propre unité de travail**, juste après son
+   * écriture. Le résultat est alors gardé dans la même transaction que
+   * l'écriture : une écriture validée a toujours son intention résolue, et le
+   * bail expiré ne la laissera jamais réexécuter.
+   *
+   * Le geste garde la main sur la frontière de sa transaction : ses contrôles
+   * préalables restent dehors, et elle ne s'ouvre que pour l'écriture.
+   *
+   * La réclamation reste HORS de toute transaction : c'est l'index unique qui
+   * arbitre deux clics, un refus d'unicité dans une transaction l'annulerait
+   * tout entière, et validée seule elle est vue de l'appel concurrent
+   * (« en vol »). Un échec rend l'intention. Un geste qui n'a pas scellé (une
+   * branche sans écriture) est résolu après coup, comme par {@link run}.
+   */
+  async runSealed<R>(
+    intent: GestureIntent,
+    codec: IntentCodec<R>,
+    gesture: (seal: (result: R) => Promise<void>) => Promise<R>,
+  ): Promise<R> {
+    const replayed = await this.claim(intent, codec);
+    if (replayed !== NOT_REPLAYED) {
+      return replayed.result;
+    }
+    let sealed = false;
+    const seal = async (result: R): Promise<void> => {
+      await this.ledger.resolve(intent, codec.write(result), this.clock.now());
+      sealed = true;
+    };
+    let result: R;
+    try {
+      result = await gesture(seal);
+    } catch (error) {
+      await this.ledger.release(intent);
+      throw error;
+    }
+    if (!sealed) {
+      await this.ledger.resolve(intent, codec.write(result), this.clock.now());
+    }
+    return result;
+  }
+
+  /** Réclame l'intention : refuse, rend le résultat gardé, ou laisse exécuter. */
+  private async claim<R>(
+    intent: GestureIntent,
+    codec: IntentCodec<R>,
+  ): Promise<{ readonly result: R } | typeof NOT_REPLAYED> {
+    const claim = await this.ledger.claim(intent, this.clock.now());
+    if (claim.kind === "mismatch") {
+      throw new IntentKeyReusedError();
+    }
+    if (claim.kind === "in_flight") {
+      throw new GestureInFlightError();
+    }
+    if (claim.kind === "replayed") {
+      return { result: codec.read(claim.result, intent.gesture) };
+    }
+    return NOT_REPLAYED;
   }
 }

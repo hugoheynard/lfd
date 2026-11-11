@@ -6,6 +6,9 @@
  * Ports doublés par de vraies sous-classes. Les dates ne sont comparées qu'à
  * la fixture : le handler de pose ne lit pas l'horloge.
  */
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import type { PoseCompanyMercurialePayload } from "@lfd/contracts";
 
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
@@ -112,6 +115,8 @@ function setup(commitments: readonly VolumeCommitment[] = []) {
     new InMemoryReservedElsewhere(),
     new InMemoryPolicyPromotionNames(),
     new InMemoryVolumeCommitments(commitments),
+    new DirectUnitOfWork(),
+    inMemoryIntents(),
   );
   const run = (over: Partial<PoseCompanyMercurialePayload> = {}) =>
     handler.execute(
@@ -133,6 +138,7 @@ function setup(commitments: readonly VolumeCommitment[] = []) {
           ...over,
         },
         "staff_1",
+        randomUUID(),
       ),
     );
   return { mercuriales, run };

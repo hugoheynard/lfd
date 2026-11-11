@@ -17,6 +17,7 @@ import { PricingMaterialsCache } from "../src/lafoliecoffee/pricing/infrastructu
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const MEMBER = "auth0|noms-pro";
 /** VIE-001-1 vaut 2,00 € dans le catalogue qui facture (`seedE2eCatalog`). */
@@ -82,6 +83,7 @@ async function poseNamedPromotion(): Promise<void> {
 async function poseMercuriale(): Promise<void> {
   await staff()
     .post(`/admin/pricing/companies/${companyId}/mercuriale`)
+    .set(INTENT_KEY, freshIntent())
     .send({
       label: "Mercuriale Café Dupont",
       validFrom: daysAgo(1),

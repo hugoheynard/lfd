@@ -17,6 +17,7 @@ import { instantToLocal, localToInstant } from "@lfd/contracts";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -66,6 +67,7 @@ function parisMidnight(days: number): string {
 const pose = (companyId: string, body: Record<string, unknown> = {}) =>
   staff()
     .post(`/admin/pricing/companies/${companyId}/mercuriale`)
+    .set(INTENT_KEY, freshIntent())
     .send({
       label: "Mercuriale de saison",
       validFrom: parisMidnight(365),
@@ -74,9 +76,15 @@ const pose = (companyId: string, body: Record<string, unknown> = {}) =>
       ...body,
     });
 
-const correct = (companyId: string, mercurialeId: string, body: Record<string, unknown> = {}) =>
+const correct = (
+  companyId: string,
+  mercurialeId: string,
+  body: Record<string, unknown> = {},
+  intent: string = freshIntent(),
+) =>
   staff()
     .patch(`/admin/pricing/companies/${companyId}/mercuriale/${mercurialeId}/window`)
+    .set(INTENT_KEY, intent)
     .send({
       validFrom: parisMidnight(0),
       validTo: null,
@@ -179,6 +187,7 @@ describe("les refus", () => {
     const amendmentId = jsonBody<{ amendmentId: string }>(
       await staff()
         .post(`/admin/pricing/companies/${companyId}/mercuriale/${mercurialeId}/amendments`)
+        .set(INTENT_KEY, freshIntent())
         .send({ reason: "Fin de la ligne", validFrom: parisMidnight(400), endedSkus: [SKU] })
         .expect(201),
     ).amendmentId;
@@ -199,6 +208,7 @@ describe("les refus", () => {
     const { companyId, mercurialeId } = await scheduledOn();
     await staff()
       .post(`/admin/pricing/companies/${companyId}/mercuriale/${mercurialeId}/amendments`)
+      .set(INTENT_KEY, freshIntent())
       .send({ reason: "Fin de la ligne", validFrom: parisMidnight(400), endedSkus: [SKU] })
       .expect(201);
 
@@ -249,5 +259,37 @@ describe("les refus", () => {
 
     await correct(companyId, mercurialeId, { validFrom: parisMidnight(10) }).expect(409);
     await correct(companyId, mercurialeId, { validFrom: parisMidnight(60) }).expect(204);
+  });
+});
+
+describe("une correction, une fois par intention (Idempotency-Key)", () => {
+  it("le même envoi deux fois : 204 les deux fois, un seul acte au journal", async () => {
+    const { companyId, mercurialeId } = await scheduledOn();
+    const intent = freshIntent();
+
+    await correct(companyId, mercurialeId, {}, intent).expect(204);
+    // Sans la clé, ce second envoi viserait une mercuriale déjà commencée.
+    await correct(companyId, mercurialeId, {}, intent).expect(204);
+
+    expect(
+      await ctx.prisma.pricingEvent.count({ where: { subjectId: mercurialeId, act: "amended" } }),
+    ).toBe(1);
+  });
+
+  it("sans clé d'intention : 400, et les dates ne bougent pas", async () => {
+    const { companyId, mercurialeId } = await scheduledOn();
+
+    await staff()
+      .patch(`/admin/pricing/companies/${companyId}/mercuriale/${mercurialeId}/window`)
+      .send({
+        validFrom: parisMidnight(0),
+        validTo: null,
+        reason: REASON,
+        basedOnAmendmentId: null,
+      })
+      .expect(400);
+    expect(
+      await ctx.prisma.pricingEvent.count({ where: { subjectId: mercurialeId, act: "amended" } }),
+    ).toBe(0);
   });
 });

@@ -31,6 +31,7 @@ import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser, markDelivered } from "./factories.js";
 import { pickupSite, placeOrder } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 export const SIREN = "552100554";
 export const ICS = "FR72ZZZ123456";
@@ -199,6 +200,7 @@ async function negotiate(
 ): Promise<void> {
   await staff()
     .post(`/admin/pricing/companies/${companyId}/mercuriale`)
+    .set(INTENT_KEY, freshIntent())
     .send({
       label: "Mercuriale du lot",
       validFrom: new Date(closesAt.getTime() - 90 * DAY_MS).toISOString(),

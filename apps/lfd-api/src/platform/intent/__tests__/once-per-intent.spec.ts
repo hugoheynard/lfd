@@ -1,5 +1,9 @@
 import { FixedClock } from "../../time/fixed-clock.js";
-import { GESTURE_INTENT_LEASE_MS, type GestureIntent } from "../gesture-intent.js";
+import {
+  GESTURE_INTENT_LEASE_MS,
+  type GestureIntent,
+  type IntentRecord,
+} from "../gesture-intent.js";
 import {
   GestureInFlightError,
   IntentKeyReusedError,
@@ -119,5 +123,56 @@ describe("OncePerIntent — un geste par intention (revue de S2, cas 4)", () => 
     expect(() => readIntentChoice({ holder: "inconnu" }, "holder", "g", ["attached"])).toThrow(
       IntentRecordUnreadableError,
     );
+  });
+});
+
+describe("OncePerIntent.runSealed — le résultat gardé avec l'écriture", () => {
+  /** Le registre qui note l'ordre des gestes et des résolutions. */
+  function tracing() {
+    const trace: string[] = [];
+    class Ledger extends InMemoryGestureIntentLedger {
+      override resolve(intent: GestureIntent, result: IntentRecord): Promise<void> {
+        trace.push("resolve");
+        return super.resolve(intent, result);
+      }
+    }
+    return { trace, once: new OncePerIntent(new Ledger(), new FixedClock(new Date(0))) };
+  }
+
+  it("résout au moment où le geste scelle, une seule fois", async () => {
+    const { trace, once } = tracing();
+
+    const result = await once.runSealed(INTENT, MAIL_SENT_REPLAY, async (seal) => {
+      trace.push("write");
+      await seal({ mailSent: true });
+      trace.push("after seal");
+      return { mailSent: true };
+    });
+
+    expect(result).toEqual({ mailSent: true });
+    expect(trace).toEqual(["write", "resolve", "after seal"]);
+  });
+
+  it("un geste qui n'a pas scellé est résolu après coup, et se rejoue", async () => {
+    const { trace, once } = tracing();
+
+    await once.runSealed(INTENT, MAIL_SENT_REPLAY, () => Promise.resolve({ mailSent: false }));
+    const replayed = await once.runSealed(INTENT, MAIL_SENT_REPLAY, () =>
+      Promise.resolve({ mailSent: true }),
+    );
+
+    expect(replayed).toEqual({ mailSent: false });
+    expect(trace).toEqual(["resolve"]);
+  });
+
+  it("un échec avant le sceau rend l'intention : la même clé réessaie", async () => {
+    const { once } = tracing();
+
+    await expect(
+      once.runSealed(INTENT, MAIL_SENT_REPLAY, () => Promise.reject(new Error("refusé"))),
+    ).rejects.toThrow("refusé");
+    await expect(
+      once.runSealed(INTENT, MAIL_SENT_REPLAY, () => Promise.resolve({ mailSent: true })),
+    ).resolves.toEqual({ mailSent: true });
   });
 });

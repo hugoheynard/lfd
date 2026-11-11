@@ -13,6 +13,7 @@ import { AmendmentPreview, type AmendmentTarget } from './amendment-preview';
 import { amendmentRecap } from './amendment-recap';
 import { amendmentRows, dearerArticles } from './amendment-rows';
 import { withEuros } from './draft-prices';
+import { SendingIntent } from './sending-intent';
 import type { GeneralDiscountForm } from './general-discount-form';
 import { discountNames } from './general-discount-lines';
 import { discountArticlesOf } from './general-discount-pricing';
@@ -67,6 +68,8 @@ export class AmendmentEditor {
   /** Un autre avenant est passé entre-temps : on propose de recharger. */
   readonly amendedMeanwhile = signal(false);
   private readonly promotions = signal<readonly PromotionView[] | null>(null);
+  /** La clé de l'avenant, fabriquée à l'ouverture de l'éditeur (`SendingIntent`). */
+  private readonly intent = new SendingIntent();
 
   /** Le premier jour possible : aujourd'hui, ou le début de la mercuriale s'il est à venir. */
   readonly minDay = computed(() =>
@@ -281,7 +284,13 @@ export class AmendmentEditor {
     this.refusal.set(null);
     this.amendedMeanwhile.set(false);
     try {
-      await this.sources.api.amend(this.sources.companyId(), this.sources.mercuriale().id, payload);
+      await this.sources.api.amend(
+        this.sources.companyId(),
+        this.sources.mercuriale().id,
+        payload,
+        this.intent.keyFor(payload),
+      );
+      this.intent.done();
       return true;
     } catch (error) {
       if (httpErrorCode(error) === AMENDED_MEANWHILE) {

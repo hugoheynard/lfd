@@ -3,6 +3,8 @@
  * l'avenant annonce le dernier avenant vu, et le handler refuse sous le verrou
  * si un autre a été écrit depuis.
  */
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import type { AmendCompanyMercurialePayload } from "@lfd/contracts";
 
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
@@ -72,6 +74,7 @@ function setup() {
     new InMemoryReservedElsewhere(),
     new InMemoryPolicyPromotionNames(),
     new InMemoryVolumeCommitments([]),
+    inMemoryIntents(),
   );
   return { mercuriales, handler };
 }
@@ -85,7 +88,9 @@ const body = (over: Partial<AmendCompanyMercurialePayload>): AmendCompanyMercuri
 });
 
 const run = (handler: AmendCompanyMercurialeHandler, payload: AmendCompanyMercurialePayload) =>
-  handler.execute(new AmendCompanyMercurialeCommand("co_folie", "merc_1", payload, "staff|paul"));
+  handler.execute(
+    new AmendCompanyMercurialeCommand("co_folie", "merc_1", payload, "staff|paul", randomUUID()),
+  );
 
 describe("AmendCompanyMercurialeHandler — un avenant écrit pendant la saisie", () => {
   it("refuse (409) quand l'écran n'a vu aucun avenant et qu'un collègue en a écrit un", async () => {

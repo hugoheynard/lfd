@@ -18,6 +18,7 @@ import { businessDayStart } from '../../../shared/business-day';
 import { parisToday } from '../../../shared/paris-today';
 import { AMENDMENT_REASON_MAX_LENGTH } from '../amendment-body';
 import { CompanyPricingService } from '../company-pricing.service';
+import { SendingIntent } from '../sending-intent';
 
 /** La mercuriale à venir dont on corrige les dates, et son client. */
 export interface CorrectWindowPanelData {
@@ -67,6 +68,8 @@ export class CorrectWindowPanel implements FoldPanelContent<CorrectWindowPanelDa
   protected readonly reason = signal('');
   protected readonly saving = signal(false);
   protected readonly refusal = signal<string | null>(null);
+  /** La clé de la correction, fabriquée à l'ouverture du panneau (`SendingIntent`). */
+  private readonly intent = new SendingIntent();
 
   protected readonly fromDay = computed(
     () => this.typedFrom() ?? parisToday(new Date(this.data().mercuriale.validFrom)),
@@ -104,12 +107,19 @@ export class CorrectWindowPanel implements FoldPanelContent<CorrectWindowPanelDa
     this.saving.set(true);
     this.refusal.set(null);
     try {
-      await this.pricing.correctWindow(companyId, mercuriale.id, {
+      const payload = {
         validFrom,
         validTo: toDay === '' ? null : businessDayStart(toDay),
         reason: this.reason().trim(),
         basedOnAmendmentId: mercuriale.latestAmendmentId ?? null,
-      });
+      };
+      await this.pricing.correctWindow(
+        companyId,
+        mercuriale.id,
+        payload,
+        this.intent.keyFor(payload),
+      );
+      this.intent.done();
       this.panel.close(true);
     } catch (caught) {
       this.refusal.set(httpErrorMessage(caught, "Les dates n'ont pas pu être corrigées."));

@@ -48,6 +48,7 @@ import {
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { stubAdminVerifier } from "./operations-at-commerce-scene.js";
 import { cardGatewayDouble, payByCard, placeOrder } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 let ctx: E2eContext;
 
@@ -104,6 +105,7 @@ async function poseMercuriale(): Promise<void> {
   await ctx
     .asSub(E2E_STAFF_SUB)
     .post(`/admin/pricing/companies/${companyId}/mercuriale`)
+    .set(INTENT_KEY, freshIntent())
     .send({
       label: "Mercuriale négociée",
       validFrom: daysAgo(30),

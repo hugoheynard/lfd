@@ -42,6 +42,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /**
  * Le `sub` doit être celui que le harnais sème dans l'annuaire — porter un jeton
@@ -399,6 +400,7 @@ describe("le tableau de tarification", () => {
     await seedRules(120);
     await staff()
       .post(`/admin/pricing/companies/${company.id}/mercuriale`)
+      .set(INTENT_KEY, freshIntent())
       .send({
         label: "Budget",
         validFrom: "2026-01-01T00:00:00.000Z",
@@ -427,6 +429,7 @@ describe("le tableau de tarification", () => {
     const without = await createCompany(ctx.prisma);
     await staff()
       .post(`/admin/pricing/companies/${withMercuriale.id}/mercuriale`)
+      .set(INTENT_KEY, freshIntent())
       .send({
         label: "Budget",
         validFrom: "2026-01-01T00:00:00.000Z",

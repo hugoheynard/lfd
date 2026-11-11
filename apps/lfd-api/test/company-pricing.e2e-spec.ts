@@ -29,6 +29,7 @@ import {
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /** Prestataire de carte doublé : une intention par passation, aucun appel réseau. */
 const fakeGateway = cardGatewayDouble("pi_e2e");
@@ -96,9 +97,10 @@ const read = async (companyId: string): Promise<CompanyPricingView> =>
     await staff().get(`/admin/pricing/companies/${companyId}`).expect(200),
   );
 
-const pose = (companyId: string, body: Record<string, unknown>) =>
+const pose = (companyId: string, body: Record<string, unknown>, intent: string = freshIntent()) =>
   staff()
     .post(`/admin/pricing/companies/${companyId}/mercuriale`)
+    .set(INTENT_KEY, intent)
     .send({
       label: "Mercuriale Club Med",
       validFrom: FROM,
@@ -236,6 +238,7 @@ describe("poser", () => {
 
     await staff()
       .post(`/admin/pricing/companies/${company.id}/mercuriale`)
+      .set(INTENT_KEY, freshIntent())
       .send({
         label: "Sans fin",
         validFrom: FROM,
@@ -797,5 +800,64 @@ describe("🔴 re-poser un plancher, vu depuis la fiche client", () => {
     const view = await read(company.id);
 
     expect(itemOf(view, SKU)?.ownFloor?.value).toBe(6_000);
+  });
+});
+
+describe("poser, une fois par intention (Idempotency-Key)", () => {
+  const lines = [{ sku: SKU, unitPriceMillicents: NEGOTIATED_MILLICENTS }];
+
+  it("le même envoi deux fois : une seule mercuriale, un seul acte, et la même réponse", async () => {
+    const company = await createCompany(ctx.prisma);
+    const intent = freshIntent();
+
+    const first = jsonBody<{ affectedRules: number }>(
+      await pose(company.id, { lines }, intent).expect(201),
+    );
+    // Sans la clé, ce second envoi serait refusé : il recouvrirait la première.
+    const again = jsonBody<{ affectedRules: number }>(
+      await pose(company.id, { lines }, intent).expect(201),
+    );
+
+    expect(again).toEqual(first);
+    expect(await ctx.prisma.companyMercuriale.count({ where: { companyId: company.id } })).toBe(1);
+    const posed = await ctx.prisma.companyMercuriale.findFirstOrThrow({
+      where: { companyId: company.id },
+      select: { id: true },
+    });
+    expect(
+      await ctx.prisma.pricingEvent.count({ where: { subjectId: posed.id, act: "posed" } }),
+    ).toBe(1);
+  });
+
+  it("sans clé d'intention : 400, et rien n'est posé", async () => {
+    const company = await createCompany(ctx.prisma);
+
+    await staff()
+      .post(`/admin/pricing/companies/${company.id}/mercuriale`)
+      .send({ label: "Sans clé", validFrom: FROM, validTo: TO, lines })
+      .expect(400);
+    expect(await ctx.prisma.companyMercuriale.count({ where: { companyId: company.id } })).toBe(0);
+  });
+
+  it("la même clé chez un autre client : 409, rien n'est posé chez lui", async () => {
+    const one = await createCompany(ctx.prisma);
+    const other = await createCompany(ctx.prisma);
+    const intent = freshIntent();
+    await pose(one.id, { lines }, intent).expect(201);
+
+    await pose(other.id, { lines }, intent).expect(409);
+    expect(await ctx.prisma.companyMercuriale.count({ where: { companyId: other.id } })).toBe(0);
+  });
+
+  it("un refus rend la clé : le même envoi, corrigé, aboutit", async () => {
+    const company = await createCompany(ctx.prisma);
+    const intent = freshIntent();
+
+    await pose(
+      company.id,
+      { lines: [{ sku: "HORS-VENTE", unitPriceMillicents: 1 }] },
+      intent,
+    ).expect(409); // une référence qui ne se vend pas
+    await pose(company.id, { lines }, intent).expect(201);
   });
 });

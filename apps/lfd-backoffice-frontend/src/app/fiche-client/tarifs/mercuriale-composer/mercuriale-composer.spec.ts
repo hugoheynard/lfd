@@ -9,6 +9,18 @@ import type { DraftPrices } from '../draft-prices';
 import type { GeneralDiscountForm } from '../general-discount-form';
 import { MercurialeComposer } from './mercuriale-composer';
 
+/** Le service doublé : retient les clés d'intention, refuse tant qu'on le dit. */
+class KeyedPricing {
+  readonly keys: string[] = [];
+  refuse = true;
+  pose(_companyId: string, _payload: unknown, intentKey: string) {
+    this.keys.push(intentKey);
+    return this.refuse
+      ? Promise.reject(new Error('indisponible'))
+      : Promise.resolve({ affectedRules: 1 });
+  }
+}
+
 /** La pose n'est offerte qu'avec un nom, deux dates et au moins un prix. */
 function mount(
   label: string,
@@ -17,10 +29,11 @@ function mount(
   draft: DraftPrices,
   policy: PromotionPolicyForm = NO_PROMOTION_POLICY,
   discount: GeneralDiscountForm | null = null,
+  pricing: object = {},
 ) {
   TestBed.configureTestingModule({
     providers: [
-      { provide: CompanyPricingService, useValue: {} },
+      { provide: CompanyPricingService, useValue: pricing },
       { provide: PriceTemplatesService, useValue: {} },
       { provide: PromotionsService, useValue: { list: async () => ({ promotions: [] }) } },
     ],
@@ -100,5 +113,25 @@ describe('<app-mercuriale-composer>', () => {
     );
     expect(composer['canPose']()).toBe(false);
     expect(composer['discountProblem']()).toContain('taux de base');
+  });
+
+  it('renvoie la même clé d’intention au réessai de la même pose, et une neuve après un succès', async () => {
+    const pricing = new KeyedPricing();
+    const composer = mount(
+      'Mercuriale 2027',
+      '2027-01-01',
+      '2027-12-31',
+      new Map([['VIE-001-1', '0.90']]),
+      NO_PROMOTION_POLICY,
+      null,
+      pricing,
+    );
+    await composer['pose']();
+    pricing.refuse = false;
+    await composer['pose']();
+    await composer['pose']();
+    expect(pricing.keys).toHaveLength(3);
+    expect(pricing.keys[1]).toBe(pricing.keys[0]);
+    expect(pricing.keys[2]).not.toBe(pricing.keys[1]);
   });
 });

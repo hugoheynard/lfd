@@ -32,6 +32,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -137,6 +138,7 @@ async function poseMercuriale(companyId: string, sku: string, price: number): Pr
   const now = Date.now();
   await staff()
     .post(`/admin/pricing/companies/${companyId}/mercuriale`)
+    .set(INTENT_KEY, freshIntent())
     .send({
       label: "Mercuriale Ancolie",
       validFrom: new Date(now - DAY_MS).toISOString(),

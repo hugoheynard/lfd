@@ -26,6 +26,7 @@ import { CardProviders } from "../src/card-payment/domain/ports/card-providers.j
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -106,6 +107,7 @@ const staff = () => ctx.asSub("staff-e2e");
 async function poseMercuriale(): Promise<void> {
   await staff()
     .post(`/admin/pricing/companies/${companyId}/mercuriale`)
+    .set(INTENT_KEY, freshIntent())
     .send({
       label: "Mercuriale Club Med",
       validFrom: "2026-01-01T00:00:00.000Z",

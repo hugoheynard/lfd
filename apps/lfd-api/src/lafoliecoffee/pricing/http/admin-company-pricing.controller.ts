@@ -34,6 +34,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { AmendCompanyMercurialeCommand } from "../application/commands/amend-company-mercuriale.command.js";
 import { CloseCompanyMercurialeCommand } from "../application/commands/close-company-mercuriale.command.js";
@@ -90,6 +91,9 @@ export class AdminCompanyPricingController {
    *
    * Refuse si une mercuriale couvre déjà la période sur un de ces articles, en
    * la nommant : la sortie est de la clore, et la route d'à côté le fait.
+   *
+   * Une fois par intention (`Idempotency-Key`) : un second envoi de même clé
+   * rend la réponse d'origine sans reposer.
    */
   @Post("mercuriale")
   @HttpCode(HttpStatus.CREATED)
@@ -97,9 +101,10 @@ export class AdminCompanyPricingController {
     @Param("companyId") companyId: string,
     @Body(new ZodBody(poseCompanyMercurialePayloadSchema)) payload: PoseCompanyMercurialePayload,
     @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<AffectedRulesResponse> {
     const affectedRules = await this.commands.execute<PoseCompanyMercurialeCommand, number>(
-      new PoseCompanyMercurialeCommand(companyId, payload, staffUserId),
+      new PoseCompanyMercurialeCommand(companyId, payload, staffUserId, intentKey),
     );
     return { affectedRules };
   }
@@ -125,7 +130,9 @@ export class AdminCompanyPricingController {
   /**
    * **Amender une mercuriale** : un avenant daté, qui ajoute des prix et/ou
    * arrête des lignes à sa date d'effet, sans réécrire la grille. Rend
-   * l'identifiant de l'avenant ; l'écran relit la fiche ensuite.
+   * l'identifiant de l'avenant ; l'écran relit la fiche ensuite. Une fois
+   * par intention (`Idempotency-Key`) : un second envoi de même clé rend le
+   * même avenant.
    */
   @Post("mercuriale/:mercurialeId/amendments")
   @HttpCode(HttpStatus.CREATED)
@@ -134,9 +141,10 @@ export class AdminCompanyPricingController {
     @Param("mercurialeId") mercurialeId: string,
     @Body(new ZodBody(amendCompanyMercurialePayloadSchema)) payload: AmendCompanyMercurialePayload,
     @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<AmendedMercurialeResponse> {
     const amendmentId = await this.commands.execute<AmendCompanyMercurialeCommand, string>(
-      new AmendCompanyMercurialeCommand(companyId, mercurialeId, payload, staffUserId),
+      new AmendCompanyMercurialeCommand(companyId, mercurialeId, payload, staffUserId, intentKey),
     );
     return { amendmentId };
   }
@@ -161,6 +169,7 @@ export class AdminCompanyPricingController {
   /**
    * **Corriger les dates d'une mercuriale à venir** — son début et sa fin,
    * tant qu'elle n'a pas commencé. Rien n'est rendu : l'écran relit la fiche.
+   * Une fois par intention (`Idempotency-Key`).
    */
   @Patch("mercuriale/:mercurialeId/window")
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -170,9 +179,10 @@ export class AdminCompanyPricingController {
     @Body(new ZodBody(correctMercurialeWindowPayloadSchema))
     payload: CorrectMercurialeWindowPayload,
     @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<void> {
     await this.commands.execute<CorrectMercurialeWindowCommand, void>(
-      new CorrectMercurialeWindowCommand(companyId, mercurialeId, payload, staffUserId),
+      new CorrectMercurialeWindowCommand(companyId, mercurialeId, payload, staffUserId, intentKey),
     );
   }
 

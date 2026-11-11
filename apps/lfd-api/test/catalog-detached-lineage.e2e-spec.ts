@@ -18,6 +18,7 @@ import { OutboxRelayTrigger } from "../src/platform/outbox/outbox-relay-trigger.
 import { anActiveFiche, relayAll, SILENT_TRIGGER, type Fiche } from "./catalog-facts-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -119,6 +120,7 @@ describe("L7 — la filiation du détachement au commerce", () => {
     const now = Date.now();
     await staff()
       .post(`/admin/pricing/companies/${company.id}/mercuriale`)
+      .set(INTENT_KEY, freshIntent())
       .send({
         label: "Mercuriale Ancolie",
         validFrom: new Date(now - DAY_MS).toISOString(),
@@ -161,6 +163,7 @@ describe("L7 — la filiation du détachement au commerce", () => {
     const now = Date.now();
     await staff()
       .post(`/admin/pricing/companies/${company.id}/mercuriale`)
+      .set(INTENT_KEY, freshIntent())
       .send({
         label: "Mercuriale close",
         validFrom: new Date(now - DAY_MS).toISOString(),

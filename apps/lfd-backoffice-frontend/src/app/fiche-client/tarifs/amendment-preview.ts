@@ -16,6 +16,7 @@ export interface AmendmentApi {
     companyId: string,
     mercurialeId: string,
     payload: AmendCompanyMercurialePayload,
+    intentKey: string,
   ): Promise<unknown>;
 }
 

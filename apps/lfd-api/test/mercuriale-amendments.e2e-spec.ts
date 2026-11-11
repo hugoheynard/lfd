@@ -35,6 +35,7 @@ import {
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble } from "./order-factory.js";
 import { staffViewer } from "../src/lafoliecoffee/catalog/domain/catalog-viewer.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -91,6 +92,7 @@ async function companyWithMercuriale(): Promise<{ companyId: string; mercurialeI
   const company = await createCompany(ctx.prisma, { status: "active" });
   await staff()
     .post(`/admin/pricing/companies/${company.id}/mercuriale`)
+    .set(INTENT_KEY, freshIntent())
     .send({
       label: "Mercuriale de saison",
       validFrom: daysAgo(30),
@@ -105,9 +107,15 @@ async function companyWithMercuriale(): Promise<{ companyId: string; mercurialeI
   return { companyId: company.id, mercurialeId: row.id };
 }
 
-const amend = (companyId: string, mercurialeId: string, body: Record<string, unknown> = {}) =>
+const amend = (
+  companyId: string,
+  mercurialeId: string,
+  body: Record<string, unknown> = {},
+  intent: string = freshIntent(),
+) =>
   staff()
     .post(`/admin/pricing/companies/${companyId}/mercuriale/${mercurialeId}/amendments`)
+    .set(INTENT_KEY, intent)
     .send({
       reason: REASON,
       lines: [{ sku: AMENDED_SKU, unitPriceMillicents: millicentsFromCents(AMENDED_CENTS) }],
@@ -194,6 +202,7 @@ describe("poser un avenant", () => {
 
     await staff()
       .post(`/admin/pricing/companies/${companyId}/mercuriale`)
+      .set(INTENT_KEY, freshIntent())
       .send({
         label: "Seconde",
         validFrom: daysAgo(-1),
@@ -278,6 +287,7 @@ describe("🔴 ce qu'un avenant a facturé est scellé (seconde contradiction, B
 
     await staff()
       .post(`/admin/pricing/companies/${companyId}/mercuriale`)
+      .set(INTENT_KEY, freshIntent())
       .send({
         label: "Reposée",
         validFrom: daysAgo(30),
@@ -344,5 +354,52 @@ describe("les lecteurs voient l'avenant (T4)", () => {
       status: "active",
       amendmentReason: REASON,
     });
+  });
+});
+
+describe("un avenant, une fois par intention (Idempotency-Key)", () => {
+  it("le même envoi deux fois : un seul avenant, un seul acte, et la même réponse", async () => {
+    const { companyId, mercurialeId } = await companyWithMercuriale();
+    const intent = freshIntent();
+
+    const first = jsonBody<{ amendmentId: string }>(
+      await amend(companyId, mercurialeId, {}, intent).expect(201),
+    );
+    const again = jsonBody<{ amendmentId: string }>(
+      await amend(companyId, mercurialeId, {}, intent).expect(201),
+    );
+
+    expect(again).toEqual(first);
+    expect(await ctx.prisma.companyMercurialeAmendment.count({ where: { mercurialeId } })).toBe(1);
+    expect(
+      await ctx.prisma.pricingEvent.count({ where: { subjectId: mercurialeId, act: "amended" } }),
+    ).toBe(1);
+  });
+
+  it("sans clé d'intention : 400, et rien n'est écrit", async () => {
+    const { companyId, mercurialeId } = await companyWithMercuriale();
+
+    await staff()
+      .post(`/admin/pricing/companies/${companyId}/mercuriale/${mercurialeId}/amendments`)
+      .send({
+        reason: REASON,
+        lines: [{ sku: AMENDED_SKU, unitPriceMillicents: millicentsFromCents(AMENDED_CENTS) }],
+      })
+      .expect(400);
+    expect(await ctx.prisma.companyMercurialeAmendment.count()).toBe(0);
+  });
+
+  it("la même clé sur une autre mercuriale : 409, rien n'est écrit", async () => {
+    const one = await companyWithMercuriale();
+    const other = await companyWithMercuriale();
+    const intent = freshIntent();
+    await amend(one.companyId, one.mercurialeId, {}, intent).expect(201);
+
+    await amend(other.companyId, other.mercurialeId, {}, intent).expect(409);
+    expect(
+      await ctx.prisma.companyMercurialeAmendment.count({
+        where: { mercurialeId: other.mercurialeId },
+      }),
+    ).toBe(0);
   });
 });

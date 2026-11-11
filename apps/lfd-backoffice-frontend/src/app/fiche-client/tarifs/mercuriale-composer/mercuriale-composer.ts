@@ -33,6 +33,7 @@ import {
   tally,
 } from '../../../commercial/tarification/grille/mercuriale-row';
 import { CompanyPricingService } from '../company-pricing.service';
+import { SendingIntent } from '../sending-intent';
 import { toLines, withEuros, type DraftPrices } from '../draft-prices';
 import { policyProblem, type PromotionPolicyForm } from '../promotion-policy';
 import { PromotionPolicyPicker } from '../promotion-policy-picker/promotion-policy-picker';
@@ -213,6 +214,9 @@ export class MercurialeComposer {
     discount: this.generalDiscount(),
   }));
 
+  /** La clé de la pose, fabriquée à l'ouverture de la composition (`SendingIntent`). */
+  private readonly poseIntent = new SendingIntent();
+
   protected readonly canPose = computed(
     () => canPoseComposition(this.composition()) && !this.busy(),
   );
@@ -234,11 +238,14 @@ export class MercurialeComposer {
     if (!this.canPose()) {
       return;
     }
+    const payload = posePayload(this.composition());
     await this.run(async () => {
       const { affectedRules } = await this.pricing.pose(
         this.companyId(),
-        posePayload(this.composition()),
+        payload,
+        this.poseIntent.keyFor(payload),
       );
+      this.poseIntent.done();
       this.notify.success(`Mercuriale posée — ${String(affectedRules)} article(s).`);
       this.posed.emit();
     }, "La mercuriale n'a pas pu être posée.");

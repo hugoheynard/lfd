@@ -7,6 +7,8 @@
  * Les dates ne sont comparées qu'entre elles et au `NOW` de la `FixedClock` :
  * aucune ne rencontre l'horloge du mur.
  */
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import type { CorrectMercurialeWindowPayload } from "@lfd/contracts";
 
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
@@ -151,6 +153,7 @@ function setup(
     new InMemoryVolumeCommitments(options.commitments ?? []),
     new FixedClock(NOW),
     uow,
+    inMemoryIntents(),
   );
   const run = (over: Partial<CorrectMercurialeWindowPayload> = {}, companyId = "co_folie") =>
     handler.execute(
@@ -165,6 +168,7 @@ function setup(
           ...over,
         },
         "staff|paul",
+        randomUUID(),
       ),
     );
   return { trace, mercuriales, run };

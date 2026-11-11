@@ -6,6 +6,8 @@
  * Ports doublés par de vraies sous-classes. Les dates ne sont comparées qu'à
  * l'horloge figée de la fixture.
  */
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { SelectedPromotionNotFoundError } from "../../../domain/errors/mercuriale-promotion-policy-errors.js";
 import { InMemoryPolicyPromotionNames } from "../../../infrastructure/in-memory-policy-promotion-names.js";
 import type { AmendCompanyMercurialePayload } from "@lfd/contracts";
@@ -82,6 +84,7 @@ function setup(
     new InMemoryReservedElsewhere(),
     new InMemoryPolicyPromotionNames(new Map([["promo_rentree", "Rentrée"]])),
     new InMemoryVolumeCommitments(options.commitments ?? []),
+    inMemoryIntents(),
   );
   return { trace, mercuriales, handler };
 }
@@ -97,7 +100,9 @@ function payload(over: Partial<AmendCompanyMercurialePayload> = {}): AmendCompan
 }
 
 const run = (handler: AmendCompanyMercurialeHandler, body = payload()) =>
-  handler.execute(new AmendCompanyMercurialeCommand("co_folie", "merc_1", body, "staff|paul"));
+  handler.execute(
+    new AmendCompanyMercurialeCommand("co_folie", "merc_1", body, "staff|paul", randomUUID()),
+  );
 
 describe("AmendCompanyMercurialeHandler", () => {
   it("🔴 verrouille, relit et écrit dans la MÊME unité de travail", async () => {

@@ -33,6 +33,7 @@ import {
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { staffViewer } from "../src/lafoliecoffee/catalog/domain/catalog-viewer.js";
 import { cardProvidersOverride } from "./card-payments.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -71,6 +72,7 @@ const FAR_END = () => daysAgo(-365);
 const poseMercuriale = (companyId: string, window: { from: string; to: string }) =>
   staff()
     .post(`/admin/pricing/companies/${companyId}/mercuriale`)
+    .set(INTENT_KEY, freshIntent())
     .send({
       label: "Mercuriale de saison",
       validFrom: window.from,

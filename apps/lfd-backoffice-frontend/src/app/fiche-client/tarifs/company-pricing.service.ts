@@ -17,6 +17,7 @@ import type {
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../../api/api-config';
+import { intentOptions } from '../../shared/gesture-intents';
 
 /**
  * **La tarification d'un compte** — ce qu'il paie, et ce qu'on lui pose.
@@ -41,13 +42,22 @@ export class CompanyPricingService {
     return firstValueFrom(this.http.get<CompanyPricingView>(this.path(companyId)));
   }
 
-  /** Rend le nombre de règles écrites — une ligne, une règle. */
+  /**
+   * Rend le nombre de règles écrites — une ligne, une règle. `intentKey` : la
+   * clé fabriquée à l'ouverture de la composition, renvoyée à chaque clic ; un
+   * second envoi de même clé rend la réponse d'origine sans reposer.
+   */
   async pose(
     companyId: string,
     payload: PoseCompanyMercurialePayload,
+    intentKey: string,
   ): Promise<AffectedRulesResponse> {
     return firstValueFrom(
-      this.http.post<AffectedRulesResponse>(this.path(companyId, '/mercuriale'), payload),
+      this.http.post<AffectedRulesResponse>(
+        this.path(companyId, '/mercuriale'),
+        payload,
+        intentOptions(intentKey),
+      ),
     );
   }
 
@@ -67,16 +77,19 @@ export class CompanyPricingService {
   /**
    * **Amender une mercuriale** : un avenant daté qui ajoute un prix ou arrête
    * une ligne, sans réécrire la grille (`documentation/pricing/mercuriales/l-avenant-date.md`).
+   * Une fois par `intentKey` : un second envoi de même clé rend le même avenant.
    */
   async amend(
     companyId: string,
     mercurialeId: string,
     payload: AmendCompanyMercurialePayload,
+    intentKey: string,
   ): Promise<AmendedMercurialeResponse> {
     return firstValueFrom(
       this.http.post<AmendedMercurialeResponse>(
         this.path(companyId, `/mercuriale/${encodeURIComponent(mercurialeId)}/amendments`),
         payload,
+        intentOptions(intentKey),
       ),
     );
   }
@@ -119,17 +132,19 @@ export class CompanyPricingService {
 
   /**
    * **Corriger les dates d'une mercuriale à venir.** Rien n'est rendu : la
-   * fiche se relit, c'est la lecture qui fait foi.
+   * fiche se relit, c'est la lecture qui fait foi. Une fois par `intentKey`.
    */
   async correctWindow(
     companyId: string,
     mercurialeId: string,
     payload: CorrectMercurialeWindowPayload,
+    intentKey: string,
   ): Promise<void> {
     await firstValueFrom(
       this.http.patch<void>(
         this.path(companyId, `/mercuriale/${encodeURIComponent(mercurialeId)}/window`),
         payload,
+        intentOptions(intentKey),
       ),
     );
   }
