@@ -179,7 +179,6 @@ export class MercurialeComposer {
     () =>
       this.label().trim() !== '' &&
       this.validFrom() !== '' &&
-      this.validTo() !== '' &&
       this.lines().length > 0 &&
       this.policyProblem() === null &&
       !this.busy(),
@@ -219,7 +218,8 @@ export class MercurialeComposer {
         // mercuriale à 01 h ou 02 h du matin selon la saison, et le client
         // payait le tarif d'avant pendant ce temps-là.
         validFrom: businessDayStart(this.validFrom()) ?? '',
-        validTo: businessDayStart(this.validTo()) ?? '',
+        // Vide : sans fin, jusqu'à ce qu'on la close.
+        validTo: this.validTo() === '' ? null : (businessDayStart(this.validTo()) ?? null),
         lines: [...this.lines()],
         promotionPolicy: policyPayload(this.promotionPolicy()),
       });

@@ -42,8 +42,13 @@
     }
   </div>
   <p class="tf-meta">
-    Du <strong>{{ day(mercuriale().validFrom) }}</strong> au
-    <strong>{{ day(mercuriale().validTo) }}</strong>
+    @if (mercuriale().validTo === null) {
+      Depuis le <strong>{{ day(mercuriale().validFrom) }}</strong
+      >, <strong>sans fin</strong>
+    } @else {
+      Du <strong>{{ day(mercuriale().validFrom) }}</strong> au
+      <strong>{{ day(mercuriale().validTo) }}</strong>
+    }
     · {{ mercuriale().skuCount }} article(s) · établie par
     <strong>{{ author(mercuriale().createdBy, mercuriale().createdByName) }}</strong>
   </p>

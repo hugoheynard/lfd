@@ -80,7 +80,8 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
     );
 
     const validFrom = new Date(payload.validFrom);
-    const validTo = new Date(payload.validTo);
+    // Sans fin, elle court jusqu'à ce qu'on la close.
+    const validTo = payload.validTo === null ? null : new Date(payload.validTo);
     // La politique de promotions de départ (`plan-la-mercuriale-decide.md`,
     // § 8) — absente, « Aucune », le défaut d'une mercuriale neuve.
     const promotions = await namedPolicy(

@@ -1959,18 +1959,16 @@ export type CompanyMercurialeLinePayload = z.infer<typeof companyMercurialeLineS
 /**
  * **Poser une mercuriale chez ce client.**
  *
- * 🔴 **La fin est OBLIGATOIRE ici**, alors qu'un gabarit posé peut rester ouvert.
- * Ce n'est pas une incohérence : un tarif négocié sans terme est un tarif que
- * personne ne rouvre, et il finit par vivre plus longtemps que la raison qui l'a
- * justifié. L'écran qui l'établit demande donc les deux bornes — c'est une
- * tarification datée, un début et une fin.
+ * **La fin est facultative** (décidé par Hugo le 2026-11-11) : sans elle, la
+ * mercuriale court jusqu'à ce qu'on la close. Le domaine et la contrainte
+ * d'exclusion savaient déjà la tenir ouverte.
  */
 export const poseCompanyMercurialePayloadSchema = z.object({
   /** Ce que le client lira dans la trace de son prix. */
   label: z.string().min(1).max(120),
   validFrom: z.string().datetime(),
-  /** Borne haute **exclue**, comme partout dans ce contexte. */
-  validTo: z.string().datetime(),
+  /** Borne haute **exclue**, comme partout dans ce contexte. `null` = sans fin. */
+  validTo: z.string().datetime().nullable(),
   /** Bornées à trois cents : le catalogue B2B en compte moins d'une centaine. */
   lines: z.array(companyMercurialeLineSchema).min(1).max(300),
   /**

@@ -230,7 +230,8 @@ describe("poser", () => {
     expect(rows.every((row) => row.minQuantity === 1)).toBe(true);
   });
 
-  it("refuse une fenêtre sans terme — c'est une tarification datée", async () => {
+  it("pose sans fin : elle court jusqu'à ce qu'on la close, et bloque toute la suite", async () => {
+    // Décidé par Hugo le 2026-11-11 : la fin d'une mercuriale est facultative.
     const company = await createCompany(ctx.prisma);
 
     await staff()
@@ -241,7 +242,19 @@ describe("poser", () => {
         validTo: null,
         lines: [{ sku: SKU, unitPriceMillicents: 150_000 }],
       })
-      .expect(400);
+      .expect(201);
+
+    const row = await ctx.prisma.companyMercuriale.findFirstOrThrow({
+      where: { companyId: company.id },
+      select: { validTo: true },
+    });
+    expect(row.validTo).toBeNull();
+    // Une seconde, même lointaine, recouvre une mercuriale sans fin.
+    await pose(company.id, {
+      validFrom: TO,
+      validTo: null,
+      lines: [{ sku: SKU, unitPriceMillicents: 140_000 }],
+    }).expect(409);
   });
 
   it("refuse quand une mercuriale couvre déjà la période, en la NOMMANT", async () => {

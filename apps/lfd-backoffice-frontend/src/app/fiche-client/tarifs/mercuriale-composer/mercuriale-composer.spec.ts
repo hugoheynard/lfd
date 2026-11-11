@@ -51,6 +51,11 @@ describe('<app-mercuriale-composer>', () => {
     expect(composer['canPose']()).toBe(false);
   });
 
+  it('pose sans date de fin : la mercuriale court jusqu’à ce qu’on la close', () => {
+    const composer = mount('Mercuriale 2027', '2027-01-01', '', new Map([['VIE-001-1', '0.90']]));
+    expect(composer['canPose']()).toBe(true);
+  });
+
   it('pose un nom, deux dates et un prix', () => {
     const composer = mount(
       'Mercuriale 2027',
