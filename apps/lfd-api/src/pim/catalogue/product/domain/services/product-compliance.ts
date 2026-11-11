@@ -46,7 +46,7 @@ export interface AllergensPrecautionaryFinding {
 
 /**
  * Une fiche « les deux » dont une déclinaison vivante n'a qu'UN des deux prix
- * (`plan-prix-manquant-non-bloquant.md`, 2026-10-27) : elle se vend à
+ * (`saisir-un-prix.md`, 2026-10-27) : elle se vend à
  * l'audience dont elle a le prix, et à elle seule. `audience` nomme celle qui
  * n'est pas servie. Toujours un avertissement — l'activation l'ignore.
  */

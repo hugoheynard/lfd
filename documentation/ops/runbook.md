@@ -541,7 +541,7 @@ réémettre ne fait que republier l'état du référentiel, le plus récent gagn
 ## Passer au prix pro saisi (lot S) — l'ordre, et le retour
 
 > ⚠️ **Gestes (1), (2) et (3) retirés le 2026-10-27** (lots R2 et R3 de
-> [`plan-retirer-le-rapport-pro.md`](../pricing/saisie/plan-retirer-le-rapport-pro.md)) :
+> [`saisir-un-prix.md`](../pricing/saisie/saisir-un-prix.md)) :
 > les routes `/pim/accounting-rules/*` et l'écran du rapport n'existent plus,
 > le prix pro est toujours saisi (voir la section suivante). La production était déjà en « prix
 > saisi » (constaté par Hugo le même jour). Une base encore en `ratio_ttc` qui
@@ -618,7 +618,7 @@ prix public bouge le prix pro ».
 > rien à constater. La section reste pour l'histoire d'un déploiement.
 
 Migration `20261027110000_le_prix_pro_est_toujours_saisi`
-([`plan-retirer-le-rapport-pro.md`](../pricing/saisie/plan-retirer-le-rapport-pro.md)).
+([`saisir-un-prix.md`](../pricing/saisie/saisir-un-prix.md)).
 Elle **lève une exception** si `pim.accounting_rules` porte une méthode autre
 que `entered`, avant toute écriture : cette version ne sait plus déduire le
 prix pro du prix public, et basculer d'office retirerait du catalogue pro

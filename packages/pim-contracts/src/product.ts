@@ -115,7 +115,7 @@ export const updateVariantPricingPayloadSchema = z.object({
     .optional(),
   /**
    * Le prix au kilo **pro HT** saisi, en euros et en TEXTE, comme le prix pro
-   * (`plan-prix-au-kilo.md`). Informatif. Absent = inchangé, `null` = effacer.
+   * (`saisir-un-prix.md`). Informatif. Absent = inchangé, `null` = effacer.
    */
   proPricePerKgHt: z
     .string()
@@ -128,7 +128,7 @@ export const updateVariantPricingPayloadSchema = z.object({
    */
   publicPricePerKgTtcCents: z.number().int().min(0).nullable().optional(),
   /**
-   * Montrer chaque prix au kilo à son audience (`plan-carte-tarif.md`) : le
+   * Montrer chaque prix au kilo à son audience (`saisir-un-prix.md`) : le
    * public TTC aux particuliers, le pro HT aux pros. Décochée, la case laisse
    * son prix saisi mais le canal ne le reçoit plus. Absent = inchangé.
    */
@@ -279,14 +279,14 @@ export interface VariantView {
    */
   readonly proPriceMillicents: number | null;
   /**
-   * Les prix au kilo **saisis** (`plan-prix-au-kilo.md`) : le pro HT en
+   * Les prix au kilo **saisis** (`saisir-un-prix.md`) : le pro HT en
    * millicentimes, le public TTC en centimes ; `null` = non saisi. Résolus
    * comme le tarif : une déclinaison alignée rend ceux du défaut.
    */
   readonly proPricePerKgMillicents: number | null;
   readonly publicPricePerKgTtcCents: number | null;
   /**
-   * Chaque prix au kilo est-il montré à son audience (`plan-carte-tarif.md`) ?
+   * Chaque prix au kilo est-il montré à son audience (`saisir-un-prix.md`) ?
    * Résolus comme le tarif : une déclinaison alignée rend ceux du défaut.
    */
   readonly pricePerKgShownPublic: boolean;

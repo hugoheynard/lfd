@@ -3,7 +3,7 @@ import { shownVariantSkus, withPricesPerKg } from "../shop-catalogue-price-per-k
 import { catalogItem } from "./sale-operations-doubles.js";
 
 /**
- * Les prix au kilo sur le rayon (`plan-prix-au-kilo.md`, K3) : posés tels que
+ * Les prix au kilo sur le rayon (`saisir-un-prix.md`, K3) : posés tels que
  * saisis — celui de l'audience servie seulement (2026-10-31) — et `null` quand
  * rien n'est saisi, jamais un montant inventé.
  */

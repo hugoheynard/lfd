@@ -149,7 +149,7 @@ describe("activationGaps — au moins une déclinaison complète (lot 2b)", () =
     expect(gaps.byVariant).toEqual({ "PAT-1": ["pro_price"] });
   });
 
-  /** `plan-prix-manquant-non-bloquant.md` (2026-10-27) : un seul prix suffit à « les deux ». */
+  /** `saisir-un-prix.md` (2026-10-27) : un seul prix suffit à « les deux ». */
   it("n'empêche pas d'activer une fiche « les deux » à qui manque un seul prix", () => {
     const gaps = activationGaps(
       [variant({ proPriceMillicents: null })],

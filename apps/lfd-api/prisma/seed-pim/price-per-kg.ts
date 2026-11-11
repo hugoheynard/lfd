@@ -25,7 +25,7 @@ export interface SeedPricePerKg {
 /**
  * **Le prix au kilo d'un pain du semis**, tiré de son prix et de son poids.
  *
- * En production, il est SAISI et jamais calculé (`plan-prix-au-kilo.md`) ;
+ * En production, il est SAISI et jamais calculé (`saisir-un-prix.md`) ;
  * le semis le dérive seulement pour que chaque pain de démonstration en montre
  * un sous son prix. Rien hors du rayon Pains, rien sans prix ni poids.
  */

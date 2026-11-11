@@ -238,7 +238,7 @@ describe("publishedCatalogViewOf", () => {
     expect(new Set(skus).size).toBe(skus.length);
   });
 
-  /** `plan-prix-manquant-non-bloquant.md` (2026-10-27) : vendue au public seul. */
+  /** `saisir-un-prix.md` (2026-10-27) : vendue au public seul. */
   it("dit incomplète côté pro une déclinaison sans prix pro, en vente côté public", () => {
     const half = publishedCatalogViewOf({
       ...SOURCE,

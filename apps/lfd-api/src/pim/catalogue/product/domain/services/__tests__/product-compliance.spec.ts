@@ -144,7 +144,7 @@ describe("productCompliance — le jugement unique d'une fiche", () => {
   });
 });
 
-/** `plan-prix-manquant-non-bloquant.md` (2026-10-27) : un prix manquant se signale. */
+/** `saisir-un-prix.md` (2026-10-27) : un prix manquant se signale. */
 describe("productCompliance — le prix d'une audience manque", () => {
   it.each([
     ["pro", { proPriceMillicents: null }],

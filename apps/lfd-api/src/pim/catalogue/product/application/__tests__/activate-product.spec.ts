@@ -141,7 +141,7 @@ describe("ActivateProductHandler — le prix pro saisi", () => {
   });
 
   /**
-   * `plan-prix-manquant-non-bloquant.md` (2026-10-27) : une fiche « les deux »
+   * `saisir-un-prix.md` (2026-10-27) : une fiche « les deux »
    * sans prix pro se vend au public seul — elle ne se refuse plus.
    */
   it("active une fiche « les deux » sans prix pro : elle se vend au public seul", async () => {

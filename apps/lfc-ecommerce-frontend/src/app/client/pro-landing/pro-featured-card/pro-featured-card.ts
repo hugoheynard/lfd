@@ -30,7 +30,7 @@ export class ProFeaturedCard {
   readonly perKilo = input<string | null>(null);
   /**
    * Le kilo saisi, barré à côté de {@link perKilo} — posé par le serveur sous
-   * une promotion seulement (`plan-prix-au-kilo-suit-le-prix.md`, K2) ;
+   * une promotion seulement (`saisir-un-prix.md`, K2) ;
    * `null` = rien à barrer.
    */
   readonly perKiloWas = input<string | null>(null);

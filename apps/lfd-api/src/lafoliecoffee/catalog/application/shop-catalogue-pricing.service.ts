@@ -273,7 +273,7 @@ export class ShopCataloguePricing {
     const [priced, perKg, offered] = await Promise.all([
       this.withPrices(catalogue, sellable, { ...buyer, audience }, scope.caller),
       // Lus À CÔTÉ de la résolution, jamais par elle : informatifs
-      // (`plan-prix-au-kilo.md`, K3).
+      // (`saisir-un-prix.md`, K3).
       this.pricesPerKg.bySkus(shownVariantSkus(catalogue, sellable)),
       // Les promotions qu'un acheminement ouvrirait (L10) : MENTIONNÉES, jamais
       // appliquées au prix du rayon, où l'acheminement est inconnu.

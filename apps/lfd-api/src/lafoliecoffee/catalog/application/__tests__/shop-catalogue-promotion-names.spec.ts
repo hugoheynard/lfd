@@ -249,7 +249,7 @@ describe("le nom des promotions du prix affiché, au rayon", () => {
   });
 });
 
-/** Le kilo suit la pièce sous une promotion seulement (`plan-prix-au-kilo-suit-le-prix.md`, § 7). */
+/** Le kilo suit la pièce sous une promotion seulement (`saisir-un-prix.md`, § 2). */
 describe("le kilo au rayon, sous une promotion", () => {
   it("un pro : −20 % sur la pièce, 10,00 € barré puis 8,00 € HT le kilo", async () => {
     const item = await itemFor(shelf([NAMED]), PRO_COMPANY);

@@ -96,7 +96,7 @@ describe("variantGaps — la vente au poids", () => {
 });
 
 /**
- * Les six lignes du §2 de `plan-prix-manquant-non-bloquant.md` (2026-10-27) :
+ * Les six lignes du §2 de `saisir-un-prix.md` (2026-10-27) :
  * vendable dès qu'elle a le prix d'AU MOINS UNE audience visée.
  */
 describe("variantGaps — le prix d'au moins une audience visée", () => {

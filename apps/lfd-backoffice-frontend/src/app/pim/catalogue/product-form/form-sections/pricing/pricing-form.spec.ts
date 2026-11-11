@@ -392,7 +392,7 @@ describe('PricingForm — aucune suggestion de prix pro', () => {
   });
 });
 
-/** K4 (`plan-prix-au-kilo.md`) : deux prix au kilo SAISIS, jamais calculés. */
+/** K4 (`saisir-un-prix.md`) : deux prix au kilo SAISIS, jamais calculés. */
 /** Le bloc dont le titre fold porte ce nom. */
 function blockTitled(host: HTMLElement, title: string): HTMLElement {
   const block = [...host.querySelectorAll<HTMLElement>('section.block')].find(
@@ -408,7 +408,7 @@ function blockTitles(host: HTMLElement): string[] {
   return [...host.querySelectorAll('section.block')].map((b) => b.getAttribute('aria-label') ?? '');
 }
 
-/** `plan-carte-tarif.md` : la carte en blocs nommés. */
+/** `saisir-un-prix.md` : la carte en blocs nommés. */
 describe('PricingForm — les blocs de la carte', () => {
   it('à la pièce : unité de vente, prix, prix au kilo, puis TVA', () => {
     const store = setup();
@@ -451,7 +451,7 @@ describe('PricingForm — les blocs de la carte', () => {
   });
 });
 
-/** La case « Afficher le prix au kilo en boutique » (`plan-carte-tarif.md`). */
+/** La case « Afficher le prix au kilo en boutique » (`saisir-un-prix.md`). */
 describe('PricingForm — afficher le prix au kilo, par audience', () => {
   function checkbox(host: HTMLElement, label: string): HTMLInputElement {
     const box = [...blockTitled(host, 'Prix au kilo').querySelectorAll('fold-checkbox')].find(
@@ -537,7 +537,7 @@ describe('PricingForm — les prix au kilo saisis', () => {
     return input;
   }
 
-  // Disposition revue le 2026-10-29 (`plan-carte-tarif.md`) : les deux prix
+  // Disposition revue le 2026-10-29 (`saisir-un-prix.md`) : les deux prix
   // au kilo ont leur bloc, sous celui des prix — ils ne s'intercalent plus.
   it('offre les deux champs dans le bloc « Prix au kilo », sous le bloc « Prix »', () => {
     const store = setup();

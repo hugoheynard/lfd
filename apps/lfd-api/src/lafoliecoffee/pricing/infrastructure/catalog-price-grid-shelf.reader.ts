@@ -28,7 +28,7 @@ const NOT_ENTERED: CatalogPricePerKg = {
  * à `at`), le même sceau d'article. Les articles réservés à un autre compte
  * n'y sont pas : la grille liste ce qui se vend à ce public.
  *
- * Le prix au kilo est lu À CÔTÉ (`plan-prix-au-kilo.md`, K3), jamais par la
+ * Le prix au kilo est lu À CÔTÉ (`saisir-un-prix.md`, K3), jamais par la
  * résolution.
  */
 @Injectable()

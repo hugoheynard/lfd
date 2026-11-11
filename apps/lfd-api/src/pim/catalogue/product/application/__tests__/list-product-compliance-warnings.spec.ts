@@ -95,7 +95,7 @@ describe("ListProductComplianceWarningsHandler — le jugement unique, sur la ta
     expect(cited.requests).toEqual([[]]);
   });
 
-  /** `plan-prix-manquant-non-bloquant.md` (2026-10-27) : la table le dit. */
+  /** `saisir-un-prix.md` (2026-10-27) : la table le dit. */
   it("signale le prix pro manquant d'une fiche « les deux », sans la bloquer", async () => {
     const product = tarte({
       variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: null }],

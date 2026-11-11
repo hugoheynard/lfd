@@ -44,17 +44,17 @@ passages faux, à corriger (décision de Hugo) :
 | [`../ce-qui-reste-a-faire.md`](../ce-qui-reste-a-faire.md)                                 | **R4** « `expectedTotalCents` n'existe nulle part » : livré (total vu, obligatoire) ; le § 0 compte 38 portes (il y en a 53) ; il se dit « seul registre » alors que `le-prix-d-un-panier.md` § 9 tient les restes du chiffrage. |
 | [`../plan-export-grille-de-prix.md`](../plan-export-grille-de-prix.md)                     | « Non commité » (il l'est) ; le § 7 reste lisible comme décision, le § 8 fait foi.                                                                                                                                               |
 | [`../saisie/plan-changer-l-unite-de-vente.md`](../saisie/plan-changer-l-unite-de-vente.md) | § 1 et § 3 décrivent le verrou d'avant ; seul le § 8 (bâti) est vrai.                                                                                                                                                            |
-| [`../saisie/plan-prix-au-kilo.md`](../saisie/plan-prix-au-kilo.md)                         | Bandeau « doc-first » resté ; version de l'instantané 12 (elle est à 17).                                                                                                                                                        |
+| [`../saisie/saisir-un-prix.md`](../saisie/saisir-un-prix.md)                               | Bandeau « doc-first » resté ; version de l'instantané 12 (elle est à 17).                                                                                                                                                        |
 | [`../saisie/plan-prix-de-la-saisie.md`](../saisie/plan-prix-de-la-saisie.md)               | « P2b à bâtir » : bâti ; § 1 décrit l'avant.                                                                                                                                                                                     |
 | [`../saisie/plan-report-apres-detachement.md`](../saisie/plan-report-apres-detachement.md) | § 0 « le report n'existe que pour la mercuriale » : faux ; bandeau « non commité ».                                                                                                                                              |
-| [`../saisie/plan-retirer-le-rapport-pro.md`](../saisie/plan-retirer-le-rapport-pro.md)     | Bandeau « R3 non commité » : périmé.                                                                                                                                                                                             |
+| [`../saisie/saisir-un-prix.md`](../saisie/saisir-un-prix.md)                               | Bandeau « R3 non commité » : périmé.                                                                                                                                                                                             |
 
 ## 4. À jour
 
 `boutique-et-panier/chemin-du-prix-public.md`, `mercuriales/comprendre-une-mercuriale.md` (réécrit le 2026-11-04),
 `moteur/architecture-prix-vivant-prix-bloque.md` (note de conception, aucun
 code — à ne pas confondre avec `VolumeCommitment`), `saisie/ecrans-de-tarification.md`,
-`saisie/plan-carte-tarif.md`, `saisie/plan-prix-manquant-non-bloquant.md`,
+`saisie/saisir-un-prix.md`, `saisie/saisir-un-prix.md`,
 `vente-au-poids.md`, `journal-de-remediation.md` (un journal qui ne se
 réécrit pas, historique assumé), et les deux docs du 2026-11-04
 (`centime-et-tva/le-prix-d-un-panier.md`, `../../caching-usage/le-rayon-en-cache.md`).

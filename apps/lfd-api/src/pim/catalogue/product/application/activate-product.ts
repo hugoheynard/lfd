@@ -31,7 +31,7 @@ export class ActivateProductCommand {
  * que sa composition cite (`CitedAllergensReader`, jugement unique). L'audience
  * de la famille y entre de nouveau depuis le 2026-10-27, pour le seul prix :
  * une fiche n'exige que le prix d'une audience qu'elle vise
- * (`plan-prix-manquant-non-bloquant.md`) ; les taux, eux, restent exigés pour
+ * (`saisir-un-prix.md`) ; les taux, eux, restent exigés pour
  * tous les contextes en service.
  *
  * ⚠️ Les valeurs nutritionnelles n'entrent pas dans ce refus : le règlement

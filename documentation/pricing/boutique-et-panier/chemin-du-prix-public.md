@@ -61,7 +61,7 @@ personne. On n'invente jamais un prix ni un taux.
   (`packages/money/src/tax.ts`), au millicentime.
 - **Le stockage** : `catalog_items` (`prisma/schema/public/catalog.prisma`) :
   `price_millicents`, `public_by_context`. Un prix pro absent reste `NULL`,
-  jamais zéro ([`../saisie/plan-prix-manquant-non-bloquant.md`](../saisie/plan-prix-manquant-non-bloquant.md)).
+  jamais zéro ([`../saisie/saisir-un-prix.md`](../saisie/saisir-un-prix.md)).
 
 ## 2. Le choix du prix servi
 

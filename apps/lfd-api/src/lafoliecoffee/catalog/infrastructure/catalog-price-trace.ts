@@ -45,7 +45,7 @@ type RecordedPrices = ReadonlyMap<
  *
  * Un article **sans prix pro** n'est pas tracé : `catalog_price_history`
  * garde son `NOT NULL`, et aucune ligne « gratuite » n'y entre
- * (`plan-prix-manquant-non-bloquant.md`, P3, 2026-10-27). Une lecture datée y
+ * (`saisir-un-prix.md`, P3, 2026-10-27). Une lecture datée y
  * trouve la dernière valeur connue avant le trou ; l'article n'étant pas servi
  * aux pros pendant le trou, aucune commande pro n'en résout le prix.
  */

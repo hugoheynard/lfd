@@ -111,7 +111,7 @@ describe("Product.activate — le prix pro saisi, seule source (lot R3)", () => 
     );
   });
 
-  /** `plan-prix-manquant-non-bloquant.md` (2026-10-27) : vendue au public seul. */
+  /** `saisir-un-prix.md` (2026-10-27) : vendue au public seul. */
   it("active une fiche « les deux » sans prix pro HT", () => {
     expect(declaredAndPriced(null).activate(RATES, RULES, NO_CITED_ALLERGENS, "both")).toBe(true);
   });

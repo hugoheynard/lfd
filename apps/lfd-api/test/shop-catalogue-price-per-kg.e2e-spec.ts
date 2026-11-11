@@ -1,6 +1,6 @@
 /**
  * E2E — **les prix au kilo, de la saisie au référentiel jusqu'au rayon**
- * (`documentation/pricing/saisie/plan-prix-au-kilo.md`, K1 à K3).
+ * (`documentation/pricing/saisie/saisir-un-prix.md`, K1 à K3).
  *
  * Ce que seul ce niveau prouve : que deux montants saisis dans « Tarif & TVA »
  * se rangent au référentiel (colonnes et `CHECK`), traversent le fil v13 par
@@ -152,7 +152,7 @@ describe("les prix au kilo saisis", () => {
 
 /**
  * Les cases « Afficher aux particuliers » et « Afficher aux pros »
- * (`plan-carte-tarif.md`) : chacune retient SON prix au kilo. Depuis le
+ * (`saisir-un-prix.md`) : chacune retient SON prix au kilo. Depuis le
  * 2026-10-31, chaque rayon ne sert que celui de son audience (une audience,
  * une information) : le public au rayon public, le pro au rayon pro.
  */

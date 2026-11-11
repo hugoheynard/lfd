@@ -87,7 +87,7 @@ export function shelfUnitLabel(item: ShopItemView, perKilogram: string): string 
  * Le montant est celui que le serveur SERT : le kilo saisi au référentiel,
  * ou, sous une promotion qui baisse la pièce, le kilo après promotion — que
  * le serveur calcule dans la proportion de la pièce
- * (`plan-prix-au-kilo-suit-le-prix.md`, § 7). Cet écran ne calcule rien.
+ * (`saisir-un-prix.md`, § 2). Cet écran ne calcule rien.
  *
  * Rien pour un article au poids : son prix servi EST déjà le prix au kilo, le
  * redire doublerait la ligne. Rien non plus quand l'assiette affichée n'a pas

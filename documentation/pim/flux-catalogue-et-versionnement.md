@@ -149,7 +149,7 @@ prix public TTC (product_variant.price_cents)        → le prix public
 prix pro HT saisi (par déclinaison), sinon dérivé    → le prix pro, par proPriceOf
 ```
 
-> ⚠️ **Depuis le 2026-10-27** (lot R3 de [`plan-retirer-le-rapport-pro.md`](../pricing/saisie/plan-retirer-le-rapport-pro.md)) : le prix pro
+> ⚠️ **Depuis le 2026-10-27** (lot R3 de [`saisir-un-prix.md`](../pricing/saisie/saisir-un-prix.md)) : le prix pro
 > est toujours saisi — plus de rapport, plus de méthode, plus de repli. Le
 > paragraphe suivant est l'état d'avant.
 

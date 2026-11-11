@@ -53,7 +53,7 @@ const orderTimeLimit = () =>
 
 /**
  * Les méthodes de calcul du prix professionnel **telles que les faits passés
- * les portent**. Depuis le lot R3 de `plan-retirer-le-rapport-pro.md`
+ * les portent**. Depuis le lot R3 de `saisir-un-prix.md`
  * (2026-10-27), le prix pro est toujours saisi : plus aucun fait
  * `accounting_rules.method_changed` n'est émis, et le référentiel ne connaît
  * plus ces valeurs. La liste reste ICI, seule, pour que les faits écrits

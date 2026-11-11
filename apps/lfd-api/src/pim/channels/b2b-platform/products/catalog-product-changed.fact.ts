@@ -52,7 +52,7 @@ const payloadSchema = z.object({
     // fiche détachée avant ce lot la reçoit à sa prochaine émission.
     detachedFromSku: z.string().min(1).nullable().default(null),
   }),
-  // Les prix au kilo (fil v13, `plan-prix-au-kilo.md`) sont absents d'un
+  // Les prix au kilo (fil v13, `saisir-un-prix.md`) sont absents d'un
   // fait émis avant eux, et lus `null` — « non saisi », ce qui était vrai.
   variants: z.array(
     syncVariantSchema.extend({

@@ -126,7 +126,7 @@ export function isPrecautionary(
 
 /**
  * Une fiche « les deux » à qui manque UN prix : vendue à l'autre audience
- * seule (`plan-prix-manquant-non-bloquant.md`, 2026-10-27). La clé est
+ * seule (`saisir-un-prix.md`, 2026-10-27). La clé est
  * l'audience NON servie.
  */
 const MISSING_PRICE_TEXT: Readonly<Record<'pro' | 'public', string>> = {

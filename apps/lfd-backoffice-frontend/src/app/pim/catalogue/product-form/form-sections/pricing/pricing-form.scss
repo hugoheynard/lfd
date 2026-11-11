@@ -6,7 +6,7 @@
    phrase pour accueillir cinq caractères. Elles se replient l'une sous l'autre
    quand la colonne se resserre. */
 .tarif {
-  /* En blocs nommés (`plan-carte-tarif.md`) : la colonne des prix, étroite, et
+  /* En blocs nommés (`saisir-un-prix.md`) : la colonne des prix, étroite, et
      le bloc TVA à côté. Ils passent l'un sous l'autre dès que la carte n'a
      plus la place des deux — `flex-wrap`, sans point de rupture à tenir. */
   display: flex;

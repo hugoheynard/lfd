@@ -17,7 +17,7 @@ const NOTHING: ServedPricePerKg = { proPricePerKgMillicents: null, publicPricePe
 
 /**
  * **Le prix au kilo tel que le rayon le sert** (plan
- * `documentation/pricing/saisie/plan-prix-au-kilo-suit-le-prix.md`, § 7 —
+ * `documentation/pricing/saisie/saisir-un-prix.md`, § 2 —
  * décisions de Hugo du 2026-11-04).
  *
  * - Une **promotion** a baissé la pièce (tarif barré ET `promotionNames`

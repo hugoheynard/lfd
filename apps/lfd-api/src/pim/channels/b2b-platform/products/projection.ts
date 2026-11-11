@@ -64,7 +64,7 @@ function frenchOf(text: { readonly fr: string }): string {
  * faute que le tri en amont existe pour empêcher. Un prix absent traverse
  * `null` — « pas vendable à cette audience », jamais zéro — et
  * `publicByContext` est alors vide (2026-10-27,
- * `plan-prix-manquant-non-bloquant.md`).
+ * `saisir-un-prix.md`).
  *
  * Le prix pro est **hors taxe**, quelle que soit l'assiette de la déclinaison :
  * la plateforme professionnelle facture en HT de bout en bout, et la frontière
@@ -91,9 +91,9 @@ export function projectVariant(
     publicTtcCents,
     publicByContext: publicTtcCents === null ? {} : publicPricesOf(publicTtcCents, percents),
     weightGrams: variant.weightGrams,
-    // Informatifs, recopiés tels que saisis (`plan-prix-au-kilo.md`) : rien
+    // Informatifs, recopiés tels que saisis (`saisir-un-prix.md`) : rien
     // ne les calcule ici, rien ne les lit pour tarifer de l'autre côté. Case
-    // de SON audience décochée (`plan-carte-tarif.md`) : `null`, ce que le fil
+    // de SON audience décochée (`saisir-un-prix.md`) : `null`, ce que le fil
     // sait déjà dire — le canal ne reçoit pas ce qu'il ne montre pas.
     proPricePerKgMillicents: variant.pricePerKgShownPro ? variant.proPricePerKgMillicents : null,
     publicPricePerKgTtcCents: variant.pricePerKgShownPublic

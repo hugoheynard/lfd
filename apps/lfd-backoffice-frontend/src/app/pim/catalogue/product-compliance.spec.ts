@@ -95,7 +95,7 @@ describe('product-compliance', () => {
     expect(findingsText([BLOCKING], 'blocking')).toMatch(/^Déclinaison PAIN-1/u);
   });
 
-  // `plan-prix-manquant-non-bloquant.md` (2026-10-27) : la table le dit.
+  // `saisir-un-prix.md` (2026-10-27) : la table le dit.
   it('dit le prix manquant d’une fiche « les deux », et à qui elle se vend', () => {
     const noPro: ProductComplianceFinding = {
       code: 'price_missing_for_audience',

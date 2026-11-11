@@ -4,7 +4,7 @@ import { projectVariant, type AllergenContext } from "../projection.js";
 
 /**
  * **Les cases « afficher le prix au kilo », une par audience**
- * (`plan-carte-tarif.md`) : décochée, SON prix au kilo part à `null` — ce que
+ * (`saisir-un-prix.md`) : décochée, SON prix au kilo part à `null` — ce que
  * le fil dit déjà d'un kilo non saisi ; l'autre part tel que saisi.
  */
 const NOTHING_ELSE: AllergenContext = { cited: [], catalogueUnion: [] };

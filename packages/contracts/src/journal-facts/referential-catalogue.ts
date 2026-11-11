@@ -121,13 +121,13 @@ const pricingChanges = () =>
     priceCents: cents().nullable(),
     weightGrams: grams().nullable(),
     proPriceMillicents: millicents().nullable(),
-    // Les prix au kilo saisis (`plan-prix-au-kilo.md`), chacun dans son unité.
+    // Les prix au kilo saisis (`saisir-un-prix.md`), chacun dans son unité.
     proPricePerKgMillicents: millicents().nullable(),
     publicPricePerKgTtcCents: cents().nullable(),
     // La case unique « afficher le prix au kilo en boutique », écrite le
     // 2026-10-29 seulement : gardée pour que ces lignes restent lisibles.
     pricePerKgShown: z.boolean(),
-    // Ses deux remplaçantes, une par audience (`plan-carte-tarif.md`).
+    // Ses deux remplaçantes, une par audience (`saisir-un-prix.md`).
     pricePerKgShownPublic: z.boolean(),
     pricePerKgShownPro: z.boolean(),
     // L'unité de vente et, au poids, son minimum et son pas en grammes
@@ -604,7 +604,7 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
    * écrite seulement là où rien n'était saisi. `ratioBp` et `vatPercent` sont
    * les matériaux du calcul, pour qu'on puisse le refaire en lisant la ligne.
    * Plus émis depuis le 2026-10-27 (pré-remplissage retiré, lot R2 de
-   * `plan-retirer-le-rapport-pro.md`) : fait passé, lisible.
+   * `saisir-un-prix.md`) : fait passé, lisible.
    */
   "product.pro_price_prefilled": fact(
     payload({

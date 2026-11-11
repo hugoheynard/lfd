@@ -158,7 +158,7 @@ describe("catalogCsv", () => {
     expect(csv).toContain("SKU;Article");
   });
 
-  /** `plan-prix-manquant-non-bloquant.md` (2026-10-27) : un prix absent n'est pas « 0,00 ». */
+  /** `saisir-un-prix.md` (2026-10-27) : un prix absent n'est pas « 0,00 ». */
   it("laisse vide le prix d'un article sans prix pro, et le dit dans l'état", () => {
     const [line] = bodyLines(catalogCsv([item({ pimPriceMillicents: null })]));
 

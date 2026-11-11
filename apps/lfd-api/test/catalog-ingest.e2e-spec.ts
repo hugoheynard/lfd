@@ -254,7 +254,7 @@ describe("l'historique du tarif canonique", () => {
 });
 
 /**
- * **Un prix manquant ne retire plus l'article** (`plan-prix-manquant-non-bloquant.md`,
+ * **Un prix manquant ne retire plus l'article** (`saisir-un-prix.md`,
  * 2026-10-27) : il se range, et ne se sert qu'à l'audience dont il a le prix.
  * Ce que seul le vrai SQL prouve : la colonne accepte `NULL`, et la trace des
  * prix (`NOT NULL`) saute la ligne.

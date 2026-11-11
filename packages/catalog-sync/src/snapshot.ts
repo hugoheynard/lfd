@@ -190,7 +190,7 @@ export const syncVariantSchema = z.object({
    *
    * **`null` = pas de prix pro : l'article n'est pas vendable aux
    * professionnels**, jamais « gratuit ». Depuis le 2026-10-27
-   * (`documentation/pricing/saisie/plan-prix-manquant-non-bloquant.md`), une
+   * (`documentation/pricing/saisie/saisir-un-prix.md`), une
    * déclinaison se publie dès qu'elle a le prix d'au moins une audience de sa
    * fiche ; le récepteur ne la sert qu'à l'audience dont elle a le prix.
    * Une déclinaison sans AUCUN prix reste exclue par l'émetteur, qui le dit.
@@ -249,7 +249,7 @@ export const syncVariantSchema = z.object({
   publicTtcCents: z.number().int().nonnegative().nullable(),
   /**
    * **Le prix au kilo pro HORS TAXE saisi au référentiel**, en millicentimes —
-   * l'unité du prix pro qu'il accompagne (`plan-prix-au-kilo.md`, v13).
+   * l'unité du prix pro qu'il accompagne (`saisir-un-prix.md`, v13).
    *
    * 🔴 **Informatif** : saisi, jamais calculé depuis le prix et le poids, et
    * rien ne le lit pour tarifer. `null` = non saisi, et rien ne s'affiche.
@@ -778,7 +778,7 @@ export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
             // « gratuit » est la faute que le fil refuse en le disant `null`
             // (« pas vendable au public »). Cette ligne invoquait jusqu'au
             // 2026-10-27 un `priceMillicents` requis ; il est nullable depuis
-            // (`plan-prix-manquant-non-bloquant.md`), vérifié ce jour-là.
+            // (`saisir-un-prix.md`), vérifié ce jour-là.
             publicTtcCents: z.number().int().nonnegative().nullable().optional(),
             publicByContext: z.record(z.string().min(1), syncContextPriceSchema).optional(),
             // Absents avant la v13 : les prix au kilo ne traversaient pas, et

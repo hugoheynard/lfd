@@ -29,13 +29,13 @@ export interface UpdateVariantPricingInput {
   readonly weightGrams: number | null;
   readonly proPriceHt?: string | null | undefined;
   /**
-   * Les prix au kilo SAISIS (`plan-prix-au-kilo.md`) : le pro HT en texte,
+   * Les prix au kilo SAISIS (`saisir-un-prix.md`) : le pro HT en texte,
    * lu par le même value object que le prix pro ; le public TTC en centimes,
    * comme le prix public. Absent = inchangé, `null` = effacer.
    */
   readonly proPricePerKgHt?: string | null | undefined;
   readonly publicPricePerKgTtcCents?: number | null | undefined;
-  /** Montrer chaque prix au kilo à son audience (`plan-carte-tarif.md`). Absent = inchangé. */
+  /** Montrer chaque prix au kilo à son audience (`saisir-un-prix.md`). Absent = inchangé. */
   readonly pricePerKgShownPublic?: boolean | undefined;
   readonly pricePerKgShownPro?: boolean | undefined;
   /**
@@ -158,7 +158,7 @@ function euros(raw: string | null): ProPriceHt | null {
  * Le prix pro y entre (lot P) : sa clé est celle de la révision et du contrat
  * du fait, `proPriceMillicents`, pour que `attribution.ts` le lise tel quel.
  * Les prix au kilo aussi : sans eux, une saisie du seul kilo serait
- * `untraced` (`plan-prix-au-kilo.md`, K1).
+ * `untraced` (`saisir-un-prix.md`, K1).
  */
 function pricingOf(
   variants: readonly {
@@ -183,7 +183,7 @@ function pricingOf(
     proPriceMillicents: variant?.proPriceMillicents ?? null,
     proPricePerKgMillicents: variant?.proPricePerKgMillicents ?? null,
     publicPricePerKgTtcCents: variant?.publicPricePerKgTtcCents ?? null,
-    // Les cases « afficher aux particuliers / aux pros » (`plan-carte-tarif.md`) :
+    // Les cases « afficher aux particuliers / aux pros » (`saisir-un-prix.md`) :
     // en décocher une seule est un geste, il se trace.
     pricePerKgShownPublic: variant?.pricePerKgShownPublic ?? true,
     pricePerKgShownPro: variant?.pricePerKgShownPro ?? true,

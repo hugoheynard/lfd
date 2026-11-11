@@ -68,7 +68,7 @@ export class InvalidVariantPricingError extends DomainError {
 }
 
 /**
- * Un prix au kilo à zéro (`plan-prix-au-kilo.md`) : il s'afficherait
+ * Un prix au kilo à zéro (`saisir-un-prix.md`) : il s'afficherait
  * « 0,00 € / kg ». Pour ne rien afficher, on laisse le champ vide.
  */
 export class ZeroPricePerKgError extends DomainError {

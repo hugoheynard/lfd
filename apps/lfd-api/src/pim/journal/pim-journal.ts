@@ -294,7 +294,7 @@ export const PIM_EVENTS = {
    * lisent que `product.*` (cf. le contrat de `product.allergens_saved`).
    *
    * **Plus émis depuis le 2026-10-27** (lot R2 de
-   * `plan-retirer-le-rapport-pro.md`, pré-remplissage retiré) : gardé pour
+   * `saisir-un-prix.md`, pré-remplissage retiré) : gardé pour
    * les faits passés, que `attribution.ts` et `content-facts.ts` lisent encore.
    */
   productProPricePrefilled: "product.pro_price_prefilled",
@@ -361,7 +361,7 @@ export const PIM_EVENTS = {
    * moins bien que la phrase.
    *
    * **Plus émis depuis le 2026-10-27** (lot R3 de
-   * `plan-retirer-le-rapport-pro.md`, rapport retiré) : gardé pour les faits
+   * `saisir-un-prix.md`, rapport retiré) : gardé pour les faits
    * passés, que le journal relit.
    */
   accountingRulesProRatioChanged: "accounting_rules.pro_ratio_changed",

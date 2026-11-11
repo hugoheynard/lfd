@@ -9,7 +9,7 @@ import {
 } from "../update-variant-pricing.js";
 import { OneProduct, PRODUCT_ID, SELLABLE_VARIANT, tarte } from "./audience-doubles.js";
 
-/** Les cases « afficher le prix au kilo », une par audience (`plan-carte-tarif.md`). */
+/** Les cases « afficher le prix au kilo », une par audience (`saisir-un-prix.md`). */
 
 function pricing(
   products: OneProduct,

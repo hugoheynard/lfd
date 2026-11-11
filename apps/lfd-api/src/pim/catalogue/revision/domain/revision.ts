@@ -57,7 +57,7 @@ export interface RevisionHeader {
 
 /**
  * **L'en-tête que toute révision porte depuis le lot R3**
- * (`plan-retirer-le-rapport-pro.md`, 2026-10-27) : le prix pro est toujours
+ * (`saisir-un-prix.md`, 2026-10-27) : le prix pro est toujours
  * saisi, il n'y a plus ni rapport ni méthode à photographier.
  *
  * Les deux champs restent, figés à leur dernière valeur possible — `entered`,
@@ -119,7 +119,7 @@ export interface RevisionItemInput {
    */
   readonly proPriceMillicents?: number;
   /**
-   * Les prix au kilo **saisis** (`plan-prix-au-kilo.md`) — absents sans
+   * Les prix au kilo **saisis** (`saisir-un-prix.md`) — absents sans
    * saisie, pour la même raison que le prix pro : une publication qui ne
    * change que le kilo est un écart, et se lit comme tel, sans rebasculer les
    * empreintes des articles qui n'en portent pas.
@@ -128,7 +128,7 @@ export interface RevisionItemInput {
   readonly publicPricePerKgTtcCents?: number;
   /**
    * Les cases « afficher le prix au kilo » aux particuliers et aux pros
-   * (`plan-carte-tarif.md`) — **absentes quand cochées**, ce qu'est tout
+   * (`saisir-un-prix.md`) — **absentes quand cochées**, ce qu'est tout
    * l'existant, pour la même raison que le prix pro : décocher change
    * l'empreinte de SON article seulement.
    */

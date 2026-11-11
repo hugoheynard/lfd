@@ -35,7 +35,7 @@ export interface CatalogAdminItemView {
    * prix, il se change dans la fiche du référentiel.
    *
    * `null` = pas de prix pro : l'article n'est pas vendu aux pros, jamais
-   * « gratuit » (2026-10-27, `plan-prix-manquant-non-bloquant.md`).
+   * « gratuit » (2026-10-27, `saisir-un-prix.md`).
    */
   readonly pimPriceMillicents: number | null;
 

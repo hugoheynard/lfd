@@ -51,7 +51,7 @@ const ALLOWED = new Set([
   // Le froid relayé à la livraison (lot 4 bis, 2026-09-29) : il PORTE le
   // filtre (`...STILL_SOLD`) — un article retiré n'a plus à être chargé froid.
   "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/prisma-catalog-cold.reader.ts",
-  // Les prix au kilo du rayon (`plan-prix-au-kilo.md`, K3, 2026-10-28) : il
+  // Les prix au kilo du rayon (`saisir-un-prix.md`, K3, 2026-10-28) : il
   // PORTE le filtre (`...STILL_SOLD`) — un article retiré n'est pas au rayon.
   "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/prisma-catalog-price-per-kg.reader.ts",
   // Le rangement des SKU de commande (plan des exclusions de la remise de

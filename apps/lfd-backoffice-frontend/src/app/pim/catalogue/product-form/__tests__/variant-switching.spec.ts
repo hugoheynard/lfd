@@ -449,7 +449,7 @@ describe('le prix pro HT saisi', () => {
   });
 });
 
-/** K4 (`plan-prix-au-kilo.md`) : les prix au kilo saisis voyagent comme le prix pro HT. */
+/** K4 (`saisir-un-prix.md`) : les prix au kilo saisis voyagent comme le prix pro HT. */
 describe('les prix au kilo saisis', () => {
   it('se relisent déclinaison par déclinaison — public en euros, pro en texte exact', async () => {
     const { store } = await setup();

@@ -29,7 +29,7 @@ import { numberValue, textValue } from '../dom';
  * un prix se saisit TTC, le hors taxe se calcule. Il n'y a donc plus de
  * ternaire sur l'étiquette du champ, ni de bascule sous lui.
  *
- * Depuis le 2026-10-29 (`plan-carte-tarif.md`), la carte se lit en blocs
+ * Depuis le 2026-10-29 (`saisir-un-prix.md`), la carte se lit en blocs
  * nommés — unité de vente, prix, prix au kilo, vente au poids, TVA — et le
  * bloc du kilo porte la case « afficher en boutique ».
  */

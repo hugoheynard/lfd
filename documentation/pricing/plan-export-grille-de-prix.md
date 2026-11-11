@@ -52,7 +52,7 @@ tableur ; un PDF mis en page n'est pas demandé).
 6. **Prix au kilo** (option) : ajoute le prix au kilo **saisi** de la
    déclinaison (pro HT ou public TTC selon le public), quand il existe — une
    donnée informative, pas un calcul
-   ([`saisie/plan-prix-au-kilo.md`](saisie/plan-prix-au-kilo.md)).
+   ([`saisie/saisir-un-prix.md`](saisie/saisir-un-prix.md)).
 
 ## 3. Le fichier
 

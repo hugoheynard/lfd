@@ -195,7 +195,7 @@ describe("pricedItems — les articles suggérés valent ceux du rayon", () => {
       { unitPriceMillicents: 120_000, catalogPriceMillicents: 200_000 },
       { unitPriceMillicents: 160_000, orderable: false, lockedReason: "reserved_to_other_account" },
       // Vendu au poids : aucun kilo indicatif, exclu côté serveur depuis K1
-      // (`plan-prix-au-kilo-suit-le-prix.md`, § 7) — le prix servi EST au kilo.
+      // (`saisir-un-prix.md`, § 2) — le prix servi EST au kilo.
       { unitPriceMillicents: 160_000, proPricePerKgMillicents: null },
     ]);
     expect(some.every((item) => item.fulfillmentOffers !== undefined)).toBe(true);

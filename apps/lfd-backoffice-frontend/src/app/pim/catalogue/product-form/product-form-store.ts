@@ -161,7 +161,7 @@ export interface DerivedAmount {
 /**
  * Le prix professionnel tel que l'écran le montre : le HT saisi, qui fait foi,
  * et le TTC qui n'en est que l'affichage. Toujours saisi depuis le lot R3
- * (`plan-retirer-le-rapport-pro.md`, 2026-10-27) : la remise des règles
+ * (`saisir-un-prix.md`, 2026-10-27) : la remise des règles
  * comptables, sa pastille et sa source `ratio` sont retirées.
  */
 export interface ProPricing {
@@ -470,11 +470,11 @@ interface VariantDraft {
   readonly weightGrams: number | null;
   /** Le prix pro HT, en TEXTE tel que saisi : cinq décimales ne passent pas par un flottant. */
   readonly proPriceHtText: string;
-  /** Le prix au kilo public TTC saisi, en euros (`plan-prix-au-kilo.md`, K4). */
+  /** Le prix au kilo public TTC saisi, en euros (`saisir-un-prix.md`, K4). */
   readonly publicPricePerKgEur: number | null;
   /** Le prix au kilo pro HT saisi, en TEXTE comme le prix pro HT. */
   readonly proPricePerKgHtText: string;
-  /** Les cases « afficher aux particuliers / aux pros » (`plan-carte-tarif.md`). */
+  /** Les cases « afficher aux particuliers / aux pros » (`saisir-un-prix.md`). */
   readonly pricePerKgShownPublic: boolean;
   readonly pricePerKgShownPro: boolean;
   /** L'unité de vente, son pas et son minimum (`vente-au-poids.md`, P1). */
@@ -607,7 +607,7 @@ export class ProductFormStore {
   readonly proPriceHtText = signal('');
 
   /**
-   * **Les prix au kilo saisis** (`plan-prix-au-kilo.md`, K4) — informatifs,
+   * **Les prix au kilo saisis** (`saisir-un-prix.md`, K4) — informatifs,
    * jamais calculés : le public TTC en euros comme `priceEur`, le pro HT en
    * TEXTE comme `proPriceHtText`. Vide = non saisi.
    */
@@ -615,7 +615,7 @@ export class ProductFormStore {
   readonly proPricePerKgHtText = signal('');
 
   /**
-   * **Montrer chaque prix au kilo à son audience** (`plan-carte-tarif.md`) —
+   * **Montrer chaque prix au kilo à son audience** (`saisir-un-prix.md`) —
    * le public TTC aux particuliers, le pro HT aux pros ; cochées par défaut.
    * Décochée, une case laisse son prix saisi ici et la boutique ne le reçoit
    * plus. Partent avec le tarif, et suivent le défaut avec lui.
@@ -2270,7 +2270,7 @@ export class ProductFormStore {
           this.saleUnit(),
           this.weightStepGrams(),
           this.weightMinGrams(),
-          // Les cases « afficher le prix au kilo » (`plan-carte-tarif.md`), à la
+          // Les cases « afficher le prix au kilo » (`saisir-un-prix.md`), à la
           // suite : particuliers à la place de l'ancienne case unique, pros après.
           this.pricePerKgShownPublic(),
           this.pricePerKgShownPro(),

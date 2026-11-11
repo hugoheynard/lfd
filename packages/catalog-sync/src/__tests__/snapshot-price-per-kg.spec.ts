@@ -7,7 +7,7 @@ import {
 
 /**
  * **Les prix au kilo sur le fil, depuis la v13**
- * (`documentation/pricing/saisie/plan-prix-au-kilo.md`, K2) : obligatoires et
+ * (`documentation/pricing/saisie/saisir-un-prix.md`, K2) : obligatoires et
  * nullables pour l'émetteur, tolérés absents pour une arrivée stockée d'avant.
  */
 

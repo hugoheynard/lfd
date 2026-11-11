@@ -8,7 +8,7 @@ import type { CompletenessRules } from "../domain/services/variant-completeness.
  * Une seule lecture pour l'activation, la liste et les faits du catalogue :
  * trois lectures écrites chacune de son côté finiraient par juger la même
  * fiche de deux façons. La règle du prix pro n'y est plus lue depuis le lot R3
- * (`plan-retirer-le-rapport-pro.md`) : le prix pro est toujours saisi.
+ * (`saisir-un-prix.md`) : le prix pro est toujours saisi.
  */
 export async function readCompletenessRules(
   contexts: ActiveSalesContextsReader,

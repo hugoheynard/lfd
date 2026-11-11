@@ -289,7 +289,7 @@ interface ServedPrice {
  * article sans taux ne se facture pas ; un article dont le référentiel n'a pas
  * encore poussé le prix public ne se vend pas au public ; un article sans prix
  * pro (`price_millicents` `NULL`, 2026-10-27,
- * `plan-prix-manquant-non-bloquant.md`) ne se vend pas aux pros — même chemin
+ * `saisir-un-prix.md`) ne se vend pas aux pros — même chemin
  * qu'un taux absent.
  */
 function servedPriceOf(row: ItemRow, audience: ShopAudience): ServedPrice | null {

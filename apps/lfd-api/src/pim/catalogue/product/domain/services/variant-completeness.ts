@@ -14,7 +14,7 @@ export const PRICE_GAP = "price";
  */
 /**
  * Le prix pro HT n'est pas saisi — seule source depuis le lot R3
- * (`plan-retirer-le-rapport-pro.md`, 2026-10-27).
+ * (`saisir-un-prix.md`, 2026-10-27).
  *
  * ⚠️ `pro_price_rule` (« rapport pro non réglé ») n'est plus calculé depuis le
  * même lot : la clé n'existe plus que dans des manques publiés avant, et
@@ -60,7 +60,7 @@ export type CompletenessInput = Pick<
  *
  * ⚠️ Cette phrase justifiait le `b2b` par `catalog_items.price_millicents`
  * `NOT NULL` jusqu'au 2026-10-27 : la colonne est nullable depuis
- * (`plan-prix-manquant-non-bloquant.md`, P3 — vérifié ce jour-là), et le taux
+ * (`saisir-un-prix.md`, P3 — vérifié ce jour-là), et le taux
  * reste exigé pour la raison ci-dessus, que ce plan ne touche pas.
  */
 export function requiredContexts(rules: CompletenessRules): string[] {
@@ -73,7 +73,7 @@ export type ServedAudience = Exclude<Audience, "both">;
 /**
  * **Les audiences visées par la fiche qui n'ont pas leur prix** — vide quand
  * chacune a le sien. Le prix d'une audience que la fiche ne vise pas n'est
- * jamais exigé (`plan-prix-manquant-non-bloquant.md`, §2, 2026-10-27).
+ * jamais exigé (`saisir-un-prix.md`, § 2).
  */
 export function missingAudiencePrices(
   variant: CompletenessInput,
@@ -95,7 +95,7 @@ export function missingAudiencePrices(
  * Vide = complète. Une fiche « les deux » à qui manque un seul des deux prix
  * reste complète : elle se vend à l'audience dont elle a le prix, et le
  * constat `price_missing_for_audience` le signale (2026-10-27,
- * `plan-prix-manquant-non-bloquant.md`). Sans aucun prix visé, chaque prix
+ * `saisir-un-prix.md`). Sans aucun prix visé, chaque prix
  * visé manquant est nommé (`price`, `pro_price`).
  *
  * Pure : le taux arrive résolu (famille, dérogation, registre), comme la

@@ -130,7 +130,7 @@ export interface CatalogProductFactBody {
    * avec le prix d'au moins une audience visée et un taux par contexte en
    * service. Le prix d'une audience absente part `null` (`priceMillicents`,
    * `publicTtcCents`), jamais zéro : le commerce ne la sert qu'à l'audience
-   * dont elle a le prix (2026-10-27, `plan-prix-manquant-non-bloquant.md`). Une
+   * dont elle a le prix (2026-10-27, `saisir-un-prix.md`). Une
    * déclaration d'allergènes n'est plus exigée depuis le 2026-10-27 : sans
    * elle, la déclinaison part par précaution (`allergensPrecautionary`). Ce sont les seules qu'une fiche ACTIVE vend ; une
    * fiche inactive les porte aussi, et la plateforme ne les vend pas.

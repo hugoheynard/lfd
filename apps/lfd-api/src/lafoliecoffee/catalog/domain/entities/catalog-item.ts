@@ -67,7 +67,7 @@ export interface PimFacts {
   /**
    * Le prix pro HT du référentiel, en millicentimes. `null` = pas de prix pro :
    * l'article n'est pas servi aux pros (`servedPriceOf`), jamais « gratuit »
-   * (2026-10-27, `plan-prix-manquant-non-bloquant.md`).
+   * (2026-10-27, `saisir-un-prix.md`).
    */
   readonly priceMillicents: number | null;
   readonly weightGrams: number | null;
@@ -90,7 +90,7 @@ export interface PimFacts {
    */
   readonly publicTtcCents: number | null;
   /**
-   * **Les prix au kilo saisis au référentiel** (`plan-prix-au-kilo.md`) — le
+   * **Les prix au kilo saisis au référentiel** (`saisir-un-prix.md`) — le
    * pro HT en millicentimes, le public TTC en centimes. INFORMATIFS : aucune
    * résolution de prix ne les lit, et `ResolvedCatalogItem` ne les porte pas.
    * `null` = non saisi, ou article reçu avant le fil v13.

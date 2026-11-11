@@ -4,7 +4,7 @@ import { Sku } from "../../value-objects/sku.value-object.js";
 import { Product } from "../product.js";
 
 /**
- * **Les prix au kilo saisis** (`documentation/pricing/saisie/plan-prix-au-kilo.md`,
+ * **Les prix au kilo saisis** (`documentation/pricing/saisie/saisir-un-prix.md`,
  * K1) — deux montants indépendants, jamais calculés, portés par la mutation
  * de tarif et hérités par une déclinaison alignée.
  */
@@ -125,7 +125,7 @@ describe("Product — les prix au kilo dans la mutation de tarif", () => {
   });
 });
 
-/** Les cases « afficher le prix au kilo », une par audience (`plan-carte-tarif.md`). */
+/** Les cases « afficher le prix au kilo », une par audience (`saisir-un-prix.md`). */
 describe("Product — montrer ou non le prix au kilo, par audience", () => {
   it("cochées à l'ouverture, pour le défaut comme pour une déclinaison ajoutée", () => {
     const product = aProduct();

@@ -491,7 +491,7 @@ export interface ClientCopy {
     readonly priceStruck: string;
     /**
      * Lu seulement, à la place du kilo barré et du kilo servi sous une
-     * promotion (`plan-prix-au-kilo-suit-le-prix.md`, K2) — la règle de
+     * promotion (`saisir-un-prix.md`, K2) — la règle de
      * {@link priceStruck}. `{was}` le kilo saisi, `{now}` le kilo servi.
      */
     readonly perKiloStruck: string;

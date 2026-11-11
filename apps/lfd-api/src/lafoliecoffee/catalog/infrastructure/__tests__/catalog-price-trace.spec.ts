@@ -51,7 +51,7 @@ describe("priceTraceRows", () => {
   });
 
   /**
-   * `plan-prix-manquant-non-bloquant.md` (2026-10-27) : `catalog_price_history`
+   * `saisir-un-prix.md` (2026-10-27) : `catalog_price_history`
    * garde son `NOT NULL` — un article sans prix pro n'y entre pas, jamais à zéro.
    */
   it("saute un article sans prix pro, même jamais tracé", () => {

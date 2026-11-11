@@ -12,7 +12,7 @@ const NOT_ENTERED: CatalogPricePerKg = {
 };
 
 /**
- * **Le prix au kilo posé sur le rayon** (`plan-prix-au-kilo.md`, K3) — celui
+ * **Le prix au kilo posé sur le rayon** (`saisir-un-prix.md`, K3) — celui
  * de l'audience servie, et lui seul : le prix au kilo PRO pour un rayon pro,
  * le PUBLIC pour un rayon public ; l'autre champ vaut `null`.
  *
@@ -27,7 +27,7 @@ const NOT_ENTERED: CatalogPricePerKg = {
  * Posés APRÈS la composition, le prix et le nom des promotions : ils ne se
  * rangent pas, ne se vendent pas, ne se tarifent pas — mais sous une
  * promotion, le kilo suit la pièce et le kilo saisi se barre
- * (`servedPricePerKg`, `plan-prix-au-kilo-suit-le-prix.md`, § 7), ce qui
+ * (`servedPricePerKg`, `saisir-un-prix.md`, § 2), ce qui
  * demande le tarif, le prix servi ET `promotionNames`, tous posés avant. La carte est lue par SKU de déclinaison ;
  * la vue est indexée par SKU de vente, d'où le détour par l'article montré.
  */

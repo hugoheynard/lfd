@@ -80,7 +80,7 @@ export function vitrineItemOf(
   // quantité minimale (M2 de `plan-quantite-minimale.md`, 2026-10-29), ni
   // les promotions qu'un acheminement ouvrirait (L10 des promotions), ni le
   // nom des promotions du prix affiché (2026-11-02), ni le kilo barré sous
-  // une promotion (`plan-prix-au-kilo-suit-le-prix.md`, K1, 2026-11-04).
+  // une promotion (`saisir-un-prix.md`, K1, 2026-11-04).
   const {
     allergens,
     proPricePerKgMillicents,

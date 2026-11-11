@@ -10,7 +10,7 @@ Pour eux, **le poids commandé est le poids facturé** : aucune pesée après co
 aucun prix qui bouge entre la commande et la facture. C'est ce qui permet aux
 particuliers de payer par carte à la commande, comme pour une pièce.
 
-Il fait suite à [`plan-prix-au-kilo.md`](saisie/plan-prix-au-kilo.md), où le prix au
+Il fait suite à [`saisir-un-prix.md`](saisie/saisir-un-prix.md), où le prix au
 kilo est une donnée informative : pour un article au poids, il devient **le**
 prix de vente.
 

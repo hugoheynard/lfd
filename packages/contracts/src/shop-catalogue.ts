@@ -193,12 +193,12 @@ export interface ShopItemView {
    * pro, `null` ailleurs (« chaque audience son information », 2026-10-31).
    *
    * 🔴 **Informatif** : saisi au référentiel
-   * (`documentation/pricing/saisie/plan-prix-au-kilo.md`), jamais calculé
+   * (`documentation/pricing/saisie/saisir-un-prix.md`), jamais calculé
    * depuis le poids, jamais facturé. C'est le kilo **saisi**, sauf sous une
    * **promotion** qui baisse la pièce (`promotionNames` posé) : il porte alors
    * le kilo **après promotion** — saisi × prix servi ÷ tarif, HT, arrondi une
    * fois — et le saisi passe à {@link catalogPricePerKgMillicents}
-   * (`plan-prix-au-kilo-suit-le-prix.md`, § 7). Une mercuriale, un palier, un
+   * (`saisir-un-prix.md`, § 2). Une mercuriale, un palier, un
    * engagement ne le touchent pas. `null` = non saisi, ou article vendu au
    * poids (son prix servi est déjà au kilo).
    *

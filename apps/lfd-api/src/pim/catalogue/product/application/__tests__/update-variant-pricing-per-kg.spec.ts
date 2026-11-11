@@ -10,7 +10,7 @@ import {
 } from "../update-variant-pricing.js";
 import { OneProduct, PRODUCT_ID, SELLABLE_VARIANT, tarte } from "./audience-doubles.js";
 
-/** Les prix au kilo dans la section « Tarif » (`plan-prix-au-kilo.md`, K1). */
+/** Les prix au kilo dans la section « Tarif » (`saisir-un-prix.md`, K1). */
 
 function pricing(
   products: OneProduct,

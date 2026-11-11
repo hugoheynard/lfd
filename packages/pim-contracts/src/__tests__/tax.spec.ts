@@ -4,7 +4,7 @@ import { updateVariantPricingPayloadSchema } from "../product.js";
  * ⚠️ Ce fichier a porté les tests de `htFromTtc` / `htMillicentsOf` jusqu'au
  * 2026-09-21 (partis avec leur code dans `@lfd/money`), puis ceux de
  * `proHtFromPublic` jusqu'au 2026-10-27 (partis avec le rapport pro, lot R3 de
- * `plan-retirer-le-rapport-pro.md`). Reste le schéma qui saisit le prix.
+ * `saisir-un-prix.md`). Reste le schéma qui saisit le prix.
  */
 
 /**

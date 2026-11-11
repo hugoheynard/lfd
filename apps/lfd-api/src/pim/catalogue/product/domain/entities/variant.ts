@@ -200,14 +200,14 @@ export interface VariantSnapshot {
   readonly proPriceMillicents: number | null;
   /**
    * Le prix au kilo pro HT SAISI, en millicentimes ; `null` = non saisi.
-   * Informatif (`plan-prix-au-kilo.md`) : jamais calculé, jamais appliqué.
+   * Informatif (`saisir-un-prix.md`) : jamais calculé, jamais appliqué.
    */
   readonly proPricePerKgMillicents: number | null;
   /** Le prix au kilo public TTC SAISI, en centimes ; `null` = non saisi. */
   readonly publicPricePerKgTtcCents: number | null;
   /**
    * Chaque prix au kilo est-il MONTRÉ en boutique, par audience
-   * (`plan-carte-tarif.md`) ? Faux : le prix reste saisi, mais le canal ne
+   * (`saisir-un-prix.md`) ? Faux : le prix reste saisi, mais le canal ne
    * reçoit plus CELUI-LÀ — le public TTC aux particuliers, le pro HT aux pros.
    * Vrais par défaut ; suivent le défaut avec le tarif quand
    * `pricingFollowsDefault`.
@@ -277,12 +277,12 @@ export interface VariantPricing {
    */
   readonly proPrice?: ProPriceHt | null;
   /**
-   * Les prix au kilo saisis (`plan-prix-au-kilo.md`). Même règle que le prix
+   * Les prix au kilo saisis (`saisir-un-prix.md`). Même règle que le prix
    * pro : **absent = inchangé**, `null` = effacer.
    */
   readonly proPricePerKg?: ProPriceHt | null;
   readonly publicPricePerKgTtcCents?: number | null;
-  /** Montrer chaque prix au kilo à son audience (`plan-carte-tarif.md`). Absent = inchangé. */
+  /** Montrer chaque prix au kilo à son audience (`saisir-un-prix.md`). Absent = inchangé. */
   readonly pricePerKgShownPublic?: boolean;
   readonly pricePerKgShownPro?: boolean;
   /**

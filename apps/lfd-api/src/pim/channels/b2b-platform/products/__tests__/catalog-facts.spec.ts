@@ -52,7 +52,7 @@ function input(over: Partial<ProductFactInput> = {}): ProductFactInput {
   };
 }
 
-/** `plan-prix-manquant-non-bloquant.md` (2026-10-27) : la déclinaison à moitié tarifée part. */
+/** `saisir-un-prix.md` (2026-10-27) : la déclinaison à moitié tarifée part. */
 describe("projectProductFact — un prix manquant ne retire plus la déclinaison", () => {
   it("publie sans prix pro une déclinaison d'une fiche « les deux », prix pro `null`", () => {
     const body = projectProductFact(

@@ -6,7 +6,7 @@ import { catalogItem } from "./sale-operations-doubles.js";
 
 /**
  * Le kilo suit la pièce sous une PROMOTION, et seulement sous elle
- * (`plan-prix-au-kilo-suit-le-prix.md`, § 7, décisions de Hugo du 2026-11-04).
+ * (`saisir-un-prix.md`, § 2).
  */
 
 const SALE = {

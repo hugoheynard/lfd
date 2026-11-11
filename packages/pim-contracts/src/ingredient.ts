@@ -251,7 +251,7 @@ export type ComplianceSeverity = z.infer<typeof complianceSeveritySchema>;
  * - `price_missing_for_audience` : une fiche « les deux » dont une déclinaison
  *   n'a qu'un des deux prix — elle se vend à l'audience dont elle a le prix ;
  *   `audience` nomme celle qui n'est pas servie (`pro` ou `public`). Toujours
- *   un avertissement (2026-10-27, `plan-prix-manquant-non-bloquant.md`) ;
+ *   un avertissement (2026-10-27, `saisir-un-prix.md`) ;
  * - `allergens_precautionary` : la déclinaison n'a pas de déclaration
  *   d'allergènes et se sert par précaution — allergènes de sa composition,
  *   traces de tout le catalogue publié. Toujours un avertissement.

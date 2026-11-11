@@ -143,7 +143,7 @@ la même chose ; aligner le commentaire du comparatif.
 
 ---
 
-## 4. `plan-carte-tarif.md`
+## 4. plan-carte-tarif (retiré, absorbé dans « Saisir un prix », § 2)
 
 - [ ] **Repris**
 
@@ -177,7 +177,7 @@ Hugo, 2026-11-11), **en deux déploiements** :
 
 ---
 
-## 5. `plan-retirer-le-rapport-pro.md`
+## 5. plan-retirer-le-rapport-pro (retiré, absorbé dans « Saisir un prix », § 2)
 
 - [ ] **Repris**
 
@@ -200,7 +200,7 @@ toujours saisi ») ; le reste est de l'histoire, dans git.
 
 ---
 
-## 6. `plan-prix-au-kilo.md`
+## 6. plan-prix-au-kilo (retiré, absorbé dans « Saisir un prix », § 2)
 
 - [ ] **Repris**
 
@@ -223,7 +223,7 @@ informatif ; le kilo ne traverse pas la résolution ; public en TTC, pro en HT.
 
 ---
 
-## 7. `plan-prix-au-kilo-suit-le-prix.md`
+## 7. plan-prix-au-kilo-suit-le-prix (retiré, absorbé dans « Saisir un prix », § 2)
 
 - [ ] **Repris**
 
@@ -310,7 +310,7 @@ le refus rétroactif d'un gabarit n'est tenu que par le domaine.
 
 ---
 
-## 10. `plan-prix-manquant-non-bloquant.md`
+## 10. plan-prix-manquant-non-bloquant (retiré, absorbé dans « Saisir un prix », § 2)
 
 - [ ] **Repris**
 
