@@ -358,9 +358,11 @@ export class PaiementSection {
   protected readonly dangerous = computed<readonly DangerousAction[]>(() => {
     const credits = this.grantedTerms().map((term) => ({
       key: term,
-      label: `Retirer le crédit « ${DEFERRED_TERM_LABELS[term]} »`,
+      // On retire un RÉGIME — le paiement différé à cette échéance —, pas une
+      // somme : le mot « crédit » le faisait lire comme un montant accordé.
+      label: `Retirer le paiement différé (échéance ${DEFERRED_TERM_LABELS[term].toLowerCase()})`,
       consequence: 'Le client devra régler à la commande, dès la prochaine.',
-      question: `Retirer « ${DEFERRED_TERM_LABELS[term]} » à ce client ?`,
+      question: `Retirer le paiement différé (échéance ${DEFERRED_TERM_LABELS[term].toLowerCase()}) à ce client ?`,
       match: DEFERRED_TERM_LABELS[term],
     }));
     const current = this.mandate();
