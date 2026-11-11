@@ -70,9 +70,15 @@ clé, au même cache** que la boutique du client (`RecognisedShelf.read`). Les
 deux ne peuvent pas diverger, et toute optimisation du rayon (cache, lecture,
 calcul) s'applique aux deux sans rien toucher ici.
 
-- **La clé** se fabrique par la **même fonction** que la route reconnue du
-  client (société résolue par `@ActingCompany` : site ou principal, à vérifier
-  au bâti), jamais par l'identifiant d'URL tel quel.
+- **La clé** est celle de la route reconnue du client. Vérifié au bâti le
+  2026-11-11 : `@ActingCompany` rend la société résolue par `resolveCompany`
+  (`platform/auth/resolve-company.ts`) — **la société elle-même**, site
+  compris, jamais son principal — et `ReadMyShopCatalogueHandler` la passe
+  telle quelle à `RecognisedShelf.read`. Le principal n'intervient qu'ensuite,
+  dans le calcul (`ReservationHolders`, `pricingCompanyOf`). Il n'y a donc pas
+  de fonction de clé à partager : la clé du staff est l'identifiant de la
+  société, **une fois lu en base** (`ServedCompanyReader.servedOf`, désormais
+  exporté par `CatalogModule`) — jamais rangée sans cette lecture.
 - **Un e2e de parité** le tient : pour une société à mercuriale, un
   sous-compte et un article réservé, la table du staff est égale, SKU par SKU,
   au rayon reconnu du client. Une divergence future rougit.
@@ -91,7 +97,9 @@ range, reprend ou ajoute ne change de type.
 
 - Contrat `CustomerShelfPricesView` (`packages/contracts/src/admin-order.ts`) :
   `{ items: [{ sku, unitPriceMillicents, struckFromMillicents | null,
-lockedReason | null }], audience: "pro" | "public" }` — tiré du
+unitPriceTtcCents, struckFromTtcCents | null, lockedReason | null }],
+audience: "pro" | "public" }` (le TTC ajouté au bâti, 2026-11-11 : l'écran
+  choisit HT ou TTC selon `audience`) — tiré du
   `ShopItemView` du rayon, rien d'autre (ni marge, ni trace).
 - Requête `ReadCustomerShelfPricesQuery(companyId)`, **un fichier**
   (à créer, `orders/application/queries/read-customer-shelf-prices`), comme son
@@ -180,6 +188,7 @@ lockedReason | null }], audience: "pro" | "public" }` — tiré du
 | MINEUR — fichiers séparés                                                    | un fichier, comme le voisin (L1)                                            |
 
 **Non vérifié par `vitruve`, à ouvrir au bâti** : la clé de cache d'un
-sous-compte (site ou principal) côté `@ActingCompany` ; que `OrderDrafting`
+sous-compte (site ou principal) côté `@ActingCompany` — ouvert le 2026-11-11 :
+le site, cf. § 2 bis ; que `OrderDrafting`
 tarife un sous-compte par `pricingCompanyOf` comme le rayon ; le contenu de
 `source-produits.ts` et `immediate-pickup.ts`.

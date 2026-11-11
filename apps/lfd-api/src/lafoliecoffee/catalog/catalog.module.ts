@@ -317,6 +317,9 @@ import { SnapshotOrderLineClassificationReader } from "./infrastructure/catalogu
     ShopCataloguePricing,
     CatalogViewers,
     RecognisedShelf,
+    // Pour la liste de la saisie de l'équipe : la société est lue avant le
+    // rayon, pour qu'une clé venue de l'URL ne soit jamais rangée sans elle.
+    ServedCompanyReader,
     // Pour la grille de prix (`export-grille-de-prix.md`) : le rayon d'un
     // public se compose comme la vitrine — opérations datées comprises — et
     // porte le prix au kilo saisi, lu À CÔTÉ de la résolution.

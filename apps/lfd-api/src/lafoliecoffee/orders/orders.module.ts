@@ -300,6 +300,7 @@ import { OrderAdmissionController } from "./http/order-admission.controller.js";
 import { GetMyOrderAdmissionHandler } from "./application/queries/get-my-order-admission.handler.js";
 import { GetGuestOrderAdmissionHandler } from "./application/queries/get-guest-order-admission.handler.js";
 import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-catalogue.js";
+import { ReadCustomerShelfPricesHandler } from "./application/queries/read-customer-shelf-prices.js";
 import { GetDaySupervisionHandler } from "./application/queries/get-day-supervision.handler.js";
 import { DaySupervisionReader } from "./domain/ports/day-supervision.reader.js";
 import { PrismaDaySupervisionReader } from "./infrastructure/prisma-day-supervision.reader.js";
@@ -653,6 +654,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     OrderQuoting,
     EstimateOrderForCustomerHandler,
     ReadMyShopCatalogueHandler,
+    ReadCustomerShelfPricesHandler,
     ShopCartQuoting,
     // La surtaxe prévue au devis d'une société (plan `le-prix-d-un-panier.md`, T1).
     LateFeeJudgement,

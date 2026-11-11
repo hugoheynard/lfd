@@ -1389,6 +1389,8 @@ export type {
   AdminOrderEstimateAmountsView,
   AdminOrderEstimateLineView,
   AdminOrderEstimateDiscountView,
+  CustomerShelfPriceView,
+  CustomerShelfPricesView,
 } from "./admin-order-estimate.js";
 export type {
   StaffSettlement,

@@ -1,10 +1,15 @@
-import { type CatalogItemView, type CustomerSkuStat } from "@lfd/contracts";
+import {
+  type CatalogItemView,
+  type CustomerShelfPricesView,
+  type CustomerSkuStat,
+} from "@lfd/contracts";
 import { Controller, Get, Param } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 
-import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
+import { AdminSurface, RequirePermission } from "../../../platform/auth/admin-surface.decorator.js";
 import { ListCatalogQuery } from "../application/queries/list-catalog.query.js";
 import { ListCustomerSkusQuery } from "../application/queries/list-customer-skus.query.js";
+import { ReadCustomerShelfPricesQuery } from "../application/queries/read-customer-shelf-prices.js";
 
 /**
  * Le **catalogue vu du back-office** — ce qu'il faut pour composer une commande
@@ -63,6 +68,23 @@ export class AdminCatalogController {
   async forCompany(@Param("companyId") companyId: string): Promise<readonly CustomerSkuStat[]> {
     return this.queries.execute<ListCustomerSkusQuery, readonly CustomerSkuStat[]>(
       new ListCustomerSkusQuery(companyId),
+    );
+  }
+
+  /**
+   * **Les prix du rayon de cette société**, SKU par SKU — ce qu'elle verrait
+   * dans sa boutique, posé par l'écran sur la liste de la saisie (plan
+   * `documentation/commandes/passation/plan-liste-au-prix-du-client.md`, L1).
+   *
+   * Le droit de l'estimation, pas la seule lecture des commandes : la route
+   * montre la mercuriale effective d'une société, et ne l'ouvre qu'à qui peut
+   * commander pour elle. Société inconnue → 404 ; terminée → 409.
+   */
+  @Get("companies/:companyId/shelf-prices")
+  @RequirePermission("b2b_place_order:write")
+  async shelfPrices(@Param("companyId") companyId: string): Promise<CustomerShelfPricesView> {
+    return this.queries.execute<ReadCustomerShelfPricesQuery, CustomerShelfPricesView>(
+      new ReadCustomerShelfPricesQuery(companyId),
     );
   }
 }

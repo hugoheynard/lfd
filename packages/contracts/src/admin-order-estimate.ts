@@ -1,4 +1,5 @@
 import type { OrderQuoteCutoffView, OrderSaleUnit, VatShareView } from "./order.js";
+import type { ShopItemLockedReason } from "./shop-catalogue.js";
 
 /**
  * **Ce que la saisie de l'équipe coûterait, au centime** — la réponse de
@@ -95,4 +96,44 @@ export interface AdminOrderEstimateDiscountView {
   readonly promotionId: string | null;
   /** Son libellé français, ou `null`. */
   readonly label: string | null;
+}
+
+/**
+ * **Le prix d'un article au rayon d'un client**, tel que la saisie de l'équipe
+ * le pose sur sa liste (plan
+ * `documentation/commandes/passation/plan-liste-au-prix-du-client.md`, L1).
+ *
+ * Tiré du `ShopItemView` du rayon reconnu de ce client — le même objet, la
+ * même clé, le même cache que sa boutique. Rien d'autre : ni marge, ni trace.
+ */
+export interface CustomerShelfPriceView {
+  readonly sku: string;
+  /** Le prix résolu à la quantité 1, HT, en millicentimes (`ShopItemView.unitPriceMillicents`). */
+  readonly unitPriceMillicents: number;
+  /**
+   * Le tarif à barrer, HT, en millicentimes (`ShopItemView.catalogPriceMillicents`)
+   * — `null` quand il n'y a rien à barrer.
+   */
+  readonly struckFromMillicents: number | null;
+  /** Le même prix, TTC, en centimes (`ShopItemView.unitPriceTtcCents`) — calculé par le serveur. */
+  readonly unitPriceTtcCents: number;
+  /**
+   * Le tarif à barrer, TTC, en centimes (`ShopItemView.catalogPriceTtcCents`)
+   * — `null` exactement quand {@link struckFromMillicents} l'est.
+   */
+  readonly struckFromTtcCents: number | null;
+  /** Pourquoi l'article ne se commande pas pour ce client ; `null` s'il se commande. */
+  readonly lockedReason: ShopItemLockedReason | null;
+}
+
+/**
+ * La réponse de `GET /admin/catalog/companies/:companyId/shelf-prices`. Un
+ * article absent de `items` n'est pas au rayon de ce client.
+ *
+ * `audience` : comment la société est servie — `pro` (l'écran montre le HT)
+ * ou `public` (servie au prix d'étiquette, sans rien de négocié : le TTC).
+ */
+export interface CustomerShelfPricesView {
+  readonly items: readonly CustomerShelfPriceView[];
+  readonly audience: "pro" | "public";
 }
