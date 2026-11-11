@@ -143,7 +143,7 @@ export class PosedMercuriale implements OnInit {
     { key: 'sku', label: 'SKU', width: '8rem' },
     { key: 'productName', label: 'Article' },
     { key: 'catalog', label: 'Tarif catalogue pro', width: '11rem' },
-    { key: 'negotiated', label: 'Prix mercuriale', width: '10rem' },
+    { key: 'negotiated', label: 'Prix ferme', width: '10rem' },
     { key: 'gap', label: 'Écart', width: '8rem' },
   ];
 
