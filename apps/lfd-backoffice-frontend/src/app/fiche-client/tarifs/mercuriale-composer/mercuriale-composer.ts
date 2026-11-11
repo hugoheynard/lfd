@@ -132,15 +132,26 @@ export class MercurialeComposer {
    * triable : l'ordre du catalogue est le seul repère pour retrouver un article
    * deux minutes plus tard, et le perdre coûte plus qu'un tri ne rapporte.
    */
-  protected readonly columns: readonly FoldTableColumn<TarifRow>[] = [
+  protected readonly columns = computed((): readonly FoldTableColumn<TarifRow>[] => [
     { key: 'article', label: 'Article' },
     { key: 'catalog', label: 'Prix base pro HT (sans réductions)', width: '10rem' },
-    { key: 'current', label: 'Prix de ce client HT (sans mercuriale)', width: '10rem' },
+    { key: 'current', label: this.currentLabel(), width: '10rem' },
     { key: 'limit', label: 'Limite', width: '8rem' },
     { key: 'price', label: 'Prix mercuriale', width: '12rem' },
     { key: 'room', label: 'Marge de négoce', width: '9rem' },
     { key: 'effort', label: 'Effort de vente', width: '12rem' },
-  ];
+  ]);
+
+  /**
+   * « Sans mercuriale » n'est vrai que si aucune ne fixe déjà un prix : la
+   * composition s'ouvre aussi quand une mercuriale court encore, et ses prix
+   * négociés sont alors dans ce chiffre. La ligne concernée le dit aussi.
+   */
+  private readonly currentLabel = computed(() =>
+    this.shelves().some((shelf) => shelf.rows.some((row) => row.negotiated))
+      ? 'Prix de ce client HT'
+      : 'Prix de ce client HT (sans mercuriale)',
+  );
 
   protected readonly empty: FoldTableEmpty = {
     title: 'Aucun article dans ce rayon',

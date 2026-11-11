@@ -28,6 +28,8 @@ export interface TarifRow extends MercurialeRow {
    * limite). Lu, jamais recalculé — c'est le prix de la caisse.
    */
   readonly currentMillicents: number;
+  /** Une mercuriale en cours fixe déjà ce prix : il n'est pas « sans mercuriale ». */
+  readonly negotiated: boolean;
   /** Comment ce prix s'est fabriqué, étape par étape — le détail de la case. */
   readonly chain: PriceChain;
   /** Le prix accordé **en euros**, tel que le champ le porte. `null` = non tarifé. */
@@ -60,6 +62,7 @@ export function tarifShelves(
         openRoomMillicents: openRoomMillicents(row.catalogMillicents, row.floorMillicents),
         currentMillicents: item.finalMillicents,
         chain: chainOf(item),
+        negotiated: item.sealedByRuleId !== null,
         priceEuros: eurosIn(draft, item.sku),
       };
     }),

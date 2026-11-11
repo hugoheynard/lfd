@@ -101,7 +101,7 @@
     stickyFirst
     density="compact"
     toolbarSurface="accent"
-    [columns]="columns"
+    [columns]="columns()"
     [rows]="shelf.rows"
     [rowKey]="rowKey"
     [rowTone]="rowTone"
@@ -153,6 +153,9 @@
           <app-price-path [chain]="row.chain" (dismissed)="path.open.set(false)" />
         </div>
       </fold-popover>
+      @if (row.negotiated) {
+        <span class="tf-note">mercuriale en cours</span>
+      }
     </ng-template>
 
     <!-- La limite n'est pas un étage : elle s'applique en fin de chaîne.

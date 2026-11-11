@@ -75,6 +75,15 @@ describe('le prix de ce client', () => {
     });
   });
 
+  it('dit quand une mercuriale en cours fixe déjà ce prix', () => {
+    const [shelf] = tarifShelves(
+      shelfOf([item({ sku: 'CRO' }), item({ sku: 'PAC', sealedByRuleId: 'merc_1' })]),
+      new Map(),
+    );
+
+    expect(shelf!.rows.map((row) => row.negotiated)).toEqual([false, true]);
+  });
+
   it('ne suit pas le prix tapé dans la mercuriale en cours de composition', () => {
     const [shelf] = tarifShelves(
       shelfOf([item({ sku: 'CRO', finalMillicents: 170_000 })]),
