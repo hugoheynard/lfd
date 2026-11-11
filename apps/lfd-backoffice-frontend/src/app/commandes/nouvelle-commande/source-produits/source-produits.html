@@ -69,7 +69,7 @@
       @if (order(); as chosen) {
         <div class="src-order">
           <p class="src-note">{{ chosen.orderNumber }} — {{ orderDate() }}</p>
-          <button type="button" class="src-all" (click)="addAll.emit(orderLines())">
+          <button type="button" class="src-all" (click)="addAll.emit(addableOrderLines())">
             Tout reprendre
           </button>
         </div>
@@ -116,11 +116,16 @@
       [product]="line.product"
       [inCart]="inCart(line.product.id)"
       [favoritable]="false"
-      priceSuffix="HT"
-      notifyLabel="Retiré du catalogue"
+      [priceSuffix]="line.priceSuffix"
+      [notifyLabel]="line.unavailableLabel"
       (action)="onRowAction(line, $event)"
       (quantityChange)="quantityChange.emit($event)"
     />
-    <span class="src-hint">{{ line.hint }}</span>
+    <span class="src-hint">
+      @if (line.struckPrice; as was) {
+        Au lieu de <s>{{ was }}</s> ·
+      }
+      {{ line.hint }}
+    </span>
   </li>
 </ng-template>

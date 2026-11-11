@@ -40,6 +40,12 @@
       </fold-callout>
     }
 
+    @if (shelfPricesIssue(); as issue) {
+      <!-- Sans la table du client, la liste reste au prix d'étiquette : on le
+           dit, pour qu'il ne soit jamais lu comme le sien. -->
+      <fold-callout variant="alert" data-shelf-prices-unavailable>{{ issue }}</fold-callout>
+    }
+
     @if (buyers().length === 0) {
       <!-- Sans personne à qui porter la commande, l'écran ne mène nulle part :
            on le dit avant que le commercial ne remplisse un panier pour rien. -->
@@ -137,6 +143,7 @@
         [catalogue]="shownCatalogue()"
         [shelfLeft]="immediate() ? shelfLeft() : null"
         [habits]="habits()"
+        [shelfPrices]="shelfPrices()"
         [orders]="history()"
         [selectedOrderId]="selectedOrderId()"
         [order]="selectedOrder()"

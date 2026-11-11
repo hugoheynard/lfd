@@ -14,6 +14,7 @@ import {
   DEFAULT_DELIVERY_AVAILABILITY,
   type AdminOrderView,
   type CatalogItemView,
+  type CustomerShelfPricesView,
   type CustomerSkuStat,
   type DeliveryAddressView,
   type DeliveryAvailabilityView,
@@ -54,6 +55,7 @@ import {
 } from '../../nouvelle-commande/acheminement-commande/acheminement-commande';
 import { CartStore, saleLineOf, type CartLine } from '../../nouvelle-commande/cart.store';
 import { DraftStore } from '../../nouvelle-commande/draft.store';
+import { loadShelfPrices, NO_SHELF_PRICES } from '../../nouvelle-commande/customer-shelf-prices';
 import type { OrderEntryCustomer } from '../../nouvelle-commande/order-entry-customer';
 import {
   SourceProduits,
@@ -177,6 +179,9 @@ export class ModifierCommandePage {
 
   protected readonly catalogue = signal<readonly CatalogItemView[]>([]);
   protected readonly habits = signal<readonly CustomerSkuStat[]>([]);
+  /** Les prix du rayon du client, posés sur la liste comme à la saisie (L2b). */
+  protected readonly shelfPrices = signal<CustomerShelfPricesView | null>(null);
+  protected readonly shelfPricesIssue = signal<string | null>(null);
   protected readonly pickups = signal<readonly PickupAddressView[]>([]);
   protected readonly zones = signal<readonly DeliveryZoneView[]>([]);
   protected readonly deliveryAvailability = signal<DeliveryAvailabilityView>(
@@ -388,18 +393,25 @@ export class ModifierCommandePage {
       // (0c) — un particulier, sans société, est servi en b2c.
       const reading =
         companyId === null ? Promise.resolve(undefined) : this.customers.customer(companyId);
-      const [customer, catalogue, habits, pickups, zones, availability] = await Promise.all([
-        reading,
-        this.catalogService.list(),
-        companyId === null ? Promise.resolve([]) : this.catalogService.habitsOf(companyId),
-        companyId === null ? this.pickupsService.list() : this.pickupsService.listFor(companyId),
-        reading.then((found) => this.zonesService.listFor(audienceOf(found?.status ?? null))),
-        this.customers.deliveryAvailability().catch(() => DEFAULT_DELIVERY_AVAILABILITY),
-      ]);
+      const [customer, catalogue, habits, pickups, zones, availability, shelfPrices] =
+        await Promise.all([
+          reading,
+          this.catalogService.list(),
+          companyId === null ? Promise.resolve([]) : this.catalogService.habitsOf(companyId),
+          companyId === null ? this.pickupsService.list() : this.pickupsService.listFor(companyId),
+          reading.then((found) => this.zonesService.listFor(audienceOf(found?.status ?? null))),
+          this.customers.deliveryAvailability().catch(() => DEFAULT_DELIVERY_AVAILABILITY),
+          // Un particulier, sans société, n'a pas de rayon à lui : prix d'étiquette.
+          companyId === null
+            ? Promise.resolve(NO_SHELF_PRICES)
+            : loadShelfPrices(() => this.catalogService.shelfPricesOf(companyId)),
+        ]);
       this.order.set(order);
       this.customer.set(customer ?? null);
       this.catalogue.set(catalogue);
       this.habits.set(habits);
+      this.shelfPrices.set(shelfPrices.prices);
+      this.shelfPricesIssue.set(shelfPrices.failure);
       this.pickups.set(pickups);
       this.zones.set(zones);
       this.deliveryAvailability.set(availability);

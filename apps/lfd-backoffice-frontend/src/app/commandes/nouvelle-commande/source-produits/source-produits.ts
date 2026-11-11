@@ -8,7 +8,13 @@ import {
   FoldTabsComponent,
   type FoldTabItem,
 } from 'fold-ng';
-import type { AdminOrderRow, CatalogItemView, CustomerSkuStat, OrderView } from '@lfd/contracts';
+import type {
+  AdminOrderRow,
+  CatalogItemView,
+  CustomerShelfPricesView,
+  CustomerSkuStat,
+  OrderView,
+} from '@lfd/contracts';
 import {
   CatalogShelfNav,
   catalogShelves,
@@ -30,6 +36,14 @@ import { narrowViewport } from '../../../shared/viewport/narrow-viewport';
 import type { CartStore } from '../cart.store';
 import { HistoriqueCommandes } from '../historique-commandes/historique-commandes';
 import { shelfHintOf } from '../immediate-pickup';
+import {
+  ABSENT_LABEL,
+  LOCKED_LABEL,
+  shelfPriceIndexOf,
+  shelfPricingOf,
+  type ShelfPriceIndex,
+  type ShelfPricing,
+} from '../customer-shelf-prices';
 import { ALL_FAMILIES, familyShelvesOf, inChosenShelf, shelfIdOf } from '../catalog-shelf-filter';
 
 /** Les mots du rail des rayons, en français : le back-office n'a qu'une langue. */
@@ -60,9 +74,17 @@ export interface ProposedLine {
   readonly hint: string;
   /** La quantité que la source suggère : 1 au catalogue, celle d'une commande. */
   readonly quantity: number;
-  /** Faux = plus au catalogue : montré en lecture, pas proposable à l'ajout. */
+  /** Faux = plus au catalogue, ou pas au rayon du client : montré, pas proposable à l'ajout. */
   readonly available: boolean;
+  /** « HT » au prix d'un pro, « TTC » au prix d'un particulier. */
+  readonly priceSuffix: string;
+  /** Le prix barré du rayon du client, déjà formaté ; absent s'il n'y a rien à barrer. */
+  readonly struckPrice?: string;
+  /** Ce que dit la rangée d'un article qui ne s'ajoute pas. */
+  readonly unavailableLabel: string;
 }
+
+const RETIRED_LABEL = 'Retiré du catalogue';
 
 /** Les trois façons de regarder ce qu'on peut ajouter. */
 export type SourceKind = 'habituels' | 'catalogue' | 'commande';
@@ -118,6 +140,12 @@ export class SourceProduits {
    * — dit sur chaque rangée du catalogue. `null` hors raccourci.
    */
   readonly shelfLeft = input<ReadonlyMap<string, number> | null>(null);
+  /**
+   * Les prix du rayon de ce client (plan liste au prix du client, L2), posés
+   * sur la liste par SKU. `null` = pas de table : la liste reste au prix
+   * d'étiquette, et la page le dit.
+   */
+  readonly shelfPrices = input<CustomerShelfPricesView | null>(null);
 
   readonly kindChange = output<SourceKind>();
   /** Une commande choisie dans le volet gauche — la page va la relire en détail. */
@@ -167,10 +195,15 @@ export class SourceProduits {
    * Les rayons du catalogue filtré, en une seule liste qui défile (Hugo,
    * 2026-11-03) : plus de pages, un rayon ne se coupe plus en deux.
    */
+  /** La jointure : la table de ce client indexée par SKU. */
+  private readonly priceIndex = computed<ShelfPriceIndex | null>(() =>
+    shelfPriceIndexOf(this.shelfPrices()),
+  );
+
   protected readonly shelves = computed<readonly CatalogShelf<ProposedLine>[]>(() => {
     return catalogShelves(this.matching(), (item) => item.family).map((shelf) => ({
       ...shelf,
-      items: shelf.items.map((item) => fromCatalog(item, this.shelfLeft())),
+      items: shelf.items.map((item) => fromCatalog(item, this.shelfLeft(), this.priceIndex())),
     }));
   });
 
@@ -186,7 +219,7 @@ export class SourceProduits {
   protected readonly habitLines = computed<readonly ProposedLine[]>(() =>
     this.habits()
       .filter((stat) => normalise(stat.productName + stat.sku).includes(normalise(this.search())))
-      .map((stat) => fromHabit(stat, this.bySku().get(stat.sku))),
+      .map((stat) => fromHabit(stat, this.bySku().get(stat.sku), this.priceIndex())),
   );
 
   /** Les lignes de la commande choisie — avec LEURS quantités, c'est tout l'intérêt. */
@@ -194,8 +227,15 @@ export class SourceProduits {
     const order = this.order();
     return order === null
       ? []
-      : order.lines.map((line) => fromOrderLine(line, this.bySku().get(line.sku)));
+      : order.lines.map((line) =>
+          fromOrderLine(line, this.bySku().get(line.sku), this.priceIndex()),
+        );
   });
+
+  /** « Tout reprendre » ne reprend que ce qui s'ajoute encore pour ce client. */
+  protected readonly addableOrderLines = computed(() =>
+    this.orderLines().filter((line) => line.available),
+  );
 
   protected readonly orderDate = computed(() => {
     const order = this.order();
@@ -254,13 +294,46 @@ function matches(item: CatalogItemView, needle: string): boolean {
   return needle === '' || normalise(`${item.name} ${item.sku}`).includes(needle);
 }
 
+/**
+ * Pose le sort d'un SKU au rayon du client sur une rangée : son prix (barré
+ * s'il le faut), ou l'impossibilité de l'ajouter. Sans table, rien ne change.
+ */
+function withShelfPricing(line: ProposedLine, pricing: ShelfPricing | null): ProposedLine {
+  if (pricing === null) {
+    return line;
+  }
+  if (pricing.kind !== 'priced') {
+    return {
+      ...line,
+      product: { ...line.product, outOfStock: true },
+      available: false,
+      unavailableLabel: pricing.kind === 'locked' ? LOCKED_LABEL : ABSENT_LABEL,
+    };
+  }
+  return {
+    ...line,
+    product: { ...line.product, price: pricing.price },
+    unitPriceMillicents: pricing.unitPriceMillicents,
+    priceSuffix: pricing.suffix,
+    ...(pricing.struckFrom === null
+      ? {}
+      : { struckPrice: `${pricing.struckFrom} ${pricing.suffix}` }),
+  };
+}
+
+/** Bloque une rangée sans toucher son prix : une ligne passée garde le sien. */
+function withShelfAvailability(line: ProposedLine, pricing: ShelfPricing | null): ProposedLine {
+  return pricing === null || pricing.kind === 'priced' ? line : withShelfPricing(line, pricing);
+}
+
 function fromCatalog(
   item: CatalogItemView,
   shelfLeft: ReadonlyMap<string, number> | null,
+  prices: ShelfPriceIndex | null,
 ): ProposedLine {
   const product = toCatalogProduct(item);
   const left = shelfLeft?.get(item.sku);
-  return {
+  const line: ProposedLine = {
     product,
     unitPriceMillicents: item.unitPriceMillicents,
     hint:
@@ -268,8 +341,14 @@ function fromCatalog(
         ? item.sku
         : `${item.sku} · ${shelfHintOf(left, item.saleUnit ?? 'piece')}`,
     quantity: product.minimum ?? 1,
-    available: true,
+    available: product.outOfStock !== true,
+    priceSuffix: 'HT',
+    unavailableLabel: RETIRED_LABEL,
   };
+  // Un article que le catalogue rend déjà indisponible le reste, quel que soit son prix.
+  return product.outOfStock === true
+    ? line
+    : withShelfPricing(line, shelfPricingOf(prices, item.sku));
 }
 
 /**
@@ -307,7 +386,11 @@ function averageQuantityOf(stat: CustomerSkuStat, item: CatalogItemView | undefi
   return Math.max(first, Math.round(average / step) * step);
 }
 
-function fromHabit(stat: CustomerSkuStat, item: CatalogItemView | undefined): ProposedLine {
+function fromHabit(
+  stat: CustomerSkuStat,
+  item: CatalogItemView | undefined,
+  prices: ShelfPriceIndex | null,
+): ProposedLine {
   const orders = stat.orderCount > 1 ? `${stat.orderCount} commandes` : '1 commande';
   const terms = saleTermsOf(item);
   // Une ligne au poids se cumule en grammes : « 3,5 kg », pas « 3500 pcs ».
@@ -315,7 +398,7 @@ function fromHabit(stat: CustomerSkuStat, item: CatalogItemView | undefined): Pr
     terms.saleUnit === 'weight'
       ? saleQuantityLabel(stat.totalQuantity, 'weight')
       : `${stat.totalQuantity} pcs`;
-  return {
+  const line: ProposedLine = {
     product: {
       id: stat.sku,
       name: stat.productName,
@@ -332,14 +415,18 @@ function fromHabit(stat: CustomerSkuStat, item: CatalogItemView | undefined): Pr
     // remplirait le panier de 480 croissants.
     quantity: averageQuantityOf(stat, item),
     available: stat.stillAvailable,
+    priceSuffix: 'HT',
+    unavailableLabel: RETIRED_LABEL,
   };
+  return stat.stillAvailable ? withShelfPricing(line, shelfPricingOf(prices, stat.sku)) : line;
 }
 
 function fromOrderLine(
   line: OrderView['lines'][number],
   item: CatalogItemView | undefined,
+  prices: ShelfPriceIndex | null,
 ): ProposedLine {
-  return {
+  const proposed: ProposedLine = {
     product: {
       id: line.sku,
       name: line.productName,
@@ -354,5 +441,8 @@ function fromOrderLine(
     // minimum d'aujourd'hui, que le serveur exige (plan quantité minimale, Q6).
     quantity: Math.max(line.quantity, item === undefined ? 0 : (firstSaleQuantityOf(item) ?? 0)),
     available: true,
+    priceSuffix: 'HT',
+    unavailableLabel: RETIRED_LABEL,
   };
+  return withShelfAvailability(proposed, shelfPricingOf(prices, line.sku));
 }

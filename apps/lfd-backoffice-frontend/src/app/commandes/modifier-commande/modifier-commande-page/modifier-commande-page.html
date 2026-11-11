@@ -11,6 +11,9 @@
       </fold-empty-state>
     }
     @default {
+      @if (shelfPricesIssue(); as issue) {
+        <fold-callout variant="alert" data-shelf-prices-unavailable>{{ issue }}</fold-callout>
+      }
       <div class="mc-columns">
         @if (quantitiesOnly() === null) {
           <app-source-produits
@@ -18,6 +21,7 @@
             [kind]="source()"
             [catalogue]="catalogue()"
             [habits]="habits()"
+            [shelfPrices]="shelfPrices()"
             [orders]="[]"
             [cart]="cart"
             (kindChange)="source.set($event)"

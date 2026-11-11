@@ -6,7 +6,7 @@ import {
   type OrderRevisionQuoteView,
   type PickupAddressView,
 } from '@lfd/contracts';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DeliveryZonesService } from '../../../b2b/reglages/delivery-zones.service';
 import { PickupAddressesService } from '../../../b2b/reglages/pickup-addresses.service';
@@ -81,6 +81,12 @@ interface Harness {
 /** La lecture des zones, épiée : l'audience qu'elle porte est le sujet du 0c. */
 let zonesList = vi.fn(async (_audience?: string) => []);
 
+/** La table des prix du client (L2b) : vide et lisible par défaut. */
+let shelfPricesOf = vi.fn(async (_companyId: string): Promise<unknown> => ({
+  items: [],
+  audience: 'pro',
+}));
+
 async function mount(
   revise: () => Promise<unknown> = async () => ({ totalCents: 1583 }),
   order: object = ORDER,
@@ -97,7 +103,7 @@ async function mount(
       },
       {
         provide: AdminCatalogService,
-        useValue: { list: async () => [], habitsOf: async () => [] },
+        useValue: { list: async () => [], habitsOf: async () => [], shelfPricesOf },
       },
       {
         provide: CommercialOrderEntrySource,
@@ -186,6 +192,37 @@ describe('modifier une commande depuis le back-office', () => {
       );
       await page['validate']();
       expect(revise).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('les prix du rayon du client (plan liste au prix du client, L2b)', () => {
+    afterEach(() => {
+      shelfPricesOf = vi.fn(async () => ({ items: [], audience: 'pro' }));
+    });
+
+    it('lit la table de la société de la commande, sans bandeau quand elle répond', async () => {
+      const { fixture } = await mount(undefined, { ...ORDER, companyId: 'co_1' });
+      expect(shelfPricesOf).toHaveBeenCalledWith('co_1');
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('[data-shelf-prices-unavailable]')).toBeNull();
+    });
+
+    it('une table en échec : la liste reste au prix d’étiquette, et le bandeau le dit', async () => {
+      shelfPricesOf = vi.fn(async () => {
+        throw new HttpErrorResponse({ status: 500 });
+      });
+      const { fixture } = await mount(undefined, { ...ORDER, companyId: 'co_1' });
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('[data-shelf-prices-unavailable]')?.textContent).toContain(
+        'Prix de ce client indisponibles : le panier fait foi.',
+      );
+    });
+
+    it('un particulier, sans société : aucune lecture, aucun bandeau', async () => {
+      const { fixture } = await mount();
+      expect(shelfPricesOf).not.toHaveBeenCalled();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('[data-shelf-prices-unavailable]')).toBeNull();
     });
   });
 

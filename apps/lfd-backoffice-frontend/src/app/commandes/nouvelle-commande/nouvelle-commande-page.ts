@@ -67,6 +67,7 @@ import {
   type BillingAddressPayload,
   type DeliverySpecs,
   type CatalogItemView,
+  type CustomerShelfPricesView,
   type CustomerSkuStat,
   type DeliveryAddressView,
   type DeliveryAvailabilityView,
@@ -81,6 +82,7 @@ import { NotifyService } from '../../notify.service';
 import { DeliveryZonesService } from '../../b2b/reglages/delivery-zones.service';
 import { PickupAddressesService } from '../../b2b/reglages/pickup-addresses.service';
 import { AdminCatalogService } from '../catalog.service';
+import { loadShelfPrices } from './customer-shelf-prices';
 import { AdminOrdersService } from '../orders.service';
 import { OrderDraftsService } from '../order-drafts.service';
 import {
@@ -282,6 +284,10 @@ export class NouvelleCommandePage {
   protected readonly history = signal<readonly AdminOrderRow[]>([]);
   protected readonly catalogue = signal<readonly CatalogItemView[]>([]);
   protected readonly habits = signal<readonly CustomerSkuStat[]>([]);
+  /** Les prix du rayon de ce client, posés sur la liste ; `null` si illisibles. */
+  protected readonly shelfPrices = signal<CustomerShelfPricesView | null>(null);
+  /** Le bandeau quand la table n'a pas pu être lue : la liste reste au prix d'étiquette. */
+  protected readonly shelfPricesIssue = signal<string | null>(null);
   protected readonly buyers = computed<readonly OrderEntryBuyer[]>(
     () => this.company()?.buyers ?? [],
   );
@@ -473,21 +479,32 @@ export class NouvelleCommandePage {
       // par sept devant un commercial qui a le client en ligne. Seules les
       // zones attendent le client : leur frais est celui de SA clientèle (0c).
       const customer = this.customerSource.customer(companyId);
-      const [company, history, catalogue, habits, pickups, zones, saved, deliveryAvailability] =
-        await Promise.all([
-          customer,
-          this.orders.list({ companyId, limit: HISTORY_SIZE }).then((page) => page.rows),
-          this.catalogService.list(),
-          this.catalogService.habitsOf(companyId),
-          this.pickupsService.listFor(companyId),
-          customer.then((found) => this.zonesService.listFor(audienceOf(found?.status ?? null))),
-          this.draftsService.find(companyId),
-          // Illisible = le défaut du contrat, ouverte aux deux (plan, §4) : le
-          // serveur refuse de toute façon une livraison fermée, et ce refus-là
-          // est montré. Faire tomber tout l'écran pour ce réglage serait
-          // disproportionné devant un client en ligne.
-          this.customerSource.deliveryAvailability().catch(() => DEFAULT_DELIVERY_AVAILABILITY),
-        ]);
+      const [
+        company,
+        history,
+        catalogue,
+        habits,
+        pickups,
+        zones,
+        saved,
+        deliveryAvailability,
+        shelfPrices,
+      ] = await Promise.all([
+        customer,
+        this.orders.list({ companyId, limit: HISTORY_SIZE }).then((page) => page.rows),
+        this.catalogService.list(),
+        this.catalogService.habitsOf(companyId),
+        this.pickupsService.listFor(companyId),
+        customer.then((found) => this.zonesService.listFor(audienceOf(found?.status ?? null))),
+        this.draftsService.find(companyId),
+        // Illisible = le défaut du contrat, ouverte aux deux (plan, §4) : le
+        // serveur refuse de toute façon une livraison fermée, et ce refus-là
+        // est montré. Faire tomber tout l'écran pour ce réglage serait
+        // disproportionné devant un client en ligne.
+        this.customerSource.deliveryAvailability().catch(() => DEFAULT_DELIVERY_AVAILABILITY),
+        // Ne rejette jamais : sans elle, la liste reste au prix d'étiquette et le dit.
+        loadShelfPrices(() => this.catalogService.shelfPricesOf(companyId)),
+      ]);
       if (company === undefined) {
         this.state.set('error');
         return;
@@ -496,6 +513,8 @@ export class NouvelleCommandePage {
       this.history.set(history);
       this.catalogue.set(catalogue);
       this.habits.set(habits);
+      this.shelfPrices.set(shelfPrices.prices);
+      this.shelfPricesIssue.set(shelfPrices.failure);
       this.pickups.set(pickups);
       this.zones.set(zones);
       this.deliveryAvailability.set(deliveryAvailability);

@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import type { CatalogItemView, CustomerSkuStat } from '@lfd/contracts';
+import type { CatalogItemView, CustomerShelfPricesView, CustomerSkuStat } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
 
@@ -39,6 +39,19 @@ export class AdminCatalogService {
     return firstValueFrom(
       this.http.get<readonly CustomerSkuStat[]>(
         `${B2B_API_BASE}/admin/catalog/companies/${encodeURIComponent(companyId)}`,
+      ),
+    );
+  }
+
+  /**
+   * Les prix du rayon de ce client, par SKU — ce qu'il verrait dans sa
+   * boutique. Un SKU absent n'est pas à son rayon. 404 société inconnue, 409
+   * compte résilié.
+   */
+  async shelfPricesOf(companyId: string): Promise<CustomerShelfPricesView> {
+    return firstValueFrom(
+      this.http.get<CustomerShelfPricesView>(
+        `${B2B_API_BASE}/admin/catalog/companies/${encodeURIComponent(companyId)}/shelf-prices`,
       ),
     );
   }
