@@ -258,7 +258,7 @@ frappe, pas à chaque frappe.
 
 ## 5. Questions ouvertes
 
-- **F2** — l'avenant de retour automatique (§ « La fin »).
+- **F2** — l'avenant de retour automatique (§ « La fin ») : pas dans ce plan (Hugo, 2026-11-11, « lance tout » sur la recommandation de commencer sans) ; F1 seul.
 
 ## 6. Contredit par vitruve (2026-11-11)
 
