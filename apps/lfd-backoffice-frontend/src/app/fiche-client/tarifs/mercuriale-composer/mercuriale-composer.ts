@@ -16,6 +16,8 @@ import {
   FoldElementTitleComponent,
   FoldInputComponent,
   FoldNumberInputComponent,
+  FoldPopoverComponent,
+  FoldPopoverTriggerDirective,
   type FoldTableColumn,
   type FoldTableEmpty,
   type FoldTableTone,
@@ -27,6 +29,7 @@ import { MILLICENTS_PER_CENT } from '@lfd/money';
 import { NotifyService } from '../../../notify.service';
 import { nativeValue } from '../../../shared/native-input';
 import { businessDayStart } from '../../../shared/business-day';
+import { PricePath } from '../../../b2b/tarification/price-path/price-path';
 import { VolumeEffort } from '../../../b2b/tarification/volume-effort/volume-effort';
 import { PriceTemplatesService } from '../../../commercial/tarification/templates.service';
 import {
@@ -66,6 +69,9 @@ const MILLICENTS_PER_EURO = 100 * MILLICENTS_PER_CENT;
     FoldElementTitleComponent,
     FoldInputComponent,
     FoldNumberInputComponent,
+    FoldPopoverComponent,
+    FoldPopoverTriggerDirective,
+    PricePath,
     PromotionPolicyPicker,
     VolumeEffort,
   ],

@@ -22,6 +22,7 @@ import {
 import { PromotionsService } from '../../../targeted-promotions/promotions.service';
 import {
   POLICY_MODE_HINTS,
+  POLICY_SCOPE_HINT,
   POLICY_MODE_LABELS,
   promotionChoices,
   type PromotionPolicyForm,
@@ -69,7 +70,9 @@ export class PromotionPolicyPicker implements OnInit {
       disabled: this.disabled(),
     })),
   );
-  protected readonly hint = computed(() => POLICY_MODE_HINTS[this.policy().mode]);
+  protected readonly hint = computed(
+    () => `${POLICY_MODE_HINTS[this.policy().mode]} ${POLICY_SCOPE_HINT}`,
+  );
   protected readonly choices = computed(() =>
     promotionChoices(this.all(), this.policy().promotionIds),
   );

@@ -137,12 +137,22 @@
 
     <!-- Ce qu'il paie aujourd'hui, réductions comprises : le point de départ
        réel de la négociation quand il a déjà des remises. -->
+    <!-- Le chiffre ouvre son chemin : qui l'a fait bouger (promotion,
+       règle, mercuriale, limite), étape par étape. Sans lui, le prix ne dit
+       pas lequel des quatre écrans de réglage il faut aller ouvrir. -->
     <ng-template foldCell="current" let-row>
-      @if (row.currentMillicents === row.catalogMillicents) {
-        <span class="tf-note">= catalogue</span>
-      } @else {
-        {{ euros(row.currentMillicents) }}
-      }
+      <fold-popover placement="bottom-start" [arrow]="true">
+        <button class="tf-path-trigger" type="button" foldPopoverTrigger data-price-path>
+          @if (row.currentMillicents === row.catalogMillicents) {
+            = catalogue
+          } @else {
+            {{ euros(row.currentMillicents) }}
+          }
+        </button>
+        <div foldPopoverPanel class="tf-path-panel">
+          <app-price-path [chain]="row.chain" />
+        </div>
+      </fold-popover>
     </ng-template>
 
     <!-- La limite n'est pas un étage : elle s'applique en fin de chaîne.

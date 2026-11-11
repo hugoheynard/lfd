@@ -32,6 +32,14 @@ export const POLICY_MODE_HINTS: Readonly<Record<MercurialePromotionModeValue, st
     'Seules les promotions choisies ici s’ajoutent à son prix négocié. Une promotion créée plus tard n’y entre pas d’elle-même.',
 };
 
+/**
+ * Ce que le réglage ne touche PAS, dit sous chaque choix : sans cette phrase,
+ * « Aucune » se lit comme « ce client n'a aucune promotion », alors que ses
+ * articles hors mercuriale les reçoivent comme tout le monde.
+ */
+export const POLICY_SCOPE_HINT =
+  'Les articles hors mercuriale reçoivent les promotions normalement.';
+
 /** Le corps envoyé : la liste seulement en « Au choix ». */
 export function policyPayload(policy: PromotionPolicyForm): MercurialePromotionPolicyPayload {
   return {

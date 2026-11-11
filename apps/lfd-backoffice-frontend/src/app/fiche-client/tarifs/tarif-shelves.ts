@@ -4,6 +4,7 @@ import {
   mercurialeRow,
   type MercurialeRow,
 } from '../../commercial/tarification/grille/mercuriale-row';
+import { chainOf, type PriceChain } from '../../b2b/tarification/pricing-format';
 import { eurosIn, millicentsIn, type DraftPrices } from './draft-prices';
 import { liveEffort } from './live-effort';
 import { openRoomMillicents } from './negotiation-room';
@@ -27,6 +28,8 @@ export interface TarifRow extends MercurialeRow {
    * limite). Lu, jamais recalculé — c'est le prix de la caisse.
    */
   readonly currentMillicents: number;
+  /** Comment ce prix s'est fabriqué, étape par étape — le détail de la case. */
+  readonly chain: PriceChain;
   /** Le prix accordé **en euros**, tel que le champ le porte. `null` = non tarifé. */
   readonly priceEuros: number | null;
 }
@@ -56,6 +59,7 @@ export function tarifShelves(
         elasticity: liveEffort(item.elasticity, row.catalogMillicents, row.finalMillicents),
         openRoomMillicents: openRoomMillicents(row.catalogMillicents, row.floorMillicents),
         currentMillicents: item.finalMillicents,
+        chain: chainOf(item),
         priceEuros: eurosIn(draft, item.sku),
       };
     }),

@@ -1,4 +1,4 @@
-import type { CompanyPricingCategoryView, PricingItemView } from '@lfd/contracts';
+import type { CompanyPricingCategoryView, PriceStepView, PricingItemView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { withPrice } from '../draft-prices';
@@ -51,6 +51,27 @@ describe('le prix de ce client', () => {
     expect(shelf!.rows[0]).toMatchObject({
       catalogMillicents: 200_000,
       currentMillicents: 170_000,
+    });
+  });
+
+  it('porte le chemin du prix : les étapes que le serveur a résolues', () => {
+    const step: PriceStepView = {
+      stage: 'promotion',
+      ruleId: 'promo_1',
+      label: 'Remise La Folie Coffee',
+      scope: null,
+      resultMillicents: 160_000,
+      supersedes: [],
+    };
+    const [shelf] = tarifShelves(
+      shelfOf([item({ sku: 'CRO', finalMillicents: 160_000, steps: [step] })]),
+      new Map(),
+    );
+
+    expect(shelf!.rows[0]!.chain).toMatchObject({
+      canonicalMillicents: 200_000,
+      finalMillicents: 160_000,
+      steps: [step],
     });
   });
 

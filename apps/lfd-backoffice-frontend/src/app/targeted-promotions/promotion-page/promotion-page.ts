@@ -273,7 +273,7 @@ export class PromotionPage {
   /** Le cumul dit son effet au point où il joue : la ligne, ou le panier (M7). */
   protected readonly cumulativeHint = computed(() =>
     this.atLine()
-      ? "Elle s'ajoute aux autres promotions cumulables du même article (−20 % puis −15 % du reste = −32 %). Sinon, le client reçoit la plus avantageuse."
+      ? "Elle s'ajoute aux autres promotions cumulables du même article (−20 % puis −15 % du reste = −32 %). Sinon, le client reçoit la plus avantageuse. Sur un prix négocié, c'est la mercuriale du client qui décide."
       : "Sa remise s'ajoute aux autres remises de panier cumulables (−10 % puis −5 % du reste), cinq au plus. Sinon, le client reçoit la plus avantageuse.",
   );
   /** Les deux genres, tous désactivés en lecture seule. */

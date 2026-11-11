@@ -181,3 +181,21 @@
     color: var(--fold-color-text-muted);
   }
 }
+
+// Le prix du client, qui ouvre son chemin : il se lit comme un chiffre de la
+// table, souligné en pointillé pour dire qu'il s'explique.
+.tf-path-trigger {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.tf-path-panel {
+  width: min(44rem, 90vw);
+}
