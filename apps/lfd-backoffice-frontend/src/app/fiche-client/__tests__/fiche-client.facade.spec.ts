@@ -85,6 +85,10 @@ class ScriptedActions extends FicheClientActions {
   override activate(): Promise<boolean> {
     return Promise.resolve(this.succeeds);
   }
+
+  override certifyKbis(): Promise<string | null> {
+    return Promise.resolve(this.succeeds ? null : 'Date de délivrance dans le futur.');
+  }
 }
 
 class RecordingPanels extends FicheClientPanels {
@@ -213,5 +217,41 @@ describe('façade — « Modifier » l’identité', () => {
     facade.editIdentity();
 
     expect(openedSteps).toEqual(['vat']);
+  });
+});
+
+describe('façade — la certification du KBIS demande sa date', () => {
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+  });
+
+  it('l’étape « à vérifier » ouvre le geste au lieu de certifier', () => {
+    const { facade, loads } = setup({});
+
+    facade.openStep('kbis_verify');
+
+    expect(facade.certifyingKbis()).toBe(true);
+    expect(loads()).toBe(0);
+  });
+
+  it('un refus garde le geste ouvert et rend son motif', async () => {
+    const { facade, loads } = setup({ succeeds: false });
+    facade.certifyingKbis.set(true);
+
+    const refusal = await facade.certifyKbis('2099-01-01');
+
+    expect(refusal).toBe('Date de délivrance dans le futur.');
+    expect(facade.certifyingKbis()).toBe(true);
+    expect(loads()).toBe(0);
+  });
+
+  it('une certification faite referme le geste et recharge', async () => {
+    const { facade, loads } = setup({ succeeds: true });
+    facade.certifyingKbis.set(true);
+
+    await expect(facade.certifyKbis('2026-10-01')).resolves.toBeNull();
+
+    expect(facade.certifyingKbis()).toBe(false);
+    expect(loads()).toBe(1);
   });
 });

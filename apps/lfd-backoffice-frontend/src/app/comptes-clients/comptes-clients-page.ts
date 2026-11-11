@@ -31,6 +31,8 @@ import { PendingAlertsService } from '../shared/alerts/pending-alerts.service';
 import { PortfolioBar } from './portfolio-bar/portfolio-bar';
 import { WarningsGallery } from './warnings-gallery/warnings-gallery';
 import { SubAccountBadge } from './sub-account-badge/sub-account-badge';
+import { KbisCell } from './kbis-cell/kbis-cell';
+import { parisToday } from '../shared/paris-today';
 import { SelfSignupPipeline } from './self-signup-pipeline/self-signup-pipeline';
 import { PortfolioMetricsService } from './portfolio-metrics.service';
 import { AdminCompaniesService } from './admin-companies.service';
@@ -112,6 +114,7 @@ function isFilterValue(value: string): value is FilterValue {
     FoldButtonComponent,
     FoldDataTableComponent,
     FoldDataTableCellDirective,
+    KbisCell,
     FoldDataTableRowCardDirective,
     FoldElementTitleComponent,
     FoldSearchComponent,
@@ -182,12 +185,16 @@ export class ComptesClientsPage {
   protected readonly page = signal(1);
   protected readonly pageSize = signal(PAGE_SIZES[0] ?? 25);
 
+  /** Le jour de l'écran, une fois : repère de l'âge des extraits KBIS. */
+  protected readonly today = parisToday();
+
   /** Colonnes de la data-table — chaque `key` a son `<ng-template foldCell>`. */
   protected readonly columns: readonly FoldTableColumn[] = [
     { key: 'reference', label: 'Référence', width: '8rem' },
     { key: 'raisonSociale', label: 'Société' },
     { key: 'siret', label: 'SIRET', width: '11rem' },
     { key: 'status', label: 'Statut', width: '8rem' },
+    { key: 'kbis', label: 'KBIS', width: '9rem' },
     { key: 'contact', label: 'Contact' },
     { key: 'owner', label: 'Espace client' },
     { key: 'createdAt', label: 'Créé le', width: '7rem', align: 'right' },

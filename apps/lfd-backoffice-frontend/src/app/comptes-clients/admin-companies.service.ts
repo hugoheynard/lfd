@@ -6,6 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import type {
   AccountHolderPayload,
   BillingAddressPayload,
+  CertifyKbisPayload,
   CompanyMemberInvitedView,
   CompanyMemberView,
   CreatedIdResponse,
@@ -203,10 +204,18 @@ export class AdminCompaniesService {
    * l'identité enregistrée. C'est ce geste qui débloque l'activation — le dépôt
    * seul ne prouve rien. Le serveur refuse (404) s'il n'y a rien à certifier, et
    * garde qui a certifié.
+   *
+   * `issuedOn` (AAAA-MM-JJ) est la date de délivrance lue en tête de l'extrait :
+   * le serveur l'exige, refuse une date future ou impossible, et accepte un
+   * extrait ancien — c'est à l'agent d'en juger.
    */
-  async certifyKbis(companyId: string): Promise<void> {
+  async certifyKbis(companyId: string, issuedOn: string): Promise<void> {
+    const payload: CertifyKbisPayload = { issuedOn };
     await firstValueFrom(
-      this.http.post<void>(`${B2B_API_BASE}/admin/companies/${companyId}/kbis/certification`, {}),
+      this.http.post<void>(
+        `${B2B_API_BASE}/admin/companies/${companyId}/kbis/certification`,
+        payload,
+      ),
     );
   }
 

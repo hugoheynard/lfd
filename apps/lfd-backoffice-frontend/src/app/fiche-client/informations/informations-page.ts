@@ -48,6 +48,10 @@ import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
 import { SiteIdentityCard } from '../site-identity-card/site-identity-card';
 import { SitePaymentNote } from '../site-payment-note/site-payment-note';
 import { GroupAccountCard } from '../group-account-card/group-account-card';
+import { KbisCertification } from '../kbis-certification/kbis-certification';
+import { frenchDay, kbisAgeNote, kbisAgeTone } from '../../comptes-clients/kbis-age-wording';
+import { parisToday } from '../../shared/paris-today';
+import { kbisAgeOf } from '@lfd/contracts';
 import { UncoveredDeliveryAddresses } from '../uncovered-delivery-addresses/uncovered-delivery-addresses';
 
 /**
@@ -75,6 +79,7 @@ import { UncoveredDeliveryAddresses } from '../uncovered-delivery-addresses/unco
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [FicheClientFacade, FicheClientStore, FicheClientPanels, FicheClientActions],
   imports: [
+    KbisCertification,
     GroupAccountCard,
     PayerBillingModeCard,
     FoldAsideLayoutComponent,
@@ -239,6 +244,33 @@ export class InformationsPage {
     }
     const role = kbis.certifiedBy?.role ?? '';
     return role === '' ? ` par ${agent}, le ${date}` : ` par ${agent} (${role}), le ${date}`;
+  });
+
+  /** Le jour de l'écran, une fois : repère de l'âge de l'extrait. */
+  private readonly today = parisToday();
+
+  /** L'âge de l'extrait certifié — `null` s'il n'y a pas d'extrait. */
+  private readonly kbisAge = computed(() => {
+    const kbis = this.fiche.company()?.kbis;
+    return kbis === null || kbis === undefined ? null : kbisAgeOf(kbis.issuedOn, this.today);
+  });
+
+  /** « Délivré le 12/08/2026 — extrait de plus de 3 mois. » */
+  protected readonly issuedLine = computed(() => {
+    const issuedOn = this.fiche.company()?.kbis?.issuedOn ?? null;
+    if (issuedOn === null) {
+      return 'Date de délivrance inconnue.';
+    }
+    const age = this.kbisAge();
+    const note = age === null ? null : kbisAgeNote(age);
+    const delivered = `Délivré le ${frenchDay(issuedOn)}`;
+    return note === null ? `${delivered}.` : `${delivered} — ${note.toLowerCase()}.`;
+  });
+
+  /** Récent : succès ; plus de 3 mois ou sans date : avertissement ; plus d'un an : alerte. */
+  protected readonly issuedTone = computed(() => {
+    const age = this.kbisAge();
+    return (age === null ? null : kbisAgeTone(age)) ?? 'success';
   });
 
   /**

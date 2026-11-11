@@ -97,7 +97,7 @@
     } @else {
       <!-- `narrowLayout="cards"
       rowCardChrome="none"` : sous 768px la table cède la place aux cartes
-         ci-dessous. `auto-cards` empilerait les sept colonnes en paires
+         ci-dessous. `auto-cards` empilerait les huit colonnes en paires
          libellé/valeur — sept lignes par compte, et le nom perdu au milieu. -->
       <fold-data-table
         caption="Comptes clients B2B"
@@ -183,6 +183,12 @@
           }
         </ng-template>
 
+        <!-- Absent, déposé ou certifié — et l'âge d'un extrait certifié, en
+           fond de case ET en toutes lettres. -->
+        <ng-template foldCell="kbis" let-row>
+          <app-kbis-cell [kbis]="row.kbis" [today]="today" />
+        </ng-template>
+
         <ng-template foldCell="contact" let-row>
           <span class="contact">{{ contactName(row) }}</span>
           @if (row.primaryContact.email) {
@@ -204,7 +210,7 @@
           <span class="date">{{ formatDate(row.createdAt) }}</span>
         </ng-template>
 
-        <!-- La carte mobile. Elle ne rejoue PAS les sept colonnes : elle garde ce
+        <!-- La carte mobile. Elle ne rejoue PAS les huit colonnes : elle garde ce
            qui sert à reconnaître un compte au téléphone — le nom, son état, de
            quoi le dicter (référence, SIRET), et qui décroche. La date d'entrée
            part : sur mobile on cherche un client, on n'audite pas un portefeuille.

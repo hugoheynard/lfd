@@ -1,4 +1,4 @@
-import { computed, inject, Injectable } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import type { DeferredTerm, DeliveryAddressView, FulfillmentPreferenceView } from '@lfd/contracts';
 import { isCompanyIdentityOpenable, type CompanyIdentityDraft } from '@lfd/b2b-ui/company';
 
@@ -115,9 +115,27 @@ export class FicheClientFacade {
     return this.mutate((company) => this.actions.uploadKbis(company, file));
   }
 
-  /** Certifie le KBIS — le geste qui débloque l'activation. */
-  certifyKbis(): Promise<void> {
-    return this.mutate((company) => this.actions.certifyKbis(company));
+  /**
+   * Le geste de certification est-il ouvert ? Il demande la date de délivrance
+   * de l'extrait : la carte d'identité comme la synthèse d'activation l'ouvrent.
+   */
+  readonly certifyingKbis = signal(false);
+
+  /**
+   * Certifie le KBIS — le geste qui débloque l'activation. Rend le motif d'un
+   * refus (le geste reste ouvert), `null` une fois fait (il se referme).
+   */
+  async certifyKbis(issuedOn: string): Promise<string | null> {
+    const company = this.company();
+    if (company === null) {
+      return null;
+    }
+    const refusal = await this.actions.certifyKbis(company, issuedOn);
+    if (refusal === null) {
+      this.certifyingKbis.set(false);
+      await this.store.load();
+    }
+    return refusal;
   }
 
   /** Retire la certification posée par erreur. */
@@ -160,20 +178,19 @@ export class FicheClientFacade {
   /**
    * « Modifier » sur la carte d'identité.
    *
-   * 🔴 Une méthode nommée plutôt qu'une clé écrite dans le gabarit : la carte
-   * appelait `openStep('tva')`, clé que plus rien ne servait depuis que les
-   * étapes disent `vat` — le clic n'ouvrait rien, sans une erreur (relevé le
-   * 2026-09-14). Un nom de méthode faux ne compile pas ; une chaîne fausse, si.
+   * Une méthode nommée plutôt qu'une clé écrite dans le gabarit : un nom de
+   * méthode faux ne compile pas ; une clé d'étape fausse, si — et le clic
+   * n'ouvrirait rien, sans une erreur.
    */
   editIdentity(): void {
     this.openStep('vat');
   }
 
   openStep(key: string): void {
-    // La vérification n'ouvre aucun panneau : c'est le geste lui-même, et il
-    // est identique à celui de la carte Identité.
+    // La vérification n'ouvre aucun panneau : elle ouvre le geste de la carte
+    // Identité, qui demande la date de délivrance de l'extrait.
     if (key === 'kbis_verify') {
-      void this.certifyKbis();
+      this.certifyingKbis.set(true);
       return;
     }
     // Le détenteur n'est pas un panneau « qu'on referme » : ce qu'il rend est la

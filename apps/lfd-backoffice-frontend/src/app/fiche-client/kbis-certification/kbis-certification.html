@@ -1,0 +1,35 @@
+<div class="certify">
+  <fold-date
+    label="Date de délivrance de l'extrait"
+    hint="En tête de l'extrait KBIS"
+    required
+    [max]="today"
+    [value]="issuedOn()"
+    (valueChange)="setIssuedOn($event)"
+  />
+
+  @if (olderThanFresh()) {
+    <fold-callout variant="warning" data-kbis-aging>
+      Extrait de plus de 3 mois : l'usage en demande un plus récent. Vous pouvez certifier quand
+      même.
+    </fold-callout>
+  }
+
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" announce data-kbis-refusal>{{ message }}</fold-callout>
+  }
+
+  <div class="actions">
+    <button foldButton emphasis="outline" size="sm" (click)="cancel()">Annuler</button>
+    <button
+      foldButton
+      emphasis="solid"
+      size="sm"
+      data-kbis-certify
+      [disabled]="!canSubmit()"
+      (click)="submit()"
+    >
+      Certifier l'extrait
+    </button>
+  </div>
+</div>

@@ -141,8 +141,10 @@
             @if (fiche.company()?.kbis; as kbis) {
               <div kbisFooter class="kbis-certif">
                 @if (kbis.certified) {
-                  <fold-callout variant="success" class="kbis-certif-state">
-                    Extrait vérifié{{ certifiedBy() }}.
+                  <!-- Le ton suit l'ÂGE de l'extrait, et la phrase le dit en
+                       clair : la couleur seule ne porterait pas l'information. -->
+                  <fold-callout [variant]="issuedTone()" class="kbis-certif-state">
+                    Extrait vérifié{{ certifiedBy() }}. {{ issuedLine() }}
                   </fold-callout>
                   <!-- Retirer la vérification SUSPEND le compte : la confirmation
                        le dit, parce qu'un bouton qui coupe l'accès d'un client ne
@@ -168,11 +170,18 @@
                       Retirer la vérification
                     </button>
                   }
+                } @else if (fiche.certifyingKbis()) {
+                  <app-kbis-certification />
                 } @else {
                   <p class="kbis-certif-state">
                     Déposé, <strong>pas encore vérifié</strong> — le compte ne peut pas être activé.
                   </p>
-                  <button foldButton emphasis="solid" size="sm" (click)="fiche.certifyKbis()">
+                  <button
+                    foldButton
+                    emphasis="solid"
+                    size="sm"
+                    (click)="fiche.certifyingKbis.set(true)"
+                  >
                     J'ai vérifié cet extrait
                   </button>
                 }

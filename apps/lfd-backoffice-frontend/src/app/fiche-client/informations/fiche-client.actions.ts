@@ -10,6 +10,7 @@ import type { CompanyIdentityDraft } from '@lfd/b2b-ui/company';
 
 import type { AdminCompanyDetail, CompanyOpened } from '../../comptes-clients/admin-company';
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
+import { httpErrorMessage } from '@lfd/endpoints';
 import { NotifyService } from '../../notify.service';
 import type { HolderChoice } from '../holder-picker/holder-picker';
 import { validUntil } from '../../admin/acces-en-attente/pending-access.model';
@@ -101,9 +102,19 @@ export class FicheClientActions {
   /**
    * **Certifie** le KBIS déposé. Ce n'est pas une case qu'on coche : c'est la
    * garantie que l'identité du compte a été confrontée à un document officiel.
+   *
+   * Rend le motif du refus plutôt qu'un toast : le geste reste ouvert et
+   * l'affiche à côté de la date saisie, que l'agent corrige sur place.
+   * `null` quand la certification est faite.
    */
-  certifyKbis(company: AdminCompanyDetail): Promise<boolean> {
-    return this.run(() => this.service.certifyKbis(company.id), 'KBIS certifié.');
+  async certifyKbis(company: AdminCompanyDetail, issuedOn: string): Promise<string | null> {
+    try {
+      await this.service.certifyKbis(company.id, issuedOn);
+      this.notify.success('KBIS certifié.');
+      return null;
+    } catch (error) {
+      return httpErrorMessage(error);
+    }
   }
 
   /** Retire la certification (erreur de manipulation, extrait périmé). */
