@@ -153,8 +153,25 @@ la même chose ; aligner le commentaire du comparatif.
 
 **Faux ou périmé** — rien.
 
-**Reste à faire** — retirer la colonne morte `price_per_kg_shown`, par
-migration à part, **sur ordre de Hugo**.
+**Reste à faire** — retirer la colonne morte `price_per_kg_shown` (ordre de
+Hugo, 2026-11-11), **en deux déploiements** :
+
+1. ✅ 2026-11-11 — le champ quitte le schéma Prisma ; la colonne reste en
+   base. (Prisma lit toutes les colonnes déclarées : supprimer la colonne
+   dans le même déploiement ferait tomber en erreur chaque lecture d'une
+   fiche ou d'un rayon par l'API d'avant, entre la migration et le
+   démarrage du nouveau code — relu par `lecteur-de-migrations`.)
+2. ⏳ **Au déploiement suivant**, une fois l'étape 1 en production — la
+   migration :
+
+   ```sql
+   SET lock_timeout = '5s';
+   ALTER TABLE "pim"."product_variant" DROP COLUMN IF EXISTS "price_per_kg_shown";
+   ```
+
+   Destructive : la valeur figée au 2026-10-29 est perdue (elle a été
+   recopiée dans `_public` / `_pro` par `20261029160000`). Les faits passés
+   du journal gardent leur clé `pricePerKgShown`.
 
 **Devient** — § 2 de « Saisir un prix ».
 
