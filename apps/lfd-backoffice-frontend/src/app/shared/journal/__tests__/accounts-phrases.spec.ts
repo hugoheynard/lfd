@@ -124,6 +124,17 @@ describe('la déclaration et l’activation d’un client', () => {
     );
   });
 
+  it('dit la date de délivrance de l’extrait certifié, quand le fait la porte', () => {
+    expect(
+      sentence(
+        company('company.kbis_certified', {
+          at: '2026-09-19T08:00:00.000Z',
+          issuedOn: '2026-08-12',
+        }),
+      ),
+    ).toBe('Colette Martin a certifié l’extrait KBIS d’un client (délivré le 12/08/2026)');
+  });
+
   it('dit qu’un KBIS retiré a coupé le compte — et laisse le « non » au détail', () => {
     const cut = company('company.kbis_revoked', {
       subjectLabel: CAFE,

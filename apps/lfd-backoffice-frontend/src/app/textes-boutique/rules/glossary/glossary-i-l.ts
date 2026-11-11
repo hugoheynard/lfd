@@ -11,6 +11,7 @@ export const GLOSSARY_I_L: Readonly<Record<string, string>> = {
   identityFormPlaceholder: 'Identité — forme juridique, exemple',
   identityLegalHint: 'Identité — mentions légales, aide',
   identityLegalLocked: 'Identité — mentions verrouillées',
+  identityVatLocked: 'Identité — numéro de TVA figé',
   identityNote: 'Identité — note',
   identityOptional: 'Identité — facultatif',
   identityPanelSubtitle: 'Identité — sous-titre',

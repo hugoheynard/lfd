@@ -261,6 +261,29 @@ const kbisUploaded: Phrase = (fact) => {
   );
 };
 
+/**
+ * « … a certifié l'extrait KBIS du client « X » (délivré le 12/08/2026) ».
+ * Un fait d'avant la saisie de la date ne la porte pas : la phrase s'arrête.
+ */
+const kbisCertified: Phrase = (fact) => {
+  const issuedOn = optional(fact.payload['issuedOn']);
+  return byActor(
+    fact,
+    [
+      text('a certifié l’extrait KBIS '),
+      ...client(fact, 'of'),
+      ...(issuedOn === null ? [] : [text(` (délivré le ${frenchDay(issuedOn)})`)]),
+    ],
+    ['subjectLabel', 'issuedOn'],
+  );
+};
+
+/** `2026-08-12` → `12/08/2026` : un jour calendaire, sans fuseau. */
+function frenchDay(day: string): string {
+  const [year, month, date] = day.split('-');
+  return `${date ?? ''}/${month ?? ''}/${year ?? ''}`;
+}
+
 /** « … a modifié l'identité du client « X » : enseigne, numéro de TVA ». */
 const identityEdited: Phrase = (fact) => {
   const fields = strings(fact.payload['fields']);
@@ -791,7 +814,7 @@ export const ACCOUNTS_PHRASES = {
       ['subjectLabel', 'step'],
     ),
   'company.activated': onClient('a activé le compte ', 'of'),
-  'company.kbis_certified': onClient('a certifié l’extrait KBIS ', 'of'),
+  'company.kbis_certified': kbisCertified,
   'company.kbis_revoked': kbisRevoked,
   'company.kbis_uploaded': kbisUploaded,
   'company.kbis_uploaded_by_staff': kbisUploaded,
