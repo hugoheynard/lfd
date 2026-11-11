@@ -2107,8 +2107,69 @@ export const amendCompanyMercurialePayloadSchema = z.object({
    * `{ set: null }` l'arrête, une valeur la remplace. Absent = rien.
    */
   generalDiscount: generalDiscountChangeSchema.optional(),
+  /**
+   * Le dernier avenant que l'écran a vu en calculant l'écart (`null` = aucun),
+   * tel que l'aperçu le rend. Présent, l'avenant est refusé (409) si un autre
+   * a été enregistré depuis : deux commerciaux ne s'écrasent pas. Absent = pas
+   * de contrôle, pour les appelants qui ne partent pas d'un aperçu.
+   */
+  basedOnAmendmentId: z.string().min(1).nullable().optional(),
 });
 export type AmendCompanyMercurialePayload = z.infer<typeof amendCompanyMercurialePayloadSchema>;
+
+/** D'où vient le prix d'un article dans l'aperçu d'un avenant. */
+export type MercurialeAmendmentPreviewSource = "firm" | "general_discount" | "chain";
+
+/** Un article du catalogue du client, avant et après l'avenant proposé. */
+export interface MercurialeAmendmentPreviewItem {
+  readonly sku: string;
+  /** Ce qu'il paie à `at` sans l'avenant, en millicentimes, à l'unité. */
+  readonly beforeMillicents: number;
+  /** Ce qu'il paierait à `at` avec l'avenant. Égal à `before` si l'avenant est refusé. */
+  readonly afterMillicents: number;
+  /** Le prix d'après est relevé par la limite. */
+  readonly floored: boolean;
+  /** D'où vient le prix d'après : un prix ferme, la remise générale, ou la chaîne normale. */
+  readonly source: MercurialeAmendmentPreviewSource;
+}
+
+/** Un refus du domaine, rendu au lieu d'une erreur pour que l'écran désigne la ligne. */
+export interface MercurialeAmendmentPreviewRefusal {
+  /** Le code de l'erreur (`pricing.mercuriale.amendment.…`). */
+  readonly code: string;
+  /** L'article fautif, quand le refus en nomme un. */
+  readonly sku: string | null;
+  readonly message: string;
+}
+
+/**
+ * **L'aperçu d'un avenant** — `POST admin/pricing/companies/:companyId/
+ * mercuriale/:mercurialeId/amendments/preview`, corps
+ * `AmendCompanyMercurialePayload`. Une lecture : rien n'est écrit.
+ *
+ * Chaque prix est résolu par la caisse à la date d'effet, sur la mercuriale
+ * telle qu'elle est puis sur une copie amendée en mémoire.
+ */
+export interface MercurialeAmendmentPreviewView {
+  /** La date d'effet résolue (ISO) : `validFrom`, ou maintenant. */
+  readonly at: string;
+  /** Le dernier avenant non rangé — à renvoyer en `basedOnAmendmentId`. */
+  readonly basedOnAmendmentId: string | null;
+  /** La mercuriale à `at`, AVANT l'avenant : l'état de référence de l'écart. */
+  readonly state: {
+    readonly firm: readonly {
+      readonly sku: string;
+      readonly tiers: readonly {
+        readonly minQuantity: number;
+        readonly unitPriceMillicents: number;
+      }[];
+    }[];
+    readonly generalDiscount: GeneralDiscountView | null;
+    readonly promotionPolicy: MercurialePromotionPolicyView;
+  };
+  readonly items: readonly MercurialeAmendmentPreviewItem[];
+  readonly refusals: readonly MercurialeAmendmentPreviewRefusal[];
+}
 
 /** L'avenant écrit : son identifiant, que l'écran relit ensuite. */
 export interface AmendedMercurialeResponse {

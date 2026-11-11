@@ -9,6 +9,7 @@ import {
   type AmendedMercurialeResponse,
   type CloseCompanyMercurialePayload,
   type CompanyPricingView,
+  type MercurialeAmendmentPreviewView,
   type MercurialeDraftResponse,
   type MercurialeDraftView,
   type PoseCompanyMercurialePayload,
@@ -39,6 +40,7 @@ import { DiscardMercurialeDraftCommand } from "../application/commands/discard-m
 import { SaveMercurialeDraftCommand } from "../application/commands/save-mercuriale-draft.command.js";
 import { ReadCompanyPricingQuery } from "../application/queries/read-company-pricing.query.js";
 import { ReadMercurialeDraftQuery } from "../application/queries/read-mercuriale-draft.query.js";
+import { PreviewMercurialeAmendmentQuery } from "../application/queries/preview-mercuriale-amendment.query.js";
 
 /**
  * **La tarification d'UN client** — l'onglet « Tarifs » de sa fiche.
@@ -133,6 +135,23 @@ export class AdminCompanyPricingController {
       new AmendCompanyMercurialeCommand(companyId, mercurialeId, payload, staffUserId),
     );
     return { amendmentId };
+  }
+
+  /**
+   * **L'aperçu d'un avenant** : ce que le client paierait, article par article,
+   * si cet avenant était enregistré, et les refus qu'il rencontrerait. `POST`
+   * parce que le corps est un avenant entier ; rien n'est écrit. Répond 200.
+   */
+  @Post("mercuriale/:mercurialeId/amendments/preview")
+  @HttpCode(HttpStatus.OK)
+  async previewAmendment(
+    @Param("companyId") companyId: string,
+    @Param("mercurialeId") mercurialeId: string,
+    @Body(new ZodBody(amendCompanyMercurialePayloadSchema)) payload: AmendCompanyMercurialePayload,
+  ): Promise<MercurialeAmendmentPreviewView> {
+    return this.queries.execute<PreviewMercurialeAmendmentQuery, MercurialeAmendmentPreviewView>(
+      new PreviewMercurialeAmendmentQuery(companyId, mercurialeId, payload),
+    );
   }
 
   /**

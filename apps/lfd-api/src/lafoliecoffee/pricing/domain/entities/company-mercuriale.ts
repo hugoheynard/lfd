@@ -7,6 +7,7 @@ import {
 import {
   ArchivedMercurialeIsSealedError,
   EmptyMercurialeError,
+  MercurialeAmendedMeanwhileError,
   ReversedValidityWindowError,
 } from "../pricing-errors.js";
 import { normalizeGrid } from "../pricing-grid.js";
@@ -231,6 +232,27 @@ export class CompanyMercuriale {
     const amended = { ...this.state, amendments: [...this.state.amendments, amendment] };
     assertNoDoubleNegotiation(amended, amendment);
     return new CompanyMercuriale(amended);
+  }
+
+  /**
+   * Le dernier avenant écrit et non rangé, ou `null` — ce qu'un écran annonce
+   * avoir vu quand il amende (cf. {@link assertNotAmendedSince}).
+   */
+  get latestAmendmentId(): string | null {
+    return this.state.amendments.filter((a) => a.archivedAt === null).at(-1)?.id ?? null;
+  }
+
+  /**
+   * Refuse si un avenant a été écrit depuis celui que l'appelant a vu : son
+   * écart serait calculé sur un état périmé. À appeler sous le verrou.
+   *
+   * @throws {MercurialeAmendedMeanwhileError} le dernier avenant n'est pas celui annoncé.
+   */
+  assertNotAmendedSince(basedOnAmendmentId: string | null): void {
+    const latest = this.latestAmendmentId;
+    if (latest !== basedOnAmendmentId) {
+      throw new MercurialeAmendedMeanwhileError(basedOnAmendmentId, latest);
+    }
   }
 
   /**

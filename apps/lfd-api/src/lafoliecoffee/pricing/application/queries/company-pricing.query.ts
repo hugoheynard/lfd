@@ -8,24 +8,15 @@ import { Injectable } from "@nestjs/common";
 
 import { Clock } from "../../../../platform/time/clock.js";
 import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
-import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { CustomerVolumeReader } from "../../domain/ports/customer-volume.reader.js";
-import { VolumeLadderReader } from "../../domain/ports/volume-ladder.reader.js";
 import { PricedCompanyNotFoundError } from "../../domain/pricing-errors.js";
 import { BoardElasticityService } from "../board-elasticity.service.js";
-import { boardDecisions, boardMaterials, itemView } from "../board-item.js";
-import { LinePromotionSupply } from "../../../promotions/application/line-promotion-supply.js";
-import { PricingDecisionsReader } from "../ports/pricing-decisions.reader.js";
 import { PricedCompanyReader } from "../../domain/ports/priced-company.reader.js";
-import { groupByFamily } from "../board-category.js";
-import { familyView } from "../../../catalog/domain/catalog-family.js";
 import { posedMercurialeView } from "../posed-mercuriale-view.js";
-import { lotBuyerOf } from "../../domain/loaded-pricer.js";
-import { pricingContextFor } from "../../domain/pricing-context.js";
 import { CompanyMercurialeReader } from "../../domain/ports/company-mercuriale.reader.js";
 import type { CompanyMercuriale } from "../../domain/entities/company-mercuriale.js";
 import { PricingPartiesResolver } from "../pricing-parties.resolver.js";
-import { CatalogViewers } from "../../../catalog/application/catalog-viewers.service.js";
+import { CompanyPriceSheets } from "../ports/company-price-sheet.js";
 
 /**
  * **Ce que paie UN client**, article par article — la lecture de l'onglet
@@ -64,18 +55,14 @@ import { CatalogViewers } from "../../../catalog/application/catalog-viewers.ser
 @Injectable()
 export class CompanyPricingQuery {
   constructor(
-    private readonly decisions: PricingDecisionsReader,
     private readonly companies: PricedCompanyReader,
-    private readonly catalog: ProductCatalogReader,
-    private readonly ladders: VolumeLadderReader,
     private readonly mercuriales: CompanyMercurialeReader,
     private readonly elasticity: BoardElasticityService,
     private readonly customerVolumes: CustomerVolumeReader,
     private readonly clock: Clock,
     private readonly staffAuthors: StaffAuthorDirectory,
     private readonly parties: PricingPartiesResolver,
-    private readonly viewers: CatalogViewers,
-    private readonly linePromotions: LinePromotionSupply,
+    private readonly sheets: CompanyPriceSheets,
   ) {}
 
   /** @throws {PricedCompanyNotFoundError} l'identifiant ne désigne aucune société. */
@@ -89,13 +76,8 @@ export class CompanyPricingQuery {
     // Porte inconnue : la fiche est lue par le staff, pas par le client.
     const parties = await this.parties.partiesAt(companyId, at, "unknown");
 
-    const [ladders, catalogue, mercuriales, live] = await Promise.all([
-      this.ladders.listAll(at),
-      // Au nom de CE client (`plan-articles-sur-mesure.md`, Q1) : la grille, et
-      // donc le sélecteur d'articles de la pose et des avenants, ne propose que
-      // ce à quoi il a droit. Ce qui est réservé à un autre compte n'en sort
-      // pas ; une ligne déjà posée dessus reste, étiquetée.
-      this.viewers.regarding(companyId).then((viewer) => this.catalog.all(viewer)),
+    const [sheet, mercuriales, live] = await Promise.all([
+      this.sheets.sheetFor(companyId, parties, at),
       // Ce qu'on a DÉCIDÉ chez ce client — en cours, à venir, terminées.
       this.mercuriales.listFor(companyId),
       // Ce qui AGIT maintenant : c'est elle, et elle seule, qui entre dans le
@@ -103,43 +85,12 @@ export class CompanyPricingQuery {
       // de tarif : celle du principal tant que le sous-compte le suit.
       this.mercuriales.liveFor(parties.pricingCompanyId, at),
     ]);
-    // 🔴 **Après le catalogue, et non avec lui** : une vue de plancher porte
-    // l'écart au tarif de référence, donc a besoin des articles. C'est une
-    // seconde vague, comme avant ce port — le catalogue s'attendait déjà seul.
-    //
-    // Le filtre d'audience vit dans la REQUÊTE de l'adaptateur, et il y reste :
-    // une règle d'un tiers qui entrerait dans le matériau pourrait gagner son
-    // étage, et le prix rendu serait celui d'un autre client. La fenêtre des
-    // planchers y est aussi — c'est là qu'elle manquait.
-    const articles = catalogue.filter((article) => article.reservation !== "other");
+    const { catalogue, rules } = sheet;
     const reservedElsewhere = new Set(
       catalogue.filter((article) => article.reservation === "other").map((article) => article.sku),
     );
-    const decided = await this.decisions.decisionsAt(at, { companyId }, articles);
-    const floors = decided.floors;
-    // Comme la caisse (plan des promotions, L8, L12) : l'étage promotion
-    // vient des promotions de CE client.
-    const { rules, promotions } = boardDecisions(
-      decided.rules,
-      await this.linePromotions.forLot(lotBuyerOf(parties), at, false),
-    );
-
     const names = new Map(catalogue.map((article) => [article.sku, article.name]));
-    const materials = await boardMaterials(rules, floors, at, live, ladders, parties, promotions);
-    // Les familles qui portent au moins un article, dans l'ordre du référentiel.
-    const categories: CompanyPricingCategoryView[] = groupByFamily(articles).map((shelf) => ({
-      id: shelf.family.id,
-      name: shelf.family.name,
-      family: familyView(shelf.family),
-      items: shelf.articles.map((article) =>
-        itemView(
-          article.article,
-          pricingContextFor({ ...article.article, sku: article.sku }, 1, parties, at),
-          materials,
-          { rules, floors },
-        ),
-      ),
-    }));
+    const categories = await sheet.categoriesWith(live);
 
     // 🔴 **L'effort de vente se mesure sur CE client, pas sur le marché.**
     //

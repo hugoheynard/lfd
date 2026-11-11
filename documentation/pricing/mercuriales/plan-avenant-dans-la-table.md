@@ -249,12 +249,12 @@ frappe, pas à chaque frappe.
 
 ## 4. Les lots
 
-| Lot    | Contenu                                                                                                                                 | Tests                                                                                                                                                                                                                                                                     |
-| ------ | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **A1** | l'aperçu : la composition datée extraite de `CompanyPricingQuery`, requête, handler, route, contrat ; `basedOnAmendmentId` et son refus | unitaires du handler (copie amendée, refus rendus, rien d'écrit) ; e2e : un prix changé, un prix retiré qui passe à la remise, un article qui revient à la chaîne avec la promotion du client, une date future qui tient compte d'un avenant à venir, le mur `company_id` |
-| **A2** | le module « amendment-diff »                                                                                                            | unitaires : chaque ligne du tableau du § 1, remise égale par valeur, avenant vide                                                                                                                                                                                         |
-| **A3** | l'écran : mode `amending`, étapes, colonnes, barre, récapitulatif, F1, confirmation de sortie ; retrait des gestes séparés              | specs, vérification à l'écran                                                                                                                                                                                                                                             |
-| **A4** | doc d'état (`l-avenant-date.md` au présent) ; ce plan supprimé                                                                          | —                                                                                                                                                                                                                                                                         |
+| Lot                  | Contenu                                                                                                                                 | Tests                                                                                                                                                                                                                                                                     |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A1** ✅ 2026-11-11 | l'aperçu : la composition datée extraite de `CompanyPricingQuery`, requête, handler, route, contrat ; `basedOnAmendmentId` et son refus | unitaires du handler (copie amendée, refus rendus, rien d'écrit) ; e2e : un prix changé, un prix retiré qui passe à la remise, un article qui revient à la chaîne avec la promotion du client, une date future qui tient compte d'un avenant à venir, le mur `company_id` |
+| **A2**               | le module « amendment-diff »                                                                                                            | unitaires : chaque ligne du tableau du § 1, remise égale par valeur, avenant vide                                                                                                                                                                                         |
+| **A3**               | l'écran : mode `amending`, étapes, colonnes, barre, récapitulatif, F1, confirmation de sortie ; retrait des gestes séparés              | specs, vérification à l'écran                                                                                                                                                                                                                                             |
+| **A4**               | doc d'état (`l-avenant-date.md` au présent) ; ce plan supprimé                                                                          | —                                                                                                                                                                                                                                                                         |
 
 ## 5. Questions ouvertes
 
@@ -271,3 +271,21 @@ le budget de lectures, les refus avec code et SKU, le brouillon assumé,
 l'accessibilité. Non vérifiés : les promotions programmées à une date
 future, une mercuriale en pause dans l'aperçu, le nombre exact de lectures
 par aperçu.
+
+## 7. Notes du bâti de A1 (2026-11-11)
+
+- **Q1 était faux dans le domaine** : un prix ferme arrêté retombait sur la
+  chaîne au lieu de la remise générale (`segmentAt` rend la ligne de grille
+  hors fenêtre, et `mercurialeRuleFor` la prenait). Corrigé : un prix ferme
+  ne l'emporte que s'il couvre l'instant ; sinon la remise parle, et sans
+  remise la ligne hors fenêtre est rendue comme avant (« expirée »).
+- **Un seul refus** au plus dans `refusals` : `amend` s'arrête au premier.
+- **Les refus applicatifs** (article hors vente, réservé à un autre compte,
+  engagement de volume) ne sont pas rejoués par l'aperçu : ils répondent à
+  l'enregistrement, et l'étape 3 les affiche.
+- **L'écran amende depuis la fiche du compte qui porte la mercuriale.** Un
+  site qui suit son principal n'affiche pas la mercuriale du principal ;
+  l'aperçu, lui, l'accepte par la route du site — sans usage à l'écran.
+- **Une mercuriale close** répond 404 à l'aperçu.
+- **Le prix de base n'est pas daté** (`ProductCatalogReader.all`) : un aperçu
+  à une date future part du prix catalogue d'aujourd'hui.

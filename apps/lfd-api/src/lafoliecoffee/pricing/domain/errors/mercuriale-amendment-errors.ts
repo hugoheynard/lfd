@@ -138,3 +138,22 @@ export class AmendedMercurialeNotFoundError extends ResourceNotFoundError {
     );
   }
 }
+
+/**
+ * **Un autre avenant a été enregistré pendant la saisie.**
+ *
+ * L'écran calcule son écart sur l'état qu'il a lu ; si un collègue a amendé
+ * entre-temps, enregistrer écraserait sa décision avec un écart périmé. La
+ * sortie est de recharger : l'écart se recalcule sur l'état réel.
+ */
+export class MercurialeAmendedMeanwhileError extends BusinessError {
+  constructor(
+    readonly basedOnAmendmentId: string | null,
+    readonly latestAmendmentId: string | null,
+  ) {
+    super(
+      "pricing.mercuriale.amendment.amended_meanwhile",
+      "Un autre avenant a été enregistré pendant votre saisie. Rechargez : vos changements seront recalculés.",
+    );
+  }
+}

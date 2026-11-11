@@ -21,7 +21,8 @@ import { describeAmendment } from "./company-mercuriale-support.js";
 import { assertNotReservedElsewhere, assertOnSale } from "./sale-reference-support.js";
 import { ReservedElsewhereReader } from "../../domain/ports/reserved-elsewhere.reader.js";
 import { VolumeCommitmentReader } from "../../domain/ports/volume-commitment.reader.js";
-import { assertNoVolumeCommitmentUnder, generalDiscountOf } from "./general-discount-support.js";
+import { assertNoVolumeCommitmentUnder } from "./general-discount-support.js";
+import { amendmentDraftOf } from "./amendment-draft-support.js";
 
 @CommandHandler(AmendCompanyMercurialeCommand)
 export class AmendCompanyMercurialeHandler implements ICommandHandler<
@@ -54,6 +55,8 @@ export class AmendCompanyMercurialeHandler implements ICommandHandler<
    *
    * @throws {PricedCompanyNotFoundError} l'identifiant ne désigne aucune société.
    * @throws {AmendedMercurialeNotFoundError} cette mercuriale n'est pas chez ce client.
+   * @throws {MercurialeAmendedMeanwhileError} `basedOnAmendmentId` annoncé, et un
+   *   autre avenant a été écrit depuis.
    * @throws {SaleReferenceNotOnSaleError} une ligne vise une référence qui ne se vend pas.
    * @throws {ReservedArticleRefusedError} une ligne ouverte vise un article réservé à un autre compte.
    * @throws les refus de `namedPolicy` (nouvelle politique de promotions).
@@ -82,13 +85,17 @@ export class AmendCompanyMercurialeHandler implements ICommandHandler<
       command.payload.promotionPolicy === undefined
         ? null
         : await namedPolicy(this.promotionNames, command.payload.promotionPolicy);
-    const draft = { ...draftOf(command, now), promotionPolicy: promotions?.policy ?? null };
+    const draft = amendmentDraftOf(command.payload, now, promotions?.policy ?? null);
     const amendmentId = this.ids.next();
 
     await this.uow.run(async () => {
       const mercuriale = await this.mercuriales.lockForAmendment(mercurialeId);
       if (mercuriale === null || mercuriale.companyId !== companyId) {
         throw new AmendedMercurialeNotFoundError(mercurialeId);
+      }
+      // Sous le verrou : un avenant écrit pendant la saisie est vu ici (§ 2.2).
+      if (command.payload.basedOnAmendmentId !== undefined) {
+        mercuriale.assertNotAmendedSince(command.payload.basedOnAmendmentId);
       }
       if (draft.generalDiscount?.set != null) {
         // La remise de l'avenant ne vaut que sur SA fenêtre, bornée par le document.
@@ -108,33 +115,6 @@ export class AmendCompanyMercurialeHandler implements ICommandHandler<
     });
     return amendmentId;
   }
-}
-
-/** Le contrat → l'intention du domaine. `validFrom` absent = maintenant (Q2). */
-function draftOf(command: AmendCompanyMercurialeCommand, now: Date): MercurialeAmendmentDraft {
-  const { payload } = command;
-  return {
-    // Le prix fixe est le seul palier de sa ligne, comme à la pose.
-    lines: payload.lines.map((line) => ({
-      sku: line.sku,
-      tiers: [{ minQuantity: 1, unitPriceMillicents: line.unitPriceMillicents }],
-    })),
-    endedSkus: payload.endedSkus,
-    validFrom: payload.validFrom === undefined ? now : new Date(payload.validFrom),
-    validTo: payload.validTo === null ? null : new Date(payload.validTo),
-    reason: payload.reason,
-    origin: null,
-    ...(payload.generalDiscount === undefined
-      ? {}
-      : {
-          generalDiscount: {
-            set:
-              payload.generalDiscount.set === null
-                ? null
-                : generalDiscountOf(payload.generalDiscount.set),
-          },
-        }),
-  };
 }
 
 /**

@@ -208,7 +208,8 @@ export function posedMercurialeView(
   };
 }
 
-function discountView(discount: GeneralDiscount | null): GeneralDiscountView | null {
+/** La remise générale au fil — partagée avec l'aperçu d'un avenant. */
+export function discountView(discount: GeneralDiscount | null): GeneralDiscountView | null {
   return discount === null
     ? null
     : {
@@ -218,7 +219,8 @@ function discountView(discount: GeneralDiscount | null): GeneralDiscountView | n
       };
 }
 
-function policyOf(policy: PromotionAdmission): MercurialePromotionPolicyView {
+/** La politique de promotions au fil — partagée avec l'aperçu d'un avenant. */
+export function policyOf(policy: PromotionAdmission): MercurialePromotionPolicyView {
   return { mode: policy.mode, promotionIds: [...policy.promotionIds] };
 }
 

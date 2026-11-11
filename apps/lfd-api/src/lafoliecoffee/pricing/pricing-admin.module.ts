@@ -65,6 +65,9 @@ import { PrismaPriceTemplateRepository } from "./infrastructure/prisma-price-tem
 import { AdminPriceTemplatesController } from "./http/admin-price-templates.controller.js";
 import { AdminCompanyPricingController } from "./http/admin-company-pricing.controller.js";
 import { CompanyPricingQuery } from "./application/queries/company-pricing.query.js";
+import { CompanyPriceSheets } from "./application/ports/company-price-sheet.js";
+import { PortsCompanyPriceSheets } from "./application/company-price-sheets.service.js";
+import { PreviewMercurialeAmendmentHandler } from "./application/queries/preview-mercuriale-amendment.handler.js";
 import { MercurialeDraftStore } from "./application/ports/mercuriale-draft.store.js";
 import { PrismaMercurialeDraftStore } from "./infrastructure/prisma-mercuriale-draft.store.js";
 import { PriceTemplatesReader } from "./application/ports/price-templates.reader.js";
@@ -168,6 +171,8 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
     PriceTemplatesQuery,
     MercurialeBenchmarkQuery,
     CompanyPricingQuery,
+    { provide: CompanyPriceSheets, useClass: PortsCompanyPriceSheets },
+    PreviewMercurialeAmendmentHandler,
     // Les lectures de ces cinq contrôleurs ont chacune un NOM et un handler
     // depuis le 2026-09-09 : les services ci-dessus ne s'injectent plus dans du
     // HTTP, ils sont délégués depuis le bus.
