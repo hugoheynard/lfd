@@ -190,6 +190,13 @@
   white-space: nowrap;
 }
 
+// Le prix à cet étage, sous son écart : plus discret, il dit où l'on en est.
+.effect-price {
+  display: block;
+  font-weight: 400;
+  color: var(--fold-color-text-muted);
+}
+
 // Le prix final est le point d'arrivée : il se lit avant les étapes.
 .effect.is-final {
   font-size: var(--fold-text-sm, 0.875rem);

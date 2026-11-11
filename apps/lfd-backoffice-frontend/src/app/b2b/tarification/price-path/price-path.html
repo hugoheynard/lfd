@@ -59,7 +59,14 @@
         <span class="effect" [class]="'is-' + leg.kind" [attr.data-stage]="leg.stage">
           <!-- L'effet est SIGNÉ et écrit : « −0,17 € ». Le signe ne se déduit
                pas d'une couleur, qui ne se lit ni en daltonien ni imprimée. -->
-          {{ leg.effect ?? euros(leg.amountMillicents) }}
+          @if (leg.effect; as effect) {
+            {{ effect }}
+            <!-- Et le prix une fois l'étage passé : l'écart seul oblige à
+                 refaire la soustraction pour savoir où l'on en est. -->
+            <span class="effect-price">{{ euros(leg.amountMillicents) }}</span>
+          } @else {
+            {{ euros(leg.amountMillicents) }}
+          }
         </span>
       }
     </div>
