@@ -2,8 +2,9 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal } f
 import { RouterLink } from '@angular/router';
 import type { PriceTemplateKind, PriceTemplateView } from '@lfd/contracts';
 import { formatEuros } from '@lfd/catalog-ui';
-import { FoldButtonComponent, FoldEmptyStateComponent } from 'fold-ng';
+import { FoldButtonComponent, FoldDangerZoneComponent, FoldEmptyStateComponent } from 'fold-ng';
 
+import { NotifyService } from '../../../notify.service';
 import { PriceTemplatesService } from '../templates.service';
 import {
   averageGapBp,
@@ -46,7 +47,7 @@ const COPY: Readonly<Record<PriceTemplateKind, { title: string; hint: string }>>
 @Component({
   selector: 'app-gabarits-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, FoldButtonComponent, FoldEmptyStateComponent],
+  imports: [RouterLink, FoldButtonComponent, FoldDangerZoneComponent, FoldEmptyStateComponent],
   templateUrl: './gabarits-page.html',
   styleUrl: './gabarits-page.scss',
 })
@@ -55,6 +56,7 @@ export class GabaritsPage {
   readonly kind = input.required<PriceTemplateKind>();
 
   private readonly templates = inject(PriceTemplatesService);
+  private readonly notify = inject(NotifyService);
 
   protected readonly euros = formatEuros;
   protected readonly isFlatPrice = isFlatPrice;
@@ -83,6 +85,22 @@ export class GabaritsPage {
     } catch {
       this.state.set('error');
     }
+  }
+
+  /**
+   * **Archiver**, puis relire la liste : le serveur en retire le gabarit. Un
+   * refus (déjà archivé, introuvable) dit qu'on regardait une liste périmée —
+   * on la relit aussi.
+   */
+  protected async archive(id: string): Promise<void> {
+    try {
+      await this.templates.archive(id);
+      this.notify.success('Gabarit archivé.');
+    } catch (error) {
+      this.notify.refused(error, "Le gabarit n'a pas pu être archivé.");
+    }
+    this.opened.set(null);
+    await this.load();
   }
 
   protected toggle(id: string): void {

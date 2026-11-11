@@ -84,6 +84,11 @@
   overflow-x: auto;
 }
 
+.archive-zone {
+  display: block;
+  margin: var(--fold-space-md);
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;

@@ -1,6 +1,9 @@
 import { BusinessError, DomainError } from "../../../../../platform/shared/errors/app-error.js";
 import { PriceTemplate, type PriceTemplateDraft } from "../price-template.js";
-import { ArchivedPriceTemplateIsSealedError } from "../../pricing-errors.js";
+import {
+  ArchivedPriceTemplateIsSealedError,
+  ArchivedPriceTemplateNotPosableError,
+} from "../../pricing-errors.js";
 
 const GRILLE: PriceTemplateDraft = {
   kind: "mercuriale",
@@ -20,11 +23,6 @@ const archive = (): PriceTemplate =>
 /**
  * **Le scellement d'un gabarit archivé, et sa CATÉGORIE.**
  *
- * 🔴 Ce refus est éprouvé ici et non par un e2e, parce qu'**aucune route ne
- * l'atteint** : archiver un gabarit n'a pas d'appelant — c'est la trace morte
- * que R10 recense (vérifié le 2026-09-09). Le dire plutôt que de laisser croire
- * qu'un e2e manque par négligence.
- *
  * La catégorie est le sujet, pas le refus. `Archived*IsSealedError` vaut
  * **409** partout ailleurs dans ce contexte ; le gabarit répondait **400**,
  * c'est-à-dire « votre saisie est mauvaise » là où aucune saisie ne pouvait
@@ -33,6 +31,16 @@ const archive = (): PriceTemplate =>
 describe("un gabarit archivé est scellé", () => {
   it("refuse de retoucher une grille archivée", () => {
     expect(() => archive().revise(GRILLE)).toThrow(ArchivedPriceTemplateIsSealedError);
+  });
+
+  /** Régression : un gabarit archivé se posait encore chez un client par `POST …/:id/apply`. */
+  it("refuse de se poser chez un client", () => {
+    expect(() => archive().linesToPose()).toThrow(ArchivedPriceTemplateNotPosableError);
+  });
+
+  it("un gabarit vivant rend ses lignes à poser", () => {
+    const lines = PriceTemplate.compose("tpl_1", GRILLE, "auth0|staff").linesToPose();
+    expect(lines.map((line) => line.sku)).toEqual(["VIE-001"]);
   });
 
   it("refuse de l'archiver deux fois", () => {

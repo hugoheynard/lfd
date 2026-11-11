@@ -50,22 +50,28 @@ export class NonDecreasingTemplateTiersError extends DomainError {
 /**
  * Un gabarit archivé ne se retouche plus : on en compose un nouveau.
  *
- * **409 depuis le 2026-09-09**, comme `Archived*IsSealedError` partout ailleurs
- * : la grille envoyée est parfaitement bien formée, c'est l'état du gabarit qui
- * la refuse. Le 400 disait au staff de corriger sa saisie, alors qu'aucune
- * saisie ne pouvait passer (R18).
- *
- * ⚠️ **Aucune route ne l'atteint aujourd'hui** : archiver un gabarit n'a pas
- * d'appelant — c'est la trace morte que R10 recense. Ce refus se tient donc au
- * niveau de l'agrégat, et c'est là qu'il est éprouvé. Le corriger malgré tout,
- * c'est refuser qu'une catégorie fausse attende, invisible, le jour où
- * quelqu'un branchera le geste (vérifié le 2026-09-09).
+ * **409** comme `Archived*IsSealedError` partout ailleurs : la grille envoyée
+ * est bien formée, c'est l'état du gabarit qui la refuse. Atteint par la
+ * révision, le report de ligne et l'archivage (`POST …/templates/:id/archive`).
  */
 export class ArchivedPriceTemplateIsSealedError extends BusinessError {
   constructor(id: string) {
     super(
       "pricing.template.archived_is_sealed",
       `Le gabarit ${id} est archivé : il ne se retouche plus, un nouveau se compose.`,
+    );
+  }
+}
+
+/**
+ * Un gabarit archivé ne se pose plus chez un client : l'archiver, c'est le
+ * retirer des choix. Les mercuriales qu'il a déjà posées ne bougent pas.
+ */
+export class ArchivedPriceTemplateNotPosableError extends BusinessError {
+  constructor(label: string) {
+    super(
+      "pricing.template.archived_not_posable",
+      `Le gabarit « ${label} » est archivé : il ne se pose plus chez un client. Composez-en un nouveau, ou posez la mercuriale à la main.`,
     );
   }
 }

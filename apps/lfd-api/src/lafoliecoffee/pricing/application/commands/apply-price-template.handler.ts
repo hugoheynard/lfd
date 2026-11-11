@@ -55,11 +55,12 @@ export class ApplyPriceTemplateHandler implements ICommandHandler<
     if (template === null) {
       throw new PriceTemplateNotFoundError(command.id);
     }
+    const lines = template.linesToPose();
     // Relu à l'application, pas seulement à l'enregistrement : un article du
     // gabarit a pu être retiré entre-temps (L5).
     await assertOnSale(
       this.references,
-      template.lines.map((line) => line.sku),
+      lines.map((line) => line.sku),
       "pro",
     );
     const state = template.toPersistence();
@@ -73,7 +74,7 @@ export class ApplyPriceTemplateHandler implements ICommandHandler<
         label: state.label,
         // Les lignes du gabarit **telles quelles**, moins `plannedVolume` :
         // c'était l'hypothèse de négociation, elle a servi.
-        lines: template.lines.map((line) => ({ sku: line.sku, tiers: line.tiers })),
+        lines: lines.map((line) => ({ sku: line.sku, tiers: line.tiers })),
         validFrom,
         validTo,
       },

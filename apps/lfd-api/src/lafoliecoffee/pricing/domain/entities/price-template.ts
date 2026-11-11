@@ -1,5 +1,6 @@
 import {
   ArchivedPriceTemplateIsSealedError,
+  ArchivedPriceTemplateNotPosableError,
   EmptyPriceTemplateError,
   NonDecreasingTemplateTiersError,
   DuplicateTemplateSkuError,
@@ -131,7 +132,7 @@ export class PriceTemplate {
 
   /**
    * **Remplacer la ligne de l'ancienne référence par la nouvelle**
-   * (`plan-report-apres-detachement.md`, § 2.2, R5 — Hugo, 2026-10-30).
+   * (`saisir-un-prix.md`, § 4 — Hugo, 2026-10-30).
    *
    * Pas un report daté : un gabarit n'a ni fenêtre ni société, il n'a jamais
    * facturé. La ligne garde ses paliers et son volume prévu, et seule sa
@@ -158,6 +159,18 @@ export class PriceTemplate {
         line.sku === fromSku ? { ...line, sku: toSku } : line,
       ),
     });
+  }
+
+  /**
+   * **Les lignes à poser chez un client.** Seul un gabarit vivant se pose.
+   *
+   * @throws {ArchivedPriceTemplateNotPosableError} le gabarit est archivé.
+   */
+  linesToPose(): readonly TemplateLine[] {
+    if (this.state.archivedAt !== null) {
+      throw new ArchivedPriceTemplateNotPosableError(this.state.label);
+    }
+    return this.state.lines;
   }
 
   archive(at: Date): PriceTemplate {

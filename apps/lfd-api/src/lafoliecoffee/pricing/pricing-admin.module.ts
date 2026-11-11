@@ -60,6 +60,7 @@ import { MercurialeBenchmarkQuery } from "./application/queries/mercuriale-bench
 import { PriceTemplatesQuery } from "./application/queries/price-templates.query.js";
 import { ApplyPriceTemplateHandler } from "./application/commands/apply-price-template.handler.js";
 import { SavePriceTemplateHandler } from "./application/commands/save-price-template.handler.js";
+import { ArchivePriceTemplateHandler } from "./application/commands/archive-price-template.handler.js";
 import { PriceTemplateRepository } from "./domain/ports/price-template.repository.js";
 import { PrismaPriceTemplateRepository } from "./infrastructure/prisma-price-template.repository.js";
 import { AdminPriceTemplatesController } from "./http/admin-price-templates.controller.js";
@@ -209,7 +210,7 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
     PoseCompanyMercurialeHandler,
     AmendCompanyMercurialeHandler,
     CarryOverMercurialeLineHandler,
-    // Le report des cinq autres familles (`plan-report-apres-detachement.md`) :
+    // Le report des cinq autres familles (`saisir-un-prix.md`) :
     // chacun sous la surface de SA famille, sérialisé par un verrou consultatif.
     CarryOverPriceRuleHandler,
     CarryOverPriceFloorHandler,
@@ -223,6 +224,7 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
     RenameCompanyMercurialeHandler,
     CorrectMercurialeWindowHandler,
     SavePriceTemplateHandler,
+    ArchivePriceTemplateHandler,
     ApplyPriceTemplateHandler,
     // Possède « écrire un acte » : l'état, le journal du domaine et son miroir
     // au journal général, dans une seule transaction. Il vit ICI et pas dans le

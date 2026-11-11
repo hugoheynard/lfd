@@ -130,6 +130,19 @@
               </tbody>
             </table>
           </div>
+          <fold-danger-zone
+            class="archive-zone"
+            appearance="section"
+            title="Archiver le gabarit"
+            actionLabel="Archiver le gabarit"
+            [confirmPhrase]="template.label"
+            (confirmed)="archive(template.id)"
+          >
+            <p>
+              «&nbsp;{{ template.label }}&nbsp;» ne sera plus proposé. Les mercuriales déjà posées
+              depuis ce gabarit ne changent pas&nbsp;: elles portent leurs propres prix.
+            </p>
+          </fold-danger-zone>
         }
       </section>
     }

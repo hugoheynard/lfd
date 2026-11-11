@@ -2068,6 +2068,27 @@ describe("les gabarits tarifaires", () => {
     const company = await createCompany(ctx.prisma);
     await apply(inconnu, company.id).expect(404);
   });
+
+  /**
+   * **Archiver** : le gabarit sort de la liste de choix, un second archivage
+   * est refusé (l'écran montrait une liste périmée), l'inconnu répond 404.
+   */
+  it("archive un gabarit : absent de la liste, 409 au second geste, 404 sur l'inconnu", async () => {
+    const { id } = jsonBody<{ id: string }>(
+      await compose([
+        { sku: SKU, tiers: [{ minQuantity: 1, unitPriceMillicents: 150_000 }] },
+      ]).expect(201),
+    );
+
+    await staff().post(`/admin/pricing/templates/${id}/archive`).expect(204);
+
+    const listed = jsonBody<readonly { id: string }[]>(
+      await staff().get("/admin/pricing/templates?kind=mercuriale").expect(200),
+    );
+    expect(listed.map((t) => t.id)).not.toContain(id);
+    await staff().post(`/admin/pricing/templates/${id}/archive`).expect(409);
+    await staff().post("/admin/pricing/templates/tpl_ceci_nexiste_pas/archive").expect(404);
+  });
 });
 
 /**

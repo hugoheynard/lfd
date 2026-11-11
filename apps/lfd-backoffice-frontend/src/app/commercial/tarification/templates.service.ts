@@ -59,6 +59,16 @@ export class PriceTemplatesService {
     await firstValueFrom(this.http.put<void>(`${this.base}/${encodeURIComponent(id)}`, payload));
   }
 
+  /**
+   * **Archiver** — le gabarit sort des listes de choix ; les mercuriales déjà
+   * posées depuis lui portent leurs propres lignes et ne changent pas.
+   */
+  async archive(id: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(`${this.base}/${encodeURIComponent(id)}/archive`, null),
+    );
+  }
+
   /** Rend le nombre de règles posées — une ligne à deux paliers en pose deux. */
   async apply(id: string, payload: ApplyPriceTemplatePayload): Promise<PosedRulesResponse> {
     return firstValueFrom(

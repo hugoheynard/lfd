@@ -28,6 +28,7 @@ import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js"
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody, ZodParam } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ApplyPriceTemplateCommand } from "../application/commands/apply-price-template.command.js";
+import { ArchivePriceTemplateCommand } from "../application/commands/archive-price-template.command.js";
 import { SavePriceTemplateCommand } from "../application/commands/save-price-template.command.js";
 import { CarryOverPriceTemplateLineCommand } from "../application/commands/carry-over-price-template-line.command.js";
 import { GetPriceTemplateQuery } from "../application/queries/get-price-template.query.js";
@@ -121,6 +122,19 @@ export class AdminPriceTemplatesController {
   }
 
   /**
+   * **Archiver** — le gabarit sort des listes de choix et ne se retouche plus.
+   * Les mercuriales déjà posées depuis lui portent leurs propres lignes : elles
+   * ne bougent pas. 404 s'il n'existe pas, 409 s'il est déjà archivé.
+   */
+  @Post(":id/archive")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async archive(@Param("id") id: string): Promise<void> {
+    await this.commands.execute<ArchivePriceTemplateCommand, void>(
+      new ArchivePriceTemplateCommand(id),
+    );
+  }
+
+  /**
    * **Poser le gabarit chez un client.** Rend le nombre de règles posées : une
    * grille de trente lignes à deux paliers en pose soixante, et « appliqué » sans
    * chiffre laisserait croire qu'une ligne vaut une règle.
@@ -140,7 +154,7 @@ export class AdminPriceTemplatesController {
 
   /**
    * **Remplacer** l'ancienne référence par la nouvelle dans ce gabarit
-   * (`plan-report-apres-detachement.md`, R5) — l'édition qui tient lieu de
+   * (`saisir-un-prix.md`, § 4) — l'édition qui tient lieu de
    * report pour une grille sans fenêtre. Rend l'identifiant du gabarit.
    */
   @Post(":id/carry-over")
