@@ -71,6 +71,26 @@ alternative.
 - **Au journal tarifaire** : la pose et chaque avenant disent la remise
   générale et ses exclusions.
 
+## Un taux par famille (Hugo, 2026-11-11)
+
+« −40 % sur le pain, −30 % sur les viennoiseries » : **chaque ligne du
+sélecteur porte son taux**, et la ligne la plus précise gagne — déclinaison,
+puis famille la plus proche, puis le taux de base du mode. Une ligne sans taux
+est une **exclusion**.
+
+| Ligne                                  | Remise |
+| -------------------------------------- | ------ |
+| Tout le catalogue (mode « tout sauf ») | −30 %  |
+| Famille Pains                          | −40 %  |
+| Sous-famille Pains spéciaux            | −25 %  |
+| Famille Chocolat                       | exclue |
+| Déclinaison Baguette tradition         | −35 %  |
+
+En mode « rien sauf », il n'y a pas de taux de base : seules les lignes qui
+portent un taux remisent. Cette section **prime** sur le « un seul
+pourcentage » de D6 et du § 1 : D6 garde seulement « pas de palier de
+quantité ».
+
 # Partie 2 — Le code
 
 ## 1. Le modèle
@@ -80,10 +100,15 @@ gagne un champ :
 
 ```ts
 interface GeneralDiscount {
-  /** En points de base, 1 à 9 999. */
-  readonly bp: number;
-  /** `all_except` / `only`, cibles `category` et `variant` seulement (D3). */
-  readonly scope: PromotionScope;
+  readonly mode: "all_except" | "only";
+  /** Le taux de base, en points de base (1 à 9 999). Présent en `all_except`, `null` en `only`. */
+  readonly baseBp: number | null;
+  /** Cibles `category` et `variant` seulement (D3). `bp: null` = exclue. */
+  readonly rules: readonly {
+    readonly target: "category" | "variant";
+    readonly targetId: string;
+    readonly bp: number | null;
+  }[];
 }
 
 // CompanyMercurialeState
@@ -124,9 +149,15 @@ Tout passe par `mercurialeRuleFor` (`entities/mercuriale-rule.ts`), qui reste
 règle `replace` quand l'article a un prix ferme. Il rendra :
 
 1. le prix ferme, comme aujourd'hui, s'il y en a un (D2) ;
-2. **sinon**, si une remise générale court à cette date et couvre l'article
-   (`promotionScopeMatch` avec `{ sku, productId: null, categoryPath }` et le
-   point ligne, `extendsToWeight: true` — D4), une règle :
+2. **sinon**, si une remise générale court à cette date et qu'une décision
+   la couvre — la déclinaison, sinon la famille la plus proche, sinon le taux
+   de base du mode — avec un taux, une règle à ce taux. La recherche de la
+   décision est celle de `promotionScopeMatch`
+   (`packages/contracts/src/promotion-scope.ts`), mais elle doit rendre **la
+   règle qui décide**, pas seulement un rang : on en extrait une fonction
+   pure qui rend la règle (`articleRuleOf` / `nearestFamilyRule`), que
+   `promotionScopeMatch` réutilise sans changer de comportement (D4 : le poids
+   est couvert, comme `extendsToWeight: true`). Une règle :
 
 ```ts
 {
