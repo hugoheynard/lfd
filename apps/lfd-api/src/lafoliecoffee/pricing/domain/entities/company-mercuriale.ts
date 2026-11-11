@@ -1,17 +1,6 @@
-import {
-  admissionAt,
-  checkedAdmission,
-  NO_PROMOTION_ADMITTED,
-  type PromotionAdmission,
-} from "./mercuriale-promotion-policy.js";
-import {
-  ArchivedMercurialeIsSealedError,
-  EmptyMercurialeError,
-  MercurialeAmendedMeanwhileError,
-  ReversedValidityWindowError,
-} from "../pricing-errors.js";
-import { normalizeGrid } from "../pricing-grid.js";
-import { IN_FORCE, statusOf, suspendedFromOf } from "../rule-lifecycle.js";
+import { admissionAt, type PromotionAdmission } from "./mercuriale-promotion-policy.js";
+import { ArchivedMercurialeIsSealedError } from "../pricing-errors.js";
+import { statusOf, suspendedFromOf } from "../rule-lifecycle.js";
 import { closedState } from "./mercuriale-closing.js";
 import type { RuleStatus } from "../rule-lifecycle.js";
 import type {
@@ -20,7 +9,6 @@ import type {
   MercurialeLine,
 } from "./company-mercuriale-state.js";
 import {
-  checkedGeneralDiscount,
   generalDiscountAt,
   type GeneralDiscount,
   type SpeakingGeneralDiscount,
@@ -31,12 +19,9 @@ import type {
   MercurialeAmendment,
   MercurialeAmendmentDraft,
 } from "./mercuriale-amendment.js";
-import {
-  MERCURIALE_REFUSALS,
-  assertNoDoubleNegotiation,
-  checkedAmendment,
-} from "./mercuriale-amendment-checks.js";
+import { amendedState, assertNotAmendedSince, latestAmendmentIdOf } from "./mercuriale-amending.js";
 import { carryOverDraft, type CarryOver } from "./mercuriale-carry-over.js";
+import { posedState } from "./mercuriale-posing.js";
 import { mercurialeMissesTier, mercurialeRuleFor, segmentFor } from "./mercuriale-rule.js";
 import { allSegments, linesAt } from "./mercuriale-segments.js";
 import { correctedWindowState } from "./mercuriale-window-correction.js";
@@ -91,10 +76,10 @@ export type {
  *
  * ## La grille ne se réécrit pas — elle s'amende
  *
- * Décision du 2026-09-08 : on la pose entière, on la clôt entière, et la
- * grille posée n'est jamais réécrite — le **libellé** se corrige
+ * On la pose entière, on la clôt entière, et la grille posée n'est jamais
+ * réécrite (décidé par Hugo le 2026-09-08) — le **libellé** se corrige
  * (cf. {@link rename}), et les **dates** tant qu'elle n'a pas commencé
- * (cf. {@link correctWindow}). Depuis le 2026-10-29, un **avenant** daté ajoute une
+ * (cf. {@link correctWindow}). Un **avenant** daté ajoute une
  * ligne, ou en arrête une à une date (changer un prix = arrêter puis ouvrir),
  * sans toucher la grille (cf. {@link amend}, `mercuriale-amendment.ts`) : ce
  * qu'une facture passée explique reste intact.
@@ -119,28 +104,7 @@ export class CompanyMercuriale {
    * @throws {ReversedValidityWindowError} fenêtre qui se ferme avant de s'ouvrir.
    */
   static pose(id: string, draft: CompanyMercurialeDraft, createdBy: string): CompanyMercuriale {
-    if (draft.validTo !== null && draft.validTo.getTime() <= draft.validFrom.getTime()) {
-      throw new ReversedValidityWindowError(draft.validFrom, draft.validTo);
-    }
-    const generalDiscount =
-      draft.generalDiscount === undefined || draft.generalDiscount === null
-        ? null
-        : checkedGeneralDiscount(draft.generalDiscount);
-    if (draft.lines.length === 0 && generalDiscount === null) {
-      throw new EmptyMercurialeError();
-    }
-    return new CompanyMercuriale({
-      ...draft,
-      promotionPolicy: checkedAdmission(draft.promotionPolicy ?? NO_PROMOTION_ADMITTED),
-      generalDiscount,
-      // La grille vide n'est admise qu'à côté d'une remise générale (D5) ;
-      // `normalizeGrid` la refuse, et garde ce refus pour les gabarits.
-      lines: draft.lines.length === 0 ? [] : normalizeGrid(draft.lines, MERCURIALE_REFUSALS),
-      id,
-      createdBy,
-      lifecycle: IN_FORCE,
-      amendments: [],
-    });
+    return new CompanyMercuriale(posedState(id, draft, createdBy));
   }
 
   /** Reconstruit sans revérifier : ce qui est en base y est déjà passé. */
@@ -223,18 +187,7 @@ export class CompanyMercuriale {
    */
   amend(id: string, draft: MercurialeAmendmentDraft, by: string, now: Date): CompanyMercuriale {
     this.assertNotArchived();
-    const amendment: MercurialeAmendment = {
-      ...checkedAmendment(this.state, draft, now),
-      id,
-      createdBy: by,
-      createdAt: now,
-      archivedAt: null,
-      archivedBy: null,
-      archiveReason: null,
-    };
-    const amended = { ...this.state, amendments: [...this.state.amendments, amendment] };
-    assertNoDoubleNegotiation(amended, amendment);
-    return new CompanyMercuriale(amended);
+    return new CompanyMercuriale(amendedState(this.state, id, draft, by, now));
   }
 
   /**
@@ -242,7 +195,7 @@ export class CompanyMercuriale {
    * avoir vu quand il amende (cf. {@link assertNotAmendedSince}).
    */
   get latestAmendmentId(): string | null {
-    return this.state.amendments.filter((a) => a.archivedAt === null).at(-1)?.id ?? null;
+    return latestAmendmentIdOf(this.state);
   }
 
   /**
@@ -252,10 +205,7 @@ export class CompanyMercuriale {
    * @throws {MercurialeAmendedMeanwhileError} le dernier avenant n'est pas celui annoncé.
    */
   assertNotAmendedSince(basedOnAmendmentId: string | null): void {
-    const latest = this.latestAmendmentId;
-    if (latest !== basedOnAmendmentId) {
-      throw new MercurialeAmendedMeanwhileError(basedOnAmendmentId, latest);
-    }
+    assertNotAmendedSince(this.state, basedOnAmendmentId);
   }
 
   /**
