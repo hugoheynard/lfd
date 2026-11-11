@@ -24,7 +24,7 @@
   </div>
 
   <div class="tf-pose-field">
-    <label class="tf-pose-label" for="tf-to">Jusqu'au</label>
+    <label class="tf-pose-label" for="tf-to">Jusqu'au (facultatif)</label>
     <input id="tf-to" type="date" [value]="validTo()" (change)="validTo.set(nativeValue($event))" />
   </div>
 
@@ -261,6 +261,15 @@
 
     <ng-template foldCell="effort" let-row>
       <app-volume-effort [elasticity]="row.elasticity" />
+      <!-- Ce que l'effort compare : le prix de base au prix de ce client tant
+           qu'on n'a rien tapé, au prix ferme dès qu'on tape. -->
+      @if (row.elasticity; as elastic) {
+        <span class="tf-note" data-effort-basis>
+          {{ euros(elastic.fromMillicents) }} → {{ euros(elastic.toMillicents) }} ({{
+            row.priceEuros === null ? 'prix base / prix de ce client' : 'prix base / prix ferme'
+          }})
+        </span>
+      }
     </ng-template>
   </fold-data-table>
 }
