@@ -1,5 +1,6 @@
 import type { PosedMercurialeAmendmentView, PromotionView } from '@lfd/contracts';
 
+import { discountPhrase } from '../general-discount';
 import { policyPhrase } from '../promotion-policy';
 
 const DAY = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeZone: 'Europe/Paris' });
@@ -12,6 +13,7 @@ const DAY = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeZone: 'Eu
 export function amendmentLine(
   amendment: PosedMercurialeAmendmentView,
   promotions: readonly PromotionView[] | null = null,
+  names: ReadonlyMap<string, string> = new Map(),
 ): string {
   const from = DAY.format(new Date(amendment.validFrom));
   const window =
@@ -27,6 +29,14 @@ export function amendmentLine(
   }
   if (amendment.promotionPolicy !== undefined && amendment.promotionPolicy !== null) {
     gestures.push(`promotions : ${policyPhrase(amendment.promotionPolicy, promotions)}`);
+  }
+  const discount = amendment.generalDiscount;
+  if (discount !== undefined && discount !== null) {
+    gestures.push(
+      discount.set === null
+        ? 'arrête la remise générale'
+        : `remise générale : ${discountPhrase(discount.set, names)}`,
+    );
   }
   const author = amendment.createdByName ?? amendment.createdBy;
   return `${window} — ${gestures.join(' · ')} — « ${amendment.reason} » — ${author}`;

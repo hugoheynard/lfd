@@ -82,3 +82,17 @@
   color: var(--fold-color-text-muted);
   font-variant-numeric: tabular-nums;
 }
+
+// La remise générale : sa phrase, puis ses lignes.
+.tf-discount {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.tf-discount-list {
+  margin: 0;
+  padding-inline-start: var(--fold-space-lg);
+  font-size: var(--fold-text-base, 0.875rem);
+  color: var(--fold-color-text-muted);
+}

@@ -140,3 +140,56 @@ describe('le nom du fichier', () => {
     expect(mercurialeFileName({ ...MERCURIALE, label: '///' })).toBe('mercuriale-sans-nom.csv');
   });
 });
+
+describe('la remise générale', () => {
+  const DISCOUNTED: PosedMercurialeView = {
+    ...MERCURIALE,
+    generalDiscount: {
+      mode: 'all_except',
+      baseBp: 3000,
+      rules: [
+        { target: 'category', targetId: 'cat_pain', bp: 4000 },
+        { target: 'category', targetId: 'cat_choco', bp: null },
+      ],
+    },
+  };
+  const NAMES = new Map([
+    ['cat_pain', 'Pains'],
+    ['cat_choco', 'Chocolat'],
+  ]);
+
+  it('prend une ligne sous l’identité : taux de base, taux particuliers, exclusions', () => {
+    const [, second, third] = mercurialeCsv(DISCOUNTED, [row()], NAMES).split('\r\n');
+
+    expect(second).toBe(
+      '"Remise générale : −30 % sur tout le catalogue, sauf : Pains : −40 % ; Chocolat : exclue"',
+    );
+    expect(third).toBe('');
+  });
+
+  it('dit « seulement » quand il n’y a pas de taux de base', () => {
+    const csv = mercurialeCsv(
+      {
+        ...MERCURIALE,
+        generalDiscount: {
+          mode: 'only',
+          baseBp: null,
+          rules: [{ target: 'variant', targetId: 'VIE-012', bp: 1550 }],
+        },
+      },
+      [],
+    );
+
+    expect(csv).toContain(
+      'Remise générale : Seulement sur les lignes suivantes : VIE-012 : −15,5 %',
+    );
+  });
+
+  it('n’ajoute rien sans remise générale', () => {
+    const [, second] = mercurialeCsv({ ...MERCURIALE, generalDiscount: null }, [row()]).split(
+      '\r\n',
+    );
+
+    expect(second).toBe('');
+  });
+});

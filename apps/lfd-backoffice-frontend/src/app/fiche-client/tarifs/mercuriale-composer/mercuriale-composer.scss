@@ -32,6 +32,11 @@
   flex: 1 1 100%;
 }
 
+// L'avertissement de la limite prend sa ligne, sous le décompte.
+.tf-pose-wide {
+  flex: 1 1 100%;
+}
+
 .tf-pose-field {
   display: flex;
   flex-direction: column;

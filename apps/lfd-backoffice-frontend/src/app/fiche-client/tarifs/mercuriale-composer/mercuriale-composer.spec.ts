@@ -6,6 +6,7 @@ import { PromotionsService } from '../../../targeted-promotions/promotions.servi
 import { CompanyPricingService } from '../company-pricing.service';
 import { NO_PROMOTION_POLICY, type PromotionPolicyForm } from '../promotion-policy';
 import type { DraftPrices } from '../draft-prices';
+import type { GeneralDiscountForm } from '../general-discount';
 import { MercurialeComposer } from './mercuriale-composer';
 
 /** La pose n'est offerte qu'avec un nom, deux dates et au moins un prix. */
@@ -15,6 +16,7 @@ function mount(
   to: string,
   draft: DraftPrices,
   policy: PromotionPolicyForm = NO_PROMOTION_POLICY,
+  discount: GeneralDiscountForm | null = null,
 ) {
   TestBed.configureTestingModule({
     providers: [
@@ -32,6 +34,7 @@ function mount(
   fixture.componentRef.setInput('validTo', to);
   fixture.componentRef.setInput('draft', draft);
   fixture.componentRef.setInput('promotionPolicy', policy);
+  fixture.componentRef.setInput('generalDiscount', discount);
   fixture.detectChanges();
   return fixture.componentInstance;
 }
@@ -76,5 +79,27 @@ describe('<app-mercuriale-composer>', () => {
     );
     expect(composer['canPose']()).toBe(false);
     expect(composer['policyProblem']()).toContain('au moins une');
+  });
+
+  it('D5 : pose une mercuriale qui ne porte qu’une remise générale', () => {
+    const composer = mount('Mercuriale 2027', '2027-01-01', '', new Map(), NO_PROMOTION_POLICY, {
+      mode: 'all_except',
+      baseBp: 1500,
+      lines: [],
+    });
+    expect(composer['canPose']()).toBe(true);
+  });
+
+  it('ne pose pas une remise incomplète', () => {
+    const composer = mount(
+      'Mercuriale 2027',
+      '2027-01-01',
+      '',
+      new Map([['VIE-001-1', '0.90']]),
+      NO_PROMOTION_POLICY,
+      { mode: 'all_except', baseBp: null, lines: [] },
+    );
+    expect(composer['canPose']()).toBe(false);
+    expect(composer['discountProblem']()).toContain('taux de base');
   });
 });

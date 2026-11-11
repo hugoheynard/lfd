@@ -64,8 +64,27 @@
     @if (summary().floored > 0) {
       · <strong>{{ summary().floored }}</strong> relevé(s) par une limite
     }
+    @if (discounted().size > 0) {
+      · <strong>{{ discounted().size }}</strong> par la remise générale
+    }
   </p>
+
+  <!-- Q3 : un pourcentage relevé à la limite n'est plus ce pourcentage. On
+       le dit avant de poser ; la pose reste permise. -->
+  @if (flooredByDiscount().length > 0) {
+    <fold-callout class="tf-pose-wide" variant="warning" data-discount-floored>
+      La remise générale passe sous la limite de {{ flooredByDiscount().length }} article(s),
+      relevés à la limite : {{ flooredByDiscount().join(', ') }}.
+    </fold-callout>
+  }
 </section>
+
+<!-- La remise générale, au-dessus de la table qu'elle remplit. -->
+<app-general-discount-picker
+  [(discount)]="generalDiscount"
+  [categories]="categories()"
+  [firmSkus]="firmSkus()"
+/>
 
 @if (blocked()) {
   <fold-callout variant="warning">
@@ -239,6 +258,16 @@
            le chiffre tapé n'est pas celui qui sera facturé, et ça se lit
            là où on tape. Le ton de ligne le répète, il ne le porte pas
            seul. -->
+      <!-- Sans prix ferme, la remise générale fait le prix : en gris, sous
+           le champ vide. Le prix tapé l'emporte (D2). -->
+      @if (row.priceEuros === null && discounted().get(row.sku); as cut) {
+        <span class="tf-note" data-discounted>
+          {{ euros(cut.finalMillicents) }} · {{ discountLabel(cut.bp) }} (remise générale)
+          @if (cut.floored) {
+            · relevé à la limite
+          }
+        </span>
+      }
       @if (row.floored && row.finalMillicents !== null) {
         <span class="tf-floored">relevé à {{ euros(row.finalMillicents) }}</span>
       }

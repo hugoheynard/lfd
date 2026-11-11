@@ -26,7 +26,7 @@ import {
   type FoldTableEmpty,
   type FoldTableTone,
 } from 'fold-ng';
-import type { CompanyPricingCategoryView } from '@lfd/contracts';
+import type { CompanyPricingCategoryView, GeneralDiscountPayload } from '@lfd/contracts';
 import { formatEuros } from '@lfd/catalog-ui';
 import { MILLICENTS_PER_CENT } from '@lfd/money';
 
@@ -45,6 +45,17 @@ import { CompanyPricingService } from '../company-pricing.service';
 import { toLines, withEuros, withoutPrice, type DraftPrices } from '../draft-prices';
 import { policyPayload, policyProblem, type PromotionPolicyForm } from '../promotion-policy';
 import { PromotionPolicyPicker } from '../promotion-policy-picker/promotion-policy-picker';
+import {
+  discountArticlesOf,
+  discountedArticles,
+  discountLabel,
+  discountPayload,
+  discountProblem,
+  discountViewOf,
+  flooredNames,
+  type GeneralDiscountForm,
+} from '../general-discount';
+import { GeneralDiscountPicker } from '../general-discount-picker/general-discount-picker';
 import { tarifShelves, type TarifRow, type TarifShelf } from '../tarif-shelves';
 import { ALL_SHELVES, filterTarifRows, type FilteredTarifRow } from '../tarif-filter';
 
@@ -80,6 +91,7 @@ const MILLICENTS_PER_EURO = 100 * MILLICENTS_PER_CENT;
     FoldPopoverComponent,
     FoldPopoverTriggerDirective,
     FoldSearchComponent,
+    GeneralDiscountPicker,
     PricePath,
     PromotionPolicyPicker,
     VolumeEffort,
@@ -100,6 +112,8 @@ export class MercurialeComposer {
   readonly draft = model.required<DraftPrices>();
   /** « Promotions pour ce client » — « Aucune promotion » par défaut (§ 7). */
   readonly promotionPolicy = model.required<PromotionPolicyForm>();
+  /** La remise générale envisagée ; `null` = aucune. */
+  readonly generalDiscount = model<GeneralDiscountForm | null>(null);
 
   /** Une mercuriale vient d'être posée : au parent de relire. */
   readonly posed = output<void>();
@@ -118,6 +132,28 @@ export class MercurialeComposer {
   protected readonly busy = signal(false);
 
   protected readonly lines = computed(() => toLines(this.draft()));
+  protected readonly discountLabel = discountLabel;
+
+  /** Les articles à prix ferme saisi : la remise ne les touche pas (D2). */
+  protected readonly firmSkus = computed<ReadonlySet<string>>(
+    () => new Set(this.lines().map((line) => line.sku)),
+  );
+  private readonly discountView = computed(() => discountViewOf(this.generalDiscount()));
+  private readonly discountArticles = computed(() => discountArticlesOf(this.categories()));
+  protected readonly discountProblem = computed(() => discountProblem(this.generalDiscount()));
+
+  /**
+   * Ce que la remise fait aux articles sans prix ferme, par SKU — lu par la
+   * cellule « Prix ferme » sous le champ vide. Dérivé une fois par frappe.
+   */
+  protected readonly discounted = computed(() =>
+    discountedArticles(this.discountView(), this.discountArticles(), this.firmSkus()),
+  );
+
+  /** Q3 : les articles que la limite relèvera — dit avant de poser, sans bloquer. */
+  protected readonly flooredByDiscount = computed(() =>
+    flooredNames(this.discounted(), this.discountArticles()),
+  );
 
   /**
    * **Les rayons, dérivés UNE fois par frappe** et non à chaque cycle de
@@ -223,7 +259,8 @@ export class MercurialeComposer {
     () =>
       this.label().trim() !== '' &&
       this.validFrom() !== '' &&
-      this.lines().length > 0 &&
+      (this.lines().length > 0 || this.discountView() !== null) &&
+      this.discountProblem() === null &&
       this.policyProblem() === null &&
       !this.busy(),
   );
@@ -266,6 +303,7 @@ export class MercurialeComposer {
         validTo: this.validTo() === '' ? null : (businessDayStart(this.validTo()) ?? null),
         lines: [...this.lines()],
         promotionPolicy: policyPayload(this.promotionPolicy()),
+        generalDiscount: this.discountBody(),
       });
       this.notify.success(`Mercuriale posée — ${String(affectedRules)} article(s).`);
       this.posed.emit();
@@ -327,6 +365,13 @@ export class MercurialeComposer {
    * refuse que si l'écriture échoue, jamais parce qu'il manque quelque chose.
    */
   protected async saveDraft(): Promise<void> {
+    // Le contrat refuse un taux hors bornes : une remise incomplète ne
+    // s'écrit pas, et le refus dit pourquoi plutôt que de la perdre.
+    const problem = this.discountProblem();
+    if (problem !== null) {
+      this.notify.refused(null, problem);
+      return;
+    }
     this.busy.set(true);
     try {
       await this.pricing.saveDraft(this.companyId(), {
@@ -335,6 +380,7 @@ export class MercurialeComposer {
         validTo: isoDay(this.validTo()),
         lines: [...this.lines()],
         promotionPolicy: policyPayload(this.promotionPolicy()),
+        generalDiscount: this.discountBody(),
       });
       this.notify.success('Brouillon enregistré.');
     } catch (error) {
@@ -342,6 +388,11 @@ export class MercurialeComposer {
     } finally {
       this.busy.set(false);
     }
+  }
+
+  private discountBody(): GeneralDiscountPayload | null {
+    const form = this.generalDiscount();
+    return form === null ? null : discountPayload(form);
   }
 
   /** Jeter le brouillon ; le parent referme la composition et relit. */

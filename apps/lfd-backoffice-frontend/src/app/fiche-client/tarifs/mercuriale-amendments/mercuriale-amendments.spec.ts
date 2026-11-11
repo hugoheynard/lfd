@@ -3,6 +3,7 @@ import type {
   StaffPermission,
   AmendCompanyMercurialePayload,
   AmendedMercurialeResponse,
+  CompanyPricingCategoryView,
   PosedMercurialeView,
 } from '@lfd/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -73,7 +74,11 @@ const MERCURIALE: PosedMercurialeView = {
 
 const CAN: readonly StaffPermission[] = ['b2b_pricing:read', 'b2b_pricing:write'];
 
-function mount(mercuriale: PosedMercurialeView = MERCURIALE, granted = CAN) {
+function mount(
+  mercuriale: PosedMercurialeView = MERCURIALE,
+  granted = CAN,
+  categories: readonly CompanyPricingCategoryView[] = [],
+) {
   const pricing = new StubPricing();
   TestBed.configureTestingModule({
     providers: [
@@ -87,7 +92,7 @@ function mount(mercuriale: PosedMercurialeView = MERCURIALE, granted = CAN) {
     TestBed.createComponent(MercurialeAmendments);
   fixture.componentRef.setInput('companyId', 'co_1');
   fixture.componentRef.setInput('mercuriale', mercuriale);
-  fixture.componentRef.setInput('categories', []);
+  fixture.componentRef.setInput('categories', categories);
   const amended: string[] = [];
   fixture.componentInstance.amended.subscribe(() => amended.push('amended'));
   fixture.detectChanges();
@@ -227,5 +232,79 @@ describe('<app-mercuriale-amendments>', () => {
     expect(host.querySelector('[data-amendments]')?.textContent).toContain(
       'promotions : Toutes les promotions',
     );
+  });
+
+  const DISCOUNTED: PosedMercurialeView = {
+    ...MERCURIALE,
+    generalDiscount: {
+      mode: 'all_except',
+      baseBp: 3000,
+      rules: [{ target: 'category', targetId: 'choco', bp: null }],
+    },
+  };
+
+  it('Q1 : arrêter le prix ferme d’un article couvert dit qu’il passe à la remise', () => {
+    const { fixture, host } = mount(DISCOUNTED);
+    const component = fixture.componentInstance;
+    component['open']('end');
+    component['sku'].set('VIE-001-1');
+    fixture.detectChanges();
+
+    expect(host.querySelector('[data-falls-to-discount]')?.textContent).toContain(
+      'Cet article passera à −30 % (remise générale).',
+    );
+  });
+
+  it('Q1 : rien à dire sans remise générale', () => {
+    const { fixture, host } = mount();
+    fixture.componentInstance['open']('end');
+    fixture.componentInstance['sku'].set('VIE-001-1');
+    fixture.detectChanges();
+
+    expect(host.querySelector('[data-falls-to-discount]')).toBeNull();
+  });
+
+  it('change la remise générale par avenant daté, sur sa fenêtre', async () => {
+    const { fixture, pricing } = mount(DISCOUNTED);
+    const component = fixture.componentInstance;
+    component['open']('discount');
+    expect(component['discount']()).toMatchObject({ mode: 'all_except', baseBp: 3000 });
+    component['discount'].set({ mode: 'all_except', baseBp: 2000, lines: [] });
+    component['toDay'].set('2027-01-31');
+    component['reason'].set('Soldes de janvier');
+
+    await component['submit']();
+
+    expect(pricing.sent[0]?.payload).toMatchObject({
+      reason: 'Soldes de janvier',
+      lines: [],
+      endedSkus: [],
+      generalDiscount: { set: { mode: 'all_except', baseBp: 2000, rules: [] } },
+    });
+    expect(pricing.sent[0]?.payload.validTo).not.toBeNull();
+  });
+
+  it('« Arrêter la remise » envoie `{ set: null }`', async () => {
+    const { fixture, pricing } = mount(DISCOUNTED);
+    const component = fixture.componentInstance;
+    component['open']('discount');
+    component['stopDiscount']();
+    component['reason'].set('Fin de l’accord');
+
+    await component['submit']();
+
+    expect(pricing.sent[0]?.payload.generalDiscount).toEqual({ set: null });
+  });
+
+  it('refuse d’arrêter une remise qui n’existe pas', async () => {
+    const { fixture, pricing } = mount();
+    const component = fixture.componentInstance;
+    component['open']('discount');
+    component['reason'].set('Rien');
+
+    await component['submit']();
+
+    expect(pricing.sent).toEqual([]);
+    expect(component['refusal']()).toContain('rien à arrêter');
   });
 });

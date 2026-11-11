@@ -15,6 +15,7 @@ import { PricingFollow } from '../pricing-follow/pricing-follow';
 import { CompanyPricingService } from './company-pricing.service';
 import { draftFromLines, draftFromView, type DraftPrices } from './draft-prices';
 import { NO_PROMOTION_POLICY, type PromotionPolicyForm } from './promotion-policy';
+import { discountFormOf, type GeneralDiscountForm } from './general-discount';
 import { MercurialeComposer } from './mercuriale-composer/mercuriale-composer';
 import { PosedMercuriale } from './posed-mercuriale/posed-mercuriale';
 import { TariffJournalCard } from './tariff-journal-card/tariff-journal-card';
@@ -102,6 +103,7 @@ export class ClientTarifsPage {
   protected readonly validFrom = signal('');
   protected readonly validTo = signal('');
   protected readonly promotionPolicy = signal<PromotionPolicyForm>(NO_PROMOTION_POLICY);
+  protected readonly generalDiscount = signal<GeneralDiscountForm | null>(null);
 
   /**
    * **Ce que l'écran montre**, et il ne montre qu'une chose à la fois.
@@ -176,6 +178,7 @@ export class ClientTarifsPage {
         this.validTo.set(dayOf(saved.validTo));
         this.draft.set(draftFromLines(saved.lines));
         this.promotionPolicy.set(saved.promotionPolicy ?? NO_PROMOTION_POLICY);
+        this.generalDiscount.set(discountFormOf(saved.generalDiscount));
         this.state.set('ready');
         return;
       }
@@ -187,6 +190,8 @@ export class ClientTarifsPage {
         // Une mercuriale neuve démarre en « Aucune promotion » (§ 8) : le
         // commercial choisit, rien n'est hérité de la précédente.
         this.promotionPolicy.set(NO_PROMOTION_POLICY);
+        // Comme la politique : une mercuriale neuve part sans remise générale.
+        this.generalDiscount.set(null);
       }
       this.state.set('ready');
     } catch {

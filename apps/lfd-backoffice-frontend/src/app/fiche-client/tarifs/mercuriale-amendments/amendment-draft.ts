@@ -1,6 +1,7 @@
 import type {
   AmendCompanyMercurialePayload,
   CompanyPricingCategoryView,
+  GeneralDiscountView,
   PosedMercurialeView,
 } from '@lfd/contracts';
 
@@ -12,6 +13,13 @@ import {
   samePolicy,
   type PromotionPolicyForm,
 } from '../promotion-policy';
+import {
+  discountPayload,
+  discountProblem,
+  discountViewOf,
+  sameDiscount,
+  type GeneralDiscountForm,
+} from '../general-discount';
 
 /** La borne du motif — celle du contrat (`amendCompanyMercurialePayloadSchema`). */
 export const AMENDMENT_REASON_MAX_LENGTH = 500;
@@ -143,6 +151,57 @@ export function policyAmendment(
       lines: [],
       endedSkus: [],
       promotionPolicy: policyPayload(form.policy),
+    },
+  };
+}
+
+export interface DiscountAmendmentForm {
+  /** `null` = l'avenant arrête la remise générale. */
+  readonly discount: GeneralDiscountForm | null;
+  readonly fromDay: string;
+  readonly toDay: string;
+  readonly reason: string;
+}
+
+/**
+ * **Changer la remise générale** à une date d'effet
+ * (`plan-remise-generale.md`, § 2.1) : elle ne vaut que sur la fenêtre de
+ * l'avenant — après sa fin, la remise d'avant reparle. `{ set: null }`
+ * l'arrête. Refusé s'il ne change rien à la remise en vigueur.
+ */
+export function discountAmendment(
+  form: DiscountAmendmentForm,
+  current: GeneralDiscountView | null,
+): AmendmentDraft {
+  const reason = form.reason.trim();
+  const problem = discountProblem(form.discount);
+  if (problem !== null) {
+    return { ok: false, refusal: problem };
+  }
+  if (sameDiscount(discountViewOf(form.discount), current)) {
+    return {
+      ok: false,
+      refusal:
+        current === null
+          ? 'Cette mercuriale n’a pas de remise générale : rien à arrêter.'
+          : 'C’est déjà la remise en vigueur : changez-la ou arrêtez-la.',
+    };
+  }
+  if (reason === '') {
+    return { ok: false, refusal: 'Le motif est obligatoire : il reste au journal de l’accord.' };
+  }
+  const window = windowOf(form.fromDay, form.toDay);
+  if (!window.ok) {
+    return window;
+  }
+  return {
+    ok: true,
+    payload: {
+      ...window.bounds,
+      reason,
+      lines: [],
+      endedSkus: [],
+      generalDiscount: { set: form.discount === null ? null : discountPayload(form.discount) },
     },
   };
 }

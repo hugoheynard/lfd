@@ -42,6 +42,7 @@ import { PromotionsService } from '../../../targeted-promotions/promotions.servi
 import { CompanyPricingService } from '../company-pricing.service';
 import { NO_PROMOTION_POLICY, originPhrase, policyOrigin, policyPhrase } from '../promotion-policy';
 import { mercurialeCsv, mercurialeFileName } from '../mercuriale-csv';
+import { discountNames, discountReading } from '../general-discount';
 import { MercurialeAmendments } from '../mercuriale-amendments/mercuriale-amendments';
 import { mercurialeRowKey, mercurialeRows, type MercurialeRowView } from '../mercuriale-rows';
 
@@ -111,6 +112,16 @@ export class PosedMercuriale implements OnInit {
   protected readonly policySince = computed(() =>
     originPhrase(policyOrigin(this.mercuriale(), new Date())),
   );
+
+  /**
+   * La remise générale **en vigueur**, lue : sa tête et ses lignes, cibles
+   * nommées. `null` = aucune. Elle se change par avenant daté.
+   */
+  private readonly names = computed(() => discountNames(this.categories()));
+  protected readonly discount = computed(() => {
+    const view = this.mercuriale().generalDiscount ?? null;
+    return view === null ? null : discountReading(view, this.names());
+  });
 
   protected readonly euros = formatEuros;
   protected readonly percent = impactLabel;
@@ -235,7 +246,7 @@ export class PosedMercuriale implements OnInit {
    */
   protected exportCsv(): void {
     const mercuriale = this.mercuriale();
-    const blob = new Blob([mercurialeCsv(mercuriale, this.rows())], {
+    const blob = new Blob([mercurialeCsv(mercuriale, this.rows(), this.names())], {
       type: 'text/csv;charset=utf-8',
     });
     const url = URL.createObjectURL(blob);

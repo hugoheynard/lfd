@@ -30,6 +30,7 @@ import { CompanyPricingService } from '../company-pricing.service';
 import {
   AMENDMENT_REASON_MAX_LENGTH,
   catalogueOptions,
+  discountAmendment,
   endAmendment,
   policyAmendment,
   priceAmendment,
@@ -40,9 +41,18 @@ import {
 import { amendmentLine } from './amendment-lines';
 import { NO_PROMOTION_POLICY, type PromotionPolicyForm } from '../promotion-policy';
 import { PromotionPolicyPicker } from '../promotion-policy-picker/promotion-policy-picker';
+import {
+  discountArticlesOf,
+  discountBpFor,
+  discountFormOf,
+  discountLabel,
+  discountNames,
+  type GeneralDiscountForm,
+} from '../general-discount';
+import { GeneralDiscountPicker } from '../general-discount-picker/general-discount-picker';
 
 /** Le geste ouvert, s'il y en a un. */
-type Gesture = 'price' | 'end' | 'policy' | null;
+type Gesture = 'price' | 'end' | 'policy' | 'discount' | null;
 
 /**
  * **Les avenants d'une mercuriale** (`documentation/pricing/mercuriales/l-avenant-date.md`,
@@ -64,6 +74,7 @@ type Gesture = 'price' | 'end' | 'policy' | null;
     FoldElementTitleComponent,
     FoldNumberInputComponent,
     FoldTextareaComponent,
+    GeneralDiscountPicker,
     PromotionPolicyPicker,
   ],
   templateUrl: './mercuriale-amendments.html',
@@ -92,6 +103,8 @@ export class MercurialeAmendments {
   protected readonly reason = signal('');
   /** La politique que l'avenant ouvrira ; part de celle en vigueur. */
   protected readonly policy = signal<PromotionPolicyForm>(NO_PROMOTION_POLICY);
+  /** La remise que l'avenant ouvrira ; part de celle en vigueur, `null` l'arrête. */
+  protected readonly discount = signal<GeneralDiscountForm | null>(null);
   protected readonly refusal = signal<string | null>(null);
   protected readonly saving = signal(false);
 
@@ -105,9 +118,30 @@ export class MercurialeAmendments {
   protected readonly amendments = computed<readonly PosedMercurialeAmendmentView[]>(
     () => this.mercuriale().amendments ?? [],
   );
+  private readonly names = computed(() => discountNames(this.categories()));
   protected lineOf(amendment: PosedMercurialeAmendmentView): string {
-    return amendmentLine(amendment, this.promotions());
+    return amendmentLine(amendment, this.promotions(), this.names());
   }
+  /** Une remise générale court : on peut l'arrêter. */
+  protected readonly hasDiscount = computed(
+    () => (this.mercuriale().generalDiscount ?? null) !== null,
+  );
+
+  /**
+   * **Q1** — arrêter le prix ferme d'un article que la remise générale couvre
+   * ne le rend pas au catalogue : il passe à la remise. L'écran le dit avant
+   * d'enregistrer. Lu sur la remise en vigueur.
+   */
+  protected readonly fallsToDiscount = computed(() => {
+    const sku = this.sku();
+    const discount = this.mercuriale().generalDiscount ?? null;
+    if (this.gesture() !== 'end' || sku === null || discount === null) {
+      return null;
+    }
+    const article = discountArticlesOf(this.categories()).find((entry) => entry.sku === sku);
+    const bp = discountBpFor(discount, { sku, categoryPath: article?.categoryPath ?? [] });
+    return bp === null ? null : `Cet article passera à ${discountLabel(bp)} (remise générale).`;
+  });
   protected readonly catalogue = computed(() => catalogueOptions(this.categories()));
   protected readonly running = computed(() => runningOptions(this.mercuriale()));
   /** L'article choisi a déjà un prix en cours : l'avenant le changera. */
@@ -122,6 +156,7 @@ export class MercurialeAmendments {
   protected open(gesture: Exclude<Gesture, null>): void {
     this.reset();
     this.policy.set(this.currentPolicy());
+    this.discount.set(discountFormOf(this.mercuriale().generalDiscount));
     this.gesture.set(gesture);
   }
 
@@ -145,7 +180,23 @@ export class MercurialeAmendments {
     return this.mercuriale().promotionPolicy ?? NO_PROMOTION_POLICY;
   }
 
+  /** « Arrêter la remise » : l'avenant porte `{ set: null }`. */
+  protected stopDiscount(): void {
+    this.discount.set(null);
+  }
+
   private draft(): AmendmentDraft {
+    if (this.gesture() === 'discount') {
+      return discountAmendment(
+        {
+          discount: this.discount(),
+          fromDay: this.fromDay(),
+          toDay: this.toDay(),
+          reason: this.reason(),
+        },
+        this.mercuriale().generalDiscount ?? null,
+      );
+    }
     if (this.gesture() === 'policy') {
       return policyAmendment(
         { policy: this.policy(), fromDay: this.fromDay(), reason: this.reason() },
@@ -189,6 +240,7 @@ export class MercurialeAmendments {
     this.toDay.set('');
     this.reason.set('');
     this.policy.set(NO_PROMOTION_POLICY);
+    this.discount.set(null);
     this.refusal.set(null);
   }
 }

@@ -1,0 +1,107 @@
+<fold-card>
+  <div class="discount" data-general-discount>
+    <fold-element-title variant="title" title="Remise générale" [subtitle]="subtitle()" />
+    <fold-checkbox
+      label="Accorder une remise générale"
+      hint="Un pourcentage du prix de base pro, qui suit le catalogue. Le prix ferme d’un article l’emporte."
+      [checked]="discount() !== null"
+      (checkedChange)="toggle($event)"
+    />
+
+    @if (discount(); as form) {
+      <fold-view-toggle
+        ariaLabel="Étendue de la remise générale"
+        activeStyle="accent"
+        [options]="modeOptions"
+        [value]="form.mode"
+        (valueChange)="setMode($event)"
+      />
+      <p class="discount-hint">{{ modeHint() }}</p>
+
+      @if (form.mode === 'all_except') {
+        <fold-number-input
+          class="discount-rate-field"
+          label="Taux de base, en %"
+          required
+          [min]="0"
+          [max]="99.99"
+          [step]="1"
+          [decimals]="2"
+          [value]="percentOf(form.baseBp)"
+          (valueChange)="setBase($event)"
+          data-discount-base
+        />
+      }
+
+      @for (row of lines(); track row.key) {
+        <div [class.discount-nested]="row.nested">
+          <fold-card surface="sunken" padding="sm">
+            <div class="discount-line">
+              <fold-element-title variant="title" [title]="row.name" [subtitle]="row.subtitle">
+                <button
+                  foldButton
+                  titleAction
+                  size="sm"
+                  emphasis="soft"
+                  type="button"
+                  (click)="remove(row.line)"
+                >
+                  Retirer
+                </button>
+              </fold-element-title>
+              <div class="discount-rate">
+                <fold-view-toggle
+                  size="sm"
+                  [ariaLabel]="'Remise sur ' + row.name"
+                  [options]="rateOptions"
+                  [value]="row.line.excluded ? 'excluded' : 'rate'"
+                  (valueChange)="setExcluded(row.line, $event)"
+                />
+                @if (!row.line.excluded) {
+                  <fold-number-input
+                    class="discount-rate-field"
+                    size="sm"
+                    [label]="'Taux, en %'"
+                    [min]="0"
+                    [max]="99.99"
+                    [step]="1"
+                    [decimals]="2"
+                    [value]="percentOf(row.line.bp)"
+                    (valueChange)="setRate(row.line, $event)"
+                  />
+                }
+              </div>
+            </div>
+          </fold-card>
+        </div>
+      }
+
+      <div class="discount-add">
+        @if (addableFamilies().length > 0) {
+          <fold-listbox
+            label="Ajouter une famille"
+            placeholder="Choisir une famille"
+            [options]="addableFamilies()"
+            [(value)]="familyToAdd"
+            (selectionChange)="addFamily($event)"
+          />
+        }
+        <fold-combobox
+          label="Ajouter un article"
+          placeholder="Nom ou référence"
+          emptyText="Aucun article ne correspond."
+          resultLabel="articles"
+          clearOnSelect
+          [options]="addableArticles()"
+          (selectionChange)="addArticle($event)"
+        />
+      </div>
+
+      @if (problem(); as message) {
+        <fold-callout appearance="inset" variant="warning" data-discount-problem>{{
+          message
+        }}</fold-callout>
+      }
+    }
+  </div>
+</fold-card>

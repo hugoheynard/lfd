@@ -1,6 +1,7 @@
 import type { PosedMercurialeView } from '@lfd/contracts';
 
 import { staffAuthor } from '../../shared/staff-author';
+import { discountPhrase } from './general-discount';
 import type { MercurialeRowView } from './mercuriale-rows';
 
 /**
@@ -65,11 +66,18 @@ function cell(value: string): string {
  * sa fenêtre, son auteur — avant l'en-tête des colonnes. Un tableau de prix sans
  * son entête est un tableau qu'on ne peut plus rattacher à personne dès qu'il a
  * quitté l'écran, et c'est précisément ce qu'un export sert à faire.
+ *
+ * Une **remise générale** en vigueur prend une ligne à elle, sous l'identité :
+ * son taux de base, ses taux particuliers et ses exclusions, cibles nommées
+ * par `names` (l'identifiant à défaut). Les lignes de prix ne portent que les
+ * prix fermes : un article remisé n'a pas de prix à lui dans le document.
  */
 export function mercurialeCsv(
   mercuriale: PosedMercurialeView,
   rows: readonly MercurialeRowView[],
+  names: ReadonlyMap<string, string> = new Map(),
 ): string {
+  const discount = mercuriale.generalDiscount ?? null;
   const window = `du ${day(mercuriale.validFrom)} au ${day(mercuriale.validTo)}`;
   const lines = [
     [
@@ -77,6 +85,7 @@ export function mercurialeCsv(
       cell(window),
       cell(`établie par ${staffAuthor(mercuriale.createdBy, mercuriale.createdByName)}`),
     ].join(';'),
+    ...(discount === null ? [] : [cell(`Remise générale : ${discountPhrase(discount, names)}`)]),
     '',
     HEADER.join(';'),
     ...rows.map((row) =>

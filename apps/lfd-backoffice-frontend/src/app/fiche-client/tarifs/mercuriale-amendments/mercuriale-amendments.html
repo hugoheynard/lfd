@@ -29,6 +29,15 @@
           >
             Changer les promotions
           </button>
+          <button
+            foldButton
+            size="sm"
+            emphasis="outline"
+            (click)="open('discount')"
+            data-amend-discount
+          >
+            Changer la remise générale
+          </button>
         </div>
       }
       @default {
@@ -39,7 +48,9 @@
               ? 'Arrêter une ligne'
               : gesture() === 'policy'
                 ? 'Changer les promotions'
-                : 'Ajouter ou changer un prix'
+                : gesture() === 'discount'
+                  ? 'Changer la remise générale'
+                  : 'Ajouter ou changer un prix'
           "
         >
           @if (gesture() === 'policy') {
@@ -49,6 +60,41 @@
               optional
               optionalLabel="vide : dès maintenant"
               [(value)]="fromDay"
+            />
+          } @else if (gesture() === 'discount') {
+            <app-general-discount-picker [(discount)]="discount" [categories]="categories()" />
+            @if (discount() === null && hasDiscount()) {
+              <fold-callout appearance="inset" variant="warning" data-discount-stopped>
+                L’avenant arrête la remise générale sur sa période : les articles sans prix ferme
+                repassent au tarif.
+              </fold-callout>
+            }
+            @if (hasDiscount() && discount() !== null) {
+              <div class="amendments-actions">
+                <button
+                  foldButton
+                  size="sm"
+                  emphasis="soft"
+                  type="button"
+                  (click)="stopDiscount()"
+                  data-discount-stop
+                >
+                  Arrêter la remise
+                </button>
+              </div>
+            }
+            <fold-date
+              label="À partir du"
+              optional
+              optionalLabel="vide : dès maintenant"
+              [(value)]="fromDay"
+            />
+            <fold-date
+              label="Jusqu'au"
+              optional
+              optionalLabel="vide : fin de la mercuriale"
+              hint="Après cette date, la remise d’avant reparle."
+              [(value)]="toDay"
             />
           } @else if (gesture() === 'end') {
             <fold-combobox
@@ -67,6 +113,11 @@
               optionalLabel="vide : dès maintenant"
               [(value)]="fromDay"
             />
+            @if (fallsToDiscount(); as warning) {
+              <fold-callout appearance="inset" variant="warning" data-falls-to-discount>{{
+                warning
+              }}</fold-callout>
+            }
           } @else {
             <fold-combobox
               label="Article"

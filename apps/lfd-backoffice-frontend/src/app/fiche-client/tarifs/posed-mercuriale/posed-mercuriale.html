@@ -58,6 +58,22 @@
   <p class="tf-meta" data-policy-line>
     Promotions sur les prix négociés : <strong>{{ policyLine() }}</strong> · {{ policySince() }}
   </p>
+  <!-- La remise générale en vigueur : un pourcentage du prix de base pour
+       les articles sans prix ferme. Elle se change par avenant daté. -->
+  @if (discount(); as reading) {
+    <div class="tf-discount" data-discount-line>
+      <p class="tf-meta">
+        Remise générale : <strong>{{ reading.head }}</strong>
+      </p>
+      @if (reading.items.length > 0) {
+        <ul class="tf-discount-list">
+          @for (item of reading.items; track item) {
+            <li>{{ item }}</li>
+          }
+        </ul>
+      }
+    </div>
+  }
   @if (promotionsMissing()) {
     <fold-callout variant="alert" data-promotions-missing>
       Les noms des promotions n'ont pas pu être lus : elles sont désignées par leur identifiant.

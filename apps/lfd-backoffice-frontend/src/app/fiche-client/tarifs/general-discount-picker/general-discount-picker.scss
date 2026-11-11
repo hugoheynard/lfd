@@ -1,0 +1,28 @@
+.discount,
+.discount-line {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.discount-hint {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}
+
+// Une sous-famille ou un article se lit sous la famille qui le contient.
+.discount-nested {
+  padding-inline-start: var(--fold-space-lg);
+}
+
+.discount-rate,
+.discount-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fold-space-md);
+}
+
+.discount-rate-field {
+  max-width: 12rem;
+}

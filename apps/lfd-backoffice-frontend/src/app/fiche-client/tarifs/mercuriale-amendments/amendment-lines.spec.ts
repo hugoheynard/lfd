@@ -34,4 +34,36 @@ describe('amendmentLine', () => {
       }),
     ).toBe('Du 01/11/2026 au 01/12/2026 — ouvre VIE-002-1 — « Ajout » — system');
   });
+
+  it('dit la remise générale qu’il pose, ou qu’il l’arrête', () => {
+    const base = {
+      id: 'amd_d',
+      validFrom: '2026-11-01T00:00:00.000Z',
+      validTo: null,
+      reason: 'Accord',
+      openedSkus: [],
+      endedSkus: [],
+      createdBy: 'staff_1',
+      createdByName: 'Marie Curie',
+    };
+    expect(
+      amendmentLine(
+        {
+          ...base,
+          generalDiscount: {
+            set: {
+              mode: 'all_except',
+              baseBp: 2000,
+              rules: [{ target: 'category', targetId: 'c', bp: null }],
+            },
+          },
+        },
+        null,
+        new Map([['c', 'Chocolat']]),
+      ),
+    ).toContain('remise générale : −20 % sur tout le catalogue, sauf : Chocolat : exclue');
+    expect(amendmentLine({ ...base, generalDiscount: { set: null } })).toContain(
+      'arrête la remise générale',
+    );
+  });
 });
