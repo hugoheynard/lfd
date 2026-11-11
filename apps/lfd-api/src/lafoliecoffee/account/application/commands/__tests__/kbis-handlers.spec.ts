@@ -142,6 +142,7 @@ describe("UploadKbisHandler", () => {
       byStaffUserId: "staff_1",
       byName: "Marc",
       byRole: "comptabilite",
+      issuedOn: "2026-01-01",
     });
     expect(company.kbis?.certified).toBe(true);
 

@@ -35,6 +35,7 @@ function columns(over: Partial<CompanyColumns> = {}): CompanyColumns {
     kbisCertifiedByStaffId: null,
     kbisCertifiedByName: null,
     kbisCertifiedByRole: null,
+    kbisIssuedOn: null,
     directDebitBlockedAt: null,
     directDebitBlockedBy: null,
     directDebitBlockReason: null,

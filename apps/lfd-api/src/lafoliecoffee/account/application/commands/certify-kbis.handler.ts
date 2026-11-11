@@ -53,11 +53,12 @@ export class CertifyKbisHandler implements ICommandHandler<CertifyKbisCommand, v
       byStaffUserId: command.staffUserId,
       byName: agent?.name ?? "",
       byRole: agent?.role ?? "",
+      issuedOn: command.issuedOn,
     });
     await this.uow.run(async () => {
       await this.companies.save(company);
       await this.events.publishTraced(
-        new KbisCertifiedEvent(companyNamed(command.companyId, company), at),
+        new KbisCertifiedEvent(companyNamed(command.companyId, company), at, command.issuedOn),
       );
     });
   }

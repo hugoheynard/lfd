@@ -1,4 +1,4 @@
-import { KbisNotFoundError } from "../../errors/account-errors.js";
+import { InvalidKbisIssueDateError, KbisNotFoundError } from "../../errors/account-errors.js";
 import { Company } from "../../entities/company.js";
 import { KbisDeposit, type KbisCertification, type KbisFile } from "../kbis-deposit.js";
 
@@ -33,6 +33,7 @@ const CERTIFICATION: KbisCertification = {
   byStaffUserId: "staff_1",
   byName: "Marc Rousseau",
   byRole: "comptabilite",
+  issuedOn: "2026-01-20",
 };
 
 function sampleCompany(kbis: KbisDeposit | null): Company {
@@ -54,6 +55,31 @@ function sampleCompany(kbis: KbisDeposit | null): Company {
     kbis,
   });
 }
+
+describe("la date de délivrance de l'extrait certifié", () => {
+  it.each([
+    ["absente", null],
+    ["mal formée", "20/01/2026"],
+    ["impossible", "2026-02-30"],
+    ["après le jour de la certification", "2026-02-05"],
+  ])("est refusée %s", (_case, issuedOn) => {
+    expect(() => KbisDeposit.deposit(FILE).certify({ ...CERTIFICATION, issuedOn })).toThrow(
+      InvalidKbisIssueDateError,
+    );
+  });
+
+  it("est gardée avec la certification, même ancienne", () => {
+    const certified = KbisDeposit.deposit(FILE).certify({
+      ...CERTIFICATION,
+      issuedOn: "2020-01-01",
+    });
+    expect(certified.certification?.issuedOn).toBe("2020-01-01");
+  });
+
+  it("disparaît avec la certification au retrait", () => {
+    expect(KbisDeposit.deposit(FILE).certify(CERTIFICATION).revoke().certification).toBeNull();
+  });
+});
 
 describe("le dépôt de KBIS", () => {
   it("arrive NON certifié", () => {

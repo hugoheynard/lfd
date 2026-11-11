@@ -80,6 +80,18 @@ export class VatNumberFrozenError extends BusinessError {
   }
 }
 
+/** La date de délivrance d'un extrait KBIS, absente, impossible ou dans le futur. */
+export class InvalidKbisIssueDateError extends DomainError {
+  constructor(readonly raw: string) {
+    super(
+      "account.kbis.issue_date_invalid",
+      raw === ""
+        ? "Indiquez la date de délivrance lue en tête de l'extrait KBIS pour le certifier."
+        : `Date de délivrance « ${raw} » impossible : elle se lit en tête de l'extrait, et ne peut pas être après aujourd'hui.`,
+    );
+  }
+}
+
 /** Une forme juridique hors de la liste reconnue (SAS, SARL, EI…). */
 export class InvalidLegalFormError extends DomainError {
   constructor(readonly raw: string) {

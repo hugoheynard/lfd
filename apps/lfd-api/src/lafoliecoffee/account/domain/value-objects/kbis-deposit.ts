@@ -1,3 +1,5 @@
+import { InvalidKbisIssueDateError } from "../errors/account-errors.js";
+
 /** Le fichier déposé — le contenu, lui, vit dans le stockage objet (R2). */
 export interface KbisFile {
   readonly storageKey: string;
@@ -22,7 +24,14 @@ export interface KbisCertification {
   readonly byName: string;
   /** Instantané du périmètre, vide de même. */
   readonly byRole: string;
+  /**
+   * La date de délivrance lue en tête de l'extrait (`AAAA-MM-JJ`). Exigée pour
+   * certifier ; `null` seulement sur une certification d'avant qu'elle se saisisse.
+   */
+  readonly issuedOn: string | null;
 }
+
+const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/u;
 
 /**
  * **Un extrait KBIS déposé, et l'éventuelle parole d'un agent dessus.**
@@ -72,7 +81,16 @@ export class KbisDeposit {
   }
 
   /** Un agent a ouvert l'extrait, l'a comparé, et engage sa parole. */
+  /**
+   * @throws {InvalidKbisIssueDateError} date absente, mal formée, ou postérieure
+   * au jour de la certification — un extrait ne se délivre pas demain.
+   */
   certify(certification: KbisCertification): KbisDeposit {
+    const issuedOn = certification.issuedOn;
+    const certifiedOn = certification.at.toISOString().slice(0, 10);
+    if (issuedOn === null || !isCalendarDay(issuedOn) || issuedOn > certifiedOn) {
+      throw new InvalidKbisIssueDateError(issuedOn ?? "");
+    }
     return new KbisDeposit(this.fileValue, certification);
   }
 
@@ -83,4 +101,13 @@ export class KbisDeposit {
   revoke(): KbisDeposit {
     return new KbisDeposit(this.fileValue, null);
   }
+}
+
+/** Un vrai jour du calendrier : `2026-02-30` a la forme, pas l'existence. */
+function isCalendarDay(day: string): boolean {
+  if (!DAY_PATTERN.test(day)) {
+    return false;
+  }
+  const parsed = new Date(`${day}T00:00:00.000Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === day;
 }

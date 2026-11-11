@@ -17,6 +17,8 @@ export class KbisCertifiedEvent implements JournaledEvent {
     readonly company: NamedRef,
     /** Instant de la vérification (temps métier, issu du `Clock`). */
     readonly at: Date,
+    /** La date de délivrance lue en tête de l'extrait, `AAAA-MM-JJ`. */
+    readonly issuedOn: string,
   ) {}
 
   journalFact(): JournalFact {
@@ -25,7 +27,11 @@ export class KbisCertifiedEvent implements JournaledEvent {
       subjectType: "company",
       subjectId: this.company.id,
       occurredAt: this.at,
-      payload: { subjectLabel: this.company.name, at: this.at.toISOString() },
+      payload: {
+        subjectLabel: this.company.name,
+        at: this.at.toISOString(),
+        issuedOn: this.issuedOn,
+      },
     };
   }
 }

@@ -1,4 +1,12 @@
 export { NEW_CUSTOMER_WINDOW_DAYS } from "./admin-company.js";
+export {
+  KBIS_FRESH_MONTHS,
+  KBIS_STALE_MONTHS,
+  certifyKbisPayloadSchema,
+  kbisAgeOf,
+  type CertifyKbisPayload,
+  type KbisAge,
+} from "./kbis-age.js";
 export type {
   CustomerPortfolioView,
   CompanyOwnerView,

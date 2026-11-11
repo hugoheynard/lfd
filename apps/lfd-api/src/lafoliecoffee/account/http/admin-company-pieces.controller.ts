@@ -1,6 +1,8 @@
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import {
   type BillingAddressPayload,
+  type CertifyKbisPayload,
+  certifyKbisPayloadSchema,
   billingAddressPayloadSchema,
   type CompanyStatusPayload,
   companyStatusPayloadSchema,
@@ -133,9 +135,10 @@ export class AdminCompanyPiecesController {
   async certifyKbis(
     @Param("companyId") companyId: string,
     @StaffUserId() staffUserId: string,
+    @Body(new ZodBody(certifyKbisPayloadSchema)) payload: CertifyKbisPayload,
   ): Promise<void> {
     await this.commands.execute<CertifyKbisCommand, void>(
-      new CertifyKbisCommand(companyId, staffUserId),
+      new CertifyKbisCommand(companyId, staffUserId, payload.issuedOn),
     );
   }
 

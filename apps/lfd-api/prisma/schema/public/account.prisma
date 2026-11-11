@@ -186,6 +186,13 @@ model Company {
   kbisCertifiedByName    String? @map("kbis_certified_by_name")
   kbisCertifiedByRole    String? @map("kbis_certified_by_role")
 
+  // La DATE DE DÉLIVRANCE de l'extrait certifié, lue par le staff en tête du
+  // PDF au moment de certifier. Un extrait n'expire pas : l'usage en veut un
+  // de moins de 3 mois, et l'équipe le redemande au-delà d'un an. Remise à
+  // null avec la certification. Null sur une certification d'avant cette
+  // colonne : « date inconnue », jamais une date devinée.
+  kbisIssuedOn DateTime? @map("kbis_issued_on") @db.Date
+
   // BLOCAGE DU PRÉLÈVEMENT : le crédit mensuel est conservé, mais les commandes
   // À VENIR se règlent par carte tant que le blocage tient. Les trois colonnes
   // sont nulles ensemble (non bloqué) ou posées ensemble — contrainte CHECK

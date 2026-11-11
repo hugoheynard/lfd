@@ -35,6 +35,7 @@ const COMPANY_SELECT = {
   kbisCertifiedAt: true,
   kbisCertifiedByName: true,
   kbisCertifiedByRole: true,
+  kbisIssuedOn: true,
   contactPrenom: true,
   contactNom: true,
   contactFonction: true,
@@ -253,6 +254,10 @@ function toView(company: CompanyRow, now: Date): AdminCompanyView {
                     name: company.kbisCertifiedByName ?? "",
                     role: company.kbisCertifiedByRole ?? "",
                   },
+            issuedOn:
+              company.kbisCertifiedAt === null
+                ? null
+                : (company.kbisIssuedOn?.toISOString().slice(0, 10) ?? null),
           }
         : null,
     owner: company.memberships[0]?.user ?? null,

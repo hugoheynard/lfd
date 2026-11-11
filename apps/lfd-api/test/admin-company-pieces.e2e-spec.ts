@@ -17,7 +17,7 @@ import {
   CompanyStatus,
   DeferredTerm,
 } from "../src/platform/database/client/client.js";
-import { bootstrapE2e, E2E_STAFF_ID, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, daysAgo, E2E_STAFF_ID, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
 
 const PDF = Buffer.from("%PDF-1.4\nfake kbis", "latin1");
@@ -305,11 +305,61 @@ describe("préférence d'acheminement", () => {
   });
 });
 
+/** Un extrait délivré il y a dix jours : la date est lue en tête du PDF à la certification. */
+const ISSUED_ON = daysAgo(10).slice(0, 10);
+
 describe("certification du KBIS", () => {
+  it("exige la date de délivrance (400), et ne certifie rien sans elle", async () => {
+    await staff()
+      .put(`/admin/companies/${companyId}/kbis`)
+      .attach("file", PDF, "k.pdf")
+      .expect(204);
+
+    await staff().post(`/admin/companies/${companyId}/kbis/certification`).send({}).expect(400);
+
+    const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    expect(company.kbisCertifiedAt).toBeNull();
+  });
+
+  it("refuse une date de délivrance future (400)", async () => {
+    await staff()
+      .put(`/admin/companies/${companyId}/kbis`)
+      .attach("file", PDF, "k.pdf")
+      .expect(204);
+
+    await staff()
+      .post(`/admin/companies/${companyId}/kbis/certification`)
+      .send({ issuedOn: daysAgo(-3).slice(0, 10) })
+      .expect(400);
+  });
+
+  it("garde la date de délivrance, la sert au staff, et l'efface au dépôt suivant", async () => {
+    await staff()
+      .put(`/admin/companies/${companyId}/kbis`)
+      .attach("file", PDF, "k.pdf")
+      .expect(204);
+    await staff()
+      .post(`/admin/companies/${companyId}/kbis/certification`)
+      .send({ issuedOn: ISSUED_ON })
+      .expect(204);
+
+    const fiche = await staff().get(`/admin/companies/${companyId}`).expect(200);
+    expect((fiche.body as { kbis: { issuedOn: string } }).kbis.issuedOn).toBe(ISSUED_ON);
+
+    await staff()
+      .put(`/admin/companies/${companyId}/kbis`)
+      .attach("file", PDF, "k2.pdf")
+      .expect(204);
+    const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    expect(company.kbisIssuedOn).toBeNull();
+  });
+
   it("refuse de certifier ce qui n'a pas été déposé (404), rien n'est écrit", async () => {
     // Le clic n'existe que s'il y a un document à ouvrir. Certifier à blanc
     // produirait un compte activable dont personne n'a jamais vu l'extrait.
-    const response = await staff().post(`/admin/companies/${companyId}/kbis/certification`);
+    const response = await staff()
+      .post(`/admin/companies/${companyId}/kbis/certification`)
+      .send({ issuedOn: ISSUED_ON });
     expect(response.status).toBe(404);
 
     const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
@@ -343,7 +393,10 @@ describe("certification du KBIS", () => {
       .put(`/admin/companies/${companyId}/kbis`)
       .attach("file", PDF, "k.pdf")
       .expect(204);
-    await staff().post(`/admin/companies/${companyId}/kbis/certification`).expect(204);
+    await staff()
+      .post(`/admin/companies/${companyId}/kbis/certification`)
+      .send({ issuedOn: ISSUED_ON })
+      .expect(204);
 
     const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
     expect(company.kbisCertifiedAt).not.toBeNull();
@@ -355,7 +408,10 @@ describe("certification du KBIS", () => {
       .put(`/admin/companies/${companyId}/kbis`)
       .attach("file", PDF, "k.pdf")
       .expect(204);
-    await staff().post(`/admin/companies/${companyId}/kbis/certification`).expect(204);
+    await staff()
+      .post(`/admin/companies/${companyId}/kbis/certification`)
+      .send({ issuedOn: ISSUED_ON })
+      .expect(204);
 
     await staff()
       .put(`/admin/companies/${companyId}/kbis`)
@@ -372,7 +428,10 @@ describe("certification du KBIS", () => {
       .put(`/admin/companies/${companyId}/kbis`)
       .attach("file", PDF, "k.pdf")
       .expect(204);
-    await staff().post(`/admin/companies/${companyId}/kbis/certification`).expect(204);
+    await staff()
+      .post(`/admin/companies/${companyId}/kbis/certification`)
+      .send({ issuedOn: ISSUED_ON })
+      .expect(204);
 
     await staff().delete(`/admin/companies/${companyId}/kbis/certification`).expect(204);
 
@@ -492,7 +551,10 @@ describe("certification du KBIS", () => {
       .put(`/admin/companies/${companyId}/kbis`)
       .attach("file", PDF, "k.pdf")
       .expect(204);
-    await staff().post(`/admin/companies/${companyId}/kbis/certification`).expect(204);
+    await staff()
+      .post(`/admin/companies/${companyId}/kbis/certification`)
+      .send({ issuedOn: ISSUED_ON })
+      .expect(204);
     await staff().post(`/admin/companies/${companyId}/activate`).expect(204);
   }
 });

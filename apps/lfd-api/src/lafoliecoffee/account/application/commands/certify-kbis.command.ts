@@ -11,5 +11,7 @@ export class CertifyKbisCommand {
   constructor(
     readonly companyId: string,
     readonly staffUserId: string,
+    /** La date de délivrance lue en tête de l'extrait, `AAAA-MM-JJ`. */
+    readonly issuedOn: string,
   ) {}
 }

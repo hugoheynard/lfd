@@ -100,6 +100,7 @@ interface KbisRow {
   readonly kbisCertifiedByStaffId: string | null;
   readonly kbisCertifiedByName: string | null;
   readonly kbisCertifiedByRole: string | null;
+  readonly kbisIssuedOn: Date | null;
 }
 
 /**
@@ -138,6 +139,7 @@ export function kbisOf(row: KbisRow): KbisDeposit | null {
           byStaffUserId: row.kbisCertifiedByStaffId ?? "",
           byName: row.kbisCertifiedByName ?? "",
           byRole: row.kbisCertifiedByRole ?? "",
+          issuedOn: row.kbisIssuedOn?.toISOString().slice(0, 10) ?? null,
         },
   );
 }
@@ -158,6 +160,7 @@ export function kbisColumns(kbis: KbisDeposit | null): {
   kbisCertifiedByStaffId: string | null;
   kbisCertifiedByName: string | null;
   kbisCertifiedByRole: string | null;
+  kbisIssuedOn: Date | null;
 } {
   const certification = kbis?.certification ?? null;
   return {
@@ -172,6 +175,9 @@ export function kbisColumns(kbis: KbisDeposit | null): {
     // un nom vide — et la lecture n'a ainsi qu'un seul cas à traiter.
     kbisCertifiedByName: blankToNull(certification?.byName),
     kbisCertifiedByRole: blankToNull(certification?.byRole),
+    // Une colonne `DATE` : le jour seul, posé à minuit UTC.
+    kbisIssuedOn:
+      certification?.issuedOn == null ? null : new Date(`${certification.issuedOn}T00:00:00.000Z`),
   };
 }
 

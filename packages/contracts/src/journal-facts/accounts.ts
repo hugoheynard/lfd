@@ -170,7 +170,17 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
   ),
   "company.step_reached": labelled({ step: z.enum(["vat", "kbis", "billing", "delivery"]) }),
   "company.activated": labelled({ activatedAt: instant() }),
-  "company.kbis_certified": labelled({ at: instant() }),
+  /**
+   * `issuedOn` : la date de délivrance lue en tête de l'extrait (`AAAA-MM-JJ`) ;
+   * absente des faits écrits avant qu'elle se saisisse.
+   */
+  "company.kbis_certified": labelled({
+    at: instant(),
+    issuedOn: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/u)
+      .optional(),
+  }),
   /** `suspended` : le compte, actif, a été coupé par le retrait. */
   "company.kbis_revoked": labelled({ at: instant(), suspended: z.boolean() }),
   "company.kbis_uploaded": labelled({ fileName: z.string() }),

@@ -195,6 +195,12 @@ export interface AdminKbisView extends KbisView {
   readonly certifiedAt: string | null;
   /** Qui a certifié, tel que figé ce jour-là. `null` si non certifié. */
   readonly certifiedBy: StaffActorView | null;
+  /**
+   * Date de délivrance de l'extrait (`AAAA-MM-JJ`), saisie à la certification.
+   * `null` si non certifié, ou certifié avant que la date se saisisse — son
+   * âge se lit alors `undated` ({@link kbisAgeOf}).
+   */
+  readonly issuedOn: string | null;
 }
 
 /**

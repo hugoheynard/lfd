@@ -68,6 +68,7 @@ const COMPLETE: Partial<AdminCompanyDetailView> = {
     uploadedAt: "2026-08-01T10:00:00.000Z",
     certified: true,
     certifiedAt: "2026-08-02T10:00:00.000Z",
+    issuedOn: "2026-07-20",
     certifiedBy: { name: "Camille", role: "commercial" },
   },
   addresses: {
@@ -129,6 +130,7 @@ describe("activationGate — le verdict, et il n'y en a qu'un", () => {
         certified: false,
         certifiedAt: null,
         certifiedBy: null,
+        issuedOn: null,
       },
     };
     const gate = activationGate(detail(deposited));
