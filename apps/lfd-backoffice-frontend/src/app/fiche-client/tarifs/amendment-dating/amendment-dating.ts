@@ -3,6 +3,7 @@ import { FoldDateComponent, FoldTextareaComponent } from 'fold-ng';
 
 import { AMENDMENT_REASON_MAX_LENGTH } from '../amendment-body';
 import { NO_END_REASON } from '../amendment-effect';
+import { nativeValue } from '../../../shared/native-input';
 
 /**
  * **Dater l'avenant** (étape 3) : la date d'effet — aujourd'hui par défaut,
@@ -17,6 +18,12 @@ import { NO_END_REASON } from '../amendment-effect';
   styleUrl: './amendment-dating.scss',
 })
 export class AmendmentDating {
+  /**
+   * `fold-textarea` ne rend sa valeur qu'en quittant le champ : le motif se lit
+   * aussi à chaque frappe, pour que le bouton s'active sans cliquer ailleurs.
+   */
+  protected readonly nativeValue = nativeValue;
+
   /** Aujourd'hui à Paris, `AAAA-MM-JJ` : la borne basse de la date d'effet. */
   readonly today = input.required<string>();
   /** F1 : aucun prix arrêté et la politique inchangée. */

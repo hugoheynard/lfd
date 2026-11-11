@@ -39,6 +39,7 @@
       "
       [value]="reason()"
       (valueChange)="reason.set($event)"
+      (input)="reason.set(nativeValue($event))"
       data-correct-reason
     />
 

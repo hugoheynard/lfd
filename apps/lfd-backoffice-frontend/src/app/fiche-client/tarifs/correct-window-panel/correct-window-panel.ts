@@ -19,6 +19,7 @@ import { parisToday } from '../../../shared/paris-today';
 import { AMENDMENT_REASON_MAX_LENGTH } from '../amendment-body';
 import { CompanyPricingService } from '../company-pricing.service';
 import { SendingIntent } from '../sending-intent';
+import { nativeValue } from '../../../shared/native-input';
 
 /** La mercuriale à venir dont on corrige les dates, et son client. */
 export interface CorrectWindowPanelData {
@@ -51,6 +52,12 @@ export interface CorrectWindowPanelData {
   styleUrl: './correct-window-panel.scss',
 })
 export class CorrectWindowPanel implements FoldPanelContent<CorrectWindowPanelData> {
+  /**
+   * `fold-textarea` ne rend sa valeur qu'en quittant le champ : le motif se lit
+   * aussi à chaque frappe, pour que le bouton s'active sans cliquer ailleurs.
+   */
+  protected readonly nativeValue = nativeValue;
+
   static readonly foldPanel: FoldPanelDefaults = { side: 'auto', width: 'md' };
 
   readonly data = input.required<CorrectWindowPanelData>();

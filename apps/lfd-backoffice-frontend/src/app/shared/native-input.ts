@@ -10,12 +10,15 @@
  * La conversion se fait donc ici, en TypeScript, avec un vrai rétrécissement.
  *
  * Réservé aux champs que **Signal Forms ne pilote pas** : les dates, les
- * `<select>`, les curseurs. Un champ de texte ordinaire passe par `[formField]`
+ * `<select>`, les curseurs, et la zone de texte d'un `fold-textarea`, qui ne
+ * rend sa valeur qu'en quittant le champ. Un champ de texte ordinaire passe par `[formField]`
  * et n'a jamais besoin de lire son événement.
  */
 export function nativeValue(event: Event): string {
   const target = event.target;
-  return target instanceof HTMLInputElement || target instanceof HTMLSelectElement
+  return target instanceof HTMLInputElement ||
+    target instanceof HTMLSelectElement ||
+    target instanceof HTMLTextAreaElement
     ? target.value
     : '';
 }
