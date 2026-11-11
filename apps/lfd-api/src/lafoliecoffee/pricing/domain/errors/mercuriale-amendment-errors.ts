@@ -1,3 +1,5 @@
+import { describeDay } from "../pricing-act-summary.js";
+
 /**
  * **Les refus d'un AVENANT de mercuriale** (`documentation/pricing/mercuriales/l-avenant-date.md`).
  *
@@ -14,8 +16,12 @@ import {
 } from "../../../../platform/shared/errors/app-error.js";
 
 /** Le jour civil à Paris, pour les messages : « 2026-11-01 ». */
-function isoDay(date: Date): string {
-  return date.toISOString().slice(0, 10);
+/**
+ * Le jour CIVIL à Paris, en toutes lettres : une fenêtre s'ouvre à minuit à
+ * Paris, qui tombe la veille en UTC.
+ */
+function parisDay(date: Date): string {
+  return describeDay(date);
 }
 
 /**
@@ -57,8 +63,8 @@ export class AmendmentOutsideMercurialeError extends DomainError {
   ) {
     super(
       "pricing.mercuriale.amendment.outside_window",
-      `Un avenant reste dans la période de sa mercuriale (du ${isoDay(mercurialeFrom)} ${
-        mercurialeTo === null ? "sans terme" : `au ${isoDay(mercurialeTo)}`
+      `Un avenant reste dans la période de sa mercuriale (du ${parisDay(mercurialeFrom)} ${
+        mercurialeTo === null ? "sans terme" : `au ${parisDay(mercurialeTo)}`
       }) : choisissez des dates comprises dedans.`,
     );
   }
@@ -75,7 +81,7 @@ export class RetroactiveAmendmentError extends DomainError {
   constructor(readonly validFrom: Date) {
     super(
       "pricing.mercuriale.amendment.retroactive",
-      `Un avenant ne prend effet que pour l'avenir : le ${isoDay(validFrom)} est déjà passé. Faites-le partir d'aujourd'hui.`,
+      `Un avenant ne prend effet que pour l'avenir : le ${parisDay(validFrom)} est déjà passé. Faites-le partir d'aujourd'hui.`,
     );
   }
 }
@@ -100,7 +106,7 @@ export class SkuAlreadyNegotiatedError extends BusinessError {
       `L'article « ${sku} » a déjà un prix ${
         amendedFrom === null
           ? "dans la grille de cette mercuriale"
-          : `ajouté par l'avenant du ${isoDay(amendedFrom)}`
+          : `ajouté par l'avenant du ${parisDay(amendedFrom)}`
       } sur cette période. Pour le changer, arrêtez cette ligne dans le même avenant.`,
     );
   }
@@ -114,7 +120,7 @@ export class NoNegotiatedLineToEndError extends BusinessError {
   ) {
     super(
       "pricing.mercuriale.amendment.nothing_to_end",
-      `Aucun prix négocié de « ${sku} » ne court le ${isoDay(at)} dans cette mercuriale : il n'y a rien à arrêter.`,
+      `Aucun prix négocié de « ${sku} » ne court le ${parisDay(at)} dans cette mercuriale : il n'y a rien à arrêter.`,
     );
   }
 }
