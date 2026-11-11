@@ -85,6 +85,17 @@ if (families.length === 0) {
   process.exit(1);
 }
 
+/**
+ * Les fichiers d'ÉTAT qu'un agrégat importe pour rester sous trois cents
+ * lignes : sa fenêtre y est déclarée, et la porte les lit avec lui. Nommés un
+ * par un, pas déduits — c'est ce qui garde la porte lisible d'un coup d'œil.
+ */
+const COMPANIONS = {
+  "pricing/domain/entities/company-mercuriale.ts": [
+    "pricing/domain/entities/company-mercuriale-state.ts",
+  ],
+};
+
 const undated = [];
 for (const { field, type } of families) {
   if (EXEMPT.has(field)) {
@@ -118,6 +129,10 @@ for (const { field, type } of families) {
  * plutôt que sous-entendu — une porte qui promet plus qu'elle ne tient est pire
  * qu'une porte étroite.
  */
+function readCompanion(file) {
+  return readFileSync(join(B2B, file), "utf8");
+}
+
 function declaringFile(type) {
   const files = [
     "pricing/domain/price-rule.ts",
@@ -144,7 +159,9 @@ function declaringFile(type) {
       continue;
     }
     if (heads.some((head) => text.includes(head))) {
-      return text;
+      return [text, ...(COMPANIONS[file] ?? []).map((companion) => readCompanion(companion))].join(
+        "\n",
+      );
     }
   }
   return null;
