@@ -104,7 +104,7 @@ contrat. Sans F2, F1 seul suffit et rien ne ment.
 
 ## 1. L'écart (front, pur)
 
-`fiche-client/tarifs/amendment-diff.ts` (nouveau, testé) : à partir de
+un module neuf, « amendment-diff », dans `fiche-client/tarifs/` (testé) : à partir de
 **l'état en vigueur** (lignes, remise, politique, lus sur
 `PosedMercurialeView` à la date d'effet) et de **l'état saisi**, produit le
 corps de l'avenant :
@@ -252,7 +252,7 @@ frappe, pas à chaque frappe.
 | Lot    | Contenu                                                                                                                                 | Tests                                                                                                                                                                                                                                                                     |
 | ------ | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **A1** | l'aperçu : la composition datée extraite de `CompanyPricingQuery`, requête, handler, route, contrat ; `basedOnAmendmentId` et son refus | unitaires du handler (copie amendée, refus rendus, rien d'écrit) ; e2e : un prix changé, un prix retiré qui passe à la remise, un article qui revient à la chaîne avec la promotion du client, une date future qui tient compte d'un avenant à venir, le mur `company_id` |
-| **A2** | `amendment-diff.ts`                                                                                                                     | unitaires : chaque ligne du tableau du § 1, remise égale par valeur, avenant vide                                                                                                                                                                                         |
+| **A2** | le module « amendment-diff »                                                                                                            | unitaires : chaque ligne du tableau du § 1, remise égale par valeur, avenant vide                                                                                                                                                                                         |
 | **A3** | l'écran : mode `amending`, étapes, colonnes, barre, récapitulatif, F1, confirmation de sortie ; retrait des gestes séparés              | specs, vérification à l'écran                                                                                                                                                                                                                                             |
 | **A4** | doc d'état (`l-avenant-date.md` au présent) ; ce plan supprimé                                                                          | —                                                                                                                                                                                                                                                                         |
 
