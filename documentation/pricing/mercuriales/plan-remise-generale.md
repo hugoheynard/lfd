@@ -125,18 +125,24 @@ readonly generalDiscount?: { readonly set: GeneralDiscount | null } | undefined;
 ```
 
 `{ set: null }` arrête la remise générale ; absent, l'avenant n'en dit rien.
-La remise générale à une date est **celle du dernier avenant qui en porte une
-et a pris effet, sinon celle du document** — la règle même de
-`promotionPolicyAt`, qu'on factorise plutôt que de la recopier.
+La remise générale à une date est lue par `generalDiscountAt` (§ 2.1).
 
-**Refus nouveaux** (dans `mercuriale-errors.ts`) :
+**Refus nouveaux** (dans `mercuriale-errors.ts`, bâtis en R1) :
 
-| Refus                                          | Erreur                                                       |
-| ---------------------------------------------- | ------------------------------------------------------------ |
-| pourcentage hors ]0 ; 100 % [                  | `InvalidGeneralDiscountError` (400)                          |
-| portée qui nomme un produit (D3)               | `GeneralDiscountProductTargetError` (400)                    |
-| portée « seulement » sans aucune cible incluse | `GeneralDiscountIncludesNothingError` (400)                  |
-| ni prix ferme ni remise générale (D5)          | `EmptyMercurialeError`, élargie : son message nomme les deux |
+| Refus                                                  | Erreur                                                       |
+| ------------------------------------------------------ | ------------------------------------------------------------ |
+| un taux hors ]0 ; 100 %[ (base ou ligne)               | `InvalidGeneralDiscountError` (400)                          |
+| « tout sauf » sans taux de base, ou « seulement » avec | `GeneralDiscountBaseRateError` (400)                         |
+| « seulement » sans aucune ligne à taux                 | `GeneralDiscountIncludesNothingError` (400)                  |
+| deux lignes sur la même cible                          | `DuplicateGeneralDiscountTargetError` (400)                  |
+| ni prix ferme ni remise générale (D5)                  | `EmptyMercurialeError`, élargie : son message nomme les deux |
+
+La cible « produit » est impossible par le type (D3). La lecture datée est
+`generalDiscountAt` (§ 2.1), distincte de `promotionPolicyAt`. Q2 (refus chez
+un client à engagement de volume) ne peut pas vivre dans l'agrégat, qui ne
+connaît pas les engagements : les handlers de pose et d'avenant de R2 lisent
+le port des engagements et refusent, y compris un avenant qui pose une remise
+sur une mercuriale qui n'en avait pas.
 
 `normalizeGrid` refuse aujourd'hui la grille vide (`pricing-grid.ts`) ; la
 pose ne l'appelle plus sur une grille vide **quand** une remise générale est
@@ -274,13 +280,13 @@ n'ont **rien** à changer : ils reçoivent la règle.
 
 ## 6. Les lots
 
-| Lot    | Contenu                                                                                          | Tests                                                                                                                                                           |
-| ------ | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **R1** | domaine : `GeneralDiscount`, refus, pose, avenant, `mercurialeRuleFor`                           | unitaires domaine : couverture, exclusion famille / SKU, poids, prix ferme prioritaire, avenant qui arrête, relecture datée, scellement (palier écarté), limite |
-| **R2** | migration + adaptateur + contrat + routes de pose et d'avenant                                   | e2e : poser une mercuriale à remise seule ; le prix d'un article couvert, exclu, à prix ferme ; un avenant qui change le taux ; le mur `company_id`             |
-| **R3** | lecteurs du § 4 et journal                                                                       | unitaires des résumés, export CSV                                                                                                                               |
-| **R4** | écran : composition, mercuriale posée, avenant                                                   | specs Angular, vérification à l'écran                                                                                                                           |
-| **R5** | doc d'état : `comprendre-une-mercuriale.md` et `l-avenant-date.md` au présent ; ce plan supprimé | —                                                                                                                                                               |
+| Lot                  | Contenu                                                                                          | Tests                                                                                                                                                           |
+| -------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **R1** ✅ 2026-11-11 | domaine : `GeneralDiscount`, refus, pose, avenant, `mercurialeRuleFor`                           | unitaires domaine : couverture, exclusion famille / SKU, poids, prix ferme prioritaire, avenant qui arrête, relecture datée, scellement (palier écarté), limite |
+| **R2**               | migration + adaptateur + contrat + routes de pose et d'avenant                                   | e2e : poser une mercuriale à remise seule ; le prix d'un article couvert, exclu, à prix ferme ; un avenant qui change le taux ; le mur `company_id`             |
+| **R3**               | lecteurs du § 4 et journal                                                                       | unitaires des résumés, export CSV                                                                                                                               |
+| **R4**               | écran : composition, mercuriale posée, avenant                                                   | specs Angular, vérification à l'écran                                                                                                                           |
+| **R5**               | doc d'état : `comprendre-une-mercuriale.md` et `l-avenant-date.md` au présent ; ce plan supprimé | —                                                                                                                                                               |
 
 ## 7. Contredit par vitruve (2026-11-11)
 

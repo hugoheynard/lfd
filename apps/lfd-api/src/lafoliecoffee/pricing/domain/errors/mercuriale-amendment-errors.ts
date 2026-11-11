@@ -39,7 +39,7 @@ export class EmptyAmendmentError extends DomainError {
   constructor() {
     super(
       "pricing.mercuriale.amendment.empty",
-      "Cet avenant ne dit rien : ajoutez au moins un article, désignez au moins une ligne à arrêter, ou changez la politique de promotions.",
+      "Cet avenant ne dit rien : ajoutez au moins un article, désignez au moins une ligne à arrêter, changez la politique de promotions ou la remise générale.",
     );
   }
 }

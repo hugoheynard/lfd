@@ -120,16 +120,74 @@ export class PosedMercurialeNotFoundError extends ResourceNotFoundError {
 }
 
 /**
- * **Une mercuriale sans rien à accorder.**
+ * **Une mercuriale sans rien à accorder** — ni prix ferme, ni remise générale,
+ * ou une ligne de prix sans palier.
  *
- * Une grille vide se lirait chez le client comme un tarif sans contenu, et
+ * Un document vide se lirait chez le client comme un tarif sans contenu, et
  * personne ne saurait si c'est une saisie ratée ou une décision.
  */
 export class EmptyMercurialeError extends DomainError {
   constructor() {
     super(
       "pricing.mercuriale.empty",
-      "Une mercuriale accorde au moins un prix sur au moins un article : sans ligne, elle ne dit rien.",
+      "Une mercuriale accorde au moins un prix ferme sur un article, ou une remise générale : " +
+        "sans l'un ni l'autre (ou avec une ligne sans prix), elle ne dit rien. " +
+        "Saisissez un prix ou un pourcentage de remise générale.",
+    );
+  }
+}
+
+/**
+ * **Un taux de remise générale hors de ]0 % ; 100 %[** — de base ou d'une
+ * ligne —, ou qui n'est pas un nombre entier de points de base. 0 % ne remise rien ; 100 % donnerait la
+ * marchandise.
+ */
+export class InvalidGeneralDiscountError extends DomainError {
+  constructor(readonly bp: number) {
+    super(
+      "pricing.mercuriale.general_discount.invalid",
+      `La remise générale doit être comprise entre 0,01 % et 99,99 % (reçu : ${String(bp / 100)} %). ` +
+        "Corrigez le pourcentage avant d'enregistrer.",
+    );
+  }
+}
+
+/**
+ * **Un taux de base qui ne va pas avec le mode** : « tout sauf… » remise le
+ * reste du catalogue à un taux, qu'il faut donc dire ; « rien sauf… » ne
+ * remise que ses lignes, et un taux de base n'y aurait aucune lecture.
+ */
+export class GeneralDiscountBaseRateError extends DomainError {
+  constructor(readonly mode: "all_except" | "only") {
+    super(
+      "pricing.mercuriale.general_discount.base_rate",
+      mode === "all_except"
+        ? "Une remise générale « tout sauf… » porte un taux de base pour le reste du catalogue : saisissez-le."
+        : "Une remise générale « seulement sur… » n'a pas de taux de base : chaque ligne porte le sien. Retirez le taux de base.",
+    );
+  }
+}
+
+/** **Deux lignes sur la même famille ou la même déclinaison** — deux taux concurrents. */
+export class DuplicateGeneralDiscountTargetError extends DomainError {
+  constructor(readonly targetId: string) {
+    super(
+      "pricing.mercuriale.general_discount.duplicate_target",
+      `« ${targetId} » figure deux fois dans la remise générale : le taux appliqué dépendrait de l'ordre de lecture. Gardez une seule ligne.`,
+    );
+  }
+}
+
+/**
+ * **Une remise générale « seulement » dont aucune ligne ne porte de taux** :
+ * elle ne couvrirait aucun article, et personne ne saurait si c'est voulu.
+ */
+export class GeneralDiscountIncludesNothingError extends DomainError {
+  constructor() {
+    super(
+      "pricing.mercuriale.general_discount.includes_nothing",
+      "Une remise générale « seulement sur… » doit remiser au moins une famille ou une déclinaison. " +
+        "Donnez un taux à une ligne, ou passez en « tout sauf… ».",
     );
   }
 }

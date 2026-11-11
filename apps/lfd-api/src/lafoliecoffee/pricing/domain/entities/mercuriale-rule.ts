@@ -1,4 +1,4 @@
-import { describeDay } from "../pricing-act-summary.js";
+import { describeDay, describePercent } from "../pricing-act-summary.js";
 import type { PricingTier } from "../pricing-grid.js";
 import { volumeQuantityOf } from "../price-rule.js";
 import type { PriceRule, PricingContext } from "../price-rule.js";
@@ -6,6 +6,11 @@ import { suspendedFromOf, type RuleLifecycle } from "../rule-lifecycle.js";
 import type { AmendedGrid, LineSegment } from "./mercuriale-amendment.js";
 import { segmentAt } from "./mercuriale-segments.js";
 import { admissionAt, type PromotionAdmission } from "./mercuriale-promotion-policy.js";
+import {
+  generalDiscountAt,
+  generalDiscountBpFor,
+  type GeneralDiscount,
+} from "./general-discount.js";
 
 /*
  * La mercuriale lue comme la RÈGLE de son étage — séparée de l'agrégat pour
@@ -21,6 +26,8 @@ export interface RuledMercuriale extends AmendedGrid {
   readonly lifecycle: RuleLifecycle;
   /** La politique de promotions de départ ; les avenants en portent les suivantes. */
   readonly promotionPolicy: PromotionAdmission;
+  /** La remise générale de départ ; les avenants la changent sur leur fenêtre. */
+  readonly generalDiscount: GeneralDiscount | null;
 }
 
 /**
@@ -71,6 +78,17 @@ export interface RuledMercuriale extends AmendedGrid {
  * sa date, jamais le réglage d'aujourd'hui : celle du dernier avenant qui en
  * porte une, sinon celle du document. Un site, qui paie la mercuriale de son
  * principal, en suit aussi la politique.
+ *
+ * ## Le prix ferme d'abord, la remise générale ensuite
+ *
+ * Un article qui a une ligne de prix ferme à cet instant n'est JAMAIS remisé
+ * par la remise générale (D2), même quand sa mesure n'atteint aucun palier :
+ * la règle est alors `null` et {@link mercurialeMissesTier} dit « palier non
+ * atteint ». Sans ça, un client dont le prix ferme s'ouvre à 50 pièces
+ * paierait 10 pièces à −30 %, peut-être moins cher que son prix ferme. Sans
+ * ligne, la remise générale qui parle (cf. `generalDiscountAt`) rend une règle
+ * `alter` en pourcentage, au premier étage : elle s'applique au prix de base,
+ * et scelle comme un prix ferme (D1).
  */
 export function mercurialeRuleFor(
   mercuriale: RuledMercuriale,
@@ -81,8 +99,17 @@ export function mercurialeRuleFor(
   }
   const segment = segmentFor(mercuriale, context);
   if (segment === null) {
-    return null;
+    return generalDiscountRuleFor(mercuriale, context, context.companyId);
   }
+  return firmPriceRuleFor(mercuriale, context, context.companyId, segment);
+}
+
+function firmPriceRuleFor(
+  mercuriale: RuledMercuriale,
+  context: PricingContext,
+  companyId: string,
+  segment: LineSegment,
+): PriceRule | null {
   const { line } = segment;
   const tier = highestTierReached(line.tiers, volumeQuantityOf(context));
   if (tier === null) {
@@ -92,7 +119,7 @@ export function mercurialeRuleFor(
     id: mercuriale.id,
     stage: "mercuriale",
     scope: { type: "product", id: line.sku },
-    audience: { type: "company", id: context.companyId },
+    audience: { type: "company", id: companyId },
     minQuantity: tier.minQuantity,
     // La fenêtre de la LIGNE : celle du document pour la grille, celle de
     // l'avenant coupée par le document, et l'une ou l'autre coupée par un
@@ -109,6 +136,44 @@ export function mercurialeRuleFor(
     promotionAdmission: admissionAt(mercuriale, context.at),
     nature: "replace",
     amountMillicents: tier.unitPriceMillicents,
+  };
+}
+
+/**
+ * La règle de la remise générale pour un article SANS ligne de prix ferme, ou
+ * `null` quand aucune ne parle ou qu'elle ne couvre pas l'article.
+ *
+ * Portée `product` (le SKU de l'article), comme celle d'un prix ferme : en
+ * `variant`, la spécificité ferait gagner la remise sur une règle d'étage
+ * mercuriale écrite à la main en portée produit. L'id est celui du DOCUMENT,
+ * comme pour un prix ferme : le scellement « a facturé » cherche des ids de
+ * documents.
+ */
+function generalDiscountRuleFor(
+  mercuriale: RuledMercuriale,
+  context: PricingContext,
+  companyId: string,
+): PriceRule | null {
+  const speaking = generalDiscountAt(mercuriale, context.at);
+  const bp = speaking === null ? null : generalDiscountBpFor(speaking.discount, context);
+  if (speaking === null || bp === null) {
+    return null;
+  }
+  return {
+    id: mercuriale.id,
+    stage: "mercuriale",
+    scope: { type: "product", id: context.productSku },
+    audience: { type: "company", id: companyId },
+    minQuantity: null,
+    validFrom: speaking.from,
+    validTo: speaking.to,
+    // La pause du document suspend sa remise comme ses prix.
+    suspendedFrom: suspendedFromOf(mercuriale.lifecycle),
+    label: `${mercuriale.label} — remise générale −${describePercent(bp)} %`,
+    stacksOverMercuriale: false,
+    promotionAdmission: admissionAt(mercuriale, context.at),
+    nature: "alter",
+    alteration: { direction: "decrease", mode: "percent", bp },
   };
 }
 

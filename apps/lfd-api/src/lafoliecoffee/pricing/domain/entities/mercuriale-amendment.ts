@@ -1,3 +1,4 @@
+import type { GeneralDiscountChange } from "./general-discount.js";
 import type { PromotionAdmission } from "./mercuriale-promotion-policy.js";
 import type { PricingGridLine } from "../pricing-grid.js";
 
@@ -44,6 +45,13 @@ export interface MercurialeAmendmentDraft {
    * ne suit PAS `validTo`, qui ne borne que les lignes ouvertes.
    */
   readonly promotionPolicy?: PromotionAdmission | null | undefined;
+  /**
+   * **La remise générale de l'avenant** (`plan-remise-generale.md`, § 2.1) :
+   * `{ set: null }` l'arrête, une valeur la remplace — sur la FENÊTRE de
+   * l'avenant seulement, après quoi celle d'avant reparle. Absente : l'avenant
+   * n'en dit rien.
+   */
+  readonly generalDiscount?: GeneralDiscountChange | undefined;
 }
 
 export interface MercurialeAmendment extends MercurialeAmendmentDraft {

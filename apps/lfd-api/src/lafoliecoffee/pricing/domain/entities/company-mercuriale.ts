@@ -4,10 +4,26 @@ import {
   NO_PROMOTION_ADMITTED,
   type PromotionAdmission,
 } from "./mercuriale-promotion-policy.js";
-import { ArchivedMercurialeIsSealedError, ReversedValidityWindowError } from "../pricing-errors.js";
-import { normalizeGrid, type PricingGridLine } from "../pricing-grid.js";
-import { IN_FORCE, closingWindowAt, statusOf, suspendedFromOf } from "../rule-lifecycle.js";
-import type { RuleLifecycle, RuleStatus } from "../rule-lifecycle.js";
+import {
+  ArchivedMercurialeIsSealedError,
+  EmptyMercurialeError,
+  ReversedValidityWindowError,
+} from "../pricing-errors.js";
+import { normalizeGrid } from "../pricing-grid.js";
+import { IN_FORCE, statusOf, suspendedFromOf } from "../rule-lifecycle.js";
+import { closedState } from "./mercuriale-closing.js";
+import type { RuleStatus } from "../rule-lifecycle.js";
+import type {
+  CompanyMercurialeDraft,
+  CompanyMercurialeState,
+  MercurialeLine,
+} from "./company-mercuriale-state.js";
+import {
+  checkedGeneralDiscount,
+  generalDiscountAt,
+  type GeneralDiscount,
+  type SpeakingGeneralDiscount,
+} from "./general-discount.js";
 import type { PriceRule, PricingContext } from "../price-rule.js";
 import type {
   LineSegment,
@@ -30,60 +46,26 @@ export type {
   MercurialeAmendment,
   MercurialeAmendmentDraft,
 } from "./mercuriale-amendment.js";
-
-/** Une ligne accordée : un article, ses paliers. Pas de `plannedVolume` — cf. la classe. */
-export type MercurialeLine = PricingGridLine;
-
-/** Ce qu'un appelant apporte pour poser : l'intention, pas l'état. */
-export interface CompanyMercurialeDraft {
-  /** Identifiant **opaque** de la société. Aucune clé étrangère ne traverse. */
-  readonly companyId: string;
-  readonly label: string;
-  readonly lines: readonly MercurialeLine[];
-  /** Borne basse **incluse**. */
-  readonly validFrom: Date;
-  /** Borne haute **exclue**. `null` = sans terme. */
-  readonly validTo: Date | null;
-  /**
-   * La politique de promotions de départ (`plan-la-mercuriale-decide.md`,
-   * § 8) — absente = « Aucune promotion », le défaut d'une mercuriale neuve.
-   */
-  readonly promotionPolicy?: PromotionAdmission | undefined;
-}
-
-export interface CompanyMercurialeState extends Omit<CompanyMercurialeDraft, "promotionPolicy"> {
-  /**
-   * La politique de départ ; un avenant peut en porter une nouvelle à sa date
-   * d'effet (cf. {@link CompanyMercuriale.promotionPolicyAt}).
-   */
-  readonly promotionPolicy: PromotionAdmission;
-  readonly id: string;
-  readonly createdBy: string;
-  readonly lifecycle: RuleLifecycle;
-  /**
-   * Les avenants datés, **dans l'ordre d'écriture** — chargés dans l'agrégat,
-   * parce que c'est lui qui refuse un doublon entre la grille et un avenant.
-   */
-  readonly amendments: readonly MercurialeAmendment[];
-}
+export type {
+  CompanyMercurialeDraft,
+  CompanyMercurialeState,
+  MercurialeLine,
+} from "./company-mercuriale-state.js";
+export type {
+  GeneralDiscount,
+  GeneralDiscountChange,
+  GeneralDiscountRule,
+} from "./general-discount.js";
 
 /**
  * **La mercuriale d'un client, en tant qu'agrégat.**
  *
- * Le tarif négocié d'UNE société : des prix fermes en euros, par article, sur
- * une période datée, qui remplacent le tarif catalogue et **ferment la chaîne
- * des remises**. La définition complète est dans
+ * Le tarif négocié d'UNE société : des prix fermes en euros, par article, et
+ * une remise générale facultative sur le reste, sur une période datée, qui
+ * remplacent le tarif catalogue et **ferment la chaîne des remises**. La définition complète est dans
  * `documentation/pricing/mercuriales/comprendre-une-mercuriale.md`.
  *
- * ## Pourquoi un objet, et pas N règles
- *
- * Elle l'a été : poser écrivait une règle indépendante par article et par
- * palier, et rien ne les reliait. « Mercuriale 2027 » n'existait alors que
- * comme une déduction — les règles qui partagent un libellé et une fenêtre —
- * avec ce que ça implique : clore, c'était archiver N lignes ; renommer, en
- * réécrire N sous transaction ; et deux mercuriales homonymes se confondaient.
- *
- * ## Ce qu'elle refuse, et que N règles ne pouvaient pas voir
+ * ## Ce qu'elle refuse, et que N règles indépendantes ne verraient pas
  *
  * Une grille **qui monte** — « 0,80 € puis 0,85 € à partir de 5 000 » — est
  * parfaitement saisissable palier par palier et parfaitement absurde. Chaque
@@ -93,7 +75,8 @@ export interface CompanyMercurialeState extends Omit<CompanyMercurialeDraft, "pr
  *
  * Même chose pour **deux fois le même article** (le prix dépendrait de l'ordre
  * de lecture) et pour la **grille vide** (un tarif sans contenu, dont personne
- * ne sait s'il est une saisie ratée ou un choix).
+ * ne sait s'il est une saisie ratée ou un choix) — une mercuriale qui ne
+ * porte qu'une remise générale n'est pas vide (D5).
  *
  * ## Ce qu'elle NE refuse pas, parce que ce n'est pas à elle
  *
@@ -125,7 +108,8 @@ export class CompanyMercuriale {
    * **Poser.** La factory nomme l'intention : on ne « crée » pas une
    * mercuriale, on la pose chez quelqu'un.
    *
-   * @throws {EmptyMercurialeError} aucune ligne, ou une ligne sans palier.
+   * @throws {EmptyMercurialeError} ni ligne ni remise générale, ou une ligne sans palier.
+   * @throws les refus de `checkedGeneralDiscount`.
    * @throws {DuplicateMercurialeSkuError} deux lignes sur le même article.
    * @throws {NonDecreasingMercurialeTiersError} une grille où commander plus
    *   coûte plus cher, ou deux paliers au même seuil.
@@ -135,10 +119,20 @@ export class CompanyMercuriale {
     if (draft.validTo !== null && draft.validTo.getTime() <= draft.validFrom.getTime()) {
       throw new ReversedValidityWindowError(draft.validFrom, draft.validTo);
     }
+    const generalDiscount =
+      draft.generalDiscount === undefined || draft.generalDiscount === null
+        ? null
+        : checkedGeneralDiscount(draft.generalDiscount);
+    if (draft.lines.length === 0 && generalDiscount === null) {
+      throw new EmptyMercurialeError();
+    }
     return new CompanyMercuriale({
       ...draft,
       promotionPolicy: checkedAdmission(draft.promotionPolicy ?? NO_PROMOTION_ADMITTED),
-      lines: normalizeGrid(draft.lines, MERCURIALE_REFUSALS),
+      generalDiscount,
+      // La grille vide n'est admise qu'à côté d'une remise générale (D5) ;
+      // `normalizeGrid` la refuse, et garde ce refus pour les gabarits.
+      lines: draft.lines.length === 0 ? [] : normalizeGrid(draft.lines, MERCURIALE_REFUSALS),
       id,
       createdBy,
       lifecycle: IN_FORCE,
@@ -179,6 +173,16 @@ export class CompanyMercuriale {
   /** La politique de promotions en vigueur à cette date — document, puis avenants. */
   promotionPolicyAt(at: Date): PromotionAdmission {
     return admissionAt(this.state, at);
+  }
+
+  /** La remise générale de départ, posée avec le document. */
+  get generalDiscount(): GeneralDiscount | null {
+    return this.state.generalDiscount;
+  }
+
+  /** La remise générale qui parle à cette date, sur sa fenêtre (cf. {@link generalDiscountAt}). */
+  generalDiscountAt(at: Date): SpeakingGeneralDiscount | null {
+    return generalDiscountAt(this.state, at);
   }
 
   get status(): RuleStatus {
@@ -241,46 +245,14 @@ export class CompanyMercuriale {
   }
 
   /**
-   * **Clore.** Terminal : elle cesse d'agir et **rend sa place**.
-   *
-   * Rendre sa place est le point : c'est la condition pour en reposer une sur la
-   * même période, et c'est ce que la contrainte d'exclusion partielle
-   * (`WHERE archived_at IS NULL`) traduit en base.
-   *
-   * Rien n'est effacé — une lecture datée d'avant la clôture la retrouve, et ce
-   * qu'elle a facturé est figé sur les commandes.
-   *
-   * 🔴 Fausse jusqu'au 2026-09-09 (R17) : les lecteurs filtrent
-   * `archived_at IS NULL`, et clore la faisait disparaître du passé. Clore
-   * écrit donc **aussi** la fin dans la fenêtre, où le domaine la lit ;
-   * `archived_at` garde son rôle — rendre sa place pour qu'on puisse reposer.
-   *
-   * {@link closingWindowAt} porte les quatre cas — dont les **trois** où ne rien
-   * borner est la bonne réponse.
+   * **Clore.** Terminal : elle cesse d'agir et **rend sa place** — le pourquoi
+   * est sur {@link closedState}.
    *
    * @throws {ArchivedMercurialeIsSealedError} elle l'est déjà.
    */
   close(by: string, at: Date, reason: string | null): CompanyMercuriale {
     this.assertNotArchived();
-    const closedAt = closingWindowAt(this.state, suspendedFromOf(this.state.lifecycle), at);
-    return new CompanyMercuriale({
-      ...this.state,
-      ...(closedAt === null ? {} : { validTo: closedAt }),
-      // Ses avenants sont rangés avec elle, au même instant et pour le même
-      // motif. Leur fenêtre n'est pas réécrite : elle est coupée à la lecture
-      // par celle du document, que `closedAt` vient de borner.
-      amendments: this.state.amendments.map((amendment) =>
-        amendment.archivedAt === null
-          ? { ...amendment, archivedAt: at, archivedBy: by, archiveReason: reason }
-          : amendment,
-      ),
-      lifecycle: {
-        ...this.state.lifecycle,
-        archivedAt: at,
-        archivedBy: by,
-        archiveReason: reason,
-      },
-    });
+    return new CompanyMercuriale(closedState(this.state, by, at, reason));
   }
 
   /**

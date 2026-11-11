@@ -243,6 +243,11 @@ function euros(millicents: number): string {
   return `${(millicents / 100_000).toFixed(2).replace(".", ",")} €`;
 }
 
+/** Un pourcentage en points de base, à la française : `1250` → « 12,5 ». */
+export function describePercent(bp: number): string {
+  return percent(bp);
+}
+
 function percent(bp: number): string {
   return String(bp / 100).replace(".", ",");
 }

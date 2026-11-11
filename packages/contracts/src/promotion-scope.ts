@@ -150,20 +150,55 @@ export function promotionScopeMatch(
   facts: PromotionScopeFacts,
   point: PromotionScopePoint,
 ): PromotionScopeMatch | null {
-  const article = articleRuleOf(scope, facts);
-  if (article !== undefined) {
-    return article.eligible ? { rank: rankOf(article), familyCloseness: 0 } : null;
-  }
-  if (point.kind === "line" && point.saleUnit !== "piece" && !point.extendsToWeight) {
-    return null;
-  }
-  const family = nearestFamilyRule(scope, facts.categoryPath);
-  if (family !== null) {
-    return family.rule.eligible
-      ? { rank: rankOf(family.rule), familyCloseness: family.closeness }
+  const reachesFamilies =
+    point.kind !== "line" || point.saleUnit === "piece" || point.extendsToWeight;
+  const decision = decidingScopeRule(scope.rules, facts, reachesFamilies);
+  if (decision !== null) {
+    return decision.rule.eligible
+      ? { rank: rankOf(decision.rule), familyCloseness: decision.familyCloseness }
       : null;
   }
+  if (!reachesFamilies) {
+    return null;
+  }
   return scope.mode === "all_except" ? { rank: MODE_RANK, familyCloseness: 0 } : null;
+}
+
+/** Ce qu'une règle de portée doit nommer pour être cherchée : sa cible. */
+export interface TargetedScopeRule {
+  readonly target: PromotionScopeTarget;
+  readonly targetId: string;
+}
+
+/** La règle qui décide pour un article, et la proximité de sa famille (0 pour l'article). */
+export interface DecidingScopeRule<R extends TargetedScopeRule> {
+  readonly rule: R;
+  readonly familyCloseness: number;
+}
+
+/**
+ * **La règle qui décide pour cet article**, ou `null` quand seul le mode
+ * décide : une règle sur sa déclinaison, sinon sur son produit, sinon celle de
+ * sa famille la plus proche — familles ignorées si `reachesFamilies` est faux.
+ *
+ * Générique sur la règle : la portée d'une promotion et la remise générale
+ * d'une mercuriale (qui porte un taux par règle) partagent la même recherche,
+ * écrite une fois.
+ */
+export function decidingScopeRule<R extends TargetedScopeRule>(
+  rules: readonly R[],
+  facts: PromotionScopeFacts,
+  reachesFamilies = true,
+): DecidingScopeRule<R> | null {
+  const article = articleRuleOf(rules, facts);
+  if (article !== undefined) {
+    return { rule: article, familyCloseness: 0 };
+  }
+  if (!reachesFamilies) {
+    return null;
+  }
+  const family = nearestFamilyRule(rules, facts.categoryPath);
+  return family === null ? null : { rule: family.rule, familyCloseness: family.closeness };
 }
 
 /** **L'article est-il concerné ?** — la question de l'assiette. */
@@ -180,25 +215,23 @@ export function rankOf(rule: PromotionScopeRule): number {
   return rule.targetRank ?? NATURAL_TARGET_RANK[rule.target];
 }
 
-function articleRuleOf(
-  scope: PromotionScope,
+function articleRuleOf<R extends TargetedScopeRule>(
+  rules: readonly R[],
   facts: PromotionScopeFacts,
-): PromotionScopeRule | undefined {
-  const variant = scope.rules.find(
-    (rule) => rule.target === "variant" && rule.targetId === facts.sku,
-  );
+): R | undefined {
+  const variant = rules.find((rule) => rule.target === "variant" && rule.targetId === facts.sku);
   if (variant !== undefined || facts.productId === null) {
     return variant;
   }
-  return scope.rules.find((rule) => rule.target === "product" && rule.targetId === facts.productId);
+  return rules.find((rule) => rule.target === "product" && rule.targetId === facts.productId);
 }
 
-function nearestFamilyRule(
-  scope: PromotionScope,
+function nearestFamilyRule<R extends TargetedScopeRule>(
+  rules: readonly R[],
   categoryPath: readonly string[],
-): { readonly rule: PromotionScopeRule; readonly closeness: number } | null {
+): { readonly rule: R; readonly closeness: number } | null {
   for (const [index, categoryId] of categoryPath.entries()) {
-    const rule = scope.rules.find(
+    const rule = rules.find(
       (candidate) => candidate.target === "category" && candidate.targetId === categoryId,
     );
     if (rule !== undefined) {

@@ -1,3 +1,4 @@
+import { checkedGeneralDiscount } from "./general-discount.js";
 import { checkedAdmission } from "./mercuriale-promotion-policy.js";
 import {
   AmendmentOutsideMercurialeError,
@@ -42,7 +43,9 @@ export const MERCURIALE_REFUSALS: GridRefusals = {
  * vérifie avant.
  *
  * @throws {MissingAmendmentReasonError} motif vide ou blanc.
- * @throws {EmptyAmendmentError} ni ligne ouverte, ni ligne arrêtée.
+ * @throws {EmptyAmendmentError} ni ligne ouverte, ni ligne arrêtée, ni
+ *   politique de promotions, ni remise générale.
+ * @throws les refus de `checkedGeneralDiscount`.
  * @throws {ReversedValidityWindowError} fenêtre inversée ou vide.
  * @throws {AmendmentOutsideMercurialeError} fenêtre hors du document.
  * @throws {RetroactiveAmendmentError} `validFrom` antérieur à `now`.
@@ -61,7 +64,13 @@ export function checkedAmendment(
   const promotionPolicy = draft.promotionPolicy ?? null;
   // Un avenant qui ne fait que changer la politique de promotions est valide
   // (Hugo, 2026-10-31) : c'est le geste daté qui la fait évoluer.
-  if (draft.lines.length === 0 && draft.endedSkus.length === 0 && promotionPolicy === null) {
+  const generalDiscount = draft.generalDiscount;
+  if (
+    draft.lines.length === 0 &&
+    draft.endedSkus.length === 0 &&
+    promotionPolicy === null &&
+    generalDiscount === undefined
+  ) {
     throw new EmptyAmendmentError();
   }
   assertWindow(grid, draft, now);
@@ -72,6 +81,13 @@ export function checkedAmendment(
     reason: draft.reason.trim(),
     lines,
     promotionPolicy: promotionPolicy === null ? null : checkedAdmission(promotionPolicy),
+    ...(generalDiscount === undefined
+      ? {}
+      : {
+          generalDiscount: {
+            set: generalDiscount.set === null ? null : checkedGeneralDiscount(generalDiscount.set),
+          },
+        }),
   };
 }
 

@@ -50,6 +50,8 @@ export function mercurialeFromRow(row: {
     validTo: row.validTo,
     createdBy: row.createdBy,
     promotionPolicy: promotionPolicyFromRow(row.id, row.promotionMode, row.promotionIds),
+    // Dette R2 : la colonne `general_discount` n’existe pas encore ; aucune remise.
+    generalDiscount: null,
     lifecycle: {
       pausedAt: row.pausedAt,
       pausedBy: row.pausedBy,
