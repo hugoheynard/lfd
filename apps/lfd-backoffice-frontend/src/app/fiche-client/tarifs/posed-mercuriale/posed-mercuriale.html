@@ -137,7 +137,7 @@
   [columns]="readColumns"
   [rows]="rows()"
   [rowKey]="readRowKey"
-  [empty]="readEmpty"
+  [empty]="readEmpty()"
 >
   <ng-template foldCell="sku" let-row>
     <span class="tf-sku">{{ row.sku }}</span>

@@ -162,11 +162,23 @@ export class PosedMercuriale implements OnInit {
 
   protected readonly readRowKey = mercurialeRowKey;
 
-  protected readonly readEmpty: FoldTableEmpty = {
-    title: 'Cette mercuriale ne porte aucune ligne',
-    subtitle:
-      "Elle n'accorde donc rien — ce qui ne devrait pas arriver : la pose refuse une grille vide.",
-  };
+  /**
+   * Une mercuriale sans prix ferme est normale quand elle porte une remise
+   * générale : la table vide le dit, au lieu de crier à l'anomalie.
+   */
+  protected readonly readEmpty = computed((): FoldTableEmpty =>
+    (this.mercuriale().generalDiscount ?? null) !== null
+      ? {
+          title: 'Aucun prix ferme',
+          subtitle:
+            'Les prix de ce client viennent de la remise générale. « Modifier par avenant » pour en fixer un.',
+        }
+      : {
+          title: 'Aucun prix ferme ni remise',
+          subtitle:
+            "Cette mercuriale n'accorde rien aujourd'hui : ses prix ou sa remise ont été arrêtés.",
+        },
+  );
 
   ngOnInit(): void {
     this.promotionsApi.list().then(
