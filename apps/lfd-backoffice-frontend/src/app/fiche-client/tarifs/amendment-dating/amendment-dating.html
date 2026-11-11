@@ -1,0 +1,36 @@
+<fold-date
+  label="Date d’effet"
+  required
+  hint="Aujourd’hui = dès l’enregistrement. Jamais avant aujourd’hui."
+  [min]="today()"
+  [value]="fromDay()"
+  (valueChange)="fromDay.set($event)"
+  data-amend-from
+/>
+@if (endAllowed()) {
+  <fold-date
+    label="Jusqu’au"
+    optional
+    optionalLabel="vide : jusqu’à la fin de la mercuriale"
+    hint="À cette date, les prix ajoutés s’arrêtent et la remise d’avant reparle."
+    [min]="endMin()"
+    [value]="toDay()"
+    (valueChange)="toDay.set($event)"
+    data-amend-to
+  />
+} @else {
+  <p class="am-no-end" data-amend-no-end>{{ noEnd }}</p>
+}
+<fold-textarea
+  label="Motif"
+  required
+  [rows]="2"
+  [hint]="
+    tooLong()
+      ? 'Au plus ' + maxLength + ' caractères.'
+      : 'Gardé au journal de l’accord. Au plus ' + maxLength + ' caractères.'
+  "
+  [value]="reason()"
+  (valueChange)="reason.set($event)"
+  data-amend-reason
+/>

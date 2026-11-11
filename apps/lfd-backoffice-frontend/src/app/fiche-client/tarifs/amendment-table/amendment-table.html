@@ -1,0 +1,92 @@
+<app-tarif-filter-bar
+  checkLabel="Seulement les changements"
+  [shelfOptions]="shelfOptions()"
+  [(shelf)]="shelf"
+  [(search)]="search"
+  [(checked)]="onlyChanged"
+/>
+
+<fold-data-table
+  caption="Prix de ce client avant et après l’avenant"
+  hover
+  stickyFirst
+  density="compact"
+  [columns]="columns()"
+  [rows]="visible()"
+  [rowKey]="rowKey"
+  [rowTone]="rowTone"
+  [empty]="empty"
+>
+  <ng-template foldCell="article" let-row>
+    <span class="am-name">{{ row.name }}</span>
+    <span class="am-meta">{{ row.meta }}</span>
+  </ng-template>
+
+  <ng-template foldCell="before" let-row>
+    @if (row.beforeMillicents === null) {
+      <span class="am-meta">—</span>
+    } @else if (row.label?.changed) {
+      <!-- `<s>` n'est pas lu par la plupart des lecteurs d'écran : le texte
+           caché dit que c'est l'ancien prix. -->
+      <span class="am-sr-only">avant : {{ euros(row.beforeMillicents) }}</span>
+      <s class="am-old" aria-hidden="true">{{ euros(row.beforeMillicents) }}</s>
+    } @else {
+      {{ euros(row.beforeMillicents) }}
+    }
+  </ng-template>
+
+  <ng-template foldCell="after" let-row>
+    @switch (row.after.kind) {
+      @case ('price') {
+        <strong [class.am-dearer]="row.dearer">{{ euros(row.after.millicents) }}</strong>
+        @if (row.dearer) {
+          <span class="am-dearer-note" data-dearer>plus cher</span>
+        }
+        @if (row.after.floored) {
+          <span class="am-floored">relevé à la limite</span>
+        }
+      }
+      @case ('deferred') {
+        <span class="am-meta">recalculé à la vérification</span>
+      }
+      @default {
+        @if (row.beforeMillicents !== null) {
+          {{ euros(row.beforeMillicents) }}
+        }
+      }
+    }
+  </ng-template>
+
+  <ng-template foldCell="price" let-row>
+    @if (row.tiered) {
+      <span class="am-tiered">
+        <span class="am-meta">à paliers — retirer, puis reposer un prix</span>
+        <button
+          foldButton
+          size="sm"
+          emphasis="outline"
+          type="button"
+          (click)="tieredChange.emit({ sku: row.sku, removed: !row.tieredRemoved })"
+        >
+          {{ row.tieredRemoved ? 'Garder la grille' : 'Retirer la grille' }}
+        </button>
+      </span>
+    } @else {
+      <app-firm-price-field
+        [euros]="row.euros"
+        [catalogMillicents]="row.catalogMillicents"
+        (eurosChange)="priceChange.emit({ sku: row.sku, euros: $event })"
+      />
+    }
+  </ng-template>
+
+  <ng-template foldCell="change" let-row>
+    @if (row.label; as label) {
+      <fold-badge
+        radius="square"
+        [content]="label.label"
+        [variant]="label.changed ? 'warning' : 'neutral'"
+      />
+    }
+  </ng-template>
+</fold-data-table>

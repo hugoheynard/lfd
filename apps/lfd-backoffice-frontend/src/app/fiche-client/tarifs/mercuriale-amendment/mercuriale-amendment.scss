@@ -1,0 +1,94 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg, 1rem);
+}
+
+.am-step-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs, 0.25rem);
+}
+
+.am-step-title {
+  margin: 0;
+  font-size: var(--fold-text-lg, 1.125rem);
+  font-weight: 600;
+
+  &:focus-visible {
+    outline: 2px solid var(--fold-color-primary);
+    outline-offset: 2px;
+  }
+}
+
+.am-step-hint {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}
+
+// La barre des changements, collée au bas de l'écran pendant qu'on parcourt
+// la table. Un champ qui passerait dessous est ramené (`keepFocusVisible`).
+.am-bar {
+  position: sticky;
+  inset-block-end: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-md, 0.75rem);
+  padding: var(--fold-space-md, 0.75rem);
+  border-top: 1px solid var(--fold-color-border);
+  background: var(--fold-color-surface-raised, var(--fold-color-surface-card));
+}
+
+.am-bar-count {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.am-bar-actions {
+  display: flex;
+  gap: var(--fold-space-sm, 0.5rem);
+  margin-inline-start: auto;
+}
+
+.am-table {
+  display: flex;
+  flex-direction: column;
+  // La hauteur de la barre collante : la dernière ligne ne passe pas dessous.
+  padding-block-end: var(--fold-space-5xl, 3rem);
+}
+
+.am-effect {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fold-space-sm, 0.5rem);
+}
+
+.am-effect-text {
+  margin: 0;
+}
+
+.am-recap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm, 0.5rem);
+  margin: 0;
+  padding-inline-start: var(--fold-space-lg, 1rem);
+}
+
+.am-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm, 0.5rem);
+}
+
+.am-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

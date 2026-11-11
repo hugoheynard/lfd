@@ -1,0 +1,14 @@
+:host {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--fold-space-md, 0.75rem);
+}
+
+.tf-filter-shelf {
+  flex: 0 1 16rem;
+}
+
+.tf-filter-search {
+  flex: 1 1 16rem;
+}

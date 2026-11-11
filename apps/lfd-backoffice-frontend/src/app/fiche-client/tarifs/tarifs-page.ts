@@ -21,7 +21,9 @@ import { CompanyPricingService } from './company-pricing.service';
 import { draftFromLines, draftFromView, type DraftPrices } from './draft-prices';
 import { NO_PROMOTION_POLICY, type PromotionPolicyForm } from './promotion-policy';
 import { discountFormOf, type GeneralDiscountForm } from './general-discount';
+import { MercurialeAmendment } from './mercuriale-amendment/mercuriale-amendment';
 import { MercurialeComposer } from './mercuriale-composer/mercuriale-composer';
+import type { HasPendingChanges } from '../../pim/catalogue/product-form/pending-changes.guard';
 import { PosedMercuriale } from './posed-mercuriale/posed-mercuriale';
 import { TariffJournalCard } from './tariff-journal-card/tariff-journal-card';
 
@@ -67,6 +69,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldCalloutComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
+    MercurialeAmendment,
     MercurialeComposer,
     PosedMercuriale,
     PricingFollow,
@@ -75,7 +78,7 @@ type LoadState = 'loading' | 'ready' | 'error';
   templateUrl: './tarifs-page.html',
   styleUrl: './tarifs-page.scss',
 })
-export class ClientTarifsPage {
+export class ClientTarifsPage implements HasPendingChanges {
   readonly id = input.required<string>();
 
   private readonly pricing = inject(CompanyPricingService);
@@ -99,6 +102,17 @@ export class ClientTarifsPage {
    * la quitte sans forcément en avoir enregistré un.
    */
   protected readonly composing = signal(false);
+
+  /**
+   * **La mercuriale qu'on amende**, ou `null`. L'avenant s'écrit dans la
+   * table (`plan-avenant-dans-la-table.md`) ; tant qu'il est ouvert, la page
+   * ne montre que lui.
+   */
+  protected readonly amendingId = signal<string | null>(null);
+  /** L'avenant ouvert porte des changements non enregistrés. */
+  private readonly amendingDirty = signal(false);
+  /** Une navigation a été retenue : l'écran le dit. */
+  protected readonly leaveBlocked = signal(false);
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly view = signal<CompanyPricingView | null>(null);
@@ -124,7 +138,10 @@ export class ClientTarifsPage {
    * ferait croire qu'on la retouche, alors qu'enregistrer en poserait une
    * seconde.
    */
-  protected readonly mode = computed<'empty' | 'composing' | 'posed'>(() => {
+  protected readonly mode = computed<'empty' | 'composing' | 'posed' | 'amending'>(() => {
+    if (this.amending() !== null && this.canWrite()) {
+      return 'amending';
+    }
     if (this.composing() && this.canWrite()) {
       return 'composing';
     }
@@ -140,6 +157,10 @@ export class ClientTarifsPage {
    */
   protected readonly periodOf = (mercuriale: PosedMercurialeView): string =>
     periodText(mercuriale.validFrom, mercuriale.validTo);
+
+  protected readonly amending = computed(
+    () => this.mercuriales().find((entry) => entry.id === this.amendingId()) ?? null,
+  );
 
   protected readonly blocking = computed(() =>
     this.mercuriales().filter((entry) => entry.status !== 'expired'),
@@ -225,6 +246,45 @@ export class ClientTarifsPage {
   protected onDiscarded(): void {
     this.composing.set(false);
     void this.reload(this.id(), true);
+  }
+
+  /** « Modifier par avenant » sur une mercuriale posée. */
+  protected startAmending(mercurialeId: string): void {
+    this.leaveBlocked.set(false);
+    this.amendingId.set(mercurialeId);
+  }
+
+  protected onAmendingDirty(dirty: boolean): void {
+    this.amendingDirty.set(dirty);
+    if (!dirty) {
+      this.leaveBlocked.set(false);
+    }
+  }
+
+  /** On quitte l'avenant (confirmé s'il portait des changements). */
+  protected stopAmending(): void {
+    this.amendingId.set(null);
+    this.amendingDirty.set(false);
+    this.leaveBlocked.set(false);
+  }
+
+  /** L'avenant est enregistré : on revient à la mercuriale, relue. */
+  protected onAmendmentSaved(): void {
+    this.stopAmending();
+    void this.reload(this.id(), false);
+  }
+
+  /**
+   * **La garde de navigation** : un avenant ouvert avec des changements
+   * retient la sortie de l'onglet. L'écran dit pourquoi, et la sortie passe
+   * par « Quitter l'avenant », qui demande confirmation.
+   */
+  canLeave(): boolean {
+    if (this.mode() === 'amending' && this.amendingDirty()) {
+      this.leaveBlocked.set(true);
+      return false;
+    }
+    return true;
   }
 
   /**

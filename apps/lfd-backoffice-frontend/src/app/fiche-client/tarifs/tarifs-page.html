@@ -56,6 +56,26 @@
             [mercuriale]="mercuriale"
             [categories]="categories()"
             (changed)="onAmended()"
+            (amend)="startAmending(mercuriale.id)"
+          />
+        }
+      }
+
+      @case ('amending') {
+        @if (leaveBlocked()) {
+          <fold-callout variant="warning" announce data-leave-blocked>
+            L’avenant n’est pas enregistré. Enregistrez-le, ou quittez-le d’abord avec « Quitter
+            l’avenant ».
+          </fold-callout>
+        }
+        @if (amending(); as mercuriale) {
+          <app-mercuriale-amendment
+            [companyId]="id()"
+            [mercuriale]="mercuriale"
+            [categories]="categories()"
+            (dirtyChange)="onAmendingDirty($event)"
+            (saved)="onAmendmentSaved()"
+            (left)="stopAmending()"
           />
         }
       }

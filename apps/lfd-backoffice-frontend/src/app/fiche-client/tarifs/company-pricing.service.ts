@@ -8,6 +8,7 @@ import type {
   CloseCompanyMercurialePayload,
   CompanyPricingView,
   MercurialeDraftResponse,
+  MercurialeAmendmentPreviewView,
   MercurialeDraftView,
   PoseCompanyMercurialePayload,
   RenameCompanyMercurialePayload,
@@ -74,6 +75,25 @@ export class CompanyPricingService {
     return firstValueFrom(
       this.http.post<AmendedMercurialeResponse>(
         this.path(companyId, `/mercuriale/${encodeURIComponent(mercurialeId)}/amendments`),
+        payload,
+      ),
+    );
+  }
+
+  /**
+   * **L'aperçu d'un avenant** : ce que le client paierait avec et sans, à la
+   * date d'effet, et l'état de la mercuriale à cette date. Une lecture —
+   * appelée à l'ouverture, à la vérification et sur « Recalculer », jamais à
+   * la frappe (la base de production est facturée à l'opération).
+   */
+  async previewAmendment(
+    companyId: string,
+    mercurialeId: string,
+    payload: AmendCompanyMercurialePayload,
+  ): Promise<MercurialeAmendmentPreviewView> {
+    return firstValueFrom(
+      this.http.post<MercurialeAmendmentPreviewView>(
+        this.path(companyId, `/mercuriale/${encodeURIComponent(mercurialeId)}/amendments/preview`),
         payload,
       ),
     );

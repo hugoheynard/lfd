@@ -102,28 +102,13 @@
 <!-- **Une seule table, et un filtre au-dessus.** Le rayon devient un choix
      plutôt qu'une table : on va droit à une famille, ou on les garde toutes
      avec la colonne « Famille » pour repère. -->
-<div class="tf-filter">
-  <fold-listbox
-    class="tf-filter-shelf"
-    label="Famille"
-    [options]="shelfOptions()"
-    [value]="shelfFilter()"
-    (selectionChange)="shelfFilter.set($event)"
-  />
-  <fold-search
-    class="tf-filter-search"
-    placeholder="Nom ou SKU"
-    ariaLabel="Rechercher un article par nom ou SKU"
-    clearable
-    [value]="search()"
-    (valueChange)="search.set($event)"
-  />
-  <fold-checkbox
-    label="Seulement les articles avec un prix ferme"
-    [checked]="pricedOnly()"
-    (checkedChange)="pricedOnly.set($event)"
-  />
-</div>
+<app-tarif-filter-bar
+  checkLabel="Seulement les articles avec un prix ferme"
+  [shelfOptions]="shelfOptions()"
+  [(shelf)]="shelfFilter"
+  [(search)]="search"
+  [(checked)]="pricedOnly"
+/>
 
 <!--
   **Une `fold-data-table`, comme la tarification générale.** Les colonnes se
@@ -212,40 +197,11 @@
          l'article en `<th scope="row">`. Une étiquette de plus ne
          ferait que répéter ce que la structure porte. -->
     <span class="tf-stack">
-      <!-- Le pas est de 0,10 € parce que c'est l'unité d'une
-           négociation : on lâche dix centimes, pas un millicentime. La
-           saisie libre reste ouverte à cinq décimales — un prix
-           négocié en vaut souvent quatre — donc pas de `snapToStep`,
-           qui recollerait « 2,13456 » sur la grille du dixième. -->
-      <fold-number-input
-        size="sm"
-        align="center"
-        spinner="plusminus"
-        controls="inside"
-        placeholder="—"
-        [min]="0"
-        [step]="0.1"
-        [decimals]="5"
-        [value]="row.priceEuros"
-        (valueChange)="setEuros(row.sku, $event)"
+      <app-firm-price-field
+        [euros]="row.priceEuros"
+        [catalogMillicents]="row.catalogMillicents"
+        (eurosChange)="setEuros(row.sku, $event)"
       />
-      <!-- Un HINT, mais cliquable : il est à la place d'une aide de
-           champ et il en a le poids, sauf qu'il fait quelque chose —
-           il pose le tarif catalogue dans le champ, d'où l'on part
-           pour négocier. `fold-number-input` ne projette pas de
-           contenu dans son `hint`, qui n'accepte qu'une chaîne : le
-           lien vit donc à côté, sous le champ. -->
-      @if (row.priceEuros === null) {
-        <button
-          class="tf-hint-link"
-          type="button"
-          (click)="priceIt(row.sku, row.catalogMillicents)"
-        >
-          partir du catalogue
-        </button>
-      } @else {
-        <button class="tf-hint-link" type="button" (click)="clear(row.sku)">retirer ce prix</button>
-      }
       <!-- Le prix relevé se dit SOUS la saisie : ce qui compte est que
            le chiffre tapé n'est pas celui qui sera facturé, et ça se lit
            là où on tape. Le ton de ligne le répète, il ne le porte pas

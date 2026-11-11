@@ -16,6 +16,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { CompanyPricingService } from '../company-pricing.service';
+import { MercurialeAmendment } from '../mercuriale-amendment/mercuriale-amendment';
 import { MercurialeComposer } from '../mercuriale-composer/mercuriale-composer';
 import { PosedMercuriale } from '../posed-mercuriale/posed-mercuriale';
 import { ClientTarifsPage } from '../tarifs-page';
@@ -103,6 +104,7 @@ async function render(
         FoldCalloutComponent,
         FoldEmptyStateComponent,
         FoldLoadingStateComponent,
+        MercurialeAmendment,
         MercurialeComposer,
         PosedMercuriale,
         StubFollow,
@@ -137,7 +139,7 @@ describe('<app-client-tarifs-page> — droit d’écriture', () => {
     expect(host.querySelector('[data-compose]')).toBeNull();
     expect(host.querySelector('[data-rename]')).toBeNull();
     expect(host.querySelector('[data-close]')).toBeNull();
-    expect(host.querySelector('[data-amend-price]')).toBeNull();
+    expect(host.querySelector('[data-amend]')).toBeNull();
   });
 
   it('lecteur seul : un brouillon enregistré n’ouvre pas la composition', async () => {
@@ -156,7 +158,7 @@ describe('<app-client-tarifs-page> — droit d’écriture', () => {
     expect(host.querySelector('[data-compose]')).not.toBeNull();
     expect(host.querySelector('[data-rename]')).not.toBeNull();
     expect(host.querySelector('[data-close]')).not.toBeNull();
-    expect(host.querySelector('[data-amend-price]')).not.toBeNull();
+    expect(host.querySelector('[data-amend]')).not.toBeNull();
   });
 
   it('avec le droit : un brouillon enregistré rouvre la composition', async () => {

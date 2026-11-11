@@ -1,0 +1,16 @@
+<fold-listbox
+  class="tf-filter-shelf"
+  label="Famille"
+  [options]="shelfOptions()"
+  [value]="shelf()"
+  (selectionChange)="shelf.set($event)"
+/>
+<fold-search
+  class="tf-filter-search"
+  placeholder="Nom ou SKU"
+  ariaLabel="Rechercher un article par nom ou SKU"
+  clearable
+  [value]="search()"
+  (valueChange)="search.set($event)"
+/>
+<fold-checkbox [label]="checkLabel()" [checked]="checked()" (checkedChange)="checked.set($event)" />

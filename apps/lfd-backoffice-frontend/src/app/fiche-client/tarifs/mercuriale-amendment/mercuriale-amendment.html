@@ -1,0 +1,242 @@
+<fold-element-title
+  variant="title"
+  [level]="3"
+  [title]="'Avenant à « ' + mercuriale().label + ' »'"
+  subtitle="Un seul avenant, quel que soit le nombre de changements."
+>
+  <span titleAction>
+    @if (changes() > 0) {
+      <fold-inline-confirm
+        intent="danger"
+        message="Vos changements ne seront pas enregistrés."
+        [labels]="{ confirm: 'Quitter sans enregistrer', cancel: 'Rester' }"
+        (confirmed)="left.emit()"
+      >
+        <button foldButton size="sm" emphasis="outline" type="button" data-amend-leave>
+          Quitter l’avenant
+        </button>
+      </fold-inline-confirm>
+    } @else {
+      <button
+        foldButton
+        size="sm"
+        emphasis="outline"
+        type="button"
+        (click)="left.emit()"
+        data-amend-leave
+      >
+        Quitter l’avenant
+      </button>
+    }
+  </span>
+</fold-element-title>
+
+<app-amendment-steps [step]="step()" />
+<p class="am-sr-only" aria-live="polite">{{ announcement() }}</p>
+
+@switch (loadState()) {
+  @case ('loading') {
+    <fold-loading message="Lecture de la mercuriale en vigueur…" />
+  }
+  @case ('error') {
+    <fold-empty-state
+      tone="alert"
+      title="Impossible d’ouvrir l’avenant"
+      subtitle="La mercuriale en vigueur n’a pas pu être lue. Rien n’a été modifié."
+    >
+      <button foldButton type="button" (click)="open()">Réessayer</button>
+    </fold-empty-state>
+  }
+  @default {
+    <header class="am-step-head">
+      <h4 class="am-step-title" tabindex="-1" #stepHeading>
+        {{ step() }}. {{ stepNames[step() - 1] }}
+      </h4>
+      <p class="am-step-hint">{{ stepHints[step()] }}</p>
+    </header>
+
+    <!-- La date d'effet, visible dès la table : l'état de référence et la
+         colonne « Au … » en dépendent, et un refus de date se corrige ici
+         sans perdre la saisie. -->
+    @if (step() !== 3) {
+      <div class="am-effect" data-amend-effect>
+        @if (editingDate()) {
+          <fold-date
+            label="Date d’effet"
+            hint="Les prix « avant » et « après » sont recalculés à cette date."
+            [min]="minDay()"
+            [value]="fromDay()"
+            (valueChange)="setFromDay($event)"
+          />
+          <button
+            foldButton
+            size="sm"
+            emphasis="soft"
+            type="button"
+            (click)="editingDate.set(false)"
+          >
+            Fermer
+          </button>
+        } @else {
+          <p class="am-effect-text">
+            Date d’effet : <strong>{{ effectLabel() }}</strong>
+          </p>
+          <button
+            foldButton
+            size="sm"
+            emphasis="outline"
+            type="button"
+            (click)="editingDate.set(true)"
+            data-amend-change-date
+          >
+            Changer
+          </button>
+        }
+      </div>
+    }
+
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce data-amend-refusal>{{ message }}</fold-callout>
+    }
+    @if (previewFailed()) {
+      <fold-callout variant="alert" announce data-amend-preview-failed>
+        Les prix après l’avenant n’ont pas pu être recalculés. Votre saisie est intacte.
+        <button foldButton actions size="sm" emphasis="outline" type="button" (click)="recompute()">
+          Réessayer
+        </button>
+      </fold-callout>
+    }
+
+    @switch (step()) {
+      @case (1) {
+        @if (edit(); as current) {
+          <app-general-discount-picker
+            [discount]="current.discount"
+            (discountChange)="setDiscount($event)"
+            [categories]="categories()"
+            [firmSkus]="firmSkus()"
+          />
+          <app-promotion-policy-picker
+            [policy]="current.policy"
+            (policyChange)="setPolicy($event)"
+          />
+          <div class="am-table" (focusin)="keepFocusVisible($event, bar)">
+            <app-amendment-table
+              [rows]="rows()"
+              [shelfOptions]="shelfOptions()"
+              [beforeLabel]="beforeLabel()"
+              [(onlyChanged)]="onlyChanged"
+              (priceChange)="setPrice($event)"
+              (tieredChange)="setTiered($event)"
+            />
+          </div>
+        }
+        <div class="am-bar" #bar data-amend-bar>
+          <p class="am-bar-count">
+            <strong>{{ changes() }}</strong> changement{{ changes() > 1 ? 's' : '' }}
+          </p>
+          <fold-checkbox
+            label="Voir seulement les changements"
+            [checked]="onlyChanged()"
+            (checkedChange)="onlyChanged.set($event)"
+          />
+          <div class="am-bar-actions">
+            <button
+              foldButton
+              emphasis="outline"
+              type="button"
+              [disabled]="checking() || changes() === 0"
+              (click)="recompute()"
+            >
+              {{ checking() ? 'Calcul…' : 'Recalculer' }}
+            </button>
+            <button
+              foldButton
+              type="button"
+              #verifyButton
+              [disabled]="checking()"
+              (click)="verify()"
+              data-amend-verify
+            >
+              Vérifier l’avenant
+            </button>
+          </div>
+        </div>
+      }
+
+      @case (2) {
+        @if (checking()) {
+          <fold-loading message="Calcul des prix après l’avenant…" />
+        } @else if (recap(); as summary) {
+          @for (warning of summary.warnings; track warning) {
+            <fold-callout variant="warning" data-amend-warning>{{ warning }}</fold-callout>
+          }
+          <ul class="am-recap" data-amend-recap>
+            @for (entry of summary.entries; track entry) {
+              <li>{{ entry }}</li>
+            }
+            @if (summary.discount.length > 0) {
+              <li>
+                Remise générale :
+                <ul class="am-recap" data-amend-recap-discount>
+                  @for (change of summary.discount; track change) {
+                    <li>{{ change }}</li>
+                  }
+                </ul>
+              </li>
+            }
+          </ul>
+        }
+        <div class="am-actions">
+          <button foldButton emphasis="outline" type="button" (click)="backToTable()">
+            Revenir à la table
+          </button>
+          <button
+            foldButton
+            type="button"
+            [disabled]="checking() || previewRefused()"
+            (click)="toDating()"
+            data-amend-continue
+          >
+            Continuer
+          </button>
+        </div>
+      }
+
+      @case (3) {
+        @if (refusalWarning(); as warning) {
+          <fold-callout variant="alert">{{ warning }}</fold-callout>
+        }
+        @if (amendedMeanwhile()) {
+          <fold-callout variant="alert" announce data-amend-meanwhile>
+            Un autre avenant a été enregistré pendant votre saisie. Rechargez : vos changements
+            seront recalculés sur la mercuriale à jour.
+            <button foldButton actions size="sm" type="button" (click)="reload()">Recharger</button>
+          </fold-callout>
+        }
+        <app-amendment-dating
+          [today]="minDay()"
+          [endAllowed]="endAllowed()"
+          [fromDay]="fromDay()"
+          (fromDayChange)="setFromDay($event)"
+          [(toDay)]="toDay"
+          [(reason)]="reason"
+        />
+        <div class="am-actions">
+          <button foldButton emphasis="outline" type="button" (click)="backToTable()">
+            Revenir à la table
+          </button>
+          <button
+            foldButton
+            type="button"
+            [disabled]="saving() || checking()"
+            (click)="save()"
+            data-amend-save
+          >
+            {{ saving() ? 'Enregistrement…' : 'Enregistrer l’avenant' }}
+          </button>
+        </div>
+      }
+    }
+  }
+}

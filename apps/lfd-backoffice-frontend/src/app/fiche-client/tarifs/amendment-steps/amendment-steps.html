@@ -1,0 +1,13 @@
+<ol class="am-steps" aria-label="Étapes de l’avenant">
+  @for (name of steps; track name; let index = $index) {
+    <li
+      class="am-step"
+      [class.is-current]="index + 1 === step()"
+      [class.is-done]="index + 1 < step()"
+      [attr.aria-current]="index + 1 === step() ? 'step' : null"
+    >
+      <span class="am-step-number" aria-hidden="true">{{ index + 1 }}</span>
+      {{ name }}
+    </li>
+  }
+</ol>

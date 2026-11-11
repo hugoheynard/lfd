@@ -88,8 +88,10 @@ export class PosedMercuriale implements OnInit {
   readonly mercuriale = input.required<PosedMercurialeView>();
   readonly categories = input.required<readonly CompanyPricingCategoryView[]>();
 
-  /** La mercuriale a changé (renommée, close, amendée) : au parent de relire. */
+  /** La mercuriale a changé (renommée, close) : au parent de relire. */
   readonly changed = output<void>();
+  /** « Modifier par avenant » : au parent d'ouvrir la table de l'avenant. */
+  readonly amend = output<void>();
 
   private readonly pricing = inject(CompanyPricingService);
   private readonly notify = inject(NotifyService);

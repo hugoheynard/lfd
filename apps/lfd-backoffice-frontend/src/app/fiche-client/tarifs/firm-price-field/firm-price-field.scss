@@ -1,0 +1,30 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.15rem;
+}
+
+// Le champ prend la largeur de sa cellule : les colonnes s'alignent.
+fold-number-input {
+  width: 100%;
+}
+
+// Un hint, mais cliquable : il a le poids d'une aide, pas celui d'un bouton.
+.tf-hint-link {
+  align-self: flex-start;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--fold-color-text-muted);
+  font: inherit;
+  font-size: var(--fold-text-xs, 0.75rem);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--fold-color-primary-text, var(--fold-color-primary));
+  }
+}

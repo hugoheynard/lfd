@@ -1,6 +1,7 @@
 import { type Routes } from '@angular/router';
 
 import { permissionGuard } from '../auth/permission.guard';
+import { pendingChangesGuard } from '../pim/catalogue/product-form/pending-changes.guard';
 
 /**
  * Les routes du **dossier client** — la fiche et sa création.
@@ -95,6 +96,8 @@ export const ficheClientRoutes: Routes = [
         // à prendre à part, pas un effet de bord de l'endroit où on range un écran.
         path: 'tarifs',
         canActivate: [permissionGuard('b2b_pricing:read')],
+        // Un avenant ouvert avec des changements retient la sortie de l'onglet.
+        canDeactivate: [pendingChangesGuard],
         loadComponent: () => import('./tarifs/tarifs-page').then((m) => m.ClientTarifsPage),
       },
       {

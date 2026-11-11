@@ -11,24 +11,19 @@ import {
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
-  FoldCheckboxComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
   FoldElementTitleComponent,
   FoldInputComponent,
   FoldInfoComponent,
-  FoldListboxComponent,
-  FoldNumberInputComponent,
   FoldPopoverComponent,
   FoldPopoverTriggerDirective,
-  FoldSearchComponent,
   type FoldTableColumn,
   type FoldTableEmpty,
   type FoldTableTone,
 } from 'fold-ng';
 import type { CompanyPricingCategoryView, GeneralDiscountPayload } from '@lfd/contracts';
 import { formatEuros } from '@lfd/catalog-ui';
-import { MILLICENTS_PER_CENT } from '@lfd/money';
 
 import { NotifyService } from '../../../notify.service';
 import { nativeValue } from '../../../shared/native-input';
@@ -42,7 +37,7 @@ import {
   tally,
 } from '../../../commercial/tarification/grille/mercuriale-row';
 import { CompanyPricingService } from '../company-pricing.service';
-import { toLines, withEuros, withoutPrice, type DraftPrices } from '../draft-prices';
+import { toLines, withEuros, type DraftPrices } from '../draft-prices';
 import { policyPayload, policyProblem, type PromotionPolicyForm } from '../promotion-policy';
 import { PromotionPolicyPicker } from '../promotion-policy-picker/promotion-policy-picker';
 import {
@@ -56,11 +51,10 @@ import {
   type GeneralDiscountForm,
 } from '../general-discount';
 import { GeneralDiscountPicker } from '../general-discount-picker/general-discount-picker';
+import { FirmPriceField } from '../firm-price-field/firm-price-field';
+import { TarifFilterBar } from '../tarif-filter-bar/tarif-filter-bar';
 import { tarifShelves, type TarifRow, type TarifShelf } from '../tarif-shelves';
 import { ALL_SHELVES, filterTarifRows, type FilteredTarifRow } from '../tarif-filter';
-
-/** 10⁵ — d'un millicentime à l'euro. Dérivé une fois, jamais réécrit en dur. */
-const MILLICENTS_PER_EURO = 100 * MILLICENTS_PER_CENT;
 
 /**
  * **La composition d'une mercuriale** : le nom, la fenêtre, la grille de
@@ -80,20 +74,18 @@ const MILLICENTS_PER_EURO = 100 * MILLICENTS_PER_CENT;
   imports: [
     FoldButtonComponent,
     FoldCalloutComponent,
-    FoldCheckboxComponent,
     FoldDataTableComponent,
     FoldDataTableCellDirective,
     FoldElementTitleComponent,
     FoldInputComponent,
     FoldInfoComponent,
-    FoldListboxComponent,
-    FoldNumberInputComponent,
     FoldPopoverComponent,
     FoldPopoverTriggerDirective,
-    FoldSearchComponent,
+    FirmPriceField,
     GeneralDiscountPicker,
     PricePath,
     PromotionPolicyPicker,
+    TarifFilterBar,
     VolumeEffort,
   ],
   templateUrl: './mercuriale-composer.html',
@@ -270,15 +262,6 @@ export class MercurialeComposer {
    */
   protected setEuros(sku: string, euros: number | null): void {
     this.draft.update((draft) => withEuros(draft, sku, euros));
-  }
-
-  /** Partir du tarif catalogue : le champ s'ouvre dessus, il ne s'y verrouille pas. */
-  protected priceIt(sku: string, catalogMillicents: number): void {
-    this.draft.update((draft) => withEuros(draft, sku, catalogMillicents / MILLICENTS_PER_EURO));
-  }
-
-  protected clear(sku: string): void {
-    this.draft.update((draft) => withoutPrice(draft, sku));
   }
 
   /**

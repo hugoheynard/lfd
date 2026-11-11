@@ -1,0 +1,21 @@
+<fold-number-input
+  size="sm"
+  align="center"
+  spinner="plusminus"
+  controls="inside"
+  placeholder="—"
+  [min]="0"
+  [step]="0.1"
+  [decimals]="5"
+  [value]="euros()"
+  (valueChange)="eurosChange.emit($event)"
+/>
+<!-- `fold-number-input` ne projette rien dans son `hint`, qui n'accepte
+     qu'une chaîne : le lien vit donc sous le champ. -->
+@if (euros() === null) {
+  <button class="tf-hint-link" type="button" (click)="fromCatalog()">partir du catalogue</button>
+} @else {
+  <button class="tf-hint-link" type="button" (click)="eurosChange.emit(null)">
+    retirer ce prix
+  </button>
+}

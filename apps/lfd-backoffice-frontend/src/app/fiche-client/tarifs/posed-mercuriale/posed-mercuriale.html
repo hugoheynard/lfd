@@ -53,7 +53,7 @@
     <strong>{{ author(mercuriale().createdBy, mercuriale().createdByName) }}</strong>
   </p>
   <!-- La politique en vigueur et d'où elle vient. Elle se change par un
-       avenant daté (« Changer les promotions », sous la table) : jamais sur
+       avenant daté (« Modifier par avenant ») : jamais sur
        place, qui ferait payer au passé le réglage d'aujourd'hui. -->
   <p class="tf-meta" data-policy-line>
     Promotions sur les prix négociés : <strong>{{ policyLine() }}</strong> · {{ policySince() }}
@@ -80,6 +80,11 @@
     </fold-callout>
   }
   <div class="tf-head-actions">
+    <!-- Le geste qui modifie : un avenant daté, dans la table, pour tous
+         les changements à la fois. -->
+    @if (canWrite() && mercuriale().status !== 'expired') {
+      <button foldButton size="sm" (click)="amend.emit()" data-amend>Modifier par avenant</button>
+    }
     <button foldButton size="sm" emphasis="outline" (click)="exportCsv()">Exporter en CSV</button>
     <!-- Clore ARCHIVE ses règles : c'est ce qui rend leur place dans
          la contrainte d'exclusion, donc la condition pour reposer sur
@@ -120,8 +125,8 @@
   </div>
 </header>
 
-<!-- 🔴 En LECTURE. Modifier passe par un AVENANT daté (sous la
-     table) ou par « clore » puis reposer — jamais par une retouche
+<!-- 🔴 En LECTURE. Modifier passe par un AVENANT daté (« Modifier
+     par avenant ») ou par « clore » puis reposer — jamais par une retouche
      de la grille, qui réécrirait l'explication de ce qui a été
      facturé. Une colonne éditable ici ferait croire l'inverse. -->
 <fold-data-table
@@ -177,9 +182,7 @@
 </fold-data-table>
 
 <app-mercuriale-amendments
-  [companyId]="companyId()"
   [mercuriale]="mercuriale()"
   [categories]="categories()"
   [promotions]="promotions()"
-  (amended)="changed.emit()"
 />

@@ -1,5 +1,4 @@
-.amendments,
-.amendments-form {
+:host {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-sm);
@@ -8,10 +7,4 @@
 .amendments-list {
   margin: 0;
   padding-inline-start: var(--fold-space-lg);
-}
-
-.amendments-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-sm);
 }

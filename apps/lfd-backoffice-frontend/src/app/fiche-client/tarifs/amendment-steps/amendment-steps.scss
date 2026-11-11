@@ -1,0 +1,43 @@
+.am-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-lg, 1rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.am-step {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-sm, 0.5rem);
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm, 0.875rem);
+
+  &.is-current {
+    color: var(--fold-color-text);
+    font-weight: 600;
+  }
+}
+
+.am-step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  border: 1px solid var(--fold-color-border);
+  border-radius: 50%;
+  font-variant-numeric: tabular-nums;
+
+  .is-current & {
+    border-color: var(--fold-color-primary);
+    background: var(--fold-color-primary);
+    color: var(--fold-color-on-primary, var(--fold-color-surface-card));
+  }
+
+  .is-done & {
+    border-color: var(--fold-color-primary);
+    color: var(--fold-color-primary-text, var(--fold-color-primary));
+  }
+}

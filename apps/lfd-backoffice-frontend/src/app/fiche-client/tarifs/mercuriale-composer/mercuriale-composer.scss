@@ -133,33 +133,6 @@
   white-space: normal;
 }
 
-// Le champ prend la largeur de sa cellule : les colonnes de chiffres s'alignent
-// par la droite, et un champ qui flotterait à sa largeur naturelle casserait
-// l'alignement d'une ligne à l'autre.
-.tf-stack fold-number-input {
-  width: 100%;
-}
-
-// **Un hint, mais cliquable.** Il occupe la place d'une aide de champ et en a
-// le poids — c'est ce qui l'empêche de rivaliser avec le chiffre juste
-// au-dessus, alors qu'un bouton en ferait le geste principal de la cellule.
-.tf-hint-link {
-  border: 0;
-  padding: 0;
-  background: none;
-  color: var(--fold-color-text-muted);
-  font: inherit;
-  font-size: var(--fold-text-xs, 0.75rem);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  cursor: pointer;
-
-  &:hover,
-  &:focus-visible {
-    color: var(--fold-color-primary-text, var(--fold-color-primary));
-  }
-}
-
 // Le prix relevé est un AVERTISSEMENT : ce qui est tapé n'est pas ce qui sera
 // facturé. Le ton de ligne le répète, il ne le porte pas seul.
 .tf-floored {
@@ -203,21 +176,4 @@
 
 .tf-path-panel {
   width: min(44rem, 90vw);
-}
-
-// ── Le filtre de la table ───────────────────────────────────────────────────
-
-.tf-filter {
-  display: flex;
-  align-items: flex-end;
-  flex-wrap: wrap;
-  gap: var(--fold-space-md, 0.75rem);
-}
-
-.tf-filter-shelf {
-  flex: 0 1 16rem;
-}
-
-.tf-filter-search {
-  flex: 1 1 16rem;
 }
