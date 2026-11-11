@@ -1,6 +1,7 @@
 import {
   amendCompanyMercurialePayloadSchema,
   closeCompanyMercurialePayloadSchema,
+  correctMercurialeWindowPayloadSchema,
   poseCompanyMercurialePayloadSchema,
   renameCompanyMercurialePayloadSchema,
   saveMercurialeDraftPayloadSchema,
@@ -9,6 +10,7 @@ import {
   type AmendedMercurialeResponse,
   type CloseCompanyMercurialePayload,
   type CompanyPricingView,
+  type CorrectMercurialeWindowPayload,
   type MercurialeAmendmentPreviewView,
   type MercurialeDraftResponse,
   type MercurialeDraftView,
@@ -24,6 +26,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Put,
 } from "@nestjs/common";
@@ -34,6 +37,7 @@ import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { AmendCompanyMercurialeCommand } from "../application/commands/amend-company-mercuriale.command.js";
 import { CloseCompanyMercurialeCommand } from "../application/commands/close-company-mercuriale.command.js";
+import { CorrectMercurialeWindowCommand } from "../application/commands/correct-mercuriale-window.command.js";
 import { PoseCompanyMercurialeCommand } from "../application/commands/pose-company-mercuriale.command.js";
 import { RenameCompanyMercurialeCommand } from "../application/commands/rename-company-mercuriale.command.js";
 import { DiscardMercurialeDraftCommand } from "../application/commands/discard-mercuriale-draft.command.js";
@@ -151,6 +155,24 @@ export class AdminCompanyPricingController {
   ): Promise<MercurialeAmendmentPreviewView> {
     return this.queries.execute<PreviewMercurialeAmendmentQuery, MercurialeAmendmentPreviewView>(
       new PreviewMercurialeAmendmentQuery(companyId, mercurialeId, payload),
+    );
+  }
+
+  /**
+   * **Corriger les dates d'une mercuriale à venir** — son début et sa fin,
+   * tant qu'elle n'a pas commencé. Rien n'est rendu : l'écran relit la fiche.
+   */
+  @Patch("mercuriale/:mercurialeId/window")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async correctWindow(
+    @Param("companyId") companyId: string,
+    @Param("mercurialeId") mercurialeId: string,
+    @Body(new ZodBody(correctMercurialeWindowPayloadSchema))
+    payload: CorrectMercurialeWindowPayload,
+    @StaffUserId() staffUserId: string,
+  ): Promise<void> {
+    await this.commands.execute<CorrectMercurialeWindowCommand, void>(
+      new CorrectMercurialeWindowCommand(companyId, mercurialeId, payload, staffUserId),
     );
   }
 

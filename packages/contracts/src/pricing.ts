@@ -1913,6 +1913,12 @@ export interface PosedMercurialeView {
    */
   readonly amendments?: readonly PosedMercurialeAmendmentView[];
   /**
+   * Le dernier avenant non rangé, ou `null` — ce qu'un geste sur le document
+   * renvoie en `basedOnAmendmentId` (corriger les dates). Optionnel le temps
+   * qu'un front en ligne ne le lise pas encore.
+   */
+  readonly latestAmendmentId?: string | null;
+  /**
    * **Sa politique de promotions à l'instant de la lecture** — à son début
    * si elle n'a pas commencé (`plan-la-mercuriale-decide.md`, § 8). Celle de
    * départ, puis celles des avenants, se lisent sur eux.
@@ -2074,6 +2080,30 @@ export const renameCompanyMercurialePayloadSchema = z.object({
   newLabel: z.string().min(1).max(120),
 });
 export type RenameCompanyMercurialePayload = z.infer<typeof renameCompanyMercurialePayloadSchema>;
+
+/**
+ * **Corriger les dates d'une mercuriale à venir** — `PATCH admin/pricing/
+ * companies/:companyId/mercuriale/:mercurialeId/window`
+ * (`documentation/pricing/mercuriales/plan-corriger-les-dates.md`).
+ *
+ * Possible tant qu'elle n'a pas commencé, ni close ni en pause. Le nouveau
+ * début est aujourd'hui ou plus tard, la fin vide ou après lui, et chaque
+ * avenant non rangé reste dedans. Le motif est obligatoire.
+ */
+export const correctMercurialeWindowPayloadSchema = z.object({
+  /** Le nouveau début, inclus. */
+  validFrom: z.string().datetime(),
+  /** La nouvelle fin, exclue. `null` = sans terme. */
+  validTo: z.string().datetime().nullable(),
+  reason: z.string().min(1).max(500),
+  /**
+   * Le dernier avenant non rangé que l'écran a vu (`null` = aucun), tel que
+   * `PosedMercurialeView.latestAmendmentId` le rend. Refusé (409) si un autre
+   * a été enregistré depuis.
+   */
+  basedOnAmendmentId: z.string().min(1).nullable(),
+});
+export type CorrectMercurialeWindowPayload = z.infer<typeof correctMercurialeWindowPayloadSchema>;
 
 /**
  * **Amender une mercuriale posée** : un avenant daté

@@ -79,6 +79,9 @@ class RecordingMercuriales extends CompanyMercurialeRepository {
   rename(): Promise<void> {
     return Promise.resolve();
   }
+  correctWindow(): Promise<void> {
+    return Promise.resolve();
+  }
   load(): Promise<CompanyMercuriale | null> {
     return Promise.resolve(null);
   }

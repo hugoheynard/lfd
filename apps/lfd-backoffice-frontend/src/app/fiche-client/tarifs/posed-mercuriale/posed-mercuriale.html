@@ -49,8 +49,9 @@
   </div>
 
   <!-- Un seul geste principal : l'avenant daté, qui porte tous les
-       changements. Renommer, exporter et clore restent secondaires ;
-       renommer et clore sont des écritures (`b2b_pricing:write`). -->
+       changements. Renommer, corriger les dates (à venir seulement),
+       exporter et clore restent secondaires ; tous sauf exporter sont des
+       écritures (`b2b_pricing:write`). -->
   <div class="tf-head-actions">
     @if (canWrite() && mercuriale().status !== 'expired') {
       <button foldButton size="sm" (click)="amend.emit()" data-amend>Modifier par avenant</button>
@@ -58,6 +59,11 @@
     @if (canWrite() && !renaming()) {
       <button foldButton size="sm" emphasis="outline" (click)="startRename()" data-rename>
         Renommer
+      </button>
+    }
+    @if (canWrite() && mercuriale().status === 'scheduled') {
+      <button foldButton size="sm" emphasis="outline" (click)="correctWindow()" data-correct-window>
+        Corriger les dates
       </button>
     }
     <button foldButton size="sm" emphasis="outline" (click)="exportCsv()">Exporter en CSV</button>

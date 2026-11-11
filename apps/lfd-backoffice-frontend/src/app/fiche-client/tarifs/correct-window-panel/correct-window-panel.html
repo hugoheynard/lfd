@@ -1,0 +1,66 @@
+<fold-panel-header
+  title="Corriger les dates"
+  [subtitle]="data().mercuriale.label"
+  closeLabel="Fermer"
+/>
+
+<fold-panel-body>
+  <div class="cw-body">
+    <fold-callout variant="info" icon="info" data-correct-window-rule>
+      Possible tant que la mercuriale n'a pas commencé.
+    </fold-callout>
+
+    <fold-date
+      label="Début"
+      required
+      hint="Aujourd’hui ou plus tard."
+      [min]="today"
+      [value]="fromDay()"
+      (valueChange)="setFrom($event)"
+      data-correct-from
+    />
+    <fold-date
+      label="Fin"
+      optional
+      optionalLabel="vide : sans date de fin"
+      [min]="endMin()"
+      [value]="toDay()"
+      (valueChange)="setTo($event)"
+      data-correct-to
+    />
+    <fold-textarea
+      label="Motif"
+      required
+      [rows]="2"
+      [hint]="
+        tooLong()
+          ? 'Au plus ' + maxLength + ' caractères.'
+          : 'Gardé au journal de l’accord. Au plus ' + maxLength + ' caractères.'
+      "
+      [value]="reason()"
+      (valueChange)="reason.set($event)"
+      data-correct-reason
+    />
+
+    @if (refusal(); as why) {
+      <fold-callout variant="warning" icon="info" data-correct-refusal>{{ why }}</fold-callout>
+    }
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    Annuler
+  </button>
+  <button
+    foldButton
+    icon="check"
+    type="button"
+    data-correct-submit
+    [disabled]="!ready()"
+    [loading]="saving()"
+    (click)="submit()"
+  >
+    Corriger
+  </button>
+</fold-panel-footer>

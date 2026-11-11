@@ -7,6 +7,7 @@ import type {
   AmendedMercurialeResponse,
   CloseCompanyMercurialePayload,
   CompanyPricingView,
+  CorrectMercurialeWindowPayload,
   MercurialeDraftResponse,
   MercurialeAmendmentPreviewView,
   MercurialeDraftView,
@@ -113,6 +114,23 @@ export class CompanyPricingService {
   ): Promise<AffectedRulesResponse> {
     return firstValueFrom(
       this.http.post<AffectedRulesResponse>(this.path(companyId, '/mercuriale/rename'), payload),
+    );
+  }
+
+  /**
+   * **Corriger les dates d'une mercuriale à venir.** Rien n'est rendu : la
+   * fiche se relit, c'est la lecture qui fait foi.
+   */
+  async correctWindow(
+    companyId: string,
+    mercurialeId: string,
+    payload: CorrectMercurialeWindowPayload,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.patch<void>(
+        this.path(companyId, `/mercuriale/${encodeURIComponent(mercurialeId)}/window`),
+        payload,
+      ),
     );
   }
 

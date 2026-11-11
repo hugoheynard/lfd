@@ -219,6 +219,28 @@ export class PrismaCompanyMercurialeRepository extends CompanyMercurialeReposito
     this.shelves.changed(companyShelves(companyId));
   }
 
+  /**
+   * Les deux bornes, et elles seules : la grille et les avenants ne bougent
+   * pas. La contrainte d'exclusion tient la course que le pré-contrôle du
+   * handler ne ferme pas ; son refus est traduit comme à la pose.
+   *
+   * @throws {RunningMercurialeError} la nouvelle période recouvre une mercuriale en cours.
+   */
+  async correctWindow(mercuriale: CompanyMercuriale, act: PricingAct): Promise<void> {
+    const { id, label, validFrom, validTo, companyId } = mercuriale.toPersistence();
+    try {
+      await this.acts.around(act, () =>
+        this.prisma.companyMercuriale.update({ where: { id }, data: { validFrom, validTo } }),
+      );
+    } catch (error) {
+      if (isExclusionViolation(error, OVERLAP_CONSTRAINT)) {
+        throw new RunningMercurialeError(label, validFrom, validTo);
+      }
+      throw error;
+    }
+    this.shelves.changed(companyShelves(companyId));
+  }
+
   async load(id: string): Promise<CompanyMercuriale | null> {
     const row = await this.prisma.companyMercuriale.findUnique({
       where: { id },
@@ -261,6 +283,7 @@ export class PrismaCompanyMercurialeRepository extends CompanyMercurialeReposito
     companyId: string,
     validFrom: Date,
     validTo: Date | null,
+    exceptId?: string,
   ): Promise<CompanyMercuriale | null> {
     // Bornes basse incluse, haute exclue : deux fenêtres qui se succèdent à la
     // même date ne se recouvrent pas. La clause dit exactement ce que la
@@ -270,6 +293,7 @@ export class PrismaCompanyMercurialeRepository extends CompanyMercurialeReposito
       where: {
         companyId,
         archivedAt: null,
+        ...(exceptId === undefined ? {} : { id: { not: exceptId } }),
         ...(validTo === null ? {} : { validFrom: { lt: validTo } }),
         OR: [{ validTo: null }, { validTo: { gt: validFrom } }],
       },

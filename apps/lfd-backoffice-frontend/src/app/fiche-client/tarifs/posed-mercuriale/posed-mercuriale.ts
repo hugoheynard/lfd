@@ -18,6 +18,7 @@ import {
   FoldDataTableComponent,
   FoldElementTitleComponent,
   FoldInputComponent,
+  FoldPanelHostService,
   FoldPopoverComponent,
   FoldPopoverTriggerDirective,
   type FoldTableColumn,
@@ -53,6 +54,10 @@ import { discountSummary, firmSummary } from '../posed-summary';
 import { mercurialeCsv, mercurialeFileName, type DiscountedCsvRow } from '../mercuriale-csv';
 import { discountArticlesOf, discountedArticles, discountNames } from '../general-discount';
 import { MercurialeAmendments } from '../mercuriale-amendments/mercuriale-amendments';
+import {
+  CorrectWindowPanel,
+  type CorrectWindowPanelData,
+} from '../correct-window-panel/correct-window-panel';
 import { mercurialeRowKey, mercurialeRows, type MercurialeRowView } from '../mercuriale-rows';
 
 /** La couleur d'un état de mercuriale — jamais l'information seule. */
@@ -106,6 +111,7 @@ export class PosedMercuriale implements OnInit {
   private readonly notify = inject(NotifyService);
   private readonly permissions = inject(PermissionsStore);
   private readonly promotionsApi = inject(PromotionsService);
+  private readonly panels = inject(FoldPanelHostService);
 
   /**
    * Les promotions, pour NOMMER celles d’un « Seulement celles choisies ». `null` tant qu'elles
@@ -278,6 +284,20 @@ export class PosedMercuriale implements OnInit {
       this.notify.error(error, "La mercuriale n'a pas pu être renommée.");
     } finally {
       this.busy.set(false);
+    }
+  }
+
+  /**
+   * **Corriger les dates**, dans un panneau — seulement à venir : une
+   * mercuriale commencée garde ses dates. Après succès, la fiche se relit.
+   */
+  protected async correctWindow(): Promise<void> {
+    const ref = this.panels.open<CorrectWindowPanelData, boolean>(CorrectWindowPanel, {
+      data: { companyId: this.companyId(), mercuriale: this.mercuriale() },
+    });
+    if ((await ref.closed) === true) {
+      this.notify.success('Dates de la mercuriale corrigées.');
+      this.changed.emit();
     }
   }
 

@@ -39,6 +39,7 @@ import {
 import { carryOverDraft, type CarryOver } from "./mercuriale-carry-over.js";
 import { mercurialeMissesTier, mercurialeRuleFor, segmentFor } from "./mercuriale-rule.js";
 import { allSegments, linesAt } from "./mercuriale-segments.js";
+import { correctedWindowState } from "./mercuriale-window-correction.js";
 
 export type { CarryOver } from "./mercuriale-carry-over.js";
 export type {
@@ -91,8 +92,9 @@ export type {
  * ## La grille ne se réécrit pas — elle s'amende
  *
  * Décision du 2026-09-08 : on la pose entière, on la clôt entière, et la
- * grille posée n'est jamais réécrite — seul le **libellé** se corrige
- * (cf. {@link rename}). Depuis le 2026-10-29, un **avenant** daté ajoute une
+ * grille posée n'est jamais réécrite — le **libellé** se corrige
+ * (cf. {@link rename}), et les **dates** tant qu'elle n'a pas commencé
+ * (cf. {@link correctWindow}). Depuis le 2026-10-29, un **avenant** daté ajoute une
  * ligne, ou en arrête une à une date (changer un prix = arrêter puis ouvrir),
  * sans toucher la grille (cf. {@link amend}, `mercuriale-amendment.ts`) : ce
  * qu'une facture passée explique reste intact.
@@ -197,8 +199,9 @@ export class CompanyMercuriale {
 
   /**
    * **Renommer** — la seule retouche du document lui-même : le libellé ne
-   * participe à aucun calcul. Un prix, un article ou une borne se changent par
-   * un avenant ou en closant et reposant, jamais en réécrivant la grille.
+   * participe à aucun calcul. Un prix ou un article se change par un avenant
+   * ou en closant et reposant, jamais en réécrivant la grille ; une borne, par
+   * {@link correctWindow} tant qu'elle n'a pas commencé.
    *
    * @throws {ArchivedMercurialeIsSealedError} elle est close.
    */
@@ -264,6 +267,18 @@ export class CompanyMercuriale {
    */
   carryOver(id: string, carry: CarryOver, by: string, now: Date): CompanyMercuriale {
     return this.amend(id, carryOverDraft(this.state, carry, now), by, now);
+  }
+
+  /**
+   * **Corriger les dates**, tant qu'elle n'a pas commencé — le pourquoi et
+   * les refus sont sur {@link correctedWindowState}. `now` est l'horloge du
+   * handler, lue sous le verrou du document.
+   *
+   * @throws {ArchivedMercurialeIsSealedError} elle est close.
+   */
+  correctWindow(validFrom: Date, validTo: Date | null, now: Date): CompanyMercuriale {
+    this.assertNotArchived();
+    return new CompanyMercuriale(correctedWindowState(this.state, validFrom, validTo, now));
   }
 
   /**

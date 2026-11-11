@@ -49,6 +49,17 @@ export abstract class CompanyMercurialeRepository {
   /** Le renommage : **une seule colonne**, plus l'acte. */
   abstract rename(mercuriale: CompanyMercuriale, act: PricingAct): Promise<void>;
 
+  /**
+   * **Les dates corrigées** : `valid_from` et `valid_to`, plus l'acte — rien
+   * d'autre. Sous la transaction de l'appelant, qui tient le verrou du
+   * document (cf. {@link lockForAmendment}).
+   *
+   * @throws {RunningMercurialeError} la nouvelle période recouvre une
+   *   mercuriale en cours — la contrainte d'exclusion parle, traduite comme
+   *   à la pose.
+   */
+  abstract correctWindow(mercuriale: CompanyMercuriale, act: PricingAct): Promise<void>;
+
   abstract load(id: string): Promise<CompanyMercuriale | null>;
 
   /**
@@ -78,9 +89,14 @@ export abstract class CompanyMercurialeRepository {
     validTo: Date | null,
   ): Promise<readonly string[]>;
 
+  /**
+   * `exceptId` écarte la mercuriale dont on corrige les dates : elle ne se
+   * recouvre pas elle-même.
+   */
   abstract runningFor(
     companyId: string,
     validFrom: Date,
     validTo: Date | null,
+    exceptId?: string,
   ): Promise<CompanyMercuriale | null>;
 }

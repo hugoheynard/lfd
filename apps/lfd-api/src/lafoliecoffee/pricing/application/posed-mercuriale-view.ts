@@ -194,6 +194,7 @@ export function posedMercurialeView(
     createdByName: authors.nameOf(state.createdBy),
     lines,
     amendments: amendmentsOf(mercuriale, authors),
+    latestAmendmentId: mercuriale.latestAmendmentId,
     // À son début si elle n'a pas commencé : c'est la politique qu'elle aura.
     promotionPolicy: policyOf(
       mercuriale.promotionPolicyAt(at.getTime() < state.validFrom.getTime() ? state.validFrom : at),

@@ -76,6 +76,7 @@ import { VolumeCommitmentsReader } from "./application/ports/volume-commitments.
 import { PrismaVolumeCommitmentsReader } from "./infrastructure/prisma-volume-commitments.reader.js";
 import { CloseCompanyMercurialeHandler } from "./application/commands/close-company-mercuriale.handler.js";
 import { RenameCompanyMercurialeHandler } from "./application/commands/rename-company-mercuriale.handler.js";
+import { CorrectMercurialeWindowHandler } from "./application/commands/correct-mercuriale-window.handler.js";
 import { PoseCompanyMercurialeHandler } from "./application/commands/pose-company-mercuriale.handler.js";
 import { AmendCompanyMercurialeHandler } from "./application/commands/amend-company-mercuriale.handler.js";
 import { CarryOverMercurialeLineHandler } from "./application/commands/carry-over-mercuriale-line.handler.js";
@@ -220,6 +221,7 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
     { provide: CarriedFloorRepository, useClass: PrismaCarriedFloorRepository },
     CloseCompanyMercurialeHandler,
     RenameCompanyMercurialeHandler,
+    CorrectMercurialeWindowHandler,
     SavePriceTemplateHandler,
     ApplyPriceTemplateHandler,
     // Possède « écrire un acte » : l'état, le journal du domaine et son miroir
