@@ -75,6 +75,15 @@ export class AmendmentEditor {
   readonly minDay = computed(() =>
     defaultEffectDay(this.sources.mercuriale().validFrom, this.sources.today),
   );
+  /**
+   * La date saisie tombe AVANT le premier jour possible. Le calendrier du champ
+   * borne le choix, mais une date tapée au clavier passe : la garde est ici, et
+   * elle dit le geste qui avance le début de la mercuriale.
+   */
+  readonly draftTooEarly = computed(
+    () => this.draftDay() !== '' && this.draftDay() < this.minDay(),
+  );
+  readonly minDayLabel = computed(() => frenchDay(this.minDay()));
   /** La date d'effet, lue : « aujourd'hui, dès l'enregistrement » ou le jour. */
   readonly effectLabel = computed(() =>
     this.fromDay() === this.sources.today

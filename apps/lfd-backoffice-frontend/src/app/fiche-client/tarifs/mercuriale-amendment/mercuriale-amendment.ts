@@ -116,6 +116,8 @@ export class MercurialeAmendment implements OnInit {
   protected readonly fromDay = this.editor.fromDay;
   protected readonly editingDate = this.editor.editingDate;
   protected readonly draftDay = this.editor.draftDay;
+  protected readonly draftTooEarly = this.editor.draftTooEarly;
+  protected readonly minDayLabel = this.editor.minDayLabel;
   protected readonly minDay = this.editor.minDay;
   protected readonly effectLabel = this.editor.effectLabel;
   protected readonly beforeLabel = this.editor.beforeLabel;

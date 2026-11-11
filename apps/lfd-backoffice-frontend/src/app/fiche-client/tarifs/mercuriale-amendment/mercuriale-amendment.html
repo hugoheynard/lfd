@@ -77,7 +77,7 @@
             foldButton
             size="sm"
             type="button"
-            [disabled]="draftDay() === ''"
+            [disabled]="draftDay() === '' || draftTooEarly()"
             (click)="setFromDay(draftDay())"
             data-amend-apply-date
           >
@@ -92,6 +92,12 @@
           >
             Annuler
           </button>
+          @if (draftTooEarly()) {
+            <fold-callout variant="warning" data-amend-date-too-early>
+              Cette mercuriale commence le {{ minDayLabel() }} : un avenant ne peut pas commencer
+              avant. Pour avancer son début, fermez l’avenant et utilisez « Corriger les dates ».
+            </fold-callout>
+          }
         } @else {
           <p class="am-effect-text">
             Date d’effet : <strong>{{ effectLabel() }}</strong>

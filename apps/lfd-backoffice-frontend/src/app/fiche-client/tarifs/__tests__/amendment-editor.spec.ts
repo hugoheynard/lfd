@@ -81,6 +81,15 @@ describe('AmendmentEditor', () => {
     expect(editor.beforeLabel()).toBe('Au 10/11/2099');
   });
 
+  /** Régression : une date tapée avant le début de la mercuriale passait, et l'aperçu montrait les prix d'aujourd'hui. */
+  it('refuse une date d’effet tapée avant le début de la mercuriale', async () => {
+    const { editor } = await started({ ...MERCURIALE, validFrom: '2099-11-09T23:00:00.000Z' });
+    editor.draftDay.set(TODAY);
+    expect(editor.draftTooEarly()).toBe(true);
+    editor.draftDay.set('2099-11-10');
+    expect(editor.draftTooEarly()).toBe(false);
+  });
+
   it('refuse de vérifier un avenant vide, puis vérifie un prix changé', async () => {
     const { api, editor } = await started();
     expect(await editor.verify()).toBe(false);
