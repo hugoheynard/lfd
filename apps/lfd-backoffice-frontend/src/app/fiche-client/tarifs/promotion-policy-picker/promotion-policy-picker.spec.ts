@@ -42,26 +42,30 @@ describe('<app-promotion-policy-picker>', () => {
     TestBed.resetTestingModule();
   });
 
-  it('offre trois positions, « Aucune promotion » par défaut, avec son aide', async () => {
+  it('offre trois positions, « Non, jamais » par défaut, avec son aide', async () => {
     const { host } = await mount();
-    expect(choice(host, 'Aucune promotion')?.getAttribute('aria-checked')).toBe('true');
-    expect(choice(host, 'Toutes les promotions')).toBeDefined();
-    expect(choice(host, 'Au choix')).toBeDefined();
+    expect(choice(host, 'Non, jamais')?.getAttribute('aria-checked')).toBe('true');
+    expect(choice(host, 'Oui, toutes')).toBeDefined();
+    expect(choice(host, 'Seulement celles choisies')).toBeDefined();
     expect(host.querySelector('[data-policy-hint]')?.textContent).toContain(
-      'Ce client paie son prix négocié, sans aucune promotion en plus — ni au catalogue, ni au panier — sur les quantités où le tarif négocié s’applique.',
+      'le client paie −10 %.',
     );
+    expect(host.querySelector('[data-policy-hint]')?.textContent).toContain(
+      'Les articles hors mercuriale reçoivent les promotions normalement.',
+    );
+    expect(host.textContent).toContain('Les promotions s’ajoutent-elles aux prix négociés ?');
     expect(host.querySelector('[data-policy-promotions]')).toBeNull();
   });
 
-  it('« Au choix » ouvre la sélection ; la liste survit à un aller-retour', async () => {
+  it('« Seulement celles choisies » ouvre la sélection ; la liste survit à un aller-retour', async () => {
     const { fixture, host } = await mount({ mode: 'all', promotionIds: [] });
-    choice(host, 'Au choix')?.click();
+    choice(host, 'Seulement celles choisies')?.click();
     fixture.detectChanges();
     expect(host.querySelector('[data-policy-promotions]')).not.toBeNull();
 
     fixture.componentInstance['setIds'](['p_rentree']);
-    choice(host, 'Toutes les promotions')?.click();
-    choice(host, 'Au choix')?.click();
+    choice(host, 'Oui, toutes')?.click();
+    choice(host, 'Seulement celles choisies')?.click();
     expect(fixture.componentInstance.policy()).toEqual({
       mode: 'selected',
       promotionIds: ['p_rentree'],

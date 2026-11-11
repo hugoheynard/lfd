@@ -437,7 +437,12 @@ export function withDiscountLineChange(
   };
 }
 
-/** La remise lue : sa tête, puis une entrée par ligne (« Pains : −40 % »). */
+/**
+ * La remise lue : sa tête, puis une entrée par ligne (« Pains −40 % »,
+ * « Chocolat exclue »). Les lignes sont des taux particuliers ou des
+ * exclusions : la tête dit « sur le reste du catalogue », jamais « sauf »,
+ * qui les faisait toutes lire comme des exclusions.
+ */
 export interface DiscountReading {
   readonly head: string;
   readonly items: readonly string[];
@@ -449,23 +454,26 @@ export function discountReading(
 ): DiscountReading {
   const items = view.rules.map(
     (rule) =>
-      `${names.get(rule.targetId) ?? rule.targetId} : ${rule.bp === null ? 'exclue' : discountLabel(rule.bp)}`,
+      `${names.get(rule.targetId) ?? rule.targetId} ${rule.bp === null ? 'exclue' : discountLabel(rule.bp)}`,
   );
   const head =
     view.mode === 'only' || view.baseBp === null
-      ? 'Seulement sur les lignes suivantes'
-      : `${discountLabel(view.baseBp)} sur tout le catalogue${items.length > 0 ? ', sauf' : ''}`;
+      ? 'Seulement'
+      : `${discountLabel(view.baseBp)} sur ${items.length > 0 ? 'le reste du' : 'tout le'} catalogue`;
   return { head, items };
 }
 
 /**
- * **La remise en une phrase** — « −30 % sur tout le catalogue, sauf : Chocolat
- * : exclue ; Pains : −40 % » ou « Seulement sur les lignes suivantes : Pains : −40 % ».
+ * **La remise en une phrase** — « −30 % sur le reste du catalogue ; Pains
+ * −40 % ; Chocolat exclue » ou « Seulement : Pains −40 % ».
  */
 export function discountPhrase(
   view: GeneralDiscountView,
   names: ReadonlyMap<string, string>,
 ): string {
   const { head, items } = discountReading(view, names);
-  return items.length === 0 ? head : `${head} : ${items.join(' ; ')}`;
+  if (items.length === 0) {
+    return head;
+  }
+  return head === 'Seulement' ? `${head} : ${items.join(' ; ')}` : `${head} ; ${items.join(' ; ')}`;
 }

@@ -18,7 +18,7 @@ import {
   discountLabel,
   type DiscountArticle,
 } from './general-discount';
-import { policyPhrase } from './promotion-policy';
+import { POLICY_SUMMARY_LABEL, policyPhrase } from './promotion-policy';
 
 /**
  * **Le récapitulatif d'un avenant, en phrases** (étape 2 de
@@ -219,7 +219,7 @@ function policyEntry(diff: AmendmentDiff, state: AmendmentState, context: RecapC
   return diff.promotionPolicy === null
     ? []
     : [
-        `Promotions sur les prix négociés : ${policyPhrase(diff.promotionPolicy, context.promotions)} (au lieu de : ${policyPhrase(state.promotionPolicy, context.promotions)}).`,
+        `${POLICY_SUMMARY_LABEL} : ${policyPhrase(diff.promotionPolicy, context.promotions)} (au lieu de : ${policyPhrase(state.promotionPolicy, context.promotions)}).`,
       ];
 }
 

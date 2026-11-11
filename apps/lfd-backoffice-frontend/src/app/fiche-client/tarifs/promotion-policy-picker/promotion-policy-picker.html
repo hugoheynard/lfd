@@ -1,7 +1,7 @@
 <div class="policy" data-promotion-policy>
-  <fold-element-title variant="eyebrow" title="Promotions sur les prix négociés" />
+  <fold-element-title variant="eyebrow" [title]="question" />
   <fold-view-toggle
-    ariaLabel="Promotions sur les prix négociés"
+    [ariaLabel]="question"
     activeStyle="accent"
     [options]="modeOptions()"
     [value]="policy().mode"
@@ -22,7 +22,7 @@
       }
       @default {
         <fold-multiselect
-          label="Promotions acceptées"
+          label="Promotions qui s’ajoutent"
           placeholder="Choisir des promotions"
           searchable
           searchPlaceholder="Nom de la promotion"

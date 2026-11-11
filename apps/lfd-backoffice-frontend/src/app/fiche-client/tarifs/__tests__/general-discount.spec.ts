@@ -256,7 +256,7 @@ describe('la lecture', () => {
 
   it('dit la remise en une phrase', () => {
     expect(discountPhrase(HUGO, names)).toBe(
-      '−30 % sur tout le catalogue, sauf : Pains : −40 % ; Pains spéciaux : −25 % ; Chocolat : exclue ; Nom BAG (BAG) : −35 %',
+      '−30 % sur le reste du catalogue ; Pains −40 % ; Pains spéciaux −25 % ; Chocolat exclue ; Nom BAG (BAG) −35 %',
     );
     expect(discountLabel(3250)).toBe('−32,5 %');
   });

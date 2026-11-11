@@ -51,7 +51,7 @@ describe('<app-mercuriale-amendments>', () => {
 
   it('liste les avenants passés, sans aucun geste', () => {
     const host = mount();
-    expect(host.querySelectorAll('[data-amendments] li')).toHaveLength(1);
+    expect(host.querySelectorAll('[data-amendment]')).toHaveLength(1);
     expect(host.textContent).toContain('« Ajout » — Marie Curie');
     expect(host.querySelector('button')).toBeNull();
   });

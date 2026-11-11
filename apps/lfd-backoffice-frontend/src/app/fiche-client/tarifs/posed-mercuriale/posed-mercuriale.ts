@@ -12,9 +12,11 @@ import {
   FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
+  FoldCardComponent,
   FoldDangerZoneComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
+  FoldElementTitleComponent,
   FoldInputComponent,
   FoldPopoverComponent,
   FoldPopoverTriggerDirective,
@@ -40,9 +42,16 @@ import {
 } from '../../../commercial/tarification/grille/mercuriale-row';
 import { PromotionsService } from '../../../targeted-promotions/promotions.service';
 import { CompanyPricingService } from '../company-pricing.service';
-import { NO_PROMOTION_POLICY, originPhrase, policyOrigin, policyPhrase } from '../promotion-policy';
-import { mercurialeCsv, mercurialeFileName } from '../mercuriale-csv';
-import { discountNames, discountReading } from '../general-discount';
+import {
+  NO_PROMOTION_POLICY,
+  POLICY_SUMMARY_LABEL,
+  originPhrase,
+  policyOrigin,
+  policyPhrase,
+} from '../promotion-policy';
+import { discountSummary, firmSummary } from '../posed-summary';
+import { mercurialeCsv, mercurialeFileName, type DiscountedCsvRow } from '../mercuriale-csv';
+import { discountArticlesOf, discountedArticles, discountNames } from '../general-discount';
 import { MercurialeAmendments } from '../mercuriale-amendments/mercuriale-amendments';
 import { mercurialeRowKey, mercurialeRows, type MercurialeRowView } from '../mercuriale-rows';
 
@@ -55,11 +64,9 @@ const STATUS_TONE: Readonly<Record<PosedMercurialeStatus, 'success' | 'neutral' 
 };
 
 /**
- * **Une mercuriale posée** : son entête (nom, état, fenêtre, auteur), ses
- * gestes, sa table en lecture et ses avenants.
- *
- * Sortie de `ClientTarifsPage` le 2026-10-30, sans changement de comportement,
- * pour que la page ne porte plus que l'aiguillage entre lecture et composition.
+ * **Une mercuriale posée** : son entête (nom, état, fenêtre, auteur) et ses
+ * gestes, trois blocs de résumé (prix fermes, remise générale, cumul des
+ * promotions), sa table en lecture et ses avenants.
  *
  * Renommer et clore sont des **écritures** : elles ne s'offrent qu'avec
  * `b2b_pricing:write`. Le front CACHE, le serveur REFUSE — un lecteur seul ne
@@ -72,9 +79,11 @@ const STATUS_TONE: Readonly<Record<PosedMercurialeStatus, 'success' | 'neutral' 
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
+    FoldCardComponent,
     FoldDangerZoneComponent,
     FoldDataTableComponent,
     FoldDataTableCellDirective,
+    FoldElementTitleComponent,
     FoldInputComponent,
     FoldPopoverComponent,
     FoldPopoverTriggerDirective,
@@ -99,17 +108,22 @@ export class PosedMercuriale implements OnInit {
   private readonly promotionsApi = inject(PromotionsService);
 
   /**
-   * Les promotions, pour NOMMER celles d'un « Au choix ». `null` tant qu'elles
+   * Les promotions, pour NOMMER celles d’un « Seulement celles choisies ». `null` tant qu'elles
    * ne sont pas lues ; une lecture ratée laisse les identifiants à l'écran et
    * le dit (`promotionsMissing`) — la politique, elle, reste lisible.
    */
   protected readonly promotions = signal<readonly PromotionView[] | null>(null);
   protected readonly promotionsMissing = signal(false);
 
-  /** « Promotions pour ce client » en vigueur, en une phrase. */
-  protected readonly policyLine = computed(() =>
-    policyPhrase(this.mercuriale().promotionPolicy ?? NO_PROMOTION_POLICY, this.promotions()),
-  );
+  /** Le cumul en vigueur, en réponse : « Non », « Oui, toutes », « Seulement Rentrée ». */
+  protected readonly policyLine = computed(() => {
+    const answer = policyPhrase(
+      this.mercuriale().promotionPolicy ?? NO_PROMOTION_POLICY,
+      this.promotions(),
+    );
+    return answer.charAt(0).toUpperCase() + answer.slice(1);
+  });
+  protected readonly policyLabel = POLICY_SUMMARY_LABEL;
   /** « depuis la pose » ou « depuis l'avenant du … ». */
   protected readonly policySince = computed(() =>
     originPhrase(policyOrigin(this.mercuriale(), new Date())),
@@ -120,10 +134,35 @@ export class PosedMercuriale implements OnInit {
    * nommées. `null` = aucune. Elle se change par avenant daté.
    */
   private readonly names = computed(() => discountNames(this.categories()));
-  protected readonly discount = computed(() => {
-    const view = this.mercuriale().generalDiscount ?? null;
-    return view === null ? null : discountReading(view, this.names());
+
+  /**
+   * Les articles que la remise générale EN VIGUEUR fait, pour l'export : le
+   * prix ferme l'emporte, la limite relève.
+   */
+  private readonly discountedRows = computed((): readonly DiscountedCsvRow[] => {
+    const articles = discountArticlesOf(this.categories());
+    const verdicts = discountedArticles(
+      this.mercuriale().generalDiscount ?? null,
+      articles,
+      new Set(this.rows().map((row) => row.sku)),
+    );
+    return articles.flatMap((article) => {
+      const verdict = verdicts.get(article.sku);
+      return verdict === undefined
+        ? []
+        : [
+            {
+              ...verdict,
+              sku: article.sku,
+              name: article.name,
+              canonicalMillicents: article.canonicalMillicents,
+            },
+          ];
+    });
   });
+  protected readonly discount = computed(() =>
+    discountSummary(this.mercuriale().generalDiscount ?? null, this.names()),
+  );
 
   protected readonly euros = formatEuros;
   protected readonly percent = impactLabel;
@@ -152,6 +191,14 @@ export class PosedMercuriale implements OnInit {
    * Les colonnes de la table de LECTURE — celles que tu lis pour juger un tarif
    * accordé : d'où l'on part, ce qu'on a donné, et l'écart entre les deux.
    */
+  /** Le bloc « Prix fermes » : combien, et l'écart moyen au catalogue. */
+  protected readonly firm = computed(() =>
+    firmSummary(
+      this.mercuriale().skuCount,
+      this.rows().map((row) => row.gapBp),
+    ),
+  );
+
   protected readonly readColumns: readonly FoldTableColumn<MercurialeRowView>[] = [
     { key: 'sku', label: 'SKU', width: '8rem' },
     { key: 'productName', label: 'Article' },
@@ -260,9 +307,12 @@ export class PosedMercuriale implements OnInit {
    */
   protected exportCsv(): void {
     const mercuriale = this.mercuriale();
-    const blob = new Blob([mercurialeCsv(mercuriale, this.rows(), this.names())], {
-      type: 'text/csv;charset=utf-8',
-    });
+    const blob = new Blob(
+      [mercurialeCsv(mercuriale, this.rows(), this.names(), this.discountedRows())],
+      {
+        type: 'text/csv;charset=utf-8',
+      },
+    );
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;

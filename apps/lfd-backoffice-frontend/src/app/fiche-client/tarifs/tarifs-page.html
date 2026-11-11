@@ -46,7 +46,9 @@
         -->
         @if (canWrite()) {
           <div class="tf-head-actions tf-start">
-            <button foldButton (click)="compose()" data-compose>Préparer une mercuriale</button>
+            <button foldButton emphasis="outline" (click)="compose()" data-compose>
+              Préparer une mercuriale
+            </button>
           </div>
         }
 

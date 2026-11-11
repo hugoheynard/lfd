@@ -5,98 +5,67 @@
   pose six mois plus tard.
 -->
 <header class="tf-head">
-  <div class="tf-head-title">
-    <!--
-      **Le nom se corrige sur place.** Il n'entre dans aucun calcul :
-      renommer ne touche ni un prix, ni une facture. Ce qu'il touche,
-      faute d'identité en base, c'est la CLÉ qui recolle ses règles —
-      d'où le passage par le serveur, qui les renomme toutes d'un
-      coup et refuse un nom déjà pris sur la même fenêtre.
-    -->
-    @if (renaming()) {
-      <fold-input
-        class="tf-rename"
-        ariaLabel="Nom de la mercuriale"
-        size="sm"
-        [value]="newLabel()"
-        [disabled]="busy()"
-        (valueChange)="newLabel.set($event)"
-        (keyup.enter)="rename(nativeValue($event))"
-        (keyup.escape)="cancelRename()"
-      />
-      <button foldButton size="sm" [disabled]="busy()" (click)="rename()">Renommer</button>
-      <button foldButton size="sm" emphasis="outline" (click)="cancelRename()">Annuler</button>
-    } @else {
-      <h3 class="tf-name">{{ mercuriale().label }}</h3>
-      <fold-badge
-        [content]="statusLabel[mercuriale().status]"
-        [variant]="statusTone[mercuriale().status]"
-      />
-      <!-- Renommer et clore sont des écritures : sans \`b2b_pricing:write\`,
-           le serveur les refuse, et l'écran ne les offre pas. -->
-      @if (canWrite()) {
-        <button foldButton size="sm" emphasis="outline" (click)="startRename()" data-rename>
-          Renommer
-        </button>
-      }
-    }
-  </div>
-  <p class="tf-meta">
-    @if (mercuriale().validTo === null) {
-      Depuis le <strong>{{ day(mercuriale().validFrom) }}</strong
-      >, <strong>sans fin</strong>
-    } @else {
-      Du <strong>{{ day(mercuriale().validFrom) }}</strong> au
-      <strong>{{ day(mercuriale().validTo) }}</strong>
-    }
-    · {{ mercuriale().skuCount }} article(s) · établie par
-    <strong>{{ author(mercuriale().createdBy, mercuriale().createdByName) }}</strong>
-  </p>
-  <!-- La politique en vigueur et d'où elle vient. Elle se change par un
-       avenant daté (« Modifier par avenant ») : jamais sur
-       place, qui ferait payer au passé le réglage d'aujourd'hui. -->
-  <p class="tf-meta" data-policy-line>
-    Promotions sur les prix négociés : <strong>{{ policyLine() }}</strong> · {{ policySince() }}
-  </p>
-  <!-- La remise générale en vigueur : un pourcentage du prix de base pour
-       les articles sans prix ferme. Elle se change par avenant daté. -->
-  @if (discount(); as reading) {
-    <div class="tf-discount" data-discount-line>
-      <p class="tf-meta">
-        Remise générale : <strong>{{ reading.head }}</strong>
-      </p>
-      @if (reading.items.length > 0) {
-        <ul class="tf-discount-list">
-          @for (item of reading.items; track item) {
-            <li>{{ item }}</li>
-          }
-        </ul>
+  <div class="tf-identity">
+    <div class="tf-head-title">
+      <!--
+        **Le nom se corrige sur place.** Il n'entre dans aucun calcul :
+        renommer ne touche ni un prix, ni une facture. Ce qu'il touche,
+        faute d'identité en base, c'est la CLÉ qui recolle ses règles —
+        d'où le passage par le serveur, qui les renomme toutes d'un
+        coup et refuse un nom déjà pris sur la même fenêtre.
+      -->
+      @if (renaming()) {
+        <fold-input
+          class="tf-rename"
+          ariaLabel="Nom de la mercuriale"
+          size="sm"
+          [value]="newLabel()"
+          [disabled]="busy()"
+          (valueChange)="newLabel.set($event)"
+          (keyup.enter)="rename(nativeValue($event))"
+          (keyup.escape)="cancelRename()"
+        />
+        <button foldButton size="sm" [disabled]="busy()" (click)="rename()">Renommer</button>
+        <button foldButton size="sm" emphasis="outline" (click)="cancelRename()">Annuler</button>
+      } @else {
+        <h3 class="tf-name">{{ mercuriale().label }}</h3>
+        <fold-badge
+          [content]="statusLabel[mercuriale().status]"
+          [variant]="statusTone[mercuriale().status]"
+        />
       }
     </div>
-  }
-  @if (promotionsMissing()) {
-    <fold-callout variant="alert" data-promotions-missing>
-      Les noms des promotions n'ont pas pu être lus : elles sont désignées par leur identifiant.
-    </fold-callout>
-  }
+    <p class="tf-meta">
+      @if (mercuriale().validTo === null) {
+        Depuis le <strong>{{ day(mercuriale().validFrom) }}</strong
+        >, sans fin
+      } @else {
+        Du <strong>{{ day(mercuriale().validFrom) }}</strong> au
+        <strong>{{ day(mercuriale().validTo) }}</strong>
+      }
+      · établie par
+      <strong>{{ author(mercuriale().createdBy, mercuriale().createdByName) }}</strong>
+    </p>
+  </div>
+
+  <!-- Un seul geste principal : l'avenant daté, qui porte tous les
+       changements. Renommer, exporter et clore restent secondaires ;
+       renommer et clore sont des écritures (`b2b_pricing:write`). -->
   <div class="tf-head-actions">
-    <!-- Le geste qui modifie : un avenant daté, dans la table, pour tous
-         les changements à la fois. -->
     @if (canWrite() && mercuriale().status !== 'expired') {
       <button foldButton size="sm" (click)="amend.emit()" data-amend>Modifier par avenant</button>
     }
+    @if (canWrite() && !renaming()) {
+      <button foldButton size="sm" emphasis="outline" (click)="startRename()" data-rename>
+        Renommer
+      </button>
+    }
     <button foldButton size="sm" emphasis="outline" (click)="exportCsv()">Exporter en CSV</button>
-    <!-- Clore ARCHIVE ses règles : c'est ce qui rend leur place dans
-         la contrainte d'exclusion, donc la condition pour reposer sur
-         la même période. Rien n'est effacé. -->
     @if (canWrite() && mercuriale().status !== 'expired') {
       <!--
         **Derrière un popover, et une zone de danger dedans.** Clore
-        n'efface rien — les règles sont archivées, une lecture datée
-        d'avant les retrouve — mais le client repasse au tarif
-        catalogue à l'instant du clic, et personne ne l'en avertit.
-        C'est ça qu'il faut lire AVANT, pas après : le bouton nu ne
-        disait ni ce qu'il fait, ni ce qu'il ne fait pas.
+        n'efface rien — les règles sont archivées — mais le client repasse
+        au tarif catalogue à l'instant du clic : c'est à lire AVANT.
       -->
       <fold-popover placement="bottom-end" [arrow]="true">
         <button foldButton foldPopoverTrigger size="sm" emphasis="outline" data-close>Clore</button>
@@ -124,6 +93,55 @@
     }
   </div>
 </header>
+
+@if (promotionsMissing()) {
+  <fold-callout variant="alert" data-promotions-missing>
+    Les noms des promotions n'ont pas pu être lus : elles sont désignées par leur identifiant.
+  </fold-callout>
+}
+
+<!-- Ce que la mercuriale accorde, en trois blocs lus d'un coup d'œil.
+     Tout se change par un avenant daté, jamais sur place. -->
+<div class="tf-summary">
+  <fold-card padding="md" data-firm-summary>
+    <fold-element-title variant="title" title="Prix fermes" />
+    <p class="tf-figure">{{ firm().value }}</p>
+    @if (firm().detail; as detail) {
+      <p class="tf-detail">{{ detail }}</p>
+    }
+  </fold-card>
+
+  <fold-card padding="md" data-discount-line>
+    <fold-element-title variant="title" title="Remise générale" />
+    @if (discount(); as reading) {
+      <p class="tf-figure">
+        @if (reading.rate; as rate) {
+          {{ rate }}
+        }
+        <span class="tf-scope">{{ reading.scope }}</span>
+      </p>
+      @if (reading.lines.length > 0) {
+        <ul class="tf-lines">
+          @for (line of reading.lines; track line.key) {
+            <li [class.is-excluded]="line.excluded">
+              <span>{{ line.name }}</span>
+              <strong>{{ line.excluded ? '— ' + line.value : line.value }}</strong>
+            </li>
+          }
+        </ul>
+      }
+    } @else {
+      <p class="tf-figure">Aucune</p>
+    }
+  </fold-card>
+
+  <fold-card padding="md" data-policy-line>
+    <fold-element-title variant="title" title="Promotions" />
+    <p class="tf-detail">{{ policyLabel }} :</p>
+    <p class="tf-figure">{{ policyLine() }}</p>
+    <p class="tf-detail">{{ policySince() }}</p>
+  </fold-card>
+</div>
 
 <!-- 🔴 En LECTURE. Modifier passe par un AVENANT daté (« Modifier
      par avenant ») ou par « clore » puis reposer — jamais par une retouche

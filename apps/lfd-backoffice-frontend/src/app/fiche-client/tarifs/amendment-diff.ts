@@ -75,7 +75,7 @@ export interface AmendmentDiff {
   readonly generalDiscount: { readonly set: GeneralDiscountPayload | null } | null;
   /** `null` = la politique ne change pas. */
   readonly promotionPolicy: MercurialePromotionPolicyPayload | null;
-  /** Une saisie incomplète (remise, « Au choix » vide) : elle ne part pas. */
+  /** Une saisie incomplète (remise, « Seulement celles choisies » vide) : elle ne part pas. */
   readonly problem: string | null;
 }
 

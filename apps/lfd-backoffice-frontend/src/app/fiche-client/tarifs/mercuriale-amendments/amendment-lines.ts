@@ -1,43 +1,62 @@
 import type { PosedMercurialeAmendmentView, PromotionView } from '@lfd/contracts';
 
 import { discountPhrase } from '../general-discount';
-import { policyPhrase } from '../promotion-policy';
+import { POLICY_SUMMARY_LABEL, policyPhrase } from '../promotion-policy';
 
 const DAY = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeZone: 'Europe/Paris' });
 
+/** Un avenant tel que la liste le montre : quand, ce qu'il change, pourquoi et qui. */
+export interface AmendmentEntry {
+  readonly key: string;
+  /** « Depuis le 01/11/2026 » ou « Du 01/11/2026 au 01/12/2026 ». */
+  readonly period: string;
+  /** Une puce courte par changement. */
+  readonly changes: readonly string[];
+  /** « « Prix revu » — Marie Curie ». */
+  readonly byline: string;
+}
+
+function skuNames(skus: readonly string[], names: ReadonlyMap<string, string>): string {
+  return skus.map((sku) => names.get(sku) ?? sku).join(', ');
+}
+
 /**
- * Une ligne de la liste des avenants : quand, ce qu'il ouvre et ce qu'il
- * arrête, le motif et l'auteur. « Du 01/11/2026 à la fin de la mercuriale —
- * ouvre VIE-002-1 · arrête VIE-001-1 — « Prix revu » — Marie Curie ».
+ * **Un avenant, lisible** : sa période en tête, ce qu'il change en puces
+ * (« Prix ferme ouvert : Croissant (VIE-001-1) », « Remise générale arrêtée »,
+ * « Promotions en plus des prix négociés : oui, toutes »), puis motif et
+ * auteur. Les mots sont ceux du récapitulatif de l'avenant
+ * (`amendment-recap.ts`).
  */
-export function amendmentLine(
+export function amendmentEntry(
   amendment: PosedMercurialeAmendmentView,
   promotions: readonly PromotionView[] | null = null,
   names: ReadonlyMap<string, string> = new Map(),
-): string {
+): AmendmentEntry {
   const from = DAY.format(new Date(amendment.validFrom));
-  const window =
+  const period =
     amendment.validTo === null
-      ? `Du ${from} à la fin de la mercuriale`
+      ? `Depuis le ${from}`
       : `Du ${from} au ${DAY.format(new Date(amendment.validTo))}`;
-  const gestures: string[] = [];
+  const changes: string[] = [];
   if (amendment.openedSkus.length > 0) {
-    gestures.push(`ouvre ${amendment.openedSkus.join(', ')}`);
+    changes.push(`Prix ferme ouvert : ${skuNames(amendment.openedSkus, names)}`);
   }
   if (amendment.endedSkus.length > 0) {
-    gestures.push(`arrête ${amendment.endedSkus.join(', ')}`);
-  }
-  if (amendment.promotionPolicy !== undefined && amendment.promotionPolicy !== null) {
-    gestures.push(`promotions : ${policyPhrase(amendment.promotionPolicy, promotions)}`);
+    changes.push(`Prix ferme arrêté : ${skuNames(amendment.endedSkus, names)}`);
   }
   const discount = amendment.generalDiscount;
   if (discount !== undefined && discount !== null) {
-    gestures.push(
+    changes.push(
       discount.set === null
-        ? 'arrête la remise générale'
-        : `remise générale : ${discountPhrase(discount.set, names)}`,
+        ? 'Remise générale arrêtée'
+        : `Remise générale : ${discountPhrase(discount.set, names)}`,
+    );
+  }
+  if (amendment.promotionPolicy !== undefined && amendment.promotionPolicy !== null) {
+    changes.push(
+      `${POLICY_SUMMARY_LABEL} : ${policyPhrase(amendment.promotionPolicy, promotions)}`,
     );
   }
   const author = amendment.createdByName ?? amendment.createdBy;
-  return `${window} — ${gestures.join(' · ')} — « ${amendment.reason} » — ${author}`;
+  return { key: amendment.id, period, changes, byline: `« ${amendment.reason} » — ${author}` };
 }

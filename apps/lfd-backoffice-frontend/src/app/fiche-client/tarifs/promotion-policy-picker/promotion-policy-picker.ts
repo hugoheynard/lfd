@@ -21,9 +21,9 @@ import {
 
 import { PromotionsService } from '../../../targeted-promotions/promotions.service';
 import {
-  POLICY_MODE_HINTS,
-  POLICY_SCOPE_HINT,
   POLICY_MODE_LABELS,
+  POLICY_QUESTION,
+  policyHint,
   promotionChoices,
   type PromotionPolicyForm,
 } from '../promotion-policy';
@@ -33,7 +33,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 const MODES: readonly MercurialePromotionModeValue[] = ['none', 'all', 'selected'];
 
 /**
- * **« Promotions pour ce client »** — le choix à trois positions d'une
+ * **« Les promotions s’ajoutent-elles aux prix négociés ? »** — le cumul, choix à trois positions d'une
  * mercuriale (`documentation/promotions/plan-la-mercuriale-decide.md`, § 7),
  * à la pose, sur le brouillon et sur l'avenant.
  *
@@ -70,9 +70,8 @@ export class PromotionPolicyPicker implements OnInit {
       disabled: this.disabled(),
     })),
   );
-  protected readonly hint = computed(
-    () => `${POLICY_MODE_HINTS[this.policy().mode]} ${POLICY_SCOPE_HINT}`,
-  );
+  protected readonly question = POLICY_QUESTION;
+  protected readonly hint = computed(() => policyHint(this.policy().mode));
   protected readonly choices = computed(() =>
     promotionChoices(this.all(), this.policy().promotionIds),
   );

@@ -242,7 +242,7 @@ export class MercurialeComposer {
    */
   protected readonly rowTone = (row: TarifRow): FoldTableTone => (row.floored ? 'warning' : null);
 
-  /** Un « Au choix » vide ne se pose pas : le domaine le refuserait. */
+  /** Un « Seulement celles choisies » vide ne se pose pas : le domaine le refuserait. */
   protected readonly policyProblem = computed(() => policyProblem(this.promotionPolicy()));
 
   protected readonly canPose = computed(

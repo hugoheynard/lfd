@@ -1,98 +1,139 @@
 :host {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-sm, 0.5rem);
+  gap: var(--fold-space-md);
 }
 
-// ── Une mercuriale posée : son entête, puis sa table ────────────────────────
+// ── L'entête : l'identité à gauche, les gestes à droite ─────────────────────
+
+.tf-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+
+.tf-identity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
 
 .tf-head-title {
   display: flex;
   align-items: center;
-  gap: var(--fold-space-sm, 0.5rem);
+  gap: var(--fold-space-sm);
 }
 
-// Le champ de renommage prend la place du titre, sans faire sauter la ligne :
-// une entête qui change de hauteur en cliquant « Renommer » ferait bouger la
-// table sous les yeux.
+// Le champ de renommage prend la place du titre, sans faire sauter la ligne.
 .tf-rename {
   min-width: 18rem;
 }
 
-// Le panneau du popover de clôture. Une largeur bornée : les deux phrases qu'il
-// porte sont là pour être LUES avant de cliquer, et un paragraphe pleine largeur
-// dans une couche flottante ne se lit pas.
-.tf-close-panel {
-  max-width: 26rem;
-
-  p {
-    margin: 0 0 var(--fold-space-sm, 0.5rem);
-    font-size: var(--fold-text-base, 0.875rem);
-
-    &:last-child {
-      margin-bottom: 0;
-    }
-  }
-}
-
 .tf-name {
   margin: 0;
-  font-size: 1.0625rem;
+  font-size: var(--fold-text-lg);
 }
 
 .tf-meta {
-  flex: 1 1 auto;
   margin: 0;
-  font-size: var(--fold-text-base, 0.875rem);
+  font-size: var(--fold-text-base);
   color: var(--fold-color-text-muted);
   font-variant-numeric: tabular-nums;
 }
 
 .tf-head-actions {
   display: flex;
-  gap: var(--fold-space-sm, 0.5rem);
+  gap: var(--fold-space-sm);
   flex-wrap: wrap;
 }
 
+// Le panneau de clôture : deux phrases à LIRE avant de cliquer, largeur bornée.
+.tf-close-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  max-width: 26rem;
+
+  p {
+    margin: 0;
+    font-size: var(--fold-text-base);
+  }
+}
+
+// ── Les trois blocs de résumé : côte à côte, en colonne quand c'est étroit ──
+
+.tf-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: var(--fold-space-md);
+}
+
+.tf-figure {
+  margin: 0;
+  font-size: var(--fold-text-xl);
+  font-weight: var(--fold-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.tf-scope {
+  font-size: var(--fold-text-base);
+  font-weight: var(--fold-weight-regular);
+  color: var(--fold-color-text-muted);
+}
+
+.tf-detail {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+// Les lignes de la remise : la cible à gauche, le taux ou l'exclusion à droite.
+.tf-lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fold-text-base);
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--fold-space-sm);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .is-excluded {
+    color: var(--fold-color-text-muted);
+  }
+}
+
+// ── La table ────────────────────────────────────────────────────────────────
+
 .tf-sku {
-  font-size: var(--fold-text-xs, 0.75rem);
+  font-size: var(--fold-text-xs);
   color: var(--fold-color-text-muted);
   font-variant-numeric: tabular-nums;
 }
 
 .tf-impact {
-  font-weight: 600;
+  font-weight: var(--fold-weight-semibold);
 
   &.is-down {
-    color: var(--fold-color-success, currentcolor);
+    color: var(--fold-color-success);
   }
 
-  // `alert` et non « danger » : fold ne porte pas ce second nom, et un `var()`
-  // qui vise un jeton inexistant tombe sur son repli SANS que rien ne rougisse
-  // — la hausse se serait affichée dans la couleur du texte courant, donc à
-  // l'identique d'une baisse. C'est la porte `fold-tokens` qui l'a vu.
   &.is-up {
-    color: var(--fold-color-alert-text, currentcolor);
+    color: var(--fold-color-alert-text);
   }
 }
 
 .tf-note {
   display: block;
-  font-size: var(--fold-text-xs, 0.75rem);
+  font-size: var(--fold-text-xs);
   color: var(--fold-color-text-muted);
   font-variant-numeric: tabular-nums;
-}
-
-// La remise générale : sa phrase, puis ses lignes.
-.tf-discount {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-xs);
-}
-
-.tf-discount-list {
-  margin: 0;
-  padding-inline-start: var(--fold-space-lg);
-  font-size: var(--fold-text-base, 0.875rem);
-  color: var(--fold-color-text-muted);
 }

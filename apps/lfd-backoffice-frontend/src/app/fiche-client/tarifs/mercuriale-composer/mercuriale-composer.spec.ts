@@ -68,7 +68,7 @@ describe('<app-mercuriale-composer>', () => {
     expect(composer['canPose']()).toBe(true);
   });
 
-  it('montre « Promotions pour ce client » ; un « Au choix » vide ne se pose pas', () => {
+  it('un « Seulement celles choisies » vide ne se pose pas', () => {
     const composer = mount(
       'Mercuriale 2027',
       '2027-01-01',

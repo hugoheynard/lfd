@@ -1,8 +1,23 @@
-@if (amendments().length > 0) {
+@if (entries().length > 0) {
   <fold-element-title variant="eyebrow" title="Avenants" />
-  <ul class="amendments-list" data-amendments>
-    @for (amendment of amendments(); track amendment.id) {
-      <li>{{ lineOf(amendment) }}</li>
-    }
-  </ul>
+  <fold-timeline
+    ariaLabel="Avenants de la mercuriale"
+    datePlacement="hidden"
+    data-amendments
+    [nodes]="nodes()"
+  >
+    <ng-template #node let-node>
+      @if (entryOf(node.key); as entry) {
+        <div class="amendment" data-amendment>
+          <strong>{{ entry.period }}</strong>
+          <ul class="amendment-changes">
+            @for (change of entry.changes; track change) {
+              <li>{{ change }}</li>
+            }
+          </ul>
+          <span class="amendment-byline">{{ entry.byline }}</span>
+        </div>
+      }
+    </ng-template>
+  </fold-timeline>
 }

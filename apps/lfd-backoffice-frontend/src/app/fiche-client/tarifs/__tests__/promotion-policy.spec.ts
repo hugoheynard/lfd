@@ -7,7 +7,9 @@ import {
   originPhrase,
   policyOrigin,
   policyPayload,
+  policyHint,
   policyPhrase,
+  policySummary,
   policyProblem,
   promotionChoices,
   samePolicy,
@@ -50,7 +52,7 @@ function amendment(id: string, validFrom: string, withPolicy: boolean) {
 }
 
 describe('la politique de promotions d’une mercuriale', () => {
-  it('n’envoie la liste qu’en « Au choix »', () => {
+  it('n’envoie la liste qu’en « Seulement celles choisies »', () => {
     expect(policyPayload({ mode: 'all', promotionIds: ['p_rentree'] })).toEqual({
       mode: 'all',
       promotionIds: [],
@@ -61,12 +63,12 @@ describe('la politique de promotions d’une mercuriale', () => {
     });
   });
 
-  it('refuse un « Au choix » vide, rien d’autre', () => {
+  it('refuse un « Seulement celles choisies » vide, rien d’autre', () => {
     expect(policyProblem({ mode: 'selected', promotionIds: [] })).toContain('au moins une');
     expect(policyProblem(NO_PROMOTION_POLICY)).toBeNull();
   });
 
-  it('compare sans tenir compte de l’ordre ni d’une liste gardée hors « Au choix »', () => {
+  it('compare sans tenir compte de l’ordre ni d’une liste gardée hors « Seulement celles choisies »', () => {
     expect(
       samePolicy(
         { mode: 'selected', promotionIds: ['a', 'b'] },
@@ -83,15 +85,29 @@ describe('la politique de promotions d’une mercuriale', () => {
     expect(kept.map((c) => c.label)).toEqual(['Rentrée — −10 %', 'Été (archivée) — −5 %']);
   });
 
-  it('se dit en une phrase, promotions nommées', () => {
-    expect(policyPhrase(NO_PROMOTION_POLICY, null)).toBe('Aucune promotion');
-    expect(policyPhrase({ mode: 'all', promotionIds: [] }, null)).toBe('Toutes les promotions');
+  it('répond à la question du cumul, promotions nommées', () => {
+    expect(policyPhrase(NO_PROMOTION_POLICY, null)).toBe('non');
+    expect(policyPhrase({ mode: 'all', promotionIds: [] }, null)).toBe('oui, toutes');
     expect(
       policyPhrase({ mode: 'selected', promotionIds: ['p_rentree', 'p_ete', 'p_x'] }, [
         RENTREE,
         ETE,
       ]),
-    ).toBe('Au choix : Rentrée, Été (archivée), p_x');
+    ).toBe('seulement Rentrée, Été (archivée), p_x');
+    expect(policySummary(NO_PROMOTION_POLICY, null)).toBe(
+      'Promotions en plus des prix négociés : non',
+    );
+  });
+
+  it('l’aide dit le cumul avec un exemple, et toujours ce qu’elle ne touche pas', () => {
+    expect(policyHint('none')).toContain('le client paie −10 %');
+    expect(policyHint('all')).toContain('−10 % (remise) puis −20 % du reste = −28 %');
+    expect(policyHint('selected')).toContain('les autres non');
+    for (const mode of ['none', 'all', 'selected'] as const) {
+      expect(policyHint(mode)).toContain(
+        'Les articles hors mercuriale reçoivent les promotions normalement.',
+      );
+    }
   });
 
   it('vient de la pose tant qu’aucun avenant n’en porte une en vigueur', () => {
