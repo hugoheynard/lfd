@@ -83,7 +83,7 @@
 
 @for (shelf of shelves(); track shelf.id) {
   <!--
-  **Une `fold-data-table`, comme la tarification générale.** Les cinq
+  **Une `fold-data-table`, comme la tarification générale.** Les six
   colonnes se lisent de gauche à droite comme la négociation se mène :
   d'où l'on part, où l'on ne descend pas, ce qu'on décide, ce qu'on peut
   encore lâcher, et ce que ça oblige ce client à commander.
@@ -126,7 +126,13 @@
     />
     <ng-template foldCell="article" let-row>
       <span class="tf-article-name">{{ row.name }}</span>
-      <span class="tf-article-meta">{{ row.sku }} · {{ euros(row.catalogMillicents) }}</span>
+      <span class="tf-article-meta">{{ row.sku }}</span>
+    </ng-template>
+
+    <!-- Le tarif catalogue pro, d'où part la négociation : une colonne à
+       lui, à gauche de la limite, pour comparer les deux d'un coup d'œil. -->
+    <ng-template foldCell="catalog" let-row>
+      {{ euros(row.catalogMillicents) }}
     </ng-template>
 
     <!-- La limite n'est pas un étage : elle s'applique en fin de chaîne.

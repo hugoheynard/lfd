@@ -127,7 +127,8 @@ export class MercurialeComposer {
    * deux minutes plus tard, et le perdre coûte plus qu'un tri ne rapporte.
    */
   protected readonly columns: readonly FoldTableColumn<TarifRow>[] = [
-    { key: 'article', label: 'Article · tarif catalogue pro' },
+    { key: 'article', label: 'Article' },
+    { key: 'catalog', label: 'Prix pro', width: '8rem' },
     { key: 'limit', label: 'Limite', width: '8rem' },
     { key: 'price', label: 'Prix mercuriale', width: '12rem' },
     { key: 'room', label: 'Marge de négoce', width: '9rem' },
