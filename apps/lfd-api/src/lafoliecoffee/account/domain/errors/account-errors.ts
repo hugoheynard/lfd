@@ -608,6 +608,20 @@ export class DeliveryAddressBookStaleError extends BusinessError {
  * qu'elle vient d'ouvrir. On refuse, et le même geste, refait, la trouve
  * connectable et rattache la société à son compte.
  */
+/**
+ * Le statut de la société a changé entre le moment où la fiche a été lue et
+ * celui où le geste l'écrit — un collègue l'a suspendue, réactivée ou résiliée
+ * entre-temps. Rien n'est écrit : on relit la fiche, et l'on décide sur l'état réel.
+ */
+export class CompanyChangedMeanwhileError extends BusinessError {
+  constructor(readonly companyId: string) {
+    super(
+      "account.company.changed_meanwhile",
+      "Le statut de cette société vient d'être changé par quelqu'un d'autre. Rechargez la fiche, puis recommencez si le geste a encore lieu d'être.",
+    );
+  }
+}
+
 export class GuestBecameAccountMeanwhileError extends BusinessError {
   constructor(readonly userId: string) {
     super(

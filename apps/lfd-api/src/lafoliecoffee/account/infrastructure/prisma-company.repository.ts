@@ -6,13 +6,22 @@ import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-chan
 import { companyShelves } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { referenceFrom } from "../../../platform/id/reference.js";
-import { Company, type CompanySoftState } from "../domain/entities/company.js";
-import { SiretAlreadyRegisteredError } from "../domain/errors/account-errors.js";
+import { Company } from "../domain/entities/company.js";
+import {
+  CompanyChangedMeanwhileError,
+  SiretAlreadyRegisteredError,
+} from "../domain/errors/account-errors.js";
 import { CompanyRepository, type KbisLocation } from "../domain/ports/company.repository.js";
-import { KbisDeposit } from "../domain/value-objects/kbis-deposit.js";
-import { DirectDebitBlock } from "../domain/value-objects/direct-debit-block.js";
 import { ContactDetails } from "../domain/value-objects/contact-details.js";
 import { HierarchyPlace } from "../domain/value-objects/hierarchy-place.js";
+import {
+  changedColumns,
+  companyColumnsOf,
+  contactColumns,
+  directDebitBlockOf,
+  kbisOf,
+  type CompanyColumns,
+} from "./company-columns.js";
 
 /** Préfixe de la référence société — ce que le `P-` du produit est à un article. */
 const COMPANY_PREFIX = "C";
@@ -53,6 +62,12 @@ async function pickFreeCompanyReference(
 /** Adaptateur Prisma du port des sociétés. */
 @Injectable()
 export class PrismaCompanyRepository extends CompanyRepository {
+  /** Chaque agrégat chargé, tel qu'il était : la base de l'écart que `save()` écrit. */
+  private readonly loaded = new WeakMap<
+    Company,
+    { readonly columns: CompanyColumns; readonly status: CompanyStatus }
+  >();
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly ids: IdGenerator,
@@ -188,7 +203,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
     if (row === null) {
       return null;
     }
-    return Company.reconstitute({
+    const company = Company.reconstitute({
       id: row.id,
       raisonSociale: row.raisonSociale,
       enseigne: row.enseigne,
@@ -241,50 +256,68 @@ export class PrismaCompanyRepository extends CompanyRepository {
         signatureRequired: row.deliverySignatureRequired,
       },
     });
+    // Ce que l'agrégat écrirait tel quel : `save()` n'écrira que l'écart.
+    this.loaded.set(company, {
+      columns: companyColumnsOf(company.toPersistence()),
+      status: row.status,
+    });
+    return company;
   }
 
+  /**
+   * N'écrit que les colonnes changées depuis {@link load} ({@link changedColumns}),
+   * et le statut seulement s'il vaut encore en base ce qu'on avait lu : une
+   * réactivation partie d'une fiche « suspendue » ne rouvre pas un compte
+   * résilié entre-temps.
+   *
+   * @throws {CompanyChangedMeanwhileError} le statut a changé depuis le chargement.
+   */
   async save(company: Company): Promise<void> {
     const id = company.id;
     if (id === null) {
       throw new Error("save() attend un agrégat déjà persisté (id manquant).");
     }
-    // On écrit les champs **mutables** portés par l'agrégat (identité souple +
-    // contact + termes + statut/activation) ; le mur est vérifié en amont.
     const state = company.toPersistence();
-    await this.prisma.company.update({
-      where: { id },
-      data: {
-        enseigne: state.enseigne,
-        raisonSociale: state.raisonSociale,
-        formeJuridique: state.formeJuridique,
-        siret: state.siret,
-        siren: state.siren,
-        vatNumber: state.vatNumber,
-        ...contactColumns(state.contact),
-        grantedTerms: [...state.grantedTerms],
-        requestedTerm: state.requestedTerm,
-        activatedAt: state.activatedAt,
-        activatedByStaffId: state.activatedBy?.staffUserId ?? null,
-        activatedByName: state.activatedBy?.name ?? null,
-        activatedByRole: state.activatedBy?.role ?? null,
-        suspensionCause: state.suspensionCause,
-        nafCode: state.nafCode,
-        preferredFulfillmentMethod: state.fulfillmentPreference.method,
-        preferredPickupAddressId: state.fulfillmentPreference.pickupAddressId,
-        preferredDeliveryAddressId: state.fulfillmentPreference.deliveryAddressId,
-        deliverySignatureRequired: state.fulfillmentPreference.signatureRequired,
-        ...kbisColumns(state.kbis),
-        ...directDebitBlockColumns(state.directDebitBlock),
-        // La hiérarchie seulement si elle a bougé (cf. `hierarchyChange`) : une
-        // écriture d'identité ne réécrit pas un rattachement fait entre-temps.
-        ...(state.hierarchyChange ?? {}),
-        // Le statut seulement s'il a bougé (cf. `statusChange`) : dans le
-        // `SET`, il fait monter l'estampille du principal même à valeur égale.
-        ...(state.statusChange ?? {}),
-      },
-    });
+    const columns = companyColumnsOf(state);
+    const loaded = this.loaded.get(company);
+    const data = {
+      ...(loaded === undefined ? columns : changedColumns(loaded.columns, columns)),
+      // La hiérarchie seulement si elle a bougé (cf. `hierarchyChange`) : une
+      // écriture d'identité ne réécrit pas un rattachement fait entre-temps.
+      ...(state.hierarchyChange ?? {}),
+      // Le statut seulement s'il a bougé (cf. `statusChange`) : dans le
+      // `SET`, il fait monter l'estampille du principal même à valeur égale.
+      ...(state.statusChange ?? {}),
+    };
+    if (Object.keys(data).length > 0) {
+      await this.write(id, data, state.statusChange === null ? undefined : loaded?.status);
+    }
+    this.loaded.set(company, { columns, status: state.status });
     // Statut, rattachement, conditions : le rayon de la société et de ses sites.
     this.shelves.changed(companyShelves(id));
+  }
+
+  /** L'écriture, conditionnée sur le statut chargé quand le statut change. */
+  private async write(
+    id: string,
+    data: Partial<CompanyColumns> & {
+      readonly status?: CompanyStatus;
+      readonly parentCompanyId?: string | null;
+      readonly groupWithoutDelivery?: boolean;
+    },
+    loadedStatus: CompanyStatus | undefined,
+  ): Promise<void> {
+    if (loadedStatus === undefined) {
+      await this.prisma.company.update({ where: { id }, data });
+      return;
+    }
+    const { count } = await this.prisma.company.updateMany({
+      where: { id, status: loadedStatus },
+      data,
+    });
+    if (count === 0) {
+      throw new CompanyChangedMeanwhileError(id);
+    }
   }
 
   async kbisLocation(companyId: string): Promise<KbisLocation | null> {
@@ -338,155 +371,4 @@ function mentionsSiret(target: unknown): boolean {
 /** Une propriété d'un objet d'erreur — sans assertion, et sans supposer sa forme. */
 function readField(source: unknown, key: string): unknown {
   return typeof source === "object" && source !== null ? Reflect.get(source, key) : undefined;
-}
-
-/**
- * Les cinq colonnes du détenteur, aplaties — **vides** quand il n'y en a pas.
- *
- * C'est ici, et nulle part ailleurs, qu'on choisit la chaîne vide : les colonnes
- * sont non nulles, le domaine dit `null`, et cette traduction est un détail de
- * schéma. La lecture fait le chemin inverse (adresse vide ⇒ pas de détenteur),
- * si bien que l'aller-retour est fidèle.
- */
-function contactColumns(contact: CompanySoftState["contact"]): {
-  contactPrenom: string;
-  contactNom: string;
-  contactFonction: string;
-  contactEmail: string;
-  contactTelephone: string;
-} {
-  return {
-    contactPrenom: contact?.firstName ?? "",
-    contactNom: contact?.lastName ?? "",
-    contactFonction: contact?.fonction ?? "",
-    contactEmail: contact?.email ?? "",
-    contactTelephone: contact?.phone ?? "",
-  };
-}
-
-/** Une chaîne vide n'est pas une valeur : c'est une absence. */
-function blankToNull(value: string | undefined): string | null {
-  return value === undefined || value.trim() === "" ? null : value;
-}
-
-/** Les colonnes du KBIS d'une ligne `companies`, avant rehydratation. */
-interface KbisRow {
-  readonly kbisStorageKey: string | null;
-  readonly kbisFileName: string | null;
-  readonly kbisContentType: string | null;
-  readonly kbisSize: number | null;
-  readonly kbisUploadedAt: Date | null;
-  readonly kbisCertifiedAt: Date | null;
-  readonly kbisCertifiedByStaffId: string | null;
-  readonly kbisCertifiedByName: string | null;
-  readonly kbisCertifiedByRole: string | null;
-}
-
-/**
- * Ligne → dépôt, ou `null` quand aucun extrait n'est arrivé.
- *
- * Les quatre colonnes du fichier sont nullables **ensemble** : elles sont
- * écrites d'un seul geste. On exige quand même les quatre, plutôt que de se
- * fier à `kbisStorageKey` seul — une ligne à moitié écrite donnerait un dépôt
- * dont le domaine croirait le fichier complet.
- */
-function kbisOf(row: KbisRow): KbisDeposit | null {
-  if (
-    row.kbisStorageKey === null ||
-    row.kbisFileName === null ||
-    row.kbisContentType === null ||
-    row.kbisSize === null
-  ) {
-    return null;
-  }
-  return KbisDeposit.reconstitute(
-    {
-      storageKey: row.kbisStorageKey,
-      fileName: row.kbisFileName,
-      contentType: row.kbisContentType,
-      size: row.kbisSize,
-      // Un extrait déposé avant que la colonne existe : sa date est inconnue,
-      // pas « maintenant ». On prend l'époque plutôt que de mentir sur un fait.
-      uploadedAt: row.kbisUploadedAt ?? new Date(0),
-    },
-    // La trace n'est pas séparable de l'instant : sans `at`, il n'y a pas de
-    // certification, quel que soit ce que les trois autres colonnes portent.
-    row.kbisCertifiedAt === null
-      ? null
-      : {
-          at: row.kbisCertifiedAt,
-          byStaffUserId: row.kbisCertifiedByStaffId ?? "",
-          byName: row.kbisCertifiedByName ?? "",
-          byRole: row.kbisCertifiedByRole ?? "",
-        },
-  );
-}
-
-/**
- * Dépôt → colonnes. Toutes écrites à chaque fois, y compris à `null` : c'est ce
- * qui fait qu'un remplacement d'extrait efface la certification précédente sans
- * qu'aucune ligne ici ne parle de remise à zéro — l'agrégat a rendu un dépôt
- * neuf, et un dépôt neuf n'a pas de certification.
- */
-function kbisColumns(kbis: KbisDeposit | null): {
-  kbisStorageKey: string | null;
-  kbisFileName: string | null;
-  kbisContentType: string | null;
-  kbisSize: number | null;
-  kbisUploadedAt: Date | null;
-  kbisCertifiedAt: Date | null;
-  kbisCertifiedByStaffId: string | null;
-  kbisCertifiedByName: string | null;
-  kbisCertifiedByRole: string | null;
-} {
-  const certification = kbis?.certification ?? null;
-  return {
-    kbisStorageKey: kbis?.file.storageKey ?? null,
-    kbisFileName: kbis?.file.fileName ?? null,
-    kbisContentType: kbis?.file.contentType ?? null,
-    kbisSize: kbis?.file.size ?? null,
-    kbisUploadedAt: kbis?.file.uploadedAt ?? null,
-    kbisCertifiedAt: certification?.at ?? null,
-    kbisCertifiedByStaffId: certification?.byStaffUserId ?? null,
-    // Chaîne vide ⇒ `null` en base : « aucun nom connu » est une absence, pas
-    // un nom vide — et la lecture n'a ainsi qu'un seul cas à traiter.
-    kbisCertifiedByName: blankToNull(certification?.byName),
-    kbisCertifiedByRole: blankToNull(certification?.byRole),
-  };
-}
-
-/** Les colonnes du blocage du prélèvement d'une ligne `companies`. */
-interface DirectDebitBlockRow {
-  readonly directDebitBlockedAt: Date | null;
-  readonly directDebitBlockedBy: string | null;
-  readonly directDebitBlockReason: string | null;
-}
-
-/**
- * Ligne → blocage, ou `null`. Les trois colonnes sont nulles ou posées ensemble
- * (contrainte `companies_direct_debit_block_complete`) ; on exige quand même
- * les trois plutôt que l'instant seul.
- */
-function directDebitBlockOf(row: DirectDebitBlockRow): DirectDebitBlock | null {
-  if (
-    row.directDebitBlockedAt === null ||
-    row.directDebitBlockedBy === null ||
-    row.directDebitBlockReason === null
-  ) {
-    return null;
-  }
-  return DirectDebitBlock.reconstitute(
-    row.directDebitBlockedAt,
-    row.directDebitBlockedBy,
-    row.directDebitBlockReason,
-  );
-}
-
-/** Blocage → colonnes, toujours les trois : débloquer les remet à `null` ensemble. */
-function directDebitBlockColumns(block: DirectDebitBlock | null): DirectDebitBlockRow {
-  return {
-    directDebitBlockedAt: block?.blockedAt ?? null,
-    directDebitBlockedBy: block?.blockedBy ?? null,
-    directDebitBlockReason: block?.reason ?? null,
-  };
 }

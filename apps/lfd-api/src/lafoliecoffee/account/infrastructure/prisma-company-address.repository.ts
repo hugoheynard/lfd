@@ -187,15 +187,21 @@ export class PrismaCompanyAddressRepository extends CompanyAddressRepository {
   async saveBilling(companyId: string, payload: BillingAddressPayload): Promise<void> {
     // Une seule facturation par entreprise : on met à jour celle qui existe, on la
     // crée sinon. Pas d'`isDefault` sur une facturation (notion propre à la livraison).
-    const { count } = await this.prisma.address.updateMany({
-      where: { companyId, kind: AddressKind.billing, archivedAt: null },
-      data: postal(payload),
-    });
-    if (count === 0) {
-      await this.prisma.address.create({
-        data: { companyId, kind: AddressKind.billing, isDefault: false, ...postal(payload) },
+    await this.prisma.$transaction(async (tx) => {
+      // Deux premières saisies simultanées passent l'une après l'autre : sans
+      // le verrou de la société, chacune voyait « aucune facturation » et en
+      // créait une.
+      await tx.$queryRaw`SELECT id FROM companies WHERE id = ${companyId} FOR UPDATE`;
+      const { count } = await tx.address.updateMany({
+        where: { companyId, kind: AddressKind.billing, archivedAt: null },
+        data: postal(payload),
       });
-    }
+      if (count === 0) {
+        await tx.address.create({
+          data: { companyId, kind: AddressKind.billing, isDefault: false, ...postal(payload) },
+        });
+      }
+    });
   }
 
   async loadDeliveryBook(companyId: string): Promise<DeliveryAddressBook> {
