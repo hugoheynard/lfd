@@ -305,7 +305,20 @@ Non vérifiés par vitruve, à faire au bâti : l'arrondi d'un pourcentage sur u
 article au poids (`price-rule-application.ts`) ; le rayon en cache quand
 presque tout est scellé (`sealingOfShelf`, `shop-catalogue-offers.ts:116-162`).
 
-## 8. Ce qui n'est pas dans ce plan
+## 8. Notes du bâti de R2
+
+- **Q2 lu au sens large** : la remise est refusée si un engagement de volume
+  vivant **recouvre sa fenêtre**, pas seulement s'il court aujourd'hui — une
+  remise posée pour janvier scellerait un engagement qui commence en janvier.
+- **Report sur une référence détachée** qui a déjà sa ligne dans la remise :
+  `DuplicateGeneralDiscountTargetError` (400) répond.
+- **Une future bascule de SKU par défaut** devra aussi réécrire
+  `general_discount->'rules'[*].targetId` (cible `variant`) sur les trois
+  tables, et `dev-toolbox/ops/check-default-sku-switch.mjs` les compter.
+- **Le journal compte les cibles** (« sauf 1 famille et 2 articles ») sans les
+  nommer : le domaine ne connaît que des identifiants.
+
+## 9. Ce qui n'est pas dans ce plan
 
 - La remise générale sur un **gabarit** (D8).
 - Des **paliers** sur la remise générale (D6).
