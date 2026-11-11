@@ -31,14 +31,17 @@
 .am-bar {
   position: sticky;
   inset-block-end: 0;
-  z-index: 1;
+  // Au-dessus des cellules collantes de la table (première colonne, en-tête).
+  z-index: 3;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--fold-space-md, 0.75rem);
   padding: var(--fold-space-md, 0.75rem);
   border-top: 1px solid var(--fold-color-border);
-  background: var(--fold-color-surface-raised, var(--fold-color-surface-card));
+  // Plein : `surface-raised` est translucide dans fold, et la table défilait
+  // au travers du bandeau.
+  background: var(--fold-color-surface-card);
 }
 
 .am-bar-count {
