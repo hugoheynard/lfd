@@ -233,7 +233,7 @@ export class ArchivedMercurialeIsSealedError extends BusinessError {
 
 /**
  * **Une remise générale chez un client qui a un engagement de volume**
- * (`plan-remise-generale.md`, Q2, tranchée par Hugo le 2026-11-11).
+ * (`la-remise-generale.md`, Q2, tranchée par Hugo le 2026-11-11).
  *
  * Ce qui gagne l'étage mercuriale scelle le prix : l'engagement ne jouerait
  * plus sur rien de ce que la remise couvre — avec « tout », sur rien du tout.

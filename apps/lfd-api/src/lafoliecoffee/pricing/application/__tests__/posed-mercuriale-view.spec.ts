@@ -91,7 +91,7 @@ describe("posedMercurialeView — les avenants", () => {
         endedSkus: ["CRO-001"],
         // Il ne touche pas la politique de promotions (`plan-la-mercuriale-decide.md`, § 8).
         promotionPolicy: null,
-        // Ni la remise générale (`plan-remise-generale.md`).
+        // Ni la remise générale (`la-remise-generale.md`).
         generalDiscount: null,
         createdBy: "staff|paul",
         createdByName: null,

@@ -106,7 +106,7 @@ export class PrismaSaleReferenceUsage extends SaleReferenceUsage {
    * Une mercuriale : sa grille, l'un de ses avenants datés — un article
    * ajouté par avenant a été négocié dans l'unité d'alors, comme la grille —,
    * ou une ligne `variant` de sa remise générale, taux ou exclusion
-   * (`plan-remise-generale.md`, § 4).
+   * (`la-remise-generale.md`, § 4).
    */
   private async mercuriales(skus: readonly string[]): Promise<ReadonlySet<string>> {
     const [grids, amendments, discounts, amendedDiscounts] = await Promise.all([

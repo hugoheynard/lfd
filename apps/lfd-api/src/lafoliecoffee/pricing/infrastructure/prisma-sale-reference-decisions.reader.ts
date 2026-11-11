@@ -61,7 +61,7 @@ export class PrismaSaleReferenceDecisionsReader extends SaleReferenceDecisionsRe
               { lines: { array_contains: [{ sku }] } },
               { amendments: { some: { archivedAt: null, lines: { array_contains: [{ sku }] } } } },
               // Une ligne `variant` de la remise générale — taux ou exclusion —
-              // nomme aussi la référence (`plan-remise-generale.md`, § 4).
+              // nomme aussi la référence (`la-remise-generale.md`, § 4).
               { generalDiscount: inDiscountRules(sku) },
               { amendments: { some: { archivedAt: null, generalDiscount: inDiscountRules(sku) } } },
             ],

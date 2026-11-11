@@ -210,7 +210,7 @@ export class CompanyPricingQuery {
 }
 
 /**
- * **Les articles scellés, partagés en deux** (`plan-remise-generale.md`, § 4) :
+ * **Les articles scellés, partagés en deux** (`la-remise-generale.md`, § 4) :
  * ceux qu'un prix ferme fait, et ceux que la remise générale de la mercuriale
  * vivante fait — scellés par elle, sans ligne de prix ferme à cet instant.
  * `negotiatedSkuCount` et `averageGapBp` gardent leur sens : les prix fermes.

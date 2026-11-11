@@ -42,7 +42,7 @@ const MODE_HINTS: Readonly<Record<GeneralDiscountModeValue, string>> = {
 
 /**
  * **« Remise générale »** — un pourcentage du prix de base, par famille et par
- * article, avec ses exclusions (`plan-remise-generale.md`, § 5 et « Un taux
+ * article, avec ses exclusions (`la-remise-generale.md`, § 5 et « Un taux
  * par famille »). À la pose, sur le brouillon et sur l'avenant.
  *
  * `null` = pas de remise. Le prix ferme d'un article l'emporte toujours :

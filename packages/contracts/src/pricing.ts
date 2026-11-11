@@ -1844,7 +1844,7 @@ export interface PosedMercurialeAmendmentView {
   readonly promotionPolicy?: MercurialePromotionPolicyView | null;
   /**
    * Ce qu'il dit de la remise générale, sur SA fenêtre, ou `null` s'il n'y
-   * touche pas (`plan-remise-generale.md`, § 2.1).
+   * touche pas (`la-remise-generale.md`, § 2.1).
    */
   readonly generalDiscount?: GeneralDiscountChangeView | null;
   readonly createdBy: string;
@@ -1923,7 +1923,7 @@ export interface PosedMercurialeView {
   /**
    * **Sa remise générale à l'instant de la lecture** — à son début si elle
    * n'a pas commencé —, ou `null` : aucune, ou un avenant l'arrête
-   * (`plan-remise-generale.md`). Celle des avenants se lit sur eux.
+   * (`la-remise-generale.md`). Celle des avenants se lit sur eux.
    */
   readonly generalDiscount?: GeneralDiscountView | null;
   /** Sa remise générale de DÉPART, posée avec elle, ou `null`. */
@@ -1946,7 +1946,7 @@ export interface CompanyPricingView {
   readonly negotiatedSkuCount: number;
   /**
    * Sur combien d'articles la **remise générale** d'une mercuriale fait le
-   * prix aujourd'hui — couverts, sans prix ferme (`plan-remise-generale.md`,
+   * prix aujourd'hui — couverts, sans prix ferme (`la-remise-generale.md`,
    * § 4). Ils ne comptent ni dans `negotiatedSkuCount` ni dans `averageGapBp`.
    */
   readonly generalDiscountSkuCount: number;
@@ -2005,7 +2005,7 @@ export const poseCompanyMercurialePayloadSchema = z.object({
    * § 8). Absente = « Aucune promotion ».
    */
   promotionPolicy: mercurialePromotionPolicySchema.optional(),
-  /** Sa remise générale (`plan-remise-generale.md`). Absente ou `null` = aucune. */
+  /** Sa remise générale (`la-remise-generale.md`). Absente ou `null` = aucune. */
   generalDiscount: generalDiscountSchema.nullable().optional(),
 });
 export type PoseCompanyMercurialePayload = z.infer<typeof poseCompanyMercurialePayloadSchema>;

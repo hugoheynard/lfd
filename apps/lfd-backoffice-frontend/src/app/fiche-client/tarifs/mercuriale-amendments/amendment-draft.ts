@@ -165,7 +165,7 @@ export interface DiscountAmendmentForm {
 
 /**
  * **Changer la remise générale** à une date d'effet
- * (`plan-remise-generale.md`, § 2.1) : elle ne vaut que sur la fenêtre de
+ * (`la-remise-generale.md`, § 2.1) : elle ne vaut que sur la fenêtre de
  * l'avenant — après sa fin, la remise d'avant reparle. `{ set: null }`
  * l'arrête. Refusé s'il ne change rien à la remise en vigueur.
  */

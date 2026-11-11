@@ -151,7 +151,7 @@ describe("CarryOverMercurialeLineHandler", () => {
     expect(mercuriales.written).toEqual([]);
   });
 
-  describe("une ligne de la remise générale (plan-remise-generale.md, § 4)", () => {
+  describe("une ligne de la remise générale (la-remise-generale.md, § 4)", () => {
     const discounted = (bp: number | null): CompanyMercuriale =>
       CompanyMercuriale.pose(
         "merc_1",

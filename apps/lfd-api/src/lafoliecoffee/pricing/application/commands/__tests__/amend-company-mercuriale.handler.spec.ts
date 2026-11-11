@@ -208,7 +208,7 @@ describe("AmendCompanyMercurialeHandler", () => {
     expect(mercuriales.written[0]?.act.summary).toMatch(/arrêt de 1 article/);
   });
 
-  describe("remise générale (plan-remise-generale.md, R2)", () => {
+  describe("remise générale (la-remise-generale.md, R2)", () => {
     const DISCOUNT = { mode: "all_except" as const, baseBp: 2_000, rules: [] };
     const SUMMER = {
       validFrom: "2026-06-01T00:00:00.000Z",

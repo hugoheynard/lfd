@@ -25,7 +25,7 @@ export interface CarryOver {
  * catalogue : le handler la vérifie avant, l'agrégat ne la voit pas.
  *
  * Sans prix ferme, c'est la ligne `variant` de la remise générale qui se
- * reporte — taux ou exclusion (`plan-remise-generale.md`, § 4) : cf.
+ * reporte — taux ou exclusion (`la-remise-generale.md`, § 4) : cf.
  * {@link discountCarryOverDraft}.
  *
  * @throws {NoNegotiatedLineToCarryError} l'ancienne référence n'a plus de prix ici.

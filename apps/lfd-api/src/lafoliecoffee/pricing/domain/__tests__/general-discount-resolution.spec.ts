@@ -5,7 +5,7 @@ import { resolvePrice } from "../resolve-price.js";
 import type { VolumeLadder } from "../volume-ladder.js";
 
 /**
- * **La remise générale résolue par la chaîne entière** (`plan-remise-generale.md`,
+ * **La remise générale résolue par la chaîne entière** (`la-remise-generale.md`,
  * D1, D9) : elle s'applique au prix de base, scelle comme un prix ferme, laisse
  * passer les promotions selon la politique du document, et la limite la relève.
  *

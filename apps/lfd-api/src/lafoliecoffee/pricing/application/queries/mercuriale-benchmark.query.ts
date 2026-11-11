@@ -25,7 +25,7 @@ import { staffViewer } from "../../../catalog/domain/catalog-viewer.js";
  * Ce n'est pas qu'une règle d'étage mercuriale puisse être écrite en `alter` :
  * `PricingRule.create` le refuse (`MercurialeMustPoseAPriceError`).
  *
- * **La remise générale n'entre pas dans l'indicateur** (`plan-remise-generale.md`,
+ * **La remise générale n'entre pas dans l'indicateur** (`la-remise-generale.md`,
  * § 4) : seules les lignes de prix ferme sont observées. Un « −30 % sur tout »
  * n'est pas un prix d'article négocié, et le compter ferait passer le tarif
  * catalogue remisé d'un client pour un prix de marché.

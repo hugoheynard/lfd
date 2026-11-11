@@ -27,7 +27,7 @@ import {
 } from '../general-discount';
 
 /**
- * **La remise générale à l'écran** (`plan-remise-generale.md`, « Un taux par
+ * **La remise générale à l'écran** (`la-remise-generale.md`, « Un taux par
  * famille ») : la ligne la plus précise gagne, le prix ferme passe devant, et
  * le prix remisé est celui de la caisse.
  */

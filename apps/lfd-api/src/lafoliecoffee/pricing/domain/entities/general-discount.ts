@@ -9,7 +9,7 @@ import type { PricingContext } from "../price-rule.js";
 
 /*
  * **La remise générale d'une mercuriale** — « −40 % sur le pain, −30 % sur le
- * reste, sauf le chocolat » (`documentation/pricing/mercuriales/plan-remise-generale.md`,
+ * reste, sauf le chocolat » (`documentation/pricing/mercuriales/la-remise-generale.md`,
  * « Un taux par famille », § 1 et § 2).
  *
  * Un pourcentage du prix de base du jour : contrairement au prix ferme, elle

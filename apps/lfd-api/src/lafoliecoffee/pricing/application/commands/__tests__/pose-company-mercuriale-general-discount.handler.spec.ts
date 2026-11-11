@@ -1,5 +1,5 @@
 /**
- * **Poser une mercuriale à remise générale** (`plan-remise-generale.md`, R2) :
+ * **Poser une mercuriale à remise générale** (`la-remise-generale.md`, R2) :
  * la remise passe du contrat au domaine, le journal la dit, et Q2 refuse la
  * remise chez un client qu'un engagement de volume couvre sur la période.
  *

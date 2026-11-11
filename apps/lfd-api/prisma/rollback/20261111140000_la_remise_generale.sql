@@ -1,5 +1,5 @@
 -- RETOUR ARRIÈRE de 20261111140000_la_remise_generale
--- (documentation/pricing/mercuriales/plan-remise-generale.md, § 3).
+-- (documentation/pricing/mercuriales/la-remise-generale.md, § 3).
 --
 -- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
 -- « appliquée ».

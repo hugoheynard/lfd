@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * **La remise générale d'une mercuriale** — « −40 % sur le pain, −30 % sur le
- * reste, sauf le chocolat » (`documentation/pricing/mercuriales/plan-remise-generale.md`).
+ * reste, sauf le chocolat » (`documentation/pricing/mercuriales/la-remise-generale.md`).
  *
  * Un pourcentage du prix de base du jour, qui suit donc le catalogue, à côté
  * des prix fermes du même document ; le prix ferme d'un article passe

@@ -16,7 +16,7 @@ import {
 
 /**
  * **La remise générale d'une mercuriale** — « tout le reste à −30 %, sauf… »
- * (`plan-remise-generale.md`, lot R1).
+ * (`la-remise-generale.md`, lot R1).
  *
  * Les dates sont absolues et ne sont comparées **qu'entre elles** : l'instant
  * du contexte et le `now` de l'avenant sont passés en paramètre, rien ne lit

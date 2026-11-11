@@ -12,7 +12,7 @@ import { floorMillicentsOf } from '../../commercial/tarification/grille/mercuria
 
 /**
  * **La remise générale d'une mercuriale, côté écran**
- * (`documentation/pricing/mercuriales/plan-remise-generale.md`, « Un taux par
+ * (`documentation/pricing/mercuriales/la-remise-generale.md`, « Un taux par
  * famille ») — « −30 % sur tout, −40 % sur le pain, sauf le chocolat ».
  *
  * Chaque ligne porte son taux ou l'exclusion ; la plus précise gagne

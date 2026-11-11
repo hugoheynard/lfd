@@ -1,6 +1,6 @@
 /**
  * E2E de **la remise générale d'une mercuriale**
- * (`documentation/pricing/mercuriales/plan-remise-generale.md`, R2) : « −30 %
+ * (`documentation/pricing/mercuriales/la-remise-generale.md`, R2) : « −30 %
  * sur tout, −40 % sur les pains, sauf le pain au chocolat », à côté d'un prix
  * ferme qui passe devant. Posée par la route du dossier, persistée, relue par
  * la fiche staff, appliquée au rayon et au devis du client ; changée par un

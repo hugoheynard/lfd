@@ -46,7 +46,7 @@ export interface MercurialeAmendmentDraft {
    */
   readonly promotionPolicy?: PromotionAdmission | null | undefined;
   /**
-   * **La remise générale de l'avenant** (`plan-remise-generale.md`, § 2.1) :
+   * **La remise générale de l'avenant** (`la-remise-generale.md`, § 2.1) :
    * `{ set: null }` l'arrête, une valeur la remplace — sur la FENÊTRE de
    * l'avenant seulement, après quoi celle d'avant reparle. Absente : l'avenant
    * n'en dit rien.

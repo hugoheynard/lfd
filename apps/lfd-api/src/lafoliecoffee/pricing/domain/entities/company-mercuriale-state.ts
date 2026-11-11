@@ -29,7 +29,7 @@ export interface CompanyMercurialeDraft {
    */
   readonly promotionPolicy?: PromotionAdmission | undefined;
   /**
-   * **La remise générale** (`plan-remise-generale.md`) — « tout le reste à
+   * **La remise générale** (`la-remise-generale.md`) — « tout le reste à
    * −30 %, sauf… ». Absente ou `null` : aucune. Une mercuriale qui la porte
    * peut n'avoir aucun prix ferme (D5).
    */

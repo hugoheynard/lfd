@@ -6,7 +6,7 @@ import { checkedGeneralDiscount } from "../domain/entities/general-discount.js";
 import { CorruptedMercurialeError } from "../domain/pricing-errors.js";
 
 /**
- * **La remise générale ↔ sa colonne `jsonb`** (`plan-remise-generale.md`, § 3).
+ * **La remise générale ↔ sa colonne `jsonb`** (`la-remise-generale.md`, § 3).
  *
  * La colonne arrive en `unknown`. Le CHECK de la table tient la forme
  * grossière (mode connu, taux de base entier borné, `rules` tableau) ; le
