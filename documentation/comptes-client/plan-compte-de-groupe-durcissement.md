@@ -2,7 +2,8 @@
 
 > 🟡 **Doc-first.** Rien n'est bâti. Décisions de Hugo du 2026-11-11, après
 > l'audit du compte de groupe (principal + sites). Ce plan touche l'argent et
-> le mur : il passe par `vitruve` avant Hugo.
+> le mur : contredit par `vitruve` le 2026-11-11 (3 bloquants, 5 sérieux,
+> intégrés ci-dessous).
 
 ## En bref
 
@@ -56,29 +57,40 @@ Ce que l'audit a trouvé, et ce que ce plan décide :
 
 ### La règle
 
-**Une facture se lit par son payeur, et par lui seul.** Le mur de « Mes
-factures » devient `payerCompanyId = société`. Un site qui facture lui-même
-(il ne suit pas `billing`) est son propre payeur et voit ses factures comme
-aujourd'hui ; un site qui suit `billing` n'en voit aucune. Il garde ses
-commandes, qu'il voit déjà dans « Mes commandes » (inchangé).
+**Un site voit une facture quand elle ne porte que ses propres commandes** —
+ou quand il en est le payeur. Le mur de « Mes factures » devient :
+`payerCompanyId = société` **OU** « tous les bons de la pièce ont été passés
+par la société ». Une facture groupée qui porte un bon d'un frère ne s'ouvre
+plus au site ; la facture **carte** d'une commande du site (une pièce, un bon,
+émise au principal par `prepareCardInvoice` quand le site suit `billing`,
+`accounting/application/card-invoice-support.ts`) reste à lui : c'est le
+justificatif de son propre paiement, et un site qui suit `billing` peut payer
+par carte (`orders/application/services/staff-settlement-refusal.ts`, le
+règlement `card` n'est jamais refusé).
 
-- L'e-mail de facture ne part plus qu'au payeur : la source `site_billing`
-  disparaît de `invoiceNoticeRecipients`.
-- L'écran « Mes factures » d'un site qui suit `billing` dit pourquoi il est
-  vide : « Vos commandes sont facturées au compte principal, {nom}. » — pas
-  un état vide muet. Le nom du principal est déjà servi au site (`via` des
-  sites atteints) : à confirmer au bâti sur la route du site lui-même.
-- Le détachement n'a plus rien à fermer côté factures : l'ex-site n'a jamais
-  été payeur des factures groupées, il ne les voit pas, avant comme après.
+- La même règle choisit les destinataires de l'e-mail de facture : les
+  contacts `billing` d'un site ne la reçoivent que si la pièce ne porte que
+  ses bons. La source `site_billing` de `invoiceNoticeRecipients` reste, sous
+  cette condition.
+- L'écran « Mes factures » d'un site qui suit `billing` dit pourquoi il n'y
+  voit pas ses factures du mois : « Vos commandes au compte sont facturées
+  au compte principal. » — pas un état vide muet.
+- Le détachement n'a rien à fermer : la règle ne dépend que des bons de la
+  pièce, avant comme après.
+- Le commentaire de tête de `PrismaCompanyInvoicesReader` se réécrit au même
+  commit.
 
-### Ce qui reste à ouvrir au bâti (non vérifié ici)
+### Les autres lecteurs — inventaire fait (2026-11-11, `vitruve`)
 
-- Les autres lecteurs qui ouvrent une facture par ses bons : les impayés
-  (`PrismaUnpaidAccessReader`, page des impayés), les relances, l'avis de
-  prélèvement (`collection-notice`). Chacun reçoit la même règle — payeur
-  seul — ou une raison écrite de faire autrement.
-- `PrismaInvoiceSiteContactsReader` (cité par le lecteur) : son seul usage
-  est-il la liste `site_billing` ? S'il ne sert plus, il se retire.
+- `PrismaUnpaidAccessReader` n'ouvre aucune facture : c'est le lecteur de
+  rôle du mur.
+- L'avis de prélèvement ne part qu'au payeur (`collection-notice-recipient.ts`).
+- `PrismaOrderInvoicesReader` (par `invoice_order`) n'est servi qu'au staff
+  (`admin-card-invoices.controller.ts`).
+- Les impayés détachés (`get-my-detached-unpaid-orders.handler.ts`) passent
+  par les bons, pas par la facture.
+- `PrismaInvoiceSiteContactsReader` n'a qu'un usage, `InvoiceNoticeSender` :
+  il reste, filtré par la règle ci-dessus.
 
 ## 2. La doc fausse — corrigée sans code (L2)
 
@@ -102,28 +114,39 @@ Dans [`sous-comptes.md`](sous-comptes.md) :
 - `facture-emise.md` (« Mes factures ») : la phrase sur la facture entière de
   la maison mère est remplacée par la règle du §1.
 
-## 3. Suivre `billing` exige un site sans facturation propre (L3)
+## 3. Un site qui suit `billing` n'a pas de facturation propre (L3)
 
 **Rattacher reste libre** : un site garde ses commandes, ses factures et son
-historique. Le conflit n'est qu'au **suivi `billing`** : un site qui a encore
-son propre crédit ou son propre mandat serait prélevé par deux voies.
+historique. La règle tient sur toute la durée du suivi `billing`, pas
+seulement au geste qui l'ouvre : un site prélevé par deux voies est
+l'état interdit.
 
-`SubAccountFollows.follow("billing", …)`
-(`account/domain/entities/sub-account-follows.ts`) refuse aujourd'hui
-seulement un principal non actif. Il refuse en plus :
+**Le prédicat « mandat propre du site »** : `payment_mandate.company_id = site`
+**et** (`debtor_company_id = site` **ou** `debtor_company_id IS NULL` — les
+mandats d'avant S4, dont le débiteur est implicitement leur société,
+`prisma/schema/public/accounting.prisma`), dans un statut **vivant** :
+`draft`, `pending` ou `active` (`MandateStatus` en a cinq ; `revoked` et
+`failed` sont morts).
 
-- un enfant dont `grantedTerms` n'est pas vide — « Ce site a son propre
-  crédit : retirez-le avant qu'il suive la facturation du compte principal. » ;
-- un enfant qui porte un mandat SEPA **actif dont il est le débiteur** —
-  « Ce site a son propre mandat de prélèvement : révoquez-le avant… ».
+Les gestes qui tiennent la règle, tous sous `AccountHierarchyLock` :
 
-Le mandat vit dans `payments/` (même bloc) : le compte DÉCLARE un port de
-lecture étroit (« ce site a-t-il un mandat actif à son nom ? »), `payments`
-l'implémente, comme `SiteMandateRevocation` aujourd'hui. Lu **sous le verrou**
-de la hiérarchie, dans `FollowParentHandler` et `CreateSubAccountHandler`
-(qui peut naître en suivant `billing`).
+| Geste                                                                        | Refuse                                                                                                                                                               |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| suivre `billing` (`FollowParentHandler`, `CreateSubAccountHandler`)          | un site au crédit non vide, ou au mandat propre vivant — « Ce site a son propre crédit / mandat : retirez-le avant qu'il suive la facturation du compte principal. » |
+| accorder un crédit (`GrantTermsHandler`)                                     | un site qui suit `billing` — « Ce site est facturé par son compte principal. »                                                                                       |
+| frapper un mandat au nom du site (`mint-mandate`, `mint-my-company-mandate`) | un site qui suit `billing` et dont le débiteur serait lui-même                                                                                                       |
 
-Les factures déjà émises au site restent dues au site ; rien ne les réécrit.
+Le compte DÉCLARE un port de lecture étroit (« ce site a-t-il un mandat
+propre vivant ? »), `payments` l'implémente, comme `SiteMandateRevocation`.
+Les gestes de mandat prennent le même verrou ; à défaut, ils relisent le
+suivi dans leur transaction (choix au bâti, écrit dans le commit).
+
+**Les données existantes** : avant le bâti, une requête de dénombrement des
+sites qui suivent `billing` avec un crédit ou un mandat propre vivant. S'il
+y en a, la liste va au staff avec le geste de sortie (retirer le crédit,
+révoquer le mandat) ; la règle ne réécrit rien d'office.
+
+Les factures déjà émises au site restent dues au site.
 
 ## 4. Le libellé du compte de groupe (L4)
 
@@ -137,45 +160,60 @@ change pas.
 ## 5. Résilier un site (L5)
 
 Aujourd'hui, `ChangeCompanyStatusHandler` (`terminate`) ne touche ni aux
-suivis, ni aux mandats, ni au rattachement.
+suivis, ni aux mandats, ni au rattachement, et lit l'agrégat **avant** sa
+transaction.
 
-Résilier une société **qui a un principal**, sous `AccountHierarchyLock` et
-dans la même unité de travail que le statut :
+Résiliation d'une société **qui a un principal** : le handler prend
+`AccountHierarchyLock`, puis charge la société **dans** l'unité de travail
+(la forme de `detach-from-parent.handler.ts`), et :
 
-- **ferme tous ses suivis** (`SubAccountFollows.closeAll`, comme le
-  détachement) : un site résilié ne vit plus sur son principal ;
-- **révoque ses mandats** dont il est le débiteur, et ceux qui nomment le
-  principal (`SiteMandateRevocation.revokeNaming` existe ; le premier cas
-  demande une méthode de plus sur le port) ;
-- **garde le rattachement** : le principal continue de voir l'historique du
-  site, et l'on ne détache pas d'office.
+- **refuse** si un mandat du site figure dans un **lot de prélèvement
+  vivant** (`prisma-batched-mandates.reader.ts`) — « Un prélèvement en
+  cours vise ce site : attendez son règlement ou annulez le lot, puis
+  résiliez. » Un mandat révoqué sous un lot vivant laisserait partir un
+  `pain.008` sous un mandat mort ;
+- **ferme tous ses suivis** (`SubAccountFollows.closeAll`) ;
+- **révoque ses mandats propres vivants** (prédicat du §3) et ceux qui
+  nomment le principal. `revokeNaming` ne voit aujourd'hui que `active` et
+  `draft` (`payments/infrastructure/prisma-site-mandates.reader.ts`) : il
+  couvre aussi `pending`, que l'agrégat sait révoquer ;
+- **garde le rattachement** : le principal lit toujours l'historique du site.
 
-Les factures déjà émises restent dues. Un site résilié ne commande plus
-(déjà refusé : `CompanyClosedOrderRefusedError`).
+**Les commandes au compte du mois, pas encore facturées** : leur payeur
+copié est le principal et le suivi daté couvre leur passation ; la facture
+du principal les porte comme avant, prélevée sur **son** mandat. Les mandats
+qu'on révoque sont ceux du site : ils ne prélevaient pas ces bons.
+(À vérifier au bâti dans `collection-verdict.ts` : quel mandat juge une
+ligne d'un site qui suivait `billing` au moment de sa passation.)
+
+La résiliation est terminale (`company.ts`) : aucun retour à traiter. Un
+site résilié ne commande plus (`CompanyClosedOrderRefusedError`).
 
 ## 6. Tests
 
-- **L1** : e2e — l'admin d'un site qui suit `billing` ne voit aucune facture
-  groupée (liste, détail 404, PDF 404, archive vide), même quand un bon de la
-  facture est le sien ; le principal la voit ; un site qui facture lui-même
-  voit les siennes. L'e-mail de facture ne part qu'au payeur (unitaire de
-  `invoiceNoticeRecipients`, et l'abonné). Régression nommée : « un site ne
-  lit pas la facture groupée de ses frères ».
-- **L3** : unitaire de `SubAccountFollows` (crédit propre, mandat propre →
-  refus) ; e2e du geste staff `follows` et de la création d'un site qui suit
-  `billing`.
-- **L5** : e2e — résilier un site ferme ses suivis, révoque ses mandats,
-  garde `parent_company_id`, et le principal lit toujours ses commandes.
+- **L1** : e2e — l'admin d'un site ne voit pas une facture groupée qui porte
+  un bon d'un frère (liste, détail 404, PDF 404, archive), voit sa facture
+  carte, et voit une pièce qui ne porte que ses bons ; le principal voit tout ;
+  un site qui facture lui-même voit les siennes. L'e-mail ne part à un site
+  que pour une pièce qui ne porte que ses bons. Régression nommée : « un site
+  ne lit pas la facture groupée de ses frères ».
+- **L3** : unitaire de `SubAccountFollows` (crédit propre, mandat `draft`,
+  `pending`, `active`, mandat d'avant S4 sans débiteur → refus) ; e2e du
+  suivi, de la création d'un site, du crédit refusé pendant le suivi, de la
+  frappe d'un mandat refusée pendant le suivi.
+- **L5** : e2e — résilier un site ferme ses suivis, révoque ses mandats
+  (`pending` compris), garde `parent_company_id`, refuse quand un lot vivant
+  vise un de ses mandats ; le principal lit toujours ses commandes.
 
 ## 7. Lots
 
-| Lot | Contenu                                                                     | Migration |
-| --- | --------------------------------------------------------------------------- | --------- |
-| L1  | mur des factures au payeur seul, e-mail au payeur seul, écran vide expliqué | aucune    |
-| L2  | doc                                                                         | —         |
-| L3  | refus du suivi `billing` + port de lecture des mandats                      | aucune    |
-| L4  | libellé back-office                                                         | aucune    |
-| L5  | résiliation d'un site                                                       | aucune    |
+| Lot | Contenu                                                                                                            | Migration |
+| --- | ------------------------------------------------------------------------------------------------------------------ | --------- |
+| L1  | mur des factures : payeur, ou pièce qui ne porte que les bons du site ; e-mail sous la même règle ; écran expliqué | aucune    |
+| L2  | doc                                                                                                                | —         |
+| L3  | refus du suivi `billing` + port de lecture des mandats                                                             | aucune    |
+| L4  | libellé back-office                                                                                                | aucune    |
+| L5  | résiliation d'un site                                                                                              | aucune    |
 
 Ordre : L1 (la fuite), puis L3 et L5, L2 et L4 au fil de l'eau.
 
