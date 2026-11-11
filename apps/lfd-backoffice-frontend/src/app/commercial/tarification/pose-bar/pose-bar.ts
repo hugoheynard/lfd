@@ -13,6 +13,7 @@ import type { AdminCompany } from '../../../comptes-clients/admin-company';
 import { AdminCompaniesService } from '../../../comptes-clients/admin-companies.service';
 import { nativeValue } from '../../../shared/native-input';
 import { businessDayStart } from '../../../shared/business-day';
+import { parisToday } from '../../../shared/paris-today';
 
 /** Chez qui, et sur quelle fenêtre. */
 export interface PoseRequest {
@@ -49,7 +50,7 @@ export class PoseBar {
 
   protected readonly companies = signal<readonly AdminCompany[]>([]);
   protected readonly companyId = signal('');
-  protected readonly validFrom = signal(new Date().toISOString().slice(0, 10));
+  protected readonly validFrom = signal(parisToday());
   protected readonly validTo = signal('');
 
   protected readonly canPose = computed(

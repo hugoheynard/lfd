@@ -18,6 +18,7 @@ import { NotifyService } from '../../../notify.service';
 import { MILLICENTS_PER_CENT } from '../pricing-format';
 import { TarificationService } from '../tarification.service';
 import { businessDayStart } from '../../../shared/business-day';
+import { parisToday } from '../../../shared/paris-today';
 import { PromotionsService } from '../../../targeted-promotions/promotions.service';
 
 /** Charge d'ouverture : sur quoi la règle porte, et comment le dire à l'écran. */
@@ -118,7 +119,7 @@ export class RulePanel {
   protected readonly alteration = signal<PriceAlteration | null>(null);
   /** Le prix posé, en euros tels que saisis. */
   protected readonly amount = signal<number | null>(null);
-  protected readonly validFrom = signal(today());
+  protected readonly validFrom = signal(parisToday());
   protected readonly validTo = signal('');
   protected readonly saving = signal(false);
 
@@ -239,9 +240,4 @@ export class RulePanel {
       value: alteration.mode === 'percent' ? alteration.bp : alteration.cents * MILLICENTS_PER_CENT,
     };
   }
-}
-
-/** Aujourd'hui en `YYYY-MM-DD`, le format qu'attend un `<input type="date">`. */
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
 }

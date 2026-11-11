@@ -12,6 +12,7 @@ import { NotifyService } from '../../../notify.service';
 import { magnitudeToWire } from '../pricing-format';
 import { TarificationService } from '../tarification.service';
 import { businessDayStart } from '../../../shared/business-day';
+import { parisToday } from '../../../shared/paris-today';
 
 /** Charge d'ouverture : sur quoi le barème porte, et ce qui y est déjà posé. */
 export interface LadderPanelData {
@@ -63,7 +64,7 @@ export class LadderPanel {
 
   protected readonly unit = signal<PriceMode>('percent');
   protected readonly label = signal('');
-  protected readonly validFrom = signal(today());
+  protected readonly validFrom = signal(parisToday());
   protected readonly validTo = signal('');
   protected readonly saving = signal(false);
   protected readonly tiers = signal<readonly DraftTier[]>([{ minQuantity: null, value: null }]);
@@ -183,9 +184,4 @@ function parseWhole(raw: string): number | null {
 function parseDecimal(raw: string): number | null {
   const parsed = Number.parseFloat(raw.replace(',', '.'));
   return raw.trim() === '' || Number.isNaN(parsed) || parsed <= 0 ? null : parsed;
-}
-
-/** Aujourd'hui en `YYYY-MM-DD`, le format qu'attend un `<input type="date">`. */
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
 }
