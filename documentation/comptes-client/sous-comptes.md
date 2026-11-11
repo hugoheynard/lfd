@@ -15,6 +15,9 @@ sous-comptes, avec leurs adresses, leur facturation, possibilité de partager
 une donnée avec le compte principal — prendre exemple sur la fiche produit et
 ses déclinaisons ».
 
+> 🟡 Un durcissement est en préparation : [`plan-compte-de-groupe-durcissement.md`](plan-compte-de-groupe-durcissement.md)
+> (2026-11-11) — ce qu'un site voit des factures, le suivi `billing`, la résiliation d'un site.
+
 ## 0. Ce qui existe
 
 | Lot  | État                | Où ça se voit                                                                                                                                  |
