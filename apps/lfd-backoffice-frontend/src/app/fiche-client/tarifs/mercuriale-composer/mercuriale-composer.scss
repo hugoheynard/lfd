@@ -79,7 +79,7 @@
   color: var(--fold-color-text-muted);
 }
 
-// ── Les rayons ──────────────────────────────────────────────────────────────
+// ── Les cellules ─────────────────────────────────────────────────────────────
 
 .tf-article-name {
   display: block;
@@ -198,4 +198,21 @@
 
 .tf-path-panel {
   width: min(44rem, 90vw);
+}
+
+// ── Le filtre de la table ───────────────────────────────────────────────────
+
+.tf-filter {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--fold-space-md, 0.75rem);
+}
+
+.tf-filter-shelf {
+  flex: 0 1 16rem;
+}
+
+.tf-filter-search {
+  flex: 1 1 16rem;
 }

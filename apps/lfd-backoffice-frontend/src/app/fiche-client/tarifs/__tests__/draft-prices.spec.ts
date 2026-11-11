@@ -57,6 +57,7 @@ function view(items: readonly PricingItemView[]): CompanyPricingView {
     ],
     mercuriales: [],
     negotiatedSkuCount: 0,
+    generalDiscountSkuCount: 0,
     averageGapBp: null,
   };
 }

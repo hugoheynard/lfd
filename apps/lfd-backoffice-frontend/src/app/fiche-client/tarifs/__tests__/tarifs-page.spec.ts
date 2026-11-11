@@ -59,6 +59,7 @@ function view(mercuriales: readonly PosedMercurialeView[]): CompanyPricingView {
     categories: [],
     mercuriales,
     negotiatedSkuCount: 0,
+    generalDiscountSkuCount: 0,
     averageGapBp: null,
   };
 }

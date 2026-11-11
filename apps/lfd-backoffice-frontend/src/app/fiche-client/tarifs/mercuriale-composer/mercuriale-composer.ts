@@ -11,14 +11,17 @@ import {
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
+  FoldCheckboxComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
   FoldElementTitleComponent,
   FoldInputComponent,
   FoldInfoComponent,
+  FoldListboxComponent,
   FoldNumberInputComponent,
   FoldPopoverComponent,
   FoldPopoverTriggerDirective,
+  FoldSearchComponent,
   type FoldTableColumn,
   type FoldTableEmpty,
   type FoldTableTone,
@@ -43,6 +46,7 @@ import { toLines, withEuros, withoutPrice, type DraftPrices } from '../draft-pri
 import { policyPayload, policyProblem, type PromotionPolicyForm } from '../promotion-policy';
 import { PromotionPolicyPicker } from '../promotion-policy-picker/promotion-policy-picker';
 import { tarifShelves, type TarifRow, type TarifShelf } from '../tarif-shelves';
+import { ALL_SHELVES, filterTarifRows, type FilteredTarifRow } from '../tarif-filter';
 
 /** 10⁵ — d'un millicentime à l'euro. Dérivé une fois, jamais réécrit en dur. */
 const MILLICENTS_PER_EURO = 100 * MILLICENTS_PER_CENT;
@@ -65,14 +69,17 @@ const MILLICENTS_PER_EURO = 100 * MILLICENTS_PER_CENT;
   imports: [
     FoldButtonComponent,
     FoldCalloutComponent,
+    FoldCheckboxComponent,
     FoldDataTableComponent,
     FoldDataTableCellDirective,
     FoldElementTitleComponent,
     FoldInputComponent,
     FoldInfoComponent,
+    FoldListboxComponent,
     FoldNumberInputComponent,
     FoldPopoverComponent,
     FoldPopoverTriggerDirective,
+    FoldSearchComponent,
     PricePath,
     PromotionPolicyPicker,
     VolumeEffort,
@@ -126,6 +133,29 @@ export class MercurialeComposer {
     tarifShelves(this.categories(), this.draft()),
   );
 
+  /** Le filtre de la table — état local, rien ne part au serveur. */
+  protected readonly shelfFilter = signal<string>(ALL_SHELVES);
+  protected readonly search = signal('');
+  protected readonly pricedOnly = signal(false);
+
+  /** « Toutes », puis une option par famille, dans l'ordre du catalogue. */
+  protected readonly shelfOptions = computed(() => [
+    { value: ALL_SHELVES, label: 'Toutes' },
+    ...this.shelves().map((shelf) => ({ value: shelf.id, label: shelf.name })),
+  ]);
+
+  /**
+   * **Une seule table**, filtrée. L'ordre reste celui du catalogue : le
+   * filtre retire des lignes, il ne les déplace pas.
+   */
+  protected readonly rows = computed<readonly FilteredTarifRow[]>(() =>
+    filterTarifRows(this.shelves(), {
+      shelfId: this.shelfFilter(),
+      search: this.search(),
+      pricedOnly: this.pricedOnly(),
+    }),
+  );
+
   /** Ce que la grille pèse — les mêmes chiffres que sur la grille d'un gabarit. */
   protected readonly summary = computed(() => tally(this.shelves().flatMap((shelf) => shelf.rows)));
 
@@ -134,14 +164,18 @@ export class MercurialeComposer {
    * triable : l'ordre du catalogue est le seul repère pour retrouver un article
    * deux minutes plus tard, et le perdre coûte plus qu'un tri ne rapporte.
    */
-  protected readonly columns = computed((): readonly FoldTableColumn<TarifRow>[] => [
+  protected readonly columns = computed((): readonly FoldTableColumn<FilteredTarifRow>[] => [
     { key: 'article', label: 'Article' },
+    // En « Toutes », la famille garde le repère qu'avaient les tables par rayon.
+    ...(this.shelfFilter() === ALL_SHELVES
+      ? [{ key: 'shelf', label: 'Famille', width: '10rem' }]
+      : []),
     { key: 'catalog', label: 'Prix base pro HT (sans réductions)', width: '10rem' },
     { key: 'current', label: this.currentLabel(), width: '10rem' },
     { key: 'limit', label: 'Limite', width: '8rem' },
     { key: 'price', label: 'Prix ferme', width: '12rem' },
     { key: 'room', label: 'Marge de négoce', width: '9rem' },
-    { key: 'effort', label: 'Effort de vente', width: '12rem' },
+    { key: 'effort', label: this.effortLabel(), width: '12rem' },
   ]);
 
   /**
@@ -155,9 +189,19 @@ export class MercurialeComposer {
       : 'Prix de ce client HT (sans mercuriale)',
   );
 
+  /**
+   * Ce que l'effort compare : le prix de base au prix de ce client, puis au
+   * prix ferme sur chaque ligne où l'on en a tapé un (`liveEffort`).
+   */
+  private readonly effortLabel = computed(() =>
+    this.lines().length > 0
+      ? 'Effort de vente (prix base / prix ferme, sinon prix de ce client)'
+      : 'Effort de vente (prix base / prix de ce client)',
+  );
+
   protected readonly empty: FoldTableEmpty = {
-    title: 'Aucun article dans ce rayon',
-    subtitle: 'Publiez des produits de cette famille sur le canal B2B.',
+    title: 'Aucun article ne correspond au filtre',
+    subtitle: 'Changez de famille, effacez la recherche ou décochez « Seulement les prix fermes ».',
   };
 
   protected readonly rowKey = (row: TarifRow): string => row.sku;
