@@ -1,7 +1,8 @@
 import type { PosedMercurialeView } from '@lfd/contracts';
+import { gapBp } from '@lfd/money';
 
 import { staffAuthor } from '../../shared/staff-author';
-import { discountPhrase } from './general-discount';
+import { discountLabel, discountPhrase, type ArticleDiscount } from './general-discount';
 import type { MercurialeRowView } from './mercuriale-rows';
 
 /**
@@ -30,10 +31,18 @@ const HEADER = [
   'SKU',
   'Article',
   'Tarif catalogue pro',
-  'Prix mercuriale',
+  'Prix négocié',
   'Écart',
   'À partir de',
+  'Origine',
 ] as const;
+
+/** Un article dont la remise générale fait le prix, nommé pour l'export. */
+export interface DiscountedCsvRow extends ArticleDiscount {
+  readonly sku: string;
+  readonly name: string;
+  readonly canonicalMillicents: number;
+}
 
 /** Le préfixe qui dit à Excel que le fichier est en UTF-8. */
 const BOM = '﻿';
@@ -69,13 +78,19 @@ function cell(value: string): string {
  *
  * Une **remise générale** en vigueur prend une ligne à elle, sous l'identité :
  * son taux de base, ses taux particuliers et ses exclusions, cibles nommées
- * par `names` (l'identifiant à défaut). Les lignes de prix ne portent que les
- * prix fermes : un article remisé n'a pas de prix à lui dans le document.
+ * par `names` (l'identifiant à défaut).
+ *
+ * Les lignes de prix portent **tout article dont la mercuriale change le
+ * prix** : les prix fermes, puis les articles que la remise générale fait
+ * (`discounted`), avec leur prix remisé — relevé par la limite s'il le faut.
+ * La colonne « Origine » dit lequel des deux : le client lit un prix, et doit
+ * savoir s'il est ferme ou s'il suivra le catalogue.
  */
 export function mercurialeCsv(
   mercuriale: PosedMercurialeView,
   rows: readonly MercurialeRowView[],
   names: ReadonlyMap<string, string> = new Map(),
+  discounted: readonly DiscountedCsvRow[] = [],
 ): string {
   const discount = mercuriale.generalDiscount ?? null;
   const window = `du ${day(mercuriale.validFrom)} au ${day(mercuriale.validTo)}`;
@@ -96,10 +111,30 @@ export function mercurialeCsv(
         euros(row.negotiatedMillicents),
         row.gapBp === null ? '' : percent(row.gapBp),
         row.minQuantity > 1 ? String(row.minQuantity) : '',
+        'Prix ferme',
+      ].join(';'),
+    ),
+    ...discounted.map((row) =>
+      [
+        cell(row.sku),
+        cell(row.name),
+        euros(row.canonicalMillicents),
+        euros(row.finalMillicents),
+        discountGap(row),
+        '',
+        cell(
+          `Remise générale ${discountLabel(row.bp)}${row.floored ? ', relevé à la limite' : ''}`,
+        ),
       ].join(';'),
     ),
   ];
   return BOM + lines.join('\r\n');
+}
+
+/** L'écart d'un article remisé, par l'arithmétique de la colonne des prix fermes. */
+function discountGap(row: DiscountedCsvRow): string {
+  const gap = gapBp(row.canonicalMillicents, row.finalMillicents);
+  return gap === null ? '' : percent(gap);
 }
 
 /** `2026-01-01T…` → `01/01/2026`, ou « sans terme » quand la fenêtre est ouverte. */

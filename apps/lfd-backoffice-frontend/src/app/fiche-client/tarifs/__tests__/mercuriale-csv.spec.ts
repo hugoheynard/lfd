@@ -162,7 +162,7 @@ describe('la remise générale', () => {
     const [, second, third] = mercurialeCsv(DISCOUNTED, [row()], NAMES).split('\r\n');
 
     expect(second).toBe(
-      '"Remise générale : −30 % sur tout le catalogue, sauf : Pains : −40 % ; Chocolat : exclue"',
+      '"Remise générale : −30 % sur le reste du catalogue ; Pains −40 % ; Chocolat exclue"',
     );
     expect(third).toBe('');
   });
@@ -180,9 +180,7 @@ describe('la remise générale', () => {
       [],
     );
 
-    expect(csv).toContain(
-      'Remise générale : Seulement sur les lignes suivantes : VIE-012 : −15,5 %',
-    );
+    expect(csv).toContain('Remise générale : Seulement : VIE-012 −15,5 %');
   });
 
   it('n’ajoute rien sans remise générale', () => {
@@ -191,5 +189,39 @@ describe('la remise générale', () => {
     );
 
     expect(second).toBe('');
+  });
+});
+
+describe('toutes les lignes dont la mercuriale change le prix', () => {
+  it('sort aussi les articles que la remise générale fait, avec leur origine', () => {
+    const csv = mercurialeCsv(MERCURIALE, [row()], new Map(), [
+      {
+        sku: 'VIE-001',
+        name: 'Croissant',
+        canonicalMillicents: 200_000,
+        bp: 3_000,
+        discountedMillicents: 140_000,
+        finalMillicents: 140_000,
+        floored: false,
+      },
+      {
+        sku: 'VIE-002',
+        name: 'Brioche',
+        canonicalMillicents: 100_000,
+        bp: 3_000,
+        discountedMillicents: 70_000,
+        finalMillicents: 80_000,
+        floored: true,
+      },
+    ]);
+    const lines = csv.split('\r\n');
+
+    expect(lines.find((line) => line.startsWith('VIE-012;'))).toContain(';Prix ferme');
+    expect(lines.find((line) => line.startsWith('VIE-001;'))).toBe(
+      'VIE-001;Croissant;2,00000;1,40000;-30,0 %;;Remise générale −30 %',
+    );
+    expect(lines.find((line) => line.startsWith('VIE-002;'))).toContain(
+      ';0,80000;-20,0 %;;Remise générale −30 %, relevé à la limite',
+    );
   });
 });
