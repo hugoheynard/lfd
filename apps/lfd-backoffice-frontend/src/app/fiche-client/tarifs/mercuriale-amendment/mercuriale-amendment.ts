@@ -73,7 +73,7 @@ const STEP_HINTS: Readonly<Record<AmendmentStep, string>> = {
 };
 
 /**
- * **L'avenant dans la table** (`plan-avenant-dans-la-table.md`) : la table de
+ * **L'avenant dans la table** (`l-avenant-date.md`) : la table de
  * la mercuriale pré-remplie avec ce qui est en vigueur à la date d'effet, en
  * trois étapes — Modifier, Vérifier, Dater et enregistrer. Un seul avenant,
  * quel que soit le nombre de changements.

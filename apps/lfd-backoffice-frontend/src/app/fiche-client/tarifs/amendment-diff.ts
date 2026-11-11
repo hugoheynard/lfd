@@ -31,7 +31,7 @@ import {
 } from './promotion-policy';
 
 /**
- * **L'écart d'un avenant** (`documentation/pricing/mercuriales/plan-avenant-dans-la-table.md`,
+ * **L'écart d'un avenant** (`documentation/pricing/mercuriales/l-avenant-date.md`,
  * § 1) : de l'état de la mercuriale à la date d'effet — rendu par l'aperçu —
  * et de ce qu'on a saisi dans la table, le corps de l'avenant, l'étiquette de
  * chaque ligne et le prix d'après quand l'écran sait le faire. Pur.

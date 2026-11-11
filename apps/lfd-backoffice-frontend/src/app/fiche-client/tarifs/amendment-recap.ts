@@ -22,7 +22,7 @@ import { policyPhrase } from './promotion-policy';
 
 /**
  * **Le récapitulatif d'un avenant, en phrases** (étape 2 de
- * `plan-avenant-dans-la-table.md`) : une phrase par changement, et en tête ce
+ * `l-avenant-date.md`) : une phrase par changement, et en tête ce
  * qui peut surprendre — un refus de l'aperçu qui désigne la ligne, la limite
  * qui relève, un prix retiré qui passe à la remise (Q1) ou revient au
  * catalogue. Pur.

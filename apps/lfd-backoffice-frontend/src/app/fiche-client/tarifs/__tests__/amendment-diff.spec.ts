@@ -20,7 +20,7 @@ import { withEuros, withoutPrice } from '../draft-prices';
 import { NO_PROMOTION_POLICY } from '../promotion-policy';
 
 /**
- * **L'écart d'un avenant** (`plan-avenant-dans-la-table.md`, § 1) : chaque
+ * **L'écart d'un avenant** (`l-avenant-date.md`, § 8.1) : chaque
  * ligne du tableau, la remise comparée par valeur, et l'avenant vide.
  */
 

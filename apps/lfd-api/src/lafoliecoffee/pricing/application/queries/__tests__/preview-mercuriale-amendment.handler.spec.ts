@@ -1,5 +1,5 @@
 /**
- * **L'aperçu d'un avenant** (`plan-avenant-dans-la-table.md`, § 2) : la
+ * **L'aperçu d'un avenant** (`l-avenant-date.md`, § 8.2) : la
  * copie amendée en mémoire, les refus rendus en donnée, l'état de référence à
  * la date d'effet, et le mur du compte de tarif.
  *

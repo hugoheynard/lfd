@@ -105,7 +105,7 @@ export class ClientTarifsPage implements HasPendingChanges {
 
   /**
    * **La mercuriale qu'on amende**, ou `null`. L'avenant s'écrit dans la
-   * table (`plan-avenant-dans-la-table.md`) ; tant qu'il est ouvert, la page
+   * table (`l-avenant-date.md`) ; tant qu'il est ouvert, la page
    * ne montre que lui.
    */
   protected readonly amendingId = signal<string | null>(null);

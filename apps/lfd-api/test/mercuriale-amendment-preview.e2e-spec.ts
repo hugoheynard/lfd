@@ -1,5 +1,5 @@
 /**
- * E2E de **l'aperçu d'un avenant** (`plan-avenant-dans-la-table.md`, § 2 et
+ * E2E de **l'aperçu d'un avenant** (`l-avenant-date.md`, § 8.2 et
  * § 2.2) : ce que le client paierait, article par article, si l'avenant
  * proposé était enregistré — résolu par la caisse à la date d'effet, sans
  * rien écrire. Et le refus d'un avenant enregistré par-dessus un autre.

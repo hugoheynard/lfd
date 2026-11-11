@@ -1,5 +1,5 @@
 /**
- * **Deux commerciaux en même temps** (`plan-avenant-dans-la-table.md`, § 2.2) :
+ * **Deux commerciaux en même temps** (`l-avenant-date.md`, § 8.3) :
  * l'avenant annonce le dernier avenant vu, et le handler refuse sous le verrou
  * si un autre a été écrit depuis.
  */

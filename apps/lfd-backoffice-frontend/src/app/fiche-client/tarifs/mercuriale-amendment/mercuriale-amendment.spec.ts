@@ -15,7 +15,7 @@ import { NO_PROMOTION_POLICY } from '../promotion-policy';
 import { MercurialeAmendment } from './mercuriale-amendment';
 
 /**
- * **L'avenant dans la table** (`plan-avenant-dans-la-table.md`, § 3) : l'aperçu
+ * **L'avenant dans la table** (`l-avenant-date.md`, § 8.4) : l'aperçu
  * à l'ouverture, les étapes, le récapitulatif, F1, le corps envoyé et le 409
  * de concurrence.
  */

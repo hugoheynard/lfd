@@ -100,11 +100,11 @@ l'**identifiant du document** (B1, § 7) ; la pièce se lit dans le libellé
 ## 5. Les routes et l'écran
 
 - `POST admin/pricing/companies/:companyId/mercuriale/:mercurialeId/amendments`
-  (`admin-company-pricing.controller.ts`).
-- Écran : `fiche-client/tarifs/mercuriale-amendments/` — la liste des avenants
-  sous la grille, « Ajouter ou changer un prix » (l'article déjà en cours est
-  arrêté dans le même avenant), « Arrêter une ligne », « Changer les
-  promotions », motif obligatoire ; la grille note chaque ligne datée à part.
+  (`admin-company-pricing.controller.ts`) ; l'aperçu à côté, `…/amendments/preview`
+  (§ 8.2).
+- Écran : **un seul parcours**, « Modifier par avenant » sur la mercuriale
+  posée (§ 8.4). La liste des avenants passés reste sous la grille, en lecture
+  (`fiche-client/tarifs/mercuriale-amendments/`).
 
 ## 6. Le report sur une référence détachée
 
@@ -136,3 +136,100 @@ l'**identifiant du document** (B1, § 7) ; la pièce se lit dans le libellé
 | **B1** (`vitruve`)                                | La règle rendue garde l'identifiant **du document**, pas de l'avenant : le contrôle « cette période a déjà facturé » (`prisma-priced-decisions.reader.ts`) cherche des identifiants de documents.                                                    |
 | **B2** (`vitruve`)                                | Verrou, relecture et écriture dans la **même** transaction, ouverte par le handler.                                                                                                                                                                  |
 | Modèle                                            | Un avenant est rattaché au **document** `CompanyMercuriale`, pas une règle de prix à part : une règle séparée aurait défait la migration `20260908160000_mercuriale_objet`, privé un sous-compte du prix, et laissé le doublon gardé d'un seul côté. |
+
+## 8. L'avenant dans la table
+
+Bâti le 2026-11-11 (Hugo : « l'avenant devrait rouvrir la page avec la
+table, pour un avenant multi-changement — la meilleure UI/UX possible pour
+le staff »). Un avenant change autant de choses qu'on veut, en un seul
+avenant daté.
+
+```mermaid
+flowchart LR
+  P["Mercuriale posée"] -->|"Modifier par avenant"| M["1. Modifier<br/>la table pré-remplie"]
+  M -->|"Vérifier l'avenant"| V["2. Vérifier<br/>l'aperçu et le récapitulatif"]
+  V -->|"Revenir à la table"| M
+  V --> D["3. Dater et enregistrer"]
+  D -->|"un seul avenant"| P
+```
+
+### 8.1 L'écart
+
+`fiche-client/tarifs/amendment-diff.ts` compare l'état **à la date d'effet**
+(rendu par l'aperçu, `state`) à la saisie, et produit le corps de l'avenant :
+
+| Saisie                                 | Ce qui part                                                         |
+| -------------------------------------- | ------------------------------------------------------------------- |
+| article sans prix ferme → prix tapé    | `lines += { sku, prix }`                                            |
+| prix ferme → autre prix                | `endedSkus += sku` et `lines += { sku, nouveau prix }`              |
+| prix ferme → vidé                      | `endedSkus += sku` (il passe à la remise générale s'il est couvert) |
+| remise différente, comparée par valeur | `generalDiscount: { set: saisie }` ; retirée : `{ set: null }`      |
+| politique différente                   | `promotionPolicy`                                                   |
+| rien                                   | refus : « L'avenant ne change rien »                                |
+
+Une ligne à **paliers** ne se réécrit pas en prix fixe : on peut la retirer.
+`amendment-recap.ts` en tire le récapitulatif en phrases, qui ne dit que ce
+qui change (« Taux de base : −5 % → −10 % »).
+
+### 8.2 L'aperçu
+
+`POST …/amendments/preview` (`preview-mercuriale-amendment.handler.ts`),
+une lecture : l'avenant est appliqué à une **copie** de la mercuriale
+(`amend` rend un nouvel agrégat), puis chaque article est résolu à la date
+d'effet avec l'originale et avec la copie, par la composition datée des prix
+d'un client (`company-price-sheets.service.ts`, que `CompanyPricingQuery`
+réutilise à `now`). Il rend `state` (prix fermes, remise, politique à la
+date d'effet), `items` (avant, après, relevé par la limite, source : prix
+ferme, remise, chaîne) et `refusals` (code et article, au plus un : `amend`
+s'arrête au premier). Rien n'est écrit. Limites : le prix de base n'est pas
+daté (`ProductCatalogReader.all`) ; les refus applicatifs (article hors
+vente, réservé, engagement de volume) ne répondent qu'à l'enregistrement ;
+une mercuriale close répond 404.
+
+Appelé à l'ouverture, à « Vérifier », sur « Recalculer » et quand la date
+d'effet change — jamais à la frappe (la base de production est facturée à
+l'opération). À l'étape 1, l'écran calcule lui-même le prix « après » d'un
+article dont le prix vient de la mercuriale ; un article qui en sort affiche
+« recalculé à la vérification ».
+
+### 8.3 Deux commerciaux en même temps
+
+L'avenant annonce `basedOnAmendmentId`, le dernier avenant vu. Sous le verrou
+du document, un avenant plus récent le fait refuser :
+`MercurialeAmendedMeanwhileError` (409), « Un autre avenant a été enregistré
+pendant votre saisie. Rechargez : vos changements seront recalculés. »
+
+### 8.4 L'écran
+
+`fiche-client/tarifs/mercuriale-amendment/` (mode `amending` de
+`tarifs-page`) :
+
+1. **Modifier** — la date d'effet en tête (par défaut le plus tard entre
+   aujourd'hui et le début de la mercuriale, « Changer » sur place), la
+   remise générale et les promotions, puis une table à cinq colonnes
+   (`amendment-table/`) : Article (famille, prix de base et limite en ligne
+   secondaire) · Aujourd'hui (ou « Au <date> ») · Après l'avenant · Prix
+   ferme · Changement. Une ligne changée est surlignée, son ancien prix barré
+   (lu « avant : … »), son étiquette dit le changement ; une hausse est
+   marquée « plus cher ». Barre collante : compteur, « Voir seulement les
+   changements », « Recalculer », « Vérifier l'avenant ».
+2. **Vérifier** — refus, limite et hausses de prix en tête, puis le
+   récapitulatif.
+3. **Dater et enregistrer** — date d'effet, fin (§ 8.5), motif.
+
+Étapes annoncées (`aria-current`, `aria-live`), focus placé sur le titre de
+chaque étape. Quitter avec des changements demande confirmation, y compris
+en changeant de page (`pendingChangesGuard`). Pas de brouillon d'avenant.
+
+### 8.5 La fin d'un avenant
+
+| Ce que l'avenant change    | À sa fin                                                           |
+| -------------------------- | ------------------------------------------------------------------ |
+| un prix ajouté             | s'arrête : l'article revient à la remise ou au catalogue           |
+| la remise générale         | celle d'avant reparle                                              |
+| un prix changé ou retiré   | l'ancien **ne revient pas** (`endingOf`, `mercuriale-segments.ts`) |
+| la politique de promotions | ne s'arrête pas : elle ne lit que `validFrom`                      |
+
+L'écran ne propose donc une fin que si l'avenant n'arrête aucun prix et ne
+change pas la politique ; sinon il dit de faire un second avenant à la date
+voulue. Un avenant de retour automatique a été écarté (Hugo, 2026-11-11).
