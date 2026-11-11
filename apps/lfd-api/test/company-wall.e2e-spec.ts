@@ -245,3 +245,26 @@ it("le témoin : le gestionnaire de la société écrit bien sur ces routes", as
   const address = await ctx.prisma.address.findUniqueOrThrow({ where: { id: addressId } });
   expect(address).toMatchObject({ kind: AddressKind.delivery, label: "Atelier" });
 });
+
+/**
+ * Le numéro de TVA est contrôlé à l'activation et part sur les factures : une
+ * fois la société active, son gestionnaire ne le change plus (409) ; il change
+ * encore son enseigne en le renvoyant tel quel.
+ */
+it("le gestionnaire d'une société active ne change plus son numéro de TVA", async () => {
+  const before = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+
+  await ctx
+    .asSub(OWNER)
+    .patch(`/companies/${companyId}/identity`)
+    .send({ enseigne: "Forgée", vatNumber: "DE123456789" })
+    .expect(409);
+  await ctx
+    .asSub(OWNER)
+    .patch(`/companies/${companyId}/identity`)
+    .send({ enseigne: "Le Comptoir", vatNumber: before.vatNumber })
+    .expect(204);
+
+  const after = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+  expect(after).toMatchObject({ enseigne: "Le Comptoir", vatNumber: before.vatNumber });
+});

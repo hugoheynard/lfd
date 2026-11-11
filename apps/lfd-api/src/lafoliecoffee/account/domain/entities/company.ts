@@ -5,8 +5,10 @@ import {
   CompanyStatusTransitionError,
   InvalidCompanyIdentityError,
   KbisNotFoundError,
+  InvalidLegalFormError,
+  VatNumberFrozenError,
 } from "../errors/account-errors.js";
-import { NO_FULFILLMENT_PREFERENCE } from "@lfd/contracts";
+import { NO_FULFILLMENT_PREFERENCE, toLegalForm } from "@lfd/contracts";
 import type { DeferredTerm, FulfillmentPreferenceView } from "@lfd/contracts";
 import type { CompanyDeclarationChannel } from "../value-objects/company-declaration-channel.js";
 import type { CompanyStatus } from "../value-objects/company-status.js";
@@ -16,6 +18,7 @@ import { EmailAddress } from "../value-objects/email-address.js";
 import { PersonName } from "../value-objects/person-name.js";
 import { PhoneNumber } from "../value-objects/phone-number.js";
 import { LegalRegistration } from "../value-objects/legal-registration.js";
+import { ensureVatMatchesSiren, normalizedVatNumber } from "../value-objects/vat-number.js";
 import type { Siren } from "../value-objects/siren.js";
 import type { Siret } from "../value-objects/siret.js";
 import {
@@ -281,9 +284,9 @@ export class Company {
       // Forme juridique et SIRET sont FACULTATIFS à l'ouverture : le compte se
       // crée souvent chez le client, qui n'a pas ses papiers sous la main. Ils
       // se complètent ensuite, et l'activation les exige (cf. `activate`).
-      optional(identity.formeJuridique, "Forme juridique"),
+      legalForm(identity.formeJuridique),
       LegalRegistration.declare(identity.siret, identity.siren),
-      optional(identity.vatNumber, "TVA intracommunautaire"),
+      declaredVatNumber(identity.vatNumber, identity.siret, identity.siren),
       contact,
       // Déclarée : aucun crédit accordé (elle paie à la commande), aucune demande,
       // aucune préférence d'acheminement, et **non validée** (pending) —
@@ -399,7 +402,7 @@ export class Company {
       this.raisonSocialeValue = optional(input.raisonSociale, "Raison sociale");
     }
     if (this.formeJuridiqueValue === "") {
-      this.formeJuridiqueValue = optional(input.formeJuridique, "Forme juridique");
+      this.formeJuridiqueValue = legalForm(input.formeJuridique);
     }
   }
 
@@ -429,7 +432,7 @@ export class Company {
       this.raisonSocialeValue = optional(input.raisonSociale, "Raison sociale");
     }
     if (input.formeJuridique.trim() !== "") {
-      this.formeJuridiqueValue = optional(input.formeJuridique, "Forme juridique");
+      this.formeJuridiqueValue = legalForm(input.formeJuridique);
     }
   }
 
@@ -458,10 +461,47 @@ export class Company {
     this.contactValue = contact;
   }
 
-  /** Édite l'identité **souple** (enseigne + TVA). L'identité légale reste figée. */
+  /**
+   * Édite l'identité **souple** (enseigne + TVA). L'identité légale reste figée.
+   *
+   * Le numéro de TVA est contrôlé ({@link normalizedVatNumber}) et comparé au
+   * SIREN de la société : à appeler APRÈS l'identité légale d'un même geste,
+   * pour comparer au SIREN qu'il vient de poser.
+   *
+   * @throws {InvalidVatNumberError}
+   * @throws {VatSirenMismatchError}
+   */
   editSoftIdentity(input: { enseigne: string; vatNumber: string }): void {
+    // Renvoyé tel quel (le formulaire renvoie tout), le numéro n'est pas
+    // revérifié : un numéro d'avant le contrôle ne bloque pas une correction
+    // d'enseigne. Il est en revanche toujours comparé au SIREN, qu'un SIRET
+    // posé dans le même geste vient peut-être de fixer.
+    const vatNumber = this.vatNumberChangedBy(input.vatNumber)
+      ? normalizedVatNumber(input.vatNumber)
+      : this.vatNumberValue;
+    ensureVatMatchesSiren(compactVat(vatNumber), this.sirenDigits);
     this.enseigneValue = optional(input.enseigne, "Enseigne");
-    this.vatNumberValue = optional(input.vatNumber, "TVA intracommunautaire");
+    this.vatNumberValue = vatNumber;
+  }
+
+  /**
+   * La même édition, **par un membre** depuis son espace : une fois la société
+   * sortie de l'attente, son numéro de TVA est figé — il a été contrôlé à
+   * l'activation et part sur les factures. Seul le back-office le corrige
+   * ({@link editSoftIdentity}).
+   *
+   * @throws {VatNumberFrozenError} le numéro change sur une société activée.
+   */
+  editSoftIdentityAsMember(input: { enseigne: string; vatNumber: string }): void {
+    if (this.vatNumberChangedBy(input.vatNumber) && this.statusValue !== "pending") {
+      throw new VatNumberFrozenError(this.identityId ?? "");
+    }
+    this.editSoftIdentity(input);
+  }
+
+  /** Le numéro saisi diffère-t-il du numéro gardé, espaces, points et casse mis à part ? */
+  private vatNumberChangedBy(raw: string): boolean {
+    return compactVat(raw) !== compactVat(this.vatNumberValue);
   }
 
   get nafCode(): string {
@@ -894,6 +934,33 @@ function required(raw: string, field: string): string {
 }
 
 /** Texte facultatif : vide autorisé, borné sinon. */
+/**
+ * Une forme juridique saisie, ou la chaîne vide. Le texte reconnu est gardé
+ * tel quel (le stock d'avant la liste fermée l'est aussi) ; ce que
+ * `toLegalForm` ne reconnaît pas est refusé.
+ *
+ * @throws {InvalidLegalFormError}
+ */
+function legalForm(raw: string): string {
+  const value = optional(raw, "Forme juridique");
+  if (value !== "" && toLegalForm(value) === null) {
+    throw new InvalidLegalFormError(raw);
+  }
+  return value;
+}
+
+/** Un numéro de TVA sans espaces, points ni tirets, en capitales : pour comparer, pas pour valider. */
+function compactVat(raw: string): string {
+  return raw.replace(/[\s.-]/gu, "").toUpperCase();
+}
+
+/** Le numéro de TVA d'une société qui naît, contrôlé contre le SIREN déclaré avec elle. */
+function declaredVatNumber(raw: string, rawSiret: string, rawSiren: string): string {
+  const vatNumber = normalizedVatNumber(raw);
+  ensureVatMatchesSiren(vatNumber, LegalRegistration.declare(rawSiret, rawSiren).sirenDigits);
+  return vatNumber;
+}
+
 function optional(raw: string, field: string): string {
   const trimmed = collapse(raw);
   return trimmed === "" ? "" : capped(trimmed, field);

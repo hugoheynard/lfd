@@ -92,6 +92,8 @@ export const ACCOUNT_EN: AccountCopy = {
   identityOptional: 'optional',
   identityLegalLocked:
     'These details come from the company registry. To correct them, contact our sales team.',
+  identityVatLocked:
+    'Your VAT number is checked when your account opens. To correct it, contact our sales team.',
   identitySaveFailed: 'Your identity was not saved.',
   railPosition: 'Section {n} of {total}',
   usersHolder: 'Account holder',

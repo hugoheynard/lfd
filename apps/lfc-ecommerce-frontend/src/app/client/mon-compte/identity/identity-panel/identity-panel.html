@@ -32,16 +32,29 @@
       [value]="enseigne()"
       (valueChange)="enseigne.set($event)"
     />
-    <!-- Le caractère obligatoire suit la forme juridique : la même règle que l'admin. -->
-    <fold-input
-      [label]="t().account.identityVatField"
-      [hint]="vatHint()"
-      [required]="vatRequired()"
-      [optional]="!vatRequired()"
-      [optionalLabel]="t().account.identityOptional"
-      [value]="vatNumber()"
-      (valueChange)="vatNumber.set($event)"
-    />
+    @if (data().vatLocked) {
+      <!-- Figée à l'ouverture du compte : elle se lit, et la phrase dit par où passer. -->
+      <div class="locked">
+        <dl class="facts">
+          <div class="fact">
+            <dt>{{ t().account.identityVatField }}</dt>
+            <dd>{{ lockedVat() }}</dd>
+          </div>
+        </dl>
+        <p class="note">{{ t().account.identityVatLocked }}</p>
+      </div>
+    } @else {
+      <!-- Le caractère obligatoire suit la forme juridique : la même règle que l'admin. -->
+      <fold-input
+        [label]="t().account.identityVatField"
+        [hint]="vatHint()"
+        [required]="vatRequired()"
+        [optional]="!vatRequired()"
+        [optionalLabel]="t().account.identityOptional"
+        [value]="vatNumber()"
+        (valueChange)="vatNumber.set($event)"
+      />
+    }
 
     @for (field of openFields(); track field.key) {
       @if (field.key === 'formeJuridique') {

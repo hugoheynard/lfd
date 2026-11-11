@@ -254,7 +254,7 @@ describe("l'identité et le délai, par le client", () => {
     formeJuridique: "SAS",
     siret: "",
     siren: "",
-    vatNumber: "FR40812456789",
+    vatNumber: "FR66812456789",
   };
 
   it("l'identité éditée nomme les champs changés, sans leurs valeurs", async () => {
@@ -269,7 +269,7 @@ describe("l'identité et le délai, par le client", () => {
       subjectLabel: COMPANY_LABEL,
       fields: ["vatNumber", "formeJuridique"],
     });
-    expect(JSON.stringify(events.traced[0]?.journalFact())).not.toContain("FR40812456789");
+    expect(JSON.stringify(events.traced[0]?.journalFact())).not.toContain("FR66812456789");
   });
 
   it("un envoi qui ne change rien n'écrit aucun fait", async () => {

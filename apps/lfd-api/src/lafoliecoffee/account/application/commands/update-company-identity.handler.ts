@@ -4,6 +4,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import type { Company } from "../../domain/entities/company.js";
 import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
+import { CompanySiretSetEvent } from "../../domain/events/company-siret-set.event.js";
 import { CompanyStepReachedEvent } from "../../domain/events/company-step-reached.event.js";
 import { CompanyIdentityEditedEvent } from "../../domain/events/member-acts.event.js";
 import { companyNamed } from "../../domain/events/journal-names.js";
@@ -44,17 +45,18 @@ export class UpdateCompanyIdentityHandler implements ICommandHandler<
       throw new CompanyNotFoundError(command.companyId);
     }
     const before = identityOf(company);
-    company.editSoftIdentity({
-      enseigne: command.payload.enseigne,
-      vatNumber: command.payload.vatNumber,
-    });
     // Complète ce qui manquait à l'ouverture. Sans SIRET, pas d'activation
-    // possible : ce serait un compte ouvert pour rien.
+    // possible : ce serait un compte ouvert pour rien. L'identité légale passe
+    // avant la TVA, qui se compare au SIREN qu'elle pose.
     company.completeLegalIdentity({
       raisonSociale: command.payload.raisonSociale,
       formeJuridique: command.payload.formeJuridique,
       siret: command.payload.siret,
       siren: command.payload.siren,
+    });
+    company.editSoftIdentityAsMember({
+      enseigne: command.payload.enseigne,
+      vatNumber: command.payload.vatNumber,
     });
     const fields = changedFields(IDENTITY_FIELDS, before, identityOf(company));
     await this.uow.run(async () => {
@@ -68,7 +70,10 @@ export class UpdateCompanyIdentityHandler implements ICommandHandler<
 
     // Pièce d'activation « TVA » franchie dès qu'un numéro est présent. Le journal
     // dédoublonne par (société, étape) : seule la 1re fois compte.
-    if (command.payload.vatNumber.trim() !== "") {
+    if (fields.includes("siret")) {
+      this.events.publish(new CompanySiretSetEvent(command.companyId));
+    }
+    if (fields.includes("vatNumber") && company.vatNumber !== "") {
       this.events.publish(
         new CompanyStepReachedEvent(command.companyId, company.displayName(), "vat"),
       );

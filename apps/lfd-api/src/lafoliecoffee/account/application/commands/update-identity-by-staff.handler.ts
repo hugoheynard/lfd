@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
+import { CompanySiretSetEvent } from "../../domain/events/company-siret-set.event.js";
 import { CompanyStepReachedEvent } from "../../domain/events/company-step-reached.event.js";
 import { CompanyIdentityCorrectedEvent } from "../../domain/events/staff-acts.event.js";
 import { companyNamed } from "../../domain/events/journal-names.js";
@@ -34,7 +35,8 @@ export class UpdateIdentityByStaffHandler implements ICommandHandler<
     if (company === null) {
       throw new CompanyNotFoundError(command.companyId);
     }
-    company.editSoftIdentity(command.payload);
+    const vatBefore = company.vatNumber;
+    const siretBefore = company.siretDigits;
     // Le back-office **corrige** là où le client ne fait que compléter : une
     // faute de frappe saisie au comptoir restait gravée, et le compte portait
     // une identité fausse sans recours. Un champ vide ne réécrit rien.
@@ -45,6 +47,8 @@ export class UpdateIdentityByStaffHandler implements ICommandHandler<
       siren: command.payload.siren,
     };
     company.correctLegalIdentity(identity);
+    // Après l'identité légale : la TVA se compare au SIREN qu'elle vient de poser.
+    company.editSoftIdentity(command.payload);
     await this.uow.run(async () => {
       await this.companies.save(company);
       await this.events.publishTraced(
@@ -53,7 +57,10 @@ export class UpdateIdentityByStaffHandler implements ICommandHandler<
     });
 
     // Pièce « TVA » franchie dès qu'un numéro est présent (idempotent par étape).
-    if (command.payload.vatNumber.trim() !== "") {
+    if (company.siretDigits !== "" && company.siretDigits !== siretBefore) {
+      this.events.publish(new CompanySiretSetEvent(command.companyId));
+    }
+    if (company.vatNumber !== "" && company.vatNumber !== vatBefore) {
       this.events.publish(
         new CompanyStepReachedEvent(command.companyId, company.displayName(), "vat"),
       );

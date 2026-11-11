@@ -16,7 +16,7 @@ const view: AdminCompanyView = {
   formeJuridique: "SAS",
   siret: "12345678901234",
   siren: "",
-  vatNumber: "FR12345678901",
+  vatNumber: "FR32123456789",
   status: "pending",
   grantedTerms: [],
   primaryContact: {

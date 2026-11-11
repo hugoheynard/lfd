@@ -17,7 +17,7 @@ function company(over: Partial<AdminCompanyView> = {}): AdminCompanyView {
     formeJuridique: "SARL",
     siret: "81245678900021",
     siren: "",
-    vatNumber: "FR12812456789",
+    vatNumber: "FR66812456789",
     status: "active",
     grantedTerms: [],
     requestedTerm: null,

@@ -23,7 +23,7 @@ const identity: CompanyIdentityInput = {
   formeJuridique: "SAS",
   siret: "812 456 789 00021",
   siren: "",
-  vatNumber: "FR32812456789",
+  vatNumber: "FR66812456789",
 };
 
 const AGENT = { staffUserId: "staff_camille", name: "Camille Rousseau", role: "commercial" };

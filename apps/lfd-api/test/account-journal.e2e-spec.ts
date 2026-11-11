@@ -22,7 +22,7 @@ import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import { IdentityWithoutLoginMethods } from "../src/lafoliecoffee/account/domain/ports/__tests__/login-method-doubles.js";
 import { CustomerIdentityPort } from "../src/lafoliecoffee/account/domain/ports/customer-identity.port.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { CustomerRole, UserStatus } from "../src/platform/database/client/client.js";
+import { CompanyStatus, CustomerRole, UserStatus } from "../src/platform/database/client/client.js";
 import type { ProvisionedIdentity } from "../src/platform/shared/identity/provisioned-identity.js";
 import {
   bootstrapE2e,
@@ -91,7 +91,10 @@ beforeEach(async () => {
   await repairJournal();
   identity.refuses = false;
   ownerId = (await createUser(ctx.prisma, { auth0Sub: OWNER, email: "camille@ancienne.fr" })).id;
-  companyId = (await createCompany(ctx.prisma)).id;
+  // En attente : le client saisit encore sa TVA. Son SIREN (732 829 320) porte FR44.
+  companyId = (
+    await createCompany(ctx.prisma, { status: CompanyStatus.pending, siret: "73282932000009" })
+  ).id;
   await attachTo(ctx.prisma, ownerId, companyId, CustomerRole.owner);
 });
 
@@ -227,7 +230,7 @@ describe("le client, sur le compte de sa société", () => {
   it("son identité et le délai demandé : les champs changés, la demande d'avant et d'après", async () => {
     await owner()
       .patch(`/companies/${companyId}/identity`)
-      .send({ enseigne: "Le Comptoir", vatNumber: "FR40812456789" })
+      .send({ enseigne: "Le Comptoir", vatNumber: "FR44732829320" })
       .expect(204);
     await owner()
       .patch(`/companies/${companyId}/payment-term`)

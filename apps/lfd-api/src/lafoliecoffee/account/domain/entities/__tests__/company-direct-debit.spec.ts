@@ -24,7 +24,7 @@ function company(
     enseigne: "Marais Café",
     formeJuridique: "SAS",
     siret: "81245678900021",
-    vatNumber: "FR12345678901",
+    vatNumber: "FR32123456789",
     contact: ContactDetails.create({
       firstName: "Camille",
       lastName: "Rousseau",

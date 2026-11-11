@@ -8,7 +8,7 @@ describe("changedFields", () => {
       changedFields(
         KEYS,
         { enseigne: "Le Fournil", vatNumber: "", siret: "" },
-        { enseigne: "Le Fournil", vatNumber: "FR12345678901", siret: "81245678900021" },
+        { enseigne: "Le Fournil", vatNumber: "FR32123456789", siret: "81245678900021" },
       ),
     ).toEqual(["vatNumber", "siret"]);
   });

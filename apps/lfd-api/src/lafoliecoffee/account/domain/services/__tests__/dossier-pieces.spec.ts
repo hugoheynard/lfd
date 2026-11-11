@@ -15,7 +15,7 @@ describe("dossierPieces — le x/4 de Comptes clients", () => {
   it("rend les quatre, dans l'ordre canonique, quand tout est là", () => {
     expect(
       dossierPieces({
-        vatNumber: "FR12345678901",
+        vatNumber: "FR32123456789",
         kbisDeposited: true,
         hasBillingAddress: true,
         hasDeliveryAddress: true,

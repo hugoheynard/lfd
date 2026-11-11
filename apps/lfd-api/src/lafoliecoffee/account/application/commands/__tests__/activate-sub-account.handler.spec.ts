@@ -36,7 +36,7 @@ function chaletView(parentStatus: "active" | "pending"): AdminCompanyDetailView 
     formeJuridique: "",
     siret: "",
     siren: "",
-    vatNumber: "FR12812456789",
+    vatNumber: "FR66812456789",
     status: "pending",
     grantedTerms: [],
     requestedTerm: null,

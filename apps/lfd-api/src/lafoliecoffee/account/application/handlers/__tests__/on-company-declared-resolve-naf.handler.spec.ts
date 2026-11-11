@@ -1,5 +1,6 @@
 import { Company } from "../../../domain/entities/company.js";
 import { CompanyDeclaredEvent } from "../../../domain/events/company-declared.event.js";
+import { CompanySiretSetEvent } from "../../../domain/events/company-siret-set.event.js";
 import { CompanyNafWriter } from "../../../domain/ports/company-naf.writer.js";
 import { EstablishmentDirectory } from "../../../domain/ports/establishment-directory.js";
 import { CompanyRepository, type KbisLocation } from "../../../domain/ports/company.repository.js";
@@ -189,6 +190,21 @@ describe("OnCompanyDeclaredResolveNaf", () => {
     expect(store.stored?.grantedTerms).toEqual(["monthly"]);
     expect(store.stored?.nafCode).toBe("56.10A");
     expect(store.fullSaves).toBe(1);
+  });
+
+  /**
+   * Régression : une société déclarée depuis la boutique naît sans SIRET, et
+   * son NAF n'était jamais résolu quand le SIRET arrivait ensuite.
+   */
+  it("résout le NAF quand le SIRET arrive après la déclaration", async () => {
+    const store = new StoredCompanies(reconstituted());
+    const { handler, writer } = handlerOn(store, new FakeDirectory("56.10A"), work);
+
+    handler.handle(new CompanySiretSetEvent("company_1"));
+    await work.whenIdle();
+
+    expect(writer.writes).toBe(1);
+    expect(store.stored?.nafCode).toBe("56.10A");
   });
 
   it("résout le NAF depuis le SIRET et le persiste sur la société", async () => {

@@ -8233,6 +8233,13 @@
           "variables": []
         },
         {
+          "key": "account.identityVatLocked",
+          "fr": "Le numéro de TVA est vérifié à l’ouverture du compte. Pour le corriger, passez par notre service commercial.",
+          "en": "Your VAT number is checked when your account opens. To correct it, contact our sales team.",
+          "it": "Il numero di partita IVA viene verificato all’apertura del conto. Per correggerlo, passate dal nostro servizio commerciale.",
+          "variables": []
+        },
+        {
           "key": "account.identitySaveFailed",
           "fr": "L’identité n’a pas été enregistrée.",
           "en": "Your identity was not saved.",

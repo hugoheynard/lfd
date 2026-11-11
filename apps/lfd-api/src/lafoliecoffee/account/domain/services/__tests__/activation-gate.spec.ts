@@ -62,7 +62,7 @@ function detail(over: Partial<AdminCompanyDetailView> = {}): AdminCompanyDetailV
 
 /** Un dossier complet — on retire ensuite ce qu'on veut éprouver. */
 const COMPLETE: Partial<AdminCompanyDetailView> = {
-  vatNumber: "FR32812456789",
+  vatNumber: "FR66812456789",
   kbis: {
     fileName: "k.pdf",
     uploadedAt: "2026-08-01T10:00:00.000Z",

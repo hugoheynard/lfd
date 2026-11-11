@@ -93,6 +93,8 @@ export const ACCOUNT_FR: AccountCopy = {
   identityOptional: 'facultatif',
   identityLegalLocked:
     'Ces mentions viennent du greffe. Pour les corriger, passez par notre service commercial.',
+  identityVatLocked:
+    'Le numéro de TVA est vérifié à l’ouverture du compte. Pour le corriger, passez par notre service commercial.',
   identitySaveFailed: 'L’identité n’a pas été enregistrée.',
   railPosition: 'Section {n} sur {total}',
   usersHolder: 'Détenteur du compte',

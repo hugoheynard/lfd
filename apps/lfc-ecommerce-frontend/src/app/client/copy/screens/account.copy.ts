@@ -111,6 +111,8 @@ export interface AccountCopy {
   readonly identityOptional: string;
   /** Sous les mentions déjà renseignées, montrées en lecture. */
   readonly identityLegalLocked: string;
+  /** Sous le numéro de TVA, figé une fois le compte ouvert. */
+  readonly identityVatLocked: string;
   /** En tête du message du serveur, quand l'écriture est refusée. */
   readonly identitySaveFailed: string;
   /** La pastille du rail, pour qui ne la voit pas. `{n}` le rang depuis un, `{total}` le nombre de sections. */

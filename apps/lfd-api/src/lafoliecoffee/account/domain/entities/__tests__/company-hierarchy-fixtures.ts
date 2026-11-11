@@ -17,7 +17,7 @@ export function principalCompany(
     enseigne: "Alpes Chalets",
     formeJuridique: "SAS",
     siret: "81245678900021",
-    vatNumber: "FR12812456789",
+    vatNumber: "FR66812456789",
     contact: ContactDetails.create({
       firstName: "Lise",
       lastName: "Martin",

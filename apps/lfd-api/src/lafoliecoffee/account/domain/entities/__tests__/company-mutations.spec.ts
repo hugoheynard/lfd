@@ -21,7 +21,7 @@ function reconstituted(): Company {
     enseigne: "Marais Café",
     formeJuridique: "SAS",
     siret: "81245678900021",
-    vatNumber: "FR12345678901",
+    vatNumber: "FR32123456789",
     contact: ContactDetails.create(CONTACT),
     grantedTerms: [],
     requestedTerm: null,
@@ -39,7 +39,7 @@ describe("Company — reconstitution + mutations souples", () => {
   it("reconstitue une société avec son id et sérialise ses champs mutables", () => {
     const state = reconstituted().toPersistence();
     expect(state.enseigne).toBe("Marais Café");
-    expect(state.vatNumber).toBe("FR12345678901");
+    expect(state.vatNumber).toBe("FR32123456789");
     expect(state.contact).toEqual({
       firstName: "Camille",
       lastName: "Rousseau",
@@ -49,12 +49,15 @@ describe("Company — reconstitution + mutations souples", () => {
     });
   });
 
-  it("editSoftIdentity normalise (espaces réduits) enseigne et TVA", () => {
+  it("editSoftIdentity normalise l'enseigne (espaces réduits) et la TVA (sans espaces, en capitales)", () => {
     const company = reconstituted();
-    company.editSoftIdentity({ enseigne: "  Nouvelle   Enseigne  ", vatNumber: " FR99 " });
+    company.editSoftIdentity({
+      enseigne: "  Nouvelle   Enseigne  ",
+      vatNumber: " fr66 812 456 789 ",
+    });
     const state = company.toPersistence();
     expect(state.enseigne).toBe("Nouvelle Enseigne");
-    expect(state.vatNumber).toBe("FR99");
+    expect(state.vatNumber).toBe("FR66812456789");
     expect(company.displayName()).toBe("Nouvelle Enseigne");
   });
 

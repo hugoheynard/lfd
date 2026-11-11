@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1812 textes
+## Sommaire — 1813 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -42,7 +42,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 282 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 57 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
-| [Mon compte (factures comprises)](#espace-account) | `account` | 526 |
+| [Mon compte (factures comprises)](#espace-account) | `account` | 527 |
 | [Le compte pro — le dictionnaire général](#espace-pro) | `pro` | 8 |
 | [Le compte pro — l’écran](#espace-proaccount) | `proAccount` | 27 |
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
@@ -50,7 +50,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Les cases des e-mails marketing, « Mes e-mails » et le pied de page](#espace-marketingconsent) | `marketingConsent` | 29 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1812** |
+| **Total** | | **1813** |
 
 ## Le parcours de commande
 
@@ -1438,7 +1438,7 @@ Source : `screens/loyalty.copy.ts` · 38 textes.
 
 ### Mon compte (factures comprises) — `account`
 
-Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 526 textes.
+Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 527 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1496,6 +1496,7 @@ Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 
 | `account.identityVatUndecidedHint` | Obligatoire ou non selon la forme juridique. | Required or not depending on the legal form. | Obbligatoria o no a seconda della forma giuridica. |  |
 | `account.identityOptional` | facultatif | optional | facoltativo |  |
 | `account.identityLegalLocked` | Ces mentions viennent du greffe. Pour les corriger, passez par notre service commercial. | These details come from the company registry. To correct them, contact our sales team. | Queste menzioni provengono dal registro delle imprese. Per correggerle, passate dal nostro servizio commerciale. |  |
+| `account.identityVatLocked` | Le numéro de TVA est vérifié à l’ouverture du compte. Pour le corriger, passez par notre service commercial. | Your VAT number is checked when your account opens. To correct it, contact our sales team. | Il numero di partita IVA viene verificato all’apertura del conto. Per correggerlo, passate dal nostro servizio commerciale. |  |
 | `account.identitySaveFailed` | L’identité n’a pas été enregistrée. | Your identity was not saved. | L’identità non è stata registrata. |  |
 | `account.railPosition` | Section {n} sur {total} | Section {n} of {total} | Sezione {n} di {total} | `{n}` `{total}` |
 | `account.usersHolder` | Détenteur du compte | Account holder | Titolare dell’account |  |

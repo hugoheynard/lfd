@@ -93,6 +93,8 @@ export const ACCOUNT_IT: AccountCopy = {
   identityOptional: 'facoltativo',
   identityLegalLocked:
     'Queste menzioni provengono dal registro delle imprese. Per correggerle, passate dal nostro servizio commerciale.',
+  identityVatLocked:
+    'Il numero di partita IVA viene verificato all’apertura del conto. Per correggerlo, passate dal nostro servizio commerciale.',
   identitySaveFailed: 'L’identità non è stata registrata.',
   railPosition: 'Sezione {n} di {total}',
   usersHolder: 'Titolare dell’account',

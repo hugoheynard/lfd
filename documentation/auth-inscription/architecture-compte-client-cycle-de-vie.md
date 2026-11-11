@@ -99,6 +99,30 @@ Le minimum est tenu par l'**agrégat** (`Company.declare` exige l'enseigne), pas
 par la frontière HTTP. La charge `createCompanyPayload` n'exige plus rien : elle
 l'a fait, et refusait alors une ouverture que le domaine autorisait.
 
+**Ce qui se contrôle quand l'identité se complète** (`Company`, couche domaine) :
+
+- le **SIRET** : 14 chiffres et sa clé ; le SIREN en est tiré, et un SIREN qui
+  le contredit est refusé. Le client complète, il ne réécrit pas : une mention
+  posée ne se corrige qu'au back-office ;
+- la **forme juridique** : reconnue par `toLegalForm` (la liste SAS, SARL,
+  EI…), sinon refusée ;
+- le **numéro de TVA** (`apps/lfd-api/src/lafoliecoffee/account/domain/value-objects/vat-number.ts`) : normalisé (sans espaces, en
+  capitales), de la forme d'un numéro intracommunautaire ; un numéro français
+  a sa clé vérifiée contre le SIREN qu'il porte, et ce SIREN doit être celui
+  de la société. Un numéro renvoyé inchangé n'est pas revérifié : un numéro
+  d'avant ce contrôle ne bloque pas une correction d'enseigne ;
+- la **TVA est figée pour le client** dès que la société sort de l'attente
+  (`editSoftIdentityAsMember`) : contrôlée à l'activation, elle part sur les
+  factures. Seul le back-office la corrige ;
+- le **code NAF** se résout depuis le SIRET auprès de l'annuaire des
+  entreprises, à la déclaration **et** à chaque SIRET posé ou corrigé ensuite
+  (`CompanySiretSetEvent`) : une société déclarée depuis la boutique naît sans
+  SIRET.
+
+Ne sont pas vérifiés : l'existence du SIRET à l'annuaire, l'état actif de
+l'établissement, la concordance de la raison sociale (une alerte sans blocage
+est envisagée, non décidée).
+
 ```mermaid
 stateDiagram-v2
     [*] --> pending : déclarée (porte A ou B)

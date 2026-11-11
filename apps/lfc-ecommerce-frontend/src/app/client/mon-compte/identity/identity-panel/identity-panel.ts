@@ -55,6 +55,11 @@ export interface IdentityPanelData extends LegalDraft {
    * panneau en LECTURE — toutes les mentions, aucun champ, aucun Enregistrer.
    */
   readonly editable: boolean;
+  /**
+   * La société n'est plus en attente : son numéro de TVA a été contrôlé à
+   * l'ouverture du compte, et l'API refuse qu'un membre le change. Il se lit.
+   */
+  readonly vatLocked: boolean;
 }
 
 /**
@@ -139,6 +144,7 @@ export class IdentityPanel {
         siret: company.siret,
         siren: company.siren,
         editable: canEditIdentity(company),
+        vatLocked: company.status !== 'pending',
       },
     });
     return (await ref.closed) === true;
@@ -189,6 +195,12 @@ export class IdentityPanel {
   });
 
   protected readonly lockedFields = computed(() => this.legalFields().filter((f) => f.locked));
+
+  /** Le numéro de TVA figé, tel qu'il se lit. */
+  protected readonly lockedVat = computed(() => {
+    const vat = this.data().vatNumber.trim();
+    return vat === '' ? this.t().account.identityUnknown : vat;
+  });
   protected readonly openFields = computed(() => this.legalFields().filter((f) => !f.locked));
 
   /** Les formes du catalogue — la liste vient du contrat, pas de l'écran. */

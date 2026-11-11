@@ -19,6 +19,7 @@ const FILLED: IdentityPanelData = {
   siret: '81245678900021',
   siren: '552100554',
   editable: true,
+  vatLocked: false,
 };
 
 /** Une société ouverte SANS papiers : le commercial était chez le client. */
@@ -138,6 +139,14 @@ describe('IdentityPanel', () => {
     expect(el().querySelectorAll('fold-input').length).toBe(2);
     expect(el().querySelector('.locked')?.textContent).toContain('81245678900021');
     expect(el().textContent).toContain(FR.account.identityLegalLocked);
+  });
+
+  it('une fois le compte ouvert, la TVA se lit et la phrase dit par où passer', () => {
+    fixture = boot({ ...FILLED, vatLocked: true });
+
+    expect(el().querySelectorAll('fold-input').length).toBe(1);
+    expect(el().querySelector('.locked')?.textContent).toContain('FR45812456789');
+    expect(el().textContent).toContain(FR.account.identityVatLocked);
   });
 
   it('ouvre en champ les mentions encore vides, et elles seules', () => {
@@ -364,6 +373,7 @@ describe('IdentityPanel', () => {
         siret: TOMMEUSES.siret,
         siren: TOMMEUSES.siren,
         editable: true,
+        vatLocked: TOMMEUSES.status !== 'pending',
       });
 
       panels.dismissAll();

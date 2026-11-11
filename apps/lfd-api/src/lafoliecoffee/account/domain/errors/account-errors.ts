@@ -41,6 +41,55 @@ export class InvalidSiretError extends DomainError {
   }
 }
 
+export class InvalidVatNumberError extends DomainError {
+  constructor(
+    readonly raw: string,
+    readonly reason: string,
+  ) {
+    super("account.vat_number.invalid", `Numéro de TVA « ${raw} » : ${reason}.`);
+  }
+}
+
+/**
+ * Un numéro de TVA français qui porte un autre SIREN que celui de la société :
+ * c'est le numéro d'une autre entreprise, et il partirait sur ses factures.
+ */
+export class VatSirenMismatchError extends DomainError {
+  constructor(
+    readonly vatNumber: string,
+    readonly siren: string,
+  ) {
+    super(
+      "account.vat_number.siren_mismatch",
+      `Le numéro de TVA ${vatNumber} porte un autre SIREN que celui de la société (${siren}). Corrigez l'un ou l'autre.`,
+    );
+  }
+}
+
+/**
+ * Le client change le numéro de TVA d'une société déjà activée. Il a été
+ * contrôlé à l'activation et part sur les factures : seul le back-office le
+ * corrige désormais.
+ */
+export class VatNumberFrozenError extends BusinessError {
+  constructor(readonly companyId: string) {
+    super(
+      "account.vat_number.frozen",
+      "Le numéro de TVA ne se modifie plus depuis votre espace une fois le compte ouvert. Contactez-nous pour le corriger.",
+    );
+  }
+}
+
+/** Une forme juridique hors de la liste reconnue (SAS, SARL, EI…). */
+export class InvalidLegalFormError extends DomainError {
+  constructor(readonly raw: string) {
+    super(
+      "account.legal_form.invalid",
+      `Forme juridique « ${raw} » inconnue : choisissez-la dans la liste.`,
+    );
+  }
+}
+
 export class InvalidSirenError extends DomainError {
   constructor(
     readonly raw: string,
