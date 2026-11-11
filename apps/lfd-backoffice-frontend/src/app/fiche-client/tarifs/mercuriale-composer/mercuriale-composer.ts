@@ -128,7 +128,8 @@ export class MercurialeComposer {
    */
   protected readonly columns: readonly FoldTableColumn<TarifRow>[] = [
     { key: 'article', label: 'Article' },
-    { key: 'catalog', label: 'Prix pro HT', width: '8rem' },
+    { key: 'catalog', label: 'Prix pro catalogue HT', width: '9rem' },
+    { key: 'current', label: 'Prix de ce client HT', width: '9rem' },
     { key: 'limit', label: 'Limite', width: '8rem' },
     { key: 'price', label: 'Prix mercuriale', width: '12rem' },
     { key: 'room', label: 'Marge de négoce', width: '9rem' },

@@ -21,6 +21,12 @@ export interface TarifRow extends MercurialeRow {
    * marges cohabitent dans la même colonne, et comment l'écran les distingue.
    */
   readonly openRoomMillicents: number | null;
+  /**
+   * Ce que ce client paie **aujourd'hui**, à l'unité : la chaîne résolue par le
+   * serveur pour lui (ses règles, ses promotions, sa mercuriale en cours, la
+   * limite). Lu, jamais recalculé — c'est le prix de la caisse.
+   */
+  readonly currentMillicents: number;
   /** Le prix accordé **en euros**, tel que le champ le porte. `null` = non tarifé. */
   readonly priceEuros: number | null;
 }
@@ -49,6 +55,7 @@ export function tarifShelves(
         // c'est ce qui sera facturé, donc le seul dont l'effort soit réel.
         elasticity: liveEffort(item.elasticity, row.catalogMillicents, row.finalMillicents),
         openRoomMillicents: openRoomMillicents(row.catalogMillicents, row.floorMillicents),
+        currentMillicents: item.finalMillicents,
         priceEuros: eurosIn(draft, item.sku),
       };
     }),
