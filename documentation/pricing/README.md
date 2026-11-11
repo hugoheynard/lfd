@@ -102,17 +102,18 @@ Ces mots reviennent partout et ne veulent pas dire ce qu'on croit.
 
 **Je veux COMPRENDRE.**
 
-| La question                                                              | Le document                                                                                            |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
-| **Comment un prix se fabrique, concrètement ?**                          | [`comment-un-prix-se-fabrique.md`](comment-un-prix-se-fabrique.md) — **commencer ici**                 |
-| Pourquoi il n'y a qu'un seul objet qui fabrique un prix ?                | [`architecture-pricer.md`](moteur/architecture-pricer.md)                                              |
-| Pourquoi un prix se saisit en TTC alors que tout est HT ?                | [`architecture-prix-ancre-ttc.md`](centime-et-tva/architecture-prix-ancre-ttc.md) §A                   |
-| Que veulent dire exactement « étage », « spécificité », « scellement » ? | [`architecture-resolution-de-prix.md`](moteur/architecture-resolution-de-prix.md) — la sémantique      |
-| Pourquoi la TVA se calcule par taux et pas sur le total ?                | [`ajouter-un-terme-au-panier.md`](boutique-et-panier/ajouter-un-terme-au-panier.md) §2                 |
-| Qu'est-ce que la boutique a le droit de montrer ?                        | [`architecture-prix-boutique.md`](boutique-et-panier/architecture-prix-boutique.md) §4                 |
-| Qu'est-ce qu'un commercial voit quand il pose une règle ?                | [`ecrans-de-tarification.md`](saisie/ecrans-de-tarification.md)                                        |
-| **Qu'est-ce qu'une mercuriale, exactement ?**                            | [`mercuriales/comprendre-une-mercuriale.md`](mercuriales/comprendre-une-mercuriale.md) — la définition |
-| Qui décide de poser une promotion, et où ?                               | [`promotions.md` § 2.16](../promotions/promotions.md)                                                  |
+| La question                                                              | Le document                                                                                                          |
+| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| **Comment un prix se fabrique, concrètement ?**                          | [`comment-un-prix-se-fabrique.md`](comment-un-prix-se-fabrique.md) — **commencer ici**                               |
+| Pourquoi il n'y a qu'un seul objet qui fabrique un prix ?                | [`architecture-pricer.md`](moteur/architecture-pricer.md)                                                            |
+| Pourquoi un prix se saisit en TTC alors que tout est HT ?                | [`architecture-prix-ancre-ttc.md`](centime-et-tva/architecture-prix-ancre-ttc.md) §A                                 |
+| Que veulent dire exactement « étage », « spécificité », « scellement » ? | [`architecture-resolution-de-prix.md`](moteur/architecture-resolution-de-prix.md) — la sémantique                    |
+| Pourquoi la TVA se calcule par taux et pas sur le total ?                | [`ajouter-un-terme-au-panier.md`](boutique-et-panier/ajouter-un-terme-au-panier.md) §2                               |
+| Qu'est-ce que la boutique a le droit de montrer ?                        | [`architecture-prix-boutique.md`](boutique-et-panier/architecture-prix-boutique.md) §4                               |
+| Où en sont les docs de la saisie, une par une ?                          | [`audit-des-docs-de-la-saisie.md`](saisie/audit-des-docs-de-la-saisie.md) — audit du 2026-11-11, document de travail |
+| Qu'est-ce qu'un commercial voit quand il pose une règle ?                | [`ecrans-de-tarification.md`](saisie/ecrans-de-tarification.md)                                                      |
+| **Qu'est-ce qu'une mercuriale, exactement ?**                            | [`mercuriales/comprendre-une-mercuriale.md`](mercuriales/comprendre-une-mercuriale.md) — la définition               |
+| Qui décide de poser une promotion, et où ?                               | [`promotions.md` § 2.16](../promotions/promotions.md)                                                                |
 
 **Je veux IMPLÉMENTER.**
 
