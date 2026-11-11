@@ -6,7 +6,12 @@ import type {
   PosedMercurialeView,
   StaffPermission,
 } from '@lfd/contracts';
-import { FoldButtonComponent, FoldEmptyStateComponent, FoldLoadingStateComponent } from 'fold-ng';
+import {
+  FoldButtonComponent,
+  FoldCalloutComponent,
+  FoldEmptyStateComponent,
+  FoldLoadingStateComponent,
+} from 'fold-ng';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
@@ -95,6 +100,7 @@ async function render(
     set: {
       imports: [
         FoldButtonComponent,
+        FoldCalloutComponent,
         FoldEmptyStateComponent,
         FoldLoadingStateComponent,
         MercurialeComposer,

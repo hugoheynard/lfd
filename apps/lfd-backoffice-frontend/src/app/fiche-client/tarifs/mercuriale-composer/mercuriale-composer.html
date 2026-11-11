@@ -86,14 +86,6 @@
   [firmSkus]="firmSkus()"
 />
 
-@if (blocked()) {
-  <fold-callout variant="warning">
-    <strong>Ce compte a déjà une mercuriale.</strong> Poser sur une période qui
-    <strong>chevauche</strong> la sienne sera refusé : il faut d'abord clore celle qui tourne. Ses
-    règles seront <strong>archivées</strong>, jamais supprimées — ce qu'elle a facturé reste.
-  </fold-callout>
-}
-
 <!-- L'en-tête d'une `fold-data-table` ne prend qu'un libellé : l'aide de la
      colonne « Prix ferme » vit donc ici, au-dessus des rayons qu'elle explique. -->
 <p class="tf-caveat">

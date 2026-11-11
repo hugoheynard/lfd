@@ -102,8 +102,6 @@ const MILLICENTS_PER_EURO = 100 * MILLICENTS_PER_CENT;
 export class MercurialeComposer {
   readonly companyId = input.required<string>();
   readonly categories = input.required<readonly CompanyPricingCategoryView[]>();
-  /** Une mercuriale non terminée occupe déjà la place : le bandeau le dit. */
-  readonly blocked = input.required<boolean>();
 
   /** Le libellé et la fenêtre de ce qu'on s'apprête à poser. */
   readonly label = model.required<string>();

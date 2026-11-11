@@ -61,10 +61,30 @@
       }
 
       @case ('composing') {
+        <!-- La mercuriale qui occupe la place, NOMMÉE : la composition cache
+             les mercuriales posées, et « ce compte en a déjà une » sans dire
+             laquelle laissait chercher où la voir. Revenir à la lecture garde
+             la saisie en cours. -->
+        @for (running of blocking(); track running.id) {
+          <fold-callout variant="warning" data-blocking>
+            <strong>{{ running.label }}</strong> court déjà ({{ periodOf(running) }}). Poser sur une
+            période qui la chevauche sera refusé : il faut d'abord la clore. Ses règles seront
+            archivées, jamais supprimées — ce qu'elle a facturé reste.
+            <button
+              foldButton
+              actions
+              size="sm"
+              emphasis="outline"
+              type="button"
+              (click)="composing.set(false)"
+            >
+              Voir la mercuriale
+            </button>
+          </fold-callout>
+        }
         <app-mercuriale-composer
           [companyId]="id()"
           [categories]="categories()"
-          [blocked]="blocking().length > 0"
           [(label)]="label"
           [(validFrom)]="validFrom"
           [(validTo)]="validTo"

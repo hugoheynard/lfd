@@ -28,7 +28,6 @@ function mount(
   const fixture = TestBed.createComponent(MercurialeComposer);
   fixture.componentRef.setInput('companyId', 'co_1');
   fixture.componentRef.setInput('categories', []);
-  fixture.componentRef.setInput('blocked', false);
   fixture.componentRef.setInput('label', label);
   fixture.componentRef.setInput('validFrom', from);
   fixture.componentRef.setInput('validTo', to);

@@ -7,8 +7,13 @@ import {
   input,
   signal,
 } from '@angular/core';
-import { FoldButtonComponent, FoldEmptyStateComponent, FoldLoadingStateComponent } from 'fold-ng';
-import type { CompanyPricingView } from '@lfd/contracts';
+import {
+  FoldButtonComponent,
+  FoldCalloutComponent,
+  FoldEmptyStateComponent,
+  FoldLoadingStateComponent,
+} from 'fold-ng';
+import type { CompanyPricingView, PosedMercurialeView } from '@lfd/contracts';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { PricingFollow } from '../pricing-follow/pricing-follow';
@@ -59,6 +64,7 @@ type LoadState = 'loading' | 'ready' | 'error';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
+    FoldCalloutComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
     MercurialeComposer,
@@ -132,6 +138,9 @@ export class ClientTarifsPage {
    * Les mercuriales qui **occupent la place** : celles qu'il faudra clore avant
    * de reposer. Une mercuriale terminée n'en occupe aucune.
    */
+  protected readonly periodOf = (mercuriale: PosedMercurialeView): string =>
+    periodText(mercuriale.validFrom, mercuriale.validTo);
+
   protected readonly blocking = computed(() =>
     this.mercuriales().filter((entry) => entry.status !== 'expired'),
   );
@@ -229,6 +238,14 @@ export class ClientTarifsPage {
 }
 
 /** `2026-01-01T…` → `2026-01-01`, ce qu'un `<input type="date">` attend. */
+/** « du 01/01/2027 au 31/12/2027 », ou « depuis le …, sans fin ». */
+function periodText(validFrom: string, validTo: string | null): string {
+  const day = (iso: string): string => new Date(iso).toLocaleDateString('fr-FR');
+  return validTo === null
+    ? `depuis le ${day(validFrom)}, sans fin`
+    : `du ${day(validFrom)} au ${day(validTo)}`;
+}
+
 function dayOf(iso: string | null): string {
   return iso === null ? '' : iso.slice(0, 10);
 }
