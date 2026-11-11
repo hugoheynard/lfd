@@ -1,6 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../../platform/time/clock.js";
+import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { KbisUploadedByStaffEvent } from "../../domain/events/staff-acts.event.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
@@ -30,6 +31,7 @@ export class UploadKbisByStaffHandler implements ICommandHandler<UploadKbisBySta
     private readonly companies: CompanyRepository,
     private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
+    private readonly ids: IdGenerator,
   ) {}
 
   async execute(command: UploadKbisByStaffCommand): Promise<void> {
@@ -41,6 +43,7 @@ export class UploadKbisByStaffHandler implements ICommandHandler<UploadKbisBySta
       this.companies,
       this.events,
       this.clock,
+      this.ids,
     );
     // Tracé APRÈS, et hors transaction — seul acte du lot dans ce cas. Le dépôt
     // range d'abord le fichier au stockage objet, qui n'a pas de transaction :

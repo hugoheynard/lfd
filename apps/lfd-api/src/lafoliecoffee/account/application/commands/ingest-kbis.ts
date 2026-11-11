@@ -1,4 +1,5 @@
 import type { Clock } from "../../../../platform/time/clock.js";
+import type { IdGenerator } from "../../../../platform/id/id-generator.js";
 import type { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
 import { CompanyStepReachedEvent } from "../../domain/events/company-step-reached.event.js";
@@ -18,6 +19,10 @@ import { ScannedDocument } from "../../../../platform/shared/documents/scanned-d
  *
  * Rend la société **nommée** : l'appelant trace le dépôt sous son nom du moment
  * sans la relire (lot B du plan des phrases).
+ *
+ * Chaque dépôt a **sa propre clé** de stockage : un nouvel extrait n'écrase
+ * jamais le fichier qu'une certification couvre, et l'extrait certifié reste
+ * celui que le staff a lu, même si l'écriture des métadonnées échoue.
  */
 export async function ingestKbis(
   companyId: string,
@@ -27,6 +32,7 @@ export async function ingestKbis(
   companies: CompanyRepository,
   events: DomainEventPublisher,
   clock: Clock,
+  ids: IdGenerator,
 ): Promise<NamedRef> {
   // Le fichier se valide lui-même (PDF par ses octets, taille) avant de partir
   // au stockage : on ne range jamais un fichier douteux.
@@ -34,7 +40,7 @@ export async function ingestKbis(
 
   // Ranger d'abord, écrire les métadonnées ensuite : si le stockage échoue, la
   // base ne pointe pas vers un fichier absent.
-  const storageKey = await store.save(kbisKeyFor(companyId), {
+  const storageKey = await store.save(kbisKeyFor(companyId, ids.next()), {
     bytes: file.bytes,
     contentType: file.contentType,
   });
@@ -63,6 +69,6 @@ export async function ingestKbis(
  * même clé. Sans extension, depuis que la pièce peut être une photo autant qu'un
  * PDF (le type réel est déduit des octets et gardé en base).
  */
-function kbisKeyFor(companyId: string): string {
-  return `companies/${companyId}/kbis`;
+function kbisKeyFor(companyId: string, depositId: string): string {
+  return `companies/${companyId}/kbis/${depositId}`;
 }

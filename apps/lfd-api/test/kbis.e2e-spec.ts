@@ -94,23 +94,25 @@ describe("dépôt du KBIS", () => {
     expect((await companyOf(ADMIN)).kbis?.certified).toBe(true);
   });
 
-  it("range la pièce SOUS l'entreprise, et un re-dépôt écrase au lieu d'accumuler", async () => {
-    // Deux garanties que le magasin en mémoire ne pouvait pas donner : le mur de
-    // tenancy est **dans le chemin** de la clé, et « une même clé écrase » —
-    // sinon chaque correction laisserait derrière elle l'ancien extrait.
+  it("range chaque extrait SOUS l'entreprise, à sa propre clé, et sert le dernier", async () => {
+    // Le mur de tenancy est **dans le chemin** de la clé. Chaque dépôt a la
+    // sienne : un nouvel extrait n'écrase pas celui qu'une certification couvre.
     await ctx
       .asSub(ADMIN)
       .put(`/companies/${companyId}/kbis`)
       .attach("file", PDF, "k.pdf")
       .expect(204);
-    expect(await storageKeys()).toEqual([`companies/${companyId}/kbis`]);
+    const [first] = await storageKeys();
+    expect(first).toMatch(new RegExp(`^companies/${companyId}/kbis/`, "u"));
 
     await ctx
       .asSub(ADMIN)
       .put(`/companies/${companyId}/kbis`)
       .attach("file", Buffer.from("%PDF-1.4\nkbis corrigé", "latin1"), "k.pdf")
       .expect(204);
-    expect(await storageKeys()).toEqual([`companies/${companyId}/kbis`]);
+    const keys = await storageKeys();
+    expect(keys).toHaveLength(2);
+    expect(keys).toContain(first);
 
     const download = await ctx.asSub(ADMIN).get(`/companies/${companyId}/kbis`).expect(200);
     expect(Buffer.from(download.body as Buffer).toString("latin1")).toContain("corrigé");

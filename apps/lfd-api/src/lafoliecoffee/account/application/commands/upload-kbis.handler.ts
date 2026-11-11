@@ -1,6 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../../platform/time/clock.js";
+import { IdGenerator } from "../../../../platform/id/id-generator.js";
 
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { KbisUploadedByMemberEvent } from "../../domain/events/member-acts.event.js";
@@ -28,6 +29,7 @@ export class UploadKbisHandler implements ICommandHandler<UploadKbisCommand, voi
     private readonly companies: CompanyRepository,
     private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
+    private readonly ids: IdGenerator,
   ) {}
 
   async execute(command: UploadKbisCommand): Promise<void> {
@@ -42,6 +44,7 @@ export class UploadKbisHandler implements ICommandHandler<UploadKbisCommand, voi
       this.companies,
       this.events,
       this.clock,
+      this.ids,
     );
     await this.events.publishTraced(new KbisUploadedByMemberEvent(company, command.fileName));
   }

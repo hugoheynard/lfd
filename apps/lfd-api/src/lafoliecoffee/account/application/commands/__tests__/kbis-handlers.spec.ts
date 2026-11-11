@@ -1,4 +1,5 @@
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
+import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
 import {
   CompanyAdminRequiredError,
   CompanyNotFoundError,
@@ -87,12 +88,28 @@ describe("UploadKbisHandler", () => {
         companies,
         events,
         new FixedClock(DEPOSITED_AT),
+        new FixedIdGenerator("deposit"),
       ),
       saved,
       company,
       events,
     };
   }
+
+  /**
+   * Régression : tous les dépôts d'une société partageaient une clé, si bien
+   * qu'un nouvel extrait écrasait le fichier qu'une certification couvrait.
+   */
+  it("range chaque dépôt sous sa propre clé", async () => {
+    const { handler, saved } = doubles("owner");
+
+    await handler.execute(new UploadKbisCommand("u1", "c1", "kbis.pdf", PDF));
+    const first = saved.key;
+    await handler.execute(new UploadKbisCommand("u1", "c1", "kbis.pdf", PDF));
+
+    expect(first).toMatch(/^companies\/c1\/kbis\//u);
+    expect(saved.key).not.toBe(first);
+  });
 
   it("range le fichier PUIS écrit les métadonnées, pour le gestionnaire", async () => {
     const { handler, saved } = doubles("owner");
