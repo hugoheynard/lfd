@@ -131,7 +131,7 @@ function setup(commitments: readonly VolumeCommitment[] = []) {
             mode: "all_except",
             baseBp: 3_000,
             rules: [
-              { target: "category", targetId: "cat_pains", bp: 4_000 },
+              { target: "category", targetId: "fam_boulangerie", bp: 4_000 },
               { target: "variant", targetId: "VIE-001", bp: null },
             ],
           },
@@ -156,7 +156,7 @@ describe("PoseCompanyMercurialeHandler — remise générale", () => {
       mode: "all_except",
       baseBp: 3_000,
       rules: [
-        { target: "category", targetId: "cat_pains", bp: 4_000 },
+        { target: "category", targetId: "fam_boulangerie", bp: 4_000 },
         { target: "variant", targetId: "VIE-001", bp: null },
       ],
     });

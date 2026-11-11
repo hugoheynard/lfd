@@ -11,7 +11,7 @@ describe("describeGeneralDiscount", () => {
         mode: "all_except",
         baseBp: 3_000,
         rules: [
-          { target: "category", targetId: "cat_pains", bp: 4_000 },
+          { target: "category", targetId: "fam_boulangerie", bp: 4_000 },
           { target: "category", targetId: "cat_choc", bp: null },
           { target: "variant", targetId: "VIE-001", bp: null },
           { target: "variant", targetId: "VIE-002", bp: null },
@@ -32,7 +32,7 @@ describe("describeGeneralDiscount", () => {
         mode: "only",
         baseBp: null,
         rules: [
-          { target: "category", targetId: "cat_pains", bp: 4_000 },
+          { target: "category", targetId: "fam_boulangerie", bp: 4_000 },
           { target: "category", targetId: "cat_vienno", bp: 2_500 },
           { target: "variant", targetId: "PAI-001-1", bp: null },
         ],
