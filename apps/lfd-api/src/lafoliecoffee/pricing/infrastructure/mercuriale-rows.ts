@@ -11,6 +11,8 @@ import type {
 } from "../domain/entities/company-mercuriale.js";
 import { CorruptedMercurialeError } from "../domain/pricing-errors.js";
 import type { PricingTier } from "../domain/pricing-grid.js";
+import type { GeneralDiscountChange } from "../domain/entities/general-discount.js";
+import { generalDiscountFromJson, generalDiscountJson } from "./general-discount-rows.js";
 
 /**
  * **La ligne de base → l'agrégat.**
@@ -39,6 +41,7 @@ export function mercurialeFromRow(row: {
   readonly archiveReason: string | null;
   readonly promotionMode: string;
   readonly promotionIds: readonly string[];
+  readonly generalDiscount: unknown;
   readonly amendments: readonly AmendmentRow[];
 }): CompanyMercuriale {
   const state: CompanyMercurialeState = {
@@ -50,8 +53,7 @@ export function mercurialeFromRow(row: {
     validTo: row.validTo,
     createdBy: row.createdBy,
     promotionPolicy: promotionPolicyFromRow(row.id, row.promotionMode, row.promotionIds),
-    // Dette R2 : la colonne `general_discount` n’existe pas encore ; aucune remise.
-    generalDiscount: null,
+    generalDiscount: generalDiscountFromJson(row.id, row.generalDiscount),
     lifecycle: {
       pausedAt: row.pausedAt,
       pausedBy: row.pausedBy,
@@ -75,6 +77,8 @@ export interface AmendmentRow {
   readonly origin: unknown;
   readonly promotionMode: string | null;
   readonly promotionIds: readonly string[];
+  readonly generalDiscount: unknown;
+  readonly generalDiscountSet: boolean;
   readonly createdBy: string;
   readonly createdAt: Date;
   readonly archivedAt: Date | null;
@@ -107,12 +111,40 @@ function amendmentFromRow(mercurialeId: string, row: AmendmentRow): MercurialeAm
       row.promotionMode === null
         ? null
         : promotionPolicyFromRow(mercurialeId, row.promotionMode, row.promotionIds),
+    ...generalDiscountChangeOf(mercurialeId, row),
     createdBy: row.createdBy,
     createdAt: row.createdAt,
     archivedAt: row.archivedAt,
     archivedBy: row.archivedBy,
     archiveReason: row.archiveReason,
   };
+}
+
+/**
+ * La paire `(general_discount_set, general_discount)` → ce que l'avenant dit de
+ * la remise : rien (drapeau baissé), l'arrêt (`NULL`), ou la remise qu'il pose.
+ */
+function generalDiscountChangeOf(
+  mercurialeId: string,
+  row: AmendmentRow,
+): { readonly generalDiscount?: GeneralDiscountChange } {
+  if (!row.generalDiscountSet) {
+    return {};
+  }
+  return { generalDiscount: { set: generalDiscountFromJson(mercurialeId, row.generalDiscount) } };
+}
+
+/** Les deux colonnes de ce qu'un avenant dit de la remise, telles qu'elles s'écrivent. */
+export function generalDiscountChangeColumns(change: GeneralDiscountChange | undefined): {
+  readonly generalDiscountSet: boolean;
+  readonly generalDiscount?: ReturnType<typeof generalDiscountJson>;
+} {
+  if (change === undefined) {
+    return { generalDiscountSet: false };
+  }
+  return change.set === null
+    ? { generalDiscountSet: true }
+    : { generalDiscountSet: true, generalDiscount: generalDiscountJson(change.set) };
 }
 
 /**

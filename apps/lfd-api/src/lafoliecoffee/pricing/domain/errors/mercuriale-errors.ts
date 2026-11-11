@@ -232,6 +232,23 @@ export class ArchivedMercurialeIsSealedError extends BusinessError {
 }
 
 /**
+ * **Une remise générale chez un client qui a un engagement de volume**
+ * (`plan-remise-generale.md`, Q2, tranchée par Hugo le 2026-11-11).
+ *
+ * Ce qui gagne l'étage mercuriale scelle le prix : l'engagement ne jouerait
+ * plus sur rien de ce que la remise couvre — avec « tout », sur rien du tout.
+ * Le client perdrait en silence ce qu'il a négocié ; on refuse plutôt.
+ */
+export class GeneralDiscountOverVolumeCommitmentError extends BusinessError {
+  constructor(readonly companyId: string) {
+    super(
+      "pricing.mercuriale.general_discount_over_volume_commitment",
+      "Ce client a un engagement de volume en cours sur cette période : une remise générale scellerait ses prix et l'engagement ne jouerait plus sur les articles couverts. Clôturez d'abord l'engagement, ou accordez des prix fermes article par article.",
+    );
+  }
+}
+
+/**
  * **Une mercuriale illisible en base.**
  *
  * Sa grille vit en `jsonb`, donc en `unknown` : ni Postgres ni Prisma ne

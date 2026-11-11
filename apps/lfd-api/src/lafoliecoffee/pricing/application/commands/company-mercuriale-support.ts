@@ -4,6 +4,7 @@ import type { MercurialeAmendmentDraft } from "../../domain/entities/company-mer
 import { describeArticleCount, describeWindowOf } from "../../domain/pricing-act.js";
 import { describeDay } from "../../domain/pricing-act-summary.js";
 import { PosedMercurialeNotFoundError } from "../../domain/pricing-errors.js";
+import { describeGeneralDiscount } from "../../domain/general-discount-summary.js";
 
 /**
  * **Établir la mercuriale d'un compte**, la clore, la renommer — ce que les
@@ -100,7 +101,12 @@ export function describeMercuriale(mercuriale: CompanyMercuriale): string {
   // Elle écrivait « du 2026-09-01 au sans terme » : les dates en ISO, et une
   // fenêtre ouverte qui cassait la phrase. Les mots de la fenêtre sont ceux
   // des règles et des barèmes (plan des phrases du journal, lot D).
-  return `Mercuriale « ${state.label} » — ${describeArticleCount(negotiatedSkuCount(mercuriale))}, ${describeWindowOf(state.validFrom, state.validTo)}`;
+  const phrase = `Mercuriale « ${state.label} » — ${describeArticleCount(negotiatedSkuCount(mercuriale))}, ${describeWindowOf(state.validFrom, state.validTo)}`;
+  // La remise générale du document n'est dite que si elle existe : une
+  // mercuriale à prix fermes seuls garde sa phrase.
+  return state.generalDiscount === null
+    ? phrase
+    : `${phrase} ; ${describeGeneralDiscount(state.generalDiscount)}`;
 }
 
 /**
@@ -144,6 +150,13 @@ export function describeAmendment(
   if (promotionPhrase !== null) {
     parts.push(`${promotionPhrase} à partir du ${describeDay(draft.validFrom)}`);
   }
+  if (draft.generalDiscount !== undefined) {
+    // La remise d'un avenant ne vaut que sur sa fenêtre : la phrase la dit.
+    const to = draft.validTo ?? mercuriale.toPersistence().validTo;
+    parts.push(
+      `${describeGeneralDiscount(draft.generalDiscount.set)} ${describeWindowOf(draft.validFrom, to)}`,
+    );
+  }
   return `Avenant — ${parts.join(" ; ")}`;
 }
 
@@ -159,4 +172,17 @@ export function describeCarryOver(
 ): string {
   const window = describeWindowOf(from, mercuriale.toPersistence().validTo);
   return `Avenant — + ${toSku} reporté depuis ${fromSku}, ${window}`;
+}
+
+/**
+ * La phrase figée du report d'une ligne de la remise générale : « Avenant —
+ * remise générale : CHO-001 reprend la ligne de CHO-000-2, du … au … ».
+ */
+export function describeDiscountCarryOver(
+  fromSku: string,
+  toSku: string,
+  from: Date,
+  to: Date | null,
+): string {
+  return `Avenant — remise générale : ${toSku} reprend la ligne de ${fromSku}, ${describeWindowOf(from, to)}`;
 }

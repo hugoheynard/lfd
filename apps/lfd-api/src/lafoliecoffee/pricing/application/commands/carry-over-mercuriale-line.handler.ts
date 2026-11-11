@@ -11,7 +11,7 @@ import {
   NotDetachedFromError,
 } from "../../domain/pricing-errors.js";
 import { CarryOverMercurialeLineCommand } from "./carry-over-mercuriale-line.command.js";
-import { describeCarryOver } from "./company-mercuriale-support.js";
+import { describeCarryOver, describeDiscountCarryOver } from "./company-mercuriale-support.js";
 import { assertNotReservedElsewhere, assertOnSale } from "./sale-reference-support.js";
 import { ReservedElsewhereReader } from "../../domain/ports/reserved-elsewhere.reader.js";
 
@@ -81,7 +81,10 @@ export class CarryOverMercurialeLineHandler implements ICommandHandler<
         // Daté de la prise d'effet, comme la pose et l'avenant saisi.
         at: amendment?.validFrom ?? now,
         reason: reason.trim(),
-        summary: describeCarryOver(carried, fromSku, toSku, amendment?.validFrom ?? now),
+        summary:
+          amendment?.generalDiscount === undefined
+            ? describeCarryOver(carried, fromSku, toSku, amendment?.validFrom ?? now)
+            : describeDiscountCarryOver(fromSku, toSku, amendment.validFrom, amendment.validTo),
         subjectLabel: carried.label,
       });
     });

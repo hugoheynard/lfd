@@ -150,4 +150,56 @@ describe("CarryOverMercurialeLineHandler", () => {
     await expect(handler.execute(command())).rejects.toBeInstanceOf(CarriedMercurialeNotFoundError);
     expect(mercuriales.written).toEqual([]);
   });
+
+  describe("une ligne de la remise générale (plan-remise-generale.md, § 4)", () => {
+    const discounted = (bp: number | null): CompanyMercuriale =>
+      CompanyMercuriale.pose(
+        "merc_1",
+        {
+          companyId: "co_folie",
+          label: "Mercuriale 2026",
+          lines: [],
+          validFrom: new Date("2026-01-01T00:00:00.000Z"),
+          validTo: new Date("2026-12-31T00:00:00.000Z"),
+          generalDiscount: {
+            mode: "all_except",
+            baseBp: 3_000,
+            rules: [{ target: "variant", targetId: OLD_SKU, bp }],
+          },
+        },
+        "staff|marie",
+      );
+
+    it("reporte une EXCLUSION sur la nouvelle référence, par un avenant de remise", async () => {
+      const { mercuriales, handler } = setup({ mercuriale: discounted(null) });
+
+      await handler.execute(command());
+
+      const [written] = mercuriales.written;
+      const amendment = written?.mercuriale.amendments.at(-1);
+      expect(amendment).toMatchObject({
+        lines: [],
+        validFrom: NOW,
+        validTo: new Date("2026-12-31T00:00:00.000Z"),
+        origin: { kind: "detached", fromSku: OLD_SKU, fromMercurialeId: "merc_1" },
+      });
+      expect(amendment?.generalDiscount?.set?.rules).toEqual([
+        { target: "variant", targetId: OLD_SKU, bp: null },
+        { target: "variant", targetId: NEW_SKU, bp: null },
+      ]);
+      expect(written?.act.summary).toContain(
+        `remise générale : ${NEW_SKU} reprend la ligne de ${OLD_SKU}`,
+      );
+    });
+
+    it("reporte un TAUX particulier tel quel", async () => {
+      const { mercuriales, handler } = setup({ mercuriale: discounted(4_500) });
+
+      await handler.execute(command());
+
+      const rules =
+        mercuriales.written[0]?.mercuriale.amendments.at(-1)?.generalDiscount?.set?.rules;
+      expect(rules).toContainEqual({ target: "variant", targetId: NEW_SKU, bp: 4_500 });
+    });
+  });
 });

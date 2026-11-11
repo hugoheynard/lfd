@@ -22,15 +22,13 @@ import { staffViewer } from "../../../catalog/domain/catalog-viewer.js";
  * façons de dériver un prix négocié finiraient par ne plus dire la même chose,
  * et c'est ici que ça se verrait le plus tard.
  *
- * ⚠️ Ce JSDoc a donné une AUTRE raison jusqu'au 2026-09-08 : « une mercuriale
- * peut être posée en `replace` comme en `alter` ». C'est faux, et ça l'a
- * toujours été — `PricingRule.create` refuse `alter` à cet étage
- * (`MercurialeMustPoseAPriceError`) depuis le premier commit qui a permis
- * d'écrire une règle. Vérifié en base le 2026-09-08 : aucune ligne `alter` à
- * l'étage mercuriale, et aucune n'a jamais pu y être écrite. Une justification
- * fausse est pire qu'une absence de justification : elle fait garder un
- * mécanisme pour une raison qui n'existe pas, et défendre l'inverse le jour où
- * quelqu'un propose de le simplifier.
+ * Ce n'est pas qu'une règle d'étage mercuriale puisse être écrite en `alter` :
+ * `PricingRule.create` le refuse (`MercurialeMustPoseAPriceError`).
+ *
+ * **La remise générale n'entre pas dans l'indicateur** (`plan-remise-generale.md`,
+ * § 4) : seules les lignes de prix ferme sont observées. Un « −30 % sur tout »
+ * n'est pas un prix d'article négocié, et le compter ferait passer le tarif
+ * catalogue remisé d'un client pour un prix de marché.
  *
  * Le **plancher n'est pas appliqué**, et c'est délibéré : il est propre à un
  * client, alors qu'on mesure ici un prix de marché. Un prix relevé chez un seul

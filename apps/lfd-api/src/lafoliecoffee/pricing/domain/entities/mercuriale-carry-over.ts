@@ -1,6 +1,7 @@
 import { NoNegotiatedLineToCarryError } from "../pricing-errors.js";
 import type { AmendedGrid, MercurialeAmendmentDraft } from "./mercuriale-amendment.js";
 import { carriedSegment } from "./mercuriale-segments.js";
+import { generalDiscountAt, type DiscountedGrid } from "./general-discount.js";
 
 /** Le report d'une ancienne référence sur celle qui en est née (§ 6 du plan). */
 export interface CarryOver {
@@ -23,16 +24,24 @@ export interface CarryOver {
  * ne fait plus de prix. La filiation (« `toSku` est né de `fromSku` ») est au
  * catalogue : le handler la vérifie avant, l'agrégat ne la voit pas.
  *
+ * Sans prix ferme, c'est la ligne `variant` de la remise générale qui se
+ * reporte — taux ou exclusion (`plan-remise-generale.md`, § 4) : cf.
+ * {@link discountCarryOverDraft}.
+ *
  * @throws {NoNegotiatedLineToCarryError} l'ancienne référence n'a plus de prix ici.
  */
 export function carryOverDraft(
-  grid: AmendedGrid & { readonly id: string },
+  grid: AmendedGrid & DiscountedGrid & { readonly id: string },
   carry: CarryOver,
   now: Date,
 ): MercurialeAmendmentDraft {
   const source = carriedSegment(grid, carry.fromSku, now);
   if (source === null) {
-    throw new NoNegotiatedLineToCarryError(carry.fromSku, grid.id);
+    const discounted = discountCarryOverDraft(grid, carry, now);
+    if (discounted === null) {
+      throw new NoNegotiatedLineToCarryError(carry.fromSku, grid.id);
+    }
+    return discounted;
   }
   return {
     lines: [{ sku: carry.toSku, tiers: source.line.tiers }],
@@ -41,5 +50,44 @@ export function carryOverDraft(
     validTo: source.to,
     reason: carry.reason,
     origin: { kind: "detached", fromSku: carry.fromSku, fromMercurialeId: grid.id },
+  };
+}
+
+/**
+ * **Le report d'une ligne `variant` de la remise générale** : la remise qui
+ * parle à partir de maintenant (ou au début du document s'il n'a pas
+ * commencé), augmentée d'une ligne au même taux — ou à la même exclusion —
+ * sur la nouvelle référence, posée par avenant sur la fenêtre de cette
+ * remise. `null` : aucune ligne de la remise ne nomme l'ancienne référence.
+ *
+ * Sans ce report, une exclusion posée sur l'ancienne référence serait caduque
+ * pour la nouvelle, qui prendrait le taux de sa famille ou le taux de base.
+ */
+function discountCarryOverDraft(
+  grid: DiscountedGrid & { readonly id: string },
+  carry: CarryOver,
+  now: Date,
+): MercurialeAmendmentDraft | null {
+  const from = grid.validFrom.getTime() > now.getTime() ? grid.validFrom : now;
+  const speaking = generalDiscountAt(grid, from);
+  const carried = speaking?.discount.rules.find(
+    (rule) => rule.target === "variant" && rule.targetId === carry.fromSku,
+  );
+  if (speaking === null || carried === undefined) {
+    return null;
+  }
+  return {
+    lines: [],
+    endedSkus: [],
+    validFrom: from,
+    validTo: speaking.to,
+    reason: carry.reason,
+    origin: { kind: "detached", fromSku: carry.fromSku, fromMercurialeId: grid.id },
+    generalDiscount: {
+      set: {
+        ...speaking.discount,
+        rules: [...speaking.discount.rules, { ...carried, targetId: carry.toSku }],
+      },
+    },
   };
 }

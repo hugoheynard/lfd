@@ -40,6 +40,7 @@ import { PoseCompanyMercurialeHandler } from "../pose-company-mercuriale.handler
 import { SignVolumeCommitmentCommand } from "../sign-volume-commitment.command.js";
 import { SignVolumeCommitmentHandler } from "../sign-volume-commitment.handler.js";
 import { InMemoryReservedElsewhere } from "../../../infrastructure/in-memory-reserved-elsewhere.js";
+import { InMemoryVolumeCommitments } from "../../../infrastructure/in-memory-volume-commitments.js";
 import { ReservedArticleRefusedError } from "../../../../catalog/domain/errors/reserved-article-refused.error.js";
 
 const FROM = "2026-06-01T00:00:00.000Z";
@@ -148,6 +149,7 @@ function poseMercuriale(skus: readonly string[], reservations = new InMemoryRese
     REFERENCES,
     reservations,
     new InMemoryPolicyPromotionNames(),
+    new InMemoryVolumeCommitments(),
   );
   const payload: PoseCompanyMercurialePayload = {
     label: "Été",

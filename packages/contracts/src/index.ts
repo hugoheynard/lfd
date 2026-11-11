@@ -3134,6 +3134,22 @@ export {
   MERCURIALE_PROMOTION_MODE_VALUES,
   mercurialePromotionPolicySchema,
 } from "./mercuriale-promotion-policy.js";
+export {
+  GENERAL_DISCOUNT_MODE_VALUES,
+  GENERAL_DISCOUNT_TARGET_VALUES,
+  generalDiscountChangeSchema,
+  generalDiscountRuleSchema,
+  generalDiscountSchema,
+} from "./mercuriale-general-discount.js";
+export type {
+  GeneralDiscountChangePayload,
+  GeneralDiscountChangeView,
+  GeneralDiscountModeValue,
+  GeneralDiscountPayload,
+  GeneralDiscountRuleView,
+  GeneralDiscountTargetValue,
+  GeneralDiscountView,
+} from "./mercuriale-general-discount.js";
 export type {
   MercurialePromotionModeValue,
   MercurialePromotionPolicyPayload,

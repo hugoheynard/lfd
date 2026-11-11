@@ -5,11 +5,15 @@ import type {
   PosedMercurialeView,
 } from "@lfd/contracts";
 
-import type { MercurialePromotionPolicyView } from "@lfd/contracts";
+import type { GeneralDiscountView, MercurialePromotionPolicyView } from "@lfd/contracts";
 import type { PromotionAdmission } from "../domain/entities/mercuriale-promotion-policy.js";
 import type { StaffAuthors } from "../../../staff/directory/domain/staff-author-directory.js";
 
-import type { CompanyMercuriale, LineSegment } from "../domain/entities/company-mercuriale.js";
+import type {
+  CompanyMercuriale,
+  GeneralDiscount,
+  LineSegment,
+} from "../domain/entities/company-mercuriale.js";
 
 /**
  * **La mercuriale d'un client, telle que son dossier la montre.**
@@ -146,6 +150,10 @@ function amendmentsOf(
       openedSkus: amendment.lines.map((line) => line.sku),
       endedSkus: [...amendment.endedSkus],
       promotionPolicy: policyView(amendment.promotionPolicy ?? null),
+      generalDiscount:
+        amendment.generalDiscount === undefined
+          ? null
+          : { set: discountView(amendment.generalDiscount.set) },
       createdBy: amendment.createdBy,
       createdByName: authors.nameOf(amendment.createdBy),
     }));
@@ -191,7 +199,23 @@ export function posedMercurialeView(
       mercuriale.promotionPolicyAt(at.getTime() < state.validFrom.getTime() ? state.validFrom : at),
     ),
     initialPromotionPolicy: policyOf(state.promotionPolicy),
+    // Même instant que la politique : à son début si elle n'a pas commencé.
+    generalDiscount: discountView(
+      mercuriale.generalDiscountAt(at.getTime() < state.validFrom.getTime() ? state.validFrom : at)
+        ?.discount ?? null,
+    ),
+    initialGeneralDiscount: discountView(state.generalDiscount),
   };
+}
+
+function discountView(discount: GeneralDiscount | null): GeneralDiscountView | null {
+  return discount === null
+    ? null
+    : {
+        mode: discount.mode,
+        baseBp: discount.baseBp,
+        rules: discount.rules.map((rule) => ({ ...rule })),
+      };
 }
 
 function policyOf(policy: PromotionAdmission): MercurialePromotionPolicyView {

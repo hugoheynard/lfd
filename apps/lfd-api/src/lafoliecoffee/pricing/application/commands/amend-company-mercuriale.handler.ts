@@ -20,6 +20,8 @@ import { AmendCompanyMercurialeCommand } from "./amend-company-mercuriale.comman
 import { describeAmendment } from "./company-mercuriale-support.js";
 import { assertNotReservedElsewhere, assertOnSale } from "./sale-reference-support.js";
 import { ReservedElsewhereReader } from "../../domain/ports/reserved-elsewhere.reader.js";
+import { VolumeCommitmentReader } from "../../domain/ports/volume-commitment.reader.js";
+import { assertNoVolumeCommitmentUnder, generalDiscountOf } from "./general-discount-support.js";
 
 @CommandHandler(AmendCompanyMercurialeCommand)
 export class AmendCompanyMercurialeHandler implements ICommandHandler<
@@ -35,6 +37,7 @@ export class AmendCompanyMercurialeHandler implements ICommandHandler<
     private readonly uow: UnitOfWork,
     private readonly reservations: ReservedElsewhereReader,
     private readonly promotionNames: PolicyPromotionNamesReader,
+    private readonly commitments: VolumeCommitmentReader,
   ) {}
 
   /**
@@ -54,6 +57,8 @@ export class AmendCompanyMercurialeHandler implements ICommandHandler<
    * @throws {SaleReferenceNotOnSaleError} une ligne vise une référence qui ne se vend pas.
    * @throws {ReservedArticleRefusedError} une ligne ouverte vise un article réservé à un autre compte.
    * @throws les refus de `namedPolicy` (nouvelle politique de promotions).
+   * @throws {GeneralDiscountOverVolumeCommitmentError} l'avenant pose ou change
+   *   une remise générale sur une fenêtre qu'un engagement de volume recouvre (Q2).
    * @throws les refus de `CompanyMercuriale.amend`.
    */
   async execute(command: AmendCompanyMercurialeCommand): Promise<string> {
@@ -85,6 +90,15 @@ export class AmendCompanyMercurialeHandler implements ICommandHandler<
       if (mercuriale === null || mercuriale.companyId !== companyId) {
         throw new AmendedMercurialeNotFoundError(mercurialeId);
       }
+      if (draft.generalDiscount?.set != null) {
+        // La remise de l'avenant ne vaut que sur SA fenêtre, bornée par le document.
+        await assertNoVolumeCommitmentUnder(
+          this.commitments,
+          companyId,
+          draft.validFrom,
+          draft.validTo ?? mercuriale.toPersistence().validTo,
+        );
+      }
       const amended = mercuriale.amend(amendmentId, draft, staffUserId, now);
       await this.mercuriales.addAmendment(
         amended,
@@ -110,6 +124,16 @@ function draftOf(command: AmendCompanyMercurialeCommand, now: Date): MercurialeA
     validTo: payload.validTo === null ? null : new Date(payload.validTo),
     reason: payload.reason,
     origin: null,
+    ...(payload.generalDiscount === undefined
+      ? {}
+      : {
+          generalDiscount: {
+            set:
+              payload.generalDiscount.set === null
+                ? null
+                : generalDiscountOf(payload.generalDiscount.set),
+          },
+        }),
   };
 }
 

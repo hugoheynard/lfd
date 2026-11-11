@@ -28,7 +28,10 @@ import {
   TracingUnitOfWork,
   type Trace,
 } from "./mercuriale-amendment.doubles.js";
+import type { VolumeCommitment } from "../../../domain/volume-commitment.js";
+import { GeneralDiscountOverVolumeCommitmentError } from "../../../domain/pricing-errors.js";
 import { InMemoryReservedElsewhere } from "../../../infrastructure/in-memory-reserved-elsewhere.js";
+import { InMemoryVolumeCommitments } from "../../../infrastructure/in-memory-volume-commitments.js";
 
 const NOW = new Date("2026-03-01T00:00:00.000Z");
 const REFERENCES = new InMemorySaleReferences(["VIE-012", "PAI-001-1"], ["PAI-009"]);
@@ -55,7 +58,13 @@ const stored = (companyId = "co_folie"): CompanyMercuriale =>
     "staff|marie",
   );
 
-function setup(options: { known?: boolean; mercuriale?: CompanyMercuriale | null } = {}) {
+function setup(
+  options: {
+    known?: boolean;
+    mercuriale?: CompanyMercuriale | null;
+    commitments?: readonly VolumeCommitment[];
+  } = {},
+) {
   const trace: Trace = [];
   const uow = new TracingUnitOfWork(trace);
   const mercuriales = new LockingMercuriales(
@@ -72,6 +81,7 @@ function setup(options: { known?: boolean; mercuriale?: CompanyMercuriale | null
     uow,
     new InMemoryReservedElsewhere(),
     new InMemoryPolicyPromotionNames(new Map([["promo_rentree", "Rentrée"]])),
+    new InMemoryVolumeCommitments(options.commitments ?? []),
   );
   return { trace, mercuriales, handler };
 }
@@ -196,5 +206,73 @@ describe("AmendCompanyMercurialeHandler", () => {
     await run(handler, payload({ lines: [], endedSkus: ["PAI-009"] }));
 
     expect(mercuriales.written[0]?.act.summary).toMatch(/arrêt de 1 article/);
+  });
+
+  describe("remise générale (plan-remise-generale.md, R2)", () => {
+    const DISCOUNT = { mode: "all_except" as const, baseBp: 2_000, rules: [] };
+    const SUMMER = {
+      validFrom: "2026-06-01T00:00:00.000Z",
+      validTo: "2026-07-01T00:00:00.000Z",
+    };
+    const commitment = (validFrom: string, validTo: string): VolumeCommitment => ({
+      id: "vc_1",
+      companyId: "co_folie",
+      scope: { type: "product", id: "VIE-012" },
+      promisedQuantity: 500,
+      validFrom: new Date(validFrom),
+      validTo: new Date(validTo),
+    });
+
+    it("un avenant à remise seule l'écrit sur SA fenêtre, et le journal la dit", async () => {
+      const { mercuriales, handler } = setup();
+
+      await run(handler, payload({ ...SUMMER, lines: [], generalDiscount: { set: DISCOUNT } }));
+
+      const [written] = mercuriales.written;
+      const amendment = written?.mercuriale.amendments.at(-1);
+      expect(amendment?.generalDiscount).toEqual({ set: DISCOUNT });
+      expect(written?.act.summary).toMatch(/remise générale −20 % du /);
+    });
+
+    it("`{ set: null }` arrête la remise, et le journal dit « sans remise générale »", async () => {
+      const { mercuriales, handler } = setup();
+
+      await run(handler, payload({ ...SUMMER, lines: [], generalDiscount: { set: null } }));
+
+      const [written] = mercuriales.written;
+      expect(written?.mercuriale.amendments.at(-1)?.generalDiscount).toEqual({ set: null });
+      expect(written?.act.summary).toContain("sans remise générale");
+    });
+
+    it("🔴 Q2 : refuse une remise sur une fenêtre qu'un engagement recouvre, sans rien écrire", async () => {
+      const { mercuriales, handler } = setup({
+        commitments: [commitment("2026-06-20T00:00:00.000Z", "2026-08-01T00:00:00.000Z")],
+      });
+
+      await expect(
+        run(handler, payload({ ...SUMMER, lines: [], generalDiscount: { set: DISCOUNT } })),
+      ).rejects.toBeInstanceOf(GeneralDiscountOverVolumeCommitmentError);
+      expect(mercuriales.written).toEqual([]);
+    });
+
+    it("Q2 : un engagement hors de la fenêtre de l'avenant ne bloque rien", async () => {
+      const { mercuriales, handler } = setup({
+        commitments: [commitment("2026-09-01T00:00:00.000Z", "2026-10-01T00:00:00.000Z")],
+      });
+
+      await run(handler, payload({ ...SUMMER, lines: [], generalDiscount: { set: DISCOUNT } }));
+
+      expect(mercuriales.written).toHaveLength(1);
+    });
+
+    it("Q2 : arrêter la remise reste permis sous engagement", async () => {
+      const { mercuriales, handler } = setup({
+        commitments: [commitment("2026-06-20T00:00:00.000Z", "2026-08-01T00:00:00.000Z")],
+      });
+
+      await run(handler, payload({ ...SUMMER, lines: [], generalDiscount: { set: null } }));
+
+      expect(mercuriales.written).toHaveLength(1);
+    });
   });
 });

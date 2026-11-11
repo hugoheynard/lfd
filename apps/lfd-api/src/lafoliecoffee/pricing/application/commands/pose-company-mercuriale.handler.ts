@@ -19,6 +19,8 @@ import { SaleReferenceReader } from "../../domain/ports/sale-reference.reader.js
 import { assertNotReservedElsewhere, assertOnSale } from "./sale-reference-support.js";
 import { ReservedElsewhereReader } from "../../domain/ports/reserved-elsewhere.reader.js";
 import { PoseCompanyMercurialeCommand } from "./pose-company-mercuriale.command.js";
+import { VolumeCommitmentReader } from "../../domain/ports/volume-commitment.reader.js";
+import { assertNoVolumeCommitmentUnder, generalDiscountOf } from "./general-discount-support.js";
 
 @CommandHandler(PoseCompanyMercurialeCommand)
 export class PoseCompanyMercurialeHandler implements ICommandHandler<
@@ -34,6 +36,7 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
     private readonly references: SaleReferenceReader,
     private readonly reservations: ReservedElsewhereReader,
     private readonly promotionNames: PolicyPromotionNamesReader,
+    private readonly commitments: VolumeCommitmentReader,
   ) {}
 
   /**
@@ -62,6 +65,8 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
    * @throws {SaleReferenceWithdrawnError} une ligne vise un article retiré.
    * @throws {ReservedArticleRefusedError} une ligne vise un article réservé à un autre compte.
    * @throws les refus de `namedPolicy` (politique de promotions de départ).
+   * @throws {GeneralDiscountOverVolumeCommitmentError} une remise générale chez
+   *   un client dont un engagement de volume recouvre la période (Q2).
    */
   async execute(command: PoseCompanyMercurialeCommand): Promise<number> {
     const { companyId, payload, staffUserId } = command;
@@ -88,6 +93,12 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
       this.promotionNames,
       payload.promotionPolicy ?? NO_PROMOTION_ADMITTED,
     );
+
+    const generalDiscount =
+      payload.generalDiscount == null ? null : generalDiscountOf(payload.generalDiscount);
+    if (generalDiscount !== null) {
+      await assertNoVolumeCommitmentUnder(this.commitments, companyId, validFrom, validTo);
+    }
 
     const running = await this.mercuriales.runningFor(companyId, validFrom, validTo);
     if (running !== null) {
@@ -129,6 +140,7 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
         validFrom,
         validTo,
         promotionPolicy: promotions.policy,
+        generalDiscount,
       },
       staffUserId,
     );

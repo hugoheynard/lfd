@@ -103,15 +103,51 @@ export class PrismaSaleReferenceUsage extends SaleReferenceUsage {
   }
 
   /**
-   * Une mercuriale : sa grille, ou l'un de ses avenants datés — un article
-   * ajouté par avenant a été négocié dans l'unité d'alors, comme la grille.
+   * Une mercuriale : sa grille, l'un de ses avenants datés — un article
+   * ajouté par avenant a été négocié dans l'unité d'alors, comme la grille —,
+   * ou une ligne `variant` de sa remise générale, taux ou exclusion
+   * (`plan-remise-generale.md`, § 4).
    */
   private async mercuriales(skus: readonly string[]): Promise<ReadonlySet<string>> {
-    const [grids, amendments] = await Promise.all([
+    const [grids, amendments, discounts, amendedDiscounts] = await Promise.all([
       this.inLines(this.prisma.companyMercuriale, skus),
       this.inLines(this.prisma.companyMercurialeAmendment, skus),
+      this.inDiscounts(this.prisma.companyMercuriale, skus),
+      this.inDiscounts(this.prisma.companyMercurialeAmendment, skus),
     ]);
-    return new Set([...grids, ...amendments]);
+    return new Set([...grids, ...amendments, ...discounts, ...amendedDiscounts]);
+  }
+
+  /** Une remise générale `{ rules: [{ target: "variant", targetId }] }` en JSON. */
+  private async inDiscounts(
+    table: {
+      findFirst(args: {
+        where: {
+          generalDiscount: {
+            path: string[];
+            array_contains: { target: string; targetId: string }[];
+          };
+        };
+        select: { id: true };
+      }): Promise<unknown>;
+    },
+    skus: readonly string[],
+  ): Promise<ReadonlySet<string>> {
+    const hits = await Promise.all(
+      skus.map(async (sku) => {
+        const row = await table.findFirst({
+          where: {
+            generalDiscount: {
+              path: ["rules"],
+              array_contains: [{ target: "variant", targetId: sku }],
+            },
+          },
+          select: { id: true },
+        });
+        return row === null ? null : sku;
+      }),
+    );
+    return new Set(hits.filter((sku): sku is string => sku !== null));
   }
 
   /** Les réassorts : demandés, reçus, ou en brouillon au fournil. */

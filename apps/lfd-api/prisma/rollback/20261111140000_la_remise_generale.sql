@@ -1,0 +1,25 @@
+-- RETOUR ARRIÈRE de 20261111140000_la_remise_generale
+-- (documentation/pricing/mercuriales/plan-remise-generale.md, § 3).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
+-- « appliquée ».
+--
+-- Le code d'avant ignore ces colonnes : le retour arrière est le retour du
+-- code seul. ⚠️ Une mercuriale posée avec une remise générale et sans prix
+-- ferme serait alors relue sans contenu (aucun prix appliqué). Retirer les
+-- colonnes serait un resserrement ultérieur, sur décision de Hugo :
+--
+--   ALTER TABLE public.mercuriale_drafts
+--     DROP CONSTRAINT mercuriale_drafts_general_discount_shape,
+--     DROP COLUMN general_discount;
+--   ALTER TABLE public.company_mercuriale_amendments
+--     DROP CONSTRAINT company_mercuriale_amendments_general_discount_shape,
+--     DROP CONSTRAINT company_mercuriale_amendments_general_discount_set,
+--     DROP COLUMN general_discount_set,
+--     DROP COLUMN general_discount;
+--   ALTER TABLE public.company_mercuriales
+--     DROP CONSTRAINT company_mercuriales_general_discount_shape,
+--     DROP COLUMN general_discount;
+--   DROP FUNCTION public.general_discount_shape_ok(jsonb);
+
+SELECT 1;

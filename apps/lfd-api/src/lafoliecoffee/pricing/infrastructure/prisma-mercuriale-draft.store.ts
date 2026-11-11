@@ -1,11 +1,14 @@
 import {
   MERCURIALE_PROMOTION_MODE_VALUES,
+  type GeneralDiscountPayload,
   type MercurialePromotionModeValue,
   type SaveMercurialeDraftPayload,
 } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
+import { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { generalDiscountJson, parsedGeneralDiscount } from "./general-discount-rows.js";
 import {
   MercurialeDraftStore,
   type StoredMercurialeDraft,
@@ -37,6 +40,8 @@ export class PrismaMercurialeDraftStore extends MercurialeDraftStore {
       validTo: row.validTo?.toISOString() ?? null,
       lines: linesOf(row.lines),
       promotionPolicy: promotionPolicyOf(row.promotionMode, row.promotionIds),
+      // Un brouillon ne tarife rien : une remise illisible y redevient « aucune ».
+      generalDiscount: draftGeneralDiscountOf(row.generalDiscount),
       updatedBy: row.updatedBy,
       updatedAt: row.updatedAt.toISOString(),
     };
@@ -56,6 +61,11 @@ export class PrismaMercurialeDraftStore extends MercurialeDraftStore {
       // Absente = « Aucune promotion » (`plan-la-mercuriale-decide.md`, § 8).
       promotionMode: payload.promotionPolicy?.mode ?? "none",
       promotionIds: [...(payload.promotionPolicy?.promotionIds ?? [])],
+      // `DbNull` est l'ABSENCE de remise, pas un `null` JSON.
+      generalDiscount:
+        payload.generalDiscount == null
+          ? Prisma.DbNull
+          : generalDiscountJson(payload.generalDiscount),
       updatedBy: staffUserId,
     };
     await this.prisma.mercurialeDraft.upsert({
@@ -93,6 +103,12 @@ function promotionPolicyOf(
   return known === undefined
     ? { mode: "none", promotionIds: [] }
     : { mode: known, promotionIds: [...promotionIds] };
+}
+
+/** La remise envisagée, sur le fil ; illisible = aucune. */
+function draftGeneralDiscountOf(raw: unknown): GeneralDiscountPayload | null {
+  const discount = raw === null ? null : parsedGeneralDiscount(raw);
+  return discount === null ? null : generalDiscountJson(discount);
 }
 
 function linesOf(raw: unknown): { sku: string; unitPriceMillicents: number }[] {

@@ -6,6 +6,12 @@ import {
   type MercurialePromotionPolicyView,
 } from "./mercuriale-promotion-policy.js";
 import { discountLabelIn, type DiscountLabelView } from "./discount-label.js";
+import {
+  generalDiscountChangeSchema,
+  generalDiscountSchema,
+  type GeneralDiscountChangeView,
+  type GeneralDiscountView,
+} from "./mercuriale-general-discount.js";
 
 /**
  * ## L'unité de l'argent, dans tout ce fichier
@@ -1836,6 +1842,11 @@ export interface PosedMercurialeAmendmentView {
    * touche pas (`plan-la-mercuriale-decide.md`, § 8).
    */
   readonly promotionPolicy?: MercurialePromotionPolicyView | null;
+  /**
+   * Ce qu'il dit de la remise générale, sur SA fenêtre, ou `null` s'il n'y
+   * touche pas (`plan-remise-generale.md`, § 2.1).
+   */
+  readonly generalDiscount?: GeneralDiscountChangeView | null;
   readonly createdBy: string;
   readonly createdByName: string | null;
 }
@@ -1909,6 +1920,14 @@ export interface PosedMercurialeView {
   readonly promotionPolicy?: MercurialePromotionPolicyView;
   /** Sa politique de DÉPART, posée avec elle. */
   readonly initialPromotionPolicy?: MercurialePromotionPolicyView;
+  /**
+   * **Sa remise générale à l'instant de la lecture** — à son début si elle
+   * n'a pas commencé —, ou `null` : aucune, ou un avenant l'arrête
+   * (`plan-remise-generale.md`). Celle des avenants se lit sur eux.
+   */
+  readonly generalDiscount?: GeneralDiscountView | null;
+  /** Sa remise générale de DÉPART, posée avec elle, ou `null`. */
+  readonly initialGeneralDiscount?: GeneralDiscountView | null;
 }
 
 export interface CompanyPricingView {
@@ -1926,8 +1945,14 @@ export interface CompanyPricingView {
    */
   readonly negotiatedSkuCount: number;
   /**
+   * Sur combien d'articles la **remise générale** d'une mercuriale fait le
+   * prix aujourd'hui — couverts, sans prix ferme (`plan-remise-generale.md`,
+   * § 4). Ils ne comptent ni dans `negotiatedSkuCount` ni dans `averageGapBp`.
+   */
+  readonly generalDiscountSkuCount: number;
+  /**
    * L'écart moyen au tarif catalogue, en points de base, sur les seuls articles
-   * scellés. **Signé** : positif = le client paie moins cher que le catalogue.
+   * scellés par un prix ferme. **Signé** : positif = le client paie moins cher que le catalogue.
    *
    * `null` quand aucun article n'est scellé — une moyenne sur rien vaudrait
    * « 0 % », ce qui se lirait « il paie le tarif », alors qu'il n'a pas de tarif
@@ -1969,13 +1994,19 @@ export const poseCompanyMercurialePayloadSchema = z.object({
   validFrom: z.string().datetime(),
   /** Borne haute **exclue**, comme partout dans ce contexte. `null` = sans fin. */
   validTo: z.string().datetime().nullable(),
-  /** Bornées à trois cents : le catalogue B2B en compte moins d'une centaine. */
-  lines: z.array(companyMercurialeLineSchema).min(1).max(300),
+  /**
+   * Bornées à trois cents : le catalogue B2B en compte moins d'une centaine.
+   * Vide admis à côté d'une remise générale ; le domaine refuse une
+   * mercuriale qui ne porte ni l'un ni l'autre.
+   */
+  lines: z.array(companyMercurialeLineSchema).max(300),
   /**
    * Sa politique de promotions de départ (`plan-la-mercuriale-decide.md`,
    * § 8). Absente = « Aucune promotion ».
    */
   promotionPolicy: mercurialePromotionPolicySchema.optional(),
+  /** Sa remise générale (`plan-remise-generale.md`). Absente ou `null` = aucune. */
+  generalDiscount: generalDiscountSchema.nullable().optional(),
 });
 export type PoseCompanyMercurialePayload = z.infer<typeof poseCompanyMercurialePayloadSchema>;
 
@@ -2071,6 +2102,11 @@ export const amendCompanyMercurialePayloadSchema = z.object({
    * qui ne porte qu'elle est valide.
    */
   promotionPolicy: mercurialePromotionPolicySchema.optional(),
+  /**
+   * Ce qu'il dit de la remise générale, sur sa fenêtre seulement :
+   * `{ set: null }` l'arrête, une valeur la remplace. Absent = rien.
+   */
+  generalDiscount: generalDiscountChangeSchema.optional(),
 });
 export type AmendCompanyMercurialePayload = z.infer<typeof amendCompanyMercurialePayloadSchema>;
 
@@ -2142,6 +2178,8 @@ export const saveMercurialeDraftPayloadSchema = z.object({
   lines: z.array(companyMercurialeLineSchema).max(300),
   /** La politique de promotions envisagée. Absente = « Aucune promotion ». */
   promotionPolicy: mercurialePromotionPolicySchema.optional(),
+  /** La remise générale envisagée. Absente ou `null` = aucune. */
+  generalDiscount: generalDiscountSchema.nullable().optional(),
 });
 export type SaveMercurialeDraftPayload = z.infer<typeof saveMercurialeDraftPayloadSchema>;
 

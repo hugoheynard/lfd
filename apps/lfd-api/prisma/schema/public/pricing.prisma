@@ -351,6 +351,11 @@ model CompanyMercuriale {
   promotionMode String   @default("none") @map("promotion_mode")
   promotionIds  String[] @default([]) @map("promotion_ids")
 
+  /// La remise générale du document (`plan-remise-generale.md`) :
+  /// `{ mode, baseBp, rules: [{ target, targetId, bp }] }`, `NULL` = aucune.
+  /// Forme tenue par CHECK (`general_discount_shape_ok`), revérifiée à la lecture.
+  generalDiscount Json? @map("general_discount")
+
   /// Ses avenants datés (`documentation/pricing/mercuriales/l-avenant-date.md`).
   amendments CompanyMercurialeAmendment[]
 
@@ -393,6 +398,12 @@ model CompanyMercurialeAmendment {
   /// pas. Même forme que sur la mercuriale (CHECK).
   promotionMode String?  @map("promotion_mode")
   promotionIds  String[] @default([]) @map("promotion_ids")
+
+  /// Ce que l'avenant dit de la remise générale, sur SA fenêtre :
+  /// `set = false` n'en dit rien, `set = true` et `NULL` l'arrête, une valeur
+  /// la remplace. CHECK : pas de valeur sans le drapeau.
+  generalDiscount    Json?   @map("general_discount")
+  generalDiscountSet Boolean @default(false) @map("general_discount_set")
 
   createdBy String   @map("created_by")
   /// Écrit par le domaine (horloge du handler) : l'ordre d'écriture décide de
@@ -453,6 +464,9 @@ model MercurialeDraft {
   /// (`plan-la-mercuriale-decide.md`, § 8). Même forme (CHECK).
   promotionMode String   @default("none") @map("promotion_mode")
   promotionIds  String[] @default([]) @map("promotion_ids")
+
+  /// La remise générale envisagée, même forme (CHECK) ; `NULL` = aucune.
+  generalDiscount Json? @map("general_discount")
 
   /// Qui l'a touché en dernier — la négociation se reprend souvent à deux.
   updatedBy String   @map("updated_by")

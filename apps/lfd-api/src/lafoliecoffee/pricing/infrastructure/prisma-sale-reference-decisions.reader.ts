@@ -60,6 +60,10 @@ export class PrismaSaleReferenceDecisionsReader extends SaleReferenceDecisionsRe
             OR: [
               { lines: { array_contains: [{ sku }] } },
               { amendments: { some: { archivedAt: null, lines: { array_contains: [{ sku }] } } } },
+              // Une ligne `variant` de la remise générale — taux ou exclusion —
+              // nomme aussi la référence (`plan-remise-generale.md`, § 4).
+              { generalDiscount: inDiscountRules(sku) },
+              { amendments: { some: { archivedAt: null, generalDiscount: inDiscountRules(sku) } } },
             ],
           },
         ],
@@ -168,6 +172,11 @@ export class PrismaSaleReferenceDecisionsReader extends SaleReferenceDecisionsRe
       origin: null,
     }));
   }
+}
+
+/** Le filtre `jsonb` d'une remise générale dont une ligne `variant` nomme ce SKU. */
+function inDiscountRules(sku: string) {
+  return { path: ["rules"], array_contains: [{ target: "variant", targetId: sku }] };
 }
 
 /** L'origine d'une décision reportée ; une forme inattendue lève. */

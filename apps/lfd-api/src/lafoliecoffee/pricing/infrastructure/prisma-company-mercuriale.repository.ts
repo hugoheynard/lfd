@@ -10,7 +10,13 @@ import { RunningMercurialeError } from "../domain/pricing-errors.js";
 import { MissingAmendmentInAggregateError } from "./mercuriale-lock-errors.js";
 import { PricingActWriter } from "./pricing-act.writer.js";
 import { isExclusionViolation } from "./exclusion-violation.js";
-import { LIVE_AMENDMENTS, mercurialeFromRow, promotionPolicyColumns } from "./mercuriale-rows.js";
+import {
+  LIVE_AMENDMENTS,
+  generalDiscountChangeColumns,
+  mercurialeFromRow,
+  promotionPolicyColumns,
+} from "./mercuriale-rows.js";
+import { generalDiscountJson } from "./general-discount-rows.js";
 import { currentTransaction } from "../../../platform/database/transaction.store.js";
 import { MercurialeLockOutsideTransactionError } from "./mercuriale-lock-errors.js";
 
@@ -69,6 +75,9 @@ export class PrismaCompanyMercurialeRepository extends CompanyMercurialeReposito
             validFrom: state.validFrom,
             validTo: state.validTo,
             ...promotionPolicyColumns(state.promotionPolicy),
+            ...(state.generalDiscount === null
+              ? {}
+              : { generalDiscount: generalDiscountJson(state.generalDiscount) }),
             createdBy: state.createdBy,
           },
         }),
@@ -176,6 +185,7 @@ export class PrismaCompanyMercurialeRepository extends CompanyMercurialeReposito
           ...(amendment.promotionPolicy == null
             ? {}
             : promotionPolicyColumns(amendment.promotionPolicy)),
+          ...generalDiscountChangeColumns(amendment.generalDiscount),
           ...(amendment.origin === null
             ? {}
             : {

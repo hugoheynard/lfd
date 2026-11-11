@@ -91,9 +91,66 @@ describe("posedMercurialeView — les avenants", () => {
         endedSkus: ["CRO-001"],
         // Il ne touche pas la politique de promotions (`plan-la-mercuriale-decide.md`, § 8).
         promotionPolicy: null,
+        // Ni la remise générale (`plan-remise-generale.md`).
+        generalDiscount: null,
         createdBy: "staff|paul",
         createdByName: null,
       },
     ]);
+  });
+});
+
+describe("posedMercurialeView — la remise générale", () => {
+  const DOCUMENT = { mode: "all_except" as const, baseBp: 3_000, rules: [] };
+  const SPRING = { mode: "all_except" as const, baseBp: 2_000, rules: [] };
+  const withDiscount = (): CompanyMercuriale =>
+    CompanyMercuriale.pose(
+      "merc_2",
+      {
+        companyId: "co_folie",
+        label: "Remise 2026",
+        lines: [],
+        validFrom: new Date("2026-01-01T00:00:00.000Z"),
+        validTo: new Date("2026-12-31T00:00:00.000Z"),
+        generalDiscount: DOCUMENT,
+      },
+      "staff|marie",
+    ).amend(
+      "amd_2",
+      {
+        lines: [],
+        endedSkus: [],
+        validFrom: new Date("2026-03-10T00:00:00.000Z"),
+        validTo: APRIL,
+        reason: "Printemps",
+        origin: null,
+        generalDiscount: { set: SPRING },
+      },
+      "staff|paul",
+      NOW,
+    );
+
+  it("rend la remise qui parle à l'instant de la lecture, et celle de départ", () => {
+    const projected = view(withDiscount());
+
+    expect(projected.generalDiscount).toEqual(SPRING);
+    expect(projected.initialGeneralDiscount).toEqual(DOCUMENT);
+    expect(projected.amendments?.[0]?.generalDiscount).toEqual({ set: SPRING });
+  });
+
+  it("après la fenêtre de l'avenant, la remise du document reparle", () => {
+    const projected = posedMercurialeView(
+      withDiscount(),
+      new Date("2026-05-01T00:00:00.000Z"),
+      (sku) => sku,
+      StaffAuthors.none(),
+    );
+
+    expect(projected.generalDiscount).toEqual(DOCUMENT);
+  });
+
+  it("une mercuriale sans remise rend `null`", () => {
+    expect(view(posed()).generalDiscount).toBeNull();
+    expect(view(posed()).initialGeneralDiscount).toBeNull();
   });
 });

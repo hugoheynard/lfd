@@ -23,6 +23,7 @@ import { posedMercurialeView } from "../posed-mercuriale-view.js";
 import { lotBuyerOf } from "../../domain/loaded-pricer.js";
 import { pricingContextFor } from "../../domain/pricing-context.js";
 import { CompanyMercurialeReader } from "../../domain/ports/company-mercuriale.reader.js";
+import type { CompanyMercuriale } from "../../domain/entities/company-mercuriale.js";
 import { PricingPartiesResolver } from "../pricing-parties.resolver.js";
 import { CatalogViewers } from "../../../catalog/application/catalog-viewers.service.js";
 
@@ -169,9 +170,7 @@ export class CompanyPricingQuery {
         ...mercuriale.amendments.map((amendment) => amendment.createdBy),
       ]),
     );
-    const sealed = measured.flatMap((category) =>
-      category.items.filter((item) => item.sealedByRuleId !== null),
-    );
+    const { firm, discounted } = sealedBy(measured, live, at);
 
     return {
       companyId,
@@ -191,8 +190,9 @@ export class CompanyPricingQuery {
           (sku) => reservedElsewhere.has(sku),
         ),
       ),
-      negotiatedSkuCount: sealed.length,
-      averageGapBp: averageGapBp(sealed),
+      negotiatedSkuCount: firm.length,
+      generalDiscountSkuCount: discounted.length,
+      averageGapBp: averageGapBp(firm),
     };
   }
 
@@ -207,6 +207,29 @@ export class CompanyPricingQuery {
       throw new PricedCompanyNotFoundError(companyId);
     }
   }
+}
+
+/**
+ * **Les articles scellés, partagés en deux** (`plan-remise-generale.md`, § 4) :
+ * ceux qu'un prix ferme fait, et ceux que la remise générale de la mercuriale
+ * vivante fait — scellés par elle, sans ligne de prix ferme à cet instant.
+ * `negotiatedSkuCount` et `averageGapBp` gardent leur sens : les prix fermes.
+ */
+function sealedBy(
+  categories: readonly CompanyPricingCategoryView[],
+  live: CompanyMercuriale | null,
+  at: Date,
+): { readonly firm: PricingItemView[]; readonly discounted: PricingItemView[] } {
+  const firmSkus = new Set(live?.linesAt(at).map((line) => line.sku) ?? []);
+  const sealed = categories.flatMap((category) =>
+    category.items.filter((item) => item.sealedByRuleId !== null),
+  );
+  const byDiscount = (item: PricingItemView): boolean =>
+    live !== null && item.sealedByRuleId === live.id && !firmSkus.has(item.sku);
+  return {
+    firm: sealed.filter((item) => !byDiscount(item)),
+    discounted: sealed.filter(byDiscount),
+  };
 }
 
 /**
