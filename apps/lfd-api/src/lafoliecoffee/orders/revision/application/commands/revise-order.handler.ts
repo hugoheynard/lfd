@@ -95,6 +95,10 @@ export class ReviseOrderHandler implements ICommandHandler<ReviseOrderCommand, R
       revision: revision.toRevision,
       totalCents: revision.totalAfterCents,
       previousTotalCents: revision.totalBeforeCents,
+      pretaxCents: revision.pretaxAfterCents,
+      previousPretaxCents: revision.pretaxBeforeCents,
+      onAccount: revision.onAccount,
+      forCompany: current.companyId !== null,
     };
   }
 

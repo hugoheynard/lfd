@@ -517,6 +517,16 @@
       "subject": "Commande ORD-4812 modifiée à votre demande",
       "htmlSha256": "68bbbfa2d050403bb3b3af435a1d85534d1674ce24a8054bea04380c5c39dba1",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    },
+    "proOnAccount": {
+      "subject": "Commande ORD-4812 modifiée à votre demande",
+      "htmlSha256": "40be2289995227ded99846385e13e337d91dae67b21f38bba88d2db427547afd",
+      "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    },
+    "proByCard": {
+      "subject": "Commande ORD-4812 modifiée à votre demande",
+      "htmlSha256": "3c63a48dcb2432eee56aa5224767f42ae01b7292e6c934e225c7fa3e912a11fc",
+      "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },
   "customer.order-change-refused": {

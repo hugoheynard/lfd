@@ -306,7 +306,12 @@ Le §7 du plan A2 l'a emporté sur ses §§1 à 5, et c'est lui que le code tien
   l'applicateur. Tout refus du geste remonte avec sa phrase ; la demande
   reste en attente.
 - Courriels `customer.order-change-applied` (nouveau total et écart, tirés de
-  l'entrée de révision) et `customer.order-change-refused`.
+  l'entrée de révision) et `customer.order-change-refused`. Le total s'écrit
+  comme dans `customer.order-revised` (§ 2.8, `orderTotalFormFor`) : HT seul
+  pour un pro au compte, TTC puis HT pour un pro par carte, TTC seul pour un
+  particulier. L'écart suit : en HT pour le pro au compte, en TTC sinon (le
+  montant payé ou rendu). La révision rend à l'applicateur les HT avant et
+  après, le règlement au compte (`onAccount`) et la société (`forCompany`).
 
 ### 2.6 L'argent au compte
 

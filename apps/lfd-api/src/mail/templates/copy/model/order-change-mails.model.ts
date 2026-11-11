@@ -14,9 +14,20 @@ export interface OrderChangeAppliedCopy {
   readonly title: string;
   /** `{ref}`. */
   readonly intro: string;
-  /** Le libellé du nouveau total TTC, lu sur la révision appliquée. */
+  /** Le libellé du nouveau total d'un particulier, en TTC. */
   readonly totalLabel: string;
-  /** Le total a monté. `{amount}` = l'écart, `{previous}` = l'ancien total. */
+  /** Le libellé du nouveau total d'un pro au compte, hors taxe (F5). */
+  readonly totalLabelPretax: string;
+  /** Le libellé du nouveau total d'un pro qui paie par carte, écrit par {@link bothAmounts}. */
+  readonly totalLabelBoth: string;
+  /** Un total d'un pro au compte, hors taxe. `{pretax}`. */
+  readonly pretaxAmount: string;
+  /** Un total d'un pro qui paie par carte : le TTC payé d'abord, puis le HT. `{withTax}`, `{pretax}`. */
+  readonly bothAmounts: string;
+  /**
+   * Le total a monté. `{amount}` = l'écart, `{previous}` = l'ancien total —
+   * en HT pour un pro au compte, en TTC sinon (le montant payé ou rendu).
+   */
   readonly moreToPay: string;
   /** Le total a baissé. `{amount}`, `{previous}`. */
   readonly lessToPay: string;

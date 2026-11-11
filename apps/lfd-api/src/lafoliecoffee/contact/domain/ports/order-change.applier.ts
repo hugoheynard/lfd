@@ -9,6 +9,13 @@ export interface AppliedOrderChange {
   readonly revision: number;
   readonly totalCents: number;
   readonly previousTotalCents: number;
+  /** Les HT après et avant, en centimes : l'e-mail d'un pro les dit. */
+  readonly pretaxCents: number;
+  readonly previousPretaxCents: number;
+  /** La commande se règle au compte : son total se dit hors taxe. */
+  readonly onAccount: boolean;
+  /** La commande est passée pour une société (un pro), et non pour soi. */
+  readonly forCompany: boolean;
 }
 
 /**

@@ -24,7 +24,9 @@ import { RefuseOrderChangeCommand } from "../refuse-order-change.command.js";
 import { RefuseOrderChangeHandler } from "../refuse-order-change.handler.js";
 import { Directory, MemoryRequests } from "./contact-doubles.js";
 import {
+  APPLIED_PREVIOUS_PRETAX_CENTS,
   APPLIED_PREVIOUS_TOTAL_CENTS,
+  APPLIED_PRETAX_CENTS,
   APPLIED_TOTAL_CENTS,
   RecordingApplier,
   RevisionRefused,
@@ -121,6 +123,10 @@ describe("ApplyOrderChangeHandler", () => {
       revision: 2,
       totalCents: APPLIED_TOTAL_CENTS,
       previousTotalCents: APPLIED_PREVIOUS_TOTAL_CENTS,
+      pretaxCents: APPLIED_PRETAX_CENTS,
+      previousPretaxCents: APPLIED_PREVIOUS_PRETAX_CENTS,
+      onAccount: false,
+      forCompany: false,
     });
   });
 
@@ -143,6 +149,10 @@ describe("ApplyOrderChangeHandler", () => {
           reference: "ORD-0001",
           totalCents: APPLIED_TOTAL_CENTS,
           previousTotalCents: APPLIED_PREVIOUS_TOTAL_CENTS,
+          pretaxCents: APPLIED_PRETAX_CENTS,
+          previousPretaxCents: APPLIED_PREVIOUS_PRETAX_CENTS,
+          onAccount: false,
+          variant: "public",
           locale: "fr",
         },
       }),

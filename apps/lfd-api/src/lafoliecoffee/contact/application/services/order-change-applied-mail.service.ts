@@ -32,6 +32,10 @@ export class OrderChangeAppliedMail {
         reference: order.number,
         totalCents: event.applied.totalCents,
         previousTotalCents: event.applied.previousTotalCents,
+        pretaxCents: event.applied.pretaxCents,
+        previousPretaxCents: event.applied.previousPretaxCents,
+        onAccount: event.applied.onAccount,
+        variant: event.applied.forCompany ? "pro" : "public",
         locale: DEFAULT_MAIL_LOCALE,
       },
     });

@@ -341,6 +341,12 @@
     },
     "unchanged": {
       "textSha256": "1b857759bc75a67f150168c8dd1e24993284dc91a6102dd68068e692fc8f97dd"
+    },
+    "proOnAccount": {
+      "textSha256": "457054b9068bf4140edc0ac746618544bcf084e102630bf82dd17cdccbc313e8"
+    },
+    "proByCard": {
+      "textSha256": "d17a4cc1e8adcd2f93cf3c15609f7126b42f04e55c6118ac8be65ba0c0ada8db"
     }
   },
   "customer.order-change-refused": {

@@ -2720,6 +2720,36 @@
         "required": [],
         "fr": "Nouveau total TTC"
       },
+      "totalLabelPretax": {
+        "variables": [],
+        "required": [],
+        "fr": "Nouveau total HT"
+      },
+      "totalLabelBoth": {
+        "variables": [],
+        "required": [],
+        "fr": "Nouveau total"
+      },
+      "pretaxAmount": {
+        "variables": [
+          "pretax"
+        ],
+        "required": [
+          "pretax"
+        ],
+        "fr": "{pretax} HT"
+      },
+      "bothAmounts": {
+        "variables": [
+          "withTax",
+          "pretax"
+        ],
+        "required": [
+          "withTax",
+          "pretax"
+        ],
+        "fr": "{withTax} TTC ({pretax} HT)"
+      },
       "moreToPay": {
         "variables": [
           "amount",

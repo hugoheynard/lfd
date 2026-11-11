@@ -1,5 +1,6 @@
 import type { ClientSheet } from "@lfd/contracts";
 
+import { orderTotalFormFor } from "../../order-total-form.js";
 import { orderTotalFormOf } from "../../order-total-form.js";
 import { SPECIMEN_MARK } from "../mail-specimen.types.js";
 import { PRESENCE, presence, specimenCase, specimenOnly, variantCase } from "./case-builders.js";
@@ -123,11 +124,32 @@ export const ORDER_ANSWER_CASE_TABLES: Pick<
       variantCase("customer.order-change-applied", "lower", "Total en baisse", (data) => ({
         ...data,
         totalCents: data.previousTotalCents - 800,
+        pretaxCents: data.previousPretaxCents - 758,
       })),
       variantCase("customer.order-change-applied", "unchanged", "Total inchangé", (data) => ({
         ...data,
         totalCents: data.previousTotalCents,
+        pretaxCents: data.previousPretaxCents,
       })),
+      variantCase(
+        "customer.order-change-applied",
+        "proOnAccount",
+        "Pro au compte (HT)",
+        (data) => ({
+          ...data,
+          variant: "pro",
+          onAccount: true,
+        }),
+      ),
+      variantCase(
+        "customer.order-change-applied",
+        "proByCard",
+        "Pro par carte (TTC puis HT)",
+        (data) => ({
+          ...data,
+          variant: "pro",
+        }),
+      ),
     ],
     axes: [
       {
@@ -139,6 +161,11 @@ export const ORDER_ANSWER_CASE_TABLES: Pick<
             : data.totalCents < data.previousTotalCents
               ? "lower"
               : "unchanged",
+      },
+      {
+        id: "form",
+        values: ["pretax", "both", "with_tax"],
+        of: (data) => orderTotalFormFor(data.onAccount, data.variant),
       },
     ],
   },

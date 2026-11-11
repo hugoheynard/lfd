@@ -170,7 +170,8 @@ export const ORDER_VALUE_CARDS: Pick<
   },
   previous: {
     label: "Ancien total",
-    description: "Le total TTC de la commande avant la modification.",
+    description:
+      "Le total de la commande avant la modification, écrit comme le nouveau : HT pour un pro au compte, TTC puis HT pour un pro par carte, TTC pour un particulier.",
     example: "38,00 €",
     senses: {
       "customer.order-change-applied": SAME_SENSE,
@@ -181,13 +182,31 @@ export const ORDER_VALUE_CARDS: Pick<
     label: "Montant HT",
     description:
       "Un total de la commande hors taxe, dans la phrase d'un pro : seul s'il est au compte, après le TTC s'il paie par carte.",
-    example: "12,96 €",
+    example: "40,28 €",
+    senses: {
+      "customer.order-change-applied": SAME_SENSE,
+      "customer.order-revised": {
+        label: "Montant HT",
+        description:
+          "Un total de la commande hors taxe, dans la phrase d'un pro : seul s'il est au compte, après le TTC s'il paie par carte.",
+        example: "12,96 €",
+      },
+    },
   },
   withTax: {
     label: "Montant TTC",
     description:
       "Un total de la commande toutes taxes comprises, d'un pro qui paie par carte : le montant payé.",
-    example: "13,67 €",
+    example: "42,50 €",
+    senses: {
+      "customer.order-change-applied": SAME_SENSE,
+      "customer.order-revised": {
+        label: "Montant TTC",
+        description:
+          "Un total de la commande toutes taxes comprises, d'un pro qui paie par carte : le montant payé.",
+        example: "13,67 €",
+      },
+    },
   },
   product: {
     label: "Produit",

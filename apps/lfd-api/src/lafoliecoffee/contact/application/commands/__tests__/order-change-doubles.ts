@@ -77,6 +77,8 @@ export class RevisionRefused extends BusinessError {
 /** Les totaux que la révision doublée rend : 42,50 € après, 38,00 € avant. */
 export const APPLIED_TOTAL_CENTS = 4250;
 export const APPLIED_PREVIOUS_TOTAL_CENTS = 3800;
+export const APPLIED_PRETAX_CENTS = 4028;
+export const APPLIED_PREVIOUS_PRETAX_CENTS = 3602;
 
 /** La révision, notée ; `refuse` la fait refuser comme la règle des commandes. */
 export class RecordingApplier extends OrderChangeApplier {
@@ -111,6 +113,10 @@ export class RecordingApplier extends OrderChangeApplier {
       revision: baseRevision + 1,
       totalCents: APPLIED_TOTAL_CENTS,
       previousTotalCents: APPLIED_PREVIOUS_TOTAL_CENTS,
+      pretaxCents: APPLIED_PRETAX_CENTS,
+      previousPretaxCents: APPLIED_PREVIOUS_PRETAX_CENTS,
+      onAccount: false,
+      forCompany: false,
     });
   }
 }

@@ -11,7 +11,16 @@ import { OrderChangeAppliedMail } from "../order-change-applied-mail.service.js"
 import { OrderChangeRefusedMail } from "../order-change-refused-mail.service.js";
 
 const SUBJECT = { requestId: "q1", order: ORDER, baseRevision: 1 };
-const APPLIED = { revision: 2, totalCents: 4250, previousTotalCents: 3800 };
+/** Une commande passée pour une société, réglée au compte. */
+const APPLIED = {
+  revision: 2,
+  totalCents: 4250,
+  previousTotalCents: 3800,
+  pretaxCents: 4028,
+  previousPretaxCents: 3602,
+  onAccount: true,
+  forCompany: true,
+};
 
 function recording(): { uow: OpenableUnitOfWork; mails: RecordingMail } {
   const uow = new OpenableUnitOfWork();
@@ -33,7 +42,16 @@ describe("les courriels de réponse à une demande de modification", () => {
         template: "customer.order-change-applied",
         idempotencyKey: "order-change-applied:q1",
         subjects: [{ type: "order", id: ORDER.id }],
-        data: { reference: "ORD-0001", totalCents: 4250, previousTotalCents: 3800, locale: "fr" },
+        data: {
+          reference: "ORD-0001",
+          totalCents: 4250,
+          previousTotalCents: 3800,
+          pretaxCents: 4028,
+          previousPretaxCents: 3602,
+          onAccount: true,
+          variant: "pro",
+          locale: "fr",
+        },
       },
     ]);
   });

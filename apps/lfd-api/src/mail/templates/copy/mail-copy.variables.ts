@@ -173,6 +173,8 @@ const DECLARED_VARIABLES = {
     intro: ["ref"],
     moreToPay: ["amount", "previous"],
     lessToPay: ["amount", "previous"],
+    pretaxAmount: ["pretax"],
+    bothAmounts: ["withTax", "pretax"],
   },
   "customer.order-change-refused": { subject: ["ref"], intro: ["ref"] },
   "customer.order-shortfall": {

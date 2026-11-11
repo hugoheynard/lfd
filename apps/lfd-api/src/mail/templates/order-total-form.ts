@@ -1,4 +1,4 @@
-import type { ClientSheet } from "@lfd/contracts";
+import type { ClientSheet, SheetVariant } from "@lfd/contracts";
 
 /**
  * **Le total d'un pro au compte se dit hors taxe** (F5, plan
@@ -24,8 +24,16 @@ export function totalIsPretaxOnly(sheet: ClientSheet): boolean {
 export type OrderTotalForm = "pretax" | "both" | "with_tax";
 
 export function orderTotalFormOf(sheet: ClientSheet): OrderTotalForm {
-  if (totalIsPretaxOnly(sheet)) {
+  return orderTotalFormFor(totalIsPretaxOnly(sheet), sheet.variant);
+}
+
+/**
+ * La même règle, pour un e-mail qui n'a pas de feuille : `onAccount` = la
+ * commande se règle au compte, `variant` = pro ou public.
+ */
+export function orderTotalFormFor(onAccount: boolean, variant: SheetVariant): OrderTotalForm {
+  if (onAccount) {
     return "pretax";
   }
-  return sheet.variant === "pro" ? "both" : "with_tax";
+  return variant === "pro" ? "both" : "with_tax";
 }

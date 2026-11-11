@@ -47,8 +47,27 @@ export const ORDER_CHANGE_MAIL_LAYOUTS: Readonly<
     header: KICKER,
     sections: [
       { id: "title", texts: texts("title") },
-      { id: "body", texts: texts("intro", "moreToPay", "lessToPay", "sameTotal", "where") },
-      { id: "summary", texts: texts("totalLabel") },
+      {
+        id: "body",
+        texts: [
+          ...texts("intro", "moreToPay", "lessToPay", "sameTotal"),
+          ...variants({
+            pretaxAmount: "Un montant, pro au compte (HT)",
+            bothAmounts: "Un montant, pro par carte (TTC puis HT)",
+          }),
+          ...texts("where"),
+        ],
+      },
+      {
+        id: "summary",
+        texts: [
+          ...variants({
+            totalLabel: "Libellé du total, particulier (TTC)",
+            totalLabelPretax: "Libellé du total, pro au compte (HT)",
+            totalLabelBoth: "Libellé du total, pro par carte",
+          }),
+        ],
+      },
       { id: "footer", texts: texts("footer") },
     ],
   },

@@ -34,4 +34,10 @@ export interface ReviseOrderResult {
   readonly revision: number;
   readonly totalCents: number;
   readonly previousTotalCents: number;
+  readonly pretaxCents: number;
+  readonly previousPretaxCents: number;
+  /** La commande se règle au compte après la révision. */
+  readonly onAccount: boolean;
+  /** La commande est passée pour une société. */
+  readonly forCompany: boolean;
 }

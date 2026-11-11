@@ -49,6 +49,10 @@ export class BusOrderChangeApplier extends OrderChangeApplier {
       revision: result.revision,
       totalCents: result.totalCents,
       previousTotalCents: result.previousTotalCents,
+      pretaxCents: result.pretaxCents,
+      previousPretaxCents: result.previousPretaxCents,
+      onAccount: result.onAccount,
+      forCompany: result.forCompany,
     };
   }
 }

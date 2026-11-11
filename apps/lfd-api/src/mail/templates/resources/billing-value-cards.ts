@@ -43,7 +43,8 @@ export const BILLING_VALUE_CARDS: Pick<
       },
       "customer.order-change-applied": {
         label: "Écart de total",
-        description: "La différence entre le nouveau total TTC et l'ancien, en plus ou en moins.",
+        description:
+          "La différence entre le nouveau total et l'ancien, en plus ou en moins : en HT pour un pro au compte, en TTC sinon.",
         example: "4,50 €",
       },
     },
