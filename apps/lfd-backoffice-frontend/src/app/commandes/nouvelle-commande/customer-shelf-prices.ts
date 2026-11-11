@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 
-import type { CustomerShelfPricesView } from '@lfd/contracts';
+import type { CustomerShelfPriceView, CustomerShelfPricesView } from '@lfd/contracts';
 import { formatCents, formatMillicents } from '@lfd/b2b-ui/order';
 
 import { serverMessageOf } from '../../production/server-message';
@@ -50,21 +50,35 @@ export function shelfPriceIndexOf(view: CustomerShelfPricesView | null): ShelfPr
       if (item.lockedReason !== null) {
         return [item.sku, { kind: 'locked' }];
       }
-      const struck = pro ? item.struckFromMillicents : item.struckFromTtcCents;
       return [
         item.sku,
         {
           kind: 'priced',
-          price: pro
-            ? formatMillicents(item.unitPriceMillicents)
-            : formatCents(item.unitPriceTtcCents),
-          struckFrom: struck === null ? null : pro ? formatMillicents(struck) : formatCents(struck),
+          ...(pro ? proLabels(item) : publicLabels(item)),
           suffix: pro ? 'HT' : 'TTC',
           unitPriceMillicents: item.unitPriceMillicents,
         },
       ];
     }),
   );
+}
+
+/** Le prix d'un pro : HT, en millicentimes. */
+function proLabels(item: CustomerShelfPriceView): { price: string; struckFrom: string | null } {
+  const struck = item.struckFromMillicents;
+  return {
+    price: formatMillicents(item.unitPriceMillicents),
+    struckFrom: struck === null ? null : formatMillicents(struck),
+  };
+}
+
+/** Le prix d'un particulier : TTC, en centimes. */
+function publicLabels(item: CustomerShelfPriceView): { price: string; struckFrom: string | null } {
+  const struck = item.struckFromTtcCents;
+  return {
+    price: formatCents(item.unitPriceTtcCents),
+    struckFrom: struck === null ? null : formatCents(struck),
+  };
 }
 
 /**
