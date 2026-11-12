@@ -5,6 +5,7 @@ import type { StorageResetReport } from "../../seeding/storage.seed.js";
 import { purgeCardPayments } from "./card-payment.purge.js";
 import { purgeCommerce } from "./commerce.purge.js";
 import { purgeDelivery } from "./delivery.purge.js";
+import { purgeSeedIntents } from "./intent.purge.js";
 import { purgeJournals } from "./journals.purge.js";
 import { purgeMailRequests } from "./mail.purge.js";
 import { purgeOutbox } from "./outbox.purge.js";
@@ -56,6 +57,9 @@ export async function purgeScenario(
   const outbox = await prisma.$transaction((tx) => purgeOutbox(tx, scope), options);
   // Le suivi des e-mails compte avec la boîte d'envoi : c'est le même envoi.
   const mails = await prisma.$transaction((tx) => purgeMailRequests(tx, scope), options);
+  // Les intentions de geste du semis comptent avec la boîte d'envoi : des
+  // traces techniques des gestes rejoués, sans métier propre.
+  const intents = await prisma.$transaction((tx) => purgeSeedIntents(tx), options);
   const commerce = await prisma.$transaction((tx) => purgeCommerce(tx, scope), options);
   // Les paiements par carte comptent avec leurs commandes ; transaction à
   // part, parce que leur garde `SET LOCAL` ne doit rien couvrir d'autre.
@@ -72,7 +76,7 @@ export async function purgeScenario(
       { category: "production", rows: production.rows },
       { category: "packing", rows: packing },
       { category: "delivery", rows: delivery.rows },
-      { category: "outbox", rows: outbox + mails },
+      { category: "outbox", rows: outbox + mails + intents },
       { category: "journals", rows: journals },
     ],
     orders: commerce.orders,

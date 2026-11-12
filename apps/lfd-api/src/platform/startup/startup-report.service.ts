@@ -124,6 +124,7 @@ export class StartupReport implements OnApplicationBootstrap {
       hasRoadRouting: this.config.routePlannerEndpoint() !== null,
       hasContainerMetrics: this.config.containerMetricsConfig() !== null,
       hasShelfCache: this.config.shopShelfCacheUrl() !== null,
+      hasDayVersionsCache: this.config.dayVersionsCacheUrl() !== null,
     };
   }
 }

@@ -36,6 +36,8 @@ export const GLOSSARY_INVOICES: Readonly<Record<string, string>> = {
   statusRejected: 'Statut : prélèvement rejeté',
   statusRecollectionPlanned: 'Statut : nouveau prélèvement prévu',
   statusSettled: 'Statut : réglée',
+  statusTransferExpected: 'Statut : virement attendu',
+  statusTransferOverdue: 'Statut : virement en retard',
   statusClosed: 'Statut : clôturée',
   statusProcessing: 'Statut : en cours de traitement',
   processingHint: 'En cours de traitement — précision',

@@ -117,17 +117,18 @@ describe("RecordBankTransferHandler — « virement reçu » (V7)", () => {
 
     await record();
 
+    const payload: unknown = expect.objectContaining({
+      amountCents: 15_455,
+      receivedOn: "2026-11-18",
+      invoices: ["FA-LFD-2026-000001", "FA-LFD-2026-000002"],
+      legalEntity: { id: "le1", name: "La Folie Douce" },
+    });
     expect(events.traced.map((event) => event.journalFact())).toEqual([
       expect.objectContaining({
         type: "bank_transfer.received",
         subjectType: "company",
         subjectId: "cmp_port",
-        payload: expect.objectContaining({
-          amountCents: 15_455,
-          receivedOn: "2026-11-18",
-          invoices: ["FA-LFD-2026-000001", "FA-LFD-2026-000002"],
-          legalEntity: { id: "le1", name: "La Folie Douce" },
-        }),
+        payload,
       }),
     ]);
     expect(ledger.resolutions).toEqual(["in tx"]);

@@ -83,9 +83,9 @@ export function engagementFrom(facts: OrderEngagementFacts): AccountEngagement |
       };
     case "written_off":
       return { kind: "written_off" };
+    // Réglée par un virement reçu : réglée hors prélèvement, comme
+    // `settled_otherwise`. Sa facture la fait lire `invoiced` avant ce choix.
     case "settled_otherwise":
-    // Réglée par un virement reçu : réglée hors prélèvement, comme la
-    // précédente. Sa facture la fait lire `invoiced` avant ce choix.
     case "settled_by_transfer":
       return { kind: "settled_otherwise" };
     case "cancelled":

@@ -140,11 +140,7 @@ describe("resetProduction", () => {
       type: { in: SEEDED_DAY_FACT_TYPES },
       OR: [{ payload: { path: ["serviceDay"], equals: "2026-10-05" } }],
     };
-    expect(purges).toEqual([
-      { message: where },
-      where,
-      { gesture: { in: ["packing.allocate", "packing.withdraw", "packing.transfer"] } },
-    ]);
+    expect(purges).toEqual([{ message: where }, where, { actorId: "seed|dev" }]);
     expect(SEEDED_DAY_FACT_TYPES).toContain("production.handed_to_packing");
     expect(report.facts).toBe(2);
   });

@@ -55,6 +55,11 @@ export interface CapabilitySnapshot {
    * Worker lui-même en production, absent en local et dans les e2e.
    */
   readonly hasShelfCache: boolean;
+  /**
+   * L'objet des journées : posé par le Worker lui-même en production, absent
+   * en local et dans les e2e.
+   */
+  readonly hasDayVersionsCache: boolean;
 }
 
 /**
@@ -291,6 +296,14 @@ const CHECKS: readonly Check[] = [
       "chaque rayon se calcule depuis la base à chaque visite : la boutique fonctionne, mais chaque visite coûte ses lectures, et l'interrupteur `ops_shelf_cache` répond que le cache n'est pas configuré",
     severity: "degraded",
     present: (s) => s.hasShelfCache,
+  },
+  {
+    capability: "Cache des numéros de journée",
+    setting: "DAY_VERSIONS_CACHE_URL (posée par le Worker de l'API)",
+    consequence:
+      "chaque question sur le numéro d'une journée relit la base : tout fonctionne, mais chaque lecture coûte une requête de plus",
+    severity: "degraded",
+    present: (s) => s.hasDayVersionsCache,
   },
 ];
 
