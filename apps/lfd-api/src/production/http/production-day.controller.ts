@@ -233,6 +233,9 @@ export class ProductionDayController {
    * `production_plan:write` : arrêter le compte n'est pas le même geste que
    * lire le plan (plan `documentation/fournil/arret-du-plan.md`, §6).
    */
+  @Idempotent(
+    "le rejeu ne change rien de faux : il réannonce l'arrêt du plan tel qu'il est (une réparation voulue, Hugo, 2026-11-12) — un retirage y apprend au commerce les commandes ajoutées, et les abonnés appliquent un état exact",
+  )
   @Post("batch/:date/close")
   @RequirePermission("production_count_stop:write")
   async close(

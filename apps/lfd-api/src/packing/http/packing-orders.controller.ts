@@ -32,6 +32,9 @@ const NO_CONTENT = 204;
 export class PackingOrdersController {
   constructor(private readonly commands: CommandBus) {}
 
+  @Idempotent(
+    "refermer une fiche déjà scellée la réannonce telle qu'elle est (réparation voulue d'un commerce en arrière, Hugo, 2026-11-12) ; rien n'est re-colisé",
+  )
   @Post("close")
   @HttpCode(NO_CONTENT)
   async close(
@@ -44,6 +47,9 @@ export class PackingOrdersController {
     );
   }
 
+  @Idempotent(
+    "un second signalement remplace le premier : le bac a pu changer, et le fait neuf dit l'état exact du manque (domaine, Hugo, 2026-11-12) ; rien ne s'additionne",
+  )
   @Post("shortfall")
   @HttpCode(NO_CONTENT)
   async reportShortfall(

@@ -105,6 +105,9 @@ export class HandoverController {
    * Déclarée **avant** `:token` : deux segments, donc `:token` ne l'avalerait
    * pas — mais l'ordre rend l'intention lisible sans avoir à y réfléchir.
    */
+  @Idempotent(
+    "le rejeu sur un retrait déjà attesté rend l'attestation et la réannonce telle qu'elle est (réparation voulue d'un commerce en arrière, Hugo, 2026-11-12) ; aucune seconde attestation",
+  )
   @Post("manual/:reference")
   async confirmManually(
     @Param("reference") reference: string,
@@ -184,6 +187,9 @@ export class HandoverController {
    * corps vide : au comptoir, la confirmation doit s'afficher dans la seconde,
    * sans second aller-retour.
    */
+  @Idempotent(
+    "le rejeu sur un retrait déjà attesté rend l'attestation et la réannonce telle qu'elle est (réparation voulue d'un commerce en arrière, Hugo, 2026-11-12) ; aucune seconde attestation",
+  )
   @Post(":token")
   async confirm(
     @Param("token") token: string,
