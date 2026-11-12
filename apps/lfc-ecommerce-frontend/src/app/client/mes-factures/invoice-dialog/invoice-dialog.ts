@@ -8,7 +8,11 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import type { IssuedInvoiceView } from '@lfd/contracts';
+import type {
+  IssuedInvoiceView,
+  MyInvoiceSettlementStatus,
+  MyInvoiceSettlementView,
+} from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -38,7 +42,19 @@ import {
 export interface InvoiceDialogData {
   readonly companyId: string;
   readonly invoiceId: string;
+  /**
+   * Son règlement, tel que la liste le lit : la pièce figée ne dit pas
+   * qu'elle se règle par virement, la liste si. `null` : un avoir, ou ouvert
+   * d'ailleurs.
+   */
+  readonly settlement?: MyInvoiceSettlementView | null;
 }
+
+/** Les statuts d'une facture au virement pas encore réglée. */
+const TRANSFER_PENDING: ReadonlySet<MyInvoiceSettlementStatus> = new Set([
+  'transfer_expected',
+  'transfer_overdue',
+]);
 
 /**
  * **Une facture**, en lecture seule (plan `facture-emise.md`) : parties, lignes, ventilation par taux, totaux, mentions, règlement,
@@ -71,11 +87,12 @@ export class InvoiceDialog {
     companyId: string,
     invoiceId: string,
     stack = false,
+    settlement: MyInvoiceSettlementView | null = null,
   ): void {
     panels.open<InvoiceDialogData, void>(InvoiceDialog, {
       side: dialogSide(),
       stack,
-      data: { companyId, invoiceId },
+      data: { companyId, invoiceId, settlement },
     });
   }
 
@@ -125,8 +142,15 @@ export class InvoiceDialog {
       : fill(this.copy().received, { date: invoiceDay(day, this.locale()) });
   }
 
-  /** Le règlement figé : le prélèvement et sa RUM, ou la carte qui l'a acquittée (E5a). */
+  /**
+   * Le règlement figé : le prélèvement et sa RUM, la carte qui l'a acquittée
+   * (E5a), ou le virement attendu et la référence à reporter.
+   */
   protected means(bill: IssuedInvoiceView): string {
+    const status = this.data().settlement?.status;
+    if (status !== undefined && TRANSFER_PENDING.has(status)) {
+      return fill(this.copy().byTransfer, { reference: bill.number });
+    }
     if (bill.mandateReference !== null) {
       return fill(this.copy().directDebit, { rum: bill.mandateReference });
     }

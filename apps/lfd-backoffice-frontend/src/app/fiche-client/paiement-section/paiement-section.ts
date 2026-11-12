@@ -44,6 +44,11 @@ import {
 } from '../mandate-preview-panel/mandate-preview-panel';
 import { ProofPanel, type ProofPanelData } from '../proof-panel/proof-panel';
 import { BankAccountSection } from '../bank-account-section/bank-account-section';
+import { BankTransferMeans } from '../bank-transfer-means/bank-transfer-means';
+import {
+  CollectionMeansChoice,
+  type ShownCollectionMeans,
+} from '../collection-means-choice/collection-means-choice';
 import { MandateOptionsSection } from '../mandate-options-section/mandate-options-section';
 import { NotifyService } from '../../notify.service';
 import { MandatesService } from '../mandat/mandates.service';
@@ -118,6 +123,8 @@ const PROOF_REPLACED_ON_SIGN =
   imports: [
     DatePipe,
     BankAccountSection,
+    BankTransferMeans,
+    CollectionMeansChoice,
     MandateOptionsSection,
     FoldPageSectionComponent,
     FoldCardComponent,
@@ -268,6 +275,15 @@ export class PaiementSection {
   });
 
   /** Un crédit accordé signifie « facturé puis encaissé », donc un mandat à avoir. */
+  /**
+   * Le moyen que le choix montre, et l'entité qui encaisse ; `null` tant
+   * qu'il n'est pas lu (ou illisible) : la section montre alors le
+   * prélèvement, comme avant que le virement existe.
+   */
+  protected readonly shownMeans = signal<ShownCollectionMeans | null>(null);
+  /** Le dessous suit le choix : le virement n'a ni RIB ni mandat. */
+  protected readonly byTransfer = computed(() => this.shownMeans()?.means === 'bank_transfer');
+
   protected readonly settlesOnAccount = computed(() => this.grantedTerms().length > 0);
 
   /** Un mandat sur lequel on peut prélever aujourd'hui. */

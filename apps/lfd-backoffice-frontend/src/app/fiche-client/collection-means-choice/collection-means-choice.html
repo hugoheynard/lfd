@@ -1,0 +1,131 @@
+@if (!canRead()) {
+  <p class="said" data-means-no-read>
+    Le moyen d’encaissement est réservé à la comptabilité (droit « comptabilité » en lecture)&nbsp;:
+    la section montre le prélèvement.
+  </p>
+} @else {
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture du moyen d’encaissement…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de lire le moyen d’encaissement">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('no-entity') {
+      <fold-empty-state
+        title="Aucune entité émettrice en service"
+        subtitle="Le moyen d’encaissement se choisit chez l’entité qui émet les factures."
+      >
+        <fold-icon empty-icon name="banknote" />
+      </fold-empty-state>
+    }
+    @default {
+      <div class="choice">
+        @if (entityOptions().length > 1) {
+          <fold-listbox
+            label="Entité émettrice"
+            [options]="entityOptions()"
+            [value]="entityId()"
+            (selectionChange)="chooseEntity($event)"
+          />
+        }
+
+        <p class="state" data-means-current>{{ current() }}.</p>
+
+        @if (follows(); as payer) {
+          <p class="said" data-means-follows>
+            Suit le moyen de <strong>{{ payer.name }}</strong
+            >&nbsp;: ce site est facturé à son nom, et se règle comme lui.
+          </p>
+        }
+
+        <fold-view-toggle
+          ariaLabel="Comment ce client règle au compte"
+          [options]="options"
+          [value]="shown()"
+          (valueChange)="choose($event)"
+          data-means-toggle
+        />
+
+        @if (scheduled(); as next) {
+          <fold-callout appearance="inset" variant="info" data-means-scheduled>
+            Programmé&nbsp;: {{ next.label }}, à partir de la clôture du {{ next.effectiveOn }} —
+            {{ next.reason }}
+            <div actions>
+              <fold-inline-confirm
+                intent="primary"
+                message="Garder le moyen en vigueur et retirer le changement programmé ?"
+                [labels]="{ confirm: 'Annuler le changement' }"
+                (confirmed)="cancelScheduled()"
+              >
+                <button
+                  foldButton
+                  size="sm"
+                  emphasis="outline"
+                  [disabled]="!canWrite() || busy()"
+                  data-means-cancel
+                >
+                  Annuler ce changement
+                </button>
+              </fold-inline-confirm>
+            </div>
+          </fold-callout>
+        }
+
+        @if (modePendingUntil(); as until) {
+          <p class="said" data-means-mode-pending>
+            Un changement de mode de facturation attend sa prise d’effet&nbsp;: le moyen ne pourra
+            changer qu’à partir du {{ until }}.
+          </p>
+        }
+
+        @if (changing() && follows() === null) {
+          <div class="change" data-means-change>
+            @if (!canWrite()) {
+              <p class="said" data-means-no-write>
+                Seule la comptabilité peut changer le moyen (droit « moyen d’encaissement » en
+                écriture). Ce qui suit montre ce que ce moyen demanderait.
+              </p>
+            } @else if (!locked()) {
+              <fold-callout appearance="inset" variant="warning" data-means-effective>
+                {{ effectiveSentence() }}
+              </fold-callout>
+              <fold-textarea
+                label="Motif du changement"
+                required
+                [rows]="2"
+                [hint]="'Une phrase, gardée au journal. Au plus ' + reasonMax + ' caractères.'"
+                [(value)]="reason"
+                data-means-reason
+              />
+            }
+
+            @if (refusal(); as message) {
+              <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+            }
+
+            <div class="actions">
+              <button foldButton emphasis="outline" intent="neutral" (click)="keep()">
+                Garder le moyen actuel
+              </button>
+              @if (canWrite() && !locked()) {
+                <fold-inline-confirm
+                  intent="primary"
+                  [message]="effectiveSentence()"
+                  [labels]="{ confirm: 'Changer de moyen' }"
+                  (confirmed)="save()"
+                >
+                  <button foldButton [disabled]="!canSave()" data-means-save>Enregistrer</button>
+                </fold-inline-confirm>
+              }
+            </div>
+          </div>
+        } @else if (refusal(); as message) {
+          <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+        }
+      </div>
+    }
+  }
+}

@@ -11498,6 +11498,13 @@
           "variables": ["date"]
         },
         {
+          "key": "account.invoices.byTransfer",
+          "fr": "Paiement au compte, par virement à réception de facture — référence à reporter : {reference}. Nos coordonnées bancaires figurent sur la facture (PDF).",
+          "en": "Paid on account, by bank transfer on receipt of invoice — reference to quote: {reference}. Our bank details are on the invoice (PDF).",
+          "it": "Pagamento su conto, con bonifico al ricevimento della fattura — causale da indicare: {reference}. Le nostre coordinate bancarie sono sulla fattura (PDF).",
+          "variables": ["reference"]
+        },
+        {
           "key": "account.invoices.orders",
           "fr": "Commandes facturées",
           "en": "Invoiced orders",

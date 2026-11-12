@@ -267,7 +267,7 @@ export class InvoicesPage {
   protected open(row: MyIssuedInvoiceView): void {
     const id = this.companyId();
     if (id !== null) {
-      InvoiceDialog.open(this.panels, id, row.invoiceId);
+      InvoiceDialog.open(this.panels, id, row.invoiceId, false, row.settlement);
     }
   }
 

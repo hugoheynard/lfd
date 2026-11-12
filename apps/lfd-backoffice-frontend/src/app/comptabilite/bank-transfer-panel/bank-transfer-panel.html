@@ -34,9 +34,10 @@
     </div>
   </fold-fieldset>
 
-  <fold-callout appearance="inset" variant="info">
+  <fold-callout appearance="inset" variant="info" data-transfer-rules>
     Le montant doit égaler le total des factures cochées : sinon, l'enregistrement est refusé et
-    l'écart affiché.
+    l'écart affiché — ajustez les factures cochées ou le montant. Les paiements partiels ne sont pas
+    pris en charge, et les avoirs ne se déduisent pas encore d'un virement.
   </fold-callout>
 
   @if (mixedEntities()) {

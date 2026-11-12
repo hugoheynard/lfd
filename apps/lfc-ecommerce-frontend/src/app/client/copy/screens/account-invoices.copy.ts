@@ -126,6 +126,11 @@ export interface AccountInvoicesCopy {
   readonly directDebit: string;
   /** La facture carte, acquittée (lot E5a) : `{date}` = le jour du paiement. */
   readonly paidByCard: string;
+  /**
+   * La facture au virement : `{reference}` = son numéro, à reporter sur le
+   * virement. Les coordonnées bancaires ne sont que sur la facture.
+   */
+  readonly byTransfer: string;
   readonly orders: string;
   /** `{date}`. */
   readonly received: string;
@@ -230,6 +235,8 @@ export const ACCOUNT_INVOICES_FR: AccountInvoicesCopy = {
   payment: 'Règlement',
   directDebit: 'Prélèvement SEPA, mandat {rum}',
   paidByCard: 'Acquittée par carte le {date}',
+  byTransfer:
+    'Paiement au compte, par virement à réception de facture — référence à reporter : {reference}. Nos coordonnées bancaires figurent sur la facture (PDF).',
   orders: 'Commandes facturées',
   received: 'reçue le {date}',
   notReceived: 'réception non constatée',
@@ -330,6 +337,8 @@ export const ACCOUNT_INVOICES_EN: AccountInvoicesCopy = {
   payment: 'Payment',
   directDebit: 'SEPA direct debit, mandate {rum}',
   paidByCard: 'Paid by card on {date}',
+  byTransfer:
+    'Paid on account, by bank transfer on receipt of invoice — reference to quote: {reference}. Our bank details are on the invoice (PDF).',
   orders: 'Invoiced orders',
   received: 'received on {date}',
   notReceived: 'receipt not recorded',
@@ -431,6 +440,8 @@ export const ACCOUNT_INVOICES_IT: AccountInvoicesCopy = {
   payment: 'Pagamento',
   directDebit: 'Addebito diretto SEPA, mandato {rum}',
   paidByCard: 'Pagata con carta il {date}',
+  byTransfer:
+    'Pagamento su conto, con bonifico al ricevimento della fattura — causale da indicare: {reference}. Le nostre coordinate bancarie sono sulla fattura (PDF).',
   orders: 'Ordini fatturati',
   received: 'ricevuta il {date}',
   notReceived: 'ricezione non registrata',

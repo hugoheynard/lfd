@@ -1,0 +1,36 @@
+<fold-element-title variant="caps" icon="banknote" title="Nos coordonnées" />
+@if (hasAccount()) {
+  <dl class="coordinates" data-transfer-coordinates>
+    <dt>Titulaire</dt>
+    <dd>{{ entity().creditorAccountHolder }}</dd>
+    <dt>IBAN</dt>
+    <dd>se termine par {{ entity().creditorAccountLast4 }}</dd>
+    <dt>BIC</dt>
+    <dd>{{ entity().creditorBic || '—' }}</dd>
+  </dl>
+  <p class="said">
+    Chaque facture porte l’IBAN complet de {{ entity().name }} et une référence à reporter sur le
+    virement&nbsp;: son numéro. Les coordonnées ne partent jamais par e-mail — l’e-mail renvoie à la
+    facture jointe.
+  </p>
+  @if (pending()) {
+    <fold-callout appearance="inset" variant="info" data-transfer-pending-account>
+      Une modification du compte attend la confirmation d’un second membre&nbsp;: les factures
+      portent le compte ci-dessus jusque-là.
+    </fold-callout>
+  }
+} @else {
+  <fold-callout appearance="inset" variant="warning" data-transfer-no-account>
+    <strong>Aucun compte saisi pour {{ entity().name }}.</strong> Une facture au virement n’aurait
+    pas de coordonnées à donner&nbsp;: saisissez le compte sur la fiche de l’entité émettrice.
+  </fold-callout>
+}
+
+<fold-element-title variant="caps" icon="calendar" title="Échéance" />
+<p class="said" data-transfer-due>
+  La même que pour un prélèvement&nbsp;: {{ dueDays() }} jours après la clôture de la période,
+  reportée au premier jour ouvré. Elle est imprimée sur chaque facture, et le client vire pour cette
+  date.
+</p>
+
+<app-transfer-invoices-card [companyId]="companyId()" />

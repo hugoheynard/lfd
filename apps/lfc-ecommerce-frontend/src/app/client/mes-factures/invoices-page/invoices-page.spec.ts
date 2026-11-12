@@ -193,7 +193,12 @@ describe('InvoicesPage', () => {
     el.querySelector<HTMLButtonElement>('[data-open="inv_1"]')?.click();
 
     expect(openedPanel()?.component).toBe(InvoiceDialog);
-    expect(openedPanel()?.data).toEqual({ companyId: 'cmp_1', invoiceId: 'inv_1' });
+    // Le règlement de la ligne suit : la pièce figée ne dit pas qu'elle se règle par virement.
+    expect(openedPanel()?.data).toEqual({
+      companyId: 'cmp_1',
+      invoiceId: 'inv_1',
+      settlement: { status: 'collection_planned', date: '2026-10-15', otherInvoicesOnDebit: 0 },
+    });
   });
 
   it('télécharge tout l’affiché en un zip nommé par le serveur', async () => {

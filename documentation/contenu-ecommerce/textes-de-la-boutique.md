@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1815 textes
+## Sommaire — 1816 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -42,7 +42,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 282 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 57 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
-| [Mon compte (factures comprises)](#espace-account) | `account` | 529 |
+| [Mon compte (factures comprises)](#espace-account) | `account` | 530 |
 | [Le compte pro — le dictionnaire général](#espace-pro) | `pro` | 8 |
 | [Le compte pro — l’écran](#espace-proaccount) | `proAccount` | 27 |
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
@@ -50,7 +50,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Les cases des e-mails marketing, « Mes e-mails » et le pied de page](#espace-marketingconsent) | `marketingConsent` | 29 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1815** |
+| **Total** | | **1816** |
 
 ## Le parcours de commande
 
@@ -1438,7 +1438,7 @@ Source : `screens/loyalty.copy.ts` · 38 textes.
 
 ### Mon compte (factures comprises) — `account`
 
-Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 529 textes.
+Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 530 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1965,6 +1965,7 @@ Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 
 | `account.invoices.payment` | Règlement | Payment | Pagamento |  |
 | `account.invoices.directDebit` | Prélèvement SEPA, mandat {rum} | SEPA direct debit, mandate {rum} | Addebito diretto SEPA, mandato {rum} | `{rum}` |
 | `account.invoices.paidByCard` | Acquittée par carte le {date} | Paid by card on {date} | Pagata con carta il {date} | `{date}` |
+| `account.invoices.byTransfer` | Paiement au compte, par virement à réception de facture — référence à reporter : {reference}. Nos coordonnées bancaires figurent sur la facture (PDF). | Paid on account, by bank transfer on receipt of invoice — reference to quote: {reference}. Our bank details are on the invoice (PDF). | Pagamento su conto, con bonifico al ricevimento della fattura — causale da indicare: {reference}. Le nostre coordinate bancarie sono sulla fattura (PDF). | `{reference}` |
 | `account.invoices.orders` | Commandes facturées | Invoiced orders | Ordini fatturati |  |
 | `account.invoices.received` | reçue le {date} | received on {date} | ricevuta il {date} | `{date}` |
 | `account.invoices.notReceived` | réception non constatée | receipt not recorded | ricezione non registrata |  |

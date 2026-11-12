@@ -5,12 +5,15 @@ import { FoldPanelRef } from 'fold-ng';
 
 import { ClientInvoices } from '../../client-invoices.service';
 import { CREDIT_NOTE, SEPTEMBER_DETAIL } from '../invoice.fixture';
-import { InvoiceDialog } from './invoice-dialog';
+import { InvoiceDialog, type InvoiceDialogData } from './invoice-dialog';
 
 let asked: string[];
 let pdf: () => Promise<Blob>;
 
-async function render(answer: () => Promise<IssuedInvoiceView>): Promise<HTMLElement> {
+async function render(
+  answer: () => Promise<IssuedInvoiceView>,
+  data: InvoiceDialogData = { companyId: 'cmp_1', invoiceId: 'inv_1' },
+): Promise<HTMLElement> {
   asked = [];
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -33,7 +36,7 @@ async function render(answer: () => Promise<IssuedInvoiceView>): Promise<HTMLEle
     ],
   });
   const fixture = TestBed.createComponent(InvoiceDialog);
-  fixture.componentRef.setInput('data', { companyId: 'cmp_1', invoiceId: 'inv_1' });
+  fixture.componentRef.setInput('data', data);
   fixture.detectChanges();
   await fixture.whenStable();
   fixture.detectChanges();
@@ -67,6 +70,22 @@ describe('InvoiceDialog', () => {
     expect(el.querySelector('[data-invoice-means]')?.textContent).toContain(
       'Acquittée par carte le 28 sept. 2026',
     );
+  });
+
+  it('une facture au virement dit le paiement au compte par virement, la référence, et renvoie au PDF pour les coordonnées', async () => {
+    const el = await render(
+      () => Promise.resolve({ ...SEPTEMBER_DETAIL, mandateReference: null, paidOn: null }),
+      {
+        companyId: 'cmp_1',
+        invoiceId: 'inv_1',
+        settlement: { status: 'transfer_expected', date: '2026-10-15', otherInvoicesOnDebit: 0 },
+      },
+    );
+    const means = el.querySelector('[data-invoice-means]')?.textContent ?? '';
+
+    expect(means).toContain('par virement à réception de facture');
+    expect(means).toContain(SEPTEMBER_DETAIL.number);
+    expect(means).toContain('figurent sur la facture (PDF)');
   });
 
   it('un PDF rendu se télécharge, nommé d’après le numéro de la pièce', async () => {
