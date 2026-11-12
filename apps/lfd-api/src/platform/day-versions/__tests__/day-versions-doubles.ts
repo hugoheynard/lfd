@@ -1,13 +1,17 @@
-import type { DayJournal, StaffPermission } from "@lfd/contracts";
+import type { DayJournal, GlobalVersionSubject, StaffPermission } from "@lfd/contracts";
 
 import { ScriptedCallDeadline } from "../../cache-calls/__tests__/cache-call-doubles.js";
 import { FixedStopwatch, RecordingTimings } from "../../metrics/__tests__/metrics-doubles.js";
 import { FixedWallClock } from "../../time/fixed-wall-clock.js";
 import { DayVersionRegistry } from "../day-version-registry.js";
 import { DayVersionSource } from "../day-version-source.js";
-import { type DayVersionsCard, DayVersionsCache } from "../day-versions-cache.js";
+import { DayVersionsCache, type VersionsCard } from "../day-versions-cache.js";
 import { GetDayVersionsHandler } from "../get-day-versions.handler.js";
+import { GetVersionsHandler } from "../get-versions.handler.js";
+import { GlobalVersionSource } from "../global-version-source.js";
 import { ResilientDayVersionsCache } from "../resilient-day-versions-cache.js";
+import { ScopeVersions } from "../scope-versions.js";
+import { VersionRegistry } from "../version-registry.js";
 
 /** Une source qui rend une version fixe et retient les journées demandées. */
 export class RecordingSource extends DayVersionSource {
@@ -47,26 +51,40 @@ export class RecordingSource extends DayVersionSource {
 /** Ce que fait l'objet : garder, échouer, ou ne jamais répondre. */
 export type CacheBehaviour = "keeps" | "throws" | "hangs";
 
-/** L'objet des journées en mémoire : une carte par journée, gardée si lue plus tard. */
+/**
+ * L'objet des journées en mémoire : une carte par portée, fusionnée sujet par
+ * sujet — un numéro ne remplace le gardé que s'il a été lu plus tard.
+ */
 export class InMemoryDayVersionsCache extends DayVersionsCache {
-  readonly cards = new Map<string, DayVersionsCard>();
+  readonly cards = new Map<string, VersionsCard>();
   behaviour: CacheBehaviour = "keeps";
   reads = 0;
   stores = 0;
+  readonly stored: { readonly scope: string; readonly card: VersionsCard }[] = [];
 
-  read(serviceDay: string): Promise<DayVersionsCard | null> {
+  read(scope: string): Promise<VersionsCard | null> {
     this.reads += 1;
-    return this.behave(() => this.cards.get(serviceDay) ?? null);
+    return this.behave(() => this.cards.get(scope) ?? null);
   }
 
-  store(serviceDay: string, card: DayVersionsCard): Promise<void> {
+  store(scope: string, card: VersionsCard): Promise<void> {
     this.stores += 1;
     return this.behave(() => {
-      const kept = this.cards.get(serviceDay);
-      if (kept === undefined || card.readAtMs > kept.readAtMs) {
-        this.cards.set(serviceDay, card);
+      this.stored.push({ scope, card });
+      const subjects = { ...this.cards.get(scope)?.subjects };
+      for (const [subject, reading] of Object.entries(card.subjects)) {
+        const kept = subjects[subject];
+        if (kept === undefined || reading.readAtMs > kept.readAtMs) {
+          subjects[subject] = reading;
+        }
       }
+      this.cards.set(scope, { subjects });
     });
+  }
+
+  /** Le numéro gardé d'un sujet dans une portée. */
+  versionOf(scope: string, subject: string): number | undefined {
+    return this.cards.get(scope)?.subjects[subject]?.version;
   }
 
   private behave<T>(work: () => T): Promise<T> {
@@ -90,11 +108,53 @@ export function sources(): Record<DayJournal, RecordingSource> {
   };
 }
 
+/** Un sujet global qui rend un numéro fixe et compte ses lectures. */
+export class RecordingGlobalSource extends GlobalVersionSource {
+  asked = 0;
+
+  constructor(
+    readonly subject: GlobalVersionSubject,
+    readonly readers: readonly [StaffPermission, ...StaffPermission[]],
+    readonly freshMs: number,
+    public version: number,
+  ) {
+    super();
+  }
+
+  versionOf(): Promise<number> {
+    this.asked += 1;
+    return Promise.resolve(this.version);
+  }
+}
+
+export const COMPANIES_FRESH_MS = 30_000;
+export const ALL_ORDERS_FRESH_MS = 15_000;
+
+export function globalSources(): Record<GlobalVersionSubject, RecordingGlobalSource> {
+  return {
+    companies: new RecordingGlobalSource(
+      "companies",
+      ["b2b_companies:read"],
+      COMPANIES_FRESH_MS,
+      100,
+    ),
+    "orders-all": new RecordingGlobalSource(
+      "orders-all",
+      ["b2b_orders:read"],
+      ALL_ORDERS_FRESH_MS,
+      200,
+    ),
+  };
+}
+
 // L'instant du mur, comparé à lui-même seulement (fraîcheur, disjoncteur).
 const WALL_START = new Date(Date.UTC(2030, 0, 1));
 
-/** Le handler, son objet, son délai et son mur, autour des sources données. */
-export function handlerAround(all: readonly DayVersionSource[]) {
+/** Les deux portes, leur objet, leur délai et leur mur, autour des sources données. */
+export function handlerAround(
+  all: readonly DayVersionSource[],
+  globals: readonly GlobalVersionSource[] = Object.values(globalSources()),
+) {
   const cache = new InMemoryDayVersionsCache();
   const deadline = new ScriptedCallDeadline();
   const wall = new FixedWallClock(WALL_START);
@@ -106,8 +166,11 @@ export function handlerAround(all: readonly DayVersionSource[]) {
     new FixedStopwatch(3),
     timings,
   );
-  const handler = new GetDayVersionsHandler(new DayVersionRegistry(all), resilient, wall);
-  return { handler, cache, deadline, wall, timings };
+  const registry = new VersionRegistry(new DayVersionRegistry(all), globals);
+  const scopes = new ScopeVersions(registry, resilient, wall);
+  const handler = new GetDayVersionsHandler(registry, scopes);
+  const versions = new GetVersionsHandler(registry, scopes);
+  return { handler, versions, cache, deadline, wall, timings };
 }
 
 /** Laisse partir les rangements non attendus. */

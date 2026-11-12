@@ -10,7 +10,8 @@
  * déclaration par journal. Cette porte-ci empêche le retour en arrière :
  *
  * - **côté API** (`apps/lfd-api/src`) : aucune route dont un mot du chemin est
- *   `version` (`@Controller`, `@Get`, `@Post`…), sauf la porte elle-même. Un
+ *   `version` (`@Controller`, `@Get`, `@Post`…), sauf `admin/versions` (la
+ *   porte des sujets) et `admin/day-versions` (servie un déploiement de plus). Un
  *   journal de plus est une source de plus dans
  *   `appBootstrap/day-version-sources.module.ts`, jamais une route ;
  * - **côté back-office** (`apps/lfd-backoffice-frontend/src`) : la porte
@@ -30,8 +31,14 @@ const API_ROOT = "apps/lfd-api/src";
 const FRONT_ROOT = "apps/lfd-backoffice-frontend/src";
 const SKIP_DIRS = new Set(["node_modules", "dist", "coverage", ".turbo", "__tests__"]);
 
-/** La porte unique — le seul chemin de route qui ait le droit de dire « version ». */
+/** La porte que le front appelle encore (le veilleur bascule au lot V2). */
 const DOOR = "admin/day-versions";
+/**
+ * Les chemins de route qui ont le droit de dire « version » : la porte des
+ * sujets (`plan-veilleur-unique.md`, § 3.3) et l'ancienne, servie un
+ * déploiement de plus pour les onglets restés sur l'ancien bundle.
+ */
+const API_DOORS = new Set([DOOR, "admin/versions"]);
 /** Le seul fichier du front qui l'appelle. */
 const FRONT_CALLER = `${FRONT_ROOT}/app/shared/day-version/day-version.service.ts`;
 
@@ -50,7 +57,7 @@ export function versionRoutesOf(source) {
   const found = [];
   for (const match of withoutComments(source).matchAll(ROUTE_DECORATOR)) {
     const path = match[2];
-    if (VERSION_SEGMENT.test(path) && path !== DOOR) {
+    if (VERSION_SEGMENT.test(path) && !API_DOORS.has(path)) {
       found.push(path);
     }
   }
@@ -81,6 +88,7 @@ function selfCheck() {
     ['@Controller("admin/production")\n@Get(\n  "day-version",\n)', 1],
     ["@Get('production-version')", 1],
     ['@Controller("admin/day-versions")', 0],
+    ['@Controller("admin/versions")', 0],
     ['// @Get("version")', 0],
     ['@Get(":id/history")', 0],
     ['@Get("conversions")', 0],
@@ -92,23 +100,29 @@ function selfCheck() {
 
 function main() {
   const failures = selfCheck();
-  let doorFound = false;
+  const doorsFound = new Set();
   for (const file of sourceFiles(join(ROOT, API_ROOT))) {
     const rel = unix(relative(ROOT, file));
     const source = readFileSync(file, "utf8");
-    doorFound ||= source.includes(`@Controller("${DOOR}")`);
+    for (const door of API_DOORS) {
+      if (source.includes(`@Controller("${door}")`)) {
+        doorsFound.add(door);
+      }
+    }
     for (const path of versionRoutesOf(source)) {
       failures.push(
         `${rel} : la route « ${path} » rouvre une porte de version par journal. ` +
           `Ajoutez une source au registre (appBootstrap/day-version-sources.module.ts) ; ` +
-          `la seule porte est GET ${DOOR}.`,
+          `les seules portes sont GET ${[...API_DOORS].join(" et GET ")}.`,
       );
     }
   }
-  if (!doorFound) {
-    failures.push(
-      `la porte @Controller("${DOOR}") est introuvable dans ${API_ROOT} : la porte ne regarde plus rien.`,
-    );
+  for (const door of API_DOORS) {
+    if (!doorsFound.has(door)) {
+      failures.push(
+        `la porte @Controller("${door}") est introuvable dans ${API_ROOT} : la porte ne regarde plus rien.`,
+      );
+    }
   }
   let callerFound = false;
   for (const file of sourceFiles(join(ROOT, FRONT_ROOT))) {
@@ -136,7 +150,7 @@ function main() {
     process.exit(1);
   }
   console.log(
-    `✓ lint:day-version-door — une seule porte (GET ${DOOR}), un seul appelant au front.`,
+    `✓ lint:day-version-door — les portes (GET ${[...API_DOORS].join(", GET ")}), un seul appelant au front.`,
   );
 }
 

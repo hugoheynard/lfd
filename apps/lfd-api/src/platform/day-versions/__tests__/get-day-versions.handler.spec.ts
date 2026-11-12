@@ -79,9 +79,14 @@ describe("GetDayVersionsHandler — la carte complète, d'abord, puis le droit",
     await settle();
 
     expect(Object.values(all).map((source) => source.asked)).toEqual([[DAY], [DAY], [DAY], [DAY]]);
+    const readAtMs = wall.elapsedNow().getTime();
     expect(cache.cards.get(DAY)).toEqual({
-      versions: { orders: 7, production: 42, delivery: 3, "my-round": 11 },
-      readAtMs: wall.elapsedNow().getTime(),
+      subjects: {
+        orders: { version: 7, readAtMs },
+        production: { version: 42, readAtMs },
+        delivery: { version: 3, readAtMs },
+        "my-round": { version: 11, readAtMs },
+      },
     });
   });
 
@@ -129,17 +134,20 @@ describe("GetDayVersionsHandler — la carte complète, d'abord, puis le droit",
     await settle();
 
     expect(view.versions).toEqual({ orders: 8 });
-    expect(cache.cards.get(DAY)?.versions["orders"]).toBe(8);
+    expect(cache.versionOf(DAY, "orders")).toBe(8);
   });
 
-  it("relit la base quand la carte gardée ne nomme pas tous les journaux du registre", async () => {
+  it("relit en base SEULS les journaux que la carte gardée ne nomme pas", async () => {
     const all = sources();
     const { handler, cache, wall } = handlerAround(Object.values(all));
-    cache.cards.set(DAY, { versions: { orders: 1 }, readAtMs: wall.elapsedNow().getTime() });
+    cache.cards.set(DAY, {
+      subjects: { orders: { version: 1, readAtMs: wall.elapsedNow().getTime() } },
+    });
 
     const view = await handler.execute(everything(["orders"]));
 
-    expect(view.versions).toEqual({ orders: 7 });
+    expect(view.versions).toEqual({ orders: 1 });
+    expect(all.orders.asked).toEqual([]);
     expect(all.production.asked).toEqual([DAY]);
   });
 

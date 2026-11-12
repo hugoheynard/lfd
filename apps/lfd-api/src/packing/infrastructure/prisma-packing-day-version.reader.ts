@@ -1,9 +1,10 @@
 import { Injectable } from "@nestjs/common";
 
+import { journalVersion } from "../../platform/day-versions/journal-version.js";
 import { PrismaService } from "../../platform/database/prisma.service.js";
 import { PackingDayVersionReader } from "../../production/channels/packing/index.js";
 
-/** `max(id)` de `packing.day_change` pour une journée — un parcours d'index. */
+/** `max(id)` et `count(*)` de `packing.day_change` (`journalVersion`) pour une journée — un parcours d'index. */
 @Injectable()
 export class PrismaPackingDayVersionReader extends PackingDayVersionReader {
   constructor(private readonly prisma: PrismaService) {
@@ -14,7 +15,8 @@ export class PrismaPackingDayVersionReader extends PackingDayVersionReader {
     const found = await this.prisma.packingDayChange.aggregate({
       where: { serviceDay },
       _max: { id: true },
+      _count: true,
     });
-    return found._max.id === null ? 0 : Number(found._max.id);
+    return journalVersion(found._max.id, found._count);
   }
 }

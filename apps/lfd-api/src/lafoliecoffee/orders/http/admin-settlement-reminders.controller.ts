@@ -4,6 +4,8 @@ import { CommandBus } from "@nestjs/cqrs";
 import { Public } from "../../../platform/auth/public.decorator.js";
 import { RecomputeGuard } from "../../../platform/auth/recompute.guard.js";
 import { PruneOrderDayChangesCommand } from "../application/commands/prune-order-day-changes.command.js";
+import { PruneOrderChangesCommand } from "../application/commands/prune-order-changes.command.js";
+import { PruneCompanyChangesCommand } from "../../account/application/commands/prune-company-changes.command.js";
 import {
   SendSettlementRemindersCommand,
   type SettlementRemindersReport,
@@ -19,11 +21,13 @@ import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.j
  * et son jeton, présentés par le Worker sur un Cron Trigger horaire
  * (`SETTLEMENT_REMINDERS_CRON`, `container/worker.ts`).
  *
- * **La même passe balaie le journal des journées du commerce**
- * (`documentation/caching-usage/version-par-journee.md`, D2) : c'est la
+ * **La même passe balaie les journaux de version du commerce** — celui des
+ * journées (`documentation/caching-usage/version-par-journee.md`, D2), celui
+ * de toutes les commandes et celui des comptes clients
+ * (`plan-veilleur-unique.md`, § 3.2) : c'est la
  * passe machine du contexte qui possède `orders`, et un cron de plus serait un
  * réglage Cloudflare pour une suppression de quelques centaines de lignes.
- * Deux commandes, deux handlers — seule la porte est partagée. Le compte
+ * Une commande et un handler par balayage — seule la porte est partagée. Le compte
  * rendu reste celui du rappel : sa forme est lue telle quelle, et un balayage
  * de numéros d'affichage n'a rien à y annoncer.
  */
@@ -45,6 +49,10 @@ export class SettlementRemindersController {
     >(new SendSettlementRemindersCommand());
     await this.commands.execute<PruneOrderDayChangesCommand, number>(
       new PruneOrderDayChangesCommand(),
+    );
+    await this.commands.execute<PruneOrderChangesCommand, number>(new PruneOrderChangesCommand());
+    await this.commands.execute<PruneCompanyChangesCommand, number>(
+      new PruneCompanyChangesCommand(),
     );
     return report;
   }

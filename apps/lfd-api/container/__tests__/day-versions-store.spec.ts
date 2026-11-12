@@ -2,8 +2,8 @@ import {
   acceptsCard,
   cardKeyOf,
   oldestKeptDay,
-  parseDayCard,
   parseDayVersionsCall,
+  parseVersionsCard,
 } from "../day-versions-store";
 
 /**
@@ -11,7 +11,7 @@ import {
  * `day-versions.ts` ne fait que les relier au stockage. Ces tests échouent si
  * l'on :
  *
- * - remplace une carte par une carte lue plus tôt ;
+ * - remplace le numéro d'un sujet par un numéro lu plus tôt ;
  * - mélange deux révisions du code sous la même clé ;
  * - garde des journées de plus de trois jours ;
  * - accepte un appel ou une carte mal formés.
@@ -54,33 +54,47 @@ describe("objet des journées — la clé et les appels", () => {
   });
 
   it("comprend une lecture et un rangement d'une journée", () => {
-    const url = new URL(`${URL_BASE}/days/2030-03-12?revision=abc`);
+    const url = new URL(`${URL_BASE}/scopes/2030-03-12?revision=abc`);
 
     expect(parseDayVersionsCall("GET", url)).toEqual({ kind: "read", key: "r:abc/2030-03-12" });
     expect(parseDayVersionsCall("PUT", url)).toEqual({
       kind: "store",
       key: "r:abc/2030-03-12",
-      serviceDay: "2030-03-12",
+      scope: "2030-03-12",
+    });
+  });
+
+  it("comprend la portée des sujets globaux", () => {
+    const url = new URL(`${URL_BASE}/scopes/global?revision=abc`);
+
+    expect(parseDayVersionsCall("PUT", url)).toEqual({
+      kind: "store",
+      key: "r:abc/global",
+      scope: "global",
     });
   });
 
   it("refuse un appel sans révision, sur une journée mal formée ou d'une autre méthode", () => {
-    expect(parseDayVersionsCall("GET", new URL(`${URL_BASE}/days/2030-03-12`))).toBeNull();
-    expect(parseDayVersionsCall("GET", new URL(`${URL_BASE}/days/demain?revision=a`))).toBeNull();
+    expect(parseDayVersionsCall("GET", new URL(`${URL_BASE}/scopes/2030-03-12`))).toBeNull();
+    expect(parseDayVersionsCall("GET", new URL(`${URL_BASE}/scopes/demain?revision=a`))).toBeNull();
     expect(parseDayVersionsCall("GET", new URL(`${URL_BASE}/shelves?revision=a`))).toBeNull();
     expect(
-      parseDayVersionsCall("DELETE", new URL(`${URL_BASE}/days/2030-03-12?revision=a`)),
+      parseDayVersionsCall("DELETE", new URL(`${URL_BASE}/scopes/2030-03-12?revision=a`)),
     ).toBeNull();
   });
 
   it("lit une carte bien formée, refuse le reste", () => {
-    expect(parseDayCard({ versions: { orders: 3, production: 0 }, readAtMs: READ_AT })).toEqual({
-      versions: { orders: 3, production: 0 },
-      readAtMs: READ_AT,
-    });
-    expect(parseDayCard({ versions: { orders: -1 }, readAtMs: READ_AT })).toBeNull();
-    expect(parseDayCard({ versions: { orders: "3" }, readAtMs: READ_AT })).toBeNull();
-    expect(parseDayCard({ versions: {}, readAtMs: 1.5 })).toBeNull();
-    expect(parseDayCard(null)).toBeNull();
+    const card = {
+      subjects: {
+        orders: { version: 3, readAtMs: READ_AT },
+        companies: { version: 0, readAtMs: READ_AT - 1 },
+      },
+    };
+    expect(parseVersionsCard(card)).toEqual(card);
+    expect(parseVersionsCard({ subjects: { orders: { version: -1, readAtMs: 1 } } })).toBeNull();
+    expect(parseVersionsCard({ subjects: { orders: { version: "3", readAtMs: 1 } } })).toBeNull();
+    expect(parseVersionsCard({ subjects: { orders: { version: 3, readAtMs: 1.5 } } })).toBeNull();
+    expect(parseVersionsCard({ versions: { orders: 3 }, readAtMs: READ_AT })).toBeNull();
+    expect(parseVersionsCard(null)).toBeNull();
   });
 });

@@ -1,10 +1,11 @@
 import { Injectable } from "@nestjs/common";
 
+import { journalVersion } from "../../platform/day-versions/journal-version.js";
 import { PrismaService } from "../../platform/database/prisma.service.js";
 import { DeliveryDayVersionReader } from "../domain/ports/delivery-day-version.reader.js";
 
 /**
- * `max(id)` de `delivery.day_change` pour une journée — un parcours de l'index
+ * `max(id)` et `count(*)` de `delivery.day_change` (`journalVersion`) pour une journée — un parcours de l'index
  * `(service_day, id)`, une seule opération.
  */
 @Injectable()
@@ -17,9 +18,8 @@ export class PrismaDeliveryDayVersionReader extends DeliveryDayVersionReader {
     const found = await this.prisma.deliveryDayChange.aggregate({
       where: { serviceDay },
       _max: { id: true },
+      _count: true,
     });
-    // Un `bigserial` : il ne dépassera pas 2^53 avant très longtemps, et un
-    // nombre JSON est ce que l'écran compare.
-    return found._max.id === null ? 0 : Number(found._max.id);
+    return journalVersion(found._max.id, found._count);
   }
 }

@@ -15,6 +15,7 @@ import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ApplyOrderChangeCommand } from "../application/commands/apply-order-change.command.js";
 import { RefuseOrderChangeCommand } from "../application/commands/refuse-order-change.command.js";
 import { QuoteOrderChangeQuery } from "../application/queries/quote-order-change.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Répondre à une demande de modification** dans la boîte « Demandes
@@ -47,6 +48,9 @@ export class AdminOrderChangeRequestsController {
    */
   @Post("apply")
   @HttpCode(HttpStatus.OK)
+  @Idempotent(
+    "transition : rejouée, la demande relue sous verrou est déjà traitée et l'agrégat refuse (409, ensureUnhandled) avant toute révision, tout courriel ni fait",
+  )
   async apply(
     @Param("id") id: string,
     @StaffUserId() staffUserId: string,
@@ -60,6 +64,9 @@ export class AdminOrderChangeRequestsController {
 
   @Post("refuse")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée, la demande relue sous verrou est déjà traitée et l'agrégat refuse (409, ensureUnhandled) avant toute écriture, tout courriel ni fait",
+  )
   async refuse(
     @Param("id") id: string,
     @StaffUserId() staffUserId: string,

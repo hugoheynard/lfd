@@ -2648,6 +2648,20 @@ export {
 } from "./day-version.js";
 export type { DayJournal, DayVersionsQuery, DayVersionsView } from "./day-version.js";
 export {
+  GLOBAL_VERSION_SUBJECTS,
+  VERSION_SUBJECTS,
+  isGlobalVersionSubject,
+  isVersionSubject,
+  versionsQuerySchema,
+  versionsViewSchema,
+} from "./versions.js";
+export type {
+  GlobalVersionSubject,
+  VersionSubject,
+  VersionsQuery,
+  VersionsView,
+} from "./versions.js";
+export {
   COMPANY_FOLLOW_ASPECTS,
   companyFollowAspectSchema,
   companyFicheFollowAspectSchema,

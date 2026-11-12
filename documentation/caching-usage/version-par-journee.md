@@ -53,8 +53,14 @@ Deux journaux en **ajout seul**, un par schéma, pour que la frontière tienne
 
 - **Un journal, pas un compteur** : un `UPDATE … version + 1` verrouillerait la
   ligne de la journée pendant les longues transactions (une clôture). Chaque
-  instruction insère une ligne ; la version est le plus grand identifiant
-  (`max(id) WHERE service_day = $1`, un parcours d'index).
+  instruction insère une ligne ; la version est la paire `max(id)` +
+  `count(*)` sur la journée, lue en une requête et encodée en un nombre
+  (`journalVersion`) : `max(id)` seul raterait une transaction qui a pris un
+  identifiant plus petit et valide après une autre. Le numéro se compare par
+  égalité, jamais par ordre ; un balayage qui fait baisser le compte provoque
+  une relecture de trop, jamais un numéro qui ment (décidé par Hugo le
+  2026-11-12). Les journaux globaux `public.company_change` et
+  `public.order_change` suivent la même règle, sur tout le journal.
 - **Déclencheurs au niveau de l'instruction** (`FOR EACH STATEMENT`, tables de
   transition) : une clôture de 300 lignes écrit une ligne par journée touchée.
 - Un balayage vide les lignes de plus de 7 jours.

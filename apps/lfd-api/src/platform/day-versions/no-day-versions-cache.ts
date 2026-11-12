@@ -1,4 +1,4 @@
-import { type DayVersionsCard, DayVersionsCache } from "./day-versions-cache.js";
+import { DayVersionsCache, type VersionsCard } from "./day-versions-cache.js";
 
 /**
  * **Sans objet des journées** : toujours un raté, rien de gardé. Relié quand
@@ -6,11 +6,11 @@ import { type DayVersionsCard, DayVersionsCache } from "./day-versions-cache.js"
  * le dev local hors wrangler et les e2e, qui lisent donc chaque fois la base.
  */
 export class NoDayVersionsCache extends DayVersionsCache {
-  read(_serviceDay: string): Promise<DayVersionsCard | null> {
+  read(_scope: string): Promise<VersionsCard | null> {
     return Promise.resolve(null);
   }
 
-  store(_serviceDay: string, _card: DayVersionsCard): Promise<void> {
+  store(_scope: string, _card: VersionsCard): Promise<void> {
     return Promise.resolve();
   }
 }

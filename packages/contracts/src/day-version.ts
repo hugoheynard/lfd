@@ -34,7 +34,7 @@ export function isDayJournal(value: string): value is DayJournal {
 }
 
 /** La journée de SERVICE, `AAAA-MM-JJ`. */
-const serviceDaySchema = z
+export const serviceDaySchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/u, "date attendue au format AAAA-MM-JJ");
 

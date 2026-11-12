@@ -7,7 +7,7 @@ import { LoggingCallGuardListener } from "../cache-calls/logging-call-guard-list
 import { Stopwatch } from "../metrics/stopwatch.js";
 import { TimingRecorder } from "../metrics/timing-recorder.js";
 import { WallClock } from "../time/wall-clock.js";
-import { type DayVersionsCard, DayVersionsCache } from "./day-versions-cache.js";
+import { DayVersionsCache, type VersionsCard } from "./day-versions-cache.js";
 import { UnreadableDayVersionsReplyError } from "./unreadable-day-versions-reply.error.js";
 
 /** Le nom du cache, préfixe de ses mesures (`day_versions.round_trip`), lu par la carte de santé. */
@@ -57,18 +57,18 @@ export class ResilientDayVersionsCache {
   }
 
   /** La carte gardée ; `null` = aucune, ou objet indisponible — lis la base. */
-  read(serviceDay: string): Promise<DayVersionsCard | null> {
-    return this.guard.call("read", () => this.cache.read(serviceDay), true);
+  read(scope: string): Promise<VersionsCard | null> {
+    return this.guard.call("read", () => this.cache.read(scope), true);
   }
 
   /**
    * Range sans faire attendre la réponse. Rien n'est avalé en silence : le
    * garde ne lève jamais, et une panne y est comptée et journalisée.
    */
-  storeAfterReply(serviceDay: string, card: DayVersionsCard): void {
+  storeAfterReply(scope: string, card: VersionsCard): void {
     void this.guard.call(
       "store",
-      () => this.cache.store(serviceDay, card).then(() => true),
+      () => this.cache.store(scope, card).then(() => true),
       true,
       DAY_VERSIONS_STORE_LIMIT_MS,
     );

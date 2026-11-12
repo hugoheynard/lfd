@@ -13,8 +13,9 @@ import { isCalendarDay } from "../domain/value-objects/service-day.js";
  * La page du livreur doit suivre le coliseur : un bac déclaré (journal de la
  * livraison) ou une commande prête (journal du COMMERCE, lu par son port).
  *
- * 🔴 **La version est la SOMME des deux numéros.** Chacun est le `max(id)` d'un
- * journal pour ce jour : il ne décroît jamais tant que le jour n'est pas
+ * 🔴 **La version est la SOMME des deux numéros.** Chacun est le numéro d'un
+ * journal pour ce jour (`journalVersion` : `max(id)` et `count(*)`) : il ne
+ * décroît jamais tant que le jour n'est pas
  * balayé. La somme bouge dès que l'un bouge ; opaque, elle se compare par
  * égalité. Ni le livreur ni sa tournée n'y entrent : la page relit sous son
  * mur quand le numéro change.

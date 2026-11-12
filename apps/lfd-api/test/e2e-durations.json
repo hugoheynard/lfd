@@ -618,6 +618,7 @@
   "test/support-requests.e2e-spec.ts": 13563,
   "test/user-nav-prefs.e2e-spec.ts": 4875,
   "test/usual-suggestions.e2e-spec.ts": 22073,
+  "test/versions.e2e-spec.ts": 13563,
   "test/vitrine-notices.e2e-spec.ts": 7500,
   "test/vitrine-read-only.e2e-spec.ts": 5541,
   "test/vitrine-webhook.e2e-spec.ts": 25278,

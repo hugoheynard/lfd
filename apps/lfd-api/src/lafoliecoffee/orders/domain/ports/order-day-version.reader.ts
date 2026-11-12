@@ -11,7 +11,7 @@
  */
 export abstract class OrderDayVersionReader {
   /**
-   * Le plus grand identifiant du journal pour ce jour `AAAA-MM-JJ`, `0` si
+   * Le numéro du journal (`max(id)` et `count(*)`, `journalVersion`) pour ce jour `AAAA-MM-JJ`, `0` si
    * aucun. Opaque : il se compare par égalité, il ne compte rien.
    */
   abstract versionOf(day: string): Promise<number>;

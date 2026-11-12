@@ -305,6 +305,12 @@ import { GetDaySupervisionHandler } from "./application/queries/get-day-supervis
 import { DaySupervisionReader } from "./domain/ports/day-supervision.reader.js";
 import { PrismaDaySupervisionReader } from "./infrastructure/prisma-day-supervision.reader.js";
 import { OrdersDayVersionSource } from "./application/services/orders-day-version.source.js";
+import { AllOrdersVersionSource } from "./application/services/all-orders-version.source.js";
+import { PruneOrderChangesHandler } from "./application/commands/prune-order-changes.handler.js";
+import { OrderChangeVersionReader } from "./domain/ports/order-change-version.reader.js";
+import { OrderChangePruner } from "./domain/ports/order-change.pruner.js";
+import { PrismaOrderChangeVersionReader } from "./infrastructure/prisma-order-change-version.reader.js";
+import { PrismaOrderChangePruner } from "./infrastructure/prisma-order-change.pruner.js";
 import { PruneOrderDayChangesHandler } from "./application/commands/prune-order-day-changes.handler.js";
 import { OrderDayVersionReader } from "./domain/ports/order-day-version.reader.js";
 import { AdminOrderSalesTermsController } from "./http/admin-order-sales-terms.controller.js";
@@ -614,6 +620,10 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // balayer le journal du commerce sont deux ports (ISP).
     OrdersDayVersionSource,
     PruneOrderDayChangesHandler,
+    AllOrdersVersionSource,
+    PruneOrderChangesHandler,
+    { provide: OrderChangeVersionReader, useClass: PrismaOrderChangeVersionReader },
+    { provide: OrderChangePruner, useClass: PrismaOrderChangePruner },
     { provide: OrderDayVersionReader, useClass: PrismaOrderDayVersionReader },
     // Les CGV figées sur une commande, pour son détail (plan des CGV, C4).
     { provide: OrderSalesTermsRecordReader, useClass: PrismaOrderSalesTermsRecordReader },
@@ -727,6 +737,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
   exports: [
     // La source du journal du commerce, reliée au registre par `appBootstrap/day-version-sources.module.ts`.
     OrdersDayVersionSource,
+    // Le numéro de toutes les commandes, relié au registre au même endroit.
+    AllOrdersVersionSource,
     // Les trois adaptateurs que la production consomme par ses ports. Ils
     // sortent d'ici pour être RELIÉS dans la racine de composition, jamais
     // pour être importés par le fournil : le token qu'il connaît est le sien.

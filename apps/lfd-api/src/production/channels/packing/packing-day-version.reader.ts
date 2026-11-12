@@ -8,7 +8,7 @@
  * `caching-usage/version-par-journee.md`) : sans lui, l'écran ne verrait
  * plus bouger ni une ligne au bac, ni un container, ni une fermeture.
  *
- * `max(id)` du journal du colisage pour la journée ; `0` = aucune trace.
+ * `max(id)` et `count(*)` (`journalVersion`) du journal du colisage pour la journée ; `0` = aucune trace.
  */
 export abstract class PackingDayVersionReader {
   abstract versionOf(serviceDay: string): Promise<number>;

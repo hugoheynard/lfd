@@ -1,6 +1,7 @@
 // L'objet des journées (`documentation/caching-usage/plan-objet-des-journees.md`,
-// lot 1) : par (révision, journée), la carte complète des numéros et l'instant
-// où l'API a commencé à la lire. Le stockage SQLite survit à l'endormissement.
+// et `plan-veilleur-unique.md` § 3.3) : par (révision, portée) — une journée ou
+// `global` —, le numéro de chaque sujet et l'instant où l'API a commencé à le
+// lire. Le stockage SQLite survit à l'endormissement.
 //
 // Ce fichier ne décide rien : chaque décision est dans `day-versions-store.ts`,
 // sous tests. Ici, seulement le SQL qui les relie.
@@ -8,32 +9,43 @@ import { DurableObject } from "cloudflare:workers";
 
 import {
   acceptsCard,
+  GLOBAL_SCOPE,
   oldestKeptDay,
-  parseDayCard,
   parseDayVersionsCall,
-  type DayCard,
+  parseVersionsCard,
+  type SubjectReading,
+  type VersionsCard,
 } from "./day-versions-store";
 
 /** Le nom de l'instance unique : une seule copie, quel que soit le nombre d'API. */
 export const DAY_VERSIONS_INSTANCE = "day-versions-weur";
 
-/** Une carte plus ancienne que la gardée : ignorée, sans faute. */
-const STATUS_OLDER = 409;
-
 /** L'objet ne lit aucune liaison ni aucun secret. */
 type DayVersionsEnv = Record<string, never>;
 
+interface SubjectRow extends Record<string, string | number> {
+  subject: string;
+  version: number;
+  read_at: number;
+}
+
 /**
- * Le magasin des numéros de journée. Un Durable Object traite ses requêtes une
- * à une ; la comparaison des instants et l'écriture se font d'un seul tenant,
- * après le dernier `await`.
+ * Le magasin des numéros. Un Durable Object traite ses requêtes une à une ;
+ * la comparaison des instants et l'écriture se font d'un seul tenant, après
+ * le dernier `await`.
+ *
+ * Une ligne par (clé, sujet) : un rangement se FUSIONNE à la carte gardée,
+ * sujet par sujet. La table `cards` (une carte entière par journée) est celle
+ * d'une image précédente : un cache, retiré au premier démarrage.
  */
 export class DayVersions extends DurableObject<DayVersionsEnv> {
   constructor(ctx: DurableObjectState, env: DayVersionsEnv) {
     super(ctx, env);
+    this.ctx.storage.sql.exec("DROP TABLE IF EXISTS cards");
     this.ctx.storage.sql.exec(
-      "CREATE TABLE IF NOT EXISTS cards (key TEXT PRIMARY KEY, service_day TEXT NOT NULL, " +
-        "versions TEXT NOT NULL, read_at INTEGER NOT NULL)",
+      "CREATE TABLE IF NOT EXISTS subject_cards (key TEXT NOT NULL, scope TEXT NOT NULL, " +
+        "subject TEXT NOT NULL, version INTEGER NOT NULL, read_at INTEGER NOT NULL, " +
+        "PRIMARY KEY (key, subject))",
     );
   }
 
@@ -45,46 +57,55 @@ export class DayVersions extends DurableObject<DayVersionsEnv> {
     if (call.kind === "read") {
       return this.read(call.key);
     }
-    const card = parseDayCard(await bodyJson(request));
+    const card = parseVersionsCard(await bodyJson(request));
     return card === null
       ? new Response(null, { status: 400 })
-      : this.store(call.key, call.serviceDay, card);
+      : this.store(call.key, call.scope, card);
+  }
+
+  private rows(key: string): SubjectRow[] {
+    return this.ctx.storage.sql
+      .exec<SubjectRow>("SELECT subject, version, read_at FROM subject_cards WHERE key = ?", key)
+      .toArray();
   }
 
   private read(key: string): Response {
-    const row = this.ctx.storage.sql
-      .exec<{ versions: string; read_at: number }>(
-        "SELECT versions, read_at FROM cards WHERE key = ?",
-        key,
-      )
-      .toArray()[0];
-    if (row === undefined) {
+    const rows = this.rows(key);
+    if (rows.length === 0) {
       return new Response(null, { status: 404 });
     }
-    return new Response(`{"versions":${row.versions},"readAtMs":${row.read_at}}`, {
-      status: 200,
-      headers: { "content-type": "application/json" },
-    });
+    const subjects: Record<string, SubjectReading> = {};
+    for (const row of rows) {
+      subjects[row.subject] = { version: row.version, readAtMs: row.read_at };
+    }
+    return Response.json({ subjects });
   }
 
-  private store(key: string, serviceDay: string, card: DayCard): Response {
-    const kept = this.ctx.storage.sql
-      .exec<{ read_at: number }>("SELECT read_at FROM cards WHERE key = ?", key)
-      .toArray()[0];
-    if (!acceptsCard(kept?.read_at ?? null, card.readAtMs)) {
-      return new Response(null, { status: STATUS_OLDER });
+  private store(key: string, scope: string, card: VersionsCard): Response {
+    const kept = new Map(this.rows(key).map((row) => [row.subject, row.read_at]));
+    let newest = 0;
+    for (const [subject, reading] of Object.entries(card.subjects)) {
+      newest = Math.max(newest, reading.readAtMs);
+      if (!acceptsCard(kept.get(subject) ?? null, reading.readAtMs)) {
+        continue;
+      }
+      this.ctx.storage.sql.exec(
+        "INSERT OR REPLACE INTO subject_cards (key, scope, subject, version, read_at) " +
+          "VALUES (?, ?, ?, ?, ?)",
+        key,
+        scope,
+        subject,
+        reading.version,
+        reading.readAtMs,
+      );
     }
-    this.ctx.storage.sql.exec(
-      "INSERT OR REPLACE INTO cards (key, service_day, versions, read_at) VALUES (?, ?, ?, ?)",
-      key,
-      serviceDay,
-      JSON.stringify(card.versions),
-      card.readAtMs,
-    );
-    this.ctx.storage.sql.exec(
-      "DELETE FROM cards WHERE service_day < ?",
-      oldestKeptDay(card.readAtMs),
-    );
+    if (newest > 0) {
+      this.ctx.storage.sql.exec(
+        "DELETE FROM subject_cards WHERE scope <> ? AND scope < ?",
+        GLOBAL_SCOPE,
+        oldestKeptDay(newest),
+      );
+    }
     return new Response(null, { status: 201 });
   }
 }

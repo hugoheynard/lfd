@@ -8,7 +8,7 @@
  */
 export abstract class DeliveryDayVersionReader {
   /**
-   * Le plus grand identifiant du journal pour cette journée, `0` si aucun.
+   * Le numéro du journal (`max(id)` et `count(*)`, `journalVersion`) pour cette journée, `0` si aucun.
    * Opaque : il se compare par égalité, il ne compte rien.
    */
   abstract versionOf(serviceDay: string): Promise<number>;

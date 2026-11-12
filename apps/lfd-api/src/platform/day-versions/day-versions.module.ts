@@ -4,14 +4,18 @@ import { CallDeadline, NodeCallDeadline } from "../cache-calls/call-deadline.js"
 import { AppConfig } from "../config/app-config.js";
 import { DayVersionsCache } from "./day-versions-cache.js";
 import { DayVersionsController } from "./day-versions.controller.js";
+import { VersionsController } from "./versions.controller.js";
 import { DurableObjectDayVersionsCache } from "./durable-object-day-versions-cache.js";
 import { GetDayVersionsHandler } from "./get-day-versions.handler.js";
+import { GetVersionsHandler } from "./get-versions.handler.js";
 import { NoDayVersionsCache } from "./no-day-versions-cache.js";
 import { ResilientDayVersionsCache } from "./resilient-day-versions-cache.js";
+import { ScopeVersions } from "./scope-versions.js";
 
 /**
- * La porte des versions de journée. Le registre qu'elle lit
- * (`DayVersionRegistry`) n'est PAS fourni ici : `platform` ne connaît aucun
+ * Les portes des versions — `admin/versions`, et `admin/day-versions` le
+ * temps d'un déploiement. Le registre qu'elles lisent (`VersionRegistry`)
+ * n'est PAS fourni ici : `platform` ne connaît aucun
  * bloc, et c'est `appBootstrap/day-version-sources.module.ts` (global) qui le
  * construit à partir des sources des blocs.
  *
@@ -20,7 +24,7 @@ import { ResilientDayVersionsCache } from "./resilient-day-versions-cache.js";
  * « sans objet » — chaque question relit la base.
  */
 @Module({
-  controllers: [DayVersionsController],
+  controllers: [DayVersionsController, VersionsController],
   providers: [
     {
       provide: DayVersionsCache,
@@ -34,7 +38,9 @@ import { ResilientDayVersionsCache } from "./resilient-day-versions-cache.js";
     },
     { provide: CallDeadline, useClass: NodeCallDeadline },
     ResilientDayVersionsCache,
+    ScopeVersions,
     GetDayVersionsHandler,
+    GetVersionsHandler,
   ],
 })
 export class DayVersionsModule {}

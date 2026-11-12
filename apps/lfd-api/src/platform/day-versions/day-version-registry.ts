@@ -3,14 +3,14 @@ import { DAY_JOURNALS, type DayJournal } from "@lfd/contracts";
 import { TechnicalError } from "../shared/errors/app-error.js";
 import type { DayVersionSource } from "./day-version-source.js";
 
-/** Un montage qui laisse un journal sans source, ou lui en donne deux. */
+/** Un montage qui laisse un sujet sans source, ou lui en donne deux. */
 export class DayVersionRegistryMisassembledError extends TechnicalError {
   constructor(detail: string) {
     super(
       "day_versions.registry_misassembled",
-      `Le registre des versions de journée est mal monté : ${detail}. Chaque journal du contrat ` +
-        "(`DAY_JOURNALS`) doit avoir exactement une source, reliée dans " +
-        "`appBootstrap/day-version-sources.module.ts`.",
+      `Le registre des versions est mal monté : ${detail}. Chaque sujet du contrat ` +
+        "(`DAY_JOURNALS`, `GLOBAL_VERSION_SUBJECTS`) doit avoir exactement une source, " +
+        "reliée dans `appBootstrap/day-version-sources.module.ts`.",
     );
   }
 }

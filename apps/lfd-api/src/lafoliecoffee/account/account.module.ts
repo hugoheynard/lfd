@@ -236,6 +236,12 @@ import { PrismaAcceptedMembersReader } from "./infrastructure/prisma-accepted-me
 import { PrismaDeliveryPostalCodesReader } from "./infrastructure/prisma-delivery-postal-codes.reader.js";
 import { PrismaCompanyParentReader } from "./infrastructure/prisma-company-parent.reader.js";
 import { CompanyLifecycleReader } from "./domain/ports/company-lifecycle.reader.js";
+import { CompaniesVersionSource } from "./application/services/companies-version.source.js";
+import { PruneCompanyChangesHandler } from "./application/commands/prune-company-changes.handler.js";
+import { CompanyChangeVersionReader } from "./domain/ports/company-change-version.reader.js";
+import { CompanyChangePruner } from "./domain/ports/company-change.pruner.js";
+import { PrismaCompanyChangeVersionReader } from "./infrastructure/prisma-company-change-version.reader.js";
+import { PrismaCompanyChangePruner } from "./infrastructure/prisma-company-change.pruner.js";
 import { PrismaCompanyLifecycleReader } from "./infrastructure/prisma-company-lifecycle.reader.js";
 import {
   PrismaSubAccountNoticeRulesReader,
@@ -279,6 +285,10 @@ import {
     AdminCompanyPricingFollowController,
   ],
   providers: [
+    CompaniesVersionSource,
+    PruneCompanyChangesHandler,
+    { provide: CompanyChangeVersionReader, useClass: PrismaCompanyChangeVersionReader },
+    { provide: CompanyChangePruner, useClass: PrismaCompanyChangePruner },
     UpdateMyProfileHandler,
     // Le registre marketing après l'inscription et le changement d'adresse
     // (plan de désinscription, C2), par le canal du bloc `mail`.
@@ -510,6 +520,8 @@ import {
   // `StaffDirectory` : l'accès aux fonctionnalités fige l'auteur d'un écart par
   // le même port que la certification d'un KBIS (2026-09-14).
   exports: [
+    // Le numéro des comptes clients, relié au registre par `appBootstrap/day-version-sources.module.ts`.
+    CompaniesVersionSource,
     SiteGesturePublisher,
     // N4e (2026-10-20) : les paniers récurrents nomment leur site et murent
     // leurs gestes par le rattachement ACTUEL.

@@ -1,0 +1,22 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Le numéro global de TOUTES LES COMMANDES —
+// `documentation/caching-usage/plan-veilleur-unique.md`, § 3.2.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// **Le journal des écritures sur les commandes**, en ajout seul et sans
+/// condition de date : une commande sans `requested_delivery_date`, que
+/// `day_change` ne voit pas, fait monter ce numéro.
+///
+/// 🔴 Aucun code ne l'écrit : des déclencheurs AU NIVEAU DE L'INSTRUCTION sur
+/// `orders`, `order_lines` et `order_shortfall` l'alimentent (migration
+/// `20261112180000_les_journaux_des_comptes_et_des_commandes`).
+///
+/// Le numéro `orders-all` est `max(id)`. Les lignes de plus de sept jours se
+/// balaient ; un journal vide rend `0`, et la séquence ne redémarre pas.
+model OrderChange {
+  id        BigInt   @id @default(autoincrement())
+  changedAt DateTime @default(now()) @map("changed_at") @db.Timestamptz(6)
+
+  @@map("order_change")
+  @@schema("public")
+}
