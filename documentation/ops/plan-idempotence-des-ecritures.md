@@ -1,6 +1,6 @@
 # Plan — chaque écriture dit pourquoi un rejeu ne la refait pas
 
-> 📐 **Plan, 2026-11-12.** J0 bâti le 2026-11-12 (§ 4) ; J1 et J2 restent à faire. Demande de Hugo : « est-ce qu'on a
+> 📐 **Plan, 2026-11-12.** J0 bâti le 2026-11-12 (§ 4), J3 aussi (§ 8) ; J1, J2, J4 et J5 restent à faire. Demande de Hugo : « est-ce qu'on a
 > une porte pour garantir l'idempotence de toutes les actions d'écriture ? ».
 > Réponse vérifiée ce jour-là : non. Touche une frontière transverse et, sur
 > les routes de paiement, l'argent : passe par `vitruve` avant Hugo.
@@ -242,6 +242,43 @@ une seule écriture (compte des lignes de la table que le handler écrit,
 avant et après) et deux réponses identiques. Une route « par intention »
 sans scénario semé (corps valide, droits) est une dette comptée du test,
 pas un oubli. C'est la seule preuve qu'un `runSealed` tient réellement.
+
+**✅ Bâti le 2026-11-12** (non commité à l'écriture de ces lignes).
+
+- **L'inventaire** : `node dev-toolbox/gates/write-idempotence.mjs --inventory
+[fichier]` écrit, pour chaque route rangée, `route` (`fichier#méthode`),
+  `httpMethod`, `path` (préfixe `@Controller` + chemin du verbe, constantes du
+  fichier résolues), `case` (`intent` / `nature` / `accepted`) et `handlers`
+  (`fichier#Classe`, case « par intention » seulement). La lecture des
+  décorateurs et du chemin vit dans `dev-toolbox/gates/write-idempotence-paths.mjs`,
+  l'inventaire dans `dev-toolbox/gates/write-idempotence-inventory.mjs`. Limites : une constante importée
+  reste `{NOM}` (les quatre routes du retrait, `HANDOVER_ROUTES`) ; le préfixe
+  d'un `RouterModule` (`/pim`) n'est pas lu, l'e2e le connaît.
+- **L'e2e** : `apps/lfd-api/test/write-replay.e2e-spec.ts`, ses scénarios dans
+  `apps/lfd-api/test/write-replay/*-scenarios.ts` (un fichier par bloc), ses
+  doublures dans `apps/lfd-api/test/write-replay/doubles.ts`. Il lit l'inventaire à l'instant (la porte est
+  lancée par le test), et pour chaque route « par intention » qui a un
+  scénario : sème, relève **toutes** les tables (compte et empreinte md5 du
+  contenu, pas seulement la table du handler — une mise à jour se voit aussi),
+  envoie, relève, renvoie avec la même clé, relève. Le premier envoi doit
+  écrire, le second ne rien changer, et les deux réponses être identiques
+  (statut et corps) — ou, pour un secret montré une fois, un 409 sans
+  écriture. Entre l'envoi et le relevé, une lecture `/me` de l'appelant laisse
+  la résolution faire ses écritures d'entrée (l'acceptation du rattachement du
+  créateur d'une société), qui sont l'effet d'une requête, pas du rejeu.
+- **Couverture au 2026-11-12** : 80 routes sur 93 « par intention », dont
+  toutes celles de l'argent (comptabilité, paiements, `card-payment`,
+  tarification, la commande saisie par l'équipe, la hausse par carte, les
+  liens de paiement). Aucun rejeu n'a écrit deux fois.
+- **La dette** : 13 routes, listées avec leur raison dans
+  `apps/lfd-api/test/write-replay/replay-debt.ts`, sous un plafond que le test vérifie
+  (`REPLAY_DEBT_CEILING`) : les quatre gestes du colisage et quatre de la
+  livraison (semis d'une journée ou d'une tournée), la liaison d'une identité
+  tierce et l'essai d'un abonné de la vitrine (frontières pas encore
+  doublées), le réassort d'un site, le remplacement d'une image, la
+  réémission du référentiel. Une route « par intention » sans scénario ni
+  inscription fait échouer le test ; une inscription qui a gagné son scénario
+  ou qui ne désigne plus rien aussi.
 
 ### J4 — « par nature » resserré
 

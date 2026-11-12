@@ -119,6 +119,7 @@
   "test/company-pricing.e2e-spec.ts": 23674,
   "test/company-races.e2e-spec.ts": 6114,
   "test/company-siren.e2e-spec.ts": 11282,
+  "test/company-stale-sheet.e2e-spec.ts": 10198,
   "test/company-standing-readers.e2e-spec.ts": 21897,
   "test/company-standing-workspace.e2e-spec.ts": 16749,
   "test/company-wall.e2e-spec.ts": 23551,
@@ -630,5 +631,6 @@
   "test/vitrine-webhooks-right.e2e-spec.ts": 5442,
   "test/vitrine-xml.e2e-spec.ts": 8726,
   "test/volume-commitment-carry-over.e2e-spec.ts": 13689,
-  "test/volume-ladder-carry-over.e2e-spec.ts": 11733
+  "test/volume-ladder-carry-over.e2e-spec.ts": 11733,
+  "test/write-replay.e2e-spec.ts": 112233
 }

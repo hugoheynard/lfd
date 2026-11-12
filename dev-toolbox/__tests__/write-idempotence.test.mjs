@@ -6,10 +6,13 @@ import {
   caseOf,
   commandHandlersIn,
   debtOf,
+  handlerFor,
   sealedUnderDirectTransaction,
   verdict,
   writeRoutes,
 } from "../gates/write-idempotence.mjs";
+import { inventoryOf } from "../gates/write-idempotence-inventory.mjs";
+import { joinRoutePath } from "../gates/write-idempotence-paths.mjs";
 
 const CONTROLLER_PATH = "apps/lfd-api/src/x/http/things.controller.ts";
 const COMMAND_PATH = "apps/lfd-api/src/x/application/commands/send-thing.command.ts";
@@ -236,4 +239,42 @@ test("risque assumé : @AcceptedReplay avec raison et décision, rangé à part"
     assert.equal(route.case, "empty-reason", bad);
     assert.match(verdict([route], []).failures[0], /AcceptedReplay/);
   }
+});
+
+test("inventaire : verbe, chemin complet (préfixe, constantes du fichier), case et handler", () => {
+  const source = [
+    'import { SendThingCommand } from "../application/commands/send-thing.command.js";',
+    'const ITEM = ":id/things";',
+    "@Controller('admin/x/')",
+    "export class ThingsController {",
+    "  @Post(`${ITEM}/send`) send(@IntentKey() k: string) { return this.commands.execute(new SendThingCommand(k)); }",
+    '  @Put() @Idempotent("pose") put() {}',
+    "  @Delete(IMPORTED) drop() {}",
+    "}",
+  ].join("\n");
+  const handlers = commandHandlersIn(HANDLER_PATH, SEALED);
+  const routes = writeRoutes(CONTROLLER_PATH, source).map((r) => ({
+    ...r,
+    case: caseOf(r, handlers),
+  }));
+  const inventory = inventoryOf(routes, (command) => handlerFor(command, handlers));
+  assert.deepEqual(inventory, [
+    {
+      route: `${CONTROLLER_PATH}#put`,
+      httpMethod: "PUT",
+      path: "/admin/x",
+      case: "nature",
+      handlers: [],
+    },
+    {
+      route: `${CONTROLLER_PATH}#send`,
+      httpMethod: "POST",
+      path: "/admin/x/:id/things/send",
+      case: "intent",
+      handlers: [`${HANDLER_PATH}#SendThingHandler`],
+    },
+  ]);
+  assert.equal(routes.find((r) => r.method === "drop").path, "/admin/x/{IMPORTED}");
+  assert.equal(joinRoutePath("", ""), "/");
+  assert.equal(joinRoutePath("/a/", "/b/"), "/a/b");
 });

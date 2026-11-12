@@ -43,7 +43,9 @@
  *    de la transaction sans erreur (§ 7).
  *
  * Usage : `pnpm gate write-idempotence` ; `--write-debt` réécrit la liste de
- * dette avec les routes non rangées d'aujourd'hui. Tests :
+ * dette avec les routes non rangées d'aujourd'hui ; `--inventory [fichier]`
+ * écrit l'inventaire JSON des routes rangées (sur la sortie sans fichier),
+ * que l'e2e de rejeu lit (`apps/lfd-api/test/write-replay.e2e-spec.ts`). Tests :
  * `node --test dev-toolbox/__tests__/write-idempotence.test.mjs`.
  */
 import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
@@ -52,31 +54,27 @@ import { fileURLToPath } from "node:url";
 
 import ts from "typescript";
 
+import { inventoryOf } from "./write-idempotence-inventory.mjs";
+import {
+  WRITE_VERBS,
+  decoratorOf,
+  decoratorsOf,
+  joinRoutePath,
+  pathConstants,
+  prefixOf,
+  verbOf,
+} from "./write-idempotence-paths.mjs";
+
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const SRC = "apps/lfd-api/src";
 export const DEBT_FILE = "dev-toolbox/gates/write-idempotence-debt.json";
 
-const WRITE_VERBS = new Set(["Post", "Put", "Patch", "Delete"]);
 const WRITING_INJECTIONS = /^(?:UnitOfWork|PrismaService)$|(?:Repository|Store|Writer)$/;
 
 const parse = (path, source) =>
   ts.createSourceFile(path, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
 
 const lineOf = (file, node) => file.getLineAndCharacterOfPosition(node.getStart(file)).line + 1;
-
-/** Le nom d'un décorateur (`@Post()` → `Post`), et son premier argument. */
-function decoratorOf(decorator) {
-  const expression = decorator.expression;
-  if (ts.isCallExpression(expression) && ts.isIdentifier(expression.expression)) {
-    return { name: expression.expression.text, args: expression.arguments };
-  }
-  if (ts.isIdentifier(expression)) {
-    return { name: expression.text, args: [] };
-  }
-  return { name: null, args: [] };
-}
-
-const decoratorsOf = (node) => (ts.canHaveDecorators(node) ? (ts.getDecorators(node) ?? []) : []);
 
 /** La raison d'un `@Idempotent(...)` : `null` sans décorateur, `""` si vide ou non littérale. */
 function reasonOf(method) {
@@ -166,10 +164,12 @@ export function importsOf(path, file) {
 export function writeRoutes(path, source) {
   const file = parse(path, source);
   const imports = importsOf(path, file);
+  const constants = pathConstants(file);
   const routes = [];
   const visit = (node) => {
     if (ts.isClassDeclaration(node)) {
       const guards = decoratorsOf(node).map((d) => d.getText(file));
+      const prefix = prefixOf(node, constants);
       const siblings = new Map(
         node.members
           .filter((member) => ts.isMethodDeclaration(member) && member.name)
@@ -180,9 +180,12 @@ export function writeRoutes(path, source) {
         const names = decoratorsOf(member).map((d) => decoratorOf(d).name);
         if (!names.some((name) => WRITE_VERBS.has(name))) continue;
         const own = decoratorsOf(member).map((d) => d.getText(file));
+        const { verb, path: ownPath } = verbOf(member, constants);
         routes.push({
           file: path,
           method: member.name.getText(file),
+          httpMethod: verb,
+          path: joinRoutePath(prefix, ownPath),
           line: lineOf(file, member),
           reason: reasonOf(member),
           accepted: acceptedReplayOf(member),
@@ -242,6 +245,7 @@ export function commandHandlersIn(path, source) {
         const [first] = args;
         if (name !== "CommandHandler" || !first || !ts.isIdentifier(first)) continue;
         found.push({
+          name: node.name?.text ?? null,
           command: first.text,
           from: imports.get(first.text) ?? path,
           file: path,
@@ -360,6 +364,19 @@ function main(argv) {
   const sealedFiles = files
     .filter(({ source }) => sealedUnderDirectTransaction(source))
     .map(({ path }) => path);
+
+  const inventoryAt = argv.indexOf("--inventory");
+  if (inventoryAt !== -1) {
+    const target = argv[inventoryAt + 1];
+    const content = `${JSON.stringify(
+      inventoryOf(routes, (command) => handlerFor(command, handlers)),
+      null,
+      2,
+    )}\n`;
+    if (target && !target.startsWith("--")) writeFileSync(resolve(target), content);
+    else process.stdout.write(content);
+    return;
+  }
 
   if (argv.includes("--write-debt")) {
     const content = {
