@@ -93,3 +93,23 @@ export class BillingPayerNotFoundError extends ResourceNotFoundError {
     );
   }
 }
+
+/**
+ * **Le premier choix ne se pose qu'une fois** (décidé par Hugo le
+ * 2026-11-12) : le droit sociétés pose le mode à l'ouverture d'un compte, et
+ * seulement le premier. Un mode déjà choisi chez cette entité se change par
+ * la comptabilité, sur la fiche.
+ */
+export class PayerBillingModeAlreadyChosenError extends BusinessError {
+  constructor(
+    readonly payerName: string,
+    readonly mode: BillingMode,
+  ) {
+    super(
+      "accounting.payer_mode.already_chosen",
+      `Le mode de facturation de « ${payerName} » est déjà choisi chez cette entité (` +
+        `${BILLING_MODE_LABELS[mode]}) : le premier choix ne se pose qu'une fois. Pour le changer, ` +
+        `passez par la carte « Mode de facturation » de la fiche, où la comptabilité le modifie.`,
+    );
+  }
+}

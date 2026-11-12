@@ -11,12 +11,14 @@ import type { CompanyIdentityDraft } from '@lfd/b2b-ui/company';
 
 import type { AdminCompanyDetail, CompanyOpened } from '../../comptes-clients/admin-company';
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
-import { httpErrorMessage } from '@lfd/endpoints';
+import { httpErrorCode, httpErrorMessage } from '@lfd/endpoints';
 import { NotifyService } from '../../notify.service';
 import type { HolderChoice } from '../holder-picker/holder-picker';
 import type { InitialBillingMode } from '../facturation/initial-billing-mode';
-import { PayerBillingModeService } from '../facturation/payer-billing-mode.service';
 import { validUntil } from '../../admin/acces-en-attente/pending-access.model';
+
+/** Le refus du premier choix quand un mode est déjà posé : pas une faute à dire. */
+const MODE_ALREADY_CHOSEN = 'accounting.payer_mode.already_chosen';
 
 /**
  * Ce que la fiche **écrit**.
@@ -34,7 +36,6 @@ export class FicheClientActions {
   /** Une clé par geste voulu : un double clic n'envoie pas deux e-mails (revue de S2, cas 4). */
   private readonly intents = new GestureIntents();
   private readonly notify = inject(NotifyService);
-  private readonly billingModes = inject(PayerBillingModeService);
 
   /** Une ouverture d'accès est en cours — empêche le double envoi. */
   readonly granting = signal(false);
@@ -100,8 +101,9 @@ export class FicheClientActions {
 
   /**
    * Pose le mode de facturation choisi à l'ouverture ou à l'activation, par la
-   * route du mode du payeur. Le compte existe déjà : un échec ne défait rien,
-   * il se dit — le mode reste « non choisi » et se règle sur la fiche.
+   * route du premier choix (droit sociétés). Le compte existe déjà : un échec
+   * ne défait rien, il se dit — le mode reste « non choisi » et se règle sur la
+   * fiche. Un mode déjà choisi n'est pas une faute de l'utilisateur.
    */
   async applyInitialBillingMode(companyId: string, choice: InitialBillingMode): Promise<boolean> {
     if (choice.kind !== 'chosen') {
@@ -109,10 +111,17 @@ export class FicheClientActions {
     }
     const label = BILLING_RHYTHM_KIND_LABELS[choice.mode];
     try {
-      await this.billingModes.set(choice.legalEntityId, companyId, { mode: choice.mode });
+      await this.service.setInitialBillingMode(companyId, {
+        legalEntityId: choice.legalEntityId,
+        mode: choice.mode,
+      });
       this.notify.success(`Mode de facturation : ${label}.`);
       return true;
     } catch (error) {
+      if (httpErrorCode(error) === MODE_ALREADY_CHOSEN) {
+        this.notify.info('Le mode était déjà choisi.');
+        return true;
+      }
       this.notify.error(null, initialModeFailure(label, httpErrorMessage(error, '')));
       return false;
     }

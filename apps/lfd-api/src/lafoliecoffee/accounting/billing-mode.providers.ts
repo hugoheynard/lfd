@@ -1,6 +1,7 @@
 import type { Provider, Type } from "@nestjs/common";
 
 import { CancelBillingModeDatesHandler } from "./application/commands/cancel-billing-mode-dates.handler.js";
+import { ChooseInitialPayerBillingModeHandler } from "./application/commands/choose-initial-payer-billing-mode.handler.js";
 import { CancelPayerBillingModeHandler } from "./application/commands/cancel-payer-billing-mode.handler.js";
 import { ScheduleBillingModeDatesHandler } from "./application/commands/schedule-billing-mode-dates.handler.js";
 import { SetPayerBillingModeHandler } from "./application/commands/set-payer-billing-mode.handler.js";
@@ -13,6 +14,7 @@ import { PayerBillingModesReader } from "./domain/ports/payer-billing-modes.read
 import { PayerOrderHistoryReader } from "./domain/ports/payer-order-history.reader.js";
 import { PayerStandingReader } from "./domain/ports/payer-standing.reader.js";
 import { PayerStandingsReader } from "./domain/ports/payer-standings.reader.js";
+import { AdminCompanyBillingModeController } from "./http/admin-company-billing-mode.controller.js";
 import { AdminBillingModesController } from "./http/admin-billing-modes.controller.js";
 import { PrismaBillingModeDatesReader } from "./infrastructure/prisma-billing-mode-dates.reader.js";
 import { PrismaBillingModeDatesRepository } from "./infrastructure/prisma-billing-mode-dates.repository.js";
@@ -40,9 +42,13 @@ export const BILLING_MODE_PROVIDERS: readonly Provider[] = [
   ScheduleBillingModeDatesHandler,
   CancelBillingModeDatesHandler,
   SetPayerBillingModeHandler,
+  ChooseInitialPayerBillingModeHandler,
   CancelPayerBillingModeHandler,
   GetPayerBillingModeHandler,
   GetBillingRhythmsCalendarHandler,
 ];
 
-export const BILLING_MODE_CONTROLLERS: readonly Type[] = [AdminBillingModesController];
+export const BILLING_MODE_CONTROLLERS: readonly Type[] = [
+  AdminBillingModesController,
+  AdminCompanyBillingModeController,
+];

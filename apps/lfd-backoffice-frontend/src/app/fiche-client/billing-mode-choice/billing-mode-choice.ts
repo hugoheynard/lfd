@@ -38,10 +38,10 @@ type LoadState = 'loading' | 'ready' | 'error';
  * choix qu'on fait sans le voir.
  *
  * Ce composant ne pose rien : il dit le choix (`choiceChange`), et l'écran le
- * pose par la route du mode du payeur après le succès de son geste.
+ * pose par la route du premier choix après le succès de son geste.
  *
  * Il n'exige rien quand il n'y a rien à choisir ici — aucune entité en
- * service, pas le droit d'écrire le mode (le serveur refuserait), ou un mode
+ * service, pas le droit sur les sociétés ni la lecture comptable, ou un mode
  * déjà choisi pour ce compte (`companyId` donné).
  */
 @Component({
@@ -67,10 +67,15 @@ export class BillingModeChoice {
   private readonly modesApi = inject(PayerBillingModeService);
   private readonly permissions = inject(PermissionsStore);
 
-  /** Poser le mode demande `b2b_accounting:write` ; sans lui, le choix ne serait que refusé. */
+  /**
+   * Le premier choix se pose sous `b2b_companies:write` (route
+   * `/admin/companies/:id/billing-mode/initial`). La lecture des entités et du
+   * mode déjà choisi reste sous `b2b_accounting` (`@AdminSurface("b2b_accounting")`,
+   * vérifié le 2026-11-12) : sans la lecture comptable, rien ne se propose.
+   */
   protected readonly canWrite = computed(
     () =>
-      this.permissions.can('b2b_accounting:read') && this.permissions.can('b2b_accounting:write'),
+      this.permissions.can('b2b_companies:write') && this.permissions.can('b2b_accounting:read'),
   );
 
   protected readonly choices = PAYER_MODE_CHOICES;

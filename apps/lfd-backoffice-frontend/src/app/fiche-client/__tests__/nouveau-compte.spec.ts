@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import type { ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
@@ -35,8 +36,10 @@ interface Harness {
   readonly modes: { entity: string; company: string; mode: string }[];
 }
 
-/** Le mode, posé par la route du payeur : on peut le faire refuser. */
+/** Le mode, posé par la route du premier choix : on peut le faire refuser. */
 let refuseMode: unknown = null;
+/** Les notes neutres de la dernière page montée. */
+let informed: string[] = [];
 
 /**
  * Monte la page **sans identifiant de route** — c'est ce qui la met en mode
@@ -46,6 +49,7 @@ async function setup(create = vi.fn(() => Promise.resolve(CREATED))): Promise<Ha
   const errors: unknown[] = [];
   const said: string[] = [];
   const modes: { entity: string; company: string; mode: string }[] = [];
+  informed = [];
   TestBed.configureTestingModule({
     providers: [
       provideRouter([{ path: '**', children: [] }]),
@@ -53,7 +57,17 @@ async function setup(create = vi.fn(() => Promise.resolve(CREATED))): Promise<Ha
         provide: AdminCompaniesService,
         useValue: {
           create,
-        } satisfies Pick<AdminCompaniesService, 'create'>,
+          setInitialBillingMode: (
+            company: string,
+            payload: { legalEntityId: string; mode: string },
+          ): Promise<void> => {
+            if (refuseMode !== null) {
+              return Promise.reject(refuseMode);
+            }
+            modes.push({ entity: payload.legalEntityId, company, mode: payload.mode });
+            return Promise.resolve();
+          },
+        } satisfies Pick<AdminCompaniesService, 'create' | 'setInitialBillingMode'>,
       },
       {
         provide: PickupAddressesService,
@@ -80,7 +94,9 @@ async function setup(create = vi.fn(() => Promise.resolve(CREATED))): Promise<Ha
           success: (message: string): void => {
             said.push(message);
           },
-          info: (): void => undefined,
+          info: (message: string): void => {
+            informed.push(message);
+          },
           error: (error: unknown, fallback?: string): void => {
             errors.push(error ?? fallback);
           },
@@ -98,15 +114,8 @@ async function setup(create = vi.fn(() => Promise.resolve(CREATED))): Promise<Ha
       },
       {
         provide: PayerBillingModeService,
-        useValue: {
-          set: (entity: string, company: string, payload: { mode: string }): Promise<void> => {
-            if (refuseMode !== null) {
-              return Promise.reject(refuseMode);
-            }
-            modes.push({ entity, company, mode: payload.mode });
-            return Promise.resolve();
-          },
-        },
+        // Le premier choix ne passe plus par la route comptable : rien à lire ici.
+        useValue: {},
       },
     ],
   });
@@ -278,6 +287,21 @@ describe('InformationsPage — ouverture d’un compte', () => {
         'Il reste « non choisi » : choisissez-le sur la fiche, carte « Mode de facturation ».',
     ]);
     // Le compte est ouvert : on va quand même sur sa fiche, où le mode se règle.
+    expect(navigate).toHaveBeenCalled();
+  });
+
+  it('un mode déjà choisi (409) n’est pas une erreur : une note neutre, pas d’alerte', async () => {
+    refuseMode = new HttpErrorResponse({
+      status: 409,
+      error: { code: 'accounting.payer_mode.already_chosen', message: 'Déjà choisi.' },
+    });
+    const { page, errors, said, navigate } = await setup();
+    fill(page);
+    await page['createAccount']();
+
+    expect(errors).toEqual([]);
+    expect(said).not.toContain('Mode de facturation : Hebdomadaire.');
+    expect(informed).toContain('Le mode était déjà choisi.');
     expect(navigate).toHaveBeenCalled();
   });
 

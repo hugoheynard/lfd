@@ -13,6 +13,7 @@ import type {
   DeferredTerm,
   DeliveryAddressPayload,
   FulfillmentPreferencePayload,
+  InitialPayerBillingModePayload,
   InviteCompanyMemberPayload,
   UpdateIdentityPayload,
 } from '@lfd/contracts';
@@ -317,6 +318,23 @@ export class AdminCompaniesService {
   }
 
   /** Active le compte (`pending → active`). Le gate (pièces requises) est serveur. */
+  /**
+   * Pose le **premier** mode de facturation d'un compte, à l'ouverture ou à
+   * l'activation, sous le droit sociétés. Refuse en 409
+   * `accounting.payer_mode.already_chosen` si un mode est déjà choisi.
+   */
+  async setInitialBillingMode(
+    companyId: string,
+    payload: InitialPayerBillingModePayload,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.put<void>(
+        `${B2B_API_BASE}/admin/companies/${encodeURIComponent(companyId)}/billing-mode/initial`,
+        payload,
+      ),
+    );
+  }
+
   async activate(companyId: string): Promise<void> {
     await firstValueFrom(
       this.http.post<void>(`${B2B_API_BASE}/admin/companies/${companyId}/activate`, null),

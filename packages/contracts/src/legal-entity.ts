@@ -599,6 +599,18 @@ export const setPayerBillingModePayloadSchema = z.strictObject({
 });
 export type SetPayerBillingModePayload = z.infer<typeof setPayerBillingModePayloadSchema>;
 
+/**
+ * Le **premier choix** du mode d'un payeur, posé par l'équipe sociétés à
+ * l'ouverture d'un compte (`PUT /admin/companies/:companyId/billing-mode/initial`).
+ * Refusé en 409 `accounting.payer_mode.already_chosen` quand un autre mode est
+ * déjà choisi chez l'entité ; le même mode redemandé rend 204 sans rien écrire.
+ */
+export const initialPayerBillingModePayloadSchema = z.strictObject({
+  legalEntityId: z.string().min(1),
+  mode: billingRhythmKindSchema,
+});
+export type InitialPayerBillingModePayload = z.infer<typeof initialPayerBillingModePayloadSchema>;
+
 /** Activer ou désactiver la constitution automatique — un geste à part. */
 export const setAutoCollectionPayloadSchema = z.strictObject({ enabled: z.boolean() });
 export type SetAutoCollectionPayload = z.infer<typeof setAutoCollectionPayloadSchema>;

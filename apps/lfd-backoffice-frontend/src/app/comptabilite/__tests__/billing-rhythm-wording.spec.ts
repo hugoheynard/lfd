@@ -20,9 +20,9 @@ describe('les mots du rythme de facturation', () => {
     expect(rhythmSentence({ kind: 'weekly', days: [1] })).toBe('Chaque semaine, clôture le lundi');
   });
 
-  it('propose les trois modes d’un client, le mensuel par défaut', () => {
+  it('propose les trois modes d’un client, sans défaut', () => {
     expect(PAYER_MODE_CHOICES.map((choice) => choice.label)).toEqual([
-      'Mensuel — par défaut',
+      'Mensuel',
       'Deux fois par mois',
       'Hebdomadaire',
     ]);

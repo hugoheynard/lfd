@@ -1,5 +1,6 @@
 import {
   NoScheduledPayerBillingModeError,
+  PayerBillingModeAlreadyChosenError,
   PayerBillingModeChangePendingError,
 } from "../errors/billing-mode-errors.js";
 import { PayerTimeline, type ModeTimelines } from "../services/payer-timeline.js";
@@ -145,6 +146,35 @@ export class PayerBillingModeHistory {
     ];
     this.fresh.add(gesture.segmentId);
     return { kind: "scheduled", from, to: mode, effectiveAt, immediate };
+  }
+
+  /**
+   * Le **premier choix** du mode (décidé par Hugo le 2026-11-12) : permis
+   * tant que le payeur n'a aucun segment vivant chez l'entité, puis la même
+   * règle que {@link change}. Le même mode redemandé après un premier choix
+   * — un double clic, un rejeu — n'est pas un fait et ne refuse rien.
+   *
+   * @returns ce qui a changé, ou `null` : ce premier choix est déjà posé.
+   * @throws {PayerBillingModeAlreadyChosenError} un autre mode est déjà choisi.
+   */
+  chooseFirst(
+    mode: BillingMode,
+    gesture: BillingGesture,
+    modes: ModeTimelines,
+    payer: PayerOpening,
+  ): PayerModeChange | null {
+    const chosen = this.lastWritten();
+    if (chosen === undefined) {
+      return this.change(mode, gesture, modes, payer);
+    }
+    if (chosen.mode === mode) {
+      return null;
+    }
+    throw new PayerBillingModeAlreadyChosenError(this.payer.name, chosen.mode);
+  }
+
+  private lastWritten(): PayerModeEntry | undefined {
+    return [...this.living()].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()).at(-1);
   }
 
   /**

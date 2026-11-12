@@ -27,7 +27,7 @@ async function boot(options: {
   readonly companyId?: string | null;
   readonly since?: string | null;
 }): Promise<Harness> {
-  const granted = options.granted ?? ['b2b_accounting:read', 'b2b_accounting:write'];
+  const granted = options.granted ?? ['b2b_accounting:read', 'b2b_companies:write'];
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [BillingModeChoice],
@@ -114,8 +114,10 @@ describe('BillingModeChoice — le mode choisi à l’ouverture d’un compte', 
     expect(emitted.at(-1)).toEqual({ kind: 'not-required' });
   });
 
-  it('sans le droit d’écrire le mode : la carte le dit, et n’exige rien', async () => {
-    const { fixture, emitted } = await boot({ granted: ['b2b_accounting:read'] });
+  it('sans le droit d’écrire les sociétés : la carte le dit, et n’exige rien', async () => {
+    const { fixture, emitted } = await boot({
+      granted: ['b2b_accounting:read', 'b2b_accounting:write'],
+    });
 
     expect(fixture.nativeElement.querySelector('[data-mode-choice-no-write]')).not.toBeNull();
     expect(listbox(fixture, 'Mode de facturation')).toBeUndefined();

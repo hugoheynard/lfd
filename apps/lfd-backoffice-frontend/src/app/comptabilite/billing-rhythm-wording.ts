@@ -39,15 +39,12 @@ export const LAST_CLOSING_DAY_OF_MONTH = 28;
 /** Une période plus courte que ce nombre de jours se signale (§6, bascule). */
 export const SHORT_PERIOD_DAYS = 3;
 
-/**
- * Le mode d'un client, tel que le choix à trois le dit (plan §16.9, M4b) : le
- * mensuel porte « par défaut », parce qu'un client qui n'a rien choisi l'est.
- */
+/** Le mode d'un client, tel que le choix à trois le dit ; aucun n'est présenté comme un défaut. */
 export const PAYER_MODE_CHOICES: readonly {
   readonly value: BillingRhythmKind;
   readonly label: string;
 }[] = [
-  { value: 'monthly', label: `${BILLING_RHYTHM_KIND_LABELS.monthly} — par défaut` },
+  { value: 'monthly', label: BILLING_RHYTHM_KIND_LABELS.monthly },
   { value: 'semimonthly', label: BILLING_RHYTHM_KIND_LABELS.semimonthly },
   { value: 'weekly', label: BILLING_RHYTHM_KIND_LABELS.weekly },
 ];
