@@ -1,7 +1,7 @@
 -- LE JOURNAL DU RÉFÉRENTIEL — plan
 -- `documentation/caching-usage/plan-lectures-du-pim.md`, § 4.1 et § 4.4.
 --
--- Strictement ADDITIVE : une table neuve, une fonction, 72 déclencheurs (trois
+-- Strictement ADDITIVE : une table neuve, une fonction, 69 déclencheurs (trois
 -- par table surveillée). Aucune colonne existante touchée, aucune donnée
 -- déplacée.
 --
@@ -59,6 +59,8 @@ $$ LANGUAGE plpgsql;
 -- Hors numéro : les révisions et la réémission (leur propre écran), les
 -- opérations, la liaison des canaux. Le détail d'une fiche ne lit pas
 -- `catalog_revision_item` : sa filiation lit `product` et `product_variant`.
+-- `nutrition_declaration` n'y est pas : plus aucun code ne la lit, et elle
+-- n'existe plus en production (déploiement du 2026-11-12, erreur 42P01).
 DO $$
 DECLARE
   watched TEXT;
@@ -66,8 +68,7 @@ BEGIN
   FOREACH watched IN ARRAY ARRAY[
     'product', 'product_variant', 'product_editorial', 'product_media',
     'product_packaging', 'product_readiness', 'product_context_tva',
-    'product_ingredient', 'variant_allergens', 'nutrition_declaration',
-    'nutrition_values', 'category', 'category_editorial', 'category_media',
+    'product_ingredient', 'variant_allergens', 'nutrition_values', 'category', 'category_editorial', 'category_media',
     'category_context_tva', 'tva_rate', 'sales_context', 'appellation',
     'ingredient', 'ingredient_allergen', 'allergen_category', 'allergen_entry',
     'order_time_limit', 'sku_registry'

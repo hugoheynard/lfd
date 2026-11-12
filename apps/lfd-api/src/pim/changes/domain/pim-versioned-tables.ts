@@ -25,7 +25,6 @@ export const PIM_VERSIONED_TABLES = [
   "product_context_tva",
   "product_ingredient",
   "variant_allergens",
-  "nutrition_declaration",
   "nutrition_values",
   "category",
   "category_editorial",
