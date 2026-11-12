@@ -1,24 +1,22 @@
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import type {
+  BillingModeEntityView,
   BillingRhythmKind,
   InitialPayerBillingModeView,
-  LegalEntityView,
 } from '@lfd/contracts';
 import type { StaffPermission } from '@lfd/contracts';
 import { FoldListboxComponent } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
-import { LegalEntitiesService } from '../../comptabilite/legal-entities.service';
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
 import type { InitialBillingMode } from '../facturation/initial-billing-mode';
 import { BillingModeChoice } from './billing-mode-choice';
 
-type Entity = Pick<LegalEntityView, 'id' | 'name' | 'archivedAt'>;
-
-const LE1: Entity = { id: 'le1', name: 'La Folie Douce', archivedAt: null };
-const LE2: Entity = { id: 'le2', name: 'Folie Traiteur', archivedAt: null };
+type Entity = BillingModeEntityView;
+const LE1: Entity = { id: 'le1', name: 'La Folie Douce' };
+const LE2: Entity = { id: 'le2', name: 'Folie Traiteur' };
 
 interface Harness {
   readonly fixture: ComponentFixture<BillingModeChoice>;
@@ -33,21 +31,19 @@ async function boot(options: {
   readonly requiresChoice?: boolean;
 }): Promise<Harness> {
   const entities = options.entities ?? [LE1];
-  const granted = options.granted ?? ['b2b_accounting:read', 'b2b_companies:write'];
+  const granted = options.granted ?? ['b2b_companies:write'];
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [BillingModeChoice],
     providers: [
       {
-        provide: LegalEntitiesService,
-        useValue: { list: () => Promise.resolve(entities) },
-      },
-      {
         provide: AdminCompaniesService,
         useValue: {
+          billingModeEntities: (): Promise<readonly BillingModeEntityView[]> =>
+            Promise.resolve(entities),
           initialBillingMode: (): Promise<InitialPayerBillingModeView> =>
             Promise.resolve({
-              entities: entities.map(({ id, name }) => ({ id, name })),
+              entities,
               chosen: options.chosen ?? [],
               requiresChoice: options.requiresChoice ?? true,
             }),
@@ -179,10 +175,12 @@ describe('BillingModeChoice — le mode choisi à l’ouverture d’un compte', 
     expect(emitted.at(-1)).toEqual({ kind: 'not-required' });
   });
 
-  it('ouverture sans la lecture comptable : la carte le dit, et n’exige rien', async () => {
+  it('ouverture sans aucun droit comptable : le mode est exigé sous le seul droit sociétés', async () => {
     const { fixture, emitted } = await boot({ granted: ['b2b_companies:write'] });
-
-    expect(fixture.nativeElement.querySelector('[data-mode-choice-no-write]')).not.toBeNull();
-    expect(emitted.at(-1)).toEqual({ kind: 'not-required' });
+    expect(fixture.nativeElement.querySelector('[data-mode-choice-no-write]')).toBeNull();
+    expect(listbox(fixture, 'Mode de facturation')).toBeDefined();
+    expect(emitted.at(-1)).toEqual({ kind: 'missing' });
+    await pick(fixture, 'Mode de facturation', 'weekly');
+    expect(emitted.at(-1)).toEqual({ kind: 'chosen', legalEntityId: 'le1', mode: 'weekly' });
   });
 });

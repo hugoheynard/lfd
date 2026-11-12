@@ -513,6 +513,7 @@ export type {
   SetPayerBillingModePayload,
   InitialPayerBillingModePayload,
   InitialPayerBillingModeView,
+  BillingModeEntityView,
   InvoicePaymentTermsView,
   SetInvoicePaymentTermsPayload,
   SetInvoicePrefixPayload,

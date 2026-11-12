@@ -7,6 +7,7 @@ import { ScheduleBillingModeDatesHandler } from "./application/commands/schedule
 import { SetPayerBillingModeHandler } from "./application/commands/set-payer-billing-mode.handler.js";
 import { GetBillingRhythmsCalendarHandler } from "./application/queries/get-billing-rhythms-calendar.handler.js";
 import { GetInitialPayerBillingModeHandler } from "./application/queries/get-initial-payer-billing-mode.handler.js";
+import { ListBillingModeEntitiesHandler } from "./application/queries/list-billing-mode-entities.handler.js";
 import { GetPayerBillingModeHandler } from "./application/queries/get-payer-billing-mode.handler.js";
 import { BillingModeDatesReader } from "./domain/ports/billing-mode-dates.reader.js";
 import { BillingModeDatesRepository } from "./domain/ports/billing-mode-dates.repository.js";
@@ -47,6 +48,7 @@ export const BILLING_MODE_PROVIDERS: readonly Provider[] = [
   CancelPayerBillingModeHandler,
   GetPayerBillingModeHandler,
   GetInitialPayerBillingModeHandler,
+  ListBillingModeEntitiesHandler,
   GetBillingRhythmsCalendarHandler,
 ];
 

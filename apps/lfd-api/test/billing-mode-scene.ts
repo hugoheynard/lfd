@@ -41,13 +41,13 @@ export function staff(): ReturnType<E2eContext["asSub"]> {
   return ctx.asSub("staff-e2e");
 }
 
-export async function declare(): Promise<string> {
+export async function declare(siren = "552100554", name = "La Folie Douce"): Promise<string> {
   const response = await staff()
     .post(BASE)
     .send({
-      name: "La Folie Douce",
+      name,
       legalForm: "SAS",
-      siren: "552100554",
+      siren,
       rcs: "",
       shareCapitalCents: 1_000_000,
       vatNumber: "",

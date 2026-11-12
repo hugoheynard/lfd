@@ -612,6 +612,16 @@ export const initialPayerBillingModePayloadSchema = z.strictObject({
 export type InitialPayerBillingModePayload = z.infer<typeof initialPayerBillingModePayloadSchema>;
 
 /**
+ * Une entité émettrice en service, telle que le choix du mode la propose sous
+ * le droit sociétés — son nom seulement, rien de comptable
+ * (`GET /admin/companies/billing-mode/entities`, à l'ouverture d'un compte).
+ */
+export interface BillingModeEntityView {
+  readonly id: string;
+  readonly name: string;
+}
+
+/**
  * Ce que l'écran du **premier choix** lit, sous le droit sociétés
  * (`GET /admin/companies/:companyId/billing-mode/initial`). Moindre
  * exposition : ni dates, ni paramètres de prélèvement — seulement de quoi
@@ -619,7 +629,7 @@ export type InitialPayerBillingModePayload = z.infer<typeof initialPayerBillingM
  */
 export interface InitialPayerBillingModeView {
   /** Les entités émettrices en service, dans l'ordre de la liste comptable. */
-  readonly entities: readonly { readonly id: string; readonly name: string }[];
+  readonly entities: readonly BillingModeEntityView[];
   /** Le mode déjà choisi par ce payeur, par entité — absente si rien n'y est choisi. */
   readonly chosen: readonly { readonly legalEntityId: string; readonly mode: BillingRhythmKind }[];
   /** Faux pour un site facturé chez son principal : il n'a pas de mode à lui. */

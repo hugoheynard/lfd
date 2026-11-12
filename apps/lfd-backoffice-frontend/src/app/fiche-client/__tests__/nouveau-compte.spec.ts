@@ -9,7 +9,6 @@ import type { CompanyOpened } from '../../comptes-clients/admin-company';
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
 import { NotifyService } from '../../notify.service';
 import { PermissionsStore } from '../../auth/permissions.store';
-import { LegalEntitiesService } from '../../comptabilite/legal-entities.service';
 import { PayerBillingModeService } from '../facturation/payer-billing-mode.service';
 import { DeliveryAvailabilityService } from '../../b2b/reglages/delivery-availability.service';
 import { PickupAddressesService } from '../../b2b/reglages/pickup-addresses.service';
@@ -57,6 +56,7 @@ async function setup(create = vi.fn(() => Promise.resolve(CREATED))): Promise<Ha
         provide: AdminCompaniesService,
         useValue: {
           create,
+          billingModeEntities: () => Promise.resolve([{ id: 'le1', name: 'La Folie Douce' }]),
           setInitialBillingMode: (
             company: string,
             payload: { legalEntityId: string; mode: string },
@@ -67,7 +67,10 @@ async function setup(create = vi.fn(() => Promise.resolve(CREATED))): Promise<Ha
             modes.push({ entity: payload.legalEntityId, company, mode: payload.mode });
             return Promise.resolve();
           },
-        } satisfies Pick<AdminCompaniesService, 'create' | 'setInitialBillingMode'>,
+        } satisfies Pick<
+          AdminCompaniesService,
+          'create' | 'billingModeEntities' | 'setInitialBillingMode'
+        >,
       },
       {
         provide: PickupAddressesService,
@@ -105,12 +108,6 @@ async function setup(create = vi.fn(() => Promise.resolve(CREATED))): Promise<Ha
       {
         provide: PermissionsStore,
         useValue: { can: (): boolean => true },
-      },
-      {
-        provide: LegalEntitiesService,
-        useValue: {
-          list: () => Promise.resolve([{ id: 'le1', name: 'La Folie Douce', archivedAt: null }]),
-        },
       },
       {
         provide: PayerBillingModeService,

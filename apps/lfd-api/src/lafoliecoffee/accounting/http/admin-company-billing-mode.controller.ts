@@ -2,6 +2,7 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Param, Put } from "@nestjs
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import {
   initialPayerBillingModePayloadSchema,
+  type BillingModeEntityView,
   type InitialPayerBillingModePayload,
   type InitialPayerBillingModeView,
 } from "@lfd/contracts";
@@ -12,6 +13,7 @@ import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.j
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ChooseInitialPayerBillingModeCommand } from "../application/commands/choose-initial-payer-billing-mode.command.js";
 import { GetInitialPayerBillingModeQuery } from "../application/queries/get-initial-payer-billing-mode.query.js";
+import { ListBillingModeEntitiesQuery } from "../application/queries/list-billing-mode-entities.query.js";
 
 /**
  * **Le premier choix du mode de facturation**, depuis la fiche d'un compte
@@ -28,6 +30,19 @@ export class AdminCompanyBillingModeController {
     private readonly commands: CommandBus,
     private readonly queries: QueryBus,
   ) {}
+
+  /**
+   * Les entités en service, pour le choix à l'ouverture d'un compte, quand la
+   * société n'existe pas encore. Déclarée avant les routes `:companyId/…` :
+   * aucune ne la capture (trois segments contre deux), mais l'ordre le rend
+   * évident.
+   */
+  @Get("billing-mode/entities")
+  async listEntities(): Promise<readonly BillingModeEntityView[]> {
+    return this.queries.execute<ListBillingModeEntitiesQuery, readonly BillingModeEntityView[]>(
+      new ListBillingModeEntitiesQuery(),
+    );
+  }
 
   /**
    * Les entités en service, le mode déjà choisi chez chacune, et si ce compte

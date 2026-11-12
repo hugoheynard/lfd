@@ -7,11 +7,15 @@
  * résolue en base, sans `b2b_accounting:write` ; le 409 nommé ; le rejeu
  * identique qui ne réécrit rien.
  */
-import type { InitialPayerBillingModeView, StaffResource } from "@lfd/contracts";
+import type {
+  BillingModeEntityView,
+  InitialPayerBillingModeView,
+  StaffResource,
+} from "@lfd/contracts";
 
 import { daysAgo, jsonBody } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
-import { ctx, declare, useBillingModeScene } from "./billing-mode-scene.js";
+import { BASE, ctx, declare, staff, useBillingModeScene } from "./billing-mode-scene.js";
 
 useBillingModeScene();
 
@@ -172,5 +176,41 @@ describe("la lecture du premier choix, sous le droit sociétés", () => {
     await staffWith("staff-lecteur", READER);
 
     expect((await readAs("staff-lecteur", site.id)).requiresChoice).toBe(false);
+  });
+});
+
+describe("les entités du choix à l'ouverture d'un compte, sous le droit sociétés", () => {
+  const ENTITIES = "/admin/companies/billing-mode/entities";
+
+  it("rend les entités en service sans aucun droit comptable (200), l'archivée exclue", async () => {
+    const id = await declare();
+    const replacement = await declare("552081317", "La Folie Coffee");
+    await staffWith("staff-ouverture", [
+      { resource: "b2b_companies", action: "read", effect: "allow" },
+      { resource: "b2b_accounting", action: "read", effect: "deny" },
+      { resource: "b2b_accounting", action: "write", effect: "deny" },
+    ]);
+    const list = async (): Promise<BillingModeEntityView[]> =>
+      jsonBody<BillingModeEntityView[]>(
+        await ctx.asSub("staff-ouverture").get(ENTITIES).expect(200),
+      );
+
+    // L'ordre de la liste comptable : par nom.
+    expect(await list()).toEqual([
+      { id: replacement, name: "La Folie Coffee" },
+      { id, name: "La Folie Douce" },
+    ]);
+    await staff().put(`${BASE}/${id}/archived`).send({ archived: true }).expect(204);
+    expect(await list()).toEqual([{ id: replacement, name: "La Folie Coffee" }]);
+  });
+
+  it("refuse sans b2b_companies:read (403), même avec la lecture comptable", async () => {
+    await declare();
+    await staffWith("staff-sans-societes", [
+      { resource: "b2b_companies", action: "read", effect: "deny" },
+      { resource: "b2b_accounting", action: "read", effect: "allow" },
+    ]);
+
+    await ctx.asSub("staff-sans-societes").get(ENTITIES).expect(403);
   });
 });

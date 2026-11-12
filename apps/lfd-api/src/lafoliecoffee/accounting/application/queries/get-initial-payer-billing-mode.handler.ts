@@ -8,6 +8,7 @@ import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.
 import { PayerStandingReader } from "../../domain/ports/payer-standing.reader.js";
 import { isBillingPayerAt } from "../../domain/services/billing-payer-guard.js";
 import { lastChosenMode } from "../../domain/services/payer-timeline.js";
+import { livingBillingModeEntities } from "./billing-mode-entities.js";
 import { GetInitialPayerBillingModeQuery } from "./get-initial-payer-billing-mode.query.js";
 
 /**
@@ -37,7 +38,7 @@ export class GetInitialPayerBillingModeHandler implements IQueryHandler<
     if (standing === null) {
       throw new BillingPayerNotFoundError(query.companyId);
     }
-    const living = (await this.entities.list()).filter((entity) => entity.archivedAt === null);
+    const living = await livingBillingModeEntities(this.entities);
     const chosen = await Promise.all(
       living.map(async (entity) => ({
         legalEntityId: entity.id,
@@ -45,7 +46,7 @@ export class GetInitialPayerBillingModeHandler implements IQueryHandler<
       })),
     );
     return {
-      entities: living.map((entity) => ({ id: entity.id, name: entity.name })),
+      entities: living,
       chosen: chosen.flatMap(({ legalEntityId, mode }) =>
         mode === null ? [] : [{ legalEntityId, mode }],
       ),

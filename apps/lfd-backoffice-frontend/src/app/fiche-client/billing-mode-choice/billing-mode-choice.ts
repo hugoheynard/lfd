@@ -24,7 +24,6 @@ import {
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { PAYER_MODE_CHOICES } from '../../comptabilite/billing-rhythm-wording';
-import { LegalEntitiesService } from '../../comptabilite/legal-entities.service';
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
 import type { InitialBillingMode } from '../facturation/initial-billing-mode';
 
@@ -62,20 +61,14 @@ export class BillingModeChoice {
   readonly choiceChange = output<InitialBillingMode>();
 
   private readonly companiesApi = inject(AdminCompaniesService);
-  private readonly entitiesApi = inject(LegalEntitiesService);
   private readonly permissions = inject(PermissionsStore);
 
   /**
-   * Le premier choix se pose et se lit sous `b2b_companies`
-   * (`/admin/companies/:id/billing-mode/initial`). À l'ouverture, le compte
-   * n'existe pas encore : la liste des entités se lit alors sous
-   * `b2b_accounting` (`GET admin/accounting/legal-entities`).
+   * Le premier choix se pose et se lit sous `b2b_companies` seul, à
+   * l'ouverture comme à l'activation (décidé par Hugo le 2026-11-12) : aucune
+   * lecture comptable n'est demandée.
    */
-  protected readonly canWrite = computed(
-    () =>
-      this.permissions.can('b2b_companies:write') &&
-      (this.companyId() !== null || this.permissions.can('b2b_accounting:read')),
-  );
+  protected readonly canWrite = computed(() => this.permissions.can('b2b_companies:write'));
 
   protected readonly choices = PAYER_MODE_CHOICES;
   protected readonly state = signal<LoadState>('loading');
@@ -156,9 +149,8 @@ export class BillingModeChoice {
     if (companyId !== null) {
       return this.companiesApi.initialBillingMode(companyId);
     }
-    const living = (await this.entitiesApi.list()).filter((entity) => entity.archivedAt === null);
     return {
-      entities: living.map((entity) => ({ id: entity.id, name: entity.name })),
+      entities: await this.companiesApi.billingModeEntities(),
       chosen: [],
       requiresChoice: true,
     };

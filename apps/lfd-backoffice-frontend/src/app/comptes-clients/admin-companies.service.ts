@@ -4,6 +4,7 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import type {
+  BillingModeEntityView,
   AccountHolderPayload,
   BillingAddressPayload,
   CertifyKbisPayload,
@@ -333,6 +334,18 @@ export class AdminCompaniesService {
     return firstValueFrom(
       this.http.get<InitialPayerBillingModeView>(
         `${B2B_API_BASE}/admin/companies/${encodeURIComponent(companyId)}/billing-mode/initial`,
+      ),
+    );
+  }
+
+  /**
+   * Les entités émettrices en service, pour le choix du mode à l'ouverture
+   * d'un compte (la société n'existe pas encore), sous le droit sociétés.
+   */
+  async billingModeEntities(): Promise<readonly BillingModeEntityView[]> {
+    return firstValueFrom(
+      this.http.get<readonly BillingModeEntityView[]>(
+        `${B2B_API_BASE}/admin/companies/billing-mode/entities`,
       ),
     );
   }
