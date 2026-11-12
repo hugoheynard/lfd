@@ -223,4 +223,59 @@ suit pas.
 nommé, pas une exception (à trancher) ; la porte des transactions directes
 raisonne par fichier.
 
-(suite au fil de la nuit)
+### Les failles de l'audit, corrigées (`97d638522`)
+
+- **F1** : le sujet d'une intention porte l'empreinte de son contenu (53
+  gestes) ; une clé réutilisée sur d'autres valeurs → 409 nommé, l'écran
+  repart d'une clé neuve ; la porte l'exige ; e2e sur la vraie base (virement
+  reçu, ajout d'un véhicule). Effet admis : une clé enregistrée avant ce
+  changement et renvoyée dans les 7 jours est refusée au lieu d'être rejouée.
+- **F2** : un scellement perdant annule sa transaction ; une réclamation
+  dans une transaction est refusée (la doc du code l'affirmait sans le tenir).
+- **F3** : sous verrou — promotions (pause, reprise, archivage, et la
+  révision qui remettait une promotion archivée en active), décisions sur un
+  point d'adresse, attestations de prélèvement et contrôle des retours, liens
+  de paiement (un paiement reçu pendant une annulation pouvait finir
+  « annulé »), archivage et mise à jour d'un site.
+- **F4** : l'invitation d'un membre du staff devient un risque assumé
+  (impossible à sceller : son résultat vient après l'e-mail) ; la porte suit
+  les services qui écrivent, et a trouvé le renvoi d'un avis de facture, scellé
+  depuis.
+- **Doc d'état** : `ops/l-idempotence-des-ecritures.md` remplace le plan
+  (`051a814b0`). Docs d'état du cache du back-office et du virement, carte des
+  chantiers, ✅ de la production, runbook de l'incident `nutrition_declaration`
+  — `97d638522`.
+- Virement : aperçu de l'écart par le serveur, « Réglée par virement le … »,
+  moyen d'encaissement lu par la boutique — `7fbaa6bad`.
+
+### À trancher avec Hugo
+
+1. **Les 62 exceptions de J4** : l'agent a admis trois familles (clé métier ;
+   transition refusée avant écriture, désormais sous verrou ; réseau sans
+   effet durable). La lettre stricte du plan en ferait passer ~45 sous clé,
+   avec leur écran.
+2. **`mail-check`** : il envoie volontairement un nouvel essai à chaque appel ;
+   risque assumé nommé, ou clé tirée de la révision ?
+3. **Le « +1 » du réassort d'un site** : une clé par clic, admise ; garder ?
+4. **Cinq risques assumés à lien ou e-mail** (société créée, titulaire
+   rattaché, membre client invité, membre du staff invité, lien de mot de
+   passe) : à fermer par le plan « lien fabriqué à l'envoi ». Vu en route :
+   une invitation reprise après le bail pourrait n'envoyer que le premier
+   lien, devenu mort — à vérifier côté e-mails.
+5. **L'IBAN de l'entité à l'écran du staff** : aujourd'hui réduit à ses 4
+   derniers caractères (contrat actuel) ; l'afficher en entier ?
+6. **Décisions de la nuit sur le virement** (écart nul pour valider, avoirs
+   non déduits, qui voit le moyen côté client) : à relire, écrites sans
+   `vitruve`.
+7. **La fiche périmée** : seule l'écriture d'un geste décidé sur une fiche
+   lue est conditionnée (pour garder « deux gestes sur des colonnes
+   différentes gardent chacun le leur ») ; d'accord ?
+
+### Pas fait cette nuit
+
+- Lot 2 des journées (prévu avec Hugo).
+- Mesure avant/après des requêtes ; test de la saisie dans un panneau
+  pendant une relecture.
+- Couleurs et rôles d'un site réécrits sans verrou (même risque que
+  l'archivage) ; moyen d'encaissement figé dans la vue de la facture.
+- `e2e:rebalance` (durées des suites neuves ajoutées à la main).
