@@ -4,6 +4,9 @@
 > veulent payer en virement ». Rien n'est bâti. Les affirmations sur
 > l'existant ont été vérifiées dans le code le même jour (exploration puis
 > relecture des points porteurs) ; les chemins sont cités.
+>
+> Questions tranchées et ajustements le 2026-11-12 (sections en fin de
+> Partie 2) ; nouvelle relecture de `vitruve` avant de bâtir.
 
 # Partie 1 — Comprendre
 
@@ -70,10 +73,12 @@ compte à payer** : c'est la cible de la fraude au faux changement de RIB, et
 le contrat le dit déjà (`staff-access.ts:240-244`). L'IBAN et le BIC restent
 modifiables (`legal-entity.ts:249`).
 
-**Q4 — à trancher par Hugo** : quelle garde sur un changement d'IBAN quand des
-clients règlent par virement ? Proposition : un changement d'IBAN n'est pris
-par les factures **qu'après confirmation par un second membre du staff**, et
-il est notifié à toute la comptabilité.
+**Décidé par Hugo le 2026-11-12 (Q4)** : un changement d'IBAN ou de BIC de
+l'entité n'est pris par les factures **qu'après la confirmation d'un second
+membre du staff** (quatre yeux : celui qui confirme n'est pas celui qui a
+saisi), et il est notifié à toute la comptabilité (la cloche). Tant qu'il
+n'est pas confirmé, les factures gardent l'ancien IBAN. C'est le lot **T0**,
+préalable à toute facture au virement.
 
 ## L'écran
 
@@ -82,15 +87,15 @@ flowchart TD
   A["Moyens de paiement"] --> B["À la commande — carte<br/>(toujours)"]
   A --> C{"Paiement différé<br/>accordé ?"}
   C -->|non| D["« Accorder le paiement différé »"]
-  C -->|oui| E["1 · Échéance de facturation"]
-  E --> F["2 · Prélèvement SEPA ou Virement bancaire"]
-  F -->|prélèvement| G["3 · RIB → mandat → activation"]
-  F -->|virement| H["3 · Nos coordonnées, l'échéance du cycle, factures à régler"]
+  C -->|oui| F["Prélèvement SEPA ou Virement bancaire"]
+  F -->|prélèvement| G["RIB → mandat → activation"]
+  F -->|virement| H["Nos coordonnées, l'échéance du cycle, factures à régler"]
+  A --> M["Mode de facturation (carte de la fiche, pour tout compte)"]
 ```
 
-- La carte « mode de facturation » séparée disparaît : l'échéance devient
-  l'étape 1 du paiement différé. Sans paiement différé, aucune échéance n'est
-  affichée — le client règle à la commande, l'échéance ne le concerne pas.
+- La carte « mode de facturation » reste où elle est, pour tout compte : le
+  mode se choisit à l'ouverture (A1). Le bloc « Paiement différé » ne porte
+  que le moyen d'encaissement.
 - Le choix « Prélèvement SEPA / Virement bancaire » est un `fold-view-toggle` ;
   le dessous change. Changer de moyen demande une **date d'effet** (V2) et un
   motif.
@@ -101,9 +106,9 @@ flowchart TD
 # Partie 2 — Le code
 
 - **Domaine** (`apps/lfd-api/src/lafoliecoffee/accounting/`) : le moyen
-  d'encaissement daté du payeur, sur le modèle de l'échéance
-  (`billing-mode.ts`, `PayerTimeline`, `mode-dates-timeline.ts`) ; une
-  migration additive (table des moyens par payeur et date d'effet, aucune
+  d'encaissement daté du payeur, avec SON historique (A2 corrigé : il lit le
+  calendrier du mode pour se dater, il n'entre ni dans `PayerTimeline` ni
+  dans `InvoicingCalendar`) ; une migration additive (table des moyens par payeur et date d'effet, aucune
   ligne = prélèvement, comme aujourd'hui).
 - **Facture** : `invoicePaymentMeansOf` (`monthly-invoicing.ts:204-208`)
   rend aujourd'hui « prélèvement si mandat, sinon `null` » ; il rend le
@@ -112,29 +117,145 @@ flowchart TD
   sort le code 58 et BT-84 ; le PDF de facture affiche le bloc « Règlement par
   virement ».
 - **Lot** : les candidats (`collection-candidates.reader.ts`,
-  `collection-constitution-support.ts`) écartent les payeurs au virement
-  (V3).
+  `collection-constitution-support.ts`) écartent les commandes figées
+  « virement » (V4 : le lot lit la commande, jamais le payeur).
 - **Statut** : `invoice-settlement.ts` gagne l'état « virement attendu » puis
-  `settled` par le geste V6 ; « en retard » après l'échéance.
-- **Geste V6** : commande, route `POST …/invoices/:invoiceId/settle-by-transfer`,
-  journal, droit `b2b_accounting`.
+  `settled` par le geste V7 ; « en retard » après l'échéance.
+- **Geste V7** : commande, route `POST …/legal-entities/:id/bank-transfers`
+  (un virement : montant, date, référence ; les factures qu'il règle), journal,
+  droit `b2b_accounting`.
 - **Boutique** : le libellé et la facture.
 
 ## Lots
 
-| Lot                         | Contenu                                                                                                                                                                                                               |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **T1**                      | le moyen d'encaissement daté du payeur (V1, V2, V10, V11), figé sur la commande (V3), lu par le lot (V4)                                                                                                              |
-| **T2+T3** (livrés ensemble) | la facture au virement (V5, V6, Factur-X, PDF), le statut « virement attendu / réglée / en retard », le geste V7, le suivi des impayés (V8) — ensemble, sinon une facture au virement s'affiche « prélèvement prévu » |
-| **T4**                      | l'écran « Moyens de paiement » refondu (échéance en étape 1, choix du moyen, dessous qui change) ; la carte de mode séparée retirée                                                                                   |
-| **T5**                      | la boutique ; doc d'état                                                                                                                                                                                              |
+| Lot                         | Contenu                                                                                                                                                                                                                                                                                  |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **T0**                      | l'IBAN et le BIC de l'entité aux quatre yeux (Q4) : saisie en attente, confirmation par double saisie à l'aveugle d'un autre membre, notification à la comptabilité ; TOUS les lecteurs de `creditorSnapshot` (factures, lot SEPA, mandat, arrêtés) ne lisent que l'IBAN confirmé (§ C3) |
+| **T1**                      | le moyen d'encaissement daté du payeur (V1, V2, V10, V11), figé sur la commande (V3), lu par le lot (V4)                                                                                                                                                                                 |
+| **T2+T3** (livrés ensemble) | la facture au virement (V5, V6, Factur-X, PDF), le statut « virement attendu / réglée / en retard », le geste V7, le suivi des impayés (V8) — ensemble, sinon une facture au virement s'affiche « prélèvement prévu »                                                                    |
+| **T4**                      | l'écran « Moyens de paiement » : le choix du moyen et le dessous qui change ; la carte du mode reste (A1)                                                                                                                                                                                |
+| **T5**                      | la boutique ; doc d'état                                                                                                                                                                                                                                                                 |
 
-## Questions pour Hugo
+## Décisions de Hugo (2026-11-12)
 
-- **Q2** — un client au virement qui ne paie pas : bloquer automatiquement
-  après N jours de retard, ou seulement le signaler ?
-- **Q3** — le virement est-il proposé au client dans son espace (il le
-  demande), ou seulement accordé par le staff ?
+- **Q2** — un client au virement qui ne paie pas : **on le signale seulement**
+  (suivi des impayés, fiche client, V8). Pas de blocage automatique ; le
+  blocage existant reste un geste du staff (V9).
+- **Q3** — **le staff seul** accorde le virement, comme le paiement différé.
+  Le client peut le demander par message ; il ne le choisit pas dans son
+  espace.
+- **Q4** — l'IBAN aux quatre yeux (§ « Notre IBAN devient une consigne de
+  paiement », lot T0).
+
+## Ajustements du 2026-11-12, après le chantier du mode de facturation
+
+Le même jour, le mode de facturation est devenu obligatoire à l'ouverture et
+à l'activation d'un compte, et immédiat pour un payeur qui n'a jamais commandé
+([`facturation/plan-changement-de-mode-immediat.md`](facturation/plan-changement-de-mode-immediat.md),
+bâti et en production : `96216e035`, `75d0fd1b8`, `de2a9ee51`, `0408ac70f`,
+`7fa2fe78b`).
+
+- **A1 — la carte du mode ne disparaît pas** : le § « L'écran » prévoyait d'en
+  faire l'étape 1 du paiement différé et de la retirer. Le choix du mode reste
+  à l'ouverture et à l'activation (`billing-mode-choice`), et la carte de la
+  fiche (`payer-billing-mode-card`) se range DANS le bloc « Paiement différé »
+  au lieu d'être supprimée. « Sans paiement différé, aucune échéance
+  affichée » devient : l'échéance est affichée, puisqu'elle a été choisie.
+- **A2 — un changement de moyen suit la même règle que le mode** (V2) : il
+  est daté de la dernière clôture du payeur et **immédiat pour un payeur qui
+  n'a jamais commandé** (`hasEverOrdered`), sinon il prend effet à la
+  prochaine clôture. Le calendrier de l'entité ne compte une clôture que si
+  le segment qui la gouverne était écrit avant elle (§ 3.1 du plan du mode) :
+  la même règle s'applique aux segments de moyen, par le même code, sans en
+  écrire une seconde.
+
+## Corrections du 2026-11-12, après la seconde relecture de `vitruve`
+
+Elles font foi sur ce qui précède.
+
+- **C1 — le moyen a son propre historique (BLOQUANT 1).** Le moyen ne crée
+  aucune clôture : il se fige sur la commande à la passation. Il ne s'écrit
+  donc ni dans `PayerTimeline` (qui ne connaît que des modes) ni dans
+  `InvoicingCalendar` : un segment de moyen écrit après une clôture la
+  rendrait « inconnue » (`invoicing-calendar.ts:209-219`, `statement-periods.ts:51`),
+  et sa facture ne serait jamais tentée. Il a sa table et son agrégat
+  (`PayerCollectionMeansHistory`), et ne LIT le calendrier du mode que pour
+  calculer sa date d'effet. La règle de l'immédiat est celle du mode telle
+  qu'elle est écrite (`payer-billing-mode-history.ts:129`) : le payeur n'a
+  jamais commandé et rien n'est écrit depuis la dernière clôture ; elle se
+  partage par une fonction pure, pas par l'agrégat.
+- **C2 — le moyen entre dans la clé d'une facture (BLOQUANT 2).** L'émission
+  prend toutes les commandes non facturées du payeur
+  (`prisma-monthly-invoicing.reader.ts:59-66`), et une commande
+  `awaiting_remainder` part au mois de son solde : une facture pourrait mêler
+  un bon figé « prélèvement » et un bon « virement ». La clé de groupe
+  (`monthly-invoicing.ts:91-92`, `byMandate`) et `invoicedGroups`
+  (`prisma-monthly-invoicing.reader.ts:136`) portent le moyen figé ; une
+  facture n'a qu'un moyen. La forme de la clé des émissions déjà écrites est
+  préservée : une commande sans moyen figé (toutes celles d'avant T1) est
+  « prélèvement », et sa clé ne change pas.
+- **C3 — l'IBAN confirmé est le seul que lit `creditorSnapshot` (SÉRIEUX 3).**
+  Le même instantané (`legal-entity.ts:642-661`) nourrit les factures, le
+  `CdtrAcct` du pain.008 (le compte qui reçoit chaque lot), le mandat PDF, les
+  arrêtés et les brouillons. L'IBAN en attente vit dans des colonnes à part,
+  chiffrées comme l'actuel (`creditorIbanSealed`), qu'aucun lecteur de
+  l'instantané n'atteint.
+- **C4 — la confirmation par double saisie à l'aveugle (SÉRIEUX 4).** L'IBAN
+  ne ressort jamais (`set-creditor-account.handler.ts:27-29`). Le second
+  membre ne le voit donc pas : il le **ressaisit** depuis le RIB de la banque
+  (document hors système), et la confirmation n'aboutit que si les deux
+  saisies sont égales. Un refus ne dit pas lequel des caractères diffère.
+- **C5 — la confirmation désigne sa saisie (SÉRIEUX 5).** La saisie en
+  attente porte un identifiant ; la confirmation le cite, et l'écriture est
+  conditionnée (`WHERE pending_id = …`) : une saisie remplacée, déjà
+  confirmée ou annulée entre-temps est refusée. Le `save` de l'entité
+  (`prisma-legal-entity.repository.ts:48-51`, upsert de la ligne entière) ne
+  touche plus aux colonnes de l'IBAN : elles ne s'écrivent que par ces deux
+  gestes, conditionnés.
+- **C6 — le droit et les quatre yeux (SÉRIEUX 7).** Saisir et confirmer
+  demandent `b2b_accounting` en écriture ; la confirmation est refusée si
+  l'auteur de la saisie et le confirmateur sont la même fiche du staff
+  (identifiant interne, pas le `sub`). Une seule personne qui a deux fiches
+  reste hors de portée du code : c'est dit.
+- **C7 — les impayés de factures sont un écran neuf (SÉRIEUX 6).** Aucune
+  lecture ne liste aujourd'hui une facture non réglée à son échéance
+  (`invoice-settlement.ts:26-33`) ; T3 construit la lecture, sa route et
+  l'écran, chiffrés dans le lot.
+- **C8 — A1 tenu dans le corps** (SÉRIEUX 8) : ci-dessus, § « L'écran » et T4.
+
+## T0 tel qu'il se bâtit (Hugo, 2026-11-12, après la troisième relecture)
+
+- **La première saisie est immédiate** : tant que l'entité n'a aucun compte
+  confirmé, aucun client ne paie et aucun lot ne part — rien à détourner. Le
+  semis et les 23 e2e qui posent un compte puis prélèvent restent inchangés.
+  Seuls les **changements** suivants passent aux quatre yeux.
+- **Le compte entier passe aux quatre yeux** : IBAN, BIC, titulaire et
+  adresse, saisis dans le même geste. L'agrégat `LegalEntity` porte un
+  `pendingCreditorAccount` (identifiant, auteur, instant), chiffré comme
+  l'actuel ; `setCreditorAccount` devient « proposer » quand un compte est
+  confirmé ; `confirmCreditorAccount(pendingId, ibanRetapé, confirmateur)` est
+  une méthode de l'agrégat qui refuse : confirmateur = auteur (identifiant
+  interne de la fiche), IBAN retapé différent, saisie remplacée, et la règle
+  existante du titulaire après le premier mandat (`legal-entity.ts:384-394`).
+  Annuler une saisie en attente est un geste.
+- **Concurrence : une version sur l'entité** (verrou optimiste), incrémentée
+  à chaque `save` et vérifiée par lui : un des dix-neuf gestes qui a lu une
+  version périmée est refusé (409, « l'entité a changé, rechargez »). C'est
+  ce qui remplace l'écriture conditionnée du C5, sans écriture ciblée.
+- **Un seul point à tenir : le mapper** (`legal-entity.mapper.ts`). Il ne
+  construit l'instantané (`creditorSnapshot`) que depuis le compte confirmé,
+  jamais depuis le compte en attente ni l'ancienne colonne en clair. Tous
+  les lecteurs — factures, factures carte, pain.008, mandat PDF, arrêtés,
+  brouillons, lot de test, spécimens — passent par lui.
+- **La vue** dit qu'une saisie est en attente (auteur, instant, quatre
+  derniers chiffres de l'IBAN proposé) ; la cloche de la comptabilité sonne à
+  la proposition, à la confirmation et à l'annulation.
+- **Migration additive** : colonnes du compte en attente (chiffrées), auteur,
+  instant, identifiant, et `version` (défaut 0) sur l'entité.
+- **Reporté au lot de la facture au virement (T2)** : la colonne
+  `collection_means` dans la clé primaire de `invoice_monthly_outcome`
+  (`invoice.prisma:191`, défaut `sepa_debit`) et ses quatre lecteurs —
+  bloquant de la troisième relecture, sans effet sur T0.
 
 ## Contredit par vitruve (2026-11-11)
 
