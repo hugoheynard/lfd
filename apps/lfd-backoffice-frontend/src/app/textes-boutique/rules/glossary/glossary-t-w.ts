@@ -10,6 +10,7 @@ export const GLOSSARY_T_W: Readonly<Record<string, string>> = {
   telPlaceholder: 'Téléphone — exemple',
   telephone: 'Téléphone',
   termGrantedSub: 'Règlement mensuel — accordé',
+  termGrantedTransferSub: 'Règlement mensuel — accordé, par virement',
   termMonthly: 'Règlement mensuel',
   termNoneSub: 'Règlement mensuel — sur demande',
   termOrder: 'Règlement à la commande',

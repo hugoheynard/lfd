@@ -2,6 +2,7 @@ import type {
   CompanyAddressesView,
   CompanyBankAccountSectionView,
   IssuedInvoicesView,
+  MyCollectionMeansView,
 } from '@lfd/contracts';
 
 /**
@@ -46,3 +47,6 @@ export const DEMO_COMPANY_ADDRESSES: CompanyAddressesView = {
 export const DEMO_COMPANY_BANK_ACCOUNT: CompanyBankAccountSectionView = { account: null };
 
 export const DEMO_COMPANY_INVOICES: IssuedInvoicesView = { invoices: [] };
+
+/** Le moyen d'encaissement au compte : le prélèvement, celui par défaut. */
+export const DEMO_COMPANY_COLLECTION_MEANS: MyCollectionMeansView = { means: 'sepa_debit' };

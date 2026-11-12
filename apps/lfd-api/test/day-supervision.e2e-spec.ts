@@ -317,11 +317,17 @@ describe("la Supervision du jour", () => {
    */
   it("ne signale pas un créneau dépassé de cinq minutes sous la tolérance de 15", async () => {
     const { guestId } = await seedParties();
-    const FIVE_MINUTES_MS = 5 * 60_000;
-    // Relatif à l'horloge : la fin du créneau est il y a cinq minutes, à Paris.
-    const ended = instantToLocal(new Date(Date.now() - FIVE_MINUTES_MS));
-    // Un créneau d'une demi-heure : un début égal à la fin n'est pas une tranche.
-    const opened = instantToLocal(new Date(Date.now() - FIVE_MINUTES_MS - 30 * 60_000));
+    const MINUTE_MS = 60_000;
+    // Relatif à l'horloge : la fin du créneau est il y a cinq minutes, à Paris —
+    // six si la cinquième tombe à minuit pile, où aucun créneau du jour ne finit.
+    const fiveAgo = instantToLocal(new Date(Date.now() - 5 * MINUTE_MS));
+    const endedAgoMs = (fiveAgo.time === "00:00" ? 6 : 5) * MINUTE_MS;
+    const ended = instantToLocal(new Date(Date.now() - endedAgoMs));
+    // Un créneau d'une demi-heure au plus, borné au jour de la fin : juste après
+    // minuit, une demi-heure en arrière tombe la veille, et un créneau dont le
+    // début suit la fin n'est jamais dépassé (rouge en CI à 00 h 14, Paris).
+    const halfHourBefore = instantToLocal(new Date(Date.now() - endedAgoMs - 30 * MINUTE_MS));
+    const opened = halfHourBefore.day === ended.day ? halfHourBefore : { ...ended, time: "00:00" };
     await seedOrder({
       reference: "ORD-13",
       day: ended.day,

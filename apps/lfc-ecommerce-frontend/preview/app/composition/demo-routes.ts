@@ -17,6 +17,7 @@ import { DEMO_CATALOGUE } from '../demo-data/demo-catalogue';
 import {
   DEMO_COMPANY_ADDRESSES,
   DEMO_COMPANY_BANK_ACCOUNT,
+  DEMO_COMPANY_COLLECTION_MEANS,
   DEMO_COMPANY_INVOICES,
 } from '../demo-data/demo-company';
 import {
@@ -284,6 +285,12 @@ export const DEMO_ROUTES: readonly DemoRoute[] = [
     pattern: /^\/companies\/[^/]+\/bank-account$/u,
     serves: 'aucun RIB déposé',
     answer: () => ok(DEMO_COMPANY_BANK_ACCOUNT),
+  },
+  {
+    method: 'GET',
+    pattern: /^\/companies\/[^/]+\/collection-means$/u,
+    serves: 'le prélèvement, moyen d’encaissement par défaut',
+    answer: () => ok(DEMO_COMPANY_COLLECTION_MEANS),
   },
   {
     method: 'GET',

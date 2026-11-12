@@ -4,6 +4,8 @@
  * garde son libellé.
  */
 export const GLOSSARY_INVOICES: Readonly<Record<string, string>> = {
+  settledByTransfer: 'Facture réglée par virement — date',
+  byTransfer: 'Virement attendu — référence à reporter',
   noneFilteredTitle: 'Rien pour ces filtres — titre',
   noneFiltered: 'Rien pour ces filtres — texte',
   forbiddenTitle: 'Accès réservé — titre',
