@@ -11,6 +11,7 @@ import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { GetStaffMeQuery } from "../application/get-staff-me.query.js";
 import { UpdateStaffNavPrefsCommand } from "../application/update-staff-nav-prefs.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * « Qui suis-je, et que puis-je faire » — **le seul point** par lequel un écran
@@ -49,6 +50,9 @@ export class AdminMeController {
    */
   @Patch("prefs")
   @HttpCode(204)
+  @Idempotent(
+    "fusionne des préférences d'affichage : rejouée, la même fusion laisse les mêmes préférences",
+  )
   async updatePrefs(
     @StaffUserId() staffUserId: string,
     @Body(new ZodBody(staffNavPreferencesPatchSchema)) patch: StaffNavPreferencesPatch,

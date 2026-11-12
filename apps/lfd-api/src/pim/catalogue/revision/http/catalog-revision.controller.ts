@@ -18,6 +18,7 @@ import {
   TakeCatalogRevisionCommand,
   type TakenRevision,
 } from "../application/take-catalog-revision.js";
+import { Idempotent } from "../../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Le libellé qu'on donne à une ancre. Facultatif : la plupart des captures sont
@@ -109,6 +110,9 @@ export class CatalogRevisionController {
    */
   @Patch(":reference/label")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "une révision ne se nomme qu'une fois : rejouée, elle porte déjà son nom et la demande est refusée (409) sans rien écrire",
+  )
   async name(
     @Param("reference") reference: string,
     @Body(new ZodBody(nameRevisionPayloadSchema)) body: NameRevisionPayload,

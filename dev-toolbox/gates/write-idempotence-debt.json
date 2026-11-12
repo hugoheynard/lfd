@@ -1967,27 +1967,11 @@
     },
     {
       "file": "apps/lfd-api/src/media/http/media-library.controller.ts",
-      "method": "describe"
-    },
-    {
-      "file": "apps/lfd-api/src/media/http/media-library.controller.ts",
       "method": "discard"
     },
     {
       "file": "apps/lfd-api/src/media/http/media-library.controller.ts",
-      "method": "removeTag"
-    },
-    {
-      "file": "apps/lfd-api/src/media/http/media-library.controller.ts",
-      "method": "renameTag"
-    },
-    {
-      "file": "apps/lfd-api/src/media/http/media-library.controller.ts",
       "method": "upload"
-    },
-    {
-      "file": "apps/lfd-api/src/media/http/media-palette.controller.ts",
-      "method": "paint"
     },
     {
       "file": "apps/lfd-api/src/media/http/media-replace.controller.ts",
@@ -1996,10 +1980,6 @@
     {
       "file": "apps/lfd-api/src/media/http/media-series.controller.ts",
       "method": "declare"
-    },
-    {
-      "file": "apps/lfd-api/src/media/http/media-series.controller.ts",
-      "method": "describe"
     },
     {
       "file": "apps/lfd-api/src/media/http/media-sweep.controller.ts",
@@ -2098,10 +2078,6 @@
       "method": "restoreEntry"
     },
     {
-      "file": "apps/lfd-api/src/pim/allergens/http/allergen.controller.ts",
-      "method": "reviseEntry"
-    },
-    {
       "file": "apps/lfd-api/src/pim/catalogue/category/http/category.controller.ts",
       "method": "archiveCategory"
     },
@@ -2111,67 +2087,15 @@
     },
     {
       "file": "apps/lfd-api/src/pim/catalogue/category/http/category.controller.ts",
-      "method": "editCategoryEditorial"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/category/http/category.controller.ts",
       "method": "moveCategory"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/category/http/category.controller.ts",
-      "method": "renameCategory"
     },
     {
       "file": "apps/lfd-api/src/pim/catalogue/category/http/category.controller.ts",
       "method": "reorderCategories"
     },
     {
-      "file": "apps/lfd-api/src/pim/catalogue/category/http/category.controller.ts",
-      "method": "setAudience"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/category/http/category.controller.ts",
-      "method": "setCategoryMedia"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/category/http/category.controller.ts",
-      "method": "setVat"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/product/http/product-custom-recipe.controller.ts",
-      "method": "setProductCustomRecipe"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/product/http/product-deletion.controller.ts",
-      "method": "deleteProduct"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/product/http/product-min-quantities.controller.ts",
-      "method": "setVariantMinQuantities"
-    },
-    {
       "file": "apps/lfd-api/src/pim/catalogue/product/http/product-variant-lifecycle.controller.ts",
       "method": "detachVariant"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/product/http/product-variant-lifecycle.controller.ts",
-      "method": "discontinueVariant"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/product/http/product-variant-lifecycle.controller.ts",
-      "method": "makeVariantDefault"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/product/http/product-variant-lifecycle.controller.ts",
-      "method": "restoreVariant"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/product/http/product-variants-as-tiles.controller.ts",
-      "method": "setProductVariantsAsTiles"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/product/http/product.controller.ts",
-      "method": "activateProduct"
     },
     {
       "file": "apps/lfd-api/src/pim/catalogue/product/http/product.controller.ts",
@@ -2179,83 +2103,11 @@
     },
     {
       "file": "apps/lfd-api/src/pim/catalogue/product/http/product.controller.ts",
-      "method": "alignVariant"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/product/http/product.controller.ts",
-      "method": "archiveProduct"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/product/http/product.controller.ts",
       "method": "createProduct"
     },
     {
       "file": "apps/lfd-api/src/pim/catalogue/product/http/product.controller.ts",
-      "method": "deactivateProduct"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/product/http/product.controller.ts",
       "method": "declareProductReady"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/product/http/product.controller.ts",
-      "method": "editProductEditorial"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/product/http/product.controller.ts",
-      "method": "renameVariant"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/product/http/product.controller.ts",
-      "method": "restoreProduct"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/product/http/product.controller.ts",
-      "method": "saveVariantAllergens"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/product/http/product.controller.ts",
-      "method": "saveVariantNutrition"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/product/http/product.controller.ts",
-      "method": "setProductAudience"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/product/http/product.controller.ts",
-      "method": "setProductColdRequirement"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/product/http/product.controller.ts",
-      "method": "setProductMedia"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/product/http/product.controller.ts",
-      "method": "setProductOperationOnly"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/product/http/product.controller.ts",
-      "method": "setProductVat"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/product/http/product.controller.ts",
-      "method": "setVariantPricing"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/product/http/product.controller.ts",
-      "method": "setVariantShopName"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/product/http/product.controller.ts",
-      "method": "updateIdentity"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/product/http/product.controller.ts",
-      "method": "withdrawProductReadiness"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/revision/http/catalog-revision.controller.ts",
-      "method": "name"
     },
     {
       "file": "apps/lfd-api/src/pim/catalogue/revision/http/catalog-revision.controller.ts",
@@ -2270,68 +2122,16 @@
       "method": "create"
     },
     {
-      "file": "apps/lfd-api/src/pim/ingredients/http/appellation.controller.ts",
-      "method": "remove"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/ingredients/http/appellation.controller.ts",
-      "method": "update"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/ingredients/http/ingredient.controller.ts",
-      "method": "applyAllergenPropagation"
-    },
-    {
       "file": "apps/lfd-api/src/pim/ingredients/http/ingredient.controller.ts",
       "method": "createIngredient"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/ingredients/http/ingredient.controller.ts",
-      "method": "removeIngredient"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/ingredients/http/ingredient.controller.ts",
-      "method": "setIngredientAllergens"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/ingredients/http/ingredient.controller.ts",
-      "method": "setOfProduct"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/ingredients/http/ingredient.controller.ts",
-      "method": "updateIngredient"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/order-time-limitation/http/order-time-limit.controller.ts",
-      "method": "remove"
     },
     {
       "file": "apps/lfd-api/src/pim/order-time-limitation/http/order-time-limit.controller.ts",
       "method": "set"
     },
     {
-      "file": "apps/lfd-api/src/pim/sales-contexts/http/sales-context.controller.ts",
-      "method": "create"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/sales-contexts/http/sales-context.controller.ts",
-      "method": "remove"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/sales-contexts/http/sales-context.controller.ts",
-      "method": "update"
-    },
-    {
       "file": "apps/lfd-api/src/pim/vat-rates/http/vat-rate.controller.ts",
       "method": "create"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/vat-rates/http/vat-rate.controller.ts",
-      "method": "remove"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/vat-rates/http/vat-rate.controller.ts",
-      "method": "update"
     },
     {
       "file": "apps/lfd-api/src/platform/outbox/admin-outbox.controller.ts",
@@ -2442,14 +2242,6 @@
       "method": "sweep"
     },
     {
-      "file": "apps/lfd-api/src/staff/directory/http/admin-me.controller.ts",
-      "method": "updatePrefs"
-    },
-    {
-      "file": "apps/lfd-api/src/staff/directory/http/admin-staff-users.controller.ts",
-      "method": "remove"
-    },
-    {
       "file": "apps/lfd-api/src/staff/directory/http/admin-staff-users.controller.ts",
       "method": "update"
     },
@@ -2458,52 +2250,8 @@
       "method": "issueLink"
     },
     {
-      "file": "apps/lfd-api/src/staff/notifications/http/admin-staff-notifications.controller.ts",
-      "method": "read"
-    },
-    {
-      "file": "apps/lfd-api/src/staff/notifications/http/admin-staff-notifications.controller.ts",
-      "method": "readAll"
-    },
-    {
-      "file": "apps/lfd-api/src/staff/notifications/http/admin-staff-push.controller.ts",
-      "method": "subscribe"
-    },
-    {
-      "file": "apps/lfd-api/src/staff/notifications/http/admin-staff-push.controller.ts",
-      "method": "unsubscribe"
-    },
-    {
-      "file": "apps/lfd-api/src/staff/notifications/http/my-staff-notifications.controller.ts",
-      "method": "read"
-    },
-    {
-      "file": "apps/lfd-api/src/staff/notifications/http/my-staff-notifications.controller.ts",
-      "method": "readAll"
-    },
-    {
-      "file": "apps/lfd-api/src/staff/notifications/http/my-staff-push.controller.ts",
-      "method": "subscribe"
-    },
-    {
-      "file": "apps/lfd-api/src/staff/notifications/http/my-staff-push.controller.ts",
-      "method": "unsubscribe"
-    },
-    {
       "file": "apps/lfd-api/src/staff/permissions/http/admin-staff-roles.controller.ts",
       "method": "archive"
-    },
-    {
-      "file": "apps/lfd-api/src/staff/permissions/http/admin-staff-roles.controller.ts",
-      "method": "create"
-    },
-    {
-      "file": "apps/lfd-api/src/staff/permissions/http/admin-staff-roles.controller.ts",
-      "method": "restore"
-    },
-    {
-      "file": "apps/lfd-api/src/staff/permissions/http/admin-staff-roles.controller.ts",
-      "method": "update"
     }
   ]
 }

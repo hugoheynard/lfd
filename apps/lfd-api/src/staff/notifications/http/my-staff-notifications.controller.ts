@@ -6,6 +6,7 @@ import { AdminSelfSurface } from "../../../platform/auth/admin-surface.decorator
 import { StaffPermissions, StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { MarkMyNotificationReadCommand } from "../application/commands/mark-my-notification-read.command.js";
 import { GetMyNotificationsQuery } from "../application/queries/get-my-notifications.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Mes notifications** — celles adressées à un droit que je tiens
@@ -36,6 +37,9 @@ export class MyStaffNotificationsController {
 
   @Post("read")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "ne marque que les notifications non lues (`readAt: null` dans le where) : rejouée, rien ne s'écrit",
+  )
   async readAll(
     @StaffPermissions() permissions: readonly StaffPermission[],
     @StaffUserId() staffUserId: string,
@@ -47,6 +51,9 @@ export class MyStaffNotificationsController {
 
   @Post(":id/read")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "ne marque que si la notification n'est pas lue (`readAt: null` dans le where) : rejouée, rien ne s'écrit",
+  )
   async read(
     @Param("id") id: string,
     @StaffPermissions() permissions: readonly StaffPermission[],

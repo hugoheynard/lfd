@@ -5,6 +5,7 @@ import { type MediaPalettePayload, mediaPalettePayloadSchema } from "@lfd/pim-co
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { PaintMediaPaletteCommand } from "../application/paint-media-palette.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Rattraper la palette d'une image** (2026-10-11) — `PUT /media/palette`.
@@ -22,6 +23,9 @@ export class MediaPaletteController {
 
   @Put()
   @HttpCode(204)
+  @Idempotent(
+    "ne pose la palette que sur une image qui n'en a pas : rejouée, l'image garde la sienne et rien ne s'écrit",
+  )
   async paint(
     @Body(new ZodBody(mediaPalettePayloadSchema)) payload: MediaPalettePayload,
   ): Promise<void> {

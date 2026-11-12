@@ -8,6 +8,7 @@ import {
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import { SetProductMinQuantitiesCommand } from "../application/set-product-min-quantities.js";
+import { Idempotent } from "../../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **La quantité minimale d'une déclinaison** (`plan-quantite-minimale.md`, M1)
@@ -25,6 +26,9 @@ export class ProductMinQuantitiesController {
    * grille vide retire tout minimum — ou `"follow"`, qui suit le défaut.
    */
   @Put(":id/variants/:variantId/min-quantities")
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête laisse la fiche telle quelle, et le journal se tait quand rien n'a changé",
+  )
   async setVariantMinQuantities(
     @Param("id") id: string,
     @Param("variantId") variantId: string,

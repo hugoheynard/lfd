@@ -8,6 +8,7 @@ import {
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import { SetProductVariantsAsTilesCommand } from "../application/set-product-variants-as-tiles.js";
+import { Idempotent } from "../../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Montrer chaque déclinaison en vignette** au rayon
@@ -23,6 +24,9 @@ export class ProductVariantsAsTilesController {
 
   /** L'état entier de la case, comme le froid. */
   @Put(":id/variants-as-tiles")
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête laisse la fiche telle quelle, et le journal se tait quand rien n'a changé",
+  )
   async setProductVariantsAsTiles(
     @Param("id") id: string,
     @Body(new ZodBody(setProductVariantsAsTilesPayloadSchema))

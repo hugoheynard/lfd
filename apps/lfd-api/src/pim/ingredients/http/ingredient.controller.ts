@@ -30,6 +30,7 @@ import { ReadProductIngredientAllergensQuery } from "../../catalogue/product/app
 import { ReadProductIngredientsQuery } from "../application/read-product-ingredients.js";
 import { SetIngredientAllergensCommand } from "../application/set-ingredient-allergens.js";
 import { SetProductIngredientsCommand } from "../application/set-product-ingredients.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Les **ingrédients** — la matière, ce qu'elle contient, et ce que chaque fiche
@@ -73,6 +74,7 @@ export class IngredientController {
   }
 
   @Put("ingredients/:key")
+  @Idempotent("pose les valeurs de l'ingrédient : rejouée, rien ne change et le journal se tait")
   async updateIngredient(
     @Param("key") key: string,
     @Body(new ZodBody(updateIngredientPayloadSchema)) body: UpdateIngredientPayload,
@@ -84,6 +86,9 @@ export class IngredientController {
   }
 
   @Delete("ingredients/:key")
+  @Idempotent(
+    "retire l'ingrédient : rejoué, il n'existe plus et la demande est refusée (404) sans rien écrire",
+  )
   async removeIngredient(@Param("key") key: string) {
     await this.commands.execute<RemoveIngredientCommand, void>(new RemoveIngredientCommand(key));
     return { key };
@@ -97,6 +102,7 @@ export class IngredientController {
    * appartient à la déclaration de la déclinaison.
    */
   @Put("ingredients/:key/allergens")
+  @Idempotent("pose les allergènes de l'ingrédient : rejouée, rien ne change et le journal se tait")
   async setIngredientAllergens(
     @Param("key") key: string,
     @Body(new ZodBody(setIngredientAllergensPayloadSchema)) body: SetIngredientAllergensPayload,
@@ -132,6 +138,9 @@ export class IngredientController {
    */
   @Post("ingredients/:key/allergen-propagation")
   @HttpCode(200)
+  @Idempotent(
+    "n'écrit que les fiches dont la déclaration diffère de la propagée : rejouée, aucune ne diffère et le handler sort sans écrire",
+  )
   async applyAllergenPropagation(
     @Param("key") key: string,
     @Body(new ZodBody(applyIngredientAllergenPropagationPayloadSchema))
@@ -160,6 +169,9 @@ export class IngredientController {
   }
 
   @Put("products/:id/ingredients")
+  @Idempotent(
+    "pose la liste d'ingrédients de la fiche : rejouée, rien ne change et le journal se tait",
+  )
   async setOfProduct(
     @Param("id") id: string,
     @Body(new ZodBody(setProductIngredientsPayloadSchema)) body: SetProductIngredientsPayload,

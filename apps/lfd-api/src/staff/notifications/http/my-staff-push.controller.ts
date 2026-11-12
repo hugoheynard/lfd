@@ -14,6 +14,7 @@ import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { SubscribeStaffPushCommand } from "../application/commands/subscribe-staff-push.command.js";
 import { UnsubscribeStaffPushCommand } from "../application/commands/unsubscribe-staff-push.command.js";
 import { GetPushCapabilityQuery } from "../application/queries/get-push-capability.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Abonner MON appareil** (`a-la-porte.md`, B5 ; `plan-tournee-prete.md`,
@@ -43,6 +44,9 @@ export class MyStaffPushController {
 
   @Post()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "abonnement rangé par son endpoint (upsert) : rejoué, il met à jour la même ligne sans en créer",
+  )
   async subscribe(
     @Body(new ZodBody(pushSubscriptionSchema)) body: PushSubscriptionPayload,
     @StaffUserId() staffUserId: string,
@@ -57,6 +61,7 @@ export class MyStaffPushController {
 
   @Delete()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent("oubli par `deleteMany` sur l'endpoint : rejoué, il n'y a plus rien à oublier")
   async unsubscribe(
     @Body(new ZodBody(pushUnsubscribeSchema)) body: PushUnsubscribePayload,
   ): Promise<void> {

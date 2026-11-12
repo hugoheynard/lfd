@@ -8,6 +8,7 @@ import {
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import { SetProductCustomRecipeCommand } from "../application/set-product-custom-recipe.js";
+import { Idempotent } from "../../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Sur mesure** — la case de la fiche
@@ -23,6 +24,9 @@ export class ProductCustomRecipeController {
 
   /** L'état entier de la case. */
   @Put(":id/custom-recipe")
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête laisse la fiche telle quelle, et le journal se tait quand rien n'a changé",
+  )
   async setProductCustomRecipe(
     @Param("id") id: string,
     @Body(new ZodBody(setProductCustomRecipePayloadSchema))

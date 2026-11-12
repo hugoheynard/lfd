@@ -55,6 +55,7 @@ import { SaveMediaDetailsCommand } from "../application/save-media-details.js";
 import { ListMediaTagsQuery } from "../application/list-media-tags.js";
 import { RenameMediaTagCommand } from "../application/rename-media-tag.js";
 import { RemoveMediaTagCommand } from "../application/remove-media-tag.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Garde-fou DoS du multipart, **très au-dessus** de la limite métier (le
@@ -221,6 +222,9 @@ export class MediaLibraryController {
    */
   @Put("tags/rename")
   @HttpCode(204)
+  @Idempotent(
+    "renomme le mot sur les images qui le portent : rejoué, plus aucune ne porte l'ancien et le geste est refusé (404) sans rien écrire",
+  )
   async renameTag(
     @Body(new ZodBody(renameMediaTagPayloadSchema)) payload: RenameMediaTagPayload,
   ): Promise<void> {
@@ -235,6 +239,9 @@ export class MediaLibraryController {
    */
   @Delete("tags")
   @HttpCode(204)
+  @Idempotent(
+    "retire le mot des images qui le portent : rejoué, plus aucune ne le porte et le retrait est refusé (404) sans rien écrire",
+  )
   async removeTag(@Query(new ZodQuery(tagQuerySchema)) query: TagQuery): Promise<void> {
     await this.commands.execute<RemoveMediaTagCommand, void>(
       new RemoveMediaTagCommand(query.tag ?? ""),
@@ -253,6 +260,9 @@ export class MediaLibraryController {
    * elle vit dans `mediaTags`.
    */
   @Put()
+  @Idempotent(
+    "pose la description de l'image : rejouée, elle ne change rien et le journal se tait quand rien n'a bougé",
+  )
   async describe(
     @Body(new ZodBody(mediaDetailsPayloadSchema)) payload: MediaDetailsPayload,
   ): Promise<void> {

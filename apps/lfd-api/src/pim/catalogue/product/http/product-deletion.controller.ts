@@ -3,6 +3,7 @@ import { CommandBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
 import { DeleteProductCommand } from "../application/delete-product.js";
+import { Idempotent } from "../../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Supprimer une fiche archivée** (`documentation/pim/plan-effacer-une-fiche-archivee.md`,
@@ -23,6 +24,9 @@ export class ProductDeletionController {
    */
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "seule une fiche archivée se supprime : rejouée, la fiche est déjà supprimée et la demande est refusée (404) sans rien écrire",
+  )
   async deleteProduct(@Param("id") id: string): Promise<void> {
     await this.commands.execute<DeleteProductCommand, void>(new DeleteProductCommand(id));
   }

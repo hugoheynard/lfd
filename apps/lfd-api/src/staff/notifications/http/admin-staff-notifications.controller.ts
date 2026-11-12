@@ -6,6 +6,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { MarkNotificationReadCommand } from "../application/commands/mark-notification-read.command.js";
 import { GetStaffNotificationsQuery } from "../application/queries/get-staff-notifications.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * La **cloche** du back-office.
@@ -30,6 +31,9 @@ export class AdminStaffNotificationsController {
 
   @Post("read")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "ne marque que les notifications non lues (`readAt: null` dans le where) : rejouée, rien ne s'écrit",
+  )
   async readAll(@StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<MarkNotificationReadCommand, void>(
       new MarkNotificationReadCommand(null, staffUserId),
@@ -38,6 +42,9 @@ export class AdminStaffNotificationsController {
 
   @Post(":id/read")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "ne marque que si la notification n'est pas lue (`readAt: null` dans le where) : rejouée, rien ne s'écrit",
+  )
   async read(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<MarkNotificationReadCommand, void>(
       new MarkNotificationReadCommand(id, staffUserId),

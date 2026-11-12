@@ -11,6 +11,7 @@ import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { DeclareMediaSeriesCommand } from "../application/declare-media-series.js";
 import { DescribeMediaSeriesCommand } from "../application/describe-media-series.js";
 import { ListMediaSeriesQuery } from "../application/list-media-series.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Les séries de la médiathèque** (2026-10-10, `mediatheque.md` §5) — ouvrir, corriger,
@@ -47,6 +48,9 @@ export class MediaSeriesController {
 
   @Put(":id")
   @HttpCode(204)
+  @Idempotent(
+    "pose la description de la série : rejouée, elle ne change rien et le journal se tait quand rien n'a bougé",
+  )
   async describe(
     @Param("id") id: string,
     @Body(new ZodBody(mediaSeriesPayloadSchema)) payload: MediaSeriesPayload,

@@ -64,6 +64,7 @@ import { SetProductAudienceCommand } from "../application/set-product-audience.j
 import { UpdateProductEditorialCommand } from "../application/update-product-editorial.js";
 import { UpdateProductIdentityCommand } from "../application/update-product-identity.js";
 import { UpdateVariantPricingCommand } from "../application/update-variant-pricing.js";
+import { Idempotent } from "../../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Produits du catalogue — dispatchés sur les bus CQRS. L'édition se fait **par
@@ -117,6 +118,9 @@ export class ProductController {
 
   /** Section Identité : nom + nature + famille en une opération. */
   @Put(":id/identity")
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête laisse la fiche telle quelle, et le journal se tait quand rien n'a changé",
+  )
   async updateIdentity(
     @Param("id") id: string,
     @Body(new ZodBody(updateProductIdentityPayloadSchema))
@@ -130,6 +134,9 @@ export class ProductController {
 
   /** Section Description (couche éditoriale). */
   @Put(":id/editorial")
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête laisse la fiche telle quelle, et le journal se tait quand rien n'a changé",
+  )
   async editProductEditorial(
     @Param("id") id: string,
     @Body(new ZodBody(productEditorialPayloadSchema))
@@ -149,6 +156,9 @@ export class ProductController {
    * images à la création et plus jamais y toucher.
    */
   @Put(":id/media")
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête laisse la fiche telle quelle, et le journal se tait quand rien n'a changé",
+  )
   async setProductMedia(
     @Param("id") id: string,
     @Body(new ZodBody(setProductMediaPayloadSchema)) body: SetProductMediaPayload,
@@ -164,6 +174,9 @@ export class ProductController {
    * des opérations datées). L'état entier, comme les autres sections.
    */
   @Put(":id/operation-only")
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête laisse la fiche telle quelle, et le journal se tait quand rien n'a changé",
+  )
   async setProductOperationOnly(
     @Param("id") id: string,
     @Body(new ZodBody(setProductOperationOnlyPayloadSchema))
@@ -180,6 +193,9 @@ export class ProductController {
    * préparation de tournée). L'état entier, comme les autres sections.
    */
   @Put(":id/cold-requirement")
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête laisse la fiche telle quelle, et le journal se tait quand rien n'a changé",
+  )
   async setProductColdRequirement(
     @Param("id") id: string,
     @Body(new ZodBody(setProductColdRequirementPayloadSchema))
@@ -193,6 +209,9 @@ export class ProductController {
 
   /** À qui la fiche vend — `null` la rend à sa famille. */
   @Put(":id/audience")
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête laisse la fiche telle quelle, et le journal se tait quand rien n'a changé",
+  )
   async setProductAudience(
     @Param("id") id: string,
     @Body(new ZodBody(setProductAudiencePayloadSchema)) body: SetProductAudiencePayload,
@@ -239,6 +258,9 @@ export class ProductController {
    * `lint:sku-never-recycled` interdit par ailleurs.
    */
   @Put(":id/variants/:variantId/name")
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête laisse la fiche telle quelle, et le journal se tait quand rien n'a changé",
+  )
   async renameVariant(
     @Param("id") id: string,
     @Param("variantId") variantId: string,
@@ -255,6 +277,9 @@ export class ProductController {
    * « Identité de la déclinaison », enregistrée seule (§ 3 du même plan).
    */
   @Put(":id/variants/:variantId/shop-name")
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête laisse la fiche telle quelle, et le journal se tait quand rien n'a changé",
+  )
   async setVariantShopName(
     @Param("id") id: string,
     @Param("variantId") variantId: string,
@@ -278,6 +303,9 @@ export class ProductController {
    * chemins à murer au fur et à mesure que la liste s'allonge.
    */
   @Put(":id/variants/:variantId/alignment")
+  @Idempotent(
+    "pose l'alignement : rejoué, l'état est déjà celui demandé et le handler sort sans écrire ni journaliser",
+  )
   async alignVariant(
     @Param("id") id: string,
     @Param("variantId") variantId: string,
@@ -290,6 +318,9 @@ export class ProductController {
   }
 
   @Put(":id/vat")
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête laisse la fiche telle quelle, et le journal se tait quand rien n'a changé",
+  )
   async setProductVat(
     @Param("id") id: string,
     @Body(new ZodBody(setProductVatPayloadSchema)) body: SetProductVatPayload,
@@ -302,6 +333,9 @@ export class ProductController {
 
   /** Section Tarif & logistique : prix + poids de la déclinaison en une opération. */
   @Put(":id/variants/:variantId/pricing")
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête laisse la fiche telle quelle, et le journal se tait quand rien n'a changé",
+  )
   async setVariantPricing(
     @Param("id") id: string,
     @Param("variantId") variantId: string,
@@ -322,6 +356,9 @@ export class ProductController {
    * l'oublier l'effaçait, sur de la donnée d'étiquette.
    */
   @Put(":id/variants/:variantId/allergens")
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête laisse la fiche telle quelle, et le journal se tait quand rien n'a changé",
+  )
   async saveVariantAllergens(
     @Param("id") id: string,
     @Param("variantId") variantId: string,
@@ -343,6 +380,9 @@ export class ProductController {
    * est pire qu'un refus (§7 du plan). Le message nomme la route de sortie.
    */
   @Put(":id/variants/:variantId/nutrition")
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête laisse la fiche telle quelle, et le journal se tait quand rien n'a changé",
+  )
   async saveVariantNutrition(
     @Param("id") id: string,
     @Param("variantId") variantId: string,
@@ -395,6 +435,9 @@ export class ProductController {
    * Refusée (409) sur une fiche non signée ou archivée.
    */
   @Delete(":id/ready")
+  @Idempotent(
+    "le retrait est refusé sur une fiche qui n'est pas déclarée prête (409) : rejoué, rien ne s'écrit",
+  )
   async withdrawProductReadiness(@Param("id") id: string): Promise<null> {
     await this.commands.execute<WithdrawProductReadinessCommand, void>(
       new WithdrawProductReadinessCommand(id),
@@ -403,6 +446,9 @@ export class ProductController {
   }
 
   @Put(":id/publish")
+  @Idempotent(
+    "une fiche déjà en vente rend « rien à faire » : rejouée, le handler sort sans écrire ni journaliser",
+  )
   async activateProduct(@Param("id") id: string) {
     await this.commands.execute<ActivateProductCommand, void>(new ActivateProductCommand(id));
     return { id };
@@ -410,18 +456,27 @@ export class ProductController {
 
   /** Désactivation (route `/unpublish`) : la fiche redevient inactive, pas archivée. */
   @Put(":id/unpublish")
+  @Idempotent(
+    "une fiche déjà en brouillon rend « rien à faire » : rejouée, le handler sort sans écrire ni journaliser",
+  )
   async deactivateProduct(@Param("id") id: string) {
     await this.commands.execute<DeactivateProductCommand, void>(new DeactivateProductCommand(id));
     return { id };
   }
 
   @Put(":id/archive")
+  @Idempotent(
+    "une fiche déjà archivée rend « rien à faire » : rejouée, le handler sort sans écrire ni journaliser",
+  )
   async archiveProduct(@Param("id") id: string) {
     await this.commands.execute<ArchiveProductCommand, void>(new ArchiveProductCommand(id));
     return { id };
   }
 
   @Put(":id/restore")
+  @Idempotent(
+    "l'agrégat refuse de restaurer une fiche qui n'est pas archivée (409) : rejouée, rien ne s'écrit",
+  )
   async restoreProduct(@Param("id") id: string) {
     await this.commands.execute<RestoreProductCommand, void>(new RestoreProductCommand(id));
     return { id };

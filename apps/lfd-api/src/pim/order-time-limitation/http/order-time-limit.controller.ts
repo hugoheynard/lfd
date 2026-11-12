@@ -13,6 +13,7 @@ import { GetGeneralOrderCutoffQuery } from "../application/get-general-order-cut
 import { ListOrderTimeLimitsQuery } from "../application/list-order-time-limits.js";
 import { RemoveOrderTimeLimitCommand } from "../application/remove-order-time-limit.js";
 import { SetOrderTimeLimitCommand } from "../application/set-order-time-limit.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Points d'arrêt de prise de commande** — jusqu'à quand on accepte une
@@ -68,6 +69,9 @@ export class OrderTimeLimitController {
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "retire la limite : rejoué, elle n'existe plus et la demande est refusée (404) sans rien écrire",
+  )
   async remove(@Param("id") id: string): Promise<void> {
     await this.commands.execute<RemoveOrderTimeLimitCommand, void>(
       new RemoveOrderTimeLimitCommand(id),

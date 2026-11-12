@@ -6,6 +6,7 @@ import { DetachProductVariantCommand } from "../application/detach-product-varia
 import { DiscontinueProductVariantCommand } from "../application/discontinue-product-variant.js";
 import { MakeVariantDefaultCommand } from "../application/make-variant-default.js";
 import { RestoreProductVariantCommand } from "../application/restore-product-variant.js";
+import { Idempotent } from "../../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Les gestes qui sortent une déclinaison de sa fiche, ou l'y ramènent**
@@ -24,6 +25,9 @@ export class ProductVariantLifecycleController {
   /** Archive la déclinaison : hors vente, en base, référence jamais réattribuée. */
   @Post(":id/variants/:variantId/discontinue")
   @HttpCode(200)
+  @Idempotent(
+    "l'agrégat refuse d'arrêter une déclinaison déjà arrêtée (409) : rejouée, rien ne s'écrit",
+  )
   async discontinueVariant(@Param("id") id: string, @Param("variantId") variantId: string) {
     await this.commands.execute<DiscontinueProductVariantCommand, void>(
       new DiscontinueProductVariantCommand(id, variantId),
@@ -34,6 +38,9 @@ export class ProductVariantLifecycleController {
   /** La désarchive : son rang, sa référence, et la vente selon la fiche. */
   @Post(":id/variants/:variantId/restore")
   @HttpCode(200)
+  @Idempotent(
+    "l'agrégat refuse de rétablir une déclinaison qui n'est pas arrêtée (409) : rejouée, rien ne s'écrit",
+  )
   async restoreVariant(@Param("id") id: string, @Param("variantId") variantId: string) {
     await this.commands.execute<RestoreProductVariantCommand, void>(
       new RestoreProductVariantCommand(id, variantId),
@@ -44,6 +51,9 @@ export class ProductVariantLifecycleController {
   /** En fait la déclinaison par défaut : celles qui suivaient le défaut la suivent. */
   @Post(":id/variants/:variantId/make-default")
   @HttpCode(200)
+  @Idempotent(
+    "l'agrégat refuse de promouvoir la déclinaison déjà par défaut (409) : rejouée, rien ne s'écrit",
+  )
   async makeVariantDefault(@Param("id") id: string, @Param("variantId") variantId: string) {
     await this.commands.execute<MakeVariantDefaultCommand, void>(
       new MakeVariantDefaultCommand(id, variantId),

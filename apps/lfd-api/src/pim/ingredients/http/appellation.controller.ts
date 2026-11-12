@@ -14,6 +14,7 @@ import { CreateAppellationCommand } from "../application/create-appellation.js";
 import { RemoveAppellationCommand } from "../application/remove-appellation.js";
 import { UpdateAppellationCommand } from "../application/update-appellation.js";
 import { ListAppellationsQuery } from "../application/list-appellations.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Les **appellations** — les signes de qualité et d'origine qu'une matière peut
@@ -57,6 +58,7 @@ export class AppellationController {
   }
 
   @Put(":code")
+  @Idempotent("pose les valeurs de l'appellation : rejouée, rien ne change et le journal se tait")
   async update(
     @Param("code") code: string,
     @Body(new ZodBody(updateAppellationPayloadSchema)) body: UpdateAppellationPayload,
@@ -68,6 +70,9 @@ export class AppellationController {
   }
 
   @Delete(":code")
+  @Idempotent(
+    "retire l'appellation : rejoué, elle n'existe plus et la demande est refusée (404) sans rien écrire",
+  )
   async remove(@Param("code") code: string) {
     await this.commands.execute<RemoveAppellationCommand, void>(new RemoveAppellationCommand(code));
     return { code };

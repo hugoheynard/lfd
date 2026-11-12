@@ -26,6 +26,7 @@ import { RenameAllergenCategoryCommand } from "../application/rename-allergen-ca
 import { RestoreAllergenCategoryCommand } from "../application/restore-allergen-category.js";
 import { RestoreAllergenEntryCommand } from "../application/restore-allergen-entry.js";
 import { ReviseAllergenEntryCommand } from "../application/revise-allergen-entry.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **L'administration du référentiel d'allergènes** — l'écran staff, pas la
@@ -118,6 +119,9 @@ export class AllergenController {
   }
 
   @Put("entries/:id")
+  @Idempotent(
+    "pose les valeurs de l'entrée : rejouée, aucun écart n'est trouvé et le handler sort sans écrire ni journaliser",
+  )
   async reviseEntry(
     @Param("id") id: string,
     @Body(new ZodBody(reviseAllergenEntryPayloadSchema)) body: ReviseAllergenEntryPayload,

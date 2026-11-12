@@ -16,6 +16,7 @@ import { ListActiveSalesContextsQuery } from "../application/list-active-sales-c
 import { ListSalesContextsQuery } from "../application/list-sales-contexts.js";
 import { RemoveSalesContextCommand } from "../application/remove-sales-context.js";
 import { UpdateSalesContextCommand } from "../application/update-sales-context.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Les **contextes de vente** — le registre, en lecture ET en écriture.
@@ -68,6 +69,9 @@ export class SalesContextController {
   }
 
   @Post()
+  @Idempotent(
+    "la clé du contexte vient de la requête, pas d'un générateur : rejouée, la clé est prise et la création est refusée (409) sans rien écrire",
+  )
   async create(
     @Body(new ZodBody(createSalesContextPayloadSchema)) body: CreateSalesContextPayload,
   ) {
@@ -78,6 +82,7 @@ export class SalesContextController {
   }
 
   @Put(":key")
+  @Idempotent("pose les valeurs du contexte : rejouée, rien ne change et le journal se tait")
   async update(
     @Param("key") key: string,
     @Body(new ZodBody(updateSalesContextPayloadSchema)) body: UpdateSalesContextPayload,
@@ -89,6 +94,9 @@ export class SalesContextController {
   }
 
   @Delete(":key")
+  @Idempotent(
+    "retire le contexte : rejoué, il n'existe plus et la demande est refusée (404) sans rien écrire",
+  )
   async remove(@Param("key") key: string) {
     await this.commands.execute<RemoveSalesContextCommand, void>(
       new RemoveSalesContextCommand(key),

@@ -37,6 +37,7 @@ import {
   RemoveStaffUserCommand,
   UpdateStaffUserCommand,
 } from "../application/staff-user.commands.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Surface **admin** (staff) de l'annuaire des users staff : lister, ajouter,
@@ -137,6 +138,9 @@ export class AdminStaffUsersController {
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "la suppression d'un membre est retirée : le handler refuse toujours, sans rien écrire",
+  )
   async remove(@Param("id") id: string, @StaffUserId() actorId: string): Promise<void> {
     await this.commands.execute<RemoveStaffUserCommand, void>(
       new RemoveStaffUserCommand(id, actorId),

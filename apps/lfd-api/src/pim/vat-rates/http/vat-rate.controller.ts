@@ -8,6 +8,7 @@ import { CreateVatRateCommand } from "../application/create-vat-rate.js";
 import { ListVatRatesQuery } from "../application/list-vat-rates.js";
 import { RemoveVatRateCommand } from "../application/remove-vat-rate.js";
 import { UpdateVatRateCommand } from "../application/update-vat-rate.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Taux de **TVA** — référence commerciale partagée (familles, fiches, canal). Le
@@ -46,6 +47,7 @@ export class VatRateController {
   }
 
   @Put(":id")
+  @Idempotent("pose les valeurs du taux : rejouée, rien ne change et le journal se tait")
   async update(
     @Param("id") id: string,
     @Body(new ZodBody(vatRatePayloadSchema)) body: VatRatePayload,
@@ -55,6 +57,9 @@ export class VatRateController {
   }
 
   @Delete(":id")
+  @Idempotent(
+    "retire le taux : rejoué, il n'existe plus et la demande est refusée (404) sans rien écrire",
+  )
   async remove(@Param("id") id: string) {
     await this.commands.execute<RemoveVatRateCommand, void>(new RemoveVatRateCommand(id));
     return { id };

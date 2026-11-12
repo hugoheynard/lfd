@@ -34,6 +34,7 @@ import { ReorderCategoriesCommand } from "../application/reorder-categories.js";
 import { RenameCategoryCommand } from "../application/rename-category.js";
 import { SetCategoryVatCommand } from "../application/set-category-vat.js";
 import { SetCategoryAudienceCommand } from "../application/set-category-audience.js";
+import { Idempotent } from "../../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Familles du catalogue — dispatchées sur les bus CQRS.
@@ -79,6 +80,9 @@ export class CategoryController {
   }
 
   @Put(":id/name")
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête laisse la famille telle quelle, et le journal se tait quand rien n'a changé",
+  )
   async renameCategory(
     @Param("id") id: string,
     @Body(new ZodBody(renameCategoryPayloadSchema)) body: RenameCategoryPayload,
@@ -88,6 +92,9 @@ export class CategoryController {
   }
 
   @Put(":id/vat")
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête laisse la famille telle quelle, et le journal se tait quand rien n'a changé",
+  )
   async setVat(
     @Param("id") id: string,
     @Body(new ZodBody(setCategoryVatPayloadSchema)) body: SetCategoryVatPayload,
@@ -100,6 +107,9 @@ export class CategoryController {
 
   /** À qui la famille vend — ses fiches en héritent, sauf dérogation. */
   @Put(":id/audience")
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête laisse la famille telle quelle, et le journal se tait quand rien n'a changé",
+  )
   async setAudience(
     @Param("id") id: string,
     @Body(new ZodBody(setCategoryAudiencePayloadSchema)) body: SetCategoryAudiencePayload,
@@ -145,6 +155,9 @@ export class CategoryController {
 
   /** Section **Communication** : les textes, dans leurs trois langues. */
   @Put(":id/editorial")
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête laisse la famille telle quelle, et le journal se tait quand rien n'a changé",
+  )
   async editCategoryEditorial(
     @Param("id") id: string,
     @Body(new ZodBody(categoryEditorialPayloadSchema)) body: CategoryEditorialPayload,
@@ -162,6 +175,9 @@ export class CategoryController {
    * qu'il affiche. Réordonner et retirer sont le même geste pour qui l'exécute.
    */
   @Put(":id/media")
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête laisse la famille telle quelle, et le journal se tait quand rien n'a changé",
+  )
   async setCategoryMedia(
     @Param("id") id: string,
     @Body(new ZodBody(setCategoryMediaPayloadSchema)) body: SetCategoryMediaPayload,

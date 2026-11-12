@@ -31,6 +31,7 @@ import {
   RestoreStaffRoleCommand,
   UpdateStaffRoleCommand,
 } from "../application/staff-role.commands.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Surface **admin** des rôles : les voir, en définir, les modifier, les retirer.
@@ -65,6 +66,9 @@ export class AdminStaffRolesController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @Idempotent(
+    "la clé du rôle vient de la requête, pas d'un générateur : rejouée, la clé est prise et la création est refusée (409) sans rien écrire",
+  )
   async create(
     @Body(new ZodBody(createStaffRolePayloadSchema)) payload: CreateStaffRolePayload,
   ): Promise<{ readonly key: string }> {
@@ -76,6 +80,7 @@ export class AdminStaffRolesController {
 
   @Put(":key")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent("pose la définition du rôle : rejouée, rien ne change et aucun fait n'est écrit")
   async update(
     @Param("key") key: string,
     @Body(new ZodBody(updateStaffRolePayloadSchema)) payload: UpdateStaffRolePayload,
@@ -95,6 +100,9 @@ export class AdminStaffRolesController {
 
   @Post(":key/restore")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "remet `archivedAt` à vide : rejouée, le rôle est déjà en circulation et aucun fait n'est écrit",
+  )
   async restore(@Param("key") key: string): Promise<void> {
     await this.commands.execute<RestoreStaffRoleCommand, void>(new RestoreStaffRoleCommand(key));
   }
