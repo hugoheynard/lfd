@@ -21,6 +21,26 @@ describe("SimulatePostDeployOperationHandler", () => {
     });
   });
 
+  /** Régression : un double clic sur « Simuler » rangeait deux passages. */
+  it("rejouée avec la même clé, rend le même passage sans en ranger un second", async () => {
+    const world = postDeployWorld([new ScriptedOperation("policies", 3)]);
+
+    const first = await world.simulate("policies", "fiche-hugo", "cle-1");
+    const replay = await world.simulate("policies", "fiche-hugo", "cle-1");
+
+    expect(replay).toBe(first);
+    expect(world.runs.rows.size).toBe(1);
+  });
+
+  it("une clé neuve range une simulation neuve", async () => {
+    const world = postDeployWorld([new ScriptedOperation("policies", 3)]);
+
+    await world.simulate("policies", "fiche-hugo", "cle-1");
+    await world.simulate("policies", "fiche-hugo", "cle-2");
+
+    expect(world.runs.rows.size).toBe(2);
+  });
+
   it("refuse une clé inconnue, sans rien tracer", async () => {
     const world = postDeployWorld([]);
 

@@ -47,11 +47,15 @@ function run(overrides: Partial<PostDeployRunView> = {}): PostDeployRunView {
 class FakeService {
   runs: PostDeployRunView[] = [];
   simulated: string[] = [];
+  intentKeys: string[] = [];
   applied: string[] = [];
   applyError: unknown = null;
+  simulateError: unknown = null;
 
-  simulate(key: string): Promise<{ runId: string }> {
+  simulate(key: string, intentKey: string): Promise<{ runId: string }> {
     this.simulated.push(key);
+    this.intentKeys.push(intentKey);
+    if (this.simulateError !== null) return Promise.reject(this.simulateError);
     return Promise.resolve({ runId: 'run-1' });
   }
   apply(key: string): Promise<{ runId: string }> {
@@ -148,6 +152,20 @@ describe('PostDeployOperationCard', () => {
     expect((apply as HTMLButtonElement).disabled).toBe(true);
     await acknowledge(fixture);
     expect((q(fixture, '[data-apply]') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('« Simuler » rejoue la même clé après un échec, et en tire une neuve après un succès', async () => {
+    const service = new FakeService();
+    service.runs = [run()];
+    service.simulateError = new Error('réseau coupé');
+    const { fixture } = await render(service);
+    await click(fixture, '[data-simulate]');
+    service.simulateError = null;
+    await click(fixture, '[data-simulate]');
+    await click(fixture, '[data-simulate]');
+    const [failed, retried, next] = service.intentKeys;
+    expect(retried).toBe(failed);
+    expect(next).not.toBe(retried);
   });
 
   it('une simulation expirée n’offre plus « Appliquer », et le dit', async () => {

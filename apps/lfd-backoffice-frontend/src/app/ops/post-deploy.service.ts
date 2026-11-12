@@ -10,6 +10,7 @@ import type {
 } from '@lfd/ops-contract';
 
 import { B2B_API_BASE } from '../api/api-config';
+import { intentOptions } from '../shared/gesture-intents';
 
 const BASE = `${B2B_API_BASE}/admin/ops/post-deploy`;
 
@@ -28,9 +29,14 @@ export class PostDeployService {
     return firstValueFrom(this.http.get<PostDeployOverview>(BASE));
   }
 
-  simulate(key: string): Promise<PostDeployRunStarted> {
+  /** `intentKey` : la clé du geste (`GestureIntents`) — un double clic ne range qu'une simulation. */
+  simulate(key: string, intentKey: string): Promise<PostDeployRunStarted> {
     return firstValueFrom(
-      this.http.post<PostDeployRunStarted>(`${BASE}/${encodeURIComponent(key)}/simulate`, {}),
+      this.http.post<PostDeployRunStarted>(
+        `${BASE}/${encodeURIComponent(key)}/simulate`,
+        {},
+        intentOptions(intentKey),
+      ),
     );
   }
 

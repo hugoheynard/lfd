@@ -27,12 +27,16 @@ import {
   FoldStatusBadgeComponent,
 } from 'fold-ng';
 
+import { GestureIntents } from '../../shared/gesture-intents';
 import { PostDeployService } from '../post-deploy.service';
 
 /** L'avancement d'une application se relit à ce rythme, jusqu'à un état final. */
 export const RUN_POLL_MS = 2000;
 /** La fenêtre d'application se réévalue à ce rythme : « Appliquer » s'éteint de lui-même. */
 const CLOCK_TICK_MS = 15_000;
+
+/** Le sujet du geste « Simuler » : une clé tant que la simulation n'a pas abouti. */
+const SIMULATE_INTENT = 'simulate';
 
 const RUN_STATE_LABEL: Record<PostDeployRunState, string> = {
   simulated: 'simulée',
@@ -75,6 +79,7 @@ const FINAL_STATES: ReadonlySet<PostDeployRunState> = new Set([
 })
 export class PostDeployOperationCard {
   private readonly service = inject(PostDeployService);
+  private readonly intents = new GestureIntents();
 
   readonly operation = input.required<PostDeployOperationView>();
   /** Le titre de chaque opération par clé, pour dire « bloquée par … » en clair. */
@@ -171,7 +176,9 @@ export class PostDeployOperationCard {
     this.failure.set(null);
     this.acknowledged.set(false);
     try {
-      const { runId } = await this.service.simulate(this.operation().key);
+      const key = this.operation().key;
+      const { runId } = await this.service.simulate(key, this.intents.keyFor(SIMULATE_INTENT));
+      this.intents.done(SIMULATE_INTENT);
       this.run.set(await this.service.run(runId));
       this.now.set(Date.now());
     } catch (error) {

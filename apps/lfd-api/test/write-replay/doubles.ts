@@ -9,11 +9,13 @@ import { CheckoutGateway } from "../../src/lafoliecoffee/payments/domain/ports/c
 import { OrderMailOrigins } from "../../src/lafoliecoffee/orders/domain/ports/order-mail-origins.js";
 import { AdminTokenVerifier } from "../../src/platform/auth/admin-token.verifier.js";
 import { VerifiedSendingDomains } from "../../src/mail/senders/domain/ports/verified-sending-domains.js";
+import { POST_DEPLOY_OPERATIONS } from "../../src/platform/post-deploy/post-deploy-operation.js";
 import { MAILER } from "../../src/mail/templates/mailer.tokens.js";
 import { Clock } from "../../src/platform/time/clock.js";
 import { FixedClock } from "../../src/platform/time/fixed-clock.js";
 import type { E2eOverride } from "../e2e-harness.js";
 import { cardGatewayDouble } from "../order-factory.js";
+import { REPLAY_POST_DEPLOY_OPERATIONS } from "./ops-scenarios.js";
 
 /**
  * Les frontières sortantes que l'e2e du rejeu double — celles des suites
@@ -113,4 +115,5 @@ export const REPLAY_OVERRIDES: readonly E2eOverride[] = [
   { token: CustomerIdentityPort, value: customerIdentity },
   { token: StaffIdentityPort, value: staffIdentity },
   { token: Clock, value: clock },
+  { token: POST_DEPLOY_OPERATIONS, value: REPLAY_POST_DEPLOY_OPERATIONS },
 ];

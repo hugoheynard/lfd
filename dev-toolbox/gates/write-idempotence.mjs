@@ -40,7 +40,10 @@
  *    sans décision ;
  * 4. `runSealed` dans un fichier qui ouvre `$transaction(` en direct :
  *    `seal` ne scelle que sous `UnitOfWork`, ailleurs la résolution part hors
- *    de la transaction sans erreur (§ 7).
+ *    de la transaction sans erreur (§ 7) ;
+ * 5. un `POST` `@Idempotent` dont le handler crée, envoie un e-mail ou
+ *    appelle le réseau, hors des exceptions datées (§ 8, J4 ;
+ *    `write-idempotence-effects.mjs`).
  *
  * Usage : `pnpm gate write-idempotence` ; `--write-debt` réécrit la liste de
  * dette avec les routes non rangées d'aujourd'hui ; `--inventory [fichier]`
@@ -54,6 +57,12 @@ import { fileURLToPath } from "node:url";
 
 import ts from "typescript";
 
+import {
+  EXCEPTIONS_FILE,
+  effectsOf,
+  natureFailures,
+  networkTypes,
+} from "./write-idempotence-effects.mjs";
 import { inventoryOf } from "./write-idempotence-inventory.mjs";
 import {
   WRITE_VERBS,
@@ -211,7 +220,7 @@ const typeName = (parameter) =>
     : null;
 
 /** Ce qu'une classe handler fait de `OncePerIntent`, et si elle écrit en base. */
-function handlerTraits(file, node) {
+function handlerTraits(file, node, network) {
   const constructor = node.members.find(ts.isConstructorDeclaration);
   const injected = (constructor?.parameters ?? []).map((p) => ({
     field: p.name.getText(file),
@@ -224,6 +233,7 @@ function handlerTraits(file, node) {
       new RegExp(`this\\.${field}\\s*\\.\\s*${verb}\\s*[<(]`).test(text),
     );
   return {
+    effects: effectsOf(injected, text, network),
     sealed: calls("runSealed"),
     run: calls("run"),
     writes:
@@ -233,7 +243,7 @@ function handlerTraits(file, node) {
 }
 
 /** Les `@CommandHandler(X)` d'un fichier : `{ command, from, file, …traits }`. */
-export function commandHandlersIn(path, source) {
+export function commandHandlersIn(path, source, network = new Set()) {
   if (!source.includes("@CommandHandler")) return [];
   const file = parse(path, source);
   const imports = importsOf(path, file);
@@ -249,7 +259,7 @@ export function commandHandlersIn(path, source) {
           command: first.text,
           from: imports.get(first.text) ?? path,
           file: path,
-          ...handlerTraits(file, node),
+          ...handlerTraits(file, node, network),
         });
       }
     }
@@ -356,7 +366,8 @@ function main(argv) {
     path: relative(ROOT, full),
     source: readFileSync(full, "utf8"),
   }));
-  const handlers = files.flatMap(({ path, source }) => commandHandlersIn(path, source));
+  const network = networkTypes(files);
+  const handlers = files.flatMap(({ path, source }) => commandHandlersIn(path, source, network));
   const routes = files
     .filter(({ path }) => path.endsWith(".controller.ts"))
     .flatMap(({ path, source }) => writeRoutes(path, source))
@@ -392,6 +403,10 @@ function main(argv) {
 
   const debt = JSON.parse(readFileSync(join(ROOT, DEBT_FILE), "utf8")).routes;
   const result = verdict(routes, debt, sealedFiles);
+  const exceptions = JSON.parse(readFileSync(join(ROOT, EXCEPTIONS_FILE), "utf8")).exceptions;
+  result.failures.push(
+    ...natureFailures(routes, (command) => handlerFor(command, handlers), exceptions),
+  );
   if (result.failures.length > 0) {
     console.error("\n✗ write-idempotence\n");
     for (const failure of result.failures) console.error(`  ${failure}`);
@@ -407,6 +422,9 @@ function main(argv) {
       `(${count("intent")} par intention, ${count("nature")} par @Idempotent dont ${machine} sous RecomputeGuard, ` +
       `${count("accepted")} en risque assumé).\n` +
       `  Dette : ${result.debt.length} route(s) non rangée(s) (${DEBT_FILE}) — compté, pas ignoré.`,
+  );
+  console.log(
+    `  POST « par nature » à effet, en exception datée (${EXCEPTIONS_FILE}) : ${exceptions.length}.`,
   );
   for (const route of result.ranged.filter((r) => r.case === "accepted")) {
     console.log(`  Risque assumé : ${route.file}  ${route.method} — ${route.accepted}`);

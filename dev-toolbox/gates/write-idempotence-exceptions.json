@@ -1,0 +1,377 @@
+{
+  "$comment": "POST rangés « par nature » dont le handler crée, envoie un e-mail ou appelle le réseau, et dont la création ou l'envoi est gardé par une clé métier (index unique, clé d'e-mail dérivée du sujet). Chaque entrée : route (fichier#méthode), reason (la clé, où elle est), verified (date de la lecture du code). Plan : documentation/ops/plan-idempotence-des-ecritures.md § 8, J4.",
+  "exceptions": [
+    {
+      "route": "apps/lfd-api/src/card-payment/http/admin-card-refunds.controller.ts#settleElsewhere",
+      "effects": ["creates"],
+      "reason": "transition terminale : rejouée, la demande relue sous le verrou du paiement n'est plus arrêtée et l'agrégat refuse (409 CardRefundNotStoppedError) avant toute ligne au carnet, tout fait ou tout avoir",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/card-payment/http/replay-first-payments.controller.ts#replay",
+      "effects": ["creates"],
+      "reason": "appelée par la machine (RecomputeGuard) : chaque référence est relue sous claim et la ligne insérée absente ou avancée en retard, jamais en arrière ; rejoué, le rattrapage ne trouve plus rien à insérer ni à avancer",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/delivery/http/address-point-suggestions.controller.ts#apply",
+      "effects": ["creates"],
+      "reason": "rejouée, la suggestion appliquée n'est plus proposée : refus 409 AddressSuggestionChangedError avant toute écriture ni tout identifiant",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/delivery/http/address-point-suggestions.controller.ts#ignore",
+      "effects": ["creates"],
+      "reason": "rejouée, la suggestion écartée n'est plus proposée : refus 409 AddressSuggestionChangedError avant toute écriture ni tout identifiant",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/delivery/http/bin-types.controller.ts#add",
+      "effects": ["creates"],
+      "reason": "par unicité : le nom d'un type en service est unique ; rejoué, le type existe et l'ajout est refusé (409 BinTypeNameTakenError) avant toute écriture",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/delivery/http/delivery-loading.controller.ts#load",
+      "effects": ["creates"],
+      "reason": "charge un bac : rejouée, il est déjà chargé dans cette tournée, l'agrégat rend faux et ni l'écriture ni le journal ne partent",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/delivery/http/delivery-proposal.controller.ts#locate",
+      "effects": ["network:Geocoder"],
+      "reason": "rejoué, les adresses sont au cache des géocodages : rien ne sort sur le réseau et rien ne s'écrit — réseau en lecture seule (géocodage) ; rejoué, les adresses sont au cache et rien ne sort (locate-delivery-stops.handler.ts : seules les adresses absentes du cache partent).",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/delivery/http/delivery-proposal.controller.ts#apply",
+      "effects": ["creates"],
+      "reason": "par sa propre clé : les versions lues des tournées ; rejouée, les tournées qui tiennent ces commandes ont changé et la proposition est refusée (409 ProposalOutdatedError)",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/delivery/http/delivery-rounds.controller.ts#assign",
+      "effects": ["creates"],
+      "reason": "par sa propre clé : la version lue de la tournée ; rejouée, l'affectation l'a fait monter et la requête est refusée (409 DeliveryRoundStaleError) avant de tirer un identifiant d'arrêt",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/delivery/http/delivery-simulation-scenarios.controller.ts#record",
+      "effects": ["creates"],
+      "reason": "par unicité : le nom d'un scénario vivant est unique ; rejoué, l'enregistrement est refusé (409 SimulationScenarioNameTakenError) avant toute écriture",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/delivery/http/purchase-bin-candidates.controller.ts#declare",
+      "effects": ["creates"],
+      "reason": "par unicité : le nom d'un candidat de la bibliothèque est unique ; rejoué, la déclaration est refusée (409 PurchaseCandidateNameTakenError) avant toute écriture",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/delivery/http/purchase-scenarios.controller.ts#record",
+      "effects": ["creates"],
+      "reason": "par unicité : le nom d'un scénario en cours est unique ; rejoué, l'enregistrement est refusé (409 PurchaseScenarioNameTakenError) avant toute écriture",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/delivery/http/purchase-vehicle-candidates.controller.ts#declare",
+      "effects": ["creates"],
+      "reason": "par unicité : le nom d'un candidat de la bibliothèque est unique ; rejoué, la déclaration est refusée (409 PurchaseCandidateNameTakenError) avant toute écriture",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/delivery/http/road-routing-wake.controller.ts#wake",
+      "effects": ["network:RoadRoutingWaker"],
+      "reason": "réveille le moteur d'itinéraires sans rien écrire ; rejoué dans l'intervalle, le réveil ne repart même pas — réseau sans effet durable : réveil du moteur d'itinéraires, rien ne s'écrit ; rejoué dans l'intervalle, le réveil ne repart pas (wake-road-routing.handler.ts).",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/accounting/http/admin-account-bank-exports.controller.ts#declareKnown",
+      "effects": ["creates"],
+      "reason": "rejouée, l'empreinte du compte est déjà connue : l'entité refuse (409) avant toute écriture, et l'index unique sur l'empreinte tient la même règle en base",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/accounting/http/admin-bank-return-checks.controller.ts#attest",
+      "effects": ["creates"],
+      "reason": "transition : rejouée, le jour est déjà attesté et l'agrégat refuse (409 BankReturnCheckAlreadyAttestedError) avant toute ligne ni fait",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/accounting/http/admin-bank-return-checks.controller.ts#withdraw",
+      "effects": ["creates"],
+      "reason": "transition : rejouée, le jour n'est plus attesté et l'agrégat refuse (409 BankReturnCheckNotAttestedError) avant toute ligne ni fait",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/accounting/http/admin-card-invoices.controller.ts#retry",
+      "effects": ["creates"],
+      "reason": "par sa propre clé : sous le verrou de la commande, une facture déjà émise rend « already_invoiced » sans numéro (l'index invoice_order_invoiced_once tient un bon facturé une fois) ; un refus identique déjà rangé n'est ni réécrit ni rejournalisé",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/accounting/http/admin-collection-batch-attestations.controller.ts#attest",
+      "effects": ["creates"],
+      "reason": "transition : rejouée, la sorte est déjà attestée et l'agrégat refuse (409 BatchAttestationAlreadyGivenError) avant toute ligne ni fait",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/accounting/http/admin-collection-batch-attestations.controller.ts#withdraw",
+      "effects": ["creates"],
+      "reason": "transition : rejouée, la sorte n'est plus attestée et l'agrégat refuse (409) avant toute ligne ni fait",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/accounting/http/admin-collection-returns.controller.ts#record",
+      "effects": ["creates"],
+      "reason": "sous le verrou du lot : rejouée, la ligne a déjà son retour et l'agrégat refuse (409 LineAlreadyReturnedError) avant toute écriture ni fait",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/accounting/http/admin-collection-returns.controller.ts#confirm",
+      "effects": ["creates"],
+      "reason": "tout ou rien, par la référence de chaque transaction : rejoué, chaque retour retenu est déjà enregistré (ligne déjà retournée, essai déjà retourné) et l'import entier est refusé (409) avant toute écriture",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/accounting/http/admin-monthly-invoices.controller.ts#issue",
+      "effects": ["creates"],
+      "reason": "par sa propre clé : un bon n'est facturé qu'une fois (index invoice_order_invoiced_once) et le plan saute les groupes déjà facturés ; un refus identique déjà rangé n'est ni réécrit ni rejournalisé",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/bundles/http/admin-bundles.controller.ts#create",
+      "effects": ["creates"],
+      "reason": "création : rejouée, la clé tirée du nom est déjà prise et le cas d'usage refuse (409 BundleKeyTakenError) avant tout tirage d'identifiant ni écriture ; l'index unique tient la course entre deux onglets",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/catalog/http/admin-shelf-cache.controller.ts#switch",
+      "effects": ["network:ShopShelfSwitch"],
+      "reason": "appelée par la machine (RecomputeGuard, workflow ops) : pose un état du drapeau ; rejouée, le drapeau est déjà dans cet état, et la purge du rayon qu'elle demande est le geste lui-même (une seconde ne fait que regarnir le cache) — réseau sans effet durable : pose un drapeau et purge un cache ; rejouée, l'état est le même (switch-shelf-cache.handler.ts).",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/contact/http/my-order-change-requests.controller.ts#request",
+      "effects": ["creates"],
+      "reason": "rejouée, une demande attend déjà sur cette commande : le geste refuse (409 OrderChangeAlreadyPendingError) avant tout dépôt ni courriel",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/content/http/admin-platform-content.controller.ts#addLegalDocumentParagraph",
+      "effects": ["creates"],
+      "reason": "porte la révision chargée : rejouée après le premier succès, la révision a monté et le dépôt refuse (409 LegalDocumentChangedError) avant d'ajouter un second article",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/content/http/admin-platform-content.controller.ts#addRequiredLegalSection",
+      "effects": ["creates"],
+      "reason": "porte la révision chargée : rejouée après le premier succès, la révision a monté et le dépôt refuse (409 LegalDocumentChangedError) avant d'ajouter une seconde section",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/feature-access/http/admin-feature-access.controller.ts#addExemption",
+      "effects": ["creates"],
+      "reason": "rejouée, l'adresse est déjà exemptée : addIfAbsent rend l'id de la ligne existante, sans seconde ligne ni fait",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/growth/http/admin-market.controller.ts#refresh",
+      "effects": ["network:MarketDirectory"],
+      "reason": "recompte depuis l'annuaire public (lecture seule chez le tiers) et pose les comptes lus : rejouée, elle pose l'état du moment, rien ne s'additionne ni ne part — réseau en lecture seule chez le tiers (annuaire public) ; la route pose les comptes lus, rien ne s'additionne.",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/loyalty/http/admin-loyalty.controller.ts#cancel",
+      "effects": ["creates"],
+      "reason": "transition : rejouée, le bon relu sous le verrou de son titulaire est déjà annulé et l'agrégat refuse (409 LoyaltyVoucherNotAvailableError) avant tout tirage d'identifiant ni écriture ; l'index unique de la ligne de recrédit tient la même règle en base",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/loyalty/http/my-loyalty.controller.ts#convert",
+      "effects": ["creates"],
+      "reason": "par sa propre clé : le solde vu (expectedBalancePoints, obligatoire au contrat) ; rejouée, la conversion l'a fait baisser et l'agrégat refuse (409 LoyaltyBalanceChangedError) sous le verrou du titulaire, avant tout tirage d'identifiant ni écriture",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/order-opening/http/admin-order-opening-exemptions.controller.ts#grant",
+      "effects": ["creates"],
+      "reason": "création : rejouée, l'exemption est déjà active et l'agrégat refuse le doublon (409) sous transaction avant tout tirage d'identifiant ni écriture ; l'index unique partiel tient la course",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/orders/http/admin-order-shortfall.controller.ts#writeLetter",
+      "effects": ["mail"],
+      "reason": "par sa propre clé : une fois par décision, tenu par ShortfallNotice.notify sous verrou (409 « déjà prévenu » au rejeu) ; le courriel porte la clé de la décision",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/orders/http/admin-orders.controller.ts#warnOfDelay",
+      "effects": ["mail"],
+      "reason": "par sa propre clé : une fois par commande, tenu par l'agrégat sous verrou (409 au rejeu, rien d'écrit ni de demandé) ; le courriel porte la clé order.delay-warning:<commande>",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/payments/http/admin-payment-links.controller.ts#cancel",
+      "effects": ["network:CheckoutGateway"],
+      "reason": "transition : rejouée, le lien n'est plus ouvert et l'agrégat refuse (409 PaymentLinkNotOpenError) avant toute écriture et avant tout appel au prestataire — le port est injecté, mais le webhook ne fait que vérifier la signature (parseLinkWebhook, sans réseau) ; l'annulation, elle, est refusée au rejeu (409) avant l'appel au prestataire.",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/payments/http/payment-links-webhook.controller.ts#handle",
+      "effects": ["network:CheckoutGateway"],
+      "reason": "webhook, par la clé de l'émetteur : l'issue projetée (payé, expiré) est conditionnée à l'état du lien ; un événement rejoué ne réécrit rien — le port est injecté, mais le webhook ne fait que vérifier la signature (parseLinkWebhook, sans réseau) ; l'annulation, elle, est refusée au rejeu (409) avant l'appel au prestataire.",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-price-floors.controller.ts#carryOverFloor",
+      "effects": ["creates"],
+      "reason": "report : rejoué, la décision est déjà reportée sur la nouvelle référence et le cas d'usage refuse (409 DecisionAlreadyCarriedError) sous le verrou du report, avant tout tirage d'identifiant ni écriture",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-price-templates.controller.ts#apply",
+      "effects": ["creates"],
+      "reason": "rejouée, la mercuriale posée par le gabarit couvre déjà la période chez ce client : la contrainte d'exclusion la refuse (409 RunningMercurialeError), aucune seconde mercuriale ni acte ; une mercuriale est une seule ligne, atomique",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-pricing-carry-over.controller.ts#carryOverRule",
+      "effects": ["creates"],
+      "reason": "report : rejoué, la décision est déjà reportée sur la nouvelle référence et le cas d'usage refuse (409 DecisionAlreadyCarriedError) sous le verrou du report, avant tout tirage d'identifiant ni écriture",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-pricing-carry-over.controller.ts#carryOverLadder",
+      "effects": ["creates"],
+      "reason": "report : rejoué, la décision est déjà reportée sur la nouvelle référence et le cas d'usage refuse (409 DecisionAlreadyCarriedError) sous le verrou du report, avant tout tirage d'identifiant ni écriture",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-sale-reference-decisions.controller.ts#carryOver",
+      "effects": ["creates"],
+      "reason": "report : rejoué, la nouvelle référence est déjà négociée dans la mercuriale et l'agrégat refuse (409 SkuAlreadyNegotiatedError) sous le verrou du document, avant tout tirage d'identifiant ni écriture",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-volume-commitments.controller.ts#carryOver",
+      "effects": ["creates"],
+      "reason": "report : rejoué, la décision est déjà reportée sur la nouvelle référence et le cas d'usage refuse (409 DecisionAlreadyCarriedError) sous le verrou du report, avant tout tirage d'identifiant ni écriture",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/promotions/http/admin-promotions.controller.ts#pause",
+      "effects": ["network:PublicSettingsEdgeCache"],
+      "reason": "transition : rejouée sur une promotion en pause, l'agrégat refuse (409 PromotionAlreadyPausedError) avant toute écriture, tout acte ni toute purge du cache — réseau = purge d'un cache, refaite sans dommage ; et la transition est refusée au rejeu (409) avant la purge.",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/promotions/http/admin-promotions.controller.ts#resume",
+      "effects": ["network:PublicSettingsEdgeCache"],
+      "reason": "transition : rejouée sur une promotion en cours, l'agrégat refuse (409 PromotionNotPausedError) avant toute écriture, tout acte ni toute purge du cache — réseau = purge d'un cache, refaite sans dommage ; et la transition est refusée au rejeu (409) avant la purge.",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/promotions/http/admin-promotions.controller.ts#archive",
+      "effects": ["network:PublicSettingsEdgeCache"],
+      "reason": "transition : rejouée sur une promotion archivée, l'agrégat refuse (409 ArchivedPromotionIsSealedError) avant toute écriture, tout acte ni toute purge du cache — réseau = purge d'un cache, refaite sans dommage ; et la transition est refusée au rejeu (409) avant la purge.",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/resupply/http/admin-bakehouse-resupplies.controller.ts#sendDraft",
+      "effects": ["creates"],
+      "reason": "porte la version lue : rejouée, le brouillon déjà envoyé rend le réassort qu'il a produit (sentAfter) sans en écrire un second",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/resupply/http/admin-resupply-receipts.controller.ts#receive",
+      "effects": ["creates"],
+      "reason": "rejouée, la réception trouve la même ligne à la même quantité (ResupplyReceipt.holds) et n'écrit rien ; une quantité différente est refusée (409)",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/resupply/http/admin-site-stock-alerts.controller.ts#declare",
+      "effects": ["creates"],
+      "reason": "pose le niveau : rejouée, elle retrouve l'alerte vivante de l'article (une seule par site et article) et y repose le même niveau ; aucune seconde alerte, aucun fait",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/shop-copy/http/admin-shop-copy.controller.ts#publish",
+      "effects": ["network:ShopCopyEdgeCache"],
+      "reason": "publie les brouillons en attente : rejouée, il n'y a plus rien à publier et le geste est refusé (409) sans écrire, journaliser ni purger — réseau = purge d'un cache ; rejouée, rien à publier, refus 409 avant écriture et purge.",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/sites/http/admin-sites.controller.ts#archive",
+      "effects": ["network:PublicSettingsEdgeCache"],
+      "reason": "archive le site : rejoué, le site n'est plus actif et l'archivage est refusé sans rien écrire, journaliser ni purger — réseau = purge d'un cache, refaite sans dommage ; et la transition est refusée au rejeu (409) avant la purge.",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/vitrine/http/admin-vitrine.controller.ts#sendNotice",
+      "effects": ["creates"],
+      "reason": "par sa propre clé : idempotencyKey du corps, unique en base (idOfKey puis open) — rejouée, la même clé rend l'annonce déjà ouverte sans rien renvoyer",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/vitrine/http/vitrine-sweep.controller.ts#sweep",
+      "effects": ["creates"],
+      "reason": "appelée par la machine (RecomputeGuard), sous bail : un passage concurrent sort sans rien envoyer ; rejouée, les empreintes déjà émises ne rouvrent aucune livraison (état relu)",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/mail/deliveries/http/resend-webhook.controller.ts#handle",
+      "effects": ["creates"],
+      "reason": "webhook : un retour Resend n'est rangé qu'une fois par identifiant Svix (addIfAbsent), et une réponse entrante n'est reçue qu'une fois par identifiant d'e-mail (receiveOnce)",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/mail/requests/http/mail-check.controller.ts#check",
+      "effects": ["creates", "mail"],
+      "reason": "À TRANCHER (Hugo) — pas une clé métier : appelée par la machine (RecomputeGuard) après un déploiement, sans acteur ; la clé d'e-mail est tirée à chaque appel (check-mail-delivery.handler.ts, `ops.deploy-check:<révision>:<id>`), donc chaque appel envoie un essai de plus à l'administrateur, voulu par la conception du contrôle.",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/media/http/media-library.controller.ts#upload",
+      "effects": ["network:MediaStore"],
+      "reason": "par sa propre clé : l'adresse du contenu (SHA-256 des octets) ; rejoué, le même fichier retombe sur la même image, rendue « déjà au fonds », sans ligne ni fait de plus — stockage adressé par le contenu (SHA-256) ou balayage qui relit les orphelins : rejoué, même objet ou rien à retirer.",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/media/http/media-sweep.controller.ts#sweep",
+      "effects": ["network:MediaStore"],
+      "reason": "appelée par la machine (RecomputeGuard) : rejouée, elle relit les orphelins encore vieux et n'en trouve plus à retirer — stockage adressé par le contenu (SHA-256) ou balayage qui relit les orphelins : rejoué, même objet ou rien à retirer.",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/packing/http/packing-containers.controller.ts#applyProposal",
+      "effects": ["creates"],
+      "reason": "rejouée, la fiche porte déjà les bacs de la proposition et l'agrégat refuse (409 ProposalOverContainersError) avant de déclarer un bac ni de tirer un identifiant",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/pim/ingredients/http/appellation.controller.ts#create",
+      "effects": ["creates"],
+      "reason": "par unicité : le code d'une appellation est unique ; rejouée, la création est refusée (409 AppellationCodeTakenError) avant toute écriture",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/pim/ingredients/http/ingredient.controller.ts#createIngredient",
+      "effects": ["creates"],
+      "reason": "par unicité : la clé d'un ingrédient est unique ; rejouée, la création est refusée (409 IngredientKeyTakenError) avant toute écriture",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/production/http/production-batch-shortcuts.controller.ts#create",
+      "effects": ["creates"],
+      "reason": "par unicité : le libellé d'un raccourci est unique pour un article ; rejoué, la création est refusée (409) avant toute écriture",
+      "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/production/http/production-dossier-recipients.controller.ts#add",
+      "effects": ["creates"],
+      "reason": "par unicité : un destinataire n'est qu'une fois dans la liste ; rejoué, l'ajout est refusé (409 DuplicateDossierRecipientError) avant toute écriture",
+      "verified": "2026-11-12"
+    }
+  ]
+}

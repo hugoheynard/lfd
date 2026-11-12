@@ -70,12 +70,24 @@ describe("ApplyPostDeployOperationHandler", () => {
   });
 
   it("refuse une seconde application en cours de la même opération", async () => {
-    const world = postDeployWorld([new ScriptedOperation("policies", 3)]);
+    const operation = new ScriptedOperation("policies", 3);
+    // La première application reste en cours tant que le test ne la libère
+    // pas : l'état « running » ne dépend pas de l'ordre des micro-tâches.
+    let release = (): void => undefined;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    operation.apply = async (run) => {
+      await held;
+      return ScriptedOperation.prototype.apply.call(operation, run);
+    };
+    const world = postDeployWorld([operation]);
     await world.simulate("policies", "fiche-autre");
     await world.apply("policies", "fiche-autre");
     await world.simulate("policies");
 
     await expect(world.apply("policies")).rejects.toThrow(PostDeployAlreadyRunningError);
+    release();
     await world.background.whenIdle();
   });
 

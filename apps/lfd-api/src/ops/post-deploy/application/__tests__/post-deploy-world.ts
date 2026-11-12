@@ -1,3 +1,5 @@
+import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { BackgroundWork } from "../../../../platform/events/background-work.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import type { PostDeployOperation } from "../../../../platform/post-deploy/post-deploy-operation.js";
@@ -23,6 +25,8 @@ export function postDeployWorld(operations: readonly PostDeployOperation[]) {
     revision,
     new FixedIdGenerator("run"),
     clock,
+    new DirectUnitOfWork(),
+    inMemoryIntents(),
   );
   const applyHandler = new ApplyPostDeployOperationHandler(
     catalogue,
@@ -32,14 +36,17 @@ export function postDeployWorld(operations: readonly PostDeployOperation[]) {
     new PostDeployExecution(runs, clock),
     background,
   );
+  let gestures = 0;
+  // Sans clé donnée, chaque appel est un clic neuf.
+  const freshKey = (): string => `intent-${(gestures += 1)}`;
   return {
     runs,
     revision,
     clock,
     background,
     catalogue,
-    simulate: (key: string, actor = "fiche-hugo") =>
-      simulateHandler.execute(new SimulatePostDeployOperationCommand(key, actor)),
+    simulate: (key: string, actor = "fiche-hugo", intentKey = freshKey()) =>
+      simulateHandler.execute(new SimulatePostDeployOperationCommand(key, actor, intentKey)),
     apply: (key: string, actor = "fiche-hugo") =>
       applyHandler.execute(new ApplyPostDeployOperationCommand(key, actor)),
   };

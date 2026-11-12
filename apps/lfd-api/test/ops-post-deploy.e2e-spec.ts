@@ -13,6 +13,8 @@
  * simulation à zéro en production, plan § 8). Le mécanisme ne dépend donc
  * d'aucune reprise réelle.
  */
+import { randomUUID } from "node:crypto";
+
 import type {
   PostDeployOverview,
   PostDeployRunStarted,
@@ -115,9 +117,13 @@ async function overview(): Promise<PostDeployOverview> {
   return jsonBody<PostDeployOverview>(await staff().get(ROUTE).expect(200));
 }
 
+/** Chaque appel est une intention neuve : une clé tirée par simulation voulue. */
 async function simulate(key: string): Promise<string> {
-  return jsonBody<PostDeployRunStarted>(await staff().post(`${ROUTE}/${key}/simulate`).expect(201))
-    .runId;
+  const response = await staff()
+    .post(`${ROUTE}/${key}/simulate`)
+    .set("Idempotency-Key", randomUUID())
+    .expect(201);
+  return jsonBody<PostDeployRunStarted>(response).runId;
 }
 
 async function run(runId: string): Promise<PostDeployRunView> {

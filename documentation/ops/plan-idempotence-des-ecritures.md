@@ -1,6 +1,6 @@
 # Plan — chaque écriture dit pourquoi un rejeu ne la refait pas
 
-> 📐 **Plan, 2026-11-12.** J0 bâti le 2026-11-12 (§ 4), J3 aussi (§ 8) ; J1, J2, J4 et J5 restent à faire. Demande de Hugo : « est-ce qu'on a
+> 📐 **Plan, 2026-11-12.** J0 bâti le 2026-11-12 (§ 4), J3 et J4 aussi (§ 8) ; J1, J2 et J5 restent à faire. Demande de Hugo : « est-ce qu'on a
 > une porte pour garantir l'idempotence de toutes les actions d'écriture ? ».
 > Réponse vérifiée ce jour-là : non. Touche une frontière transverse et, sur
 > les routes de paiement, l'argent : passe par `vitruve` avant Hugo.
@@ -286,6 +286,57 @@ La porte refuse `@Idempotent` sur un `POST` dont le handler atteint appelle
 `ids.next()` (création), `mail.send` / `mail.sendAndAwaitReceipt`, ou un port
 réseau gardé par `assertOutsideTransaction`. Une telle route porte une clé.
 `PUT`, `PATCH` et `DELETE` gardent la raison déclarative.
+
+**✅ Bâti le 2026-11-12** (non commité à l'écriture de ces lignes).
+
+- **La porte** : `dev-toolbox/gates/write-idempotence-effects.mjs`, appelé par
+  `write-idempotence.mjs` (faute 5). Elle lit le handler résolu par
+  l'inventaire, et lui seul : `next(` sur un champ `IdGenerator`, `send(` /
+  `sendAndAwaitReceipt(` sur un champ `Mail`, ou l'injection d'un type que
+  déclare (classe, `implements`, `extends`) un fichier qui appelle
+  `assertOutsideTransaction(`. Elle ne suit pas les services qu'un handler
+  injecte (`OpenStaffAccess`, § 7) : la porte ne sait pas encore les suivre.
+  Tests : `node --test dev-toolbox/__tests__/write-idempotence-effects.test.mjs`.
+- **Les exceptions** : `dev-toolbox/gates/write-idempotence-exceptions.json`,
+  62 routes au 2026-11-12, chacune avec ses effets, sa raison et la date de
+  la lecture du code. Une exception sans raison, sans date, ou qui ne désigne
+  plus un `POST` « par nature » à effet échoue. Ce qu'elles couvrent :
+  - **une clé métier** : un index unique sur un nom ou un code (types de bac,
+    scénarios, candidats d'achat, appellations, ingrédients, raccourcis,
+    destinataires d'un dossier, ensembles, empreinte d'un compte bancaire,
+    exemption, facture unique par bon), l'identifiant de l'émetteur
+    (webhooks Resend et liens de paiement), l'adresse du contenu (dépôt
+    d'image), une clé d'e-mail tirée du sujet (retard, lettre de manque) ;
+  - **une transition refusée au rejeu** (409 avant toute écriture, sous
+    verrou) : l'identifiant tiré est celui de la trace ou de la ligne du
+    geste, et le rejeu n'arrive pas jusqu'à lui. Attestations, retours de
+    prélèvement, reports de décisions tarifaires, annulation d'un bon,
+    promotions, archivage d'un site, publication des textes ;
+  - **un réseau sans effet durable** : lecture (géocodage, annuaire public),
+    purge d'un cache, réveil du moteur d'itinéraires ; la porte voit le port
+    injecté, pas ce qu'il fait ;
+  - **la machine** (`RecomputeGuard`) : rattrapage des paiements, balayages.
+- **Basculée** : la simulation d'une opération après déploiement
+  (`admin-post-deploy.controller.ts#simulate`) rangeait un passage de plus à
+  chaque rejeu. Elle porte `@IntentKey()`, son handler `runSealed` (passage
+  et intention dans la même transaction), l'écran envoie la clé par
+  `GestureIntents`, et l'e2e du rejeu la rejoue (`apps/lfd-api/test/write-replay/ops-scenarios.ts`).
+- **À trancher par Hugo** : `mail-check.controller.ts#check` est inscrite
+  sans clé métier. Appelée par la machine après un déploiement, elle tire
+  une clé d'e-mail neuve à chaque appel (`ops.deploy-check:<révision>:<id>`),
+  et un rejeu envoie un essai de plus à l'administrateur. Une clé tirée de la
+  seule révision fermerait le rejeu, mais changerait le contrôle (un second
+  contrôle voulu sur la même image ne partirait plus).
+- **Examiné, non bougé** : `RequestPasswordResetHandler` (`me.controller.ts`,
+  « par intention », `run`). Il écrit pourtant : le fait
+  `PasswordResetRequestedEvent` part au journal hors transaction, ce que
+  l'heuristique de `run` ne voit pas (elle ne lit pas `publishTraced`). Une
+  panne entre l'envoi du lien et la résolution laisse un rejeu tardif
+  renvoyer un lien et une trace. `runSealed` n'y changerait rien : sceller
+  le fait avant l'envoi perdrait le lien sur une panne d'après validation,
+  sceller après revient à `run`. La fermeture est celle des quatre gestes du
+  § 7 ([`../mail/plan-lien-fabrique-a-l-envoi.md`](../mail/plan-lien-fabrique-a-l-envoi.md)).
+  Hors de ce lot : le fichier est dans `lafoliecoffee/account`, en chantier.
 
 ### J5 — la porte côté écrans
 

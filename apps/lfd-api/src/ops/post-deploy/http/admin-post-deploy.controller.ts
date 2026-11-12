@@ -15,6 +15,7 @@ import { ListPostDeployOperationsQuery } from "../application/list-post-deploy-o
 import { ReadPostDeployRunQuery } from "../application/read-post-deploy-run.query.js";
 import { SimulatePostDeployOperationCommand } from "../application/simulate-post-deploy-operation.command.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 
 /** « J'ai lu » coché (§ 7.10) : la forme seulement, le reste est la machine d'états. */
 const ApplySchema = z.object({ acknowledged: z.literal(true) });
@@ -51,17 +52,15 @@ export class AdminPostDeployController {
   }
 
   @Post(":key/simulate")
-  @Idempotent(
-    "une simulation est une mesure rangée, sans écriture métier : rejouée, elle en range une de plus, que seul « Appliquer » lit (la dernière de l'auteur) ; non durci, voulu",
-  )
   @HttpCode(201)
   @RequirePermission("ops_post_deploy:read")
   async simulate(
     @Param("key") key: string,
     @StaffUserId() actor: string,
+    @IntentKey() intentKey: string,
   ): Promise<PostDeployRunStarted> {
     const runId = await this.commands.execute<SimulatePostDeployOperationCommand, string>(
-      new SimulatePostDeployOperationCommand(key, actor),
+      new SimulatePostDeployOperationCommand(key, actor, intentKey),
     );
     return { runId };
   }
