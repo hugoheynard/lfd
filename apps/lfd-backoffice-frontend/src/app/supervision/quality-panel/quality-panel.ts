@@ -59,6 +59,7 @@ import {
 } from '../quality-draft';
 import { QualityPhoto } from '../quality-photo/quality-photo';
 import { QualityService } from '../quality.service';
+import { GestureIntents } from '../../shared/gesture-intents';
 
 /** Ce que la page passe au panneau : la journée, la cible et ses mots. */
 export interface QualityPanelData extends QualityRequest {
@@ -109,6 +110,8 @@ const VERDICTS: readonly QualityVerdictCode[] = ['ok', 'warning', 'blocking'];
 })
 export class QualityPanel implements OnInit {
   private readonly service = inject(QualityService);
+  /** Une clé par photo : un envoi rejoué retombe sur le même dépôt. */
+  private readonly depositIntents = new GestureIntents();
   private readonly notify = inject(NotifyService);
   private readonly ref = inject(FoldPanelRef<boolean>);
 
@@ -285,7 +288,14 @@ export class QualityPanel implements OnInit {
   private async deposit(key: number, preview: string, file: File): Promise<void> {
     let next: DraftPhoto;
     try {
-      next = { key, preview, status: 'ready', uploadId: await this.service.deposit(file) };
+      const subject = String(key);
+      next = {
+        key,
+        preview,
+        status: 'ready',
+        uploadId: await this.service.deposit(file, this.depositIntents.keyFor(subject)),
+      };
+      this.depositIntents.done(subject);
     } catch (error) {
       next = {
         key,

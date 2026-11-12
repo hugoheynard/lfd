@@ -10,7 +10,7 @@ import {
 import { addDays, type HandoverQueueEntryView, type ResupplyTransferView } from '@lfd/contracts';
 import type { FoldTabItem, FoldTabsContext } from 'fold-ng';
 
-import { DayVersionWatcher } from '../shared/day-version/day-version-watcher';
+import { VersionWatcher } from '../shared/version/version-watcher';
 import { PickupAddressesService } from '../b2b/reglages/pickup-addresses.service';
 import { HandoverQueueService } from './handover-queue.service';
 import {
@@ -291,8 +291,8 @@ export class HandoverQueueStore {
     // `version-par-journee.md`) : une commande passée au téléphone
     // (commerce), un sac fermé au fournil (production), ou un transfert
     // déposé au point de retrait par le livreur (livraison). Filet de 5 min inclus.
-    inject(DayVersionWatcher).watch({
-      journals: ['orders', 'production', 'delivery'],
+    inject(VersionWatcher).watch({
+      subjects: ['orders', 'production', 'delivery'],
       date: this.day,
       reload: () => this.refresh(),
     });

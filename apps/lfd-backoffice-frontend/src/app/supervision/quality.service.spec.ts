@@ -16,9 +16,10 @@ describe('QualityService', () => {
     const { service, http } = setup();
     const photo = new Blob(['x'], { type: 'image/jpeg' });
 
-    const uploaded = service.deposit(photo);
+    const uploaded = service.deposit(photo, 'cle-1');
     const request = http.expectOne((req) => req.url.endsWith('/admin/supervision/quality/photos'));
     expect(request.request.method).toBe('POST');
+    expect(request.request.headers.get('Idempotency-Key')).toBe('cle-1');
     expect((request.request.body as FormData).get('photo')).toBeInstanceOf(Blob);
     request.flush({ uploadId: 'up-1' });
 

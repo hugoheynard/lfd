@@ -1,4 +1,4 @@
-import { DayVersionWatcher } from '../shared/day-version/day-version-watcher';
+import { VersionWatcher } from '../shared/version/version-watcher';
 import { refreshWhileVisible } from '../shared/periodic-refresh';
 import { inject } from '@angular/core';
 
@@ -23,8 +23,8 @@ export function watchSupervisionDay(
   date: () => string | null,
   refresh: (columns: 'always' | 'on-turn') => Promise<void>,
 ): void {
-  inject(DayVersionWatcher).watch({
-    journals: ['orders', 'production', 'delivery'],
+  inject(VersionWatcher).watch({
+    subjects: ['orders', 'production', 'delivery'],
     date,
     reload: () => refresh('always'),
   });

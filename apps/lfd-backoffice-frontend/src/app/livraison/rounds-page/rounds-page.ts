@@ -30,7 +30,7 @@ import {
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
-import { DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
+import { VersionWatcher } from '../../shared/version/version-watcher';
 import { DayReadinessBanner } from '../day-readiness-banner/day-readiness-banner';
 import type { MapDeparture } from '../delivery-map/delivery-map';
 import { vehicleColors } from '../delivery-planning';
@@ -289,8 +289,8 @@ export class RoundsPage {
     // Ne relire que si la journée de la livraison a bougé — un autre poste a
     // composé, un livreur est parti (`version-par-journee.md`, D4).
     // L'écran s'ouvre sous `delivery_rounds:read`, la porte de la version aussi.
-    inject(DayVersionWatcher).watch({
-      journals: ['delivery'],
+    inject(VersionWatcher).watch({
+      subjects: ['delivery'],
       date: () => this.day(),
       reload: () => this.read.load(this.read.day()),
     });

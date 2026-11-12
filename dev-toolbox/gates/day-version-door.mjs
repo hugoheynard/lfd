@@ -15,8 +15,8 @@
  *   journal de plus est une source de plus dans
  *   `appBootstrap/day-version-sources.module.ts`, jamais une route ;
  * - **côté back-office** (`apps/lfd-backoffice-frontend/src`) : la porte
- *   n'est appelée que par `shared/day-version/day-version.service.ts`, que
- *   seul le veilleur utilise. Un écran qui l'appellerait en direct reposerait
+ *   `admin/versions` n'est appelée que par `shared/version/version.service.ts`,
+ *   que seul le veilleur utilise. Un écran qui l'appellerait en direct reposerait
  *   la question que le veilleur pose déjà pour tout l'onglet.
  *
  * Commentaires retirés : une phrase qui raconte l'ancienne route n'est pas
@@ -31,8 +31,10 @@ const API_ROOT = "apps/lfd-api/src";
 const FRONT_ROOT = "apps/lfd-backoffice-frontend/src";
 const SKIP_DIRS = new Set(["node_modules", "dist", "coverage", ".turbo", "__tests__"]);
 
-/** La porte que le front appelle encore (le veilleur bascule au lot V2). */
+/** L'ancienne porte, servie un déploiement de plus ; plus aucun code du front ne l'appelle. */
 const DOOR = "admin/day-versions";
+/** La porte que le front appelle (`plan-veilleur-unique.md`, § 3.4). */
+const FRONT_DOOR = "admin/versions";
 /**
  * Les chemins de route qui ont le droit de dire « version » : la porte des
  * sujets (`plan-veilleur-unique.md`, § 3.3) et l'ancienne, servie un
@@ -40,7 +42,7 @@ const DOOR = "admin/day-versions";
  */
 const API_DOORS = new Set([DOOR, "admin/versions"]);
 /** Le seul fichier du front qui l'appelle. */
-const FRONT_CALLER = `${FRONT_ROOT}/app/shared/day-version/day-version.service.ts`;
+const FRONT_CALLER = `${FRONT_ROOT}/app/shared/version/version.service.ts`;
 
 /** `version` comme mot du chemin (`version`, `day-version`, `version/x`) — pas `conversions`. */
 const VERSION_SEGMENT = /(?:^|[/-])versions?(?:$|[/-])/iu;
@@ -64,9 +66,10 @@ export function versionRoutesOf(source) {
   return found;
 }
 
-/** Vrai si le source appelle la porte (son chemin, avec ou sans barre initiale). */
+/** Vrai si le source appelle une porte de version (l'ancienne ou la nouvelle). */
 export function callsDoor(source) {
-  return withoutComments(source).includes(DOOR);
+  const code = withoutComments(source);
+  return code.includes(DOOR) || code.includes(FRONT_DOOR);
 }
 
 function sourceFiles(directory) {
@@ -135,12 +138,12 @@ function main() {
       continue;
     }
     failures.push(
-      `${rel} appelle ${DOOR} en direct. Confiez les journaux au DayVersionWatcher : ` +
+      `${rel} appelle une porte de version en direct. Confiez les sujets au VersionWatcher : ` +
         `il pose une seule question par journée pour tout l'onglet.`,
     );
   }
   if (!callerFound) {
-    failures.push(`${FRONT_CALLER} n'appelle plus ${DOOR} : la porte ne regarde plus rien.`);
+    failures.push(`${FRONT_CALLER} n'appelle plus ${FRONT_DOOR} : la porte ne regarde plus rien.`);
   }
   if (failures.length > 0) {
     console.error("✗ lint:day-version-door — une seule porte pour les versions de journée\n");

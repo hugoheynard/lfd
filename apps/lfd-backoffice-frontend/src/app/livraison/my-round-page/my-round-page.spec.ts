@@ -12,7 +12,7 @@ import type {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
-import { type DayWatch, DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
+import { type VersionWatch, VersionWatcher } from '../../shared/version/version-watcher';
 import { DriverNoticeGate } from '../driver-notice-gate';
 import { fixedGeolocation, refusingGeolocation } from '../gesture-position.fixture';
 import { GesturePositionReader } from '../gesture-position';
@@ -44,7 +44,7 @@ interface Wire {
 
 let wire: Wire;
 /** Ce que la page a confié au veilleur de version — pour jouer un changement. */
-let watched: DayWatch | null;
+let watched: VersionWatch | null;
 
 function loadingViewOf(roundId: string): DeliveryLoadingRoundView {
   return {
@@ -97,9 +97,9 @@ async function boot(
       // « Mes données » est un `routerLink` : il lui faut un routeur.
       provideRouter([]),
       {
-        provide: DayVersionWatcher,
+        provide: VersionWatcher,
         useValue: {
-          watch: (spec: DayWatch): void => {
+          watch: (spec: VersionWatch): void => {
             watched = spec;
           },
         },
@@ -763,8 +763,8 @@ describe('MyRoundPage — elle suit le colisage (PL4)', () => {
 
   it('suit la version de « ma tournée » du jour, et relit la tournée ouverte sans la quitter', async () => {
     const { fixture, element } = await boot();
-    expect(watched?.journals).toEqual(['my-round']);
-    expect(watched?.date()).toBe(parisDayOf(new Date()));
+    expect(watched?.subjects).toEqual(['my-round']);
+    expect(watched?.date?.()).toBe(parisDayOf(new Date()));
 
     wire.round = myRoundOf({ readyStops: 2, stopCount: 2 });
     await watched?.reload();

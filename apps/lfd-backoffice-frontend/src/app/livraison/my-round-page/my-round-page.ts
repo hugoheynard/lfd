@@ -22,7 +22,7 @@ import {
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
-import { DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
+import { VersionWatcher } from '../../shared/version/version-watcher';
 import { parisTimeOf } from '../delivery-loading';
 import { incidentCountLabel } from '../delivery-incidents';
 import { IncidentList } from '../incident-list/incident-list';
@@ -87,7 +87,7 @@ function deviceStorage(): Storage | null {
  * **Elle suit le colisage** (`parcours-du-livreur.md`, PL4) : « n arrêts
  * prêts sur m » en tête, l'avancement et la fiche sur chaque arrêt. Comme les
  * postes du fournil, elle interroge la version de « ma tournée » et ne relit
- * que si elle a bougé (`DayVersionWatcher`).
+ * que si elle a bougé (`VersionWatcher`).
  *
  * **Charger** (PL1) : au dépôt, « Charger » ouvre le chargement de SA tournée
  * dans la page — le même écran que celui du dépôt, par la porte du livreur.
@@ -241,8 +241,8 @@ export class MyRoundPage {
     // Le coliseur déclare, le fournil marque prête : sans relecture, le
     // livreur partirait sur un « en préparation » périmé. On ne relit que si
     // la version de « ma tournée » a bougé (PL4).
-    inject(DayVersionWatcher).watch({
-      journals: ['my-round'],
+    inject(VersionWatcher).watch({
+      subjects: ['my-round'],
       date: () => this.today,
       reload: () => this.reader.refresh(),
     });

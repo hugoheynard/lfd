@@ -10,7 +10,7 @@ import type {
 } from '@lfd/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { type DayWatch, DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
+import { type VersionWatch, VersionWatcher } from '../../shared/version/version-watcher';
 import { DeliveryBinsService } from '../../livraison/delivery-bins.service';
 import { DeliveryLoadingService } from '../../livraison/delivery-loading.service';
 import { DeliveryTransfersService } from '../../livraison/delivery-transfers.service';
@@ -24,9 +24,9 @@ import { Colisage } from './colisage';
  * Le veilleur de journée, doublé : il garde la relecture que l'écran lui
  * confie, et le test la déclenche comme le ferait une version qui bouge.
  */
-const watched: DayWatch[] = [];
+const watched: VersionWatch[] = [];
 const fakeWatcher = {
-  watch: (spec: DayWatch): void => {
+  watch: (spec: VersionWatch): void => {
     watched.push(spec);
   },
 };
@@ -307,7 +307,7 @@ describe('le poste de colisage', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
-        { provide: DayVersionWatcher, useValue: fakeWatcher },
+        { provide: VersionWatcher, useValue: fakeWatcher },
         provideRouter([]),
         { provide: PackingService, useValue: api },
         // `can` : les bacs d'une livraison prête (lot 4 bis) demandent un droit que
@@ -546,7 +546,7 @@ describe('le poste de colisage', () => {
 
     it('ne suit que la journée du fournil quand la livraison est hors droit', async () => {
       await render();
-      expect(watched.at(-1)?.journals).toEqual(['production']);
+      expect(watched.at(-1)?.subjects).toEqual(['production']);
     });
 
     /**
@@ -558,7 +558,7 @@ describe('le poste de colisage', () => {
         useValue: { identity: () => ME, can: (p: string) => p === 'delivery_loading:read' },
       });
       await render();
-      expect(watched.at(-1)?.journals).toEqual(['production', 'delivery']);
+      expect(watched.at(-1)?.subjects).toEqual(['production', 'delivery']);
     });
 
     it('montre une ligne mise au bac sur un autre poste', async () => {

@@ -33,10 +33,19 @@ import { intentOptions } from '../shared/gesture-intents';
 export class PackingContainersService {
   private readonly http = inject(HttpClient);
 
-  /** Un contenant de plus ; rend son identifiant. */
-  async open(date: string, orderId: string, body: OpenPackingContainer): Promise<string> {
+  /** Un contenant de plus ; rend son identifiant. `intentKey` : un double clic n'en ouvre qu'un. */
+  async open(
+    date: string,
+    orderId: string,
+    body: OpenPackingContainer,
+    intentKey: string,
+  ): Promise<string> {
     const opened = await firstValueFrom(
-      this.http.post<OpenedPackingContainer>(`${this.orderUrl(date, orderId)}/containers`, body),
+      this.http.post<OpenedPackingContainer>(
+        `${this.orderUrl(date, orderId)}/containers`,
+        body,
+        intentOptions(intentKey),
+      ),
     );
     return opened.containerId;
   }

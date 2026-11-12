@@ -93,11 +93,11 @@ leurs blocs.
   relie en un `DayVersionRegistry`, qui refuse de se construire — l'API ne
   démarre pas — si un journal de `DAY_JOURNALS` n'a pas de source ou en a deux.
 - **`lint:day-version-door`** : aucune autre route « version » dans l'API, et
-  un seul appelant au back-office (`shared/day-version/day-version.service.ts`).
+  un seul appelant au back-office (`shared/version/version.service.ts`).
 
 ## 3. Côté écran
 
-`DayVersionWatcher` (`shared/day-version/day-version-watcher.ts`) : toutes les
+`VersionWatcher` (`shared/version/version-watcher.ts`) : toutes les
 15 s (`REFRESH_INTERVAL_MS`), onglet visible, **une requête par journée** pour
 tous les écrans de l'onglet ; relecture de l'écran si un numéro a changé
 (égalité, jamais ordre) ; filet de 5 min (`SAFETY_NET_MS`) ; un échec ne relit

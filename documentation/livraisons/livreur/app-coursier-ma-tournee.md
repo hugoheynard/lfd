@@ -298,12 +298,12 @@ La page affiche le refus **tel quel** et relit la tournée
 ## 7. La fraîcheur
 
 La page suit le colisage et le fournil sans relire à vide :
-`DayVersionWatcher` (`shared/day-version/day-version-watcher.ts`) interroge
+`VersionWatcher` (`shared/version/version-watcher.ts`) interroge
 `ma-tournee/version` toutes les 15 s (`REFRESH_INTERVAL_MS`,
 `shared/periodic-refresh.ts:22`) quand l'onglet est visible, et ne relit la
 tournée que si le numéro a bougé ; un filet relit quoi qu'il arrive toutes les
 5 min (`SAFETY_NET_MS`, l. 12). Le journal `my-round` est le seul qui mêle
-deux numéros (`shared/day-version/day-version.service.ts:41`).
+deux numéros (`shared/version/version.service.ts`).
 
 ## 8. Les décisions d'Hugo en vigueur
 

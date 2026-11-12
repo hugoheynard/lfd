@@ -11,7 +11,7 @@ import {
 } from '@lfd/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { type DayWatch, DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
+import { type VersionWatch, VersionWatcher } from '../../shared/version/version-watcher';
 import { PermissionsStore } from '../../auth/permissions.store';
 import { StaffPrefsService } from '../../shared/staff-prefs/staff-prefs.service';
 import { dayLabelOf } from '../worksheet-day';
@@ -30,7 +30,7 @@ import { WorkshopKeypadOpener } from './workshop-keypad-opener';
  */
 const watched: { reload: () => Promise<void> }[] = [];
 const fakeWatcher = {
-  watch: (spec: DayWatch): void => {
+  watch: (spec: VersionWatch): void => {
     watched.push(spec);
   },
 };
@@ -283,7 +283,7 @@ describe('la fiche d’atelier', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
-        { provide: DayVersionWatcher, useValue: fakeWatcher },
+        { provide: VersionWatcher, useValue: fakeWatcher },
         { provide: WorksheetService, useValue: api },
         { provide: StaffPrefsService, useValue: prefs },
         { provide: PermissionsStore, useValue: { identity: () => ME } },

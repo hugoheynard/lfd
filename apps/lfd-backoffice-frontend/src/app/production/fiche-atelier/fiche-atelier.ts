@@ -22,7 +22,7 @@ import type { WorkshopGroup, WorkshopLine } from '@lfd/contracts';
 
 import { StaffPrefsService } from '../../shared/staff-prefs/staff-prefs.service';
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
-import { DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
+import { VersionWatcher } from '../../shared/version/version-watcher';
 import { isoDay } from '../worksheet-day';
 import { DriftBanner } from './drift-banner/drift-banner';
 import { WorkshopDayReader } from './workshop-day.reader';
@@ -153,8 +153,8 @@ export class FicheAtelier {
     // Les autres postes déclarent aussi : sans relecture, une ligne sortie du four
     // par le voisin resterait « à faire » ici, et on la fabriquerait deux fois.
     // Elle ne relit que si la journée du fournil a bougé (`version-par-journee.md`).
-    inject(DayVersionWatcher).watch({
-      journals: ['production'],
+    inject(VersionWatcher).watch({
+      subjects: ['production'],
       date: this.day.date,
       // Les paliers arrivent avec la ligne : relire la fiche suffit.
       reload: () => this.day.refresh(),

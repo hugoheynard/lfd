@@ -38,7 +38,7 @@ flowchart LR
   carte par (révision, journée), fenêtre `DAY_VERSIONS_FRESH_MS` (15 s), repli
   sur la base, une relecture par journée et par instance (single-flight).
 - **Le veilleur de l'écran** `DayVersionWatcher`
-  (`apps/lfd-backoffice-frontend/src/app/shared/day-version/day-version-watcher.ts`) :
+  (`apps/lfd-backoffice-frontend/src/app/shared/version/version-watcher.ts`) :
   une requête par journée et par onglet toutes les 15 s, filet de 5 min.
 - **Les journaux** sont des tables en ajout seul (`public.day_change`,
   `production.day_change`, colisage, livraison), la version = `max(id)` de la

@@ -19,7 +19,7 @@ import type {
 
 import { FoldPanelHostService } from 'fold-ng';
 
-import { type DayWatch, DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
+import { type VersionWatch, VersionWatcher } from '../../shared/version/version-watcher';
 import { PermissionsStore } from '../../auth/permissions.store';
 import { DeliveryRoundsService } from '../../livraison/delivery-rounds.service';
 import { SitePaletteService } from '../../shared/logistics-colors/site-palette.service';
@@ -35,9 +35,9 @@ import { SupervisionPage } from './supervision-page';
  * Le veilleur de journée, doublé : il garde la relecture que l'écran lui
  * confie, et le test la déclenche comme le ferait une version qui bouge.
  */
-const watched: DayWatch[] = [];
+const watched: VersionWatch[] = [];
 const fakeWatcher = {
-  watch: (spec: DayWatch): void => {
+  watch: (spec: VersionWatch): void => {
     watched.push(spec);
   },
 };
@@ -223,7 +223,7 @@ async function mount(
   TestBed.configureTestingModule({
     imports: [SupervisionPage],
     providers: [
-      { provide: DayVersionWatcher, useValue: fakeWatcher },
+      { provide: VersionWatcher, useValue: fakeWatcher },
       provideRouter([]),
       {
         provide: SupervisionService,
@@ -321,8 +321,8 @@ describe('SupervisionPage', () => {
     const fixture = await mount({ preparation });
     const watch = watched.at(-1);
 
-    expect(watch?.journals).toEqual(['orders', 'production', 'delivery']);
-    expect(watch?.date()).toBe(DATE);
+    expect(watch?.subjects).toEqual(['orders', 'production', 'delivery']);
+    expect(watch?.date?.()).toBe(DATE);
 
     await watch?.reload();
     await fixture.whenStable();

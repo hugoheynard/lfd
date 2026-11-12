@@ -19,6 +19,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
 
 import { NavCountsService } from './nav-counts.service';
+import { watchCompanySubjects } from './comptes-clients/company-cache/company-subjects';
 import { headerNameOf, pageNameOf } from './page-name';
 import {
   FoldAppShellComponent,
@@ -597,6 +598,9 @@ export class App {
         void this.counts.refresh();
       }
     });
+    // Le badge des comptes suit le numéro `companies` : un compte changé
+    // ailleurs le recompte sans attendre une navigation.
+    watchCompanySubjects(['companies'], () => this.counts.refreshCompanies());
 
     // Le compte des demandes clients à traiter, tous types, pour l'entrée
     // « Demandes clients » du Commercial (rail et tuiles). Même précaution : seulement avec le droit de lire.

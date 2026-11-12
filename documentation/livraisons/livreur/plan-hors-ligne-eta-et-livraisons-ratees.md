@@ -34,7 +34,7 @@
 - La tournée est **figée au départ** (`DeliveryStopExecution`,
   `delivery.prisma:320-378`) ; un veilleur la relit toutes les 15 s, et un filet
   toutes les 5 min, **onglet visible seulement**
-  (`shared/day-version/day-version-watcher.ts:84-88`). Une requête qui échoue
+  (`shared/version/version-watcher.ts`). Une requête qui échoue
   met l'écran en `error` (`livraison/my-round-reader.ts:116`), elle
   ne garde pas le dernier état. La route est sous `permissionGuard`, qui
   appelle `GET /admin/me` et vaut `denied` sur un échec réseau

@@ -25,4 +25,23 @@ export class CompanyWrites {
   record(): void {
     this.counter.update((value) => value + 1);
   }
+
+  /**
+   * Un AUTRE poste a écrit : le numéro `companies` ou `orders-all` a bougé
+   * (`VersionWatcher`). Monte d'un cran, une fois par tour du veilleur : il
+   * rappelle plusieurs écrans dans la même passe synchrone, et un cran par
+   * écran rendrait périmée la lecture que le précédent vient de lancer.
+   */
+  changedElsewhere(): void {
+    if (this.bumpedThisTurn) {
+      return;
+    }
+    this.bumpedThisTurn = true;
+    this.record();
+    queueMicrotask(() => {
+      this.bumpedThisTurn = false;
+    });
+  }
+
+  private bumpedThisTurn = false;
 }

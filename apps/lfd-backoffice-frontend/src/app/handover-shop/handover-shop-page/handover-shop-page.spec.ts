@@ -7,7 +7,7 @@ import type { HandoverQueueEntryView, HandoverQueueView } from '@lfd/contracts';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { AdminOrdersService } from '../../commandes/orders.service';
-import { type DayWatch, DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
+import { type VersionWatch, VersionWatcher } from '../../shared/version/version-watcher';
 import { HandoverMasthead } from '../handover-masthead/handover-masthead';
 import { HandoverQueueService } from '../handover-queue.service';
 import { HandoverQueueStore } from '../handover-queue.store';
@@ -69,9 +69,9 @@ function entry(over: Partial<HandoverQueueEntryView> = {}): HandoverQueueEntryVi
 }
 
 /** Le veilleur doublé : il garde ce que l'écran lui confie, le test déclenche. */
-const watched: DayWatch[] = [];
+const watched: VersionWatch[] = [];
 const fakeWatcher = {
-  watch: (spec: DayWatch): void => {
+  watch: (spec: VersionWatch): void => {
     watched.push(spec);
   },
 };
@@ -175,7 +175,7 @@ async function render(
       { provide: HandoverQueueService, useValue: api },
       { provide: AdminOrdersService, useValue: new FakeOrders() },
       { provide: PermissionsStore, useValue: { can: (): boolean => true } },
-      { provide: DayVersionWatcher, useValue: fakeWatcher },
+      { provide: VersionWatcher, useValue: fakeWatcher },
       { provide: FoldPanelHostService, useValue: panels },
       {
         provide: PickupAddressesService,
@@ -515,8 +515,8 @@ describe('HandoverShopPage — changer de journée', () => {
       await render(api);
       const watch = watched.at(-1);
 
-      expect(watch?.journals).toEqual(['orders', 'production', 'delivery']);
-      expect(watch?.date()).toBe(api.days[0]);
+      expect(watch?.subjects).toEqual(['orders', 'production', 'delivery']);
+      expect(watch?.date?.()).toBe(api.days[0]);
     });
 
     it('montre une commande arrivée ailleurs, sans repasser par le chargement', async () => {
@@ -535,7 +535,7 @@ describe('HandoverShopPage — changer de journée', () => {
       await fixture.whenStable();
       fixture.detectChanges();
 
-      expect(api.days.at(-1)).toBe(watched.at(-1)?.date());
+      expect(api.days.at(-1)).toBe(watched.at(-1)?.date?.());
       expect(rowTexts(fixture).join(' ')).toContain('Hôtel des Cimes');
     });
 

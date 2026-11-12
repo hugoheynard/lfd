@@ -5,6 +5,13 @@ import type { AdminCompanyDetail } from '../admin-company';
 import { COMPANY_LIST_MAX_AGE_MS } from './company-list.store';
 import { CompanyWrites } from './company-writes';
 
+/**
+ * Les fiches gardées, au plus (décidé par Hugo le 2026-11-12) : au-delà, la
+ * moins récemment lue est oubliée. Sans borne, un onglet ouvert plusieurs
+ * jours garderait toutes les fiches vues.
+ */
+export const COMPANY_DETAIL_MAX_ENTRIES = 50;
+
 interface DetailEntry {
   readonly detail: AdminCompanyDetail | undefined;
   readonly readAt: number;
@@ -30,6 +37,8 @@ interface PendingDetail {
  * en naviguant entre ses onglets qu'on ne paie plus.
  *
  * `undefined` dit « société inconnue » (404), et se garde comme une réponse.
+ * Au plus {@link COMPANY_DETAIL_MAX_ENTRIES} fiches : la moins récemment
+ * servie est oubliée la première.
  */
 @Injectable({ providedIn: 'root' })
 export class CompanyDetailStore {
@@ -49,6 +58,9 @@ export class CompanyDetailStore {
       entry.version === version &&
       Date.now() - entry.readAt <= COMPANY_LIST_MAX_AGE_MS
     ) {
+      // Servie = récente : elle repasse en queue de l'ordre d'oubli.
+      this.entries.delete(id);
+      this.entries.set(id, entry);
       return Promise.resolve(entry.detail);
     }
     const inFlight = this.pending.get(id);
@@ -68,6 +80,18 @@ export class CompanyDetailStore {
     this.pending.delete(id);
   }
 
+  /** Range en queue ; au-delà de la borne, oublie la plus ancienne (l'ordre d'insertion d'une `Map`). */
+  private remember(id: string, entry: DetailEntry): void {
+    this.entries.delete(id);
+    this.entries.set(id, entry);
+    for (const oldest of this.entries.keys()) {
+      if (this.entries.size <= COMPANY_DETAIL_MAX_ENTRIES) {
+        break;
+      }
+      this.entries.delete(oldest);
+    }
+  }
+
   private async readFromServer(
     id: string,
     ticket: number,
@@ -80,7 +104,7 @@ export class CompanyDetailStore {
       // Une lecture dépassée (oubliée, ou doublée par une plus récente) rend sa
       // réponse à qui l'attendait, mais n'écrase pas la copie.
       if (this.pending.get(id)?.ticket === ticket) {
-        this.entries.set(id, { detail, readAt: Date.now(), version });
+        this.remember(id, { detail, readAt: Date.now(), version });
       }
       return detail;
     } finally {

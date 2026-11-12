@@ -11,6 +11,7 @@ import type {
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
+import { intentOptions } from '../shared/gesture-intents';
 
 const QUALITY = `${B2B_API_BASE}/admin/supervision/quality`;
 
@@ -52,12 +53,16 @@ export class QualityService {
     );
   }
 
-  /** Déposer UNE photo, dès qu'elle est choisie — rend l'identifiant à rattacher. */
-  async deposit(photo: Blob): Promise<string> {
+  /**
+   * Déposer UNE photo, dès qu'elle est choisie — rend l'identifiant à
+   * rattacher. `intentKey` : la clé de CETTE photo — un envoi rejoué ne la
+   * dépose qu'une fois.
+   */
+  async deposit(photo: Blob, intentKey: string): Promise<string> {
     const body = new FormData();
     body.append('photo', photo);
     const uploaded = await firstValueFrom(
-      this.http.post<QualityPhotoUploaded>(`${QUALITY}/photos`, body),
+      this.http.post<QualityPhotoUploaded>(`${QUALITY}/photos`, body, intentOptions(intentKey)),
     );
     return uploaded.uploadId;
   }

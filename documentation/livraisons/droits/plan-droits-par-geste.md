@@ -293,7 +293,7 @@ Côté écran, en plus des lignes de § 1.1 : `auth/permission.guard.ts:20`
 (l'atterrissage `/commandes` choisi par `b2b_orders:read`),
 `shared/workspace-rail/workspaces.ts` (l. 131, 258, 275),
 `fiche-client/fiche-client.routes.ts:77`,
-`shared/day-version/day-version.service.ts:13`, et le commentaire
+`shared/version/version.service.ts`, et le commentaire
 `app.routes.ts:169`. Chacun prend la ressource du geste qu'il ouvre ;
 `LANDINGS` gagne une entrée par ressource du fournil.
 

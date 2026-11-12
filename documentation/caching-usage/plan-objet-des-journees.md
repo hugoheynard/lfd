@@ -49,7 +49,7 @@ sequenceDiagram
   `get-day-versions.handler.ts` : un journal que l'appelant ne peut pas lire
   est omis. Les sources sont enregistrées par `DayVersionRegistry`, chacune
   `versionOf(serviceDay)`.
-- Le veilleur du back-office (`shared/day-version/day-version-watcher.ts:105`) :
+- Le veilleur du back-office (`shared/version/version-watcher.ts`) :
   une requête par journée et par onglet toutes les 15 s.
 - Le modèle de Durable Object à suivre : `ProShelves`
   (`apps/lfd-api/container/pro-shelves.ts`, `PRO_SHELVES` dans

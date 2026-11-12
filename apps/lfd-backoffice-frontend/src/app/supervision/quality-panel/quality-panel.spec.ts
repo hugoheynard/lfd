@@ -194,7 +194,7 @@ describe('QualityPanel', () => {
     dropzone.filesPicked.emit([photo]);
     await fixture.whenStable();
     fixture.detectChanges();
-    expect(deposit).toHaveBeenCalledWith(photo);
+    expect(deposit).toHaveBeenCalledWith(photo, expect.any(String));
     expect(element.querySelector('[data-photo="ready"]')).not.toBeNull();
 
     save()?.click();
@@ -220,7 +220,7 @@ describe('QualityPanel', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(deposit).toHaveBeenCalledWith(photo);
+    expect(deposit).toHaveBeenCalledWith(photo, expect.any(String));
     expect(element.querySelector('[data-photo="ready"]')).not.toBeNull();
   });
 

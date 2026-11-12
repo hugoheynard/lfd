@@ -47,9 +47,10 @@ export class PackingContainerGestures {
     this.refused.set(null);
   }
 
+  /** Un contenant de plus est un ajout : une clé par commande, gardée jusqu'au succès. */
   open(orderId: string, request: OpenPackingContainer): Promise<boolean> {
-    return this.write(async (date) => {
-      await this.api.open(date, orderId, request);
+    return this.once(`open|${orderId}`, async (date, key) => {
+      await this.api.open(date, orderId, request, key);
     });
   }
 

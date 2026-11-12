@@ -18,6 +18,11 @@ class KeyedContainers {
   readonly keys: string[] = [];
   refuseNext = false;
 
+  async open(...args: readonly [string, string, unknown, string]): Promise<string> {
+    await this.receive(args[3]);
+    return 'c-neuf';
+  }
+
   allocate(...args: readonly [string, string, string, string, number, string]): Promise<void> {
     return this.receive(args[5]);
   }
@@ -94,6 +99,16 @@ describe('PackingContainerGestures — une clé par geste voulu', () => {
     await gestures.transfer('o-1', 'c-1', 'CRO', 'c-2', 3);
     await gestures.transfer('o-1', 'c-1', 'CRO', 'c-2', 3);
     await gestures.transfer('o-1', 'c-1', 'CRO', 'c-2', 3);
+
+    expect(api.keys[0]).toBe(api.keys[1]);
+    expect(api.keys[2]).not.toBe(api.keys[1]);
+  });
+
+  it('ouvrir : la clé est gardée sur un refus, oubliée sur un succès', async () => {
+    api.refuseNext = true;
+    await gestures.open('o-1', { nature: 'bag' });
+    await gestures.open('o-1', { nature: 'bag' });
+    await gestures.open('o-1', { nature: 'bag' });
 
     expect(api.keys[0]).toBe(api.keys[1]);
     expect(api.keys[2]).not.toBe(api.keys[1]);

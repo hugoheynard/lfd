@@ -19,8 +19,8 @@ import type { DayInternalTransferView, PackingSheet, ProductionPackingView } fro
 import { methodLabel, type PackingStack } from '../packing-board';
 import { isoDay } from '../worksheet-day';
 import { PermissionsStore } from '../../auth/permissions.store';
-import { DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
-import type { DayJournal } from '../../shared/day-version/day-version.service';
+import { VersionWatcher } from '../../shared/version/version-watcher';
+import type { VersionSubject } from '../../shared/version/version.service';
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
 import { ClienteleBadge } from './clientele-badge/clientele-badge';
 import { PackingDayReader } from './packing-day.reader';
@@ -218,15 +218,15 @@ export class Colisage {
     // La journée de la LIVRAISON aussi (2026-10-02) : une tournée recomposée
     // range la pile autrement, et sans elle le filet de 5 min seul la voyait.
     // Seulement si le poste peut la lire — sa porte ne s'ouvre pas au colisage.
-    inject(DayVersionWatcher).watch({
-      journals: this.watchedJournals(),
+    inject(VersionWatcher).watch({
+      subjects: this.watchedSubjects(),
       date: this.day.date,
       reload: () => this.refresh(),
       clockDay: () => isoDay(new Date()),
     });
   }
 
-  private watchedJournals(): readonly DayJournal[] {
+  private watchedSubjects(): readonly VersionSubject[] {
     const deliveryReadable =
       this.permissions.can('delivery_rounds:read') || this.permissions.can('delivery_loading:read');
     return deliveryReadable ? ['production', 'delivery'] : ['production'];

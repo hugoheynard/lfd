@@ -2,8 +2,8 @@ import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { SAFETY_NET_MS, DayVersionWatcher } from '../day-version-watcher';
-import { type DayJournal, DayVersionService } from '../day-version.service';
+import { SAFETY_NET_MS, VersionWatcher } from '../version-watcher';
+import { type VersionSubject, VersionService } from '../version.service';
 
 const TICK = 15_000;
 
@@ -20,13 +20,13 @@ function montrerOnglet(state: DocumentVisibilityState): void {
   document.dispatchEvent(new Event('visibilitychange'));
 }
 
-describe('le veilleur de journée', () => {
+describe('le veilleur unique', () => {
   let versions: ReturnType<
     typeof vi.fn<
       (
-        date: string,
-        journals: readonly DayJournal[],
-      ) => Promise<Partial<Record<DayJournal, number>>>
+        date: string | null,
+        subjects: readonly VersionSubject[],
+      ) => Promise<Partial<Record<VersionSubject, number>>>
     >
   >;
 
@@ -38,22 +38,24 @@ describe('le veilleur de journée', () => {
       get: () => visibility,
     });
     served = new Map();
-    versions = vi.fn(async (date: string, journals: readonly DayJournal[]) => {
-      const answer: Partial<Record<DayJournal, number>> = {};
-      for (const journal of journals) {
-        const value = served.get(`${journal}|${date}`) ?? 0;
+    versions = vi.fn(async (date: string | null, subjects: readonly VersionSubject[]) => {
+      const answer: Partial<Record<VersionSubject, number>> = {};
+      for (const subject of subjects) {
+        const global =
+          subject === 'companies' || subject === 'orders-all' || subject === 'catalog-admin';
+        const value = served.get(global ? subject : `${subject}|${date}`) ?? 0;
         if (value === 'fail') {
           throw new Error('réseau');
         }
         if (value !== 'absent') {
-          answer[journal] = value;
+          answer[subject] = value;
         }
       }
       return answer;
     });
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [{ provide: DayVersionService, useValue: { versions } }],
+      providers: [{ provide: VersionService, useValue: { versions } }],
     });
   });
 
@@ -63,12 +65,12 @@ describe('le veilleur de journée', () => {
   });
 
   function brancher(
-    journals: readonly DayJournal[],
+    subjects: readonly VersionSubject[],
     date: () => string | null = () => '2026-10-03',
   ): ReturnType<typeof vi.fn<() => Promise<void>>> {
     const reload = vi.fn(async () => undefined);
-    const watcher = TestBed.inject(DayVersionWatcher);
-    TestBed.runInInjectionContext(() => watcher.watch({ journals, date, reload }));
+    const watcher = TestBed.inject(VersionWatcher);
+    TestBed.runInInjectionContext(() => watcher.watch({ subjects, date, reload }));
     return reload;
   }
 
@@ -196,10 +198,10 @@ describe('le veilleur de journée', () => {
   it('🔴 relit au premier tick après minuit, sans attendre le filet', async () => {
     let today = '2026-10-03';
     const reload = vi.fn(async () => undefined);
-    const watcher = TestBed.inject(DayVersionWatcher);
+    const watcher = TestBed.inject(VersionWatcher);
     TestBed.runInInjectionContext(() =>
       watcher.watch({
-        journals: ['production'],
+        subjects: ['production'],
         date: () => '2026-10-03',
         reload,
         clockDay: () => today,
@@ -257,6 +259,75 @@ describe('le veilleur de journée', () => {
     expect(versions).not.toHaveBeenCalled();
   });
 
+  /** § 3.4 : les sujets globaux montent dans la question de la journée, sans requête de plus. */
+  it('🔴 réunit sujets journaliers et globaux de plusieurs écrans en UNE requête', async () => {
+    brancher(['orders', 'production']);
+    brancher(['companies']);
+    brancher(['orders-all']);
+
+    await vi.advanceTimersByTimeAsync(TICK);
+
+    expect(versions).toHaveBeenCalledTimes(1);
+    expect(versions).toHaveBeenCalledWith('2026-10-03', [
+      'orders',
+      'production',
+      'companies',
+      'orders-all',
+    ]);
+  });
+
+  it('pose une question sans date quand aucun écran n’affiche de journée', async () => {
+    const reload = vi.fn(async () => undefined);
+    const watcher = TestBed.inject(VersionWatcher);
+    TestBed.runInInjectionContext(() => watcher.watch({ subjects: ['companies'], reload }));
+
+    await vi.advanceTimersByTimeAsync(TICK);
+
+    expect(versions).toHaveBeenCalledWith(null, ['companies']);
+  });
+
+  it('🔴 ne rappelle que les écrans dont un sujet a bougé', async () => {
+    const day = brancher(['orders']);
+    const companies = brancher(['companies']);
+    const orders = brancher(['orders-all']);
+    await vi.advanceTimersByTimeAsync(TICK);
+
+    served.set('companies', 4);
+    await vi.advanceTimersByTimeAsync(TICK);
+
+    expect(companies).toHaveBeenCalledTimes(1);
+    expect(day).not.toHaveBeenCalled();
+    expect(orders).not.toHaveBeenCalled();
+  });
+
+  it('un sujet global absent de la réponse (non permis) est ignoré, les autres restent suivis', async () => {
+    served.set('orders-all', 'absent');
+    const reload = brancher(['companies', 'orders-all']);
+    await vi.advanceTimersByTimeAsync(2 * TICK);
+    expect(reload).not.toHaveBeenCalled();
+
+    served.set('companies', 2);
+    await vi.advanceTimersByTimeAsync(TICK);
+    expect(reload).toHaveBeenCalledTimes(1);
+  });
+
+  it('suit les sujets qu’une fonction rend au fil des tours (les droits arrivent tard)', async () => {
+    const open = signal(false);
+    const reload = vi.fn(async () => undefined);
+    const watcher = TestBed.inject(VersionWatcher);
+    TestBed.runInInjectionContext(() =>
+      watcher.watch({ subjects: () => (open() ? ['companies'] : []), reload }),
+    );
+    await vi.advanceTimersByTimeAsync(TICK);
+    expect(versions).not.toHaveBeenCalled();
+
+    open.set(true);
+    await vi.advanceTimersByTimeAsync(TICK);
+    served.set('companies', 1);
+    await vi.advanceTimersByTimeAsync(TICK);
+    expect(reload).toHaveBeenCalledTimes(1);
+  });
+
   it('s’arrête avec l’écran', async () => {
     const reload = brancher(['production']);
 
@@ -266,5 +337,36 @@ describe('le veilleur de journée', () => {
 
     expect(versions).not.toHaveBeenCalled();
     expect(reload).not.toHaveBeenCalled();
+  });
+
+  describe('le numéro de la copie (`held`)', () => {
+    function brancherCopie(held: () => number | null) {
+      const reload = vi.fn(async () => undefined);
+      const watcher = TestBed.inject(VersionWatcher);
+      TestBed.runInInjectionContext(() =>
+        watcher.watch({ subjects: ['catalog-admin'], reload, held: () => held() }),
+      );
+      return reload;
+    }
+
+    it('ignore l’écho du propre geste : le numéro servi est celui de la copie', async () => {
+      served.set('catalog-admin', 3);
+      let held = 3;
+      const reload = brancherCopie(() => held);
+      await vi.advanceTimersByTimeAsync(TICK);
+      served.set('catalog-admin', 4);
+      held = 4;
+      await vi.advanceTimersByTimeAsync(2 * TICK);
+
+      expect(reload).not.toHaveBeenCalled();
+    });
+
+    it('relit dès le premier tour quand la copie porte un autre numéro', async () => {
+      served.set('catalog-admin', 5);
+      const reload = brancherCopie(() => 3);
+      await vi.advanceTimersByTimeAsync(TICK);
+
+      expect(reload).toHaveBeenCalledTimes(1);
+    });
   });
 });

@@ -168,7 +168,7 @@ voient donc bouger les tournées par l'effet des déclencheurs :
 > 2026-09-30 (vue simple : `FOR UPDATE`, `UPDATE`, `INSERT`, `DELETE` passent) ;
 > `\dT production.*` vide.
 
-Le service commun (`shared/day-version/day-version.service.ts`) gagne une
+Le service commun (`shared/version/version.service.ts`) gagne une
 valeur de journal (`delivery`), sous le droit des tournées **ou** du
 chargement (`delivery_rounds:read` ou `delivery_loading:read`,
 `@RequireAnyPermission` de `delivery-day-version.source.ts`, porte unique `admin/day-versions` depuis le 2026-11-03). Chaque écran

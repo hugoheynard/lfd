@@ -20,7 +20,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
-import { type DayWatch, DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
+import { type VersionWatch, VersionWatcher } from '../../shared/version/version-watcher';
 import { DeliveryIncidentsService } from '../delivery-incidents.service';
 import { DeliveryRoundsService } from '../delivery-rounds.service';
 import { DeliveryRoutingService } from '../delivery-routing.service';
@@ -176,9 +176,9 @@ const PROPOSAL: DeliveryRoundProposalView = {
  * Le veilleur de journée, doublé : il garde la relecture que l'écran lui
  * confie, et le test la déclenche comme le ferait une version qui bouge.
  */
-const watched: DayWatch[] = [];
+const watched: VersionWatch[] = [];
 const fakeWatcher = {
-  watch: (spec: DayWatch): void => {
+  watch: (spec: VersionWatch): void => {
     watched.push(spec);
   },
 };
@@ -377,7 +377,7 @@ async function boot(
         } satisfies Partial<Record<keyof DeliveryIncidentsService, unknown>>,
       },
       { provide: NotifyService, useValue: { success: () => undefined } },
-      { provide: DayVersionWatcher, useValue: fakeWatcher },
+      { provide: VersionWatcher, useValue: fakeWatcher },
       { provide: SitePaletteService, useValue: { palette: () => Promise.resolve({ sites: [] }) } },
       {
         provide: PermissionsStore,
@@ -1236,8 +1236,8 @@ describe('RoundsPage — la relecture de la journée', () => {
   it('suit la journée de la livraison, pour le jour affiché', async () => {
     await boot();
     const watch = watched.at(-1);
-    expect(watch?.journals).toEqual(['delivery']);
-    expect(watch?.date()).toBe(shiftDay(parisDayOf(new Date()), 1));
+    expect(watch?.subjects).toEqual(['delivery']);
+    expect(watch?.date?.()).toBe(shiftDay(parisDayOf(new Date()), 1));
   });
 
   it('une version qui bouge relit la composition et la feuille, sans repasser par « chargement »', async () => {
