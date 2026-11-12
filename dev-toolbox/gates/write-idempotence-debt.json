@@ -150,72 +150,20 @@
       "method": "add"
     },
     {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-contacts.controller.ts",
-      "method": "remove"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-contacts.controller.ts",
-      "method": "update"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-contacts.controller.ts",
-      "method": "updatePrimary"
-    },
-    {
       "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-delivery-procedure.controller.ts",
       "method": "addStep"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-delivery-procedure.controller.ts",
-      "method": "removeStep"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-delivery-procedure.controller.ts",
-      "method": "reorder"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-delivery-procedure.controller.ts",
       "method": "reviseStep"
     },
     {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-delivery-procedure.controller.ts",
-      "method": "setDoorstepRule"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-hierarchy.controller.ts",
-      "method": "attach"
-    },
-    {
       "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-hierarchy.controller.ts",
       "method": "createSubAccount"
     },
     {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-hierarchy.controller.ts",
-      "method": "detach"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-hierarchy.controller.ts",
-      "method": "follow"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-hierarchy.controller.ts",
-      "method": "setCollectionForm"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-hierarchy.controller.ts",
-      "method": "setGroupWithoutDelivery"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-hierarchy.controller.ts",
-      "method": "stopFollowing"
-    },
-    {
       "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-members.controller.ts",
       "method": "invite"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-pieces.controller.ts",
-      "method": "activate"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-pieces.controller.ts",
@@ -227,127 +175,23 @@
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-pieces.controller.ts",
-      "method": "changeStatus"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-pieces.controller.ts",
-      "method": "grantTerms"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-pieces.controller.ts",
-      "method": "preferFulfillment"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-pieces.controller.ts",
-      "method": "removeDelivery"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-pieces.controller.ts",
-      "method": "revokeKbisCertification"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-pieces.controller.ts",
-      "method": "saveBilling"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-pieces.controller.ts",
-      "method": "setDefaultDelivery"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-pieces.controller.ts",
-      "method": "updateDelivery"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-pieces.controller.ts",
-      "method": "updateIdentity"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-pieces.controller.ts",
       "method": "uploadKbis"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-pricing-follow.controller.ts",
-      "method": "follow"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-company-pricing-follow.controller.ts",
-      "method": "stop"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-direct-debit-blocks.controller.ts",
-      "method": "block"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-direct-debit-blocks.controller.ts",
-      "method": "unblock"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-support.controller.ts",
-      "method": "handle"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/account/http/companies.controller.ts",
       "method": "create"
     },
     {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/companies.controller.ts",
-      "method": "preferFulfillment"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/companies.controller.ts",
-      "method": "requestPaymentTerm"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/companies.controller.ts",
-      "method": "updateIdentity"
-    },
-    {
       "file": "apps/lfd-api/src/lafoliecoffee/account/http/company-addresses.controller.ts",
       "method": "addDelivery"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/company-addresses.controller.ts",
-      "method": "removeDelivery"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/company-addresses.controller.ts",
-      "method": "saveBilling"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/company-addresses.controller.ts",
-      "method": "setDefault"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/company-addresses.controller.ts",
-      "method": "updateDelivery"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/account/http/company-contacts.controller.ts",
       "method": "addContact"
     },
     {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/company-contacts.controller.ts",
-      "method": "removeContact"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/company-contacts.controller.ts",
-      "method": "updateContact"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/company-contacts.controller.ts",
-      "method": "updatePrimaryContact"
-    },
-    {
       "file": "apps/lfd-api/src/lafoliecoffee/account/http/company-delivery-procedure.controller.ts",
       "method": "addStep"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/company-delivery-procedure.controller.ts",
-      "method": "removeStep"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/company-delivery-procedure.controller.ts",
-      "method": "reorder"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/account/http/company-delivery-procedure.controller.ts",
@@ -366,10 +210,6 @@
       "method": "subscribe"
     },
     {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/me-marketing.controller.ts",
-      "method": "unsubscribe"
-    },
-    {
       "file": "apps/lfd-api/src/lafoliecoffee/account/http/me.controller.ts",
       "method": "declareEstablishment"
     },
@@ -384,10 +224,6 @@
     {
       "file": "apps/lfd-api/src/lafoliecoffee/account/http/me.controller.ts",
       "method": "revokeIdentity"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/account/http/me.controller.ts",
-      "method": "updateNavPrefs"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/account/http/me.controller.ts",
@@ -610,78 +446,6 @@
       "method": "run"
     },
     {
-      "file": "apps/lfd-api/src/lafoliecoffee/alerts/http/admin-account-alert-rules.controller.ts",
-      "method": "clear"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/alerts/http/admin-account-alert-rules.controller.ts",
-      "method": "save"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/alerts/http/admin-account-alerts.controller.ts",
-      "method": "acknowledge"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/alerts/http/admin-alert-rules.controller.ts",
-      "method": "save"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/alerts/http/admin-recompute-norms.controller.ts",
-      "method": "recompute"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/alerts/http/order-preflight.controller.ts",
-      "method": "preflight"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/bundles/http/admin-bundles.controller.ts",
-      "method": "create"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/bundles/http/admin-bundles.controller.ts",
-      "method": "editPresentation"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/bundles/http/admin-bundles.controller.ts",
-      "method": "returnToDraft"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/bundles/http/admin-bundles.controller.ts",
-      "method": "saveComposition"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/bundles/http/admin-bundles.controller.ts",
-      "method": "withdraw"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/catalog/http/admin-catalog.controller.ts",
-      "method": "approveReview"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/catalog/http/admin-catalog.controller.ts",
-      "method": "retracePrices"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/catalog/http/admin-catalog.controller.ts",
-      "method": "setFeatured"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/catalog/http/admin-catalog.controller.ts",
-      "method": "setMasking"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/catalog/http/admin-made-to-order.controller.ts",
-      "method": "release"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/catalog/http/admin-made-to-order.controller.ts",
-      "method": "reserve"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/catalog/http/admin-made-to-order.controller.ts",
-      "method": "setReservedVisibility"
-    },
-    {
       "file": "apps/lfd-api/src/lafoliecoffee/catalog/http/admin-shelf-cache.controller.ts",
       "method": "switch"
     },
@@ -691,35 +455,11 @@
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/client-notes/http/admin-client-notes.controller.ts",
-      "method": "remove"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/client-notes/http/admin-client-notes.controller.ts",
-      "method": "reorder"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/client-notes/http/admin-client-notes.controller.ts",
       "method": "revise"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/contact/http/admin-contact-phones.controller.ts",
-      "method": "archive"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/contact/http/admin-contact-phones.controller.ts",
       "method": "create"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/contact/http/admin-contact-phones.controller.ts",
-      "method": "revise"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/contact/http/admin-contact-settings.controller.ts",
-      "method": "update"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/contact/http/admin-customer-requests.controller.ts",
-      "method": "markHandled"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/contact/http/admin-order-change-requests.controller.ts",
@@ -731,15 +471,7 @@
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/contact/http/admin-request-reasons.controller.ts",
-      "method": "archive"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/contact/http/admin-request-reasons.controller.ts",
       "method": "create"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/contact/http/admin-request-reasons.controller.ts",
-      "method": "revise"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/contact/http/contact-anonymization-sweep.controller.ts",
@@ -778,32 +510,8 @@
       "method": "addRequiredLegalSection"
     },
     {
-      "file": "apps/lfd-api/src/lafoliecoffee/content/http/admin-platform-content.controller.ts",
-      "method": "editLegalDocumentParagraph"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/content/http/admin-platform-content.controller.ts",
-      "method": "moveLegalDocumentParagraph"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/content/http/admin-platform-content.controller.ts",
-      "method": "removeLegalDocumentParagraph"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/content/http/admin-platform-content.controller.ts",
-      "method": "setLegalDocumentTitle"
-    },
-    {
       "file": "apps/lfd-api/src/lafoliecoffee/delivery-availability/http/admin-delivery-availability.controller.ts",
       "method": "update"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/delivery-notes/http/admin-delivery-notes.controller.ts",
-      "method": "reconcile"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/delivery-notes/http/delivery-notes-reconcile.controller.ts",
-      "method": "sweep"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/delivery-zones/http/admin-delivery-pricing.controller.ts",
@@ -815,10 +523,6 @@
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/delivery-zones/http/admin-delivery-zones.controller.ts",
-      "method": "remove"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/delivery-zones/http/admin-delivery-zones.controller.ts",
       "method": "update"
     },
     {
@@ -826,144 +530,24 @@
       "method": "addExemption"
     },
     {
-      "file": "apps/lfd-api/src/lafoliecoffee/feature-access/http/admin-feature-access.controller.ts",
-      "method": "clearOverride"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/feature-access/http/admin-feature-access.controller.ts",
-      "method": "removeExemption"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/feature-access/http/admin-feature-access.controller.ts",
-      "method": "setOverride"
-    },
-    {
       "file": "apps/lfd-api/src/lafoliecoffee/growth/http/admin-appointments.controller.ts",
       "method": "schedule"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/growth/http/admin-appointments.controller.ts",
-      "method": "transition"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/growth/http/admin-availability.controller.ts",
-      "method": "saveAvailability"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/growth/http/admin-availability.controller.ts",
-      "method": "saveExceptions"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/growth/http/admin-availability.controller.ts",
-      "method": "savePolicy"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/growth/http/admin-leads.controller.ts",
       "method": "capture"
     },
     {
-      "file": "apps/lfd-api/src/lafoliecoffee/growth/http/admin-leads.controller.ts",
-      "method": "changeStatus"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/growth/http/admin-market.controller.ts",
-      "method": "addNaf"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/growth/http/admin-market.controller.ts",
-      "method": "addZone"
-    },
-    {
       "file": "apps/lfd-api/src/lafoliecoffee/growth/http/admin-market.controller.ts",
       "method": "refresh"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/growth/http/admin-market.controller.ts",
-      "method": "removeNaf"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/growth/http/admin-market.controller.ts",
-      "method": "removeZone"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/growth/http/admin-recompute.controller.ts",
-      "method": "recompute"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/growth/http/appointments.controller.ts",
       "method": "book"
     },
     {
-      "file": "apps/lfd-api/src/lafoliecoffee/growth/http/appointments.controller.ts",
-      "method": "cancel"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/loyalty/http/admin-loyalty.controller.ts",
-      "method": "adjust"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/loyalty/http/admin-loyalty.controller.ts",
-      "method": "cancel"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/loyalty/http/admin-loyalty.controller.ts",
-      "method": "writeSettings"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/loyalty/http/loyalty-sweep.controller.ts",
-      "method": "sweep"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/loyalty/http/my-loyalty.controller.ts",
-      "method": "convert"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/operations/http/admin-operations.controller.ts",
-      "method": "archive"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/operations/http/admin-operations.controller.ts",
-      "method": "changeAudience"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/operations/http/admin-operations.controller.ts",
-      "method": "edit"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/operations/http/admin-operations.controller.ts",
-      "method": "prepare"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/operations/http/admin-operations.controller.ts",
-      "method": "reschedule"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/operations/http/admin-operations.controller.ts",
-      "method": "setSelection"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/operations/http/admin-operations.controller.ts",
-      "method": "setVisibility"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/order-cutoffs/http/admin-order-cutoff-settings.controller.ts",
-      "method": "update"
-    },
-    {
       "file": "apps/lfd-api/src/lafoliecoffee/order-cutoffs/http/admin-order-cutoffs.controller.ts",
       "method": "define"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/order-opening/http/admin-customer-cancellation.controller.ts",
-      "method": "update"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/order-opening/http/admin-order-opening-exemptions.controller.ts",
-      "method": "grant"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/order-opening/http/admin-order-opening-exemptions.controller.ts",
-      "method": "withdraw"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/order-opening/http/admin-order-opening.controller.ts",
@@ -974,28 +558,8 @@
       "method": "grant"
     },
     {
-      "file": "apps/lfd-api/src/lafoliecoffee/order-waivers/http/admin-order-cutoff-waivers.controller.ts",
-      "method": "revoke"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/order-waivers/http/admin-order-delivery-vat.controller.ts",
-      "method": "save"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/order-waivers/http/admin-order-late-fee.controller.ts",
-      "method": "clear"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/order-waivers/http/admin-order-late-fee.controller.ts",
-      "method": "save"
-    },
-    {
       "file": "apps/lfd-api/src/lafoliecoffee/orders/cancellation/http/guest-order-cancellation.controller.ts",
       "method": "confirm"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/orders/cancellation/http/guest-order-cancellation.controller.ts",
-      "method": "view"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/orders/http/admin-counter-incomplete-handover.controller.ts",
@@ -1008,18 +572,6 @@
     {
       "file": "apps/lfd-api/src/lafoliecoffee/orders/http/admin-order-complement.controller.ts",
       "method": "relaunch"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/orders/http/admin-order-drafts.controller.ts",
-      "method": "discard"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/orders/http/admin-order-drafts.controller.ts",
-      "method": "save"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/orders/http/admin-order-estimates.controller.ts",
-      "method": "estimate"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/orders/http/admin-order-shortfall.controller.ts",
@@ -1035,39 +587,11 @@
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/orders/http/admin-orders.controller.ts",
-      "method": "place"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/orders/http/admin-orders.controller.ts",
-      "method": "quote"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/orders/http/admin-orders.controller.ts",
       "method": "remindHandover"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/orders/http/admin-orders.controller.ts",
       "method": "warnOfDelay"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/orders/http/admin-settlement-reminders.controller.ts",
-      "method": "remind"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/orders/http/admin-unsettled-shop-orders.controller.ts",
-      "method": "expire"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/orders/http/company-orders.controller.ts",
-      "method": "summary"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/orders/http/my-shop-quote.controller.ts",
-      "method": "quote"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/orders/http/order-admission.controller.ts",
-      "method": "guest"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/orders/http/order-complement.controller.ts",
@@ -1086,56 +610,8 @@
       "method": "cancel"
     },
     {
-      "file": "apps/lfd-api/src/lafoliecoffee/orders/http/orders.controller.ts",
-      "method": "place"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/orders/http/orders.controller.ts",
-      "method": "quote"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/orders/http/shop-cart.controller.ts",
-      "method": "save"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/orders/http/shop-orders.controller.ts",
-      "method": "place"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/orders/http/shop-quote.controller.ts",
-      "method": "quote"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/orders/revision/http/admin-order-revisions.controller.ts",
-      "method": "quote"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/orders/revision/http/admin-order-revisions.controller.ts",
-      "method": "revise"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/orders/revision/http/card-increase-sweep.controller.ts",
-      "method": "expire"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/orders/revision/http/card-increase-sweep.controller.ts",
-      "method": "sweep"
-    },
-    {
       "file": "apps/lfd-api/src/lafoliecoffee/orders/revision/http/order-revisions.controller.ts",
       "method": "proposeCardIncrease"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/orders/revision/http/order-revisions.controller.ts",
-      "method": "quote"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/orders/revision/http/order-revisions.controller.ts",
-      "method": "quoteChangeRequest"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/orders/revision/http/order-revisions.controller.ts",
-      "method": "revise"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/payments/http/admin-accounting-settings.controller.ts",
@@ -1199,10 +675,6 @@
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/pickup-addresses/http/admin-pickup-addresses.controller.ts",
-      "method": "remove"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/pickup-addresses/http/admin-pickup-addresses.controller.ts",
       "method": "savePublicSchedule"
     },
     {
@@ -1211,35 +683,7 @@
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-company-pricing.controller.ts",
-      "method": "close"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-company-pricing.controller.ts",
-      "method": "discardDraft"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-company-pricing.controller.ts",
-      "method": "previewAmendment"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-company-pricing.controller.ts",
       "method": "rename"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-company-pricing.controller.ts",
-      "method": "saveDraft"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-price-floors.controller.ts",
-      "method": "archiveGlobalFloor"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-price-floors.controller.ts",
-      "method": "archiveScopedFloor"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-price-floors.controller.ts",
-      "method": "carryOverFloor"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-price-floors.controller.ts",
@@ -1251,23 +695,7 @@
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-price-floors.controller.ts",
-      "method": "removeFloor"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-price-floors.controller.ts",
-      "method": "removeGlobalFloor"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-price-floors.controller.ts",
       "method": "setFloor"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-price-grid.controller.ts",
-      "method": "export"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-price-grid.controller.ts",
-      "method": "promotions"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-price-templates.controller.ts",
@@ -1275,35 +703,7 @@
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-price-templates.controller.ts",
-      "method": "archive"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-price-templates.controller.ts",
-      "method": "carryOver"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-price-templates.controller.ts",
       "method": "compose"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-price-templates.controller.ts",
-      "method": "revise"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-pricing-carry-over.controller.ts",
-      "method": "carryOverLadder"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-pricing-carry-over.controller.ts",
-      "method": "carryOverRule"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-pricing.controller.ts",
-      "method": "archiveLadder"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-pricing.controller.ts",
-      "method": "archiveRule"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-pricing.controller.ts",
@@ -1311,47 +711,11 @@
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-pricing.controller.ts",
-      "method": "pauseLadder"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-pricing.controller.ts",
-      "method": "pauseRule"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-pricing.controller.ts",
-      "method": "project"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-pricing.controller.ts",
-      "method": "removeRule"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-pricing.controller.ts",
       "method": "renameRule"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-pricing.controller.ts",
-      "method": "resumeLadder"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-pricing.controller.ts",
-      "method": "resumeRule"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-pricing.controller.ts",
       "method": "setVolumeLadder"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-sale-reference-decisions.controller.ts",
-      "method": "carryOver"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-volume-commitments.controller.ts",
-      "method": "carryOver"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-volume-commitments.controller.ts",
-      "method": "close"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-volume-commitments.controller.ts",
@@ -1359,191 +723,27 @@
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/promotions/http/admin-promotions.controller.ts",
-      "method": "archive"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/promotions/http/admin-promotions.controller.ts",
-      "method": "decimals"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/promotions/http/admin-promotions.controller.ts",
-      "method": "pause"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/promotions/http/admin-promotions.controller.ts",
       "method": "pose"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/promotions/http/admin-promotions.controller.ts",
-      "method": "resume"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/promotions/http/admin-promotions.controller.ts",
-      "method": "revise"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/recommendations/http/admin-staff-suggestions.controller.ts",
-      "method": "archive"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/recommendations/http/admin-staff-suggestions.controller.ts",
       "method": "create"
     },
     {
-      "file": "apps/lfd-api/src/lafoliecoffee/recommendations/http/admin-staff-suggestions.controller.ts",
-      "method": "preview"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/recommendations/http/admin-staff-suggestions.controller.ts",
-      "method": "revise"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/recommendations/http/admin-staff-suggestions.controller.ts",
-      "method": "setActive"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/recommendations/http/admin-staff-suggestions.controller.ts",
-      "method": "setOrder"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/recommendations/http/my-shop-cart-suggestions.controller.ts",
-      "method": "read"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/recommendations/http/my-shop-home-suggestions.controller.ts",
-      "method": "read"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/recommendations/http/my-shop-product-suggestions.controller.ts",
-      "method": "read"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/recommendations/http/my-shop-usual-suggestions.controller.ts",
-      "method": "read"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/recommendations/http/shop-cart-suggestions.controller.ts",
-      "method": "read"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/recommendations/http/shop-home-suggestions.controller.ts",
-      "method": "read"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/recommendations/http/shop-product-audience.controller.ts",
-      "method": "record"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/recommendations/http/shop-product-suggestions.controller.ts",
-      "method": "read"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/resupply/http/admin-bakehouse-resupplies.controller.ts",
-      "method": "createDraft"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/resupply/http/admin-bakehouse-resupplies.controller.ts",
-      "method": "discardDraft"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/resupply/http/admin-bakehouse-resupplies.controller.ts",
-      "method": "mounted"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/resupply/http/admin-bakehouse-resupplies.controller.ts",
-      "method": "saveDraft"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/resupply/http/admin-bakehouse-resupplies.controller.ts",
-      "method": "send"
-    },
-    {
       "file": "apps/lfd-api/src/lafoliecoffee/resupply/http/admin-bakehouse-resupplies.controller.ts",
       "method": "sendDraft"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/resupply/http/admin-reserve-shop-releases.controller.ts",
-      "method": "send"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/resupply/http/admin-resupply-receipts.controller.ts",
-      "method": "correct"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/resupply/http/admin-resupply-receipts.controller.ts",
-      "method": "correctReceived"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/resupply/http/admin-resupply-receipts.controller.ts",
       "method": "receive"
     },
     {
-      "file": "apps/lfd-api/src/lafoliecoffee/resupply/http/admin-resupply-receipts.controller.ts",
-      "method": "receiveResupply"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/resupply/http/admin-resupply-receipts.controller.ts",
-      "method": "withdraw"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/resupply/http/admin-site-resupplies.controller.ts",
-      "method": "addLine"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/resupply/http/admin-site-resupplies.controller.ts",
-      "method": "cancel"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/resupply/http/admin-site-resupplies.controller.ts",
-      "method": "correctLine"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/resupply/http/admin-site-resupplies.controller.ts",
-      "method": "name"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/resupply/http/admin-site-resupplies.controller.ts",
-      "method": "send"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/resupply/http/admin-site-resupplies.controller.ts",
-      "method": "withdrawLine"
-    },
-    {
       "file": "apps/lfd-api/src/lafoliecoffee/resupply/http/admin-site-stock-alerts.controller.ts",
       "method": "declare"
     },
     {
-      "file": "apps/lfd-api/src/lafoliecoffee/resupply/http/admin-site-stock-alerts.controller.ts",
-      "method": "lift"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/shop-copy/http/admin-shop-copy.controller.ts",
-      "method": "publish"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/shop-copy/http/admin-shop-copy.controller.ts",
-      "method": "reset"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/shop-copy/http/admin-shop-copy.controller.ts",
-      "method": "saveDraft"
-    },
-    {
       "file": "apps/lfd-api/src/lafoliecoffee/sites/http/admin-site-tables.controller.ts",
       "method": "generateQr"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/sites/http/admin-site-tables.controller.ts",
-      "method": "removeQr"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/sites/http/admin-site-tables.controller.ts",
-      "method": "setCount"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/sites/http/admin-sites.controller.ts",
-      "method": "archive"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/sites/http/admin-sites.controller.ts",
@@ -1552,10 +752,6 @@
     {
       "file": "apps/lfd-api/src/lafoliecoffee/sites/http/admin-sites.controller.ts",
       "method": "savePublicSchedule"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/sites/http/admin-sites.controller.ts",
-      "method": "setColors"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/sites/http/admin-sites.controller.ts",
@@ -1570,44 +766,12 @@
       "method": "save"
     },
     {
-      "file": "apps/lfd-api/src/lafoliecoffee/storefront/http/admin-storefront.controller.ts",
-      "method": "saveSettings"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/sub-account-notices/http/admin-sub-account-notices.controller.ts",
-      "method": "reset"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/sub-account-notices/http/admin-sub-account-notices.controller.ts",
-      "method": "set"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/sub-account-notices/http/admin-sub-account-notices.controller.ts",
-      "method": "setEnabled"
-    },
-    {
       "file": "apps/lfd-api/src/lafoliecoffee/subscriptions/http/subscriptions.controller.ts",
       "method": "create"
     },
     {
-      "file": "apps/lfd-api/src/lafoliecoffee/subscriptions/http/subscriptions.controller.ts",
-      "method": "override"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/subscriptions/http/subscriptions.controller.ts",
-      "method": "remove"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/subscriptions/http/subscriptions.controller.ts",
-      "method": "setStatus"
-    },
-    {
       "file": "apps/lfd-api/src/lafoliecoffee/vitrine/http/admin-vitrine.controller.ts",
       "method": "create"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/vitrine/http/admin-vitrine.controller.ts",
-      "method": "previewNotice"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/vitrine/http/admin-vitrine.controller.ts",
@@ -1631,19 +795,7 @@
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/vitrine/http/admin-vitrine.controller.ts",
-      "method": "setActive"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/vitrine/http/admin-vitrine.controller.ts",
-      "method": "setContents"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/vitrine/http/admin-vitrine.controller.ts",
       "method": "test"
-    },
-    {
-      "file": "apps/lfd-api/src/lafoliecoffee/vitrine/http/admin-vitrine.controller.ts",
-      "method": "updateIdentity"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/vitrine/http/vitrine-sweep.controller.ts",
