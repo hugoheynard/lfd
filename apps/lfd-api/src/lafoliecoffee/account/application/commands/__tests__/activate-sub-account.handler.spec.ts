@@ -30,6 +30,7 @@ const clock = new FixedClock(new Date("2030-03-01T08:00:00.000Z"));
 function chaletView(parentStatus: "active" | "pending"): AdminCompanyDetailView {
   return {
     id: "chalet",
+    revision: 0,
     reference: "C-CHALET",
     raisonSociale: "",
     enseigne: "Chalet Edelweiss",

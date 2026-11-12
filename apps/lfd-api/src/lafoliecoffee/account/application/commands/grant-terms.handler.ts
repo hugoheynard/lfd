@@ -34,6 +34,9 @@ export class GrantTermsHandler implements ICommandHandler<GrantTermsCommand, voi
     if (!company.grantTerms(command.grantedTerms)) {
       return;
     }
+    // Après la méthode métier : un rejeu à l'identique n'a rien changé et
+    // sort au-dessus, il ne devient pas un refus.
+    company.ensureReadAt(command.expectedRevision);
     await this.uow.run(async () => {
       await this.companies.save(company);
       await this.events.publishTraced(

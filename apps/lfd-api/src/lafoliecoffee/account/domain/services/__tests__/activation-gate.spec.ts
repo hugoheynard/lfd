@@ -5,6 +5,7 @@ import { activationGate } from "../activation-gate.js";
 function detail(over: Partial<AdminCompanyDetailView> = {}): AdminCompanyDetailView {
   return {
     id: "company_1",
+    revision: 0,
     owner: null,
     warnings: [],
     reference: "C-1",

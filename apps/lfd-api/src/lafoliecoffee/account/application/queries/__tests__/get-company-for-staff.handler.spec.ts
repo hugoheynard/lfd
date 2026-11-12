@@ -12,6 +12,7 @@ const emptyAddresses: CompanyAddressesView = { billing: null, deliveries: [] };
 
 const detail: AdminCompanyDetailView = {
   id: "company_1",
+  revision: 0,
   owner: null,
   warnings: [],
   reference: "C-000123",

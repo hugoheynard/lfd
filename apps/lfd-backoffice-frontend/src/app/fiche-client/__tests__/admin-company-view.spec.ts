@@ -7,6 +7,7 @@ import { toContactCards, toIdentityView } from '../admin-company-view';
 
 function company(over: Partial<AdminCompanyDetail> = {}): AdminCompanyDetail {
   return {
+    revision: 0,
     activation: null,
     gate: { canActivate: false, blocking: [], checklist: [] },
     suspensionCause: null,

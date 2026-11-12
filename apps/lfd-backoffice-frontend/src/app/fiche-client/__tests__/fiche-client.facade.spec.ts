@@ -10,6 +10,7 @@ import { FicheClientPanels } from '../informations/fiche-client.panels';
 import { FicheClientStore } from '../informations/fiche-client.store';
 
 const COMPANY: AdminCompanyDetail = {
+  revision: 0,
   activation: null,
   gate: { canActivate: false, blocking: [], checklist: [] },
   suspensionCause: null,

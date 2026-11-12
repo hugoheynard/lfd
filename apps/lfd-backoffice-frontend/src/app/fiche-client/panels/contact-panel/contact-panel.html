@@ -4,12 +4,27 @@
 />
 
 <div class="body">
+  @if (stale()) {
+    <fold-callout variant="warning">
+      Cette fiche a changé depuis que vous l'avez ouverte : relisez-la avant d'enregistrer. Votre
+      saisie n'a pas été enregistrée.
+    </fold-callout>
+  }
   <lfd-contact-fields [value]="draft()" (valueChange)="draft.set($event)" [withRole]="withRole()" />
 </div>
 
 <footer class="foot">
   <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
-  <button foldButton intent="primary" [disabled]="!canSubmit() || submitting()" (click)="submit()">
-    Enregistrer
-  </button>
+  @if (stale()) {
+    <button foldButton intent="primary" (click)="reread()">Relire la fiche</button>
+  } @else {
+    <button
+      foldButton
+      intent="primary"
+      [disabled]="!canSubmit() || submitting()"
+      (click)="submit()"
+    >
+      Enregistrer
+    </button>
+  }
 </footer>

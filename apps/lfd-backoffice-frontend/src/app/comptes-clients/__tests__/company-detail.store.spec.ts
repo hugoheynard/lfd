@@ -73,14 +73,18 @@ describe('CompanyDetailStore', () => {
     await serve(http, 'c1', detail('c1', 'Chez Léa'));
     await first;
 
-    const write = TestBed.inject(AdminCompaniesService).updateIdentity('c1', {
-      enseigne: 'Chez Lou',
-      vatNumber: '',
-      raisonSociale: '',
-      formeJuridique: '',
-      siret: '',
-      siren: '',
-    });
+    const write = TestBed.inject(AdminCompaniesService).updateIdentity(
+      'c1',
+      {
+        enseigne: 'Chez Lou',
+        vatNumber: '',
+        raisonSociale: '',
+        formeJuridique: '',
+        siret: '',
+        siren: '',
+      },
+      null,
+    );
     await flush();
     http.expectOne(`${URL}/c1/identity`).flush(null);
     await write;

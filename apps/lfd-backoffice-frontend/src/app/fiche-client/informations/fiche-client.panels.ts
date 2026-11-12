@@ -68,6 +68,7 @@ export class FicheClientPanels {
           formeJuridique: company.formeJuridique,
           siret: company.siret,
           siren: company.siren,
+          revision: company.revision,
         },
       }).closed;
     }
@@ -163,7 +164,11 @@ export class FicheClientPanels {
   ): Promise<unknown> {
     return this.panels.open(AdminContactPanel, {
       ...FORM_PANEL,
-      data: { companyId: company.id, ...contactTargetOf(company, contactId, isNew) },
+      data: {
+        companyId: company.id,
+        revision: company.revision,
+        ...contactTargetOf(company, contactId, isNew),
+      },
     }).closed;
   }
 }

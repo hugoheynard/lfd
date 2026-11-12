@@ -11,6 +11,7 @@ import { ClientSubAccountsPage, followReminders } from './sub-accounts-page';
 
 function principal(hierarchy: Partial<CompanyHierarchyView> = {}): AdminCompanyDetail {
   return {
+    revision: 0,
     id: 'parent_1',
     reference: 'C-1',
     raisonSociale: 'Chalets SAS',

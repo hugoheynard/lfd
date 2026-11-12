@@ -11,6 +11,7 @@ import type { CompanyIdentityDraft } from '@lfd/b2b-ui/company';
 
 import type { AdminCompanyDetail, CompanyOpened } from '../../comptes-clients/admin-company';
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
+import { isStaleSheet } from '../../comptes-clients/sheet-revision';
 import { httpErrorCode, httpErrorMessage } from '@lfd/endpoints';
 import { NotifyService } from '../../notify.service';
 import type { HolderChoice } from '../holder-picker/holder-picker';
@@ -172,7 +173,7 @@ export class FicheClientActions {
   /** Accorde (ou retire) les crédits de règlement — l'ensemble complet part. */
   grantTerms(company: AdminCompanyDetail, terms: readonly DeferredTerm[]): Promise<boolean> {
     return this.run(
-      () => this.service.grantTerms(company.id, terms),
+      () => this.service.grantTerms(company.id, terms, company.revision),
       'Moyens de paiement mis à jour.',
     );
   }
@@ -188,7 +189,7 @@ export class FicheClientActions {
     this.preferring.set(true);
     try {
       return await this.run(
-        () => this.service.preferFulfillment(company.id, preference),
+        () => this.service.preferFulfillment(company.id, preference, company.revision),
         "Préférence d'acheminement enregistrée.",
       );
     } finally {
@@ -328,6 +329,11 @@ export class FicheClientActions {
   }
 
   /** Mute, annonce, et dit si ça a tenu — le trio commun à tous les gestes. */
+  /**
+   * Rend `true` quand la fiche est à relire : après une écriture, et après le
+   * refus d'une fiche périmée — le contrôle en ligne montre alors l'état que
+   * quelqu'un d'autre vient de poser, et le message dit de recommencer.
+   */
   private async run(mutate: () => Promise<void>, done: string): Promise<boolean> {
     try {
       await mutate();
@@ -335,7 +341,7 @@ export class FicheClientActions {
       return true;
     } catch (error) {
       this.notify.error(error);
-      return false;
+      return isStaleSheet(error);
     }
   }
 }

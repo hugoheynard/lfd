@@ -1,4 +1,5 @@
 import {
+  CompanyChangedSinceReadError,
   CompanyActivationBlockedError,
   CompanyAlreadyHasOwnerError,
   CompanyHasNoHolderError,
@@ -124,6 +125,11 @@ export interface ReconstituteCompanyInput {
    * par la migration, et on n'invente pas son canal.
    */
   readonly declaredVia?: CompanyDeclarationChannel | null;
+  /**
+   * La révision lue, **facultative** : absente = 0, celle d'une fiche jamais
+   * réécrite depuis la colonne.
+   */
+  readonly revision?: number;
 }
 
 /**
@@ -246,6 +252,8 @@ export class Company {
     private hierarchyValue: HierarchyPlace,
     /** Fait de naissance, jamais muté — cf. {@link CompanyDeclarationChannel}. */
     private readonly declaredViaValue: CompanyDeclarationChannel | null,
+    /** La révision chargée : celle contre laquelle une fiche lue se compare. */
+    private readonly revisionValue = 0,
   ) {
     this.loadedHierarchy = hierarchyValue;
     this.loadedStatus = statusValue;
@@ -333,8 +341,47 @@ export class Company {
       input.directDebitBlock ?? null,
       input.hierarchy ?? HierarchyPlace.standalone(),
       input.declaredVia ?? null,
+      input.revision ?? 0,
     );
   }
+
+  /** La révision chargée — celle que l'écran lit avec la fiche. */
+  get revision(): number {
+    return this.revisionValue;
+  }
+
+  /**
+   * Refuse un geste décidé sur une fiche lue à une autre révision.
+   *
+   * `null` : l'appelant n'a pas lu de fiche (un geste du client, un appelant qui
+   * n'envoie pas `If-Match`), il n'y a rien à comparer. Appelée APRÈS la méthode
+   * métier, et seulement si elle a changé quelque chose : un rejeu à l'identique
+   * ne devient pas un refus.
+   *
+   * @throws {CompanyChangedSinceReadError} la fiche a changé depuis sa lecture.
+   */
+  ensureReadAt(expectedRevision: number | null): void {
+    if (expectedRevision === null) {
+      return;
+    }
+    if (expectedRevision !== this.revisionValue) {
+      throw new CompanyChangedSinceReadError(this.identityId ?? "");
+    }
+    this.readAtValue = expectedRevision;
+  }
+
+  /**
+   * La révision sur laquelle le geste a été décidé, ou `null` : le dépôt
+   * n'écrit alors qu'à cette révision. Seul un geste décidé sur une fiche lue
+   * la porte — les autres gardent l'écriture par écart de colonnes, qui laisse
+   * passer deux gestes concurrents sur des colonnes différentes.
+   */
+  get readAt(): number | null {
+    return this.readAtValue;
+  }
+
+  /** Posée par {@link ensureReadAt}, une fois la révision lue vérifiée. */
+  private readAtValue: number | null = null;
 
   get id(): string | null {
     return this.identityId;

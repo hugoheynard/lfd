@@ -5,6 +5,7 @@ import { CommandBus } from "@nestjs/cqrs";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { ExpectedRevision } from "./expected-revision.decorator.js";
 import { AddContactByStaffCommand } from "../application/commands/add-contact-by-staff.command.js";
 import { RemoveContactByStaffCommand } from "../application/commands/remove-contact-by-staff.command.js";
 import { UpdateContactByStaffCommand } from "../application/commands/update-contact-by-staff.command.js";
@@ -39,9 +40,10 @@ export class AdminCompanyContactsController {
   async updatePrimary(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(contactPayload)) payload: ContactPayload,
+    @ExpectedRevision() expectedRevision: number | null,
   ): Promise<void> {
     await this.commands.execute<UpdatePrimaryContactByStaffCommand, void>(
-      new UpdatePrimaryContactByStaffCommand(companyId, payload),
+      new UpdatePrimaryContactByStaffCommand(companyId, payload, expectedRevision),
     );
   }
 

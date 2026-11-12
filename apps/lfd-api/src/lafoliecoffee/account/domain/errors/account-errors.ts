@@ -683,6 +683,20 @@ export class CompanyChangedMeanwhileError extends BusinessError {
   }
 }
 
+/**
+ * Un geste du back-office décidé sur une fiche lue à une révision dépassée :
+ * quelqu'un l'a modifiée entre la lecture et l'enregistrement. Écraser ferait
+ * passer une décision prise sur une fiche qui n'existe plus.
+ */
+export class CompanyChangedSinceReadError extends BusinessError {
+  constructor(readonly companyId: string) {
+    super(
+      "account.company.changed_since_read",
+      "Cette fiche a changé depuis que vous l'avez ouverte : relisez-la avant d'enregistrer.",
+    );
+  }
+}
+
 export class GuestBecameAccountMeanwhileError extends BusinessError {
   constructor(readonly userId: string) {
     super(

@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import {
   FoldButtonComponent,
+  FoldCalloutComponent,
   type FoldPanelDefaults,
   FoldPanelHeaderComponent,
   FoldPanelRef,
@@ -22,6 +23,7 @@ import {
 } from '@lfd/b2b-ui/company';
 
 import { AdminCompaniesService } from '../../../comptes-clients/admin-companies.service';
+import { isStaleSheet } from '../../../comptes-clients/sheet-revision';
 import { NotifyService } from '../../../notify.service';
 import { GestureIntents } from '../../../shared/gesture-intents';
 
@@ -41,6 +43,8 @@ export type AdminContactTarget =
 /** Charge d'ouverture : la société, la cible, et de quoi préremplir. */
 export interface AdminContactPanelData {
   readonly companyId: string;
+  /** La révision de la fiche lue : le détenteur vit sur la fiche, et s'y compare. */
+  readonly revision: number;
   readonly target: AdminContactTarget;
   readonly initial: CompanyContactDraft;
 }
@@ -58,7 +62,7 @@ export interface AdminContactPanelData {
 @Component({
   selector: 'app-admin-contact-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldPanelHeaderComponent, FoldButtonComponent, ContactFields],
+  imports: [FoldPanelHeaderComponent, FoldButtonComponent, FoldCalloutComponent, ContactFields],
   templateUrl: './contact-panel.html',
   styleUrl: './contact-panel.scss',
 })
@@ -87,6 +91,8 @@ export class AdminContactPanel {
 
   protected readonly draft = signal<CompanyContactDraft>(EMPTY_COMPANY_CONTACT_DRAFT);
   protected readonly submitting = signal(false);
+  /** La fiche a changé depuis son ouverture : le seul geste utile est de la relire. */
+  protected readonly stale = signal(false);
 
   protected readonly title = computed(() => {
     const target = this.data().target;
@@ -125,17 +131,21 @@ export class AdminContactPanel {
       this.notify.success('Contact enregistré.');
       this.ref.close(true);
     } catch (error) {
-      this.notify.error(error);
+      if (isStaleSheet(error)) {
+        this.stale.set(true);
+      } else {
+        this.notify.error(error);
+      }
     } finally {
       this.submitting.set(false);
     }
   }
 
   private async save(): Promise<void> {
-    const { companyId, target } = this.data();
+    const { companyId, target, revision } = this.data();
     const payload = trim(this.draft());
     if (target.kind === 'primary') {
-      await this.service.updatePrimaryContact(companyId, payload);
+      await this.service.updatePrimaryContact(companyId, payload, revision);
       return;
     }
     if (target.contactId === null) {
@@ -147,6 +157,11 @@ export class AdminContactPanel {
   }
 
   protected cancel(): void {
+    this.ref.close();
+  }
+
+  /** Ferme le panneau : la fiche se relit à la fermeture, et on le rouvre sur elle. */
+  protected reread(): void {
     this.ref.close();
   }
 }

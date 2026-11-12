@@ -1,6 +1,12 @@
 <fold-panel-header title="Identité" subtitle="Tout est corrigeable — y compris le greffe." />
 
 <div class="body">
+  @if (stale()) {
+    <fold-callout variant="warning">
+      Cette fiche a changé depuis que vous l'avez ouverte : relisez-la avant d'enregistrer. Votre
+      saisie n'a pas été enregistrée.
+    </fold-callout>
+  }
   @if (legalMissing()) {
     <!-- En TÊTE, et en avertissement : c'est la raison pour laquelle ce panneau
          vient d'être ouvert. En gris entre deux champs, la phrase disait la
@@ -19,7 +25,11 @@
 
 <footer class="foot">
   <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
-  <button foldButton intent="primary" [disabled]="submitting()" (click)="submit()">
-    Enregistrer
-  </button>
+  @if (stale()) {
+    <button foldButton intent="primary" (click)="reread()">Relire la fiche</button>
+  } @else {
+    <button foldButton intent="primary" [disabled]="submitting()" (click)="submit()">
+      Enregistrer
+    </button>
+  }
 </footer>

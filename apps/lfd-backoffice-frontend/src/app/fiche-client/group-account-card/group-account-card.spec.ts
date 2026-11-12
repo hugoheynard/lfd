@@ -9,6 +9,7 @@ import { GroupAccountCard } from './group-account-card';
 
 function principal(hierarchy: Partial<CompanyHierarchyView> = {}): AdminCompanyDetail {
   return {
+    revision: 0,
     id: 'parent_1',
     reference: 'C-1',
     raisonSociale: 'Chalets SAS',

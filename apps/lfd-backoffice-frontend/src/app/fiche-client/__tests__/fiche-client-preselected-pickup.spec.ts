@@ -26,6 +26,7 @@ const VILLAGE = point('pick_2', 'Village');
 
 /** Une fiche quelconque — seule sa préférence compte ici. */
 const COMPANY: AdminCompanyDetail = {
+  revision: 0,
   activation: null,
   gate: { canActivate: false, blocking: [], checklist: [] },
   suspensionCause: null,

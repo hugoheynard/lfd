@@ -11,6 +11,7 @@ import {
 
 /** Une société dont il ne manque que le SIRET. */
 const PARTIELLE: AdminIdentitePanelData = {
+  revision: 0,
   companyId: 'cmp_1',
   enseigne: 'Le Comptoir',
   vatNumber: 'FR32812456789',
@@ -22,6 +23,7 @@ const PARTIELLE: AdminIdentitePanelData = {
 
 /** Un compte ouvert à l'enseigne seule : aucun papier. */
 const SANS_PAPIERS: AdminIdentitePanelData = {
+  revision: 0,
   companyId: 'cmp_2',
   enseigne: 'Le Comptoir',
   vatNumber: '',

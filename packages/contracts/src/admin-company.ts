@@ -129,6 +129,12 @@ export interface AdminCompanyView {
  */
 export interface AdminCompanyDetailView extends AdminCompanyView {
   /**
+   * La révision de la fiche lue : l'écran la renvoie en `If-Match` avec chaque
+   * modification, et l'API refuse (409) une fiche réécrite entre-temps
+   * (`comptes-client/plan-fiche-perimee.md`).
+   */
+  readonly revision: number;
+  /**
    * Quand le compte a été ouvert, et par qui. `null` tant qu'il ne l'a jamais
    * été ; `by` à `null` pour les activations antérieures à la trace — on affiche
    * alors la date seule plutôt qu'un auteur inventé.

@@ -19,6 +19,7 @@ import {
 
 import { NotifyService } from '../../../notify.service';
 import { AdminCompaniesService } from '../../../comptes-clients/admin-companies.service';
+import { isStaleSheet } from '../../../comptes-clients/sheet-revision';
 
 /** Charge d'ouverture : la société + l'identité souple courante (à préremplir). */
 export interface AdminIdentitePanelData {
@@ -31,6 +32,8 @@ export interface AdminIdentitePanelData {
   readonly siret: string;
   /** Vide tant qu'inconnu — le staff le saisit et le corrige, comme le reste. */
   readonly siren: string;
+  /** La révision de la fiche lue : un enregistrement sur une fiche réécrite depuis est refusé. */
+  readonly revision: number;
 }
 
 /**
@@ -86,6 +89,8 @@ export class AdminIdentitePanel {
     vatNumber: '',
   });
   protected readonly submitting = signal(false);
+  /** La fiche a changé depuis son ouverture : le seul geste utile est de la relire. */
+  protected readonly stale = signal(false);
 
   /**
    * Le compte a-t-il été ouvert sans ses papiers ? Se lit sur la donnée
@@ -126,26 +131,39 @@ export class AdminIdentitePanel {
     this.submitting.set(true);
     try {
       const draft = this.draft();
-      await this.service.updateIdentity(this.data().companyId, {
-        enseigne: draft.enseigne.trim(),
-        vatNumber: draft.vatNumber.trim(),
-        raisonSociale: draft.raisonSociale.trim(),
-        formeJuridique: draft.formeJuridique.trim(),
-        siret: draft.siret.trim(),
-        // Toujours envoyé, prérempli : un SIRET corrigé fait suivre le SIREN
-        // qu'il proposait (`withSiret`), et le serveur refuse une contradiction.
-        siren: draft.siren.trim(),
-      });
+      await this.service.updateIdentity(
+        this.data().companyId,
+        {
+          enseigne: draft.enseigne.trim(),
+          vatNumber: draft.vatNumber.trim(),
+          raisonSociale: draft.raisonSociale.trim(),
+          formeJuridique: draft.formeJuridique.trim(),
+          siret: draft.siret.trim(),
+          // Toujours envoyé, prérempli : un SIRET corrigé fait suivre le SIREN
+          // qu'il proposait (`withSiret`), et le serveur refuse une contradiction.
+          siren: draft.siren.trim(),
+        },
+        this.data().revision,
+      );
       this.notify.success('Identité mise à jour.');
       this.ref.close(true);
     } catch (error) {
-      this.notify.error(error);
+      if (isStaleSheet(error)) {
+        this.stale.set(true);
+      } else {
+        this.notify.error(error);
+      }
     } finally {
       this.submitting.set(false);
     }
   }
 
   protected cancel(): void {
+    this.ref.close();
+  }
+
+  /** Ferme le panneau : la fiche se relit à la fermeture, et on le rouvre sur elle. */
+  protected reread(): void {
     this.ref.close();
   }
 }

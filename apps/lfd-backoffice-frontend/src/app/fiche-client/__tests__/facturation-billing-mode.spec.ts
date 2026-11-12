@@ -14,6 +14,7 @@ import { ClientFacturationPage } from '../facturation/facturation-page';
 
 function company(hierarchy: Partial<CompanyHierarchyView> = {}): AdminCompanyDetail {
   return {
+    revision: 0,
     id: 'c1',
     reference: 'C-1',
     raisonSociale: 'Chalets SAS',

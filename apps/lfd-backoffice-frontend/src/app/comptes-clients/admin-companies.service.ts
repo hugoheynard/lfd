@@ -23,6 +23,7 @@ import type {
 import type { CompanyContactDraft, CompanyIdentityDraft } from '@lfd/b2b-ui/company';
 
 import { B2B_API_BASE } from '../api/api-config';
+import { revisionOptions } from './sheet-revision';
 import type {
   AdminCompany,
   AdminCompanyDetail,
@@ -158,9 +159,17 @@ export class AdminCompaniesService {
   }
 
   /** Édite le **détenteur** du compte (contact principal, aplati sur la société). */
-  async updatePrimaryContact(companyId: string, payload: CompanyContactDraft): Promise<void> {
+  async updatePrimaryContact(
+    companyId: string,
+    payload: CompanyContactDraft,
+    revision: number | null,
+  ): Promise<void> {
     await firstValueFrom(
-      this.http.patch<void>(`${B2B_API_BASE}/admin/companies/${companyId}/contact`, payload),
+      this.http.patch<void>(
+        `${B2B_API_BASE}/admin/companies/${companyId}/contact`,
+        payload,
+        revisionOptions(revision),
+      ),
     );
   }
 
@@ -298,19 +307,32 @@ export class AdminCompaniesService {
    * Pose la **préférence d'acheminement**. Elle ne conditionne rien : c'est un
    * défaut offert au panier, que le client peut écarter.
    */
-  async preferFulfillment(companyId: string, payload: FulfillmentPreferencePayload): Promise<void> {
+  async preferFulfillment(
+    companyId: string,
+    payload: FulfillmentPreferencePayload,
+    revision: number | null,
+  ): Promise<void> {
     await firstValueFrom(
       this.http.patch<void>(
         `${B2B_API_BASE}/admin/companies/${companyId}/fulfillment-preference`,
         payload,
+        revisionOptions(revision),
       ),
     );
   }
 
   /** Édite l'identité souple (enseigne + n° de TVA). */
-  async updateIdentity(companyId: string, payload: UpdateIdentityPayload): Promise<void> {
+  async updateIdentity(
+    companyId: string,
+    payload: UpdateIdentityPayload,
+    revision: number | null,
+  ): Promise<void> {
     await firstValueFrom(
-      this.http.patch<void>(`${B2B_API_BASE}/admin/companies/${companyId}/identity`, payload),
+      this.http.patch<void>(
+        `${B2B_API_BASE}/admin/companies/${companyId}/identity`,
+        payload,
+        revisionOptions(revision),
+      ),
     );
   }
 
@@ -331,11 +353,17 @@ export class AdminCompaniesService {
   }
 
   /** Fixe la condition de règlement **convenue** (solde la demande client). */
-  async grantTerms(companyId: string, grantedTerms: readonly DeferredTerm[]): Promise<void> {
+  async grantTerms(
+    companyId: string,
+    grantedTerms: readonly DeferredTerm[],
+    revision: number | null,
+  ): Promise<void> {
     await firstValueFrom(
-      this.http.patch<void>(`${B2B_API_BASE}/admin/companies/${companyId}/granted-terms`, {
-        grantedTerms,
-      }),
+      this.http.patch<void>(
+        `${B2B_API_BASE}/admin/companies/${companyId}/granted-terms`,
+        { grantedTerms },
+        revisionOptions(revision),
+      ),
     );
   }
 

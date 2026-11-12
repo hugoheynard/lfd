@@ -14,5 +14,10 @@ export class UpdateIdentityByStaffCommand {
   constructor(
     readonly companyId: string,
     readonly payload: UpdateIdentityPayload,
+    /**
+     * La révision de la fiche lue par l'écran (`If-Match`), ou `null` : rien
+     * à comparer (cf. `Company.ensureReadAt`).
+     */
+    readonly expectedRevision: number | null = null,
   ) {}
 }

@@ -13,6 +13,7 @@ const ACTOR = "user_1";
 /** Une fiche incomplète : ni téléphone, ni TVA, ni facturation. */
 const detail: AdminCompanyDetailView = {
   id: COMPANY_ID,
+  revision: 0,
   owner: null,
   warnings: [],
   reference: "C-000123",

@@ -40,6 +40,7 @@ import type { Response } from "express";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { ExpectedRevision } from "./expected-revision.decorator.js";
 import { ChangeCompanyStatusCommand } from "../application/commands/change-company-status.command.js";
 import { ActivateCompanyByStaffCommand } from "../application/commands/activate-company.command.js";
 import { CertifyKbisCommand } from "../application/commands/certify-kbis.command.js";
@@ -177,9 +178,10 @@ export class AdminCompanyPiecesController {
   async updateIdentity(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(updateIdentityPayloadSchema)) payload: UpdateIdentityPayload,
+    @ExpectedRevision() expectedRevision: number | null,
   ): Promise<void> {
     await this.commands.execute<UpdateIdentityByStaffCommand, void>(
-      new UpdateIdentityByStaffCommand(companyId, payload),
+      new UpdateIdentityByStaffCommand(companyId, payload, expectedRevision),
     );
   }
 
@@ -200,9 +202,10 @@ export class AdminCompanyPiecesController {
   async grantTerms(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(grantTermsPayloadSchema)) payload: GrantTermsPayload,
+    @ExpectedRevision() expectedRevision: number | null,
   ): Promise<void> {
     await this.commands.execute<GrantTermsCommand, void>(
-      new GrantTermsCommand(companyId, payload.grantedTerms),
+      new GrantTermsCommand(companyId, payload.grantedTerms, expectedRevision),
     );
   }
 
@@ -222,9 +225,10 @@ export class AdminCompanyPiecesController {
   async preferFulfillment(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(fulfillmentPreferencePayloadSchema)) payload: FulfillmentPreferencePayload,
+    @ExpectedRevision() expectedRevision: number | null,
   ): Promise<void> {
     await this.commands.execute<PreferFulfillmentByStaffCommand, void>(
-      new PreferFulfillmentByStaffCommand(companyId, payload),
+      new PreferFulfillmentByStaffCommand(companyId, payload, expectedRevision),
     );
   }
 

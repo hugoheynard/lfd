@@ -23,6 +23,7 @@ const NOV_1 = '2026-10-31T23:00:00.000Z';
 
 function company(hierarchy: Partial<CompanyHierarchyView> = {}): AdminCompanyDetail {
   return {
+    revision: 0,
     id: 'c1',
     reference: 'C-1',
     raisonSociale: 'Chalets SAS',

@@ -84,6 +84,7 @@ describe('AdminCompaniesService', () => {
 
   it('GET /admin/companies/:id renvoie la fiche détail', async () => {
     const detail: AdminCompanyDetail = {
+      revision: 0,
       activation: null,
       gate: { canActivate: false, blocking: [], checklist: [] },
       suspensionCause: null,
@@ -129,12 +130,24 @@ describe('AdminCompaniesService', () => {
 
   it('grantTerms PATCH l’ensemble complet des crédits accordés', async () => {
     const { service, http } = setup();
-    const promise = service.grantTerms('company_1', ['monthly', 'monthly']);
+    const promise = service.grantTerms('company_1', ['monthly', 'monthly'], null);
     await flush();
 
     const req = http.expectOne(`${URL}/company_1/granted-terms`);
     expect(req.request.method).toBe('PATCH');
     expect(req.request.body).toEqual({ grantedTerms: ['monthly', 'monthly'] });
+    expect(req.request.headers.has('If-Match')).toBe(false);
+    req.flush(null);
+    await promise;
+  });
+
+  it('un geste de la fiche dit la révision lue en If-Match', async () => {
+    const { service, http } = setup();
+    const promise = service.grantTerms('company_1', ['monthly'], 4);
+    await flush();
+
+    const req = http.expectOne(`${URL}/company_1/granted-terms`);
+    expect(req.request.headers.get('If-Match')).toBe('"4"');
     req.flush(null);
     await promise;
   });

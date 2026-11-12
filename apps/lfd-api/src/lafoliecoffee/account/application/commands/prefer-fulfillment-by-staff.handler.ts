@@ -46,6 +46,9 @@ export class PreferFulfillmentByStaffHandler implements ICommandHandler<
     if (!company.preferFulfillment(command.preference)) {
       return;
     }
+    // Après la méthode métier : un rejeu à l'identique n'a rien changé et
+    // sort au-dessus, il ne devient pas un refus.
+    company.ensureReadAt(command.expectedRevision);
     // La préférence telle que l'agrégat l'a retenue : l'adresse de l'autre mode
     // y est remise à `null`, et le journal dit ce qui a été posé.
     const kept = company.fulfillmentPreference;

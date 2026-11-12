@@ -5,10 +5,12 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-changes.js";
 import { companyShelves } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
+import type { BusinessError } from "../../../platform/shared/errors/app-error.js";
 import { referenceFrom } from "../../../platform/id/reference.js";
 import { Company } from "../domain/entities/company.js";
 import {
   CompanyChangedMeanwhileError,
+  CompanyChangedSinceReadError,
   SiretAlreadyRegisteredError,
 } from "../domain/errors/account-errors.js";
 import { CompanyRepository, type KbisLocation } from "../domain/ports/company.repository.js";
@@ -249,6 +251,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
         hasSubAccounts: row.subAccounts.length > 0,
         groupWithoutDelivery: row.groupWithoutDelivery,
       }),
+      revision: row.revision,
       fulfillmentPreference: {
         method: row.preferredFulfillmentMethod,
         pickupAddressId: row.preferredPickupAddressId,
@@ -266,11 +269,21 @@ export class PrismaCompanyRepository extends CompanyRepository {
 
   /**
    * N'écrit que les colonnes changées depuis {@link load} ({@link changedColumns}),
-   * et le statut seulement s'il vaut encore en base ce qu'on avait lu : une
-   * réactivation partie d'une fiche « suspendue » ne rouvre pas un compte
-   * résilié entre-temps.
+   * et monte la révision d'un cran. Deux conditions, chacune seulement quand
+   * elle a lieu d'être :
+   *
+   * - le statut, quand il change, doit valoir encore en base ce qu'on avait
+   *   lu : une réactivation partie d'une fiche « suspendue » ne rouvre pas un
+   *   compte résilié entre-temps ;
+   * - la révision, quand le geste a été décidé sur une fiche lue
+   *   (`Company.readAt`), doit être encore celle-là : sinon deux écrans ouverts
+   *   sur la même fiche s'écraseraient entre le chargement et l'écriture.
+   *
+   * Sans l'une ni l'autre, l'écriture est libre : deux gestes concurrents sur
+   * des colonnes différentes gardent chacun ce qu'il a écrit.
    *
    * @throws {CompanyChangedMeanwhileError} le statut a changé depuis le chargement.
+   * @throws {CompanyChangedSinceReadError} la fiche lue a été réécrite depuis.
    */
   async save(company: Company): Promise<void> {
     const id = company.id;
@@ -290,14 +303,17 @@ export class PrismaCompanyRepository extends CompanyRepository {
       ...(state.statusChange ?? {}),
     };
     if (Object.keys(data).length > 0) {
-      await this.write(id, data, state.statusChange === null ? undefined : loaded?.status);
+      await this.write(id, data, {
+        revision: company.readAt,
+        status: state.statusChange === null ? null : (loaded?.status ?? null),
+      });
     }
     this.loaded.set(company, { columns, status: state.status });
     // Statut, rattachement, conditions : le rayon de la société et de ses sites.
     this.shelves.changed(companyShelves(id));
   }
 
-  /** L'écriture, conditionnée sur le statut chargé quand le statut change. */
+  /** L'écriture, conditionnée sur ce qui doit ne pas avoir bougé (cf. {@link save}). */
   private async write(
     id: string,
     data: Partial<CompanyColumns> & {
@@ -305,19 +321,39 @@ export class PrismaCompanyRepository extends CompanyRepository {
       readonly parentCompanyId?: string | null;
       readonly groupWithoutDelivery?: boolean;
     },
-    loadedStatus: CompanyStatus | undefined,
+    expected: { readonly revision: number | null; readonly status: CompanyStatus | null },
   ): Promise<void> {
-    if (loadedStatus === undefined) {
-      await this.prisma.company.update({ where: { id }, data });
+    const bumped = { ...data, revision: { increment: 1 } };
+    if (expected.revision === null && expected.status === null) {
+      await this.prisma.company.update({ where: { id }, data: bumped });
       return;
     }
     const { count } = await this.prisma.company.updateMany({
-      where: { id, status: loadedStatus },
-      data,
+      where: {
+        id,
+        ...(expected.revision === null ? {} : { revision: expected.revision }),
+        ...(expected.status === null ? {} : { status: expected.status }),
+      },
+      data: bumped,
     });
     if (count === 0) {
-      throw new CompanyChangedMeanwhileError(id);
+      throw await this.whatChanged(id, expected.status);
     }
+  }
+
+  /**
+   * Laquelle des deux conditions a manqué : le statut a son propre refus, plus
+   * précis, et il l'emporte.
+   */
+  private async whatChanged(
+    id: string,
+    loadedStatus: CompanyStatus | null,
+  ): Promise<BusinessError> {
+    const row = await this.prisma.company.findUnique({ where: { id }, select: { status: true } });
+    if (loadedStatus !== null && row?.status !== loadedStatus) {
+      return new CompanyChangedMeanwhileError(id);
+    }
+    return new CompanyChangedSinceReadError(id);
   }
 
   async kbisLocation(companyId: string): Promise<KbisLocation | null> {

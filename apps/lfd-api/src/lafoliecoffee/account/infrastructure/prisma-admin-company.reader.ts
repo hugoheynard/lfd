@@ -134,7 +134,7 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
     const row = await this.prisma.company.findUnique({
       where: { id: companyId },
       // Le RIB : une existence, pour la fiche seule — la liste ne la lit pas.
-      select: { ...COMPANY_SELECT, bankAccount: { select: { id: true } } },
+      select: { ...COMPANY_SELECT, revision: true, bankAccount: { select: { id: true } } },
     });
     if (row === null) {
       return null;
@@ -176,6 +176,7 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
     ]);
     return {
       ...toView(row, this.clock.now()),
+      revision: row.revision,
       vatNumberRequired: requiresVatNumber(row.formeJuridique),
       hasBankAccount: row.bankAccount !== null,
       addresses,

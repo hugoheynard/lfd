@@ -38,6 +38,9 @@ export class UpdatePrimaryContactByStaffHandler implements ICommandHandler<
     if (!company.changePrimaryContact(ContactDetails.create(command.details))) {
       return;
     }
+    // Après la méthode métier : un rejeu à l'identique n'a rien changé et
+    // sort au-dessus, il ne devient pas un refus.
+    company.ensureReadAt(command.expectedRevision);
     await this.uow.run(async () => {
       await this.companies.save(company);
       await this.gestures.publish({

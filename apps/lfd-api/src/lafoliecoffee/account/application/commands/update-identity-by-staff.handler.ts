@@ -50,6 +50,9 @@ export class UpdateIdentityByStaffHandler implements ICommandHandler<
     if (!company.correctIdentity(command.payload)) {
       return;
     }
+    // Après la méthode métier : un rejeu à l'identique n'a rien changé et
+    // sort au-dessus, il ne devient pas un refus.
+    company.ensureReadAt(command.expectedRevision);
     await this.uow.run(async () => {
       await this.companies.save(company);
       await this.events.publishTraced(

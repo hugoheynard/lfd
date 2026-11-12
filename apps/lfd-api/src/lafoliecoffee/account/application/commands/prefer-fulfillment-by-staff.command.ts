@@ -18,5 +18,10 @@ export class PreferFulfillmentByStaffCommand {
   constructor(
     readonly companyId: string,
     readonly preference: FulfillmentPreferencePayload,
+    /**
+     * La révision de la fiche lue par l'écran (`If-Match`), ou `null` : rien
+     * à comparer (cf. `Company.ensureReadAt`).
+     */
+    readonly expectedRevision: number | null = null,
   ) {}
 }
