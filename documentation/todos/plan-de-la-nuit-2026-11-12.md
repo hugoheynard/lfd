@@ -44,7 +44,7 @@
    qui purge les journaux, comme `day_change` ; une clé rejouée après la purge
    referait le geste, d'où une durée qui couvre largement les renvois réels
    (réseau, onglet rouvert, coursier hors ligne) et Stripe (24 h).
-3. **Vérification de dérive avant migration** dans
+3. ✅ (`6e87d7cc5`, mode rapport par défaut) **Vérification de dérive avant migration** dans
    `deploy_lfd_api.yml` : comparer la base de production aux migrations
    appliquées (`prisma migrate diff`, lecture seule) avant `migrate deploy` ;
    arrêter le déploiement sur un écart non inscrit ; la liste des écarts
