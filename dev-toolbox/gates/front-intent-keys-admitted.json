@@ -1,0 +1,12 @@
+{
+  "$comment": "Les écarts admis de la porte front-intent-keys (plan documentation/ops/plan-idempotence-des-ecritures.md, § 8, J5) : fichier, nature (unkeyed : appel vers une route « par intention » sans clé ; drawn : clé tirée au hasard hors de la brique), appel, raison et date de lecture. Une entrée qui ne désigne plus un écart échoue ; la liste ne grandit pas sans raison écrite.",
+  "admitted": [
+    {
+      "file": "apps/lfd-backoffice-frontend/src/app/comptoir/reassort-boutique-page/site-resupplies.store.ts",
+      "kind": "drawn",
+      "detail": "randomUUID()",
+      "reason": "Chaque « +1 » est un geste voulu : deux clics cumulent. Les gestes passent par une file (act) qui les décide l'un après l'autre ; une clé par sujet tenue jusqu'au succès fondrait le second clic dans le premier. La clé tirée par clic protège le seul renvoi réseau de la même requête (addLine et setLine). À reprendre si la brique gagne une clé « par geste » nommée.",
+      "since": "2026-11-12"
+    }
+  ]
+}

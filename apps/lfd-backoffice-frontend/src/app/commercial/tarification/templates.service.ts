@@ -12,6 +12,7 @@ import type {
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../../api/api-config';
+import { GestureIntents, intentOptions } from '../../shared/gesture-intents';
 
 /**
  * **Les gabarits tarifaires** — mercuriales et devis, un seul service.
@@ -23,6 +24,7 @@ import { B2B_API_BASE } from '../../api/api-config';
 export class PriceTemplatesService {
   private readonly http = inject(HttpClient);
   private readonly base = `${B2B_API_BASE}/admin/pricing/templates`;
+  private readonly composeIntents = new GestureIntents();
 
   async list(kind: PriceTemplateKind): Promise<readonly PriceTemplateView[]> {
     return firstValueFrom(
@@ -50,8 +52,24 @@ export class PriceTemplatesService {
     );
   }
 
+  /**
+   * **Enregistre un gabarit neuf**, une fois par intention (`Idempotency-Key`,
+   * exigée par l'API) : l'intention est la grille envoyée. Un double clic ou
+   * un réessai après une réponse perdue renvoie la même clé et reçoit le même
+   * gabarit ; une grille changée, ou un enregistrement abouti, en ouvre une
+   * neuve.
+   */
   async compose(payload: SavePriceTemplatePayload): Promise<CreatedIdResponse> {
-    return firstValueFrom(this.http.post<CreatedIdResponse>(this.base, payload));
+    const subject = JSON.stringify(payload);
+    const created = await firstValueFrom(
+      this.http.post<CreatedIdResponse>(
+        this.base,
+        payload,
+        intentOptions(this.composeIntents.keyFor(subject)),
+      ),
+    );
+    this.composeIntents.done(subject);
+    return created;
   }
 
   /** Une grille se remplace **entière** : `PUT`, jamais un palier à la fois. */

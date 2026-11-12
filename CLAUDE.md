@@ -183,7 +183,11 @@
 >   des écritures, J0) : chaque route d'écriture dit pourquoi un rejeu ne la
 >   refait pas — `@Idempotent` avec sa raison, ou `@IntentKey()` et un handler
 >   qui scelle son intention (`runSealed`) — et les routes pas encore rangées
->   sont une dette comptée qui ne peut que décroître. C'est la
+>   sont une dette comptée qui ne peut que décroître. Et **72** le même jour
+>   avec `lint:front-intent-keys` (J5) : un appel des écrans vers une route
+>   « par intention » passe la clé d'une `GestureIntents` (`intentOptions`,
+>   `withIntent`), et aucune clé d'intention n'est tirée au hasard hors de la
+>   brique — une clé tirée au clic rouvre le doublon que la route ferme. C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -1433,7 +1437,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 71 portes du dépôt, toutes, et un résumé à la fin
+pnpm lint:gates         # les 72 portes du dépôt, toutes, et un résumé à la fin
 pnpm gate <nom>         # une porte (pnpm gate --list : la liste, avec ce qu'elle tient)
 pnpm lint:watch         # relance les portes dont un fichier lu change
 pnpm tool               # les outils occasionnels (digests, carte, axe…) ; pnpm tool <nom>

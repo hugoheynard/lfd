@@ -5,6 +5,7 @@ import type { MediaImagesApi } from '../mediatheque/data/media-images-api';
 import { MediaSeriesApi } from '../mediatheque/data/media-series-api';
 import { MediaTagsApi } from '../mediatheque/data/media-tags-api';
 
+import { GestureIntents, sentOnce } from '../shared/gesture-intents';
 import { said } from './agent-tool-text';
 import {
   detailsOf,
@@ -66,6 +67,9 @@ export async function eachImage(
 export function declareMediaVocabularyTools(media: MediaImagesApi): void {
   const tags = inject(MediaTagsApi);
   const series = inject(MediaSeriesApi);
+  // Un appel d'outil est une intention, ses arguments son sujet : un réessai
+  // après un échec renvoie la même clé, un appel abouti l'oublie.
+  const seriesIntents = new GestureIntents();
   const urls = { type: 'array', items: { type: 'string' } } as const;
 
   void declareExperimentalWebMcpTool({
@@ -158,10 +162,11 @@ export function declareMediaVocabularyTools(media: MediaImagesApi): void {
     },
     execute: (args) =>
       said('Ouverture de la série', async () => {
-        // Un appel d'outil est une intention : sa propre clé, jamais réutilisée.
-        const id = await series.openSeries(
-          { title: args.title, shotOn: args.shotOn ?? null, note: args.note ?? null },
-          crypto.randomUUID(),
+        const id = await sentOnce(seriesIntents, JSON.stringify(args), (key) =>
+          series.openSeries(
+            { title: args.title, shotOn: args.shotOn ?? null, note: args.note ?? null },
+            key,
+          ),
         );
         return `Série ouverte : ${id}`;
       }),

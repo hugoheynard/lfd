@@ -3,6 +3,7 @@ import type { CatalogReemissionView } from '@lfd/pim-contracts';
 
 import { ReemissionHttpApi } from '../pim/catalogue-overview/reemission/reemission-http-api';
 
+import { GestureIntents, sentOnce } from '../shared/gesture-intents';
 import { said } from './agent-tool-text';
 
 /** Le compte rendu d'un travail, une donnée par ligne — lisible sans le code. */
@@ -37,6 +38,9 @@ export function reemissionReport(job: CatalogReemissionView): string {
  */
 export function declarePimReemissionAgentTools(): readonly string[] {
   const api = inject(ReemissionHttpApi);
+  // Un appel d'outil est une intention, ses arguments son sujet : un réessai
+  // après un échec renvoie la même clé, un appel abouti l'oublie.
+  const intents = new GestureIntents();
 
   void declareExperimentalWebMcpTool({
     name: 'pim_catalog_reemit',
@@ -49,8 +53,9 @@ export function declarePimReemissionAgentTools(): readonly string[] {
     },
     execute: (args) =>
       said('Réémission', async () => {
-        // Un appel d'outil est une intention : sa propre clé, jamais réutilisée.
-        const id = await api.start(args.productId ?? null, crypto.randomUUID());
+        const id = await sentOnce(intents, JSON.stringify(args), (key) =>
+          api.start(args.productId ?? null, key),
+        );
         return `Réémission lancée : ${id}. Relire pim_catalog_reemission_status avec ce jobId.`;
       }),
   });

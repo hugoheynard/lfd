@@ -4,6 +4,7 @@ import { CategoryStore } from '../pim/catalogue/category-store';
 import { ProductHttpApi } from '../pim/catalogue/product-http-api';
 import type { NutritionValues } from '../pim/data/models';
 
+import { GestureIntents, sentOnce } from '../shared/gesture-intents';
 import { said } from './agent-tool-text';
 import { declarePimCommerceAgentTools } from './pim-agent-commerce-tools';
 import { declarePimReadinessAgentTools } from './pim-agent-readiness-tools';
@@ -45,6 +46,9 @@ import { declarePimReemissionAgentTools } from './pim-agent-reemission-tools';
 export function declarePimAgentTools(canReemit: boolean): readonly string[] {
   const products = inject(ProductHttpApi);
   const categories = inject(CategoryStore);
+  // Un appel d'outil est une intention, ses arguments son sujet : un réessai
+  // après un échec renvoie la même clé, un appel abouti l'oublie.
+  const createIntents = new GestureIntents();
 
   void declareExperimentalWebMcpTool({
     name: 'pim_categories_list',
@@ -136,15 +140,16 @@ export function declarePimAgentTools(canReemit: boolean): readonly string[] {
     },
     execute: (args) =>
       said('Création de la fiche', async () => {
-        // Un appel d'outil est une intention : sa propre clé, jamais réutilisée.
-        const created = await products.create(
-          {
-            name: { fr: args.name },
-            kind: args.kind,
-            categoryId: args.categoryId,
-            ...(args.descriptionFr === undefined ? {} : { descriptionFr: args.descriptionFr }),
-          },
-          crypto.randomUUID(),
+        const created = await sentOnce(createIntents, JSON.stringify(args), (key) =>
+          products.create(
+            {
+              name: { fr: args.name },
+              kind: args.kind,
+              categoryId: args.categoryId,
+              ...(args.descriptionFr === undefined ? {} : { descriptionFr: args.descriptionFr }),
+            },
+            key,
+          ),
         );
         return `Fiche créée : ${created.id}`;
       }),

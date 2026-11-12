@@ -40,6 +40,7 @@ import {
   type UpdateProfilePayload,
 } from "./payloads.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { AcceptedReplay } from "../../../platform/shared/http/accepted-replay.decorator.js";
 import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 
 /** Ce que la porte pro renvoie : la société ouverte, de quoi relire `/me`. */
@@ -220,6 +221,10 @@ export class MeController {
    * un double clic ne fait pas partir deux liens.
    */
   @Post("password-link")
+  @AcceptedReplay(
+    "OncePerIntent.run : le fait PasswordResetRequested part au journal hors transaction et l'e-mail porte un lien de mot de passe, que la boîte d'envoi rangerait en clair ; une panne entre l'envoi et la résolution de l'intention, puis un rejeu après le bail, renvoie un lien et une trace. runSealed n'y change rien (sceller avant l'envoi perd le lien, après revient à run) ; fermé par le plan lien-fabriqué-à-l'envoi",
+    "même risque que les gestes à lien de mot de passe du § 7, décidé par Hugo le 2026-11-12 ; inscrit le 2026-11-12",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(PasswordLinkThrottleGuard)
   async requestPasswordLink(

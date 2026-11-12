@@ -28,7 +28,8 @@
  * **« N'écrit pas en base »**, heuristique écrite ici parce qu'elle décide :
  * le constructeur du handler n'injecte ni `UnitOfWork`, ni `PrismaService`,
  * ni un type en `*Repository`, `*Store` ou `*Writer`, et la classe n'appelle
- * ni `.save(` ni `$transaction(`. `run` résout l'intention hors de la
+ * ni `.save(`, ni `$transaction(`, ni `publishTraced(` (le fait tracé écrit le
+ * journal hors transaction). `run` résout l'intention hors de la
  * transaction du geste : une panne entre les deux laisse le bail expirer et le
  * rejeu réexécute (§ 7) — d'où `runSealed` dès qu'une écriture existe.
  *
@@ -77,6 +78,13 @@ import {
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const SRC = "apps/lfd-api/src";
 export const DEBT_FILE = "dev-toolbox/gates/write-idempotence-debt.json";
+
+/**
+ * Un appel qui écrit sans passer par un type injecté qui le dit : `.save(`,
+ * une transaction directe, et `publishTraced(` — le fait tracé part au
+ * journal hors de toute transaction, c'est une écriture (§ 8, J5).
+ */
+const WRITING_CALLS = /\.save\s*\(|\$transaction\s*\(|\.publishTraced\s*\(/;
 
 const WRITING_INJECTIONS = /^(?:UnitOfWork|PrismaService)$|(?:Repository|Store|Writer)$/;
 
@@ -238,7 +246,7 @@ function handlerTraits(file, node, network) {
     run: calls("run"),
     writes:
       injected.some((p) => p.type !== null && WRITING_INJECTIONS.test(p.type)) ||
-      /\.save\s*\(|\$transaction\s*\(/.test(text),
+      WRITING_CALLS.test(text),
   };
 }
 

@@ -40,6 +40,23 @@ export class GestureIntents {
   }
 }
 
+/**
+ * **Un geste envoyé sous la clé de son sujet**, oubliée au succès : un
+ * réessai après un échec renvoie la même clé (l'API rend la réponse
+ * d'origine), l'envoi suivant au succès est une intention neuve. Pour un
+ * appelant sans écran — un outil de l'agent, dont l'intention est l'appel et
+ * ses arguments — comme pour un service.
+ */
+export async function sentOnce<T>(
+  intents: GestureIntents,
+  subject: string,
+  send: (intentKey: string) => Promise<T>,
+): Promise<T> {
+  const result = await send(intents.keyFor(subject));
+  intents.done(subject);
+  return result;
+}
+
 /** Le code de l'API pour un geste encore en vol : la clé reste, le premier envoi décide. */
 const IN_FLIGHT_CODE = 'intent.in_flight';
 

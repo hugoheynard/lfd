@@ -214,6 +214,18 @@
       ]
     },
     {
+      "name": "front-intent-keys",
+      "script": "dev-toolbox/gates/front-intent-keys.mjs",
+      "holds": "Un appel des écrans (back-office, boutique) vers une route « par intention » de l'inventaire de write-idempotence passe la clé d'une GestureIntents (intentOptions, withIntent), et aucune clé d'intention n'est tirée au hasard hors de la brique, sauf écart admis et daté.",
+      "since": "2026-11-12",
+      "watch": [
+        "apps/lfd-backoffice-frontend/src/**",
+        "apps/lfc-ecommerce-frontend/src/**",
+        "apps/lfd-api/src/**",
+        "dev-toolbox/gates/front-intent-keys-admitted.json"
+      ]
+    },
+    {
       "name": "mail-key-no-pii",
       "script": "dev-toolbox/gates/mail-key-no-pii.mjs",
       "holds": "Aucune clé d'idempotence d'e-mail n'est construite avec une adresse.",

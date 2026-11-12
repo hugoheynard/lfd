@@ -130,6 +130,11 @@ test("par intention : run admis seulement si le handler n'écrit pas en base", (
       "private readonly intents: OncePerIntent",
       "return this.intents.run(i, c, () => this.x.save(t));",
     ],
+    // Régression : le fait tracé écrit le journal hors transaction, et `run` passait.
+    [
+      "private readonly events: TracedEventPublisher, private readonly intents: OncePerIntent",
+      "return this.intents.run(i, c, () => this.events.publishTraced(f, t));",
+    ],
   ]) {
     const writing = commandHandlersIn(HANDLER_PATH, handler(injections, body));
     assert.equal(routeOf(controller("@Post()"), writing).case, null, injections);

@@ -202,7 +202,10 @@ d'un client par l'équipe s'écrit, elle, sous transaction depuis `c82028b72`.
 Ces trois routes portent `@AcceptedReplay("raison", "décidé par Hugo le 2026-11-12")`
 (`platform/shared/http/accepted-replay.decorator.ts`) : une case à part, que
 la porte liste à chaque exécution. L'invitation d'un membre du staff, elle,
-est rangée « par intention » par l'heuristique (limite ci-dessous).
+est rangée « par intention » par l'heuristique (limite ci-dessous). Une
+quatrième route l'a rejointe le 2026-11-12 (J5) : la demande d'un lien de mot
+de passe par le client (`me.controller.ts#requestPasswordLink`), même risque,
+même fermeture (§ 8, J4).
 
 ### La dette à zéro (2026-11-12)
 
@@ -327,8 +330,11 @@ réseau gardé par `assertOutsideTransaction`. Une telle route porte une clé.
   et un rejeu envoie un essai de plus à l'administrateur. Une clé tirée de la
   seule révision fermerait le rejeu, mais changerait le contrôle (un second
   contrôle voulu sur la même image ne partirait plus).
-- **Examiné, non bougé** : `RequestPasswordResetHandler` (`me.controller.ts`,
-  « par intention », `run`). Il écrit pourtant : le fait
+- **Rangé en risque assumé (J5, 2026-11-12)** : `RequestPasswordResetHandler`
+  (`me.controller.ts#requestPasswordLink`). L'heuristique de `run` lit
+  désormais `publishTraced(` comme une écriture, la route a quitté « par
+  intention » et porte `@AcceptedReplay`, sans changement de comportement ;
+  son scénario a quitté l'e2e du rejeu. Ce qui suit dit pourquoi. Il écrit pourtant : le fait
   `PasswordResetRequestedEvent` part au journal hors transaction, ce que
   l'heuristique de `run` ne voit pas (elle ne lit pas `publishTraced`). Une
   panne entre l'envoi du lien et la résolution laisse un rejeu tardif
@@ -344,6 +350,42 @@ Back-office et boutique : tout appel HTTP vers une route « par intention »
 (lue dans l'inventaire de J3) passe par `intentOptions(...)` d'une
 `GestureIntents`, jamais une clé tirée au clic. La boutique reçoit la même
 brique ; l'acteur côté serveur est le client résolu en base (§ 7).
+
+**✅ Bâti le 2026-11-12** (non commité à l'écriture de ces lignes).
+
+- **La porte** : `pnpm gate front-intent-keys`
+  (`dev-toolbox/gates/front-intent-keys.mjs`, la lecture des fichiers dans
+  `dev-toolbox/gates/front-intent-keys-calls.mjs`). Elle lance l'inventaire de
+  `write-idempotence` à l'instant et lit `apps/lfd-backoffice-frontend/src` et
+  `apps/lfc-ecommerce-frontend/src` (specs exclues). Refusés : un appel
+  `http.post|put|patch|delete` (ou `request('POST', …)`, ou une enveloppe
+  `this.post(…)` de la classe) dont le verbe et le chemin désignent une route
+  « par intention » sans `intentOptions(`, `withIntent(` ni
+  `INTENT_KEY_HEADER` dans ses options ; un `randomUUID()` qui sert de clé
+  d'intention hors des briques (`shared/gesture-intents.ts`,
+  `fiche-client/tarifs/sending-intent.ts`, `client/gesture-intents.ts`).
+  Tests : `node --test dev-toolbox/__tests__/front-intent-keys.test.mjs`.
+- **Le chemin** se reconstitue dans le fichier seul : constantes, champs,
+  fonctions de chemin (`this.url(…)`, arguments liés), un joker par segment
+  inconnu ; le joker de tête vaut l'origine de l'API ou `/pim`. Limites :
+  un chemin sans morceau littéral, un verbe en variable, une fonction de
+  chemin à deux `return` (`floorPath`) ne désignent rien et passent. Au
+  2026-11-12, 87 des 93 routes « par intention » sont reconnues dans un appel
+  d'écran. Des six autres, deux sont appelées par un chemin que la porte ne
+  lit pas et passent la clé (confirmation d'une limite de prix, création
+  d'une suggestion — relu à la main) ; quatre ne sont appelées par aucun
+  écran (`POST /admin/pickup-addresses`, `POST /admin/pricing/commitments`,
+  `POST /admin/mail-copy/trials`, `PUT /admin/mail-senders/:space`).
+- **Corrigés** : `PriceTemplatesService.compose` partait sans clé — la route
+  l'exige, l'enregistrement d'un gabarit neuf était refusé (400) depuis les
+  deux écrans ; il envoie la clé d'une `GestureIntents` tenue par le service,
+  le sujet étant la grille envoyée. Les cinq outils de l'agent qui créent
+  (fiche, série d'images, réémission, suggestion, véhicule) tiraient une clé
+  par appel : ils envoient la clé de leurs arguments par `sentOnce`
+  (`shared/gesture-intents.ts`), oubliée au succès.
+- **Admis** (`dev-toolbox/gates/front-intent-keys-admitted.json`, raison et date) : le réassort
+  d'un site (`site-resupplies.store.ts`), où chaque « +1 » est un geste voulu
+  et où une clé par sujet fondrait le second clic dans le premier.
 
 Restent hors de ces lots, et dits : les écritures hors HTTP (abonnés aux
 faits, `@DurableHandler`, tâches planifiées), tenues par la boîte d'envoi et

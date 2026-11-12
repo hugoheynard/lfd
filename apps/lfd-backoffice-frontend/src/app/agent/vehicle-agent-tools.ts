@@ -13,6 +13,7 @@ import type {
 import { DeliveryZonesService } from '../b2b/reglages/delivery-zones.service';
 import { DeliverySettingsService } from '../livraison/delivery-settings.service';
 
+import { GestureIntents, sentOnce } from '../shared/gesture-intents';
 import { said } from './agent-tool-text';
 import { fleetText, vehicleText } from './vehicle-agent-text';
 
@@ -96,6 +97,9 @@ interface VehicleFields {
 export function declareVehicleAgentTools(canWrite: boolean): readonly string[] {
   const api = inject(DeliverySettingsService);
   const zonesApi = inject(DeliveryZonesService);
+  // Un appel d'outil est une intention, ses arguments son sujet : un réessai
+  // après un échec renvoie la même clé, un appel abouti l'oublie.
+  const createIntents = new GestureIntents();
 
   /** Les zones nomment celles d'un véhicule ; leur échec ne cache pas la flotte. */
   async function zones(): Promise<readonly DeliveryZoneView[] | null> {
@@ -115,8 +119,9 @@ export function declareVehicleAgentTools(canWrite: boolean): readonly string[] {
   }
 
   async function createOne(fields: VehicleFields): Promise<string> {
-    // Un appel d'outil est une intention : sa propre clé, jamais réutilisée.
-    const id = await api.addVehicleAndGetId(payloadOf(fields), crypto.randomUUID());
+    const id = await sentOnce(createIntents, JSON.stringify(fields), (key) =>
+      api.addVehicleAndGetId(payloadOf(fields), key),
+    );
     return `CRÉÉ — ${await reread(id)}`;
   }
 

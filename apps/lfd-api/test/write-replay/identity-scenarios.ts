@@ -1,11 +1,8 @@
-import { AppConfig } from "../../src/platform/config/app-config.js";
 import { CustomerRole, UserStatus } from "../../src/platform/database/client/client.js";
 import { daysAgo, type E2eContext } from "../e2e-harness.js";
 import { attachTo, createCompany, createUser } from "../factories.js";
-import { customerIdentity } from "./doubles.js";
 import { routeKey, STAFF, type ScenarioSet } from "./scenario.js";
 
-const CLIENT = "replay-client";
 const INVITED = "auth0|replay-invited";
 
 /** Une fiche staff, au statut et à l'invitation donnés. */
@@ -26,21 +23,6 @@ async function staffFiche(ctx: E2eContext, status: "invited" | "active"): Promis
 
 /** Les accès : liens de mot de passe, invitations, statut d'un membre du staff. */
 export const IDENTITY_SCENARIOS: ScenarioSet = {
-  [routeKey("lafoliecoffee/account/http/me.controller.ts", "requestPasswordLink")]: async ({
-    ctx,
-  }) => {
-    await createUser(ctx.prisma, { auth0Sub: CLIENT, email: "camille@replay.test" });
-    customerIdentity.methods = [
-      {
-        provider: "auth0",
-        secondaryUserId: "camille",
-        connection: ctx.app.get(AppConfig).auth0DatabaseConnection(),
-        isPrimary: true,
-      },
-    ];
-    return { sub: CLIENT, path: "/me/password-link" };
-  },
-
   [routeKey("lafoliecoffee/account/http/admin-access-pending.controller.ts", "issueLink")]: async ({
     ctx,
   }) => {

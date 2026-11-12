@@ -11,6 +11,7 @@ import {
 
 import { StaffSuggestionsService } from '../suggestions/staff-suggestions.service';
 
+import { GestureIntents, sentOnce } from '../shared/gesture-intents';
 import { said } from './agent-tool-text';
 import {
   CONDITION_FIELDS,
@@ -87,6 +88,9 @@ interface RuleFields extends ConditionFields {
  */
 export function declareSuggestionAgentTools(canWrite: boolean): readonly string[] {
   const api = inject(StaffSuggestionsService);
+  // Un appel d'outil est une intention, ses arguments son sujet : un réessai
+  // après un échec renvoie la même clé, un appel abouti l'oublie.
+  const createIntents = new GestureIntents();
 
   /** Le catalogue nomme les articles ; sa panne ne cache pas les règles. */
   async function choices(): Promise<StaffSuggestionChoicesView | null> {
@@ -154,9 +158,9 @@ export function declareSuggestionAgentTools(canWrite: boolean): readonly string[
     },
     execute: (args) =>
       said('Création de la suggestion', async () => {
-        // Un appel de l'outil est une intention : la clé naît avec lui. Un
-        // nouvel appel est un nouveau geste, comme un nouveau panneau.
-        const created = await api.create(payloadOf(args, null), crypto.randomUUID());
+        const created = await sentOnce(createIntents, JSON.stringify(args), (key) =>
+          api.create(payloadOf(args, null), key),
+        );
         return `CRÉÉE — ${await reread(created.id)}`;
       }),
   });
