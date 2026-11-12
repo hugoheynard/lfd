@@ -12,7 +12,7 @@ import {
 import {
   BILLING_RHYTHM_KIND_LABELS,
   type BillingRhythmKind,
-  type LegalEntityView,
+  type InitialPayerBillingModeView,
 } from '@lfd/contracts';
 import {
   FoldButtonComponent,
@@ -25,24 +25,22 @@ import {
 import { PermissionsStore } from '../../auth/permissions.store';
 import { PAYER_MODE_CHOICES } from '../../comptabilite/billing-rhythm-wording';
 import { LegalEntitiesService } from '../../comptabilite/legal-entities.service';
+import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
 import type { InitialBillingMode } from '../facturation/initial-billing-mode';
-import { PayerBillingModeService } from '../facturation/payer-billing-mode.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
 /**
  * **Le choix du mode de facturation** à l'ouverture d'un compte par l'équipe
- * et à l'activation d'un compte déclaré (plan
- * `documentation/comptabilite/facturation/plan-changement-de-mode-immediat.md`,
- * I3). Aucune valeur cochée d'avance : le mensuel « par défaut » n'est plus un
- * choix qu'on fait sans le voir.
+ * et à l'activation d'un compte déclaré. Aucune valeur cochée d'avance : le
+ * mensuel n'est pas un choix qu'on fait sans le voir.
  *
  * Ce composant ne pose rien : il dit le choix (`choiceChange`), et l'écran le
  * pose par la route du premier choix après le succès de son geste.
  *
  * Il n'exige rien quand il n'y a rien à choisir ici — aucune entité en
- * service, pas le droit sur les sociétés ni la lecture comptable, ou un mode
- * déjà choisi pour ce compte (`companyId` donné).
+ * service, pas le droit nécessaire, un mode déjà choisi chez l'entité, ou un
+ * site facturé chez son principal (`companyId` donné).
  */
 @Component({
   selector: 'app-billing-mode-choice',
@@ -63,32 +61,41 @@ export class BillingModeChoice {
 
   readonly choiceChange = output<InitialBillingMode>();
 
+  private readonly companiesApi = inject(AdminCompaniesService);
   private readonly entitiesApi = inject(LegalEntitiesService);
-  private readonly modesApi = inject(PayerBillingModeService);
   private readonly permissions = inject(PermissionsStore);
 
   /**
-   * Le premier choix se pose sous `b2b_companies:write` (route
-   * `/admin/companies/:id/billing-mode/initial`). La lecture des entités et du
-   * mode déjà choisi reste sous `b2b_accounting` (`@AdminSurface("b2b_accounting")`,
-   * vérifié le 2026-11-12) : sans la lecture comptable, rien ne se propose.
+   * Le premier choix se pose et se lit sous `b2b_companies`
+   * (`/admin/companies/:id/billing-mode/initial`). À l'ouverture, le compte
+   * n'existe pas encore : la liste des entités se lit alors sous
+   * `b2b_accounting` (`GET admin/accounting/legal-entities`).
    */
   protected readonly canWrite = computed(
     () =>
-      this.permissions.can('b2b_companies:write') && this.permissions.can('b2b_accounting:read'),
+      this.permissions.can('b2b_companies:write') &&
+      (this.companyId() !== null || this.permissions.can('b2b_accounting:read')),
   );
 
   protected readonly choices = PAYER_MODE_CHOICES;
   protected readonly state = signal<LoadState>('loading');
-  protected readonly entities = signal<readonly LegalEntityView[]>([]);
+  protected readonly view = signal<InitialPayerBillingModeView>({
+    entities: [],
+    chosen: [],
+    requiresChoice: true,
+  });
   protected readonly entityId = signal<string | null>(null);
   protected readonly mode = signal<BillingRhythmKind | null>(null);
-  /** Le mode déjà choisi pour ce compte chez l'entité retenue, ou `null`. */
-  protected readonly alreadyChosen = signal<string | null>(null);
 
   protected readonly entityOptions = computed(() =>
-    this.entities().map((entity) => ({ value: entity.id, label: entity.name })),
+    this.view().entities.map((entity) => ({ value: entity.id, label: entity.name })),
   );
+
+  /** Le mode déjà choisi pour ce compte chez l'entité retenue, ou `null`. */
+  protected readonly alreadyChosen = computed((): string | null => {
+    const chosen = this.view().chosen.find((entry) => entry.legalEntityId === this.entityId());
+    return chosen === undefined ? null : BILLING_RHYTHM_KIND_LABELS[chosen.mode];
+  });
 
   protected readonly choice = computed((): InitialBillingMode => {
     if (!this.canWrite()) {
@@ -98,7 +105,7 @@ export class BillingModeChoice {
       return { kind: 'missing' };
     }
     const legalEntityId = this.entityId();
-    if (legalEntityId === null || this.alreadyChosen() !== null) {
+    if (legalEntityId === null || !this.view().requiresChoice || this.alreadyChosen() !== null) {
       return { kind: 'not-required' };
     }
     const mode = this.mode();
@@ -123,40 +130,37 @@ export class BillingModeChoice {
   protected async load(companyId: string | null = this.companyId()): Promise<void> {
     this.state.set('loading');
     try {
-      const living = (await this.entitiesApi.list()).filter((entity) => entity.archivedAt === null);
-      this.entities.set(living);
-      const chosen =
-        living.find((entity) => entity.id === this.entityId())?.id ?? living[0]?.id ?? null;
-      this.entityId.set(chosen);
-      await this.readStanding(chosen, companyId);
+      const view = await this.read(companyId);
+      this.view.set(view);
+      this.entityId.set(
+        view.entities.find((entity) => entity.id === this.entityId())?.id ??
+          view.entities[0]?.id ??
+          null,
+      );
       this.state.set('ready');
     } catch {
       this.state.set('error');
     }
   }
 
-  protected async chooseEntity(entityId: string): Promise<void> {
+  protected chooseEntity(entityId: string): void {
     this.entityId.set(entityId);
-    this.state.set('loading');
-    try {
-      await this.readStanding(entityId, this.companyId());
-      this.state.set('ready');
-    } catch {
-      this.state.set('error');
-    }
   }
 
   protected chooseMode(mode: BillingRhythmKind): void {
     this.mode.set(mode);
   }
 
-  /** Un compte qui a déjà choisi son mode chez cette entité n'a pas à le redire. */
-  private async readStanding(entityId: string | null, companyId: string | null): Promise<void> {
-    if (entityId === null || companyId === null) {
-      this.alreadyChosen.set(null);
-      return;
+  /** Un compte existant se lit sous les sociétés ; à l'ouverture, rien n'est encore choisi. */
+  private async read(companyId: string | null): Promise<InitialPayerBillingModeView> {
+    if (companyId !== null) {
+      return this.companiesApi.initialBillingMode(companyId);
     }
-    const view = await this.modesApi.get(entityId, companyId);
-    this.alreadyChosen.set(view.since === null ? null : BILLING_RHYTHM_KIND_LABELS[view.mode]);
+    const living = (await this.entitiesApi.list()).filter((entity) => entity.archivedAt === null);
+    return {
+      entities: living.map((entity) => ({ id: entity.id, name: entity.name })),
+      chosen: [],
+      requiresChoice: true,
+    };
   }
 }

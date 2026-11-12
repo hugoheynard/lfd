@@ -7,6 +7,9 @@
  * résolue en base, sans `b2b_accounting:write` ; le 409 nommé ; le rejeu
  * identique qui ne réécrit rien.
  */
+import type { InitialPayerBillingModeView, StaffResource } from "@lfd/contracts";
+
+import { daysAgo, jsonBody } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
 import { ctx, declare, useBillingModeScene } from "./billing-mode-scene.js";
 
@@ -17,7 +20,11 @@ const route = (companyId: string): string => `/admin/companies/${companyId}/bill
 /** Un membre du staff aux seuls droits listés, tout le reste refusé par son rôle. */
 async function staffWith(
   sub: string,
-  grants: readonly { resource: string; action: "read" | "write"; effect: "allow" | "deny" }[],
+  grants: readonly {
+    resource: StaffResource;
+    action: "read" | "write";
+    effect: "allow" | "deny";
+  }[],
 ): Promise<void> {
   const member = await ctx.prisma.staffUser.create({
     data: {
@@ -96,5 +103,74 @@ describe("le premier choix du mode, sous le droit sociétés", () => {
       .send({ legalEntityId: id, mode: "weekly" })
       .expect(403);
     expect(await segments(payer.id)).toBe(0);
+  });
+});
+
+describe("la lecture du premier choix, sous le droit sociétés", () => {
+  const READER = [
+    { resource: "b2b_companies", action: "read", effect: "allow" },
+    { resource: "b2b_accounting", action: "read", effect: "deny" },
+    { resource: "b2b_accounting", action: "write", effect: "deny" },
+  ] as const;
+
+  async function readAs(sub: string, companyId: string): Promise<InitialPayerBillingModeView> {
+    return jsonBody<InitialPayerBillingModeView>(
+      await ctx.asSub(sub).get(route(companyId)).expect(200),
+    );
+  }
+
+  it("rend les entités et le mode déjà choisi sans aucun droit comptable (200)", async () => {
+    const id = await declare();
+    const payer = await createCompany(ctx.prisma, { raisonSociale: "Le Lecteur SAS" });
+    await staffWith("staff-societes", SOCIETES);
+    await staffWith("staff-lecteur", READER);
+
+    expect(await readAs("staff-lecteur", payer.id)).toEqual({
+      entities: [{ id, name: "La Folie Douce" }],
+      chosen: [],
+      requiresChoice: true,
+    });
+    await ctx
+      .asSub("staff-societes")
+      .put(route(payer.id))
+      .send({ legalEntityId: id, mode: "weekly" })
+      .expect(204);
+    expect((await readAs("staff-lecteur", payer.id)).chosen).toEqual([
+      { legalEntityId: id, mode: "weekly" },
+    ]);
+  });
+
+  it("refuse sans b2b_companies:read (403), même avec la lecture comptable", async () => {
+    await declare();
+    const payer = await createCompany(ctx.prisma);
+    await staffWith("staff-sans-societes", [
+      { resource: "b2b_companies", action: "read", effect: "deny" },
+      { resource: "b2b_accounting", action: "read", effect: "allow" },
+    ]);
+
+    await ctx.asSub("staff-sans-societes").get(route(payer.id)).expect(403);
+  });
+
+  it("un site qui suit la facturation de son principal n'a pas de mode à choisir", async () => {
+    await declare();
+    const principal = await createCompany(ctx.prisma, { raisonSociale: "Groupe Payeur SAS" });
+    const site = await createCompany(ctx.prisma, { raisonSociale: "Site Annexe SAS" });
+    // Un site ne suit que son principal ACTUEL (`company_follows_parent`) : le rattachement d'abord.
+    await ctx.prisma.company.update({
+      where: { id: site.id },
+      data: { parentCompanyId: principal.id },
+    });
+    await ctx.prisma.companyFollow.create({
+      data: {
+        companyId: site.id,
+        parentId: principal.id,
+        aspect: "billing",
+        validFrom: new Date(daysAgo(30)),
+        validTo: null,
+      },
+    });
+    await staffWith("staff-lecteur", READER);
+
+    expect((await readAs("staff-lecteur", site.id)).requiresChoice).toBe(false);
   });
 });

@@ -512,6 +512,7 @@ export type {
   SetBillingModeDatesPayload,
   SetPayerBillingModePayload,
   InitialPayerBillingModePayload,
+  InitialPayerBillingModeView,
   InvoicePaymentTermsView,
   SetInvoicePaymentTermsPayload,
   SetInvoicePrefixPayload,

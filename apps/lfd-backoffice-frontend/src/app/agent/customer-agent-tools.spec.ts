@@ -456,7 +456,7 @@ describe('declareCustomerAgentTools', () => {
   it('account_billing lit le relevé de la période en cours', async () => {
     const { call } = armTools();
     const text = await call('account_billing', { companyId: 'c1' });
-    expect(text).toContain('Chez LFD SAS : Mensuel, par défaut');
+    expect(text).toContain('Chez LFD SAS : non choisi');
     expect(text).toContain('Relevé Octobre 2026 — PROVISOIRE');
   });
 

@@ -1,9 +1,14 @@
 <div class="choice">
   @if (!canWrite()) {
     <p class="said" data-mode-choice-no-write>
-      Le mode de facturation ne peut pas se choisir ici sans les droits «&nbsp;sociétés&nbsp;» en
-      écriture et «&nbsp;comptabilité&nbsp;» en lecture&nbsp;: d'ici là, la fiche le dira «&nbsp;non
-      choisi&nbsp;».
+      @if (companyId() === null) {
+        Le mode de facturation ne peut pas se choisir ici sans les droits «&nbsp;sociétés&nbsp;» en
+        écriture et «&nbsp;comptabilité&nbsp;» en lecture&nbsp;: d'ici là, la fiche le dira
+        «&nbsp;non choisi&nbsp;».
+      } @else {
+        Le mode de facturation ne peut pas se choisir ici sans le droit «&nbsp;sociétés&nbsp;» en
+        écriture&nbsp;: d'ici là, la fiche le dira «&nbsp;non choisi&nbsp;».
+      }
     </p>
   } @else {
     @switch (state()) {
@@ -33,7 +38,11 @@
               data-mode-choice-entity
             />
           }
-          @if (alreadyChosen(); as label) {
+          @if (!view().requiresChoice) {
+            <p class="said" data-mode-choice-follows>
+              Ce site est facturé chez son principal&nbsp;: il n'a pas de mode à lui.
+            </p>
+          } @else if (alreadyChosen(); as label) {
             <p class="said" data-mode-choice-already>Mode déjà choisi&nbsp;: {{ label }}.</p>
           } @else {
             <fold-listbox

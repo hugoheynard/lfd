@@ -41,6 +41,7 @@
   "test/billing-mode-calendar.e2e-spec.ts": 10910,
   "test/billing-mode-entity.e2e-spec.ts": 12028,
   "test/billing-mode-immediate.e2e-spec.ts": 5814,
+  "test/billing-mode-initial.e2e-spec.ts": 12290,
   "test/billing-mode-payer.e2e-spec.ts": 5795,
   "test/billing-rhythms-deposit.e2e-spec.ts": 7434,
   "test/billing-statements.e2e-spec.ts": 13821,

@@ -121,3 +121,13 @@ export class PayerTimeline implements RhythmTimeline {
     return [...new Set([current, ...scheduled])];
   }
 }
+
+/**
+ * Le mode **choisi** par un payeur : celui du dernier segment vivant écrit —
+ * le même que `PayerBillingModeHistory.chooseFirst` oppose à un premier choix
+ * différent. `null` s'il n'a rien choisi.
+ */
+export function lastChosenMode(segments: readonly PayerModeSegment[]): BillingMode | null {
+  const last = [...segments].sort((a, b) => a.writtenAt.getTime() - b.writtenAt.getTime()).at(-1);
+  return last?.mode ?? null;
+}

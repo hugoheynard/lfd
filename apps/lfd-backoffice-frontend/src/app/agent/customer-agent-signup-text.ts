@@ -92,12 +92,16 @@ export function billingModesText(
       if (mode === undefined || typeof mode === 'string') {
         return `Chez ${entity.name} : ${mode ?? 'non lu'}`;
       }
-      const since = mode.since === null ? 'par défaut' : `depuis le ${day(mode.since)}`;
       const next =
         mode.scheduled === null
           ? ''
           : ` · passera ${BILLING_RHYTHM_KIND_LABELS[mode.scheduled.mode]} le ${day(mode.scheduled.effectiveAt)}`;
-      return `Chez ${entity.name} : ${BILLING_RHYTHM_KIND_LABELS[mode.mode]}, ${since}${next}`;
+      // `since` nul : jamais choisi — le mensuel n'est pas un choix qu'on lui prête.
+      const inForce =
+        mode.since === null
+          ? 'non choisi'
+          : `${BILLING_RHYTHM_KIND_LABELS[mode.mode]}, depuis le ${day(mode.since)}`;
+      return `Chez ${entity.name} : ${inForce}${next}`;
     })
     .join('\n');
 }

@@ -14,6 +14,7 @@ import type {
   DeliveryAddressPayload,
   FulfillmentPreferencePayload,
   InitialPayerBillingModePayload,
+  InitialPayerBillingModeView,
   InviteCompanyMemberPayload,
   UpdateIdentityPayload,
 } from '@lfd/contracts';
@@ -323,6 +324,19 @@ export class AdminCompaniesService {
    * l'activation, sous le droit sociétés. Refuse en 409
    * `accounting.payer_mode.already_chosen` si un mode est déjà choisi.
    */
+  /**
+   * Ce que le premier choix du mode lit pour un compte existant, sous le droit
+   * sociétés : les entités en service, le mode déjà choisi chez chacune, et si
+   * le compte en a un à choisir (pas un site facturé chez son principal).
+   */
+  async initialBillingMode(companyId: string): Promise<InitialPayerBillingModeView> {
+    return firstValueFrom(
+      this.http.get<InitialPayerBillingModeView>(
+        `${B2B_API_BASE}/admin/companies/${encodeURIComponent(companyId)}/billing-mode/initial`,
+      ),
+    );
+  }
+
   async setInitialBillingMode(
     companyId: string,
     payload: InitialPayerBillingModePayload,

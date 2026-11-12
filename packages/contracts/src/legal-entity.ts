@@ -611,6 +611,21 @@ export const initialPayerBillingModePayloadSchema = z.strictObject({
 });
 export type InitialPayerBillingModePayload = z.infer<typeof initialPayerBillingModePayloadSchema>;
 
+/**
+ * Ce que l'écran du **premier choix** lit, sous le droit sociétés
+ * (`GET /admin/companies/:companyId/billing-mode/initial`). Moindre
+ * exposition : ni dates, ni paramètres de prélèvement — seulement de quoi
+ * proposer le choix ou dire qu'il est déjà fait.
+ */
+export interface InitialPayerBillingModeView {
+  /** Les entités émettrices en service, dans l'ordre de la liste comptable. */
+  readonly entities: readonly { readonly id: string; readonly name: string }[];
+  /** Le mode déjà choisi par ce payeur, par entité — absente si rien n'y est choisi. */
+  readonly chosen: readonly { readonly legalEntityId: string; readonly mode: BillingRhythmKind }[];
+  /** Faux pour un site facturé chez son principal : il n'a pas de mode à lui. */
+  readonly requiresChoice: boolean;
+}
+
 /** Activer ou désactiver la constitution automatique — un geste à part. */
 export const setAutoCollectionPayloadSchema = z.strictObject({ enabled: z.boolean() });
 export type SetAutoCollectionPayload = z.infer<typeof setAutoCollectionPayloadSchema>;
