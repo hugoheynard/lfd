@@ -185,6 +185,20 @@ Elles font foi sur ce qui précède.
 - Comptes corrigés : 10 contrôleurs portent `@IntentKey()` ; 15 handlers
   appellent `OncePerIntent` (12 `run`, 3 `runSealed`).
 
+### Risque assumé : quatre gestes restent en `run` (Hugo, 2026-11-12)
+
+L'invitation d'un membre du staff, l'invitation d'un membre d'une société, la
+création d'un client par l'équipe et le rattachement du titulaire gardent
+`OncePerIntent.run`. Leur e-mail porte un lien de mot de passe, et le passer
+par la boîte d'envoi le rangerait en clair ; la conception qui le permettrait
+(notre lien signé, le ticket Auth0 demandé au clic) est un chantier à part
+([`../mail/plan-lien-fabrique-a-l-envoi.md`](../mail/plan-lien-fabrique-a-l-envoi.md)).
+Le risque : une panne entre l'écriture et la résolution de l'intention, puis
+un rejeu après le bail, refait le geste. La fenêtre est de quelques
+millisecondes, sur des gestes rares, faits par le staff, dont un doublon se
+voit dans l'annuaire. À fermer avant le lancement commercial. La déclaration
+d'un client par l'équipe s'écrit, elle, sous transaction depuis `c82028b72`.
+
 ### Limite connue de J0 (2026-11-12)
 
 L'heuristique « `run` admis si le handler n'écrit pas » ne lit que ce que le

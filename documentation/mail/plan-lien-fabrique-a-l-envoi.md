@@ -7,6 +7,20 @@
 > bâtisseur s'est arrêté avant d'écrire : la boîte d'envoi aurait gardé le
 > lien de mot de passe en clair. Frontière de sécurité : passe par `vitruve`
 > avant Hugo.
+>
+> ⏸️ **Refusé par `vitruve` et mis de côté par Hugo le 2026-11-12.** Un lien
+> neuf à chaque essai change le corps de l'e-mail d'un essai à l'autre : un
+> envoi accepté par Resend mais non noté, repris par le balayeur avec la même
+> clé et un autre corps, n'est plus dédoublonné (`mail-send-attempt.ts:55-58`,
+> `resend-mailer.ts:233-256`). S'y ajoutent les durées (7 jours pour une
+> invitation, 1 heure pour une réinitialisation), les deux écrans qui
+> remettent le lien en main propre, et la réparation d'un sujet inconnu.
+> **La conception retenue pour plus tard** : l'e-mail porte NOTRE lien
+> (`/acces/<demande>.<HMAC>`), recalculé à l'identique à chaque essai et
+> jamais rangé ; au clic, une page à bouton vérifie la signature et la
+> validité, demande le ticket Auth0 à ce moment-là et redirige ; usage unique
+> noté en base. En attendant, les quatre gestes restent en `run` : risque
+> assumé, écrit au plan de l'idempotence.
 
 ## 1. En simple
 
