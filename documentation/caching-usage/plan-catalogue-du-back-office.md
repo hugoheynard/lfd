@@ -69,11 +69,20 @@ Les routes `admin/catalog`, `admin/catalog/published` et les marqueurs
 restent : Mise en avant, Promotions, fiche client › articles réservés, offre
 pro d'une variante et carte de sélection du commerce les lisent.
 
-### 3.2 Un geste relit l'écran, pas trois routes
+### 3.2 Un geste relit sa ligne, l'écran recalcule les comptes
 
-Masquer, valider (après le **dernier** lot) et fermer le panneau du sur
-mesure relisent `admin/catalog/screen` une fois. C'est la vue entière, parce
-que les comptes par rayon et la liste en attente changent avec la ligne.
+Décidé avec Hugo le 2026-11-12. Les comptes par rayon et la liste en attente
+de validation se calculent sur tout le catalogue, mais l'écran l'a déjà dans
+son store. Le calcul (`shelvesOf`, `pendingOf`, aujourd'hui dans
+`published-catalog-view.ts`) devient **une fonction pure partagée** dans
+`@lfd/contracts`, lue par le serveur (route de l'écran) et par l'écran (après
+un geste) : une seule arithmétique, testée une fois.
+
+Masquer et valider relisent **les lignes touchées** par
+`GET admin/catalog/screen/rows?sku=…` (les lignes validées après le
+**dernier** lot), sous le même droit, avec le numéro `catalog-admin` lu avant
+les lignes ; l'écran les remplace dans sa copie et recalcule. Fermer le
+panneau du sur mesure relit les marqueurs seuls, comme aujourd'hui.
 
 ### 3.3 Le numéro `catalog-admin`
 
@@ -108,8 +117,8 @@ de 5 min.
 
 ## 5. Ce que `vitruve` a rendu (2026-11-12)
 
-- BLOQUANT « un geste relit sa ligne » : faux, la vue porte des comptes
-  globaux → § 3.2, un geste relit l'écran entier.
+- BLOQUANT « un geste relit sa ligne » : la vue porte des comptes globaux →
+  § 3.2, le calcul devient une fonction partagée que l'écran rejoue.
 - BLOQUANT le droit : `lfc_catalog`, et le sur mesure tranché dans le
   handler → § 3.1.
 - SÉRIEUX l'écho du propre geste → le store retient le numéro rendu (§ 3.4).
