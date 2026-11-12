@@ -47,3 +47,5 @@ ce que coûte un prix et le cache des règles de prix.
 Le plan de l'objet des journées (lot 1 : les numéros, dans un Durable Object partagé) : [`plan-objet-des-journees.md`](plan-objet-des-journees.md).
 
 Le plan du veilleur unique (un numéro par sujet, une porte, un veilleur par onglet) : [`plan-veilleur-unique.md`](plan-veilleur-unique.md).
+
+Le plan de l’écran Catalogue du back-office (une route, un store, le numéro `catalog-admin`) : [`plan-catalogue-du-back-office.md`](plan-catalogue-du-back-office.md).
