@@ -28,6 +28,7 @@ type AccountView = 'loading' | 'signed-out' | 'failed' | 'incomplete' | 'dossier
 
 import { ClientBannerOutlet } from '../../nav/client-banner';
 import { ClientActivation } from '../../client-activation.service';
+import { ClientCollectionMeans } from '../../client-collection-means.service';
 import { ClientAddresses } from '../../client-addresses.service';
 import { ClientBankAccount } from '../../client-bank-account.service';
 import { ClientMandate } from '../../client-mandate.service';
@@ -227,16 +228,23 @@ export class ComptePage {
    *
    * Le RIB est lu par ses propres cartes, montrées au même rôle : tant qu'elles
    * ne l'ont pas lu, `account()` vaut `null` et la carte mandat attend.
+   *
+   * Et jamais pour un client **au virement** : il n'a rien à signer, rien ne
+   * sera prélevé. Un moyen pas encore lu (ou en échec) laisse la carte : le
+   * prélèvement est le cas courant, et la retirer sur une lecture manquée
+   * ferait disparaître le mandat d'un client prélevé.
    */
   protected readonly showsMandate = computed(
     () =>
       this.client.managesBank() &&
       this.bank.account() !== null &&
-      this.access.customerMandate() === 'open',
+      this.access.customerMandate() === 'open' &&
+      this.collectionMeans.means() !== 'bank_transfer',
   );
 
   private readonly document = inject(DOCUMENT);
   private readonly activation = inject(ClientActivation);
+  private readonly collectionMeans = inject(ClientCollectionMeans);
   private readonly addresses = inject(ClientAddresses);
   private readonly mandates = inject(ClientMandate);
   private readonly panels = inject(FoldPanelHostService);
@@ -365,7 +373,10 @@ export class ComptePage {
     effect(() => {
       const company = this.company();
       if (company !== null) {
-        untracked(() => this.activation.follow(company));
+        untracked(() => {
+          this.activation.follow(company);
+          this.collectionMeans.follow(company);
+        });
       }
     });
     this.chrome.back.set(null);

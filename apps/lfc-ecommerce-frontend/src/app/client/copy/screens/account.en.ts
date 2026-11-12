@@ -290,6 +290,8 @@ export const ACCOUNT_EN: AccountCopy = {
   },
   termMonthly: '30 days end of month',
   termGrantedSub: 'Granted by your sales contact: your orders are settled at month end.',
+  termGrantedTransferSub:
+    'Paid on account, by bank transfer on receipt of invoice. Our bank details and the reference to quote are on each invoice (PDF).',
   termRequestedSub: 'Request sent: your sales contact will approve it.',
   termNoneSub: 'On request: your sales contact grants it company by company.',
   termSuspendedSub: 'Monthly direct debit suspended — your orders are paid by card.',

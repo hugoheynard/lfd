@@ -10,6 +10,7 @@ import type { Invoice } from "../domain/entities/invoice.js";
 import { mandateReferenceOf } from "../domain/entities/invoice.types.js";
 import { InvoiceNotFoundError } from "../domain/errors/invoice-access-errors.js";
 import type { InvoicePeriodsReader } from "../domain/ports/invoice-periods.reader.js";
+import type { InvoiceTransferSettlementReader } from "../domain/ports/invoice-transfer-settlement.reader.js";
 import type { InvoiceReader } from "../domain/ports/invoice.reader.js";
 import type { OrderInvoicesReader } from "../domain/ports/order-invoices.reader.js";
 import type { BillingCycle } from "../domain/services/billing-cycle.js";
@@ -19,6 +20,12 @@ import { periodLabelOf, periodMonthOf } from "../domain/services/invoicing-closu
 export interface IssuedInvoiceReaders {
   readonly invoices: InvoiceReader;
   readonly periods: InvoicePeriodsReader;
+}
+
+/** Ce que la vue d'UNE pièce lit en plus : son mois facturé, et le virement qui l'a réglée. */
+export interface InvoiceDetailReaders {
+  readonly periods: InvoicePeriodsReader;
+  readonly transfers: InvoiceTransferSettlementReader;
 }
 
 /**
@@ -49,11 +56,14 @@ async function invoicesViewOf(
 
 /** Une pièce déjà lue (et déjà passée au mur), avec son mois facturé. */
 export async function invoiceViewOf(
-  periodsReader: InvoicePeriodsReader,
+  readers: InvoiceDetailReaders,
   invoice: Invoice,
 ): Promise<IssuedInvoiceView> {
-  const period = (await periodsReader.periodsOf([invoice.id])).get(invoice.id) ?? null;
-  return detailOf(invoice, period);
+  const [periods, settledByTransferOn] = await Promise.all([
+    readers.periods.periodsOf([invoice.id]),
+    readers.transfers.receivedOnOf(invoice.id),
+  ]);
+  return detailOf(invoice, periods.get(invoice.id) ?? null, settledByTransferOn);
 }
 
 /**
@@ -63,7 +73,7 @@ export async function invoiceViewOf(
  * @throws {InvoiceNotFoundError}
  */
 export async function issuedInvoiceOf(
-  readers: IssuedInvoiceReaders,
+  readers: IssuedInvoiceReaders & InvoiceDetailReaders,
   invoiceId: string,
   payerCompanyId: string | null,
 ): Promise<IssuedInvoiceView> {
@@ -74,8 +84,7 @@ export async function issuedInvoiceOf(
   ) {
     throw new InvoiceNotFoundError(invoiceId);
   }
-  const period = (await readers.periods.periodsOf([invoice.id])).get(invoice.id) ?? null;
-  return detailOf(invoice, period);
+  return invoiceViewOf(readers, invoice);
 }
 
 /**
@@ -117,7 +126,11 @@ const sum = (parts: readonly InvoiceVatPart[]): number =>
   parts.reduce((total, part) => total + part.amountCents, 0);
 
 /** Le vendeur sans son IBAN ni son BIC : une facture se lit, elle ne fait pas virer. */
-function detailOf(invoice: Invoice, period: BillingCycle | null): IssuedInvoiceView {
+function detailOf(
+  invoice: Invoice,
+  period: BillingCycle | null,
+  settledByTransferOn: string | null,
+): IssuedInvoiceView {
   const state = invoice.toState();
   const { seller, buyer, vat, mentions } = state;
   return {
@@ -164,5 +177,6 @@ function detailOf(invoice: Invoice, period: BillingCycle | null): IssuedInvoiceV
     },
     mandateReference: mandateReferenceOf(state.paymentMeans),
     paidOn: state.prepayment?.paidOn ?? null,
+    settledByTransferOn,
   };
 }

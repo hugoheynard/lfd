@@ -398,22 +398,25 @@ Tranchées pour bâtir T4 et T5, sans vitruve ni Hugo : à relire au matin.
   **avant** de valider, et ne valide que si l'écart est nul (« ajustez les
   factures cochées ou le montant ») ; les paiements partiels ne sont pas pris
   en charge. L'API dit la même règle (V7 : 409 qui dit l'écart en euros).
-  ⚠️ **Pas bâtie** : afficher l'écart demande d'additionner à l'écran les
-  restes dus des factures cochées, ce que refuse la porte `front-money-reads`
-  (une somme `reduce` de `…Cents` hors de sa liste de dette, qui ne peut que
-  décroître) et ce que le panneau `bank-transfer-panel` s'interdit déjà par
-  écrit. Deux sorties, à trancher : le serveur sert un aperçu de l'écart
-  (une lecture : factures choisies + montant → écart), ou la porte admet la
-  somme de restes dus servis. En attendant, le panneau dit la règle, et le
-  refus du serveur donne l'écart sans rien écrire.
+  ✅ **Bâtie (2026-11-12, non commité)** : le serveur sert l'aperçu,
+  `GET admin/accounting/legal-entities/:id/bank-transfers/preview?amountCents=…&invoiceIds=a,b`
+  (lecture de la comptabilité) → `{ amountCents, invoicesDueCents, gapCents }`.
+  Il appelle `previewBankTransfer`, qui partage avec `ReceivedBankTransfer.record`
+  la même fonction (`judgeInvoices` : factures au virement, non réglées, d'un
+  seul payeur, et leur reste dû) — une seule arithmétique, et les mêmes refus
+  de facture. Le panneau `bank-transfer-panel` le lit à chaque saisie,
+  affiche l'écart avant « Enregistrer », et n'active le bouton qu'à écart nul
+  sur les saisies courantes. L'écran n'additionne rien (`front-money-reads`).
 - **(b) Un avoir n'est pas déduit d'un virement.** Le panneau le dit : « les
   avoirs ne se déduisent pas encore d'un virement ». Bâti.
-- **(c) « Réglée par virement le … » dans la vue d'une facture.** ⚠️ **Pas
-  bâtie** : ni `IssuedInvoiceView` (back-office et boutique) ni
-  `MyInvoiceSettlementView` (`settled` + date, pour tout règlement autre)
-  ne distinguent une facture réglée par un virement reçu. Il manque un champ
-  servi (par exemple `settledByTransferOn`, ou un statut
-  `settled_by_transfer`).
+- **(c) « Réglée par virement le … » dans la vue d'une facture.** ✅ **Bâtie
+  (2026-11-12, non commité)** : `IssuedInvoiceView` (le staff et le client
+  lisent la même) porte `settledByTransferOn` — le jour de réception du
+  virement reçu qui la règle, lu sur `received_bank_transfer_invoice` (clé
+  unique `invoice_id`) par le port `InvoiceTransferSettlementReader` ; `null`
+  sinon. La fiche facture du back-office et le dialogue de facture de la
+  boutique disent « Réglée par virement le … », d'où qu'on ouvre la pièce.
+  `MyInvoiceSettlementView` reste `settled` + date pour la liste.
 
 ### Ce que T4 et T5 ont bâti (2026-11-12, non commité)
 
@@ -432,22 +435,30 @@ Tranchées pour bâtir T4 et T5, sans vitruve ni Hugo : à relire au matin.
   au compte, par virement à réception de facture », la référence à reporter
   (son numéro), et renvoie au PDF pour les coordonnées.
 
+- **T5, le moyen côté client** ✅ (2026-11-12, non commité) :
+  `GET companies/:companyId/collection-means` → `{ means }` (`MyCollectionMeansView`).
+  Le mur : tout membre de la société (404 non divulguant sinon) ; un site qui
+  suit la facturation de son principal lit celui du principal
+  (`collectionMeansPayerOf`) ; l'entité est celle en service (aucune : le
+  prélèvement par défaut ; plusieurs qui divergent : 409). Rien de l'entité
+  n'est servi. La carte « Paiement » de `/mon-compte` dit « Paiement au
+  compte, par virement à réception de facture » quand le crédit est accordé
+  au virement, et la carte mandat disparaît pour un client au virement (un
+  moyen pas encore lu, ou en échec, la laisse : le prélèvement est le cas
+  courant).
+
 ### Ce qui manque côté API pour finir T4 et T5
 
 - **L'IBAN entier de l'entité** à l'écran du staff : `LegalEntityView` ne
   sert que `creditorAccountLast4`, à dessein. Le bloc virement le montre
   donc par ses quatre derniers caractères ; le servir en entier serait une
   décision (route dédiée, droit, journal), pas un oubli.
-- **Le moyen du client côté boutique** : ni `CompanyView` (`/me`) ni aucune
-  route client ne dit qu'un compte règle par virement. Sans lui, la
-  boutique ne peut ni dire « Paiement au compte, par virement à réception de
-  facture » au niveau du compte, ni retirer l'espace mandat d'un client au
-  virement.
+- ~~Le moyen du client côté boutique~~ — servi, ci-dessus (T5).
 - **Le moyen figé sur la facture** dans `IssuedInvoiceView` : le dialogue
   le lit aujourd'hui sur le statut de la ligne (`transfer_expected`,
   `transfer_overdue`) transmis par la liste ; une facture réglée ou ouverte
   d'ailleurs ne le dit pas.
-- **Un aperçu de l'écart** d'un virement (décision a).
+- ~~Un aperçu de l'écart d'un virement~~ — servi, décision (a).
 
 ## Contredit par vitruve (2026-11-11)
 

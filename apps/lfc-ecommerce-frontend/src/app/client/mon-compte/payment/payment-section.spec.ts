@@ -44,6 +44,16 @@ describe('l’état du crédit mensuel', () => {
     expect(canRequestMonthly(null)).toBe(false);
   });
 
+  it('accordé au virement, la phrase dit le virement ; un moyen non lu garde la phrase commune', () => {
+    expect(monthlyTermView('granted', FR.account, 'bank_transfer').note).toBe(
+      FR.account.termGrantedTransferSub,
+    );
+    expect(monthlyTermView('granted', FR.account, 'sepa_debit').note).toBe(
+      FR.account.termGrantedSub,
+    );
+    expect(monthlyTermView('granted', FR.account, null).note).toBe(FR.account.termGrantedSub);
+  });
+
   it('nomme chaque état par sa pastille, son ton et sa phrase', () => {
     expect(monthlyTermView('granted', FR.account)).toEqual({
       badge: FR.account.stateActive,

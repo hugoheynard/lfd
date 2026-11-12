@@ -47,3 +47,14 @@ export interface PayerCollectionMeansView {
     readonly reason: string;
   } | null;
 }
+
+/**
+ * `GET companies/:companyId/collection-means` — comment le compte règle au
+ * compte, pour l'espace client : la boutique dit « par virement à réception
+ * de facture » et retire l'espace mandat au virement. Un site qui suit la
+ * facturation de son principal lit celui du principal. Jamais d'IBAN : les
+ * coordonnées ne sont que sur la facture.
+ */
+export interface MyCollectionMeansView {
+  readonly means: CollectionMeansName;
+}

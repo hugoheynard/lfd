@@ -2,6 +2,7 @@ import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import type {
+  CollectionMeansName,
   ActivationGate,
   CompanyView,
   CustomerBankAccountView,
@@ -21,7 +22,14 @@ import { FR } from '../../copy/fr';
 import { ClientFeatureAccess } from '../../feature-access/client-feature-access.service';
 import { DEFAULT_LEVELS } from '../../feature-access/feature-access.fixture';
 import { ProOnboarding } from '../../pro-onboarding.service';
-import { asRole, matchMediaAt, openedPanel, PROFILE, TOMMEUSES } from '../account.fixture';
+import {
+  asRole,
+  collectionMeansWith,
+  matchMediaAt,
+  openedPanel,
+  PROFILE,
+  TOMMEUSES,
+} from '../account.fixture';
 import { IdentityPanel } from '../identity/identity-panel/identity-panel';
 import { ContactEditPanel } from '../users/contact-edit-panel/contact-edit-panel';
 import { ComptePage } from './compte-page';
@@ -40,6 +48,8 @@ interface Situation {
   readonly mintBlockers?: readonly MintBlocker[];
   /** Un site atteint par héritage (S6), où l'espace est entré — aucun par défaut. */
   readonly site?: CompanyView;
+  /** Le moyen d'encaissement lu — aucun par défaut, comme une lecture pas encore faite. */
+  readonly means?: CollectionMeansName | null;
 }
 
 /** Un RIB enregistré, sans IBAN : la lecture n'en rend que `last4`. */
@@ -67,6 +77,7 @@ function boot(
     mandate = 'closed',
     bank = null,
     gate = null,
+    means = null,
     mintBlockers = [],
     site,
   }: Situation = {},
@@ -142,6 +153,8 @@ function boot(
         provide: ClientActivation,
         useValue: { gate: signal(gate), follow: (): void => undefined },
       },
+      // Le moyen d'encaissement a sa propre suite : ici, celui que le test pose.
+      collectionMeansWith(means),
       // La carte « Compléter mon dossier » a sa propre suite : ici, le dossier existe.
       { provide: ProOnboarding, useValue: { needsDossier: () => false } },
     ],
@@ -313,6 +326,14 @@ describe('ComptePage', () => {
       expect(anchors()).not.toContain('compte-mandate');
       expect(anchors().length).toBe(8);
       expect(el().querySelector('section#compte-bank')?.classList).not.toContain('paired');
+    });
+
+    it('reste absent pour un client au virement : rien à signer, rien ne sera prélevé', () => {
+      fixture = boot([TOMMEUSES], { mandate: 'open', bank: RIB, means: 'bank_transfer' });
+
+      expect(el().querySelector('#compte-mandate')).toBeNull();
+      expect(anchors()).not.toContain('compte-mandate');
+      expect(anchors().length).toBe(8);
     });
 
     it('reste absent sans RIB enregistré, même drapeau ouvert', () => {

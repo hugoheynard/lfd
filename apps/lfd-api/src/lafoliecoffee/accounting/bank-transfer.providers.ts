@@ -2,6 +2,7 @@ import type { Provider, Type } from "@nestjs/common";
 
 import { RecordBankTransferHandler } from "./application/commands/record-bank-transfer.handler.js";
 import { ListUnpaidTransferInvoicesHandler } from "./application/queries/list-unpaid-transfer-invoices.handler.js";
+import { PreviewBankTransferHandler } from "./application/queries/preview-bank-transfer.handler.js";
 import { ReceivedBankTransferRepository } from "./domain/ports/received-bank-transfer.repository.js";
 import { TransferInvoicesReader } from "./domain/ports/transfer-invoices.reader.js";
 import { UnpaidTransferInvoicesReader } from "./domain/ports/unpaid-transfer-invoices.reader.js";
@@ -21,6 +22,7 @@ export const BANK_TRANSFER_PROVIDERS: readonly Provider[] = [
   { provide: UnpaidTransferInvoicesReader, useClass: PrismaUnpaidTransferInvoicesReader },
   RecordBankTransferHandler,
   ListUnpaidTransferInvoicesHandler,
+  PreviewBankTransferHandler,
 ];
 
 export const BANK_TRANSFER_CONTROLLERS: readonly Type[] = [AdminBankTransfersController];

@@ -308,6 +308,11 @@ export interface AccountCopy {
    * tout le monde : `CompanyView` ne porte ni date d'accord ni plafond.
    */
   readonly termGrantedSub: string;
+  /**
+   * Le crédit accordé, réglé par virement (le staff l'a choisi) : pas de
+   * mandat, et les coordonnées bancaires ne sont que sur la facture.
+   */
+  readonly termGrantedTransferSub: string;
   readonly termRequestedSub: string;
   readonly termNoneSub: string;
   /**

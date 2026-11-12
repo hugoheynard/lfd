@@ -5,7 +5,14 @@ import { afterEach, vi } from 'vitest';
 
 import { ClientLocale } from '../../../client-locale.service';
 import { FR } from '../../../copy/fr';
-import { asRole, bootCard, matchMediaAt, openedPanel, TOMMEUSES } from '../../account.fixture';
+import {
+  asRole,
+  bootCard,
+  collectionMeansWith,
+  matchMediaAt,
+  openedPanel,
+  TOMMEUSES,
+} from '../../account.fixture';
 import { PaymentPanel } from '../payment-panel/payment-panel';
 import { PaymentDeskCard } from './payment-desk-card';
 
@@ -40,6 +47,16 @@ describe('PaymentDeskCard', () => {
     expect(el.querySelector('.monthly')?.textContent).toContain(FR.account.termGrantedSub);
     expect(el.textContent).toContain(FR.account.paymentNote);
     expect(requestButton(el)).toBeUndefined();
+  });
+
+  it('accordé et réglé par virement : « paiement au compte, par virement à réception de facture »', () => {
+    const el = bootCard(PaymentDeskCard, [GRANTED], [collectionMeansWith('bank_transfer')])
+      .nativeElement as HTMLElement;
+
+    const monthly = el.querySelector('.monthly')?.textContent ?? '';
+    expect(monthly).toContain(FR.account.termGrantedTransferSub);
+    expect(monthly).toContain('par virement à réception de facture');
+    expect(monthly).not.toMatch(/FR76|IBAN/u);
   });
 
   /** Le crédit n'est pas retiré : le client doit lire qu'il est suspendu, et pourquoi il paie par carte. */

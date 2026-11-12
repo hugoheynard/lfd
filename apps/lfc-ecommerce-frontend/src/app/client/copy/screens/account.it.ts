@@ -292,6 +292,8 @@ export const ACCOUNT_IT: AccountCopy = {
   },
   termMonthly: 'Pagamento a 30 giorni fine mese',
   termGrantedSub: 'Concesso dal vostro commerciale: gli ordini si saldano a fine mese.',
+  termGrantedTransferSub:
+    'Pagamento su conto, con bonifico al ricevimento della fattura. Le nostre coordinate bancarie e la causale da indicare sono su ogni fattura (PDF).',
   termRequestedSub: 'Richiesta inviata: il vostro commerciale la convalida.',
   termNoneSub: 'Su richiesta: il vostro commerciale lo concede società per società.',
   termSuspendedSub: 'Addebito mensile sospeso — gli ordini si pagano con carta.',

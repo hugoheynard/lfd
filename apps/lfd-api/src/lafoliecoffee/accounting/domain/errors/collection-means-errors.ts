@@ -88,3 +88,18 @@ export class NotACollectionMeansPayerError extends BusinessError {
     );
   }
 }
+
+/**
+ * Plusieurs entités émettrices en service ne règlent pas ce client de la même
+ * façon : l'espace client ne choisit pas laquelle dire.
+ */
+export class SeveralClientCollectionMeansError extends BusinessError {
+  constructor(readonly count: number) {
+    super(
+      "accounting.collection_means.several_issuers",
+      `${String(count)} entités émettrices sont en service et ne règlent pas ce compte de la même ` +
+        `façon (prélèvement chez l'une, virement chez l'autre) : l'espace client ne peut pas dire ` +
+        `comment il paie. Aligner le moyen d'encaissement du compte sur chaque entité.`,
+    );
+  }
+}

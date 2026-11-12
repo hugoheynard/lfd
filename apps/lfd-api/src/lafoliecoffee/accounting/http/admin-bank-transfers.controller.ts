@@ -1,4 +1,6 @@
 import {
+  bankTransferPreviewQuerySchema,
+  type BankTransferPreviewView,
   recordBankTransferPayloadSchema,
   type RecordBankTransferPayload,
   type RecordedBankTransferView,
@@ -13,9 +15,16 @@ import {
 } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
-import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { ZodBody, ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import { RecordBankTransferCommand } from "../application/commands/record-bank-transfer.command.js";
 import { ListUnpaidTransferInvoicesQuery } from "../application/queries/list-unpaid-transfer-invoices.query.js";
+import { PreviewBankTransferQuery } from "../application/queries/preview-bank-transfer.query.js";
+
+/** La requête d'aperçu, une fois la chaîne de factures découpée. */
+interface PreviewParams {
+  readonly amountCents: number;
+  readonly invoiceIds: readonly string[];
+}
 
 /** Un filtre de chaîne vide vaut « pas de filtre ». */
 function filterOf(value: string | undefined): string | null {
@@ -54,6 +63,21 @@ export class AdminBankTransfersController {
       new RecordBankTransferCommand(legalEntityId, payload, staffUserId, intentKey),
     );
     return { transferId };
+  }
+
+  /**
+   * L'écart avant de valider : le reste dû des factures cochées, le montant
+   * et l'écart, par la règle même de la saisie. N'écrit rien ; mêmes refus
+   * de facture que la saisie. Lecture de la comptabilité.
+   */
+  @Get("legal-entities/:id/bank-transfers/preview")
+  preview(
+    @Param("id") legalEntityId: string,
+    @Query(new ZodQuery<PreviewParams>(bankTransferPreviewQuerySchema)) params: PreviewParams,
+  ): Promise<BankTransferPreviewView> {
+    return this.queries.execute<PreviewBankTransferQuery, BankTransferPreviewView>(
+      new PreviewBankTransferQuery(legalEntityId, params.amountCents, params.invoiceIds),
+    );
   }
 
   /** Les factures au virement non réglées, les plus en retard d'abord. */

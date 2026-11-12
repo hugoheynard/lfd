@@ -3225,15 +3225,19 @@ export {
 } from "./payer-collection-means.js";
 export type {
   CollectionMeansName,
+  MyCollectionMeansView,
   PayerCollectionMeansView,
   SetPayerCollectionMeansPayload,
 } from "./payer-collection-means.js";
 export {
   BANK_TRANSFER_INVOICES_MAX,
   BANK_TRANSFER_REFERENCE_MAX,
+  bankTransferPreviewQuerySchema,
   recordBankTransferPayloadSchema,
 } from "./bank-transfer.js";
 export type {
+  BankTransferPreviewQuery,
+  BankTransferPreviewView,
   RecordBankTransferPayload,
   RecordedBankTransferView,
   UnpaidTransferInvoiceView,

@@ -1,4 +1,4 @@
-import type { CompanyMemberRole, CompanyView } from '@lfd/contracts';
+import type { CollectionMeansName, CompanyMemberRole, CompanyView } from '@lfd/contracts';
 import type { FoldBadgeVariant } from 'fold-ng';
 
 import { directDebitSuspended, MONTHLY, settlesOnAccount } from '../../../account/account.model';
@@ -50,14 +50,23 @@ export function canRequestMonthly(company: CompanyView | null): boolean {
   );
 }
 
-/** Ce que la pastille et la phrase disent, par état. Une table : trois états, trois lignes. */
+/**
+ * Ce que la pastille et la phrase disent, par état. Une table : trois états,
+ * trois lignes. Accordé et réglé par virement (`means`, lu au serveur), la
+ * phrase le dit ; un moyen pas encore lu garde la phrase commune.
+ */
 export function monthlyTermView(
   state: MonthlyTermState,
   copy: AccountCopy,
+  means: CollectionMeansName | null = null,
 ): { readonly badge: string; readonly variant: FoldBadgeVariant; readonly note: string } {
   switch (state) {
     case 'granted':
-      return { badge: copy.stateActive, variant: 'success', note: copy.termGrantedSub };
+      return {
+        badge: copy.stateActive,
+        variant: 'success',
+        note: means === 'bank_transfer' ? copy.termGrantedTransferSub : copy.termGrantedSub,
+      };
     case 'suspended':
       return { badge: copy.stateSuspended, variant: 'warning', note: copy.termSuspendedSub };
     case 'requested':

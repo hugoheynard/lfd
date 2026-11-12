@@ -115,5 +115,6 @@ export const SEPTEMBER_DETAIL: IssuedInvoiceView = {
   },
   mandateReference: 'RUM-PORT-1',
   paidOn: null,
+  settledByTransferOn: null,
   documentAvailable: false,
 };

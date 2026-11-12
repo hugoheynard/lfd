@@ -6,6 +6,7 @@ import { EN } from '../../../copy/en';
 import { FR } from '../../../copy/fr';
 import { ClientLocale } from '../../../client-locale.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
+import { collectionMeansWith } from '../../account.fixture';
 import { PaymentPanel, type PaymentPanelData } from './payment-panel';
 
 /** Ce que les doublés ont vu passer : les demandes, et les fermetures du panneau. */
@@ -27,6 +28,8 @@ function boot(data: PaymentPanelData): ComponentFixture<PaymentPanel> {
   TestBed.configureTestingModule({
     imports: [PaymentPanel],
     providers: [
+      // Le moyen d'encaissement a sa propre suite : ici, pas encore lu.
+      collectionMeansWith(null),
       {
         provide: AccountService,
         useValue: {

@@ -88,6 +88,20 @@ describe('InvoiceDialog', () => {
     expect(means).toContain('figurent sur la facture (PDF)');
   });
 
+  it('une facture réglée par un virement reçu le dit, même ouverte sans sa ligne de liste', async () => {
+    const el = await render(() =>
+      Promise.resolve({
+        ...SEPTEMBER_DETAIL,
+        mandateReference: null,
+        settledByTransferOn: '2026-11-10',
+      }),
+    );
+
+    expect(el.querySelector('[data-invoice-means]')?.textContent).toContain(
+      'Réglée par virement le 10 nov. 2026',
+    );
+  });
+
   it('un PDF rendu se télécharge, nommé d’après le numéro de la pièce', async () => {
     pdf = () => Promise.resolve(new Blob(['%PDF-'], { type: 'application/pdf' }));
     const created = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:facture');

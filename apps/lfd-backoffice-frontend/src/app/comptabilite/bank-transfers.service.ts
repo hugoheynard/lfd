@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import type {
+  BankTransferPreviewView,
   RecordBankTransferPayload,
   RecordedBankTransferView,
   UnpaidTransferInvoicesView,
@@ -42,6 +43,28 @@ export class BankTransfersService {
     return firstValueFrom(
       this.http.get<UnpaidTransferInvoicesView>(
         `${B2B_API_BASE}/admin/accounting/transfer-invoices/unpaid`,
+        { params },
+      ),
+    );
+  }
+
+  /**
+   * `GET admin/accounting/legal-entities/:id/bank-transfers/preview` — l'écart
+   * entre le montant reçu et le reste dû des factures cochées, calculé par la
+   * règle même de la saisie. N'écrit rien ; 409 rédigé pour une facture que
+   * la saisie refuserait.
+   */
+  async preview(
+    legalEntityId: string,
+    amountCents: number,
+    invoiceIds: readonly string[],
+  ): Promise<BankTransferPreviewView> {
+    const params = new HttpParams()
+      .set('amountCents', String(amountCents))
+      .set('invoiceIds', invoiceIds.join(','));
+    return firstValueFrom(
+      this.http.get<BankTransferPreviewView>(
+        `${B2B_API_BASE}/admin/accounting/legal-entities/${encodeURIComponent(legalEntityId)}/bank-transfers/preview`,
         { params },
       ),
     );

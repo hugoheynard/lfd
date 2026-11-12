@@ -13,6 +13,7 @@ import {
 } from 'fold-ng';
 
 import { AccountService } from '../../../../account/account.service';
+import { ClientCollectionMeans } from '../../../client-collection-means.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { panelSide } from '../../../panel-side';
 import {
@@ -83,13 +84,14 @@ export class PaymentPanel {
   protected readonly t = inject(ClientCopyService).t;
   private readonly account = inject(AccountService);
   private readonly ref = inject(FoldPanelRef);
+  private readonly collectionMeans = inject(ClientCollectionMeans);
 
   protected readonly saving = signal(false);
   /** Le message du dernier refus, `null` tant qu'il n'y en a pas. */
   protected readonly refusal = signal<string | null>(null);
 
   protected readonly monthly = computed(() =>
-    monthlyTermView(this.data().monthly, this.t().account),
+    monthlyTermView(this.data().monthly, this.t().account, this.collectionMeans.means()),
   );
 
   protected async request(): Promise<void> {

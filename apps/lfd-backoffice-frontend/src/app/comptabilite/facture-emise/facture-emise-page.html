@@ -172,7 +172,9 @@
               <dd>{{ bill.mentions.earlyPaymentDiscount }}</dd>
               <dt>Règlement</dt>
               <dd data-invoice-means>
-                @if (bill.mandateReference !== null) {
+                @if (bill.settledByTransferOn !== null) {
+                  Réglée par virement le {{ day(bill.settledByTransferOn) }}
+                } @else if (bill.mandateReference !== null) {
                   Prélèvement SEPA, mandat {{ bill.mandateReference }}
                 } @else if (bill.paidOn !== null) {
                   Acquittée par carte le {{ day(bill.paidOn) }}

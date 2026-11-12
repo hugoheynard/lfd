@@ -26,6 +26,30 @@ export const recordBankTransferPayloadSchema = z.strictObject({
 });
 export type RecordBankTransferPayload = z.infer<typeof recordBankTransferPayloadSchema>;
 
+/**
+ * `GET admin/accounting/legal-entities/:id/bank-transfers/preview?amountCents=…&invoiceIds=a,b`
+ * — la forme seulement ; le domaine juge les factures comme à la saisie.
+ */
+export const bankTransferPreviewQuerySchema = z.strictObject({
+  amountCents: z.coerce.number().int(),
+  invoiceIds: z
+    .string()
+    .transform((value) => value.split(",").filter((id) => id !== ""))
+    .pipe(z.array(z.string().min(1)).min(1).max(BANK_TRANSFER_INVOICES_MAX)),
+});
+export type BankTransferPreviewQuery = z.input<typeof bankTransferPreviewQuerySchema>;
+
+/**
+ * L'aperçu d'un virement avant de le saisir, calculé par la règle même de la
+ * saisie : `gapCents` = reçu − reste dû (positif : en trop ; négatif :
+ * manquant). La saisie n'aboutit qu'à écart nul.
+ */
+export interface BankTransferPreviewView {
+  readonly amountCents: number;
+  readonly invoicesDueCents: number;
+  readonly gapCents: number;
+}
+
 /** Ce que rend le geste : l'identifiant du virement saisi. */
 export interface RecordedBankTransferView {
   readonly transferId: string;

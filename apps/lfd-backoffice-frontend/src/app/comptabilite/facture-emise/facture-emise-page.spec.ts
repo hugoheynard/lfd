@@ -84,6 +84,7 @@ function issuedInvoice(over: Partial<IssuedInvoiceView> = {}): IssuedInvoiceView
     },
     mandateReference: 'RUM-PORT-1',
     paidOn: null,
+    settledByTransferOn: null,
     documentAvailable: false,
     ...over,
   };
@@ -172,6 +173,20 @@ describe('FactureEmisePage', () => {
 
     expect(page.querySelector('[data-invoice-means]')?.textContent).toMatch(
       /Acquittée par carte le 28 sept\. 2026/u,
+    );
+  });
+
+  it('une facture réglée par un virement reçu le dit, au jour du virement', async () => {
+    const page = host(
+      await render(() =>
+        Promise.resolve(
+          issuedInvoice({ mandateReference: null, settledByTransferOn: '2026-11-10' }),
+        ),
+      ),
+    );
+
+    expect(page.querySelector('[data-invoice-means]')?.textContent).toMatch(
+      /Réglée par virement le 10 nov\. 2026/u,
     );
   });
 

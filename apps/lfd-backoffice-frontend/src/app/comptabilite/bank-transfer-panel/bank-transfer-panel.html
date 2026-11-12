@@ -34,10 +34,19 @@
     </div>
   </fold-fieldset>
 
+  @if (gapNotice(); as gap) {
+    <fold-callout appearance="inset" [variant]="gap.variant" announce data-transfer-gap>
+      {{ gap.text }}
+    </fold-callout>
+  }
+  @if (previewError(); as message) {
+    <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+  }
+
   <fold-callout appearance="inset" variant="info" data-transfer-rules>
-    Le montant doit égaler le total des factures cochées : sinon, l'enregistrement est refusé et
-    l'écart affiché — ajustez les factures cochées ou le montant. Les paiements partiels ne sont pas
-    pris en charge, et les avoirs ne se déduisent pas encore d'un virement.
+    Le montant doit égaler le total des factures cochées : l'écart s'affiche avant l'enregistrement,
+    qui ne s'ouvre qu'à écart nul. Les paiements partiels ne sont pas pris en charge, et les avoirs
+    ne se déduisent pas encore d'un virement.
   </fold-callout>
 
   @if (mixedEntities()) {

@@ -1,9 +1,16 @@
-import type { Provider, Type } from '@angular/core';
+import { signal, type Provider, type Type } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type { CompanyMemberRole, CompanyView, ContactView, ProfileView } from '@lfd/contracts';
+import type {
+  CollectionMeansName,
+  CompanyMemberRole,
+  CompanyView,
+  ContactView,
+  ProfileView,
+} from '@lfd/contracts';
 import { FoldPanelHostService } from 'fold-ng';
 
 import { AccountService } from '../../account/account.service';
+import { ClientCollectionMeans } from '../client-collection-means.service';
 import { NARROW_QUERY } from '../panel-side';
 
 /**
@@ -111,7 +118,7 @@ export function bootCard<T>(
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [component],
-    providers: [accountWith(companies), ...providers],
+    providers: [accountWith(companies), collectionMeansWith(null), ...providers],
   });
   const fixture = TestBed.createComponent(component);
   fixture.detectChanges();
@@ -141,4 +148,12 @@ export function footButton(host: HTMLElement): HTMLButtonElement {
     throw new Error('Pas de bouton en bas de carte.');
   }
   return button;
+}
+
+/** Le moyen d'encaissement lu pour la société affichée ; `null` : pas encore lu. */
+export function collectionMeansWith(means: CollectionMeansName | null): Provider {
+  return {
+    provide: ClientCollectionMeans,
+    useValue: { means: signal(means), follow: (): void => undefined },
+  };
 }

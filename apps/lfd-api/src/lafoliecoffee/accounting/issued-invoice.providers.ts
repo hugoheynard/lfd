@@ -21,6 +21,7 @@ import { InvoiceFontSource } from "./domain/ports/invoice-font-source.js";
 import { InvoiceMailOrigins } from "./domain/ports/invoice-mail-origins.js";
 import { InvoicePeriodsReader } from "./domain/ports/invoice-periods.reader.js";
 import { InvoiceSettlementFactsReader } from "./domain/ports/invoice-settlement-facts.reader.js";
+import { InvoiceTransferSettlementReader } from "./domain/ports/invoice-transfer-settlement.reader.js";
 import { InvoiceSiteContactsReader } from "./domain/ports/invoice-site-contacts.reader.js";
 import { FflateStoredZipWriter } from "./infrastructure/fflate-stored-zip-writer.js";
 import { PrismaCompanyInvoicesReader } from "./infrastructure/prisma-company-invoices.reader.js";
@@ -28,6 +29,7 @@ import { PrismaCompanyLabelReader } from "./infrastructure/prisma-company-label.
 import { DiskInvoiceFontSource } from "./infrastructure/disk-invoice-font-source.js";
 import { PrismaInvoicePeriodsReader } from "./infrastructure/prisma-invoice-periods.reader.js";
 import { PrismaInvoiceSettlementFactsReader } from "./infrastructure/prisma-invoice-settlement-facts.reader.js";
+import { PrismaInvoiceTransferSettlementReader } from "./infrastructure/prisma-invoice-transfer-settlement.reader.js";
 import { PrismaInvoiceSiteContactsReader } from "./infrastructure/prisma-invoice-site-contacts.reader.js";
 
 /**
@@ -42,6 +44,10 @@ export const ISSUED_INVOICE_PROVIDERS: readonly Provider[] = [
   { provide: StoredZipWriter, useClass: FflateStoredZipWriter },
   { provide: InvoicePeriodsReader, useClass: PrismaInvoicePeriodsReader },
   { provide: InvoiceSettlementFactsReader, useClass: PrismaInvoiceSettlementFactsReader },
+  {
+    provide: InvoiceTransferSettlementReader,
+    useClass: PrismaInvoiceTransferSettlementReader,
+  },
   { provide: InvoiceSiteContactsReader, useClass: PrismaInvoiceSiteContactsReader },
   {
     provide: InvoiceMailOrigins,

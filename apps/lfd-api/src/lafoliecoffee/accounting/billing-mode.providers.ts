@@ -19,6 +19,8 @@ import { PayerStandingsReader } from "./domain/ports/payer-standings.reader.js";
 import { AdminCompanyBillingModeController } from "./http/admin-company-billing-mode.controller.js";
 import { AdminBillingModesController } from "./http/admin-billing-modes.controller.js";
 import { AdminPayerCollectionMeansController } from "./http/admin-payer-collection-means.controller.js";
+import { CompanyCollectionMeansController } from "./http/company-collection-means.controller.js";
+import { GetMyCompanyCollectionMeansHandler } from "./application/queries/get-my-company-collection-means.handler.js";
 import { CancelPayerCollectionMeansHandler } from "./application/commands/cancel-payer-collection-means.handler.js";
 import { SetPayerCollectionMeansHandler } from "./application/commands/set-payer-collection-means.handler.js";
 import { GetPayerCollectionMeansHandler } from "./application/queries/get-payer-collection-means.handler.js";
@@ -74,10 +76,12 @@ export const BILLING_MODE_PROVIDERS: readonly Provider[] = [
   SetPayerCollectionMeansHandler,
   CancelPayerCollectionMeansHandler,
   GetPayerCollectionMeansHandler,
+  GetMyCompanyCollectionMeansHandler,
 ];
 
 export const BILLING_MODE_CONTROLLERS: readonly Type[] = [
   AdminBillingModesController,
   AdminCompanyBillingModeController,
   AdminPayerCollectionMeansController,
+  CompanyCollectionMeansController,
 ];

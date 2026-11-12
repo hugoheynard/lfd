@@ -4,6 +4,7 @@ import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import { InvoiceNotFoundError } from "../../domain/errors/invoice-access-errors.js";
 import { CompanyInvoicesReader } from "../../domain/ports/company-invoices.reader.js";
 import { InvoicePeriodsReader } from "../../domain/ports/invoice-periods.reader.js";
+import { InvoiceTransferSettlementReader } from "../../domain/ports/invoice-transfer-settlement.reader.js";
 import { UnpaidAccessReader } from "../../domain/ports/unpaid-access.reader.js";
 import { ensureInvoiceAccess } from "../../domain/services/invoice-access.js";
 import { invoiceViewOf } from "../issued-invoice-view-support.js";
@@ -23,6 +24,7 @@ export class GetMyCompanyInvoiceHandler implements IQueryHandler<
     private readonly access: UnpaidAccessReader,
     private readonly invoices: CompanyInvoicesReader,
     private readonly periods: InvoicePeriodsReader,
+    private readonly transfers: InvoiceTransferSettlementReader,
   ) {}
 
   async execute(query: GetMyCompanyInvoiceQuery): Promise<IssuedInvoiceView> {
@@ -34,6 +36,6 @@ export class GetMyCompanyInvoiceHandler implements IQueryHandler<
     if (invoice === null) {
       throw new InvoiceNotFoundError(query.invoiceId);
     }
-    return invoiceViewOf(this.periods, invoice);
+    return invoiceViewOf({ periods: this.periods, transfers: this.transfers }, invoice);
   }
 }

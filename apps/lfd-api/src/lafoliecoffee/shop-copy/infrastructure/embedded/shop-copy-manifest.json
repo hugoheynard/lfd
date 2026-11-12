@@ -9808,6 +9808,13 @@
           "variables": []
         },
         {
+          "key": "account.termGrantedTransferSub",
+          "fr": "Paiement au compte, par virement à réception de facture. Nos coordonnées bancaires et la référence à reporter figurent sur chaque facture (PDF).",
+          "en": "Paid on account, by bank transfer on receipt of invoice. Our bank details and the reference to quote are on each invoice (PDF).",
+          "it": "Pagamento su conto, con bonifico al ricevimento della fattura. Le nostre coordinate bancarie e la causale da indicare sono su ogni fattura (PDF).",
+          "variables": []
+        },
+        {
           "key": "account.termRequestedSub",
           "fr": "Demande envoyée : votre commercial la valide.",
           "en": "Request sent: your sales contact will approve it.",
@@ -11495,6 +11502,13 @@
           "fr": "Acquittée par carte le {date}",
           "en": "Paid by card on {date}",
           "it": "Pagata con carta il {date}",
+          "variables": ["date"]
+        },
+        {
+          "key": "account.invoices.settledByTransfer",
+          "fr": "Réglée par virement le {date}",
+          "en": "Paid by bank transfer on {date}",
+          "it": "Pagata con bonifico il {date}",
           "variables": ["date"]
         },
         {

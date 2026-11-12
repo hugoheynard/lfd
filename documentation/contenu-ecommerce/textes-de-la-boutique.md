@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1816 textes
+## Sommaire — 1818 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -42,7 +42,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 282 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 57 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
-| [Mon compte (factures comprises)](#espace-account) | `account` | 530 |
+| [Mon compte (factures comprises)](#espace-account) | `account` | 532 |
 | [Le compte pro — le dictionnaire général](#espace-pro) | `pro` | 8 |
 | [Le compte pro — l’écran](#espace-proaccount) | `proAccount` | 27 |
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
@@ -50,7 +50,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Les cases des e-mails marketing, « Mes e-mails » et le pied de page](#espace-marketingconsent) | `marketingConsent` | 29 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1816** |
+| **Total** | | **1818** |
 
 ## Le parcours de commande
 
@@ -1438,7 +1438,7 @@ Source : `screens/loyalty.copy.ts` · 38 textes.
 
 ### Mon compte (factures comprises) — `account`
 
-Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 530 textes.
+Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 532 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1721,6 +1721,7 @@ Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 
 | `account.deliveryForm.specs.deadlinesNone` | Aucune échéance | No deadline | Nessuna scadenza |  |
 | `account.termMonthly` | Paiement à 30 jours fin de mois | 30 days end of month | Pagamento a 30 giorni fine mese |  |
 | `account.termGrantedSub` | Accordé par votre commercial : vos commandes se règlent en fin de mois. | Granted by your sales contact: your orders are settled at month end. | Concesso dal vostro commerciale: gli ordini si saldano a fine mese. |  |
+| `account.termGrantedTransferSub` | Paiement au compte, par virement à réception de facture. Nos coordonnées bancaires et la référence à reporter figurent sur chaque facture (PDF). | Paid on account, by bank transfer on receipt of invoice. Our bank details and the reference to quote are on each invoice (PDF). | Pagamento su conto, con bonifico al ricevimento della fattura. Le nostre coordinate bancarie e la causale da indicare sono su ogni fattura (PDF). |  |
 | `account.termRequestedSub` | Demande envoyée : votre commercial la valide. | Request sent: your sales contact will approve it. | Richiesta inviata: il vostro commerciale la convalida. |  |
 | `account.termNoneSub` | Sur demande : votre commercial l’accorde société par société. | On request: your sales contact grants it company by company. | Su richiesta: il vostro commerciale lo concede società per società. |  |
 | `account.termSuspendedSub` | Prélèvement mensuel suspendu — vos commandes se règlent par carte. | Monthly direct debit suspended — your orders are paid by card. | Addebito mensile sospeso — gli ordini si pagano con carta. |  |
@@ -1965,6 +1966,7 @@ Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 
 | `account.invoices.payment` | Règlement | Payment | Pagamento |  |
 | `account.invoices.directDebit` | Prélèvement SEPA, mandat {rum} | SEPA direct debit, mandate {rum} | Addebito diretto SEPA, mandato {rum} | `{rum}` |
 | `account.invoices.paidByCard` | Acquittée par carte le {date} | Paid by card on {date} | Pagata con carta il {date} | `{date}` |
+| `account.invoices.settledByTransfer` | Réglée par virement le {date} | Paid by bank transfer on {date} | Pagata con bonifico il {date} | `{date}` |
 | `account.invoices.byTransfer` | Paiement au compte, par virement à réception de facture — référence à reporter : {reference}. Nos coordonnées bancaires figurent sur la facture (PDF). | Paid on account, by bank transfer on receipt of invoice — reference to quote: {reference}. Our bank details are on the invoice (PDF). | Pagamento su conto, con bonifico al ricevimento della fattura — causale da indicare: {reference}. Le nostre coordinate bancarie sono sulla fattura (PDF). | `{reference}` |
 | `account.invoices.orders` | Commandes facturées | Invoiced orders | Ordini fatturati |  |
 | `account.invoices.received` | reçue le {date} | received on {date} | ricevuta il {date} | `{date}` |

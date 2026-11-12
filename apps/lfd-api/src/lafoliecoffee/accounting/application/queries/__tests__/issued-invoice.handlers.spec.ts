@@ -12,6 +12,7 @@ import {
   SEPTEMBER_2026,
   FixedRoles,
   FixedSettlementFacts,
+  FixedTransferSettlements,
   MemoryCompanyInvoices,
   MemoryInvoiceReader,
 } from "../../services/__tests__/issued-invoice-doubles.js";
@@ -50,6 +51,9 @@ const OTHER_PAYER = Invoice.issue(
 
 const invoices = new MemoryInvoiceReader([SEPTEMBER, OCTOBER, OTHER_PAYER]);
 const periods = new FixedInvoicePeriods(new Map([["inv_1", SEPTEMBER_2026]]));
+/** `inv_2` réglée par un virement reçu ; les autres, non. */
+const TRANSFER_DAY = "2026-11-10";
+const transfers = new FixedTransferSettlements(new Map([["inv_2", TRANSFER_DAY]]));
 const roles = new FixedRoles(
   new Map([
     ["u_owner:c_port", "owner"],
@@ -84,7 +88,7 @@ describe("« Mes factures » côté client (E6)", () => {
     new FixedSettlementFacts(),
     CLOCK,
   );
-  const read = new GetMyCompanyInvoiceHandler(roles, visible, periods);
+  const read = new GetMyCompanyInvoiceHandler(roles, visible, periods, transfers);
 
   it("le détenteur et le rôle facturation voient les pièces adressées à leur société, récentes d'abord", async () => {
     for (const user of ["u_owner", "u_compta"]) {
@@ -166,7 +170,7 @@ describe("« Mes factures » d'un site (E6, suite (a))", () => {
     new FixedSettlementFacts(),
     CLOCK,
   );
-  const read = new GetMyCompanyInvoiceHandler(roles, siteVisible, periods);
+  const read = new GetMyCompanyInvoiceHandler(roles, siteVisible, periods, transfers);
 
   it("voit, en lecture, les pièces de sa maison mère qui couvrent un de ses bons", async () => {
     const view = await list.execute(new ListMyCompanyInvoicesQuery("u_site", "c_site"));
@@ -277,12 +281,35 @@ describe("les factures depuis le back-office (E6)", () => {
     );
     expect(list.invoices.map((invoice) => invoice.number)).toEqual(["FA-LFD-2026-000003"]);
 
-    const one = await new GetIssuedInvoiceHandler(invoices, periods).execute(
+    const one = await new GetIssuedInvoiceHandler(invoices, periods, transfers).execute(
       new GetIssuedInvoiceQuery("inv_3"),
     );
     expect(one.payerCompanyId).toBe("c_other");
     await expect(
-      new GetIssuedInvoiceHandler(invoices, periods).execute(new GetIssuedInvoiceQuery("absente")),
+      new GetIssuedInvoiceHandler(invoices, periods, transfers).execute(
+        new GetIssuedInvoiceQuery("absente"),
+      ),
     ).rejects.toBeInstanceOf(InvoiceNotFoundError);
+  });
+});
+
+describe("« Réglée par virement le … » dans la vue d'une pièce (V7)", () => {
+  it("le back-office lit le jour du virement reçu qui règle la facture, et null sinon", async () => {
+    const handler = new GetIssuedInvoiceHandler(invoices, periods, transfers);
+
+    expect((await handler.execute(new GetIssuedInvoiceQuery("inv_2"))).settledByTransferOn).toBe(
+      TRANSFER_DAY,
+    );
+    expect(
+      (await handler.execute(new GetIssuedInvoiceQuery("inv_1"))).settledByTransferOn,
+    ).toBeNull();
+  });
+
+  it("le client lit le même jour dans sa facture", async () => {
+    const handler = new GetMyCompanyInvoiceHandler(roles, visible, periods, transfers);
+
+    const view = await handler.execute(new GetMyCompanyInvoiceQuery("u_owner", "c_port", "inv_2"));
+
+    expect(view.settledByTransferOn).toBe(TRANSFER_DAY);
   });
 });

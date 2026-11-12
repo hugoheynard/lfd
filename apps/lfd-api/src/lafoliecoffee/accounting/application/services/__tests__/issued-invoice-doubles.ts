@@ -9,6 +9,7 @@ import {
   InvoiceSettlementFactsReader,
   type InvoiceCollectionFacts,
 } from "../../../domain/ports/invoice-settlement-facts.reader.js";
+import { InvoiceTransferSettlementReader } from "../../../domain/ports/invoice-transfer-settlement.reader.js";
 import type { BillingCycle } from "../../../domain/services/billing-cycle.js";
 import { InvoiceReader } from "../../../domain/ports/invoice.reader.js";
 import { PayerNoticeContactsReader } from "../../../domain/ports/payer-notice-contacts.reader.js";
@@ -102,6 +103,16 @@ export class FixedSettlementFacts extends InvoiceSettlementFactsReader {
     return Promise.resolve(
       new Map([...this.facts].filter(([invoiceId]) => invoiceIds.includes(invoiceId))),
     );
+  }
+}
+
+/** Le jour du virement reçu qui règle chaque pièce ; aucune par défaut. */
+export class FixedTransferSettlements extends InvoiceTransferSettlementReader {
+  constructor(private readonly days: ReadonlyMap<string, string> = new Map()) {
+    super();
+  }
+  receivedOnOf(invoiceId: string): Promise<string | null> {
+    return Promise.resolve(this.days.get(invoiceId) ?? null);
   }
 }
 

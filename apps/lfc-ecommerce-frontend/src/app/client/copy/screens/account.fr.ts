@@ -293,6 +293,8 @@ export const ACCOUNT_FR: AccountCopy = {
   },
   termMonthly: 'Paiement à 30 jours fin de mois',
   termGrantedSub: 'Accordé par votre commercial : vos commandes se règlent en fin de mois.',
+  termGrantedTransferSub:
+    'Paiement au compte, par virement à réception de facture. Nos coordonnées bancaires et la référence à reporter figurent sur chaque facture (PDF).',
   termRequestedSub: 'Demande envoyée : votre commercial la valide.',
   termNoneSub: 'Sur demande : votre commercial l’accorde société par société.',
   termSuspendedSub: 'Prélèvement mensuel suspendu — vos commandes se règlent par carte.',

@@ -143,10 +143,16 @@ export class InvoiceDialog {
   }
 
   /**
-   * Le règlement figé : le prélèvement et sa RUM, la carte qui l'a acquittée
-   * (E5a), ou le virement attendu et la référence à reporter.
+   * Le règlement : le virement reçu qui l'a réglée (servi sur la pièce, d'où
+   * qu'on l'ouvre), le virement attendu et la référence à reporter, le
+   * prélèvement et sa RUM, ou la carte qui l'a acquittée (E5a).
    */
   protected means(bill: IssuedInvoiceView): string {
+    if (bill.settledByTransferOn !== null) {
+      return fill(this.copy().settledByTransfer, {
+        date: invoiceDay(bill.settledByTransferOn, this.locale()),
+      });
+    }
     const status = this.data().settlement?.status;
     if (status !== undefined && TRANSFER_PENDING.has(status)) {
       return fill(this.copy().byTransfer, { reference: bill.number });

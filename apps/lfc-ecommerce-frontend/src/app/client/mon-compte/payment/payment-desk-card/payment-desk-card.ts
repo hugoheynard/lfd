@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { FoldBadgeComponent, FoldButtonComponent, FoldPanelHostService } from 'fold-ng';
 
+import { ClientCollectionMeans } from '../../../client-collection-means.service';
 import { ClientCompany } from '../../../client-company.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { PaymentPanel } from '../payment-panel/payment-panel';
@@ -27,10 +28,15 @@ import { canRequestMonthly, monthlyTermState, monthlyTermView } from '../payment
 export class PaymentDeskCard {
   protected readonly t = inject(ClientCopyService).t;
   private readonly client = inject(ClientCompany);
+  private readonly collectionMeans = inject(ClientCollectionMeans);
   private readonly panels = inject(FoldPanelHostService);
 
   protected readonly monthly = computed(() =>
-    monthlyTermView(monthlyTermState(this.client.company()), this.t().account),
+    monthlyTermView(
+      monthlyTermState(this.client.company()),
+      this.t().account,
+      this.collectionMeans.means(),
+    ),
   );
 
   protected readonly canRequest = computed(() => canRequestMonthly(this.client.company()));

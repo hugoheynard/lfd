@@ -101,15 +101,11 @@ export class ReceivedBankTransfer {
     by: RecordedBy,
   ): ReceivedBankTransfer {
     const reference = assertEntry(entry, by.today);
-    const chosen = chosenInvoices(entry.invoiceIds, invoices, by.legalEntityId);
-    const [first] = chosen;
-    if (first === undefined) {
-      throw new InvalidBankTransferError("choisir au moins une facture.");
-    }
-    for (const invoice of chosen) {
-      assertSettleable(invoice, first.payerCompanyId);
-    }
-    const due = chosen.reduce((sum, invoice) => sum + invoice.remainingCents, 0);
+    const {
+      chosen,
+      first,
+      dueCents: due,
+    } = judgeInvoices(entry.invoiceIds, invoices, by.legalEntityId);
     if (due !== entry.amountCents) {
       throw new BankTransferAmountMismatchError(entry.amountCents, due);
     }
@@ -141,11 +137,72 @@ export class ReceivedBankTransfer {
   }
 }
 
-/** Rend la référence nettoyée. */
-function assertEntry(entry: BankTransferEntry, today: string): string {
-  if (!Number.isSafeInteger(entry.amountCents) || entry.amountCents <= 0) {
+/**
+ * **L'aperçu d'un virement** avant de le saisir (décision (a) de la nuit du
+ * 2026-11-12) : le reste dû des factures choisies, le montant reçu et l'écart.
+ * Mêmes refus que `ReceivedBankTransfer.record` sur les factures, et la MÊME
+ * somme (`judgeInvoices`) : l'écran voit l'écart que la saisie refuserait,
+ * jamais un autre. N'écrit rien et ne refuse pas un écart : il le dit.
+ *
+ * @throws {InvalidBankTransferError} montant non positif, facture citée deux fois ou aucune.
+ * @throws les refus de facture de `ReceivedBankTransfer.record`.
+ */
+export function previewBankTransfer(
+  amountCents: number,
+  invoiceIds: readonly string[],
+  invoices: readonly TransferInvoice[],
+  legalEntityId: string,
+): BankTransferPreview {
+  assertAmount(amountCents);
+  assertDistinct(invoiceIds);
+  const { dueCents } = judgeInvoices(invoiceIds, invoices, legalEntityId);
+  return { amountCents, invoicesDueCents: dueCents, gapCents: amountCents - dueCents };
+}
+
+/** Ce que l'aperçu rend : `gapCents` positif = reçu en trop, négatif = manquant. */
+export interface BankTransferPreview {
+  readonly amountCents: number;
+  readonly invoicesDueCents: number;
+  readonly gapCents: number;
+}
+
+/** Les factures choisies, jugées réglables par un même virement, et leur reste dû total. */
+function judgeInvoices(
+  ids: readonly string[],
+  invoices: readonly TransferInvoice[],
+  legalEntityId: string,
+): {
+  readonly chosen: readonly TransferInvoice[];
+  readonly first: TransferInvoice;
+  readonly dueCents: number;
+} {
+  const chosen = chosenInvoices(ids, invoices, legalEntityId);
+  const [first] = chosen;
+  if (first === undefined) {
+    throw new InvalidBankTransferError("choisir au moins une facture.");
+  }
+  for (const invoice of chosen) {
+    assertSettleable(invoice, first.payerCompanyId);
+  }
+  const dueCents = chosen.reduce((sum, invoice) => sum + invoice.remainingCents, 0);
+  return { chosen, first, dueCents };
+}
+
+function assertAmount(amountCents: number): void {
+  if (!Number.isSafeInteger(amountCents) || amountCents <= 0) {
     throw new InvalidBankTransferError("le montant doit être un nombre positif de centimes.");
   }
+}
+
+function assertDistinct(invoiceIds: readonly string[]): void {
+  if (new Set(invoiceIds).size !== invoiceIds.length) {
+    throw new InvalidBankTransferError("une facture est citée deux fois.");
+  }
+}
+
+/** Rend la référence nettoyée. */
+function assertEntry(entry: BankTransferEntry, today: string): string {
+  assertAmount(entry.amountCents);
   if (!DAY.test(entry.receivedOn) || Number.isNaN(Date.parse(entry.receivedOn))) {
     throw new InvalidBankTransferError(
       `le jour de réception « ${entry.receivedOn} » n'est pas une date.`,
@@ -162,9 +219,7 @@ function assertEntry(entry: BankTransferEntry, today: string): string {
       `la référence lue sur le relevé est obligatoire, ${TRANSFER_REFERENCE_MAX} caractères au plus.`,
     );
   }
-  if (new Set(entry.invoiceIds).size !== entry.invoiceIds.length) {
-    throw new InvalidBankTransferError("une facture est citée deux fois.");
-  }
+  assertDistinct(entry.invoiceIds);
   return reference;
 }
 

@@ -127,6 +127,12 @@ export interface IssuedInvoiceView extends IssuedInvoiceSummaryView {
    * ACQUITTÉE (lot E5a, BT-113). `null` : rien n'était payé à l'émission.
    */
   readonly paidOn: string | null;
+  /**
+   * Le jour de réception (`AAAA-MM-JJ`, lu sur le relevé) du virement reçu
+   * qui l'a réglée en entier (V7) : « Réglée par virement le … ». `null` :
+   * aucun virement reçu ne la règle.
+   */
+  readonly settledByTransferOn: string | null;
 }
 
 /**
