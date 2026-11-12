@@ -176,4 +176,51 @@ e-mail.
   fiche lue est conditionnée, pour ne pas casser la règle « deux gestes sur
   des colonnes différentes gardent chacun le leur » — `c137414e2`.
 
+- Fiche client périmée — `c137414e2` (avec un `lock_timeout` de 5 s ajouté
+  à sa migration).
+- Idempotence J4 (porte resserrée, 62 exceptions datées et justifiées) —
+  `0c8196adc` ; J5 (porte côté écrans, un vrai défaut trouvé : un gabarit
+  tarifaire neuf était toujours refusé) — `a079267d8`.
+- Virement T4 (écran « Moyens de paiement ») et T5 (boutique, facture) —
+  `d7161d4a0`.
+
+### Audit du système de garantie de l'idempotence (relecteur indépendant, au commit `a079267d8`)
+
+**Verdict** : le registre arrête un doublon séquentiel et deux appels
+simultanés **sur la même clé** (index unique `(actor_id, key)`, scellement
+dans la transaction de l'écriture, 80 routes sur 93 rejouées par l'e2e). Les
+549 routes « par nature » ne tiennent que par une raison déclarée ; J4 ne
+contrôle que les `POST`.
+
+**Garanti** : rejeu séquentiel d'une route par intention ; deux requêtes
+simultanées avec la même clé (la seconde : 409 « en vol ») ; la clé d'un
+autre acteur ne rejoue rien (clé propre à l'acteur) ; la même clé sur un
+autre geste ou un autre sujet → 409.
+
+**Échappe, et c'est écrit** : écritures hors HTTP (abonnés, crons) ; effets
+chez un tiers (clé du fournisseur, outbox) ; 4 risques assumés en `run`
+(société créée, titulaire rattaché, membre invité, lien de mot de passe) ;
+13 routes sans scénario de rejeu ; 6 routes que la porte front ne lit pas ;
+un rejeu après la purge de 7 jours ; les services injectés que la porte ne
+suit pas.
+
+**Failles trouvées (SÉRIEUX), traitées cette nuit (§ suivant)** :
+
+- **F1** — une même clé renvoyée avec un **autre contenu** est rejouée en
+  silence dans 57 gestes sur 93 (le sujet n'est qu'un identifiant). Exemple :
+  un virement enregistré dont la réponse se perd, montant corrigé et renvoyé :
+  l'écran affiche un succès, **le montant corrigé n'est jamais écrit**.
+- **F2** — un geste scellé plus long que le bail de 2 min peut s'écrire deux
+  fois : la résolution perdante ne touche aucune ligne et n'échoue pas.
+- **F3** — des exceptions « transition refusée avant écriture » ne tiennent
+  qu'en séquence : pause / reprise / archivage d'une promotion, appliquer /
+  ignorer une suggestion de point d'adresse (lecture puis écriture sans verrou).
+- **F4** — l'inviter-un-membre-du-staff est rangé « par intention » alors
+  qu'il est en `run` (la porte ne suit pas le service qui écrit).
+
+**Mineur** : 62 exceptions et non 61 ; aucun e2e concurrent sur Postgres réel
+(« en vol », « mismatch ») ; `mail-check` devrait être un risque assumé
+nommé, pas une exception (à trancher) ; la porte des transactions directes
+raisonne par fichier.
+
 (suite au fil de la nuit)
