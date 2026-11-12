@@ -1,6 +1,6 @@
 # Plan — chaque écriture dit pourquoi un rejeu ne la refait pas
 
-> 📐 **Plan, 2026-11-12.** Rien n'est bâti. Demande de Hugo : « est-ce qu'on a
+> 📐 **Plan, 2026-11-12.** J0 bâti le 2026-11-12 (§ 4) ; J1 et J2 restent à faire. Demande de Hugo : « est-ce qu'on a
 > une porte pour garantir l'idempotence de toutes les actions d'écriture ? ».
 > Réponse vérifiée ce jour-là : non. Touche une frontière transverse et, sur
 > les routes de paiement, l'argent : passe par `vitruve` avant Hugo.
@@ -73,18 +73,33 @@ contrôleur → commande → handler que `intent-key-gestures`).
 
 ## 4. Le bâti
 
-### J0 — la porte et l'inventaire
+### J0 — la porte et l'inventaire ✅ bâti le 2026-11-12
 
-- `dev-toolbox/gates/write-idempotence.mjs`, inscrite dans
-  `lint/lint-backend.json` (`pnpm gate write-idempotence`) et au compte du
-  `CLAUDE.md` §10.
-- Le décorateur `@Idempotent(reason: string)` dans
-  `platform/shared/http/`, sans effet à l'exécution : il porte la raison
-  pour la porte et pour le lecteur.
+- `dev-toolbox/gates/write-idempotence.mjs` (`pnpm gate write-idempotence`),
+  inscrite dans `lint/lint-backend.json` et au compte du `CLAUDE.md` § 10.
+  Tests : `node --test dev-toolbox/__tests__/write-idempotence.test.mjs`.
+- `@Idempotent(reason)` (`apps/lfd-api/src/platform/shared/http/idempotent.decorator.ts`),
+  sans effet à l'exécution : il porte la raison pour la porte et pour le
+  lecteur. Il sert les cases « par nature », « par sa propre clé », « par la
+  machine » et les webhooks ; la porte vérifie que la raison existe, pas
+  qu'elle est vraie, et ne distingue pas ces cases entre elles (elle compte
+  à part celles sous `RecomputeGuard`).
+- La case « par intention » : `@IntentKey()` dans la signature, et le handler
+  atteint appelle `runSealed` — ou `run` si le handler n'injecte ni
+  `UnitOfWork`, ni `PrismaService`, ni un `*Repository` / `*Store` /
+  `*Writer`, et n'appelle ni `.save(` ni `$transaction(`. Le handler se
+  résout sans liste : `new X(...)` passé à `.execute(` (y compris dans une
+  méthode voisine appelée par `this.x(`), l'import de X, puis la classe
+  `@CommandHandler(X)` qui importe X du même fichier (repli : par le nom,
+  s'il n'a qu'un handler).
 - La liste de dette `dev-toolbox/gates/write-idempotence-debt.json` : chaque
-  route non rangée, par fichier et méthode. Une entrée rangée qui reste
-  inscrite échoue ; une route nouvelle non rangée échoue.
-- Rien ne change à l'exécution.
+  route non rangée, par fichier et méthode, régénérée par
+  `node dev-toolbox/gates/write-idempotence.mjs --write-debt`. Une entrée
+  rangée ou disparue qui reste inscrite échoue ; une route ni rangée ni
+  inscrite échoue ; `@Idempotent` sans raison échoue ; `runSealed` dans un
+  fichier qui ouvre `$transaction(` en direct échoue.
+- Au 2026-11-12 : 638 routes d'écriture, 12 rangées par intention, 626 en
+  dette. Rien ne change à l'exécution.
 
 ### J1 — les routes à risque d'abord
 
@@ -169,3 +184,13 @@ Elles font foi sur ce qui précède.
   vise, et un bail par geste au lieu de deux minutes fixes (lot de factures).
 - Comptes corrigés : 10 contrôleurs portent `@IntentKey()` ; 15 handlers
   appellent `OncePerIntent` (12 `run`, 3 `runSealed`).
+
+### Limite connue de J0 (2026-11-12)
+
+L'heuristique « `run` admis si le handler n'écrit pas » ne lit que ce que le
+handler injecte. `invite-staff-user.handler.ts` délègue à `OpenStaffAccess`,
+qui écrit sous sa propre transaction : la porte le range « par intention »
+alors qu'il n'est pas scellé. Les quatre gestes non scellés (invitation
+staff, invitation d'un membre, création d'un client par l'équipe,
+rattachement du titulaire) attendent la décision de Hugo sur l'e-mail par la
+boîte d'envoi ; la porte les rendra justes en les basculant.

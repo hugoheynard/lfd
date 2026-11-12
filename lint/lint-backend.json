@@ -203,6 +203,13 @@
       "watch": ["apps/lfd-api/src/**"]
     },
     {
+      "name": "write-idempotence",
+      "script": "dev-toolbox/gates/write-idempotence.mjs",
+      "holds": "Chaque route d'écriture dit pourquoi un rejeu ne la refait pas (@Idempotent avec raison, ou @IntentKey et un handler en runSealed), ou figure dans une dette comptée qui ne peut que décroître.",
+      "since": "2026-11-12",
+      "watch": ["apps/lfd-api/src/**", "dev-toolbox/gates/write-idempotence-debt.json"]
+    },
+    {
       "name": "mail-key-no-pii",
       "script": "dev-toolbox/gates/mail-key-no-pii.mjs",
       "holds": "Aucune clé d'idempotence d'e-mail n'est construite avec une adresse.",
