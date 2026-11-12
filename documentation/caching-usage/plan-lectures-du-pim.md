@@ -91,7 +91,13 @@ alertes) et les référentiels (familles, taux de TVA avec leur usage,
 contextes de vente, appellations, ingrédients, allergènes) sont rangés dans
 l'objet partagé sous le numéro `pim`, par le même port générique « contenu
 versionné ». Tant que le numéro ne bouge pas, tous les postes les reçoivent
-sans toucher la base ; ce qu'un droit réserve n'est jamais rangé. Les stores
+sans toucher la base ; ce qu'un droit réserve n'est jamais rangé.
+**Le détail d'une fiche** (décidé par Hugo le 2026-11-12) y entre aussi, sous
+la clé (produit, numéro `pim`) : une fiche rouverte, par soi ou par un
+collègue, ne relit pas la base tant que le numéro n'a pas bougé. Au bâti :
+vérifier que le détail est le même pour tout lecteur du PIM (rien qui dépende
+de l'appelant), borner le nombre de fiches gardées dans l'objet (les moins
+récemment servies sortent) et ne garder que la dernière version par fiche. Les stores
 de l'onglet gardent la copie et son numéro, et ne forcent plus de relecture.
 
 ## 5. Le bâti et la mesure
