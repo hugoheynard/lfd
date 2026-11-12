@@ -44,7 +44,7 @@ export class SetSiteColorsHandler implements ICommandHandler<SetSiteColorsComman
     const transfer = payload.transferColor;
     const givenTransfer = transfer === undefined ? undefined : colorOf(transfer);
     await this.uow.run(async () => {
-      const site = await this.sites.load(command.siteId);
+      const site = await this.sites.loadLocked(command.siteId);
       if (site === null) {
         throw new PickupAddressNotFoundError(command.siteId);
       }

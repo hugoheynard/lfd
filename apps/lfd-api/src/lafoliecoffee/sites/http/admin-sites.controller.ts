@@ -134,7 +134,7 @@ export class AdminSitesController {
   @Put(":id/roles")
   @HttpCode(HttpStatus.NO_CONTENT)
   @Idempotent(
-    "pose les rôles en bloc : rejouée, la même requête les trouve identiques, point compris (Site.assignRoles rend false), et rien n'est écrit, journalisé ni purgé",
+    "pose les rôles en bloc sur le site relu sous le verrou de sa ligne (FOR UPDATE) : rejouée, la même requête les trouve identiques, point compris (Site.assignRoles rend false), et rien n'est écrit, journalisé ni purgé ; un archivage simultané se joue avant ou après, jamais écrasé",
   )
   async setRoles(
     @Param("id") id: string,
@@ -147,7 +147,7 @@ export class AdminSitesController {
   @Put(":id/couleurs")
   @HttpCode(HttpStatus.NO_CONTENT)
   @Idempotent(
-    "pose les couleurs en bloc : rejouées, l'agrégat les trouve identiques et rien n'est écrit, journalisé ni purgé",
+    "pose les couleurs en bloc sur le site relu sous le verrou de sa ligne (FOR UPDATE) : rejouées, l'agrégat les trouve identiques et rien n'est écrit, journalisé ni purgé ; un archivage simultané se joue avant ou après, jamais écrasé",
   )
   async setColors(
     @Param("id") id: string,

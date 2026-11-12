@@ -45,7 +45,7 @@ export class SetSiteRolesHandler implements ICommandHandler<SetSiteRolesCommand,
    */
   async execute(command: SetSiteRolesCommand): Promise<void> {
     await this.uow.run(async () => {
-      const site = await this.sites.load(command.siteId);
+      const site = await this.sites.loadLocked(command.siteId);
       if (site === null) {
         throw new PickupAddressNotFoundError(command.siteId);
       }

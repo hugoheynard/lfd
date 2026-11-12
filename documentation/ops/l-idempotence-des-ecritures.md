@@ -287,7 +287,8 @@ clé de l'écran.
 - **Deux clics simultanés sur un geste « par nature » sans verrou** : la raison
   tient en séquence. Les transitions inscrites en exception relisent sous
   verrou (promotions, sites, attestations, liens de paiement, suggestions de
-  point d'adresse) ; les poses « en bloc » ne le font pas (§ 8).
+  point d'adresse) ; les poses « en bloc » d'un site (couleurs, rôles) aussi,
+  si bien qu'un archivage simultané n'est jamais écrasé (`sites.e2e-spec.ts`).
 - **Un rejeu après la purge** (7 jours) : la clé n'est plus reconnue, le geste
   se refait.
 - **Les limites des portes** :
@@ -347,11 +348,6 @@ aujourd'hui :
   clic et ne protège que le renvoi réseau de la même requête. À reprendre si
   la brique gagne une clé « par geste » nommée ; sa route reste aussi dans la
   dette du rejeu.
-- **Les poses en bloc sans verrou** — `admin-sites.controller.ts#setColors` et
-  `#setRoles` (`set-site-colors.handler.ts`, `set-site-roles.handler.ts` : ni
-  verrou ni `FOR UPDATE`, vérifié le 2026-11-12) : deux poses identiques
-  simultanées lisent toutes deux l'ancien état et peuvent journaliser deux
-  fois ; deux poses différentes, la dernière gagne.
 - **La dette du rejeu** : 13 routes sans scénario (§ 5), plafond qui ne fait
   que baisser.
 - **`e2e:rebalance`** (`pnpm --filter lfd-api e2e:rebalance`) : l'e2e du rejeu

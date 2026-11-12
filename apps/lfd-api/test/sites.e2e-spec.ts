@@ -305,6 +305,33 @@ describe("admin/sites — archiver", () => {
     const response = await staff().post(`/admin/sites/${bakery}/archive`);
     expect(response.status).toBe(409);
   });
+
+  /**
+   * Régression : les couleurs et les rôles relisaient le site sans verrou puis
+   * le réécrivaient en entier — un archivage simultané était écrasé.
+   */
+  it("un archivage et une pose de couleurs ou de rôles simultanés : le site reste archivé", async () => {
+    await create("Fournil");
+    const villages = await Promise.all(["A", "B", "C", "D"].map((n) => create(`Village ${n}`)));
+
+    await Promise.all(
+      villages.flatMap((id, index) => [
+        staff().post(`/admin/sites/${id}/archive`),
+        index % 2 === 0
+          ? staff()
+              .put(`/admin/sites/${id}/couleurs`)
+              .send({ ...NO_COLORS, pickupColorB2b: "#123456" })
+          : staff()
+              .put(`/admin/sites/${id}/roles`)
+              .send({ ...ROLES, counterSetupMinutes: 5 }),
+      ]),
+    );
+
+    for (const id of villages) {
+      expect((await site(id)).archivedAt).not.toBeNull();
+    }
+    expect(await publicLabels()).toEqual(["Fournil"]);
+  });
 });
 
 describe("admin/sites — le droit", () => {

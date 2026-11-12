@@ -276,6 +276,6 @@ raisonne par fichier.
 - Lot 2 des journées (prévu avec Hugo).
 - Mesure avant/après des requêtes ; test de la saisie dans un panneau
   pendant une relecture.
-- Couleurs et rôles d'un site réécrits sans verrou (même risque que
-  l'archivage) ; moyen d'encaissement figé dans la vue de la facture.
+- ~~Couleurs et rôles d'un site réécrits sans verrou~~ — fait le 2026-11-13
+  (`loadLocked`, e2e concurrent dans `sites.e2e-spec.ts`, non commité) ; moyen d'encaissement figé dans la vue de la facture.
 - `e2e:rebalance` (durées des suites neuves ajoutées à la main).
