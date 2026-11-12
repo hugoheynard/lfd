@@ -14,7 +14,7 @@ import type {
 } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
-import { ReferenceApi } from '../catalogue/reference-api';
+import { AllergenReferenceStore } from '../catalogue/allergen-reference-store';
 import { API_BASE_URL } from '../data/api';
 import { ListLoadState } from '../data/list-load-state';
 
@@ -41,15 +41,15 @@ const INGREDIENT_ALLERGEN_SCOPE: AllergenScope = 'world';
  * le premier évite d'offrir un bouton qui répondrait 403.
  *
  * Il sert enfin le **référentiel allergènes** au panneau ingrédient, par
- * {@link ReferenceApi} plutôt qu'en tapant l'URL lui-même : `/reference/*` a
- * déjà son client, et le recopier ici ferait deux endroits à corriger le jour
- * où la route bouge.
+ * {@link AllergenReferenceStore} plutôt qu'en tapant l'URL lui-même : le
+ * référentiel a déjà son client, lu une fois par session et partagé avec la
+ * fiche produit.
  */
 @Injectable({ providedIn: 'root' })
 export class ProvenanceStore {
   private readonly http = inject(HttpClient);
   private readonly base = inject(API_BASE_URL);
-  private readonly reference = inject(ReferenceApi);
+  private readonly reference = inject(AllergenReferenceStore);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   private readonly appellationState = signal<AppellationView[]>([]);

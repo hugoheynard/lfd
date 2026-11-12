@@ -64,6 +64,9 @@ export class IngredientController {
   }
 
   @Post("ingredients")
+  @Idempotent(
+    "par unicité : la clé d'un ingrédient est unique ; rejouée, la création est refusée (409 IngredientKeyTakenError) avant toute écriture",
+  )
   async createIngredient(
     @Body(new ZodBody(createIngredientPayloadSchema)) body: CreateIngredientPayload,
   ) {

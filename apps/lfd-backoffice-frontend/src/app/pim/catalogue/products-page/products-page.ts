@@ -113,12 +113,13 @@ export class ProductsPage {
   protected readonly rates = signal<VatRate[]>([]);
   protected readonly query = signal('');
 
-  /** Les constats de conformité, par fiche — le jugement du serveur, lu tel quel. */
-  private readonly findings = signal<ReadonlyMap<string, readonly ProductComplianceFinding[]>>(
-    new Map(),
+  /**
+   * Les constats de conformité, par fiche — le jugement du serveur, rendu dans
+   * chaque ligne de la liste et lu tel quel : pas de seconde lecture.
+   */
+  private readonly findings = computed<ReadonlyMap<string, readonly ProductComplianceFinding[]>>(
+    () => findingsByProduct(this.products()),
   );
-  /** Échec PARTIEL : la liste reste, seuls les constats manquent. */
-  protected readonly complianceError = signal<string | null>(null);
   protected readonly page = signal(1);
   protected readonly pageSize = signal(25);
 
@@ -548,19 +549,6 @@ export class ProductsPage {
       this.categories.set(categories.filter((category) => !category.isArchived));
     } catch (caught) {
       this.error.set(failureMessageOf(caught));
-    }
-    await this.reloadCompliance();
-  }
-
-  /** Rien n'est appliqué en cas d'échec : les badges gardent ce qu'ils avaient. */
-  private async reloadCompliance(): Promise<void> {
-    try {
-      this.findings.set(findingsByProduct(await this.api.listComplianceWarnings()));
-      this.complianceError.set(null);
-    } catch (caught) {
-      this.complianceError.set(
-        `Les constats de conformité n'ont pas pu être lus : ${failureMessageOf(caught)}`,
-      );
     }
   }
 }

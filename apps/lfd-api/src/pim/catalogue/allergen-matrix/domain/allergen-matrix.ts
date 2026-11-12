@@ -4,11 +4,7 @@ import type { AllergenCategoryView } from "../../../allergens/domain/ports/aller
 import { IncoProjector } from "../../../allergens/domain/services/inco-projector.js";
 import type { IncoCategory } from "../../../allergens/domain/value-objects/inco-category.js";
 import { CategoryNotFoundError } from "../../category/domain/errors/category-errors.js";
-import {
-  isLiveStatus,
-  type ProductRecord,
-  type VariantRecord,
-} from "../../product/domain/ports/product.repository.js";
+import { isLiveStatus } from "../../product/domain/ports/product.repository.js";
 import type { LocalizedText } from "../../shared/domain/value-objects/localized-text.js";
 import {
   judgeDeclaration,
@@ -18,7 +14,11 @@ import {
   type MatrixRanking,
   type MatrixRowState,
 } from "./matrix-row.js";
-import type { MatrixFamilyRecord } from "./ports/allergen-matrix.source.js";
+import type {
+  MatrixFamilyRecord,
+  MatrixProductRecord,
+  MatrixVariantRecord,
+} from "./ports/allergen-matrix.source.js";
 
 export type MatrixScope = "published" | "all";
 
@@ -61,7 +61,7 @@ export interface AllergenMatrix {
 
 export interface MatrixInput {
   readonly referential: readonly AllergenCategoryView[];
-  readonly products: readonly ProductRecord[];
+  readonly products: readonly MatrixProductRecord[];
   readonly families: readonly MatrixFamilyRecord[];
   readonly filters: MatrixFilters;
 }
@@ -135,7 +135,7 @@ function mentionsTranslated(columns: readonly AllergenCategoryView[], locale: Lo
 }
 
 function inScope(
-  product: ProductRecord,
+  product: MatrixProductRecord,
   filters: MatrixFilters,
   wanted: ReadonlySet<string> | null,
 ): boolean {
@@ -215,7 +215,7 @@ function alphabetical(left: string, right: string): number {
  *
  * @throws {CategoryNotFoundError} le filtre vise une famille inconnue.
  */
-export function retainedProducts(input: MatrixInput): ProductRecord[] {
+export function retainedProducts(input: MatrixInput): MatrixProductRecord[] {
   const { filters } = input;
   if (filters.categoryId !== null && !input.families.some((f) => f.id === filters.categoryId)) {
     throw new CategoryNotFoundError(filters.categoryId);
@@ -229,14 +229,14 @@ function nameOf(text: LocalizedText, locale: Locale): string {
 }
 
 /** Q1 : une ligne par déclinaison, dans l'ordre de la fiche. */
-function rowsOf(product: ProductRecord, ranking: MatrixRanking): MatrixRow[] {
+function rowsOf(product: MatrixProductRecord, ranking: MatrixRanking): MatrixRow[] {
   const several = product.variants.length > 1;
   // Une déclinaison arrêtée ne se vend plus : elle sort de la matrice
   // (décision de Hugo, 2026-10-20, Q5 du plan).
   return product.variants
     .filter((variant) => !variant.isDiscontinued)
     .sort((a, b) => a.position - b.position)
-    .map((variant: VariantRecord) => {
+    .map((variant: MatrixVariantRecord) => {
       const judgement = judgeDeclaration(variant.allergenSheet, ranking);
       return {
         productId: product.id,

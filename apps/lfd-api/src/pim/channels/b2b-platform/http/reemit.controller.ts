@@ -5,6 +5,7 @@ import type { CatalogReemissionView, LatestCatalogReemissionView } from "@lfd/pi
 import { z } from "zod";
 
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
+import { IntentKey } from "../../../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import { GetCatalogReemissionQuery } from "../application/get-catalog-reemission.js";
 import { GetLatestCatalogReemissionQuery } from "../application/get-latest-catalog-reemission.js";
@@ -23,7 +24,9 @@ const reemitPayload = z.object({
  * - `GET /pim/channels/b2b/reemit/latest` — la dernière, ou `{ job: null }` ;
  * - `GET /pim/channels/b2b/reemit/:id` — un travail et son compte rendu.
  *
- * Lancer demande `pim_channels:write`, relire `pim_channels:read` (le verbe).
+ * Lancer demande `pim_channels:write`, relire `pim_channels:read` (le verbe),
+ * et la clé d'intention de l'écran (`Idempotency-Key`) : un double clic ne
+ * lance qu'un travail.
  */
 @AdminSurface("pim_channels")
 @Controller("reemit")
@@ -37,9 +40,10 @@ export class B2bReemitController {
   @HttpCode(HttpStatus.ACCEPTED)
   async reemit(
     @Body(new ZodBody(reemitPayload)) body: z.infer<typeof reemitPayload>,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedIdResponse> {
     const id = await this.commands.execute<StartCatalogReemissionCommand, string>(
-      new StartCatalogReemissionCommand(body.productId ?? null),
+      new StartCatalogReemissionCommand(body.productId ?? null, intentKey),
     );
     return { id };
   }

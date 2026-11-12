@@ -35,6 +35,7 @@ import {
   type ComplianceFinding,
 } from "../services/product-compliance.js";
 import { refusalOf } from "./activation-refusal.js";
+import { alignedAllergenSheet } from "../services/aligned-allergen-sheet.js";
 import {
   DefaultVariantNotDetachableError,
   DefaultVariantNotDiscontinuableError,
@@ -925,7 +926,6 @@ export class Product {
     // mettrait sur une étiquette la trace d'un autre article (plan §5). Depuis
     // le lot 7, rien ne se recolle plus ici — les deux moitiés sont deux
     // champs, et prendre l'un pour l'autre demanderait de le vouloir.
-    const allergensFrom = variant.follows("allergens") ? source : own;
     const valuesFrom = variant.follows("nutrition") ? source : own;
     const pricing = variant.follows("pricing")
       ? {
@@ -940,7 +940,7 @@ export class Product {
       : {};
     return {
       ...own,
-      allergenSheet: allergensFrom.allergenSheet,
+      allergenSheet: alignedAllergenSheet(own, source),
       nutrition: valuesFrom.nutrition,
       ...pricing,
       minQuantities: effectiveMinQuantities(own, source),

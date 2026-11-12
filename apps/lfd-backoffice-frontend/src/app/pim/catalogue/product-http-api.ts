@@ -23,6 +23,7 @@ import {
 } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
+import { intentOptions } from '../../shared/gesture-intents';
 import { API_BASE_URL } from '../data/api';
 import { EMPTY_NUTRITION, type NutritionValues } from '../data/models';
 import type { Product, ProductKind, Variant } from '../data/models';
@@ -253,17 +254,20 @@ export class ProductHttpApi {
       ...backendToProduct(row),
       activatable: row.activatable,
       illustrated: row.illustrated,
+      complianceWarnings: row.complianceWarnings,
     }));
   }
 
   /**
-   * Les constats de conformité des fiches qui en portent — le jugement UNIQUE
-   * du serveur, celui-là même qui refuse l'activation. Une fiche absente n'a
-   * aucun constat ; le front ne le recalcule pas.
+   * Les constats de conformité d'UNE fiche — le jugement UNIQUE du serveur,
+   * celui-là même qui refuse l'activation. Vide = aucun constat ; le front ne
+   * le recalcule pas. La liste, elle, les lit dans sa propre réponse.
    */
-  async complianceWarnings(): Promise<readonly ProductComplianceWarningView[]> {
+  async complianceWarningsOf(productId: string): Promise<readonly ProductComplianceWarningView[]> {
     return firstValueFrom(
-      this.http.get<ProductComplianceWarningView[]>(this.url('products/compliance-warnings')),
+      this.http.get<ProductComplianceWarningView[]>(this.url('products/compliance-warnings'), {
+        params: { productId },
+      }),
     );
   }
 
@@ -327,22 +331,27 @@ export class ProductHttpApi {
   /**
    * Crée le produit puis, si un prix/poids est fourni, tarife sa déclinaison par
    * défaut (le backend ne les prend pas à la création). La description part dans
-   * l'éditorial du produit.
+   * l'éditorial du produit. `intentKey` : la clé du geste « Créer » — un
+   * réessai après un tarif refusé retombe sur la même fiche.
    */
-  async create(input: CreateProductInput): Promise<CreatedIdResponse> {
+  async create(input: CreateProductInput, intentKey: string): Promise<CreatedIdResponse> {
     const created = await firstValueFrom(
-      this.http.post<CreatedIdResponse>(this.url('products'), {
-        name: input.name,
-        kind: input.kind,
-        categoryId: input.categoryId,
-        ...(input.allergens === undefined ? {} : { allergens: input.allergens }),
-        ...(input.mayContain === undefined || input.mayContain.length === 0
-          ? {}
-          : { mayContain: input.mayContain }),
-        ...(input.descriptionFr === undefined || input.descriptionFr === ''
-          ? {}
-          : { editorial: { descriptionShort: { fr: input.descriptionFr } } }),
-      }),
+      this.http.post<CreatedIdResponse>(
+        this.url('products'),
+        {
+          name: input.name,
+          kind: input.kind,
+          categoryId: input.categoryId,
+          ...(input.allergens === undefined ? {} : { allergens: input.allergens }),
+          ...(input.mayContain === undefined || input.mayContain.length === 0
+            ? {}
+            : { mayContain: input.mayContain }),
+          ...(input.descriptionFr === undefined || input.descriptionFr === ''
+            ? {}
+            : { editorial: { descriptionShort: { fr: input.descriptionFr } } }),
+        },
+        intentOptions(intentKey),
+      ),
     );
     if (input.priceEur !== undefined || input.weightGrams !== undefined) {
       await this.applyInitialPricing(created.id, input);
@@ -388,11 +397,16 @@ export class ProductHttpApi {
    *
    * Le nom seul : le rang, la référence et l'alignement réglementaire sont
    * décidés par le serveur. Les proposer ici donnerait à l'écran une opinion sur
-   * une référence qu'il ne sait pas rendre unique.
+   * une référence qu'il ne sait pas rendre unique. `intentKey` : un double
+   * clic n'ajoute qu'une déclinaison.
    */
-  async addVariant(productId: string, name: LocalizedText): Promise<string> {
+  async addVariant(productId: string, name: LocalizedText, intentKey: string): Promise<string> {
     const { id } = await firstValueFrom(
-      this.http.post<CreatedIdResponse>(this.url(`products/${productId}/variants`), { name }),
+      this.http.post<CreatedIdResponse>(
+        this.url(`products/${productId}/variants`),
+        { name },
+        intentOptions(intentKey),
+      ),
     );
     return id;
   }

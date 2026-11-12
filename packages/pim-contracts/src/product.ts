@@ -8,6 +8,7 @@ import {
   setMediaPayloadSchema,
   type AttachedMediaView,
 } from "./attached-media.js";
+import type { ProductComplianceFinding } from "./ingredient.js";
 import type { LocalizedText } from "./shared.js";
 
 /**
@@ -442,6 +443,13 @@ export interface ProductListView extends ProductView {
   readonly activationGaps: ProductActivationGapsView | null;
   /** Elle porte au moins une image, quel que soit son rôle (filtre « Sans image », 2026-10-28). */
   readonly illustrated: boolean;
+  /**
+   * Ses constats de conformité — le jugement unique, celui de
+   * `compliance-warnings`, calculé sur la même lecture. Vide pour une fiche
+   * archivée, et pour une fiche sans constat : une absence ne vaut PAS
+   * conformité (D5).
+   */
+  readonly complianceWarnings: readonly ProductComplianceFinding[];
 }
 
 /**

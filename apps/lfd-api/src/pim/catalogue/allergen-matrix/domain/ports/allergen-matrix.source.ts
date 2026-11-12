@@ -1,5 +1,29 @@
 import type { LocalizedText } from "../../../shared/domain/value-objects/localized-text.js";
-import type { ProductRecord } from "../../../product/domain/ports/product.repository.js";
+import type { ProductStatus } from "../../../product/domain/entities/product.js";
+import type { VariantSnapshot } from "../../../product/domain/entities/variant.js";
+
+/**
+ * Une déclinaison telle que la matrice la lit : son nom, son rang, son arrêt
+ * et ses allergènes **résolus** (`alignedAllergenSheet`) — ni prix, ni
+ * nutrition. Un `VariantSnapshot` la satisfait.
+ */
+export type MatrixVariantRecord = Pick<
+  VariantSnapshot,
+  "id" | "sku" | "name" | "position" | "isDiscontinued" | "allergenSheet"
+>;
+
+/**
+ * Une fiche telle que la matrice la lit — un type ALLÉGÉ : ni nutrition, ni
+ * TVA de contexte, que la matrice ne montre pas. Un `ProductSnapshot` la
+ * satisfait (les spécimens en passent).
+ */
+export interface MatrixProductRecord {
+  readonly id: string;
+  readonly name: LocalizedText;
+  readonly status: ProductStatus;
+  readonly categoryId: string;
+  readonly variants: readonly MatrixVariantRecord[];
+}
 
 /** Une famille telle que la matrice la range : son nom et son rang. */
 export interface MatrixFamilyRecord {
@@ -27,7 +51,7 @@ export abstract class AllergenMatrixSource {
    * (`Product.snapshot()`), jamais `null` — sans quoi elle se lirait « non
    * renseigné » (objection BLOQUANTE de vitruve, plan §6).
    */
-  abstract products(): Promise<readonly ProductRecord[]>;
+  abstract products(): Promise<readonly MatrixProductRecord[]>;
 
   /** Toutes les familles, archivées comprises : une fiche peut encore y être rangée. */
   abstract families(): Promise<readonly MatrixFamilyRecord[]>;

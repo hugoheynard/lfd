@@ -51,6 +51,7 @@ async function setup(
 ) {
   const routes: string[] = [];
   const notices: string[] = [];
+  const complianceReads: string[] = [];
   TestBed.configureTestingModule({
     providers: [
       ProductFormStore,
@@ -75,7 +76,10 @@ async function setup(
           unpublishProduct: async () => {
             routes.push('unpublish');
           },
-          listComplianceWarnings: () => Promise.resolve(warnings),
+          productComplianceWarnings: (productId: string) => {
+            complianceReads.push(productId);
+            return Promise.resolve(warnings);
+          },
         },
       },
       { provide: NotifyService, useValue: { info: (message: string) => notices.push(message) } },
@@ -88,7 +92,14 @@ async function setup(
   fixture.componentInstance.publish.subscribe(() => void store.runLifecycle('publish'));
   fixture.componentInstance.unpublish.subscribe(() => void store.runLifecycle('unpublish'));
   fixture.detectChanges();
-  return { store, fixture, routes, notices, host: fixture.nativeElement as HTMLElement };
+  return {
+    store,
+    fixture,
+    routes,
+    notices,
+    complianceReads,
+    host: fixture.nativeElement as HTMLElement,
+  };
 }
 
 function buttons(host: HTMLElement): string[] {
@@ -168,25 +179,31 @@ describe('PublishRail — Activer / Désactiver', () => {
 
   /** `plan-allergenes-jamais-bloquants.md` §2 : publier sans déclaration se dit, sans rien demander. */
   it('annonce d’un toast d’information une publication sans déclaration d’allergènes', async () => {
-    const { host, fixture, notices, store } = await setup('draft', async () => undefined, [
-      {
-        productId: 'prd_1',
-        warnings: [
-          {
-            code: 'allergens_precautionary',
-            severity: 'warning',
-            variantId: 'v',
-            sku: 'CHO-001-1',
-          },
-        ],
-      },
-    ]);
+    const { host, fixture, notices, store, complianceReads } = await setup(
+      'draft',
+      async () => undefined,
+      [
+        {
+          productId: 'prd_1',
+          warnings: [
+            {
+              code: 'allergens_precautionary',
+              severity: 'warning',
+              variantId: 'v',
+              sku: 'CHO-001-1',
+            },
+          ],
+        },
+      ],
+    );
 
     click(host, 'Activer');
     await fixture.whenStable();
 
     expect(notices).toEqual([expect.stringContaining('sans information précise')]);
     expect(store.error()).toBeNull();
+    // Les constats de CETTE fiche, jamais tout le catalogue.
+    expect(complianceReads).toEqual(['prd_1']);
   });
 
   it('ne dit rien quand la fiche publiée est déclarée', async () => {

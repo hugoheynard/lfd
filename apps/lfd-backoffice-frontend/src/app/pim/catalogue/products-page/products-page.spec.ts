@@ -72,11 +72,11 @@ async function render(
       {
         provide: CatalogueApi,
         useValue: {
-          listProducts: () => Promise.resolve(products),
+          // Les constats voyagent dans les lignes de la liste, comme au serveur.
+          listProducts: async () => withFindings(products, await compliance()),
           listCategories: () => Promise.resolve(CATEGORIES),
           listVatRates: () => Promise.resolve([]),
           publishProduct,
-          listComplianceWarnings: compliance,
           deleteProduct: deletion.deleteProduct ?? (() => Promise.resolve()),
         },
       },
@@ -108,6 +108,17 @@ async function render(
   const mask = (): HTMLInputElement | null =>
     element.querySelector<HTMLInputElement>('[data-products-mask] input');
   return { fixture, element, navigate, chip, mask, settle };
+}
+
+/** Pose sur chaque fiche les constats que le serveur rendrait dans sa ligne. */
+function withFindings(
+  products: readonly Product[],
+  views: readonly ProductComplianceWarningView[],
+): Product[] {
+  return products.map((item) => ({
+    ...item,
+    complianceWarnings: views.find((view) => view.productId === item.id)?.warnings ?? [],
+  }));
 }
 
 function rows(element: HTMLElement): readonly string[] {
@@ -353,7 +364,7 @@ describe('ProductsPage — « Activer la sélection »', () => {
     expect(callout).toContain('P2 — P2-1 : prix pro absent');
   });
 
-  /** Les constats viennent du serveur (`compliance-warnings`, 2026-10-27) : lus, jamais jugés ici. */
+  /** Les constats viennent du serveur, dans les lignes de la liste : lus, jamais jugés ici. */
   describe('constats de conformité', () => {
     const blocking = (sku: string): ProductComplianceFinding => ({
       code: 'variant_incomplete',
@@ -459,14 +470,14 @@ describe('ProductsPage — « Activer la sélection »', () => {
       expect(notices).toEqual([]);
     });
 
-    it('garde la liste quand les constats ne se lisent pas, et le dit', async () => {
-      const { element } = await render({}, undefined, PRODUCTS, () =>
-        Promise.reject(new Error('panne')),
-      );
+    /** P1.1 du plan des lectures du PIM : plus de seconde lecture de tout le catalogue. */
+    it('lit les constats dans les lignes de la liste, sans appeler compliance-warnings', async () => {
+      // Le double n'a plus de `productComplianceWarnings` ni d'ancienne lecture :
+      // un appel ferait tomber la page.
+      const { element } = await render({}, undefined, PRODUCTS, () => Promise.resolve(FINDINGS));
       expect(rows(element)).toEqual(['P1', 'P2', 'V1']);
-      expect(element.querySelector('fold-callout')?.textContent).toContain(
-        "Les constats de conformité n'ont pas pu être lus",
-      );
+      expect(badges(element)).toEqual(['Non conforme', 'Bloquant', 'À vérifier']);
+      expect(element.querySelector('fold-callout[variant="alert"]')).toBeNull();
     });
   });
 });

@@ -70,6 +70,9 @@ export class CategoryController {
   }
 
   @Post()
+  @Idempotent(
+    "par unicité : le slug d'une famille est unique ; rejouée, la création est refusée (409) avant toute écriture",
+  )
   async createCategory(
     @Body(new ZodBody(createCategoryPayloadSchema)) body: CreateCategoryPayload,
   ) {

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Post, Put, Query } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import {
   createProductPayloadSchema,
@@ -39,6 +39,8 @@ import {
 import type { ProductComplianceWarningView } from "@lfd/pim-contracts";
 import { ListProductComplianceWarningsQuery } from "../application/list-product-compliance-warnings.js";
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
+import { StaffUserId } from "../../../../platform/auth/staff.decorator.js";
+import { IntentKey } from "../../../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import { AddProductVariantCommand } from "../application/add-product-variant.js";
 import { RenameProductVariantCommand } from "../application/rename-product-variant.js";
@@ -90,13 +92,19 @@ export class ProductController {
 
   /**
    * Les fiches non archivées qui portent au moins un constat du jugement
-   * unique (bloquant ou avertissement) — pour la table des produits. Déclarée
-   * AVANT `:id`, qui l'avalerait sinon. Une absence ne vaut pas conformité.
+   * unique (bloquant ou avertissement). Déclarée AVANT `:id`, qui l'avalerait
+   * sinon. Une absence ne vaut pas conformité. `?productId=` : les constats de
+   * cette seule fiche (la fiche, après une publication) ; la table des
+   * produits, elle, les lit dans sa propre réponse.
    */
   @Get("compliance-warnings")
-  complianceWarnings(): Promise<ProductComplianceWarningView[]> {
+  complianceWarnings(
+    @Query("productId") productId?: string,
+  ): Promise<ProductComplianceWarningView[]> {
     return this.queries.execute<ListProductComplianceWarningsQuery, ProductComplianceWarningView[]>(
-      new ListProductComplianceWarningsQuery(),
+      new ListProductComplianceWarningsQuery(
+        productId === undefined || productId === "" ? null : productId,
+      ),
     );
   }
 
@@ -109,9 +117,13 @@ export class ProductController {
   }
 
   @Post()
-  async createProduct(@Body(new ZodBody(createProductPayloadSchema)) body: CreateProductPayload) {
+  async createProduct(
+    @Body(new ZodBody(createProductPayloadSchema)) body: CreateProductPayload,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+  ) {
     const id = await this.commands.execute<CreateProductCommand, string>(
-      new CreateProductCommand(body),
+      new CreateProductCommand(body, staffUserId, intentKey),
     );
     return { id };
   }
@@ -239,9 +251,11 @@ export class ProductController {
   async addVariant(
     @Param("id") id: string,
     @Body(new ZodBody(addProductVariantPayloadSchema)) body: AddProductVariantPayload,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ) {
     const variantId = await this.commands.execute<AddProductVariantCommand, string>(
-      new AddProductVariantCommand(id, body),
+      new AddProductVariantCommand(id, body, staffUserId, intentKey),
     );
     return { id: variantId };
   }

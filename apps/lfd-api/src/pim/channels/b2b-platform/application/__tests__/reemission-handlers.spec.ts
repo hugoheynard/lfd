@@ -1,3 +1,4 @@
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { runWithRequestContext } from "../../../../../platform/context/request-context.store.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { BackgroundWork } from "../../../../../platform/events/background-work.js";
@@ -41,6 +42,10 @@ import {
   StartCatalogReemissionHandler,
 } from "../start-catalog-reemission.js";
 import { InMemoryReemissionJobs, InMemoryReemissionReader } from "./reemission-doubles.js";
+
+let intentCount = 0;
+/** Une clé d'intention neuve par geste voulu, comme l'écran. */
+const nextKey = (): string => `intent_${(intentCount += 1)}`;
 
 /**
  * La réémission suivie (2026-10-18) : lancer rend un identifiant, le travail
@@ -139,15 +144,32 @@ function setup(options: { script?: ScriptedReemission; emitter?: RecordingCatalo
     clock,
     runner,
     background,
+    new DirectUnitOfWork(),
+    inMemoryIntents(),
   );
-  const launch = (productId: string | null): Promise<string> =>
+  const launch = (productId: string | null, intentKey: string = nextKey()): Promise<string> =>
     runWithRequestContext({ now: NOW, traceId: "t", actor: { type: "staff", id: STAFF } }, () =>
-      start.execute(new StartCatalogReemissionCommand(productId)),
+      start.execute(new StartCatalogReemissionCommand(productId, intentKey)),
     );
   return { jobs, clock, background, start, launch };
 }
 
 describe("StartCatalogReemissionHandler", () => {
+  /** Régression : un double clic sur « Réémettre » une fiche inscrivait et lançait deux travaux. */
+  it("rejoué avec la même clé, rend le même travail sans en lancer un second", async () => {
+    const { jobs, background, launch } = setup({
+      script: new ScriptedReemission({ ok: ["prd_tarte"], failed: [] }),
+    });
+    const key = nextKey();
+
+    const first = await launch("prd_tarte", key);
+    const replayed = await launch("prd_tarte", key);
+    await background.whenIdle();
+
+    expect(replayed).toBe(first);
+    expect(jobs.rows.size).toBe(1);
+  });
+
   it("rend l'identifiant tout de suite, le travail en cours, puis fini en arrière-plan", async () => {
     const { jobs, background, launch } = setup({
       script: new ScriptedReemission({ ok: ["p_1", "p_2"], failed: [] }),
@@ -194,9 +216,9 @@ describe("StartCatalogReemissionHandler", () => {
   it("refuse un lancement sans identité", async () => {
     const { start } = setup();
 
-    await expect(start.execute(new StartCatalogReemissionCommand(null))).rejects.toBeInstanceOf(
-      AnonymousReemissionError,
-    );
+    await expect(
+      start.execute(new StartCatalogReemissionCommand(null, nextKey())),
+    ).rejects.toBeInstanceOf(AnonymousReemissionError);
   });
 });
 

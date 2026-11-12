@@ -58,6 +58,9 @@ export class OrderTimeLimitController {
   }
 
   @Put()
+  @Idempotent(
+    "pose la règle d'une portée (une ligne par portée) : rejouée à l'identique, ni écriture, ni fait, ni émission ; rend le même identifiant",
+  )
   async set(
     @Body(new ZodBody(orderTimeLimitPayloadSchema)) body: OrderTimeLimitPayload,
   ): Promise<{ id: string }> {

@@ -135,3 +135,39 @@ describe("ListProductsHandler — les fiches supprimées", () => {
     expect(items).toEqual([]);
   });
 });
+
+/** P1.1 du plan des lectures du PIM : la table lit ses constats dans sa propre réponse. */
+describe("ListProductsHandler — les constats de conformité", () => {
+  it("rend le constat d'une fiche vivante, sans autre lecture du catalogue", async () => {
+    const product = tarte({ variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: null }] });
+
+    const [item] = await listing(product, family("both")).execute();
+
+    expect(item?.complianceWarnings).toEqual([
+      {
+        code: "price_missing_for_audience",
+        severity: "warning",
+        variantId: SELLABLE_VARIANT.id,
+        sku: SELLABLE_VARIANT.sku,
+        audience: "pro",
+      },
+    ]);
+  });
+
+  it("ne juge pas une archivée : elle ne part nulle part", async () => {
+    const product = tarte({
+      status: "archived",
+      variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: null }],
+    });
+
+    const [item] = await listing(product, family("both")).execute();
+
+    expect(item?.complianceWarnings).toEqual([]);
+  });
+
+  it("rend une liste vide pour une fiche sans constat", async () => {
+    const [item] = await listing(tarte(), family("both")).execute();
+
+    expect(item?.complianceWarnings).toEqual([]);
+  });
+});

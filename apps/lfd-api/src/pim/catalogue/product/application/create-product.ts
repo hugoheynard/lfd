@@ -5,6 +5,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { AllergenCatalogueReader } from "../../../allergens/domain/ports/allergen-catalogue.reader.js";
 import { UuidGenerator } from "../../../../platform/id/uuid-generator.js";
+import { CREATED_ID_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import {
   CategoryArchivedError,
   CategoryNotFoundError,
@@ -62,13 +63,24 @@ export interface CreateProductInput {
   readonly media?: readonly MediaInput[] | undefined;
 }
 
+/**
+ * `intentKey` : la clé que l'écran a fabriquée pour ce geste — un double clic
+ * sur « Créer » ne crée qu'une fiche (la référence proposée change à chaque
+ * appel, rien d'autre ne refuserait la seconde).
+ */
 export class CreateProductCommand {
-  constructor(readonly input: CreateProductInput) {}
+  constructor(
+    readonly input: CreateProductInput,
+    readonly staffUserId: string,
+    readonly intentKey: string,
+  ) {}
 }
 
 /**
  * Crée le produit **et sa déclinaison par défaut** — indissociables (invariant 2).
  * La persistance les écrit en une transaction : l'invariant n'est jamais faux.
+ * Une fois par intention : la clé est scellée dans cette transaction, et un
+ * rejeu de la même clé rend la même fiche.
  */
 @CommandHandler(CreateProductCommand)
 export class CreateProductHandler implements ICommandHandler<CreateProductCommand, string> {
@@ -84,9 +96,26 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
     @Inject(UuidGenerator) private readonly ids: UuidGenerator,
     @Inject(SKU_AVAILABILITY) private readonly availability: SkuAvailability,
     private readonly emitter: CatalogEmitter,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: CreateProductCommand): Promise<string> {
+  execute(command: CreateProductCommand): Promise<string> {
+    return this.intents.runSealed(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: "pim.product.create",
+        subject: "new",
+      },
+      CREATED_ID_REPLAY,
+      (seal) => this.create(command, seal),
+    );
+  }
+
+  private async create(
+    command: CreateProductCommand,
+    seal: (id: string) => Promise<void>,
+  ): Promise<string> {
     const { input } = command;
     const name = localizedText("nom", input.name);
     const category = await this.categories.findById(input.categoryId);
@@ -170,6 +199,7 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
         await this.editorials.save(productId, story, visuals, ticket);
       }
       await this.emitter.emitProducts([productId]);
+      await seal(productId);
     });
 
     return productId;

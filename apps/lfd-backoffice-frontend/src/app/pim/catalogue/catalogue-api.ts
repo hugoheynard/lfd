@@ -63,8 +63,11 @@ export class CatalogueApi {
     return this.productsApi.list();
   }
 
-  async listComplianceWarnings(): Promise<readonly ProductComplianceWarningView[]> {
-    return this.productsApi.complianceWarnings();
+  /** Les constats d'une seule fiche — la liste lit les siens dans sa réponse. */
+  async productComplianceWarnings(
+    productId: string,
+  ): Promise<readonly ProductComplianceWarningView[]> {
+    return this.productsApi.complianceWarningsOf(productId);
   }
 
   /** Détail enrichi (éditorial compris) — pour la page d'édition produit. */
@@ -72,28 +75,34 @@ export class CatalogueApi {
     return this.productsApi.get(id);
   }
 
-  async createProduct(payload: {
-    name: LocalizedText;
-    kind: ProductKind;
-    categoryId: string;
-    allergens?: string[];
-    mayContain?: string[];
-    priceEur?: number;
-    weightGrams?: number;
-    handleFr?: string;
-    descriptionFr?: string;
-  }): Promise<{ id: string }> {
+  async createProduct(
+    payload: {
+      name: LocalizedText;
+      kind: ProductKind;
+      categoryId: string;
+      allergens?: string[];
+      mayContain?: string[];
+      priceEur?: number;
+      weightGrams?: number;
+      handleFr?: string;
+      descriptionFr?: string;
+    },
+    intentKey: string,
+  ): Promise<{ id: string }> {
     // `handleFr` différé : le slug est dérivé côté backend.
-    return this.productsApi.create({
-      name: payload.name,
-      kind: payload.kind,
-      categoryId: payload.categoryId,
-      allergens: payload.allergens,
-      mayContain: payload.mayContain,
-      descriptionFr: payload.descriptionFr,
-      priceEur: payload.priceEur,
-      weightGrams: payload.weightGrams,
-    });
+    return this.productsApi.create(
+      {
+        name: payload.name,
+        kind: payload.kind,
+        categoryId: payload.categoryId,
+        allergens: payload.allergens,
+        mayContain: payload.mayContain,
+        descriptionFr: payload.descriptionFr,
+        priceEur: payload.priceEur,
+        weightGrams: payload.weightGrams,
+      },
+      intentKey,
+    );
   }
 
   async publishProduct(id: string): Promise<void> {

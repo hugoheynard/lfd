@@ -59,9 +59,9 @@ export class CatalogRevisionController {
   /**
    * **Où en est le catalogue** — la synthèse.
    *
-   * Sous `revisions/` parce qu'elle se calcule comme une capture qu'on ne pose
-   * pas : c'est la même mécanique, donc le même contexte. La ranger ailleurs
-   * ferait deux endroits qui savent construire une révision.
+   * Sous `revisions/` parce qu'elle compte avec la règle d'une capture
+   * (`countCatalogOverview`) : fiches vivantes, par fiche, chaque déclinaison
+   * un article — sans construire la capture.
    */
   @Get("overview")
   overview(): Promise<CatalogOverviewView> {
@@ -123,6 +123,9 @@ export class CatalogRevisionController {
   }
 
   @Post()
+  @Idempotent(
+    "par sa propre clé : l'empreinte du catalogue ; rejoué, le même état rend la même révision (created: false), sans ligne de plus",
+  )
   take(
     @Body(new ZodBody(takeRevisionPayloadSchema)) body: TakeRevisionPayload,
   ): Promise<TakenRevision> {

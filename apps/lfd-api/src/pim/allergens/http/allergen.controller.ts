@@ -61,6 +61,9 @@ export class AllergenController {
   }
 
   @Post("categories")
+  @Idempotent(
+    "par unicité : la clé d'une catégorie est unique ; rejouée, la création est refusée (409) avant toute écriture",
+  )
   async createCategory(
     @Body(new ZodBody(createAllergenCategoryPayloadSchema)) body: CreateAllergenCategoryPayload,
   ) {
@@ -117,6 +120,9 @@ export class AllergenController {
   }
 
   @Post("entries")
+  @Idempotent(
+    "par unicité : le code d'un allergène est unique ; rejouée, la création est refusée (409) avant toute écriture",
+  )
   async createEntry(
     @Body(new ZodBody(createAllergenEntryPayloadSchema)) body: CreateAllergenEntryPayload,
   ) {

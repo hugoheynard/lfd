@@ -39,6 +39,9 @@ export class VatRateController {
   }
 
   @Post()
+  @Idempotent(
+    "par unicité : un taux par pourcentage ; rejouée, la création est refusée (409) avant toute écriture",
+  )
   async create(@Body(new ZodBody(vatRatePayloadSchema)) body: VatRatePayload) {
     const id = await this.commands.execute<CreateVatRateCommand, string>(
       new CreateVatRateCommand(body),

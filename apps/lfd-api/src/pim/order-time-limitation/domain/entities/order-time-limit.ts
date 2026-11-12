@@ -66,10 +66,18 @@ export class OrderTimeLimit {
    *
    * @throws {RetiredOrderTimeLimitScopeError} la règle vise une portée retirée.
    * @throws {IncompleteOrderTimeLimitError} le délai ou l'heure manque.
+   * @returns `false` si les réglages reposés sont ceux qu'elle porte déjà.
    */
-  reset(payload: OrderTimeLimitPayload): void {
+  reset(payload: OrderTimeLimitPayload): boolean {
     ensureProduct(this.scope);
-    this.values = productValuesOf(payload);
+    const next = productValuesOf(payload);
+    const before = this.values;
+    this.values = next;
+    return (
+      before.daysBefore !== next.daysBefore ||
+      before.time !== next.time ||
+      before.graceMinutes !== next.graceMinutes
+    );
   }
 
   get daysBefore(): number | null {

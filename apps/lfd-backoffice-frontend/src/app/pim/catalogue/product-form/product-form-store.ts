@@ -67,7 +67,7 @@ import { CatalogueApi } from '../catalogue-api';
 import type { PickedMedia } from '../library-picker/library-picker';
 import { isPublishedMediaRole } from '../media-roles';
 import { MEDIA_ROLE_FORMATS, roleLabel } from '../media-formats';
-import { ReferenceApi } from '../reference-api';
+import { AllergenReferenceStore } from '../allergen-reference-store';
 import { NotifyService } from '../../../notify.service';
 import { isPrecautionary, PRECAUTIONARY_NOTICE } from '../product-compliance';
 import {
@@ -83,6 +83,10 @@ import {
   withMediaRoles,
 } from '../media-usages';
 import { PendingCreatedMedia, type CreatedMediaFailure } from '../pending-created-media';
+import { GestureIntents } from '../../../shared/gesture-intents';
+
+/** Le sujet de l'intention « Créer » : un formulaire, une fiche. */
+const CREATE = 'create';
 
 // Réexporté : les panneaux le tenaient d'ici, et il vit maintenant au niveau de
 // l'API — la couche qui parle au serveur possède la forme qu'elle envoie.
@@ -509,7 +513,7 @@ export class ProductFormStore {
   private readonly api = inject(CatalogueApi);
   /** Le rapport prix public / prix pro — réglé une fois, lu partout. */
   private readonly contextStore = inject(SalesContextStore);
-  private readonly reference = inject(ReferenceApi);
+  private readonly reference = inject(AllergenReferenceStore);
   private readonly notify = inject(NotifyService);
   private readonly pendingCreatedMedia = inject(PendingCreatedMedia);
 
@@ -894,6 +898,8 @@ export class ProductFormStore {
    * saisie sans un mot.
    */
   private readonly drafts = new Map<string, VariantDraft>();
+  /** Créer la fiche, ajouter une déclinaison : des créations, une clé chacune jusqu'au succès. */
+  private readonly createIntents = new GestureIntents();
   private readonly statusMap = signal<Partial<Record<FormSection, SectionStatus>>>({});
   private readonly baseline = signal<Partial<Record<FormSection, string>>>({});
 
@@ -1446,18 +1452,24 @@ export class ProductFormStore {
       const description = (this.editorial().descriptionShort?.[SOURCE_LOCALE] ?? '').trim();
       const declaration = this.declaration();
       const declares = hasDeclared(declaration);
-      const created = await this.api.createProduct({
-        name: this.nameText(),
-        kind: this.kind(),
-        categoryId: this.categoryId(),
-        ...(declares ? { allergens: [...this.selected()] } : {}),
-        // Les traces partent AVEC, même quand personne n'a déclaré de présence :
-        // les taire à la création serait le bug 0a déplacé d'un écran.
-        ...(declaration.mayContain.length === 0 ? {} : { mayContain: [...declaration.mayContain] }),
-        ...(price === null ? {} : { priceEur: price }),
-        ...(weight === null ? {} : { weightGrams: weight }),
-        ...(description === '' ? {} : { descriptionFr: description }),
-      });
+      const created = await this.api.createProduct(
+        {
+          name: this.nameText(),
+          kind: this.kind(),
+          categoryId: this.categoryId(),
+          ...(declares ? { allergens: [...this.selected()] } : {}),
+          // Les traces partent AVEC, même quand personne n'a déclaré de présence :
+          // les taire à la création serait le bug 0a déplacé d'un écran.
+          ...(declaration.mayContain.length === 0
+            ? {}
+            : { mayContain: [...declaration.mayContain] }),
+          ...(price === null ? {} : { priceEur: price }),
+          ...(weight === null ? {} : { weightGrams: weight }),
+          ...(description === '' ? {} : { descriptionFr: description }),
+        },
+        this.createIntents.keyFor(CREATE),
+      );
+      this.createIntents.done(CREATE);
       // Les photos n'existent que dans le brouillon de l'écran : la route de
       // création ne les porte pas, et la page suivante relit la fiche au
       // serveur. Sans cet envoi, elles disparaissaient à la navigation
@@ -1870,7 +1882,8 @@ export class ProductFormStore {
    */
   private async noticeIfPrecautionary(id: string): Promise<void> {
     try {
-      const views = await this.api.listComplianceWarnings();
+      // Les constats de CETTE fiche seulement : publier n'a pas à relire tout le catalogue.
+      const views = await this.api.productComplianceWarnings(id);
       if (isPrecautionary(views.find((view) => view.productId === id)?.warnings)) {
         this.notify.info(PRECAUTIONARY_NOTICE);
       }
@@ -2092,7 +2105,13 @@ export class ProductFormStore {
     this.busy.set(true);
     this.error.set(null);
     try {
-      const created = await this.products.addVariant(id, { [SOURCE_LOCALE]: name.trim() });
+      const subject = `${id}|${name.trim()}`;
+      const created = await this.products.addVariant(
+        id,
+        { [SOURCE_LOCALE]: name.trim() },
+        this.createIntents.keyFor(subject),
+      );
+      this.createIntents.done(subject);
       await this.hydrate(id);
       this.selectVariant(created);
     } catch (caught) {

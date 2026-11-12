@@ -1,7 +1,11 @@
 import { FixedActiveContexts } from "../../../../sales-contexts/domain/ports/__tests__/fixed-active-contexts.js";
 import type { ProductSnapshot } from "../../domain/entities/product.js";
 import { FixedCitedAllergens } from "../../domain/ports/__tests__/fixed-cited-allergens.js";
-import { ListProductComplianceWarningsHandler } from "../list-product-compliance-warnings.js";
+import {
+  ListProductComplianceWarningsHandler,
+  ListProductComplianceWarningsQuery,
+} from "../list-product-compliance-warnings.js";
+import { ProductNotFoundError } from "../../domain/errors/product-errors.js";
 import {
   BOTH_RATES,
   FixedVatPercents,
@@ -123,5 +127,43 @@ describe("ListProductComplianceWarningsHandler — le jugement unique, sur la ta
     });
 
     expect(await listing(product, new FixedCitedAllergens(), "public").execute()).toEqual([]);
+  });
+});
+
+describe("ListProductComplianceWarningsHandler — une seule fiche (`?productId=`)", () => {
+  const withoutProPrice = () =>
+    tarte({ variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: null }] });
+
+  it("rend les constats de cette fiche, jugés comme pour la table", async () => {
+    const handler = listing(withoutProPrice());
+
+    expect(await handler.execute(new ListProductComplianceWarningsQuery(PRODUCT_ID))).toEqual(
+      await handler.execute(new ListProductComplianceWarningsQuery()),
+    );
+  });
+
+  it("ne rend rien pour une fiche archivée, sans rien lire de plus", async () => {
+    const cited = new FixedCitedAllergens();
+
+    expect(
+      await listing(tarte({ status: "archived" }), cited).execute(
+        new ListProductComplianceWarningsQuery(PRODUCT_ID),
+      ),
+    ).toEqual([]);
+    expect(cited.requests).toEqual([]);
+  });
+
+  it("refuse une fiche inconnue plutôt que de la dire conforme", async () => {
+    await expect(
+      listing(tarte()).execute(new ListProductComplianceWarningsQuery("prd_inconnu")),
+    ).rejects.toBeInstanceOf(ProductNotFoundError);
+  });
+
+  it("lit les citations de cette fiche seulement", async () => {
+    const cited = new FixedCitedAllergens();
+
+    await listing(tarte(), cited).execute(new ListProductComplianceWarningsQuery(PRODUCT_ID));
+
+    expect(cited.requests).toEqual([[PRODUCT_ID]]);
   });
 });

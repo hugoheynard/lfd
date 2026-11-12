@@ -1,8 +1,10 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { currentRequestContext } from "../../../../platform/context/request-context.store.js";
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { BackgroundWork } from "../../../../platform/events/background-work.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
+import { CREATED_ID_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { ProductNotFoundError } from "../../../catalogue/product/domain/errors/product-errors.js";
 import { CatalogFactsReader } from "../../../catalogue/shared/domain/ports/catalog-facts.reader.js";
@@ -14,9 +16,16 @@ import {
 import { ReemissionJobRepository } from "../domain/ports/reemission-job.repository.js";
 import { CatalogReemissionRunner } from "./catalog-reemission-runner.js";
 
-/** `productId` = une fiche ; `null` = tout le catalogue, familles d'abord, règles en dernier. */
+/**
+ * `productId` = une fiche ; `null` = tout le catalogue, familles d'abord, règles en dernier.
+ * `intentKey` : la clé que l'écran a fabriquée pour ce geste — un double clic
+ * ne lance qu'un travail.
+ */
 export class StartCatalogReemissionCommand {
-  constructor(readonly productId: string | null) {}
+  constructor(
+    readonly productId: string | null,
+    readonly intentKey: string,
+  ) {}
 }
 
 /**
@@ -31,6 +40,10 @@ export class StartCatalogReemissionCommand {
  * Ce qui se refuse ici, avant tout travail : une fiche inconnue (404), un
  * second « tout » pendant qu'un premier tourne (409) — l'index partiel de la
  * table le refuse aussi, pour deux clics simultanés.
+ *
+ * **Une fois par intention** : une fiche relancée deux fois inscrirait deux
+ * travaux. La clé de l'écran est scellée avec l'inscription du travail ; un
+ * rejeu de la même clé rend le même travail, sans en relancer un.
  *
  * @throws {ProductNotFoundError} la fiche visée n'existe pas.
  * @throws {ReemissionAlreadyRunningError} un « tout » est déjà en cours.
@@ -50,6 +63,8 @@ export class StartCatalogReemissionHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly runner: CatalogReemissionRunner,
     private readonly background: BackgroundWork,
+    private readonly uow: UnitOfWork,
+    private readonly intents: OncePerIntent,
   ) {}
 
   async execute(command: StartCatalogReemissionCommand): Promise<string> {
@@ -57,14 +72,34 @@ export class StartCatalogReemissionHandler implements ICommandHandler<
     if (startedBy === null) {
       throw new AnonymousReemissionError();
     }
-    await this.refuseUnreachable(command.productId);
+    return this.intents.runSealed(
+      {
+        actorId: startedBy,
+        key: command.intentKey,
+        gesture: "pim.catalog.reemit",
+        subject: command.productId ?? "everything",
+      },
+      CREATED_ID_REPLAY,
+      (seal) => this.start(command.productId, startedBy, seal),
+    );
+  }
+
+  private async start(
+    productId: string | null,
+    startedBy: string,
+    seal: (id: string) => Promise<void>,
+  ): Promise<string> {
+    await this.refuseUnreachable(productId);
     const job = CatalogReemissionJob.start({
       id: this.ids.next(),
-      productId: command.productId,
+      productId,
       startedAt: this.clock.now(),
       startedBy,
     });
-    await this.jobs.save(job);
+    await this.uow.run(async () => {
+      await this.jobs.save(job);
+      await seal(job.id);
+    });
     void this.background.detach(() => this.runner.run(job), "catalog.reemission");
     return job.id;
   }

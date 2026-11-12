@@ -4,6 +4,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { UuidGenerator } from "../../../../platform/id/uuid-generator.js";
+import { CREATED_ID_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import {
   localizedText,
   type LocalizedText,
@@ -32,10 +33,16 @@ export interface AddProductVariantInput {
   readonly sku?: string | undefined;
 }
 
+/**
+ * `intentKey` : la clé que l'écran a fabriquée pour ce geste — un double clic
+ * n'ajoute qu'une déclinaison (la référence proposée change à chaque appel).
+ */
 export class AddProductVariantCommand {
   constructor(
     readonly productId: string,
     readonly input: AddProductVariantInput,
+    readonly staffUserId: string,
+    readonly intentKey: string,
   ) {}
 }
 
@@ -65,9 +72,26 @@ export class AddProductVariantHandler implements ICommandHandler<AddProductVaria
     @Inject(UuidGenerator) private readonly ids: UuidGenerator,
     @Inject(SKU_AVAILABILITY) private readonly availability: SkuAvailability,
     private readonly emitter: CatalogEmitter,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: AddProductVariantCommand): Promise<string> {
+  execute(command: AddProductVariantCommand): Promise<string> {
+    return this.intents.runSealed(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: "pim.product.add_variant",
+        subject: command.productId,
+      },
+      CREATED_ID_REPLAY,
+      (seal) => this.add(command, seal),
+    );
+  }
+
+  private async add(
+    command: AddProductVariantCommand,
+    seal: (id: string) => Promise<void>,
+  ): Promise<string> {
     const product = await requireProduct(this.products, command.productId);
     const name = localizedText("nom", command.input.name);
 
@@ -99,6 +123,7 @@ export class AddProductVariantHandler implements ICommandHandler<AddProductVaria
       });
       await this.products.save(product, ticket);
       await this.emitter.emitProducts([command.productId]);
+      await seal(variant.id);
     });
 
     return variant.id;

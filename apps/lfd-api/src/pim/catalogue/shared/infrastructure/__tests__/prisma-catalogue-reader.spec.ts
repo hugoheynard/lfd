@@ -127,3 +127,95 @@ describe("PrismaCatalogueReader.vatPercents", () => {
     await expect(reader.vatPercents([product()])).rejects.toBeInstanceOf(CategoryNotFoundError);
   });
 });
+
+/** Une famille telle que `CategoryRepository.listAll()` la rend, réduite à ce que la TVA lit. */
+interface FamilyLike {
+  readonly id: string;
+  readonly isArchived: boolean;
+  readonly vatByContext: Readonly<Record<string, string>>;
+}
+
+/** Le lecteur sur un catalogue de plusieurs familles, et le compte des relectures. */
+async function buildCatalogue(
+  families: readonly FamilyLike[],
+  rates: Record<string, number>,
+): Promise<{ reader: CatalogueReader; findByIdCalls: string[] }> {
+  const findByIdCalls: string[] = [];
+  const moduleRef = await Test.createTestingModule({
+    providers: [
+      { provide: CatalogueReader, useClass: PrismaCatalogueReader },
+      { provide: ProductRepository, useValue: { listAll: () => Promise.resolve([]) } },
+      {
+        provide: CategoryRepository,
+        useValue: {
+          findById: (id: string) => {
+            findByIdCalls.push(id);
+            return Promise.resolve(families.find((family) => family.id === id) ?? null);
+          },
+        },
+      },
+      { provide: EditorialReader, useValue: { findByProducts: () => Promise.resolve(new Map()) } },
+      {
+        provide: VatRateRepository,
+        useValue: {
+          listAll: () =>
+            Promise.resolve(Object.entries(rates).map(([id, percent]) => ({ id, percent }))),
+        },
+      },
+    ],
+  }).compile();
+  return { reader: moduleRef.get(CatalogueReader), findByIdCalls };
+}
+
+function productIn(
+  id: string,
+  categoryId: string,
+  vatByContext: Readonly<Record<string, string>> = {},
+): ProductSnapshot {
+  return { ...product(vatByContext), id, categoryId };
+}
+
+describe("PrismaCatalogueReader.vatPercents — familles passées par l'appelant", () => {
+  const FAMILIES: readonly FamilyLike[] = [
+    { id: "cat_vien", isArchived: false, vatByContext: { takeaway: "r1", b2b: "r1" } },
+    { id: "cat_noel", isArchived: true, vatByContext: { takeaway: "r2" } },
+    { id: "cat_vide", isArchived: false, vatByContext: {} },
+  ];
+  const RATES = { r1: 5.5, r2: 10, r3: 20 };
+  const CATALOGUE = [
+    productIn("prd_croissant", "cat_vien"),
+    productIn("prd_derog", "cat_vien", { b2b: "r3" }),
+    productIn("prd_buche", "cat_noel"),
+    productIn("prd_sans_taux", "cat_vide"),
+    productIn("prd_sans_taux_derog", "cat_vide", { takeaway: "r2" }),
+  ];
+
+  /**
+   * Non-régression du passage des familles (P1.2 du plan des lectures du PIM) :
+   * famille archivée, dérogation de fiche et famille sans taux rendent la même
+   * carte par les deux chemins.
+   */
+  it("rend exactement ce que rend la relecture famille par famille", async () => {
+    const before = await buildCatalogue(FAMILIES, RATES);
+    const after = await buildCatalogue(FAMILIES, RATES);
+
+    const reread = await before.reader.vatPercents(CATALOGUE);
+    const passed = await after.reader.vatPercents(CATALOGUE, FAMILIES);
+
+    expect([...passed.entries()]).toEqual([...reread.entries()]);
+    expect(passed.get("prd_derog")).toEqual({ takeaway: 5.5, b2b: 20 });
+    expect(passed.get("prd_buche")).toEqual({ takeaway: 10 });
+    expect(passed.get("prd_sans_taux")).toEqual({});
+    expect(after.findByIdCalls).toEqual([]);
+    expect(before.findByIdCalls).toEqual(["cat_vien", "cat_noel", "cat_vide"]);
+  });
+
+  it("REFUSE une famille absente de la liste passée, sans la relire", async () => {
+    const { reader, findByIdCalls } = await buildCatalogue(FAMILIES, RATES);
+
+    await expect(
+      reader.vatPercents([productIn("prd_x", "cat_vien")], [FAMILIES[1] as FamilyLike]),
+    ).rejects.toBeInstanceOf(CategoryNotFoundError);
+    expect(findByIdCalls).toEqual([]);
+  });
+});

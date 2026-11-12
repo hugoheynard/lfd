@@ -85,6 +85,8 @@ import { TakeCatalogRevisionHandler } from "./revision/application/take-catalog-
 import { CatalogRevisionController } from "./revision/http/catalog-revision.controller.js";
 import { PrismaCatalogRevisionRepository } from "./revision/infrastructure/prisma-catalog-revision.repository.js";
 import { PrismaCatalogRevisionSource } from "./revision/infrastructure/prisma-catalog-revision.source.js";
+import { CatalogOverviewReader } from "./revision/domain/ports/catalog-overview.reader.js";
+import { PrismaCatalogOverviewReader } from "./revision/infrastructure/prisma-catalog-overview.reader.js";
 import { EditorialReader } from "./product/domain/ports/editorial-reader.js";
 import { ReadinessRepository } from "./product/domain/ports/readiness.repository.js";
 import { EditorialRepository } from "./product/domain/ports/editorial.repository.js";
@@ -239,6 +241,7 @@ import {
     { provide: IllustratedProductsReader, useClass: PrismaIllustratedProductsReader },
     { provide: CatalogRevisionRepository, useClass: PrismaCatalogRevisionRepository },
     { provide: CatalogRevisionSource, useClass: PrismaCatalogRevisionSource },
+    { provide: CatalogOverviewReader, useClass: PrismaCatalogOverviewReader },
     TakeCatalogRevisionHandler,
     ListCatalogRevisionsHandler,
     DiffCatalogRevisionsHandler,

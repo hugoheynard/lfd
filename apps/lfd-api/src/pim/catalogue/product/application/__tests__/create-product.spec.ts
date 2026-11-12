@@ -1,3 +1,4 @@
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import { v7 as uuidV7 } from "uuid";
@@ -24,6 +25,10 @@ import {
   type CreateProductInput,
 } from "../create-product.js";
 import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+
+let intentCount = 0;
+/** Une clé d'intention neuve par geste voulu, comme l'écran. */
+const nextKey = (): string => `intent_${(intentCount += 1)}`;
 
 class FakeProductRepository extends ProductRepository {
   readonly written: ProductSnapshot[] = [];
@@ -173,6 +178,7 @@ function setup(taken: readonly string[] = []): {
       new RealIds(),
       availability,
       new RecordingCatalogEmitter(),
+      inMemoryIntents(),
     ),
   };
 }
@@ -181,11 +187,25 @@ function input(over: Partial<CreateProductInput> = {}): CreateProductInput {
   return { name: { fr: "Croissant au beurre" }, kind: "daily", categoryId: "cat_active", ...over };
 }
 
+describe("CreateProductHandler — une fois par intention", () => {
+  /** Régression : un double clic sur « Créer » ouvrait deux fiches sous deux références. */
+  it("rejouée avec la même clé, rend la même fiche sans en créer une autre", async () => {
+    const { handler, products } = setup();
+    const command = new CreateProductCommand(input(), "staff_1", nextKey());
+
+    const first = await handler.execute(command);
+    const replayed = await handler.execute(command);
+
+    expect(replayed).toBe(first);
+    expect(products.written).toHaveLength(1);
+  });
+});
+
 describe("CreateProductHandler — la référence proposée", () => {
   it("propose une référence opaque quand le champ est laissé vide", async () => {
     const { handler, products } = setup();
 
-    await handler.execute(new CreateProductCommand(input()));
+    await handler.execute(new CreateProductCommand(input(), "staff_1", nextKey()));
 
     expect(products.last.sku).toMatch(/^P-[A-Z2-9]{6}$/u);
   });
@@ -198,8 +218,8 @@ describe("CreateProductHandler — la référence proposée", () => {
   it("ne dérive la référence ni du nom du produit ni de sa famille", async () => {
     const { handler, products } = setup();
 
-    await handler.execute(new CreateProductCommand(input()));
-    await handler.execute(new CreateProductCommand(input()));
+    await handler.execute(new CreateProductCommand(input(), "staff_1", nextKey()));
+    await handler.execute(new CreateProductCommand(input(), "staff_1", nextKey()));
 
     const [first, second] = products.written;
     expect(first?.sku).not.toBe(second?.sku);
@@ -210,7 +230,7 @@ describe("CreateProductHandler — la référence proposée", () => {
   it("donne à la déclinaison par défaut la référence du produit, suffixée par son rang", async () => {
     const { handler, products } = setup();
 
-    await handler.execute(new CreateProductCommand(input()));
+    await handler.execute(new CreateProductCommand(input(), "staff_1", nextKey()));
 
     const { sku, variants } = products.last;
     expect(variants[0]?.sku).toBe(`${sku}-1`);
@@ -221,7 +241,9 @@ describe("CreateProductHandler — la référence proposée", () => {
   it("honore une référence saisie à la main", async () => {
     const { handler, products } = setup();
 
-    await handler.execute(new CreateProductCommand(input({ sku: "vien-croiss" })));
+    await handler.execute(
+      new CreateProductCommand(input({ sku: "vien-croiss" }), "staff_1", nextKey()),
+    );
 
     expect(products.last.sku).toBe("VIEN-CROISS");
     expect(products.last.variants[0]?.sku).toBe("VIEN-CROISS-1");
@@ -230,11 +252,11 @@ describe("CreateProductHandler — la référence proposée", () => {
   it("re-tire tant que la référence proposée est prise", async () => {
     const { handler, products } = setup();
     const first = await handler
-      .execute(new CreateProductCommand(input()))
+      .execute(new CreateProductCommand(input(), "staff_1", nextKey()))
       .then(() => products.last.sku);
 
     const { handler: second, products: written } = setup([first]);
-    await second.execute(new CreateProductCommand(input()));
+    await second.execute(new CreateProductCommand(input(), "staff_1", nextKey()));
 
     expect(written.last.sku).not.toBe(first);
   });
@@ -243,7 +265,9 @@ describe("CreateProductHandler — la référence proposée", () => {
     const { handler, products } = setup();
 
     await expect(
-      handler.execute(new CreateProductCommand(input({ categoryId: "cat_archived" }))),
+      handler.execute(
+        new CreateProductCommand(input({ categoryId: "cat_archived" }), "staff_1", nextKey()),
+      ),
     ).rejects.toThrow(CategoryArchivedError);
     expect(products.written).toHaveLength(0);
   });
@@ -256,6 +280,8 @@ describe("CreateProductHandler — ce qu'il inscrit au journal", () => {
     const id = await handler.execute(
       new CreateProductCommand(
         input({ allergens: ["UW"], editorial: { descriptionShort: { fr: "Pur beurre" } } }),
+        "staff_1",
+        nextKey(),
       ),
     );
 
@@ -274,7 +300,7 @@ describe("CreateProductHandler — ce qu'il inscrit au journal", () => {
   it("dit dans la charge utile si la fiche naît DÉCLARÉE ou non", async () => {
     const { handler, journal } = setup();
 
-    await handler.execute(new CreateProductCommand(input()));
+    await handler.execute(new CreateProductCommand(input(), "staff_1", nextKey()));
 
     expect(journal.entries[0]?.payload).toMatchObject({ declared: false });
   });
@@ -284,7 +310,9 @@ describe("CreateProductHandler — la fiche se valide contre le référentiel EN
   it("accepte un code que le référentiel connaît", async () => {
     const { handler, journal } = setup();
 
-    await handler.execute(new CreateProductCommand(input({ allergens: ["UW"] })));
+    await handler.execute(
+      new CreateProductCommand(input({ allergens: ["UW"] }), "staff_1", nextKey()),
+    );
 
     expect(journal.entries[0]?.payload).toMatchObject({ declared: true });
   });
@@ -299,7 +327,9 @@ describe("CreateProductHandler — la fiche se valide contre le référentiel EN
     const { handler, products } = setup();
 
     await expect(
-      handler.execute(new CreateProductCommand(input({ allergens: ["OLD"] }))),
+      handler.execute(
+        new CreateProductCommand(input({ allergens: ["OLD"] }), "staff_1", nextKey()),
+      ),
     ).rejects.toBeInstanceOf(ArchivedAllergenDeclaredError);
     expect(products.written).toHaveLength(0);
   });
@@ -308,7 +338,13 @@ describe("CreateProductHandler — la fiche se valide contre le référentiel EN
     const { handler } = setup();
 
     await expect(
-      handler.execute(new CreateProductCommand(input({ allergens: [], mayContain: ["OLD"] }))),
+      handler.execute(
+        new CreateProductCommand(
+          input({ allergens: [], mayContain: ["OLD"] }),
+          "staff_1",
+          nextKey(),
+        ),
+      ),
     ).rejects.toBeInstanceOf(ArchivedAllergenDeclaredError);
   });
 });

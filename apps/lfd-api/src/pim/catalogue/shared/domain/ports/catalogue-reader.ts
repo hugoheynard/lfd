@@ -61,6 +61,12 @@ export interface ChannelCategory {
   readonly vatByContext: CategoryVatPercents;
 }
 
+/** Ce que `vatPercents` lit d'une famille déjà chargée : ses taux propres, par contexte. */
+export interface VatFamily {
+  readonly id: string;
+  readonly vatByContext: Readonly<Record<string, string>>;
+}
+
 export abstract class CatalogueReader {
   abstract publishable(): Promise<ProductRecord[]>;
   abstract byIds(ids: readonly string[]): Promise<ProductRecord[]>;
@@ -76,9 +82,18 @@ export abstract class CatalogueReader {
    * Une famille inconnue est un REFUS (`CategoryNotFoundError`), pas une
    * absence de taux : deux causes distinctes (un rattachement cassé / un taux à
    * régler) ne doivent pas rendre le même symptôme.
+   *
+   * `families` évite de relire les familles que l'appelant a DÉJÀ chargées.
+   * Le contrat : la liste passée contient **toutes** les familles, archivées
+   * comprises (`CategoryRepository.listAll()`), et une famille qui n'y est
+   * pas lève toujours `CategoryNotFoundError` — une liste partielle se lirait
+   * comme un rattachement cassé. Réservé à la liste des fiches et aux
+   * constats de conformité, qui lisent déjà toutes les familles ; sans elle,
+   * chaque famille est relue (l'activation, l'ancre d'une révision).
    */
   abstract vatPercents(
     products: readonly ProductRecord[],
+    families?: readonly VatFamily[],
   ): Promise<ReadonlyMap<string, CategoryVatPercents>>;
 
   /** Les familles **non archivées**, avec leurs taux résolus, par contexte. */

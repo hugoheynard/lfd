@@ -2,6 +2,7 @@ import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core'
 import type { CatalogReemissionView } from '@lfd/pim-contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 
+import { GestureIntents } from '../../../shared/gesture-intents';
 import { ReemissionHttpApi } from './reemission-http-api';
 
 /**
@@ -22,6 +23,8 @@ export const REEMISSION_POLL_MS = 1500;
 @Injectable()
 export class ReemissionTracker {
   private readonly api = inject(ReemissionHttpApi);
+  /** Lancer inscrit un travail : une clé par portée, gardée jusqu'au succès. */
+  private readonly intents = new GestureIntents();
   private timer: ReturnType<typeof setTimeout> | null = null;
 
   readonly job = signal<CatalogReemissionView | null>(null);
@@ -56,7 +59,9 @@ export class ReemissionTracker {
     this.starting.set(true);
     this.error.set(null);
     try {
-      const id = await this.api.start(productId);
+      const subject = productId ?? 'everything';
+      const id = await this.api.start(productId, this.intents.keyFor(subject));
+      this.intents.done(subject);
       await this.read(id);
     } catch (caught) {
       this.error.set(httpErrorMessage(caught));

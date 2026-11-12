@@ -4,6 +4,7 @@ import type { CreatedIdResponse } from '@lfd/contracts';
 import type { CatalogReemissionView, LatestCatalogReemissionView } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
+import { intentOptions } from '../../../shared/gesture-intents';
 import { API_BASE_URL } from '../../data/api';
 
 /**
@@ -18,10 +19,17 @@ export class ReemissionHttpApi {
   private readonly http = inject(HttpClient);
   private readonly base = `${inject(API_BASE_URL)}/channels/b2b/reemit`;
 
-  /** Lance — une fiche, ou tout si `productId` vaut `null`. Rend l'identifiant du travail. */
-  async start(productId: string | null): Promise<string> {
+  /**
+   * Lance — une fiche, ou tout si `productId` vaut `null`. Rend l'identifiant
+   * du travail. `intentKey` : un double clic ne lance qu'un travail.
+   */
+  async start(productId: string | null, intentKey: string): Promise<string> {
     const created = await firstValueFrom(
-      this.http.post<CreatedIdResponse>(this.base, productId === null ? {} : { productId }),
+      this.http.post<CreatedIdResponse>(
+        this.base,
+        productId === null ? {} : { productId },
+        intentOptions(intentKey),
+      ),
     );
     return created.id;
   }

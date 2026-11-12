@@ -1,4 +1,5 @@
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
+import type { ProductComplianceFinding } from "@lfd/pim-contracts";
 
 import { ActiveSalesContextsReader } from "../../../sales-contexts/domain/ports/active-sales-contexts.reader.js";
 import { CategoryNotFoundError } from "../../category/domain/errors/category-errors.js";
@@ -14,6 +15,7 @@ import type { ActivationGaps } from "../domain/services/activation-gaps.js";
 import type { CompletenessRules } from "../domain/services/variant-completeness.js";
 import { audienceView, type AudienceView } from "./audience-view.js";
 import { readCompletenessRules } from "./completeness-support.js";
+import { complianceFindingsOf } from "./compliance-view.js";
 import { CitedAllergensReader } from "../domain/ports/cited-allergens.reader.js";
 import { IllustratedProductsReader } from "../domain/ports/illustrated-products.reader.js";
 
@@ -34,6 +36,8 @@ export type ProductListItem = ProductSnapshot &
   ActivationView & {
     /** Elle porte au moins une image (filtre « Sans image », 2026-10-28). */
     readonly illustrated: boolean;
+    /** Ses constats de conformité, calculés sur la même lecture ; vide hors fiche vivante. */
+    readonly complianceWarnings: readonly ProductComplianceFinding[];
   };
 
 /** Lecture du catalogue — dispatchée par le `QueryBus`. Sans paramètre. */
@@ -55,6 +59,9 @@ export class ListProductsHandler implements IQueryHandler<ListProductsQuery, Pro
    * toute la liste, jamais une fois par fiche. Une fiche rattachée à une
    * famille inconnue est un REFUS, comme dans le lecteur du catalogue : un
    * rattachement cassé ne se maquille pas en héritage.
+   *
+   * Les constats de conformité sont rendus sur la même lecture : l'écran
+   * n'a plus à relire tout le catalogue par `compliance-warnings`.
    */
   async execute(): Promise<ProductListItem[]> {
     const [all, categories, rules] = await Promise.all([
@@ -70,7 +77,10 @@ export class ListProductsHandler implements IQueryHandler<ListProductsQuery, Pro
     );
     const ids = products.map((product) => product.id);
     const [vat, cited, illustrated] = await Promise.all([
-      this.catalogue.vatPercents(products.map((product) => product.snapshot())),
+      this.catalogue.vatPercents(
+        products.map((product) => product.snapshot()),
+        categories,
+      ),
       this.cited.ofProducts(ids),
       this.illustrated.amongst(ids),
     ]);
@@ -79,16 +89,18 @@ export class ListProductsHandler implements IQueryHandler<ListProductsQuery, Pro
       if (categoryAudience === undefined) {
         throw new CategoryNotFoundError(product.categoryId);
       }
+      const resolved: Resolved = {
+        vat: vat.get(product.id) ?? {},
+        rules,
+        citedAllergens: cited.get(product.id) ?? [],
+        categoryAudience,
+      };
       return {
         ...product.snapshot(),
         ...audienceView(product, categoryAudience),
-        ...activationView(product, {
-          vat: vat.get(product.id) ?? {},
-          rules,
-          citedAllergens: cited.get(product.id) ?? [],
-          categoryAudience,
-        }),
+        ...activationView(product, resolved),
         illustrated: illustrated.has(product.id),
+        complianceWarnings: complianceFindingsOf(product, resolved),
       };
     });
   }

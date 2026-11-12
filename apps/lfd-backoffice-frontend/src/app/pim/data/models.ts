@@ -21,6 +21,7 @@
 import type {
   LocalizedText,
   OperationAudience,
+  ProductComplianceFinding,
   SaleUnit,
   VariantMinQuantities,
 } from '@lfd/pim-contracts';
@@ -236,6 +237,11 @@ export interface Product {
   activatable?: boolean;
   /** Elle porte au moins une image — rendu par la LISTE seule (filtre « Sans image »). */
   illustrated?: boolean;
+  /**
+   * Ses constats de conformité — rendus par la LISTE seule, jugés au serveur
+   * sur la même lecture. Absent ailleurs ; vide = aucun constat.
+   */
+  complianceWarnings?: readonly ProductComplianceFinding[];
   /** Étiquettes de workflow interne : `a-decrire`, `prix-a-verifier`,
    *  `titre-a-verifier`, `tva-a-valider` — ce qui reste à compléter. */
   workflowFlags?: string[];

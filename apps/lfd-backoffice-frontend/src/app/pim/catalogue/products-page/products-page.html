@@ -18,10 +18,6 @@
     </fold-callout>
   }
 
-  @if (complianceError(); as message) {
-    <fold-callout appearance="inset" variant="alert">{{ message }}</fold-callout>
-  }
-
   @if (categories().length === 0) {
     <fold-callout appearance="inset" variant="warning">
       Créez d'abord une <a routerLink="/pim/categories">catégorie</a> : un produit s'y rattache.

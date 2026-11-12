@@ -1,15 +1,11 @@
 import type { FoldBadgeVariant } from 'fold-ng';
-import type {
-  ComplianceSeverity,
-  ProductComplianceFinding,
-  ProductComplianceWarningView,
-} from '@lfd/pim-contracts';
+import type { ComplianceSeverity, ProductComplianceFinding } from '@lfd/pim-contracts';
 
 import type { ProductStatus } from '../data/models';
 
 /**
  * **Dire les constats de conformité d'une fiche** — le jugement UNIQUE du
- * serveur (`GET /pim/catalogue/products/compliance-warnings`), mis en mots
+ * serveur (rendu par `GET /pim/catalogue/products`, ligne par ligne), mis en mots
  * pour le staff. Rien n'est jugé ici : le front lit, il ne recalcule pas.
  */
 
@@ -19,11 +15,14 @@ export interface ComplianceBadge {
   readonly variant: FoldBadgeVariant;
 }
 
-/** Les constats, rangés par fiche. Une fiche absente n'en porte aucun. */
+/** Les constats, rangés par fiche, tels que la liste les rend. Absents = aucun. */
 export function findingsByProduct(
-  views: readonly ProductComplianceWarningView[],
+  products: readonly {
+    readonly id: string;
+    readonly complianceWarnings?: readonly ProductComplianceFinding[];
+  }[],
 ): ReadonlyMap<string, readonly ProductComplianceFinding[]> {
-  return new Map(views.map((view) => [view.productId, view.warnings]));
+  return new Map(products.map((product) => [product.id, product.complianceWarnings ?? []]));
 }
 
 /** Le pire constat : un seul bloquant suffit à bloquer. `null` = aucun constat. */

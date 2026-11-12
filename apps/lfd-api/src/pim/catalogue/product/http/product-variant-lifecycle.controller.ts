@@ -63,6 +63,9 @@ export class ProductVariantLifecycleController {
 
   /** En fait un produit, né inactif ; rend l'id du nouveau produit, que l'écran ouvre. */
   @Post(":id/variants/:variantId/detach")
+  @Idempotent(
+    "transition : la déclinaison détachée est arrêtée ; rejoué, l'agrégat refuse (409 VariantAlreadyDiscontinuedError) avant toute écriture",
+  )
   async detachVariant(@Param("id") id: string, @Param("variantId") variantId: string) {
     const productId = await this.commands.execute<DetachProductVariantCommand, string>(
       new DetachProductVariantCommand(id, variantId),

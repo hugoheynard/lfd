@@ -9,6 +9,7 @@ import {
   CatalogueReader,
   type CategoryVatPercents,
   type ChannelCategory,
+  type VatFamily,
 } from "../domain/ports/catalogue-reader.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
 import {
@@ -74,29 +75,38 @@ export class PrismaCatalogueReader extends CatalogueReader {
    */
   async vatPercents(
     products: readonly ProductRecord[],
+    families?: readonly VatFamily[],
   ): Promise<ReadonlyMap<string, CategoryVatPercents>> {
     const percentById = await this.percentIndex();
     const resolved = new Map<string, CategoryVatPercents>();
     // Les familles sont lues UNE fois chacune, même quand cent produits les
-    // partagent : c'est le cas normal d'un catalogue.
-    const families = new Map<string, Readonly<Record<string, string>>>();
-
+    // partagent : c'est le cas normal d'un catalogue. Passées par l'appelant,
+    // elles ne sont pas relues du tout.
+    const known = new Map<string, Readonly<Record<string, string>>>(
+      (families ?? []).map((family) => [family.id, family.vatByContext]),
+    );
     for (const product of products) {
-      let family = families.get(product.categoryId);
+      const family =
+        known.get(product.categoryId) ??
+        (families === undefined ? await this.familyVat(product.categoryId) : undefined);
       if (family === undefined) {
-        const category = await this.categories.findById(product.categoryId);
-        if (category === null) {
-          throw new CategoryNotFoundError(product.categoryId);
-        }
-        family = category.vatByContext;
-        families.set(product.categoryId, family);
+        throw new CategoryNotFoundError(product.categoryId);
       }
+      known.set(product.categoryId, family);
       resolved.set(
         product.id,
         this.resolve(effectiveVat(family, product.vatByContext), percentById),
       );
     }
     return resolved;
+  }
+
+  /** Les taux propres d'une famille ; `undefined` = famille inconnue. */
+  private async familyVat(
+    categoryId: string,
+  ): Promise<Readonly<Record<string, string>> | undefined> {
+    const category = await this.categories.findById(categoryId);
+    return category === null ? undefined : category.vatByContext;
   }
 
   /**

@@ -55,8 +55,9 @@ export class SetOrderTimeLimitHandler implements ICommandHandler<SetOrderTimeLim
     // ne dit rien, et journaliser un fait qu'on va ensuite rejeter laisserait
     // dans le journal une décision qui n'a jamais eu lieu.
     const limit = existing ?? OrderTimeLimit.set(this.ids.next(), payload);
-    if (existing !== null) {
-      existing.reset(payload);
+    // Rejouer le geste ne change rien : ni écriture, ni fait au journal, ni émission.
+    if (existing !== null && !existing.reset(payload)) {
+      return existing.id;
     }
 
     // La portée en mots, figée au journal (lot B du plan des phrases, D6).

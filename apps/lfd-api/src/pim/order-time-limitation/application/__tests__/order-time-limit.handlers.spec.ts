@@ -175,6 +175,19 @@ describe("SetOrderTimeLimitHandler", () => {
     expect(saved[0]?.time).toBe("16:00");
   });
 
+  /** Régression : reposer la même règle réécrivait la ligne, un fait au journal et l'échelle. */
+  it("rejouée à l'identique, n'écrit rien, ne trace rien et n'émet rien", async () => {
+    const existing = OrderTimeLimit.set("deja_la", payload({ time: "18:00" }));
+    const { handler, saved, journal, rules } = doubles(existing);
+
+    const id = await handler.execute(new SetOrderTimeLimitCommand(payload({ time: "18:00" })));
+
+    expect(id).toBe("deja_la");
+    expect(saved).toEqual([]);
+    expect(journal.entries).toEqual([]);
+    expect(rules.emissions).toEqual([]);
+  });
+
   /**
    * Une portée qui se contredit est refusée **avant** toute lecture : interroger
    * la base avec une question qui n'en est pas une n'aurait produit qu'un

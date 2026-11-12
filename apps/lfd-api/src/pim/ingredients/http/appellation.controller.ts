@@ -50,6 +50,9 @@ export class AppellationController {
   }
 
   @Post()
+  @Idempotent(
+    "par unicité : le code d'une appellation est unique ; rejouée, la création est refusée (409 AppellationCodeTakenError) avant toute écriture",
+  )
   async create(@Body(new ZodBody(createAppellationPayloadSchema)) body: CreateAppellationPayload) {
     const code = await this.commands.execute<CreateAppellationCommand, string>(
       new CreateAppellationCommand(body),
