@@ -91,7 +91,7 @@ export const ACCOUNTING_FACTS = {
   "legal_entity.creditor_account_changed": labelled({ last4: z.string() }),
   /**
    * Une modification du compte est proposée, en attente de la confirmation
-   * d'un second membre (T0, plan `plan-paiement-au-compte-par-virement.md`).
+   * d'un second membre (T0, `le-paiement-par-virement.md`).
    * `pendingId` désigne la saisie ; l'IBAN n'y figure que par ses quatre
    * derniers caractères.
    */
@@ -176,7 +176,7 @@ export const ACCOUNTING_FACTS = {
   ),
   /**
    * Le MOYEN d'encaissement d'un payeur — prélèvement ou virement (plan
-   * `plan-paiement-au-compte-par-virement.md`, V10) ; sujet : le payeur.
+   * `le-paiement-par-virement.md`, V10) ; sujet : le payeur.
    * `effectiveAt` : la prochaine clôture de sa suite, ou la dernière passée
    * quand `immediate`. `cancelled` : le passage à `from` est annulé, `to`
    * reste en vigueur. `reason` : le motif du geste, absent d'une annulation.
@@ -195,7 +195,7 @@ export const ACCOUNTING_FACTS = {
   ),
   /**
    * Un VIREMENT REÇU saisi depuis le relevé (plan
-   * `plan-paiement-au-compte-par-virement.md`, V7) ; sujet : le payeur.
+   * `le-paiement-par-virement.md`, V7) ; sujet : le payeur.
    * `reference` : ce que le relevé porte, tel que le client l'a écrit.
    * `invoices` : les numéros des factures réglées, dans l'ordre saisi.
    */

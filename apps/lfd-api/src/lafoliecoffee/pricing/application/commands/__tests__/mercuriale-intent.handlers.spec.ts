@@ -7,6 +7,7 @@
  * Les dates ne sont comparées qu'au `NOW` de la `FixedClock`.
  */
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
+import { intentSubject } from "../../../../../platform/intent/intent-subject.js";
 import { OncePerIntent } from "../../../../../platform/intent/once-per-intent.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { CompanyMercuriale } from "../../../domain/entities/company-mercuriale.js";
@@ -178,24 +179,23 @@ describeOncePerIntent("la pose", (): IntentProbe => {
     uow,
     intents,
   );
+  const terms = (sku: string) => ({
+    label: "Été",
+    validFrom: NEXT_YEAR.toISOString(),
+    validTo: null,
+    lines: [{ sku, unitPriceMillicents: 180_000 }],
+  });
   const pose = (key: string, companyId: string, sku: string) =>
-    handler.execute(
-      new PoseCompanyMercurialeCommand(
-        companyId,
-        {
-          label: "Été",
-          validFrom: NEXT_YEAR.toISOString(),
-          validTo: null,
-          lines: [{ sku, unitPriceMillicents: 180_000 }],
-        },
-        STAFF,
-        key,
-      ),
-    );
+    handler.execute(new PoseCompanyMercurialeCommand(companyId, terms(sku), STAFF, key));
   return {
     ledger,
     now: NOW,
-    intent: { actorId: STAFF, key: KEY, gesture: MERCURIALE_GESTURES.pose, subject: "co_folie" },
+    intent: {
+      actorId: STAFF,
+      key: KEY,
+      gesture: MERCURIALE_GESTURES.pose,
+      subject: intentSubject("co_folie", terms("VIE-012")),
+    },
     run: (key, other = false) => pose(key, other ? "co_other" : "co_folie", "VIE-012"),
     runRefused: (key) => pose(key, "co_folie", "HORS-VENTE"),
     writes: () => mercuriales.saved.length,
@@ -216,26 +216,26 @@ describeOncePerIntent("l'avenant", (): IntentProbe => {
     new InMemoryVolumeCommitments(),
     intents,
   );
+  const amendment = (sku: string) => ({
+    validFrom: NEXT_YEAR.toISOString(),
+    validTo: null,
+    reason: "Référence ajoutée",
+    lines: [{ sku, unitPriceMillicents: 150_000 }],
+    endedSkus: [],
+  });
   const amend = (key: string, mercurialeId: string, sku: string) =>
     handler.execute(
-      new AmendCompanyMercurialeCommand(
-        "co_folie",
-        mercurialeId,
-        {
-          validFrom: NEXT_YEAR.toISOString(),
-          validTo: null,
-          reason: "Référence ajoutée",
-          lines: [{ sku, unitPriceMillicents: 150_000 }],
-          endedSkus: [],
-        },
-        STAFF,
-        key,
-      ),
+      new AmendCompanyMercurialeCommand("co_folie", mercurialeId, amendment(sku), STAFF, key),
     );
   return {
     ledger,
     now: NOW,
-    intent: { actorId: STAFF, key: KEY, gesture: MERCURIALE_GESTURES.amend, subject: "merc_1" },
+    intent: {
+      actorId: STAFF,
+      key: KEY,
+      gesture: MERCURIALE_GESTURES.amend,
+      subject: intentSubject("merc_1", "co_folie", amendment("PAI-001-1")),
+    },
     run: (key, other = false) => amend(key, other ? "merc_2" : "merc_1", "PAI-001-1"),
     runRefused: (key) => amend(key, "merc_1", "HORS-VENTE"),
     writes: () => mercuriales.written.length,
@@ -253,20 +253,15 @@ describeOncePerIntent("la correction de dates", (): IntentProbe => {
     uow,
     intents,
   );
+  const window = (reason: string) => ({
+    validFrom: "2026-03-31T22:00:00.000Z",
+    validTo: "2026-06-30T22:00:00.000Z",
+    reason,
+    basedOnAmendmentId: null,
+  });
   const correct = (key: string, mercurialeId: string, reason: string) =>
     handler.execute(
-      new CorrectMercurialeWindowCommand(
-        "co_folie",
-        mercurialeId,
-        {
-          validFrom: "2026-03-31T22:00:00.000Z",
-          validTo: "2026-06-30T22:00:00.000Z",
-          reason,
-          basedOnAmendmentId: null,
-        },
-        STAFF,
-        key,
-      ),
+      new CorrectMercurialeWindowCommand("co_folie", mercurialeId, window(reason), STAFF, key),
     );
   return {
     ledger,
@@ -275,7 +270,7 @@ describeOncePerIntent("la correction de dates", (): IntentProbe => {
       actorId: STAFF,
       key: KEY,
       gesture: MERCURIALE_GESTURES.correctWindow,
-      subject: "merc_1",
+      subject: intentSubject("merc_1", "co_folie", window("Posée en 2027")),
     },
     run: (key, other = false) => correct(key, other ? "merc_2" : "merc_1", "Posée en 2027"),
     runRefused: (key) => correct(key, "merc_1", "  "),

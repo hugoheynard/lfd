@@ -7,7 +7,7 @@ import { ProductListStore } from './product-list-store';
 import type { ProductListing } from './product-http-api';
 
 /**
- * La liste des fiches (`plan-lectures-du-pim.md`, § 4.3) : une lecture à la
+ * La liste des fiches (`le-cache-du-back-office.md`, § 5.4) : une lecture à la
  * première ouverture, une relecture en fond qui garde la copie sur un échec.
  */
 

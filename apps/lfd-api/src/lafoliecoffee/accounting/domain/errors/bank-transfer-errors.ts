@@ -7,7 +7,7 @@ import { euros } from "../services/invoice-pdf-wording.js";
 
 /**
  * Les refus du geste **« virement reçu »** (plan
- * `plan-paiement-au-compte-par-virement.md`, V7). Lus par la comptabilité sans
+ * `le-paiement-par-virement.md`, V7). Lus par la comptabilité sans
  * le code sous les yeux : chacun nomme la facture en cause et le geste de
  * sortie. Aucun ne porte d'IBAN.
  */

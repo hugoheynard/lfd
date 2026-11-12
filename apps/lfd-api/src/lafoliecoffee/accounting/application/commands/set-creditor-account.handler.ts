@@ -17,7 +17,7 @@ import { SetCreditorAccountCommand } from "./legal-entity-commands.js";
 /**
  * Enregistre le compte où l'argent arrive — tout de suite s'il n'y en a aucun,
  * en proposition à confirmer par un second membre sinon (quatre yeux, plan
- * `plan-paiement-au-compte-par-virement.md`, T0 ; la règle est dans
+ * `le-paiement-par-virement.md`, T0 ; la règle est dans
  * `LegalEntity.setCreditorAccount`). La route répond 204 dans les deux cas :
  * la fiche relue dit s'il attend.
  *

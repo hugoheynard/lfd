@@ -1,5 +1,5 @@
 -- RETOUR ARRIÈRE de 20261112150100_le_moyen_d_encaissement_du_payeur
--- (documentation/comptabilite/plan-paiement-au-compte-par-virement.md, T1).
+-- (documentation/comptabilite/le-paiement-par-virement.md, T1).
 --
 -- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
 -- « appliquée ».

@@ -2,6 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { MandateNotFoundError } from "../../domain/errors/mandate-errors.js";
@@ -41,7 +42,7 @@ export class RevokeMandateHandler implements ICommandHandler<RevokeMandateComman
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: REVOKE_GESTURE,
-        subject: command.companyId,
+        subject: intentSubject(command.companyId),
       },
       NOTHING_TO_REPLAY,
       (seal) => this.revoke(command, seal),

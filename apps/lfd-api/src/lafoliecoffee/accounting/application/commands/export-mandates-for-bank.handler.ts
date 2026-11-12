@@ -4,6 +4,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { MandateBankExport } from "../../domain/entities/mandate-bank-export.js";
 import { BankExportWithoutCreditorIdentifierError } from "../../domain/errors/mandate-bank-export-errors.js";
@@ -73,7 +74,7 @@ export class ExportMandatesForBankHandler implements ICommandHandler<
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: EXPORT_MANDATES_GESTURE,
-        subject: command.legalEntityId,
+        subject: intentSubject(command.legalEntityId),
       },
       CREATED_ID_REPLAY,
       (seal) => this.export(command, seal),

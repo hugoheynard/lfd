@@ -107,7 +107,7 @@
       // L'objet des rayons pro (`documentation/caching-usage/le-rayon-en-cache.md`,
       // lot C2) : joint par le seul conteneur, par un gestionnaire de sortie.
       { "name": "PRO_SHELVES", "class_name": "ProShelves" },
-      // L'objet des journées (`documentation/caching-usage/plan-objet-des-journees.md`).
+      // L'objet des journées (`documentation/caching-usage/le-cache-du-back-office.md`).
       { "name": "DAY_VERSIONS", "class_name": "DayVersions" },
     ],
     // 🔴 Le code des objets se met à jour AVEC l'image, pas jusqu'à 5 min
@@ -123,7 +123,7 @@
     { "tag": "v1", "new_sqlite_classes": ["Backend"] },
     { "tag": "v2", "new_sqlite_classes": ["ProShelves"] },
     // ⚠️ Ne se défait pas par un revert : retirer l'objet demandera une
-    // migration `deleted_classes` (plan-objet-des-journees.md, § 3 bis).
+    // migration `deleted_classes` (le-cache-du-back-office.md, § 3).
     { "tag": "v3", "new_sqlite_classes": ["DayVersions"] },
   ],
 

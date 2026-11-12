@@ -1,5 +1,5 @@
 // La table horaire des objets partagés (`documentation/caching-usage/
-// plan-onglet-cache.md`, § 3). Le SQL passe par `MetricsSql`, la forme commune
+// le-cache-du-back-office.md`, § 6). Le SQL passe par `MetricsSql`, la forme commune
 // du stockage SQLite d'un Durable Object et de celui de Node — d'où des tests
 // sur une vraie base SQLite.
 //

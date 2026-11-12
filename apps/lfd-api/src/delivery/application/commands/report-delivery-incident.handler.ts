@@ -6,6 +6,7 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { CREATED_ID_REPLAY, OncePerIntent } from "../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../platform/intent/intent-subject.js";
 import { ProductionDocumentStore } from "../../../platform/storage/production-document-store.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { DeliveryIncident, incidentPhotoKey } from "../../domain/entities/delivery-incident.js";
@@ -78,7 +79,7 @@ export class ReportDeliveryIncidentHandler implements ICommandHandler<
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: "delivery.incident.report",
-        subject: command.roundId,
+        subject: intentSubject(command.roundId, command.fields, command.photo),
       },
       CREATED_ID_REPLAY,
       (seal) => this.report(command, seal),

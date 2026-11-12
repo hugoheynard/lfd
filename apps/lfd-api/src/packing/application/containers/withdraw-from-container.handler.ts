@@ -42,7 +42,7 @@ export class WithdrawFromContainerHandler implements ICommandHandler<
 
   execute(command: WithdrawFromContainerCommand): Promise<void> {
     return this.intents.runSealed(
-      movementIntent("packing.withdraw", command, command.containerId),
+      movementIntent("packing.withdraw", command, command.containerId, command.quantity),
       NOTHING_TO_REPLAY,
       (seal) => this.withdraw(command, seal),
     );

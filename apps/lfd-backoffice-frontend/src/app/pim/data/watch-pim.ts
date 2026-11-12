@@ -6,7 +6,7 @@ import { VersionWatcher } from '../../shared/version/version-watcher';
 
 /**
  * Branche un store du référentiel sur le numéro `pim`
- * (`documentation/caching-usage/plan-lectures-du-pim.md`, § 4.3 et § 4.4) :
+ * (`documentation/caching-usage/le-cache-du-back-office.md`, § 5.4 et § 5.3) :
  * quand le numéro diffère, le store se relit en fond.
  *
  * Le sujet ne se suit que si la personne a le droit de la ROUTE que lit le

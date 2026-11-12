@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { shownOnceReplay } from "../../../../platform/intent/shown-once-replay.js";
 import { VitrineCredentialsAlreadyShownError } from "../../domain/errors/vitrine-errors.js";
 import { Clock } from "../../../../platform/time/clock.js";
@@ -51,7 +52,7 @@ export class RotateVitrineCredentialsHandler implements ICommandHandler<
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: ROTATE_GESTURE,
-        subject: command.subscriberId,
+        subject: intentSubject(command.subscriberId),
       },
       ROTATED_REPLAY,
       (seal) => this.rotate(command, seal),

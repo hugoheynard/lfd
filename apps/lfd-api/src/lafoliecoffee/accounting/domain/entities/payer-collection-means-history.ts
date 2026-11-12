@@ -74,7 +74,7 @@ export interface PayerCollectionMeansRecord {
 
 /**
  * **L'historique du moyen d'encaissement d'un payeur** (plan
- * `plan-paiement-au-compte-par-virement.md`, V1, V2, V10, C1) — append-only,
+ * `le-paiement-par-virement.md`, V1, V2, V10, C1) — append-only,
  * à part de l'historique du mode : il ne crée aucune clôture et n'entre ni
  * dans `PayerTimeline` ni dans `InvoicingCalendar`. Il LIT les clôtures du
  * mode du payeur pour se dater.

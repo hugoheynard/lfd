@@ -104,8 +104,8 @@ function keysOf(spec: VersionWatch): string[] {
 }
 
 /**
- * **Le veilleur unique** (`documentation/caching-usage/plan-veilleur-unique.md`,
- * § 3.4) : toutes les 15 s, onglet visible, il demande « les numéros ont-ils
+ * **Le veilleur unique** (`documentation/caching-usage/le-cache-du-back-office.md`,
+ * § 2.4) : toutes les 15 s, onglet visible, il demande « les numéros ont-ils
  * changé ? » pour TOUS les écrans ouverts, et ne relit que ceux dont un sujet
  * a bougé.
  *

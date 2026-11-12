@@ -11,6 +11,15 @@ export abstract class PromotionRepository {
   abstract load(id: string): Promise<Promotion | null>;
 
   /**
+   * La promotion, chargée SOUS LE VERROU DE SA LIGNE, dans l'unité de travail
+   * de l'appelant : deux gestes concurrents sur la même promotion se jouent
+   * l'un après l'autre, et le second décide sur l'état écrit par le premier
+   * (une transition refusée l'est aussi en concurrence). Hors d'une unité de
+   * travail, refus technique.
+   */
+  abstract loadLocked(id: string): Promise<Promotion | null>;
+
+  /**
    * Écrit la promotion ET son acte, dans une transaction : l'état sans sa
    * trace n'existe pas, la trace d'une écriture refusée non plus. La portée
    * est remplacée en bloc.

@@ -2,7 +2,7 @@ import { InvalidCollectionMeansError } from "../errors/invalid-collection-means.
 
 /**
  * **Comment un payeur au compte règle** (plan
- * `plan-paiement-au-compte-par-virement.md`, V1) : par prélèvement SEPA, ou
+ * `le-paiement-par-virement.md`, V1) : par prélèvement SEPA, ou
  * par virement à réception de facture. Des VALEURS : elles vivent en base.
  */
 export type CollectionMeans = "sepa_debit" | "bank_transfer";

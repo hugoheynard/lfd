@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { StaffContacts } from "../../../../staff/directory/domain/staff-contacts.js";
 import { MailCopyAdminReader } from "../../domain/ports/mail-copy-admin.reader.js";
 import { MailTrialSender } from "../../domain/ports/mail-specimen.renderer.js";
@@ -51,9 +52,7 @@ export class SendMailCopyTrialHandler implements ICommandHandler<SendMailCopyTri
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: "mail.trial",
-        subject: `${command.mail}:${command.locale}:${command.source}${
-          command.editor === null ? "" : `:${command.editor.caseId}`
-        }`,
+        subject: intentSubject(command.mail, command.locale, command.source, command.editor),
       },
       NOTHING_TO_REPLAY,
       (seal) => this.trial(command, seal),

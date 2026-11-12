@@ -9,7 +9,7 @@ export type { VersionSubject } from '@lfd/contracts';
 
 /**
  * La **porte unique** des versions — `GET admin/versions`
- * (`documentation/caching-usage/plan-veilleur-unique.md`, § 3.3).
+ * (`documentation/caching-usage/le-cache-du-back-office.md`, § 2.3).
  *
  * 🔴 **Le SEUL code du front qui l'appelle** (`lint:day-version-door` le
  * tient) : un écran confie ses sujets au `VersionWatcher`, jamais à la porte

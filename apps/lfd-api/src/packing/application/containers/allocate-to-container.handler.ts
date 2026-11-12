@@ -59,7 +59,7 @@ export class AllocateToContainerHandler implements ICommandHandler<
 
   execute(command: AllocateToContainerCommand): Promise<void> {
     return this.intents.runSealed(
-      movementIntent("packing.allocate", command, command.containerId),
+      movementIntent("packing.allocate", command, command.containerId, command.quantity),
       NOTHING_TO_REPLAY,
       (seal) => this.allocate(command, seal),
     );

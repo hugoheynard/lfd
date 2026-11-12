@@ -55,13 +55,6 @@ export const IDENTITY_SCENARIOS: ScenarioSet = {
     replay: "shown-once",
   }),
 
-  [routeKey("staff/directory/http/admin-staff-users.controller.ts", "invite")]: async ({
-    ctx,
-  }) => ({
-    sub: STAFF,
-    path: `/admin/staff-users/${await staffFiche(ctx, "invited")}/invitation`,
-  }),
-
   [routeKey("staff/directory/http/admin-staff-users.controller.ts", "setStatus")]: async ({
     ctx,
   }) => ({

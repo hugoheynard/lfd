@@ -1,7 +1,7 @@
 /**
  * **Le cache partagé des contenus versionnés** — une charge JSON rangée sous
  * une clé opaque et le numéro qu'elle reflète
- * (`documentation/caching-usage/plan-catalogue-du-back-office.md`, § 3.5).
+ * (`documentation/caching-usage/le-cache-du-back-office.md`, § 4.5).
  * Implémenté par l'objet `DayVersions` du conteneur, ou absent.
  *
  * `platform` ne sait pas ce que la charge contient : la clé est opaque, le

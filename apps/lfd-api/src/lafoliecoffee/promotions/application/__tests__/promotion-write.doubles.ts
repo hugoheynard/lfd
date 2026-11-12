@@ -41,6 +41,11 @@ export class InMemoryPromotions extends PromotionRepository {
     return Promise.resolve(this.stored.get(id) ?? null);
   }
 
+  /** Le verrou n'a pas de sens en mémoire : les tests d'application sont séquentiels. */
+  loadLocked(id: string): Promise<Promotion | null> {
+    return this.load(id);
+  }
+
   save(promotion: Promotion, act: PromotionAct): Promise<void> {
     this.stored.set(promotion.id, promotion);
     this.acts.push(act);
@@ -172,6 +177,7 @@ export function writeScene(at: Date) {
   const afterCommit = new HeldAfterCommit();
   const edge = new RecordingPublicSettingsEdgeCache();
   const purge = [afterCommit, edge] as const;
+  const uow = new DirectUnitOfWork();
   return {
     promotions,
     catalogue,
@@ -184,12 +190,12 @@ export function writeScene(at: Date) {
       new FixedIdGenerator("promo"),
       clock,
       ...purge,
-      new DirectUnitOfWork(),
+      uow,
       inMemoryIntents(),
     ),
-    revise: new RevisePromotionHandler(promotions, guard, names, clock, ...purge),
-    pause: new PausePromotionHandler(promotions, names, clock, ...purge),
-    resume: new ResumePromotionHandler(promotions, guard, names, clock, ...purge),
-    archive: new ArchivePromotionHandler(promotions, names, clock, ...purge),
+    revise: new RevisePromotionHandler(promotions, guard, names, clock, ...purge, uow),
+    pause: new PausePromotionHandler(promotions, names, clock, ...purge, uow),
+    resume: new ResumePromotionHandler(promotions, guard, names, clock, ...purge, uow),
+    archive: new ArchivePromotionHandler(promotions, names, clock, ...purge, uow),
   };
 }

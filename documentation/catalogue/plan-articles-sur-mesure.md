@@ -430,7 +430,7 @@ flowchart LR
   vérification de la recherche serveur, correction du JSDoc de `servedTo`.
 - **L2 back-office** : les écrans du § 7.
 - **L3 boutique** : `orderable:false` grisé, rien dans les suggestions, sauf les habituels, grisés avec leur raison (Hugo, 2026-10-30).
-  🟦 Bâti le 2026-10-30 (§ 10 bis).
+  ✅ Bâti le 2026-10-30, en production (§ 10 bis).
 - **L4** : e2e du mur et budget.
 
 ## 9. Tests
@@ -510,7 +510,7 @@ naturellement ».
   par `parent_company_id` dans le lecteur d'administration.
 - **L1b** — le mur (§ 5, § 6) : `CatalogViewer`, `servedToViewer`, refus
   nommé, S3, sélecteur de la mercuriale filtré.
-  🟦 **Bâti le 2026-10-30, non commité.** `CatalogViewer` remplace l'audience
+  ✅ **Bâti le 2026-10-30, en production.** `CatalogViewer` remplace l'audience
   dans `CatalogReader` et `ProductCatalogReader` (`findSku` retiré du port) ;
   `servedToViewer` pur (`catalog/domain/served-to-viewer.ts`) ; S3 dans
   `servedTo` et `servedToAnyone` ; `readReservationHolders` dans
@@ -529,7 +529,7 @@ naturellement ».
   `staff` (le mur est tenu par la porte du prix). Budget : `COLD_QUOTE_OPS`
   inchangé à 7, le cas froid `/shop/quote/mine` reste au L4.
 - **L3** — la boutique (§ 7, § 8).
-  🟦 **Bâti le 2026-10-30, non commité.** La vignette d'un article
+  ✅ **Bâti le 2026-10-30, en production.** La vignette d'un article
   `orderable: false` se grise (photo seule, le texte garde son contraste) et
   dit « Réservé à un autre compte » à la place du « + », sans « − » ni
   pastille ; le nom, seul arrêt de la tuile, est décrit par cette raison
@@ -553,7 +553,7 @@ naturellement ».
   est réservé. Les lectures (marqueurs, réservataires d'un article, articles
   réservés d'une société) demandent `lfc_made_to_order:read` — la liste des
   réservataires nomme des clients — et les gestes `write`.
-  🟦 **Bâti le 2026-10-30, non commité** : valeur d'enum
+  ✅ **Bâti le 2026-10-30, en production** : valeur d'enum
   `20261031020000_le_droit_du_sur_mesure` (aucun droit accordé), surface
   `@AdminSurface("lfc_made_to_order")` sur `AdminMadeToOrderController` ;
   au back-office, « Sur mesure… » et les badges du catalogue publié, le

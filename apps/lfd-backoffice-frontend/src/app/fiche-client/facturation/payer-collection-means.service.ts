@@ -11,7 +11,7 @@ const BASE = `${B2B_API_BASE}/admin/accounting/legal-entities`;
 /**
  * **Le moyen d'encaissement d'un payeur** — prélèvement SEPA ou virement
  * bancaire — chez une entité émettrice (plan
- * `documentation/comptabilite/plan-paiement-au-compte-par-virement.md`, V1,
+ * `documentation/comptabilite/le-paiement-par-virement.md`, V1,
  * V2, V10).
  *
  * Transport pur : la date d'effet est posée par le serveur (immédiate pour un

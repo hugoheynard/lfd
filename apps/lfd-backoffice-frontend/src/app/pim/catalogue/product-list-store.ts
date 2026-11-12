@@ -9,7 +9,7 @@ export type ProductListState = 'idle' | 'loading' | 'ready' | 'error';
 
 /**
  * **La liste des fiches du référentiel**, gardée tant que l'onglet vit
- * (`documentation/caching-usage/plan-lectures-du-pim.md`, § 4.3).
+ * (`documentation/caching-usage/le-cache-du-back-office.md`, § 5.4).
  *
  * - Lue à la **première** ouverture de l'écran, rien avant ; une réouverture
  *   montre la copie sans relire.

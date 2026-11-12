@@ -20,7 +20,7 @@ export interface ScopedSubject {
 }
 
 /**
- * **Le registre des sujets** (`plan-veilleur-unique.md`, § 3.1) : les
+ * **Le registre des sujets** (`le-cache-du-back-office.md`, § 2.1) : les
  * journaux de journée (portée `day`, tenus par {@link DayVersionRegistry}) et
  * les sujets globaux (portée `global`).
  *

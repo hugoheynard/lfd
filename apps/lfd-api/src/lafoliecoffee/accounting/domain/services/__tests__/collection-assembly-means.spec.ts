@@ -9,7 +9,7 @@ import { ENTITY_ID, SEPTEMBER, mandate, order } from "./collection-fixtures.js";
 
 /**
  * **Le lot lit le moyen de la facture, bon par bon** (plan
- * `plan-paiement-au-compte-par-virement.md`, K2, K9). Les dates ne sont
+ * `le-paiement-par-virement.md`, K2, K9). Les dates ne sont
  * comparées qu'entre elles : aucune horloge n'est lue.
  */
 

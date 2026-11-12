@@ -5,7 +5,7 @@ import { FoldCalloutComponent, FoldElementTitleComponent } from 'fold-ng';
 import { TransferInvoicesCard } from '../transfer-invoices-card/transfer-invoices-card';
 
 /**
- * **Ce que le virement demande** (plan `plan-paiement-au-compte-par-virement.md`,
+ * **Ce que le virement demande** (`le-paiement-par-virement.md`,
  * § « L'écran », V5, V6) : rien à signer. Nos coordonnées — celles que chaque
  * facture porte —, l'échéance du cycle, et les factures à régler.
  *

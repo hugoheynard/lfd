@@ -9,7 +9,7 @@ export const CATALOG_ADMIN_FRESH_MS = 15_000;
 
 /**
  * **L'écran Catalogue du back-office**, pour la porte des versions
- * (`plan-catalogue-du-back-office.md`, § 3.3) : le numéro du journal
+ * (`le-cache-du-back-office.md`, § 4.3) : le numéro du journal
  * `public.catalog_admin_change`. Sous `lfc_catalog:read`, le droit de l'écran.
  */
 @Injectable()

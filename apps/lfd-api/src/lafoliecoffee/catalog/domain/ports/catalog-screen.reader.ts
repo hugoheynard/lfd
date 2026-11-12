@@ -11,7 +11,7 @@ export interface CatalogScreenSource {
 
 /**
  * **Port de lecture de l'écran Catalogue du back-office**
- * (`documentation/caching-usage/plan-catalogue-du-back-office.md`, § 3.1–3.2).
+ * (`documentation/caching-usage/le-cache-du-back-office.md`, § 4.1–4.2).
  *
  * Distinct de `PublishedCatalogReader` et de `CatalogAdminReader` (ISP) : il
  * rassemble ce que les deux lisent, en lisant les articles UNE fois, sans les

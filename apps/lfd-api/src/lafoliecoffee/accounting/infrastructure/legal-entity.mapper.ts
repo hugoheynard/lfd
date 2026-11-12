@@ -45,7 +45,7 @@ export function toDomain(row: LegalEntityRow, cipher: FieldCipher): LegalEntity 
  * sur ce que rend cette fonction : ni la proposition en attente
  * (`pending_creditor_iban_sealed`), ni l'ancienne colonne claire
  * `creditor_iban`, qui n'est plus alimentée depuis le scellement et ne sert
- * plus que de retour arrière (plan `plan-paiement-au-compte-par-virement.md`,
+ * plus que de retour arrière (`le-paiement-par-virement.md`,
  * T0). Une entité qui n'aurait que la valeur claire se lit sans compte, et son
  * compte se ressaisit par l'écran — première saisie, donc immédiate.
  */

@@ -37,17 +37,20 @@ export class CancelPaymentLinkHandler implements ICommandHandler<CancelPaymentLi
   ) {}
 
   async execute(command: CancelPaymentLinkCommand): Promise<void> {
-    const link = await this.links.load(command.paymentLinkId);
-    if (link === null) {
-      throw new PaymentLinkNotFoundError(command.paymentLinkId);
-    }
-    link.cancel(this.clock.now(), command.staffUserId);
-    // La société existe : la clé étrangère le garantit. L'id en repli ne sert
-    // qu'à ne jamais écrire un sujet vide si la lecture échouait à la nommer.
-    const companyName = (await this.companies.nameOf(link.companyId)) ?? link.companyId;
-    await this.uow.run(async () => {
-      await this.links.save(link);
-      await this.events.publishTraced(new PaymentLinkCancelledEvent(link, companyName));
+    // Sous le verrou de la ligne : une seconde annulation, ou un paiement
+    // reçu au même instant, décide sur l'état écrit par celui-ci.
+    const link = await this.uow.run(async () => {
+      const locked = await this.links.loadLocked(command.paymentLinkId);
+      if (locked === null) {
+        throw new PaymentLinkNotFoundError(command.paymentLinkId);
+      }
+      locked.cancel(this.clock.now(), command.staffUserId);
+      // La société existe : la clé étrangère le garantit. L'id en repli ne sert
+      // qu'à ne jamais écrire un sujet vide si la lecture échouait à la nommer.
+      const companyName = (await this.companies.nameOf(locked.companyId)) ?? locked.companyId;
+      await this.links.save(locked);
+      await this.events.publishTraced(new PaymentLinkCancelledEvent(locked, companyName));
+      return locked;
     });
 
     try {

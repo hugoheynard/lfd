@@ -6,6 +6,7 @@ import { ensureServiceDayNotPast } from "../../domain/services/composable-day.js
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { CREATED_ID_REPLAY, OncePerIntent } from "../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../platform/intent/intent-subject.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { DeliveryRound } from "../../domain/entities/delivery-round.js";
 import { DeliveryRoundOpenedEvent } from "../../domain/events/delivery-round.events.js";
@@ -45,7 +46,7 @@ export class OpenDeliveryRoundHandler implements ICommandHandler<OpenDeliveryRou
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: "delivery.round.open",
-        subject: `${day}/${vehicleId}`,
+        subject: intentSubject(`${day}/${vehicleId}`, command.payload),
       },
       CREATED_ID_REPLAY,
       (seal) => this.open(command, seal),

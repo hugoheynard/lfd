@@ -5,7 +5,7 @@
 > (tarif figé à la commande, colonnes du franco), 1b (le calcul du franco),
 > la saisie du seuil au back-office, la clientèle fermée grisée, les pastilles
 > « Global », la révision sans seuil figé qui prend celui du jour.
-> 🟦 **Sur `dev`, pas en production** : **0c** (`0d0ff6b4c`, `292509178` —
+> ✅ **En production** (`adb9c41e3`) : **0c** (`0d0ff6b4c`, `292509178` —
 > `GET /delivery-zones?audience=b2b|b2c` sert le frais et le seuil résolus,
 > la boutique et la saisie staff les lisent par clientèle) et **1c**
 > (`0d0ff6b4c`, `292509178` — le devis sert `freeDelivery` ; le panier dit
@@ -233,12 +233,12 @@ particulier (TTC « environ », servi par le serveur).
 
 | Lot | Contenu                                                                                                   | Seul ?                |
 | --- | --------------------------------------------------------------------------------------------------------- | --------------------- |
-| 0a  | 🟦 table du réglage global + colonnes de zone nullables ; rien ne change encore                           | oui                   |
-| 0b  | 🟦 résolution zone → global dans `deliveryRoute`, double calcul supprimé, écran, purge                    | oui                   |
-| 0c  | 🟦 serveur (`GET /delivery-zones?audience=`) ; boutique et saisie staff bâties (2026-11-05)               | après « pending pro » |
-| 1a  | 🟦 le franco figé sur la commande ; recomposition et bon partiel le lisent ; barème figé relu en révision | avant 1b              |
-| 1b  | 🟦 le calcul du franco (`priceBasket`, `composeExactOrder`) ; révision contre le seuil figé               | après 1a              |
-| 1c  | 🟦 serveur (devis `freeDelivery`) ; affichage boutique bâti (2026-11-05)                                  | après 1b              |
+| 0a  | ✅ table du réglage global + colonnes de zone nullables ; rien ne change encore                           | oui                   |
+| 0b  | ✅ résolution zone → global dans `deliveryRoute`, double calcul supprimé, écran, purge                    | oui                   |
+| 0c  | ✅ serveur (`GET /delivery-zones?audience=`) ; boutique et saisie staff bâties (2026-11-05)               | après « pending pro » |
+| 1a  | ✅ le franco figé sur la commande ; recomposition et bon partiel le lisent ; barème figé relu en révision | avant 1b              |
+| 1b  | ✅ le calcul du franco (`priceBasket`, `composeExactOrder`) ; révision contre le seuil figé               | après 1a              |
+| 1c  | ✅ serveur (devis `freeDelivery`) ; affichage boutique bâti (2026-11-05)                                  | après 1b              |
 
 **Ce que 1a a bâti (2026-11-05)** :
 

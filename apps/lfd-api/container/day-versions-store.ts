@@ -1,5 +1,5 @@
 // Les décisions de l'objet des journées (`documentation/caching-usage/
-// plan-objet-des-journees.md`, et `plan-veilleur-unique.md` § 3.3 : une carte
+// le-cache-du-back-office.md`, § 3 et § 2.3 : une carte
 // par portée, un instant de lecture par sujet) — `day-versions.ts` ne fait que
 // les relier au stockage SQLite, et ces fonctions pures sont sous tests.
 

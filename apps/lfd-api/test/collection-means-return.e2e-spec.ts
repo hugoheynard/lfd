@@ -1,6 +1,6 @@
 /**
  * E2E : **pas de changement de moyen pendant un retour bancaire** (plan
- * `documentation/comptabilite/plan-paiement-au-compte-par-virement.md`, V10).
+ * `documentation/comptabilite/le-paiement-par-virement.md`, V10).
  * Un payeur prélevé dont la ligne revient de la banque, retour pas encore
  * décidé : passer au virement est refusé, en nommant le geste de sortie.
  */

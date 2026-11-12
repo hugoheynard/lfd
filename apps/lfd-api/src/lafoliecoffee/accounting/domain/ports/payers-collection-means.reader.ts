@@ -2,7 +2,7 @@ import type { PayerMeansEntry } from "../services/collection-means-timeline.js";
 
 /**
  * Port de LECTURE groupée du moyen d'encaissement (plan
- * `plan-paiement-au-compte-par-virement.md`, V4', K10) : les segments de
+ * `le-paiement-par-virement.md`, V4', K10) : les segments de
  * plusieurs payeurs d'UNE entité, en une lecture — celle que l'émission, le
  * lot et le compte des clients font une fois par clôture, jamais par bon.
  *

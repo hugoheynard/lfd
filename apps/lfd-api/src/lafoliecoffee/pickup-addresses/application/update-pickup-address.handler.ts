@@ -49,7 +49,7 @@ export class UpdatePickupAddressHandler implements ICommandHandler<
       refuseLegacyPromotionEditor("site_discount");
     }
     await this.uow.run(async () => {
-      const site = await this.sites.load(command.id);
+      const site = await this.sites.loadLocked(command.id);
       if (site === null) {
         throw new PickupAddressNotFoundError(command.id);
       }

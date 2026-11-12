@@ -10,6 +10,7 @@ import { SiteTablesRepository } from "../domain/site-tables.repository.js";
 import { GenerateSiteTableQrCommand } from "./generate-site-table-qr.command.js";
 import { requireSite } from "./site-support.js";
 import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../platform/intent/intent-subject.js";
 
 /** Le nom stable du geste, dans le registre des intentions. */
 const GESTURE = "sites.generate-table-qr";
@@ -50,7 +51,7 @@ export class GenerateSiteTableQrHandler implements ICommandHandler<
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: GESTURE,
-        subject: `${command.siteId}|${String(command.tableNumber)}`,
+        subject: intentSubject(command.siteId, command.tableNumber),
       },
       NOTHING_TO_REPLAY,
       (seal) => this.generate(command, seal),

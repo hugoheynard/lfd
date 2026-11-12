@@ -18,7 +18,7 @@ import { GetMyCompanyCollectionMeansQuery } from "./get-my-company-collection-me
 
 /**
  * **Comment le compte règle au compte**, pour l'espace client (plan
- * `plan-paiement-au-compte-par-virement.md`, T5) : la boutique dit « par
+ * `le-paiement-par-virement.md`, T5) : la boutique dit « par
  * virement à réception de facture » et retire l'espace mandat d'un client au
  * virement. Le moyen d'un site qui suit la facturation de son principal est
  * celui du principal (V1, `collectionMeansPayerOf`), comme pour le staff.

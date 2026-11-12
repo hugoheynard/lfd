@@ -490,7 +490,7 @@ describe('ProductsPage — « Activer la sélection »', () => {
       expect(notices).toEqual([]);
     });
 
-    /** P1.1 du plan des lectures du PIM : plus de seconde lecture de tout le catalogue. */
+    /** Le cache du back-office (§ 5.1) : plus de seconde lecture de tout le catalogue. */
     it('lit les constats dans les lignes de la liste, sans appeler compliance-warnings', async () => {
       // Le double n'a plus de `productComplianceWarnings` ni d'ancienne lecture :
       // un appel ferait tomber la page.
@@ -590,7 +590,7 @@ describe('ProductsPage — supprimer une fiche archivée', () => {
   });
 });
 
-/** Le veilleur et le numéro `pim` de la copie (`plan-lectures-du-pim.md`, § 4.3). */
+/** Le veilleur et le numéro `pim` de la copie (`le-cache-du-back-office.md`, § 5.4). */
 describe('ProductsPage — le numéro retenu', () => {
   beforeEach(() => {
     watched = null;

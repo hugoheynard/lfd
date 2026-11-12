@@ -1,6 +1,6 @@
 /**
  * E2E des **lectures du virement** (plan
- * `documentation/comptabilite/plan-paiement-au-compte-par-virement.md`,
+ * `documentation/comptabilite/le-paiement-par-virement.md`,
  * décisions de la nuit (a), (c) et T5).
  *
  * Ce que seul le vrai serveur prouve : l'aperçu dit l'écart que la saisie

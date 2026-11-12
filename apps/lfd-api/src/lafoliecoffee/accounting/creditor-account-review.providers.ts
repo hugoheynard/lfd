@@ -6,7 +6,7 @@ import { RingCreditorAccountReview } from "./application/handlers/ring-creditor-
 
 /**
  * Le compte de l'entité aux quatre yeux (plan
- * `plan-paiement-au-compte-par-virement.md`, T0) : confirmer, annuler, et la
+ * `le-paiement-par-virement.md`, T0) : confirmer, annuler, et la
  * cloche. Proposer reste `SetCreditorAccountHandler`, au module. À part du
  * module, qui dépasse déjà la taille d'un fichier.
  */

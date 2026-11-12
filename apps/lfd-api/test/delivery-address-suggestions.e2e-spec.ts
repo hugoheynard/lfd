@@ -220,6 +220,25 @@ describe("« Appliquer » et « Ignorer »", () => {
 
     expect(await ctx.prisma.deliveryAddressSuggestionDecision.count()).toBe(0);
   });
+
+  /**
+   * Régression : « Appliquer » et « Ignorer » simultanés voyaient chacun la
+   * suggestion encore proposée, et inscrivaient chacun leur décision.
+   */
+  it("appliquer et ignorer en même temps : un seul passe, une seule décision", async () => {
+    await deliveredAt([north(118), north(120), north(122)]);
+    const shown = (await suggestions()).suggestions.find((s) => s.kind === "door");
+    const decide = (gesture: "apply" | "dismiss") =>
+      ctx
+        .asSub(E2E_STAFF_SUB)
+        .post(`${SUGGESTIONS}/${shown?.addressId ?? ""}/${gesture}`)
+        .send({ kind: "door", point: shown?.suggested });
+
+    const responses = await Promise.all([decide("apply"), decide("dismiss"), decide("apply")]);
+
+    expect(responses.map((r) => r.status).sort()).toEqual([204, 409, 409]);
+    expect(await ctx.prisma.deliveryAddressSuggestionDecision.count()).toBe(1);
+  });
 });
 
 describe("les droits — les positions ne se voient qu'en organisant les tournées", () => {

@@ -10,7 +10,7 @@ import { VatRateStore } from './vat-rates/vat-store';
 
 /**
  * La fiche lit les familles et les taux dans leurs stores, sans relecture
- * forcée (`plan-lectures-du-pim.md`, § 4.3) — sauf quand le droit de la
+ * forcée (`le-cache-du-back-office.md`, § 5.4) — sauf quand le droit de la
  * route manque : le store n'est alors pas suivi par le numéro `pim` (§ 4.4).
  */
 

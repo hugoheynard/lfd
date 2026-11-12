@@ -10,6 +10,7 @@ import {
   readIntentChoice,
   readIntentString,
 } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { Company } from "../../domain/entities/company.js";
 import { SiretAlreadyRegisteredError } from "../../domain/errors/account-errors.js";
 import { CompanyDeclaredEvent } from "../../domain/events/company-declared.event.js";
@@ -98,7 +99,14 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
         actorId: command.invitedBy,
         key: command.intentKey,
         gesture: "account.create-company",
-        subject: command.siret === "" ? "sans-siret" : command.siret,
+        subject: intentSubject(command.siret === "" ? "sans-siret" : command.siret, {
+          raisonSociale: command.raisonSociale,
+          enseigne: command.enseigne,
+          formeJuridique: command.formeJuridique,
+          siren: command.siren,
+          vatNumber: command.vatNumber,
+          contact: command.contact,
+        }),
       },
       OPENED_REPLAY,
       () => this.open(command),

@@ -63,8 +63,7 @@ export interface ShownCollectionMeans {
 
 /**
  * **Comment un client au compte règle** — prélèvement SEPA ou virement
- * bancaire (plan `plan-paiement-au-compte-par-virement.md`, V1, V2, V10, § «
- * L'écran »).
+ * bancaire (`le-paiement-par-virement.md`, V1, V2, V10, § 6).
  *
  * Le `fold-view-toggle` dit ce que la section montre dessous ; il ne change
  * rien tant qu'on n'a pas enregistré. Changer de moyen demande un motif, et la

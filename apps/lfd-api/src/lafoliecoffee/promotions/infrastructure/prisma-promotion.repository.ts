@@ -3,7 +3,9 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-changes.js";
 import { targetedShelves } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
+import { currentTransaction } from "../../../platform/database/transaction.store.js";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
+import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { Journal } from "../../../platform/journal/journal.js";
 import { PricingMaterialsCache } from "../../pricing/infrastructure/pricing-materials.cache.js";
@@ -14,6 +16,20 @@ import { audienceCompanyIdOf } from "../domain/promotion-audience.js";
 import { audienceTargetRowsOf } from "./promotion-audience-rows.js";
 import { FULFILLMENT_LINKS, fulfillmentLinkRowsOf } from "./promotion-fulfillment-rows.js";
 import { scopeRuleRowsOf, toDomain, toPersistence } from "./promotion-rows.js";
+
+/**
+ * Le verrou d'une promotion a été demandé hors d'une unité de travail — une
+ * faute de câblage : en autocommit, le `FOR UPDATE` est relâché à la fin de
+ * sa propre instruction, et l'écriture qui suit ne serait plus protégée.
+ */
+export class PromotionLockOutsideTransactionError extends TechnicalError {
+  constructor() {
+    super(
+      "promotion.lock_outside_transaction",
+      "Le verrou d'une promotion exige une transaction ouverte : appeler loadLocked sous UnitOfWork.run.",
+    );
+  }
+}
 
 /**
  * **L'adaptateur Prisma de l'agrégat `Promotion`.** Il ne tient aucune
@@ -45,6 +61,15 @@ export class PrismaPromotionRepository extends PromotionRepository {
       },
     });
     return row === null ? null : toDomain(row, row.scopeRules, row.audienceTargets);
+  }
+
+  async loadLocked(id: string): Promise<Promotion | null> {
+    if (currentTransaction() === undefined) {
+      throw new PromotionLockOutsideTransactionError();
+    }
+    await this.prisma
+      .$queryRaw`SELECT "id" FROM "public"."promotions" WHERE "id" = ${id} FOR UPDATE`;
+    return this.load(id);
   }
 
   async save(promotion: Promotion, act: PromotionAct): Promise<void> {

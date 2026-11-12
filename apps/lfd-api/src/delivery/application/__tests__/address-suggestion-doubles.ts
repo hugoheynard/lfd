@@ -1,5 +1,5 @@
 import { FixedDeparture } from "../commands/__tests__/routing-doubles.js";
-import type { BillingAddressPayload, GpsPoint } from "@lfd/contracts";
+import type { AddressPointKind, BillingAddressPayload, GpsPoint } from "@lfd/contracts";
 
 import { DirectUnitOfWork } from "../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedIdGenerator } from "../../../platform/id/fixed-id-generator.js";
@@ -16,6 +16,7 @@ import {
   type DeliveryOrderAddress,
 } from "../../channels/commerce/index.js";
 import type { AddressSuggestionDecision } from "../../domain/entities/address-suggestion-decision.js";
+import { AddressSuggestionDecisionLock } from "../../domain/ports/address-suggestion-decision.lock.js";
 import { AddressSuggestionDecisionRepository } from "../../domain/ports/address-suggestion-decision.repository.js";
 import { GeocodeCacheReader } from "../../domain/ports/geocode-cache.reader.js";
 import {
@@ -118,6 +119,34 @@ export class InMemoryDecisions extends AddressSuggestionDecisionRepository {
   }
 }
 
+/**
+ * Le verrou, compté sur les décisions en mémoire. `meanwhile` joue la
+ * décision qu'un collègue valide entre la vérification et le verrou — ce que
+ * Postgres sérialise, et qu'un test séquentiel ne peut que mettre en scène.
+ */
+export class CountingDecisionLock extends AddressSuggestionDecisionLock {
+  meanwhile: (() => Promise<void>) | null = null;
+
+  constructor(private readonly decisions: InMemoryDecisions) {
+    super();
+  }
+
+  decisionsSoFar(addressId: string, kind: AddressPointKind): Promise<number> {
+    return Promise.resolve(
+      this.decisions.recorded
+        .map((decision) => decision.toSnapshot())
+        .filter((state) => state.addressId === addressId && state.kind === kind).length,
+    );
+  }
+
+  async holdAndCount(addressId: string, kind: AddressPointKind): Promise<number> {
+    const meanwhile = this.meanwhile;
+    this.meanwhile = null;
+    await meanwhile?.();
+    return this.decisionsSoFar(addressId, kind);
+  }
+}
+
 export class DecisionsAsIgnored extends IgnoredAddressPointsReader {
   constructor(private readonly decisions: InMemoryDecisions) {
     super();
@@ -176,5 +205,6 @@ export function suggestionScene(
     ids: new FixedIdGenerator("decision"),
     clock: new FixedClock(new Date()),
     uow: new DirectUnitOfWork(),
+    lock: new CountingDecisionLock(decisions),
   };
 }

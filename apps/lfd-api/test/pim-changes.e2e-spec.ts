@@ -1,6 +1,6 @@
 /**
  * E2E du **numéro `pim`** et des contenus du référentiel servis sous lui —
- * `documentation/caching-usage/plan-lectures-du-pim.md`, § 4.1, § 4.2, § 4.4.
+ * `documentation/caching-usage/le-cache-du-back-office.md`, § 5.2 et § 5.3.
  *
  * Ce que seule la base migrée peut dire :
  *

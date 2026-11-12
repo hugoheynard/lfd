@@ -4,6 +4,7 @@ import { Clock } from "../time/clock.js";
 import { type GestureIntent, GestureIntentLedger, type IntentRecord } from "./gesture-intent.js";
 import {
   GestureInFlightError,
+  IntentAlreadySealedError,
   IntentKeyReusedError,
   IntentRecordUnreadableError,
 } from "./intent-errors.js";
@@ -142,7 +143,11 @@ export class OncePerIntent {
     }
     let sealed = false;
     const seal = async (result: R): Promise<void> => {
-      await this.ledger.resolve(intent, codec.write(result), this.clock.now());
+      // Un appel qui a repris l'intention après le bail a déjà scellé : lever
+      // ici annule la transaction de celui-ci, et le geste ne s'écrit qu'une fois.
+      if (!(await this.ledger.resolve(intent, codec.write(result), this.clock.now()))) {
+        throw new IntentAlreadySealedError(intent.gesture);
+      }
       sealed = true;
     };
     let result: R;

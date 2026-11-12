@@ -1,6 +1,6 @@
 /**
  * **Le verrou des changements d'un payeur** (plan
- * `plan-paiement-au-compte-par-virement.md`, K11) : les gestes de mode et de
+ * `le-paiement-par-virement.md`, K11) : les gestes de mode et de
  * moyen d'un payeur le prennent, dans leur transaction et AVANT de lire
  * « aucun changement en attente » (K1). Sans lui, deux gestes simultanés
  * liraient chacun l'autre absent, et écriraient tous deux.

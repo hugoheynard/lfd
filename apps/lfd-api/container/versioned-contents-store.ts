@@ -1,5 +1,5 @@
 // Les contenus versionnés de l'objet des journées
-// (`documentation/caching-usage/plan-catalogue-du-back-office.md`, § 3.5) : par
+// (`documentation/caching-usage/le-cache-du-back-office.md`, § 4.5) : par
 // (révision, clé opaque), la DERNIÈRE charge rangée et le numéro qu'elle
 // porte. L'objet ne sait pas ce qu'il garde ; ces fonctions pures sont sous
 // tests, `day-versions.ts` les relie au stockage SQLite.

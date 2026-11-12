@@ -17,6 +17,7 @@ import { workspaceInterceptor } from './client/client-workspace.interceptor';
 import { sessionExpiredInterceptor } from './auth/session-expired';
 import { identityConflictInterceptor } from './auth/identity-conflict';
 import { invitationExpiredInterceptor } from './auth/invitation-expired';
+import { refusedIntentKeyInterceptor } from './client/gesture-intents';
 import { ADDRESS_WRITER, LFD_NOTIFY } from '@lfd/b2b-ui/panel';
 
 import { AddressesService } from './legacy/entreprises/addresses.service';
@@ -67,6 +68,7 @@ export const appConfig: ApplicationConfig = {
         identityConflictInterceptor,
         invitationExpiredInterceptor,
         sessionExpiredInterceptor,
+        refusedIntentKeyInterceptor,
       ]),
     ),
     provideAuth(),

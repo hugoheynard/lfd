@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../platform/database/unit-of-work.js";
 import { UuidGenerator } from "../../platform/id/uuid-generator.js";
 import { NOTHING_TO_REPLAY, OncePerIntent } from "../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../platform/intent/intent-subject.js";
 import { DurablePublisher } from "../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../platform/time/clock.js";
 import { MediaCarriers } from "../channels/carriers/media-carriers.js";
@@ -83,7 +84,7 @@ export class ReplaceMediaHandler implements ICommandHandler<ReplaceMediaCommand,
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: "media.replace",
-        subject: command.from,
+        subject: intentSubject(command.from, command.to),
       },
       NOTHING_TO_REPLAY,
       (seal) => this.replace(command, seal),

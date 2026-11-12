@@ -1,5 +1,5 @@
-// L'objet des journées (`documentation/caching-usage/plan-objet-des-journees.md`,
-// et `plan-veilleur-unique.md` § 3.3) : par (révision, portée) — une journée ou
+// L'objet des journées (`documentation/caching-usage/le-cache-du-back-office.md`,
+// et `le-cache-du-back-office.md` § 2.3) : par (révision, portée) — une journée ou
 // `global` —, le numéro de chaque sujet et l'instant où l'API a commencé à le
 // lire. Le stockage SQLite survit à l'endormissement.
 //
@@ -53,7 +53,7 @@ interface ContentRow extends Record<string, string | number> {
 
 /**
  * Le magasin des numéros, et des contenus versionnés (`contents`, § 3.5 de
- * `plan-catalogue-du-back-office.md`). Un Durable Object traite ses requêtes une à une ;
+ * `le-cache-du-back-office.md`). Un Durable Object traite ses requêtes une à une ;
  * la comparaison des instants et l'écriture se font d'un seul tenant, après
  * le dernier `await`.
  *

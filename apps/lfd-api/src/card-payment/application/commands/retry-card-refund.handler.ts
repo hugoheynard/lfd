@@ -1,6 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../platform/intent/intent-subject.js";
 import { CardRefundRetrier } from "../refunds/card-refund-retrier.js";
 import { RetryCardRefundCommand } from "./retry-card-refund.command.js";
 
@@ -29,7 +30,7 @@ export class RetryCardRefundHandler implements ICommandHandler<RetryCardRefundCo
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: RETRY_GESTURE,
-        subject: command.requestId,
+        subject: intentSubject(command.requestId),
       },
       NOTHING_TO_REPLAY,
       (seal) => this.retrier.retry(command.requestId, () => seal()),

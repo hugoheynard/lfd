@@ -33,7 +33,7 @@ function filterOf(value: string | undefined): string | null {
 
 /**
  * **Le virement reçu et les factures au virement à régler** (plan
- * `plan-paiement-au-compte-par-virement.md`, V7, V8, C7).
+ * `le-paiement-par-virement.md`, V7, V8, C7).
  *
  * Saisir un virement : `b2b_accounting:write` (déduit du verbe). Lire les
  * factures à régler : la comptabilité, OU la fiche client — comme les impayés

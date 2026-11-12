@@ -8,7 +8,7 @@ import {
 
 /**
  * Les contenus versionnés de l'objet des journées
- * (`plan-catalogue-du-back-office.md`, § 3.5). Ces tests échouent si l'on
+ * (`le-cache-du-back-office.md`, § 4.5). Ces tests échouent si l'on
  * sert une charge d'un autre numéro, mélange deux révisions, ou range au-delà
  * du plafond.
  */

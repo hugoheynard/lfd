@@ -1,6 +1,6 @@
 /**
  * **Lire le numéro `catalog-admin`** — le journal de l'écran Catalogue
- * (`public.catalog_admin_change`, `plan-catalogue-du-back-office.md` § 3.3),
+ * (`public.catalog_admin_change`, `le-cache-du-back-office.md` § 4.3),
  * alimenté par les déclencheurs des tables que l'écran lit, jamais par le
  * code. Séparé du balayage (ISP).
  */

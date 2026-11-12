@@ -16,7 +16,7 @@ const RING_CREDITOR_ACCOUNT_REVIEW = "ring-creditor-account-review";
 
 /**
  * **La cloche de la comptabilité** sur le compte de l'entité aux quatre yeux :
- * proposé, confirmé, annulé (plan `plan-paiement-au-compte-par-virement.md`,
+ * proposé, confirmé, annulé (`le-paiement-par-virement.md`,
  * T0). Changer le compte qui reçoit l'argent est la cible de la fraude au
  * faux RIB : toute la comptabilité le voit passer, pas seulement les deux qui
  * l'ont fait.

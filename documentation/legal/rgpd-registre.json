@@ -1371,7 +1371,7 @@
       "colonne": "public.received_bank_transfer.recorded_by_staff_id",
       "personne": "staff",
       "categorie": "auteur-geste",
-      "finalite": "Tracer quel membre du staff a saisi un virement reçu et réglé des factures au virement (`received_bank_transfer`, plan-paiement-au-compte-par-virement V7).",
+      "finalite": "Tracer quel membre du staff a saisi un virement reçu et réglé des factures au virement (`received_bank_transfer`, le-paiement-par-virement V7).",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
@@ -1857,7 +1857,7 @@
       "colonne": "public.payer_collection_means.cancelled_by_staff_id",
       "personne": "staff",
       "categorie": "auteur-geste",
-      "finalite": "Tracer quel membre du staff a annulé le changement programmé du moyen d'encaissement d'un client (`payer_collection_means`, plan-paiement-au-compte-par-virement V10).",
+      "finalite": "Tracer quel membre du staff a annulé le changement programmé du moyen d'encaissement d'un client (`payer_collection_means`, le-paiement-par-virement V10).",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
@@ -1866,7 +1866,7 @@
       "colonne": "public.payer_collection_means.created_by_staff_id",
       "personne": "staff",
       "categorie": "auteur-geste",
-      "finalite": "Tracer quel membre du staff a changé le moyen d'encaissement d'un client — prélèvement ou virement (`payer_collection_means`, plan-paiement-au-compte-par-virement V10).",
+      "finalite": "Tracer quel membre du staff a changé le moyen d'encaissement d'un client — prélèvement ou virement (`payer_collection_means`, le-paiement-par-virement V10).",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
@@ -2874,7 +2874,7 @@
       "colonne": "public.legal_entities.pending_creditor_account_proposed_by_staff_id",
       "personne": "staff",
       "categorie": "auteur-geste",
-      "finalite": "Tracer quel membre du staff a proposé une modification du compte bancaire de l'entité émettrice, pour refuser qu'il la confirme lui-même (quatre yeux, plan-paiement-au-compte-par-virement T0). Effacée à la confirmation ou à l'annulation ; le journal garde l'acte.",
+      "finalite": "Tracer quel membre du staff a proposé une modification du compte bancaire de l'entité émettrice, pour refuser qu'il la confirme lui-même (quatre yeux, le-paiement-par-virement T0). Effacée à la confirmation ou à l'annulation ; le journal garde l'acte.",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false

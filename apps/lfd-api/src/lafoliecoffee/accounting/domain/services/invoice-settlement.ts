@@ -12,7 +12,7 @@ import {
  *
  * 1. un avoir n'a pas de statut ;
  * 2. payée par carte → acquittée ;
- * 2 bis. au virement (plan `plan-paiement-au-compte-par-virement.md`, V7, V8) :
+ * 2 bis. au virement (`le-paiement-par-virement.md`, V7, V8) :
  *    réglée dès qu'un virement reçu la règle (le jour de réception), sinon
  *    « virement attendu » jusqu'à l'échéance comprise, « en retard » après ;
  * 3. sa DERNIÈRE ligne de prélèvement dans un lot non annulé (par instant de

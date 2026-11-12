@@ -6,7 +6,7 @@ import type { PublishedCatalogView, PublishedEntryView } from "./published-catal
 
 /**
  * **L'écran Catalogue du back-office, lu en une fois**
- * (`documentation/caching-usage/plan-catalogue-du-back-office.md`, § 3.1–3.2) :
+ * (`documentation/caching-usage/le-cache-du-back-office.md`, § 4.1–4.2) :
  * `GET admin/catalog/screen`, puis `GET admin/catalog/screen/rows?sku=…` après
  * un geste.
  *

@@ -1,6 +1,6 @@
 /**
  * E2E du **moyen d'encaissement des bons sans facture** (plan
- * `documentation/comptabilite/plan-paiement-au-compte-par-virement.md`, K9,
+ * `documentation/comptabilite/le-paiement-par-virement.md`, K9,
  * V10) : le chemin des arrêtés — l'aperçu qui simule, la constitution sans
  * plancher de facture — lit le moyen de la période où le bon a été soldé.
  * Au virement, pas d'arrêté : le bon n'est ni prélevé, ni écarté, ni compté

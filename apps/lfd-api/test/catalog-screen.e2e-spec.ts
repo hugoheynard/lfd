@@ -1,7 +1,7 @@
 /**
  * E2E de **l'écran Catalogue lu en une fois** et de son numéro
- * `catalog-admin` — `documentation/caching-usage/plan-catalogue-du-back-office.md`,
- * § 3.1 à 3.3.
+ * `catalog-admin` — `documentation/caching-usage/le-cache-du-back-office.md`,
+ * § 4.1 à 3.3.
  *
  * Ce que seule la base migrée peut dire :
  *

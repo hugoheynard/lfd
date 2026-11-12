@@ -4,6 +4,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { CollectionTest } from "../../domain/entities/collection-test.js";
 import { CollectionTestCreditorNotFoundError } from "../../domain/errors/collection-test-errors.js";
@@ -59,7 +60,13 @@ export class GenerateCollectionTestHandler implements ICommandHandler<
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: GENERATE_TEST_GESTURE,
-        subject: command.companyId,
+        subject: intentSubject(
+          command.companyId,
+          command.amountCents,
+          command.requestedCollectionDay,
+          command.sequence,
+          command.remittance,
+        ),
       },
       CREATED_ID_REPLAY,
       (seal) => this.generate(command, seal),

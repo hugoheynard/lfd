@@ -16,7 +16,7 @@ import { GetCatalogScreenQuery } from "../application/queries/get-catalog-screen
 
 /**
  * **L'écran Catalogue du back-office, lu une fois**
- * (`documentation/caching-usage/plan-catalogue-du-back-office.md`, § 3.1–3.2) :
+ * (`documentation/caching-usage/le-cache-du-back-office.md`, § 4.1–4.2) :
  * `GET admin/catalog/screen` rend tout l'écran, `GET admin/catalog/screen/rows`
  * les lignes qu'un geste a touchées. Les deux rendent le numéro
  * `catalog-admin` lu avant les données.

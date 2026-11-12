@@ -21,7 +21,7 @@ export interface UnpaidTransferFilter {
 
 /**
  * **Le virement reçu et les factures au virement à régler** (plan
- * `plan-paiement-au-compte-par-virement.md`, V7, V8). Lire : la comptabilité
+ * `le-paiement-par-virement.md`, V7, V8). Lire : la comptabilité
  * ou la fiche client ; saisir un virement : `b2b_accounting:write`.
  */
 @Injectable({ providedIn: 'root' })

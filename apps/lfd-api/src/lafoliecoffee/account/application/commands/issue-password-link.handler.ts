@@ -16,6 +16,7 @@ import {
 } from "../../domain/errors/invitation-errors.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { shownOnceReplay } from "../../../../platform/intent/shown-once-replay.js";
 import { InvitationRenewal } from "../../domain/ports/invitation-renewal.js";
 import { IssuePasswordLinkCommand } from "./issue-password-link.command.js";
@@ -97,7 +98,7 @@ export class IssuePasswordLinkHandler implements ICommandHandler<
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: ISSUE_LINK_GESTURE,
-        subject: `${command.userId}|${command.companyId ?? ""}`,
+        subject: intentSubject(command.userId, command.companyId),
       },
       LINK_REPLAY,
       (seal) => this.issue(command, seal),

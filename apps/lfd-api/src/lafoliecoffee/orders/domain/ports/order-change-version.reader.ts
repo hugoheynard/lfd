@@ -1,6 +1,6 @@
 /**
  * **Lire le numéro `orders-all`** — le journal de toutes les commandes
- * (`public.order_change`, `plan-veilleur-unique.md` § 3.2), alimenté par les
+ * (`public.order_change`, `le-cache-du-back-office.md` § 2.2), alimenté par les
  * déclencheurs de `orders`, `order_lines` et `order_shortfall`, jamais par le
  * code. Séparé du balayage (ISP) : l'écran qui veille ne purge rien.
  *

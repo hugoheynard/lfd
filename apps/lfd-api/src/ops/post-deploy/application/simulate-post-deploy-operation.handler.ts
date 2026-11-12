@@ -2,6 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { CREATED_ID_REPLAY, OncePerIntent } from "../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../platform/intent/intent-subject.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { DeployedRevision } from "../domain/deployed-revision.js";
@@ -40,7 +41,7 @@ export class SimulatePostDeployOperationHandler implements ICommandHandler<
         actorId: command.actor,
         key: command.intentKey,
         gesture: "ops.post-deploy-simulate",
-        subject: command.operationKey,
+        subject: intentSubject(command.operationKey),
       },
       CREATED_ID_REPLAY,
       (seal) => this.simulate(command, seal),

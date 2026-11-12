@@ -4,6 +4,7 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { CREATED_ID_REPLAY, OncePerIntent } from "../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../platform/intent/intent-subject.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { Vehicle } from "../../domain/entities/vehicle.js";
 import { VehicleAddedEvent } from "../../domain/events/vehicle.events.js";
@@ -43,7 +44,7 @@ export class AddVehicleHandler implements ICommandHandler<AddVehicleCommand, str
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: "delivery.vehicle.add",
-        subject: "new",
+        subject: intentSubject("vehicle", command.payload),
       },
       CREATED_ID_REPLAY,
       (seal) => this.add(command, seal),

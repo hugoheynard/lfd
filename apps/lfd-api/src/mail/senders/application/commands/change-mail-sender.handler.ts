@@ -4,6 +4,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { StaffContacts } from "../../../../staff/directory/domain/staff-contacts.js";
 import { TrialRecipientMissingError } from "../../../copy/domain/mail-copy-errors.js";
@@ -78,7 +79,7 @@ export class ChangeMailSenderHandler implements ICommandHandler<ChangeMailSender
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: "mail.sender-change",
-        subject: `${space}:${nature}`,
+        subject: intentSubject(`${space}:${nature}`, command.identity, command.expectedRevision),
       },
       NOTHING_TO_REPLAY,
       (seal) => this.change(space, nature, command, seal),

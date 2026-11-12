@@ -4,6 +4,7 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { CREATED_ID_REPLAY, OncePerIntent } from "../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../platform/intent/intent-subject.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
 import { SimulationScenarioDuplicatedEvent } from "../../domain/events/simulation-scenario.events.js";
@@ -45,7 +46,7 @@ export class DuplicateSimulationScenarioHandler implements ICommandHandler<
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: "delivery.simulation.duplicate",
-        subject: command.scenarioId,
+        subject: intentSubject(command.scenarioId),
       },
       CREATED_ID_REPLAY,
       (seal) => this.duplicate(command, seal),

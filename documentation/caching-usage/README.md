@@ -29,27 +29,18 @@ flowchart LR
 
 # Partie 2 — Les documents
 
-| Document                                                                           | État                  | Sujet                                                                                                                                                           |
-| ---------------------------------------------------------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`carte-des-caches.md`](carte-des-caches.md)                                       | ✅ relu le 2026-11-05 | **la porte d'entrée** : objectifs restants priorisés, dernières mesures, chaque cache couche par couche (clé, durée, purge), comment le constater en production |
-| [`le-rayon-en-cache.md`](le-rayon-en-cache.md)                                     | ✅ état 2026-11-05    | le rayon public au bord de Cloudflare, le rayon d'une société dans l'objet `ProShelves` : purge, durée, repli, interrupteur, surveillance                       |
-| [`qui-est-le-client.md`](qui-est-le-client.md)                                     | ✅ état 2026-11-05    | le principal gardé en mémoire et relu sur une estampille posée par la base                                                                                      |
-| [`dans-quel-espace-est-le-client.md`](dans-quel-espace-est-le-client.md)           | ✅ état 2026-11-05    | le contexte de lecture de la boutique, la brique `contextKeyed`, l'oubli à la déconnexion                                                                       |
-| [`aucune-reponse-personnelle-en-cache.md`](aucune-reponse-personnelle-en-cache.md) | ✅ état 2026-11-05    | rien de personnel dans un cache partagé : le middleware et la porte `lint:cache-control`                                                                        |
-| [`version-par-journee.md`](version-par-journee.md)                                 | ✅ état 2026-11-04    | ne relire que ce qui a bougé, un numéro par journée                                                                                                             |
-| [`le-catalogue-en-memoire.md`](le-catalogue-en-memoire.md)                         | ✅ en production      | le catalogue en mémoire, un numéro par contexte tenu par la base ; les deux mémoires d'un prix (catalogue, règles)                                              |
+| Document                                                                           | État                  | Sujet                                                                                                                                                                                           |
+| ---------------------------------------------------------------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`carte-des-caches.md`](carte-des-caches.md)                                       | ✅ relu le 2026-11-05 | **la porte d'entrée** : objectifs restants priorisés, dernières mesures, chaque cache couche par couche (clé, durée, purge), comment le constater en production                                 |
+| [`le-rayon-en-cache.md`](le-rayon-en-cache.md)                                     | ✅ état 2026-11-05    | le rayon public au bord de Cloudflare, le rayon d'une société dans l'objet `ProShelves` : purge, durée, repli, interrupteur, surveillance                                                       |
+| [`qui-est-le-client.md`](qui-est-le-client.md)                                     | ✅ état 2026-11-05    | le principal gardé en mémoire et relu sur une estampille posée par la base                                                                                                                      |
+| [`dans-quel-espace-est-le-client.md`](dans-quel-espace-est-le-client.md)           | ✅ état 2026-11-05    | le contexte de lecture de la boutique, la brique `contextKeyed`, l'oubli à la déconnexion                                                                                                       |
+| [`aucune-reponse-personnelle-en-cache.md`](aucune-reponse-personnelle-en-cache.md) | ✅ état 2026-11-05    | rien de personnel dans un cache partagé : le middleware et la porte `lint:cache-control`                                                                                                        |
+| [`le-cache-du-back-office.md`](le-cache-du-back-office.md)                         | ✅ état 2026-11-12    | le back-office relit peu : un numéro par sujet tenu par la base, un veilleur par onglet, l'objet partagé `DayVersions` (numéros et contenus du Catalogue et du PIM), l'onglet Cache de la santé |
+| [`version-par-journee.md`](version-par-journee.md)                                 | ✅ état 2026-11-04    | ne relire que ce qui a bougé, un numéro par journée                                                                                                                                             |
+| [`le-catalogue-en-memoire.md`](le-catalogue-en-memoire.md)                         | ✅ en production      | le catalogue en mémoire, un numéro par contexte tenu par la base ; les deux mémoires d'un prix (catalogue, règles)                                                                              |
 
 Les petits restes : [`../todos/todo-cache-restes.md`](../todos/todo-cache-restes.md).
 Ailleurs, à lire avec :
 [`../pricing/moteur/optimisation-resolution-de-prix.md`](../pricing/moteur/optimisation-resolution-de-prix.md),
 ce que coûte un prix et le cache des règles de prix.
-
-Le plan de l'objet des journées (lot 1 : les numéros, dans un Durable Object partagé) : [`plan-objet-des-journees.md`](plan-objet-des-journees.md).
-
-Le plan du veilleur unique (un numéro par sujet, une porte, un veilleur par onglet) : [`plan-veilleur-unique.md`](plan-veilleur-unique.md).
-
-Le plan de l’écran Catalogue du back-office (une route, un store, le numéro `catalog-admin`) : [`plan-catalogue-du-back-office.md`](plan-catalogue-du-back-office.md).
-
-Le plan des lectures du PIM (gains directs, puis le numéro `pim`) : [`plan-lectures-du-pim.md`](plan-lectures-du-pim.md).
-
-Le plan de l’onglet Cache de la santé (taille et taux de réussite dans le temps) : [`plan-onglet-cache.md`](plan-onglet-cache.md).

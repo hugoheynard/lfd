@@ -22,8 +22,8 @@ import { publishedCatalogViewOf } from "./published-catalog-view.js";
 const MADE_TO_ORDER_READER: StaffPermission = "lfc_made_to_order:read";
 
 /**
- * **L'écran Catalogue, lu une fois** (`plan-catalogue-du-back-office.md`,
- * § 3.1) : la vue publiée, les lignes de paramétrage et, sous leur droit, les
+ * **L'écran Catalogue, lu une fois** (`le-cache-du-back-office.md`,
+ * § 4.1) : la vue publiée, les lignes de paramétrage et, sous leur droit, les
  * marqueurs du sur mesure.
  *
  * 🔴 Le numéro `catalog-admin` est lu AVANT les données, jamais en même temps :

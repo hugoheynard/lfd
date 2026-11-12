@@ -11,7 +11,7 @@ export type ScopeVersionsMap = Readonly<Record<string, number>>;
 
 /**
  * **Les numéros d'une portée** — une journée, ou les sujets globaux
- * (`plan-veilleur-unique.md`, § 3.3), sans regard au droit : c'est la porte
+ * (`le-cache-du-back-office.md`, § 2.3), sans regard au droit : c'est la porte
  * qui filtre ensuite.
  *
  * D'abord la carte de l'objet ; un sujet dont le numéro a été lu il y a moins

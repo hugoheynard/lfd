@@ -4,6 +4,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { LegalEntity } from "../../domain/entities/legal-entity.js";
 import { LegalEntityDeclaredEvent } from "../../domain/events/legal-entity.events.js";
@@ -50,7 +51,7 @@ export class DeclareLegalEntityHandler implements ICommandHandler<
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: DECLARE_GESTURE,
-        subject: command.payload.siren,
+        subject: intentSubject(command.payload.siren, command.payload),
       },
       CREATED_ID_REPLAY,
       (seal) => this.declare(command, seal),

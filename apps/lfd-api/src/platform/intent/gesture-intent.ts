@@ -51,8 +51,14 @@ export abstract class GestureIntentLedger {
   /** Réclame l'intention ; une intention non résolue plus vieille que le bail est reprise. */
   abstract claim(intent: GestureIntent, now: Date): Promise<IntentClaim>;
 
-  /** Le geste a abouti : son résultat est gardé, et rendu à tout rejeu. */
-  abstract resolve(intent: GestureIntent, result: IntentRecord, now: Date): Promise<void>;
+  /**
+   * Le geste a abouti : son résultat est gardé, et rendu à tout rejeu.
+   *
+   * Rend `false` quand l'intention était DÉJÀ résolue : un autre appel l'a
+   * reprise après le bail et a abouti le premier. Celui qui scelle doit alors
+   * annuler son écriture (`OncePerIntent.runSealed`).
+   */
+  abstract resolve(intent: GestureIntent, result: IntentRecord, now: Date): Promise<boolean>;
 
   /** Le geste a échoué : l'intention est rendue, un nouvel essai réexécute. */
   abstract release(intent: GestureIntent): Promise<void>;

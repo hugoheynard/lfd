@@ -16,7 +16,7 @@ import {
 
 /**
  * **Le compte de l'entité aux quatre yeux** (plan
- * `plan-paiement-au-compte-par-virement.md`, T0) : confirmer ou annuler la
+ * `le-paiement-par-virement.md`, T0) : confirmer ou annuler la
  * modification en attente. Proposer est le `PUT …/creditor-account` existant,
  * qui répond toujours 204 ; la fiche relue dit si la saisie attend.
  *

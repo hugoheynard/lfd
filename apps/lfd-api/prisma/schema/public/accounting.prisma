@@ -152,7 +152,7 @@ model LegalEntity {
   creditorAccountCountryCode String? @map("creditor_account_country_code")
 
   /// Le compte PROPOSÉ, en attente de la confirmation d'un second membre de la
-  /// comptabilité (quatre yeux, plan `plan-paiement-au-compte-par-virement.md`,
+  /// comptabilité (quatre yeux, `le-paiement-par-virement.md`,
   /// T0). Même régime que le compte confirmé : l'IBAN scellé, le reste en clair.
   /// 🔴 Aucun lecteur de l'instantané du créancier ne lit ces colonnes : une
   /// facture, un lot ou un mandat ne prennent que le compte confirmé ci-dessus.

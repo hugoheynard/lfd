@@ -1,6 +1,6 @@
 /**
  * **Les tables du référentiel qui font monter le numéro `pim`**
- * (`documentation/caching-usage/plan-lectures-du-pim.md`, § 4.1) : toutes
+ * (`documentation/caching-usage/le-cache-du-back-office.md`, § 5.2) : toutes
  * celles que lisent la liste des produits, les référentiels et le détail
  * d'une fiche. Chacune porte trois déclencheurs d'instruction qui écrivent
  * dans `pim.pim_change` (migration `20261112210000_le_journal_du_referentiel`) ;

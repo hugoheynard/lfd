@@ -19,7 +19,7 @@ export type DayVersionsFetch = (url: string, init: RequestInit) => Promise<Respo
 
 /**
  * **Les numéros de journée, dans le Durable Object `DayVersions`**
- * (`plan-objet-des-journees.md`, § 3 bis). Le conteneur l'appelle à
+ * (`le-cache-du-back-office.md`, § 3). Le conteneur l'appelle à
  * `http://objets.interne/journees` : une adresse fictive que le Worker intercepte et refuse
  * à tout autre appelant que ce conteneur — le chemin de `ProShelves`.
  *

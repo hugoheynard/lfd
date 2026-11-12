@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * **Le virement reçu** et **les factures au virement à régler** (plan
- * `documentation/comptabilite/plan-paiement-au-compte-par-virement.md`, V7,
+ * `documentation/comptabilite/le-paiement-par-virement.md`, V7,
  * V8, C7). Montants en centimes, jours en `AAAA-MM-JJ` (Paris).
  */
 

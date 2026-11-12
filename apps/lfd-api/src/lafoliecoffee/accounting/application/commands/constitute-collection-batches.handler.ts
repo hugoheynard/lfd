@@ -4,6 +4,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import type { CreditorSnapshot } from "../../domain/creditor-snapshot.js";
 import type { CollectionBatch } from "../../domain/entities/collection-batch.js";
@@ -106,7 +107,7 @@ export class ConstituteCollectionBatchesHandler implements ICommandHandler<
         actorId: author.staffId,
         key: intentKey,
         gesture: CONSTITUTE_GESTURE,
-        subject: command.legalEntityId,
+        subject: intentSubject(command.legalEntityId),
       },
       CREATED_IDS_REPLAY,
       (seal) => this.constitute(command, seal),

@@ -12,7 +12,7 @@ import { contextKeyed, type ContextKey, workspaceRequestOf } from './context-key
 /**
  * **Comment la société règle au compte** — prélèvement SEPA ou virement à
  * réception de facture (`GET /companies/:companyId/collection-means`, plan
- * `documentation/comptabilite/plan-paiement-au-compte-par-virement.md`, T5).
+ * `documentation/comptabilite/le-paiement-par-virement.md`, T5).
  * Le staff seul le choisit (Q3) ; l'écran le lit pour dire « par virement »
  * sur la carte Paiement et retirer l'espace mandat d'un client au virement.
  * Aucune coordonnée bancaire n'est servie : elles ne sont que sur la facture.

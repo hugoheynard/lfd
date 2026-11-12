@@ -1,11 +1,10 @@
-import { createHash } from "node:crypto";
-
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { LoyaltyPointsAdjustedEvent } from "../../domain/events/loyalty.events.js";
 import { LoyaltyAccountRepository } from "../../domain/ports/loyalty-account.repository.js";
@@ -52,7 +51,11 @@ export class AdjustLoyaltyPointsHandler implements ICommandHandler<
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: ADJUST_GESTURE,
-        subject: adjustmentSubject(command),
+        subject: intentSubject(
+          `${command.holderKind}:${command.holderId}`,
+          command.points,
+          command.reason.trim(),
+        ),
       },
       NOTHING_TO_REPLAY,
       (seal) => this.adjust(command, seal),
@@ -85,9 +88,3 @@ export class AdjustLoyaltyPointsHandler implements ICommandHandler<
 
 /** Le nom stable du geste, dans le registre des intentions. */
 const ADJUST_GESTURE = "loyalty.adjust-points";
-
-/** Ce que vise l'ajustement — identifiants et nombre, le motif haché (borne de la colonne). */
-function adjustmentSubject(command: AdjustLoyaltyPointsCommand): string {
-  const reason = createHash("sha256").update(command.reason.trim()).digest("hex");
-  return [command.holderKind, command.holderId, String(command.points), reason].join("|");
-}

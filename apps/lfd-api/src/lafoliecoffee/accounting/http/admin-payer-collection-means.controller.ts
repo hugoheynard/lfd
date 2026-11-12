@@ -16,7 +16,7 @@ import { GetPayerCollectionMeansQuery } from "../application/queries/get-payer-c
 
 /**
  * **Le moyen d'encaissement d'un payeur** — prélèvement ou virement (plan
- * `plan-paiement-au-compte-par-virement.md`, V1, V2, V10), à côté de son mode.
+ * `le-paiement-par-virement.md`, V1, V2, V10), à côté de son mode.
  *
  * Lire : `b2b_accounting:read`. Changer ou annuler : `b2b_collection_means:write`,
  * un geste à part — il arrête ou démarre un prélèvement. Un site qui suit son

@@ -9,6 +9,7 @@ import { VitrineRelay } from "../services/vitrine-relay.js";
 import { loadVitrineSubscriber } from "../vitrine-support.js";
 import { SendVitrineTestCommand } from "./send-vitrine-test.command.js";
 import { CREATED_ID_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 
 /** Le nom stable du geste, dans le registre des intentions. */
@@ -46,7 +47,7 @@ export class SendVitrineTestHandler implements ICommandHandler<SendVitrineTestCo
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: GESTURE,
-        subject: command.subscriberId,
+        subject: intentSubject(command.subscriberId),
       },
       CREATED_ID_REPLAY,
       (seal) => this.send(command, seal),

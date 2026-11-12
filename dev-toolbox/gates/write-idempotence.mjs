@@ -29,7 +29,8 @@
  * le constructeur du handler n'injecte ni `UnitOfWork`, ni `PrismaService`,
  * ni un type en `*Repository`, `*Store` ou `*Writer`, et la classe n'appelle
  * ni `.save(`, ni `$transaction(`, ni `publishTraced(` (le fait tracé écrit le
- * journal hors transaction). `run` résout l'intention hors de la
+ * journal hors transaction), ni un service `@Injectable()` qui écrit, lui-même
+ * ou par un service qu'il injecte (`write-idempotence-services.mjs`). `run` résout l'intention hors de la
  * transaction du geste : une panne entre les deux laisse le bail expirer et le
  * rejeu réexécute (§ 7) — d'où `runSealed` dès qu'une écriture existe.
  *
@@ -44,7 +45,13 @@
  *    de la transaction sans erreur (§ 7) ;
  * 5. un `POST` `@Idempotent` dont le handler crée, envoie un e-mail ou
  *    appelle le réseau, hors des exceptions datées (§ 8, J4 ;
- *    `write-idempotence-effects.mjs`).
+ *    `write-idempotence-effects.mjs`) ;
+ * 6. une intention (littéral `{ key, gesture, subject }`) dont le sujet n'est
+ *    pas un appel à `intentSubject(...)` : un sujet qui n'est qu'un
+ *    identifiant rend en silence l'ancien résultat à la même clé renvoyée
+ *    avec un autre contenu (un montant corrigé après une réponse perdue).
+ *    L'empreinte du contenu fait refuser ce renvoi en 409. Hors de
+ *    `platform/intent/` (le registre lui-même) et du client Prisma généré.
  *
  * Usage : `pnpm gate write-idempotence` ; `--write-debt` réécrit la liste de
  * dette avec les routes non rangées d'aujourd'hui ; `--inventory [fichier]`
@@ -65,6 +72,7 @@ import {
   networkTypes,
 } from "./write-idempotence-effects.mjs";
 import { inventoryOf } from "./write-idempotence-inventory.mjs";
+import { injectableClassesIn, writingServices } from "./write-idempotence-services.mjs";
 import {
   WRITE_VERBS,
   decoratorOf,
@@ -244,6 +252,7 @@ function handlerTraits(file, node, network) {
     effects: effectsOf(injected, text, network),
     sealed: calls("runSealed"),
     run: calls("run"),
+    injectedTypes: injected.map((p) => p.type).filter((type) => type !== null),
     writes:
       injected.some((p) => p.type !== null && WRITING_INJECTIONS.test(p.type)) ||
       WRITING_CALLS.test(text),
@@ -292,14 +301,16 @@ const isQuery = (command) => /Query$/.test(command.name);
  * La case d'une route : `nature`, `intent`, `accepted`, `empty-reason`, ou
  * `null` (non rangée).
  */
-export function caseOf(route, handlers) {
+export function caseOf(route, handlers, services = new Set()) {
   if (route.reason !== null) return route.reason === "" ? "empty-reason" : "nature";
   const accepted = route.accepted ?? null;
   if (accepted !== null) return accepted === "" ? "empty-reason" : "accepted";
   const commands = route.commands.filter((command) => !isQuery(command));
   if (!route.intentKey || commands.length === 0) return null;
   const reached = commands.map((command) => handlerFor(command, handlers));
-  const sealedOrHarmless = (h) => h !== null && (h.sealed || (h.run && !h.writes));
+  const writesThroughService = (h) => (h.injectedTypes ?? []).some((t) => services.has(t));
+  const sealedOrHarmless = (h) =>
+    h !== null && (h.sealed || (h.run && !h.writes && !writesThroughService(h)));
   return reached.every(sealedOrHarmless) ? "intent" : null;
 }
 
@@ -307,13 +318,51 @@ export function caseOf(route, handlers) {
 export const sealedUnderDirectTransaction = (source) =>
   /\.runSealed\s*[<(]/.test(source) && /\$transaction\s*\(/.test(source);
 
+/** Le registre et le client généré manipulent le sujet, ils ne le construisent pas. */
+const SUBJECT_BUILDERS_EXEMPT = /^apps\/lfd-api\/src\/platform\/(?:intent|database\/client)\//;
+
+/** Les propriétés qui font d'un littéral une intention (`GestureIntent`). */
+const INTENT_PROPERTIES = ["key", "gesture", "subject"];
+
+/**
+ * Les intentions d'un fichier dont le sujet n'est pas construit par
+ * `intentSubject(...)` : `[{ line, subject }]` (6).
+ */
+export function unfingerprintedSubjects(path, source) {
+  if (SUBJECT_BUILDERS_EXEMPT.test(path) || !source.includes("subject")) return [];
+  const file = parse(path, source);
+  const found = [];
+  const visit = (node) => {
+    if (ts.isObjectLiteralExpression(node)) {
+      const named = new Map(
+        node.properties.filter((p) => p.name).map((p) => [p.name.getText(file), p]),
+      );
+      if (INTENT_PROPERTIES.every((name) => named.has(name))) {
+        const subject = named.get("subject");
+        const value = ts.isPropertyAssignment(subject) ? subject.initializer : null;
+        const built =
+          value !== null &&
+          ts.isCallExpression(value) &&
+          ts.isIdentifier(value.expression) &&
+          value.expression.text === "intentSubject";
+        if (!built) {
+          found.push({ line: lineOf(file, subject), subject: subject.getText(file) });
+        }
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(file);
+  return found;
+}
+
 const key = (entry) => `${entry.file}#${entry.method}`;
 
 /**
  * Le verdict : `{ failures, ranged, debt }`. `routes` sont déjà classées
  * (`case`), `debt` est la liste inscrite, `sealedFiles` les fichiers fautifs (4).
  */
-export function verdict(routes, debt, sealedFiles = []) {
+export function verdict(routes, debt, sealedFiles = [], bareSubjects = []) {
   const failures = [];
   const inDebt = new Set(debt.map(key));
   const known = new Map(routes.map((route) => [key(route), route]));
@@ -343,6 +392,11 @@ export function verdict(routes, debt, sealedFiles = []) {
   for (const file of sealedFiles) {
     failures.push(
       `${file} — runSealed dans un fichier qui ouvre $transaction( en direct : seal ne scelle que sous UnitOfWork`,
+    );
+  }
+  for (const { file, line, subject } of bareSubjects) {
+    failures.push(
+      `${file}:${line} — intention dont le sujet n'est pas intentSubject(...) (« ${subject} ») : la même clé renvoyée avec un autre contenu rendrait l'ancien résultat ; écrire intentSubject(cible, ...champs saisis)`,
     );
   }
   const ranged = routes.filter((route) => ["nature", "intent", "accepted"].includes(route.case));
@@ -376,10 +430,15 @@ function main(argv) {
   }));
   const network = networkTypes(files);
   const handlers = files.flatMap(({ path, source }) => commandHandlersIn(path, source, network));
+  const services = writingServices(
+    files.flatMap(({ path, source }) =>
+      injectableClassesIn(path, source, (t) => WRITING_INJECTIONS.test(t), WRITING_CALLS),
+    ),
+  );
   const routes = files
     .filter(({ path }) => path.endsWith(".controller.ts"))
     .flatMap(({ path, source }) => writeRoutes(path, source))
-    .map((route) => ({ ...route, case: caseOf(route, handlers) }));
+    .map((route) => ({ ...route, case: caseOf(route, handlers, services) }));
   const sealedFiles = files
     .filter(({ source }) => sealedUnderDirectTransaction(source))
     .map(({ path }) => path);
@@ -410,7 +469,10 @@ function main(argv) {
   }
 
   const debt = JSON.parse(readFileSync(join(ROOT, DEBT_FILE), "utf8")).routes;
-  const result = verdict(routes, debt, sealedFiles);
+  const bareSubjects = files.flatMap(({ path, source }) =>
+    unfingerprintedSubjects(path, source).map((found) => ({ file: path, ...found })),
+  );
+  const result = verdict(routes, debt, sealedFiles, bareSubjects);
   const exceptions = JSON.parse(readFileSync(join(ROOT, EXCEPTIONS_FILE), "utf8")).exceptions;
   result.failures.push(
     ...natureFailures(routes, (command) => handlerFor(command, handlers), exceptions),

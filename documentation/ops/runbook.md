@@ -1040,6 +1040,76 @@ En mode bloquant, une comparaison qui n'a pas pu se faire (base fantôme qui ne
 démarre pas, Prisma en erreur) arrête aussi le déploiement ; en mode rapport,
 elle n'est qu'un avertissement.
 
+## Si une migration échoue en production — l'exemple de `nutrition_declaration` (2026-11-12)
+
+**En clair.** Le 2026-11-12, l'étape « Migrer la base » a échoué sur
+`20261112210000_le_journal_du_referentiel` : la migration posait un
+déclencheur sur `pim.nutrition_declaration`, une table qui n'existe plus en
+production. Postgres a répondu `42P01` (relation inexistante) et **toute la
+migration a été annulée** : rien n'a été écrit. Mais Prisma l'a inscrite
+« commencée, jamais finie » dans `_prisma_migrations`, et refuse tout
+déploiement suivant (`P3009`) tant que cette ligne reste. La migration a été
+corrigée dans le dépôt (la table retirée de la liste, `ee0e9055c`), puis la
+ligne marquée annulée, et le déploiement suivant l'a rejouée en entier.
+
+**Le geste**, dans la console Prisma de la base de production (éditeur de
+requêtes), avec le nom exact de la migration :
+
+1. Lire la ligne, et vérifier qu'elle est bien la seule dans cet état :
+
+   ```sql
+   SELECT migration_name, started_at, finished_at, rolled_back_at, logs
+   FROM _prisma_migrations
+   WHERE finished_at IS NULL AND rolled_back_at IS NULL;
+   ```
+
+2. Seulement si `logs` dit que l'échec a tout annulé (une erreur Postgres
+   dans une migration sans `COMMIT` intermédiaire) — sinon, une partie est
+   écrite, et c'est une réparation à décider, pas ce geste :
+
+   ```sql
+   UPDATE _prisma_migrations
+   SET rolled_back_at = now()
+   WHERE migration_name = '20261112210000_le_journal_du_referentiel'
+     AND finished_at IS NULL
+     AND rolled_back_at IS NULL;
+   ```
+
+   Les deux conditions empêchent de toucher une migration finie ou déjà
+   marquée. Le résultat doit être `UPDATE 1`. C'est ce que fait
+   `prisma migrate resolve --rolled-back <nom>`, sans ouvrir de poste vers la
+   base de production.
+
+3. Corriger la migration dans le dépôt (elle n'a jamais été appliquée : son
+   contenu peut encore changer), pousser, redéployer. « Migrer la base » la
+   rejoue en entier.
+
+**Avant une migration qui pose des déclencheurs** sur une liste de tables,
+vérifier qu'elles existent toutes en production (lecture seule, même
+console). Toute ligne rendue est une table absente, à retirer de la
+migration avant de déployer :
+
+```sql
+SELECT t AS table_absente
+FROM unnest(ARRAY['product', 'product_variant', 'nutrition_values']) AS t
+WHERE to_regclass(format('%I.%I', 'pim', t)) IS NULL;
+```
+
+(remplacer le schéma et la liste par ceux de la migration). La vérification
+de la dérive avant migration (section précédente) aurait listé l'écart —
+`nutrition_declaration` créée par les migrations, absente de la base — dès
+son passage en mode bloquant : c'est elle qui tient ce cas à l'avenir.
+
+## Retirer l'objet partagé `DayVersions`
+
+La migration de classe `v3` de `apps/lfd-api/wrangler.jsonc`
+(`new_sqlite_classes: ["DayVersions"]`) **ne se défait pas par un revert**.
+Retirer l'objet demande, dans l'ordre : retirer le code de l'API qui
+l'appelle, puis la liaison, puis une migration `deleted_classes:
+["DayVersions"]` dans un nouveau tag. Sans l'objet (adresse absente), l'API
+lit la base : la porte des versions reste servie
+([`../caching-usage/le-cache-du-back-office.md`](../caching-usage/le-cache-du-back-office.md) § 3).
+
 ## Si l'API refuse de démarrer : `persistence.migrations_pending`
 
 Symptôme : au démarrage, `La base de données est en retard de N migration(s) : …`

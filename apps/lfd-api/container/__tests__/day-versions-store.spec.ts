@@ -7,7 +7,7 @@ import {
 } from "../day-versions-store";
 
 /**
- * Les décisions de l'objet des journées (`plan-objet-des-journees.md`) —
+ * Les décisions de l'objet des journées (`le-cache-du-back-office.md`) —
  * `day-versions.ts` ne fait que les relier au stockage. Ces tests échouent si
  * l'on :
  *

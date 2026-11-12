@@ -8,6 +8,7 @@ import {
   debtOf,
   handlerFor,
   sealedUnderDirectTransaction,
+  unfingerprintedSubjects,
   verdict,
   writeRoutes,
 } from "../gates/write-idempotence.mjs";
@@ -282,4 +283,85 @@ test("inventaire : verbe, chemin complet (préfixe, constantes du fichier), case
   assert.equal(routes.find((r) => r.method === "drop").path, "/admin/x/{IMPORTED}");
   assert.equal(joinRoutePath("", ""), "/");
   assert.equal(joinRoutePath("/a/", "/b/"), "/a/b");
+});
+
+test("refuse : une intention dont le sujet n'est qu'un identifiant (même clé, autre contenu rejoué en silence)", () => {
+  const source = [
+    "export class RecordThingHandler {",
+    "  execute(command) {",
+    "    return this.intents.runSealed(",
+    "      { actorId: command.staffUserId, key: command.intentKey, gesture: 'thing.record', subject: command.entityId },",
+    "      CREATED_ID_REPLAY,",
+    "      (seal) => this.record(command, seal),",
+    "    );",
+    "  }",
+    "}",
+  ].join("\n");
+  const found = unfingerprintedSubjects(HANDLER_PATH, source);
+  assert.deepEqual(
+    found.map((f) => f.line),
+    [4],
+  );
+  const { failures } = verdict(
+    [],
+    [],
+    [],
+    found.map((f) => ({ file: HANDLER_PATH, ...f })),
+  );
+  assert.equal(failures.length, 1);
+  assert.match(failures[0], /intentSubject/);
+});
+
+test("admet : un sujet construit par intentSubject, et un littéral qui n'est pas une intention", () => {
+  const source = [
+    "const intent = { actorId: a, key: k, gesture: 'thing.record', subject: intentSubject(id, command.entry) };",
+    "const bin = { subject: { kind: 'transfer' }, declaration };",
+    "const shorthand = { key, gesture, subject };",
+  ].join("\n");
+  const found = unfingerprintedSubjects(HANDLER_PATH, source);
+  assert.deepEqual(
+    found.map((f) => f.subject),
+    ["subject"],
+  );
+});
+
+test("le registre lui-même n'est pas lu : il manipule le sujet, il ne le construit pas", () => {
+  const source =
+    "const row = { key: intent.key, gesture: intent.gesture, subject: intent.subject };";
+  assert.deepEqual(
+    unfingerprintedSubjects(
+      "apps/lfd-api/src/platform/intent/prisma-gesture-intent.ledger.ts",
+      source,
+    ),
+    [],
+  );
+});
+
+test("par intention : run refusé quand un service injecté écrit, même par un autre service", async () => {
+  const { injectableClassesIn, writingServices } =
+    await import("../gates/write-idempotence-services.mjs");
+  const isWriting = (t) => /^(?:UnitOfWork|PrismaService)$|(?:Repository|Store|Writer)$/.test(t);
+  const calls = /\.save\s*\(|\$transaction\s*\(|\.publishTraced\s*\(/;
+  const services = writingServices([
+    ...injectableClassesIn(
+      "a.ts",
+      "@Injectable() export class OpenAccess { constructor(private readonly uow: UnitOfWork) {} }",
+      isWriting,
+      calls,
+    ),
+    ...injectableClassesIn(
+      "b.ts",
+      "@Injectable() export class Wrapper { constructor(private readonly open: OpenAccess) {} }",
+      isWriting,
+      calls,
+    ),
+  ]);
+  const viaService = handler(
+    "private readonly access: Wrapper, private readonly intents: OncePerIntent",
+    "return this.intents.run(i, c, () => this.access.open(x));",
+  );
+  const handlers = commandHandlersIn(HANDLER_PATH, viaService);
+  const [route] = writeRoutes(CONTROLLER_PATH, controller("@Post()"));
+  assert.equal(caseOf(route, handlers), "intent");
+  assert.equal(caseOf(route, handlers, services), null);
 });

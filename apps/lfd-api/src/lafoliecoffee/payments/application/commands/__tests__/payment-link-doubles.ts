@@ -38,6 +38,15 @@ export class InMemoryPaymentLinks extends PaymentLinkRepository {
     return Promise.resolve(row === undefined ? null : PaymentLink.reconstitute(row));
   }
 
+  /** Le verrou n'a pas de sens en mémoire : les tests d'application sont séquentiels. */
+  loadLocked(id: string): Promise<PaymentLink | null> {
+    return this.load(id);
+  }
+
+  loadBySessionLocked(sessionId: string): Promise<PaymentLink | null> {
+    return this.loadBySession(sessionId);
+  }
+
   save(link: PaymentLink): Promise<void> {
     this.saves += 1;
     this.rows.set(link.id, link.toPersistence());

@@ -4,6 +4,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { MailSendNotFoundError } from "../../domain/errors/mail-sends.errors.js";
 import { MailRecipientRevealedEvent } from "../../domain/mail-sends.events.js";
@@ -37,7 +38,12 @@ export class RevealMailRecipientHandler implements ICommandHandler<
    */
   execute({ sendId, staffUserId, intentKey }: RevealMailRecipientCommand): Promise<void> {
     return this.intents.runSealed(
-      { actorId: staffUserId, key: intentKey, gesture: "mail.send.reveal", subject: sendId },
+      {
+        actorId: staffUserId,
+        key: intentKey,
+        gesture: "mail.send.reveal",
+        subject: intentSubject(sendId),
+      },
       NOTHING_TO_REPLAY,
       (seal) => this.reveal(sendId, staffUserId, seal),
     );

@@ -1,6 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { InvoiceNotFoundError } from "../../domain/errors/invoice-access-errors.js";
 import {
   InvoiceNoticeNobodyToNotifyError,
@@ -39,19 +40,22 @@ export class ResendInvoiceNoticeHandler implements ICommandHandler<
   ) {}
 
   execute(command: ResendInvoiceNoticeCommand): Promise<void> {
-    return this.intents.run(
+    return this.intents.runSealed(
       {
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: "accounting.resend-invoice-notice",
-        subject: command.invoiceId,
+        subject: intentSubject(command.invoiceId),
       },
       NOTHING_TO_REPLAY,
-      () => this.resend(command),
+      (seal) => this.resend(command, seal),
     );
   }
 
-  private async resend(command: ResendInvoiceNoticeCommand): Promise<void> {
+  private async resend(
+    command: ResendInvoiceNoticeCommand,
+    seal: (result: void) => Promise<void>,
+  ): Promise<void> {
     const invoice = await this.invoices.byId(command.invoiceId);
     if (invoice === null) {
       throw new InvoiceNotFoundError(command.invoiceId);
@@ -61,7 +65,9 @@ export class ResendInvoiceNoticeHandler implements ICommandHandler<
       throw new InvoiceNoticeNotForCreditNoteError(number);
     }
     const document = await this.documents.ensure(invoice.id);
-    const outcome = await this.sender.resend(invoice.id, document, command.intentKey);
+    const outcome = await this.sender.resend(invoice.id, document, command.intentKey, () =>
+      seal(undefined),
+    );
     if (outcome === null) {
       throw new InvoiceNotFoundError(command.invoiceId);
     }

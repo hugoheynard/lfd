@@ -13,7 +13,7 @@ export interface PimChangeSweepReport {
 
 /**
  * Endpoint **batch** du balayage du journal du référentiel
- * (`plan-lectures-du-pim.md`, § 4.1). Même porte machine-à-machine que
+ * (`le-cache-du-back-office.md`, § 5.2). Même porte machine-à-machine que
  * `admin/delivery/journal/sweep` : le `RecomputeGuard` et son jeton.
  *
  * Appelé par le cron nocturne des balayages (`QUALITY_UPLOAD_SWEEP_CRON`,

@@ -52,6 +52,7 @@ function scene(rows = [north(118), north(120), north(122)]) {
     s.ids,
     s.clock,
     s.uow,
+    s.lock,
   );
   const ignore = new IgnoreAddressPointSuggestionHandler(
     s.positions,
@@ -65,6 +66,7 @@ function scene(rows = [north(118), north(120), north(122)]) {
     s.ids,
     s.clock,
     s.uow,
+    s.lock,
   );
   const now = () => currentSuggestions(ports, s.clock.now());
   return { ...s, apply, ignore, now };
@@ -179,5 +181,35 @@ describe("IgnoreAddressPointSuggestionHandler — « Ignorer »", () => {
         new IgnoreAddressPointSuggestionCommand("staff_ana", "a1", "parking", north(120)),
       ),
     ).rejects.toBeInstanceOf(AddressSuggestionChangedError);
+  });
+
+  /**
+   * Régression : « Appliquer » et « Ignorer » simultanés sur la même
+   * suggestion la voyaient chacun encore proposée, et écrivaient chacun.
+   */
+  it("un collègue qui décide entre la vérification et le verrou fait refuser ce geste, rien n'est écrit", async () => {
+    const s = scene();
+    const [shown] = await s.now();
+    const seen = shown?.suggested ?? north(0);
+    s.lock.meanwhile = () =>
+      s.ignore.execute(new IgnoreAddressPointSuggestionCommand("staff_ana", "a1", "door", seen));
+
+    await expect(
+      s.apply.execute(new ApplyAddressPointSuggestionCommand("staff_ana", "a1", "door", seen)),
+    ).rejects.toBeInstanceOf(AddressSuggestionChangedError);
+    expect(s.corrector.corrections).toEqual([]);
+    expect(s.decisions.recorded.map((d) => d.toSnapshot().outcome)).toEqual(["ignored"]);
+  });
+
+  it("deux « Ignorer » qui se croisent : le second est refusé, une seule décision", async () => {
+    const s = scene();
+    const [shown] = await s.now();
+    const seen = shown?.suggested ?? north(0);
+    const ignore = () =>
+      s.ignore.execute(new IgnoreAddressPointSuggestionCommand("staff_ana", "a1", "door", seen));
+    s.lock.meanwhile = ignore;
+
+    await expect(ignore()).rejects.toBeInstanceOf(AddressSuggestionChangedError);
+    expect(s.decisions.recorded).toHaveLength(1);
   });
 });

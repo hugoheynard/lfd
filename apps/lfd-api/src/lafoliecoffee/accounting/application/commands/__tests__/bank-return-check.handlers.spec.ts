@@ -31,6 +31,11 @@ class MemoryChecks extends BankReturnCheckRepository {
     return Promise.resolve(BankReturnCheckDay.rehydrate({ legalEntityId, day, entries }));
   }
 
+  /** Le verrou n'a pas de sens en mémoire : les tests d'application sont séquentiels. */
+  loadLocked(legalEntityId: string, day: string): Promise<BankReturnCheckDay> {
+    return this.load(legalEntityId, day);
+  }
+
   save(checkDay: BankReturnCheckDay): Promise<void> {
     for (const entry of checkDay.newEntries()) {
       this.rows.push({ ...entry, legalEntityId: checkDay.legalEntityId });

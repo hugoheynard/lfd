@@ -44,7 +44,7 @@ export class CatalogueApi {
 
   /**
    * Les familles du store, sans relecture forcée : le numéro `pim` le tient à
-   * jour (`plan-lectures-du-pim.md`, § 4.3). Sans le droit de sa route, le
+   * jour (`le-cache-du-back-office.md`, § 5.4). Sans le droit de sa route, le
    * store n'est pas suivi, et la lecture se refait à chaque ouverture (§ 4.4).
    */
   async listCategories(): Promise<Category[]> {

@@ -39,7 +39,7 @@ export interface PayerModeChange {
  * jamais eu de commande au compte, par aucun chemin de rattachement. C'est la
  * première condition de l'immédiat ; l'agrégat juge les deux autres.
  * `pendingMeans` — le changement de MOYEN programmé et pas encore en vigueur,
- * s'il y en a un (plan `plan-paiement-au-compte-par-virement.md`, K1).
+ * s'il y en a un (`le-paiement-par-virement.md`, K1).
  */
 export interface PayerOpening {
   readonly opening: boolean;

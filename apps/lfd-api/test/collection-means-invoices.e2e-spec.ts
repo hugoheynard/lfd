@@ -1,6 +1,6 @@
 /**
  * E2E du **moyen d'encaissement lu par la facture et le lot** (plan
- * `documentation/comptabilite/plan-paiement-au-compte-par-virement.md`, V3',
+ * `documentation/comptabilite/le-paiement-par-virement.md`, V3',
  * V4', K2, K6, K10, K13).
  *
  * Ce que seul le vrai serveur prouve : la facture d'une période au virement

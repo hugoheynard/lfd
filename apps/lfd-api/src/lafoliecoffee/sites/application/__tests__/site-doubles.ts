@@ -45,6 +45,11 @@ export class InMemorySites extends SiteRepository {
     return Promise.resolve(row === undefined ? null : Site.rehydrate(row));
   }
 
+  /** Le verrou n'a pas de sens en mémoire : les tests d'application sont séquentiels. */
+  loadLocked(id: string): Promise<Site | null> {
+    return this.load(id);
+  }
+
   save(site: Site): Promise<void> {
     this.rows.set(site.id, site.snapshot());
     this.saved.push(site.id);

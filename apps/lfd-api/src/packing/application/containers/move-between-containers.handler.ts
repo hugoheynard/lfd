@@ -52,7 +52,13 @@ export class MoveBetweenContainersHandler implements ICommandHandler<
 
   execute(command: MoveBetweenContainersCommand): Promise<void> {
     return this.intents.runSealed(
-      movementIntent("packing.transfer", command, command.fromContainerId),
+      movementIntent(
+        "packing.transfer",
+        command,
+        command.fromContainerId,
+        command.toContainerId,
+        command.quantity,
+      ),
       NOTHING_TO_REPLAY,
       (seal) => this.move(command, seal),
     );

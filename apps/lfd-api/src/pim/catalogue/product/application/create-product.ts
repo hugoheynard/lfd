@@ -6,6 +6,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { AllergenCatalogueReader } from "../../../allergens/domain/ports/allergen-catalogue.reader.js";
 import { UuidGenerator } from "../../../../platform/id/uuid-generator.js";
 import { CREATED_ID_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import {
   CategoryArchivedError,
   CategoryNotFoundError,
@@ -105,7 +106,7 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: "pim.product.create",
-        subject: "new",
+        subject: intentSubject("product", command.input),
       },
       CREATED_ID_REPLAY,
       (seal) => this.create(command, seal),

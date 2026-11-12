@@ -4,6 +4,7 @@ import { Mail } from "../../../mail/channels/requests/mail.js";
 import { AppConfig } from "../../../platform/config/app-config.js";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../platform/intent/intent-subject.js";
 import { Journal } from "../../../platform/journal/journal.js";
 import { StaffAccessCache } from "../../permissions/staff-access-cache.port.js";
 import { staffStatusFact } from "../domain/staff-facts.js";
@@ -55,7 +56,7 @@ export class SetStaffStatusHandler implements ICommandHandler<SetStaffStatusComm
         actorId: command.actorId,
         key: command.intentKey,
         gesture: "staff.set-status",
-        subject: `${command.id}:${command.change.status}`,
+        subject: intentSubject(command.id, command.change),
       },
       NOTHING_TO_REPLAY,
       (seal) => this.apply(command, seal),

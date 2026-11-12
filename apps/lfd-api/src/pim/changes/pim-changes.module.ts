@@ -13,7 +13,7 @@ import { PrismaPimChangePruner } from "./infrastructure/prisma-pim-change.pruner
 
 /**
  * Contexte **changes** — le numéro `pim` du référentiel
- * (`documentation/caching-usage/plan-lectures-du-pim.md`, § 4).
+ * (`documentation/caching-usage/le-cache-du-back-office.md`, § 5).
  *
  * Il tient le journal `pim.pim_change` (lu, balayé — jamais écrit : ses
  * lignes naissent des déclencheurs), la source globale `pim` que

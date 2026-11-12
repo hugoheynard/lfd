@@ -73,8 +73,8 @@ function world(): World {
         inMemoryIntents(),
       ),
     cancel: new CancelPaymentLinkHandler(links, COMPANIES, checkout, clock, events, uow),
-    settle: new SettlePaymentLinkHandler(links, COMPANIES, notifier, clock),
-    expire: new ExpirePaymentLinkHandler(links),
+    settle: new SettlePaymentLinkHandler(links, COMPANIES, notifier, clock, uow),
+    expire: new ExpirePaymentLinkHandler(links, uow),
   };
 }
 

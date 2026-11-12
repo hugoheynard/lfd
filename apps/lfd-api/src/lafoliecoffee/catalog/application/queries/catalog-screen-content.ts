@@ -4,8 +4,8 @@ import type { CatalogScreenItemView, PublishedCatalogView } from "@lfd/contracts
 export const CATALOG_SCREEN_CONTENT_KEY = "catalog-admin";
 
 /**
- * **Ce que l'objet garde de l'écran Catalogue** (`plan-catalogue-du-back-office.md`,
- * § 3.5) : la part commune à tout porteur de `lfc_catalog`. Ni le numéro (il
+ * **Ce que l'objet garde de l'écran Catalogue** (`le-cache-du-back-office.md`,
+ * § 4.5) : la part commune à tout porteur de `lfc_catalog`. Ni le numéro (il
  * est la clé), ni les marqueurs du sur mesure — lus à chaque appel, sous leur
  * droit, jamais rangés.
  */

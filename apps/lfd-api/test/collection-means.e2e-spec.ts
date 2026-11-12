@@ -1,6 +1,6 @@
 /**
  * E2E du **moyen d'encaissement d'un payeur** (plan
- * `documentation/comptabilite/plan-paiement-au-compte-par-virement.md`, T1 :
+ * `documentation/comptabilite/le-paiement-par-virement.md`, T1 :
  * V1, V2, V10, V11).
  *
  * Ce que seul le vrai serveur prouve : la table append-only et ses CHECK

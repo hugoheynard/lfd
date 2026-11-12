@@ -7,8 +7,8 @@ import { GetCatalogScreenRowsQuery } from "./get-catalog-screen-rows.query.js";
 import { publishedCatalogViewOf } from "./published-catalog-view.js";
 
 /**
- * **Les lignes touchées par un geste** (`plan-catalogue-du-back-office.md`,
- * § 3.2) : les fiches des articles nommés, recomposées par la même
+ * **Les lignes touchées par un geste** (`le-cache-du-back-office.md`,
+ * § 4.2) : les fiches des articles nommés, recomposées par la même
  * arithmétique que l'écran entier. Comptes par rayon et liste à valider ne
  * sont PAS rendus — l'écran les recalcule sur sa copie
  * (`@lfd/contracts/published-catalog-counts`).

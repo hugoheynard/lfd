@@ -3,10 +3,12 @@ import type { Provider, Type } from "@nestjs/common";
 import { ApplyAddressPointSuggestionHandler } from "./application/commands/apply-address-point-suggestion.handler.js";
 import { IgnoreAddressPointSuggestionHandler } from "./application/commands/ignore-address-point-suggestion.handler.js";
 import { GetAddressPointSuggestionsHandler } from "./application/queries/get-address-point-suggestions.handler.js";
+import { AddressSuggestionDecisionLock } from "./domain/ports/address-suggestion-decision.lock.js";
 import { AddressSuggestionDecisionRepository } from "./domain/ports/address-suggestion-decision.repository.js";
 import { GesturePositionsReader } from "./domain/ports/gesture-positions.reader.js";
 import { IgnoredAddressPointsReader } from "./domain/ports/ignored-address-points.reader.js";
 import { AddressPointSuggestionsController } from "./http/address-point-suggestions.controller.js";
+import { PrismaAddressSuggestionDecisionLock } from "./infrastructure/prisma-address-suggestion-decision.lock.js";
 import { PrismaAddressSuggestionDecisionRepository } from "./infrastructure/prisma-address-suggestion-decision.repository.js";
 import { PrismaGesturePositionsReader } from "./infrastructure/prisma-gesture-positions.reader.js";
 import { PrismaIgnoredAddressPointsReader } from "./infrastructure/prisma-ignored-address-points.reader.js";
@@ -14,7 +16,7 @@ import { PrismaIgnoredAddressPointsReader } from "./infrastructure/prisma-ignore
 /**
  * **Les corrections du carnet suggérées au bureau**
  * (`documentation/livraisons/livreur/gps-y-aller-et-position.md`, §6), rangées à
- * part : une lecture, deux décisions, trois ports et leurs adaptateurs. Le
+ * part : une lecture, deux décisions, quatre ports et leurs adaptateurs. Le
  * carnet lui-même est au commerce, joint par le canal
  * (`DeliveryAddressPointsReader`, `DeliveryAddressPointCorrector`).
  */
@@ -30,4 +32,5 @@ export const ADDRESS_SUGGESTIONS_PROVIDERS: readonly Provider[] = [
     provide: AddressSuggestionDecisionRepository,
     useClass: PrismaAddressSuggestionDecisionRepository,
   },
+  { provide: AddressSuggestionDecisionLock, useClass: PrismaAddressSuggestionDecisionLock },
 ];

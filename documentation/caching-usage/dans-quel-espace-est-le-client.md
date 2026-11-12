@@ -2,7 +2,7 @@
 
 > 📍 **État au 2026-11-05.** Tout ce qui est décrit ici existe, en
 > production depuis `8710ec3`, sauf le devis chiffré pour l'espace montré
-> (`70ab3b3b4`, sur `dev` seulement au 2026-11-05). Ce document remplace le plan de « l'espace
+> (`70ab3b3b4`, en production). Ce document remplace le plan de « l'espace
 > retenu », dont les six lots (a, b, c, c bis, d, e) sont bâtis ; le plan
 > reste dans l'historique git. Son voisin côté serveur :
 > [`qui-est-le-client.md`](qui-est-le-client.md).

@@ -55,7 +55,7 @@ export const comptabiliteRoutes: Routes = [
       },
       {
         // Les factures au virement non réglées après leur échéance (plan
-        // plan-paiement-au-compte-par-virement.md, V8, C7) : une lecture.
+        // le-paiement-par-virement.md, V8, C7) : une lecture.
         path: 'virements-en-retard',
         title: 'Virements en retard — LFC B2B admin',
         loadComponent: () =>

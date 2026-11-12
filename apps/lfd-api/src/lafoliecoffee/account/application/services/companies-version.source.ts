@@ -4,12 +4,12 @@ import { Injectable } from "@nestjs/common";
 import { GlobalVersionSource } from "../../../../platform/day-versions/global-version-source.js";
 import { CompanyChangeVersionReader } from "../../domain/ports/company-change-version.reader.js";
 
-/** La fenêtre de `companies` : 30 s (`plan-veilleur-unique.md`, § 3.1). */
+/** La fenêtre de `companies` : 30 s (`le-cache-du-back-office.md`, § 2.1). */
 export const COMPANIES_FRESH_MS = 30_000;
 
 /**
  * **Les comptes clients**, pour la porte des versions
- * (`plan-veilleur-unique.md`, § 3.2–3.3) : le numéro du journal
+ * (`le-cache-du-back-office.md`, § 2.2–2.3) : le numéro du journal
  * `public.company_change`. Sous `b2b_companies:read`, le droit de la liste
  * et de la fiche des sociétés.
  */

@@ -61,8 +61,8 @@ interface ScreenItemRow extends PublishedItemSourceRow {
 }
 
 /**
- * L'écran Catalogue en une lecture par table (`plan-catalogue-du-back-office.md`,
- * § 3.1) : les articles en vente (décisions jointes, une requête de plus par
+ * L'écran Catalogue en une lecture par table (`le-cache-du-back-office.md`,
+ * § 4.1) : les articles en vente (décisions jointes, une requête de plus par
  * Prisma), les fiches reçues, les familles. Ni `include` de la famille — son
  * nom vient de la lecture des familles —, ni compte des réservations, ni
  * auteurs.

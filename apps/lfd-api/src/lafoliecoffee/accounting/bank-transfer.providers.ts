@@ -13,7 +13,7 @@ import { PrismaUnpaidTransferInvoicesReader } from "./infrastructure/prisma-unpa
 
 /**
  * Le virement reçu et les impayés de factures au virement (plan
- * `plan-paiement-au-compte-par-virement.md`, T3 : V7, V8, C7). À part du
+ * `le-paiement-par-virement.md`, T3 : V7, V8, C7). À part du
  * module, qui dépasse déjà la taille d'un fichier.
  */
 export const BANK_TRANSFER_PROVIDERS: readonly Provider[] = [

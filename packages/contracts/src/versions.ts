@@ -4,7 +4,7 @@ import { DAY_JOURNALS, type DayJournal, isDayJournal, serviceDaySchema } from ".
 
 /**
  * Contrat de fil de **la porte des versions**
- * (`documentation/caching-usage/plan-veilleur-unique.md`, § 3.3) :
+ * (`documentation/caching-usage/le-cache-du-back-office.md`, § 2.3) :
  * `GET admin/versions?date=AAAA-MM-JJ&subjects=orders,companies`.
  *
  * Un sujet a un numéro ; un écran ne se relit que si le numéro d'un sujet

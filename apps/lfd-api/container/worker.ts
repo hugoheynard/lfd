@@ -45,7 +45,7 @@ import { isTrustedCaller, SHELF_STORE_ENV } from "./shelf-store";
 // L'objet des rayons pro (lot C2) : exporté par le point d'entrée, comme toute
 // classe de Durable Object liée dans `wrangler.jsonc`.
 export { ProShelves } from "./pro-shelves";
-// L'objet des journées (`plan-objet-des-journees.md`, lot 1).
+// L'objet des journées (`le-cache-du-back-office.md`, § 3).
 export { DayVersions } from "./day-versions";
 
 // Le point d'entrée par lequel un gestionnaire de sortie répond au container
@@ -507,8 +507,8 @@ async function triggerQualityUploadSweep(env: Env): Promise<void> {
   for (const path of [
     "admin/production/quality/sweep",
     "admin/delivery/journal/sweep",
-    // Le journal du référentiel (`documentation/caching-usage/plan-lectures-du-pim.md`,
-    // § 4.1) : sa propre route, la passe du commerce n'atteint pas le PIM.
+    // Le journal du référentiel (`documentation/caching-usage/le-cache-du-back-office.md`,
+    // § 5.2) : sa propre route, la passe du commerce n'atteint pas le PIM.
     "admin/pim/changes/sweep",
     "admin/delivery/geocoding/sweep",
     "admin/delivery/positions/sweep",

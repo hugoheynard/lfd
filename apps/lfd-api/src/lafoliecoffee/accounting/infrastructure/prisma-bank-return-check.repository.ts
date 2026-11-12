@@ -1,9 +1,14 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { currentTransaction } from "../../../platform/database/transaction.store.js";
 import { BankReturnCheckDay } from "../domain/entities/bank-return-check.js";
 import { BankReturnCheckRepository } from "../domain/ports/bank-return-check.repository.js";
+import { AttestationLockOutsideTransactionError } from "./attestation-lock-outside-transaction.error.js";
 import { returnDayColumn, returnDayOf } from "./collection-return.mapper.js";
+
+/** L'espace de noms du verrou : aucune autre clé consultative ne le porte. */
+const CHECK_DAY_LOCK_NAMESPACE = "accounting_bank_return_check:";
 
 /**
  * Adaptateur d'écriture de « Retours contrôlés ». Registre d'ajouts : `save`
@@ -33,6 +38,21 @@ export class PrismaBankReturnCheckRepository extends BankReturnCheckRepository {
         note: row.note,
       })),
     });
+  }
+
+  /**
+   * `pg_advisory_xact_lock` par (entité, jour) : il couvre aussi un jour sans
+   * ligne, que `FOR UPDATE` ne verrouillerait pas — la course de deux
+   * premières attestations. La lecture qui suit, en READ COMMITTED, voit ce
+   * que le geste concurrent a validé pendant l'attente.
+   */
+  async loadLocked(legalEntityId: string, day: string): Promise<BankReturnCheckDay> {
+    if (currentTransaction() === undefined) {
+      throw new AttestationLockOutsideTransactionError();
+    }
+    const key = `${CHECK_DAY_LOCK_NAMESPACE}${legalEntityId}:${day}`;
+    await this.prisma.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${key}, 0))`;
+    return this.load(legalEntityId, day);
   }
 
   async save(checkDay: BankReturnCheckDay): Promise<void> {

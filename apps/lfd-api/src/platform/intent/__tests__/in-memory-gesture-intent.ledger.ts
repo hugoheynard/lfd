@@ -49,12 +49,13 @@ export class InMemoryGestureIntentLedger extends GestureIntentLedger {
     return Promise.resolve({ kind: "claimed" });
   }
 
-  resolve(intent: GestureIntent, result: IntentRecord): Promise<void> {
+  resolve(intent: GestureIntent, result: IntentRecord): Promise<boolean> {
     const held = this.held.get(`${intent.actorId}|${intent.key}`);
-    if (held !== undefined && held.result === null) {
-      held.result = result;
+    if (held === undefined || held.result !== null) {
+      return Promise.resolve(false);
     }
-    return Promise.resolve();
+    held.result = result;
+    return Promise.resolve(true);
   }
 
   release(intent: GestureIntent): Promise<void> {

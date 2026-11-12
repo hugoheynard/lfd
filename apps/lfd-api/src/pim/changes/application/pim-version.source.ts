@@ -8,8 +8,8 @@ import { PimChangeVersionReader } from "../domain/ports/pim-change-version.reade
 export const PIM_FRESH_MS = 30_000;
 
 /**
- * **Le référentiel**, pour la porte des versions (`plan-lectures-du-pim.md`,
- * § 4.1 et § 4.4) : le numéro du journal `pim.pim_change`.
+ * **Le référentiel**, pour la porte des versions (`le-cache-du-back-office.md`,
+ * § 5.2 et § 5.3) : le numéro du journal `pim.pim_change`.
  *
  * Ouvert à quiconque lit une part du référentiel — fiches, taux, contextes
  * de vente ou matrice des allergènes. Le numéro ne dit qu'« un changement a

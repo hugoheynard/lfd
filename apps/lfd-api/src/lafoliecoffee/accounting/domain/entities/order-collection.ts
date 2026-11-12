@@ -20,7 +20,7 @@ export type OrderCollectionStateName =
    */
   | "cancelled"
   /**
-   * Réglée par un virement reçu (plan `plan-paiement-au-compte-par-virement.md`,
+   * Réglée par un virement reçu (`le-paiement-par-virement.md`,
    * V7) : TERMINAL, elle cite son virement. Aucune transition ne la reprend.
    */
   | "settled_by_transfer";

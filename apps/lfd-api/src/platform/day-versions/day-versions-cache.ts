@@ -8,7 +8,7 @@ export interface SubjectReading {
 /**
  * **La carte d'une portée** — une journée `AAAA-MM-JJ`, ou {@link GLOBAL_SCOPE} —
  * telle qu'elle a été lue en base : le numéro de chaque sujet de la portée,
- * jamais une réponse filtrée par droit (`plan-veilleur-unique.md`, § 3.3).
+ * jamais une réponse filtrée par droit (`le-cache-du-back-office.md`, § 2.3).
  *
  * Chaque sujet porte SON instant de lecture : un sujet à 30 s n'oblige pas à
  * relire un sujet à 15 s. Les clés sont des chaînes et non des sujets typés :

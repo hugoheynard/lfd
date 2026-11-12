@@ -22,7 +22,7 @@ export interface CreditorAccountProposal {
  * c'est la cible de la fraude au faux changement de RIB. Une fois un compte
  * confirmé, toute modification (IBAN, BIC, titulaire, adresse) attend ici
  * qu'un AUTRE membre de la comptabilité la confirme en ressaisissant l'IBAN
- * depuis le RIB de la banque (plan `plan-paiement-au-compte-par-virement.md`,
+ * depuis le RIB de la banque (`le-paiement-par-virement.md`,
  * T0). Tant qu'elle attend, rien ne la lit : ni facture, ni lot, ni mandat.
  */
 export class PendingCreditorAccount {

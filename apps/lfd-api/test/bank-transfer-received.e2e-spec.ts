@@ -1,6 +1,6 @@
 /**
  * E2E du **virement reçu** et des **impayés au virement** (plan
- * `documentation/comptabilite/plan-paiement-au-compte-par-virement.md`, V7,
+ * `documentation/comptabilite/le-paiement-par-virement.md`, V7,
  * V8, C7).
  *
  * Ce que seul le vrai serveur prouve : la facture d'une période au virement

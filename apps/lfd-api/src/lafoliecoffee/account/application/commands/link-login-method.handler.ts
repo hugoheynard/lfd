@@ -21,6 +21,7 @@ import { LinkableIdentity } from "../../domain/value-objects/linkable-identity.j
 import { AccountJournalNames } from "../services/account-journal-names.service.js";
 import { LinkLoginMethodCommand } from "./link-login-method.command.js";
 import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { customerIntentActor } from "../../../shared/intent/customer-intent-actor.js";
 
 /** Le nom stable du geste, dans le registre des intentions. */
@@ -115,7 +116,7 @@ export class LinkLoginMethodHandler implements ICommandHandler<LinkLoginMethodCo
         // La personne seule : chaque essai porte une preuve neuve (une
         // fenêtre d'autorisation de plus), et un réessai après une réponse
         // perdue doit rendre le rattachement fait, pas un refus de clé.
-        subject: command.userId,
+        subject: intentSubject(command.userId),
       },
       NOTHING_TO_REPLAY,
       (seal) => this.link(command, seal),

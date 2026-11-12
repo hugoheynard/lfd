@@ -7,6 +7,7 @@ import {
   OncePerIntent,
   readIntentString,
 } from "../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../platform/intent/intent-subject.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { ResupplyCatalogue } from "../domain/resupply-catalogue.js";
 import { ResupplySiteUnknownError } from "../domain/resupply-site-errors.js";
@@ -52,7 +53,7 @@ export class AddSiteResupplyLineHandler implements ICommandHandler<
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: ADD_LINE_GESTURE,
-        subject: [command.siteId, command.target, command.sku, String(command.quantity)].join("|"),
+        subject: intentSubject(command.siteId, command.target, command.sku, command.quantity),
       },
       DRAFT_ID_REPLAY,
       (seal) => this.add(command, seal),

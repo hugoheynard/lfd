@@ -7,7 +7,7 @@ import {
 
 /**
  * L'arithmétique de l'écran Catalogue que le serveur et l'écran partagent
- * (`plan-catalogue-du-back-office.md`, § 3.2). Les dates ne sont comparées à
+ * (`le-cache-du-back-office.md`, § 4.2). Les dates ne sont comparées à
  * aucune horloge.
  */
 

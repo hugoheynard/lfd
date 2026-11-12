@@ -112,7 +112,7 @@ export interface BankCardMeans {
 
 /**
  * UNTDID 4461 — le virement SEPA : le moyen de la facture d'une période au
- * virement (plan `plan-paiement-au-compte-par-virement.md`, V5, K10).
+ * virement (`le-paiement-par-virement.md`, V5, K10).
  */
 export const SEPA_CREDIT_TRANSFER = "58";
 

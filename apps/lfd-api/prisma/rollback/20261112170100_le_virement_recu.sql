@@ -1,5 +1,5 @@
 -- RETOUR ARRIÈRE de 20261112170100_le_virement_recu
--- (documentation/comptabilite/plan-paiement-au-compte-par-virement.md, T3).
+-- (documentation/comptabilite/le-paiement-par-virement.md, T3).
 --
 -- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
 -- « appliquée ».

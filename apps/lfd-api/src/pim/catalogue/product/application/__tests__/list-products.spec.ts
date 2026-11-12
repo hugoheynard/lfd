@@ -40,7 +40,7 @@ async function items(handler: ListProductsHandler): Promise<readonly ProductList
   return (await handler.execute()).items;
 }
 
-/** L'écran retient le numéro pour ignorer l'écho de son geste (`plan-lectures-du-pim.md`, § 4.3). */
+/** L'écran retient le numéro pour ignorer l'écho de son geste (`le-cache-du-back-office.md`, § 5.4). */
 describe("ListProductsHandler — le numéro", () => {
   it("rend le numéro `pim` sous lequel la liste est servie", async () => {
     const listingAt12 = await listing(tarte(), family("pro"), [], 12).execute();
@@ -156,7 +156,7 @@ describe("ListProductsHandler — les fiches supprimées", () => {
   });
 });
 
-/** P1.1 du plan des lectures du PIM : la table lit ses constats dans sa propre réponse. */
+/** Le cache du back-office (§ 5.1) : la table lit ses constats dans sa propre réponse. */
 describe("ListProductsHandler — les constats de conformité", () => {
   it("rend le constat d'une fiche vivante, sans autre lecture du catalogue", async () => {
     const product = tarte({ variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: null }] });

@@ -24,7 +24,7 @@ const PARIS_INSTANT = new Intl.DateTimeFormat('fr-FR', {
 
 /**
  * **La modification du compte en attente** — quatre yeux (plan
- * `plan-paiement-au-compte-par-virement.md`, T0).
+ * `le-paiement-par-virement.md`, T0).
  *
  * Elle dit qui a proposé, quand, et le compte proposé (quatre caractères de
  * l'IBAN, le reste en entier). Un AUTRE membre la confirme en ressaisissant

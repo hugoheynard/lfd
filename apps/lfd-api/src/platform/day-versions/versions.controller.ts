@@ -13,8 +13,8 @@ import { ZodQuery } from "../shared/http/zod-body.pipe.js";
 import { GetVersionsQuery } from "./get-versions.query.js";
 
 /**
- * **La porte des versions** (`documentation/caching-usage/plan-veilleur-unique.md`,
- * § 3.3) : `GET admin/versions?date=AAAA-MM-JJ&subjects=orders,companies` →
+ * **La porte des versions** (`documentation/caching-usage/le-cache-du-back-office.md`,
+ * § 2.3) : `GET admin/versions?date=AAAA-MM-JJ&subjects=orders,companies` →
  * `{ date, versions: { orders, companies } }`. `date` n'est exigée que si un
  * sujet journalier est demandé.
  *

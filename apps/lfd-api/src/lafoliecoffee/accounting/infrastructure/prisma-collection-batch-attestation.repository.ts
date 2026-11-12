@@ -1,11 +1,13 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { currentTransaction } from "../../../platform/database/transaction.store.js";
 import {
   CollectionBatchAttestations,
   batchAttestationKindOf,
 } from "../domain/entities/collection-batch-attestation.js";
 import { CollectionBatchAttestationRepository } from "../domain/ports/collection-batch-attestation.repository.js";
+import { AttestationLockOutsideTransactionError } from "./attestation-lock-outside-transaction.error.js";
 
 /**
  * Adaptateur d'écriture des attestations d'un lot. Registre d'ajouts : `save`
@@ -17,6 +19,15 @@ import { CollectionBatchAttestationRepository } from "../domain/ports/collection
 export class PrismaCollectionBatchAttestationRepository extends CollectionBatchAttestationRepository {
   constructor(private readonly prisma: PrismaService) {
     super();
+  }
+
+  async loadLocked(batchId: string): Promise<CollectionBatchAttestations | null> {
+    if (currentTransaction() === undefined) {
+      throw new AttestationLockOutsideTransactionError();
+    }
+    await this.prisma.$queryRaw`
+      SELECT "id" FROM "public"."collection_batch" WHERE "id" = ${batchId} FOR UPDATE`;
+    return this.load(batchId);
   }
 
   async load(batchId: string): Promise<CollectionBatchAttestations | null> {

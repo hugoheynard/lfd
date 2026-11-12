@@ -21,7 +21,7 @@ export class SealingIntentLedger extends InMemoryGestureIntentLedger {
     super();
   }
 
-  override resolve(intent: GestureIntent, result: IntentRecord): Promise<void> {
+  override resolve(intent: GestureIntent, result: IntentRecord): Promise<boolean> {
     this.resolutions.push(this.insideTransaction() ? "in tx" : "OUTSIDE tx");
     const refusal = this.refuseNextSeal;
     if (refusal !== null) {

@@ -79,7 +79,7 @@ Les SÉRIEUX :
 
 ## 4. Le lot (un seul : backend + back-office)
 
-> 🟦 **Bâti le 2026-10-29, pas encore commité.** Migration
+> ✅ **Bâti le 2026-10-29, en production.** Migration
 > `20261029060000_le_libelle_interne_des_declinaisons` ; route du crayon
 > `PUT …/variants/:variantId/name` sur `{ label }`, route du nom de boutique
 > `PUT …/variants/:variantId/shop-name` ; carte `app-variant-identity-form`.

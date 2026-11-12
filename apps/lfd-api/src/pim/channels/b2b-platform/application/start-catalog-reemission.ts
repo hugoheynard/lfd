@@ -5,6 +5,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { BackgroundWork } from "../../../../platform/events/background-work.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { CREATED_ID_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { ProductNotFoundError } from "../../../catalogue/product/domain/errors/product-errors.js";
 import { CatalogFactsReader } from "../../../catalogue/shared/domain/ports/catalog-facts.reader.js";
@@ -77,7 +78,7 @@ export class StartCatalogReemissionHandler implements ICommandHandler<
         actorId: startedBy,
         key: command.intentKey,
         gesture: "pim.catalog.reemit",
-        subject: command.productId ?? "everything",
+        subject: intentSubject(command.productId ?? "everything"),
       },
       CREATED_ID_REPLAY,
       (seal) => this.start(command.productId, startedBy, seal),

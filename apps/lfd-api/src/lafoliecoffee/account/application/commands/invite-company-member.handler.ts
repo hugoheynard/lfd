@@ -8,6 +8,7 @@ import {
   readIntentBoolean,
   readIntentString,
 } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { CompanyAccessOpenedEvent } from "../../domain/events/person-acts.event.js";
 import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
 import { CompanyMemberReader } from "../../domain/ports/company-member.repository.js";
@@ -59,7 +60,13 @@ export class InviteCompanyMemberHandler implements ICommandHandler<
         actorId: command.invitedBy,
         key: command.intentKey,
         gesture: "account.invite-member",
-        subject: command.companyId,
+        subject: intentSubject(command.companyId, {
+          email: command.email,
+          firstName: command.firstName,
+          lastName: command.lastName,
+          phone: command.phone,
+          role: command.role,
+        }),
       },
       INVITED_REPLAY,
       () => this.invite(command),

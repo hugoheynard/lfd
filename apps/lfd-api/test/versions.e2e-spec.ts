@@ -1,6 +1,6 @@
 /**
  * E2E de **la porte des versions** et des deux journaux globaux —
- * `documentation/caching-usage/plan-veilleur-unique.md`, § 3.2 et 3.3.
+ * `documentation/caching-usage/le-cache-du-back-office.md`, § 2.2 et 2.3.
  *
  * Ce que seule la base migrée peut dire :
  *

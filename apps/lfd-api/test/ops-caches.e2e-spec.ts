@@ -1,6 +1,6 @@
 /**
  * E2E de l'onglet **Cache** de la santé (`documentation/caching-usage/
- * plan-onglet-cache.md`) — `GET /admin/ops/caches`.
+ * le-cache-du-back-office.md`) — `GET /admin/ops/caches`.
  *
  * Ce que seul ce niveau prouve : que la route est murée comme le reste d'OPS
  * (droit `ops_health` lu en base), et que, sans objet partagé (e2e : aucune

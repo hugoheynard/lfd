@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { CREATED_ID_REPLAY, OncePerIntent } from "../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../platform/intent/intent-subject.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { Clock } from "../../../platform/time/clock.js";
@@ -68,7 +69,7 @@ export class OpenPackingContainerHandler implements ICommandHandler<
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: "packing.open",
-        subject: command.orderId,
+        subject: intentSubject(command.orderId, command.serviceDay, command.request),
       },
       CREATED_ID_REPLAY,
       (seal) => this.open(command, seal),

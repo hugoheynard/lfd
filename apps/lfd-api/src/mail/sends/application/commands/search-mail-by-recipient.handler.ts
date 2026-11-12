@@ -4,6 +4,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { CREATED_ID_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { MailRecipientSearchedEvent } from "../../domain/mail-sends.events.js";
 import { MailSendFinder } from "../../domain/ports/mail-send-finder.js";
@@ -53,7 +54,12 @@ export class SearchMailByRecipientHandler implements ICommandHandler<
     // Le sujet est l'empreinte, jamais l'adresse : la même clé sur une autre
     // adresse est refusée (409 nommé), et un rejeu rend la même recherche.
     return await this.intents.runSealed(
-      { actorId: staffUserId, key: intentKey, gesture: "mail.send.search", subject: fingerprint },
+      {
+        actorId: staffUserId,
+        key: intentKey,
+        gesture: "mail.send.search",
+        subject: intentSubject("mail-search", fingerprint),
+      },
       CREATED_ID_REPLAY,
       (seal) => this.search(key, fingerprint, staffUserId, seal),
     );

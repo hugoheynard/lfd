@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { Prisma } from "../database/client/client.js";
 import { isJsonRecord } from "../database/json-columns.js";
 import { PrismaService } from "../database/prisma.service.js";
+import { isInsideTransaction } from "../database/transaction.store.js";
 import { IdGenerator } from "../id/id-generator.js";
 import {
   GESTURE_INTENT_LEASE_MS,
@@ -11,7 +12,7 @@ import {
   type IntentClaim,
   type IntentRecord,
 } from "./gesture-intent.js";
-import { IntentRecordUnreadableError } from "./intent-errors.js";
+import { IntentClaimInsideTransactionError, IntentRecordUnreadableError } from "./intent-errors.js";
 
 /** Code Postgres d'une violation de contrainte unique. */
 const UNIQUE_VIOLATION = "P2002";
@@ -31,6 +32,12 @@ export class PrismaGestureIntentLedger extends GestureIntentLedger {
   }
 
   async claim(intent: GestureIntent, now: Date): Promise<IntentClaim> {
+    if (isInsideTransaction()) {
+      // Dans une transaction, la réclamation ne serait vue de personne avant
+      // la validation (« en vol » ne joue plus) et un refus d'unicité
+      // annulerait la transaction entière.
+      throw new IntentClaimInsideTransactionError(intent.gesture);
+    }
     try {
       await this.prisma.gestureIntent.create({
         data: {
@@ -85,11 +92,17 @@ export class PrismaGestureIntentLedger extends GestureIntentLedger {
     return count === 1 ? { kind: "claimed" } : this.decideOnExisting(intent, now);
   }
 
-  async resolve(intent: GestureIntent, result: IntentRecord, now: Date): Promise<void> {
-    await this.prisma.gestureIntent.updateMany({
+  /**
+   * Dans la transaction du geste, l'`UPDATE` pose le verrou de ligne : un
+   * second scellement attend la validation du premier, puis ne trouve plus de
+   * ligne non résolue — `false`, et c'est à l'appelant d'annuler.
+   */
+  async resolve(intent: GestureIntent, result: IntentRecord, now: Date): Promise<boolean> {
+    const { count } = await this.prisma.gestureIntent.updateMany({
       where: { actorId: intent.actorId, key: intent.key, resolvedAt: null },
       data: { resolvedAt: now, result: { ...result } },
     });
+    return count === 1;
   }
 
   async release(intent: GestureIntent): Promise<void> {

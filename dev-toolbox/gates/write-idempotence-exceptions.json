@@ -16,13 +16,13 @@
     {
       "route": "apps/lfd-api/src/delivery/http/address-point-suggestions.controller.ts#apply",
       "effects": ["creates"],
-      "reason": "rejouée, la suggestion appliquée n'est plus proposée : refus 409 AddressSuggestionChangedError avant toute écriture ni tout identifiant",
+      "reason": "rejouée, la suggestion appliquée n'est plus proposée : refus 409 AddressSuggestionChangedError avant toute écriture ni tout identifiant ; en concurrence, le geste compte les décisions avant sa vérification puis recompte sous le verrou consultatif (adresse, sorte) dans son unité de travail : une décision validée entre-temps le refuse (409), une seule décision et une seule correction",
       "verified": "2026-11-12"
     },
     {
       "route": "apps/lfd-api/src/delivery/http/address-point-suggestions.controller.ts#ignore",
       "effects": ["creates"],
-      "reason": "rejouée, la suggestion écartée n'est plus proposée : refus 409 AddressSuggestionChangedError avant toute écriture ni tout identifiant",
+      "reason": "rejouée, la suggestion écartée n'est plus proposée : refus 409 AddressSuggestionChangedError avant toute écriture ni tout identifiant ; en concurrence, le geste compte les décisions avant sa vérification puis recompte sous le verrou consultatif (adresse, sorte) dans son unité de travail : une décision validée entre-temps le refuse (409), une seule décision",
       "verified": "2026-11-12"
     },
     {
@@ -94,13 +94,13 @@
     {
       "route": "apps/lfd-api/src/lafoliecoffee/accounting/http/admin-bank-return-checks.controller.ts#attest",
       "effects": ["creates"],
-      "reason": "transition : rejouée, le jour est déjà attesté et l'agrégat refuse (409 BankReturnCheckAlreadyAttestedError) avant toute ligne ni fait",
+      "reason": "transition : rejouée, le jour relu sous le verrou consultatif (entité, jour) est déjà attesté et l'agrégat refuse (409 BankReturnCheckAlreadyAttestedError) avant toute ligne ni fait ; deux attestations simultanées se jouent l'une après l'autre",
       "verified": "2026-11-12"
     },
     {
       "route": "apps/lfd-api/src/lafoliecoffee/accounting/http/admin-bank-return-checks.controller.ts#withdraw",
       "effects": ["creates"],
-      "reason": "transition : rejouée, le jour n'est plus attesté et l'agrégat refuse (409 BankReturnCheckNotAttestedError) avant toute ligne ni fait",
+      "reason": "transition : rejouée, le jour relu sous le verrou consultatif (entité, jour) n'est plus attesté et l'agrégat refuse (409 BankReturnCheckNotAttestedError) avant toute ligne ni fait ; deux retraits simultanés se jouent l'un après l'autre",
       "verified": "2026-11-12"
     },
     {
@@ -112,13 +112,13 @@
     {
       "route": "apps/lfd-api/src/lafoliecoffee/accounting/http/admin-collection-batch-attestations.controller.ts#attest",
       "effects": ["creates"],
-      "reason": "transition : rejouée, la sorte est déjà attestée et l'agrégat refuse (409 BatchAttestationAlreadyGivenError) avant toute ligne ni fait",
+      "reason": "transition : rejouée, la sorte relue sous le verrou de la ligne du lot (FOR UPDATE) est déjà attestée et l'agrégat refuse (409 BatchAttestationAlreadyGivenError) avant toute ligne ni fait ; deux attestations simultanées se jouent l'une après l'autre",
       "verified": "2026-11-12"
     },
     {
       "route": "apps/lfd-api/src/lafoliecoffee/accounting/http/admin-collection-batch-attestations.controller.ts#withdraw",
       "effects": ["creates"],
-      "reason": "transition : rejouée, la sorte n'est plus attestée et l'agrégat refuse (409) avant toute ligne ni fait",
+      "reason": "transition : rejouée, la sorte relue sous le verrou de la ligne du lot (FOR UPDATE) n'est plus attestée et l'agrégat refuse (409) avant toute ligne ni fait ; deux retraits simultanés se jouent l'un après l'autre",
       "verified": "2026-11-12"
     },
     {
@@ -214,13 +214,13 @@
     {
       "route": "apps/lfd-api/src/lafoliecoffee/payments/http/admin-payment-links.controller.ts#cancel",
       "effects": ["network:CheckoutGateway"],
-      "reason": "transition : rejouée, le lien n'est plus ouvert et l'agrégat refuse (409 PaymentLinkNotOpenError) avant toute écriture et avant tout appel au prestataire — le port est injecté, mais le webhook ne fait que vérifier la signature (parseLinkWebhook, sans réseau) ; l'annulation, elle, est refusée au rejeu (409) avant l'appel au prestataire.",
+      "reason": "transition : rejouée, le lien relu sous le verrou de sa ligne (FOR UPDATE) n'est plus ouvert et l'agrégat refuse (409 PaymentLinkNotOpenError) avant toute écriture et avant tout appel au prestataire ; un paiement qui croise l'annulation se joue avant ou après elle, jamais effacé par elle.",
       "verified": "2026-11-12"
     },
     {
       "route": "apps/lfd-api/src/lafoliecoffee/payments/http/payment-links-webhook.controller.ts#handle",
       "effects": ["network:CheckoutGateway"],
-      "reason": "webhook, par la clé de l'émetteur : l'issue projetée (payé, expiré) est conditionnée à l'état du lien ; un événement rejoué ne réécrit rien — le port est injecté, mais le webhook ne fait que vérifier la signature (parseLinkWebhook, sans réseau) ; l'annulation, elle, est refusée au rejeu (409) avant l'appel au prestataire.",
+      "reason": "webhook, par la clé de l'émetteur : l'issue projetée (payé, expiré) est décidée sur le lien relu sous le verrou de sa ligne (FOR UPDATE), donc sur l'état écrit par une annulation concurrente ; un événement rejoué ne réécrit rien — le port est injecté, mais le webhook ne fait que vérifier la signature (parseLinkWebhook, sans réseau).",
       "verified": "2026-11-12"
     },
     {
@@ -262,19 +262,19 @@
     {
       "route": "apps/lfd-api/src/lafoliecoffee/promotions/http/admin-promotions.controller.ts#pause",
       "effects": ["network:PublicSettingsEdgeCache"],
-      "reason": "transition : rejouée sur une promotion en pause, l'agrégat refuse (409 PromotionAlreadyPausedError) avant toute écriture, tout acte ni toute purge du cache — réseau = purge d'un cache, refaite sans dommage ; et la transition est refusée au rejeu (409) avant la purge.",
+      "reason": "transition : rejouée sur une promotion en pause, relue sous le verrou de sa ligne (FOR UPDATE) dans l'unité de travail du geste, l'agrégat refuse (409 PromotionAlreadyPausedError) avant toute écriture, tout acte ni toute purge du cache ; deux suspensions simultanées se jouent l'une après l'autre — réseau = purge d'un cache, refaite sans dommage, et seulement après l'écriture validée.",
       "verified": "2026-11-12"
     },
     {
       "route": "apps/lfd-api/src/lafoliecoffee/promotions/http/admin-promotions.controller.ts#resume",
       "effects": ["network:PublicSettingsEdgeCache"],
-      "reason": "transition : rejouée sur une promotion en cours, l'agrégat refuse (409 PromotionNotPausedError) avant toute écriture, tout acte ni toute purge du cache — réseau = purge d'un cache, refaite sans dommage ; et la transition est refusée au rejeu (409) avant la purge.",
+      "reason": "transition : rejouée sur une promotion en cours, relue sous le verrou de sa ligne (FOR UPDATE) dans l'unité de travail du geste, l'agrégat refuse (409 PromotionNotPausedError) avant toute écriture, tout acte ni toute purge du cache ; deux reprises simultanées se jouent l'une après l'autre — réseau = purge d'un cache, refaite sans dommage, et seulement après l'écriture validée.",
       "verified": "2026-11-12"
     },
     {
       "route": "apps/lfd-api/src/lafoliecoffee/promotions/http/admin-promotions.controller.ts#archive",
       "effects": ["network:PublicSettingsEdgeCache"],
-      "reason": "transition : rejouée sur une promotion archivée, l'agrégat refuse (409 ArchivedPromotionIsSealedError) avant toute écriture, tout acte ni toute purge du cache — réseau = purge d'un cache, refaite sans dommage ; et la transition est refusée au rejeu (409) avant la purge.",
+      "reason": "transition : rejouée sur une promotion archivée, relue sous le verrou de sa ligne (FOR UPDATE) dans l'unité de travail du geste, l'agrégat refuse (409 ArchivedPromotionIsSealedError) avant toute écriture, tout acte ni toute purge du cache ; deux archivages simultanés se jouent l'un après l'autre — réseau = purge d'un cache, refaite sans dommage, et seulement après l'écriture validée.",
       "verified": "2026-11-12"
     },
     {
@@ -304,7 +304,7 @@
     {
       "route": "apps/lfd-api/src/lafoliecoffee/sites/http/admin-sites.controller.ts#archive",
       "effects": ["network:PublicSettingsEdgeCache"],
-      "reason": "archive le site : rejoué, le site n'est plus actif et l'archivage est refusé sans rien écrire, journaliser ni purger — réseau = purge d'un cache, refaite sans dommage ; et la transition est refusée au rejeu (409) avant la purge.",
+      "reason": "archive le site : rejoué, le site relu sous le verrou de sa ligne (FOR UPDATE) n'est plus actif et l'archivage est refusé sans rien écrire, journaliser ni purger ; deux archivages simultanés se jouent l'un après l'autre — réseau = purge d'un cache, refaite sans dommage ; et la transition est refusée au rejeu (409) avant la purge.",
       "verified": "2026-11-12"
     },
     {

@@ -4,6 +4,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import {
   MarketingPreferenceAddressErasedError,
@@ -50,7 +51,7 @@ export class RevealMarketingPreferenceRecipientHandler implements ICommandHandle
         actorId: staffUserId,
         key: intentKey,
         gesture: "mail.preference.reveal",
-        subject: preferenceId,
+        subject: intentSubject(preferenceId),
       },
       NOTHING_TO_REPLAY,
       (seal) => this.reveal(preferenceId, staffUserId, seal),

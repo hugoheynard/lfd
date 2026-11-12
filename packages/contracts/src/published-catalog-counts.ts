@@ -9,8 +9,8 @@ import type {
 
 /**
  * **Les comptes par rayon et la liste à valider** de la vue « Catalogue
- * publié » (`documentation/caching-usage/plan-catalogue-du-back-office.md`,
- * § 3.2).
+ * publié » (`documentation/caching-usage/le-cache-du-back-office.md`,
+ * § 4.2).
  *
  * Les deux se calculent sur TOUT le catalogue. Le serveur les rend avec
  * l'écran ; après un geste, l'écran remplace les lignes touchées dans sa

@@ -2,6 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import type { CompanyMercuriale } from "../../domain/entities/company-mercuriale.js";
 import { checkedWindowCorrectionReason } from "../../domain/entities/mercuriale-window-correction.js";
@@ -66,7 +67,7 @@ export class CorrectMercurialeWindowHandler implements ICommandHandler<
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: MERCURIALE_GESTURES.correctWindow,
-        subject: command.mercurialeId,
+        subject: intentSubject(command.mercurialeId, command.companyId, command.payload),
       },
       NOTHING_TO_REPLAY,
       (seal) => this.correct(command, seal),

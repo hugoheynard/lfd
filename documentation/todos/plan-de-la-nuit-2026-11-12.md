@@ -100,7 +100,7 @@ l'avez ouverte ») au lieu d'écraser. Court plan d'abord (où vit la version
 de la société, quels gestes de la fiche la portent), vérifié dans le code.
 2 quinquies. **Finir le paiement par virement** (Hugo, 2026-11-12) : T4
 (l'écran) et T5 (la boutique) du plan
-`comptabilite/plan-paiement-au-compte-par-virement.md`, plus les trois
+`comptabilite/le-paiement-par-virement.md`, plus les trois
 petites décisions (écart avant de valider, déduction d'un avoir, état dans
 la vue facture) tranchées et écrites dans le plan. L'argent : `vitruve` sur
 ce qui n'a pas encore été contredit. Rappel : l'IBAN ne part jamais par
@@ -108,24 +108,24 @@ e-mail.
 
 ## 4. Documenter
 
-4. **Les plans finis deviennent des docs d'état** (au présent, schémas, reste
-   à faire), puis les plans sont retirés et leurs liens repointés :
-   - `caching-usage/plan-veilleur-unique.md`
-   - `caching-usage/plan-catalogue-du-back-office.md`
-   - `caching-usage/plan-lectures-du-pim.md` (P1 et P2)
-   - `caching-usage/plan-onglet-cache.md`
-   - `caching-usage/plan-objet-des-journees.md` (lot 1)
-   - `ops/plan-idempotence-des-ecritures.md` (J0–J2 ; J3–J5 restent en plan)
-   - `comptabilite/plan-paiement-au-compte-par-virement.md` (T0–T3 ; T4–T5
-     restent en plan)
-5. **La carte des chantiers** : ce qui est fait, ce qui reste, dans l'ordre.
-6. **Les 🟦 « sur dev » passés à ✅** pour ce qui est en production
-   (`adb9c41e3`).
-7. **Le runbook** : l'incident `nutrition_declaration` (42P01), le geste
-   `rolled_back_at` en console Prisma, et la vérification des tables avant
-   une migration qui pose des déclencheurs.
-8. **`documentation/README.md`** : vérifier l'index des docs créées ou
-   retirées aujourd'hui.
+4. ✅ (2026-11-12, non commité) **Les plans finis deviennent des docs d'état**,
+   les plans sont retirés et leurs liens repointés : les cinq plans du cache
+   (veilleur unique, écran Catalogue, lectures du PIM, onglet Cache, objet
+   des journées) → `caching-usage/le-cache-du-back-office.md` (le lot 2 des
+   journées y reste à faire) ; le plan du virement →
+   `comptabilite/le-paiement-par-virement.md` (le moyen figé dans la vue
+   d'une facture y reste à faire). `ops/plan-idempotence-des-ecritures.md`
+   reste en plan (autre lot).
+5. ✅ (2026-11-12, non commité) **La carte des chantiers** : ce qui est fait,
+   ce qui reste, dans l'ordre.
+6. ✅ (2026-11-12, non commité) **Les 🟦 « sur dev » passés à ✅** pour ce
+   qui est en production (`adb9c41e3`).
+7. ✅ (2026-11-12, non commité) **Le runbook** : l'incident
+   `nutrition_declaration` (42P01), le geste `rolled_back_at` en console
+   Prisma, et la vérification des tables avant une migration qui pose des
+   déclencheurs.
+8. ✅ (2026-11-12, non commité) **`documentation/README.md`** : l'index des
+   docs créées ou retirées aujourd'hui.
 
 ## 5. Si le temps le permet
 

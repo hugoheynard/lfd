@@ -11,8 +11,8 @@ import { listContent } from "../pim-content-keys.js";
 import { VersionedPimContents } from "../pim-contents.js";
 
 /**
- * Les contenus du référentiel sous le numéro `pim` (`plan-lectures-du-pim.md`,
- * § 4.2) : le numéro est lu AVANT la charge, et une clé refusée lit la base.
+ * Les contenus du référentiel sous le numéro `pim` (`le-cache-du-back-office.md`,
+ * § 5.3) : le numéro est lu AVANT la charge, et une clé refusée lit la base.
  */
 
 class MemoryContents extends VersionedContentCache {

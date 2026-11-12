@@ -874,7 +874,7 @@ describe('le sur mesure (R3-2)', () => {
 });
 
 /**
- * **L'écran lit le store** (`plan-catalogue-du-back-office.md`, § 3.2–3.4) :
+ * **L'écran lit le store** (`le-cache-du-back-office.md`, § 4.2–4.4) :
  * une lecture à l'ouverture, les lignes seules après un geste, et le numéro
  * de la copie confié au veilleur.
  */

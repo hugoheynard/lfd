@@ -92,7 +92,7 @@ export interface LegalEntitySnapshot {
   readonly creditorAccountCountryCode: string | null;
   /**
    * Le compte PROPOSÉ, en attente de la confirmation d'un second membre
-   * (quatre yeux, plan `plan-paiement-au-compte-par-virement.md`, T0). Tous
+   * (quatre yeux, `le-paiement-par-virement.md`, T0). Tous
    * nuls = rien en attente. 🔴 `creditorSnapshot()` ne les lit jamais.
    */
   readonly pendingCreditorAccountId: string | null;

@@ -29,7 +29,7 @@ type DayVersionsOperation = "read" | "store";
 
 /**
  * **L'objet des journées n'est jamais sur le chemin de la disponibilité**
- * (`plan-objet-des-journees.md`, § 3) : objet injoignable, lent ou
+ * (`le-cache-du-back-office.md`, § 3) : objet injoignable, lent ou
  * disjoncteur ouvert → `null`, et le handler lit la base. Rien ne lève.
  */
 @Injectable()

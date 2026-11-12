@@ -57,7 +57,7 @@ export interface GapNotice {
 }
 
 /**
- * **« Virement reçu »** (plan `plan-paiement-au-compte-par-virement.md`, V7) :
+ * **« Virement reçu »** (`le-paiement-par-virement.md`, V7) :
  * le montant, le jour et la référence lus sur le relevé, et les factures au
  * virement du payeur qu'il règle en entier. L'écran n'additionne aucun
  * montant (porte `front-money-reads`) : l'écart est lu, AVANT « Enregistrer »,

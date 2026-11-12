@@ -66,7 +66,7 @@ import { VersionedContents } from "./versioned-contents.js";
     GetDayVersionsHandler,
     GetVersionsHandler,
   ],
-  // Les contenus versionnés (`plan-catalogue-du-back-office.md`, § 3.5) : la
+  // Les contenus versionnés (`le-cache-du-back-office.md`, § 4.5) : la
   // porte générique que les blocs appellent.
   exports: [VersionedContents],
 })

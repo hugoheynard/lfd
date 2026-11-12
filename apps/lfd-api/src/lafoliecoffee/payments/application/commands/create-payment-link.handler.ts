@@ -5,6 +5,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import type { IntentRecord } from "../../../../platform/intent/gesture-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import {
   type IntentCodec,
   OncePerIntent,
@@ -69,7 +70,7 @@ export class CreatePaymentLinkHandler implements ICommandHandler<
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: CREATE_LINK_GESTURE,
-        subject: command.companyId,
+        subject: intentSubject(command.companyId, command.amountCents, command.label),
       },
       CREATED_LINK_REPLAY,
       (seal) => this.create(command, seal),

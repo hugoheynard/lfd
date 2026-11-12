@@ -1,6 +1,6 @@
 /**
  * **Lire le numéro `companies`** — le journal des comptes clients
- * (`public.company_change`, `plan-veilleur-unique.md` § 3.2), alimenté par
+ * (`public.company_change`, `le-cache-du-back-office.md` § 2.2), alimenté par
  * les déclencheurs des tables que la liste et la fiche des sociétés lisent,
  * jamais par le code. Séparé du balayage (ISP).
  *

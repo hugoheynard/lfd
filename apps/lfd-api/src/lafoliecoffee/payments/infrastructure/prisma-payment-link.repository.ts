@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { currentTransaction } from "../../../platform/database/transaction.store.js";
+import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import { PaymentLink } from "../domain/entities/payment-link.js";
 import { PaymentLinkRepository } from "../domain/ports/payment-link.repository.js";
 
@@ -19,6 +21,20 @@ const LINK_SELECT = {
   cancelledAt: true,
   cancelledByStaffId: true,
 } as const;
+
+/**
+ * Le verrou d'un lien a été demandé hors d'une unité de travail — une faute
+ * de câblage : en autocommit, le `FOR UPDATE` est relâché à la fin de sa
+ * propre instruction, et l'écriture qui suit ne serait plus protégée.
+ */
+export class PaymentLinkLockOutsideTransactionError extends TechnicalError {
+  constructor() {
+    super(
+      "payment_link.lock_outside_transaction",
+      "Le verrou d'un lien de paiement exige une transaction ouverte : le charger sous UnitOfWork.run.",
+    );
+  }
+}
 
 /**
  * Adaptateur Prisma des liens libres : `load` → `reconstitute`, `save` ←
@@ -40,6 +56,20 @@ export class PrismaPaymentLinkRepository extends PaymentLinkRepository {
   async load(id: string): Promise<PaymentLink | null> {
     const row = await this.prisma.paymentLink.findUnique({ where: { id }, select: LINK_SELECT });
     return row === null ? null : PaymentLink.reconstitute(row);
+  }
+
+  async loadLocked(id: string): Promise<PaymentLink | null> {
+    assertInsideTransaction();
+    await this.prisma
+      .$queryRaw`SELECT "id" FROM "public"."payment_links" WHERE "id" = ${id} FOR UPDATE`;
+    return this.load(id);
+  }
+
+  async loadBySessionLocked(sessionId: string): Promise<PaymentLink | null> {
+    assertInsideTransaction();
+    await this.prisma.$queryRaw`
+      SELECT "id" FROM "public"."payment_links" WHERE "stripe_session_id" = ${sessionId} FOR UPDATE`;
+    return this.loadBySession(sessionId);
   }
 
   async loadBySession(sessionId: string): Promise<PaymentLink | null> {
@@ -66,5 +96,11 @@ export class PrismaPaymentLinkRepository extends PaymentLinkRepository {
     if (count === 0) {
       await this.prisma.paymentLink.create({ data: { id, ...columns } });
     }
+  }
+}
+
+function assertInsideTransaction(): void {
+  if (currentTransaction() === undefined) {
+    throw new PaymentLinkLockOutsideTransactionError();
   }
 }

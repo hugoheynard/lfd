@@ -1,5 +1,5 @@
 // Les compteurs horaires des objets partagés (`documentation/caching-usage/
-// plan-onglet-cache.md`, § 3) : par cache et par heure, les lectures servies,
+// le-cache-du-back-office.md`, § 6) : par cache et par heure, les lectures servies,
 // les ratés, les rangements, les refus de rangement trop gros, et la taille
 // rangée. Les objets sont le seul endroit commun à toutes les instances de
 // l'API : compter ici, c'est compter pour toute la flotte.

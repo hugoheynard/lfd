@@ -54,7 +54,7 @@ import type { CollectionExclusionReason } from "../entities/order-collection.js"
  *   calculée** en une fois sur ses bons (`simulateInvoiceDossier`), pas leur
  *   somme ; l'arrêté la fige.
  *
- * ## Le moyen d'encaissement (plan `plan-paiement-au-compte-par-virement.md`)
+ * ## Le moyen d'encaissement (`le-paiement-par-virement.md`)
  *
  * - Un bon facturé suit le moyen que SA FACTURE a figé (K2) : une facture au
  *   virement n'est jamais prélevée, ses bons restent intacts — ni écartés,

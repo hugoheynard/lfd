@@ -7,6 +7,7 @@ import {
   OncePerIntent,
   readIntentString,
 } from "../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../platform/intent/intent-subject.js";
 import { Clock } from "../../platform/time/clock.js";
 import { MediaSeries, type MediaSeriesDescription } from "../domain/entities/media-series.js";
 import { MediaSeriesRepository } from "../domain/ports/media-series.js";
@@ -54,7 +55,7 @@ export class DeclareMediaSeriesHandler implements ICommandHandler<
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: "media.series.declare",
-        subject: "new",
+        subject: intentSubject("media-series", command.description),
       },
       SERIES_REPLAY,
       (seal) => this.declare(command, seal),

@@ -1,5 +1,6 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { intentSubject } from "../../platform/intent/intent-subject.js";
 import { MAIL_SENT_REPLAY, OncePerIntent } from "../../platform/intent/once-per-intent.js";
 
 import { OpenStaffAccess, type StaffAccessOpened } from "./open-staff-access.service.js";
@@ -41,7 +42,7 @@ export class InviteStaffUserHandler implements ICommandHandler<
         actorId: command.actorId,
         key: command.intentKey,
         gesture: "staff.invite",
-        subject: command.id,
+        subject: intentSubject(command.id),
       },
       MAIL_SENT_REPLAY,
       () => this.access.open(command.id, command.intentKey),

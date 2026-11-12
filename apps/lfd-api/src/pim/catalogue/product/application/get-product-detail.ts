@@ -93,7 +93,7 @@ export class GetProductDetailHandler implements IQueryHandler<
   /**
    * Servi sous le numéro `pim`, sous la clé de la fiche : une ligne par fiche
    * dans l'objet. Deux parts lues hors du schéma `pim` y entrent, et c'est
-   * accepté (`plan-lectures-du-pim.md`, § 4.4) : la péremption de la
+   * accepté (`le-cache-du-back-office.md`, § 5.3) : la péremption de la
    * signature — un fait de contenu accompagne toujours une écriture d'une
    * table versionnée — et le nom du signataire, qui reste l'ancien jusqu'au
    * prochain changement du référentiel. Une fiche inconnue n'est pas rangée.

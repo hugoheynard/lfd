@@ -99,7 +99,7 @@ export class AdminLegalEntityBankingController {
    * Les deux sont exigés **ensemble**, parce qu'ils se lisent sur le même RIB.
    *
    * 🔴 **Aux quatre yeux dès qu'un compte est confirmé** (plan
-   * `plan-paiement-au-compte-par-virement.md`, T0) : la première saisie est
+   * `le-paiement-par-virement.md`, T0) : la première saisie est
    * prise tout de suite, chaque modification suivante devient une proposition
    * qu'un autre membre confirme (`AdminCreditorAccountReviewController`).
    * 204 dans les deux cas — la fiche relue dit si la saisie attend, et

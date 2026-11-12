@@ -1,6 +1,7 @@
 import { Logger } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { StaffNotifier } from "../../../../staff/notifications/domain/ports/staff-notifier.js";
 import type { PaymentLink } from "../../domain/entities/payment-link.js";
@@ -36,19 +37,28 @@ export class SettlePaymentLinkHandler implements ICommandHandler<SettlePaymentLi
     private readonly companies: PaymentLinkCompanyReader,
     private readonly notifier: StaffNotifier,
     private readonly clock: Clock,
+    private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: SettlePaymentLinkCommand): Promise<void> {
-    const link = await this.links.loadBySession(command.sessionId);
-    if (link === null) {
+    // Sous le verrou de la ligne : une annulation qui croise ce paiement ne
+    // l'efface pas, elle le voit et c'est « payé après annulation ».
+    const outcome = await this.uow.run(async () => {
+      const locked = await this.links.loadBySessionLocked(command.sessionId);
+      if (locked === null) {
+        return null;
+      }
+      const settled = locked.markPaid(this.clock.now());
+      if (settled !== "already_paid") {
+        await this.links.save(locked);
+      }
+      return { link: locked, settlement: settled };
+    });
+    if (outcome === null) {
       this.logger.warn(`Paiement Stripe reçu pour une session inconnue (${command.sessionId}).`);
       return;
     }
-    const settlement = link.markPaid(this.clock.now());
-    if (settlement === "already_paid") {
-      return;
-    }
-    await this.links.save(link);
+    const { link, settlement } = outcome;
     if (settlement === "settled_after_cancel") {
       await this.ringPaidAfterCancel(link);
     }

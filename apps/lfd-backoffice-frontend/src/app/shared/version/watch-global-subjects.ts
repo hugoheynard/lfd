@@ -5,10 +5,10 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { VersionWatcher } from './version-watcher';
 
 /**
- * Les droits qui ouvrent chaque sujet global (`plan-veilleur-unique.md`,
- * § 3.3) — l'un suffit, comme au serveur : un écran ne demande pas un numéro
+ * Les droits qui ouvrent chaque sujet global (`le-cache-du-back-office.md`,
+ * § 2.3) — l'un suffit, comme au serveur : un écran ne demande pas un numéro
  * que le serveur ne lui rendrait pas. `pim` s'ouvre à qui lit une part du
- * référentiel (`plan-lectures-du-pim.md`, § 4.4).
+ * référentiel (`le-cache-du-back-office.md`, § 5.3).
  */
 const SUBJECT_PERMISSIONS: Readonly<
   Record<GlobalVersionSubject, readonly [StaffPermission, ...StaffPermission[]]>

@@ -2,7 +2,7 @@ import type { CacheCallReport, CacheReport } from "./cache.js";
 
 /**
  * **Les chiffres d'un cache partagé sur une période** — comptés DANS l'objet
- * qui le garde, donc pour toute la flotte (plan de l'onglet Cache, § 3).
+ * qui le garde, donc pour toute la flotte (`documentation/caching-usage/le-cache-du-back-office.md`, § 6).
  */
 export interface SharedCacheFigures {
   /** Lectures servies depuis l'objet. */

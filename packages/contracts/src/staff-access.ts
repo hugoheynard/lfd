@@ -257,7 +257,7 @@ export const staffResourceSchema = z.enum([
   "b2b_deferred_payment_block",
   /**
    * **Changer le moyen d'encaissement d'un payeur au compte** — prélèvement ou
-   * virement (plan `plan-paiement-au-compte-par-virement.md`, V10). Changer de
+   * virement (`le-paiement-par-virement.md`, V10). Changer de
    * moyen arrête ou démarre un prélèvement : un geste de comptabilité à part
    * de `b2b_accounting`. Lire le moyen reste sous `b2b_accounting:read`.
    * Accordée à l'écran ; aucune migration ne la donne à un rôle.

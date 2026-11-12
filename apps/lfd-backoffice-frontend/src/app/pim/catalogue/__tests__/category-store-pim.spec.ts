@@ -8,8 +8,8 @@ import { CategoryHttpApi } from '../category-http-api';
 import { CategoryStore } from '../category-store';
 
 /**
- * Un store de référentiel suit le numéro `pim` (`plan-lectures-du-pim.md`,
- * § 4.3) : quand le veilleur voit un numéro différent, il se relit en fond.
+ * Un store de référentiel suit le numéro `pim` (`le-cache-du-back-office.md`,
+ * § 5.4) : quand le veilleur voit un numéro différent, il se relit en fond.
  */
 
 function category(id: string): Category {

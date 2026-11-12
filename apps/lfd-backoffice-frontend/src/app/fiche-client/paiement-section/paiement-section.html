@@ -47,7 +47,7 @@
       />
 
       <!-- Comment il règle : prélèvement ou virement (plan
-           plan-paiement-au-compte-par-virement.md, § « L'écran »). Le dessous
+           le-paiement-par-virement.md, § 6). Le dessous
            suit le choix ; tant qu'il n'est pas lu, c'est le prélèvement. -->
       @if (companyId(); as id) {
         <app-collection-means-choice [companyId]="id" (shownChange)="shownMeans.set($event)" />

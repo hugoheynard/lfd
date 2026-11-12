@@ -6,6 +6,7 @@ import {
 } from "../gesture-intent.js";
 import {
   GestureInFlightError,
+  IntentAlreadySealedError,
   IntentKeyReusedError,
   IntentRecordUnreadableError,
 } from "../intent-errors.js";
@@ -131,7 +132,7 @@ describe("OncePerIntent.runSealed — le résultat gardé avec l'écriture", () 
   function tracing() {
     const trace: string[] = [];
     class Ledger extends InMemoryGestureIntentLedger {
-      override resolve(intent: GestureIntent, result: IntentRecord): Promise<void> {
+      override resolve(intent: GestureIntent, result: IntentRecord): Promise<boolean> {
         trace.push("resolve");
         return super.resolve(intent, result);
       }
@@ -174,5 +175,40 @@ describe("OncePerIntent.runSealed — le résultat gardé avec l'écriture", () 
     await expect(
       once.runSealed(INTENT, MAIL_SENT_REPLAY, () => Promise.resolve({ mailSent: true })),
     ).resolves.toEqual({ mailSent: true });
+  });
+
+  /**
+   * Régression : un geste plus long que le bail était repris par un second
+   * appel, et la résolution perdante, qui ne touchait aucune ligne, laissait
+   * sa transaction écrire le geste une seconde fois.
+   */
+  it("un appel repris après le bail qui scelle en second lève, pour annuler son écriture", async () => {
+    const clock = new FixedClock(new Date(0));
+    const once = new OncePerIntent(new InMemoryGestureIntentLedger(), clock);
+    const writes: string[] = [];
+    let releaseSlow: () => void = () => undefined;
+    const slowMayFinish = new Promise<void>((resolve) => {
+      releaseSlow = resolve;
+    });
+
+    const slow = once.runSealed(INTENT, MAIL_SENT_REPLAY, async (seal) => {
+      await slowMayFinish;
+      writes.push("slow");
+      await seal({ mailSent: true });
+      return { mailSent: true };
+    });
+    await Promise.resolve();
+    clock.set(new Date(GESTURE_INTENT_LEASE_MS + 1));
+    await expect(
+      once.runSealed(INTENT, MAIL_SENT_REPLAY, async (seal) => {
+        writes.push("retry");
+        await seal({ mailSent: false });
+        return { mailSent: false };
+      }),
+    ).resolves.toEqual({ mailSent: false });
+    releaseSlow();
+
+    await expect(slow).rejects.toBeInstanceOf(IntentAlreadySealedError);
+    expect(writes).toEqual(["retry", "slow"]);
   });
 });

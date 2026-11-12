@@ -1,4 +1,5 @@
-import { HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { HttpErrorResponse, HttpHeaders, type HttpInterceptorFn } from '@angular/common/http';
+import { tap } from 'rxjs';
 
 /** L'en-tête qui porte la clé d'intention d'un geste (lu par l'API, `@IntentKey()`). */
 export const INTENT_KEY_HEADER = 'Idempotency-Key';
@@ -21,6 +22,8 @@ export function intentOptions(intentKey: string): { readonly headers: HttpHeader
  * (`vitrine-notice-panel`), tenue par sujet pour les listes.
  *
  * Un échec garde la clé : l'API a rendu l'intention, le réessai repasse.
+ * Seule exception : une clé refusée comme déjà servie sur un autre contenu
+ * (409 `intent.key_reused`, {@link refusedIntentKeyInterceptor}) est oubliée.
  */
 export class GestureIntents {
   private readonly keys = new Map<string, string>();
@@ -28,7 +31,7 @@ export class GestureIntents {
   /** La clé de l'intention en cours pour ce sujet, fabriquée si besoin. */
   keyFor(subject: string): string {
     const known = this.keys.get(subject);
-    if (known !== undefined) return known;
+    if (known !== undefined && !refusedKeys.delete(known)) return known;
     const fresh = crypto.randomUUID();
     this.keys.set(subject, fresh);
     return fresh;
@@ -103,3 +106,39 @@ function codeOf(error: HttpErrorResponse): string | null {
   }
   return null;
 }
+
+/** Le code de l'API pour une clé déjà servie sur un autre contenu, ou un autre geste. */
+const KEY_REUSED_CODE = 'intent.key_reused';
+
+/**
+ * Les clés que l'API a refusées comme déjà servies sur un autre contenu
+ * (409 `intent.key_reused`). Une telle clé ne passera plus jamais : la garder
+ * bloquerait l'écran sur le même refus à chaque nouvel essai. Tenues ici, au
+ * niveau du module, parce que l'intercepteur qui les voit ne connaît pas
+ * l'écran qui les a fabriquées.
+ */
+const refusedKeys = new Set<string>();
+
+/**
+ * **Oublie une clé refusée comme déjà servie** : sur un 409
+ * `intent.key_reused`, la clé de la requête est marquée, et le prochain
+ * {@link GestureIntents.keyFor} du sujet en fabrique une neuve. Le refus
+ * lui-même remonte à l'écran inchangé : il affiche le message, pas un succès.
+ */
+export const refusedIntentKeyInterceptor: HttpInterceptorFn = (request, next) => {
+  const key = request.headers.get(INTENT_KEY_HEADER);
+  if (key === null) return next(request);
+  return next(request).pipe(
+    tap({
+      error: (error: unknown) => {
+        if (
+          error instanceof HttpErrorResponse &&
+          error.status === 409 &&
+          codeOf(error) === KEY_REUSED_CODE
+        ) {
+          refusedKeys.add(key);
+        }
+      },
+    }),
+  );
+};

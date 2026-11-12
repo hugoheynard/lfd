@@ -13,6 +13,7 @@ import {
   StaffUserNotFoundError,
 } from "../directory/domain/staff-user-errors.js";
 import { OncePerIntent } from "../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../platform/intent/intent-subject.js";
 import { shownOnceReplay } from "../../platform/intent/shown-once-replay.js";
 import { StaffUserRepository } from "../directory/domain/staff-user.repository.js";
 import { StaffAccessCache } from "../permissions/staff-access-cache.port.js";
@@ -65,7 +66,7 @@ export class IssueStaffPasswordLinkHandler implements ICommandHandler<
         actorId: command.issuedBy,
         key: command.intentKey,
         gesture: ISSUE_LINK_GESTURE,
-        subject: command.staffUserId,
+        subject: intentSubject(command.staffUserId),
       },
       LINK_REPLAY,
       (seal) => this.issue(command, seal),

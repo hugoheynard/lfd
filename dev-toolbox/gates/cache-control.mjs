@@ -141,7 +141,7 @@ const CALLER_READS =
  * qui garde les réponses peut la faire ; le gestionnaire de sortie — le seul
  * chemin du conteneur vers l'objet ; une classe de Durable Object — un
  * magasin de plus se décide. `day-versions.ts` : l'objet des journées, décidé
- * par Hugo le 2026-11-12 (`plan-objet-des-journees.md`, § 3 bis) — des
+ * par Hugo le 2026-11-12 (`le-cache-du-back-office.md`, § 3) — des
  * numéros de journée, jamais une réponse servie à un appelant.
  */
 const CONTAINER_ADMITTED = [

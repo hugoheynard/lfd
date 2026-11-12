@@ -5,7 +5,7 @@ import { PIM_VERSIONED_TABLES } from "../../domain/pim-versioned-tables.js";
 
 /**
  * **Les tables que lisent les contenus servis sous le numéro `pim` sont toutes
- * au numéro** (`plan-lectures-du-pim.md`, § 4.1). Une table lue et absente de
+ * au numéro** (`le-cache-du-back-office.md`, § 5.2). Une table lue et absente de
  * `PIM_VERSIONED_TABLES` servirait une charge périmée sans que rien ne la
  * fasse relire.
  *

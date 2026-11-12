@@ -66,8 +66,8 @@ const ALLOWED = new Set([
   // elle PORTE le filtre — une déclinaison retirée n'y paraît que par les
   // manques que le fait de sa fiche déclare, jamais comme article en vente.
   "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/prisma-published-catalog.reader.ts",
-  // L'écran Catalogue du back-office lu en une fois (`plan-catalogue-du-back-office.md`,
-  // § 3.1, 2026-11-12) : il PORTE le filtre (`...STILL_SOLD`), comme les deux
+  // L'écran Catalogue du back-office lu en une fois (`le-cache-du-back-office.md`,
+  // § 4.1, 2026-11-12) : il PORTE le filtre (`...STILL_SOLD`), comme les deux
   // lectures qu'il rassemble.
   "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/prisma-catalog-screen.reader.ts",
   // Le retraçage du prix (lot D du catalogue synchronisé, 2026-10-15) : il

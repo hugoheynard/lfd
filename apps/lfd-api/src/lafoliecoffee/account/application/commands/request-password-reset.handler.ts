@@ -9,6 +9,7 @@ import { CustomerIdentityPort } from "../../domain/ports/customer-identity.port.
 import { AccountJournalNames } from "../services/account-journal-names.service.js";
 import { RequestPasswordResetCommand } from "./request-password-reset.command.js";
 import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { customerIntentActor } from "../../../shared/intent/customer-intent-actor.js";
 
 /** Le nom stable du geste, dans le registre des intentions. */
@@ -96,7 +97,7 @@ export class RequestPasswordResetHandler implements ICommandHandler<
         actorId: customerIntentActor(command.userId),
         key: command.intentKey,
         gesture: PASSWORD_RESET_GESTURE,
-        subject: command.userId,
+        subject: intentSubject(command.userId),
       },
       NOTHING_TO_REPLAY,
       () => this.request(command),

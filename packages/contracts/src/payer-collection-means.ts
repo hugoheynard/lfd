@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * **Comment un payeur au compte règle** (plan
- * `documentation/comptabilite/plan-paiement-au-compte-par-virement.md`, V1) :
+ * `documentation/comptabilite/le-paiement-par-virement.md`, V1) :
  * par prélèvement SEPA, ou par virement à réception de facture. Des VALEURS :
  * elles vivent en base, elles ne se renomment que par migration.
  */

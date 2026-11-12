@@ -24,7 +24,7 @@ export class VersionsDayMissingError extends DomainError {
 
 /**
  * **Les sujets ont-ils bougé ?** — la question qu'un onglet pose toutes les
- * 15 s, une fois pour tous ses écrans (`plan-veilleur-unique.md`, § 3.3).
+ * 15 s, une fois pour tous ses écrans (`le-cache-du-back-office.md`, § 2.3).
  *
  * Le droit se tranche D'ABORD, sujet par sujet : un sujet que l'appelant ne
  * peut pas lire est absent de sa réponse, sans refuser les autres. Puis une

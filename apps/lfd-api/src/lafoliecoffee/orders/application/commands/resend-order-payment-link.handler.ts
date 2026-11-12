@@ -2,6 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { Mail } from "../../../../mail/channels/requests/mail.js";
 import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import {
   OrderNotFoundError,
   OrderPaymentLinkRefusedError,
@@ -44,7 +45,7 @@ export class ResendOrderPaymentLinkHandler implements ICommandHandler<
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: "orders.resend-payment-link",
-        subject: command.orderId,
+        subject: intentSubject(command.orderId),
       },
       NOTHING_TO_REPLAY,
       () => this.resend(command),

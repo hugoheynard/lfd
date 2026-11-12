@@ -7,7 +7,8 @@ import { exportEntityOrFail, journalEntity } from "./mandate-bank-export-support
 
 /**
  * Le lot et ses attestations, avec l'entité qui le porte — le sujet du fait
- * au journal. Partagé par « attester » et « retirer ».
+ * au journal. Partagé par « attester » et « retirer », et chargé sous le
+ * verrou du lot : à appeler dans `UnitOfWork.run`.
  *
  * @throws {CollectionBatchNotFoundError} le lot n'existe pas.
  */
@@ -18,7 +19,7 @@ export async function attestationsOrFail(
   },
   batchId: string,
 ): Promise<{ readonly attestations: CollectionBatchAttestations; readonly entity: ExportEntity }> {
-  const attestations = await readers.attestations.load(batchId);
+  const attestations = await readers.attestations.loadLocked(batchId);
   if (attestations === null) {
     throw new CollectionBatchNotFoundError(batchId);
   }

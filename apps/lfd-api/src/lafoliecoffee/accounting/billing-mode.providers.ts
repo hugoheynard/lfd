@@ -65,7 +65,7 @@ export const BILLING_MODE_PROVIDERS: readonly Provider[] = [
   GetInitialPayerBillingModeHandler,
   ListBillingModeEntitiesHandler,
   GetBillingRhythmsCalendarHandler,
-  // Le moyen d'encaissement du payeur (plan-paiement-au-compte-par-virement.md, T1).
+  // Le moyen d'encaissement du payeur (le-paiement-par-virement.md, T1).
   { provide: PayerCollectionMeansRepository, useClass: PrismaPayerCollectionMeansRepository },
   PrismaPayerCollectionMeansReader,
   { provide: PayerCollectionMeansReader, useExisting: PrismaPayerCollectionMeansReader },

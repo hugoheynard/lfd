@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Le numéro global des COMPTES CLIENTS —
-// `documentation/caching-usage/plan-veilleur-unique.md`, § 3.2.
+// `documentation/caching-usage/le-cache-du-back-office.md`, § 2.2.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// **Le journal des écritures sur les comptes clients**, en ajout seul.

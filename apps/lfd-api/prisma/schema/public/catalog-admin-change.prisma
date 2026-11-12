@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Le numéro global de l'ÉCRAN CATALOGUE du back-office —
-// `documentation/caching-usage/plan-catalogue-du-back-office.md`, § 3.3.
+// `documentation/caching-usage/le-cache-du-back-office.md`, § 4.3.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// **Le journal des écritures que l'écran Catalogue lit**, en ajout seul.

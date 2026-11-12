@@ -16,7 +16,7 @@ export class TracingIntentLedger extends InMemoryGestureIntentLedger {
   constructor(private readonly uow: TracingUnitOfWork) {
     super();
   }
-  override resolve(intent: GestureIntent, result: IntentRecord): Promise<void> {
+  override resolve(intent: GestureIntent, result: IntentRecord): Promise<boolean> {
     this.resolutions.push(this.uow.open ? "in tx" : "OUTSIDE tx");
     return super.resolve(intent, result);
   }

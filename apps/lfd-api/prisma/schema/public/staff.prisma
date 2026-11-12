@@ -101,7 +101,7 @@ enum StaffResource {
   /// `blocage-et-liens-de-paiement.md`).
   b2b_deferred_payment_block
   /// CHANGER LE MOYEN D'ENCAISSEMENT d'un payeur au compte — prélèvement ou
-  /// virement (plan-paiement-au-compte-par-virement.md, V10). Accordée à l'écran.
+  /// virement (le-paiement-par-virement.md, V10). Accordée à l'écran.
   b2b_collection_means
   /// LE PRÉLÈVEMENT D'ESSAI — déclarer nos établissements, générer un fichier
   /// `pain.008` d'essai, marquer un essai remboursé (2026-10-22,

@@ -1,5 +1,5 @@
 -- RETOUR ARRIÈRE de 20261112100000_le_compte_creancier_aux_quatre_yeux
--- (documentation/comptabilite/plan-paiement-au-compte-par-virement.md, T0).
+-- (documentation/comptabilite/le-paiement-par-virement.md, T0).
 --
 -- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
 -- « appliquée ».

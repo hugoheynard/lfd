@@ -276,7 +276,7 @@ la confusion à trois états que tout le dépôt combat, cette fois au niveau de
 **matière** — et elle contamine la détection de contradiction, qui compare une
 déclaration à des listes dont elle ne sait pas si elles ont été remplies.
 
-> 🟦 **Bâti autrement le 2026-10-26 (décision de Hugo)** : une colonne
+> ✅ **Bâti autrement le 2026-10-26 (décision de Hugo)** : une colonne
 > **booléenne** `declares_no_allergen` (migration
 > `20261026140000_ingredient_aucun_allergene`, défaut `false` — l'existant reste
 > « non renseigné »), posée par `PUT /pim/ingredients/:key/allergens` avec
@@ -810,7 +810,7 @@ défaut corrigé le 2026-08-31 dans `allergensOf`, et il se rejouerait ici.
 `allergenLabels` porte donc **aussi** `incomplete: boolean`, calculé côté PIM
 qui, lui, a le référentiel.
 
-> 🟦 **Corrigé le 2026-10-26 (décision de Hugo, Q3 portée jusqu'au fil).** Un
+> ✅ **Corrigé le 2026-10-26 (décision de Hugo, Q3 portée jusqu'au fil).** Un
 > code connu **hors obligation UE** (`BWD`, `NM`, `SO`, et les entrées maison
 > d'une catégorie non archivée) voyage désormais **nommé** dans `labels`, sa
 > clé `category` étant son code GS1 ; `incomplete` ne se lève plus que pour un

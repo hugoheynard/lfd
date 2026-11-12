@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * **Le compte créancier aux quatre yeux** (plan
- * `plan-paiement-au-compte-par-virement.md`, T0).
+ * `le-paiement-par-virement.md`, T0).
  *
  * La première saisie du compte d'une entité est prise tout de suite ; chaque
  * modification suivante (IBAN, BIC, titulaire, adresse) attend la

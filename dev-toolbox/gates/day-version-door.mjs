@@ -33,11 +33,11 @@ const SKIP_DIRS = new Set(["node_modules", "dist", "coverage", ".turbo", "__test
 
 /** L'ancienne porte, servie un déploiement de plus ; plus aucun code du front ne l'appelle. */
 const DOOR = "admin/day-versions";
-/** La porte que le front appelle (`plan-veilleur-unique.md`, § 3.4). */
+/** La porte que le front appelle (`le-cache-du-back-office.md`, § 2.4). */
 const FRONT_DOOR = "admin/versions";
 /**
  * Les chemins de route qui ont le droit de dire « version » : la porte des
- * sujets (`plan-veilleur-unique.md`, § 3.3) et l'ancienne, servie un
+ * sujets (`le-cache-du-back-office.md`, § 2.3) et l'ancienne, servie un
  * déploiement de plus pour les onglets restés sur l'ancien bundle.
  */
 const API_DOORS = new Set([DOOR, "admin/versions"]);

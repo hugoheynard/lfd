@@ -43,7 +43,7 @@ enum OrderCollectionState {
   /// La commande a été annulée par l'équipe (lot C5) : TERMINAL, aucune
   /// transition ne l'accepte. Sans lot, sans ligne, sans raison.
   cancelled
-  /// Réglée par un virement reçu (plan `plan-paiement-au-compte-par-virement.md`,
+  /// Réglée par un virement reçu (`le-paiement-par-virement.md`,
   /// V7) : TERMINAL, cite son virement (`bank_transfer_id`, CHECK en base).
   settled_by_transfer
 

@@ -2,7 +2,7 @@ import type { GlobalVersionSubject, StaffPermission } from "@lfd/contracts";
 
 /**
  * **Une source de numéro global** — un sujet dont le numéro ne dépend d'aucune
- * journée (`plan-veilleur-unique.md`, § 3.1 : la portée `global`).
+ * journée (`le-cache-du-back-office.md`, § 2.1 : la portée `global`).
  *
  * Même figure que {@link DayVersionSource} : `platform` déclare, le bloc qui
  * possède le journal implémente, `appBootstrap/day-version-sources.module.ts`

@@ -8,7 +8,7 @@ import { VersionRegistry } from "./version-registry.js";
 /**
  * **Les journées ont-elles bougé ?** — l'ancienne porte `admin/day-versions`,
  * servie un déploiement de plus pour les onglets restés sur l'ancien bundle
- * (`plan-veilleur-unique.md`, § 3.3), puis retirée.
+ * (`le-cache-du-back-office.md`, § 2.3), puis retirée.
  *
  * Elle lit les mêmes cartes que `admin/versions` ({@link ScopeVersions}), puis
  * tranche le droit PAR JOURNAL : un journal non permis est omis de SA

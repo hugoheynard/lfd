@@ -44,7 +44,7 @@ export class PrismaLegalEntityRepository extends LegalEntityRepository {
    * l'ancienne valeur. C'est arrivé le 2026-09-12 avec les réglages de mandat —
    * le semis disait « posés » sur une colonne restée vide.
    *
-   * 🔴 **Le verrou optimiste** (plan `plan-paiement-au-compte-par-virement.md`,
+   * 🔴 **Le verrou optimiste** (`le-paiement-par-virement.md`,
    * T0) : la ligne ne s'écrit que si elle porte encore la version que l'agrégat
    * a lue, et elle passe à la suivante. Sous Postgres, un second écrivain
    * concurrent attend le verrou de ligne, puis relit la condition et ne trouve

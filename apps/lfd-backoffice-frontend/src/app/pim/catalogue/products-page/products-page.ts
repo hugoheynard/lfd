@@ -297,7 +297,7 @@ export class ProductsPage {
   /**
    * La liste du store, lue à la première ouverture seulement. Le veilleur la
    * relit en fond quand le numéro `pim` diffère de celui que la copie retient
-   * — l'écho du propre geste est ignoré (`plan-lectures-du-pim.md`, § 4.3).
+   * — l'écho du propre geste est ignoré (`le-cache-du-back-office.md`, § 5.4).
    */
   constructor() {
     void this.store.open();

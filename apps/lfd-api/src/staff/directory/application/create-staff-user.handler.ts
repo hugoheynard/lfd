@@ -7,6 +7,7 @@ import {
   OncePerIntent,
   readIntentString,
 } from "../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../platform/intent/intent-subject.js";
 import { Journal } from "../../../platform/journal/journal.js";
 import { OpenStaffAccess } from "../../invitations/open-staff-access.service.js";
 import { staffUserCreatedFact } from "../domain/staff-facts.js";
@@ -49,10 +50,15 @@ export class CreateStaffUserHandler implements ICommandHandler<CreateStaffUserCo
   ) {}
 
   execute(command: CreateStaffUserCommand): Promise<string> {
-    // Le sujet n'est pas encore né : la clé seule désigne la création. Elle
-    // est scellée avec la fiche ; l'invitation, réseau, part après.
+    // Le sujet n'est pas encore né : l'empreinte de la fiche saisie désigne la
+    // création. Elle est scellée avec la fiche ; l'invitation, réseau, part après.
     return this.intents.runSealed(
-      { actorId: command.actorId, key: command.intentKey, gesture: "staff.create", subject: "new" },
+      {
+        actorId: command.actorId,
+        key: command.intentKey,
+        gesture: "staff.create",
+        subject: intentSubject("staff-user", command.payload),
+      },
       CREATED_REPLAY,
       (seal) => this.create(command, seal),
     );

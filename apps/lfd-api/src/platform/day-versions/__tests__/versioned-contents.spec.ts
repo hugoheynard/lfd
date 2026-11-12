@@ -5,7 +5,7 @@ import { VersionedContentCache } from "../versioned-content-cache.js";
 import { VERSIONED_CONTENT_MAX_BYTES, VersionedContents } from "../versioned-contents.js";
 
 /**
- * Les contenus versionnés (`plan-catalogue-du-back-office.md`, § 3.5) : servis
+ * Les contenus versionnés (`le-cache-du-back-office.md`, § 4.5) : servis
  * depuis l'objet au même numéro, relus une fois quand il change, jamais
  * rangés au-delà du plafond, et la base quand l'objet manque.
  */

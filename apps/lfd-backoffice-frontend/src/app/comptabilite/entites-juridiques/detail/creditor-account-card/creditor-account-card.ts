@@ -36,7 +36,7 @@ import { CreditorAccountPending } from '../creditor-account-pending/creditor-acc
  * prime jusqu'au prochain succès.
  *
  * 🔴 **Aux quatre yeux dès qu'un compte est confirmé** (plan
- * `plan-paiement-au-compte-par-virement.md`, T0) : la première saisie est
+ * `le-paiement-par-virement.md`, T0) : la première saisie est
  * prise tout de suite, chaque suivante est une PROPOSITION qu'un autre membre
  * confirme (`app-creditor-account-pending`). Le bouton le dit avant le geste.
  */

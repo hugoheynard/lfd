@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { Mail } from "../../../../mail/channels/requests/mail.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { CreditorReader } from "../../../accounting/domain/ports/creditor.reader.js";
 import { LegalEntityLogoReader } from "../../../accounting/domain/ports/legal-entity-logo.reader.js";
 import { CustomerDocumentStore } from "../../../../platform/storage/customer-document-store.js";
@@ -134,7 +135,7 @@ export class SendMandateHandler implements ICommandHandler<SendMandateCommand, v
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: "payments.send-mandate",
-        subject: command.mandateId,
+        subject: intentSubject(command.mandateId, command.companyId),
       },
       NOTHING_TO_REPLAY,
       (seal) => this.send(command, seal),

@@ -2,6 +2,8 @@ import { Injectable } from "@nestjs/common";
 
 import { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { currentTransaction } from "../../../platform/database/transaction.store.js";
+import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import { ShelfChanges } from "../../shared/shelf-changes/domain/ports/shelf-changes.js";
 import { ALL_SHELVES } from "../../shared/shelf-changes/domain/shelf-change-scope.js";
 import { toAdjustmentColumns } from "../../pricing/cart-adjustment.mapper.js";
@@ -142,6 +144,15 @@ export class PrismaSiteRepository extends SiteRepository {
     return row === null ? null : toDomain(row);
   }
 
+  async loadLocked(id: string): Promise<Site | null> {
+    if (currentTransaction() === undefined) {
+      throw new SiteLockOutsideTransactionError();
+    }
+    await this.prisma
+      .$queryRaw`SELECT "id" FROM "public"."pickup_addresses" WHERE "id" = ${id} FOR UPDATE`;
+    return this.load(id);
+  }
+
   /**
    * Le site, puis ses règles de remise **remplacées en bloc** : elles sont des
    * valeurs de la remise, sans identité ni histoire propre (le journal porte
@@ -157,5 +168,19 @@ export class PrismaSiteRepository extends SiteRepository {
     }
     // Un point de retrait ouvert, fermé ou renommé change les offres de tous les rayons.
     this.shelves.changed(ALL_SHELVES);
+  }
+}
+
+/**
+ * Le verrou d'un site a été demandé hors d'une unité de travail — une faute de
+ * câblage : en autocommit, le `FOR UPDATE` est relâché à la fin de sa propre
+ * instruction, et l'écriture qui suit ne serait plus protégée.
+ */
+export class SiteLockOutsideTransactionError extends TechnicalError {
+  constructor() {
+    super(
+      "site.lock_outside_transaction",
+      "Le verrou d'un site exige une transaction ouverte : le charger sous UnitOfWork.run.",
+    );
   }
 }

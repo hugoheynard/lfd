@@ -14,6 +14,11 @@
 > absent ». Ce que le dépôt ne peut pas dire (gestes à l'écran, état de la
 > base de production, achats) est marqué **non vérifiable**. Les versions
 > précédentes (2026-10-10, 2026-10-23) sont dans l'historique git.
+>
+> 🔁 **Complétée le 2026-11-12 au soir** : § 1 bis (livré du 2026-11-05 au
+> 2026-11-12), § 2 et § 8. `main` = `adb9c41e3` : tout ce qui est avant est
+> en production ; ce qui suit est **sur `dev`**, en attente du déploiement
+> du matin. Le reste de la carte n'a pas été rouvert ce jour-là.
 
 ## 0. Ce qui a une date, et les gestes de Hugo
 
@@ -55,9 +60,30 @@ vérifiés le 2026-11-02.
 | **Sous-comptes**                 | S6 : une seule requête de rôle effectif (`readCompanyStanding`), la boutique entre dans un site                                                                                                                           | `comptes-client/sous-comptes.md`                                         |
 | **Ops**                          | les opérations après déploiement se simulent puis s'appliquent depuis le back-office                                                                                                                                      | `ops/plan-operations-apres-deploiement.md`                               |
 
+## 1 bis. Livré du 2026-11-05 au 2026-11-12
+
+Relu dans `git log` le 2026-11-12. ✅ = en production (`adb9c41e3`) ;
+🟦 = sur `dev`.
+
+| Chantier                        | Ce qui est livré                                                                                                                                                                                                | Doc                                                                                                |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| **Le service d'e-mails**        | ✅ le bloc `mail` et sa porte, le suivi des retours, le sujet déclaré, la désinscription et l'accord (le détail des lots : `mail/`)                                                                             | `mail/`                                                                                            |
+| **Le paiement par carte**       | ✅ P0 et P1 du bloc `card-payment` : encaissement et remboursement pour un sujet opaque                                                                                                                         | `commandes/modification/plan-m2-historique-de-transactions.md`                                     |
+| **Prix**                        | ✅ la remise générale d'une mercuriale ; le prix d'un client expliqué ; la commande de l'équipe au prix du rayon du client                                                                                      | `pricing/mercuriales/la-remise-generale.md`, `commandes/passation/plan-liste-au-prix-du-client.md` |
+| **Comptes clients**             | ✅ la date de délivrance du KBIS ; le mode de facturation choisi à l'ouverture, immédiat pour un client qui n'a jamais commandé ; 🟦 une fiche modifiée depuis sa lecture refuse l'enregistrement (`c137414e2`) | `comptabilite/facturation/plan-changement-de-mode-immediat.md`                                     |
+| **Le paiement par virement**    | ✅ IBAN aux quatre yeux, moyen daté du payeur, facture au virement, virement reçu, virements en retard ; 🟦 l'écran de la fiche, la boutique, l'écart avant de valider (`d7161d4a0`, `7fbaa6bad`)               | `comptabilite/le-paiement-par-virement.md`                                                         |
+| **Le cache du back-office**     | ✅ un numéro par sujet, un veilleur par onglet, l'objet `DayVersions`, l'écran Catalogue et le PIM lus une fois, l'onglet Cache ; 🟦 l'aiguillage des objets par le chemin (`91f6856c2`)                        | `caching-usage/le-cache-du-back-office.md`                                                         |
+| **L'idempotence des écritures** | ✅ J0–J2 : chaque route d'écriture dit pourquoi un rejeu ne la refait pas ; 🟦 J3–J5 (rejeu de chaque route à clé, porte resserrée, porte côté écrans), purge des gestes à 7 jours                              | `ops/plan-idempotence-des-ecritures.md`                                                            |
+| **Ops**                         | 🟦 la vérification de dérive avant migration, en mode rapport (`6e87d7cc5`)                                                                                                                                     | `ops/runbook.md`                                                                                   |
+
 ## 2. En cours
 
-Rien.
+- **Le déploiement du matin** (Hugo) : tout le 🟦 du § 1 bis. Après lui,
+  l'onglet Cache doit montrer `day-versions` et `pro-shelves` séparés
+  (`caching-usage/le-cache-du-back-office.md` § 7), et la dérive listée au
+  premier passage s'inscrit ou se corrige (`ops/runbook.md`).
+- **L'idempotence** : les failles F1–F4 de l'audit du 2026-11-12
+  (`todos/plan-de-la-nuit-2026-11-12.md` § 7), en cours sur `dev`.
 
 ## 3. Prêts à bâtir, sans décision à prendre
 
@@ -194,6 +220,11 @@ vitals ; la médiathèque à 600 lignes.
 
 ## 8. Mon conseil d'ordre
 
+0. **(2026-11-12)** Déployer le 🟦 du § 1 bis et le prouver (onglet Cache,
+   dérive) ; puis, à trancher avec Hugo : le lot 2 de l'objet des journées
+   (`caching-usage/le-cache-du-back-office.md` § 7) et le moyen figé dans la
+   vue d'une facture au virement (`comptabilite/le-paiement-par-virement.md`
+   § 8), avant de passer un vrai client au virement.
 1. **Les échéances du § 0**, parce qu'elles ont une date : les adresses de facturation avant le 30 novembre.
 2. **Le § 3 de haut en bas** : le cache des routes personnelles (sécurité), puis le reliquat L7–L9, qui finit un chantier à moitié livré.
 3. **Le ménage du § 6** par dossier, quand un lot se termine : une doc qui contredit le code gèle le chantier de celui qui la lit.

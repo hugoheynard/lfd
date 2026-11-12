@@ -14,7 +14,7 @@
 > (qui est « pro ») : **`vitruve` avant Hugo** (CLAUDE.md § 9 bis).
 > Chaque affirmation sur l'existant cite un fichier ouvert le 2026-10-30.
 
-## 0. Décision de Hugo du 2026-11-05 — un pending est un pro, partout — 🟦 bâti le 2026-11-05
+## 0. Décision de Hugo du 2026-11-05 — un pending est un pro, partout — ✅ bâti le 2026-11-05, en production
 
 > 🔴 L'emporte sur le § 1 là où ils divergent. Posée en concevant la
 > livraison offerte ([`../promotions/plan-livraison-offerte.md`](../promotions/plan-livraison-offerte.md),

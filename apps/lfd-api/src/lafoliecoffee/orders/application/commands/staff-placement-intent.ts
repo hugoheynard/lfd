@@ -1,6 +1,7 @@
 import { type AdminPlaceOrderPayload, staffSettlementSchema } from "@lfd/contracts";
 
 import type { GestureIntent, IntentRecord } from "../../../../platform/intent/gesture-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { IntentRecordUnreadableError } from "../../../../platform/intent/intent-errors.js";
 import {
   type IntentCodec,
@@ -31,8 +32,11 @@ export function staffPlacementIntent(
     actorId: staffUserId,
     key: intentKey,
     gesture: STAFF_PLACEMENT_GESTURE,
-    subject: [payload.buyerUserId, payload.settlement, payload.supply ?? "plan", fingerprint].join(
-      "|",
+    subject: intentSubject(
+      payload.buyerUserId,
+      payload.settlement,
+      payload.supply ?? "plan",
+      fingerprint,
     ),
   };
 }

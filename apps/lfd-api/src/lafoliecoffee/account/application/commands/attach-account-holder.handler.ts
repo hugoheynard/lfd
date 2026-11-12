@@ -2,6 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { MAIL_SENT_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { CompanyAccessOpenedEvent } from "../../domain/events/person-acts.event.js";
 import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
@@ -68,7 +69,7 @@ export class AttachAccountHolderHandler implements ICommandHandler<
         actorId: command.invitedBy,
         key: command.intentKey,
         gesture: "account.attach-holder",
-        subject: command.companyId,
+        subject: intentSubject(command.companyId, command.contact),
       },
       MAIL_SENT_REPLAY,
       () => this.attach(command),

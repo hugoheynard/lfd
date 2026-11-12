@@ -1,5 +1,5 @@
 /// Un VIREMENT REÇU, saisi par le staff depuis le relevé (plan
-/// `plan-paiement-au-compte-par-virement.md`, V7). Il règle une ou plusieurs
+/// `le-paiement-par-virement.md`, V7). Il règle une ou plusieurs
 /// factures au virement d'un même payeur, dont le reste dû total égale son
 /// montant ; leurs commandes passent `settled_by_transfer` dans la même
 /// transaction. Rien ne le modifie ni ne l'efface (déclencheur append-only,

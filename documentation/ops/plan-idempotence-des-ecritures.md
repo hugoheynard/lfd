@@ -230,6 +230,48 @@ staff, invitation d'un membre, création d'un client par l'équipe,
 rattachement du titulaire) attendent la décision de Hugo sur l'e-mail par la
 boîte d'envoi ; la porte les rendra justes en les basculant.
 
+### Le sujet d'une intention porte son contenu (audit F1, 2026-11-12)
+
+**La règle** : le sujet d'une intention est toujours
+`intentSubject(cible, ...champs saisis)` (`platform/intent/intent-subject.ts`)
+— la cible (un identifiant opaque, ou le nom de ce qu'on crée) et
+l'empreinte sha256 de tout ce que la commande dit, sans l'acteur ni la clé.
+Le registre ne garde que l'empreinte : ni adresse, ni texte, ni octets.
+
+**Pourquoi** : un sujet réduit à un identifiant (`legalEntityId`, `"new"`)
+rendait en silence l'ancien résultat à la même clé renvoyée avec un autre
+contenu. Un virement dont la réponse s'était perdue, renvoyé avec un montant
+corrigé, affichait un succès ; le montant corrigé n'était jamais écrit. La
+même clé sur un autre contenu reçoit désormais le 409 `intent.key_reused` :
+« Ce geste a déjà été enregistré avec d'autres valeurs, et ces nouvelles
+valeurs ne l'ont pas été : rechargez la page pour relire ce qui est
+enregistré, puis recommencez si une correction reste à faire. »
+
+- **Les handlers** : 53 sujets réécrits (tous ceux que la porte trouvait).
+  Un sujet sans contenu reste construit par `intentSubject` quand la commande
+  n'a rien d'autre que sa cible (renvoyer un avis, révoquer un mandat), ou
+  quand le contenu change à chaque essai par construction (la preuve
+  d'identité de `link-login-method`, commentée sur place).
+- **La porte** (`write-idempotence`, refus 6) : tout littéral
+  `{ key, gesture, subject }` de `apps/lfd-api/src` dont le sujet n'est pas un
+  appel à `intentSubject(...)` échoue, hors du registre lui-même
+  (`platform/intent/`) et du client généré.
+- **Les écrans** : `refusedIntentKeyInterceptor`, branché dans les deux
+  fronts (`shared/gesture-intents.ts`, `client/gesture-intents.ts`), marque la
+  clé d'une requête refusée en `intent.key_reused` ; le `keyFor` suivant du
+  sujet en fabrique une neuve. Le refus remonte à l'écran comme une erreur,
+  jamais comme un succès. « En vol » et une panne gardent la clé.
+- **L'e2e** (`test/intent-key-content.e2e-spec.ts`, Postgres réel) : sur le
+  virement reçu et l'ajout d'un véhicule, deux envois simultanés sous la même
+  clé n'écrivent qu'une fois (l'autre : la réponse scellée ou « en vol »), et
+  la même clé sur un autre contenu reçoit `intent.key_reused` sans rien
+  écrire.
+- **Reste** : `invite-staff-user.handler.ts` (traité avec F4) — la porte le
+  refuse tant que son sujet n'est que `command.id`. Les intentions résolues
+  avant ce changement ont un sujet sans empreinte : leur clé, renvoyée dans
+  les 7 jours de rétention, reçoit `intent.key_reused` au lieu du rejeu (on
+  est en pré-release).
+
 ## 8. Les lots suivants : prouver plutôt que croire (Hugo, 2026-11-12)
 
 Une fois la dette à zéro, la porte garantit que chaque route est rangée ;

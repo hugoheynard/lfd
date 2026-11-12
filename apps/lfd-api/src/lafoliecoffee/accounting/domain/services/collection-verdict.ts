@@ -40,7 +40,7 @@ export interface VerdictContext {
   readonly liveSchemes: readonly SepaScheme[];
   /**
    * **Le moyen d'encaissement** du payeur pour ce qu'on juge (plan
-   * `plan-paiement-au-compte-par-virement.md`, K3) : celui de la période
+   * `le-paiement-par-virement.md`, K3) : celui de la période
    * facturée pour la facture du mois et le compte des clients, celui que la
    * FACTURE a figé pour un bon facturé (K2), celui de la période de son
    * solde pour un bon sans facture (K9). Un seul endroit où le lire.

@@ -8,7 +8,7 @@ import { parisLongDay } from "./collection-errors.js";
 
 /**
  * **Un seul changement en attente par payeur, mode et moyen confondus**
- * (plan `plan-paiement-au-compte-par-virement.md`, K1) : un moyen programmé
+ * (`le-paiement-par-virement.md`, K1) : un moyen programmé
  * tombe sur une clôture de la suite ACTUELLE du payeur ; un mode posé avant
  * qu'il prenne effet déplacerait cette suite, et la limite du moyen
  * tomberait au milieu d'une période — une facture à deux moyens.

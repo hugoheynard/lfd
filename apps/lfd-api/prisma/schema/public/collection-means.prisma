@@ -1,5 +1,5 @@
 /// Le MOYEN D'ENCAISSEMENT d'un payeur au compte chez une entité — prélèvement
-/// SEPA ou virement (plan `plan-paiement-au-compte-par-virement.md`, V1, V2,
+/// SEPA ou virement (`le-paiement-par-virement.md`, V1, V2,
 /// C1). Son PROPRE historique, append-only comme `payer_billing_mode` : il ne
 /// crée aucune clôture, il lit celles du mode du payeur pour se dater.
 /// AUCUNE ligne = prélèvement. Le motif est obligatoire (V10).

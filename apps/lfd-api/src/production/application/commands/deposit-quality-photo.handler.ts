@@ -4,6 +4,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { CREATED_ID_REPLAY, OncePerIntent } from "../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../platform/intent/intent-subject.js";
 import { ProductionDocumentStore } from "../../../platform/storage/production-document-store.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { QualityUpload } from "../../domain/entities/quality-upload.js";
@@ -50,7 +51,7 @@ export class DepositQualityPhotoHandler implements ICommandHandler<
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: "production.quality.deposit",
-        subject: "new",
+        subject: intentSubject("quality-photo", command.bytes),
       },
       CREATED_ID_REPLAY,
       (seal) => this.deposit(command, seal),

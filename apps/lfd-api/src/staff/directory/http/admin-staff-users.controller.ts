@@ -27,6 +27,7 @@ import {
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { AcceptedReplay } from "../../../platform/shared/http/accepted-replay.decorator.js";
 import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ListStaffUsersQuery } from "../application/list-staff-users.query.js";
@@ -128,6 +129,10 @@ export class AdminStaffUsersController {
   // 200 et non 204 : la réponse porte `mailSent`. Le 204 d'avant ne pouvait
   // rien dire, et l'écran annonçait donc un envoi qu'il n'avait pas constaté.
   @Post(":id/invitation")
+  @AcceptedReplay(
+    "OncePerIntent.run : l'écriture (markInvited et son fait) vit dans OpenStaffAccess, entre la demande d'un lien au fournisseur d'identité et l'e-mail, et le résultat gardé (mailSent) n'est connu qu'après l'e-mail, hors transaction — sceller dans l'écriture rangerait un résultat pas encore connu. Une panne entre l'écriture et la résolution de l'intention, puis un rejeu après le bail, refait le geste : un second lien, une seconde trace (l'accès, idempotent sur l'adresse, ne double pas ; l'e-mail porte la clé de l'intention)",
+    "même risque que l'invitation d'un membre client, décidé par Hugo le 2026-11-12 ; inscrit le 2026-11-12",
+  )
   @HttpCode(HttpStatus.OK)
   invite(
     @Param("id") id: string,

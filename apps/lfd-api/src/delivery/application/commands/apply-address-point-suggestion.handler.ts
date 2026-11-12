@@ -12,6 +12,7 @@ import {
 } from "../../channels/commerce/index.js";
 import { AddressSuggestionDecision } from "../../domain/entities/address-suggestion-decision.js";
 import { AddressSuggestionChangedError } from "../../domain/errors/address-suggestion-errors.js";
+import { AddressSuggestionDecisionLock } from "../../domain/ports/address-suggestion-decision.lock.js";
 import { AddressSuggestionDecisionRepository } from "../../domain/ports/address-suggestion-decision.repository.js";
 import { GeocodeCacheReader } from "../../domain/ports/geocode-cache.reader.js";
 import { GesturePositionsReader } from "../../domain/ports/gesture-positions.reader.js";
@@ -59,10 +60,14 @@ export class ApplyAddressPointSuggestionHandler implements ICommandHandler<
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly lock: AddressSuggestionDecisionLock,
   ) {}
 
   async execute(command: ApplyAddressPointSuggestionCommand): Promise<void> {
     const now = this.clock.now();
+    // Compté AVANT la vérification : une décision validée ensuite par un
+    // collègue fera bouger le compte relu sous le verrou.
+    const decided = await this.lock.decisionsSoFar(command.addressId, command.kind);
     const suggestions = await currentSuggestions(
       {
         positions: this.positions,
@@ -87,6 +92,7 @@ export class ApplyAddressPointSuggestionHandler implements ICommandHandler<
       author: await deliveryAuthorOf(this.directory, command.staffUserId),
     });
     await this.uow.run(async () => {
+      await this.refuseIfDecidedMeanwhile(command, decided);
       await this.corrector.correct({
         companyId: seen.address.companyId,
         addressId: command.addressId,
@@ -95,5 +101,15 @@ export class ApplyAddressPointSuggestionHandler implements ICommandHandler<
       });
       await this.decisions.record(decision);
     });
+  }
+
+  /** Sous le verrou de la suggestion : une décision prise entre-temps refuse ce geste. */
+  private async refuseIfDecidedMeanwhile(
+    command: ApplyAddressPointSuggestionCommand,
+    decided: number,
+  ): Promise<void> {
+    if ((await this.lock.holdAndCount(command.addressId, command.kind)) !== decided) {
+      throw new AddressSuggestionChangedError();
+    }
   }
 }

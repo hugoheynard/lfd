@@ -7,6 +7,7 @@ import { PricedDecisionsReader } from "../../domain/ports/priced-decisions.reade
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { PricedCompanyReader } from "../../domain/ports/priced-company.reader.js";
 import { CompanyMercuriale } from "../../domain/entities/company-mercuriale.js";
 import { CompanyMercurialeRepository } from "../../domain/ports/company-mercuriale.repository.js";
@@ -89,7 +90,7 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: MERCURIALE_GESTURES.pose,
-        subject: command.companyId,
+        subject: intentSubject(command.companyId, command.payload),
       },
       POSED_LINES_REPLAY,
       (seal) => this.pose(command, seal),

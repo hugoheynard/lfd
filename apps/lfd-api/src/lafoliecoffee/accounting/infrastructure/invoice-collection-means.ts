@@ -4,7 +4,7 @@ import { invoicePaymentMeansSchema } from "./invoice-json.schema.js";
 
 /**
  * **Le moyen d'encaissement qu'une facture a figé** (plan
- * `plan-paiement-au-compte-par-virement.md`, K2, K10), relu sur sa colonne
+ * `le-paiement-par-virement.md`, K2, K10), relu sur sa colonne
  * `payment_means` : le virement pour le code 58. Tout le reste se lit
  * « prélèvement » — le code 59, et `NULL` (sans mandat, ou émise avant le
  * chantier), comme avant.

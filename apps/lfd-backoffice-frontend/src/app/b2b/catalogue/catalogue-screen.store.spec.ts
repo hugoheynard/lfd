@@ -13,7 +13,7 @@ import { CatalogueService } from './catalogue.service';
 import { MadeToOrderService } from './made-to-order.service';
 
 /**
- * La copie de l'écran Catalogue (`plan-catalogue-du-back-office.md`, § 3.4) :
+ * La copie de l'écran Catalogue (`le-cache-du-back-office.md`, § 4.4) :
  * une lecture à la première ouverture, des lignes remplacées après un geste
  * avec des comptes recalculés, et le numéro retenu avec la copie.
  */

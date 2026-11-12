@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { DocumentStore } from "../../../../platform/storage/document-store.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { LegalEntityRepository } from "../../domain/ports/legal-entity.repository.js";
 import { EntityLogo } from "../../domain/value-objects/entity-logo.js";
 import { legalEntityLogoKey, loadOrFail } from "../legal-entity-support.js";
@@ -53,7 +54,7 @@ export class SetLegalEntityLogoHandler implements ICommandHandler<SetLegalEntity
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: SET_LOGO_GESTURE,
-        subject: command.legalEntityId,
+        subject: intentSubject(command.legalEntityId, command.fileName, command.bytes),
       },
       NOTHING_TO_REPLAY,
       (seal) => this.deposit(command, seal),

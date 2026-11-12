@@ -29,6 +29,11 @@ class MemoryAttestations extends CollectionBatchAttestationRepository {
     super();
   }
 
+  /** Le verrou n'a pas de sens en mémoire : les tests d'application sont séquentiels. */
+  loadLocked(batchId: string): Promise<CollectionBatchAttestations | null> {
+    return this.load(batchId);
+  }
+
   load(batchId: string): Promise<CollectionBatchAttestations | null> {
     const batch = this.batches.get(batchId);
     return Promise.resolve(

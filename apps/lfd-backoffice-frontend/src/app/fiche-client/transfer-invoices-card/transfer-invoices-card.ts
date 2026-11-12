@@ -30,7 +30,7 @@ import { NotifyService } from '../../notify.service';
 
 /**
  * **Les factures au virement à régler** de ce payeur (plan
- * `plan-paiement-au-compte-par-virement.md`, V7, V8) : chacune avec son
+ * `le-paiement-par-virement.md`, V7, V8) : chacune avec son
  * échéance et son retard — on le SIGNALE, rien ne bloque (Q2) — et le geste
  * « Virement reçu » pour qui écrit en comptabilité.
  *

@@ -191,7 +191,7 @@ describe("PrismaCatalogueReader.vatPercents — familles passées par l'appelant
   ];
 
   /**
-   * Non-régression du passage des familles (P1.2 du plan des lectures du PIM) :
+   * Non-régression du passage des familles (`le-cache-du-back-office.md`, § 5.1) :
    * famille archivée, dérogation de fiche et famille sans taux rendent la même
    * carte par les deux chemins.
    */

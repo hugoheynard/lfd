@@ -6,7 +6,7 @@ import { DAY_VERSIONS_FRESH_MS } from "./day-versions-card.js";
  * **Une source de version de journée** — ce que la porte des versions demande
  * à chaque bloc qui tient un journal de journée
  * (`documentation/caching-usage/version-par-journee.md`, D8 ;
- * `plan-veilleur-unique.md`, § 3.1 : la portée `day`).
+ * `le-cache-du-back-office.md`, § 2.1 : la portée `day`).
  *
  * `platform` DÉCLARE ce port et ne connaît aucun bloc : le commerce, le fournil
  * et la livraison l'IMPLÉMENTENT chacun dans leur propre code, et

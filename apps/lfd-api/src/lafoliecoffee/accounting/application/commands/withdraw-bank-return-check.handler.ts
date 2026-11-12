@@ -32,7 +32,7 @@ export class WithdrawBankReturnCheckHandler implements ICommandHandler<
     const at = this.clock.now();
     const entity = await exportEntityOrFail(this.entities, command.legalEntityId);
     return this.uow.run(async () => {
-      const checkDay = await this.checks.load(entity.id, command.day);
+      const checkDay = await this.checks.loadLocked(entity.id, command.day);
       const stamp = { at, staffId: command.staffUserId };
       const entry = checkDay.withdraw(this.ids.next(), stamp, command.note);
       await this.checks.save(checkDay);

@@ -5,6 +5,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { UuidGenerator } from "../../../../platform/id/uuid-generator.js";
 import { CREATED_ID_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import {
   localizedText,
   type LocalizedText,
@@ -81,7 +82,7 @@ export class AddProductVariantHandler implements ICommandHandler<AddProductVaria
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: "pim.product.add_variant",
-        subject: command.productId,
+        subject: intentSubject(command.productId, command.input),
       },
       CREATED_ID_REPLAY,
       (seal) => this.add(command, seal),

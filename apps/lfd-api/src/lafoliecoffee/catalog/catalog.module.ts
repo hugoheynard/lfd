@@ -177,7 +177,7 @@ import { SnapshotOrderLineClassificationReader } from "./infrastructure/catalogu
   ],
   controllers: [
     AdminCatalogController,
-    // L'écran Catalogue lu en une fois (`plan-catalogue-du-back-office.md`, § 3.1).
+    // L'écran Catalogue lu en une fois (`le-cache-du-back-office.md`, § 4.1).
     AdminCatalogScreenController,
     // Le sur mesure et la réservation (`plan-articles-sur-mesure.md`, L1a).
     AdminMadeToOrderController,
@@ -203,7 +203,7 @@ import { SnapshotOrderLineClassificationReader } from "./infrastructure/catalogu
     GetCatalogScreenHandler,
     GetCatalogScreenRowsHandler,
     { provide: CatalogScreenReader, useClass: PrismaCatalogScreenReader },
-    // Le numéro `catalog-admin` et son balayage (`plan-catalogue-du-back-office.md`, § 3.3).
+    // Le numéro `catalog-admin` et son balayage (`le-cache-du-back-office.md`, § 4.3).
     CatalogAdminVersionSource,
     PruneCatalogAdminChangesHandler,
     { provide: CatalogAdminChangeVersionReader, useClass: PrismaCatalogAdminChangeVersionReader },

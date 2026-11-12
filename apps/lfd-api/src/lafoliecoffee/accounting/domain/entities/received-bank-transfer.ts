@@ -74,7 +74,7 @@ export interface SettledInvoice {
 }
 
 /**
- * **Un virement reçu** (plan `plan-paiement-au-compte-par-virement.md`, V7) :
+ * **Un virement reçu** (`le-paiement-par-virement.md`, V7) :
  * une somme lue sur le relevé, et les factures au virement d'UN payeur
  * qu'elle règle en entier. Pas de règlement partiel : le reste dû total des
  * factures égale le montant, au centime.

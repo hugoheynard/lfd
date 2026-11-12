@@ -5,7 +5,7 @@ import { PIM_CHANGE_RETENTION_MS, PimChangePruner } from "../domain/ports/pim-ch
 
 /**
  * **Balayer le journal du référentiel** des traces de plus de sept jours
- * (`plan-lectures-du-pim.md`, § 4.1). Rend le nombre retiré.
+ * (`le-cache-du-back-office.md`, § 5.2). Rend le nombre retiré.
  */
 export class PrunePimChangesCommand {}
 

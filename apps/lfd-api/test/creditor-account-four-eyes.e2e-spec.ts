@@ -1,6 +1,6 @@
 /**
  * E2E du **compte de l'entité aux quatre yeux** (plan
- * `plan-paiement-au-compte-par-virement.md`, T0).
+ * `le-paiement-par-virement.md`, T0).
  *
  * Ce que seul un e2e prouve : le compte qui part dans le `CdtrAcct` du
  * `pain.008` et dans l'instantané que les factures copient est le compte

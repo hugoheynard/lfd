@@ -24,7 +24,7 @@ export interface CountingLotInputs {
  *   lui, prélève une société suspendue pour ses dettes) ;
  * - **facturé en son nom** — `isBillingPayerAt` ;
  * - **au compte chez CETTE entité** (K5, plan
- *   `plan-paiement-au-compte-par-virement.md`) — par virement à `at`, ou
+ *   `le-paiement-par-virement.md`) — par virement à `at`, ou
  *   débité : `isDebitedHereAt`, le jugement EXACT du lot. Le lot n'est pas
  *   touché ; c'est le compte qui le rejoue (note § 12 bis). Un payeur au
  *   virement reste un client de l'entité.

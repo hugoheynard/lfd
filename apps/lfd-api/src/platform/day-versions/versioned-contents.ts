@@ -29,7 +29,7 @@ export type ContentGuard<T> = (raw: unknown) => raw is T;
 
 /**
  * **Un contenu servi depuis l'objet tant que son numéro ne bouge pas**
- * (`plan-catalogue-du-back-office.md`, § 3.5) — la porte que les blocs
+ * (`le-cache-du-back-office.md`, § 4.5) — la porte que les blocs
  * appellent ; `platform` ne sait pas ce qu'elle garde.
  *
  * - même numéro rangé → la charge, sans la base ;

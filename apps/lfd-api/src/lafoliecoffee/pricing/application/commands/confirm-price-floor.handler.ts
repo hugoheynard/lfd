@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { PricingFloor, floorSubjectKey } from "../../domain/entities/pricing-floor.js";
 import { PricingFloorRepository } from "../../domain/ports/pricing-floor.repository.js";
 import { PriceFloorNotFoundError } from "../../domain/pricing-errors.js";
@@ -53,7 +54,10 @@ export class ConfirmPriceFloorHandler implements ICommandHandler<ConfirmPriceFlo
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: CONFIRM_FLOOR_GESTURE,
-        subject: `${command.scope.type}:${command.scope.id ?? ""}|${command.clientele}`,
+        subject: intentSubject(
+          `${command.scope.type}:${command.scope.id ?? ""}`,
+          command.clientele,
+        ),
       },
       NOTHING_TO_REPLAY,
       (seal) => this.confirm(command, seal),

@@ -8,7 +8,7 @@ import { PimChangeVersionReader } from "../domain/ports/pim-change-version.reade
 
 /**
  * **Un contenu du référentiel servi sous le numéro `pim`**
- * (`plan-lectures-du-pim.md`, § 4.2) : tant que le numéro ne bouge pas, la
+ * (`le-cache-du-back-office.md`, § 5.3) : tant que le numéro ne bouge pas, la
  * charge rangée dans l'objet est servie sans relire la base.
  *
  * Un contenu rangé ici ne dépend PAS de l'appelant : il est le même pour tout

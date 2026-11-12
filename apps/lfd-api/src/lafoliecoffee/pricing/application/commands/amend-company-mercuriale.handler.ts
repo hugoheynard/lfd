@@ -5,6 +5,7 @@ import { namedPolicy } from "./promotion-policy-support.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import type {
   CompanyMercuriale,
@@ -79,7 +80,7 @@ export class AmendCompanyMercurialeHandler implements ICommandHandler<
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: MERCURIALE_GESTURES.amend,
-        subject: command.mercurialeId,
+        subject: intentSubject(command.mercurialeId, command.companyId, command.payload),
       },
       AMENDMENT_ID_REPLAY,
       (seal) => this.amend(command, seal),

@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { FieldCipher } from "../../../../platform/crypto/field-cipher.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { DocumentStore } from "../../../../platform/storage/document-store.js";
 import { Clock } from "../../../../platform/time/clock.js";
@@ -46,7 +47,7 @@ export class AttachMandateProofHandler implements ICommandHandler<AttachMandateP
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: ATTACH_PROOF_GESTURE,
-        subject: command.companyId,
+        subject: intentSubject(command.companyId, command.fileName, command.bytes),
       },
       NOTHING_TO_REPLAY,
       (seal) => this.attach(command, seal),

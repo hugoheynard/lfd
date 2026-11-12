@@ -25,8 +25,8 @@ import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.j
  * **La même passe balaie les journaux de version du commerce** — celui des
  * journées (`documentation/caching-usage/version-par-journee.md`, D2), celui
  * de toutes les commandes et celui des comptes clients
- * (`plan-veilleur-unique.md`, § 3.2), celui de l'écran Catalogue
- * (`plan-catalogue-du-back-office.md`, § 3.3) : c'est la
+ * (`le-cache-du-back-office.md`, § 2.2), celui de l'écran Catalogue
+ * (`le-cache-du-back-office.md`, § 4.3) : c'est la
  * passe machine du contexte qui possède `orders`, et un cron de plus serait un
  * réglage Cloudflare pour une suppression de quelques centaines de lignes.
  * Une commande et un handler par balayage — seule la porte est partagée. Le compte

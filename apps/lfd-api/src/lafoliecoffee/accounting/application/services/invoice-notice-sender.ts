@@ -137,12 +137,17 @@ export class InvoiceNoticeSender {
    *
    * Hors de toute transaction (exigence de `sendAndAwaitReceipt`).
    *
+   * @param seal appelé dans la transaction de la trace, quand tout est parti :
+   *   l'intention du renvoi est résolue avec la trace, et un rejeu après le
+   *   bail ne la réécrit pas. Un refus ne scelle pas : l'appelant lève, et le
+   *   même clic réessaie.
    * @returns les destinataires et le refus du fournisseur ; `null` si rien n'était à envoyer.
    */
   async resend(
     invoiceId: string,
     document: InvoiceDocument | null,
     resendId: string,
+    seal: () => Promise<void> = () => Promise.resolve(),
   ): Promise<InvoiceNoticeOutcome | null> {
     const subject = await this.subjectOf(invoiceId);
     if (subject === null) {
@@ -166,7 +171,12 @@ export class InvoiceNoticeSender {
             },
     };
     const failure = await this.sendEach(data, recipients, resendId, invoiceMailSubjects(invoice));
-    await this.uow.run(() => this.journal(invoice, recipients, failure, true));
+    await this.uow.run(async () => {
+      await this.journal(invoice, recipients, failure, true);
+      if (failure === null) {
+        await seal();
+      }
+    });
     return { recipients, failure };
   }
 

@@ -8,6 +8,7 @@ import {
   OncePerIntent,
   readIntentString,
 } from "../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../platform/intent/intent-subject.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { DeliveryBin } from "../../domain/entities/delivery-bin.js";
 import { InternalTransferNotFoundError } from "../../domain/errors/internal-transfer-errors.js";
@@ -74,7 +75,12 @@ export class DeclareTransferBinsHandler implements ICommandHandler<
         actorId: request.staffUserId,
         key: request.intentKey,
         gesture: "delivery.transfer.declare_bins",
-        subject: request.transferId,
+        subject: intentSubject(
+          request.transferId,
+          request.binTypeId,
+          request.count,
+          request.innerBags,
+        ),
       },
       BIN_IDS_REPLAY,
       (seal) => this.declare(request, seal),

@@ -415,6 +415,26 @@ describe("après la bascule — les refus nommés", () => {
     });
     expect(events.map((event) => event.act)).toEqual(["posed", "paused", "resumed", "archived"]);
   });
+
+  /**
+   * Régression : deux suspensions simultanées lisaient chacune la promotion
+   * en cours, et écrivaient chacune — deux actes « paused ».
+   */
+  it("deux suspensions simultanées : une passe, l'autre est refusée, un seul acte", async () => {
+    const created = jsonBody<{ id: string }>(
+      await admin().post(PROMOTIONS).set(INTENT_KEY, freshIntent()).send(terms()).expect(201),
+    );
+    const pause = () =>
+      admin().post(`${PROMOTIONS}/${created.id}/pause`).set(INTENT_KEY, freshIntent()).send({});
+
+    const statuses = (await Promise.all([pause(), pause(), pause()])).map((r) => r.status).sort();
+
+    expect(statuses).toEqual([204, 409, 409]);
+    const paused = await ctx.prisma.pricingEvent.count({
+      where: { subjectType: "promotion", subjectId: created.id, act: "paused" },
+    });
+    expect(paused).toBe(1);
+  });
 });
 
 describe("la description interne", () => {

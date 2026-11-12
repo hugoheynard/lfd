@@ -27,7 +27,7 @@ import { GetCatalogScreenHandler } from "../get-catalog-screen.handler.js";
 import { GetCatalogScreenQuery } from "../get-catalog-screen.query.js";
 
 /**
- * L'écran Catalogue (`plan-catalogue-du-back-office.md`, § 3.1–3.2) : le
+ * L'écran Catalogue (`le-cache-du-back-office.md`, § 4.1–4.2) : le
  * numéro lu AVANT les données, le sur mesure sous son seul droit, les lignes
  * recomposées sans comptes. Les dates ne sont comparées à aucune horloge.
  */

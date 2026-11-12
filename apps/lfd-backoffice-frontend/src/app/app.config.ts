@@ -31,6 +31,7 @@ import { provideAppIcons } from './shared/icons/app-icons';
 import { provideStaffAuth } from './auth/auth.providers';
 import { staffAuthInterceptor } from './auth/staff-auth.interceptor';
 import { companyWritesInterceptor } from './comptes-clients/company-cache/company-writes.interceptor';
+import { refusedIntentKeyInterceptor } from './shared/gesture-intents';
 
 // App browser-only (pas de SSR — la suite est CSR). HttpClient en mode `fetch`
 // pour appeler la surface `/admin/*` du backend B2B.
@@ -115,7 +116,11 @@ export const appConfig: ApplicationConfig = {
     // `company-cache/company-writes.ts`.
     provideHttpClient(
       withFetch(),
-      withInterceptors([staffAuthInterceptor, companyWritesInterceptor]),
+      withInterceptors([
+        staffAuthInterceptor,
+        companyWritesInterceptor,
+        refusedIntentKeyInterceptor,
+      ]),
     ),
     // Session Auth0 propre à cette app. Cf. `auth.providers.ts`.
     provideStaffAuth(),

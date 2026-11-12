@@ -29,7 +29,7 @@ const COLUMNS: readonly FoldTableColumn[] = [
 
 /**
  * **Comptabilité › Virements en retard** (plan
- * `plan-paiement-au-compte-par-virement.md`, V8, C7) : les factures au
+ * `le-paiement-par-virement.md`, V8, C7) : les factures au
  * virement non réglées après leur échéance, toutes entités, les plus en
  * retard d'abord. On SIGNALE seulement : aucun blocage automatique (Q2). Le
  * virement reçu se saisit depuis la fiche du client, onglet Facturation.

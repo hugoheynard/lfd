@@ -39,7 +39,7 @@ export class RemovePickupAddressHandler implements ICommandHandler<
    */
   async execute(command: RemovePickupAddressCommand): Promise<void> {
     await this.uow.run(async () => {
-      const site = await this.sites.load(command.id);
+      const site = await this.sites.loadLocked(command.id);
       if (site === null) {
         throw new PickupAddressNotFoundError(command.id);
       }

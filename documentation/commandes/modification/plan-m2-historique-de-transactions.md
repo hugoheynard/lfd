@@ -22,8 +22,7 @@
 > sur le bon est recopié au §10 ; l'état bâti : [`modifier-une-commande.md`](modifier-une-commande.md)).
 > Versions 1 à 4 et leurs contradictions par `vitruve` : `d2632e136`,
 > `6eef19357`, `ca3b6c0c4`, `d5e5d7a49`, `e1b7f8a75`, `c290188ed`,
-> `eaec69258`, `d87322030`, `68f63d17b`. **P0 est bâti sur `dev`** (§4.9, 2026-11-10) ;
-> rien de P1 ne l'est. Touche l'argent : `vitruve` avant Hugo.
+> `eaec69258`, `d87322030`, `68f63d17b`. **P0 et P1 sont bâtis et en production** (§4.9, §5.6 ; `adb9c41e3`). Touche l'argent : `vitruve` avant Hugo.
 
 ## 0. Les décisions de Hugo
 
@@ -793,7 +792,7 @@ sujet publie `order.refund_succeeded`, que la facture se réveille et que
 l'avoir se décide (selon la nature, comme un `re_…`) ; puis publie
 `card_payment.refund_succeeded`.
 
-### 5.6 P1 — ce que le bâti a tranché (P1.a → P1.d, 2026-11-10, sur `dev`)
+### 5.6 P1 — ce que le bâti a tranché (P1.a → P1.d, 2026-11-10, en production)
 
 P1.a (`f25ed5ecf`) a posé les tables ; **P1.b** a bâti le remboursement dans
 `src/card-payment/` (domaine, canal, exécuteur, constat, routes d'équipe,
@@ -828,7 +827,7 @@ Ce que le plan ne disait pas, tranché au plus simple :
 
 🔴 **P1.b ne se déploie pas seul.** L'annulation écrivait encore les
 anciennes tables par l'ancien exécuteur, alors que le webhook ne nourrissait
-plus que le nouveau carnet. **P1.c** (2026-11-10, sur `dev`) a fait la
+plus que le nouveau carnet. **P1.c** (2026-11-10, en production) a fait la
 bascule ; ce qu'il a tranché au plus simple :
 
 - **L'annulation** (`cancellation-refund-requester.ts`) : `cards.ensureFirst`
@@ -1133,13 +1132,13 @@ faire échouer la migration.
 
 ## 14. L'ordre, et l'irréversible
 
-Portes, matrice et configuration armées ✅ → **P0** ✅ bâti sur `dev` le 2026-11-10 (§4.9) (schéma et table additifs,
+Portes, matrice et configuration armées ✅ → **P0** ✅ bâti le 2026-11-10, en production (§4.9) (schéma et table additifs,
 secret des liens, deux endpoints ; pas réversible par le code seul — dit) →
 déployé, e2e vertes, `claim` et le cron rattrapent la fenêtre → **P1**
 (irréversible : tables, reprise, `refund_credit`, relations retirées, enum
 `card_payments`, valeurs des enums ; `lecteur-de-migrations` ; **boutique
 fermée, condition du §5.2**)
-✅ bâti sur `dev` le 2026-11-10 (§5.6), déploiement en attente
+✅ bâti le 2026-11-10, en production (§5.6)
 → quelques jours d'annulations ordinaires, « Vérifier » cliqué, la veille
 muette → **S2** (avancée avant S1, Hugo, 2026-11-10 : les deux lots sont
 indépendants) → **S1** → **S3** → **P2**.
