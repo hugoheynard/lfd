@@ -21,6 +21,26 @@ import {
  *   - le dev par sous-domaine continue de fonctionner à l'identique.
  */
 
+/**
+ * Régression : `https://lafoliecoffee.info//example.com/` servait la page
+ * d'example.com sous la zone, et `/pro//example.com` y redirigeait.
+ */
+describe("resolveTarget — un chemin à double barre ne répond nulle part", () => {
+  it.each([
+    "//example.com/",
+    "//example.com/x?y=1",
+    "/pro//example.com",
+    "/api/lfd//example.com/admin",
+    "/a//b",
+  ])("refuse « %s » sur la zone", (path) => {
+    expect(resolveTarget(ZONE_HOSTNAME, path)).toBeUndefined();
+  });
+
+  it("refuse aussi hors de la zone", () => {
+    expect(resolveTarget("lfd-gateway.lafoliedouce.workers.dev", "//example.com/")).toBeUndefined();
+  });
+});
+
 describe("resolveTarget — préfixes d'API vers les backends", () => {
   it("route `/api/route-planner` vers `lfd-route-planner`, préfixe retiré, sans le confondre avec `/api/lfd`", () => {
     expect(

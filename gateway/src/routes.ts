@@ -168,11 +168,19 @@ export type Target =
 /**
  * Résout la destination d'une requête. `undefined` ⇒ rien ne répond ici.
  *
+ * Un chemin qui porte `//` ne répond nulle part : chaque destination se
+ * fabrique par `new URL(chemin, origine)`, qui lit `//hôte/…` comme un AUTRE
+ * hôte. Servi tel quel, il faisait relayer sous la zone la page d'un site
+ * quelconque, cookies compris, et `/pro//hôte` redirigeait hors du domaine.
+ *
  * L'ordre compte : le sous-domaine dev l'emporte, pour qu'un poste de dev garde
  * exactement le comportement d'aujourd'hui même si un chemin ressemble à un
  * préfixe d'API.
  */
 export function resolveTarget(hostname: string, pathname: string): Target | undefined {
+  if (pathname.includes("//")) {
+    return undefined;
+  }
   const devUrl = DEV_ROUTES[hostname];
   if (devUrl !== undefined) {
     return { kind: "url", url: devUrl };
