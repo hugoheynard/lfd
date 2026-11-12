@@ -43,7 +43,7 @@ flowchart TD
   - côté back-office, `GestureIntents` et `intentOptions`
     (`apps/lfd-backoffice-frontend/src/app/shared/gesture-intents.ts`) : une
     clé par geste voulu, gardée jusqu'au succès.
-  - 16 contrôleurs l'utilisent ; la porte `intent-key-gestures` l'impose aux
+  - 10 contrôleurs portent `@IntentKey()` et 15 handlers appellent `OncePerIntent` (§ 7) ; la porte `intent-key-gestures` l'impose aux
     seuls gestes du staff qui envoient un e-mail.
 - **Des idempotences propres, hors de ce mécanisme** : la passation
   (`OrderIdempotency`, `ShopOrderIdempotency`, `orders.prisma:932, 993`),
@@ -127,3 +127,45 @@ Un fichier touché est un fichier rangé. La dette se lit à chaque exécution.
   handler le sache : il garderait un résultat HTTP sans savoir s'il est
   rejouable, et masquerait les gestes qui ne doivent pas l'être.
 - Pas de clé exigée des webhooks : leur idempotence est celle de l'émetteur.
+
+## 7. Les corrections de `vitruve` (2026-11-12)
+
+Elles font foi sur ce qui précède.
+
+- **`OncePerIntent.run` n'est pas atomique** (vérifié) : le geste écrit, puis
+  `resolve` part à part ; une panne entre les deux laisse le bail expirer, et
+  le rejeu réexécute. `runSealed` résout dans la transaction de l'écriture,
+  et seuls trois handlers de mercuriale l'utilisent. Donc : **`runSealed`
+  obligatoire pour tout geste qui écrit en base** ; `run` ne reste admis que
+  pour un geste sans écriture. La porte distingue les deux. **J1 commence par
+  basculer les douze appelants de `run`** — dont `send-mandate.handler.ts:125`
+  (argent), `create-company-by-staff.handler.ts:94`,
+  `invite-company-member.handler.ts:57` — avant d'ajouter une seule route.
+- **`runSealed` ne scelle que sous `UnitOfWork`** : sous un
+  `prisma.$transaction(async (tx) => …)` direct, la résolution part hors de la
+  transaction, sans erreur. La porte refuse `seal` dans un fichier qui ouvre
+  une transaction directe.
+- **La porte doit résoudre contrôleur → commande → handler** par
+  `@CommandHandler`, sur toutes les routes. `intent-key-gestures` ne le fait
+  pas (liste écrite à la main, `dev-toolbox/gates/intent-key-gestures.mjs:42`,
+  et elle n'ouvre pas le handler). C'est le gros de J0 ; sans lui, la case
+  « par intention » se réduit à « lit l'en-tête ».
+- **Une quatrième case, « appelée par la machine »** : les routes sous
+  `RecomputeGuard` (balayages, crons), rangées avec la raison de leur
+  idempotence (bail, état relu).
+- **L'acteur hors du staff** : pour la boutique, l'identifiant du client
+  résolu en base ; `GestureIntent.actorId` devient « l'acteur opaque »,
+  préfixé par sa nature. Les routes publiques sans compte n'ont pas d'acteur :
+  « par nature » ou « par leur propre clé » (la passation), jamais « par
+  intention ».
+- **« Par nature » est déclaratif** : la porte vérifie que la raison existe,
+  pas qu'elle est vraie ; elle se relit en revue. Le § 3 le demande, il ne
+  l'interdit pas.
+- **Les remboursements vont dans la case 3** (clé propre envoyée à Stripe,
+  `card-refund-issuance-preparation.ts:92`, `stripe-refund-calls.ts:84`), les
+  webhooks aussi, reconnus à leur contrôleur, listé.
+- **Avant d'étendre `gesture_intent`** : une purge des intentions résolues de
+  plus de 30 jours, son inscription au registre RGPD si `lint:rgpd-staff` la
+  vise, et un bail par geste au lieu de deux minutes fixes (lot de factures).
+- Comptes corrigés : 10 contrôleurs portent `@IntentKey()` ; 15 handlers
+  appellent `OncePerIntent` (12 `run`, 3 `runSealed`).
