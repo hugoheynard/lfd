@@ -1,3 +1,4 @@
+import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { Invoice } from "../../../domain/entities/invoice.js";
 import { BUYER, issueInput } from "../../../domain/entities/__tests__/invoice-fixtures.js";
 import {
@@ -24,6 +25,9 @@ import {
 } from "../issued-invoice-queries.js";
 import { ListCompanyInvoicesHandler } from "../list-company-invoices.handler.js";
 import { ListMyCompanyInvoicesHandler } from "../list-my-company-invoices.handler.js";
+
+// Aucune pièce au virement ici : l'horloge ne juge aucun retard.
+const CLOCK = new FixedClock(new Date("2026-10-20T10:00:00.000Z"));
 
 const SEPTEMBER = Invoice.issue(
   issueInput({ paymentMeans: { code: "59", mandateReference: "RUM-PORT-1" } }),
@@ -78,6 +82,7 @@ describe("« Mes factures » côté client (E6)", () => {
     visible,
     periods,
     new FixedSettlementFacts(),
+    CLOCK,
   );
   const read = new GetMyCompanyInvoiceHandler(roles, visible, periods);
 
@@ -159,6 +164,7 @@ describe("« Mes factures » d'un site (E6, suite (a))", () => {
     siteVisible,
     periods,
     new FixedSettlementFacts(),
+    CLOCK,
   );
   const read = new GetMyCompanyInvoiceHandler(roles, siteVisible, periods);
 
@@ -195,12 +201,13 @@ const REJECTED = {
     },
   ],
   blocked: false,
+  transferReceivedOn: null,
 } as const;
 
 describe("« Mes factures » : règlement, total dû, filtres (plan page-mes-factures, P1)", () => {
   it("chaque pièce porte son statut ; le total dû compte le prévu et le rejeté, lus en UNE fois", async () => {
     const facts = new FixedSettlementFacts(new Map([["inv_1", REJECTED]]));
-    const list = new ListMyCompanyInvoicesHandler(roles, visible, periods, facts);
+    const list = new ListMyCompanyInvoicesHandler(roles, visible, periods, facts, CLOCK);
 
     const view = await list.execute(new ListMyCompanyInvoicesQuery("u_compta", "c_port"));
 
@@ -225,7 +232,7 @@ describe("« Mes factures » : règlement, total dû, filtres (plan page-mes-fac
 
   it("le filtre choisit les lignes, jamais le total dû (§7.3)", async () => {
     const facts = new FixedSettlementFacts(new Map([["inv_1", REJECTED]]));
-    const list = new ListMyCompanyInvoicesHandler(roles, visible, periods, facts);
+    const list = new ListMyCompanyInvoicesHandler(roles, visible, periods, facts, CLOCK);
 
     const view = await list.execute(
       new ListMyCompanyInvoicesQuery("u_owner", "c_port", { year: 2026, month: 10, kind: null }),
@@ -245,7 +252,7 @@ describe("« Mes factures » : règlement, total dû, filtres (plan page-mes-fac
 
   it("un site compte dans SON total la pièce rejetée de sa maison mère (Q-C)", async () => {
     const facts = new FixedSettlementFacts(new Map([["inv_9", REJECTED]]));
-    const list = new ListMyCompanyInvoicesHandler(roles, siteVisible, periods, facts);
+    const list = new ListMyCompanyInvoicesHandler(roles, siteVisible, periods, facts, CLOCK);
 
     const view = await list.execute(new ListMyCompanyInvoicesQuery("u_site", "c_site"));
 
@@ -254,7 +261,7 @@ describe("« Mes factures » : règlement, total dû, filtres (plan page-mes-fac
 
   it("le mur passe avant toute lecture : un autre rôle, 403, et rien n'est lu", async () => {
     const facts = new FixedSettlementFacts();
-    const list = new ListMyCompanyInvoicesHandler(roles, visible, periods, facts);
+    const list = new ListMyCompanyInvoicesHandler(roles, visible, periods, facts, CLOCK);
 
     await expect(
       list.execute(new ListMyCompanyInvoicesQuery("u_orders", "c_port")),

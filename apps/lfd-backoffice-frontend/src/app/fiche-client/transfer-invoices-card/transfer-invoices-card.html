@@ -1,0 +1,42 @@
+@if (loadError()) {
+  <fold-callout variant="alert" data-transfer-invoices-error>
+    Impossible de lire les factures au virement de ce compte.
+    <button foldButton size="sm" emphasis="soft" (click)="retry()">Réessayer</button>
+  </fold-callout>
+} @else if (view(); as unpaid) {
+  @if (unpaid.invoices.length > 0) {
+    <fold-card data-transfer-invoices>
+      <fold-element-title
+        cardHeader
+        variant="title"
+        icon="receipt"
+        title="Factures au virement à régler"
+        [subtitle]="
+          overdueCount() > 0
+            ? overdueCount() + ' en retard — ' + euros(unpaid.overdueCents)
+            : 'Aucune en retard'
+        "
+      >
+        @if (canRecord()) {
+          <button foldButton titleAction size="sm" data-record-transfer (click)="record()">
+            Virement reçu
+          </button>
+        }
+      </fold-element-title>
+      <div class="body">
+        @for (invoice of unpaid.invoices; track invoice.invoiceId) {
+          <p class="row" [attr.data-transfer-invoice]="invoice.invoiceId">
+            <a [routerLink]="['/comptabilite/factures', invoice.invoiceId]">{{ invoice.number }}</a>
+            <span class="meta">échéance le {{ day(invoice.dueOn) }}</span>
+            @if (invoice.overdue) {
+              <fold-badge variant="alert" [content]="'En retard de ' + invoice.daysLate + ' j'" />
+            } @else {
+              <fold-badge variant="info" content="Virement attendu" />
+            }
+            <strong class="amount">{{ euros(invoice.amountCents) }}</strong>
+          </p>
+        }
+      </div>
+    </fold-card>
+  }
+}

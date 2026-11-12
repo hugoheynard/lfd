@@ -1,0 +1,58 @@
+<fold-panel-header title="Virement reçu" [subtitle]="data()?.payerName ?? ''" />
+
+<div class="body">
+  <fold-input
+    label="Montant reçu"
+    required
+    placeholder="1 250,00"
+    hint="En euros, tel que le relevé l'écrit."
+    [(value)]="amount"
+  />
+  @if (amountInvalid()) {
+    <fold-callout appearance="inset" variant="warning">
+      Montant illisible : écrire par exemple « 1 250,00 ».
+    </fold-callout>
+  }
+  <fold-date label="Reçu le" required hint="Le jour lu sur le relevé." [(value)]="receivedOn" />
+  <fold-input
+    label="Référence du virement"
+    required
+    [hint]="'Recopiée du relevé. Au plus ' + referenceMax + ' caractères.'"
+    [(value)]="reference"
+  />
+
+  <fold-fieldset legend="Factures réglées" hint="Le virement les règle en entier.">
+    <div class="invoices">
+      @for (invoice of invoices(); track invoice.invoiceId) {
+        <fold-checkbox
+          [label]="labelOf(invoice)"
+          [hint]="hintOf(invoice)"
+          [checked]="chosen().has(invoice.invoiceId)"
+          (checkedChange)="toggle(invoice.invoiceId, $event)"
+        />
+      }
+    </div>
+  </fold-fieldset>
+
+  <fold-callout appearance="inset" variant="info">
+    Le montant doit égaler le total des factures cochées : sinon, l'enregistrement est refusé et
+    l'écart affiché.
+  </fold-callout>
+
+  @if (mixedEntities()) {
+    <fold-callout appearance="inset" variant="warning">
+      Ces factures sont émises par deux entités : un virement ne règle que les factures d'une seule.
+    </fold-callout>
+  }
+
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="close()">Annuler</button>
+  <button foldButton [disabled]="!canSubmit()" [loading]="saving()" (click)="submit()">
+    Enregistrer le virement
+  </button>
+</footer>

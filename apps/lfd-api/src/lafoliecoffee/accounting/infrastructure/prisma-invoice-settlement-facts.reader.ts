@@ -11,6 +11,12 @@ import type {
   InvoiceDebitFact,
 } from "../domain/services/invoice-settlement.js";
 
+interface MutableFacts {
+  debits: InvoiceDebitFact[];
+  blocked: boolean;
+  transferReceivedOn: string | null;
+}
+
 interface DebitRow {
   readonly invoice_id: string;
   readonly batch_id: string;
@@ -24,9 +30,9 @@ interface DebitRow {
 }
 
 /**
- * Les faits de prélèvement de « Mes factures », en DEUX requêtes pour toutes
- * les pièces : leurs lignes (lot, avis, retour, factures de la ligne), puis
- * celles dont un bon a quitté `due`. Tables du bloc `b2b`, toutes écrites par
+ * Les faits de prélèvement de « Mes factures », en TROIS requêtes pour toutes
+ * les pièces : leurs lignes (lot, avis, retour, factures de la ligne),
+ * celles dont un bon a quitté `due`, et le virement reçu qui les règle. Tables du bloc `b2b`, toutes écrites par
  * la comptabilité ; `order_collection.order_id` est opaque, la jointure passe
  * par `invoice_order`.
  */
@@ -42,13 +48,14 @@ export class PrismaInvoiceSettlementFactsReader extends InvoiceSettlementFactsRe
     if (invoiceIds.length === 0) {
       return new Map();
     }
-    const [debits, blocked] = await Promise.all([
+    const [debits, blocked, transfers] = await Promise.all([
       this.debitsOf(invoiceIds),
       this.blockedOf(invoiceIds),
+      this.transfersOf(invoiceIds),
     ]);
-    const facts = new Map<string, { debits: InvoiceDebitFact[]; blocked: boolean }>();
-    const entry = (id: string): { debits: InvoiceDebitFact[]; blocked: boolean } => {
-      const existing = facts.get(id) ?? { debits: [], blocked: false };
+    const facts = new Map<string, MutableFacts>();
+    const entry = (id: string): MutableFacts => {
+      const existing = facts.get(id) ?? { debits: [], blocked: false, transferReceivedOn: null };
       facts.set(id, existing);
       return existing;
     };
@@ -57,6 +64,9 @@ export class PrismaInvoiceSettlementFactsReader extends InvoiceSettlementFactsRe
     }
     for (const id of blocked) {
       entry(id).blocked = true;
+    }
+    for (const transfer of transfers) {
+      entry(transfer.invoiceId).transferReceivedOn = dayOf(transfer.transfer.receivedOn);
     }
     return facts;
   }
@@ -83,6 +93,14 @@ export class PrismaInvoiceSettlementFactsReader extends InvoiceSettlementFactsRe
           ON n."batch_id" = li."batch_id" AND n."line_rank" = li."line_rank"
         LEFT JOIN "public"."collection_return" r ON r."end_to_end_id" = l."end_to_end_id"
        WHERE li."invoice_id" = ANY(${[...invoiceIds]}::text[])`;
+  }
+
+  /** Le virement reçu qui règle chaque pièce, s'il y en a un (V7). */
+  private transfersOf(invoiceIds: readonly string[]) {
+    return this.prisma.receivedBankTransferInvoice.findMany({
+      where: { invoiceId: { in: [...invoiceIds] } },
+      select: { invoiceId: true, transfer: { select: { receivedOn: true } } },
+    });
   }
 
   /** Les pièces dont un bon n'est plus `due` (l'absence de ligne vaut `due`). */

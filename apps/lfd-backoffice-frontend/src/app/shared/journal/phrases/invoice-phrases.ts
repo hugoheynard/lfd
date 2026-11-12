@@ -243,6 +243,37 @@ const signalled: Phrase = (fact) =>
     ['subjectLabel', ...PERIOD_KEYS, 'reason'],
   );
 
+/**
+ * « a enregistré le virement reçu de « Le Bistrot » le 18/11/2026, 154,55 €,
+ * référence « FA-LFD-2026-000001 », chez l'entité « X » : il règle
+ * FA-LFD-2026-000001, FA-LFD-2026-000002 » (plan virement, V7).
+ */
+const bankTransferReceived: Phrase = (fact) => {
+  const raw = fact.payload['invoices'];
+  const numbers = Array.isArray(raw) ? raw.filter((one) => typeof one === 'string') : [];
+  const reference = fact.payload['reference'];
+  const label = subjectLabelOf(fact);
+  return byActor(
+    fact,
+    [
+      text('a enregistré le virement reçu de '),
+      ...(label === null ? [text('un client')] : [text('« '), subject(fact, label), text(' »')]),
+      text(' le '),
+      inUnit('day', fact.payload['receivedOn']),
+      text(', '),
+      inUnit('cents', fact.payload['amountCents']),
+      ...(typeof reference === 'string'
+        ? [text(', référence « '), value(reference), text(' »')]
+        : []),
+      text(', chez '),
+      ...cite(ENTITY, fact.payload['legalEntity']),
+      text(numbers.length > 1 ? ' : il règle les factures ' : ' : il règle la facture '),
+      value(numbers.join(', ')),
+    ],
+    ['subjectLabel', 'receivedOn', 'amountCents', 'reference', 'legalEntity', 'invoices'],
+  );
+};
+
 export const INVOICE_PHRASES = {
   'invoice.issued': invoiceIssued,
   'invoice.credit_note_issued': creditNoteIssued,
@@ -253,4 +284,5 @@ export const INVOICE_PHRASES = {
   'invoice.document_render_failed': documentRenderFailed,
   'invoice.autopilot_ran': autopilotRan,
   'invoice.signalled': signalled,
+  'bank_transfer.received': bankTransferReceived,
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

@@ -65,6 +65,10 @@ export interface AccountInvoicesCopy {
   readonly statusSettled: string;
   readonly statusClosed: string;
   readonly statusProcessing: string;
+  /** Au virement, attendu à l'échéance. */
+  readonly statusTransferExpected: string;
+  /** Au virement, échéance passée sans virement reçu. */
+  readonly statusTransferOverdue: string;
   /** Ce que « En cours de traitement » promet. */
   readonly processingHint: string;
   /** `{date}` — accolé au statut. */
@@ -181,6 +185,8 @@ export const ACCOUNT_INVOICES_FR: AccountInvoicesCopy = {
   statusSettled: 'Réglée',
   statusClosed: 'Clôturée',
   statusProcessing: 'En cours de traitement',
+  statusTransferExpected: 'Virement attendu',
+  statusTransferOverdue: 'Virement en retard, échéance passée',
   processingHint: 'notre équipe s’en occupe',
   statusOn: 'le {date}',
   rejectedWith: 'rejeté avec {n} autres factures du même prélèvement',
@@ -279,6 +285,8 @@ export const ACCOUNT_INVOICES_EN: AccountInvoicesCopy = {
   statusSettled: 'Settled',
   statusClosed: 'Closed',
   statusProcessing: 'Being processed',
+  statusTransferExpected: 'Bank transfer expected',
+  statusTransferOverdue: 'Bank transfer overdue',
   processingHint: 'our team is on it',
   statusOn: 'on {date}',
   rejectedWith: 'rejected with {n} other invoices of the same debit',
@@ -378,6 +386,8 @@ export const ACCOUNT_INVOICES_IT: AccountInvoicesCopy = {
   statusSettled: 'Saldata',
   statusClosed: 'Chiusa',
   statusProcessing: 'In lavorazione',
+  statusTransferExpected: 'Bonifico atteso',
+  statusTransferOverdue: 'Bonifico in ritardo',
   processingHint: 'se ne occupa il nostro team',
   statusOn: 'il {date}',
   rejectedWith: 'respinto con altre {n} fatture dello stesso addebito',

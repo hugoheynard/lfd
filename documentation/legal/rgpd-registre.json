@@ -1368,6 +1368,15 @@
       "information": false
     },
     {
+      "colonne": "public.received_bank_transfer.recorded_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a saisi un virement reçu et réglé des factures au virement (`received_bank_transfer`, plan-paiement-au-compte-par-virement V7).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.resupply_receipt.received_by_name",
       "personne": "staff",
       "categorie": "identite",

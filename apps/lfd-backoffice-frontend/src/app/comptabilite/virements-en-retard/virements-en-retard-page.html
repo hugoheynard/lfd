@@ -1,0 +1,55 @@
+<fold-page-layout title="Virements en retard" separator>
+  <p description>
+    Les factures au <strong>virement</strong> dont l'échéance est passée sans virement reçu. Rien
+    n'est bloqué&nbsp;: la liste signale. Le virement reçu se saisit depuis la fiche du client,
+    onglet Facturation.
+  </p>
+
+  @if (loadError(); as message) {
+    <fold-empty-state
+      tone="alert"
+      title="Impossible de lire les virements en retard"
+      [subtitle]="message"
+    >
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  } @else if (empty()) {
+    <fold-empty-state
+      title="Aucun virement en retard"
+      subtitle="Toutes les factures au virement échues sont réglées."
+    >
+      <fold-icon empty-icon name="receipt" />
+    </fold-empty-state>
+  } @else {
+    <fold-card>
+      <fold-data-table
+        [caption]="'En retard : ' + euros(overdueCents())"
+        narrowLayout="cards"
+        zebra
+        [columns]="columns"
+        [rows]="rows()"
+        [rowKey]="rowKey"
+        [loading]="loading()"
+      >
+        <!-- `fold-data-table` n'a AUCUN rendu par défaut : chaque `key` de
+             `columns` a son template ici. -->
+        <ng-template foldCell="payer" let-row>
+          <a [routerLink]="['/comptes-clients', of(row).payerCompanyId, 'facturation']">
+            {{ of(row).payerName }}
+          </a>
+        </ng-template>
+        <ng-template foldCell="invoice" let-row>
+          <a [routerLink]="['/comptabilite/factures', of(row).invoiceId]">{{ of(row).number }}</a>
+        </ng-template>
+        <ng-template foldCell="entity" let-row>{{ of(row).legalEntityName }}</ng-template>
+        <ng-template foldCell="due" let-row>{{ day(of(row).dueOn) }}</ng-template>
+        <ng-template foldCell="late" let-row>
+          <fold-badge variant="alert" [content]="of(row).daysLate + ' j'" />
+        </ng-template>
+        <ng-template foldCell="amount" let-row>
+          {{ euros(of(row).amountCents) }}
+        </ng-template>
+      </fold-data-table>
+    </fold-card>
+  }
+</fold-page-layout>

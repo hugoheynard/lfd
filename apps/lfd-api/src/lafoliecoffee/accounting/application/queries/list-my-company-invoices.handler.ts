@@ -1,10 +1,12 @@
 import type { MyIssuedInvoicesView } from "@lfd/contracts";
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
+import { Clock } from "../../../../platform/time/clock.js";
 import { CompanyInvoicesReader } from "../../domain/ports/company-invoices.reader.js";
 import { InvoicePeriodsReader } from "../../domain/ports/invoice-periods.reader.js";
 import { InvoiceSettlementFactsReader } from "../../domain/ports/invoice-settlement-facts.reader.js";
 import { UnpaidAccessReader } from "../../domain/ports/unpaid-access.reader.js";
+import { parisDayOf } from "../../domain/services/collection-test-file.js";
 import { ensureInvoiceAccess } from "../../domain/services/invoice-access.js";
 import { myInvoicesViewOf } from "../my-invoices-view-support.js";
 import { ListMyCompanyInvoicesQuery } from "./issued-invoice-queries.js";
@@ -26,6 +28,7 @@ export class ListMyCompanyInvoicesHandler implements IQueryHandler<
     private readonly invoices: CompanyInvoicesReader,
     private readonly periods: InvoicePeriodsReader,
     private readonly settlements: InvoiceSettlementFactsReader,
+    private readonly clock: Clock,
   ) {}
 
   async execute(query: ListMyCompanyInvoicesQuery): Promise<MyIssuedInvoicesView> {
@@ -37,6 +40,7 @@ export class ListMyCompanyInvoicesHandler implements IQueryHandler<
       { periods: this.periods, settlements: this.settlements },
       await this.invoices.visibleTo(query.companyId),
       query.filter,
+      parisDayOf(this.clock.now()),
     );
   }
 }

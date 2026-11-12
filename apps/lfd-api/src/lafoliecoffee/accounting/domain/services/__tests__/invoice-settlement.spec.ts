@@ -11,6 +11,9 @@ const facts = (over: Partial<InvoiceSettlementFacts> = {}): InvoiceSettlementFac
   dueOn: "2026-10-14",
   debits: [],
   blocked: false,
+  paidByTransfer: false,
+  transferReceivedOn: null,
+  today: "2026-10-10",
   ...over,
 });
 
@@ -181,5 +184,39 @@ describe("le statut de règlement d'une facture (§7.1)", () => {
     expect(
       settlementOf(facts({ blocked: true, debits: [debit({ batchStatus: "deposited" })] }))?.status,
     ).toBe("collected");
+  });
+});
+
+describe("le statut d'une facture au virement (plan virement, V7, V8)", () => {
+  const transfer = (over: Partial<InvoiceSettlementFacts> = {}): InvoiceSettlementFacts =>
+    facts({ paidByTransfer: true, ...over });
+
+  it("avant l'échéance, et le jour même : virement attendu, à l'échéance", () => {
+    expect(settlementOf(transfer({ today: "2026-10-13" }))).toEqual({
+      status: "transfer_expected",
+      date: "2026-10-14",
+      otherInvoicesOnDebit: 0,
+    });
+    expect(settlementOf(transfer({ today: "2026-10-14" }))?.status).toBe("transfer_expected");
+  });
+
+  it("le lendemain de l'échéance, sans virement reçu : en retard", () => {
+    expect(settlementOf(transfer({ today: "2026-10-15" }))).toEqual({
+      status: "transfer_overdue",
+      date: "2026-10-14",
+      otherInvoicesOnDebit: 0,
+    });
+  });
+
+  it("réglée par un virement reçu, au jour de réception — même en retard, même bloquée", () => {
+    expect(
+      settlementOf(
+        transfer({ today: "2026-10-30", transferReceivedOn: "2026-10-20", blocked: true }),
+      ),
+    ).toEqual({ status: "settled", date: "2026-10-20", otherInvoicesOnDebit: 0 });
+  });
+
+  it("un avoir n'a toujours pas de statut", () => {
+    expect(settlementOf(transfer({ isCreditNote: true }))).toBeNull();
   });
 });

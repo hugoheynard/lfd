@@ -27,12 +27,14 @@ export interface AmountDue {
  * du total : l'acquittée, la prélevée, la réglée, la clôturée (Q-D : passer
  * en perte, c'est renoncer) et celle « en cours de traitement » (Q-E : elle
  * attend NOTRE décision). Une re-présentée attend un nouveau prélèvement :
- * elle est due.
+ * elle est due. Une facture au virement l'est jusqu'au virement reçu.
  */
 const DUE: ReadonlySet<InvoiceSettlementStatus> = new Set([
   "collection_planned",
   "collection_rejected",
   "recollection_planned",
+  "transfer_expected",
+  "transfer_overdue",
 ]);
 
 /**

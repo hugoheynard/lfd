@@ -18,7 +18,12 @@ export type OrderCollectionStateName =
    * La commande a été annulée par l'équipe (lot C5, C5.4) : TERMINAL. Aucune
    * transition ne la nomme dans ses états de départ, donc toutes la refusent.
    */
-  | "cancelled";
+  | "cancelled"
+  /**
+   * Réglée par un virement reçu (plan `plan-paiement-au-compte-par-virement.md`,
+   * V7) : TERMINAL, elle cite son virement. Aucune transition ne la reprend.
+   */
+  | "settled_by_transfer";
 
 /** Pourquoi une commande a été écartée. Des VALEURS : elles vivent en base. */
 export type CollectionExclusionReason =
@@ -40,6 +45,8 @@ export interface OrderCollectionState {
   readonly amountCents: number;
   readonly settledNote: string | null;
   readonly settledByStaffId: string | null;
+  /** Le virement reçu qui l'a réglée — posé ⇔ `settled_by_transfer`. */
+  readonly bankTransferId: string | null;
   readonly updatedAt: Date;
 }
 
@@ -68,6 +75,7 @@ export class OrderCollection {
       amountCents,
       settledNote: null,
       settledByStaffId: null,
+      bankTransferId: null,
       updatedAt: at,
     });
   }
@@ -204,6 +212,27 @@ export class OrderCollection {
   settleOtherwise(note: string, stamp: StaffStamp): void {
     this.assertIn(["due", "excluded"], "être réglée autrement");
     this.settle(note, stamp);
+  }
+
+  /**
+   * `due` ou `excluded` → `settled_by_transfer` : la facture de la commande
+   * est réglée par un virement reçu (V7). Distinct de {@link settleOtherwise} :
+   * le règlement est le virement lui-même, qu'elle cite ; aucune note. Une
+   * commande engagée dans un lot, prélevée ou déjà réglée la refuse.
+   */
+  settleByTransfer(bankTransferId: string, stamp: StaffStamp): void {
+    this.assertIn(["due", "excluded"], "être réglée par un virement reçu");
+    this.state = {
+      ...this.state,
+      state: "settled_by_transfer",
+      batchId: null,
+      lineRank: null,
+      exclusionReason: null,
+      settledNote: null,
+      settledByStaffId: stamp.staffId,
+      bankTransferId,
+      updatedAt: stamp.at,
+    };
   }
 
   private settle(note: string, stamp: StaffStamp): void {

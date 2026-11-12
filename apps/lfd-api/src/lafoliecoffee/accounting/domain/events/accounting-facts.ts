@@ -52,6 +52,8 @@ export const ACCOUNTING_FACTS = {
   /** Le mode de facturation d'un payeur est programmé, ou annulé (§16.6-7). */
   payerBillingModeChanged: "payer.billing_mode_changed",
   payerCollectionMeansChanged: "payer.collection_means_changed",
+  /** Un virement reçu règle des factures au virement (V7). */
+  bankTransferReceived: "bank_transfer.received",
   /** La constitution automatique est activée — des lots partiront sans clic. */
   autoCollectionEnabled: "legal_entity.auto_collection_enabled",
   autoCollectionDisabled: "legal_entity.auto_collection_disabled",

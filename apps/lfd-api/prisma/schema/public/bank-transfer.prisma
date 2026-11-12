@@ -1,0 +1,42 @@
+/// Un VIREMENT REÇU, saisi par le staff depuis le relevé (plan
+/// `plan-paiement-au-compte-par-virement.md`, V7). Il règle une ou plusieurs
+/// factures au virement d'un même payeur, dont le reste dû total égale son
+/// montant ; leurs commandes passent `settled_by_transfer` dans la même
+/// transaction. Rien ne le modifie ni ne l'efface (déclencheur append-only,
+/// CHECK : dans le `migration.sql` de `20261112170100_le_virement_recu`).
+model ReceivedBankTransfer {
+  /// ULID.
+  id                String      @id
+  legalEntityId     String      @map("legal_entity_id")
+  legalEntity       LegalEntity @relation(fields: [legalEntityId], references: [id], onDelete: Restrict)
+  /// Le payeur légal — opaque, comme `invoice.payer_company_id`.
+  payerCompanyId    String      @map("payer_company_id")
+  amountCents       Int         @map("amount_cents")
+  /// Le jour de réception lu sur le relevé.
+  receivedOn        DateTime    @map("received_on") @db.Date
+  /// La référence lue sur le relevé, telle que le client l'a écrite.
+  reference         String
+  recordedAt        DateTime    @map("recorded_at") @db.Timestamptz(3)
+  recordedByStaffId String      @map("recorded_by_staff_id")
+
+  invoices ReceivedBankTransferInvoice[]
+  orders   OrderCollection[]
+
+  @@index([legalEntityId, payerCompanyId])
+  @@map("received_bank_transfer")
+  @@schema("public")
+}
+
+/// Une facture qu'un virement reçu règle, et ce qu'il en règle (son reste dû).
+/// Une facture n'est réglée que par UN virement (`invoice_id` unique).
+model ReceivedBankTransferInvoice {
+  transferId  String               @map("transfer_id")
+  transfer    ReceivedBankTransfer @relation(fields: [transferId], references: [id], onDelete: Restrict)
+  invoiceId   String               @unique @map("invoice_id")
+  invoice     Invoice              @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  amountCents Int                  @map("amount_cents")
+
+  @@id([transferId, invoiceId])
+  @@map("received_bank_transfer_invoice")
+  @@schema("public")
+}

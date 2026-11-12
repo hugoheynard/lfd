@@ -6,6 +6,8 @@ export interface InvoiceCollectionFacts {
   readonly debits: readonly InvoiceDebitFact[];
   /** Un de ses bons a quitté l'état `due` sans qu'une ligne la porte. */
   readonly blocked: boolean;
+  /** Le jour de réception du virement reçu qui la règle (V7) ; `null` sinon. */
+  readonly transferReceivedOn: string | null;
 }
 
 /**

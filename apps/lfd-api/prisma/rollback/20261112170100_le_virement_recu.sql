@@ -1,0 +1,21 @@
+-- RETOUR ARRIÈRE de 20261112170100_le_virement_recu
+-- (documentation/comptabilite/plan-paiement-au-compte-par-virement.md, T3).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
+-- « appliquée ».
+--
+-- Le code d'avant ignore les deux tables et la colonne : le retour arrière est
+-- le retour du code seul. ⚠️ Une commande `settled_by_transfer` resterait dans
+-- cet état, que le code d'avant ne connaît pas (lu comme « libre » par
+-- l'engagement, hors des états ouverts par le lot : jamais prélevée). Retirer
+-- les tables effacerait la trace des virements saisis : un resserrement
+-- ultérieur, sur décision de Hugo seulement :
+--
+--   ALTER TABLE public.order_collection DROP CONSTRAINT order_collection_settled_by_transfer_cites_it;
+--   ALTER TABLE public.order_collection DROP CONSTRAINT order_collection_bank_transfer_id_fkey;
+--   ALTER TABLE public.order_collection DROP COLUMN bank_transfer_id;
+--   DROP TRIGGER received_bank_transfer_invoice_append_only ON public.received_bank_transfer_invoice;
+--   DROP TRIGGER received_bank_transfer_append_only ON public.received_bank_transfer;
+--   DROP FUNCTION public.received_bank_transfer_append_only();
+--   DROP TABLE public.received_bank_transfer_invoice;
+--   DROP TABLE public.received_bank_transfer;

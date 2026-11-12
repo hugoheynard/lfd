@@ -263,6 +263,7 @@ model LegalEntity {
   billingModeDates       BillingModeDates[]
   payerBillingModes      PayerBillingMode[]
   payerCollectionMeans   PayerCollectionMeans[]
+  receivedBankTransfers  ReceivedBankTransfer[]
   // Les plafonds de la convention d'émission, par schéma (PL1,
   // `plan-plafonds-de-la-banque.md`). Côté inverse obligatoire.
   bankLimits             LegalEntityBankLimits[]

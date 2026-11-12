@@ -3204,3 +3204,14 @@ export type {
   PayerCollectionMeansView,
   SetPayerCollectionMeansPayload,
 } from "./payer-collection-means.js";
+export {
+  BANK_TRANSFER_INVOICES_MAX,
+  BANK_TRANSFER_REFERENCE_MAX,
+  recordBankTransferPayloadSchema,
+} from "./bank-transfer.js";
+export type {
+  RecordBankTransferPayload,
+  RecordedBankTransferView,
+  UnpaidTransferInvoiceView,
+  UnpaidTransferInvoicesView,
+} from "./bank-transfer.js";

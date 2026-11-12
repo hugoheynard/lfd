@@ -99,6 +99,8 @@ model Invoice {
   /// Le remboursement par carte que cet avoir constate (plan M2, lot P1) —
   /// un au plus.
   refundCredit    RefundCredit?
+  /// Le virement reçu qui l'a réglée (V7) — un au plus.
+  bankTransfer    ReceivedBankTransferInvoice?
 
   @@unique([legalEntityId, year, rank])
   @@unique([id, type])

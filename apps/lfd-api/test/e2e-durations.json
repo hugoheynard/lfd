@@ -35,6 +35,7 @@
   "test/b2b-legal-sections.e2e-spec.ts": 9079,
   "test/bakehouse-resupply-drafts.e2e-spec.ts": 8057,
   "test/bank-collection-limits.e2e-spec.ts": 8479,
+  "test/bank-transfer-received.e2e-spec.ts": 14004,
   "test/basket-discount-ttc-particulier.e2e-spec.ts": 5953,
   "test/basket-discount-vat-split-to-invoice.e2e-spec.ts": 6130,
   "test/billable-amounts.e2e-spec.ts": 11988,

@@ -54,6 +54,16 @@ export const comptabiliteRoutes: Routes = [
           ),
       },
       {
+        // Les factures au virement non réglées après leur échéance (plan
+        // plan-paiement-au-compte-par-virement.md, V8, C7) : une lecture.
+        path: 'virements-en-retard',
+        title: 'Virements en retard — LFC B2B admin',
+        loadComponent: () =>
+          import('./virements-en-retard/virements-en-retard-page').then(
+            (m) => m.VirementsEnRetardPage,
+          ),
+      },
+      {
         // LES PROCÉDURES DE PRÉLÈVEMENT — une ligne par clôture : ouvertes, à
         // venir, closes récentes. `?entite=&lot=` (les anciennes adresses)
         // redirige vers le détail du lot.

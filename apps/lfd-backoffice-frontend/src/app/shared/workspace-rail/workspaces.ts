@@ -763,6 +763,14 @@ export const COMPTABILITE_VIEWS: readonly WorkspaceView[] = [
     needs: 'b2b_accounting:read',
   },
   {
+    // Les factures au virement échues sans virement reçu (V8) : on signale.
+    key: 'virements-en-retard',
+    label: 'Virements en retard',
+    link: '/comptabilite/virements-en-retard',
+    icon: 'receipt',
+    needs: 'b2b_accounting:read',
+  },
+  {
     // Le fil d'une clôture, de ses factures à ses retours ; il a repris
     // « Prélèvement du mois », retiré le 2026-10-24 (plan
     // `plan-page-procedure-de-prelevement.md`, § 12).

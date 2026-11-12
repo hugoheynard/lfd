@@ -11195,6 +11195,20 @@
           "variables": []
         },
         {
+          "key": "account.invoices.statusTransferExpected",
+          "fr": "Virement attendu",
+          "en": "Bank transfer expected",
+          "it": "Bonifico atteso",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.statusTransferOverdue",
+          "fr": "Virement en retard, échéance passée",
+          "en": "Bank transfer overdue",
+          "it": "Bonifico in ritardo",
+          "variables": []
+        },
+        {
           "key": "account.invoices.processingHint",
           "fr": "notre équipe s’en occupe",
           "en": "our team is on it",

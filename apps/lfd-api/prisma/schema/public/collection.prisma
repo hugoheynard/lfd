@@ -43,6 +43,9 @@ enum OrderCollectionState {
   /// La commande a été annulée par l'équipe (lot C5) : TERMINAL, aucune
   /// transition ne l'accepte. Sans lot, sans ligne, sans raison.
   cancelled
+  /// Réglée par un virement reçu (plan `plan-paiement-au-compte-par-virement.md`,
+  /// V7) : TERMINAL, cite son virement (`bank_transfer_id`, CHECK en base).
+  settled_by_transfer
 
   @@schema("public")
 }
@@ -205,6 +208,10 @@ model OrderCollection {
 
   settledNote      String? @map("settled_note")
   settledByStaffId String? @map("settled_by_staff_id")
+
+  /// Le virement reçu qui l'a réglée — posé ⇔ `settled_by_transfer` (CHECK).
+  bankTransferId String?               @map("bank_transfer_id")
+  bankTransfer   ReceivedBankTransfer? @relation(fields: [bankTransferId], references: [id], onDelete: Restrict)
 
   updatedAt DateTime @map("updated_at") @db.Timestamptz(3)
 

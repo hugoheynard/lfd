@@ -12,6 +12,9 @@ import {
  *
  * 1. un avoir n'a pas de statut ;
  * 2. payée par carte → acquittée ;
+ * 2 bis. au virement (plan `plan-paiement-au-compte-par-virement.md`, V7, V8) :
+ *    réglée dès qu'un virement reçu la règle (le jour de réception), sinon
+ *    « virement attendu » jusqu'à l'échéance comprise, « en retard » après ;
  * 3. sa DERNIÈRE ligne de prélèvement dans un lot non annulé (par instant de
  *    constitution — un lot annulé relâche ses factures) dit l'état : lot
  *    constitué, déposé, ou le retour de la banque et ce que l'équipe en a fait ;
@@ -30,7 +33,9 @@ export type InvoiceSettlementStatus =
   | "recollection_planned"
   | "settled"
   | "closed"
-  | "processing";
+  | "processing"
+  | "transfer_expected"
+  | "transfer_overdue";
 
 /** L'état d'un lot tel que la ligne le voit. */
 export type DebitBatchStatus = CollectionBatchStatus;
@@ -64,6 +69,12 @@ export interface InvoiceSettlementFacts {
    * lot, réglé autrement, annulé… — l'équipe doit décider (Q-E).
    */
   readonly blocked: boolean;
+  /** Son moyen figé est le virement (code 58). */
+  readonly paidByTransfer: boolean;
+  /** Le jour de réception du virement qui la règle ; `null` tant qu'aucun. */
+  readonly transferReceivedOn: string | null;
+  /** Le jour de Paris où l'on lit — juge le retard d'un virement. */
+  readonly today: string;
 }
 
 export interface InvoiceSettlement {
@@ -80,6 +91,9 @@ export function settlementOf(facts: InvoiceSettlementFacts): InvoiceSettlement |
   if (facts.paidOn !== null) {
     return settlement("card_paid", facts.paidOn, 0);
   }
+  if (facts.paidByTransfer) {
+    return transferSettlement(facts);
+  }
   const debit = latestLiveDebit(facts.debits);
   if (debit !== null) {
     return debitSettlement(debit);
@@ -87,6 +101,15 @@ export function settlementOf(facts: InvoiceSettlementFacts): InvoiceSettlement |
   return facts.blocked
     ? settlement("processing", null, 0)
     : settlement("collection_planned", facts.dueOn, 0);
+}
+
+/** Une facture au virement ne passe par aucun lot : le virement reçu, ou l'échéance. */
+function transferSettlement(facts: InvoiceSettlementFacts): InvoiceSettlement {
+  if (facts.transferReceivedOn !== null) {
+    return settlement("settled", facts.transferReceivedOn, 0);
+  }
+  const overdue = facts.dueOn !== null && facts.today > facts.dueOn;
+  return settlement(overdue ? "transfer_overdue" : "transfer_expected", facts.dueOn, 0);
 }
 
 /** La dernière ligne d'un lot vivant (ni annulé, ni rejeté par la banque) ; à instant égal, le plus grand id (ULID). */

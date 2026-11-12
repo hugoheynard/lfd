@@ -60,6 +60,8 @@ function statusLabel(status: MyInvoiceSettlementStatus, copy: AccountInvoicesCop
     settled: copy.statusSettled,
     closed: copy.statusClosed,
     processing: copy.statusProcessing,
+    transfer_expected: copy.statusTransferExpected,
+    transfer_overdue: copy.statusTransferOverdue,
   };
   return labels[status];
 }
@@ -90,6 +92,8 @@ export function settlementTone(status: MyInvoiceSettlementStatus): FoldBadgeVari
     settled: 'success',
     closed: 'neutral',
     processing: 'neutral',
+    transfer_expected: 'info',
+    transfer_overdue: 'warning',
   };
   return tones[status];
 }

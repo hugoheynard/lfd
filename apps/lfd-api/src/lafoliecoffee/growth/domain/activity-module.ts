@@ -223,6 +223,8 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // Le moyen d'encaissement d'un payeur (prélèvement ou virement), réglé
     // sous `b2b_collection_means` (plan paiement au compte par virement, T1).
     "payer.collection_means",
+    // Le virement reçu qui règle des factures au virement (plan virement, T3).
+    "bank_transfer.",
     // Les liens de paiement libres, créés et annulés sous `b2b_accounting`
     // (plan liens de paiement §2b, 2026-09-25).
     "payment_link.",

@@ -20,6 +20,7 @@ function inState(state: OrderCollectionStateName): OrderCollection {
     amountCents: 1_000,
     settledNote: null,
     settledByStaffId: null,
+    bankTransferId: null,
     updatedAt: AT,
   });
 }

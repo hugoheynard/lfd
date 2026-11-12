@@ -25,7 +25,13 @@ import type { IssuedInvoiceSummaryView } from "./issued-invoices.js";
  * - `settled` — réglée autrement ;
  * - `closed` — clôturée (passée en perte) ;
  * - `processing` — en cours de traitement chez nous (« notre équipe s'en
- *   occupe ») : elle attend une décision de l'équipe, pas un geste du client.
+ *   occupe ») : elle attend une décision de l'équipe, pas un geste du client ;
+ * - `transfer_expected` — au virement, attendu (`date` = l'échéance) ;
+ * - `transfer_overdue` — au virement, échéance passée sans virement reçu
+ *   (`date` = l'échéance).
+ *
+ * Une facture au virement réglée par un virement reçu est `settled`, `date` =
+ * le jour de réception.
  */
 export type MyInvoiceSettlementStatus =
   | "card_paid"
@@ -35,7 +41,9 @@ export type MyInvoiceSettlementStatus =
   | "recollection_planned"
   | "settled"
   | "closed"
-  | "processing";
+  | "processing"
+  | "transfer_expected"
+  | "transfer_overdue";
 
 export interface MyInvoiceSettlementView {
   readonly status: MyInvoiceSettlementStatus;

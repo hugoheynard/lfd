@@ -12,6 +12,7 @@ export function toOrderCollectionState(row: OrderCollectionRow): OrderCollection
     amountCents: row.amountCents,
     settledNote: row.settledNote,
     settledByStaffId: row.settledByStaffId,
+    bankTransferId: row.bankTransferId,
     updatedAt: row.updatedAt,
   };
 }
@@ -26,6 +27,7 @@ export function orderCollectionColumns(state: OrderCollectionState) {
     amountCents: state.amountCents,
     settledNote: state.settledNote,
     settledByStaffId: state.settledByStaffId,
+    bankTransferId: state.bankTransferId,
     updatedAt: state.updatedAt,
   };
 }

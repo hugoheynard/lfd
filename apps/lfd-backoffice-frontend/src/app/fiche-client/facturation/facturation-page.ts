@@ -34,6 +34,7 @@ import { CollectionReturnsCard } from '../collection-returns-card/collection-ret
 import { DetachedUnpaidCard } from '../detached-unpaid-card/detached-unpaid-card';
 import { IssuedInvoicesCard } from '../issued-invoices-card/issued-invoices-card';
 import { PayerBillingModeNote } from '../payer-billing-mode-note/payer-billing-mode-note';
+import { TransferInvoicesCard } from '../transfer-invoices-card/transfer-invoices-card';
 import {
   groupByYear,
   ledgerRows,
@@ -74,6 +75,7 @@ const ORDERS_WINDOW = 200;
     DetachedUnpaidCard,
     IssuedInvoicesCard,
     PayerBillingModeNote,
+    TransferInvoicesCard,
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,

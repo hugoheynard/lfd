@@ -193,6 +193,22 @@ export const ACCOUNTING_FACTS = {
       reason: z.string().nullable(),
     }),
   ),
+  /**
+   * Un VIREMENT REÇU saisi depuis le relevé (plan
+   * `plan-paiement-au-compte-par-virement.md`, V7) ; sujet : le payeur.
+   * `reference` : ce que le relevé porte, tel que le client l'a écrit.
+   * `invoices` : les numéros des factures réglées, dans l'ordre saisi.
+   */
+  "bank_transfer.received": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      legalEntity: named("legal_entity"),
+      amountCents: cents(),
+      receivedOn: day(),
+      reference: z.string().min(1),
+      invoices: z.array(z.string().min(1)).min(1),
+    }),
+  ),
   /** La constitution automatique — un fait distinct du calendrier. */
   "legal_entity.auto_collection_enabled": labelled({}),
   "legal_entity.auto_collection_disabled": labelled({}),

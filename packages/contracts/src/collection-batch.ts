@@ -74,7 +74,9 @@ export type OrderCollectionStateView =
   | "returned"
   | "written_off"
   /** Sa commande a été annulée par l'équipe (lot C5) : la ligne est fermée. */
-  | "cancelled";
+  | "cancelled"
+  /** Sa facture est réglée par un virement reçu (virement, V7). */
+  | "settled_by_transfer";
 
 export const ORDER_COLLECTION_STATE_LABELS: Readonly<Record<OrderCollectionStateView, string>> = {
   due: "À prélever",
@@ -85,6 +87,7 @@ export const ORDER_COLLECTION_STATE_LABELS: Readonly<Record<OrderCollectionState
   returned: "Rejetée par la banque",
   written_off: "Passée en perte",
   cancelled: "Commande annulée",
+  settled_by_transfer: "Réglée par virement",
 };
 
 /**
