@@ -40,6 +40,12 @@ seul endroit commun à tous les containers, donc la mesure est globale.
   personnes DISTINCTES servies (empreintes de l'heure en cours seulement,
   seul le compte reste), un appel sans personne n'est pas compté. Et par
   heure, le plus de requêtes reçues par l'objet en une seconde.
+- **Les adresses lues** : `GET <adresse de l'objet>/metrics`, soit
+  `http://objets.interne/rayons/metrics` et
+  `http://objets.interne/journees/metrics` — un seul hôte intercepté, l'objet
+  choisi par le préfixe (`le-rayon-en-cache.md` § 4). C'est cet onglet qui a
+  montré, le 2026-11-12, que deux hôtes distincts livraient les deux lectures
+  au même objet (`pro-shelves` des deux côtés).
 - **Ce que l'API ajoute** : les replis vers la base (objet lent ou en panne)
   et la durée des appels, déjà mesurés par instance, servis à côté.
 - **Une route** `GET admin/ops/caches?days=30` sous le droit de la santé :

@@ -1,6 +1,6 @@
 # Plan — l'objet des journées, lot 1 : les numéros
 
-> ✅ **Lot 1 bâti le 2026-11-12** : objet `DayVersions` (Worker de l'API, migration de classe v3), hôte `journees.interne`, briques communes `platform/cache-calls/` (garde borné, disjoncteur, mesure) que le rayon utilise aussi, mesure `day_versions` sur la page Santé.
+> ✅ **Lot 1 bâti le 2026-11-12** : objet `DayVersions` (Worker de l'API, migration de classe v3), hôte `journees.interne` (devenu `objets.interne/journees`), briques communes `platform/cache-calls/` (garde borné, disjoncteur, mesure) que le rayon utilise aussi, mesure `day_versions` sur la page Santé.
 >
 > 🔴 **Runbook** : la migration de classe v3 de `wrangler.jsonc` ne se défait pas par un revert. Retirer l'objet demande une migration `deleted_classes: ["DayVersions"]` dans un nouveau tag, après avoir retiré la liaison et le code qui l'appelle. Sans l'objet (URL absente), l'API lit la base : la porte reste servie.
 
@@ -108,8 +108,12 @@ C'est su et accepté.
   dans l'API) : les requêtes qui arrivent pendant une relecture attendent son
   résultat au lieu de relire chacune.
 - **Le chemin** : comme `ProShelves`, par l'interception sortante du
-  conteneur (`Backend.outboundByHost`, `worker.ts:258-274`) sur un **second
-  hôte** dédié aux journées, aiguillé vers l'objet `DayVersions`. C'est
+  conteneur (`Backend.outboundByHost`, `worker.ts`), sur le **même hôte**
+  `objets.interne` que les rayons, sous le préfixe `/journees`, aiguillé vers
+  l'objet `DayVersions` (`apps/lfd-api/container/internal-objects.ts`). Un second hôte
+  `journees.interne` livrait en production ses appels à `ProShelves`
+  (constaté le 2026-11-12, `le-rayon-en-cache.md` § 4) : numéros et contenus
+  n'étaient jamais gardés, chaque lecture retombait sur la base. C'est
   l'API qui joint l'objet (et non l'objet qui joint l'API comme le prévoyait
   `version-par-journee.md` § 4 pour l'alarme du lot 2).
 - **Le garde, le disjoncteur et la mesure** de l'appel (`ShelfCallGuard`,

@@ -57,7 +57,7 @@ export const SHELF_ROUND_TRIP_TIMING = "shelf_cache.round_trip";
 export const SHELF_LATE_FINISH_TIMING = "shelf_cache.late_finish";
 
 /**
- * **Le délai et le disjoncteur de TOUT appel au chemin `rayons.interne`** —
+ * **Le délai et le disjoncteur de TOUT appel au chemin `objets.interne/rayons`** —
  * rayons pro (C2) comme rayon public (C3). Un seul disjoncteur, parce qu'il
  * n'y a qu'un chemin et qu'un objet derrière : une panne vue par le rayon pro
  * épargne donc aussi le délai au rayon public, et l'inverse.

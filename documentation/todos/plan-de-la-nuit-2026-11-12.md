@@ -23,19 +23,44 @@
 
 1. **🔴 Les appels vers l'objet des journées arrivent à l'objet des rayons.**
    Constaté le 2026-11-12 à 22 h 17 dans l'onglet Cache : les deux objets
-   rendent EXACTEMENT les mêmes compteurs, sous le nom `pro-shelves`. Ni l'API
-   (`ops.module.ts`, deux adresses distinctes), ni le Worker (deux
-   gestionnaires par hôte, `outboundByHost`), ni `@cloudflare/containers`
-   0.3.7 (choix du gestionnaire par le nom d'hôte de l'URL) ne le montrent à la
-   lecture : l'hypothèse est que l'interception du runtime, pour deux hôtes
-   fictifs, livre au proxy des requêtes sous le PREMIER hôte enregistré. Si
-   c'est le cas, numéros des journées, numéros des sujets et contenus partagés
-   (catalogue, PIM) vivent dans l'objet des rayons, ou y échouent et retombent
-   sur la base sans le dire. À faire : le prouver (essai local `wrangler dev`
-   - Docker, journal des requêtes reçues par chaque objet), puis corriger de la
-     façon la plus sûre — un seul hôte intercepté (`objets.interne`) et un
-     aiguillage par préfixe de chemin dans le Worker — avec une porte ou un test
-     qui l'aurait vu. Sur `dev` seulement ; la production attend Hugo.
+   rendent EXACTEMENT les mêmes compteurs, sous le nom `pro-shelves`.
+   - **Ce qui est prouvé** : l'effet. Le nom `pro-shelves` n'est écrit que par
+     `ProShelves` ; `DayVersions` compte sous `day-versions` et les noms des
+     contenus. Les deux lectures sont donc servies par `ProShelves`. Côté
+     `ProShelves`, `/scopes/…` et `/contents/…` ne se lisent pas
+     (`parseShelfCall` → `null`) : **400**, rien n'est rangé ni effacé. L'API
+     prend un 400 pour une réponse illisible
+     (`UnreadableDayVersionsReplyError`) et relit la base : numéros des
+     journées et des sujets, contenus du catalogue du back-office et du PIM
+     n'ont **jamais** été gardés en production — chaque lecture est allée en
+     base, avec un avertissement journalisé. Rien de faux n'a été servi ;
+     `ProShelves` a seulement compté ces appels dans ses « requêtes ».
+   - **Ce qui n'est PAS prouvé** : le mécanisme. Ni l'API (deux adresses),
+     ni le Worker (deux gestionnaires), ni `@cloudflare/containers` 0.3.7
+     (`ContainerProxy.fetch` choisit par `url.hostname`, un même
+     `ContainerProxy` pour les deux hôtes) n'expliquent le mélange. Essai
+     local `wrangler dev` 4.157 + Docker le 2026-11-12, deux hôtes interceptés
+     comme en production : 60 paires d'appels concurrents, **zéro** erreur
+     d'aiguillage. La doc Cloudflare dit qu'un hôte intercepté résout vers
+     une « adresse de substitution » et que l'URL vient de l'en-tête `Host`
+     pour l'HTTPS, sans le dire pour l'HTTP : l'hypothèse reste que le
+     runtime de production aiguille par l'adresse, commune aux deux hôtes, et
+     reconstruit l'URL avec le premier.
+   - **Correction (non commitée, non déployée)** : un seul hôte intercepté,
+     `objets.interne`, et l'objet choisi par le préfixe du chemin
+     (`apps/lfd-api/container/internal-objects.ts` : `/rayons/…` → `ProShelves`,
+     `/journees/…` → `DayVersions`, préfixe retiré, 404 sinon). Refus 403 et
+     relais de la purge publique gardés. Les adresses posées par le Worker
+     deviennent `http://objets.interne/rayons` et
+     `http://objets.interne/journees` ; l'API n'a pas changé (ses adaptateurs
+     concatènent déjà le chemin à l'adresse). Les anciens hôtes restent
+     interceptés et aiguillés par l'hôte un déploiement, pour un conteneur
+     démarré avant la bascule ; à retirer au suivant.
+   - **Test** : `apps/lfd-api/container/__tests__/internal-objects.spec.ts` fait passer
+     les VRAIS adaptateurs de l'API par l'aiguillage du Worker et vérifie que
+     chaque objet reçoit un chemin qu'il comprend. Il ne remplace pas
+     l'épreuve en production : après le déploiement, l'onglet Cache doit
+     montrer `day-versions` d'un côté et `pro-shelves` de l'autre.
 
 ## 3. Construire
 

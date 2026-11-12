@@ -345,7 +345,7 @@ export class AppConfig {
 
   /**
    * L'adresse du **magasin des rayons pro** (`le-rayon-en-cache.md`, C2)
-   * — `http://rayons.interne`, posée par le Worker lui-même à côté du
+   * — `http://objets.interne/rayons`, posée par le Worker lui-même à côté du
    * gestionnaire de sortie qui l'intercepte (`container/worker.ts`) —, ou
    * `null` : aucun magasin, chaque rayon se calcule depuis la base (dev local
    * hors wrangler, e2e). Délibérément sans défaut : hors du conteneur, ce nom

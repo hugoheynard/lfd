@@ -28,7 +28,7 @@ export class ShopCopyEdgePurgeFailedError extends TechnicalError {
 }
 
 /**
- * **La purge par le chemin interne du Worker** (`http://rayons.interne`, le
+ * **La purge par le chemin interne du Worker** (`http://objets.interne/rayons`, le
  * même que la purge du rayon public) : seul le Worker peut purger son
  * Workers Cache, et son gestionnaire de sortie refuse tout autre appelant
  * que le conteneur de l'API.

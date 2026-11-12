@@ -30,13 +30,17 @@ import {
 import type { ProShelves } from "./pro-shelves";
 import { DAY_VERSIONS_INSTANCE } from "./day-versions";
 import type { DayVersions } from "./day-versions";
-import { DAY_VERSIONS_ENV, DAY_VERSIONS_HOST, DAY_VERSIONS_ORIGIN } from "./day-versions-store";
+import { DAY_VERSIONS_ENV } from "./day-versions-store";
 import {
-  isTrustedCaller,
-  SHELF_STORE_ENV,
-  SHELF_STORE_HOST,
+  DAY_VERSIONS_ORIGIN,
+  INTERNAL_OBJECTS_HOST,
+  internalObjectRouteOf,
+  LEGACY_OBJECT_HOSTS,
+  objectUrlOf,
   SHELF_STORE_ORIGIN,
-} from "./shelf-store";
+  type InternalObject,
+} from "./internal-objects";
+import { isTrustedCaller, SHELF_STORE_ENV } from "./shelf-store";
 
 // L'objet des rayons pro (lot C2) : exporté par le point d'entrée, comme toute
 // classe de Durable Object liée dans `wrangler.jsonc`.
@@ -250,9 +254,11 @@ export class Backend extends Container<Env> {
 }
 
 /**
- * **Le chemin conteneur → objet des rayons pro** (`le-rayon-en-cache.md`,
- * § 4) : le conteneur appelle `http://rayons.interne/…`, le Worker intercepte et
- * transmet à l'objet par sa liaison. Ni route publique, ni jeton.
+ * **Le chemin conteneur → objets partagés** (`le-rayon-en-cache.md`, § 4) :
+ * le conteneur appelle `http://objets.interne/rayons/…` ou
+ * `http://objets.interne/journees/…`, le Worker intercepte et transmet à
+ * l'objet que nomme le PRÉFIXE du chemin, par sa liaison, chemin sans
+ * préfixe. Ni route publique, ni jeton. Un préfixe inconnu rend 404.
  *
  * Il REFUSE tout appel dont le `containerId` n'est pas celui de `Backend` :
  * `ContainerProxy` est un point d'entrée exporté, qu'un autre Worker du compte
@@ -263,7 +269,7 @@ export class Backend extends Container<Env> {
  * l'accesseur hérité de `Container`, qui seul inscrit le gestionnaire — le
  * conteneur démarrerait alors sans interception, sans erreur.
  */
-async function proShelvesGateway(
+async function internalObjectsGateway(
   request: Request,
   env: Env,
   ctx: OutboundHandlerContext,
@@ -273,13 +279,17 @@ async function proShelvesGateway(
     return new Response(null, { status: 403 });
   }
   const url = new URL(request.url);
-  if (isPublicPurgeRelay(request.method, url.pathname)) {
+  const route = internalObjectRouteOf(url);
+  if (route === null) {
+    return new Response(null, { status: 404 });
+  }
+  if (route.object === "pro-shelves" && isPublicPurgeRelay(request.method, route.pathname)) {
     const tag = purgeableTagOf(url);
     return tag === null
       ? new Response(null, { status: purgeStatusOf({ kind: "unknown_tag" }) })
       : relayPublicPurge(tag);
   }
-  return proShelves(env).fetch(request);
+  return OBJECT_STUBS[route.object](env).fetch(new Request(objectUrlOf(url, route), request));
 }
 
 /** La boucle locale vers le point d'entrée par défaut (`ctx.exports`), telle que le runtime la donne. */
@@ -345,27 +355,13 @@ async function publicPurgeOutcome(
   }
 }
 
-/**
- * **Le chemin conteneur → objet des journées** (`plan-objet-des-journees.md`,
- * § 3 bis) : un second hôte, `http://journees.interne`, intercepté de la même
- * façon que celui des rayons et refusé (403) à tout autre appelant que
- * `Backend` — le refus fait retomber l'API sur la base.
- */
-async function dayVersionsGateway(
-  request: Request,
-  env: Env,
-  ctx: OutboundHandlerContext,
-): Promise<Response> {
-  const trusted = [env.BACKEND.idFromName(PRIMARY_INSTANCE).toString()];
-  if (!isTrustedCaller(ctx.containerId, trusted)) {
-    return new Response(null, { status: 403 });
-  }
-  return dayVersions(env).fetch(request);
-}
-
+// L'hôte unique d'abord ; les anciens hôtes, un déploiement, pour un
+// conteneur démarré avant la bascule (`internal-objects.ts`).
 Backend.outboundByHost = {
-  [SHELF_STORE_HOST]: proShelvesGateway,
-  [DAY_VERSIONS_HOST]: dayVersionsGateway,
+  [INTERNAL_OBJECTS_HOST]: internalObjectsGateway,
+  ...Object.fromEntries(
+    Object.keys(LEGACY_OBJECT_HOSTS).map((host) => [host, internalObjectsGateway]),
+  ),
 };
 
 function proShelves(env: Env): DurableObjectStub<ProShelves> {
@@ -375,6 +371,12 @@ function proShelves(env: Env): DurableObjectStub<ProShelves> {
 function dayVersions(env: Env): DurableObjectStub<DayVersions> {
   return env.DAY_VERSIONS.get(env.DAY_VERSIONS.idFromName(DAY_VERSIONS_INSTANCE), PLACEMENT);
 }
+
+/** La liaison de chaque objet joint par le chemin interne. */
+const OBJECT_STUBS: Readonly<Record<InternalObject, (env: Env) => Fetcher>> = {
+  "pro-shelves": proShelves,
+  "day-versions": dayVersions,
+};
 
 /**
  * Le nom de l'instance unique — **déterministe, et c'est tout l'intérêt** : un

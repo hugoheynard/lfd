@@ -17,6 +17,7 @@
     "pro-shelves.ts",
     "public-shelf.ts",
     "day-versions-store.ts",
+    "internal-objects.ts",
     "day-versions.ts",
     "versioned-contents-store.ts",
     "cache-metrics-store.ts",

@@ -24,7 +24,7 @@ const HTTP_OK = 200;
 const HTTP_NO_CONTENT = 204;
 
 /**
- * **Le rayon public par le chemin interne** (`http://rayons.interne`, C3) :
+ * **Le rayon public par le chemin interne** (`http://objets.interne/rayons`, C3) :
  * l'état vient de l'objet des rayons, la purge du Worker lui-même — le seul
  * qui puisse purger son Workers Cache. Le gestionnaire de sortie refuse tout
  * autre appelant que le conteneur de l'API.

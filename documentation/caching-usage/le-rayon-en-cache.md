@@ -192,10 +192,26 @@ Chemins relatifs à la racine du dépôt. Les lignes de la carte
 - **Où** : `apps/lfd-api/container/pro-shelves.ts`, une instance unique,
   stockage SQLite : table `shelves (key, body, version, principal,
 expires_at)` et table `meta` (version globale, drapeaux).
-- **Le chemin conteneur → objet** : un gestionnaire de sortie
+- **Le chemin conteneur → objets** : un gestionnaire de sortie
   (`Backend.outboundByHost`, `apps/lfd-api/container/worker.ts`) intercepte
-  `http://rayons.interne/…`. **Aucune route publique, aucun jeton** ; le
-  gestionnaire refuse tout appelant autre que `Backend` (`ctx.containerId`).
+  **un seul hôte**, `http://objets.interne/…`, et choisit l'objet par le
+  **préfixe du chemin** (`apps/lfd-api/container/internal-objects.ts`) : `/rayons/…` →
+  `ProShelves`, `/journees/…` → `DayVersions`, préfixe retiré avant de
+  transmettre ; un préfixe inconnu rend 404. **Aucune route publique, aucun
+  jeton** ; le gestionnaire refuse tout appelant autre que `Backend`
+  (`ctx.containerId`), et relaie la purge du rayon public
+  (`/rayons/public/purge`).
+  - Pourquoi un seul hôte : avec un hôte par objet (`rayons.interne`,
+    `journees.interne`), la production livrait les appels de l'objet des
+    journées à `ProShelves` (constaté le 2026-11-12 : les deux `/metrics`
+    rendaient les compteurs `pro-shelves`), alors que `wrangler dev` les
+    sépare (60 paires d'appels concurrents, zéro erreur, essai du
+    2026-11-12). Le mécanisme du runtime n'est pas prouvé ; le préfixe ne
+    dépend d'aucun choix d'hôte.
+  - Les anciens hôtes restent interceptés et aiguillés par l'hôte le temps
+    d'**un** déploiement (un conteneur démarré avant la bascule garde ses
+    anciennes adresses) ; ils se retirent au suivant
+    (`LEGACY_OBJECT_HOSTS`).
 - **Clé** : `r:<révision>/company:<id>` ou `r:<révision>/personal`
   (`storageKeyOf`, `apps/lfd-api/container/shelf-store.ts`). La société est
   celle que `@ActingCompany` a résolue en base.

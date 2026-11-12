@@ -3,12 +3,6 @@
 // par portée, un instant de lecture par sujet) — `day-versions.ts` ne fait que
 // les relier au stockage SQLite, et ces fonctions pures sont sous tests.
 
-/** L'hôte fictif que le conteneur appelle et que le Worker intercepte. */
-export const DAY_VERSIONS_HOST = "journees.interne";
-
-/** L'adresse complète, posée par le Worker dans l'environnement du conteneur. */
-export const DAY_VERSIONS_ORIGIN = `http://${DAY_VERSIONS_HOST}`;
-
 /** Le nom de la variable que `AppConfig.dayVersionsCacheUrl()` lit. */
 export const DAY_VERSIONS_ENV = "DAY_VERSIONS_CACHE_URL";
 

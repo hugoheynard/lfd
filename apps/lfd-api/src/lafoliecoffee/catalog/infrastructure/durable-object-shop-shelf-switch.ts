@@ -17,7 +17,7 @@ const HTTP_OK = 200;
 
 /**
  * **L'interrupteur du Durable Object des rayons pro**, par le même chemin
- * interne que la lecture (`http://rayons.interne`, gestionnaire de sortie
+ * interne que la lecture (`http://objets.interne/rayons`, gestionnaire de sortie
  * du Worker). Une classe à part de `DurableObjectShopShelfCache` : elle ne
  * change pas pour la même raison (un geste d'exploitation, pas un rayon).
  */

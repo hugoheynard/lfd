@@ -12,7 +12,7 @@ const HTTP_NOT_FOUND = 404;
 
 /**
  * **Les contenus versionnés, dans le Durable Object `DayVersions`** — le même
- * hôte que les numéros (`http://journees.interne`), sous `/contents/<clé>`. La
+ * hôte que les numéros (`http://objets.interne/journees`), sous `/contents/<clé>`. La
  * révision part avec chaque appel, et l'objet la met dans sa clé.
  *
  * Toute réponse inattendue est {@link UnreadableDayVersionsReplyError} ; une

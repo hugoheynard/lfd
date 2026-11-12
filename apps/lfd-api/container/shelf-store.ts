@@ -11,16 +11,6 @@
 // `Clock`) à la lecture, et l'échéance au rangement. Une seule horloge décide
 // de l'âge d'un rayon, celle que `lint:clock-port` tient.
 
-/**
- * L'hôte fictif que le conteneur appelle, et que le Worker intercepte
- * (gestionnaire de sortie). En `http://` : seul l'HTTP est intercepté par
- * défaut, une adresse `https://` partirait sur internet (§ 1).
- */
-export const SHELF_STORE_HOST = "rayons.interne";
-
-/** L'adresse complète, posée par le Worker dans l'environnement du conteneur. */
-export const SHELF_STORE_ORIGIN = `http://${SHELF_STORE_HOST}`;
-
 /** Le nom de la variable que `AppConfig.shopShelfCacheUrl()` lit. */
 export const SHELF_STORE_ENV = "SHOP_SHELF_CACHE_URL";
 

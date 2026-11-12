@@ -33,7 +33,7 @@ export type ShelfFetch = (url: string, init: RequestInit) => Promise<Response>;
 
 /**
  * **Le magasin des rayons pro, dans un Durable Object** (`le-rayon-en-cache.md`,
- * § 4). Le conteneur l'appelle à `http://rayons.interne` : un nom fictif que le
+ * § 4). Le conteneur l'appelle à `http://objets.interne/rayons` : un nom fictif que le
  * Worker intercepte (gestionnaire de sortie), et qu'il refuse à tout autre
  * appelant que ce conteneur. Ni route publique, ni jeton.
  *

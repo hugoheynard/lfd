@@ -7,7 +7,7 @@
 //
 // Le chemin d'une purge publique, et pourquoi il fait un détour :
 //
-//   API ──http://rayons.interne/public/purge──▶ gestionnaire de sortie
+//   API ──http://objets.interne/rayons/public/purge──▶ gestionnaire de sortie
 //        (point d'entrée `ContainerProxy`, appelant contrôlé par `containerId`)
 //     ──boucle locale, `props` de purge──▶ point d'entrée PAR DÉFAUT
 //     ──▶ `ctx.cache.purge({ tags: [<étiquette de la liste fermée>] })`
@@ -66,7 +66,7 @@ export function purgeableTagOf(url: URL): PurgeableTag | null {
   return PURGEABLE_TAGS.find((tag) => tag === asked[0]) ?? null;
 }
 
-/** Le chemin que l'API appelle chez `rayons.interne` pour purger une étiquette de Workers Cache. */
+/** Le chemin (sous le préfixe de l'objet des rayons) que l'API appelle pour purger une étiquette de Workers Cache. */
 export const PUBLIC_SHELF_PURGE_PATH = "/public/purge";
 
 /**
