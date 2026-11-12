@@ -188,6 +188,7 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   SalesContext: "pim",
   VatRate: "pim",
   Product: "pim",
+  PimChange: "pim",
   ProductVariant: "pim",
   ProductPackaging: "pim",
   // Hors service depuis le 2026-09-22 : plus aucun code ne l'ouvre, et la table
