@@ -1,0 +1,86 @@
+/* Les cadrans reprennent le registre de l'en-tête de Santé : un seul instrument, des filets. */
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+.gauges {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface-card);
+  overflow: hidden;
+}
+
+.gauge {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-md);
+  border-left: 1px solid var(--fold-color-border-subtle);
+
+  &:first-child {
+    border-left: 0;
+  }
+}
+
+.gauge-label {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.gauge-value {
+  color: var(--fold-color-text);
+  font-size: var(--fold-text-xl);
+  font-weight: 500;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+
+  i {
+    color: var(--fold-color-text-muted);
+    font-size: var(--fold-text-sm);
+    font-style: normal;
+  }
+}
+
+.gauge-note,
+.muted {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.charts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+
+  figcaption {
+    font-size: var(--fold-text-sm);
+    color: var(--fold-color-text-secondary);
+  }
+
+  svg {
+    width: 100%;
+    height: 120px;
+    border-bottom: 1px solid var(--fold-color-border-subtle);
+  }
+}
+
+.line {
+  fill: none;
+  stroke: var(--fold-color-primary);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}

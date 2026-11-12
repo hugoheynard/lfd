@@ -11,6 +11,17 @@ export { HEALTH_REASONS, isHealthReason } from "./health.js";
 export type { HealthReason, NodeReading, NodeHealth, EcosystemHealth } from "./health.js";
 
 export type { CacheCallReport, CacheOutcomeView, CacheReport } from "./cache.js";
+export type {
+  CacheFallbackCount,
+  CacheMetricsReport,
+  InstanceCacheReport,
+  ObjectPeakPoint,
+  SharedCacheFigures,
+  SharedCachePoint,
+  SharedCacheSeries,
+  SharedObjectReport,
+  SharedObjectState,
+} from "./cache-metrics.js";
 
 export type { ContainerUsage, ContainerUsageGap, ContainerUsageGapReason } from "./container.js";
 

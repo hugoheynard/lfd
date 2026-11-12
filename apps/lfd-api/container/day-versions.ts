@@ -17,6 +17,14 @@ import {
   type VersionsCard,
 } from "./day-versions-store";
 import {
+  contentCacheOfPath,
+  DAY_VERSIONS_METRICS_CACHE,
+  parseMetricsCall,
+  sizesByContentCache,
+  servedPersonOf,
+} from "./cache-metrics-store";
+import { HourlyCacheMetrics } from "./hourly-cache-metrics";
+import {
   acceptsContentBody,
   type ContentCall,
   parseContentCall,
@@ -25,6 +33,9 @@ import {
 
 /** Le nom de l'instance unique : une seule copie, quel que soit le nombre d'API. */
 export const DAY_VERSIONS_INSTANCE = "day-versions-weur";
+
+/** Les deux entiers d'une ligne de carte (`version`, `read_at`), comptés huit octets chacun. */
+const CARD_ROW_INTEGER_BYTES = 16;
 
 /** L'objet ne lit aucune liaison ni aucun secret. */
 type DayVersionsEnv = Record<string, never>;
@@ -51,6 +62,8 @@ interface ContentRow extends Record<string, string | number> {
  * d'une image précédente : un cache, retiré au premier démarrage.
  */
 export class DayVersions extends DurableObject<DayVersionsEnv> {
+  private readonly metrics: HourlyCacheMetrics;
+
   constructor(ctx: DurableObjectState, env: DayVersionsEnv) {
     super(ctx, env);
     this.ctx.storage.sql.exec("DROP TABLE IF EXISTS cards");
@@ -65,20 +78,34 @@ export class DayVersions extends DurableObject<DayVersionsEnv> {
       "CREATE TABLE IF NOT EXISTS contents (key TEXT PRIMARY KEY, version INTEGER NOT NULL, " +
         "body TEXT NOT NULL)",
     );
+    this.metrics = new HourlyCacheMetrics(this.ctx.storage.sql);
   }
 
   override async fetch(request: Request): Promise<Response> {
+    // L'heure est une mesure : aucune décision de l'objet n'en dépend.
+    this.metrics.request(Date.now());
     const url = new URL(request.url);
+    const metrics = parseMetricsCall(request.method, url);
+    if (metrics !== null) {
+      return Response.json(this.metrics.read(metrics.sinceMs));
+    }
     const content = parseContentCall(request.method, url);
     if (content !== null) {
-      return this.content(content, request);
+      return this.content(content, request, contentCacheOfPath(url.pathname));
     }
     const call = parseDayVersionsCall(request.method, url);
     if (call === null) {
       return new Response(null, { status: 400 });
     }
     if (call.kind === "read") {
-      return this.read(call.key);
+      const read = this.read(call.key);
+      this.metrics.count(
+        DAY_VERSIONS_METRICS_CACHE,
+        read.ok ? "hit" : "miss",
+        Date.now(),
+        servedPersonOf(request.headers),
+      );
+      return read;
     }
     const card = parseVersionsCard(await bodyJson(request));
     return card === null
@@ -86,7 +113,51 @@ export class DayVersions extends DurableObject<DayVersionsEnv> {
       : this.store(call.key, call.scope, card);
   }
 
-  private async content(call: ContentCall, request: Request): Promise<Response> {
+  private async content(call: ContentCall, request: Request, cache: string): Promise<Response> {
+    const response = await this.contentResponse(call, request);
+    this.countContent(call, cache, response.status, servedPersonOf(request.headers));
+    return response;
+  }
+
+  /**
+   * Les compteurs d'un appel de contenu, au nom du cache que la clé porte en
+   * préfixe. L'heure est une mesure : le seul `Date.now()` de l'objet, et
+   * aucune décision n'en dépend.
+   */
+  private countContent(
+    call: ContentCall,
+    cache: string,
+    status: number,
+    person: string | null,
+  ): void {
+    const nowMs = Date.now();
+    if (call.kind === "content-read") {
+      this.metrics.count(cache, status === 200 ? "hit" : "miss", nowMs, person);
+      return;
+    }
+    this.metrics.count(cache, status === 201 ? "store" : "too_large", nowMs);
+    if (status === 201) {
+      this.recordContentSize(cache, nowMs);
+    }
+  }
+
+  private recordContentSize(cache: string, nowMs: number): void {
+    try {
+      const rows = this.ctx.storage.sql
+        .exec<{ key: string; bytes: number }>(
+          "SELECT key, length(CAST(body AS BLOB)) AS bytes FROM contents",
+        )
+        .toArray();
+      const size = sizesByContentCache(rows).get(cache);
+      if (size !== undefined) {
+        this.metrics.size(cache, size, nowMs);
+      }
+    } catch (error) {
+      console.error("Taille des contenus non relevée", error);
+    }
+  }
+
+  private async contentResponse(call: ContentCall, request: Request): Promise<Response> {
     if (call.kind === "content-read") {
       const [row] = this.ctx.storage.sql
         .exec<ContentRow>("SELECT version, body FROM contents WHERE key = ?", call.key)
@@ -151,7 +222,32 @@ export class DayVersions extends DurableObject<DayVersionsEnv> {
         oldestKeptDay(newest),
       );
     }
+    this.countCardsStore();
     return new Response(null, { status: 201 });
+  }
+
+  /** Un rangement de carte, et la taille des cartes gardées (texte + deux entiers par ligne). */
+  private countCardsStore(): void {
+    const nowMs = Date.now();
+    this.metrics.count(DAY_VERSIONS_METRICS_CACHE, "store", nowMs);
+    try {
+      const [size] = this.ctx.storage.sql
+        .exec<{ bytes: number | null; entries: number }>(
+          "SELECT SUM(length(CAST(key AS BLOB)) + length(CAST(scope AS BLOB)) + " +
+            "length(CAST(subject AS BLOB)) + ?) AS bytes, COUNT(*) AS entries FROM subject_cards",
+          CARD_ROW_INTEGER_BYTES,
+        )
+        .toArray();
+      if (size !== undefined) {
+        this.metrics.size(
+          DAY_VERSIONS_METRICS_CACHE,
+          { bytes: size.bytes ?? 0, entries: size.entries },
+          nowMs,
+        );
+      }
+    } catch (error) {
+      console.error("Taille des cartes non relevée", error);
+    }
   }
 }
 

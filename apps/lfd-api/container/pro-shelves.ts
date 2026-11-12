@@ -7,6 +7,8 @@
 // tests. Ici, seulement le SQL qui les relie.
 import { DurableObject } from "cloudflare:workers";
 
+import { parseMetricsCall, PRO_SHELVES_METRICS_CACHE, servedPersonOf } from "./cache-metrics-store";
+import { HourlyCacheMetrics } from "./hourly-cache-metrics";
 import {
   isEnabled,
   isPublicEnabled,
@@ -44,6 +46,8 @@ type ProShelvesEnv = Record<string, never>;
  * glisser entre le contrôle de version et le rangement.
  */
 export class ProShelves extends DurableObject<ProShelvesEnv> {
+  private readonly metrics: HourlyCacheMetrics;
+
   constructor(ctx: DurableObjectState, env: ProShelvesEnv) {
     super(ctx, env);
     this.ctx.storage.sql.exec(
@@ -53,10 +57,18 @@ export class ProShelves extends DurableObject<ProShelvesEnv> {
     this.ctx.storage.sql.exec(
       "CREATE TABLE IF NOT EXISTS meta (name TEXT PRIMARY KEY, value INTEGER NOT NULL)",
     );
+    this.metrics = new HourlyCacheMetrics(this.ctx.storage.sql);
   }
 
   override async fetch(request: Request): Promise<Response> {
-    const call = parseShelfCall(request.method, new URL(request.url));
+    // L'heure est une mesure : aucune décision de l'objet n'en dépend.
+    this.metrics.request(Date.now());
+    const url = new URL(request.url);
+    const metrics = parseMetricsCall(request.method, url);
+    if (metrics !== null) {
+      return Response.json(this.metrics.read(metrics.sinceMs));
+    }
+    const call = parseShelfCall(request.method, url);
     if (call === null) {
       return new Response(null, { status: 400 });
     }
@@ -64,6 +76,51 @@ export class ProShelves extends DurableObject<ProShelvesEnv> {
   }
 
   private async serve(call: ShelfCall, request: Request): Promise<Response> {
+    const response = await this.answer(call, request);
+    this.countCall(call.kind, response.status, servedPersonOf(request.headers));
+    return response;
+  }
+
+  /**
+   * Les compteurs d'un appel, après la réponse décidée. L'heure est une
+   * mesure : aucune décision de l'objet n'en dépend (l'échéance d'un rayon se
+   * juge sur l'instant de l'API).
+   */
+  private countCall(kind: ShelfCall["kind"], status: number, person: string | null): void {
+    const nowMs = Date.now();
+    if (kind === "read") {
+      this.metrics.count(PRO_SHELVES_METRICS_CACHE, status === 200 ? "hit" : "miss", nowMs, person);
+      return;
+    }
+    if (kind === "store" && status === 201) {
+      this.metrics.count(PRO_SHELVES_METRICS_CACHE, "store", nowMs);
+    }
+    if (kind === "store" || kind === "erase" || kind === "switch") {
+      this.recordSize(nowMs);
+    }
+  }
+
+  private recordSize(nowMs: number): void {
+    try {
+      const [size] = this.ctx.storage.sql
+        .exec<{ bytes: number | null; entries: number }>(
+          "SELECT SUM(length(body) + length(CAST(key AS BLOB))) AS bytes, COUNT(*) AS entries " +
+            "FROM shelves",
+        )
+        .toArray();
+      if (size !== undefined) {
+        this.metrics.size(
+          PRO_SHELVES_METRICS_CACHE,
+          { bytes: size.bytes ?? 0, entries: size.entries },
+          nowMs,
+        );
+      }
+    } catch (error) {
+      console.error("Taille des rayons non relevée", error);
+    }
+  }
+
+  private async answer(call: ShelfCall, request: Request): Promise<Response> {
     switch (call.kind) {
       case "read":
         return this.read(call.key, call.nowMs);

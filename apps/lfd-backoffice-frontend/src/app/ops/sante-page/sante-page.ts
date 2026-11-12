@@ -9,7 +9,13 @@ import {
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { FoldButtonComponent, FoldLoadingStateComponent } from 'fold-ng';
+import {
+  FoldButtonComponent,
+  FoldLoadingStateComponent,
+  FoldTabPanelComponent,
+  FoldTabsComponent,
+  type FoldTabItem,
+} from 'fold-ng';
 import type {
   CapabilitiesReport,
   EcosystemHealth,
@@ -18,6 +24,7 @@ import type {
 } from '@lfd/ops-contract';
 
 import { Capabilities, type CapabilitiesState } from '../capabilities/capabilities';
+import { CacheBoard } from '../cache-board/cache-board';
 import { CacheOutcomes } from '../cache-outcomes/cache-outcomes';
 import { ChargeTable } from '../charge-table/charge-table';
 import { DeadLetters } from '../dead-letters/dead-letters';
@@ -37,6 +44,13 @@ const WINDOW_MINUTES = 5;
 const REFRESH_MS = 15_000;
 
 type LoadState = 'loading' | 'ready' | 'error';
+
+type SanteTab = 'health' | 'cache';
+
+const TABS: readonly FoldTabItem<SanteTab>[] = [
+  { key: 'health', label: 'Écosystème' },
+  { key: 'cache', label: 'Cache' },
+];
 
 /**
  * **Santé de l'écosystème** — la carte, et les trois chiffres qui la
@@ -58,6 +72,7 @@ type LoadState = 'loading' | 'ready' | 'error';
   standalone: true,
   imports: [
     PostDeployBanner,
+    CacheBoard,
     CacheOutcomes,
     Capabilities,
     ChargeTable,
@@ -67,6 +82,8 @@ type LoadState = 'loading' | 'ready' | 'error';
     EcosystemMap,
     FoldButtonComponent,
     FoldLoadingStateComponent,
+    FoldTabPanelComponent,
+    FoldTabsComponent,
     MediaThresholds,
     PricingProbe,
     RouterLink,
@@ -86,6 +103,9 @@ export class SantePage {
    */
   protected readonly heldFor = (since: string): string =>
     elapsedSince(since, Date.parse(this.health()?.generatedAt ?? since));
+
+  protected readonly tabs = TABS;
+  protected readonly tab = signal<SanteTab>('health');
 
   private readonly ops = inject(OpsService);
   private readonly permissions = inject(PermissionsStore);

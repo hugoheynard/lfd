@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 
 import type { DeadLettersView } from '@lfd/contracts';
 import type {
+  CacheMetricsReport,
   CapabilitiesReport,
   EcosystemHealth,
   MediaThresholdsReport,
@@ -43,6 +44,13 @@ export class OpsService {
   pricingProbe(): Promise<PricingProbeReport> {
     return firstValueFrom(
       this.http.get<PricingProbeReport>(`${B2B_API_BASE}/admin/ops/health/pricing`),
+    );
+  }
+
+  /** Les compteurs des caches partagés, comptés dans les objets, sur `days` jours. */
+  caches(days: number): Promise<CacheMetricsReport> {
+    return firstValueFrom(
+      this.http.get<CacheMetricsReport>(`${B2B_API_BASE}/admin/ops/caches?days=${days}`),
     );
   }
 

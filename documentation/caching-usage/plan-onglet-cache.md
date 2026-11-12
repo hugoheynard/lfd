@@ -33,6 +33,13 @@ seul endroit commun à tous les containers, donc la mesure est globale.
   gardée 30 jours. Les caches suivis : `day-versions` (numéros),
   `catalog-admin`, `pim-list`, `pim-referentials`, `pim-product`, rayons pro
   et public.
+- **Personnes servies et pic** (décidé par Hugo le 2026-11-12) : l'API joint
+  à chaque appel d'un objet une empreinte irréversible de la personne
+  (`sha256` d’un sel dérivé de `FIELD_ENCRYPTION_KEY` et de l’identifiant interne, jamais
+  d'e-mail, de nom ni de `sub`) ; l'objet compte par heure et par cache les
+  personnes DISTINCTES servies (empreintes de l'heure en cours seulement,
+  seul le compte reste), un appel sans personne n'est pas compté. Et par
+  heure, le plus de requêtes reçues par l'objet en une seconde.
 - **Ce que l'API ajoute** : les replis vers la base (objet lent ou en panne)
   et la durée des appels, déjà mesurés par instance, servis à côté.
 - **Une route** `GET admin/ops/caches?days=30` sous le droit de la santé :

@@ -1,0 +1,141 @@
+@switch (state()) {
+  @case ('loading') {
+    <fold-loading message="Lecture des compteurs des caches…" />
+  }
+  @case ('error') {
+    <fold-empty-state
+      tone="alert"
+      title="Compteurs illisibles"
+      subtitle="La lecture a échoué. Ce ne sont pas les caches qui sont tombés, c'est l'écran qui ne les voit plus."
+    >
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  }
+  @default {
+    @for (notice of silentObjects(); track notice.object) {
+      <fold-callout [variant]="notice.tone">
+        L'objet <strong>{{ notice.object }}</strong> est {{ notice.text }}
+      </fold-callout>
+    }
+
+    @if (caches().length === 0) {
+      <fold-empty-state
+        title="Aucun cache compté"
+        subtitle="Les objets partagés n'ont compté aucune lecture sur la période."
+      >
+        <fold-icon empty-icon name="archive" />
+      </fold-empty-state>
+    } @else {
+      <section class="gauges" aria-label="Chiffres clés des caches">
+        <div class="gauge">
+          <span class="gauge-label">Taux de réussite</span>
+          <span class="gauge-value">{{
+            head().hour.hitRate === null ? '—' : (head().hour.hitRate | percent: '1.0-1')
+          }}</span>
+          <span class="gauge-note"
+            >24 h :
+            {{ head().day.hitRate === null ? '—' : (head().day.hitRate | percent: '1.0-1') }}</span
+          >
+        </div>
+        <div class="gauge">
+          <span class="gauge-label">Lectures évitées</span>
+          <span class="gauge-value">{{ head().hour.hits | number: '1.0-0' }}</span>
+          <span class="gauge-note">24 h : {{ head().day.hits | number: '1.0-0' }}</span>
+        </div>
+        <div class="gauge">
+          <span class="gauge-label">Taille rangée</span>
+          <span class="gauge-value">{{ bytesLabel(head().day.bytes) }}</span>
+          <span class="gauge-note">dernier relevé, tous caches</span>
+        </div>
+        <div class="gauge">
+          <span class="gauge-label">Personnes servies</span>
+          <span class="gauge-value">{{ head().hour.persons | number: '1.0-0' }}</span>
+          <span class="gauge-note"
+            >24 h : {{ head().day.persons | number: '1.0-0' }} au plus fort d'une heure</span
+          >
+        </div>
+        <div class="gauge">
+          <span class="gauge-label">Pic de requêtes</span>
+          <span class="gauge-value">{{ head().peakHour ?? '—' }} <i>/ s</i></span>
+          <span class="gauge-note">24 h : {{ head().peakDay ?? '—' }} / s</span>
+        </div>
+        <div class="gauge">
+          <span class="gauge-label">Durée des appels</span>
+          <span class="gauge-value">{{ head().p95Ms ?? '—' }} <i>ms</i></span>
+          <span class="gauge-note"
+            >95ᵉ centile, cette instance, {{ head().windowMinutes }} min</span
+          >
+        </div>
+        <div class="gauge">
+          <span class="gauge-label">Replis vers la base</span>
+          <span class="gauge-value">{{ head().fallbacks | number: '1.0-0' }}</span>
+          <span class="gauge-note">cette instance, {{ head().windowMinutes }} min</span>
+        </div>
+      </section>
+
+      <fold-card>
+        <fold-element-title
+          variant="title"
+          title="Sur la période"
+          subtitle="Une heure par point ; une heure sans lecture coupe la courbe du taux."
+        />
+        <div class="charts">
+          <fold-listbox
+            label="Cache"
+            [options]="cacheOptions()"
+            [value]="selected()?.cache ?? null"
+            (selectionChange)="chosen.set($event)"
+          />
+          <figure class="chart">
+            <figcaption>
+              Taille rangée — au plus {{ bytesLabel(sizeLine()?.peak ?? null) }}
+            </figcaption>
+            @if (sizeLine(); as line) {
+              <svg
+                [attr.viewBox]="'0 0 ' + box.width + ' ' + box.height"
+                preserveAspectRatio="none"
+                role="img"
+                aria-label="Taille rangée sur la période"
+              >
+                <path class="line" [attr.d]="line.path" />
+              </svg>
+            } @else {
+              <p class="muted">Aucune taille relevée sur la période.</p>
+            }
+          </figure>
+          <figure class="chart">
+            <figcaption>Taux de réussite — de 0 à 100 %</figcaption>
+            @if (rateLine(); as line) {
+              <svg
+                [attr.viewBox]="'0 0 ' + box.width + ' ' + box.height"
+                preserveAspectRatio="none"
+                role="img"
+                aria-label="Taux de réussite sur la période"
+              >
+                <path class="line" [attr.d]="line.path" />
+              </svg>
+            } @else {
+              <p class="muted">Aucune lecture sur la période.</p>
+            }
+          </figure>
+        </div>
+      </fold-card>
+
+      <fold-card>
+        <fold-element-title
+          variant="title"
+          title="Par cache"
+          subtitle="L'heure en cours et les 24 dernières heures."
+        />
+        <fold-data-table
+          caption="Compteurs par cache"
+          narrowLayout="cards"
+          [columns]="columns"
+          [rows]="caches()"
+          [rowKey]="rowKey"
+          [empty]="nothing"
+        />
+      </fold-card>
+    }
+  }
+}

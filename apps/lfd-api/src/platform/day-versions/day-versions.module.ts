@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { CallDeadline, NodeCallDeadline } from "../cache-calls/call-deadline.js";
+import { personStampedFetch } from "../cache-calls/served-person.js";
 import { AppConfig } from "../config/app-config.js";
 import { DayVersionsCache } from "./day-versions-cache.js";
 import { DayVersionsController } from "./day-versions.controller.js";
@@ -37,7 +38,11 @@ import { VersionedContents } from "./versioned-contents.js";
         const url = config.dayVersionsCacheUrl();
         return url === null
           ? new NoDayVersionsCache()
-          : new DurableObjectDayVersionsCache(url, config.revision());
+          : new DurableObjectDayVersionsCache(
+              url,
+              config.revision(),
+              personStampedFetch(config.cachePersonSalt()),
+            );
       },
     },
     {
@@ -47,7 +52,11 @@ import { VersionedContents } from "./versioned-contents.js";
         const url = config.dayVersionsCacheUrl();
         return url === null
           ? new NoVersionedContentCache()
-          : new DurableObjectVersionedContentCache(url, config.revision());
+          : new DurableObjectVersionedContentCache(
+              url,
+              config.revision(),
+              personStampedFetch(config.cachePersonSalt()),
+            );
       },
     },
     VersionedContents,

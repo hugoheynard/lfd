@@ -505,6 +505,9 @@ async function triggerQualityUploadSweep(env: Env): Promise<void> {
   for (const path of [
     "admin/production/quality/sweep",
     "admin/delivery/journal/sweep",
+    // Le journal du référentiel (`documentation/caching-usage/plan-lectures-du-pim.md`,
+    // § 4.1) : sa propre route, la passe du commerce n'atteint pas le PIM.
+    "admin/pim/changes/sweep",
     "admin/delivery/geocoding/sweep",
     "admin/delivery/positions/sweep",
     // L'anonymisation des messages « Nous écrire » traités depuis douze mois

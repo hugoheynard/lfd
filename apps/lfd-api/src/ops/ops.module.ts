@@ -33,6 +33,10 @@ import { ContainerMetricsReader } from "./container/container-metrics-reader.por
 import { ContainerUsageService } from "./container/container-usage.service.js";
 import { GraphqlContainerMetricsReader } from "./container/graphql-container-metrics.reader.js";
 import { UnconfiguredContainerMetricsReader } from "./container/unconfigured-container-metrics.reader.js";
+import { AdminCachesController } from "./caches/admin-caches.controller.js";
+import { DurableObjectCacheMetricsReader } from "./caches/durable-object-cache-metrics.reader.js";
+import { ReadCacheMetricsHandler } from "./caches/read-cache-metrics.handler.js";
+import { SharedCacheMetricsReader } from "./caches/shared-cache-metrics.reader.js";
 import { PostDeployModule } from "./post-deploy/post-deploy.module.js";
 
 /**
@@ -74,6 +78,7 @@ const FRONTEND_PROBES: readonly NodeProbe[] = TOPOLOGY.flatMap((node) =>
     AdminPricingProbeController,
     AdminMediaThresholdsController,
     AdminCapabilitiesController,
+    AdminCachesController,
     VitalsController,
   ],
   providers: [
@@ -113,6 +118,18 @@ const FRONTEND_PROBES: readonly NodeProbe[] = TOPOLOGY.flatMap((node) =>
     // lu par un port étroit — la même source que la route au jeton.
     ReadCapabilitiesHandler,
     { provide: CapabilityInventory, useClass: StartupCapabilityInventory },
+    // L'onglet Cache : les compteurs lus DANS les objets partagés, par leur
+    // route interne ; sans adresse, chaque objet se dit non configuré.
+    ReadCacheMetricsHandler,
+    {
+      provide: SharedCacheMetricsReader,
+      inject: [AppConfig],
+      useFactory: (config: AppConfig): SharedCacheMetricsReader =>
+        new DurableObjectCacheMetricsReader([
+          { object: "day-versions", origin: config.dayVersionsCacheUrl() },
+          { object: "pro-shelves", origin: config.shopShelfCacheUrl() },
+        ]),
+    },
     // CPU et mémoire du container de l'API. Même choix au démarrage que le
     // trafic, mais SANS répétition : un CPU inventé est précisément la
     // confusion que ce chiffre vient lever. Non configuré, il le dit.

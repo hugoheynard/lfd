@@ -367,6 +367,19 @@ export class AppConfig {
   }
 
   /**
+   * Le sel de l'empreinte des personnes servies par les objets partagés
+   * (onglet Cache de la santé). DÉRIVÉ de la clé du coffre par HKDF-SHA256
+   * sous son étiquette, comme les autres empreintes : pas de variable de plus
+   * (décidé par Hugo le 2026-11-12). Une rotation de `FIELD_ENCRYPTION_KEY`
+   * ne fausse que le compte de l'heure en cours.
+   */
+  cachePersonSalt(): string {
+    return Buffer.from(
+      hkdfSync("sha256", this.fieldKey, Buffer.alloc(0), CACHE_SERVED_PERSON_KEY_INFO, 32),
+    ).toString("hex");
+  }
+
+  /**
    * L'instantané du catalogue est-il gardé en mémoire ? `CATALOGUE_SNAPSHOT_MEMORY`,
    * `on` par défaut ; `off` = l'arrêt d'urgence, chaque requête relit la base
    * (`le-catalogue-en-memoire.md`, § 2.2).
@@ -760,6 +773,7 @@ const MAIL_UNSUBSCRIBE_TOKEN_KEY_INFO = "lfd/mail-unsubscribe/v1";
 
 /** L'étiquette HKDF des empreintes du registre de préférence marketing. */
 const MAIL_MARKETING_PRINT_KEY_INFO = "lfd/mail-unsubscribe-print/v1";
+const CACHE_SERVED_PERSON_KEY_INFO = "lfd/cache-served-person/v1";
 /** L'étiquette HKDF des jetons de confirmation d'un accord (C1) : distincte des deux autres. */
 const MAIL_MARKETING_CONFIRM_KEY_INFO = "lfd/mail-marketing-confirm/v1";
 

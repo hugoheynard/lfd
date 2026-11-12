@@ -22,6 +22,8 @@ const NOT_DEPLOYED: Readonly<Record<string, string>> = {
   MAIL_REQUEST_PURGE: "purge à blanc par défaut — son activation est une décision de Hugo",
   NETWORK_IN_TRANSACTION:
     "mesure du réseau dans une transaction (report par défaut) — enforce sera une décision à part",
+  // Le sel des empreintes de personnes servies (onglet Cache de la santé) :
+  // absent, l'objet ne compte aucune personne. Le secret est à créer par Hugo.
 };
 
 /**
