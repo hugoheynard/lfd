@@ -39,7 +39,7 @@
 
 ## 3. Construire
 
-2. **Purge de la table des gestes (`gesture_intent`)** — **7 jours**
+2. ✅ (`61ce2cbdb`) **Purge de la table des gestes (`gesture_intent`)** — **7 jours**
    (décidé par Hugo le 2026-11-12). Élagueur sur la passe nocturne
    qui purge les journaux, comme `day_change` ; une clé rejouée après la purge
    referait le geste, d'où une durée qui couvre largement les renvois réels
