@@ -216,13 +216,13 @@ expires_at)` et table `meta` (version globale, drapeaux).
 « La prod ne peut jamais tomber en panne. » **Toute panne du cache retombe sur
 la lecture en base.**
 
-| Panne                                       | Ce qui se passe                                                                                                         |
-| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Workers Cache vide, désactivé ou en panne   | l'API calcule depuis la base                                                                                            |
-| l'objet ne répond pas, répond mal, ou tarde | lecture bornée à **400 ms** (`SHELF_CALL_LIMIT_MS`, `shelf-call-guard.ts`, 100 ms jusqu'au 2026-11-05) : passé, la base |
-| l'objet est en panne durable                | disjoncteur : 5 échecs, coupé 30 s (`shelf-cache-breaker.ts`)                                                           |
-| une purge échoue                            | journalisée, **pas comptée ni alertée** ; la durée rattrape (30 s public, 5 min pro)                                    |
-| la version ne se lit pas                    | public : pas offert au bord ; pro : calcul sans rangement                                                               |
+| Panne                                       | Ce qui se passe                                                                                                                                                 |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Workers Cache vide, désactivé ou en panne   | l'API calcule depuis la base                                                                                                                                    |
+| l'objet ne répond pas, répond mal, ou tarde | lecture bornée à **400 ms** (`SHELF_CALL_LIMIT_MS`, `shelf-call-guard.ts`, 100 ms jusqu'au 2026-11-05) : passé, la base                                         |
+| l'objet est en panne durable                | disjoncteur : 5 échecs, coupé 30 s (`shelf-cache-breaker.ts`, sur la brique commune `platform/cache-calls/call-breaker.ts`, partagée avec l'objet des journées) |
+| une purge échoue                            | journalisée, **pas comptée ni alertée** ; la durée rattrape (30 s public, 5 min pro)                                                                            |
+| la version ne se lit pas                    | public : pas offert au bord ; pro : calcul sans rangement                                                                                                       |
 
 **La seule panne que ce repli ne couvre pas** : un conteneur qui ne démarre
 pas (un gestionnaire de sortie sans `ContainerProxy` exporté — constaté en
