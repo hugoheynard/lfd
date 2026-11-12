@@ -1,0 +1,20 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Le numéro global du RÉFÉRENTIEL — `documentation/caching-usage/plan-lectures-du-pim.md`, § 4.1.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// **Le journal des écritures du référentiel**, en ajout seul.
+///
+/// 🔴 Aucun code ne l'écrit : des déclencheurs AU NIVEAU DE L'INSTRUCTION sur
+/// chaque table de `PIM_VERSIONED_TABLES` l'alimentent (migration
+/// `20261112210000_le_journal_du_referentiel`) — une ligne par instruction qui
+/// touche au moins une ligne.
+///
+/// Le numéro `pim` est `max(id)` + `count(*)` (`journal-version.ts`). Les
+/// lignes de plus de sept jours se balaient.
+model PimChange {
+  id        BigInt   @id @default(autoincrement())
+  changedAt DateTime @default(now()) @map("changed_at") @db.Timestamptz(6)
+
+  @@map("pim_change")
+  @@schema("pim")
+}

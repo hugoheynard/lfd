@@ -1,6 +1,8 @@
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import type { ProductComplianceFinding } from "@lfd/pim-contracts";
 
+import { PimContents } from "../../../changes/application/pim-contents.js";
+import { listContent, PIM_CONTENT_KEYS } from "../../../changes/application/pim-content-keys.js";
 import { ActiveSalesContextsReader } from "../../../sales-contexts/domain/ports/active-sales-contexts.reader.js";
 import { CategoryNotFoundError } from "../../category/domain/errors/category-errors.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
@@ -52,7 +54,20 @@ export class ListProductsHandler implements IQueryHandler<ListProductsQuery, Pro
     private readonly contexts: ActiveSalesContextsReader,
     private readonly cited: CitedAllergensReader,
     private readonly illustrated: IllustratedProductsReader,
+    private readonly contents: PimContents,
   ) {}
+
+  /**
+   * Servie sous le numéro `pim`, alertes comprises : rien n'y dépend de
+   * l'appelant, et chaque table lue en fait monter le numéro.
+   */
+  execute(): Promise<ProductListItem[]> {
+    return this.contents.contentOf(
+      PIM_CONTENT_KEYS.products,
+      () => this.fromBase(),
+      listContent<ProductListItem>(),
+    );
+  }
 
   /**
    * Familles, taux, contextes et règle du prix pro sont lus UNE fois pour
@@ -63,7 +78,7 @@ export class ListProductsHandler implements IQueryHandler<ListProductsQuery, Pro
    * Les constats de conformité sont rendus sur la même lecture : l'écran
    * n'a plus à relire tout le catalogue par `compliance-warnings`.
    */
-  async execute(): Promise<ProductListItem[]> {
+  private async fromBase(): Promise<ProductListItem[]> {
     const [all, categories, rules] = await Promise.all([
       this.products.listAll(),
       this.categories.listAll(),

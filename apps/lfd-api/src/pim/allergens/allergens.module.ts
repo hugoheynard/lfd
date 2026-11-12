@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { PimDatabaseModule } from "../infra/database/pim-database.module.js";
+import { PimChangesModule } from "../changes/pim-changes.module.js";
 import { ArchiveAllergenCategoryHandler } from "./application/archive-allergen-category.js";
 import { ArchiveAllergenEntryHandler } from "./application/archive-allergen-entry.js";
 import { CreateAllergenCategoryHandler } from "./application/create-allergen-category.js";
@@ -32,7 +33,7 @@ import { PrismaAllergenEntryRepository } from "./infrastructure/prisma-allergen-
  * ailleurs.
  */
 @Module({
-  imports: [PimDatabaseModule],
+  imports: [PimDatabaseModule, PimChangesModule],
   controllers: [AllergenController],
   providers: [
     { provide: AllergenCatalogueReader, useClass: PrismaAllergenCatalogueReader },

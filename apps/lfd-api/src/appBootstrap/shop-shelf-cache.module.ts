@@ -23,6 +23,7 @@ import { CountingShelfCacheSignals } from "../lafoliecoffee/catalog/infrastructu
 import { LoggingShelfCacheSignals } from "../lafoliecoffee/catalog/infrastructure/logging-shelf-cache-signals.js";
 import { NoShopShelfCache } from "../lafoliecoffee/catalog/infrastructure/no-shop-shelf-cache.js";
 import { NodeShelfCallDeadline } from "../lafoliecoffee/catalog/infrastructure/node-shelf-call-deadline.js";
+import { personStampedFetch } from "../platform/cache-calls/served-person.js";
 import { AppConfig } from "../platform/config/app-config.js";
 
 /**
@@ -54,7 +55,11 @@ import { AppConfig } from "../platform/config/app-config.js";
         const url = config.shopShelfCacheUrl();
         return url === null
           ? new NoShopShelfCache()
-          : new DurableObjectShopShelfCache(url, config.revision());
+          : new DurableObjectShopShelfCache(
+              url,
+              config.revision(),
+              personStampedFetch(config.cachePersonSalt()),
+            );
       },
     },
     { provide: ShopShelfEraser, useExisting: ShopShelfCache },

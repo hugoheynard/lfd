@@ -5,6 +5,7 @@ import { CreateAppellationCommand, CreateAppellationHandler } from "../create-ap
 import { ListAppellationsHandler } from "../list-appellations.js";
 import { UpdateAppellationCommand, UpdateAppellationHandler } from "../update-appellation.js";
 import { InMemoryAppellationRepository } from "./in-memory-repositories.js";
+import { DirectPimContents } from "../../../changes/application/__tests__/direct-pim-contents.js";
 
 /**
  * Les appellations sont ouvertes par le geste réel : une donnée que le domaine
@@ -28,7 +29,7 @@ describe("ListAppellationsHandler", () => {
   it("rend les appellations avec ce qui les retient", async () => {
     const appellations = await opened(["aop-beaufort"]);
 
-    const view = await new ListAppellationsHandler(appellations).execute();
+    const view = await new ListAppellationsHandler(appellations, new DirectPimContents()).execute();
 
     expect(view).toEqual([
       {
@@ -46,7 +47,7 @@ describe("ListAppellationsHandler", () => {
   it("ne laisse pas sortir l'identifiant technique", async () => {
     const appellations = await opened(["aop-beaufort"]);
 
-    const view = await new ListAppellationsHandler(appellations).execute();
+    const view = await new ListAppellationsHandler(appellations, new DirectPimContents()).execute();
 
     expect(view[0]).not.toHaveProperty("id");
   });
@@ -61,7 +62,7 @@ describe("ListAppellationsHandler", () => {
       new DirectUnitOfWork(),
     ).execute(new UpdateAppellationCommand("aop-beaufort", { active: false }));
 
-    const view = await new ListAppellationsHandler(appellations).execute();
+    const view = await new ListAppellationsHandler(appellations, new DirectPimContents()).execute();
 
     expect(view.map((row) => [row.code, row.active])).toEqual([["aop-beaufort", false]]);
   });

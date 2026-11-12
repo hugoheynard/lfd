@@ -11,6 +11,7 @@ import { ListVatRatesHandler } from "../list-vat-rates.js";
 import { RemoveVatRateCommand, RemoveVatRateHandler } from "../remove-vat-rate.js";
 import { UpdateVatRateCommand, UpdateVatRateHandler } from "../update-vat-rate.js";
 import { RecordingCatalogReemission } from "../../../catalogue/shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { DirectPimContents } from "../../../changes/application/__tests__/direct-pim-contents.js";
 
 /** Garde des agrégats et reconstitue à chaque lecture — comme la vraie base. */
 class InMemoryRepo extends VatRateRepository {
@@ -248,7 +249,7 @@ describe("ListVatRatesHandler", () => {
     await create.execute(new CreateVatRateCommand({ name: "Normal", percent: 20 }));
     repo.usage.set("tva_1", { takeaway: 3, eatIn: 1 });
 
-    const views = await new ListVatRatesHandler(repo).execute();
+    const views = await new ListVatRatesHandler(repo, new DirectPimContents()).execute();
 
     // Un taux que personne ne vise rend une carte VIDE. Poser un zéro par
     // contexte reviendrait à nommer les contextes dans la réponse, donc à les

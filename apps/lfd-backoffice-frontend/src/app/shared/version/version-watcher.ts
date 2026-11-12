@@ -21,6 +21,7 @@ const GLOBAL_SUBJECTS: Readonly<Record<GlobalVersionSubject, true>> = {
   companies: true,
   'orders-all': true,
   'catalog-admin': true,
+  pim: true,
 };
 
 function isGlobal(subject: VersionSubject): boolean {

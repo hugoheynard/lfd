@@ -8,7 +8,9 @@
 export const CONTENT_MAX_BYTES = 1_048_576;
 
 const CONTENT_PATH = /^\/contents\/([^/]+)$/u;
-const CONTENT_KEY = /^[a-z0-9-]{1,64}$/u;
+// `:` sépare une famille de contenus de son sujet (`pim-product:<id>`) : l'onglet
+// Cache regroupe les contenus par ce préfixe (`cache-metrics-store.ts`).
+const CONTENT_KEY = /^[a-z0-9:-]{1,64}$/u;
 const WHOLE = /^\d+$/u;
 
 /** Un appel de contenu compris par l'objet. */
@@ -24,7 +26,7 @@ export function contentKeyOf(revision: string, key: string): string {
 /** Lit un appel `/contents/<clé>?revision=…&version=…` ; `null` = rien de compris. */
 export function parseContentCall(method: string, url: URL): ContentCall | null {
   const match = CONTENT_PATH.exec(url.pathname);
-  const key = match?.[1] ?? null;
+  const key = decodedSegment(match?.[1] ?? null);
   const revision = url.searchParams.get("revision");
   const rawVersion = url.searchParams.get("version") ?? "";
   const version = Number(rawVersion);
@@ -59,5 +61,17 @@ export function acceptsContentBody(body: string): boolean {
     return true;
   } catch {
     return false;
+  }
+}
+
+/** Le segment de chemin décodé (`%3A` → `:`) ; `null` s'il est mal encodé. */
+function decodedSegment(segment: string | null): string | null {
+  if (segment === null) {
+    return null;
+  }
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return null;
   }
 }

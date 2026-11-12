@@ -7,6 +7,8 @@ import {
   type Locale,
 } from "@lfd/pim-contracts";
 
+import { PimContents } from "../../changes/application/pim-contents.js";
+import { allergenReferenceKey, recordContent } from "../../changes/application/pim-content-keys.js";
 import {
   AllergenCatalogueReader,
   type AllergenCategoryView,
@@ -50,9 +52,21 @@ export class ReadAllergenReferenceHandler implements IQueryHandler<
   ReadAllergenReferenceQuery,
   AllergenReference
 > {
-  constructor(private readonly catalogue: AllergenCatalogueReader) {}
+  constructor(
+    private readonly catalogue: AllergenCatalogueReader,
+    private readonly contents: PimContents,
+  ) {}
 
-  async execute(query: ReadAllergenReferenceQuery): Promise<AllergenReference> {
+  /** Servi sous le numéro `pim`, par portée et par langue : rien n'y dépend de l'appelant. */
+  execute(query: ReadAllergenReferenceQuery): Promise<AllergenReference> {
+    return this.contents.contentOf(
+      allergenReferenceKey(query.scope, query.locale),
+      () => this.fromBase(query),
+      recordContent<AllergenReference>("scope", "entries"),
+    );
+  }
+
+  private async fromBase(query: ReadAllergenReferenceQuery): Promise<AllergenReference> {
     const categories = await this.catalogue.catalogue();
     const entries: AllergenEntry[] = [];
     for (const category of categories) {

@@ -1,5 +1,7 @@
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
+import { PimContents } from "../../../changes/application/pim-contents.js";
+import { listContent, PIM_CONTENT_KEYS } from "../../../changes/application/pim-content-keys.js";
 import type { CategorySnapshot } from "../domain/entities/category.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
 import { ProductCountReader } from "../domain/ports/product-count.reader.js";
@@ -18,7 +20,17 @@ export class ListCategoriesHandler implements IQueryHandler<
   constructor(
     private readonly categories: CategoryRepository,
     private readonly products: ProductCountReader,
+    private readonly contents: PimContents,
   ) {}
+
+  /** Servie sous le numéro `pim` : familles et fiches comptées en sont. */
+  execute(): Promise<CategoryListItem[]> {
+    return this.contents.contentOf(
+      PIM_CONTENT_KEYS.categories,
+      () => this.fromBase(),
+      listContent<CategoryListItem>(),
+    );
+  }
 
   /**
    * Le compte de fiches accompagne chaque famille.
@@ -29,7 +41,7 @@ export class ListCategoriesHandler implements IQueryHandler<
    *
    * Une seule requête pour toutes, jamais une par ligne.
    */
-  async execute(): Promise<CategoryListItem[]> {
+  private async fromBase(): Promise<CategoryListItem[]> {
     const [categories, counts] = await Promise.all([
       this.categories.listAll(),
       this.products.countByCategory(),

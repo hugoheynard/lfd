@@ -144,6 +144,9 @@ servies sortent), une version par fiche.
   `staff`). Accepté et écrit : un fait de contenu accompagne toujours une
   écriture dans `pim` (vérifié au bâti par un test), et un nom de staff
   renommé reste ancien dans l'objet jusqu'au prochain changement du PIM.
+  De même la description d'un visuel (texte alternatif, point focal), lue
+  dans la médiathèque : redécrite, elle reste ancienne dans l'objet jusqu'au
+  prochain changement du PIM (accepté le 2026-11-12).
 - La filiation : si le détail lit `catalog_revision_item`, la table entre au
   numéro (vérifié au bâti).
 - Le droit du numéro s'ouvre aussi à `allergen_matrix:read`. Un store dont la

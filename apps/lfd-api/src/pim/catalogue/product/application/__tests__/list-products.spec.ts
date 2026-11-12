@@ -15,6 +15,7 @@ import {
 import { FixedCitedAllergens } from "../../domain/ports/__tests__/fixed-cited-allergens.js";
 import { FixedIllustratedProducts } from "../../domain/ports/__tests__/fixed-illustrated-products.js";
 import { FixedActiveContexts } from "../../../../sales-contexts/domain/ports/__tests__/fixed-active-contexts.js";
+import { DirectPimContents } from "../../../../changes/application/__tests__/direct-pim-contents.js";
 
 /** Le handler de liste, avec taux et contextes doublés. */
 function listing(
@@ -29,6 +30,7 @@ function listing(
     new FixedActiveContexts(["b2b", "takeaway"]),
     new FixedCitedAllergens(),
     new FixedIllustratedProducts(illustrated),
+    new DirectPimContents(),
   );
 }
 

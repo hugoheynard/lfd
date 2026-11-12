@@ -42,7 +42,10 @@ describe('le veilleur unique', () => {
       const answer: Partial<Record<VersionSubject, number>> = {};
       for (const subject of subjects) {
         const global =
-          subject === 'companies' || subject === 'orders-all' || subject === 'catalog-admin';
+          subject === 'companies' ||
+          subject === 'orders-all' ||
+          subject === 'catalog-admin' ||
+          subject === 'pim';
         const value = served.get(global ? subject : `${subject}|${date}`) ?? 0;
         if (value === 'fail') {
           throw new Error('réseau');
@@ -307,6 +310,16 @@ describe('le veilleur unique', () => {
     expect(reload).not.toHaveBeenCalled();
 
     served.set('companies', 2);
+    await vi.advanceTimersByTimeAsync(TICK);
+    expect(reload).toHaveBeenCalledTimes(1);
+  });
+
+  it('`pim` est un sujet global : suivi sans journée, relu quand son numéro bouge', async () => {
+    const reload = brancher(['pim'], () => null);
+    await vi.advanceTimersByTimeAsync(TICK);
+    expect(versions).toHaveBeenLastCalledWith(null, ['pim']);
+
+    served.set('pim', 7);
     await vi.advanceTimersByTimeAsync(TICK);
     expect(reload).toHaveBeenCalledTimes(1);
   });

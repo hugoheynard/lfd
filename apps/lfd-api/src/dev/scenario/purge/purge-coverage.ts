@@ -204,6 +204,7 @@ export const SCENARIO_PURGED_TABLES: readonly PurgedTable[] = [
   { table: "public.order_change", purgedIn: "journals.purge.ts", referencedBy: [] },
   { table: "public.company_change", purgedIn: "journals.purge.ts", referencedBy: [] },
   { table: "public.catalog_admin_change", purgedIn: "journals.purge.ts", referencedBy: [] },
+  { table: "pim.pim_change", purgedIn: "journals.purge.ts", referencedBy: [] },
 ];
 
 /** Ce que la purge laisse exprès, malgré une clé bloquante vers une table purgée. */

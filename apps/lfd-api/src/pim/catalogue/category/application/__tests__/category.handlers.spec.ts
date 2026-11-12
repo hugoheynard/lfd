@@ -41,6 +41,7 @@ import {
   RecordingCatalogEmitter,
   RecordingCatalogReemission,
 } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { DirectPimContents } from "../../../../changes/application/__tests__/direct-pim-contents.js";
 
 /**
  * Le faux dépôt garde des **agrégats**, pas des lignes : c'est ce que le port
@@ -772,7 +773,7 @@ describe("ListCategoriesHandler", () => {
     ).execute(new CreateCategoryCommand({ name: { fr: "Viennoiseries" } }));
     const counts = new StubProductCounts(0, new Map([[created, 3]]));
 
-    const [row] = await new ListCategoriesHandler(repo, counts).execute();
+    const [row] = await new ListCategoriesHandler(repo, counts, new DirectPimContents()).execute();
 
     expect(row?.activeProductCount).toBe(3);
   });
@@ -789,7 +790,11 @@ describe("ListCategoriesHandler", () => {
       new RecordingCatalogEmitter(),
     ).execute(new CreateCategoryCommand({ name: { fr: "Pains" } }));
 
-    const [row] = await new ListCategoriesHandler(repo, new StubProductCounts()).execute();
+    const [row] = await new ListCategoriesHandler(
+      repo,
+      new StubProductCounts(),
+      new DirectPimContents(),
+    ).execute();
 
     expect(row?.activeProductCount).toBe(0);
   });

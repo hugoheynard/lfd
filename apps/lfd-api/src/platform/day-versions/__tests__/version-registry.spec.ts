@@ -17,6 +17,12 @@ describe("VersionRegistry — les sujets, journaliers et globaux", () => {
     expect(registry.readersOf("companies")).toEqual(["b2b_companies:read"]);
     expect(registry.readersOf("orders-all")).toEqual(["b2b_orders:read"]);
     expect(registry.readersOf("catalog-admin")).toEqual(["lfc_catalog:read"]);
+    expect(registry.readersOf("pim")).toEqual([
+      "pim_catalog:read",
+      "pim_tax:read",
+      "pim_settings:read",
+      "allergen_matrix:read",
+    ]);
     expect(registry.readersOf("production")).toEqual(["production_plan:read"]);
   });
 
@@ -27,6 +33,7 @@ describe("VersionRegistry — les sujets, journaliers et globaux", () => {
       "companies",
       "orders-all",
       "catalog-admin",
+      "pim",
     ]);
     expect(registry.subjectsOf("2030-03-12").map((one) => one.subject)).toEqual([
       "orders",
@@ -43,7 +50,12 @@ describe("VersionRegistry — les sujets, journaliers et globaux", () => {
       Object.fromEntries(
         registry.subjectsOf(GLOBAL_SCOPE).map((one) => [one.subject, one.freshMs]),
       ),
-    ).toEqual({ companies: 30_000, "orders-all": 15_000, "catalog-admin": 15_000 });
+    ).toEqual({
+      companies: 30_000,
+      "orders-all": 15_000,
+      "catalog-admin": 15_000,
+      pim: 30_000,
+    });
   });
 
   it("refuse de se construire quand un sujet global n'a pas de source", () => {
@@ -60,6 +72,7 @@ describe("VersionRegistry — les sujets, journaliers et globaux", () => {
         all.companies,
         all["orders-all"],
         all["catalog-admin"],
+        all.pim,
         globalSources().companies,
       ]);
 

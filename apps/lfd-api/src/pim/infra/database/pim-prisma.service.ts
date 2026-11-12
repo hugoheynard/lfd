@@ -67,6 +67,8 @@ export abstract class PimPrismaService {
   abstract readonly ingredientAllergen: PrismaService["ingredientAllergen"];
   /** Les réémissions du catalogue, suivies comme des travaux (2026-10-18). */
   abstract readonly catalogReemissionJob: PrismaService["catalogReemissionJob"];
+  /** Le journal du numéro `pim`, lu et balayé — ses lignes naissent des déclencheurs. */
+  abstract readonly pimChange: PrismaService["pimChange"];
 
   /**
    * Le SQL écrit à la main — pour **un seul usage** à ce jour (vérifié le

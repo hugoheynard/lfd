@@ -1,6 +1,8 @@
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import type { AppellationView } from "@lfd/pim-contracts";
 
+import { PimContents } from "../../changes/application/pim-contents.js";
+import { listContent, PIM_CONTENT_KEYS } from "../../changes/application/pim-content-keys.js";
 import {
   AppellationRepository,
   type AppellationRecord,
@@ -21,9 +23,21 @@ export class ListAppellationsHandler implements IQueryHandler<
   ListAppellationsQuery,
   AppellationView[]
 > {
-  constructor(private readonly appellations: AppellationRepository) {}
+  constructor(
+    private readonly appellations: AppellationRepository,
+    private readonly contents: PimContents,
+  ) {}
 
-  async execute(): Promise<AppellationView[]> {
+  /** Servie sous le numéro `pim` : rien n'y dépend de l'appelant. */
+  execute(): Promise<AppellationView[]> {
+    return this.contents.contentOf(
+      PIM_CONTENT_KEYS.appellations,
+      () => this.fromBase(),
+      listContent<AppellationView>(),
+    );
+  }
+
+  private async fromBase(): Promise<AppellationView[]> {
     const records = await this.appellations.list();
     return records.map(toAppellationView);
   }

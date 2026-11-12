@@ -13,6 +13,8 @@ import { DeliveryModule } from "../delivery/delivery.module.js";
 import { DayVersionRegistry } from "../platform/day-versions/day-version-registry.js";
 import { DayVersionsModule } from "../platform/day-versions/day-versions.module.js";
 import { VersionRegistry } from "../platform/day-versions/version-registry.js";
+import { PimVersionSource } from "../pim/changes/application/pim-version.source.js";
+import { PimChangesModule } from "../pim/changes/pim-changes.module.js";
 import { ProductionDayVersionSource } from "../production/application/services/production-day-version.source.js";
 import { ProductionModule } from "../production/production.module.js";
 
@@ -40,6 +42,7 @@ import { ProductionModule } from "../production/production.module.js";
     CatalogModule,
     ProductionModule,
     DeliveryModule,
+    PimChangesModule,
     DayVersionsModule,
   ],
   providers: [
@@ -65,12 +68,14 @@ import { ProductionModule } from "../production/production.module.js";
         companies: CompaniesVersionSource,
         allOrders: AllOrdersVersionSource,
         catalogAdmin: CatalogAdminVersionSource,
-      ) => new VersionRegistry(days, [companies, allOrders, catalogAdmin]),
+        pim: PimVersionSource,
+      ) => new VersionRegistry(days, [companies, allOrders, catalogAdmin, pim]),
       inject: [
         DayVersionRegistry,
         CompaniesVersionSource,
         AllOrdersVersionSource,
         CatalogAdminVersionSource,
+        PimVersionSource,
       ],
     },
   ],

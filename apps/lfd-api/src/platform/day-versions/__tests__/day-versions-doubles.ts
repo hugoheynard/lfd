@@ -130,6 +130,7 @@ export class RecordingGlobalSource extends GlobalVersionSource {
 export const COMPANIES_FRESH_MS = 30_000;
 export const ALL_ORDERS_FRESH_MS = 15_000;
 export const CATALOG_ADMIN_FRESH_MS = 15_000;
+export const PIM_FRESH_MS = 30_000;
 
 export function globalSources(): Record<GlobalVersionSubject, RecordingGlobalSource> {
   return {
@@ -150,6 +151,12 @@ export function globalSources(): Record<GlobalVersionSubject, RecordingGlobalSou
       ["lfc_catalog:read"],
       CATALOG_ADMIN_FRESH_MS,
       300,
+    ),
+    pim: new RecordingGlobalSource(
+      "pim",
+      ["pim_catalog:read", "pim_tax:read", "pim_settings:read", "allergen_matrix:read"],
+      PIM_FRESH_MS,
+      400,
     ),
   };
 }

@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 
 import { AllergensModule } from "../allergens/allergens.module.js";
 import { PimDatabaseModule } from "../infra/database/pim-database.module.js";
+import { PimChangesModule } from "../changes/pim-changes.module.js";
 import { CreateAppellationHandler } from "./application/create-appellation.js";
 import { CreateIngredientHandler } from "./application/create-ingredient.js";
 import { ListAppellationsHandler } from "./application/list-appellations.js";
@@ -38,7 +39,7 @@ import { IngredientCompositionCopier } from "./infrastructure/ingredient-composi
   // sur une matière suppose de savoir ce que le référentiel reconnaît, et ce
   // qu'il ne propose plus (D2 bis). Il n'expose aucun dépôt d'écriture — la
   // provenance lit le référentiel, elle ne l'administre pas.
-  imports: [PimDatabaseModule, AllergensModule],
+  imports: [PimDatabaseModule, PimChangesModule, AllergensModule],
   controllers: [IngredientController, AppellationController],
   providers: [
     CreateAppellationHandler,

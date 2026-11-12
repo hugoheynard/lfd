@@ -1,6 +1,8 @@
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import type { SalesContextAdminView } from "@lfd/pim-contracts";
 
+import { PimContents } from "../../changes/application/pim-contents.js";
+import { listContent, PIM_CONTENT_KEYS } from "../../changes/application/pim-content-keys.js";
 import { isRootContext } from "../domain/value-objects/bootstrap-contexts.js";
 import { SalesContextRegistry } from "../domain/ports/sales-context.registry.js";
 import { SalesContextRepository } from "../domain/ports/sales-context.repository.js";
@@ -19,9 +21,19 @@ export class ListSalesContextsHandler implements IQueryHandler<
   constructor(
     private readonly contexts: SalesContextRegistry,
     private readonly repository: SalesContextRepository,
+    private readonly contents: PimContents,
   ) {}
 
-  async execute(): Promise<SalesContextAdminView[]> {
+  /** Servie sous le numéro `pim` : contextes et taux qui les retiennent en sont. */
+  execute(): Promise<SalesContextAdminView[]> {
+    return this.contents.contentOf(
+      PIM_CONTENT_KEYS.salesContexts,
+      () => this.fromBase(),
+      listContent<SalesContextAdminView>(),
+    );
+  }
+
+  private async fromBase(): Promise<SalesContextAdminView[]> {
     const [contexts, usage] = await Promise.all([
       this.contexts.all(),
       this.repository.usageByKey(),

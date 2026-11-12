@@ -67,7 +67,8 @@ export async function purgeJournals(
       ],
     },
   });
-  // Les journaux de version globaux (commandes, comptes, écran Catalogue) ne
+  // Les journaux de version globaux (commandes, comptes, écran Catalogue,
+  // référentiel) ne
   // portent que des numéros d'affichage, sans clé vers ce qu'ils annoncent :
   // ils se vident en entier. Un écran ouvert y voit un numéro changé et se
   // relit, rien de plus.
@@ -75,6 +76,7 @@ export async function purgeJournals(
     tx.orderChange.deleteMany({}),
     tx.companyChange.deleteMany({}),
     tx.catalogAdminChange.deleteMany({}),
+    tx.pimChange.deleteMany({}),
   ]);
   return activity + mails.count + versions.reduce((sum, one) => sum + one.count, 0);
 }

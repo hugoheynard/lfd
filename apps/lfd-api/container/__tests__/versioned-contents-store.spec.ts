@@ -33,6 +33,16 @@ describe("objet des journées — les contenus versionnés", () => {
     expect(store?.kind).toBe("content-store");
   });
 
+  it("admet une clé à préfixe `famille:sujet`, encodée comme l'API l'envoie", () => {
+    const key = "pim-product:0b6f1c9e-8a3d-4f7e-9a51-2c4d6e8f0a1b";
+    const read = parseContentCall(
+      "GET",
+      new URL(`${URL_BASE}/contents/${encodeURIComponent(key)}?revision=abc&version=7`),
+    );
+
+    expect(read).toEqual({ kind: "content-read", key: contentKeyOf("abc", key), version: 7 });
+  });
+
   it("deux révisions ne partagent pas une clé", () => {
     expect(contentKeyOf("a", "catalog-admin")).not.toBe(contentKeyOf("b", "catalog-admin"));
   });

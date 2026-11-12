@@ -1,6 +1,7 @@
 import { Logger, Module, type OnModuleInit } from "@nestjs/common";
 
 import { PimDatabaseModule } from "../infra/database/pim-database.module.js";
+import { PimChangesModule } from "../changes/pim-changes.module.js";
 import { StartupReport } from "../../platform/startup/startup-report.service.js";
 import { CreateSalesContextHandler } from "./application/create-sales-context.js";
 import { ListActiveSalesContextsHandler } from "./application/list-active-sales-contexts.js";
@@ -44,7 +45,7 @@ import { PrismaSalesContextRepository } from "./infrastructure/prisma-sales-cont
  * lui, ne sort pas — on règle un contexte par cet écran, pas d'ailleurs.
  */
 @Module({
-  imports: [PimDatabaseModule],
+  imports: [PimDatabaseModule, PimChangesModule],
   controllers: [SalesContextController],
   providers: [
     CreateSalesContextHandler,

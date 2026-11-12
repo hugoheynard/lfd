@@ -17,6 +17,7 @@ import {
   InMemoryIngredientRepository,
 } from "./in-memory-repositories.js";
 import { RecordingCatalogEmitter } from "../../../catalogue/shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { DirectPimContents } from "../../../changes/application/__tests__/direct-pim-contents.js";
 
 const PRODUCT = "prd_1";
 const APPELLATION = "aop-beaufort";
@@ -87,7 +88,7 @@ describe("ListIngredientsHandler", () => {
   it("rend la matière avec son appellation déjà résolue", async () => {
     const ingredients = await declared(["beurre-de-savoie"], APPELLATION);
 
-    const view = await new ListIngredientsHandler(ingredients).execute();
+    const view = await new ListIngredientsHandler(ingredients, new DirectPimContents()).execute();
 
     expect(view[0]).toMatchObject({
       key: "beurre-de-savoie",
@@ -102,7 +103,7 @@ describe("ListIngredientsHandler", () => {
   it("n'attribue aucun compte à l'appellation lue à travers un ingrédient", async () => {
     const ingredients = await declared(["beurre-de-savoie"], APPELLATION);
 
-    const view = await new ListIngredientsHandler(ingredients).execute();
+    const view = await new ListIngredientsHandler(ingredients, new DirectPimContents()).execute();
 
     expect(view[0]?.appellation?.usedBy).toBe(0);
   });
@@ -112,7 +113,7 @@ describe("ListIngredientsHandler", () => {
   it("ne laisse sortir aucun identifiant technique", async () => {
     const ingredients = await declared(["beurre-de-savoie"], APPELLATION);
 
-    const view = await new ListIngredientsHandler(ingredients).execute();
+    const view = await new ListIngredientsHandler(ingredients, new DirectPimContents()).execute();
 
     expect(view[0]).not.toHaveProperty("id");
     expect(view[0]).not.toHaveProperty("appellationId");
@@ -122,7 +123,7 @@ describe("ListIngredientsHandler", () => {
   it("rend une matière sans signe officiel avec une appellation nulle", async () => {
     const ingredients = await declared(["farine-de-meule"]);
 
-    const view = await new ListIngredientsHandler(ingredients).execute();
+    const view = await new ListIngredientsHandler(ingredients, new DirectPimContents()).execute();
 
     expect(view[0]?.appellation).toBeNull();
   });
@@ -133,7 +134,7 @@ describe("ListIngredientsHandler", () => {
     const ingredients = await declared(["beurre-de-savoie"]);
     await cite(ingredients, ["beurre-de-savoie"]);
 
-    const view = await new ListIngredientsHandler(ingredients).execute();
+    const view = await new ListIngredientsHandler(ingredients, new DirectPimContents()).execute();
 
     expect(view[0]?.usedBy).toBe(1);
   });

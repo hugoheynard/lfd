@@ -26,9 +26,12 @@ import { DAY_JOURNALS, type DayJournal, isDayJournal, serviceDaySchema } from ".
  * - `orders-all` — toutes les commandes, quelle que soit leur journée
  *   (`public.order_change`), sous `b2b_orders:read` seul ;
  * - `catalog-admin` — l'écran Catalogue du back-office
- *   (`public.catalog_admin_change`), sous `lfc_catalog:read`.
+ *   (`public.catalog_admin_change`), sous `lfc_catalog:read` ;
+ * - `pim` — le référentiel (`pim.pim_change`), sous `pim_catalog:read`,
+ *   `pim_tax:read`, `pim_settings:read` ou `allergen_matrix:read` : le numéro
+ *   ne dit qu'« un changement a eu lieu », chaque contenu garde sa route.
  */
-export const GLOBAL_VERSION_SUBJECTS = ["companies", "orders-all", "catalog-admin"] as const;
+export const GLOBAL_VERSION_SUBJECTS = ["companies", "orders-all", "catalog-admin", "pim"] as const;
 export type GlobalVersionSubject = (typeof GLOBAL_VERSION_SUBJECTS)[number];
 
 /** Tous les sujets du fil : les journaux de journée, puis les sujets globaux. */

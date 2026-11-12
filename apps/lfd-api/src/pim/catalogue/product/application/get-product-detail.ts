@@ -1,5 +1,7 @@
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
+import { PimContents } from "../../../changes/application/pim-contents.js";
+import { productDetailKey, recordContent } from "../../../changes/application/pim-content-keys.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { PimJournalReader } from "../../../journal/pim-journal-reader.js";
 import { isContentFact } from "../domain/content-facts.js";
@@ -85,12 +87,36 @@ export class GetProductDetailHandler implements IQueryHandler<
     private readonly staffAuthors: StaffAuthorDirectory,
     private readonly categories: CategoryRepository,
     private readonly lineage: DetachmentLineageReader,
+    private readonly contents: PimContents,
   ) {}
 
+  /**
+   * Servi sous le numéro `pim`, sous la clé de la fiche : une ligne par fiche
+   * dans l'objet. Deux parts lues hors du schéma `pim` y entrent, et c'est
+   * accepté (`plan-lectures-du-pim.md`, § 4.4) : la péremption de la
+   * signature — un fait de contenu accompagne toujours une écriture d'une
+   * table versionnée — et le nom du signataire, qui reste l'ancien jusqu'au
+   * prochain changement du référentiel. Une fiche inconnue n'est pas rangée.
+   */
   async execute(query: GetProductDetailQuery): Promise<ProductDetail | null> {
+    try {
+      return await this.contents.contentOf(
+        productDetailKey(query.id),
+        () => this.fromBase(query),
+        recordContent<ProductDetail>("id", "variants"),
+      );
+    } catch (error) {
+      if (error instanceof UnknownProductDetail) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  private async fromBase(query: GetProductDetailQuery): Promise<ProductDetail> {
     const product = await this.products.findById(query.id);
     if (product === null) {
-      return null;
+      throw new UnknownProductDetail(query.id);
     }
     // Une supprimée est absente partout, son détail compris : un 404 nommé
     // (`plan-effacer-une-fiche-archivee.md`, point 5). L'inconnue garde son
@@ -164,3 +190,10 @@ export class GetProductDetailHandler implements IQueryHandler<
     return facts.some((fact) => isContentFact(fact.type));
   }
 }
+
+/**
+ * Une fiche inconnue : rendue `null` par {@link GetProductDetailHandler}, et
+ * jamais rangée dans l'objet — une clé par identifiant demandé ne serait plus
+ * bornée par le nombre de fiches.
+ */
+class UnknownProductDetail extends ProductNotFoundError {}

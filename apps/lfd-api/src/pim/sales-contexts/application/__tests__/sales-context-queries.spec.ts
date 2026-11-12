@@ -8,6 +8,7 @@ import { ROOT_CONTEXT_KEY } from "../../domain/value-objects/bootstrap-contexts.
 import type { SalesContext } from "../../domain/value-objects/sales-context.js";
 import { ListActiveSalesContextsHandler } from "../list-active-sales-contexts.js";
 import { ListSalesContextsHandler } from "../list-sales-contexts.js";
+import { DirectPimContents } from "../../../changes/application/__tests__/direct-pim-contents.js";
 
 const ROOT: SalesContext = {
   id: "sc_root",
@@ -61,7 +62,10 @@ class UsageDouble extends SalesContextRepository {
 
 describe("ListActiveSalesContextsHandler", () => {
   it("rend les contextes en service, en vue maigre", async () => {
-    const views = await new ListActiveSalesContextsHandler(new RegistryDouble()).execute();
+    const views = await new ListActiveSalesContextsHandler(
+      new RegistryDouble(),
+      new DirectPimContents(),
+    ).execute();
 
     expect(views).toEqual([{ key: ROOT_CONTEXT_KEY, label: "Vente en ligne pro", position: 0 }]);
   });
@@ -72,6 +76,7 @@ describe("ListSalesContextsHandler", () => {
     const views = await new ListSalesContextsHandler(
       new RegistryDouble(),
       new UsageDouble(),
+      new DirectPimContents(),
     ).execute();
 
     expect(views).toEqual([

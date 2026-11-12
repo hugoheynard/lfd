@@ -1,6 +1,8 @@
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import type { SalesContextView } from "@lfd/pim-contracts";
 
+import { PimContents } from "../../changes/application/pim-contents.js";
+import { listContent, PIM_CONTENT_KEYS } from "../../changes/application/pim-content-keys.js";
 import { SalesContextRegistry } from "../domain/ports/sales-context.registry.js";
 
 export class ListActiveSalesContextsQuery {}
@@ -18,9 +20,21 @@ export class ListActiveSalesContextsHandler implements IQueryHandler<
   ListActiveSalesContextsQuery,
   SalesContextView[]
 > {
-  constructor(private readonly contexts: SalesContextRegistry) {}
+  constructor(
+    private readonly contexts: SalesContextRegistry,
+    private readonly contents: PimContents,
+  ) {}
 
-  async execute(): Promise<SalesContextView[]> {
+  /** Servie sous le numéro `pim` : rien n'y dépend de l'appelant. */
+  execute(): Promise<SalesContextView[]> {
+    return this.contents.contentOf(
+      PIM_CONTENT_KEYS.activeSalesContexts,
+      () => this.fromBase(),
+      listContent<SalesContextView>(),
+    );
+  }
+
+  private async fromBase(): Promise<SalesContextView[]> {
     const contexts = await this.contexts.active();
     return contexts.map((context) => ({
       key: context.key,

@@ -5,13 +5,18 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { VersionWatcher } from './version-watcher';
 
 /**
- * Le droit qui ouvre chaque sujet global (`plan-veilleur-unique.md`, § 3.3) :
- * un écran ne demande pas un numéro que le serveur ne lui rendrait pas.
+ * Les droits qui ouvrent chaque sujet global (`plan-veilleur-unique.md`,
+ * § 3.3) — l'un suffit, comme au serveur : un écran ne demande pas un numéro
+ * que le serveur ne lui rendrait pas. `pim` s'ouvre à qui lit une part du
+ * référentiel (`plan-lectures-du-pim.md`, § 4.4).
  */
-const SUBJECT_PERMISSION: Readonly<Record<GlobalVersionSubject, StaffPermission>> = {
-  companies: 'b2b_companies:read',
-  'orders-all': 'b2b_orders:read',
-  'catalog-admin': 'lfc_catalog:read',
+const SUBJECT_PERMISSIONS: Readonly<
+  Record<GlobalVersionSubject, readonly [StaffPermission, ...StaffPermission[]]>
+> = {
+  companies: ['b2b_companies:read'],
+  'orders-all': ['b2b_orders:read'],
+  'catalog-admin': ['lfc_catalog:read'],
+  pim: ['pim_catalog:read', 'pim_tax:read', 'pim_settings:read', 'allergen_matrix:read'],
 };
 
 /**
@@ -27,7 +32,10 @@ export function watchGlobalSubjects(
 ): void {
   const permissions = inject(PermissionsStore);
   inject(VersionWatcher).watch({
-    subjects: () => subjects.filter((subject) => permissions.can(SUBJECT_PERMISSION[subject])),
+    subjects: () =>
+      subjects.filter((subject) =>
+        SUBJECT_PERMISSIONS[subject].some((permission) => permissions.can(permission)),
+      ),
     reload,
     ...(held === undefined ? {} : { held }),
   });

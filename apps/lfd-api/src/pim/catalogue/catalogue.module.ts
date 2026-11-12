@@ -15,6 +15,7 @@ import { RepositoryAllergenMatrixSource } from "./allergen-matrix/infrastructure
 import { VatRatesModule } from "../vat-rates/vat-rates.module.js";
 import { PrismaMediaCarriers } from "./shared/infrastructure/prisma-media-carriers.js";
 import { PimDatabaseModule } from "../infra/database/pim-database.module.js";
+import { PimChangesModule } from "../changes/pim-changes.module.js";
 import { ArchiveCategoryHandler } from "./category/application/archive-category.js";
 import { ArchiveProductHandler } from "./product/application/archive-product.js";
 import { DeleteProductHandler } from "./product/application/delete-product.js";
@@ -138,6 +139,7 @@ import {
   // jamais.
   imports: [
     PimDatabaseModule,
+    PimChangesModule,
     // Le logo des papiers : la matrice des allergènes en PDF (plan §2).
     BrandModule,
     AllergensModule,

@@ -4,6 +4,7 @@ import {
   ReadAllergenReferenceQuery,
 } from "../read-allergen-reference.js";
 import { AllergenStore, InMemoryAllergenCatalogueReader } from "./in-memory-allergens.js";
+import { DirectPimContents } from "../../../changes/application/__tests__/direct-pim-contents.js";
 
 /**
  * Un référentiel réduit mais **complet en natures** : une catégorie de l'annexe
@@ -41,7 +42,10 @@ function withHouse(store: AllergenStore): void {
 }
 
 function codesOf(store: AllergenStore, scope: "eu" | "world"): Promise<string[]> {
-  return new ReadAllergenReferenceHandler(new InMemoryAllergenCatalogueReader(store))
+  return new ReadAllergenReferenceHandler(
+    new InMemoryAllergenCatalogueReader(store),
+    new DirectPimContents(),
+  )
     .execute(new ReadAllergenReferenceQuery(scope, "fr"))
     .then((reference) => reference.entries.map((entry) => entry.code));
 }
@@ -75,6 +79,7 @@ describe("ReadAllergenReferenceHandler — le périmètre (D2)", () => {
 
     const reference = await new ReadAllergenReferenceHandler(
       new InMemoryAllergenCatalogueReader(store),
+      new DirectPimContents(),
     ).execute(new ReadAllergenReferenceQuery("eu", "fr"));
 
     expect(reference.entries.find((entry) => entry.code === "X-SOUCHET")).toEqual({
