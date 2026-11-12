@@ -43,3 +43,21 @@ export function payerCountsAt(
 export function isRhythmFollowed(mode: BillingMode, payerCount: number): boolean {
   return mode === DEFAULT_BILLING_MODE || payerCount > 0;
 }
+
+/**
+ * **Combien de clients n'ont choisi aucun mode** chez l'entité : parmi
+ * `payerIds` (les mêmes que `payerCountsAt`, pour que la page ne compte pas
+ * un client que ses barres ignorent), ceux qui n'ont aucun segment vivant.
+ * Un payeur sans segment n'a pas choisi (plan
+ * `plan-changement-de-mode-immediat.md`, §3.3) ; un choix programmé, lui,
+ * est un choix.
+ */
+export function payersWithoutModeCount(
+  chosen: readonly PayerModeSegments[],
+  payerIds: ReadonlySet<string>,
+): number {
+  const withMode = new Set(
+    chosen.filter((payer) => payer.segments.length > 0).map((payer) => payer.payerCompanyId),
+  );
+  return [...payerIds].filter((id) => !withMode.has(id)).length;
+}

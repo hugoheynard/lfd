@@ -1,10 +1,11 @@
 import { GestureIntents } from '../../shared/gesture-intents';
 import { inject, Injectable, signal } from '@angular/core';
-import type {
-  CompanyMemberInvitedView,
-  DeferredTerm,
-  DeliveryAddressView,
-  FulfillmentPreferenceView,
+import {
+  BILLING_RHYTHM_KIND_LABELS,
+  type CompanyMemberInvitedView,
+  type DeferredTerm,
+  type DeliveryAddressView,
+  type FulfillmentPreferenceView,
 } from '@lfd/contracts';
 import type { CompanyIdentityDraft } from '@lfd/b2b-ui/company';
 
@@ -13,6 +14,8 @@ import { AdminCompaniesService } from '../../comptes-clients/admin-companies.ser
 import { httpErrorMessage } from '@lfd/endpoints';
 import { NotifyService } from '../../notify.service';
 import type { HolderChoice } from '../holder-picker/holder-picker';
+import type { InitialBillingMode } from '../facturation/initial-billing-mode';
+import { PayerBillingModeService } from '../facturation/payer-billing-mode.service';
 import { validUntil } from '../../admin/acces-en-attente/pending-access.model';
 
 /**
@@ -31,6 +34,7 @@ export class FicheClientActions {
   /** Une clé par geste voulu : un double clic n'envoie pas deux e-mails (revue de S2, cas 4). */
   private readonly intents = new GestureIntents();
   private readonly notify = inject(NotifyService);
+  private readonly billingModes = inject(PayerBillingModeService);
 
   /** Une ouverture d'accès est en cours — empêche le double envoi. */
   readonly granting = signal(false);
@@ -92,6 +96,26 @@ export class FicheClientActions {
   /** Active le compte — le geste qui clôt le dossier. */
   activate(company: AdminCompanyDetail): Promise<boolean> {
     return this.run(() => this.service.activate(company.id), 'Compte activé.');
+  }
+
+  /**
+   * Pose le mode de facturation choisi à l'ouverture ou à l'activation, par la
+   * route du mode du payeur. Le compte existe déjà : un échec ne défait rien,
+   * il se dit — le mode reste « non choisi » et se règle sur la fiche.
+   */
+  async applyInitialBillingMode(companyId: string, choice: InitialBillingMode): Promise<boolean> {
+    if (choice.kind !== 'chosen') {
+      return true;
+    }
+    const label = BILLING_RHYTHM_KIND_LABELS[choice.mode];
+    try {
+      await this.billingModes.set(choice.legalEntityId, companyId, { mode: choice.mode });
+      this.notify.success(`Mode de facturation : ${label}.`);
+      return true;
+    } catch (error) {
+      this.notify.error(null, initialModeFailure(label, httpErrorMessage(error, '')));
+      return false;
+    }
   }
 
   /** Dépose le KBIS. */
@@ -351,4 +375,13 @@ export function trimIdentity(draft: CompanyIdentityDraft): CompanyIdentityDraft 
     siren: draft.siren.trim(),
     vatNumber: draft.vatNumber.trim(),
   };
+}
+
+/** Le compte existe, son mode non : la phrase dit les deux, et où le régler. */
+export function initialModeFailure(label: string, reason: string): string {
+  const why = reason === '' ? '' : ` (${reason})`;
+  return (
+    `Le compte existe, mais le mode « ${label} » n'a pas pu être enregistré${why}. ` +
+    'Il reste « non choisi » : choisissez-le sur la fiche, carte « Mode de facturation ».'
+  );
 }

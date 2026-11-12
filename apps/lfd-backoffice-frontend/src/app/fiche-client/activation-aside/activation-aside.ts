@@ -49,11 +49,17 @@ export class ActivationAside {
   readonly activation = input<ActivationTrace | null>(null);
   /** Ce qui a coupé l'accès : c'est ce qui décide du geste à proposer. */
   readonly suspensionCause = input<SuspensionCause | null>(null);
+  /**
+   * Le mode de facturation reste à choisir : le choix est projeté
+   * (`[activationChoice]`) au-dessus du bouton, qui attend qu'il soit fait.
+   */
+  readonly modeMissing = input(false);
 
   readonly activate = output<void>();
   readonly reactivate = output<void>();
 
   protected readonly pending = computed(() => this.status() === 'pending');
+  protected readonly activatable = computed(() => this.canActivate() && !this.modeMissing());
   protected readonly suspended = computed(() => this.status() === 'suspended');
   protected readonly terminated = computed(() => this.status() === 'terminated');
 

@@ -16,7 +16,7 @@ import {
   type RhythmTimeline,
 } from "../domain/services/invoicing-closures.js";
 import type { ModeDatesTimeline } from "../domain/services/mode-dates-timeline.js";
-import { payerCountsAt } from "../domain/services/rhythm-payer-counts.js";
+import { payerCountsAt, payersWithoutModeCount } from "../domain/services/rhythm-payer-counts.js";
 import { PayerTimeline, type ModeTimelines } from "../domain/services/payer-timeline.js";
 import { BILLING_MODES, type BillingMode } from "../domain/value-objects/billing-mode.js";
 
@@ -26,6 +26,7 @@ export const UPCOMING_CLOSURES_SHOWN = 3;
 /** Les dates des trois modes, et la dernière clôture du calendrier de l'entité. */
 export interface EntityBillingModes {
   readonly billingModes: readonly LegalEntityBillingModeView[];
+  readonly payersWithoutModeCount: number;
   readonly lastClosure: string;
   readonly lastClosurePeriod: LastClosurePeriodView;
 }
@@ -37,7 +38,8 @@ export interface EntityBillingModes {
  *
  * Le nombre de clients d'un mode est celui du tableau de bord des rythmes
  * (`payerCountsAt` sur `countedIds`) : la fiche et le tableau de bord
- * annoncent le même chiffre.
+ * annoncent le même chiffre. Ceux qui n'ont choisi aucun mode se comptent
+ * sur le même ensemble.
  */
 export function entityBillingModes(
   modes: ModeTimelines,
@@ -51,6 +53,7 @@ export function entityBillingModes(
     billingModes: BILLING_MODES.map((mode) =>
       modeView(mode, modes[mode], counts.get(mode) ?? 0, now),
     ),
+    payersWithoutModeCount: payersWithoutModeCount(payers, countedIds),
     lastClosure: calendar.lastClosureAtOrBefore(now).toISOString(),
     lastClosurePeriod: lastClosurePeriodOf(calendar, now),
   };

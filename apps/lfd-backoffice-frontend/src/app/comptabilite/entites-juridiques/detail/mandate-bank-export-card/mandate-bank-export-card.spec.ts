@@ -85,6 +85,7 @@ const BASE_ENTITY: LegalEntityView = {
   hasLogo: false,
   lastAutopilotRun: null,
   isLastActive: true,
+  payersWithoutModeCount: 0,
   missingToCollect: [],
   invoicePaymentTerms: {
     latePenaltyRateBasisPoints: null,

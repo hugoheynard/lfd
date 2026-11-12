@@ -89,6 +89,7 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
     // entité « dernière en service » y désarmerait le bouton sans raison. Le
     // cas qui en parle le pose explicitement.
     isLastActive: false,
+    payersWithoutModeCount: 0,
     missingToCollect: ["l'identifiant créancier (ICS)", "le compte bancaire de l'entité"],
     invoicePaymentTerms: {
       latePenaltyRateBasisPoints: null,

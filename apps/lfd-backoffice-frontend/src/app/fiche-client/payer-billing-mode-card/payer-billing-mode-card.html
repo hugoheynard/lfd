@@ -46,6 +46,12 @@
           }
 
           <p class="state" data-payer-mode-current>{{ current() }}.</p>
+          @if (unchosen()) {
+            <p class="said" data-payer-mode-unchosen>
+              Le mode de ce client n’a jamais été choisi&nbsp;: il est facturé au mensuel en
+              attendant qu’on le choisisse.
+            </p>
+          }
 
           @if (scheduled(); as next) {
             <fold-callout appearance="inset" variant="info" data-payer-mode-scheduled>
@@ -100,6 +106,7 @@
             [options]="choices"
             [disabled]="!canWrite() || lockedUntil() !== null"
             [value]="draft()"
+            placeholder="Choisir un mode"
             (selectionChange)="chooseMode($event)"
             data-payer-mode-choice
           />

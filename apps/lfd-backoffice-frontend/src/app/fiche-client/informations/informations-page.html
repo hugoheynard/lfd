@@ -94,15 +94,29 @@
                regard. Un bouton désactivé n'est pas focalisable : la phrase est
                donc du texte adjacent, lu dans l'ordre du document, et non un
                `aria-describedby` que personne n'atteindrait. -->
+          <fold-page-section
+            title="Mode de facturation"
+            icon="calendar"
+            description="Le rythme auquel ce client sera facturé, chez l'entité qui émet ses factures. Rien n'est coché d'avance : il se choisit."
+          >
+            <fold-card class="form">
+              <app-billing-mode-choice (choiceChange)="openingMode.set($event)" />
+            </fold-card>
+          </fold-page-section>
+
           <div class="open-actions">
             @if (!canCreate()) {
               <p class="open-blocker">Saisissez l'enseigne pour ouvrir le compte.</p>
+            } @else if (openingModeMissing()) {
+              <p class="open-blocker" data-opening-mode-missing>
+                Choisissez le mode de facturation pour ouvrir le compte.
+              </p>
             }
             <button
               foldButton
               intent="primary"
               icon="check"
-              [disabled]="!canCreate() || fiche.creating()"
+              [disabled]="!canOpen() || fiche.creating()"
               (click)="createAccount()"
             >
               Ouvrir le compte
@@ -312,9 +326,18 @@
             [remaining]="fiche.blockingCount()"
             [activation]="fiche.company()?.activation ?? null"
             [suspensionCause]="fiche.company()?.suspensionCause ?? null"
-            (activate)="fiche.activate()"
+            [modeMissing]="activationModeMissing()"
+            (activate)="fiche.activate(activationMode())"
             (reactivate)="fiche.reactivate()"
-          />
+          >
+            @if (fiche.status() === 'pending' && !isSite() && fiche.company(); as c) {
+              <app-billing-mode-choice
+                activationChoice
+                [companyId]="c.id"
+                (choiceChange)="activationMode.set($event)"
+              />
+            }
+          </app-activation-aside>
         }
 
         <!-- La référence dans le rail plutôt qu'au fil du dossier : c'est un

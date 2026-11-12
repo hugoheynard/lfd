@@ -5,6 +5,12 @@
 >
   <div class="bm-stack">
     <p class="bm-said" data-modes-closure-time>{{ closureTime }}</p>
+    @if (withoutMode(); as count) {
+      <fold-callout appearance="inset" variant="warning" data-modes-without-mode>
+        <strong>{{ count }}.</strong> Ils sont facturés au mensuel en attendant&nbsp;; leur mode se
+        choisit sur la fiche de chaque client.
+      </fold-callout>
+    }
     @for (mode of entity().billingModes; track mode.mode) {
       <app-billing-mode-row
         [entityId]="entity().id"

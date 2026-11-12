@@ -38,6 +38,11 @@ import { ActivationAside } from '../activation-aside/activation-aside';
 import { HolderPicker, type HolderChoice } from '../holder-picker/holder-picker';
 import { PaiementSection } from '../paiement-section/paiement-section';
 import { PayerBillingModeCard } from '../payer-billing-mode-card/payer-billing-mode-card';
+import { BillingModeChoice } from '../billing-mode-choice/billing-mode-choice';
+import {
+  initialBillingModeMissing,
+  type InitialBillingMode,
+} from '../facturation/initial-billing-mode';
 import { FollowParentToggle } from '../follow-parent-toggle/follow-parent-toggle';
 import { FicheClientActions } from './fiche-client.actions';
 import { FicheClientFacade } from './fiche-client.facade';
@@ -82,6 +87,7 @@ import { UncoveredDeliveryAddresses } from '../uncovered-delivery-addresses/unco
     KbisCertification,
     GroupAccountCard,
     PayerBillingModeCard,
+    BillingModeChoice,
     FoldAsideLayoutComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
@@ -138,6 +144,23 @@ export class InformationsPage {
   protected readonly holder = signal<HolderChoice | null>(null);
 
   protected readonly canCreate = computed(() => this.fiche.canOpen(this.identityDraft()));
+
+  /** Le mode choisi à l'ouverture — exigé, sauf quand il n'y a rien à choisir ici. */
+  protected readonly openingMode = signal<InitialBillingMode>({ kind: 'missing' });
+  protected readonly openingModeMissing = computed(() =>
+    initialBillingModeMissing(this.openingMode()),
+  );
+  /** Ouvrir demande l'enseigne ET le mode ; la liste d'ouverture ne compte que l'enseigne. */
+  protected readonly canOpen = computed(() => this.canCreate() && !this.openingModeMissing());
+
+  /** Le mode choisi à l'activation ; un site suit celui de son principal et n'en choisit pas. */
+  protected readonly activationMode = signal<InitialBillingMode>({ kind: 'missing' });
+  protected readonly activationModeMissing = computed(
+    () =>
+      this.fiche.status() === 'pending' &&
+      !this.isSite() &&
+      initialBillingModeMissing(this.activationMode()),
+  );
 
   /**
    * La synthèse dit ce qui bloque **maintenant** : avant l'ouverture, le seul
@@ -296,12 +319,16 @@ export class InformationsPage {
    * est déjà la bonne, et une navigation la remonterait en haut.
    */
   protected async createAccount(): Promise<void> {
-    if (!this.canCreate() || this.fiche.creating()) {
+    if (!this.canOpen() || this.fiche.creating()) {
       return;
     }
     // Le détenteur peut manquer : c'est l'ouverture « au téléphone », et il se
     // rattachera depuis la fiche dès que le commercial aura son adresse.
-    const id = await this.fiche.openAccount(this.identityDraft(), this.holder());
+    const id = await this.fiche.openAccount(
+      this.identityDraft(),
+      this.holder(),
+      this.openingMode(),
+    );
     if (id !== null) {
       void this.router.navigate(['/comptes-clients', id, 'informations'], { replaceUrl: true });
     }

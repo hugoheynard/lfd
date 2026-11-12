@@ -124,6 +124,9 @@ interface Wire {
   view: PayerBillingModeView;
   refuse: unknown;
   gets: number;
+  /** La vue que le serveur rendra après un `set` réussi ; `null` : inchangée. */
+  after: PayerBillingModeView | null;
+  readonly said: string[];
   readonly set: { entity: string; company: string; mode: BillingRhythmKind }[];
   readonly cancelled: { entity: string; company: string }[];
 }
@@ -137,7 +140,7 @@ async function boot(
   client: AdminCompanyDetail = company(),
   granted: readonly StaffPermission[] = ['b2b_accounting:read', 'b2b_accounting:write'],
 ): Promise<ComponentFixture<PayerBillingModeCard>> {
-  wire = { view, refuse: null, gets: 0, set: [], cancelled: [] };
+  wire = { view, refuse: null, gets: 0, after: null, said: [], set: [], cancelled: [] };
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [PayerBillingModeCard],
@@ -161,6 +164,9 @@ async function boot(
               return Promise.reject(wire.refuse);
             }
             wire.set.push({ entity, company: companyId, mode: payload.mode });
+            if (wire.after !== null) {
+              wire.view = wire.after;
+            }
             return Promise.resolve();
           },
           cancelScheduled: (entity: string, companyId: string) => {
@@ -169,7 +175,13 @@ async function boot(
           },
         },
       },
-      { provide: NotifyService, useValue: { success: () => undefined, error: () => undefined } },
+      {
+        provide: NotifyService,
+        useValue: {
+          success: (message: string) => wire.said.push(message),
+          error: () => undefined,
+        },
+      },
       {
         provide: PermissionsStore,
         useValue: { can: (permission: StaffPermission): boolean => granted.includes(permission) },
@@ -210,10 +222,15 @@ async function settle(fixture: ComponentFixture<PayerBillingModeCard>): Promise<
 }
 
 describe('PayerBillingModeCard — le mode de facturation d’un client', () => {
-  it('dit le mensuel par défaut, la règle permanente et trois clôtures seulement', async () => {
+  it('un payeur sans choix : « Mode non choisi », l’invitation, la règle et trois clôtures', async () => {
     const fixture = await boot(modeView());
 
-    expect(text(fixture)).toContain('Mensuel — par défaut.');
+    expect(text(fixture)).toContain('Mode non choisi.');
+    expect(text(fixture)).toContain('n’a jamais été choisi');
+    expect(text(fixture)).not.toContain('Mensuel — par défaut.');
+    expect((modeChoice(fixture)?.componentInstance as FoldListboxComponent<string>).value()).toBe(
+      null,
+    );
     expect(text(fixture)).toContain('Un seul changement à la fois');
     expect(text(fixture)).toContain('Période du 1er au 31 octobre 2026 — facturée le 31 oct. 2026');
     expect(text(fixture)).not.toContain('janvier 2027');
@@ -221,15 +238,56 @@ describe('PayerBillingModeCard — le mode de facturation d’un client', () => 
     expect(saveButton(fixture)?.disabled).toBe(true);
   });
 
-  it('choisir un mode : la confirmation nomme la prise d’effet, puis l’envoie', async () => {
+  it('un mode choisi se dit avec sa date, sans invitation', async () => {
+    const fixture = await boot(modeView({ since: '2026-09-30T22:00:00.000Z' }));
+
+    expect(text(fixture)).toContain('Mensuel, depuis le');
+    expect(text(fixture)).not.toContain('n’a jamais été choisi');
+    expect(saveButton(fixture)?.disabled).toBe(true);
+  });
+
+  it('le premier choix s’enregistre même s’il redit le mensuel', async () => {
+    const fixture = await boot(modeView());
+    modeChoice(fixture)?.triggerEventHandler('selectionChange', 'monthly');
+    fixture.detectChanges();
+
+    expect(saveButton(fixture)?.disabled).toBe(false);
+  });
+
+  it('immédiat : la vue relue n’a rien de programmé, la notification dit « dès maintenant »', async () => {
+    const fixture = await boot(modeView());
+    wire.after = modeView({ mode: 'weekly', since: '2026-10-26T23:00:00.000Z' });
+    modeChoice(fixture)?.triggerEventHandler('selectionChange', 'weekly');
+    fixture.detectChanges();
+    confirms(fixture).at(-1)?.triggerEventHandler('confirmed', '');
+    await settle(fixture);
+
+    expect(wire.said).toEqual(['Mode : Hebdomadaire, dès maintenant.']);
+    expect(text(fixture)).toContain('Hebdomadaire, depuis le');
+  });
+
+  it('programmé : la notification nomme la clôture de prise d’effet', async () => {
+    const fixture = await boot(modeView({ since: '2026-09-30T22:00:00.000Z' }));
+    wire.after = modeView({ since: '2026-09-30T22:00:00.000Z', ...PENDING });
+    modeChoice(fixture)?.triggerEventHandler('selectionChange', 'weekly');
+    fixture.detectChanges();
+    confirms(fixture).at(-1)?.triggerEventHandler('confirmed', '');
+    await settle(fixture);
+
+    expect(wire.said).toEqual([
+      'Mode : Hebdomadaire, à partir de la clôture du 1er novembre 2026.',
+    ]);
+  });
+
+  it('choisir un mode : la confirmation dit les deux cas, puis l’envoie', async () => {
     const fixture = await boot(modeView());
     modeChoice(fixture)?.triggerEventHandler('selectionChange', 'weekly');
     fixture.detectChanges();
 
     const confirm = confirms(fixture).at(-1);
-    expect((confirm?.componentInstance as FoldInlineConfirmComponent).message()).toContain(
-      'prendra effet à la clôture du 1er novembre 2026',
-    );
+    const message = (confirm?.componentInstance as FoldInlineConfirmComponent).message();
+    expect(message).toContain('jamais commandé, le nouveau mode prendra effet immédiatement');
+    expect(message).toContain('il prendra effet à la clôture du 1er novembre 2026');
     expect(saveButton(fixture)?.disabled).toBe(false);
     confirm?.triggerEventHandler('confirmed', '');
     await settle(fixture);

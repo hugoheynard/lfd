@@ -78,6 +78,7 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
     hasLogo: false,
     lastAutopilotRun: null,
     isLastActive: false,
+    payersWithoutModeCount: 0,
     missingToCollect: ["l'identifiant créancier (ICS)", "le compte bancaire de l'entité"],
     invoicePaymentTerms: {
       latePenaltyRateBasisPoints: null,

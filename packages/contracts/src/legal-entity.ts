@@ -268,6 +268,14 @@ export interface LegalEntityView {
   /** Les dates des trois modes de facturation (§16), mensuel d'abord. */
   readonly billingModes: readonly LegalEntityBillingModeView[];
   /**
+   * Les clients comptés par l'entité (ceux de `payerCount`) qui n'ont encore
+   * choisi AUCUN mode chez elle : facturés au mensuel par défaut, sans trace
+   * d'un choix. La page le dit « N clients sans mode choisi », pour qu'un
+   * choix perdu entre la création d'un compte et son mode se voie sans ouvrir
+   * chaque fiche (plan `plan-changement-de-mode-immediat.md`, I3).
+   */
+  readonly payersWithoutModeCount: number;
+  /**
    * ISO — la dernière clôture atteinte du calendrier de l'entité (union des
    * modes en service et du mensuel, §16.3) : celle du lot à préparer.
    */

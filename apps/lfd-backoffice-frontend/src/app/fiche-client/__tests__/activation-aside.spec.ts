@@ -19,6 +19,7 @@ function render(options: {
   readonly remaining?: number;
   readonly activation?: ActivationTrace | null;
   readonly suspensionCause?: SuspensionCause | null;
+  readonly modeMissing?: boolean;
 }): Rendered {
   const fixture = TestBed.createComponent(ActivationAside);
   fixture.componentRef.setInput('status', options.status);
@@ -27,6 +28,7 @@ function render(options: {
   fixture.componentRef.setInput('remaining', options.remaining ?? 0);
   fixture.componentRef.setInput('activation', options.activation ?? null);
   fixture.componentRef.setInput('suspensionCause', options.suspensionCause ?? null);
+  fixture.componentRef.setInput('modeMissing', options.modeMissing ?? false);
   const activations: number[] = [];
   const reactivations: number[] = [];
   fixture.componentInstance.activate.subscribe(() => activations.push(1));
@@ -64,6 +66,15 @@ describe('rail Activation du compte', () => {
 
     expect(host.textContent).toContain('1 point à régler');
     expect(host.textContent).not.toContain('1 points');
+  });
+
+  it('attend le choix du mode de facturation, et le dit', () => {
+    const { host, button } = render({ status: 'pending', canActivate: true, modeMissing: true });
+
+    expect(button.disabled).toBe(true);
+    expect(host.querySelector('[data-activation-mode-missing]')?.textContent).toContain(
+      'Choisissez le mode de facturation pour activer le compte.',
+    );
   });
 
   it('active en un clic quand le dossier est complet', () => {

@@ -20,6 +20,7 @@ import {
   ctx,
   declare,
   lastMonthlyClosure,
+  mandated,
   nextMonthlyClosure,
   ordered,
   read,
@@ -48,6 +49,9 @@ describe("le changement de mode immédiat", () => {
     const id = await declare();
     const payer = await createCompany(ctx.prisma, { raisonSociale: "Le Nouveau SAS" });
     const c0 = lastMonthlyClosure();
+    await mandated(id, payer.id);
+    // La page des entités le compte « sans mode choisi » tant qu'il n'a rien choisi.
+    expect((await read(id)).payersWithoutModeCount).toBe(1);
 
     const view = await setWeekly(id, payer.id);
 
@@ -60,6 +64,7 @@ describe("le changement de mode immédiat", () => {
     expect(await lastFact(payer.id)).toMatchObject({ effectiveAt: c0, immediate: true });
     // Aucun lundi entre C0 et maintenant n'est une clôture de l'entité.
     expect((await read(id)).lastClosure).toBe(c0);
+    expect((await read(id)).payersWithoutModeCount).toBe(0);
   });
 
   it("un client qui a commandé reste programmé à la prochaine clôture", async () => {

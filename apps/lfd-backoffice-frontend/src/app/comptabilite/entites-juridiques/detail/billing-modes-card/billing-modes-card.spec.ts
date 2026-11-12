@@ -99,6 +99,7 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
     hasLogo: false,
     lastAutopilotRun: null,
     isLastActive: false,
+    payersWithoutModeCount: 0,
     missingToCollect: [],
     invoicePaymentTerms: {
       latePenaltyRateBasisPoints: null,
@@ -134,6 +135,18 @@ describe('BillingModesCard — les dates des trois modes (M4b)', () => {
     );
 
     expect(rows).toEqual(['monthly', 'semimonthly', 'weekly']);
+  });
+
+  it('compte les clients sans mode choisi, et se tait quand tous ont choisi', () => {
+    expect(host(boot()).querySelector('[data-modes-without-mode]')).toBeNull();
+    expect(
+      host(boot({ payersWithoutModeCount: 1 })).querySelector('[data-modes-without-mode]')
+        ?.textContent,
+    ).toContain('1 client sans mode choisi.');
+    expect(
+      host(boot({ payersWithoutModeCount: 3 })).querySelector('[data-modes-without-mode]')
+        ?.textContent,
+    ).toContain('3 clients sans mode choisi.');
   });
 
   it('dit une fois ce qu’est une date de clôture', () => {

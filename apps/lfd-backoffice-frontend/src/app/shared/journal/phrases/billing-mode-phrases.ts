@@ -84,10 +84,20 @@ function payer(fact: PhraseFact): Segment[] {
 /**
  * « a programmé le mode de facturation de « Le Bistrot » chez l'entité
  * émettrice « X » : Hebdomadaire, à partir du … (au lieu de Mensuel) » — ou
- * l'annulation d'un passage programmé.
+ * l'annulation d'un passage programmé. Un mode posé immédiatement (`immediate`,
+ * un payeur qui n'a jamais commandé) dit « dès maintenant » : son
+ * `effectiveAt` est la dernière clôture passée, une date qui tromperait.
  */
 const payerBillingModeChanged: Phrase = (fact) => {
-  const keys = ['subjectLabel', 'legalEntity', 'from', 'to', 'effectiveAt', 'cancelled'];
+  const keys = [
+    'subjectLabel',
+    'legalEntity',
+    'from',
+    'to',
+    'effectiveAt',
+    'cancelled',
+    'immediate',
+  ];
   const atEntity = [text(' chez '), ...cite(ENTITY[''], fact.payload['legalEntity'])];
   if (fact.payload['cancelled'] === true) {
     return byActor(
@@ -106,16 +116,22 @@ const payerBillingModeChanged: Phrase = (fact) => {
       keys,
     );
   }
+  const immediate = fact.payload['immediate'] === true;
   return byActor(
     fact,
     [
-      text('a programmé le mode de facturation de '),
+      text(
+        immediate
+          ? 'a changé le mode de facturation de '
+          : 'a programmé le mode de facturation de ',
+      ),
       ...payer(fact),
       ...atEntity,
       text(' : '),
       valueIn(BILLING_RHYTHM_KIND, fact.payload['to'], { inSentence: true }),
-      text(', à partir du '),
-      inUnit('instant', fact.payload['effectiveAt']),
+      ...(immediate
+        ? [text(', dès maintenant')]
+        : [text(', à partir du '), inUnit('instant', fact.payload['effectiveAt'])]),
       text(' (au lieu de '),
       valueIn(BILLING_RHYTHM_KIND, fact.payload['from'], { inSentence: true }),
       text(')'),

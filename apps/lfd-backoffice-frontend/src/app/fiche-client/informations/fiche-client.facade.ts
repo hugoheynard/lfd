@@ -2,6 +2,7 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import type { DeferredTerm, DeliveryAddressView, FulfillmentPreferenceView } from '@lfd/contracts';
 import { isCompanyIdentityOpenable, type CompanyIdentityDraft } from '@lfd/b2b-ui/company';
 
+import type { InitialBillingMode } from '../facturation/initial-billing-mode';
 import type { HolderChoice } from '../holder-picker/holder-picker';
 import { FicheClientActions } from './fiche-client.actions';
 import { FicheClientPanels } from './fiche-client.panels';
@@ -96,9 +97,12 @@ export class FicheClientFacade {
   async openAccount(
     identity: CompanyIdentityDraft,
     holder: HolderChoice | null,
+    billingMode: InitialBillingMode = { kind: 'not-required' },
   ): Promise<string | null> {
     const id = await this.actions.openAccount(identity, holder);
     if (id !== null) {
+      // Avant la relecture : la carte du mode lit la fiche une fois rechargée.
+      await this.actions.applyInitialBillingMode(id, billingMode);
       this.store.adopt(id);
       await this.store.load();
     }
@@ -107,8 +111,15 @@ export class FicheClientFacade {
 
   // ── Gestes sur une fiche existante ──────────────────────────────────────
 
-  activate(): Promise<void> {
-    return this.mutate((company) => this.actions.activate(company));
+  /** Active, puis pose le mode choisi — un mode refusé n'annule pas l'activation. */
+  activate(billingMode: InitialBillingMode = { kind: 'not-required' }): Promise<void> {
+    return this.mutate(async (company) => {
+      const activated = await this.actions.activate(company);
+      if (activated) {
+        await this.actions.applyInitialBillingMode(company.id, billingMode);
+      }
+      return activated;
+    });
   }
 
   uploadKbis(file: File): Promise<void> {

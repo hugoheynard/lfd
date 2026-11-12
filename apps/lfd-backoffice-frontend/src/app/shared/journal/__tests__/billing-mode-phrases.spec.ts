@@ -81,6 +81,23 @@ describe('le mode d’un payeur', () => {
     expect(rendered.detail).toEqual([]);
   });
 
+  it('dit « dès maintenant » pour un mode posé immédiatement, sans la date de la clôture passée', () => {
+    const { sentence, detail } = renderFact(
+      fact('payer.billing_mode_changed', 'company', {
+        ...base,
+        from: 'monthly',
+        to: 'weekly',
+        cancelled: false,
+        immediate: true,
+      }),
+    );
+
+    expect(sentence).toContain('a changé le mode de facturation de « Le Bistrot »');
+    expect(sentence).toContain(', dès maintenant');
+    expect(sentence).not.toContain('à partir du');
+    expect(detail).toEqual([]);
+  });
+
   it('dit l’annulation, et le mode qui reste', () => {
     const { sentence } = renderFact(
       fact('payer.billing_mode_changed', 'company', {

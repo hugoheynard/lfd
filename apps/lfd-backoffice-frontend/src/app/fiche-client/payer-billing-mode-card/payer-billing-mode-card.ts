@@ -101,7 +101,7 @@ export class PayerBillingModeCard {
   protected readonly entities = signal<readonly LegalEntityView[]>([]);
   protected readonly entityId = signal<string | null>(null);
   protected readonly view = signal<PayerBillingModeView | null>(null);
-  protected readonly draft = signal<BillingRhythmKind>('monthly');
+  protected readonly draft = signal<BillingRhythmKind | null>(null);
   protected readonly busy = signal(false);
   protected readonly refusal = signal<string | null>(null);
 
@@ -117,15 +117,17 @@ export class PayerBillingModeCard {
     this.entities().map((entity) => ({ value: entity.id, label: entity.name })),
   );
 
+  /** Aucun choix n'a jamais été fait (`since: null`) : la suite mensuelle s'applique, sans avoir été choisie. */
+  protected readonly unchosen = computed(() => this.view()?.since === null);
+
   protected readonly current = computed(() => {
     const view = this.view();
     if (view === null) {
       return '';
     }
-    const label = BILLING_RHYTHM_KIND_LABELS[view.mode];
     return view.since === null
-      ? `${label} — par défaut`
-      : `${label}, depuis le ${longDay(view.since)}`;
+      ? 'Mode non choisi'
+      : `${BILLING_RHYTHM_KIND_LABELS[view.mode]}, depuis le ${longDay(view.since)}`;
   });
 
   protected readonly scheduled = computed(() => {
@@ -144,10 +146,17 @@ export class PayerBillingModeCard {
     (this.view()?.upcomingClosures ?? []).slice(0, SHOWN_CLOSURES).map(closureLine),
   );
 
-  /** Le mode qui fera foi si l'on ne fait rien : le programmé, sinon le courant. */
-  private readonly standing = computed(() => {
+  /**
+   * Le mode qui fera foi si l'on ne fait rien : le programmé, sinon le courant ;
+   * `null` tant qu'aucun mode n'a été choisi — le premier choix s'enregistre
+   * même s'il redit le mensuel, pour laisser sa trace.
+   */
+  private readonly standing = computed((): BillingRhythmKind | null => {
     const view = this.view();
-    return view?.scheduled?.mode ?? view?.mode ?? 'monthly';
+    if (view === null || view.since === null) {
+      return view?.scheduled?.mode ?? null;
+    }
+    return view.scheduled?.mode ?? view.mode;
   });
 
   protected readonly canSave = computed(
@@ -155,13 +164,16 @@ export class PayerBillingModeCard {
       this.canWrite() &&
       !this.busy() &&
       this.lockedUntil() === null &&
+      this.draft() !== null &&
       this.draft() !== this.standing(),
   );
 
+  /** Le serveur tranche : immédiat si le client n'a jamais commandé, sinon à la prochaine clôture. */
   protected readonly confirmMessage = computed(
     () =>
-      `Le nouveau mode prendra effet ${effectiveClosureSentence(this.view()?.upcomingClosures ?? [])}, ` +
-      'à la prochaine clôture de son mode actuel. Aucun autre changement ne sera possible avant.',
+      'Si ce client n’a encore jamais commandé, le nouveau mode prendra effet immédiatement. ' +
+      `Sinon, il prendra effet ${effectiveClosureSentence(this.view()?.upcomingClosures ?? [])}, ` +
+      'à la prochaine clôture de son mode actuel, et aucun autre changement ne sera possible avant.',
   );
 
   constructor() {
@@ -216,10 +228,26 @@ export class PayerBillingModeCard {
       return;
     }
     const mode = this.draft();
+    if (mode === null) {
+      return;
+    }
     await this.act(
       () => this.api.set(entityId, this.company().id, { mode }),
-      `Mode « ${BILLING_RHYTHM_KIND_LABELS[mode]} » programmé.`,
+      () => this.outcomeOf(mode),
     );
+  }
+
+  /** Ce que la vue relue dit du geste : posé tout de suite, ou programmé à une clôture. */
+  private outcomeOf(mode: BillingRhythmKind): string {
+    const label = BILLING_RHYTHM_KIND_LABELS[mode];
+    const view = this.view();
+    if (view?.scheduled?.mode === mode) {
+      return `Mode : ${label}, à partir de la clôture du ${longDay(view.scheduled.effectiveAt)}.`;
+    }
+    if (view !== null && view.scheduled === null && view.mode === mode) {
+      return `Mode : ${label}, dès maintenant.`;
+    }
+    return `Mode « ${label} » enregistré.`;
   }
 
   protected async cancelScheduled(): Promise<void> {
@@ -227,19 +255,19 @@ export class PayerBillingModeCard {
     if (entityId !== null) {
       await this.act(
         () => this.api.cancelScheduled(entityId, this.company().id),
-        'Changement de mode annulé.',
+        () => 'Changement de mode annulé.',
       );
     }
   }
 
-  /** Un geste : son refus reste à l'écran avec les mots du serveur ; un succès relit. */
-  private async act(gesture: () => Promise<void>, said: string): Promise<void> {
+  /** Un geste : son refus reste à l'écran avec les mots du serveur ; un succès relit, puis dit ce qui s'est passé. */
+  private async act(gesture: () => Promise<void>, said: () => string): Promise<void> {
     this.busy.set(true);
     this.refusal.set(null);
     try {
       await gesture();
-      this.notify.success(said);
       await this.load();
+      this.notify.success(said());
     } catch (error) {
       this.refusal.set(httpErrorMessage(error, 'Le changement de mode a été refusé.'));
     } finally {

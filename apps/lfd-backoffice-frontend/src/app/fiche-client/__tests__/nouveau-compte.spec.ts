@@ -7,6 +7,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CompanyOpened } from '../../comptes-clients/admin-company';
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
 import { NotifyService } from '../../notify.service';
+import { PermissionsStore } from '../../auth/permissions.store';
+import { LegalEntitiesService } from '../../comptabilite/legal-entities.service';
+import { PayerBillingModeService } from '../facturation/payer-billing-mode.service';
 import { DeliveryAvailabilityService } from '../../b2b/reglages/delivery-availability.service';
 import { PickupAddressesService } from '../../b2b/reglages/pickup-addresses.service';
 import { FicheClientFacade } from '../informations/fiche-client.facade';
@@ -28,7 +31,12 @@ interface Harness {
   readonly create: ReturnType<typeof vi.fn>;
   readonly navigate: ReturnType<typeof vi.fn>;
   readonly errors: unknown[];
+  readonly said: string[];
+  readonly modes: { entity: string; company: string; mode: string }[];
 }
+
+/** Le mode, posé par la route du payeur : on peut le faire refuser. */
+let refuseMode: unknown = null;
 
 /**
  * Monte la page **sans identifiant de route** — c'est ce qui la met en mode
@@ -36,6 +44,8 @@ interface Harness {
  */
 async function setup(create = vi.fn(() => Promise.resolve(CREATED))): Promise<Harness> {
   const errors: unknown[] = [];
+  const said: string[] = [];
+  const modes: { entity: string; company: string; mode: string }[] = [];
   TestBed.configureTestingModule({
     providers: [
       provideRouter([{ path: '**', children: [] }]),
@@ -67,12 +77,36 @@ async function setup(create = vi.fn(() => Promise.resolve(CREATED))): Promise<Ha
       {
         provide: NotifyService,
         useValue: {
-          success: (): void => undefined,
+          success: (message: string): void => {
+            said.push(message);
+          },
           info: (): void => undefined,
-          error: (error: unknown): void => {
-            errors.push(error);
+          error: (error: unknown, fallback?: string): void => {
+            errors.push(error ?? fallback);
           },
         } satisfies Pick<NotifyService, 'success' | 'info' | 'error'>,
+      },
+      {
+        provide: PermissionsStore,
+        useValue: { can: (): boolean => true },
+      },
+      {
+        provide: LegalEntitiesService,
+        useValue: {
+          list: () => Promise.resolve([{ id: 'le1', name: 'La Folie Douce', archivedAt: null }]),
+        },
+      },
+      {
+        provide: PayerBillingModeService,
+        useValue: {
+          set: (entity: string, company: string, payload: { mode: string }): Promise<void> => {
+            if (refuseMode !== null) {
+              return Promise.reject(refuseMode);
+            }
+            modes.push({ entity, company, mode: payload.mode });
+            return Promise.resolve();
+          },
+        },
       },
     ],
   });
@@ -85,7 +119,7 @@ async function setup(create = vi.fn(() => Promise.resolve(CREATED))): Promise<Ha
   vi.spyOn(TestBed.inject(Router), 'navigate').mockImplementation(navigate);
   await Promise.resolve();
   await Promise.resolve();
-  return { page, fixture, fiche, create, navigate, errors };
+  return { page, fixture, fiche, create, navigate, errors, said, modes };
 }
 
 /** Remplit le bloc d'ouverture avec le minimum exigé. */
@@ -98,6 +132,7 @@ function fill(page: InformationsPage): void {
     siren: '',
     vatNumber: '',
   });
+  page['openingMode'].set({ kind: 'chosen', legalEntityId: 'le1', mode: 'weekly' });
   page['holder'].set({
     firstName: 'Jean',
     lastName: 'Dupont',
@@ -110,6 +145,7 @@ describe('InformationsPage — ouverture d’un compte', () => {
   beforeEach(() => {
     TestBed.resetTestingModule();
     vi.restoreAllMocks();
+    refuseMode = null;
   });
 
   it("ne conclut pas à « introuvable » quand il n'y a pas d'identifiant", async () => {
@@ -162,6 +198,7 @@ describe('InformationsPage — ouverture d’un compte', () => {
       siren: '',
       vatNumber: '',
     });
+    page['openingMode'].set({ kind: 'not-required' });
 
     await page['createAccount']();
 
@@ -209,6 +246,41 @@ describe('InformationsPage — ouverture d’un compte', () => {
     });
   });
 
+  it('n’ouvre pas tant que le mode de facturation n’est pas choisi', async () => {
+    const { page, fixture, create } = await setup();
+    fill(page);
+    page['openingMode'].set({ kind: 'missing' });
+    fixture.detectChanges();
+
+    expect(page['canOpen']()).toBe(false);
+    expect(fixture.nativeElement.querySelector('[data-opening-mode-missing]')).not.toBeNull();
+    await page['createAccount']();
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('pose le mode choisi chez l’entité, juste après l’ouverture', async () => {
+    const { page, modes, said } = await setup();
+    fill(page);
+    await page['createAccount']();
+
+    expect(modes).toEqual([{ entity: 'le1', company: 'cmp_1', mode: 'weekly' }]);
+    expect(said).toContain('Mode de facturation : Hebdomadaire.');
+  });
+
+  it('un mode refusé le dit : le compte existe, son mode reste « non choisi »', async () => {
+    refuseMode = new Error('refusé');
+    const { page, errors, navigate } = await setup();
+    fill(page);
+    await page['createAccount']();
+
+    expect(errors).toEqual([
+      "Le compte existe, mais le mode « Hebdomadaire » n'a pas pu être enregistré. " +
+        'Il reste « non choisi » : choisissez-le sur la fiche, carte « Mode de facturation ».',
+    ]);
+    // Le compte est ouvert : on va quand même sur sa fiche, où le mode se règle.
+    expect(navigate).toHaveBeenCalled();
+  });
+
   it('garde la saisie à l’écran quand l’ouverture échoue', async () => {
     const boom = new Error('SIRET déjà connu');
     const { page, fiche, navigate, errors } = await setup(vi.fn(() => Promise.reject(boom)));
@@ -243,6 +315,9 @@ describe("Le bouton d'ouverture dit pourquoi il est éteint", () => {
     fill(page);
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('.open-blocker')).toBeNull();
+    // Reste, le cas échéant, la raison suivante : le mode de facturation.
+    expect(fixture.nativeElement.querySelector('.open-blocker')?.textContent ?? '').not.toContain(
+      "Saisissez l'enseigne",
+    );
   });
 });

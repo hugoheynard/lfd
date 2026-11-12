@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import type { LegalEntityView } from '@lfd/contracts';
-import { FoldPageSectionComponent } from 'fold-ng';
+import { FoldCalloutComponent, FoldPageSectionComponent } from 'fold-ng';
 
 import { CLOSURE_TIME_SENTENCE } from '../../../billing-rhythm-wording';
 import { BillingModeRow, type BillingModeSaved } from '../billing-mode-row/billing-mode-row';
@@ -15,7 +15,7 @@ import { BillingModeRow, type BillingModeSaved } from '../billing-mode-row/billi
 @Component({
   selector: 'app-billing-modes-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldPageSectionComponent, BillingModeRow],
+  imports: [FoldCalloutComponent, FoldPageSectionComponent, BillingModeRow],
   templateUrl: './billing-modes-card.html',
   styleUrl: './billing-modes-card.scss',
 })
@@ -26,4 +26,17 @@ export class BillingModesCard {
   readonly saved = output<BillingModeSaved>();
 
   protected readonly closureTime = CLOSURE_TIME_SENTENCE;
+
+  /**
+   * « 3 clients sans mode choisi » — `null` quand tous ont choisi. Un choix
+   * perdu entre la création d'un compte et son mode se voit ici, sans ouvrir
+   * chaque fiche.
+   */
+  protected readonly withoutMode = computed(() => {
+    const count = this.entity().payersWithoutModeCount;
+    if (count === 0) {
+      return null;
+    }
+    return count === 1 ? '1 client sans mode choisi' : `${count} clients sans mode choisi`;
+  });
 }

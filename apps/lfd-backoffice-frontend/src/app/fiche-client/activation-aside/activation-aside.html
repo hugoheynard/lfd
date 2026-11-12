@@ -20,11 +20,13 @@
       }
     }
 
+    <ng-content select="[activationChoice]" />
+
     <button
       foldButton
       intent="primary"
       icon="check"
-      [disabled]="!canActivate()"
+      [disabled]="!activatable()"
       (click)="activate.emit()"
     >
       Activer le compte
@@ -33,6 +35,10 @@
     <!-- Un bouton grisé muet est une impasse : on ne sait pas quoi corriger. -->
     @if (blockedReason(); as reason) {
       <p class="why">{{ reason }}</p>
+    } @else if (canActivate() && modeMissing()) {
+      <p class="why" data-activation-mode-missing>
+        Choisissez le mode de facturation pour activer le compte.
+      </p>
     }
   } @else if (suspended()) {
     <p class="kicker">
