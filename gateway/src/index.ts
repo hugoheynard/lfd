@@ -1,4 +1,5 @@
 import { frontHeaders, PRO_FRONT_ORIGIN, resolveTarget } from "./routes";
+import { forwardedSearch } from "./cache-key";
 import type { BackendKey, Target } from "./routes";
 import { guardTarget } from "./route-planner-guard";
 import type { RoutePlannerGuardEnv } from "./route-planner-guard";
@@ -248,7 +249,7 @@ function destinationFor(target: Forwardable, url: URL, env: Env): Destination | 
   // exige une URL absolue. On garde celle de la gateway, ce qui rend les
   // journaux du backend lisibles.
   return {
-    url: new URL(target.path + url.search, url.origin).toString(),
+    url: new URL(target.path + forwardedSearch(target.path, url.search), url.origin).toString(),
     send: (forward) => binding.fetch(forward),
   };
 }
