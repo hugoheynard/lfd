@@ -6,6 +6,11 @@ import {
 } from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
 import type { MailDemand } from "../../../../../mail/channels/requests/mail.js";
 import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+import {
+  InsideUnitOfWork,
+  SealingIntentLedger,
+} from "../../../../../platform/intent/__tests__/sealing-intent-ledger.js";
+import type { JournaledEvent } from "../../../../../platform/journal/journal-fact.js";
 import type { B2bMails } from "../../../../../mail/channels/templates/b2b-mails.js";
 import { DocumentStorageUnavailableError } from "../../../../../platform/shared/errors/storage-errors.js";
 import { KeptDocumentStore } from "../../../../../platform/storage/kept-document-store.js";
@@ -68,6 +73,18 @@ class FailingStore extends MemoryStore {
   }
 }
 
+/** Le journal, qui tombe en panne sur demande : la transaction du fait tombe avec lui. */
+class FailingPublisher extends StepPublisher {
+  broken = false;
+
+  override publishTraced(event: JournaledEvent): Promise<void> {
+    if (this.broken) {
+      return Promise.reject(new Error("journal en panne"));
+    }
+    return super.publishTraced(event);
+  }
+}
+
 const FIRST_INTENT = "0b7f6f0e-8a52-4c1e-9d43-0d8e5f0a1b2c";
 const SECOND_INTENT = "5c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f";
 
@@ -79,7 +96,9 @@ function harness(providerId: string | null = "re_1") {
   accounts.stored = bankAccount();
   const mails = new StepMail(steps, providerId);
   const kept = new FailingStore(steps);
-  const events = new StepPublisher(steps);
+  const events = new FailingPublisher(steps);
+  const uow = new InsideUnitOfWork();
+  const ledger = new SealingIntentLedger(() => uow.inside);
   const handler = new SendMandateHandler(
     mandates,
     accounts,
@@ -91,9 +110,11 @@ function harness(providerId: string | null = "re_1") {
     events,
     new FixedDebtors(mandates),
     new FixedClock(new Date("2026-09-14T09:00:00.000Z")),
-    inMemoryIntents(),
+    uow,
+    inMemoryIntents(ledger),
   );
   return {
+    ledger,
     steps,
     mandates,
     kept,
@@ -260,5 +281,48 @@ describe("SendMandateHandler — le fait « mandat envoyé »", () => {
 
     await expect(h.run("mdt_actif")).rejects.toBeInstanceOf(MandateNotSendableError);
     expect(h.steps.log).toEqual([]);
+  });
+});
+
+describe("SendMandateHandler — une fois par intention, scellée avec le fait", () => {
+  // Régression : l'intention était résolue après l'écriture du fait ; une panne
+  // entre les deux laissait expirer le bail, et le rejeu refaisait le geste.
+  it("l'intention est résolue DANS la transaction du fait « mandat envoyé »", async () => {
+    const h = harness();
+
+    await h.run();
+
+    expect(h.ledger.resolutions).toEqual(["in tx"]);
+  });
+
+  it("un scellement refusé fait échouer le geste et rend la clé", async () => {
+    const h = harness();
+    h.ledger.refuseNextSeal = new Error("registre indisponible");
+
+    await expect(h.run()).rejects.toThrow("registre indisponible");
+    // Rendue : le rejeu réexécute ; le dépôt et l'e-mail sont idempotents par la clé.
+    await h.run();
+    expect(h.ledger.resolutions).toEqual(["in tx", "in tx"]);
+    expect(new Set(h.mails.awaitedReceipt.map((mail) => mail.idempotencyKey)).size).toBe(1);
+  });
+
+  it("un fait qui ne s'écrit pas ne scelle rien", async () => {
+    const h = harness();
+    h.events.broken = true;
+
+    await expect(h.run()).rejects.toThrow("journal en panne");
+    expect(h.ledger.resolutions).toEqual([]);
+  });
+
+  it("rejouée après un succès : ni dépôt, ni courriel, ni fait de plus", async () => {
+    const h = harness();
+
+    await h.run();
+    await h.run();
+
+    expect(h.kept.objects.size).toBe(1);
+    expect(h.mails.awaitedReceipt).toHaveLength(1);
+    expect(h.events.traced).toHaveLength(1);
+    expect(h.ledger.resolutions).toEqual(["in tx"]);
   });
 });

@@ -71,7 +71,9 @@ export class ChangeMailSenderHandler implements ICommandHandler<ChangeMailSender
   async execute(command: ChangeMailSenderCommand): Promise<void> {
     const space = mailSpaceOfParam(command.space);
     const nature = mailNatureOfParam(command.nature);
-    return this.intents.run(
+    // Scellée avec le changement ; l'essai, réseau et idempotent par la clé,
+    // part avant la transaction.
+    return this.intents.runSealed(
       {
         actorId: command.staffUserId,
         key: command.intentKey,
@@ -79,7 +81,7 @@ export class ChangeMailSenderHandler implements ICommandHandler<ChangeMailSender
         subject: `${space}:${nature}`,
       },
       NOTHING_TO_REPLAY,
-      () => this.change(space, nature, command),
+      (seal) => this.change(space, nature, command, seal),
     );
   }
 
@@ -87,6 +89,7 @@ export class ChangeMailSenderHandler implements ICommandHandler<ChangeMailSender
     space: MailSpace,
     nature: MailNature,
     command: ChangeMailSenderCommand,
+    seal: (result: void) => Promise<void>,
   ): Promise<void> {
     (await this.senders.load(space, nature)).assertRevision(command.expectedRevision);
     const verified = await this.domains.verified();
@@ -107,6 +110,7 @@ export class ChangeMailSenderHandler implements ICommandHandler<ChangeMailSender
           new MailSenderChangedEvent(space, nature, revision, identity, release.version),
         );
       }
+      await seal(undefined);
     });
     this.cache.forget();
   }

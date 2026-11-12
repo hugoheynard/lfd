@@ -49,20 +49,25 @@ export class CreateStaffUserHandler implements ICommandHandler<CreateStaffUserCo
   ) {}
 
   execute(command: CreateStaffUserCommand): Promise<string> {
-    // Le sujet n'est pas encore né : la clé seule désigne la création.
-    return this.intents.run(
+    // Le sujet n'est pas encore né : la clé seule désigne la création. Elle
+    // est scellée avec la fiche ; l'invitation, réseau, part après.
+    return this.intents.runSealed(
       { actorId: command.actorId, key: command.intentKey, gesture: "staff.create", subject: "new" },
       CREATED_REPLAY,
-      () => this.create(command),
+      (seal) => this.create(command, seal),
     );
   }
 
-  private async create(command: CreateStaffUserCommand): Promise<string> {
+  private async create(
+    command: CreateStaffUserCommand,
+    seal: (id: string) => Promise<void>,
+  ): Promise<string> {
     const id = await this.uow.run(async () => {
       const created = await this.staff.create(command.payload, command.actorId);
       await this.journal.append(
         staffUserCreatedFact(created.id, { ...command.payload, roleLabel: created.roleLabel }),
       );
+      await seal(created.id);
       return created.id;
     });
     try {

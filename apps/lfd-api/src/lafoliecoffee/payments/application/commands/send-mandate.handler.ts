@@ -16,6 +16,7 @@ import { CompanyBankAccountRepository } from "../../domain/ports/company-bank-ac
 import { PaymentMandateRepository } from "../../domain/payment-mandate.repository.js";
 import { MandateDebtorReader } from "../../domain/ports/mandate-debtor.reader.js";
 import { Clock } from "../../../../platform/time/clock.js";
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { buildCustomerMandate, type CustomerMandateDocument } from "../customer-mandate-support.js";
 import { SendMandateCommand } from "./send-mandate.command.js";
 
@@ -118,11 +119,17 @@ export class SendMandateHandler implements ICommandHandler<SendMandateCommand, v
     private readonly events: DomainEventPublisher,
     private readonly debtors: MandateDebtorReader,
     private readonly clock: Clock,
+    private readonly uow: UnitOfWork,
     private readonly intents: OncePerIntent,
   ) {}
 
+  /**
+   * L'intention est scellée avec le fait « mandat envoyé ». Le dépôt du PDF et
+   * l'e-mail, réseau et idempotents par la clé d'intention, partent avant la
+   * transaction : un rejeu après une panne les retrouve sans les doubler.
+   */
   execute(command: SendMandateCommand): Promise<void> {
-    return this.intents.run(
+    return this.intents.runSealed(
       {
         actorId: command.staffUserId,
         key: command.intentKey,
@@ -130,11 +137,14 @@ export class SendMandateHandler implements ICommandHandler<SendMandateCommand, v
         subject: command.mandateId,
       },
       NOTHING_TO_REPLAY,
-      () => this.send(command),
+      (seal) => this.send(command, seal),
     );
   }
 
-  private async send(command: SendMandateCommand): Promise<void> {
+  private async send(
+    command: SendMandateCommand,
+    seal: (result: void) => Promise<void>,
+  ): Promise<void> {
     const mandate = await this.mandates.findById(command.mandateId);
     if (mandate === null || mandate.companyId !== command.companyId) {
       throw new MandateNotFoundError(command.companyId);
@@ -176,14 +186,17 @@ export class SendMandateHandler implements ICommandHandler<SendMandateCommand, v
       ],
       idempotencyKey: `mandate-to-sign:${mandate.id}:${command.intentKey}`,
     });
-    await this.events.publishTraced(
-      new MandateSentEvent(
-        mandate.id,
-        { id: mandate.companyId, name: holder.displayName },
-        snapshot.reference,
-        receipt.providerId,
-      ),
-    );
+    await this.uow.run(async () => {
+      await this.events.publishTraced(
+        new MandateSentEvent(
+          mandate.id,
+          { id: mandate.companyId, name: holder.displayName },
+          snapshot.reference,
+          receipt.providerId,
+        ),
+      );
+      await seal(undefined);
+    });
   }
 
   /** Le mandat par la lecture même de l'aperçu (cf. la classe). */

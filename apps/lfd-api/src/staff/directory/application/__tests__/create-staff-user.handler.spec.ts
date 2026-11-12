@@ -1,6 +1,7 @@
 import type { StaffUserPayload } from "@lfd/contracts";
 
 import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+import { SealingIntentLedger } from "../../../../platform/intent/__tests__/sealing-intent-ledger.js";
 import { RecordingJournal } from "../../../../platform/journal/__tests__/recording-journal.js";
 import type { OpenStaffAccess } from "../../../invitations/open-staff-access.service.js";
 import { STAFF_FACTS } from "../../domain/staff-facts.js";
@@ -25,6 +26,7 @@ interface Harness {
   readonly staff: ScriptedStaffUsers;
   readonly journal: RecordingJournal;
   readonly opened: { readonly id: string; readonly insideTransaction: boolean }[];
+  readonly ledger: SealingIntentLedger;
 }
 
 function harness(options: { journalDown?: boolean; openFails?: boolean } = {}): Harness {
@@ -32,6 +34,7 @@ function harness(options: { journalDown?: boolean; openFails?: boolean } = {}): 
   const staff = new ScriptedStaffUsers(uow);
   const journal = new RecordingJournal(options.journalDown ? new Error("journal en panne") : null);
   const opened: { id: string; insideTransaction: boolean }[] = [];
+  const ledger = new SealingIntentLedger(() => uow.inside);
   // `OpenStaffAccess` est une classe concrète à sept dépendances : on n'en
   // double que le geste que le handler appelle.
   const access = {
@@ -43,10 +46,11 @@ function harness(options: { journalDown?: boolean; openFails?: boolean } = {}): 
     },
   } as OpenStaffAccess;
   return {
-    handler: new CreateStaffUserHandler(staff, access, journal, uow, inMemoryIntents()),
+    handler: new CreateStaffUserHandler(staff, access, journal, uow, inMemoryIntents(ledger)),
     staff,
     journal,
     opened,
+    ledger,
   };
 }
 
@@ -117,5 +121,49 @@ describe("créer un membre de l’équipe", () => {
       h.handler.execute(new CreateStaffUserCommand(PAYLOAD, "staff_moi", INTENT)),
     ).resolves.toBe("s1");
     expect(h.journal.types()).toEqual([STAFF_FACTS.created]);
+  });
+
+  describe("une fois par intention, scellée avec la fiche", () => {
+    // Régression : l'intention était résolue après la transaction ; une panne
+    // entre les deux laissait expirer le bail, et le rejeu refaisait le geste.
+    it("l'intention est résolue DANS la transaction de la fiche, avant l'invitation", async () => {
+      const h = harness();
+
+      await h.handler.execute(new CreateStaffUserCommand(PAYLOAD, "staff_moi", INTENT));
+
+      expect(h.ledger.resolutions).toEqual(["in tx"]);
+    });
+
+    it("un scellement refusé fait échouer la création : rien n'est invité, la clé est rendue", async () => {
+      const h = harness();
+      h.ledger.refuseNextSeal = new Error("registre indisponible");
+
+      await expect(
+        h.handler.execute(new CreateStaffUserCommand(PAYLOAD, "staff_moi", INTENT)),
+      ).rejects.toThrow("registre indisponible");
+      expect(h.opened).toEqual([]);
+      await expect(
+        h.handler.execute(new CreateStaffUserCommand(PAYLOAD, "staff_moi", INTENT)),
+      ).resolves.toBe("s1");
+    });
+
+    it("une écriture qui tombe ne scelle rien", async () => {
+      const h = harness({ journalDown: true });
+
+      await expect(
+        h.handler.execute(new CreateStaffUserCommand(PAYLOAD, "staff_moi", INTENT)),
+      ).rejects.toThrow("journal en panne");
+      expect(h.ledger.resolutions).toEqual([]);
+    });
+
+    it("rejouée après un succès : la fiche n'est pas recréée, rien n'est rescellé", async () => {
+      const h = harness();
+
+      await h.handler.execute(new CreateStaffUserCommand(PAYLOAD, "staff_moi", INTENT));
+      await h.handler.execute(new CreateStaffUserCommand(PAYLOAD, "staff_moi", INTENT));
+
+      expect(h.staff.writes).toHaveLength(1);
+      expect(h.ledger.resolutions).toEqual(["in tx"]);
+    });
   });
 });

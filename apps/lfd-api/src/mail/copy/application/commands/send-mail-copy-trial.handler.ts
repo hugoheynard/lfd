@@ -44,7 +44,9 @@ export class SendMailCopyTrialHandler implements ICommandHandler<SendMailCopyTri
    * @throws {TrialRecipientMissingError} la fiche n'a pas d'adresse active.
    */
   execute(command: SendMailCopyTrialCommand): Promise<void> {
-    return this.intents.run(
+    // Scellée avec le fait de l'essai ; l'envoi, réseau et idempotent par la
+    // clé, part avant la transaction.
+    return this.intents.runSealed(
       {
         actorId: command.staffUserId,
         key: command.intentKey,
@@ -54,11 +56,14 @@ export class SendMailCopyTrialHandler implements ICommandHandler<SendMailCopyTri
         }`,
       },
       NOTHING_TO_REPLAY,
-      () => this.trial(command),
+      (seal) => this.trial(command, seal),
     );
   }
 
-  private async trial(command: SendMailCopyTrialCommand): Promise<void> {
+  private async trial(
+    command: SendMailCopyTrialCommand,
+    seal: (result: void) => Promise<void>,
+  ): Promise<void> {
     if (!this.manifest.hasMail(command.mail)) {
       throw new UnknownMailError(command.mail);
     }
@@ -79,11 +84,12 @@ export class SendMailCopyTrialHandler implements ICommandHandler<SendMailCopyTri
       command.intentKey,
       command.editor,
     );
-    await this.uow.run(() =>
-      this.events.publishTraced(
+    await this.uow.run(async () => {
+      await this.events.publishTraced(
         new MailCopyTrialSentEvent(command.mail, command.locale, command.source),
-      ),
-    );
+      );
+      await seal(undefined);
+    });
   }
 
   private async recipientOf(staffUserId: string): Promise<string> {

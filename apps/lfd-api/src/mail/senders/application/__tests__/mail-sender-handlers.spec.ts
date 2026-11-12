@@ -1,6 +1,9 @@
-import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+import {
+  InsideUnitOfWork,
+  SealingIntentLedger,
+} from "../../../../platform/intent/__tests__/sealing-intent-ledger.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
   FixedStaffContacts,
@@ -19,6 +22,7 @@ import {
   SenderDomainNotVerifiedError,
   UnknownMailNatureError,
 } from "../../domain/mail-sender-errors.js";
+import type { MailSpaceSender } from "../../domain/mail-space-sender.js";
 import { ChangeMailSenderCommand } from "../commands/change-mail-sender.command.js";
 import { ChangeMailSenderHandler } from "../commands/change-mail-sender.handler.js";
 import {
@@ -45,19 +49,29 @@ const IDENTITY = {
 };
 const VERIFIED = ["lafoliecoffee.info", "lfd-backoffice.com"];
 
+/** Un autre poste a changé l'expéditeur entre la lecture et l'écriture. */
+class RefusingSenders extends InMemoryMailSenders {
+  override save(sender: MailSpaceSender): Promise<void> {
+    return Promise.reject(new MailSenderChangedError(sender.space));
+  }
+}
+
 function world(
   options: {
     domains?: readonly string[] | Error;
     refusal?: Error | null;
     contacts?: (typeof COLETTE)[];
+    senders?: InMemoryMailSenders;
   } = {},
 ) {
-  const senders = new InMemoryMailSenders();
+  const senders = options.senders ?? new InMemoryMailSenders();
   const texts = new InMemoryMailCopy();
   const trial = new RecordingSenderTrial(options.refusal ?? null);
   const events = new RecordingPublisher();
   const cache = new RecordingCache();
   const domains = new FixedSendingDomains(options.domains ?? VERIFIED);
+  const uow = new InsideUnitOfWork();
+  const ledger = new SealingIntentLedger(() => uow.inside);
   const handler = new ChangeMailSenderHandler(
     senders,
     domains,
@@ -67,10 +81,10 @@ function world(
     cache,
     events,
     new FixedClock(new Date(0)),
-    new DirectUnitOfWork(),
-    inMemoryIntents(),
+    uow,
+    inMemoryIntents(ledger),
   );
-  return { senders, texts, trial, events, cache, domains, handler };
+  return { senders, texts, trial, events, cache, domains, handler, ledger };
 }
 
 function command(
@@ -227,5 +241,41 @@ describe("ChangeMailSenderHandler (C3)", () => {
     await w.handler.execute(command({ space: "lfc" }));
     await w.handler.execute(command({ space: "lfc", nature: "marketing", intentKey: "autre" }));
     expect(w.trial.sent).toHaveLength(2);
+  });
+});
+
+describe("ChangeMailSenderHandler — une fois par intention, scellée avec le changement", () => {
+  // Régression : l'intention était résolue après la transaction ; une panne
+  // entre les deux laissait expirer le bail, et le rejeu refaisait le geste.
+  it("l'intention est résolue DANS la transaction du changement", async () => {
+    const w = world();
+    await w.handler.execute(command());
+    expect(w.ledger.resolutions).toEqual(["in tx"]);
+  });
+
+  it("un scellement refusé fait échouer le geste : la clé est rendue, le cache n'est pas oublié", async () => {
+    const w = world();
+    w.ledger.refuseNextSeal = new Error("registre indisponible");
+
+    await expect(w.handler.execute(command())).rejects.toThrow("registre indisponible");
+    expect(w.cache.forgotten).toBe(0);
+    expect(w.ledger.resolutions).toEqual(["in tx"]);
+  });
+
+  it("une écriture refusée ne scelle rien", async () => {
+    const w = world({ senders: new RefusingSenders() });
+
+    await expect(w.handler.execute(command())).rejects.toThrow(MailSenderChangedError);
+    expect(w.ledger.resolutions).toEqual([]);
+  });
+
+  it("rejouée après un succès : ni essai ni écriture de plus", async () => {
+    const w = world();
+    await w.handler.execute(command());
+    await w.handler.execute(command());
+
+    expect(w.trial.sent).toHaveLength(1);
+    expect(w.texts.version).toBe(1);
+    expect(w.ledger.resolutions).toEqual(["in tx"]);
   });
 });

@@ -1,5 +1,9 @@
-import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+import {
+  InsideUnitOfWork,
+  SealingIntentLedger,
+} from "../../../../platform/intent/__tests__/sealing-intent-ledger.js";
+import type { JournaledEvent } from "../../../../platform/journal/journal-fact.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { MANIFEST, SUBJECT, stamp } from "../../domain/__tests__/mail-copy-fixtures.js";
 import { TrialRecipientMissingError, UnknownMailError } from "../../domain/mail-copy-errors.js";
@@ -27,7 +31,14 @@ const COLETTE = {
 };
 
 /** Un texte publié, dont le brouillon attend : les deux sources diffèrent. */
-function world(contacts = [COLETTE]) {
+/** Le fait de l'essai ne s'écrit pas : la transaction tombe. */
+class FailingPublisher extends RecordingPublisher {
+  override publishTraced(_event: JournaledEvent): Promise<void> {
+    return Promise.reject(new Error("journal en panne"));
+  }
+}
+
+function world(contacts = [COLETTE], events: RecordingPublisher = new RecordingPublisher()) {
   const texts = new InMemoryMailCopy();
   texts.rows.set(`${SUBJECT.mail}|${SUBJECT.path}|fr`, {
     mail: SUBJECT.mail,
@@ -44,11 +55,13 @@ function world(contacts = [COLETTE]) {
   const reader = new InMemoryAdminReader(texts);
   const renderer = new RecordingRenderer();
   const sender = new RecordingTrialSender();
-  const events = new RecordingPublisher();
+  const uow = new InsideUnitOfWork();
+  const ledger = new SealingIntentLedger(() => uow.inside);
   return {
     renderer,
     sender,
     events,
+    ledger,
     preview: new GetMailCopyPreviewHandler(reader, MANIFEST, renderer),
     trial: new SendMailCopyTrialHandler(
       reader,
@@ -56,8 +69,8 @@ function world(contacts = [COLETTE]) {
       new FixedStaffContacts(contacts),
       sender,
       events,
-      new DirectUnitOfWork(),
-      inMemoryIntents(),
+      uow,
+      inMemoryIntents(ledger),
     ),
   };
 }
@@ -156,5 +169,44 @@ describe("« M'envoyer un essai » (C6)", () => {
         new SendMailCopyTrialCommand("pas.un.mail", "fr", "draft", "fiche-colette", INTENT),
       ),
     ).rejects.toBeInstanceOf(UnknownMailError);
+  });
+});
+
+describe("« M'envoyer un essai » — une fois par intention, scellée avec sa trace", () => {
+  const trial = (): SendMailCopyTrialCommand =>
+    new SendMailCopyTrialCommand(SUBJECT.mail, "fr", "draft", "fiche-colette", INTENT);
+
+  // Régression : l'intention était résolue après la transaction ; une panne
+  // entre les deux laissait expirer le bail, et le rejeu refaisait le geste.
+  it("l'intention est résolue DANS la transaction de la trace", async () => {
+    const w = world();
+    await w.trial.execute(trial());
+    expect(w.ledger.resolutions).toEqual(["in tx"]);
+  });
+
+  it("un scellement refusé fait échouer le geste et rend la clé", async () => {
+    const w = world();
+    w.ledger.refuseNextSeal = new Error("registre indisponible");
+
+    await expect(w.trial.execute(trial())).rejects.toThrow("registre indisponible");
+    await w.trial.execute(trial());
+    expect(w.ledger.resolutions).toEqual(["in tx", "in tx"]);
+  });
+
+  it("une trace qui ne s'écrit pas ne scelle rien", async () => {
+    const w = world([COLETTE], new FailingPublisher());
+
+    await expect(w.trial.execute(trial())).rejects.toThrow("journal en panne");
+    expect(w.ledger.resolutions).toEqual([]);
+  });
+
+  it("rejouée après un succès : ni envoi ni trace de plus", async () => {
+    const w = world();
+    await w.trial.execute(trial());
+    await w.trial.execute(trial());
+
+    expect(w.sender.sent).toHaveLength(1);
+    expect(w.events.traced).toHaveLength(1);
+    expect(w.ledger.resolutions).toEqual(["in tx"]);
   });
 });

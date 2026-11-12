@@ -46,10 +46,11 @@ export class SetStaffStatusHandler implements ICommandHandler<SetStaffStatusComm
   /**
    * **Une fois par intention** (plan `plan-service-e-mails.md`, revue, cas
    * 4) : un double clic ne repasse pas la transition et ne redemande pas
-   * l'e-mail.
+   * l'e-mail. L'intention est scellée dans la transaction de la transition :
+   * une transition validée n'est jamais rejouée après l'expiration du bail.
    */
   execute(command: SetStaffStatusCommand): Promise<void> {
-    return this.intents.run(
+    return this.intents.runSealed(
       {
         actorId: command.actorId,
         key: command.intentKey,
@@ -57,11 +58,14 @@ export class SetStaffStatusHandler implements ICommandHandler<SetStaffStatusComm
         subject: `${command.id}:${command.change.status}`,
       },
       NOTHING_TO_REPLAY,
-      () => this.apply(command),
+      (seal) => this.apply(command, seal),
     );
   }
 
-  private async apply(command: SetStaffStatusCommand): Promise<void> {
+  private async apply(
+    command: SetStaffStatusCommand,
+    seal: (result: void) => Promise<void>,
+  ): Promise<void> {
     const { status } = command.change;
     await this.uow.run(async () => {
       const previous = await this.staff.setStatus(command.id, command.change, command.actorId);
@@ -70,6 +74,7 @@ export class SetStaffStatusHandler implements ICommandHandler<SetStaffStatusComm
         await this.journal.append(fact);
       }
       await this.tell(command, previous, status);
+      await seal(undefined);
     });
     this.cache.forgetAll();
   }

@@ -7,6 +7,7 @@ import {
 } from "../../../../mail/channels/requests/mail.js";
 import { RecordingMail } from "../../../../mail/channels/requests/__tests__/recording-mail.js";
 import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+import { SealingIntentLedger } from "../../../../platform/intent/__tests__/sealing-intent-ledger.js";
 import { STAFF_FACTS } from "../../domain/staff-facts.js";
 import type { StaffUserSnapshot } from "../../domain/staff-user-state.js";
 import { SetStaffStatusCommand } from "../set-staff-status.command.js";
@@ -40,6 +41,7 @@ function harness(before: StaffUserSnapshot, journalDown = false) {
   const journal = new RecordingJournal(journalDown ? new Error("journal en panne") : null);
   const cache = new RecordingAccessCache(uow);
   const mails = new InsideMail(uow);
+  const ledger = new SealingIntentLedger(() => uow.inside);
   const config = { adminBaseUrl: (): string => "https://admin.test" } as AppConfig;
   const handler = new SetStaffStatusHandler(
     staff,
@@ -48,9 +50,9 @@ function harness(before: StaffUserSnapshot, journalDown = false) {
     journal,
     uow,
     cache,
-    inMemoryIntents(),
+    inMemoryIntents(ledger),
   );
-  return { handler, journal, cache, mails };
+  return { handler, staff, journal, cache, mails, ledger };
 }
 
 const FIRST = "0b7f6f0e-8a52-4c1e-9d43-0d8e5f0a1b2c";
@@ -169,5 +171,45 @@ describe("SetStaffStatusHandler — la porte se ferme avec sa trace", () => {
 
     await expect(h.handler.execute(suspend)).rejects.toThrow("boîte d'envoi indisponible");
     expect(h.cache.forgotten).toEqual([]);
+  });
+
+  describe("une fois par intention, scellée avec la transition", () => {
+    // Régression : l'intention était résolue après la transaction ; une panne
+    // entre les deux laissait expirer le bail, et le rejeu refaisait le geste.
+    it("l'intention est résolue DANS la transaction de la transition", async () => {
+      const h = harness(CECILE);
+
+      await h.handler.execute(suspend);
+
+      expect(h.ledger.resolutions).toEqual(["in tx"]);
+    });
+
+    it("un scellement refusé fait échouer la transaction : l'intention n'est pas résolue", async () => {
+      const h = harness(CECILE);
+      h.ledger.refuseNextSeal = new Error("registre indisponible");
+
+      await expect(h.handler.execute(suspend)).rejects.toThrow("registre indisponible");
+      expect(h.cache.forgotten).toEqual([]);
+      // Rendue, la même clé réexécute : rien n'avait été gardé.
+      await h.handler.execute(suspend);
+      expect(h.ledger.resolutions).toEqual(["in tx", "in tx"]);
+    });
+
+    it("une écriture qui tombe ne scelle rien, et la même clé réessaie", async () => {
+      const h = harness(CECILE, true);
+
+      await expect(h.handler.execute(suspend)).rejects.toThrow("journal en panne");
+      expect(h.ledger.resolutions).toEqual([]);
+    });
+
+    it("rejouée après un succès : rien n'est réécrit", async () => {
+      const h = harness(CECILE);
+
+      await h.handler.execute(suspend);
+      await h.handler.execute(suspend);
+
+      expect(h.staff.writes).toHaveLength(1);
+      expect(h.ledger.resolutions).toEqual(["in tx"]);
+    });
   });
 });
