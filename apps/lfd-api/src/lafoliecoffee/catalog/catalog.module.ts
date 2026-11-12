@@ -53,6 +53,18 @@ import { PrismaCatalogItemRepository } from "./infrastructure/prisma-catalog-ite
 import { PrismaCatalogVisualsProjection } from "./infrastructure/prisma-catalog-visuals.projection.js";
 import { PrismaCatalogReader } from "./infrastructure/prisma-catalog.reader.js";
 import { AdminCatalogController } from "./http/admin-catalog.controller.js";
+import { DayVersionsModule } from "../../platform/day-versions/day-versions.module.js";
+import { AdminCatalogScreenController } from "./http/admin-catalog-screen.controller.js";
+import { GetCatalogScreenHandler } from "./application/queries/get-catalog-screen.handler.js";
+import { GetCatalogScreenRowsHandler } from "./application/queries/get-catalog-screen-rows.handler.js";
+import { CatalogScreenReader } from "./domain/ports/catalog-screen.reader.js";
+import { PrismaCatalogScreenReader } from "./infrastructure/prisma-catalog-screen.reader.js";
+import { CatalogAdminVersionSource } from "./application/catalog-admin-version.source.js";
+import { PruneCatalogAdminChangesHandler } from "./application/commands/prune-catalog-admin-changes.handler.js";
+import { CatalogAdminChangeVersionReader } from "./domain/ports/catalog-admin-change-version.reader.js";
+import { CatalogAdminChangePruner } from "./domain/ports/catalog-admin-change.pruner.js";
+import { PrismaCatalogAdminChangeVersionReader } from "./infrastructure/prisma-catalog-admin-change-version.reader.js";
+import { PrismaCatalogAdminChangePruner } from "./infrastructure/prisma-catalog-admin-change.pruner.js";
 import { ShopCatalogueController } from "./http/shop-catalogue.controller.js";
 import { ShopFeaturedController } from "./http/shop-featured.controller.js";
 import { ReadShopCatalogueHandler } from "./application/queries/read-shop-catalogue.js";
@@ -151,6 +163,8 @@ import { SnapshotOrderLineClassificationReader } from "./infrastructure/catalogu
   // `PricingModule` pour les promotions que le rayon mentionne (L10) : il
   // n'importe rien, donc aucun cycle.
   imports: [
+    // Les contenus versionnés : l'écran Catalogue servi depuis l'objet (§ 3.5).
+    DayVersionsModule,
     PricerModule,
     PricingModule,
     CanonicalPriceHistoryModule,
@@ -163,6 +177,8 @@ import { SnapshotOrderLineClassificationReader } from "./infrastructure/catalogu
   ],
   controllers: [
     AdminCatalogController,
+    // L'écran Catalogue lu en une fois (`plan-catalogue-du-back-office.md`, § 3.1).
+    AdminCatalogScreenController,
     // Le sur mesure et la réservation (`plan-articles-sur-mesure.md`, L1a).
     AdminMadeToOrderController,
     // L'interrupteur du cache des rayons pro (`le-rayon-en-cache.md`).
@@ -184,6 +200,14 @@ import { SnapshotOrderLineClassificationReader } from "./infrastructure/catalogu
     ListCatalogHandler,
     GetCatalogSummaryHandler,
     GetPublishedCatalogHandler,
+    GetCatalogScreenHandler,
+    GetCatalogScreenRowsHandler,
+    { provide: CatalogScreenReader, useClass: PrismaCatalogScreenReader },
+    // Le numéro `catalog-admin` et son balayage (`plan-catalogue-du-back-office.md`, § 3.3).
+    CatalogAdminVersionSource,
+    PruneCatalogAdminChangesHandler,
+    { provide: CatalogAdminChangeVersionReader, useClass: PrismaCatalogAdminChangeVersionReader },
+    { provide: CatalogAdminChangePruner, useClass: PrismaCatalogAdminChangePruner },
     ExportCatalogCsvHandler,
     ReadShopCatalogueHandler,
     ReadShopFeaturedHandler,
@@ -290,6 +314,8 @@ import { SnapshotOrderLineClassificationReader } from "./infrastructure/catalogu
   // L'historique sort d'ici parce que l'écran de tarification en a besoin : sa
   // lecture datée doit rendre le tarif de CE jour-là, pas celui d'aujourd'hui.
   exports: [
+    // Le numéro de l'écran Catalogue, relié au registre par `appBootstrap/day-version-sources.module.ts`.
+    CatalogAdminVersionSource,
     CatalogReader,
     // Pour la caisse, le tarificateur et la projection : tous trois résolvent un
     // SKU avant de tarifer, et aucun n'a de raison de passer par `orders` pour ça.

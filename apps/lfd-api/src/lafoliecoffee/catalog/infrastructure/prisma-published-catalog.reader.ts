@@ -6,6 +6,8 @@ import { PUBLIC_SALES_CONTEXT } from "../domain/public-context.js";
 import {
   PublishedCatalogReader,
   type PublishedCatalogSource,
+  type PublishedEntryRow,
+  type PublishedFamilyRow,
   type PublishedItemRow,
 } from "../domain/ports/published-catalog.reader.js";
 import { catalogAudienceOf } from "../domain/served-to.js";
@@ -17,7 +19,7 @@ import { DECISION_COLUMNS } from "./catalog-decision-columns.js";
 const ENTRY_STATUSES: readonly CatalogEntryStatus[] = ["inactive", "active", "archived"];
 
 /** La ligne d'article lue, décision jointe. Aucun type `Prisma.*` exporté. */
-interface ItemRow {
+export interface PublishedItemSourceRow {
   readonly sku: string;
   readonly productId: string;
   readonly productSku: string;
@@ -62,32 +64,15 @@ export class PrismaPublishedCatalogReader extends PublishedCatalogReader {
       this.prisma.catalogCategory.findMany({ orderBy: [{ position: "asc" }, { id: "asc" }] }),
     ]);
     return {
-      entries: entries.map((entry) => ({
-        productId: entry.productId,
-        productSku: entry.productSku,
-        name: entry.name,
-        categoryId: entry.categoryId,
-        status: entryStatusOf(entry.status),
-        audience: catalogAudienceOf(entry.audience) ?? "both",
-        audienceInherited: entry.audienceInherited,
-        gaps: gapsOf(entry.gaps),
-        variants: entryVariantsOf(entry.variants),
-        receivedAt: entry.receivedAt,
-      })),
-      items: items.map(toItem),
-      families: families.map((family) => ({
-        id: family.id,
-        name: family.name,
-        parentId: family.parentId,
-        position: family.position,
-        audience: catalogAudienceOf(family.audience),
-        withdrawn: family.withdrawnAt !== null,
-      })),
+      entries: entries.map(publishedEntryRowOf),
+      items: items.map(publishedItemRowOf),
+      families: families.map(publishedFamilyRowOf),
     };
   }
 }
 
-function toItem(row: ItemRow): PublishedItemRow {
+/** L'article en vente, tel que la vue publiée le lit. */
+export function publishedItemRowOf(row: PublishedItemSourceRow): PublishedItemRow {
   return {
     sku: row.sku,
     productId: row.productId,
@@ -110,12 +95,64 @@ function toItem(row: ItemRow): PublishedItemRow {
   };
 }
 
+/** La ligne de fiche lue. Aucun type `Prisma.*` exporté. */
+export interface PublishedEntrySourceRow {
+  readonly productId: string;
+  readonly productSku: string;
+  readonly name: string;
+  readonly categoryId: string;
+  readonly status: string;
+  readonly audience: string | null;
+  readonly audienceInherited: boolean | null;
+  readonly gaps: unknown;
+  readonly variants: unknown;
+  readonly receivedAt: Date;
+}
+
+/** La ligne de famille lue. */
+export interface PublishedFamilySourceRow {
+  readonly id: string;
+  readonly name: string;
+  readonly parentId: string | null;
+  readonly position: number;
+  readonly audience: string | null;
+  readonly withdrawnAt: Date | null;
+}
+
+/** La fiche reçue, `jsonb` relus. */
+export function publishedEntryRowOf(entry: PublishedEntrySourceRow): PublishedEntryRow {
+  return {
+    productId: entry.productId,
+    productSku: entry.productSku,
+    name: entry.name,
+    categoryId: entry.categoryId,
+    status: entryStatusOf(entry.status),
+    audience: catalogAudienceOf(entry.audience) ?? "both",
+    audienceInherited: entry.audienceInherited,
+    gaps: gapsOf(entry.gaps),
+    variants: entryVariantsOf(entry.variants),
+    receivedAt: entry.receivedAt,
+  };
+}
+
+/** La famille connue. */
+export function publishedFamilyRowOf(family: PublishedFamilySourceRow): PublishedFamilyRow {
+  return {
+    id: family.id,
+    name: family.name,
+    parentId: family.parentId,
+    position: family.position,
+    audience: catalogAudienceOf(family.audience),
+    withdrawn: family.withdrawnAt !== null,
+  };
+}
+
 /**
  * L'étiquette servie au public : celle du référentiel — et rien si le
  * contexte public n'a pas d'entrée, parce que la boutique ne sert alors pas
  * l'article (`servedPriceOf`, `prisma-catalog.reader.ts`).
  */
-function publicTtcOf(row: ItemRow): number | null {
+export function publicTtcOf(row: PublishedItemSourceRow): number | null {
   if (publicByContextOf(row.publicByContext)?.[PUBLIC_SALES_CONTEXT] === undefined) {
     return null;
   }

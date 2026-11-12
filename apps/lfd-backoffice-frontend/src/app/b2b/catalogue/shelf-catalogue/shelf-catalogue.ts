@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import type { CatalogAdminItemView, MadeToOrderMarkView } from '@lfd/contracts';
+import type { CatalogScreenItemView, MadeToOrderMarkView } from '@lfd/contracts';
 import { formatEuros } from '@lfd/catalog-ui';
 import { htMillicentsOf, MILLICENTS_PER_CENT, ttcCentsFromHtMillicents } from '@lfd/money';
 import {
@@ -212,7 +212,7 @@ export class ShelfCatalogue {
    * n'est pas affiché ici. La colonne reste : elle dit ce que la chaîne réelle
    * rend, et c'est elle qui verrait un écart revenir.
    */
-  protected chargedEuros(item: CatalogAdminItemView): string | null {
+  protected chargedEuros(item: CatalogScreenItemView): string | null {
     const posed = item.publicTtcCents;
     const rate = item.publicVatRatePercent;
     if (posed === null || rate === null) {
@@ -233,7 +233,7 @@ export class ShelfCatalogue {
    * ramenant : deux chemins de mise en forme pour deux unités finiraient par
    * arrondir différemment, et sur la même ligne.
    */
-  protected publicEuros(item: CatalogAdminItemView): string | null {
+  protected publicEuros(item: CatalogScreenItemView): string | null {
     const cents = item.publicTtcCents;
     return cents === null ? null : formatEuros(cents * MILLICENTS_PER_CENT);
   }

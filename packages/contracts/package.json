@@ -43,6 +43,11 @@
       "import": "./dist/product-path.js",
       "require": "./dist/product-path.js"
     },
+    "./published-catalog-counts": {
+      "types": "./src/published-catalog-counts.ts",
+      "import": "./dist/published-catalog-counts.js",
+      "require": "./dist/published-catalog-counts.js"
+    },
     "./promotion-scope": {
       "types": "./src/promotion-scope.ts",
       "import": "./dist/promotion-scope.js",

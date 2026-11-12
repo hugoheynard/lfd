@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest';
 
 import { provideRouter } from '@angular/router';
 import type {
-  CatalogAdminItemView,
+  CatalogScreenItemView,
+  CatalogScreenRowsView,
+  CatalogScreenView,
   MadeToOrderMarkView,
   PendingReviewView,
   PublishedCatalogView,
@@ -17,6 +19,7 @@ import { NotifyService } from '../../../notify.service';
 import { CataloguePage } from './catalogue-page';
 import { CatalogueService, type ShopAudience } from '../catalogue.service';
 import { MadeToOrderService } from '../made-to-order.service';
+import { type VersionWatch, VersionWatcher } from '../../../shared/version/version-watcher';
 
 /**
  * La vue « Catalogue publié » : les prix du référentiel en lecture (lot D,
@@ -27,8 +30,9 @@ import { MadeToOrderService } from '../made-to-order.service';
  * et c'est le gabarit qui câble les colonnes — que `tsc` ne lit pas.
  */
 
-function item(over: Partial<CatalogAdminItemView> = {}): CatalogAdminItemView {
+function item(over: Partial<CatalogScreenItemView> = {}): CatalogScreenItemView {
   return {
+    productId: `prd_${over.sku ?? 'VIE-001-1'}`,
     sku: 'VIE-001-1',
     productSku: 'VIE-001',
     name: 'Croissant',
@@ -52,10 +56,7 @@ function item(over: Partial<CatalogAdminItemView> = {}): CatalogAdminItemView {
     isFeaturedPro: false,
     isFeaturedPublic: false,
     isCustomRecipe: false,
-    isReserved: false,
     operationOnly: false,
-    decidedBy: null,
-    decidedByName: null,
     decidedAt: null,
     receivedAt: '2026-09-01T08:00:00.000Z',
     ...over,
@@ -109,7 +110,7 @@ function entry(over: Partial<PublishedEntryView> = {}): PublishedEntryView {
  * SKU et son nom repris. C'est la forme que le serveur rend pour un catalogue
  * où tout se vend — les cas qui s'en écartent posent `published` eux-mêmes.
  */
-function viewOf(items: readonly CatalogAdminItemView[]): PublishedCatalogView {
+function viewOf(items: readonly CatalogScreenItemView[]): PublishedCatalogView {
   return {
     shelves: [
       {
@@ -123,7 +124,7 @@ function viewOf(items: readonly CatalogAdminItemView[]): PublishedCatalogView {
     ],
     entries: items.map((one) =>
       entry({
-        productId: `prd_${one.sku}`,
+        productId: one.productId,
         productSku: one.productSku,
         name: one.name,
         variants: [variantView({ sku: one.sku, name: one.name })],
@@ -134,15 +135,37 @@ function viewOf(items: readonly CatalogAdminItemView[]): PublishedCatalogView {
 }
 
 class FakeCatalogue {
-  items: readonly CatalogAdminItemView[] = [item()];
+  items: readonly CatalogScreenItemView[] = [item()];
   /** `null` = dérivée des lignes en vente (`viewOf`). */
   view: PublishedCatalogView | null = null;
 
-  list(): Promise<readonly CatalogAdminItemView[]> {
-    return Promise.resolve(this.items);
+  version = 1;
+  screens = 0;
+  readonly rowReads: (readonly string[])[] = [];
+  madeToOrder: FakeMadeToOrder | null = null;
+
+  async screen(): Promise<CatalogScreenView> {
+    this.screens += 1;
+    return {
+      version: this.version,
+      published: this.view ?? viewOf(this.items),
+      items: this.items,
+      madeToOrder: this.madeToOrder === null ? null : await this.madeToOrder.marks(),
+    };
   }
-  published(): Promise<PublishedCatalogView> {
-    return Promise.resolve(this.view ?? viewOf(this.items));
+  /** Les fiches qui portent un SKU demandé, et leurs articles. */
+  screenRows(skus: readonly string[]): Promise<CatalogScreenRowsView> {
+    this.rowReads.push(skus);
+    const view = this.view ?? viewOf(this.items);
+    const entries = view.entries.filter((one) =>
+      one.variants.some((variant) => skus.includes(variant.sku)),
+    );
+    const products = new Set(entries.map((one) => one.productId));
+    return Promise.resolve({
+      version: this.version,
+      entries,
+      items: this.items.filter((one) => products.has(one.productId) || skus.includes(one.sku)),
+    });
   }
   /** Ce que la route unique `/masking` a reçu. */
   readonly masking: { sku: string; audience: ShopAudience; hidden: boolean }[] = [];
@@ -181,7 +204,9 @@ async function render(
   api: FakeCatalogue,
   madeToOrder = new FakeMadeToOrder(),
   can: (permission: string) => boolean = () => true,
+  watches: VersionWatch[] = [],
 ) {
+  api.madeToOrder = can('lfc_made_to_order:read') ? madeToOrder : null;
   TestBed.configureTestingModule({
     imports: [CataloguePage],
     providers: [
@@ -190,6 +215,7 @@ async function render(
       { provide: MadeToOrderService, useValue: madeToOrder },
       { provide: NotifyService, useValue: new FakeNotify() },
       { provide: PermissionsStore, useValue: { can } },
+      { provide: VersionWatcher, useValue: { watch: (spec: VersionWatch) => watches.push(spec) } },
     ],
   });
   const fixture: ComponentFixture<CataloguePage> = TestBed.createComponent(CataloguePage);
@@ -803,7 +829,7 @@ describe('le sur mesure (R3-2)', () => {
 
   it('un article sur mesure réservé dit à combien de comptes', async () => {
     const api = new FakeCatalogue();
-    api.items = [item({ isCustomRecipe: true, isReserved: true })];
+    api.items = [item({ isCustomRecipe: true })];
     const madeToOrder = new FakeMadeToOrder();
     madeToOrder.marked = [
       { sku: 'VIE-001-1', isCustomRecipe: true, reservedVisibility: 'hidden', reservationCount: 2 },
@@ -844,5 +870,97 @@ describe('le sur mesure (R3-2)', () => {
     expect(madeToOrder.calls).toBe(0);
     expect(text(fixture)).not.toContain('Attribuer…');
     expect(text(fixture)).toContain('Croissant');
+  });
+});
+
+/**
+ * **L'écran lit le store** (`plan-catalogue-du-back-office.md`, § 3.2–3.4) :
+ * une lecture à l'ouverture, les lignes seules après un geste, et le numéro
+ * de la copie confié au veilleur.
+ */
+describe('CataloguePage — la copie et ses relectures', () => {
+  it('s’ouvre sur une seule lecture de l’écran', async () => {
+    const api = new FakeCatalogue();
+    await render(api);
+
+    expect(api.screens).toBe(1);
+    expect(api.rowReads).toEqual([]);
+  });
+
+  it('après un masquage, relit la seule ligne touchée, pas l’écran', async () => {
+    const api = new FakeCatalogue();
+    const fixture = await render(api);
+
+    button(fixture, 'Masquer Croissant aux pros').click();
+    fixture.detectChanges();
+    api.view = {
+      ...viewOf(api.items),
+      entries: [
+        entry({
+          productId: 'prd_VIE-001-1',
+          variants: [variantView({ pro: { state: 'masque', htMillicents: 170_616 } })],
+        }),
+      ],
+    };
+    confirmNamed(fixture, 'Masquer');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(api.rowReads).toEqual([['VIE-001-1']]);
+    expect(api.screens).toBe(1);
+    expect(button(fixture, 'Afficher Croissant aux pros')).toBeTruthy();
+  });
+
+  it('après une validation, relit les lignes validées', async () => {
+    const api = new FakeCatalogue();
+    api.items = [item({ proReviewPending: true })];
+    api.view = {
+      ...viewOf(api.items),
+      entries: [
+        entry({
+          productId: 'prd_VIE-001-1',
+          variants: [
+            variantView({ pro: { state: 'en_attente_validation', htMillicents: 170_616 } }),
+          ],
+        }),
+      ],
+      pendingReview: [
+        {
+          sku: 'VIE-001-1',
+          productId: 'prd_VIE-001-1',
+          productSku: 'VIE-001',
+          name: 'Croissant',
+          categoryId: 'fam_morning',
+          audiences: ['pro'],
+          receivedAt: '2026-09-01T08:00:00.000Z',
+        },
+      ],
+    };
+    const fixture = await render(api);
+    expect(fixture.nativeElement.querySelector('app-review-callout')).not.toBeNull();
+
+    api.items = [item()];
+    api.view = null;
+    const validate = [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')].find(
+      (candidate) => candidate.textContent?.trim().startsWith('Valider'),
+    );
+    validate?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(api.rowReads).toEqual([['VIE-001-1']]);
+    expect(fixture.nativeElement.querySelector('app-review-callout')).toBeNull();
+  });
+
+  it('confie au veilleur le sujet `catalog-admin` et le numéro de sa copie', async () => {
+    const api = new FakeCatalogue();
+    api.version = 7;
+    const watches: VersionWatch[] = [];
+    await render(api, new FakeMadeToOrder(), () => true, watches);
+
+    const [watch] = watches;
+    const subjects = typeof watch?.subjects === 'function' ? watch.subjects() : watch?.subjects;
+    expect(subjects).toEqual(['catalog-admin']);
+    expect(watch?.held?.('catalog-admin')).toBe(7);
   });
 });

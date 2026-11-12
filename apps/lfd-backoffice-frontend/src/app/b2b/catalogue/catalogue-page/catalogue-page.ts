@@ -1,9 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import type {
-  CatalogAdminItemView,
-  MadeToOrderMarkView,
-  PublishedCatalogView,
-} from '@lfd/contracts';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -21,8 +16,9 @@ import {
 
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
+import { watchGlobalSubjects } from '../../../shared/version/watch-global-subjects';
+import { CatalogueScreenStore } from '../catalogue-screen.store';
 import { CatalogueService, type ShopAudience } from '../catalogue.service';
-import { MadeToOrderService } from '../made-to-order.service';
 import {
   MadeToOrderPanel,
   type MadeToOrderPanelData,
@@ -95,7 +91,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 export class CataloguePage {
   private readonly catalogue = inject(CatalogueService);
   private readonly notify = inject(NotifyService);
-  private readonly madeToOrder = inject(MadeToOrderService);
+  private readonly store = inject(CatalogueScreenStore);
   private readonly panels = inject(FoldPanelHostService);
   private readonly permissions = inject(PermissionsStore);
 
@@ -108,16 +104,16 @@ export class CataloguePage {
     this.permissions.can('lfc_made_to_order:read'),
   );
 
-  protected readonly state = signal<LoadState>('loading');
-  private readonly view = signal<PublishedCatalogView>({
-    shelves: [],
-    entries: [],
-    pendingReview: [],
+  /** L'écran attend tant que le store n'a pas de copie ; une relecture en fond ne l'efface pas. */
+  protected readonly state = computed<LoadState>(() => {
+    const state = this.store.state();
+    return state === 'idle' ? 'loading' : state;
   });
-  private readonly items = signal<readonly CatalogAdminItemView[]>([]);
+  private readonly view = this.store.view;
+  private readonly items = this.store.items;
 
   /** Le réglage sur mesure, par SKU (L1a) — seuls les articles qui en portent un. */
-  protected readonly marks = signal<ReadonlyMap<string, MadeToOrderMarkView>>(new Map());
+  protected readonly marks = this.store.marks;
 
   /** Une validation est en vol : les boutons du callout attendent. */
   protected readonly approving = signal(false);
@@ -180,24 +176,30 @@ export class CataloguePage {
     }
   }
 
+  /**
+   * La copie du store, lue à la première ouverture seulement. Le veilleur la
+   * relit en fond quand le numéro `catalog-admin` servi diffère du sien.
+   */
   constructor() {
-    void this.load();
+    void this.store.open();
+    watchGlobalSubjects(
+      ['catalog-admin'],
+      () => this.store.refresh(),
+      () => this.store.version(),
+    );
   }
 
-  protected async load(): Promise<void> {
-    this.state.set('loading');
+  /** « Réessayer » après un échec de chargement. */
+  protected load(): Promise<void> {
+    return this.store.load();
+  }
+
+  /** Le geste a réussi ; relire ses lignes. Un échec le dit sans défaire le geste. */
+  private async refreshRows(skus: readonly string[]): Promise<void> {
     try {
-      const [view, items, marks] = await Promise.all([
-        this.catalogue.published(),
-        this.catalogue.list(),
-        this.canSeeMadeToOrder() ? this.madeToOrder.marks() : Promise.resolve([]),
-      ]);
-      this.view.set(view);
-      this.items.set(items);
-      this.marks.set(marksBySku(marks));
-      this.state.set('ready');
-    } catch {
-      this.state.set('error');
+      await this.store.refreshRows(skus);
+    } catch (error) {
+      this.notify.error(error, 'Les lignes changées n’ont pas pu être relues.');
     }
   }
 
@@ -219,10 +221,11 @@ export class CataloguePage {
       this.notify.success(
         hidden ? `${name} est masqué de ${shop}.` : `${name} revient dans ${shop}.`,
       );
-      await this.load();
     } catch (error) {
       this.notify.error(error, "L'affichage n'a pas pu être changé.");
+      return;
     }
+    await this.refreshRows([row.variant.sku]);
   }
 
   /**
@@ -239,13 +242,13 @@ export class CataloguePage {
 
   private async reloadMarks(): Promise<void> {
     try {
-      this.marks.set(marksBySku(await this.madeToOrder.marks()));
+      await this.store.refreshMarks();
     } catch (error) {
       this.notify.error(error, 'Les marqueurs sur mesure n’ont pas pu être relus.');
     }
   }
 
-  /** Lève l'attente de validation, puis relit : le serveur reste l'autorité. */
+  /** Lève l'attente de validation, puis relit les lignes validées après le dernier lot. */
   protected async approve(approval: ReviewApproval): Promise<void> {
     this.approving.set(true);
     try {
@@ -255,17 +258,15 @@ export class CataloguePage {
           ? `${String(approval.skus.length)} articles validés.`
           : 'Article validé.',
       );
-      await this.load();
     } catch (error) {
       this.notify.error(error, "La validation n'a pas pu être enregistrée.");
+      this.approving.set(false);
+      return;
+    }
+    try {
+      await this.refreshRows(approval.skus);
     } finally {
       this.approving.set(false);
     }
   }
-}
-
-function marksBySku(
-  marks: readonly MadeToOrderMarkView[],
-): ReadonlyMap<string, MadeToOrderMarkView> {
-  return new Map(marks.map((mark) => [mark.sku, mark]));
 }

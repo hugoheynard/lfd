@@ -129,6 +129,7 @@ export class RecordingGlobalSource extends GlobalVersionSource {
 
 export const COMPANIES_FRESH_MS = 30_000;
 export const ALL_ORDERS_FRESH_MS = 15_000;
+export const CATALOG_ADMIN_FRESH_MS = 15_000;
 
 export function globalSources(): Record<GlobalVersionSubject, RecordingGlobalSource> {
   return {
@@ -143,6 +144,12 @@ export function globalSources(): Record<GlobalVersionSubject, RecordingGlobalSou
       ["b2b_orders:read"],
       ALL_ORDERS_FRESH_MS,
       200,
+    ),
+    "catalog-admin": new RecordingGlobalSource(
+      "catalog-admin",
+      ["lfc_catalog:read"],
+      CATALOG_ADMIN_FRESH_MS,
+      300,
     ),
   };
 }

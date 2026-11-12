@@ -81,6 +81,8 @@ export const ADMITTED = {
     "administration : l'écran du sur mesure",
   "lafoliecoffee/catalog/infrastructure/prisma-published-catalog.reader.ts":
     "administration : le catalogue publié (`admin-catalog.controller.ts`)",
+  "lafoliecoffee/catalog/infrastructure/prisma-catalog-screen.reader.ts":
+    "administration : l'écran Catalogue lu en une fois (`admin-catalog-screen.controller.ts`)",
   "lafoliecoffee/catalog/infrastructure/prisma-received-operations.reader.ts":
     "administration : l'éditeur de vitrine voit tout le miroir des opérations",
   "lafoliecoffee/catalog/infrastructure/prisma-withdrawn-shop-skus.reader.ts":

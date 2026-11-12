@@ -16,6 +16,12 @@ import {
   type SubjectReading,
   type VersionsCard,
 } from "./day-versions-store";
+import {
+  acceptsContentBody,
+  type ContentCall,
+  parseContentCall,
+  servesContent,
+} from "./versioned-contents-store";
 
 /** Le nom de l'instance unique : une seule copie, quel que soit le nombre d'API. */
 export const DAY_VERSIONS_INSTANCE = "day-versions-weur";
@@ -29,8 +35,14 @@ interface SubjectRow extends Record<string, string | number> {
   read_at: number;
 }
 
+interface ContentRow extends Record<string, string | number> {
+  version: number;
+  body: string;
+}
+
 /**
- * Le magasin des numéros. Un Durable Object traite ses requêtes une à une ;
+ * Le magasin des numéros, et des contenus versionnés (`contents`, § 3.5 de
+ * `plan-catalogue-du-back-office.md`). Un Durable Object traite ses requêtes une à une ;
  * la comparaison des instants et l'écriture se font d'un seul tenant, après
  * le dernier `await`.
  *
@@ -47,10 +59,21 @@ export class DayVersions extends DurableObject<DayVersionsEnv> {
         "subject TEXT NOT NULL, version INTEGER NOT NULL, read_at INTEGER NOT NULL, " +
         "PRIMARY KEY (key, subject))",
     );
+    // Une ligne par clé : la charge rangée remplace la précédente, les
+    // versions remplacées ne s'accumulent pas.
+    this.ctx.storage.sql.exec(
+      "CREATE TABLE IF NOT EXISTS contents (key TEXT PRIMARY KEY, version INTEGER NOT NULL, " +
+        "body TEXT NOT NULL)",
+    );
   }
 
   override async fetch(request: Request): Promise<Response> {
-    const call = parseDayVersionsCall(request.method, new URL(request.url));
+    const url = new URL(request.url);
+    const content = parseContentCall(request.method, url);
+    if (content !== null) {
+      return this.content(content, request);
+    }
+    const call = parseDayVersionsCall(request.method, url);
     if (call === null) {
       return new Response(null, { status: 400 });
     }
@@ -61,6 +84,28 @@ export class DayVersions extends DurableObject<DayVersionsEnv> {
     return card === null
       ? new Response(null, { status: 400 })
       : this.store(call.key, call.scope, card);
+  }
+
+  private async content(call: ContentCall, request: Request): Promise<Response> {
+    if (call.kind === "content-read") {
+      const [row] = this.ctx.storage.sql
+        .exec<ContentRow>("SELECT version, body FROM contents WHERE key = ?", call.key)
+        .toArray();
+      return row !== undefined && servesContent(row.version, call.version)
+        ? new Response(row.body, { headers: { "content-type": "application/json" } })
+        : new Response(null, { status: 404 });
+    }
+    const body = await request.text();
+    if (!acceptsContentBody(body)) {
+      return new Response(null, { status: 413 });
+    }
+    this.ctx.storage.sql.exec(
+      "INSERT OR REPLACE INTO contents (key, version, body) VALUES (?, ?, ?)",
+      call.key,
+      call.version,
+      body,
+    );
+    return new Response(null, { status: 201 });
   }
 
   private rows(key: string): SubjectRow[] {

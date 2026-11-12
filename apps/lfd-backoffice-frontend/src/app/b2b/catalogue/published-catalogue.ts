@@ -1,5 +1,5 @@
 import type {
-  CatalogAdminItemView,
+  CatalogScreenItemView,
   CatalogItemAudience,
   PublishedCatalogView,
   PublishedCellCounts,
@@ -30,7 +30,7 @@ import type {
 export interface PublishedRow {
   readonly entry: PublishedEntryView;
   readonly variant: PublishedVariantView;
-  readonly item: CatalogAdminItemView | null;
+  readonly item: CatalogScreenItemView | null;
 }
 
 /** Un rayon, ses comptes par audience, et ses lignes retenues par le filtre. */
@@ -66,7 +66,7 @@ export function filterLabel(filter: PublishedFilter): string {
  */
 export function rowsOf(
   view: PublishedCatalogView,
-  items: readonly CatalogAdminItemView[],
+  items: readonly CatalogScreenItemView[],
 ): readonly PublishedRow[] {
   const bySku = new Map(items.map((item) => [item.sku, item]));
   return view.entries.flatMap((entry) =>

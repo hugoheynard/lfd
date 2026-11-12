@@ -1,10 +1,11 @@
-import type {
-  PendingReviewView,
-  PublishedCatalogView,
-  PublishedCellCounts,
-  PublishedEntryView,
-  PublishedShelfView,
-  PublishedVariantView,
+import {
+  pendingReviewOf,
+  publishedShelvesOf,
+  type PendingReviewCandidate,
+  type PublishedCatalogView,
+  type PublishedEntryView,
+  type PublishedShelfFamily,
+  type PublishedVariantView,
 } from "@lfd/contracts";
 import { categoryPathOf } from "@lfd/catalog-sync";
 
@@ -15,11 +16,7 @@ import type {
   PublishedItemRow,
 } from "../../domain/ports/published-catalog.reader.js";
 import type { EntryVariant } from "../../domain/catalog-product-facts.js";
-import { publishedCellOf, type PublishedCellState } from "../../domain/published-catalog-cells.js";
-import type { ShopAudience } from "../../domain/ports/catalog.reader.js";
-import { audienceIncludes } from "../../domain/served-to.js";
-
-const SHOP_AUDIENCES: readonly ShopAudience[] = ["pro", "public"];
+import { publishedCellOf } from "../../domain/published-catalog-cells.js";
 
 /**
  * **Compose la vue « Catalogue publié »** depuis les trois lectures — pur,
@@ -48,9 +45,19 @@ export function publishedCatalogViewOf(source: PublishedCatalogSource): Publishe
       }),
     );
   return {
-    shelves: shelvesOf(source.families, entries),
+    shelves: publishedShelvesOf(source.families.map(shelfFamilyOf), entries),
     entries,
-    pendingReview: pendingOf(source.items),
+    pendingReview: pendingReviewOf(source.items.map(pendingCandidateOf)),
+  };
+}
+
+/** La famille connue, telle qu'un rayon la montre. */
+export function shelfFamilyOf(family: PublishedFamilyRow): PublishedShelfFamily {
+  return {
+    categoryId: family.id,
+    name: family.name,
+    position: family.position,
+    withdrawn: family.withdrawn,
   };
 }
 
@@ -200,86 +207,24 @@ function incompleteViewOf(
   };
 }
 
-/** Les rayons : toutes les familles connues, et celles qu'une fiche cite sans être connues. */
-function shelvesOf(
-  families: readonly PublishedFamilyRow[],
-  entries: readonly PublishedEntryView[],
-): PublishedShelfView[] {
-  const byShelf = groupBy(entries, (entry) => entry.categoryId);
-  const known = families.map((family) =>
-    shelfOf(family.id, family.name, family.position, family.withdrawn, byShelf.get(family.id)),
-  );
-  const knownIds = new Set(families.map((family) => family.id));
-  const unknown = [...byShelf.keys()]
-    .filter((id) => !knownIds.has(id))
-    .map((id) => shelfOf(id, null, Number.MAX_SAFE_INTEGER, false, byShelf.get(id)));
-  return [...known, ...unknown];
-}
-
-function shelfOf(
-  categoryId: string,
-  name: string | null,
-  position: number,
-  withdrawn: boolean,
-  entries: readonly PublishedEntryView[] = [],
-): PublishedShelfView {
-  const variants = entries.flatMap((entry) => entry.variants);
-  return {
-    categoryId,
-    name,
-    position,
-    withdrawn,
-    pro: countsOf(variants.map((variant) => variant.pro.state)),
-    public: countsOf(variants.map((variant) => variant.public.state)),
-  };
-}
-
-function countsOf(states: readonly PublishedCellState[]): PublishedCellCounts {
-  const counts: Record<PublishedCellState, number> = {
-    inactif: 0,
-    en_vente: 0,
-    masque: 0,
-    pas_vendu: 0,
-    en_attente_validation: 0,
-    incomplet: 0,
-  };
-  for (const state of states) {
-    counts[state] += 1;
-  }
-  return counts;
-}
-
-/** L'attente d'un article en vente, par audience. */
-function reviewPendingOf(item: PublishedItemRow): { pro: boolean; public: boolean } {
-  return { pro: item.proReviewPending, public: item.publicReviewPending };
-}
-
-/** Les audiences qui attendent cet article ET que son audience contient. */
-function pendingAudiencesOf(item: PublishedItemRow): ShopAudience[] {
-  const pending = reviewPendingOf(item);
-  return SHOP_AUDIENCES.filter(
-    (audience) => pending[audience] && audienceIncludes(item.audience, audience),
-  );
-}
-
-/** Le callout : les articles qui attendent une validation, et pour qui. */
-function pendingOf(items: readonly PublishedItemRow[]): PendingReviewView[] {
-  return items.flatMap((item) => {
-    const audiences = pendingAudiencesOf(item);
-    return audiences.length === 0 ? [] : [pendingViewOf(item, audiences)];
-  });
-}
-
-function pendingViewOf(item: PublishedItemRow, audiences: ShopAudience[]): PendingReviewView {
+/** L'article en vente, tel que la liste à valider le lit. */
+function pendingCandidateOf(item: PublishedItemRow): PendingReviewCandidate {
   return {
     sku: item.sku,
     productId: item.productId,
     productSku: item.productSku,
     name: item.name,
     categoryId: item.categoryId,
-    audiences,
+    audience: item.audience,
+    proReviewPending: item.proReviewPending,
+    publicReviewPending: item.publicReviewPending,
     receivedAt: item.receivedAt.toISOString(),
   };
+}
+
+/** L'attente d'un article en vente, par audience. */
+function reviewPendingOf(item: PublishedItemRow): { pro: boolean; public: boolean } {
+  return { pro: item.proReviewPending, public: item.publicReviewPending };
 }
 
 /** Le rang d'une fiche : la position de sa famille ; l'ordre par nom vient de la lecture. */

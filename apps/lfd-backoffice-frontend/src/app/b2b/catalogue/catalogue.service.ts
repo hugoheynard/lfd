@@ -1,10 +1,12 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import {
   REVIEW_BATCH_MAX,
   type CatalogAdminItemView,
+  type CatalogScreenRowsView,
+  type CatalogScreenView,
   type PublishedCatalogView,
 } from '@lfd/contracts';
 
@@ -29,6 +31,28 @@ export class CatalogueService {
   list(): Promise<readonly CatalogAdminItemView[]> {
     return firstValueFrom(
       this.http.get<readonly CatalogAdminItemView[]>(`${B2B_API_BASE}/admin/catalog`),
+    );
+  }
+
+  /**
+   * **L'écran Catalogue en une lecture** — la vue publiée, le paramétrage, les
+   * marqueurs du sur mesure si le poste les lit, et le numéro `catalog-admin`
+   * lu avant les données.
+   */
+  screen(): Promise<CatalogScreenView> {
+    return firstValueFrom(this.http.get<CatalogScreenView>(`${B2B_API_BASE}/admin/catalog/screen`));
+  }
+
+  /**
+   * **Les lignes touchées par un geste** — les fiches entières des SKU nommés,
+   * leurs articles en vente et le numéro. Au plus `REVIEW_BATCH_MAX` SKU.
+   */
+  screenRows(skus: readonly string[]): Promise<CatalogScreenRowsView> {
+    const params = new HttpParams().set('sku', skus.join(','));
+    return firstValueFrom(
+      this.http.get<CatalogScreenRowsView>(`${B2B_API_BASE}/admin/catalog/screen/rows`, {
+        params,
+      }),
     );
   }
 

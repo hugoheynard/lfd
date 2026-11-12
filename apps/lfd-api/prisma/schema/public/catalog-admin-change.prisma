@@ -1,0 +1,23 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Le numéro global de l'ÉCRAN CATALOGUE du back-office —
+// `documentation/caching-usage/plan-catalogue-du-back-office.md`, § 3.3.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// **Le journal des écritures que l'écran Catalogue lit**, en ajout seul.
+///
+/// 🔴 Aucun code ne l'écrit : des déclencheurs AU NIVEAU DE L'INSTRUCTION sur
+/// `catalog_entries`, `catalog_items`, `catalog_categories`,
+/// `catalog_item_overrides` et `catalog_item_reservations` l'alimentent
+/// (migration `20261112190000_le_journal_de_l_ecran_catalogue`), et seulement
+/// quand une ligne a VRAIMENT changé : un rejeu du référentiel à l'identique
+/// n'écrit rien.
+///
+/// Le numéro `catalog-admin` est `max(id)` + `count(*)` (`journal-version.ts`).
+/// Les lignes de plus de sept jours se balaient.
+model CatalogAdminChange {
+  id        BigInt   @id @default(autoincrement())
+  changedAt DateTime @default(now()) @map("changed_at") @db.Timestamptz(6)
+
+  @@map("catalog_admin_change")
+  @@schema("public")
+}

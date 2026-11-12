@@ -103,6 +103,7 @@ describe("GetVersionsHandler — le droit, sujet par sujet", () => {
     expect(Object.keys(cache.cards.get(GLOBAL_SCOPE)?.subjects ?? {})).toEqual([
       "companies",
       "orders-all",
+      "catalog-admin",
     ]);
   });
 });
@@ -137,12 +138,13 @@ describe("GetVersionsHandler — une fenêtre par sujet", () => {
     await settle();
 
     expect(cache.stored.map((one) => Object.keys(one.card.subjects))).toEqual([
-      ["companies", "orders-all"],
-      ["orders-all"],
+      ["companies", "orders-all", "catalog-admin"],
+      ["orders-all", "catalog-admin"],
     ]);
     expect(Object.keys(cache.cards.get(GLOBAL_SCOPE)?.subjects ?? {})).toEqual([
       "companies",
       "orders-all",
+      "catalog-admin",
     ]);
   });
 

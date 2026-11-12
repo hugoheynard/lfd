@@ -11,6 +11,10 @@ import { GetVersionsHandler } from "./get-versions.handler.js";
 import { NoDayVersionsCache } from "./no-day-versions-cache.js";
 import { ResilientDayVersionsCache } from "./resilient-day-versions-cache.js";
 import { ScopeVersions } from "./scope-versions.js";
+import { DurableObjectVersionedContentCache } from "./durable-object-versioned-content-cache.js";
+import { NoVersionedContentCache } from "./no-versioned-content-cache.js";
+import { VersionedContentCache } from "./versioned-content-cache.js";
+import { VersionedContents } from "./versioned-contents.js";
 
 /**
  * Les portes des versions — `admin/versions`, et `admin/day-versions` le
@@ -36,11 +40,25 @@ import { ScopeVersions } from "./scope-versions.js";
           : new DurableObjectDayVersionsCache(url, config.revision());
       },
     },
+    {
+      provide: VersionedContentCache,
+      inject: [AppConfig],
+      useFactory: (config: AppConfig): VersionedContentCache => {
+        const url = config.dayVersionsCacheUrl();
+        return url === null
+          ? new NoVersionedContentCache()
+          : new DurableObjectVersionedContentCache(url, config.revision());
+      },
+    },
+    VersionedContents,
     { provide: CallDeadline, useClass: NodeCallDeadline },
     ResilientDayVersionsCache,
     ScopeVersions,
     GetDayVersionsHandler,
     GetVersionsHandler,
   ],
+  // Les contenus versionnés (`plan-catalogue-du-back-office.md`, § 3.5) : la
+  // porte générique que les blocs appellent.
+  exports: [VersionedContents],
 })
 export class DayVersionsModule {}

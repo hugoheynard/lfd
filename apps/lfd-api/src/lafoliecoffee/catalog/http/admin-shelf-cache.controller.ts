@@ -10,6 +10,7 @@ import {
   type ShelfSwitchOutcome,
 } from "../application/commands/switch-shelf-cache.command.js";
 import { SHELF_SWITCH_ACTIONS } from "../domain/ports/shop-shelf-switch.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 const switchPayloadSchema = z.object({ action: z.enum(SHELF_SWITCH_ACTIONS) });
 
@@ -38,6 +39,9 @@ export class AdminShelfCacheController {
 
   @Post()
   @HttpCode(200)
+  @Idempotent(
+    "appelée par la machine (RecomputeGuard, workflow ops) : pose un état du drapeau ; rejouée, le drapeau est déjà dans cet état, et la purge du rayon qu'elle demande est le geste lui-même (une seconde ne fait que regarnir le cache)",
+  )
   switch(
     @Body(new ZodBody(switchPayloadSchema)) payload: SwitchPayload,
   ): Promise<ShelfSwitchOutcome> {
