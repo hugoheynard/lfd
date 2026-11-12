@@ -6,6 +6,7 @@ import type {
   ProductReadinessView,
 } from '@lfd/pim-contracts';
 
+import { PermissionsStore } from '../../auth/permissions.store';
 import { CategoryStore } from './category-store';
 import { ProductHttpApi } from './product-http-api';
 import { VatRateStore } from './vat-rates/vat-store';
@@ -37,11 +38,19 @@ export class CatalogueApi {
   private readonly productsApi = inject(ProductHttpApi);
   private readonly categoryStore = inject(CategoryStore);
   private readonly vatRateStore = inject(VatRateStore);
+  private readonly permissions = inject(PermissionsStore);
 
   // ── Familles (backend `catalogue/categories`, via CategoryStore) ──────────
 
+  /**
+   * Les familles du store, sans relecture forcée : le numéro `pim` le tient à
+   * jour (`plan-lectures-du-pim.md`, § 4.3). Sans le droit de sa route, le
+   * store n'est pas suivi, et la lecture se refait à chaque ouverture (§ 4.4).
+   */
   async listCategories(): Promise<Category[]> {
-    await this.categoryStore.reload();
+    await (this.permissions.can('pim_catalog:read')
+      ? this.categoryStore.ensure()
+      : this.categoryStore.reload());
     return [...this.categoryStore.items()];
   }
 
@@ -52,8 +61,11 @@ export class CatalogueApi {
 
   // ── Taux de TVA (backend `vat-rates`, via VatRateStore) ─────────
 
+  /** Les taux du store, sur la même règle que les familles (droit `pim_tax:read`). */
   async listVatRates(): Promise<VatRate[]> {
-    await this.vatRateStore.reload();
+    await (this.permissions.can('pim_tax:read')
+      ? this.vatRateStore.ensure()
+      : this.vatRateStore.reload());
     return [...this.vatRateStore.items()];
   }
 

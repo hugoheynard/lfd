@@ -5,6 +5,7 @@ import { LOCALES, type LocalizedText } from '@lfd/pim-contracts';
 
 import type { Category } from '../data/models';
 import { CategoryHttpApi, type CategoryVatDraft } from './category-http-api';
+import { watchPim } from '../data/watch-pim';
 import { ListLoadState } from '../data/list-load-state';
 
 /**
@@ -46,7 +47,36 @@ export class CategoryStore {
       // ce chargement, et un rejet non géré ne rendrait service à personne. La
       // raison, elle, est retenue dans `loadError` — l'écran la lira plutôt que
       // d'afficher une liste vide qui ment.
-      void this.reload().catch(() => undefined);
+      void this.ensure().catch(() => undefined);
+      watchPim('pim_catalog:read', () => this.refresh());
+    }
+  }
+
+  private first: Promise<void> | null = null;
+
+  /**
+   * La première lecture de la session, partagée ; après un échec, la suivante
+   * relit. Le numéro `pim` tient la liste à jour ensuite : un lecteur ne
+   * force plus de relecture.
+   */
+  ensure(): Promise<void> {
+    this.first ??= this.reload().catch((caught: unknown) => {
+      this.first = null;
+      throw caught;
+    });
+    return this.first;
+  }
+
+  /**
+   * La relecture en fond, quand le numéro `pim` a bougé. Ne rejette pas et
+   * ne touche pas `loadError` : un échec garde la liste, le tour suivant
+   * reposera la question.
+   */
+  async refresh(): Promise<void> {
+    try {
+      this.state.set(await this.api.list());
+    } catch {
+      // La liste reste : le veilleur reposera la question.
     }
   }
 

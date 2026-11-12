@@ -9,6 +9,7 @@ import type {
 import { firstValueFrom } from 'rxjs';
 
 import { API_BASE_URL } from '../data/api';
+import { watchPim } from '../data/watch-pim';
 import { ListLoadState } from '../data/list-load-state';
 
 /**
@@ -40,6 +41,21 @@ export class SalesContextAdminStore {
   constructor() {
     if (this.isBrowser) {
       void this.reload().catch(() => undefined);
+      watchPim('pim_settings:read', () => this.refresh());
+    }
+  }
+
+  /**
+   * La relecture en fond, quand le numéro `pim` a bougé. Ne rejette pas et
+   * ne touche pas l'erreur de chargement : un échec garde la liste, le tour
+   * suivant reposera la question.
+   */
+  async refresh(): Promise<void> {
+    try {
+      const items = await firstValueFrom(this.http.get<SalesContextAdminView[]>(this.url('')));
+      this.state.set([...items].sort((a, b) => a.position - b.position));
+    } catch {
+      // La liste reste : le veilleur reposera la question.
     }
   }
 

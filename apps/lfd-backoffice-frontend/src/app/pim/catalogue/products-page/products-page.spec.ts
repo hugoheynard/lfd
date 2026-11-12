@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -10,6 +11,8 @@ import { NotifyService } from '../../../notify.service';
 import { PermissionsStore } from '../../../auth/permissions.store';
 import type { ProductStatus } from '../../data/models';
 import { ProductsPage } from './products-page';
+import { CategoryStore } from '../category-store';
+import { VersionWatcher } from '../../../shared/version/version-watcher';
 
 function category(id: string, name: string, position: number): Category {
   return { id, name: { fr: name }, position, isArchived: false } as Category;
@@ -61,6 +64,8 @@ async function render(
     imports: [ProductsPage],
     providers: [
       provideRouter([]),
+      { provide: CategoryStore, useValue: { items: signal(CATEGORIES) } },
+      { provide: VersionWatcher, useValue: { watch: () => undefined } },
       {
         provide: PermissionsStore,
         useValue: {

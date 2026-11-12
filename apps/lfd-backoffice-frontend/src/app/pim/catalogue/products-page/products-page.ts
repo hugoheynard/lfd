@@ -27,7 +27,10 @@ import {
   type FoldTableSort,
 } from 'fold-ng';
 
-import { CatalogueApi, type Category, type Product, type VatRate } from '../catalogue-api';
+import { CatalogueApi, type Product } from '../catalogue-api';
+import { CategoryStore } from '../category-store';
+import { ProductListStore } from '../product-list-store';
+import { watchGlobalSubjects } from '../../../shared/version/watch-global-subjects';
 import { productStatusLabel, productStatusVariant } from '../product-status';
 import {
   complianceBadge,
@@ -106,11 +109,19 @@ export class ProductsPage {
   /** L'échec d'une suppression, rangé sous la ligne concernée. */
   protected readonly deleteErrors = signal<ReadonlyMap<string, string>>(new Map());
 
-  protected readonly products = signal<Product[]>([]);
-  protected readonly categories = signal<Category[]>([]);
-  protected readonly error = signal<string | null>(null);
+  private readonly store = inject(ProductListStore);
+  private readonly categoryStore = inject(CategoryStore);
+
+  /** La copie du store : lue à la première ouverture, relue en fond ensuite. */
+  protected readonly products = this.store.products;
+  /** Les familles vivantes, tenues à jour par le numéro `pim`. */
+  protected readonly categories = computed(() =>
+    this.categoryStore.items().filter((category) => !category.isArchived),
+  );
+  /** Le refus d'un geste, ou l'échec de la première lecture. */
+  private readonly gestureError = signal<string | null>(null);
+  protected readonly error = computed(() => this.gestureError() ?? this.store.loadError());
   protected readonly busy = signal(false);
-  protected readonly rates = signal<VatRate[]>([]);
   protected readonly query = signal('');
 
   /**
@@ -283,8 +294,14 @@ export class ProductsPage {
     () => new Map(this.categories().map((category) => [category.id, category])),
   );
 
+  /**
+   * La liste du store, lue à la première ouverture seulement. Le veilleur la
+   * relit en fond quand le numéro `pim` bouge (`plan-lectures-du-pim.md`,
+   * § 4.3).
+   */
   constructor() {
-    void this.reload();
+    void this.store.open();
+    watchGlobalSubjects(['pim'], () => this.store.refresh());
   }
 
   /**
@@ -447,7 +464,7 @@ export class ProductsPage {
     this.setDeleteError(product.id, null);
     try {
       await this.api.deleteProduct(product.id);
-      this.products.update((list) => list.filter((p) => p.id !== product.id));
+      this.store.remove(product.id);
       this.selection.update((keys) => new Set([...keys].filter((key) => key !== product.id)));
     } catch (caught) {
       this.setDeleteError(product.id, failureMessageOf(caught));
@@ -477,7 +494,7 @@ export class ProductsPage {
       return;
     }
     this.busy.set(true);
-    this.error.set(null);
+    this.gestureError.set(null);
     let activated = 0;
     const refusals: string[] = [];
     for (const product of chosen) {
@@ -495,7 +512,7 @@ export class ProductsPage {
     await this.reload();
     this.selection.set(new Set());
     if (refusals.length > 0) {
-      this.error.set(`${activated} fiche(s) activée(s). ${refusals.join(' · ')}`);
+      this.gestureError.set(`${activated} fiche(s) activée(s). ${refusals.join(' · ')}`);
     }
     this.busy.set(false);
   }
@@ -510,7 +527,7 @@ export class ProductsPage {
       return;
     }
     this.busy.set(true);
-    this.error.set(null);
+    this.gestureError.set(null);
     try {
       for (const id of ids) {
         await action(id);
@@ -518,7 +535,7 @@ export class ProductsPage {
       await this.reload();
       this.selection.set(new Set());
     } catch (caught) {
-      this.error.set(failureMessageOf(caught));
+      this.gestureError.set(failureMessageOf(caught));
     } finally {
       this.busy.set(false);
     }
@@ -526,30 +543,20 @@ export class ProductsPage {
 
   private async run(action: () => Promise<unknown>): Promise<void> {
     this.busy.set(true);
-    this.error.set(null);
+    this.gestureError.set(null);
     try {
       await action();
       await this.reload();
     } catch (caught) {
-      this.error.set(failureMessageOf(caught));
+      this.gestureError.set(failureMessageOf(caught));
     } finally {
       this.busy.set(false);
     }
   }
 
-  private async reload(): Promise<void> {
-    try {
-      const [products, categories, rates] = await Promise.all([
-        this.api.listProducts(),
-        this.api.listCategories(),
-        this.api.listVatRates(),
-      ]);
-      this.products.set(products);
-      this.rates.set(rates);
-      this.categories.set(categories.filter((category) => !category.isArchived));
-    } catch (caught) {
-      this.error.set(failureMessageOf(caught));
-    }
+  /** Après un geste : la liste en fond, servie par l'objet si personne n'a écrit. */
+  private reload(): Promise<void> {
+    return this.store.refresh();
   }
 }
 

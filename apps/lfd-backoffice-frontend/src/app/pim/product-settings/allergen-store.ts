@@ -8,6 +8,7 @@ import type {
   ReviseAllergenEntryPayload,
 } from '@lfd/pim-contracts';
 
+import { watchPim } from '../data/watch-pim';
 import { ListLoadState } from '../data/list-load-state';
 import { AllergenHttpApi } from './allergen-http-api';
 
@@ -60,8 +61,22 @@ export class AllergenStore {
       // Le seul appelant qui ABSORBE l'échec : au démarrage personne n'attend ce
       // chargement. La raison, elle, reste dans `loadError`.
       void this.reload().catch(() => undefined);
+      watchPim('pim_catalog:read', () => this.refresh());
     } else {
       this.settled.set(true);
+    }
+  }
+
+  /**
+   * La relecture en fond, quand le numéro `pim` a bougé. Ne rejette pas et
+   * ne touche pas l'erreur de chargement : un échec garde la liste, le tour
+   * suivant reposera la question.
+   */
+  async refresh(): Promise<void> {
+    try {
+      this.state.set(await this.api.list());
+    } catch {
+      // La liste reste : le veilleur reposera la question.
     }
   }
 

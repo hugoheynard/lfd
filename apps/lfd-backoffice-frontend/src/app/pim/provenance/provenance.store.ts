@@ -16,6 +16,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { AllergenReferenceStore } from '../catalogue/allergen-reference-store';
 import { API_BASE_URL } from '../data/api';
+import { watchPim } from '../data/watch-pim';
 import { ListLoadState } from '../data/list-load-state';
 
 /**
@@ -90,6 +91,30 @@ export class ProvenanceStore {
   constructor() {
     if (this.isBrowser) {
       void this.reload().catch(() => undefined);
+      watchPim('pim_catalog:read', () => this.refresh());
+    }
+  }
+
+  /**
+   * La relecture en fond, quand le numéro `pim` a bougé. Ne rejette pas et
+   * ne touche pas l'erreur de chargement : un échec garde la liste, le tour
+   * suivant reposera la question.
+   */
+  async refresh(): Promise<void> {
+    try {
+      const [appellations, ingredients] = await Promise.all([
+        firstValueFrom(this.http.get<AppellationView[]>(`${this.base}/appellations`)),
+        firstValueFrom(this.http.get<IngredientView[]>(`${this.base}/ingredients`)),
+      ]);
+      this.appellationState.set([...appellations]);
+      this.ingredientState.set([...ingredients]);
+      if (this.allergensLoaded) {
+        this.reference.forget();
+        const reference = await this.reference.allergens(INGREDIENT_ALLERGEN_SCOPE);
+        this.allergenState.set([...reference.entries]);
+      }
+    } catch {
+      // La liste reste : le veilleur reposera la question.
     }
   }
 

@@ -1,15 +1,18 @@
-import { inject, Injectable } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { inject, Injectable, PLATFORM_ID } from '@angular/core';
 
 import type { AllergenReference, AllergenScope } from '../data/models';
+import { watchPim } from '../data/watch-pim';
 import { ReferenceApi } from './reference-api';
 
 /**
- * **Le référentiel des allergènes, lu une fois par session** — `eu` et
- * `world`, chacun à sa première demande.
+ * **Le référentiel des allergènes, gardé tant que le numéro `pim` ne bouge
+ * pas** — `eu` et `world`, chacun à sa première demande.
  *
- * Un référentiel réglementaire : il ne change qu'avec une migration, jamais
- * par un geste de l'équipe. La fiche produit (à chaque ouverture) et la
- * provenance le relisaient chacune ; elles le lisent ici.
+ * L'écran des allergènes l'administre : un collègue peut le changer en cours
+ * de séance. Quand le numéro `pim` bouge, la copie est oubliée et la demande
+ * suivante relit (servie par l'objet partagé si rien d'autre n'a changé).
+ * La fiche produit et la provenance le lisent ici.
  *
  * La lecture EN COURS est partagée : deux demandes simultanées font une
  * requête. Un échec n'est pas gardé — la demande suivante relit, et c'est ce
@@ -19,6 +22,20 @@ import { ReferenceApi } from './reference-api';
 export class AllergenReferenceStore {
   private readonly api = inject(ReferenceApi);
   private readonly byScope = new Map<AllergenScope, Promise<AllergenReference>>();
+
+  constructor() {
+    if (isPlatformBrowser(inject(PLATFORM_ID))) {
+      watchPim('pim_catalog:read', () => {
+        this.forget();
+        return Promise.resolve();
+      });
+    }
+  }
+
+  /** Oublie la copie : la demande suivante relit. */
+  forget(): void {
+    this.byScope.clear();
+  }
 
   allergens(scope: AllergenScope): Promise<AllergenReference> {
     const known = this.byScope.get(scope);
