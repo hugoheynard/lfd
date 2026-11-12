@@ -317,6 +317,17 @@ Font foi sur la section précédente.
 
 > ✅ **V3'/V4' (K1–K13) bâtis le 2026-11-12**, sans migration. Reste T2 (PDF et e-mail de la facture au virement : IBAN, référence) **avant de passer un vrai client au virement**, puis T3–T5.
 
+## 🔴 L'IBAN ne voyage jamais par e-mail (Hugo, 2026-11-12)
+
+Les coordonnées bancaires de l'entité (IBAN, BIC) ne figurent **que sur la
+facture** (PDF et XML Factur-X). L'e-mail « facture émise » d'une facture au
+virement dit seulement qu'elle se règle par virement, son échéance et la
+référence à reporter, et renvoie à la facture jointe pour les coordonnées.
+Aucune donnée d'une demande d'e-mail ne porte l'IBAN : ni la boîte d'envoi,
+ni le suivi, ni le prestataire d'envoi ne le voient, et un e-mail imité ne
+peut pas « corriger » des coordonnées qu'il n'a jamais données. Un test le
+tient.
+
 ## Dernières corrections avant le bâti (Hugo, 2026-11-12, cinquième relecture)
 
 - **K9 — les bons sans facture** (chemin des arrêtés, `collection-assembly.ts:169-175` :
