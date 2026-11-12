@@ -71,6 +71,7 @@ export class AllergenController {
   }
 
   @Put("categories/:id/name")
+  @Idempotent("pose le libellé : rejouée avec le même nom, rien ne change, ni fait ni réémission")
   async renameCategory(
     @Param("id") id: string,
     @Body(new ZodBody(renameAllergenCategoryPayloadSchema)) body: RenameAllergenCategoryPayload,
@@ -82,6 +83,7 @@ export class AllergenController {
   }
 
   @Put("categories/:id/position")
+  @Idempotent("pose le rang : rejouée au même rang, rien ne change, ni fait ni réémission")
   async moveCategory(
     @Param("id") id: string,
     @Body(new ZodBody(moveAllergenCategoryPayloadSchema)) body: MoveAllergenCategoryPayload,
@@ -93,6 +95,9 @@ export class AllergenController {
   }
 
   @Put("categories/:id/archive")
+  @Idempotent(
+    "pose l'état archivé : rejouée sur une catégorie archivée, rien ne change, ni fait ni réémission",
+  )
   async archiveCategory(@Param("id") id: string) {
     await this.commands.execute<ArchiveAllergenCategoryCommand, void>(
       new ArchiveAllergenCategoryCommand(id),
@@ -101,6 +106,9 @@ export class AllergenController {
   }
 
   @Put("categories/:id/restore")
+  @Idempotent(
+    "pose l'état vivant : rejouée sur une catégorie au référentiel, rien ne change, ni fait ni réémission",
+  )
   async restoreCategory(@Param("id") id: string) {
     await this.commands.execute<RestoreAllergenCategoryCommand, void>(
       new RestoreAllergenCategoryCommand(id),
@@ -133,6 +141,9 @@ export class AllergenController {
   }
 
   @Put("entries/:id/archive")
+  @Idempotent(
+    "pose l'état archivé : rejouée sur une entrée archivée, rien ne change, ni fait ni réémission",
+  )
   async archiveEntry(@Param("id") id: string) {
     await this.commands.execute<ArchiveAllergenEntryCommand, void>(
       new ArchiveAllergenEntryCommand(id),
@@ -141,6 +152,9 @@ export class AllergenController {
   }
 
   @Put("entries/:id/restore")
+  @Idempotent(
+    "pose l'état vivant : rejouée sur une entrée au référentiel, rien ne change, ni fait ni réémission",
+  )
   async restoreEntry(@Param("id") id: string) {
     await this.commands.execute<RestoreAllergenEntryCommand, void>(
       new RestoreAllergenEntryCommand(id),

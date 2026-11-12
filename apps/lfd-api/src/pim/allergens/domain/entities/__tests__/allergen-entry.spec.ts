@@ -204,3 +204,21 @@ function houseEntry(): AllergenEntry {
     categoryId: "cat_1",
   });
 }
+
+/**
+ * Régression : un archivage ou une restauration rejoués journalisaient et
+ * réémettaient tout le catalogue — l'agrégat dit désormais « rien n'a changé ».
+ */
+describe("AllergenEntry — un geste déjà dans l'état visé", () => {
+  it("un second archivage rend « inchangé » et garde la première date", () => {
+    const entry = houseEntry();
+
+    expect(entry.archive(NOW)).toBe(true);
+    expect(entry.archive(LATER)).toBe(false);
+    expect(entry.snapshot().archivedAt).toBe(NOW);
+  });
+
+  it("restaurer une entrée vivante rend « inchangé »", () => {
+    expect(houseEntry().restore()).toBe(false);
+  });
+});

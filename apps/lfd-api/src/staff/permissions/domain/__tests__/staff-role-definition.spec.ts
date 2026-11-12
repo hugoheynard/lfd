@@ -208,6 +208,21 @@ describe("StaffRoleDefinition — archivage", () => {
   });
 });
 
+/**
+ * Régression : un archivage rejoué reposait `archivedAt` — la date répondait
+ * « depuis le dernier clic » et le geste se journalisait de nouveau.
+ */
+describe("StaffRoleDefinition — archivage rejoué", () => {
+  it("rend « inchangé » et garde la première date", () => {
+    const role = fournil();
+    const first = new Date(0);
+    expect(role.archive(first, 0)).toBe(true);
+
+    expect(role.archive(new Date(60_000), 0)).toBe(false);
+    expect(role.toPersistence().archivedAt).toBe(first);
+  });
+});
+
 describe("StaffRoleDefinition — relecture", () => {
   it("fait l'aller-retour sans rien perdre", () => {
     const written = fournil().toPersistence();

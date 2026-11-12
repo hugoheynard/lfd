@@ -63,13 +63,18 @@ export class ReorderCategoriesHandler implements ICommandHandler<ReorderCategori
         : (await requireCategory(this.categories, command.parentId)).name.fr;
     const byId = new Map(living.map((category) => [category.id, category]));
     const ranked: Category[] = [];
+    let moved = false;
     command.orderedIds.forEach((id, rank) => {
       const category = byId.get(id);
       if (category !== undefined) {
-        category.placeAt(rank);
+        moved = category.placeAt(rank) || moved;
         ranked.push(category);
       }
     });
+    // Rejouer le geste ne change rien : ni fait au journal, ni réémission de la fratrie.
+    if (!moved) {
+      return;
+    }
     await this.uow.run(async () => {
       const ticket = await this.journal.trace({
         type: PIM_EVENTS.productCategoriesReordered,

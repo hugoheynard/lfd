@@ -166,20 +166,40 @@ export class Category {
     this.slugValue = slugOf(name);
   }
 
-  /** Déplace sous un parent (`null` = racine), à la place donnée. */
-  moveUnder(parentId: string | null, position: number): void {
+  /**
+   * Déplace sous un parent (`null` = racine), à la place donnée.
+   *
+   * Sous le parent qu'elle a déjà, la famille **ne bouge pas** — ni de parent
+   * ni de rang : la place donnée est la dernière de la fratrie, et la prendre
+   * renverrait la famille en queue à chaque rejeu.
+   *
+   * @returns `false` quand le parent visé est déjà le sien : rien n'a changé.
+   */
+  moveUnder(parentId: string | null, position: number): boolean {
     this.refuseIfArchived();
     if (parentId === this.identity) {
       throw new CategorySelfParentError(this.identity);
     }
+    if (parentId === this.parentIdValue) {
+      return false;
+    }
     this.parentIdValue = parentId;
     this.positionValue = position;
+    return true;
   }
 
-  /** Change le rang dans la fratrie, sans changer de parent. */
-  placeAt(position: number): void {
+  /**
+   * Change le rang dans la fratrie, sans changer de parent.
+   *
+   * @returns `false` quand la famille est déjà à ce rang.
+   */
+  placeAt(position: number): boolean {
     this.refuseIfArchived();
+    if (position === this.positionValue) {
+      return false;
+    }
     this.positionValue = position;
+    return true;
   }
 
   /**
@@ -201,9 +221,17 @@ export class Category {
     this.vatByContextValue = { ...vat };
   }
 
-  /** Idempotent : archiver deux fois n'est pas une erreur, c'est un état visé. */
-  archive(): void {
+  /**
+   * Idempotent : archiver deux fois n'est pas une erreur, c'est un état visé.
+   *
+   * @returns `false` quand la famille était déjà archivée : rien n'a changé.
+   */
+  archive(): boolean {
+    if (this.archivedValue) {
+      return false;
+    }
     this.archivedValue = true;
+    return true;
   }
 
   snapshot(): CategorySnapshot {

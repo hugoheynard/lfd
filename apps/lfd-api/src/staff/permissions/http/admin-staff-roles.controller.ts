@@ -93,6 +93,9 @@ export class AdminStaffRolesController {
   }
 
   @Delete(":key")
+  @Idempotent(
+    "pose l'état archivé : rejouée sur un rôle archivé, sa date reste la première, ni écriture ni fait",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async archive(@Param("key") key: string): Promise<void> {
     await this.commands.execute<ArchiveStaffRoleCommand, void>(new ArchiveStaffRoleCommand(key));

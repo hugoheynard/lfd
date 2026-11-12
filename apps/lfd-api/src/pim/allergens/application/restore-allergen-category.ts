@@ -31,7 +31,11 @@ export class RestoreAllergenCategoryHandler implements ICommandHandler<
 
   async execute(command: RestoreAllergenCategoryCommand): Promise<void> {
     const category = await requireCategory(this.categories, command.id);
-    category.restore();
+    // Rejouer le geste ne change rien : ni fait au journal, ni réémission du
+    // catalogue entier.
+    if (!category.restore()) {
+      return;
+    }
     const restored = category.snapshot();
 
     await this.uow.run(async () => {

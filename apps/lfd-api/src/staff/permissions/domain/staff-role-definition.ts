@@ -156,13 +156,21 @@ export class StaffRoleDefinition {
   /**
    * Retire le rôle de la circulation, sans effacer ce qu'il a été.
    *
+   * Déjà archivé, le rôle garde sa première date : elle répond à « depuis
+   * quand », et le rejeu n'a rien à écrire.
+   *
+   * @returns `false` quand le rôle était déjà archivé : rien n'a changé.
    * @throws {StaffRoleStillHeldError} des personnes le portent encore.
    */
-  archive(at: Date, memberCount: number): void {
+  archive(at: Date, memberCount: number): boolean {
+    if (this.archivedAtValue !== null) {
+      return false;
+    }
     if (memberCount > 0) {
       throw new StaffRoleStillHeldError(this.key, memberCount);
     }
     this.archivedAtValue = at;
+    return true;
   }
 
   restore(): void {

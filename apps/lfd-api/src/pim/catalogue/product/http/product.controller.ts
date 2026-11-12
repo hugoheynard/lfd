@@ -407,6 +407,9 @@ export class ProductController {
    * Refusée (409) sur un produit archivé, ou hors requête identifiée.
    */
   @Put(":id/ready")
+  @Idempotent(
+    "pose la signature : rejouée par le même signataire sans contenu modifié depuis, ni nouvelle date, ni fait, ni réémission",
+  )
   async declareProductReady(@Param("id") id: string): Promise<ProductReadinessView | null> {
     await this.commands.execute<DeclareProductReadyCommand, void>(
       new DeclareProductReadyCommand(id),

@@ -280,3 +280,21 @@ describe("redéfinir — on ne vide pas l'annuaire", () => {
     expect(roles.saves).toEqual([true]);
   });
 });
+
+/**
+ * Régression : un archivage rejoué reposait `archivedAt`, réécrivait le rôle
+ * et vidait le cache d'accès sans que rien ait changé.
+ */
+describe("un archivage rejoué sur un rôle déjà archivé", () => {
+  it("n'écrit ni le rôle, ni un fait, et garde le cache", async () => {
+    const { uow, roles, journal, cache } = setup();
+    const archive = new ArchiveStaffRoleHandler(roles, new FixedClock(NOW), journal, uow, cache);
+    await archive.execute(new ArchiveStaffRoleCommand("logistique"));
+
+    await archive.execute(new ArchiveStaffRoleCommand("logistique"));
+
+    expect(roles.saves).toHaveLength(1);
+    expect(journal.types()).toEqual([STAFF_ROLE_FACTS.archived]);
+    expect(cache.forgotten).toHaveLength(1);
+  });
+});

@@ -12,8 +12,8 @@ import { AllergenLabelRequiredError } from "../errors/allergen-errors.js";
  * traduction qui n'existe pas.
  *
  * Une fonction et non une classe, à l'inverse du code et de la clé : un libellé
- * ne circule pas comme une identité, il ne se compare pas, il se nettoie. C'est
- * le même partage que `cleanRequiredText` dans le contexte voisin.
+ * ne circule pas comme une identité, il se nettoie. C'est le même partage que
+ * `cleanRequiredText` dans le contexte voisin.
  *
  * @param what ce dont on parle, tel qu'il apparaîtra dans le refus.
  * @throws {AllergenLabelRequiredError} rien de lisible dans la langue source.
@@ -31,4 +31,14 @@ export function cleanLabel(what: string, text: LocalizedText): LocalizedText {
     throw new AllergenLabelRequiredError(what);
   }
   return { ...cleaned, [SOURCE_LOCALE]: source };
+}
+
+/**
+ * Deux libellés **nettoyés** disent-ils la même chose, langue par langue ?
+ *
+ * Sert à reconnaître un renommage qui ne change rien : rejoué, il ne doit ni
+ * journaliser ni réémettre le catalogue.
+ */
+export function sameLabel(left: LocalizedText, right: LocalizedText): boolean {
+  return LOCALES.every((locale) => left[locale] === right[locale]);
 }

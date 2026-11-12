@@ -256,3 +256,35 @@ describe("AllergenCategory", () => {
     expect(AllergenCategory.reconstitute(state).snapshot()).toEqual(state);
   });
 });
+
+/**
+ * Régression : un geste rejoué sans effet journalisait et réémettait tout le
+ * catalogue — l'agrégat dit désormais « rien n'a changé ».
+ */
+describe("AllergenCategory — un geste déjà dans l'état visé", () => {
+  it("un second archivage rend « inchangé »", () => {
+    const category = houseCategory();
+
+    expect(category.archive(NOW)).toBe(true);
+    expect(category.archive(LATER)).toBe(false);
+  });
+
+  it("restaurer une catégorie vivante rend « inchangé »", () => {
+    expect(houseCategory().restore()).toBe(false);
+  });
+
+  it("un rang identique rend « inchangé »", () => {
+    const category = houseCategory();
+
+    expect(category.moveTo(0)).toBe(false);
+    expect(category.moveTo(2)).toBe(true);
+  });
+
+  it("un libellé identique après nettoyage rend « inchangé »", () => {
+    const category = houseCategory();
+
+    expect(category.rename({ fr: "  Maison " })).toBe(false);
+    expect(category.rename({ fr: "Maison", en: "House" })).toBe(true);
+    expect(category.snapshot().name).toEqual({ fr: "Maison", en: "House" });
+  });
+});

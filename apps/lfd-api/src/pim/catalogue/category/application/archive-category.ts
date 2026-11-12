@@ -48,7 +48,10 @@ export class ArchiveCategoryHandler implements ICommandHandler<ArchiveCategoryCo
       throw new CategoryHasActiveChildrenError(command.id, children);
     }
 
-    category.archive();
+    // Rejouer le geste ne change rien : ni fait au journal, ni réémission.
+    if (!category.archive()) {
+      return;
+    }
     await this.uow.run(async () => {
       const ticket = await this.journal.trace({
         type: PIM_EVENTS.productCategoryArchived,

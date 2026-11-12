@@ -150,12 +150,15 @@ export class AllergenEntry {
    *   `new Date()` : le domaine reste déterministe.
    * @throws {OfficialAllergenEntryLockedError} archiver du droit, c'est le
    *   supprimer.
+   * @returns `false` quand l'entrée était déjà archivée : rien n'a changé.
    */
-  archive(at: Date): void {
+  archive(at: Date): boolean {
     this.refuseIfOfficial();
-    if (this.archivedAtValue === null) {
-      this.archivedAtValue = at;
+    if (this.archivedAtValue !== null) {
+      return false;
     }
+    this.archivedAtValue = at;
+    return true;
   }
 
   /**
@@ -164,10 +167,15 @@ export class AllergenEntry {
    * @throws {OfficialAllergenEntryLockedError} une entrée officielle n'a jamais
    *   quitté le référentiel — la restaurer n'aurait rien à remettre, et
    *   toucherait quand même une ligne du droit.
+   * @returns `false` quand l'entrée était déjà au référentiel.
    */
-  restore(): void {
+  restore(): boolean {
     this.refuseIfOfficial();
+    if (this.archivedAtValue === null) {
+      return false;
+    }
     this.archivedAtValue = null;
+    return true;
   }
 
   snapshot(): AllergenEntrySnapshot {

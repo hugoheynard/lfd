@@ -823,6 +823,15 @@ describe("Ce que les familles inscrivent au journal", () => {
       uow,
       new RecordingCatalogEmitter(),
     ).execute(new CreateCategoryCommand({ name: { fr: "Pralinés" } }));
+    // Une sœur au premier niveau, pour que le réordonnancement change un rang :
+    // un ordre identique à l'existant ne journalise rien.
+    const sibling = await new CreateCategoryHandler(
+      repo,
+      ids,
+      journal,
+      uow,
+      new RecordingCatalogEmitter(),
+    ).execute(new CreateCategoryCommand({ name: { fr: "Thés" } }));
     await new RenameCategoryHandler(repo, journal, uow, new RecordingCatalogEmitter()).execute(
       new RenameCategoryCommand(child, { name: { fr: "Pralinés maison" } }),
     );
@@ -830,7 +839,7 @@ describe("Ce que les familles inscrivent au journal", () => {
       new MoveCategoryCommand(child, parent),
     );
     await new ReorderCategoriesHandler(repo, journal, uow, new RecordingCatalogEmitter()).execute(
-      new ReorderCategoriesCommand(null, [parent]),
+      new ReorderCategoriesCommand(null, [sibling, parent]),
     );
     await new ArchiveCategoryHandler(
       repo,
@@ -841,6 +850,7 @@ describe("Ce que les familles inscrivent au journal", () => {
     ).execute(new ArchiveCategoryCommand(child));
 
     expect(journal.types()).toEqual([
+      "product_category.created",
       "product_category.created",
       "product_category.created",
       "product_category.renamed",
@@ -1004,5 +1014,75 @@ describe("SetCategoryMediaHandler", () => {
     ).execute(new SetCategoryMediaCommand(id!, [{ role: "hero", url: "https://cdn/1.jpg" }]));
 
     expect(journal.types()).toEqual([]);
+  });
+});
+
+/**
+ * Régression : rejouer un archivage, un déplacement ou un ordre sans effet
+ * journalisait un fait et réémettait les familles.
+ */
+describe("un geste rejoué sur une famille déjà dans l'état visé", () => {
+  it("un archivage rejoué n'écrit ni fait ni réémission", async () => {
+    const repo = new InMemoryCategories();
+    const [id] = await openRoots(repo, 1);
+    await archive(repo).execute(new ArchiveCategoryCommand(id!));
+    const journal = new RecordingJournal();
+    const emitter = new RecordingCatalogEmitter();
+
+    await new ArchiveCategoryHandler(
+      repo,
+      new StubProductCounts(),
+      journal,
+      new DirectUnitOfWork(),
+      emitter,
+    ).execute(new ArchiveCategoryCommand(id!));
+
+    expect(journal.entries).toEqual([]);
+    expect(emitter.categories).toEqual([]);
+  });
+
+  it("un déplacement sous le même parent garde le rang, sans fait ni réémission", async () => {
+    const repo = new InMemoryCategories();
+    const [parent, first, second] = await openRoots(repo, 3);
+    const move = () =>
+      new MoveCategoryHandler(
+        repo,
+        new RecordingJournal(),
+        new DirectUnitOfWork(),
+        new RecordingCatalogEmitter(),
+      );
+    await move().execute(new MoveCategoryCommand(first!, parent!));
+    await move().execute(new MoveCategoryCommand(second!, parent!));
+    const journal = new RecordingJournal();
+    const emitter = new RecordingCatalogEmitter();
+
+    await new MoveCategoryHandler(repo, journal, new DirectUnitOfWork(), emitter).execute(
+      new MoveCategoryCommand(first!, parent!),
+    );
+
+    expect(repo.at(first!).position).toBe(0);
+    expect(journal.entries).toEqual([]);
+    expect(emitter.categories).toEqual([]);
+  });
+
+  it("un ordre identique n'écrit ni fait ni réémission", async () => {
+    const repo = new InMemoryCategories();
+    const ids = await openRoots(repo, 3);
+    const order = [ids[2]!, ids[0]!, ids[1]!];
+    await new ReorderCategoriesHandler(
+      repo,
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
+    ).execute(new ReorderCategoriesCommand(null, order));
+    const journal = new RecordingJournal();
+    const emitter = new RecordingCatalogEmitter();
+
+    await new ReorderCategoriesHandler(repo, journal, new DirectUnitOfWork(), emitter).execute(
+      new ReorderCategoriesCommand(null, order),
+    );
+
+    expect(journal.entries).toEqual([]);
+    expect(emitter.categories).toEqual([]);
   });
 });

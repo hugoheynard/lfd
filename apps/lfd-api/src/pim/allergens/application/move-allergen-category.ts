@@ -41,7 +41,11 @@ export class MoveAllergenCategoryHandler implements ICommandHandler<
   async execute(command: MoveAllergenCategoryCommand): Promise<void> {
     const category = await requireCategory(this.categories, command.id);
     const before = category.snapshot().position;
-    category.moveTo(command.position);
+    // Rejouer le geste ne change rien : ni fait au journal, ni réémission du
+    // catalogue entier.
+    if (!category.moveTo(command.position)) {
+      return;
+    }
     const after = category.snapshot();
 
     await this.uow.run(async () => {

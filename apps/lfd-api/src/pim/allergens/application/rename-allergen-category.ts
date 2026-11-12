@@ -39,7 +39,11 @@ export class RenameAllergenCategoryHandler implements ICommandHandler<
     // Le libellé d'AVANT est lu avant la révision : après, l'agrégat ne s'en
     // souvient plus, et un journal qui ne dit pas d'où l'on vient ne sert à rien.
     const before = category.snapshot().name;
-    category.rename(command.name);
+    // Rejouer le geste ne change rien : ni fait au journal, ni réémission du
+    // catalogue entier.
+    if (!category.rename(command.name)) {
+      return;
+    }
     const after = category.snapshot();
 
     await this.uow.run(async () => {

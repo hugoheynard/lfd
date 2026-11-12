@@ -55,6 +55,7 @@ class StubIds extends UuidGenerator {
 interface Harness {
   readonly store: AllergenStore;
   readonly journal: RecordingJournal;
+  readonly reemission: RecordingCatalogReemission;
   readonly createCategory: CreateAllergenCategoryHandler;
   readonly archiveCategory: ArchiveAllergenCategoryHandler;
   readonly create: CreateAllergenEntryHandler;
@@ -71,10 +72,12 @@ function harness(): Harness {
   const journal = new RecordingJournal();
   const uow = new DirectUnitOfWork();
   const ids = new StubIds();
+  const reemission = new RecordingCatalogReemission();
   const clock = new FixedClock(NOW);
   return {
     store,
     journal,
+    reemission,
     createCategory: new CreateAllergenCategoryHandler(categories, ids, journal, uow),
     archiveCategory: new ArchiveAllergenCategoryHandler(
       categories,
@@ -82,30 +85,12 @@ function harness(): Harness {
       journal,
       clock,
       uow,
-      new RecordingCatalogReemission(),
+      reemission,
     ),
     create: new CreateAllergenEntryHandler(entries, categories, ids, journal, uow),
-    revise: new ReviseAllergenEntryHandler(
-      entries,
-      categories,
-      journal,
-      uow,
-      new RecordingCatalogReemission(),
-    ),
-    archive: new ArchiveAllergenEntryHandler(
-      entries,
-      journal,
-      clock,
-      uow,
-      new RecordingCatalogReemission(),
-    ),
-    restore: new RestoreAllergenEntryHandler(
-      entries,
-      categories,
-      journal,
-      uow,
-      new RecordingCatalogReemission(),
-    ),
+    revise: new ReviseAllergenEntryHandler(entries, categories, journal, uow, reemission),
+    archive: new ArchiveAllergenEntryHandler(entries, journal, clock, uow, reemission),
+    restore: new RestoreAllergenEntryHandler(entries, categories, journal, uow, reemission),
   };
 }
 
@@ -356,5 +341,41 @@ describe("RestoreAllergenEntryHandler", () => {
     await expect(h.restore.execute(new RestoreAllergenEntryCommand(id))).rejects.toBeInstanceOf(
       ArchivedAllergenCategoryError,
     );
+  });
+});
+
+/**
+ * Régression : rejouer un archivage ou une restauration sans effet journalisait
+ * un fait et réémettait tout le catalogue.
+ */
+describe("un geste rejoué sur une entrée déjà dans l'état visé", () => {
+  async function souchet(h: Harness): Promise<string> {
+    const categoryId = await houseCategory(h);
+    return h.create.execute(
+      new CreateAllergenEntryCommand({ code: "X-SOUCHET", name: { fr: "Souchet" }, categoryId }),
+    );
+  }
+
+  it("un archivage rejoué n'écrit ni fait ni réémission", async () => {
+    const h = harness();
+    const id = await souchet(h);
+    await h.archive.execute(new ArchiveAllergenEntryCommand(id));
+    const facts = h.journal.types().length;
+
+    await h.archive.execute(new ArchiveAllergenEntryCommand(id));
+
+    expect(h.journal.types()).toHaveLength(facts);
+    expect(h.reemission.everythingCalls).toBe(1);
+  });
+
+  it("une restauration d'une entrée vivante n'écrit ni fait ni réémission", async () => {
+    const h = harness();
+    const id = await souchet(h);
+    const facts = h.journal.types().length;
+
+    await h.restore.execute(new RestoreAllergenEntryCommand(id));
+
+    expect(h.journal.types()).toHaveLength(facts);
+    expect(h.reemission.everythingCalls).toBe(0);
   });
 });

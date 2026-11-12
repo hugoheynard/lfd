@@ -53,7 +53,12 @@ export class MoveCategoryHandler implements ICommandHandler<MoveCategoryCommand,
     // venait sous le nom qu'il portait ce jour-là.
     const from =
       category.parentId === null ? null : await requireCategory(this.categories, category.parentId);
-    category.moveUnder(command.parentId, await this.categories.nextPosition(command.parentId));
+    const position = await this.categories.nextPosition(command.parentId);
+    // Rejouer le geste ne change rien : ni fait au journal, ni réémission, et
+    // la famille garde son rang au lieu de repartir en queue.
+    if (!category.moveUnder(command.parentId, position)) {
+      return;
+    }
     await this.uow.run(async () => {
       const ticket = await this.journal.trace({
         type: PIM_EVENTS.productCategoryMoved,

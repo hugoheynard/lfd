@@ -44,7 +44,11 @@ export class ArchiveAllergenCategoryHandler implements ICommandHandler<
   async execute(command: ArchiveAllergenCategoryCommand): Promise<void> {
     const category = await requireCategory(this.categories, command.id);
     await ensureCategoryUncited(this.catalogue, category);
-    category.archive(this.clock.now());
+    // Rejouer le geste ne change rien : ni fait au journal, ni réémission du
+    // catalogue entier.
+    if (!category.archive(this.clock.now())) {
+      return;
+    }
     const archived = category.snapshot();
 
     await this.uow.run(async () => {

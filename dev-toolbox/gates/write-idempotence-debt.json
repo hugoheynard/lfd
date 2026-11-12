@@ -2047,14 +2047,6 @@
     },
     {
       "file": "apps/lfd-api/src/pim/allergens/http/allergen.controller.ts",
-      "method": "archiveCategory"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/allergens/http/allergen.controller.ts",
-      "method": "archiveEntry"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/allergens/http/allergen.controller.ts",
       "method": "createCategory"
     },
     {
@@ -2062,36 +2054,8 @@
       "method": "createEntry"
     },
     {
-      "file": "apps/lfd-api/src/pim/allergens/http/allergen.controller.ts",
-      "method": "moveCategory"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/allergens/http/allergen.controller.ts",
-      "method": "renameCategory"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/allergens/http/allergen.controller.ts",
-      "method": "restoreCategory"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/allergens/http/allergen.controller.ts",
-      "method": "restoreEntry"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/category/http/category.controller.ts",
-      "method": "archiveCategory"
-    },
-    {
       "file": "apps/lfd-api/src/pim/catalogue/category/http/category.controller.ts",
       "method": "createCategory"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/category/http/category.controller.ts",
-      "method": "moveCategory"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/category/http/category.controller.ts",
-      "method": "reorderCategories"
     },
     {
       "file": "apps/lfd-api/src/pim/catalogue/product/http/product-variant-lifecycle.controller.ts",
@@ -2104,10 +2068,6 @@
     {
       "file": "apps/lfd-api/src/pim/catalogue/product/http/product.controller.ts",
       "method": "createProduct"
-    },
-    {
-      "file": "apps/lfd-api/src/pim/catalogue/product/http/product.controller.ts",
-      "method": "declareProductReady"
     },
     {
       "file": "apps/lfd-api/src/pim/catalogue/revision/http/catalog-revision.controller.ts",
@@ -2248,10 +2208,6 @@
     {
       "file": "apps/lfd-api/src/staff/invitations/admin-staff-access-pending.controller.ts",
       "method": "issueLink"
-    },
-    {
-      "file": "apps/lfd-api/src/staff/permissions/http/admin-staff-roles.controller.ts",
-      "method": "archive"
     }
   ]
 }

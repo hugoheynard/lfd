@@ -38,7 +38,11 @@ export class ArchiveAllergenEntryHandler implements ICommandHandler<
 
   async execute(command: ArchiveAllergenEntryCommand): Promise<void> {
     const entry = await requireEntry(this.entries, command.id);
-    entry.archive(this.clock.now());
+    // Rejouer le geste ne change rien : ni fait au journal, ni réémission du
+    // catalogue entier.
+    if (!entry.archive(this.clock.now())) {
+      return;
+    }
     const archived = entry.snapshot();
 
     await this.uow.run(async () => {

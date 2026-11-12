@@ -4,12 +4,14 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { currentRequestContext } from "../../../../platform/context/request-context.store.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
+import { PimJournalReader } from "../../../journal/pim-journal-reader.js";
 import {
   AnonymousReadinessError,
   ArchivedProductNotReadyError,
 } from "../domain/errors/product-errors.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { ReadinessRepository } from "../domain/ports/readiness.repository.js";
+import { signatureStillHolds } from "../domain/services/readiness-renewal.js";
 import { requireProduct } from "./product-support.js";
 import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 
@@ -29,6 +31,9 @@ export class DeclareProductReadyCommand {
  * Elle ne touche PAS au statut. Une fiche déclarée publiable reste un
  * brouillon : mettre en vente est un second geste, et les fondre en un seul
  * ferait disparaître celui qui a du sens.
+ *
+ * Rejouée par le même signataire sur une fiche dont le contenu n'a pas bougé,
+ * elle ne fait rien : ni fait, ni nouvelle date, ni réémission.
  */
 @CommandHandler(DeclareProductReadyCommand)
 export class DeclareProductReadyHandler implements ICommandHandler<
@@ -42,6 +47,7 @@ export class DeclareProductReadyHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
     private readonly emitter: CatalogEmitter,
+    private readonly history: PimJournalReader,
   ) {}
 
   async execute(command: DeclareProductReadyCommand): Promise<void> {
@@ -52,6 +58,9 @@ export class DeclareProductReadyHandler implements ICommandHandler<
     const actor = currentRequestContext()?.actor.id;
     if (actor === undefined || actor === null) {
       throw new AnonymousReadinessError(command.id);
+    }
+    if (await this.alreadySigned(command.id, actor)) {
+      return;
     }
     const { sku, name } = product.snapshot();
     // Le fait et la signature dans la MÊME transaction. Une seule écriture ne
@@ -76,5 +85,23 @@ export class DeclareProductReadyHandler implements ICommandHandler<
       });
       await this.emitter.emitProducts([command.id]);
     });
+  }
+
+  private async alreadySigned(productId: string, actor: string): Promise<boolean> {
+    const current = await this.readiness.read(productId);
+    if (current === null) {
+      return false;
+    }
+    const facts = await this.history.factsAbout(
+      "product",
+      productId,
+      current.readyAt,
+      new Date(this.clock.now()),
+    );
+    return signatureStillHolds(
+      current,
+      actor,
+      facts.map((fact) => fact.type),
+    );
   }
 }

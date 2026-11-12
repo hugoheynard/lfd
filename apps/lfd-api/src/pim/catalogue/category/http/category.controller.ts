@@ -127,6 +127,9 @@ export class CategoryController {
    * `PUT /:id` ne puisse pas l'avaler : Nest résout dans l'ordre déclaré.
    */
   @Put("reorder")
+  @Idempotent(
+    "pose l'ordre complet de la fratrie : rejouée dans le même ordre, rien ne change, ni fait ni réémission",
+  )
   async reorderCategories(
     @Body(new ZodBody(reorderCategoriesPayloadSchema)) body: ReorderCategoriesPayload,
   ) {
@@ -137,6 +140,9 @@ export class CategoryController {
   }
 
   @Put(":id/parent")
+  @Idempotent(
+    "pose le parent : rejouée sous le même parent, la famille garde son rang, ni fait ni réémission",
+  )
   async moveCategory(
     @Param("id") id: string,
     @Body(new ZodBody(moveCategoryPayloadSchema)) body: MoveCategoryPayload,
@@ -148,6 +154,9 @@ export class CategoryController {
   }
 
   @Put(":id/archive")
+  @Idempotent(
+    "pose l'état archivé : rejouée sur une famille archivée, rien ne change, ni fait ni réémission",
+  )
   async archiveCategory(@Param("id") id: string) {
     await this.commands.execute<ArchiveCategoryCommand, void>(new ArchiveCategoryCommand(id));
     return { id };

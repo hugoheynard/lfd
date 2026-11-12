@@ -33,16 +33,23 @@ export class ArchiveStaffRoleHandler implements ICommandHandler<ArchiveStaffRole
   ) {}
 
   async execute(command: ArchiveStaffRoleCommand): Promise<void> {
-    await this.uow.run(async () => {
+    const archived = await this.uow.run(async () => {
       const role = await loadEditableRole(this.roles, command.key, { forUpdate: true });
       const before = role.toPersistence();
-      role.archive(this.clock.now(), await this.roles.memberCount(command.key));
+      // Rejouer l'archivage ne change rien : ni écriture, ni fait au journal,
+      // ni cache d'accès vidé.
+      if (!role.archive(this.clock.now(), await this.roles.memberCount(command.key))) {
+        return false;
+      }
       await this.roles.save(role);
       const fact = roleArchivedFact(before);
       if (fact !== null) {
         await this.journal.append(fact);
       }
+      return true;
     });
-    this.cache.forgetAll();
+    if (archived) {
+      this.cache.forgetAll();
+    }
   }
 }

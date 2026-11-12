@@ -60,6 +60,7 @@ class StubIds extends UuidGenerator {
 interface Harness {
   readonly store: AllergenStore;
   readonly journal: RecordingJournal;
+  readonly reemission: RecordingCatalogReemission;
   readonly create: CreateAllergenCategoryHandler;
   readonly rename: RenameAllergenCategoryHandler;
   readonly move: MoveAllergenCategoryHandler;
@@ -77,43 +78,30 @@ function harness(): Harness {
   const journal = new RecordingJournal();
   const uow = new DirectUnitOfWork();
   const ids = new StubIds();
+  const reemission = new RecordingCatalogReemission();
   return {
     store,
     journal,
+    reemission,
     create: new CreateAllergenCategoryHandler(categories, ids, journal, uow),
-    rename: new RenameAllergenCategoryHandler(
-      categories,
-      journal,
-      uow,
-      new RecordingCatalogReemission(),
-    ),
-    move: new MoveAllergenCategoryHandler(
-      categories,
-      journal,
-      uow,
-      new RecordingCatalogReemission(),
-    ),
+    rename: new RenameAllergenCategoryHandler(categories, journal, uow, reemission),
+    move: new MoveAllergenCategoryHandler(categories, journal, uow, reemission),
     archive: new ArchiveAllergenCategoryHandler(
       categories,
       reader,
       journal,
       new FixedClock(NOW),
       uow,
-      new RecordingCatalogReemission(),
+      reemission,
     ),
-    restore: new RestoreAllergenCategoryHandler(
-      categories,
-      journal,
-      uow,
-      new RecordingCatalogReemission(),
-    ),
+    restore: new RestoreAllergenCategoryHandler(categories, journal, uow, reemission),
     createEntry: new CreateAllergenEntryHandler(entries, categories, ids, journal, uow),
     archiveEntry: new ArchiveAllergenEntryHandler(
       entries,
       journal,
       new FixedClock(NOW),
       uow,
-      new RecordingCatalogReemission(),
+      reemission,
     ),
   };
 }
@@ -311,5 +299,59 @@ describe("le journal du référentiel d'allergènes", () => {
       subjectId: id,
       payload: { from: { fr: "Exotiques" }, to: { fr: "Fruits exotiques" } },
     });
+  });
+});
+
+/**
+ * Régression : rejouer un geste qui ne change rien journalisait un fait et
+ * réémettait tout le catalogue.
+ */
+describe("un geste rejoué sur une catégorie déjà dans l'état visé", () => {
+  async function houseCategory(h: Harness): Promise<string> {
+    return h.create.execute(
+      new CreateAllergenCategoryCommand({ key: "exotiques", name: { fr: "Exotiques" } }),
+    );
+  }
+
+  it("un renommage au même libellé n'écrit ni fait ni réémission", async () => {
+    const h = harness();
+    const id = await houseCategory(h);
+
+    await h.rename.execute(new RenameAllergenCategoryCommand(id, { fr: " Exotiques " }));
+
+    expect(h.journal.types()).toEqual(["allergen_category.created"]);
+    expect(h.reemission.everythingCalls).toBe(0);
+  });
+
+  it("un déplacement au même rang n'écrit ni fait ni réémission", async () => {
+    const h = harness();
+    h.store.seedOfficialCategory("alg_cat_gluten", "gluten", "gluten");
+    await h.move.execute(new MoveAllergenCategoryCommand("alg_cat_gluten", 4));
+
+    await h.move.execute(new MoveAllergenCategoryCommand("alg_cat_gluten", 4));
+
+    expect(h.journal.types()).toEqual(["allergen_category.reordered"]);
+    expect(h.reemission.everythingCalls).toBe(1);
+  });
+
+  it("un archivage rejoué n'écrit ni fait ni réémission", async () => {
+    const h = harness();
+    const id = await houseCategory(h);
+    await h.archive.execute(new ArchiveAllergenCategoryCommand(id));
+
+    await h.archive.execute(new ArchiveAllergenCategoryCommand(id));
+
+    expect(h.journal.types()).toEqual(["allergen_category.created", "allergen_category.archived"]);
+    expect(h.reemission.everythingCalls).toBe(1);
+  });
+
+  it("une restauration d'une catégorie vivante n'écrit ni fait ni réémission", async () => {
+    const h = harness();
+    const id = await houseCategory(h);
+
+    await h.restore.execute(new RestoreAllergenCategoryCommand(id));
+
+    expect(h.journal.types()).toEqual(["allergen_category.created"]);
+    expect(h.reemission.everythingCalls).toBe(0);
   });
 });

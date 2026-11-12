@@ -165,3 +165,30 @@ describe("l’agrégat Category", () => {
     });
   });
 });
+
+/**
+ * Régression : un archivage, un déplacement ou un rang rejoués journalisaient
+ * et réémettaient la famille — l'agrégat dit désormais « rien n'a changé ».
+ */
+describe("Category — un geste déjà dans l'état visé", () => {
+  it("un second archivage rend « inchangé »", () => {
+    const category = Category.open(OPEN);
+
+    expect(category.archive()).toBe(true);
+    expect(category.archive()).toBe(false);
+  });
+
+  it("un déplacement sous le parent actuel rend « inchangé » et garde le rang", () => {
+    const category = Category.open({ ...OPEN, parentId: "cat_parent", position: 3 });
+
+    expect(category.moveUnder("cat_parent", 9)).toBe(false);
+    expect(category.snapshot()).toMatchObject({ parentId: "cat_parent", position: 3 });
+  });
+
+  it("un rang identique rend « inchangé »", () => {
+    const category = Category.open(OPEN);
+
+    expect(category.placeAt(0)).toBe(false);
+    expect(category.placeAt(1)).toBe(true);
+  });
+});

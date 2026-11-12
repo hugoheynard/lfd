@@ -5,7 +5,7 @@ import {
   OfficialAllergenCategoryLockedError,
 } from "../errors/allergen-errors.js";
 import { AllergenCategoryKey } from "../value-objects/allergen-category-key.js";
-import { cleanLabel } from "../value-objects/allergen-label.js";
+import { cleanLabel, sameLabel } from "../value-objects/allergen-label.js";
 import { toIncoCategory, type IncoCategory } from "../value-objects/inco-category.js";
 
 /** Ce qu'une catégorie **maison** demande pour naître. */
@@ -144,20 +144,34 @@ export class AllergenCategory {
    * La clé n'y figure pas (c'est une identité), `incoCategory` non plus (une
    * catégorie ne devient pas réglementaire par un `PATCH`).
    *
+   * @returns `false` quand le libellé nettoyé est celui qu'elle porte déjà :
+   *   le rejeu n'a rien à journaliser ni à réémettre.
    * @throws {OfficialAllergenCategoryLockedError} la catégorie est du droit.
    */
-  rename(name: LocalizedText): void {
+  rename(name: LocalizedText): boolean {
     this.refuseIfOfficial();
-    this.nameValue = cleanLabel("la catégorie d'allergène", name);
+    const cleaned = cleanLabel("la catégorie d'allergène", name);
+    if (sameLabel(cleaned, this.nameValue)) {
+      return false;
+    }
+    this.nameValue = cleaned;
+    return true;
   }
 
   /**
    * Range la catégorie dans l'écran. **Autorisé même sur l'officiel** : l'ordre
    * d'affichage n'a aucune portée réglementaire, et le trigger laisse
    * `position` libre pour cette raison exacte.
+   *
+   * @returns `false` quand la catégorie est déjà à ce rang.
    */
-  moveTo(position: number): void {
-    this.positionValue = requirePosition(position);
+  moveTo(position: number): boolean {
+    const target = requirePosition(position);
+    if (target === this.positionValue) {
+      return false;
+    }
+    this.positionValue = target;
+    return true;
   }
 
   /**
@@ -176,12 +190,15 @@ export class AllergenCategory {
    *   `new Date()` : le domaine reste déterministe.
    * @throws {OfficialAllergenCategoryLockedError} archiver du droit, c'est le
    *   supprimer.
+   * @returns `false` quand la catégorie était déjà archivée : rien n'a changé.
    */
-  archive(at: Date): void {
+  archive(at: Date): boolean {
     this.refuseIfOfficial();
-    if (this.archivedAtValue === null) {
-      this.archivedAtValue = at;
+    if (this.archivedAtValue !== null) {
+      return false;
     }
+    this.archivedAtValue = at;
+    return true;
   }
 
   /**
@@ -190,10 +207,15 @@ export class AllergenCategory {
    * @throws {OfficialAllergenCategoryLockedError} une catégorie officielle n'a
    *   jamais quitté le référentiel — la restaurer n'aurait rien à remettre, et
    *   toucherait quand même une ligne du droit.
+   * @returns `false` quand la catégorie était déjà au référentiel.
    */
-  restore(): void {
+  restore(): boolean {
     this.refuseIfOfficial();
+    if (this.archivedAtValue === null) {
+      return false;
+    }
     this.archivedAtValue = null;
+    return true;
   }
 
   snapshot(): AllergenCategorySnapshot {

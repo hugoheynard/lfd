@@ -9,7 +9,14 @@ import {
   ProductNotFoundError,
 } from "../../domain/errors/product-errors.js";
 import type { ProductSnapshot } from "../../domain/entities/product.js";
-import { FakeProducts, FakeReadiness, NOW, PRODUCT_ID, snapshot } from "./readiness-doubles.js";
+import {
+  FakeProductHistory,
+  FakeProducts,
+  FakeReadiness,
+  NOW,
+  PRODUCT_ID,
+  snapshot,
+} from "./readiness-doubles.js";
 import {
   DeclareProductReadyCommand,
   DeclareProductReadyHandler,
@@ -24,18 +31,20 @@ import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/
  * forme, et aucun code ne dira que 10,00 € est le bon prix. Ce qui se teste,
  * c'est donc qui signe, quand, et les deux cas où signer n'a pas de sens.
  */
-function build(status: ProductSnapshot["status"] = "draft") {
+function build(status: ProductSnapshot["status"] = "draft", factsSince: readonly string[] = []) {
   const readiness = new FakeReadiness();
   const journal = new RecordingJournal();
+  const emitter = new RecordingCatalogEmitter();
   const handler = new DeclareProductReadyHandler(
     new FakeProducts(snapshot(status)),
     readiness,
     journal,
     new FixedClock(NOW),
     new DirectUnitOfWork(),
-    new RecordingCatalogEmitter(),
+    emitter,
+    new FakeProductHistory(factsSince),
   );
-  return { handler, readiness, journal };
+  return { handler, readiness, journal, emitter };
 }
 
 /** Le geste, tel qu'il arrive vraiment : dans une requête, signée par quelqu'un. */
@@ -103,10 +112,49 @@ describe("DeclareProductReady", () => {
       new FixedClock(NOW),
       new DirectUnitOfWork(),
       new RecordingCatalogEmitter(),
+      new FakeProductHistory(),
     );
 
     await expect(
       asStaff(() => handler.execute(new DeclareProductReadyCommand(PRODUCT_ID))),
     ).rejects.toBeInstanceOf(ProductNotFoundError);
+  });
+});
+
+/**
+ * Régression : redéclarer une fiche déjà signée retraçait le fait, resignait
+ * `readyAt` et réémettait la fiche sans que rien ait changé.
+ */
+describe("DeclareProductReady rejoué", () => {
+  const EARLIER = new Date(NOW.getTime() - 60_000);
+
+  it("ne retrace ni ne resigne quand le même signataire n'a rien vu changer", async () => {
+    const { handler, readiness, journal, emitter } = build();
+    readiness.declared = { readyAt: EARLIER, readyBy: "staff_hugo" };
+
+    await asStaff(() => handler.execute(new DeclareProductReadyCommand(PRODUCT_ID)));
+
+    expect(readiness.declared).toEqual({ readyAt: EARLIER, readyBy: "staff_hugo" });
+    expect(journal.entries).toEqual([]);
+    expect(emitter.products).toEqual([]);
+  });
+
+  it("resigne une signature périmée par un changement de contenu", async () => {
+    const { handler, readiness, journal } = build("draft", [PIM_EVENTS.productPricingSaved]);
+    readiness.declared = { readyAt: EARLIER, readyBy: "staff_hugo" };
+
+    await asStaff(() => handler.execute(new DeclareProductReadyCommand(PRODUCT_ID)));
+
+    expect(readiness.declared).toEqual({ readyAt: NOW, readyBy: "staff_hugo" });
+    expect(journal.entries.map((entry) => entry.type)).toEqual([PIM_EVENTS.productDeclaredReady]);
+  });
+
+  it("resigne quand quelqu'un d'autre s'engage", async () => {
+    const { handler, readiness } = build();
+    readiness.declared = { readyAt: EARLIER, readyBy: "staff_autre" };
+
+    await asStaff(() => handler.execute(new DeclareProductReadyCommand(PRODUCT_ID)));
+
+    expect(readiness.declared).toEqual({ readyAt: NOW, readyBy: "staff_hugo" });
   });
 });

@@ -1,3 +1,4 @@
+import { PimJournalReader, type PimJournalFact } from "../../../../journal/pim-journal-reader.js";
 import { Product, type ProductSnapshot } from "../../domain/entities/product.js";
 import { ProductRepository } from "../../domain/ports/product.repository.js";
 import {
@@ -97,5 +98,28 @@ export class FakeReadiness extends ReadinessRepository {
   withdraw(): Promise<void> {
     this.declared = null;
     return Promise.resolve();
+  }
+}
+
+/** L'historique de la fiche : les types de faits qu'on lui donne, rien d'autre. */
+export class FakeProductHistory extends PimJournalReader {
+  constructor(private readonly types: readonly string[] = []) {
+    super();
+  }
+
+  factsAbout(): Promise<readonly PimJournalFact[]> {
+    return Promise.resolve(
+      this.types.map((type) => ({
+        type,
+        subjectType: "product",
+        subjectId: PRODUCT_ID,
+        occurredAt: NOW,
+        actorName: null,
+        payload: {},
+      })),
+    );
+  }
+  factsBetween(): Promise<readonly PimJournalFact[]> {
+    return Promise.resolve([]);
   }
 }

@@ -36,7 +36,11 @@ export class RestoreAllergenEntryHandler implements ICommandHandler<
   async execute(command: RestoreAllergenEntryCommand): Promise<void> {
     const entry = await requireEntry(this.entries, command.id);
     await requireLivingCategory(this.categories, entry.categoryId);
-    entry.restore();
+    // Rejouer le geste ne change rien : ni fait au journal, ni réémission du
+    // catalogue entier.
+    if (!entry.restore()) {
+      return;
+    }
     const restored = entry.snapshot();
 
     await this.uow.run(async () => {
