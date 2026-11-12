@@ -96,6 +96,17 @@ D'où la même forme que les journées : **un journal en ajout seul, version =
 - Un e2e lit `pg_trigger` pour chaque table nommée (le geste de
   `version-par-journee.md` § 1) : pas de nouvelle porte.
 
+### 3.2 bis La version d'un journal : plus grand identifiant ET nombre de lignes
+
+Décidé par Hugo le 2026-11-12. `max(id)` seul rate une validation tardive :
+A prend 100, B prend 101 et valide d'abord, un lecteur voit 101 ; quand A
+valide, le maximum reste 101 et son changement est invisible jusqu'à la
+prochaine écriture. La version de **tous** les journaux (ceux des journées et
+les deux nouveaux) devient `max(id)` + `count(*)` sur le même périmètre,
+comparée à l'égalité seulement. Les compteurs de `context_versions` n'ont pas
+ce trou : le verrou de leur ligne sérialise les validations. Un e2e reproduit
+les deux transactions validées dans l'ordre inverse.
+
 ### 3.3 Une porte, un objet
 
 - **`GET admin/versions?date=AAAA-MM-JJ&subjects=orders,companies,…`**
