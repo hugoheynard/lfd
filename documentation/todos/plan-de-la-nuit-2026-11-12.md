@@ -28,8 +28,8 @@
 
 ## 3. Construire
 
-2. **Purge de la table des gestes (`gesture_intent`)** — période proposée :
-   **7 jours** (à confirmer par Hugo, cf. § 6). Élagueur sur la passe nocturne
+2. **Purge de la table des gestes (`gesture_intent`)** — **7 jours**
+   (décidé par Hugo le 2026-11-12). Élagueur sur la passe nocturne
    qui purge les journaux, comme `day_change` ; une clé rejouée après la purge
    referait le geste, d'où une durée qui couvre largement les renvois réels
    (réseau, onglet rouvert, coursier hors ligne) et Stripe (24 h).
@@ -39,6 +39,23 @@
    arrêter le déploiement sur un écart non inscrit ; la liste des écarts
    connus, avec leur raison, dans un fichier du dépôt. Le premier passage
    montrera les écarts anciens : ils sont listés, pas corrigés cette nuit.
+
+2 bis. **Finir l'idempotence** (Hugo, 2026-11-12 : « l'intégralité ») —
+lots J3, J4, J5 du plan `ops/plan-idempotence-des-ecritures.md` § 8 :
+
+- **J3** : un e2e de rejeu généré depuis l'inventaire de la porte, qui
+  envoie deux fois chaque route « par intention » avec la même clé et
+  vérifie une seule écriture et deux réponses identiques ;
+- **J4** : la porte refuse `@Idempotent` sur un `POST` dont le handler crée
+  (`ids.next()`), envoie un e-mail ou appelle le réseau ;
+- **J5** : côté écrans (back-office et boutique), tout appel vers une route
+  « par intention » passe par `GestureIntents`, jamais une clé tirée au clic.
+  Puis le plan devient une **doc d'état** de l'idempotence.
+  2 ter. **Audit du système de garantie de l'idempotence**, rendu au rapport du
+  matin (§ 7) : ce que la porte, le scellement, les tests et les écrans
+  garantissent réellement, ce qui échappe (écritures hors HTTP, effets chez
+  un tiers, deux clics simultanés sur un geste « par nature », risques
+  assumés), chaque affirmation vérifiée dans le code.
 
 ## 4. Documenter
 
@@ -71,11 +88,15 @@
 
 ## 6. À trancher avec Hugo (pas cette nuit)
 
-- La période de purge des gestes (7 jours proposés).
-- Lot 2 des journées, virement T4–T5, idempotence J3–J5.
+- Lot 2 des journées, virement T4–T5.
 - Audit de sécurité : capture de la fiche racine, fuite d'une facture d'un
   site frère, `RECOMPUTE_TOKEN`, en-têtes des fronts, propriétaire des
   abonnements push.
 - Protections de coût : alertes de budget, limites de débit Cloudflare,
   Turnstile.
 - Refus d'écrire sur une fiche client périmée.
+
+## 7. Le rapport du matin
+
+(rempli au fil de la nuit : ce qui est fait avec son commit, ce qui a bloqué
+et pourquoi, l'audit de l'idempotence, et ce qui attend une décision)
