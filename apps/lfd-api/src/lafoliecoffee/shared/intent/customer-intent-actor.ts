@@ -1,6 +1,6 @@
 /**
  * **L'acteur d'une intention de la boutique** : le client résolu en base,
- * préfixé par sa nature (plan `documentation/ops/plan-idempotence-des-ecritures.md`,
+ * préfixé par sa nature (`documentation/ops/l-idempotence-des-ecritures.md`,
  * § 7). Le registre des intentions est partagé avec le staff, et une clé ne
  * se partage pas entre deux personnes : le préfixe empêche qu'un identifiant
  * de client et une fiche du staff se confondent.

@@ -63,7 +63,7 @@ export class AdminPaymentLinksController {
   @Post(":id/cancel")
   @HttpCode(HttpStatus.NO_CONTENT)
   @Idempotent(
-    "transition : rejouée, le lien n'est plus ouvert et l'agrégat refuse (409 PaymentLinkNotOpenError) avant toute écriture et avant tout appel au prestataire",
+    "transition : rejouée, le lien relu sous le verrou de sa ligne (FOR UPDATE) n'est plus ouvert et l'agrégat refuse (409 PaymentLinkNotOpenError) avant toute écriture et avant tout appel au prestataire ; un paiement qui croise l'annulation se joue avant ou après elle",
   )
   async cancel(@StaffUserId() staffUserId: string, @Param("id") id: string): Promise<void> {
     await this.commands.execute<CancelPaymentLinkCommand, void>(

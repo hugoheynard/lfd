@@ -1,7 +1,7 @@
 /**
  * L'inventaire des routes d'écriture rangées, écrit par
  * `node dev-toolbox/gates/write-idempotence.mjs --inventory [fichier]`
- * (plan `documentation/ops/plan-idempotence-des-ecritures.md`, § 8, J3).
+ * (`documentation/ops/l-idempotence-des-ecritures.md`, § 8, J3).
  *
  * Il sert l'e2e de rejeu (`apps/lfd-api/test/write-replay.e2e-spec.ts`), qui
  * rejoue chaque route « par intention » : la porte dit qu'une route est

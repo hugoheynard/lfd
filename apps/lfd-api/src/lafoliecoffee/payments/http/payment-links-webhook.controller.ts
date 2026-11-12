@@ -36,7 +36,7 @@ export class PaymentLinksWebhookController {
   @Post("webhook")
   @HttpCode(HttpStatus.OK)
   @Idempotent(
-    "webhook, par la clé de l'émetteur : l'issue projetée (payé, expiré) est conditionnée à l'état du lien ; un événement rejoué ne réécrit rien",
+    "webhook, par la clé de l'émetteur : l'issue projetée (payé, expiré) est décidée sur le lien relu sous le verrou de sa ligne (FOR UPDATE), donc sur l'état écrit par une annulation concurrente ; un événement rejoué ne réécrit rien",
   )
   async handle(
     @Req() request: RawBodyRequest<Request>,

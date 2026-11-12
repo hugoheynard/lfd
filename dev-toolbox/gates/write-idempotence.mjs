@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Gate : **chaque route d'écriture dit pourquoi un rejeu ne la refait pas**
- * (plan `documentation/ops/plan-idempotence-des-ecritures.md`, J0 ;
+ * (`documentation/ops/l-idempotence-des-ecritures.md`, J0 ;
  * corrections de vitruve, § 7).
  *
  * Chaque méthode `@Post`, `@Put`, `@Patch`, `@Delete` d'un `*.controller.ts`
@@ -481,7 +481,7 @@ function main(argv) {
     console.error("\n✗ write-idempotence\n");
     for (const failure of result.failures) console.error(`  ${failure}`);
     console.error(
-      `\n  ${result.failures.length} faute(s). Plan : documentation/ops/plan-idempotence-des-ecritures.md\n`,
+      `\n  ${result.failures.length} faute(s). Doc : documentation/ops/l-idempotence-des-ecritures.md\n`,
     );
     process.exit(1);
   }

@@ -1,6 +1,6 @@
 /**
  * Range une route d'écriture dans la case « **rejouer ne refait rien** », et
- * dit pourquoi (plan `documentation/ops/plan-idempotence-des-ecritures.md`).
+ * dit pourquoi (`documentation/ops/l-idempotence-des-ecritures.md`).
  *
  * Un double clic, un réseau qui coupe après l'envoi, un onglet qui rejoue sa
  * requête : la même écriture peut arriver deux fois. Chaque `@Post`, `@Put`,

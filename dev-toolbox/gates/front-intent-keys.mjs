@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Gate : **un écran envoie la clé d'une intention, jamais une clé tirée au
- * clic** (plan `documentation/ops/plan-idempotence-des-ecritures.md`, § 8, J5).
+ * clic** (`documentation/ops/l-idempotence-des-ecritures.md`, § 8, J5).
  *
  * L'API range chaque route d'écriture (`write-idempotence`) ; une route « par
  * intention » ne résiste au rejeu que si l'écran renvoie la MÊME clé à chaque
@@ -158,7 +158,7 @@ function main() {
     console.error("\n✗ front-intent-keys\n");
     for (const failure of result.failures) console.error(`  ${failure}`);
     console.error(
-      `\n  ${result.failures.length} faute(s). Plan : documentation/ops/plan-idempotence-des-ecritures.md (§ 8, J5)\n`,
+      `\n  ${result.failures.length} faute(s). Doc : documentation/ops/l-idempotence-des-ecritures.md (§ 8, J5)\n`,
     );
     process.exit(1);
   }

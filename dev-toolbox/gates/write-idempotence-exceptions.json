@@ -1,5 +1,5 @@
 {
-  "$comment": "POST rangés « par nature » dont le handler crée, envoie un e-mail ou appelle le réseau, et dont la création ou l'envoi est gardé par une clé métier (index unique, clé d'e-mail dérivée du sujet). Chaque entrée : route (fichier#méthode), reason (la clé, où elle est), verified (date de la lecture du code). Plan : documentation/ops/plan-idempotence-des-ecritures.md § 8, J4.",
+  "$comment": "POST rangés « par nature » dont le handler crée, envoie un e-mail ou appelle le réseau, et dont la création ou l'envoi est gardé par une clé métier (index unique, clé d'e-mail dérivée du sujet). Chaque entrée : route (fichier#méthode), reason (la clé, où elle est), verified (date de la lecture du code). Plan : documentation/ops/l-idempotence-des-ecritures.md § 8, J4.",
   "exceptions": [
     {
       "route": "apps/lfd-api/src/card-payment/http/admin-card-refunds.controller.ts#settleElsewhere",

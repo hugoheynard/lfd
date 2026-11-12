@@ -1,7 +1,7 @@
 # Plan — le lien de mot de passe, fabriqué à l'envoi
 
 > 📐 **Plan, 2026-11-12.** Rien n'est bâti. Né du plan de l'idempotence des
-> écritures ([`../ops/plan-idempotence-des-ecritures.md`](../ops/plan-idempotence-des-ecritures.md), § 7) :
+> écritures ([`../ops/l-idempotence-des-ecritures.md`](../ops/l-idempotence-des-ecritures.md), § 7) :
 > Hugo a choisi le 2026-11-12 que les gestes d'ouverture d'accès passent leur
 > e-mail par la boîte d'envoi pour être scellés avec leur écriture, et le
 > bâtisseur s'est arrêté avant d'écrire : la boîte d'envoi aurait gardé le

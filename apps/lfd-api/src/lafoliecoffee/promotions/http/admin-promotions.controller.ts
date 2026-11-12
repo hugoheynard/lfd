@@ -152,7 +152,7 @@ export class AdminPromotionsController {
   @Post(":id/pause")
   @HttpCode(HttpStatus.NO_CONTENT)
   @Idempotent(
-    "transition : rejouée sur une promotion en pause, l'agrégat refuse (409 PromotionAlreadyPausedError) avant toute écriture, tout acte ni toute purge du cache",
+    "transition : rejouée sur une promotion en pause, relue sous le verrou de sa ligne (FOR UPDATE), l'agrégat refuse (409 PromotionAlreadyPausedError) avant toute écriture, tout acte ni toute purge du cache ; deux suspensions simultanées se jouent l'une après l'autre",
   )
   async pause(
     @Param("id") id: string,
@@ -167,7 +167,7 @@ export class AdminPromotionsController {
   @Post(":id/resume")
   @HttpCode(HttpStatus.NO_CONTENT)
   @Idempotent(
-    "transition : rejouée sur une promotion en cours, l'agrégat refuse (409 PromotionNotPausedError) avant toute écriture, tout acte ni toute purge du cache",
+    "transition : rejouée sur une promotion en cours, relue sous le verrou de sa ligne (FOR UPDATE), l'agrégat refuse (409 PromotionNotPausedError) avant toute écriture, tout acte ni toute purge du cache ; deux reprises simultanées se jouent l'une après l'autre",
   )
   async resume(
     @Param("id") id: string,
@@ -182,7 +182,7 @@ export class AdminPromotionsController {
   @Post(":id/archive")
   @HttpCode(HttpStatus.NO_CONTENT)
   @Idempotent(
-    "transition : rejouée sur une promotion archivée, l'agrégat refuse (409 ArchivedPromotionIsSealedError) avant toute écriture, tout acte ni toute purge du cache",
+    "transition : rejouée sur une promotion archivée, relue sous le verrou de sa ligne (FOR UPDATE), l'agrégat refuse (409 ArchivedPromotionIsSealedError) avant toute écriture, tout acte ni toute purge du cache ; deux archivages simultanés se jouent l'un après l'autre",
   )
   async archive(
     @Param("id") id: string,

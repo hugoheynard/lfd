@@ -29,7 +29,7 @@ export class AdminBankReturnChecksController {
   /** Atteste le jour (aujourd'hui par défaut) ; 409 s'il l'est déjà. */
   @Post()
   @Idempotent(
-    "transition : rejouée, le jour est déjà attesté et l'agrégat refuse (409 BankReturnCheckAlreadyAttestedError) avant toute ligne ni fait",
+    "transition : rejouée, le jour relu sous le verrou consultatif (entité, jour) est déjà attesté et l'agrégat refuse (409 BankReturnCheckAlreadyAttestedError) avant toute ligne ni fait ; deux attestations simultanées se jouent l'une après l'autre",
   )
   async attest(
     @StaffUserId() staffUserId: string,
@@ -44,7 +44,7 @@ export class AdminBankReturnChecksController {
   /** Retire l'attestation d'un jour, avec sa raison ; 409 s'il n'y en a pas. */
   @Post("withdrawn")
   @Idempotent(
-    "transition : rejouée, le jour n'est plus attesté et l'agrégat refuse (409 BankReturnCheckNotAttestedError) avant toute ligne ni fait",
+    "transition : rejouée, le jour relu sous le verrou consultatif (entité, jour) n'est plus attesté et l'agrégat refuse (409 BankReturnCheckNotAttestedError) avant toute ligne ni fait ; deux retraits simultanés se jouent l'un après l'autre",
   )
   async withdraw(
     @StaffUserId() staffUserId: string,

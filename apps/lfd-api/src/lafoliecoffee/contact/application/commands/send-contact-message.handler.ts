@@ -62,7 +62,7 @@ export class SendContactMessageHandler implements ICommandHandler<SendContactMes
   /**
    * Chaque envoi passe sous sa clé d'intention : un double envoi ne dépose
    * pas deux demandes. L'acteur est le client résolu en base ; pour un
-   * visiteur, un littéral (plan `documentation/ops/plan-idempotence-des-ecritures.md`,
+   * visiteur, un littéral (`documentation/ops/l-idempotence-des-ecritures.md`,
    * § 7) — le sujet porte alors l'empreinte de la clé et du contenu, si bien
    * qu'une clé rejouée sur un autre message est refusée, jamais rendue.
    */

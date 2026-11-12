@@ -160,7 +160,7 @@ export class AdminSitesController {
   @Post(":id/archive")
   @HttpCode(HttpStatus.NO_CONTENT)
   @Idempotent(
-    "archive le site : rejoué, le site n'est plus actif et l'archivage est refusé sans rien écrire, journaliser ni purger",
+    "archive le site : rejoué, le site relu sous le verrou de sa ligne (FOR UPDATE) n'est plus actif et l'archivage est refusé sans rien écrire, journaliser ni purger ; deux archivages simultanés se jouent l'un après l'autre",
   )
   async archive(@Param("id") id: string): Promise<void> {
     await this.commands.execute<RemovePickupAddressCommand, void>(

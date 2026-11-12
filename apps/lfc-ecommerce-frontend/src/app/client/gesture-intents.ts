@@ -16,7 +16,7 @@ export function withIntent(headers: HttpHeaders, intentKey: string): HttpHeaders
 
 /**
  * **Les intentions d'un écran de la boutique** — une clé par geste voulu (plan
- * `documentation/ops/plan-idempotence-des-ecritures.md`, § 4 et § 7). La même
+ * `documentation/ops/l-idempotence-des-ecritures.md`, § 4 et § 7). La même
  * brique que celle du back-office.
  *
  * L'écran fabrique la clé à la première demande pour un sujet, et la renvoie

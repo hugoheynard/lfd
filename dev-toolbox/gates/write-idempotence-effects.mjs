@@ -1,6 +1,6 @@
 /**
  * Les effets qu'un handler ne peut pas rejouer sans clé, pour la porte
- * `write-idempotence` (plan `documentation/ops/plan-idempotence-des-ecritures.md`,
+ * `write-idempotence` (`documentation/ops/l-idempotence-des-ecritures.md`,
  * § 8, J4 : « par nature » resserré).
  *
  * Un `POST` rangé `@Idempotent("raison")` affirme que le rejeu ne refait

@@ -2,7 +2,7 @@
  * La lecture d'un fichier d'écran pour la porte `front-intent-keys` : ses
  * appels HTTP d'écriture (verbe, chemin reconstitué, porte-t-il la clé
  * d'intention ?) et ses clés tirées au hasard (plan
- * `documentation/ops/plan-idempotence-des-ecritures.md`, § 8, J5).
+ * `documentation/ops/l-idempotence-des-ecritures.md`, § 8, J5).
  *
  * **Le chemin** se reconstitue dans le fichier seul : un gabarit
  * `` `${this.base}/phones/${id}` `` remplace `this.base` (ou une constante,

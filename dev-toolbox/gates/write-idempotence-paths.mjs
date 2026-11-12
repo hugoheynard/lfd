@@ -1,7 +1,7 @@
 /**
  * Les décorateurs d'une route d'écriture, pour la porte `write-idempotence` :
  * leur nom, et le chemin HTTP qu'ils écrivent (l'inventaire, `--inventory`, plan
- * `documentation/ops/plan-idempotence-des-ecritures.md`, § 8, J3).
+ * `documentation/ops/l-idempotence-des-ecritures.md`, § 8, J3).
  *
  * Lit `@Controller(...)` et le verbe : un littéral, une constante du fichier
  * (ou un gabarit qui en compose), le `path` d'un objet littéral. Ce qui ne se

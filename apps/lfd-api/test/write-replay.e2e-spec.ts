@@ -1,7 +1,7 @@
 /**
  * E2E du **rejeu** : chaque route « par intention » résiste à la même requête
  * envoyée deux fois avec la même clé (plan
- * `documentation/ops/plan-idempotence-des-ecritures.md`, § 8, J3).
+ * `documentation/ops/l-idempotence-des-ecritures.md`, § 8, J3).
  *
  * La porte `write-idempotence` dit qu'une route est rangée : `@IntentKey()`
  * et un handler qui appelle `OncePerIntent.runSealed`. Elle ne prouve pas que

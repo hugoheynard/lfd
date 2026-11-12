@@ -1,7 +1,7 @@
 /**
  * E2E : **une clé d'intention ne vaut que pour son contenu**, et deux appels
  * simultanés sous la même clé n'écrivent qu'une fois (plan
- * `documentation/ops/plan-idempotence-des-ecritures.md`, § 7).
+ * `documentation/ops/l-idempotence-des-ecritures.md`, § 7).
  *
  * Le rejeu séquentiel est éprouvé route par route par `write-replay`. Ce qui
  * ne s'y voit pas, et ne se voit que sur le vrai Postgres :

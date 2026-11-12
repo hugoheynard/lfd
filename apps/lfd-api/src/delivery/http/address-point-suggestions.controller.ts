@@ -42,7 +42,7 @@ export class AddressPointSuggestionsController {
   /** « Appliquer » — 204 ; 409 si la suggestion a changé depuis l'affichage. */
   @Post(":addressId/apply")
   @Idempotent(
-    "rejouée, la suggestion appliquée n'est plus proposée : refus 409 AddressSuggestionChangedError avant toute écriture ni tout identifiant",
+    "rejouée, la suggestion appliquée n'est plus proposée : refus 409 AddressSuggestionChangedError avant toute écriture ni tout identifiant ; deux décisions simultanées recomptent sous le verrou consultatif (adresse, sorte), une seule passe",
   )
   @HttpCode(HttpStatus.NO_CONTENT)
   async apply(
@@ -58,7 +58,7 @@ export class AddressPointSuggestionsController {
   /** « Ignorer » — 204 ; 409 si la suggestion a changé depuis l'affichage. */
   @Post(":addressId/dismiss")
   @Idempotent(
-    "rejouée, la suggestion écartée n'est plus proposée : refus 409 AddressSuggestionChangedError avant toute écriture ni tout identifiant",
+    "rejouée, la suggestion écartée n'est plus proposée : refus 409 AddressSuggestionChangedError avant toute écriture ni tout identifiant ; deux décisions simultanées recomptent sous le verrou consultatif (adresse, sorte), une seule passe",
   )
   @HttpCode(HttpStatus.NO_CONTENT)
   async ignore(

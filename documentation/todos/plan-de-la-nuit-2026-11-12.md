@@ -77,7 +77,7 @@
    montrera les écarts anciens : ils sont listés, pas corrigés cette nuit.
 
 2 bis. **Finir l'idempotence** (Hugo, 2026-11-12 : « l'intégralité ») —
-lots J3, J4, J5 du plan `ops/plan-idempotence-des-ecritures.md` § 8 :
+lots J3, J4, J5 (repères dans `ops/l-idempotence-des-ecritures.md`, § 7) :
 
 - **J3** : un e2e de rejeu généré depuis l'inventaire de la porte, qui
   envoie deux fois chaque route « par intention » avec la même clé et
@@ -114,8 +114,8 @@ e-mail.
    des journées) → `caching-usage/le-cache-du-back-office.md` (le lot 2 des
    journées y reste à faire) ; le plan du virement →
    `comptabilite/le-paiement-par-virement.md` (le moyen figé dans la vue
-   d'une facture y reste à faire). `ops/plan-idempotence-des-ecritures.md`
-   reste en plan (autre lot).
+   d'une facture y reste à faire). Le plan de l'idempotence est devenu
+   `ops/l-idempotence-des-ecritures.md` (doc d'état, après `97d638522`).
 5. ✅ (2026-11-12, non commité) **La carte des chantiers** : ce qui est fait,
    ce qui reste, dans l'ordre.
 6. ✅ (2026-11-12, non commité) **Les 🟦 « sur dev » passés à ✅** pour ce

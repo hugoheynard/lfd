@@ -29,7 +29,7 @@ export class AdminCollectionBatchAttestationsController {
   /** Atteste une sorte ; 409 si elle l'est déjà ou si le lot n'en est pas là. */
   @Post()
   @Idempotent(
-    "transition : rejouée, la sorte est déjà attestée et l'agrégat refuse (409 BatchAttestationAlreadyGivenError) avant toute ligne ni fait",
+    "transition : rejouée, la sorte relue sous le verrou de la ligne du lot (FOR UPDATE) est déjà attestée et l'agrégat refuse (409 BatchAttestationAlreadyGivenError) avant toute ligne ni fait ; deux attestations simultanées se jouent l'une après l'autre",
   )
   async attest(
     @StaffUserId() staffUserId: string,
@@ -45,7 +45,7 @@ export class AdminCollectionBatchAttestationsController {
   /** Retire une sorte, avec sa raison ; 409 si elle n'est pas attestée. */
   @Post("withdrawn")
   @Idempotent(
-    "transition : rejouée, la sorte n'est plus attestée et l'agrégat refuse (409) avant toute ligne ni fait",
+    "transition : rejouée, la sorte relue sous le verrou de la ligne du lot (FOR UPDATE) n'est plus attestée et l'agrégat refuse (409) avant toute ligne ni fait ; deux retraits simultanés se jouent l'un après l'autre",
   )
   async withdraw(
     @StaffUserId() staffUserId: string,

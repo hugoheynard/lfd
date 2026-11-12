@@ -5,7 +5,7 @@ import type { IntentCodec } from "./once-per-intent.js";
 /**
  * Le codec d'un geste dont la réponse porte un **secret montré une fois** —
  * un lien de mot de passe, un secret de signature, la clé d'un paiement
- * (plan `documentation/ops/plan-idempotence-des-ecritures.md`, § 3).
+ * (`documentation/ops/l-idempotence-des-ecritures.md`, § 3).
  *
  * Le registre des intentions ne garde **aucun secret** : `keep` n'en retient
  * qu'un identifiant non secret, ou rien. Un rejeu de la même clé ne peut donc
