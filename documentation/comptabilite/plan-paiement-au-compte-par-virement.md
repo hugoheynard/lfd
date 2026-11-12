@@ -272,6 +272,49 @@ début de période)`). Rien n'est figé sur la commande : une commande prend le
 - **Révision d'une commande** qui déplace son solde d'une période à l'autre :
   elle prend le moyen de sa nouvelle période, comme elle en prend la facture.
 
+## Corrections de V3'/V4' (Hugo, 2026-11-12, après la quatrième relecture)
+
+Font foi sur la section précédente.
+
+- **K1 — un seul changement en attente par payeur, mode et moyen confondus.**
+  Tant qu'un changement de mode ou de moyen est programmé (pas encore en
+  vigueur), un changement de l'autre est refusé (409, message qui nomme le
+  changement en attente et sa date). Sans cette règle, un mode immédiat posé
+  après un moyen programmé déplace les limites de période, et la limite du
+  moyen tombe au milieu d'une période (`payer-collection-means-history.ts:129-132`,
+  `payer-billing-mode-history.ts:128-131`, `payer-timeline.ts:30-35`). Avec
+  elle, chaque limite de moyen est une limite de la suite du payeur.
+- **K2 — le lot lit le moyen figé sur la FACTURE de chaque bon**, jamais le
+  moyen du payeur pour « la » période : le lot reprend les bons des périodes
+  antérieures (`prisma-collection-candidates.reader.ts:50-52`,
+  `payerPeriodStartAt`). Un bon dont la facture demande un virement n'est
+  jamais prélevé ; un bon dont la facture annonce un prélèvement l'est, même
+  si le payeur est passé au virement depuis. La facture connaît déjà ses bons
+  (`invoicesOf`). La facture fait foi.
+- **K3 — le moyen entre dans `VerdictContext`** (`collection-verdict.ts`) :
+  `judgeMandate`, la constitution, `isDebitedHereAt`, les payeurs comptés et
+  `effectiveMandateOf` le lisent au même endroit.
+- **K4 — le blocage** (`directDebitBlockedAt`) devient « paiement au compte
+  suspendu » quel que soit le moyen (V9) : un payeur bloqué puis passé au
+  virement reste bloqué jusqu'au déblocage par le staff.
+- **K5 — un payeur au virement reste un client de l'entité** : le compte des
+  payeurs (`counted-payers.ts:23-38`) compte « paiement au compte », plus
+  « prélevé ».
+- **K6 — la représentation après retour** vise une facture au prélèvement :
+  admise. La **pré-notification** (`collection-notice-support.ts`) ne concerne
+  que les factures au prélèvement ; elle couvre aussi un bon passé sous
+  « virement » et soldé dans une période au prélèvement. L'**autopilote** du
+  lot passe par la constitution (à vérifier au bâti).
+- **K7 — la clé de facture ne change pas** : `invoice_monthly_outcome` n'a
+  jamais eu de colonne de moyen (`invoice.prisma:191`) ; avec K1, une facture
+  au virement (`mandateId = ""`) et une issue « sans mandat » du même payeur
+  ne coexistent pas sur une même clôture.
+- **K8 — pourquoi le moyen n'est pas une décision de passation**, alors que
+  le terme l'est (`billable-order-criterion.ts`, Hugo, 2026-09-10) : le terme
+  dit QUAND un bon est dû et engage le client à la commande ; le moyen dit
+  COMMENT la facture se règle, et une facture n'a qu'un moyen. La commande
+  le reçoit de sa facture.
+
 ## T0 tel qu'il se bâtit (Hugo, 2026-11-12, après la troisième relecture)
 
 > ✅ **T0 bâti le 2026-11-12** (migration `20261112100000_le_compte_creancier_aux_quatre_yeux`, additive). Avant son déploiement : vérifier en production qu'aucune entité n'a `creditor_iban_sealed IS NULL AND creditor_iban IS NOT NULL` — l'instantané ne lit plus la colonne claire.
