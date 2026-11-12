@@ -65,45 +65,69 @@ filiation et signature) : ils passent en P2, avec le numéro `pim`.
   règle qu'aujourd'hui : statuts vivants (`isLiveStatus`), déclinaisons
   archivées comptées dans les articles, refus sur un rattachement cassé.
 
-## 4. P2 — le numéro `pim` et les stores (à réviser avant le bâti)
+## 4. P2 — le numéro `pim`, le contenu partagé et les stores
 
-À trancher avant de bâtir (`vitruve`, point 6) : les tables exactes parmi
-les 37 du schéma `pim` et la porte qui les tient, pourquoi le journal des
-gestes du PIM (`pim/journal/pim-journal.ts`) ne suffit pas, le droit exact.
-Y entrent aussi les trois points retirés de P1.
+Tranché le 2026-11-12 avant le bâti (Hugo : « on enchaîne sur P2 »).
 
-- Journal en ajout seul **dans le schéma `pim`** (`pim.pim_change`), version
+### 4.1 Le numéro `pim`
+
+- **Un journal par déclencheurs, pas le journal des gestes.** Le journal des
+  gestes du PIM (`pim/journal/pim-journal.ts`, vers `growth.activity_events`)
+  est écrit par le code, geste par geste : une écriture qui l'oublie (semis,
+  correctif, nouvelle route) passe inaperçue, et il vit hors du schéma `pim`.
+  Un déclencheur ne s'oublie pas.
+- **`pim.pim_change`**, en ajout seul dans le schéma `pim`, version =
   `max(id)` + `count(*)`, déclencheurs `FOR EACH STATEMENT` qui n'écrivent que
-  sur un vrai changement, sur les tables lues par la liste et le référentiel
-  (à relire au bâti) ; élagueur dans `pim/` ; source globale sous le droit de
-  lecture du PIM.
-- `ProductListStore` : chargé à la première ouverture, ligne remplacée après
-  un geste, numéro retenu (l'écho du propre geste ne relit rien), relu quand
-  le numéro diffère.
-- Les stores de référentiel existants s'abonnent au numéro au lieu de vivre
-  toute la session sans jamais voir le geste d'un collègue.
+  sur un vrai changement (comme `catalog_admin_change` :
+  `new_rows EXCEPT ALL old_rows` en `to_jsonb`).
+- **Les tables** : toutes celles que lisent la liste des produits, les
+  référentiels et le détail d'une fiche. Point de départ, à relire dans les
+  lecteurs au bâti : `product`, `product_variant`, `product_editorial`,
+  `product_media`, `product_packaging`, `product_readiness`,
+  `product_context_tva`, `product_ingredient`, `variant_allergens`,
+  `nutrition_declaration`, `nutrition_values`, `category`,
+  `category_editorial`, `category_media`, `category_context_tva`, `tva_rate`,
+  `sales_context`, `appellation`, `ingredient`, `ingredient_allergen`,
+  `allergen_category`, `allergen_entry`, `order_time_limit`, `sku_registry`.
+  Hors numéro, avec leur raison écrite : les révisions et la réémission (leur
+  propre écran), les opérations, la liaison des canaux. Une constante
+  `PIM_VERSIONED_TABLES` porte la liste ; un e2e vérifie un déclencheur par
+  table de la liste, et un test compare la liste aux tables que lisent les
+  adaptateurs de la liste, du détail et des référentiels.
+- Élagueur à 7 jours dans `pim/` ; source globale `pim` reliée au registre
+  par `appBootstrap`.
+- **Droit** : le numéro s'ouvre à qui a `pim_catalog:read`, `pim_tax:read`
+  ou `pim_settings:read` (il ne dit qu'« un changement a eu lieu »). Chaque
+  contenu reste servi sous la garde de sa propre route.
 
-### 4.1 Le contenu partagé dans l'objet
+### 4.2 Le contenu partagé
 
-Décidé par Hugo le 2026-11-12, comme pour le catalogue du commerce
-(`plan-catalogue-du-back-office.md` § 3.5) : la liste des produits (avec ses
-alertes) et les référentiels (familles, taux de TVA avec leur usage,
-contextes de vente, appellations, ingrédients, allergènes) sont rangés dans
-l'objet partagé sous le numéro `pim`, par le même port générique « contenu
-versionné ». Tant que le numéro ne bouge pas, tous les postes les reçoivent
-sans toucher la base ; ce qu'un droit réserve n'est jamais rangé.
-**Le détail d'une fiche** (décidé par Hugo le 2026-11-12) y entre aussi, sous
-la clé (produit, numéro `pim`) : une fiche rouverte, par soi ou par un
-collègue, ne relit pas la base tant que le numéro n'a pas bougé. Au bâti :
-vérifier que le détail est le même pour tout lecteur du PIM (rien qui dépende
-de l'appelant), borner le nombre de fiches gardées dans l'objet (les moins
-récemment servies sortent) et ne garder que la dernière version par fiche. Les stores
-de l'onglet gardent la copie et son numéro, et ne forcent plus de relecture.
+Par le port générique « contenu versionné » du catalogue, sous le numéro
+`pim` : la liste des produits avec ses alertes, chaque référentiel (familles,
+taux de TVA avec leur usage, contextes de vente, appellations, ingrédients,
+allergènes), et le détail d'une fiche sous la clé (produit, numéro). Avant de
+ranger un contenu, vérifier qu'il ne dépend pas de l'appelant (auteurs
+résolus, champs sous droit) ; s'il en dépend, la part qui en dépend se lit à
+part. Le nombre de fiches gardées est borné (500, les moins récemment
+servies sortent), une version par fiche.
+
+### 4.3 Les écrans
+
+- `ProductListStore` : première ouverture seulement, numéro retenu, ligne
+  relue après un geste (la copie garde son numéro : le veilleur relit tout,
+  servi par l'objet), relecture en fond.
+- Les stores des familles, de la TVA, des contextes de vente, de la
+  provenance et des allergènes s'abonnent à `pim` et ne forcent plus de
+  relecture ; la fiche les lit sans `reload()`.
+- La fiche relit la seule déclinaison après une section de la déclinaison par
+  défaut, par une route neuve, en gardant la péremption de la signature
+  déduite au front ; après un geste de déclinaison, elle relit le détail (servi
+  par l'objet) sans les référentiels.
 
 ## 5. Le bâti et la mesure
 
-P1 d'abord (API P1.1, P1.2, P1.4 à P1.6 ; écran P1.1 et P1.3), puis P2
-après sa révision. Avant et après sur dev : requêtes Prisma
+P1 bâti (`2ad3cb37e`). P2 : API (journal, source, contenu partagé, route
+d'une déclinaison) puis écrans. Avant et après sur dev : requêtes Prisma
 pour l'ouverture de la liste, d'une fiche, un geste, un filtre de matrice.
 
 ## 6. Ce que `vitruve` a rendu (2026-11-12)
