@@ -164,14 +164,27 @@ describe("PayerBillingModeHistory — l'immédiat et le premier choix (plan chan
     ).toMatchObject({ effectiveAt: paris("2026-11-02"), immediate: false });
   });
 
-  it("refus 3 — un segment a été écrit depuis C0, même annulé : un seul immédiat par période", () => {
+  it("refus 3 — un segment vivant a été écrit depuis C0 : un seul immédiat par période", () => {
+    // Hebdomadaire depuis le 1er, écrit le 10 : sa dernière clôture (le 9) précède l'écriture.
+    const payer = history([written(paris("2026-11-01"), "weekly", paris("2026-11-10"))]);
+
+    expect(payer.change("semimonthly", gesture(AT), defaultModes(), OPENING)).toMatchObject({
+      immediate: false,
+    });
+  });
+
+  /**
+   * Régression : un changement programmé avant la mise en service de l'immédiat,
+   * puis annulé, empêchait l'immédiat du client qui n'avait jamais commandé.
+   */
+  it("un segment annulé ne retient pas l'immédiat : il n'a jamais valu", () => {
     const payer = history([
       written(paris("2026-12-01"), "weekly", paris("2026-11-05"), paris("2026-11-06")),
     ]);
 
-    expect(payer.change("semimonthly", gesture(AT), defaultModes(), OPENING)).toMatchObject({
-      effectiveAt: paris("2026-12-01"),
-      immediate: false,
+    expect(payer.change("weekly", gesture(AT), defaultModes(), OPENING)).toMatchObject({
+      effectiveAt: paris("2026-11-01"),
+      immediate: true,
     });
   });
 

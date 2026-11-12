@@ -99,7 +99,7 @@ export class PayerBillingModeHistory {
    * Change le mode du payeur. **Immédiat** (plan
    * `plan-changement-de-mode-immediat.md`, §3.2) quand il n'a jamais commandé
    * (`opening`), qu'aucun segment vivant ne commence à la dernière clôture
-   * passée C0 ou après, et qu'aucun segment n'a été écrit depuis C0 : le
+   * passée C0 ou après, et qu'aucun segment vivant n'a été écrit depuis C0 : le
    * segment est daté de C0, une vraie clôture de sa suite, et écrit
    * maintenant. Sinon **programmé** à sa prochaine clôture.
    *
@@ -179,14 +179,15 @@ export class PayerBillingModeHistory {
 
   /**
    * Rien n'a bougé depuis `closure` : aucun segment vivant ne commence à elle
-   * ou après, et aucun segment, annulé compris, n'a été écrit depuis — un
-   * seul immédiat par période.
+   * ou après, ni n'a été écrit depuis — un seul immédiat par période. Un
+   * segment annulé ne compte pas : une annulation n'est admise qu'avant la
+   * prise d'effet (`cancellableOf`), il n'a donc jamais valu.
    */
   private isQuietSince(closure: Date): boolean {
-    return !this.entries.some(
+    return !this.living().some(
       (entry) =>
         entry.createdAt.getTime() >= closure.getTime() ||
-        (entry.cancelledAt === null && entry.effectiveFrom.getTime() >= closure.getTime()),
+        entry.effectiveFrom.getTime() >= closure.getTime(),
     );
   }
 
