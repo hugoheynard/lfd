@@ -2,7 +2,7 @@ import type { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import type { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import type { IdGenerator } from "../../../platform/id/id-generator.js";
 import type { Clock } from "../../../platform/time/clock.js";
-import type { BillingGesture } from "../domain/entities/billing-gesture.js";
+import { pendingOf, type BillingGesture } from "../domain/entities/billing-gesture.js";
 import type {
   PayerBillingModeHistory,
   PayerModeChange,
@@ -11,6 +11,8 @@ import type {
 import { PayerBillingModeChangedEvent } from "../domain/events/billing-mode.events.js";
 import type { BillingModeDatesReader } from "../domain/ports/billing-mode-dates.reader.js";
 import type { LegalEntityRepository } from "../domain/ports/legal-entity.repository.js";
+import type { PayerChangeLock } from "../domain/ports/payer-change-lock.js";
+import type { PayerCollectionMeansReader } from "../domain/ports/payer-collection-means.reader.js";
 import type { PayerBillingModeRepository } from "../domain/ports/payer-billing-mode.repository.js";
 import type { PayerOrderHistoryReader } from "../domain/ports/payer-order-history.reader.js";
 import type { PayerStandingReader } from "../domain/ports/payer-standing.reader.js";
@@ -26,6 +28,9 @@ export interface PayerModeGesturePorts {
   readonly modeDates: BillingModeDatesReader;
   readonly payerModes: PayerBillingModeRepository;
   readonly orderHistory: PayerOrderHistoryReader;
+  /** Le moyen du payeur : un moyen programmé bloque le mode (K1). */
+  readonly payerMeans: PayerCollectionMeansReader;
+  readonly lock: PayerChangeLock;
   readonly clock: Clock;
   readonly ids: IdGenerator;
   readonly events: DomainEventPublisher;
@@ -54,6 +59,10 @@ export type PayerModeDecision = (
  * (`requireBillingPayer`), puis l'agrégat décide par `decide` ; un `null`
  * n'écrit rien et ne journalise rien. Sinon l'historique et le fait
  * `payer.billing_mode_changed` partent dans la même transaction.
+ *
+ * Sous le verrou du payeur (K11), pris AVANT de lire l'historique du mode et
+ * celui du moyen : un geste de moyen simultané attend, puis lit ce mode
+ * programmé (K1, un seul changement en attente, mode et moyen confondus).
  */
 export async function applyPayerModeGesture(
   ports: PayerModeGesturePorts,
@@ -68,19 +77,25 @@ export async function applyPayerModeGesture(
     await ports.standings.standingOf(input.payerCompanyId, at),
     at,
   );
-  const history = await ports.payerModes.load(entity.id, payer);
-  const modes = await ports.modeDates.timelinesOf(entity.id);
-  const change = decide(
-    history,
-    mode,
-    { segmentId: ports.ids.next(), at, staffId: input.staffId },
-    modes,
-    { opening: !(await ports.orderHistory.hasEverOrdered(payer.id)) },
-  );
-  if (change === null) {
-    return;
-  }
   await ports.uow.run(async () => {
+    await ports.lock.lock(payer.id);
+    const history = await ports.payerModes.load(entity.id, payer);
+    const modes = await ports.modeDates.timelinesOf(entity.id);
+    const means = pendingOf(await ports.payerMeans.entriesOf(entity.id, payer.id), at);
+    const change = decide(
+      history,
+      mode,
+      { segmentId: ports.ids.next(), at, staffId: input.staffId },
+      modes,
+      {
+        opening: !(await ports.orderHistory.hasEverOrdered(payer.id)),
+        pendingMeans:
+          means === null ? null : { means: means.means, effectiveFrom: means.effectiveFrom },
+      },
+    );
+    if (change === null) {
+      return;
+    }
     await ports.payerModes.save(history);
     await ports.events.publishTraced(
       new PayerBillingModeChangedEvent(payer, { id: entity.id, name: entity.name }, at, change),

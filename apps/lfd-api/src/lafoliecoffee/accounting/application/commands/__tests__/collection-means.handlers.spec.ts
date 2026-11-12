@@ -8,6 +8,7 @@ import {
   NoScheduledCollectionMeansError,
   NotACollectionMeansPayerError,
 } from "../../../domain/errors/collection-means-errors.js";
+import { ModeChangeBlocksMeansChangeError } from "../../../domain/errors/payer-change-pending-errors.js";
 import { InvalidCollectionMeansError } from "../../../domain/errors/invalid-collection-means.error.js";
 import { paris } from "../../../domain/services/__tests__/billing-mode-fixtures.js";
 import { GetPayerCollectionMeansHandler } from "../../queries/get-payer-collection-means.handler.js";
@@ -30,6 +31,7 @@ import {
   InMemoryPayerMeans,
   OnlyLe1,
   PayerMeansStore,
+  RecordingPayerLock,
   StorePayerMeansReader,
 } from "./collection-means-doubles.js";
 import { declaredEntity, SettingSteps, StepEntities } from "./mandate-setting-doubles.js";
@@ -55,11 +57,14 @@ const SITE = {
 const NEWCOMER = { companyId: "cmp_new", name: "Le Nouveau", active: true, follows: [] };
 const RETURNED = { companyId: "cmp_ret", name: "Le Rejeté", active: true, follows: [] };
 
-function world() {
+function world(whileWaiting: (modes: PayerModesStore) => void = () => undefined) {
   const entities = new StepEntities(new SettingSteps());
   entities.rows.set("le1", declaredEntity());
   const means = new PayerMeansStore();
   const modes = new PayerModesStore();
+  const lock = new RecordingPayerLock(() => {
+    whileWaiting(modes);
+  });
   const dates = new ModeDatesStore();
   const clock = new FixedClock(NOW);
   const events = new RecordingPublisher();
@@ -67,6 +72,7 @@ function world() {
   return {
     means,
     modes,
+    lock,
     events,
     set: new SetPayerCollectionMeansHandler(
       entities,
@@ -76,6 +82,7 @@ function world() {
       new InMemoryPayerMeans(means),
       new FixedOrderHistory(new Set([PAYER.companyId, RETURNED.companyId])),
       new FixedPendingReturns(new Set([RETURNED.companyId])),
+      lock,
       clock,
       new FixedIdGenerator("seg"),
       events,
@@ -264,5 +271,39 @@ describe("GetPayerCollectionMeansHandler", () => {
       followsPayer: { id: PAYER.companyId, name: PAYER.name },
       scheduled: { means: "bank_transfer" },
     });
+  });
+});
+
+describe("SetPayerCollectionMeansHandler — un seul changement en attente, mode et moyen confondus (K1, K11)", () => {
+  it("prend le verrou du payeur, puis lit le mode qu'un geste concurrent vient de programmer", async () => {
+    const w = world((modes) => {
+      // Validé par un geste de mode pendant qu'on attendait le verrou.
+      modes.rows.push({
+        id: "mode_concurrent",
+        legalEntityId: "le1",
+        payerCompanyId: PAYER.companyId,
+        effectiveFrom: paris("2026-11-01"),
+        mode: "weekly",
+        createdAt: NOW,
+        createdByStaffId: "staff_autre",
+        cancelledAt: null,
+        cancelledByStaffId: null,
+      });
+    });
+
+    await expect(
+      w.set.execute(
+        new SetPayerCollectionMeansCommand(
+          "le1",
+          PAYER.companyId,
+          "bank_transfer",
+          REASON,
+          "staff_compta",
+        ),
+      ),
+    ).rejects.toThrow(ModeChangeBlocksMeansChangeError);
+    expect(w.lock.locked).toEqual([PAYER.companyId]);
+    expect(w.means.rows).toHaveLength(0);
+    expect(w.events.published).toHaveLength(0);
   });
 });

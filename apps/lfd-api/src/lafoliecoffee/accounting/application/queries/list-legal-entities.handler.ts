@@ -7,6 +7,7 @@ import { BillingModeDatesReader } from "../../domain/ports/billing-mode-dates.re
 import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.reader.js";
 import { CollectionMandatesReader } from "../../domain/ports/collection-mandates.reader.js";
 import { CountedLotInputsReader } from "../../domain/ports/counted-lot-inputs.reader.js";
+import { PayersCollectionMeansReader } from "../../domain/ports/payers-collection-means.reader.js";
 import { PayerStandingsReader } from "../../domain/ports/payer-standings.reader.js";
 import { LastAutopilotRunReader } from "../../domain/ports/last-autopilot-run.reader.js";
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
@@ -37,6 +38,7 @@ export class ListLegalEntitiesHandler implements IQueryHandler<
     private readonly standings: PayerStandingsReader,
     private readonly mandates: CollectionMandatesReader,
     private readonly lotInputs: CountedLotInputsReader,
+    private readonly collectionMeans: PayersCollectionMeansReader,
     private readonly authors: StaffAuthorDirectory,
     private readonly clock: Clock,
   ) {}
@@ -52,7 +54,12 @@ export class ListLegalEntitiesHandler implements IQueryHandler<
             closures: this.closures,
             autopilotRuns: this.autopilotRuns,
             modes: { modeDates: this.modeDates, payerModes: this.payerModes },
-            counting: { standings: this.standings, mandates: this.mandates, lot: this.lotInputs },
+            counting: {
+              standings: this.standings,
+              mandates: this.mandates,
+              lot: this.lotInputs,
+              means: this.collectionMeans,
+            },
             authors: this.authors,
           },
           now,

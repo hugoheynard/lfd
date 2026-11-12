@@ -89,6 +89,7 @@ function handler(
     counting.standings,
     counting.mandates,
     counting.lot,
+    counting.means,
     new StoredBatches(extra.batches),
     stored,
     new FixedInvoicePeriods(new Map()),

@@ -18,6 +18,7 @@ import {
 } from "../../domain/ports/collection-batch.reader.js";
 import { CollectionMandatesReader } from "../../domain/ports/collection-mandates.reader.js";
 import { CountedLotInputsReader } from "../../domain/ports/counted-lot-inputs.reader.js";
+import { PayersCollectionMeansReader } from "../../domain/ports/payers-collection-means.reader.js";
 import { CollectionReturnsReader } from "../../domain/ports/collection-returns.reader.js";
 import { BankReturnChecksReader } from "../../domain/ports/bank-return-checks.reader.js";
 import { CollectionBatchAttestationsReader } from "../../domain/ports/collection-batch-attestations.reader.js";
@@ -93,6 +94,7 @@ export class ListCollectionProceduresHandler implements IQueryHandler<
     private readonly standings: PayerStandingsReader,
     private readonly collectionMandates: CollectionMandatesReader,
     private readonly lotInputs: CountedLotInputsReader,
+    private readonly collectionMeans: PayersCollectionMeansReader,
     private readonly coverage: AutopilotCoverageReader,
     private readonly clock: Clock,
     private readonly checks: BankReturnChecksReader,
@@ -109,7 +111,12 @@ export class ListCollectionProceduresHandler implements IQueryHandler<
       this.batches.list(entity.id),
       readBillingDates({ modeDates: this.modeDates, payerModes: this.payerModes }, entity.id),
       countedPayerIdsOf(
-        { standings: this.standings, mandates: this.collectionMandates, lot: this.lotInputs },
+        {
+          standings: this.standings,
+          mandates: this.collectionMandates,
+          lot: this.lotInputs,
+          means: this.collectionMeans,
+        },
         entity.id,
         now,
       ),

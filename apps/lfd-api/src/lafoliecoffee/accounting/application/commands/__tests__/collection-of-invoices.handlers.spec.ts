@@ -5,6 +5,7 @@ import {
   mandate,
   order,
 } from "../../../domain/services/__tests__/collection-fixtures.js";
+import { NothingToCollectError } from "../../../domain/errors/collection-errors.js";
 import type { CollectableInvoice } from "../../../domain/services/collection-assembly.js";
 import { CancelCollectionBatchCommand } from "../cancel-collection-batch.command.js";
 import { ConstituteCollectionBatchesCommand } from "../constitute-collection-batches.command.js";
@@ -26,6 +27,7 @@ function invoicedWorld(): { readonly w: World; readonly invoice: CollectableInvo
     number: "FA-LFD-2026-000001",
     totalCents: 1_999,
     orderIds: [a.orderId, b.orderId],
+    means: "sepa_debit",
   };
   w.candidates.orders = [a, b];
   w.candidates.invoices = [invoice];
@@ -69,6 +71,18 @@ describe("la constitution d'un lot de factures (E4)", () => {
       invoiceNumbers: [invoice.number],
       representedRejectionDay: null,
     });
+  });
+
+  it("une facture au virement : rien à prélever — aucun lot, aucun avis, rien d'écarté (K2, K6)", async () => {
+    const { w, invoice } = invoicedWorld();
+    w.candidates.invoices = [{ ...invoice, means: "bank_transfer" }];
+
+    await expect(
+      w.constitute.execute(new ConstituteCollectionBatchesCommand(ENTITY_ID, STAFF_AUTHOR)),
+    ).rejects.toThrow(NothingToCollectError);
+    expect(w.batches.saved.size).toBe(0);
+    expect(w.noticeStore.notices).toEqual([]);
+    expect(w.statements.inserted).toEqual([]);
   });
 
   /** Retours bancaires, § 2 bis-6 : la re-présentation entre au lot normal, son avis le dit. */

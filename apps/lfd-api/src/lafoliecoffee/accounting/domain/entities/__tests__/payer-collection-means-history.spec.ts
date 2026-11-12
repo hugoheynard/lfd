@@ -1,3 +1,5 @@
+import { ModeChangeBlocksMeansChangeError } from "../../errors/payer-change-pending-errors.js";
+import { BillingModeDatesHistory } from "../billing-mode-dates-history.js";
 import {
   CollectionMeansChangePendingError,
   CollectionMeansReasonRequiredError,
@@ -29,8 +31,8 @@ const WEEKLY = PayerTimeline.of(
   [{ effectiveFrom: paris("2026-10-01"), mode: "weekly", writtenAt: paris("2026-09-20") }],
   defaultModes(),
 );
-const ORDERED = { opening: false, returnPending: false };
-const OPENING = { opening: true, returnPending: false };
+const ORDERED = { opening: false, returnPending: false, pendingMode: null };
+const OPENING = { opening: true, returnPending: false, pendingMode: null };
 
 function entry(
   effectiveFrom: Date,
@@ -139,6 +141,7 @@ describe("PayerCollectionMeansHistory — le moyen d'encaissement d'un payeur (V
       history().change("bank_transfer", gesture(paris("2026-10-08")), MONTHLY, {
         opening: false,
         returnPending: true,
+        pendingMode: null,
       });
     expect(attempt).toThrow(CollectionMeansReturnPendingError);
     expect(attempt).toThrow(/retour bancaire en cours/u);
@@ -189,5 +192,58 @@ describe("PayerCollectionMeansHistory — le moyen d'encaissement d'un payeur (V
     expect(() => payer.cancelScheduled({ at: paris("2026-10-08"), staffId: "s" })).toThrow(
       NoScheduledCollectionMeansError,
     );
+  });
+});
+
+describe("PayerCollectionMeansHistory — un seul changement en attente, mode et moyen confondus (K1)", () => {
+  it("refuse un moyen tant qu'un mode est programmé, en nommant le mode et sa date", () => {
+    const attempt = (): unknown =>
+      history().change("bank_transfer", gesture(paris("2026-10-08")), MONTHLY, {
+        ...ORDERED,
+        pendingMode: { mode: "weekly", effectiveFrom: paris("2026-11-01") },
+      });
+
+    expect(attempt).toThrow(ModeChangeBlocksMeansChangeError);
+    expect(attempt).toThrow(/passe déjà au mode hebdomadaire le 1er novembre 2026/u);
+  });
+
+  it("le moyen déjà en vigueur, redemandé pendant un mode programmé, n'est pas un fait", () => {
+    const payer = history();
+    const pending = { mode: "weekly" as const, effectiveFrom: paris("2026-11-01") };
+
+    expect(
+      payer.change("sepa_debit", gesture(paris("2026-10-08")), MONTHLY, {
+        ...ORDERED,
+        pendingMode: pending,
+      }),
+    ).toBeNull();
+  });
+});
+
+describe("PayerCollectionMeansHistory — les dates des modes de l'entité ne sont pas dans K1 (K12)", () => {
+  it("un moyen programmé, puis les dates du mode changées : sa limite reste une clôture du payeur", () => {
+    const payer = history();
+    const change = payer.change("bank_transfer", gesture(paris("2026-10-08")), WEEKLY, ORDERED);
+    // Le payeur hebdomadaire clôt le lundi : le moyen tombe le lundi 12 octobre.
+    expect(change?.effectiveAt).toEqual(paris("2026-10-12"));
+
+    // L'entité passe son hebdomadaire au jeudi APRÈS : programmé à la prochaine clôture.
+    const weeklyDates = BillingModeDatesHistory.reconstitute("le1", "weekly", []);
+    const dates = weeklyDates.schedule([4], {
+      segmentId: "dates_1",
+      at: paris("2026-10-09"),
+      staffId: "staff_1",
+    });
+    expect(dates?.effectiveAt).toEqual(paris("2026-10-12"));
+    const after = PayerTimeline.of(
+      [{ effectiveFrom: paris("2026-10-01"), mode: "weekly", writtenAt: paris("2026-09-20") }],
+      defaultModes({ weekly: weeklyDates.timeline() }),
+    );
+
+    const limit = change?.effectiveAt ?? new Date(0);
+    expect(after.closureAfter(new Date(limit.getTime() - 1))).toEqual(limit);
+    expect(after.isKnownClosure(limit)).toBe(true);
+    // La suite continue au jeudi : la période ouverte par le moyen est entière.
+    expect(after.closureAfter(limit)).toEqual(paris("2026-10-15"));
   });
 });

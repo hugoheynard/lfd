@@ -77,6 +77,7 @@ function world(payerModes: PayerBillingModesReader = new FixedPayerModes(), paye
     counting.standings,
     counting.mandates,
     counting.lot,
+    counting.means,
     coverage,
     accounts.clock,
     checks,

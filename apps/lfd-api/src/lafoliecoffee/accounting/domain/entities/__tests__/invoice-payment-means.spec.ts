@@ -65,3 +65,40 @@ describe("renderFacturXml — le prélèvement SEPA", () => {
     expect(xml).not.toContain("DirectDebitMandateID");
   });
 });
+
+describe("le virement SEPA — une période au virement (K10, V5)", () => {
+  const TRANSFER = { code: "58" } as const;
+
+  it("la facture garde le virement ; la relecture aussi", () => {
+    const invoice = Invoice.issue(issueInput({ paymentMeans: TRANSFER }));
+
+    expect(invoice.toState().paymentMeans).toEqual(TRANSFER);
+    expect(Invoice.restore(invoice.toState()).toState().paymentMeans).toEqual(TRANSFER);
+  });
+
+  it("écrit le code 58, l'IBAN du vendeur (BT-84) et la référence = le numéro (BT-83), sans mandat", () => {
+    const invoice = Invoice.issue(issueInput({ paymentMeans: TRANSFER }));
+    const xml = renderFacturXml(invoice);
+
+    expect(xml).toContain(
+      `<ram:PaymentReference>${invoice.toState().number}</ram:PaymentReference>`,
+    );
+    expect(xml).toContain("<ram:TypeCode>58</ram:TypeCode>");
+    expect(xml).toContain(
+      `<ram:PayeePartyCreditorFinancialAccount><ram:IBANID>${SELLER.creditorIban}</ram:IBANID></ram:PayeePartyCreditorFinancialAccount>`,
+    );
+    expect(xml).not.toContain("DirectDebitMandateID");
+    expect(xml).not.toContain("CreditorReferenceID");
+    expect(facturXArithmeticViolations(xml)).toEqual([]);
+  });
+
+  it("refuse un virement sans IBAN de l'entité : la pièce ne dirait pas où virer", () => {
+    const attempt = (): unknown =>
+      Invoice.issue(
+        issueInput({ paymentMeans: TRANSFER, seller: { ...SELLER, creditorIban: "" } }),
+      );
+
+    expect(attempt).toThrow(InvalidInvoiceError);
+    expect(attempt).toThrow(/sans IBAN de l'entité/u);
+  });
+});

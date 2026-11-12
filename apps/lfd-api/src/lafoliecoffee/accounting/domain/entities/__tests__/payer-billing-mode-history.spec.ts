@@ -2,6 +2,7 @@ import {
   NoScheduledPayerBillingModeError,
   PayerBillingModeChangePendingError,
 } from "../../errors/billing-mode-errors.js";
+import { MeansChangeBlocksModeChangeError } from "../../errors/payer-change-pending-errors.js";
 import { defaultModes, paris } from "../../services/__tests__/billing-mode-fixtures.js";
 import { ModeDatesTimeline } from "../../services/mode-dates-timeline.js";
 import type { BillingMode } from "../../value-objects/billing-mode.js";
@@ -11,9 +12,9 @@ import { PayerBillingModeHistory, type PayerModeEntry } from "../payer-billing-m
 const PAYER = { id: "cmp_1", name: "Le Bistrot" };
 const gesture = (at: Date) => ({ segmentId: "seg_new", at, staffId: "staff_1" });
 /** Le payeur a déjà commandé : le changement est programmé. */
-const ORDERED = { opening: false };
+const ORDERED = { opening: false, pendingMeans: null };
 /** Le payeur n'a jamais commandé : première condition de l'immédiat. */
-const OPENING = { opening: true };
+const OPENING = { opening: true, pendingMeans: null };
 
 function entry(effectiveFrom: Date, mode: BillingMode): PayerModeEntry {
   return {
@@ -210,5 +211,28 @@ describe("PayerBillingModeHistory — l'immédiat et le premier choix (plan chan
       written(paris("2026-11-01"), "weekly", paris("2026-10-01"), paris("2026-10-02")),
     ]);
     expect(payer.change("monthly", gesture(AT), defaultModes(), ORDERED)).not.toBeNull();
+  });
+});
+
+describe("PayerBillingModeHistory — un seul changement en attente, mode et moyen confondus (K1)", () => {
+  it("refuse un mode tant qu'un moyen est programmé, en nommant le moyen et sa date", () => {
+    const attempt = (): unknown =>
+      history().change("weekly", gesture(paris("2026-10-08")), defaultModes(), {
+        opening: false,
+        pendingMeans: { means: "bank_transfer", effectiveFrom: paris("2026-11-01") },
+      });
+
+    expect(attempt).toThrow(MeansChangeBlocksModeChangeError);
+    expect(attempt).toThrow(/passe déjà au virement bancaire le 1er novembre 2026/u);
+  });
+
+  it("refuse aussi un mode IMMÉDIAT : il déplacerait la clôture où le moyen tombe", () => {
+    const attempt = (): unknown =>
+      history().change("weekly", gesture(paris("2026-10-08")), defaultModes(), {
+        opening: true,
+        pendingMeans: { means: "bank_transfer", effectiveFrom: paris("2026-11-01") },
+      });
+
+    expect(attempt).toThrow(MeansChangeBlocksModeChangeError);
   });
 });

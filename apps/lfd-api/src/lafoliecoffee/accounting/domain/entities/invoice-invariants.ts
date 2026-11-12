@@ -8,6 +8,7 @@ import {
 import { InvoiceQuantity } from "../value-objects/invoice-quantity.js";
 import {
   BANK_CARD,
+  SEPA_CREDIT_TRANSFER,
   SEPA_DIRECT_DEBIT,
   type InvoiceLineInput,
   type InvoicePaymentMeans,
@@ -215,6 +216,24 @@ export function assertPaymentMeans(means: InvoicePaymentMeans | null): void {
     throw new InvalidInvoiceError(
       "moyen de paiement",
       `RUM « ${reference} » vide ou plus longue que ${String(MANDATE_REFERENCE_MAX)} caractères`,
+    );
+  }
+}
+
+/**
+ * **Une facture au virement dit où virer** (BT-84, K10) : le compte de
+ * l'entité figé sur le vendeur. Sans lui, la pièce demanderait un virement
+ * sans dire vers quel compte. Jugé à l'émission seulement : une facture émise
+ * reste émise.
+ *
+ * @throws {InvalidInvoiceError}
+ */
+export function assertTransferPayee(means: InvoicePaymentMeans | null, creditorIban: string): void {
+  if (means?.code === SEPA_CREDIT_TRANSFER && creditorIban.trim() === "") {
+    throw new InvalidInvoiceError(
+      "moyen de paiement",
+      "facture au virement sans IBAN de l'entité : renseignez le compte créancier de l'entité " +
+        "(Comptabilité › Entités), puis relancez l'émission",
     );
   }
 }

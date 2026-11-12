@@ -30,6 +30,7 @@ function bon(id: string): InvoiceableOrder {
 
 const GROUP: PayerInvoicePlan = {
   payerId: "c_port",
+  means: "sepa_debit",
   mandate: mandate("c_port"),
   billable: [bon("a"), bon("b")],
   unbillable: [bon("z")],

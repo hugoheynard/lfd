@@ -23,8 +23,11 @@ import { CancelPayerCollectionMeansHandler } from "./application/commands/cancel
 import { SetPayerCollectionMeansHandler } from "./application/commands/set-payer-collection-means.handler.js";
 import { GetPayerCollectionMeansHandler } from "./application/queries/get-payer-collection-means.handler.js";
 import { PayerCollectionMeansReader } from "./domain/ports/payer-collection-means.reader.js";
+import { PayersCollectionMeansReader } from "./domain/ports/payers-collection-means.reader.js";
 import { PayerCollectionMeansRepository } from "./domain/ports/payer-collection-means.repository.js";
 import { PendingBankReturnsReader } from "./domain/ports/pending-bank-returns.reader.js";
+import { PayerChangeLock } from "./domain/ports/payer-change-lock.js";
+import { PrismaPayerChangeLock } from "./infrastructure/prisma-payer-change-lock.js";
 import { PrismaPayerCollectionMeansReader } from "./infrastructure/prisma-payer-collection-means.reader.js";
 import { PrismaPayerCollectionMeansRepository } from "./infrastructure/prisma-payer-collection-means.repository.js";
 import { PrismaPendingBankReturnsReader } from "./infrastructure/prisma-pending-bank-returns.reader.js";
@@ -62,8 +65,12 @@ export const BILLING_MODE_PROVIDERS: readonly Provider[] = [
   GetBillingRhythmsCalendarHandler,
   // Le moyen d'encaissement du payeur (plan-paiement-au-compte-par-virement.md, T1).
   { provide: PayerCollectionMeansRepository, useClass: PrismaPayerCollectionMeansRepository },
-  { provide: PayerCollectionMeansReader, useClass: PrismaPayerCollectionMeansReader },
+  PrismaPayerCollectionMeansReader,
+  { provide: PayerCollectionMeansReader, useExisting: PrismaPayerCollectionMeansReader },
+  { provide: PayersCollectionMeansReader, useExisting: PrismaPayerCollectionMeansReader },
   { provide: PendingBankReturnsReader, useClass: PrismaPendingBankReturnsReader },
+  // Un seul changement en attente, mode et moyen confondus (K1, K11).
+  { provide: PayerChangeLock, useClass: PrismaPayerChangeLock },
   SetPayerCollectionMeansHandler,
   CancelPayerCollectionMeansHandler,
   GetPayerCollectionMeansHandler,

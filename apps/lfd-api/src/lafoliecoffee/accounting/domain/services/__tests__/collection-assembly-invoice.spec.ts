@@ -25,6 +25,7 @@ function input(orders: readonly CollectableOrder[]): AssemblyInput {
     legalEntityId: ENTITY_ID,
     at: AT,
     payerPeriodStartsAt: () => SEPTEMBER.startsAt,
+    statementMeansOf: () => "sepa_debit",
     orders,
     follows: [],
     mandates: [mandate("c_port"), mandate("c_quai")],

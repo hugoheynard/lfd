@@ -9,6 +9,7 @@ import { InvoiceNumber } from "../value-objects/invoice-number.js";
 import {
   assertLines,
   assertPaymentMeans,
+  assertTransferPayee,
   assertPrepayment,
   assertSha256,
   assertTotals,
@@ -116,6 +117,7 @@ export class Invoice {
     assertLines(input.lines);
     assertTotals(number, input.lines, input.vat);
     assertPaymentMeans(input.paymentMeans);
+    assertTransferPayee(input.paymentMeans, input.seller.creditorIban);
     assertPrepayment(number, input.issuedOn, input.paymentMeans, input.prepayment, input.vat);
     return new Invoice(
       {

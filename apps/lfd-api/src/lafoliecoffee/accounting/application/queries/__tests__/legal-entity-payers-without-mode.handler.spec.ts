@@ -83,6 +83,7 @@ function handler(payers: PayerModesStore, counting: CountedPayersReaders): GetLe
     counting.standings,
     counting.mandates,
     counting.lot,
+    counting.means,
     new FixedStaffAuthorDirectory(),
     new FixedClock(NOW),
   );
@@ -157,6 +158,7 @@ describe("la fiche de l'entité compte les clients sans mode choisi (I3)", () =>
       counting.standings,
       counting.mandates,
       counting.lot,
+      counting.means,
       new FixedStaffAuthorDirectory(),
       new FixedClock(NOW),
     ).execute();

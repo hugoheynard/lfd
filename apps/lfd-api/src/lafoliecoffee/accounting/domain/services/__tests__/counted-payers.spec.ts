@@ -2,6 +2,7 @@ import type { PayerStanding } from "../../ports/payer-standing.reader.js";
 import type { CollectionMandate } from "../../ports/collection-mandates.reader.js";
 import type { CollectionFormName } from "../../value-objects/collection-form.js";
 import { countedPayerIdsAt, type CountingLotInputs } from "../counted-payers.js";
+import { PayersCollectionMeans } from "../payers-collection-means.js";
 import { mandate } from "./collection-fixtures.js";
 
 const AT = new Date("2026-10-08T09:00:00.000Z");
@@ -11,8 +12,9 @@ function lot(
   mandates: readonly CollectionMandate[],
   forms: ReadonlyMap<string, CollectionFormName> = new Map(),
   consumed: ReadonlySet<string> = new Set(),
+  collectionMeans: PayersCollectionMeans = PayersCollectionMeans.none(),
 ): CountingLotInputs {
-  return { mandates, collectionForms: forms, consumedMandates: consumed };
+  return { mandates, collectionForms: forms, consumedMandates: consumed, collectionMeans };
 }
 
 function standing(companyId: string, overrides: Partial<PayerStanding> = {}): PayerStanding {
@@ -121,4 +123,35 @@ describe("countedPayerIdsAt — qui compte comme client d'une entité", () => {
       ]);
     },
   );
+
+  it("compte un payeur au virement sans mandat : un client au compte reste un client (K5)", () => {
+    const transfer = PayersCollectionMeans.of(
+      new Map([
+        [
+          "a",
+          [
+            {
+              id: "seg_1",
+              effectiveFrom: new Date(AT.getTime() - 1),
+              means: "bank_transfer" as const,
+              reason: "Demande du client",
+              createdAt: new Date(AT.getTime() - 1),
+              createdByStaffId: "staff_1",
+              cancelledAt: null,
+              cancelledByStaffId: null,
+            },
+          ],
+        ],
+      ]),
+    );
+
+    const ids = countedPayerIdsAt(
+      ENTITY,
+      [standing("a"), standing("b")],
+      lot([], new Map(), new Set(), transfer),
+      AT,
+    );
+
+    expect([...ids]).toEqual(["a"]);
+  });
 });

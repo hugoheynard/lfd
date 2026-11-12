@@ -55,6 +55,7 @@ const TWO_MANDATES: MandateContext = {
     mandate("c_chalet", { debtorCompanyId: "c_principal", reference: "RUM-chalet" }),
   ],
   collectionForms: new Map([["c_chalet", "own_mandate_principal_iban" as const]]),
+  collectionMeansOf: () => "sepa_debit",
 };
 
 const ONE_MANDATE: MandateContext = {
@@ -199,14 +200,44 @@ describe("planMonthlyInvoices — une facture par payeur légal et par mandat (E
 
 describe("invoicePaymentMeansOf — le moyen de paiement figé (BG-16)", () => {
   it("prélèvement SEPA, sous le mandat de la facture", () => {
-    expect(invoicePaymentMeansOf(mandate("c_principal"))).toEqual({
-      code: "59",
-      mandateReference: "RUM-c-principal",
-    });
+    expect(invoicePaymentMeansOf({ means: "sepa_debit", mandate: mandate("c_principal") })).toEqual(
+      {
+        code: "59",
+        mandateReference: "RUM-c-principal",
+      },
+    );
   });
 
   it("rien sans mandat", () => {
-    expect(invoicePaymentMeansOf(null)).toBeNull();
+    expect(invoicePaymentMeansOf({ means: "sepa_debit", mandate: null })).toBeNull();
+  });
+
+  it("une période au virement : le code du virement, distinct de « rien » (K10)", () => {
+    expect(invoicePaymentMeansOf({ means: "bank_transfer", mandate: null })).toEqual({
+      code: "58",
+    });
+  });
+});
+
+describe("planMonthlyInvoices — un payeur dont la période est au virement (K10)", () => {
+  const TRANSFER: MandateContext = { ...TWO_MANDATES, collectionMeansOf: () => "bank_transfer" };
+
+  it("UNE facture sans mandat, même si ses bons tombaient sur deux mandats", () => {
+    const result = plan([bon("c_principal"), bon("c_chalet")], TRANSFER);
+
+    expect(result.invoices).toHaveLength(1);
+    expect(result.invoices[0]).toMatchObject({
+      payerId: "c_principal",
+      means: "bank_transfer",
+      mandate: null,
+    });
+    expect(result.invoices[0]?.billable).toHaveLength(2);
+  });
+
+  it("sa clé est celle d'une facture sans mandat (K7)", () => {
+    const already = new Set([invoiceGroupKey("c_principal", null)]);
+
+    expect(plan([bon("c_principal")], TRANSFER, already).alreadyInvoiced).toEqual(["c_principal|"]);
   });
 });
 

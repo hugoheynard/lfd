@@ -91,6 +91,7 @@ function handlerWith(
     counting.standings,
     counting.mandates,
     counting.lot,
+    counting.means,
     new FixedStaffAuthorDirectory(),
     new FixedClock(now),
   );
@@ -117,6 +118,7 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       CLIENTS.standings,
       CLIENTS.mandates,
       CLIENTS.lot,
+      CLIENTS.means,
       new FixedStaffAuthorDirectory(),
       new FixedClock(NOW),
     );
@@ -147,6 +149,7 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       CLIENTS.standings,
       CLIENTS.mandates,
       CLIENTS.lot,
+      CLIENTS.means,
       new FixedStaffAuthorDirectory(),
       clock,
     ).execute();
@@ -159,6 +162,7 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       CLIENTS.standings,
       CLIENTS.mandates,
       CLIENTS.lot,
+      CLIENTS.means,
       new FixedStaffAuthorDirectory(),
       clock,
     ).execute(new GetLegalEntityQuery("le1"));
@@ -176,6 +180,7 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       CLIENTS.standings,
       CLIENTS.mandates,
       CLIENTS.lot,
+      CLIENTS.means,
       new FixedStaffAuthorDirectory(),
       new FixedClock(NOW),
     );
@@ -200,6 +205,7 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       CLIENTS.standings,
       CLIENTS.mandates,
       CLIENTS.lot,
+      CLIENTS.means,
       new FixedStaffAuthorDirectory(),
       new FixedClock(NOW),
     ).execute(new GetLegalEntityQuery("le1"));

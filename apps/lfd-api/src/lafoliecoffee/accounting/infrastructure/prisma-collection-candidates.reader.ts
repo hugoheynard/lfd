@@ -9,6 +9,7 @@ import type { CollectionCalendarReader } from "../domain/ports/collection-calend
 import type { CompanyNamesReader } from "../domain/ports/company-names.reader.js";
 import type { CountedLotInputsReader } from "../domain/ports/counted-lot-inputs.reader.js";
 import { COMMERCIAL_INVOICE } from "../domain/entities/invoice.types.js";
+import { invoiceCollectionMeansOf } from "./invoice-collection-means.js";
 import type { BillingFollow } from "../domain/ports/statement-billing.reader.js";
 import type { CollectableInvoice } from "../domain/services/collection-assembly.js";
 import type { CollectionFormName } from "../domain/value-objects/collection-form.js";
@@ -20,6 +21,9 @@ import {
 } from "./billable-invoice-order.mapper.js";
 import { toOrderCollectionState } from "./order-collection.mapper.js";
 import { LIVE_BATCH_STATUS } from "./live-batch-status.js";
+
+/** `AAAA-MM-JJ` d'une colonne `@db.Date` (minuit UTC). */
+const DAY_LENGTH = 10;
 
 /** Les états qu'une constitution reprend : l'absence de ligne compte comme `due`. */
 const OPEN_STATES = ["due", "excluded"] as const;
@@ -69,6 +73,7 @@ export class PrismaCollectionCandidatesReader
         id: true,
         companyId: true,
         billedCompanyId: true,
+        settledOn: true,
       },
     });
     const ids = orders.map((order) => order.id);
@@ -79,8 +84,11 @@ export class PrismaCollectionCandidatesReader
     const stateOf = new Map(states.map((row) => [row.orderId, row]));
     return orders.flatMap((order) => {
       const state = stateOf.get(order.id);
+      // `settledOn` est posé sur toute l'assiette (`billableOrderWhere`) ; le
+      // garde ne sert que le type.
       if (
         order.companyId === null ||
+        order.settledOn === null ||
         later.has(order.id) ||
         (state !== undefined && !isOpen(state.state))
       ) {
@@ -94,6 +102,7 @@ export class PrismaCollectionCandidatesReader
           orderNumber: order.orderNumber,
           companyId: order.companyId,
           placedAt: order.createdAt,
+          settledOn: order.settledOn.toISOString().slice(0, DAY_LENGTH),
           billedCompanyId: order.billedCompanyId,
           totalCents: frozen.totalCents,
           frozen,
@@ -198,6 +207,7 @@ export class PrismaCollectionCandidatesReader
         id: true,
         number: true,
         totalTtcCents: true,
+        paymentMeans: true,
         orders: { select: { orderId: true }, orderBy: { position: "asc" } },
       },
     });
@@ -208,6 +218,7 @@ export class PrismaCollectionCandidatesReader
         number: row.number,
         totalCents: row.totalTtcCents,
         orderIds: row.orders.map((order) => order.orderId),
+        means: invoiceCollectionMeansOf(row.paymentMeans),
       };
       for (const orderId of invoice.orderIds) {
         byOrder.set(orderId, invoice);

@@ -27,6 +27,7 @@ import {
 import { MonthlyInvoicingReader } from "../../domain/ports/monthly-invoicing.reader.js";
 import { OrderRowsLock } from "../../domain/ports/order-rows-lock.js";
 import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.reader.js";
+import { PayersCollectionMeansReader } from "../../domain/ports/payers-collection-means.reader.js";
 import { StatementBuyerReader } from "../../domain/ports/statement-buyer.reader.js";
 import type { BillingCycle } from "../../domain/services/billing-cycle.js";
 import type { InvoiceSellerFacts } from "../../domain/services/invoice-issuance-blockers.js";
@@ -85,17 +86,16 @@ import { IssueMonthlyInvoicesCommand } from "./issue-monthly-invoices.command.js
  *
  * - émise la **veille de la clôture** (jour local), échéance = la date de
  *   prélèvement du lot qui la prendra (`invoiceDueDay`) ;
- * - moyen de paiement figé : le mandat effectif de la facture (BG-16), aucun
- *   pour la facture des bons sans mandat ;
+ * - moyen figé (BG-16) : le virement si SA période l'est (K10) ; sinon le
+ *   mandat effectif, aucun pour la facture des bons sans mandat ;
  * - un refus (manque nommé, numérotation, base) : la facture n'est pas
  *   émise, le payeur est **signalé** — rangé dans `invoice_monthly_outcome`,
  *   journalisé (`invoice.signalled`, dans la transaction de l'issue) — et les
  *   autres continuent. Rien n'est avalé ;
  * - un bon non facturable est signalé et laissé hors de la facture.
  *
- * ⚠️ L'échéance est celle du calendrier AU JOUR de l'émission : une
- * préparation tardive du lot (D4) peut prélever plus tard que la facture ne
- * l'annonce. La facture ne se réécrit pas pour autant.
+ * ⚠️ L'échéance est celle du calendrier AU JOUR de l'émission : un lot
+ * préparé tard (D4) prélève après elle ; la facture ne se réécrit pas.
  */
 @CommandHandler(IssueMonthlyInvoicesCommand)
 export class IssueMonthlyInvoicesHandler implements ICommandHandler<
@@ -112,6 +112,7 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
     private readonly issuers: InvoiceIssuersReader,
     private readonly buyers: StatementBuyerReader,
     private readonly mandates: CollectionMandatesReader,
+    private readonly means: PayersCollectionMeansReader,
     private readonly issuer: InvoiceIssuer,
     private readonly outcomes: MonthlyInvoiceOutcomes,
     private readonly rows: OrderRowsLock,
@@ -174,12 +175,17 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
     const payers = ordersByPayer(orders, follows).filter((payer) =>
       calendar.closesFor(payer.payerId, closesAt),
     );
-    const readers = {
-      reader: this.reader,
-      buyers: this.buyers,
-      mandates: this.mandates,
-    };
-    const context = await readMonthlyContext(readers, payers, follows, at);
+    const { reader, buyers, mandates, means } = this;
+    const context = await readMonthlyContext(
+      { reader, buyers, mandates, means },
+      payers,
+      follows,
+      at,
+      {
+        legalEntityId,
+        periodStartOf: (payerId) => calendar.payerPeriodOf(payerId, closesAt).startsAt,
+      },
+    );
     const plan = planMonthlyInvoices(payers, { legalEntityId, ...context }, invoiced);
     const { preNotificationDays, collectionDaysAfterClosure } = creditor;
     // Jamais d'antidate : émise après la veille de la clôture, la facture

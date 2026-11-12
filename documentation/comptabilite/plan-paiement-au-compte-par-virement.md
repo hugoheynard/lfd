@@ -315,6 +315,8 @@ Font foi sur la section précédente.
   COMMENT la facture se règle, et une facture n'a qu'un moyen. La commande
   le reçoit de sa facture.
 
+> ✅ **V3'/V4' (K1–K13) bâtis le 2026-11-12**, sans migration. Reste T2 (PDF et e-mail de la facture au virement : IBAN, référence) **avant de passer un vrai client au virement**, puis T3–T5.
+
 ## Dernières corrections avant le bâti (Hugo, 2026-11-12, cinquième relecture)
 
 - **K9 — les bons sans facture** (chemin des arrêtés, `collection-assembly.ts:169-175` :
@@ -374,10 +376,7 @@ UPDATE` sur la société payeuse), dans le même ordre pour les deux.
   la proposition, à la confirmation et à l'annulation.
 - **Migration additive** : colonnes du compte en attente (chiffrées), auteur,
   instant, identifiant, et `version` (défaut 0) sur l'entité.
-- **Reporté au lot de la facture au virement (T2)** : la colonne
-  `collection_means` dans la clé primaire de `invoice_monthly_outcome`
-  (`invoice.prisma:191`, défaut `sepa_debit`) et ses quatre lecteurs —
-  bloquant de la troisième relecture, sans effet sur T0.
+- ~~Reporté à T2 : une colonne de moyen dans la clé de `invoice_monthly_outcome`~~ — retiré : K7, la clé ne change pas.
 
 ## Contredit par vitruve (2026-11-11)
 

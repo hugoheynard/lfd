@@ -11,6 +11,9 @@ import type {
 import type { CollectionMandatesReader } from "../domain/ports/collection-mandates.reader.js";
 import type { CountedLotInputsReader } from "../domain/ports/counted-lot-inputs.reader.js";
 import type { OrderRowsLock } from "../domain/ports/order-rows-lock.js";
+import type { PayersCollectionMeansReader } from "../domain/ports/payers-collection-means.reader.js";
+import { PayersCollectionMeans } from "../domain/services/payers-collection-means.js";
+import { settledDayStart } from "../domain/services/settled-day.js";
 import { billedPayerOf } from "../domain/services/billed-payer.js";
 import type { BillingCycle } from "../domain/services/billing-cycle.js";
 import {
@@ -44,6 +47,8 @@ export interface ConstitutionReaders {
   /** La forme des sites à la clôture, les mandats ponctuels consommés. */
   readonly sites: CountedLotInputsReader;
   readonly mandates: CollectionMandatesReader;
+  /** Le moyen d'encaissement des payeurs, en une lecture (K9). */
+  readonly means: PayersCollectionMeansReader;
   /**
    * Le calendrier de la facture (M3) : le cycle du lot va de clôture en
    * clôture du calendrier — celles d'au moins un payeur.
@@ -132,11 +137,17 @@ export async function readAssembly(
     throw new CollectionNotYetOpenError(floor, calendar.closureAfter(floor));
   }
   const orders = await lockedCandidates(readers.candidates, rows, mode, floor, cycle.closesAt);
-  const parties = await readParties(readers, orders, cycle.closesAt);
+  const { payers, ...parties } = await readParties(readers, orders, cycle.closesAt);
+  const means = PayersCollectionMeans.of(
+    await readers.means.entriesOfPayers(legalEntityId, payers),
+  );
   const assembly = assembleCollection({
     legalEntityId,
     at,
     payerPeriodStartsAt: (payer) => calendar.payerPeriodStartAt(payer, cycle.closesAt),
+    // K9 : le moyen de la période où le bon a été soldé, lu à son début.
+    statementMeansOf: (payer, settledOn) =>
+      means.at(payer, calendar.payerPeriodStartContaining(payer, settledDayStart(settledOn))),
     orders,
     ...parties,
     liveSchemes: await readers.cycle.liveSchemes(legalEntityId, cycle.closesAt),
@@ -160,7 +171,13 @@ async function readParties(
   readers: ConstitutionReaders,
   orders: readonly CollectableOrder[],
   closesAt: Date,
-): Promise<Parties & { readonly companyNames: ReadonlyMap<string, string> }> {
+): Promise<
+  Parties & {
+    readonly companyNames: ReadonlyMap<string, string>;
+    /** Les payeurs des candidats : leur moyen se lit en une fois. */
+    readonly payers: readonly string[];
+  }
+> {
   const { candidates, sites: siteReader } = readers;
   const invoices = await candidates.invoicesOf(orders.map((order) => order.orderId));
   const follows = await candidates.billingFollowsOf(unique(orders.map((order) => order.companyId)));
@@ -175,6 +192,7 @@ async function readParties(
   // Les sites aussi : en formes 2 et 3, c'est le site qu'on nomme sans mandat.
   const companyNames = await candidates.companyNames(unique([...payers, ...sites]));
   return {
+    payers,
     invoices,
     follows,
     mandates,

@@ -91,7 +91,15 @@ export class PayerTimeline implements RhythmTimeline {
    * jusqu'à elle, un autre changement est refusé (§16.6-2). `null` : libre.
    */
   changeLockedUntil(now: Date): Date | null {
-    return this.segments.find((segment) => segment.effectiveFrom >= now)?.effectiveFrom ?? null;
+    return this.pendingChange(now)?.effectiveFrom ?? null;
+  }
+
+  /**
+   * Le changement de mode qui n'a pas encore eu lieu (≥ `now`), ou `null` —
+   * celui qui bloque aussi un changement de moyen (K1).
+   */
+  pendingChange(now: Date): PayerModeSegment | null {
+    return this.segments.find((segment) => segment.effectiveFrom >= now) ?? null;
   }
 
   /** Le segment qui prend effet STRICTEMENT après `now`, ou `null`. */

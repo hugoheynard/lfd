@@ -190,3 +190,59 @@ describe("le moyen d'encaissement d'un payeur", () => {
     expect(await ctx.prisma.payerCollectionMeans.count()).toBe(0);
   });
 });
+
+describe("un seul changement en attente par payeur, mode et moyen confondus (K1, K11)", () => {
+  const modeRoute = (entityId: string, companyId: string): string =>
+    `${BASE}/${entityId}/payers/${companyId}/billing-mode`;
+
+  it("un moyen programmé refuse un mode, et un mode programmé refuse un moyen (409 nommé)", async () => {
+    const id = await declare();
+    const meansFirst = await createCompany(ctx.prisma, { raisonSociale: "Moyen D'abord SAS" });
+    const modeFirst = await createCompany(ctx.prisma, { raisonSociale: "Mode D'abord SAS" });
+    await ordered(meansFirst.id);
+    await ordered(modeFirst.id);
+    await toTransfer(id, meansFirst.id);
+    await staff().put(modeRoute(id, modeFirst.id)).send({ mode: "weekly" }).expect(204);
+
+    const modeRefused = await staff()
+      .put(modeRoute(id, meansFirst.id))
+      .send({ mode: "weekly" })
+      .expect(409);
+    const meansRefused = await staff()
+      .put(route(id, modeFirst.id))
+      .send({ means: "bank_transfer", reason: REASON })
+      .expect(409);
+
+    expect(jsonBody<{ code: string; message: string }>(modeRefused)).toMatchObject({
+      code: "accounting.payer_change.means_pending",
+      message: expect.stringContaining("passe déjà au virement bancaire") as unknown,
+    });
+    expect(jsonBody<{ code: string; message: string }>(meansRefused)).toMatchObject({
+      code: "accounting.payer_change.mode_pending",
+      message: expect.stringContaining("passe déjà au mode hebdomadaire") as unknown,
+    });
+    expect(
+      await ctx.prisma.payerBillingMode.count({ where: { payerCompanyId: meansFirst.id } }),
+    ).toBe(0);
+    expect(
+      await ctx.prisma.payerCollectionMeans.count({ where: { payerCompanyId: modeFirst.id } }),
+    ).toBe(0);
+  });
+
+  it("deux gestes simultanés sur le même payeur : un seul passe, l'autre lit le premier et refuse", async () => {
+    const id = await declare();
+    const payer = await createCompany(ctx.prisma, { raisonSociale: "Le Disputé SAS" });
+    await ordered(payer.id);
+
+    const [mode, means] = await Promise.all([
+      staff().put(modeRoute(id, payer.id)).send({ mode: "weekly" }),
+      staff().put(route(id, payer.id)).send({ means: "bank_transfer", reason: REASON }),
+    ]);
+
+    expect([mode.status, means.status].sort()).toEqual([204, 409]);
+    const written =
+      (await ctx.prisma.payerBillingMode.count({ where: { payerCompanyId: payer.id } })) +
+      (await ctx.prisma.payerCollectionMeans.count({ where: { payerCompanyId: payer.id } }));
+    expect(written).toBe(1);
+  });
+});

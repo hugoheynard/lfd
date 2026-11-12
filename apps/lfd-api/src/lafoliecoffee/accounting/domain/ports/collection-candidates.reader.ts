@@ -14,6 +14,11 @@ export interface CollectableOrder {
   /** La société qui a commandé — le site, pour un sous-compte. */
   readonly companyId: string;
   readonly placedAt: Date;
+  /**
+   * `AAAA-MM-JJ` (Paris) — le jour du solde, celui qui range le bon dans une
+   * période : un bon sans facture y lit son moyen (K9).
+   */
+  readonly settledOn: string;
   /** Le payeur copié à la passation (S4), `null` pour une commande d'avant. */
   readonly billedCompanyId: string | null;
   readonly totalCents: number;

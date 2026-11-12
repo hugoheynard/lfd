@@ -52,6 +52,7 @@ export function order(
     orderNumber,
     companyId,
     placedAt,
+    settledOn: "2026-09-15",
     billedCompanyId: null,
     totalCents: 1_000,
     frozen: frozenOrder(orderNumber, placedAt),

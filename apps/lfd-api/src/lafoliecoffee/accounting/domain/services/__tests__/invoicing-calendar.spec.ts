@@ -177,3 +177,24 @@ describe("InvoicingCalendar — qui clôt, et le cycle du lot (M4c)", () => {
     });
   });
 });
+
+describe("InvoicingCalendar.payerPeriodStartContaining — la période d'un solde (K9)", () => {
+  const calendar = InvoicingCalendar.of(defaultModes(), [WEEKLY_SINCE_AUGUST]);
+
+  it("le début de la période du payeur qui contient l'instant, sur SA suite", () => {
+    // Jeudi 10 septembre 2026 : le payeur hebdomadaire est dans la semaine du lundi 7.
+    expect(calendar.payerPeriodStartContaining("c_week", paris("2026-09-10"))).toEqual(
+      paris("2026-09-07"),
+    );
+    // Un payeur qui n'a rien choisi suit le mensuel : la période du 1er.
+    expect(calendar.payerPeriodStartContaining("c_other", paris("2026-09-10"))).toEqual(
+      paris("2026-09-01"),
+    );
+  });
+
+  it("un jour de clôture ouvre la période suivante : un solde du lundi est dans la semaine du lundi", () => {
+    expect(calendar.payerPeriodStartContaining("c_week", paris("2026-09-14"))).toEqual(
+      paris("2026-09-14"),
+    );
+  });
+});

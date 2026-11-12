@@ -14,6 +14,11 @@ import {
   InMemoryPayerModes,
   StoreModeDatesReader,
 } from "./billing-mode-doubles.js";
+import {
+  PayerMeansStore,
+  RecordingPayerLock,
+  StorePayerMeansReader,
+} from "./collection-means-doubles.js";
 import { declaredEntity, SettingSteps, StepEntities } from "./mandate-setting-doubles.js";
 
 /** Le 8 octobre 2026, horloge FIXE : la dernière clôture du mensuel est le 1er octobre. */
@@ -33,6 +38,8 @@ function world() {
     new StoreModeDatesReader(new ModeDatesStore()),
     new InMemoryPayerModes(payers),
     new FixedOrderHistory(new Set()),
+    new StorePayerMeansReader(new PayerMeansStore()),
+    new RecordingPayerLock(),
     new FixedClock(NOW),
     new FixedIdGenerator("seg"),
     events,

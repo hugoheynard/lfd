@@ -12,6 +12,7 @@ import type { IssueInvoiceInput } from "../../entities/invoice.js";
 import { Invoice } from "../../entities/invoice.js";
 import {
   BANK_CARD,
+  SEPA_CREDIT_TRANSFER,
   SEPA_DIRECT_DEBIT,
   type InvoiceLineInput,
 } from "../../entities/invoice.types.js";
@@ -104,6 +105,13 @@ function directDebit(): Invoice {
       id: "inv_sdd",
       paymentMeans: { code: SEPA_DIRECT_DEBIT, mandateReference: "RUM-LFD-000042" },
     }),
+  );
+}
+
+/** La facture d'une période au virement (K10) : code 58, IBAN du vendeur, référence. */
+function creditTransfer(): Invoice {
+  return Invoice.issue(
+    realisticInput({ id: "inv_transfer", paymentMeans: { code: SEPA_CREDIT_TRANSFER } }),
   );
 }
 
@@ -280,6 +288,7 @@ export function facturXSamples(): readonly FacturXSample[] {
     { name: "facture-du-mois", invoice: Invoice.issue(realisticInput({})) },
     { name: "plusieurs-taux-remise-livraison", invoice: multiRateWithDiscountAndDelivery() },
     { name: "prelevement-sepa", invoice: directDebit() },
+    { name: "virement-sepa", invoice: creditTransfer() },
     { name: "carte-acquittee", invoice: paidByCard() },
     { name: "avoir-partiel", invoice: partialCreditNote() },
     { name: "quantites-au-kilo", invoice: weighed() },

@@ -7,6 +7,7 @@ import { Clock } from "../../../../platform/time/clock.js";
 import { PayerCollectionMeansChangedEvent } from "../../domain/events/collection-means.events.js";
 import { BillingModeDatesReader } from "../../domain/ports/billing-mode-dates.reader.js";
 import { LegalEntityRepository } from "../../domain/ports/legal-entity.repository.js";
+import { PayerChangeLock } from "../../domain/ports/payer-change-lock.js";
 import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.reader.js";
 import { PayerCollectionMeansRepository } from "../../domain/ports/payer-collection-means.repository.js";
 import { PayerOrderHistoryReader } from "../../domain/ports/payer-order-history.reader.js";
@@ -23,8 +24,12 @@ import { SetPayerCollectionMeansCommand } from "./set-payer-collection-means.com
  * qui suit son principal prend le moyen du principal), puis l'historique
  * date le changement sur les clôtures du MODE du payeur — immédiat s'il n'a
  * jamais commandé et que rien n'est écrit depuis sa dernière clôture, sinon
- * la prochaine — et refuse pendant un retour bancaire. Le même moyen
- * redemandé n'écrit rien. L'historique et le fait partent ensemble.
+ * la prochaine — et refuse pendant un retour bancaire ou un changement de
+ * mode programmé (K1). Le même moyen redemandé n'écrit rien.
+ *
+ * Sous le verrou du payeur (K11), pris AVANT de lire les deux historiques :
+ * un geste de mode simultané attend, puis lit ce moyen programmé. Le
+ * verrou, la lecture, l'historique et le fait sont dans une transaction.
  */
 @CommandHandler(SetPayerCollectionMeansCommand)
 export class SetPayerCollectionMeansHandler implements ICommandHandler<
@@ -39,6 +44,7 @@ export class SetPayerCollectionMeansHandler implements ICommandHandler<
     private readonly payerMeans: PayerCollectionMeansRepository,
     private readonly orderHistory: PayerOrderHistoryReader,
     private readonly bankReturns: PendingBankReturnsReader,
+    private readonly lock: PayerChangeLock,
     private readonly clock: Clock,
     private readonly ids: IdGenerator,
     private readonly events: DomainEventPublisher,
@@ -54,24 +60,26 @@ export class SetPayerCollectionMeansHandler implements ICommandHandler<
       await this.standings.standingOf(command.payerCompanyId, at),
       at,
     );
-    const history = await this.payerMeans.load(entity.id, payer);
-    const closures = PayerTimeline.of(
-      await this.payerModes.segmentsOfPayer(entity.id, payer.id),
-      await this.modeDates.timelinesOf(entity.id),
-    );
-    const change = history.change(
-      means,
-      { segmentId: this.ids.next(), at, staffId: command.staffId, reason: command.reason },
-      closures,
-      {
-        opening: !(await this.orderHistory.hasEverOrdered(payer.id)),
-        returnPending: await this.bankReturns.hasPendingReturn(entity.id, payer.id),
-      },
-    );
-    if (change === null) {
-      return;
-    }
     await this.uow.run(async () => {
+      await this.lock.lock(payer.id);
+      const history = await this.payerMeans.load(entity.id, payer);
+      const closures = PayerTimeline.of(
+        await this.payerModes.segmentsOfPayer(entity.id, payer.id),
+        await this.modeDates.timelinesOf(entity.id),
+      );
+      const change = history.change(
+        means,
+        { segmentId: this.ids.next(), at, staffId: command.staffId, reason: command.reason },
+        closures,
+        {
+          opening: !(await this.orderHistory.hasEverOrdered(payer.id)),
+          returnPending: await this.bankReturns.hasPendingReturn(entity.id, payer.id),
+          pendingMode: closures.pendingChange(at),
+        },
+      );
+      if (change === null) {
+        return;
+      }
       await this.payerMeans.save(history);
       await this.events.publishTraced(
         new PayerCollectionMeansChangedEvent(

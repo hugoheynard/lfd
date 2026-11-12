@@ -77,8 +77,8 @@ export function draftOf(
       deliveryNoteNumbers: order.deliveryNoteNumbers,
       ...(order.settlement === "unsettled" ? { unsettled: true } : {}),
     })),
-    paymentMeans: invoicePaymentMeansOf(payer.mandate),
-    // Rien n'est payé d'avance sur un bon au compte : il sera prélevé.
+    paymentMeans: invoicePaymentMeansOf(payer),
+    // Rien n'est payé d'avance sur un bon au compte : il sera prélevé ou viré.
     prepayment: null,
     computed: simulateInvoiceDossier(payer.billable.map((order) => order.frozen)).invoice,
   });

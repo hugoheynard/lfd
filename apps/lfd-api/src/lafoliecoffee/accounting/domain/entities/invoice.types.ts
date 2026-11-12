@@ -110,8 +110,24 @@ export interface BankCardMeans {
   readonly code: typeof BANK_CARD;
 }
 
+/**
+ * UNTDID 4461 — le virement SEPA : le moyen de la facture d'une période au
+ * virement (plan `plan-paiement-au-compte-par-virement.md`, V5, K10).
+ */
+export const SEPA_CREDIT_TRANSFER = "58";
+
+/**
+ * Le virement (K10) : rien d'autre que le code. Le compte à créditer (BT-84,
+ * l'IBAN de l'entité) se relit sur le vendeur figé, comme l'ICS du
+ * prélèvement ; la référence à reporter (BT-83) est le numéro de la facture.
+ * Les recopier ici ferait deux vérités sur la même pièce.
+ */
+export interface SepaCreditTransferMeans {
+  readonly code: typeof SEPA_CREDIT_TRANSFER;
+}
+
 /** Le moyen de paiement figé à l'émission (BG-16). */
-export type InvoicePaymentMeans = SepaDirectDebitMeans | BankCardMeans;
+export type InvoicePaymentMeans = SepaDirectDebitMeans | BankCardMeans | SepaCreditTransferMeans;
 
 /** La RUM d'un prélèvement ; `null` pour tout autre moyen, ou aucun. */
 export function mandateReferenceOf(means: InvoicePaymentMeans | null): string | null {

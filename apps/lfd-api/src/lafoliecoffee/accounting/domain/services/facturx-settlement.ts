@@ -1,6 +1,10 @@
 import type { InvoiceVatCategory, InvoiceVatPart } from "@lfd/money";
 
-import { mandateReferenceOf, type InvoiceState } from "../entities/invoice.types.js";
+import {
+  mandateReferenceOf,
+  SEPA_CREDIT_TRANSFER,
+  type InvoiceState,
+} from "../entities/invoice.types.js";
 import { centsAmount, dateElement, ratePercent, textElement } from "./facturx-format.js";
 import { paymentTermsDescription } from "./facturx-mentions.js";
 import {
@@ -20,8 +24,10 @@ import { BASKET_PROMOTION_PREFIX } from "./invoice-discount-allowances.js";
  *
  * Le prélèvement (E4, question E3a b) : quand la facture a figé un mandat,
  * le code 59 (UNTDID 4461), l'ICS du vendeur figé et la RUM. La carte (E5a) :
- * le code 48 seul, et le déjà payé (BT-113). Sans moyen figé, aucun n'est
- * écrit plutôt qu'un moyen deviné. Ordre des
+ * le code 48 seul, et le déjà payé (BT-113). Le virement (K10) : le code
+ * 58, le compte à créditer (BT-84, l'IBAN du vendeur figé, et son BIC
+ * BT-86 s'il est connu) et la référence à reporter (BT-83, le numéro de la
+ * facture). Sans moyen figé, aucun n'est écrit plutôt qu'un moyen deviné. Ordre des
  * éléments écrit de mémoire du XSD D16B, non vérifié contre lui.
  *
  * Tout est repris de la ventilation figée par l'émission ; rien n'est
@@ -68,6 +74,7 @@ export function headerSettlement(state: InvoiceState): string {
     mandateReferenceOf(state.paymentMeans) === null
       ? ""
       : textElement("ram:CreditorReferenceID", state.seller.ics),
+    isTransfer(state) ? textElement("ram:PaymentReference", state.number) : "",
     textElement("ram:InvoiceCurrencyCode", CURRENCY),
     paymentMeans(state),
     ...state.vat.categories.map(headerTradeTax),
@@ -80,7 +87,10 @@ export function headerSettlement(state: InvoiceState): string {
   ].join("");
 }
 
-/** BG-16 — BT-81, le code du moyen (59 prélèvement, 48 carte) ; rien sans moyen figé. */
+/**
+ * BG-16 — BT-81, le code du moyen (59 prélèvement, 48 carte, 58 virement) ;
+ * rien sans moyen figé. Au virement, BG-17 : le compte à créditer.
+ */
 function paymentMeans(state: InvoiceState): string {
   if (state.paymentMeans === null) {
     return "";
@@ -88,7 +98,25 @@ function paymentMeans(state: InvoiceState): string {
   return [
     "<ram:SpecifiedTradeSettlementPaymentMeans>",
     textElement("ram:TypeCode", state.paymentMeans.code),
+    isTransfer(state) ? creditTransferAccount(state) : "",
     "</ram:SpecifiedTradeSettlementPaymentMeans>",
+  ].join("");
+}
+
+function isTransfer(state: InvoiceState): boolean {
+  return state.paymentMeans?.code === SEPA_CREDIT_TRANSFER;
+}
+
+/** BT-84 (IBAN) et BT-86 (BIC, s'il est figé) — le compte de l'entité. */
+function creditTransferAccount(state: InvoiceState): string {
+  const { creditorIban, creditorBic } = state.seller;
+  return [
+    "<ram:PayeePartyCreditorFinancialAccount>",
+    textElement("ram:IBANID", creditorIban),
+    "</ram:PayeePartyCreditorFinancialAccount>",
+    creditorBic === null
+      ? ""
+      : `<ram:PayeeSpecifiedCreditorFinancialInstitution>${textElement("ram:BICID", creditorBic)}</ram:PayeeSpecifiedCreditorFinancialInstitution>`,
   ].join("");
 }
 

@@ -12,6 +12,7 @@ import { CountedLotInputsReader } from "../domain/ports/counted-lot-inputs.reade
 import { CycleNoticesReader } from "../domain/ports/cycle-notices.reader.js";
 import { OrderCollectionRepository } from "../domain/ports/order-collection.repository.js";
 import { PayerBillingModesReader } from "../domain/ports/payer-billing-modes.reader.js";
+import { PayersCollectionMeansReader } from "../domain/ports/payers-collection-means.reader.js";
 import { PayerNoticeContactsReader } from "../domain/ports/payer-notice-contacts.reader.js";
 import { RepresentedRejectionsReader } from "../domain/ports/represented-rejections.reader.js";
 import { StatementBuyerReader } from "../domain/ports/statement-buyer.reader.js";
@@ -41,6 +42,8 @@ export class CollectionAssemblyReaders {
     readonly mandates: CollectionMandatesReader,
     modeDates: BillingModeDatesReader,
     payerModes: PayerBillingModesReader,
+    /** Le moyen d'encaissement des payeurs (K9) : un bon sans facture lit celui de sa période. */
+    readonly means: PayersCollectionMeansReader,
   ) {
     this.calendar = { modeDates, payerModes };
   }

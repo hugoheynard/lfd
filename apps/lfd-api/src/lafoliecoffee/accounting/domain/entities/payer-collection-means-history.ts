@@ -5,7 +5,9 @@ import {
   CollectionMeansReturnPendingError,
   NoScheduledCollectionMeansError,
 } from "../errors/collection-means-errors.js";
+import { ModeChangeBlocksMeansChangeError } from "../errors/payer-change-pending-errors.js";
 import { collectionMeansAt, type PayerMeansEntry } from "../services/collection-means-timeline.js";
+import type { BillingMode } from "../value-objects/billing-mode.js";
 import {
   COLLECTION_MEANS_REASON_MAX,
   type CollectionMeans,
@@ -26,11 +28,19 @@ export interface PayerClosures {
  * Ce que l'appelant sait du payeur au moment du geste : `opening` — il n'a
  * jamais eu de commande au compte (la première condition de l'immédiat,
  * celle du mode) ; `returnPending` — un retour bancaire de ce payeur attend
- * sa décision (V10).
+ * sa décision (V10) ; `pendingMode` — le changement de MODE programmé et
+ * pas encore en vigueur, s'il y en a un (K1).
  */
 export interface PayerMeansStanding {
   readonly opening: boolean;
   readonly returnPending: boolean;
+  readonly pendingMode: PendingModeChange | null;
+}
+
+/** Un changement de mode programmé : ce qu'un refus nomme. */
+export interface PendingModeChange {
+  readonly mode: BillingMode;
+  readonly effectiveFrom: Date;
 }
 
 /** Un geste de changement : celui d'un historique, et son motif. */
@@ -73,6 +83,10 @@ export interface PayerCollectionMeansRecord {
  * n'est écrit depuis sa dernière clôture (la règle du mode, `isQuietSince`) ;
  * sinon sa prochaine clôture. Un seul changement à la fois ; annulation
  * avant la prise d'effet. Les mandats ne sont pas touchés (V11).
+ *
+ * **Un seul changement en attente par payeur, mode et moyen confondus**
+ * (K1) : tant qu'un mode est programmé, le moyen ne change pas — sa limite
+ * est une clôture de la suite ACTUELLE, que le mode programmé déplacerait.
  */
 export class PayerCollectionMeansHistory {
   private readonly fresh = new Set<string>();
@@ -100,6 +114,7 @@ export class PayerCollectionMeansHistory {
    * @throws {CollectionMeansReasonTooLongError} motif trop long.
    * @throws {CollectionMeansChangePendingError} un autre moyen est programmé.
    * @throws {CollectionMeansReturnPendingError} un retour bancaire attend.
+   * @throws {ModeChangeBlocksMeansChangeError} un changement de mode est programmé (K1).
    */
   change(
     means: CollectionMeans,
@@ -122,6 +137,13 @@ export class PayerCollectionMeansHistory {
     const from = collectionMeansAt(this.entries, gesture.at).means;
     if (from === means) {
       return null;
+    }
+    if (standing.pendingMode !== null) {
+      throw new ModeChangeBlocksMeansChangeError(
+        this.payer.name,
+        standing.pendingMode.mode,
+        standing.pendingMode.effectiveFrom,
+      );
     }
     if (standing.returnPending) {
       throw new CollectionMeansReturnPendingError(this.payer.name);

@@ -90,6 +90,14 @@ export class InvoicingCalendar implements ClosureSequence {
     return previousClosureOf(lastClosureAtOrBefore(closesAtInstant, timeline), timeline);
   }
 
+  /**
+   * Le début de la période du payeur qui CONTIENT `instant` : sa dernière
+   * clôture ≤ `instant`. Un bon soldé ce jour-là y lit son moyen (K9).
+   */
+  payerPeriodStartContaining(payerCompanyId: string, instant: Date): Date {
+    return lastClosureAtOrBefore(instant, this.timelineOf(payerCompanyId));
+  }
+
   /** Cet instant est-il la clôture connue d'au moins un payeur (ou du mensuel) ? */
   isClosure(instant: Date): boolean {
     return this.sources().some((source) => knownClosesAt(instant, source));

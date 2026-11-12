@@ -6,6 +6,7 @@ import {
   DEFAULT_COLLECTION_FORM,
   type CollectionFormName,
 } from "../value-objects/collection-form.js";
+import type { CollectionMeans } from "../value-objects/collection-means.js";
 import type { SepaScheme } from "../value-objects/sepa-scheme.js";
 import { billedPayerOf, billingFollowAt } from "./billed-payer.js";
 
@@ -37,6 +38,14 @@ export interface VerdictContext {
   readonly collectionForms: ReadonlyMap<string, CollectionFormName>;
   readonly consumedMandates: ReadonlySet<string>;
   readonly liveSchemes: readonly SepaScheme[];
+  /**
+   * **Le moyen d'encaissement** du payeur pour ce qu'on juge (plan
+   * `plan-paiement-au-compte-par-virement.md`, K3) : celui de la période
+   * facturée pour la facture du mois et le compte des clients, celui que la
+   * FACTURE a figé pour un bon facturé (K2), celui de la période de son
+   * solde pour un bon sans facture (K9). Un seul endroit où le lire.
+   */
+  readonly collectionMeansOf: (payerId: string) => CollectionMeans;
 }
 
 export type Verdict =
@@ -46,14 +55,23 @@ export type Verdict =
       readonly reason: CollectionExclusionReason;
       readonly payerId: string;
     }
-  | { readonly kind: "elsewhere" };
+  | { readonly kind: "elsewhere" }
+  /**
+   * Le payeur règle ce bon par virement (K3) : il n'est ni prélevé ni
+   * écarté — et jamais compté « sans mandat ». Rien ne s'écrit sur lui.
+   */
+  | { readonly kind: "bank_transfer"; readonly payerId: string };
 
 /**
- * Le verdict d'un bon, sans le jugement « facturable » : payeur détaché,
- * mandat effectif, créancier, mandat ponctuel consommé, schéma déjà pris.
+ * Le verdict d'un bon, sans le jugement « facturable » : moyen d'encaissement
+ * (un virement s'arrête là), payeur détaché, mandat effectif, créancier,
+ * mandat ponctuel consommé, schéma déjà pris.
  */
 export function judgeMandate(order: JudgedOrder, context: VerdictContext): Verdict {
   const payerId = billedPayerOf(order, context.follows);
+  if (context.collectionMeansOf(payerId) === "bank_transfer") {
+    return { kind: "bank_transfer", payerId };
+  }
   if (payerId !== order.companyId) {
     const now = billingFollowAt(order.companyId, context.at, context.follows);
     if (now?.payerId !== payerId) {
@@ -89,7 +107,8 @@ export function judgeMandate(order: JudgedOrder, context: VerdictContext): Verdi
  * pour ne pas fabriquer lui-même ce bon.
  *
  * `liveSchemes` est vide : un schéma déjà pris par un lot vivant renvoie un
- * bon au lot suivant, il ne fait pas d'un payeur un non-débité.
+ * bon au lot suivant, il ne fait pas d'un payeur un non-débité. Un payeur au
+ * virement à `at` n'est pas débité (K3).
  */
 export function isDebitedHereAt(
   companyId: string,
@@ -103,13 +122,20 @@ export function isDebitedHereAt(
  * Le mandat EFFECTIF d'un bon chez cette entité — `null` s'il n'y en a pas
  * exactement un. Ce que la facture du mois fige (BG-16) : ni le schéma déjà
  * pris, ni le mandat ponctuel consommé, ni le détachement n'y entrent — ils
- * décident du LOT, pas du moyen de paiement que la facture annonce.
+ * décident du LOT, pas du moyen de paiement que la facture annonce. Une
+ * période au virement n'a pas de mandat sur sa facture (K3, BG-16) : `null`.
  */
 export function effectiveMandateOf(
   order: JudgedOrder,
-  context: Pick<VerdictContext, "legalEntityId" | "follows" | "mandates" | "collectionForms">,
+  context: Pick<
+    VerdictContext,
+    "legalEntityId" | "follows" | "mandates" | "collectionForms" | "collectionMeansOf"
+  >,
 ): CollectionMandate | null {
   const payerId = billedPayerOf(order, context.follows);
+  if (context.collectionMeansOf(payerId) === "bank_transfer") {
+    return null;
+  }
   const { candidates } = effectiveMandates(order, payerId, context);
   const [mandate, ...others] = candidates;
   if (mandate === undefined || others.length > 0) {

@@ -6,7 +6,7 @@ import { PayerBillingModeHistory, type PayerModeEntry } from "../payer-billing-m
 const PAYER = { id: "cmp_1", name: "Le Bistrot" };
 const AT = paris("2026-10-08");
 const gesture = { segmentId: "seg_new", at: AT, staffId: "staff_1" };
-const OPENING = { opening: true };
+const OPENING = { opening: true, pendingMeans: null };
 
 function entry(mode: BillingMode, cancelledAt: Date | null = null): PayerModeEntry {
   return {

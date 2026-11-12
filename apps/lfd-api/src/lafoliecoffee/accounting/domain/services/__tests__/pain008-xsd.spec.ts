@@ -22,6 +22,7 @@ function batchXml(): string {
     legalEntityId: ENTITY_ID,
     at: new Date("2026-10-02T09:15:00.000Z"),
     payerPeriodStartsAt: () => SEPTEMBER.startsAt,
+    statementMeansOf: () => "sepa_debit",
     orders: [order("c_port"), order("c_mer")],
     follows: [],
     mandates: [mandate("c_port"), mandate("c_mer", { paymentType: "one_off", bic: "BNPAFRPP" })],

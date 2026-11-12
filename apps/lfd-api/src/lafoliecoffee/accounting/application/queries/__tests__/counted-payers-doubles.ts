@@ -4,6 +4,7 @@ import { CountedLotInputsReader } from "../../../domain/ports/counted-lot-inputs
 import type { CollectionFormName } from "../../../domain/value-objects/collection-form.js";
 import { PayerStandingsReader } from "../../../domain/ports/payer-standings.reader.js";
 import { mandate } from "../../../domain/services/__tests__/collection-fixtures.js";
+import { StorePayersMeansReader } from "../../commands/__tests__/collection-means-doubles.js";
 import type { CountedPayersReaders } from "../../counted-payers-support.js";
 import { FakeMandates } from "../../commands/__tests__/collection-doubles.js";
 
@@ -53,7 +54,12 @@ export function countingOf(
 ): CountedPayersReaders {
   const fake = new FakeMandates();
   fake.mandates = [...mandates];
-  return { standings: new AllStandings(accounts), mandates: fake, lot: new FixedLotInputs() };
+  return {
+    standings: new AllStandings(accounts),
+    mandates: fake,
+    lot: new FixedLotInputs(),
+    means: new StorePayersMeansReader(),
+  };
 }
 
 /** Des clients qui comptent tous : actifs, payeurs, chacun son mandat signé chez l'entité. */

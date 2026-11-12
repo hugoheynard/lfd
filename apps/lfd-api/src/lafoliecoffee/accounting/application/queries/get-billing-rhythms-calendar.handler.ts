@@ -12,6 +12,7 @@ import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
 import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.reader.js";
 import { CollectionMandatesReader } from "../../domain/ports/collection-mandates.reader.js";
 import { CountedLotInputsReader } from "../../domain/ports/counted-lot-inputs.reader.js";
+import { PayersCollectionMeansReader } from "../../domain/ports/payers-collection-means.reader.js";
 import { PayerStandingsReader } from "../../domain/ports/payer-standings.reader.js";
 import { isRhythmFollowed, payerCountsAt } from "../../domain/services/rhythm-payer-counts.js";
 import { procedureCodeOf } from "../../domain/services/collection-procedure-code.js";
@@ -58,6 +59,7 @@ export class GetBillingRhythmsCalendarHandler implements IQueryHandler<
     private readonly standings: PayerStandingsReader,
     private readonly mandates: CollectionMandatesReader,
     private readonly lotInputs: CountedLotInputsReader,
+    private readonly collectionMeans: PayersCollectionMeansReader,
     private readonly batches: ClosureBatchesReader,
     private readonly storedBatches: CollectionBatchReader,
     private readonly periods: InvoicePeriodsReader,
@@ -74,7 +76,12 @@ export class GetBillingRhythmsCalendarHandler implements IQueryHandler<
       this.modeDates.timelinesOf(entity.id),
       this.payerModes.segmentsOf(entity.id),
       countedPayerIdsOf(
-        { standings: this.standings, mandates: this.mandates, lot: this.lotInputs },
+        {
+          standings: this.standings,
+          mandates: this.mandates,
+          lot: this.lotInputs,
+          means: this.collectionMeans,
+        },
         entity.id,
         now,
       ),

@@ -6,6 +6,8 @@ import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { BillingModeDatesReader } from "../../domain/ports/billing-mode-dates.reader.js";
 import { LegalEntityRepository } from "../../domain/ports/legal-entity.repository.js";
+import { PayerChangeLock } from "../../domain/ports/payer-change-lock.js";
+import { PayerCollectionMeansReader } from "../../domain/ports/payer-collection-means.reader.js";
 import { PayerBillingModeRepository } from "../../domain/ports/payer-billing-mode.repository.js";
 import { PayerOrderHistoryReader } from "../../domain/ports/payer-order-history.reader.js";
 import { PayerStandingReader } from "../../domain/ports/payer-standing.reader.js";
@@ -31,6 +33,8 @@ export class SetPayerBillingModeHandler implements ICommandHandler<
     readonly modeDates: BillingModeDatesReader,
     readonly payerModes: PayerBillingModeRepository,
     readonly orderHistory: PayerOrderHistoryReader,
+    readonly payerMeans: PayerCollectionMeansReader,
+    readonly lock: PayerChangeLock,
     readonly clock: Clock,
     readonly ids: IdGenerator,
     readonly events: DomainEventPublisher,

@@ -3,8 +3,10 @@ import {
   PayerBillingModeAlreadyChosenError,
   PayerBillingModeChangePendingError,
 } from "../errors/billing-mode-errors.js";
+import { MeansChangeBlocksModeChangeError } from "../errors/payer-change-pending-errors.js";
 import { PayerTimeline, type ModeTimelines } from "../services/payer-timeline.js";
 import { DEFAULT_BILLING_MODE, type BillingMode } from "../value-objects/billing-mode.js";
+import type { CollectionMeans } from "../value-objects/collection-means.js";
 import {
   cancellableOf,
   isQuietSince,
@@ -36,9 +38,18 @@ export interface PayerModeChange {
  * Ce que l'appelant sait du payeur au moment du geste : `opening` — il n'a
  * jamais eu de commande au compte, par aucun chemin de rattachement. C'est la
  * première condition de l'immédiat ; l'agrégat juge les deux autres.
+ * `pendingMeans` — le changement de MOYEN programmé et pas encore en vigueur,
+ * s'il y en a un (plan `plan-paiement-au-compte-par-virement.md`, K1).
  */
 export interface PayerOpening {
   readonly opening: boolean;
+  readonly pendingMeans: PendingMeansChange | null;
+}
+
+/** Un changement de moyen programmé : ce qu'un refus nomme. */
+export interface PendingMeansChange {
+  readonly means: CollectionMeans;
+  readonly effectiveFrom: Date;
 }
 
 /** La forme persistée, et ce que ce chargement a créé ou annulé. */
@@ -109,6 +120,8 @@ export class PayerBillingModeHistory {
    *
    * @returns ce qui a changé, ou `null` : c'est déjà le mode qu'il a choisi.
    * @throws {PayerBillingModeChangePendingError} un changement n'a pas encore pris effet.
+   * @throws {MeansChangeBlocksModeChangeError} un changement de moyen est programmé (K1) :
+   *         le mode déplacerait la clôture où il tombe.
    */
   change(
     mode: BillingMode,
@@ -132,6 +145,13 @@ export class PayerBillingModeHistory {
     const from = timeline.modeAt(immediate ? gesture.at : effectiveAt).mode;
     if (mode === from && this.living().length > 0) {
       return null;
+    }
+    if (payer.pendingMeans !== null) {
+      throw new MeansChangeBlocksModeChangeError(
+        this.payer.name,
+        payer.pendingMeans.means,
+        payer.pendingMeans.effectiveFrom,
+      );
     }
     this.entries = [
       ...this.entries,

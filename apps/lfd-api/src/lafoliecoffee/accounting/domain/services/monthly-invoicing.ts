@@ -1,6 +1,10 @@
 import { instantToLocal } from "@lfd/contracts";
 
-import { SEPA_DIRECT_DEBIT, type InvoicePaymentMeans } from "../entities/invoice.types.js";
+import {
+  SEPA_CREDIT_TRANSFER,
+  SEPA_DIRECT_DEBIT,
+  type InvoicePaymentMeans,
+} from "../entities/invoice.types.js";
 import type { CollectionMandate } from "../ports/collection-mandates.reader.js";
 import type { BillingFollow } from "../ports/statement-billing.reader.js";
 import { billedPayerOf } from "./billed-payer.js";
@@ -9,6 +13,7 @@ import type { DossierHandoverFact, DossierStopFact } from "./invoice-dossier-his
 import { orderHistory } from "./invoice-dossier-history.js";
 import { isBillable } from "./invoice-billability.js";
 import type { FrozenInvoiceOrder } from "./invoice-dossier.types.js";
+import type { CollectionMeans } from "../value-objects/collection-means.js";
 
 /**
  * **La facture du mois**, sa partie pure (plan
@@ -64,6 +69,11 @@ export interface PayerOrders {
  */
 export interface PayerInvoicePlan {
   readonly payerId: string;
+  /**
+   * Le moyen de la période du payeur (K10) — celui que la facture fige. Au
+   * virement, aucun mandat : une seule facture, `mandate` vaut `null`.
+   */
+  readonly means: CollectionMeans;
   /** Le mandat effectif de tous ses bons ; `null` : aucun mandat unique. */
   readonly mandate: CollectionMandate | null;
   /** Les bons à facturer, dans l'ordre reçu (date de passation). */
@@ -78,10 +88,13 @@ export interface MonthlyInvoicePlan {
   readonly alreadyInvoiced: readonly string[];
 }
 
-/** Ce qu'il faut pour trouver le mandat effectif d'un bon — la règle du lot. */
+/**
+ * Ce qu'il faut pour trouver le mandat effectif d'un bon — la règle du lot —,
+ * et le moyen de la période de chaque payeur (K3, K10).
+ */
 export type MandateContext = Pick<
   VerdictContext,
-  "legalEntityId" | "follows" | "mandates" | "collectionForms"
+  "legalEntityId" | "follows" | "mandates" | "collectionForms" | "collectionMeansOf"
 >;
 
 /**
@@ -117,7 +130,10 @@ export function ordersByPayer(
  * Hugo 2026-10-08) : les bons d'un payeur qui tombent sur deux mandats
  * (sites sur leur propre mandat, formes 2 et 3) font deux factures, chacune
  * encaissée par la ligne de lot de son mandat. Les bons sans mandat
- * effectif font la leur, sans moyen de paiement — comme avant E4b.
+ * effectif font la leur, sans moyen de paiement — comme avant E4b. Un payeur
+ * dont la période est au virement (K10) a UNE facture, sans mandat : la clé
+ * est celle d'une facture sans mandat (K7 — les deux ne coexistent pas sur
+ * une même clôture, une période n'ayant qu'un moyen).
  *
  * Ordre déterministe, donc numérotation aussi : les payeurs dans l'ordre de
  * leur premier bon, puis, chez un payeur, ses factures dans l'ordre du
@@ -175,8 +191,12 @@ export function groupOrderIds(group: PayerInvoicePlan): readonly string[] {
   return [...group.billable, ...group.unbillable].map((order) => order.orderId);
 }
 
-/** Les bons d'un payeur rangés par mandat effectif, dans l'ordre du premier bon. */
+/**
+ * Les bons d'un payeur rangés par mandat effectif, dans l'ordre du premier
+ * bon. Au virement, `effectiveMandateOf` rend `null` pour tous : un seul groupe.
+ */
 function byMandate(payer: PayerOrders, context: MandateContext): readonly PayerInvoicePlan[] {
+  const means = context.collectionMeansOf(payer.payerId);
   const groups = new Map<
     string,
     {
@@ -193,18 +213,26 @@ function byMandate(payer: PayerOrders, context: MandateContext): readonly PayerI
     (!held && isBillable(order.frozen) ? group.billable : group.unbillable).push(order);
     groups.set(key, group);
   }
-  return [...groups.values()].map((group) => ({ payerId: payer.payerId, ...group }));
+  return [...groups.values()].map((group) => ({ payerId: payer.payerId, means, ...group }));
 }
 
 /**
- * Le moyen de paiement que la facture fige (BG-16) : le prélèvement SEPA
- * sous le mandat effectif de ses bons — celui que le lot prendra. Sans
- * mandat, `null` : aucun moyen n'est écrit.
+ * Le moyen de paiement que la facture fige (BG-16, K10) : le virement pour
+ * une période au virement ; sinon le prélèvement SEPA sous le mandat
+ * effectif de ses bons — celui que le lot prendra. Sans mandat, `null` :
+ * aucun moyen n'est écrit, et le lot la lit « prélèvement ».
  */
 export function invoicePaymentMeansOf(
-  mandate: Pick<CollectionMandate, "reference"> | null,
+  invoice: Pick<PayerInvoicePlan, "means"> & {
+    readonly mandate: Pick<CollectionMandate, "reference"> | null;
+  },
 ): InvoicePaymentMeans | null {
-  return mandate === null ? null : { code: SEPA_DIRECT_DEBIT, mandateReference: mandate.reference };
+  if (invoice.means === "bank_transfer") {
+    return { code: SEPA_CREDIT_TRANSFER };
+  }
+  return invoice.mandate === null
+    ? null
+    : { code: SEPA_DIRECT_DEBIT, mandateReference: invoice.mandate.reference };
 }
 
 /**

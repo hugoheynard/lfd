@@ -17,12 +17,13 @@ export interface CollectionMeansInForce {
 }
 
 /**
- * **Le moyen d'encaissement d'un payeur à `instant`** (V1, V3) — le dernier
+ * **Le moyen d'encaissement d'un payeur à `instant`** (V1, V3') — le dernier
  * segment vivant qui a pris effet à `instant` ou avant ; sans lui, le
- * prélèvement. C'est la lecture que la passation fera pour figer le moyen
- * d'une commande, d'après la période où elle tombe : un segment prend
- * toujours effet à une clôture du payeur (V2), donc une période n'a qu'un
- * moyen.
+ * prélèvement. Lu au DÉBUT d'une période, c'est le moyen de toute la
+ * période : un segment prend toujours effet à une clôture du payeur (V2, K1).
+ * L'émission le fige sur la facture ; le lot le relit sur elle, ou sur la
+ * période du solde d'un bon sans facture (K2, K9). Rien n'est figé sur la
+ * commande.
  */
 export function collectionMeansAt(
   entries: readonly PayerMeansEntry[],

@@ -1,10 +1,15 @@
+import type { CollectionMeans } from "../../value-objects/collection-means.js";
 import { isDebitedHereAt } from "../collection-verdict.js";
 import { ENTITY_ID, mandate } from "./collection-fixtures.js";
 
 /** Les dates ne sont comparées qu'entre elles (signature ≤ instant jugé). */
 const AT = new Date("2026-09-30T22:00:00.000Z");
 
-function context(mandates: ReturnType<typeof mandate>[], consumed: readonly string[] = []) {
+function context(
+  mandates: ReturnType<typeof mandate>[],
+  consumed: readonly string[] = [],
+  means: CollectionMeans = "sepa_debit",
+) {
   return {
     legalEntityId: ENTITY_ID,
     at: AT,
@@ -12,6 +17,7 @@ function context(mandates: ReturnType<typeof mandate>[], consumed: readonly stri
     mandates,
     collectionForms: new Map(),
     consumedMandates: new Set(consumed),
+    collectionMeansOf: (): CollectionMeans => means,
   };
 }
 
@@ -31,5 +37,9 @@ describe("isDebitedHereAt — débité chez cette entité à cet instant", () =>
   it("un mandat ponctuel déjà consommé : non", () => {
     const oneOff = mandate("a", { paymentType: "one_off" });
     expect(isDebitedHereAt("a", context([oneOff], [oneOff.mandateId]))).toBe(false);
+  });
+
+  it("au virement à cet instant : non, même avec un mandat actif (K3)", () => {
+    expect(isDebitedHereAt("a", context([mandate("a")], [], "bank_transfer"))).toBe(false);
   });
 });

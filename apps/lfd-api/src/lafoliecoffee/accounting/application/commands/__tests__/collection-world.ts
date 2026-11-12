@@ -11,6 +11,8 @@ import {
   ConstitutionNoticeReaders,
   ConstitutionWriters,
 } from "../../collection-constitution-ports.js";
+import type { PayersCollectionMeansReader } from "../../../domain/ports/payers-collection-means.reader.js";
+import { StorePayersMeansReader } from "./collection-means-doubles.js";
 import { CancelCollectionBatchHandler } from "../cancel-collection-batch.handler.js";
 import { ConstituteCollectionBatchesHandler } from "../constitute-collection-batches.handler.js";
 import { DepositCollectionBatchHandler } from "../deposit-collection-batch.handler.js";
@@ -139,6 +141,7 @@ export function world(payers: readonly PayerModeSegments[] = []) {
 export function assemblyReaders(
   w: { readonly candidates: FakeCandidates; readonly mandates: FakeMandates },
   payerModes: PayerBillingModesReader,
+  means: PayersCollectionMeansReader = new StorePayersMeansReader(),
 ): CollectionAssemblyReaders {
   return new CollectionAssemblyReaders(
     w.candidates,
@@ -147,5 +150,6 @@ export function assemblyReaders(
     w.mandates,
     new FixedModeDates(),
     payerModes,
+    means,
   );
 }

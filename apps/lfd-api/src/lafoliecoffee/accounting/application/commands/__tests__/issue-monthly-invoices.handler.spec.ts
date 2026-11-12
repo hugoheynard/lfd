@@ -25,6 +25,7 @@ import type { PayerModeSegments } from "../../../domain/ports/payer-billing-mode
 import { paris } from "../../../domain/services/__tests__/billing-mode-fixtures.js";
 import { InvoiceIssuer } from "../../services/invoice-issuer.js";
 import { RecordingDurable } from "./notice-doubles.js";
+import { meansRow, PayerMeansStore, StorePayersMeansReader } from "./collection-means-doubles.js";
 import { IssueMonthlyInvoicesCommand } from "../issue-monthly-invoices.command.js";
 import { IssueMonthlyInvoicesHandler } from "../issue-monthly-invoices.handler.js";
 import {
@@ -107,6 +108,8 @@ function harness(
     /** Les payeurs qui ont choisi un mode ; aucun : tous mensuels au 1er. */
     payers?: readonly PayerModeSegments[];
     closure?: string;
+    /** Les moyens d'encaissement des payeurs ; aucun : tous au prélèvement. */
+    means?: PayerMeansStore;
   } = {},
 ) {
   const invoices = new MemoryInvoices();
@@ -131,6 +134,7 @@ function harness(
     new FixedIssuers([SELLER_FACTS]),
     options.buyers ?? new FixedBuyers(),
     mandates,
+    new StorePayersMeansReader(options.means),
     issuer,
     outcomes,
     rows,
@@ -185,6 +189,40 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
     expect(state?.dueOn).toBe("2026-10-15");
     expect(state?.paymentMeans).toEqual({ code: "59", mandateReference: "RUM-c-port" });
     expect(h.outcomes.rows.get(PORT)?.invoiceId).toBe(state?.id);
+  });
+
+  it("un payeur dont la période est au virement : code 58, aucun mandat (K10)", async () => {
+    const means = new PayerMeansStore();
+    means.rows.push(meansRow("c_port", "bank_transfer", paris("2026-08-01"), ENTITY_ID));
+    const h = harness({ means });
+    h.reader.orders = [bon("c_port"), bon("c_principal")];
+
+    await h.run();
+
+    const states = h.invoices.inserted.map((invoice) => invoice.toState());
+    const port = states.find((state) => state.buyer.companyId === "c_port");
+    const principal = states.find((state) => state.buyer.companyId === "c_principal");
+    expect(port?.paymentMeans).toEqual({ code: "58" });
+    expect(mandateReferenceOf(port?.paymentMeans ?? null)).toBeNull();
+    // L'échéance suit le cycle, quel que soit le moyen (V6).
+    expect(port?.dueOn).toBe(principal?.dueOn);
+    expect(principal?.paymentMeans).toEqual({ code: "59", mandateReference: "RUM-c-principal" });
+    // La clé d'issue est celle d'une facture sans mandat (K7).
+    expect(h.outcomes.rows.get(invoiceGroupKey("c_port", null))?.invoiceId).toBe(port?.id);
+  });
+
+  it("un virement qui prend effet à la clôture ne touche pas la facture de la période qu'elle ferme (V3')", async () => {
+    const means = new PayerMeansStore();
+    means.rows.push(meansRow("c_port", "bank_transfer", new Date(CLOSURE), ENTITY_ID));
+    const h = harness({ means });
+    h.reader.orders = [bon("c_port")];
+
+    await h.run();
+
+    expect(h.invoices.inserted[0]?.toState().paymentMeans).toEqual({
+      code: "59",
+      mandateReference: "RUM-c-port",
+    });
   });
 
   it("un payeur refusé est SIGNALÉ, rangé, et les autres sont facturés", async () => {
@@ -409,6 +447,7 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
         new FixedIssuers([SELLER_FACTS]),
         new FixedBuyers(),
         new FakeMandates(),
+        new StorePayersMeansReader(),
         new InvoiceIssuer(
           new CountingNumbering(),
           h.invoices,

@@ -9,6 +9,7 @@ import {
   NoScheduledBillingModeDatesError,
   NotABillingPayerError,
 } from "../../../domain/errors/billing-mode-errors.js";
+import { MeansChangeBlocksModeChangeError } from "../../../domain/errors/payer-change-pending-errors.js";
 import { InvalidBillingRhythmError } from "../../../domain/errors/billing-rhythm-errors.js";
 import { paris } from "../../../domain/services/__tests__/billing-mode-fixtures.js";
 import { CancelBillingModeDatesCommand } from "../cancel-billing-mode-dates.command.js";
@@ -29,6 +30,11 @@ import {
   PayerModesStore,
   StoreModeDatesReader,
 } from "./billing-mode-doubles.js";
+import {
+  PayerMeansStore,
+  RecordingPayerLock,
+  StorePayerMeansReader,
+} from "./collection-means-doubles.js";
 import { declaredEntity, SettingSteps, StepEntities } from "./mandate-setting-doubles.js";
 
 /** Le 8 octobre 2026, horloge FIXE : la prochaine clôture du mensuel est le 1er novembre. */
@@ -52,11 +58,15 @@ const SITE = {
 /** Un payeur qui n'a jamais commandé : son changement de mode est immédiat. */
 const NEWCOMER = { companyId: "cmp_new", name: "Le Nouveau", active: true, follows: [] };
 
-function world() {
+function world(whileWaiting: (means: PayerMeansStore) => void = () => undefined) {
   const entities = new StepEntities(new SettingSteps());
   entities.rows.set("le1", declaredEntity());
   const dates = new ModeDatesStore();
   const payers = new PayerModesStore();
+  const means = new PayerMeansStore();
+  const lock = new RecordingPayerLock(() => {
+    whileWaiting(means);
+  });
   const clock = new FixedClock(NOW);
   const events = new RecordingPublisher();
   const ids = new FixedIdGenerator("seg");
@@ -64,6 +74,7 @@ function world() {
   return {
     dates,
     payers,
+    lock,
     clock,
     events,
     schedule: new ScheduleBillingModeDatesHandler(
@@ -87,6 +98,8 @@ function world() {
       new StoreModeDatesReader(dates),
       new InMemoryPayerModes(payers),
       new FixedOrderHistory(new Set([PAYER.companyId])),
+      new StorePayerMeansReader(means),
+      lock,
       clock,
       ids,
       events,
@@ -267,5 +280,34 @@ describe("SetPayerBillingModeHandler / CancelPayerBillingModeHandler", () => {
       to: "monthly",
       cancelled: true,
     });
+  });
+});
+
+describe("SetPayerBillingModeHandler — un seul changement en attente, mode et moyen confondus (K1, K11)", () => {
+  it("prend le verrou du payeur, puis lit le moyen qu'un geste concurrent vient de programmer", async () => {
+    const w = world((means) => {
+      // Validé par un geste de moyen pendant qu'on attendait le verrou.
+      means.rows.push({
+        id: "means_concurrent",
+        legalEntityId: "le1",
+        payerCompanyId: PAYER.companyId,
+        effectiveFrom: paris("2026-11-01"),
+        means: "bank_transfer",
+        reason: "Demande écrite du client",
+        createdAt: NOW,
+        createdByStaffId: "staff_autre",
+        cancelledAt: null,
+        cancelledByStaffId: null,
+      });
+    });
+
+    await expect(
+      w.setPayer.execute(
+        new SetPayerBillingModeCommand("le1", PAYER.companyId, "weekly", "staff_compta"),
+      ),
+    ).rejects.toThrow(MeansChangeBlocksModeChangeError);
+    expect(w.lock.locked).toEqual([PAYER.companyId]);
+    expect(w.payers.rows).toHaveLength(0);
+    expect(w.events.published).toHaveLength(0);
   });
 });

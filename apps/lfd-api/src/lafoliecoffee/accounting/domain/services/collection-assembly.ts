@@ -2,6 +2,7 @@ import type { CollectableOrder } from "../ports/collection-candidates.reader.js"
 import type { CollectionMandate } from "../ports/collection-mandates.reader.js";
 import type { BillingFollow } from "../ports/statement-billing.reader.js";
 import type { CollectionFormName } from "../value-objects/collection-form.js";
+import type { CollectionMeans } from "../value-objects/collection-means.js";
 import type { SepaScheme } from "../value-objects/sepa-scheme.js";
 import { judgeMandate, type Verdict } from "./collection-verdict.js";
 import { debitsByScheme, nameOf } from "./collection-debit-drafts.js";
@@ -53,6 +54,15 @@ import type { CollectionExclusionReason } from "../entities/order-collection.js"
  *   calculée** en une fois sur ses bons (`simulateInvoiceDossier`), pas leur
  *   somme ; l'arrêté la fige.
  *
+ * ## Le moyen d'encaissement (plan `plan-paiement-au-compte-par-virement.md`)
+ *
+ * - Un bon facturé suit le moyen que SA FACTURE a figé (K2) : une facture au
+ *   virement n'est jamais prélevée, ses bons restent intacts — ni écartés,
+ *   ni comptés « sans mandat » ; une facture au prélèvement (ou sans moyen,
+ *   d'avant le chantier) l'est, même si le payeur est passé au virement depuis.
+ * - Un bon sans facture (l'arrêté) suit le moyen de la période de son solde
+ *   (K9) : au virement, pas d'arrêté (V10), le bon reste intact.
+ *
  * Un bon passé APRÈS la mise en service et sans facture n'entre pas : il
  * attend la sienne (la facture du mois l'a signalé, ou ne l'a pas encore
  * vu). Il n'est ni arrêté — il serait alors facturé deux fois —, ni écarté.
@@ -95,6 +105,11 @@ export interface AssemblyInput {
    * l'ancien chemin (l'aperçu, qui simule ; une base sans plancher).
    */
   readonly invoicingFloor: Date | null;
+  /**
+   * Le moyen de la période où un bon SANS facture a été soldé (K9) — lu au
+   * début de cette période du payeur. `settledOn` : `AAAA-MM-JJ`, Paris.
+   */
+  readonly statementMeansOf: (payerId: string, settledOn: string) => CollectionMeans;
 }
 
 /** Une facture émise que le lot peut encaisser — sa pièce est figée ailleurs. */
@@ -105,6 +120,12 @@ export interface CollectableInvoice {
   readonly totalCents: number;
   /** TOUS ses bons : elle ne se prélève qu'entière. */
   readonly orderIds: readonly string[];
+  /**
+   * Le moyen qu'elle a figé (K2, K10) : `bank_transfer` pour le code 58 ;
+   * `sepa_debit` sinon — prélèvement sous mandat, ou aucun moyen écrit
+   * (sans mandat, ou d'avant le chantier), qui se lit « prélèvement ».
+   */
+  readonly means: CollectionMeans;
 }
 
 /**
@@ -187,7 +208,10 @@ export function assembleCollection(input: AssemblyInput): Assembly {
 
 /** L'ancien chemin : un bon jugé seul, facturable ou écarté. */
 function collectStatementOrder(order: CollectableOrder, input: AssemblyInput, acc: Accumulator) {
-  const verdict = judgeMandate(order, input);
+  const verdict = judgeMandate(order, {
+    ...input,
+    collectionMeansOf: (payerId) => input.statementMeansOf(payerId, order.settledOn),
+  });
   if (verdict.kind === "debit" && !isBillable(order.frozen)) {
     acc.exclusions.push({ order, reason: "unbillable" });
     return;
@@ -215,8 +239,11 @@ function collectInvoice(
   if (orders.length !== invoice.orderIds.length) {
     return;
   }
-  const verdicts = orders.map((order) => judgeMandate(order, input));
-  if (verdicts.some((verdict) => verdict.kind === "elsewhere")) {
+  const context = { ...input, collectionMeansOf: () => invoice.means };
+  const verdicts = orders.map((order) => judgeMandate(order, context));
+  if (
+    verdicts.some((verdict) => verdict.kind === "elsewhere" || verdict.kind === "bank_transfer")
+  ) {
     return;
   }
   const excluded = verdicts.find((verdict) => verdict.kind === "exclude");

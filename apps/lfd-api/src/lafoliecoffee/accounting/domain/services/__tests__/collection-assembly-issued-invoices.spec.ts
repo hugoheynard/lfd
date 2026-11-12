@@ -22,6 +22,7 @@ function input(overrides: Partial<AssemblyInput>): AssemblyInput {
     legalEntityId: ENTITY_ID,
     at: AT,
     payerPeriodStartsAt: () => SEPTEMBER.startsAt,
+    statementMeansOf: () => "sepa_debit",
     orders: [],
     follows: [],
     mandates: [mandate("c_port"), mandate("c_quai")],
@@ -48,6 +49,7 @@ function invoice(
     number,
     totalCents,
     orderIds: orders.map((o) => o.orderId),
+    means: "sepa_debit",
   };
 }
 

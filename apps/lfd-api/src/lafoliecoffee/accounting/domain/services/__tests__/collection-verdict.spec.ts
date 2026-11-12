@@ -1,7 +1,12 @@
 import type { CollectionMandate } from "../../ports/collection-mandates.reader.js";
 import type { BillingFollow } from "../../ports/statement-billing.reader.js";
 import type { CollectionFormName } from "../../value-objects/collection-form.js";
-import { judgeMandate, type Verdict, type VerdictContext } from "../collection-verdict.js";
+import {
+  effectiveMandateOf,
+  judgeMandate,
+  type Verdict,
+  type VerdictContext,
+} from "../collection-verdict.js";
 import { ENTITY_ID, mandate } from "./collection-fixtures.js";
 
 /**
@@ -22,6 +27,7 @@ function context(overrides: {
   readonly forms?: ReadonlyMap<string, CollectionFormName>;
   readonly consumed?: readonly string[];
   readonly liveSchemes?: VerdictContext["liveSchemes"];
+  readonly transferPayers?: readonly string[];
 }): VerdictContext {
   return {
     legalEntityId: ENTITY_ID,
@@ -31,6 +37,8 @@ function context(overrides: {
     collectionForms: overrides.forms ?? new Map(),
     consumedMandates: new Set(overrides.consumed ?? []),
     liveSchemes: overrides.liveSchemes ?? [],
+    collectionMeansOf: (payerId) =>
+      (overrides.transferPayers ?? []).includes(payerId) ? "bank_transfer" : "sepa_debit",
   };
 }
 
@@ -118,5 +126,34 @@ describe("judgeMandate — une sortie par jugement, dans l'ordre", () => {
       reason: "payer_detached",
       payerId: "p",
     });
+  });
+});
+
+describe("judgeMandate et effectiveMandateOf — le moyen d'encaissement (K3)", () => {
+  it("un payeur au virement : ni prélevé ni écarté « sans mandat », même avec un mandat actif", () => {
+    const withMandate = context({ mandates: [mandate("a")], transferPayers: ["a"] });
+
+    expect(judgeMandate(own, withMandate)).toEqual({ kind: "bank_transfer", payerId: "a" });
+    expect(judgeMandate(own, context({ transferPayers: ["a"] }))).toEqual({
+      kind: "bank_transfer",
+      payerId: "a",
+    });
+  });
+
+  it("un site d'un principal au virement suit le moyen du principal", () => {
+    const ctx = context({
+      follows: [follow(null)],
+      mandates: [mandate("s")],
+      transferPayers: ["p"],
+    });
+
+    expect(judgeMandate(siteOrder, ctx)).toEqual({ kind: "bank_transfer", payerId: "p" });
+  });
+
+  it("une période au virement n'a pas de mandat sur sa facture (BG-16)", () => {
+    expect(
+      effectiveMandateOf(own, context({ mandates: [mandate("a")], transferPayers: ["a"] })),
+    ).toBeNull();
+    expect(effectiveMandateOf(own, context({ mandates: [mandate("a")] }))).not.toBeNull();
   });
 });

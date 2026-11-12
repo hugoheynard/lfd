@@ -10,6 +10,7 @@ function input(overrides: Partial<AssemblyInput>): AssemblyInput {
     legalEntityId: ENTITY_ID,
     at: AT,
     payerPeriodStartsAt: () => SEPTEMBER.startsAt,
+    statementMeansOf: () => "sepa_debit",
     orders: [],
     follows: [],
     mandates: [],
