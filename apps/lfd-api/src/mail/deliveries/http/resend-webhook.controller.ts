@@ -16,6 +16,7 @@ import {
   ReceiveResendEventCommand,
   type ResendEventReceipt,
 } from "../application/receive-resend-event.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Réception des **webhooks Resend** — ce que devient un e-mail après son envoi.
@@ -39,6 +40,9 @@ export class ResendWebhookController {
 
   @Public()
   @Post()
+  @Idempotent(
+    "webhook : un retour Resend n'est rangé qu'une fois par identifiant Svix (addIfAbsent), et une réponse entrante n'est reçue qu'une fois par identifiant d'e-mail (receiveOnce)",
+  )
   @HttpCode(HttpStatus.OK)
   async handle(
     @Req() request: RawBodyRequest<Request>,

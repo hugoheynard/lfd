@@ -11,6 +11,7 @@ import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { AcknowledgeDriverNoticeCommand } from "../application/commands/acknowledge-driver-notice.command.js";
 import { GetMyDriverNoticeQuery } from "../application/queries/get-my-driver-notice.query.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **« Mes données »** — le texte d'information du livreur et son accusé de
@@ -37,6 +38,9 @@ export class MyDriverNoticeController {
   }
 
   @Post("acknowledgement")
+  @Idempotent(
+    "pose un accusé de lecture par livreur et par version : rejouée, la base garde le premier (skipDuplicates)",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async acknowledge(
     @StaffUserId() staffUserId: string,

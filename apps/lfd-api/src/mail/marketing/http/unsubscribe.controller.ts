@@ -20,6 +20,7 @@ import { UnsubscribeByTokenCommand } from "../application/commands/unsubscribe-b
 import { groupIsOffered } from "../domain/services/marketing-group.js";
 import { type UnsubscribeForm, unsubscribeFormSchema } from "./unsubscribe-form.js";
 import { UNSUBSCRIBE_PAGE_CSP, confirmPage, donePage, pageLocaleOf } from "./unsubscribe-page.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /** Un même jeton : quelques POST par minute (contradiction B1). */
 const POSTS_PER_TOKEN = 5;
@@ -62,6 +63,9 @@ export class UnsubscribeController {
   }
 
   @Post(":token")
+  @Idempotent(
+    "désinscrit une adresse : rejouée, la préférence est déjà retirée, l'agrégat rend faux et rien n'est écrit — la préférence n'est créée qu'au premier passage",
+  )
   @HttpCode(HttpStatus.OK)
   @SkipThrottle()
   @UseGuards(

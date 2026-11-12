@@ -20,6 +20,7 @@ import { BringStopBackCommand } from "../application/commands/bring-stop-back.co
 import { GetDecisionIncidentPhotoQuery } from "../application/queries/get-decision-incident-photo.query.js";
 import { GetPendingStopDecisionsQuery } from "../application/queries/get-pending-stop-decisions.query.js";
 import { serveStepPhoto } from "./step-photo-http.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Le commercial décide** (`documentation/livraisons/livreur/a-la-porte.md`,
@@ -67,6 +68,9 @@ export class StopDecisionsController {
 
   /** « Autoriser le dépôt cette fois » — 204, même répétée. */
   @Post(":stopId/allow-drop-off")
+  @Idempotent(
+    "décision posée : rejouée, le dépôt est déjà autorisé, l'agrégat rend faux et ni l'écriture ni le journal ne partent",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async authorize(
     @StaffUserId() staffUserId: string,
@@ -79,6 +83,9 @@ export class StopDecisionsController {
 
   /** « Rapporter » — 204 ; l'arrêt se clôt « rapporté ». */
   @Post(":stopId/bring-back")
+  @Idempotent(
+    "décision posée : rejouée, l'arrêt est déjà ramené, l'agrégat rend faux et ni l'écriture, ni le journal, ni le fait durable ne partent",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async bringBack(
     @StaffUserId() staffUserId: string,

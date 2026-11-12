@@ -27,6 +27,7 @@ import { CorrectPurchaseVehicleCandidateCommand } from "../application/commands/
 import { DeclarePurchaseVehicleCandidateCommand } from "../application/commands/declare-purchase-vehicle-candidate.command.js";
 import { ReactivatePurchaseVehicleCandidateCommand } from "../application/commands/reactivate-purchase-vehicle-candidate.command.js";
 import { ListPurchaseVehicleCandidatesQuery } from "../application/queries/list-purchase-vehicle-candidates.query.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **La bibliothèque d'achat, véhicules candidats** — Livraison → Assistant d'achat
@@ -82,6 +83,9 @@ export class PurchaseVehicleCandidatesController {
   }
 
   @Post(":id/archive")
+  @Idempotent(
+    "transition : rejouée sur un candidat archivé, l'agrégat refuse (409 PurchaseCandidateAlreadyArchivedError) avant toute écriture",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async archive(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<ArchivePurchaseVehicleCandidateCommand, void>(
@@ -90,6 +94,9 @@ export class PurchaseVehicleCandidatesController {
   }
 
   @Post(":id/reactivate")
+  @Idempotent(
+    "transition : rejouée sur un candidat en service, l'agrégat refuse (409 PurchaseCandidateNotArchivedError) avant toute écriture",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async reactivate(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<ReactivatePurchaseVehicleCandidateCommand, void>(

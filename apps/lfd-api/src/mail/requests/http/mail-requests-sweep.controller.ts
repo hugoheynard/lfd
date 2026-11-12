@@ -7,6 +7,7 @@ import {
   type MailSweepReport,
   SweepMailRequestsCommand,
 } from "../application/sweep-mail-requests.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Endpoint **batch** du balayeur des e-mails (plan `plan-service-e-mails.md`,
@@ -21,6 +22,9 @@ export class MailRequestsSweepController {
   constructor(private readonly commands: CommandBus) {}
 
   @Post()
+  @Idempotent(
+    "balayage appelé par la machine sous RecomputeGuard, état relu : il ne reprend que les demandes restées en suspens au-delà du délai, et chaque reprise part sous la clé d'idempotence de la demande",
+  )
   @HttpCode(200)
   sweep(): Promise<MailSweepReport> {
     return this.commands.execute<SweepMailRequestsCommand, MailSweepReport>(

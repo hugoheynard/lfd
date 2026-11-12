@@ -16,6 +16,7 @@ import { CreateBatchShortcutCommand } from "../application/commands/create-batch
 import { RemoveBatchShortcutCommand } from "../application/commands/remove-batch-shortcut.command.js";
 import { UpdateBatchShortcutCommand } from "../application/commands/update-batch-shortcut.command.js";
 import { GetBatchShortcutsSettingsQuery } from "../application/queries/get-batch-shortcuts-settings.query.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /** Le code de retour d'un geste qui n'a rien à rendre — le client relit. */
 const NO_CONTENT = 204;
@@ -60,6 +61,9 @@ export class ProductionBatchShortcutsController {
 
   /** Modifie le nom ou les pièces. 404 sur un raccourci inconnu ou supprimé. */
   @Put(":id")
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête ne change rien, l'agrégat rend null et ni l'écriture ni le journal ne partent",
+  )
   @HttpCode(NO_CONTENT)
   async update(
     @Param("id") id: string,
@@ -72,6 +76,9 @@ export class ProductionBatchShortcutsController {
 
   /** Supprime (archive) un raccourci. 404 s'il est inconnu ou déjà supprimé. */
   @Post(":id/remove")
+  @Idempotent(
+    "retire un raccourci : rejouée, il n'est plus tenu (removedAt posé) et la requête rend 404 sans rien écrire",
+  )
   @HttpCode(NO_CONTENT)
   async remove(@Param("id") id: string): Promise<void> {
     await this.commands.execute<RemoveBatchShortcutCommand, void>(

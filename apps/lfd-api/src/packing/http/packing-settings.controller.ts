@@ -11,6 +11,7 @@ import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { SetPackingSettingsCommand } from "../application/settings/set-packing-settings.command.js";
 import { GetPackingSettingsQuery } from "../application/settings/get-packing-settings.query.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Réglages › Colisage** (Hugo, 2026-10-25). Sous `delivery_settings`, le
@@ -39,6 +40,7 @@ export class PackingSettingsController {
   }
 
   @Put()
+  @Idempotent("pose des valeurs : rejouée, la même requête trouve un réglage égal et ne sauve rien")
   @HttpCode(HttpStatus.NO_CONTENT)
   async set(
     @Body(new ZodBody(packingSettingsPayloadSchema)) payload: PackingSettingsPayload,

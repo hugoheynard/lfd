@@ -13,6 +13,7 @@ import { AdminSurface, RequirePermission } from "../../platform/auth/admin-surfa
 import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { AssistBinPurchaseQuery } from "../application/queries/assist-bin-purchase.query.js";
 import { CrossPurchaseTableQuery } from "../application/queries/cross-purchase-table.query.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **L'assistant d'achat** — combien de bacs de tel format tiennent dans tel
@@ -29,6 +30,7 @@ export class DeliveryPurchaseAssistantController {
 
   /** Le meilleur rangement par rangées de chaque format : rien n'est lu, rien n'est écrit. */
   @Post()
+  @Idempotent("calcul pur en POST : n'écrit rien, ne lit que la charge envoyée")
   @HttpCode(HttpStatus.OK)
   @RequirePermission("delivery_rounds:read")
   assist(
@@ -45,6 +47,9 @@ export class DeliveryPurchaseAssistantController {
    * relus par identifiant. Rien n'est écrit.
    */
   @Post("table")
+  @Idempotent(
+    "lecture en POST : n'écrit rien, ne lit que les candidats, la flotte et le catalogue des bacs",
+  )
   @HttpCode(HttpStatus.OK)
   @RequirePermission("delivery_rounds:read")
   table(

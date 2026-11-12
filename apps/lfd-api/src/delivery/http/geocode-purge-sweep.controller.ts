@@ -4,6 +4,7 @@ import { CommandBus } from "@nestjs/cqrs";
 import { Public } from "../../platform/auth/public.decorator.js";
 import { RecomputeGuard } from "../../platform/auth/recompute.guard.js";
 import { PurgeStaleGeocodesCommand } from "../application/commands/purge-stale-geocodes.command.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /** Le compte rendu du passage : un compte, jamais une empreinte ni une adresse. */
 export interface GeocodePurgeSweepReport {
@@ -24,6 +25,9 @@ export class GeocodePurgeSweepController {
   constructor(private readonly commands: CommandBus) {}
 
   @Post()
+  @Idempotent(
+    "balayage appelé par la machine sous RecomputeGuard : il efface les géocodages d'avant la fraîcheur, et un second passage ne trouve plus rien",
+  )
   @HttpCode(200)
   async sweep(): Promise<GeocodePurgeSweepReport> {
     const purged = await this.commands.execute<PurgeStaleGeocodesCommand, number>(

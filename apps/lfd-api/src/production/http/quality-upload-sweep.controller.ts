@@ -5,6 +5,7 @@ import { Public } from "../../platform/auth/public.decorator.js";
 import { RecomputeGuard } from "../../platform/auth/recompute.guard.js";
 import { PruneProductionDayChangesCommand } from "../application/commands/prune-production-day-changes.command.js";
 import { SweepQualityUploadsCommand } from "../application/commands/sweep-quality-uploads.command.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /** Le compte rendu du passage : la seule observabilité d'un déclenchement machine. */
 export interface QualityUploadSweepReport {
@@ -34,6 +35,9 @@ export class QualityUploadSweepController {
   constructor(private readonly commands: CommandBus) {}
 
   @Post()
+  @Idempotent(
+    "balayage appelé par la machine sous RecomputeGuard, état relu : il ne libère que les dépôts expirés pas encore libérés et ne purge que l'historique d'avant la rétention — un second passage ne trouve plus rien",
+  )
   @HttpCode(200)
   async sweep(): Promise<QualityUploadSweepReport> {
     const released = await this.commands.execute<SweepQualityUploadsCommand, number>(

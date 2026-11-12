@@ -29,6 +29,7 @@ import { GetMyDeliveryRoundQuery } from "../application/queries/get-my-delivery-
 import { GetMyDeliveryRoundsQuery } from "../application/queries/get-my-delivery-rounds.query.js";
 import { GetMyStopStepPhotoQuery } from "../application/queries/get-my-stop-step-photo.query.js";
 import { serveStepPhoto } from "./step-photo-http.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /** Le jour, validé dans sa FORME — le message nomme le paramètre. */
 const dateQuerySchema = z.object({
@@ -79,6 +80,9 @@ export class MyDeliveryRoundController {
   }
 
   @Post(":roundId/departure")
+  @Idempotent(
+    "par sa propre clé : la version lue de la tournée ; rejouée, le départ l'a fait monter et la requête est refusée (409 DeliveryRoundStaleError)",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async depart(
     @StaffUserId() staffUserId: string,

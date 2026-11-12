@@ -40,6 +40,7 @@ import {
   serveQualityPhoto,
   type UploadedQualityPhoto,
 } from "./quality-photo-http.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Le contrôle qualité, depuis la Supervision** (plan
@@ -115,6 +116,9 @@ export class ProductionQualityController {
 
   /** Rendre un verdict — idempotent par `id` (D8). */
   @Post("checks")
+  @Idempotent(
+    "par sa propre clé : l'identifiant du verdict vient de l'écran ; rejouée, la requête relit le verdict gardé sous cet id et le rend (409 si la charge diffère), sans recopier les photos ni rejournaliser",
+  )
   @HttpCode(HttpStatus.CREATED)
   async render(
     @Body(new ZodBody(renderQualityCheckSchema)) payload: RenderQualityCheckPayload,

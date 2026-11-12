@@ -6,6 +6,7 @@ import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { ZodParam } from "../../platform/shared/http/zod-body.pipe.js";
 import { LaunchResupplyCommand } from "../application/commands/launch-resupply.command.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /** Le jour du chemin, validé dans sa FORME par un pipe (400 nommant le paramètre). */
 const DAY = new ZodParam(productionBatchQuerySchema.shape.date, "date");
@@ -28,6 +29,9 @@ export class ProductionResupplyLaunchController {
   constructor(private readonly commands: CommandBus) {}
 
   @Post("batch/:date/resupplies/:resupplyId/launch")
+  @Idempotent(
+    "transition : rejouée, le réassort est déjà lancé et l'agrégat refuse (409 ResupplyAlreadyLaunchedError) sous le verrou de la journée, avant toute écriture",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async launch(
     @Param("date", DAY) date: string,

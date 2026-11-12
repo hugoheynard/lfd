@@ -33,6 +33,7 @@ import { UnmarkWorksheetLineCommand } from "../application/commands/unmark-works
 import { ListProductionContainersQuery } from "../application/queries/list-production-containers.query.js";
 import { GetCurrentProductionWorksheetQuery } from "../application/queries/get-current-production-worksheet.query.js";
 import { GetProductionWorksheetQuery } from "../application/queries/get-production-worksheet.query.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Le jour du chemin, validé dans sa FORME avant d'entrer.
@@ -128,6 +129,9 @@ export class ProductionWorksheetController {
    * une réponse — §4.
    */
   @Put("worksheet/:date/lines/:sku/done")
+  @Idempotent(
+    "coche une ligne : rejouée, la ligne est complète, l'agrégat ne rend aucune fournée et rien n'est écrit",
+  )
   @HttpCode(NO_CONTENT)
   async mark(
     @Param("date", DAY) date: string,
@@ -148,6 +152,9 @@ export class ProductionWorksheetController {
    * sont déjà dans des sacs : il faut les ressortir du bac d'abord.
    */
   @Delete("worksheet/:date/lines/:sku/done")
+  @Idempotent(
+    "décoche une ligne : rejouée, ses fournées sont annulées (rien à décocher) ou leur retour est déjà demandé au colisage (409 BatchReturnPendingError)",
+  )
   @HttpCode(NO_CONTENT)
   async unmark(
     @Param("date", DAY) date: string,
@@ -168,6 +175,9 @@ export class ProductionWorksheetController {
    * plusieurs fois.
    */
   @Put("worksheet/:date/lines/:sku/batches/:batchId")
+  @Idempotent(
+    "par sa propre clé : l'identifiant de la fournée vient de l'écran ; rejouée, la base garde la première (skipDuplicates), la même charge passe en silence, la remise au colisage garde son id et le fait sa clé d'outbox",
+  )
   @HttpCode(NO_CONTENT)
   async recordBatch(
     @Param("date", DAY) date: string,
@@ -187,6 +197,9 @@ export class ProductionWorksheetController {
    * Refusée si des pièces sont déjà dans des sacs (409).
    */
   @Delete("worksheet/:date/batches/:batchId")
+  @Idempotent(
+    "annule une fournée : rejouée, elle l'est déjà et l'agrégat rend null, ou son retour est déjà demandé (409 BatchReturnPendingError)",
+  )
   @HttpCode(NO_CONTENT)
   async cancelBatch(
     @Param("date", DAY) date: string,
@@ -210,6 +223,9 @@ export class ProductionWorksheetController {
    * le tirage que la fiche montre déjà.
    */
   @Post("worksheet/:date/retake")
+  @Idempotent(
+    "reprend les commandes arrivées : rejouée, il n'y a plus rien à absorber et ni l'écriture ni le journal ne partent",
+  )
   async retake(
     @Param("date", DAY) date: string,
     @StaffUserId() staffUserId: string,
@@ -236,6 +252,9 @@ export class ProductionWorksheetController {
    * le poser deux fois de suite doit donner le même état.
    */
   @Put("containers/:sku")
+  @Idempotent(
+    "pose une règle de contenant : rejouée, la même règle est réécrite telle quelle et le journal se tait quand rien n'a changé",
+  )
   @RequirePermission("production_settings:write")
   @HttpCode(NO_CONTENT)
   async setContainer(
@@ -250,6 +269,9 @@ export class ProductionWorksheetController {
 
   /** Retirer le réglage — la colonne de la fiche redevient vide. */
   @Delete("containers/:sku")
+  @Idempotent(
+    "retire une règle : rejouée, il n'y en a plus, l'effacement ne touche rien et le journal se tait",
+  )
   @RequirePermission("production_settings:write")
   @HttpCode(NO_CONTENT)
   async removeContainer(@Param("sku") sku: string): Promise<void> {

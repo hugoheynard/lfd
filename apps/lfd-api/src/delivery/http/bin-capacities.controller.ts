@@ -10,6 +10,7 @@ import { AdminSurface, RequireAnyPermission } from "../../platform/auth/admin-su
 import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { SetBinCapacityCommand } from "../application/commands/set-bin-capacity.command.js";
 import { GetBinCapacitiesQuery } from "../application/queries/get-bin-capacities.query.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **La grille des contenances** — bacs × produits (lot 4 bis, v2-2 : Q4
@@ -33,6 +34,9 @@ export class BinCapacitiesController {
   }
 
   @Put()
+  @Idempotent(
+    "pose une contenance : rejouée, la valeur est déjà celle demandée et ni l'écriture ni le journal ne partent",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async set(
     @Body(new ZodBody(setBinCapacityPayloadSchema)) payload: SetBinCapacityPayload,

@@ -7,6 +7,7 @@ import {
   type MailPurgeReport,
   PurgeSettledMailRequestsCommand,
 } from "../application/purge-settled-mail-requests.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Endpoint **batch** de la purge du suivi des envois (`plan-service-e-mails.md`,
@@ -22,6 +23,9 @@ export class MailRequestPurgeController {
   constructor(private readonly commands: CommandBus) {}
 
   @Post()
+  @Idempotent(
+    "balayage appelé par la machine sous RecomputeGuard : il efface ce qui a passé sa rétention, et un second passage ne trouve plus rien",
+  )
   @HttpCode(200)
   purge(): Promise<MailPurgeReport> {
     return this.commands.execute<PurgeSettledMailRequestsCommand, MailPurgeReport>(

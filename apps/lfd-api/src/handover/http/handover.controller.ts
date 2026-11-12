@@ -19,6 +19,7 @@ import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { GetHandoverByOrderQuery } from "../application/queries/get-handover-by-order.query.js";
 import { GetHandoverQueueQuery } from "../application/queries/get-handover-queue.query.js";
 import { GetHandoverQuery } from "../application/queries/get-handover.query.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Les deux chemins de cette surface**, et pourquoi il y en a deux.
@@ -120,6 +121,9 @@ export class HandoverController {
    * T2, Q-T6) — 204. Motif obligatoire quand il n'est parti dans aucune tournée.
    */
   @Post("orders/:orderId/transfer-reception")
+  @Idempotent(
+    "transition : rejouée sur un transfert reçu, l'agrégat refuse (409 TransferAlreadyReceivedError) avant toute écriture ni tout fait",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async receiveTransfer(
     @Param("orderId") orderId: string,
@@ -136,6 +140,9 @@ export class HandoverController {
    * chemin d'un transfert de réassort seul, qu'aucune commande ne désigne.
    */
   @Post("transfers/:transferId/reception")
+  @Idempotent(
+    "transition : rejouée sur un transfert reçu, l'agrégat refuse (409 TransferAlreadyReceivedError) avant toute écriture ni tout fait",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async receiveTransferById(
     @Param("transferId") transferId: string,

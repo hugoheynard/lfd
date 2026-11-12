@@ -7,6 +7,7 @@ import { ClosePackingOrderCommand } from "../application/station/close-packing-o
 import { ReportPackingShortfallCommand } from "../application/station/report-packing-shortfall.command.js";
 import { ReopenPackingOrderCommand } from "../application/station/reopen-packing-order.command.js";
 import { packingDayOf } from "./packing-day-path.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /** Le code de retour d'un geste qui n'a rien à rendre — le client relit le poste. */
 const NO_CONTENT = 204;
@@ -56,6 +57,9 @@ export class PackingOrdersController {
   }
 
   @Post("reopen")
+  @Idempotent(
+    "transition : rejouée sur une fiche déjà rouverte, la requête rend avant toute écriture",
+  )
   @HttpCode(NO_CONTENT)
   async reopen(@Param("date") date: string, @Param("orderId") orderId: string): Promise<void> {
     await this.commands.execute<ReopenPackingOrderCommand, void>(

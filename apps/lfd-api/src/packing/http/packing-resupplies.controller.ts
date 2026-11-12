@@ -13,6 +13,7 @@ import { ClosePackingResupplyCommand } from "../application/resupplies/close-pac
 import { EnterPackedResupplyLineCommand } from "../application/resupplies/enter-packed-resupply-line.command.js";
 import { ListPackingResuppliesQuery } from "../application/resupplies/list-packing-resupplies.query.js";
 import { packingDayOf } from "./packing-day-path.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /** Le code de retour d'un geste qui n'a rien à rendre — le client relit la liste. */
 const NO_CONTENT = 204;
@@ -45,6 +46,9 @@ export class PackingResuppliesController {
   }
 
   @Put(":resupplyId/lines/:sku")
+  @Idempotent(
+    "pose une quantité emballée : rejouée, l'écart avec la valeur déjà posée est nul et le stock ne bouge pas",
+  )
   @HttpCode(NO_CONTENT)
   async enter(
     @Param("date") date: string,
@@ -65,6 +69,9 @@ export class PackingResuppliesController {
   }
 
   @Post(":resupplyId/close")
+  @Idempotent(
+    "transition : rejouée sur un réassort clos, l'agrégat rend faux et ni l'écriture ni la levée des réservations ne partent",
+  )
   @HttpCode(NO_CONTENT)
   async close(
     @Param("date") date: string,

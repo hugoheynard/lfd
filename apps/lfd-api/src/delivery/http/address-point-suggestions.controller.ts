@@ -12,6 +12,7 @@ import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { ApplyAddressPointSuggestionCommand } from "../application/commands/apply-address-point-suggestion.command.js";
 import { IgnoreAddressPointSuggestionCommand } from "../application/commands/ignore-address-point-suggestion.command.js";
 import { GetAddressPointSuggestionsQuery } from "../application/queries/get-address-point-suggestions.query.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **« Carnet à corriger »** (`documentation/livraisons/livreur/gps-y-aller-et-position.md`,
@@ -40,6 +41,9 @@ export class AddressPointSuggestionsController {
 
   /** « Appliquer » — 204 ; 409 si la suggestion a changé depuis l'affichage. */
   @Post(":addressId/apply")
+  @Idempotent(
+    "rejouée, la suggestion appliquée n'est plus proposée : refus 409 AddressSuggestionChangedError avant toute écriture ni tout identifiant",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async apply(
     @StaffUserId() staffUserId: string,
@@ -53,6 +57,9 @@ export class AddressPointSuggestionsController {
 
   /** « Ignorer » — 204 ; 409 si la suggestion a changé depuis l'affichage. */
   @Post(":addressId/dismiss")
+  @Idempotent(
+    "rejouée, la suggestion écartée n'est plus proposée : refus 409 AddressSuggestionChangedError avant toute écriture ni tout identifiant",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async ignore(
     @StaffUserId() staffUserId: string,

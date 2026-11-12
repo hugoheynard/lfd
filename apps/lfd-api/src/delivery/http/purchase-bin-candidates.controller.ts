@@ -27,6 +27,7 @@ import { CorrectPurchaseBinCandidateCommand } from "../application/commands/corr
 import { DeclarePurchaseBinCandidateCommand } from "../application/commands/declare-purchase-bin-candidate.command.js";
 import { ReactivatePurchaseBinCandidateCommand } from "../application/commands/reactivate-purchase-bin-candidate.command.js";
 import { ListPurchaseBinCandidatesQuery } from "../application/queries/list-purchase-bin-candidates.query.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **La bibliothèque d'achat, formats de bacs candidats** — Livraison → Assistant d'achat
@@ -80,6 +81,9 @@ export class PurchaseBinCandidatesController {
   }
 
   @Post(":id/archive")
+  @Idempotent(
+    "transition : rejouée sur un candidat archivé, l'agrégat refuse (409 PurchaseCandidateAlreadyArchivedError) avant toute écriture",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async archive(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<ArchivePurchaseBinCandidateCommand, void>(
@@ -88,6 +92,9 @@ export class PurchaseBinCandidatesController {
   }
 
   @Post(":id/reactivate")
+  @Idempotent(
+    "transition : rejouée sur un candidat en service, l'agrégat refuse (409 PurchaseCandidateNotArchivedError) avant toute écriture",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async reactivate(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<ReactivatePurchaseBinCandidateCommand, void>(

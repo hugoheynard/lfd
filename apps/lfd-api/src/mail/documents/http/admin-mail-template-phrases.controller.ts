@@ -16,6 +16,7 @@ import {
   mailPhraseDraftPayloadSchema,
   mailPhraseResetPayloadSchema,
 } from "./mail-template-payloads.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Les phrases d'un e-mail, sous le droit de l'éditeur** (plan
@@ -46,6 +47,9 @@ export class AdminMailTemplatePhrasesController {
 
   /** Écrit le brouillon d'une phrase, sur la révision lue — `409` si quelqu'un a écrit entre-temps. */
   @Put(":template/phrases/drafts")
+  @Idempotent(
+    "par sa propre clé : la révision lue ; rejouée, l'enregistrement l'a fait monter et la requête est refusée (409 MailCopyChangedError)",
+  )
   @HttpCode(204)
   async saveDraft(
     @Param("template") template: string,
@@ -66,6 +70,9 @@ export class AdminMailTemplatePhrasesController {
 
   /** « Rétablir le texte d'origine » — appliqué au prochain « Publier », pas avant. */
   @Post(":template/phrases/resets")
+  @Idempotent(
+    "par sa propre clé : la révision lue ; rejouée, la remise à zéro l'a fait monter et la requête est refusée (409 MailCopyChangedError)",
+  )
   @HttpCode(204)
   async reset(
     @Param("template") template: string,

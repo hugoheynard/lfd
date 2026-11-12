@@ -47,6 +47,7 @@ import { ReturnDeliveryRoundCommand } from "../application/commands/return-deliv
 import { UnassignDeliveryDriverCommand } from "../application/commands/unassign-delivery-driver.command.js";
 import { GetDeliveryRoundsDayQuery } from "../application/queries/get-delivery-rounds-day.query.js";
 import { ListDeliveryDriversQuery } from "../application/queries/list-delivery-drivers.query.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /** Le jour de service, validé dans sa FORME — le message nomme le paramètre. */
 const dayQuerySchema = z.object({
@@ -98,6 +99,9 @@ export class DeliveryRoundsController {
   }
 
   @Put(":roundId/driver")
+  @Idempotent(
+    "par sa propre clé : la version lue de la tournée ; rejouée, la requête est refusée (409 DeliveryRoundStaleError) ou trouve le livreur déjà affecté et ne fait rien",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async assignDriver(
     @Param("roundId") roundId: string,
@@ -109,6 +113,9 @@ export class DeliveryRoundsController {
   }
 
   @Post(":roundId/driver/removal")
+  @Idempotent(
+    "par sa propre clé : la version lue de la tournée ; rejouée, la requête est refusée (409 DeliveryRoundStaleError) ou ne trouve plus de livreur et ne fait rien",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async unassignDriver(
     @Param("roundId") roundId: string,
@@ -125,6 +132,9 @@ export class DeliveryRoundsController {
    * 204, même rejoué.
    */
   @Post(":roundId/return")
+  @Idempotent(
+    "transition : rejouée sur une tournée rentrée, l'agrégat ne rend aucun fait et rien n'est journalisé",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async returnToDepot(
     @StaffUserId() staffUserId: string,
@@ -151,6 +161,9 @@ export class DeliveryRoundsController {
    * retournent à répartir, elle sort des lectures du jour. 204, même rejoué.
    */
   @Post(":roundId/removal")
+  @Idempotent(
+    "retire une tournée : rejouée, elle l'est déjà (removedAt posé) et la requête rend sans rien écrire",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async removeRound(
     @Param("roundId") roundId: string,
@@ -162,6 +175,9 @@ export class DeliveryRoundsController {
   }
 
   @Post(":roundId/stops")
+  @Idempotent(
+    "par sa propre clé : la version lue de la tournée ; rejouée, l'affectation l'a fait monter et la requête est refusée (409 DeliveryRoundStaleError) avant de tirer un identifiant d'arrêt",
+  )
   @HttpCode(HttpStatus.CREATED)
   async assign(
     @Param("roundId") roundId: string,
@@ -174,6 +190,9 @@ export class DeliveryRoundsController {
   }
 
   @Post(":roundId/stops/:stopId/move")
+  @Idempotent(
+    "par sa propre clé : les versions lues des deux tournées ; rejouée, le déplacement les a fait monter et la requête est refusée (409 DeliveryRoundStaleError)",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async move(
     @Param("roundId") roundId: string,
@@ -186,6 +205,9 @@ export class DeliveryRoundsController {
   }
 
   @Put(":roundId/sequence")
+  @Idempotent(
+    "par sa propre clé : la version lue de la tournée ; rejouée, la requête est refusée (409 DeliveryRoundStaleError) ou trouve le même ordre et ne fait rien",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async reorder(
     @Param("roundId") roundId: string,
@@ -197,6 +219,9 @@ export class DeliveryRoundsController {
   }
 
   @Post(":roundId/stops/:stopId/removal")
+  @Idempotent(
+    "par sa propre clé : la version lue de la tournée ; rejouée, le retrait l'a fait monter et la requête est refusée (409 DeliveryRoundStaleError)",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(
     @Param("roundId") roundId: string,

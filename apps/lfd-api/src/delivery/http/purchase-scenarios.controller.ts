@@ -29,6 +29,7 @@ import { RecordPurchaseScenarioCommand } from "../application/commands/record-pu
 import { ReplacePurchaseScenarioCommand } from "../application/commands/replace-purchase-scenario.command.js";
 import { GetPurchaseScenarioQuery } from "../application/queries/get-purchase-scenario.query.js";
 import { ListPurchaseScenariosQuery } from "../application/queries/list-purchase-scenarios.query.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Les scénarios d'achat** — Livraison → Assistant d'achat → Tableau
@@ -93,6 +94,9 @@ export class PurchaseScenariosController {
   }
 
   @Post(":id/archive")
+  @Idempotent(
+    "transition : rejouée sur un scénario archivé, l'agrégat refuse (409 PurchaseScenarioAlreadyArchivedError) avant toute écriture",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async archive(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<ArchivePurchaseScenarioCommand, void>(
@@ -101,6 +105,9 @@ export class PurchaseScenariosController {
   }
 
   @Post(":id/reactivate")
+  @Idempotent(
+    "transition : rejouée sur un scénario en service, l'agrégat refuse (409 PurchaseScenarioNotArchivedError) avant toute écriture",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async reactivate(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<ReactivatePurchaseScenarioCommand, void>(

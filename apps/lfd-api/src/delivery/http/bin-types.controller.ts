@@ -14,6 +14,7 @@ import { ArchiveBinTypeCommand } from "../application/commands/archive-bin-type.
 import { CorrectBinTypeCommand } from "../application/commands/correct-bin-type.command.js";
 import { ReactivateBinTypeCommand } from "../application/commands/reactivate-bin-type.command.js";
 import { ListBinTypesQuery } from "../application/queries/list-bin-types.query.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Le catalogue des bacs** — Livraison → Bacs
@@ -86,12 +87,18 @@ export class BinTypesController {
   }
 
   @Post(":id/archive")
+  @Idempotent(
+    "transition : rejouée sur un type archivé, l'agrégat refuse (409 BinTypeAlreadyArchivedError) avant toute écriture",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async archive(@Param("id") id: string): Promise<void> {
     await this.commands.execute<ArchiveBinTypeCommand, void>(new ArchiveBinTypeCommand(id));
   }
 
   @Post(":id/reactivate")
+  @Idempotent(
+    "transition : rejouée sur un type en service, l'agrégat refuse (409 BinTypeNotArchivedError) avant toute écriture",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async reactivate(@Param("id") id: string): Promise<void> {
     await this.commands.execute<ReactivateBinTypeCommand, void>(new ReactivateBinTypeCommand(id));

@@ -26,6 +26,7 @@ import {
   mailCharterPreviewPayloadSchema,
   mailCharterPublishPayloadSchema,
 } from "./mail-charter-payloads.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **La charte d'un espace d'e-mails** (plan `plan-editeur-par-blocs.md`,
@@ -58,6 +59,9 @@ export class AdminMailChartersController {
 
   /** Enregistre le brouillon, sur la révision lue — `409` si quelqu'un a écrit entre-temps. */
   @Put(":space/draft")
+  @Idempotent(
+    "par sa propre clé : la révision lue ; rejouée, l'enregistrement l'a fait monter et la requête est refusée (409) avant toute écriture",
+  )
   @HttpCode(204)
   async saveDraft(
     @Param("space") space: string,
@@ -76,6 +80,9 @@ export class AdminMailChartersController {
 
   /** Publie le brouillon : la charte vaut pour les e-mails de l'espace au prochain envoi. */
   @Post(":space/publications")
+  @Idempotent(
+    "par sa propre clé : la révision lue ; rejouée, la publication l'a fait monter et vidé le brouillon, et la requête est refusée (409) avant de copier le logo au stockage",
+  )
   publish(
     @Param("space") space: string,
     @Body(new ZodBody(mailCharterPublishPayloadSchema)) payload: MailCharterPublishPayload,
@@ -88,6 +95,7 @@ export class AdminMailChartersController {
 
   /** L'aperçu — une lecture : un `POST` parce que les réglages voyagent dans le corps. */
   @Post(":space/previews")
+  @Idempotent("rendu pur en POST : compose l'aperçu en mémoire, n'écrit rien et n'envoie rien")
   @HttpCode(200)
   @RequirePermission("mail_templates:read")
   preview(

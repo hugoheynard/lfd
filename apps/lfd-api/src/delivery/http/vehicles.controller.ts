@@ -14,6 +14,7 @@ import { CorrectVehicleCommand } from "../application/commands/correct-vehicle.c
 import { ReactivateVehicleCommand } from "../application/commands/reactivate-vehicle.command.js";
 import { RetireVehicleCommand } from "../application/commands/retire-vehicle.command.js";
 import { ListVehiclesQuery } from "../application/queries/list-vehicles.query.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **La flotte** — Livraison → Véhicules
@@ -64,12 +65,18 @@ export class VehiclesController {
   }
 
   @Post(":id/retirement")
+  @Idempotent(
+    "transition : rejouée sur un véhicule retiré, l'agrégat refuse (409 VehicleAlreadyRetiredError) avant toute écriture",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async retire(@Param("id") id: string): Promise<void> {
     await this.commands.execute<RetireVehicleCommand, void>(new RetireVehicleCommand(id));
   }
 
   @Post(":id/reactivation")
+  @Idempotent(
+    "transition : rejouée sur un véhicule en service, l'agrégat refuse (409 VehicleNotRetiredError) avant toute écriture",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async reactivate(@Param("id") id: string): Promise<void> {
     await this.commands.execute<ReactivateVehicleCommand, void>(new ReactivateVehicleCommand(id));

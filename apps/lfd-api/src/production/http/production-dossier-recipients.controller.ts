@@ -16,6 +16,7 @@ import { AddStaffDossierRecipientCommand } from "../application/commands/add-sta
 import { RemoveDossierRecipientCommand } from "../application/commands/remove-dossier-recipient.command.js";
 import { ListDossierRecipientsQuery } from "../application/queries/list-dossier-recipients.query.js";
 import { ListDossierStaffCandidatesQuery } from "../application/queries/list-dossier-staff-candidates.query.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /** Le code de retour d'un geste qui n'a rien à rendre — le client relit. */
 const NO_CONTENT = 204;
@@ -82,6 +83,9 @@ export class ProductionDossierRecipientsController {
 
   /** Retire un destinataire ; 404 s'il n'est pas (ou plus) dans la liste. */
   @Delete(":id")
+  @Idempotent(
+    "retire un destinataire : rejouée, il n'est plus dans la liste vivante et l'agrégat refuse (404) avant toute écriture",
+  )
   @HttpCode(NO_CONTENT)
   async remove(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<RemoveDossierRecipientCommand, void>(

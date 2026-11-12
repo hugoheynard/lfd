@@ -31,6 +31,7 @@ import { GetProductionForecastQuery } from "../application/queries/get-productio
 import { GetProductionDueThresholdsQuery } from "../application/queries/get-production-due-thresholds.query.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import type { ProductionPaper } from "../application/services/production-paper.service.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Le jour du chemin, validé dans sa FORME par un pipe : un `.parse` écrit dans
@@ -254,6 +255,9 @@ export class ProductionDayController {
    * un rôle.
    */
   @Post("batch/:date/reopen")
+  @Idempotent(
+    "transition : rejouée sur un plan déjà rouvert, l'agrégat refuse (409 ProductionDayNotClosedError) avant toute écriture ni tout fait",
+  )
   @RequirePermission("production_count_stop:write")
   async reopen(
     @Param("date", DAY) date: string,

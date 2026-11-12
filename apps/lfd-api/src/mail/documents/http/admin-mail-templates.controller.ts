@@ -38,6 +38,7 @@ import {
   mailDocumentRevertPayloadSchema,
   mailDocumentTrialPayloadSchema,
 } from "./mail-template-payloads.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **L'éditeur d'e-mails par blocs** (plan `plan-editeur-par-blocs.md`, S4c ;
@@ -71,6 +72,9 @@ export class AdminMailTemplatesController {
    * d'arrangement ne partent pas.
    */
   @Post("publications")
+  @Idempotent(
+    "rejouée, il n'y a plus rien en attente : refus 409 NothingToPublishError avant toute écriture",
+  )
   async publishAll(@StaffUserId() staffUserId: string): Promise<MailDocumentPublicationView> {
     const publicationVersion = await this.commands.execute<PublishMailCopyCommand, number>(
       new PublishMailCopyCommand(staffUserId, false),
@@ -95,6 +99,9 @@ export class AdminMailTemplatesController {
 
   /** Enregistre le brouillon, sur la révision lue — `409` si quelqu'un a écrit entre-temps. */
   @Put(":template/draft")
+  @Idempotent(
+    "par sa propre clé : la révision lue ; rejouée, l'enregistrement l'a fait monter et la requête est refusée (409) avant toute écriture",
+  )
   @HttpCode(204)
   async saveDraft(
     @Param("template") template: string,
@@ -113,6 +120,9 @@ export class AdminMailTemplatesController {
 
   /** Publie l'arrangement ET les phrases en attente de cet e-mail, ensemble. */
   @Post(":template/publications")
+  @Idempotent(
+    "par sa propre clé : la révision lue ; rejouée, la publication l'a fait monter et vidé le brouillon, et la requête est refusée (409) avant de copier les images au stockage",
+  )
   async publish(
     @Param("template") template: string,
     @Body(new ZodBody(mailDocumentPublishPayloadSchema)) payload: MailDocumentPublishPayload,
@@ -126,6 +136,9 @@ export class AdminMailTemplatesController {
 
   /** Revient au modèle d'origine : retire le document publié et le brouillon. */
   @Post(":template/reverts")
+  @Idempotent(
+    "par sa propre clé : la révision lue ; rejouée, le retrait l'a fait monter et la requête est refusée (409) avant toute écriture",
+  )
   async revert(
     @Param("template") template: string,
     @Body(new ZodBody(mailDocumentRevertPayloadSchema)) payload: MailDocumentRevertPayload,
@@ -143,6 +156,7 @@ export class AdminMailTemplatesController {
    * pas un cas de cet e-mail.
    */
   @Post(":template/previews")
+  @Idempotent("rendu pur en POST : compose l'aperçu en mémoire, n'écrit rien et n'envoie rien")
   @HttpCode(200)
   @RequirePermission("mail_templates:read")
   preview(
@@ -165,6 +179,7 @@ export class AdminMailTemplatesController {
    * marqué par bloc. `404` e-mail ou cas inconnu, `400` document refusé.
    */
   @Post(":template/block-previews")
+  @Idempotent("rendu pur en POST : compose l'aperçu en mémoire, n'écrit rien et n'envoie rien")
   @HttpCode(200)
   @RequirePermission("mail_templates:read")
   blockPreview(

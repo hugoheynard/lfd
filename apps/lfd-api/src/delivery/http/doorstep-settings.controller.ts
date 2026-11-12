@@ -11,6 +11,7 @@ import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { SetDoorstepSettingsCommand } from "../application/commands/set-doorstep-settings.command.js";
 import { GetDoorstepSettingsQuery } from "../application/queries/get-doorstep-settings.query.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **La décision réglée d'avance à la porte**, le réglage GLOBAL
@@ -39,6 +40,9 @@ export class DoorstepSettingsController {
   }
 
   @Put()
+  @Idempotent(
+    "pose une valeur : rejouée, la règle est déjà celle demandée et ni l'écriture ni le journal ne partent",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async set(
     @Body(new ZodBody(doorstepSettingsPayloadSchema)) payload: DoorstepSettingsPayload,

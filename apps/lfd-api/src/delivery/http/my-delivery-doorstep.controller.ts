@@ -46,6 +46,7 @@ import {
   type UploadedIncidentPhoto,
 } from "./incident-photo-http.js";
 import { serveStepPhoto } from "./step-photo-http.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **À la porte — les gestes du livreur** (`documentation/livraisons/livreur/a-la-porte.md`,
@@ -83,6 +84,7 @@ export class MyDeliveryDoorstepController {
 
   /** Clore l'arrêt sans remise — la commande est déjà retirée, ou annulée. 204, même rejoué. */
   @Post(":roundId/stops/:stopId/close-without-handover")
+  @Idempotent("rejouée sur un arrêt déjà clos, la requête rend avant toute écriture ni tout fait")
   @HttpCode(HttpStatus.NO_CONTENT)
   async closeWithoutHandover(
     @StaffUserId() staffUserId: string,
@@ -101,6 +103,7 @@ export class MyDeliveryDoorstepController {
    * transfert : le site reçoit le transfert, l'arrêt se clôt. 204, même rejoué.
    */
   @Post(":roundId/stops/:stopId/site-drop")
+  @Idempotent("rejouée sur un arrêt déjà clos, la requête rend avant toute écriture ni tout fait")
   @HttpCode(HttpStatus.NO_CONTENT)
   async dropAtSite(
     @StaffUserId() staffUserId: string,
@@ -168,6 +171,9 @@ export class MyDeliveryDoorstepController {
    * rentrés. 204, même rejoué.
    */
   @Post(":roundId/return")
+  @Idempotent(
+    "transition : rejouée sur une tournée rentrée, l'agrégat ne rend aucun fait et rien n'est journalisé",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async returnToDepot(
     @StaffUserId() staffUserId: string,

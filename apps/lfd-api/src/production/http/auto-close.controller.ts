@@ -7,6 +7,7 @@ import {
   RunAutoCloseRoundCommand,
   type AutoCloseRoundReport,
 } from "../application/commands/run-auto-close-round.command.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Endpoint **machine** du tour de l'arrêt du plan (plan
@@ -24,6 +25,9 @@ export class AutoCloseController {
   constructor(private readonly commands: CommandBus) {}
 
   @Post()
+  @Idempotent(
+    "appelée par le cron sous RecomputeGuard : l'arrêt est pris par un bail par journée (claim), une journée déjà arrêtée est relue et laissée, et chaque cloche porte une clé par journée — un second passage ne ferme ni ne sonne deux fois",
+  )
   @HttpCode(200)
   async run(): Promise<AutoCloseRoundReport> {
     return this.commands.execute<RunAutoCloseRoundCommand, AutoCloseRoundReport>(

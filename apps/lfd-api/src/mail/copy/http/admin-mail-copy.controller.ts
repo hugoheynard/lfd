@@ -30,6 +30,7 @@ import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js
 import { SendMailCopyTrialCommand } from "../application/commands/send-mail-copy-trial.command.js";
 import { GetMailCopyAdminQuery } from "../application/queries/get-mail-copy-admin.query.js";
 import { GetMailCopyPreviewQuery } from "../application/queries/get-mail-copy-preview.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Édition **staff** des textes des e-mails (plan
@@ -57,6 +58,9 @@ export class AdminMailCopyController {
 
   /** Écrit un brouillon, sur la révision lue — `409` si quelqu'un a écrit entre-temps. */
   @Put("drafts")
+  @Idempotent(
+    "par sa propre clé : la révision lue ; rejouée, l'enregistrement l'a fait monter et la requête est refusée (409 MailCopyChangedError)",
+  )
   @HttpCode(204)
   async saveDraft(
     @Body(new ZodBody(mailCopyDraftPayloadSchema)) payload: MailCopyDraftPayload,
@@ -76,6 +80,9 @@ export class AdminMailCopyController {
 
   /** « Rétablir le texte d'origine » — appliqué au prochain « Publier », pas avant. */
   @Post("resets")
+  @Idempotent(
+    "par sa propre clé : la révision lue ; rejouée, la remise à zéro l'a fait monter et la requête est refusée (409 MailCopyChangedError)",
+  )
   @HttpCode(204)
   async reset(
     @Body(new ZodBody(mailCopyResetPayloadSchema)) payload: MailCopyResetPayload,
@@ -98,6 +105,9 @@ export class AdminMailCopyController {
    * double ou invente une section, ou nomme l'en-tête ou le recours.
    */
   @Put("section-orders")
+  @Idempotent(
+    "par sa propre clé : la révision lue ; rejouée, l'enregistrement l'a fait monter et la requête est refusée (409)",
+  )
   @HttpCode(204)
   async saveSectionOrder(
     @Body(new ZodBody(mailSectionOrderDraftPayloadSchema)) payload: MailSectionOrderDraftPayload,
@@ -115,6 +125,9 @@ export class AdminMailCopyController {
 
   /** « Rétablir l'ordre d'origine » — appliqué au prochain « Publier », pas avant. */
   @Post("section-order-resets")
+  @Idempotent(
+    "par sa propre clé : la révision lue ; rejouée, la remise à zéro l'a fait monter et la requête est refusée (409)",
+  )
   @HttpCode(204)
   async resetSectionOrder(
     @Body(new ZodBody(mailSectionOrderResetPayloadSchema)) payload: MailSectionOrderResetPayload,
@@ -126,6 +139,9 @@ export class AdminMailCopyController {
   }
 
   @Post("publications")
+  @Idempotent(
+    "rejouée, il n'y a plus rien en attente : refus 409 NothingToPublishError avant toute écriture",
+  )
   async publish(@StaffUserId() staffUserId: string): Promise<MailCopyPublishedView> {
     const version = await this.commands.execute<PublishMailCopyCommand, number>(
       new PublishMailCopyCommand(staffUserId),

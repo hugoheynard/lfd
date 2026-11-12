@@ -26,6 +26,7 @@ import { UnloadDeliveryBinCommand } from "../application/commands/unload-deliver
 import { GetDeliveryLoadingPlanQuery } from "../application/queries/get-delivery-loading-plan.query.js";
 import { GetDeliveryLoadingDayQuery } from "../application/queries/get-delivery-loading-day.query.js";
 import { GetDeliveryLoadingRoundQuery } from "../application/queries/get-delivery-loading-round.query.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /** Le jour de service, validé dans sa FORME — le message nomme le paramètre. */
 const dayQuerySchema = z.object({
@@ -79,6 +80,9 @@ export class DeliveryLoadingController {
   }
 
   @Post("loading/:roundId/bins")
+  @Idempotent(
+    "charge un bac : rejouée, il est déjà chargé dans cette tournée, l'agrégat rend faux et ni l'écriture ni le journal ne partent",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async load(
     @Param("roundId") roundId: string,
@@ -91,6 +95,9 @@ export class DeliveryLoadingController {
   }
 
   @Post("loading/:roundId/bins/:binId/unloading")
+  @Idempotent(
+    "décharge un bac : rejouée, il n'est plus chargé, l'agrégat rend null et rien n'est écrit",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async unload(@Param("roundId") roundId: string, @Param("binId") binId: string): Promise<void> {
     await this.commands.execute<UnloadDeliveryBinCommand, void>(
@@ -99,6 +106,9 @@ export class DeliveryLoadingController {
   }
 
   @Post("rounds/:roundId/departure")
+  @Idempotent(
+    "par sa propre clé : la version lue de la tournée ; rejouée, le départ l'a fait monter et la requête est refusée (409 DeliveryRoundStaleError)",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async depart(
     @Param("roundId") roundId: string,

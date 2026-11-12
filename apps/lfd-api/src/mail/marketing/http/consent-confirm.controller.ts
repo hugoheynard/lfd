@@ -17,6 +17,7 @@ import { perParamThrottleGuard } from "../../../platform/security/per-param-thro
 import { ConfirmConsentByTokenCommand } from "../application/commands/confirm-consent-by-token.command.js";
 import { consentConfirmedPage, consentConfirmPage } from "./consent-confirm-page.js";
 import { UNSUBSCRIBE_PAGE_CSP, pageLocaleOf } from "./unsubscribe-page.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /** La page et le geste, par IP : de quoi suivre un lien, pas de quoi balayer des jetons. */
 const REQUESTS_PER_IP = 20;
@@ -59,6 +60,9 @@ export class ConsentConfirmController {
   }
 
   @Post(":token")
+  @Idempotent(
+    "confirme un accord : rejouée, il l'est déjà, l'agrégat rend faux et rien n'est écrit",
+  )
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: REQUESTS_PER_IP, ttl: MINUTE_MS } })
   @UseGuards(

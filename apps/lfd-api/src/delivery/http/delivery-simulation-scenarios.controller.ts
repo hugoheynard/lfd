@@ -17,6 +17,7 @@ import { RecordSimulationScenarioCommand } from "../application/commands/record-
 import { ReplaceSimulationScenarioCommand } from "../application/commands/replace-simulation-scenario.command.js";
 import { GetSimulationScenarioQuery } from "../application/queries/get-simulation-scenario.query.js";
 import { ListSimulationScenariosQuery } from "../application/queries/list-simulation-scenarios.query.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Les scénarios du simulateur** — Livraison → Simulateur
@@ -87,6 +88,9 @@ export class DeliverySimulationScenariosController {
   }
 
   @Post(":id/archive")
+  @Idempotent(
+    "transition : rejouée sur un scénario archivé, l'agrégat refuse (409 SimulationScenarioAlreadyArchivedError) avant toute écriture",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async archive(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<ArchiveSimulationScenarioCommand, void>(

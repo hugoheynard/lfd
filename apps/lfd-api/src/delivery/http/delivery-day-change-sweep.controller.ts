@@ -4,6 +4,7 @@ import { CommandBus } from "@nestjs/cqrs";
 import { Public } from "../../platform/auth/public.decorator.js";
 import { RecomputeGuard } from "../../platform/auth/recompute.guard.js";
 import { PruneDeliveryDayChangesCommand } from "../application/commands/prune-delivery-day-changes.command.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /** Le compte rendu du passage : la seule observabilité d'un déclenchement machine. */
 export interface DeliveryDayChangeSweepReport {
@@ -27,6 +28,9 @@ export class DeliveryDayChangeSweepController {
   constructor(private readonly commands: CommandBus) {}
 
   @Post()
+  @Idempotent(
+    "balayage appelé par la machine sous RecomputeGuard : il efface l'historique d'avant la rétention, et un second passage ne trouve plus rien",
+  )
   @HttpCode(200)
   async sweep(): Promise<DeliveryDayChangeSweepReport> {
     const pruned = await this.commands.execute<PruneDeliveryDayChangesCommand, number>(

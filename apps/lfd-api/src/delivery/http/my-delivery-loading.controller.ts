@@ -14,6 +14,7 @@ import { LoadMyBinCommand } from "../application/commands/load-my-bin.command.js
 import { UnloadMyBinCommand } from "../application/commands/unload-my-bin.command.js";
 import { GetMyLoadingPlanQuery } from "../application/queries/get-my-loading-plan.query.js";
 import { GetMyLoadingRoundQuery } from "../application/queries/get-my-loading-round.query.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Charger depuis « Ma tournée »** (`documentation/livraisons/livreur/parcours-du-livreur.md`,
@@ -56,6 +57,9 @@ export class MyDeliveryLoadingController {
   }
 
   @Post(":roundId/loading/bins")
+  @Idempotent(
+    "charge un bac : rejouée, il est déjà chargé dans cette tournée, l'agrégat rend faux et ni l'écriture ni le journal ne partent",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async load(
     @StaffUserId() staffUserId: string,
@@ -68,6 +72,9 @@ export class MyDeliveryLoadingController {
   }
 
   @Post(":roundId/loading/bins/:binId/unloading")
+  @Idempotent(
+    "décharge un bac : rejouée, il n'est plus chargé, l'agrégat rend null et rien n'est écrit",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async unload(
     @StaffUserId() staffUserId: string,

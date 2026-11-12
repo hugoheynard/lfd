@@ -8,6 +8,7 @@ import { ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import { VoidDeliveryBinCommand } from "../application/commands/void-delivery-bin.command.js";
 import { GetDeliveryBinQuery } from "../application/queries/get-delivery-bin.query.js";
 import { GetDeliveryOrderBinsQuery } from "../application/queries/get-delivery-order-bins.query.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /** La commande dont on lit les bacs, validée dans sa FORME. */
 const orderQuerySchema = z.object({
@@ -78,6 +79,9 @@ export class DeliveryBinsController {
   }
 
   @Post(":binId/cancellation")
+  @Idempotent(
+    "annule un bac : rejouée, le bac l'est déjà, l'agrégat rend faux et ni l'écriture ni le journal ne partent",
+  )
   @RequireAnyPermission("production_packing:write", "delivery_loading:write")
   @HttpCode(HttpStatus.NO_CONTENT)
   async void(@Param("binId") binId: string): Promise<void> {

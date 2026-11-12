@@ -26,56 +26,16 @@
       "method": "replay"
     },
     {
-      "file": "apps/lfd-api/src/delivery/http/address-point-suggestions.controller.ts",
-      "method": "apply"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/address-point-suggestions.controller.ts",
-      "method": "ignore"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/bin-capacities.controller.ts",
-      "method": "set"
-    },
-    {
       "file": "apps/lfd-api/src/delivery/http/bin-types.controller.ts",
       "method": "add"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/bin-types.controller.ts",
-      "method": "archive"
     },
     {
       "file": "apps/lfd-api/src/delivery/http/bin-types.controller.ts",
       "method": "correct"
     },
     {
-      "file": "apps/lfd-api/src/delivery/http/bin-types.controller.ts",
-      "method": "reactivate"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/delivery-bins.controller.ts",
-      "method": "void"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/delivery-day-change-sweep.controller.ts",
-      "method": "sweep"
-    },
-    {
       "file": "apps/lfd-api/src/delivery/http/delivery-loading.controller.ts",
       "method": "declareTransferBins"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/delivery-loading.controller.ts",
-      "method": "depart"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/delivery-loading.controller.ts",
-      "method": "load"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/delivery-loading.controller.ts",
-      "method": "unload"
     },
     {
       "file": "apps/lfd-api/src/delivery/http/delivery-proposal.controller.ts",
@@ -90,56 +50,8 @@
       "method": "time"
     },
     {
-      "file": "apps/lfd-api/src/delivery/http/delivery-purchase-assistant.controller.ts",
-      "method": "assist"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/delivery-purchase-assistant.controller.ts",
-      "method": "table"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/delivery-rounds-gap-sweep.controller.ts",
-      "method": "sweep"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/delivery-rounds.controller.ts",
-      "method": "assign"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/delivery-rounds.controller.ts",
-      "method": "assignDriver"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/delivery-rounds.controller.ts",
-      "method": "move"
-    },
-    {
       "file": "apps/lfd-api/src/delivery/http/delivery-rounds.controller.ts",
       "method": "open"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/delivery-rounds.controller.ts",
-      "method": "remove"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/delivery-rounds.controller.ts",
-      "method": "removeRound"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/delivery-rounds.controller.ts",
-      "method": "reorder"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/delivery-rounds.controller.ts",
-      "method": "returnToDepot"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/delivery-rounds.controller.ts",
-      "method": "unassignDriver"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/delivery-simulation-scenarios.controller.ts",
-      "method": "archive"
     },
     {
       "file": "apps/lfd-api/src/delivery/http/delivery-simulation-scenarios.controller.ts",
@@ -162,24 +74,8 @@
       "method": "choose"
     },
     {
-      "file": "apps/lfd-api/src/delivery/http/doorstep-settings.controller.ts",
-      "method": "set"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/geocode-purge-sweep.controller.ts",
-      "method": "sweep"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/my-delivery-doorstep.controller.ts",
-      "method": "closeWithoutHandover"
-    },
-    {
       "file": "apps/lfd-api/src/delivery/http/my-delivery-doorstep.controller.ts",
       "method": "deposit"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/my-delivery-doorstep.controller.ts",
-      "method": "dropAtSite"
     },
     {
       "file": "apps/lfd-api/src/delivery/http/my-delivery-doorstep.controller.ts",
@@ -190,52 +86,12 @@
       "method": "report"
     },
     {
-      "file": "apps/lfd-api/src/delivery/http/my-delivery-doorstep.controller.ts",
-      "method": "returnToDepot"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/my-delivery-loading.controller.ts",
-      "method": "load"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/my-delivery-loading.controller.ts",
-      "method": "unload"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/my-delivery-round.controller.ts",
-      "method": "depart"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/my-driver-notice.controller.ts",
-      "method": "acknowledge"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/position-purge-sweep.controller.ts",
-      "method": "sweep"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/purchase-bin-candidates.controller.ts",
-      "method": "archive"
-    },
-    {
       "file": "apps/lfd-api/src/delivery/http/purchase-bin-candidates.controller.ts",
       "method": "correct"
     },
     {
       "file": "apps/lfd-api/src/delivery/http/purchase-bin-candidates.controller.ts",
       "method": "declare"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/purchase-bin-candidates.controller.ts",
-      "method": "reactivate"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/purchase-scenarios.controller.ts",
-      "method": "archive"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/purchase-scenarios.controller.ts",
-      "method": "reactivate"
     },
     {
       "file": "apps/lfd-api/src/delivery/http/purchase-scenarios.controller.ts",
@@ -247,19 +103,11 @@
     },
     {
       "file": "apps/lfd-api/src/delivery/http/purchase-vehicle-candidates.controller.ts",
-      "method": "archive"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/purchase-vehicle-candidates.controller.ts",
       "method": "correct"
     },
     {
       "file": "apps/lfd-api/src/delivery/http/purchase-vehicle-candidates.controller.ts",
       "method": "declare"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/purchase-vehicle-candidates.controller.ts",
-      "method": "reactivate"
     },
     {
       "file": "apps/lfd-api/src/delivery/http/road-routing-wake.controller.ts",
@@ -270,28 +118,12 @@
       "method": "set"
     },
     {
-      "file": "apps/lfd-api/src/delivery/http/stop-decisions.controller.ts",
-      "method": "authorize"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/stop-decisions.controller.ts",
-      "method": "bringBack"
-    },
-    {
       "file": "apps/lfd-api/src/delivery/http/vehicles.controller.ts",
       "method": "add"
     },
     {
       "file": "apps/lfd-api/src/delivery/http/vehicles.controller.ts",
       "method": "correct"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/vehicles.controller.ts",
-      "method": "reactivate"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/vehicles.controller.ts",
-      "method": "retire"
     },
     {
       "file": "apps/lfd-api/src/dev/http/dev-scenario.controller.ts",
@@ -316,14 +148,6 @@
     {
       "file": "apps/lfd-api/src/handover/http/handover.controller.ts",
       "method": "confirmManually"
-    },
-    {
-      "file": "apps/lfd-api/src/handover/http/handover.controller.ts",
-      "method": "receiveTransfer"
-    },
-    {
-      "file": "apps/lfd-api/src/handover/http/handover.controller.ts",
-      "method": "receiveTransferById"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-access-pending.controller.ts",
@@ -1842,74 +1666,6 @@
       "method": "sweep"
     },
     {
-      "file": "apps/lfd-api/src/mail/charters/http/admin-mail-charters.controller.ts",
-      "method": "preview"
-    },
-    {
-      "file": "apps/lfd-api/src/mail/charters/http/admin-mail-charters.controller.ts",
-      "method": "publish"
-    },
-    {
-      "file": "apps/lfd-api/src/mail/charters/http/admin-mail-charters.controller.ts",
-      "method": "saveDraft"
-    },
-    {
-      "file": "apps/lfd-api/src/mail/copy/http/admin-mail-copy.controller.ts",
-      "method": "publish"
-    },
-    {
-      "file": "apps/lfd-api/src/mail/copy/http/admin-mail-copy.controller.ts",
-      "method": "reset"
-    },
-    {
-      "file": "apps/lfd-api/src/mail/copy/http/admin-mail-copy.controller.ts",
-      "method": "resetSectionOrder"
-    },
-    {
-      "file": "apps/lfd-api/src/mail/copy/http/admin-mail-copy.controller.ts",
-      "method": "saveDraft"
-    },
-    {
-      "file": "apps/lfd-api/src/mail/copy/http/admin-mail-copy.controller.ts",
-      "method": "saveSectionOrder"
-    },
-    {
-      "file": "apps/lfd-api/src/mail/deliveries/http/resend-webhook.controller.ts",
-      "method": "handle"
-    },
-    {
-      "file": "apps/lfd-api/src/mail/documents/http/admin-mail-template-phrases.controller.ts",
-      "method": "reset"
-    },
-    {
-      "file": "apps/lfd-api/src/mail/documents/http/admin-mail-template-phrases.controller.ts",
-      "method": "saveDraft"
-    },
-    {
-      "file": "apps/lfd-api/src/mail/documents/http/admin-mail-templates.controller.ts",
-      "method": "blockPreview"
-    },
-    {
-      "file": "apps/lfd-api/src/mail/documents/http/admin-mail-templates.controller.ts",
-      "method": "preview"
-    },
-    {
-      "file": "apps/lfd-api/src/mail/documents/http/admin-mail-templates.controller.ts",
-      "method": "publish"
-    },
-    {
-      "file": "apps/lfd-api/src/mail/documents/http/admin-mail-templates.controller.ts",
-      "method": "publishAll"
-    },
-    {
-      "file": "apps/lfd-api/src/mail/documents/http/admin-mail-templates.controller.ts",
-      "method": "revert"
-    },
-    {
-      "file": "apps/lfd-api/src/mail/documents/http/admin-mail-templates.controller.ts",
-      "method": "saveDraft"
-    },
-    {
       "file": "apps/lfd-api/src/mail/documents/http/admin-mail-templates.controller.ts",
       "method": "trial"
     },
@@ -1930,32 +1686,12 @@
       "method": "unsubscribeAddress"
     },
     {
-      "file": "apps/lfd-api/src/mail/marketing/http/consent-confirm.controller.ts",
-      "method": "confirm"
-    },
-    {
       "file": "apps/lfd-api/src/mail/marketing/http/newsletter.controller.ts",
       "method": "subscribe"
     },
     {
-      "file": "apps/lfd-api/src/mail/marketing/http/unsubscribe.controller.ts",
-      "method": "unsubscribe"
-    },
-    {
       "file": "apps/lfd-api/src/mail/requests/http/mail-check.controller.ts",
       "method": "check"
-    },
-    {
-      "file": "apps/lfd-api/src/mail/requests/http/mail-request-purge.controller.ts",
-      "method": "purge"
-    },
-    {
-      "file": "apps/lfd-api/src/mail/requests/http/mail-requests-sweep.controller.ts",
-      "method": "sweep"
-    },
-    {
-      "file": "apps/lfd-api/src/mail/requests/http/mail-requests-watch.controller.ts",
-      "method": "watch"
     },
     {
       "file": "apps/lfd-api/src/mail/sends/http/admin-mail-sends.controller.ts",
@@ -2003,19 +1739,11 @@
     },
     {
       "file": "apps/lfd-api/src/packing/http/packing-containers.controller.ts",
-      "method": "applyProposal"
-    },
-    {
-      "file": "apps/lfd-api/src/packing/http/packing-containers.controller.ts",
       "method": "open"
     },
     {
       "file": "apps/lfd-api/src/packing/http/packing-containers.controller.ts",
       "method": "transfer"
-    },
-    {
-      "file": "apps/lfd-api/src/packing/http/packing-containers.controller.ts",
-      "method": "void"
     },
     {
       "file": "apps/lfd-api/src/packing/http/packing-containers.controller.ts",
@@ -2027,23 +1755,7 @@
     },
     {
       "file": "apps/lfd-api/src/packing/http/packing-orders.controller.ts",
-      "method": "reopen"
-    },
-    {
-      "file": "apps/lfd-api/src/packing/http/packing-orders.controller.ts",
       "method": "reportShortfall"
-    },
-    {
-      "file": "apps/lfd-api/src/packing/http/packing-resupplies.controller.ts",
-      "method": "close"
-    },
-    {
-      "file": "apps/lfd-api/src/packing/http/packing-resupplies.controller.ts",
-      "method": "enter"
-    },
-    {
-      "file": "apps/lfd-api/src/packing/http/packing-settings.controller.ts",
-      "method": "set"
     },
     {
       "file": "apps/lfd-api/src/pim/allergens/http/allergen.controller.ts",
@@ -2106,100 +1818,20 @@
       "method": "sweep"
     },
     {
-      "file": "apps/lfd-api/src/production/http/auto-close.controller.ts",
-      "method": "run"
-    },
-    {
       "file": "apps/lfd-api/src/production/http/production-batch-shortcuts.controller.ts",
       "method": "create"
-    },
-    {
-      "file": "apps/lfd-api/src/production/http/production-batch-shortcuts.controller.ts",
-      "method": "remove"
-    },
-    {
-      "file": "apps/lfd-api/src/production/http/production-batch-shortcuts.controller.ts",
-      "method": "update"
     },
     {
       "file": "apps/lfd-api/src/production/http/production-day.controller.ts",
       "method": "close"
     },
     {
-      "file": "apps/lfd-api/src/production/http/production-day.controller.ts",
-      "method": "reopen"
-    },
-    {
       "file": "apps/lfd-api/src/production/http/production-dossier-recipients.controller.ts",
       "method": "add"
     },
     {
-      "file": "apps/lfd-api/src/production/http/production-dossier-recipients.controller.ts",
-      "method": "remove"
-    },
-    {
       "file": "apps/lfd-api/src/production/http/production-quality.controller.ts",
       "method": "deposit"
-    },
-    {
-      "file": "apps/lfd-api/src/production/http/production-quality.controller.ts",
-      "method": "render"
-    },
-    {
-      "file": "apps/lfd-api/src/production/http/production-resupply-launch.controller.ts",
-      "method": "launch"
-    },
-    {
-      "file": "apps/lfd-api/src/production/http/production-settings.controller.ts",
-      "method": "addClosedDay"
-    },
-    {
-      "file": "apps/lfd-api/src/production/http/production-settings.controller.ts",
-      "method": "removeClosedDay"
-    },
-    {
-      "file": "apps/lfd-api/src/production/http/production-settings.controller.ts",
-      "method": "setDisplay"
-    },
-    {
-      "file": "apps/lfd-api/src/production/http/production-settings.controller.ts",
-      "method": "setTranches"
-    },
-    {
-      "file": "apps/lfd-api/src/production/http/production-worksheet.controller.ts",
-      "method": "cancelBatch"
-    },
-    {
-      "file": "apps/lfd-api/src/production/http/production-worksheet.controller.ts",
-      "method": "mark"
-    },
-    {
-      "file": "apps/lfd-api/src/production/http/production-worksheet.controller.ts",
-      "method": "recordBatch"
-    },
-    {
-      "file": "apps/lfd-api/src/production/http/production-worksheet.controller.ts",
-      "method": "removeContainer"
-    },
-    {
-      "file": "apps/lfd-api/src/production/http/production-worksheet.controller.ts",
-      "method": "retake"
-    },
-    {
-      "file": "apps/lfd-api/src/production/http/production-worksheet.controller.ts",
-      "method": "setContainer"
-    },
-    {
-      "file": "apps/lfd-api/src/production/http/production-worksheet.controller.ts",
-      "method": "unmark"
-    },
-    {
-      "file": "apps/lfd-api/src/production/http/quality-control-settings.controller.ts",
-      "method": "set"
-    },
-    {
-      "file": "apps/lfd-api/src/production/http/quality-upload-sweep.controller.ts",
-      "method": "sweep"
     },
     {
       "file": "apps/lfd-api/src/staff/directory/http/admin-staff-users.controller.ts",

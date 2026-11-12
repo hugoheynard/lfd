@@ -11,6 +11,7 @@ import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { SetQualityControlSettingsCommand } from "../application/commands/set-quality-control-settings.command.js";
 import { GetQualityControlSettingsQuery } from "../application/queries/get-quality-control-settings.query.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Réglages › Commandes › Contrôle qualité** (décision de Hugo, 2026-10-26).
@@ -37,6 +38,9 @@ export class QualityControlSettingsController {
   }
 
   @Put()
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête trouve un réglage égal et ne sauve ni ne journalise",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async set(
     @Body(new ZodBody(qualityControlSettingsPayloadSchema)) payload: QualityControlSettingsPayload,

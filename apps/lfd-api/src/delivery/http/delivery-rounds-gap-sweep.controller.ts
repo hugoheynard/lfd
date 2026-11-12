@@ -7,6 +7,7 @@ import {
   RingRoundsGapBellCommand,
   type RoundsGapBellReport,
 } from "../application/commands/ring-rounds-gap-bell.command.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Endpoint **machine** de la cloche « hors tournée »
@@ -24,6 +25,9 @@ export class DeliveryRoundsGapSweepController {
   constructor(private readonly commands: CommandBus) {}
 
   @Post()
+  @Idempotent(
+    "appelée par le cron sous RecomputeGuard : l'état des journées est relu et chaque cloche porte une clé par journée et par compte d'arrêts non placés — un second passage ne sonne pas deux fois",
+  )
   @HttpCode(200)
   sweep(): Promise<RoundsGapBellReport> {
     return this.commands.execute<RingRoundsGapBellCommand, RoundsGapBellReport>(

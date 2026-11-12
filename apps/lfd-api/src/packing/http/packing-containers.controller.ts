@@ -41,6 +41,7 @@ import { OpenPackingContainerCommand } from "../application/containers/open-pack
 import { VoidPackingContainerCommand } from "../application/containers/void-packing-container.command.js";
 import { WithdrawFromContainerCommand } from "../application/containers/withdraw-from-container.command.js";
 import { packingDayOf as dayOf } from "./packing-day-path.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /** `?sacs=c1,c2` — les sacs à imprimer, validés dans leur FORME ; absent : tous. */
 const bagLabelsQuerySchema = z.object({ sacs: z.string().optional() });
@@ -154,6 +155,9 @@ export class PackingContainersController {
 
   /** **Annuler** un contenant — un bac s'annule d'abord chez la livraison. */
   @Post("containers/:containerId/void")
+  @Idempotent(
+    "annule un contenant : rejouée, il n'est plus vivant et l'agrégat refuse avant d'annuler le bac ni de rendre le stock",
+  )
   @HttpCode(NO_CONTENT)
   async void(
     @Param("date") date: string,
@@ -184,6 +188,9 @@ export class PackingContainersController {
    * une seule transaction. Refusé sur une commande qui a déjà des contenants.
    */
   @Post("proposal/apply")
+  @Idempotent(
+    "rejouée, la fiche porte déjà les bacs de la proposition et l'agrégat refuse (409 ProposalOverContainersError) avant de déclarer un bac ni de tirer un identifiant",
+  )
   @HttpCode(NO_CONTENT)
   async applyProposal(
     @Param("date") date: string,

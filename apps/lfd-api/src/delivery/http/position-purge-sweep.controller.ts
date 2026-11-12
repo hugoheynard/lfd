@@ -4,6 +4,7 @@ import { CommandBus } from "@nestjs/cqrs";
 import { Public } from "../../platform/auth/public.decorator.js";
 import { RecomputeGuard } from "../../platform/auth/recompute.guard.js";
 import { PurgeStalePositionsCommand } from "../application/commands/purge-stale-positions.command.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /** Le compte rendu du passage : un compte, jamais une coordonnée ni un arrêt. */
 export interface PositionPurgeSweepReport {
@@ -24,6 +25,9 @@ export class PositionPurgeSweepController {
   constructor(private readonly commands: CommandBus) {}
 
   @Post()
+  @Idempotent(
+    "balayage appelé par la machine sous RecomputeGuard : il efface les positions d'avant la rétention, et un second passage ne trouve plus rien",
+  )
   @HttpCode(200)
   async sweep(): Promise<PositionPurgeSweepReport> {
     const purged = await this.commands.execute<PurgeStalePositionsCommand, number>(

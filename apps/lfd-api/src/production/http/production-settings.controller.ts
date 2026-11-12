@@ -18,6 +18,7 @@ import { SetProductionDisplayCommand } from "../application/commands/set-product
 import { SetProductionTranchesCommand } from "../application/commands/set-production-tranches.command.js";
 import { RemoveProductionClosedDayCommand } from "../application/commands/remove-production-closed-day.command.js";
 import { GetProductionSettingsQuery } from "../application/queries/get-production-settings.query.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /** Le code de retour d'un geste qui n'a rien à rendre — le client relit. */
 const NO_CONTENT = 204;
@@ -53,6 +54,9 @@ export class ProductionSettingsController {
    * T1). 400 sur une heure mal formée, un doublon ou plus de huit heures.
    */
   @Put("tranches")
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête trouve un réglage égal et ne sauve ni ne journalise",
+  )
   @HttpCode(NO_CONTENT)
   async setTranches(
     @Body(new ZodBody(productionTranchesPayloadSchema)) body: ProductionTranchesPayload,
@@ -68,6 +72,9 @@ export class ProductionSettingsController {
    * sous-catégories en intertitres dans chaque groupe racine.
    */
   @Put("display")
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête trouve un réglage égal et ne sauve ni ne journalise",
+  )
   @HttpCode(NO_CONTENT)
   async setDisplay(
     @Body(new ZodBody(productionDisplayPayloadSchema)) body: ProductionDisplayPayload,
@@ -80,6 +87,7 @@ export class ProductionSettingsController {
 
   /** Ferme un jour. Idempotent ; 400 sur une date passée ou mal formée. */
   @Post("closed-days")
+  @Idempotent("pose un jour fermé : rejouée, le dépôt dit qu'il l'était déjà et le journal se tait")
   @HttpCode(NO_CONTENT)
   async addClosedDay(
     @Body(new ZodBody(productionClosedDayPayloadSchema)) body: ProductionClosedDayPayload,
@@ -92,6 +100,9 @@ export class ProductionSettingsController {
 
   /** Rouvre un jour fermé. Silencieux s'il ne l'était pas. */
   @Delete("closed-days/:date")
+  @Idempotent(
+    "retire un jour fermé : rejouée, le dépôt dit qu'il ne l'était plus et le journal se tait",
+  )
   @HttpCode(NO_CONTENT)
   async removeClosedDay(
     @Param("date") date: string,
