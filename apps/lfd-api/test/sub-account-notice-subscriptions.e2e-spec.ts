@@ -146,10 +146,14 @@ describe("un panier récurrent créé dans l'espace d'un site", () => {
     await site.delete(`/subscriptions/${id}`).expect(204);
     await ctx.drain();
 
+    // L'ordre d'envoi n'est pas celui des gestes : la boîte d'envoi part après
+    // validation, et deux gestes dans la même milliseconde se croisent. Ce qui
+    // compte est un avis par geste, chacun nommé.
     expect(
       notices()
         .filter((mail) => mail.to === mailOf(s.owner))
-        .map(gestureOf),
+        .map(gestureOf)
+        .sort(),
     ).toEqual([
       "subscription_created",
       "subscription_paused",
