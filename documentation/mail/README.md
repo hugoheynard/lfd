@@ -222,3 +222,4 @@ fait dans la même base.
    pensé pour d'autres emplacements, sans en bâtir (Hugo, 2026-11-06).
 
 Le plan : [`plan-service-e-mails.md`](plan-service-e-mails.md).
+Le lien de mot de passe fabriqué à l'envoi, jamais rangé dans la boîte d'envoi (préalable aux quatre gestes d'accès scellés) : [`plan-lien-fabrique-a-l-envoi.md`](plan-lien-fabrique-a-l-envoi.md).

@@ -194,3 +194,38 @@ alors qu'il n'est pas scellé. Les quatre gestes non scellés (invitation
 staff, invitation d'un membre, création d'un client par l'équipe,
 rattachement du titulaire) attendent la décision de Hugo sur l'e-mail par la
 boîte d'envoi ; la porte les rendra justes en les basculant.
+
+## 8. Les lots suivants : prouver plutôt que croire (Hugo, 2026-11-12)
+
+Une fois la dette à zéro, la porte garantit que chaque route est rangée ;
+elle ne prouve pas qu'elle résiste au rejeu. Trois lots ferment l'écart, dans
+cet ordre.
+
+### J3 — l'e2e de rejeu, généré depuis l'inventaire
+
+La porte écrit son inventaire (`--inventory`, JSON : route, méthode HTTP,
+case, handler). Un e2e unique le parcourt : pour chaque route « par
+intention », il envoie deux fois la même requête avec la même clé, et vérifie
+une seule écriture (compte des lignes de la table que le handler écrit,
+avant et après) et deux réponses identiques. Une route « par intention »
+sans scénario semé (corps valide, droits) est une dette comptée du test,
+pas un oubli. C'est la seule preuve qu'un `runSealed` tient réellement.
+
+### J4 — « par nature » resserré
+
+La porte refuse `@Idempotent` sur un `POST` dont le handler atteint appelle
+`ids.next()` (création), `mail.send` / `mail.sendAndAwaitReceipt`, ou un port
+réseau gardé par `assertOutsideTransaction`. Une telle route porte une clé.
+`PUT`, `PATCH` et `DELETE` gardent la raison déclarative.
+
+### J5 — la porte côté écrans
+
+Back-office et boutique : tout appel HTTP vers une route « par intention »
+(lue dans l'inventaire de J3) passe par `intentOptions(...)` d'une
+`GestureIntents`, jamais une clé tirée au clic. La boutique reçoit la même
+brique ; l'acteur côté serveur est le client résolu en base (§ 7).
+
+Restent hors de ces lots, et dits : les écritures hors HTTP (abonnés aux
+faits, `@DurableHandler`, tâches planifiées), tenues par la boîte d'envoi et
+les baux ; et les effets chez un fournisseur, tenus par sa clé (Stripe) ou
+par la résolution à l'envoi ([`../mail/plan-lien-fabrique-a-l-envoi.md`](../mail/plan-lien-fabrique-a-l-envoi.md)).
