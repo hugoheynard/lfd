@@ -62,6 +62,7 @@ function prismaSpy(
     },
     outboxDelivery: purge("outboxDelivery", 0),
     outboxMessage: purge("outboxMessage", serviceDays.length * 2),
+    gestureIntent: purge("gestureIntent", 0),
     productionDay: {
       findMany: () => Promise.resolve(serviceDays.map((serviceDay) => ({ serviceDay }))),
       deleteMany: (): Promise<{ count: number }> => {
@@ -92,6 +93,7 @@ describe("resetProduction", () => {
     // remises, fournées —, puis la journée, puis les copies du colisage (K2),
     // les lignes avant leur bac. L'attestation de remise reste en dernier.
     expect(called).toEqual([
+      "gestureIntent",
       "productionReturnRequest",
       "productionHandoff",
       "productionBatch",
@@ -138,7 +140,11 @@ describe("resetProduction", () => {
       type: { in: SEEDED_DAY_FACT_TYPES },
       OR: [{ payload: { path: ["serviceDay"], equals: "2026-10-05" } }],
     };
-    expect(purges).toEqual([{ message: where }, where]);
+    expect(purges).toEqual([
+      { message: where },
+      where,
+      { gesture: { in: ["packing.allocate", "packing.withdraw", "packing.transfer"] } },
+    ]);
     expect(SEEDED_DAY_FACT_TYPES).toContain("production.handed_to_packing");
     expect(report.facts).toBe(2);
   });

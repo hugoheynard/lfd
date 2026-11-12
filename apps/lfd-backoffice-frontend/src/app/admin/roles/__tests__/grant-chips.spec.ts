@@ -138,6 +138,6 @@ describe('grantGroups', () => {
    * (commandes/modification/plan-m2-historique-de-transactions.md, P1).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(71);
+    expect(RESOURCE_COUNT).toBe(72);
   });
 });

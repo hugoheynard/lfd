@@ -60,7 +60,19 @@ export interface ProductionTables {
   readonly packingReturn: Deletable;
   readonly outboxMessage: OutboxPurge<SeededFactsFilter>;
   readonly outboxDelivery: OutboxPurge<{ readonly message: SeededFactsFilter }>;
+  readonly gestureIntent: OutboxPurge<{ readonly gesture: { readonly in: string[] } }>;
 }
+
+/**
+ * Les gestes du colisage que le semis rejoue avec une clé d'intention neuve
+ * (glisser, retirer, déplacer) : leurs intentions partent avec les journées,
+ * sans quoi chaque remise à l'état de base en laisserait une par ligne semée.
+ */
+const SEEDED_PACKING_GESTURES: string[] = [
+  "packing.allocate",
+  "packing.withdraw",
+  "packing.transfer",
+];
 
 /** Une table dont on n'emporte qu'une partie, désignée par un filtre. */
 interface OutboxPurge<Where> {
@@ -126,6 +138,7 @@ export async function resetProduction(prisma: ProductionTables): Promise<Product
     prisma,
     seededDays.map((day) => day.serviceDay),
   );
+  await prisma.gestureIntent.deleteMany({ where: { gesture: { in: SEEDED_PACKING_GESTURES } } });
   await prisma.productionReturnRequest.deleteMany();
   await prisma.productionHandoff.deleteMany();
   await prisma.productionBatch.deleteMany();

@@ -192,11 +192,12 @@ describe("moduleOf — la comptabilité", () => {
     expect(moduleOf(type)).toBe(module);
   });
 
-  it("le filtre du module ne ramène que ses seize préfixes", () => {
+  it("le filtre du module ne ramène que ses dix-sept préfixes", () => {
     expect(prefixesOf("comptabilite")).toEqual([
       "legal_entity.",
       "payment_mandate.",
       "payer.billing_mode",
+      "payer.collection_means",
       "payment_link.",
       "payment_refund.",
       "card_payment.",

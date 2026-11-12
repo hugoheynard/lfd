@@ -220,6 +220,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // 2026-10-12). Le préfixe est `payer.billing_mode` et non `payer.` : rien
     // d'autre ne porte ce sujet, et un préfixe plus large en happerait demain.
     "payer.billing_mode",
+    // Le moyen d'encaissement d'un payeur (prélèvement ou virement), réglé
+    // sous `b2b_collection_means` (plan paiement au compte par virement, T1).
+    "payer.collection_means",
     // Les liens de paiement libres, créés et annulés sous `b2b_accounting`
     // (plan liens de paiement §2b, 2026-09-25).
     "payment_link.",
