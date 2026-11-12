@@ -57,6 +57,19 @@ lots J3, J4, J5 du plan `ops/plan-idempotence-des-ecritures.md` § 8 :
   un tiers, deux clics simultanés sur un geste « par nature », risques
   assumés), chaque affirmation vérifiée dans le code.
 
+2 quater. **Refus d'écrire sur une fiche client périmée** (Hugo, 2026-11-12) :
+une modification envoyée sur une fiche que quelqu'un a changée depuis sa
+lecture est refusée (409 nommé : « cette fiche a changé depuis que vous
+l'avez ouverte ») au lieu d'écraser. Court plan d'abord (où vit la version
+de la société, quels gestes de la fiche la portent), vérifié dans le code.
+2 quinquies. **Finir le paiement par virement** (Hugo, 2026-11-12) : T4
+(l'écran) et T5 (la boutique) du plan
+`comptabilite/plan-paiement-au-compte-par-virement.md`, plus les trois
+petites décisions (écart avant de valider, déduction d'un avoir, état dans
+la vue facture) tranchées et écrites dans le plan. L'argent : `vitruve` sur
+ce qui n'a pas encore été contredit. Rappel : l'IBAN ne part jamais par
+e-mail.
+
 ## 4. Documenter
 
 4. **Les plans finis deviennent des docs d'état** (au présent, schémas, reste
@@ -88,7 +101,7 @@ lots J3, J4, J5 du plan `ops/plan-idempotence-des-ecritures.md` § 8 :
 
 ## 6. À trancher avec Hugo (pas cette nuit)
 
-- Lot 2 des journées, virement T4–T5.
+- Lot 2 des journées (demain matin).
 - Audit de sécurité : capture de la fiche racine, fuite d'une facture d'un
   site frère, `RECOMPUTE_TOKEN`, en-têtes des fronts, propriétaire des
   abonnements push.
