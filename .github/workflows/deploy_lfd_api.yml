@@ -319,6 +319,43 @@ jobs:
             fi
           done
 
+      # 3a) Avant d'écrire : la base est-elle ce que ses migrations appliquées
+      #    décrivent ? Une table créée par une migration et absente de la base
+      #    fait échouer `migrate deploy` à mi-course (42P01, 2026-11-12) ; la
+      #    comparaison le dit avant la première écriture. LECTURE SEULE sur la
+      #    production : `migrate status` et `migrate diff` n'écrivent rien ; les
+      #    migrations appliquées sont rejouées sur une base FANTÔME jetable
+      #    (Postgres dans le runner), jamais sur la production.
+      #    Les écarts tolérés sont inscrits, avec leur raison, dans
+      #    apps/lfd-api/prisma/known-drift.json. Mode par la variable de dépôt
+      #    MIGRATION_DRIFT_MODE : `report` (défaut — le journal liste, rien ne
+      #    s'arrête) ou `enforce` (un écart non inscrit arrête le déploiement).
+      #    Cf. documentation/ops/runbook.md, « La dérive de schéma avant migration ».
+      - name: Vérifier la dérive de la base (lecture seule)
+        working-directory: apps/lfd-api
+        # En mode `report`, une panne de l'étape elle-même (Docker, base
+        # fantôme) n'arrête jamais le déploiement : elle ne fait que le dire.
+        continue-on-error: ${{ (vars.MIGRATION_DRIFT_MODE || 'report') == 'report' }}
+        env:
+          DATABASE_LFD_URL: ${{ secrets.DATABASE_LFD_PROD_DIRECT_URL }}
+          SHADOW_DATABASE_URL: postgresql://postgres:shadow@localhost:55432/shadow
+          MIGRATION_DRIFT_MODE: ${{ vars.MIGRATION_DRIFT_MODE || 'report' }}
+        run: |
+          if [ -z "${DATABASE_LFD_URL}" ]; then
+            echo "::error::DATABASE_LFD_PROD_DIRECT_URL absent des secrets GitHub — rien à comparer."
+            exit 1
+          fi
+          docker run -d --rm --name drift-shadow -e POSTGRES_PASSWORD=shadow -e POSTGRES_DB=shadow \
+            -p 55432:5432 postgres:17-alpine >/dev/null
+          for _ in $(seq 1 30); do
+            docker exec drift-shadow pg_isready -U postgres -d shadow >/dev/null 2>&1 && break
+            sleep 1
+          done
+          status=0
+          node ../../dev-toolbox/ci/migration-drift.mjs --mode "${MIGRATION_DRIFT_MODE}" || status=$?
+          docker stop drift-shadow >/dev/null || true
+          exit $status
+
       # 3) Le schéma AVANT le code — mais le plus TARD possible avant lui.
       #
       #    L'ordre inverse (code avant schéma) met en ligne un backend qui

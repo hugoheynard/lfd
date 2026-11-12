@@ -1006,6 +1006,40 @@ rend `0`.
 lecture des colonnes, qui n'ont pas bougé. Les lignes retracées restent dans
 l'historique — elles disent le prix réellement servi pendant l'intervalle.
 
+## La dérive de schéma avant migration — passer en mode bloquant
+
+**En clair.** Avant « Migrer la base », le déploiement de l'API compare la base de
+production à ce que ses migrations **déjà appliquées** décrivent (étape « Vérifier
+la dérive de la base », lecture seule). Un écart — une table que les migrations
+créent et que la base n'a pas, un index posé à la main — est listé dans le
+journal de l'étape. Par défaut, il est seulement **signalé** (avertissement
+jaune) ; en mode bloquant, il **arrête** le déploiement avant toute écriture.
+
+**Technique.** `dev-toolbox/ci/migration-drift.mjs` lit `prisma migrate status`
+pour exclure les migrations en attente, rejoue les autres sur une base fantôme
+(Postgres dans le runner) et lance
+`prisma migrate diff --from-migrations <appliquées> --to-config-datasource --script`.
+Chaque instruction rendue est un écart ; celles inscrites dans
+`apps/lfd-api/prisma/known-drift.json` (avec leur `reason`) sont retirées.
+
+Passer en mode bloquant :
+
+1. Lire le journal de l'étape au dernier déploiement : chaque `✗` est
+   l'instruction qui ramènerait la base à ses migrations.
+2. Pour chacun : **corriger la base** (une migration qui la remet d'aplomb), ou
+   l'**inscrire** dans `apps/lfd-api/prisma/known-drift.json` — `statement` recopiée du journal,
+   `reason` qui dit pourquoi on la tolère. Ne jamais appliquer le script à la
+   main sans relecture : il peut contenir des `DROP`.
+3. Redéployer et vérifier « Aucun écart non inscrit ». Une ligne « inscrit mais
+   plus constaté » est une inscription à retirer.
+4. GitHub → Settings → Secrets and variables → Actions → **Variables** :
+   `MIGRATION_DRIFT_MODE` = `enforce`. Revenir au rapport seul : la mettre à
+   `report` (ou la supprimer).
+
+En mode bloquant, une comparaison qui n'a pas pu se faire (base fantôme qui ne
+démarre pas, Prisma en erreur) arrête aussi le déploiement ; en mode rapport,
+elle n'est qu'un avertissement.
+
 ## Si l'API refuse de démarrer : `persistence.migrations_pending`
 
 Symptôme : au démarrage, `La base de données est en retard de N migration(s) : …`

@@ -1,0 +1,4 @@
+{
+  "$comment": "Écarts connus entre la base de production et ses migrations appliquées, tolérés par l'étape « Vérifier la dérive » de deploy_lfd_api.yml. `statement` est l'instruction exacte que `prisma migrate diff --script` rend (espaces indifférents) ; `reason` dit pourquoi on la tolère. Cf. documentation/ops/runbook.md, « La dérive de schéma avant migration ».",
+  "entries": []
+}
