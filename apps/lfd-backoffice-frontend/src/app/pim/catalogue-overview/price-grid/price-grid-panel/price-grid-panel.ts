@@ -34,7 +34,7 @@ import {
 
 import { DeliveryZonesService } from '../../../../b2b/reglages/delivery-zones.service';
 import { PickupAddressesService } from '../../../../b2b/reglages/pickup-addresses.service';
-import { AdminCompaniesService } from '../../../../comptes-clients/admin-companies.service';
+import { CompanyListStore } from '../../../../comptes-clients/company-cache/company-list.store';
 import type { AdminCompany } from '../../../../comptes-clients/admin-company';
 import { matchesCompanySearch } from '../../../../comptes-clients/company-search';
 import { saveBlob } from '../../../../shared/download/save-blob';
@@ -89,7 +89,7 @@ export class PriceGridPanel {
   static readonly foldPanel: FoldPanelDefaults = { side: 'auto', width: 'md' };
 
   private readonly api = inject(PriceGridHttpApi);
-  private readonly companies = inject(AdminCompaniesService);
+  private readonly companies = inject(CompanyListStore);
   private readonly pickups = inject(PickupAddressesService);
   private readonly zones = inject(DeliveryZonesService);
   private readonly ref = inject(FoldPanelRef<void>);

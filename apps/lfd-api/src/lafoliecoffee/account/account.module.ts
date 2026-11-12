@@ -77,6 +77,9 @@ import { GetCompanyForStaffHandler } from "./application/queries/get-company-for
 import { ExportCustomersCsvHandler } from "./application/queries/export-customers-csv.handler.js";
 import { GetCustomerPortfolioHandler } from "./application/queries/get-customer-portfolio.handler.js";
 import { ListAllCompaniesHandler } from "./application/queries/list-all-companies.handler.js";
+import { CountCompanyWarningsHandler } from "./application/queries/count-company-warnings.handler.js";
+import { CompanyWarningsCounter } from "./domain/ports/company-warnings.counter.js";
+import { PrismaCompanyWarningsCounter } from "./infrastructure/prisma-company-warnings.counter.js";
 import { ListDirectDebitBlocksHandler } from "./application/queries/list-direct-debit-blocks.handler.js";
 import { DirectDebitBlockReader } from "./domain/ports/direct-debit-block.reader.js";
 import { PrismaDirectDebitBlockReader } from "./infrastructure/prisma-direct-debit-block.reader.js";
@@ -382,6 +385,8 @@ import {
     HandleSupportRequestHandler,
     ListSupportRequestsHandler,
     ListAllCompaniesHandler,
+    CountCompanyWarningsHandler,
+    { provide: CompanyWarningsCounter, useClass: PrismaCompanyWarningsCounter },
     ListDirectDebitBlocksHandler,
     ListCounterCustomersHandler,
     GetCounterCustomerHandler,

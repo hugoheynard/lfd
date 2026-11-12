@@ -33,6 +33,7 @@ import {
 } from '@lfd/b2b-ui/company';
 
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
+import { CompanyDetailStore } from '../../comptes-clients/company-cache/company-detail.store';
 import { PermissionsStore } from '../../auth/permissions.store';
 import { ActivationAside } from '../activation-aside/activation-aside';
 import { HolderPicker, type HolderChoice } from '../holder-picker/holder-picker';
@@ -122,6 +123,7 @@ export class InformationsPage {
   protected readonly fiche = inject(FicheClientFacade);
   /** Lecture directe du fichier : ce n'est pas une mutation, elle ne passe pas par la façade. */
   private readonly companies = inject(AdminCompaniesService);
+  private readonly details = inject(CompanyDetailStore);
   private readonly permissions = inject(PermissionsStore);
 
   /**
@@ -383,6 +385,6 @@ export class InformationsPage {
       this.principal.set(null);
       return;
     }
-    this.principal.set((await this.companies.getById(parentId)) ?? null);
+    this.principal.set((await this.details.get(parentId)) ?? null);
   }
 }

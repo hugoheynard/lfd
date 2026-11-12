@@ -8,6 +8,7 @@ import type {
   AccountHolderPayload,
   BillingAddressPayload,
   CertifyKbisPayload,
+  CompanyWarningsCountView,
   CompanyMemberInvitedView,
   CompanyMemberView,
   CreatedIdResponse,
@@ -49,6 +50,17 @@ export class AdminCompaniesService {
     return firstValueFrom(
       this.http.get<readonly AdminCompany[]>(`${B2B_API_BASE}/admin/companies`),
     );
+  }
+
+  /**
+   * Le nombre d'avertissements du portefeuille, pour le compteur du menu —
+   * sans télécharger la liste (`GET /admin/companies/warnings-count`).
+   */
+  async warningsCount(): Promise<number> {
+    const view = await firstValueFrom(
+      this.http.get<CompanyWarningsCountView>(`${B2B_API_BASE}/admin/companies/warnings-count`),
+    );
+    return view.count;
   }
 
   /** La **fiche** d'une société (état d'activation complet). `undefined` si l'id est inconnu (404). */

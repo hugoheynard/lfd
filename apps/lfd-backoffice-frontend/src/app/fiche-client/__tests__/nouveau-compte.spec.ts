@@ -56,6 +56,8 @@ async function setup(create = vi.fn(() => Promise.resolve(CREATED))): Promise<Ha
         provide: AdminCompaniesService,
         useValue: {
           create,
+          // La fiche s'ouvre sur le compte créé ; son détail n'est pas le sujet.
+          getById: () => Promise.resolve(undefined),
           billingModeEntities: () => Promise.resolve([{ id: 'le1', name: 'La Folie Douce' }]),
           setInitialBillingMode: (
             company: string,
@@ -69,7 +71,7 @@ async function setup(create = vi.fn(() => Promise.resolve(CREATED))): Promise<Ha
           },
         } satisfies Pick<
           AdminCompaniesService,
-          'create' | 'billingModeEntities' | 'setInitialBillingMode'
+          'create' | 'getById' | 'billingModeEntities' | 'setInitialBillingMode'
         >,
       },
       {

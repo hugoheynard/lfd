@@ -35,7 +35,7 @@ import { KbisCell } from './kbis-cell/kbis-cell';
 import { parisToday } from '../shared/paris-today';
 import { SelfSignupPipeline } from './self-signup-pipeline/self-signup-pipeline';
 import { PortfolioMetricsService } from './portfolio-metrics.service';
-import { AdminCompaniesService } from './admin-companies.service';
+import { COMPANY_LIST_MAX_AGE_MS, CompanyListStore } from './company-cache/company-list.store';
 import { STATUS_LABELS, type AdminCompany, type CompanyStatus } from './admin-company';
 import type { PortfolioMetricsView } from '@lfd/contracts';
 
@@ -151,7 +151,7 @@ export class ComptesClientsPage {
   );
 
   private readonly router = inject(Router);
-  private readonly service = inject(AdminCompaniesService);
+  private readonly service = inject(CompanyListStore);
   private readonly alerts = inject(PendingAlertsService);
   private readonly portfolio = inject(PortfolioMetricsService);
 
@@ -392,7 +392,8 @@ export class ComptesClientsPage {
     // liste. Son échec ne doit pas emporter l'écran de travail.
     const metrics = this.portfolio.load().catch(() => null);
     try {
-      this.companies.set(await this.service.list());
+      // La copie de la session sert, sauf écriture depuis ou plus de cinq minutes.
+      this.companies.set(await this.service.list({ maxAgeMs: COMPANY_LIST_MAX_AGE_MS }));
       this.state.set('ready');
     } catch {
       this.state.set('error');

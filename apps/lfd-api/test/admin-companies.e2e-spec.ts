@@ -440,3 +440,46 @@ describe("GET /admin/companies/export.csv", () => {
     await ctx.http().get("/admin/companies/export.csv").expect(401);
   });
 });
+
+/**
+ * Le **compteur du menu** : la lecture étroite dit le même nombre que la
+ * galerie (la somme des `warnings` de la liste) sur la vraie ligne SQL, la
+ * route n'est pas capturée par `GET /admin/companies/:companyId`, et elle
+ * reste murée.
+ */
+async function warningsOfTheList(): Promise<number> {
+  const rows = jsonBody<{ readonly warnings: readonly unknown[] }[]>(
+    await staff().get("/admin/companies").expect(200),
+  );
+  return rows.reduce((total, row) => total + row.warnings.length, 0);
+}
+
+describe("GET /admin/companies/warnings-count", () => {
+  it("rend zéro sur un portefeuille vide", async () => {
+    const response = await staff().get("/admin/companies/warnings-count").expect(200);
+
+    expect(jsonBody<{ count: number }>(response)).toEqual({ count: 0 });
+  });
+
+  it("dit le même nombre que la galerie de la liste", async () => {
+    // Sans adresse de facturation, un dossier en attente est bloqué ; avec, il
+    // ne l'est plus. Une société active n'en porte aucun.
+    await createCompany(ctx.prisma, { siret: "81245678900021", status: CompanyStatus.pending });
+    const complete = await createCompany(ctx.prisma, {
+      siret: "81245678900005",
+      status: CompanyStatus.pending,
+    });
+    await addBillingAddress(ctx.prisma, complete.id);
+    await createCompany(ctx.prisma, { siret: "81245678900013", status: CompanyStatus.active });
+
+    const expected = await warningsOfTheList();
+    const response = await staff().get("/admin/companies/warnings-count").expect(200);
+
+    expect(expected).toBeGreaterThan(0);
+    expect(jsonBody<{ count: number }>(response)).toEqual({ count: expected });
+  });
+
+  it("reste muré : sans jeton staff, rien ne sort", async () => {
+    await ctx.http().get("/admin/companies/warnings-count").expect(401);
+  });
+});

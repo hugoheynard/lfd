@@ -13,7 +13,7 @@ import type {
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
-import { AdminCompaniesService } from './admin-companies.service';
+import { CompanyDetailStore } from './company-cache/company-detail.store';
 
 /**
  * Les **sous-comptes**, vus du back-office (`sous-comptes.md`, lot S2) :
@@ -28,15 +28,16 @@ import { AdminCompaniesService } from './admin-companies.service';
 @Injectable({ providedIn: 'root' })
 export class AdminCompanyHierarchyService {
   private readonly http = inject(HttpClient);
-  private readonly companies = inject(AdminCompaniesService);
+  private readonly details = inject(CompanyDetailStore);
 
   /**
    * La place d'une société dans la hiérarchie, lue sur sa fiche — il n'existe
-   * pas de route dédiée : `GET /admin/companies/:id` la porte (`hierarchy`).
+   * pas de route dédiée : `GET /admin/companies/:id` la porte (`hierarchy`), lue
+   * dans le détail que la fiche partage (`CompanyDetailStore`).
    * `undefined` si la société est inconnue.
    */
   async hierarchyOf(companyId: string): Promise<CompanyHierarchyView | undefined> {
-    return (await this.companies.getById(companyId))?.hierarchy;
+    return (await this.details.get(companyId))?.hierarchy;
   }
 
   /** Crée un sous-compte de `parentId`. Rend son identifiant. */

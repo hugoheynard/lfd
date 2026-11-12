@@ -1,4 +1,4 @@
-import type { CustomerPortfolioView } from "@lfd/contracts";
+import type { CompanyWarningsCountView, CustomerPortfolioView } from "@lfd/contracts";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { Body, Controller, Get, Header, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
@@ -16,6 +16,7 @@ import { GetCustomerSheetQuery } from "../application/queries/get-customer-sheet
 import { ExportCustomersCsvQuery } from "../application/queries/export-customers-csv.query.js";
 import { GetCustomerPortfolioQuery } from "../application/queries/get-customer-portfolio.query.js";
 import { ListAllCompaniesQuery } from "../application/queries/list-all-companies.query.js";
+import { CountCompanyWarningsQuery } from "../application/queries/count-company-warnings.query.js";
 import type { CustomerSheetView } from "@lfd/contracts";
 import type {
   AdminCompanyFicheView,
@@ -50,6 +51,20 @@ export class AdminCompaniesController {
   list(): Promise<readonly AdminCompanyView[]> {
     return this.queries.execute<ListAllCompaniesQuery, readonly AdminCompanyView[]>(
       new ListAllCompaniesQuery(),
+    );
+  }
+
+  /**
+   * Le nombre d'avertissements du portefeuille, pour le compteur du menu.
+   *
+   * Une route à part pour la même raison que `portfolio` : le menu veut un
+   * entier, et le calculer à l'écran lui faisait télécharger toute la liste au
+   * démarrage du back-office. Déclarée avant `:companyId`, qui la capturerait.
+   */
+  @Get("warnings-count")
+  warningsCount(): Promise<CompanyWarningsCountView> {
+    return this.queries.execute<CountCompanyWarningsQuery, CompanyWarningsCountView>(
+      new CountCompanyWarningsQuery(),
     );
   }
 

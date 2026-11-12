@@ -364,3 +364,12 @@ export interface CustomerPortfolioView {
   /** Comptes activés dans les {@link NEW_CUSTOMER_WINDOW_DAYS} derniers jours. */
   readonly newlyActive: number;
 }
+
+/**
+ * Le compteur du menu « Comptes clients » (`GET /admin/companies/warnings-count`) :
+ * la somme des avertissements du portefeuille — une société qui cumule deux
+ * manques compte pour deux, comme dans la galerie.
+ */
+export interface CompanyWarningsCountView {
+  readonly count: number;
+}

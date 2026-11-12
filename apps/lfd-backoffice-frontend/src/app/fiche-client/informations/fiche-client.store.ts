@@ -16,7 +16,7 @@ import type {
 } from '@lfd/b2b-ui/company';
 
 import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
-import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
+import { CompanyDetailStore } from '../../comptes-clients/company-cache/company-detail.store';
 import { DeliveryAvailabilityService } from '../../b2b/reglages/delivery-availability.service';
 import { PickupAddressesService } from '../../b2b/reglages/pickup-addresses.service';
 import { toContactCards, toIdentityView } from '../admin-company-view';
@@ -40,7 +40,7 @@ export type LoadState = 'loading' | 'ready' | 'error' | 'notfound';
  */
 @Injectable()
 export class FicheClientStore {
-  private readonly service = inject(AdminCompaniesService);
+  private readonly details = inject(CompanyDetailStore);
   private readonly pickupsService = inject(PickupAddressesService);
   private readonly deliveryAvailabilityService = inject(DeliveryAvailabilityService);
 
@@ -184,7 +184,7 @@ export class FicheClientStore {
     }
     try {
       const [company, pickups, deliveryAvailability] = await Promise.all([
-        id === null ? Promise.resolve(undefined) : this.service.getById(id),
+        id === null ? Promise.resolve(undefined) : this.details.get(id),
         (id === null ? this.pickupsService.list() : this.pickupsService.listFor(id)).catch(
           () => [] as readonly PickupAddressView[],
         ),

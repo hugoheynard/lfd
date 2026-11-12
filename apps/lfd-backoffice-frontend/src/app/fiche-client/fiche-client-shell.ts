@@ -23,6 +23,7 @@ import { NotifyService } from '../notify.service';
 import { WorkspaceCatalogue } from '../shared/workspace-rail/workspaces';
 import { provideWorkspaceRail } from '../shared/workspace-rail/workspace-rail.store';
 import { ClientSheetStore } from './client-sheet.store';
+import { CompanyDetailStore } from '../comptes-clients/company-cache/company-detail.store';
 import { CompteChiffres } from '../shared/compte-chiffres/compte-chiffres';
 
 /**
@@ -164,6 +165,7 @@ export class FicheClientShell {
   readonly id = input.required<string>();
 
   private readonly store = inject(ClientSheetStore);
+  private readonly details = inject(CompanyDetailStore);
   private readonly pins = inject(PinnedAccountsStore);
   private readonly notify = inject(NotifyService);
 
@@ -219,7 +221,11 @@ export class FicheClientShell {
     // sur « Compte client » sans que rien ne le signale. L'effet attend la
     // liaison, et rejoue si on passe d'un compte à un autre.
     effect(() => {
-      void this.store.load(this.id());
+      const id = this.id();
+      // Entrer dans un dossier le relit : la copie partagée ne sert qu'entre
+      // ses onglets, pas d'une visite à l'autre.
+      this.details.forget(id);
+      void this.store.load(id);
     });
   }
 

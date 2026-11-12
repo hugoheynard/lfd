@@ -10,7 +10,7 @@ import {
 import { FoldButtonComponent, FoldEmptyStateComponent, FoldLoadingStateComponent } from 'fold-ng';
 import type { CustomerSheetView } from '@lfd/contracts';
 
-import { CustomerSheetService } from '../../commercial/calendrier/customer-sheet/customer-sheet.service';
+import { ClientSheetStore } from '../client-sheet.store';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -59,7 +59,8 @@ const ACTOR_LABEL: Record<string, string> = {
 export class ClientDataPage {
   readonly id = input.required<string>();
 
-  private readonly api = inject(CustomerSheetService);
+  /** La fiche que la coquille a déjà lue : la vue ne la relit pas. */
+  private readonly api = inject(ClientSheetStore);
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly sheet = signal<CustomerSheetView | null>(null);
@@ -116,7 +117,7 @@ export class ClientDataPage {
   protected async load(id: string = this.id()): Promise<void> {
     this.state.set('loading');
     try {
-      this.sheet.set(await this.api.sheet(id));
+      this.sheet.set(await this.api.read(id));
       this.state.set('ready');
     } catch {
       this.state.set('error');

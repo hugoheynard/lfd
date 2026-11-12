@@ -37,10 +37,14 @@ millisecondes, ou lève un doute. Un point pris se réduit à un renvoi.
 - **Le back-office sur un nom de `lafoliecoffee.info`**, avec `/api/lfd` sur
   son propre hôte (décidé le 2026-11-04, « plus tard ») : plus aucun contrôle
   CORS.
-- **La liste des sociétés lue deux fois au démarrage** : le compteur du menu
-  (`apps/lfd-backoffice-frontend/src/app/nav-counts.service.ts:38`) et l'écran
-  « Comptes clients ». Le premier lecteur est vu le 2026-11-05 ; le doublon
-  n'est pas remesuré.
+- **La liste des sociétés reste lue en entier, et paginée à l'écran.** Depuis
+  le 2026-11-12, le back-office la lit une fois par session
+  (`apps/lfd-backoffice-frontend/src/app/comptes-clients/company-cache/`, relue
+  après une écriture ou à la réouverture de la page passé cinq minutes), et le
+  compteur du menu lit `GET /admin/companies/warnings-count`. Mais chaque
+  lecture rend toute la table, et la recherche, les filtres et la pagination
+  tournent dans l'écran. Au-delà de quelques milliers de sociétés, passer à une
+  pagination et une recherche côté serveur.
 - **Si un jour on cache les comptes clients** : un catalogue périmé ne doit
   jamais servir `SetPriceFloorHandler` / `ConfirmPriceFloorHandler`, qui
   figent une médiane en base pour six mois ; séparer d'abord le port qui

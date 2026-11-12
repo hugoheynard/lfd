@@ -35,10 +35,10 @@ export class NavCountsService {
 
   async refreshCompanies(): Promise<void> {
     try {
-      const all = await this.companies.list();
       // Le nombre d'AVERTISSEMENTS, pas de sociétés : une société qui cumule
       // deux manques réclame deux gestes, et c'est ce que la galerie montrera.
-      this.companyWarnings.set(all.reduce((total, one) => total + one.warnings.length, 0));
+      // Le serveur le compte : le menu n'a pas à télécharger la liste.
+      this.companyWarnings.set(await this.companies.warningsCount());
     } catch {
       this.companyWarnings.set(0);
     }

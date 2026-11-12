@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import type { CustomerSheetView } from '@lfd/contracts';
 
 import { CustomerSheetService } from '../commercial/calendrier/customer-sheet/customer-sheet.service';
+import { CompanyWrites } from '../comptes-clients/company-cache/company-writes';
 
 /** Où en est la lecture du compte — les trois états que fold sait rendre. */
 export type ClientSheetState = 'loading' | 'ready' | 'error';
@@ -30,10 +31,15 @@ export type ClientSheetState = 'loading' | 'ready' | 'error';
 @Injectable()
 export class ClientSheetStore {
   private readonly api = inject(CustomerSheetService);
+  private readonly writes = inject(CompanyWrites);
   private readonly view = signal<CustomerSheetView | null>(null);
   /** Le compte porté, pour savoir quoi relire. Jamais exposé : c'est la route
    *  qui décide du compte, pas ce magasin. */
   private current: string | null = null;
+  /** Le cran d'écritures auquel la fiche a été lue (cf. `CompanyWrites`). */
+  private readVersion = -1;
+  private inFlight: { readonly id: string; readonly promise: Promise<CustomerSheetView> } | null =
+    null;
   private readonly status = signal<ClientSheetState>('loading');
 
   /** La fiche, ou `null` tant qu'elle n'est pas lue. */
@@ -57,14 +63,35 @@ export class ClientSheetStore {
    * avait sous les yeux restent la dernière chose vraie qu'on ait lue.
    */
   async load(id: string): Promise<void> {
-    this.current = id;
-    this.status.set('loading');
     try {
-      this.view.set(await this.api.sheet(id));
-      this.status.set('ready');
+      await this.readFromServer(id);
     } catch {
-      this.status.set('error');
+      // L'état `error` est posé par `readFromServer` ; la coquille le lit.
     }
+  }
+
+  /**
+   * La fiche d'un compte, pour une vue qui en a besoin à son entrée
+   * (statistiques, commandes, données).
+   *
+   * Sert la fiche déjà lue par la coquille — ou attend sa lecture en cours —
+   * tant qu'aucune écriture du back-office n'est passée depuis. Sinon, relit.
+   * Un échec est relancé : la vue montre son propre état d'erreur.
+   */
+  read(id: string): Promise<CustomerSheetView> {
+    if (this.inFlight?.id === id) {
+      return this.inFlight.promise;
+    }
+    const view = this.view();
+    if (
+      this.current === id &&
+      view !== null &&
+      this.status() === 'ready' &&
+      this.readVersion === this.writes.version()
+    ) {
+      return Promise.resolve(view);
+    }
+    return this.readFromServer(id);
   }
 
   /**
@@ -78,5 +105,31 @@ export class ClientSheetStore {
     if (this.current !== null) {
       await this.load(this.current);
     }
+  }
+
+  private readFromServer(id: string): Promise<CustomerSheetView> {
+    this.current = id;
+    this.status.set('loading');
+    const version = this.writes.version();
+    const promise = this.api.sheet(id).then(
+      (view) => {
+        if (this.inFlight?.promise === promise) {
+          this.view.set(view);
+          this.readVersion = version;
+          this.status.set('ready');
+          this.inFlight = null;
+        }
+        return view;
+      },
+      (error: unknown) => {
+        if (this.inFlight?.promise === promise) {
+          this.status.set('error');
+          this.inFlight = null;
+        }
+        throw error;
+      },
+    );
+    this.inFlight = { id, promise };
+    return promise;
   }
 }

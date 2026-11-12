@@ -11,10 +11,11 @@ import {
   type AdminCompanyView,
 } from "../domain/ports/admin-company.reader.js";
 import { companyWarnings } from "../domain/services/company-warnings.js";
+import { warningInputOf } from "./company-warnings.projection.js";
 import { dossierPieces } from "../domain/services/dossier-pieces.js";
 import { requiresVatNumber } from "../domain/value-objects/vat-liability.js";
 import { projectContacts } from "./company-contacts.projection.js";
-import { billingCarriedAt, readHierarchy } from "./company-hierarchy.projection.js";
+import { readHierarchy } from "./company-hierarchy.projection.js";
 
 /** Colonnes lues pour une vue admin — partagées par la liste et la fiche. */
 const COMPANY_SELECT = {
@@ -263,24 +264,7 @@ function toView(company: CompanyRow, now: Date): AdminCompanyView {
     owner: company.memberships[0]?.user ?? null,
     hasOpenSupportRequest: company.supportRequests.length > 0,
     createdAt: company.createdAt.toISOString(),
-    warnings: companyWarnings(
-      {
-        status: company.status,
-        createdAt: company.createdAt,
-        hasLegalIdentity:
-          company.raisonSociale.trim() !== "" &&
-          company.formeJuridique.trim() !== "" &&
-          company.siret.trim() !== "",
-        hasHolder: company.contactEmail.trim() !== "",
-        hasBillingAddress: company.addresses.length > 0,
-        hasGrantedTerms: company.grantedTerms.length > 0,
-        hasActiveMandate: company.mandates.length > 0,
-        kbisUploadedAt: company.kbisUploadedAt,
-        kbisCertifiedAt: company.kbisCertifiedAt,
-        legalIdentityCarriedByParent: billingCarriedAt(company.parentCompany, company.follows, now),
-      },
-      now,
-    ),
+    warnings: companyWarnings(warningInputOf(company, now), now),
     parent:
       company.parentCompany === null
         ? null

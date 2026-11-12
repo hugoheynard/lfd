@@ -9,6 +9,7 @@ export {
 } from "./kbis-age.js";
 export type {
   CustomerPortfolioView,
+  CompanyWarningsCountView,
   CompanyOwnerView,
   AdminCompanyView,
   AdminCompanyDetailView,

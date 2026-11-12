@@ -15,7 +15,7 @@ import {
   type FoldPanelDefaults,
 } from 'fold-ng';
 
-import { AdminCompaniesService } from '../../../comptes-clients/admin-companies.service';
+import { CompanyListStore } from '../../../comptes-clients/company-cache/company-list.store';
 import { AdminCompanyHierarchyService } from '../../../comptes-clients/admin-company-hierarchy.service';
 import { STATUS_LABELS, type AdminCompany } from '../../../comptes-clients/admin-company';
 import { matchesCompanySearch } from '../../../comptes-clients/company-search';
@@ -63,7 +63,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 export class AttachSubAccountPanel {
   static readonly foldPanel: FoldPanelDefaults = { side: 'auto', width: 'md' };
 
-  private readonly companies = inject(AdminCompaniesService);
+  private readonly companies = inject(CompanyListStore);
   private readonly hierarchy = inject(AdminCompanyHierarchyService);
   private readonly notify = inject(NotifyService);
   private readonly ref = inject(FoldPanelRef<string>);

@@ -23,7 +23,7 @@ import { formatCents, formatOrderDate } from '@lfd/b2b-ui/order';
 import { Chart, type ChartOption } from '../../shared/chart/chart';
 import { AdminCatalogService } from '../../commandes/catalog.service';
 import { AdminOrdersService } from '../../commandes/orders.service';
-import { CustomerSheetService } from '../../commercial/calendrier/customer-sheet/customer-sheet.service';
+import { ClientSheetStore } from '../client-sheet.store';
 import { grainBuckets } from '../../shared/stats-grain/stats-grain';
 import { StatsGrainStore } from '../../shared/stats-grain/stats-grain.store';
 import { StatsGrainToggle } from '../../shared/stats-grain/stats-grain-toggle/stats-grain-toggle';
@@ -75,7 +75,8 @@ const TOP_SKUS = 10;
 export class ClientStatsPage {
   readonly id = input.required<string>();
 
-  private readonly sheets = inject(CustomerSheetService);
+  /** La fiche que la coquille a déjà lue : la vue ne la relit pas. */
+  private readonly sheets = inject(ClientSheetStore);
   private readonly orders = inject(AdminOrdersService);
   private readonly catalog = inject(AdminCatalogService);
   private readonly grainStore = inject(StatsGrainStore);
@@ -161,7 +162,7 @@ export class ClientStatsPage {
     this.state.set('loading');
     try {
       const [sheet, rows, habits] = await Promise.all([
-        this.sheets.sheet(id),
+        this.sheets.read(id),
         this.orders.list({ companyId: id, limit: ORDERS_WINDOW }).then((page) => page.rows),
         this.catalog.habitsOf(id),
       ]);

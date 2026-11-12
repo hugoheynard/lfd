@@ -25,7 +25,7 @@ import {
 } from '@lfd/b2b-ui/order';
 
 import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
-import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
+import { CompanyDetailStore } from '../../comptes-clients/company-cache/company-detail.store';
 import { AdminOrdersService } from '../../commandes/orders.service';
 import { NotifyService } from '../../notify.service';
 import { periodCsv, periodFileName } from './billing-csv';
@@ -90,7 +90,7 @@ export class ClientFacturationPage {
   readonly id = input.required<string>();
 
   private readonly orders = inject(AdminOrdersService);
-  private readonly companies = inject(AdminCompaniesService);
+  private readonly details = inject(CompanyDetailStore);
   private readonly router = inject(Router);
   private readonly notify = inject(NotifyService);
 
@@ -214,7 +214,7 @@ export class ClientFacturationPage {
     try {
       const [rows, company] = await Promise.all([
         this.orders.list({ companyId: id, limit: ORDERS_WINDOW }).then((page) => page.rows),
-        this.companies.getById(id),
+        this.details.get(id),
       ]);
       this.rows.set(rows);
       this.company.set(company ?? null);

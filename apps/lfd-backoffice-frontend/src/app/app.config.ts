@@ -30,6 +30,7 @@ import { NotifyService } from './notify.service';
 import { provideAppIcons } from './shared/icons/app-icons';
 import { provideStaffAuth } from './auth/auth.providers';
 import { staffAuthInterceptor } from './auth/staff-auth.interceptor';
+import { companyWritesInterceptor } from './comptes-clients/company-cache/company-writes.interceptor';
 
 // App browser-only (pas de SSR — la suite est CSR). HttpClient en mode `fetch`
 // pour appeler la surface `/admin/*` du backend B2B.
@@ -110,7 +111,12 @@ export const appConfig: ApplicationConfig = {
     ),
     // Un seul point d'attache du jeton staff, pour que treize services n'aient
     // pas à s'en souvenir chacun (sept l'avaient oublié). Cf. `staff-auth.interceptor.ts`.
-    provideHttpClient(withFetch(), withInterceptors([staffAuthInterceptor])),
+    // Le second fait relire les magasins de sociétés après toute écriture : cf.
+    // `company-cache/company-writes.ts`.
+    provideHttpClient(
+      withFetch(),
+      withInterceptors([staffAuthInterceptor, companyWritesInterceptor]),
+    ),
     // Session Auth0 propre à cette app. Cf. `auth.providers.ts`.
     provideStaffAuth(),
     // Toasts d'opération (succès/échec). Durées par défaut de fold : succès bref,

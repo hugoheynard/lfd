@@ -20,7 +20,7 @@ import {
 } from 'fold-ng';
 import type { AdminOrderRow, CustomerSheetView, PaymentStatus } from '@lfd/contracts';
 
-import { CustomerSheetService } from '../../commercial/calendrier/customer-sheet/customer-sheet.service';
+import { ClientSheetStore } from '../client-sheet.store';
 import { PermissionsStore } from '../../auth/permissions.store';
 import { AdminOrdersService } from '../../commandes/orders.service';
 import { OrdersTable } from '../../commandes/orders-table/orders-table';
@@ -70,7 +70,8 @@ const PAGE_SIZE = 50;
 export class ClientCommandesPage {
   readonly id = input.required<string>();
 
-  private readonly sheets = inject(CustomerSheetService);
+  /** La fiche que la coquille a déjà lue : la vue ne la relit pas. */
+  private readonly sheets = inject(ClientSheetStore);
   private readonly orders = inject(AdminOrdersService);
   private readonly router = inject(Router);
   private readonly permissions = inject(PermissionsStore);
@@ -173,7 +174,7 @@ export class ClientCommandesPage {
               : { companyId: site, limit: PAGE_SIZE, ...period },
           )
           .then((page) => page.rows),
-        this.sheets.sheet(id),
+        this.sheets.read(id),
       ]);
       this.rows.set(rows);
       // Les sites se lisent sur la liste COMPLÈTE : une période ou un règlement

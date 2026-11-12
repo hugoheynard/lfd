@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { PermissionsStore } from '../../auth/permissions.store';
 import { CustomerSheetService } from '../../commercial/calendrier/customer-sheet/customer-sheet.service';
 import { AdminOrdersService } from '../../commandes/orders.service';
+import { ClientSheetStore } from '../client-sheet.store';
 import { ClientCommandesPage } from './commandes-page';
 
 /**
@@ -16,6 +17,7 @@ import { ClientCommandesPage } from './commandes-page';
 async function mount(
   permissions: readonly StaffPermission[],
   queries: Partial<AdminOrdersQuery>[] = [],
+  sheetReads: string[] = [],
 ): Promise<ComponentFixture<ClientCommandesPage>> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -34,14 +36,18 @@ async function mount(
       {
         provide: CustomerSheetService,
         useValue: {
-          sheet: (): Promise<CustomerSheetView> =>
-            Promise.resolve({ stats: { recurringBasketsCount: 0 } } as CustomerSheetView),
+          sheet: (id: string): Promise<CustomerSheetView> => {
+            sheetReads.push(id);
+            return Promise.resolve({ stats: { recurringBasketsCount: 0 } } as CustomerSheetView);
+          },
         },
       },
       {
         provide: PermissionsStore,
         useValue: { can: (p: StaffPermission): boolean => permissions.includes(p) },
       },
+      // La coquille le fournit en vrai ; ici, la page en est la seule lectrice.
+      ClientSheetStore,
     ],
   });
   const fixture = TestBed.createComponent(ClientCommandesPage);
@@ -104,5 +110,16 @@ describe('ClientCommandesPage — le règlement', () => {
     expect(queries.at(-1)).toMatchObject({ paymentStatus: 'not_required' });
     await fixture.componentInstance['onPayment']('any');
     expect(queries.at(-1)).not.toHaveProperty('paymentStatus');
+  });
+});
+
+describe('ClientCommandesPage — la fiche du compte', () => {
+  it('ne relit pas la fiche quand un filtre relance la liste', async () => {
+    const sheetReads: string[] = [];
+    const fixture = await mount(['b2b_companies:read'], [], sheetReads);
+
+    await fixture.componentInstance['onPayment']('not_required');
+
+    expect(sheetReads).toEqual(['co_1']);
   });
 });
