@@ -72,6 +72,7 @@ export const NOT_IN_DEV = new Map([
     "admin/mail/requests/purge",
     "purge du suivi des e-mails (à blanc par défaut) : rien à éprouver en dev",
   ],
+  ["admin/intents/purge", "purge des intentions des gestes : rien à éprouver en dev"],
   [
     "admin/accounting/monthly-invoices/autopilot",
     "émet les factures du mois : à jouer à la main quand on l'éprouve",

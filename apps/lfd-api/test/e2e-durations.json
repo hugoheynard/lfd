@@ -233,6 +233,7 @@
   "test/first-mandate-ledger.e2e-spec.ts": 9240,
   "test/free-delivery.e2e-spec.ts": 9182,
   "test/fulfillment-days.e2e-spec.ts": 8273,
+  "test/gesture-intent-purge.e2e-spec.ts": 4000,
   "test/gesture-rights-switchover.e2e-spec.ts": 9015,
   "test/gesture-rights.e2e-spec.ts": 14076,
   "test/growth-stats.e2e-spec.ts": 13413,

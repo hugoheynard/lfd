@@ -92,6 +92,8 @@ model GestureIntent {
   result     Json?
 
   @@unique([actorId, key])
+  /// La purge nocturne (7 jours) lit et supprime par ancienneté.
+  @@index([claimedAt])
   @@map("gesture_intent")
   @@schema("platform")
 }

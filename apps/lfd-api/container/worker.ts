@@ -520,6 +520,10 @@ async function triggerQualityUploadSweep(env: Env): Promise<void> {
     // le passage compte ce qu'il supprimerait, et ne supprime rien.
     "admin/outbox/purge",
     "admin/mail/requests/purge",
+    // La purge des intentions des gestes réclamées depuis sept jours (décidé
+    // par Hugo le 2026-11-12) : toujours active, une clé rejouée après
+    // refait le geste.
+    "admin/intents/purge",
   ]) {
     await postSweep(env, token, path);
   }
