@@ -16,7 +16,9 @@ import {
   COLLECTION_TEST_CONTROLLERS,
   COLLECTION_TEST_PROVIDERS,
 } from "./collection-test.providers.js";
+import { AdminCreditorAccountReviewController } from "./http/admin-creditor-account-review.controller.js";
 import { COLLECTION_RETURN_PROVIDERS } from "./collection-return.providers.js";
+import { CREDITOR_ACCOUNT_REVIEW_PROVIDERS } from "./creditor-account-review.providers.js";
 import { AdminCollectionReturnsController } from "./http/admin-collection-returns.controller.js";
 import { ISSUED_INVOICE_PROVIDERS } from "./issued-invoice.providers.js";
 import { Module } from "@nestjs/common";
@@ -235,6 +237,7 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     // pas, donc l'ordre ci-dessous ne décide de rien.
     AdminLegalEntitiesController,
     AdminLegalEntityBankingController,
+    AdminCreditorAccountReviewController,
     AdminLegalEntityDocumentsController,
     AdminBillingCycleController,
     AdminCycleStatementsController,
@@ -332,6 +335,7 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     ...COLLECTION_PROCEDURE_PROVIDERS,
     ...ACCOUNT_BANK_EXPORT_PROVIDERS,
     ...COLLECTION_RETURN_PROVIDERS,
+    ...CREDITOR_ACCOUNT_REVIEW_PROVIDERS,
     // Le prélèvement d'essai et nos établissements (plan `plan-prelevement-d-essai.md`).
     ...COLLECTION_TEST_PROVIDERS,
     // La constitution automatique (PA3).

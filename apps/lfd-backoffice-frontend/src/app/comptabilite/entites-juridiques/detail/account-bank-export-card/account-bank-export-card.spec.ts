@@ -55,6 +55,7 @@ const BASE_ENTITY: LegalEntityView = {
   creditorAccountCountryCode: '',
   creditorAccountLast4: '',
   creditorIdentityFrozen: false,
+  pendingCreditorAccount: null,
   preNotificationDays: 14,
   autoCollectionEnabled: false,
   autoCollectionDelayHours: 1,

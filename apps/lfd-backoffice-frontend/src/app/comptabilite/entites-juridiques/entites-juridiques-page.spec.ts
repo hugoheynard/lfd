@@ -46,6 +46,7 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
     creditorAccountCity: '',
     creditorAccountCountryCode: '',
     creditorIdentityFrozen: false,
+    pendingCreditorAccount: null,
     creditorAccountLast4: '',
     preNotificationDays: 14,
     autoCollectionEnabled: false,

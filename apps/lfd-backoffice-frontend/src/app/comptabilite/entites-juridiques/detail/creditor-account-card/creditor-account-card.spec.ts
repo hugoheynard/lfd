@@ -40,6 +40,7 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
     creditorAccountCountryCode: '',
     creditorAccountLast4: '',
     creditorIdentityFrozen: false,
+    pendingCreditorAccount: null,
     preNotificationDays: 14,
     autoCollectionEnabled: false,
     autoCollectionDelayHours: 1,
@@ -132,10 +133,10 @@ function field(fixture: ComponentFixture<CreditorAccountCard>, label: string): F
 
 function saveButton(fixture: ComponentFixture<CreditorAccountCard>): HTMLButtonElement {
   const button = [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')].find(
-    (candidate) => (candidate.textContent ?? '').includes('Enregistrer'),
+    (candidate) => /Enregistrer|Proposer la modification/u.test(candidate.textContent ?? ''),
   );
   if (button === undefined) {
-    throw new Error('Bouton « Enregistrer » absent.');
+    throw new Error('Bouton « Enregistrer » / « Proposer la modification » absent.');
   }
   return button;
 }
@@ -158,7 +159,10 @@ describe('CreditorAccountCard', () => {
     fixture.detectChanges();
 
     saveButton(fixture).click();
-    expect(wire.saved.map((request) => request.said)).toEqual(['Compte enregistré.']);
+    // Un compte est déjà confirmé : la saisie le PROPOSE (quatre yeux, T0).
+    expect(wire.saved.map((request) => request.said)).toEqual([
+      'Modification proposée : un autre membre de la comptabilité doit la confirmer.',
+    ]);
     await wire.saved[0]?.action();
 
     expect(wire.writes).toEqual([
@@ -176,6 +180,41 @@ describe('CreditorAccountCard', () => {
         },
       },
     ]);
+  });
+
+  it('la première saisie s’enregistre ; ensuite, elle se propose', () => {
+    const first = boot(entity());
+    expect(saveButton(first.fixture).textContent).toContain('Enregistrer');
+
+    const next = boot(entity(RECORDED));
+    expect(saveButton(next.fixture).textContent).toContain('Proposer la modification');
+  });
+
+  it('montre la modification en attente quand la fiche en porte une', () => {
+    const { fixture } = boot(
+      entity({
+        ...RECORDED,
+        pendingCreditorAccount: {
+          id: 'p1',
+          last4: '0189',
+          bic: 'BNPAFRPP',
+          holder: 'Crazeativity',
+          line1: 'Route de la Balme',
+          line2: '',
+          postalCode: '73150',
+          city: 'Val d’Isère',
+          countryCode: 'FR',
+          proposedByStaffId: 'staff_author',
+          proposedByName: 'Colette Martin',
+          proposedAt: '2026-11-12T09:00:00.000Z',
+        },
+      }),
+    );
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('en attente de confirmation');
+    expect(text).toContain('0189');
+    expect(text).toContain('Colette Martin');
   });
 
   it('ne remonte rien tant que l’IBAN manque', () => {

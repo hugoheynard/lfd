@@ -126,6 +126,7 @@
   "test/counter-incomplete-handover.e2e-spec.ts": 18481,
   "test/counter-packing-sheet.e2e-spec.ts": 7481,
   "test/counter-roles-migration.e2e-spec.ts": 7549,
+  "test/creditor-account-four-eyes.e2e-spec.ts": 14001,
   "test/custom-recipe-report-migration.e2e-spec.ts": 10436,
   "test/customer-audience.e2e-spec.ts": 7470,
   "test/customer-bank-account.e2e-spec.ts": 15910,

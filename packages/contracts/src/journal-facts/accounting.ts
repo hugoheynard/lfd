@@ -86,7 +86,23 @@ export const ACCOUNTING_FACTS = {
   "legal_entity.corrected": labelled({ name: z.string() }),
   /** L'ICS — donnée publique, attribuée une seule fois. */
   "legal_entity.creditor_identifier_assigned": labelled({ ics: z.string() }),
+  /** Le compte CONFIRMÉ change : première saisie, ou proposition confirmée. */
   "legal_entity.creditor_account_changed": labelled({ last4: z.string() }),
+  /**
+   * Une modification du compte est proposée, en attente de la confirmation
+   * d'un second membre (T0, plan `plan-paiement-au-compte-par-virement.md`).
+   * `pendingId` désigne la saisie ; l'IBAN n'y figure que par ses quatre
+   * derniers caractères.
+   */
+  "legal_entity.creditor_account_proposed": labelled({
+    pendingId: z.string(),
+    last4: z.string(),
+  }),
+  /** Une proposition en attente est annulée ; le compte confirmé ne bouge pas. */
+  "legal_entity.creditor_account_proposal_cancelled": labelled({
+    pendingId: z.string(),
+    last4: z.string(),
+  }),
   "legal_entity.pre_notification_changed": labelled({ days: days() }),
   /**
    * Le calendrier de prélèvement APRÈS le changement (plan

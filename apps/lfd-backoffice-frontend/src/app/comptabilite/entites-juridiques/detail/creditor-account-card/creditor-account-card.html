@@ -37,6 +37,15 @@
       }
     </p>
 
+    @if (entity().pendingCreditorAccount; as pending) {
+      <app-creditor-account-pending
+        [entityId]="entity().id"
+        [pending]="pending"
+        [busy]="busy()"
+        (saved)="saved.emit($event)"
+      />
+    }
+
     <!-- 🔴 L'IBAN est toujours vide à l'ouverture, même quand un compte
        existe : il ne revient d'aucune route, et ne se vide qu'après un succès. Tout le reste se réaffiche —
        rien de cela n'est un secret, et le relire est justement ce qu'on
@@ -107,12 +116,17 @@
     </div>
     <div class="ca-row">
       <button foldButton [disabled]="!accountComplete() || busy()" (click)="save()">
-        Enregistrer
+        {{ proposing() ? 'Proposer la modification' : 'Enregistrer' }}
       </button>
     </div>
     <p class="ca-said">
       Le RIB se recopie <strong>en entier</strong>&nbsp;: un compte à moitié saisi ne se
       découvrirait qu'au rejet du lot, cinq jours après l'envoi.
+      @if (proposing()) {
+        Ce compte s'imprime sur les factures comme le compte à payer&nbsp;: une modification n'est
+        prise qu'après la confirmation d'un autre membre de la comptabilité, qui ressaisit l'IBAN
+        depuis le RIB de la banque.
+      }
     </p>
   </div>
 </fold-page-section>

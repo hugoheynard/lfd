@@ -617,6 +617,26 @@ export const ACCOUNTING_PHRASES = {
     },
     ['last4'],
   ),
+  // Quatre yeux : la modification attend qu'un autre membre la confirme ; sa
+  // confirmation s'écrit `creditor_account_changed`. `pendingId` ne se lit pas.
+  'legal_entity.creditor_account_proposed': onEntity(
+    'a proposé, à confirmer par un second membre, de changer le compte où arrivent les prélèvements',
+    'de',
+    (fact) => {
+      const last4 = optional(fact.payload['last4']);
+      return last4 === null ? [] : [text(' : '), value(`…${last4}`)];
+    },
+    ['last4', 'pendingId'],
+  ),
+  'legal_entity.creditor_account_proposal_cancelled': onEntity(
+    'a annulé la proposition de nouveau compte',
+    'de',
+    (fact) => {
+      const last4 = optional(fact.payload['last4']);
+      return last4 === null ? [] : [text(' : '), value(`…${last4}`)];
+    },
+    ['last4', 'pendingId'],
+  ),
   'legal_entity.pre_notification_changed': onEntity(
     'a fixé le préavis de prélèvement',
     'de',

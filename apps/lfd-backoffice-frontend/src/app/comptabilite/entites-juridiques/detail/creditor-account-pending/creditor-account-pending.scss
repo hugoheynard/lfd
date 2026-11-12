@@ -1,0 +1,24 @@
+/* La pile du bloc : l'écart vient du gap, aucun bloc ne pose sa marge. */
+.cap-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.cap-said {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+  margin: 0;
+}
+
+/* Des champs et des boutons sur une ligne ; en dessous de 18rem, ils s'empilent. */
+.cap-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fold-space-sm);
+  flex-wrap: wrap;
+}
+
+.cap-row fold-input {
+  flex: 1 1 18rem;
+}

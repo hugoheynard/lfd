@@ -1,21 +1,26 @@
-import type { LegalEntityView } from "@lfd/contracts";
+import type { LegalEntityView, PendingCreditorAccountView } from "@lfd/contracts";
 
 /**
- * La vue SANS son calendrier, les dates de ses modes, sa dernière clôture ni
- * la dernière tentative de l'automatisme : le calendrier et les
+ * La vue SANS son calendrier, les dates de ses modes, sa dernière clôture, la
+ * dernière tentative de l'automatisme ni le nom de l'auteur d'une saisie en
+ * attente (l'annuaire du staff) : le calendrier et les
  * clôtures dépendent de l'heure et de la dernière clôture,
  * que l'application ajoute (`legal-entity-view-support.ts`) — un adaptateur
  * de lecture ne lit pas l'horloge — et la tentative a son propre port.
  */
 export type LegalEntityRecord = Omit<
   LegalEntityView,
+  | "pendingCreditorAccount"
   | "nextCollection"
   | "lastAutopilotRun"
   | "billingModes"
   | "payersWithoutModeCount"
   | "lastClosure"
   | "lastClosurePeriod"
->;
+> & {
+  /** La saisie en attente, sans le nom de son auteur — l'application le résout. */
+  readonly pendingCreditorAccount: Omit<PendingCreditorAccountView, "proposedByName"> | null;
+};
 
 /**
  * Port de **lecture pour l'écran** — ce que Comptabilité › Entités juridiques

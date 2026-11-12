@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import type {
+  ConfirmCreditorAccountPayload,
   AssignCreditorIdentifierPayload,
   BillingRhythmKind,
   CorrectLegalEntityPayload,
@@ -95,8 +96,36 @@ export class LegalEntitiesService {
     await firstValueFrom(this.http.put<void>(`${this.base}/${id}/creditor-identifier`, payload));
   }
 
+  /**
+   * Pose le compte. Le premier est pris tout de suite ; ensuite, la saisie
+   * attend la confirmation d'un autre membre — la fiche relue le dit
+   * (`pendingCreditorAccount`).
+   */
   async setCreditorAccount(id: string, payload: SetCreditorAccountPayload): Promise<void> {
     await firstValueFrom(this.http.put<void>(`${this.base}/${id}/creditor-account`, payload));
+  }
+
+  /** Confirme la saisie en attente en ressaisissant son IBAN — refusé à son auteur. */
+  async confirmCreditorAccount(
+    id: string,
+    pendingId: string,
+    payload: ConfirmCreditorAccountPayload,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(
+        `${this.base}/${id}/creditor-account/pending/${encodeURIComponent(pendingId)}/confirm`,
+        payload,
+      ),
+    );
+  }
+
+  /** Annule la saisie en attente ; le compte confirmé ne bouge pas. */
+  async cancelPendingCreditorAccount(id: string, pendingId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.delete<void>(
+        `${this.base}/${id}/creditor-account/pending/${encodeURIComponent(pendingId)}`,
+      ),
+    );
   }
 
   /**

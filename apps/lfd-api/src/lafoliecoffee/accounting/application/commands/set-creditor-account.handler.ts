@@ -3,6 +3,8 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
+import { IdGenerator } from "../../../../platform/id/id-generator.js";
+import { CreditorAccountProposedEvent } from "../../domain/events/creditor-account-review.events.js";
 import { CreditorAccountChangedEvent } from "../../domain/events/legal-entity.events.js";
 import { LegalEntityRepository } from "../../domain/ports/legal-entity.repository.js";
 import { Bic } from "../../domain/value-objects/bic.js";
@@ -13,7 +15,11 @@ import { loadOrFail } from "../legal-entity-support.js";
 import { SetCreditorAccountCommand } from "./legal-entity-commands.js";
 
 /**
- * Enregistre le compte où l'argent arrive.
+ * Enregistre le compte où l'argent arrive — tout de suite s'il n'y en a aucun,
+ * en proposition à confirmer par un second membre sinon (quatre yeux, plan
+ * `plan-paiement-au-compte-par-virement.md`, T0 ; la règle est dans
+ * `LegalEntity.setCreditorAccount`). La route répond 204 dans les deux cas :
+ * la fiche relue dit s'il attend.
  *
  * Il change — on change de banque — et c'est tout ce qui le distingue de l'ICS,
  * qui lui ne change pas. La différence n'est pas une nuance de rigueur : l'IBAN
@@ -44,37 +50,45 @@ export class SetCreditorAccountHandler implements ICommandHandler<SetCreditorAcc
   constructor(
     private readonly entities: LegalEntityRepository,
     private readonly clock: Clock,
+    private readonly ids: IdGenerator,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: SetCreditorAccountCommand): Promise<void> {
     const entity = await loadOrFail(this.entities, command.legalEntityId);
-    const { payload } = command;
-    const account = CreditorAccount.create({
-      holder: payload.holder,
-      address: LegalAddress.create({
-        line1: payload.line1,
-        line2: payload.line2,
-        postalCode: payload.postalCode,
-        city: payload.city,
-        countryCode: payload.countryCode,
-      }),
-      iban: Iban.create(payload.iban),
-      bic: Bic.create(payload.bic),
-    });
-    entity.setCreditorAccount(account);
-
+    const account = creditorAccountOf(command.payload);
     const at = this.clock.now();
+    const pending = entity.setCreditorAccount(account, {
+      id: this.ids.next(),
+      staffId: command.staffId,
+      at,
+    });
+    const subject = { id: command.legalEntityId, name: entity.name };
+
     await this.uow.run(async () => {
       await this.entities.save(entity);
       await this.events.publishTraced(
-        new CreditorAccountChangedEvent(
-          { id: command.legalEntityId, name: entity.name },
-          at,
-          account.last4(),
-        ),
+        pending === null
+          ? new CreditorAccountChangedEvent(subject, at, account.last4())
+          : new CreditorAccountProposedEvent(subject, pending, at),
       );
     });
   }
+}
+
+/** Le RIB saisi, en value objects — chacun refuse sa forme invalide (400). */
+function creditorAccountOf(payload: SetCreditorAccountCommand["payload"]): CreditorAccount {
+  return CreditorAccount.create({
+    holder: payload.holder,
+    address: LegalAddress.create({
+      line1: payload.line1,
+      line2: payload.line2,
+      postalCode: payload.postalCode,
+      city: payload.city,
+      countryCode: payload.countryCode,
+    }),
+    iban: Iban.create(payload.iban),
+    bic: Bic.create(payload.bic),
+  });
 }

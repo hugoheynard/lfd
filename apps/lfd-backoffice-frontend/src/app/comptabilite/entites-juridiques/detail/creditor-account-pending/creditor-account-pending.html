@@ -1,0 +1,36 @@
+<div class="cap-body">
+  <fold-callout appearance="inset" variant="warning">
+    <strong>Modification du compte en attente de confirmation.</strong>
+    {{ author() }} a proposé le {{ proposedAt() }} le compte •••• {{ pending().last4 }} · BIC
+    {{ pending().bic }} · {{ pending().holder }}, {{ address() }}. Les factures et les prélèvements
+    gardent le compte actuel tant qu'un autre membre de la comptabilité ne l'a pas confirmé.
+  </fold-callout>
+
+  @if (isAuthor()) {
+    <p class="cap-said">
+      Vous avez saisi cette modification&nbsp;: un autre membre de la comptabilité doit la
+      confirmer, en ressaisissant l'IBAN depuis le RIB de la banque.
+    </p>
+  } @else {
+    <div class="cap-row">
+      <fold-input
+        label="IBAN ressaisi"
+        placeholder="FR76 …"
+        hint="Recopiez-le depuis le RIB remis par la banque, jamais depuis la saisie de votre collègue."
+        [value]="ibanDraft()"
+        (valueChange)="ibanDraft.set($event)"
+      />
+    </div>
+  }
+
+  <div class="cap-row">
+    @if (!isAuthor()) {
+      <button foldButton [disabled]="ibanDraft().trim() === '' || busy()" (click)="confirm()">
+        Confirmer le compte
+      </button>
+    }
+    <button foldButton emphasis="outline" intent="danger" [disabled]="busy()" (click)="cancel()">
+      Annuler la modification
+    </button>
+  </div>
+</div>

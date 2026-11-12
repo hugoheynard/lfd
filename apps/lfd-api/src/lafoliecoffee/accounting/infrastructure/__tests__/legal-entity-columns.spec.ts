@@ -7,6 +7,9 @@ import { Siren } from "../../domain/value-objects/siren.js";
 import { AesGcmFieldCipher } from "../../../../platform/crypto/aes-gcm-field-cipher.js";
 import { legalEntityColumns } from "../legal-entity.mapper.js";
 
+/** Qui saisit — sans effet sur une première saisie, prise tout de suite. */
+const PROPOSAL = { id: "pending_1", staffId: "staff_author", at: new Date(0) };
+
 /** Une clé de test — 32 octets, la seule contrainte du coffre. */
 const CIPHER = new AesGcmFieldCipher(Buffer.alloc(32, 7));
 
@@ -19,6 +22,21 @@ function declared(): LegalEntity {
     rcs: "Chambéry",
     shareCapitalCents: 1_000_000,
     vatNumber: "",
+    address: LegalAddress.create({
+      line1: "Route de la Balme",
+      line2: "",
+      postalCode: "73150",
+      city: "Val d'Isère",
+      countryCode: "FR",
+    }),
+  });
+}
+
+function rib(iban: string): CreditorAccount {
+  return CreditorAccount.create({
+    holder: "CRAZEATIVITY",
+    iban: Iban.create(iban),
+    bic: Bic.create("CEPAFRPP751"),
     address: LegalAddress.create({
       line1: "Route de la Balme",
       line2: "",
@@ -62,10 +80,21 @@ describe("legalEntityColumns", () => {
     // `invoicesIssued` sort enfin (lot ZA) : ce n'est pas une colonne, c'est
     // l'existence d'une pièce de l'entité, lue à la relecture — le gel du
     // préfixe n'a d'autre auteur que l'émission elle-même.
-    const excluded = new Set(["id", "creditorIban", "firstMandateIssuedAt", "invoicesIssued"]);
+    //
+    // `pendingCreditorIban` suit le même régime que `creditorIban` (T0, quatre
+    // yeux) : il s'écrit scellé. `version` sort aussi : `save` la compare et
+    // l'incrémente lui-même, dans la même requête.
+    const excluded = new Set([
+      "id",
+      "creditorIban",
+      "pendingCreditorIban",
+      "firstMandateIssuedAt",
+      "invoicesIssued",
+      "version",
+    ]);
     const expected = Object.keys(snapshot)
       .filter((key) => !excluded.has(key))
-      .concat("creditorIbanSealed")
+      .concat("creditorIbanSealed", "pendingCreditorIbanSealed")
       .sort();
 
     expect(written).toEqual(expected);
@@ -96,6 +125,7 @@ describe("legalEntityColumns", () => {
           countryCode: "FR",
         }),
       }),
+      PROPOSAL,
     );
 
     const columns = legalEntityColumns(entity.toPersistence(), CIPHER);
@@ -103,6 +133,24 @@ describe("legalEntityColumns", () => {
     expect(columns.creditorIbanSealed).not.toContain("FR7630006000011234567890189");
     expect(columns.creditorIbanSealed?.startsWith("v1.")).toBe(true);
     expect(CIPHER.open(columns.creditorIbanSealed!)).toBe("FR7630006000011234567890189");
+  });
+
+  it("scelle aussi l'IBAN PROPOSÉ en attente de confirmation", () => {
+    const entity = declared();
+    entity.setCreditorAccount(rib("FR1420041010050500013M02606"), PROPOSAL);
+    entity.setCreditorAccount(rib("FR7630006000011234567890189"), PROPOSAL);
+
+    const columns = legalEntityColumns(entity.toPersistence(), CIPHER);
+
+    expect(JSON.stringify(columns)).not.toContain("FR7630006000011234567890189");
+    expect(CIPHER.open(columns.pendingCreditorIbanSealed!)).toBe("FR7630006000011234567890189");
+    expect(columns.pendingCreditorAccountProposedByStaffId).toBe("staff_author");
+  });
+
+  it("laisse la proposition toute nulle quand rien n'attend", () => {
+    const columns = legalEntityColumns(declared().toPersistence(), CIPHER);
+    expect(columns.pendingCreditorIbanSealed).toBeNull();
+    expect(columns.pendingCreditorAccountId).toBeNull();
   });
 
   /**

@@ -11,6 +11,7 @@ import {
 import type { PrismaClient } from "../../platform/database/client/client.js";
 import { DocumentStorageUnavailableError } from "../../platform/shared/errors/storage-errors.js";
 import { BRAND_LOGO_BW, BRAND_LOGO_FILE_NAME } from "./brand-logo.js";
+import { SEED_STAFF_SUB } from "./order-placing.seed.js";
 
 /**
  * **L'entité émettrice de développement** — celle au nom de qui les mandats SEPA
@@ -185,12 +186,16 @@ export async function seedAccounting({ prisma, commands }: AccountingContext): P
     console.log(`✓ ICS ${SEEDED_ICS} attribué — factice, à ne jamais confondre avec le vrai.`);
   }
 
-  // Le compte, lui, se change — on change de banque. Il est reposé seulement
-  // s'il manque, pour ne pas écraser un IBAN saisi à la main sur le poste.
-  if (existing?.creditorIban) {
+  // Le compte, lui, se change — on change de banque. Il est posé seulement
+  // s'il manque : c'est alors une première saisie, prise tout de suite. Un
+  // second passage proposerait une modification aux quatre yeux, au nom d'un
+  // auteur qui n'est personne. Le compte confirmé vit dans la colonne scellée.
+  if (existing?.creditorIbanSealed) {
     console.log("· Compte créancier déjà posé — inchangé.");
   } else {
-    await commands.execute(new SetCreditorAccountCommand(entityId, SEEDED_CREDITOR_ACCOUNT));
+    await commands.execute(
+      new SetCreditorAccountCommand(entityId, SEEDED_CREDITOR_ACCOUNT, SEED_STAFF_SUB),
+    );
     console.log("✓ Compte créancier posé — l'entité peut désormais prélever.");
   }
 

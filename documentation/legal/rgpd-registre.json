@@ -2842,6 +2842,15 @@
       },
       "purge": "apps/lfd-api/src/mail/sends/infrastructure/prisma-mail-consultation.pruner.ts",
       "information": false
+    },
+    {
+      "colonne": "public.legal_entities.pending_creditor_account_proposed_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a proposé une modification du compte bancaire de l'entité émettrice, pour refuser qu'il la confirme lui-même (quatre yeux, plan-paiement-au-compte-par-virement T0). Effacée à la confirmation ou à l'annulation ; le journal garde l'acte.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
     }
   ],
   "exclusions": [

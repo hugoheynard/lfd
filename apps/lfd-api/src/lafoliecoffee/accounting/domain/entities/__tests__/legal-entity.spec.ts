@@ -39,6 +39,18 @@ function accountWith(over: { iban?: string; holder?: string; city?: string } = {
 }
 const ACCOUNT = accountWith();
 
+/** Qui propose — sans effet sur une première saisie, prise tout de suite. */
+const PROPOSAL = { id: "pending_1", staffId: "staff_author", at: new Date(0) };
+
+/**
+ * Change le compte d'une entité qui en a déjà un : la proposition, puis la
+ * confirmation par un AUTRE membre qui ressaisit l'IBAN (quatre yeux, T0).
+ */
+function changeAccount(entity: LegalEntity, account: CreditorAccount): void {
+  entity.setCreditorAccount(account, PROPOSAL);
+  entity.confirmCreditorAccount(PROPOSAL.id, account.iban, "staff_confirmer");
+}
+
 function declaration(overrides: Partial<LegalEntityDeclaration> = {}): LegalEntityDeclaration {
   return {
     id: "01JBXY000000000000000000LE",
@@ -62,7 +74,7 @@ function declaration(overrides: Partial<LegalEntityDeclaration> = {}): LegalEnti
 function collecting(): LegalEntity {
   const entity = LegalEntity.declare(declaration());
   entity.assignCreditorIdentifier(ICS);
-  entity.setCreditorAccount(ACCOUNT);
+  entity.setCreditorAccount(ACCOUNT, PROPOSAL);
   return entity;
 }
 
@@ -122,7 +134,7 @@ describe("LegalEntity — l'ICS ne se remplace pas", () => {
 
   it("laisse en revanche changer de banque", () => {
     const entity = collecting();
-    entity.setCreditorAccount(accountWith({ iban: "FR7630006000011234567890189" }));
+    changeAccount(entity, accountWith({ iban: "FR7630006000011234567890189" }));
     expect(entity.toPersistence().creditorIban).toBe("FR7630006000011234567890189");
   });
 });
@@ -130,7 +142,7 @@ describe("LegalEntity — l'ICS ne se remplace pas", () => {
 describe("LegalEntity — encaisser demande tout", () => {
   it("refuse le snapshot tant que l'ICS manque, en le nommant", () => {
     const entity = LegalEntity.declare(declaration());
-    entity.setCreditorAccount(ACCOUNT);
+    entity.setCreditorAccount(ACCOUNT, PROPOSAL);
     expect(() => entity.creditorSnapshot()).toThrow(EntityCannotCollectError);
     expect(() => entity.creditorSnapshot()).toThrow(/identifiant créancier/u);
   });
@@ -420,7 +432,7 @@ describe("LegalEntity — le créancier imprimé gèle au premier mandat", () =>
   function withAccount(): LegalEntity {
     const entity = LegalEntity.declare(declaration());
     entity.assignCreditorIdentifier(ICS);
-    entity.setCreditorAccount(ACCOUNT);
+    entity.setCreditorAccount(ACCOUNT, PROPOSAL);
     return entity;
   }
 
@@ -440,7 +452,7 @@ describe("LegalEntity — le créancier imprimé gèle au premier mandat", () =>
   it("se corrige librement TANT QU'AUCUN mandat n'est frappé", () => {
     const entity = withAccount();
 
-    entity.setCreditorAccount(accountWith({ holder: "Crazeativity SAS" }));
+    changeAccount(entity, accountWith({ holder: "Crazeativity SAS" }));
 
     expect(entity.toPersistence().creditorAccountHolder).toBe("Crazeativity SAS");
     expect(entity.creditorIdentityFrozen).toBe(false);
@@ -449,15 +461,15 @@ describe("LegalEntity — le créancier imprimé gèle au premier mandat", () =>
   it("refuse de changer le TITULAIRE une fois le premier mandat frappé", () => {
     const entity = frozen(withAccount());
 
-    expect(() => entity.setCreditorAccount(accountWith({ holder: "Autre Société" }))).toThrow(
-      CreditorIdentityIsFrozenError,
-    );
+    expect(() =>
+      entity.setCreditorAccount(accountWith({ holder: "Autre Société" }), PROPOSAL),
+    ).toThrow(CreditorIdentityIsFrozenError);
   });
 
   it("refuse aussi de changer l'ADRESSE : elle est imprimée à côté du nom", () => {
     const entity = frozen(withAccount());
 
-    expect(() => entity.setCreditorAccount(accountWith({ city: "Tignes" }))).toThrow(
+    expect(() => entity.setCreditorAccount(accountWith({ city: "Tignes" }), PROPOSAL)).toThrow(
       CreditorIdentityIsFrozenError,
     );
   });
@@ -466,7 +478,7 @@ describe("LegalEntity — le créancier imprimé gèle au premier mandat", () =>
   it("LAISSE changer d'IBAN après le premier mandat — aucun mandat ne le porte", () => {
     const entity = frozen(withAccount());
 
-    entity.setCreditorAccount(accountWith({ iban: "FR7630006000011234567890189" }));
+    changeAccount(entity, accountWith({ iban: "FR7630006000011234567890189" }));
 
     expect(entity.toPersistence().creditorIban).toBe("FR7630006000011234567890189");
   });
@@ -474,17 +486,17 @@ describe("LegalEntity — le créancier imprimé gèle au premier mandat", () =>
   it("nomme l'ancien créancier ET le nouveau, pour qu'on sache lequel est sur le papier", () => {
     const entity = frozen(withAccount());
 
-    expect(() => entity.setCreditorAccount(accountWith({ holder: "Autre Société" }))).toThrow(
-      /Crazeativity.*Autre Société/su,
-    );
+    expect(() =>
+      entity.setCreditorAccount(accountWith({ holder: "Autre Société" }), PROPOSAL),
+    ).toThrow(/Crazeativity.*Autre Société/su);
   });
 
   it("dit la sortie : une seconde entité, pas une correction en douce", () => {
     const entity = frozen(withAccount());
 
-    expect(() => entity.setCreditorAccount(accountWith({ holder: "Autre Société" }))).toThrow(
-      /seconde entité juridique/u,
-    );
+    expect(() =>
+      entity.setCreditorAccount(accountWith({ holder: "Autre Société" }), PROPOSAL),
+    ).toThrow(/seconde entité juridique/u);
   });
 
   it("se relit gelée depuis la base — le verrou survit au rechargement", () => {
@@ -493,7 +505,7 @@ describe("LegalEntity — le créancier imprimé gèle au premier mandat", () =>
     const reloaded = LegalEntity.reconstitute(entity.toPersistence());
 
     expect(reloaded.creditorIdentityFrozen).toBe(true);
-    expect(() => reloaded.setCreditorAccount(accountWith({ holder: "Autre" }))).toThrow(
+    expect(() => reloaded.setCreditorAccount(accountWith({ holder: "Autre" }), PROPOSAL)).toThrow(
       CreditorIdentityIsFrozenError,
     );
   });
@@ -507,6 +519,6 @@ describe("LegalEntity — le créancier imprimé gèle au premier mandat", () =>
     declared.assignCreditorIdentifier(ICS);
     const entity = frozen(declared);
 
-    expect(() => entity.setCreditorAccount(ACCOUNT)).not.toThrow();
+    expect(() => entity.setCreditorAccount(ACCOUNT, PROPOSAL)).not.toThrow();
   });
 });

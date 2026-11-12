@@ -1,3 +1,4 @@
+import { FixedStaffAuthorDirectory } from "../../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
   LegalEntityReader,
@@ -90,6 +91,7 @@ function handlerWith(
     counting.standings,
     counting.mandates,
     counting.lot,
+    new FixedStaffAuthorDirectory(),
     new FixedClock(now),
   );
 }
@@ -115,6 +117,7 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       CLIENTS.standings,
       CLIENTS.mandates,
       CLIENTS.lot,
+      new FixedStaffAuthorDirectory(),
       new FixedClock(NOW),
     );
 
@@ -144,6 +147,7 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       CLIENTS.standings,
       CLIENTS.mandates,
       CLIENTS.lot,
+      new FixedStaffAuthorDirectory(),
       clock,
     ).execute();
     const one = await new GetLegalEntityHandler(
@@ -155,6 +159,7 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       CLIENTS.standings,
       CLIENTS.mandates,
       CLIENTS.lot,
+      new FixedStaffAuthorDirectory(),
       clock,
     ).execute(new GetLegalEntityQuery("le1"));
 
@@ -171,6 +176,7 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       CLIENTS.standings,
       CLIENTS.mandates,
       CLIENTS.lot,
+      new FixedStaffAuthorDirectory(),
       new FixedClock(NOW),
     );
 
@@ -194,6 +200,7 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       CLIENTS.standings,
       CLIENTS.mandates,
       CLIENTS.lot,
+      new FixedStaffAuthorDirectory(),
       new FixedClock(NOW),
     ).execute(new GetLegalEntityQuery("le1"));
 

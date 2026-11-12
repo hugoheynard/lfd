@@ -1,3 +1,4 @@
+import { FixedStaffAuthorDirectory } from "../../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
   LastAutopilotRunReader,
@@ -82,6 +83,7 @@ function handler(payers: PayerModesStore, counting: CountedPayersReaders): GetLe
     counting.standings,
     counting.mandates,
     counting.lot,
+    new FixedStaffAuthorDirectory(),
     new FixedClock(NOW),
   );
 }
@@ -155,6 +157,7 @@ describe("la fiche de l'entité compte les clients sans mode choisi (I3)", () =>
       counting.standings,
       counting.mandates,
       counting.lot,
+      new FixedStaffAuthorDirectory(),
       new FixedClock(NOW),
     ).execute();
 

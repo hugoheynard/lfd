@@ -46,6 +46,29 @@ export class SetCreditorAccountCommand {
   constructor(
     readonly legalEntityId: string,
     readonly payload: SetCreditorAccountPayload,
+    /** La fiche staff de qui saisit — l'auteur d'une proposition en attente. */
+    readonly staffId: string,
+  ) {}
+}
+
+/**
+ * La confirmation d'une modification du compte en attente, par un AUTRE
+ * membre que son auteur, qui ressaisit l'IBAN depuis le RIB de la banque.
+ */
+export class ConfirmCreditorAccountCommand {
+  constructor(
+    readonly legalEntityId: string,
+    readonly pendingId: string,
+    readonly iban: string,
+    readonly staffId: string,
+  ) {}
+}
+
+/** L'annulation d'une modification du compte en attente. */
+export class CancelPendingCreditorAccountCommand {
+  constructor(
+    readonly legalEntityId: string,
+    readonly pendingId: string,
   ) {}
 }
 

@@ -225,6 +225,8 @@ Elles font foi sur ce qui précède.
 
 ## T0 tel qu'il se bâtit (Hugo, 2026-11-12, après la troisième relecture)
 
+> ✅ **T0 bâti le 2026-11-12** (migration `20261112100000_le_compte_creancier_aux_quatre_yeux`, additive). Avant son déploiement : vérifier en production qu'aucune entité n'a `creditor_iban_sealed IS NULL AND creditor_iban IS NOT NULL` — l'instantané ne lit plus la colonne claire.
+
 - **La première saisie est immédiate** : tant que l'entité n'a aucun compte
   confirmé, aucun client ne paie et aucun lot ne part — rien à détourner. Le
   semis et les 23 e2e qui posent un compte puis prélèvent restent inchangés.

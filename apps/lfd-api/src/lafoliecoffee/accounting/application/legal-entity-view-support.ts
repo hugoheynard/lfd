@@ -1,5 +1,6 @@
 import { instantToLocal, type CollectionCalendarView, type LegalEntityView } from "@lfd/contracts";
 
+import type { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
 import type { LastAutopilotRunReader } from "../domain/ports/last-autopilot-run.reader.js";
 import type { LegalEntityRecord } from "../domain/ports/legal-entity.reader.js";
 import type { RecordedClosureReader } from "../domain/ports/recorded-closure.reader.js";
@@ -20,6 +21,8 @@ export interface EntityViewReaders {
   readonly autopilotRuns: LastAutopilotRunReader;
   readonly modes: InvoicingCalendarReaders;
   readonly counting: CountedPayersReaders;
+  /** Nomme l'auteur d'une saisie du compte en attente. */
+  readonly authors: StaffAuthorDirectory;
 }
 
 /**
@@ -58,6 +61,7 @@ export async function withNextCollection(
   const run = await readers.autopilotRuns.lastOf(record.id);
   return {
     ...record,
+    pendingCreditorAccount: await withAuthorName(record.pendingCreditorAccount, readers.authors),
     ...entityBillingModes(modes, payers, countedIds, invoicing, now),
     nextCollection: calendarView(calendar),
     lastAutopilotRun:
@@ -70,6 +74,18 @@ export async function withNextCollection(
             message: run.message,
           },
   };
+}
+
+/** La saisie en attente, avec le nom de son auteur — une lecture de l'annuaire s'il y en a une. */
+async function withAuthorName(
+  pending: LegalEntityRecord["pendingCreditorAccount"],
+  authors: StaffAuthorDirectory,
+): Promise<LegalEntityView["pendingCreditorAccount"]> {
+  if (pending === null) {
+    return null;
+  }
+  const names = await authors.identify([pending.proposedByStaffId]);
+  return { ...pending, proposedByName: names.nameOf(pending.proposedByStaffId) };
 }
 
 /** Le calendrier, tel que le contrat le porte : instants en ISO, jours tels quels. */

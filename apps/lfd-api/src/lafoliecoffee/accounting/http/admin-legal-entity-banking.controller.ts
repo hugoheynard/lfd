@@ -21,6 +21,7 @@ import {
 } from "@lfd/contracts";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import {
   AssignCreditorIdentifierCommand,
@@ -92,14 +93,22 @@ export class AdminLegalEntityBankingController {
    * ce qu'on détient.
    *
    * Les deux sont exigés **ensemble**, parce qu'ils se lisent sur le même RIB.
+   *
+   * 🔴 **Aux quatre yeux dès qu'un compte est confirmé** (plan
+   * `plan-paiement-au-compte-par-virement.md`, T0) : la première saisie est
+   * prise tout de suite, chaque modification suivante devient une proposition
+   * qu'un autre membre confirme (`AdminCreditorAccountReviewController`).
+   * 204 dans les deux cas — la fiche relue dit si la saisie attend, et
+   * l'appelant n'a rien d'autre à apprendre de la réponse.
    */
   @Put(":id/creditor-account")
   @HttpCode(HttpStatus.NO_CONTENT)
   async setAccount(
+    @StaffUserId() staffUserId: string,
     @Param("id") id: string,
     @Body(new ZodBody(setCreditorAccountPayloadSchema)) payload: SetCreditorAccountPayload,
   ): Promise<void> {
-    await this.commands.execute(new SetCreditorAccountCommand(id, payload));
+    await this.commands.execute(new SetCreditorAccountCommand(id, payload, staffUserId));
   }
 
   /**

@@ -19,6 +19,10 @@ import {
 import { CreditorIdentifier } from "../value-objects/creditor-identifier.js";
 import { Bic } from "../value-objects/bic.js";
 import { CreditorAccount } from "../value-objects/creditor-account.js";
+import {
+  type CreditorAccountProposal,
+  PendingCreditorAccount,
+} from "../value-objects/pending-creditor-account.js";
 import { Iban } from "../value-objects/iban.js";
 import { LegalAddress } from "../value-objects/legal-address.js";
 import { Siren } from "../value-objects/siren.js";
@@ -29,6 +33,7 @@ import {
 import type { InvoiceSellerFacts } from "../services/invoice-issuance-blockers.js";
 import { InvoicePrefixIsFrozenError } from "../errors/invoice-errors.js";
 import { InvoicePrefix } from "../value-objects/invoice-prefix.js";
+import { PendingCreditorAccountGoneError } from "../errors/creditor-account-review-errors.js";
 
 /**
  * Le délai EPC par défaut entre la pré-notification et le débit. Il se réduit
@@ -85,6 +90,27 @@ export interface LegalEntitySnapshot {
   readonly creditorAccountPostalCode: string | null;
   readonly creditorAccountCity: string | null;
   readonly creditorAccountCountryCode: string | null;
+  /**
+   * Le compte PROPOSÉ, en attente de la confirmation d'un second membre
+   * (quatre yeux, plan `plan-paiement-au-compte-par-virement.md`, T0). Tous
+   * nuls = rien en attente. 🔴 `creditorSnapshot()` ne les lit jamais.
+   */
+  readonly pendingCreditorAccountId: string | null;
+  readonly pendingCreditorIban: string | null;
+  readonly pendingCreditorBic: string | null;
+  readonly pendingCreditorAccountHolder: string | null;
+  readonly pendingCreditorAccountLine1: string | null;
+  readonly pendingCreditorAccountLine2: string | null;
+  readonly pendingCreditorAccountPostalCode: string | null;
+  readonly pendingCreditorAccountCity: string | null;
+  readonly pendingCreditorAccountCountryCode: string | null;
+  readonly pendingCreditorAccountProposedByStaffId: string | null;
+  readonly pendingCreditorAccountProposedAt: Date | null;
+  /**
+   * La version lue — le verrou optimiste. `save` n'écrit que si la base porte
+   * encore celle-ci ; l'agrégat la porte sans jamais la juger.
+   */
+  readonly version: number;
   /**
    * Quand le PREMIER mandat a été frappé sous cette entité, ou `null`.
    *
@@ -178,6 +204,8 @@ export class LegalEntity {
     private vatNumberValue: string,
     private icsValue: CreditorIdentifier | null,
     private creditorAccountValue: CreditorAccount | null,
+    private pendingCreditorAccountValue: PendingCreditorAccount | null,
+    private versionValue: number,
     private readonly firstMandateIssuedAtValue: Date | null,
     private preNotificationDaysValue: number,
     private mandateDefaultsValue: MandateDefaults,
@@ -207,9 +235,12 @@ export class LegalEntity {
       declaration.rcs.trim(),
       requireCapital(declaration.shareCapitalCents),
       declaration.vatNumber.trim().toUpperCase(),
-      // ICS et compte créancier : absents à la déclaration. Et aucun mandat.
+      // ICS et compte créancier : absents à la déclaration, rien en attente,
+      // jamais écrite. Et aucun mandat.
       null,
       null,
+      null,
+      0,
       null,
       PRE_NOTIFICATION_DEFAULT_DAYS,
       // Rien à dire du contrat, et récurrent : le régime de l'immense majorité
@@ -260,6 +291,8 @@ export class LegalEntity {
       snapshot.vatNumber,
       snapshot.ics === null ? null : CreditorIdentifier.create(snapshot.ics),
       accountOf(snapshot),
+      pendingAccountOf(snapshot),
+      snapshot.version,
       snapshot.firstMandateIssuedAt,
       snapshot.preNotificationDays,
       MandateDefaults.create(snapshot.mandateContractDescription, snapshot.mandatePaymentType),
@@ -370,18 +403,105 @@ export class LegalEntity {
    * BIC. Un compte à moitié rempli ne se découvrirait qu'au rejet du lot, cinq
    * jours après l'envoi — {@link CreditorAccount} le rend inexprimable.
    *
+   * 🔴 **La première saisie est immédiate, les suivantes attendent un second
+   * membre** (Hugo, 2026-11-12). Tant qu'aucun compte n'est confirmé, aucun
+   * client ne paie et aucun lot ne part : rien à détourner. Ensuite, le compte
+   * est imprimé sur les factures comme le compte à payer, et toute
+   * modification devient une proposition ({@link PendingCreditorAccount}) qui
+   * remplace celle qui attendait ; le compte confirmé reste celui que tout le
+   * monde lit jusqu'à {@link confirmCreditorAccount}.
+   *
    * 🔴 **Après le premier mandat, le titulaire et l'adresse sont GELÉS**, pour
    * la raison exacte qui rend l'ICS immuable : le papier signé les porte, et le
-   * débiteur a autorisé CE créancier-là.
+   * débiteur a autorisé CE créancier-là. L'IBAN et le BIC restent libres —
+   * aucun mandat ne les porte ({@link CreditorAccount.sameIdentityAs}).
    *
-   * ⚠️ L'IBAN et le BIC, eux, restent libres **pour toujours** — aucun mandat ne
-   * les porte, et changer de banque ne contredit aucune signature. C'est
-   * pourquoi le gel se mesure sur l'identité seule
-   * ({@link CreditorAccount.sameIdentityAs}) et non sur l'objet entier.
-   *
+   * @returns la proposition en attente, ou `null` si le compte est pris tout de suite.
    * @throws {CreditorIdentityIsFrozenError} un mandat existe et le nom change.
    */
-  setCreditorAccount(account: CreditorAccount): void {
+  setCreditorAccount(
+    account: CreditorAccount,
+    proposal: CreditorAccountProposal,
+  ): PendingCreditorAccount | null {
+    this.assertIdentityKept(account);
+    if (this.creditorAccountValue === null) {
+      this.creditorAccountValue = account;
+      return null;
+    }
+    const pending = PendingCreditorAccount.propose(account, proposal);
+    this.pendingCreditorAccountValue = pending;
+    return pending;
+  }
+
+  /**
+   * Confirme la proposition en attente : elle devient LE compte.
+   *
+   * Refusée si `pendingId` ne désigne plus la saisie en attente (remplacée,
+   * confirmée ou annulée), si le confirmateur en est l'auteur — même fiche du
+   * staff —, si l'IBAN ressaisi à l'aveugle diffère, ou si un mandat a été
+   * frappé depuis et que la proposition change le créancier imprimé.
+   *
+   * ⚠️ Une seule personne qui tient deux fiches du staff reste hors de portée :
+   * l'agrégat compare des fiches, pas des personnes.
+   *
+   * @returns la proposition confirmée.
+   */
+  confirmCreditorAccount(
+    pendingId: string,
+    retypedIban: Iban,
+    confirmerStaffId: string,
+  ): PendingCreditorAccount {
+    const pending = this.requirePending(pendingId);
+    pending.assertConfirmableBy(pendingId, retypedIban, confirmerStaffId);
+    this.assertIdentityKept(pending.account);
+    this.creditorAccountValue = pending.account;
+    this.pendingCreditorAccountValue = null;
+    return pending;
+  }
+
+  /**
+   * Annule la proposition en attente ; le compte confirmé ne bouge pas.
+   * L'auteur peut annuler la sienne : retirer n'engage rien.
+   *
+   * @returns la proposition annulée.
+   * @throws {PendingCreditorAccountGoneError} `pendingId` n'est plus en attente.
+   */
+  cancelPendingCreditorAccount(pendingId: string): PendingCreditorAccount {
+    const pending = this.requirePending(pendingId);
+    this.pendingCreditorAccountValue = null;
+    return pending;
+  }
+
+  /** La proposition en attente de confirmation, ou `null`. Personne ne l'imprime. */
+  get pendingCreditorAccount(): PendingCreditorAccount | null {
+    return this.pendingCreditorAccountValue;
+  }
+
+  /** La version lue, pour le verrou optimiste de `save`. */
+  get version(): number {
+    return this.versionValue;
+  }
+
+  /**
+   * L'écriture a réussi sous la version suivante : l'agrégat la prend, pour
+   * qu'un second `save` du même objet ne se croie pas périmé. Appelé par le
+   * dépôt seul.
+   */
+  persistedAsNextVersion(): void {
+    this.versionValue += 1;
+  }
+
+  private requirePending(pendingId: string): PendingCreditorAccount {
+    const pending = this.pendingCreditorAccountValue;
+    if (pending === null) {
+      throw new PendingCreditorAccountGoneError(pendingId);
+    }
+    pending.assertDesignatedBy(pendingId);
+    return pending;
+  }
+
+  /** @throws {CreditorIdentityIsFrozenError} un mandat existe et le créancier imprimé change. */
+  private assertIdentityKept(account: CreditorAccount): void {
     const current = this.creditorAccountValue;
     if (
       this.firstMandateIssuedAtValue !== null &&
@@ -390,7 +510,6 @@ export class LegalEntity {
     ) {
       throw new CreditorIdentityIsFrozenError(current.holder, account.holder);
     }
-    this.creditorAccountValue = account;
   }
 
   /**
@@ -691,6 +810,8 @@ export class LegalEntity {
       creditorAccountPostalCode: this.creditorAccountValue?.address.postalCode ?? null,
       creditorAccountCity: this.creditorAccountValue?.address.city ?? null,
       creditorAccountCountryCode: this.creditorAccountValue?.address.countryCode ?? null,
+      ...pendingColumnsOf(this.pendingCreditorAccountValue),
+      version: this.versionValue,
       firstMandateIssuedAt: this.firstMandateIssuedAtValue,
       preNotificationDays: this.preNotificationDaysValue,
       mandateContractDescription: this.mandateDefaultsValue.contractDescription,
@@ -774,4 +895,70 @@ function accountOf(snapshot: LegalEntitySnapshot): CreditorAccount | null {
     iban: Iban.create(snapshot.creditorIban),
     bic: Bic.create(snapshot.creditorBic),
   });
+}
+
+/** La proposition en attente, rebâtie de ses colonnes — toutes, ou aucune (CHECK). */
+function pendingAccountOf(snapshot: LegalEntitySnapshot): PendingCreditorAccount | null {
+  if (
+    snapshot.pendingCreditorAccountId === null ||
+    snapshot.pendingCreditorIban === null ||
+    snapshot.pendingCreditorBic === null ||
+    snapshot.pendingCreditorAccountHolder === null ||
+    snapshot.pendingCreditorAccountProposedByStaffId === null ||
+    snapshot.pendingCreditorAccountProposedAt === null
+  ) {
+    return null;
+  }
+  return PendingCreditorAccount.propose(
+    CreditorAccount.create({
+      holder: snapshot.pendingCreditorAccountHolder,
+      address: LegalAddress.create({
+        line1: snapshot.pendingCreditorAccountLine1 ?? "",
+        line2: snapshot.pendingCreditorAccountLine2 ?? "",
+        postalCode: snapshot.pendingCreditorAccountPostalCode ?? "",
+        city: snapshot.pendingCreditorAccountCity ?? "",
+        countryCode: snapshot.pendingCreditorAccountCountryCode ?? "",
+      }),
+      iban: Iban.create(snapshot.pendingCreditorIban),
+      bic: Bic.create(snapshot.pendingCreditorBic),
+    }),
+    {
+      id: snapshot.pendingCreditorAccountId,
+      staffId: snapshot.pendingCreditorAccountProposedByStaffId,
+      at: snapshot.pendingCreditorAccountProposedAt,
+    },
+  );
+}
+
+type PendingColumns = Pick<
+  LegalEntitySnapshot,
+  | "pendingCreditorAccountId"
+  | "pendingCreditorIban"
+  | "pendingCreditorBic"
+  | "pendingCreditorAccountHolder"
+  | "pendingCreditorAccountLine1"
+  | "pendingCreditorAccountLine2"
+  | "pendingCreditorAccountPostalCode"
+  | "pendingCreditorAccountCity"
+  | "pendingCreditorAccountCountryCode"
+  | "pendingCreditorAccountProposedByStaffId"
+  | "pendingCreditorAccountProposedAt"
+>;
+
+/** La proposition en attente, à plat — toute nulle quand rien n'attend. */
+function pendingColumnsOf(pending: PendingCreditorAccount | null): PendingColumns {
+  const account = pending?.account ?? null;
+  return {
+    pendingCreditorAccountId: pending?.id ?? null,
+    pendingCreditorIban: account?.iban.value ?? null,
+    pendingCreditorBic: account?.bic.value ?? null,
+    pendingCreditorAccountHolder: account?.holder ?? null,
+    pendingCreditorAccountLine1: account?.address.line1 ?? null,
+    pendingCreditorAccountLine2: account?.address.line2 ?? null,
+    pendingCreditorAccountPostalCode: account?.address.postalCode ?? null,
+    pendingCreditorAccountCity: account?.address.city ?? null,
+    pendingCreditorAccountCountryCode: account?.address.countryCode ?? null,
+    pendingCreditorAccountProposedByStaffId: pending?.proposedByStaffId ?? null,
+    pendingCreditorAccountProposedAt: pending?.proposedAt ?? null,
+  };
 }

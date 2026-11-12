@@ -1,0 +1,25 @@
+-- RETOUR ARRIÈRE de 20261112100000_le_compte_creancier_aux_quatre_yeux
+-- (documentation/comptabilite/plan-paiement-au-compte-par-virement.md, T0).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
+-- « appliquée ».
+--
+-- Le code d'avant ignore ces colonnes : le retour arrière est le retour du
+-- code seul. ⚠️ Une saisie en attente y resterait sans effet — le code d'avant
+-- ne la lit pas, et son `save` n'écrit ni elle ni `version`. Retirer les
+-- colonnes serait un resserrement ultérieur, sur décision de Hugo :
+--
+--   ALTER TABLE public.legal_entities
+--     DROP CONSTRAINT legal_entity_pending_creditor_account_whole,
+--     DROP COLUMN pending_creditor_account_id,
+--     DROP COLUMN pending_creditor_iban_sealed,
+--     DROP COLUMN pending_creditor_bic,
+--     DROP COLUMN pending_creditor_account_holder,
+--     DROP COLUMN pending_creditor_account_line1,
+--     DROP COLUMN pending_creditor_account_line2,
+--     DROP COLUMN pending_creditor_account_postal_code,
+--     DROP COLUMN pending_creditor_account_city,
+--     DROP COLUMN pending_creditor_account_country_code,
+--     DROP COLUMN pending_creditor_account_proposed_by_staff_id,
+--     DROP COLUMN pending_creditor_account_proposed_at,
+--     DROP COLUMN version;

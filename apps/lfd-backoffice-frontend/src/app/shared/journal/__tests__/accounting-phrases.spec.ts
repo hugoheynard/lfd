@@ -160,6 +160,28 @@ describe('l’entité émettrice', () => {
     ).toBe(
       'Colette Martin a changé le compte où arrivent les prélèvements de l’entité émettrice « La Folie Douce SAS » : …4321',
     );
+    expect(
+      sentence(
+        entity('legal_entity.creditor_account_proposed', {
+          subjectLabel: ENTITY,
+          pendingId: 'p1',
+          last4: '0189',
+        }),
+      ),
+    ).toBe(
+      'Colette Martin a proposé, à confirmer par un second membre, de changer le compte où arrivent les prélèvements de l’entité émettrice « La Folie Douce SAS » : …0189',
+    );
+    expect(
+      sentence(
+        entity('legal_entity.creditor_account_proposal_cancelled', {
+          subjectLabel: ENTITY,
+          pendingId: 'p1',
+          last4: '0189',
+        }),
+      ),
+    ).toBe(
+      'Colette Martin a annulé la proposition de nouveau compte de l’entité émettrice « La Folie Douce SAS » : …0189',
+    );
   });
 
   it('dit le schéma d’avant et le nouveau, par leur mot', () => {

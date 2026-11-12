@@ -30,6 +30,13 @@ export const ACCOUNTING_FACTS = {
   creditorIdentifierAssigned: "legal_entity.creditor_identifier_assigned",
   /** Le compte où l'argent arrive change. */
   creditorAccountChanged: "legal_entity.creditor_account_changed",
+  /**
+   * Une modification du compte attend la confirmation d'un second membre
+   * (quatre yeux) ; sa confirmation s'écrit `creditorAccountChanged`.
+   */
+  creditorAccountProposed: "legal_entity.creditor_account_proposed",
+  /** Une modification en attente est annulée — le compte ne change pas. */
+  creditorAccountProposalCancelled: "legal_entity.creditor_account_proposal_cancelled",
   /** Le délai annoncé entre pré-notification et débit est renégocié. */
   preNotificationChanged: "legal_entity.pre_notification_changed",
   /** Le calendrier de prélèvement : délai de constitution, échéance N, cut-off de dépôt. */

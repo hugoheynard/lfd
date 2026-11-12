@@ -254,6 +254,7 @@ describe("SetCreditorAccountHandler", () => {
       handler: new SetCreditorAccountHandler(
         entities,
         new FixedClock(NOW),
+        new FixedIdGenerator("id"),
         events,
         new DirectUnitOfWork(),
       ),
@@ -263,7 +264,7 @@ describe("SetCreditorAccountHandler", () => {
   it("enregistre le compte, et le compte SEUL sort en quatre caractères", async () => {
     const { handler, entities, events } = doubles();
 
-    await handler.execute(new SetCreditorAccountCommand("le1", ACCOUNT_PAYLOAD));
+    await handler.execute(new SetCreditorAccountCommand("le1", ACCOUNT_PAYLOAD, "staff_author"));
 
     expect(entities.rows.get("le1")?.toPersistence().creditorIban).toBe(IBAN);
     const fact = events.traced[0]?.journalFact();
@@ -282,29 +283,46 @@ describe("SetCreditorAccountHandler", () => {
     await expect(
       // Deux chiffres intervertis dans la clé.
       handler.execute(
-        new SetCreditorAccountCommand("le1", {
-          ...ACCOUNT_PAYLOAD,
-          iban: "FR4120041010050500013M02606",
-        }),
+        new SetCreditorAccountCommand(
+          "le1",
+          { ...ACCOUNT_PAYLOAD, iban: "FR4120041010050500013M02606" },
+          "staff_author",
+        ),
       ),
     ).rejects.toBeInstanceOf(InvalidIbanError);
     expect(entities.rows.get("le1")?.toPersistence().creditorIban).toBeNull();
   });
 
-  it("le compte change librement — on peut changer de banque, contrairement à l'ICS", async () => {
-    const { handler, entities } = doubles();
+  /**
+   * Le compte change toujours — on peut changer de banque, contrairement à
+   * l'ICS —, mais une fois un compte confirmé, la modification attend un
+   * second membre (quatre yeux, T0) : la commande la PROPOSE.
+   */
+  it("une seconde saisie est proposée, pas prise : le compte confirmé reste", async () => {
+    const { handler, entities, events } = doubles();
 
-    await handler.execute(new SetCreditorAccountCommand("le1", ACCOUNT_PAYLOAD));
+    await handler.execute(new SetCreditorAccountCommand("le1", ACCOUNT_PAYLOAD, "staff_author"));
     await handler.execute(
-      new SetCreditorAccountCommand("le1", {
-        ...ACCOUNT_PAYLOAD,
-        iban: "FR7630006000011234567890189",
-      }),
+      new SetCreditorAccountCommand(
+        "le1",
+        { ...ACCOUNT_PAYLOAD, iban: "FR7630006000011234567890189" },
+        "staff_author",
+      ),
     );
 
-    expect(entities.rows.get("le1")?.toPersistence().creditorIban).toBe(
-      "FR7630006000011234567890189",
-    );
+    expect(entities.rows.get("le1")?.toPersistence()).toMatchObject({
+      creditorIban: IBAN,
+      pendingCreditorIban: "FR7630006000011234567890189",
+      pendingCreditorAccountId: "id_000002",
+      pendingCreditorAccountProposedByStaffId: "staff_author",
+      pendingCreditorAccountProposedAt: NOW,
+    });
+    const proposed = events.traced[1]?.journalFact();
+    expect(proposed).toMatchObject({
+      type: ACCOUNTING_FACTS.creditorAccountProposed,
+      payload: { pendingId: "id_000002", last4: "0189" },
+    });
+    expect(JSON.stringify(proposed)).not.toContain("FR7630006000011234567890189");
   });
 });
 
@@ -354,7 +372,7 @@ describe("SetLegalEntityArchivedHandler", () => {
     const entities = new InMemoryEntities();
     const entity = sampleEntity();
     entity.assignCreditorIdentifier(CreditorIdentifier.create(ICS));
-    entity.setCreditorAccount(account());
+    entity.setCreditorAccount(account(), { id: "pending_1", staffId: "staff_author", at: NOW });
     entities.rows.set("le1", entity);
     // Une seconde entité, sans quoi le handler refuse : on n'archive pas la
     // dernière en service.

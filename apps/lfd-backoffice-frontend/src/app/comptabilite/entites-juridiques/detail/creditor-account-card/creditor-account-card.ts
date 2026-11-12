@@ -18,6 +18,7 @@ import {
 } from 'fold-ng';
 
 import { LegalEntitiesService } from '../../../legal-entities.service';
+import { CreditorAccountPending } from '../creditor-account-pending/creditor-account-pending';
 
 /**
  * **Le compte créancier d'une entité** — la recopie de son RIB, telle que la
@@ -33,11 +34,17 @@ import { LegalEntitiesService } from '../../../legal-entities.service';
  * la saisie. Les autres champs se reprennent de la fiche relue tant que
  * personne n'a commencé à les modifier ; dès la première frappe, la saisie
  * prime jusqu'au prochain succès.
+ *
+ * 🔴 **Aux quatre yeux dès qu'un compte est confirmé** (plan
+ * `plan-paiement-au-compte-par-virement.md`, T0) : la première saisie est
+ * prise tout de suite, chaque suivante est une PROPOSITION qu'un autre membre
+ * confirme (`app-creditor-account-pending`). Le bouton le dit avant le geste.
  */
 @Component({
   selector: 'app-creditor-account-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    CreditorAccountPending,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldInputComponent,
@@ -82,6 +89,9 @@ export class CreditorAccountCard {
       this.countryDraft().trim() !== '',
   );
 
+  /** Un compte est-il confirmé ? Alors une saisie ne fait que le proposer. */
+  protected readonly proposing = computed(() => this.entity().creditorAccountLast4 !== '');
+
   constructor() {
     // Une fiche relue repose la recopie telle que le serveur l'a rendue —
     // sauf pendant une saisie, qu'elle n'écrase jamais. L'IBAN n'en dépend pas.
@@ -122,7 +132,9 @@ export class CreditorAccountCard {
         this.editing.set(false);
         this.fillDrafts(this.entity());
       },
-      said: 'Compte enregistré.',
+      said: this.proposing()
+        ? 'Modification proposée : un autre membre de la comptabilité doit la confirmer.'
+        : 'Compte enregistré.',
     });
   }
 

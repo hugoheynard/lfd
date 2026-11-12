@@ -143,6 +143,11 @@ export type {
   SignMandatePayload,
 } from "./payment-mandate.js";
 export {
+  confirmCreditorAccountPayloadSchema,
+  type ConfirmCreditorAccountPayload,
+  type PendingCreditorAccountView,
+} from "./creditor-account-review.js";
+export {
   assignCreditorIdentifierPayloadSchema,
   correctLegalEntityPayloadSchema,
   declareLegalEntityPayloadSchema,

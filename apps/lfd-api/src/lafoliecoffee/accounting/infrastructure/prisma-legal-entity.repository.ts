@@ -3,14 +3,16 @@ import { Injectable } from "@nestjs/common";
 import { FieldCipher } from "../../../platform/crypto/field-cipher.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import type { LegalEntity } from "../domain/entities/legal-entity.js";
+import { LegalEntityChangedConcurrentlyError } from "../domain/errors/creditor-account-review-errors.js";
 import { LegalEntityRepository } from "../domain/ports/legal-entity.repository.js";
 import { LEGAL_ENTITY_ROW_INCLUDE, legalEntityColumns, toDomain } from "./legal-entity.mapper.js";
 
 /**
  * Adaptateur Prisma du port d'**écriture**.
  *
- * `save` est un `upsert` sur l'identité frappée par la commande, et non un
- * `create`/`update` choisi par le handler : la distinction « neuve ou modifiée »
+ * `save` écrit l'identité frappée par la commande — mise à jour sous verrou de
+ * version, création si la ligne n'existe pas —, et non un `create`/`update`
+ * choisi par le handler : la distinction « neuve ou modifiée »
  * n'existe pas côté domaine — l'agrégat est écrit en entier, tel que
  * `toPersistence()` le rend.
  *
@@ -42,18 +44,44 @@ export class PrismaLegalEntityRepository extends LegalEntityRepository {
    * l'ancienne valeur. C'est arrivé le 2026-09-12 avec les réglages de mandat —
    * le semis disait « posés » sur une colonne restée vide.
    *
-   * Un `...snapshot` étalé serait plus sûr mais ferait passer `id` et les
-   * horodatages dans l'`update` ; la vigilance est le prix de ce choix.
+   * 🔴 **Le verrou optimiste** (plan `plan-paiement-au-compte-par-virement.md`,
+   * T0) : la ligne ne s'écrit que si elle porte encore la version que l'agrégat
+   * a lue, et elle passe à la suivante. Sous Postgres, un second écrivain
+   * concurrent attend le verrou de ligne, puis relit la condition et ne trouve
+   * plus rien : son geste est refusé (409) au lieu d'écraser le premier. Une
+   * ligne absente est une entité neuve, créée.
+   *
+   * @throws {LegalEntityChangedConcurrentlyError} la ligne a changé depuis la lecture.
    */
   async save(entity: LegalEntity): Promise<void> {
     const snapshot = entity.toPersistence();
     const columns = legalEntityColumns(snapshot, this.cipher);
-    await this.prisma.legalEntity.upsert({
-      where: { id: snapshot.id },
-      create: { id: snapshot.id, ...columns },
-      update: columns,
+    const next = snapshot.version + 1;
+    const updated = await this.prisma.legalEntity.updateMany({
+      where: { id: snapshot.id, version: snapshot.version },
+      data: { ...columns, version: next },
     });
+    if (updated.count === 0) {
+      await this.createOrRefuse(snapshot.id, columns, next);
+    }
+    entity.persistedAsNextVersion();
     await this.saveBankLimits(entity);
+  }
+
+  /** Pas de ligne à cette version : neuve, on la crée ; changée, on refuse. */
+  private async createOrRefuse(
+    id: string,
+    columns: ReturnType<typeof legalEntityColumns>,
+    version: number,
+  ): Promise<void> {
+    const existing = await this.prisma.legalEntity.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (existing !== null) {
+      throw new LegalEntityChangedConcurrentlyError(id);
+    }
+    await this.prisma.legalEntity.create({ data: { id, ...columns, version } });
   }
 
   /**

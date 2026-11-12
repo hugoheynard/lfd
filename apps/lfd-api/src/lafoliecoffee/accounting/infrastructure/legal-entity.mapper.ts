@@ -39,25 +39,28 @@ export function toDomain(row: LegalEntityRow, cipher: FieldCipher): LegalEntity 
 }
 
 /**
- * L'IBAN créancier, **d'où qu'il vienne** — scellé de préférence, clair sinon.
+ * L'IBAN créancier CONFIRMÉ — le scellé, et lui seul.
  *
- * 🔴 La bascule du 2026-09-12, palier 2 sur 3. Une entité enregistrée avant ce
- * jour porte sa valeur en clair dans `creditor_iban` ; toute écriture depuis
- * remplit `creditor_iban_sealed`. Lire le scellé D'ABORD fait que la valeur
- * ressaisie par l'écran gagne, sans qu'aucun drapeau ne soit à tenir.
- *
- * L'ordre n'est pas indifférent : l'inverse ferait gagner la vieille valeur
- * claire sur la neuve, et le retour arrière ressusciterait un IBAN périmé — sur
- * le compte où l'argent arrive.
- *
- * Aucun rattrapage n'est écrit ici : la colonne claire disparaîtra au palier 3,
- * et ce jour-là cette fonction se réduira à une lecture.
+ * 🔴 L'instantané du créancier (factures, lot SEPA, mandat, arrêtés) se bâtit
+ * sur ce que rend cette fonction : ni la proposition en attente
+ * (`pending_creditor_iban_sealed`), ni l'ancienne colonne claire
+ * `creditor_iban`, qui n'est plus alimentée depuis le scellement et ne sert
+ * plus que de retour arrière (plan `plan-paiement-au-compte-par-virement.md`,
+ * T0). Une entité qui n'aurait que la valeur claire se lit sans compte, et son
+ * compte se ressaisit par l'écran — première saisie, donc immédiate.
  */
 function creditorIbanOf(row: LegalEntityRow, cipher: FieldCipher): string | null {
-  if (row.creditorIbanSealed !== null && row.creditorIbanSealed !== "") {
-    return cipher.open(row.creditorIbanSealed);
-  }
-  return row.creditorIban;
+  return openSealed(row.creditorIbanSealed, cipher);
+}
+
+/** Un scellé ouvert, ou `null` s'il n'y en a pas. */
+function openSealed(sealed: string | null, cipher: FieldCipher): string | null {
+  return sealed === null || sealed === "" ? null : cipher.open(sealed);
+}
+
+/** Un IBAN scellé pour l'écriture, ou `null`. */
+function sealOrNull(iban: string | null, cipher: FieldCipher): string | null {
+  return iban === null || iban === "" ? null : cipher.seal(iban);
 }
 
 /** Agrégat → vue d'écran. */
@@ -96,6 +99,7 @@ export function toView(entity: LegalEntity, isLastActive: boolean): LegalEntityR
     creditorAccountCity: snapshot.creditorAccountCity ?? "",
     creditorAccountCountryCode: snapshot.creditorAccountCountryCode ?? "",
     creditorIdentityFrozen: entity.creditorIdentityFrozen,
+    pendingCreditorAccount: pendingView(entity),
     preNotificationDays: snapshot.preNotificationDays,
     autoCollectionEnabled: snapshot.autoCollectionEnabled,
     autoCollectionDelayHours: snapshot.autoCollectionDelayHours,
@@ -125,6 +129,32 @@ export function toView(entity: LegalEntity, isLastActive: boolean): LegalEntityR
     // est une propriété de l'ensemble. Le lui faire calculer supposerait de lui
     // donner un dépôt, c'est-à-dire d'en faire autre chose qu'un mapper.
     isLastActive,
+  };
+}
+
+/**
+ * La proposition en attente telle que la fiche la montre : quatre caractères
+ * de l'IBAN, le reste en entier (comme le compte confirmé), l'auteur par sa
+ * fiche — son nom est résolu par l'application.
+ */
+function pendingView(entity: LegalEntity): LegalEntityRecord["pendingCreditorAccount"] {
+  const pending = entity.pendingCreditorAccount;
+  if (pending === null) {
+    return null;
+  }
+  const { account } = pending;
+  return {
+    id: pending.id,
+    last4: pending.last4(),
+    bic: account.bic.value,
+    holder: account.holder,
+    line1: account.address.line1,
+    line2: account.address.line2,
+    postalCode: account.address.postalCode,
+    city: account.address.city,
+    countryCode: account.address.countryCode,
+    proposedByStaffId: pending.proposedByStaffId,
+    proposedAt: pending.proposedAt.toISOString(),
   };
 }
 
@@ -165,6 +195,18 @@ function toSnapshot(row: LegalEntityRow, cipher: FieldCipher): LegalEntitySnapsh
     creditorAccountPostalCode: row.creditorAccountPostalCode,
     creditorAccountCity: row.creditorAccountCity,
     creditorAccountCountryCode: row.creditorAccountCountryCode,
+    pendingCreditorAccountId: row.pendingCreditorAccountId,
+    pendingCreditorIban: openSealed(row.pendingCreditorIbanSealed, cipher),
+    pendingCreditorBic: row.pendingCreditorBic,
+    pendingCreditorAccountHolder: row.pendingCreditorAccountHolder,
+    pendingCreditorAccountLine1: row.pendingCreditorAccountLine1,
+    pendingCreditorAccountLine2: row.pendingCreditorAccountLine2,
+    pendingCreditorAccountPostalCode: row.pendingCreditorAccountPostalCode,
+    pendingCreditorAccountCity: row.pendingCreditorAccountCity,
+    pendingCreditorAccountCountryCode: row.pendingCreditorAccountCountryCode,
+    pendingCreditorAccountProposedByStaffId: row.pendingCreditorAccountProposedByStaffId,
+    pendingCreditorAccountProposedAt: row.pendingCreditorAccountProposedAt,
+    version: row.version,
     firstMandateIssuedAt: row.firstMandateIssuedAt,
     preNotificationDays: row.preNotificationDays,
     mandateContractDescription: row.mandateContractDescription,
@@ -216,12 +258,25 @@ function toSnapshot(row: LegalEntityRow, cipher: FieldCipher): LegalEntitySnapsh
  *
  * N'écrit pas non plus `invoicesIssued` (lot ZA) : ce n'est pas une colonne,
  * c'est l'existence d'une ligne d'`invoice`, lue à la relecture.
+ *
+ * N'écrit pas `version` : c'est `save` qui la compare et l'incrémente, dans la
+ * même requête que ces colonnes. La proposition en attente part, comme le
+ * compte confirmé, avec son IBAN scellé.
  */
 export function legalEntityColumns(
   snapshot: LegalEntitySnapshot,
   cipher: FieldCipher,
-): Omit<LegalEntitySnapshot, "id" | "creditorIban" | "firstMandateIssuedAt" | "invoicesIssued"> & {
+): Omit<
+  LegalEntitySnapshot,
+  | "id"
+  | "creditorIban"
+  | "pendingCreditorIban"
+  | "firstMandateIssuedAt"
+  | "invoicesIssued"
+  | "version"
+> & {
   readonly creditorIbanSealed: string | null;
+  readonly pendingCreditorIbanSealed: string | null;
 } {
   return {
     name: snapshot.name,
@@ -236,10 +291,7 @@ export function legalEntityColumns(
     city: snapshot.city,
     countryCode: snapshot.countryCode,
     ics: snapshot.ics,
-    creditorIbanSealed:
-      snapshot.creditorIban === null || snapshot.creditorIban === ""
-        ? null
-        : cipher.seal(snapshot.creditorIban),
+    creditorIbanSealed: sealOrNull(snapshot.creditorIban, cipher),
     creditorBic: snapshot.creditorBic,
     creditorAccountHolder: snapshot.creditorAccountHolder,
     creditorAccountLine1: snapshot.creditorAccountLine1,
@@ -247,6 +299,17 @@ export function legalEntityColumns(
     creditorAccountPostalCode: snapshot.creditorAccountPostalCode,
     creditorAccountCity: snapshot.creditorAccountCity,
     creditorAccountCountryCode: snapshot.creditorAccountCountryCode,
+    pendingCreditorAccountId: snapshot.pendingCreditorAccountId,
+    pendingCreditorIbanSealed: sealOrNull(snapshot.pendingCreditorIban, cipher),
+    pendingCreditorBic: snapshot.pendingCreditorBic,
+    pendingCreditorAccountHolder: snapshot.pendingCreditorAccountHolder,
+    pendingCreditorAccountLine1: snapshot.pendingCreditorAccountLine1,
+    pendingCreditorAccountLine2: snapshot.pendingCreditorAccountLine2,
+    pendingCreditorAccountPostalCode: snapshot.pendingCreditorAccountPostalCode,
+    pendingCreditorAccountCity: snapshot.pendingCreditorAccountCity,
+    pendingCreditorAccountCountryCode: snapshot.pendingCreditorAccountCountryCode,
+    pendingCreditorAccountProposedByStaffId: snapshot.pendingCreditorAccountProposedByStaffId,
+    pendingCreditorAccountProposedAt: snapshot.pendingCreditorAccountProposedAt,
     preNotificationDays: snapshot.preNotificationDays,
     mandateContractDescription: snapshot.mandateContractDescription,
     mandatePaymentType: snapshot.mandatePaymentType,

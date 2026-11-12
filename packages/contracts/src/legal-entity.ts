@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { PendingCreditorAccountView } from "./creditor-account-review.js";
+
 /**
  * Les bornes du **délai de pré-notification**, recopiées du domaine.
  *
@@ -250,6 +252,12 @@ export interface LegalEntityView {
    * restent modifiables, aucun mandat ne les porte.
    */
   readonly creditorIdentityFrozen: boolean;
+  /**
+   * La modification du compte en attente de la confirmation d'un second
+   * membre, ou `null`. Les champs `creditor*` ci-dessus restent le compte
+   * CONFIRMÉ — celui que factures, lots et mandats lisent.
+   */
+  readonly pendingCreditorAccount: PendingCreditorAccountView | null;
   readonly preNotificationDays: number;
   /** La constitution automatique — désactivée par défaut. */
   readonly autoCollectionEnabled: boolean;
