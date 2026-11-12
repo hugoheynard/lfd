@@ -11,6 +11,7 @@ import type { LegalEntityView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const BASE = "/admin/accounting/legal-entities";
 const NONE = { perDebitCents: null, perRemittanceCents: null, monthlyCents: null };
@@ -43,6 +44,7 @@ function staff(): ReturnType<E2eContext["asSub"]> {
 async function declare(): Promise<string> {
   const response = await staff()
     .post(BASE)
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: "La Folie Douce",
       legalForm: "SAS",
@@ -78,6 +80,7 @@ describe("les plafonds de la banque", () => {
 
     await staff()
       .put(`${BASE}/${id}/bank-collection-limits`)
+      .set(INTENT_KEY, freshIntent())
       .send({
         scheme: "B2B",
         perDebitCents: 500_000,
@@ -112,11 +115,13 @@ describe("les plafonds de la banque", () => {
     const path = `${BASE}/${id}/bank-collection-limits`;
     await staff()
       .put(path)
+      .set(INTENT_KEY, freshIntent())
       .send({ scheme: "B2B", ...NONE, monthlyCents: 100 })
       .expect(204);
 
     await staff()
       .put(path)
+      .set(INTENT_KEY, freshIntent())
       .send({ scheme: "B2B", ...NONE })
       .expect(204);
 
@@ -128,6 +133,7 @@ describe("les plafonds de la banque", () => {
 
     const response = await staff()
       .put(`${BASE}/${id}/bank-collection-limits`)
+      .set(INTENT_KEY, freshIntent())
       .send({ scheme: "B2B", ...NONE, perRemittanceCents: -5 })
       .expect(400);
 
@@ -141,10 +147,12 @@ describe("les plafonds de la banque", () => {
 
     await staff()
       .put(path)
+      .set(INTENT_KEY, freshIntent())
       .send({ scheme: "B2B", ...NONE, monthlyCents: 12.5 })
       .expect(400);
     await staff()
       .put(path)
+      .set(INTENT_KEY, freshIntent())
       .send({ scheme: "COR1", ...NONE })
       .expect(400);
   });
@@ -152,6 +160,7 @@ describe("les plafonds de la banque", () => {
   it("refuse en 404 une entité inconnue", async () => {
     await staff()
       .put(`${BASE}/absente/bank-collection-limits`)
+      .set(INTENT_KEY, freshIntent())
       .send({ scheme: "B2B", ...NONE })
       .expect(404);
   });

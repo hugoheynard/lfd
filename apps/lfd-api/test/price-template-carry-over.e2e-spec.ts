@@ -20,6 +20,7 @@ import {
   stubAdminVerifier,
 } from "./decision-carry-over-scene.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const TIERS = [{ minQuantity: 1, unitPriceMillicents: 800_000 }];
 
@@ -51,6 +52,7 @@ async function detachedWithTemplate(): Promise<{
   const templateId = jsonBody<CreatedIdResponse>(
     await staffOf(ctx)
       .post("/admin/pricing/templates")
+      .set(INTENT_KEY, freshIntent())
       .send({
         kind: "mercuriale",
         label: "Hôtels",

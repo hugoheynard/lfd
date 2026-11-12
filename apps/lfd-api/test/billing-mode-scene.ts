@@ -26,6 +26,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { LATEST_DELIVERY_FULFILLMENT } from "./delivery-deadline-fixture.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 export const BASE = "/admin/accounting/legal-entities";
 
@@ -44,6 +45,7 @@ export function staff(): ReturnType<E2eContext["asSub"]> {
 export async function declare(siren = "552100554", name = "La Folie Douce"): Promise<string> {
   const response = await staff()
     .post(BASE)
+    .set(INTENT_KEY, freshIntent())
     .send({
       name,
       legalForm: "SAS",
@@ -98,7 +100,11 @@ export let rumSeq = 0;
  */
 export async function mandated(entityId: string, companyId: string): Promise<void> {
   rumSeq += 1;
-  await staff().put(`/admin/companies/${companyId}/bank-account`).send(DEBTOR_RIB).expect(204);
+  await staff()
+    .put(`/admin/companies/${companyId}/bank-account`)
+    .set(INTENT_KEY, freshIntent())
+    .send(DEBTOR_RIB)
+    .expect(204);
   await ctx.prisma.paymentMandate.create({
     data: {
       companyId,

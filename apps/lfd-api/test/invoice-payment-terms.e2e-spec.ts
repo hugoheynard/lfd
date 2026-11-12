@@ -15,6 +15,7 @@ import type { InvoiceDossierView, LegalEntityView } from "@lfd/contracts";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { addBillingAddress, createCompany } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const BASE = "/admin/accounting/legal-entities";
 
@@ -46,6 +47,7 @@ function staff(): ReturnType<E2eContext["asSub"]> {
 async function declare(): Promise<string> {
   const response = await staff()
     .post(BASE)
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: "La Folie Douce",
       legalForm: "SAS",
@@ -64,7 +66,11 @@ async function declare(): Promise<string> {
     .expect(201);
   const id = jsonBody<{ id: string }>(response).id;
   // Le préfixe (lot ZA) est posé : cette suite ne juge que les mentions.
-  await staff().put(`${BASE}/${id}/invoice-prefix`).send({ prefix: "LFD" }).expect(204);
+  await staff()
+    .put(`${BASE}/${id}/invoice-prefix`)
+    .set(INTENT_KEY, freshIntent())
+    .send({ prefix: "LFD" })
+    .expect(204);
   return id;
 }
 
@@ -102,7 +108,11 @@ describe("les mentions de paiement de l'entité", () => {
   it("s'écrivent, se relisent, et journalisent l'après", async () => {
     const id = await declare();
 
-    await staff().put(`${BASE}/${id}/invoice-payment-terms`).send(TERMS).expect(204);
+    await staff()
+      .put(`${BASE}/${id}/invoice-payment-terms`)
+      .set(INTENT_KEY, freshIntent())
+      .send(TERMS)
+      .expect(204);
 
     const entity = await read(id);
     expect(entity.invoicePaymentTerms).toEqual(TERMS);
@@ -119,6 +129,7 @@ describe("les mentions de paiement de l'entité", () => {
 
     const response = await staff()
       .put(`${BASE}/${id}/invoice-payment-terms`)
+      .set(INTENT_KEY, freshIntent())
       .send({ ...TERMS, recoveryIndemnityCents: 40 })
       .expect(400);
 
@@ -131,6 +142,7 @@ describe("les mentions de paiement de l'entité", () => {
 
     await staff()
       .put(`${BASE}/${id}/invoice-payment-terms`)
+      .set(INTENT_KEY, freshIntent())
       .send({ latePenaltyRateBasisPoints: 1_415 })
       .expect(400);
   });
@@ -164,7 +176,11 @@ describe("le dossier de facturation dit ce qui empêcherait d'émettre", () => {
       "payment_terms_missing",
     ]);
 
-    await staff().put(`${BASE}/${id}/invoice-payment-terms`).send(TERMS).expect(204);
+    await staff()
+      .put(`${BASE}/${id}/invoice-payment-terms`)
+      .set(INTENT_KEY, freshIntent())
+      .send(TERMS)
+      .expect(204);
 
     expect((await dossier(company.id)).issuanceBlockers).toEqual([]);
   });

@@ -132,6 +132,7 @@ describe("le report d'un plancher sur la référence détachée (R2)", () => {
     // Confirmer re-pose une version neuve : l'identifiant d'origine change.
     await staffOf(ctx)
       .post(`/admin/pricing/floors/variant/${oldSku}/confirm?clientele=pro`)
+      .set(INTENT_KEY, freshIntent())
       .expect(204);
     const nextVersion = await floorIdOn(oldSku);
     expect(nextVersion).not.toBe(floorId);
@@ -167,6 +168,7 @@ describe("le report d'un plancher sur la référence détachée (R2)", () => {
     const refused = await ctx
       .asSub(sub)
       .post(`/admin/pricing/floors/${floorId}/carry-over`)
+      .set(INTENT_KEY, freshIntent())
       .send({ fromSku: oldSku, toSku: newSku, reason: CARRY_REASON });
 
     expect(refused.status).toBe(403);

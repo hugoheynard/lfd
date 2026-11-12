@@ -27,12 +27,13 @@ import {
   staff,
   useBillingModeScene,
 } from "./billing-mode-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 useBillingModeScene();
 
 async function setWeekly(id: string, payerId: string): Promise<PayerBillingModeView> {
   const route = `${BASE}/${id}/payers/${payerId}/billing-mode`;
-  await staff().put(route).send({ mode: "weekly" }).expect(204);
+  await staff().put(route).set(INTENT_KEY, freshIntent()).send({ mode: "weekly" }).expect(204);
   return jsonBody<PayerBillingModeView>(await staff().get(route).expect(200));
 }
 

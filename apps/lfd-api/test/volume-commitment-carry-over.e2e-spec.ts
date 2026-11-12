@@ -53,6 +53,7 @@ beforeEach(async () => {
 const sign = (companyId: string, scope: { type: string; id: string }, promisedQuantity: number) =>
   staffOf(ctx)
     .post("/admin/pricing/commitments")
+    .set(INTENT_KEY, freshIntent())
     .send({ companyId, scope, promisedQuantity, validFrom: daysAgo(3), validTo: daysAgo(-60) })
     .expect(201);
 

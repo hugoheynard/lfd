@@ -15,6 +15,7 @@ import type { BillingRhythmsCalendarView } from "@lfd/contracts";
 import { depositDeadlineOf } from "../src/lafoliecoffee/accounting/domain/services/collection-calendar.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const BASE = "/admin/accounting/legal-entities";
 const CUTOFF = { businessDaysBefore: 2, time: "16:00" };
@@ -47,6 +48,7 @@ function staff(): ReturnType<E2eContext["asSub"]> {
 async function declare(): Promise<string> {
   const response = await staff()
     .post(BASE)
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: "La Folie Douce",
       legalForm: "SAS",
@@ -88,6 +90,7 @@ describe("la limite de dépôt sur le calendrier des rythmes", () => {
     const id = await declare();
     await staff()
       .put(`${BASE}/${id}/collection-schedule`)
+      .set(INTENT_KEY, freshIntent())
       .send({ delayHours: 1, daysAfterClosure: null, depositCutoff: CUTOFF })
       .expect(204);
 

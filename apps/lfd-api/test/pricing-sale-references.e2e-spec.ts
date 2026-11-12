@@ -58,7 +58,11 @@ const staff = (): ReturnType<E2eContext["http"]> => ctx.asSub(E2E_STAFF_SUB);
 async function aWithdrawnSku(): Promise<string> {
   const fiche = await anActiveFiche(staff, "Financier retiré", "both");
   await relayAll(ctx);
-  await staff().put(`/pim/catalogue/products/${fiche.id}/unpublish`).send({}).expect(200);
+  await staff()
+    .put(`/pim/catalogue/products/${fiche.id}/unpublish`)
+    .set(INTENT_KEY, freshIntent())
+    .send({})
+    .expect(200);
   await relayAll(ctx);
   return fiche.variantSku;
 }
@@ -71,6 +75,7 @@ async function aPublicOnlySku(): Promise<string> {
   // l'article arrivé du référentiel attend sa validation avant d'être servi.
   await staff()
     .post("/admin/catalog/review/approve")
+    .set(INTENT_KEY, freshIntent())
     .send({ skus: [fiche.variantSku], audiences: ["public"] })
     .expect(204);
   return fiche.variantSku;
@@ -143,6 +148,7 @@ describe("l'engagement de volume", () => {
   const sign = (companyId: string, sku: string) =>
     staff()
       .post("/admin/pricing/commitments")
+      .set(INTENT_KEY, freshIntent())
       .send({
         companyId,
         scope: { type: "product", id: sku },

@@ -16,6 +16,7 @@ import type {
 import { daysAgo, jsonBody } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
 import { BASE, ctx, declare, staff, useBillingModeScene } from "./billing-mode-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 useBillingModeScene();
 
@@ -66,6 +67,7 @@ describe("le premier choix du mode, sous le droit sociétés", () => {
     await ctx
       .asSub("staff-societes")
       .put(route(payer.id))
+      .set(INTENT_KEY, freshIntent())
       .send({ legalEntityId: id, mode: "weekly" })
       .expect(204);
 
@@ -82,7 +84,11 @@ describe("le premier choix du mode, sous le droit sociétés", () => {
     const payer = await createCompany(ctx.prisma, { raisonSociale: "Le Doublon SAS" });
     await staffWith("staff-societes", SOCIETES);
     const put = (mode: string) =>
-      ctx.asSub("staff-societes").put(route(payer.id)).send({ legalEntityId: id, mode });
+      ctx
+        .asSub("staff-societes")
+        .put(route(payer.id))
+        .set(INTENT_KEY, freshIntent())
+        .send({ legalEntityId: id, mode });
 
     await put("weekly").expect(204);
     await put("weekly").expect(204);
@@ -104,6 +110,7 @@ describe("le premier choix du mode, sous le droit sociétés", () => {
     await ctx
       .asSub("staff-compta")
       .put(route(payer.id))
+      .set(INTENT_KEY, freshIntent())
       .send({ legalEntityId: id, mode: "weekly" })
       .expect(403);
     expect(await segments(payer.id)).toBe(0);
@@ -137,6 +144,7 @@ describe("la lecture du premier choix, sous le droit sociétés", () => {
     await ctx
       .asSub("staff-societes")
       .put(route(payer.id))
+      .set(INTENT_KEY, freshIntent())
       .send({ legalEntityId: id, mode: "weekly" })
       .expect(204);
     expect((await readAs("staff-lecteur", payer.id)).chosen).toEqual([
@@ -200,7 +208,11 @@ describe("les entités du choix à l'ouverture d'un compte, sous le droit socié
       { id: replacement, name: "La Folie Coffee" },
       { id, name: "La Folie Douce" },
     ]);
-    await staff().put(`${BASE}/${id}/archived`).send({ archived: true }).expect(204);
+    await staff()
+      .put(`${BASE}/${id}/archived`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ archived: true })
+      .expect(204);
     expect(await list()).toEqual([{ id: replacement, name: "La Folie Coffee" }]);
   });
 

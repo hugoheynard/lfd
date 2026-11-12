@@ -26,6 +26,7 @@ import {
   staff,
   useBillingModeScene,
 } from "./billing-mode-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 useBillingModeScene();
 
@@ -36,6 +37,7 @@ const route = (entityId: string, companyId: string): string =>
 async function toTransfer(entityId: string, companyId: string): Promise<PayerCollectionMeansView> {
   await staff()
     .put(route(entityId, companyId))
+    .set(INTENT_KEY, freshIntent())
     .send({ means: "bank_transfer", reason: REASON })
     .expect(204);
   return jsonBody<PayerCollectionMeansView>(
@@ -86,12 +88,14 @@ describe("le moyen d'encaissement d'un payeur", () => {
     // Un rejeu du même geste n'écrit rien.
     await staff()
       .put(route(id, payer.id))
+      .set(INTENT_KEY, freshIntent())
       .send({ means: "bank_transfer", reason: REASON })
       .expect(204);
     expect(await ctx.prisma.payerCollectionMeans.count()).toBe(1);
     // Revenir au prélèvement pendant que le virement est programmé : annuler d'abord.
     const refused = await staff()
       .put(route(id, payer.id))
+      .set(INTENT_KEY, freshIntent())
       .send({ means: "sepa_debit", reason: REASON })
       .expect(409);
     expect(jsonBody<{ code: string }>(refused).code).toBe(
@@ -100,6 +104,7 @@ describe("le moyen d'encaissement d'un payeur", () => {
 
     await staff()
       .delete(`${route(id, payer.id)}/scheduled`)
+      .set(INTENT_KEY, freshIntent())
       .expect(204);
 
     const after = jsonBody<PayerCollectionMeansView>(
@@ -110,6 +115,7 @@ describe("le moyen d'encaissement d'un payeur", () => {
     expect(row.cancelledAt).not.toBeNull();
     await staff()
       .delete(`${route(id, payer.id)}/scheduled`)
+      .set(INTENT_KEY, freshIntent())
       .expect(409);
   });
 
@@ -142,6 +148,7 @@ describe("le moyen d'encaissement d'un payeur", () => {
     });
     const refused = await staff()
       .put(route(id, site.id))
+      .set(INTENT_KEY, freshIntent())
       .send({ means: "bank_transfer", reason: REASON })
       .expect(409);
     expect(jsonBody<{ code: string }>(refused).code).toBe(
@@ -154,12 +161,17 @@ describe("le moyen d'encaissement d'un payeur", () => {
     const payer = await createCompany(ctx.prisma, { raisonSociale: "Sans Motif SAS" });
     const blank = await staff()
       .put(route(id, payer.id))
+      .set(INTENT_KEY, freshIntent())
       .send({ means: "bank_transfer", reason: "  " })
       .expect(400);
     expect(jsonBody<{ code: string }>(blank).code).toBe(
       "accounting.collection_means.reason_required",
     );
-    await staff().put(route(id, payer.id)).send({ means: "cheque", reason: REASON }).expect(400);
+    await staff()
+      .put(route(id, payer.id))
+      .set(INTENT_KEY, freshIntent())
+      .send({ means: "cheque", reason: REASON })
+      .expect(400);
     expect(await ctx.prisma.payerCollectionMeans.count()).toBe(0);
   });
 
@@ -182,10 +194,12 @@ describe("le moyen d'encaissement d'un payeur", () => {
     await accountant().get(route(id, payer.id)).expect(200);
     await accountant()
       .put(route(id, payer.id))
+      .set(INTENT_KEY, freshIntent())
       .send({ means: "bank_transfer", reason: REASON })
       .expect(403);
     await accountant()
       .delete(`${route(id, payer.id)}/scheduled`)
+      .set(INTENT_KEY, freshIntent())
       .expect(403);
     expect(await ctx.prisma.payerCollectionMeans.count()).toBe(0);
   });
@@ -202,14 +216,20 @@ describe("un seul changement en attente par payeur, mode et moyen confondus (K1,
     await ordered(meansFirst.id);
     await ordered(modeFirst.id);
     await toTransfer(id, meansFirst.id);
-    await staff().put(modeRoute(id, modeFirst.id)).send({ mode: "weekly" }).expect(204);
+    await staff()
+      .put(modeRoute(id, modeFirst.id))
+      .set(INTENT_KEY, freshIntent())
+      .send({ mode: "weekly" })
+      .expect(204);
 
     const modeRefused = await staff()
       .put(modeRoute(id, meansFirst.id))
+      .set(INTENT_KEY, freshIntent())
       .send({ mode: "weekly" })
       .expect(409);
     const meansRefused = await staff()
       .put(route(id, modeFirst.id))
+      .set(INTENT_KEY, freshIntent())
       .send({ means: "bank_transfer", reason: REASON })
       .expect(409);
 
@@ -235,8 +255,11 @@ describe("un seul changement en attente par payeur, mode et moyen confondus (K1,
     await ordered(payer.id);
 
     const [mode, means] = await Promise.all([
-      staff().put(modeRoute(id, payer.id)).send({ mode: "weekly" }),
-      staff().put(route(id, payer.id)).send({ means: "bank_transfer", reason: REASON }),
+      staff().put(modeRoute(id, payer.id)).set(INTENT_KEY, freshIntent()).send({ mode: "weekly" }),
+      staff()
+        .put(route(id, payer.id))
+        .set(INTENT_KEY, freshIntent())
+        .send({ means: "bank_transfer", reason: REASON }),
     ]);
 
     expect([mode.status, means.status].sort()).toEqual([204, 409]);

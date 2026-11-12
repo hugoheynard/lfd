@@ -24,6 +24,7 @@ import type {
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { seedPickupPoint } from "./promotion-fixtures.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /** Le jeton porteur EST le `sub` du staff : chaque personne semée a le sien. */
 const subjectAsToken = {
@@ -119,7 +120,7 @@ describe("les droits — un seul endroit", () => {
       { resource: "b2b_pricing", action: "read" },
     ]);
     await pricingReader.get(PROMOTIONS).expect(200);
-    await pricingReader.post(PROMOTIONS).send(terms()).expect(403);
+    await pricingReader.post(PROMOTIONS).set(INTENT_KEY, freshIntent()).send(terms()).expect(403);
 
     const settingsReader = await staffWith("settings-reader", "communication", [
       { resource: "lfc_site_settings", action: "read" },
@@ -135,9 +136,10 @@ describe("les droits — un seul endroit", () => {
     const pricer = await staffWith("pricer", "communication", [
       { resource: "b2b_pricing", action: "write" },
     ]);
-    await pricer.post(PROMOTIONS).send(terms()).expect(201);
+    await pricer.post(PROMOTIONS).set(INTENT_KEY, freshIntent()).send(terms()).expect(201);
     await pricer
       .post(PROMOTIONS)
+      .set(INTENT_KEY, freshIntent())
       .send(terms({ fulfillment: AT_COEUR_POINT, internalName: "Cœur", scope: VIE_002 }))
       .expect(201);
   });
@@ -152,6 +154,7 @@ describe("les droits — un seul endroit", () => {
     ]);
     await siteKeeper
       .post(PROMOTIONS)
+      .set(INTENT_KEY, freshIntent())
       .send(terms({ fulfillment: AT_COEUR_POINT, internalName: "Cœur" }))
       .expect(403);
   });
@@ -160,6 +163,7 @@ describe("les droits — un seul endroit", () => {
     await admin().get("/admin/sites/pk_coeur/promotions").expect(404);
     await admin()
       .post("/admin/sites/pk_coeur/promotions")
+      .set(INTENT_KEY, freshIntent())
       .send(terms({ fulfillment: AT_COEUR_POINT }))
       .expect(404);
   });
@@ -177,10 +181,12 @@ describe("après la bascule — les refus nommés", () => {
     const individuals = [{ kind: "individuals", companyId: null }] as const;
     await admin()
       .post(PROMOTIONS)
+      .set(INTENT_KEY, freshIntent())
       .send(terms({ audiences: [...individuals] }))
       .expect(201);
     const refused = await admin()
       .post(PROMOTIONS)
+      .set(INTENT_KEY, freshIntent())
       .send(terms({ internalName: "Doublon", audiences: [...individuals] }))
       .expect(409);
     expect(refusalOf(refused)).toMatchObject({ code: "promotions.overlapping" });
@@ -190,6 +196,7 @@ describe("après la bascule — les refus nommés", () => {
     // Un public disjoint coexiste.
     await admin()
       .post(PROMOTIONS)
+      .set(INTENT_KEY, freshIntent())
       .send(
         terms({
           internalName: "Pros actifs",
@@ -200,6 +207,7 @@ describe("après la bascule — les refus nommés", () => {
     // `pros` couvre les pros actifs : refusé.
     const pros = await admin()
       .post(PROMOTIONS)
+      .set(INTENT_KEY, freshIntent())
       .send(
         terms({ internalName: "Tous les pros", audiences: [{ kind: "pros", companyId: null }] }),
       )
@@ -210,6 +218,7 @@ describe("après la bascule — les refus nommés", () => {
   it("ramène le public à sa forme canonique et filtre l'écran par société (L8b)", async () => {
     const created = await admin()
       .post(PROMOTIONS)
+      .set(INTENT_KEY, freshIntent())
       .send(
         terms({
           audiences: [
@@ -227,6 +236,7 @@ describe("après la bascule — les refus nommés", () => {
     const id = jsonBody<{ id: string }>(created).id;
     await admin()
       .post(PROMOTIONS)
+      .set(INTENT_KEY, freshIntent())
       .send(terms({ internalName: "Pros", audiences: [{ kind: "pros_active", companyId: null }] }))
       .expect(201);
 
@@ -251,10 +261,12 @@ describe("après la bascule — les refus nommés", () => {
   it("refuse un public vide et un libellé d'une audience que le public ne touche pas", async () => {
     await admin()
       .post(PROMOTIONS)
+      .set(INTENT_KEY, freshIntent())
       .send(terms({ audiences: [] }))
       .expect(400);
     const label = await admin()
       .post(PROMOTIONS)
+      .set(INTENT_KEY, freshIntent())
       .send(
         terms({
           audiences: [{ kind: "pros", companyId: null }],
@@ -268,6 +280,7 @@ describe("après la bascule — les refus nommés", () => {
   it("refuse une seconde promotion de panier qui s'appliquerait à la même commande", async () => {
     await admin()
       .post(PROMOTIONS)
+      .set(INTENT_KEY, freshIntent())
       .send(
         terms({
           internalName: "Cœur pros",
@@ -278,6 +291,7 @@ describe("après la bascule — les refus nommés", () => {
       .expect(201);
     const refused = await admin()
       .post(PROMOTIONS)
+      .set(INTENT_KEY, freshIntent())
       .send(
         terms({
           internalName: "Tout retrait pros",
@@ -303,6 +317,7 @@ describe("après la bascule — les refus nommés", () => {
     ).productId;
     const byProduct = await admin()
       .post(PROMOTIONS)
+      .set(INTENT_KEY, freshIntent())
       .send(
         terms({
           scope: {
@@ -318,10 +333,11 @@ describe("après la bascule — les refus nommés", () => {
 
   it("la fiche relit la promotion, cibles nommées, et la liste se restreint au point", async () => {
     const created = jsonBody<{ id: string }>(
-      await admin().post(PROMOTIONS).send(terms()).expect(201),
+      await admin().post(PROMOTIONS).set(INTENT_KEY, freshIntent()).send(terms()).expect(201),
     );
     await admin()
       .post(PROMOTIONS)
+      .set(INTENT_KEY, freshIntent())
       .send(terms({ internalName: "Cœur", fulfillment: AT_COEUR_POINT }))
       .expect(201);
 
@@ -343,11 +359,13 @@ describe("après la bascule — les refus nommés", () => {
     const created = jsonBody<{ id: string }>(
       await admin()
         .post(PROMOTIONS)
+        .set(INTENT_KEY, freshIntent())
         .send(terms({ fulfillment: AT_COEUR_POINT }))
         .expect(201),
     );
     await admin()
       .put(`${PROMOTIONS}/${created.id}`)
+      .set(INTENT_KEY, freshIntent())
       .send({
         terms: terms({ fulfillment: AT_COEUR_POINT, effect: { kind: "percent_off", value: 2500 } }),
         reason: "on monte à 25 %",
@@ -359,6 +377,7 @@ describe("après la bascule — les refus nommés", () => {
     expect(view.effect).toEqual({ kind: "percent_off", value: 2500 });
     await admin()
       .put(`${PROMOTIONS}/${created.id}`)
+      .set(INTENT_KEY, freshIntent())
       .send({ terms: terms(), reason: "tous acheminements" })
       .expect(204);
     const moved = jsonBody<PromotionView>(
@@ -371,13 +390,23 @@ describe("après la bascule — les refus nommés", () => {
     const created = jsonBody<{ id: string }>(
       await admin()
         .post(PROMOTIONS)
+        .set(INTENT_KEY, freshIntent())
         .send(terms({ fulfillment: AT_COEUR_POINT }))
         .expect(201),
     );
-    await admin().post(`${PROMOTIONS}/${created.id}/pause`).send({}).expect(204);
-    await admin().post(`${PROMOTIONS}/${created.id}/resume`).send({}).expect(204);
+    await admin()
+      .post(`${PROMOTIONS}/${created.id}/pause`)
+      .set(INTENT_KEY, freshIntent())
+      .send({})
+      .expect(204);
+    await admin()
+      .post(`${PROMOTIONS}/${created.id}/resume`)
+      .set(INTENT_KEY, freshIntent())
+      .send({})
+      .expect(204);
     await admin()
       .post(`${PROMOTIONS}/${created.id}/archive`)
+      .set(INTENT_KEY, freshIntent())
       .send({ reason: "fin de saison" })
       .expect(204);
     const events = await ctx.prisma.pricingEvent.findMany({
@@ -394,6 +423,7 @@ describe("la description interne", () => {
     const validFrom = daysAgo(1);
     const created = await admin()
       .post(PROMOTIONS)
+      .set(INTENT_KEY, freshIntent())
       .send(terms({ validFrom, description: "  Pour écouler les croissants du mardi  " }))
       .expect(201);
     const { id } = jsonBody<{ id: string }>(created);
@@ -403,12 +433,14 @@ describe("la description interne", () => {
 
     await admin()
       .put(`${PROMOTIONS}/${id}`)
+      .set(INTENT_KEY, freshIntent())
       .send({ terms: terms({ validFrom, description: "Vue avec le fournil" }), reason: null })
       .expect(204);
     expect((await read()).description).toBe("Vue avec le fournil");
 
     await admin()
       .put(`${PROMOTIONS}/${id}`)
+      .set(INTENT_KEY, freshIntent())
       .send({ terms: terms({ validFrom, description: "" }), reason: null })
       .expect(204);
     expect((await read()).description).toBeNull();
@@ -429,6 +461,7 @@ describe("la description interne", () => {
   it("refuse au-delà de 1 000 caractères, en le nommant", async () => {
     const response = await admin()
       .post(PROMOTIONS)
+      .set(INTENT_KEY, freshIntent())
       .send(terms({ description: "a".repeat(1001) }))
       .expect(400);
     expect(refusalOf(response).code).toBe("promotions.description_too_long");
@@ -440,7 +473,11 @@ describe("l'avertissement des décimales (plan-remise-par-ligne.md, § 18.7)", (
     const scope: PromotionTermsPayload["scope"] = { mode: "all_except", rules: [] };
     // Des termes jamais posés : l'avertissement parle pendant la saisie.
     return jsonBody<PromotionDecimalsView>(
-      await admin().post(`${PROMOTIONS}/decimals`).send(terms({ effect, scope })).expect(200),
+      await admin()
+        .post(`${PROMOTIONS}/decimals`)
+        .set(INTENT_KEY, freshIntent())
+        .send(terms({ effect, scope }))
+        .expect(200),
     );
   };
 

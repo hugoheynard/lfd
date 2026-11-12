@@ -16,6 +16,7 @@ import {
   staff,
   useBillingModeScene,
 } from "./billing-mode-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 useBillingModeScene();
 
@@ -40,6 +41,7 @@ describe("les dates des modes de l'entité", () => {
 
     await staff()
       .put(`${BASE}/${id}/billing-modes/monthly`)
+      .set(INTENT_KEY, freshIntent())
       .send({ days: [15] })
       .expect(204);
 
@@ -70,11 +72,13 @@ describe("les dates des modes de l'entité", () => {
     const id = await declare();
     await staff()
       .put(`${BASE}/${id}/billing-modes/monthly`)
+      .set(INTENT_KEY, freshIntent())
       .send({ days: [15] })
       .expect(204);
 
     const response = await staff()
       .put(`${BASE}/${id}/billing-modes/monthly`)
+      .set(INTENT_KEY, freshIntent())
       .send({ days: [10] })
       .expect(409);
 
@@ -86,10 +90,14 @@ describe("les dates des modes de l'entité", () => {
     const id = await declare();
     await staff()
       .put(`${BASE}/${id}/billing-modes/weekly`)
+      .set(INTENT_KEY, freshIntent())
       .send({ days: [5] })
       .expect(204);
 
-    await staff().delete(`${BASE}/${id}/billing-modes/weekly/scheduled`).expect(204);
+    await staff()
+      .delete(`${BASE}/${id}/billing-modes/weekly/scheduled`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(204);
 
     expect(await modeOf(id, "weekly")).toMatchObject({ scheduled: null, changeLockedUntil: null });
     const rows = await ctx.prisma.billingModeDates.findMany({ where: { legalEntityId: id } });
@@ -101,7 +109,10 @@ describe("les dates des modes de l'entité", () => {
   it("refuse en 409 l'annulation quand rien n'est programmé", async () => {
     const id = await declare();
 
-    await staff().delete(`${BASE}/${id}/billing-modes/monthly/scheduled`).expect(409);
+    await staff()
+      .delete(`${BASE}/${id}/billing-modes/monthly/scheduled`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(409);
   });
 
   it("refuse le 29 et un mode inconnu en 400", async () => {
@@ -109,11 +120,13 @@ describe("les dates des modes de l'entité", () => {
 
     const day = await staff()
       .put(`${BASE}/${id}/billing-modes/monthly`)
+      .set(INTENT_KEY, freshIntent())
       .send({ days: [29] })
       .expect(400);
     expect(JSON.stringify(day.body)).toContain("1 à 28");
     await staff()
       .put(`${BASE}/${id}/billing-modes/yearly`)
+      .set(INTENT_KEY, freshIntent())
       .send({ days: [1] })
       .expect(400);
   });
@@ -122,6 +135,7 @@ describe("les dates des modes de l'entité", () => {
     const id = await declare();
     await staff()
       .put(`${BASE}/${id}/billing-modes/monthly`)
+      .set(INTENT_KEY, freshIntent())
       .send({ days: [15] })
       .expect(204);
 
@@ -158,11 +172,13 @@ describe("le droit", () => {
     await ctx
       .asSub("staff-lecture")
       .put(`${BASE}/${id}/billing-modes/weekly`)
+      .set(INTENT_KEY, freshIntent())
       .send({ days: [3] })
       .expect(403);
     await ctx
       .asSub("staff-lecture")
       .put(`${BASE}/${id}/payers/${payer.id}/billing-mode`)
+      .set(INTENT_KEY, freshIntent())
       .send({ mode: "weekly" })
       .expect(403);
     expect(await ctx.prisma.billingModeDates.count({ where: { legalEntityId: id } })).toBe(0);

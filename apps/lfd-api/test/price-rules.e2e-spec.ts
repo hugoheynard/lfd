@@ -168,6 +168,7 @@ function placeOrder(quantity: number) {
   return ctx
     .asSub("auth0|solo")
     .post("/orders")
+    .set(INTENT_KEY, freshIntent())
     .send({ ...pickupContent(), lines: [{ sku: SKU, quantity }] });
 }
 
@@ -389,7 +390,7 @@ describe("une règle prise en compte sans redémarrer", () => {
     const remisee = await placeOrder(1);
     expect(await unitPriceOf(jsonBody<{ id: string }>(remisee).id)).toBe(180);
 
-    await staff().delete(`/admin/pricing/rules/${id}`).expect(204);
+    await staff().delete(`/admin/pricing/rules/${id}`).set(INTENT_KEY, freshIntent()).expect(204);
 
     const pleinTarif = await placeOrder(1);
     expect(await unitPriceOf(jsonBody<{ id: string }>(pleinTarif).id)).toBe(CANONICAL);
@@ -427,6 +428,7 @@ describe("une règle change le prix facturé", () => {
     const gros = await ctx
       .asSub("auth0|solo")
       .post("/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         ...pickupContent(),
         lines: [
@@ -677,7 +679,10 @@ describe("le scellement par la mercuriale", () => {
 
     // Rangée, puis reposée sur la MÊME période : le geste ordinaire « je me suis
     // trompé, je recommence ». Il doit passer, parce qu'elle n'a rien facturé.
-    await staff().delete(`/admin/pricing/rules/${promo}`).expect(204);
+    await staff()
+      .delete(`/admin/pricing/rules/${promo}`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(204);
     await staff()
       .post("/admin/pricing/rules")
       .set(INTENT_KEY, freshIntent())
@@ -749,6 +754,7 @@ describe("POST /orders/quote — la grille et le scellement", () => {
     ctx
       .asSub("auth0|solo")
       .post("/orders/quote")
+      .set(INTENT_KEY, freshIntent())
       .send({ companyId: soloCompanyId, lines: [{ sku: SKU, quantity }] });
 
   it("rend le barème palier par palier, résolu", async () => {
@@ -839,6 +845,7 @@ describe("POST /admin/orders/quote — le scellement, côté comptoir", () => {
       await ctx
         .asSub(E2E_STAFF_SUB)
         .post("/admin/orders/quote")
+        .set(INTENT_KEY, freshIntent())
         .send({ companyId: soloCompanyId, lines: [{ sku: SKU, quantity: 1 }] })
         .expect(200),
     );
@@ -908,6 +915,7 @@ describe("l'engagement de volume", () => {
     return ctx
       .asSub(CLIENT)
       .post("/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({ ...pickupContent(), companyId, lines: [{ sku: SKU, quantity }] });
   }
 
@@ -1140,7 +1148,7 @@ describe("les engagements de volume, signés par la route staff", () => {
   });
 
   function sign(scope: { type: string; id: string | null }, promised: number) {
-    return staff().post("/admin/pricing/commitments").send({
+    return staff().post("/admin/pricing/commitments").set(INTENT_KEY, freshIntent()).send({
       companyId,
       scope,
       promisedQuantity: promised,
@@ -1212,6 +1220,7 @@ describe("les engagements de volume, signés par la route staff", () => {
     await ctx.prisma.company.update({ where: { id: companyId }, data: { enseigne: "Chez Paul" } });
     await staff()
       .post(`/admin/pricing/commitments/${signed.id}/close`)
+      .set(INTENT_KEY, freshIntent())
       .send({ reason: "fin de saison" })
       .expect(204);
     await ctx.prisma.company.update({ where: { id: companyId }, data: { enseigne: "Autre nom" } });

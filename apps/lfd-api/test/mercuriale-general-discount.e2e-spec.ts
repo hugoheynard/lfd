@@ -183,6 +183,7 @@ describe("le prix du client", () => {
       await ctx
         .asSub(MEMBER)
         .post("/shop/quote/mine")
+        .set(INTENT_KEY, freshIntent())
         .send({
           lines: [
             { sku: COVERED, quantity: 1 },
@@ -263,6 +264,7 @@ describe("Q2 — pas de remise générale sous engagement de volume", () => {
   beforeEach(async () => {
     await staff()
       .post("/admin/pricing/commitments")
+      .set(INTENT_KEY, freshIntent())
       .send({
         companyId,
         scope: { type: "product", id: COVERED },
@@ -330,6 +332,7 @@ describe("le brouillon garde la remise saisie", () => {
   it("enregistre et relit la remise envisagée", async () => {
     await staff()
       .put(`/admin/pricing/companies/${companyId}/mercuriale/draft`)
+      .set(INTENT_KEY, freshIntent())
       .send({
         label: "En cours",
         validFrom: null,

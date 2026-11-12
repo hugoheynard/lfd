@@ -309,12 +309,19 @@ describe("poser une règle", () => {
  */
 describe("suspendre, reprendre, archiver", () => {
   const pause = (id: string, reason: string | null = null) =>
-    staff().post(`/admin/pricing/rules/${id}/pause`).send({ reason });
+    staff()
+      .post(`/admin/pricing/rules/${id}/pause`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ reason });
 
-  const resume = (id: string) => staff().post(`/admin/pricing/rules/${id}/resume`).send({});
+  const resume = (id: string) =>
+    staff().post(`/admin/pricing/rules/${id}/resume`).set(INTENT_KEY, freshIntent()).send({});
 
   const archive = (id: string, reason: string | null = null) =>
-    staff().post(`/admin/pricing/rules/${id}/archive`).send({ reason });
+    staff()
+      .post(`/admin/pricing/rules/${id}/archive`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ reason });
 
   const journalOf = async (id: string): Promise<{ act: string; summary: string }[]> =>
     jsonBody<{ act: string; summary: string }[]>(
@@ -468,6 +475,7 @@ describe("suspendre, reprendre, archiver", () => {
 
     const archived = await staff()
       .post("/admin/pricing/floors/global/archive")
+      .set(INTENT_KEY, freshIntent())
       .send({ reason: "Le tarif a changé, la limite n'a plus de sens" });
 
     expect(archived.status).toBe(204);
@@ -640,7 +648,10 @@ describe("suspendre, reprendre, archiver", () => {
     });
     expect(await familyOverlaps()).toHaveLength(1);
 
-    await staff().post(`/admin/pricing/rules/${id}/pause`).send({ reason: null });
+    await staff()
+      .post(`/admin/pricing/rules/${id}/pause`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ reason: null });
 
     expect(await familyOverlaps()).toEqual([]);
   });
@@ -984,6 +995,7 @@ describe("l'écran de tarification", () => {
 
     const archived = await staff()
       .post("/admin/pricing/floors/global/archive")
+      .set(INTENT_KEY, freshIntent())
       .send({ reason: "La limite ne vaut plus" });
     expect(archived.status).toBe(204);
 
@@ -1001,6 +1013,7 @@ describe("l'écran de tarification", () => {
     const projected = jsonBody<{ points: { unitPriceMillicents: number }[] }>(
       await staff()
         .post("/admin/pricing/projection")
+        .set(INTENT_KEY, freshIntent())
         .send({ companyId: null, sku: SKU, cumulativeQuantities: [1] })
         .expect(200),
     );
@@ -1052,6 +1065,7 @@ describe("le rapport prix / volume", () => {
     const response = await ctx
       .asSub("auth0|solo")
       .post("/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         idempotencyKey: randomUUID(),
         salesTerms: null,
@@ -1395,6 +1409,7 @@ describe("l’écran daté et la comparaison", () => {
     const response = await ctx
       .asSub("auth0|solo")
       .post("/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         idempotencyKey: randomUUID(),
         salesTerms: null,
@@ -1433,7 +1448,10 @@ describe("l’écran daté et la comparaison", () => {
     const before = await priceOf(SKU);
     expect(before).toBe(millicentsFromCents(CANONICAL / 2));
 
-    await staff().post(`/admin/pricing/rules/${id}/archive`).send({ reason: "fin" });
+    await staff()
+      .post(`/admin/pricing/rules/${id}/archive`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ reason: "fin" });
 
     // Au présent : la règle a disparu, le prix remonte.
     expect(await priceOf(SKU)).toBe(millicentsFromCents(CANONICAL));
@@ -1590,10 +1608,12 @@ describe("suspendre, reprendre, archiver un barème", () => {
 
     await staff()
       .post(`/admin/pricing/volume-ladders/${id}/pause`)
+      .set(INTENT_KEY, freshIntent())
       .send({ reason: "four en panne" })
       .expect(204);
     await staff()
       .post(`/admin/pricing/volume-ladders/${id}/pause`)
+      .set(INTENT_KEY, freshIntent())
       .send({ reason: "encore" })
       .expect(409);
   });
@@ -1601,7 +1621,11 @@ describe("suspendre, reprendre, archiver un barème", () => {
   it("refuse de reprendre ce qui n'est pas suspendu", async () => {
     const { id } = jsonBody<{ id: string }>(await poseLadder().expect(201));
 
-    await staff().post(`/admin/pricing/volume-ladders/${id}/resume`).send({}).expect(409);
+    await staff()
+      .post(`/admin/pricing/volume-ladders/${id}/resume`)
+      .set(INTENT_KEY, freshIntent())
+      .send({})
+      .expect(409);
   });
 
   it("reprend ce qui était suspendu", async () => {
@@ -1609,9 +1633,14 @@ describe("suspendre, reprendre, archiver un barème", () => {
 
     await staff()
       .post(`/admin/pricing/volume-ladders/${id}/pause`)
+      .set(INTENT_KEY, freshIntent())
       .send({ reason: null })
       .expect(204);
-    await staff().post(`/admin/pricing/volume-ladders/${id}/resume`).send({}).expect(204);
+    await staff()
+      .post(`/admin/pricing/volume-ladders/${id}/resume`)
+      .set(INTENT_KEY, freshIntent())
+      .send({})
+      .expect(204);
   });
 
   it("refuse tout geste sur un barème archivé", async () => {
@@ -1619,16 +1648,22 @@ describe("suspendre, reprendre, archiver un barème", () => {
 
     await staff()
       .post(`/admin/pricing/volume-ladders/${id}/archive`)
+      .set(INTENT_KEY, freshIntent())
       .send({ reason: "remplacé" })
       .expect(204);
     await staff()
       .post(`/admin/pricing/volume-ladders/${id}/pause`)
+      .set(INTENT_KEY, freshIntent())
       .send({ reason: null })
       .expect(409);
   });
 
   it("répond 404 sur un barème qui n'a jamais existé", async () => {
-    await staff().post("/admin/pricing/volume-ladders/ladder_inconnu/resume").send({}).expect(404);
+    await staff()
+      .post("/admin/pricing/volume-ladders/ladder_inconnu/resume")
+      .set(INTENT_KEY, freshIntent())
+      .send({})
+      .expect(404);
   });
 
   /**
@@ -1641,6 +1676,7 @@ describe("suspendre, reprendre, archiver un barème", () => {
 
     await staff()
       .post(`/admin/pricing/volume-ladders/${id}/pause`)
+      .set(INTENT_KEY, freshIntent())
       .send({ reason: null })
       .expect(204);
     // Suspendu ⇒ le créneau est encore réservé.
@@ -1648,6 +1684,7 @@ describe("suspendre, reprendre, archiver un barème", () => {
 
     await staff()
       .post(`/admin/pricing/volume-ladders/${id}/archive`)
+      .set(INTENT_KEY, freshIntent())
       .send({ reason: "on repart de zéro" })
       .expect(204);
     // Archivé ⇒ la place est rendue.
@@ -1672,6 +1709,7 @@ describe("renommer une règle", () => {
 
     await staff()
       .patch(`/admin/pricing/rules/${id}/label`)
+      .set(INTENT_KEY, freshIntent())
       .send({ label: "Promo de rentrée" })
       .expect(204);
 
@@ -1684,7 +1722,11 @@ describe("renommer une règle", () => {
   it("laisse une trace qui ne prétend pas à un changement de prix", async () => {
     const { id } = jsonBody<{ id: string }>(await postRule({ label: "Avant" }).expect(201));
 
-    await staff().patch(`/admin/pricing/rules/${id}/label`).send({ label: "Après" }).expect(204);
+    await staff()
+      .patch(`/admin/pricing/rules/${id}/label`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ label: "Après" })
+      .expect(204);
 
     const entries = jsonBody<{ act: string }[]>(
       await staff().get(`/admin/pricing/journal/rule/${id}`).expect(200),
@@ -1703,7 +1745,11 @@ describe("renommer une règle", () => {
       await postRule({ label: "Avant", scope: { type: "category", id: FAMILY } }).expect(201),
     );
 
-    await staff().patch(`/admin/pricing/rules/${id}/label`).send({ label: "Après" }).expect(204);
+    await staff()
+      .patch(`/admin/pricing/rules/${id}/label`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ label: "Après" })
+      .expect(204);
 
     const facts = await ctx.prisma.activityEvent.findMany({
       where: { subjectType: "price_rule", subjectId: id },
@@ -1725,10 +1771,15 @@ describe("renommer une règle", () => {
 
   it("refuse de renommer une règle archivée", async () => {
     const { id } = jsonBody<{ id: string }>(await postRule({ label: "Close" }).expect(201));
-    await staff().post(`/admin/pricing/rules/${id}/archive`).send({ reason: "rangée" }).expect(204);
+    await staff()
+      .post(`/admin/pricing/rules/${id}/archive`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ reason: "rangée" })
+      .expect(204);
 
     await staff()
       .patch(`/admin/pricing/rules/${id}/label`)
+      .set(INTENT_KEY, freshIntent())
       .send({ label: "Trop tard" })
       .expect(409);
   });
@@ -1763,6 +1814,7 @@ describe("POST /admin/pricing/projection", () => {
   const project = (levels: readonly number[]) =>
     staff()
       .post("/admin/pricing/projection")
+      .set(INTENT_KEY, freshIntent())
       .send({ companyId: null, sku: SKU, cumulativeQuantities: levels });
 
   it("résout à chaque niveau de cumul, sans rien écrire", async () => {
@@ -1813,6 +1865,7 @@ describe("POST /admin/pricing/projection", () => {
     const placed = await ctx
       .asSub("auth0|projection")
       .post("/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         idempotencyKey: randomUUID(),
         salesTerms: null,
@@ -1838,6 +1891,7 @@ describe("POST /admin/pricing/projection", () => {
   it("refuse un SKU que le catalogue ne connaît pas", async () => {
     await staff()
       .post("/admin/pricing/projection")
+      .set(INTENT_KEY, freshIntent())
       .send({ companyId: null, sku: "INEXISTANT", cumulativeQuantities: [10] })
       .expect(400);
   });
@@ -1857,11 +1911,13 @@ describe("les gabarits tarifaires", () => {
   const compose = (lines: unknown) =>
     staff()
       .post("/admin/pricing/templates")
+      .set(INTENT_KEY, freshIntent())
       .send({ kind: "mercuriale", label: "Mercuriale Club Med", lines });
 
   const apply = (id: string, companyId: string) =>
     staff()
       .post(`/admin/pricing/templates/${id}/apply`)
+      .set(INTENT_KEY, freshIntent())
       .send({
         companyId,
         validFrom: new Date("2026-01-01T00:00:00.000Z").toISOString(),
@@ -2083,6 +2139,7 @@ describe("les gabarits tarifaires", () => {
 
     await staff()
       .put(`/admin/pricing/templates/${inconnu}`)
+      .set(INTENT_KEY, freshIntent())
       .send({
         kind: "mercuriale",
         label: "Révision d'un fantôme",
@@ -2105,14 +2162,23 @@ describe("les gabarits tarifaires", () => {
       ]).expect(201),
     );
 
-    await staff().post(`/admin/pricing/templates/${id}/archive`).expect(204);
+    await staff()
+      .post(`/admin/pricing/templates/${id}/archive`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(204);
 
     const listed = jsonBody<readonly { id: string }[]>(
       await staff().get("/admin/pricing/templates?kind=mercuriale").expect(200),
     );
     expect(listed.map((t) => t.id)).not.toContain(id);
-    await staff().post(`/admin/pricing/templates/${id}/archive`).expect(409);
-    await staff().post("/admin/pricing/templates/tpl_ceci_nexiste_pas/archive").expect(404);
+    await staff()
+      .post(`/admin/pricing/templates/${id}/archive`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(409);
+    await staff()
+      .post("/admin/pricing/templates/tpl_ceci_nexiste_pas/archive")
+      .set(INTENT_KEY, freshIntent())
+      .expect(404);
   });
 });
 
@@ -2131,7 +2197,11 @@ describe("les gabarits tarifaires", () => {
 describe("🔴 reposer sur une période rangée", () => {
   it("l'autorise pour une RÈGLE que rien n'a citée", async () => {
     const { id } = jsonBody<{ id: string }>(await postRule({ label: "Avant" }).expect(201));
-    await staff().post(`/admin/pricing/rules/${id}/archive`).send({ reason: "rangée" }).expect(204);
+    await staff()
+      .post(`/admin/pricing/rules/${id}/archive`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ reason: "rangée" })
+      .expect(204);
 
     await postRule({ label: "Après" }).expect(201);
   });
@@ -2156,6 +2226,7 @@ describe("🔴 reposer sur une période rangée", () => {
     const { id } = jsonBody<{ id: string }>(await ladder().expect(201));
     await staff()
       .post(`/admin/pricing/volume-ladders/${id}/archive`)
+      .set(INTENT_KEY, freshIntent())
       .send({ reason: "on repart de zéro" })
       .expect(204);
 

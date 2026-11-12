@@ -248,6 +248,7 @@ describe("les refus", () => {
     });
     await staff()
       .post("/admin/pricing/commitments")
+      .set(INTENT_KEY, freshIntent())
       .send({
         companyId,
         scope: { type: "product", id: SKU },

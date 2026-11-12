@@ -19,6 +19,7 @@ import {
   staff,
   useBillingModeScene,
 } from "./billing-mode-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 useBillingModeScene();
 
@@ -109,6 +110,7 @@ describe("le calendrier des trois rythmes", () => {
     for (const payer of [scheduled, unmandated]) {
       await staff()
         .put(`${BASE}/${id}/payers/${payer ?? ""}/billing-mode`)
+        .set(INTENT_KEY, freshIntent())
         .send({ mode: "weekly" })
         .expect(204);
     }
@@ -131,6 +133,7 @@ describe("le calendrier des trois rythmes", () => {
     const payer = await createCompany(ctx.prisma, { raisonSociale: "Sans Mandat SAS" });
     await staff()
       .put(`${BASE}/${id}/payers/${payer.id}/billing-mode`)
+      .set(INTENT_KEY, freshIntent())
       .send({ mode: "weekly" })
       .expect(204);
 

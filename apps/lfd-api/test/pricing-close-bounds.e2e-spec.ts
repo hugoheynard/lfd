@@ -105,6 +105,7 @@ async function placeOrderFor(companyId: string): Promise<string> {
   const placed = await ctx
     .asSub(BUYER_SUB)
     .post("/orders")
+    .set(INTENT_KEY, freshIntent())
     .send({
       idempotencyKey: randomUUID(),
       salesTerms: null,
@@ -143,6 +144,7 @@ describe("🔴 régression R17 — clore une mercuriale qui a facturé", () => {
     const orderId = await placeOrderFor(company.id);
     await staff()
       .post(`/admin/pricing/companies/${company.id}/mercuriale/close`)
+      .set(INTENT_KEY, freshIntent())
       .send({ id: await mercurialeIdOf(company.id), reason: "renégociée" })
       .expect(200);
 
@@ -186,7 +188,11 @@ describe("🔴 régression R17 — la fin de la clôture est persistée", () => 
       .expect(201);
     const { id } = jsonBody<{ id: string }>(created);
 
-    await staff().post(`/admin/pricing/rules/${id}/archive`).send({ reason: null }).expect(204);
+    await staff()
+      .post(`/admin/pricing/rules/${id}/archive`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ reason: null })
+      .expect(204);
 
     const row = await ctx.prisma.priceRule.findUniqueOrThrow({
       where: { id },
@@ -214,6 +220,7 @@ describe("🔴 régression R17 — la fin de la clôture est persistée", () => 
 
     await staff()
       .post(`/admin/pricing/volume-ladders/${id}/archive`)
+      .set(INTENT_KEY, freshIntent())
       .send({ reason: null })
       .expect(204);
 
@@ -229,6 +236,7 @@ describe("🔴 régression R17 — la fin de la clôture est persistée", () => 
     const company = await createCompany(ctx.prisma);
     const signed = await staff()
       .post("/admin/pricing/commitments")
+      .set(INTENT_KEY, freshIntent())
       .send({
         companyId: company.id,
         scope: { type: "product", id: SKU },
@@ -239,7 +247,11 @@ describe("🔴 régression R17 — la fin de la clôture est persistée", () => 
       .expect(201);
     const { id } = jsonBody<{ id: string }>(signed);
 
-    await staff().post(`/admin/pricing/commitments/${id}/close`).send({ reason: null }).expect(204);
+    await staff()
+      .post(`/admin/pricing/commitments/${id}/close`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ reason: null })
+      .expect(204);
 
     const row = await ctx.prisma.volumeCommitment.findUniqueOrThrow({
       where: { id },

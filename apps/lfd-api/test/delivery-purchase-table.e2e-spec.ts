@@ -15,6 +15,7 @@ import {
   VEHICLES,
 } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const TABLE = "/admin/delivery/purchase-assistant/table";
 const LIBRARY_VEHICLES = "/admin/delivery/library/vehicles";
@@ -62,7 +63,9 @@ beforeEach(async () => {
 });
 
 async function create(path: string, body: object): Promise<string> {
-  return jsonBody<CreatedIdResponse>(await admin(ctx).post(path).send(body).expect(201)).id;
+  return jsonBody<CreatedIdResponse>(
+    await admin(ctx).post(path).set(INTENT_KEY, freshIntent()).send(body).expect(201),
+  ).id;
 }
 
 function code(response: Parameters<typeof jsonBody>[0]): string {
@@ -104,7 +107,7 @@ describe("POST admin/delivery/purchase-assistant/table (B-D4)", () => {
       gapCm: 1,
     };
     const view = jsonBody<PurchaseTableView>(
-      await admin(ctx).post(TABLE).send(selection).expect(200),
+      await admin(ctx).post(TABLE).set(INTENT_KEY, freshIntent()).send(selection).expect(200),
     );
 
     expect(view.formats.map((f) => [f.name, f.unitPriceCentsExclVat])).toEqual([
@@ -157,7 +160,11 @@ describe("POST admin/delivery/purchase-assistant/table (B-D4)", () => {
     }
 
     const started = performance.now();
-    const response = await admin(ctx).post(TABLE).send({ vehicles, formats, gapCm: 1 }).expect(200);
+    const response = await admin(ctx)
+      .post(TABLE)
+      .set(INTENT_KEY, freshIntent())
+      .send({ vehicles, formats, gapCm: 1 })
+      .expect(200);
     const elapsedMs = performance.now() - started;
 
     const view = jsonBody<PurchaseTableView>(response);
@@ -173,6 +180,7 @@ describe("POST admin/delivery/purchase-assistant/table (B-D4)", () => {
 
     const response = await admin(ctx)
       .post(TABLE)
+      .set(INTENT_KEY, freshIntent())
       .send({
         vehicles: [{ source: "fleet", id: "nope" }],
         formats: [{ source: "candidate", id: caisse }],
@@ -186,12 +194,16 @@ describe("POST admin/delivery/purchase-assistant/table (B-D4)", () => {
   it("un format archivé : 409 qui le nomme ; un véhicule sans plancher : 409", async () => {
     const candidate = await create(LIBRARY_VEHICLES, KANGOO);
     const caisse = await create(LIBRARY_BINS, CAISSE);
-    await admin(ctx).post(`${LIBRARY_BINS}/${caisse}/archive`).expect(204);
+    await admin(ctx)
+      .post(`${LIBRARY_BINS}/${caisse}/archive`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(204);
     const bare = await create(VEHICLES, { name: "Nu", plate: "EF-456-GH" });
     const bacM = await create(REAL_BINS, BAC_M);
 
     const archived = await admin(ctx)
       .post(TABLE)
+      .set(INTENT_KEY, freshIntent())
       .send({
         vehicles: [{ source: "candidate", id: candidate }],
         formats: [{ source: "candidate", id: caisse }],
@@ -205,6 +217,7 @@ describe("POST admin/delivery/purchase-assistant/table (B-D4)", () => {
 
     const bareResponse = await admin(ctx)
       .post(TABLE)
+      .set(INTENT_KEY, freshIntent())
       .send({
         vehicles: [{ source: "fleet", id: bare }],
         formats: [{ source: "bin_type", id: bacM }],
@@ -220,10 +233,12 @@ describe("POST admin/delivery/purchase-assistant/table (B-D4)", () => {
 
     await admin(ctx)
       .post(TABLE)
+      .set(INTENT_KEY, freshIntent())
       .send({ vehicles: eleven, formats: [ref], gapCm: 1 })
       .expect(400);
     await admin(ctx)
       .post(TABLE)
+      .set(INTENT_KEY, freshIntent())
       .send({ vehicles: [ref], formats: eleven, gapCm: 1 })
       .expect(400);
   });
@@ -244,6 +259,7 @@ describe("POST admin/delivery/purchase-assistant/table (B-D4)", () => {
     await ctx
       .asSub("staff-support")
       .post(TABLE)
+      .set(INTENT_KEY, freshIntent())
       .send({ vehicles: [ref], formats: [ref], gapCm: 1 })
       .expect(403);
   });

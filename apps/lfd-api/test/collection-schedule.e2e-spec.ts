@@ -17,6 +17,7 @@ import { cycleAt } from "../src/lafoliecoffee/accounting/domain/services/billing
 import { collectionCalendar } from "../src/lafoliecoffee/accounting/domain/services/collection-calendar.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const SIREN = "552100554";
 const BASE = "/admin/accounting/legal-entities";
@@ -49,6 +50,7 @@ function staff(): ReturnType<E2eContext["asSub"]> {
 async function declare(): Promise<string> {
   const response = await staff()
     .post(BASE)
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: "La Folie Douce",
       legalForm: "SAS",
@@ -111,7 +113,11 @@ describe("le calendrier de prélèvement de l'entité", () => {
   it("s'écrit, se relit, et journalise l'après", async () => {
     const id = await declare();
 
-    await staff().put(`${BASE}/${id}/collection-schedule`).send(SCHEDULE).expect(204);
+    await staff()
+      .put(`${BASE}/${id}/collection-schedule`)
+      .set(INTENT_KEY, freshIntent())
+      .send(SCHEDULE)
+      .expect(204);
 
     const entity = await read(id);
     expect(entity).toMatchObject({
@@ -142,6 +148,7 @@ describe("le calendrier de prélèvement de l'entité", () => {
 
     const response = await staff()
       .put(`${BASE}/${id}/collection-schedule`)
+      .set(INTENT_KEY, freshIntent())
       .send({ ...SCHEDULE, daysAfterClosure: 4 })
       .expect(409);
 
@@ -153,9 +160,17 @@ describe("le calendrier de prélèvement de l'entité", () => {
 
   it("refuse en 409 de porter le délai de pré-notification au-dessus d'une échéance réglée", async () => {
     const id = await declare();
-    await staff().put(`${BASE}/${id}/collection-schedule`).send(SCHEDULE).expect(204);
+    await staff()
+      .put(`${BASE}/${id}/collection-schedule`)
+      .set(INTENT_KEY, freshIntent())
+      .send(SCHEDULE)
+      .expect(204);
 
-    await staff().put(`${BASE}/${id}/pre-notification`).send({ days: 21 }).expect(409);
+    await staff()
+      .put(`${BASE}/${id}/pre-notification`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ days: 21 })
+      .expect(409);
 
     expect((await read(id)).preNotificationDays).toBe(14);
   });
@@ -163,7 +178,11 @@ describe("le calendrier de prélèvement de l'entité", () => {
   it("refuse en 400 un délai de pré-notification de moins de 3 jours (Hugo, 2026-10-24)", async () => {
     const id = await declare();
 
-    await staff().put(`${BASE}/${id}/pre-notification`).send({ days: 2 }).expect(400);
+    await staff()
+      .put(`${BASE}/${id}/pre-notification`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ days: 2 })
+      .expect(400);
 
     expect((await read(id)).preNotificationDays).toBe(14);
   });
@@ -172,14 +191,20 @@ describe("le calendrier de prélèvement de l'entité", () => {
     const id = await declare();
     await staff()
       .put(`${BASE}/${id}/collection-schedule`)
+      .set(INTENT_KEY, freshIntent())
       .send({ ...SCHEDULE, daysAfterClosure: 20 })
       .expect(204);
 
     await staff()
       .put(`${BASE}/${id}/collection-schedule`)
+      .set(INTENT_KEY, freshIntent())
       .send({ ...SCHEDULE, daysAfterClosure: null })
       .expect(204);
-    await staff().put(`${BASE}/${id}/pre-notification`).send({ days: 25 }).expect(204);
+    await staff()
+      .put(`${BASE}/${id}/pre-notification`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ days: 25 })
+      .expect(204);
 
     const entity = await read(id);
     expect(entity.collectionDaysAfterClosure).toBeNull();
@@ -191,6 +216,7 @@ describe("le calendrier de prélèvement de l'entité", () => {
 
     await staff()
       .put(`${BASE}/${id}/collection-schedule`)
+      .set(INTENT_KEY, freshIntent())
       .send({ ...SCHEDULE, delayHours: 24 })
       .expect(400);
   });
@@ -200,9 +226,17 @@ describe("la constitution automatique", () => {
   it("s'active et se désactive, chaque bascule étant un fait distinct", async () => {
     const id = await declare();
 
-    await staff().put(`${BASE}/${id}/auto-collection`).send({ enabled: true }).expect(204);
+    await staff()
+      .put(`${BASE}/${id}/auto-collection`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ enabled: true })
+      .expect(204);
     expect((await read(id)).autoCollectionEnabled).toBe(true);
-    await staff().put(`${BASE}/${id}/auto-collection`).send({ enabled: false }).expect(204);
+    await staff()
+      .put(`${BASE}/${id}/auto-collection`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ enabled: false })
+      .expect(204);
 
     const facts = await ctx.prisma.activityEvent.findMany({
       where: { subjectId: id, type: { startsWith: "legal_entity.auto_collection" } },

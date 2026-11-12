@@ -18,6 +18,7 @@ import {
   staff,
   useBillingModeScene,
 } from "./billing-mode-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 useBillingModeScene();
 
@@ -37,6 +38,7 @@ describe("le mode d'un payeur", () => {
 
     await staff()
       .put(`${BASE}/${id}/payers/${payer.id}/billing-mode`)
+      .set(INTENT_KEY, freshIntent())
       .send({ mode: "weekly" })
       .expect(204);
 
@@ -64,10 +66,14 @@ describe("le mode d'un payeur", () => {
     const payer = await createCompany(ctx.prisma);
     await ordered(payer.id);
     const route = `${BASE}/${id}/payers/${payer.id}/billing-mode`;
-    await staff().put(route).send({ mode: "weekly" }).expect(204);
+    await staff().put(route).set(INTENT_KEY, freshIntent()).send({ mode: "weekly" }).expect(204);
 
-    await staff().put(route).send({ mode: "semimonthly" }).expect(409);
-    await staff().delete(`${route}/scheduled`).expect(204);
+    await staff()
+      .put(route)
+      .set(INTENT_KEY, freshIntent())
+      .send({ mode: "semimonthly" })
+      .expect(409);
+    await staff().delete(`${route}/scheduled`).set(INTENT_KEY, freshIntent()).expect(204);
 
     const view = jsonBody<PayerBillingModeView>(await staff().get(route).expect(200));
     expect(view.scheduled).toBeNull();
@@ -95,6 +101,7 @@ describe("le mode d'un payeur", () => {
 
     const response = await staff()
       .put(`${BASE}/${id}/payers/${site.id}/billing-mode`)
+      .set(INTENT_KEY, freshIntent())
       .send({ mode: "weekly" })
       .expect(409);
 
@@ -107,6 +114,7 @@ describe("le mode d'un payeur", () => {
 
     await staff()
       .put(`${BASE}/${id}/payers/cmp_inconnu/billing-mode`)
+      .set(INTENT_KEY, freshIntent())
       .send({ mode: "weekly" })
       .expect(404);
   });

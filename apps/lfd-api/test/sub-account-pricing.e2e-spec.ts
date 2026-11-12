@@ -92,11 +92,17 @@ async function subAccount(parentId: string, enseigne: string): Promise<string> {
 
 /** Le geste du commercial : suivre le tarif du principal (Q9). */
 async function followPricing(companyId: string): Promise<void> {
-  await staff().post(`/admin/companies/${companyId}/pricing-follow`).expect(204);
+  await staff()
+    .post(`/admin/companies/${companyId}/pricing-follow`)
+    .set(INTENT_KEY, freshIntent())
+    .expect(204);
 }
 
 async function stopPricing(companyId: string): Promise<void> {
-  await staff().post(`/admin/companies/${companyId}/pricing-follow/stop`).expect(204);
+  await staff()
+    .post(`/admin/companies/${companyId}/pricing-follow/stop`)
+    .set(INTENT_KEY, freshIntent())
+    .expect(204);
 }
 
 /** Le début de la période de suivi `pricing` en cours, tel que la base l'a posé. */
@@ -149,6 +155,7 @@ async function quotedByCheckout(companyId: string, sub: string): Promise<number 
     await ctx
       .asSub(sub)
       .post("/orders/quote")
+      .set(INTENT_KEY, freshIntent())
       .send({ companyId, lines: [{ sku: SKU, quantity: 1 }] })
       .expect(200),
   );
@@ -263,6 +270,7 @@ describe("le volume du Club Med", () => {
   async function signCommitment(companyId: string): Promise<void> {
     await staff()
       .post("/admin/pricing/commitments")
+      .set(INTENT_KEY, freshIntent())
       .send({
         companyId,
         scope: { type: "product", id: SKU },
@@ -404,7 +412,10 @@ describe("le journal du tarif", () => {
     const site = await subAccount(group, "Club Med Tignes");
     await followPricing(site);
 
-    await staff().post(`/admin/companies/${site}/parent/detach`).expect(204);
+    await staff()
+      .post(`/admin/companies/${site}/parent/detach`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(204);
 
     expect((await journalOf(group)).entries.map((entry) => entry.act)).toEqual(["left", "joined"]);
   });

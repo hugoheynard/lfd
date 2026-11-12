@@ -43,6 +43,7 @@ import {
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -170,15 +171,18 @@ describe("les allergènes servis à la plateforme", () => {
   it("le pain sans blé qui déclarait aucun allergène et citait le gluten se publie avec le gluten déclaré", async () => {
     await staff()
       .post("/pim/ingredients")
+      .set(INTENT_KEY, freshIntent())
       .send({ key: "farine-e2e", name: { fr: "Farine" }, origin: "France", appellationCode: null })
       .expect(201);
     await staff()
       .put("/pim/ingredients/farine-e2e/allergens")
+      .set(INTENT_KEY, freshIntent())
       .send({ codes: ["UW"] })
       .expect(200);
     const fiche = await aDraftFiche(staff, "Pain sans blé");
     await staff()
       .put(`/pim/products/${fiche.id}/ingredients`)
+      .set(INTENT_KEY, freshIntent())
       .send({ keys: ["farine-e2e"] })
       .expect(200);
     const published = await activateFiche(staff, fiche);
@@ -200,6 +204,7 @@ describe("l'ordre et la répétition", () => {
     const fiche = await aDraftFiche(staff, "Brioche");
     await staff()
       .put(`${PRODUCTS}/${fiche.id}/identity`)
+      .set(INTENT_KEY, freshIntent())
       .send({ name: { fr: "Brioche tressée" }, kind: "daily", categoryId: fiche.categoryId })
       .expect(200);
     const facts = await productFactsOf(ctx, fiche.id);
@@ -270,6 +275,7 @@ describe("aucune décision locale ne se perd (H10)", () => {
     for (let rank = 1; rank <= TEN_FACTS; rank += 1) {
       await staff()
         .put(`${PRODUCTS}/${fiche.id}/identity`)
+        .set(INTENT_KEY, freshIntent())
         .send({
           name: { fr: `Kouign-amann ${String(rank)}` },
           kind: "daily",
@@ -287,7 +293,11 @@ describe("aucune décision locale ne se perd (H10)", () => {
   it("une fiche désactivée retire ses déclinaisons, garde ses décisions, et les retrouve", async () => {
     const fiche = await decidedFiche("Financier");
 
-    await staff().put(`${PRODUCTS}/${fiche.id}/unpublish`).send({}).expect(200);
+    await staff()
+      .put(`${PRODUCTS}/${fiche.id}/unpublish`)
+      .set(INTENT_KEY, freshIntent())
+      .send({})
+      .expect(200);
     await relayAll(ctx);
 
     const withdrawn = await itemOf(fiche.variantSku);
@@ -295,7 +305,11 @@ describe("aucune décision locale ne se perd (H10)", () => {
     expect(withdrawn?.override?.priceMillicents).toBe(DECIDED_PRICE);
     expect((await entryOf(fiche.id))?.status).toBe("inactive");
 
-    await staff().put(`${PRODUCTS}/${fiche.id}/publish`).send({}).expect(200);
+    await staff()
+      .put(`${PRODUCTS}/${fiche.id}/publish`)
+      .set(INTENT_KEY, freshIntent())
+      .send({})
+      .expect(200);
     await relayAll(ctx);
 
     const back = await itemOf(fiche.variantSku);
@@ -327,6 +341,7 @@ describe("l'audience décide à qui l'article se vend (servedTo)", () => {
     return ctx
       .asSub("auth0|acheteur_faits")
       .post("/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         idempotencyKey: randomUUID(),
         salesTerms: null,
@@ -352,12 +367,17 @@ describe("l'audience décide à qui l'article se vend (servedTo)", () => {
     // Lot 3 : l'article neuf attend sa validation, pros comme public.
     await staff()
       .post("/admin/catalog/review/approve")
+      .set(INTENT_KEY, freshIntent())
       .send({ skus: [fiche.variantSku], audiences: ["pro", "public"] })
       .expect(204);
     const buyer = await aBuyer();
     await order(buyer, fiche.variantSku).expect(201);
 
-    await staff().put(`${PRODUCTS}/${fiche.id}/audience`).send({ audience: "public" }).expect(200);
+    await staff()
+      .put(`${PRODUCTS}/${fiche.id}/audience`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ audience: "public" })
+      .expect(200);
     await relayAll(ctx);
 
     expect((await itemOf(fiche.variantSku))?.audience).toBe("public");
@@ -399,7 +419,7 @@ describe("réémettre", () => {
     // La perte simulée : la ligne disparaît côté plateforme, le référentiel n'a pas bougé.
     await ctx.prisma.catalogEntry.delete({ where: { productId: fiche.id } });
 
-    const started = await staff().post(REEMIT).send({}).expect(202);
+    const started = await staff().post(REEMIT).set(INTENT_KEY, freshIntent()).send({}).expect(202);
     await relayAll(ctx);
 
     const { id } = jsonBody<{ id: string }>(started);
@@ -425,7 +445,11 @@ describe("réémettre", () => {
     await relayAll(ctx);
     const before = (await entryOf(fiche.id))?.appliedSeq ?? 0n;
 
-    const started = await staff().post(REEMIT).send({ productId: fiche.id }).expect(202);
+    const started = await staff()
+      .post(REEMIT)
+      .set(INTENT_KEY, freshIntent())
+      .send({ productId: fiche.id })
+      .expect(202);
     await relayAll(ctx);
 
     expect((await entryOf(fiche.id))?.appliedSeq).toBeGreaterThan(before);
@@ -440,7 +464,7 @@ describe("réémettre", () => {
   it("refuse un second « tout » pendant qu'un premier tourne, en le nommant", async () => {
     await aRunningEverything();
 
-    const refused = await staff().post(REEMIT).send({}).expect(409);
+    const refused = await staff().post(REEMIT).set(INTENT_KEY, freshIntent()).send({}).expect(409);
 
     expect(jsonBody<{ code: string }>(refused).code).toBe("catalogue.reemission.already_running");
     expect(await ctx.prisma.catalogReemissionJob.count()).toBe(1);
@@ -453,7 +477,11 @@ describe("réémettre", () => {
     // domaine ne sait produire une telle ligne — c'est précisément une corruption.
     await ctx.prisma.category.update({ where: { id: fiche.categoryId }, data: { name: 42 } });
 
-    const started = await staff().post(REEMIT).send({ productId: fiche.id }).expect(202);
+    const started = await staff()
+      .post(REEMIT)
+      .set(INTENT_KEY, freshIntent())
+      .send({ productId: fiche.id })
+      .expect(202);
     await ctx.drain();
 
     const report = await reportOf(jsonBody<{ id: string }>(started).id);
@@ -473,12 +501,16 @@ describe("réémettre", () => {
 
     expect(await reportOf(id)).toMatchObject({ status: "failed", error: INTERRUPTED_BY_RESTART });
     // Le « tout » orphelin ne bloque plus le suivant.
-    await staff().post(REEMIT).send({}).expect(202);
+    await staff().post(REEMIT).set(INTENT_KEY, freshIntent()).send({}).expect(202);
     await ctx.drain();
   });
 
   it("refuse une fiche inconnue (404) et un travail inconnu (404)", async () => {
-    await staff().post(REEMIT).send({ productId: "prd_absent" }).expect(404);
+    await staff()
+      .post(REEMIT)
+      .set(INTENT_KEY, freshIntent())
+      .send({ productId: "prd_absent" })
+      .expect(404);
     await staff().get(`${REEMIT}/inconnu`).expect(404);
   });
 });

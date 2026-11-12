@@ -125,7 +125,10 @@ describe("confirmer et archiver avec `?clientele=`", () => {
     const [proBefore] = (await limits("pro")).floors;
     const [publicBefore] = (await limits("public")).floors;
 
-    await admin().post("/admin/pricing/floors/global/confirm?clientele=public").expect(204);
+    await admin()
+      .post("/admin/pricing/floors/global/confirm?clientele=public")
+      .set(INTENT_KEY, freshIntent())
+      .expect(204);
 
     expect((await limits("pro")).floors.map((floor) => floor.id)).toEqual([proBefore?.id]);
     const [publicAfter] = (await limits("public")).floors;
@@ -135,6 +138,7 @@ describe("confirmer et archiver avec `?clientele=`", () => {
   it("archiver en public ne touche pas la pro — par le POST motivé comme par le DELETE", async () => {
     await admin()
       .post("/admin/pricing/floors/global/archive?clientele=public")
+      .set(INTENT_KEY, freshIntent())
       .send({ reason: "Pas de promotion publique cette saison" })
       .expect(204);
 
@@ -147,7 +151,7 @@ describe("confirmer et archiver avec `?clientele=`", () => {
   });
 
   it("sans paramètre, c'est la pro qu'on vise", async () => {
-    await admin().delete("/admin/pricing/floors/global").expect(204);
+    await admin().delete("/admin/pricing/floors/global").set(INTENT_KEY, freshIntent()).expect(204);
 
     expect((await limits("pro")).floors).toEqual([]);
     expect((await limits("public")).floors.map((floor) => floor.value)).toEqual([4_000]);
@@ -164,7 +168,10 @@ describe("le journal sépare les deux histoires", () => {
   it("l'historique d'une portée pro ne montre aucun fait public", async () => {
     await putFloor(6_000).expect(204);
     await putFloor(4_000, "public").expect(204);
-    await admin().post("/admin/pricing/floors/global/confirm?clientele=public").expect(204);
+    await admin()
+      .post("/admin/pricing/floors/global/confirm?clientele=public")
+      .set(INTENT_KEY, freshIntent())
+      .expect(204);
 
     const pro = jsonBody<{ act: string; summary: string }[]>(
       await admin().get("/admin/pricing/journal/floor/global%3A").expect(200),
