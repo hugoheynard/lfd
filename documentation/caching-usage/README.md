@@ -51,3 +51,5 @@ Le plan du veilleur unique (un numéro par sujet, une porte, un veilleur par ong
 Le plan de l’écran Catalogue du back-office (une route, un store, le numéro `catalog-admin`) : [`plan-catalogue-du-back-office.md`](plan-catalogue-du-back-office.md).
 
 Le plan des lectures du PIM (gains directs, puis le numéro `pim`) : [`plan-lectures-du-pim.md`](plan-lectures-du-pim.md).
+
+Le plan de l’onglet Cache de la santé (taille et taux de réussite dans le temps) : [`plan-onglet-cache.md`](plan-onglet-cache.md).
