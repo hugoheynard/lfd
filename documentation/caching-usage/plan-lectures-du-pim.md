@@ -83,6 +83,17 @@ Y entrent aussi les trois points retirés de P1.
 - Les stores de référentiel existants s'abonnent au numéro au lieu de vivre
   toute la session sans jamais voir le geste d'un collègue.
 
+### 4.1 Le contenu partagé dans l'objet
+
+Décidé par Hugo le 2026-11-12, comme pour le catalogue du commerce
+(`plan-catalogue-du-back-office.md` § 3.5) : la liste des produits (avec ses
+alertes) et les référentiels (familles, taux de TVA avec leur usage,
+contextes de vente, appellations, ingrédients, allergènes) sont rangés dans
+l'objet partagé sous le numéro `pim`, par le même port générique « contenu
+versionné ». Tant que le numéro ne bouge pas, tous les postes les reçoivent
+sans toucher la base ; ce qu'un droit réserve n'est jamais rangé. Les stores
+de l'onglet gardent la copie et son numéro, et ne forcent plus de relecture.
+
 ## 5. Le bâti et la mesure
 
 P1 d'abord (API P1.1, P1.2, P1.4 à P1.6 ; écran P1.1 et P1.3), puis P2
