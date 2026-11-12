@@ -223,6 +223,55 @@ Elles font foi sur ce qui précède.
   l'écran, chiffrés dans le lot.
 - **C8 — A1 tenu dans le corps** (SÉRIEUX 8) : ci-dessus, § « L'écran » et T4.
 
+## V3 et V4 réécrits : le moyen se lit par période (Hugo, 2026-11-12)
+
+Font foi sur V3, V4 et C2. La version « figé sur la commande à la
+passation » est retirée après la contradiction de `vitruve` : une facture et
+un lot prennent les commandes par **date de solde** (`settledOn`,
+`billable-order-criterion.ts:84-89`), pas par date de passation — une
+commande passée en mars, soldée en avril chez un payeur passé au virement le
+1er avril, aurait apporté « prélèvement » sur une facture « virement ».
+
+- **V3' — une période, un moyen.** Un changement de moyen tombe sur une
+  limite de période du payeur (la prochaine clôture ; le début de la période
+  pour un payeur qui n'a jamais commandé — A2/C1). Le moyen d'une période est
+  donc **celui en vigueur à son début** (`collectionMeansAt(entries,
+début de période)`). Rien n'est figé sur la commande : une commande prend le
+  moyen de la période où elle est soldée, comme elle en prend la facture.
+- **V4' — la facture et le lot lisent le même moyen.** L'émission et la
+  constitution du lot lisent, pour chaque payeur, le moyen de la période
+  qu'elles traitent, par un port de lecture déclaré par `accounting`
+  (`PayerCollectionMeansReader`, une lecture groupée par clôture et par
+  entité, jamais par commande). Le lot ne prend que les payeurs dont la
+  période est au prélèvement ; un payeur au virement n'est ni prélevé ni
+  compté « sans mandat ». La facture fige son moyen dans son instantané
+  (`invoicePaymentMeansOf`), comme elle fige déjà le mandat.
+- **C2' — la clé de facture.** Une période n'ayant qu'un moyen, une facture
+  ne peut plus mêler deux moyens : la colonne `collection_means` dans la clé
+  primaire de `invoice_monthly_outcome` n'est plus nécessaire **si** le moyen
+  d'une période ne change jamais après coup. À vérifier : un changement
+  immédiat (payeur sans commande) date le moyen du début de la période en
+  cours — aucune facture de cette période n'existe encore, puisqu'il n'a
+  jamais commandé.
+- **L'entité** : celle que l'émission et le lot traitent déjà ; l'émission
+  n'en admet aujourd'hui qu'une en service (`soleSeller`,
+  `issue-monthly-invoices.handler.ts:207-213`).
+- **Coût** : zéro à la passation ; une lecture groupée par clôture à
+  l'émission et au lot.
+- **Lecteurs à mettre au moyen de la période** (liste de `vitruve`) : le lot
+  (`collection-candidates.reader.ts`, `collection-constitution-support.ts`),
+  `isDebitedHereAt` (`collection-verdict.ts:91-98`, « vous serez prélevé »),
+  `effectiveMandateOf` (une période au virement ne reçoit pas de mandat sur
+  sa facture, BG-16), les arrêtés (`statement-billing.reader.ts`, V10 : jamais
+  d'arrêté au virement), le dossier de facture (`invoice-dossier-support.ts`),
+  l'annulation, le prélèvement d'essai.
+- **Le blocage du prélèvement** (`directDebitBlockedAt`, `prisma-order-guard.reader.ts:51`) :
+  pour un payeur au virement, il ne retire pas le paiement au compte (à
+  trancher : le blocage devient-il « paiement au compte suspendu », V9, pour
+  les deux moyens ?).
+- **Révision d'une commande** qui déplace son solde d'une période à l'autre :
+  elle prend le moyen de sa nouvelle période, comme elle en prend la facture.
+
 ## T0 tel qu'il se bâtit (Hugo, 2026-11-12, après la troisième relecture)
 
 > ✅ **T0 bâti le 2026-11-12** (migration `20261112100000_le_compte_creancier_aux_quatre_yeux`, additive). Avant son déploiement : vérifier en production qu'aucune entité n'a `creditor_iban_sealed IS NULL AND creditor_iban IS NOT NULL` — l'instantané ne lit plus la colonne claire.
