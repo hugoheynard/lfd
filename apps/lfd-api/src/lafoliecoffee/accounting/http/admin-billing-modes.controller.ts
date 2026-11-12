@@ -18,6 +18,7 @@ import { ScheduleBillingModeDatesCommand } from "../application/commands/schedul
 import { SetPayerBillingModeCommand } from "../application/commands/set-payer-billing-mode.command.js";
 import { GetBillingRhythmsCalendarQuery } from "../application/queries/get-billing-rhythms-calendar.query.js";
 import { GetPayerBillingModeQuery } from "../application/queries/get-payer-billing-mode.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Les dates des modes de facturation, le mode des payeurs** (plan
@@ -41,6 +42,9 @@ export class AdminBillingModesController {
   /** Programme les dates d'un mode. */
   @Put(":id/billing-modes/:mode")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose des dates : rejouée, la même requête trouve le changement programmé en attente et l'agrégat refuse (409) — ou, déjà en vigueur, rend « rien à faire » sans écrire ni journaliser",
+  )
   async scheduleDates(
     @StaffUserId() staffUserId: string,
     @Param("id") id: string,
@@ -55,6 +59,9 @@ export class AdminBillingModesController {
   /** Annule les dates programmées d'un mode — 409 si rien n'est programmé. */
   @Delete(":id/billing-modes/:mode/scheduled")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée, plus rien n'est programmé et l'agrégat refuse (409) avant toute écriture ni fait",
+  )
   async cancelDates(
     @StaffUserId() staffUserId: string,
     @Param("id") id: string,
@@ -88,6 +95,9 @@ export class AdminBillingModesController {
   /** Programme le mode d'un payeur — 409 pour un site facturé chez un autre. */
   @Put(":id/payers/:companyId/billing-mode")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose un mode, sous le verrou du payeur : rejouée, la même requête trouve le changement en attente et l'agrégat refuse (409) — ou, déjà en vigueur, rend « rien à faire » sans écrire ni journaliser",
+  )
   async setPayerMode(
     @StaffUserId() staffUserId: string,
     @Param("id") id: string,
@@ -102,6 +112,9 @@ export class AdminBillingModesController {
   /** Annule le mode programmé d'un payeur — 409 si rien n'est programmé. */
   @Delete(":id/payers/:companyId/billing-mode/scheduled")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition, sous le verrou du payeur : rejouée, plus rien n'est programmé et l'agrégat refuse (409) avant toute écriture ni fait",
+  )
   async cancelPayerMode(
     @StaffUserId() staffUserId: string,
     @Param("id") id: string,

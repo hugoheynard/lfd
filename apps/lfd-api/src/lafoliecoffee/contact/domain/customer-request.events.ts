@@ -17,12 +17,13 @@ export const CUSTOMER_REQUEST_FACTS = {
  * personnelles qui s'anonymisent. Son abonné fait sonner la cloche, et son
  * échec ne défait pas la demande ; le courriel à l'adresse du motif, lui, est
  * demandé au bloc `mail` dans la transaction qui range la demande
- * (`CustomerRequestMail`, lot S2c).
+ * (`CustomerRequestMail`) — sauf si le motif n'a pas d'adresse (`null`) :
+ * aucun e-mail, la demande n'arrive que dans « Demandes clients ».
  */
 export class CustomerRequestReceivedEvent {
   constructor(
     readonly request: CustomerRequest,
-    readonly recipientEmail: string,
+    readonly recipientEmail: string | null,
   ) {}
 }
 

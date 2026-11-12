@@ -1,6 +1,7 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
   InvalidLicensePlateError,
@@ -32,6 +33,9 @@ import {
 } from "./fleet-doubles.js";
 
 const NOW = new Date(CREATED.getTime() + 3_600_000);
+let intentCount = 0;
+/** Une clé d'intention neuve par geste voulu, comme l'écran. */
+const nextKey = (): string => `intent_${(intentCount += 1)}`;
 
 /** Un grand fourgon (≈ 9,9 m³) et sa caisse frigorifique de 400 L. */
 const LOADED = {
@@ -52,6 +56,28 @@ function tools(): { clock: FixedClock; events: RecordingPublisher; uow: DirectUn
 }
 
 describe("AddVehicleHandler", () => {
+  /** Régression : un double clic sur « Ajouter » faisait entrer deux véhicules sans plaque. */
+  it("rejoué avec la même clé, rend le même identifiant sans rien écrire de plus", async () => {
+    const vehicles = new InMemoryVehicles();
+    const { clock, events, uow } = tools();
+    const handler = new AddVehicleHandler(
+      vehicles,
+      new FixedIdGenerator("veh"),
+      clock,
+      events,
+      uow,
+      inMemoryIntents(),
+    );
+    const command = new AddVehicleCommand({ name: "Fourgon" }, "staff_1", nextKey());
+
+    const first = await handler.execute(command);
+    const replayed = await handler.execute(command);
+
+    expect(replayed).toBe(first);
+    expect(vehicles.saved).toHaveLength(1);
+    expect(events.factTypes()).toEqual(["delivery_vehicle.added"]);
+  });
+
   it("fait entrer le véhicule, id du générateur, et le trace", async () => {
     const vehicles = new InMemoryVehicles();
     const { clock, events, uow } = tools();
@@ -61,9 +87,12 @@ describe("AddVehicleHandler", () => {
       clock,
       events,
       uow,
+      inMemoryIntents(),
     );
 
-    const id = await handler.execute(new AddVehicleCommand({ name: "Kangoo", plate: "ab123cd" }));
+    const id = await handler.execute(
+      new AddVehicleCommand({ name: "Kangoo", plate: "ab123cd" }, "staff_1", nextKey()),
+    );
 
     expect(id).toBe("veh_000001");
     expect(vehicles.saved[0]?.toState()).toMatchObject({ plate: "AB-123-CD", createdAt: NOW });
@@ -82,10 +111,21 @@ describe("AddVehicleHandler", () => {
   it("porte les dimensions et le froid jusqu'à l'agrégat et au journal (lot 2 bis)", async () => {
     const vehicles = new InMemoryVehicles();
     const { clock, events, uow } = tools();
-    const handler = new AddVehicleHandler(vehicles, new FixedIdGenerator(), clock, events, uow);
+    const handler = new AddVehicleHandler(
+      vehicles,
+      new FixedIdGenerator(),
+      clock,
+      events,
+      uow,
+      inMemoryIntents(),
+    );
 
     await handler.execute(
-      new AddVehicleCommand({ name: "Master frigo", plate: "AB-123-CD", ...LOADED }),
+      new AddVehicleCommand(
+        { name: "Master frigo", plate: "AB-123-CD", ...LOADED },
+        "staff_1",
+        nextKey(),
+      ),
     );
 
     expect(vehicles.saved[0]?.toState()).toMatchObject(LOADED);
@@ -95,15 +135,26 @@ describe("AddVehicleHandler", () => {
   it("refuse un volume réfrigéré au-dessus du volume utile, sans rien écrire", async () => {
     const vehicles = new InMemoryVehicles();
     const { clock, events, uow } = tools();
-    const handler = new AddVehicleHandler(vehicles, new FixedIdGenerator(), clock, events, uow);
+    const handler = new AddVehicleHandler(
+      vehicles,
+      new FixedIdGenerator(),
+      clock,
+      events,
+      uow,
+      inMemoryIntents(),
+    );
 
     const adding = handler.execute(
-      new AddVehicleCommand({
-        name: "Kangoo",
-        plate: "AB-123-CD",
-        cargo: { lengthCm: 100, widthCm: 100, heightCm: 100 },
-        refrigeration: { volumeLiters: 1001, minTempC: 0, maxTempC: 4 },
-      }),
+      new AddVehicleCommand(
+        {
+          name: "Kangoo",
+          plate: "AB-123-CD",
+          cargo: { lengthCm: 100, widthCm: 100, heightCm: 100 },
+          refrigeration: { volumeLiters: 1001, minTempC: 0, maxTempC: 4 },
+        },
+        "staff_1",
+        nextKey(),
+      ),
     );
 
     await expect(adding).rejects.toThrow(RefrigeratedVolumeExceedsCargoError);
@@ -114,10 +165,21 @@ describe("AddVehicleHandler", () => {
   it("porte les passages de roue jusqu'à l'agrégat et au journal (G4)", async () => {
     const vehicles = new InMemoryVehicles();
     const { clock, events, uow } = tools();
-    const handler = new AddVehicleHandler(vehicles, new FixedIdGenerator(), clock, events, uow);
+    const handler = new AddVehicleHandler(
+      vehicles,
+      new FixedIdGenerator(),
+      clock,
+      events,
+      uow,
+      inMemoryIntents(),
+    );
 
     await handler.execute(
-      new AddVehicleCommand({ name: "Trafic", plate: "AB-123-CD", ...LOADED, wheelArches: ARCHES }),
+      new AddVehicleCommand(
+        { name: "Trafic", plate: "AB-123-CD", ...LOADED, wheelArches: ARCHES },
+        "staff_1",
+        nextKey(),
+      ),
     );
 
     expect(vehicles.saved[0]?.toState().wheelArches).toEqual(ARCHES);
@@ -127,11 +189,22 @@ describe("AddVehicleHandler", () => {
   it("refuse des passages sans dimensions utiles, sans rien écrire (G4)", async () => {
     const vehicles = new InMemoryVehicles();
     const { clock, events, uow } = tools();
-    const handler = new AddVehicleHandler(vehicles, new FixedIdGenerator(), clock, events, uow);
+    const handler = new AddVehicleHandler(
+      vehicles,
+      new FixedIdGenerator(),
+      clock,
+      events,
+      uow,
+      inMemoryIntents(),
+    );
 
     await expect(
       handler.execute(
-        new AddVehicleCommand({ name: "Trafic", plate: "AB-123-CD", wheelArches: ARCHES }),
+        new AddVehicleCommand(
+          { name: "Trafic", plate: "AB-123-CD", wheelArches: ARCHES },
+          "staff_1",
+          nextKey(),
+        ),
       ),
     ).rejects.toThrow(WheelArchesWithoutCargoError);
     expect(vehicles.saved).toEqual([]);
@@ -141,13 +214,24 @@ describe("AddVehicleHandler", () => {
   it("refuse une plaque déjà portée par un véhicule en service, en le nommant", async () => {
     const vehicles = new InMemoryVehicles(vehicle("v_1", "Kangoo blanc", "AB-123-CD"));
     const { clock, events, uow } = tools();
-    const handler = new AddVehicleHandler(vehicles, new FixedIdGenerator(), clock, events, uow);
+    const handler = new AddVehicleHandler(
+      vehicles,
+      new FixedIdGenerator(),
+      clock,
+      events,
+      uow,
+      inMemoryIntents(),
+    );
 
-    const adding = handler.execute(new AddVehicleCommand({ name: "Trafic", plate: "AB 123 CD" }));
+    const adding = handler.execute(
+      new AddVehicleCommand({ name: "Trafic", plate: "AB 123 CD" }, "staff_1", nextKey()),
+    );
 
     await expect(adding).rejects.toThrow(LicensePlateAlreadyInServiceError);
     await expect(
-      handler.execute(new AddVehicleCommand({ name: "Trafic", plate: "AB 123 CD" })),
+      handler.execute(
+        new AddVehicleCommand({ name: "Trafic", plate: "AB 123 CD" }, "staff_1", nextKey()),
+      ),
     ).rejects.toThrow(/Kangoo blanc/u);
     expect(vehicles.saved).toEqual([]);
     expect(events.traced).toEqual([]);
@@ -156,10 +240,17 @@ describe("AddVehicleHandler", () => {
   it("refuse une plaque mal formée avant toute écriture", async () => {
     const vehicles = new InMemoryVehicles();
     const { clock, events, uow } = tools();
-    const handler = new AddVehicleHandler(vehicles, new FixedIdGenerator(), clock, events, uow);
+    const handler = new AddVehicleHandler(
+      vehicles,
+      new FixedIdGenerator(),
+      clock,
+      events,
+      uow,
+      inMemoryIntents(),
+    );
 
     await expect(
-      handler.execute(new AddVehicleCommand({ name: "X", plate: "??" })),
+      handler.execute(new AddVehicleCommand({ name: "X", plate: "??" }, "staff_1", nextKey())),
     ).rejects.toThrow(InvalidLicensePlateError);
     expect(vehicles.saved).toEqual([]);
   });
@@ -301,6 +392,23 @@ describe("CorrectVehicleHandler", () => {
     ).execute(new CorrectVehicleCommand("v_1", { name: "Kangoo blanc", plate: "AB123CD" }));
 
     expect(vehicles.saved).toHaveLength(1);
+  });
+
+  /** Régression : un « Enregistrer » rejoué sans changement écrivait la fiche et un fait au journal. */
+  it("rejouée sans changement (plaque saisie autrement), n'écrit rien et ne trace rien", async () => {
+    const vehicles = new InMemoryVehicles(vehicle("v_1", "Kangoo", "AB-123-CD"));
+    const { clock, events, uow } = tools();
+
+    await new CorrectVehicleHandler(
+      vehicles,
+      new MeasuredVehiclesOver(vehicles),
+      clock,
+      events,
+      uow,
+    ).execute(new CorrectVehicleCommand("v_1", { name: "Kangoo", plate: "AB123CD" }));
+
+    expect(vehicles.saved).toEqual([]);
+    expect(events.factTypes()).toEqual([]);
   });
 
   it("refuse un véhicule inconnu", async () => {

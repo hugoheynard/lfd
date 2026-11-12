@@ -66,7 +66,8 @@ export const requestReasonPayloadSchema = z
   .object({
     kind: requestKindSchema,
     label: localized(CONTACT_BOUNDS.reasonLabel),
-    recipientEmail: bounded(CONTACT_BOUNDS.recipientEmail),
+    /** Vide ou `null` : aucun e-mail, la demande arrive seulement dans « Demandes clients ». */
+    recipientEmail: bounded(CONTACT_BOUNDS.recipientEmail).nullable(),
     position: z.number().int().min(0),
     active: z.boolean(),
     audience: z.enum(["b2b", "b2c", "both"]),

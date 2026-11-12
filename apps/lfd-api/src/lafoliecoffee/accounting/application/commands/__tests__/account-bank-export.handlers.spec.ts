@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { LegalEntityNotFoundError } from "../../../domain/errors/accounting-errors.js";
 import {
   AccountAlreadyKnownToBankError,
@@ -25,7 +26,7 @@ import { RecordAccountBankExportDownloadCommand } from "../record-account-bank-e
 import { NOW, accountExportWorld } from "./account-bank-export-doubles.js";
 import { entityRecord } from "./mandate-bank-export-doubles.js";
 
-const prepare = (staff = "staff_1") => new ExportAccountsForBankCommand("le1", staff);
+const prepare = (staff = "staff_1") => new ExportAccountsForBankCommand("le1", staff, randomUUID());
 
 describe("préparer un export des comptes", () => {
   it("fige l'empreinte des comptes, jamais l'IBAN, et le journalise sur l'entité", async () => {
@@ -91,7 +92,7 @@ describe("préparer un export des comptes", () => {
     w.entities.record = { ...entityRecord(), id: "le2" };
 
     await expect(
-      w.prepare.execute(new ExportAccountsForBankCommand("le2", "staff_1")),
+      w.prepare.execute(new ExportAccountsForBankCommand("le2", "staff_1", randomUUID())),
     ).rejects.toThrow(NoAccountToExportError);
   });
 
@@ -136,9 +137,9 @@ describe("préparer un export des comptes", () => {
 
   it("une entité inconnue est un 404, sans rien écrire", async () => {
     const w = accountExportWorld();
-    await expect(w.prepare.execute(new ExportAccountsForBankCommand("autre", "s"))).rejects.toThrow(
-      LegalEntityNotFoundError,
-    );
+    await expect(
+      w.prepare.execute(new ExportAccountsForBankCommand("autre", "s", randomUUID())),
+    ).rejects.toThrow(LegalEntityNotFoundError);
     expect(w.exports.rows.size).toBe(0);
   });
 });
@@ -291,5 +292,21 @@ describe("déclarer un compte connu de la banque, et pourquoi", () => {
       ),
     ).rejects.toThrow(AccountNotDebitedByEntityError);
     expect(w.declared.rows).toHaveLength(0);
+  });
+});
+
+describe("préparer un export des comptes — une fois par intention", () => {
+  /** Régression : un double clic figeait un second export des comptes restants. */
+  it("la même clé rend le même export, sans en figer un second", async () => {
+    const w = accountExportWorld();
+    w.accounts.exportable = [debitedAccount("a"), debitedAccount("b", { iban: IBAN_B })];
+    const command = new ExportAccountsForBankCommand("le1", "staff_1", randomUUID());
+
+    const first = await w.prepare.execute(command);
+    const replay = await w.prepare.execute(command);
+
+    expect(replay).toBe(first);
+    expect(w.exports.rows.size).toBe(1);
+    expect(w.events.factTypes()).toEqual(["account_bank_export.created"]);
   });
 });

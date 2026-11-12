@@ -89,7 +89,9 @@ export async function bootstrapHarness(): Promise<SeedHarness> {
 /** Acteur système (provisioning, avant résolution du principal). */
 export const SYSTEM: Actor = { type: "system", id: null };
 /** Acteur staff synthétique du seed (démarchage, mutations back-office). */
-export const SEED_STAFF: Actor = { type: "staff", id: "seed-staff" };
+/** L'identifiant du staff de semis, aussi auteur des intentions qu'il scelle. */
+export const SEED_STAFF_ID = "seed-staff";
+export const SEED_STAFF: Actor = { type: "staff", id: SEED_STAFF_ID };
 /** Acteur client pour un utilisateur donné. */
 export function customer(userId: string): Actor {
   return { type: "customer", id: userId };

@@ -20,6 +20,7 @@ import { anActiveFiche, relayAll, SILENT_TRIGGER } from "./catalog-facts-scene.j
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble, pickupSite, placeOrder } from "./order-factory.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -104,6 +105,7 @@ async function aBornFicheWithANewDefault(): Promise<BornFiche> {
   const partId = jsonBody<{ id: string }>(
     await staff()
       .post(`${PRODUCTS}/${fiche.id}/variants`)
+      .set(INTENT_KEY, freshIntent())
       .send({ name: { fr: "Ancolie part" } })
       .expect(201),
   ).id;
@@ -132,6 +134,7 @@ async function aBornFicheWithANewDefault(): Promise<BornFiche> {
   const otherId = jsonBody<{ id: string }>(
     await staff()
       .post(`${PRODUCTS}/${bornId}/variants`)
+      .set(INTENT_KEY, freshIntent())
       .send({ name: { fr: "Ancolie entière" } })
       .expect(201),
   ).id;

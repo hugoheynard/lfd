@@ -2,6 +2,8 @@ import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js"
 import { Body, Controller, Delete, HttpCode, HttpStatus, Param, Patch, Post } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { AddContactByStaffCommand } from "../application/commands/add-contact-by-staff.command.js";
 import { RemoveContactByStaffCommand } from "../application/commands/remove-contact-by-staff.command.js";
@@ -43,14 +45,17 @@ export class AdminCompanyContactsController {
     );
   }
 
+  /** Un contact de plus — une fois par intention (`Idempotency-Key`). */
   @Post("contacts")
   @HttpCode(HttpStatus.CREATED)
   async add(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(additionalContactPayload)) payload: AdditionalContactPayload,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedContactResponse> {
     const id = await this.commands.execute<AddContactByStaffCommand, string>(
-      new AddContactByStaffCommand(companyId, payload, payload.role),
+      new AddContactByStaffCommand(companyId, payload, payload.role, staffUserId, intentKey),
     );
     return { id };
   }

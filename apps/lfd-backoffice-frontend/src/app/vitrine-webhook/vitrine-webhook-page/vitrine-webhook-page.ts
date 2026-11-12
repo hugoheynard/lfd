@@ -28,6 +28,7 @@ import {
 import { VitrineSubscriberEditPanel } from '../vitrine-subscriber-edit-panel/vitrine-subscriber-edit-panel';
 import { VitrineSubscriberPanel } from '../vitrine-subscriber-panel/vitrine-subscriber-panel';
 import { VitrineWebhookService } from '../vitrine-webhook.service';
+import { GestureIntents } from '../../shared/gesture-intents';
 
 type LoadState = 'loading' | 'error' | 'ready';
 
@@ -59,6 +60,11 @@ export class VitrineWebhookPage {
   private readonly permissions = inject(PermissionsStore);
   private readonly panels = inject(FoldPanelHostService);
   private readonly notify = inject(NotifyService);
+  /**
+   * L'intention d'un essai : une clé tirée au premier envoi, renvoyée jusqu'au
+   * succès — un double clic ne envoie pas deux essais.
+   */
+  private readonly intents = new GestureIntents();
 
   protected readonly canWrite = computed(() => this.permissions.can('lfd_webhooks:write'));
   protected readonly state = signal<LoadState>('loading');
@@ -152,7 +158,11 @@ export class VitrineWebhookPage {
       case 'test':
         return this.act(
           subscriber,
-          () => this.api.test(subscriber.id),
+          async () => {
+            const subject = `test:${subscriber.id}`;
+            await this.api.test(subscriber.id, this.intents.keyFor(subject));
+            this.intents.done(subject);
+          },
           'Essai envoyé : son verdict est au journal des envois.',
         );
       case 'resync':

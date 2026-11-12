@@ -91,6 +91,9 @@ export class AdminPlatformContentController {
    * déduire d'une relecture supposerait que personne d'autre n'a écrit depuis.
    */
   @Post("legal/:mention/paragraphs")
+  @Idempotent(
+    "porte la révision chargée : rejouée après le premier succès, la révision a monté et le dépôt refuse (409 LegalDocumentChangedError) avant d'ajouter un second article",
+  )
   async addLegalDocumentParagraph(
     @Param("mention", LegalMentionParam) mention: LegalDocumentKey,
     @Body(new ZodBody(legalDocumentParagraphWritePayloadSchema))
@@ -110,6 +113,9 @@ export class AdminPlatformContentController {
    * autres écritures : c'est un article de plus, qu'on ne pourra pas retirer.
    */
   @Post("legal/:mention/sections")
+  @Idempotent(
+    "porte la révision chargée : rejouée après le premier succès, la révision a monté et le dépôt refuse (409 LegalDocumentChangedError) avant d'ajouter une seconde section",
+  )
   async addRequiredLegalSection(
     @Param("mention", LegalMentionParam) mention: LegalDocumentKey,
     @Body(new ZodBody(legalRequiredSectionPayloadSchema)) payload: LegalRequiredSectionPayload,

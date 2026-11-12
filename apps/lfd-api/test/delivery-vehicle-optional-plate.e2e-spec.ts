@@ -13,6 +13,7 @@ import { checkJournalFact } from "@lfd/contracts/journal-facts";
 
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { ADMIN_VERIFIER_OVERRIDE, admin, VEHICLES } from "./delivery-rounds-scene.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 let ctx: E2eContext;
 
@@ -29,7 +30,11 @@ beforeEach(async () => {
 });
 
 async function add(body: Record<string, unknown>): Promise<string> {
-  const response = await admin(ctx).post(VEHICLES).send(body).expect(201);
+  const response = await admin(ctx)
+    .post(VEHICLES)
+    .set(INTENT_KEY, freshIntent())
+    .send(body)
+    .expect(201);
   return jsonBody<CreatedIdResponse>(response).id;
 }
 
@@ -53,6 +58,7 @@ describe("Un véhicule sans plaque", () => {
 
     const refused = await admin(ctx)
       .post(VEHICLES)
+      .set(INTENT_KEY, freshIntent())
       .send({ name: "Trafic", plate: "ab 123 cd" })
       .expect(409);
 

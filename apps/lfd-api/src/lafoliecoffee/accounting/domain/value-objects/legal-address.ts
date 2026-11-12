@@ -53,6 +53,17 @@ export class LegalAddress {
   toString(): string {
     return this.lines().join(", ");
   }
+
+  /** La même adresse, champ à champ — ce qu'une saisie rejouée doit retrouver. */
+  equals(other: LegalAddress): boolean {
+    return (
+      this.line1 === other.line1 &&
+      this.line2 === other.line2 &&
+      this.postalCode === other.postalCode &&
+      this.city === other.city &&
+      this.countryCode === other.countryCode
+    );
+  }
 }
 
 function required(raw: string, field: string): string {

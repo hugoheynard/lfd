@@ -55,4 +55,10 @@ export class MandateOptions {
   get isEmpty(): boolean {
     return this.debtorReference === "" && this.contractNumber === "";
   }
+
+  equals(other: MandateOptions): boolean {
+    return (
+      this.debtorReference === other.debtorReference && this.contractNumber === other.contractNumber
+    );
+  }
 }

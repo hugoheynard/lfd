@@ -24,6 +24,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -123,11 +124,11 @@ async function seed({ id, template, minutesAgo, outcome }: Seed): Promise<void> 
 }
 
 function search(agent: ReturnType<E2eContext["asSub"]>, address: string) {
-  return agent.post(`${SENDS}/searches`).send({ address });
+  return agent.post(`${SENDS}/searches`).set(INTENT_KEY, freshIntent()).send({ address });
 }
 
 function reveal(agent: ReturnType<E2eContext["asSub"]>, id: string) {
-  return agent.post(`${SENDS}/${id}/recipient-reveal`);
+  return agent.post(`${SENDS}/${id}/recipient-reveal`).set(INTENT_KEY, freshIntent());
 }
 
 describe("le droit `mail_sends`", () => {

@@ -1,6 +1,7 @@
 import { PublicPickupClosure, type PublicPickupClosureState } from "./public-pickup-closure.js";
 import { PublicPickupSlotRulesOverlapError } from "./pickup-errors.js";
 import { PublicPickupSlotRule, type PublicPickupSlotRuleState } from "./public-pickup-slot-rule.js";
+import { sameStructure } from "../../../platform/shared/equality/same-structure.js";
 
 /** L'état complet de l'horaire public d'un point, en primitives. */
 export interface PickupScheduleState {
@@ -87,11 +88,17 @@ export class PickupSchedule {
    * geste réel de l'opérateur — il édite sa grille et l'enregistre.
    *
    * @throws {PublicPickupSlotRulesOverlapError} deux des règles données se chevauchent.
+   * @returns `false` quand la grille est déjà celle-là, dans le même ordre : rien n'a changé.
    */
-  replace(rules: readonly PublicPickupSlotRule[], closures: readonly PublicPickupClosure[]): void {
+  replace(
+    rules: readonly PublicPickupSlotRule[],
+    closures: readonly PublicPickupClosure[],
+  ): boolean {
     assertNoOverlap(rules);
+    const before = this.toPersistence();
     this.rules = [...rules];
     this.closures = [...closures];
+    return !sameStructure(before, this.toPersistence());
   }
 
   /** L'état à écrire, règles d'abord — l'adaptateur leur donne leurs identifiants. */

@@ -21,6 +21,7 @@ import { departedStop, DOOR_ROLE, JPEG, myRound } from "./delivery-handover-scen
 import { ADMIN_VERIFIER_OVERRIDE, admin, forgetCustomer, ROUNDS } from "./delivery-rounds-scene.js";
 import { forgetRoutingScene } from "./delivery-routing-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const DECIDE = "/admin/delivery/stop-decisions";
 
@@ -95,6 +96,7 @@ describe("« Tournée terminée » exige un sort pour chaque arrêt (B4)", () =>
     const { roundId, stopId } = await departedStop(ctx, paul);
     await paul.agent
       .post(`${MY_ROUND}/${roundId}/incidents`)
+      .set(INTENT_KEY, freshIntent())
       .field("family", "doorstep")
       .field("reason", "nobody_present")
       .field("note", "")

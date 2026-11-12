@@ -51,6 +51,7 @@ import {
   serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const DECIDE = "/admin/delivery/stop-decisions";
 const RUN_SHEET = "/admin/delivery/run-sheet";
@@ -82,6 +83,7 @@ async function broughtBack() {
   const stop = await departedStop(ctx, paul);
   await paul.agent
     .post(`${MY_ROUND}/${stop.roundId}/incidents`)
+    .set(INTENT_KEY, freshIntent())
     .field("family", "doorstep")
     .field("reason", "nobody_present")
     .field("note", "")

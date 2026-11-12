@@ -7,5 +7,7 @@ export class DepositLegalDocumentFileCommand {
     /** Les octets reçus, tels quels : le domaine juge, pas le contrôleur. */
     readonly bytes: Buffer,
     readonly staffUserId: string,
+    /** La clé d'intention de l'écran (`Idempotency-Key`) : un rejeu ne refait pas le geste. */
+    readonly intentKey: string,
   ) {}
 }

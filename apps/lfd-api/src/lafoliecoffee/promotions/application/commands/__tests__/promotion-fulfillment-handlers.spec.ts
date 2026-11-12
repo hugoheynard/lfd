@@ -6,6 +6,7 @@ import { FROM, basketTerms } from "../../../domain/__tests__/promotion-terms.fix
 import { ArchivePromotionCommand } from "../archive-promotion.command.js";
 import { PosePromotionCommand } from "../pose-promotion.command.js";
 import { RevisePromotionCommand } from "../revise-promotion.command.js";
+import { randomUUID } from "node:crypto";
 
 /**
  * Les gestes face aux points et aux zones qu'une promotion nomme (`documentation/promotions/promotions.md`, § 2.14) :
@@ -26,7 +27,7 @@ describe("poser une promotion « un point + une zone »", () => {
     const { promotions, pose } = writeScene(FROM);
 
     const id = await pose.execute(
-      new PosePromotionCommand(basketTerms({ fulfillment: POINT_AND_ZONE }), STAFF),
+      new PosePromotionCommand(basketTerms({ fulfillment: POINT_AND_ZONE }), STAFF, randomUUID()),
     );
 
     expect(promotions.stored.get(id)?.terms.fulfillment).toEqual(POINT_AND_ZONE);
@@ -49,7 +50,9 @@ describe("poser une promotion « un point + une zone »", () => {
   ] as const)("refuse %s en la nommant, sans rien écrire", async (_case, fulfillment, message) => {
     const { promotions, pose } = writeScene(FROM);
 
-    const refusal = pose.execute(new PosePromotionCommand(basketTerms({ fulfillment }), STAFF));
+    const refusal = pose.execute(
+      new PosePromotionCommand(basketTerms({ fulfillment }), STAFF, randomUUID()),
+    );
 
     await expect(refusal).rejects.toBeInstanceOf(PromotionUnknownFulfillmentTargetError);
     await expect(refusal).rejects.toThrow(message);
@@ -59,7 +62,7 @@ describe("poser une promotion « un point + une zone »", () => {
 
   it("refuse aussi à la révision une zone inconnue", async () => {
     const { promotions, pose, revise } = writeScene(FROM);
-    const id = await pose.execute(new PosePromotionCommand(basketTerms(), STAFF));
+    const id = await pose.execute(new PosePromotionCommand(basketTerms(), STAFF, randomUUID()));
 
     await expect(
       revise.execute(
@@ -81,7 +84,7 @@ describe("poser une promotion « un point + une zone »", () => {
     const zones = (ids: readonly string[]) =>
       basketTerms({ fulfillment: { kind: "basket", pickup: "none", delivery: { zones: ids } } });
     const id = await pose.execute(
-      new PosePromotionCommand(zones(["zone_vallee", "zone_sommet"]), STAFF),
+      new PosePromotionCommand(zones(["zone_vallee", "zone_sommet"]), STAFF, randomUUID()),
     );
 
     await revise.execute(
@@ -94,7 +97,7 @@ describe("poser une promotion « un point + une zone »", () => {
   it("archiver ne juge pas les cibles, et nomme celles qui existent encore", async () => {
     const { promotions, pose, archive } = writeScene(FROM);
     const id = await pose.execute(
-      new PosePromotionCommand(basketTerms({ fulfillment: POINT_AND_ZONE }), STAFF),
+      new PosePromotionCommand(basketTerms({ fulfillment: POINT_AND_ZONE }), STAFF, randomUUID()),
     );
 
     await archive.execute(new ArchivePromotionCommand(id, STAFF, "fin de saison"));
@@ -107,7 +110,7 @@ describe("poser une promotion « un point + une zone »", () => {
   it("refuse une seconde promotion de panier non cumulable sur la même zone", async () => {
     const { pose } = writeScene(FROM);
     await pose.execute(
-      new PosePromotionCommand(basketTerms({ fulfillment: POINT_AND_ZONE }), STAFF),
+      new PosePromotionCommand(basketTerms({ fulfillment: POINT_AND_ZONE }), STAFF, randomUUID()),
     );
 
     await expect(
@@ -118,6 +121,7 @@ describe("poser une promotion « un point + une zone »", () => {
             fulfillment: { kind: "basket", pickup: "none", delivery: { zones: ["zone_vallee"] } },
           }),
           STAFF,
+          randomUUID(),
         ),
       ),
     ).rejects.toBeInstanceOf(OverlappingPromotionError);
@@ -126,7 +130,7 @@ describe("poser une promotion « un point + une zone »", () => {
   it("accepte une seconde promotion de panier sur un autre point et une autre zone", async () => {
     const { promotions, pose } = writeScene(FROM);
     await pose.execute(
-      new PosePromotionCommand(basketTerms({ fulfillment: POINT_AND_ZONE }), STAFF),
+      new PosePromotionCommand(basketTerms({ fulfillment: POINT_AND_ZONE }), STAFF, randomUUID()),
     );
 
     await pose.execute(
@@ -140,6 +144,7 @@ describe("poser une promotion « un point + une zone »", () => {
           },
         }),
         STAFF,
+        randomUUID(),
       ),
     );
 

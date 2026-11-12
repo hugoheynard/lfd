@@ -3,6 +3,7 @@ import { CommandBus } from "@nestjs/cqrs";
 
 import { AdminSurface, RequirePermission } from "../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
+import { IntentKey } from "../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { RetryCardRefundCommand } from "../application/commands/retry-card-refund.command.js";
 import { SettleCardRefundElsewhereCommand } from "../application/commands/settle-card-refund-elsewhere.command.js";
@@ -10,6 +11,7 @@ import {
   type SettleElsewherePayload,
   settleElsewherePayloadSchema,
 } from "./card-refund-payloads.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Les gestes d'équipe sur un remboursement par carte** (plan M2, §3.3,
@@ -28,14 +30,19 @@ export class AdminCardRefundsController {
   /**
    * **« Relancer »** (§3.4). Refus : demande inconnue (404) ; en cours d'envoi,
    * émise et en attente de la banque, rendue, jamais tentée, ou une autre en
-   * cours sur le même paiement (409, avec leur phrase).
+   * cours sur le même paiement (409, avec leur phrase). Une fois par intention
+   * (`Idempotency-Key`) : la même clé ne relance rien de plus.
    */
   @Post(":requestId/retry")
   @RequirePermission("card_payments:write")
   @HttpCode(HttpStatus.ACCEPTED)
-  async retry(@Param("requestId") requestId: string): Promise<void> {
+  async retry(
+    @Param("requestId") requestId: string,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+  ): Promise<void> {
     await this.commands.execute<RetryCardRefundCommand, void>(
-      new RetryCardRefundCommand(requestId),
+      new RetryCardRefundCommand(requestId, staffUserId, intentKey),
     );
   }
 
@@ -46,6 +53,9 @@ export class AdminCardRefundsController {
   @Post(":requestId/settle-elsewhere")
   @RequirePermission("card_payments:write")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition terminale : rejouée, la demande relue sous le verrou du paiement n'est plus arrêtée et l'agrégat refuse (409 CardRefundNotStoppedError) avant toute ligne au carnet, tout fait ou tout avoir",
+  )
   async settleElsewhere(
     @Param("requestId") requestId: string,
     @Body(new ZodBody(settleElsewherePayloadSchema)) payload: SettleElsewherePayload,

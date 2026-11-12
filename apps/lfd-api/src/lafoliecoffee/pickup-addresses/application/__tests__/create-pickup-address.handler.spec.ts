@@ -7,6 +7,8 @@ import { LegacyPromotionEditorClosedError } from "../../../promotions/domain/err
 import { CreatePickupAddressCommand } from "../create-pickup-address.command.js";
 import { CreatePickupAddressHandler } from "../create-pickup-address.handler.js";
 import { FIELDS, StoredPoints } from "./pickup-address-doubles.js";
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 
 describe("CreatePickupAddressHandler — les remises par clientèle", () => {
   /**
@@ -22,22 +24,27 @@ describe("CreatePickupAddressHandler — les remises par clientèle", () => {
       new DirectUnitOfWork(),
       new HeldAfterCommit(),
       new RecordingPublicSettingsEdgeCache(),
+      inMemoryIntents(),
     );
 
     await expect(
       handler.execute(
-        new CreatePickupAddressCommand({
-          ...FIELDS,
-          discounts: {
-            b2b: {
-              adjustment: { mode: "percent", bp: 500 },
-              scope: "only",
-              categories: [],
-              products: [],
+        new CreatePickupAddressCommand(
+          {
+            ...FIELDS,
+            discounts: {
+              b2b: {
+                adjustment: { mode: "percent", bp: 500 },
+                scope: "only",
+                categories: [],
+                products: [],
+              },
+              b2c: null,
             },
-            b2c: null,
           },
-        }),
+          "staff_1",
+          randomUUID(),
+        ),
       ),
     ).rejects.toBeInstanceOf(LegacyPromotionEditorClosedError);
     expect(points.written).toBeNull();
@@ -53,12 +60,17 @@ describe("CreatePickupAddressHandler — le point GPS", () => {
       new DirectUnitOfWork(),
       new HeldAfterCommit(),
       new RecordingPublicSettingsEdgeCache(),
+      inMemoryIntents(),
     ).execute(
-      new CreatePickupAddressCommand({
-        ...FIELDS,
-        discounts: { b2b: null, b2c: null },
-        ...(gps === undefined ? {} : { gps }),
-      }),
+      new CreatePickupAddressCommand(
+        {
+          ...FIELDS,
+          discounts: { b2b: null, b2c: null },
+          ...(gps === undefined ? {} : { gps }),
+        },
+        "staff_1",
+        randomUUID(),
+      ),
     );
   }
 
@@ -72,5 +84,35 @@ describe("CreatePickupAddressHandler — le point GPS", () => {
     const points = new StoredPoints(null);
     await create(points, { lat: 45.9, lng: 6.1 });
     expect(points.written?.gps).toEqual({ lat: 45.9, lng: 6.1 });
+  });
+});
+
+describe("CreatePickupAddressHandler — une fois par intention", () => {
+  /** Régression : un double clic créait deux sites, deux faits et deux purges. */
+  it("rejouée sous la même clé, rend le même site sans en créer un second", async () => {
+    const points = new StoredPoints(null);
+    const events = new RecordingPublisher();
+    const handler = new CreatePickupAddressHandler(
+      points,
+      new FixedIdGenerator(),
+      events,
+      new DirectUnitOfWork(),
+      new HeldAfterCommit(),
+      new RecordingPublicSettingsEdgeCache(),
+      inMemoryIntents(),
+    );
+    const key = randomUUID();
+    const command = (): CreatePickupAddressCommand =>
+      new CreatePickupAddressCommand(
+        { ...FIELDS, discounts: { b2b: null, b2c: null } },
+        "staff_1",
+        key,
+      );
+
+    const first = await handler.execute(command());
+    const replayed = await handler.execute(command());
+
+    expect(replayed).toBe(first);
+    expect(events.traced).toHaveLength(1);
   });
 });

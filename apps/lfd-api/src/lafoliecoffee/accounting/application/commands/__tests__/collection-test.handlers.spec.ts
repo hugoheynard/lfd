@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import {
   CollectionTestAmountOutOfRangeError,
   CollectionTestCompanyNotFoundError,
@@ -35,6 +36,7 @@ function generate(
     overrides.sequence ?? "RCUR",
     null,
     "staff_1",
+    randomUUID(),
   );
 }
 
@@ -233,5 +235,22 @@ describe("l'outil d'essai et la liste « Essais »", () => {
       refundedByName: "Camille Compta",
     });
     expect(w.events.traced.at(-1)?.journalFact().type).toBe("collection.test_refunded");
+  });
+});
+
+describe("générer un prélèvement d'essai — une fois par intention", () => {
+  /**
+   * Régression : un double clic lisait un refus (« essai semblable ») après un
+   * succès, et deux envois simultanés gardaient deux fichiers.
+   */
+  it("la même clé rend le même essai, sans en garder un second", async () => {
+    const w = await declared();
+    const command = generate();
+
+    const first = await w.generate.execute(command);
+    const replay = await w.generate.execute(command);
+
+    expect(replay).toBe(first);
+    expect(w.tests.saveCount).toBe(1);
   });
 });

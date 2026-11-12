@@ -176,4 +176,22 @@ describe("DebtorAccount", () => {
       expect(() => account({ holder: "Col Pers", holderLegalForm: "Col Pers SAS" })).not.toThrow();
     });
   });
+
+  describe("equals — le dépôt identique qui ne fait rien", () => {
+    it("vrai pour le même RIB, faux dès qu'un champ diffère", () => {
+      expect(account().equals(account())).toBe(true);
+      expect(account().equals(account({ iban: Iban.create(OTHER_IBAN) }))).toBe(false);
+      expect(account().equals(account({ holder: "Refuge du Col SAS" }))).toBe(false);
+      expect(account().equals(account().withHolderLegalForm("Madame"))).toBe(false);
+      expect(account().equals(account({ bic: Bic.create("AGRIFRPP882") }))).toBe(false);
+      const moved = LegalAddress.create({
+        line1: "3 route de la Balme",
+        line2: "",
+        postalCode: "73320",
+        city: "Tignes",
+        countryCode: "FR",
+      });
+      expect(account().equals(account({ address: moved }))).toBe(false);
+    });
+  });
 });

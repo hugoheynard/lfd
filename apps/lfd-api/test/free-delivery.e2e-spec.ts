@@ -27,6 +27,7 @@ import {
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -98,7 +99,7 @@ async function seedPro(): Promise<string> {
     where: { id: company.id },
     data: { grantedTerms: [DeferredTerm.monthly] },
   });
-  await staff().post("/admin/delivery-zones").send(ZONE).expect(201);
+  await staff().post("/admin/delivery-zones").set(INTENT_KEY, freshIntent()).send(ZONE).expect(201);
   return company.id;
 }
 
@@ -107,6 +108,7 @@ async function proAddress(companyId: string): Promise<string> {
   const created = await ctx
     .asSub(PRO_SUB)
     .post(`/companies/${companyId}/delivery-addresses`)
+    .set(INTENT_KEY, freshIntent())
     .send({
       ...COURIER_ADDR,
       label: "Hôtel",
@@ -167,7 +169,11 @@ async function revise(orderId: string, addressId: string, revision: number, quan
 describe("le franco au devis", () => {
   /** Régression : sans seuil réglé, le devis livré est celui d'avant le franco. */
   it("sans seuil : la course est facturée, comme avant", async () => {
-    await staff().post("/admin/delivery-zones").send(ZONE).expect(201);
+    await staff()
+      .post("/admin/delivery-zones")
+      .set(INTENT_KEY, freshIntent())
+      .send(ZONE)
+      .expect(201);
 
     const view = await guestQuote();
     expect(view.deliveryFeeCents).toBe(2_000);
@@ -175,7 +181,11 @@ describe("le franco au devis", () => {
   });
 
   it("particulier : offerte au seuil HT pile, facturée un centime en dessous", async () => {
-    await staff().post("/admin/delivery-zones").send(ZONE).expect(201);
+    await staff()
+      .post("/admin/delivery-zones")
+      .set(INTENT_KEY, freshIntent())
+      .send(ZONE)
+      .expect(201);
     const base = await guestQuote();
 
     await setGlobal({ b2c: { freeDeliveryThresholdCents: base.subtotalHtCents } });
@@ -216,6 +226,7 @@ describe("le franco au devis", () => {
   it("le seuil d'une zone remplace le global, pour son audience", async () => {
     await staff()
       .post("/admin/delivery-zones")
+      .set(INTENT_KEY, freshIntent())
       .send({
         ...ZONE,
         audienceTerms: {

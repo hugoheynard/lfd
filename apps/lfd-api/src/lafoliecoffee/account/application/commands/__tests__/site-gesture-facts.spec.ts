@@ -40,6 +40,8 @@ import {
   STREET,
 } from "./member-acts-doubles.js";
 import { FixedSitePrincipals } from "./site-gesture-doubles.js";
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 
 /** Une correction réelle de l'adresse semée : la même charge rejouée ne change rien. */
 const CORRECTED = { ...DELIVERY, ligne2: "Bâtiment B" };
@@ -90,7 +92,8 @@ async function customerGestures(b: Built): Promise<string> {
     b.uow,
     b.names,
     b.gestures,
-  ).execute(new AddDeliveryAddressCommand("u1", "c1", DELIVERY));
+    inMemoryIntents(),
+  ).execute(new AddDeliveryAddressCommand("u1", "c1", DELIVERY, randomUUID()));
   await new UpdateDeliveryAddressHandler(
     b.member,
     b.addresses,
@@ -128,7 +131,8 @@ async function teamGestures(b: Built): Promise<string> {
     b.uow,
     b.names,
     b.gestures,
-  ).execute(new AddDeliveryAddressByStaffCommand("c1", DELIVERY));
+    inMemoryIntents(),
+  ).execute(new AddDeliveryAddressByStaffCommand("c1", DELIVERY, "staff_1", randomUUID()));
   await new UpdateDeliveryAddressByStaffHandler(
     b.addresses,
     b.events,

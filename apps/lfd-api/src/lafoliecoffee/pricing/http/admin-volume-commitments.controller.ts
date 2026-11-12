@@ -19,6 +19,7 @@ import { CarryOverVolumeCommitmentCommand } from "../application/commands/carry-
 import { ListVolumeCommitmentsQuery } from "../application/queries/list-volume-commitments.query.js";
 import type { CreatedIdResponse } from "@lfd/contracts";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 
 /**
  * **Les engagements de volume**, côté back-office.
@@ -50,9 +51,10 @@ export class AdminVolumeCommitmentsController {
   async sign(
     @Body(new ZodBody(createVolumeCommitmentPayloadSchema)) payload: CreateVolumeCommitmentPayload,
     @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedIdResponse> {
     const id = await this.commands.execute<SignVolumeCommitmentCommand, string>(
-      new SignVolumeCommitmentCommand(payload, staffUserId),
+      new SignVolumeCommitmentCommand(payload, staffUserId, intentKey),
     );
     return { id };
   }

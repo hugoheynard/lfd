@@ -22,6 +22,7 @@ import { InvoiceNumber } from "../src/lafoliecoffee/accounting/domain/value-obje
 import { toInvoiceCreate } from "../src/lafoliecoffee/accounting/infrastructure/invoice.mapper.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const ENTITIES = "/admin/accounting/legal-entities";
 const ISSUED_ON = "2026-09-30";
@@ -66,6 +67,7 @@ function staff(): ReturnType<E2eContext["asSub"]> {
 async function declareEntity(name = "La Folie Douce", siren = "552100554"): Promise<string> {
   const response = await staff()
     .post(ENTITIES)
+    .set(INTENT_KEY, freshIntent())
     .send({
       name,
       legalForm: "SAS",

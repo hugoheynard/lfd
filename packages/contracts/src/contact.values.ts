@@ -111,7 +111,8 @@ export interface RequestReasonView {
   readonly id: string;
   readonly kind: RequestKind;
   readonly label: ContactLocalizedText;
-  readonly recipientEmail: string;
+  /** L'adresse qui reçoit les demandes de ce motif ; `null` : aucun e-mail. */
+  readonly recipientEmail: string | null;
   readonly position: number;
   readonly active: boolean;
   readonly audience: ContactAudience;

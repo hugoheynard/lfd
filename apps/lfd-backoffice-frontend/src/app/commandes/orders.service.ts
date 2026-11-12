@@ -258,13 +258,15 @@ export class AdminOrdersService {
    * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
    * §3.4, §5.3) — PAR DEMANDE : une commande en porte une par paiement
    * encaissé. `202` : le serveur n'attend pas Stripe, l'écran relit le détail.
-   * Les refus (`404`, `409`) portent leur phrase.
+   * Les refus (`404`, `409`) portent leur phrase. Une fois par intention : la
+   * même clé ne relance rien de plus.
    */
-  async retryRefund(requestId: string): Promise<void> {
+  async retryRefund(requestId: string, intentKey: string): Promise<void> {
     await firstValueFrom(
       this.http.post<void>(
         `${B2B_API_BASE}/admin/card-payments/refund-requests/${encodeURIComponent(requestId)}/retry`,
         {},
+        intentOptions(intentKey),
       ),
     );
   }

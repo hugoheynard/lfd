@@ -129,7 +129,11 @@ export class FicheClientActions {
 
   /** Dépose le KBIS. */
   uploadKbis(company: AdminCompanyDetail, file: File): Promise<boolean> {
-    return this.run(() => this.service.uploadKbis(company.id, file), 'KBIS déposé.');
+    const subject = `kbis-upload:${company.id}`;
+    return this.run(async () => {
+      await this.service.uploadKbis(company.id, file, this.intents.keyFor(subject));
+      this.intents.done(subject);
+    }, 'KBIS déposé.');
   }
 
   /**
@@ -142,7 +146,9 @@ export class FicheClientActions {
    */
   async certifyKbis(company: AdminCompanyDetail, issuedOn: string): Promise<string | null> {
     try {
-      await this.service.certifyKbis(company.id, issuedOn);
+      const subject = `kbis-certify:${company.id}`;
+      await this.service.certifyKbis(company.id, issuedOn, this.intents.keyFor(subject));
+      this.intents.done(subject);
       this.notify.success('KBIS certifié.');
       return null;
     } catch (error) {

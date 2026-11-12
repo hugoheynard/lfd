@@ -18,6 +18,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
+import { GestureIntents, withIntent } from '../gesture-intents';
 
 /**
  * Un refus du serveur, tel qu'il l'a dit : le code pour brancher, la phrase
@@ -68,6 +69,8 @@ export class OrderRevisionGateway {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
   private readonly base = AUTH_CONFIG.apiBaseUrl;
+  /** Une clé par hausse voulue (commande et contenu), oubliée une fois tranchée. */
+  private readonly cardIncreaseIntents = new GestureIntents();
 
   /** `GET /orders/:id` — la commande telle qu'elle est ; `null` si la lecture échoue. */
   async order(orderId: string): Promise<CustomerOrderDetailView | null> {
@@ -122,14 +125,26 @@ export class OrderRevisionGateway {
    * réponse porte de quoi payer le complément. La commande ne change qu'une
    * fois le complément payé.
    */
-  proposeCardIncrease(
+  async proposeCardIncrease(
     orderId: string,
     payload: CardIncreasePayload,
   ): Promise<RevisionOutcome<CardComplementPaymentView>> {
-    return this.post<CardComplementPaymentView>(
+    // Une fois par intention : la clé du paiement n'est montrée qu'une fois,
+    // l'API refuse un rejeu (409) sans préparer un second paiement. Une panne
+    // garde la clé pour le réessai ; un succès ou un refus l'oublie — le
+    // geste suivant est neuf —, sauf « encore en vol ».
+    const subject = `${orderId}:${JSON.stringify(payload)}`;
+    const key = this.cardIncreaseIntents.keyFor(subject);
+    const outcome = await this.post<CardComplementPaymentView>(
       `${this.url(orderId)}/revisions/card-increase`,
       payload,
+      key,
     );
+    const inFlight = outcome.kind === 'refused' && outcome.refusal.code === IN_FLIGHT_CODE;
+    if (outcome.kind !== 'failed' && !inFlight) {
+      this.cardIncreaseIntents.done(subject);
+    }
+    return outcome;
   }
 
   /**
@@ -194,11 +209,15 @@ export class OrderRevisionGateway {
     return `${this.base}/me/orders/${encodeURIComponent(orderId)}`;
   }
 
-  private async post<T>(url: string, body: object): Promise<RevisionOutcome<T>> {
+  private async post<T>(
+    url: string,
+    body: object,
+    intentKey: string | null = null,
+  ): Promise<RevisionOutcome<T>> {
     try {
-      const value = await firstValueFrom(
-        this.http.post<T>(url, body, { headers: await this.bearer() }),
-      );
+      const bearer = await this.bearer();
+      const headers = intentKey === null ? bearer : withIntent(bearer, intentKey);
+      const value = await firstValueFrom(this.http.post<T>(url, body, { headers }));
       return { kind: 'ok', value };
     } catch (error) {
       return outcomeOfError(error);
@@ -214,6 +233,9 @@ export class OrderRevisionGateway {
     return new HttpHeaders({ Authorization: `Bearer ${token}` });
   }
 }
+
+/** Le code de l'API pour un geste encore en vol : la clé reste, le premier envoi décide. */
+const IN_FLIGHT_CODE = 'intent.in_flight';
 
 /** Un 4xx est un refus qui se dit ; le reste est une panne, qui se réessaie. */
 function outcomeOfError(error: unknown):

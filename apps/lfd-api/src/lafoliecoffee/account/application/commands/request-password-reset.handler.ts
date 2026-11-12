@@ -8,6 +8,11 @@ import { PasswordResetRequestedEvent } from "../../domain/events/person-acts.eve
 import { CustomerIdentityPort } from "../../domain/ports/customer-identity.port.js";
 import { AccountJournalNames } from "../services/account-journal-names.service.js";
 import { RequestPasswordResetCommand } from "./request-password-reset.command.js";
+import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { customerIntentActor } from "../../../shared/intent/customer-intent-actor.js";
+
+/** Le nom stable du geste, dans le registre des intentions. */
+const PASSWORD_RESET_GESTURE = "account.request-password-reset";
 
 /**
  * **Envoie à la personne un lien pour changer son mot de passe** — son propre
@@ -62,6 +67,15 @@ import { RequestPasswordResetCommand } from "./request-password-reset.command.js
  * `@hors-transaction` l'émission et l'envoi se font chez des tiers, et rien ne
  * s'écrit chez nous : le fait part seul. Une transaction ne les annulerait pas,
  * elle tiendrait une connexion ouverte le temps de deux allers-retours réseau.
+ *
+ * **Une fois par intention** : un double clic ne fait pas partir deux liens
+ * ni deux traces. `run`, pas `runSealed` : le geste n'écrit par aucun port de
+ * ce contexte — la trace est le journal, l'envoi est chez le fournisseur
+ * d'identité, qui n'a pas de transaction ; l'intention se résout après les
+ * deux. Une panne entre l'envoi et la résolution laisse un rejeu tardif
+ * redemander un lien, ce qui ne prend rien à personne.
+ *
+ * @throws {GestureInFlightError} la même clé est encore en vol.
  */
 @CommandHandler(RequestPasswordResetCommand)
 export class RequestPasswordResetHandler implements ICommandHandler<
@@ -73,9 +87,23 @@ export class RequestPasswordResetHandler implements ICommandHandler<
     private readonly config: AppConfig,
     private readonly events: DomainEventPublisher,
     private readonly names: AccountJournalNames,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: RequestPasswordResetCommand): Promise<void> {
+  execute(command: RequestPasswordResetCommand): Promise<void> {
+    return this.intents.run(
+      {
+        actorId: customerIntentActor(command.userId),
+        key: command.intentKey,
+        gesture: PASSWORD_RESET_GESTURE,
+        subject: command.userId,
+      },
+      NOTHING_TO_REPLAY,
+      () => this.request(command),
+    );
+  }
+
+  private async request(command: RequestPasswordResetCommand): Promise<void> {
     await this.refuseWithoutPasswordLogin(command.subject);
     await this.events.publishTraced(
       new PasswordResetRequestedEvent(command.userId, await this.names.person(command.userId)),

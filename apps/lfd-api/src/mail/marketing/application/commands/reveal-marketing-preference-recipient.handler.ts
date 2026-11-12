@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
+import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import {
   MarketingPreferenceAddressErasedError,
@@ -31,6 +32,7 @@ export class RevealMarketingPreferenceRecipientHandler implements ICommandHandle
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly intents: OncePerIntent,
   ) {}
 
   /**
@@ -38,10 +40,28 @@ export class RevealMarketingPreferenceRecipientHandler implements ICommandHandle
    * @throws {MarketingPreferenceAddressErasedError} l'adresse a été effacée.
    * @throws {MailConsultationLimitReachedError} 30 consultations dans l'heure.
    */
-  async execute({
+  execute({
     preferenceId,
     staffUserId,
+    intentKey,
   }: RevealMarketingPreferenceRecipientCommand): Promise<void> {
+    return this.intents.runSealed(
+      {
+        actorId: staffUserId,
+        key: intentKey,
+        gesture: "mail.preference.reveal",
+        subject: preferenceId,
+      },
+      NOTHING_TO_REPLAY,
+      (seal) => this.reveal(preferenceId, staffUserId, seal),
+    );
+  }
+
+  private async reveal(
+    preferenceId: string,
+    staffUserId: string,
+    seal: (result: void) => Promise<void>,
+  ): Promise<void> {
     const state = await this.preferences.detail(preferenceId);
     if (state === null) {
       throw new MarketingPreferenceNotFoundError(preferenceId);
@@ -57,6 +77,7 @@ export class RevealMarketingPreferenceRecipientHandler implements ICommandHandle
       await this.events.publishTraced(
         new MarketingPreferenceRecipientRevealedEvent(preferenceId, state.space),
       );
+      await seal(undefined);
     });
   }
 }

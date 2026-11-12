@@ -13,6 +13,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { CustomerRole, UserStatus } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createGuest, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
 const stubAdminVerifier = {
@@ -80,7 +81,11 @@ describe("la fiche rend UNE liste d'interlocuteurs", () => {
   it("dit `none` pour un interlocuteur qui n'a AUCUN accès", async () => {
     // Le cas le plus fréquent, et parfaitement légitime : le responsable
     // réception qui prend les livraisons n'a aucune raison de se connecter.
-    await staff().post(`/admin/companies/${companyId}/contacts`).send(KARIM).expect(201);
+    await staff()
+      .post(`/admin/companies/${companyId}/contacts`)
+      .set(INTENT_KEY, freshIntent())
+      .send(KARIM)
+      .expect(201);
 
     const karim = (await contactsOf()).find((contact) => contact.email === KARIM.email);
 
@@ -140,7 +145,10 @@ describe("le rôle d'un contact est exigé à la frontière", () => {
   it("refuse un contact SANS rôle", async () => {
     const sansRole = { ...KARIM, role: undefined };
 
-    const response = await staff().post(`/admin/companies/${companyId}/contacts`).send(sansRole);
+    const response = await staff()
+      .post(`/admin/companies/${companyId}/contacts`)
+      .set(INTENT_KEY, freshIntent())
+      .send(sansRole);
 
     expect(response.status).toBe(400);
   });
@@ -150,6 +158,7 @@ describe("le rôle d'un contact est exigé à la frontière", () => {
     // croire qu'une société peut en avoir deux.
     const response = await staff()
       .post(`/admin/companies/${companyId}/contacts`)
+      .set(INTENT_KEY, freshIntent())
       .send({ ...KARIM, role: "owner" });
 
     expect(response.status).toBe(400);
@@ -158,6 +167,7 @@ describe("le rôle d'un contact est exigé à la frontière", () => {
   it("écrit le rôle sur la vraie ligne SQL", async () => {
     await staff()
       .post(`/admin/companies/${companyId}/contacts`)
+      .set(INTENT_KEY, freshIntent())
       .send({ ...KARIM, role: "billing" })
       .expect(201);
 
@@ -170,10 +180,15 @@ describe("le rôle d'un contact est exigé à la frontière", () => {
     // la même personne, et l'accès ouvert depuis l'une contredirait l'autre.
     // Tenu par la base — deux commerciaux simultanés passeraient une simple
     // vérification applicative.
-    await staff().post(`/admin/companies/${companyId}/contacts`).send(KARIM).expect(201);
+    await staff()
+      .post(`/admin/companies/${companyId}/contacts`)
+      .set(INTENT_KEY, freshIntent())
+      .send(KARIM)
+      .expect(201);
 
     const response = await staff()
       .post(`/admin/companies/${companyId}/contacts`)
+      .set(INTENT_KEY, freshIntent())
       .send({ ...KARIM, firstName: "Karim (bis)" });
 
     expect(response.status).toBe(409);
@@ -183,6 +198,7 @@ describe("le rôle d'un contact est exigé à la frontière", () => {
     // Il y figure déjà, en tête de la fiche.
     const response = await staff()
       .post(`/admin/companies/${companyId}/contacts`)
+      .set(INTENT_KEY, freshIntent())
       .send({ ...KARIM, email: "camille@test.fr" });
 
     expect(response.status).toBe(409);
@@ -194,6 +210,7 @@ describe("le rôle d'un contact est exigé à la frontière", () => {
     // quelqu'un qui administre l'espace.
     const created = await staff()
       .post(`/admin/companies/${companyId}/contacts`)
+      .set(INTENT_KEY, freshIntent())
       .send(KARIM)
       .expect(201);
     const contactId = jsonBody<{ readonly id: string }>(created).id;
@@ -227,6 +244,7 @@ describe("le rôle d'un contact est exigé à la frontière", () => {
   it("aligne le rôle malgré un INVITÉ portant la même adresse", async () => {
     const created = await staff()
       .post(`/admin/companies/${companyId}/contacts`)
+      .set(INTENT_KEY, freshIntent())
       .send(KARIM)
       .expect(201);
     const contactId = jsonBody<{ readonly id: string }>(created).id;
@@ -256,6 +274,7 @@ describe("le rôle d'un contact est exigé à la frontière", () => {
   it("REFUSE toujours quand deux comptes connectables portent l'adresse", async () => {
     const created = await staff()
       .post(`/admin/companies/${companyId}/contacts`)
+      .set(INTENT_KEY, freshIntent())
       .send(KARIM)
       .expect(201);
     const contactId = jsonBody<{ readonly id: string }>(created).id;

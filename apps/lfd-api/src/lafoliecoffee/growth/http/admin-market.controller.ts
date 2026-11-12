@@ -82,6 +82,9 @@ export class AdminMarketController {
 
   @Post("refresh")
   @HttpCode(HttpStatus.OK)
+  @Idempotent(
+    "recompte depuis l'annuaire public (lecture seule chez le tiers) et pose les comptes lus : rejouée, elle pose l'état du moment, rien ne s'additionne ni ne part",
+  )
   async refresh(): Promise<MarketConfigView> {
     await this.commands.execute<RefreshMarketCommand, void>(new RefreshMarketCommand());
     return this.config();

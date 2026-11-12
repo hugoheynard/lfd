@@ -31,18 +31,22 @@ export class PrismaCardInvoiceOutcomes extends CardInvoiceOutcomes {
     });
   }
 
-  async recordBlocked(key: CardInvoiceOutcomeKey, message: string): Promise<void> {
+  async recordBlocked(key: CardInvoiceOutcomeKey, message: string): Promise<boolean> {
     const columns = { ...columnsOf(key), outcome: BLOCKED_OUTCOME, invoiceId: null, message };
     const { count } = await this.prisma.cardInvoiceOutcome.createMany({
       data: [columns],
       skipDuplicates: true,
     });
-    if (count === 0) {
-      await this.prisma.cardInvoiceOutcome.updateMany({
-        where: { orderId: key.orderId, outcome: BLOCKED_OUTCOME },
-        data: columns,
-      });
+    if (count > 0) {
+      return true;
     }
+    // Le même refus déjà rangé ne se réécrit pas : sa date reste celle du
+    // premier signalement, et l'appelant ne le rejournalise pas.
+    const changed = await this.prisma.cardInvoiceOutcome.updateMany({
+      where: { orderId: key.orderId, outcome: BLOCKED_OUTCOME, NOT: { message } },
+      data: columns,
+    });
+    return changed.count > 0;
   }
 }
 

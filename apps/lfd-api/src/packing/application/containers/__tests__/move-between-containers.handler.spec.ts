@@ -61,9 +61,14 @@ async function setup(target: typeof BAG | typeof BIN = BAG) {
     uow,
     InMemoryPackingSettings.sharingOpen().reader(),
     new RecordingPlanHold(),
+    inMemoryIntents(),
   );
-  const from = await open.execute(new OpenPackingContainerCommand(DAY, "ord_1", BAG, STAFF));
-  const to = await open.execute(new OpenPackingContainerCommand(DAY, "ord_1", target, STAFF));
+  const from = await open.execute(
+    new OpenPackingContainerCommand(DAY, "ord_1", BAG, STAFF, nextKey()),
+  );
+  const to = await open.execute(
+    new OpenPackingContainerCommand(DAY, "ord_1", target, STAFF, nextKey()),
+  );
   await new AllocateToContainerHandler(
     sheets,
     stocks,

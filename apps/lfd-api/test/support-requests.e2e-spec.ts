@@ -12,6 +12,7 @@ import { CustomerRole } from "../src/platform/database/client/client.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const MEMBER = "auth0|member";
 const STRANGER = "auth0|stranger";
@@ -67,6 +68,7 @@ async function request(companyId: string): Promise<string> {
   await ctx
     .asSub(MEMBER)
     .post("/support/activation")
+    .set(INTENT_KEY, freshIntent())
     .send({ ...CALL_BACK, companyId })
     .expect(201);
   const list = await staff().get("/admin/support-requests").expect(200);
@@ -117,6 +119,7 @@ describe("sans entreprise", () => {
     await ctx
       .asSub(STRANGER)
       .post("/support/activation")
+      .set(INTENT_KEY, freshIntent())
       .send({ ...CALL_BACK, companyId: null })
       .expect(201);
 
@@ -130,9 +133,19 @@ describe("sans entreprise", () => {
   it("borne alors la file par PERSONNE, pas par société", async () => {
     await createUser(ctx.prisma, { auth0Sub: STRANGER });
     const payload = { ...CALL_BACK, companyId: null };
-    await ctx.asSub(STRANGER).post("/support/activation").send(payload).expect(201);
+    await ctx
+      .asSub(STRANGER)
+      .post("/support/activation")
+      .set(INTENT_KEY, freshIntent())
+      .send(payload)
+      .expect(201);
     // Sans ce garde, un prospect déposerait autant de rappels qu'il a de clics.
-    await ctx.asSub(STRANGER).post("/support/activation").send(payload).expect(409);
+    await ctx
+      .asSub(STRANGER)
+      .post("/support/activation")
+      .set(INTENT_KEY, freshIntent())
+      .send(payload)
+      .expect(409);
   });
 
   it("ne verrouille PAS deux personnes l'une par l'autre", async () => {
@@ -140,8 +153,18 @@ describe("sans entreprise", () => {
     const other = "auth0|other";
     await createUser(ctx.prisma, { auth0Sub: other });
     const payload = { ...CALL_BACK, companyId: null };
-    await ctx.asSub(STRANGER).post("/support/activation").send(payload).expect(201);
-    await ctx.asSub(other).post("/support/activation").send(payload).expect(201);
+    await ctx
+      .asSub(STRANGER)
+      .post("/support/activation")
+      .set(INTENT_KEY, freshIntent())
+      .send(payload)
+      .expect(201);
+    await ctx
+      .asSub(other)
+      .post("/support/activation")
+      .set(INTENT_KEY, freshIntent())
+      .send(payload)
+      .expect(201);
   });
 
   it("refuse une société dont on n'est pas membre (le mur tient toujours)", async () => {
@@ -149,6 +172,7 @@ describe("sans entreprise", () => {
     await ctx
       .asSub(STRANGER)
       .post("/support/activation")
+      .set(INTENT_KEY, freshIntent())
       .send({ ...CALL_BACK, companyId })
       .expect(404);
   });
@@ -160,6 +184,7 @@ describe("le motif", () => {
     await ctx
       .asSub(MEMBER)
       .post("/support/activation")
+      .set(INTENT_KEY, freshIntent())
       .send({ ...CALL_BACK, companyId, purpose: "billing" })
       .expect(201);
     const response = await staff().get("/admin/support-requests").expect(200);
@@ -171,6 +196,7 @@ describe("le motif", () => {
     await ctx
       .asSub(MEMBER)
       .post("/support/activation")
+      .set(INTENT_KEY, freshIntent())
       .send({ ...CALL_BACK, companyId, purpose: "other", message: "" })
       .expect(400);
   });
@@ -197,6 +223,7 @@ describe("la clôture", () => {
     await ctx
       .asSub(MEMBER)
       .post("/support/activation")
+      .set(INTENT_KEY, freshIntent())
       .send({ ...CALL_BACK, companyId })
       .expect(409);
 
@@ -206,6 +233,7 @@ describe("la clôture", () => {
     await ctx
       .asSub(MEMBER)
       .post("/support/activation")
+      .set(INTENT_KEY, freshIntent())
       .send({ ...CALL_BACK, companyId })
       .expect(201);
     expect(await ctx.prisma.supportRequest.count()).toBe(2);
@@ -239,6 +267,7 @@ describe("le mur client", () => {
     await ctx
       .asSub(STRANGER)
       .post("/support/activation")
+      .set(INTENT_KEY, freshIntent())
       .send({ ...CALL_BACK, companyId })
       .expect(404);
     expect(await ctx.prisma.supportRequest.count()).toBe(0);

@@ -38,6 +38,7 @@ import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 import { storageKeys } from "./storage.js";
 import { coliseOrder } from "./production-day-fixture.js";
 import { openQualityControl } from "./quality-control-settings.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const MEMBER = "auth0|member-quality";
 const READER = "staff-supervision-lecture";
@@ -178,6 +179,7 @@ async function readOnlySupervisor(): Promise<void> {
 async function deposit(bytes: Buffer = PHOTO, expected = 201): Promise<string> {
   const response = await admin()
     .post(`${BASE}/photos`)
+    .set(INTENT_KEY, freshIntent())
     .attach("photo", bytes, "controle.jpg")
     .expect(expected);
   return jsonBody<QualityPhotoUploaded>(response).uploadId;
@@ -392,7 +394,11 @@ describe("le droit (D3)", () => {
     expect(JSON.stringify(pastille.body)).not.toContain("Adresse du client");
     await reader.get(`${BASE}/checks?date=${DAY}`).expect(403);
     await reader.get(`${BASE}/checks/${id}/photos/0`).expect(403);
-    await reader.post(`${BASE}/photos`).attach("photo", PHOTO, "p.jpg").expect(403);
+    await reader
+      .post(`${BASE}/photos`)
+      .set(INTENT_KEY, freshIntent())
+      .attach("photo", PHOTO, "p.jpg")
+      .expect(403);
     await reader
       .post(`${BASE}/checks`)
       .send({

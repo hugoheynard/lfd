@@ -12,6 +12,7 @@ import type { Request } from "express";
 
 import { Public } from "../../../platform/auth/public.decorator.js";
 import { RecordPaymentLinkEventCommand } from "../application/commands/record-payment-link-event.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Le webhook des liens de paiement** — `POST /payments/links/webhook`, son
@@ -34,6 +35,9 @@ export class PaymentLinksWebhookController {
   @Public()
   @Post("webhook")
   @HttpCode(HttpStatus.OK)
+  @Idempotent(
+    "webhook, par la clé de l'émetteur : l'issue projetée (payé, expiré) est conditionnée à l'état du lien ; un événement rejoué ne réécrit rien",
+  )
   async handle(
     @Req() request: RawBodyRequest<Request>,
     @Headers("stripe-signature") signature: string | undefined,

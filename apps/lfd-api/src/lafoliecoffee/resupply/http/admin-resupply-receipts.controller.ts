@@ -112,6 +112,9 @@ export class AdminResupplyReceiptsController {
   @Post(":siteId/:day/lines")
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission("handover_counter:write")
+  @Idempotent(
+    "rejouée, la réception trouve la même ligne à la même quantité (ResupplyReceipt.holds) et n'écrit rien ; une quantité différente est refusée (409)",
+  )
   async receive(
     @Param("siteId") siteId: string,
     @Param("day", new ZodQuery(resupplyServiceDaySchema)) day: string,

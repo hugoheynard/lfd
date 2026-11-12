@@ -13,6 +13,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { CompanyStatus } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -61,6 +62,7 @@ async function addAddress(
 async function seedZone(postalPrefixes: readonly string[]): Promise<void> {
   await staff()
     .post("/admin/delivery-zones")
+    .set(INTENT_KEY, freshIntent())
     .send({ label: "Tarentaise", postalPrefixes, fee: { mode: "amount", cents: 1_500 } })
     .expect(201);
 }

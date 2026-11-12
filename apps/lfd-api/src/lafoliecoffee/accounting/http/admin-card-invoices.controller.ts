@@ -12,6 +12,7 @@ import {
   GetCardInvoiceSignalsQuery,
   ListOrderInvoicesQuery,
 } from "../application/queries/card-invoice-queries.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Surface **staff** de la facture carte (plan
@@ -37,6 +38,9 @@ export class AdminCardInvoicesController {
   /** « Réessayer » : la même commande que les abonnés — sans effet si elle est déjà émise. */
   @Post("card-invoices/:orderId/retry")
   @HttpCode(200)
+  @Idempotent(
+    "par sa propre clé : sous le verrou de la commande, une facture déjà émise rend « already_invoiced » sans numéro (l'index invoice_order_invoiced_once tient un bon facturé une fois) ; un refus identique déjà rangé n'est ni réécrit ni rejournalisé",
+  )
   retry(@Param("orderId") orderId: string): Promise<CardInvoiceRetryView> {
     return this.commands.execute<IssueCardInvoiceCommand, CardInvoiceRetryView>(
       new IssueCardInvoiceCommand(orderId),

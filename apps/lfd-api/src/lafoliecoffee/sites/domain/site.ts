@@ -1,6 +1,7 @@
 import type { GpsPoint, PickupDiscountAudiences, PickupOpening } from "@lfd/contracts";
 
 import type { PickupDiscount } from "../../pickup-addresses/domain/pickup-discount.js";
+import { sameStructure } from "../../../platform/shared/equality/same-structure.js";
 import type { SiteColor } from "./site-color.js";
 import {
   ArchivedSiteError,
@@ -201,13 +202,18 @@ export class Site {
    * @throws {ArchivedSiteError} le site est archivé.
    * @throws {SiteDeliveryDepartureWithoutGpsError} le point d'un site qui expédie serait effacé.
    * @throws {SiteTransferWithoutGpsError} celui d'un site servi par transfert aussi.
+   * @returns `false` quand le lieu est déjà celui-là : rien n'a changé.
    */
-  revise(place: SitePlace): void {
+  revise(place: SitePlace): boolean {
     this.assertActive();
     if (this.state.place.gps !== null && place.gps === null) {
       this.assertGpsKept(this.state.roles, this.state.place.gps, null);
     }
+    if (sameStructure(this.state.place, place)) {
+      return false;
+    }
     this.state = { ...this.state, place };
+    return true;
   }
 
   /**
@@ -226,8 +232,14 @@ export class Site {
    * @throws {SiteTransferWithoutGpsError} « par transfert » sans point, ou point effacé.
    * @throws {DepartureSiteMustDeliverError} « Livraison » retirée au départ des tournées.
    * @throws {EatInSiteWithTablesError} « Sur place » retiré à un site qui a des tables.
+   * @returns `false` quand les rôles et le point sont déjà ceux-là : rien n'a changé.
    */
-  assignRoles(roles: SiteRoles, gps?: GpsPoint | null, isDeparture = false, tableCount = 0): void {
+  assignRoles(
+    roles: SiteRoles,
+    gps?: GpsPoint | null,
+    isDeparture = false,
+    tableCount = 0,
+  ): boolean {
     this.assertActive();
     checkRoles(roles);
     if (isDeparture && !roles.deliveryDeparture) {
@@ -239,7 +251,11 @@ export class Site {
     const before = this.state.place.gps;
     const after = gps === undefined ? before : gps;
     this.assertGpsKept(roles, before, after);
+    if (sameStructure(this.state.roles, roles) && sameStructure(before, after)) {
+      return false;
+    }
     this.state = { ...this.state, roles, place: { ...this.state.place, gps: after } };
+    return true;
   }
 
   /**

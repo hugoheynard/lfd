@@ -163,6 +163,22 @@ describe("les véhicules candidats (bibliothèque d'achat, B1)", () => {
     ).rejects.toThrow(PurchaseCandidateNameTakenError);
   });
 
+  /** Régression : une correction rejouée sans changement réécrivait la fiche et un fait au journal. */
+  it("rejouée sans changement, la correction n'écrit rien et ne trace rien", async () => {
+    const w = world(existing("pvc_a", "Kangoo L2"));
+    const command = new CorrectPurchaseVehicleCandidateCommand(
+      "pvc_a",
+      { ...KANGOO, priceCentsExclVat: null },
+      "staff_2",
+    );
+
+    await w.correct.execute(command);
+    await w.correct.execute(command);
+
+    expect(w.repo.saved).toHaveLength(1);
+    expect(w.events.traced).toHaveLength(1);
+  });
+
   it("archive une fois, réactive, et refuse de réactiver sur un nom repris", async () => {
     const w = world(existing("pvc_a", "Kangoo L2"));
 

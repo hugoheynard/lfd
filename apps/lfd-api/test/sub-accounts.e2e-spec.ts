@@ -15,6 +15,7 @@ import { CompanyFollowsReader } from "../src/lafoliecoffee/account/domain/ports/
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -74,6 +75,7 @@ const DELIVERY = {
 async function createChalet(parentId: string, follows: readonly string[]): Promise<string> {
   const response = await admin()
     .post(`/admin/companies/${parentId}/sub-accounts`)
+    .set(INTENT_KEY, freshIntent())
     .send({
       enseigne: "Chalet Edelweiss",
       deliveryAddress: DELIVERY,
@@ -138,6 +140,7 @@ describe("Créer un sous-compte", () => {
 
     const created = await admin()
       .post(`/admin/companies/${groupe}/sub-accounts`)
+      .set(INTENT_KEY, freshIntent())
       .send({ enseigne: "Club Med Tignes", follows: [] })
       .expect(201);
     const entity = jsonBody<CreatedIdResponse>(created).id;
@@ -149,7 +152,11 @@ describe("Créer un sous-compte", () => {
       city: null,
     });
 
-    await admin().post(`/admin/companies/${entity}/delivery-addresses`).send(DELIVERY).expect(201);
+    await admin()
+      .post(`/admin/companies/${entity}/delivery-addresses`)
+      .set(INTENT_KEY, freshIntent())
+      .send(DELIVERY)
+      .expect(201);
     await admin()
       .patch(`/admin/companies/${entity}/identity`)
       .send({
@@ -173,6 +180,7 @@ describe("Créer un sous-compte", () => {
 
     await admin()
       .post(`/admin/companies/${chalet}/sub-accounts`)
+      .set(INTENT_KEY, freshIntent())
       .send({ enseigne: "Annexe", deliveryAddress: DELIVERY })
       .expect(409);
   });
@@ -185,6 +193,7 @@ describe("Le chalet sans SIRET (sous-comptes §2.1 bis)", () => {
     // Ce que la porte exige encore du chalet : un numéro joignable (la livraison).
     await admin()
       .post(`/admin/companies/${chalet}/contacts`)
+      .set(INTENT_KEY, freshIntent())
       .send({
         firstName: "Paul",
         lastName: "Gardien",

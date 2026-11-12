@@ -36,6 +36,7 @@ import {
 } from "./factories.js";
 import { cardPaid, recordCardEvent } from "./card-payments.js";
 import { cardGatewayDouble, pickupSite, placeOrder } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const ENTITIES = "/admin/accounting/legal-entities";
 const STAFF = "staff-e2e";
@@ -83,6 +84,7 @@ async function settle(): Promise<void> {
 async function entity(): Promise<void> {
   const response = await staff()
     .post(ENTITIES)
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: "La Folie Douce",
       legalForm: "SAS",

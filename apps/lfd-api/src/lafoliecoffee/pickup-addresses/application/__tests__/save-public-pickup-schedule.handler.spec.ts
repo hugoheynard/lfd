@@ -4,6 +4,7 @@ import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { PickupSchedule } from "../../domain/pickup-schedule.js";
 import { PickupScheduleRepository } from "../../domain/pickup-schedule.repository.js";
+import { PublicPickupSlotRule } from "../../domain/public-pickup-slot-rule.js";
 import {
   PickupAddressRepository,
   type PickupAddressWrite,
@@ -59,8 +60,15 @@ class StoredPoints extends PickupAddressRepository {
 class StoredSchedules extends PickupScheduleRepository {
   written: PickupSchedule | null = null;
 
+  /** `configure` règle l'horaire rangé avant le geste — vide sinon. */
+  constructor(private readonly configure?: (schedule: PickupSchedule) => void) {
+    super();
+  }
+
   load(pickupAddressId: string): Promise<PickupSchedule> {
-    return Promise.resolve(PickupSchedule.empty(pickupAddressId));
+    const schedule = PickupSchedule.empty(pickupAddressId);
+    this.configure?.(schedule);
+    return Promise.resolve(schedule);
   }
   save(schedule: PickupSchedule): Promise<void> {
     this.written = schedule;
@@ -117,13 +125,28 @@ describe("SavePublicPickupScheduleHandler", () => {
 
   /** Un point réglé qu'on vide redevient un point ordinaire (D6). */
   it("vider l'horaire est un enregistrement comme un autre, et il se journalise", async () => {
-    const schedules = new StoredSchedules();
+    const schedules = new StoredSchedules((schedule) => {
+      schedule.replace([PublicPickupSlotRule.of(MORNING)], []);
+    });
     const events = new RecordingPublisher();
 
     await save(new StoredPoints(POINT), schedules, { rules: [], closures: [] }, events);
 
     expect(schedules.written?.isConfigured).toBe(false);
     expect(events.traced[0]?.journalFact().payload).toMatchObject({ configured: false });
+  });
+
+  /** Régression : rejoué à l'identique, l'horaire se réécrivait et se rejournalisait. */
+  it("un horaire redit à l'identique n'est ni réécrit ni journalisé", async () => {
+    const schedules = new StoredSchedules((schedule) => {
+      schedule.replace([PublicPickupSlotRule.of(MORNING)], []);
+    });
+    const events = new RecordingPublisher();
+
+    await save(new StoredPoints(POINT), schedules, { rules: [MORNING], closures: [] }, events);
+
+    expect(schedules.written).toBeNull();
+    expect(events.traced).toHaveLength(0);
   });
 
   it("un point introuvable est un 404, et rien n'est écrit ni journalisé", async () => {

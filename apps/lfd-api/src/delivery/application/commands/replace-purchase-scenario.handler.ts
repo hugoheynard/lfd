@@ -44,12 +44,11 @@ export class ReplacePurchaseScenarioHandler implements ICommandHandler<
     await this.uow.run(async () => {
       const scenario = await loadPurchaseScenario(this.scenarios, scenarioId);
       const previousName = scenario.name;
-      scenario.replace(
-        payload.name,
-        { selection: payload.selection, display: payload.display },
-        this.clock.now(),
-        author,
-      );
+      // Rejouer le geste ne change rien : ni écriture, ni fait au journal.
+      const content = { selection: payload.selection, display: payload.display };
+      if (!scenario.replace(payload.name, content, this.clock.now(), author)) {
+        return;
+      }
       await ensurePurchaseScenarioNameFree(this.scenarios, scenario);
       await this.scenarios.save(scenario);
       await this.events.publishTraced(new PurchaseScenarioReplacedEvent(scenario, previousName));

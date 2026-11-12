@@ -14,5 +14,7 @@ export class ConfirmPriceFloorCommand {
     readonly scope: PriceScope,
     readonly clientele: FloorClientele,
     readonly staffUserId: string,
+    /** La clé d'intention de l'écran (`Idempotency-Key`) : un rejeu ne refait pas le geste. */
+    readonly intentKey: string,
   ) {}
 }

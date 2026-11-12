@@ -93,3 +93,28 @@ describe("OrderOpeningUpdatedEvent", () => {
     });
   });
 });
+
+describe("OrderOpening.changes", () => {
+  /** Régression : un réglage rejoué réécrivait, rejournalisait et purgeait les réglages publics. */
+  it("ne voit aucun changement quand le patch redit l'état courant", () => {
+    const opening = OrderOpening.pose({
+      current: OPEN,
+      patch: { ordersOpenToB2b: true, firstServiceDayB2c: null },
+      at: AT,
+      author: AUTHOR,
+    });
+
+    expect(opening.changes(OPEN)).toBe(false);
+  });
+
+  it("voit une clientèle fermée", () => {
+    const opening = OrderOpening.pose({
+      current: OPEN,
+      patch: { ordersOpenToB2c: false },
+      at: AT,
+      author: AUTHOR,
+    });
+
+    expect(opening.changes(OPEN)).toBe(true);
+  });
+});

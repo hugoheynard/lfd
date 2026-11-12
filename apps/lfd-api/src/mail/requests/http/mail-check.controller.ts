@@ -7,6 +7,7 @@ import {
   CheckMailDeliveryCommand,
   type MailCheckResult,
 } from "../application/check-mail-delivery.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Endpoint du **contrôle de mise en service du courrier**, appelé par
@@ -22,6 +23,9 @@ export class MailCheckController {
   constructor(private readonly commands: CommandBus) {}
 
   @Post()
+  @Idempotent(
+    "appelée par la machine (RecomputeGuard) une fois après un déploiement : chaque appel est un contrôle et envoie un essai de plus à l'adresse de l'administrateur, voulu ; rien d'autre ne s'écrit",
+  )
   @HttpCode(200)
   check(): Promise<MailCheckResult> {
     return this.commands.execute<CheckMailDeliveryCommand, MailCheckResult>(

@@ -14,6 +14,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { CurrentUser } from "../../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../../platform/auth/principal.js";
+import { IntentKey } from "../../../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import { ProposeCardIncreaseCommand } from "../application/commands/propose-card-increase.command.js";
 import {
@@ -123,6 +124,7 @@ export class OrderRevisionsController {
     @CurrentUser() user: Principal,
     @Param("id") id: string,
     @Body(new ZodBody(cardIncreasePayloadSchema)) payload: CardIncreasePayload,
+    @IntentKey() intentKey: string,
   ): Promise<CardComplementPaymentView> {
     const { expectedRevision, expectedTotalCents, ...content } = payload;
     return this.commands.execute<ProposeCardIncreaseCommand, CardComplementPaymentView>(
@@ -132,6 +134,7 @@ export class OrderRevisionsController {
         expectedRevision,
         content,
         expectedTotalCents,
+        intentKey,
       ),
     );
   }

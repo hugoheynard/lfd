@@ -56,6 +56,22 @@ describe("SetMandateOptionsHandler — les zones 14 et 19", () => {
     expect(h.notifier.notices).toHaveLength(0);
   });
 
+  /**
+   * Régression : les mêmes zones rejouées rejournalisaient
+   * `payment_mandate.options_changed` et rendaient le brouillon caduc.
+   */
+  it("les mêmes zones rejouées n'écrivent rien et ne révoquent aucun brouillon", async () => {
+    const h = harness();
+    await h.run();
+    h.mandates.draft = mandate();
+
+    await h.run();
+
+    expect(h.events.traced).toHaveLength(1);
+    expect(h.mandates.saved).toHaveLength(0);
+    expect(h.notifier.notices).toHaveLength(0);
+  });
+
   /** Plan §10 (2026-09-14) : sans brouillon, la réécriture n'avait aucune trace. */
   it("journalise la réécriture DANS l'unité de travail, même sans brouillon", async () => {
     const h = harness();

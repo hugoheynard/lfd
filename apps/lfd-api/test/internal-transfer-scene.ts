@@ -15,6 +15,7 @@ import { admin, addVehicle } from "./delivery-rounds-scene.js";
 import { MEASURED, seedDeparture } from "./delivery-routing-scene.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { type OrderLineSeed, placeOrder } from "./order-factory.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const VILLAGE_GPS = { lat: 45.45, lng: 6.98 };
 
@@ -91,6 +92,7 @@ export async function declareTransferBins(
 ): Promise<readonly string[]> {
   const response = await admin(ctx)
     .post(`${LOADING}/loading/transfers/${transferId}/bins`)
+    .set(INTENT_KEY, freshIntent())
     .send({ binTypeId: await binTypeId(ctx), count, innerBags: 2 })
     .expect(201);
   return jsonBody<DeclaredTransferBinsView>(response).binIds;

@@ -107,9 +107,30 @@ export class ClientSheetStore {
     }
   }
 
-  private readFromServer(id: string): Promise<CustomerSheetView> {
+  /**
+   * Relecture de fond (le veilleur) : la fiche lue reste à l'écran pendant la
+   * lecture, et un échec la laisse telle quelle — le tour suivant ou le filet
+   * reposera la question.
+   */
+  async refresh(): Promise<void> {
+    if (this.current === null) {
+      return;
+    }
+    try {
+      await this.readFromServer(this.current, { quiet: this.status() === 'ready' });
+    } catch {
+      // Fond : rien à dire de plus que ce que l'écran montre déjà.
+    }
+  }
+
+  private readFromServer(
+    id: string,
+    { quiet = false }: { readonly quiet?: boolean } = {},
+  ): Promise<CustomerSheetView> {
     this.current = id;
-    this.status.set('loading');
+    if (!quiet) {
+      this.status.set('loading');
+    }
     const version = this.writes.version();
     const promise = this.api.sheet(id).then(
       (view) => {
@@ -123,7 +144,9 @@ export class ClientSheetStore {
       },
       (error: unknown) => {
         if (this.inFlight?.promise === promise) {
-          this.status.set('error');
+          if (!quiet) {
+            this.status.set('error');
+          }
           this.inFlight = null;
         }
         throw error;

@@ -266,6 +266,21 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
     ]);
   });
 
+  /**
+   * Régression : l'émission rejouée sur un payeur toujours refusé réécrivait
+   * `invoice.signalled` à chaque clic.
+   */
+  it("le même refus rejoué ne réécrit pas `invoice.signalled`", async () => {
+    const h = harness({ buyers: new BuyersWithout("c_principal") });
+    h.reader.orders = [bon("c_principal")];
+    await h.run();
+
+    const replay = await h.run();
+
+    expect(replay.blocked.map((issue) => issue.payerCompanyId)).toEqual(["c_principal"]);
+    expect(h.events.factTypes()).toEqual(["invoice.signalled"]);
+  });
+
   it("un payeur facturé n'écrit aucun `invoice.signalled`", async () => {
     const h = harness();
     h.reader.orders = [bon("c_port")];

@@ -11,6 +11,7 @@ import type { CreatedIdResponse, RequestReasonPayload, RoleGrant } from "@lfd/co
 
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 let ctx: E2eContext;
 
@@ -64,7 +65,11 @@ describe("b2b_contact n'ouvre plus les motifs", () => {
     const as = () => ctx.asSub(sub);
 
     await as().get("/admin/request-reasons?kind=contact").expect(403);
-    await as().post("/admin/request-reasons").send(REASON).expect(403);
+    await as()
+      .post("/admin/request-reasons")
+      .set(INTENT_KEY, freshIntent())
+      .send(REASON)
+      .expect(403);
     await as().get("/admin/customer-requests?status=pending").expect(200);
   });
 });
@@ -76,7 +81,12 @@ describe("b2b_request_reasons", () => {
     ]);
 
     await ctx.asSub(sub).get("/admin/request-reasons?kind=contact").expect(200);
-    await ctx.asSub(sub).post("/admin/request-reasons").send(REASON).expect(403);
+    await ctx
+      .asSub(sub)
+      .post("/admin/request-reasons")
+      .set(INTENT_KEY, freshIntent())
+      .send(REASON)
+      .expect(403);
     await ctx.asSub(sub).get("/admin/customer-requests?status=pending").expect(403);
   });
 
@@ -85,20 +95,34 @@ describe("b2b_request_reasons", () => {
       { resource: "b2b_request_reasons", action: "write" },
     ]);
 
-    const created = await ctx.asSub(sub).post("/admin/request-reasons").send(REASON).expect(201);
+    const created = await ctx
+      .asSub(sub)
+      .post("/admin/request-reasons")
+      .set(INTENT_KEY, freshIntent())
+      .send(REASON)
+      .expect(201);
     const { id } = jsonBody<CreatedIdResponse>(created);
     await ctx
       .asSub(sub)
       .put(`/admin/request-reasons/${id}`)
       .send({ ...REASON, position: 1 })
       .expect(204);
-    await ctx.asSub(sub).post(`/admin/request-reasons/${id}/archive`).expect(204);
+    await ctx
+      .asSub(sub)
+      .post(`/admin/request-reasons/${id}/archive`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(204);
   });
 });
 
 describe("la lecture publique des motifs", () => {
   it("ne demande aucun droit : les formulaires de la boutique les lisent", async () => {
-    await ctx.asSub(E2E_STAFF_SUB).post("/admin/request-reasons").send(REASON).expect(201);
+    await ctx
+      .asSub(E2E_STAFF_SUB)
+      .post("/admin/request-reasons")
+      .set(INTENT_KEY, freshIntent())
+      .send(REASON)
+      .expect(201);
 
     await ctx.http().get("/request-reasons?kind=contact&audience=b2c").expect(200);
   });

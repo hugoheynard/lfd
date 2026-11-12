@@ -4,6 +4,7 @@ import type { CreatedIdResponse, MediaSeriesPayload, MediaSeriesView } from '@lf
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../../api/api-config';
+import { intentOptions } from '../../shared/gesture-intents';
 
 /** **Les séries de prise de vue** — `/media/series`. */
 @Injectable({ providedIn: 'root' })
@@ -16,9 +17,14 @@ export class MediaSeriesApi {
     return firstValueFrom(this.http.get<readonly MediaSeriesView[]>(this.base));
   }
 
-  /** Ouvre une série ; rend son identifiant. Les refus (400) nomment la règle. */
-  async openSeries(payload: MediaSeriesPayload): Promise<string> {
-    const created = await firstValueFrom(this.http.post<CreatedIdResponse>(this.base, payload));
+  /**
+   * Ouvre une série ; rend son identifiant. Les refus (400) nomment la règle.
+   * `intentKey` : la clé du geste — un double clic n'ouvre qu'une série.
+   */
+  async openSeries(payload: MediaSeriesPayload, intentKey: string): Promise<string> {
+    const created = await firstValueFrom(
+      this.http.post<CreatedIdResponse>(this.base, payload, intentOptions(intentKey)),
+    );
     return created.id;
   }
 

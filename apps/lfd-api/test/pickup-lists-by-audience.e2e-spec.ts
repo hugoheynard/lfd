@@ -23,6 +23,7 @@ import { CompanyStatus, CustomerRole } from "../src/platform/database/client/cli
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { poseSiteDiscount } from "./promotion-fixtures.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const PERSO = "auth0|listes-perso";
 const ACTIVE = "auth0|listes-active";
@@ -67,6 +68,7 @@ async function seedSite(
 ): Promise<string> {
   const response = await staff()
     .post("/admin/pickup-addresses")
+    .set(INTENT_KEY, freshIntent())
     .send({
       label,
       ligne1: "5 rue du Four",

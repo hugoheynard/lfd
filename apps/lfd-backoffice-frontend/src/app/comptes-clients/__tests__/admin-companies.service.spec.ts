@@ -141,12 +141,14 @@ describe('AdminCompaniesService', () => {
 
   it('certifyKbis POST la date de délivrance de l’extrait', async () => {
     const { service, http } = setup();
-    const promise = service.certifyKbis('company_1', '2026-09-01');
+    const promise = service.certifyKbis('company_1', '2026-09-01', 'key-1');
     await flush();
 
     const req = http.expectOne(`${URL}/company_1/kbis/certification`);
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual({ issuedOn: '2026-09-01' });
+    // Une fois par intention : un double clic ne certifie pas deux fois.
+    expect(req.request.headers.get('Idempotency-Key')).toBe('key-1');
     req.flush(null);
     await promise;
   });

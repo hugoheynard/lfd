@@ -24,8 +24,8 @@ class StaticZones extends DeliveryZoneRepository {
   create(_payload: DeliveryZonePayload): Promise<string> {
     return Promise.resolve("unused");
   }
-  update(): Promise<void> {
-    return Promise.resolve();
+  update(): Promise<boolean> {
+    return Promise.resolve(true);
   }
   remove(): Promise<void> {
     return Promise.resolve();

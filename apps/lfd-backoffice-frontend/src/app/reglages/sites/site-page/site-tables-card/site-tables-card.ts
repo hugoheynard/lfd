@@ -24,6 +24,7 @@ import { NotifyService } from '../../../../notify.service';
 import { QrCode } from '../../../../shared/qr-code/qr-code';
 import { qrSvgString } from '../../../../shared/qr-code/qr';
 import { SitesService } from '../../sites.service';
+import { GestureIntents } from '../../../../shared/gesture-intents';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -60,6 +61,11 @@ const MAX_TABLES = 200;
 export class SiteTablesCard {
   private readonly sites = inject(SitesService);
   private readonly notify = inject(NotifyService);
+  /**
+   * L'intention de régénérer un QR : une clé tirée au premier envoi, renvoyée jusqu'au
+   * succès — un double clic ne tire pas deux QR.
+   */
+  private readonly intents = new GestureIntents();
 
   readonly site = input.required<SiteView>();
   readonly readOnly = input(false);
@@ -105,10 +111,11 @@ export class SiteTablesCard {
   }
 
   protected async generateQr(tableNumber: number): Promise<void> {
-    await this.run(
-      () => this.sites.generateTableQr(this.site().id, tableNumber),
-      `QR de la table ${tableNumber} généré.`,
-    );
+    const subject = `qr:${this.site().id}:${tableNumber}`;
+    await this.run(async () => {
+      await this.sites.generateTableQr(this.site().id, tableNumber, this.intents.keyFor(subject));
+      this.intents.done(subject);
+    }, `QR de la table ${tableNumber} généré.`);
   }
 
   protected async removeQr(tableNumber: number): Promise<void> {

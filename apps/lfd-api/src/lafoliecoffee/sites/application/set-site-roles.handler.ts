@@ -63,7 +63,10 @@ export class SetSiteRolesHandler implements ICommandHandler<SetSiteRolesCommand,
       // La grille ne se compte que si « Sur place » est retiré.
       const closes = current.eatIn && !roles.eatIn;
       const tableCount = closes ? (await this.tables.load(site.id)).count : 0;
-      site.assignRoles(roles, gps, isDeparture, tableCount);
+      // Rejouer le geste ne change rien : ni écriture, ni fait, ni purge.
+      if (!site.assignRoles(roles, gps, isDeparture, tableCount)) {
+        return;
+      }
       await this.sites.save(site);
       await this.events.publishTraced(
         new SiteRolesSetEvent(

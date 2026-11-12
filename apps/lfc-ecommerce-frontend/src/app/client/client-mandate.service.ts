@@ -16,6 +16,7 @@ import { AUTH_CONFIG } from '../auth/auth.config';
 import { AuthFacade } from '../auth/auth.facade';
 import { ClientContext } from './client-context.service';
 import { contextKeyed, type ContextKey, workspaceRequestOf } from './context-keyed/context-keyed';
+import { GestureIntents, withIntent } from './gesture-intents';
 
 /** Où en est la lecture du mandat. */
 export type MandateReadStatus = 'loading' | 'failed' | 'ready';
@@ -43,6 +44,8 @@ export type MandateReadStatus = 'loading' | 'failed' | 'ready';
 export class ClientMandate {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
+  /** Les intentions des dépôts du mandat signé, une par fichier choisi. */
+  private readonly proofIntents = new GestureIntents();
   private readonly context = inject(ClientContext);
 
   /** Avance à chaque réponse ou échec : la brique n'est pas un signal. */
@@ -253,17 +256,22 @@ export class ClientMandate {
   /**
    * `PUT …/proof` en multipart `file` (204) — le mandat signé, PDF ou photo.
    * Le statut ne change pas ; la relecture dit « en vérification ».
+   *
+   * Une fois par intention : un fichier choisi est une intention (nom, taille,
+   * date de modification), un autre fichier en est une autre. Un double envoi
+   * ne dépose pas deux pièces ; au succès, la clé est oubliée.
    */
   async attachProof(companyId: string, file: File): Promise<string | null> {
     const form = new FormData();
     form.append('file', file, file.name);
+    const subject = `proof|${companyId}|${file.name}|${String(file.size)}|${String(file.lastModified)}`;
     try {
-      await firstValueFrom(
-        this.http.put(`${this.url(companyId)}/proof`, form, { headers: await this.headers() }),
-      );
+      const headers = withIntent(await this.headers(), this.proofIntents.keyFor(subject));
+      await firstValueFrom(this.http.put(`${this.url(companyId)}/proof`, form, { headers }));
     } catch (error) {
       return httpErrorMessage(error);
     }
+    this.proofIntents.done(subject);
     await this.reload(companyId);
     return null;
   }

@@ -10,6 +10,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { SetMyCompanyBankAccountCommand } from "../application/commands/set-my-company-bank-account.command.js";
 import { GetMyCompanyBankAccountQuery } from "../application/queries/get-my-company-bank-account.query.js";
@@ -84,6 +85,9 @@ export class CompanyBankAccountController {
    */
   @Put(":companyId/bank-account")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose un RIB : rejoué à l'identique (DebtorAccount.equals), rien n'est écrit, journalisé, annoncé ni rendu caduc",
+  )
   async set(
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,

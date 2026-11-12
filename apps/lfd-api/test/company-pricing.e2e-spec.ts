@@ -781,6 +781,7 @@ describe("🔴 re-poser un plancher, vu depuis la fiche client", () => {
   const putFloor = (value: number) =>
     staff()
       .put("/admin/pricing/floors")
+      .set(INTENT_KEY, freshIntent())
       .send({
         scope: { type: "product", id: SKU },
         mode: "percent",

@@ -22,6 +22,7 @@ import { PricingMaterialsCache } from "../src/lafoliecoffee/pricing/infrastructu
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { posePromotion, promotionTerms } from "./promotion-fixtures.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const MIGRATION = readFileSync(
   join(process.cwd(), "prisma/migrations/20261031200000_les_acheminements_a_cocher/migration.sql"),
@@ -80,6 +81,7 @@ async function site(): Promise<string> {
   return jsonBody<CreatedPickupResponse>(
     await staff()
       .post("/admin/pickup-addresses")
+      .set(INTENT_KEY, freshIntent())
       .send({
         label: "Le Labo",
         ligne1: "5 rue du Four",

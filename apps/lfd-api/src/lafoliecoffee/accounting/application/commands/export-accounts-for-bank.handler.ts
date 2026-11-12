@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
+import { OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { AccountBankExport } from "../../domain/entities/account-bank-export.js";
 import { AccountBankExportEvent } from "../../domain/events/account-bank-export.events.js";
@@ -19,6 +20,7 @@ import {
   exportPartOf,
 } from "../../domain/services/bank-export-reference.js";
 import { ACCOUNT_IMPORT_MAX_ROWS } from "../../domain/services/account-bank-export-values.js";
+import { CREATED_ID_REPLAY } from "../created-id-replay.js";
 import { exportEntityOrFail, journalEntity } from "../mandate-bank-export-support.js";
 import { ExportAccountsForBankCommand } from "./export-accounts-for-bank.command.js";
 
@@ -36,6 +38,10 @@ import { ExportAccountsForBankCommand } from "./export-accounts-for-bank.command
  * Le numéro `EXC-<n>` et le rang « k sur N » se prennent ici, dans la
  * transaction, et se figent avec l'export (doc `procedure-de-prelevement.md`,
  * « Les identifiants courts et les noms de fichiers »).
+ *
+ * **Une fois par intention** : sujet, l'entité. Un double clic aurait figé un
+ * second export des comptes restants (au-delà de 200) ; la même clé rend
+ * l'export d'origine, scellé avec lui.
  */
 @CommandHandler(ExportAccountsForBankCommand)
 export class ExportAccountsForBankHandler implements ICommandHandler<
@@ -53,9 +59,26 @@ export class ExportAccountsForBankHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly lock: BankExportPreparationLock,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: ExportAccountsForBankCommand): Promise<string> {
+  execute(command: ExportAccountsForBankCommand): Promise<string> {
+    return this.intents.runSealed(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: EXPORT_ACCOUNTS_GESTURE,
+        subject: command.legalEntityId,
+      },
+      CREATED_ID_REPLAY,
+      (seal) => this.export(command, seal),
+    );
+  }
+
+  private async export(
+    command: ExportAccountsForBankCommand,
+    seal: (exportId: string) => Promise<void>,
+  ): Promise<string> {
     const at = this.clock.now();
     const entity = await exportEntityOrFail(this.entities, command.legalEntityId);
     return this.uow.run(async () => {
@@ -88,7 +111,11 @@ export class ExportAccountsForBankHandler implements ICommandHandler<
       await this.events.publishTraced(
         new AccountBankExportEvent("created", bankExport, journalEntity(entity), at),
       );
+      await seal(bankExport.id);
       return bankExport.id;
     });
   }
 }
+
+/** Le nom stable du geste, dans le registre des intentions. */
+const EXPORT_ACCOUNTS_GESTURE = "accounting.export-accounts-for-bank";

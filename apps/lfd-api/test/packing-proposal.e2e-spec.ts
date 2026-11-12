@@ -194,6 +194,7 @@ describe("partager une moitié de bac depuis le colisage", () => {
     await assign(ctx, SERVICE_DAY, roundId, second?.orderId ?? "");
     await staff()
       .post(`${base(first?.orderId ?? "")}/containers`)
+      .set(INTENT_KEY, freshIntent())
       .send({ nature: "bin", binTypeId: await binTypeId(ctx), half: true, innerBags: 0 })
       .expect(201);
     return { first: first?.orderId ?? "", second: second?.orderId ?? "" };
@@ -209,6 +210,7 @@ describe("partager une moitié de bac depuis le colisage", () => {
     expect(jsonBody<{ readonly code: string }>(listing).code).toBe("packing.half_sharing.disabled");
     const refusal = await staff()
       .post(`${base(second)}/containers`)
+      .set(INTENT_KEY, freshIntent())
       .send({ nature: "bin", partnerBinId: partner.id, innerBags: 0 })
       .expect(409);
     expect(jsonBody<{ readonly code: string }>(refusal).code).toBe("packing.half_sharing.disabled");
@@ -222,6 +224,7 @@ describe("partager une moitié de bac depuis le colisage", () => {
     const opened = jsonBody<OpenedPackingContainer>(
       await staff()
         .post(`${base(second)}/containers`)
+        .set(INTENT_KEY, freshIntent())
         .send({ nature: "bin", partnerBinId: partner.id, innerBags: 0 })
         .expect(201),
     );
@@ -244,6 +247,7 @@ describe("partager une moitié de bac depuis le colisage", () => {
     await assign(ctx, SERVICE_DAY, roundId, second?.orderId ?? "");
     await staff()
       .post(`${base(first?.orderId ?? "")}/containers`)
+      .set(INTENT_KEY, freshIntent())
       .send({ nature: "bin", binTypeId: typeId, half: true, innerBags: 0 })
       .expect(201);
 
@@ -258,6 +262,7 @@ describe("partager une moitié de bac depuis le colisage", () => {
     const opened = jsonBody<OpenedPackingContainer>(
       await staff()
         .post(`${base(second?.orderId ?? "")}/containers`)
+        .set(INTENT_KEY, freshIntent())
         .send({ nature: "bin", partnerBinId: half?.binId ?? "", innerBags: 0 })
         .expect(201),
     );
@@ -282,6 +287,7 @@ describe("le retrait partiel d'une répartition", () => {
     const binId = jsonBody<OpenedPackingContainer>(
       await staff()
         .post(`${base(orderId)}/containers`)
+        .set(INTENT_KEY, freshIntent())
         .send({ nature: "bin", binTypeId: await binTypeId(ctx), half: false, innerBags: 0 })
         .expect(201),
     ).containerId;

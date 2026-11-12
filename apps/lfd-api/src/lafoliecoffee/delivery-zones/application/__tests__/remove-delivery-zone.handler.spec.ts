@@ -43,8 +43,8 @@ class OneZone extends DeliveryZoneRepository {
     return Promise.resolve(STORED.id);
   }
 
-  update(): Promise<void> {
-    return Promise.resolve();
+  update(): Promise<boolean> {
+    return Promise.resolve(true);
   }
 
   remove(id: string): Promise<void> {

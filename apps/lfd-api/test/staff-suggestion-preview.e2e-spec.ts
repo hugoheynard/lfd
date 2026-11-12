@@ -24,6 +24,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { staffWith, stubAdminVerifier } from "./operations-at-commerce-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const PREVIEW = "/admin/suggestions/preview";
 
@@ -58,7 +59,12 @@ function croissantRule(): StaffSuggestionRulePayload {
 }
 
 async function create(body: StaffSuggestionRulePayload): Promise<string> {
-  const response = await ctx.asSub(E2E_STAFF_SUB).post("/admin/suggestions").send(body).expect(201);
+  const response = await ctx
+    .asSub(E2E_STAFF_SUB)
+    .post("/admin/suggestions")
+    .set(INTENT_KEY, freshIntent())
+    .send(body)
+    .expect(201);
   return jsonBody<{ id: string }>(response).id;
 }
 

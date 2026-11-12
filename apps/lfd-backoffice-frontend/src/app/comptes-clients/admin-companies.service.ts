@@ -1,4 +1,4 @@
-import { intentOptions } from '../shared/gesture-intents';
+import { GestureIntents, intentOptions, shownOnce } from '../shared/gesture-intents';
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
@@ -45,6 +45,8 @@ import type {
 @Injectable({ providedIn: 'root' })
 export class AdminCompaniesService {
   private readonly http = inject(HttpClient);
+  /** Une clé par lien voulu, par personne ; oubliée une fois le lien montré. */
+  private readonly linkIntents = new GestureIntents();
 
   async list(): Promise<readonly AdminCompany[]> {
     return firstValueFrom(
@@ -162,12 +164,20 @@ export class AdminCompaniesService {
     );
   }
 
-  /** Ajoute un interlocuteur additionnel au carnet d'adresses. */
-  async addContact(companyId: string, payload: CompanyContactDraft): Promise<void> {
+  /**
+   * Ajoute un interlocuteur additionnel au carnet d'adresses. `intentKey` : la
+   * clé de l'intention, renvoyée à chaque clic jusqu'au succès.
+   */
+  async addContact(
+    companyId: string,
+    payload: CompanyContactDraft,
+    intentKey: string,
+  ): Promise<void> {
     await firstValueFrom(
       this.http.post<CreatedIdResponse>(
         `${B2B_API_BASE}/admin/companies/${companyId}/contacts`,
         payload,
+        intentOptions(intentKey),
       ),
     );
   }
@@ -193,12 +203,16 @@ export class AdminCompaniesService {
     );
   }
 
-  /** Dépose (ou remplace) le KBIS — multipart. */
-  async uploadKbis(companyId: string, file: File): Promise<void> {
+  /** Dépose (ou remplace) le KBIS — multipart, une fois par intention. */
+  async uploadKbis(companyId: string, file: File, intentKey: string): Promise<void> {
     const body = new FormData();
     body.append('file', file);
     await firstValueFrom(
-      this.http.put<void>(`${B2B_API_BASE}/admin/companies/${companyId}/kbis`, body),
+      this.http.put<void>(
+        `${B2B_API_BASE}/admin/companies/${companyId}/kbis`,
+        body,
+        intentOptions(intentKey),
+      ),
     );
   }
 
@@ -224,12 +238,13 @@ export class AdminCompaniesService {
    * le serveur l'exige, refuse une date future ou impossible, et accepte un
    * extrait ancien — c'est à l'agent d'en juger.
    */
-  async certifyKbis(companyId: string, issuedOn: string): Promise<void> {
+  async certifyKbis(companyId: string, issuedOn: string, intentKey: string): Promise<void> {
     const payload: CertifyKbisPayload = { issuedOn };
     await firstValueFrom(
       this.http.post<void>(
         `${B2B_API_BASE}/admin/companies/${companyId}/kbis/certification`,
         payload,
+        intentOptions(intentKey),
       ),
     );
   }
@@ -304,10 +319,13 @@ export class AdminCompaniesService {
    * le repli quand l'e-mail n'est pas parti. Même route que la file.
    */
   async issueAccessLink(userId: string): Promise<{ url: string; expiresAt: string }> {
-    return firstValueFrom(
-      this.http.post<{ url: string; expiresAt: string }>(
-        `${B2B_API_BASE}/admin/access-pending/${userId}/link`,
-        {},
+    return shownOnce(this.linkIntents, userId, (key) =>
+      firstValueFrom(
+        this.http.post<{ url: string; expiresAt: string }>(
+          `${B2B_API_BASE}/admin/access-pending/${userId}/link`,
+          {},
+          intentOptions(key),
+        ),
       ),
     );
   }
@@ -395,11 +413,16 @@ export class AdminCompaniesService {
   }
 
   /** Ajoute une adresse de livraison. */
-  async addDelivery(companyId: string, payload: DeliveryAddressPayload): Promise<void> {
+  async addDelivery(
+    companyId: string,
+    payload: DeliveryAddressPayload,
+    intentKey: string,
+  ): Promise<void> {
     await firstValueFrom(
       this.http.post<CreatedIdResponse>(
         `${B2B_API_BASE}/admin/companies/${companyId}/delivery-addresses`,
         payload,
+        intentOptions(intentKey),
       ),
     );
   }

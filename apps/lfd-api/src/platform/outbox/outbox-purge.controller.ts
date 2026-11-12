@@ -5,6 +5,7 @@ import { Public } from "../auth/public.decorator.js";
 import { RecomputeGuard } from "../auth/recompute.guard.js";
 import type { PurgeReport } from "../retention/purge-mode.js";
 import { PurgeDeliveredOutboxCommand } from "./purge-delivered-outbox.command.js";
+import { Idempotent } from "../shared/http/idempotent.decorator.js";
 
 /**
  * Endpoint **batch** de la purge de la boîte d'envoi (`plan-service-e-mails.md`,
@@ -20,6 +21,9 @@ export class OutboxPurgeController {
   constructor(private readonly commands: CommandBus) {}
 
   @Post()
+  @Idempotent(
+    "appelée par la machine (RecomputeGuard) : ne retire que des livraisons faites depuis plus de 30 jours ; rejouée, elle reprend où la précédente s'est arrêtée",
+  )
   @HttpCode(200)
   purge(): Promise<PurgeReport> {
     return this.commands.execute<PurgeDeliveredOutboxCommand, PurgeReport>(

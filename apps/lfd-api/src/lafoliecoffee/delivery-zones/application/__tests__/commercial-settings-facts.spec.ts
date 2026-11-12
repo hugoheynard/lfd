@@ -25,6 +25,8 @@ import { RemoveDeliveryZoneHandler } from "../remove-delivery-zone.handler.js";
 import { UpdateDeliveryZoneCommand } from "../update-delivery-zone.command.js";
 import { UpdateDeliveryZoneHandler } from "../update-delivery-zone.handler.js";
 import { FixedPromotionsTargetingZone, RecordingZoneLock } from "./remove-delivery-zone.doubles.js";
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 
 /**
  * **Les réglages qui décident du prix payé.**
@@ -71,7 +73,7 @@ function zones(stored: DeliveryZoneView | null = null): DeliveryZoneRepository {
     findById: () => Promise.resolve(stored),
     resolveForPostalCode: () => Promise.resolve(null),
     create: () => Promise.resolve("zone_3"),
-    update: () => Promise.resolve(),
+    update: () => Promise.resolve(true),
     remove: () => Promise.resolve(),
   };
 }
@@ -101,7 +103,8 @@ describe("Les réglages commerciaux au journal", () => {
       new DirectUnitOfWork(),
       new HeldAfterCommit(),
       new RecordingPublicSettingsEdgeCache(),
-    ).execute(new CreateDeliveryZoneCommand(ZONE));
+      inMemoryIntents(),
+    ).execute(new CreateDeliveryZoneCommand(ZONE, "staff_1", randomUUID()));
 
     expect(zoneId).toBe("zone_3");
     expect(events.factTypes()).toEqual(["delivery_zone.created"]);
@@ -184,7 +187,13 @@ describe("Les réglages commerciaux au journal", () => {
       new DirectUnitOfWork(),
       new HeldAfterCommit(),
       new RecordingPublicSettingsEdgeCache(),
-    ).execute(new UpdatePickupAddressCommand("pickup_2", withoutDiscounts));
+    ).execute(
+      // Une ligne d'adresse changée : rejoué à l'identique, le geste n'écrit plus rien.
+      new UpdatePickupAddressCommand("pickup_2", {
+        ...withoutDiscounts,
+        ligne2: "Cour intérieure",
+      }),
+    );
 
     expect(events.traced[0]?.journalFact().payload).toMatchObject({
       ville: "Paris",

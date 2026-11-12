@@ -24,6 +24,7 @@ import {
   stubAdminVerifier,
 } from "./decision-carry-over-scene.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const CLIENT = "auth0|report_plancher";
 /** 90 % du prix pro de la part (10 €). */
@@ -54,6 +55,7 @@ beforeEach(async () => {
 const putFloor = (sku: string) =>
   staffOf(ctx)
     .put("/admin/pricing/floors")
+    .set(INTENT_KEY, freshIntent())
     .send({
       scope: { type: "variant", id: sku },
       mode: "percent",
@@ -78,6 +80,7 @@ async function detachedWithFloor(): Promise<{ floorId: string; oldSku: string; n
   const newSku = await detach(ctx, part);
   await staffOf(ctx)
     .post("/admin/pricing/rules")
+    .set(INTENT_KEY, freshIntent())
     .send({
       // `geste` depuis L12 (2026-10-30) : l'étage `promotion` ne s'écrit plus, et la
       // mécanique éprouvée ici ne dépend pas de l'étage.

@@ -30,6 +30,7 @@ import {
   recordOf,
   type NoticeScene,
 } from "./sub-account-notice-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const TEMPLATE = "customer.sub-account-gesture";
 
@@ -81,6 +82,7 @@ async function create(s: NoticeScene, workspace: string = s.site): Promise<strin
   const response = await ctx
     .asSub(s.housekeeper)
     .post("/subscriptions")
+    .set(INTENT_KEY, freshIntent())
     .set(WORKSPACE_HEADER, workspace)
     .send(PANIER)
     .expect(201);

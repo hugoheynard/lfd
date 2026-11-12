@@ -35,6 +35,7 @@ import { z } from "zod";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
+import { IntentKey } from "../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody, ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import { AssignDeliveryDriverCommand } from "../application/commands/assign-delivery-driver.command.js";
 import { AssignDeliveryStopCommand } from "../application/commands/assign-delivery-stop.command.js";
@@ -145,13 +146,20 @@ export class DeliveryRoundsController {
     );
   }
 
+  /**
+   * Ouvre le passage suivant d'un véhicule. Un ajout : la clé d'intention de
+   * l'écran (`Idempotency-Key`, obligatoire) fait qu'un double clic n'en
+   * ouvre qu'un.
+   */
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async open(
     @Body(new ZodBody(openDeliveryRoundPayloadSchema)) payload: OpenDeliveryRoundPayload,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedIdResponse> {
     const id = await this.commands.execute<OpenDeliveryRoundCommand, string>(
-      new OpenDeliveryRoundCommand(payload),
+      new OpenDeliveryRoundCommand(payload, staffUserId, intentKey),
     );
     return { id };
   }

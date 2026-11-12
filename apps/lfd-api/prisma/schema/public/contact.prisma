@@ -59,8 +59,9 @@ model RequestReason {
   labelEn String @default("") @map("label_en")
   labelIt String @default("") @map("label_it")
 
-  /// L'adresse de l'équipe qui reçoit les demandes de ce motif.
-  recipientEmail String @map("recipient_email")
+  /// L'adresse de l'équipe qui reçoit les demandes de ce motif. Vide : aucun
+  /// e-mail, la demande arrive seulement dans « Demandes clients ».
+  recipientEmail String? @map("recipient_email")
 
   position Int             @default(0)
   active   Boolean         @default(true)

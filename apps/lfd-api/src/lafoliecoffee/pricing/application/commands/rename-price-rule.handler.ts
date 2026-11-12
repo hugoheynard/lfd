@@ -31,6 +31,10 @@ export class RenamePriceRuleHandler implements ICommandHandler<RenamePriceRuleCo
     const now = this.clock.now();
     const rule = await mustLoadEditable(this.rules, command.id);
     const renamed = rule.rename(command.label);
+    // Redire le même nom (un rejeu) ne renomme rien : aucun acte au journal.
+    if (renamed.label === rule.label) {
+      return;
+    }
     await this.rules.rename(
       renamed,
       actOf(

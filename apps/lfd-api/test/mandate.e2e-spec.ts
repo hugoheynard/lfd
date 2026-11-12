@@ -18,6 +18,7 @@ import { PaymentMandateRepository } from "../src/lafoliecoffee/payments/domain/p
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
 import { storageKeys } from "./storage.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const PDF = Buffer.from("%PDF-1.4\nmandat signé", "latin1");
 /**
@@ -135,7 +136,10 @@ describe("Mandat — révocation puis remplacement", () => {
   it("date la révocation, et rouvre la voie", async () => {
     await seedMandate();
 
-    await staff().delete(`/admin/companies/${companyId}/mandate`).expect(204);
+    await staff()
+      .delete(`/admin/companies/${companyId}/mandate`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(204);
 
     const revoked = jsonBody<MandateSectionView>(
       await staff().get(`/admin/companies/${companyId}/mandate`).expect(200),
@@ -147,7 +151,10 @@ describe("Mandat — révocation puis remplacement", () => {
   });
 
   it("refuse de révoquer quand il n'y a rien à révoquer", async () => {
-    await staff().delete(`/admin/companies/${companyId}/mandate`).expect(404);
+    await staff()
+      .delete(`/admin/companies/${companyId}/mandate`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(404);
   });
 });
 
@@ -157,6 +164,7 @@ describe("Mandat — la preuve", () => {
 
     await staff()
       .put(`/admin/companies/${companyId}/mandate/proof`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", PDF, "mandat-signe.pdf")
       .expect(204);
 
@@ -171,6 +179,7 @@ describe("Mandat — la preuve", () => {
 
     await staff()
       .put(`/admin/companies/${companyId}/mandate/proof`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", Buffer.from("MZ\x90\x00", "latin1"), "virus.pdf")
       .expect(400);
   });
@@ -184,6 +193,7 @@ describe("Mandat — la preuve", () => {
 
     await staff()
       .put(`/admin/companies/${companyId}/mandate/proof`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", PDF, "mandat-signe.pdf")
       .expect(409);
 
@@ -211,6 +221,7 @@ describe("Mandat — la preuve", () => {
     const mandateId = await seedMandate("draft");
     await staff()
       .put(`/admin/companies/${companyId}/mandate/proof`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", PDF, "mandat-signe.pdf")
       .expect(204);
 
@@ -236,6 +247,7 @@ async function currentView(): Promise<PaymentMandateView> {
 async function deposit(fileName = "mandat-signe.pdf"): Promise<void> {
   await staff()
     .put(`/admin/companies/${companyId}/mandate/proof`)
+    .set(INTENT_KEY, freshIntent())
     .attach("file", PDF, fileName)
     .expect(204);
 }
@@ -301,7 +313,10 @@ describe("Mandat — la purge des pièces jamais valides", () => {
       .send({ signedAt: ON_PAPER, proofRevision: (await currentView()).proofRevision })
       .expect(204);
 
-    await staff().delete(`/admin/companies/${companyId}/mandate`).expect(204);
+    await staff()
+      .delete(`/admin/companies/${companyId}/mandate`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(204);
 
     expect(await mandateObjects()).toHaveLength(1);
     expect(await factCount("payment_mandate.proof_purged")).toBe(0);

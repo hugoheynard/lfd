@@ -28,6 +28,7 @@ import {
   sheetOf,
   STAFF,
 } from "./production-day-fixture.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const DAY_MS = 86_400_000;
 
@@ -123,6 +124,7 @@ async function bookedFulfillment(
   const created = await ctx
     .asSub(E2E_STAFF_SUB)
     .post(`/admin/companies/${companyId}/delivery-addresses`)
+    .set(INTENT_KEY, freshIntent())
     .send({
       ...fulfillment.address,
       isDefault: true,

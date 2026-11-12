@@ -9,6 +9,10 @@
 export class IssuePasswordLinkCommand {
   constructor(
     readonly userId: string,
-    readonly companyId: string | null = null,
+    readonly companyId: string | null,
+    /** La fiche du staff qui remet le lien : l'acteur de l'intention. */
+    readonly staffUserId: string,
+    /** La clé d'intention de l'écran : un double clic ne fabrique pas deux liens. */
+    readonly intentKey: string,
   ) {}
 }

@@ -59,9 +59,11 @@ export class SetLegalEntityArchivedHandler implements ICommandHandler<
       if (!(await this.entities.hasAnotherActive(command.legalEntityId))) {
         throw new LastActiveLegalEntityError(command.legalEntityId);
       }
-      entity.archive(at);
-    } else {
-      entity.restore();
+      if (!entity.archive(at)) {
+        return;
+      }
+    } else if (!entity.restore()) {
+      return;
     }
 
     await this.uow.run(async () => {

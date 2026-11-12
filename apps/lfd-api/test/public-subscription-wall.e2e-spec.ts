@@ -22,6 +22,7 @@ import {
 } from "./e2e-harness.js";
 import { markCustomRecipe } from "./custom-recipe-fixture.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (sub: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -74,7 +75,8 @@ function weekly(sku: string): Record<string, unknown> {
   };
 }
 
-const subscribe = (sku: string) => ctx.asSub(PERSON).post("/subscriptions").send(weekly(sku));
+const subscribe = (sku: string) =>
+  ctx.asSub(PERSON).post("/subscriptions").set(INTENT_KEY, freshIntent()).send(weekly(sku));
 
 const GESTURES: readonly [string, () => Promise<unknown>][] = [
   [
@@ -121,7 +123,8 @@ describe("abonnement de particulier", () => {
 
 /** Décision de Hugo (2026-10-30) : un abonnement pro passe le mur complet du rayon pro. */
 describe("abonnement pro", () => {
-  const subscribePro = (sku: string) => ctx.asSub(PRO).post("/subscriptions").send(weekly(sku));
+  const subscribePro = (sku: string) =>
+    ctx.asSub(PRO).post("/subscriptions").set(INTENT_KEY, freshIntent()).send(weekly(sku));
   const NOT_SERVED = "catalog.article_not_served_to_company";
 
   it("accepte un article servi aux pros, sur mesure attribué à sa société compris", async () => {

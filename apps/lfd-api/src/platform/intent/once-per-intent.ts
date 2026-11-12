@@ -26,6 +26,12 @@ export const NOTHING_TO_REPLAY: IntentCodec<void> = {
   read: () => undefined,
 };
 
+/** Le codec d'un geste qui crée et rend l'identifiant de ce qu'il a créé. */
+export const CREATED_ID_REPLAY: IntentCodec<string> = {
+  write: (id) => ({ id }),
+  read: (record, gesture) => readIntentString(record, "id", gesture),
+};
+
 /** Le codec d'un geste qui ne rend que « l'e-mail est-il parti ? ». */
 export const MAIL_SENT_REPLAY: IntentCodec<{ readonly mailSent: boolean }> = {
   write: (result) => ({ mailSent: result.mailSent }),

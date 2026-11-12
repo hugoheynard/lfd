@@ -17,6 +17,13 @@ import { BookAppointmentCommand } from "./book-appointment.command.js";
 import { appointmentSubjectLabel } from "../appointment-subject-label.js";
 import { CompanyNamer } from "../../domain/ports/company-namer.js";
 import { AppointmentBookedAlert } from "../../domain/ports/appointment-booked-alert.js";
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
+import { CREATED_ID_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { customerIntentActor } from "../../../../lafoliecoffee/shared/intent/customer-intent-actor.js";
+
+/** Le nom stable du geste, dans le registre des intentions. */
+const BOOK_GESTURE = "growth.book-appointment";
 
 /**
  * Réservation client. Compose les trois gardes qui, ensemble, font l'exclusivité :
@@ -26,6 +33,13 @@ import { AppointmentBookedAlert } from "../../domain/ports/appointment-booked-al
  *
  * Puis il **prévient l'équipe**, une fois le rendez-vous écrit et journalisé :
  * avant, un courriel pourrait annoncer un créneau que la base vient de refuser.
+ *
+ * **Une fois par intention** : la clé de l'écran est réclamée avant
+ * l'écriture et scellée dans sa transaction ; un double envoi rend le rendez-vous déjà pris, sans en prendre un second ni prévenir l'équipe deux fois.
+ * L'acteur est le client (`customer:<id>`).
+ *
+ * @throws {GestureInFlightError} la même clé est encore en vol.
+ * @throws {IntentKeyReusedError} la clé a servi pour un autre envoi.
  */
 @CommandHandler(BookAppointmentCommand)
 export class BookAppointmentHandler implements ICommandHandler<BookAppointmentCommand, string> {
@@ -38,9 +52,27 @@ export class BookAppointmentHandler implements ICommandHandler<BookAppointmentCo
     private readonly clock: Clock,
     private readonly companies: CompanyNamer,
     private readonly alert: AppointmentBookedAlert,
+    private readonly uow: UnitOfWork,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: BookAppointmentCommand): Promise<string> {
+  execute(command: BookAppointmentCommand): Promise<string> {
+    return this.intents.runSealed(
+      {
+        actorId: customerIntentActor(command.actorUserId),
+        key: command.intentKey,
+        gesture: BOOK_GESTURE,
+        subject: intentSubject("appointment", command.payload),
+      },
+      CREATED_ID_REPLAY,
+      (seal) => this.book(command, seal),
+    );
+  }
+
+  private async book(
+    command: BookAppointmentCommand,
+    seal: (appointmentId: string) => Promise<void>,
+  ): Promise<string> {
     const { payload } = command;
     const now = this.clock.now();
     const startAt = parseStartAt(payload.startAt);
@@ -64,7 +96,23 @@ export class BookAppointmentHandler implements ICommandHandler<BookAppointmentCo
       },
       now,
     );
-    const id = await this.appointments.create(appointment);
+    const id = await this.uow.run(async () => {
+      const created = await this.appointments.create(appointment);
+      await this.recordRequested(created, appointment, subject, startAt, payload.channel);
+      await seal(created);
+      return created;
+    });
+    await this.warnTeam(id, appointment);
+    return id;
+  }
+
+  private async recordRequested(
+    id: string,
+    appointment: Appointment,
+    subject: { readonly type: string; readonly id: string },
+    startAt: Date,
+    channel: BookAppointmentCommand["payload"]["channel"],
+  ): Promise<void> {
     await this.recorder.record({
       type: ACTIVITY_TYPES.appointmentRequested,
       subjectType: subject.type === "company" ? "company" : "user",
@@ -74,11 +122,9 @@ export class BookAppointmentHandler implements ICommandHandler<BookAppointmentCo
         ...(await appointmentSubjectLabel(appointment, { companies: this.companies })),
         appointmentId: id,
         startAt: startAt.toISOString(),
-        channel: payload.channel,
+        channel,
       },
     });
-    await this.warnTeam(id, appointment);
-    return id;
   }
 
   /**

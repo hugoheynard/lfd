@@ -11,6 +11,7 @@
 import { b2bMailTemplates, type B2bMails } from "../src/mail/templates/mail-templates.js";
 import { E2E_STAFF_ID } from "./e2e-harness.js";
 import { recordCardEvent } from "./card-payments.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import {
   bootCardRefundScene,
   buyer,
@@ -134,6 +135,7 @@ describe("Les refus (R3, R10, R1)", () => {
     const seen = await quoteOf(order, 9);
     await buyer()
       .post(`/orders/${order.id}/revisions/card-increase`)
+      .set(INTENT_KEY, freshIntent())
       .send({
         expectedRevision: 0,
         expectedTotalCents: seen.totalCents,

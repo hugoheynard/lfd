@@ -18,6 +18,7 @@ import {
   VEHICLES,
 } from "./delivery-rounds-scene.js";
 import { BINS, declareTypedBins, LOADING, loadingOf, shareBin } from "./delivery-loading-scene.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const DAY = serviceDay();
 
@@ -44,6 +45,7 @@ function planOf(roundId: string) {
 async function measuredVehicle(): Promise<string> {
   const response = await admin(ctx)
     .post(VEHICLES)
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: "Trafic mesuré",
       plate: "PL-123-AN",
@@ -148,6 +150,7 @@ describe("le plan de chargement d'une tournée composée", () => {
   it("G5 : une pile qui ne tient pas au sol sort en `floor_over`, même quand les litres suffisent", async () => {
     const vehicle = await admin(ctx)
       .post(VEHICLES)
+      .set(INTENT_KEY, freshIntent())
       .send({
         name: "Utilitaire étroit",
         plate: "PL-456-AN",
@@ -192,6 +195,7 @@ describe("le plan de chargement d'une tournée composée", () => {
     async (lengthCm, kind) => {
       const vehicle = await admin(ctx)
         .post(VEHICLES)
+        .set(INTENT_KEY, freshIntent())
         .send({
           name: "Plancher juste",
           plate: "PL-789-AN",
@@ -254,6 +258,7 @@ describe("le plan de chargement d'une tournée composée", () => {
     async (heightCm, heights, kinds) => {
       const vehicle = await admin(ctx)
         .post(VEHICLES)
+        .set(INTENT_KEY, freshIntent())
         .send({
           name: "Caisse basse",
           plate: "PL-321-AN",

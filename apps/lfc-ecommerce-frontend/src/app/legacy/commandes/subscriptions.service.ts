@@ -8,10 +8,11 @@ import type {
   UpsertOccurrenceOverridePayload,
 } from '@lfd/contracts';
 import type { Observable } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
+import { switchMap, tap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
+import { GestureIntents, INTENT_KEY_HEADER } from '../../client/gesture-intents';
 
 /** Ce que la création renvoie. */
 /**
@@ -23,23 +24,26 @@ import { AuthFacade } from '../../auth/auth.facade';
 export class SubscriptionsService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
+  /** Les intentions des créations : une clé par contenu, oubliée au succès. */
+  private readonly intents = new GestureIntents();
 
   private readonly _list = signal<readonly SubscriptionView[]>([]);
   readonly list = this._list.asReadonly();
 
-  /** Crée un panier récurrent (le plus souvent depuis une commande). */
+  /**
+   * Crée un panier récurrent (le plus souvent depuis une commande), une fois
+   * par intention : la clé suit le contenu tant que la création n'a pas abouti.
+   */
   create(payload: CreateSubscriptionPayload): Observable<CreatedIdResponse> {
-    return this.auth
-      .accessToken$()
-      .pipe(
-        switchMap((token) =>
-          this.http.post<CreatedIdResponse>(
-            `${AUTH_CONFIG.apiBaseUrl}/subscriptions`,
-            payload,
-            headers(token),
-          ),
-        ),
-      );
+    const subject = `subscription:${JSON.stringify(payload)}`;
+    return this.auth.accessToken$().pipe(
+      switchMap((token) =>
+        this.http.post<CreatedIdResponse>(`${AUTH_CONFIG.apiBaseUrl}/subscriptions`, payload, {
+          headers: { ...headers(token).headers, [INTENT_KEY_HEADER]: this.intents.keyFor(subject) },
+        }),
+      ),
+      tap(() => this.intents.done(subject)),
+    );
   }
 
   /**

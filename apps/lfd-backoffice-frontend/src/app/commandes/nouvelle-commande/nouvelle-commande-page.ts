@@ -758,7 +758,7 @@ export class NouvelleCommandePage {
       // Le carnet APRÈS la commande : une adresse enregistrée pour une commande
       // qui n'est pas passée serait une trace de rien.
       if (this.canKeepAddress && draft.saveAddressToBook && draft.deliveryAddress !== null) {
-        await this.keepAddress(draft.deliveryAddress);
+        await this.keepAddress(draft.deliveryAddress, placed.id);
       }
       // Le lien de règlement est copié plutôt qu'affiché en passant : le
       // commercial a le client en ligne, et le canal e-mail n'a pas encore fait
@@ -917,13 +917,17 @@ export class NouvelleCommandePage {
    * commande : la commande, elle, est passée — annoncer le contraire enverrait le
    * commercial la ressaisir.
    */
-  private async keepAddress(address: BillingAddressPayload): Promise<void> {
+  private async keepAddress(address: BillingAddressPayload, orderId: string): Promise<void> {
+    // Une intention par commande passée : rejoué pour la même commande, l'ajout
+    // au carnet ne crée pas une seconde adresse.
+    const subject = `keep-address:${orderId}`;
     try {
-      await this.companies.addDelivery(this.id(), {
-        ...address,
-        isDefault: false,
-        specs: EMPTY_SPECS,
-      });
+      await this.companies.addDelivery(
+        this.id(),
+        { ...address, isDefault: false, specs: EMPTY_SPECS },
+        this.placeIntents.keyFor(subject),
+      );
+      this.placeIntents.done(subject);
     } catch {
       this.notify.info("L'adresse n'a pas pu être ajoutée au carnet du compte.");
     }

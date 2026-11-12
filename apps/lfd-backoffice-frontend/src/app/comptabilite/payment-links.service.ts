@@ -44,8 +44,14 @@ export class PaymentLinksService {
     return firstValueFrom(this.http.get<readonly PaymentLinkView[]>(this.base));
   }
 
-  async createLink(payload: CreatePaymentLinkPayload): Promise<CreatedPaymentLink> {
-    return firstValueFrom(this.http.post<CreatedPaymentLink>(this.base, payload));
+  /** Une fois par intention : la même clé rend le même lien, sans rouvrir de page Stripe. */
+  async createLink(
+    payload: CreatePaymentLinkPayload,
+    intentKey: string,
+  ): Promise<CreatedPaymentLink> {
+    return firstValueFrom(
+      this.http.post<CreatedPaymentLink>(this.base, payload, intentOptions(intentKey)),
+    );
   }
 
   async cancelLink(id: string): Promise<void> {

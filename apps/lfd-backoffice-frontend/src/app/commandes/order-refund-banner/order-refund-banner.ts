@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import type { AdminRefundRequest, AdminRefundRequestState } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
+import { GestureIntents } from '../../shared/gesture-intents';
 import { formatCents } from '@lfd/b2b-ui/order';
 import {
   FoldButtonComponent,
@@ -105,6 +106,8 @@ export class OrderRefundBanner {
 
   private readonly api = inject(AdminOrdersService);
   private readonly permissions = inject(PermissionsStore);
+  /** Une relance par intention : un double clic ne relance pas deux fois. */
+  private readonly retryIntents = new GestureIntents();
 
   protected readonly maxLength = SETTLE_REASON_MAX_LENGTH;
   protected readonly allowed = computed(() => this.permissions.can('card_payments:write'));
@@ -130,8 +133,10 @@ export class OrderRefundBanner {
   }
 
   protected async retry(requestId: string): Promise<void> {
-    await this.run(requestId, () => this.api.retryRefund(requestId), {
+    const key = this.retryIntents.keyFor(requestId);
+    await this.run(requestId, () => this.api.retryRefund(requestId, key), {
       fallback: "La relance n'a pas abouti. Réessayez.",
+      onSuccess: () => this.retryIntents.done(requestId),
     });
   }
 

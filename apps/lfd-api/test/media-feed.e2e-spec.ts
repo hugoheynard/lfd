@@ -13,6 +13,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { MediaStore } from "../src/platform/storage/media-store.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { InMemoryMediaStore } from "./in-memory-media-store.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 /** Même doublé que `pim-media-library` : il HONORE le jeton (le jeton EST le sujet). */
 const stubAdminVerifier = {
@@ -106,6 +107,7 @@ async function carriedBy(urls: readonly string[], label: string): Promise<void> 
   expect(category.status).toBe(201);
   const product = await staff()
     .post(PRODUCTS)
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: { fr: label },
       kind: "daily",

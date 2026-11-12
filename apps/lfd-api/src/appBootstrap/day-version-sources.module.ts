@@ -2,6 +2,8 @@ import { Global, Module } from "@nestjs/common";
 
 import { CompaniesVersionSource } from "../lafoliecoffee/account/application/services/companies-version.source.js";
 import { AccountModule } from "../lafoliecoffee/account/account.module.js";
+import { CatalogAdminVersionSource } from "../lafoliecoffee/catalog/application/catalog-admin-version.source.js";
+import { CatalogModule } from "../lafoliecoffee/catalog/catalog.module.js";
 import { AllOrdersVersionSource } from "../lafoliecoffee/orders/application/services/all-orders-version.source.js";
 import { OrdersDayVersionSource } from "../lafoliecoffee/orders/application/services/orders-day-version.source.js";
 import { OrdersModule } from "../lafoliecoffee/orders/orders.module.js";
@@ -32,7 +34,14 @@ import { ProductionModule } from "../production/production.module.js";
  */
 @Global()
 @Module({
-  imports: [OrdersModule, AccountModule, ProductionModule, DeliveryModule, DayVersionsModule],
+  imports: [
+    OrdersModule,
+    AccountModule,
+    CatalogModule,
+    ProductionModule,
+    DeliveryModule,
+    DayVersionsModule,
+  ],
   providers: [
     {
       provide: DayVersionRegistry,
@@ -55,8 +64,14 @@ import { ProductionModule } from "../production/production.module.js";
         days: DayVersionRegistry,
         companies: CompaniesVersionSource,
         allOrders: AllOrdersVersionSource,
-      ) => new VersionRegistry(days, [companies, allOrders]),
-      inject: [DayVersionRegistry, CompaniesVersionSource, AllOrdersVersionSource],
+        catalogAdmin: CatalogAdminVersionSource,
+      ) => new VersionRegistry(days, [companies, allOrders, catalogAdmin]),
+      inject: [
+        DayVersionRegistry,
+        CompaniesVersionSource,
+        AllOrdersVersionSource,
+        CatalogAdminVersionSource,
+      ],
     },
   ],
   exports: [DayVersionRegistry, VersionRegistry],

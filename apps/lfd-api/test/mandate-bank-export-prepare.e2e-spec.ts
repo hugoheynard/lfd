@@ -21,6 +21,7 @@ import {
   staff,
   useMandateBankExportScene,
 } from "./mandate-bank-export-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 useMandateBankExportScene();
 
@@ -50,7 +51,7 @@ describe("l'export des mandats pour la banque", () => {
     await staff()
       .post(`${exportsOf(entityId)}/${exportId}/imported`)
       .expect(409);
-    await staff().post(exportsOf(entityId)).send({}).expect(409);
+    await staff().post(exportsOf(entityId)).set(INTENT_KEY, freshIntent()).send({}).expect(409);
 
     const card = jsonBody<MandateBankExportsView>(
       await staff().get(exportsOf(entityId)).expect(200),
@@ -119,7 +120,11 @@ describe("l'export des mandats pour la banque", () => {
     };
     expect(await rumsOf(firstExport)).toEqual([first]);
     expect(await rumsOf(secondExport)).toEqual([second]);
-    const refused = await staff().post(exportsOf(entityId)).send({}).expect(409);
+    const refused = await staff()
+      .post(exportsOf(entityId))
+      .set(INTENT_KEY, freshIntent())
+      .send({})
+      .expect(409);
     expect(refused.text).toContain("dans un export pas encore importé");
   });
 
@@ -127,8 +132,16 @@ describe("l'export des mandats pour la banque", () => {
   it("refuse (400) l'option « tous » : elle n'existe plus", async () => {
     const entityId = await entity("552100554");
     await mandated(entityId, "Tous");
-    await staff().post(exportsOf(entityId)).send({ all: true }).expect(400);
-    await staff().post(exportsOf(entityId)).send({ all: false }).expect(400);
+    await staff()
+      .post(exportsOf(entityId))
+      .set(INTENT_KEY, freshIntent())
+      .send({ all: true })
+      .expect(400);
+    await staff()
+      .post(exportsOf(entityId))
+      .set(INTENT_KEY, freshIntent())
+      .send({ all: false })
+      .expect(400);
   });
 
   it("nomme un mandat sans BIC et ne l'exporte pas", async () => {

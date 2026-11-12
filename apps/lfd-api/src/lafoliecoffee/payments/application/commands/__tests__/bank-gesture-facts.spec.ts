@@ -117,10 +117,43 @@ describe("le RIB et la preuve de mandat écrivent un fait durable (N4d)", () => 
     }
   });
 
-  it("une requête rejouée fait deux faits : deux avis valent mieux que zéro (assumé)", async () => {
+  /**
+   * Régression : un RIB rejoué à l'identique réécrivait le compte, rejournalisait,
+   * prévenait de nouveau le principal et rendait caduc le brouillon de mandat.
+   * Décidé par Hugo le 2026-11-12 : un RIB identique ne fait rien.
+   */
+  it("un RIB rejoué à l'identique ne fait rien : ni écriture, ni fait, ni avis, ni brouillon caduc", async () => {
     const h = harness();
     await recordCompanyBankAccount("cmp_1", RIB_PAYLOAD, CUSTOMER, h.bank);
+    h.mandates.draft = mandate();
+    const before = h.steps.log.length;
+
     await recordCompanyBankAccount("cmp_1", RIB_PAYLOAD, CUSTOMER, h.bank);
+
+    expect(h.bank.accounts.saved).toHaveLength(1);
+    expect(h.durable.facts).toHaveLength(1);
+    expect(h.steps.log.slice(before)).toEqual([]);
+    expect(h.bank.notifier.notices).toEqual([]);
+  });
+
+  it("le même RIB sans la forme juridique ne fait rien non plus : elle se fusionne", async () => {
+    const h = harness();
+    await recordCompanyBankAccount("cmp_1", RIB_PAYLOAD, CUSTOMER, h.bank);
+    const { holderLegalForm: _omitted, ...withoutForm } = RIB_PAYLOAD;
+    await recordCompanyBankAccount("cmp_1", withoutForm, TEAM, h.bank);
+    expect(h.durable.facts).toHaveLength(1);
+  });
+
+  it("une adresse corrigée reste une écriture, avec son avis", async () => {
+    const h = harness();
+    await recordCompanyBankAccount("cmp_1", RIB_PAYLOAD, CUSTOMER, h.bank);
+    await recordCompanyBankAccount(
+      "cmp_1",
+      { ...RIB_PAYLOAD, line2: "Bâtiment B" },
+      CUSTOMER,
+      h.bank,
+    );
+    expect(h.bank.accounts.saved).toHaveLength(2);
     expect(new Set(h.durable.facts.map((fact) => fact.key)).size).toBe(2);
   });
 

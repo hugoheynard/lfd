@@ -30,6 +30,7 @@ import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.
 import { attachTo, createCompany, createUser, markDelivered } from "./factories.js";
 import { placeServedOrder } from "./served-order.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 export const HOUR_MS = 60 * 60 * 1000;
 export const DAY_MS = 24 * HOUR_MS;
@@ -76,6 +77,7 @@ export function staff(): ReturnType<E2eContext["asSub"]> {
 export async function entity(options: { readonly complete: boolean } = { complete: true }) {
   const response = await staff()
     .post(ENTITIES)
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: "La Folie Douce",
       legalForm: "SAS",

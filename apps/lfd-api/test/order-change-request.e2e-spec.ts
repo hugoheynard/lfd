@@ -160,7 +160,11 @@ async function scene(late = true): Promise<Scene> {
       })
       .expect(201),
   );
-  await staff().post("/admin/request-reasons").send(CHANGE_REASON).expect(201);
+  await staff()
+    .post("/admin/request-reasons")
+    .set(INTENT_KEY, freshIntent())
+    .send(CHANGE_REASON)
+    .expect(201);
   if (late) {
     await ctx.prisma.orderCutoff.create({
       data: { pickupAddressId: null, weekday: null, daysBefore: 8, time: "00:00", graceMinutes: 0 },

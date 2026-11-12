@@ -33,14 +33,19 @@ export class CorrectLegalEntityHandler implements ICommandHandler<CorrectLegalEn
   async execute(command: CorrectLegalEntityCommand): Promise<void> {
     const entity = await loadOrFail(this.entities, command.legalEntityId);
     const { payload } = command;
-    entity.correctIdentity({
+    const identityChanged = entity.correctIdentity({
       name: payload.name,
       legalForm: payload.legalForm,
       rcs: payload.rcs,
       shareCapitalCents: payload.shareCapitalCents,
       vatNumber: payload.vatNumber,
     });
-    entity.moveTo(LegalAddress.create(payload.address));
+    const moved = entity.moveTo(LegalAddress.create(payload.address));
+    // La même fiche rejouée : rien à écrire, et surtout pas une date de
+    // correction de plus au journal, qui daterait les documents à tort.
+    if (!identityChanged && !moved) {
+      return;
+    }
 
     const at = this.clock.now();
     await this.uow.run(async () => {

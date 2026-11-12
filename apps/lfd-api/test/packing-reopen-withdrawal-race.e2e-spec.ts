@@ -40,6 +40,7 @@ import {
   sheetOf,
   STAFF,
 } from "./production-day-fixture.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const ORDER = "order_race";
 const SKU = "SKU-CROISSANT";
@@ -123,6 +124,7 @@ describe("rouvrir une journée pendant qu'on met au bac", () => {
       ctx
         .asSub(STAFF)
         .post(`${packingOrderPath(sheet.orderId)}/containers`)
+        .set(INTENT_KEY, freshIntent())
         .send({ nature: "bag" }),
     );
     await untilBlocked(ctx, 1, opened);

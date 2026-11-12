@@ -13,6 +13,7 @@ import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { AttestBankReturnCheckCommand } from "../application/commands/attest-bank-return-check.command.js";
 import { WithdrawBankReturnCheckCommand } from "../application/commands/withdraw-bank-return-check.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **« Retours contrôlés »** — l'attestation du contrôle quotidien des retours
@@ -27,6 +28,9 @@ export class AdminBankReturnChecksController {
 
   /** Atteste le jour (aujourd'hui par défaut) ; 409 s'il l'est déjà. */
   @Post()
+  @Idempotent(
+    "transition : rejouée, le jour est déjà attesté et l'agrégat refuse (409 BankReturnCheckAlreadyAttestedError) avant toute ligne ni fait",
+  )
   async attest(
     @StaffUserId() staffUserId: string,
     @Body(new ZodBody(attestBankReturnCheckPayloadSchema)) payload: AttestBankReturnCheckPayload,
@@ -39,6 +43,9 @@ export class AdminBankReturnChecksController {
 
   /** Retire l'attestation d'un jour, avec sa raison ; 409 s'il n'y en a pas. */
   @Post("withdrawn")
+  @Idempotent(
+    "transition : rejouée, le jour n'est plus attesté et l'agrégat refuse (409 BankReturnCheckNotAttestedError) avant toute ligne ni fait",
+  )
   async withdraw(
     @StaffUserId() staffUserId: string,
     @Body(new ZodBody(withdrawBankReturnCheckPayloadSchema))

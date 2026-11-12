@@ -8,6 +8,8 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Put } from "@
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface, RequireAnyPermission } from "../../platform/auth/admin-surface.decorator.js";
+import { StaffUserId } from "../../platform/auth/staff.decorator.js";
+import { IntentKey } from "../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { AddVehicleCommand } from "../application/commands/add-vehicle.command.js";
 import { CorrectVehicleCommand } from "../application/commands/correct-vehicle.command.js";
@@ -46,14 +48,17 @@ export class VehiclesController {
   @HttpCode(HttpStatus.CREATED)
   async add(
     @Body(new ZodBody(vehiclePayloadSchema)) payload: VehiclePayload,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedIdResponse> {
     const id = await this.commands.execute<AddVehicleCommand, string>(
-      new AddVehicleCommand(payload),
+      new AddVehicleCommand(payload, staffUserId, intentKey),
     );
     return { id };
   }
 
   @Put(":id")
+  @Idempotent("pose la fiche entière : rejouée, rien ne change et ni écriture ni fait ne partent")
   @HttpCode(HttpStatus.NO_CONTENT)
   async correct(
     @Param("id") id: string,

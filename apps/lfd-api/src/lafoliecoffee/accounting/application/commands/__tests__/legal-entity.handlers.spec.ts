@@ -1,3 +1,5 @@
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+import { randomUUID } from "node:crypto";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
@@ -117,24 +119,29 @@ describe("DeclareLegalEntityHandler", () => {
       new FixedClock(NOW),
       events,
       new DirectUnitOfWork(),
+      inMemoryIntents(),
     );
 
     const id = await handler.execute(
-      new DeclareLegalEntityCommand({
-        name: "La Folie Douce",
-        legalForm: "SAS",
-        siren: SIREN,
-        rcs: "",
-        shareCapitalCents: 1_000_000,
-        vatNumber: "",
-        address: {
-          line1: "12 rue du Fournil",
-          line2: "",
-          postalCode: "73000",
-          city: "Chambéry",
-          countryCode: "FR",
+      new DeclareLegalEntityCommand(
+        {
+          name: "La Folie Douce",
+          legalForm: "SAS",
+          siren: SIREN,
+          rcs: "",
+          shareCapitalCents: 1_000_000,
+          vatNumber: "",
+          address: {
+            line1: "12 rue du Fournil",
+            line2: "",
+            postalCode: "73000",
+            city: "Chambéry",
+            countryCode: "FR",
+          },
         },
-      }),
+        "staff_compta",
+        randomUUID(),
+      ),
     );
 
     const stored = entities.rows.get(id);
@@ -152,26 +159,31 @@ describe("DeclareLegalEntityHandler", () => {
       new FixedClock(NOW),
       new RecordingPublisher(),
       new DirectUnitOfWork(),
+      inMemoryIntents(),
     );
 
     await expect(
       handler.execute(
-        new DeclareLegalEntityCommand({
-          name: "La Folie Douce",
-          legalForm: "SAS",
-          // Un SIRET collé dans le champ SIREN : l'erreur réaliste.
-          siren: "81245678900021",
-          rcs: "",
-          shareCapitalCents: 0,
-          vatNumber: "",
-          address: {
-            line1: "12 rue du Fournil",
-            line2: "",
-            postalCode: "73000",
-            city: "Chambéry",
-            countryCode: "FR",
+        new DeclareLegalEntityCommand(
+          {
+            name: "La Folie Douce",
+            legalForm: "SAS",
+            // Un SIRET collé dans le champ SIREN : l'erreur réaliste.
+            siren: "81245678900021",
+            rcs: "",
+            shareCapitalCents: 0,
+            vatNumber: "",
+            address: {
+              line1: "12 rue du Fournil",
+              line2: "",
+              postalCode: "73000",
+              city: "Chambéry",
+              countryCode: "FR",
+            },
           },
-        }),
+          "staff_compta",
+          randomUUID(),
+        ),
       ),
     ).rejects.toThrow();
     expect(entities.rows.size).toBe(0);

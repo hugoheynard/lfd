@@ -32,6 +32,7 @@ import { bootstrapE2e, E2E_STAFF_ID, jsonBody, type E2eContext } from "./e2e-har
 import { DELIVERY, photoOf, pngOf } from "./delivery-procedure-scene.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { storageKeys } from "./storage.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const ADMIN = "auth0|dp-admin";
 const MEMBER = "auth0|dp-member";
@@ -80,6 +81,7 @@ async function addDelivery(company: string, sub: string): Promise<string> {
   const response = await ctx
     .asSub(sub)
     .post(`/companies/${company}/delivery-addresses`)
+    .set(INTENT_KEY, freshIntent())
     .send(DELIVERY)
     .expect(201);
   return jsonBody<CreatedAddressResponse>(response).id;
@@ -89,6 +91,7 @@ async function addDeliveryByStaff(company: string): Promise<string> {
   const response = await ctx
     .asSub(STAFF)
     .post(`/admin/companies/${company}/delivery-addresses`)
+    .set(INTENT_KEY, freshIntent())
     .send(DELIVERY)
     .expect(201);
   return jsonBody<CreatedAddressResponse>(response).id;
@@ -107,7 +110,11 @@ async function addStep(
   title: string,
   photo: Buffer | null,
 ): Promise<string> {
-  const pending = agent.post(`${base}/steps`).field("title", title).field("body", "");
+  const pending = agent
+    .post(`${base}/steps`)
+    .set(INTENT_KEY, freshIntent())
+    .field("title", title)
+    .field("body", "");
   const response = await (
     photo === null ? pending : pending.attach("photo", photo, "porte.png")
   ).expect(201);
@@ -155,6 +162,7 @@ describe("le gestionnaire tient la procédure", () => {
 
     await admin
       .patch(`${procedure("client")}/steps/${stepId}`)
+      .set(INTENT_KEY, freshIntent())
       .field("title", "Portail vert")
       .field("body", "Code 1234")
       .attach("photo", COUR, "cour.png")
@@ -168,6 +176,7 @@ describe("le gestionnaire tient la procédure", () => {
 
     await admin
       .patch(`${procedure("client")}/steps/${stepId}`)
+      .set(INTENT_KEY, freshIntent())
       .field("title", "Portail vert")
       .field("removePhoto", "true")
       .expect(204);
@@ -180,17 +189,20 @@ describe("le gestionnaire tient la procédure", () => {
     const stepId = await addStep(admin, procedure("client"), "Portail", null);
     await admin
       .patch(`${procedure("client")}/steps/${stepId}`)
+      .set(INTENT_KEY, freshIntent())
       .field("title", "Portail")
       .field("removePhoto", "true")
       .attach("photo", PORTAIL, "porte.png")
       .expect(400);
     await admin
       .post(`${procedure("client")}/steps`)
+      .set(INTENT_KEY, freshIntent())
       .field("title", "Portail")
       .attach("photo", Buffer.from("%PDF-1.4", "latin1"), "porte.png")
       .expect(400);
     await admin
       .post(`${procedure("client")}/steps`)
+      .set(INTENT_KEY, freshIntent())
       .field("title", "  ")
       .expect(400);
     expect(await storedPhotos()).toEqual([]);
@@ -263,6 +275,7 @@ describe("le mur", () => {
     await photoOf(member, `${procedure("client")}/steps/${stepId}/photo`);
     await member
       .post(`${procedure("client")}/steps`)
+      .set(INTENT_KEY, freshIntent())
       .field("title", "Intrus")
       .expect(403);
     await member
@@ -277,6 +290,7 @@ describe("le mur", () => {
     await admin.get(procedure("client", companyId, otherAddressId)).expect(404);
     await admin
       .post(`${procedure("client", companyId, otherAddressId)}/steps`)
+      .set(INTENT_KEY, freshIntent())
       .field("title", "Intrus")
       .expect(404);
     await admin.get(procedure("client", otherCompanyId, otherAddressId)).expect(404);
@@ -374,7 +388,11 @@ describe("le staff tient la procédure d'un client", () => {
     const base = procedure("staff");
     const portail = await addStep(staff, base, "Portail", PORTAIL);
     const cour = await addStep(staff, base, "Cour", null);
-    await staff.patch(`${base}/steps/${cour}`).field("title", "Cour intérieure").expect(204);
+    await staff
+      .patch(`${base}/steps/${cour}`)
+      .set(INTENT_KEY, freshIntent())
+      .field("title", "Cour intérieure")
+      .expect(204);
     await staff
       .put(`${base}/order`)
       .send({ stepIds: [cour, portail] })

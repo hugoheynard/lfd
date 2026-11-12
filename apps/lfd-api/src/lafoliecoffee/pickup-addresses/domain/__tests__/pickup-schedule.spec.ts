@@ -65,7 +65,7 @@ describe("PickupSchedule", () => {
   it("refuse deux plages du même jour qui se chevauchent, en les nommant", () => {
     const schedule = PickupSchedule.empty(POINT);
 
-    const attempt = (): void =>
+    const attempt = (): boolean =>
       schedule.replace(
         [
           rule({ startTime: "07:00", endTime: "09:00" }),
@@ -168,5 +168,16 @@ describe("PickupSchedule", () => {
         }),
       ).toThrow(PublicPickupSlotRulesOverlapError);
     });
+  });
+});
+
+describe("PickupSchedule.replace — un enregistrement rejoué", () => {
+  /** Régression : rejoué, l'horaire se réécrivait et se rejournalisait. */
+  it("rend false quand la grille est déjà celle-là, true sinon", () => {
+    const schedule = PickupSchedule.empty(POINT);
+
+    expect(schedule.replace([rule()], [CLOSURE])).toBe(true);
+    expect(schedule.replace([rule()], [CLOSURE])).toBe(false);
+    expect(schedule.replace([rule({ weekday: "tue" })], [CLOSURE])).toBe(true);
   });
 });

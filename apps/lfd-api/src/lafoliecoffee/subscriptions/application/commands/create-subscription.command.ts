@@ -13,5 +13,7 @@ export class CreateSubscriptionCommand {
      * contre les rattachements), `null` en perso (N4e).
      */
     readonly companyId: string | null,
+    /** La clé d'intention de l'écran (`Idempotency-Key`) : un rejeu ne refait pas le geste. */
+    readonly intentKey: string,
   ) {}
 }

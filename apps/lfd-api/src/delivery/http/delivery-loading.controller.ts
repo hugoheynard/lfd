@@ -17,6 +17,7 @@ import { z } from "zod";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
+import { IntentKey } from "../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody, ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import { DeclareTransferBinsCommand } from "../application/commands/declare-transfer-bins.command.js";
 import { DepartDeliveryRoundCommand } from "../application/commands/depart-delivery-round.command.js";
@@ -127,12 +128,18 @@ export class DeliveryLoadingController {
     );
   }
 
-  /** Déclare des bacs entiers pour un transfert (lot T3) ; rend leurs identifiants. */
+  /**
+   * Déclare des bacs entiers pour un transfert (lot T3) ; rend leurs
+   * identifiants. Un ajout : la clé d'intention de l'écran (`Idempotency-Key`,
+   * obligatoire) fait qu'un double clic ne déclare qu'une fois.
+   */
   @Post("loading/transfers/:transferId/bins")
   @HttpCode(HttpStatus.CREATED)
   async declareTransferBins(
     @Param("transferId") transferId: string,
     @Body(new ZodBody(declareTransferBinsPayloadSchema)) payload: DeclareTransferBinsPayload,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<DeclaredTransferBinsView> {
     const binIds = await this.commands.execute<DeclareTransferBinsCommand, readonly string[]>(
       new DeclareTransferBinsCommand(
@@ -140,6 +147,8 @@ export class DeliveryLoadingController {
         payload.binTypeId,
         payload.count,
         payload.innerBags,
+        staffUserId,
+        intentKey,
       ),
     );
     return { binIds };

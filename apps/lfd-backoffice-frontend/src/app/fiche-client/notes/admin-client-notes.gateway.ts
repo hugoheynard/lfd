@@ -16,6 +16,7 @@ import { httpErrorMessage } from '@lfd/endpoints';
 import { firstValueFrom, type Observable } from 'rxjs';
 
 import { B2B_API_BASE } from '../../api/api-config';
+import { intentOptions } from '../../shared/gesture-intents';
 
 /** Le statut d'un carnet qui a changé sous l'écran. */
 const CONFLICT = 409;
@@ -51,10 +52,15 @@ export class AdminClientNotesGateway extends PhotoCardsGateway<ClientNoteView> {
     return (await this.send(this.http.get<ClientNotebookView>(this.notesUrl()))).notes;
   }
 
-  async add(fields: PhotoCardFields, photo: Blob | null, thumbnail?: Blob): Promise<string> {
+  async add(
+    fields: PhotoCardFields,
+    photo: Blob | null,
+    intentKey: string,
+    thumbnail?: Blob,
+  ): Promise<string> {
     const body = noteForm(fields, photo, thumbnail);
     const created = await this.send(
-      this.http.post<CreatedClientNoteResponse>(this.notesUrl(), body),
+      this.http.post<CreatedClientNoteResponse>(this.notesUrl(), body, intentOptions(intentKey)),
     );
     return created.id;
   }
@@ -63,13 +69,14 @@ export class AdminClientNotesGateway extends PhotoCardsGateway<ClientNoteView> {
     noteId: string,
     fields: PhotoCardFields,
     change: PhotoCardPhotoChange,
+    intentKey: string,
   ): Promise<void> {
     const body =
       change.kind === 'replace'
         ? noteForm(fields, change.photo, change.thumbnail)
         : noteForm(fields, null, undefined);
     body.append('removePhoto', change.kind === 'remove' ? 'true' : 'false');
-    await this.send(this.http.patch<void>(this.noteUrl(noteId), body));
+    await this.send(this.http.patch<void>(this.noteUrl(noteId), body, intentOptions(intentKey)));
   }
 
   async remove(noteId: string): Promise<void> {

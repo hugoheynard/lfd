@@ -82,4 +82,12 @@ describe("RequestReason — un motif", () => {
       RequestReasonKindUnknownError,
     );
   });
+
+  it("une adresse vide ou absente : aucune adresse, donc aucun e-mail", () => {
+    expect(reason({ recipientEmail: "" }).recipientEmail).toBeNull();
+    expect(reason({ recipientEmail: "   " }).recipientEmail).toBeNull();
+    expect(reason({ recipientEmail: null }).recipientEmail).toBeNull();
+    const state = { ...reason().toPersistence(), recipientEmail: null };
+    expect(RequestReason.rehydrate(state).recipientEmail).toBeNull();
+  });
 });

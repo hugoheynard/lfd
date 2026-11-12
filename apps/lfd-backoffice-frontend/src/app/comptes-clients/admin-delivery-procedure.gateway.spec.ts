@@ -27,10 +27,17 @@ describe('AdminDeliveryProcedureGateway', () => {
 
   it('ajoute une étape en multipart, photo sous `photo`, et rend son identifiant', async () => {
     const photo = new Blob(['jpeg'], { type: 'image/jpeg' });
-    const adding = gateway.addStep('adr_1', { title: 'Portail', body: 'Code 4512' }, photo);
+    const adding = gateway.addStep(
+      'adr_1',
+      { title: 'Portail', body: 'Code 4512' },
+      photo,
+      'key-1',
+    );
 
     const request = http.expectOne((r) => r.url.endsWith(`${base}/steps`));
     expect(request.request.method).toBe('POST');
+    // Une fois par intention : un double envoi n'ajoute pas deux étapes.
+    expect(request.request.headers.get('Idempotency-Key')).toBe('key-1');
     const body = request.request.body as FormData;
     expect(body.get('title')).toBe('Portail');
     expect(body.get('body')).toBe('Code 4512');
@@ -41,7 +48,7 @@ describe('AdminDeliveryProcedureGateway', () => {
   });
 
   it('une étape sans photo ne joint aucun fichier', async () => {
-    const adding = gateway.addStep('adr_1', { title: 'Portail', body: '' }, null);
+    const adding = gateway.addStep('adr_1', { title: 'Portail', body: '' }, null, 'key-2');
     const request = http.expectOne((r) => r.url.endsWith(`${base}/steps`));
     expect((request.request.body as FormData).has('photo')).toBe(false);
     request.flush({ id: 'stp_9' });
@@ -52,7 +59,13 @@ describe('AdminDeliveryProcedureGateway', () => {
     [{ kind: 'keep' } as const, 'false', false],
     [{ kind: 'remove' } as const, 'true', false],
   ])('refaire une étape (%o) envoie removePhoto=%s', async (change, removePhoto, hasPhoto) => {
-    const revising = gateway.reviseStep('adr_1', 'stp_1', { title: 'T', body: '' }, change);
+    const revising = gateway.reviseStep(
+      'adr_1',
+      'stp_1',
+      { title: 'T', body: '' },
+      change,
+      'key-3',
+    );
     const request = http.expectOne((r) => r.url.endsWith(`${base}/steps/stp_1`));
     expect(request.request.method).toBe('PATCH');
     const body = request.request.body as FormData;
@@ -69,6 +82,7 @@ describe('AdminDeliveryProcedureGateway', () => {
       'stp_1',
       { title: 'T', body: '' },
       { kind: 'replace', photo },
+      'key-4',
     );
     const request = http.expectOne((r) => r.url.endsWith(`${base}/steps/stp_1`));
     const body = request.request.body as FormData;

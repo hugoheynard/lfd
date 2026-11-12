@@ -245,7 +245,11 @@ describe("la révocation du mandat par le staff", () => {
   it("écrit un fait sur le mandat, avec sa RUM et son état d'avant", async () => {
     const mandateId = await seedMandate("active");
 
-    await ctx.asSub(E2E_STAFF_SUB).delete(`/admin/companies/${companyId}/mandate`).expect(204);
+    await ctx
+      .asSub(E2E_STAFF_SUB)
+      .delete(`/admin/companies/${companyId}/mandate`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(204);
 
     expect(await facts("payment_mandate.revoked")).toEqual([
       {
@@ -268,7 +272,10 @@ describe("la révocation du mandat par le staff", () => {
     const mandateId = await seedMandate("active");
     await breakJournal("payment_mandate.revoked");
 
-    const response = await ctx.asSub(E2E_STAFF_SUB).delete(`/admin/companies/${companyId}/mandate`);
+    const response = await ctx
+      .asSub(E2E_STAFF_SUB)
+      .delete(`/admin/companies/${companyId}/mandate`)
+      .set(INTENT_KEY, freshIntent());
 
     expect(response.status).toBeGreaterThanOrEqual(500);
     const row = await ctx.prisma.paymentMandate.findUniqueOrThrow({ where: { id: mandateId } });
@@ -281,6 +288,7 @@ async function declareIssuer(): Promise<void> {
   const staff = ctx.asSub(E2E_STAFF_SUB);
   const created = await staff
     .post("/admin/accounting/legal-entities")
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: "Crazeativity",
       legalForm: "SAS",

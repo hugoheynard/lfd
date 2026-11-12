@@ -12,6 +12,7 @@ import { firstValueFrom } from 'rxjs';
 import { B2B_API_BASE } from '../api/api-config';
 import { attachmentFileName } from '../shared/download/content-disposition';
 import type { NamedBlob } from './comptabilite-dashboard.service';
+import { intentOptions } from '../shared/gesture-intents';
 
 /**
  * **Les comptes à la banque** — l'export du fichier des comptes destinataires
@@ -33,10 +34,14 @@ export class AccountBankExportsService {
     );
   }
 
-  /** Fige un export des comptes à exporter, et rend son id. */
-  async prepare(entityId: string): Promise<string> {
+  /** Fige un export des comptes à exporter, et rend son id. Une fois par intention : la même clé rend le même export. */
+  async prepare(entityId: string, intentKey: string): Promise<string> {
     const created = await firstValueFrom(
-      this.http.post<AccountBankExportCreatedView>(`${this.base}/${entityId}/account-exports`, {}),
+      this.http.post<AccountBankExportCreatedView>(
+        `${this.base}/${entityId}/account-exports`,
+        {},
+        intentOptions(intentKey),
+      ),
     );
     return created.exportId;
   }

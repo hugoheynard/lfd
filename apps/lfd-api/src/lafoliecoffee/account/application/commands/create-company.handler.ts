@@ -14,6 +14,13 @@ import { PersonName } from "../../domain/value-objects/person-name.js";
 import { PhoneNumber } from "../../domain/value-objects/phone-number.js";
 import { CreateCompanyCommand } from "./create-company.command.js";
 import { personName, personRef } from "../../domain/events/journal-names.js";
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
+import { CREATED_ID_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { customerIntentActor } from "../../../shared/intent/customer-intent-actor.js";
+
+/** Le nom stable du geste, dans le registre des intentions. */
+const CREATE_COMPANY_GESTURE = "account.create-company";
 
 /**
  * Déclare l'entreprise et en fait, d'un même geste, celle de son créateur.
@@ -27,6 +34,13 @@ import { personName, personRef } from "../../domain/events/journal-names.js";
  * écrivains, que les lecteurs d'entonnoir compteraient deux fois.
  * Ce fait-là reste best-effort, hors de la transaction, comme les faits de
  * commande (plan du journal, lot 1 ; décidé le 2026-09-19).
+ *
+ * **Une fois par intention** : la clé de l'écran est réclamée avant tout et
+ * scellée dans la transaction de l'écriture ; un double envoi rend la société déjà déclarée,
+ * sans en déclarer une seconde. L'acteur est le client (`customer:<id>`).
+ *
+ * @throws {GestureInFlightError} la même clé est encore en vol.
+ * @throws {IntentKeyReusedError} la clé a servi pour une autre saisie.
  */
 @CommandHandler(CreateCompanyCommand)
 export class CreateCompanyHandler implements ICommandHandler<CreateCompanyCommand, string> {
@@ -34,9 +48,34 @@ export class CreateCompanyHandler implements ICommandHandler<CreateCompanyComman
     private readonly companies: CompanyRepository,
     private readonly profiles: UserProfileRepository,
     private readonly events: DomainEventPublisher,
+    private readonly uow: UnitOfWork,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: CreateCompanyCommand): Promise<string> {
+  execute(command: CreateCompanyCommand): Promise<string> {
+    return this.intents.runSealed(
+      {
+        actorId: customerIntentActor(command.ownerUserId),
+        key: command.intentKey,
+        gesture: CREATE_COMPANY_GESTURE,
+        subject: intentSubject("company", {
+          raisonSociale: command.raisonSociale,
+          enseigne: command.enseigne,
+          formeJuridique: command.formeJuridique,
+          siret: command.siret,
+          siren: command.siren,
+          vatNumber: command.vatNumber,
+        }),
+      },
+      CREATED_ID_REPLAY,
+      (seal) => this.create(command, seal),
+    );
+  }
+
+  private async create(
+    command: CreateCompanyCommand,
+    seal: (companyId: string) => Promise<void>,
+  ): Promise<string> {
     const owner = await this.profiles.findById(command.ownerUserId);
     if (owner === null) {
       throw new UserProfileNotFoundError(command.ownerUserId);
@@ -68,7 +107,11 @@ export class CreateCompanyHandler implements ICommandHandler<CreateCompanyComman
       throw new SiretAlreadyRegisteredError(siret.value);
     }
 
-    const companyId = await this.companies.declareOwnedBy(company, command.ownerUserId);
+    const companyId = await this.uow.run(async () => {
+      const declared = await this.companies.declareOwnedBy(company, command.ownerUserId);
+      await seal(declared);
+      return declared;
+    });
     // Déclarée par le client lui-même : signal `self` (candidat adoption+).
     this.events.publish(
       new CompanyDeclaredEvent(

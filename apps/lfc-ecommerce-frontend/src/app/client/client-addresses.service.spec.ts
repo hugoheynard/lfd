@@ -170,6 +170,27 @@ describe('les écritures du carnet', () => {
     http.verify();
   });
 
+  /** Régression : un double clic, ou un réessai après une coupure, ajoutait deux adresses. */
+  it('renvoie la même clé d’intention pour le même ajout tant qu’il n’a pas abouti', async () => {
+    const http = bootWith([]);
+    const addresses = TestBed.inject(ClientAddresses);
+
+    const first = addresses.addDelivery('cmp_1', PAYLOAD);
+    await settle();
+    const refused = http.expectOne((r) => r.url.endsWith('/companies/cmp_1/delivery-addresses'));
+    const key = refused.request.headers.get('Idempotency-Key');
+    refused.flush({ message: 'Indisponible.' }, { status: 503, statusText: 'Unavailable' });
+    await first;
+
+    void addresses.addDelivery('cmp_1', PAYLOAD);
+    await settle();
+    const retried = http.expectOne((r) => r.url.endsWith('/companies/cmp_1/delivery-addresses'));
+
+    expect(key).not.toBeNull();
+    expect(retried.request.headers.get('Idempotency-Key')).toBe(key);
+    expect(retried.request.headers.get('Authorization')).toBe('Bearer jeton');
+  });
+
   /**
    * Archiver par DELETE, puis relire : si l'archivée était la défaut, c'est le
    * serveur qui promeut sa remplaçante, et seule la relecture la montre.

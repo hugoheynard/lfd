@@ -103,11 +103,14 @@ export class IssueCardInvoiceHandler implements ICommandHandler<
     return { outcome: "issued", number: invoice.number, message: null };
   }
 
-  /** Rangée et journalisée — jamais levée. */
+  /** Rangée et journalisée — jamais levée ; le même refus rejoué ne se redit pas. */
   private async signal(
     prepared: Extract<CardInvoicePreparation, { kind: "blocked" }>,
   ): Promise<CardInvoiceRetryView> {
-    await this.outcomes.recordBlocked(prepared.key, prepared.message);
+    const changed = await this.outcomes.recordBlocked(prepared.key, prepared.message);
+    if (!changed) {
+      return { outcome: "blocked", number: null, message: prepared.message };
+    }
     await this.journal.append({
       type: "order.card_invoice_blocked",
       subjectType: "order",

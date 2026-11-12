@@ -37,6 +37,7 @@ import {
 } from "./order-customer-cancel-scene.js";
 import { placeOrder } from "./order-factory.js";
 import { resetScene } from "./order-staff-cancel-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 let ctx: E2eContext;
 
@@ -153,6 +154,7 @@ async function deliveredAccountOrder(companyId: string, author: Person): Promise
   const booked = await ctx
     .asSub(author.sub)
     .post(`/companies/${companyId}/delivery-addresses`)
+    .set(INTENT_KEY, freshIntent())
     .send({
       ...COURIER_ADDRESS,
       isDefault: true,

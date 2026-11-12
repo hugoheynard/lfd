@@ -81,6 +81,9 @@ export class AdminFeatureAccessController {
   /** Idempotent : une adresse déjà exemptée rend l'id de sa ligne existante. */
   @Post(":key/exemptions")
   @HttpCode(HttpStatus.CREATED)
+  @Idempotent(
+    "rejouée, l'adresse est déjà exemptée : addIfAbsent rend l'id de la ligne existante, sans seconde ligne ni fait",
+  )
   async addExemption(
     @Param("key") key: string,
     @Body(new ZodBody(featureExemptionPayloadSchema)) payload: FeatureExemptionPayload,

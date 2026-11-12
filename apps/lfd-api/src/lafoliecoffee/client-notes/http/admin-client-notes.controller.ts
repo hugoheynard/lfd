@@ -29,6 +29,7 @@ import type { Response } from "express";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import type { StoredDocument } from "../../../platform/storage/document-store.js";
 import { servePhoto } from "../../shared/photo-cards/http/photo-card-http.js";
@@ -75,6 +76,7 @@ export class AdminClientNotesController {
     @Body(new ZodBody(clientNoteFieldsSchema)) fields: ClientNoteFields,
     @UploadedFiles() files: UploadedNoteImages | undefined,
     @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedClientNoteResponse> {
     const id = await this.commands.execute<AddClientNoteCommand, string>(
       new AddClientNoteCommand(
@@ -83,6 +85,7 @@ export class AdminClientNotesController {
         noteImageBytes(files, "photo"),
         noteImageBytes(files, "thumbnail"),
         staffUserId,
+        intentKey,
       ),
     );
     return { id };
@@ -96,6 +99,8 @@ export class AdminClientNotesController {
     @Param("noteId") noteId: string,
     @Body(new ZodBody(clientNoteRevisionFieldsSchema)) fields: ClientNoteRevisionFields,
     @UploadedFiles() files: UploadedNoteImages | undefined,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<void> {
     await this.commands.execute<ReviseClientNoteCommand, void>(
       new ReviseClientNoteCommand(
@@ -105,6 +110,8 @@ export class AdminClientNotesController {
         fields.removePhoto === "true",
         noteImageBytes(files, "photo"),
         noteImageBytes(files, "thumbnail"),
+        staffUserId,
+        intentKey,
       ),
     );
   }

@@ -10,6 +10,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { MediaStore } from "../src/platform/storage/media-store.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { InMemoryMediaStore } from "./in-memory-media-store.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -135,6 +136,7 @@ describe("GET /media/palette-strip", () => {
     const shotOn = dayAgo(30);
     const opened = await staff()
       .post("/media/series")
+      .set(INTENT_KEY, freshIntent())
       .send({ title: "Fournil", shotOn, note: null });
     expect(opened.status).toBe(201);
     const seriesId = jsonBody<{ id: string }>(opened).id;

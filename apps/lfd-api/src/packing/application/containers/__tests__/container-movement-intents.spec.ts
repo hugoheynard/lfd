@@ -1,3 +1,4 @@
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import {
@@ -22,6 +23,10 @@ import { OpenPackingContainerCommand } from "../open-packing-container.command.j
 import { OpenPackingContainerHandler } from "../open-packing-container.handler.js";
 import { WithdrawFromContainerCommand } from "../withdraw-from-container.command.js";
 import { WithdrawFromContainerHandler } from "../withdraw-from-container.handler.js";
+
+let intentCount = 0;
+/** Une clé d'intention neuve par geste voulu, comme l'écran. */
+const nextKey = (): string => `intent_${(intentCount += 1)}`;
 
 /*
  * Glisser, retirer, déplacer sont des DELTAS : un double clic les referait.
@@ -75,12 +80,13 @@ async function setup() {
     uow,
     InMemoryPackingSettings.sharingOpen().reader(),
     new RecordingPlanHold(),
+    inMemoryIntents(),
   );
   const from = await open.execute(
-    new OpenPackingContainerCommand(DAY, "ord_1", { nature: "bag" }, STAFF),
+    new OpenPackingContainerCommand(DAY, "ord_1", { nature: "bag" }, STAFF, nextKey()),
   );
   const to = await open.execute(
-    new OpenPackingContainerCommand(DAY, "ord_1", { nature: "bag" }, STAFF),
+    new OpenPackingContainerCommand(DAY, "ord_1", { nature: "bag" }, STAFF, nextKey()),
   );
   return {
     sheets,

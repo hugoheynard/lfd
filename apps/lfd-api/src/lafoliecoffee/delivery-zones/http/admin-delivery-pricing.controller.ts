@@ -11,6 +11,7 @@ import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { GetDeliveryPricingQuery } from "../application/get-delivery-pricing.query.js";
 import { UpdateDeliveryPricingCommand } from "../application/update-delivery-pricing.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Réglage **staff** global de livraison, par audience (plan
@@ -39,6 +40,9 @@ export class AdminDeliveryPricingController {
 
   @Patch()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose un réglage : rejouée, la même requête trouve le réglage en vigueur (DeliveryPricing.changes) et ne l'écrit, ne le journalise ni ne purge",
+  )
   async update(
     @Body(new ZodBody(deliveryPricingPatchSchema)) patch: DeliveryPricingPatch,
     @StaffUserId() staffUserId: string,

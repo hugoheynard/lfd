@@ -23,6 +23,7 @@ import {
   SERVICE_DAY,
   STAFF,
 } from "./production-day-fixture.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 let ctx: E2eContext;
 let issued: string[];
@@ -63,6 +64,7 @@ function openBag(orderId: string) {
   return ctx
     .asSub(STAFF)
     .post(`${packingOrderPath(orderId)}/containers`)
+    .set(INTENT_KEY, freshIntent())
     .send({ nature: "bag" })
     .then((response) => response);
 }

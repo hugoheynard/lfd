@@ -242,6 +242,7 @@ describe("société suspendue — pro, carte seule", () => {
     await ctx
       .asSub(E2E_STAFF_SUB)
       .post("/admin/suggestions")
+      .set(INTENT_KEY, freshIntent())
       .send({
         trigger: { kind: "product_in_cart", ref: "PAI-001-1" },
         suggestedSkus: [SKU],

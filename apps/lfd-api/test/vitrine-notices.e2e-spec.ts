@@ -19,6 +19,7 @@ import type {
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 interface SentMail {
   readonly to: string;
@@ -64,6 +65,7 @@ async function subscribe(name: string, contactEmail: string | null): Promise<str
   const created = jsonBody<VitrineCredentialsView>(
     await staff()
       .post("/admin/vitrine/subscribers")
+      .set(INTENT_KEY, freshIntent())
       .send({ name, endpointUrl: "https://agence.e2e.test/hook", contents: [], contactEmail })
       .expect(201),
   );

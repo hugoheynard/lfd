@@ -289,6 +289,9 @@ export class MediaLibraryController {
    * comme dans une barre d'adresse.
    */
   @Delete()
+  @Idempotent(
+    "rejouée, l'image n'est plus au fonds : refusée (404 MediaNotInLibraryError) avant le stockage et le journal",
+  )
   @HttpCode(204)
   async discard(@Query(new ZodQuery(imageUrlQuerySchema)) query: ImageUrlQuery): Promise<void> {
     await this.commands.execute<DiscardMediaCommand, void>(
@@ -310,6 +313,9 @@ export class MediaLibraryController {
    * 2026-10-11, quand `GET /media` la taisait déjà).
    */
   @Post()
+  @Idempotent(
+    "par sa propre clé : l'adresse du contenu (SHA-256 des octets) ; rejoué, le même fichier retombe sur la même image, rendue « déjà au fonds », sans ligne ni fait de plus",
+  )
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: IMAGE_UPLOAD_HARD_LIMIT } }))
   async upload(
     @UploadedFile() file: UploadedFilePart | undefined,

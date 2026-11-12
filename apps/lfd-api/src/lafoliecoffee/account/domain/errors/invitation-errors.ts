@@ -1,5 +1,6 @@
 import {
   AuthorizationError,
+  BusinessError,
   ResourceNotFoundError,
 } from "../../../../platform/shared/errors/app-error.js";
 
@@ -41,6 +42,21 @@ export class PendingInvitationNotFoundError extends ResourceNotFoundError {
       "account.invitation.not_found",
       "Cette personne n'a pas d'invitation en attente pour cette société. " +
         "Ouvrez-lui l'accès depuis la fiche de la société.",
+    );
+  }
+}
+
+/**
+ * **Le même clic redemande un lien déjà fabriqué** : la clé d'intention a déjà
+ * servi. Le lien n'est gardé nulle part — il ouvre un compte —, donc il ne
+ * peut pas être rendu une seconde fois, et un second n'est pas fabriqué dans
+ * le dos du staff : le geste de sortie est d'en demander un nouveau.
+ */
+export class PasswordLinkAlreadyIssuedError extends BusinessError {
+  constructor() {
+    super(
+      "account.password_link.already_issued",
+      "Ce lien a déjà été émis et n'est montré qu'une fois : émettez-en un nouveau.",
     );
   }
 }

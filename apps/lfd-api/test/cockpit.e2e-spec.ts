@@ -13,6 +13,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 import type { InputJsonObject } from "../src/platform/database/client/internal/prismaNamespace.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -67,7 +68,11 @@ async function seed(
 /** Un établissement démarché, saisi par la vraie route : le coup `nurture`. */
 async function captureLead(businessName: string): Promise<string> {
   const created = jsonBody<CreatedLeadResponse>(
-    await staff().post("/admin/leads").send({ businessName }).expect(201),
+    await staff()
+      .post("/admin/leads")
+      .set(INTENT_KEY, freshIntent())
+      .send({ businessName })
+      .expect(201),
   );
   return created.id;
 }

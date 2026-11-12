@@ -47,6 +47,7 @@ import { PUBLIC_LABEL, snapshotOf, type IngestedSku } from "./catalog-ingest-fix
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /** Ce que l'agence de test a reçu. */
 interface Received {
@@ -157,6 +158,7 @@ async function subscribe(
   return jsonBody<VitrineCredentialsView>(
     await staff()
       .post("/admin/vitrine/subscribers")
+      .set(INTENT_KEY, freshIntent())
       .send({ name: "Agence du site", endpointUrl: "https://agence.e2e.test/hook", contents })
       .expect(201),
   );
@@ -260,6 +262,7 @@ describe("de la création à la notification signée", () => {
   it("refuse une adresse qui porte un jeton en requête, en le disant", async () => {
     const refusal = await staff()
       .post("/admin/vitrine/subscribers")
+      .set(INTENT_KEY, freshIntent())
       .send({ name: "A", endpointUrl: "https://agence.e2e.test/hook?token=x", contents: ALL })
       .expect(400);
     expect(jsonBody<{ code: string }>(refusal).code).toBe("vitrine.endpoint.carries_secret");
@@ -421,7 +424,10 @@ describe("GET /vitrine — ce qui sort, sur la route elle-même", () => {
   it("refuse une clé absente ou remplacée par une rotation", async () => {
     const { id, readKey } = await subscribe();
     await ctx.http().get("/vitrine/catalogue").expect(403);
-    await staff().post(`/admin/vitrine/subscribers/${id}/rotate`).expect(200);
+    await staff()
+      .post(`/admin/vitrine/subscribers/${id}/rotate`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(200);
     await ctx.http().get("/vitrine/catalogue").set("x-vitrine-key", readKey).expect(403);
   });
 });
@@ -434,6 +440,7 @@ describe("le nom, la description et le contact d'un abonné", () => {
     const created = jsonBody<VitrineCredentialsView>(
       await staff()
         .post("/admin/vitrine/subscribers")
+        .set(INTENT_KEY, freshIntent())
         .send({
           name: "Agence",
           endpointUrl: "https://agence.e2e.test/hook",

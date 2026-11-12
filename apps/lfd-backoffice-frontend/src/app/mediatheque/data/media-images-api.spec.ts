@@ -101,9 +101,10 @@ describe('MediaImagesApi', () => {
     put.flush(null);
     await described;
 
-    const replaced = api.replace({ from: 'a', to: 'b' });
+    const replaced = api.replace({ from: 'a', to: 'b' }, 'cle-1');
     const post = http.expectOne(`${BASE}/replace`);
     expect(post.request.method).toBe('POST');
+    expect(post.request.headers.get('Idempotency-Key')).toBe('cle-1');
     post.flush(null);
     await replaced;
 

@@ -24,6 +24,8 @@ export class AddDeliveryAddressCommand {
     readonly actorUserId: string,
     readonly companyId: string,
     readonly payload: DeliveryAddressPayload,
+    /** La clé d'intention de l'écran (`Idempotency-Key`) : un rejeu ne refait pas le geste. */
+    readonly intentKey: string,
   ) {}
 }
 

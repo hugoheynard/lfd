@@ -22,6 +22,7 @@ import { createUser } from "./factories.js";
 import { cardGatewayDouble, handOver, payByCard, pickupSite, placeOrder } from "./order-factory.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 import { storageKeys } from "./storage.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 interface SentMail {
   readonly to: string;
@@ -88,6 +89,7 @@ const DAMAGED: RequestReasonPayload = {
 async function createReason(overrides: Partial<RequestReasonPayload> = {}): Promise<string> {
   const response = await staff()
     .post("/admin/request-reasons")
+    .set(INTENT_KEY, freshIntent())
     .send({ ...DAMAGED, ...overrides })
     .expect(201);
   return jsonBody<CreatedIdResponse>(response).id;
@@ -116,6 +118,7 @@ function report(sub: string, orderId: string, reasonId: string, photos = 0): Tes
   let call = ctx
     .asSub(sub)
     .post(`/me/orders/${orderId}/problems`)
+    .set(INTENT_KEY, freshIntent())
     .field("reasonId", reasonId)
     .field("message", "Le pain était écrasé.");
   for (let index = 0; index < photos; index += 1) {

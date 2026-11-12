@@ -26,6 +26,12 @@ import { RequestPhoto } from "../../domain/request-photo.js";
 import { CustomerRequestMail } from "../services/customer-request-mail.service.js";
 import { offeredReason } from "./offered-reason.js";
 import { ReportOrderProblemCommand } from "./report-order-problem.command.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
+import { CREATED_ID_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { customerIntentActor } from "../../../shared/intent/customer-intent-actor.js";
+
+/** Le nom stable du geste, dans le registre des intentions. */
+const REPORT_PROBLEM_GESTURE = "contact.report-order-problem";
 
 /**
  * **Signaler un problème sur une commande** (`demandes-clients.md`,
@@ -48,6 +54,14 @@ import { ReportOrderProblemCommand } from "./report-order-problem.command.js";
  * commande ; une commande d'avant la copie n'en a pas, et personne n'est
  * prévenu (assumé). Depuis S2c (`plan-service-e-mails.md`), le courriel à
  * l'équipe est demandé au bloc `mail` dans cette même unité de travail.
+ *
+ * **Une fois par intention** : la clé de l'écran est réclamée avant tout et
+ * scellée avec la demande ; un double envoi rend la demande déjà déposée,
+ * sans seconde demande, ni photos rangées deux fois, ni second courriel à
+ * l'équipe. L'acteur est le client (`customer:<id>`).
+ *
+ * @throws {GestureInFlightError} la même clé est encore en vol.
+ * @throws {IntentKeyReusedError} la clé a servi pour un autre signalement.
  */
 @CommandHandler(ReportOrderProblemCommand)
 export class ReportOrderProblemHandler implements ICommandHandler<
@@ -67,9 +81,26 @@ export class ReportOrderProblemHandler implements ICommandHandler<
     private readonly durable: DurablePublisher,
     private readonly uow: UnitOfWork,
     private readonly mail: CustomerRequestMail,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: ReportOrderProblemCommand): Promise<string> {
+  execute(command: ReportOrderProblemCommand): Promise<string> {
+    return this.intents.runSealed(
+      {
+        actorId: customerIntentActor(command.actor.userId),
+        key: command.intentKey,
+        gesture: REPORT_PROBLEM_GESTURE,
+        subject: intentSubject(command.orderId, command.payload, ...command.photos),
+      },
+      CREATED_ID_REPLAY,
+      (seal) => this.report(command, seal),
+    );
+  }
+
+  private async report(
+    command: ReportOrderProblemCommand,
+    seal: (requestId: string) => Promise<void>,
+  ): Promise<string> {
     const photos = command.photos.map((bytes) => RequestPhoto.create(bytes));
     const { actor } = command;
     const order = await this.fulfilledOrder(command.orderId, actor.userId);
@@ -109,7 +140,7 @@ export class ReportOrderProblemHandler implements ICommandHandler<
       await this.store.save(ref.storageKey, { bytes: photo.bytes, contentType: photo.contentType });
     }
     const received = new CustomerRequestReceivedEvent(request, reason.recipientEmail);
-    await this.persist(received, order, actor.userId);
+    await this.persist(received, order, actor.userId, seal);
     this.events.publish(received);
     return request.id;
   }
@@ -123,11 +154,13 @@ export class ReportOrderProblemHandler implements ICommandHandler<
     received: CustomerRequestReceivedEvent,
     order: ReportableOrder,
     authorUserId: string,
+    seal: (requestId: string) => Promise<void>,
   ): Promise<void> {
     const { request } = received;
     await this.uow.run(async () => {
       await this.requests.save(request);
       await this.mail.request(received);
+      await seal(request.id);
       if (order.site !== null) {
         const fact = new OrderProblemReportedFact(
           request.id,

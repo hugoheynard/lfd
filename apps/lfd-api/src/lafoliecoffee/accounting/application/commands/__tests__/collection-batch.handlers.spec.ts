@@ -313,3 +313,26 @@ describe("constituer sous le verrou des commandes (lot C5, C5.3)", () => {
     expect(w.orders.saved.get(kept.orderId)?.stateName).toBe("batched");
   });
 });
+
+describe("constituer au bouton — une fois par intention", () => {
+  /**
+   * Régression : un double clic sur « Constituer » finissait en 409 « rien à
+   * constituer » sur le second envoi, et l'écran affichait un refus après un
+   * succès.
+   */
+  it("la même clé rend les mêmes lots, sans rien reconstituer", async () => {
+    const w = world();
+    w.candidates.orders = [order("c_port")];
+    w.mandates.mandates = [mandate("c_port")];
+    const command = new ConstituteCollectionBatchesCommand(ENTITY_ID, STAFF_AUTHOR, "cle-1");
+
+    const first = await w.constitute.execute(command);
+    const replay = await w.constitute.execute(command);
+
+    expect(replay).toEqual(first);
+    expect(w.batches.saved.size).toBe(1);
+    expect(
+      w.events.factTypes().filter((type) => type === "collection.batch_constituted"),
+    ).toHaveLength(1);
+  });
+});

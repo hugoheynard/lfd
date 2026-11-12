@@ -45,6 +45,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { staffWith, stubAdminVerifier } from "./operations-at-commerce-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const SUGGESTIONS = "/admin/suggestions";
 
@@ -85,7 +86,11 @@ function croissantRule(over: Partial<StaffSuggestionRulePayload> = {}): StaffSug
 const admin = () => ctx.asSub(E2E_STAFF_SUB);
 
 async function create(body: StaffSuggestionRulePayload): Promise<string> {
-  const response = await admin().post(SUGGESTIONS).send(body).expect(201);
+  const response = await admin()
+    .post(SUGGESTIONS)
+    .set(INTENT_KEY, freshIntent())
+    .send(body)
+    .expect(201);
   return jsonBody<{ id: string }>(response).id;
 }
 
@@ -197,7 +202,11 @@ describe("les suggestions décidées", () => {
 
   it("refuse en nommant le cas : article inconnu, famille inconnue, déclencheur suggéré, fin passée", async () => {
     const refused = async (body: StaffSuggestionRulePayload, code: string) => {
-      const response = await admin().post(SUGGESTIONS).send(body).expect(400);
+      const response = await admin()
+        .post(SUGGESTIONS)
+        .set(INTENT_KEY, freshIntent())
+        .send(body)
+        .expect(400);
       expect(response.body).toMatchObject({ code });
     };
     await refused(croissantRule({ suggestedSkus: ["ZZZ-404"] }), "suggestions.catalogue_unknown");
@@ -343,7 +352,12 @@ describe("les suggestions décidées", () => {
     await ctx.asSub(reader).get(SUGGESTIONS).expect(200);
     await ctx.asSub(outsider).get(`${SUGGESTIONS}/results`).expect(403);
     await ctx.asSub(reader).get(`${SUGGESTIONS}/results`).expect(200);
-    await ctx.asSub(reader).post(SUGGESTIONS).send(croissantRule()).expect(403);
+    await ctx
+      .asSub(reader)
+      .post(SUGGESTIONS)
+      .set(INTENT_KEY, freshIntent())
+      .send(croissantRule())
+      .expect(403);
     await ctx.asSub(reader).put(`${SUGGESTIONS}/order`).send({ order: "priority" }).expect(403);
   });
 });
@@ -376,10 +390,12 @@ describe("les conditions d'une règle (RS8)", () => {
   it("refuse un point de retrait inconnu et une plage qui passe minuit, sans rien écrire", async () => {
     const unknownSite = await admin()
       .post(SUGGESTIONS)
+      .set(INTENT_KEY, freshIntent())
       .send(croissantRule({ conditions: { ...conditions, pickupAddressIds: ["site-inconnu"] } }))
       .expect(400);
     const overnight = await admin()
       .post(SUGGESTIONS)
+      .set(INTENT_KEY, freshIntent())
       .send(croissantRule({ conditions: { ...conditions, hours: { from: "22:00", to: "02:00" } } }))
       .expect(400);
 

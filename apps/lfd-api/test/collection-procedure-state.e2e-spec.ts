@@ -22,6 +22,7 @@ import {
   staff,
   useCollectionProcedureScene,
 } from "./collection-procedure-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 useCollectionProcedureScene();
 
@@ -36,7 +37,7 @@ describe("la procédure de prélèvement — la lecture d'état", () => {
     expect(first.arrivalStep).toBe("accounts");
 
     const accountExport = jsonBody<AccountBankExportCreatedView>(
-      await staff().post(exportsOf(entityId, "account")).expect(201),
+      await staff().post(exportsOf(entityId, "account")).set(INTENT_KEY, freshIntent()).expect(201),
     ).exportId;
     expect((await procedure(entityId)).accounts.state).toBe("waiting");
 
@@ -85,7 +86,11 @@ describe("la procédure de prélèvement — la lecture d'état", () => {
 
 /** Exporte, télécharge et marque importé : « importé » ne se dit que d'un fichier sorti. */
 async function importAtBank(entityId: string, kind: "account" | "mandate"): Promise<void> {
-  const created = await staff().post(exportsOf(entityId, kind)).send({}).expect(201);
+  const created = await staff()
+    .post(exportsOf(entityId, kind))
+    .set(INTENT_KEY, freshIntent())
+    .send({})
+    .expect(201);
   const exportId = jsonBody<AccountBankExportCreatedView | MandateBankExportCreatedView>(
     created,
   ).exportId;

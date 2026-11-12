@@ -39,6 +39,9 @@ export class AdminSiteStockAlertsController {
   @Post(":siteId")
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission("handover_counter:write")
+  @Idempotent(
+    "pose le niveau : rejouée, elle retrouve l'alerte vivante de l'article (une seule par site et article) et y repose le même niveau ; aucune seconde alerte, aucun fait",
+  )
   async declare(
     @Param("siteId") siteId: string,
     @Body(new ZodBody(declareStockAlertSchema)) body: DeclareStockAlertPayload,

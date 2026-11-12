@@ -70,6 +70,9 @@ function channelOf(actor: GestureActor): MandateActorChannel {
  * §8) : une erreur de validation ne dit pas si la ligne a été écrite, et
  * retirer l'objet sur un doute pourrait détruire une pièce désignée.
  *
+ * `seal` est appelé dans la transaction de l'écriture : l'intention d'un geste
+ * de l'équipe y est résolue avec la référence qu'il pose.
+ *
  * @returns le brouillon prouvé, pour que l'appelant puisse prévenir l'équipe.
  * @throws {MandateProofChangedError} un autre geste est passé entre la lecture
  *   et l'écriture.
@@ -77,6 +80,7 @@ function channelOf(actor: GestureActor): MandateActorChannel {
 export async function attachProofToDraft(
   deps: MandateProofDeps,
   upload: MandateProofUpload,
+  seal: () => Promise<void> = NO_SEAL,
 ): Promise<PaymentMandate> {
   const mandate = await provableMandate(deps.mandates, upload.companyId);
   // Le domaine valide le fichier EN CLAIR — type réel, taille, nom. Sceller
@@ -95,7 +99,7 @@ export async function attachProofToDraft(
     { bytes: deps.cipher.sealBytes(document.bytes), contentType: "application/octet-stream" },
   );
   mandate.attachProof({ storageKey, fileName: document.fileName });
-  await recordDeposit(deps, mandate, previousKey, upload);
+  await recordDeposit(deps, mandate, previousKey, upload, seal);
   if (replacedKey !== null) {
     await purgeProof(deps, mandate, replacedKey, "proof_replaced");
   }
@@ -111,6 +115,7 @@ async function recordDeposit(
   mandate: PaymentMandate,
   previousKey: string | null,
   upload: MandateProofUpload,
+  seal: () => Promise<void>,
 ): Promise<void> {
   try {
     await deps.uow.run(async () => {
@@ -133,6 +138,7 @@ async function recordDeposit(
         subjectId: mandate.id,
         actor: upload.actor,
       });
+      await seal();
     });
   } catch (error) {
     const deposited = mandate.proofStorageKey();
@@ -177,3 +183,6 @@ async function provableMandate(
 function proofKeyFor(companyId: string, mandateId: string, at: Date): string {
   return `companies/${companyId}/mandates/${mandateId}/mandat-signe-${at.getTime()}`;
 }
+
+/** Un dépôt sans intention à sceller (le client). */
+const NO_SEAL = (): Promise<void> => Promise.resolve();

@@ -11,6 +11,7 @@ import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { UpdateDeliveryAvailabilityCommand } from "../application/commands/update-delivery-availability.command.js";
 import { GetDeliveryAvailabilityQuery } from "../application/queries/get-delivery-availability.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Réglage **staff** de la livraison par clientèle (Exploitation › Livraison ›
@@ -36,6 +37,9 @@ export class AdminDeliveryAvailabilityController {
 
   @Patch()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose un réglage : rejouée, la même requête trouve le réglage en vigueur (DeliveryAvailability.changes) et ne l'écrit, ne le journalise ni ne purge",
+  )
   async update(
     @Body(new ZodBody(deliveryAvailabilityPatchSchema)) patch: DeliveryAvailabilityPatch,
     @StaffUserId() staffUserId: string,

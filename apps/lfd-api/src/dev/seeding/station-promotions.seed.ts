@@ -6,6 +6,7 @@ import type { PromotionAudience } from "../../lafoliecoffee/promotions/domain/pr
 import { PromotionAudienceSet } from "../../lafoliecoffee/promotions/domain/promotion-audience-set.js";
 import type { PromotionEffect } from "../../lafoliecoffee/promotions/domain/promotion-effect.js";
 import type { PromotionTerms } from "../../lafoliecoffee/promotions/domain/promotion-terms.js";
+import { randomUUID } from "node:crypto";
 
 /**
  * L'auteur des promotions semées : un acteur système nommé, comme la reprise
@@ -37,7 +38,11 @@ export async function posePointDiscount(
 ): Promise<void> {
   for (const audience of POINT_DISCOUNT_AUDIENCES) {
     await commands.execute(
-      new PosePromotionCommand(pointDiscountTerms(pickupId, adjustment, now, audience), SEED_ACTOR),
+      new PosePromotionCommand(
+        pointDiscountTerms(pickupId, adjustment, now, audience),
+        SEED_ACTOR,
+        randomUUID(),
+      ),
     );
   }
 }

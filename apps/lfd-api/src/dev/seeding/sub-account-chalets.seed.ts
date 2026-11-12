@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import type { DeliveryAddressPayload } from "@lfd/contracts";
 
 import { ActivateCompanyByStaffCommand } from "../../lafoliecoffee/account/application/commands/activate-company.command.js";
@@ -190,6 +192,8 @@ async function seedChalet(
             follows: ["billing"],
           },
           false,
+          SEED_STAFF_SUB,
+          randomUUID(),
         ),
       ),
     ));
@@ -268,6 +272,8 @@ async function ensureReachable(
           phone: person.phone,
         },
         "admin",
+        SEED_STAFF_SUB,
+        randomUUID(),
       ),
     ),
   );

@@ -24,6 +24,8 @@ import { GetSiteTablesQuery } from "../application/get-site-tables.query.js";
 import { RemoveSiteTableQrCommand } from "../application/remove-site-table-qr.command.js";
 import { SetSiteTableCountCommand } from "../application/set-site-table-count.command.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 
 /**
  * **Réglages › Sites › Tables** — la grille de la salle d'un site, sous
@@ -67,9 +69,11 @@ export class AdminSiteTablesController {
   async generateQr(
     @Param("id") id: string,
     @Param("number", ParseIntPipe) tableNumber: number,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<void> {
     await this.commands.execute<GenerateSiteTableQrCommand, void>(
-      new GenerateSiteTableQrCommand(id, tableNumber),
+      new GenerateSiteTableQrCommand(id, tableNumber, staffUserId, intentKey),
     );
   }
 

@@ -203,6 +203,9 @@ export class AdminCompanyPricingController {
    */
   @Post("mercuriale/rename")
   @HttpCode(HttpStatus.OK)
+  @Idempotent(
+    "pose un libellé, aucun prix ne bouge : rejouée, la mercuriale porte déjà ce nom, aucun acte n'est écrit, et le même nombre d'articles est rendu",
+  )
   async rename(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(renameCompanyMercurialePayloadSchema))

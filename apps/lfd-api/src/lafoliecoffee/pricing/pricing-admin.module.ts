@@ -60,6 +60,7 @@ import { MercurialeBenchmarkQuery } from "./application/queries/mercuriale-bench
 import { PriceTemplatesQuery } from "./application/queries/price-templates.query.js";
 import { ApplyPriceTemplateHandler } from "./application/commands/apply-price-template.handler.js";
 import { SavePriceTemplateHandler } from "./application/commands/save-price-template.handler.js";
+import { ComposePriceTemplateHandler } from "./application/commands/compose-price-template.handler.js";
 import { ArchivePriceTemplateHandler } from "./application/commands/archive-price-template.handler.js";
 import { PriceTemplateRepository } from "./domain/ports/price-template.repository.js";
 import { PrismaPriceTemplateRepository } from "./infrastructure/prisma-price-template.repository.js";
@@ -224,6 +225,7 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
     RenameCompanyMercurialeHandler,
     CorrectMercurialeWindowHandler,
     SavePriceTemplateHandler,
+    ComposePriceTemplateHandler,
     ArchivePriceTemplateHandler,
     ApplyPriceTemplateHandler,
     // Possède « écrire un acte » : l'état, le journal du domaine et son miroir

@@ -13,6 +13,7 @@ import { checkJournalFact } from "@lfd/contracts/journal-facts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -46,7 +47,11 @@ function admin(): ReturnType<E2eContext["asSub"]> {
 }
 
 async function addVehicle(body: Record<string, unknown>): Promise<string> {
-  const response = await admin().post(VEHICLES).send(body).expect(201);
+  const response = await admin()
+    .post(VEHICLES)
+    .set(INTENT_KEY, freshIntent())
+    .send(body)
+    .expect(201);
   return jsonBody<CreatedIdResponse>(response).id;
 }
 
@@ -156,6 +161,7 @@ describe("le chargement d'un véhicule — refus", () => {
   ])("refuse %s (400), sans rien écrire", async (_case, load, expected) => {
     const refusal = await admin()
       .post(VEHICLES)
+      .set(INTENT_KEY, freshIntent())
       .send({ name: "Master", plate: "AB-123-CD", ...load })
       .expect(400);
 
@@ -166,6 +172,7 @@ describe("le chargement d'un véhicule — refus", () => {
   it("refuse une énergie hors de la liste dès la forme (400)", async () => {
     await admin()
       .post(VEHICLES)
+      .set(INTENT_KEY, freshIntent())
       .send({ name: "Master", plate: "AB-123-CD", energy: "hydrogen" })
       .expect(400);
     expect((await fleet()).vehicles).toEqual([]);
@@ -174,6 +181,7 @@ describe("le chargement d'un véhicule — refus", () => {
   it("refuse une dimension non entière dès la forme (400)", async () => {
     await admin()
       .post(VEHICLES)
+      .set(INTENT_KEY, freshIntent())
       .send({ name: "Master", plate: "AB-123-CD", cargo: { ...CARGO, widthCm: 170.5 } })
       .expect(400);
   });

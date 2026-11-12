@@ -166,6 +166,7 @@ async function journalText(): Promise<string> {
 async function addAddress(label: string): Promise<string> {
   const response = await owner()
     .post(`/companies/${companyId}/delivery-addresses`)
+    .set(INTENT_KEY, freshIntent())
     .send(delivery(label))
     .expect(201);
   return jsonBody<{ id: string }>(response).id;
@@ -206,6 +207,7 @@ describe("le client, sur le compte de sa société", () => {
   it("ses contacts : l'id, le nom et le rôle, jamais l'e-mail ni le téléphone", async () => {
     const created = await owner()
       .post(`/companies/${companyId}/contacts`)
+      .set(INTENT_KEY, freshIntent())
       .send({ ...CONTACT, role: "orders" })
       .expect(201);
     const contactId = jsonBody<{ id: string }>(created).id;
@@ -284,6 +286,7 @@ describe("le client, sur le compte de sa société", () => {
       .expect(204);
     await owner()
       .post(`/companies/${companyId}/contacts`)
+      .set(INTENT_KEY, freshIntent())
       .send({ ...CONTACT, role: "orders" })
       .expect(201);
     await owner().patch(`/companies/${companyId}/contact`).send(CONTACT).expect(200);
@@ -346,6 +349,7 @@ describe("le lieu de retrait et la qualité de l'auteur", () => {
   it("la préférence porte le nom du site, et la ligne dit « client pro »", async () => {
     const site = await staff()
       .post("/admin/pickup-addresses")
+      .set(INTENT_KEY, freshIntent())
       .send({
         label: "Boutique Oberkampf",
         ligne1: "5 rue du Four",
@@ -402,7 +406,11 @@ describe("le lieu de retrait et la qualité de l'auteur", () => {
  */
 describe("le client, sur ses pièces et ses consignes", () => {
   it("déposer son KBIS : le fait du staff, sous l'id `users` du client", async () => {
-    await owner().put(`/companies/${companyId}/kbis`).attach("file", PDF, "kbis.pdf").expect(204);
+    await owner()
+      .put(`/companies/${companyId}/kbis`)
+      .set(INTENT_KEY, freshIntent())
+      .attach("file", PDF, "kbis.pdf")
+      .expect(204);
 
     expect(await facts("company.kbis_uploaded")).toEqual([
       {
@@ -421,6 +429,7 @@ describe("le client, sur ses pièces et ses consignes", () => {
 
     const response = await owner()
       .post(`/companies/${companyId}/delivery-addresses/${addressId}/procedure/steps`)
+      .set(INTENT_KEY, freshIntent())
       .field("title", "Portail")
       .field("body", "Code 1234");
 
@@ -462,7 +471,10 @@ describe("le staff, sur l'accès d'un client", () => {
     // Un lien renouvelle l'invitation d'une société (2026-10-10) : il en faut une.
     await attachTo(ctx.prisma, waiting.id, companyId);
 
-    await staff().post(`/admin/access-pending/${waiting.id}/link`).expect(201);
+    await staff()
+      .post(`/admin/access-pending/${waiting.id}/link`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(201);
 
     expect(await facts("user.password_link_issued")).toEqual([
       {
@@ -483,6 +495,7 @@ describe("un journal en panne annule le geste", () => {
 
     const response = await owner()
       .post(`/companies/${companyId}/delivery-addresses`)
+      .set(INTENT_KEY, freshIntent())
       .send(delivery("Boutique"));
 
     expect(response.status).toBeGreaterThanOrEqual(500);
@@ -494,6 +507,7 @@ describe("un journal en panne annule le geste", () => {
 
     const response = await owner()
       .post(`/companies/${companyId}/contacts`)
+      .set(INTENT_KEY, freshIntent())
       .send({ ...CONTACT, role: "orders" });
 
     expect(response.status).toBeGreaterThanOrEqual(500);

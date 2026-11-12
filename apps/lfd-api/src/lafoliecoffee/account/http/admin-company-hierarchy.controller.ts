@@ -17,7 +17,8 @@ import { Body, Controller, HttpCode, HttpStatus, Param, Post, Put } from "@nestj
 import { CommandBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
-import { StaffPermissions } from "../../../platform/auth/staff.decorator.js";
+import { StaffPermissions, StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { AttachToParentCommand } from "../application/commands/attach-to-parent.command.js";
 import { CreateSubAccountCommand } from "../application/commands/create-sub-account.command.js";
@@ -46,7 +47,7 @@ export class AdminCompanyHierarchyController {
   /**
    * Crée un sous-compte de `:companyId`. Il naît `pending`. `pricing` dans les
    * aspects initiaux exige en plus le droit de tarification en écriture (Q9) :
-   * sans lui, `403`.
+   * sans lui, `403`. Une fois par intention (`Idempotency-Key`).
    */
   @Post("sub-accounts")
   @HttpCode(HttpStatus.CREATED)
@@ -54,12 +55,16 @@ export class AdminCompanyHierarchyController {
     @Param("companyId") parentId: string,
     @StaffPermissions() permissions: readonly StaffPermission[],
     @Body(new ZodBody(createSubAccountPayloadSchema)) payload: CreateSubAccountPayload,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedIdResponse> {
     const id = await this.commands.execute<CreateSubAccountCommand, string>(
       new CreateSubAccountCommand(
         parentId,
         payload,
         hasStaffPermission(permissions, "b2b_pricing:write"),
+        staffUserId,
+        intentKey,
       ),
     );
     return { id };

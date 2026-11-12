@@ -58,6 +58,11 @@ export class SetCreditorAccountHandler implements ICommandHandler<SetCreditorAcc
   async execute(command: SetCreditorAccountCommand): Promise<void> {
     const entity = await loadOrFail(this.entities, command.legalEntityId);
     const account = creditorAccountOf(command.payload);
+    // Le même RIB rejoué ne repropose rien : une nouvelle proposition périmerait
+    // celle que le second membre s'apprête à confirmer.
+    if (entity.alreadyHoldsCreditorAccount(account)) {
+      return;
+    }
     const at = this.clock.now();
     const pending = entity.setCreditorAccount(account, {
       id: this.ids.next(),

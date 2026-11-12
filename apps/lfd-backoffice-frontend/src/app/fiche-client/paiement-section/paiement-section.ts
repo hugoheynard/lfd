@@ -1,3 +1,4 @@
+import { GestureIntents } from '../../shared/gesture-intents';
 import {
   ChangeDetectionStrategy,
   ElementRef,
@@ -134,6 +135,8 @@ const PROOF_REPLACED_ON_SIGN =
 })
 export class PaiementSection {
   private readonly mandates = inject(MandatesService);
+  /** Les intentions des gestes du mandat (dépôt du scan, révocation) : un double clic ne refait rien. */
+  private readonly mandateIntents = new GestureIntents();
   private readonly notify = inject(NotifyService);
 
   /**
@@ -436,7 +439,14 @@ export class PaiementSection {
       return;
     }
     picker.value = '';
-    await this.run(id, () => this.mandates.uploadProof(id, file), 'Mandat signé déposé.');
+    // Un fichier choisi est une intention : un autre fichier en est une autre.
+    const subject = `proof|${id}|${file.name}|${String(file.size)}|${String(file.lastModified)}`;
+    const key = this.mandateIntents.keyFor(subject);
+    if (
+      await this.run(id, () => this.mandates.uploadProof(id, file, key), 'Mandat signé déposé.')
+    ) {
+      this.mandateIntents.done(subject);
+    }
   }
 
   /**
@@ -625,7 +635,10 @@ export class PaiementSection {
     if (id === null) {
       return;
     }
-    if (await this.run(id, () => this.mandates.revoke(id), 'Mandat révoqué.')) {
+    const subject = `revoke|${id}`;
+    const key = this.mandateIntents.keyFor(subject);
+    if (await this.run(id, () => this.mandates.revoke(id, key), 'Mandat révoqué.')) {
+      this.mandateIntents.done(subject);
       this.debitSetupChange.emit();
     }
   }

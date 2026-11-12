@@ -65,6 +65,9 @@ export class BinTypesController {
   }
 
   @Post()
+  @Idempotent(
+    "par unicité : le nom d'un type en service est unique ; rejoué, le type existe et l'ajout est refusé (409 BinTypeNameTakenError) avant toute écriture",
+  )
   @HttpCode(HttpStatus.CREATED)
   async add(
     @Body(new ZodBody(binTypePayloadSchema)) payload: BinTypePayload,
@@ -76,6 +79,7 @@ export class BinTypesController {
   }
 
   @Put(":id")
+  @Idempotent("pose la fiche entière : rejouée, rien ne change et ni écriture ni fait ne partent")
   @HttpCode(HttpStatus.NO_CONTENT)
   async correct(
     @Param("id") id: string,

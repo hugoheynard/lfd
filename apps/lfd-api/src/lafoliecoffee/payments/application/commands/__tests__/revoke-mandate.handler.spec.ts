@@ -1,3 +1,5 @@
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+import { randomUUID } from "node:crypto";
 import { UnitOfWork } from "../../../../../platform/database/unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
@@ -34,6 +36,7 @@ function revokeHandler(
     new FixedClock(NOW),
     events,
     new TracingUnitOfWork(trace),
+    inMemoryIntents(),
   );
   return { handler, trace };
 }
@@ -44,7 +47,7 @@ describe("RevokeMandateHandler", () => {
     // traité avec la banque, et la révocation est une écriture locale.
     const { handler, trace } = revokeHandler(activeMandate());
 
-    await handler.execute(new RevokeMandateCommand("cmp_1"));
+    await handler.execute(new RevokeMandateCommand("cmp_1", "staff_compta", randomUUID()));
 
     expect(trace.steps).toEqual(["uow:begin", "save", "uow:end"]);
     expect(trace.saved?.status).toBe("revoked");
@@ -55,7 +58,7 @@ describe("RevokeMandateHandler", () => {
     const events = new RecordingPublisher();
     const { handler } = revokeHandler(activeMandate(), events);
 
-    await handler.execute(new RevokeMandateCommand("cmp_1"));
+    await handler.execute(new RevokeMandateCommand("cmp_1", "staff_compta", randomUUID()));
 
     expect(events.factTypes()).toEqual(["payment_mandate.revoked"]);
     expect(events.traced[0]?.journalFact()).toMatchObject({
@@ -75,9 +78,26 @@ describe("RevokeMandateHandler", () => {
     const events = new RecordingPublisher();
     const { handler } = revokeHandler(null, events);
 
-    await expect(handler.execute(new RevokeMandateCommand("cmp_1"))).rejects.toBeInstanceOf(
-      MandateNotFoundError,
-    );
+    await expect(
+      handler.execute(new RevokeMandateCommand("cmp_1", "staff_compta", randomUUID())),
+    ).rejects.toBeInstanceOf(MandateNotFoundError);
     expect(events.traced).toHaveLength(0);
+  });
+});
+
+describe("RevokeMandateHandler — une fois par intention", () => {
+  /**
+   * Régression : « le mandat courant » est l'actif, sinon le brouillon — un
+   * second envoi, l'actif révoqué, révoquait le brouillon d'une rotation.
+   */
+  it("la même clé ne révoque rien de plus et ne rejournalise pas", async () => {
+    const events = new RecordingPublisher();
+    const { handler } = revokeHandler(activeMandate(), events);
+    const command = new RevokeMandateCommand("cmp_1", "staff_compta", "cle-1");
+
+    await handler.execute(command);
+    await handler.execute(command);
+
+    expect(events.factTypes()).toEqual(["payment_mandate.revoked"]);
   });
 });

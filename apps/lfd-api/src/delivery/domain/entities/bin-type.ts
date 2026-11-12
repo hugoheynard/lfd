@@ -6,6 +6,7 @@ import {
   InvalidBinMaxStackError,
   InvalidBinTypeNameError,
 } from "../errors/delivery-bin-errors.js";
+import { sameSheet } from "../services/same-sheet.js";
 import {
   BinTypeDimensions,
   type BinTypeDimensionsInput,
@@ -136,10 +137,20 @@ export class BinType {
   /**
    * Corrige la fiche ENTIÈRE. Permis sur un type archivé : corriger une faute
    * ne le remet pas en service. Tout est validé avant la moindre affectation.
+   *
+   * @returns `false` si la fiche reposée est celle qu'il porte déjà : rien ne
+   *   change, ni la date, et l'appelant n'écrit ni ne journalise.
    */
-  correct(spec: BinTypeSpec, at: Date): void {
+  correct(spec: BinTypeSpec, at: Date): boolean {
+    const previous = this.spec;
+    const before = this.specification;
     this.spec = validSpecOf(spec);
+    if (sameSheet(before, this.specification)) {
+      this.spec = previous;
+      return false;
+    }
     this.currentUpdatedAt = at;
+    return true;
   }
 
   /** @throws {BinTypeAlreadyArchivedError} il l'est déjà — sa date ne se réécrit pas. */

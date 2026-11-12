@@ -1,3 +1,4 @@
+import { sameSheet } from "../services/same-sheet.js";
 import { InvalidRoutingSettingError } from "../errors/delivery-routing-errors.js";
 import { BIN_GAP_DEFAULT_CM, BIN_GAP_MAX_CM, BIN_GAP_MIN_CM } from "./bin-gap.js";
 import { minutesOfDay } from "./clock-time.js";
@@ -191,6 +192,11 @@ export class RoutingSettings implements RoutingSettingsValues {
       defaultContainer: this.defaultContainer,
       binGapCm: this.binGapCm,
     };
+  }
+
+  /** Les mêmes valeurs saisies — reposer des réglages identiques ne change rien. */
+  equals(other: RoutingSettings): boolean {
+    return sameSheet(this.values(), other.values());
   }
 }
 

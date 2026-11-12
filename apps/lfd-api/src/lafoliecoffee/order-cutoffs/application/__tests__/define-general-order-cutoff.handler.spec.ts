@@ -102,4 +102,17 @@ describe("DefineGeneralOrderCutoffHandler", () => {
     expect(stored.saved).toEqual([]);
     expect(events.traced).toEqual([]);
   });
+
+  /** Régression : un réglage rejoué réécrivait la règle et la rejournalisait. */
+  it("ne réécrit ni ne journalise une règle redite à l'identique", async () => {
+    const stored = new Stored(
+      GeneralOrderCutoffRule.rehydrate("c1", { daysBefore: 1, time: "17:00", graceMinutes: 0 }),
+    );
+    const events = new RecordingPublisher();
+
+    await define(stored, events);
+
+    expect(stored.saved).toEqual([]);
+    expect(events.traced).toEqual([]);
+  });
 });

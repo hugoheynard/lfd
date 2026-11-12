@@ -15,6 +15,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
 import { DeliveryZonesService } from '../b2b/reglages/delivery-zones.service';
+import { intentOptions } from '../shared/gesture-intents';
 
 /**
  * **Les promotions** — `/admin/promotions` (`documentation/promotions/promotions.md`, § 2.9, lots L7-L8). Lecture sous `b2b_pricing` OU `lfc_site_settings`.
@@ -66,8 +67,11 @@ export class PromotionsService {
     return firstValueFrom(this.http.get<PromotionsSourceView>(`${this.base}/source`));
   }
 
-  async pose(terms: PromotionTermsPayload): Promise<string> {
-    const created = await firstValueFrom(this.http.post<CreatedIdResponse>(this.base, terms));
+  /** Pose une promotion, une fois par intention (`Idempotency-Key`). */
+  async pose(terms: PromotionTermsPayload, intentKey: string): Promise<string> {
+    const created = await firstValueFrom(
+      this.http.post<CreatedIdResponse>(this.base, terms, intentOptions(intentKey)),
+    );
     return created.id;
   }
 

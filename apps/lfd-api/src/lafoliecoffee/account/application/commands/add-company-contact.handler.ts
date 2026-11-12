@@ -12,6 +12,12 @@ import { AccountJournalNames } from "../services/account-journal-names.service.j
 import { contactRef } from "../../domain/events/journal-names.js";
 import { CONTACT_ADDED } from "../../domain/events/site-gesture.fact.js";
 import { SiteGesturePublisher } from "../services/site-gesture.publisher.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
+import { CREATED_ID_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { customerIntentActor } from "../../../shared/intent/customer-intent-actor.js";
+
+/** Le nom stable du geste, dans le registre des intentions. */
+const ADD_CONTACT_GESTURE = "account.add-company-contact";
 
 /**
  * Ajoute un contact additionnel à une entreprise, réservé à son gestionnaire.
@@ -19,6 +25,13 @@ import { SiteGesturePublisher } from "../services/site-gesture.publisher.js";
  * Journalisé dans la transaction de l'écriture depuis le 2026-09-19 (plan
  * `documentation/journalisation/plan-journal-d-activite.md` §3, décision 1) —
  * sous le nom du geste staff jumeau, sans coordonnée.
+ *
+ * **Une fois par intention** : la clé de l'écran est réclamée après le mur et
+ * scellée dans la transaction de l'écriture ; un double envoi rend le contact déjà ajouté,
+ * sans second contact ni second fait. L'acteur est le client (`customer:<id>`).
+ *
+ * @throws {GestureInFlightError} la même clé est encore en vol.
+ * @throws {IntentKeyReusedError} la clé a servi pour une autre saisie.
  */
 @CommandHandler(AddCompanyContactCommand)
 export class AddCompanyContactHandler implements ICommandHandler<AddCompanyContactCommand, string> {
@@ -29,12 +42,28 @@ export class AddCompanyContactHandler implements ICommandHandler<AddCompanyConta
     private readonly uow: UnitOfWork,
     private readonly names: AccountJournalNames,
     private readonly gestures: SiteGesturePublisher,
+    private readonly intents: OncePerIntent,
   ) {}
 
   async execute(command: AddCompanyContactCommand): Promise<string> {
     const role = await this.memberships.roleOf(command.actorUserId, command.companyId);
     ensureCompanyAdmin(role, command.companyId);
+    return this.intents.runSealed(
+      {
+        actorId: customerIntentActor(command.actorUserId),
+        key: command.intentKey,
+        gesture: ADD_CONTACT_GESTURE,
+        subject: intentSubject(command.companyId, command.details, command.role),
+      },
+      CREATED_ID_REPLAY,
+      (seal) => this.add(command, seal),
+    );
+  }
 
+  private async add(
+    command: AddCompanyContactCommand,
+    seal: (contactId: string) => Promise<void>,
+  ): Promise<string> {
     const details = ContactDetails.create(command.details);
     const company = await this.names.company(command.companyId);
     return this.uow.run(async () => {
@@ -48,6 +77,7 @@ export class AddCompanyContactHandler implements ICommandHandler<AddCompanyConta
       await this.events.publishTraced(
         new ContactAddedByMemberEvent(company, contactRef(contactId, details), command.role),
       );
+      await seal(contactId);
       return contactId;
     });
   }

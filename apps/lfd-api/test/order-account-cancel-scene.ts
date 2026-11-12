@@ -20,6 +20,7 @@ import {
 } from "./factories.js";
 import { pickupSite, placeOrder } from "./order-factory.js";
 import { LATEST_DELIVERY_FULFILLMENT } from "./delivery-deadline-fixture.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /**
  * **La scène de l'annulation d'une commande AU COMPTE** (doc
@@ -309,7 +310,10 @@ export function issueRequest(entityId: string) {
 }
 
 export function constituteRequest(entityId: string) {
-  return staff().post(`${COLLECTION}/batches`).send({ legalEntityId: entityId });
+  return staff()
+    .post(`${COLLECTION}/batches`)
+    .set(INTENT_KEY, freshIntent())
+    .send({ legalEntityId: entityId });
 }
 
 /** Livre la boîte d'envoi, et attend les abonnés de fond. */

@@ -34,6 +34,9 @@ import { SetPriceFloorHandler } from "../set-price-floor.handler.js";
 import type { PriceFloorPolicy } from "../../../domain/floor-policy.js";
 import type { PriceScope } from "../../../domain/price-rule.js";
 import type { PricingAct } from "../../../domain/pricing-act.js";
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 
 const AT = new Date("2026-06-15T09:00:00.000Z");
 const GLOBAL: PriceScope = { type: "global", id: null };
@@ -101,18 +104,56 @@ function setup(references = new InMemorySaleReferences()): {
   const ids = new FixedIdGenerator("flr");
   return {
     floors,
-    set: new SetPriceFloorHandler(floors, catalog, clock, ids, references),
-    confirm: new ConfirmPriceFloorHandler(floors, catalog, clock, ids),
+    set: new SetPriceFloorHandler(
+      floors,
+      catalog,
+      clock,
+      ids,
+      references,
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
+    ),
+    confirm: new ConfirmPriceFloorHandler(
+      floors,
+      catalog,
+      clock,
+      ids,
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
+    ),
     archive: new ArchivePriceFloorHandler(floors, clock, catalog),
   };
 }
 
 describe("la clientèle d'une limite, geste par geste", () => {
+  /** Régression : un double clic posait deux versions de la limite, la seconde « remplaçant » la première. */
+  it("poser rejoué sous la même clé n'ouvre pas une seconde version", async () => {
+    const { floors, set } = setup();
+    const key = randomUUID();
+
+    await set.execute(new SetPriceFloorCommand(GLOBAL, "pro", WALL, "staff_1", key));
+    await set.execute(new SetPriceFloorCommand(GLOBAL, "pro", WALL, "staff_1", key));
+
+    expect(floors.acts.map((act) => act.kind)).toEqual(["posed"]);
+  });
+
+  /** Régression : un double clic sur « Confirmer » écrivait deux actes `confirmed`. */
+  it("confirmer rejoué sous la même clé ne reconfirme pas", async () => {
+    const { floors, set, confirm } = setup();
+    await set.execute(new SetPriceFloorCommand(GLOBAL, "pro", WALL, "staff_1", randomUUID()));
+    const key = randomUUID();
+
+    await confirm.execute(new ConfirmPriceFloorCommand(GLOBAL, "pro", "staff_1", key));
+    await confirm.execute(new ConfirmPriceFloorCommand(GLOBAL, "pro", "staff_1", key));
+
+    expect(floors.acts.map((act) => act.kind)).toEqual(["posed", "confirmed"]);
+  });
+
   it("🔴 poser une limite publique laisse la limite pro en vigueur", async () => {
     const { floors, set } = setup();
-    await set.execute(new SetPriceFloorCommand(GLOBAL, "pro", WALL, "staff_1"));
+    await set.execute(new SetPriceFloorCommand(GLOBAL, "pro", WALL, "staff_1", randomUUID()));
 
-    await set.execute(new SetPriceFloorCommand(GLOBAL, "public", WALL, "staff_1"));
+    await set.execute(new SetPriceFloorCommand(GLOBAL, "public", WALL, "staff_1", randomUUID()));
 
     const pro = await floors.inForceFor(GLOBAL, "pro", AT);
     expect(pro?.clientele).toBe("pro");
@@ -124,8 +165,8 @@ describe("la clientèle d'une limite, geste par geste", () => {
   it("journalise la pro sous la clé d'avant, la publique sous `public:`, et nomme la clientèle", async () => {
     const { floors, set } = setup();
 
-    await set.execute(new SetPriceFloorCommand(GLOBAL, "pro", WALL, "staff_1"));
-    await set.execute(new SetPriceFloorCommand(GLOBAL, "public", WALL, "staff_1"));
+    await set.execute(new SetPriceFloorCommand(GLOBAL, "pro", WALL, "staff_1", randomUUID()));
+    await set.execute(new SetPriceFloorCommand(GLOBAL, "public", WALL, "staff_1", randomUUID()));
 
     expect(floors.acts.map((act) => [act.subjectId, act.summary])).toEqual([
       ["global:", "Limite pro · mur à 60 % du tarif"],
@@ -135,11 +176,11 @@ describe("la clientèle d'une limite, geste par geste", () => {
 
   it("confirmer en public repose la publique, et ne touche pas la pro", async () => {
     const { floors, set, confirm } = setup();
-    await set.execute(new SetPriceFloorCommand(GLOBAL, "pro", WALL, "staff_1"));
-    await set.execute(new SetPriceFloorCommand(GLOBAL, "public", WALL, "staff_1"));
+    await set.execute(new SetPriceFloorCommand(GLOBAL, "pro", WALL, "staff_1", randomUUID()));
+    await set.execute(new SetPriceFloorCommand(GLOBAL, "public", WALL, "staff_1", randomUUID()));
     const proBefore = await floors.inForceFor(GLOBAL, "pro", AT);
 
-    await confirm.execute(new ConfirmPriceFloorCommand(GLOBAL, "public", "staff_2"));
+    await confirm.execute(new ConfirmPriceFloorCommand(GLOBAL, "public", "staff_2", randomUUID()));
 
     expect((await floors.inForceFor(GLOBAL, "pro", AT))?.id).toBe(proBefore?.id);
     expect((await floors.inForceFor(GLOBAL, "public", AT))?.clientele).toBe("public");
@@ -148,8 +189,8 @@ describe("la clientèle d'une limite, geste par geste", () => {
 
   it("archiver en public retire la publique, et laisse la pro en vigueur", async () => {
     const { floors, set, archive } = setup();
-    await set.execute(new SetPriceFloorCommand(GLOBAL, "pro", WALL, "staff_1"));
-    await set.execute(new SetPriceFloorCommand(GLOBAL, "public", WALL, "staff_1"));
+    await set.execute(new SetPriceFloorCommand(GLOBAL, "pro", WALL, "staff_1", randomUUID()));
+    await set.execute(new SetPriceFloorCommand(GLOBAL, "public", WALL, "staff_1", randomUUID()));
 
     await archive.execute(new ArchivePriceFloorCommand(GLOBAL, "public", "staff_2", null));
 
@@ -160,9 +201,11 @@ describe("la clientèle d'une limite, geste par geste", () => {
 
   it("refuse de confirmer une publique absente, même quand une pro existe — en la nommant", async () => {
     const { set, confirm } = setup();
-    await set.execute(new SetPriceFloorCommand(GLOBAL, "pro", WALL, "staff_1"));
+    await set.execute(new SetPriceFloorCommand(GLOBAL, "pro", WALL, "staff_1", randomUUID()));
 
-    const refusal = confirm.execute(new ConfirmPriceFloorCommand(GLOBAL, "public", "staff_2"));
+    const refusal = confirm.execute(
+      new ConfirmPriceFloorCommand(GLOBAL, "public", "staff_2", randomUUID()),
+    );
 
     await expect(refusal).rejects.toBeInstanceOf(PriceFloorNotFoundError);
     await expect(refusal).rejects.toThrow("Aucune limite publique posée");
@@ -180,7 +223,7 @@ describe("la clientèle d'une limite posée sur un article", () => {
   it("pose une limite publique sur un article vendu aux particuliers", async () => {
     const { floors, set } = setup(references());
     const scope: PriceScope = { type: "product", id: "TAR-002" };
-    await set.execute(new SetPriceFloorCommand(scope, "public", WALL, "staff_1"));
+    await set.execute(new SetPriceFloorCommand(scope, "public", WALL, "staff_1", randomUUID()));
     expect(await floors.inForceFor(scope, "public", AT)).not.toBeNull();
   });
 
@@ -188,7 +231,7 @@ describe("la clientèle d'une limite posée sur un article", () => {
     const { floors, set } = setup(references());
     const scope: PriceScope = { type: "product", id: "TAR-002" };
     await expect(
-      set.execute(new SetPriceFloorCommand(scope, "pro", WALL, "staff_1")),
+      set.execute(new SetPriceFloorCommand(scope, "pro", WALL, "staff_1", randomUUID())),
     ).rejects.toBeInstanceOf(SaleReferenceNotSoldToProsError);
     expect(floors.acts).toHaveLength(0);
   });
@@ -197,7 +240,7 @@ describe("la clientèle d'une limite posée sur un article", () => {
     const { set } = setup(references());
     const scope: PriceScope = { type: "product", id: "FOU-003" };
     await expect(
-      set.execute(new SetPriceFloorCommand(scope, "public", WALL, "staff_1")),
+      set.execute(new SetPriceFloorCommand(scope, "public", WALL, "staff_1", randomUUID())),
     ).rejects.toBeInstanceOf(SaleReferenceNotSoldToPublicError);
   });
 });

@@ -109,6 +109,19 @@ describe("CorrectBinTypeHandler", () => {
     });
   });
 
+  /** Régression : un « Enregistrer » rejoué sans changement écrivait la fiche et un fait au journal. */
+  it("rejouée sans changement, n'écrit rien et ne trace rien", async () => {
+    const types = new InMemoryBinTypes(binType("bin_a", "Bac M"));
+    const { clock, events, uow } = tools();
+
+    await new CorrectBinTypeHandler(types, clock, events, uow).execute(
+      new CorrectBinTypeCommand("bin_a", { ...SPEC, name: " Bac M " }),
+    );
+
+    expect(types.saved).toEqual([]);
+    expect(events.factTypes()).toEqual([]);
+  });
+
   it("refuse de prendre le nom d'un autre type en service", async () => {
     const types = new InMemoryBinTypes(binType("bin_a", "Bac M"), binType("bin_b", "Bac L"));
     const { clock, events, uow } = tools();

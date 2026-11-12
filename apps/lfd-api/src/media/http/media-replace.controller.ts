@@ -4,6 +4,7 @@ import { type ReplaceMediaPayload, replaceMediaPayloadSchema } from "@lfd/pim-co
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
+import { IntentKey } from "../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { ReplaceMediaCommand } from "../application/replace-media.js";
 
@@ -21,6 +22,9 @@ import { ReplaceMediaCommand } from "../application/replace-media.js";
  * transaction, et le combiner ici ne ferait gagner qu'un aller-retour, au prix
  * d'un multipart et d'un échec à deux moitiés à expliquer (l'image entrée au
  * fonds, le remplacement refusé). Deux appels disent chacun leur refus.
+ *
+ * La clé d'intention de l'écran (`Idempotency-Key`, obligatoire) fait qu'un
+ * double clic ne remplace — et ne trace — qu'une fois.
  */
 @AdminSurface("media_library")
 @Controller("media/replace")
@@ -32,9 +36,10 @@ export class MediaReplaceController {
   async replace(
     @Body(new ZodBody(replaceMediaPayloadSchema)) payload: ReplaceMediaPayload,
     @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<void> {
     await this.commands.execute<ReplaceMediaCommand, void>(
-      new ReplaceMediaCommand(payload.from, payload.to, staffUserId),
+      new ReplaceMediaCommand(payload.from, payload.to, staffUserId, intentKey),
     );
   }
 }

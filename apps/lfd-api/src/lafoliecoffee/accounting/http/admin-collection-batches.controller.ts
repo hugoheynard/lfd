@@ -42,6 +42,8 @@ import {
 } from "../application/queries/collection-batch-queries.js";
 import type { CollectionBatchAudit } from "../application/queries/export-collection-batch-audit.handler.js";
 import type { CollectionBatchFile } from "../application/queries/export-collection-batch-file.handler.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 
 /**
  * Surface **staff** des lots de prélèvement figés (plan
@@ -75,26 +77,34 @@ export class AdminCollectionBatchesController {
     );
   }
 
-  /** Constitue les lots du dernier cycle clos. 409 si rien n'a bougé. */
+  /**
+   * Constitue les lots du dernier cycle clos. 409 si rien n'a bougé. Une fois
+   * par intention (`Idempotency-Key`) : la même clé rend les mêmes lots.
+   */
   @Post("batches")
   async constitute(
     @StaffUserId() staffUserId: string,
     @Body(new ZodBody(constituteBatchesPayloadSchema)) payload: ConstituteBatchesPayload,
+    @IntentKey() intentKey: string,
   ): Promise<ConstitutedBatchesView> {
     const batchIds = await this.commands.execute<
       ConstituteCollectionBatchesCommand,
       readonly string[]
     >(
-      new ConstituteCollectionBatchesCommand(payload.legalEntityId, {
-        kind: "staff",
-        staffId: staffUserId,
-      }),
+      new ConstituteCollectionBatchesCommand(
+        payload.legalEntityId,
+        { kind: "staff", staffId: staffUserId },
+        intentKey,
+      ),
     );
     return { batchIds };
   }
 
   @Post("batches/:id/cancel")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition, sous le verrou du lot : rejouée, le lot n'est plus constitué et l'agrégat refuse (409) avant toute libération ni fait",
+  )
   async cancel(@StaffUserId() staffUserId: string, @Param("id") id: string): Promise<void> {
     await this.commands.execute<CancelCollectionBatchCommand, void>(
       new CancelCollectionBatchCommand(id, staffUserId),
@@ -104,6 +114,9 @@ export class AdminCollectionBatchesController {
   /** Relit mandats, comptes et commandes ; 409 nommant l'écart s'il y en a un. */
   @Post("batches/:id/deposit")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition, sous le verrou du lot : rejouée, le lot est déjà déposé et l'agrégat refuse (409) avant tout bon prélevé ni fait",
+  )
   async deposit(@StaffUserId() staffUserId: string, @Param("id") id: string): Promise<void> {
     await this.commands.execute<DepositCollectionBatchCommand, void>(
       new DepositCollectionBatchCommand(id, staffUserId),
@@ -117,6 +130,9 @@ export class AdminCollectionBatchesController {
    */
   @Post("batches/:id/rejected-by-bank")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition, sous le verrou du lot : rejouée, le lot n'est plus déposé et l'agrégat refuse (409 BatchNotDepositedError) avant toute libération ni fait",
+  )
   async rejectedByBank(
     @StaffUserId() staffUserId: string,
     @Param("id") id: string,
@@ -177,6 +193,9 @@ export class AdminCollectionBatchesController {
   /** Une commande à prélever (ou écartée) a été réglée par un autre chemin. */
   @Post("orders/:orderId/settle-otherwise")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition, sous le verrou de la commande : rejouée, elle n'est plus due ni écartée et l'agrégat refuse (409) avant toute écriture ni fait",
+  )
   async settleOtherwise(
     @StaffUserId() staffUserId: string,
     @Param("orderId") orderId: string,

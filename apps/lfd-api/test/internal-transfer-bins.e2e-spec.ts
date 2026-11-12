@@ -30,6 +30,7 @@ import {
   seedVillage,
   seedVillageOrder,
 } from "./internal-transfer-scene.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const DAY = serviceDay();
 
@@ -103,6 +104,7 @@ describe("les bacs du transfert (lot T3, Q-T4 révisée)", () => {
 
     const late = await admin(ctx)
       .post(`${LOADING}/loading/transfers/${transferId}/bins`)
+      .set(INTENT_KEY, freshIntent())
       .send({ binTypeId: await binTypeId(ctx), count: 1, innerBags: 0 })
       .expect(409);
     expect(codeOf(late)).toBe("delivery.internal_transfer_bins_closed");

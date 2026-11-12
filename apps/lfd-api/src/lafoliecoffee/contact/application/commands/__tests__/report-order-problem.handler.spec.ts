@@ -31,6 +31,8 @@ import {
   MemoryRequests,
   VisibleOrders,
 } from "./contact-doubles.js";
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 
 const DAMAGED = reason({
   id: "r_damaged",
@@ -100,6 +102,7 @@ function setup(...reasons: ReturnType<typeof reason>[]): {
     new TransactionalDurablePublisher(uow),
     uow,
     new CustomerRequestMail(mails),
+    inMemoryIntents(),
   );
   return { handler, requests, store, events, uow, log, mails };
 }
@@ -108,16 +111,31 @@ function report(
   orderId: string,
   photos: readonly Buffer[] = [],
   actor = ME,
+  intentKey = randomUUID(),
 ): ReportOrderProblemCommand {
   return new ReportOrderProblemCommand(
     orderId,
     { reasonId: "r_damaged", message: "Le pain était écrasé." },
     photos,
     actor,
+    intentKey,
   );
 }
 
 describe("ReportOrderProblemHandler — signaler un problème", () => {
+  /** Régression : un double envoi déposait deux demandes et écrivait deux fois à l'équipe. */
+  it("rejoué sous la même clé, rend la demande déposée sans en déposer une seconde", async () => {
+    const { handler, requests, mails } = setup();
+    const key = randomUUID();
+
+    const first = await handler.execute(report("o1", [], ME, key));
+    const replayed = await handler.execute(report("o1", [], ME, key));
+
+    expect(replayed).toBe(first);
+    expect(requests.saved).toHaveLength(1);
+    expect(mails.queued).toHaveLength(1);
+  });
+
   it("range la demande avec la commande, l'auteur PRIS AU COMPTE, et publie sa réception", async () => {
     const { handler, requests, events } = setup();
     const id = await handler.execute(report("o1"));

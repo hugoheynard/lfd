@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { GrantTermsCommand } from "../../lafoliecoffee/account/application/commands/grant-terms.command.js";
 import { SetPayerBillingModeCommand } from "../../lafoliecoffee/accounting/application/commands/set-payer-billing-mode.command.js";
 import { AttachMandateProofCommand } from "../../lafoliecoffee/payments/application/commands/attach-mandate-proof.command.js";
@@ -6,7 +8,7 @@ import { SetCompanyBankAccountCommand } from "../../lafoliecoffee/payments/appli
 import { SignMandateCommand } from "../../lafoliecoffee/payments/application/commands/sign-mandate.command.js";
 import { proofRevisionOf } from "../../lafoliecoffee/payments/domain/services/proof-revision.js";
 import { InvoiceSeedStepError } from "./invoice-seed-errors.js";
-import { asStaff, isoDay, type SeedContext } from "./order-placing.seed.js";
+import { asStaff, isoDay, SEED_STAFF_SUB, type SeedContext } from "./order-placing.seed.js";
 
 /**
  * **Les trois payeurs du groupe des Cimes, prêts à être prélevés** : le
@@ -102,7 +104,13 @@ async function ensureActiveMandate(context: SeedContext, companyId: string, at: 
     draft?.id ??
     (await context.commands.execute<MintMandateCommand, string>(new MintMandateCommand(companyId)));
   await context.commands.execute(
-    new AttachMandateProofCommand(companyId, "mandat-signe.pdf", MANDATE_SCAN),
+    new AttachMandateProofCommand(
+      companyId,
+      "mandat-signe.pdf",
+      MANDATE_SCAN,
+      SEED_STAFF_SUB,
+      randomUUID(),
+    ),
   );
   const proven = await context.prisma.paymentMandate.findUniqueOrThrow({
     where: { id: mandateId },

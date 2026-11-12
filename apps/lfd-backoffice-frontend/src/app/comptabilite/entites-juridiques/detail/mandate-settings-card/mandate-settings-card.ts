@@ -34,6 +34,7 @@ import {
   MandateSchemeDialog,
   type MandateSchemeDialogData,
 } from '../mandate-scheme-dialog/mandate-scheme-dialog';
+import { GestureIntents } from '../../../../shared/gesture-intents';
 
 /**
  * **Ce qui façonne les mandats d'une entité** : leur schéma (CORE ou
@@ -86,6 +87,8 @@ import {
 })
 export class MandateSettingsCard {
   private readonly api = inject(LegalEntitiesService);
+  /** Un dépôt de logo par intention : un double envoi ne redépose rien. */
+  private readonly logoIntents = new GestureIntents();
   private readonly panels = inject(FoldPanelHostService);
 
   readonly entity = input.required<LegalEntityView>();
@@ -200,8 +203,14 @@ export class MandateSettingsCard {
     // n'émet aucun `change`, et l'écran paraît ne rien faire.
     picker.value = '';
     const id = this.entity().id;
+    // Un fichier choisi est une intention : un autre fichier en est une autre.
+    const subject = `${id}|${file.name}|${String(file.size)}|${String(file.lastModified)}`;
+    const key = this.logoIntents.keyFor(subject);
     this.saved.emit({
-      action: () => this.api.setLogo(id, file),
+      action: async () => {
+        await this.api.setLogo(id, file, key);
+        this.logoIntents.done(subject);
+      },
       said: 'Logo attaché — les mandats de cette entité le porteront.',
     });
   }

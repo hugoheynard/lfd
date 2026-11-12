@@ -3,6 +3,8 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
+import { CREATED_ID_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import { DocumentStore } from "../../../../platform/storage/document-store.js";
 import { StaffDirectory } from "../../../account/domain/ports/staff-directory.js";
 import { ClientNoteEditedByStaffEvent } from "../../domain/events/client-note-edited-by-staff.event.js";
@@ -13,6 +15,9 @@ import { AddClientNoteCommand } from "./add-client-note.command.js";
 import { addClientNote } from "./client-notebook-editing.js";
 import { noteAuthorOf } from "./note-author.js";
 import { namedNotebookCompany } from "../services/notebook-company-guard.js";
+
+/** Le nom stable du geste, dans le registre des intentions. */
+const ADD_NOTE_GESTURE = "client-notes.add";
 
 /**
  * Ajoute une note **en tête** du carnet d'un client, avec son auteur figé.
@@ -31,9 +36,34 @@ export class AddClientNoteHandler implements ICommandHandler<AddClientNoteComman
     private readonly uow: UnitOfWork,
     private readonly events: DomainEventPublisher,
     private readonly staff: StaffDirectory,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: AddClientNoteCommand): Promise<string> {
+  /**
+   * **Une fois par intention** : la clé de l'écran est scellée avec la note et
+   * son fait ; un double envoi rend la note déjà ajoutée, sans seconde note,
+   * seconde photo ni second fait.
+   *
+   * @throws {GestureInFlightError} la même clé est encore en vol.
+   * @throws {IntentKeyReusedError} la clé a servi pour une autre note.
+   */
+  execute(command: AddClientNoteCommand): Promise<string> {
+    return this.intents.runSealed(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: ADD_NOTE_GESTURE,
+        subject: intentSubject(command.companyId, command.fields, command.photo),
+      },
+      CREATED_ID_REPLAY,
+      (seal) => this.add(command, seal),
+    );
+  }
+
+  private async add(
+    command: AddClientNoteCommand,
+    seal: (noteId: string) => Promise<void>,
+  ): Promise<string> {
     const author = await noteAuthorOf(this.staff, command.staffUserId);
     const ports = {
       companies: this.companies,
@@ -47,14 +77,16 @@ export class AddClientNoteHandler implements ICommandHandler<AddClientNoteComman
       ports,
       command.companyId,
       { fields: command.fields, photo: command.photo, thumbnail: command.thumbnail, author },
-      async (noteId) =>
-        this.events.publishTraced(
+      async (noteId) => {
+        await this.events.publishTraced(
           ClientNoteEditedByStaffEvent.onNote(
             await namedNotebookCompany(this.companies, command.companyId),
             noteId,
             "note_added",
           ),
-        ),
+        );
+        await seal(noteId);
+      },
     );
   }
 }

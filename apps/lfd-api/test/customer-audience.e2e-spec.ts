@@ -85,6 +85,7 @@ async function seedPeople(): Promise<{
 async function seedProsOnlyPoint(): Promise<string> {
   const response = await staff()
     .post("/admin/pickup-addresses")
+    .set(INTENT_KEY, freshIntent())
     .send({
       label: "Labo",
       ligne1: "5 rue du Four",
@@ -105,6 +106,7 @@ async function seedProsOnlyPoint(): Promise<string> {
 async function seedZone(): Promise<void> {
   await staff()
     .post("/admin/delivery-zones")
+    .set(INTENT_KEY, freshIntent())
     .send({
       label: "Val d'Isère",
       postalPrefixes: ["73150"],
@@ -166,6 +168,7 @@ async function bookAddressBeforeTen(companyId: string): Promise<string> {
   const created = await ctx
     .asSub(ACTIVE)
     .post(`/companies/${companyId}/delivery-addresses`)
+    .set(INTENT_KEY, freshIntent())
     .send({
       ...COURIER_ADDR,
       label: "Hôtel",

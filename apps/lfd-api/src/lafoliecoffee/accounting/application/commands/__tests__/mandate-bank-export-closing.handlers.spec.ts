@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import {
   BankExportAlreadyImportedError,
   MandateBankExportAbandonedError,
@@ -13,7 +14,9 @@ import { NOW, bankExportWorld, bankMandate, entityRecord } from "./mandate-bank-
 async function prepared() {
   const w = bankExportWorld();
   w.mandates.exportable = [bankMandate("m1")];
-  const id = await w.exportCommand.execute(new ExportMandatesForBankCommand("le1", "staff_1"));
+  const id = await w.exportCommand.execute(
+    new ExportMandatesForBankCommand("le1", "staff_1", randomUUID()),
+  );
   return { w, id };
 }
 
@@ -38,7 +41,7 @@ describe("abandonner un export des mandats (S3)", () => {
     await w.abandon.execute(new AbandonMandateBankExportCommand("le1", id, "staff_2"));
 
     const second = await w.exportCommand.execute(
-      new ExportMandatesForBankCommand("le1", "staff_1"),
+      new ExportMandatesForBankCommand("le1", "staff_1", randomUUID()),
     );
 
     expect(w.exports.rows.get(second)?.mandateCount).toBe(1);

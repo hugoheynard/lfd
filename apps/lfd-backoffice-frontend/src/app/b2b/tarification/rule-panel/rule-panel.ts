@@ -20,6 +20,10 @@ import { TarificationService } from '../tarification.service';
 import { businessDayStart } from '../../../shared/business-day';
 import { parisToday } from '../../../shared/paris-today';
 import { PromotionsService } from '../../../targeted-promotions/promotions.service';
+import { GestureIntents } from '../../../shared/gesture-intents';
+
+/** Le sujet de l'intention : une seule pose par panneau ouvert. */
+const RULE_INTENT = 'create-rule';
 
 /** Charge d'ouverture : sur quoi la règle porte, et comment le dire à l'écran. */
 export interface RulePanelData {
@@ -89,6 +93,11 @@ export class RulePanel {
   private readonly notify = inject(NotifyService);
   private readonly ref = inject(FoldPanelRef<boolean>);
   private readonly promotions = inject(PromotionsService);
+  /**
+   * L'intention de poser la règle : une clé tirée au premier envoi, renvoyée jusqu'au
+   * succès — un double clic ne pose pas deux règles.
+   */
+  private readonly intents = new GestureIntents();
 
   readonly data = input<RulePanelData | undefined>(undefined);
 
@@ -174,7 +183,8 @@ export class RulePanel {
     }
     this.saving.set(true);
     try {
-      await this.tarification.createRule(payload);
+      await this.tarification.createRule(payload, this.intents.keyFor(RULE_INTENT));
+      this.intents.done(RULE_INTENT);
       this.notify.success('Règle tarifaire posée.');
       this.ref.close(true);
     } catch (error) {

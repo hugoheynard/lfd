@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import type { SetCreditorAccountPayload, DeclareLegalEntityPayload } from "@lfd/contracts";
 import type { CommandBus } from "@nestjs/cqrs";
 
@@ -171,7 +173,7 @@ export async function seedAccounting({ prisma, commands }: AccountingContext): P
     entityId = existing.id;
   } else {
     entityId = await commands.execute<DeclareLegalEntityCommand, string>(
-      new DeclareLegalEntityCommand(ENTITY),
+      new DeclareLegalEntityCommand(ENTITY, SEED_STAFF_SUB, randomUUID()),
     );
     console.log(`✓ Entité « ${ENTITY.name} ${ENTITY.legalForm} » semée.`);
   }
@@ -249,7 +251,13 @@ export async function seedAccounting({ prisma, commands }: AccountingContext): P
 async function seedLogo(entityId: string, commands: CommandBus): Promise<void> {
   try {
     await commands.execute(
-      new SetLegalEntityLogoCommand(entityId, BRAND_LOGO_FILE_NAME, BRAND_LOGO_BW),
+      new SetLegalEntityLogoCommand(
+        entityId,
+        BRAND_LOGO_FILE_NAME,
+        BRAND_LOGO_BW,
+        SEED_STAFF_SUB,
+        randomUUID(),
+      ),
     );
     console.log("✓ Logo attaché — les mandats de ce poste porteront le rond.");
   } catch (error) {

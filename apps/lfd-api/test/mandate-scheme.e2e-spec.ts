@@ -20,6 +20,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
 import { storageKeys } from "./storage.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const RIB = {
   iban: "FR1420041010050500013M02606",
@@ -67,6 +68,7 @@ const defaultsUrl = (): string => `/admin/accounting/legal-entities/${entityId}/
 async function declareIssuer(): Promise<string> {
   const response = await staff()
     .post("/admin/accounting/legal-entities")
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: "Crazeativity",
       legalForm: "SAS",
@@ -104,6 +106,7 @@ async function activate(company: string): Promise<string> {
   const id = await mint(company);
   await staff()
     .put(`/admin/companies/${company}/mandate/proof`)
+    .set(INTENT_KEY, freshIntent())
     .attach("file", PDF, "scan.pdf")
     .expect(204);
   const proofRevision = (await mandateOf(company))?.proofRevision;
@@ -236,6 +239,7 @@ describe("PUT mandate-scheme — la bascule", () => {
     await mint(companyId);
     await staff()
       .put(`/admin/companies/${companyId}/mandate/proof`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", PDF, "scan.pdf")
       .expect(204);
 

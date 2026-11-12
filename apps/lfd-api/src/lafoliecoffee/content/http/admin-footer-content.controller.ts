@@ -11,6 +11,7 @@ import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { GetFooterContentQuery } from "../application/get-footer-content.query.js";
 import { SaveFooterContentCommand } from "../application/save-footer-content.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Édition **staff** du pied de page de la vitrine — sous `b2b_settings`.
@@ -40,6 +41,9 @@ export class AdminFooterContentController {
   }
 
   @Put("footer")
+  @Idempotent(
+    "pose le pied de page entier : rejouée, la même requête réécrit le même texte ; seule la révision, qui date le geste (voulu, cf. l'adaptateur), monte, et la purge des réglages publics ne rend que ce qui est servi ; aucun fait, aucun e-mail",
+  )
   saveFooter(
     @Body(new ZodBody(footerContentPayloadSchema)) payload: FooterContentPayload,
     @StaffUserId() staffUserId: string,

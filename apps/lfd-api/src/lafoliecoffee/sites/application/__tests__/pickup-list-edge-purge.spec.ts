@@ -21,6 +21,8 @@ import {
   PLACE,
   storedSite,
 } from "./site-doubles.js";
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 
 const FIELDS = {
   label: "Laboratoire",
@@ -57,6 +59,7 @@ function scene() {
       uow,
       afterCommit,
       edge,
+      inMemoryIntents(),
     ),
     update: new UpdatePickupAddressHandler(sites, events, uow, afterCommit, edge),
     remove: new RemovePickupAddressHandler(
@@ -88,7 +91,11 @@ describe("points de retrait — la purge de la liste publique", () => {
   it("une création purge après la validation, et pas avant", async () => {
     const { create, edge, afterCommit } = scene();
     await create.execute(
-      new CreatePickupAddressCommand({ ...FIELDS, discounts: { b2b: null, b2c: null } }),
+      new CreatePickupAddressCommand(
+        { ...FIELDS, discounts: { b2b: null, b2c: null } },
+        "staff_1",
+        randomUUID(),
+      ),
     );
     expect(edge.purges).toBe(0);
     await afterCommit.commit();
@@ -97,7 +104,9 @@ describe("points de retrait — la purge de la liste publique", () => {
 
   it("une modification purge après la validation", async () => {
     const { update, edge, afterCommit } = scene();
-    await update.execute(new UpdatePickupAddressCommand("site_village", { ...FIELDS }));
+    await update.execute(
+      new UpdatePickupAddressCommand("site_village", { ...FIELDS, ligne2: "Cour intérieure" }),
+    );
     expect(edge.purges).toBe(0);
     await afterCommit.commit();
     expect(edge.purges).toBe(1);

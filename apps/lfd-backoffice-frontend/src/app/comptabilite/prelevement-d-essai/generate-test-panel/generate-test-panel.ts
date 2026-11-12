@@ -28,6 +28,7 @@ import { httpErrorMessage } from '@lfd/endpoints';
 import { centsOf } from '../../cents-field';
 import { CollectionTestsService } from '../../collection-tests.service';
 import { day, euros } from '../../invoice-dossier-format';
+import { GestureIntents } from '../../../shared/gesture-intents';
 
 /** Ce que le panneau reçoit : l'outil tel que le serveur l'a jugé. */
 export interface GenerateTestPanelData {
@@ -74,6 +75,8 @@ export function defaultSequence(sequences: readonly TestSequenceView[]): TestSeq
 })
 export class GenerateTestPanel {
   private readonly api = inject(CollectionTestsService);
+  /** Un essai par intention : un double clic ne garde pas deux fichiers. */
+  private readonly intents = new GestureIntents();
   private readonly ref = inject(FoldPanelRef<string>);
 
   readonly data = input<GenerateTestPanelData | undefined>(undefined);
@@ -151,13 +154,17 @@ export class GenerateTestPanel {
     this.error.set(null);
     try {
       const remittance = this.remittance().trim();
-      const testId = await this.api.generate({
-        companyId,
-        amountCents,
-        requestedCollectionDay: this.collectionDay(),
-        sequence,
-        remittance: remittance === '' ? null : remittance,
-      });
+      const testId = await this.api.generate(
+        {
+          companyId,
+          amountCents,
+          requestedCollectionDay: this.collectionDay(),
+          sequence,
+          remittance: remittance === '' ? null : remittance,
+        },
+        this.intents.keyFor(companyId),
+      );
+      this.intents.done(companyId);
       this.ref.close(testId);
     } catch (caught) {
       this.error.set(httpErrorMessage(caught, 'Le fichier d’essai n’a pas été généré.'));

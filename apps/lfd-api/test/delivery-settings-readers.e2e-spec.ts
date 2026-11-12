@@ -13,6 +13,7 @@
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -72,7 +73,11 @@ describe("qui lit les tournées lit les réglages (Q10 « A »)", () => {
   it("🔴 ne les modifie pas (403), sans rien écrire", async () => {
     const reader = await supportStaff(true);
 
-    await reader.post(VEHICLES).send({ name: "X", plate: "AB-123-CD" }).expect(403);
+    await reader
+      .post(VEHICLES)
+      .set(INTENT_KEY, freshIntent())
+      .send({ name: "X", plate: "AB-123-CD" })
+      .expect(403);
     await reader.put(DEPARTURE).send({ pickupAddressId: null }).expect(403);
     await reader.put(ROUTING).send({}).expect(403);
     expect(await ctx.prisma.deliveryVehicle.count()).toBe(0);

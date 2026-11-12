@@ -29,6 +29,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const IBAN = "FR1420041010050500013M02606";
 const RIB = {
@@ -83,6 +84,7 @@ const staff = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);
 async function declareIssuer(): Promise<void> {
   const response = await staff()
     .post("/admin/accounting/legal-entities")
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: "Crazeativity",
       legalForm: "SAS",
@@ -142,6 +144,7 @@ function everyRoute(sub: string, id = companyId) {
         ctx
           .asSub(sub)
           .put(`${base(id)}/proof`)
+          .set(INTENT_KEY, freshIntent())
           .attach("file", PDF, "scan.pdf"),
     ],
   ] as const;
@@ -288,7 +291,12 @@ describe("le parcours complet — frappe, dépôt client, activation staff", () 
   it("trace chaque geste, prévient l'équipe, puis verrouille le mandat actif", async () => {
     const draft = await mint();
 
-    await ctx.asSub(BILLING).put(`${base()}/proof`).attach("file", PDF, "scan.pdf").expect(204);
+    await ctx
+      .asSub(BILLING)
+      .put(`${base()}/proof`)
+      .set(INTENT_KEY, freshIntent())
+      .attach("file", PDF, "scan.pdf")
+      .expect(204);
 
     const proven = jsonBody<CustomerMandateView>(await ctx.asSub(OWNER).get(base()).expect(200));
     expect(proven).toMatchObject({ status: "draft", hasProof: true, proofFileName: "scan.pdf" });
@@ -326,7 +334,12 @@ describe("le parcours complet — frappe, dépôt client, activation staff", () 
 
     // Ce qui est désormais verrouillé côté client.
     await ctx.asSub(OWNER).post(base()).expect(409);
-    await ctx.asSub(OWNER).put(`${base()}/proof`).attach("file", PDF, "autre.pdf").expect(409);
+    await ctx
+      .asSub(OWNER)
+      .put(`${base()}/proof`)
+      .set(INTENT_KEY, freshIntent())
+      .attach("file", PDF, "autre.pdf")
+      .expect(409);
     await ctx.asSub(OWNER).get(`${base()}/document.pdf`).expect(404);
     await ctx
       .asSub(OWNER)
@@ -336,15 +349,39 @@ describe("le parcours complet — frappe, dépôt client, activation staff", () 
   });
 
   it("refuse le dépôt client quand aucun mandat n'existe (404)", async () => {
-    await ctx.asSub(OWNER).put(`${base()}/proof`).attach("file", PDF, "scan.pdf").expect(404);
+    await ctx
+      .asSub(OWNER)
+      .put(`${base()}/proof`)
+      .set(INTENT_KEY, freshIntent())
+      .attach("file", PDF, "scan.pdf")
+      .expect(404);
   });
 
   /** Déprécié le 2026-09-14 : un back-office déjà chargé l'appelle encore. */
   it("sert encore la pièce du mandat courant par l'ancienne route staff", async () => {
     await mint();
-    await ctx.asSub(OWNER).put(`${base()}/proof`).attach("file", PDF, "scan.pdf").expect(204);
+    await ctx
+      .asSub(OWNER)
+      .put(`${base()}/proof`)
+      .set(INTENT_KEY, freshIntent())
+      .attach("file", PDF, "scan.pdf")
+      .expect(204);
 
     await staff().get(`/admin/companies/${companyId}/mandate/proof`).expect(200);
+  });
+
+  /**
+   * Régression : un double envoi de la boutique rangeait deux pièces et
+   * journalisait deux dépôts.
+   */
+  it("la même clé d'intention ne redépose rien", async () => {
+    await mint();
+    const key = freshIntent();
+    const upload = () =>
+      ctx.asSub(OWNER).put(`${base()}/proof`).set(INTENT_KEY, key).attach("file", PDF, "scan.pdf");
+    await upload().expect(204);
+    await upload().expect(204);
+    expect(await journal("payment_mandate.proof_attached")).toHaveLength(1);
   });
 });
 
@@ -374,6 +411,28 @@ describe("le brouillon devient caduc quand son papier change", () => {
     ).toBe(1);
     // Le client régénère : une RUM neuve, pas l'ancienne.
     expect((await mint()).reference).not.toBe(draft.reference);
+  });
+
+  /**
+   * Régression : un RIB rejoué à l'identique rendait le brouillon caduc,
+   * rejournalisait et prévenait de nouveau. Décidé par Hugo le 2026-11-12 :
+   * un RIB identique ne fait rien.
+   */
+  it("un RIB identique, client puis staff, ne rend pas le brouillon caduc et ne journalise rien", async () => {
+    const draft = await mint();
+    const changesBefore = await ctx.prisma.activityEvent.count({
+      where: { type: "company.bank_account_changed" },
+    });
+
+    await ctx.asSub(BILLING).put(`/companies/${companyId}/bank-account`).send(RIB).expect(204);
+    await staff().put(`/admin/companies/${companyId}/bank-account`).send(RIB).expect(204);
+
+    const after = jsonBody<CustomerMandateView>(await ctx.asSub(OWNER).get(base()).expect(200));
+    expect(after).toMatchObject({ id: draft.id, status: "draft" });
+    expect(await journal("payment_mandate.draft_voided")).toEqual([]);
+    expect(
+      await ctx.prisma.activityEvent.count({ where: { type: "company.bank_account_changed" } }),
+    ).toBe(changesBefore);
   });
 
   it("révoque le brouillon CORE sur une réécriture des zones 14/19 par le staff", async () => {

@@ -99,6 +99,7 @@ async function writeText(
 async function depositPdf(mention: "salesTerms" | "salesTermsPro"): Promise<string> {
   const response = await staff()
     .post(`/admin/content/legal/${mention}/files`)
+    .set(INTENT_KEY, freshIntent())
     .attach("file", PDF, "cgv.pdf")
     .expect(201);
   return jsonBody<LegalDocumentFileDeposited>(response).id;

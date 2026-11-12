@@ -187,7 +187,7 @@ describe('le bandeau des remboursements par carte (plan M2, §5.3)', () => {
     retryButton(fixture, 'rrq_2')?.click();
     await fixture.whenStable();
 
-    expect(retryRefund).toHaveBeenCalledWith('rrq_2');
+    expect(retryRefund).toHaveBeenCalledWith('rrq_2', expect.any(String));
     expect(changed).toHaveBeenCalledTimes(1);
   });
 

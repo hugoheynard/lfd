@@ -12,6 +12,7 @@ import { EventBus } from "@nestjs/cqrs";
 import { UserRegisteredEvent } from "../src/lafoliecoffee/account/domain/events/user-registered.event.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -40,17 +41,27 @@ function staff(): ReturnType<E2eContext["http"]> {
 
 describe("POST /admin/leads", () => {
   it("mure la route côté staff (401 sans jeton porteur)", async () => {
-    await ctx.http().post("/admin/leads").send({ businessName: "X" }).expect(401);
+    await ctx
+      .http()
+      .post("/admin/leads")
+      .set(INTENT_KEY, freshIntent())
+      .send({ businessName: "X" })
+      .expect(401);
   });
 
   it("rejette une raison sociale vide (400)", async () => {
-    await staff().post("/admin/leads").send({ businessName: "   " }).expect(400);
+    await staff()
+      .post("/admin/leads")
+      .set(INTENT_KEY, freshIntent())
+      .send({ businessName: "   " })
+      .expect(400);
   });
 
   it("persiste le lead (statut new, e-mail normalisé) et journalise lead.captured", async () => {
     const created = jsonBody<CreatedLeadResponse>(
       await staff()
         .post("/admin/leads")
+        .set(INTENT_KEY, freshIntent())
         .send({ businessName: "Bistrot du Coin", email: "Marie@Bistrot.FR" })
         .expect(201),
     );
@@ -76,6 +87,7 @@ describe("POST /admin/leads", () => {
   it("nomme le prospect au journal, sans son e-mail ni son téléphone", async () => {
     await staff()
       .post("/admin/leads")
+      .set(INTENT_KEY, freshIntent())
       .send({ businessName: "Bistrot du Coin", email: "Marie@Bistrot.FR", phone: "06 12 34 56 78" })
       .expect(201);
 
@@ -98,8 +110,16 @@ describe("GET /admin/leads", () => {
   });
 
   it("liste les leads saisis, le plus récent en tête", async () => {
-    await staff().post("/admin/leads").send({ businessName: "Ancien" }).expect(201);
-    await staff().post("/admin/leads").send({ businessName: "Récent" }).expect(201);
+    await staff()
+      .post("/admin/leads")
+      .set(INTENT_KEY, freshIntent())
+      .send({ businessName: "Ancien" })
+      .expect(201);
+    await staff()
+      .post("/admin/leads")
+      .set(INTENT_KEY, freshIntent())
+      .send({ businessName: "Récent" })
+      .expect(201);
 
     const leads = jsonBody<LeadView[]>(await staff().get("/admin/leads").expect(200));
     expect(leads.map((lead) => lead.businessName)).toEqual(["Récent", "Ancien"]);
@@ -110,7 +130,11 @@ describe("GET /admin/leads", () => {
 describe("PATCH /admin/leads/:id", () => {
   async function captureLead(businessName: string): Promise<string> {
     const created = jsonBody<CreatedLeadResponse>(
-      await staff().post("/admin/leads").send({ businessName }).expect(201),
+      await staff()
+        .post("/admin/leads")
+        .set(INTENT_KEY, freshIntent())
+        .send({ businessName })
+        .expect(201),
     );
     return created.id;
   }
@@ -152,6 +176,7 @@ describe("Rapprochement automatique à l'inscription (user.registered)", () => {
     const created = jsonBody<CreatedLeadResponse>(
       await staff()
         .post("/admin/leads")
+        .set(INTENT_KEY, freshIntent())
         .send({ businessName: "Bistrot", email: "Marie@Bistrot.fr" })
         .expect(201),
     );
@@ -179,6 +204,7 @@ describe("Rapprochement automatique à l'inscription (user.registered)", () => {
     const created = jsonBody<CreatedLeadResponse>(
       await staff()
         .post("/admin/leads")
+        .set(INTENT_KEY, freshIntent())
         .send({ businessName: "Bistrot", email: "marie@bistrot.fr" })
         .expect(201),
     );

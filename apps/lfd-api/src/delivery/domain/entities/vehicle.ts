@@ -5,6 +5,7 @@ import {
   VehicleAlreadyRetiredError,
   VehicleNotRetiredError,
 } from "../errors/delivery-errors.js";
+import { sameSheet } from "../services/same-sheet.js";
 import { AllowedZones } from "../value-objects/allowed-zones.js";
 import type { CargoDimensions, CargoSpace } from "../value-objects/cargo-space.js";
 import { LicensePlate } from "../value-objects/license-plate.js";
@@ -195,17 +196,35 @@ export class Vehicle {
    * véhicule retiré : corriger une faute de saisie ne le remet pas en service.
    * Tout est validé avant la moindre affectation : un refus ne laisse pas une
    * fiche à moitié corrigée.
+   *
+   * @returns `false` si la fiche reposée est celle qu'il porte déjà : rien ne
+   *   change, ni la date, et l'appelant n'écrit ni ne journalise.
    */
-  correct(identity: VehicleIdentity, at: Date): void {
+  correct(identity: VehicleIdentity, at: Date): boolean {
     const name = nameOf(identity.name);
     const plate = plateOf(identity.plate);
     const load = loadSpaceOf(identity);
     const zones = AllowedZones.of(identity.allowedZoneIds ?? []);
+    const before = this.identity;
+    const previous = {
+      name: this.currentName,
+      plate: this.currentPlate,
+      load: this.currentLoad,
+      zones: this.currentZones,
+    };
     this.currentName = name;
     this.currentPlate = plate;
     this.currentLoad = load;
     this.currentZones = zones;
+    if (sameSheet(before, this.identity)) {
+      this.currentName = previous.name;
+      this.currentPlate = previous.plate;
+      this.currentLoad = previous.load;
+      this.currentZones = previous.zones;
+      return false;
+    }
     this.currentUpdatedAt = at;
+    return true;
   }
 
   /** @throws {VehicleAlreadyRetiredError} il l'est déjà — sa date ne se réécrit pas. */

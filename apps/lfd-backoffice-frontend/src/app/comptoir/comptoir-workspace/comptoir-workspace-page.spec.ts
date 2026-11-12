@@ -7,7 +7,7 @@ import type { HandoverQueueEntryView, HandoverQueueView, StaffPermission } from 
 import { describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
-import { DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
+import { VersionWatcher } from '../../shared/version/version-watcher';
 import { HandoverQueueService } from '../../handover-shop/handover-queue.service';
 import { CustomerRequestsService } from '../../b2b/demandes/customer-requests.service';
 import { WorkspaceRailStore } from '../../shared/workspace-rail/workspace-rail.store';
@@ -90,7 +90,7 @@ async function open(
       },
       { provide: CustomerRequestsService, useValue: {} },
       { provide: HandoverQueueService, useValue: queue },
-      { provide: DayVersionWatcher, useValue: { watch: () => undefined } },
+      { provide: VersionWatcher, useValue: { watch: () => undefined } },
       {
         provide: PickupAddressesService,
         useValue: { list: () => Promise.resolve(places), listFor: () => Promise.resolve([]) },

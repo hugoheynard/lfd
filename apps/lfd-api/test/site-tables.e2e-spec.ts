@@ -8,6 +8,7 @@ import type { CreatedPickupResponse, SiteTablesView, SiteView } from "@lfd/contr
 
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 let ctx: E2eContext;
 
@@ -38,6 +39,7 @@ const ROLES = {
 async function create(label: string): Promise<string> {
   const response = await staff()
     .post("/admin/sites")
+    .set(INTENT_KEY, freshIntent())
     .send({
       label,
       ligne1: "1 place du Village",
@@ -95,8 +97,8 @@ describe("admin/sites/:id/tables", () => {
     const id = await create("Village");
     await openRoom(id);
     await staff().put(`/admin/sites/${id}/tables`).send({ count: 3 }).expect(204);
-    await staff().post(`/admin/sites/${id}/tables/1/qr`).expect(204);
-    await staff().post(`/admin/sites/${id}/tables/2/qr`).expect(204);
+    await staff().post(`/admin/sites/${id}/tables/1/qr`).set(INTENT_KEY, freshIntent()).expect(204);
+    await staff().post(`/admin/sites/${id}/tables/2/qr`).set(INTENT_KEY, freshIntent()).expect(204);
 
     const grid = (await tables(id)).tables;
     expect(grid.map((table) => [table.number, table.hasQr])).toEqual([
@@ -117,9 +119,9 @@ describe("admin/sites/:id/tables", () => {
     const id = await create("Village");
     await openRoom(id);
     await staff().put(`/admin/sites/${id}/tables`).send({ count: 1 }).expect(204);
-    await staff().post(`/admin/sites/${id}/tables/1/qr`).expect(204);
+    await staff().post(`/admin/sites/${id}/tables/1/qr`).set(INTENT_KEY, freshIntent()).expect(204);
     const first = await ctx.prisma.siteTable.findFirstOrThrow({ where: { siteId: id } });
-    await staff().post(`/admin/sites/${id}/tables/1/qr`).expect(204);
+    await staff().post(`/admin/sites/${id}/tables/1/qr`).set(INTENT_KEY, freshIntent()).expect(204);
     const second = await ctx.prisma.siteTable.findFirstOrThrow({ where: { siteId: id } });
     expect(second.token).not.toBeNull();
     expect(second.token).not.toBe(first.token);
@@ -129,7 +131,7 @@ describe("admin/sites/:id/tables", () => {
     const id = await create("Village");
     await openRoom(id);
     await staff().put(`/admin/sites/${id}/tables`).send({ count: 1 }).expect(204);
-    await staff().post(`/admin/sites/${id}/tables/7/qr`).expect(404);
+    await staff().post(`/admin/sites/${id}/tables/7/qr`).set(INTENT_KEY, freshIntent()).expect(404);
     await staff().put(`/admin/sites/${id}/tables`).send({ count: 201 }).expect(400);
   });
 

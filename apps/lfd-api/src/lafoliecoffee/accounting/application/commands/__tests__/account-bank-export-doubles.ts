@@ -1,3 +1,4 @@
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import {
   MemoryAccountNumbering,
@@ -220,6 +221,7 @@ export function accountExportWorld() {
       w.events,
       uow,
       lock,
+      inMemoryIntents(),
     ),
     markImported: new MarkAccountBankExportImportedHandler(
       gesture.entities,

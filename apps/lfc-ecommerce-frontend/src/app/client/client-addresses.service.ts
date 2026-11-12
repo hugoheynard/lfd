@@ -18,6 +18,7 @@ import { AuthFacade } from '../auth/auth.facade';
 import { ClientActivation } from './client-activation.service';
 import { ClientContext, VISITOR } from './client-context.service';
 import { contextKeyed, type ContextKey, workspaceRequestOf } from './context-keyed/context-keyed';
+import { GestureIntents, withIntent } from './gesture-intents';
 
 /**
  * **Le carnet d'adresses du client**, tel que notre base le porte.
@@ -52,6 +53,8 @@ export class ClientAddresses {
   private readonly auth = inject(AuthFacade);
   private readonly context = inject(ClientContext);
   private readonly activation = inject(ClientActivation);
+  /** Les intentions des ajouts d'adresse, une par contenu saisi. */
+  private readonly intents = new GestureIntents();
 
   /** Avance à chaque réponse : la brique n'est pas un signal. */
   private readonly answered = signal(0);
@@ -130,11 +133,23 @@ export class ClientAddresses {
     return refusal;
   }
 
-  /** `POST /companies/:id/delivery-addresses` — même contrat que {@link saveBilling}. */
-  addDelivery(companyId: string, payload: DeliveryAddressPayload): Promise<string | null> {
-    return this.write(companyId, (headers) =>
-      this.http.post(`${this.url(companyId)}/delivery-addresses`, payload, { headers }),
+  /**
+   * `POST /companies/:id/delivery-addresses` — même contrat que {@link saveBilling}.
+   * Une fois par intention : la clé suit le contenu saisi tant que l'ajout n'a
+   * pas abouti — un double clic, ou un réessai après une coupure, n'ajoute pas
+   * deux adresses ; au succès, elle est oubliée.
+   */
+  async addDelivery(companyId: string, payload: DeliveryAddressPayload): Promise<string | null> {
+    const subject = `delivery:${companyId}:${JSON.stringify(payload)}`;
+    const refusal = await this.write(companyId, (headers) =>
+      this.http.post(`${this.url(companyId)}/delivery-addresses`, payload, {
+        headers: withIntent(headers, this.intents.keyFor(subject)),
+      }),
     );
+    if (refusal === null) {
+      this.intents.done(subject);
+    }
+    return refusal;
   }
 
   /** `PATCH /companies/:id/delivery-addresses/:addressId` — même contrat que {@link saveBilling}. */

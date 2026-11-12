@@ -24,6 +24,7 @@
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -92,6 +93,7 @@ async function aProductWithTwoPrices(suffix: string): Promise<{
 
   const created = await staff()
     .post(PRODUCTS)
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: { fr: `Croissant${suffix}` },
       kind: "daily",
@@ -108,6 +110,7 @@ async function aProductWithTwoPrices(suffix: string): Promise<{
 
   const added = await staff()
     .post(`${PRODUCTS}/${productId}/variants`)
+    .set(INTENT_KEY, freshIntent())
     .send({ name: { fr: "Boîte de 220 g" }, options: { poids: "220 g" } });
   expect(added.status).toBe(201);
   const variantId = jsonBody<{ id: string }>(added).id;

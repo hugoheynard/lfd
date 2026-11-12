@@ -1,3 +1,4 @@
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
@@ -100,6 +101,7 @@ export function world(payers: readonly PayerModeSegments[] = []) {
     w.clock,
     w.events,
     new DirectUnitOfWork(),
+    inMemoryIntents(),
   );
   const cancel = new CancelCollectionBatchHandler(
     new StepBatchLock(steps),

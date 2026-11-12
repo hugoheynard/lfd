@@ -6,6 +6,7 @@ import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
 import { AbandonCardIncreaseCommand } from "../revision/application/commands/abandon-card-increase.command.js";
 import { GetComplementPaymentQuery } from "../application/queries/get-complement-payment.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Le complément d'une hausse, côté client** (doc
@@ -37,6 +38,9 @@ export class OrderComplementController {
   /** Abandonner le complément : `204`, la commande reste telle quelle. */
   @Delete(":id/complement")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée, plus aucun complément n'attend de paiement et le geste refuse (409) avant tout appel au prestataire",
+  )
   async abandon(@CurrentUser() user: Principal, @Param("id") id: string): Promise<void> {
     await this.commands.execute<AbandonCardIncreaseCommand, void>(
       new AbandonCardIncreaseCommand(id, { kind: "customer", userId: user.userId }),

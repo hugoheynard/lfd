@@ -18,5 +18,10 @@ export class SendContactMessageCommand {
     readonly payload: ContactMessagePayload,
     readonly sender: ContactSender | null,
     readonly clientIp: string,
+    /**
+     * La clé d'intention de la page (`Idempotency-Key`) : un double envoi ne
+     * dépose ni deux demandes ni deux courriels, connecté ou visiteur.
+     */
+    readonly intentKey: string,
   ) {}
 }

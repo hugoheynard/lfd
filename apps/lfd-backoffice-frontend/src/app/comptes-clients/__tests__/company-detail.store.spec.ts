@@ -7,7 +7,11 @@ import { B2B_API_BASE } from '../../api/api-config';
 import { AdminCompaniesService } from '../admin-companies.service';
 import type { AdminCompanyDetail } from '../admin-company';
 import { AdminCompanyHierarchyService } from '../admin-company-hierarchy.service';
-import { CompanyDetailStore } from '../company-cache/company-detail.store';
+import {
+  COMPANY_DETAIL_MAX_ENTRIES,
+  CompanyDetailStore,
+} from '../company-cache/company-detail.store';
+import { CompanyWrites } from '../company-cache/company-writes';
 import { COMPANY_LIST_MAX_AGE_MS } from '../company-cache/company-list.store';
 import { companyWritesInterceptor } from '../company-cache/company-writes.interceptor';
 
@@ -118,5 +122,35 @@ describe('CompanyDetailStore', () => {
     http.expectOne(`${URL}/nope`).flush(null, { status: 404, statusText: 'Not Found' });
     await expect(first).resolves.toBeUndefined();
     await expect(store.get('nope')).resolves.toBeUndefined();
+  });
+  it('oublie la fiche la moins récemment servie au-delà de la borne', async () => {
+    const { store, http } = setup();
+    for (let index = 0; index < COMPANY_DETAIL_MAX_ENTRIES; index += 1) {
+      const read = store.get(`c${String(index)}`);
+      await serve(http, `c${String(index)}`, detail(`c${String(index)}`, 'X'));
+      await read;
+    }
+    // c0 resservie : elle repasse devant, c1 devient la plus ancienne.
+    await expect(store.get('c0')).resolves.toEqual(detail('c0', 'X'));
+    const extra = store.get('c-new');
+    await serve(http, 'c-new', detail('c-new', 'Y'));
+    await extra;
+
+    await expect(store.get('c0')).resolves.toEqual(detail('c0', 'X'));
+    const reread = store.get('c1');
+    await serve(http, 'c1', detail('c1', 'Z'));
+    await expect(reread).resolves.toEqual(detail('c1', 'Z'));
+  });
+
+  it('relit après un changement venu d’un autre poste (le veilleur)', async () => {
+    const { store, http } = setup();
+    const first = store.get('c1');
+    await serve(http, 'c1', detail('c1', 'Chez Léa'));
+    await first;
+
+    TestBed.inject(CompanyWrites).changedElsewhere();
+    const reread = store.get('c1');
+    await serve(http, 'c1', detail('c1', 'Chez Lou'));
+    await expect(reread).resolves.toEqual(detail('c1', 'Chez Lou'));
   });
 });

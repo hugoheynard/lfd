@@ -28,6 +28,7 @@ import {
 import { allergenReference } from "../src/pim/allergens/allergen-reference.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
 const stubAdminVerifier = {
@@ -620,6 +621,7 @@ describe("la fiche réglementaire se valide contre le référentiel EN BASE (D3)
     expect(family.status).toBe(201);
     const created = await staff()
       .post(PRODUCTS)
+      .set(INTENT_KEY, freshIntent())
       .send({
         name: { fr: "Croissant" },
         kind: "daily",

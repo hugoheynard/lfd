@@ -19,6 +19,10 @@ import {
 
 import { AdminCompanyHierarchyService } from '../../../comptes-clients/admin-company-hierarchy.service';
 import { NotifyService } from '../../../notify.service';
+import { GestureIntents } from '../../../shared/gesture-intents';
+
+/** Le sujet de l'intention : une seule création par panneau ouvert. */
+const CREATE_INTENT = 'create-sub-account';
 
 /** Charge d'ouverture : le principal sous lequel le sous-compte naît. */
 export interface SubAccountPanelData {
@@ -76,6 +80,11 @@ export class SubAccountPanel {
   private readonly notify = inject(NotifyService);
   private readonly router = inject(Router);
   private readonly ref = inject(FoldPanelRef<string>);
+  /**
+   * L'intention de créer : une clé tirée au premier clic, renvoyée jusqu'au
+   * succès — un double clic ne crée pas deux sous-comptes.
+   */
+  private readonly intents = new GestureIntents();
 
   readonly data = input.required<SubAccountPanelData>();
 
@@ -122,7 +131,12 @@ export class SubAccountPanel {
     this.submitting.set(true);
     this.refusal.set(null);
     try {
-      const id = await this.service.createSubAccount(this.data().parentId, this.payload());
+      const id = await this.service.createSubAccount(
+        this.data().parentId,
+        this.payload(),
+        this.intents.keyFor(CREATE_INTENT),
+      );
+      this.intents.done(CREATE_INTENT);
       this.notify.success(`Sous-compte créé sous ${this.data().parentName}. Complétez sa fiche.`);
       this.ref.close(id);
       void this.router.navigate(['/comptes-clients', id, 'informations']);

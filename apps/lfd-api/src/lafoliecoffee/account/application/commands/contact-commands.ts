@@ -28,6 +28,8 @@ export class AddCompanyContactCommand {
     readonly companyId: string,
     readonly details: ContactDetailsInput,
     readonly role: AssignableRole,
+    /** La clé d'intention de l'écran (`Idempotency-Key`) : un rejeu ne refait pas le geste. */
+    readonly intentKey: string,
   ) {}
 }
 

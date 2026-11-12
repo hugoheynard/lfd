@@ -1,3 +1,4 @@
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
@@ -22,6 +23,10 @@ import {
   roundWith,
 } from "./round-doubles.js";
 
+let intentCount = 0;
+/** Une clé d'intention neuve par geste voulu, comme l'écran. */
+const nextKey = (): string => `intent_${(intentCount += 1)}`;
+
 // Des jours comparés entre eux et à des retraits écrits ici — jamais à l'horloge.
 const DAY = "2030-03-12";
 const NOW = new Date(0);
@@ -38,7 +43,15 @@ function tools() {
 describe("OpenDeliveryRoundHandler", () => {
   function open(rounds: InMemoryDeliveryRounds, vehicles: InMemoryVehicles) {
     const { ids, clock, events, uow } = tools();
-    const handler = new OpenDeliveryRoundHandler(rounds, vehicles, ids, clock, events, uow);
+    const handler = new OpenDeliveryRoundHandler(
+      rounds,
+      vehicles,
+      ids,
+      clock,
+      events,
+      uow,
+      inMemoryIntents(),
+    );
     return { handler, events };
   }
 
@@ -50,10 +63,10 @@ describe("OpenDeliveryRoundHandler", () => {
     );
 
     const first = await handler.execute(
-      new OpenDeliveryRoundCommand({ day: DAY, vehicleId: "v_1" }),
+      new OpenDeliveryRoundCommand({ day: DAY, vehicleId: "v_1" }, "staff_1", nextKey()),
     );
     const second = await handler.execute(
-      new OpenDeliveryRoundCommand({ day: DAY, vehicleId: "v_1" }),
+      new OpenDeliveryRoundCommand({ day: DAY, vehicleId: "v_1" }, "staff_1", nextKey()),
     );
 
     expect([rounds.stored(first)?.passage, rounds.stored(second)?.passage]).toEqual([1, 2]);
@@ -65,6 +78,27 @@ describe("OpenDeliveryRoundHandler", () => {
     });
   });
 
+  /** Régression : un double clic sur « Ouvrir » ouvrait un second passage du véhicule. */
+  it("rejouée avec la même clé, rend la même tournée sans ouvrir de second passage", async () => {
+    const rounds = new InMemoryDeliveryRounds();
+    const { handler, events } = open(
+      rounds,
+      new InMemoryVehicles(vehicle("v_1", "Kangoo", "AB-123-CD")),
+    );
+    const command = new OpenDeliveryRoundCommand(
+      { day: DAY, vehicleId: "v_1" },
+      "staff_1",
+      nextKey(),
+    );
+
+    const first = await handler.execute(command);
+    const replayed = await handler.execute(command);
+
+    expect(replayed).toBe(first);
+    expect(rounds.saved).toHaveLength(1);
+    expect(events.factTypes()).toEqual(["delivery_round.opened"]);
+  });
+
   it("refuse un véhicule retiré avant ce jour, sans rien écrire", async () => {
     const retired = vehicle("v_1", "Kangoo", "AB-123-CD");
     retired.retire(new Date("2030-03-10T10:00:00.000Z"));
@@ -72,7 +106,9 @@ describe("OpenDeliveryRoundHandler", () => {
     const { handler, events } = open(rounds, new InMemoryVehicles(retired));
 
     await expect(
-      handler.execute(new OpenDeliveryRoundCommand({ day: DAY, vehicleId: "v_1" })),
+      handler.execute(
+        new OpenDeliveryRoundCommand({ day: DAY, vehicleId: "v_1" }, "staff_1", nextKey()),
+      ),
     ).rejects.toThrow(VehicleInactiveOnDayError);
     expect(rounds.saved).toEqual([]);
     expect(events.traced).toEqual([]);

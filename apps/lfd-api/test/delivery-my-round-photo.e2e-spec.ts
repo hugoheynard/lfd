@@ -27,6 +27,7 @@ import {
 import { forgetRoutingScene, seedLocatedDelivery } from "./delivery-routing-scene.js";
 import { MY_ROUND, seedDriverRole, staffWithRole } from "./delivery-driver-scene.js";
 import { photoOf, pngOf } from "./delivery-procedure-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const DAY = serviceDay();
 const POINT = { lat: 45.6, lng: 6.1 };
@@ -58,6 +59,7 @@ async function addPhotoStep(orderId: string): Promise<string> {
   const base = `/admin/companies/${order.companyId ?? ""}/delivery-addresses/${order.deliveryAddressId ?? ""}/procedure`;
   const response = await admin(ctx)
     .post(`${base}/steps`)
+    .set(INTENT_KEY, freshIntent())
     .field("title", "Le portail")
     .field("body", "")
     .attach("photo", PORTAIL, "porte.png")

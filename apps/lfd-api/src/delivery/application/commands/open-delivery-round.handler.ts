@@ -5,6 +5,7 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { ensureServiceDayNotPast } from "../../domain/services/composable-day.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
+import { CREATED_ID_REPLAY, OncePerIntent } from "../../../platform/intent/once-per-intent.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { DeliveryRound } from "../../domain/entities/delivery-round.js";
 import { DeliveryRoundOpenedEvent } from "../../domain/events/delivery-round.events.js";
@@ -18,6 +19,10 @@ import { OpenDeliveryRoundCommand } from "./open-delivery-round.command.js";
  * suivant de ce véhicule ce jour-là (Q13) ; deux ouvertures simultanées butent
  * sur l'unicité `(jour, véhicule, passage)` et la seconde est refusée.
  *
+ * **Une fois par intention** : un passage de plus est un ajout, et un double
+ * clic en ouvrirait deux. La clé de l'écran est scellée avec l'ouverture ; un
+ * rejeu de la même clé rend la même tournée.
+ *
  * @throws {VehicleNotFoundError} @throws {VehicleInactiveOnDayError}
  * @throws {InvalidServiceDayError} @throws {DeliveryRoundStaleError}
  */
@@ -30,9 +35,27 @@ export class OpenDeliveryRoundHandler implements ICommandHandler<OpenDeliveryRou
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: OpenDeliveryRoundCommand): Promise<string> {
+  execute(command: OpenDeliveryRoundCommand): Promise<string> {
+    const { day, vehicleId } = command.payload;
+    return this.intents.runSealed(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: "delivery.round.open",
+        subject: `${day}/${vehicleId}`,
+      },
+      CREATED_ID_REPLAY,
+      (seal) => this.open(command, seal),
+    );
+  }
+
+  private async open(
+    command: OpenDeliveryRoundCommand,
+    seal: (id: string) => Promise<void>,
+  ): Promise<string> {
     const { day, vehicleId } = command.payload;
     const at = this.clock.now();
     // Avant toute lecture : une journée passée ne s'ouvre plus (2026-10-26).
@@ -48,6 +71,7 @@ export class OpenDeliveryRoundHandler implements ICommandHandler<OpenDeliveryRou
       });
       await this.rounds.save(round);
       await this.events.publishTraced(new DeliveryRoundOpenedEvent(round));
+      await seal(round.id);
       return round.id;
     });
   }

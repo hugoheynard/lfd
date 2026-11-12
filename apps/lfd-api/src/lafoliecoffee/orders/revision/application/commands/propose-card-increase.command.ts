@@ -19,5 +19,7 @@ export class ProposeCardIncreaseCommand {
     readonly expectedRevision: number,
     readonly content: OrderContent,
     readonly expectedTotalCents: number,
+    /** La clé d'intention de l'écran : un double envoi ne prépare pas deux paiements. */
+    readonly intentKey: string,
   ) {}
 }

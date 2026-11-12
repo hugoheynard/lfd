@@ -41,6 +41,7 @@ import {
 } from "./e2e-harness.js";
 import { promotionTerms } from "./promotion-fixtures.js";
 import { cardProvidersOverride } from "./card-payments.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -105,6 +106,7 @@ function antiGaspi(over: Partial<PromotionTermsPayload> = {}): PromotionTermsPay
 async function poseSite(): Promise<string> {
   const response = await staff()
     .post("/admin/pickup-addresses")
+    .set(INTENT_KEY, freshIntent())
     .send({
       label: "Cœur de station",
       ligne1: "5 rue du Four",
@@ -164,7 +166,11 @@ async function guestPlacesForSlot(site: string, window: FulfillmentWindow): Prom
 
 describe("une promotion de 17 h à 19 h, au panier", () => {
   it("se pose et se relit telle quelle, la phrase du journal disant ses heures", async () => {
-    const posed = await staff().post("/admin/promotions").send(antiGaspi()).expect(201);
+    const posed = await staff()
+      .post("/admin/promotions")
+      .set(INTENT_KEY, freshIntent())
+      .send(antiGaspi())
+      .expect(201);
     const { id } = jsonBody<{ id: string }>(posed);
     const view = jsonBody<PromotionView>(await staff().get(`/admin/promotions/${id}`).expect(200));
 
@@ -174,7 +180,11 @@ describe("une promotion de 17 h à 19 h, au panier", () => {
 
   it("le devis la chiffre dans la plage, et dit qu'elle a pris fin après", async () => {
     const site = await poseSite();
-    await staff().post("/admin/promotions").send(antiGaspi()).expect(201);
+    await staff()
+      .post("/admin/promotions")
+      .set(INTENT_KEY, freshIntent())
+      .send(antiGaspi())
+      .expect(201);
     ctx.app.get(PricingMaterialsCache).invalidate();
 
     const inside = await quoteAt(site);
@@ -192,6 +202,7 @@ describe("une promotion de 17 h à 19 h, au panier", () => {
   it("refuse une promotion à heures « dans le prix affiché », en nommant le geste", async () => {
     const refused = await staff()
       .post("/admin/promotions")
+      .set(INTENT_KEY, freshIntent())
       .send(antiGaspi({ fulfillment: { kind: "displayed_price" } }))
       .expect(400);
 
@@ -203,6 +214,7 @@ describe("une promotion de 17 h à 19 h, au panier", () => {
   it("refuse une plage qui passe minuit", async () => {
     const refused = await staff()
       .post("/admin/promotions")
+      .set(INTENT_KEY, freshIntent())
       .send(
         antiGaspi({
           conditions: [
@@ -232,7 +244,11 @@ describe("une promotion de 17 h à 19 h, au panier", () => {
         },
       ],
     });
-    await staff().post("/admin/promotions").send(atHandover).expect(201);
+    await staff()
+      .post("/admin/promotions")
+      .set(INTENT_KEY, freshIntent())
+      .send(atHandover)
+      .expect(201);
     ctx.app.get(PricingMaterialsCache).invalidate();
     // Hors de la plage À LA COMMANDE : seul le créneau peut la déclencher.
     clock.set(todayAt("09:00"));

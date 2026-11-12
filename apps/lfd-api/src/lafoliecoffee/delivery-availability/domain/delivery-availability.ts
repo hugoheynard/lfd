@@ -74,4 +74,18 @@ export class DeliveryAvailability {
       input.author,
     );
   }
+
+  /**
+   * Le réglage posé diffère-t-il de `current` ? Un patch rejoué, ou qui
+   * redit l'état courant, ne change rien : ni écriture, ni fait, ni purge.
+   */
+  changes(current: DeliveryOpening): boolean {
+    return (
+      this.openToB2b !== current.openToB2b ||
+      this.openToB2c !== current.openToB2c ||
+      this.windowMode !== current.windowMode ||
+      this.deliveryMarginMinutes !== (current.deliveryMarginMinutes ?? null) ||
+      this.pickupMarginMinutes !== (current.pickupMarginMinutes ?? null)
+    );
+  }
 }

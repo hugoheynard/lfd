@@ -134,6 +134,7 @@ describe('ClientMandate', () => {
     await tick();
     const put = http.expectOne((r) => r.url.endsWith('/companies/cmp_1/mandate/proof'));
     expect(put.request.method).toBe('PUT');
+    expect(put.request.headers.get('Idempotency-Key')).toEqual(expect.any(String));
     const body = put.request.body;
     expect(body instanceof FormData ? body.get('file') : null).toBeInstanceOf(File);
     put.flush(null, { status: 204, statusText: 'No Content' });
@@ -159,6 +160,30 @@ describe('ClientMandate', () => {
 
     expect(await uploading).toBe('Le fichier doit être un PDF ou une image.');
     http.expectNone((r) => MANDATE_URL.test(r.url));
+  });
+
+  it('un réessai du même fichier après un refus garde la clé ; après un succès, elle est neuve', async () => {
+    const file = new File(['%PDF-1.7'], 'mandat-signe.pdf', { type: 'application/pdf' });
+    const keyOfNextPut = async (status: number): Promise<string | null> => {
+      const uploading = mandates.attachProof('cmp_1', file);
+      await tick();
+      const put = http.expectOne((r) => r.url.endsWith('/mandate/proof'));
+      const key = put.request.headers.get('Idempotency-Key');
+      put.flush(status === 204 ? null : { message: 'Panne.' }, { status, statusText: 'x' });
+      await tick();
+      if (status === 204) {
+        http.expectOne((r) => MANDATE_URL.test(r.url)).flush(DRAFT);
+      }
+      await uploading;
+      return key;
+    };
+
+    const failed = await keyOfNextPut(503);
+    const retried = await keyOfNextPut(204);
+    const next = await keyOfNextPut(204);
+
+    expect(retried).toBe(failed);
+    expect(next).not.toBe(retried);
   });
 
   it('lit les options enveloppées, et tient `null` pour « pas de RIB »', async () => {

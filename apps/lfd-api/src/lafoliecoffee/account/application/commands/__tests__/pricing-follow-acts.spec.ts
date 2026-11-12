@@ -26,6 +26,8 @@ import {
   RecordingPricingJournal,
   RecordingSiteMandates,
 } from "./hierarchy-doubles.js";
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 
 /**
  * **Le suivi du tarif va au journal des prix** (`sous-comptes.md`, S3) :
@@ -125,6 +127,7 @@ describe("le suivi du tarif, au journal des prix", () => {
       clock,
       new DirectUnitOfWork(),
       w.pricing,
+      inMemoryIntents(),
     ).execute(
       new CreateSubAccountCommand(
         "groupe",
@@ -139,6 +142,8 @@ describe("le suivi du tarif, au journal des prix", () => {
           follows: ["pricing"],
         },
         true,
+        "staff_1",
+        randomUUID(),
       ),
     );
 

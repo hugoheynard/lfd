@@ -26,6 +26,7 @@ import type {
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { prose } from "./legal-document-writes.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const PDF = Buffer.from("%PDF-1.7\n1 0 obj << >> endobj\n%%EOF", "latin1");
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]);
@@ -65,7 +66,10 @@ async function staffWith(key: string, grants: readonly RoleGrant[]): Promise<str
 }
 
 async function deposit(mention: string, bytes: Buffer, name = "cgv.pdf") {
-  return staff().post(`/admin/content/legal/${mention}/files`).attach("file", bytes, name);
+  return staff()
+    .post(`/admin/content/legal/${mention}/files`)
+    .set(INTENT_KEY, freshIntent())
+    .attach("file", bytes, name);
 }
 
 describe("le droit `lfc_legal` (lot 0)", () => {
@@ -95,6 +99,7 @@ describe("le droit `lfc_legal` (lot 0)", () => {
     await ctx
       .asSub(sub)
       .post("/admin/content/legal/salesTerms/files")
+      .set(INTENT_KEY, freshIntent())
       .attach("file", PDF, "cgv.pdf")
       .expect(403);
   });

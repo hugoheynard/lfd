@@ -26,6 +26,7 @@ import { CancelOwnAppointmentCommand } from "../application/commands/cancel-own-
 import { GetSlotsQuery } from "../application/queries/get-slots.query.js";
 import { ListMyAppointmentsQuery } from "../application/queries/list-my-appointments.query.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 
 /**
  * Surface **client** de la prise de rendez-vous : voir les créneaux, réserver,
@@ -63,9 +64,10 @@ export class AppointmentsController {
   async book(
     @CurrentUser() user: Principal,
     @Body(new ZodBody(bookAppointmentPayloadSchema)) payload: BookAppointmentPayload,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedAppointmentResponse> {
     const id = await this.commands.execute<BookAppointmentCommand, string>(
-      new BookAppointmentCommand(user.userId, user.email, companyIdsOf(user), payload),
+      new BookAppointmentCommand(user.userId, user.email, companyIdsOf(user), payload, intentKey),
     );
     return { id };
   }

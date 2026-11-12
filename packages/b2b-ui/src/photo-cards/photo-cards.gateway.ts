@@ -48,16 +48,25 @@ export abstract class PhotoCardsGateway<C extends PhotoCardView = PhotoCardView>
   /**
    * Ajoute une carte — du côté que le serveur a choisi ; rend son identifiant.
    *
-   * `thumbnail` n'arrive que si la politique de photo de l'usage en fabrique
-   * une ; un usage sans vignette l'ignore.
+   * `intentKey` part dans l'en-tête `Idempotency-Key` : l'éditeur la fabrique
+   * à l'ouverture du formulaire et la renvoie à chaque envoi, si bien qu'un
+   * double clic n'ajoute pas deux cartes. `thumbnail` n'arrive que si la
+   * politique de photo de l'usage en fabrique une ; un usage sans vignette
+   * l'ignore.
    */
-  abstract add(fields: PhotoCardFields, photo: Blob | null, thumbnail?: Blob): Promise<string>;
+  abstract add(
+    fields: PhotoCardFields,
+    photo: Blob | null,
+    intentKey: string,
+    thumbnail?: Blob,
+  ): Promise<string>;
 
-  /** Refait une carte : titre, texte, et ce qu'on fait de sa photo. */
+  /** Refait une carte : titre, texte, et ce qu'on fait de sa photo — une fois par intention. */
   abstract revise(
     cardId: string,
     fields: PhotoCardFields,
     change: PhotoCardPhotoChange,
+    intentKey: string,
   ): Promise<void>;
 
   /** Supprime une carte **définitivement**, photo comprise. */

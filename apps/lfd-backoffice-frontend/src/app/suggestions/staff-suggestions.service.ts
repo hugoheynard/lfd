@@ -16,6 +16,7 @@ import type {
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
+import { intentOptions } from '../shared/gesture-intents';
 
 /**
  * **Les suggestions décidées par le staff** — `/admin/suggestions`
@@ -31,8 +32,14 @@ export class StaffSuggestionsService {
     return firstValueFrom(this.http.get<readonly StaffSuggestionRuleView[]>(this.url()));
   }
 
-  create(payload: StaffSuggestionRulePayload): Promise<StaffSuggestionRuleIdResponse> {
-    return firstValueFrom(this.http.post<StaffSuggestionRuleIdResponse>(this.url(), payload));
+  /** Crée une règle, une fois par intention (`Idempotency-Key`). */
+  create(
+    payload: StaffSuggestionRulePayload,
+    intentKey: string,
+  ): Promise<StaffSuggestionRuleIdResponse> {
+    return firstValueFrom(
+      this.http.post<StaffSuggestionRuleIdResponse>(this.url(), payload, intentOptions(intentKey)),
+    );
   }
 
   /** La règle entière : un `PUT` remplace tout. */

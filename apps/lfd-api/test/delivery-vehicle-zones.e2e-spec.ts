@@ -29,6 +29,7 @@ import {
   seedDeparture,
   seedPlannableDelivery,
 } from "./delivery-routing-scene.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const DAY = serviceDay();
 
@@ -55,6 +56,7 @@ async function addVehicle(name: string, allowedZoneIds?: readonly string[]): Pro
   plateSeq += 1;
   const response = await admin(ctx)
     .post(VEHICLES)
+    .set(INTENT_KEY, freshIntent())
     .send({
       name,
       plate: `ZZ-${String(100 + plateSeq)}-ZZ`,
@@ -121,6 +123,7 @@ describe("la fiche d'un véhicule porte ses zones", () => {
   it("refuse une zone vide (400), sans rien écrire", async () => {
     await admin(ctx)
       .post(VEHICLES)
+      .set(INTENT_KEY, freshIntent())
       .send({ name: "Kangoo", plate: "ZZ-999-ZZ", allowedZoneIds: [""] })
       .expect(400);
     expect(await ctx.prisma.deliveryVehicle.count()).toBe(0);

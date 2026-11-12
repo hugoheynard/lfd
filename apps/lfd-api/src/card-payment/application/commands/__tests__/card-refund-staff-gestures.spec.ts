@@ -1,3 +1,5 @@
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+import { randomUUID } from "node:crypto";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import {
   CardRefundNotStoppedError,
@@ -130,7 +132,31 @@ describe("RetryCardRefundHandler", () => {
     seedPayment(h);
     seedRequest(h, { firstAttemptAt: null });
 
-    await new RetryCardRefundHandler(h.retrier).execute(new RetryCardRefundCommand("req_1"));
+    await new RetryCardRefundHandler(h.retrier, inMemoryIntents()).execute(
+      new RetryCardRefundCommand("req_1", "staff_compta", randomUUID()),
+    );
+
+    expect(h.store.request("req_1")?.generation).toBe(2);
+    expect(h.journal.types()).toEqual(["card_payment.retried"]);
+    expect(h.dispatch.afterCommit).toEqual(["req_1"]);
+  });
+});
+
+describe("RetryCardRefundHandler — une fois par intention", () => {
+  /**
+   * Régression : une demande à émettre déjà tentée accepte une relance à
+   * chaque clic — un double clic écrivait deux `card_payment.retried` et
+   * réveillait deux fois l'exécuteur.
+   */
+  it("la même clé ne relance rien de plus", async () => {
+    const h = refundHarness();
+    seedPayment(h);
+    seedRequest(h, { firstAttemptAt: null });
+    const handler = new RetryCardRefundHandler(h.retrier, inMemoryIntents());
+    const command = new RetryCardRefundCommand("req_1", "staff_compta", "cle-1");
+
+    await handler.execute(command);
+    await handler.execute(command);
 
     expect(h.store.request("req_1")?.generation).toBe(2);
     expect(h.journal.types()).toEqual(["card_payment.retried"]);

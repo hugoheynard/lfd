@@ -199,6 +199,24 @@ millisecondes, sur des gestes rares, faits par le staff, dont un doublon se
 voit dans l'annuaire. À fermer avant le lancement commercial. La déclaration
 d'un client par l'équipe s'écrit, elle, sous transaction depuis `c82028b72`.
 
+Ces trois routes portent `@AcceptedReplay("raison", "décidé par Hugo le 2026-11-12")`
+(`platform/shared/http/accepted-replay.decorator.ts`) : une case à part, que
+la porte liste à chaque exécution. L'invitation d'un membre du staff, elle,
+est rangée « par intention » par l'heuristique (limite ci-dessous).
+
+### La dette à zéro (2026-11-12)
+
+- Secret montré une fois (lien de mot de passe client et staff, déclaration et
+  rotation d'un abonné de la vitrine, complément par carte) : `runSealed` avec
+  `shownOnceReplay` (`platform/intent/shown-once-replay.ts`), qui ne garde
+  aucun secret ; un rejeu de la même clé reçoit un 409 qui nomme le geste et
+  la sortie, sans refaire l'effet.
+- « Nous écrire » public : clé fabriquée par la page, acteur littéral
+  `visitor:public`, sujet = empreinte de la clé et du contenu.
+- Une requête de relecture exécutée par la route (`XQuery`) ne compte plus
+  comme une commande non scellée (`linkIdentity`).
+- `write-idempotence-debt.json` est vide : toute route non rangée échoue.
+
 ### Limite connue de J0 (2026-11-12)
 
 L'heuristique « `run` admis si le handler n'écrit pas » ne lit que ce que le

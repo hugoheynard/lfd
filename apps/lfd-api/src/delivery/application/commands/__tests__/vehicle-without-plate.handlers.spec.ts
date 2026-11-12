@@ -1,6 +1,7 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { Vehicle } from "../../../domain/entities/vehicle.js";
 import { AddVehicleCommand } from "../add-vehicle.command.js";
@@ -13,6 +14,9 @@ import { CREATED, InMemoryVehicles, MeasuredVehiclesOver, vehicle } from "./flee
 
 /** La plaque est facultative depuis le 2026-10-14 : seul le nom est obligatoire. */
 const NOW = new Date(CREATED.getTime() + 3_600_000);
+let intentCount = 0;
+/** Une clé d'intention neuve par geste voulu, comme l'écran. */
+const nextKey = (): string => `intent_${(intentCount += 1)}`;
 
 function tools(): { clock: FixedClock; events: RecordingPublisher; uow: DirectUnitOfWork } {
   return {
@@ -36,9 +40,10 @@ describe("La flotte sans plaque", () => {
       clock,
       events,
       uow,
+      inMemoryIntents(),
     );
 
-    await handler.execute(new AddVehicleCommand({ name: "Fourgon neuf" }));
+    await handler.execute(new AddVehicleCommand({ name: "Fourgon neuf" }, "staff_1", nextKey()));
 
     expect(vehicles.saved[0]?.toState()).toMatchObject({ name: "Fourgon neuf", plate: null });
     expect(events.traced[0]?.journalFact().payload).toMatchObject({ plate: null });
@@ -47,9 +52,18 @@ describe("La flotte sans plaque", () => {
   it("deux véhicules sans plaque ne se disputent rien", async () => {
     const vehicles = new InMemoryVehicles(bare("v_1", "Fourgon A"));
     const { clock, events, uow } = tools();
-    const handler = new AddVehicleHandler(vehicles, new FixedIdGenerator(), clock, events, uow);
+    const handler = new AddVehicleHandler(
+      vehicles,
+      new FixedIdGenerator(),
+      clock,
+      events,
+      uow,
+      inMemoryIntents(),
+    );
 
-    await handler.execute(new AddVehicleCommand({ name: "Fourgon B", plate: "" }));
+    await handler.execute(
+      new AddVehicleCommand({ name: "Fourgon B", plate: "" }, "staff_1", nextKey()),
+    );
 
     expect(vehicles.all().map((one) => one.plate)).toEqual([null, null]);
   });

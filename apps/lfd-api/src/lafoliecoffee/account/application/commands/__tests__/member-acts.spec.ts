@@ -50,6 +50,8 @@ import {
   STREET,
 } from "./member-acts-doubles.js";
 import { silentGestures } from "./site-gesture-doubles.js";
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 
 /** Une correction réelle de l'adresse semée : la même charge rejouée ne change rien. */
 const CORRECTED = { ...DELIVERY, ligne2: "Bâtiment B" };
@@ -104,7 +106,8 @@ describe("les adresses, par le client", () => {
       uow,
       names,
       silentGestures(),
-    ).execute(new AddDeliveryAddressCommand("u1", "c1", DELIVERY));
+      inMemoryIntents(),
+    ).execute(new AddDeliveryAddressCommand("u1", "c1", DELIVERY, randomUUID()));
     await new UpdateDeliveryAddressHandler(
       member,
       addresses,
@@ -218,7 +221,8 @@ describe("les contacts, par le client", () => {
       uow,
       names,
       silentGestures(),
-    ).execute(new AddCompanyContactCommand("u1", "c1", details, "orders"));
+      inMemoryIntents(),
+    ).execute(new AddCompanyContactCommand("u1", "c1", details, "orders", randomUUID()));
     await new UpdateCompanyContactHandler(
       member,
       book,

@@ -13,5 +13,7 @@ export class AttachMyCompanyMandateProofCommand {
     readonly companyId: string,
     readonly fileName: string,
     readonly bytes: Buffer,
+    /** La clé d'intention de l'écran : un second envoi ne redépose rien. */
+    readonly intentKey: string,
   ) {}
 }

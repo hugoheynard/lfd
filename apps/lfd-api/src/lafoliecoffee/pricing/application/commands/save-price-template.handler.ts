@@ -5,7 +5,7 @@ import { PriceTemplate } from "../../domain/entities/price-template.js";
 import { PriceTemplateRepository } from "../../domain/ports/price-template.repository.js";
 import { PriceTemplateNotFoundError } from "../../domain/pricing-errors.js";
 import { SaleReferenceReader } from "../../domain/ports/sale-reference.reader.js";
-import { assertOnSale } from "./sale-reference-support.js";
+import { type PriceTemplateDraft, priceTemplateDraftOf } from "./price-template-draft.js";
 import { SavePriceTemplateCommand } from "./save-price-template.command.js";
 
 @CommandHandler(SavePriceTemplateCommand)
@@ -17,24 +17,7 @@ export class SavePriceTemplateHandler implements ICommandHandler<SavePriceTempla
   ) {}
 
   async execute(command: SavePriceTemplateCommand): Promise<string> {
-    // Un gabarit est une mercuriale en attente : la faute de frappe se dit ici,
-    // pas le jour où on l'applique à un client (L5).
-    await assertOnSale(
-      this.references,
-      command.payload.lines.map((line) => line.sku),
-      "pro",
-    );
-    const draft = {
-      kind: command.payload.kind,
-      label: command.payload.label,
-      lines: command.payload.lines.map((line) => ({
-        sku: line.sku,
-        tiers: line.tiers,
-        // Recopié tel quel : le volume prévu accompagne la grille, il ne change
-        // aucun prix — `templateToRules` ne le lit même pas.
-        plannedVolume: line.plannedVolume,
-      })),
-    };
+    const draft = await priceTemplateDraftOf(this.references, command.payload);
     const template = await this.resolve(command.id, draft, command.staffUserId);
     await this.templates.save(template);
     return template.id;
@@ -47,7 +30,7 @@ export class SavePriceTemplateHandler implements ICommandHandler<SavePriceTempla
    */
   private async resolve(
     id: string | null,
-    draft: Parameters<typeof PriceTemplate.compose>[1],
+    draft: PriceTemplateDraft,
     staffUserId: string,
   ): Promise<PriceTemplate> {
     if (id === null) {

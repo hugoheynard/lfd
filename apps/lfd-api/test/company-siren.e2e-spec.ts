@@ -83,6 +83,7 @@ describe("création", () => {
     const created = await ctx
       .asSub(SUB)
       .post("/companies")
+      .set(INTENT_KEY, freshIntent())
       .send({ enseigne: "Le Comptoir", siret: "812 456 788 00023" })
       .expect(201);
 

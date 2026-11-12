@@ -19,6 +19,10 @@ export abstract class CardInvoiceOutcomes {
   /** Dans la transaction de l'émission : la facture et son issue partent ensemble. */
   abstract recordIssued(key: CardInvoiceOutcomeKey, invoiceId: string): Promise<void>;
 
-  /** Le refus en clair ; remplace un refus antérieur de la même commande. */
-  abstract recordBlocked(key: CardInvoiceOutcomeKey, message: string): Promise<void>;
+  /**
+   * Le refus en clair ; remplace un refus antérieur de la même commande.
+   * Rend `false` quand le même refus était déjà rangé : rien n'a changé, et
+   * le journal ne le redit pas (un « Réessayer » rejoué n'écrit aucun fait).
+   */
+  abstract recordBlocked(key: CardInvoiceOutcomeKey, message: string): Promise<boolean>;
 }

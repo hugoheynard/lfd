@@ -73,6 +73,7 @@ async function site(label: string): Promise<string> {
   return jsonBody<CreatedPickupResponse>(
     await staff()
       .post("/admin/pickup-addresses")
+      .set(INTENT_KEY, freshIntent())
       .send({
         label,
         ligne1: "5 rue du Four",
@@ -106,6 +107,7 @@ async function scene(): Promise<Scene> {
 async function poseAt(pickupId: string): Promise<void> {
   await staff()
     .post("/admin/promotions")
+    .set(INTENT_KEY, freshIntent())
     .send({
       internalName: "Retrait au point",
       label: { fr: "Remise retrait", en: null, it: null },

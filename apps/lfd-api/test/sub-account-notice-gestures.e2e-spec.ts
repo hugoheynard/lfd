@@ -30,6 +30,7 @@ import {
   recordOf,
   type NoticeScene,
 } from "./sub-account-notice-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const TEMPLATE = "customer.sub-account-gesture";
 
@@ -97,6 +98,7 @@ async function reason(): Promise<string> {
   const response = await ctx
     .asSub(E2E_STAFF_SUB)
     .post("/admin/request-reasons")
+    .set(INTENT_KEY, freshIntent())
     .send({
       kind: "order_problem",
       label: { fr: "Produit abîmé", en: "Damaged product", it: "" },
@@ -114,6 +116,7 @@ async function report(s: NoticeScene, orderId: string): Promise<void> {
   await ctx
     .asSub(s.housekeeper)
     .post(`/me/orders/${orderId}/problems`)
+    .set(INTENT_KEY, freshIntent())
     .set(WORKSPACE_HEADER, s.site)
     .field("reasonId", await reason())
     .field("message", "Le pain était écrasé.")

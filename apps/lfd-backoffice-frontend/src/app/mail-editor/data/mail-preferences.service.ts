@@ -11,6 +11,7 @@ import type {
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../../api/api-config';
+import { intentOptions } from '../../shared/gesture-intents';
 import { mailPreferenceQuery, type MailPreferenceFilters } from '../rules/mail-preference-labels';
 
 const BASE = `${B2B_API_BASE}/admin/mail/preferences`;
@@ -44,16 +45,22 @@ export class MailPreferencesService {
   }
 
   /** Révèle l'adresse (inscrit au journal, vaut 5 minutes), puis la lit. */
-  async revealRecipient(id: string): Promise<MailPreferenceRecipientView> {
+  async revealRecipient(id: string, intentKey: string): Promise<MailPreferenceRecipientView> {
     const at = `${BASE}/${encodeURIComponent(id)}`;
-    await firstValueFrom(this.http.post<unknown>(`${at}/recipient-reveal`, null));
+    await firstValueFrom(
+      this.http.post<unknown>(`${at}/recipient-reveal`, null, intentOptions(intentKey)),
+    );
     return firstValueFrom(this.http.get<MailPreferenceRecipientView>(`${at}/recipient`));
   }
 
   /** Cherche les lignes d'une adresse (dans le CORPS), puis lit le résultat figé. */
-  async searchByAddress(address: string): Promise<MailPreferenceSearchView> {
+  async searchByAddress(address: string, intentKey: string): Promise<MailPreferenceSearchView> {
     const { id } = await firstValueFrom(
-      this.http.post<MailPreferenceSearchCreatedView>(`${BASE}/searches`, { address }),
+      this.http.post<MailPreferenceSearchCreatedView>(
+        `${BASE}/searches`,
+        { address },
+        intentOptions(intentKey),
+      ),
     );
     return firstValueFrom(
       this.http.get<MailPreferenceSearchView>(`${BASE}/searches/${encodeURIComponent(id)}`),

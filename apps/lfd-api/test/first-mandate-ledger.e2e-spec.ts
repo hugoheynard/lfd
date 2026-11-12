@@ -20,6 +20,7 @@ import { LegalEntityRepository } from "../src/lafoliecoffee/accounting/domain/po
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /** Le RIB d'un client, complet pour un mandat interentreprises. */
 const RIB = {
@@ -75,6 +76,7 @@ const staff = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);
 async function declareIssuer(): Promise<string> {
   const response = await staff()
     .post("/admin/accounting/legal-entities")
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: "Crazeativity",
       legalForm: "SAS",

@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 import { httpErrorMessage } from '@lfd/endpoints';
 
+import { GestureIntents } from '../shared/gesture-intents';
 import type { OrderLists } from './delivery-rounds';
 import { DeliveryRoundsService } from './delivery-rounds.service';
 import { POOL_KEY } from './rounds-board-model';
@@ -26,6 +27,8 @@ export const CONFLICT = 409;
 export class RoundsDayWriter {
   private readonly rounds = inject(DeliveryRoundsService);
   private readonly day = inject(RoundsDay);
+  /** Ouvrir un passage est un ajout : une clé par véhicule et par jour, gardée jusqu'au succès. */
+  private readonly openIntents = new GestureIntents();
 
   /** Le dernier refus du serveur — la composition reste à l'écran. */
   readonly refusal = signal<string | null>(null);
@@ -157,10 +160,12 @@ export class RoundsDayWriter {
   }
 
   openRound(vehicleId: string): Promise<boolean> {
-    return this.write(
-      () => this.rounds.open({ day: this.day.day(), vehicleId }),
-      'La tournée n’a pas pu être ouverte.',
-    );
+    const day = this.day.day();
+    const subject = `${day}/${vehicleId}`;
+    return this.write(async () => {
+      await this.rounds.open({ day, vehicleId }, this.openIntents.keyFor(subject));
+      this.openIntents.done(subject);
+    }, 'La tournée n’a pas pu être ouverte.');
   }
 
   /** Affecter un livreur (MT-D2) ; une tournée partie est refusée par le serveur, qui le dit. */

@@ -29,10 +29,13 @@ export class CardRefundRetrier {
   ) {}
 
   /**
+   * `seal` est appelé dans la transaction de la relance : l'intention d'un
+   * geste de l'équipe y est résolue avec le fait qu'elle écrit.
+   *
    * @throws {CardRefundRequestNotFoundError} demande inconnue.
    * @throws {CardRefundRetryRefusedError} la règle de « Relancer » la refuse.
    */
-  retry(requestId: string): Promise<void> {
+  retry(requestId: string, seal: () => Promise<void> = NO_SEAL): Promise<void> {
     return this.uow.run(async () => {
       const paymentId = await this.requests.paymentOf(requestId);
       const locked = paymentId === null ? null : await this.scope.lock(paymentId);
@@ -46,7 +49,11 @@ export class CardRefundRetrier {
       const effects = new RefundEffects();
       effects.journal((label) => retriedFact(request, label));
       await this.effects.flush(locked, effects);
+      await seal();
       this.dispatch.afterCommitFor(requestId);
     });
   }
 }
+
+/** Une relance sans intention à sceller (le port `CardRefunds.retry`). */
+const NO_SEAL = (): Promise<void> => Promise.resolve();

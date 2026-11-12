@@ -23,6 +23,7 @@ import { CustomerRole } from "../src/platform/database/client/client.js";
 import { attachTo, createCompany, createUser, markDelivered } from "./factories.js";
 import { pickupSite, placeOrder } from "./order-factory.js";
 import { storageKeys } from "./storage.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /** SIREN dont la clé de Luhn est bonne : un SIREN inventé se fait refuser. */
 const SIREN = "552100554";
@@ -96,6 +97,7 @@ function declaration(siren = SIREN): Record<string, unknown> {
 async function declare(siren = SIREN): Promise<string> {
   const response = await staff()
     .post("/admin/accounting/legal-entities")
+    .set(INTENT_KEY, freshIntent())
     .send(declaration(siren))
     .expect(201);
   return jsonBody<{ id: string }>(response).id;
@@ -122,12 +124,17 @@ describe("Entité juridique — déclaration", () => {
     // vient de l'INDEX, pas d'une relecture applicative : c'est ce qui le rend
     // insensible à la concurrence — et la plateforme traduit déjà la violation
     // d'unicité en 409, sans qu'on ait à la rattraper ici.
-    await staff().post("/admin/accounting/legal-entities").send(declaration()).expect(409);
+    await staff()
+      .post("/admin/accounting/legal-entities")
+      .set(INTENT_KEY, freshIntent())
+      .send(declaration())
+      .expect(409);
   });
 
   it("refuse un SIREN dont la clé est fausse, en 400 et sans rien écrire", async () => {
     await staff()
       .post("/admin/accounting/legal-entities")
+      .set(INTENT_KEY, freshIntent())
       .send(declaration("552100555"))
       .expect(400);
 
@@ -890,6 +897,7 @@ describe("Entité juridique — le logo", () => {
     const bytes = png(256, 256);
     await staff()
       .post(`/admin/accounting/legal-entities/${id}/logo`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", bytes, "logo.png")
       .expect(204);
 
@@ -921,6 +929,7 @@ describe("Entité juridique — le logo", () => {
 
     const refusal = await staff()
       .post(`/admin/accounting/legal-entities/${id}/logo`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", jpeg(4000, 100), "banniere.jpg")
       .expect(400);
 
@@ -940,6 +949,7 @@ describe("Entité juridique — le logo", () => {
 
     await staff()
       .post(`/admin/accounting/legal-entities/${id}/logo`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", Buffer.from("%PDF-1.4\nrien d'une image", "latin1"), {
         filename: "logo.png",
         contentType: "image/png",
@@ -954,6 +964,7 @@ describe("Entité juridique — le logo", () => {
 
     const refusal = await staff()
       .post(`/admin/accounting/legal-entities/${id}/logo`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", png(220, 220), "logo.png")
       .expect(400);
 
@@ -971,6 +982,7 @@ describe("Entité juridique — le logo", () => {
     const id = await declare();
     await staff()
       .post(`/admin/accounting/legal-entities/${id}/logo`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", png(256, 256), "logo.png")
       .expect(204);
 
@@ -993,10 +1005,12 @@ describe("Entité juridique — le logo", () => {
 
     await staff()
       .post(`/admin/accounting/legal-entities/${id}/logo`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", png(256, 256), "logo.png")
       .expect(204);
     await staff()
       .post(`/admin/accounting/legal-entities/${id}/logo`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", png(400, 400), "autre.png")
       .expect(204);
 
@@ -1007,6 +1021,7 @@ describe("Entité juridique — le logo", () => {
     const id = await declare();
     await staff()
       .post(`/admin/accounting/legal-entities/${id}/logo`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", png(256, 256), "logo.png")
       .expect(204);
 
@@ -1042,6 +1057,7 @@ describe("Entité juridique — le logo", () => {
 
     await staff()
       .post(`/admin/accounting/legal-entities/${id}/logo`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", png(256, 256), "logo.png")
       .expect(204);
 

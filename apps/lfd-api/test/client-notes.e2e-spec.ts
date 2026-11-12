@@ -29,6 +29,7 @@ import {
 import { photoOf, refusalOf } from "./delivery-procedure-scene.js";
 import { bootstrapE2e, E2E_STAFF_ID, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 let ctx: E2eContext;
 let companyId: string;
@@ -102,6 +103,7 @@ describe("le carnet, de bout en bout", () => {
 
     await admin()
       .patch(`${notes}/${noteId}`)
+      .set(INTENT_KEY, freshIntent())
       .field("title", "Visite refaite")
       .attach("photo", OTHER_PHOTO, "note.png")
       .attach("thumbnail", OTHER_THUMBNAIL, "vignette.png")
@@ -114,6 +116,7 @@ describe("le carnet, de bout en bout", () => {
 
     await admin()
       .patch(`${notes}/${noteId}`)
+      .set(INTENT_KEY, freshIntent())
       .field("title", "Visite refaite")
       .field("removePhoto", "true")
       .expect(204);
@@ -169,6 +172,7 @@ describe("les refus", () => {
   it("refuse une photo sans vignette, sans rien ranger (400)", async () => {
     const refused = await admin()
       .post(notes)
+      .set(INTENT_KEY, freshIntent())
       .field("title", "Visite")
       .attach("photo", PHOTO, "note.png")
       .expect(400);
@@ -185,6 +189,7 @@ describe("les refus", () => {
     const heavy = Buffer.concat([THUMBNAIL, Buffer.alloc(60 * 1024)]);
     const refused = await admin()
       .post(notes)
+      .set(INTENT_KEY, freshIntent())
       .field("title", "Visite")
       .attach("photo", PHOTO, "note.png")
       .attach("thumbnail", heavy, "vignette.png")
@@ -197,7 +202,11 @@ describe("les refus", () => {
     for (let index = 0; index < 50; index += 1) {
       await addNote(admin(), companyId, `Note ${index}`, null);
     }
-    const full = await admin().post(notes).field("title", "De trop").expect(409);
+    const full = await admin()
+      .post(notes)
+      .set(INTENT_KEY, freshIntent())
+      .field("title", "De trop")
+      .expect(409);
     expect(refusalOf(full)).toEqual({
       code: "client_notes.notebook.full",
       message:
@@ -215,7 +224,7 @@ describe("les refus", () => {
     });
     const unknown = notesOf("01JUNKNOWNCOMPANY000000000");
     await admin().get(unknown).expect(404);
-    await admin().post(unknown).field("title", "x").expect(404);
+    await admin().post(unknown).set(INTENT_KEY, freshIntent()).field("title", "x").expect(404);
     expect(await ctx.prisma.clientNotebook.count()).toBe(0);
   });
 });

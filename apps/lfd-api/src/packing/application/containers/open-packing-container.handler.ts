@@ -2,6 +2,7 @@ import type { OpenPackingContainer } from "@lfd/contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
+import { CREATED_ID_REPLAY, OncePerIntent } from "../../../platform/intent/once-per-intent.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { Clock } from "../../../platform/time/clock.js";
@@ -36,6 +37,10 @@ import { holdArrestedPlan } from "../arrested-plan-support.js";
  *
  * Rend l'identifiant du contenant ; le client relit le poste.
  *
+ * **Une fois par intention** : un contenant de plus est un ajout, et un double
+ * clic en ouvrirait deux (et déclarerait deux bacs). La clé de l'écran est
+ * scellée dans la même unité de travail ; un rejeu rend le même contenant.
+ *
  * @throws {HalfSharingDisabledError} @throws {PackingOrderNotDrawnYetError} @throws {PackedOrderSealedError}
  * @throws {ContainersCountedError} @throws {ContainerCeilingReachedError}
  *   et les refus de la livraison pour un bac.
@@ -54,9 +59,26 @@ export class OpenPackingContainerHandler implements ICommandHandler<
     private readonly uow: UnitOfWork,
     private readonly settings: PackingSettingsReader,
     private readonly plan: ArrestedPlanHold,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: OpenPackingContainerCommand): Promise<string> {
+  execute(command: OpenPackingContainerCommand): Promise<string> {
+    return this.intents.runSealed(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: "packing.open",
+        subject: command.orderId,
+      },
+      CREATED_ID_REPLAY,
+      (seal) => this.open(command, seal),
+    );
+  }
+
+  private open(
+    command: OpenPackingContainerCommand,
+    seal: (id: string) => Promise<void>,
+  ): Promise<string> {
     return this.uow.run(async () => {
       await holdArrestedPlan(this.plan, command.serviceDay);
       const sheet = await lockedSheet(this.sheets, command.serviceDay, command.orderId);
@@ -80,6 +102,7 @@ export class OpenPackingContainerHandler implements ICommandHandler<
           bin === null ? "bag" : "bin",
         ),
       );
+      await seal(id);
       return id;
     });
   }

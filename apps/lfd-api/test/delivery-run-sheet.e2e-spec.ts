@@ -34,6 +34,7 @@ import { grantAccount, placeByStaff } from "./staff-late-order.js";
 import { pngOf } from "./delivery-procedure-scene.js";
 import { addVehicle, assign, openRound } from "./delivery-rounds-scene.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const OWNER = "auth0|run-sheet-owner";
 const OTHER_OWNER = "auth0|run-sheet-other";
@@ -127,6 +128,7 @@ async function addStep(
   const pending = ctx
     .asSub(sub)
     .post(`/companies/${companyId}/delivery-addresses/${addressId}/procedure/steps`)
+    .set(INTENT_KEY, freshIntent())
     .field("title", title)
     .field("body", "");
   await (photo === null ? pending : pending.attach("photo", photo, "portail.png")).expect(201);

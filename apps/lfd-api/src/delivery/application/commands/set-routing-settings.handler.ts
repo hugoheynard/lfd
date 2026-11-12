@@ -44,6 +44,10 @@ export class SetRoutingSettingsHandler implements ICommandHandler<SetRoutingSett
       const before = await this.reader.current();
       const base = before === null ? RoutingSettings.DEFAULTS : before.values();
       const next = RoutingSettings.define(withDeprecatedFields(command.payload, base));
+      // Rejouer le geste ne change rien : ni écriture, ni fait au journal.
+      if (before?.equals(next) === true) {
+        return;
+      }
       const types = await this.catalog.listTypes();
       ensureDefaultContainerInService(
         next.defaultContainer,

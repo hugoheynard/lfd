@@ -25,6 +25,8 @@ import {
   InMemorySiteTables,
   storedSite,
 } from "./site-doubles.js";
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 
 /** Les rôles d'un site neuf, salle ouverte ou non. */
 function rolesWith(eatIn: boolean) {
@@ -102,13 +104,16 @@ describe("GenerateSiteTableQrHandler / RemoveSiteTableQrHandler", () => {
       new FixedClock(NOW),
       events,
       new DirectUnitOfWork(),
+      inMemoryIntents(),
     );
   }
 
   it("tire le jeton du port d'identifiants, date le QR, journalise le NUMÉRO seul", async () => {
     const tables = gridOf(2);
     const events = new RecordingPublisher();
-    await generator(tables, events).execute(new GenerateSiteTableQrCommand("site_village", 2));
+    await generator(tables, events).execute(
+      new GenerateSiteTableQrCommand("site_village", 2, "staff_1", randomUUID()),
+    );
     expect(tables.stateOf("site_village")?.tables[1]).toEqual({
       number: 2,
       token: "tok_000001",
@@ -120,11 +125,25 @@ describe("GenerateSiteTableQrHandler / RemoveSiteTableQrHandler", () => {
     expect(JSON.stringify(payload)).not.toContain("tok_");
   });
 
+  /** Régression : un double clic tirait deux QR, et le premier affiché ne valait déjà plus. */
+  it("rejouée sous la même clé, ne tire pas un second QR", async () => {
+    const tables = gridOf(2);
+    const events = new RecordingPublisher();
+    const handler = generator(tables, events);
+    const key = randomUUID();
+
+    await handler.execute(new GenerateSiteTableQrCommand("site_village", 2, "staff_1", key));
+    await handler.execute(new GenerateSiteTableQrCommand("site_village", 2, "staff_1", key));
+
+    expect(tables.stateOf("site_village")?.tables[1]?.token).toBe("tok_000001");
+    expect(events.factTypes()).toEqual(["pickup_address.table_qr_generated"]);
+  });
+
   it("refuse une table qui n'existe pas", async () => {
     const tables = gridOf(1);
     await expect(
       generator(tables, new RecordingPublisher()).execute(
-        new GenerateSiteTableQrCommand("site_village", 5),
+        new GenerateSiteTableQrCommand("site_village", 5, "staff_1", randomUUID()),
       ),
     ).rejects.toBeInstanceOf(SiteTableNotFoundError);
     expect(tables.saved).toEqual([]);
@@ -133,7 +152,7 @@ describe("GenerateSiteTableQrHandler / RemoveSiteTableQrHandler", () => {
   it("retire le QR et le journalise", async () => {
     const tables = gridOf(1);
     await generator(tables, new RecordingPublisher()).execute(
-      new GenerateSiteTableQrCommand("site_village", 1),
+      new GenerateSiteTableQrCommand("site_village", 1, "staff_1", randomUUID()),
     );
     const events = new RecordingPublisher();
     await new RemoveSiteTableQrHandler(eatInSite(), tables, events, new DirectUnitOfWork()).execute(

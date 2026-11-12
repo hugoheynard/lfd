@@ -59,6 +59,7 @@ const staff = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);
 async function poseNamedPromotion(): Promise<void> {
   await staff()
     .post("/admin/promotions")
+    .set(INTENT_KEY, freshIntent())
     .send({
       internalName: "Folie Coffee",
       label: { fr: "Offre Folie Coffee", en: null, it: null },

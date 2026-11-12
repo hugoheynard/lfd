@@ -16,6 +16,7 @@ import { UploadKbisCommand } from "../../src/lafoliecoffee/account/application/c
 import { customer, SEED_STAFF, SYSTEM, type SeedHarness } from "./harness.js";
 import { persona } from "./personas.js";
 import type { VerifiedToken } from "../../src/platform/auth/principal.js";
+import { randomUUID } from "node:crypto";
 
 /**
  * Phase **activation** : déclare des sociétés (propriétaires dédiés, index décalé)
@@ -115,7 +116,7 @@ async function declare(
   try {
     return await harness.runAt(at, customer(ownerId), () =>
       harness.commands.execute<CreateCompanyCommand, string>(
-        new CreateCompanyCommand(ownerId, raisonSociale, "", "SAS", siret, "", ""),
+        new CreateCompanyCommand(ownerId, raisonSociale, "", "SAS", siret, "", "", randomUUID()),
       ),
     );
   } catch {
@@ -156,7 +157,7 @@ async function advancePieces(
   if (depth >= 2) {
     await step(() =>
       harness.commands.execute<UploadKbisCommand, void>(
-        new UploadKbisCommand(ownerId, companyId, "kbis.pdf", PDF),
+        new UploadKbisCommand(ownerId, companyId, "kbis.pdf", PDF, randomUUID()),
       ),
     );
   }
@@ -170,7 +171,7 @@ async function advancePieces(
   if (depth >= 4) {
     await step(() =>
       harness.commands.execute<AddDeliveryAddressCommand, void>(
-        new AddDeliveryAddressCommand(ownerId, companyId, deliveryPayload(who)),
+        new AddDeliveryAddressCommand(ownerId, companyId, deliveryPayload(who), randomUUID()),
       ),
     );
   }

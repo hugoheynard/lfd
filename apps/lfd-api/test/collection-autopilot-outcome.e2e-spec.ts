@@ -20,6 +20,7 @@ import {
   staff,
   useCollectionAutopilotScene,
 } from "./collection-autopilot-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 useCollectionAutopilotScene();
 
@@ -78,7 +79,11 @@ describe("la constitution automatique (PA3)", () => {
       outcome: "missed",
     });
 
-    await staff().post(`${BASE}/batches`).send({ legalEntityId: id }).expect(201);
+    await staff()
+      .post(`${BASE}/batches`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ legalEntityId: id })
+      .expect(201);
     const next = cycleToConstitute(new Date(closesAt.getTime() + 35 * DAY_MS), null).closesAt;
     clock.set(new Date(next.getTime() + 2 * HOUR_MS));
 

@@ -18,6 +18,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const ACTIVE = "auth0|contact-info-active";
 const PENDING = "auth0|contact-info-pending";
@@ -73,6 +74,7 @@ async function seedCards(): Promise<void> {
   for (const [index, [audience, number]] of phones.entries()) {
     await staff()
       .post("/admin/contact/phones")
+      .set(INTENT_KEY, freshIntent())
       .send({
         label: { fr: audience, en: "", it: "" },
         audience,

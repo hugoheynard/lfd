@@ -30,6 +30,7 @@ import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser, markDelivered } from "./factories.js";
 import { pickupSite, placeOrder } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 export const DAY_MS = 24 * 60 * 60 * 1000;
 export const ICS = "FR72ZZZ123456";
@@ -81,6 +82,7 @@ export function staff(): ReturnType<E2eContext["asSub"]> {
 export async function collectingEntity(): Promise<string> {
   const response = await staff()
     .post("/admin/accounting/legal-entities")
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: "La Folie Douce",
       legalForm: "SAS",
@@ -181,6 +183,7 @@ export async function orderOf(companyId: string): Promise<{ id: string; totalCen
 export async function constitute(entityId: string): Promise<string> {
   const response = await staff()
     .post(`${BASE}/batches`)
+    .set(INTENT_KEY, freshIntent())
     .send({ legalEntityId: entityId })
     .expect(201);
   await ctx.drain();

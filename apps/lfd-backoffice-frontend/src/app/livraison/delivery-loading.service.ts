@@ -13,6 +13,7 @@ import type {
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
+import { intentOptions } from '../shared/gesture-intents';
 
 const BASE = `${B2B_API_BASE}/admin/delivery`;
 /** Les bacs DÉCLARÉS — `admin/delivery/bins` est le catalogue des types (tranche A). */
@@ -94,15 +95,18 @@ export class DeliveryLoadingService {
   /**
    * Déclarer `count` bacs ENTIERS pour un transfert (lot T3, Q-T4 révisée) :
    * les sacs des commandes du site vont dedans. Sous `delivery_loading:write`.
+   * `intentKey` : la clé du geste — un double clic ne déclare qu'une fois.
    */
   declareTransferBins(
     transferId: string,
     payload: DeclareTransferBinsPayload,
+    intentKey: string,
   ): Promise<DeclaredTransferBinsView> {
     return firstValueFrom(
       this.http.post<DeclaredTransferBinsView>(
         `${BASE}/loading/transfers/${id(transferId)}/bins`,
         payload,
+        intentOptions(intentKey),
       ),
     );
   }

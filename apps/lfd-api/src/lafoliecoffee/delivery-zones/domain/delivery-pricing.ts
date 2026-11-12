@@ -48,6 +48,34 @@ export class DeliveryPricing {
     });
     return new DeliveryPricing(terms, input.at, input.author);
   }
+
+  /**
+   * Le réglage posé diffère-t-il de `current` ? Un patch rejoué, ou qui
+   * redit l'état courant, ne change rien : ni écriture, ni fait, ni purge.
+   */
+  changes(current: DeliveryPricingTerms): boolean {
+    return (
+      !sameAudienceTerms(this.terms.b2b, current.b2b) ||
+      !sameAudienceTerms(this.terms.b2c, current.b2c)
+    );
+  }
+}
+
+function sameAudienceTerms(left: DeliveryAudienceTerms, right: DeliveryAudienceTerms): boolean {
+  return (
+    left.freeDeliveryThresholdCents === right.freeDeliveryThresholdCents &&
+    sameFee(left.fee, right.fee)
+  );
+}
+
+function sameFee(left: DeliveryAudienceTerms["fee"], right: DeliveryAudienceTerms["fee"]): boolean {
+  if (left === null || right === null) {
+    return left === right;
+  }
+  if (left.mode === "percent") {
+    return right.mode === "percent" && left.bp === right.bp;
+  }
+  return right.mode === "amount" && left.cents === right.cents;
 }
 
 function patched(

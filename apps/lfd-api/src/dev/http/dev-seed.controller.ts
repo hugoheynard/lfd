@@ -4,6 +4,7 @@ import { Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { DevSeedService } from "../dev-seed.service.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Recharger le jeu de données de développement**, depuis le back-office.
@@ -26,12 +27,18 @@ export class DevSeedController {
   constructor(private readonly seeding: DevSeedService) {}
 
   @Post("reload")
+  @Idempotent(
+    "outil de la base locale seulement : remet la base dans l'état que le semis déclare ; rejoué, le même état",
+  )
   @HttpCode(HttpStatus.OK)
   reload(@StaffUserId() staffUserId: string): Promise<DevSeedReport> {
     return this.seeding.reload(staffUserId);
   }
 
   @Post("reload/orders")
+  @Idempotent(
+    "outil de la base locale seulement : rejoue le scénario de commandes déclaré ; rejoué, le même état",
+  )
   @HttpCode(HttpStatus.OK)
   reloadOrders(@StaffUserId() staffUserId: string): Promise<DevSeedOrdersOnlyReport> {
     return this.seeding.reloadOrders(staffUserId);

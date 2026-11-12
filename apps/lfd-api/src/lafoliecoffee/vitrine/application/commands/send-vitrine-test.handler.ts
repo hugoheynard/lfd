@@ -8,6 +8,11 @@ import { VitrineDelivery } from "../../domain/vitrine-delivery.js";
 import { VitrineRelay } from "../services/vitrine-relay.js";
 import { loadVitrineSubscriber } from "../vitrine-support.js";
 import { SendVitrineTestCommand } from "./send-vitrine-test.command.js";
+import { CREATED_ID_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+
+/** Le nom stable du geste, dans le registre des intentions. */
+const GESTURE = "vitrine.send-test";
 
 /**
  * Envoie un essai à l'instant — l'agence vérifie sa signature avant le
@@ -26,9 +31,32 @@ export class SendVitrineTestHandler implements ICommandHandler<SendVitrineTestCo
     private readonly relay: VitrineRelay,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
+    private readonly uow: UnitOfWork,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: SendVitrineTestCommand): Promise<string> {
+  /**
+   * **Une fois par intention** : un double clic n'envoie pas deux tests à
+   * l'agence. La clé est scellée avec la livraison de test ; l'appel à
+   * l'agence part avant, hors transaction.
+   */
+  execute(command: SendVitrineTestCommand): Promise<string> {
+    return this.intents.runSealed(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: GESTURE,
+        subject: command.subscriberId,
+      },
+      CREATED_ID_REPLAY,
+      (seal) => this.send(command, seal),
+    );
+  }
+
+  private async send(
+    command: SendVitrineTestCommand,
+    seal: (deliveryId: string) => Promise<void>,
+  ): Promise<string> {
     const subscriber = await loadVitrineSubscriber(this.subscribers, command.subscriberId);
     subscriber.assertActive();
     subscriber.assertHasEndpoint();
@@ -38,7 +66,10 @@ export class SendVitrineTestHandler implements ICommandHandler<SendVitrineTestCo
       at: this.clock.now(),
     });
     await this.relay.attempt(delivery, subscriber);
-    await this.deliveries.save(delivery);
+    await this.uow.run(async () => {
+      await this.deliveries.save(delivery);
+      await seal(delivery.id);
+    });
     return delivery.id;
   }
 }

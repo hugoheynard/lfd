@@ -15,6 +15,8 @@ import { CaptureLeadCommand } from "../application/commands/capture-lead.command
 import { ChangeLeadStatusCommand } from "../application/commands/change-lead-status.command.js";
 import { ListLeadsQuery } from "../application/queries/list-leads.query.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 
 /**
  * Surface **staff** des leads cold (démarchage). Saisir un lead + lister la file.
@@ -37,9 +39,11 @@ export class AdminLeadsController {
   @HttpCode(HttpStatus.CREATED)
   async capture(
     @Body(new ZodBody(captureLeadPayloadSchema)) payload: CaptureLeadPayload,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedLeadResponse> {
     const id = await this.commands.execute<CaptureLeadCommand, string>(
-      new CaptureLeadCommand(payload),
+      new CaptureLeadCommand(payload, staffUserId, intentKey),
     );
     return { id };
   }

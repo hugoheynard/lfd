@@ -170,6 +170,7 @@ async function openBag(orderId: string): Promise<string> {
   return jsonBody<OpenedPackingContainer>(
     await staff()
       .post(`${packingOrderPath(orderId, DAY)}/containers`)
+      .set(INTENT_KEY, freshIntent())
       .send({ nature: "bag" })
       .expect(201),
   ).containerId;

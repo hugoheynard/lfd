@@ -35,7 +35,11 @@ export class ReplaceSimulationScenarioHandler implements ICommandHandler<
     await this.uow.run(async () => {
       const scenario = await loadLiveScenario(this.scenarios, command.scenarioId);
       const previousName = scenario.name;
-      scenario.replace(command.payload.name, command.payload.scenario, this.clock.now(), author);
+      // Rejouer le geste ne change rien : ni écriture, ni fait au journal.
+      const at = this.clock.now();
+      if (!scenario.replace(command.payload.name, command.payload.scenario, at, author)) {
+        return;
+      }
       await ensureScenarioNameFree(this.scenarios, scenario);
       await this.scenarios.save(scenario);
       await this.events.publishTraced(new SimulationScenarioReplacedEvent(scenario, previousName));

@@ -56,6 +56,10 @@ import {
 import { type ConditionsDraft, conditionsPayloadOf } from '../suggestion-conditions';
 import { SuggestionConditionsFieldset } from '../suggestion-conditions-fieldset/suggestion-conditions-fieldset';
 import { summaryOf } from '../suggestion-summary';
+import { GestureIntents } from '../../shared/gesture-intents';
+
+/** Le sujet de l'intention : une seule création par panneau ouvert. */
+const CREATE_INTENT = 'create-suggestion';
 
 /**
  * Ce que le panneau reçoit : la règle à réécrire (`null` = une neuve), et le
@@ -104,6 +108,11 @@ export class SuggestionPanel {
 
   private readonly ref = inject<FoldPanelRef<string>>(FoldPanelRef);
   private readonly api = inject(StaffSuggestionsService);
+  /**
+   * L'intention de créer la règle : une clé tirée au premier envoi, renvoyée jusqu'au
+   * succès — un double clic ne crée pas deux règles.
+   */
+  private readonly intents = new GestureIntents();
 
   readonly data = input<SuggestionPanelData | undefined>(undefined);
 
@@ -216,7 +225,10 @@ export class SuggestionPanel {
     this.refusal.set(null);
     try {
       const saved =
-        rule === null ? await this.api.create(payload) : await this.api.revise(rule.id, payload);
+        rule === null
+          ? await this.api.create(payload, this.intents.keyFor(CREATE_INTENT))
+          : await this.api.revise(rule.id, payload);
+      this.intents.done(CREATE_INTENT);
       this.ref.close(saved.id);
     } catch (error) {
       this.refusal.set(refusalOf(error, 'La suggestion n’a pas pu être enregistrée.'));

@@ -9,5 +9,7 @@ export class DepositQualityPhotoCommand {
     readonly bytes: Buffer | null,
     /** L'identité staff, résolue par le guard. Jamais dans la charge utile. */
     readonly staffUserId: string,
+    /** La clé que l'écran a fabriquée pour CETTE photo — un envoi rejoué ne la dépose qu'une fois. */
+    readonly intentKey: string,
   ) {}
 }

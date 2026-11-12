@@ -13,5 +13,7 @@ export class CertifyKbisCommand {
     readonly staffUserId: string,
     /** La date de délivrance lue en tête de l'extrait, `AAAA-MM-JJ`. */
     readonly issuedOn: string,
+    /** La clé d'intention de l'écran (`Idempotency-Key`) : un rejeu ne refait pas le geste. */
+    readonly intentKey: string,
   ) {}
 }

@@ -25,6 +25,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { LATEST_DELIVERY_FULFILLMENT } from "./delivery-deadline-fixture.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const MIGRATION = join(
   process.cwd(),
@@ -166,6 +167,7 @@ async function aCreditNote(): Promise<string> {
   const declared = await ctx
     .asSub("staff-e2e")
     .post("/admin/accounting/legal-entities")
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: "La Folie Douce",
       legalForm: "SAS",

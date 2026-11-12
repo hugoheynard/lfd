@@ -48,6 +48,11 @@ export class UpdateDeliveryAvailabilityHandler implements ICommandHandler<
         at: this.clock.now(),
         author,
       });
+      // Rejouer le geste (ou redire l'état courant) ne change rien : ni
+      // écriture, ni fait au journal, ni purge des réglages publics.
+      if (!next.changes(previous)) {
+        return;
+      }
       await this.settings.put(next);
       await this.events.publishTraced(new DeliveryAvailabilityUpdatedEvent(next, previous));
       this.afterCommit.defer(() => this.edge.purge(), "delivery-availability.edge-purge");

@@ -39,6 +39,7 @@ import { MailPreferencesTable } from '../mail-preferences-table/mail-preferences
 import { mailSendWhen } from '../../rules/mail-send-labels';
 import { MailSendsTabs } from '../mail-sends-tabs/mail-sends-tabs';
 import { MailUnsubscribeAddressPanel } from '../mail-unsubscribe-address-panel/mail-unsubscribe-address-panel';
+import { GestureIntents } from '../../../shared/gesture-intents';
 
 const NOTHING_LISTED: FoldTableEmpty = {
   title: 'Aucune ligne ne correspond',
@@ -83,6 +84,8 @@ const NOTHING_FOUND: FoldTableEmpty = {
 })
 export class MailPreferencesPage {
   private readonly api = inject(MailPreferencesService);
+  /** Chaque recherche est une consultation comptée : une clé par adresse, gardée jusqu'au succès. */
+  private readonly intents = new GestureIntents();
   private readonly panels = inject(FoldPanelHostService);
   private readonly permissions = inject(PermissionsStore);
   protected readonly canSeeTemplates = computed(() => this.permissions.can('mail_templates:read'));
@@ -173,7 +176,8 @@ export class MailPreferencesPage {
     this.searching.set(true);
     this.searchError.set(null);
     try {
-      this.search.set(await this.api.searchByAddress(address));
+      this.search.set(await this.api.searchByAddress(address, this.intents.keyFor(address)));
+      this.intents.done(address);
     } catch (error) {
       this.searchError.set(httpErrorMessage(error, 'La recherche n’a pas pu aboutir.'));
     } finally {

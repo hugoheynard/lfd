@@ -39,6 +39,7 @@ import { declareBins, loadBin } from "./delivery-loading-scene.js";
 import { forgetRoutingScene, seedLocatedDelivery } from "./delivery-routing-scene.js";
 import { MY_ROUND, staffWithRole } from "./delivery-driver-scene.js";
 import { LATEST_DELIVERY_FULFILLMENT } from "./delivery-deadline-fixture.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const DAY = serviceDay();
 const POINT = { lat: 45.6, lng: 6.1 };
@@ -162,6 +163,7 @@ describe("le droit des gestes à la porte (AP-D9)", () => {
 
     await paul.agent
       .post(`${MY_ROUND}/${roundId}/incidents`)
+      .set(INTENT_KEY, freshIntent())
       .field("family", "doorstep")
       .field("reason", "nobody_present")
       .field("stopId", stopId)
@@ -318,7 +320,7 @@ describe("« Déclarer un problème » (§ 3)", () => {
     fields: Record<string, string>,
     photo?: Buffer,
   ): request.Test {
-    let call = agent.post(`${MY_ROUND}/${roundId}/incidents`);
+    let call = agent.post(`${MY_ROUND}/${roundId}/incidents`).set(INTENT_KEY, freshIntent());
     for (const [name, value] of Object.entries(fields)) {
       call = call.field(name, value);
     }
@@ -422,7 +424,7 @@ describe("« Non remis » (AP-D7)", () => {
   });
 
   async function report(agent: Agent, roundId: string, fields: Record<string, string>) {
-    let call = agent.post(`${MY_ROUND}/${roundId}/incidents`);
+    let call = agent.post(`${MY_ROUND}/${roundId}/incidents`).set(INTENT_KEY, freshIntent());
     for (const [name, value] of Object.entries(fields)) {
       call = call.field(name, value);
     }
@@ -501,6 +503,7 @@ describe("« Tournée terminée » (PL2)", () => {
 
     const incident = await paul.agent
       .post(`${MY_ROUND}/${roundId}/incidents`)
+      .set(INTENT_KEY, freshIntent())
       .field("family", "road")
       .field("reason", "accident")
       .expect(409);

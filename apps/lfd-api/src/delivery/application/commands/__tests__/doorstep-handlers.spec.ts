@@ -1,3 +1,4 @@
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
@@ -42,6 +43,10 @@ import {
   RecordingStaffNotifier,
 } from "./decision-doubles.js";
 import { deliveryOn, FixedDeliveryOrders, InMemoryDeliveryRounds } from "./round-doubles.js";
+
+let intentCount = 0;
+/** Une clé d'intention neuve par geste voulu, comme l'écran. */
+const nextKey = (): string => `intent_${(intentCount += 1)}`;
 
 // Des instants comparés entre eux seulement, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -198,6 +203,7 @@ describe("ReportDeliveryIncidentHandler — « Déclarer un problème » (§ 3)"
         new BackgroundWork(),
         new StopDecisionBySetting(new InMemoryDeliveryRounds(), decisions, new RecordingDurable()),
       ),
+      inMemoryIntents(),
     );
     return { handler, incidents, store, events, decisions, notifier, afterCommit };
   }
@@ -208,7 +214,13 @@ describe("ReportDeliveryIncidentHandler — « Déclarer un problème » (§ 3)"
     const { handler, incidents, store, events } = reporting();
 
     const id = await handler.execute(
-      new ReportDeliveryIncidentCommand(PAUL, "r_1", { ...FIELDS, note: "trois coups" }, JPEG),
+      new ReportDeliveryIncidentCommand(
+        PAUL,
+        "r_1",
+        { ...FIELDS, note: "trois coups" },
+        JPEG,
+        nextKey(),
+      ),
     );
 
     expect(id).toBe("inc_000001");
@@ -234,10 +246,24 @@ describe("ReportDeliveryIncidentHandler — « Déclarer un problème » (§ 3)"
     });
   });
 
+  /** Régression : un envoi rejoué (réseau du livreur qui coupe) signalait deux fois et rangeait deux photos. */
+  it("rejoué avec la même clé, rend le même signalement sans rien ranger ni écrire de plus", async () => {
+    const { handler, incidents, store, events } = reporting();
+    const command = new ReportDeliveryIncidentCommand(PAUL, "r_1", FIELDS, JPEG, nextKey());
+
+    const first = await handler.execute(command);
+    const replayed = await handler.execute(command);
+
+    expect(replayed).toBe(first);
+    expect(incidents.recorded).toHaveLength(1);
+    expect(store.objects.size).toBe(1);
+    expect(events.traced).toHaveLength(1);
+  });
+
   it("sans photo, rien ne part au stockage", async () => {
     const { handler, store, incidents } = reporting();
 
-    await handler.execute(new ReportDeliveryIncidentCommand(PAUL, "r_1", FIELDS, null));
+    await handler.execute(new ReportDeliveryIncidentCommand(PAUL, "r_1", FIELDS, null, nextKey()));
 
     expect(store.objects.size).toBe(0);
     expect(incidents.recorded[0]?.photoKey).toBeNull();
@@ -248,7 +274,7 @@ describe("ReportDeliveryIncidentHandler — « Déclarer un problème » (§ 3)"
 
     await expect(
       handler.execute(
-        new ReportDeliveryIncidentCommand(PAUL, "r_1", FIELDS, Buffer.from("%PDF-1.7")),
+        new ReportDeliveryIncidentCommand(PAUL, "r_1", FIELDS, Buffer.from("%PDF-1.7"), nextKey()),
       ),
     ).rejects.toThrow(InvalidIncidentPhotoError);
     expect(store.objects.size).toBe(0);
@@ -260,7 +286,7 @@ describe("ReportDeliveryIncidentHandler — « Déclarer un problème » (§ 3)"
     incidents.failing = true;
 
     await expect(
-      handler.execute(new ReportDeliveryIncidentCommand(PAUL, "r_1", FIELDS, JPEG)),
+      handler.execute(new ReportDeliveryIncidentCommand(PAUL, "r_1", FIELDS, JPEG, nextKey())),
     ).rejects.toThrow("base en panne");
     expect(store.objects.size).toBe(0);
     expect(store.deleted).toEqual(["delivery/incidents/r_1/inc_000001"]);
@@ -269,7 +295,7 @@ describe("ReportDeliveryIncidentHandler — « Déclarer un problème » (§ 3)"
   it("🔴 B3 : « personne » ouvre une décision ; les commerciaux sont prévenus APRÈS la validation", async () => {
     const { handler, decisions, notifier, afterCommit } = reporting();
 
-    await handler.execute(new ReportDeliveryIncidentCommand(PAUL, "r_1", FIELDS, null));
+    await handler.execute(new ReportDeliveryIncidentCommand(PAUL, "r_1", FIELDS, null, nextKey()));
 
     expect(decisions.stored("s_1")).toMatchObject({
       roundId: "r_1",
@@ -298,7 +324,7 @@ describe("ReportDeliveryIncidentHandler — « Déclarer un problème » (§ 3)"
     incidents.failing = true;
 
     await expect(
-      handler.execute(new ReportDeliveryIncidentCommand(PAUL, "r_1", FIELDS, null)),
+      handler.execute(new ReportDeliveryIncidentCommand(PAUL, "r_1", FIELDS, null, nextKey())),
     ).rejects.toThrow("base en panne");
     afterCommit.discard();
     await afterCommit.commit();
@@ -310,7 +336,7 @@ describe("ReportDeliveryIncidentHandler — « Déclarer un problème » (§ 3)"
     const decisions = new InMemoryStopDecisions(openDecision({ openedByIncidentId: "inc_0" }));
     const { handler, notifier, afterCommit } = reporting(decisions);
 
-    await handler.execute(new ReportDeliveryIncidentCommand(PAUL, "r_1", FIELDS, null));
+    await handler.execute(new ReportDeliveryIncidentCommand(PAUL, "r_1", FIELDS, null, nextKey()));
     await afterCommit.commit();
 
     expect(decisions.stored("s_1")?.openedByIncidentId).toBe("inc_0");
@@ -331,7 +357,7 @@ describe("ReportDeliveryIncidentHandler — « Déclarer un problème » (§ 3)"
     );
     const { handler, notifier, afterCommit } = reporting(decisions);
 
-    await handler.execute(new ReportDeliveryIncidentCommand(PAUL, "r_1", FIELDS, null));
+    await handler.execute(new ReportDeliveryIncidentCommand(PAUL, "r_1", FIELDS, null, nextKey()));
     await afterCommit.commit();
 
     expect(notifier.notified).toEqual([]);
@@ -342,7 +368,13 @@ describe("ReportDeliveryIncidentHandler — « Déclarer un problème » (§ 3)"
     const { handler, decisions, notifier, afterCommit } = reporting();
 
     await handler.execute(
-      new ReportDeliveryIncidentCommand(PAUL, "r_1", { ...FIELDS, reason: "goods_damaged" }, null),
+      new ReportDeliveryIncidentCommand(
+        PAUL,
+        "r_1",
+        { ...FIELDS, reason: "goods_damaged" },
+        null,
+        nextKey(),
+      ),
     );
     await handler.execute(
       new ReportDeliveryIncidentCommand(
@@ -350,6 +382,7 @@ describe("ReportDeliveryIncidentHandler — « Déclarer un problème » (§ 3)"
         "r_1",
         { family: "technical", reason: "cold_failure", note: "", stopId: "s_1" },
         null,
+        nextKey(),
       ),
     );
     await afterCommit.commit();
@@ -362,7 +395,9 @@ describe("ReportDeliveryIncidentHandler — « Déclarer un problème » (§ 3)"
     const { handler } = reporting();
 
     await expect(
-      handler.execute(new ReportDeliveryIncidentCommand("staff_autre", "r_1", FIELDS, null)),
+      handler.execute(
+        new ReportDeliveryIncidentCommand("staff_autre", "r_1", FIELDS, null, nextKey()),
+      ),
     ).rejects.toThrow(DriverRoundNotFoundError);
   });
 });

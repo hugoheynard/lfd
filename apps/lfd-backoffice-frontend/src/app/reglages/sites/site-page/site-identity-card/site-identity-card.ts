@@ -30,6 +30,10 @@ import { EMPTY_OPENING } from '../../../../b2b/reglages/pickup-opening.model';
 import { NotifyService } from '../../../../notify.service';
 import { SitesService } from '../../sites.service';
 import { placePayload } from '../site-place-payload';
+import { GestureIntents } from '../../../../shared/gesture-intents';
+
+/** Le sujet de l'intention : la création du site de cette fiche. */
+const CREATE_SITE_INTENT = 'create-site';
 
 /** L'adresse : la part du lieu que cette carte écrit. */
 type SiteIdentity = ReturnType<typeof toBillingPayload>;
@@ -57,6 +61,11 @@ type SiteIdentity = ReturnType<typeof toBillingPayload>;
 export class SiteIdentityCard {
   private readonly sites = inject(SitesService);
   private readonly notify = inject(NotifyService);
+  /**
+   * L'intention de créer le site : une clé tirée au premier envoi, renvoyée jusqu'au
+   * succès — un double clic ne crée pas deux sites.
+   */
+  private readonly intents = new GestureIntents();
 
   /** `null` : la carte crée un site. */
   readonly site = input<SiteView | null>(null);
@@ -117,11 +126,11 @@ export class SiteIdentityCard {
 
   /** Le reste — heures, rôles — se règle une fois le site créé. */
   private async create(identity: SiteIdentity): Promise<void> {
-    const created = await this.sites.create({
-      ...identity,
-      discounts: { b2b: null, b2c: null },
-      opening: EMPTY_OPENING,
-    });
+    const created = await this.sites.create(
+      { ...identity, discounts: { b2b: null, b2c: null }, opening: EMPTY_OPENING },
+      this.intents.keyFor(CREATE_SITE_INTENT),
+    );
+    this.intents.done(CREATE_SITE_INTENT);
     this.notify.success('Site ajouté.');
     this.created.emit(created.id);
   }

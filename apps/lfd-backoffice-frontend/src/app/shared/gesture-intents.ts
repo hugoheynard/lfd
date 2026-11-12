@@ -1,4 +1,4 @@
-import { HttpHeaders } from '@angular/common/http';
+import { HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 
 /** L'en-tête qui porte la clé d'intention d'un geste (lu par l'API, `@IntentKey()`). */
 export const INTENT_KEY_HEADER = 'Idempotency-Key';
@@ -38,4 +38,51 @@ export class GestureIntents {
   done(subject: string): void {
     this.keys.delete(subject);
   }
+}
+
+/** Le code de l'API pour un geste encore en vol : la clé reste, le premier envoi décide. */
+const IN_FLIGHT_CODE = 'intent.in_flight';
+
+/**
+ * **Un geste dont la réponse montre un secret une fois** (un lien de mot de
+ * passe, le secret d'un abonné) : envoyé sous la clé du sujet, puis la clé est
+ * oubliée au succès — le clic suivant est un geste neuf.
+ *
+ * L'API ne garde pas le secret : un rejeu de la même clé est refusé en 409
+ * (« déjà émis : émettez-en un nouveau »). Ce refus-là oublie aussi la clé,
+ * pour que le clic qui suit le message fabrique bien un nouveau geste ; seul
+ * « encore en vol » la garde.
+ */
+export async function shownOnce<T>(
+  intents: GestureIntents,
+  subject: string,
+  send: (intentKey: string) => Promise<T>,
+): Promise<T> {
+  try {
+    const result = await send(intents.keyFor(subject));
+    intents.done(subject);
+    return result;
+  } catch (error) {
+    if (
+      error instanceof HttpErrorResponse &&
+      error.status === 409 &&
+      codeOf(error) !== IN_FLIGHT_CODE
+    ) {
+      intents.done(subject);
+    }
+    throw error;
+  }
+}
+
+function codeOf(error: HttpErrorResponse): string | null {
+  const body: unknown = error.error;
+  if (
+    typeof body === 'object' &&
+    body !== null &&
+    'code' in body &&
+    typeof body.code === 'string'
+  ) {
+    return body.code;
+  }
+  return null;
 }

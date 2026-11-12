@@ -11,6 +11,7 @@ import type {
 import { B2B_API_BASE } from '../api/api-config';
 import { attachmentFileName } from '../shared/download/content-disposition';
 import type { NamedBlob } from './comptabilite-dashboard.service';
+import { intentOptions } from '../shared/gesture-intents';
 
 /**
  * Les **lots de prélèvement figés** — l'écran « Prélèvement du mois » (plan
@@ -37,9 +38,14 @@ export class CollectionBatchesService {
     );
   }
 
-  async constitute(legalEntityId: string): Promise<ConstitutedBatchesView> {
+  /** Une fois par intention : la même clé rend les mêmes lots. */
+  async constitute(legalEntityId: string, intentKey: string): Promise<ConstitutedBatchesView> {
     return firstValueFrom(
-      this.http.post<ConstitutedBatchesView>(`${this.base}/batches`, { legalEntityId }),
+      this.http.post<ConstitutedBatchesView>(
+        `${this.base}/batches`,
+        { legalEntityId },
+        intentOptions(intentKey),
+      ),
     );
   }
 

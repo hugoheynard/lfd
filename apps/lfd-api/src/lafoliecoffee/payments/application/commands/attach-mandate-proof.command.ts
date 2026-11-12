@@ -7,5 +7,9 @@ export class AttachMandateProofCommand {
     readonly companyId: string,
     readonly fileName: string,
     readonly bytes: Buffer,
+    /** La fiche staff de qui dépose — l'acteur de l'intention. */
+    readonly staffUserId: string,
+    /** La clé d'intention de l'écran : un second envoi ne redépose rien. */
+    readonly intentKey: string,
   ) {}
 }

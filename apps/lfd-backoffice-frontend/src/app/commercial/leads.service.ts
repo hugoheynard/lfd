@@ -9,6 +9,7 @@ import type {
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
+import { intentOptions } from '../shared/gesture-intents';
 
 /**
  * Leads **cold** (démarchage) — saisie + mutations de pipeline. Staff-gated,
@@ -19,10 +20,14 @@ import { B2B_API_BASE } from '../api/api-config';
 export class LeadsService {
   private readonly http = inject(HttpClient);
 
-  /** Saisit un lead cold. */
-  async capture(payload: CaptureLeadPayload): Promise<CreatedLeadResponse> {
+  /** Saisit un lead cold, une fois par intention (`Idempotency-Key`). */
+  async capture(payload: CaptureLeadPayload, intentKey: string): Promise<CreatedLeadResponse> {
     return firstValueFrom(
-      this.http.post<CreatedLeadResponse>(`${B2B_API_BASE}/admin/leads`, payload),
+      this.http.post<CreatedLeadResponse>(
+        `${B2B_API_BASE}/admin/leads`,
+        payload,
+        intentOptions(intentKey),
+      ),
     );
   }
 

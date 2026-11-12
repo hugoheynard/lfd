@@ -13,5 +13,7 @@ export class RequestPasswordResetCommand {
     readonly subject: string,
     /** L'adresse du compte, lue en base : la seule destination du lien. */
     readonly email: string,
+    /** La clé d'intention de l'écran (`Idempotency-Key`) : un rejeu ne refait pas le geste. */
+    readonly intentKey: string,
   ) {}
 }

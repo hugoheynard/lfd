@@ -11,13 +11,14 @@ import { PausePromotionCommand } from "../pause-promotion.command.js";
 import { PosePromotionCommand } from "../pose-promotion.command.js";
 import { ResumePromotionCommand } from "../resume-promotion.command.js";
 import { RevisePromotionCommand } from "../revise-promotion.command.js";
+import { randomUUID } from "node:crypto";
 
 const STAFF = "staff_hugo";
 
 /** Une promotion posée, la purge de sa pose déjà comptée puis remise à zéro. */
 async function posed() {
   const s = writeScene(FROM);
-  const id = await s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF));
+  const id = await s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF, randomUUID()));
   await s.afterCommit.commit();
   s.edge.purges = 0;
   return { ...s, id };
@@ -32,7 +33,7 @@ async function posed() {
 describe("promotions — la purge de la liste publique des points", () => {
   it("la pose purge après la validation, et pas avant", async () => {
     const s = writeScene(FROM);
-    await s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF));
+    await s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF, randomUUID()));
     expect(s.edge.purges).toBe(0);
     await s.afterCommit.commit();
     expect(s.edge.purges).toBe(1);
@@ -59,9 +60,9 @@ describe("promotions — la purge de la liste publique des points", () => {
   it("un geste refusé ne purge rien", async () => {
     const s = await posed();
     const invalid = lineTerms({ scope: { mode: "only", rules: [] } });
-    await expect(s.pose.execute(new PosePromotionCommand(invalid, STAFF))).rejects.toBeInstanceOf(
-      PromotionScopeIncludesNothingError,
-    );
+    await expect(
+      s.pose.execute(new PosePromotionCommand(invalid, STAFF, randomUUID())),
+    ).rejects.toBeInstanceOf(PromotionScopeIncludesNothingError);
     await expect(
       s.resume.execute(new ResumePromotionCommand(s.id, STAFF, null)),
     ).rejects.toBeInstanceOf(PromotionNotPausedError);

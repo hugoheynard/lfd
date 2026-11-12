@@ -12,6 +12,9 @@ import {
 } from "../../../domain/ports/user-profile.repository.js";
 import { CreateCompanyCommand } from "../create-company.command.js";
 import { CreateCompanyHandler } from "../create-company.handler.js";
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 
 const OWNER: UserProfileRecord = {
   userId: "user_1",
@@ -52,7 +55,17 @@ function doubles(
   };
 
   const events = new RecordingPublisher();
-  return { handler: new CreateCompanyHandler(companies, profiles, events), declared, events };
+  return {
+    handler: new CreateCompanyHandler(
+      companies,
+      profiles,
+      events,
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
+    ),
+    declared,
+    events,
+  };
 }
 
 function command(overrides: Partial<CreateCompanyCommand> = {}): CreateCompanyCommand {
@@ -64,10 +77,23 @@ function command(overrides: Partial<CreateCompanyCommand> = {}): CreateCompanyCo
     overrides.siret ?? "812 456 789 00021",
     overrides.siren ?? "",
     overrides.vatNumber ?? "",
+    overrides.intentKey ?? randomUUID(),
   );
 }
 
 describe("CreateCompanyHandler", () => {
+  /** Régression : un double envoi du formulaire déclarait deux sociétés. */
+  it("rejouée sous la même clé, rend la même société sans en déclarer une seconde", async () => {
+    const { handler, declared } = doubles();
+    const intentKey = randomUUID();
+
+    const first = await handler.execute(command({ intentKey }));
+    const replayed = await handler.execute(command({ intentKey }));
+
+    expect(replayed).toBe(first);
+    expect(declared).toHaveLength(1);
+  });
+
   it("déclare la société et retourne son seul identifiant", async () => {
     const { handler, declared } = doubles();
 

@@ -135,6 +135,7 @@ function setup() {
     uow,
     InMemoryPackingSettings.sharingOpen().reader(),
     new RecordingPlanHold(),
+    inMemoryIntents(),
   );
   const allocate = new AllocateToContainerHandler(
     sheets,
@@ -154,10 +155,10 @@ describe("PackingSheetWithdrawalDesk", () => {
     const context = setup();
     context.sheets.put(sheetRow());
     const first = await context.open.execute(
-      new OpenPackingContainerCommand(DAY, "ord_1", { nature: "bag" }, STAFF),
+      new OpenPackingContainerCommand(DAY, "ord_1", { nature: "bag" }, STAFF, nextKey()),
     );
     const second = await context.open.execute(
-      new OpenPackingContainerCommand(DAY, "ord_1", { nature: "bag" }, STAFF),
+      new OpenPackingContainerCommand(DAY, "ord_1", { nature: "bag" }, STAFF, nextKey()),
     );
     await context.allocate.execute(
       new AllocateToContainerCommand(DAY, "ord_1", first, "CRO", 4, STAFF, nextKey()),
@@ -186,7 +187,7 @@ describe("PackingSheetWithdrawalDesk", () => {
     const context = setup();
     context.sheets.put(sheetRow());
     const bag = await context.open.execute(
-      new OpenPackingContainerCommand(DAY, "ord_1", { nature: "bag" }, STAFF),
+      new OpenPackingContainerCommand(DAY, "ord_1", { nature: "bag" }, STAFF, nextKey()),
     );
     await context.allocate.execute(
       new AllocateToContainerCommand(DAY, "ord_1", bag, "CRO", 4, STAFF, nextKey()),

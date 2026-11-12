@@ -20,6 +20,7 @@ import {
   place,
   recordBatch,
 } from "./production-day-fixture.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const BATCH = "01K6A0000000000000000000R1";
 
@@ -146,6 +147,7 @@ describe("rouvrir une journée arrêtée", () => {
     await ctx
       .asSub(STAFF)
       .post(`${packingOrderPath(order?.id ?? "")}/containers`)
+      .set(INTENT_KEY, freshIntent())
       .send({ nature: "bag" })
       .expect(201);
 

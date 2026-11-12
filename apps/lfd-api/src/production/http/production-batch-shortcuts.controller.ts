@@ -49,6 +49,9 @@ export class ProductionBatchShortcutsController {
 
   /** Ajoute un raccourci. 400 sur un nom ou des pièces invalides, 409 sur un doublon ou au plafond. */
   @Post()
+  @Idempotent(
+    "par unicité : le libellé d'un raccourci est unique pour un article ; rejoué, la création est refusée (409) avant toute écriture",
+  )
   async create(
     @Body(new ZodBody(createBatchShortcutPayloadSchema)) body: CreateBatchShortcutPayload,
     @StaffUserId() staffUserId: string,

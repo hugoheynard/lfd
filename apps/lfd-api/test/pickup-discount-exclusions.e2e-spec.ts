@@ -29,6 +29,7 @@ import {
 import { posePromotion, promotionTerms } from "./promotion-fixtures.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardProvidersOverride } from "./card-payments.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const ACTIVE = "auth0|exclusions-pro";
 
@@ -105,6 +106,7 @@ async function seedPoint(excluded: Article): Promise<string> {
   const response = await ctx
     .asSub(E2E_STAFF_SUB)
     .post("/admin/pickup-addresses")
+    .set(INTENT_KEY, freshIntent())
     .send({
       label: "Labo",
       ligne1: "5 rue du Four",

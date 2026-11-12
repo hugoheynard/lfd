@@ -181,6 +181,7 @@ describe("la règle tarifaire", () => {
   const rule = (sku: string) =>
     staff()
       .post("/admin/pricing/rules")
+      .set(INTENT_KEY, freshIntent())
       .send({
         // `geste` depuis L12 (2026-10-30) : l'étage `promotion` ne s'écrit plus, et la
         // mécanique éprouvée ici ne dépend pas de l'étage.
@@ -202,6 +203,7 @@ describe("la règle tarifaire", () => {
     const body = jsonBody<Refusal>(
       await staff()
         .post("/admin/pricing/rules")
+        .set(INTENT_KEY, freshIntent())
         .send({
           stage: "geste",
           label: "Promo L5",

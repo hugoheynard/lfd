@@ -2,6 +2,8 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { Clock } from "../../../../platform/time/clock.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
+import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { KbisCertifiedEvent } from "../../domain/events/kbis-certification.event.js";
@@ -9,6 +11,9 @@ import { companyNamed } from "../../domain/events/journal-names.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { StaffDirectory } from "../../domain/ports/staff-directory.js";
 import { CertifyKbisCommand } from "./certify-kbis.command.js";
+
+/** Le nom stable du geste, dans le registre des intentions. */
+const CERTIFY_KBIS_GESTURE = "account.certify-kbis";
 
 /**
  * Certifie le KBIS — le geste qui fait de l'identité une **information
@@ -23,6 +28,15 @@ import { CertifyKbisCommand } from "./certify-kbis.command.js";
  * 2. **On garde qui.** L'id de fiche toujours ; le nom et le titre quand l'annuaire
  *    les connaît. Ils sont figés ici, pas résolus à la lecture : une trace dit
  *    ce qui était vrai ce jour-là, pas ce qui est vrai aujourd'hui.
+ *
+ * **Une fois par intention** : certifier RE-DATE la vérification (un geste
+ * voulu, quand l'agent relit un extrait) et écrit un fait. Un double clic ne
+ * doit donc pas certifier deux fois : la clé de l'écran est réclamée avant
+ * tout et scellée dans la transaction de la certification ; le rejeu ne
+ * réécrit rien. Une vraie seconde certification est une intention neuve.
+ *
+ * @throws {GestureInFlightError} la même clé est encore en vol.
+ * @throws {IntentKeyReusedError} la clé a servi pour une autre certification.
  */
 @CommandHandler(CertifyKbisCommand)
 export class CertifyKbisHandler implements ICommandHandler<CertifyKbisCommand, void> {
@@ -32,9 +46,26 @@ export class CertifyKbisHandler implements ICommandHandler<CertifyKbisCommand, v
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: CertifyKbisCommand): Promise<void> {
+  execute(command: CertifyKbisCommand): Promise<void> {
+    return this.intents.runSealed(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: CERTIFY_KBIS_GESTURE,
+        subject: intentSubject(command.companyId, command.issuedOn),
+      },
+      NOTHING_TO_REPLAY,
+      (seal) => this.certify(command, seal),
+    );
+  }
+
+  private async certify(
+    command: CertifyKbisCommand,
+    seal: (result: void) => Promise<void>,
+  ): Promise<void> {
     const company = await this.companies.load(command.companyId);
     if (company === null) {
       throw new CompanyNotFoundError(command.companyId);
@@ -60,6 +91,7 @@ export class CertifyKbisHandler implements ICommandHandler<CertifyKbisCommand, v
       await this.events.publishTraced(
         new KbisCertifiedEvent(companyNamed(command.companyId, company), at, command.issuedOn),
       );
+      await seal();
     });
   }
 }

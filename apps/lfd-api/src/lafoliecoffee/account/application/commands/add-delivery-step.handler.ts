@@ -3,6 +3,9 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
+import { CREATED_ID_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { customerIntentActor } from "../../../shared/intent/customer-intent-actor.js";
 import { DocumentStore } from "../../../../platform/storage/document-store.js";
 import { DeliveryProcedureEditedByMemberEvent } from "../../domain/events/member-acts.event.js";
 import { CompanyAddressRepository } from "../../domain/ports/company-address.repository.js";
@@ -13,6 +16,9 @@ import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
 import { AddDeliveryStepCommand } from "./delivery-procedure-commands.js";
 import { addDeliveryStep, type ProcedureEditingPorts } from "./delivery-procedure-editing.js";
 import { AccountJournalNames } from "../services/account-journal-names.service.js";
+
+/** Le nom stable du geste, dans le registre des intentions. */
+const ADD_STEP_GESTURE = "account.add-delivery-step";
 
 /**
  * Ajoute une étape à la procédure d'une adresse de la société, réservé au **gestionnaire** (`ensureCompanyAdmin`).
@@ -36,26 +42,39 @@ export class AddDeliveryStepHandler implements ICommandHandler<AddDeliveryStepCo
     private readonly uow: UnitOfWork,
     private readonly events: DomainEventPublisher,
     private readonly names: AccountJournalNames,
+    private readonly intents: OncePerIntent,
   ) {}
 
   async execute(command: AddDeliveryStepCommand): Promise<string> {
     const role = await this.memberships.roleOf(command.actorUserId, command.companyId);
     ensureCompanyAdmin(role, command.companyId);
 
-    return await addDeliveryStep(
-      this.ports(),
-      { companyId: command.companyId, addressId: command.addressId },
-      command.fields,
-      command.photo,
-      async () =>
-        this.events.publishTraced(
-          new DeliveryProcedureEditedByMemberEvent(
-            // Lus DANS la transaction, après la vérification de l'adresse :
-            // un contenu refusé ne coûte toujours pas une lecture.
-            await this.names.company(command.companyId),
-            await this.names.deliveryAddress(command.companyId, command.addressId),
-            "step_added",
-          ),
+    return this.intents.runSealed(
+      {
+        actorId: customerIntentActor(command.actorUserId),
+        key: command.intentKey,
+        gesture: ADD_STEP_GESTURE,
+        subject: intentSubject(command.addressId, command.fields, command.photo),
+      },
+      CREATED_ID_REPLAY,
+      (seal) =>
+        addDeliveryStep(
+          this.ports(),
+          { companyId: command.companyId, addressId: command.addressId },
+          command.fields,
+          command.photo,
+          async (stepId) => {
+            await this.events.publishTraced(
+              new DeliveryProcedureEditedByMemberEvent(
+                // Lus DANS la transaction, après la vérification de l'adresse :
+                // un contenu refusé ne coûte toujours pas une lecture.
+                await this.names.company(command.companyId),
+                await this.names.deliveryAddress(command.companyId, command.addressId),
+                "step_added",
+              ),
+            );
+            await seal(stepId);
+          },
         ),
     );
   }

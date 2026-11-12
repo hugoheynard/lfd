@@ -10,12 +10,13 @@ import type { SocietyConsentAnswer } from '@lfd/contracts';
 import { PERSONAL_WORKSPACE } from '@lfd/contracts/workspace';
 import { httpErrorCode, httpErrorMessage } from '@lfd/endpoints';
 import { firstValueFrom, type Observable } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
+import { switchMap, tap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../auth/auth.config';
 import { AuthFacade } from '../auth/auth.facade';
 import { LoginMoment } from '../auth/login-moment';
 import { NotifyService } from '../notify.service';
+import { GestureIntents, INTENT_KEY_HEADER } from '../client/gesture-intents';
 import { defaultProWorkspace } from './default-workspace';
 import {
   PERSON_ALREADY_ATTACHED,
@@ -95,6 +96,14 @@ export class AccountService {
   private readonly auth = inject(AuthFacade);
   private readonly loginMoment = inject(LoginMoment);
   private readonly notify = inject(NotifyService);
+  /**
+   * Les intentions des créations : une clé par contenu saisi, renvoyée tant
+   * que l'envoi n'a pas abouti. Un double clic, ou un réseau qui coupe après
+   * l'envoi puis un réessai, ne déclare pas deux sociétés, n'ajoute pas deux
+   * contacts, ne dépose pas deux KBIS. Au succès, la clé est oubliée : un
+   * nouvel envoi du même contenu est une intention neuve.
+   */
+  private readonly intents = new GestureIntents();
 
   private readonly state = signal<Account | null>(null);
   private readonly _status = signal<AccountStatus>('idle');
@@ -350,7 +359,12 @@ export class AccountService {
 
   createCompany(draft: CompanyDraft, onDone?: () => void): void {
     this.mutate(
-      (token) => this.http.post(`${AUTH_CONFIG.apiBaseUrl}/companies`, draft, headers(token)),
+      (token) => {
+        const subject = `company:${JSON.stringify(draft)}`;
+        return this.http
+          .post(`${AUTH_CONFIG.apiBaseUrl}/companies`, draft, this.intentHeaders(token, subject))
+          .pipe(tap(() => this.intents.done(subject)));
+      },
       'Entreprise créée.',
       onDone,
     );
@@ -660,11 +674,24 @@ export class AccountService {
   }
 
   private postContact(companyId: string, draft: ContactDraft, token: string): Observable<unknown> {
-    return this.http.post(
-      `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/contacts`,
-      draft,
-      headers(token),
-    );
+    const subject = `contact:${companyId}:${JSON.stringify(draft)}`;
+    return this.http
+      .post(
+        `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/contacts`,
+        draft,
+        this.intentHeaders(token, subject),
+      )
+      .pipe(tap(() => this.intents.done(subject)));
+  }
+
+  /** Le jeton et la clé de l'intention en cours pour ce sujet. */
+  private intentHeaders(token: string, subject: string): { headers: Record<string, string> } {
+    return {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        [INTENT_KEY_HEADER]: this.intents.keyFor(subject),
+      },
+    };
   }
 
   private patchHolder(
@@ -706,11 +733,14 @@ export class AccountService {
   private putKbis(companyId: string, file: File, token: string): Observable<unknown> {
     const form = new FormData();
     form.append('file', file, file.name);
-    return this.http.put(
-      `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/kbis`,
-      form,
-      headers(token),
-    );
+    const subject = `kbis:${companyId}:${file.name}:${file.size}:${file.lastModified}`;
+    return this.http
+      .put(
+        `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/kbis`,
+        form,
+        this.intentHeaders(token, subject),
+      )
+      .pipe(tap(() => this.intents.done(subject)));
   }
 
   private patchPaymentTerm(

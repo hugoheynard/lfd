@@ -178,6 +178,7 @@ async function seedWorkedDay(): Promise<void> {
   const bag = jsonBody<OpenedPackingContainer>(
     await staff
       .post(`/admin/packing/${SERVICE_DAY}/orders/${orderId}/containers`)
+      .set(INTENT_KEY, freshIntent())
       .send({ nature: "bag" })
       .expect(201),
   );
@@ -225,6 +226,7 @@ describe("le droit b2b_supervision, seul", () => {
     await agent.post(`/admin/packing/${SERVICE_DAY}/orders/${orderId}/close`).expect(403);
     await agent
       .post(`/admin/packing/${SERVICE_DAY}/orders/${orderId}/containers`)
+      .set(INTENT_KEY, freshIntent())
       .send({ nature: "bag" })
       .expect(403);
   });

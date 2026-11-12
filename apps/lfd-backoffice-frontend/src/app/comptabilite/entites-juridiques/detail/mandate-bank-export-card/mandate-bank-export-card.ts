@@ -46,6 +46,7 @@ import {
   mandateStandingLabel,
 } from '../../../mandate-bank-export-wording';
 import { MandateBankExportsService } from '../../../mandate-bank-exports.service';
+import { GestureIntents } from '../../../../shared/gesture-intents';
 
 /** Ce que la banque importe au plus par fichier (réponse 12) — le serveur coupe au-delà. */
 const MAX_PER_EXPORT = 200;
@@ -91,6 +92,8 @@ const MAX_PER_EXPORT = 200;
 })
 export class MandateBankExportCard {
   private readonly service = inject(MandateBankExportsService);
+  /** Une préparation par intention : un double clic ne fige pas un second export. */
+  private readonly prepareIntents = new GestureIntents();
   private readonly panels = inject(FoldPanelHostService);
 
   readonly entity = input.required<LegalEntityView>();
@@ -179,8 +182,10 @@ export class MandateBankExportCard {
   protected async prepare(): Promise<void> {
     const entityId = this.entity().id;
     await this.run(async () => {
-      const exportId = await this.service.prepare(entityId);
+      // Gardée jusqu'au téléchargement : un réessai rend le même export.
+      const exportId = await this.service.prepare(entityId, this.prepareIntents.keyFor(entityId));
       await this.download(exportId);
+      this.prepareIntents.done(entityId);
     });
   }
 

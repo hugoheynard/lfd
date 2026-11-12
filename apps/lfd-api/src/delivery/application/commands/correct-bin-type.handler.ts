@@ -28,7 +28,10 @@ export class CorrectBinTypeHandler implements ICommandHandler<CorrectBinTypeComm
     await this.uow.run(async () => {
       const binType = await loadBinType(this.types, command.binTypeId);
       const before = binType.specification;
-      binType.correct(command.payload, this.clock.now());
+      // Rejouer le geste ne change rien : ni écriture, ni fait au journal.
+      if (!binType.correct(command.payload, this.clock.now())) {
+        return;
+      }
       await ensureBinTypeNameFree(this.types, binType);
       await this.types.save(binType);
       await this.events.publishTraced(new BinTypeCorrectedEvent(binType, before));

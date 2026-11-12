@@ -26,6 +26,7 @@ import {
   packing,
   place,
 } from "./production-day-fixture.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 let ctx: E2eContext;
 let issued: string[];
@@ -69,6 +70,7 @@ async function openBag(orderId: string): Promise<string> {
   const response = await ctx
     .asSub(STAFF)
     .post(`${base(orderId)}/containers`)
+    .set(INTENT_KEY, freshIntent())
     .send({ nature: "bag" })
     .expect(201);
   return jsonBody<OpenedPackingContainer>(response).containerId;

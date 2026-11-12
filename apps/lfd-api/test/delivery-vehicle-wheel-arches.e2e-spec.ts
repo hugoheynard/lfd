@@ -10,6 +10,7 @@ import type { CreatedIdResponse, VehiclesView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -43,7 +44,11 @@ function admin(): ReturnType<E2eContext["asSub"]> {
 }
 
 async function addVehicle(body: Record<string, unknown>): Promise<string> {
-  const response = await admin().post(VEHICLES).send(body).expect(201);
+  const response = await admin()
+    .post(VEHICLES)
+    .set(INTENT_KEY, freshIntent())
+    .send(body)
+    .expect(201);
   return jsonBody<CreatedIdResponse>(response).id;
 }
 
@@ -109,6 +114,7 @@ describe("les passages de roue — refus", () => {
   ])("refuse %s (400), sans rien écrire", async (_case, load, expected) => {
     const refusal = await admin()
       .post(VEHICLES)
+      .set(INTENT_KEY, freshIntent())
       .send({ name: "Trafic", plate: "AB-123-CD", wheelArches: ARCHES, ...load })
       .expect(400);
 
@@ -120,6 +126,7 @@ describe("les passages de roue — refus", () => {
     const withoutHeight = { lengthCm: 90, protrusionCm: 20, fromBackCm: 60 };
     await admin()
       .post(VEHICLES)
+      .set(INTENT_KEY, freshIntent())
       .send({ name: "Trafic", plate: "AB-123-CD", cargo: CARGO, wheelArches: withoutHeight })
       .expect(400);
     expect((await fleet()).vehicles).toEqual([]);

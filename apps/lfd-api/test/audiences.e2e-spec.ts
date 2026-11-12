@@ -29,6 +29,7 @@ import {
   placeOrderForCustomer,
   type PlacedTestOrder,
 } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const AUDIENCES = "/admin/audiences";
 
@@ -128,6 +129,7 @@ async function proCompany(
   const booked = await ctx
     .asSub(buyer.sub)
     .post(`/companies/${company.id}/delivery-addresses`)
+    .set(INTENT_KEY, freshIntent())
     .send({
       ...COURIER_ADDRESS,
       isDefault: true,

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { AdminSurface } from "../auth/admin-surface.decorator.js";
 import { ZodBody } from "../shared/http/zod-body.pipe.js";
 import { ReplayOutboxDeliveryCommand } from "./replay-outbox-delivery.command.js";
+import { Idempotent } from "../shared/http/idempotent.decorator.js";
 
 const ReplaySchema = z.object({
   eventId: z.string().min(1),
@@ -23,6 +24,9 @@ export class AdminOutboxController {
   constructor(private readonly commands: CommandBus) {}
 
   @Post()
+  @Idempotent(
+    "remet une livraison en file : rejouée, elle y est déjà (ou livrée : 409 OutboxDeliveryAlreadyDeliveredError) ; l'abonné tient sa propre idempotence par l'identifiant du fait",
+  )
   @HttpCode(204)
   async replay(@Body(new ZodBody(ReplaySchema)) body: ReplayBody): Promise<void> {
     await this.commands.execute<ReplayOutboxDeliveryCommand, void>(

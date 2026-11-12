@@ -13,6 +13,7 @@
 import type { CreatedSubscription } from "../src/lafoliecoffee/subscriptions/domain/ports/subscription.repository.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const OWNER = "auth0|panier-journal";
 const REFUSAL = "e2e_journal_paniers_en_panne";
@@ -65,7 +66,12 @@ function weeklyDelivery(): Record<string, unknown> {
 }
 
 async function createSubscription(): Promise<string> {
-  const response = await ctx.asSub(OWNER).post("/subscriptions").send(weeklyDelivery()).expect(201);
+  const response = await ctx
+    .asSub(OWNER)
+    .post("/subscriptions")
+    .set(INTENT_KEY, freshIntent())
+    .send(weeklyDelivery())
+    .expect(201);
   return jsonBody<CreatedSubscription>(response).id;
 }
 

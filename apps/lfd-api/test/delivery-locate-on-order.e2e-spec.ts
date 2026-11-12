@@ -27,6 +27,7 @@ import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 import { cardGatewayDouble } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const OWNER = "auth0|owner";
 const SERVICE_DAY = serviceDay();
@@ -125,6 +126,7 @@ async function bookAddress(): Promise<string> {
   const created = await ctx
     .asSub(OWNER)
     .post(`/companies/${companyId}/delivery-addresses`)
+    .set(INTENT_KEY, freshIntent())
     .send(payload)
     .expect(201);
   return jsonBody<{ id: string }>(created).id;

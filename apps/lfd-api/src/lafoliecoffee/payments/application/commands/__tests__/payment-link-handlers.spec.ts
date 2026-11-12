@@ -1,3 +1,5 @@
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+import { randomUUID } from "node:crypto";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
@@ -68,6 +70,7 @@ function world(): World {
         clock,
         events,
         uow,
+        inMemoryIntents(),
       ),
     cancel: new CancelPaymentLinkHandler(links, COMPANIES, checkout, clock, events, uow),
     settle: new SettlePaymentLinkHandler(links, COMPANIES, notifier, clock),
@@ -78,7 +81,9 @@ function world(): World {
 async function openOne(w: World): Promise<{ id: string; sessionId: string }> {
   const created = await w
     .create()
-    .execute(new CreatePaymentLinkCommand("co_1", 12_000, "Régularisation août", "staff_1"));
+    .execute(
+      new CreatePaymentLinkCommand("co_1", 12_000, "Régularisation août", "staff_1", randomUUID()),
+    );
   const sessionId = w.links.rows.get(created.id)?.stripeSessionId ?? "";
   return { id: created.id, sessionId };
 }
@@ -88,7 +93,15 @@ describe("CreatePaymentLinkHandler", () => {
     const w = world();
     const created = await w
       .create()
-      .execute(new CreatePaymentLinkCommand("co_1", 12_000, "Régularisation août", "staff_1"));
+      .execute(
+        new CreatePaymentLinkCommand(
+          "co_1",
+          12_000,
+          "Régularisation août",
+          "staff_1",
+          randomUUID(),
+        ),
+      );
 
     expect(w.checkout.opened).toEqual([
       {
@@ -116,7 +129,9 @@ describe("CreatePaymentLinkHandler", () => {
   it("🔴 refuse au-delà du plafond AVANT d'ouvrir une page chez Stripe", async () => {
     const w = world();
     await expect(
-      w.create(10_000).execute(new CreatePaymentLinkCommand("co_1", 10_001, "Trop", "staff_1")),
+      w
+        .create(10_000)
+        .execute(new CreatePaymentLinkCommand("co_1", 10_001, "Trop", "staff_1", randomUUID())),
     ).rejects.toBeInstanceOf(PaymentLinkAboveCapError);
     // Une session ouverte puis refusée resterait payable sans ligne pour la rapprocher.
     expect(w.checkout.opened).toEqual([]);
@@ -126,9 +141,33 @@ describe("CreatePaymentLinkHandler", () => {
   it("refuse une société inconnue, sans rien ouvrir", async () => {
     const w = world();
     await expect(
-      w.create().execute(new CreatePaymentLinkCommand("co_x", 100, "Qui ?", "staff_1")),
+      w
+        .create()
+        .execute(new CreatePaymentLinkCommand("co_x", 100, "Qui ?", "staff_1", randomUUID())),
     ).rejects.toBeInstanceOf(PaymentLinkCompanyNotFoundError);
     expect(w.checkout.opened).toEqual([]);
+  });
+});
+
+describe("CreatePaymentLinkHandler — une fois par intention", () => {
+  /** Régression : un double clic ouvrait deux pages payables chez Stripe pour la même somme. */
+  it("la même clé rend le même lien, sans rouvrir de session", async () => {
+    const w = world();
+    const handler = w.create();
+    const command = new CreatePaymentLinkCommand(
+      "co_1",
+      12_000,
+      "Régularisation août",
+      "staff_1",
+      "cle-1",
+    );
+
+    const first = await handler.execute(command);
+    const replay = await handler.execute(command);
+
+    expect(replay).toEqual(first);
+    expect(w.checkout.opened).toHaveLength(1);
+    expect(w.events.factTypes()).toEqual(["payment_link.created"]);
   });
 });
 

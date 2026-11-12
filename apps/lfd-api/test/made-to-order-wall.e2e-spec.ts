@@ -173,6 +173,7 @@ describe("réservé à A, invisible aux autres (`hidden`)", () => {
     await reserve(a, "hidden");
     await staff()
       .post("/admin/suggestions")
+      .set(INTENT_KEY, freshIntent())
       .send({
         trigger: { kind: "product_in_cart", ref: OPEN },
         suggestedSkus: [X],
@@ -240,6 +241,7 @@ describe("réservé à A, visible non commandable (`visible_locked`)", () => {
     const refused = await ctx
       .asSub(MEMBER_B)
       .post("/subscriptions")
+      .set(INTENT_KEY, freshIntent())
       .send({
         fromOrderId: null,
         recurrence: "weekly",

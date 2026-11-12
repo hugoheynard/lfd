@@ -29,6 +29,7 @@ import {
   stateOf,
   useCollectionBatchScene,
 } from "./collection-batch-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 useCollectionBatchScene();
 
@@ -284,6 +285,7 @@ describe("le prélèvement suit la facture (F2)", () => {
     });
     const response = await staff()
       .post(`${BASE}/batches`)
+      .set(INTENT_KEY, freshIntent())
       .send({ legalEntityId: entity })
       .expect(409);
     expect(JSON.stringify(response.body)).toContain("accounting.collection.not_yet_open");

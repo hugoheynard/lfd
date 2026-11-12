@@ -15,6 +15,7 @@ import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { DecideOrderShortfallCommand } from "../application/commands/decide-order-shortfall.command.js";
 import { WriteShortfallLetterCommand } from "../application/commands/write-shortfall-letter.command.js";
 import { GetShortfallLetterDraftQuery } from "../application/queries/get-shortfall-letter-draft.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Le départ incomplet, vu du staff** (lot E6b,
@@ -42,6 +43,9 @@ export class AdminOrderShortfallController {
   @Post(":id/shortfall-decision")
   @RequirePermission("b2b_orders_shortfall:write")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée, la décision relue sous verrou est déjà prise et l'agrégat refuse (409 « déjà décidée ») avant toute écriture",
+  )
   async decide(
     @Param("id") id: string,
     @StaffUserId() staffUserId: string,
@@ -80,6 +84,9 @@ export class AdminOrderShortfallController {
   @Post(":id/shortfall-letter")
   @RequirePermission("b2b_orders_shortfall:write")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "par sa propre clé : une fois par décision, tenu par ShortfallNotice.notify sous verrou (409 « déjà prévenu » au rejeu) ; le courriel porte la clé de la décision",
+  )
   async writeLetter(
     @Param("id") id: string,
     @StaffUserId() staffUserId: string,

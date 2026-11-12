@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import type { RevisableOrder } from "../../../domain/entities/order-revision.js";
 import {
   CardComplementCancellationUnavailableError,
@@ -5,6 +7,7 @@ import {
   CardIncreaseNotApplicableError,
   CardIncreaseOnShelfOrderError,
   RevisionProposalPendingError,
+  CardIncreaseAlreadyProposedError,
 } from "../../../domain/errors/card-increase-proposal-errors.js";
 import {
   OrderNotRevisableError,
@@ -45,10 +48,30 @@ async function proposeMore(
   order: RevisableOrder,
   actor: ProposeCardIncreaseCommand["actor"] = CUSTOMER,
 ): Promise<ProposeCardIncreaseCommand> {
-  return new ProposeCardIncreaseCommand("ord_1", actor, 0, MORE, await seenTotal(order, MORE));
+  return new ProposeCardIncreaseCommand(
+    "ord_1",
+    actor,
+    0,
+    MORE,
+    await seenTotal(order, MORE),
+    randomUUID(),
+  );
 }
 
 describe("ProposeCardIncreaseHandler — la hausse demandée", () => {
+  /** Régression : un double envoi préparait deux paiements chez le prestataire. */
+  it("rejouée sous la même clé : 409 nommé, un seul paiement préparé, un seul projet", async () => {
+    const order = await paidOrder();
+    const { handler, proposals, steps } = increaseScene(order);
+    const command = await proposeMore(order);
+
+    await handler.execute(command);
+    await expect(handler.execute(command)).rejects.toBeInstanceOf(CardIncreaseAlreadyProposedError);
+
+    expect(proposals.saved).toEqual(["awaiting_payment"]);
+    expect(steps.seen.filter((step) => step.startsWith("prepare:"))).toHaveLength(1);
+  });
+
   it("dans l'ordre : préparation hors verrou, puis orders → fournil lu → projet → card-payment", async () => {
     const order = await paidOrder();
     const { handler, steps, journal, proposals, cards } = increaseScene(order);
@@ -85,7 +108,14 @@ describe("ProposeCardIncreaseHandler — la hausse demandée", () => {
 
     await expect(
       handler.execute(
-        new ProposeCardIncreaseCommand("ord_1", CUSTOMER, 0, MORE, command.expectedTotalCents + 1),
+        new ProposeCardIncreaseCommand(
+          "ord_1",
+          CUSTOMER,
+          0,
+          MORE,
+          command.expectedTotalCents + 1,
+          randomUUID(),
+        ),
       ),
     ).rejects.toBeInstanceOf(OrderTotalChangedError);
     expect(steps.seen).toEqual([]);
@@ -101,7 +131,14 @@ describe("ProposeCardIncreaseHandler — la hausse demandée", () => {
       const { handler, steps } = increaseScene(order);
 
       const attempt = handler.execute(
-        new ProposeCardIncreaseCommand("ord_1", CUSTOMER, 0, wanted, order.totalCents),
+        new ProposeCardIncreaseCommand(
+          "ord_1",
+          CUSTOMER,
+          0,
+          wanted,
+          order.totalCents,
+          randomUUID(),
+        ),
       );
 
       await expect(attempt).rejects.toBeInstanceOf(CardIncreaseNotApplicableError);
@@ -115,7 +152,9 @@ describe("ProposeCardIncreaseHandler — la hausse demandée", () => {
     const { handler, steps } = increaseScene(order);
     const staff = { kind: "staff", staffId: "stf_1" } as const;
 
-    const attempt = handler.execute(new ProposeCardIncreaseCommand("ord_1", staff, 0, MORE, 1));
+    const attempt = handler.execute(
+      new ProposeCardIncreaseCommand("ord_1", staff, 0, MORE, 1, randomUUID()),
+    );
 
     await expect(attempt).rejects.toMatchObject({ reason: "increase_by_staff" });
     expect(steps.seen).toEqual([]);
@@ -126,7 +165,7 @@ describe("ProposeCardIncreaseHandler — la hausse demandée", () => {
     const { handler, steps } = increaseScene(order);
 
     await expect(
-      handler.execute(new ProposeCardIncreaseCommand("ord_1", CUSTOMER, 3, MORE, 1)),
+      handler.execute(new ProposeCardIncreaseCommand("ord_1", CUSTOMER, 3, MORE, 1, randomUUID())),
     ).rejects.toBeInstanceOf(OrderRevisedElsewhereError);
     expect(steps.seen).toEqual([]);
   });
@@ -140,7 +179,7 @@ describe("ProposeCardIncreaseHandler — la hausse demandée", () => {
     const { handler } = increaseScene(order);
 
     await expect(
-      handler.execute(new ProposeCardIncreaseCommand("ord_1", CUSTOMER, 0, MORE, 1)),
+      handler.execute(new ProposeCardIncreaseCommand("ord_1", CUSTOMER, 0, MORE, 1, randomUUID())),
     ).rejects.toBeInstanceOf(CardIncreaseOnShelfOrderError);
   });
 });

@@ -2,6 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { DocumentStore } from "../../../../platform/storage/document-store.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import { LegalEntityRepository } from "../../domain/ports/legal-entity.repository.js";
 import { EntityLogo } from "../../domain/value-objects/entity-logo.js";
 import { legalEntityLogoKey, loadOrFail } from "../legal-entity-support.js";
@@ -31,6 +32,11 @@ import { SetLegalEntityLogoCommand } from "./legal-entity-commands.js";
  * ne demandera jamais « quel rond portait le mandat qu'il a signé ». Tracer ce
  * geste-là diluerait un journal dont toute la valeur tient à ce qu'il ne
  * contient que des faits qu'on vient interroger.
+ *
+ * ## Une fois par intention
+ *
+ * Sujet : l'entité. Un double clic aurait renvoyé les octets au stockage ;
+ * la même clé ne redépose rien, l'intention est scellée avec la clé écrite.
  */
 @CommandHandler(SetLegalEntityLogoCommand)
 export class SetLegalEntityLogoHandler implements ICommandHandler<SetLegalEntityLogoCommand, void> {
@@ -38,9 +44,26 @@ export class SetLegalEntityLogoHandler implements ICommandHandler<SetLegalEntity
     private readonly entities: LegalEntityRepository,
     private readonly store: DocumentStore,
     private readonly uow: UnitOfWork,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: SetLegalEntityLogoCommand): Promise<void> {
+  execute(command: SetLegalEntityLogoCommand): Promise<void> {
+    return this.intents.runSealed(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: SET_LOGO_GESTURE,
+        subject: command.legalEntityId,
+      },
+      NOTHING_TO_REPLAY,
+      (seal) => this.deposit(command, seal),
+    );
+  }
+
+  private async deposit(
+    command: SetLegalEntityLogoCommand,
+    seal: () => Promise<void>,
+  ): Promise<void> {
     const logo = EntityLogo.create(command.fileName, command.bytes);
 
     const key = await this.store.save(legalEntityLogoKey(command.legalEntityId), {
@@ -52,6 +75,10 @@ export class SetLegalEntityLogoHandler implements ICommandHandler<SetLegalEntity
     entity.attachLogo(key);
     await this.uow.run(async () => {
       await this.entities.save(entity);
+      await seal();
     });
   }
 }
+
+/** Le nom stable du geste, dans le registre des intentions. */
+const SET_LOGO_GESTURE = "accounting.set-legal-entity-logo";

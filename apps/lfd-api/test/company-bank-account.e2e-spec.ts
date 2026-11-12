@@ -21,6 +21,7 @@ import type { CompanyBankAccountSectionView } from "@lfd/contracts";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /** IBAN d'exemple de la documentation bancaire française — clé mod-97 correcte. */
 const IBAN = "FR1420041010050500013M02606";
@@ -252,6 +253,7 @@ describe("GET /admin/companies/:id/mandate/preview.pdf", () => {
   async function declareIssuer(): Promise<void> {
     const response = await staff()
       .post("/admin/accounting/legal-entities")
+      .set(INTENT_KEY, freshIntent())
       .send({
         name: "Crazeativity",
         legalForm: "SAS",

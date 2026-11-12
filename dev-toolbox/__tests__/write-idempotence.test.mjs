@@ -194,3 +194,46 @@ test("repère une route sous RecomputeGuard, au niveau de la classe ou de la mé
   assert.equal(writeRoutes(CONTROLLER_PATH, guarded)[0].machine, true);
   assert.equal(writeRoutes(CONTROLLER_PATH, controller("@Post()"))[0].machine, false);
 });
+
+/**
+ * Régression : `me.controller.ts#linkIdentity` relit les méthodes après
+ * l'écriture ; la requête de relecture, sans handler de commande, rendait la
+ * route « non rangée » alors que sa commande est scellée.
+ */
+test("par intention : la requête de relecture après la commande ne compte pas", () => {
+  const source = [
+    'import { SendThingCommand } from "../application/commands/send-thing.command.js";',
+    'import { ListThingsQuery } from "../application/queries/list-things.query.js";',
+    "export class ThingsController {",
+    "  @Post() async go(@IntentKey() k: string) {",
+    "    await this.commands.execute(new SendThingCommand(k));",
+    "    return this.queries.execute(new ListThingsQuery());",
+    "  }",
+    "  @Post() read(@IntentKey() k: string) { return this.queries.execute(new ListThingsQuery()); }",
+    "}",
+  ].join("\n");
+  const handlers = commandHandlersIn(HANDLER_PATH, SEALED);
+  const cases = writeRoutes(CONTROLLER_PATH, source).map((r) => caseOf(r, handlers));
+  assert.deepEqual(cases, ["intent", null]);
+});
+
+test("risque assumé : @AcceptedReplay avec raison et décision, rangé à part", () => {
+  const ok = routeOf(
+    controller('@AcceptedReplay("lien de mot de passe", "décidé par Hugo le 2026-11-12") @Post()'),
+    [],
+  );
+  assert.equal(ok.case, "accepted");
+  assert.equal(ok.accepted, "lien de mot de passe (décidé par Hugo le 2026-11-12)");
+  const result = verdict([ok], []);
+  assert.deepEqual(result.failures, []);
+  assert.equal(result.ranged.length, 1);
+  for (const bad of [
+    '@AcceptedReplay("raison")',
+    '@AcceptedReplay("", "Hugo")',
+    "@AcceptedReplay(x, y)",
+  ]) {
+    const route = routeOf(controller(`${bad} @Post()`), []);
+    assert.equal(route.case, "empty-reason", bad);
+    assert.match(verdict([route], []).failures[0], /AcceptedReplay/);
+  }
+});

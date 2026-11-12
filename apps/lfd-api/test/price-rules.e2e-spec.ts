@@ -23,6 +23,7 @@ import {
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { E2E_FAMILIES } from "./catalog-fixture.js";
 import { cardProvidersOverride } from "./card-payments.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const SERVICE_DAY = serviceDay();
 let pickupId = "pickup_absent";
@@ -351,6 +352,7 @@ describe("une règle prise en compte sans redémarrer", () => {
 
     await staff()
       .post("/admin/pricing/rules")
+      .set(INTENT_KEY, freshIntent())
       .send({
         stage: "geste",
         scope: { type: "global", id: null },
@@ -370,6 +372,7 @@ describe("une règle prise en compte sans redémarrer", () => {
   it("cesse de s'appliquer dès qu'elle est RETIRÉE", async () => {
     const created = await staff()
       .post("/admin/pricing/rules")
+      .set(INTENT_KEY, freshIntent())
       .send({
         stage: "geste",
         scope: { type: "global", id: null },
@@ -651,6 +654,7 @@ describe("le scellement par la mercuriale", () => {
     const promo = jsonBody<{ id: string }>(
       await staff()
         .post("/admin/pricing/rules")
+        .set(INTENT_KEY, freshIntent())
         .send({
           stage: "geste",
           scope: { type: "global", id: null },
@@ -676,6 +680,7 @@ describe("le scellement par la mercuriale", () => {
     await staff().delete(`/admin/pricing/rules/${promo}`).expect(204);
     await staff()
       .post("/admin/pricing/rules")
+      .set(INTENT_KEY, freshIntent())
       .send({
         stage: "geste",
         scope: { type: "global", id: null },

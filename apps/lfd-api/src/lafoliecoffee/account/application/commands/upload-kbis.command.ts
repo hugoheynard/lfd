@@ -11,5 +11,7 @@ export class UploadKbisCommand {
     readonly companyId: string,
     readonly fileName: string,
     readonly bytes: Buffer,
+    /** La clé d'intention de l'écran (`Idempotency-Key`) : un rejeu ne refait pas le geste. */
+    readonly intentKey: string,
   ) {}
 }

@@ -19,6 +19,7 @@ import type { JournalFactType } from "@lfd/contracts/journal-facts";
 import { ActivityRecorder } from "../src/lafoliecoffee/growth/domain/ports/activity-recorder.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -399,6 +400,7 @@ describe("la tranche fiscale — ce qui touche au taux, par les gestes réels", 
   async function tartIn(category: string): Promise<string> {
     const response = await as("staff-e2e")
       .post(PRODUCTS)
+      .set(INTENT_KEY, freshIntent())
       .send({ name: { fr: "Tarte" }, kind: "daily", categoryId: category })
       .expect(201);
     return jsonBody<{ id: string }>(response).id;

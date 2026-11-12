@@ -17,6 +17,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { MediaStore } from "../src/platform/storage/media-store.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { InMemoryMediaStore } from "./in-memory-media-store.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -73,7 +74,10 @@ describe("un corps mal formé est un 400 nommé, pas une panne", () => {
 
   /** Régression : même `.parse` à l'ouverture et à la correction d'une série. */
   it("refuse en 400 une série dont le corps n'est pas un objet", async () => {
-    const opened = await staff().post(`${MEDIA}/series`).send([1, 2]);
+    const opened = await staff()
+      .post(`${MEDIA}/series`)
+      .set(INTENT_KEY, freshIntent())
+      .send([1, 2]);
     expect(opened.status).toBe(400);
     const corrected = await staff().put(`${MEDIA}/series/whatever`).send([1, 2]);
     expect(corrected.status).toBe(400);

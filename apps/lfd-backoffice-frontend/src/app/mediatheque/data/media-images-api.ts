@@ -12,6 +12,7 @@ import type {
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../../api/api-config';
+import { intentOptions } from '../../shared/gesture-intents';
 import { pageParams, type MediaPageRequest } from '../rules/media-page-request';
 
 /**
@@ -88,9 +89,12 @@ export class MediaImagesApi {
    * **Remplacer une image** chez tous ses porteurs (`mediatheque.md` §2) — 204.
    * L'ancienne RESTE au fonds ; la nouvelle garde sa propre description.
    * Refus nommés : 404, 400 (vide ou identique), 409 (révision de vitrine).
+   * `intentKey` : la clé du geste — un double clic ne remplace qu'une fois.
    */
-  async replace(payload: ReplaceMediaPayload): Promise<void> {
-    await firstValueFrom(this.http.post<void>(`${this.base}/replace`, payload));
+  async replace(payload: ReplaceMediaPayload, intentKey: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(`${this.base}/replace`, payload, intentOptions(intentKey)),
+    );
   }
 
   /**

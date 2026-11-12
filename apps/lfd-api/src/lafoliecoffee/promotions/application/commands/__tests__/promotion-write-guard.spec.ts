@@ -16,6 +16,7 @@ import { PausePromotionCommand } from "../pause-promotion.command.js";
 import { PosePromotionCommand } from "../pose-promotion.command.js";
 import { ResumePromotionCommand } from "../resume-promotion.command.js";
 import { RevisePromotionCommand } from "../revise-promotion.command.js";
+import { randomUUID } from "node:crypto";
 
 const STAFF = "staff_hugo";
 const DAY_MS = 86_400_000;
@@ -39,7 +40,7 @@ describe("un seul endroit", () => {
    */
   it("révise une promotion de retrait à un point vers « tous acheminements », et retour", async () => {
     const s = writeScene(FROM);
-    const id = await s.pose.execute(new PosePromotionCommand(basketTerms(), STAFF));
+    const id = await s.pose.execute(new PosePromotionCommand(basketTerms(), STAFF, randomUUID()));
     await s.revise.execute(
       new RevisePromotionCommand(
         id,
@@ -71,9 +72,10 @@ describe("le refus de chevauchement (§ 13.2)", () => {
           validTo: UNTIL,
         }),
         STAFF,
+        randomUUID(),
       ),
     );
-    const refusal = s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF));
+    const refusal = s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF, randomUUID()));
     await expect(refusal).rejects.toThrow(OverlappingPromotionError);
     await expect(refusal).rejects.toThrow(
       // `UNTIL` est minuit UTC, donc 1 h à Paris : le 1er décembre est encore couvert.
@@ -92,7 +94,8 @@ describe("le refus de chevauchement (§ 13.2)", () => {
    */
   it("laisse coexister deux portées disjointes, deux publics disjoints, deux fenêtres qui se suivent", async () => {
     const s = writeScene(FROM);
-    const pose = (terms: PromotionTerms) => s.pose.execute(new PosePromotionCommand(terms, STAFF));
+    const pose = (terms: PromotionTerms) =>
+      s.pose.execute(new PosePromotionCommand(terms, STAFF, randomUUID()));
     const individuals = { kind: "individuals" } as const;
     await pose(lineTerms({ scope: onlyFamily("c_pains"), validTo: UNTIL, audience: individuals }));
     await pose(lineTerms({ scope: onlyFamily("c_viennoiserie"), audience: individuals }));
@@ -105,7 +108,8 @@ describe("le refus de chevauchement (§ 13.2)", () => {
 
   it("refuse `pros` contre `pros actifs` : leurs couvertures se croisent (L8b, vitruve n° 3 S4)", async () => {
     const s = writeScene(FROM);
-    const pose = (terms: PromotionTerms) => s.pose.execute(new PosePromotionCommand(terms, STAFF));
+    const pose = (terms: PromotionTerms) =>
+      s.pose.execute(new PosePromotionCommand(terms, STAFF, randomUUID()));
     await pose(lineTerms({ internalName: "Pros", audience: { kind: "pros" } }));
     const refusal = pose(lineTerms({ audience: { kind: "pros_active" } }));
     await expect(refusal).rejects.toThrow(OverlappingPromotionError);
@@ -114,7 +118,8 @@ describe("le refus de chevauchement (§ 13.2)", () => {
 
   it("refuse {inscrits, pros} contre {pros} et contre {pros actifs} ; accepte contre {invités}", async () => {
     const s = writeScene(FROM);
-    const pose = (terms: PromotionTerms) => s.pose.execute(new PosePromotionCommand(terms, STAFF));
+    const pose = (terms: PromotionTerms) =>
+      s.pose.execute(new PosePromotionCommand(terms, STAFF, randomUUID()));
     await pose(
       lineTerms({
         internalName: "Inscrits et pros",
@@ -142,14 +147,26 @@ describe("le refus de chevauchement (§ 13.2)", () => {
     };
     const amount = { kind: "unit_amount_off", millicents: 50_000 } as const;
     await s.pose.execute(
-      new PosePromotionCommand(lineTerms({ scope: weightOnly, effect: amount }), STAFF),
+      new PosePromotionCommand(
+        lineTerms({ scope: weightOnly, effect: amount }),
+        STAFF,
+        randomUUID(),
+      ),
     );
     await s.pose.execute(
-      new PosePromotionCommand(lineTerms({ scope: weightOnly, effect: amount }), STAFF),
+      new PosePromotionCommand(
+        lineTerms({ scope: weightOnly, effect: amount }),
+        STAFF,
+        randomUUID(),
+      ),
     );
-    await s.pose.execute(new PosePromotionCommand(basketTerms({ scope: weightOnly }), STAFF));
+    await s.pose.execute(
+      new PosePromotionCommand(basketTerms({ scope: weightOnly }), STAFF, randomUUID()),
+    );
     await expect(
-      s.pose.execute(new PosePromotionCommand(basketTerms({ scope: weightOnly }), STAFF)),
+      s.pose.execute(
+        new PosePromotionCommand(basketTerms({ scope: weightOnly }), STAFF, randomUUID()),
+      ),
     ).rejects.toThrow("« Pain de seigle au poids »");
   });
 
@@ -163,16 +180,21 @@ describe("le refus de chevauchement (§ 13.2)", () => {
         { target: "variant", targetId: "PAI-001-1", eligible: false, targetRank: null },
       ],
     };
-    await s.pose.execute(new PosePromotionCommand(lineTerms({ scope: weightOnly }), STAFF));
+    await s.pose.execute(
+      new PosePromotionCommand(lineTerms({ scope: weightOnly }), STAFF, randomUUID()),
+    );
     await expect(
-      s.pose.execute(new PosePromotionCommand(lineTerms({ scope: weightOnly }), STAFF)),
+      s.pose.execute(
+        new PosePromotionCommand(lineTerms({ scope: weightOnly }), STAFF, randomUUID()),
+      ),
     ).rejects.toThrow("« Pain de seigle au poids »");
   });
 
   /** § 16 : deux cumulables se combinent, elles ne se disputent rien. */
   it("laisse deux cumulables se recouvrir ; refuse une non cumulable face à une cumulable", async () => {
     const s = writeScene(FROM);
-    const pose = (terms: PromotionTerms) => s.pose.execute(new PosePromotionCommand(terms, STAFF));
+    const pose = (terms: PromotionTerms) =>
+      s.pose.execute(new PosePromotionCommand(terms, STAFF, randomUUID()));
     await pose(lineTerms({ internalName: "Cumul A", cumulative: true }));
     await pose(lineTerms({ internalName: "Cumul B", cumulative: true }));
     expect(s.promotions.stored.size).toBe(2);
@@ -185,20 +207,20 @@ describe("le refus de chevauchement (§ 13.2)", () => {
 
   it("une rivale en pause garde sa place ; une archivée la rend", async () => {
     const s = writeScene(FROM);
-    const id = await s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF));
+    const id = await s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF, randomUUID()));
     await s.pause.execute(new PausePromotionCommand(id, STAFF, null));
-    await expect(s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF))).rejects.toThrow(
-      OverlappingPromotionError,
-    );
+    await expect(
+      s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF, randomUUID())),
+    ).rejects.toThrow(OverlappingPromotionError);
     await s.archive.execute(new ArchivePromotionCommand(id, STAFF, "fin"));
     await expect(
-      s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF)),
+      s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF, randomUUID())),
     ).resolves.toBeDefined();
   });
 
   it("une révision ne se dispute pas avec elle-même, et la reprise d'une pause est jugée", async () => {
     const s = writeScene(FROM);
-    const id = await s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF));
+    const id = await s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF, randomUUID()));
     await s.revise.execute(
       new RevisePromotionCommand(
         id,
@@ -221,7 +243,7 @@ describe("le refus de chevauchement (§ 13.2)", () => {
 
   it("ne lit pas le catalogue quand aucune autre promotion n'existe", async () => {
     const s = writeScene(FROM);
-    await s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF));
+    await s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF, randomUUID()));
     expect(s.catalogue.reads).toBe(0);
   });
 });
@@ -230,9 +252,13 @@ describe("une seule promotion de panier par commande, jusqu'à L12", () => {
   it("laisse coexister la remise des pros actifs et celle des autres, au même point", async () => {
     const s = writeScene(FROM);
     await s.pose.execute(
-      new PosePromotionCommand(basketTerms({ audience: { kind: "pros_active" } }), STAFF),
+      new PosePromotionCommand(
+        basketTerms({ audience: { kind: "pros_active" } }),
+        STAFF,
+        randomUUID(),
+      ),
     );
-    await s.pose.execute(new PosePromotionCommand(basketTerms(), STAFF));
+    await s.pose.execute(new PosePromotionCommand(basketTerms(), STAFF, randomUUID()));
     expect(s.promotions.stored.size).toBe(2);
   });
 
@@ -246,6 +272,7 @@ describe("une seule promotion de panier par commande, jusqu'à L12", () => {
           scope: onlyFamily("c_viennoiserie"),
         }),
         STAFF,
+        randomUUID(),
       ),
     );
     const combined = basketTerms({
@@ -253,18 +280,19 @@ describe("une seule promotion de panier par commande, jusqu'à L12", () => {
       fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       scope: onlyFamily("c_pains"),
     });
-    const refusal = s.pose.execute(new PosePromotionCommand(combined, STAFF));
+    const refusal = s.pose.execute(new PosePromotionCommand(combined, STAFF, randomUUID()));
     await expect(refusal).rejects.toThrow(BasketPromotionsWouldCombineError);
     await expect(refusal).rejects.toThrow("« Remise Cœur pros »");
   });
 
   it("laisse coexister une promotion de livraison et une de retrait, ou deux fenêtres disjointes", async () => {
     const s = writeScene(FROM);
-    await s.pose.execute(new PosePromotionCommand(basketTerms(), STAFF));
+    await s.pose.execute(new PosePromotionCommand(basketTerms(), STAFF, randomUUID()));
     await s.pose.execute(
       new PosePromotionCommand(
         basketTerms({ fulfillment: { kind: "basket", pickup: "none", delivery: "all" } }),
         STAFF,
+        randomUUID(),
       ),
     );
     await s.pose.execute(
@@ -275,6 +303,7 @@ describe("une seule promotion de panier par commande, jusqu'à L12", () => {
           validTo: FROM,
         }),
         STAFF,
+        randomUUID(),
       ),
     );
     expect(s.promotions.stored.size).toBe(3);

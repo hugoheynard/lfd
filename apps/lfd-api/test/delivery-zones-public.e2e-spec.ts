@@ -19,6 +19,7 @@ import { PUBLIC_SETTINGS_CACHE_TAG } from "../src/lafoliecoffee/shared/public-se
 import { PUBLIC_SETTINGS_CACHE_CONTROL } from "../src/lafoliecoffee/shared/public-settings-cache/http/public-settings-cache-headers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -61,7 +62,11 @@ const GLOBAL = {
 const staff = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);
 
 async function createZone(body: Record<string, unknown>): Promise<string> {
-  const response = await staff().post("/admin/delivery-zones").send(body).expect(201);
+  const response = await staff()
+    .post("/admin/delivery-zones")
+    .set(INTENT_KEY, freshIntent())
+    .send(body)
+    .expect(201);
   return jsonBody<CreatedDeliveryZoneResponse>(response).id;
 }
 

@@ -44,6 +44,10 @@ import {
   type ContactLang,
 } from '../../contact/contact-langs';
 import { RequestReasonsService } from '../request-reasons.service';
+import { GestureIntents } from '../../../shared/gesture-intents';
+
+/** Le sujet de l'intention : une seule création par dialogue ouvert. */
+const CREATE_REASON_INTENT = 'create-reason';
 
 /** Ajouter (`reason` absent) ou corriger un motif ; en lecture seule sans le droit d'écrire. */
 export interface RequestReasonDialogData {
@@ -106,6 +110,11 @@ export class RequestReasonDialog implements FoldPanelContent<RequestReasonDialog
 
   private readonly api = inject(RequestReasonsService);
   private readonly panel = inject(FoldPanelRef);
+  /**
+   * L'intention de créer le motif : une clé tirée au premier envoi, renvoyée jusqu'au
+   * succès — un double clic ne crée pas deux motifs.
+   */
+  private readonly intents = new GestureIntents();
 
   protected readonly labelFr = signal('');
   protected readonly labelEn = signal('');
@@ -167,7 +176,8 @@ export class RequestReasonDialog implements FoldPanelContent<RequestReasonDialog
     return {
       kind: this.data().kind,
       label: { fr: this.labelFr().trim(), en: this.labelEn().trim(), it: this.labelIt().trim() },
-      recipientEmail: this.recipientEmail().trim(),
+      // Vide : aucun e-mail, la demande n'arrive que dans « Demandes clients ».
+      recipientEmail: this.recipientEmail().trim() === '' ? null : this.recipientEmail().trim(),
       position,
       active: this.active(),
       audience: this.audience(),
@@ -184,8 +194,10 @@ export class RequestReasonDialog implements FoldPanelContent<RequestReasonDialog
       if (text.length > max) return `Libellé trop long (${String(max)} caractères au plus).`;
     }
     const email = this.recipientEmail().trim();
-    if (email === '') return "Saisissez l'adresse de destination.";
-    if (email.length > CONTACT_BOUNDS.recipientEmail || !EMAIL_SHAPE.test(email)) {
+    if (
+      email !== '' &&
+      (email.length > CONTACT_BOUNDS.recipientEmail || !EMAIL_SHAPE.test(email))
+    ) {
       return "L'adresse de destination n'est pas une adresse e-mail.";
     }
     if (this.payload() === null) return "L'ordre est un entier positif ou nul.";
@@ -263,7 +275,14 @@ export class RequestReasonDialog implements FoldPanelContent<RequestReasonDialog
     if (!this.canSubmit() || payload === null) return;
     const reason = this.data().reason;
     await this.write(
-      () => (reason === undefined ? this.api.create(payload) : this.api.update(reason.id, payload)),
+      async () => {
+        if (reason !== undefined) {
+          await this.api.update(reason.id, payload);
+          return;
+        }
+        await this.api.create(payload, this.intents.keyFor(CREATE_REASON_INTENT));
+        this.intents.done(CREATE_REASON_INTENT);
+      },
       'saved',
       "Le motif n'a pas pu être enregistré.",
     );

@@ -21,6 +21,7 @@ import {
   TESTS,
   useCollectionTestScene,
 } from "./collection-test-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 useCollectionTestScene();
 
@@ -42,7 +43,7 @@ describe("le droit `collection_test`", () => {
     await accountant().get(ESTABLISHMENTS).expect(403);
     await accountant().post(ESTABLISHMENTS).send({ companyId: "c" }).expect(403);
     await accountant().get(`${TESTS}/debtors`).expect(403);
-    await accountant().post(TESTS).send({}).expect(403);
+    await accountant().post(TESTS).set(INTENT_KEY, freshIntent()).send({}).expect(403);
     await accountant().get(`${TESTS}/debtors/c/mandate.csv`).expect(403);
   });
 });

@@ -8,6 +8,8 @@ import {
 import { RequestPasswordResetCommand } from "../request-password-reset.command.js";
 import { RequestPasswordResetHandler } from "../request-password-reset.handler.js";
 import { journalNames } from "./member-acts-doubles.js";
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 
 /**
  * **« Changer mon mot de passe », depuis son profil** (plan
@@ -89,9 +91,16 @@ function handler(identity: Identity): {
   readonly events: RecordingPublisher;
 } {
   const events = new RecordingPublisher();
-  const under = new RequestPasswordResetHandler(identity, new Config(), events, journalNames());
+  const under = new RequestPasswordResetHandler(
+    identity,
+    new Config(),
+    events,
+    journalNames(),
+    inMemoryIntents(),
+  );
   return {
-    run: () => under.execute(new RequestPasswordResetCommand(USER_ID, SUBJECT, EMAIL)),
+    run: () =>
+      under.execute(new RequestPasswordResetCommand(USER_ID, SUBJECT, EMAIL, randomUUID())),
     events,
   };
 }

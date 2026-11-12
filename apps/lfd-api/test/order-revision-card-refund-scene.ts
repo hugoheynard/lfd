@@ -1,4 +1,5 @@
 import type { CardComplementPaymentView, OrderRevisionQuoteView } from "@lfd/contracts";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import type request from "supertest";
 
 import { CardSettlementReader } from "../src/card-payment/channels/requests/index.js";
@@ -262,6 +263,7 @@ export async function appliedIncrease(order: PaidOrder, quantity: number): Promi
   const answer = jsonBody<CardComplementPaymentView>(
     await buyer()
       .post(`/orders/${order.id}/revisions/card-increase`)
+      .set(INTENT_KEY, freshIntent())
       .send({
         expectedRevision: seen.revision,
         expectedTotalCents: seen.totalCents,
@@ -285,6 +287,7 @@ export async function paidButNotApplied(order: PaidOrder, quantity: number): Pro
   const seen = await quoteOf(order, quantity);
   await buyer()
     .post(`/orders/${order.id}/revisions/card-increase`)
+    .set(INTENT_KEY, freshIntent())
     .send({
       expectedRevision: seen.revision,
       expectedTotalCents: seen.totalCents,

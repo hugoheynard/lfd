@@ -33,6 +33,7 @@ import {
 } from "../application/commands/address-commands.js";
 import { ListCompanyAddressesQuery } from "../application/queries/list-company-addresses.query.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 
 /**
  * Adresses d'une entreprise — une facturation (unique) et N livraisons (une par
@@ -78,16 +79,17 @@ export class CompanyAddressesController {
     );
   }
 
-  /** Ajoute une adresse de livraison (gestionnaire). */
+  /** Ajoute une adresse de livraison (gestionnaire), une fois par intention. */
   @Post(":companyId/delivery-addresses")
   @HttpCode(HttpStatus.CREATED)
   async addDelivery(
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,
     @Body(new ZodBody(deliveryAddressPayloadSchema)) payload: DeliveryAddressPayload,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedAddressResponse> {
     const id = await this.commands.execute<AddDeliveryAddressCommand, string>(
-      new AddDeliveryAddressCommand(user.userId, companyId, payload),
+      new AddDeliveryAddressCommand(user.userId, companyId, payload, intentKey),
     );
     return { id };
   }

@@ -3,12 +3,14 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
+import { OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { LegalEntity } from "../../domain/entities/legal-entity.js";
 import { LegalEntityDeclaredEvent } from "../../domain/events/legal-entity.events.js";
 import { LegalEntityRepository } from "../../domain/ports/legal-entity.repository.js";
 import { LegalAddress } from "../../domain/value-objects/legal-address.js";
 import { Siren } from "../../domain/value-objects/siren.js";
+import { CREATED_ID_REPLAY } from "../created-id-replay.js";
 import { DeclareLegalEntityCommand } from "./legal-entity-commands.js";
 
 /**
@@ -23,6 +25,10 @@ import { DeclareLegalEntityCommand } from "./legal-entity-commands.js";
  * L'identité est frappée ici, par le port `IdGenerator`, jamais par la base :
  * c'est ce qui permettra à la RUM d'un mandat d'en dériver avant la première
  * écriture.
+ *
+ * **Une fois par intention** : sujet, le SIREN déclaré. L'index unique du
+ * SIREN refuse déjà une seconde entité, mais un double clic lisait ce refus
+ * (409) après un succès ; la même clé rend la première, scellée avec elle.
  */
 @CommandHandler(DeclareLegalEntityCommand)
 export class DeclareLegalEntityHandler implements ICommandHandler<
@@ -35,9 +41,26 @@ export class DeclareLegalEntityHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: DeclareLegalEntityCommand): Promise<string> {
+  execute(command: DeclareLegalEntityCommand): Promise<string> {
+    return this.intents.runSealed(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: DECLARE_GESTURE,
+        subject: command.payload.siren,
+      },
+      CREATED_ID_REPLAY,
+      (seal) => this.declare(command, seal),
+    );
+  }
+
+  private async declare(
+    command: DeclareLegalEntityCommand,
+    seal: (id: string) => Promise<void>,
+  ): Promise<string> {
     const { payload } = command;
     const id = this.ids.next();
     const entity = LegalEntity.declare({
@@ -59,7 +82,11 @@ export class DeclareLegalEntityHandler implements ICommandHandler<
       await this.events.publishTraced(
         new LegalEntityDeclaredEvent({ id, name: entity.name }, at, payload.name, payload.siren),
       );
+      await seal(id);
     });
     return id;
   }
 }
+
+/** Le nom stable du geste, dans le registre des intentions. */
+const DECLARE_GESTURE = "accounting.declare-legal-entity";

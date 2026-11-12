@@ -31,9 +31,10 @@ describe('MailSendsService — le suivi des e-mails', () => {
 
   it('cherche une adresse dans le CORPS, jamais dans l’URL, puis relit par l’identifiant', async () => {
     const { api, http } = setup();
-    const done = api.searchByRecipient('claire@halles.fr');
+    const done = api.searchByRecipient('claire@halles.fr', 'cle-1');
     const post = http.expectOne(`${BASE}/searches`);
     expect(post.request.method).toBe('POST');
+    expect(post.request.headers.get('Idempotency-Key')).toBe('cle-1');
     expect(post.request.body).toEqual({ address: 'claire@halles.fr' });
     expect(post.request.urlWithParams).not.toContain('halles');
     post.flush({ id: 's1' });
@@ -46,17 +47,17 @@ describe('MailSendsService — le suivi des e-mails', () => {
 
   it('révèle puis lit l’adresse ; un refus de la révélation ne lit rien', async () => {
     const { api, http } = setup();
-    const done = api.revealRecipient('m1');
-    http
-      .expectOne(`${BASE}/m1/recipient-reveal`)
-      .flush(null, { status: 204, statusText: 'No Content' });
+    const done = api.revealRecipient('m1', 'cle-2');
+    const reveal = http.expectOne(`${BASE}/m1/recipient-reveal`);
+    expect(reveal.request.headers.get('Idempotency-Key')).toBe('cle-2');
+    reveal.flush(null, { status: 204, statusText: 'No Content' });
     await tick();
     http
       .expectOne(`${BASE}/m1/recipient`)
       .flush({ id: 'm1', recipient: 'a@b.fr', failureReason: null, revealedUntil: 'z' });
     expect((await done).recipient).toBe('a@b.fr');
 
-    const refused = api.revealRecipient('m2');
+    const refused = api.revealRecipient('m2', 'cle-3');
     http
       .expectOne(`${BASE}/m2/recipient-reveal`)
       .flush({ message: 'Plafond atteint.' }, { status: 409, statusText: 'Conflict' });

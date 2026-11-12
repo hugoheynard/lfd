@@ -13,6 +13,7 @@ import { PricingMaterialsCache } from "../src/lafoliecoffee/pricing/infrastructu
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const REGISTERED = "auth0|vignette-inscrit";
 const SKU = "VIE-001-1";
@@ -44,6 +45,7 @@ beforeEach(async () => {
   await ctx
     .asSub(E2E_STAFF_SUB)
     .post("/admin/pickup-addresses")
+    .set(INTENT_KEY, freshIntent())
     .send({
       label: "Le Labo",
       ligne1: "5 rue du Four",
@@ -63,6 +65,7 @@ async function pose(over: Partial<PromotionTermsPayload>): Promise<string> {
     await ctx
       .asSub(E2E_STAFF_SUB)
       .post("/admin/promotions")
+      .set(INTENT_KEY, freshIntent())
       .send({
         internalName: "Folie Coffee",
         label: { fr: "−20 % Folie Coffee", en: null, it: null },
@@ -129,6 +132,7 @@ describe("le texte d'une promotion sur la vignette", () => {
     const refused = await ctx
       .asSub(E2E_STAFF_SUB)
       .post("/admin/promotions")
+      .set(INTENT_KEY, freshIntent())
       .send({
         internalName: "Sans français",
         label: { fr: "−20 %", en: null, it: null },

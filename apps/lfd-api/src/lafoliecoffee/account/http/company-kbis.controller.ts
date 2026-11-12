@@ -23,6 +23,7 @@ import {
   type KbisDownload,
 } from "../application/queries/download-kbis.query.js";
 import { InvalidKbisFileError } from "../domain/errors/account-errors.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 
 /** Backstop DoS du multipart, très au-dessus de la limite métier (le domaine tranche à 10 Mo). */
 const KBIS_UPLOAD_HARD_LIMIT = 20 * 1024 * 1024;
@@ -55,7 +56,8 @@ export class CompanyKbisController {
    * Dépose (ou remplace) le KBIS. Le fichier arrive en **multipart** (`file`),
    * gardé en mémoire par Multer. Aucune validation ici : c'est le domaine
    * (`KbisFile`) qui vérifie le PDF par ses octets et la taille. La limite Multer
-   * n'est qu'un garde-fou DoS, très au-dessus de la limite métier.
+   * n'est qu'un garde-fou DoS, très au-dessus de la limite métier. Une fois par
+   * intention (`Idempotency-Key`) : un double envoi ne dépose pas deux fois.
    */
   @Put(":companyId/kbis")
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -64,12 +66,13 @@ export class CompanyKbisController {
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,
     @UploadedFile() file: UploadedFilePart | undefined,
+    @IntentKey() intentKey: string,
   ): Promise<void> {
     if (file === undefined) {
       throw new InvalidKbisFileError("aucun fichier reçu.");
     }
     await this.commands.execute<UploadKbisCommand, void>(
-      new UploadKbisCommand(user.userId, companyId, file.originalname, file.buffer),
+      new UploadKbisCommand(user.userId, companyId, file.originalname, file.buffer, intentKey),
     );
   }
 

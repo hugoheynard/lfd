@@ -99,7 +99,7 @@ describe('MailSendsPage — le suivi des envois', () => {
     await settle();
     element.querySelector('form')?.dispatchEvent(new Event('submit', { cancelable: true }));
     await settle();
-    expect(searchByRecipient).toHaveBeenCalledWith('claire@halles.fr');
+    expect(searchByRecipient).toHaveBeenCalledWith('claire@halles.fr', expect.any(String));
     expect(element.querySelector('[data-search-banner]')?.textContent).toContain('figés à');
     expect(element.textContent).toContain('Commande prête');
     expect(element.textContent).not.toContain('Commande passée');

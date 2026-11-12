@@ -91,6 +91,7 @@ async function seedPeople(): Promise<People> {
 async function seedSite(): Promise<string> {
   const response = await staff()
     .post("/admin/pickup-addresses")
+    .set(INTENT_KEY, freshIntent())
     .send({
       label: "Labo",
       ligne1: "5 rue du Four",

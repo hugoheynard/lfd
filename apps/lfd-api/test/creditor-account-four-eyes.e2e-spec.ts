@@ -16,6 +16,7 @@ import { LegalEntityRepository } from "../src/lafoliecoffee/accounting/domain/po
 import { LegalEntityChangedConcurrentlyError } from "../src/lafoliecoffee/accounting/domain/errors/creditor-account-review-errors.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_ID, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const SIREN = "552100554";
 const ICS = "FR72ZZZ123456";
@@ -82,6 +83,7 @@ function second(): ReturnType<E2eContext["asSub"]> {
 async function collectingEntity(): Promise<string> {
   const response = await staff()
     .post(ENTITIES)
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: "La Folie Douce",
       legalForm: "SAS",

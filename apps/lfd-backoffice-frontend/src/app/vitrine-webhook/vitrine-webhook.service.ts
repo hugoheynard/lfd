@@ -16,6 +16,7 @@ import type {
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
+import { GestureIntents, intentOptions, shownOnce } from '../shared/gesture-intents';
 
 /**
  * **Les abonnés du webhook de la vitrine** — l'agence du site vitrine et ses
@@ -27,14 +28,22 @@ import { B2B_API_BASE } from '../api/api-config';
 export class VitrineWebhookService {
   private readonly http = inject(HttpClient);
   private readonly base = `${B2B_API_BASE}/admin/vitrine`;
+  /** Une clé par déclaration ou rotation voulue ; oubliée une fois le secret montré. */
+  private readonly intents = new GestureIntents();
 
   list(): Promise<readonly VitrineSubscriberView[]> {
     return firstValueFrom(this.http.get<VitrineSubscriberView[]>(`${this.base}/subscribers`));
   }
 
   create(payload: CreateVitrineSubscriberPayload): Promise<VitrineCredentialsView> {
-    return firstValueFrom(
-      this.http.post<VitrineCredentialsView>(`${this.base}/subscribers`, payload),
+    return shownOnce(this.intents, `create:${JSON.stringify(payload)}`, (key) =>
+      firstValueFrom(
+        this.http.post<VitrineCredentialsView>(
+          `${this.base}/subscribers`,
+          payload,
+          intentOptions(key),
+        ),
+      ),
     );
   }
 
@@ -53,8 +62,14 @@ export class VitrineWebhookService {
   }
 
   rotate(id: string): Promise<VitrineCredentialsView> {
-    return firstValueFrom(
-      this.http.post<VitrineCredentialsView>(`${this.subscriber(id)}/rotate`, null),
+    return shownOnce(this.intents, `rotate:${id}`, (key) =>
+      firstValueFrom(
+        this.http.post<VitrineCredentialsView>(
+          `${this.subscriber(id)}/rotate`,
+          null,
+          intentOptions(key),
+        ),
+      ),
     );
   }
 
@@ -62,10 +77,11 @@ export class VitrineWebhookService {
     return firstValueFrom(this.http.post<void>(`${this.subscriber(id)}/resync`, null));
   }
 
-  test(id: string): Promise<void> {
-    return firstValueFrom(this.http.post<unknown>(`${this.subscriber(id)}/test`, null)).then(
-      () => undefined,
-    );
+  /** Un essai, une fois par intention : un double clic n'en envoie pas deux. */
+  test(id: string, intentKey: string): Promise<void> {
+    return firstValueFrom(
+      this.http.post<unknown>(`${this.subscriber(id)}/test`, null, intentOptions(intentKey)),
+    ).then(() => undefined);
   }
 
   deliveries(id: string): Promise<readonly VitrineDeliveryView[]> {

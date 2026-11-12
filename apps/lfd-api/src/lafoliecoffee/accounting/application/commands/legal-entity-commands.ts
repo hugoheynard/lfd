@@ -17,7 +17,13 @@ import type {
  * règle — c'est là que l'unité par fichier paie.
  */
 export class DeclareLegalEntityCommand {
-  constructor(readonly payload: DeclareLegalEntityPayload) {}
+  constructor(
+    readonly payload: DeclareLegalEntityPayload,
+    /** La fiche staff de qui déclare — l'acteur de l'intention. */
+    readonly staffUserId: string,
+    /** La clé d'intention de l'écran : un second envoi rend la même entité. */
+    readonly intentKey: string,
+  ) {}
 }
 
 export class CorrectLegalEntityCommand {
@@ -167,6 +173,10 @@ export class SetLegalEntityLogoCommand {
     readonly legalEntityId: string,
     readonly fileName: string,
     readonly bytes: Buffer,
+    /** La fiche staff de qui dépose — l'acteur de l'intention. */
+    readonly staffUserId: string,
+    /** La clé d'intention de l'écran : un second envoi ne redépose rien. */
+    readonly intentKey: string,
   ) {}
 }
 

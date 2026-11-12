@@ -30,7 +30,9 @@ export class SetPreNotificationHandler implements ICommandHandler<SetPreNotifica
 
   async execute(command: SetPreNotificationCommand): Promise<void> {
     const entity = await loadOrFail(this.entities, command.legalEntityId);
-    entity.setPreNotificationDays(command.days);
+    if (!entity.setPreNotificationDays(command.days)) {
+      return;
+    }
 
     const at = this.clock.now();
     await this.uow.run(async () => {

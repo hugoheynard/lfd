@@ -20,6 +20,7 @@ import { PausePromotionCommand } from "../pause-promotion.command.js";
 import { PosePromotionCommand } from "../pose-promotion.command.js";
 import { ResumePromotionCommand } from "../resume-promotion.command.js";
 import { RevisePromotionCommand } from "../revise-promotion.command.js";
+import { randomUUID } from "node:crypto";
 
 const STAFF = "staff_hugo";
 
@@ -30,7 +31,7 @@ function scene() {
 describe("les gestes sur une promotion", () => {
   it("la pose écrit l'agrégat et son acte, et rend l'identifiant", async () => {
     const { promotions, pose } = scene();
-    const id = await pose.execute(new PosePromotionCommand(lineTerms(), STAFF));
+    const id = await pose.execute(new PosePromotionCommand(lineTerms(), STAFF, randomUUID()));
     expect(id).toBe("promo_000001");
     expect(promotions.stored.get(id)?.status).toBe("active");
     expect(promotions.acts).toEqual([
@@ -38,12 +39,24 @@ describe("les gestes sur une promotion", () => {
     ]);
   });
 
+  /** Régression : un double clic sur « Poser » rendait un refus au second envoi d'une pose réussie. */
+  it("une pose rejouée sous la même clé rend la même promotion, sans second acte", async () => {
+    const { promotions, pose } = scene();
+    const key = randomUUID();
+
+    const first = await pose.execute(new PosePromotionCommand(lineTerms(), STAFF, key));
+    const replayed = await pose.execute(new PosePromotionCommand(lineTerms(), STAFF, key));
+
+    expect(replayed).toBe(first);
+    expect(promotions.acts).toHaveLength(1);
+  });
+
   it("une pose refusée par l'agrégat n'écrit rien", async () => {
     const { promotions, pose } = scene();
     const invalid = lineTerms({ scope: { mode: "only", rules: [] } });
-    await expect(pose.execute(new PosePromotionCommand(invalid, STAFF))).rejects.toThrow(
-      PromotionScopeIncludesNothingError,
-    );
+    await expect(
+      pose.execute(new PosePromotionCommand(invalid, STAFF, randomUUID())),
+    ).rejects.toThrow(PromotionScopeIncludesNothingError);
     expect(promotions.stored.size).toBe(0);
     expect(promotions.acts).toEqual([]);
   });
@@ -51,7 +64,7 @@ describe("les gestes sur une promotion", () => {
   it("révise, suspend, reprend puis archive — un acte par geste, dans l'ordre", async () => {
     const s = scene();
     const id = await s.pose.execute(
-      new PosePromotionCommand(basketTerms({ internalName: "Avant" }), STAFF),
+      new PosePromotionCommand(basketTerms({ internalName: "Avant" }), STAFF, randomUUID()),
     );
     await s.revise.execute(
       new RevisePromotionCommand(id, basketTerms(), STAFF, "passe au retrait"),
@@ -73,7 +86,7 @@ describe("les gestes sur une promotion", () => {
 
   it("un geste refusé n'écrit ni état ni acte", async () => {
     const s = scene();
-    const id = await s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF));
+    const id = await s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF, randomUUID()));
     await s.pause.execute(new PausePromotionCommand(id, STAFF, null));
     await expect(s.pause.execute(new PausePromotionCommand(id, STAFF, null))).rejects.toThrow(
       PromotionAlreadyPausedError,
@@ -93,14 +106,14 @@ describe("les refus des gestes — l'erreur nommée, aucune écriture, aucun act
   /** Une promotion posée, puis l'état et les actes à comparer après le refus. */
   async function posed(terms = lineTerms()) {
     const s = scene();
-    const id = await s.pose.execute(new PosePromotionCommand(terms, STAFF));
+    const id = await s.pose.execute(new PosePromotionCommand(terms, STAFF, randomUUID()));
     return { s, id, before: s.promotions.stored.get(id), actsBefore: [...s.promotions.acts] };
   }
 
   it("une seconde pose du même public sur les mêmes articles est refusée et ne laisse rien", async () => {
     const { s, actsBefore } = await posed();
     await expect(
-      s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF)),
+      s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF, randomUUID())),
     ).rejects.toBeInstanceOf(OverlappingPromotionError);
     expect([...s.promotions.stored.keys()]).toEqual(["promo_000001"]);
     expect(s.promotions.acts).toEqual(actsBefore);
@@ -111,7 +124,7 @@ describe("les refus des gestes — l'erreur nommée, aucune écriture, aucun act
       lineTerms({ validFrom: FROM, validTo: UNTIL }),
     );
     const other = await s.pose.execute(
-      new PosePromotionCommand(lineTerms({ validFrom: UNTIL, validTo: null }), STAFF),
+      new PosePromotionCommand(lineTerms({ validFrom: UNTIL, validTo: null }), STAFF, randomUUID()),
     );
     const otherBefore = s.promotions.stored.get(other);
     const actsAfterPose = [...s.promotions.acts];
@@ -153,7 +166,11 @@ describe("les refus des gestes — l'erreur nommée, aucune écriture, aucun act
     const s = scene();
     await expect(
       s.pose.execute(
-        new PosePromotionCommand(lineTerms({ validFrom: UNTIL, validTo: FROM }), STAFF),
+        new PosePromotionCommand(
+          lineTerms({ validFrom: UNTIL, validTo: FROM }),
+          STAFF,
+          randomUUID(),
+        ),
       ),
     ).rejects.toBeInstanceOf(PromotionReversedWindowError);
     expect(s.promotions.stored.size).toBe(0);
@@ -201,9 +218,9 @@ describe("les refus des gestes — l'erreur nommée, aucune écriture, aucun act
   it("l'archivage libère la place : la même promotion peut être reposée", async () => {
     const { s, id } = await posed();
     await s.archive.execute(new ArchivePromotionCommand(id, STAFF, "fin"));
-    await expect(s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF))).resolves.toBe(
-      "promo_000002",
-    );
+    await expect(
+      s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF, randomUUID())),
+    ).resolves.toBe("promo_000002");
   });
 
   it("une révision garde l'identité d'origine : auteur et date de création ne bougent pas", async () => {

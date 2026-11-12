@@ -28,6 +28,8 @@ import { RevokeLoginMethodCommand } from "../revoke-login-method.command.js";
 import { RevokeLoginMethodHandler } from "../revoke-login-method.handler.js";
 import { RecordingDurable } from "./durable-doubles.js";
 import { journalNames } from "./member-acts-doubles.js";
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 
 /**
  * **Rattacher, lister, retirer une méthode de connexion** (plan
@@ -148,13 +150,14 @@ function linkHandler(
       new DirectUnitOfWork(),
       durable,
       new FixedIdGenerator("lnk"),
+      inMemoryIntents(),
     ),
     events,
     durable,
   };
 }
 
-const linkCommand = new LinkLoginMethodCommand(OWNER, PRIMARY, "le-jeton-de-preuve");
+const linkCommand = new LinkLoginMethodCommand(OWNER, PRIMARY, "le-jeton-de-preuve", randomUUID());
 
 describe("rattacher une méthode de connexion", () => {
   it("vérifie la preuve, rattache, et inscrit le fait sans le sujet secondaire", async () => {

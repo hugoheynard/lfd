@@ -49,7 +49,8 @@ export function declarePimReemissionAgentTools(): readonly string[] {
     },
     execute: (args) =>
       said('Réémission', async () => {
-        const id = await api.start(args.productId ?? null);
+        // Un appel d'outil est une intention : sa propre clé, jamais réutilisée.
+        const id = await api.start(args.productId ?? null, crypto.randomUUID());
         return `Réémission lancée : ${id}. Relire pim_catalog_reemission_status avec ce jobId.`;
       }),
   });

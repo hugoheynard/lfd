@@ -25,6 +25,7 @@ import {
 } from "./decision-carry-over-scene.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const CLIENT = "auth0|report_regle";
 const NEGOTIATED_MILLICENTS = 700_000;
@@ -64,6 +65,7 @@ async function detachedWithRule(): Promise<{
   const ruleId = jsonBody<CreatedIdResponse>(
     await staffOf(ctx)
       .post("/admin/pricing/rules")
+      .set(INTENT_KEY, freshIntent())
       .send({
         stage: "geste",
         label: "Prix de la part",

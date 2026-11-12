@@ -10,6 +10,7 @@ import type {
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../../api/api-config';
+import { intentOptions } from '../../shared/gesture-intents';
 import { mailSendQuery, type MailSendFilters } from '../rules/mail-send-labels';
 
 const BASE = `${B2B_API_BASE}/admin/mail/sends`;
@@ -42,16 +43,22 @@ export class MailSendsService {
    * Révèle l'adresse (inscrit au journal, vaut 5 minutes), puis la lit.
    * `409` au plafond, `403` sans révélation en cours : relancés tels quels.
    */
-  async revealRecipient(id: string): Promise<MailRecipientView> {
+  async revealRecipient(id: string, intentKey: string): Promise<MailRecipientView> {
     const at = `${BASE}/${encodeURIComponent(id)}`;
-    await firstValueFrom(this.http.post<unknown>(`${at}/recipient-reveal`, null));
+    await firstValueFrom(
+      this.http.post<unknown>(`${at}/recipient-reveal`, null, intentOptions(intentKey)),
+    );
     return firstValueFrom(this.http.get<MailRecipientView>(`${at}/recipient`));
   }
 
   /** Cherche les envois d'une adresse (dans le CORPS), puis lit le résultat figé. */
-  async searchByRecipient(address: string): Promise<MailRecipientSearchView> {
+  async searchByRecipient(address: string, intentKey: string): Promise<MailRecipientSearchView> {
     const { id } = await firstValueFrom(
-      this.http.post<MailRecipientSearchCreatedView>(`${BASE}/searches`, { address }),
+      this.http.post<MailRecipientSearchCreatedView>(
+        `${BASE}/searches`,
+        { address },
+        intentOptions(intentKey),
+      ),
     );
     return firstValueFrom(
       this.http.get<MailRecipientSearchView>(`${BASE}/searches/${encodeURIComponent(id)}`),

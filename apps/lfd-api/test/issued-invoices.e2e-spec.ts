@@ -114,6 +114,7 @@ function invoiceMails(): readonly SentMail[] {
 async function entity(): Promise<string> {
   const response = await staff()
     .post(ENTITIES)
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: "La Folie Douce",
       legalForm: "SAS",

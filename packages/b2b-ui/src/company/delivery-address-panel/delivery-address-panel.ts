@@ -82,6 +82,13 @@ export class DeliveryAddressPanel {
   private readonly writer = inject(ADDRESS_WRITER);
   private readonly ref = inject(FoldPanelRef<boolean>);
   private readonly submitter = panelSubmit();
+  /**
+   * L'intention d'ajouter, fabriquée à l'ouverture du panneau et renvoyée à
+   * chaque envoi : un double clic, ou un réessai après une coupure, n'ajoute
+   * pas une seconde adresse. Le panneau se ferme au succès — une nouvelle
+   * adresse est un nouveau panneau, donc une nouvelle intention.
+   */
+  private readonly intentKey = crypto.randomUUID();
 
   readonly data = input.required<DeliveryAddressPanelData>();
 
@@ -113,7 +120,7 @@ export class DeliveryAddressPanel {
     void this.submitter.run(
       () =>
         address === null
-          ? this.writer.addDelivery(companyId, payload)
+          ? this.writer.addDelivery(companyId, payload, this.intentKey)
           : this.writer.updateDelivery(companyId, address.id, payload),
       address === null ? 'Adresse de livraison ajoutée.' : 'Adresse de livraison mise à jour.',
     );

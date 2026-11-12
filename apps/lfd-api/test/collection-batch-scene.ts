@@ -86,6 +86,7 @@ export const BASE = "/admin/accounting/collection";
 export async function collectingEntity(): Promise<string> {
   const response = await staff()
     .post("/admin/accounting/legal-entities")
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: "La Folie Douce",
       legalForm: "SAS",
@@ -261,6 +262,7 @@ export async function orderOf(
 export async function constitute(entityId: string, expected = 201): Promise<readonly string[]> {
   const response = await staff()
     .post(`${BASE}/batches`)
+    .set(INTENT_KEY, freshIntent())
     .send({ legalEntityId: entityId })
     .expect(expected);
   await ctx.drain();

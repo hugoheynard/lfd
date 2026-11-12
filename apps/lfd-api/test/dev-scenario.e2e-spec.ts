@@ -302,7 +302,11 @@ describe("le scénario du jour, étape par étape", () => {
       const order = await shortfallCandidate(day);
       const packing = `/admin/packing/${day}/orders/${order.id}`;
       const bag = jsonBody<{ containerId: string }>(
-        await admin(ctx).post(`${packing}/containers`).send({ nature: "bag" }).expect(201),
+        await admin(ctx)
+          .post(`${packing}/containers`)
+          .set(INTENT_KEY, freshIntent())
+          .send({ nature: "bag" })
+          .expect(201),
       );
       await admin(ctx)
         .post(`${packing}/containers/${bag.containerId}/lines/${order.sku}`)

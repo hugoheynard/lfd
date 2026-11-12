@@ -1,5 +1,6 @@
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 /**
  * **La case « vendu seulement pendant une opération » de la fiche** (D3 du plan
@@ -49,6 +50,7 @@ async function buche(): Promise<string> {
   return jsonBody<{ id: string }>(
     await staff()
       .post(PRODUCTS)
+      .set(INTENT_KEY, freshIntent())
       .send({ name: { fr: "Bûche praliné" }, kind: "made_to_order", categoryId: category.id })
       .expect(201),
   ).id;

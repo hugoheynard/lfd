@@ -27,6 +27,7 @@ import {
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardProvidersOverride } from "./card-payments.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const OWNER = "auth0|owner";
 const SERVICE_DAY = serviceDay();
@@ -97,6 +98,7 @@ async function bookAddress(specs: Partial<DeliveryAddressPayload["specs"]> = {})
   const created = await ctx
     .asSub(OWNER)
     .post(`/companies/${companyId}/delivery-addresses`)
+    .set(INTENT_KEY, freshIntent())
     .send(payload)
     .expect(201);
   return jsonBody<{ id: string }>(created).id;
@@ -312,6 +314,7 @@ describe("plusieurs créneaux par adresse (CA3b, §14.1)", () => {
     await ctx
       .asSub(OWNER)
       .post(`/companies/${companyId}/delivery-addresses`)
+      .set(INTENT_KEY, freshIntent())
       .send({
         ...POSTAL,
         isDefault: true,

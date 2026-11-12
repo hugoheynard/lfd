@@ -34,8 +34,16 @@ export class CustomerRequestMail {
 
   constructor(private readonly mail: Mail) {}
 
-  /** À appeler DANS l'unité de travail qui range la demande. */
+  /**
+   * À appeler DANS l'unité de travail qui range la demande. Un motif sans
+   * adresse ne demande aucun e-mail : la demande est rangée, la cloche sonne,
+   * et rien ne part (décidé par Hugo le 2026-11-12).
+   */
   async request(event: CustomerRequestReceivedEvent): Promise<void> {
+    const to = event.recipientEmail;
+    if (to === null) {
+      return;
+    }
     const request = event.request.toPersistence();
     const replyable = isValidReplyTo(request.author.email);
     if (!replyable) {
@@ -44,7 +52,7 @@ export class CustomerRequestMail {
       );
     }
     await this.mail.send({
-      to: event.recipientEmail,
+      to,
       replyTo: replyable ? request.author.email : undefined,
       template: "staff.customer-request",
       idempotencyKey: `customer-request:${request.id}`,

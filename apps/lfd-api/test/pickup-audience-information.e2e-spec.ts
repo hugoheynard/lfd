@@ -15,6 +15,7 @@ import { CompanyStatus, CustomerRole } from "../src/platform/database/client/cli
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { posePromotion, promotionTerms } from "./promotion-fixtures.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const ACTIVE = "auth0|audience-info-active";
 const PENDING = "auth0|audience-info-pending";
@@ -62,6 +63,7 @@ async function personIn(sub: string, status: CompanyStatus | null): Promise<void
 async function seedPoint(): Promise<string> {
   const response = await staff()
     .post("/admin/pickup-addresses")
+    .set(INTENT_KEY, freshIntent())
     .send({
       label: "Labo",
       ligne1: "5 rue du Four",

@@ -3,6 +3,7 @@ import { OutboxRelay } from "../src/platform/outbox/outbox-relay.js";
 import { OnCatalogProductChangedHandler } from "../src/lafoliecoffee/catalog/application/handlers/on-catalog-product-changed.handler.js";
 import type { E2eContext } from "./e2e-harness.js";
 import { jsonBody } from "./e2e-harness.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 /**
  * La scène des faits du catalogue (lot 2a de
@@ -49,6 +50,7 @@ export async function aDraftFiche(staff: Staff, name: string): Promise<Fiche> {
   const categoryId = jsonBody<{ id: string }>(family).id;
   const created = await staff()
     .post(PRODUCTS)
+    .set(INTENT_KEY, freshIntent())
     .send({ name: { fr: name }, kind: "daily", categoryId })
     .expect(201);
   const id = jsonBody<{ id: string }>(created).id;

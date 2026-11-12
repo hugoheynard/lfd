@@ -60,6 +60,9 @@ export class ProductionDossierRecipientsController {
    * ou une fiche suspendue.
    */
   @Post()
+  @Idempotent(
+    "par unicité : un destinataire n'est qu'une fois dans la liste ; rejoué, l'ajout est refusé (409 DuplicateDossierRecipientError) avant toute écriture",
+  )
   async add(
     @Body(new ZodBody(dossierRecipientPayloadSchema)) body: DossierRecipientPayload,
     @StaffUserId() staffUserId: string,

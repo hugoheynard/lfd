@@ -37,6 +37,8 @@ import {
   GetAccountBankExportsQuery,
 } from "../application/queries/account-bank-export-queries.js";
 import type { AccountBankFile } from "../application/queries/export-account-bank-file.handler.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 
 /**
  * **Les comptes à la banque** — l'export du fichier des comptes destinataires
@@ -64,14 +66,19 @@ export class AdminAccountBankExportsController {
     );
   }
 
-  /** Fige un export des 200 premiers comptes à exporter ; 409 s'il n'y en a aucun. */
+  /**
+   * Fige un export des 200 premiers comptes à exporter ; 409 s'il n'y en a
+   * aucun. Une fois par intention (`Idempotency-Key`) : la même clé rend le
+   * même export.
+   */
   @Post(":id/account-exports")
   async export(
     @StaffUserId() staffUserId: string,
     @Param("id") id: string,
+    @IntentKey() intentKey: string,
   ): Promise<AccountBankExportCreatedView> {
     const exportId = await this.commands.execute<ExportAccountsForBankCommand, string>(
-      new ExportAccountsForBankCommand(id, staffUserId),
+      new ExportAccountsForBankCommand(id, staffUserId, intentKey),
     );
     return { exportId };
   }
@@ -79,6 +86,9 @@ export class AdminAccountBankExportsController {
   /** Un compte connu de la banque sans notre fichier, et pourquoi ; 409 s'il est déjà connu ou en vol. */
   @Post(":id/account-exports/known-accounts")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "rejouée, l'empreinte du compte est déjà connue : l'entité refuse (409) avant toute écriture, et l'index unique sur l'empreinte tient la même règle en base",
+  )
   async declareKnown(
     @StaffUserId() staffUserId: string,
     @Param("id") id: string,
@@ -123,6 +133,9 @@ export class AdminAccountBankExportsController {
   /** La banque l'a importé ; 409 si l'export est déjà clos. */
   @Post(":id/account-exports/:exportId/imported")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée, l'export est clos et l'agrégat refuse (409) avant toute écriture ni fait",
+  )
   async imported(
     @StaffUserId() staffUserId: string,
     @Param("id") id: string,
@@ -136,6 +149,9 @@ export class AdminAccountBankExportsController {
   /** Compte rendu CENET : la banque avait déjà ce compte ; 409 avant le dépôt ou déjà corrigé. */
   @Post(":id/account-exports/:exportId/accounts/:bankAccountId/reported-known")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée, la ligne est déjà corrigée et l'agrégat refuse (409) avant toute écriture ni fait",
+  )
   async reportedKnown(
     @StaffUserId() staffUserId: string,
     @Param("id") id: string,
@@ -150,6 +166,9 @@ export class AdminAccountBankExportsController {
   /** Compte rendu CENET : ce compte est en erreur, il redevient à exporter ; 409 avant le dépôt. */
   @Post(":id/account-exports/:exportId/accounts/:bankAccountId/rejected")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée, la ligne est déjà corrigée et l'agrégat refuse (409) avant toute écriture ni fait",
+  )
   async rejected(
     @StaffUserId() staffUserId: string,
     @Param("id") id: string,
@@ -165,6 +184,9 @@ export class AdminAccountBankExportsController {
   /** La banque l'a rejeté : ses comptes redeviennent à exporter ; 409 s'il est déjà clos. */
   @Post(":id/account-exports/:exportId/abandoned")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée, l'export est clos et l'agrégat refuse (409) avant toute écriture ni fait",
+  )
   async abandoned(
     @StaffUserId() staffUserId: string,
     @Param("id") id: string,

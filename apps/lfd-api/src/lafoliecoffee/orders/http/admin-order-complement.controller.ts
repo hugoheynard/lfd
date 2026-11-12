@@ -5,6 +5,7 @@ import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js"
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { AbandonCardIncreaseCommand } from "../revision/application/commands/abandon-card-increase.command.js";
 import { RelaunchCardIncreaseCommand } from "../revision/application/commands/relaunch-card-increase.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **« Abandonner » le complément depuis la fiche** (doc
@@ -21,6 +22,9 @@ export class AdminOrderComplementController {
   /** `204` ; `409` s'il n'y a rien à abandonner, ou si le complément vient d'être payé. */
   @Delete(":id/complement")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée, plus aucun complément n'attend de paiement et le geste refuse (409) avant tout appel au prestataire",
+  )
   async abandon(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<AbandonCardIncreaseCommand, void>(
       new AbandonCardIncreaseCommand(id, { kind: "staff", staffId: staffUserId }),
@@ -33,6 +37,9 @@ export class AdminOrderComplementController {
    */
   @Post(":id/card-increase/relaunch")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée, le complément n'est plus en panne (ready) et le geste refuse (409) sous verrou, sans journal ni réveil de plus",
+  )
   async relaunch(@Param("id") id: string): Promise<void> {
     await this.commands.execute<RelaunchCardIncreaseCommand, void>(
       new RelaunchCardIncreaseCommand(id),

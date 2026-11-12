@@ -35,6 +35,8 @@ import {
   ExportMandateBankFileQuery,
   GetMandateBankExportsQuery,
 } from "../application/queries/mandate-bank-export-queries.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 
 /**
  * **Les mandats à la banque** — l'export du fichier d'import des mandats du
@@ -65,16 +67,18 @@ export class AdminMandateBankExportsController {
    * Fige un export des mandats « à exporter » ; 409 s'il n'y en a pas. Le
    * corps est `{}`, validé strict : l'ancien `all` (renvoi complet, retiré le
    * 2026-10-23) est refusé (400) plutôt qu'ignoré, pour qu'un client périmé
-   * n'obtienne pas en silence autre chose que ce qu'il a demandé.
+   * n'obtienne pas en silence autre chose que ce qu'il a demandé. Une fois
+   * par intention (`Idempotency-Key`) : la même clé rend le même export.
    */
   @Post(":id/mandate-exports")
   async export(
     @StaffUserId() staffUserId: string,
     @Param("id") id: string,
     @Body(new ZodBody(exportMandatesForBankPayloadSchema)) _payload: ExportMandatesForBankPayload,
+    @IntentKey() intentKey: string,
   ): Promise<MandateBankExportCreatedView> {
     const exportId = await this.commands.execute<ExportMandatesForBankCommand, string>(
-      new ExportMandatesForBankCommand(id, staffUserId),
+      new ExportMandatesForBankCommand(id, staffUserId, intentKey),
     );
     return { exportId };
   }
@@ -110,6 +114,9 @@ export class AdminMandateBankExportsController {
   /** La banque l'a importé ; 409 si c'est déjà dit. */
   @Post(":id/mandate-exports/:exportId/imported")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée, l'export est clos et l'agrégat refuse (409) avant toute écriture ni fait",
+  )
   async imported(
     @StaffUserId() staffUserId: string,
     @Param("id") id: string,
@@ -123,6 +130,9 @@ export class AdminMandateBankExportsController {
   /** Compte rendu CENET : la banque avait déjà ce mandat ; 409 avant le dépôt ou déjà corrigé. */
   @Post(":id/mandate-exports/:exportId/mandates/:mandateId/reported-known")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée, la ligne est déjà corrigée et l'agrégat refuse (409) avant toute écriture ni fait",
+  )
   async reportedKnown(
     @StaffUserId() staffUserId: string,
     @Param("id") id: string,
@@ -137,6 +147,9 @@ export class AdminMandateBankExportsController {
   /** Compte rendu CENET : ce mandat est en erreur, il redevient à exporter ; 409 avant le dépôt. */
   @Post(":id/mandate-exports/:exportId/mandates/:mandateId/rejected")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée, la ligne est déjà corrigée et l'agrégat refuse (409) avant toute écriture ni fait",
+  )
   async rejected(
     @StaffUserId() staffUserId: string,
     @Param("id") id: string,
@@ -152,6 +165,9 @@ export class AdminMandateBankExportsController {
   /** La banque l'a rejeté : il cesse d'être en attente ; 409 s'il est déjà clos. */
   @Post(":id/mandate-exports/:exportId/abandoned")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée, l'export est clos et l'agrégat refuse (409) avant toute écriture ni fait",
+  )
   async abandoned(
     @StaffUserId() staffUserId: string,
     @Param("id") id: string,

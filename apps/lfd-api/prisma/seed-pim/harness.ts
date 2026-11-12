@@ -49,12 +49,15 @@ export interface SeedHarness {
   close(): Promise<void>;
 }
 
+/** L'identifiant du staff du semis — aussi l'acteur des clés d'intention qu'il pose. */
+export const SEED_STAFF_ID = "seed-pim";
+
 /**
  * L'acteur du seed. `declare-product-ready` REFUSE un acteur anonyme — signer
  * une fiche sans signataire n'aurait aucun sens — donc le seed en porte un,
  * nommé pour être reconnu dans le journal.
  */
-export const SEED_STAFF: Actor = { type: "staff", id: "seed-pim" };
+export const SEED_STAFF: Actor = { type: "staff", id: SEED_STAFF_ID };
 
 export async function bootstrapHarness(): Promise<SeedHarness> {
   // Le harnais amorce l'application ENTIÈRE devant `DATABASE_LFD_URL` : sans

@@ -7,6 +7,7 @@ import {
   RunInvoiceAutopilotCommand,
   type InvoiceAutopilotReport,
 } from "../application/commands/run-invoice-autopilot.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Endpoint **machine** de la facture du mois à 23h55 (plan
@@ -29,6 +30,9 @@ export class InvoiceAutopilotController {
 
   @Post()
   @HttpCode(200)
+  @Idempotent(
+    "appelée par la machine (RecomputeGuard) : une clôture déjà tentée se tait, et un bon n'est facturé qu'une fois (index invoice_order_invoiced_once)",
+  )
   run(): Promise<InvoiceAutopilotReport> {
     return this.commands.execute<RunInvoiceAutopilotCommand, InvoiceAutopilotReport>(
       new RunInvoiceAutopilotCommand(),

@@ -29,6 +29,7 @@ import type {
 } from "../src/lafoliecoffee/pricing/domain/pricing-act.js";
 import { eventRow } from "../src/lafoliecoffee/pricing/infrastructure/pricing-journal.writer.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_ID, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
 const stubAdminVerifier = {
@@ -196,6 +197,7 @@ describe("paginer le journal d'une règle", () => {
   it("nomme l'auteur d'un acte écrit par le vrai chemin", async () => {
     const posed = await staff()
       .post("/admin/pricing/rules")
+      .set(INTENT_KEY, freshIntent())
       .send({
         // `geste` depuis L12 (2026-10-30) : l'étage `promotion` ne s'écrit plus, et la
         // mécanique éprouvée ici ne dépend pas de l'étage.

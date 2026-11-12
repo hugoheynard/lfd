@@ -1,3 +1,5 @@
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+import { randomUUID } from "node:crypto";
 import { Buffer } from "node:buffer";
 
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
@@ -152,9 +154,16 @@ describe("SetLegalEntityLogoHandler", () => {
   it("valide, range, puis attache la clé à l'agrégat", async () => {
     const entities = seeded();
     const store = new InMemoryStore();
-    const handler = new SetLegalEntityLogoHandler(entities, store, new DirectUnitOfWork());
+    const handler = new SetLegalEntityLogoHandler(
+      entities,
+      store,
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
+    );
 
-    await handler.execute(new SetLegalEntityLogoCommand(ENTITY_ID, "logo.png", PNG));
+    await handler.execute(
+      new SetLegalEntityLogoCommand(ENTITY_ID, "logo.png", PNG, "staff_compta", randomUUID()),
+    );
 
     const stored = entities.rows.get(ENTITY_ID);
     expect(stored?.hasLogo).toBe(true);
@@ -167,11 +176,22 @@ describe("SetLegalEntityLogoHandler", () => {
   it("REFUSE avant de ranger quoi que ce soit — on ne stocke jamais un fichier douteux", async () => {
     const entities = seeded();
     const store = new InMemoryStore();
-    const handler = new SetLegalEntityLogoHandler(entities, store, new DirectUnitOfWork());
+    const handler = new SetLegalEntityLogoHandler(
+      entities,
+      store,
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
+    );
 
     await expect(
       handler.execute(
-        new SetLegalEntityLogoCommand(ENTITY_ID, "faux.png", Buffer.from("%PDF-1.4", "latin1")),
+        new SetLegalEntityLogoCommand(
+          ENTITY_ID,
+          "faux.png",
+          Buffer.from("%PDF-1.4", "latin1"),
+          "staff_compta",
+          randomUUID(),
+        ),
       ),
     ).rejects.toThrow(InvalidEntityLogoError);
 
@@ -182,10 +202,25 @@ describe("SetLegalEntityLogoHandler", () => {
   it("remplace à la MÊME clé — un remplacement reste un remplacement", async () => {
     const entities = seeded();
     const store = new InMemoryStore();
-    const handler = new SetLegalEntityLogoHandler(entities, store, new DirectUnitOfWork());
+    const handler = new SetLegalEntityLogoHandler(
+      entities,
+      store,
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
+    );
 
-    await handler.execute(new SetLegalEntityLogoCommand(ENTITY_ID, "logo.png", PNG));
-    await handler.execute(new SetLegalEntityLogoCommand(ENTITY_ID, "autre.png", pngOf(300, 300)));
+    await handler.execute(
+      new SetLegalEntityLogoCommand(ENTITY_ID, "logo.png", PNG, "staff_compta", randomUUID()),
+    );
+    await handler.execute(
+      new SetLegalEntityLogoCommand(
+        ENTITY_ID,
+        "autre.png",
+        pngOf(300, 300),
+        "staff_compta",
+        randomUUID(),
+      ),
+    );
 
     expect(store.objects.size).toBe(1);
   });
@@ -195,10 +230,13 @@ describe("SetLegalEntityLogoHandler", () => {
       new InMemoryEntities(),
       new InMemoryStore(),
       new DirectUnitOfWork(),
+      inMemoryIntents(),
     );
 
     await expect(
-      handler.execute(new SetLegalEntityLogoCommand("inexistante", "logo.png", PNG)),
+      handler.execute(
+        new SetLegalEntityLogoCommand("inexistante", "logo.png", PNG, "staff_compta", randomUUID()),
+      ),
     ).rejects.toThrow(LegalEntityNotFoundError);
   });
 
@@ -213,10 +251,13 @@ describe("SetLegalEntityLogoHandler", () => {
       entities,
       new BrokenStore(),
       new DirectUnitOfWork(),
+      inMemoryIntents(),
     );
 
     await expect(
-      handler.execute(new SetLegalEntityLogoCommand(ENTITY_ID, "logo.png", PNG)),
+      handler.execute(
+        new SetLegalEntityLogoCommand(ENTITY_ID, "logo.png", PNG, "staff_compta", randomUUID()),
+      ),
     ).rejects.toThrow(DocumentStorageUnavailableError);
     expect(entities.rows.get(ENTITY_ID)?.hasLogo).toBe(false);
   });
@@ -230,12 +271,49 @@ describe("SetLegalEntityLogoHandler", () => {
   });
 });
 
+describe("SetLegalEntityLogoHandler — une fois par intention", () => {
+  /** Régression : un double clic renvoyait les octets au stockage une seconde fois. */
+  it("la même clé ne redépose rien au stockage", async () => {
+    const entities = seeded();
+    const saves: string[] = [];
+    const store = new (class extends InMemoryStore {
+      override save(key: string, document: StoredDocument): Promise<string> {
+        saves.push(key);
+        return super.save(key, document);
+      }
+    })();
+    const handler = new SetLegalEntityLogoHandler(
+      entities,
+      store,
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
+    );
+    const command = new SetLegalEntityLogoCommand(
+      ENTITY_ID,
+      "logo.png",
+      PNG,
+      "staff_compta",
+      "cle-1",
+    );
+
+    await handler.execute(command);
+    await handler.execute(command);
+
+    expect(saves).toHaveLength(1);
+  });
+});
+
 describe("RemoveLegalEntityLogoHandler", () => {
   it("détache la clé et laisse l'objet rangé — la base est seule autorité", async () => {
     const entities = seeded();
     const store = new InMemoryStore();
-    await new SetLegalEntityLogoHandler(entities, store, new DirectUnitOfWork()).execute(
-      new SetLegalEntityLogoCommand(ENTITY_ID, "logo.png", PNG),
+    await new SetLegalEntityLogoHandler(
+      entities,
+      store,
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
+    ).execute(
+      new SetLegalEntityLogoCommand(ENTITY_ID, "logo.png", PNG, "staff_compta", randomUUID()),
     );
 
     await new RemoveLegalEntityLogoHandler(entities, new DirectUnitOfWork()).execute(
@@ -259,8 +337,13 @@ describe("GetLegalEntityLogoHandler", () => {
   it("rend les octets et le type RELU dans les octets", async () => {
     const entities = seeded();
     const store = new InMemoryStore();
-    await new SetLegalEntityLogoHandler(entities, store, new DirectUnitOfWork()).execute(
-      new SetLegalEntityLogoCommand(ENTITY_ID, "logo.png", PNG),
+    await new SetLegalEntityLogoHandler(
+      entities,
+      store,
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
+    ).execute(
+      new SetLegalEntityLogoCommand(ENTITY_ID, "logo.png", PNG, "staff_compta", randomUUID()),
     );
 
     const logo = await new GetLegalEntityLogoHandler(

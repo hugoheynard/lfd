@@ -6,5 +6,9 @@ export class CreateStaffSuggestionCommand {
     readonly rule: StaffSuggestionRuleInput,
     /** Qui la crée — un `StaffUser.id`, ou `null` hors requête. */
     readonly writtenBy: string | null,
+    /** La fiche du staff qui agit : l'acteur de l'intention. */
+    readonly staffUserId: string,
+    /** La clé d'intention de l'écran (`Idempotency-Key`) : un rejeu ne refait pas le geste. */
+    readonly intentKey: string,
   ) {}
 }

@@ -94,12 +94,19 @@ export class MandatesService {
     );
   }
 
-  /** Dépose (ou remplace) le scan du mandat signé. */
-  async uploadProof(companyId: string, file: File): Promise<void> {
+  /**
+   * Dépose (ou remplace) le scan du mandat signé — une fois par intention : la
+   * même clé ne range pas une seconde pièce.
+   */
+  async uploadProof(companyId: string, file: File, intentKey: string): Promise<void> {
     const body = new FormData();
     body.append('file', file);
     await firstValueFrom(
-      this.http.put<void>(`${B2B_API_BASE}/admin/companies/${companyId}/mandate/proof`, body),
+      this.http.put<void>(
+        `${B2B_API_BASE}/admin/companies/${companyId}/mandate/proof`,
+        body,
+        intentOptions(intentKey),
+      ),
     );
   }
 
@@ -128,10 +135,16 @@ export class MandatesService {
     );
   }
 
-  /** Retire l'autorisation de prélever. */
-  async revoke(companyId: string): Promise<void> {
+  /**
+   * Retire l'autorisation de prélever — une fois par intention : un second
+   * envoi de la même clé ne révoque pas le brouillon qui suit l'actif.
+   */
+  async revoke(companyId: string, intentKey: string): Promise<void> {
     await firstValueFrom(
-      this.http.delete<void>(`${B2B_API_BASE}/admin/companies/${companyId}/mandate`),
+      this.http.delete<void>(
+        `${B2B_API_BASE}/admin/companies/${companyId}/mandate`,
+        intentOptions(intentKey),
+      ),
     );
   }
 }

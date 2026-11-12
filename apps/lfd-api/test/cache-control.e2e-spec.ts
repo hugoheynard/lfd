@@ -27,6 +27,7 @@ import {
   serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /** Le jeton porteur EST le `sub` : le mur se joue en base, comme en production. */
 const stubAdminVerifier = {
@@ -139,6 +140,7 @@ describe("Cache-Control de la liste publique des points", () => {
     const created = await ctx
       .asSub(E2E_STAFF_SUB)
       .post("/admin/pickup-addresses")
+      .set(INTENT_KEY, freshIntent())
       .send({
         label: "Point du cache",
         ligne1: "1 rue du Test",

@@ -155,6 +155,12 @@ export class PhotoCardsEditor<C extends PhotoCardView = PhotoCardView> {
   private readonly failedThumbs = signal<ReadonlySet<string>>(new Set());
   private readonly panels = inject(FoldPanelHostService);
   private initialDraft: PhotoCardDraft = EMPTY_PHOTO_CARD_DRAFT;
+  /**
+   * L'intention du formulaire ouvert, fabriquée à son ouverture et renvoyée à
+   * chaque envoi : un double clic, ou un réessai après une coupure, n'ajoute
+   * ni ne révise deux fois. Un nouveau formulaire est une intention neuve.
+   */
+  private intentKey = '';
   private knownCount: number | null = null;
   private destroyed = false;
 
@@ -291,13 +297,15 @@ export class PhotoCardsEditor<C extends PhotoCardView = PhotoCardView> {
     const draft = this.draft();
     const card = this.revising();
     const gateway = this.gateway();
+    const intentKey = this.intentKey;
     void this.write(() =>
       card === null
-        ? gateway.add(toPhotoCardFields(draft), newPhotoOf(draft), newThumbnailOf(draft))
+        ? gateway.add(toPhotoCardFields(draft), newPhotoOf(draft), intentKey, newThumbnailOf(draft))
         : gateway.revise(
             card.id,
             toPhotoCardFields(draft),
             photoCardChangeOf(draft, this.initialDraft),
+            intentKey,
           ),
     );
   }
@@ -308,6 +316,7 @@ export class PhotoCardsEditor<C extends PhotoCardView = PhotoCardView> {
   }
 
   private openForm(mode: EditorMode<C>, draft: PhotoCardDraft): void {
+    this.intentKey = crypto.randomUUID();
     this.notice.set(null);
     this.initialDraft = draft;
     this.draft.set(draft);

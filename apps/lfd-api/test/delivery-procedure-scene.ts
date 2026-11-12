@@ -13,6 +13,7 @@ import type request from "supertest";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /** Un PNG minimal aux dimensions lisibles — `DeliveryStepPhoto` n'exige rien de plus. */
 export function pngOf(width: number, height: number): Buffer {
@@ -198,6 +199,7 @@ export async function seedCompanyWithDelivery(
   const created = await ctx
     .asSub(adminSub)
     .post(`/companies/${company.id}/delivery-addresses`)
+    .set(INTENT_KEY, freshIntent())
     .send(DELIVERY)
     .expect(201);
   return { companyId: company.id, addressId: jsonBody<CreatedAddressResponse>(created).id };

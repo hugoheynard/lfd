@@ -17,6 +17,7 @@ import type {
 } from "../src/lafoliecoffee/account/domain/ports/customer-identity.port.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const SUB = "auth0|camille";
 const EMAIL = "camille@pqmarais.fr";
@@ -97,7 +98,11 @@ async function requestFacts(): Promise<{ type: string; payload: unknown }[]> {
 
 describe("POST /me/password-link", () => {
   it("répond 204 avec un corps VIDE — le lien ne sort jamais par HTTP", async () => {
-    const response = await ctx.asSub(SUB).post("/me/password-link").expect(204);
+    const response = await ctx
+      .asSub(SUB)
+      .post("/me/password-link")
+      .set(INTENT_KEY, freshIntent())
+      .expect(204);
 
     expect(response.text).toBe("");
     expect(JSON.stringify(response.body)).not.toContain("ticket");
@@ -105,7 +110,7 @@ describe("POST /me/password-link", () => {
   });
 
   it("inscrit la demande au journal, sans adresse ni sujet ni lien", async () => {
-    await ctx.asSub(SUB).post("/me/password-link").expect(204);
+    await ctx.asSub(SUB).post("/me/password-link").set(INTENT_KEY, freshIntent()).expect(204);
     await ctx.drain();
 
     const facts = await requestFacts();
@@ -128,7 +133,11 @@ describe("POST /me/password-link", () => {
       { provider: "google-oauth2", secondaryUserId: "10203040", connection: null, isPrimary: true },
     ];
 
-    const response = await ctx.asSub(SUB).post("/me/password-link").expect(409);
+    const response = await ctx
+      .asSub(SUB)
+      .post("/me/password-link")
+      .set(INTENT_KEY, freshIntent())
+      .expect(409);
 
     expect(response.body).toMatchObject({ code: "identity.no_password_login" });
     expect(identity.sent).toEqual([]);
@@ -137,7 +146,7 @@ describe("POST /me/password-link", () => {
   });
 
   it("refuse un porteur inconnu", async () => {
-    await ctx.http().post("/me/password-link").expect(401);
+    await ctx.http().post("/me/password-link").set(INTENT_KEY, freshIntent()).expect(401);
     expect(identity.sent).toEqual([]);
   });
 
@@ -154,10 +163,10 @@ describe("POST /me/password-link", () => {
   it("borne le nombre de demandes par compte", async () => {
     const quota = 3;
     for (let attempt = 0; attempt < quota; attempt += 1) {
-      await ctx.asSub(SUB).post("/me/password-link").expect(204);
+      await ctx.asSub(SUB).post("/me/password-link").set(INTENT_KEY, freshIntent()).expect(204);
     }
 
-    await ctx.asSub(SUB).post("/me/password-link").expect(429);
+    await ctx.asSub(SUB).post("/me/password-link").set(INTENT_KEY, freshIntent()).expect(429);
     expect(identity.sent).toHaveLength(quota);
   });
 });

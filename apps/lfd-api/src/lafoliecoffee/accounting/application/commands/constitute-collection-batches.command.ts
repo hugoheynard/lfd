@@ -14,5 +14,10 @@ export class ConstituteCollectionBatchesCommand {
     readonly legalEntityId: string,
     /** Une fiche staff LOCALE (jamais un `sub`), ou `system`. */
     readonly author: ConstitutionAuthor,
+    /**
+     * La clé d'intention de l'écran (le bouton) : un second envoi rend les
+     * mêmes lots. `null` pour l'automatisme, que son cycle tient déjà.
+     */
+    readonly intentKey: string | null = null,
   ) {}
 }

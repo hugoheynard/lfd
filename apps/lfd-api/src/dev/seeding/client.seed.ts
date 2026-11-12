@@ -21,6 +21,7 @@ import {
   type PrismaClient,
   UserStatus,
 } from "../../platform/database/client/client.js";
+import { randomUUID } from "node:crypto";
 
 /**
  * **Le client de référence** — un seul, complet, et toujours le même.
@@ -175,6 +176,7 @@ export async function seedClient(
         "81245678800023",
         "",
         "FR63812456788",
+        randomUUID(),
       ),
     ),
   );
@@ -272,6 +274,7 @@ export async function seedPendingCompany(
         "",
         "",
         "",
+        randomUUID(),
       ),
     ),
   );
@@ -409,7 +412,7 @@ async function seedAddresses(
     );
     for (const address of DELIVERIES) {
       await commands.execute<AddDeliveryAddressCommand, string>(
-        new AddDeliveryAddressCommand(userId, companyId, address),
+        new AddDeliveryAddressCommand(userId, companyId, address, randomUUID()),
       );
     }
   });
@@ -439,7 +442,7 @@ async function completeDeliveryAddresses(
     for (const address of DELIVERIES) {
       const found = current.find((row) => row.label === address.label);
       await (found === undefined
-        ? commands.execute(new AddDeliveryAddressCommand(userId, companyId, address))
+        ? commands.execute(new AddDeliveryAddressCommand(userId, companyId, address, randomUUID()))
         : commands.execute(new UpdateDeliveryAddressCommand(userId, companyId, found.id, address)));
     }
   });
@@ -525,6 +528,7 @@ async function seedContact(
           phone: "",
         },
         "billing",
+        randomUUID(),
       ),
     ),
   );

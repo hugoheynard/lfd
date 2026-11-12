@@ -17,6 +17,7 @@ import {
   type ContactPayload,
 } from "./payloads.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 
 /** Ce que l'ajout d'un contact renvoie : son identifiant. */
 export interface CreatedContactResponse {
@@ -51,16 +52,17 @@ export class CompanyContactsController {
     );
   }
 
-  /** Ajoute un contact additionnel. */
+  /** Ajoute un contact additionnel, une fois par intention (`Idempotency-Key`). */
   @Post(":companyId/contacts")
   @HttpCode(HttpStatus.CREATED)
   async addContact(
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,
     @Body(new ZodBody(additionalContactPayload)) payload: AdditionalContactPayload,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedContactResponse> {
     const id = await this.commands.execute<AddCompanyContactCommand, string>(
-      new AddCompanyContactCommand(user.userId, companyId, payload, payload.role),
+      new AddCompanyContactCommand(user.userId, companyId, payload, payload.role, intentKey),
     );
     return { id };
   }

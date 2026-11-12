@@ -18,6 +18,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { InMemoryMediaStore } from "./in-memory-media-store.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -95,7 +96,10 @@ function jsonRecord(value: unknown): Record<string, unknown> {
 const dayAgo = (days: number): string => daysAgo(days).slice(0, 10);
 
 async function openSeries(title: string, shotOn: string | null = null): Promise<string> {
-  const response = await staff().post(SERIES).send({ title, shotOn, note: null });
+  const response = await staff()
+    .post(SERIES)
+    .set(INTENT_KEY, freshIntent())
+    .send({ title, shotOn, note: null });
   expect(response.status).toBe(201);
   return jsonBody<{ id: string }>(response).id;
 }
@@ -133,6 +137,7 @@ describe("POST /media/series et PUT /media/series/:id", () => {
     const shotOn = dayAgo(3);
     const response = await staff()
       .post(SERIES)
+      .set(INTENT_KEY, freshIntent())
       .send({ title: "  Atelier  ", shotOn, note: "four à bois" });
 
     expect(response.status).toBe(201);
@@ -150,10 +155,41 @@ describe("POST /media/series et PUT /media/series/:id", () => {
     ]);
   });
 
+  /** Régression : un double clic sur « Nouvelle série » ouvrait deux séries. */
+  it("rejouée avec la même clé, rend la même série sans en ouvrir une seconde", async () => {
+    const key = freshIntent();
+    const open = () =>
+      staff()
+        .post(SERIES)
+        .set(INTENT_KEY, key)
+        .send({ title: "Atelier", shotOn: null, note: null });
+
+    const first = await open();
+    const replayed = await open();
+
+    expect([first.status, replayed.status]).toEqual([201, 201]);
+    expect(jsonBody<{ id: string }>(replayed)).toEqual(jsonBody<{ id: string }>(first));
+    expect(await seriesList()).toHaveLength(1);
+    expect(await facts("media_series.created")).toHaveLength(1);
+  });
+
+  it("refuse une ouverture sans clé d'intention (400), sans rien écrire", async () => {
+    const response = await staff()
+      .post(SERIES)
+      .send({ title: "Atelier", shotOn: null, note: null });
+
+    expect(response.status).toBe(400);
+    expect(await seriesList()).toEqual([]);
+  });
+
   it("refuse un titre vide et une prise de vue à venir (400)", async () => {
-    const empty = await staff().post(SERIES).send({ title: "  ", shotOn: null, note: null });
+    const empty = await staff()
+      .post(SERIES)
+      .set(INTENT_KEY, freshIntent())
+      .send({ title: "  ", shotOn: null, note: null });
     const future = await staff()
       .post(SERIES)
+      .set(INTENT_KEY, freshIntent())
       .send({ title: "Plus tard", shotOn: serviceDay(), note: null });
 
     expect(empty.status).toBe(400);
@@ -377,9 +413,14 @@ describe("le mur des séries", () => {
     const id = await openSeries("Été");
 
     expect((await sales().get(SERIES)).status).toBe(403);
-    expect((await sales().post(SERIES).send({ title: "x", shotOn: null, note: null })).status).toBe(
-      403,
-    );
+    expect(
+      (
+        await sales()
+          .post(SERIES)
+          .set(INTENT_KEY, freshIntent())
+          .send({ title: "x", shotOn: null, note: null })
+      ).status,
+    ).toBe(403);
     expect(
       (await sales().put(`${SERIES}/${id}`).send({ title: "x", shotOn: null, note: null })).status,
     ).toBe(403);
@@ -388,7 +429,13 @@ describe("le mur des séries", () => {
   it("refuse un anonyme", async () => {
     expect((await ctx.http().get(SERIES)).status).toBe(401);
     expect(
-      (await ctx.http().post(SERIES).send({ title: "x", shotOn: null, note: null })).status,
+      (
+        await ctx
+          .http()
+          .post(SERIES)
+          .set(INTENT_KEY, freshIntent())
+          .send({ title: "x", shotOn: null, note: null })
+      ).status,
     ).toBe(401);
   });
 });

@@ -1,3 +1,4 @@
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
@@ -13,6 +14,10 @@ import { GetShareableHalvesQuery } from "../get-shareable-halves.query.js";
 import { OpenPackingContainerCommand } from "../open-packing-container.command.js";
 import { OpenPackingContainerHandler } from "../open-packing-container.handler.js";
 import { RecordingPlanHold } from "../../__tests__/arrested-plan-doubles.js";
+
+let intentCount = 0;
+/** Une clé d'intention neuve par geste voulu, comme l'écran. */
+const nextKey = (): string => `intent_${(intentCount += 1)}`;
 
 // Un jour comparé à rien, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -51,6 +56,7 @@ function setup(posed: PackingSettings | null) {
       new DirectUnitOfWork(),
       settings,
       new RecordingPlanHold(),
+      inMemoryIntents(),
     ),
     halves: new GetShareableHalvesHandler(desk, settings),
   };
@@ -61,7 +67,7 @@ describe("Partager une moitié — soumis à Réglages › Colisage", () => {
     const { open, desk, sheets } = setup(null);
 
     await expect(
-      open.execute(new OpenPackingContainerCommand(DAY, "ord_1", SHARE, STAFF)),
+      open.execute(new OpenPackingContainerCommand(DAY, "ord_1", SHARE, STAFF, nextKey())),
     ).rejects.toThrow(HalfSharingDisabledError);
     expect(desk.shared).toEqual([]);
     expect(sheets.of(DAY, "ord_1")?.containerList).toEqual([]);
@@ -71,14 +77,14 @@ describe("Partager une moitié — soumis à Réglages › Colisage", () => {
     const { open } = setup(PackingSettings.of({ halfSharing: false, showMadeToOrder: true }));
 
     await expect(
-      open.execute(new OpenPackingContainerCommand(DAY, "ord_1", SHARE, STAFF)),
+      open.execute(new OpenPackingContainerCommand(DAY, "ord_1", SHARE, STAFF, nextKey())),
     ).rejects.toThrow(HalfSharingDisabledError);
   });
 
   it("laisse déclarer un bac entier, partage fermé", async () => {
     const { open, desk } = setup(null);
 
-    await open.execute(new OpenPackingContainerCommand(DAY, "ord_1", BIN, STAFF));
+    await open.execute(new OpenPackingContainerCommand(DAY, "ord_1", BIN, STAFF, nextKey()));
 
     expect(desk.declared).toHaveLength(1);
   });
@@ -86,7 +92,7 @@ describe("Partager une moitié — soumis à Réglages › Colisage", () => {
   it("partage une moitié quand le réglage est ouvert", async () => {
     const { open, desk } = setup(PackingSettings.of({ halfSharing: true, showMadeToOrder: true }));
 
-    await open.execute(new OpenPackingContainerCommand(DAY, "ord_1", SHARE, STAFF));
+    await open.execute(new OpenPackingContainerCommand(DAY, "ord_1", SHARE, STAFF, nextKey()));
 
     expect(desk.shared).toEqual([{ orderId: "ord_1", partnerBinId: "b_left", innerBags: 0 }]);
   });

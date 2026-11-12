@@ -14,5 +14,7 @@ export class LinkLoginMethodCommand {
     readonly userId: string,
     readonly subject: string,
     readonly idToken: string,
+    /** La clé d'intention de l'écran (`Idempotency-Key`) : un rejeu ne refait pas le geste. */
+    readonly intentKey: string,
   ) {}
 }

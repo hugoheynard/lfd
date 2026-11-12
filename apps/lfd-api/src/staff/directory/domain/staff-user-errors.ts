@@ -212,3 +212,17 @@ export function assertStaffUserUnchangedSince(
     throw new StaffUserChangedSinceReadError(id);
   }
 }
+
+/**
+ * **Le même clic redemande un lien déjà fabriqué** : la clé d'intention a déjà
+ * servi. Le lien n'est gardé nulle part — il ouvre un accès —, il ne peut pas
+ * être rendu une seconde fois, et un second n'est pas fabriqué en silence.
+ */
+export class StaffPasswordLinkAlreadyIssuedError extends BusinessError {
+  constructor() {
+    super(
+      "staff_user.password_link.already_issued",
+      "Ce lien a déjà été émis et n'est montré qu'une fois : émettez-en un nouveau.",
+    );
+  }
+}

@@ -1,7 +1,9 @@
 import { Logger } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
+import { CREATED_ID_REPLAY, OncePerIntent } from "../../../platform/intent/once-per-intent.js";
 import { ProductionDocumentStore } from "../../../platform/storage/production-document-store.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { QualityUpload } from "../../domain/entities/quality-upload.js";
@@ -23,6 +25,10 @@ const logger = new Logger("DepositQualityPhoto");
  * retire ici même. Si ce retrait échoue aussi, l'objet reste sous
  * `quality/pending/` — le seul préfixe qu'une règle de cycle de vie peut
  * balayer sans risque (D8).
+ *
+ * **Une fois par intention** : la clé de la photo est scellée avec sa ligne ;
+ * un envoi rejoué rend le même `upload_id` sans rien ranger de plus au
+ * stockage.
  */
 @CommandHandler(DepositQualityPhotoCommand)
 export class DepositQualityPhotoHandler implements ICommandHandler<
@@ -34,9 +40,27 @@ export class DepositQualityPhotoHandler implements ICommandHandler<
     private readonly store: ProductionDocumentStore,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
+    private readonly uow: UnitOfWork,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: DepositQualityPhotoCommand): Promise<string> {
+  execute(command: DepositQualityPhotoCommand): Promise<string> {
+    return this.intents.runSealed(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: "production.quality.deposit",
+        subject: "new",
+      },
+      CREATED_ID_REPLAY,
+      (seal) => this.deposit(command, seal),
+    );
+  }
+
+  private async deposit(
+    command: DepositQualityPhotoCommand,
+    seal: (id: string) => Promise<void>,
+  ): Promise<string> {
     const photo = QualityPhoto.create(command.bytes);
     const upload = QualityUpload.deposit({
       id: this.ids.next(),
@@ -49,7 +73,10 @@ export class DepositQualityPhotoHandler implements ICommandHandler<
       contentType: photo.contentType,
     });
     try {
-      await this.uploads.record(upload);
+      await this.uow.run(async () => {
+        await this.uploads.record(upload);
+        await seal(upload.id);
+      });
     } catch (error) {
       await this.store.delete(upload.storageKey).catch((cause: unknown) => {
         logger.warn(`Dépôt ${upload.id} orphelin au stockage : ${String(cause)}`);

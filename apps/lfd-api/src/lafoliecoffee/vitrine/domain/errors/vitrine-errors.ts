@@ -194,3 +194,20 @@ export class VitrineShowcaseIncompleteError extends TechnicalError {
     );
   }
 }
+
+/**
+ * **Le même clic redemande des accès déjà montrés** (déclaration ou rotation
+ * d'un abonné) : la clé d'intention a déjà servi. Le secret et la clé ne sont
+ * gardés en clair nulle part, ils ne peuvent pas être rendus une seconde fois ;
+ * le geste n'est pas refait non plus.
+ */
+export class VitrineCredentialsAlreadyShownError extends BusinessError {
+  constructor(gesture: "create" | "rotate") {
+    super(
+      "vitrine.credentials.already_shown",
+      gesture === "create"
+        ? "Cet abonné a déjà été déclaré, et son secret n'est montré qu'une fois : s'il n'a pas été copié, faites tourner ses accès depuis sa fiche."
+        : "Ces accès ont déjà été renouvelés, et le secret n'est montré qu'une fois : s'il n'a pas été copié, faites tourner les accès une nouvelle fois.",
+    );
+  }
+}

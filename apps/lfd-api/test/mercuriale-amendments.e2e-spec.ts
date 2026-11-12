@@ -304,6 +304,7 @@ describe("le sous-compte", () => {
     const site = jsonBody<CreatedIdResponse>(
       await staff()
         .post(`/admin/companies/${companyId}/sub-accounts`)
+        .set(INTENT_KEY, freshIntent())
         .send({ enseigne: "Site de Chamonix", deliveryAddress: DELIVERY, follows: [] })
         .expect(201),
     ).id;

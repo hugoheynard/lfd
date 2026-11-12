@@ -6,6 +6,7 @@ import { RecomputeGuard } from "../../../platform/auth/recompute.guard.js";
 import { PruneOrderDayChangesCommand } from "../application/commands/prune-order-day-changes.command.js";
 import { PruneOrderChangesCommand } from "../application/commands/prune-order-changes.command.js";
 import { PruneCompanyChangesCommand } from "../../account/application/commands/prune-company-changes.command.js";
+import { PruneCatalogAdminChangesCommand } from "../../catalog/application/commands/prune-catalog-admin-changes.command.js";
 import {
   SendSettlementRemindersCommand,
   type SettlementRemindersReport,
@@ -24,7 +25,8 @@ import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.j
  * **La même passe balaie les journaux de version du commerce** — celui des
  * journées (`documentation/caching-usage/version-par-journee.md`, D2), celui
  * de toutes les commandes et celui des comptes clients
- * (`plan-veilleur-unique.md`, § 3.2) : c'est la
+ * (`plan-veilleur-unique.md`, § 3.2), celui de l'écran Catalogue
+ * (`plan-catalogue-du-back-office.md`, § 3.3) : c'est la
  * passe machine du contexte qui possède `orders`, et un cron de plus serait un
  * réglage Cloudflare pour une suppression de quelques centaines de lignes.
  * Une commande et un handler par balayage — seule la porte est partagée. Le compte
@@ -53,6 +55,9 @@ export class SettlementRemindersController {
     await this.commands.execute<PruneOrderChangesCommand, number>(new PruneOrderChangesCommand());
     await this.commands.execute<PruneCompanyChangesCommand, number>(
       new PruneCompanyChangesCommand(),
+    );
+    await this.commands.execute<PruneCatalogAdminChangesCommand, number>(
+      new PruneCatalogAdminChangesCommand(),
     );
     return report;
   }

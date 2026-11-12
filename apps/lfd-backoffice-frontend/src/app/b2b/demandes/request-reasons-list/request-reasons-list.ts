@@ -83,7 +83,7 @@ export class RequestReasonsList {
       .sort((a, b) => a.position - b.position)
       .map((reason) => ({
         reason,
-        subtitle: `${CONTACT_AUDIENCE_LABELS[reason.audience]} · ${reason.recipientEmail}`,
+        subtitle: `${CONTACT_AUDIENCE_LABELS[reason.audience]} · ${reason.recipientEmail ?? 'aucun e-mail'}`,
       })),
   );
 

@@ -18,6 +18,7 @@ import type { DeliveryAddressPayload } from "@lfd/contracts";
 import { AddressKind, CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const OWNER = "auth0|owner";
 const MEMBER = "auth0|member";
@@ -90,11 +91,16 @@ beforeEach(async () => {
   addressId = jsonBody<{ id: string }>(
     await owned
       .post(`/companies/${companyId}/delivery-addresses`)
+      .set(INTENT_KEY, freshIntent())
       .send(delivery("Boutique"))
       .expect(201),
   ).id;
   contactId = jsonBody<{ id: string }>(
-    await owned.post(`/companies/${companyId}/contacts`).send(CONTACT).expect(201),
+    await owned
+      .post(`/companies/${companyId}/contacts`)
+      .set(INTENT_KEY, freshIntent())
+      .send(CONTACT)
+      .expect(201),
   ).id;
 });
 

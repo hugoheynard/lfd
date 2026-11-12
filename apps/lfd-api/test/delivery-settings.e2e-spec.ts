@@ -27,6 +27,7 @@ import {
   jsonBody,
   type E2eContext,
 } from "./e2e-harness.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -73,7 +74,11 @@ async function asRole(role: StaffRole): Promise<ReturnType<E2eContext["asSub"]>>
 }
 
 async function addVehicle(name: string, plate: string): Promise<string> {
-  const response = await admin().post(VEHICLES).send({ name, plate }).expect(201);
+  const response = await admin()
+    .post(VEHICLES)
+    .set(INTENT_KEY, freshIntent())
+    .send({ name, plate })
+    .expect(201);
   return jsonBody<CreatedIdResponse>(response).id;
 }
 
@@ -102,6 +107,7 @@ async function deliverFrom(id: string, gps = { lat: 45.5, lng: 5.9 }): Promise<v
 async function addPoint(label: string, extra: Record<string, unknown> = {}): Promise<string> {
   const response = await admin()
     .post("/admin/pickup-addresses")
+    .set(INTENT_KEY, freshIntent())
     .send({
       label,
       ligne1: "1 rue du Four",
@@ -137,7 +143,11 @@ describe("la flotte", () => {
   });
 
   it("refuse une plaque mal formée (400) et un véhicule inconnu (404)", async () => {
-    await admin().post(VEHICLES).send({ name: "X", plate: "AB-12" }).expect(400);
+    await admin()
+      .post(VEHICLES)
+      .set(INTENT_KEY, freshIntent())
+      .send({ name: "X", plate: "AB-12" })
+      .expect(400);
     await admin().post(`${VEHICLES}/absent/retirement`).expect(404);
   });
 
@@ -146,6 +156,7 @@ describe("la flotte", () => {
 
     const refused = await admin()
       .post(VEHICLES)
+      .set(INTENT_KEY, freshIntent())
       .send({ name: "Trafic", plate: "ab123cd" })
       .expect(409);
 
@@ -323,6 +334,7 @@ describe("le point GPS d'un point de retrait", () => {
   it("refuse une latitude hors bornes (400)", async () => {
     await admin()
       .post("/admin/pickup-addresses")
+      .set(INTENT_KEY, freshIntent())
       .send({
         label: "X",
         ligne1: "1",
@@ -340,9 +352,14 @@ describe("les droits de la livraison", () => {
     const commercial = await asRole("commercial");
 
     expect((await commercial.get(VEHICLES)).status).toBe(403);
-    expect((await commercial.post(VEHICLES).send({ name: "X", plate: "AB-123-CD" })).status).toBe(
-      403,
-    );
+    expect(
+      (
+        await commercial
+          .post(VEHICLES)
+          .set(INTENT_KEY, freshIntent())
+          .send({ name: "X", plate: "AB-123-CD" })
+      ).status,
+    ).toBe(403);
     expect((await commercial.get(DEPARTURE)).status).toBe(403);
     expect(await ctx.prisma.deliveryVehicle.count()).toBe(0);
   });
@@ -351,7 +368,14 @@ describe("les droits de la livraison", () => {
     const counter = await asRole("comptoir");
 
     expect((await counter.get(VEHICLES)).status).toBe(200);
-    expect((await counter.post(VEHICLES).send({ name: "X", plate: "AB-123-CD" })).status).toBe(403);
+    expect(
+      (
+        await counter
+          .post(VEHICLES)
+          .set(INTENT_KEY, freshIntent())
+          .send({ name: "X", plate: "AB-123-CD" })
+      ).status,
+    ).toBe(403);
   });
 
   it("laisse le support lire la feuille de route, qui n'est plus sous `b2b_orders`", async () => {

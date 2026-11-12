@@ -38,6 +38,7 @@ import type { FloorClientele } from "../domain/entities/pricing-floor.js";
 import type { PriceFloorPolicy } from "../domain/floor-policy.js";
 import type { PriceFloor, PriceScope } from "../domain/price-rule.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 
 /**
  * **Les limites** — ce qui empêche l'empilement des étages de descendre trop bas.
@@ -80,6 +81,7 @@ export class AdminPriceFloorsController {
   async setFloor(
     @Body(new ZodBody(setPriceFloorPayloadSchema)) payload: ParsedSetPriceFloorPayload,
     @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<void> {
     await this.commands.execute<SetPriceFloorCommand, void>(
       new SetPriceFloorCommand(
@@ -87,6 +89,7 @@ export class AdminPriceFloorsController {
         payload.clientele,
         toPolicy(payload),
         staffUserId,
+        intentKey,
       ),
     );
   }
@@ -104,8 +107,14 @@ export class AdminPriceFloorsController {
   async confirmGlobalFloor(
     @Query(new ZodQuery(floorClienteleQuerySchema)) query: FloorClienteleQuery,
     @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<void> {
-    await this.confirmFloorOn({ type: "global", id: null }, query.clientele, staffUserId);
+    await this.confirmFloorOn(
+      { type: "global", id: null },
+      query.clientele,
+      staffUserId,
+      intentKey,
+    );
   }
 
   @Post("floors/:scopeType/:scopeId/confirm")
@@ -115,11 +124,13 @@ export class AdminPriceFloorsController {
     @Param("scopeId") scopeId: string,
     @Query(new ZodQuery(floorClienteleQuerySchema)) query: FloorClienteleQuery,
     @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<void> {
     await this.confirmFloorOn(
       { type: parseScopeType(scopeType), id: scopeId },
       query.clientele,
       staffUserId,
+      intentKey,
     );
   }
 
@@ -127,9 +138,10 @@ export class AdminPriceFloorsController {
     scope: PriceScopePayload,
     clientele: FloorClientele,
     staffUserId: string,
+    intentKey: string,
   ): Promise<void> {
     await this.commands.execute<ConfirmPriceFloorCommand, void>(
-      new ConfirmPriceFloorCommand(toScope(scope), clientele, staffUserId),
+      new ConfirmPriceFloorCommand(toScope(scope), clientele, staffUserId, intentKey),
     );
   }
 

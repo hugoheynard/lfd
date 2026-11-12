@@ -57,6 +57,7 @@ import {
 } from "../application/queries/preview-staff-suggestions.query.js";
 import { ruleInputOf } from "./staff-suggestion-rule-input.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 
 /**
  * **Les suggestions décidées par le staff** — `/admin/suggestions`
@@ -191,9 +192,10 @@ export class AdminStaffSuggestionsController {
   async create(
     @Body(new ZodBody(staffSuggestionRulePayloadSchema)) body: StaffSuggestionRulePayload,
     @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<StaffSuggestionRuleIdResponse> {
     const id = await this.commands.execute<CreateStaffSuggestionCommand, string>(
-      new CreateStaffSuggestionCommand(ruleInputOf(body), staffUserId),
+      new CreateStaffSuggestionCommand(ruleInputOf(body), staffUserId, staffUserId, intentKey),
     );
     return { id };
   }

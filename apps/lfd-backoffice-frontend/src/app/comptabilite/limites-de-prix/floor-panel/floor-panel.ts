@@ -23,6 +23,11 @@ import { floorLabel } from '../../../b2b/tarification/pricing-format';
 import { PriceLimitsService } from '../../price-limits.service';
 import { FloorValueForm, type FloorValueDraft } from '../floor-value-form/floor-value-form';
 import { ScopePicker, type FloorTarget, type ScopeChoice } from '../scope-picker/scope-picker';
+import { GestureIntents } from '../../../shared/gesture-intents';
+
+/** Les sujets des intentions du panneau : poser, confirmer. */
+const SET_INTENT = 'set-floor';
+const CONFIRM_INTENT = 'confirm-floor';
 
 /**
  * Charge d'ouverture : la clientèle, le droit, et la portée visée — ou les
@@ -78,6 +83,11 @@ export class FloorPanel {
   private readonly notify = inject(NotifyService);
   private readonly ref = inject(FoldPanelRef<boolean>);
   private readonly panels = inject(FoldPanelHostService);
+  /**
+   * L'intention de poser ou de confirmer : une clé tirée au premier envoi, renvoyée jusqu'au
+   * succès — un double clic ne pose ni ne confirme deux fois.
+   */
+  private readonly intents = new GestureIntents();
 
   readonly data = input<FloorPanelData | undefined>(undefined);
 
@@ -169,7 +179,11 @@ export class FloorPanel {
     }
     this.saving.set(true);
     try {
-      await this.limits.setFloor({ scope: focus.scope, clientele: data.clientele, ...draft });
+      await this.limits.setFloor(
+        { scope: focus.scope, clientele: data.clientele, ...draft },
+        this.intents.keyFor(SET_INTENT),
+      );
+      this.intents.done(SET_INTENT);
       this.notify.success('Limite posée.');
       this.ref.close(true);
     } catch (error) {
@@ -192,7 +206,12 @@ export class FloorPanel {
     }
     this.saving.set(true);
     try {
-      await this.limits.confirmFloor(focus.scope, data.clientele);
+      await this.limits.confirmFloor(
+        focus.scope,
+        data.clientele,
+        this.intents.keyFor(CONFIRM_INTENT),
+      );
+      this.intents.done(CONFIRM_INTENT);
       this.notify.success('Limite confirmée — elle repart pour un tour.');
       this.ref.close(true);
     } catch (error) {

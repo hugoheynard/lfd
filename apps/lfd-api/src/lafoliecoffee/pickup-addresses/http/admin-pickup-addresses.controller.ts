@@ -30,6 +30,8 @@ import { CreatePickupAddressCommand } from "../application/create-pickup-address
 import { RemovePickupAddressCommand } from "../application/remove-pickup-address.command.js";
 import { UpdatePickupAddressCommand } from "../application/update-pickup-address.command.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 
 /**
  * Gestion **staff** des points de retrait (page Réglages). Ajouter / éditer /
@@ -47,9 +49,11 @@ export class AdminPickupAddressesController {
   @HttpCode(HttpStatus.CREATED)
   async create(
     @Body(new ZodBody(pickupAddressPayloadSchema)) payload: PickupAddressPayload,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedPickupResponse> {
     const id = await this.commands.execute<CreatePickupAddressCommand, string>(
-      new CreatePickupAddressCommand(payload),
+      new CreatePickupAddressCommand(payload, staffUserId, intentKey),
     );
     return { id };
   }
@@ -60,6 +64,9 @@ export class AdminPickupAddressesController {
    */
   @Patch(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose le lieu : rejouée, la même requête trouve le lieu identique (Site.revise rend false) et rien n'est écrit, journalisé ni purgé",
+  )
   async update(
     @Param("id") id: string,
     @Body(new ZodBody(pickupAddressUpdatePayloadSchema)) payload: PickupAddressUpdatePayload,
@@ -102,6 +109,9 @@ export class AdminPickupAddressesController {
    */
   @Put(":id/creneaux-publics")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "remplace la grille en bloc : rejouée, la même requête trouve la grille identique (PickupSchedule.replace rend false) et rien n'est écrit ni journalisé",
+  )
   async savePublicSchedule(
     @Param("id") id: string,
     @Body(new ZodBody(publicPickupSchedulePayloadSchema)) payload: PublicPickupSchedulePayload,

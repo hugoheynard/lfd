@@ -9,6 +9,7 @@ import {
 import { DeliveryZoneRepository } from "../domain/delivery-zone.repository.js";
 import { zoneOfPostalCode } from "../domain/zone-of-postal-code.js";
 import {
+  DELIVERY_PRICING_COLUMNS,
   UNSET_DELIVERY_PRICING_COLUMNS,
   termsToColumns,
   type DeliveryPricingColumns,
@@ -69,6 +70,20 @@ function audienceColumns(
   return payload.audienceTerms === undefined ? fallback : termsToColumns(payload.audienceTerms);
 }
 
+/** Chaque colonne écrite porte déjà sa valeur : le remplacement ne change rien. */
+function writesNothing(
+  existing: Readonly<Record<string, unknown>>,
+  data: Readonly<Record<string, unknown>>,
+): boolean {
+  return Object.entries(data).every(([column, value]) => {
+    const current = existing[column];
+    if (Array.isArray(value) && Array.isArray(current)) {
+      return value.length === current.length && value.every((item, i) => item === current[i]);
+    }
+    return current === value;
+  });
+}
+
 const SELECT = {
   id: true,
   postalPrefixes: true,
@@ -116,19 +131,21 @@ export class PrismaDeliveryZoneRepository extends DeliveryZoneRepository {
     return created.id;
   }
 
-  async update(id: string, payload: DeliveryZonePayload): Promise<void> {
+  async update(id: string, payload: DeliveryZonePayload): Promise<boolean> {
     const existing = await this.prisma.deliveryZone.findUnique({
       where: { id },
-      select: { id: true },
+      select: { ...SELECT, ...DELIVERY_PRICING_COLUMNS },
     });
     if (existing === null) {
       throw new DeliveryZoneNotFoundError(id);
     }
-    await this.assertPrefixesFree(normalizePrefixes(payload.postalPrefixes), id);
-    await this.prisma.deliveryZone.update({
-      where: { id },
-      data: { ...writable(payload), ...audienceColumns(payload, {}) },
-    });
+    const data = { ...writable(payload), ...audienceColumns(payload, {}) };
+    if (writesNothing(existing, data)) {
+      return false;
+    }
+    await this.assertPrefixesFree(data.postalPrefixes, id);
+    await this.prisma.deliveryZone.update({ where: { id }, data });
+    return true;
   }
 
   async remove(id: string): Promise<void> {

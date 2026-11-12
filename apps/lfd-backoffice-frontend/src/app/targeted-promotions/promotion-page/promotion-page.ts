@@ -93,6 +93,10 @@ import {
   withoutRule,
   withScopeModeLines,
 } from '../scope-lines';
+import { GestureIntents } from '../../shared/gesture-intents';
+
+/** Le sujet de l'intention : la pose de la promotion de cette page. */
+const POSE_INTENT = 'pose-promotion';
 
 type LoadState = 'loading' | 'error' | 'ready';
 
@@ -162,6 +166,11 @@ export class PromotionPage {
   private readonly permissions = inject(PermissionsStore);
   private readonly notify = inject(NotifyService);
   private readonly router = inject(Router);
+  /**
+   * L'intention de poser la promotion : une clé tirée au premier envoi, renvoyée jusqu'au
+   * succès — un double clic ne pose pas deux promotions.
+   */
+  private readonly intents = new GestureIntents();
 
   /** La promotion ; absente = une pose. */
   readonly id = input<string | undefined>();
@@ -596,7 +605,8 @@ export class PromotionPage {
     try {
       const existing = this.id();
       if (existing === undefined) {
-        const id = await this.api.pose(terms);
+        const id = await this.api.pose(terms, this.intents.keyFor(POSE_INTENT));
+        this.intents.done(POSE_INTENT);
         this.notify.success('Promotion posée.');
         await this.router.navigate(['/promotions-ciblees', id]);
       } else {

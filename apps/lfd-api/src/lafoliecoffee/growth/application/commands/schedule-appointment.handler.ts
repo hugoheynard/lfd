@@ -11,6 +11,12 @@ import { ScheduleAppointmentCommand } from "./schedule-appointment.command.js";
 import { appointmentSubjectLabel } from "../appointment-subject-label.js";
 import { CompanyNamer } from "../../domain/ports/company-namer.js";
 import { LeadRepository } from "../../domain/ports/lead.repository.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
+import { CREATED_ID_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+
+/** Le nom stable du geste, dans le registre des intentions. */
+const GESTURE = "growth.schedule-appointment";
 
 /**
  * Pose d'un rendez-vous par le staff : il vient d'avoir le prospect au
@@ -33,9 +39,34 @@ export class ScheduleAppointmentHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly companies: CompanyNamer,
     private readonly leads: LeadRepository,
+    private readonly uow: UnitOfWork,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: ScheduleAppointmentCommand): Promise<string> {
+  /**
+   * **Une fois par intention** : la clé de l'écran est scellée avec
+   * l'écriture ; un double clic rend le rendez-vous déjà posé sans en poser un second.
+   *
+   * @throws {GestureInFlightError} la même clé est encore en vol.
+   * @throws {IntentKeyReusedError} la clé a servi pour un autre geste.
+   */
+  execute(command: ScheduleAppointmentCommand): Promise<string> {
+    return this.intents.runSealed(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: GESTURE,
+        subject: intentSubject(command.payload.subjectId, command.payload),
+      },
+      CREATED_ID_REPLAY,
+      (seal) => this.schedule(command, seal),
+    );
+  }
+
+  private async schedule(
+    command: ScheduleAppointmentCommand,
+    seal: (appointmentId: string) => Promise<void>,
+  ): Promise<string> {
     const { payload } = command;
     const now = this.clock.now();
     const startAt = parseStartAt(payload.startAt);
@@ -56,7 +87,20 @@ export class ScheduleAppointmentHandler implements ICommandHandler<
       },
       now,
     );
-    const id = await this.appointments.create(appointment);
+    return this.uow.run(async () => {
+      const id = await this.appointments.create(appointment);
+      await this.record(appointment, payload, id, startAt);
+      await seal(id);
+      return id;
+    });
+  }
+
+  private async record(
+    appointment: Appointment,
+    payload: ScheduleAppointmentCommand["payload"],
+    id: string,
+    startAt: Date,
+  ): Promise<void> {
     await this.recorder.record({
       type: ACTIVITY_TYPES.appointmentConfirmed,
       subjectType: payload.subjectType === "lead" ? "lead" : payload.subjectType,
@@ -72,6 +116,5 @@ export class ScheduleAppointmentHandler implements ICommandHandler<
         via: "staff",
       },
     });
-    return id;
   }
 }

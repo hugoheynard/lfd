@@ -13,6 +13,7 @@ import { newTraceId } from "../../platform/context/trace-context.js";
 import { CompanyStatus, DeferredTerm, UserStatus } from "../../platform/database/client/client.js";
 import type { ClientContext } from "./client.seed.js";
 import { acceptSeededFounders } from "./seeded-founders.seed.js";
+import { randomUUID } from "node:crypto";
 
 /**
  * **Les voisins du client de référence** — pour que demain ait TROIS clients
@@ -259,6 +260,7 @@ async function seedNeighbour(context: ClientContext, neighbour: NeighbourClient)
         neighbour.siret,
         "",
         neighbour.vatNumber,
+        randomUUID(),
       ),
     );
     const postal = { ligne2: "", pays: "France", ...address };
@@ -267,17 +269,24 @@ async function seedNeighbour(context: ClientContext, neighbour: NeighbourClient)
     );
     const site = neighbour.site ?? DEFAULT_SITE;
     const addressId = await commands.execute<AddDeliveryAddressCommand, string>(
-      new AddDeliveryAddressCommand(userId, id, {
-        label: neighbour.enseigne,
-        ...postal,
-        isDefault: true,
-        specs: siteSpecs(neighbour),
-      }),
+      new AddDeliveryAddressCommand(
+        userId,
+        id,
+        {
+          label: neighbour.enseigne,
+          ...postal,
+          isDefault: true,
+          specs: siteSpecs(neighbour),
+        },
+        randomUUID(),
+      ),
     );
     // La procédure par la commande du gestionnaire, étape par étape, sans
     // photo : c'est le chemin de l'écran, et le seul qui en tient l'ordre.
     for (const step of site.steps) {
-      await commands.execute(new AddDeliveryStepCommand(userId, id, addressId, step, null));
+      await commands.execute(
+        new AddDeliveryStepCommand(userId, id, addressId, step, null, randomUUID()),
+      );
     }
     return id;
   });

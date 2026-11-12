@@ -112,6 +112,7 @@ describe("le détenteur ne se rétrograde pas", () => {
     const added = await ctx
       .asSub(ADMIN_SUB)
       .post(`/companies/${companyId}/contacts`)
+      .set(INTENT_KEY, freshIntent())
       .send({ ...KARIM, email: OWNER_LOGIN, role: "billing" });
     expect(added.status).toBe(409);
     expect(await ctx.prisma.companyContact.count({ where: { companyId } })).toBe(0);
@@ -119,6 +120,7 @@ describe("le détenteur ne se rétrograde pas", () => {
     const created = await ctx
       .asSub(ADMIN_SUB)
       .post(`/companies/${companyId}/contacts`)
+      .set(INTENT_KEY, freshIntent())
       .send(KARIM)
       .expect(201);
     const contactId = jsonBody<{ readonly id: string }>(created).id;

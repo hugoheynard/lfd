@@ -11,6 +11,7 @@ import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { HandOverPackedAtCounterCommand } from "../application/commands/hand-over-packed-at-counter.command.js";
 import { GetCounterIncompleteHandoverQuery } from "../application/queries/get-counter-incomplete-handover.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **« Remettre ce qui est au bac »** — le départ incomplet décidé au comptoir
@@ -57,6 +58,9 @@ export class AdminCounterIncompleteHandoverController {
    */
   @Post("incomplete-handover")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée, la décision relue sous verrou est déjà prise et la commande déjà retirée — l'agrégat et le comptoir refusent (409) avant toute écriture",
+  )
   async handOverPacked(
     @Param("orderId") orderId: string,
     @StaffUserId() staffUserId: string,

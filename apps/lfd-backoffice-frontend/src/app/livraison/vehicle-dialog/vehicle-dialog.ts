@@ -29,6 +29,7 @@ import {
 } from 'fold-ng';
 
 import { DeliveryZonesService } from '../../b2b/reglages/delivery-zones.service';
+import { GestureIntents } from '../../shared/gesture-intents';
 import { DeliverySettingsService } from '../delivery-settings.service';
 import {
   CARGO_CM_MAX,
@@ -97,6 +98,8 @@ export class VehicleDialog implements FoldPanelContent<VehicleDialogData> {
   private readonly api = inject(DeliverySettingsService);
   private readonly zonesApi = inject(DeliveryZonesService);
   private readonly panel = inject(FoldPanelRef);
+  /** L'ajout est une intention : un double clic ne crée qu'un véhicule. */
+  private readonly intents = new GestureIntents();
 
   protected readonly name = signal('');
   protected readonly plate = signal('');
@@ -225,7 +228,8 @@ export class VehicleDialog implements FoldPanelContent<VehicleDialogData> {
     this.refusal.set(null);
     try {
       if (vehicle === undefined) {
-        await this.api.addVehicle(payload);
+        await this.api.addVehicle(payload, this.intents.keyFor('add'));
+        this.intents.done('add');
       } else {
         await this.api.updateVehicle(vehicle.id, payload);
       }

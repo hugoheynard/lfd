@@ -34,6 +34,7 @@ import {
 } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 import { cardProvidersOverride } from "./card-payments.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const REGISTERED = "auth0|l10-inscrit";
 const SERVICE_DAY = serviceDay();
@@ -76,6 +77,7 @@ async function scene(): Promise<string> {
   const site = jsonBody<CreatedPickupResponse>(
     await staff()
       .post("/admin/pickup-addresses")
+      .set(INTENT_KEY, freshIntent())
       .send({
         label: "Le Labo",
         ligne1: "5 rue du Four",
@@ -111,7 +113,11 @@ function terms(over: Partial<PromotionTermsPayload>): Record<string, unknown> {
 }
 
 async function pose(over: Partial<PromotionTermsPayload>): Promise<void> {
-  await staff().post("/admin/promotions").send(terms(over)).expect(201);
+  await staff()
+    .post("/admin/promotions")
+    .set(INTENT_KEY, freshIntent())
+    .send(terms(over))
+    .expect(201);
   ctx.app.get(PricingMaterialsCache).invalidate();
 }
 

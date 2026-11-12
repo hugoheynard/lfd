@@ -36,6 +36,8 @@ import { RemoveDeliveryStepHandler } from "../remove-delivery-step.handler.js";
 import { ReorderDeliveryStepsHandler } from "../reorder-delivery-steps.handler.js";
 import { ReviseDeliveryStepHandler } from "../revise-delivery-step.handler.js";
 import { COMPANY_LABEL, InMemoryCompanies, journalNames } from "./member-acts-doubles.js";
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 
 /**
  * **Les gestes du gestionnaire sur la procédure de livraison.**
@@ -73,8 +75,8 @@ function scene(role: CompanyRole | null = "owner", archived: readonly string[] =
     sequence,
     procedures,
     store,
-    add: new AddDeliveryStepHandler(...deps),
-    revise: new ReviseDeliveryStepHandler(...deps),
+    add: new AddDeliveryStepHandler(...deps, inMemoryIntents()),
+    revise: new ReviseDeliveryStepHandler(...deps, inMemoryIntents()),
     remove: new RemoveDeliveryStepHandler(...deps),
     reorder: new ReorderDeliveryStepsHandler(...deps),
   };
@@ -83,7 +85,14 @@ function scene(role: CompanyRole | null = "owner", archived: readonly string[] =
 type Scene = ReturnType<typeof scene>;
 
 function addCommand(photo: Buffer | null = PHOTO, title = FIELDS.title): AddDeliveryStepCommand {
-  return new AddDeliveryStepCommand("u1", COMPANY, ADDRESS, { ...FIELDS, title }, photo);
+  return new AddDeliveryStepCommand(
+    "u1",
+    COMPANY,
+    ADDRESS,
+    { ...FIELDS, title },
+    photo,
+    randomUUID(),
+  );
 }
 
 function reviseCommand(
@@ -91,7 +100,16 @@ function reviseCommand(
   removePhoto: boolean,
   photo: Buffer | null,
 ): ReviseDeliveryStepCommand {
-  return new ReviseDeliveryStepCommand("u1", COMPANY, ADDRESS, stepId, FIELDS, removePhoto, photo);
+  return new ReviseDeliveryStepCommand(
+    "u1",
+    COMPANY,
+    ADDRESS,
+    stepId,
+    FIELDS,
+    removePhoto,
+    photo,
+    randomUUID(),
+  );
 }
 
 /** La clé de photo écrite pour l'étape, telle que la base la porte. */

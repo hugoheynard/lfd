@@ -1,10 +1,12 @@
+import { randomUUID } from "node:crypto";
+
 import { type VehiclePayload, vehicleEnergySchema } from "@lfd/contracts";
 
 import { AddVehicleCommand } from "../../delivery/application/commands/add-vehicle.command.js";
 import { CorrectVehicleCommand } from "../../delivery/application/commands/correct-vehicle.command.js";
 import { ReactivateVehicleCommand } from "../../delivery/application/commands/reactivate-vehicle.command.js";
 import type { RoundsContext } from "./delivery-rounds.seed.js";
-import { asStaff } from "./order-placing.seed.js";
+import { asStaff, SEED_STAFF_SUB } from "./order-placing.seed.js";
 
 /**
  * **La flotte semée**, par les vrais handlers de `delivery` : ajout, remise
@@ -130,7 +132,9 @@ export async function seedFleet(context: RoundsContext): Promise<ReadonlyMap<str
     });
     if (existing === null) {
       const id = await asStaff(context.now, () =>
-        context.commands.execute<AddVehicleCommand, string>(new AddVehicleCommand(vehicle)),
+        context.commands.execute<AddVehicleCommand, string>(
+          new AddVehicleCommand(vehicle, SEED_STAFF_SUB, randomUUID()),
+        ),
       );
       ids.set(vehicle.name, id);
       continue;

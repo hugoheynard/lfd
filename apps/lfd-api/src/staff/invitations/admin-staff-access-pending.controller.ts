@@ -2,6 +2,8 @@ import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { Controller, Get, Param, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
+import { StaffUserId } from "../../platform/auth/staff.decorator.js";
+import { IntentKey } from "../../platform/shared/http/intent-key.decorator.js";
 import { IssueStaffPasswordLinkCommand } from "./issue-staff-password-link.command.js";
 import { ListPendingStaffAccessQuery } from "./list-pending-staff-access.query.js";
 import type { PendingStaffAccessView } from "./pending-staff-access.reader.js";
@@ -32,9 +34,13 @@ export class AdminStaffAccessPendingController {
   }
 
   @Post(":staffUserId/link")
-  issueLink(@Param("staffUserId") staffUserId: string): Promise<IssuedPasswordLink> {
+  issueLink(
+    @StaffUserId() issuedBy: string,
+    @IntentKey() intentKey: string,
+    @Param("staffUserId") staffUserId: string,
+  ): Promise<IssuedPasswordLink> {
     return this.commands.execute<IssueStaffPasswordLinkCommand, IssuedPasswordLink>(
-      new IssueStaffPasswordLinkCommand(staffUserId),
+      new IssueStaffPasswordLinkCommand(staffUserId, issuedBy, intentKey),
     );
   }
 }

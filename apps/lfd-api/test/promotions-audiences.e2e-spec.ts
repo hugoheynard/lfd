@@ -43,6 +43,7 @@ import {
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardProvidersOverride } from "./card-payments.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const REGISTERED = "auth0|l8b-inscrit";
 const PRO = "auth0|l8b-pro-actif";
@@ -96,6 +97,7 @@ async function scene(): Promise<string> {
   const site = jsonBody<CreatedPickupResponse>(
     await staff()
       .post("/admin/pickup-addresses")
+      .set(INTENT_KEY, freshIntent())
       .send({
         label: "Le Labo",
         ligne1: "5 rue du Four",
@@ -131,7 +133,11 @@ function promotion(site: string, over: Partial<PromotionTermsPayload>): Record<s
 }
 
 async function pose(site: string, over: Partial<PromotionTermsPayload>): Promise<void> {
-  await staff().post("/admin/promotions").send(promotion(site, over)).expect(201);
+  await staff()
+    .post("/admin/promotions")
+    .set(INTENT_KEY, freshIntent())
+    .send(promotion(site, over))
+    .expect(201);
 }
 
 function order(site: string): Record<string, unknown> {

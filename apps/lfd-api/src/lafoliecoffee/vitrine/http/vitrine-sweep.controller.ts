@@ -7,6 +7,7 @@ import {
   SweepVitrineCommand,
   type VitrineSweepReport,
 } from "../application/commands/sweep-vitrine.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Endpoint **batch** du webhook de la vitrine (plan vitrine, W3′) : la même
@@ -22,6 +23,9 @@ export class VitrineSweepController {
 
   @Post()
   @HttpCode(200)
+  @Idempotent(
+    "appelée par la machine (RecomputeGuard), sous bail : un passage concurrent sort sans rien envoyer ; rejouée, les empreintes déjà émises ne rouvrent aucune livraison (état relu)",
+  )
   sweep(): Promise<VitrineSweepReport> {
     return this.commands.execute<SweepVitrineCommand, VitrineSweepReport>(
       new SweepVitrineCommand(),

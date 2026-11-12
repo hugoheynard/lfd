@@ -1,3 +1,4 @@
+import { sameSheet } from "../services/same-sheet.js";
 import { InvalidPurchaseCandidateNameError } from "../errors/delivery-purchase-errors.js";
 import { BinFormat } from "../value-objects/bin-format.js";
 import type { BinTypeDimensionsInput } from "../value-objects/bin-type-dimensions.js";
@@ -139,10 +140,20 @@ export class PurchaseBinCandidate {
     };
   }
 
-  /** Corrige la fiche ENTIÈRE ; permis sur un candidat archivé. Tout est validé d'abord. */
-  correct(spec: PurchaseBinCandidateSpec, at: Date, author: DeliveryAuthor): void {
+  /**
+   * Corrige la fiche ENTIÈRE ; permis sur un candidat archivé. Tout est validé d'abord.
+   * @returns `false` si la fiche reposée est celle qu'il porte déjà (rien ne change).
+   */
+  correct(spec: PurchaseBinCandidateSpec, at: Date, author: DeliveryAuthor): boolean {
+    const previous = this.sheet;
+    const before = this.specification;
     this.sheet = validSheetOf(spec);
+    if (sameSheet(before, this.specification)) {
+      this.sheet = previous;
+      return false;
+    }
     this.lifecycle.touch(at, author);
+    return true;
   }
 
   /** @throws {PurchaseCandidateAlreadyArchivedError} */

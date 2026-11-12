@@ -37,6 +37,7 @@ import {
 } from "./order-customer-cancel-scene.js";
 import { cancelledMails, deliver, resetScene, scene } from "./order-staff-cancel-scene.js";
 import { enableNotices } from "./sub-account-notice-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 let ctx: E2eContext;
 
@@ -452,6 +453,7 @@ describe("le signalement par le compte principal (§7.3)", () => {
       await ctx
         .asSub(E2E_STAFF_SUB)
         .post("/admin/request-reasons")
+        .set(INTENT_KEY, freshIntent())
         .send({
           kind: "order_problem",
           label: { fr: "Produit abîmé", en: "Damaged product", it: "" },
@@ -467,6 +469,7 @@ describe("le signalement par le compte principal (§7.3)", () => {
     await ctx
       .asSub(boss.sub)
       .post(`/me/orders/${orderId}/problems`)
+      .set(INTENT_KEY, freshIntent())
       .set(WORKSPACE_HEADER, g.principal)
       .field("reasonId", reason)
       .field("message", "Le pain était écrasé.")
@@ -488,6 +491,7 @@ describe("le signalement par le compte principal (§7.3)", () => {
     await ctx
       .asSub(buyer.sub)
       .post(`/me/orders/${orderId}/problems`)
+      .set(INTENT_KEY, freshIntent())
       .field("reasonId", "r_absent")
       .field("message", "Le pain était écrasé.")
       .expect(404);

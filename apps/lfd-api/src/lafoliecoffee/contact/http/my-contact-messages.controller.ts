@@ -11,6 +11,7 @@ import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { SendContactMessageCommand } from "../application/commands/send-contact-message.command.js";
 import { CONTACT_MESSAGE_THROTTLE } from "./contact-message.throttle.js";
 import { truncateIp } from "./truncate-ip.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 
 /**
  * **Écrire en client connecté** — `POST /me/contact-messages`. Le même message
@@ -34,12 +35,14 @@ export class MyContactMessagesController {
     @Req() request: Record<string, unknown>,
     @CurrentUser() principal: Principal,
     @ActingCompany() companyId: string | null,
+    @IntentKey() intentKey: string,
   ): Promise<void> {
     await this.commands.execute<SendContactMessageCommand, void>(
       new SendContactMessageCommand(
         payload,
         { userId: principal.userId, companyId },
         truncateIp(resolveClientIp(request)),
+        intentKey,
       ),
     );
   }

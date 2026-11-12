@@ -24,6 +24,7 @@ import {
   ROAD_ROUTING_OVERRIDES,
   seedLocatedDelivery,
 } from "./delivery-routing-scene.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const SCENARIOS = "/admin/delivery/simulator/scenarios";
 const FROM_DAY = "/admin/delivery/simulator/from-day";
@@ -134,9 +135,15 @@ describe("les scénarios du simulateur (L9-C7)", () => {
     const mardi = await record("Mardi");
 
     const first = jsonBody<CreatedIdResponse>(
-      await admin(ctx).post(`${SCENARIOS}/${mardi}/duplicate`).expect(201),
+      await admin(ctx)
+        .post(`${SCENARIOS}/${mardi}/duplicate`)
+        .set(INTENT_KEY, freshIntent())
+        .expect(201),
     );
-    await admin(ctx).post(`${SCENARIOS}/${mardi}/duplicate`).expect(201);
+    await admin(ctx)
+      .post(`${SCENARIOS}/${mardi}/duplicate`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(201);
 
     expect((await list()).map((s) => s.name)).toEqual([
       "Mardi",
@@ -175,7 +182,7 @@ describe("les scénarios du simulateur (L9-C7)", () => {
     await reader.get(`${SCENARIOS}/${id}`).expect(200);
     await reader.post(SCENARIOS).send({ name: "Autre", scenario: SCENARIO }).expect(403);
     await reader.put(`${SCENARIOS}/${id}`).send({ name: "Autre", scenario: SCENARIO }).expect(403);
-    await reader.post(`${SCENARIOS}/${id}/duplicate`).expect(403);
+    await reader.post(`${SCENARIOS}/${id}/duplicate`).set(INTENT_KEY, freshIntent()).expect(403);
     await reader.post(`${SCENARIOS}/${id}/archive`).expect(403);
   });
 });

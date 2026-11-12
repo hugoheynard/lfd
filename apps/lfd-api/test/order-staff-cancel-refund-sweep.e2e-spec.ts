@@ -21,6 +21,7 @@ import {
   stripe,
   sweepRefunds,
 } from "./order-staff-cancel-refund-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 let ctx: E2eContext;
 
@@ -43,7 +44,10 @@ afterEach(() => {
 
 const codeOf = (response: request.Response) => jsonBody<{ readonly code: string }>(response).code;
 const retry = (requestId: string, sub = E2E_STAFF_SUB) =>
-  ctx.asSub(sub).post(`/admin/card-payments/refund-requests/${requestId}/retry`);
+  ctx
+    .asSub(sub)
+    .post(`/admin/card-payments/refund-requests/${requestId}/retry`)
+    .set(INTENT_KEY, freshIntent());
 
 describe("« Relancer » et le balayage", () => {
   it("refus nommés : demande inconnue (404), déjà émise (409)", async () => {

@@ -7,6 +7,7 @@ import { Public } from "../../../platform/auth/public.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { SubscribeNewsletterCommand } from "../application/commands/subscribe-newsletter.command.js";
 import { NewsletterAddressThrottleGuard } from "./newsletter-address-throttle.guard.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /** Par IP : de quoi s'inscrire et se reprendre, pas de quoi balayer des adresses. */
 const REQUESTS_PER_IP = 10;
@@ -29,6 +30,9 @@ export class NewsletterController {
   constructor(private readonly commands: CommandBus) {}
 
   @Post()
+  @Idempotent(
+    "route publique, sans acteur : l'adresse déjà au registre ne reçoit rien de plus (ni ligne, ni e-mail de confirmation) ; une seule ligne par espace et adresse",
+  )
   @HttpCode(HttpStatus.ACCEPTED)
   @Throttle({ default: { limit: REQUESTS_PER_IP, ttl: MINUTE_MS } })
   @UseGuards(NewsletterAddressThrottleGuard)

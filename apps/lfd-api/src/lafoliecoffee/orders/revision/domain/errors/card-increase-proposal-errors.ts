@@ -177,3 +177,18 @@ export class NoComplementAwaitingPaymentError extends BusinessError {
     );
   }
 }
+
+/**
+ * **Le même envoi redemande un complément déjà préparé** : la clé d'intention
+ * a déjà servi. La clé du paiement n'est gardée nulle part hors du
+ * prestataire : la réponse d'origine ne peut pas être rendue, et un second
+ * paiement n'est pas préparé en silence.
+ */
+export class CardIncreaseAlreadyProposedError extends BusinessError {
+  constructor() {
+    super(
+      "orders.card_increase.already_proposed",
+      "Ce complément a déjà été demandé : rouvrez la commande pour reprendre son paiement, ou recommencez la modification.",
+    );
+  }
+}

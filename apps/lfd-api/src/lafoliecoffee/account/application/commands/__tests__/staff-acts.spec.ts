@@ -22,6 +22,8 @@ import { ChangeCompanyStatusCommand } from "../change-company-status.command.js"
 import { ChangeCompanyStatusHandler } from "../change-company-status.handler.js";
 import { COMPANY_LABEL, journalNames } from "./member-acts-doubles.js";
 import { silentGestures } from "./site-gesture-doubles.js";
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 
 /**
  * **Ce que le staff inscrit quand il touche au compte d'un client.**
@@ -163,6 +165,33 @@ describe("Les actes du staff au journal", () => {
     expect(events.published).toHaveLength(2);
   });
 
+  /** Régression : un double clic ajoutait deux adresses de livraison, deux faits. */
+  it("rejoué sous la même clé, l'ajout d'adresse rend la même sans rien réécrire", async () => {
+    const events = new RecordingPublisher();
+    const book = addresses();
+    const handler = new AddDeliveryAddressByStaffHandler(
+      book,
+      events,
+      new FixedIdGenerator("addr"),
+      new FixedClock(new Date("2026-02-03T10:00:00Z")),
+      new DirectUnitOfWork(),
+      journalNames(companies(), book),
+      silentGestures(),
+      inMemoryIntents(),
+    );
+    const key = randomUUID();
+
+    const first = await handler.execute(
+      new AddDeliveryAddressByStaffCommand("c1", DELIVERY, "staff_1", key),
+    );
+    const replayed = await handler.execute(
+      new AddDeliveryAddressByStaffCommand("c1", DELIVERY, "staff_1", key),
+    );
+
+    expect(replayed).toBe(first);
+    expect(events.traced).toHaveLength(1);
+  });
+
   it("emporte le LIEU d'une adresse et son nom, jamais l'adresse entière", async () => {
     const events = new RecordingPublisher();
     const book = addresses();
@@ -175,7 +204,8 @@ describe("Les actes du staff au journal", () => {
       new DirectUnitOfWork(),
       journalNames(companies(), book),
       silentGestures(),
-    ).execute(new AddDeliveryAddressByStaffCommand("c1", DELIVERY));
+      inMemoryIntents(),
+    ).execute(new AddDeliveryAddressByStaffCommand("c1", DELIVERY, "staff_1", randomUUID()));
 
     // L'identifiant rendu est bien celui qui part au journal : sans lui, on
     // saurait qu'une adresse a été ajoutée sans savoir laquelle.

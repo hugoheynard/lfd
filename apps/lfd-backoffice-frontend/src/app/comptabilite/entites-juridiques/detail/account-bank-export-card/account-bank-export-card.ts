@@ -56,6 +56,7 @@ import {
 } from './account-bank-filter';
 import { AccountBankExportsService } from '../../../account-bank-exports.service';
 import { parisDayLabel } from '../../../mandate-bank-export-wording';
+import { GestureIntents } from '../../../../shared/gesture-intents';
 
 /**
  * **Comptes à la banque** — préparer, télécharger, marquer importé ou
@@ -100,6 +101,8 @@ import { parisDayLabel } from '../../../mandate-bank-export-wording';
 })
 export class AccountBankExportCard {
   private readonly service = inject(AccountBankExportsService);
+  /** Une préparation par intention : un double clic ne fige pas un second export. */
+  private readonly prepareIntents = new GestureIntents();
   private readonly panels = inject(FoldPanelHostService);
 
   readonly entity = input.required<LegalEntityView>();
@@ -204,8 +207,10 @@ export class AccountBankExportCard {
   protected async prepare(): Promise<void> {
     const entityId = this.entity().id;
     await this.run(async () => {
-      const exportId = await this.service.prepare(entityId);
+      // Gardée jusqu'au téléchargement : un réessai rend le même export.
+      const exportId = await this.service.prepare(entityId, this.prepareIntents.keyFor(entityId));
       await this.download(exportId);
+      this.prepareIntents.done(entityId);
     });
   }
 

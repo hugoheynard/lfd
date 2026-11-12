@@ -12,6 +12,7 @@ import { AdminSurface, RequirePermission } from "../../platform/auth/admin-surfa
 import { ZodBody, ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import { GetSimulationFromDayQuery } from "../application/queries/get-simulation-from-day.query.js";
 import { SimulateDeliveryRoundsQuery } from "../application/queries/simulate-delivery-rounds.query.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /** Le jour de service, validé dans sa FORME — le message nomme le paramètre. */
 const dayQuerySchema = z.object({
@@ -33,6 +34,7 @@ export class DeliverySimulatorController {
 
   /** Une proposition sur des arrêts inventés : rien n'est écrit, rien n'est géocodé. */
   @Post()
+  @Idempotent("une lecture sous POST (le scénario est un corps) : rien ne s'écrit")
   @HttpCode(HttpStatus.OK)
   @RequirePermission("delivery_rounds:read")
   simulate(

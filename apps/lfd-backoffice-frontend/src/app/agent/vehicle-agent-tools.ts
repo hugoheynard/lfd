@@ -115,7 +115,8 @@ export function declareVehicleAgentTools(canWrite: boolean): readonly string[] {
   }
 
   async function createOne(fields: VehicleFields): Promise<string> {
-    const id = await api.addVehicleAndGetId(payloadOf(fields));
+    // Un appel d'outil est une intention : sa propre clé, jamais réutilisée.
+    const id = await api.addVehicleAndGetId(payloadOf(fields), crypto.randomUUID());
     return `CRÉÉ — ${await reread(id)}`;
   }
 

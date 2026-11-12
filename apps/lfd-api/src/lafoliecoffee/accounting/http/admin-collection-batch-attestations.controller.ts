@@ -13,6 +13,7 @@ import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { AttestCollectionBatchCommand } from "../application/commands/attest-collection-batch.command.js";
 import { WithdrawCollectionBatchAttestationCommand } from "../application/commands/withdraw-collection-batch-attestation.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Les attestations d'un lot** — contrôle CSV relu, remise signée sur CENET,
@@ -27,6 +28,9 @@ export class AdminCollectionBatchAttestationsController {
 
   /** Atteste une sorte ; 409 si elle l'est déjà ou si le lot n'en est pas là. */
   @Post()
+  @Idempotent(
+    "transition : rejouée, la sorte est déjà attestée et l'agrégat refuse (409 BatchAttestationAlreadyGivenError) avant toute ligne ni fait",
+  )
   async attest(
     @StaffUserId() staffUserId: string,
     @Param("batchId") batchId: string,
@@ -40,6 +44,9 @@ export class AdminCollectionBatchAttestationsController {
 
   /** Retire une sorte, avec sa raison ; 409 si elle n'est pas attestée. */
   @Post("withdrawn")
+  @Idempotent(
+    "transition : rejouée, la sorte n'est plus attestée et l'agrégat refuse (409) avant toute ligne ni fait",
+  )
   async withdraw(
     @StaffUserId() staffUserId: string,
     @Param("batchId") batchId: string,

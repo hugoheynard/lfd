@@ -10,6 +10,7 @@
  */
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 let ctx: E2eContext;
 
@@ -69,6 +70,7 @@ describe("un rôle qui porte encore `shop_vitrine`", () => {
     await ctx
       .asSub(sub)
       .post("/admin/vitrine/subscribers")
+      .set(INTENT_KEY, freshIntent())
       .send({ label: "Agence", url: "https://agence.example/hook" })
       .expect(403);
   });

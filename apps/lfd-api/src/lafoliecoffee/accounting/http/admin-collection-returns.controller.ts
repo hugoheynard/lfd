@@ -39,6 +39,7 @@ import {
   PreviewCollectionReturnImportQuery,
 } from "../application/queries/collection-return-queries.js";
 import { bankFileText, jsonField, type BankFilePart } from "./bank-return-file-upload.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /** Un relevé de retours pèse quelques dizaines de Ko ; au-delà, ce n'en est pas un. */
 const BANK_FILE_HARD_LIMIT = 5 * 1024 * 1024;
@@ -75,6 +76,9 @@ export class AdminCollectionReturnsController {
 
   /** « Signaler un retour » sur une ligne déposée. */
   @Post("batches/:batchId/lines/:rank")
+  @Idempotent(
+    "sous le verrou du lot : rejouée, la ligne a déjà son retour et l'agrégat refuse (409 LineAlreadyReturnedError) avant toute écriture ni fait",
+  )
   async record(
     @StaffUserId() staffUserId: string,
     @Param("batchId") batchId: string,
@@ -99,6 +103,9 @@ export class AdminCollectionReturnsController {
   /** Re-présenter au prochain lot ; 409 en nommant pourquoi pas. */
   @Post(":id/represent")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée, le retour n'est plus en attente et l'agrégat refuse (409) avant toute écriture ni fait",
+  )
   async represent(@StaffUserId() staffUserId: string, @Param("id") id: string): Promise<void> {
     await this.commands.execute<RepresentCollectionReturnCommand, void>(
       new RepresentCollectionReturnCommand(id, staffUserId),
@@ -108,6 +115,9 @@ export class AdminCollectionReturnsController {
   /** Réglé autrement — lien de paiement, virement. */
   @Post(":id/settle-otherwise")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée, le retour n'est plus en attente et l'agrégat refuse (409) avant toute écriture ni fait",
+  )
   async settle(
     @StaffUserId() staffUserId: string,
     @Param("id") id: string,
@@ -122,6 +132,9 @@ export class AdminCollectionReturnsController {
   /** Passé en perte, avec un motif. */
   @Post(":id/write-off")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée, le retour n'est plus en attente et l'agrégat refuse (409) avant toute écriture ni fait",
+  )
   async writeOff(
     @StaffUserId() staffUserId: string,
     @Param("id") id: string,
@@ -137,6 +150,7 @@ export class AdminCollectionReturnsController {
   @Post("import/preview")
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: BANK_FILE_HARD_LIMIT } }))
+  @Idempotent("lecture en POST (le fichier en corps) : rapproche et rend l'aperçu, n'écrit rien")
   preview(
     @UploadedFile() file: BankFilePart | undefined,
   ): Promise<CollectionReturnImportPreviewView> {
@@ -149,6 +163,9 @@ export class AdminCollectionReturnsController {
   /** Enregistre les transactions retenues — le fichier de nouveau, relu. */
   @Post("import/confirm")
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: BANK_FILE_HARD_LIMIT } }))
+  @Idempotent(
+    "tout ou rien, par la référence de chaque transaction : rejoué, chaque retour retenu est déjà enregistré (ligne déjà retournée, essai déjà retourné) et l'import entier est refusé (409) avant toute écriture",
+  )
   async confirm(
     @StaffUserId() staffUserId: string,
     @UploadedFile() file: BankFilePart | undefined,

@@ -37,6 +37,7 @@ import {
   wall,
   webhook,
 } from "./order-staff-cancel-refund-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 let ctx: E2eContext;
 
@@ -99,7 +100,10 @@ describe("un seul remboursement, quoi qu'il arrive", () => {
     stripe.during = async () => {
       const [, button] = await Promise.all([
         issueNow(requestId),
-        ctx.asSub(E2E_STAFF_SUB).post(`/admin/card-payments/refund-requests/${requestId}/retry`),
+        ctx
+          .asSub(E2E_STAFF_SUB)
+          .post(`/admin/card-payments/refund-requests/${requestId}/retry`)
+          .set(INTENT_KEY, freshIntent()),
       ]);
       seen.button = button;
     };

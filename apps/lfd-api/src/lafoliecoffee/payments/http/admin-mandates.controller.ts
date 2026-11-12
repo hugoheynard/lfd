@@ -51,6 +51,7 @@ import {
 import { GetCompanyMandateQuery } from "../application/queries/get-company-mandate.query.js";
 import { GetCardPublishableKeyQuery } from "../../../card-payment/channels/requests/index.js";
 import { ORDER_CARD_SUBJECT_TYPE } from "../../orders/application/services/order-card-subject.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /** Backstop DoS du multipart, aligné sur le KBIS (le domaine tranche à 10 Mo). */
 const PROOF_UPLOAD_HARD_LIMIT = 20 * 1024 * 1024;
@@ -131,6 +132,9 @@ export class AdminMandatesController {
    * finiraient par diverger.
    */
   @Post(":companyId/mandate")
+  @Idempotent(
+    "par sa propre clé : un brouillon par société (index unique) ; rejouée, la frappe le trouve et refuse (409 MandateDraftAlreadyExistsError) sans rien écrire",
+  )
   async mint(@Param("companyId") companyId: string): Promise<CreatedIdResponse> {
     const id = await this.commands.execute<MintMandateCommand, string>(
       new MintMandateCommand(companyId),
@@ -155,6 +159,9 @@ export class AdminMandatesController {
    */
   @Put(":companyId/mandate/:mandateId/signature")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition, sur le mandat désigné : rejouée, il n'est plus brouillon et l'agrégat refuse (409 MandateNotSignableError) avant toute écriture ni fait",
+  )
   async sign(
     @Param("companyId") companyId: string,
     @Param("mandateId") mandateId: string,
@@ -197,12 +204,20 @@ export class AdminMandatesController {
   async uploadProof(
     @Param("companyId") companyId: string,
     @UploadedFile() file: UploadedFilePart | undefined,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<void> {
     if (file === undefined) {
       throw new InvalidScannedDocumentError("aucun fichier reçu.");
     }
     await this.commands.execute<AttachMandateProofCommand, void>(
-      new AttachMandateProofCommand(companyId, file.originalname, file.buffer),
+      new AttachMandateProofCommand(
+        companyId,
+        file.originalname,
+        file.buffer,
+        staffUserId,
+        intentKey,
+      ),
     );
   }
 
@@ -268,10 +283,19 @@ export class AdminMandatesController {
     return this.proof(companyId, current.id, inline, response);
   }
 
-  /** Retire l'autorisation de prélever — chez le prestataire, puis chez nous. */
+  /**
+   * Retire l'autorisation de prélever. Une fois par intention
+   * (`Idempotency-Key`) : un second envoi ne révoque pas le brouillon suivant.
+   */
   @Delete(":companyId/mandate")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async revoke(@Param("companyId") companyId: string): Promise<void> {
-    await this.commands.execute<RevokeMandateCommand, void>(new RevokeMandateCommand(companyId));
+  async revoke(
+    @Param("companyId") companyId: string,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+  ): Promise<void> {
+    await this.commands.execute<RevokeMandateCommand, void>(
+      new RevokeMandateCommand(companyId, staffUserId, intentKey),
+    );
   }
 }

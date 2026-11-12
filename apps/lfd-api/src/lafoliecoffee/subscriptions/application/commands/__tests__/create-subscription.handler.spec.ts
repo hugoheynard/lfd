@@ -18,6 +18,8 @@ import { CreateSubscriptionHandler } from "../create-subscription.handler.js";
 import { FakeSubscriptionRepository } from "./fake-subscription-repository.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { guardServing, subscriptionGestures } from "./subscription-gesture-doubles.js";
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 
 /** Publisher doublé : capture les événements publiés (extension du port, sans cast). */
 const payload: CreateSubscriptionPayload = {
@@ -46,9 +48,12 @@ describe("CreateSubscriptionHandler", () => {
       subscriptionGestures(new FakeSubscriptionRepository()).gestures,
       articleSaleUnitsOver(),
       guardServing("SKU-1", "SKU-2", "PAT-002-1"),
+      inMemoryIntents(),
     );
 
-    const result = await handler.execute(new CreateSubscriptionCommand("user_1", payload, null));
+    const result = await handler.execute(
+      new CreateSubscriptionCommand("user_1", payload, null, randomUUID()),
+    );
 
     expect(result).toEqual({ id: "sub_created" });
     expect(repo.created).toHaveLength(1);
@@ -68,9 +73,10 @@ describe("CreateSubscriptionHandler", () => {
       subscriptionGestures(new FakeSubscriptionRepository()).gestures,
       articleSaleUnitsOver(),
       guardServing("SKU-1", "SKU-2", "PAT-002-1"),
+      inMemoryIntents(),
     );
 
-    await handler.execute(new CreateSubscriptionCommand("user_1", payload, null));
+    await handler.execute(new CreateSubscriptionCommand("user_1", payload, null, randomUUID()));
 
     expect(events.published).toHaveLength(1);
     const [event] = events.published;
@@ -101,6 +107,7 @@ describe("CreateSubscriptionHandler", () => {
         subscriptionGestures(new FakeSubscriptionRepository()).gestures,
         articleSaleUnitsOver(),
         guardServing("SKU-1", "SKU-2", "PAT-002-1"),
+        inMemoryIntents(),
       );
 
       const refused = handler.execute(
@@ -114,6 +121,7 @@ describe("CreateSubscriptionHandler", () => {
             ],
           },
           null,
+          randomUUID(),
         ),
       );
 
@@ -133,9 +141,10 @@ describe("CreateSubscriptionHandler", () => {
         subscriptionGestures(new FakeSubscriptionRepository()).gestures,
         articleSaleUnitsOver(),
         guardServing("SKU-1", "SKU-2", "PAT-002-1"),
+        inMemoryIntents(),
       );
 
-      await handler.execute(new CreateSubscriptionCommand("user_1", payload, null));
+      await handler.execute(new CreateSubscriptionCommand("user_1", payload, null, randomUUID()));
 
       expect(repo.created).toHaveLength(1);
     });
@@ -156,10 +165,11 @@ describe("CreateSubscriptionHandler — un article au poids", () => {
         catalogItem("SKU", { sku: "SKU-1", saleUnit: "weight", weightStepGrams: 100 }),
       ]),
       guardServing("SKU-1", "SKU-2", "PAT-002-1"),
+      inMemoryIntents(),
     );
 
     await expect(
-      handler.execute(new CreateSubscriptionCommand("user_1", payload, null)),
+      handler.execute(new CreateSubscriptionCommand("user_1", payload, null, randomUUID())),
     ).rejects.toThrow(WeightArticleInSubscriptionError);
     expect(repo.created).toHaveLength(0);
   });
@@ -177,10 +187,11 @@ describe("CreateSubscriptionHandler — le mur du rayon public", () => {
       subscriptionGestures(new FakeSubscriptionRepository()).gestures,
       articleSaleUnitsOver(),
       guardServing("SKU-2"),
+      inMemoryIntents(),
     );
 
     await expect(
-      handler.execute(new CreateSubscriptionCommand("user_1", payload, null)),
+      handler.execute(new CreateSubscriptionCommand("user_1", payload, null, randomUUID())),
     ).rejects.toThrow(ArticleNotServedToPublicError);
     expect(repo.created).toHaveLength(0);
   });

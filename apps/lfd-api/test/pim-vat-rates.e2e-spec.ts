@@ -9,6 +9,7 @@
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
 const stubAdminVerifier = {
@@ -90,6 +91,7 @@ async function productDerogatingB2b(
   const id = jsonBody<{ id: string }>(
     await staff()
       .post(PRODUCTS)
+      .set(INTENT_KEY, freshIntent())
       .send({ name: { fr: nameFr }, kind: "daily", categoryId: category }),
   ).id;
   await staff()

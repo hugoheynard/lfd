@@ -31,8 +31,10 @@ const TYPES: BinTypesView = { types: [] };
 
 class FakeLoading {
   calls: { transferId: string; payload: DeclareTransferBinsPayload }[] = [];
-  declareTransferBins(transferId: string, payload: DeclareTransferBinsPayload) {
+  readonly keys: string[] = [];
+  declareTransferBins(transferId: string, payload: DeclareTransferBinsPayload, intentKey: string) {
     this.calls.push({ transferId, payload });
+    this.keys.push(intentKey);
     return Promise.resolve({ binIds: ['b1', 'b2'] });
   }
 }

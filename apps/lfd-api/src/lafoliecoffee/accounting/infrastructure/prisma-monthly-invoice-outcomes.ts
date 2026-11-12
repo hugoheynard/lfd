@@ -47,18 +47,22 @@ export class PrismaMonthlyInvoiceOutcomes extends MonthlyInvoiceOutcomes {
     });
   }
 
-  async recordBlocked(key: MonthlyInvoiceOutcomeKey, message: string): Promise<void> {
+  async recordBlocked(key: MonthlyInvoiceOutcomeKey, message: string): Promise<boolean> {
     const columns = { ...this.columns(key), outcome: BLOCKED_OUTCOME, invoiceId: null, message };
     const { count } = await this.prisma.invoiceMonthlyOutcome.createMany({
       data: [columns],
       skipDuplicates: true,
     });
-    if (count === 0) {
-      await this.prisma.invoiceMonthlyOutcome.updateMany({
-        where: { ...this.id(key), outcome: BLOCKED_OUTCOME },
-        data: columns,
-      });
+    if (count > 0) {
+      return true;
     }
+    // Le même refus déjà rangé ne se réécrit pas, et une issue émise ne se
+    // touche pas : rien n'a changé, l'émission rejouée ne le redit pas.
+    const changed = await this.prisma.invoiceMonthlyOutcome.updateMany({
+      where: { ...this.id(key), outcome: BLOCKED_OUTCOME, NOT: { message } },
+      data: columns,
+    });
+    return changed.count > 0;
   }
 
   private id(key: MonthlyInvoiceOutcomeKey) {

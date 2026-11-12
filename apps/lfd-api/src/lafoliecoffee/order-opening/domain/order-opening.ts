@@ -76,4 +76,17 @@ export class OrderOpening {
       input.author,
     );
   }
+
+  /**
+   * Le réglage posé diffère-t-il de `current` ? Un patch rejoué, ou qui
+   * redit l'état courant, ne change rien : ni écriture, ni fait, ni purge.
+   */
+  changes(current: OrderOpeningState): boolean {
+    return (
+      this.ordersOpenToB2b !== current.ordersOpenToB2b ||
+      this.ordersOpenToB2c !== current.ordersOpenToB2c ||
+      this.firstServiceDayB2b !== current.firstServiceDayB2b ||
+      this.firstServiceDayB2c !== current.firstServiceDayB2c
+    );
+  }
 }

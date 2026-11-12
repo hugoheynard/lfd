@@ -23,6 +23,7 @@ import { snapshotOf } from "./catalog-ingest-fixtures.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /** Le relais de test : il accepte tout et retient ce qu'on lui a demandé. */
 class RecordingPoster extends WebhookPoster {
@@ -62,6 +63,7 @@ async function subscribe(name: string, endpointUrl?: string): Promise<VitrineCre
   return jsonBody<VitrineCredentialsView>(
     await staff()
       .post("/admin/vitrine/subscribers")
+      .set(INTENT_KEY, freshIntent())
       .send({
         name,
         contents: ["catalogue"],
@@ -147,7 +149,10 @@ describe("un abonné vitrine en lecture seule", () => {
 
   it("refuse l'essai en nommant le cas, sans rien poster", async () => {
     const { id } = await subscribe("Agence Joomla");
-    const refused = await staff().post(`/admin/vitrine/subscribers/${id}/test`).expect(409);
+    const refused = await staff()
+      .post(`/admin/vitrine/subscribers/${id}/test`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(409);
     expect(jsonBody<{ readonly message: string }>(refused).message).toBe(
       "Cet abonné n'a pas d'adresse de webhook : il lit le flux, rien ne lui est envoyé.",
     );

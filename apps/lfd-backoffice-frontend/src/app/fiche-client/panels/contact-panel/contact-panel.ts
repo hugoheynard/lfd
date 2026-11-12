@@ -23,6 +23,10 @@ import {
 
 import { AdminCompaniesService } from '../../../comptes-clients/admin-companies.service';
 import { NotifyService } from '../../../notify.service';
+import { GestureIntents } from '../../../shared/gesture-intents';
+
+/** Le sujet de l'intention : un seul ajout par panneau ouvert. */
+const ADD_CONTACT_INTENT = 'add-contact';
 
 /**
  * Qui l'on édite : le **détenteur** (aplati sur la société) ou un interlocuteur
@@ -73,6 +77,11 @@ export class AdminContactPanel {
   private readonly service = inject(AdminCompaniesService);
   private readonly ref = inject(FoldPanelRef);
   private readonly notify = inject(NotifyService);
+  /**
+   * L'intention d'ajouter : une clé tirée au premier clic, renvoyée jusqu'au
+   * succès — un double clic n'ajoute pas deux contacts.
+   */
+  private readonly intents = new GestureIntents();
 
   readonly data = input.required<AdminContactPanelData>();
 
@@ -130,7 +139,8 @@ export class AdminContactPanel {
       return;
     }
     if (target.contactId === null) {
-      await this.service.addContact(companyId, payload);
+      await this.service.addContact(companyId, payload, this.intents.keyFor(ADD_CONTACT_INTENT));
+      this.intents.done(ADD_CONTACT_INTENT);
       return;
     }
     await this.service.updateContact(companyId, target.contactId, payload);

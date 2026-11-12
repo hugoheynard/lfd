@@ -22,6 +22,9 @@ const PRO_DISCOUNT: AudiencePickupDiscount = {
   products: [],
 };
 
+/** Le lieu, une ligne d'adresse changée : un vrai geste, qui s'écrit. */
+const MOVED = { ...FIELDS, ligne2: "Cour intérieure" } as const;
+
 const PROS_ONLY: PickupAddressView = {
   ...FIELDS,
   id: "pickup_1",
@@ -50,7 +53,7 @@ describe("UpdatePickupAddressHandler — les remises par clientèle", () => {
   it("remises absentes : garde celles de la base, règles comprises", async () => {
     const points = new StoredPoints(PROS_ONLY);
 
-    await update(points, { ...FIELDS });
+    await update(points, { ...MOVED });
 
     expect(points.written?.discount.discounts).toEqual({ b2b: PRO_DISCOUNT, b2c: null });
   });
@@ -88,7 +91,7 @@ describe("UpdatePickupAddressHandler — les remises par clientèle", () => {
   it("le lieu sans remises s'écrit encore, remises gardées", async () => {
     const points = new StoredPoints(PROS_ONLY);
 
-    await update(points, { ...FIELDS });
+    await update(points, { ...MOVED });
 
     expect(points.written?.discount.discounts).toEqual({ b2b: PRO_DISCOUNT, b2c: null });
   });
@@ -105,7 +108,7 @@ describe("UpdatePickupAddressHandler — les remises par clientèle", () => {
   it("journalise les remises EFFECTIVES, pas la charge", async () => {
     const events = new RecordingPublisher();
 
-    await update(new StoredPoints(PROS_ONLY), { ...FIELDS }, events);
+    await update(new StoredPoints(PROS_ONLY), { ...MOVED }, events);
 
     expect(events.traced[0]?.journalFact().payload).toMatchObject({
       discounts: {
@@ -116,6 +119,29 @@ describe("UpdatePickupAddressHandler — les remises par clientèle", () => {
   });
 });
 
+describe("UpdatePickupAddressHandler — un geste rejoué", () => {
+  /** Régression : rejoué à l'identique, le lieu se réécrivait, se rejournalisait et purgeait la liste publique. */
+  it("n'écrit, ne journalise ni ne purge rien quand le lieu est déjà celui-là", async () => {
+    const points = new StoredPoints(PROS_ONLY);
+    const events = new RecordingPublisher();
+    const edge = new RecordingPublicSettingsEdgeCache();
+    const afterCommit = new HeldAfterCommit();
+
+    await new UpdatePickupAddressHandler(
+      points,
+      events,
+      new DirectUnitOfWork(),
+      afterCommit,
+      edge,
+    ).execute(new UpdatePickupAddressCommand("pickup_1", { ...FIELDS }));
+    await afterCommit.commit();
+
+    expect(points.written).toBeNull();
+    expect(events.traced).toHaveLength(0);
+    expect(edge.purges).toBe(0);
+  });
+});
+
 describe("UpdatePickupAddressHandler — le point GPS", () => {
   const LOCATED: PickupAddressView = { ...PROS_ONLY, gps: { lat: 45.9, lng: 6.1 } };
 
@@ -123,7 +149,7 @@ describe("UpdatePickupAddressHandler — le point GPS", () => {
   it("absent : garde celui de la base", async () => {
     const points = new StoredPoints(LOCATED);
 
-    await update(points, { ...FIELDS });
+    await update(points, { ...MOVED });
 
     expect(points.written?.gps).toEqual({ lat: 45.9, lng: 6.1 });
   });

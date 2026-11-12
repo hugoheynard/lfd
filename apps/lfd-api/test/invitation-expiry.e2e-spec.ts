@@ -37,6 +37,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const INVITATION_SUB = "auth0|invitation-expiree";
 const ADDRESS = "pro@invitation-expiree.fr";
@@ -254,6 +255,7 @@ describe("client — une invitation expirée n'ouvre plus rien", () => {
     await ctx
       .asSub(E2E_STAFF_SUB)
       .post(`/admin/access-pending/${userId}/link`)
+      .set(INTENT_KEY, freshIntent())
       .send({ companyId: companyB.id })
       .expect(201);
 
@@ -274,6 +276,7 @@ describe("client — une invitation expirée n'ouvre plus rien", () => {
     const response = await ctx
       .asSub(E2E_STAFF_SUB)
       .post(`/admin/access-pending/${userId}/link`)
+      .set(INTENT_KEY, freshIntent())
       .send({ companyId: other.id });
 
     expect(response.status).toBe(404);
@@ -409,7 +412,11 @@ describe("staff — une invitation expirée n'ouvre plus rien", () => {
   it("staff : un lien neuf renouvelle, et la fiche entre", async () => {
     const id = await invitedFiche(EXPIRED_AT());
 
-    await ctx.asSub(E2E_STAFF_SUB).post(`/admin/staff-access-pending/${id}/link`).expect(201);
+    await ctx
+      .asSub(E2E_STAFF_SUB)
+      .post(`/admin/staff-access-pending/${id}/link`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(201);
     await ctx.asSub("auth0|paul@lfc.test").get("/admin/me").expect(200);
 
     const row = await ctx.prisma.staffUser.findUniqueOrThrow({ where: { id } });

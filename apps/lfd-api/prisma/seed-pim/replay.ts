@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import type { CommandBus } from "@nestjs/cqrs";
 
 import { ArchiveProductCommand } from "../../src/pim/catalogue/product/application/archive-product.js";
@@ -18,6 +20,7 @@ import { declarationFor } from "./declarations.js";
 import { toContextVat, type Registry } from "./registry.js";
 import { seedPricePerKg } from "./price-per-kg.js";
 import { replayCapabilities, seedSaleTerms } from "./capabilities.js";
+import { SEED_STAFF_ID } from "./harness.js";
 import {
   localizedText,
   type LocalizedText,
@@ -131,19 +134,23 @@ async function openOrFind(
     return existing.id;
   }
   const id = await bus.execute<CreateProductCommand, string>(
-    new CreateProductCommand({
-      name: product.name,
-      kind: product.kind,
-      categoryId,
-      sku: product.sku,
-      ...(declaration === null
-        ? {}
-        : {
-            allergens: declaration.allergens,
-            mayContain: declaration.mayContain,
-            nutrition: nutritionValues(declaration.nutrition),
-          }),
-    }),
+    new CreateProductCommand(
+      {
+        name: product.name,
+        kind: product.kind,
+        categoryId,
+        sku: product.sku,
+        ...(declaration === null
+          ? {}
+          : {
+              allergens: declaration.allergens,
+              mayContain: declaration.mayContain,
+              nutrition: nutritionValues(declaration.nutrition),
+            }),
+      },
+      SEED_STAFF_ID,
+      randomUUID(),
+    ),
   );
   report.created += 1;
   return id;

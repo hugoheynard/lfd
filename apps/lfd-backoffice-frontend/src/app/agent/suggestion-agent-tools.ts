@@ -154,7 +154,9 @@ export function declareSuggestionAgentTools(canWrite: boolean): readonly string[
     },
     execute: (args) =>
       said('Création de la suggestion', async () => {
-        const created = await api.create(payloadOf(args, null));
+        // Un appel de l'outil est une intention : la clé naît avec lui. Un
+        // nouvel appel est un nouveau geste, comme un nouveau panneau.
+        const created = await api.create(payloadOf(args, null), crypto.randomUUID());
         return `CRÉÉE — ${await reread(created.id)}`;
       }),
   });

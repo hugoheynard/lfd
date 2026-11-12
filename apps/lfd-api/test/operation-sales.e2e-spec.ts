@@ -18,6 +18,7 @@ import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { staffViewer } from "../src/lafoliecoffee/catalog/domain/catalog-viewer.js";
 import { cardGatewayDouble } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /**
  * **Le drapeau `operationOnly` devient une règle de vente** (lot 3 de
@@ -302,6 +303,7 @@ describe("les abonnements (D6)", () => {
     const response = await ctx
       .asSub(MEMBER)
       .post("/subscriptions")
+      .set(INTENT_KEY, freshIntent())
       .send({
         fromOrderId: null,
         recurrence: "weekly",

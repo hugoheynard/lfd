@@ -21,6 +21,7 @@ import { httpErrorMessage } from '@lfd/endpoints';
 import { LegalEntitiesService } from '../legal-entities.service';
 import { legalEntityStateLabel, legalEntityStateVariant } from '../legal-entity-state';
 import { DeclarePanel } from './declare-panel/declare-panel';
+import { GestureIntents } from '../../shared/gesture-intents';
 
 /**
  * **Comptabilité › Entités juridiques** — la liste de qui encaisse.
@@ -64,6 +65,8 @@ import { DeclarePanel } from './declare-panel/declare-panel';
 })
 export class EntitesJuridiquesPage {
   private readonly api = inject(LegalEntitiesService);
+  /** Une déclaration par intention : un réessai après une coupure rend la même entité. */
+  private readonly declareIntents = new GestureIntents();
   private readonly router = inject(Router);
   private readonly panels = inject(FoldPanelHostService);
   private readonly toasts = inject(FoldToastService);
@@ -141,7 +144,8 @@ export class EntitesJuridiquesPage {
     this.busy.set(true);
     this.error.set(null);
     try {
-      await this.api.declare(payload);
+      await this.api.declare(payload, this.declareIntents.keyFor(payload.siren));
+      this.declareIntents.done(payload.siren);
       this.toasts.show('Entité déclarée.', 'success');
       // Une écriture, puis une RELECTURE : `canCollect` et `missingToCollect`
       // sont calculés par l'agrégat, et les deviner ici les ferait diverger au

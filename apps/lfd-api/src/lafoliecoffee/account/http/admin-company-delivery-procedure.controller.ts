@@ -31,6 +31,8 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import type { Response } from "express";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { AddDeliveryStepByStaffCommand } from "../application/commands/add-delivery-step-by-staff.command.js";
 import { RemoveDeliveryStepByStaffCommand } from "../application/commands/remove-delivery-step-by-staff.command.js";
@@ -119,9 +121,18 @@ export class AdminCompanyDeliveryProcedureController {
     @Param("addressId") addressId: string,
     @Body(new ZodBody(deliveryStepFieldsSchema)) fields: DeliveryStepFields,
     @UploadedFile() photo: UploadedPhotoPart | undefined,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedDeliveryStepResponse> {
     const id = await this.commands.execute<AddDeliveryStepByStaffCommand, string>(
-      new AddDeliveryStepByStaffCommand(companyId, addressId, fields, photoBytesOf(photo)),
+      new AddDeliveryStepByStaffCommand(
+        companyId,
+        addressId,
+        fields,
+        photoBytesOf(photo),
+        staffUserId,
+        intentKey,
+      ),
     );
     return { id };
   }
@@ -135,6 +146,8 @@ export class AdminCompanyDeliveryProcedureController {
     @Param("stepId") stepId: string,
     @Body(new ZodBody(deliveryStepRevisionFieldsSchema)) fields: DeliveryStepRevisionFields,
     @UploadedFile() photo: UploadedPhotoPart | undefined,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<void> {
     await this.commands.execute<ReviseDeliveryStepByStaffCommand, void>(
       new ReviseDeliveryStepByStaffCommand(
@@ -144,6 +157,8 @@ export class AdminCompanyDeliveryProcedureController {
         { title: fields.title, body: fields.body },
         fields.removePhoto === "true",
         photoBytesOf(photo),
+        staffUserId,
+        intentKey,
       ),
     );
   }

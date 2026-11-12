@@ -236,6 +236,7 @@ describe("le mur du compte de tarif", () => {
     const site = jsonBody<CreatedIdResponse>(
       await staff()
         .post(`/admin/companies/${companyId}/sub-accounts`)
+        .set(INTENT_KEY, freshIntent())
         .send({ enseigne: "Site du lac", deliveryAddress: DELIVERY, follows: [] })
         .expect(201),
     ).id;

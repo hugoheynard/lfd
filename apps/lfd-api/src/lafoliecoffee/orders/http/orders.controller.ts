@@ -260,6 +260,9 @@ export class OrdersController {
    */
   @Post(":id/payment/adopt")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "range une intention existante à l'état que la commande déclare : rejouée, la ligne est déjà là et rien n'est réécrit (aucun appel au prestataire, aucun fait)",
+  )
   async adoptPayment(@CurrentUser() user: Principal, @Param("id") id: string): Promise<void> {
     await this.commands.execute<AdoptOrderPaymentCommand, void>(
       new AdoptOrderPaymentCommand(user.userId, id),
@@ -277,6 +280,9 @@ export class OrdersController {
    */
   @Post(":id/abandon")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "rejouée, la commande déjà abandonnée répond comme la première fois sans rappeler Stripe ; un règlement pro déjà failed n'est pas réécrit et aucun fait n'est republié",
+  )
   async abandon(@CurrentUser() user: Principal, @Param("id") id: string): Promise<void> {
     await this.commands.execute<AbandonOrderCommand, void>(
       new AbandonOrderCommand(user.userId, id),
@@ -296,6 +302,9 @@ export class OrdersController {
    */
   @Post(":id/cancel")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée, la commande relue est déjà annulée et la règle refuse (409) avant tout appel à Stripe ; l'écriture sous verrou ne s'enregistre qu'une fois",
+  )
   async cancel(
     @CurrentUser() user: Principal,
     @Param("id") id: string,

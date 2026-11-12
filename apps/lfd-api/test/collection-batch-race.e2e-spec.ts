@@ -37,6 +37,7 @@ import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { invoicedPayer, setUpEntity } from "./collection-returns-scene.js";
 import { bootstrapE2e, daysAgo, type E2eContext } from "./e2e-harness.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const HOUR_MS = 60 * 60 * 1000;
 const COLLECTION = "/admin/accounting/collection";
@@ -87,7 +88,11 @@ async function readyBatch(): Promise<string> {
   const entityId = await setUpEntity(staff);
   await invoicedPayer(ctx, staff, entityId, closesAt);
   clock.set(new Date(closesAt.getTime() + 2 * HOUR_MS));
-  await staff().post(`${COLLECTION}/batches`).send({ legalEntityId: entityId }).expect(201);
+  await staff()
+    .post(`${COLLECTION}/batches`)
+    .set(INTENT_KEY, freshIntent())
+    .send({ legalEntityId: entityId })
+    .expect(201);
   await ctx.drain();
   const { id } = await ctx.prisma.collectionBatch.findFirstOrThrow({
     where: { status: "constituted" },

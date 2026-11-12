@@ -14,6 +14,11 @@ import { saleReferenceOf } from "../../domain/services/sale-references.js";
 import { assertOnSale } from "./sale-reference-support.js";
 import { SignVolumeCommitmentCommand } from "./sign-volume-commitment.command.js";
 import { ArticleSaleUnits } from "../../../catalog/application/article-sale-units.service.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
+import { CREATED_ID_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+
+/** Le nom stable du geste, dans le registre des intentions. */
+const SIGN_GESTURE = "pricing.sign-volume-commitment";
 
 @CommandHandler(SignVolumeCommitmentCommand)
 export class SignVolumeCommitmentHandler implements ICommandHandler<
@@ -29,9 +34,35 @@ export class SignVolumeCommitmentHandler implements ICommandHandler<
     private readonly companies: PricedCompanyNamer,
     private readonly saleUnits: ArticleSaleUnits,
     private readonly references: SaleReferenceReader,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: SignVolumeCommitmentCommand): Promise<string> {
+  /**
+   * **Une fois par intention** : la clé de l'écran est réclamée avant tout et
+   * scellée dans la transaction de l'écriture ; un double clic rend ce qui a
+   * déjà été posé, sans rien poser une seconde fois. Le sujet est l'empreinte
+   * de la saisie : la même clé sur une autre saisie est refusée (409).
+   *
+   * @throws {GestureInFlightError} la même clé est encore en vol.
+   * @throws {IntentKeyReusedError} la clé a servi pour une autre saisie.
+   */
+  execute(command: SignVolumeCommitmentCommand): Promise<string> {
+    return this.intents.runSealed(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: SIGN_GESTURE,
+        subject: intentSubject(command.payload.companyId, command.payload),
+      },
+      CREATED_ID_REPLAY,
+      (seal) => this.sign(command, seal),
+    );
+  }
+
+  private async sign(
+    command: SignVolumeCommitmentCommand,
+    seal: (id: string) => Promise<void>,
+  ): Promise<string> {
     const { payload } = command;
     const commitment = VolumeCommitmentAggregate.sign(
       this.ids.next(),
@@ -69,6 +100,7 @@ export class SignVolumeCommitmentHandler implements ICommandHandler<
     await this.uow.run(async () => {
       await this.commitments.sign(commitment);
       await this.events.publishTraced(new VolumeCommitmentSignedEvent(commitment, companyName));
+      await seal(commitment.id);
     });
     return commitment.id;
   }

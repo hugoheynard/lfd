@@ -38,10 +38,11 @@ describe('MediaSeriesApi', () => {
   });
 
   it('ouvre une série et rend son identifiant', async () => {
-    const pending = api.openSeries(PAYLOAD);
+    const pending = api.openSeries(PAYLOAD, 'cle-1');
     const post = http.expectOne(BASE);
     expect(post.request.method).toBe('POST');
     expect(post.request.body).toEqual(PAYLOAD);
+    expect(post.request.headers.get('Idempotency-Key')).toBe('cle-1');
     post.flush({ id: 'ser_1' });
 
     expect(await pending).toBe('ser_1');

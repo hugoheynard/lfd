@@ -40,6 +40,7 @@ import {
   type UpdateProfilePayload,
 } from "./payloads.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 
 /** Ce que la porte pro renvoie : la société ouverte, de quoi relire `/me`. */
 export interface DeclaredEstablishmentResponse {
@@ -76,6 +77,9 @@ export class MeController {
    * d'écriture.
    */
   @Patch("profile")
+  @Idempotent(
+    "pose le profil : rejouée, l'adresse est déjà la même (aucun appel au fournisseur d'identité), aucun champ ne change (aucun fait), et la demande marketing trouve la préférence déjà posée",
+  )
   async updateProfile(
     @CurrentUser() user: Principal,
     @Body(new ZodBody(updateProfilePayload)) payload: UpdateProfilePayload,
@@ -101,6 +105,9 @@ export class MeController {
    */
   @Post("establishment")
   @HttpCode(HttpStatus.CREATED)
+  @Idempotent(
+    "rejouée, la personne est déjà rattachée à l'établissement déclaré : le verrou de rattachement refuse (409 PersonAlreadyAttachedError) avant toute écriture",
+  )
   async declareEstablishment(
     @CurrentUser() user: Principal,
     @Body(new ZodBody(declareEstablishmentPayload)) payload: DeclareEstablishmentPayload,
@@ -172,16 +179,18 @@ export class MeController {
    * un compte en écrivant son adresse quelque part (R2).
    *
    * Renvoie la liste relue, comme les autres écritures de `/me` : l'appelant
-   * garde une seule source de vérité après l'écriture.
+   * garde une seule source de vérité après l'écriture. Une fois par intention
+   * (`Idempotency-Key`).
    */
   @Post("identities")
   @HttpCode(HttpStatus.OK)
   async linkIdentity(
     @CurrentUser() user: Principal,
     @Body(new ZodBody(linkLoginMethodPayload)) payload: LinkLoginMethodPayload,
+    @IntentKey() intentKey: string,
   ): Promise<LoginMethodsView> {
     await this.commands.execute<LinkLoginMethodCommand, void>(
-      new LinkLoginMethodCommand(user.userId, user.subject, payload.idToken),
+      new LinkLoginMethodCommand(user.userId, user.subject, payload.idToken, intentKey),
     );
     return this.queries.execute<ListMyLoginMethodsQuery, LoginMethodsView>(
       new ListMyLoginMethodsQuery(user.subject),
@@ -207,14 +216,18 @@ export class MeController {
    * que ce qu'il faut borner ici est le nombre de courriels par **compte**.
    *
    * 409 si le compte n'a pas de connexion par mot de passe (il entre par
-   * Google) ; 429 au-delà du débit.
+   * Google) ; 429 au-delà du débit. Une fois par intention (`Idempotency-Key`) :
+   * un double clic ne fait pas partir deux liens.
    */
   @Post("password-link")
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(PasswordLinkThrottleGuard)
-  async requestPasswordLink(@CurrentUser() user: Principal): Promise<void> {
+  async requestPasswordLink(
+    @CurrentUser() user: Principal,
+    @IntentKey() intentKey: string,
+  ): Promise<void> {
     await this.commands.execute<RequestPasswordResetCommand, void>(
-      new RequestPasswordResetCommand(user.userId, user.subject, user.email),
+      new RequestPasswordResetCommand(user.userId, user.subject, user.email, intentKey),
     );
   }
 
@@ -232,6 +245,9 @@ export class MeController {
    * compte autonome. L'écran doit le dire, pas le laisser deviner.
    */
   @Delete("identities/:provider")
+  @Idempotent(
+    "rejouée, la méthode n'est plus rattachée : le geste refuse (409 IdentityUnlinkRefusedError) avant tout appel au fournisseur d'identité ni fait",
+  )
   async revokeIdentity(
     @CurrentUser() user: Principal,
     @Param("provider") provider: string,

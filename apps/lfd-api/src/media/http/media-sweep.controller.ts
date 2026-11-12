@@ -7,6 +7,7 @@ import {
   SweepOrphanMediaCommand,
   type OrphanSweepReport,
 } from "../application/sweep-orphan-media.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Endpoint **batch** du ramassage de visuels orphelins, déclenché une fois par
@@ -28,6 +29,9 @@ export class MediaSweepController {
   constructor(private readonly commands: CommandBus) {}
 
   @Post()
+  @Idempotent(
+    "appelée par la machine (RecomputeGuard) : rejouée, elle relit les orphelins encore vieux et n'en trouve plus à retirer",
+  )
   @HttpCode(200)
   sweep(): Promise<OrphanSweepReport> {
     return this.commands.execute<SweepOrphanMediaCommand, OrphanSweepReport>(

@@ -1,6 +1,7 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { DeliveryBin } from "../../../domain/entities/delivery-bin.js";
 import type { StopLoadingSnapshot } from "../../../domain/entities/stop-loading.js";
@@ -42,6 +43,9 @@ import { ScriptedPlanHold } from "../../__tests__/plan-hold-doubles.js";
  */
 
 // Des jours comparés entre eux seulement, jamais à l'horloge.
+let intentCount = 0;
+/** Une clé d'intention neuve par geste voulu, comme l'écran. */
+const nextKey = (): string => `intent_${(intentCount += 1)}`;
 const DAY = "2030-03-12";
 const NOW = new Date(0);
 const LATER = new Date(60_000);
@@ -92,6 +96,7 @@ function declarationScene(
     new FixedClock(LATER),
     events,
     new DirectUnitOfWork(),
+    inMemoryIntents(),
   );
   return { declaration, bins, events };
 }
@@ -100,7 +105,9 @@ describe("DeclareTransferBinsHandler — déclarer les bacs d'un transfert au ch
   it("déclare autant de bacs entiers que demandé, au transfert, et UN fait au journal", async () => {
     const { declaration, bins, events } = declarationScene();
 
-    const ids = await declaration.execute(new DeclareTransferBinsCommand("t_1", "t_m", 3, 2));
+    const ids = await declaration.execute(
+      new DeclareTransferBinsCommand("t_1", "t_m", 3, 2, "staff_1", nextKey()),
+    );
 
     expect(ids).toHaveLength(3);
     expect(ids.map((id) => bins.byId.get(id)?.toSnapshot())).toEqual(
@@ -135,9 +142,24 @@ describe("DeclareTransferBinsHandler — déclarer les bacs d'un transfert au ch
   it("déclare aussi pour un transfert encore dans aucune tournée : les bacs attendent son placement", async () => {
     const { declaration, bins } = declarationScene({ loadings: new InMemoryStopLoadings() });
 
-    await declaration.execute(new DeclareTransferBinsCommand("t_1", "t_m", 1, 0));
+    await declaration.execute(
+      new DeclareTransferBinsCommand("t_1", "t_m", 1, 0, "staff_1", nextKey()),
+    );
 
     expect(bins.byId.size).toBe(1);
+  });
+
+  /** Régression : un double clic sur « Déclarer » doublait les bacs du transfert. */
+  it("rejouée avec la même clé, rend les mêmes bacs sans en déclarer d'autres", async () => {
+    const { declaration, bins, events } = declarationScene();
+    const command = new DeclareTransferBinsCommand("t_1", "t_m", 2, 0, "staff_1", nextKey());
+
+    const first = await declaration.execute(command);
+    const replayed = await declaration.execute(command);
+
+    expect(replayed).toEqual(first);
+    expect(bins.byId.size).toBe(2);
+    expect(events.traced).toHaveLength(1);
   });
 
   it("refuse un transfert parti ou reçu, sans rien écrire", async () => {
@@ -149,7 +171,9 @@ describe("DeclareTransferBinsHandler — déclarer les bacs d'un transfert au ch
     for (const transfer of [departed, received]) {
       const { declaration, bins, events } = declarationScene({ transfer });
       await expect(
-        declaration.execute(new DeclareTransferBinsCommand("t_1", "t_m", 1, 0)),
+        declaration.execute(
+          new DeclareTransferBinsCommand("t_1", "t_m", 1, 0, "staff_1", nextKey()),
+        ),
       ).rejects.toThrow(TransferBinsClosedError);
       expect(bins.byId.size).toBe(0);
       expect(events.traced).toEqual([]);
@@ -161,12 +185,16 @@ describe("DeclareTransferBinsHandler — déclarer les bacs d'un transfert au ch
       loadings: new InMemoryStopLoadings(transferStop({ departedAt: NOW })),
     });
     await expect(
-      gone.declaration.execute(new DeclareTransferBinsCommand("t_1", "t_m", 1, 0)),
+      gone.declaration.execute(
+        new DeclareTransferBinsCommand("t_1", "t_m", 1, 0, "staff_1", nextKey()),
+      ),
     ).rejects.toThrow(DeliveryRoundDepartedError);
 
     const unknown = declarationScene({ transfer: null });
     await expect(
-      unknown.declaration.execute(new DeclareTransferBinsCommand("t_1", "t_m", 1, 0)),
+      unknown.declaration.execute(
+        new DeclareTransferBinsCommand("t_1", "t_m", 1, 0, "staff_1", nextKey()),
+      ),
     ).rejects.toThrow(InternalTransferNotFoundError);
   });
 });

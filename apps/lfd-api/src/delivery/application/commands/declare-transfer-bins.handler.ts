@@ -3,6 +3,11 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
+import {
+  type IntentCodec,
+  OncePerIntent,
+  readIntentString,
+} from "../../../platform/intent/once-per-intent.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { DeliveryBin } from "../../domain/entities/delivery-bin.js";
 import { InternalTransferNotFoundError } from "../../domain/errors/internal-transfer-errors.js";
@@ -32,6 +37,10 @@ import { DeclareTransferBinsCommand } from "./declare-transfer-bins.command.js";
  * transfert encore dans aucune tournée reçoit ses bacs quand même : ils
  * attendent son placement, comme ceux d'une commande pas encore répartie.
  * Rend les identifiants des bacs : l'écran imprime leurs étiquettes.
+ *
+ * **Une fois par intention** : déclarer est un ajout, et un double clic
+ * doublerait les bacs. La clé de l'écran est scellée dans la même unité de
+ * travail ; un rejeu de la même clé rend les mêmes identifiants.
  */
 @CommandHandler(DeclareTransferBinsCommand)
 export class DeclareTransferBinsHandler implements ICommandHandler<
@@ -48,6 +57,7 @@ export class DeclareTransferBinsHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly intents: OncePerIntent,
   ) {}
 
   /**
@@ -58,7 +68,23 @@ export class DeclareTransferBinsHandler implements ICommandHandler<
    * @throws {DeliveryRoundDepartedError} @throws {BinCodeExhaustedError}
    * @throws {BinCodeCollisionError} @throws {DeliveryLoadingStaleError}
    */
-  async execute(request: DeclareTransferBinsCommand): Promise<readonly string[]> {
+  execute(request: DeclareTransferBinsCommand): Promise<readonly string[]> {
+    return this.intents.runSealed(
+      {
+        actorId: request.staffUserId,
+        key: request.intentKey,
+        gesture: "delivery.transfer.declare_bins",
+        subject: request.transferId,
+      },
+      BIN_IDS_REPLAY,
+      (seal) => this.declare(request, seal),
+    );
+  }
+
+  private declare(
+    request: DeclareTransferBinsCommand,
+    seal: (binIds: readonly string[]) => Promise<void>,
+  ): Promise<readonly string[]> {
     return this.uow.run(async () => {
       const loading = await this.loadings.forTransfer(request.transferId);
       const transfer = await this.transfers.byId(request.transferId);
@@ -91,7 +117,15 @@ export class DeclareTransferBinsHandler implements ICommandHandler<
           bins,
         ),
       );
-      return bins.map((bin) => bin.id);
+      const binIds = bins.map((bin) => bin.id);
+      await seal(binIds);
+      return binIds;
     });
   }
 }
+
+/** Les identifiants des bacs déclarés, dans l'ordre — un ULID ne porte pas de virgule. */
+const BIN_IDS_REPLAY: IntentCodec<readonly string[]> = {
+  write: (binIds) => ({ binIds: binIds.join(",") }),
+  read: (record, gesture) => readIntentString(record, "binIds", gesture).split(","),
+};

@@ -15,6 +15,7 @@ import type {
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../../api/api-config';
+import { intentOptions } from '../../shared/gesture-intents';
 
 const SITES = `${B2B_API_BASE}/admin/sites`;
 
@@ -45,8 +46,11 @@ export class SitesService {
     return firstValueFrom(this.http.get<SiteView>(`${SITES}/${encodeURIComponent(id)}`));
   }
 
-  create(payload: PickupAddressPayload): Promise<CreatedPickupResponse> {
-    return firstValueFrom(this.http.post<CreatedPickupResponse>(SITES, payload));
+  /** Crée un site, une fois par intention (`Idempotency-Key`). */
+  create(payload: PickupAddressPayload, intentKey: string): Promise<CreatedPickupResponse> {
+    return firstValueFrom(
+      this.http.post<CreatedPickupResponse>(SITES, payload, intentOptions(intentKey)),
+    );
   }
 
   /** Le lieu : adresse, heures pros, réduction, GPS. */
@@ -83,10 +87,17 @@ export class SitesService {
     );
   }
 
-  /** (Re)génère le QR d'une table : l'ancien code imprimé ne vaut plus. */
-  async generateTableQr(id: string, tableNumber: number): Promise<void> {
+  /**
+   * (Re)génère le QR d'une table : l'ancien code imprimé ne vaut plus. Une fois
+   * par intention : un double clic ne tire pas deux QR.
+   */
+  async generateTableQr(id: string, tableNumber: number, intentKey: string): Promise<void> {
     await firstValueFrom(
-      this.http.post<void>(`${SITES}/${encodeURIComponent(id)}/tables/${tableNumber}/qr`, null),
+      this.http.post<void>(
+        `${SITES}/${encodeURIComponent(id)}/tables/${tableNumber}/qr`,
+        null,
+        intentOptions(intentKey),
+      ),
     );
   }
 

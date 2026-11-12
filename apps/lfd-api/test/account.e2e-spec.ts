@@ -20,6 +20,7 @@ import { CompanyStatus } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import type { ProvisionedIdentity } from "../src/platform/shared/identity/provisioned-identity.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const SUB = "auth0|compte";
 
@@ -243,7 +244,12 @@ describe("POST /companies", () => {
   };
 
   it("déclare l'entreprise, la laisse en attente, et fait du créateur son gestionnaire", async () => {
-    const created = await ctx.asSub(SUB).post("/companies").send(valide).expect(201);
+    const created = await ctx
+      .asSub(SUB)
+      .post("/companies")
+      .set(INTENT_KEY, freshIntent())
+      .send(valide)
+      .expect(201);
 
     const company = await ctx.prisma.company.findUniqueOrThrow({
       where: { id: jsonBody<CreatedCompanyResponse>(created).id },
@@ -259,7 +265,12 @@ describe("POST /companies", () => {
   });
 
   it("journalise company.declared via `self`, acteur customer (câblage account→growth)", async () => {
-    const created = await ctx.asSub(SUB).post("/companies").send(valide).expect(201);
+    const created = await ctx
+      .asSub(SUB)
+      .post("/companies")
+      .set(INTENT_KEY, freshIntent())
+      .send(valide)
+      .expect(201);
     const companyId = jsonBody<CreatedCompanyResponse>(created).id;
 
     for (let attempt = 0; attempt < 50; attempt += 1) {
@@ -281,7 +292,12 @@ describe("POST /companies", () => {
   });
 
   it("la fait apparaître dans le compte du créateur, et de personne d'autre", async () => {
-    const created = await ctx.asSub(SUB).post("/companies").send(valide).expect(201);
+    const created = await ctx
+      .asSub(SUB)
+      .post("/companies")
+      .set(INTENT_KEY, freshIntent())
+      .send(valide)
+      .expect(201);
     await createUser(ctx.prisma, { auth0Sub: "auth0|voisin", email: "voisin@client.fr" });
 
     const mine = await ctx.asSub(SUB).get("/me").expect(200);
@@ -300,6 +316,7 @@ describe("POST /companies", () => {
     const response = await ctx
       .asSub(SUB)
       .post("/companies")
+      .set(INTENT_KEY, freshIntent())
       .send({ ...valide, siret: "812 456 789 00028" });
 
     expect(response.status).toBe(400);
@@ -308,7 +325,11 @@ describe("POST /companies", () => {
   it("refuse un SIRET déjà enregistré", async () => {
     await createCompany(ctx.prisma, { siret: "81245678900021" });
 
-    const response = await ctx.asSub(SUB).post("/companies").send(valide);
+    const response = await ctx
+      .asSub(SUB)
+      .post("/companies")
+      .set(INTENT_KEY, freshIntent())
+      .send(valide);
 
     expect(response.status).toBe(409);
   });
@@ -319,6 +340,7 @@ describe("POST /companies", () => {
     const response = await ctx
       .asSub(SUB)
       .post("/companies")
+      .set(INTENT_KEY, freshIntent())
       .send({ ...valide, enseigne: "  " });
 
     expect(response.status).toBe(400);
@@ -330,7 +352,7 @@ describe("POST /companies", () => {
     const premiere = await createCompany(ctx.prisma, { raisonSociale: "Déjà là SAS" });
     await attachTo(ctx.prisma, userId, premiere.id);
 
-    await ctx.asSub(SUB).post("/companies").send(valide).expect(201);
+    await ctx.asSub(SUB).post("/companies").set(INTENT_KEY, freshIntent()).send(valide).expect(201);
 
     const mine = await ctx.asSub(SUB).get("/me").expect(200);
     expect(jsonBody<AccountView>(mine).companies).toHaveLength(2);

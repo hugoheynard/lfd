@@ -180,6 +180,7 @@ function sheetGestures(state: PlanHoldState, row: PackingSheetSnapshot) {
       uow,
       InMemoryPackingSettings.sharingOpen().reader(),
       hold,
+      inMemoryIntents(),
     ),
     allocate: new AllocateToContainerHandler(
       sheets,
@@ -228,7 +229,9 @@ describe("Les gestes du colisage tiennent le plan arrêté, d'abord", () => {
   it("ouvrir un sac : le plan tenu avant le verrou du bac et son écriture", async () => {
     const { log, open } = sheetGestures("arrested", snapshot());
 
-    await open.execute(new OpenPackingContainerCommand(DAY, "ord_1", { nature: "bag" }, STAFF));
+    await open.execute(
+      new OpenPackingContainerCommand(DAY, "ord_1", { nature: "bag" }, STAFF, nextKey()),
+    );
 
     expect(log).toEqual([`hold ${DAY}`, "sheet.lock", "sheet.save"]);
   });
@@ -285,7 +288,9 @@ describe("Un plan rouvert : chaque geste refuse sans rien verrouiller ni écrire
       name: "ouvrir un sac",
       row: snapshot(),
       run: (g: ReturnType<typeof sheetGestures>) =>
-        g.open.execute(new OpenPackingContainerCommand(DAY, "ord_1", { nature: "bag" }, STAFF)),
+        g.open.execute(
+          new OpenPackingContainerCommand(DAY, "ord_1", { nature: "bag" }, STAFF, nextKey()),
+        ),
     },
     {
       name: "mettre au bac",
@@ -347,7 +352,7 @@ describe("Un plan rouvert : chaque geste refuse sans rien verrouiller ni écrire
     const { log, open } = sheetGestures("never_arrested", snapshot());
 
     await open
-      .execute(new OpenPackingContainerCommand(DAY, "ord_1", { nature: "bag" }, STAFF))
+      .execute(new OpenPackingContainerCommand(DAY, "ord_1", { nature: "bag" }, STAFF, nextKey()))
       .catch((error: unknown) => {
         expect(error).not.toBeInstanceOf(PackingPlanReopenedError);
       });

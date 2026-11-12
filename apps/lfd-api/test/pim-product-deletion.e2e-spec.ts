@@ -19,6 +19,7 @@ import {
   type Fiche,
 } from "./catalog-facts-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -147,6 +148,7 @@ describe("DELETE /pim/catalogue/products/:id", () => {
 
     const response = await staff()
       .post(PRODUCTS)
+      .set(INTENT_KEY, freshIntent())
       .send({
         name: { fr: "Croissant bis" },
         kind: "daily",

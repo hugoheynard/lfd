@@ -136,12 +136,16 @@ export function declarePimAgentTools(canReemit: boolean): readonly string[] {
     },
     execute: (args) =>
       said('Création de la fiche', async () => {
-        const created = await products.create({
-          name: { fr: args.name },
-          kind: args.kind,
-          categoryId: args.categoryId,
-          ...(args.descriptionFr === undefined ? {} : { descriptionFr: args.descriptionFr }),
-        });
+        // Un appel d'outil est une intention : sa propre clé, jamais réutilisée.
+        const created = await products.create(
+          {
+            name: { fr: args.name },
+            kind: args.kind,
+            categoryId: args.categoryId,
+            ...(args.descriptionFr === undefined ? {} : { descriptionFr: args.descriptionFr }),
+          },
+          crypto.randomUUID(),
+        );
         return `Fiche créée : ${created.id}`;
       }),
   });

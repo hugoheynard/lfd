@@ -5,6 +5,7 @@ import { Public } from "../../platform/auth/public.decorator.js";
 import { Clock } from "../../platform/time/clock.js";
 import { TOPOLOGY } from "../topology/topology.js";
 import { VitalsStore } from "./vitals.store.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /** Au-delà, on ignore la suite : un navigateur n'a que trois mesures à rendre. */
 const MAX_SAMPLES = 12;
@@ -42,6 +43,9 @@ export class VitalsController {
 
   @Public()
   @Post()
+  @Idempotent(
+    "route publique, sans acteur : des échantillons anonymes gardés en mémoire, sans base ; un rejeu ajoute un échantillon à une statistique, sans autre effet",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   collect(@Body() body: unknown): void {
     const now = this.clock.now().getTime();

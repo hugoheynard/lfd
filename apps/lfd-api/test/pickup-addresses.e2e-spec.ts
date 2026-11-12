@@ -13,6 +13,7 @@ import type {
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -49,7 +50,11 @@ const point = (label: string): Record<string, unknown> => ({
 });
 
 async function create(label: string): Promise<string> {
-  const response = await staff().post("/admin/pickup-addresses").send(point(label)).expect(201);
+  const response = await staff()
+    .post("/admin/pickup-addresses")
+    .set(INTENT_KEY, freshIntent())
+    .send(point(label))
+    .expect(201);
   return jsonBody<CreatedPickupResponse>(response).id;
 }
 
@@ -144,6 +149,7 @@ describe("points de retrait — une remise par clientèle", () => {
   it("refuse (409) de créer un point avec une remise, en nommant l'écran Promotions", async () => {
     const response = await staff()
       .post("/admin/pickup-addresses")
+      .set(INTENT_KEY, freshIntent())
       .send({ ...point("Labo Paris"), discounts: { b2b: PRO, b2c: null } })
       .expect(409);
 

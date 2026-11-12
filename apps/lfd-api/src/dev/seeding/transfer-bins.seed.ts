@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { DeclareTransferBinsCommand } from "../../delivery/application/commands/declare-transfer-bins.command.js";
 import { LoadDeliveryBinCommand } from "../../delivery/application/commands/load-delivery-bin.command.js";
 import { BIN_M } from "./delivery-bins.seed.js";
@@ -51,7 +53,14 @@ export async function loadTransferBins(
     const innerBags = stop.transfer.items.length;
     const binIds = await asStaff(day.at, () =>
       context.commands.execute<DeclareTransferBinsCommand, readonly string[]>(
-        new DeclareTransferBinsCommand(transferId, binType.id, TRANSFER_BINS, innerBags),
+        new DeclareTransferBinsCommand(
+          transferId,
+          binType.id,
+          TRANSFER_BINS,
+          innerBags,
+          SEED_STAFF_SUB,
+          randomUUID(),
+        ),
       ),
     );
     for (const binId of binIds) {

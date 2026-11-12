@@ -41,6 +41,7 @@ import {
 import { createUser } from "./factories.js";
 import { payByCard, pickupSite, placeOrder } from "./order-factory.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const DAY = serviceDay(7);
 const BUYER = "auth0|hausse-appliquee";
@@ -150,6 +151,7 @@ async function proposed(order: PaidOrder, quantity = 6): Promise<Proposed> {
   const answer = jsonBody<CardComplementPaymentView>(
     await buyer()
       .post(`/orders/${order.id}/revisions/card-increase`)
+      .set(INTENT_KEY, freshIntent())
       .send({
         expectedRevision: 0,
         expectedTotalCents: seen.totalCents,

@@ -9,6 +9,10 @@ import {
 
 import { NotifyService } from '../../../notify.service';
 import { LeadsService } from '../../leads.service';
+import { GestureIntents } from '../../../shared/gesture-intents';
+
+/** Le sujet de l'intention : une seule saisie par panneau ouvert. */
+const CAPTURE_INTENT = 'capture-lead';
 
 /**
  * Panneau **Ajouter un établissement démarché** : saisit un établissement que le
@@ -28,6 +32,11 @@ export class LeadCapturePanel {
   private readonly leads = inject(LeadsService);
   private readonly notify = inject(NotifyService);
   private readonly ref = inject(FoldPanelRef<boolean>);
+  /**
+   * L'intention de saisir le prospect : une clé tirée au premier envoi, renvoyée jusqu'au
+   * succès — un double clic ne saisit pas deux prospects.
+   */
+  private readonly intents = new GestureIntents();
 
   /** Le panneau ne prend aucune donnée d'ouverture (satisfait `FoldPanelContent`). */
   readonly data = input<undefined>(undefined);
@@ -56,7 +65,8 @@ export class LeadCapturePanel {
       notes: this.notes().trim(),
     };
     try {
-      await this.leads.capture(payload);
+      await this.leads.capture(payload, this.intents.keyFor(CAPTURE_INTENT));
+      this.intents.done(CAPTURE_INTENT);
       this.notify.success('Établissement ajouté aux prospects.');
       this.ref.close(true);
     } catch (error) {

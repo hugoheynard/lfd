@@ -283,10 +283,15 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
     return withoutCancelled(planned, new Set(cancelledNumbers));
   }
 
-  /** Le payeur signalé : son issue rangée et son fait au journal, ensemble. */
+  /**
+   * Le payeur signalé : son issue rangée et son fait au journal, ensemble. Le
+   * même refus déjà rangé (une émission rejouée) ne se rejournalise pas.
+   */
   private async signal(key: MonthlyInvoiceOutcomeKey, message: string): Promise<PayerIssue> {
     await this.uow.run(async () => {
-      await this.outcomes.recordBlocked(key, message);
+      if (!(await this.outcomes.recordBlocked(key, message))) {
+        return;
+      }
       await this.events.publishTraced(
         new InvoiceSignalledEvent(
           { id: key.payerCompanyId, name: key.payerName },

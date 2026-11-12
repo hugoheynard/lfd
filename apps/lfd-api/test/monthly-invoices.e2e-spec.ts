@@ -54,6 +54,7 @@ import {
 } from "./factories.js";
 import { placeServedOrder, type ServedOrder, type ServedOrderSeed } from "./served-order.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
@@ -147,6 +148,7 @@ function staff(): ReturnType<E2eContext["asSub"]> {
 async function entity(): Promise<string> {
   const response = await staff()
     .post(ENTITIES)
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: "La Folie Douce",
       legalForm: "SAS",
@@ -530,11 +532,19 @@ describe("la facture du mois, puis le lot qui l'encaisse (E4)", () => {
     await payer(id);
     await issueByHand(id);
     clock.set(new Date(closesAt.getTime() + 2 * HOUR_MS));
-    await staff().post(`${COLLECTION}/batches`).send({ legalEntityId: id }).expect(201);
+    await staff()
+      .post(`${COLLECTION}/batches`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ legalEntityId: id })
+      .expect(201);
     const first = await ctx.prisma.collectionBatch.findFirstOrThrow();
 
     await staff().post(`${COLLECTION}/batches/${first.id}/cancel`).expect(204);
-    await staff().post(`${COLLECTION}/batches`).send({ legalEntityId: id }).expect(201);
+    await staff()
+      .post(`${COLLECTION}/batches`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ legalEntityId: id })
+      .expect(201);
 
     const links = await ctx.prisma.collectionBatchLineInvoice.findMany();
     expect(links.map((link) => link.batchId)).toEqual(
@@ -1155,7 +1165,11 @@ describe("facturer chaque bon dans le mois de sa livraison (lot ZL)", () => {
     expect(await ctx.prisma.invoiceOrder.count({ where: { orderId: lateOrder.id } })).toBe(1);
 
     // Le lot d'octobre constitué en retard ne prend pas la facture de novembre.
-    await staff().post(`${COLLECTION}/batches`).send({ legalEntityId: id }).expect(201);
+    await staff()
+      .post(`${COLLECTION}/batches`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ legalEntityId: id })
+      .expect(201);
     expect(await invoicesCollectedAt(closesAt)).toEqual(await invoiceIdsOf([onTime.id]));
   });
 

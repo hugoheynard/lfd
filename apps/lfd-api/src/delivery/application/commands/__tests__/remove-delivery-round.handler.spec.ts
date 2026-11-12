@@ -1,3 +1,4 @@
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
@@ -22,6 +23,10 @@ import {
   roundWith,
 } from "./round-doubles.js";
 import { InMemoryInternalTransfers } from "../../__tests__/transfer-doubles.js";
+
+let intentCount = 0;
+/** Une clé d'intention neuve par geste voulu, comme l'écran. */
+const nextKey = (): string => `intent_${(intentCount += 1)}`;
 
 // L'horloge est FIGÉE à l'instant 0 : son jour de Paris est le 1970-01-01. Les
 // jours ci-dessous se lisent par rapport à elle, jamais au mur.
@@ -121,13 +126,18 @@ describe("on ne compose pas une journée passée (2026-10-26)", () => {
       clock,
       events,
       uow,
+      inMemoryIntents(),
     );
 
     await expect(
-      handler.execute(new OpenDeliveryRoundCommand({ day: YESTERDAY, vehicleId: "v_1" })),
+      handler.execute(
+        new OpenDeliveryRoundCommand({ day: YESTERDAY, vehicleId: "v_1" }, "staff_1", nextKey()),
+      ),
     ).rejects.toThrow(PastServiceDayCompositionError);
     await expect(
-      handler.execute(new OpenDeliveryRoundCommand({ day: TODAY, vehicleId: "v_1" })),
+      handler.execute(
+        new OpenDeliveryRoundCommand({ day: TODAY, vehicleId: "v_1" }, "staff_1", nextKey()),
+      ),
     ).resolves.toEqual(expect.any(String));
   });
 

@@ -47,6 +47,7 @@ import {
 import { createUser } from "./factories.js";
 import { drawer, pick, type Drawer } from "./seeded-draw.js";
 import { cardProvidersOverride } from "./card-payments.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const REGISTERED = "auth0|propriete-inscrit";
 const SERVICE_DAY = serviceDay();
@@ -99,6 +100,7 @@ async function scene(): Promise<string> {
   const created = jsonBody<CreatedPickupResponse>(
     await staff()
       .post("/admin/pickup-addresses")
+      .set(INTENT_KEY, freshIntent())
       .send({
         label: "Le Labo",
         ligne1: "5 rue du Four",
@@ -208,7 +210,10 @@ async function setPromotions(promotions: readonly PromotionTermsPayload[]): Prom
   await ctx.prisma.promotionDeliveryZone.deleteMany();
   await ctx.prisma.promotion.deleteMany();
   for (const promotion of promotions) {
-    const response = await staff().post("/admin/promotions").send(promotion);
+    const response = await staff()
+      .post("/admin/promotions")
+      .set(INTENT_KEY, freshIntent())
+      .send(promotion);
     if (response.status !== 201) {
       throw new Error(
         `Pose refusée (${String(response.status)}) : ${JSON.stringify(response.body)} pour ${JSON.stringify(promotion)}`,

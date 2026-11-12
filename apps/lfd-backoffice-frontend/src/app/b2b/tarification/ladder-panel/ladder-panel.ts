@@ -13,6 +13,10 @@ import { magnitudeToWire } from '../pricing-format';
 import { TarificationService } from '../tarification.service';
 import { businessDayStart } from '../../../shared/business-day';
 import { parisToday } from '../../../shared/paris-today';
+import { GestureIntents } from '../../../shared/gesture-intents';
+
+/** Le sujet de l'intention : une seule pose par panneau ouvert. */
+const LADDER_INTENT = 'set-ladder';
 
 /** Charge d'ouverture : sur quoi le barème porte, et ce qui y est déjà posé. */
 export interface LadderPanelData {
@@ -59,6 +63,11 @@ export class LadderPanel {
   private readonly tarification = inject(TarificationService);
   private readonly notify = inject(NotifyService);
   private readonly ref = inject(FoldPanelRef<boolean>);
+  /**
+   * L'intention de poser le barème : une clé tirée au premier envoi, renvoyée jusqu'au
+   * succès — un double clic ne pose pas deux barèmes.
+   */
+  private readonly intents = new GestureIntents();
 
   readonly data = input<LadderPanelData | undefined>(undefined);
 
@@ -145,17 +154,21 @@ export class LadderPanel {
     }
     this.saving.set(true);
     try {
-      await this.tarification.setVolumeLadder({
-        scope: data.scope,
-        audience: { type: 'all', id: null },
-        unit: this.unit(),
-        tiers: [...this.filled()].sort((left, right) => left.minQuantity - right.minQuantity),
-        label: this.label().trim(),
-        // Minuit **à Paris**, pas UTC : le commercial qui écrit « à partir du 1er
-        // janvier » veut dire minuit chez lui. Cf. `business-day.ts`.
-        validFrom: businessDayStart(this.validFrom()) ?? new Date().toISOString(),
-        validTo: this.validTo() === '' ? null : businessDayStart(this.validTo()),
-      });
+      await this.tarification.setVolumeLadder(
+        {
+          scope: data.scope,
+          audience: { type: 'all', id: null },
+          unit: this.unit(),
+          tiers: [...this.filled()].sort((left, right) => left.minQuantity - right.minQuantity),
+          label: this.label().trim(),
+          // Minuit **à Paris**, pas UTC : le commercial qui écrit « à partir du 1er
+          // janvier » veut dire minuit chez lui. Cf. `business-day.ts`.
+          validFrom: businessDayStart(this.validFrom()) ?? new Date().toISOString(),
+          validTo: this.validTo() === '' ? null : businessDayStart(this.validTo()),
+        },
+        this.intents.keyFor(LADDER_INTENT),
+      );
+      this.intents.done(LADDER_INTENT);
       this.notify.success('Barème de volume posé.');
       this.ref.close(true);
     } catch (error) {

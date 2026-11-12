@@ -10,6 +10,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
+import { IntentKey } from "../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { ArchiveSimulationScenarioCommand } from "../application/commands/archive-simulation-scenario.command.js";
 import { DuplicateSimulationScenarioCommand } from "../application/commands/duplicate-simulation-scenario.command.js";
@@ -50,6 +51,9 @@ export class DeliverySimulationScenariosController {
   }
 
   @Post()
+  @Idempotent(
+    "par unicité : le nom d'un scénario vivant est unique ; rejoué, l'enregistrement est refusé (409 SimulationScenarioNameTakenError) avant toute écriture",
+  )
   @HttpCode(HttpStatus.CREATED)
   async record(
     @Body(new ZodBody(saveDeliverySimulationScenarioPayloadSchema))
@@ -63,6 +67,9 @@ export class DeliverySimulationScenariosController {
   }
 
   @Put(":id")
+  @Idempotent(
+    "pose le nom et le contenu : rejoué, rien ne change et ni écriture ni fait ne partent",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async replace(
     @Param("id") id: string,
@@ -75,14 +82,16 @@ export class DeliverySimulationScenariosController {
     );
   }
 
+  /** Une copie neuve : la clé d'intention de l'écran (obligatoire) fait qu'un double clic n'en fait qu'une. */
   @Post(":id/duplicate")
   @HttpCode(HttpStatus.CREATED)
   async duplicate(
     @Param("id") id: string,
     @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedIdResponse> {
     const copyId = await this.commands.execute<DuplicateSimulationScenarioCommand, string>(
-      new DuplicateSimulationScenarioCommand(id, staffUserId),
+      new DuplicateSimulationScenarioCommand(id, staffUserId, intentKey),
     );
     return { id: copyId };
   }

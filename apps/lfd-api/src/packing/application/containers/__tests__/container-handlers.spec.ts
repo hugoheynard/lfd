@@ -82,6 +82,7 @@ function setup(options: { readonly mode?: ContainerMode; readonly received?: num
       uow,
       InMemoryPackingSettings.sharingOpen().reader(),
       new RecordingPlanHold(),
+      inMemoryIntents(),
     ),
     allocate: new AllocateToContainerHandler(
       sheets,
@@ -107,10 +108,26 @@ const BIN = { nature: "bin", binTypeId: "t_m", half: false, innerBags: 0 } as co
 const BAG = { nature: "bag" } as const;
 
 describe("OpenPackingContainerHandler — un bac par la livraison, un sac ici", () => {
+  /** Régression : un double clic sur « + Nouveau bac » ouvrait deux contenants et déclarait deux bacs. */
+  it("rejouée avec la même clé, rend le même contenant sans déclarer de second bac", async () => {
+    const { open, desk, sheets, events } = setup();
+    const command = new OpenPackingContainerCommand(DAY, "ord_1", BIN, STAFF, nextKey());
+
+    const first = await open.execute(command);
+    const replayed = await open.execute(command);
+
+    expect(replayed).toBe(first);
+    expect(desk.declared).toHaveLength(1);
+    expect(sheets.of(DAY, "ord_1")?.containerList).toHaveLength(1);
+    expect(events.traced).toHaveLength(1);
+  });
+
   it("fait déclarer le bac par la livraison, et garde son id et son code", async () => {
     const { open, desk, sheets, events } = setup();
 
-    const id = await open.execute(new OpenPackingContainerCommand(DAY, "ord_1", BIN, STAFF));
+    const id = await open.execute(
+      new OpenPackingContainerCommand(DAY, "ord_1", BIN, STAFF, nextKey()),
+    );
 
     expect(id).toBe("ctn_000001");
     expect(desk.declared).toEqual([
@@ -144,6 +161,7 @@ describe("OpenPackingContainerHandler — un bac par la livraison, un sac ici", 
         "ord_1",
         { nature: "bin", partnerBinId: "b_left", innerBags: 1 },
         STAFF,
+        nextKey(),
       ),
     );
 
@@ -153,7 +171,7 @@ describe("OpenPackingContainerHandler — un bac par la livraison, un sac ici", 
   it("ouvre un sac sans rien demander à la livraison", async () => {
     const { open, desk, events } = setup();
 
-    await open.execute(new OpenPackingContainerCommand(DAY, "ord_1", BAG, STAFF));
+    await open.execute(new OpenPackingContainerCommand(DAY, "ord_1", BAG, STAFF, nextKey()));
 
     expect(desk.declared).toEqual([]);
     expect(events.traced[0]?.journalFact().payload).toMatchObject({
@@ -167,7 +185,7 @@ describe("OpenPackingContainerHandler — un bac par la livraison, un sac ici", 
     desk.refusal = new DeliveryRefusal();
 
     await expect(
-      open.execute(new OpenPackingContainerCommand(DAY, "ord_1", BIN, STAFF)),
+      open.execute(new OpenPackingContainerCommand(DAY, "ord_1", BIN, STAFF, nextKey())),
     ).rejects.toThrow(DeliveryRefusal);
     expect(sheets.of(DAY, "ord_1")?.containerList).toEqual([]);
   });
@@ -176,7 +194,7 @@ describe("OpenPackingContainerHandler — un bac par la livraison, un sac ici", 
     const { open, desk } = setup({ mode: "counted" });
 
     await expect(
-      open.execute(new OpenPackingContainerCommand(DAY, "ord_1", BIN, STAFF)),
+      open.execute(new OpenPackingContainerCommand(DAY, "ord_1", BIN, STAFF, nextKey())),
     ).rejects.toThrow(ContainersCountedError);
     expect(desk.declared).toEqual([]);
   });
@@ -185,7 +203,7 @@ describe("OpenPackingContainerHandler — un bac par la livraison, un sac ici", 
     const { open } = setup();
 
     await expect(
-      open.execute(new OpenPackingContainerCommand(DAY, "ord_x", BAG, STAFF)),
+      open.execute(new OpenPackingContainerCommand(DAY, "ord_x", BAG, STAFF, nextKey())),
     ).rejects.toThrow(PackingOrderNotDrawnYetError);
   });
 });
@@ -194,7 +212,7 @@ describe("AllocateToContainerHandler / WithdrawFromContainerHandler — la rése
   async function withBag() {
     const context = setup();
     const id = await context.open.execute(
-      new OpenPackingContainerCommand(DAY, "ord_1", BAG, STAFF),
+      new OpenPackingContainerCommand(DAY, "ord_1", BAG, STAFF, nextKey()),
     );
     return { ...context, id };
   }
@@ -221,7 +239,7 @@ describe("AllocateToContainerHandler / WithdrawFromContainerHandler — la rése
   it("refuse ce qui n'est pas sorti du four, en disant combien il en manque", async () => {
     const context = setup({ received: 5 });
     const id = await context.open.execute(
-      new OpenPackingContainerCommand(DAY, "ord_1", BAG, STAFF),
+      new OpenPackingContainerCommand(DAY, "ord_1", BAG, STAFF, nextKey()),
     );
 
     await expect(
@@ -234,7 +252,7 @@ describe("AllocateToContainerHandler / WithdrawFromContainerHandler — la rése
   it("refuse un bac que la livraison ne connaît plus vivant (défense en profondeur)", async () => {
     const context = setup();
     const id = await context.open.execute(
-      new OpenPackingContainerCommand(DAY, "ord_1", BIN, STAFF),
+      new OpenPackingContainerCommand(DAY, "ord_1", BIN, STAFF, nextKey()),
     );
     context.desk.dead.add("bin_1");
 
@@ -253,7 +271,7 @@ describe("AllocateToContainerHandler / WithdrawFromContainerHandler — la rése
   it("tient le bac chez la livraison avant d'y mettre des pièces", async () => {
     const context = setup();
     const id = await context.open.execute(
-      new OpenPackingContainerCommand(DAY, "ord_1", BIN, STAFF),
+      new OpenPackingContainerCommand(DAY, "ord_1", BIN, STAFF, nextKey()),
     );
 
     await context.allocate.execute(
@@ -268,7 +286,7 @@ describe("VoidPackingContainerHandler — un bac s'annule d'abord chez la livrai
   it("annule le bac, puis le contenant, et rend ce qu'il portait", async () => {
     const context = setup();
     const id = await context.open.execute(
-      new OpenPackingContainerCommand(DAY, "ord_1", BIN, STAFF),
+      new OpenPackingContainerCommand(DAY, "ord_1", BIN, STAFF, nextKey()),
     );
     await context.allocate.execute(
       new AllocateToContainerCommand(DAY, "ord_1", id, "CRO", 7, STAFF, nextKey()),
@@ -288,7 +306,7 @@ describe("VoidPackingContainerHandler — un bac s'annule d'abord chez la livrai
   it("refusé par la livraison (bac chargé) : le contenant reste tel quel", async () => {
     const context = setup();
     const id = await context.open.execute(
-      new OpenPackingContainerCommand(DAY, "ord_1", BIN, STAFF),
+      new OpenPackingContainerCommand(DAY, "ord_1", BIN, STAFF, nextKey()),
     );
     context.desk.refusal = new DeliveryRefusal();
 

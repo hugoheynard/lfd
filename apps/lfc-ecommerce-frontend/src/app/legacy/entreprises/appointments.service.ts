@@ -7,10 +7,11 @@ import type {
   SlotsView,
 } from '@lfd/contracts';
 import type { Observable } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
+import { switchMap, tap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
+import { GestureIntents, INTENT_KEY_HEADER } from '../../client/gesture-intents';
 
 /**
  * **Prise de rendez-vous** côté client : les créneaux réellement ouverts, la
@@ -24,6 +25,8 @@ import { AuthFacade } from '../../auth/auth.facade';
 export class AppointmentsService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
+  /** Les intentions des réservations : une clé par contenu, oubliée au succès. */
+  private readonly intents = new GestureIntents();
   private readonly base = `${AUTH_CONFIG.apiBaseUrl}/appointments`;
 
   /** Les créneaux réservables entre deux jours locaux (`AAAA-MM-JJ`). */
@@ -34,10 +37,14 @@ export class AppointmentsService {
     );
   }
 
+  /** Une fois par intention : un double clic ne prend pas deux rendez-vous. */
   book(payload: BookAppointmentPayload): Observable<CreatedAppointmentResponse> {
+    const subject = `appointment:${JSON.stringify(payload)}`;
     return this.authed((headers) =>
-      this.http.post<CreatedAppointmentResponse>(this.base, payload, { headers }),
-    );
+      this.http.post<CreatedAppointmentResponse>(this.base, payload, {
+        headers: { ...headers, [INTENT_KEY_HEADER]: this.intents.keyFor(subject) },
+      }),
+    ).pipe(tap(() => this.intents.done(subject)));
   }
 
   mine(): Observable<readonly AppointmentView[]> {

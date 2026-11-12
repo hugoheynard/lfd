@@ -35,6 +35,7 @@ import { InvoiceIssuer } from "../src/lafoliecoffee/accounting/application/servi
 import type { InvoiceNumber } from "../src/lafoliecoffee/accounting/domain/value-objects/invoice-number.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const ISSUED_ON = "2026-09-30";
 const DUE_ON = "2026-10-14";
@@ -89,6 +90,7 @@ async function declareEntity(
   const response = await ctx
     .asSub("staff-e2e")
     .post("/admin/accounting/legal-entities")
+    .set(INTENT_KEY, freshIntent())
     .send({
       name,
       legalForm: "SAS",

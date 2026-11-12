@@ -18,6 +18,7 @@ import type { AccountBankExportCreatedView, AccountBankExportsView } from "@lfd/
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 export const ICS = "FR72ZZZ123456";
 export const ACCOUNT = {
@@ -52,6 +53,7 @@ export function exportsOf(entityId: string): string {
 export async function entity(): Promise<string> {
   const response = await staff()
     .post("/admin/accounting/legal-entities")
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: "La Folie Douce",
       legalForm: "SAS",
@@ -143,7 +145,10 @@ export async function debtor(
 }
 
 export async function prepare(entityId: string): Promise<string> {
-  const response = await staff().post(exportsOf(entityId)).expect(201);
+  const response = await staff()
+    .post(exportsOf(entityId))
+    .set(INTENT_KEY, freshIntent())
+    .expect(201);
   return jsonBody<AccountBankExportCreatedView>(response).exportId;
 }
 

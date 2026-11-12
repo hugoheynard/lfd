@@ -121,7 +121,7 @@ describe('MailPreferencesPage — les désinscriptions et accords (C4)', () => {
     component.address.set('zoe@halles.fr');
     await component.searchAddress(new Event('submit'));
     await settle();
-    expect(searchByAddress).toHaveBeenCalledWith('zoe@halles.fr');
+    expect(searchByAddress).toHaveBeenCalledWith('zoe@halles.fr', expect.any(String));
     expect(element.querySelector('[data-search-banner]')?.textContent).toContain('figés à');
     expect(element.textContent).toContain('z•••@halles.fr');
     expect(element.textContent).not.toContain('zoe@halles.fr');

@@ -41,12 +41,13 @@ describe('AdminCompanyHierarchyService', () => {
       deliveryAddress: toDeliveryPayload(EMPTY_DELIVERY_DRAFT),
       follows: ['billing'],
     };
-    const promise = service.createSubAccount('parent_1', payload);
+    const promise = service.createSubAccount('parent_1', payload, 'key-1');
     await flush();
 
     const req = http.expectOne(`${URL}/parent_1/sub-accounts`);
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual(payload);
+    expect(req.request.headers.get('Idempotency-Key')).toBe('key-1');
     req.flush({ id: 'child_1' });
 
     await expect(promise).resolves.toBe('child_1');

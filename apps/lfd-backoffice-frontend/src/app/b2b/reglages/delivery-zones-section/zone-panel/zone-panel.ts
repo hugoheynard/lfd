@@ -45,6 +45,10 @@ import {
   thresholdEuros,
   thresholdHint,
 } from '../delivery-threshold';
+import { GestureIntents } from '../../../../shared/gesture-intents';
+
+/** Le sujet de l'intention : une seule création par panneau ouvert. */
+const CREATE_ZONE_INTENT = 'create-zone';
 
 /**
  * Charge d'ouverture : la zone à éditer, ou `null` pour en créer une. En
@@ -145,6 +149,11 @@ export class ZonePanel {
   private readonly zones = inject(DeliveryZonesService);
   private readonly notify = inject(NotifyService);
   private readonly ref = inject(FoldPanelRef<boolean>);
+  /**
+   * L'intention de créer la zone : une clé tirée au premier envoi, renvoyée jusqu'au
+   * succès — un double clic ne crée pas deux zones.
+   */
+  private readonly intents = new GestureIntents();
 
   readonly data = input<ZonePanelData | undefined>(undefined);
 
@@ -326,7 +335,8 @@ export class ZonePanel {
     };
     try {
       if (zone === null) {
-        await this.zones.create(payload);
+        await this.zones.create(payload, this.intents.keyFor(CREATE_ZONE_INTENT));
+        this.intents.done(CREATE_ZONE_INTENT);
         this.notify.success('Zone de livraison ajoutée.');
       } else {
         await this.zones.update(zone.id, payload);

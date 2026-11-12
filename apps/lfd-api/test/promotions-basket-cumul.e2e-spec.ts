@@ -36,6 +36,7 @@ import { handOver, pickupSite } from "./order-factory.js";
 import { bootstrapProductionDay, closeOrder, CROISSANT, STAFF } from "./production-day-fixture.js";
 import { posePromotion, promotionTerms } from "./promotion-fixtures.js";
 import { accountOrder, decide, report, type Drawn } from "./shortfall-decision-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const LABEL_A = "Dix pour cent fidélité";
 const LABEL_B = "Cinq pour cent du fournil";
@@ -164,6 +165,7 @@ describe("le cumul au panier, de bout en bout (M7)", () => {
 
     const refused = await staff()
       .post("/admin/promotions")
+      .set(INTENT_KEY, freshIntent())
       .send(
         promotionTerms({
           internalName: "Cumul F",
@@ -217,6 +219,7 @@ describe("le cumul au panier, de bout en bout (M7)", () => {
     const other = jsonBody<{ id: string }>(
       await staff()
         .post("/admin/pickup-addresses")
+        .set(INTENT_KEY, freshIntent())
         .send({
           label: "La Boutique",
           ligne1: "1 place du Marché",

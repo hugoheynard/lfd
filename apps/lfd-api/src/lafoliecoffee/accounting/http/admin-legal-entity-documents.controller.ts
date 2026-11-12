@@ -36,6 +36,9 @@ import {
   EntityLogoNotFoundError,
   InvalidEntityLogoError,
 } from "../domain/errors/accounting-errors.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 
 /**
  * Backstop DoS du multipart, aligné sur le dépôt du KBIS : le domaine tranche
@@ -154,25 +157,32 @@ export class AdminLegalEntityDocumentsController {
    * Le contrôleur ne revalide rien de tout cela : il constate seulement qu'un
    * fichier est arrivé. Le `mimetype` annoncé par le navigateur n'est même pas
    * lu — il se falsifie d'un champ de formulaire.
+   *
+   * Une fois par intention (`Idempotency-Key`) : la même clé ne redépose rien.
    */
   @Post(":id/logo")
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: LOGO_UPLOAD_HARD_LIMIT } }))
   async setLogo(
+    @StaffUserId() staffUserId: string,
     @Param("id") id: string,
     @UploadedFile() file: UploadedFilePart | undefined,
+    @IntentKey() intentKey: string,
   ): Promise<void> {
     if (file === undefined) {
       throw new InvalidEntityLogoError("aucun fichier reçu. Choisissez une image puis réessayez.");
     }
     await this.commands.execute<SetLegalEntityLogoCommand, void>(
-      new SetLegalEntityLogoCommand(id, file.originalname, file.buffer),
+      new SetLegalEntityLogoCommand(id, file.originalname, file.buffer, staffUserId, intentKey),
     );
   }
 
   /** Retire le logo. Le mandat ressort avec sa cellule vide, et reste valide. */
   @Delete(":id/logo")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "retire un état : rejoué, l'entité n'a déjà plus de logo ; elle est réécrite à l'identique, sans fait ni appel au stockage",
+  )
   async removeLogo(@Param("id") id: string): Promise<void> {
     await this.commands.execute<RemoveLegalEntityLogoCommand, void>(
       new RemoveLegalEntityLogoCommand(id),

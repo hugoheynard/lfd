@@ -78,16 +78,21 @@ export class PackingContainersController {
     private readonly queries: QueryBus,
   ) {}
 
-  /** Un contenant de plus : un sac, un bac neuf, ou l'autre moitié d'un bac partagé. */
+  /**
+   * Un contenant de plus : un sac, un bac neuf, ou l'autre moitié d'un bac
+   * partagé. Un ajout : la clé d'intention de l'écran (obligatoire) fait
+   * qu'un double clic n'en ouvre qu'un.
+   */
   @Post("containers")
   async open(
     @Param("date") date: string,
     @Param("orderId") orderId: string,
     @Body(new ZodBody(openPackingContainerSchema)) body: OpenPackingContainer,
     @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<OpenedPackingContainer> {
     const containerId = await this.commands.execute<OpenPackingContainerCommand, string>(
-      new OpenPackingContainerCommand(dayOf(date), orderId, body, staffUserId),
+      new OpenPackingContainerCommand(dayOf(date), orderId, body, staffUserId, intentKey),
     );
     return { containerId };
   }

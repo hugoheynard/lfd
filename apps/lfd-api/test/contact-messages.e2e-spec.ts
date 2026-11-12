@@ -25,6 +25,7 @@ import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from 
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 interface SentMail {
   readonly to: string;
@@ -91,6 +92,7 @@ const SUBJECT: RequestReasonPayload = {
 async function createSubject(overrides: Partial<RequestReasonPayload> = {}): Promise<string> {
   const response = await staff()
     .post("/admin/request-reasons")
+    .set(INTENT_KEY, freshIntent())
     .send({ ...SUBJECT, ...overrides })
     .expect(201);
   return jsonBody<CreatedIdResponse>(response).id;
@@ -127,7 +129,11 @@ describe("un visiteur écrit", () => {
     // L'adresse de destination ne sort pas vers la boutique.
     expect(offered).toEqual([{ id: subjectId, label: SUBJECT.label }]);
 
-    await visitor().post("/contact-messages").send(message(subjectId)).expect(204);
+    await visitor()
+      .post("/contact-messages")
+      .set(INTENT_KEY, freshIntent())
+      .send(message(subjectId))
+      .expect(204);
     await ctx.drain();
 
     const [received] = await pending();
@@ -150,10 +156,50 @@ describe("un visiteur écrit", () => {
     ]);
   });
 
+  /** Régression : le formulaire public n'avait pas de clé ; un double envoi déposait deux demandes, deux courriels. */
+  it("rejoué sous la même clé : une seule demande, un seul courriel", async () => {
+    const subjectId = await createSubject();
+    const key = freshIntent();
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      await visitor()
+        .post("/contact-messages")
+        .set(INTENT_KEY, key)
+        .send(message(subjectId))
+        .expect(204);
+    }
+    await ctx.drain();
+
+    expect(await pending()).toHaveLength(1);
+    expect(sentMails).toHaveLength(1);
+  });
+
+  it("sans clé d'intention : 400, rien rangé", async () => {
+    const subjectId = await createSubject();
+    await visitor().post("/contact-messages").send(message(subjectId)).expect(400);
+    expect(await pending()).toEqual([]);
+  });
+
+  it("un motif sans adresse : la demande est rangée, aucun e-mail n'est demandé", async () => {
+    const subjectId = await createSubject({ recipientEmail: null });
+    await visitor()
+      .post("/contact-messages")
+      .set(INTENT_KEY, freshIntent())
+      .send(message(subjectId))
+      .expect(204);
+    await ctx.drain();
+
+    expect(await pending()).toHaveLength(1);
+    expect(sentMails).toEqual([]);
+    expect(
+      await ctx.prisma.mailRequest.count({ where: { template: "staff.customer-request" } }),
+    ).toBe(0);
+  });
+
   it("le champ piège rempli : 204, mais rien rangé ni envoyé", async () => {
     const subjectId = await createSubject();
     await visitor()
       .post("/contact-messages")
+      .set(INTENT_KEY, freshIntent())
       .send(message(subjectId, { lfd_trap: "https://spam.example" }))
       .expect(204);
     await ctx.drain();
@@ -164,7 +210,11 @@ describe("un visiteur écrit", () => {
 
   it("un objet réservé aux pros est refusé à un particulier", async () => {
     const subjectId = await createSubject({ audience: "b2b" });
-    await visitor().post("/contact-messages").send(message(subjectId)).expect(409);
+    await visitor()
+      .post("/contact-messages")
+      .set(INTENT_KEY, freshIntent())
+      .send(message(subjectId))
+      .expect(409);
     expect(await pending()).toEqual([]);
   });
 
@@ -172,9 +222,17 @@ describe("un visiteur écrit", () => {
     const subjectId = await createSubject();
     const sameIp = visitor();
     for (let attempt = 0; attempt < 3; attempt += 1) {
-      await sameIp.post("/contact-messages").send(message(subjectId)).expect(204);
+      await sameIp
+        .post("/contact-messages")
+        .set(INTENT_KEY, freshIntent())
+        .send(message(subjectId))
+        .expect(204);
     }
-    await sameIp.post("/contact-messages").send(message(subjectId)).expect(429);
+    await sameIp
+      .post("/contact-messages")
+      .set(INTENT_KEY, freshIntent())
+      .send(message(subjectId))
+      .expect(429);
     await ctx.drain();
     expect(await pending()).toHaveLength(3);
   });
@@ -189,8 +247,16 @@ describe("la priorité, à usage interne", () => {
     );
     expect(offered.every((subject) => !("priority" in subject))).toBe(true);
 
-    await visitor().post("/contact-messages").send(message(calm)).expect(204);
-    await visitor().post("/contact-messages").send(message(hot)).expect(204);
+    await visitor()
+      .post("/contact-messages")
+      .set(INTENT_KEY, freshIntent())
+      .send(message(calm))
+      .expect(204);
+    await visitor()
+      .post("/contact-messages")
+      .set(INTENT_KEY, freshIntent())
+      .send(message(hot))
+      .expect(204);
     await ctx.drain();
 
     expect((await pending()).map((received) => received.priority)).toEqual(["urgent", "low"]);
@@ -206,6 +272,7 @@ describe("un client connecté écrit", () => {
       .asSub("auth0|contact-client")
       .set("x-lfc-client-ip", "198.51.100.7")
       .post("/me/contact-messages")
+      .set(INTENT_KEY, freshIntent())
       .send(message(subjectId))
       .expect(204);
     await ctx.drain();
@@ -228,6 +295,7 @@ describe("un client connecté écrit", () => {
       .asSub("auth0|contact-pro")
       .set("x-lfc-client-ip", "198.51.100.8")
       .post("/me/contact-messages")
+      .set(INTENT_KEY, freshIntent())
       .send(message(proOnly))
       .expect(204);
     // Un `audience` au corps n'est plus un champ du contrat : refusé à la forme.
@@ -235,12 +303,14 @@ describe("un client connecté écrit", () => {
       .asSub("auth0|contact-perso")
       .set("x-lfc-client-ip", "198.51.100.9")
       .post("/me/contact-messages")
+      .set(INTENT_KEY, freshIntent())
       .send(message(proOnly, { audience: "b2b" }))
       .expect(400);
     await ctx
       .asSub("auth0|contact-perso")
       .set("x-lfc-client-ip", "198.51.100.10")
       .post("/me/contact-messages")
+      .set(INTENT_KEY, freshIntent())
       .send(message(proOnly))
       .expect(409);
     await ctx.drain();
@@ -254,7 +324,11 @@ describe("un client connecté écrit", () => {
 describe("le staff traite", () => {
   it("marque traité une fois ; le second geste est refusé en nommant le cas", async () => {
     const subjectId = await createSubject();
-    await visitor().post("/contact-messages").send(message(subjectId)).expect(204);
+    await visitor()
+      .post("/contact-messages")
+      .set(INTENT_KEY, freshIntent())
+      .send(message(subjectId))
+      .expect(204);
     await ctx.drain();
     const [received] = await pending();
     const id = received?.id ?? "";
@@ -294,17 +368,20 @@ describe("le staff traite", () => {
     const shop = { label: { fr: "Boutique de Val d'Isère", en: "", it: "" }, audience: "b2c" };
     await staff()
       .post("/admin/contact/phones")
+      .set(INTENT_KEY, freshIntent())
       .send({ ...shop, number: "04 79 00 00 00", position: 1, active: true })
       .expect(201);
     const archived = jsonBody<CreatedIdResponse>(
       await staff()
         .post("/admin/contact/phones")
+        .set(INTENT_KEY, freshIntent())
         .send({ ...shop, number: "04 79 11 11 11", position: 0, active: true })
         .expect(201),
     ).id;
     await staff().post(`/admin/contact/phones/${archived}/archive`).expect(204);
     await staff()
       .post("/admin/contact/phones")
+      .set(INTENT_KEY, freshIntent())
       .send({ ...shop, number: "pas un numéro", position: 2, active: true })
       .expect(400);
 
@@ -322,6 +399,7 @@ describe("le staff traite", () => {
   it("une carte sans numéro ni formulaire doit dire quelque chose ; sans numéro, la boutique n'en reçoit aucun", async () => {
     await staff()
       .post("/admin/contact/phones")
+      .set(INTENT_KEY, freshIntent())
       .send({
         label: { fr: "Particuliers", en: "", it: "" },
         audience: "b2c",
@@ -374,6 +452,7 @@ describe("une carte n'existe pas sans geste", () => {
     const pro = jsonBody<CreatedIdResponse>(
       await staff()
         .post("/admin/contact/phones")
+        .set(INTENT_KEY, freshIntent())
         .send({
           label: { fr: "Service pro", en: "", it: "" },
           audience: "b2b",
@@ -398,7 +477,11 @@ describe("l'anonymisation à douze mois", () => {
   it("vide un traité il y a plus d'un an ET un jamais traité reçu il y a plus d'un an — pas les récents", async () => {
     const subjectId = await createSubject();
     for (let index = 0; index < 4; index += 1) {
-      await visitor().post("/contact-messages").send(message(subjectId)).expect(204);
+      await visitor()
+        .post("/contact-messages")
+        .set(INTENT_KEY, freshIntent())
+        .send(message(subjectId))
+        .expect(204);
     }
     await ctx.drain();
     const [oldHandled, oldPending, recentHandled, recentPending] = (await pending()).map(
@@ -462,7 +545,11 @@ describe("les motifs par formulaire (§6.5)", () => {
       await visitor().get("/request-reasons?kind=contact&audience=b2c").expect(200),
     );
     expect(offered.map((reason) => reason.id)).toEqual([contact]);
-    await visitor().post("/contact-messages").send(message(problem)).expect(409);
+    await visitor()
+      .post("/contact-messages")
+      .set(INTENT_KEY, freshIntent())
+      .send(message(problem))
+      .expect(409);
 
     const tab = await staff().get("/admin/request-reasons?kind=order_problem").expect(200);
     expect(jsonBody<{ id: string }[]>(tab).map((reason) => reason.id)).toEqual([problem]);

@@ -16,6 +16,12 @@ import { DownloadKbisQuery } from "../../queries/download-kbis.query.js";
 import { DownloadKbisHandler } from "../../queries/download-kbis.handler.js";
 import { UploadKbisCommand } from "../upload-kbis.command.js";
 import { UploadKbisHandler } from "../upload-kbis.handler.js";
+import { CertifyKbisCommand } from "../certify-kbis.command.js";
+import { CertifyKbisHandler } from "../certify-kbis.handler.js";
+import { StaffDirectory, type StaffIdentity } from "../../../domain/ports/staff-directory.js";
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 
 const PDF = Buffer.from("%PDF-1.4\nx", "latin1");
 const DEPOSITED_AT = new Date("2026-02-03T10:00:00Z");
@@ -89,6 +95,8 @@ describe("UploadKbisHandler", () => {
         events,
         new FixedClock(DEPOSITED_AT),
         new FixedIdGenerator("deposit"),
+        new DirectUnitOfWork(),
+        inMemoryIntents(),
       ),
       saved,
       company,
@@ -103,9 +111,9 @@ describe("UploadKbisHandler", () => {
   it("range chaque dépôt sous sa propre clé", async () => {
     const { handler, saved } = doubles("owner");
 
-    await handler.execute(new UploadKbisCommand("u1", "c1", "kbis.pdf", PDF));
+    await handler.execute(new UploadKbisCommand("u1", "c1", "kbis.pdf", PDF, randomUUID()));
     const first = saved.key;
-    await handler.execute(new UploadKbisCommand("u1", "c1", "kbis.pdf", PDF));
+    await handler.execute(new UploadKbisCommand("u1", "c1", "kbis.pdf", PDF, randomUUID()));
 
     expect(first).toMatch(/^companies\/c1\/kbis\//u);
     expect(saved.key).not.toBe(first);
@@ -114,7 +122,7 @@ describe("UploadKbisHandler", () => {
   it("range le fichier PUIS écrit les métadonnées, pour le gestionnaire", async () => {
     const { handler, saved } = doubles("owner");
 
-    await handler.execute(new UploadKbisCommand("u1", "c1", "kbis.pdf", PDF));
+    await handler.execute(new UploadKbisCommand("u1", "c1", "kbis.pdf", PDF, randomUUID()));
 
     // Métadonnées cohérentes avec la clé rendue par le stockage.
     expect(saved.kbis?.file).toMatchObject({
@@ -136,7 +144,7 @@ describe("UploadKbisHandler", () => {
   it("dépose un extrait NON CERTIFIÉ, même quand le précédent l'était", async () => {
     const { handler, saved, company } = doubles("owner");
 
-    await handler.execute(new UploadKbisCommand("u1", "c1", "kbis.pdf", PDF));
+    await handler.execute(new UploadKbisCommand("u1", "c1", "kbis.pdf", PDF, randomUUID()));
     company.certifyKbis({
       at: DEPOSITED_AT,
       byStaffUserId: "staff_1",
@@ -146,7 +154,7 @@ describe("UploadKbisHandler", () => {
     });
     expect(company.kbis?.certified).toBe(true);
 
-    await handler.execute(new UploadKbisCommand("u1", "c1", "kbis-v2.pdf", PDF));
+    await handler.execute(new UploadKbisCommand("u1", "c1", "kbis-v2.pdf", PDF, randomUUID()));
 
     expect(saved.kbis?.file.fileName).toBe("kbis-v2.pdf");
     expect(saved.kbis?.certified).toBe(false);
@@ -155,13 +163,13 @@ describe("UploadKbisHandler", () => {
   it("refuse un non-membre (404) et un simple membre (403), sans rien stocker", async () => {
     const stranger = doubles(null);
     await expect(
-      stranger.handler.execute(new UploadKbisCommand("u1", "c1", "kbis.pdf", PDF)),
+      stranger.handler.execute(new UploadKbisCommand("u1", "c1", "kbis.pdf", PDF, randomUUID())),
     ).rejects.toBeInstanceOf(CompanyNotFoundError);
     expect(stranger.saved.kbis).toBeNull();
 
     const member = doubles("orders");
     await expect(
-      member.handler.execute(new UploadKbisCommand("u1", "c1", "kbis.pdf", PDF)),
+      member.handler.execute(new UploadKbisCommand("u1", "c1", "kbis.pdf", PDF, randomUUID())),
     ).rejects.toBeInstanceOf(CompanyAdminRequiredError);
     expect(member.saved.kbis).toBeNull();
   });
@@ -170,16 +178,31 @@ describe("UploadKbisHandler", () => {
     const { handler, saved, events } = doubles("owner");
 
     await expect(
-      handler.execute(new UploadKbisCommand("u1", "c1", "faux.pdf", Buffer.from("nope"))),
+      handler.execute(
+        new UploadKbisCommand("u1", "c1", "faux.pdf", Buffer.from("nope"), randomUUID()),
+      ),
     ).rejects.toThrow(/PDF/u);
     expect(saved.kbis).toBeNull();
     expect(events.traced).toHaveLength(0);
   });
 
+  /** Régression : un double envoi rangeait deux fichiers et journalisait deux dépôts. */
+  it("rejoué sous la même clé, ne range ni ne journalise un second dépôt", async () => {
+    const { handler, saved, events } = doubles("owner");
+    const key = randomUUID();
+
+    await handler.execute(new UploadKbisCommand("u1", "c1", "kbis.pdf", PDF, key));
+    const first = saved.key;
+    await handler.execute(new UploadKbisCommand("u1", "c1", "kbis.pdf", PDF, key));
+
+    expect(saved.key).toBe(first);
+    expect(events.traced).toHaveLength(1);
+  });
+
   it("journalise le dépôt sous le même fait que le staff, après l'écriture", async () => {
     const { handler, events } = doubles("owner");
 
-    await handler.execute(new UploadKbisCommand("u1", "c1", "kbis.pdf", PDF));
+    await handler.execute(new UploadKbisCommand("u1", "c1", "kbis.pdf", PDF, randomUUID()));
 
     expect(events.traced.map((event) => event.journalFact())).toEqual([
       {
@@ -239,5 +262,53 @@ describe("DownloadKbisHandler", () => {
     await expect(
       handlerFor("owner", null).execute(new DownloadKbisQuery("u1", "c1")),
     ).rejects.toBeInstanceOf(KbisNotFoundError);
+  });
+});
+
+describe("CertifyKbisHandler", () => {
+  class Directory extends StaffDirectory {
+    identify(): Promise<StaffIdentity | null> {
+      return Promise.resolve({ name: "Marc", role: "comptabilite" });
+    }
+  }
+
+  /** Régression : un double clic certifiait deux fois — deux dates, deux faits. */
+  it("rejouée sous la même clé, ne recertifie ni ne rejournalise", async () => {
+    const company = sampleCompany();
+    company.depositKbis({
+      storageKey: "companies/c1/kbis/d1",
+      fileName: "kbis.pdf",
+      contentType: "application/pdf",
+      size: PDF.length,
+      uploadedAt: DEPOSITED_AT,
+    });
+    let saves = 0;
+    const companies = {
+      existsBySiret: () => Promise.resolve(false),
+      declareOwnedBy: () => Promise.resolve("c"),
+      load: () => Promise.resolve(company),
+      save: () => {
+        saves += 1;
+        return Promise.resolve();
+      },
+      declareUnowned: () => Promise.resolve("c"),
+      kbisLocation: () => Promise.resolve(null),
+    } satisfies CompanyRepository;
+    const events = new RecordingPublisher();
+    const handler = new CertifyKbisHandler(
+      companies,
+      new Directory(),
+      new FixedClock(DEPOSITED_AT),
+      events,
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
+    );
+    const key = randomUUID();
+
+    await handler.execute(new CertifyKbisCommand("c1", "staff_1", "2026-01-01", key));
+    await handler.execute(new CertifyKbisCommand("c1", "staff_1", "2026-01-01", key));
+
+    expect(saves).toBe(1);
+    expect(events.traced).toHaveLength(1);
   });
 });

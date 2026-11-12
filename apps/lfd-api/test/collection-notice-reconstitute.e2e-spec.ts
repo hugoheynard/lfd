@@ -20,6 +20,7 @@ import {
   staff,
   useCollectionNoticeScene,
 } from "./collection-notice-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 useCollectionNoticeScene();
 
@@ -87,6 +88,7 @@ describe("annuler puis reconstituer : un avis parti se corrige", () => {
 
     const response = await staff()
       .post(`${BASE}/batches`)
+      .set(INTENT_KEY, freshIntent())
       .send({ legalEntityId: entity })
       .expect(201);
     await ctx.drain();

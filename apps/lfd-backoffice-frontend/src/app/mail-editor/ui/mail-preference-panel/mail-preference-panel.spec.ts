@@ -83,7 +83,7 @@ describe('MailPreferencePanel — une ligne des désinscriptions et accords (C4)
     });
     click(element, '[data-reveal]');
     await settle();
-    expect(revealRecipient).toHaveBeenCalledWith('pref_1');
+    expect(revealRecipient).toHaveBeenCalledWith('pref_1', expect.any(String));
     expect(element.querySelector('[data-recipient]')?.textContent).toBe('claire@halles.fr');
   });
 

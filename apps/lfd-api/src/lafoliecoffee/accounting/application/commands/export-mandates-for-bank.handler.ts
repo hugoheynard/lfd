@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
+import { OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { MandateBankExport } from "../../domain/entities/mandate-bank-export.js";
 import { BankExportWithoutCreditorIdentifierError } from "../../domain/errors/mandate-bank-export-errors.js";
@@ -23,6 +24,7 @@ import {
   selectForBankExport,
   type FingerprintedMandate,
 } from "../../domain/services/mandate-bank-export-selection.js";
+import { CREATED_ID_REPLAY } from "../created-id-replay.js";
 import { exportEntityOrFail, journalEntity } from "../mandate-bank-export-support.js";
 import { ExportMandatesForBankCommand } from "./export-mandates-for-bank.command.js";
 
@@ -41,6 +43,10 @@ import { ExportMandatesForBankCommand } from "./export-mandates-for-bank.command
  * puisque rien n'est faux dans le 201ᵉ. Le numéro `EXM-<n>` et le rang
  * « k sur N » se prennent ici, dans la transaction, et se figent avec
  * l'export (doc `procedure-de-prelevement.md`, « Les identifiants courts »).
+ *
+ * **Une fois par intention** : sujet, l'entité. Un double clic aurait figé un
+ * second export des mandats restants (au-delà de 200) ; la même clé rend
+ * l'export d'origine, scellé avec lui.
  */
 @CommandHandler(ExportMandatesForBankCommand)
 export class ExportMandatesForBankHandler implements ICommandHandler<
@@ -58,9 +64,26 @@ export class ExportMandatesForBankHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly lock: BankExportPreparationLock,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: ExportMandatesForBankCommand): Promise<string> {
+  execute(command: ExportMandatesForBankCommand): Promise<string> {
+    return this.intents.runSealed(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: EXPORT_MANDATES_GESTURE,
+        subject: command.legalEntityId,
+      },
+      CREATED_ID_REPLAY,
+      (seal) => this.export(command, seal),
+    );
+  }
+
+  private async export(
+    command: ExportMandatesForBankCommand,
+    seal: (exportId: string) => Promise<void>,
+  ): Promise<string> {
     const at = this.clock.now();
     const entity = await exportEntityOrFail(this.entities, command.legalEntityId);
     if (entity.ics === "") {
@@ -92,6 +115,7 @@ export class ExportMandatesForBankHandler implements ICommandHandler<
       await this.events.publishTraced(
         new MandateBankExportCreatedEvent(bankExport, journalEntity(entity), at),
       );
+      await seal(bankExport.id);
       return bankExport.id;
     });
   }
@@ -104,3 +128,6 @@ export class ExportMandatesForBankHandler implements ICommandHandler<
     return selectForBankExport(exportable, known).toExport;
   }
 }
+
+/** Le nom stable du geste, dans le registre des intentions. */
+const EXPORT_MANDATES_GESTURE = "accounting.export-mandates-for-bank";

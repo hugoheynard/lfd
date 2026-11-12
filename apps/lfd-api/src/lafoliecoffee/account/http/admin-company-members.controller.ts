@@ -9,6 +9,7 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from "@nestj
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { AcceptedReplay } from "../../../platform/shared/http/accepted-replay.decorator.js";
 import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { InviteCompanyMemberCommand } from "../application/commands/invite-company-member.command.js";
@@ -45,6 +46,10 @@ export class AdminCompanyMembersController {
    * « Renvoyer », et ça évite d'avoir deux routes pour un même geste.
    */
   @Post()
+  @AcceptedReplay(
+    "OncePerIntent.run : son e-mail porte un lien de mot de passe, que la boîte d'envoi rangerait en clair ; une panne entre l'écriture et la résolution de l'intention, puis un rejeu après le bail, renvoie un second lien (l'accès, idempotent sur l'adresse, ne double pas)",
+    "décidé par Hugo le 2026-11-12",
+  )
   @HttpCode(HttpStatus.CREATED)
   invite(
     @StaffUserId() staffUserId: string,

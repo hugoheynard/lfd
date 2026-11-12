@@ -14,6 +14,8 @@ import { CreateContactPhoneCommand } from "../application/commands/create-contac
 import { ReviseContactPhoneCommand } from "../application/commands/revise-contact-phone.command.js";
 import { ListContactPhonesQuery } from "../application/queries/list-contact-phones.query.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 
 /** Les **numéros de contact** de la boutique au back-office, sous `b2b_contact`. */
 @Controller("admin/contact/phones")
@@ -34,9 +36,11 @@ export class AdminContactPhonesController {
   @Post()
   async create(
     @Body(new ZodBody(contactPhonePayloadSchema)) payload: ContactPhonePayload,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedIdResponse> {
     const id = await this.commands.execute<CreateContactPhoneCommand, string>(
-      new CreateContactPhoneCommand(payload),
+      new CreateContactPhoneCommand(payload, staffUserId, intentKey),
     );
     return { id };
   }

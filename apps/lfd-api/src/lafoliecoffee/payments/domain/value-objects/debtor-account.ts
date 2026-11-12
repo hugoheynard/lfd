@@ -170,4 +170,19 @@ export class DebtorAccount {
   sameAccountAs(other: DebtorAccount): boolean {
     return this.iban.value === other.iban.value;
   }
+
+  /**
+   * Le même RIB, mot pour mot : compte, BIC, titulaire, forme juridique et
+   * adresse. Un dépôt identique ne fait rien (décidé par Hugo le 2026-11-12) ;
+   * une adresse ou une forme corrigée, elle, est une écriture.
+   */
+  equals(other: DebtorAccount): boolean {
+    return (
+      this.iban.value === other.iban.value &&
+      this.bic.value === other.bic.value &&
+      this.holder === other.holder &&
+      this.holderLegalForm === other.holderLegalForm &&
+      this.address.equals(other.address)
+    );
+  }
 }

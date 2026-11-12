@@ -16,6 +16,7 @@ import {
   staff,
   useMandateBankExportScene,
 } from "./mandate-bank-export-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /** Le nombre de préparations lancées ensemble. */
 const RACERS = 5;
@@ -30,7 +31,9 @@ describe("des préparations simultanées d'un export des mandats", () => {
 
     // Cinq à la fois : à deux, l'entrelacement n'est pas garanti à chaque passage.
     const responses = await Promise.all(
-      Array.from({ length: RACERS }, () => staff().post(exportsOf(entityId)).send({})),
+      Array.from({ length: RACERS }, () =>
+        staff().post(exportsOf(entityId)).set(INTENT_KEY, freshIntent()).send({}),
+      ),
     );
 
     expect(responses.map((response) => response.status).sort()).toEqual([201, 409, 409, 409, 409]);

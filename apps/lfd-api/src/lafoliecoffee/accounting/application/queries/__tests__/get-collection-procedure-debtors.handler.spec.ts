@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NOW } from "../../commands/__tests__/account-bank-export-doubles.js";
 import { bankMandate } from "../../commands/__tests__/mandate-bank-export-doubles.js";
 import { ExportAccountsForBankCommand } from "../../commands/export-accounts-for-bank.command.js";
@@ -19,7 +20,7 @@ import { world } from "./collection-procedure-world.js";
 
 async function importAccounts(w: ReturnType<typeof world>): Promise<void> {
   const accountExport = await w.accounts.prepare.execute(
-    new ExportAccountsForBankCommand("le1", "s"),
+    new ExportAccountsForBankCommand("le1", "s", randomUUID()),
   );
   await w.accounts.download.execute(
     new RecordAccountBankExportDownloadCommand("le1", accountExport, "s"),
@@ -32,7 +33,7 @@ async function importAccounts(w: ReturnType<typeof world>): Promise<void> {
 async function importEverything(w: ReturnType<typeof world>): Promise<void> {
   await importAccounts(w);
   const mandateExport = await w.mandates.exportCommand.execute(
-    new ExportMandatesForBankCommand("le1", "s"),
+    new ExportMandatesForBankCommand("le1", "s", randomUUID()),
   );
   await w.mandates.recordDownload.execute(
     new RecordMandateBankExportDownloadCommand("le1", mandateExport, "s"),
@@ -102,7 +103,9 @@ describe("la procédure de prélèvement — les débiteurs du lot au référent
     w.accounts.accounts.exportable = [debitedAccount("m1")];
     await importAccounts(w);
     w.mandates.mandates.exportable = [bankMandate("m1")];
-    await w.mandates.exportCommand.execute(new ExportMandatesForBankCommand("le1", "s"));
+    await w.mandates.exportCommand.execute(
+      new ExportMandatesForBankCommand("le1", "s", randomUUID()),
+    );
     w.batches.batches = [stored("b1")];
     w.lotDebtors.lines = [lotDebtor("b1", "m1")];
 

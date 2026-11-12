@@ -26,6 +26,7 @@ import {
 import type { LoginMethodsView } from "@lfd/contracts";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const SUB = "auth0|camille";
 const GOOGLE_SUB = "google-oauth2|10203040";
@@ -69,7 +70,11 @@ beforeEach(async () => {
 const me = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(SUB);
 
 async function link(idToken: string, status: number): Promise<LoginMethodsView> {
-  const response = await me().post("/me/identities").send({ idToken }).expect(status);
+  const response = await me()
+    .post("/me/identities")
+    .set(INTENT_KEY, freshIntent())
+    .send({ idToken })
+    .expect(status);
   return jsonBody<LoginMethodsView>(response);
 }
 
@@ -164,7 +169,7 @@ describe("POST /me/identities", () => {
   });
 
   it("refuse un corps sans jeton (forme)", async () => {
-    await me().post("/me/identities").send({}).expect(400);
+    await me().post("/me/identities").set(INTENT_KEY, freshIntent()).send({}).expect(400);
   });
 });
 

@@ -6,6 +6,8 @@ import { IssuePasswordLinkCommand } from "../application/commands/issue-password
 import type { IssuedPasswordLink } from "../../../platform/identity/password-link.js";
 import { ListPendingAccessQuery } from "../application/queries/list-pending-access.query.js";
 import type { PendingAccessView } from "../domain/ports/pending-access.reader.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { issuePasswordLinkPayload, type IssuePasswordLinkPayload } from "./payloads.js";
 
@@ -42,11 +44,13 @@ export class AdminAccessPendingController {
    */
   @Post(":userId/link")
   issueLink(
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
     @Param("userId") userId: string,
     @Body(new ZodBody(issuePasswordLinkPayload)) payload: IssuePasswordLinkPayload,
   ): Promise<IssuedPasswordLink> {
     return this.commands.execute<IssuePasswordLinkCommand, IssuedPasswordLink>(
-      new IssuePasswordLinkCommand(userId, payload?.companyId ?? null),
+      new IssuePasswordLinkCommand(userId, payload?.companyId ?? null, staffUserId, intentKey),
     );
   }
 }

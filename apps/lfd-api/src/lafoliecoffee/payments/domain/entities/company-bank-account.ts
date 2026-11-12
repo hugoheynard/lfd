@@ -131,9 +131,15 @@ export class CompanyBankAccount {
    * ici ne touche à ce que le débiteur a autorisé. Corriger la description d'un
    * contrat ne remet pas un mandat en cause, alors que changer d'IBAN, si — les
    * confondre ferait refaire signer pour une ligne de texte.
+   *
+   * @returns `false` quand les zones sont déjà celles-là : rien à écrire.
    */
-  setOptions(options: MandateOptions): void {
+  setOptions(options: MandateOptions): boolean {
+    if (options.equals(this.optionsValue)) {
+      return false;
+    }
     this.optionsValue = options;
+    return true;
   }
 
   /**

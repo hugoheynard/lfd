@@ -281,6 +281,7 @@ describe("2b — les liens libres", () => {
     return jsonBody<CreatedPaymentLink>(
       await staff()
         .post(LINKS)
+        .set(INTENT_KEY, freshIntent())
         .send({ companyId, amountCents, label: "Régularisation août" })
         .expect(201),
     );
@@ -308,12 +309,31 @@ describe("2b — les liens libres", () => {
     expect(facts).toEqual([{ subjectType: "company", subjectId: companyId }]);
   });
 
+  /** Régression : un double clic ouvrait deux pages payables pour la même somme. */
+  it("la même clé d'intention rend le même lien, sans en ouvrir un second", async () => {
+    const { companyId } = await seedCompany();
+    const key = freshIntent();
+    const send = () =>
+      staff()
+        .post(LINKS)
+        .set(INTENT_KEY, key)
+        .send({ companyId, amountCents: 12_000, label: "Régularisation août" })
+        .expect(201);
+
+    const first = jsonBody<CreatedPaymentLink>(await send());
+    const replay = jsonBody<CreatedPaymentLink>(await send());
+
+    expect(replay).toEqual(first);
+    expect(await ctx.prisma.paymentLink.count()).toBe(1);
+  });
+
   it("🔴 refuse au-delà du plafond en le nommant, et n'écrit rien", async () => {
     const { companyId } = await seedCompany();
     await staff().put(SETTINGS).send({ paymentLinkMaxCents: 10_000 }).expect(204);
 
     const refused = await staff()
       .post(LINKS)
+      .set(INTENT_KEY, freshIntent())
       .send({ companyId, amountCents: 10_001, label: "Trop" })
       .expect(409);
 
@@ -325,6 +345,7 @@ describe("2b — les liens libres", () => {
   it("refuse une société inconnue en 404", async () => {
     await staff()
       .post(LINKS)
+      .set(INTENT_KEY, freshIntent())
       .send({ companyId: "co_inexistante", amountCents: 100, label: "Qui ?" })
       .expect(404);
   });
@@ -414,6 +435,7 @@ describe("le mur dans les écritures des liens", () => {
     const theirs = jsonBody<CreatedPaymentLink>(
       await staff()
         .post(LINKS)
+        .set(INTENT_KEY, freshIntent())
         .send({ companyId: other.id, amountCents: 12_000, label: "Chez B" })
         .expect(201),
     );

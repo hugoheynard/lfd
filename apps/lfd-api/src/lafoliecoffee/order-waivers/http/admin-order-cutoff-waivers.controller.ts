@@ -74,6 +74,9 @@ export class AdminOrderCutoffWaiversController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @Idempotent(
+    "rejouée, une dérogation ouverte existe déjà pour la société : l'index unique la refuse (409 OpenWaiverAlreadyExistsError), sans seconde ligne ni fait",
+  )
   async grant(
     @Req() request: AuthenticatedStaffRequest,
     @Body(new ZodBody(orderCutoffWaiverPayloadSchema)) payload: OrderCutoffWaiverPayload,

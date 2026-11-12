@@ -38,6 +38,7 @@ import {
   sweepRefunds,
   webhook,
 } from "./order-staff-cancel-refund-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 let ctx: E2eContext;
 
@@ -70,6 +71,7 @@ async function retry(orderId: string, status: number): Promise<void> {
   await ctx
     .asSub(E2E_STAFF_SUB)
     .post(`/admin/card-payments/refund-requests/${request.id}/retry`)
+    .set(INTENT_KEY, freshIntent())
     .expect(status);
 }
 

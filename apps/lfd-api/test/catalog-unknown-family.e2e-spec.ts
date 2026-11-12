@@ -126,6 +126,7 @@ async function seedBuyer(): Promise<{ companyId: string; buyerId: string; pickup
 function postRule(scope: { type: string; id: string | null }, value: number) {
   return staff()
     .post("/admin/pricing/rules")
+    .set(INTENT_KEY, freshIntent())
     .send({
       // `geste` depuis L12 : l'étage `promotion` ne s'écrit plus.
       stage: "geste",
@@ -226,6 +227,7 @@ describe("elle se tarife et se limite par son id", () => {
     const { companyId } = await seedBuyer();
     await staff()
       .put("/admin/pricing/floors")
+      .set(INTENT_KEY, freshIntent())
       .send({ scope: { type: "category", id: UNKNOWN_FAMILY }, mode: "percent", value: 6_000 })
       .expect(204);
     await postRule({ type: "product", id: ORPHAN }, 9_000);

@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
+import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { MailSendNotFoundError } from "../../domain/errors/mail-sends.errors.js";
 import { MailRecipientRevealedEvent } from "../../domain/mail-sends.events.js";
@@ -27,13 +28,26 @@ export class RevealMailRecipientHandler implements ICommandHandler<
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly intents: OncePerIntent,
   ) {}
 
   /**
    * @throws {MailSendNotFoundError} l'envoi n'est pas au suivi.
    * @throws {MailConsultationLimitReachedError} 30 consultations dans l'heure.
    */
-  async execute({ sendId, staffUserId }: RevealMailRecipientCommand): Promise<void> {
+  execute({ sendId, staffUserId, intentKey }: RevealMailRecipientCommand): Promise<void> {
+    return this.intents.runSealed(
+      { actorId: staffUserId, key: intentKey, gesture: "mail.send.reveal", subject: sendId },
+      NOTHING_TO_REPLAY,
+      (seal) => this.reveal(sendId, staffUserId, seal),
+    );
+  }
+
+  private async reveal(
+    sendId: string,
+    staffUserId: string,
+    seal: (result: void) => Promise<void>,
+  ): Promise<void> {
     const subject = await this.subjects.subjectOf(sendId);
     if (subject === null) {
       throw new MailSendNotFoundError(sendId);
@@ -46,6 +60,7 @@ export class RevealMailRecipientHandler implements ICommandHandler<
       await this.events.publishTraced(
         new MailRecipientRevealedEvent(sendId, subject.template, subject.space),
       );
+      await seal(undefined);
     });
   }
 }

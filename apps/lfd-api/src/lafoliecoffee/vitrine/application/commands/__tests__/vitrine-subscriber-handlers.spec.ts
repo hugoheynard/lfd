@@ -39,6 +39,11 @@ import {
   testCipher,
   testMint,
 } from "./vitrine-doubles.js";
+import { randomUUID } from "node:crypto";
+import { VitrineCredentialsAlreadyShownError } from "../../../domain/errors/vitrine-errors.js";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+
+const STAFF = "staff_1";
 
 const NONE: VitrineElementKeys = { items: [], operations: [], shelves: [], texts: [] };
 
@@ -51,9 +56,19 @@ describe("déclarer un abonné", () => {
       testMint(cipher),
       new FixedIdGenerator("sub"),
       new FixedClock(AT),
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
     );
     const shown = await handler.execute(
-      new CreateVitrineSubscriberCommand("Agence", "https://agence.example/hook", ["catalogue"]),
+      new CreateVitrineSubscriberCommand(
+        "Agence",
+        "https://agence.example/hook",
+        ["catalogue"],
+        null,
+        null,
+        STAFF,
+        randomUUID(),
+      ),
     );
     const stored = (await store.load(shown.id))?.toPersistence();
     expect(shown.signingSecret).toMatch(/^vtrsec_/);
@@ -70,6 +85,8 @@ describe("déclarer un abonné", () => {
       testMint(),
       new FixedIdGenerator("sub"),
       new FixedClock(AT),
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
     ).execute(
       new CreateVitrineSubscriberCommand(
         "Agence",
@@ -77,6 +94,8 @@ describe("déclarer un abonné", () => {
         [],
         "Le site public.",
         "web@agence.example",
+        STAFF,
+        randomUUID(),
       ),
     );
     expect((await store.load(shown.id))?.toPersistence()).toMatchObject({
@@ -92,11 +111,72 @@ describe("déclarer un abonné", () => {
       testMint(),
       new FixedIdGenerator("sub"),
       new FixedClock(AT),
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
     );
     await expect(
-      handler.execute(new CreateVitrineSubscriberCommand("A", "https://a.example/?k=1", [])),
+      handler.execute(
+        new CreateVitrineSubscriberCommand(
+          "A",
+          "https://a.example/?k=1",
+          [],
+          null,
+          null,
+          STAFF,
+          randomUUID(),
+        ),
+      ),
     ).rejects.toThrow(VitrineEndpointCarriesSecretError);
     expect(store.saves).toBe(0);
+  });
+});
+
+describe("des accès montrés une fois, par intention", () => {
+  /** Régression : un double clic déclarait deux abonnés, chacun avec son secret. */
+  it("déclarer : le rejeu de la même clé est refusé en 409, sans second abonné", async () => {
+    const store = new MemorySubscribers();
+    const handler = new CreateVitrineSubscriberHandler(
+      store,
+      testMint(),
+      new FixedIdGenerator("sub"),
+      new FixedClock(AT),
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
+    );
+    const command = new CreateVitrineSubscriberCommand(
+      "Agence",
+      null,
+      [],
+      null,
+      null,
+      STAFF,
+      randomUUID(),
+    );
+    await handler.execute(command);
+    await expect(handler.execute(command)).rejects.toBeInstanceOf(
+      VitrineCredentialsAlreadyShownError,
+    );
+    expect(store.saves).toBe(1);
+  });
+
+  /** Régression : un double clic faisait tourner deux fois, et le secret copié du premier ne valait plus. */
+  it("faire tourner : le rejeu de la même clé est refusé en 409, sans seconde rotation", async () => {
+    const store = new MemorySubscribers(subscriber());
+    const handler = new RotateVitrineCredentialsHandler(
+      store,
+      testMint(),
+      new FixedClock(LATER),
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
+    );
+    const command = new RotateVitrineCredentialsCommand("sub_agence", STAFF, randomUUID());
+    const shown = await handler.execute(command);
+    await expect(handler.execute(command)).rejects.toBeInstanceOf(
+      VitrineCredentialsAlreadyShownError,
+    );
+    expect((await store.load("sub_agence"))?.toPersistence().readKeyHash).toBe(
+      hashVitrineReadKey(shown.readKey),
+    );
   });
 });
 
@@ -107,7 +187,9 @@ describe("régler un abonné", () => {
       store,
       testMint(),
       new FixedClock(LATER),
-    ).execute(new RotateVitrineCredentialsCommand("sub_agence"));
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
+    ).execute(new RotateVitrineCredentialsCommand("sub_agence", STAFF, randomUUID()));
     expect((await store.load("sub_agence"))?.toPersistence().readKeyHash).toBe(
       hashVitrineReadKey(shown.readKey),
     );
@@ -180,11 +262,41 @@ describe("envoyer un test", () => {
       new VitrineRelay(poster, cipher, clock),
       new FixedIdGenerator("t"),
       clock,
-    ).execute(new SendVitrineTestCommand("sub_agence"));
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
+    ).execute(new SendVitrineTestCommand("sub_agence", "staff_1", randomUUID()));
 
     expect(JSON.parse(poster.received[0]?.body ?? "{}")).toMatchObject({ test: true, sequence: 0 });
     expect((await deliveries.load(id))?.isFailed).toBe(true);
     expect((await store.load("sub_agence"))?.isDeliverable).toBe(true);
+  });
+
+  /** Régression : un double clic envoyait deux tests à l'agence. */
+  it("rejoué sous la même clé, n'envoie pas un second test", async () => {
+    const cipher = testCipher();
+    const minted = testMint(cipher).mint();
+    const declared = subscriber();
+    declared.rotate(minted.stored, AT);
+    const poster = new ScriptedPoster();
+    const clock = new FixedClock(AT);
+    const handler = new SendVitrineTestHandler(
+      new MemorySubscribers(declared),
+      new MemoryDeliveries(),
+      new VitrineRelay(poster, cipher, clock),
+      new FixedIdGenerator("t"),
+      clock,
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
+    );
+    const key = randomUUID();
+
+    const first = await handler.execute(new SendVitrineTestCommand("sub_agence", "staff_1", key));
+    const replayed = await handler.execute(
+      new SendVitrineTestCommand("sub_agence", "staff_1", key),
+    );
+
+    expect(replayed).toBe(first);
+    expect(poster.received).toHaveLength(1);
   });
 
   it("refuse un abonné coupé", async () => {
@@ -197,10 +309,12 @@ describe("envoyer un test", () => {
       new VitrineRelay(new ScriptedPoster(), testCipher(), clock),
       new FixedIdGenerator("t"),
       clock,
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
     );
-    await expect(handler.execute(new SendVitrineTestCommand("sub_agence"))).rejects.toThrow(
-      VitrineSubscriberInactiveError,
-    );
+    await expect(
+      handler.execute(new SendVitrineTestCommand("sub_agence", "staff_1", randomUUID())),
+    ).rejects.toThrow(VitrineSubscriberInactiveError);
   });
 });
 
@@ -212,7 +326,19 @@ describe("un abonné en lecture seule", () => {
       testMint(testCipher()),
       new FixedIdGenerator("sub"),
       new FixedClock(AT),
-    ).execute(new CreateVitrineSubscriberCommand("Agence Joomla", null, ["catalogue"]));
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
+    ).execute(
+      new CreateVitrineSubscriberCommand(
+        "Agence Joomla",
+        null,
+        ["catalogue"],
+        null,
+        null,
+        STAFF,
+        randomUUID(),
+      ),
+    );
     const saved = await store.load(shown.id);
     expect(saved?.endpointUrl).toBeNull();
     expect(saved?.isDeliverable).toBe(false);
@@ -229,10 +355,12 @@ describe("un abonné en lecture seule", () => {
       new VitrineRelay(poster, testCipher(), clock),
       new FixedIdGenerator("t"),
       clock,
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
     );
-    await expect(handler.execute(new SendVitrineTestCommand("sub_agence"))).rejects.toThrow(
-      VitrineSubscriberReadOnlyError,
-    );
+    await expect(
+      handler.execute(new SendVitrineTestCommand("sub_agence", "staff_1", randomUUID())),
+    ).rejects.toThrow(VitrineSubscriberReadOnlyError);
     expect(poster.received).toHaveLength(0);
     expect(deliveries.all()).toHaveLength(0);
   });

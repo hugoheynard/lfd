@@ -182,6 +182,7 @@ function signCommitment(sku: string) {
     new NamedCompanies(),
     new ArticleSaleUnits(new PieceOnlyCatalog()),
     REFERENCES,
+    inMemoryIntents(),
   );
   const payload: CreateVolumeCommitmentPayload = {
     companyId: "co_1",
@@ -192,7 +193,9 @@ function signCommitment(sku: string) {
   };
   return {
     commitments,
-    run: () => handler.execute(new SignVolumeCommitmentCommand(payload, "staff_1")),
+    run: () => handler.execute(new SignVolumeCommitmentCommand(payload, "staff_1", randomUUID())),
+    runWith: (key: string) =>
+      handler.execute(new SignVolumeCommitmentCommand(payload, "staff_1", key)),
   };
 }
 
@@ -241,6 +244,18 @@ describe("PoseCompanyMercurialeHandler — les références de la grille", () =>
 });
 
 describe("SignVolumeCommitmentHandler — la référence engagée", () => {
+  /** Régression : un double clic signait deux engagements identiques. */
+  it("rejouée sous la même clé, rend l'engagement signé sans en signer un second", async () => {
+    const { commitments, runWith } = signCommitment("VIE-001");
+    const key = randomUUID();
+
+    const first = await runWith(key);
+    const replayed = await runWith(key);
+
+    expect(replayed).toBe(first);
+    expect(commitments.signed).toHaveLength(1);
+  });
+
   it("signe un engagement sur une référence en vente", async () => {
     const { commitments, run } = signCommitment("VIE-001");
     await expect(run()).resolves.toBe("vc_000001");

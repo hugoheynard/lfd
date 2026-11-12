@@ -33,6 +33,7 @@ import { IdGenerator } from "../src/platform/id/id-generator.js";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const ACTIVE = "auth0|l12-active";
 const PENDING = "auth0|l12-en-attente";
@@ -87,7 +88,11 @@ function siteBody(label: string): Record<string, unknown> {
 }
 
 async function poseSite(label: string): Promise<string> {
-  const response = await staff().post("/admin/pickup-addresses").send(siteBody(label)).expect(201);
+  const response = await staff()
+    .post("/admin/pickup-addresses")
+    .set(INTENT_KEY, freshIntent())
+    .send(siteBody(label))
+    .expect(201);
   return jsonBody<CreatedPickupResponse>(response).id;
 }
 
@@ -114,7 +119,11 @@ function atPoint(
 }
 
 async function posePromotion(terms: PromotionTermsPayload): Promise<string> {
-  const response = await staff().post("/admin/promotions").send(terms).expect(201);
+  const response = await staff()
+    .post("/admin/promotions")
+    .set(INTENT_KEY, freshIntent())
+    .send(terms)
+    .expect(201);
   return jsonBody<{ id: string }>(response).id;
 }
 
@@ -216,7 +225,11 @@ describe("les anciens éditeurs", () => {
       validTo: null,
     };
 
-    const rule = await staff().post("/admin/pricing/rules").send(ruleBody).expect(409);
+    const rule = await staff()
+      .post("/admin/pricing/rules")
+      .set(INTENT_KEY, freshIntent())
+      .send(ruleBody)
+      .expect(409);
     expect(jsonBody<{ code: string }>(rule).code).toBe("promotions.legacy_editor_closed");
     const discount = await staff()
       .patch(`/admin/sites/${real}`)
@@ -227,10 +240,12 @@ describe("les anciens éditeurs", () => {
     await staff().patch(`/admin/sites/${real}`).send(place).expect(204);
     await staff()
       .post("/admin/pricing/rules")
+      .set(INTENT_KEY, freshIntent())
       .send({ ...ruleBody, stage: "geste" })
       .expect(201);
     const created = await staff()
       .post("/admin/pickup-addresses")
+      .set(INTENT_KEY, freshIntent())
       .send({
         ...siteBody("Remisé"),
         discounts: {

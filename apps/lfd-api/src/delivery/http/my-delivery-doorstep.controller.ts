@@ -30,6 +30,7 @@ import type { Response } from "express";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
+import { IntentKey } from "../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import type { StoredDocument } from "../../platform/storage/document-store.js";
 import { CloseStopWithoutHandoverCommand } from "../application/commands/close-stop-without-handover.command.js";
@@ -66,7 +67,11 @@ export class MyDeliveryDoorstepController {
     private readonly queries: QueryBus,
   ) {}
 
-  /** « Déclarer un problème » — multipart, la photo facultative. */
+  /**
+   * « Déclarer un problème » — multipart, la photo facultative. La clé
+   * d'intention de l'écran (`Idempotency-Key`, obligatoire) fait qu'un envoi
+   * rejoué ne signale qu'une fois.
+   */
   @Post(":roundId/incidents")
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(incidentPhotoUpload())
@@ -75,9 +80,16 @@ export class MyDeliveryDoorstepController {
     @Param("roundId") roundId: string,
     @Body(new ZodBody(reportDeliveryIncidentFieldsSchema)) fields: ReportDeliveryIncidentFields,
     @UploadedFile() photo: UploadedIncidentPhoto | undefined,
+    @IntentKey() intentKey: string,
   ): Promise<ReportedDeliveryIncidentResponse> {
     const id = await this.commands.execute<ReportDeliveryIncidentCommand, string>(
-      new ReportDeliveryIncidentCommand(staffUserId, roundId, fields, photo?.buffer ?? null),
+      new ReportDeliveryIncidentCommand(
+        staffUserId,
+        roundId,
+        fields,
+        photo?.buffer ?? null,
+        intentKey,
+      ),
     );
     return { id };
   }

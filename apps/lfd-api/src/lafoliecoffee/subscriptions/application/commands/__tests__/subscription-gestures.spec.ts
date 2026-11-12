@@ -23,6 +23,8 @@ import { UpsertOccurrenceOverrideCommand } from "../upsert-occurrence-override.c
 import { UpsertOccurrenceOverrideHandler } from "../upsert-occurrence-override.handler.js";
 import { activeSubscription, FakeSubscriptionRepository } from "./fake-subscription-repository.js";
 import { guardServing, subscriptionGestures } from "./subscription-gesture-doubles.js";
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 
 /**
  * N4e (`plan-notifications-sous-comptes.md`) : la société de l'espace sur le
@@ -57,6 +59,7 @@ function build(options: { readonly member?: boolean } = {}) {
       doubles.gestures,
       articleSaleUnitsOver(),
       guardServing("SKU-1", "SKU-2", "PAT-002-1"),
+      inMemoryIntents(),
     ),
     status: new SetSubscriptionStatusHandler(repo, events, uow, doubles.gestures),
     remove: new DeleteSubscriptionHandler(
@@ -80,7 +83,7 @@ function build(options: { readonly member?: boolean } = {}) {
 describe("la création porte la société de l'espace (N4e)", () => {
   it("dans l'espace d'un site : le panier porte la société, le fait part avec l'id créé", async () => {
     const { create, repo, durable } = build();
-    await create.execute(new CreateSubscriptionCommand("user_1", payload, "chalet"));
+    await create.execute(new CreateSubscriptionCommand("user_1", payload, "chalet", randomUUID()));
 
     expect(repo.created[0]?.toPersistence().companyId).toBe("chalet");
     expect(durable.facts.map((fact) => fact.type)).toEqual([SUBSCRIPTION_CREATED]);
@@ -96,7 +99,7 @@ describe("la création porte la société de l'espace (N4e)", () => {
 
   it("en perso : société nulle, aucun fait (pas de site)", async () => {
     const { create, repo, durable } = build();
-    await create.execute(new CreateSubscriptionCommand("user_1", payload, null));
+    await create.execute(new CreateSubscriptionCommand("user_1", payload, null, randomUUID()));
     expect(repo.created[0]?.toPersistence().companyId).toBeNull();
     expect(durable.facts).toEqual([]);
   });
@@ -104,7 +107,7 @@ describe("la création porte la société de l'espace (N4e)", () => {
   it("une société dont l'acteur n'est pas membre : refus, rien de créé", async () => {
     const { create, repo } = build({ member: false });
     await expect(
-      create.execute(new CreateSubscriptionCommand("user_1", payload, "chalet")),
+      create.execute(new CreateSubscriptionCommand("user_1", payload, "chalet", randomUUID())),
     ).rejects.toBeInstanceOf(SubscriptionSiteMembershipLostError);
     expect(repo.created).toEqual([]);
   });

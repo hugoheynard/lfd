@@ -4,6 +4,7 @@ import { CommandBus } from "@nestjs/cqrs";
 import { Public } from "../../../platform/auth/public.decorator.js";
 import { RecomputeGuard } from "../../../platform/auth/recompute.guard.js";
 import { AnonymizeCustomerRequestsCommand } from "../application/commands/anonymize-customer-requests.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /** Le compte rendu du passage : un compte, jamais une donnée. */
 export interface ContactAnonymizationSweepReport {
@@ -26,6 +27,9 @@ export class ContactAnonymizationSweepController {
 
   @Post()
   @HttpCode(200)
+  @Idempotent(
+    "appelée par la machine (RecomputeGuard) : rejouée, les demandes déjà anonymisées ne sont plus dues (état relu) ; la suppression des photos est idempotente",
+  )
   async sweep(): Promise<ContactAnonymizationSweepReport> {
     const anonymized = await this.commands.execute<AnonymizeCustomerRequestsCommand, number>(
       new AnonymizeCustomerRequestsCommand(),

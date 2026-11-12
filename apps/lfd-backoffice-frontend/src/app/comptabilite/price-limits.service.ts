@@ -10,6 +10,7 @@ import type {
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
+import { intentOptions } from '../shared/gesture-intents';
 
 /**
  * Les **limites de prix** — ce qui empêche un prix de descendre trop bas, pour
@@ -37,11 +38,16 @@ export class PriceLimitsService {
     );
   }
 
-  /** Pose la limite. **Idempotent par portée et clientèle** : re-poser remplace. */
+  /**
+   * Pose la limite : re-poser ouvre une version neuve qui remplace la
+   * précédente. Une fois par intention (`intentKey`, en-tête
+   * `Idempotency-Key`) : un double clic ne pose pas deux versions.
+   */
   async setFloor(
     payload: SetPriceFloorPayload & { readonly clientele: FloorClientele },
+    intentKey: string,
   ): Promise<void> {
-    await firstValueFrom(this.http.put<void>(this.base, payload));
+    await firstValueFrom(this.http.put<void>(this.base, payload, intentOptions(intentKey)));
   }
 
   /**
@@ -52,12 +58,16 @@ export class PriceLimitsService {
    * le signal de dérive serait de MODIFIER la limite — donc de changer une
    * décision pour faire taire un rappel.
    */
-  async confirmFloor(scope: PriceScopePayload, clientele: FloorClientele): Promise<void> {
+  async confirmFloor(
+    scope: PriceScopePayload,
+    clientele: FloorClientele,
+    intentKey: string,
+  ): Promise<void> {
     await firstValueFrom(
       this.http.post<void>(
         `${this.base}/${floorPath(scope)}/confirm`,
         {},
-        { params: clienteleParams(clientele) },
+        { params: clienteleParams(clientele), ...intentOptions(intentKey) },
       ),
     );
   }

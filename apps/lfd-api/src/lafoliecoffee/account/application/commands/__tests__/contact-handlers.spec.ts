@@ -24,6 +24,8 @@ import { UpdateCompanyContactHandler } from "../update-company-contact.handler.j
 import { UpdatePrimaryContactHandler } from "../update-primary-contact.handler.js";
 import { journalNames } from "./member-acts-doubles.js";
 import { silentGestures } from "./site-gesture-doubles.js";
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 
 /** Les noms que les faits figent : lus dans une société témoin, sans rien écrire. */
 function names() {
@@ -159,6 +161,31 @@ describe("handlers de contacts — le mur owner/admin", () => {
     expect(recorder.writes).toEqual(["primary"]);
   });
 
+  /** Régression : un double envoi ajoutait deux contacts. */
+  it("rejouée sous la même clé, rend le même contact sans en écrire un second", async () => {
+    const recorder: Recorder = { writes: [] };
+    const handler = new AddCompanyContactHandler(
+      membershipReturning("owner"),
+      bookRecorder(recorder),
+      new RecordingPublisher(),
+      new DirectUnitOfWork(),
+      names(),
+      silentGestures(),
+      inMemoryIntents(),
+    );
+    const key = randomUUID();
+
+    const first = await handler.execute(
+      new AddCompanyContactCommand("u1", "c1", DETAILS, "orders", key),
+    );
+    const replayed = await handler.execute(
+      new AddCompanyContactCommand("u1", "c1", DETAILS, "orders", key),
+    );
+
+    expect(replayed).toBe(first);
+    expect(recorder.writes).toHaveLength(1);
+  });
+
   it("un non-membre reçoit 404 et rien n'est écrit", async () => {
     const recorder: Recorder = { writes: [] };
     const handler = new AddCompanyContactHandler(
@@ -168,10 +195,11 @@ describe("handlers de contacts — le mur owner/admin", () => {
       new DirectUnitOfWork(),
       names(),
       silentGestures(),
+      inMemoryIntents(),
     );
 
     await expect(
-      handler.execute(new AddCompanyContactCommand("u1", "c1", DETAILS, "orders")),
+      handler.execute(new AddCompanyContactCommand("u1", "c1", DETAILS, "orders", randomUUID())),
     ).rejects.toBeInstanceOf(CompanyNotFoundError);
     expect(recorder.writes).toEqual([]);
   });
@@ -200,9 +228,15 @@ describe("handlers de contacts — le mur owner/admin", () => {
     const events = new RecordingPublisher();
     const uow = new DirectUnitOfWork();
 
-    await new AddCompanyContactHandler(admin, book, events, uow, names(), silentGestures()).execute(
-      new AddCompanyContactCommand("u1", "c1", DETAILS, "orders"),
-    );
+    await new AddCompanyContactHandler(
+      admin,
+      book,
+      events,
+      uow,
+      names(),
+      silentGestures(),
+      inMemoryIntents(),
+    ).execute(new AddCompanyContactCommand("u1", "c1", DETAILS, "orders", randomUUID()));
     await new UpdateCompanyContactHandler(
       admin,
       book,

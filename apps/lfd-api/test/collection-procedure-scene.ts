@@ -18,6 +18,7 @@ import { sha256Of } from "../src/lafoliecoffee/accounting/domain/services/collec
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { E2E_STAFF_ID, bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 export const ICS = "FR72ZZZ123456";
 export const ACCOUNT = {
@@ -73,6 +74,7 @@ export async function procedure(entityId: string): Promise<CollectionProcedureVi
 export async function entity(siren: string, ics = ICS): Promise<string> {
   const response = await staff()
     .post("/admin/accounting/legal-entities")
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: "La Folie Douce",
       legalForm: "SAS",

@@ -12,6 +12,7 @@ import { CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardProvidersOverride } from "./card-payments.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const OWNER = "auth0|owner";
 
@@ -70,6 +71,7 @@ async function bookAddress(extra: Partial<DeliveryAddressPayload["specs"]>): Pro
   const created = await ctx
     .asSub(OWNER)
     .post(`/companies/${companyId}/delivery-addresses`)
+    .set(INTENT_KEY, freshIntent())
     .send(payload)
     .expect(201);
   return jsonBody<{ id: string }>(created).id;

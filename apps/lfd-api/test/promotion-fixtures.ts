@@ -12,6 +12,7 @@
 import type { PromotionTermsPayload } from "@lfd/contracts";
 
 import { daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 type Agent = ReturnType<E2eContext["asSub"]>;
 
@@ -47,7 +48,11 @@ export function onlyVariant(sku: string): PromotionTermsPayload["scope"] {
 
 /** Pose la promotion (sous `b2b_pricing`) et rend son identifiant. */
 export async function posePromotion(agent: Agent, terms: PromotionTermsPayload): Promise<string> {
-  const response = await agent.post("/admin/promotions").send(terms).expect(201);
+  const response = await agent
+    .post("/admin/promotions")
+    .set(INTENT_KEY, freshIntent())
+    .send(terms)
+    .expect(201);
   return jsonBody<{ id: string }>(response).id;
 }
 

@@ -160,3 +160,35 @@ describe("DeliveryAvailability.pose — marges de production (vagues, V0)", () =
     });
   });
 });
+
+describe("DeliveryAvailability.changes", () => {
+  /** Régression : un réglage rejoué réécrivait, rejournalisait et purgeait les réglages publics. */
+  it("ne voit aucun changement quand le patch redit l'état courant", () => {
+    const settings = DeliveryAvailability.pose({
+      current: OPEN,
+      patch: { openToB2b: true, windowMode: "slot" },
+      at: AT,
+      author: AUTHOR,
+    });
+
+    expect(settings.changes(OPEN)).toBe(false);
+  });
+
+  it("voit le changement d'une clientèle ou d'une marge", () => {
+    const closed = DeliveryAvailability.pose({
+      current: OPEN,
+      patch: { openToB2c: false },
+      at: AT,
+      author: AUTHOR,
+    });
+    const margin = DeliveryAvailability.pose({
+      current: OPEN,
+      patch: { pickupMarginMinutes: 30 },
+      at: AT,
+      author: AUTHOR,
+    });
+
+    expect(closed.changes(OPEN)).toBe(true);
+    expect(margin.changes(OPEN)).toBe(true);
+  });
+});

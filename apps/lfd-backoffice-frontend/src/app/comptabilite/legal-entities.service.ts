@@ -24,6 +24,7 @@ import type {
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
+import { intentOptions } from '../shared/gesture-intents';
 
 /**
  * Accès à la surface **staff** des entités juridiques émettrices.
@@ -79,8 +80,11 @@ export class LegalEntitiesService {
     );
   }
 
-  async declare(payload: DeclareLegalEntityPayload): Promise<string> {
-    const created = await firstValueFrom(this.http.post<CreatedIdResponse>(this.base, payload));
+  /** Une fois par intention : la même clé rend la même entité, jamais une seconde. */
+  async declare(payload: DeclareLegalEntityPayload, intentKey: string): Promise<string> {
+    const created = await firstValueFrom(
+      this.http.post<CreatedIdResponse>(this.base, payload, intentOptions(intentKey)),
+    );
     return created.id;
   }
 
@@ -170,11 +174,15 @@ export class LegalEntitiesService {
    * ⚠️ En `multipart`, et sans `Content-Type` posé à la main : `FormData` le
    * fixe lui-même avec la frontière que le corps porte, et l'écraser produit un
    * corps que le serveur ne sait plus découper.
+   *
+   * Une fois par intention : la même clé ne redépose rien.
    */
-  async setLogo(id: string, file: File): Promise<void> {
+  async setLogo(id: string, file: File, intentKey: string): Promise<void> {
     const body = new FormData();
     body.append('file', file);
-    await firstValueFrom(this.http.post<void>(`${this.base}/${id}/logo`, body));
+    await firstValueFrom(
+      this.http.post<void>(`${this.base}/${id}/logo`, body, intentOptions(intentKey)),
+    );
   }
 
   /** Retire le logo. Le mandat ressort avec sa cellule vide, et reste valide. */

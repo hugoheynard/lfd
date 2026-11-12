@@ -14,6 +14,7 @@ import { CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { admin, ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const OWNER = "auth0|owner";
 
@@ -54,6 +55,7 @@ beforeEach(async () => {
   const created = await ctx
     .asSub(OWNER)
     .post(`/companies/${companyId}/delivery-addresses`)
+    .set(INTENT_KEY, freshIntent())
     .send(ADDRESS)
     .expect(201);
   addressId = jsonBody<{ id: string }>(created).id;

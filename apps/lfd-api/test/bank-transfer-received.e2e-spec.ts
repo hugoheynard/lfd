@@ -36,6 +36,7 @@ import {
   staff,
   useCollectionReturnScene,
 } from "./collection-returns-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 useCollectionReturnScene();
 
@@ -136,7 +137,11 @@ describe("« virement reçu » (V7)", () => {
 
     // Le lot du 1er : rien à prélever.
     clock.set(new Date(closesAt.getTime() + 2 * HOUR_MS));
-    await staff().post(`${COLLECTION}/batches`).send({ legalEntityId: entityId }).expect(409);
+    await staff()
+      .post(`${COLLECTION}/batches`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ legalEntityId: entityId })
+      .expect(409);
     expect(await ctx.prisma.collectionBatchLine.count()).toBe(0);
   });
 

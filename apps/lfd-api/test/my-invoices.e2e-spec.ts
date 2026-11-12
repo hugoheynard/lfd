@@ -24,6 +24,7 @@ import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { invoicedPayer, setUpEntity } from "./collection-returns-scene.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const HOUR_MS = 60 * 60 * 1000;
 const COLLECTION = "/admin/accounting/collection";
@@ -129,6 +130,7 @@ describe("« Mes factures » : le statut suit le prélèvement (§7.1)", () => {
     clock.set(new Date(closesAt.getTime() + 2 * HOUR_MS));
     await staff()
       .post(`${COLLECTION}/batches`)
+      .set(INTENT_KEY, freshIntent())
       .send({ legalEntityId: invoice.legalEntityId })
       .expect(201);
     await ctx.drain();

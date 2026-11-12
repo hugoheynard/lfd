@@ -21,6 +21,7 @@ import {
   staff,
   useCollectionReturnScene,
 } from "./collection-returns-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 useCollectionReturnScene();
 
@@ -148,7 +149,11 @@ describe("les retours bancaires (R5a)", () => {
     // Le bon est d'avant la facture du mois : sa ligne porte un arrêté.
     await ctx.prisma.invoicingFloor.update({ where: { id: true }, data: { floorAt: closesAt } });
     clock.set(new Date(closesAt.getTime() + 2 * HOUR_MS));
-    await staff().post(`${COLLECTION}/batches`).send({ legalEntityId: entityId }).expect(201);
+    await staff()
+      .post(`${COLLECTION}/batches`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ legalEntityId: entityId })
+      .expect(201);
     await ctx.drain();
     const line = await ctx.prisma.collectionBatchLine.findFirstOrThrow({
       include: { statement: true },

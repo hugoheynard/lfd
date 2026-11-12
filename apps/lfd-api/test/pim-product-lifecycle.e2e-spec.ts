@@ -16,6 +16,7 @@
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { makeActivatable } from "./pim-sellable.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -56,6 +57,7 @@ async function aProduct(): Promise<string> {
   expect(category.status).toBe(201);
   const product = await staff()
     .post(PRODUCTS)
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: { fr: "Croissant" },
       kind: "daily",

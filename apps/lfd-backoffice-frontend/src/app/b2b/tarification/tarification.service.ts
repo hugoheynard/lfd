@@ -16,6 +16,7 @@ import type {
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../../api/api-config';
+import { intentOptions } from '../../shared/gesture-intents';
 
 /**
  * Le **paramétrage tarifaire** : ce qui altère un prix.
@@ -81,17 +82,28 @@ export class TarificationService {
    * remplacent ensemble. Poser palier par palier laisserait, entre deux appels,
    * un barème qui régresse.
    */
-  async setVolumeLadder(payload: SetVolumeLadderPayload): Promise<string> {
+  async setVolumeLadder(payload: SetVolumeLadderPayload, intentKey: string): Promise<string> {
     const created = await firstValueFrom(
-      this.http.put<CreatedIdResponse>(`${B2B_API_BASE}/admin/pricing/volume-ladders`, payload),
+      this.http.put<CreatedIdResponse>(
+        `${B2B_API_BASE}/admin/pricing/volume-ladders`,
+        payload,
+        intentOptions(intentKey),
+      ),
     );
     return created.id;
   }
 
-  /** Pose une règle. Rend son identifiant, pour pouvoir la retirer. */
-  async createRule(payload: CreatePriceRulePayload): Promise<string> {
+  /**
+   * Pose une règle. Rend son identifiant, pour pouvoir la retirer. Une fois par
+   * intention (`Idempotency-Key`) : un double clic ne pose pas deux règles.
+   */
+  async createRule(payload: CreatePriceRulePayload, intentKey: string): Promise<string> {
     const created = await firstValueFrom(
-      this.http.post<CreatedIdResponse>(`${B2B_API_BASE}/admin/pricing/rules`, payload),
+      this.http.post<CreatedIdResponse>(
+        `${B2B_API_BASE}/admin/pricing/rules`,
+        payload,
+        intentOptions(intentKey),
+      ),
     );
     return created.id;
   }

@@ -15,6 +15,7 @@ import type {
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../../api/api-config';
+import { intentOptions } from '../../shared/gesture-intents';
 
 /**
  * Zones de livraison (code postal → frais). **Lecture** publique (le checkout
@@ -80,10 +81,17 @@ export class DeliveryZonesService {
     );
   }
 
-  /** Crée une zone (staff). */
-  async create(payload: DeliveryZonePayload): Promise<CreatedDeliveryZoneResponse> {
+  /** Crée une zone (staff), une fois par intention (`Idempotency-Key`). */
+  async create(
+    payload: DeliveryZonePayload,
+    intentKey: string,
+  ): Promise<CreatedDeliveryZoneResponse> {
     return firstValueFrom(
-      this.http.post<CreatedDeliveryZoneResponse>(`${B2B_API_BASE}/admin/delivery-zones`, payload),
+      this.http.post<CreatedDeliveryZoneResponse>(
+        `${B2B_API_BASE}/admin/delivery-zones`,
+        payload,
+        intentOptions(intentKey),
+      ),
     );
   }
 

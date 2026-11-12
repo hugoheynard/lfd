@@ -12,6 +12,7 @@ import { switchMap } from 'rxjs/operators';
 import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
 import { NotifyService } from '../../notify.service';
+import { INTENT_KEY_HEADER } from '../../client/gesture-intents';
 
 /** Où en est le chargement des adresses d'une entreprise. */
 export type AddressesStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -63,12 +64,17 @@ export class AddressesService {
     );
   }
 
-  addDelivery(companyId: string, payload: DeliveryAddressPayload): Promise<void> {
+  /** Une fois par intention : `intentKey` vient du panneau, fabriquée à son ouverture. */
+  addDelivery(
+    companyId: string,
+    payload: DeliveryAddressPayload,
+    intentKey: string,
+  ): Promise<void> {
     return this.write(companyId, (token) =>
       this.http.post(
         `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/delivery-addresses`,
         payload,
-        headers(token),
+        { headers: { ...headers(token).headers, [INTENT_KEY_HEADER]: intentKey } },
       ),
     );
   }

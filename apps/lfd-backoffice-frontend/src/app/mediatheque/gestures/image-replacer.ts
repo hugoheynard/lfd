@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { httpErrorMessage } from '@lfd/endpoints';
 
+import { GestureIntents } from '../../shared/gesture-intents';
 import type { ImageDescription } from '../rules/image-description';
 import { MediaImagesApi } from '../data/media-images-api';
 import { takenOver } from '../rules/replace-rules';
@@ -24,10 +25,14 @@ export type ReplaceOutcome =
 @Injectable({ providedIn: 'root' })
 export class ImageReplacer {
   private readonly api = inject(MediaImagesApi);
+  /** Un remplacement par intention : un double clic ne le trace qu'une fois. */
+  private readonly intents = new GestureIntents();
 
   async replace(from: ImageDescription, to: string, takeOver: boolean): Promise<ReplaceOutcome> {
+    const subject = `${from.url} → ${to}`;
     try {
-      await this.api.replace({ from: from.url, to });
+      await this.api.replace({ from: from.url, to }, this.intents.keyFor(subject));
+      this.intents.done(subject);
     } catch (caught) {
       return { refusal: httpErrorMessage(caught, "L'image n'a pas pu être remplacée.") };
     }

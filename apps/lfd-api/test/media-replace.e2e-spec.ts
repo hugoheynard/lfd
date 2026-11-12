@@ -29,6 +29,7 @@ import {
 } from "./e2e-harness.js";
 import { InMemoryMediaStore } from "./in-memory-media-store.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 /** La seule frontière doublée : la signature Auth0 — le jeton EST le sujet. */
 const stubAdminVerifier = {
@@ -82,7 +83,8 @@ async function deposit(width: number): Promise<string> {
 }
 
 async function created(path: string, body: Record<string, unknown>): Promise<string> {
-  const response = await staff().post(path).send(body).expect(201);
+  // Une clé neuve à chaque création : la fiche l'exige, la famille l'ignore.
+  const response = await staff().post(path).set(INTENT_KEY, freshIntent()).send(body).expect(201);
   return jsonBody<{ id: string }>(response).id;
 }
 
@@ -208,7 +210,7 @@ describe("POST /media/replace — remplacer une image partout", () => {
     const { a, b, category, hero, both } = await imageShownEverywhere();
     expect(await carriersOf(a)).toHaveLength(6);
 
-    await staff().post(REPLACE).send({ from: a, to: b }).expect(204);
+    await staff().post(REPLACE).set(INTENT_KEY, freshIntent()).send({ from: a, to: b }).expect(204);
 
     expect(await carriersOf(a)).toEqual([]);
     expect(await ctx.prisma.mediaAsset.count({ where: { url: a } })).toBe(1);
@@ -258,7 +260,11 @@ describe("POST /media/replace — remplacer une image partout", () => {
       })
       .expect(204);
 
-    await staff().post(REPLACE).send({ from: courier, to: next }).expect(204);
+    await staff()
+      .post(REPLACE)
+      .set(INTENT_KEY, freshIntent())
+      .send({ from: courier, to: next })
+      .expect(204);
 
     const home = await ctx.prisma.storefrontPage.findUniqueOrThrow({ where: { shelfKey: "home" } });
     expect([home.pickupDoorImageUrl, home.deliveryDoorImageUrl]).toEqual([door, next]);
@@ -275,7 +281,7 @@ describe("POST /media/replace — remplacer une image partout", () => {
   it("fusionne : une fiche qui montrait déjà B la garde UNE fois, à la place de A", async () => {
     const { a, b, both } = await imageShownEverywhere();
 
-    await staff().post(REPLACE).send({ from: a, to: b }).expect(204);
+    await staff().post(REPLACE).set(INTENT_KEY, freshIntent()).send({ from: a, to: b }).expect(204);
 
     const rows = await ctx.prisma.productMedia.findMany({ where: { productId: both } });
     expect(rows.map((row) => [row.mediaUrl, row.role, row.position])).toEqual([[b, "gallery", 1]]);
@@ -287,7 +293,7 @@ describe("POST /media/replace — remplacer une image partout", () => {
       (await request(ctx.app.getHttpServer()).get("/shop/catalogue")).body as ShopCatalogueView;
     expect((await shop()).items[0]?.image?.url).toBe(a);
 
-    await staff().post(REPLACE).send({ from: a, to: b }).expect(204);
+    await staff().post(REPLACE).set(INTENT_KEY, freshIntent()).send({ from: a, to: b }).expect(204);
     await settle();
 
     expect((await shop()).items[0]?.image?.url).toBe(b);
@@ -300,7 +306,7 @@ describe("POST /media/replace — remplacer une image partout", () => {
   it("monte la révision de la vitrine : un éditeur ouvert avant est refusé", async () => {
     const { a, b } = await imageShownEverywhere();
 
-    await staff().post(REPLACE).send({ from: a, to: b }).expect(204);
+    await staff().post(REPLACE).set(INTENT_KEY, freshIntent()).send({ from: a, to: b }).expect(204);
 
     await staff()
       .put(STOREFRONT)
@@ -314,10 +320,18 @@ describe("POST /media/replace — remplacer une image partout", () => {
     const a = await deposit(1001);
     const elsewhere = "https://ailleurs.test/x.png";
 
-    await staff().post(REPLACE).send({ from: elsewhere, to: a }).expect(404);
-    await staff().post(REPLACE).send({ from: a, to: elsewhere }).expect(404);
-    await staff().post(REPLACE).send({ from: a, to: a }).expect(400);
-    await staff().post(REPLACE).send({ from: a }).expect(400);
+    await staff()
+      .post(REPLACE)
+      .set(INTENT_KEY, freshIntent())
+      .send({ from: elsewhere, to: a })
+      .expect(404);
+    await staff()
+      .post(REPLACE)
+      .set(INTENT_KEY, freshIntent())
+      .send({ from: a, to: elsewhere })
+      .expect(404);
+    await staff().post(REPLACE).set(INTENT_KEY, freshIntent()).send({ from: a, to: a }).expect(400);
+    await staff().post(REPLACE).set(INTENT_KEY, freshIntent()).send({ from: a }).expect(400);
     expect(await ctx.prisma.activityEvent.count({ where: { type: "media_asset.replaced" } })).toBe(
       0,
     );
@@ -339,7 +353,13 @@ describe("POST /media/replace — le mur `media_library`", () => {
     });
     const body = { from: await deposit(1001), to: await deposit(1002) };
 
-    await ctx.http().post(REPLACE).set("Authorization", `Bearer ${SALES}`).send(body).expect(403);
-    await ctx.http().post(REPLACE).send(body).expect(401);
+    await ctx
+      .http()
+      .post(REPLACE)
+      .set(INTENT_KEY, freshIntent())
+      .set("Authorization", `Bearer ${SALES}`)
+      .send(body)
+      .expect(403);
+    await ctx.http().post(REPLACE).set(INTENT_KEY, freshIntent()).send(body).expect(401);
   });
 });

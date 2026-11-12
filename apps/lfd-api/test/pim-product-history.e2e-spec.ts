@@ -18,6 +18,7 @@ import type { Response } from "supertest";
 import { ActivityRecorder } from "../src/lafoliecoffee/growth/domain/ports/activity-recorder.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 /** Le jeton porteur EST le `sub` : deux personnes distinctes dans une même suite. */
 const stubAdminVerifier = {
@@ -82,6 +83,7 @@ const createProduct = (nameFr: string, categoryId: string): Promise<string> =>
   createdId(
     staff()
       .post(PRODUCTS)
+      .set(INTENT_KEY, freshIntent())
       .send({ name: { fr: nameFr }, kind: "daily", categoryId }),
   );
 
@@ -182,6 +184,7 @@ describe("l'historique d'une fiche — les trois cercles", () => {
     const scene = await aScene();
     await staff()
       .post(`${PRODUCTS}/${scene.productId}/variants`)
+      .set(INTENT_KEY, freshIntent())
       .send({ name: { fr: "Tartelette" } })
       .expect(201);
 

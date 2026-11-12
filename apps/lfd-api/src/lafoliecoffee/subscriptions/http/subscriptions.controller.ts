@@ -33,6 +33,7 @@ import { UpsertOccurrenceOverrideCommand } from "../application/commands/upsert-
 import type { CreatedSubscription } from "../domain/ports/subscription.repository.js";
 import { ListSubscriptionsQuery } from "../application/queries/list-subscriptions.query.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 
 /**
  * Paniers récurrents (abonnements) du **client connecté** — mur = son `userId`.
@@ -58,9 +59,10 @@ export class SubscriptionsController {
     @CurrentUser() user: Principal,
     @ActingCompany() companyId: string | null,
     @Body(new ZodBody(createSubscriptionPayloadSchema)) payload: CreateSubscriptionPayload,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedSubscription> {
     return this.commands.execute<CreateSubscriptionCommand, CreatedSubscription>(
-      new CreateSubscriptionCommand(user.userId, payload, companyId),
+      new CreateSubscriptionCommand(user.userId, payload, companyId, intentKey),
     );
   }
 

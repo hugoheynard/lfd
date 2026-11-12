@@ -105,6 +105,7 @@ async function seedCustomer(): Promise<{ companyId: string; buyerId: string }> {
   await ctx
     .asSub(BUYER)
     .post(`/companies/${company.id}/delivery-addresses`)
+    .set(INTENT_KEY, freshIntent())
     .send({
       label: "Boutique",
       ligne1: "2 rue Neuve",

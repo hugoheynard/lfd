@@ -12,6 +12,7 @@ import { CompanyStatus } from "../src/platform/database/client/client.js";
 import { anActiveFiche, relayAll } from "./catalog-facts-scene.js";
 import { E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 /** La vérification Auth0 doublée : le jeton EST le `sub`. */
 export const stubAdminVerifier = {
@@ -46,6 +47,7 @@ export async function aPart(
   const partId = jsonBody<{ id: string }>(
     await staff()
       .post(`${PRODUCTS}/${fiche.id}/variants`)
+      .set(INTENT_KEY, freshIntent())
       .send({ name: { fr: "Ancolie part" } })
       .expect(201),
   ).id;

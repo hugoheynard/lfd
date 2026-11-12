@@ -32,7 +32,10 @@ export class UpdateDeliveryZoneHandler implements ICommandHandler<UpdateDelivery
       deliveryPricingTermsOf(command.payload.audienceTerms);
     }
     await this.uow.run(async () => {
-      await this.zones.update(command.id, command.payload);
+      // Rejouer le remplacement ne change rien : ni fait au journal, ni purge.
+      if (!(await this.zones.update(command.id, command.payload))) {
+        return;
+      }
       await this.events.publishTraced(new DeliveryZoneUpdatedEvent(command.id, command.payload));
       this.afterCommit.defer(() => this.edge.purge(), "delivery-zone.edge-purge");
     });

@@ -370,30 +370,53 @@ export class LegalEntity {
     readonly rcs: string;
     readonly shareCapitalCents: number;
     readonly vatNumber: string;
-  }): void {
-    this.nameValue = requireText(input.name, "Raison sociale");
-    this.legalFormValue = requireText(input.legalForm, "Forme juridique");
-    this.rcsValue = input.rcs.trim();
-    this.shareCapitalCentsValue = requireCapital(input.shareCapitalCents);
-    this.vatNumberValue = input.vatNumber.trim().toUpperCase();
+  }): boolean {
+    const name = requireText(input.name, "Raison sociale");
+    const legalForm = requireText(input.legalForm, "Forme juridique");
+    const rcs = input.rcs.trim();
+    const shareCapitalCents = requireCapital(input.shareCapitalCents);
+    const vatNumber = input.vatNumber.trim().toUpperCase();
+    const changed =
+      name !== this.nameValue ||
+      legalForm !== this.legalFormValue ||
+      rcs !== this.rcsValue ||
+      shareCapitalCents !== this.shareCapitalCentsValue ||
+      vatNumber !== this.vatNumberValue;
+    this.nameValue = name;
+    this.legalFormValue = legalForm;
+    this.rcsValue = rcs;
+    this.shareCapitalCentsValue = shareCapitalCents;
+    this.vatNumberValue = vatNumber;
+    return changed;
   }
 
-  moveTo(address: LegalAddress): void {
+  /** @returns `false` quand le siège est déjà à cette adresse. */
+  moveTo(address: LegalAddress): boolean {
+    if (this.addressValue.equals(address)) {
+      return false;
+    }
     this.addressValue = address;
+    return true;
   }
 
   /**
    * Attribue l'ICS. **Une seule fois** — le même en second appel est accepté
-   * (une saisie rejouée n'est pas une faute), un autre est refusé.
+   * (une saisie rejouée n'est pas une faute) et ne change rien, un autre est
+   * refusé.
    *
+   * @returns `false` quand cet ICS était déjà attribué.
    * @throws {CreditorIdentifierIsImmutableError} un autre ICS est déjà en place.
    */
-  assignCreditorIdentifier(ics: CreditorIdentifier): void {
+  assignCreditorIdentifier(ics: CreditorIdentifier): boolean {
     const current = this.icsValue;
     if (current !== null && current.value !== ics.value) {
       throw new CreditorIdentifierIsImmutableError(current.value, ics.value);
     }
+    if (current !== null) {
+      return false;
+    }
     this.icsValue = ics;
+    return true;
   }
 
   /**
@@ -419,6 +442,20 @@ export class LegalEntity {
    * @returns la proposition en attente, ou `null` si le compte est pris tout de suite.
    * @throws {CreditorIdentityIsFrozenError} un mandat existe et le nom change.
    */
+  /**
+   * Ce RIB est-il déjà celui qui attend sa confirmation — ou, sans proposition,
+   * le compte confirmé ? Une saisie rejouée n'a alors rien à proposer : en
+   * reproposer un ferait périmer la saisie que le second membre s'apprête à
+   * confirmer, ou proposer le compte déjà en place.
+   */
+  alreadyHoldsCreditorAccount(account: CreditorAccount): boolean {
+    const pending = this.pendingCreditorAccountValue;
+    if (pending !== null) {
+      return pending.account.equals(account);
+    }
+    return this.creditorAccountValue?.equals(account) === true;
+  }
+
   setCreditorAccount(
     account: CreditorAccount,
     proposal: CreditorAccountProposal,
@@ -530,7 +567,8 @@ export class LegalEntity {
    * la banque, donc **de la donnée** : le renégocier est une saisie, pas un
    * déploiement — et deux entités peuvent ne pas avoir le même.
    */
-  setPreNotificationDays(days: number): void {
+  /** @returns `false` quand le délai est déjà celui-là (rien à écrire). */
+  setPreNotificationDays(days: number): boolean {
     if (
       !Number.isInteger(days) ||
       days < PRE_NOTIFICATION_MIN_DAYS ||
@@ -546,7 +584,11 @@ export class LegalEntity {
     // Porter le délai au-dessus d'une échéance déjà réglée est le même refus
     // que l'inverse : le débiteur serait prélevé avant le terme annoncé.
     assertCollectionAfterNotice(this.collectionScheduleValue.daysAfterClosure, days);
+    if (days === this.preNotificationDaysValue) {
+      return false;
+    }
     this.preNotificationDaysValue = days;
+    return true;
   }
 
   get collectionSchedule(): CollectionSchedule {
@@ -740,12 +782,22 @@ export class LegalEntity {
   }
 
   /** Une entité archivée n'émet plus rien, et ses documents passés restent. */
-  archive(at: Date): void {
+  /** @returns `false` quand elle l'est déjà : sa date d'archivage ne bouge pas. */
+  archive(at: Date): boolean {
+    if (this.archivedAtValue !== null) {
+      return false;
+    }
     this.archivedAtValue = at;
+    return true;
   }
 
-  restore(): void {
+  /** @returns `false` quand elle est déjà en service. */
+  restore(): boolean {
+    if (this.archivedAtValue === null) {
+      return false;
+    }
     this.archivedAtValue = null;
+    return true;
   }
 
   /** Peut-elle émettre un prélèvement ? Il lui faut un ICS, un compte, et vivre. */

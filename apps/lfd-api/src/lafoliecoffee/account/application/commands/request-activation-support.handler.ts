@@ -12,6 +12,12 @@ import { ensureCompanyMember } from "../../domain/services/company-access.js";
 import { RequestActivationSupportCommand } from "./request-activation-support.command.js";
 import { AccountJournalNames } from "../services/account-journal-names.service.js";
 import { SupportRequestedMail } from "../services/support-requested-mail.service.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
+import { CREATED_ID_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { customerIntentActor } from "../../../../lafoliecoffee/shared/intent/customer-intent-actor.js";
+
+/** Le nom stable du geste, dans le registre des intentions. */
+const SUPPORT_GESTURE = "account.request-activation-support";
 
 /**
  * Enregistre une demande de support à l'activation.
@@ -25,6 +31,13 @@ import { SupportRequestedMail } from "../services/support-requested-mail.service
  * canal demandé, jamais la coordonnée.
  * Ce fait-là reste best-effort, hors de la transaction, comme les faits de
  * commande (plan du journal, lot 1 ; décidé le 2026-09-19).
+ *
+ * **Une fois par intention** : la clé de l'écran est réclamée avant
+ * l'écriture et scellée dans sa transaction ; un double envoi rend la demande déjà déposée, sans en déposer une seconde ni écrire deux fois à l'équipe — y compris deux clics simultanés, que la seule lecture « une demande ouverte ? » ne sépare pas.
+ * L'acteur est le client (`customer:<id>`).
+ *
+ * @throws {GestureInFlightError} la même clé est encore en vol.
+ * @throws {IntentKeyReusedError} la clé a servi pour un autre envoi.
  */
 @CommandHandler(RequestActivationSupportCommand)
 export class RequestActivationSupportHandler implements ICommandHandler<
@@ -39,9 +52,26 @@ export class RequestActivationSupportHandler implements ICommandHandler<
     private readonly names: AccountJournalNames,
     private readonly uow: UnitOfWork,
     private readonly mail: SupportRequestedMail,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: RequestActivationSupportCommand): Promise<string> {
+  execute(command: RequestActivationSupportCommand): Promise<string> {
+    return this.intents.runSealed(
+      {
+        actorId: customerIntentActor(command.actorUserId),
+        key: command.intentKey,
+        gesture: SUPPORT_GESTURE,
+        subject: intentSubject(command.payload.companyId ?? "personal", command.payload),
+      },
+      CREATED_ID_REPLAY,
+      (seal) => this.request(command, seal),
+    );
+  }
+
+  private async request(
+    command: RequestActivationSupportCommand,
+    seal: (requestId: string) => Promise<void>,
+  ): Promise<string> {
     const { companyId } = command.payload;
     if (companyId !== null) {
       const role = await this.memberships.roleOf(command.actorUserId, companyId);
@@ -63,6 +93,7 @@ export class RequestActivationSupportHandler implements ICommandHandler<
     const id = await this.uow.run(async () => {
       const recorded = await this.support.record(command.actorUserId, command.payload);
       await this.mail.request(recorded, subjectLabel);
+      await seal(recorded);
       return recorded;
     });
     // Publié APRÈS l'écriture : le journal est une projection, jamais une

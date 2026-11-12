@@ -1,3 +1,5 @@
+import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
@@ -10,13 +12,24 @@ import { DepositQualityPhotoCommand } from "../deposit-quality-photo.command.js"
 import { DepositQualityPhotoHandler } from "../deposit-quality-photo.handler.js";
 import { SweepQualityUploadsHandler } from "../sweep-quality-uploads.handler.js";
 
+let intentCount = 0;
+/** Une clé d'intention neuve par geste voulu, comme l'écran. */
+const nextKey = (): string => `intent_${(intentCount += 1)}`;
+
 const HOUR = 60 * 60 * 1000;
 
 function subject() {
   const clock = new FixedClock(new Date());
   const uploads = new InMemoryUploads(new CheckTable());
   const store = new InMemoryProductionStore();
-  const deposit = new DepositQualityPhotoHandler(uploads, store, new FixedIdGenerator("up"), clock);
+  const deposit = new DepositQualityPhotoHandler(
+    uploads,
+    store,
+    new FixedIdGenerator("up"),
+    clock,
+    new DirectUnitOfWork(),
+    inMemoryIntents(),
+  );
   const sweep = new SweepQualityUploadsHandler(uploads, store, clock);
   return { clock, uploads, store, deposit, sweep };
 }
@@ -24,9 +37,9 @@ function subject() {
 describe("SweepQualityUploadsHandler", () => {
   it("retire les dépôts de plus de 24 h, et laisse les plus jeunes", async () => {
     const { clock, deposit, sweep, store, uploads } = subject();
-    const old = await deposit.execute(new DepositQualityPhotoCommand(JPEG, "s"));
+    const old = await deposit.execute(new DepositQualityPhotoCommand(JPEG, "s", nextKey()));
     clock.advanceMs(20 * HOUR);
-    const young = await deposit.execute(new DepositQualityPhotoCommand(JPEG, "s"));
+    const young = await deposit.execute(new DepositQualityPhotoCommand(JPEG, "s", nextKey()));
     clock.advanceMs(5 * HOUR);
 
     await expect(sweep.execute()).resolves.toBe(1);
@@ -39,7 +52,7 @@ describe("SweepQualityUploadsHandler", () => {
 
   it("un second passage ne retrouve rien : un dépôt n'est libéré qu'une fois", async () => {
     const { clock, deposit, sweep } = subject();
-    await deposit.execute(new DepositQualityPhotoCommand(JPEG, "s"));
+    await deposit.execute(new DepositQualityPhotoCommand(JPEG, "s", nextKey()));
     clock.advanceMs(25 * HOUR);
     await sweep.execute();
     await expect(sweep.execute()).resolves.toBe(0);

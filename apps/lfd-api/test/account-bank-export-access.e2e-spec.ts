@@ -15,6 +15,7 @@ import {
   staff,
   useAccountBankExportScene,
 } from "./account-bank-export-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 useAccountBankExportScene();
 
@@ -42,7 +43,7 @@ describe("l'export des comptes destinataires pour la banque", () => {
     await asReader()
       .get(`${exportsOf(entityId)}/${exportId}/file.csv`)
       .expect(403);
-    await asReader().post(exportsOf(entityId)).expect(403);
+    await asReader().post(exportsOf(entityId)).set(INTENT_KEY, freshIntent()).expect(403);
     await asReader()
       .post(`${exportsOf(entityId)}/${exportId}/imported`)
       .expect(403);

@@ -1,3 +1,5 @@
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+import { randomUUID } from "node:crypto";
 import { AesGcmFieldCipher } from "../../../../../platform/crypto/aes-gcm-field-cipher.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
@@ -50,9 +52,12 @@ describe("AttachMandateProofHandler", () => {
       new RecordingPublisher(),
       new DirectUnitOfWork(),
       silentGestures(),
+      inMemoryIntents(),
     );
 
-    await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
+    await handler.execute(
+      new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF, "staff_compta", randomUUID()),
+    );
 
     expect(trace.steps).toEqual(["store", "deposit"]);
     expect(trace.saved?.proven()).toBe(true);
@@ -70,9 +75,12 @@ describe("AttachMandateProofHandler", () => {
       events,
       new DirectUnitOfWork(),
       silentGestures(),
+      inMemoryIntents(),
     );
 
-    await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
+    await handler.execute(
+      new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF, "staff_compta", randomUUID()),
+    );
 
     expect(events.factTypes()).toEqual(["payment_mandate.proof_attached"]);
     expect(events.traced[0]?.journalFact().payload).toMatchObject({
@@ -93,9 +101,12 @@ describe("AttachMandateProofHandler", () => {
       new RecordingPublisher(),
       new DirectUnitOfWork(),
       silentGestures(),
+      inMemoryIntents(),
     );
 
-    await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
+    await handler.execute(
+      new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF, "staff_compta", randomUUID()),
+    );
 
     expect(trace.saved?.status).toBe("draft");
   });
@@ -115,10 +126,13 @@ describe("AttachMandateProofHandler", () => {
       new RecordingPublisher(),
       new DirectUnitOfWork(),
       silentGestures(),
+      inMemoryIntents(),
     );
 
     await expect(
-      handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF)),
+      handler.execute(
+        new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF, "staff_compta", randomUUID()),
+      ),
     ).rejects.toBeInstanceOf(MandateNotProvableError);
     expect(trace.steps).toEqual([]);
     expect(trace.stored).toBeNull();
@@ -134,10 +148,13 @@ describe("AttachMandateProofHandler", () => {
       new RecordingPublisher(),
       new DirectUnitOfWork(),
       silentGestures(),
+      inMemoryIntents(),
     );
 
     await expect(
-      handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF)),
+      handler.execute(
+        new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF, "staff_compta", randomUUID()),
+      ),
     ).rejects.toBeInstanceOf(MandateNotFoundError);
     expect(trace.steps).toEqual([]);
   });
@@ -154,9 +171,12 @@ describe("AttachMandateProofHandler", () => {
       new RecordingPublisher(),
       new DirectUnitOfWork(),
       silentGestures(),
+      inMemoryIntents(),
     );
 
-    await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
+    await handler.execute(
+      new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF, "staff_compta", randomUUID()),
+    );
 
     expect(trace.stored?.key).toBe(`companies/cmp_1/mandates/mdt_1/mandat-signe-${NOW.getTime()}`);
     // 🔴 `octet-stream` et non `application/pdf` depuis le 2026-09-12 : ce qui
@@ -177,8 +197,11 @@ describe("AttachMandateProofHandler", () => {
         new RecordingPublisher(),
         new DirectUnitOfWork(),
         silentGestures(),
+        inMemoryIntents(),
       );
-      await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
+      await handler.execute(
+        new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF, "staff_compta", randomUUID()),
+      );
       keys.push(trace.stored?.key ?? "");
     }
 
@@ -201,9 +224,12 @@ describe("AttachMandateProofHandler", () => {
       new RecordingPublisher(),
       new DirectUnitOfWork(),
       silentGestures(),
+      inMemoryIntents(),
     );
 
-    await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
+    await handler.execute(
+      new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF, "staff_compta", randomUUID()),
+    );
 
     const stored = trace.stored?.document.bytes;
     expect(stored?.equals(PDF)).toBe(false);
@@ -220,13 +246,52 @@ describe("AttachMandateProofHandler", () => {
       new RecordingPublisher(),
       new DirectUnitOfWork(),
       silentGestures(),
+      inMemoryIntents(),
     );
 
     await expect(
       handler.execute(
-        new AttachMandateProofCommand("cmp_1", "mandat.pdf", Buffer.from("MZ\x90\x00", "latin1")),
+        new AttachMandateProofCommand(
+          "cmp_1",
+          "mandat.pdf",
+          Buffer.from("MZ\x90\x00", "latin1"),
+          "staff_compta",
+          randomUUID(),
+        ),
       ),
     ).rejects.toThrow(/Pièce invalide/u);
     expect(trace.stored).toBeNull();
+  });
+});
+
+describe("AttachMandateProofHandler — une fois par intention", () => {
+  /**
+   * Régression : un double clic rangeait deux pièces sous deux clés neuves et
+   * périmait la révision que la signature en cours attendait.
+   */
+  it("la même clé ne range ni n'écrit une seconde pièce", async () => {
+    const { repo, trace } = doubles({ draft: draftMandate() });
+    const handler = new AttachMandateProofHandler(
+      repo,
+      tracingStore(trace),
+      CIPHER,
+      new FixedClock(NOW),
+      new RecordingPublisher(),
+      new DirectUnitOfWork(),
+      silentGestures(),
+      inMemoryIntents(),
+    );
+    const command = new AttachMandateProofCommand(
+      "cmp_1",
+      "mandat.pdf",
+      PDF,
+      "staff_compta",
+      "cle-1",
+    );
+
+    await handler.execute(command);
+    await handler.execute(command);
+
+    expect(trace.steps.filter((step) => step === "store")).toHaveLength(1);
   });
 });

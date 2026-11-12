@@ -27,8 +27,15 @@ import type { BillingAddressPayload, DeliveryAddressPayload } from '@lfd/contrac
 export interface AddressWriter {
   /** Pose ou corrige l'adresse de facturation (unique). */
   saveBilling(companyId: string, payload: BillingAddressPayload): Promise<unknown>;
-  /** Ajoute une adresse de livraison. */
-  addDelivery(companyId: string, payload: DeliveryAddressPayload): Promise<unknown>;
+  /**
+   * Ajoute une adresse de livraison, une fois par intention : `intentKey` part
+   * dans l'en-tête `Idempotency-Key`, et un double clic n'en ajoute pas deux.
+   */
+  addDelivery(
+    companyId: string,
+    payload: DeliveryAddressPayload,
+    intentKey: string,
+  ): Promise<unknown>;
   /** Corrige une adresse de livraison existante. */
   updateDelivery(
     companyId: string,

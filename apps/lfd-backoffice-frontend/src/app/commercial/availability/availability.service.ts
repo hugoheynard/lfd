@@ -14,6 +14,7 @@ import type {
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../../api/api-config';
+import { intentOptions } from '../../shared/gesture-intents';
 
 /**
  * Transport de la **prise de rendez-vous** côté staff : la disponibilité
@@ -75,8 +76,18 @@ export class AvailabilityService {
     return this.request<AppointmentView>('GET', `${this.base}/appointments/${appointmentId}`);
   }
 
-  schedule(payload: StaffBookAppointmentPayload): Promise<CreatedAppointmentResponse> {
-    return this.request<CreatedAppointmentResponse>('POST', `${this.base}/appointments`, payload);
+  /** Pose un rendez-vous, une fois par intention (`Idempotency-Key`). */
+  schedule(
+    payload: StaffBookAppointmentPayload,
+    intentKey: string,
+  ): Promise<CreatedAppointmentResponse> {
+    return firstValueFrom(
+      this.http.post<CreatedAppointmentResponse>(
+        `${this.base}/appointments`,
+        payload,
+        intentOptions(intentKey),
+      ),
+    );
   }
 
   transition(id: string, payload: AppointmentTransitionPayload): Promise<void> {

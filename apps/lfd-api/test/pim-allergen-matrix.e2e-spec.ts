@@ -12,6 +12,7 @@ import { pdfPages } from "../src/platform/pdf/__tests__/pdf-text.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { makeActivatable } from "./pim-sellable.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -89,6 +90,7 @@ async function aProduct(suffix: string): Promise<{ productId: string; defaultId:
     .expect(201);
   const created = await staff()
     .post(PRODUCTS)
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: { fr: `Croissant${suffix}` },
       kind: "daily",
@@ -123,6 +125,7 @@ async function publish(productId: string): Promise<void> {
 async function aDetachedVariant(productId: string): Promise<string> {
   const added = await staff()
     .post(`${PRODUCTS}/${productId}/variants`)
+    .set(INTENT_KEY, freshIntent())
     .send({ name: { fr: "Boîte de 6" }, options: { format: "6" } })
     .expect(201);
   const id = jsonBody<{ id: string }>(added).id;
@@ -185,6 +188,7 @@ describe("GET /pim/allergen-matrix", () => {
     await declare(productId, defaultId, ["AE"]);
     const added = await staff()
       .post(`${PRODUCTS}/${productId}/variants`)
+      .set(INTENT_KEY, freshIntent())
       .send({ name: { fr: "Boîte de 6" }, options: { format: "6" } })
       .expect(201);
     await publish(productId);

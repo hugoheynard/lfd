@@ -12,6 +12,7 @@ import { attachTo, createUser } from "./factories.js";
 import { cardFailed } from "./card-payments.js";
 import { cardGatewayDouble, payByCard, pickupSite, placeOrder } from "./order-factory.js";
 import type { InputJsonObject } from "../src/platform/database/client/internal/prismaNamespace.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -92,7 +93,11 @@ describe("GET /admin/growth/stats", () => {
     await seed("order.placed", "user", "u_pro", PRO_ORDER, { totalCents: 5000, companyId: "c1" });
     await seed("company.declared", "company", "c1", COMPANY_DECLARED, { via: "self" });
     await seed("company.activated", "company", "c1", COMPANY_ACTIVATED);
-    await staff().post("/admin/leads").send({ businessName: "Traiteur" }).expect(201);
+    await staff()
+      .post("/admin/leads")
+      .set(INTENT_KEY, freshIntent())
+      .send({ businessName: "Traiteur" })
+      .expect(201);
 
     const stats = jsonBody<GrowthStatsView>(await staff().get("/admin/growth/stats").expect(200));
     expect(stats.kpis).toEqual({

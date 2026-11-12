@@ -11,5 +11,7 @@ export class BookAppointmentCommand {
     readonly actorEmail: string,
     readonly companyIds: readonly string[],
     readonly payload: BookAppointmentPayload,
+    /** La clé d'intention de l'écran (`Idempotency-Key`) : un rejeu ne refait pas le geste. */
+    readonly intentKey: string,
   ) {}
 }

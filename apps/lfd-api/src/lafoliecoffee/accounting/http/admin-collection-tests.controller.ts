@@ -39,6 +39,8 @@ import {
 import type { CollectionTestBankAccountFile } from "../application/queries/export-collection-test-bank-account.handler.js";
 import type { CollectionTestFile } from "../application/queries/export-collection-test-file.handler.js";
 import type { MandateBankFile } from "../application/queries/export-mandate-bank-file.handler.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 
 /**
  * **Le prélèvement d'essai** — Comptabilité › Prélèvement › « Prélèvement
@@ -72,11 +74,15 @@ export class AdminCollectionTestsController {
     );
   }
 
-  /** Génère et garde le fichier ; 400/409 nommant le refus. */
+  /**
+   * Génère et garde le fichier ; 400/409 nommant le refus. Une fois par
+   * intention (`Idempotency-Key`) : la même clé rend le même essai.
+   */
   @Post()
   async generate(
     @StaffUserId() staffUserId: string,
     @Body(new ZodBody(generateCollectionTestPayloadSchema)) payload: GenerateCollectionTestPayload,
+    @IntentKey() intentKey: string,
   ): Promise<CollectionTestCreatedView> {
     const testId = await this.commands.execute<GenerateCollectionTestCommand, string>(
       new GenerateCollectionTestCommand(
@@ -86,6 +92,7 @@ export class AdminCollectionTestsController {
         payload.sequence,
         payload.remittance,
         staffUserId,
+        intentKey,
       ),
     );
     return { testId };
@@ -168,6 +175,9 @@ export class AdminCollectionTestsController {
   /** « Marqué remboursé » ; 409 s'il n'y a rien à rembourser ou si c'est déjà dit. */
   @Post(":id/refunded")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée, l'essai est déjà marqué remboursé et l'agrégat refuse (409 CollectionTestAlreadyRefundedError) avant toute écriture ni fait",
+  )
   async refunded(
     @StaffUserId() staffUserId: string,
     @Param("id") id: string,

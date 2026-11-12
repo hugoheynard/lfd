@@ -25,6 +25,7 @@ import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { E2E_STAFF_ID, bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 export const DAY_MS = 24 * 60 * 60 * 1000;
 export const ENTITIES = "/admin/accounting/legal-entities";
@@ -64,6 +65,7 @@ export function staff(): ReturnType<E2eContext["asSub"]> {
 export async function entity(): Promise<string> {
   const response = await staff()
     .post(ENTITIES)
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: "La Folie Douce",
       legalForm: "SAS",
@@ -132,6 +134,7 @@ export async function proposedDay(): Promise<string> {
 export function generate(companyId: string, body: Record<string, unknown>) {
   return staff()
     .post(TESTS)
+    .set(INTENT_KEY, freshIntent())
     .send({ companyId, amountCents: 100, sequence: "RCUR", remittance: null, ...body });
 }
 

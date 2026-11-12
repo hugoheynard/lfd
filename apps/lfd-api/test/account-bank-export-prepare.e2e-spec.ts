@@ -17,6 +17,7 @@ import {
   staff,
   useAccountBankExportScene,
 } from "./account-bank-export-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 useAccountBankExportScene();
 
@@ -47,7 +48,7 @@ describe("l'export des comptes destinataires pour la banque", () => {
     await staff()
       .post(`${exportsOf(entityId)}/${exportId}/imported`)
       .expect(409);
-    await staff().post(exportsOf(entityId)).expect(409);
+    await staff().post(exportsOf(entityId)).set(INTENT_KEY, freshIntent()).expect(409);
     const imported = await card(entityId);
     expect(imported).toMatchObject({ toExport: [], inFlightCount: 0, knownCount: 1 });
     expect(imported.accounts[0]?.standing).toMatchObject({ kind: "imported" });

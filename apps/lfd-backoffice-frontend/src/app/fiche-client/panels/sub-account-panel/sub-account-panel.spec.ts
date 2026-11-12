@@ -12,13 +12,14 @@ import { SubAccountPanel } from './sub-account-panel';
 
 interface Wire {
   readonly sent: CreateSubAccountPayload[];
+  readonly keys: string[];
   refuse: HttpErrorResponse | null;
   readonly closed: (string | undefined)[];
   readonly navigated: unknown[][];
 }
 
 function boot(): { fixture: ComponentFixture<SubAccountPanel>; wire: Wire } {
-  const wire: Wire = { sent: [], refuse: null, closed: [], navigated: [] };
+  const wire: Wire = { sent: [], keys: [], refuse: null, closed: [], navigated: [] };
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -36,8 +37,13 @@ function boot(): { fixture: ComponentFixture<SubAccountPanel>; wire: Wire } {
       {
         provide: AdminCompanyHierarchyService,
         useValue: {
-          createSubAccount: (_parent: string, payload: CreateSubAccountPayload) => {
+          createSubAccount: (
+            _parent: string,
+            payload: CreateSubAccountPayload,
+            intentKey: string,
+          ) => {
             wire.sent.push(payload);
+            wire.keys.push(intentKey);
             return wire.refuse === null ? Promise.resolve('child_1') : Promise.reject(wire.refuse);
           },
         } satisfies Partial<Record<keyof AdminCompanyHierarchyService, unknown>>,
@@ -153,5 +159,21 @@ describe('SubAccountPanel', () => {
     );
     expect(wire.closed).toEqual([]);
     expect(wire.navigated).toEqual([]);
+  });
+
+  /** Régression : un double clic créait deux sous-comptes — l'écran renvoie la même clé jusqu'au succès. */
+  it('renvoie la même clé d’intention après un refus, pour la même création', async () => {
+    const { fixture, wire } = boot();
+    wire.refuse = new HttpErrorResponse({ status: 503, error: { message: 'Indisponible.' } });
+    choose(fixture, 'site');
+    name(fixture, 'Chalet des Cimes');
+    submitButton(fixture).click();
+    await settle(fixture);
+    wire.refuse = null;
+    submitButton(fixture).click();
+    await settle(fixture);
+
+    expect(wire.keys).toHaveLength(2);
+    expect(wire.keys[0]).toBe(wire.keys[1]);
   });
 });

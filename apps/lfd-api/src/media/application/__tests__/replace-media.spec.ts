@@ -1,3 +1,4 @@
+import { inMemoryIntents } from "../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { UuidGenerator } from "../../../platform/id/uuid-generator.js";
 import type { WriteTicket } from "../../../platform/journal/scoped-journal.js";
@@ -22,6 +23,10 @@ import { RecordingMediaJournal } from "../../journal/__tests__/recording-media-j
 import { MEDIA_EVENTS, type MediaJournalEntry } from "../../journal/media-journal.js";
 import { ReplaceMediaCommand, ReplaceMediaHandler } from "../replace-media.js";
 import { RecordingDurable } from "./media-durable-doubles.js";
+
+let intentCount = 0;
+/** Une clé d'intention neuve par geste voulu, comme l'écran. */
+const nextKey = (): string => `intent_${(intentCount += 1)}`;
 
 /**
  * Remplacer une image. L'instant n'est comparé qu'à lui-même : il n'est
@@ -149,6 +154,7 @@ function setup(options: { named?: readonly Carrier[]; broken?: boolean; inLibrar
     durable,
     new GestureIds(),
     new FixedClock(AT),
+    inMemoryIntents(),
   );
   return { handler, log, journal, durable, carriers };
 }
@@ -157,7 +163,7 @@ describe("ReplaceMediaHandler", () => {
   it("trace, repointe puis réannonce la NOUVELLE image, dans une seule unité", async () => {
     const { handler, log, journal, durable, carriers } = setup({});
 
-    await handler.execute(new ReplaceMediaCommand(` ${A}`, B, STAFF));
+    await handler.execute(new ReplaceMediaCommand(` ${A}`, B, STAFF, nextKey()));
 
     expect(log).toEqual(["unité:ouverte", "journal", "porteurs", "boîte d'envoi", "unité:validée"]);
     expect(journal.entries).toEqual([
@@ -181,16 +187,28 @@ describe("ReplaceMediaHandler", () => {
   it("trace un remplacement sans porteur, et n'annonce rien", async () => {
     const { handler, journal, durable } = setup({ named: [] });
 
-    await handler.execute(new ReplaceMediaCommand(A, B, STAFF));
+    await handler.execute(new ReplaceMediaCommand(A, B, STAFF, nextKey()));
 
     expect(journal.entries[0]?.payload).toMatchObject({ carriers: 0 });
     expect(durable.facts).toEqual([]);
   });
 
+  /** Régression : un double clic traçait un second remplacement « chez 0 porteur ». */
+  it("rejoué avec la même clé, ne trace ni ne repointe une seconde fois", async () => {
+    const { handler, journal, carriers } = setup({});
+    const command = new ReplaceMediaCommand(A, B, STAFF, nextKey());
+
+    await handler.execute(command);
+    await handler.execute(command);
+
+    expect(journal.entries).toHaveLength(1);
+    expect(carriers.replacements).toHaveLength(1);
+  });
+
   it("refuse en 404 une ancienne image absente du fonds, sans rien écrire", async () => {
     const { handler, log } = setup({ inLibrary: [B] });
 
-    await expect(handler.execute(new ReplaceMediaCommand(A, B, STAFF))).rejects.toThrow(
+    await expect(handler.execute(new ReplaceMediaCommand(A, B, STAFF, nextKey()))).rejects.toThrow(
       MediaNotInLibraryError,
     );
     expect(log).toEqual([]);
@@ -199,7 +217,7 @@ describe("ReplaceMediaHandler", () => {
   it("refuse en 404 une nouvelle image absente du fonds, sans rien écrire", async () => {
     const { handler, log } = setup({ inLibrary: [A] });
 
-    await expect(handler.execute(new ReplaceMediaCommand(A, B, STAFF))).rejects.toThrow(
+    await expect(handler.execute(new ReplaceMediaCommand(A, B, STAFF, nextKey()))).rejects.toThrow(
       MediaNotInLibraryError,
     );
     expect(log).toEqual([]);
@@ -208,19 +226,19 @@ describe("ReplaceMediaHandler", () => {
   it("refuse en 400 de remplacer une image par elle-même, ou par rien", async () => {
     const { handler, log } = setup({});
 
-    await expect(handler.execute(new ReplaceMediaCommand(A, A, STAFF))).rejects.toThrow(
+    await expect(handler.execute(new ReplaceMediaCommand(A, A, STAFF, nextKey()))).rejects.toThrow(
       MediaReplacedBySelfError,
     );
-    await expect(handler.execute(new ReplaceMediaCommand(A, " ", STAFF))).rejects.toThrow(
-      MediaReplacementUrlRequiredError,
-    );
+    await expect(
+      handler.execute(new ReplaceMediaCommand(A, " ", STAFF, nextKey())),
+    ).rejects.toThrow(MediaReplacementUrlRequiredError);
     expect(log).toEqual([]);
   });
 
   it("laisse tomber l'unité quand un porteur échoue — rien n'est annoncé", async () => {
     const { handler, log, durable } = setup({ broken: true });
 
-    await expect(handler.execute(new ReplaceMediaCommand(A, B, STAFF))).rejects.toThrow(
+    await expect(handler.execute(new ReplaceMediaCommand(A, B, STAFF, nextKey()))).rejects.toThrow(
       "vitrine injoignable",
     );
     expect(log).toEqual(["unité:ouverte", "journal", "porteurs"]);

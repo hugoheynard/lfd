@@ -43,6 +43,10 @@ export class ChooseDepartureHandler implements ICommandHandler<ChooseDepartureCo
         throw new DeparturePointNotFoundError(command.pickupAddressId);
       }
       const previousId = await this.reader.chosenPickupAddressId();
+      // Rejouer le geste ne change rien : ni écriture, ni fait au journal.
+      if (previousId === point.pickupAddressId) {
+        return;
+      }
       const choice = DepartureChoice.choose({
         pickupAddressId: point.pickupAddressId,
         at: this.clock.now(),

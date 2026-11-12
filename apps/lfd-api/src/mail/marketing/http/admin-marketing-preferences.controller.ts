@@ -10,6 +10,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface, RequirePermission } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody, ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import { RevealMarketingPreferenceRecipientCommand } from "../application/commands/reveal-marketing-preference-recipient.command.js";
 import { UnsubscribeAddressByStaffCommand } from "../application/commands/unsubscribe-address-by-staff.command.js";
@@ -27,6 +28,7 @@ import {
   type StaffUnsubscribePayload,
   staffUnsubscribePayloadSchema,
 } from "./admin-marketing-preference-payloads.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Les désinscriptions et accords**, vus par le staff (plan
@@ -67,6 +69,9 @@ export class AdminMarketingPreferencesController {
    * espace. `204` quelle que soit l'adresse ; le geste est au journal.
    */
   @Post("unsubscriptions")
+  @Idempotent(
+    "transition : l'adresse ne se désinscrit qu'une fois ; rejouée, rien ne s'écrit au registre et le fait dit « changed: false » — chaque demande du client est tracée, voulu",
+  )
   @HttpCode(204)
   async unsubscribeAddress(
     @Body(new ZodBody(staffUnsubscribePayloadSchema)) payload: StaffUnsubscribePayload,
@@ -79,16 +84,19 @@ export class AdminMarketingPreferencesController {
   /**
    * Cherche les lignes d'une adresse, donnée dans le CORPS : inscrit au
    * journal, même plafond que les révélations (`409` au-delà). Rend
-   * l'identifiant de la recherche.
+   * l'identifiant de la recherche. La clé d'intention de l'écran
+   * (`Idempotency-Key`, obligatoire) fait qu'un double clic ne compte qu'une
+   * consultation.
    */
   @Post("searches")
   @RequirePermission("mail_sends:read")
   async search(
     @Body(new ZodBody(preferenceSearchPayloadSchema)) payload: PreferenceSearchPayload,
     @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<MailPreferenceSearchCreatedView> {
     const id = await this.commands.execute<SearchMarketingPreferencesCommand, string>(
-      new SearchMarketingPreferencesCommand(payload.address, staffUserId),
+      new SearchMarketingPreferencesCommand(payload.address, staffUserId, intentKey),
     );
     return { id };
   }
@@ -114,6 +122,9 @@ export class AdminMarketingPreferencesController {
 
   /** Désinscrit cette ligne à la demande du client ; idempotent. */
   @Post(":id/unsubscription")
+  @Idempotent(
+    "transition : la ligne ne se désinscrit qu'une fois ; rejouée, rien ne s'écrit et le fait dit « changed: false » — chaque demande du client est tracée, voulu",
+  )
   @HttpCode(204)
   async unsubscribe(@Param("id") id: string): Promise<void> {
     await this.commands.execute<UnsubscribeMarketingPreferenceCommand, void>(
@@ -123,14 +134,19 @@ export class AdminMarketingPreferencesController {
 
   /**
    * Révèle l'adresse : inscrit au journal, vaut 5 minutes pour son auteur,
-   * compte dans le plafond du suivi (`409` au-delà de 30 dans l'heure).
+   * compte dans le plafond du suivi (`409` au-delà de 30 dans l'heure). Une
+   * fois par clé d'intention (`Idempotency-Key`, obligatoire).
    */
   @Post(":id/recipient-reveal")
   @HttpCode(204)
   @RequirePermission("mail_sends:read")
-  async reveal(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
+  async reveal(
+    @Param("id") id: string,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+  ): Promise<void> {
     await this.commands.execute<RevealMarketingPreferenceRecipientCommand, void>(
-      new RevealMarketingPreferenceRecipientCommand(id, staffUserId),
+      new RevealMarketingPreferenceRecipientCommand(id, staffUserId, intentKey),
     );
   }
 

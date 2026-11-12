@@ -16,6 +16,7 @@ import type { ShopQuoteView } from "@lfd/contracts";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { onlyVariant, posePromotion, promotionTerms } from "./promotion-fixtures.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const SKU = "VIE-001-1";
 
@@ -90,6 +91,7 @@ describe("le cumul sur demande (§ 16)", () => {
 
     const refused = await staff()
       .post("/admin/promotions")
+      .set(INTENT_KEY, freshIntent())
       .send(promotionTerms({ internalName: "Seule", scope: onlyVariant(SKU) }))
       .expect(409);
 
@@ -109,6 +111,7 @@ describe("le cumul sur demande (§ 16)", () => {
 
     const refused = await staff()
       .post("/admin/promotions")
+      .set(INTENT_KEY, freshIntent())
       .send(basket("Panier seul", false))
       .expect(409);
 

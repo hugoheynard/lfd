@@ -23,6 +23,7 @@ import {
   stubAdminVerifier,
 } from "./decision-carry-over-scene.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const CLIENT = "auth0|report_bareme";
 /** −10 % dès la première pièce. */
@@ -53,6 +54,7 @@ async function detachedWithLadder(): Promise<{ ladderId: string; oldSku: string;
   const ladderId = jsonBody<CreatedIdResponse>(
     await staffOf(ctx)
       .put("/admin/pricing/volume-ladders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         scope: { type: "variant", id: part.oldSku },
         audience: { type: "all", id: null },

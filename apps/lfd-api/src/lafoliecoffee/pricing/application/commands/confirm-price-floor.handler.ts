@@ -1,17 +1,30 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
+import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import { PricingFloor, floorSubjectKey } from "../../domain/entities/pricing-floor.js";
 import { PricingFloorRepository } from "../../domain/ports/pricing-floor.repository.js";
 import { PriceFloorNotFoundError } from "../../domain/pricing-errors.js";
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { referenceCanonicalFor } from "../floor-reference.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { describeFloor, describeScope } from "../../domain/pricing-act.js";
+import { type PricingAct, describeFloor, describeScope } from "../../domain/pricing-act.js";
 import { scopeNameOf } from "../scope-names.js";
 import { ConfirmPriceFloorCommand } from "./confirm-price-floor.command.js";
 import { staffViewer } from "../../../catalog/domain/catalog-viewer.js";
 
+/** Le nom stable du geste, dans le registre des intentions. */
+const CONFIRM_FLOOR_GESTURE = "pricing.confirm-price-floor";
+
+/**
+ * **Confirmer une limite**, une fois par intention : confirmer redate la
+ * limite et écrit un acte `confirmed` — un double clic en écrirait deux. La
+ * clé de l'écran est scellée dans la transaction de la confirmation.
+ *
+ * @throws {GestureInFlightError} la même clé est encore en vol.
+ * @throws {IntentKeyReusedError} la clé a servi pour une autre limite.
+ */
 @CommandHandler(ConfirmPriceFloorCommand)
 export class ConfirmPriceFloorHandler implements ICommandHandler<ConfirmPriceFloorCommand, void> {
   constructor(
@@ -19,6 +32,8 @@ export class ConfirmPriceFloorHandler implements ICommandHandler<ConfirmPriceFlo
     private readonly catalog: ProductCatalogReader,
     private readonly clock: Clock,
     private readonly ids: IdGenerator,
+    private readonly uow: UnitOfWork,
+    private readonly intents: OncePerIntent,
   ) {}
 
   /**
@@ -32,7 +47,23 @@ export class ConfirmPriceFloorHandler implements ICommandHandler<ConfirmPriceFlo
    * effacerait du journal la seule chose qu'on y cherche — quelqu'un a-t-il
    * REVU cette limite, ou traîne-t-elle depuis deux ans ?
    */
-  async execute(command: ConfirmPriceFloorCommand): Promise<void> {
+  execute(command: ConfirmPriceFloorCommand): Promise<void> {
+    return this.intents.runSealed(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: CONFIRM_FLOOR_GESTURE,
+        subject: `${command.scope.type}:${command.scope.id ?? ""}|${command.clientele}`,
+      },
+      NOTHING_TO_REPLAY,
+      (seal) => this.confirm(command, seal),
+    );
+  }
+
+  private async confirm(
+    command: ConfirmPriceFloorCommand,
+    seal: (result: void) => Promise<void>,
+  ): Promise<void> {
     const now = this.clock.now();
     const existing = await this.floors.inForceFor(command.scope, command.clientele, now);
     if (existing === null) {
@@ -48,7 +79,7 @@ export class ConfirmPriceFloorHandler implements ICommandHandler<ConfirmPriceFlo
       now,
       referenceCanonicalFor(state.scope, await this.catalog.all(staffViewer("pro"))),
     );
-    await this.floors.pose(floor, {
+    const act: PricingAct = {
       subjectType: "floor",
       subjectId: floorSubjectKey(state.scope, state.clientele),
       kind: "confirmed",
@@ -58,6 +89,10 @@ export class ConfirmPriceFloorHandler implements ICommandHandler<ConfirmPriceFlo
       summary: describeFloor(state.clientele, state.policy),
       // Le sujet d'une limite est sa PORTÉE : c'est elle qu'on nomme.
       subjectLabel: describeScope(state.scope, await scopeNameOf(state.scope, this.catalog)),
+    };
+    await this.uow.run(async () => {
+      await this.floors.pose(floor, act);
+      await seal();
     });
   }
 }

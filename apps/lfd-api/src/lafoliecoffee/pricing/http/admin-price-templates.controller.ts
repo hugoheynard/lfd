@@ -30,6 +30,8 @@ import { ZodBody, ZodParam } from "../../../platform/shared/http/zod-body.pipe.j
 import { ApplyPriceTemplateCommand } from "../application/commands/apply-price-template.command.js";
 import { ArchivePriceTemplateCommand } from "../application/commands/archive-price-template.command.js";
 import { SavePriceTemplateCommand } from "../application/commands/save-price-template.command.js";
+import { ComposePriceTemplateCommand } from "../application/commands/compose-price-template.command.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { CarryOverPriceTemplateLineCommand } from "../application/commands/carry-over-price-template-line.command.js";
 import { GetPriceTemplateQuery } from "../application/queries/get-price-template.query.js";
 import { ListPriceTemplatesQuery } from "../application/queries/list-price-templates.query.js";
@@ -96,9 +98,10 @@ export class AdminPriceTemplatesController {
   async compose(
     @Body(new ZodBody(savePriceTemplatePayloadSchema)) payload: SavePriceTemplatePayload,
     @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedIdResponse> {
-    const id = await this.commands.execute<SavePriceTemplateCommand, string>(
-      new SavePriceTemplateCommand(null, payload, staffUserId),
+    const id = await this.commands.execute<ComposePriceTemplateCommand, string>(
+      new ComposePriceTemplateCommand(payload, staffUserId, intentKey),
     );
     return { id };
   }
@@ -148,6 +151,9 @@ export class AdminPriceTemplatesController {
    */
   @Post(":id/apply")
   @HttpCode(HttpStatus.CREATED)
+  @Idempotent(
+    "rejouée, la mercuriale posée par le gabarit couvre déjà la période chez ce client : la contrainte d'exclusion la refuse (409 RunningMercurialeError), aucune seconde mercuriale ni acte ; une mercuriale est une seule ligne, atomique",
+  )
   async apply(
     @Param("id") id: string,
     @Body(new ZodBody(applyPriceTemplatePayloadSchema)) payload: ApplyPriceTemplatePayload,

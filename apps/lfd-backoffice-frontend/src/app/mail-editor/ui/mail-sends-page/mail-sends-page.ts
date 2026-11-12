@@ -25,6 +25,7 @@ import { MailSendFilters } from '../mail-send-filters/mail-send-filters';
 import { MailSendPanel, type MailSendPanelData } from '../mail-send-panel/mail-send-panel';
 import { MailSendsTable } from '../mail-sends-table/mail-sends-table';
 import { MailSendsTabs } from '../mail-sends-tabs/mail-sends-tabs';
+import { GestureIntents } from '../../../shared/gesture-intents';
 
 const NOTHING_LISTED: FoldTableEmpty = {
   title: 'Aucun envoi ne correspond',
@@ -71,6 +72,8 @@ const NOTHING_FOUND: FoldTableEmpty = {
 })
 export class MailSendsPage {
   private readonly api = inject(MailSendsService);
+  /** Chaque recherche est une consultation comptée : une clé par adresse, gardée jusqu'au succès. */
+  private readonly intents = new GestureIntents();
   private readonly panels = inject(FoldPanelHostService);
   private readonly permissions = inject(PermissionsStore);
   /** Le retour vers les modèles ne se montre qu'à qui peut les lire. */
@@ -157,7 +160,8 @@ export class MailSendsPage {
     this.searching.set(true);
     this.searchError.set(null);
     try {
-      this.search.set(await this.api.searchByRecipient(address));
+      this.search.set(await this.api.searchByRecipient(address, this.intents.keyFor(address)));
+      this.intents.done(address);
     } catch (error) {
       this.searchError.set(httpErrorMessage(error, 'La recherche n’a pas pu aboutir.'));
     } finally {

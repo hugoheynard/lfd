@@ -21,6 +21,7 @@ import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import type { UploadedPhotoPart } from "../../shared/photo-cards/http/photo-card-http.js";
 import { ReportOrderProblemCommand } from "../application/commands/report-order-problem.command.js";
 import { OrderProblemPhotosUpload, photoBytesOf } from "./order-problem-http.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 
 /**
  * **3 signalements par 10 minutes et par COMPTE** (`demandes-clients.md`,
@@ -52,11 +53,16 @@ export class MyOrderProblemsController {
     @Body(new ZodBody(orderProblemPayloadSchema)) payload: OrderProblemPayload,
     @UploadedFiles() files: readonly UploadedPhotoPart[] | undefined,
     @CurrentUser() principal: Principal,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedIdResponse> {
     const id = await this.commands.execute<ReportOrderProblemCommand, string>(
-      new ReportOrderProblemCommand(orderId, payload, photoBytesOf(files), {
-        userId: principal.userId,
-      }),
+      new ReportOrderProblemCommand(
+        orderId,
+        payload,
+        photoBytesOf(files),
+        { userId: principal.userId },
+        intentKey,
+      ),
     );
     return { id };
   }

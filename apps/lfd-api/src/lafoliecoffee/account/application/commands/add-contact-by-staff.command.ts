@@ -15,5 +15,9 @@ export class AddContactByStaffCommand {
     readonly companyId: string,
     readonly details: ContactDetailsInput,
     readonly role: AssignableRole,
+    /** La fiche du staff qui agit : l'acteur de l'intention. */
+    readonly staffUserId: string,
+    /** La clé d'intention de l'écran (`Idempotency-Key`) : un rejeu n'ajoute pas un second contact. */
+    readonly intentKey: string,
   ) {}
 }

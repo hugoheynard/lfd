@@ -13,6 +13,7 @@ import type request from "supertest";
 import { pngOf } from "./delivery-procedure-scene.js";
 import { jsonBody, type E2eContext } from "./e2e-harness.js";
 import { storageKeys } from "./storage.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /** Staff doublé : le jeton porteur EST le `sub`. */
 export const tokenIsSubject = {
@@ -43,7 +44,11 @@ export async function addNote(
   title: string,
   pair: readonly [Buffer, Buffer] | null,
 ): Promise<string> {
-  const pending = agent.post(notesOf(companyId)).field("title", title).field("body", SECRET_BODY);
+  const pending = agent
+    .post(notesOf(companyId))
+    .set(INTENT_KEY, freshIntent())
+    .field("title", title)
+    .field("body", SECRET_BODY);
   const response = await (
     pair === null
       ? pending

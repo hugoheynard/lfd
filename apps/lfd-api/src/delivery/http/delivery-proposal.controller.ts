@@ -19,6 +19,7 @@ import { LocateDeliveryStopsCommand } from "../application/commands/locate-deliv
 import { GetDeliveryPlacementSuggestionsQuery } from "../application/queries/get-delivery-placement-suggestions.query.js";
 import { GetDeliveryRoundProposalQuery } from "../application/queries/get-delivery-round-proposal.query.js";
 import { TimeDeliveryRoundsQuery } from "../application/queries/time-delivery-rounds.query.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 const dayField = z.string().regex(/^\d{4}-\d{2}-\d{2}$/u, "day attendu au format AAAA-MM-JJ");
 
@@ -68,6 +69,9 @@ export class DeliveryProposalController {
 
   /** Géocode ce qui manque (L7-C9) : un geste, qui sort sur le réseau. */
   @Post("locate")
+  @Idempotent(
+    "rejoué, les adresses sont au cache des géocodages : rien ne sort sur le réseau et rien ne s'écrit",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async locate(@Query(new ZodQuery(dayQuerySchema)) query: DayQuery): Promise<void> {
     await this.commands.execute<LocateDeliveryStopsCommand, void>(
@@ -106,6 +110,7 @@ export class DeliveryProposalController {
    * donc sous le droit de lecture.
    */
   @Post("proposal/time")
+  @Idempotent("une lecture sous POST (la composition est un corps) : rien ne s'écrit")
   @HttpCode(HttpStatus.OK)
   @RequirePermission("delivery_rounds:read")
   time(
@@ -118,6 +123,9 @@ export class DeliveryProposalController {
 
   /** Applique la proposition vue, sous les versions lues : tout ou rien. */
   @Post("proposal")
+  @Idempotent(
+    "par sa propre clé : les versions lues des tournées ; rejouée, les tournées qui tiennent ces commandes ont changé et la proposition est refusée (409 ProposalOutdatedError)",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async apply(
     @Body(new ZodBody(applyDeliveryProposalPayloadSchema)) payload: ApplyDeliveryProposalPayload,

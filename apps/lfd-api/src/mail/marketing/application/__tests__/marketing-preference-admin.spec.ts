@@ -1,3 +1,4 @@
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
@@ -40,6 +41,10 @@ import {
 } from "./marketing-admin-doubles.js";
 import { InMemoryPreferences, ReadablePrint } from "./marketing-doubles.js";
 
+let intentCount = 0;
+/** Une clé d'intention neuve par geste voulu, comme l'écran. */
+const nextKey = (): string => `intent_${(intentCount += 1)}`;
+
 const NOW = new Date(Date.UTC(2026, 0, 1, 12));
 const MINUTE = 60_000;
 const ADDRESS = "colette@halles.fr";
@@ -71,6 +76,7 @@ function world() {
       new FixedIdGenerator("con"),
       clock,
       uow,
+      inMemoryIntents(),
     ),
     recipient: new GetMarketingPreferenceRecipientHandler(ledger, reader, clock),
     search: new SearchMarketingPreferencesHandler(
@@ -82,6 +88,7 @@ function world() {
       new FixedIdGenerator("srch"),
       clock,
       uow,
+      inMemoryIntents(),
     ),
     searchResults: new GetMarketingPreferenceSearchHandler(ledger, reader, clock),
     unsubscribe: new UnsubscribeMarketingPreferenceHandler(preferences, events, clock, uow),
@@ -187,6 +194,18 @@ describe("le registre vu par le staff — lecture (C4)", () => {
 });
 
 describe("le registre vu par le staff — « Afficher l'adresse » (C4)", () => {
+  /** Régression : un double clic sur « Afficher l'adresse » rangeait deux consultations au plafond. */
+  it("rejouée avec la même clé, ne range qu'une consultation", async () => {
+    const w = world();
+    await accepted(w, "pref_a");
+    const command = new RevealMarketingPreferenceRecipientCommand("pref_a", "colette", nextKey());
+
+    await w.reveal.execute(command);
+    await w.reveal.execute(command);
+
+    expect(w.consultations.reveals).toHaveLength(1);
+  });
+
   it("range la consultation par empreinte, publie le fait sans adresse, puis sert l'adresse 5 minutes", async () => {
     const w = world();
     await accepted(w, "pref_a");
@@ -194,7 +213,9 @@ describe("le registre vu par le staff — « Afficher l'adresse » (C4)", () => 
     await expect(
       w.recipient.execute(new GetMarketingPreferenceRecipientQuery("pref_a", "colette")),
     ).rejects.toThrow(MarketingPreferenceRecipientNotRevealedError);
-    await w.reveal.execute(new RevealMarketingPreferenceRecipientCommand("pref_a", "colette"));
+    await w.reveal.execute(
+      new RevealMarketingPreferenceRecipientCommand("pref_a", "colette", nextKey()),
+    );
     const view = await w.recipient.execute(
       new GetMarketingPreferenceRecipientQuery("pref_a", "colette"),
     );
@@ -223,7 +244,9 @@ describe("le registre vu par le staff — « Afficher l'adresse » (C4)", () => 
   it("ne sert l'adresse ni à un collègue, ni après 5 minutes", async () => {
     const w = world();
     await accepted(w, "pref_a");
-    await w.reveal.execute(new RevealMarketingPreferenceRecipientCommand("pref_a", "colette"));
+    await w.reveal.execute(
+      new RevealMarketingPreferenceRecipientCommand("pref_a", "colette", nextKey()),
+    );
 
     await expect(
       w.recipient.execute(new GetMarketingPreferenceRecipientQuery("pref_a", "bruno")),
@@ -240,7 +263,9 @@ describe("le registre vu par le staff — « Afficher l'adresse » (C4)", () => 
     w.consultations.elsewhere.set("colette", MAIL_CONSULTATIONS_PER_HOUR);
 
     await expect(
-      w.reveal.execute(new RevealMarketingPreferenceRecipientCommand("pref_a", "colette")),
+      w.reveal.execute(
+        new RevealMarketingPreferenceRecipientCommand("pref_a", "colette", nextKey()),
+      ),
     ).rejects.toThrow(MailConsultationLimitReachedError);
     expect(w.consultations.reveals).toEqual([]);
     expect(w.events.factTypes()).toEqual([]);
@@ -261,10 +286,14 @@ describe("le registre vu par le staff — « Afficher l'adresse » (C4)", () => 
     await erased(w, "pref_b");
 
     await expect(
-      w.reveal.execute(new RevealMarketingPreferenceRecipientCommand("pref_b", "colette")),
+      w.reveal.execute(
+        new RevealMarketingPreferenceRecipientCommand("pref_b", "colette", nextKey()),
+      ),
     ).rejects.toThrow(MarketingPreferenceAddressErasedError);
     await expect(
-      w.reveal.execute(new RevealMarketingPreferenceRecipientCommand("absent", "colette")),
+      w.reveal.execute(
+        new RevealMarketingPreferenceRecipientCommand("absent", "colette", nextKey()),
+      ),
     ).rejects.toThrow(MarketingPreferenceNotFoundError);
     expect(w.events.factTypes()).toEqual([]);
   });
@@ -349,13 +378,26 @@ describe("le registre vu par le staff — « Désinscrire à la demande du clien
 });
 
 describe("le registre vu par le staff — la recherche par adresse (C4)", () => {
+  /** Régression : un double clic sur « Chercher » rangeait deux recherches au plafond. */
+  it("rejouée avec la même clé, rend la même recherche sans en ranger une autre", async () => {
+    const w = world();
+    await accepted(w, "pref_a");
+    const command = new SearchMarketingPreferencesCommand(ADDRESS, "colette", nextKey());
+
+    const first = await w.search.execute(command);
+    const replayed = await w.search.execute(command);
+
+    expect(replayed).toBe(first);
+    expect(w.consultations.searches).toHaveLength(1);
+  });
+
   it("range l'empreinte et les lignes trouvées, publie le compte sans adresse, et sert le résultat masqué", async () => {
     const w = world();
     await accepted(w, "pref_a");
     await accepted(w, "pref_b", "bruno@halles.fr");
 
     const id = await w.search.execute(
-      new SearchMarketingPreferencesCommand(` ${ADDRESS.toUpperCase()} `, "colette"),
+      new SearchMarketingPreferencesCommand(` ${ADDRESS.toUpperCase()} `, "colette", nextKey()),
     );
     const view = await w.searchResults.execute(
       new GetMarketingPreferenceSearchQuery(id, "colette"),
@@ -385,7 +427,7 @@ describe("le registre vu par le staff — la recherche par adresse (C4)", () => 
     await erased(w, "pref_z");
 
     const id = await w.search.execute(
-      new SearchMarketingPreferencesCommand("zoe@halles.fr", "colette"),
+      new SearchMarketingPreferencesCommand("zoe@halles.fr", "colette", nextKey()),
     );
     const view = await w.searchResults.execute(
       new GetMarketingPreferenceSearchQuery(id, "colette"),
@@ -396,7 +438,9 @@ describe("le registre vu par le staff — la recherche par adresse (C4)", () => 
 
   it("ne se lit que par son auteur, pendant 5 minutes", async () => {
     const w = world();
-    const id = await w.search.execute(new SearchMarketingPreferencesCommand(ADDRESS, "colette"));
+    const id = await w.search.execute(
+      new SearchMarketingPreferencesCommand(ADDRESS, "colette", nextKey()),
+    );
 
     await expect(
       w.searchResults.execute(new GetMarketingPreferenceSearchQuery(id, "bruno")),
@@ -413,11 +457,11 @@ describe("le registre vu par le staff — la recherche par adresse (C4)", () => 
   it("partage le plafond du suivi, et refuse une adresse sans @, sans rien ranger", async () => {
     const w = world();
     await expect(
-      w.search.execute(new SearchMarketingPreferencesCommand("colette", "colette")),
+      w.search.execute(new SearchMarketingPreferencesCommand("colette", "colette", nextKey())),
     ).rejects.toThrow(InvalidPreferenceSearchAddressError);
     w.consultations.elsewhere.set("colette", MAIL_CONSULTATIONS_PER_HOUR);
     await expect(
-      w.search.execute(new SearchMarketingPreferencesCommand(ADDRESS, "colette")),
+      w.search.execute(new SearchMarketingPreferencesCommand(ADDRESS, "colette", nextKey())),
     ).rejects.toThrow(MailConsultationLimitReachedError);
     expect(w.consultations.searches).toEqual([]);
     expect(w.events.factTypes()).toEqual([]);

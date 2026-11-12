@@ -1,3 +1,7 @@
+import { randomUUID } from "node:crypto";
+
+import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import {
   CustomerIdentityPort,
@@ -5,7 +9,10 @@ import {
   type ProvisionedIdentity,
 } from "../../../domain/ports/customer-identity.port.js";
 import { PendingAccessNotFoundError } from "../../../domain/errors/account-errors.js";
-import { PendingInvitationNotFoundError } from "../../../domain/errors/invitation-errors.js";
+import {
+  PasswordLinkAlreadyIssuedError,
+  PendingInvitationNotFoundError,
+} from "../../../domain/errors/invitation-errors.js";
 import { PendingAccessReader } from "../../../domain/ports/pending-access.reader.js";
 import { IssuePasswordLinkCommand } from "../issue-password-link.command.js";
 import { IssuePasswordLinkHandler } from "../issue-password-link.handler.js";
@@ -76,9 +83,13 @@ describe("fabriquer un lien à remettre à la main", () => {
       new RecordingPublisher(),
       journalNames(),
       new RecordingRenewal(),
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
     );
 
-    const link = await handler.execute(new IssuePasswordLinkCommand("usr_1"));
+    const link = await handler.execute(
+      new IssuePasswordLinkCommand("usr_1", null, "fiche-1", randomUUID()),
+    );
 
     expect(link.url).toBe("https://auth/ticket-neuf");
     expect(issued).toEqual(["auth0|abc"]);
@@ -98,11 +109,13 @@ describe("fabriquer un lien à remettre à la main", () => {
       new RecordingPublisher(),
       journalNames(),
       new RecordingRenewal(),
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
     );
 
-    await expect(handler.execute(new IssuePasswordLinkCommand("usr_1"))).rejects.toThrow(
-      PendingAccessNotFoundError,
-    );
+    await expect(
+      handler.execute(new IssuePasswordLinkCommand("usr_1", null, "fiche-1", randomUUID())),
+    ).rejects.toThrow(PendingAccessNotFoundError);
     expect(issued).toEqual([]);
   });
 });
@@ -118,13 +131,17 @@ describe("le lien remis renouvelle l'invitation d'UNE société (§8.1 bis, poin
       publisher,
       journalNames(),
       renewal,
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
     );
   }
 
   it("renouvelle la société désignée, à l'instant de l'horloge", async () => {
     const renewal = new RecordingRenewal();
 
-    await handlerWith(renewal).execute(new IssuePasswordLinkCommand("usr_1", "cmp_b"));
+    await handlerWith(renewal).execute(
+      new IssuePasswordLinkCommand("usr_1", "cmp_b", "fiche-1", randomUUID()),
+    );
 
     expect(renewal.renewed).toEqual([{ userId: "usr_1", companyId: "cmp_b", at: NOW }]);
   });
@@ -132,7 +149,9 @@ describe("le lien remis renouvelle l'invitation d'UNE société (§8.1 bis, poin
   it("sans société désignée, laisse l'adaptateur prendre celle que la file affiche", async () => {
     const renewal = new RecordingRenewal();
 
-    await handlerWith(renewal).execute(new IssuePasswordLinkCommand("usr_1"));
+    await handlerWith(renewal).execute(
+      new IssuePasswordLinkCommand("usr_1", null, "fiche-1", randomUUID()),
+    );
 
     expect(renewal.renewed).toEqual([{ userId: "usr_1", companyId: null, at: NOW }]);
   });
@@ -142,9 +161,33 @@ describe("le lien remis renouvelle l'invitation d'UNE société (§8.1 bis, poin
     const publisher = new RecordingPublisher();
     const handler = handlerWith(new RecordingRenewal(null), publisher);
 
-    await expect(handler.execute(new IssuePasswordLinkCommand("usr_1", "cmp_x"))).rejects.toThrow(
-      PendingInvitationNotFoundError,
-    );
+    await expect(
+      handler.execute(new IssuePasswordLinkCommand("usr_1", "cmp_x", "fiche-1", randomUUID())),
+    ).rejects.toThrow(PendingInvitationNotFoundError);
     expect(publisher.traced).toEqual([]);
+  });
+});
+
+describe("un lien par intention, jamais gardé", () => {
+  /** Régression : un double clic fabriquait deux liens chez le fournisseur d'identité. */
+  it("le rejeu de la même clé est refusé en 409, sans second lien", async () => {
+    const issued: string[] = [];
+    const handler = new IssuePasswordLinkHandler(
+      reader("auth0|abc"),
+      identity("https://auth/ticket-neuf", issued),
+      { now: () => new Date(0) },
+      new RecordingPublisher(),
+      journalNames(),
+      new RecordingRenewal(),
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
+    );
+    const key = randomUUID();
+
+    await handler.execute(new IssuePasswordLinkCommand("usr_1", null, "fiche-1", key));
+    await expect(
+      handler.execute(new IssuePasswordLinkCommand("usr_1", null, "fiche-1", key)),
+    ).rejects.toBeInstanceOf(PasswordLinkAlreadyIssuedError);
+    expect(issued).toHaveLength(1);
   });
 });

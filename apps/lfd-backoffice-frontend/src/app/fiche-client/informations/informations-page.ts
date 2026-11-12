@@ -59,6 +59,7 @@ import { frenchDay, kbisAgeNote, kbisAgeTone } from '../../comptes-clients/kbis-
 import { parisToday } from '../../shared/paris-today';
 import { kbisAgeOf } from '@lfd/contracts';
 import { UncoveredDeliveryAddresses } from '../uncovered-delivery-addresses/uncovered-delivery-addresses';
+import { watchCompanySubjects } from '../../comptes-clients/company-cache/company-subjects';
 
 /**
  * Fiche **détail** d'un compte client (staff) — reflète l'**état d'activation**
@@ -314,6 +315,10 @@ export class InformationsPage {
     // Lu au `snapshot` : la route ne change pas sous la page, sauf à la
     // création — et là c'est nous qui la réglons.
     void this.fiche.start(this.route.snapshot.paramMap.get('id'));
+    // Un compte changé ailleurs : la fiche se relit en place. Une ouverture
+    // en cours de saisie n'a rien à relire.
+    const draft = inject(FicheClientStore).draft;
+    watchCompanySubjects(['companies'], () => (draft() ? Promise.resolve() : this.fiche.reload()));
   }
 
   /**

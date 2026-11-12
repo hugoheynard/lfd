@@ -35,6 +35,10 @@ import {
 import { CONTACT_AUDIENCE_OPTIONS } from '../contact-audience';
 import { contactLangOf, langName, langToggleOptions, type ContactLang } from '../contact-langs';
 import { ContactService } from '../contact.service';
+import { GestureIntents } from '../../../shared/gesture-intents';
+
+/** Le sujet de l'intention : une seule création par dialogue ouvert. */
+const CREATE_PHONE_INTENT = 'create-phone';
 
 /** Ajouter (`phone` absent) ou corriger un numéro ; en lecture seule sans le droit d'écrire. */
 export interface ContactPhoneDialogData {
@@ -82,6 +86,11 @@ export class ContactPhoneDialog implements FoldPanelContent<ContactPhoneDialogDa
 
   private readonly api = inject(ContactService);
   private readonly panel = inject(FoldPanelRef);
+  /**
+   * L'intention de créer le numéro : une clé tirée au premier envoi, renvoyée jusqu'au
+   * succès — un double clic ne crée pas deux numéros.
+   */
+  private readonly intents = new GestureIntents();
 
   protected readonly labels = signal<Record<ContactLang, string>>({ fr: '', en: '', it: '' });
   protected readonly number = signal('');
@@ -206,10 +215,14 @@ export class ContactPhoneDialog implements FoldPanelContent<ContactPhoneDialogDa
     if (!this.canSubmit() || payload === null) return;
     const phone = this.data().phone;
     await this.write(
-      () =>
-        phone === undefined
-          ? this.api.createPhone(payload)
-          : this.api.updatePhone(phone.id, payload),
+      async () => {
+        if (phone !== undefined) {
+          await this.api.updatePhone(phone.id, payload);
+          return;
+        }
+        await this.api.createPhone(payload, this.intents.keyFor(CREATE_PHONE_INTENT));
+        this.intents.done(CREATE_PHONE_INTENT);
+      },
       'saved',
       "Le numéro n'a pas pu être enregistré.",
     );

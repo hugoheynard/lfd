@@ -22,6 +22,7 @@ import { deliverAsFacts } from "./catalog-facts-delivery.js";
 import { snapshotOf } from "./catalog-ingest-fixtures.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /** L'origine de la boutique, réglable par cas — `null` : non configurée. */
 const SHOP_ORIGIN = "https://boutique.e2e.test";
@@ -61,6 +62,7 @@ async function aSubscriberWithACatalogue(
     await ctx
       .asSub(E2E_STAFF_SUB)
       .post("/admin/vitrine/subscribers")
+      .set(INTENT_KEY, freshIntent())
       .send({
         name: "Agence du site",
         endpointUrl: "https://agence.e2e.test/hook",

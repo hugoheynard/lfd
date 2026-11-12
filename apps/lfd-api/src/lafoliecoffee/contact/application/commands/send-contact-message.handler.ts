@@ -14,6 +14,15 @@ import { RequestReasonRepository } from "../../domain/ports/request-reason.repos
 import { CustomerRequestMail } from "../services/customer-request-mail.service.js";
 import { offeredReason } from "./offered-reason.js";
 import { SendContactMessageCommand } from "./send-contact-message.command.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
+import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import {
+  customerIntentActor,
+  VISITOR_INTENT_ACTOR,
+} from "../../../shared/intent/customer-intent-actor.js";
+
+/** Le nom stable du geste, dans le registre des intentions. */
+const SEND_MESSAGE_GESTURE = "contact.send-message";
 
 /**
  * Reçoit un message « Nous écrire » — une demande `contact`
@@ -31,6 +40,8 @@ import { SendContactMessageCommand } from "./send-contact-message.command.js";
  * @sans-journal ce n'est pas un acte du staff, et la charge porterait des
  * données personnelles qui s'anonymisent à douze mois ; le traitement, lui,
  * est journalisé.
+ *
+ * Un envoi part une fois par intention, visiteur compris (cf. `execute`).
  */
 @CommandHandler(SendContactMessageCommand)
 export class SendContactMessageHandler implements ICommandHandler<SendContactMessageCommand, void> {
@@ -45,9 +56,39 @@ export class SendContactMessageHandler implements ICommandHandler<SendContactMes
     private readonly audiences: ContactSenderAudience,
     private readonly uow: UnitOfWork,
     private readonly mail: CustomerRequestMail,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: SendContactMessageCommand): Promise<void> {
+  /**
+   * Chaque envoi passe sous sa clé d'intention : un double envoi ne dépose
+   * pas deux demandes. L'acteur est le client résolu en base ; pour un
+   * visiteur, un littéral (plan `documentation/ops/plan-idempotence-des-ecritures.md`,
+   * § 7) — le sujet porte alors l'empreinte de la clé et du contenu, si bien
+   * qu'une clé rejouée sur un autre message est refusée, jamais rendue.
+   */
+  execute(command: SendContactMessageCommand): Promise<void> {
+    const { sender, intentKey } = command;
+    const intent =
+      sender === null
+        ? {
+            actorId: VISITOR_INTENT_ACTOR,
+            key: intentKey,
+            gesture: SEND_MESSAGE_GESTURE,
+            subject: intentSubject("visitor", intentKey, command.payload),
+          }
+        : {
+            actorId: customerIntentActor(sender.userId),
+            key: intentKey,
+            gesture: SEND_MESSAGE_GESTURE,
+            subject: intentSubject(sender.companyId ?? "personal", command.payload),
+          };
+    return this.intents.runSealed(intent, NOTHING_TO_REPLAY, (seal) => this.send(command, seal));
+  }
+
+  private async send(
+    command: SendContactMessageCommand,
+    seal: (result: void) => Promise<void>,
+  ): Promise<void> {
     const { payload, sender } = command;
     if (trapIsFilled(payload.lfd_trap)) {
       // De quoi reconnaître une vague (objet, taille, IP tronquée) — jamais
@@ -74,6 +115,7 @@ export class SendContactMessageHandler implements ICommandHandler<SendContactMes
     await this.uow.run(async () => {
       await this.requests.save(request);
       await this.mail.request(received);
+      await seal();
     });
     this.events.publish(received);
   }

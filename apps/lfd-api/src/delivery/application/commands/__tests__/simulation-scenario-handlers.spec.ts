@@ -1,3 +1,4 @@
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
@@ -24,6 +25,10 @@ import { RecordSimulationScenarioHandler } from "../record-simulation-scenario.h
 import { ReplaceSimulationScenarioCommand } from "../replace-simulation-scenario.command.js";
 import { ReplaceSimulationScenarioHandler } from "../replace-simulation-scenario.handler.js";
 import { InMemorySimulationScenarios, scenarioNamed, SIMULATION } from "./simulation-doubles.js";
+
+let intentCount = 0;
+/** Une clé d'intention neuve par geste voulu, comme l'écran. */
+const nextKey = (): string => `intent_${(intentCount += 1)}`;
 
 const NOW = new Date(0);
 const UNREADABLE = { readable: false, reason: "stops : au moins un arrêt" } as const;
@@ -54,6 +59,7 @@ function world(...existing: Parameters<typeof scenarioNamed>[]) {
       clock,
       events,
       uow,
+      inMemoryIntents(),
     ),
     archive: new ArchiveSimulationScenarioHandler(scenarios, directory, clock, events, uow),
     list: new ListSimulationScenariosHandler(scenarios.reader),
@@ -130,10 +136,25 @@ describe("les scénarios du simulateur (L9-C7)", () => {
     });
   });
 
+  /** Régression : un remplacement rejoué à l'identique réécrivait le scénario et un fait au journal. */
+  it("rejoué à l'identique, le remplacement n'écrit rien et ne trace rien", async () => {
+    const w = world(["sc_1", "Mardi"]);
+    const command = new ReplaceSimulationScenarioCommand("sc_1", save("Mercredi"), "staff_2");
+
+    await w.replace.execute(command);
+    await w.replace.execute(command);
+
+    expect(w.events.traced).toHaveLength(1);
+  });
+
   it("garder son propre nom en remplaçant n'est pas un doublon", async () => {
     const w = world(["sc_1", "Mardi"]);
+    // Un contenu changé : reposer le même nom ET le même contenu ne change rien, et ne trace rien.
+    const bigger = { ...SIMULATION, vehicles: ["Kangoo", "Trafic"] };
 
-    await w.replace.execute(new ReplaceSimulationScenarioCommand("sc_1", save("Mardi"), "staff_2"));
+    await w.replace.execute(
+      new ReplaceSimulationScenarioCommand("sc_1", { name: "Mardi", scenario: bigger }, "staff_2"),
+    );
 
     expect(w.events.traced[0]?.journalFact().payload).toMatchObject({ renamedFrom: null });
   });
@@ -149,7 +170,9 @@ describe("les scénarios du simulateur (L9-C7)", () => {
   it("duplique sous le premier nom de copie libre, et trace la source", async () => {
     const w = world(["sc_1", "Mardi"], ["sc_2", "Mardi (copie)"]);
 
-    const id = await w.duplicate.execute(new DuplicateSimulationScenarioCommand("sc_1", "staff_2"));
+    const id = await w.duplicate.execute(
+      new DuplicateSimulationScenarioCommand("sc_1", "staff_2", nextKey()),
+    );
 
     const copy = await w.get.execute(new GetSimulationScenarioQuery(id));
     expect(copy).toMatchObject({ name: "Mardi (copie 2)", scenario: SIMULATION });
@@ -157,6 +180,18 @@ describe("les scénarios du simulateur (L9-C7)", () => {
       subjectLabel: "Mardi (copie 2)",
       source: { id: "sc_1", name: "Mardi" },
     });
+  });
+
+  /** Régression : un double clic sur « Dupliquer » faisait deux copies. */
+  it("rejouée avec la même clé, la duplication rend la même copie sans en faire une autre", async () => {
+    const w = world(["sc_1", "Mardi"]);
+    const command = new DuplicateSimulationScenarioCommand("sc_1", "staff_2", nextKey());
+
+    const first = await w.duplicate.execute(command);
+    const replayed = await w.duplicate.execute(command);
+
+    expect(replayed).toBe(first);
+    expect(w.events.traced).toHaveLength(1);
   });
 
   it("archive : le scénario sort de la liste et ne se rouvre plus", async () => {
@@ -182,7 +217,7 @@ describe("les scénarios du simulateur (L9-C7)", () => {
       w.replace.execute(new ReplaceSimulationScenarioCommand("sc_1", save("X"), "staff_2")),
     ).rejects.toThrow(SimulationScenarioNotFoundError);
     await expect(
-      w.duplicate.execute(new DuplicateSimulationScenarioCommand("sc_1", "staff_2")),
+      w.duplicate.execute(new DuplicateSimulationScenarioCommand("sc_1", "staff_2", nextKey())),
     ).rejects.toThrow(SimulationScenarioNotFoundError);
   });
 
@@ -215,7 +250,7 @@ describe("les scénarios du simulateur (L9-C7)", () => {
       const w = world(["sc_1", "Mardi", UNREADABLE]);
 
       await expect(
-        w.duplicate.execute(new DuplicateSimulationScenarioCommand("sc_1", "staff_2")),
+        w.duplicate.execute(new DuplicateSimulationScenarioCommand("sc_1", "staff_2", nextKey())),
       ).rejects.toThrow(SimulationScenarioUnreadableError);
     });
   });

@@ -15,6 +15,7 @@ import type {
 
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 let ctx: E2eContext;
 
@@ -61,7 +62,11 @@ const NO_COLORS = {
 } as const;
 
 async function create(label: string): Promise<string> {
-  const response = await staff().post("/admin/sites").send(place(label)).expect(201);
+  const response = await staff()
+    .post("/admin/sites")
+    .set(INTENT_KEY, freshIntent())
+    .send(place(label))
+    .expect(201);
   return jsonBody<CreatedPickupResponse>(response).id;
 }
 
@@ -69,6 +74,7 @@ async function create(label: string): Promise<string> {
 async function createWithGps(label: string): Promise<string> {
   const response = await staff()
     .post("/admin/sites")
+    .set(INTENT_KEY, freshIntent())
     .send({ ...place(label), gps: { lat: 45.45, lng: 6.98 } })
     .expect(201);
   return jsonBody<CreatedPickupResponse>(response).id;
@@ -329,6 +335,7 @@ describe("admin/sites — le droit", () => {
     await ctx
       .asSub("staff-reglages")
       .post("/admin/pickup-addresses")
+      .set(INTENT_KEY, freshIntent())
       .send(place("Val Village"))
       .expect(201);
   });

@@ -60,7 +60,10 @@ export class UpdatePickupAddressHandler implements ICommandHandler<
       // Absent = inchangé, de même : un onglet ouvert avant le champ n'efface
       // pas une position saisie.
       const position = gps === undefined ? current.gps : gps;
-      site.revise(placeOf(fields, resolved, position));
+      // Rejouer le geste ne change rien : ni écriture, ni fait, ni purge.
+      if (!site.revise(placeOf(fields, resolved, position))) {
+        return;
+      }
       await this.sites.save(site);
       const written = writeOf(fields, resolved, position);
       await this.events.publishTraced(new PickupAddressUpdatedEvent(command.id, written));

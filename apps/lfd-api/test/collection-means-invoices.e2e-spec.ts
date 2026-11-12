@@ -34,6 +34,7 @@ import {
   staff,
   useCollectionReturnScene,
 } from "./collection-returns-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 useCollectionReturnScene();
 
@@ -74,7 +75,11 @@ async function issue(entityId: string): Promise<void> {
 /** Le lot du 1er, deux heures après la clôture. */
 async function constitute(entityId: string, expected: 201 | 409): Promise<void> {
   clock.set(new Date(closesAt.getTime() + 2 * HOUR_MS));
-  await staff().post(`${COLLECTION}/batches`).send({ legalEntityId: entityId }).expect(expected);
+  await staff()
+    .post(`${COLLECTION}/batches`)
+    .set(INTENT_KEY, freshIntent())
+    .send({ legalEntityId: entityId })
+    .expect(expected);
   await ctx.drain();
 }
 

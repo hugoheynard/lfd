@@ -24,6 +24,7 @@ import { WorkspaceCatalogue } from '../shared/workspace-rail/workspaces';
 import { provideWorkspaceRail } from '../shared/workspace-rail/workspace-rail.store';
 import { ClientSheetStore } from './client-sheet.store';
 import { CompanyDetailStore } from '../comptes-clients/company-cache/company-detail.store';
+import { watchCompanySubjects } from '../comptes-clients/company-cache/company-subjects';
 import { CompteChiffres } from '../shared/compte-chiffres/compte-chiffres';
 
 /**
@@ -227,6 +228,10 @@ export class FicheClientShell {
       this.details.forget(id);
       void this.store.load(id);
     });
+    // L'en-tête et le tableau de bord suivent le compte ET ses commandes (le
+    // CA, les dernières commandes, les paniers) : un geste fait ailleurs les
+    // relit sans démonter la fiche.
+    watchCompanySubjects(['companies', 'orders-all'], () => this.store.refresh());
   }
 
   protected isPinned(): boolean {

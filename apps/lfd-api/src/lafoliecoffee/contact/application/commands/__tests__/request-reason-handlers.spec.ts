@@ -13,17 +13,51 @@ import { CreateRequestReasonHandler } from "../create-request-reason.handler.js"
 import { ReviseRequestReasonCommand } from "../revise-request-reason.command.js";
 import { ReviseRequestReasonHandler } from "../revise-request-reason.handler.js";
 import { MemoryReasons } from "./contact-doubles.js";
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 
 describe("Les motifs — créer, réviser, archiver", () => {
+  /** Régression : un double clic créait deux motifs identiques. */
+  it("rejouée sous la même clé, la création rend le même motif sans en créer un second", async () => {
+    const reasons = new MemoryReasons();
+    const handler = new CreateRequestReasonHandler(
+      reasons,
+      new FixedIdGenerator("r"),
+      new FixedClock(AT),
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
+    );
+    const key = randomUUID();
+    const command = (): CreateRequestReasonCommand =>
+      new CreateRequestReasonCommand(
+        { ...CONTACT_SETTINGS, kind: "order_problem" },
+        "staff_1",
+        key,
+      );
+
+    const first = await handler.execute(command());
+    const replayed = await handler.execute(command());
+
+    expect(replayed).toBe(first);
+    expect(reasons.saved).toHaveLength(1);
+  });
+
   it("crée un motif dans son onglet et rend son id", async () => {
     const reasons = new MemoryReasons();
     const handler = new CreateRequestReasonHandler(
       reasons,
       new FixedIdGenerator("r"),
       new FixedClock(AT),
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
     );
     const id = await handler.execute(
-      new CreateRequestReasonCommand({ ...CONTACT_SETTINGS, kind: "order_problem" }),
+      new CreateRequestReasonCommand(
+        { ...CONTACT_SETTINGS, kind: "order_problem" },
+        "staff_1",
+        randomUUID(),
+      ),
     );
     expect(id).toBe("r_000001");
     expect(reasons.saved[0]?.kind).toBe("order_problem");
@@ -35,10 +69,16 @@ describe("Les motifs — créer, réviser, archiver", () => {
       reasons,
       new FixedIdGenerator("r"),
       new FixedClock(AT),
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
     );
     await expect(
       handler.execute(
-        new CreateRequestReasonCommand({ ...CONTACT_SETTINGS, label: { fr: "", en: "x", it: "" } }),
+        new CreateRequestReasonCommand(
+          { ...CONTACT_SETTINGS, label: { fr: "", en: "x", it: "" } },
+          "staff_1",
+          randomUUID(),
+        ),
       ),
     ).rejects.toThrow(RequestReasonLabelMissingError);
     expect(reasons.saved).toHaveLength(0);

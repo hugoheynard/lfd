@@ -48,6 +48,15 @@ export class GeneralOrderCutoffRule {
   redefine(request: GeneralOrderCutoffRequest): GeneralOrderCutoffRule {
     return new GeneralOrderCutoffRule(this.id, termsOf(request));
   }
+
+  /** La règle dit-elle autre chose que `other` ? Redire la même règle ne change rien. */
+  differsFrom(other: GeneralOrderCutoffRule): boolean {
+    return (
+      this.terms.daysBefore !== other.terms.daysBefore ||
+      this.terms.time !== other.terms.time ||
+      this.terms.graceMinutes !== other.terms.graceMinutes
+    );
+  }
 }
 
 function termsOf(request: GeneralOrderCutoffRequest): GeneralOrderCutoffTerms {

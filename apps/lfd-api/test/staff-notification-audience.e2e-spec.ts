@@ -32,6 +32,7 @@ import { departedStop, DOOR_ROLE } from "./delivery-handover-scene.js";
 import { ADMIN_VERIFIER_OVERRIDE, forgetCustomer } from "./delivery-rounds-scene.js";
 import { forgetRoutingScene } from "./delivery-routing-scene.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 /** L'envoi Web Push, enregistré : chaque notice, et les appareils visés. */
 class RecordingPushSender extends StaffPushSender {
@@ -99,6 +100,7 @@ async function decisionRung() {
   const { roundId, stopId } = await departedStop(ctx, paul);
   await paul.agent
     .post(`${MY_ROUND}/${roundId}/incidents`)
+    .set(INTENT_KEY, freshIntent())
     .field("family", "doorstep")
     .field("reason", "nobody_present")
     .field("note", "")

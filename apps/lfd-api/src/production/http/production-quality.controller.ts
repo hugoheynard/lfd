@@ -28,6 +28,7 @@ import type { Response } from "express";
 
 import { AdminSurface, RequirePermission } from "../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
+import { IntentKey } from "../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody, ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import type { StoredDocument } from "../../platform/storage/document-store.js";
 import { DepositQualityPhotoCommand } from "../application/commands/deposit-quality-photo.command.js";
@@ -100,16 +101,21 @@ export class ProductionQualityController {
     return serveQualityPhoto(res, photo);
   }
 
-  /** Déposer UNE photo, dès qu'elle est prise (D8) — rend son `uploadId`. */
+  /**
+   * Déposer UNE photo, dès qu'elle est prise (D8) — rend son `uploadId`. Une
+   * clé d'intention par photo (`Idempotency-Key`, obligatoire) : un envoi
+   * rejoué ne la dépose qu'une fois.
+   */
   @Post("photos")
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(qualityPhotoUpload())
   async deposit(
     @UploadedFile() file: UploadedQualityPhoto | undefined,
     @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<QualityPhotoUploaded> {
     const uploadId = await this.commands.execute<DepositQualityPhotoCommand, string>(
-      new DepositQualityPhotoCommand(file?.buffer ?? null, staffUserId),
+      new DepositQualityPhotoCommand(file?.buffer ?? null, staffUserId, intentKey),
     );
     return { uploadId };
   }

@@ -31,6 +31,7 @@ import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.
 import { addBillingAddress, attachTo, createCompany, createUser } from "./factories.js";
 import { cardPaid } from "./card-payments.js";
 import { cardGatewayDouble, pickupSite, placeOrder } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const ENTITIES = "/admin/accounting/legal-entities";
 const STAFF = "staff-e2e";
@@ -88,6 +89,7 @@ async function entity(): Promise<void> {
   const id = jsonBody<{ id: string }>(
     await staff()
       .post(ENTITIES)
+      .set(INTENT_KEY, freshIntent())
       .send({
         name: "La Folie Douce",
         legalForm: "SAS",

@@ -27,6 +27,7 @@ import {
 } from "./client-notes-scene.js";
 import { bootstrapE2e, E2E_STAFF_ID, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 let ctx: E2eContext;
 let companyId: string;
@@ -60,7 +61,11 @@ describe("le mur", () => {
 
     await admin().get(`${notes}/${foreign}/photo`).expect(404);
     await admin().get(`${notes}/${foreign}/thumbnail`).expect(404);
-    await admin().patch(`${notes}/${foreign}`).field("title", "Intrus").expect(404);
+    await admin()
+      .patch(`${notes}/${foreign}`)
+      .set(INTENT_KEY, freshIntent())
+      .field("title", "Intrus")
+      .expect(404);
     await admin().delete(`${notes}/${foreign}`).expect(404);
     await admin()
       .put(`${notes}/order`)
@@ -84,7 +89,7 @@ describe("les permissions", () => {
 
       await agent.get(notes).expect(403);
       await agent.get(`${notes}/${noteId}/thumbnail`).expect(403);
-      await agent.post(notes).field("title", "Intrus").expect(403);
+      await agent.post(notes).set(INTENT_KEY, freshIntent()).field("title", "Intrus").expect(403);
     },
   );
 
@@ -101,7 +106,11 @@ describe("le journal", () => {
   it("chaque geste laisse un fait nominatif, sans titre, description ni clé de photo", async () => {
     const first = await addNote(admin(), companyId, SECRET_TITLE, [PHOTO, THUMBNAIL]);
     const second = await addNote(admin(), companyId, "Rappel", null);
-    await admin().patch(`${notes}/${second}`).field("title", SECRET_TITLE).expect(204);
+    await admin()
+      .patch(`${notes}/${second}`)
+      .set(INTENT_KEY, freshIntent())
+      .field("title", SECRET_TITLE)
+      .expect(204);
     await admin()
       .put(`${notes}/order`)
       .send({ noteIds: [first, second] })

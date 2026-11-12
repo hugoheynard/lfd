@@ -475,7 +475,13 @@ async function packIntoContainers(
   for (const request of containers) {
     opened.push(
       await context.commands.execute<OpenPackingContainerCommand, string>(
-        new OpenPackingContainerCommand(serviceDay, order.orderId, request, SEED_STAFF_SUB),
+        new OpenPackingContainerCommand(
+          serviceDay,
+          order.orderId,
+          request,
+          SEED_STAFF_SUB,
+          randomUUID(),
+        ),
       ),
     );
   }

@@ -11,6 +11,7 @@ import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { UpdateOrderOpeningCommand } from "../application/commands/update-order-opening.command.js";
 import { GetOrderOpeningQuery } from "../application/queries/get-order-opening.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Réglage **staff** de l'ouverture du e-commerce (« Réglages › Commandes ›
@@ -35,6 +36,9 @@ export class AdminOrderOpeningController {
 
   @Patch()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose un réglage : rejouée, la même requête trouve le réglage en vigueur (OrderOpening.changes) et ne l'écrit, ne le journalise ni ne purge",
+  )
   async update(
     @Body(new ZodBody(orderOpeningPatchSchema)) patch: OrderOpeningPatch,
     @StaffUserId() staffUserId: string,

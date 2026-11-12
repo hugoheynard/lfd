@@ -17,6 +17,7 @@ import type {
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
+import { intentOptions } from '../shared/gesture-intents';
 
 const ROUNDS = `${B2B_API_BASE}/admin/delivery/rounds`;
 
@@ -84,8 +85,9 @@ export class DeliveryRoundsService {
     return firstValueFrom(this.http.get<DeliveryCompositionGapsView>(`${ROUNDS}/composition-gaps`));
   }
 
-  async open(payload: OpenDeliveryRoundPayload): Promise<void> {
-    await firstValueFrom(this.http.post(ROUNDS, payload));
+  /** `intentKey` : la clé du geste — un double clic n'ouvre pas un second passage. */
+  async open(payload: OpenDeliveryRoundPayload, intentKey: string): Promise<void> {
+    await firstValueFrom(this.http.post(ROUNDS, payload, intentOptions(intentKey)));
   }
 
   async assign(roundId: string, payload: AssignDeliveryStopPayload): Promise<void> {

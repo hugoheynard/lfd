@@ -26,6 +26,7 @@ import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { invoicedPayer, setUpEntity } from "./collection-returns-scene.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const HOUR_MS = 60 * 60 * 1000;
 const COLLECTION = "/admin/accounting/collection";
@@ -84,7 +85,11 @@ async function issueMonthlyInvoice(entityId: string): Promise<void> {
 /** Lot du 1er, avis partis, fichier téléchargé, lot déposé : rend son id. */
 async function depositedBatch(entityId: string): Promise<string> {
   clock.set(new Date(closesAt.getTime() + 2 * HOUR_MS));
-  await staff().post(`${COLLECTION}/batches`).send({ legalEntityId: entityId }).expect(201);
+  await staff()
+    .post(`${COLLECTION}/batches`)
+    .set(INTENT_KEY, freshIntent())
+    .send({ legalEntityId: entityId })
+    .expect(201);
   await ctx.drain();
   const batch = await ctx.prisma.collectionBatch.findFirstOrThrow({
     where: { status: "constituted" },
@@ -117,7 +122,11 @@ describe("« La banque a rejeté ce fichier »", () => {
     const orders = await ctx.prisma.orderCollection.findMany();
     expect(orders.map((row) => [row.state, row.batchId])).toEqual([["due", null]]);
 
-    await staff().post(`${COLLECTION}/batches`).send({ legalEntityId: entityId }).expect(201);
+    await staff()
+      .post(`${COLLECTION}/batches`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ legalEntityId: entityId })
+      .expect(201);
     await ctx.drain();
 
     const batches = await ctx.prisma.collectionBatch.findMany({
@@ -212,7 +221,11 @@ describe("« La banque a rejeté ce fichier »", () => {
     await invoicedPayer(ctx, staff, entityId, closesAt);
     await issueMonthlyInvoice(entityId);
     clock.set(new Date(closesAt.getTime() + 2 * HOUR_MS));
-    await staff().post(`${COLLECTION}/batches`).send({ legalEntityId: entityId }).expect(201);
+    await staff()
+      .post(`${COLLECTION}/batches`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ legalEntityId: entityId })
+      .expect(201);
     await ctx.drain();
     const prepared = await ctx.prisma.collectionBatch.findFirstOrThrow();
     await reject(prepared.id).expect(409);
@@ -269,7 +282,11 @@ describe("la base tient la transition", () => {
     await invoicedPayer(ctx, staff, entityId, closesAt);
     await issueMonthlyInvoice(entityId);
     clock.set(new Date(closesAt.getTime() + 2 * HOUR_MS));
-    await staff().post(`${COLLECTION}/batches`).send({ legalEntityId: entityId }).expect(201);
+    await staff()
+      .post(`${COLLECTION}/batches`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ legalEntityId: entityId })
+      .expect(201);
     await ctx.drain();
     const { id } = await ctx.prisma.collectionBatch.findFirstOrThrow();
     const rejection = {

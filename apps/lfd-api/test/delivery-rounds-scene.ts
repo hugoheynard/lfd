@@ -20,6 +20,7 @@ import { CustomerRole } from "../src/platform/database/client/client.js";
 import { E2E_STAFF_ID, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { placeOrder, placeOrderForCustomer, type OrderLineSeed } from "./order-factory.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 export const ROUNDS = "/admin/delivery/rounds";
 export const VEHICLES = "/admin/delivery/vehicles";
@@ -52,6 +53,7 @@ export async function addVehicle(
   const plate = `AB-${String(100 + plateSeq)}-CD`;
   const response = await admin(ctx)
     .post(VEHICLES)
+    .set(INTENT_KEY, freshIntent())
     .send({ name, plate, ...(cargo === undefined ? {} : { cargo }) })
     .expect(201);
   return jsonBody<CreatedIdResponse>(response).id;
@@ -107,6 +109,7 @@ async function deliveryCustomer(ctx: E2eContext): Promise<DeliveryCustomer> {
   const booked = await ctx
     .asSub("auth0|rounds")
     .post(`/companies/${company.id}/delivery-addresses`)
+    .set(INTENT_KEY, freshIntent())
     .send({
       ...COURIER_ADDRESS,
       isDefault: true,
@@ -178,7 +181,11 @@ export async function seedDelivery(
 }
 
 export async function openRound(ctx: E2eContext, day: string, vehicleId: string): Promise<string> {
-  const response = await admin(ctx).post(ROUNDS).send({ day, vehicleId }).expect(201);
+  const response = await admin(ctx)
+    .post(ROUNDS)
+    .set(INTENT_KEY, freshIntent())
+    .send({ day, vehicleId })
+    .expect(201);
   return jsonBody<CreatedIdResponse>(response).id;
 }
 

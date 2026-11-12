@@ -12,6 +12,7 @@ import type { AccountView } from "../src/lafoliecoffee/account/domain/ports/acco
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { storageKeys } from "./storage.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const ADMIN = "auth0|admin";
 const PDF = Buffer.from("%PDF-1.4\nfake kbis", "latin1");
@@ -53,6 +54,7 @@ describe("dépôt du KBIS", () => {
     await ctx
       .asSub(ADMIN)
       .put(`/companies/${companyId}/kbis`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", PDF, "extrait-kbis.pdf")
       .expect(204);
 
@@ -80,6 +82,7 @@ describe("dépôt du KBIS", () => {
     await ctx
       .asSub(ADMIN)
       .put(`/companies/${companyId}/kbis`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", PDF, "k.pdf")
       .expect(204);
     // La certification est **propre au fichier**, pas dérivée du statut : c'est
@@ -100,6 +103,7 @@ describe("dépôt du KBIS", () => {
     await ctx
       .asSub(ADMIN)
       .put(`/companies/${companyId}/kbis`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", PDF, "k.pdf")
       .expect(204);
     const [first] = await storageKeys();
@@ -108,6 +112,7 @@ describe("dépôt du KBIS", () => {
     await ctx
       .asSub(ADMIN)
       .put(`/companies/${companyId}/kbis`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", Buffer.from("%PDF-1.4\nkbis corrigé", "latin1"), "k.pdf")
       .expect(204);
     const keys = await storageKeys();
@@ -122,6 +127,7 @@ describe("dépôt du KBIS", () => {
     const response = await ctx
       .asSub(ADMIN)
       .put(`/companies/${companyId}/kbis`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", Buffer.from("pas un pdf"), "faux.pdf");
 
     expect(response.status).toBe(400);
@@ -136,12 +142,14 @@ describe("dépôt du KBIS", () => {
     const asMember = await ctx
       .asSub("auth0|membre")
       .put(`/companies/${companyId}/kbis`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", PDF, "k.pdf");
     expect(asMember.status).toBe(403);
 
     const asStranger = await ctx
       .asSub("auth0|etranger")
       .put(`/companies/${companyId}/kbis`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", PDF, "k.pdf");
     expect(asStranger.status).toBe(404);
   });
@@ -152,6 +160,7 @@ describe("téléchargement du KBIS", () => {
     await ctx
       .asSub(ADMIN)
       .put(`/companies/${companyId}/kbis`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", PDF, "k.pdf")
       .expect(204);
   });

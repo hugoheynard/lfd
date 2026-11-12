@@ -130,6 +130,17 @@ describe("les scénarios d'achat (B-D5)", () => {
     });
   });
 
+  /** Régression : un remplacement rejoué à l'identique réécrivait le scénario et un fait au journal. */
+  it("rejoué à l'identique, le remplacement n'écrit rien et ne trace rien", async () => {
+    const w = world(["ps0", "Essai"]);
+    const command = new ReplacePurchaseScenarioCommand("ps0", save("Renommé"), "staff_2");
+
+    await w.replace.execute(command);
+    await w.replace.execute(command);
+
+    expect(w.events.traced).toHaveLength(1);
+  });
+
   it("refuse de remplacer un archivé ou un inconnu", async () => {
     const w = world(["ps0", "Essai", { archivedAt: NOW }]);
 

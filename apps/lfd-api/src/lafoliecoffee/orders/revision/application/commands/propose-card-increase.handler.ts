@@ -12,8 +12,19 @@ import { IdGenerator } from "../../../../../platform/id/id-generator.js";
 import { Journal } from "../../../../../platform/journal/journal.js";
 import { Clock } from "../../../../../platform/time/clock.js";
 import { CardIncreaseProposal } from "../../domain/entities/card-increase-proposal.js";
-import type { OrderRevisionToSave, RevisableOrder } from "../../domain/entities/order-revision.js";
-import { CardIncreaseOnShelfOrderError } from "../../domain/errors/card-increase-proposal-errors.js";
+import type {
+  OrderRevisionToSave,
+  RevisableOrder,
+  RevisionActor,
+} from "../../domain/entities/order-revision.js";
+import {
+  CardIncreaseAlreadyProposedError,
+  CardIncreaseOnShelfOrderError,
+} from "../../domain/errors/card-increase-proposal-errors.js";
+import { intentSubject } from "../../../../../platform/intent/intent-subject.js";
+import { OncePerIntent } from "../../../../../platform/intent/once-per-intent.js";
+import { shownOnceReplay } from "../../../../../platform/intent/shown-once-replay.js";
+import { customerIntentActor } from "../../../../shared/intent/customer-intent-actor.js";
 import { OrderNotFoundError } from "../../../domain/errors/order-errors.js";
 import {
   OrderNotRevisableError,
@@ -62,7 +73,21 @@ interface ProposedFrame {
  *    le paiement rattaché (`complement`), le nouveau projet, le journal.
  * 5. Un échec ⇒ l'intention rendue (`release`).
  * 6. La réponse : de quoi monter le formulaire de carte.
+ *
+ * **Une fois par intention**, scellée dans la transaction de l'étape 4 : le
+ * registre ne garde que l'id du projet, jamais la clé du paiement, et un
+ * rejeu de la même clé reçoit `CardIncreaseAlreadyProposedError` (409), sans
+ * second paiement préparé.
  */
+/** Le nom stable du geste, dans le registre des intentions. */
+const PROPOSE_GESTURE = "orders.propose-card-increase";
+
+/** Seul l'id du projet est gardé, jamais la clé du paiement. */
+const PROPOSED_REPLAY = shownOnceReplay<CardComplementPaymentView>(
+  (view) => ({ proposalId: view.proposalId }),
+  () => new CardIncreaseAlreadyProposedError(),
+);
+
 @CommandHandler(ProposeCardIncreaseCommand)
 export class ProposeCardIncreaseHandler implements ICommandHandler<
   ProposeCardIncreaseCommand,
@@ -81,9 +106,32 @@ export class ProposeCardIncreaseHandler implements ICommandHandler<
     private readonly unitOfWork: UnitOfWork,
     private readonly clock: Clock,
     private readonly ids: IdGenerator,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: ProposeCardIncreaseCommand): Promise<CardComplementPaymentView> {
+  /** @throws {CardIncreaseAlreadyProposedError} la même clé a déjà préparé ce complément. */
+  execute(command: ProposeCardIncreaseCommand): Promise<CardComplementPaymentView> {
+    return this.intents.runSealed(
+      {
+        actorId: intentActorOf(command.actor),
+        key: command.intentKey,
+        gesture: PROPOSE_GESTURE,
+        subject: intentSubject(
+          command.orderId,
+          command.expectedRevision,
+          command.content,
+          command.expectedTotalCents,
+        ),
+      },
+      PROPOSED_REPLAY,
+      (seal) => this.propose(command, seal),
+    );
+  }
+
+  private async propose(
+    command: ProposeCardIncreaseCommand,
+    seal: (view: CardComplementPaymentView) => Promise<void>,
+  ): Promise<CardComplementPaymentView> {
     const current = await this.wall.find(command.orderId, command.actor);
     const revision = await this.composed(current, command);
     const cutoff = await this.cutoffOf(current, command.content);
@@ -95,8 +143,11 @@ export class ProposeCardIncreaseHandler implements ICommandHandler<
     );
     const frame = { revision, released, prepared: preparation.prepared, cutoff };
     try {
-      const proposal = await this.unitOfWork.run(() => this.record(command, frame));
-      return viewOf(proposal, preparation);
+      return await this.unitOfWork.run(async () => {
+        const view = viewOf(await this.record(command, frame), preparation);
+        await seal(view);
+        return view;
+      });
     } catch (error) {
       await this.cards.release(preparation.prepared);
       throw error;
@@ -186,6 +237,11 @@ export class ProposeCardIncreaseHandler implements ICommandHandler<
     );
     return times.length === 0 ? null : new Date(Math.min(...times));
   }
+}
+
+/** L'acteur de l'intention : le client résolu en base, ou la fiche du staff. */
+function intentActorOf(actor: RevisionActor): string {
+  return actor.kind === "customer" ? customerIntentActor(actor.userId) : actor.staffId;
 }
 
 /** R7 : la hausse porte la révision qu'elle corrige. */

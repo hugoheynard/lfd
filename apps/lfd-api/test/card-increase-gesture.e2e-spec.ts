@@ -35,6 +35,7 @@ import {
 } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 import { payByCard, pickupSite, placeOrder } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const DAY = serviceDay(7);
 const BUYER = "auth0|hausse-geste";
@@ -114,9 +115,16 @@ async function quote(order: PaidOrder, quantity: number): Promise<OrderRevisionQ
   );
 }
 
-function propose(order: PaidOrder, quantity: number, expectedTotalCents: number, note = "") {
+function propose(
+  order: PaidOrder,
+  quantity: number,
+  expectedTotalCents: number,
+  note = "",
+  key = freshIntent(),
+) {
   return buyer()
     .post(`/orders/${order.id}/revisions/card-increase`)
+    .set(INTENT_KEY, key)
     .send({ expectedRevision: 0, expectedTotalCents, ...content(order.pickupId, quantity, note) });
 }
 
@@ -146,6 +154,21 @@ async function journalOf(orderId: string): Promise<string[]> {
 }
 
 describe("La hausse demandée (§2.4)", () => {
+  /** Régression : un double envoi préparait deux paiements et remplaçait le premier projet. */
+  it("rejouée sous la même clé : 409 nommé, un seul projet, un seul paiement", async () => {
+    const order = await paidOrder();
+    const seen = await quote(order, 6);
+    const key = freshIntent();
+    await propose(order, 6, seen.totalCents, "", key).expect(200);
+    const replay = await propose(order, 6, seen.totalCents, "", key).expect(409);
+
+    expect(jsonBody<{ code: string }>(replay).code).toBe("orders.card_increase.already_proposed");
+    expect(await proposalsOf(order.id)).toHaveLength(1);
+    expect(
+      await ctx.prisma.cardPayment.count({ where: { subjectId: order.id, role: "complement" } }),
+    ).toBe(1);
+  });
+
   it("le devis annonce le complément ; la hausse naît en projet, la commande reste intacte", async () => {
     const order = await paidOrder();
     const seen = await quote(order, 6);
@@ -342,7 +365,11 @@ describe("La commande carte vue par la boutique et par la demande M4 (R2 ter, R4
 
   it("la demande M4 sur une carte, l'heure limite passée, ne se dépose pas", async () => {
     const order = await paidOrder();
-    await staff().post("/admin/request-reasons").send(CHANGE_REASON).expect(201);
+    await staff()
+      .post("/admin/request-reasons")
+      .set(INTENT_KEY, freshIntent())
+      .send(CHANGE_REASON)
+      .expect(201);
     await ctx.prisma.orderCutoff.create({
       data: { pickupAddressId: null, weekday: null, daysBefore: 8, time: "00:00", graceMinutes: 0 },
     });

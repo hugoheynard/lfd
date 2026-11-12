@@ -20,6 +20,7 @@ import {
   seedDelivery,
 } from "./delivery-rounds-scene.js";
 import { declareBins, LOADING, loadBin } from "./delivery-loading-scene.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const DAY = serviceDay();
 
@@ -137,6 +138,7 @@ describe("on ne compose pas une journée passée", () => {
 
     const refused = await admin(ctx)
       .post(ROUNDS)
+      .set(INTENT_KEY, freshIntent())
       .send({ day: serviceDay(-1), vehicleId })
       .expect(409);
 

@@ -20,6 +20,7 @@ import type {
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { PricingMaterialsCache } from "../src/lafoliecoffee/pricing/infrastructure/pricing-materials.cache.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -50,6 +51,7 @@ const LINES = [{ sku: "VIE-001-1", quantity: 8 }];
 async function poseSite(): Promise<string> {
   const response = await staff()
     .post("/admin/pickup-addresses")
+    .set(INTENT_KEY, freshIntent())
     .send({
       label: "Cœur de station",
       ligne1: "5 rue du Four",
@@ -110,6 +112,7 @@ describe("une promotion se règle à un seul endroit", () => {
     const site = await poseSite();
     const posed = await staff()
       .post("/admin/promotions")
+      .set(INTENT_KEY, freshIntent())
       .send(siteDiscount({ kind: "basket", pickup: { points: [site] }, delivery: "none" }))
       .expect(201);
     const { id } = jsonBody<{ id: string }>(posed);

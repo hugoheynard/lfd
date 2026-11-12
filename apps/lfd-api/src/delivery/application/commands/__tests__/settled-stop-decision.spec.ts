@@ -1,3 +1,4 @@
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import type { DoorstepRule } from "@lfd/contracts";
 
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
@@ -28,6 +29,10 @@ import {
 import { FixedDriverRounds, InMemoryDocuments, InMemoryIncidents } from "./doorstep-doubles.js";
 import { DAY, DEPARTED, NOW, PAUL, roundState } from "./doorstep-handover-scene.js";
 import { InMemoryDeliveryRounds } from "./round-doubles.js";
+
+let intentCount = 0;
+/** Une clé d'intention neuve par geste voulu, comme l'écran. */
+const nextKey = (): string => `intent_${(intentCount += 1)}`;
 
 /**
  * **La décision réglée d'avance** (`a-la-porte.md`, B3 bis, LB-Q6) : la
@@ -102,6 +107,7 @@ function reporting(rule: DoorstepRule, decisions = new InMemoryStopDecisions(), 
       new BackgroundWork(),
       new StopDecisionBySetting(rounds, decisions, durable),
     ),
+    inMemoryIntents(),
   );
   return { handler, rounds, decisions, notifier, durable, afterCommit, events };
 }
@@ -112,7 +118,7 @@ describe("ReportDeliveryIncidentHandler — la décision réglée d'avance (B3 b
   it("🔴 « Rapporter » clôt l'arrêt aussitôt, tracé par le réglage, sans prévenir personne", async () => {
     const { handler, rounds, decisions, notifier, durable, events } = reporting("bring_back");
 
-    await handler.execute(new ReportDeliveryIncidentCommand(PAUL, "r_1", NOBODY, null));
+    await handler.execute(new ReportDeliveryIncidentCommand(PAUL, "r_1", NOBODY, null, nextKey()));
 
     expect(decisions.stored("s_1")).toMatchObject({
       outcome: "bring_back",
@@ -146,7 +152,7 @@ describe("ReportDeliveryIncidentHandler — la décision réglée d'avance (B3 b
   it("un arrêt de rang 2 : la décision le garde, le retour le rapporte", async () => {
     const { handler, decisions, durable } = reporting("bring_back", new InMemoryStopDecisions(), 2);
 
-    await handler.execute(new ReportDeliveryIncidentCommand(PAUL, "r_1", NOBODY, null));
+    await handler.execute(new ReportDeliveryIncidentCommand(PAUL, "r_1", NOBODY, null, nextKey()));
 
     expect(decisions.stored("s_1")).toMatchObject({ shipmentRank: 2 });
     expect(durable.payloadsOf(DELIVERY_ORDERS_BROUGHT_BACK)).toMatchObject([
@@ -157,7 +163,7 @@ describe("ReportDeliveryIncidentHandler — la décision réglée d'avance (B3 b
   it("« Déposer » autorise le dépôt — même signature exigée — sans écrire la tournée", async () => {
     const { handler, rounds, decisions, notifier, afterCommit, events } = reporting("deposit");
 
-    await handler.execute(new ReportDeliveryIncidentCommand(PAUL, "r_1", NOBODY, null));
+    await handler.execute(new ReportDeliveryIncidentCommand(PAUL, "r_1", NOBODY, null, nextKey()));
     await afterCommit.commit();
 
     expect(decisions.stored("s_1")).toMatchObject({
@@ -176,7 +182,7 @@ describe("ReportDeliveryIncidentHandler — la décision réglée d'avance (B3 b
   it("« Me demander » ouvre la décision du commercial et le prévient, comme B3", async () => {
     const { handler, decisions, notifier, afterCommit, events } = reporting("ask");
 
-    await handler.execute(new ReportDeliveryIncidentCommand(PAUL, "r_1", NOBODY, null));
+    await handler.execute(new ReportDeliveryIncidentCommand(PAUL, "r_1", NOBODY, null, nextKey()));
     await afterCommit.commit();
 
     expect(decisions.stored("s_1")).toMatchObject({ outcome: null, source: null });
@@ -188,7 +194,7 @@ describe("ReportDeliveryIncidentHandler — la décision réglée d'avance (B3 b
     const decisions = new InMemoryStopDecisions(openDecision({ openedByIncidentId: "inc_0" }));
     const { handler, rounds, events } = reporting("bring_back", decisions);
 
-    await handler.execute(new ReportDeliveryIncidentCommand(PAUL, "r_1", NOBODY, null));
+    await handler.execute(new ReportDeliveryIncidentCommand(PAUL, "r_1", NOBODY, null, nextKey()));
 
     expect(decisions.stored("s_1")).toMatchObject({ outcome: null, openedByIncidentId: "inc_0" });
     expect(rounds.stored("r_1")?.hasClosed("s_1")).toBe(false);
@@ -204,6 +210,7 @@ describe("ReportDeliveryIncidentHandler — la décision réglée d'avance (B3 b
         "r_1",
         { family: "technical", reason: "vehicle_breakdown", note: "" },
         null,
+        nextKey(),
       ),
     );
 

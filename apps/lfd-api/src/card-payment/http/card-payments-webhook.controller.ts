@@ -14,6 +14,7 @@ import type { Request } from "express";
 import { Public } from "../../platform/auth/public.decorator.js";
 import { UNNAMED_WEBHOOK_ACCOUNT } from "../../platform/config/card-accounts.js";
 import { RecordProviderEventCommand } from "../application/commands/record-provider-event.command.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Les webhooks des comptes d'encaissement par carte** (plan M2, §3.2,
@@ -37,6 +38,9 @@ export class CardPaymentsWebhookController {
   @Public()
   @Post("webhook/:account")
   @HttpCode(HttpStatus.OK)
+  @Idempotent(
+    "webhook, par la clé de l'émetteur : un événement rejoué par le prestataire est reconnu périmé (déjà encaissé, refus rejoué) ou déjà constaté, et ne change ni le paiement ni le carnet ; il ne laisse qu'une trace de l'événement ignoré",
+  )
   async handleForAccount(
     @Param("account") account: string,
     @Req() request: RawBodyRequest<Request>,
@@ -49,6 +53,9 @@ export class CardPaymentsWebhookController {
   @Public()
   @Post("webhook")
   @HttpCode(HttpStatus.OK)
+  @Idempotent(
+    "webhook, par la clé de l'émetteur : un événement rejoué par le prestataire est reconnu périmé (déjà encaissé, refus rejoué) ou déjà constaté, et ne change ni le paiement ni le carnet ; il ne laisse qu'une trace de l'événement ignoré",
+  )
   async handle(
     @Req() request: RawBodyRequest<Request>,
     @Headers("stripe-signature") signature: string | undefined,

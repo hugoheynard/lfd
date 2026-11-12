@@ -29,6 +29,7 @@ import type { Response } from "express";
 
 import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import {
   AddDeliveryStepCommand,
@@ -76,7 +77,7 @@ export class CompanyDeliveryProcedureController {
     );
   }
 
-  /** Ajoute une étape en fin de procédure (gestionnaire). */
+  /** Ajoute une étape en fin de procédure (gestionnaire), une fois par intention. */
   @Post(`${PROCEDURE}/steps`)
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(deliveryStepPhotoUpload())
@@ -86,14 +87,25 @@ export class CompanyDeliveryProcedureController {
     @Param("addressId") addressId: string,
     @Body(new ZodBody(deliveryStepFieldsSchema)) fields: DeliveryStepFields,
     @UploadedFile() photo: UploadedPhotoPart | undefined,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedDeliveryStepResponse> {
     const id = await this.commands.execute<AddDeliveryStepCommand, string>(
-      new AddDeliveryStepCommand(user.userId, companyId, addressId, fields, photoBytesOf(photo)),
+      new AddDeliveryStepCommand(
+        user.userId,
+        companyId,
+        addressId,
+        fields,
+        photoBytesOf(photo),
+        intentKey,
+      ),
     );
     return { id };
   }
 
-  /** Refait une étape : titre, texte, photo remplacée ou retirée (gestionnaire). */
+  /**
+   * Refait une étape : titre, texte, photo remplacée ou retirée (gestionnaire),
+   * une fois par intention (`Idempotency-Key`).
+   */
   @Patch(`${PROCEDURE}/steps/:stepId`)
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseInterceptors(deliveryStepPhotoUpload())
@@ -104,6 +116,7 @@ export class CompanyDeliveryProcedureController {
     @Param("stepId") stepId: string,
     @Body(new ZodBody(deliveryStepRevisionFieldsSchema)) fields: DeliveryStepRevisionFields,
     @UploadedFile() photo: UploadedPhotoPart | undefined,
+    @IntentKey() intentKey: string,
   ): Promise<void> {
     await this.commands.execute<ReviseDeliveryStepCommand, void>(
       new ReviseDeliveryStepCommand(
@@ -114,6 +127,7 @@ export class CompanyDeliveryProcedureController {
         { title: fields.title, body: fields.body },
         fields.removePhoto === "true",
         photoBytesOf(photo),
+        intentKey,
       ),
     );
   }

@@ -5,6 +5,7 @@ import { Body, Controller, Get, Header, HttpCode, HttpStatus, Param, Post } from
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { StaffPermissions, StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { AcceptedReplay } from "../../../platform/shared/http/accepted-replay.decorator.js";
 import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { AttachAccountHolderCommand } from "../application/commands/attach-account-holder.command.js";
@@ -147,6 +148,10 @@ export class AdminCompaniesController {
    * qu'il a encore au téléphone.
    */
   @Post()
+  @AcceptedReplay(
+    "OncePerIntent.run : son e-mail porte un lien de mot de passe, que la boîte d'envoi rangerait en clair ; une panne entre l'écriture et la résolution de l'intention, puis un rejeu après le bail, refait le geste et renvoie un lien",
+    "décidé par Hugo le 2026-11-12",
+  )
   @HttpCode(HttpStatus.CREATED)
   async create(
     @StaffUserId() staffUserId: string,
@@ -179,6 +184,10 @@ export class AdminCompaniesController {
    * `409` si un détenteur est déjà là : en changer est une autre décision.
    */
   @Post(":companyId/holder")
+  @AcceptedReplay(
+    "OncePerIntent.run : son e-mail porte un lien de mot de passe, que la boîte d'envoi rangerait en clair ; une panne entre l'écriture et la résolution de l'intention, puis un rejeu après le bail, refait le rattachement et renvoie un lien",
+    "décidé par Hugo le 2026-11-12",
+  )
   @HttpCode(HttpStatus.CREATED)
   attachHolder(
     @StaffUserId() staffUserId: string,

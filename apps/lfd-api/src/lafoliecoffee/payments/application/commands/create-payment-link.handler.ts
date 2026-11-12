@@ -4,6 +4,12 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
+import type { IntentRecord } from "../../../../platform/intent/gesture-intent.js";
+import {
+  type IntentCodec,
+  OncePerIntent,
+  readIntentString,
+} from "../../../../platform/intent/once-per-intent.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { PaymentLink } from "../../domain/entities/payment-link.js";
 import { PaymentLinkCompanyNotFoundError } from "../../domain/errors/payment-link-errors.js";
@@ -35,6 +41,10 @@ const PAYMENT_LINK_CURRENCY = "eur";
  *
  * Rend l'id et l'URL : l'écran affiche le lien à copier sans relire la liste
  * (même forme que `IssuedLinkResponse`).
+ *
+ * **Une fois par intention** : sujet, la société. Un double clic ouvrait deux
+ * pages payables chez Stripe pour la même somme ; la même clé rend le lien
+ * d'origine, scellé avec sa ligne, sans rouvrir de session.
  */
 @CommandHandler(CreatePaymentLinkCommand)
 export class CreatePaymentLinkHandler implements ICommandHandler<
@@ -50,9 +60,26 @@ export class CreatePaymentLinkHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: CreatePaymentLinkCommand): Promise<CreatedPaymentLink> {
+  execute(command: CreatePaymentLinkCommand): Promise<CreatedPaymentLink> {
+    return this.intents.runSealed(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: CREATE_LINK_GESTURE,
+        subject: command.companyId,
+      },
+      CREATED_LINK_REPLAY,
+      (seal) => this.create(command, seal),
+    );
+  }
+
+  private async create(
+    command: CreatePaymentLinkCommand,
+    seal: (created: CreatedPaymentLink) => Promise<void>,
+  ): Promise<CreatedPaymentLink> {
     const companyName = await this.companies.nameOf(command.companyId);
     if (companyName === null) {
       throw new PaymentLinkCompanyNotFoundError(command.companyId);
@@ -76,10 +103,24 @@ export class CreatePaymentLinkHandler implements ICommandHandler<
       createdAt: this.clock.now(),
       createdByStaffId: command.staffUserId,
     });
+    const created = { id, url: checkout.url };
     await this.uow.run(async () => {
       await this.links.save(link);
       await this.events.publishTraced(new PaymentLinkCreatedEvent(link, companyName));
+      await seal(created);
     });
-    return { id, url: checkout.url };
+    return created;
   }
 }
+
+/** Le nom stable du geste, dans le registre des intentions. */
+const CREATE_LINK_GESTURE = "payments.create-payment-link";
+
+/** Le lien gardé : son identifiant et l'adresse de la page à copier. */
+const CREATED_LINK_REPLAY: IntentCodec<CreatedPaymentLink> = {
+  write: (created): IntentRecord => ({ id: created.id, url: created.url }),
+  read: (record, gesture) => ({
+    id: readIntentString(record, "id", gesture),
+    url: readIntentString(record, "url", gesture),
+  }),
+};

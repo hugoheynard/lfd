@@ -36,7 +36,10 @@ export class CorrectPurchaseBinCandidateHandler implements ICommandHandler<
     await this.uow.run(async () => {
       const candidate = await loadBinCandidate(this.candidates, command.candidateId);
       const before = candidate.specification;
-      candidate.correct(command.payload, this.clock.now(), author);
+      // Rejouer le geste ne change rien : ni écriture, ni fait au journal.
+      if (!candidate.correct(command.payload, this.clock.now(), author)) {
+        return;
+      }
       await ensureBinCandidateNameFree(this.candidates, candidate);
       await this.candidates.save(candidate);
       await this.events.publishTraced(new PurchaseBinCandidateCorrectedEvent(candidate, before));

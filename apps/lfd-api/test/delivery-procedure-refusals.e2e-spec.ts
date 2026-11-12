@@ -36,6 +36,7 @@ import {
 } from "./delivery-procedure-scene.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { storageKeys } from "./storage.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const ADMIN = "auth0|dpr-admin";
 const MEMBER = "auth0|dpr-member";
@@ -76,6 +77,7 @@ function procedure(side: Side, address = addressId): string {
 async function addStep(side: Side, title: string, photo: Buffer | null = null): Promise<string> {
   const pending = agentOf(side)
     .post(`${procedure(side)}/steps`)
+    .set(INTENT_KEY, freshIntent())
     .field("title", title);
   const response = await (
     photo === null ? pending : pending.attach("photo", photo, "porte.png")
@@ -87,6 +89,7 @@ async function addStep(side: Side, title: string, photo: Buffer | null = null): 
 function postPhoto(side: Side, photo: Buffer): request.Test {
   return agentOf(side)
     .post(`${procedure(side)}/steps`)
+    .set(INTENT_KEY, freshIntent())
     .field("title", "Portail")
     .attach("photo", photo, { filename: "porte.jpg", contentType: "image/jpeg" });
 }
@@ -102,6 +105,7 @@ describe.each(SIDES)("les refus, mot pour mot — porte %s", (side) => {
     const post = (title: string, body: string): request.Test =>
       agent
         .post(`${procedure(side)}/steps`)
+        .set(INTENT_KEY, freshIntent())
         .field("title", title)
         .field("body", body)
         .expect(400);
@@ -122,6 +126,7 @@ describe.each(SIDES)("les refus, mot pour mot — porte %s", (side) => {
     const stepId = await addStep(side, "Portail");
     const patched = await agent
       .patch(`${procedure(side)}/steps/${stepId}`)
+      .set(INTENT_KEY, freshIntent())
       .field("title", "")
       .expect(400);
     expect(refusalOf(patched)).toEqual(
@@ -138,6 +143,7 @@ describe.each(SIDES)("les refus, mot pour mot — porte %s", (side) => {
     const stepId = await addStep(side, "Portail");
     const ambiguous = await agentOf(side)
       .patch(`${procedure(side)}/steps/${stepId}`)
+      .set(INTENT_KEY, freshIntent())
       .field("title", "Portail")
       .field("removePhoto", "true")
       .attach("photo", pngOf(40, 30), "porte.png")
@@ -163,6 +169,7 @@ describe.each(SIDES)("les refus, mot pour mot — porte %s", (side) => {
       await postPhoto(side, OVER_UPLOAD_LIMIT).expect(400),
       await agentOf(side)
         .patch(`${procedure(side)}/steps/${stepId}`)
+        .set(INTENT_KEY, freshIntent())
         .field("title", "Portail")
         .attach("photo", OVER_UPLOAD_LIMIT, "porte.png")
         .expect(400),
@@ -189,15 +196,19 @@ describe.each(SIDES)("les refus, mot pour mot — porte %s", (side) => {
     const agent = agentOf(side);
     const ghost = `${procedure(side)}/steps/${GHOST_STEP}`;
     expect(refusalOf(await agent.delete(ghost).expect(404))).toEqual(REFUSED.stepNotFound);
-    expect(refusalOf(await agent.patch(ghost).field("title", "x").expect(404))).toEqual(
-      REFUSED.stepNotFound,
-    );
+    expect(
+      refusalOf(
+        await agent.patch(ghost).set(INTENT_KEY, freshIntent()).field("title", "x").expect(404),
+      ),
+    ).toEqual(REFUSED.stepNotFound);
 
     const stepId = await addStep(side, "Portail");
     expect(refusalOf(await agent.delete(ghost).expect(404))).toEqual(REFUSED.stepNotFound);
-    expect(refusalOf(await agent.patch(ghost).field("title", "x").expect(404))).toEqual(
-      REFUSED.stepNotFound,
-    );
+    expect(
+      refusalOf(
+        await agent.patch(ghost).set(INTENT_KEY, freshIntent()).field("title", "x").expect(404),
+      ),
+    ).toEqual(REFUSED.stepNotFound);
     expect(refusalOf(await agent.get(`${ghost}/photo`).expect(404))).toEqual(REFUSED.noPhoto);
     const withoutPhoto = await agent.get(`${procedure(side)}/steps/${stepId}/photo`).expect(404);
     expect(refusalOf(withoutPhoto)).toEqual(REFUSED.noPhoto);
@@ -239,8 +250,16 @@ describe.each(SIDES)("les refus, mot pour mot — porte %s", (side) => {
       const base = procedure(side, address);
       const refusals = [
         await agent.get(base).expect(404),
-        await agent.post(`${base}/steps`).field("title", "Portail").expect(404),
-        await agent.patch(`${base}/steps/${stepId}`).field("title", "Portail").expect(404),
+        await agent
+          .post(`${base}/steps`)
+          .set(INTENT_KEY, freshIntent())
+          .field("title", "Portail")
+          .expect(404),
+        await agent
+          .patch(`${base}/steps/${stepId}`)
+          .set(INTENT_KEY, freshIntent())
+          .field("title", "Portail")
+          .expect(404),
         await agent.delete(`${base}/steps/${stepId}`).expect(404),
         await agent
           .put(`${base}/order`)
@@ -271,6 +290,7 @@ describe("les refus qui se posent une fois pour les deux portes", () => {
     for (const side of SIDES) {
       const refused = await agentOf(side)
         .post(`${procedure(side)}/steps`)
+        .set(INTENT_KEY, freshIntent())
         .field("title", "De trop")
         .expect(409);
       expect(refusalOf(refused)).toEqual(REFUSED.full);
@@ -282,8 +302,16 @@ describe("les refus qui se posent une fois pour les deux portes", () => {
     const member = ctx.asSub(MEMBER);
     const base = procedure("client");
     const refusals = [
-      await member.post(`${base}/steps`).field("title", "Intrus").expect(403),
-      await member.patch(`${base}/steps/${stepId}`).field("title", "Intrus").expect(403),
+      await member
+        .post(`${base}/steps`)
+        .set(INTENT_KEY, freshIntent())
+        .field("title", "Intrus")
+        .expect(403),
+      await member
+        .patch(`${base}/steps/${stepId}`)
+        .set(INTENT_KEY, freshIntent())
+        .field("title", "Intrus")
+        .expect(403),
       await member.delete(`${base}/steps/${stepId}`).expect(403),
       await member
         .put(`${base}/order`)
@@ -305,16 +333,23 @@ describe("le journal des gestes staff", () => {
     const staff = agentOf("staff");
     await staff
       .patch(step)
+      .set(INTENT_KEY, freshIntent())
       .field("title", "Portail")
       .attach("photo", jpegOf(30, 40), "cour.jpg")
       .expect(204);
-    await staff.patch(step).field("title", "Portail").field("removePhoto", "true").expect(204);
+    await staff
+      .patch(step)
+      .set(INTENT_KEY, freshIntent())
+      .field("title", "Portail")
+      .field("removePhoto", "true")
+      .expect(204);
     await staff
       .put(`${procedure("staff")}/order`)
       .send({ stepIds: [GHOST_STEP] })
       .expect(409);
     await staff
       .patch(`${procedure("staff")}/steps/${GHOST_STEP}`)
+      .set(INTENT_KEY, freshIntent())
       .field("title", "x")
       .expect(404);
     await postPhoto("staff", Buffer.from("%PDF-1.4", "latin1")).expect(400);

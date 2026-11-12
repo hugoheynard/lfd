@@ -33,6 +33,7 @@ import { SetMandateOptionsCommand } from "../application/commands/set-mandate-op
 import { GetCompanyBankAccountQuery } from "../application/queries/get-company-bank-account.query.js";
 import type { CustomerMandatePdf } from "../application/queries/preview-customer-mandate.handler.js";
 import { PreviewCustomerMandateQuery } from "../application/queries/preview-customer-mandate.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Surface **staff** du RIB d'une société cliente.
@@ -89,6 +90,9 @@ export class AdminCompanyBankAccountController {
    */
   @Put(":companyId/bank-account")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose un RIB : rejoué à l'identique (DebtorAccount.equals), rien n'est écrit, journalisé, annoncé ni rendu caduc",
+  )
   async set(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(setCompanyBankAccountPayloadSchema)) payload: SetCompanyBankAccountPayload,
@@ -112,6 +116,9 @@ export class AdminCompanyBankAccountController {
    */
   @Put(":companyId/mandate-options")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose des valeurs : rejouées, les mêmes zones sont trouvées égales (equals) et rien n'est écrit, journalisé ni rendu caduc",
+  )
   async setOptions(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(setMandateOptionsPayloadSchema)) payload: SetMandateOptionsPayload,

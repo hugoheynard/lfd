@@ -33,6 +33,8 @@ import {
   OrderWriter,
   ServedSkus,
 } from "./staff-suggestion-doubles.js";
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 
 /** L'horloge est fixe, et le jour métier en est tiré : rien n'y dépend du calendrier réel. */
 const NOW = new Date("2026-10-18T08:00:00.000Z");
@@ -54,6 +56,7 @@ function scene() {
     clock,
     events,
     uow,
+    inMemoryIntents(),
   );
   const revise = new ReviseStaffSuggestionHandler(
     rules,
@@ -70,10 +73,24 @@ function scene() {
 }
 
 describe("CreateStaffSuggestionHandler", () => {
+  /** Régression : un double clic créait deux règles de suggestion identiques. */
+  it("rejouée sous la même clé, rend la même règle sans en créer une seconde", async () => {
+    const { events, create } = scene();
+    const key = randomUUID();
+    const command = (): CreateStaffSuggestionCommand =>
+      new CreateStaffSuggestionCommand(croissantInput(TODAY), "staff_1", "staff_1", key);
+
+    const first = await create.execute(command());
+    const replayed = await create.execute(command());
+
+    expect(replayed).toBe(first);
+    expect(events.traced).toHaveLength(1);
+  });
+
   it("crée la règle, signée, et la journalise avec tout ce qu'elle dit", async () => {
     const { rules, events, create } = scene();
     const id = await create.execute(
-      new CreateStaffSuggestionCommand(croissantInput(TODAY), "staff_1"),
+      new CreateStaffSuggestionCommand(croissantInput(TODAY), "staff_1", "staff_1", randomUUID()),
     );
 
     expect(id).toBe("rule_000001");
@@ -99,7 +116,7 @@ describe("CreateStaffSuggestionHandler", () => {
     const { rules, events, create } = scene();
     const input = croissantInput(TODAY, { suggestedSkus: ["BOI-001", "ZZZ-404"] });
     await expect(
-      create.execute(new CreateStaffSuggestionCommand(input, "staff_1")),
+      create.execute(new CreateStaffSuggestionCommand(input, "staff_1", "staff_1", randomUUID())),
     ).rejects.toThrow(UnknownSuggestionCatalogueError);
     expect(rules.store.adds).toBe(0);
     expect(events.traced).toEqual([]);
@@ -110,19 +127,23 @@ describe("CreateStaffSuggestionHandler", () => {
     const family = (ref: string) =>
       croissantInput(TODAY, { trigger: { kind: "category_in_cart", ref } });
     await expect(
-      create.execute(new CreateStaffSuggestionCommand(family("cat_404"), null)),
+      create.execute(
+        new CreateStaffSuggestionCommand(family("cat_404"), null, "staff_1", randomUUID()),
+      ),
     ).rejects.toThrow(UnknownSuggestionCatalogueError);
     await expect(
-      create.execute(new CreateStaffSuggestionCommand(family("cat_vie"), null)),
+      create.execute(
+        new CreateStaffSuggestionCommand(family("cat_vie"), null, "staff_1", randomUUID()),
+      ),
     ).resolves.toBe("rule_000002");
   });
 
   it("refuse une règle déjà finie au jour métier du Clock", async () => {
     const { create } = scene();
     const input = croissantInput(TODAY, { startsOn: "2026-10-01", endsOn: "2026-10-17" });
-    await expect(create.execute(new CreateStaffSuggestionCommand(input, null))).rejects.toThrow(
-      SuggestionPeriodOverError,
-    );
+    await expect(
+      create.execute(new CreateStaffSuggestionCommand(input, null, "staff_1", randomUUID())),
+    ).rejects.toThrow(SuggestionPeriodOverError);
   });
 });
 
@@ -130,7 +151,7 @@ describe("ReviseStaffSuggestionHandler", () => {
   it("réécrit, journalise le diff seul, et ne dit rien d'une réécriture sans effet", async () => {
     const { rules, events, create, revise } = scene();
     const id = await create.execute(
-      new CreateStaffSuggestionCommand(croissantInput(TODAY), "staff_1"),
+      new CreateStaffSuggestionCommand(croissantInput(TODAY), "staff_1", "staff_1", randomUUID()),
     );
 
     await revise.execute(new ReviseStaffSuggestionCommand(id, croissantInput(TODAY), "staff_2"));
@@ -156,7 +177,9 @@ describe("ReviseStaffSuggestionHandler", () => {
     await expect(
       revise.execute(new ReviseStaffSuggestionCommand("nope", croissantInput(TODAY), null)),
     ).rejects.toThrow(SuggestionRuleNotFoundError);
-    const id = await create.execute(new CreateStaffSuggestionCommand(croissantInput(TODAY), null));
+    const id = await create.execute(
+      new CreateStaffSuggestionCommand(croissantInput(TODAY), null, "staff_1", randomUUID()),
+    );
     await expect(
       revise.execute(
         new ReviseStaffSuggestionCommand(
@@ -172,7 +195,9 @@ describe("ReviseStaffSuggestionHandler", () => {
 describe("SetStaffSuggestionActiveHandler et ArchiveStaffSuggestionHandler", () => {
   it("coupe, rallume, archive — un fait par geste qui change, rien pour un geste sans effet", async () => {
     const { rules, events, create, setActive, archive } = scene();
-    const id = await create.execute(new CreateStaffSuggestionCommand(croissantInput(TODAY), null));
+    const id = await create.execute(
+      new CreateStaffSuggestionCommand(croissantInput(TODAY), null, "staff_1", randomUUID()),
+    );
 
     await setActive.execute(new SetStaffSuggestionActiveCommand(id, true, "staff_1"));
     await setActive.execute(new SetStaffSuggestionActiveCommand(id, false, "staff_1"));
@@ -238,6 +263,8 @@ describe("les conditions à l'écriture (RS8)", () => {
         new CreateStaffSuggestionCommand(
           croissantInput(TODAY, conditions({ pickupAddressIds: ["site-centre", "site-ferme"] })),
           "staff_1",
+          "staff_1",
+          randomUUID(),
         ),
       ),
     ).rejects.toThrow(UnknownSuggestionSiteError);
@@ -246,6 +273,8 @@ describe("les conditions à l'écriture (RS8)", () => {
         new CreateStaffSuggestionCommand(
           croissantInput(TODAY, conditions({ cartWithoutFamilyId: "fam-inconnue" })),
           "staff_1",
+          "staff_1",
+          randomUUID(),
         ),
       ),
     ).rejects.toThrow(UnknownSuggestionCatalogueError);
@@ -255,7 +284,7 @@ describe("les conditions à l'écriture (RS8)", () => {
   it("une réécriture qui ne change que les conditions s'écrit, et le journal le dit", async () => {
     const { rules, events, create, revise } = scene();
     const id = await create.execute(
-      new CreateStaffSuggestionCommand(croissantInput(TODAY), "staff_1"),
+      new CreateStaffSuggestionCommand(croissantInput(TODAY), "staff_1", "staff_1", randomUUID()),
     );
     const morning = conditions({
       hours: { from: "07:00", to: "11:00" },

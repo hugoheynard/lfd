@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../../api/api-config';
+import { GestureIntents, intentOptions, shownOnce } from '../../shared/gesture-intents';
 import type { IssuedLinkResponse, PendingAccessView, PendingStaffAccessView } from '@lfd/contracts';
 
 import type { PendingAccess } from './pending-access.model';
@@ -11,6 +12,8 @@ import type { PendingAccess } from './pending-access.model';
 @Injectable({ providedIn: 'root' })
 export class PendingAccessService {
   private readonly http = inject(HttpClient);
+  /** Une clé par lien voulu, par personne ; oubliée une fois le lien montré. */
+  private readonly intents = new GestureIntents();
 
   /**
    * Les deux files, réunies à l'affichage seulement.
@@ -48,7 +51,11 @@ export class PendingAccessService {
       person.kind === 'staff'
         ? `${B2B_API_BASE}/admin/staff-access-pending`
         : `${B2B_API_BASE}/admin/access-pending`;
-    return firstValueFrom(this.http.post<IssuedLinkResponse>(`${base}/${person.userId}/link`, {}));
+    return shownOnce(this.intents, `${person.kind}:${person.userId}`, (key) =>
+      firstValueFrom(
+        this.http.post<IssuedLinkResponse>(`${base}/${person.userId}/link`, {}, intentOptions(key)),
+      ),
+    );
   }
 }
 

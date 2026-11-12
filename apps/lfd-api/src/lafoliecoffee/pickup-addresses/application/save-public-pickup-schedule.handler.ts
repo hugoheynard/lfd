@@ -48,7 +48,10 @@ export class SavePublicPickupScheduleHandler implements ICommandHandler<
         throw new PickupAddressNotFoundError(command.pickupAddressId);
       }
       const schedule = await this.schedules.load(command.pickupAddressId);
-      schedule.replace(rules, closures);
+      // Rejouer l'enregistrement ne change rien : ni écriture, ni fait.
+      if (!schedule.replace(rules, closures)) {
+        return;
+      }
       await this.schedules.save(schedule);
       await this.events.publishTraced(
         new PublicPickupScheduleUpdatedEvent(

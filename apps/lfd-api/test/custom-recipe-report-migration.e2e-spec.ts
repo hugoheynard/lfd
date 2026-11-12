@@ -17,6 +17,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { OutboxRelayTrigger } from "../src/platform/outbox/outbox-relay-trigger.js";
 import { anActiveFiche, relayAll, SILENT_TRIGGER, type Fiche } from "./catalog-facts-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -58,6 +59,7 @@ async function twoVariants(name: string): Promise<{ fiche: Fiche; second: string
   const added = jsonBody<{ id: string }>(
     await staff()
       .post(`${PRODUCTS}/${fiche.id}/variants`)
+      .set(INTENT_KEY, freshIntent())
       .send({ name: { fr: "Six parts" } })
       .expect(201),
   ).id;

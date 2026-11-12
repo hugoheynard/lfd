@@ -20,6 +20,11 @@ import { LoginSubjectReader } from "../../domain/ports/login-subject.reader.js";
 import { LinkableIdentity } from "../../domain/value-objects/linkable-identity.js";
 import { AccountJournalNames } from "../services/account-journal-names.service.js";
 import { LinkLoginMethodCommand } from "./link-login-method.command.js";
+import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { customerIntentActor } from "../../../shared/intent/customer-intent-actor.js";
+
+/** Le nom stable du geste, dans le registre des intentions. */
+const LINK_GESTURE = "account.link-login-method";
 
 /**
  * Ajoute une méthode de connexion au compte : **on vérifie, on rattache, on
@@ -76,6 +81,14 @@ import { LinkLoginMethodCommand } from "./link-login-method.command.js";
  * ⚠️ La fenêtre entre le rattachement chez le tiers et cette unité reste : un
  * arrêt à cet instant laisse un rattachement sans trace ni alerte. Elle n'est
  * pas fermable sans transaction distribuée ; elle est réduite à un instant.
+ *
+ * **Une fois par intention** : un double envoi ne rattache pas deux fois chez
+ * le fournisseur d'identité ni n'écrit deux traces ; la clé de l'écran est
+ * scellée avec la trace et l'alerte. L'acteur est le client
+ * (`customer:<id>`).
+ *
+ * @throws {GestureInFlightError} la même clé est encore en vol.
+ * @throws {IntentKeyReusedError} la clé a servi pour un autre geste.
  */
 @CommandHandler(LinkLoginMethodCommand)
 export class LinkLoginMethodHandler implements ICommandHandler<LinkLoginMethodCommand, void> {
@@ -90,9 +103,29 @@ export class LinkLoginMethodHandler implements ICommandHandler<LinkLoginMethodCo
     private readonly uow: UnitOfWork,
     private readonly durable: DurablePublisher,
     private readonly ids: IdGenerator,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: LinkLoginMethodCommand): Promise<void> {
+  execute(command: LinkLoginMethodCommand): Promise<void> {
+    return this.intents.runSealed(
+      {
+        actorId: customerIntentActor(command.userId),
+        key: command.intentKey,
+        gesture: LINK_GESTURE,
+        // La personne seule : chaque essai porte une preuve neuve (une
+        // fenêtre d'autorisation de plus), et un réessai après une réponse
+        // perdue doit rendre le rattachement fait, pas un refus de clé.
+        subject: command.userId,
+      },
+      NOTHING_TO_REPLAY,
+      (seal) => this.link(command, seal),
+    );
+  }
+
+  private async link(
+    command: LinkLoginMethodCommand,
+    seal: (result: void) => Promise<void>,
+  ): Promise<void> {
     const proof = await this.proofs.verify(command.idToken);
     // On ne se relie pas à soi-même : la preuve désigne le compte courant, donc
     // la personne n'a rien ajouté. Le dire « déjà rattachée » est exact — et
@@ -106,11 +139,15 @@ export class LinkLoginMethodHandler implements ICommandHandler<LinkLoginMethodCo
     const methods = await this.identity.linkLoginMethod(command.subject, secondary);
     const linked = secondaryAmong(methods, secondary);
     await this.undoIfClaimedMeanwhile(command, secondary.subject, linked);
-    await this.recordLinked(command.userId, linked);
+    await this.recordLinked(command.userId, linked, seal);
   }
 
   /** La trace et l'alerte, dans une unité : l'une ne part pas sans l'autre. */
-  private async recordLinked(userId: string, linked: LoginMethod): Promise<void> {
+  private async recordLinked(
+    userId: string,
+    linked: LoginMethod,
+    seal: (result: void) => Promise<void>,
+  ): Promise<void> {
     const traced = new LoginMethodLinkedEvent(
       userId,
       await this.names.person(userId),
@@ -121,6 +158,7 @@ export class LinkLoginMethodHandler implements ICommandHandler<LinkLoginMethodCo
     await this.uow.run(async () => {
       await this.events.publishTraced(traced);
       await this.durable.publish(alert.durableFact());
+      await seal();
     });
   }
 

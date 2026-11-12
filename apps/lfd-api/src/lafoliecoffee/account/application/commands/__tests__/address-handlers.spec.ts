@@ -38,6 +38,8 @@ import { UpdateDeliveryAddressHandler } from "../update-delivery-address.handler
 import { journalNames } from "./member-acts-doubles.js";
 import { withSlotList } from "../../../domain/services/delivery-slot-list.js";
 import { silentGestures } from "./site-gesture-doubles.js";
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 
 /** Publisher doublé : ignore (les étapes d'activation ne sont pas l'objet de ce spec). */
 /** Fabrique un publisher doublé frais. */
@@ -183,6 +185,31 @@ describe("handlers d'adresses — les murs member / admin", () => {
     expect(recorder.writes).toEqual(["billing"]);
   });
 
+  /** Régression : un double envoi ajoutait deux adresses de livraison. */
+  it("rejouée sous la même clé, rend la même adresse sans en écrire une seconde", async () => {
+    const recorder: Recorder = { writes: [] };
+    const handler = new AddDeliveryAddressHandler(
+      membershipReturning("owner"),
+      addressesRecorder(recorder),
+      events(),
+      new FixedIdGenerator("addr"),
+      clock(),
+      new DirectUnitOfWork(),
+      journalNames(companiesReturningSample()),
+      silentGestures(),
+      inMemoryIntents(),
+    );
+    const key = randomUUID();
+
+    const first = await handler.execute(new AddDeliveryAddressCommand("u1", "c1", DELIVERY, key));
+    const replayed = await handler.execute(
+      new AddDeliveryAddressCommand("u1", "c1", DELIVERY, key),
+    );
+
+    expect(replayed).toBe(first);
+    expect(recorder.writes).toHaveLength(1);
+  });
+
   it("un non-membre reçoit 404 et rien n'est écrit", async () => {
     const recorder: Recorder = { writes: [] };
     await expect(
@@ -195,7 +222,8 @@ describe("handlers d'adresses — les murs member / admin", () => {
         new DirectUnitOfWork(),
         journalNames(companiesReturningSample()),
         silentGestures(),
-      ).execute(new AddDeliveryAddressCommand("u1", "c1", DELIVERY)),
+        inMemoryIntents(),
+      ).execute(new AddDeliveryAddressCommand("u1", "c1", DELIVERY, randomUUID())),
     ).rejects.toBeInstanceOf(CompanyNotFoundError);
     expect(recorder.writes).toEqual([]);
   });
@@ -230,7 +258,8 @@ describe("handlers d'adresses — les murs member / admin", () => {
       new DirectUnitOfWork(),
       names,
       silentGestures(),
-    ).execute(new AddDeliveryAddressCommand("u1", "c1", DELIVERY));
+      inMemoryIntents(),
+    ).execute(new AddDeliveryAddressCommand("u1", "c1", DELIVERY, randomUUID()));
     await new UpdateDeliveryAddressHandler(
       admin,
       repo,

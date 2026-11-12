@@ -115,6 +115,19 @@ describe("ChooseDepartureHandler", () => {
     ]);
   });
 
+  /** Régression : reposer le point déjà choisi réécrivait le choix et un fait au journal. */
+  it("rejoué sur le point déjà choisi, n'écrit rien et ne trace rien", async () => {
+    const written = new Written();
+    const events = new RecordingPublisher();
+
+    await handler("boutique", written, events).execute(
+      new ChooseDepartureCommand("boutique", "staff_1"),
+    );
+
+    expect(written.last).toBeNull();
+    expect(events.traced).toEqual([]);
+  });
+
   it("refuse un point qui n'est pas un point de retrait, sans écrire", async () => {
     const written = new Written();
     const events = new RecordingPublisher();

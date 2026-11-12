@@ -5,6 +5,7 @@ import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-auth
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
+import { CREATED_ID_REPLAY, OncePerIntent } from "../../../platform/intent/once-per-intent.js";
 import { ProductionDocumentStore } from "../../../platform/storage/production-document-store.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { DeliveryIncident, incidentPhotoKey } from "../../domain/entities/delivery-incident.js";
@@ -46,6 +47,10 @@ const logger = new Logger("ReportDeliveryIncident");
  * d'avance (B3 bis), la décision s'applique dans la même unité, sans
  * notification.
  *
+ * **Une fois par intention** : la clé de l'écran est scellée avec la ligne ;
+ * un envoi rejoué rend le même signalement, sans rien ranger au stockage ni
+ * écrire de plus.
+ *
  * @throws {DriverRoundNotFoundError} @throws {InvalidIncidentPhotoError}
  * @throws ceux de `DeliveryIncident.report`.
  */
@@ -64,9 +69,26 @@ export class ReportDeliveryIncidentHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly decisions: StopDecisionOpening,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: ReportDeliveryIncidentCommand): Promise<string> {
+  execute(command: ReportDeliveryIncidentCommand): Promise<string> {
+    return this.intents.runSealed(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: "delivery.incident.report",
+        subject: command.roundId,
+      },
+      CREATED_ID_REPLAY,
+      (seal) => this.report(command, seal),
+    );
+  }
+
+  private async report(
+    command: ReportDeliveryIncidentCommand,
+    seal: (id: string) => Promise<void>,
+  ): Promise<string> {
     const round = await this.rounds.roundOf(command.staffUserId, command.roundId);
     if (round === null) {
       throw new DriverRoundNotFoundError();
@@ -94,7 +116,7 @@ export class ReportDeliveryIncidentHandler implements ICommandHandler<
     if (photo !== null && photoKey !== null) {
       await this.store.save(photoKey, { bytes: photo.bytes, contentType: photo.contentType });
     }
-    await this.recordOrForget(round, incident, photoKey);
+    await this.recordOrForget(round, incident, photoKey, seal);
     return id;
   }
 
@@ -103,6 +125,7 @@ export class ReportDeliveryIncidentHandler implements ICommandHandler<
     round: DriverRoundRow,
     incident: DeliveryIncident,
     photoKey: string | null,
+    seal: (id: string) => Promise<void>,
   ): Promise<void> {
     try {
       await this.uow.run(async () => {
@@ -128,6 +151,7 @@ export class ReportDeliveryIncidentHandler implements ICommandHandler<
         if (settled !== null) {
           await this.events.publishTraced(settled);
         }
+        await seal(incident.id);
       });
     } catch (error) {
       if (photoKey !== null) {

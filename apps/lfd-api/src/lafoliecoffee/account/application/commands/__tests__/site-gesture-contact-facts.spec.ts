@@ -16,6 +16,7 @@ import { SiteGesturePublisher } from "../../services/site-gesture.publisher.js";
 import { AddCompanyContactHandler } from "../add-company-contact.handler.js";
 import { AddContactByStaffCommand } from "../add-contact-by-staff.command.js";
 import { AddContactByStaffHandler } from "../add-contact-by-staff.handler.js";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import {
   AddCompanyContactCommand,
   RemoveCompanyContactCommand,
@@ -42,6 +43,7 @@ import {
   PHONE,
 } from "./member-acts-doubles.js";
 import { FixedSitePrincipals } from "./site-gesture-doubles.js";
+import { randomUUID } from "node:crypto";
 
 /**
  * N4c (`plan-notifications-sous-comptes.md`) : les contacts n'avaient AUCUN
@@ -63,6 +65,9 @@ class WitnessedLock extends FixedSitePrincipals {
     return super.lockedPrincipalOf(companyId);
   }
 }
+
+/** Une clé d'intention de l'écran, un UUID. */
+const INTENT_KEY = "6f1d2c8e-3b4a-4f5e-9a7b-1c2d3e4f5a6b";
 
 const DETAILS = {
   firstName: "Karim",
@@ -99,7 +104,8 @@ async function customerGestures(b: Built): Promise<string> {
     b.uow,
     b.names,
     b.gestures,
-  ).execute(new AddCompanyContactCommand("u1", "c1", DETAILS, "orders"));
+    inMemoryIntents(),
+  ).execute(new AddCompanyContactCommand("u1", "c1", DETAILS, "orders", randomUUID()));
   await new UpdateCompanyContactHandler(
     member,
     b.book,
@@ -129,7 +135,8 @@ async function teamGestures(b: Built): Promise<string> {
     b.uow,
     b.names,
     b.gestures,
-  ).execute(new AddContactByStaffCommand("c1", DETAILS, "orders"));
+    inMemoryIntents(),
+  ).execute(new AddContactByStaffCommand("c1", DETAILS, "orders", "staff_1", INTENT_KEY));
   await new UpdateContactByStaffHandler(b.book, b.events, b.uow, b.names, b.gestures).execute(
     new UpdateContactByStaffCommand("c1", contactId, DETAILS, "admin"),
   );
@@ -164,6 +171,27 @@ describe("les gestes sur les contacts écrivent un fait durable (N4c)", () => {
         byTeam: false,
       });
     }
+  });
+
+  /** Régression : un double clic de l'équipe ajoutait deux contacts, deux faits. */
+  it("geste de l'équipe rejoué sous la même clé : un seul contact, un seul fait", async () => {
+    const b = build();
+    const handler = new AddContactByStaffHandler(
+      b.book,
+      b.events,
+      b.uow,
+      b.names,
+      b.gestures,
+      inMemoryIntents(),
+    );
+    const command = (): AddContactByStaffCommand =>
+      new AddContactByStaffCommand("c1", DETAILS, "orders", "staff_1", INTENT_KEY);
+
+    const first = await handler.execute(command());
+    const replayed = await handler.execute(command());
+
+    expect(replayed).toBe(first);
+    expect(b.uow.committed.map((fact) => fact.type)).toEqual([CONTACT_ADDED]);
   });
 
   it("geste de l'équipe : auteur nul, `byTeam`", async () => {

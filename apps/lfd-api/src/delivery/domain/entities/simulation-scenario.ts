@@ -1,3 +1,4 @@
+import { sameSheet } from "../services/same-sheet.js";
 import type { DeliverySimulationPayload } from "@lfd/contracts";
 
 import {
@@ -109,6 +110,7 @@ export class SimulationScenario {
 
   /**
    * Remplace le nom et le contenu — ce qui répare aussi un scénario illisible.
+   * @returns `false` si nom et contenu sont ceux qu'il porte déjà (rien ne change).
    * @throws {InvalidSimulationScenarioNameError} @throws {SimulationScenarioAlreadyArchivedError}
    */
   replace(
@@ -116,11 +118,16 @@ export class SimulationScenario {
     scenario: DeliverySimulationPayload,
     at: Date,
     author: DeliveryAuthor,
-  ): void {
+  ): boolean {
     this.ensureLive();
-    this.currentName = nameOf(name);
+    const next = { name: nameOf(name), content: { readable: true, payload: scenario } };
+    if (sameSheet({ name: this.currentName, content: this.currentContent }, next)) {
+      return false;
+    }
+    this.currentName = next.name;
     this.currentContent = { readable: true, payload: scenario };
     this.touch(at, author);
+    return true;
   }
 
   /**

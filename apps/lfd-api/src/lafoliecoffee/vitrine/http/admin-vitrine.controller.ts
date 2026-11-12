@@ -39,6 +39,7 @@ import { ListVitrineNoticesQuery } from "../application/queries/list-vitrine-not
 import { ListVitrineSubscribersQuery } from "../application/queries/list-vitrine-subscribers.query.js";
 import { PreviewVitrineNoticeQuery } from "../application/queries/preview-vitrine-notice.query.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 
 /**
  * **Les abonnés du webhook de la vitrine** au back-office, Gestion Boutique
@@ -63,6 +64,8 @@ export class AdminVitrineController {
 
   @Post("subscribers")
   create(
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
     @Body(new ZodBody(createVitrineSubscriberPayloadSchema)) body: CreateVitrineSubscriberPayload,
   ): Promise<VitrineCredentialsView> {
     return this.commands.execute<CreateVitrineSubscriberCommand, VitrineCredentialsView>(
@@ -72,6 +75,8 @@ export class AdminVitrineController {
         body.contents,
         body.description ?? null,
         body.contactEmail ?? null,
+        staffUserId,
+        intentKey,
       ),
     );
   }
@@ -125,14 +130,21 @@ export class AdminVitrineController {
 
   @Post("subscribers/:id/rotate")
   @HttpCode(HttpStatus.OK)
-  rotate(@Param("id") id: string): Promise<VitrineCredentialsView> {
+  rotate(
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+    @Param("id") id: string,
+  ): Promise<VitrineCredentialsView> {
     return this.commands.execute<RotateVitrineCredentialsCommand, VitrineCredentialsView>(
-      new RotateVitrineCredentialsCommand(id),
+      new RotateVitrineCredentialsCommand(id, staffUserId, intentKey),
     );
   }
 
   @Post("subscribers/:id/resync")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose un état : rejouée, les empreintes de l'abonné sont déjà oubliées et sa resynchronisation déjà demandée ; le balayage n'émet qu'une livraison en vol par abonné",
+  )
   async resync(@Param("id") id: string): Promise<void> {
     await this.commands.execute<ResyncVitrineSubscriberCommand, void>(
       new ResyncVitrineSubscriberCommand(id),
@@ -140,9 +152,13 @@ export class AdminVitrineController {
   }
 
   @Post("subscribers/:id/test")
-  async test(@Param("id") id: string): Promise<{ readonly id: string }> {
+  async test(
+    @Param("id") id: string,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+  ): Promise<{ readonly id: string }> {
     const deliveryId = await this.commands.execute<SendVitrineTestCommand, string>(
-      new SendVitrineTestCommand(id),
+      new SendVitrineTestCommand(id, staffUserId, intentKey),
     );
     return { id: deliveryId };
   }
@@ -156,6 +172,9 @@ export class AdminVitrineController {
 
   @Post("deliveries/:id/resend")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée, la livraison est déjà en file (pending) et l'agrégat refuse (409 VitrineDeliveryNotResendableError) ; la même livraison, même séquence, part une fois",
+  )
   async resend(@Param("id") id: string): Promise<void> {
     await this.commands.execute<ResendVitrineDeliveryCommand, void>(
       new ResendVitrineDeliveryCommand(id),
@@ -175,6 +194,9 @@ export class AdminVitrineController {
   }
 
   @Post("notices")
+  @Idempotent(
+    "par sa propre clé : idempotencyKey du corps, unique en base (idOfKey puis open) — rejouée, la même clé rend l'annonce déjà ouverte sans rien renvoyer",
+  )
   async sendNotice(
     @StaffUserId() staffUserId: string,
     @Body(new ZodBody(sendVitrineNoticePayloadSchema)) body: SendVitrineNoticePayload,
@@ -194,6 +216,9 @@ export class AdminVitrineController {
   /** « Reprendre l'envoi » : les seuls destinataires restés « pas tentés ». */
   @Post("notices/:id/resume")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "par sa propre clé : ne vise que les destinataires pas encore tentés, et chaque courriel porte la clé vitrine-notice:<annonce>:<abonné>, que le bloc mail n'envoie qu'une fois",
+  )
   async resumeNotice(@Param("id") id: string): Promise<void> {
     await this.commands.execute<ResumeVitrineNoticeCommand, void>(
       new ResumeVitrineNoticeCommand(id),

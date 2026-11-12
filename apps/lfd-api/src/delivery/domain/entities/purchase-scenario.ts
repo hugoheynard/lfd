@@ -1,3 +1,4 @@
+import { sameSheet } from "../services/same-sheet.js";
 import type { PurchaseScenarioContent } from "@lfd/contracts";
 
 import {
@@ -113,12 +114,23 @@ export class PurchaseScenario {
    * Remplace le nom et le contenu — ce qui répare aussi un scénario illisible.
    * @throws {InvalidPurchaseScenarioNameError} @throws {InvalidBinGapError}
    * @throws {PurchaseScenarioAlreadyArchivedError}
+   * @returns `false` si nom et contenu sont ceux qu'il porte déjà (rien ne change).
    */
-  replace(name: string, content: PurchaseScenarioContent, at: Date, author: DeliveryAuthor): void {
+  replace(
+    name: string,
+    content: PurchaseScenarioContent,
+    at: Date,
+    author: DeliveryAuthor,
+  ): boolean {
     this.ensureLive();
-    this.currentName = nameOf(name);
-    this.currentStored = readableOf(content);
+    const next = { name: nameOf(name), stored: readableOf(content) };
+    if (sameSheet({ name: this.currentName, stored: this.currentStored }, next)) {
+      return false;
+    }
+    this.currentName = next.name;
+    this.currentStored = next.stored;
     this.touch(at, author);
+    return true;
   }
 
   /** @throws {PurchaseScenarioAlreadyArchivedError} — sa date ne se réécrit pas. */

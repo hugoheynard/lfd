@@ -13,6 +13,10 @@ import {
   type PasswordLinkOutcome,
   RETRYABLE_REFUSALS,
 } from './login-methods';
+import { GestureIntents, INTENT_KEY_HEADER } from '../client/gesture-intents';
+
+/** Le sujet de l'intention d'un lien de mot de passe : un à la fois. */
+const PASSWORD_LINK_INTENT = 'password-link';
 
 /** La route, hors de `/me` : voir le JSDoc de `LoginMethodView` (contrats). */
 const IDENTITIES = `${AUTH_CONFIG.apiBaseUrl}/me/identities`;
@@ -48,6 +52,8 @@ export class LoginMethodsService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
   private readonly authorization = inject(IdentityAuthorization);
+  /** Les intentions des gestes de connexion : une clé par geste, oubliée au succès. */
+  private readonly intents = new GestureIntents();
 
   /** `GET /me/identities` — ce avec quoi la personne peut se connecter. */
   async list(): Promise<LoginMethodsOutcome> {
@@ -88,9 +94,22 @@ export class LoginMethodsService {
       return { kind: 'cancelled' };
     }
     try {
+      // Une intention par méthode à rattacher : un réessai après une réponse
+      // perdue rend le rattachement fait, il ne rattache pas deux fois.
+      const subject = `link:${connection}`;
       const methods = await firstValueFrom(
-        this.http.post<LoginMethodsView>(IDENTITIES, { idToken: proof }, headers(token)),
+        this.http.post<LoginMethodsView>(
+          IDENTITIES,
+          { idToken: proof },
+          {
+            headers: {
+              ...headers(token).headers,
+              [INTENT_KEY_HEADER]: this.intents.keyFor(subject),
+            },
+          },
+        ),
       );
+      this.intents.done(subject);
       return { kind: 'loaded', methods };
     } catch (error: unknown) {
       return { kind: 'failed', refusal: refusalFrom(error) };
@@ -130,7 +149,15 @@ export class LoginMethodsService {
   async sendPasswordLink(): Promise<PasswordLinkOutcome> {
     try {
       const token = await firstValueFrom(this.auth.accessToken$());
-      await firstValueFrom(this.http.post(PASSWORD_LINK, null, headers(token)));
+      await firstValueFrom(
+        this.http.post(PASSWORD_LINK, null, {
+          headers: {
+            ...headers(token).headers,
+            [INTENT_KEY_HEADER]: this.intents.keyFor(PASSWORD_LINK_INTENT),
+          },
+        }),
+      );
+      this.intents.done(PASSWORD_LINK_INTENT);
       return { kind: 'sent' };
     } catch (error: unknown) {
       return { kind: 'failed', message: httpErrorMessage(error) };

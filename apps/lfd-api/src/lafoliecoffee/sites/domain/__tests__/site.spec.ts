@@ -313,3 +313,23 @@ describe("Site — le départ des tournées livre (Hugo, 2026-10-13)", () => {
     expect(village.snapshot().roles.deliveryDeparture).toBe(false);
   });
 });
+
+describe("Site — un geste rejoué ne change rien", () => {
+  /** Régression : rejoués, le lieu et les rôles se réécrivaient, se rejournalisaient et purgeaient la liste publique. */
+  it("revise rend false quand le lieu est déjà celui-là, true sinon", () => {
+    const subject = site();
+
+    expect(subject.revise({ ...PLACE })).toBe(false);
+    expect(subject.revise({ ...PLACE, ligne2: "Bâtiment B" })).toBe(true);
+    expect(subject.snapshot().place.ligne2).toBe("Bâtiment B");
+  });
+
+  it("assignRoles rend false quand les rôles et le point sont déjà ceux-là", () => {
+    const subject = site();
+
+    expect(subject.assignRoles({ ...ROLES })).toBe(false);
+    expect(subject.assignRoles({ ...ROLES }, { lat: 45.45, lng: 6.98 })).toBe(false);
+    expect(subject.assignRoles({ ...ROLES, counterSetupMinutes: 15 })).toBe(true);
+    expect(subject.assignRoles({ ...ROLES, counterSetupMinutes: 15 }, null)).toBe(true);
+  });
+});

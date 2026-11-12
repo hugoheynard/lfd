@@ -16,6 +16,7 @@ import {
   staff,
   useAccountBankExportScene,
 } from "./account-bank-export-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 useAccountBankExportScene();
 
@@ -63,7 +64,7 @@ describe("l'export des comptes destinataires pour la banque", () => {
       kind: "declared",
       reason: "reported_by_bank",
     });
-    await staff().post(exportsOf(entityId)).expect(409);
+    await staff().post(exportsOf(entityId)).set(INTENT_KEY, freshIntent()).expect(409);
     const journal = await ctx.prisma.activityEvent.findMany({
       where: { type: "account_bank_export.account_reported_known" },
       select: { payload: true },

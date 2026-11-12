@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { IdentityWithoutLoginMethods } from "../../../domain/ports/__tests__/login-method-doubles.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
@@ -352,9 +354,13 @@ describe("le lien de mot de passe", () => {
       events,
       journalNames(),
       new RecordingRenewal(),
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
     );
 
-    const link = await handler.execute(new IssuePasswordLinkCommand("u1"));
+    const link = await handler.execute(
+      new IssuePasswordLinkCommand("u1", null, "fiche-1", randomUUID()),
+    );
 
     expect(link.url).toBe("https://auth/ticket-secret");
     expect(events.traced.map((event) => event.journalFact())).toEqual([
@@ -377,9 +383,13 @@ describe("le lien de mot de passe", () => {
       events,
       journalNames(),
       new RecordingRenewal(),
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
     );
 
-    await handler.execute(new IssuePasswordLinkCommand("user_sans_fiche"));
+    await handler.execute(
+      new IssuePasswordLinkCommand("user_sans_fiche", null, "fiche-1", randomUUID()),
+    );
 
     expect(events.traced[0]?.journalFact().payload).toEqual({});
   });

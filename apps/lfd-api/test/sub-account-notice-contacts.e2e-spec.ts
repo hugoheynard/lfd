@@ -27,6 +27,7 @@ import {
   recordOf,
   type NoticeScene,
 } from "./sub-account-notice-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const TEMPLATE = "customer.sub-account-gesture";
 
@@ -74,6 +75,7 @@ async function addAsSite(s: NoticeScene): Promise<string> {
   const response = await ctx
     .asSub(s.housekeeper)
     .post(`/companies/${s.site}/contacts`)
+    .set(INTENT_KEY, freshIntent())
     .send(CONTACT)
     .expect(201);
   await ctx.drain();
@@ -131,6 +133,7 @@ describe("les contacts d'un site", () => {
     await ctx
       .asSub(E2E_STAFF_SUB)
       .post(`/admin/companies/${s.site}/contacts`)
+      .set(INTENT_KEY, freshIntent())
       .send(CONTACT)
       .expect(201);
     await ctx.drain();
@@ -146,7 +149,12 @@ describe("les contacts d'un site", () => {
     const lone = (await createCompany(ctx.prisma, { raisonSociale: "SAS Seule" })).id;
     const owner = await noticeMember(ctx, lone, CustomerRole.owner);
 
-    await ctx.asSub(owner).post(`/companies/${lone}/contacts`).send(CONTACT).expect(201);
+    await ctx
+      .asSub(owner)
+      .post(`/companies/${lone}/contacts`)
+      .set(INTENT_KEY, freshIntent())
+      .send(CONTACT)
+      .expect(201);
     await ctx.drain();
 
     expect(notices()).toEqual([]);
@@ -186,7 +194,11 @@ describe("les contacts d'un site", () => {
       await tx.company.update({ where: { id: s.site }, data: { parentCompanyId: null } });
       await tx.company.update({ where: { id: s.site }, data: { parentCompanyId: other } });
       gesture = Promise.resolve(
-        ctx.asSub(s.housekeeper).post(`/companies/${s.site}/contacts`).send(CONTACT),
+        ctx
+          .asSub(s.housekeeper)
+          .post(`/companies/${s.site}/contacts`)
+          .set(INTENT_KEY, freshIntent())
+          .send(CONTACT),
       );
       // Le geste part pendant que la ligne est tenue ; il attend le verrou.
       await sleep(400);

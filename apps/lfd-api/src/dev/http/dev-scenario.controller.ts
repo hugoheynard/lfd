@@ -8,6 +8,7 @@ import { Controller, Get, HttpCode, HttpStatus, Post } from "@nestjs/common";
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { DevScenarioService } from "../dev-scenario.service.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Le scénario du jour, étape par étape**, depuis la page « Jeu de données »
@@ -32,12 +33,18 @@ export class DevScenarioController {
   }
 
   @Post("next")
+  @Idempotent(
+    "outil de la base locale seulement (refusé ailleurs) : rejoué, il avance d'une étape de plus, ce que l'écran montre, et « Recommencer » ramène au départ ; non durci, voulu",
+  )
   @HttpCode(HttpStatus.OK)
   next(@StaffUserId() staffUserId: string): Promise<DevScenarioNextReport> {
     return this.scenario.next(staffUserId);
   }
 
   @Post("reset")
+  @Idempotent(
+    "outil de la base locale seulement : remet le scénario au départ ; rejoué, il y est déjà",
+  )
   @HttpCode(HttpStatus.OK)
   reset(@StaffUserId() staffUserId: string): Promise<DevScenarioResetReport> {
     return this.scenario.reset(staffUserId);

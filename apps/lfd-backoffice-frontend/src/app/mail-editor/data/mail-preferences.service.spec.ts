@@ -33,8 +33,9 @@ describe('MailPreferencesService — les désinscriptions et accords (C4)', () =
 
   it('cherche une adresse dans le CORPS, jamais dans l’URL, puis relit par l’identifiant', async () => {
     const { api, http } = setup();
-    const done = api.searchByAddress('claire@halles.fr');
+    const done = api.searchByAddress('claire@halles.fr', 'cle-1');
     const post = http.expectOne(`${BASE}/searches`);
+    expect(post.request.headers.get('Idempotency-Key')).toBe('cle-1');
     expect(post.request.body).toEqual({ address: 'claire@halles.fr' });
     expect(post.request.urlWithParams).not.toContain('halles');
     post.flush({ id: 's1' });
@@ -47,9 +48,10 @@ describe('MailPreferencesService — les désinscriptions et accords (C4)', () =
 
   it('révèle puis lit l’adresse', async () => {
     const { api, http } = setup();
-    const done = api.revealRecipient('pref_1');
+    const done = api.revealRecipient('pref_1', 'cle-2');
     const post = http.expectOne(`${BASE}/pref_1/recipient-reveal`);
     expect(post.request.method).toBe('POST');
+    expect(post.request.headers.get('Idempotency-Key')).toBe('cle-2');
     post.flush(null);
     await tick();
     http

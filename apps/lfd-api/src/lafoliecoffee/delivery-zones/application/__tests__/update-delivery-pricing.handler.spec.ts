@@ -141,4 +141,21 @@ describe("GetDeliveryPricingHandler", () => {
       new GetDeliveryPricingHandler(new Current(DEFAULT_DELIVERY_PRICING)).execute(),
     ).resolves.toEqual(DEFAULT_DELIVERY_PRICING);
   });
+
+  /** Régression : un réglage rejoué réécrivait, rejournalisait et purgeait les réglages publics. */
+  it("ne réécrit, ne journalise ni ne purge rien quand le patch redit l'état courant", async () => {
+    const { handler, written, events, edge, afterCommit } = scene({
+      ...DEFAULT_DELIVERY_PRICING,
+      b2b: { fee: { mode: "amount", cents: 900 }, freeDeliveryThresholdCents: null },
+    });
+
+    await handler.execute(
+      new UpdateDeliveryPricingCommand({ b2b: { fee: { mode: "amount", cents: 900 } } }, "staff_a"),
+    );
+    await afterCommit.commit();
+
+    expect(written.last).toBeNull();
+    expect(events.factTypes()).toEqual([]);
+    expect(edge.purges).toBe(0);
+  });
 });

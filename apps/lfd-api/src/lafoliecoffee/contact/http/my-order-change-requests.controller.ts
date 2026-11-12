@@ -13,6 +13,7 @@ import { perAccountThrottleGuard } from "../../../platform/security/per-account-
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { RequestOrderChangeCommand } from "../application/commands/request-order-change.command.js";
 import { GetMyOrderChangeRequestQuery } from "../application/queries/get-my-order-change-request.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /** Trois demandes par dix minutes et par COMPTE, comme un signalement. */
 export const OrderChangeRequestThrottleGuard = perAccountThrottleGuard({
@@ -41,6 +42,9 @@ export class MyOrderChangeRequestsController {
    */
   @Post()
   @UseGuards(OrderChangeRequestThrottleGuard)
+  @Idempotent(
+    "rejouée, une demande attend déjà sur cette commande : le geste refuse (409 OrderChangeAlreadyPendingError) avant tout dépôt ni courriel",
+  )
   async request(
     @Param("orderId") orderId: string,
     @Body(new ZodBody(orderChangeRequestPayloadSchema)) payload: OrderChangeRequestPayload,

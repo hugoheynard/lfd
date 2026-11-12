@@ -13,6 +13,7 @@ import type {
 } from "../src/lafoliecoffee/account/domain/ports/account.reader.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const ADMIN = "auth0|admin";
 
@@ -89,6 +90,7 @@ describe("contacts additionnels — CRUD par le gestionnaire", () => {
     const created = await ctx
       .asSub(ADMIN)
       .post(`/companies/${companyId}/contacts`)
+      .set(INTENT_KEY, freshIntent())
       .send(CONTACT)
       .expect(201);
     const contactId = jsonBody<{ id: string }>(created).id;
@@ -112,6 +114,7 @@ describe("contacts additionnels — CRUD par le gestionnaire", () => {
     await ctx
       .asSub(ADMIN)
       .post(`/companies/${companyId}/contacts`)
+      .set(INTENT_KEY, freshIntent())
       .send({ ...CONTACT, email: "pas-un-email" })
       .expect(400);
   });
@@ -125,6 +128,7 @@ describe("le mur", () => {
     const response = await ctx
       .asSub("auth0|membre")
       .post(`/companies/${companyId}/contacts`)
+      .set(INTENT_KEY, freshIntent())
       .send(CONTACT);
 
     expect(response.status).toBe(403);
@@ -137,6 +141,7 @@ describe("le mur", () => {
     const response = await ctx
       .asSub("auth0|etranger")
       .post(`/companies/${companyId}/contacts`)
+      .set(INTENT_KEY, freshIntent())
       .send(CONTACT);
 
     expect(response.status).toBe(404);
@@ -155,6 +160,7 @@ describe("le mur", () => {
     const response = await ctx
       .asSub("auth0|autre-gerant")
       .post(`/companies/${companyId}/contacts`)
+      .set(INTENT_KEY, freshIntent())
       .send(CONTACT);
 
     expect(response.status).toBe(404);
@@ -162,6 +168,11 @@ describe("le mur", () => {
   });
 
   it("exige un jeton (401)", async () => {
-    await ctx.http().post(`/companies/${companyId}/contacts`).send(CONTACT).expect(401);
+    await ctx
+      .http()
+      .post(`/companies/${companyId}/contacts`)
+      .set(INTENT_KEY, freshIntent())
+      .send(CONTACT)
+      .expect(401);
   });
 });

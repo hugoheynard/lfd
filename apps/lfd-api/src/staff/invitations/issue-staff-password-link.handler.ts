@@ -8,7 +8,12 @@ import { Journal } from "../../platform/journal/journal.js";
 import { Clock } from "../../platform/time/clock.js";
 import { staffPasswordLinkIssuedFact } from "../directory/domain/staff-facts.js";
 import { expiryFrom, type IssuedPasswordLink } from "../../platform/identity/password-link.js";
-import { StaffUserNotFoundError } from "../directory/domain/staff-user-errors.js";
+import {
+  StaffPasswordLinkAlreadyIssuedError,
+  StaffUserNotFoundError,
+} from "../directory/domain/staff-user-errors.js";
+import { OncePerIntent } from "../../platform/intent/once-per-intent.js";
+import { shownOnceReplay } from "../../platform/intent/shown-once-replay.js";
 import { StaffUserRepository } from "../directory/domain/staff-user.repository.js";
 import { StaffAccessCache } from "../permissions/staff-access-cache.port.js";
 
@@ -23,7 +28,20 @@ import { StaffAccessCache } from "../permissions/staff-access-cache.port.js";
  * avoir une réponse. Le fait part seul dans sa transaction, APRÈS l'appel au
  * fournisseur : si le journal tombe, le lien n'est pas rendu, et un nouvel
  * essai en frappe un autre.
+ *
+ * **Une fois par intention**, sans garder le lien : l'intention est scellée
+ * avec le renouvellement et le fait, et un rejeu de la même clé reçoit
+ * `StaffPasswordLinkAlreadyIssuedError` (409), jamais un second lien.
  */
+/** Le nom stable du geste, dans le registre des intentions. */
+const ISSUE_LINK_GESTURE = "staff.issue-password-link";
+
+/** Rien du lien n'est gardé : un rejeu est refusé, jamais servi. */
+const LINK_REPLAY = shownOnceReplay<IssuedPasswordLink>(
+  () => ({}),
+  () => new StaffPasswordLinkAlreadyIssuedError(),
+);
+
 @CommandHandler(IssueStaffPasswordLinkCommand)
 export class IssueStaffPasswordLinkHandler implements ICommandHandler<
   IssueStaffPasswordLinkCommand,
@@ -37,9 +55,27 @@ export class IssueStaffPasswordLinkHandler implements ICommandHandler<
     private readonly uow: UnitOfWork,
     private readonly staff: StaffUserRepository,
     private readonly cache: StaffAccessCache,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: IssueStaffPasswordLinkCommand): Promise<IssuedPasswordLink> {
+  /** @throws {StaffPasswordLinkAlreadyIssuedError} la même clé a déjà fabriqué un lien. */
+  execute(command: IssueStaffPasswordLinkCommand): Promise<IssuedPasswordLink> {
+    return this.intents.runSealed(
+      {
+        actorId: command.issuedBy,
+        key: command.intentKey,
+        gesture: ISSUE_LINK_GESTURE,
+        subject: command.staffUserId,
+      },
+      LINK_REPLAY,
+      (seal) => this.issue(command, seal),
+    );
+  }
+
+  private async issue(
+    command: IssueStaffPasswordLinkCommand,
+    seal: (link: IssuedPasswordLink) => Promise<void>,
+  ): Promise<IssuedPasswordLink> {
     const invitee = await this.pending.pendingOf(command.staffUserId);
     if (invitee === null) {
       throw new StaffUserNotFoundError(command.staffUserId);
@@ -48,12 +84,14 @@ export class IssueStaffPasswordLinkHandler implements ICommandHandler<
     // Le lien neuf RENOUVELLE l'invitation (2026-10-10, §8.1 bis, point 8) :
     // l'entrée refuse une fiche `invited` dont l'invitation a expiré, et
     // remettre un lien sans reposer la date enverrait de quoi se faire refuser.
+    // Le même calcul que côté client : un seul TTL, une seule vérité.
+    const link = { url, expiresAt: expiryFrom(this.clock.now()) };
     await this.uow.run(async () => {
       await this.staff.markInvited(command.staffUserId, invitee.subject, this.clock.now());
       await this.journal.append(staffPasswordLinkIssuedFact(command.staffUserId, invitee));
+      await seal(link);
     });
     this.cache.forgetAll();
-    // Le même calcul que côté client : un seul TTL, une seule vérité.
-    return { url, expiresAt: expiryFrom(this.clock.now()) };
+    return link;
   }
 }

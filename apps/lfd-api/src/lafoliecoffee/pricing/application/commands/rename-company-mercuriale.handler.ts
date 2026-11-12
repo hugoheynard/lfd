@@ -36,6 +36,10 @@ export class RenameCompanyMercurialeHandler implements ICommandHandler<
     const mercuriale = await designated(this.reader, companyId, payload);
     const label = payload.newLabel.trim();
     const renamed = mercuriale.rename(label);
+    // Redire le même nom (un rejeu) ne renomme rien : aucun acte au journal.
+    if (renamed.label === mercuriale.label) {
+      return mercuriale.lines.length;
+    }
 
     await this.mercuriales.rename(renamed, {
       subjectType: "mercuriale",

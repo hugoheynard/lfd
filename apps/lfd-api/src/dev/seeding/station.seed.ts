@@ -12,6 +12,8 @@ import { CreatePickupAddressCommand } from "../../lafoliecoffee/pickup-addresses
 import { CreateDeliveryZoneCommand } from "../../lafoliecoffee/delivery-zones/application/create-delivery-zone.command.js";
 import type { PrismaClient } from "../../platform/database/client/client.js";
 import { posePointDiscount } from "./station-promotions.seed.js";
+import { randomUUID } from "node:crypto";
+import { SEED_STAFF_SUB } from "./order-placing.seed.js";
 
 /**
  * **La station** : points de retrait, zones de livraison, heure limite.
@@ -174,7 +176,7 @@ async function seedPickupPoints({ prisma, commands, now }: StationContext): Prom
       gps: point.gps,
     };
     const pickupId = await commands.execute<CreatePickupAddressCommand, string>(
-      new CreatePickupAddressCommand(payload),
+      new CreatePickupAddressCommand(payload, SEED_STAFF_SUB, randomUUID()),
     );
     if (point.discount !== null) {
       await posePointDiscount(commands, pickupId, point.discount, now);
@@ -195,7 +197,7 @@ async function seedDeliveryZones({ prisma, commands }: StationContext): Promise<
       postalPrefixes: [...zone.postalPrefixes],
       fee: zone.fee,
     };
-    await commands.execute(new CreateDeliveryZoneCommand(payload));
+    await commands.execute(new CreateDeliveryZoneCommand(payload, SEED_STAFF_SUB, randomUUID()));
     console.log(`✓ Zone de livraison « ${zone.label} » semée.`);
   }
 }

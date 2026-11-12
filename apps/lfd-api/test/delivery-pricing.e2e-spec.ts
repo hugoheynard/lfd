@@ -36,6 +36,7 @@ import {
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -85,7 +86,11 @@ async function adminView(): Promise<DeliveryPricingView> {
 }
 
 async function createZone(body: Record<string, unknown> = ZONE): Promise<string> {
-  const response = await staff().post("/admin/delivery-zones").send(body).expect(201);
+  const response = await staff()
+    .post("/admin/delivery-zones")
+    .set(INTENT_KEY, freshIntent())
+    .send(body)
+    .expect(201);
   return jsonBody<CreatedDeliveryZoneResponse>(response).id;
 }
 
@@ -183,6 +188,7 @@ describe("les remplacements par zone", () => {
   it("refuse un remplacement invalide (400), sans créer la zone", async () => {
     await staff()
       .post("/admin/delivery-zones")
+      .set(INTENT_KEY, freshIntent())
       .send({
         ...ZONE,
         audienceTerms: {
@@ -241,6 +247,7 @@ describe("le frais facturé, résolu par audience (0b)", () => {
     const created = await ctx
       .asSub(ACTIVE)
       .post(`/companies/${companyId}/delivery-addresses`)
+      .set(INTENT_KEY, freshIntent())
       .send({
         ...COURIER_ADDR,
         label: "Hôtel",

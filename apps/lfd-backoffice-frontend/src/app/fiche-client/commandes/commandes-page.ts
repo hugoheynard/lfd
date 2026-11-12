@@ -21,6 +21,7 @@ import {
 import type { AdminOrderRow, CustomerSheetView, PaymentStatus } from '@lfd/contracts';
 
 import { ClientSheetStore } from '../client-sheet.store';
+import { watchCompanySubjects } from '../../comptes-clients/company-cache/company-subjects';
 import { PermissionsStore } from '../../auth/permissions.store';
 import { AdminOrdersService } from '../../commandes/orders.service';
 import { OrdersTable } from '../../commandes/orders-table/orders-table';
@@ -151,10 +152,22 @@ export class ClientCommandesPage {
         void this.load(id);
       });
     });
+    // Une commande passée ou changée ailleurs : la liste se relit, filtres gardés.
+    watchCompanySubjects(['orders-all'], () => this.load(this.id(), { quiet: true }));
   }
 
-  protected async load(id: string = this.id()): Promise<void> {
-    this.state.set('loading');
+  /**
+   * `quiet` : relecture de fond (le veilleur) — la liste reste à l'écran
+   * pendant la lecture, et un échec la laisse telle quelle.
+   */
+  protected async load(
+    id: string = this.id(),
+    { quiet = false }: { readonly quiet?: boolean } = {},
+  ): Promise<void> {
+    const background = quiet && this.state() === 'ready';
+    if (!background) {
+      this.state.set('loading');
+    }
     try {
       // Les deux appels sont indépendants : la liste vient de la route commandes,
       // le compte de paniers de la fiche commerciale. Les enchaîner aurait doublé
@@ -185,7 +198,9 @@ export class ClientCommandesPage {
       this.sheet.set(sheet);
       this.state.set('ready');
     } catch {
-      this.state.set('error');
+      if (!background) {
+        this.state.set('error');
+      }
     }
   }
 

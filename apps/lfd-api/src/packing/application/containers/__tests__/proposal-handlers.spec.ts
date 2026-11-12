@@ -1,3 +1,4 @@
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
@@ -18,6 +19,10 @@ import { OpenPackingContainerCommand } from "../open-packing-container.command.j
 import { OpenPackingContainerHandler } from "../open-packing-container.handler.js";
 import { InMemoryPackingSettings } from "../../__tests__/packing-settings-doubles.js";
 import { RecordingPlanHold } from "../../__tests__/arrested-plan-doubles.js";
+
+let intentCount = 0;
+/** Une clé d'intention neuve par geste voulu, comme l'écran. */
+const nextKey = (): string => `intent_${(intentCount += 1)}`;
 
 // Un jour comparé à rien, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -91,6 +96,7 @@ function setup(received = 70) {
       uow,
       InMemoryPackingSettings.sharingOpen().reader(),
       new RecordingPlanHold(),
+      inMemoryIntents(),
     ),
   };
 }
@@ -149,6 +155,7 @@ describe("ApplyPackingProposalHandler — « Proposer », appliqué d'un coup, b
         "ord_1",
         { nature: "bin", binTypeId: "t_m", half: false, innerBags: 0 },
         STAFF,
+        nextKey(),
       ),
     );
 

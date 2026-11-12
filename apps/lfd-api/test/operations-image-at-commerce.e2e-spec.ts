@@ -9,6 +9,7 @@ import {
   stubAdminVerifier,
 } from "./operations-at-commerce-scene.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 /**
  * E2E — **l'image d'une opération au commerce, interrupteur OUVERT** (lot 2
@@ -130,7 +131,11 @@ describe("l'opération du commerce, porteur de la médiathèque", () => {
     await noelShowing(a);
     await staff().put(`${OPERATIONS}/noel-2026/archive`).send({}).expect(200);
 
-    await staff().post("/media/replace").send({ from: a, to: b }).expect(204);
+    await staff()
+      .post("/media/replace")
+      .set(INTENT_KEY, freshIntent())
+      .send({ from: a, to: b })
+      .expect(204);
 
     const repointed = await noel();
     expect(repointed.imageUrl).toBe(b);
@@ -151,7 +156,11 @@ describe("l'opération du commerce, porteur de la médiathèque", () => {
       data: { writtenBy: null },
     });
 
-    await staff().post("/media/replace").send({ from: a, to: b }).expect(204);
+    await staff()
+      .post("/media/replace")
+      .set(INTENT_KEY, freshIntent())
+      .send({ from: a, to: b })
+      .expect(204);
 
     expect(await noel()).toMatchObject({ imageUrl: b, imageAlt: null, writtenBy: null });
 

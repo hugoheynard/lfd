@@ -11,6 +11,7 @@ import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { SetAccountingSettingsCommand } from "../application/commands/set-accounting-settings.command.js";
 import { GetAccountingSettingsQuery } from "../application/queries/get-accounting-settings.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Les **réglages de la comptabilité** — aujourd'hui le seul plafond d'un lien
@@ -34,6 +35,9 @@ export class AdminAccountingSettingsController {
 
   @Put()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose une valeur : rejoué, le même plafond est trouvé égal et rien n'est écrit ni journalisé",
+  )
   async write(
     @StaffUserId() staffUserId: string,
     @Body(new ZodBody(setAccountingSettingsPayloadSchema)) payload: SetAccountingSettingsPayload,

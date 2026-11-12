@@ -12,6 +12,7 @@ import type { CreatedLeadResponse, ProspectView } from "@lfd/contracts";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import type { InputJsonObject } from "../src/platform/database/client/internal/prismaNamespace.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
 const stubAdminVerifier = {
@@ -45,7 +46,7 @@ function staff(): ReturnType<E2eContext["http"]> {
 /** Saisit un établissement démarché par la route du commercial. */
 async function capture(payload: Record<string, string>): Promise<string> {
   const created = jsonBody<CreatedLeadResponse>(
-    await staff().post("/admin/leads").send(payload).expect(201),
+    await staff().post("/admin/leads").set(INTENT_KEY, freshIntent()).send(payload).expect(201),
   );
   return created.id;
 }

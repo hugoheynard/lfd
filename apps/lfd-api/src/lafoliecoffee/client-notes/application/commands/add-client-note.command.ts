@@ -13,5 +13,7 @@ export class AddClientNoteCommand {
     readonly photo: Buffer | null,
     readonly thumbnail: Buffer | null,
     readonly staffUserId: string,
+    /** La clé d'intention de l'écran (`Idempotency-Key`) : un rejeu ne refait pas le geste. */
+    readonly intentKey: string,
   ) {}
 }

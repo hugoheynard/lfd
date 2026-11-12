@@ -19,7 +19,7 @@ interface ReasonRow {
   readonly labelFr: string;
   readonly labelEn: string;
   readonly labelIt: string;
-  readonly recipientEmail: string;
+  readonly recipientEmail: string | null;
   readonly position: number;
   readonly active: boolean;
   readonly audience: "b2b" | "b2c" | "both";
@@ -68,7 +68,7 @@ export class PrismaRequestReasonRepository extends RequestReasonRepository {
       labelFr: state.label.fr,
       labelEn: state.label.en,
       labelIt: state.label.it,
-      recipientEmail: state.recipientEmail.value,
+      recipientEmail: state.recipientEmail?.value ?? null,
       position: state.position,
       active: state.active,
       audience: state.audience,

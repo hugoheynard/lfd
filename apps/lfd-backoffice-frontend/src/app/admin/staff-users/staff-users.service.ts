@@ -1,4 +1,4 @@
-import { intentOptions } from '../../shared/gesture-intents';
+import { GestureIntents, intentOptions, shownOnce } from '../../shared/gesture-intents';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
@@ -24,6 +24,8 @@ import { B2B_API_BASE } from '../../api/api-config';
 @Injectable({ providedIn: 'root' })
 export class StaffUsersService {
   private readonly http = inject(HttpClient);
+  /** Une clé par lien voulu, par personne ; oubliée une fois le lien montré. */
+  private readonly linkIntents = new GestureIntents();
 
   /** Liste les users staff (triés par nom). Staff-gated. */
   async list(): Promise<readonly StaffUserView[]> {
@@ -99,10 +101,13 @@ export class StaffUsersService {
    * et le neuf tue le précédent.
    */
   async issueLink(id: string): Promise<IssuedLinkResponse> {
-    return firstValueFrom(
-      this.http.post<IssuedLinkResponse>(
-        `${B2B_API_BASE}/admin/staff-access-pending/${id}/link`,
-        {},
+    return shownOnce(this.linkIntents, id, (key) =>
+      firstValueFrom(
+        this.http.post<IssuedLinkResponse>(
+          `${B2B_API_BASE}/admin/staff-access-pending/${id}/link`,
+          {},
+          intentOptions(key),
+        ),
       ),
     );
   }

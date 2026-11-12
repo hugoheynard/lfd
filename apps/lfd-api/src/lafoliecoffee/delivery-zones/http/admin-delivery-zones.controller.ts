@@ -26,6 +26,8 @@ import { ListUncoveredPostalCodesQuery } from "../application/list-uncovered-pos
 import { RemoveDeliveryZoneCommand } from "../application/remove-delivery-zone.command.js";
 import { UpdateDeliveryZoneCommand } from "../application/update-delivery-zone.command.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 
 /**
  * Gestion **staff** des zones de livraison (Exploitation › Livraison › Zones
@@ -68,15 +70,20 @@ export class AdminDeliveryZonesController {
   @HttpCode(HttpStatus.CREATED)
   async create(
     @Body(new ZodBody(deliveryZonePayloadSchema)) payload: DeliveryZonePayload,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedDeliveryZoneResponse> {
     const id = await this.commands.execute<CreateDeliveryZoneCommand, string>(
-      new CreateDeliveryZoneCommand(payload),
+      new CreateDeliveryZoneCommand(payload, staffUserId, intentKey),
     );
     return { id };
   }
 
   @Patch(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "remplace une zone : rejouée, la même requête trouve la zone identique (le dépôt rend false) et rien n'est écrit, journalisé ni purgé",
+  )
   async update(
     @Param("id") id: string,
     @Body(new ZodBody(deliveryZonePayloadSchema)) payload: DeliveryZonePayload,

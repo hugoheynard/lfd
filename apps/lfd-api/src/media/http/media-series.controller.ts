@@ -7,6 +7,8 @@ import {
 } from "@lfd/pim-contracts";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
+import { StaffUserId } from "../../platform/auth/staff.decorator.js";
+import { IntentKey } from "../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { DeclareMediaSeriesCommand } from "../application/declare-media-series.js";
 import { DescribeMediaSeriesCommand } from "../application/describe-media-series.js";
@@ -36,13 +38,19 @@ export class MediaSeriesController {
     );
   }
 
-  /** Rend l'identifiant de la série ouverte, et rien d'autre : l'écran relit. */
+  /**
+   * Rend l'identifiant de la série ouverte, et rien d'autre : l'écran relit.
+   * La clé d'intention de l'écran (`Idempotency-Key`, obligatoire) fait qu'un
+   * double clic n'ouvre qu'une série.
+   */
   @Post()
   async declare(
     @Body(new ZodBody(mediaSeriesPayloadSchema)) payload: MediaSeriesPayload,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<{ readonly id: string }> {
     return this.commands.execute<DeclareMediaSeriesCommand, { readonly id: string }>(
-      new DeclareMediaSeriesCommand(payload),
+      new DeclareMediaSeriesCommand(payload, staffUserId, intentKey),
     );
   }
 

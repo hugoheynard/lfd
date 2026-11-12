@@ -16,6 +16,7 @@ import type { PriceLimitsView, PricingBoardView } from "@lfd/contracts";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { E2E_FAMILIES } from "./catalog-fixture.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -67,6 +68,7 @@ async function asRole(
 function putFloor(value: number, clientele?: "pro" | "public") {
   return admin()
     .put("/admin/pricing/floors")
+    .set(INTENT_KEY, freshIntent())
     .send({
       scope: GLOBAL,
       mode: "percent",
@@ -182,6 +184,7 @@ describe("la résolution ne lit que le pro", () => {
   it("🔴 une limite publique élevée ne relève aucun prix pro", async () => {
     await admin()
       .put("/admin/pricing/floors")
+      .set(INTENT_KEY, freshIntent())
       .send({
         scope: { type: "product", id: SKU },
         mode: "amount",
@@ -201,6 +204,7 @@ describe("la résolution ne lit que le pro", () => {
   it("la même limite, posée pro, relève le prix — le cas précédent ne passe pas par accident", async () => {
     await admin()
       .put("/admin/pricing/floors")
+      .set(INTENT_KEY, freshIntent())
       .send({
         scope: { type: "product", id: SKU },
         mode: "amount",
@@ -221,6 +225,7 @@ describe("le droit `lfc_price_limits`", () => {
 
     const response = await commercial
       .put("/admin/pricing/floors")
+      .set(INTENT_KEY, freshIntent())
       .send({ scope: GLOBAL, mode: "percent", value: 6_000 });
 
     expect(response.status).toBe(403);
@@ -231,7 +236,10 @@ describe("le droit `lfc_price_limits`", () => {
     await putFloor(6_000).expect(204);
     const commercial = await asRole("commercial");
 
-    expect((await commercial.post("/admin/pricing/floors/global/confirm")).status).toBe(403);
+    expect(
+      (await commercial.post("/admin/pricing/floors/global/confirm").set(INTENT_KEY, freshIntent()))
+        .status,
+    ).toBe(403);
     expect((await commercial.delete("/admin/pricing/floors/global")).status).toBe(403);
   });
 
@@ -240,6 +248,7 @@ describe("le droit `lfc_price_limits`", () => {
 
     await accounting
       .put("/admin/pricing/floors")
+      .set(INTENT_KEY, freshIntent())
       .send({ scope: GLOBAL, mode: "percent", value: 6_000, clientele: "public" })
       .expect(204);
 

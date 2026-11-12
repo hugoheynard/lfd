@@ -12,6 +12,7 @@ import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { DeclareOwnEstablishmentCommand } from "../application/commands/declare-own-establishment.command.js";
 import { WithdrawOwnEstablishmentCommand } from "../application/commands/withdraw-own-establishment.command.js";
 import { ListOwnEstablishmentsQuery } from "../application/queries/collection-test-queries.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Nos établissements** — les sociétés clientes déclarées « à nous », seules
@@ -37,6 +38,9 @@ export class AdminOwnEstablishmentsController {
   /** 409 si elle l'est déjà ; 404 si la société n'existe pas. */
   @Post()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée, l'établissement est déjà déclaré et l'agrégat refuse (409 OwnEstablishmentAlreadyDeclaredError) avant toute écriture ni fait",
+  )
   async declare(
     @StaffUserId() staffUserId: string,
     @Body(new ZodBody(declareOwnEstablishmentPayloadSchema))
@@ -50,6 +54,9 @@ export class AdminOwnEstablishmentsController {
   /** 409 si elle ne l'est pas. */
   @Post(":companyId/withdraw")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée, l'établissement n'est plus déclaré et l'agrégat refuse (409) avant toute écriture ni fait",
+  )
   async withdraw(
     @StaffUserId() staffUserId: string,
     @Param("companyId") companyId: string,

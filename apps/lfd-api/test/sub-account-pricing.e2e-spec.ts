@@ -84,6 +84,7 @@ async function principal(): Promise<string> {
 async function subAccount(parentId: string, enseigne: string): Promise<string> {
   const response = await staff()
     .post(`/admin/companies/${parentId}/sub-accounts`)
+    .set(INTENT_KEY, freshIntent())
     .send({ enseigne, deliveryAddress: DELIVERY, follows: [] })
     .expect(201);
   return jsonBody<CreatedIdResponse>(response).id;

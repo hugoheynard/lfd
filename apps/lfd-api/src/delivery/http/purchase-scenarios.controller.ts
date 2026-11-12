@@ -70,6 +70,9 @@ export class PurchaseScenariosController {
   }
 
   @Post()
+  @Idempotent(
+    "par unicité : le nom d'un scénario en cours est unique ; rejoué, l'enregistrement est refusé (409 PurchaseScenarioNameTakenError) avant toute écriture",
+  )
   @HttpCode(HttpStatus.CREATED)
   async record(
     @Body(new ZodBody(savePurchaseScenarioPayloadSchema)) payload: SavePurchaseScenarioPayload,
@@ -82,6 +85,9 @@ export class PurchaseScenariosController {
   }
 
   @Put(":id")
+  @Idempotent(
+    "pose le nom et le contenu : rejoué, rien ne change et ni écriture ni fait ne partent",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async replace(
     @Param("id") id: string,

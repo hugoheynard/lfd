@@ -1,3 +1,4 @@
+import { inMemoryIntents } from "../../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import {
   type AttachedCardPayment,
   type CardPaymentCancellation,
@@ -186,6 +187,7 @@ export function increaseScene(
     new DirectUnitOfWork(),
     clock,
     new FixedIdGenerator("prop"),
+    inMemoryIntents(),
   );
   return { handler, steps, cards, journal, proposals, reader, abandonment, wall, revising };
 }

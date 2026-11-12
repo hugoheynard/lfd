@@ -28,6 +28,8 @@ import { ReorderClientNotesCommand } from "../reorder-client-notes.command.js";
 import { ReorderClientNotesHandler } from "../reorder-client-notes.handler.js";
 import { ReviseClientNoteCommand } from "../revise-client-note.command.js";
 import { ReviseClientNoteHandler } from "../revise-client-note.handler.js";
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 
 /**
  * **Les gestes d'un agent sur le carnet de notes d'un client.**
@@ -62,8 +64,12 @@ function scene(companies = new KnownCompanies()) {
     notebooks,
     store,
     events,
-    add: new AddClientNoteHandler(...deps, new FixedStaffDirectory({ [MAYA]: "Maya Commerciale" })),
-    revise: new ReviseClientNoteHandler(...deps),
+    add: new AddClientNoteHandler(
+      ...deps,
+      new FixedStaffDirectory({ [MAYA]: "Maya Commerciale" }),
+      inMemoryIntents(),
+    ),
+    revise: new ReviseClientNoteHandler(...deps, inMemoryIntents()),
     remove: new RemoveClientNoteHandler(...deps),
     reorder: new ReorderClientNotesHandler(...deps),
   };
@@ -78,7 +84,7 @@ function addNote(
   staffUserId = MAYA,
 ): Promise<string> {
   return current.add.execute(
-    new AddClientNoteCommand(COMPANY, FIELDS, photo, thumbnail, staffUserId),
+    new AddClientNoteCommand(COMPANY, FIELDS, photo, thumbnail, staffUserId, randomUUID()),
   );
 }
 
@@ -88,10 +94,33 @@ function revision(
   photo: Buffer | null,
   thumbnail: Buffer | null,
 ) {
-  return new ReviseClientNoteCommand(COMPANY, noteId, FIELDS, removePhoto, photo, thumbnail);
+  return new ReviseClientNoteCommand(
+    COMPANY,
+    noteId,
+    FIELDS,
+    removePhoto,
+    photo,
+    thumbnail,
+    MAYA,
+    randomUUID(),
+  );
 }
 
 describe("ajouter une note", () => {
+  /** Régression : un double envoi ajoutait deux notes et journalisait deux fois. */
+  it("rejouée sous la même clé, rend la même note sans en ajouter une seconde", async () => {
+    const current = scene();
+    const key = randomUUID();
+    const command = (): AddClientNoteCommand =>
+      new AddClientNoteCommand(COMPANY, FIELDS, null, null, MAYA, key);
+
+    const first = await current.add.execute(command());
+    const replayed = await current.add.execute(command());
+
+    expect(replayed).toBe(first);
+    expect(current.events.traced).toHaveLength(1);
+  });
+
   it("la range en tête, avec l'auteur figé de l'annuaire", async () => {
     const current = scene();
     const first = await addNote(current);

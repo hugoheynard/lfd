@@ -35,6 +35,8 @@ const NO_PRECONDITION: MandateOptionsPrecondition = () => Promise.resolve();
  *
  * - **Refus 404 sans RIB** : les zones vivent sur sa ligne ; en créer une sans
  *   compte ferait exister un « côté client du mandat » sans le compte à débiter.
+ * - **Les mêmes zones n'écrivent rien** : ni ligne, ni fait, ni brouillon
+ *   rendu caduc — une requête rejouée ne refait pas le geste.
  * - **Toute réécriture est journalisée**, brouillon ou pas (décidé le
  *   2026-09-14, plan §10) : `payment_mandate.options_changed` porte `via` et les
  *   valeurs écrites, dans la transaction de l'écriture. Rien n'est écrit sur un
@@ -64,7 +66,10 @@ export async function recordMandateOptions(
   await precondition(account);
 
   const options = MandateOptions.create(payload);
-  account.setOptions(options);
+  // Les mêmes zones rejouées : rien à écrire, à journaliser ni à rendre caduc.
+  if (!account.setOptions(options)) {
+    return;
+  }
   const trigger = { cause: "mandate_options_changed", via, appliesTo: printsTheZones } as const;
   const company = await mandateCompanyOf(deps.mandates, companyId);
   const voided = await writeVoidingDraft(deps, companyId, trigger, async () => {

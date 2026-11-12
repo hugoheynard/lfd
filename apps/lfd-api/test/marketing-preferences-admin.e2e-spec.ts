@@ -28,6 +28,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -107,7 +108,10 @@ describe("le droit `mail_sends`", () => {
 
     await support.get(PREFERENCES).expect(403);
     await support.get(`${PREFERENCES}/${id}`).expect(403);
-    await support.post(`${PREFERENCES}/${id}/recipient-reveal`).expect(403);
+    await support
+      .post(`${PREFERENCES}/${id}/recipient-reveal`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(403);
     await support.post(`${PREFERENCES}/${id}/unsubscription`).expect(403);
     await support
       .post(`${PREFERENCES}/unsubscriptions`)
@@ -172,7 +176,10 @@ describe("« Afficher l'adresse » — une révélation par ligne", () => {
     const colleagueAgent = await colleague("admin", "staff-colleague");
 
     await staff().get(`${PREFERENCES}/${id}/recipient`).expect(403);
-    await staff().post(`${PREFERENCES}/${id}/recipient-reveal`).expect(204);
+    await staff()
+      .post(`${PREFERENCES}/${id}/recipient-reveal`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(204);
     const response = await staff().get(`${PREFERENCES}/${id}/recipient`).expect(200);
 
     expect(jsonBody<MailPreferenceRecipientView>(response).recipient).toBe(ADDRESS);
@@ -198,7 +205,11 @@ describe("« Afficher l'adresse » — une révélation par ligne", () => {
   it("est découplée du suivi : chercher l'adresse au suivi n'ouvre pas la ligne", async () => {
     const id = await accepted(ADDRESS);
 
-    await staff().post("/admin/mail/sends/searches").send({ address: ADDRESS }).expect(201);
+    await staff()
+      .post("/admin/mail/sends/searches")
+      .set(INTENT_KEY, freshIntent())
+      .send({ address: ADDRESS })
+      .expect(201);
 
     await staff().get(`${PREFERENCES}/${id}/recipient`).expect(403);
   });
@@ -207,13 +218,29 @@ describe("« Afficher l'adresse » — une révélation par ligne", () => {
     const id = await accepted(ADDRESS);
     await MailRequestRepositorySeed.one();
     for (let index = 0; index < MAIL_CONSULTATIONS_PER_HOUR - 1; index += 1) {
-      await staff().post("/admin/mail/sends/send_1/recipient-reveal").expect(204);
+      await staff()
+        .post("/admin/mail/sends/send_1/recipient-reveal")
+        .set(INTENT_KEY, freshIntent())
+        .expect(204);
     }
-    await staff().post(`${PREFERENCES}/${id}/recipient-reveal`).expect(204);
+    await staff()
+      .post(`${PREFERENCES}/${id}/recipient-reveal`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(204);
 
-    await staff().post(`${PREFERENCES}/${id}/recipient-reveal`).expect(409);
-    await staff().post(`${PREFERENCES}/searches`).send({ address: ADDRESS }).expect(409);
-    await staff().post("/admin/mail/sends/send_1/recipient-reveal").expect(409);
+    await staff()
+      .post(`${PREFERENCES}/${id}/recipient-reveal`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(409);
+    await staff()
+      .post(`${PREFERENCES}/searches`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ address: ADDRESS })
+      .expect(409);
+    await staff()
+      .post("/admin/mail/sends/send_1/recipient-reveal")
+      .set(INTENT_KEY, freshIntent())
+      .expect(409);
     expect(await ctx.prisma.mailPreferenceConsultation.count()).toBe(1);
   });
 });
@@ -226,6 +253,7 @@ describe("la recherche par adresse du registre", () => {
 
     const created = await staff()
       .post(`${PREFERENCES}/searches`)
+      .set(INTENT_KEY, freshIntent())
       .send({ address: ` ${ADDRESS.toUpperCase()} ` })
       .expect(201);
     const searchId = jsonBody<MailPreferenceSearchCreatedView>(created).id;
@@ -254,8 +282,16 @@ describe("la recherche par adresse du registre", () => {
   });
 
   it("refuse une adresse sans @, sans rien ranger ; une adresse en URL n'est pas admise", async () => {
-    await staff().post(`${PREFERENCES}/searches`).send({ address: "colette" }).expect(400);
-    await staff().post(`${PREFERENCES}/searches`).send({}).expect(400);
+    await staff()
+      .post(`${PREFERENCES}/searches`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ address: "colette" })
+      .expect(400);
+    await staff()
+      .post(`${PREFERENCES}/searches`)
+      .set(INTENT_KEY, freshIntent())
+      .send({})
+      .expect(400);
     expect(await ctx.prisma.mailPreferenceConsultation.count()).toBe(0);
   });
 });
@@ -263,8 +299,15 @@ describe("la recherche par adresse du registre", () => {
 describe("la purge des consultations (1 an, même cran que le suivi)", () => {
   it("compte et supprime les consultations du registre, lignes trouvées comprises", async () => {
     const id = await accepted(ADDRESS);
-    await staff().post(`${PREFERENCES}/${id}/recipient-reveal`).expect(204);
-    await staff().post(`${PREFERENCES}/searches`).send({ address: ADDRESS }).expect(201);
+    await staff()
+      .post(`${PREFERENCES}/${id}/recipient-reveal`)
+      .set(INTENT_KEY, freshIntent())
+      .expect(204);
+    await staff()
+      .post(`${PREFERENCES}/searches`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ address: ADDRESS })
+      .expect(201);
     const pruner = ctx.app.get(MailConsultationPruner);
     const after = new Date(clock.now().getTime() + MINUTE);
 

@@ -127,7 +127,7 @@ function ruleBody(overrides: RuleBody = {}): Record<string, unknown> {
 }
 
 const postRule = (overrides: RuleBody = {}) =>
-  staff().post("/admin/pricing/rules").send(ruleBody(overrides));
+  staff().post("/admin/pricing/rules").set(INTENT_KEY, freshIntent()).send(ruleBody(overrides));
 
 /**
  * Une date à `days` jours d'aujourd'hui, à minuit UTC.
@@ -463,6 +463,7 @@ describe("suspendre, reprendre, archiver", () => {
   it("archive une limite avec son motif, et le journal le garde", async () => {
     await staff()
       .put("/admin/pricing/floors")
+      .set(INTENT_KEY, freshIntent())
       .send({ scope: { type: "global", id: null }, mode: "percent", value: 5_000, dynamic: null });
 
     const archived = await staff()
@@ -526,6 +527,7 @@ describe("suspendre, reprendre, archiver", () => {
   it("refuse une limite en euros sur tout le catalogue", async () => {
     const response = await staff()
       .put("/admin/pricing/floors")
+      .set(INTENT_KEY, freshIntent())
       .send({ scope: { type: "global", id: null }, mode: "amount", value: 150, dynamic: null });
 
     expect(response.status).toBe(400);
@@ -534,6 +536,7 @@ describe("suspendre, reprendre, archiver", () => {
   it("refuse une limite en euros sur une famille", async () => {
     const response = await staff()
       .put("/admin/pricing/floors")
+      .set(INTENT_KEY, freshIntent())
       .send({
         scope: { type: "category", id: FAMILY },
         mode: "amount",
@@ -547,6 +550,7 @@ describe("suspendre, reprendre, archiver", () => {
   it("accepte la même limite en pourcentage", async () => {
     const response = await staff()
       .put("/admin/pricing/floors")
+      .set(INTENT_KEY, freshIntent())
       .send({
         scope: { type: "category", id: FAMILY },
         mode: "percent",
@@ -561,6 +565,7 @@ describe("suspendre, reprendre, archiver", () => {
   it("accepte une limite en euros sur un article", async () => {
     const response = await staff()
       .put("/admin/pricing/floors")
+      .set(INTENT_KEY, freshIntent())
       .send({
         scope: { type: "product", id: SKU },
         mode: "amount",
@@ -715,6 +720,7 @@ describe("suspendre, reprendre, archiver", () => {
   ) =>
     staff()
       .put("/admin/pricing/volume-ladders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         scope: { type: "product", id: SKU },
         audience: { type: "all", id: null },
@@ -802,7 +808,10 @@ describe("suspendre, reprendre, archiver", () => {
 
 describe("poser une limite", () => {
   const putFloor = (scope: { type: string; id: string | null }, mode: string, value: number) =>
-    staff().put("/admin/pricing/floors").send({ scope, mode, value });
+    staff()
+      .put("/admin/pricing/floors")
+      .set(INTENT_KEY, freshIntent())
+      .send({ scope, mode, value });
 
   it("pose une limite globale", async () => {
     expect((await putFloor({ type: "global", id: null }, "percent", 5_000)).status).toBe(204);
@@ -918,6 +927,7 @@ describe("l'écran de tarification", () => {
   it("distingue la limite de l'article de celle dont il hérite", async () => {
     await staff()
       .put("/admin/pricing/floors")
+      .set(INTENT_KEY, freshIntent())
       .send({ scope: { type: "category", id: FAMILY }, mode: "percent", value: 8_500 });
 
     const inherited = await croissant();
@@ -926,6 +936,7 @@ describe("l'écran de tarification", () => {
 
     await staff()
       .put("/admin/pricing/floors")
+      .set(INTENT_KEY, freshIntent())
       .send({ scope: { type: "product", id: SKU }, mode: "amount", value: 120 });
 
     const own = await croissant();
@@ -937,6 +948,7 @@ describe("l'écran de tarification", () => {
     await postRule({ effect: alter(5000) }); // 200 → 100
     await staff()
       .put("/admin/pricing/floors")
+      .set(INTENT_KEY, freshIntent())
       .send({ scope: { type: "global", id: null }, mode: "percent", value: 7_500 });
 
     const item = await croissant();
@@ -966,6 +978,7 @@ describe("l'écran de tarification", () => {
     await postRule({ effect: alter(5000) }); // 200 → 100
     await staff()
       .put("/admin/pricing/floors")
+      .set(INTENT_KEY, freshIntent())
       .send({ scope: { type: "global", id: null }, mode: "percent", value: 7_500 });
     expect((await croissant()).finalMillicents).toBe(150_000);
 
@@ -1178,6 +1191,7 @@ describe("la remise commerciale accordable", () => {
   const putFloor = (mode: string, value: number) =>
     staff()
       .put("/admin/pricing/floors")
+      .set(INTENT_KEY, freshIntent())
       .send({
         scope: { type: "product", id: SKU },
         mode,
@@ -1249,6 +1263,7 @@ describe("le signal de dérive de la limite", () => {
   const putFloor = (mode: string, value: number) =>
     staff()
       .put("/admin/pricing/floors")
+      .set(INTENT_KEY, freshIntent())
       .send({
         scope: { type: "product", id: SKU },
         mode,
@@ -1340,7 +1355,9 @@ describe("le signal de dérive de la limite", () => {
     await putFloor("amount", 150);
     await ageFloor(178, 240);
 
-    const response = await staff().post(`/admin/pricing/floors/product/${SKU}/confirm`);
+    const response = await staff()
+      .post(`/admin/pricing/floors/product/${SKU}/confirm`)
+      .set(INTENT_KEY, freshIntent());
 
     expect(response.status).toBe(204);
     const floor = await floorOf();
@@ -1352,7 +1369,13 @@ describe("le signal de dérive de la limite", () => {
   });
 
   it("refuse de confirmer une limite qui n'existe pas", async () => {
-    expect((await staff().post(`/admin/pricing/floors/product/${SKU}/confirm`)).status).toBe(404);
+    expect(
+      (
+        await staff()
+          .post(`/admin/pricing/floors/product/${SKU}/confirm`)
+          .set(INTENT_KEY, freshIntent())
+      ).status,
+    ).toBe(404);
   });
 });
 
@@ -1466,6 +1489,7 @@ describe("l’écran daté et la comparaison", () => {
   it("porte les paliers de volume aux deux marqueurs", async () => {
     await staff()
       .put("/admin/pricing/volume-ladders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         scope: { type: "product", id: SKU },
         audience: { type: "all", id: null },
@@ -1549,6 +1573,7 @@ describe("suspendre, reprendre, archiver un barème", () => {
   const poseLadder = (over: Record<string, unknown> = {}) =>
     staff()
       .put("/admin/pricing/volume-ladders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         scope: { type: "product", id: SKU_L },
         audience: { type: "all", id: null },
@@ -2115,6 +2140,7 @@ describe("🔴 reposer sur une période rangée", () => {
   const ladder = (over: Record<string, unknown> = {}) =>
     staff()
       .put("/admin/pricing/volume-ladders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         scope: { type: "product", id: SKU },
         audience: { type: "all", id: null },

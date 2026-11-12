@@ -17,6 +17,7 @@ import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 export const DAY_MS = 24 * 60 * 60 * 1000;
 const ENTITIES = "/admin/accounting/legal-entities";
@@ -37,6 +38,7 @@ type Staff = () => ReturnType<E2eContext["asSub"]>;
 export async function setUpEntity(staff: Staff): Promise<string> {
   const response = await staff()
     .post(ENTITIES)
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: "La Folie Douce",
       legalForm: "SAS",
@@ -181,7 +183,11 @@ export async function depositedLine(entityId: string): Promise<{ batchId: string
     .send({ legalEntityId: entityId, periodClosesAt: closesAt.toISOString() })
     .expect(200);
   clock.set(new Date(closesAt.getTime() + 2 * HOUR_MS));
-  await staff().post(`${COLLECTION}/batches`).send({ legalEntityId: entityId }).expect(201);
+  await staff()
+    .post(`${COLLECTION}/batches`)
+    .set(INTENT_KEY, freshIntent())
+    .send({ legalEntityId: entityId })
+    .expect(201);
   await ctx.drain();
   const line = await ctx.prisma.collectionBatchLine.findFirstOrThrow();
   await staff().get(`${COLLECTION}/batches/${line.batchId}/file.xml`).expect(200);
@@ -210,7 +216,11 @@ export async function signal(
 /** Le mois suivant clos : le lot du 1er. */
 export async function nextMonthConstitution(entityId: string, expected: 201 | 409): Promise<void> {
   clock.set(new Date(nextClosesAt.getTime() + 2 * HOUR_MS));
-  await staff().post(`${COLLECTION}/batches`).send({ legalEntityId: entityId }).expect(expected);
+  await staff()
+    .post(`${COLLECTION}/batches`)
+    .set(INTENT_KEY, freshIntent())
+    .send({ legalEntityId: entityId })
+    .expect(expected);
   await ctx.drain();
 }
 

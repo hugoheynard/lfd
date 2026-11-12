@@ -9,6 +9,7 @@
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -72,6 +73,7 @@ async function aCitingProduct(
 ): Promise<{ productId: string; variantId: string }> {
   const created = await staff()
     .post(PRODUCTS)
+    .set(INTENT_KEY, freshIntent())
     .send({ name: { fr: name }, kind: "daily", categoryId })
     .expect(201);
   const productId = jsonBody<{ id: string }>(created).id;

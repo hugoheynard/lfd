@@ -10,5 +10,7 @@ export class ExportMandatesForBankCommand {
   constructor(
     readonly legalEntityId: string,
     readonly staffUserId: string,
+    /** La clé d'intention de l'écran : un second envoi rend le même export. */
+    readonly intentKey: string,
   ) {}
 }

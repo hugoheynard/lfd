@@ -9,6 +9,7 @@ import type {
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../../api/api-config';
+import { intentOptions } from '../../shared/gesture-intents';
 
 /**
  * **La carte de contact** côté back-office — ses textes et ses numéros. Les
@@ -26,10 +27,11 @@ export class ContactService {
     return firstValueFrom(this.http.get<ContactPhoneView[]>(`${this.base}/phones`));
   }
 
-  createPhone(payload: ContactPhonePayload): Promise<void> {
-    return firstValueFrom(this.http.post<unknown>(`${this.base}/phones`, payload)).then(
-      () => undefined,
-    );
+  /** Crée un numéro, une fois par intention (`Idempotency-Key`). */
+  createPhone(payload: ContactPhonePayload, intentKey: string): Promise<void> {
+    return firstValueFrom(
+      this.http.post<unknown>(`${this.base}/phones`, payload, intentOptions(intentKey)),
+    ).then(() => undefined);
   }
 
   updatePhone(id: string, payload: ContactPhonePayload): Promise<void> {

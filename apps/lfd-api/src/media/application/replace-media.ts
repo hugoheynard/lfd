@@ -2,6 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../platform/database/unit-of-work.js";
 import { UuidGenerator } from "../../platform/id/uuid-generator.js";
+import { NOTHING_TO_REPLAY, OncePerIntent } from "../../platform/intent/once-per-intent.js";
 import { DurablePublisher } from "../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../platform/time/clock.js";
 import { MediaCarriers } from "../channels/carriers/media-carriers.js";
@@ -18,6 +19,8 @@ export class ReplaceMediaCommand {
     readonly to: string,
     /** La fiche INTERNE du staff : la vitrine signe son enregistrement de lui. */
     readonly staffUserId: string,
+    /** La clé que l'écran a fabriquée pour ce geste — un double clic ne trace qu'un remplacement. */
+    readonly intentKey: string,
   ) {}
 }
 
@@ -51,6 +54,10 @@ export class ReplaceMediaCommand {
  * ⚠️ La lecture des deux images n'est pas un verrou : une image retirée entre
  * la lecture et le repointage laisserait ses porteurs sur une URL disparue.
  * C'est la fenêtre du retrait (`mediatheque.md` §8), et elle est assumée.
+ *
+ * **Une fois par intention** : rejoué, plus rien ne porterait l'ancienne image
+ * et un second fait « remplacée chez 0 porteur » partirait au journal. La clé
+ * de l'écran est scellée dans l'unité de travail ; un rejeu ne refait rien.
  */
 @CommandHandler(ReplaceMediaCommand)
 export class ReplaceMediaHandler implements ICommandHandler<ReplaceMediaCommand, void> {
@@ -62,6 +69,7 @@ export class ReplaceMediaHandler implements ICommandHandler<ReplaceMediaCommand,
     private readonly durable: DurablePublisher,
     private readonly ids: UuidGenerator,
     private readonly clock: Clock,
+    private readonly intents: OncePerIntent,
   ) {}
 
   /**
@@ -69,7 +77,23 @@ export class ReplaceMediaHandler implements ICommandHandler<ReplaceMediaCommand,
    * @throws {MediaReplacedBySelfError} les deux URL sont la même image.
    * @throws {MediaNotInLibraryError} l'une des deux n'est pas au fonds.
    */
-  async execute(command: ReplaceMediaCommand): Promise<void> {
+  execute(command: ReplaceMediaCommand): Promise<void> {
+    return this.intents.runSealed(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: "media.replace",
+        subject: command.from,
+      },
+      NOTHING_TO_REPLAY,
+      (seal) => this.replace(command, seal),
+    );
+  }
+
+  private async replace(
+    command: ReplaceMediaCommand,
+    seal: (result: void) => Promise<void>,
+  ): Promise<void> {
     const { from, to } = imageReplacement(command.from, command.to);
     const replaced = await this.library.find(from);
     if (replaced === null) {
@@ -100,6 +124,7 @@ export class ReplaceMediaHandler implements ICommandHandler<ReplaceMediaCommand,
       if (repointed > 0) {
         await this.durable.publish(MediaAssetDescribedFact.announce(to, this.ids));
       }
+      await seal(undefined);
     });
   }
 }

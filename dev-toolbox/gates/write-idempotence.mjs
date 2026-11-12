@@ -12,7 +12,12 @@
  *   pas qu'elle est vraie (§ 7 : déclaratif, relu en revue) ;
  * - **par intention** : `@IntentKey()` dans la signature, ET le handler
  *   atteint appelle `OncePerIntent.runSealed` — ou `run`, seulement si ce
- *   handler n'écrit pas en base (heuristique ci-dessous).
+ *   handler n'écrit pas en base (heuristique ci-dessous). Une requête
+ *   (`new XQuery(...)`) exécutée par la même route — la relecture après
+ *   l'écriture — n'est pas une commande et ne compte pas ;
+ * - **risque assumé** : `@AcceptedReplay("raison", "décidé par …")`, les deux
+ *   non vides. Un rejeu peut refaire le geste, et quelqu'un l'a décidé : la
+ *   porte les liste à chaque exécution, une liste qui se lit, pas une dette.
  *
  * Le handler se résout sans liste : la classe passée en `new X(...)` à un
  * `.execute(` du contrôleur, son fichier lu par l'import, puis la classe
@@ -31,7 +36,8 @@
  *
  * 1. une route ni rangée ni inscrite dans `write-idempotence-debt.json` ;
  * 2. une route rangée (ou disparue) encore inscrite dans la dette ;
- * 3. un `@Idempotent()` sans raison ;
+ * 3. un `@Idempotent()` sans raison, un `@AcceptedReplay()` sans raison ou
+ *    sans décision ;
  * 4. `runSealed` dans un fichier qui ouvre `$transaction(` en direct :
  *    `seal` ne scelle que sous `UnitOfWork`, ailleurs la résolution part hors
  *    de la transaction sans erreur (§ 7).
@@ -82,6 +88,23 @@ function reasonOf(method) {
       return first.text.trim();
     }
     return "";
+  }
+  return null;
+}
+
+/**
+ * Le risque assumé d'un `@AcceptedReplay(raison, décision)` : `null` sans
+ * décorateur, `""` si l'un des deux manque, est vide ou n'est pas littéral.
+ */
+function acceptedReplayOf(method) {
+  for (const decorator of decoratorsOf(method)) {
+    const { name, args } = decoratorOf(decorator);
+    if (name !== "AcceptedReplay") continue;
+    const texts = args
+      .filter((arg) => ts.isStringLiteral(arg) || ts.isNoSubstitutionTemplateLiteral(arg))
+      .map((arg) => arg.text.trim());
+    if (texts.length !== 2 || texts.some((text) => text === "")) return "";
+    return `${texts[0]} (${texts[1]})`;
   }
   return null;
 }
@@ -162,6 +185,7 @@ export function writeRoutes(path, source) {
           method: member.name.getText(file),
           line: lineOf(file, member),
           reason: reasonOf(member),
+          accepted: acceptedReplayOf(member),
           intentKey: readsIntentKey(member),
           commands: executedClasses(member, siblings).map((name) => ({
             name,
@@ -239,11 +263,20 @@ export function handlerFor(command, handlers) {
   return named.length === 1 ? named[0] : null;
 }
 
-/** La case d'une route : `nature`, `intent`, `empty-reason`, ou `null` (non rangée). */
+/** Une requête de lecture (`XQuery`) : la relecture après l'écriture, pas une commande. */
+const isQuery = (command) => /Query$/.test(command.name);
+
+/**
+ * La case d'une route : `nature`, `intent`, `accepted`, `empty-reason`, ou
+ * `null` (non rangée).
+ */
 export function caseOf(route, handlers) {
   if (route.reason !== null) return route.reason === "" ? "empty-reason" : "nature";
-  if (!route.intentKey || route.commands.length === 0) return null;
-  const reached = route.commands.map((command) => handlerFor(command, handlers));
+  const accepted = route.accepted ?? null;
+  if (accepted !== null) return accepted === "" ? "empty-reason" : "accepted";
+  const commands = route.commands.filter((command) => !isQuery(command));
+  if (!route.intentKey || commands.length === 0) return null;
+  const reached = commands.map((command) => handlerFor(command, handlers));
   const sealedOrHarmless = (h) => h !== null && (h.sealed || (h.run && !h.writes));
   return reached.every(sealedOrHarmless) ? "intent" : null;
 }
@@ -266,7 +299,7 @@ export function verdict(routes, debt, sealedFiles = []) {
     const where = `${route.file}:${route.line}  ${route.method}`;
     if (route.case === "empty-reason") {
       failures.push(
-        `${where} — @Idempotent() sans raison : nommer le mécanisme qui rend le rejeu sans effet`,
+        `${where} — @Idempotent() sans raison, ou @AcceptedReplay() sans raison ou sans décision : nommer le mécanisme, ou le risque et qui l'a décidé`,
       );
     } else if (route.case === null && !inDebt.has(key(route))) {
       failures.push(
@@ -290,7 +323,7 @@ export function verdict(routes, debt, sealedFiles = []) {
       `${file} — runSealed dans un fichier qui ouvre $transaction( en direct : seal ne scelle que sous UnitOfWork`,
     );
   }
-  const ranged = routes.filter((route) => route.case === "nature" || route.case === "intent");
+  const ranged = routes.filter((route) => ["nature", "intent", "accepted"].includes(route.case));
   return { failures, ranged, debt: routes.filter((route) => route.case === null) };
 }
 
@@ -354,9 +387,13 @@ function main(argv) {
   const machine = result.ranged.filter((route) => route.machine).length;
   console.log(
     `✓ write-idempotence : ${routes.length} route(s) d'écriture, ${result.ranged.length} rangée(s) ` +
-      `(${count("intent")} par intention, ${count("nature")} par @Idempotent dont ${machine} sous RecomputeGuard).\n` +
+      `(${count("intent")} par intention, ${count("nature")} par @Idempotent dont ${machine} sous RecomputeGuard, ` +
+      `${count("accepted")} en risque assumé).\n` +
       `  Dette : ${result.debt.length} route(s) non rangée(s) (${DEBT_FILE}) — compté, pas ignoré.`,
   );
+  for (const route of result.ranged.filter((r) => r.case === "accepted")) {
+    console.log(`  Risque assumé : ${route.file}  ${route.method} — ${route.accepted}`);
+  }
   const byFile = new Map();
   for (const route of result.debt) byFile.set(route.file, (byFile.get(route.file) ?? 0) + 1);
   for (const [file, n] of [...byFile].sort((a, b) => b[1] - a[1])) console.log(`    ${n}  ${file}`);

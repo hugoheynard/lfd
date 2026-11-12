@@ -1,3 +1,4 @@
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { InMemoryQualityControlSettings } from "../../__tests__/quality-control-settings-doubles.js";
 import { SealedDayReading } from "../../services/sealed-day-reading.service.js";
 import { sealedAt } from "../../__tests__/station-doubles.js";
@@ -36,6 +37,10 @@ import { DepositQualityPhotoHandler } from "../deposit-quality-photo.handler.js"
 import { RenderQualityCheckCommand } from "../render-quality-check.command.js";
 import { RenderQualityCheckHandler } from "../render-quality-check.handler.js";
 
+let intentCount = 0;
+/** Une clé d'intention neuve par geste voulu, comme l'écran. */
+const nextKey = (): string => `intent_${(intentCount += 1)}`;
+
 /**
  * Le verdict du superviseur, ports doublés à la main (lot QC2). La journée de
  * service n'est jamais comparée à l'horloge ici : elle n'est que recopiée.
@@ -65,7 +70,14 @@ function subject(packed: readonly string[] = ["ord_2"]) {
     clock,
     new DirectUnitOfWork(),
   );
-  const deposit = new DepositQualityPhotoHandler(uploads, store, new FixedIdGenerator("up"), clock);
+  const deposit = new DepositQualityPhotoHandler(
+    uploads,
+    store,
+    new FixedIdGenerator("up"),
+    clock,
+    new DirectUnitOfWork(),
+    inMemoryIntents(),
+  );
   return { clock, table, checks, uploads, store, events, handler, deposit };
 }
 
@@ -226,7 +238,7 @@ describe("RenderQualityCheckHandler — l'idempotence par id (D8)", () => {
 
 describe("RenderQualityCheckHandler — les photos déposées puis rattachées (D8)", () => {
   async function deposited(s: ReturnType<typeof subject>, by = SUPERVISOR): Promise<string> {
-    return s.deposit.execute(new DepositQualityPhotoCommand(JPEG, by));
+    return s.deposit.execute(new DepositQualityPhotoCommand(JPEG, by, nextKey()));
   }
 
   it("déplace chaque dépôt sous quality/<jour>/<contrôle>/<position> et libère le provisoire", async () => {

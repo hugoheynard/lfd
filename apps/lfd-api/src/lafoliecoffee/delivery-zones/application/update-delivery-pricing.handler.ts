@@ -56,6 +56,11 @@ export class UpdateDeliveryPricingHandler implements ICommandHandler<
         at: this.clock.now(),
         author,
       });
+      // Rejouer le geste (ou redire l'état courant) ne change rien : ni
+      // écriture, ni fait au journal, ni purge des réglages publics.
+      if (!posed.changes(previous)) {
+        return;
+      }
       await this.pricing.put(posed);
       await this.events.publishTraced(new DeliveryPricingUpdatedEvent(posed.terms, previous));
       this.afterCommit.defer(() => this.edge.purge(), "delivery-pricing.edge-purge");

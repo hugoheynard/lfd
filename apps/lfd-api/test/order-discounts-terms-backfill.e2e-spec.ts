@@ -81,6 +81,7 @@ async function placedBeforeTerms(): Promise<{
   const labo = jsonBody<CreatedPickupResponse>(
     await staff()
       .post("/admin/pickup-addresses")
+      .set(INTENT_KEY, freshIntent())
       .send({
         label: "Le Labo",
         ligne1: "5 rue du Four",

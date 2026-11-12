@@ -34,6 +34,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { stubAdminVerifier } from "./operations-at-commerce-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 let ctx: E2eContext;
 let seq = 0;
@@ -214,7 +215,12 @@ describe("souvent pris avec (R2)", () => {
       phrase: null,
       priority: 0,
     };
-    await ctx.asSub(E2E_STAFF_SUB).post("/admin/suggestions").send(rule).expect(201);
+    await ctx
+      .asSub(E2E_STAFF_SUB)
+      .post("/admin/suggestions")
+      .set(INTENT_KEY, freshIntent())
+      .send(rule)
+      .expect(201);
 
     expect(await shownOf(["VIE-001-1"])).toEqual([
       ["PAI-001-1", "staff"],

@@ -12,6 +12,7 @@ import {
 } from "../../../shared/photo-cards/application/photo-card-editing.js";
 import type {
   InTransaction,
+  InTransactionForNewCard,
   OrphanPhotoReason,
   PhotoCardUsage,
 } from "../../../shared/photo-cards/application/photo-card-usage.js";
@@ -111,7 +112,7 @@ export async function addDeliveryStep(
   target: ProcedureTarget,
   fields: DeliveryStepFields,
   photoBytes: Buffer | null,
-  inTransaction: InTransaction,
+  inTransaction: InTransactionForNewCard,
 ): Promise<string> {
   const content = DeliveryStepContent.create(fields);
   const photo = photoBytes === null ? null : DeliveryStepPhoto.create(photoBytes);

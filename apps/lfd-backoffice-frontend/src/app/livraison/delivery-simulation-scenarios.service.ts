@@ -10,6 +10,7 @@ import type {
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
+import { intentOptions } from '../shared/gesture-intents';
 
 const SCENARIOS = `${B2B_API_BASE}/admin/delivery/simulator/scenarios`;
 const FROM_DAY = `${B2B_API_BASE}/admin/delivery/simulator/from-day`;
@@ -43,8 +44,15 @@ export class DeliverySimulationScenariosService {
     await firstValueFrom(this.http.put(`${SCENARIOS}/${encodeURIComponent(id)}`, payload));
   }
 
-  async duplicate(id: string): Promise<void> {
-    await firstValueFrom(this.http.post(`${SCENARIOS}/${encodeURIComponent(id)}/duplicate`, null));
+  /** `intentKey` : la clé du geste — un double clic ne fait qu'une copie. */
+  async duplicate(id: string, intentKey: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post(
+        `${SCENARIOS}/${encodeURIComponent(id)}/duplicate`,
+        null,
+        intentOptions(intentKey),
+      ),
+    );
   }
 
   async archive(id: string): Promise<void> {

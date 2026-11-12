@@ -110,6 +110,9 @@ export class AdminOrdersController {
    */
   @Post(":id/pickup-reminder")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "par sa propre clé : une fois par commande, tenu par l'agrégat sous verrou (409 au rejeu, rien d'écrit ni de demandé) ; le courriel porte la clé order.pickup-reminder:<commande>",
+  )
   async remindHandover(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<SendHandoverReminderCommand, void>(
       new SendHandoverReminderCommand(id, staffUserId),
@@ -126,6 +129,9 @@ export class AdminOrdersController {
    */
   @Post(":id/delay-warning")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "par sa propre clé : une fois par commande, tenu par l'agrégat sous verrou (409 au rejeu, rien d'écrit ni de demandé) ; le courriel porte la clé order.delay-warning:<commande>",
+  )
   async warnOfDelay(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<WarnCustomerOfDelayCommand, void>(
       new WarnCustomerOfDelayCommand(id, staffUserId),
@@ -148,6 +154,9 @@ export class AdminOrdersController {
   @Post(":id/cancel")
   @RequirePermission("b2b_cancel_order:write")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée, la commande relue est déjà annulée et la règle refuse (409) avant tout appel à Stripe ; l'écriture sous verrou ne s'enregistre qu'une fois (recordOnce)",
+  )
   async cancel(
     @Param("id") id: string,
     @StaffUserId() staffUserId: string,

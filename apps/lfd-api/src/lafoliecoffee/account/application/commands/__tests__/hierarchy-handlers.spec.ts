@@ -37,6 +37,8 @@ import {
   RecordingPricingJournal,
   RecordingSiteMandates,
 } from "./hierarchy-doubles.js";
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 
 /** L'horloge de la requête : les périodes s'ouvrent à SON instant, jamais à une date du calendrier. */
 const clock = new FixedClock(new Date("2030-03-01T08:00:00.000Z"));
@@ -91,6 +93,7 @@ function createHandler(w: World): CreateSubAccountHandler {
     clock,
     new DirectUnitOfWork(),
     w.pricing,
+    inMemoryIntents(),
   );
 }
 
@@ -104,11 +107,32 @@ function chaletFollowing(): SubAccountFollows {
 }
 
 describe("Créer un sous-compte", () => {
+  /** Régression : un double clic créait deux sous-comptes. */
+  it("rejouée sous la même clé, rend le même sous-compte sans en créer un second", async () => {
+    const w = world([principalCompany()]);
+    const handler = createHandler(w);
+    const key = randomUUID();
+    const command = (): CreateSubAccountCommand =>
+      new CreateSubAccountCommand("groupe", payload(), false, "staff_1", key);
+
+    const first = await handler.execute(command());
+    const replayed = await handler.execute(command());
+
+    expect(replayed).toBe(first);
+    expect(w.companies.declared).toHaveLength(1);
+  });
+
   it("prend le verrou AVANT de relire le principal, et crée lien, adresse et suivis", async () => {
     const w = world([principalCompany()]);
 
     const id = await createHandler(w).execute(
-      new CreateSubAccountCommand("groupe", payload({ follows: ["billing", "contacts"] }), false),
+      new CreateSubAccountCommand(
+        "groupe",
+        payload({ follows: ["billing", "contacts"] }),
+        false,
+        "staff_1",
+        randomUUID(),
+      ),
     );
 
     expect(id).toBe("sub_new");
@@ -128,7 +152,7 @@ describe("Créer un sous-compte", () => {
     const { deliveryAddress: _omitted, ...nameOnly } = payload();
 
     const id = await createHandler(w).execute(
-      new CreateSubAccountCommand("groupe", nameOnly, false),
+      new CreateSubAccountCommand("groupe", nameOnly, false, "staff_1", randomUUID()),
     );
 
     expect(id).toBe("sub_new");
@@ -141,7 +165,13 @@ describe("Créer un sous-compte", () => {
 
     await expect(
       createHandler(w).execute(
-        new CreateSubAccountCommand("groupe", payload({ follows: ["pricing"] }), false),
+        new CreateSubAccountCommand(
+          "groupe",
+          payload({ follows: ["pricing"] }),
+          false,
+          "staff_1",
+          randomUUID(),
+        ),
       ),
     ).rejects.toThrow(PricingFollowNotAllowedError);
     expect(w.log.calls).toEqual([]);
@@ -151,7 +181,13 @@ describe("Créer un sous-compte", () => {
     const w = world([principalCompany()]);
 
     await createHandler(w).execute(
-      new CreateSubAccountCommand("groupe", payload({ follows: ["pricing"] }), true),
+      new CreateSubAccountCommand(
+        "groupe",
+        payload({ follows: ["pricing"] }),
+        true,
+        "staff_1",
+        randomUUID(),
+      ),
     );
 
     expect(w.follows.saved[0]?.open.map((p) => p.aspect)).toEqual(["pricing"]);
@@ -161,7 +197,9 @@ describe("Créer un sous-compte", () => {
     const w = world([chaletCompany()]);
 
     await expect(
-      createHandler(w).execute(new CreateSubAccountCommand("chalet", payload(), false)),
+      createHandler(w).execute(
+        new CreateSubAccountCommand("chalet", payload(), false, "staff_1", randomUUID()),
+      ),
     ).rejects.toThrow(ParentIsSubAccountError);
     expect(w.companies.declared).toEqual([]);
   });
@@ -171,7 +209,13 @@ describe("Créer un sous-compte", () => {
 
     await expect(
       createHandler(w).execute(
-        new CreateSubAccountCommand("groupe", payload({ follows: ["billing"] }), false),
+        new CreateSubAccountCommand(
+          "groupe",
+          payload({ follows: ["billing"] }),
+          false,
+          "staff_1",
+          randomUUID(),
+        ),
       ),
     ).rejects.toThrow(BillingFollowNeedsActiveParentError);
   });

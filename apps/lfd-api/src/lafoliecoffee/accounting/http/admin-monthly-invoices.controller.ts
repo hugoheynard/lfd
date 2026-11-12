@@ -12,6 +12,7 @@ import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { IssueMonthlyInvoicesCommand } from "../application/commands/issue-monthly-invoices.command.js";
 import { GetMonthlyInvoicesQuery } from "../application/queries/get-monthly-invoices.query.js";
 import type { MonthlyInvoiceReport } from "../domain/services/monthly-invoice-report.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * La FORME du bouton seulement : l'instant est-il une clôture de l'entité,
@@ -46,6 +47,9 @@ export class AdminMonthlyInvoicesController {
   /** « Émettre les factures du 1er au 30 septembre ». Rejouable : une facture émise (payeur × mandat) ne l'est pas deux fois. */
   @Post()
   @HttpCode(200)
+  @Idempotent(
+    "par sa propre clé : un bon n'est facturé qu'une fois (index invoice_order_invoiced_once) et le plan saute les groupes déjà facturés ; un refus identique déjà rangé n'est ni réécrit ni rejournalisé",
+  )
   issue(
     @Body(new ZodBody(issueMonthlyInvoicesPayloadSchema)) payload: IssueMonthlyInvoicesPayload,
   ): Promise<MonthlyInvoiceReportView> {

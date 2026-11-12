@@ -22,6 +22,7 @@ import { CreateCompanyCommand } from "../application/commands/create-company.com
 import { GetMyCompanyActivationQuery } from "../application/queries/get-my-company-activation.query.js";
 import { createCompanyPayload, type CreateCompanyPayload } from "./payloads.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 
 /** Ce que la création renvoie : de quoi router, rien de plus. */
 export interface CreatedCompanyResponse {
@@ -45,11 +46,13 @@ export class CompaniesController {
     private readonly queries: QueryBus,
   ) {}
 
+  /** Déclare une entreprise — une fois par intention (`Idempotency-Key`). */
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(
     @CurrentUser() user: Principal,
     @Body(new ZodBody(createCompanyPayload)) payload: CreateCompanyPayload,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedCompanyResponse> {
     const id = await this.commands.execute<CreateCompanyCommand, string>(
       new CreateCompanyCommand(
@@ -60,6 +63,7 @@ export class CompaniesController {
         payload.siret,
         payload.siren,
         payload.vatNumber,
+        intentKey,
       ),
     );
     return { id };

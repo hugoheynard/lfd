@@ -41,19 +41,25 @@ export abstract class DeliveryProcedureGateway {
   /** La procédure de l'adresse ; sans étape, `steps` est vide. */
   abstract load(addressId: string): Promise<DeliveryProcedureView>;
 
-  /** Ajoute une étape en fin de procédure ; rend son identifiant. */
+  /**
+   * Ajoute une étape en fin de procédure ; rend son identifiant. `intentKey`
+   * part dans l'en-tête `Idempotency-Key` : un double envoi n'ajoute pas deux
+   * étapes.
+   */
   abstract addStep(
     addressId: string,
     fields: DeliveryStepFields,
     photo: Blob | null,
+    intentKey: string,
   ): Promise<string>;
 
-  /** Refait une étape : titre, texte, et ce qu'on fait de sa photo. */
+  /** Refait une étape : titre, texte, et ce qu'on fait de sa photo — une fois par intention. */
   abstract reviseStep(
     addressId: string,
     stepId: string,
     fields: DeliveryStepFields,
     change: DeliveryStepPhotoChange,
+    intentKey: string,
   ): Promise<void>;
 
   /** Supprime une étape **définitivement**, photo comprise. */
@@ -103,16 +109,17 @@ class AddressDeliverySteps extends PhotoCardsGateway<DeliveryProcedureStepView> 
     return (await this.procedure.load(this.addressId)).steps;
   }
 
-  add(fields: DeliveryStepFields, photo: Blob | null): Promise<string> {
-    return this.procedure.addStep(this.addressId, fields, photo);
+  add(fields: DeliveryStepFields, photo: Blob | null, intentKey: string): Promise<string> {
+    return this.procedure.addStep(this.addressId, fields, photo, intentKey);
   }
 
   revise(
     stepId: string,
     fields: DeliveryStepFields,
     change: DeliveryStepPhotoChange,
+    intentKey: string,
   ): Promise<void> {
-    return this.procedure.reviseStep(this.addressId, stepId, fields, change);
+    return this.procedure.reviseStep(this.addressId, stepId, fields, change, intentKey);
   }
 
   remove(stepId: string): Promise<void> {

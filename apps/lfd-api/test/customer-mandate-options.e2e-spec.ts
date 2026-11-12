@@ -22,6 +22,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const RIB = {
   iban: "FR1420041010050500013M02606",
@@ -76,6 +77,7 @@ const staff = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);
 async function declareIssuer(): Promise<void> {
   const response = await staff()
     .post("/admin/accounting/legal-entities")
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: "Crazeativity",
       legalForm: "SAS",
@@ -301,7 +303,12 @@ describe("les zones — drapeau ouvert", () => {
     await ctx.asSub(OWNER).put(`/companies/${companyId}/bank-account`).send(RIB).expect(204);
     await declareIssuer();
     const draft = await mint();
-    await ctx.asSub(OWNER).put(`${mandateUrl()}/proof`).attach("file", PDF, "scan.pdf").expect(204);
+    await ctx
+      .asSub(OWNER)
+      .put(`${mandateUrl()}/proof`)
+      .set(INTENT_KEY, freshIntent())
+      .attach("file", PDF, "scan.pdf")
+      .expect(204);
     const section = jsonBody<MandateSectionView>(
       await staff().get(`/admin/companies/${companyId}/mandate`).expect(200),
     );

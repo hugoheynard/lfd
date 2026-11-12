@@ -29,6 +29,8 @@ import {
   PLACE,
   storedSite,
 } from "./site-doubles.js";
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 
 const ROLES = {
   pickup: true,
@@ -450,6 +452,7 @@ describe("Plus de site par défaut (Hugo, 2026-10-15)", () => {
       new DirectUnitOfWork(),
       new HeldAfterCommit(),
       new RecordingPublicSettingsEdgeCache(),
+      inMemoryIntents(),
     );
     const payload = {
       label: "Fournil",
@@ -462,8 +465,10 @@ describe("Plus de site par défaut (Hugo, 2026-10-15)", () => {
       opening: { publicOpening: null, proPickup: null },
     };
 
-    const first = await create.execute(new CreatePickupAddressCommand(payload));
-    await create.execute(new CreatePickupAddressCommand(payload));
+    const first = await create.execute(
+      new CreatePickupAddressCommand(payload, "staff_1", randomUUID()),
+    );
+    await create.execute(new CreatePickupAddressCommand(payload, "staff_1", randomUUID()));
 
     expect(first).toBe("site_id_000001");
     // Un seul `save` par création : plus de démission d'un ancien défaut.

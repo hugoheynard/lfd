@@ -22,6 +22,7 @@ import {
   staff,
   useCollectionAutopilotScene,
 } from "./collection-autopilot-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 useCollectionAutopilotScene();
 
@@ -92,7 +93,11 @@ describe("la constitution automatique (PA3)", () => {
     const id = await entity();
     await payerWithOrder(id);
 
-    await staff().post(`${BASE}/batches`).send({ legalEntityId: id }).expect(201);
+    await staff()
+      .post(`${BASE}/batches`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ legalEntityId: id })
+      .expect(201);
 
     const batch = await ctx.prisma.collectionBatch.findFirstOrThrow({
       where: { legalEntityId: id },

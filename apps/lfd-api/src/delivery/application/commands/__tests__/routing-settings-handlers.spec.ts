@@ -89,6 +89,19 @@ describe("les réglages du calcul de tournée", () => {
     });
   });
 
+  /** Régression : des réglages reposés à l'identique se réécrivaient avec un fait au journal. */
+  it("rejoués à l'identique, n'écrivent rien et ne tracent rien", async () => {
+    const settings = new InMemoryRoutingSettings();
+    const events = new RecordingPublisher();
+    const command = new SetRoutingSettingsCommand(PAYLOAD, "staff_1");
+
+    await setter(settings, events).execute(command);
+    await setter(settings, events).execute(command);
+
+    expect(settings.written).toHaveLength(1);
+    expect(events.traced).toHaveLength(1);
+  });
+
   it("refuse une valeur hors bornes, sans rien écrire ni tracer", async () => {
     const settings = new InMemoryRoutingSettings();
     const events = new RecordingPublisher();

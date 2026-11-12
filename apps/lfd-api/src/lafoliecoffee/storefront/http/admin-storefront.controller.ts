@@ -61,6 +61,9 @@ export class AdminStorefrontController {
    */
   @Put()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "porte la révision chargée : rejouée après le premier succès, la vitrine a changé de révision et l'agrégat refuse (409 StorefrontChangedError) avant toute écriture",
+  )
   async save(
     @Body(new ZodBody(storefrontPayloadSchema)) payload: StorefrontPayload,
     @StaffUserId() staffUserId: string,

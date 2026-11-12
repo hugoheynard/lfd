@@ -73,6 +73,7 @@ async function ancolie(): Promise<{ fiche: Fiche; partSku: string }> {
   const added = jsonBody<{ id: string }>(
     await staff()
       .post(`${PRODUCTS}/${fiche.id}/variants`)
+      .set(INTENT_KEY, freshIntent())
       .send({ name: { fr: "Ancolie part" } })
       .expect(201),
   ).id;

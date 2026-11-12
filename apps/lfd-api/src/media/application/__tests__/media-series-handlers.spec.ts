@@ -1,3 +1,4 @@
+import { inMemoryIntents } from "../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { DirectUnitOfWork } from "../../../platform/database/__tests__/direct-unit-of-work.js";
 import { UuidGenerator } from "../../../platform/id/uuid-generator.js";
 import type { WriteTicket } from "../../../platform/journal/scoped-journal.js";
@@ -28,6 +29,10 @@ import {
 } from "../describe-media-series.js";
 import { ListMediaSeriesHandler } from "../list-media-series.js";
 import { SaveMediaDetailsCommand, SaveMediaDetailsHandler } from "../save-media-details.js";
+
+let intentCount = 0;
+/** Une clé d'intention neuve par geste voulu, comme l'écran. */
+const nextKey = (): string => `intent_${(intentCount += 1)}`;
 
 /**
  * 23 h 30 UTC le 15 juin = 1 h 30 le 16 à Paris : « aujourd'hui » est le 16.
@@ -131,6 +136,32 @@ class RecordingWriter extends MediaLibraryWriter {
 }
 
 describe("DeclareMediaSeriesHandler", () => {
+  /** Régression : un double clic sur « Nouvelle série » ouvrait deux séries. */
+  it("rejouée avec la même clé, rend la même série sans en ouvrir une autre", async () => {
+    const repository = new InMemorySeries();
+    const journal = new RecordingMediaJournal();
+    const handler = new DeclareMediaSeriesHandler(
+      repository,
+      new StubIds(),
+      new FixedClock(NOW),
+      journal,
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
+    );
+    const command = new DeclareMediaSeriesCommand(
+      { title: "Été", shotOn: PARIS_TODAY, note: "" },
+      "staff_1",
+      nextKey(),
+    );
+
+    const first = await handler.execute(command);
+    const replayed = await handler.execute(command);
+
+    expect(replayed).toEqual(first);
+    expect(repository.saved).toHaveLength(1);
+    expect(journal.entries).toHaveLength(1);
+  });
+
   it("ouvre la série, rend son id, et trace son ouverture", async () => {
     const repository = new InMemorySeries();
     const journal = new RecordingMediaJournal();
@@ -140,10 +171,15 @@ describe("DeclareMediaSeriesHandler", () => {
       new FixedClock(NOW),
       journal,
       new DirectUnitOfWork(),
+      inMemoryIntents(),
     );
 
     const result = await handler.execute(
-      new DeclareMediaSeriesCommand({ title: " Été ", shotOn: PARIS_TODAY, note: "" }),
+      new DeclareMediaSeriesCommand(
+        { title: " Été ", shotOn: PARIS_TODAY, note: "" },
+        "staff_1",
+        nextKey(),
+      ),
     );
 
     expect(result).toEqual({ id: "series_1" });
@@ -171,11 +207,16 @@ describe("DeclareMediaSeriesHandler", () => {
       new FixedClock(NOW),
       new RecordingMediaJournal(),
       new DirectUnitOfWork(),
+      inMemoryIntents(),
     );
 
     await expect(
       handler.execute(
-        new DeclareMediaSeriesCommand({ title: "x", shotOn: "2026-06-17", note: null }),
+        new DeclareMediaSeriesCommand(
+          { title: "x", shotOn: "2026-06-17", note: null },
+          "staff_1",
+          nextKey(),
+        ),
       ),
     ).rejects.toThrow(InvalidMediaSeriesShotOnError);
     expect(repository.saved).toEqual([]);

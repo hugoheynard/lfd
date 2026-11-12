@@ -24,6 +24,8 @@ import { PromotionFulfillmentNames } from "../commands/promotion-fulfillment-nam
 import { PromotionWriteGuard } from "../commands/promotion-write-guard.js";
 import { ResumePromotionHandler } from "../commands/resume-promotion.handler.js";
 import { RevisePromotionHandler } from "../commands/revise-promotion.handler.js";
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 
 /**
  * **Les doublés des gestes d'écriture** (plan des promotions, L3 et L7) —
@@ -182,6 +184,8 @@ export function writeScene(at: Date) {
       new FixedIdGenerator("promo"),
       clock,
       ...purge,
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
     ),
     revise: new RevisePromotionHandler(promotions, guard, names, clock, ...purge),
     pause: new PausePromotionHandler(promotions, names, clock, ...purge),

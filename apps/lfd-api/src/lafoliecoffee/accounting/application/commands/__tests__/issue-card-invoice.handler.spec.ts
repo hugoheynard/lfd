@@ -150,6 +150,21 @@ describe("IssueCardInvoiceHandler — rien ne boucle", () => {
     expect(w.journal.types()).toEqual(["order.card_invoice_blocked"]);
   });
 
+  /**
+   * Régression : « Réessayer » rejoué sur une facture toujours impossible
+   * réécrivait `order.card_invoice_blocked` à chaque clic.
+   */
+  it("le même refus rejoué n'est ni réécrit ni rejournalisé", async () => {
+    const w = cardWorld(RETRAIT, []);
+    w.reader.orders.set("o_1", order());
+
+    await issue(w);
+    const replayed = await issue(w);
+
+    expect(replayed.outcome).toBe("blocked");
+    expect(w.journal.types()).toEqual(["order.card_invoice_blocked"]);
+  });
+
   it("« Réessayer » une fois l'émetteur en service émet la facture", async () => {
     const blocked = cardWorld(RETRAIT, []);
     blocked.reader.orders.set("o_1", order());

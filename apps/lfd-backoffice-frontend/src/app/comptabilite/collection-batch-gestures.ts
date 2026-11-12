@@ -8,6 +8,7 @@ import { saveBlob } from '../shared/download/save-blob';
 import { BatchRejectedByBankPanel } from './batch-rejected-by-bank-panel/batch-rejected-by-bank-panel';
 import { CollectionBatchesService } from './collection-batches.service';
 import type { PendingBatchGesture } from './procedure-de-prelevement/pending-batch/pending-batch';
+import { GestureIntents } from '../shared/gesture-intents';
 
 /** Un téléchargement d'un lot : son fichier XML ou son CSV de contrôle. */
 export interface BatchDownload {
@@ -30,6 +31,8 @@ export class CollectionBatchGestures {
   private readonly api = inject(CollectionBatchesService);
   private readonly notify = inject(NotifyService);
   private readonly panels = inject(FoldPanelHostService);
+  /** Une préparation par intention : un double clic ne reconstitue rien. */
+  private readonly prepareIntents = new GestureIntents();
 
   /** La clé du geste en cours (`prepare`, l'id d'un lot…), ou `null`. */
   readonly pending = signal<string | null>(null);
@@ -48,7 +51,11 @@ export class CollectionBatchGestures {
     await this.run(
       'prepare',
       async () => {
-        const { batchIds } = await this.api.constitute(entityId);
+        const { batchIds } = await this.api.constitute(
+          entityId,
+          this.prepareIntents.keyFor(entityId),
+        );
+        this.prepareIntents.done(entityId);
         this.notify.success(batchIds.length === 0 ? nothing : `Lot ${lotName} préparé.`);
       },
       reload,

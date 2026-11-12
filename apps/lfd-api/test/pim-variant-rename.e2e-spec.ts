@@ -22,6 +22,7 @@
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -74,6 +75,7 @@ async function aProduct(suffix = ""): Promise<string> {
   expect(category.status).toBe(201);
   const product = await staff()
     .post(PRODUCTS)
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: { fr: `Croissant${suffix}` },
       kind: "daily",
@@ -95,6 +97,7 @@ describe("Renommer une déclinaison", () => {
     const id = await aProduct();
     const added = await staff()
       .post(`${PRODUCTS}/${id}/variants`)
+      .set(INTENT_KEY, freshIntent())
       .send({ name: { fr: "Boîte de 220 g" } });
     expect(added.status).toBe(201);
     const variantId = jsonBody<{ id: string }>(added).id;
@@ -121,6 +124,7 @@ describe("Renommer une déclinaison", () => {
     const id = await aProduct();
     const added = await staff()
       .post(`${PRODUCTS}/${id}/variants`)
+      .set(INTENT_KEY, freshIntent())
       .send({ name: { fr: "Boîte de 220 g" } });
     const variantId = jsonBody<{ id: string }>(added).id;
     const before = (await variantsOf(id)).find((entry) => entry.id === variantId)?.sku;

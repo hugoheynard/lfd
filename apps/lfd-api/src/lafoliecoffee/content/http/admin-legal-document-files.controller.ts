@@ -13,6 +13,7 @@ import { DepositLegalDocumentFileCommand } from "../application/deposit-legal-do
 import { ListLegalDocumentFilesQuery } from "../application/list-legal-document-files.query.js";
 import { InvalidLegalPdfError } from "../domain/errors/legal-document-file-errors.js";
 import { SalesTermsDocumentParam } from "./sales-terms-document.pipe.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 
 /**
  * Backstop DoS du multipart : le domaine tranche à 10 Mo (`LegalPdf`), cette
@@ -62,12 +63,13 @@ export class AdminLegalDocumentFilesController {
     @Param("mention", SalesTermsDocumentParam) document: SalesTermsDocument,
     @UploadedFile() file: UploadedFilePart | undefined,
     @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<LegalDocumentFileDeposited> {
     if (file === undefined) {
       throw new InvalidLegalPdfError("aucun fichier n'a été reçu.");
     }
     const id = await this.commands.execute<DepositLegalDocumentFileCommand, string>(
-      new DepositLegalDocumentFileCommand(document, file.buffer, staffUserId),
+      new DepositLegalDocumentFileCommand(document, file.buffer, staffUserId, intentKey),
     );
     return { id };
   }

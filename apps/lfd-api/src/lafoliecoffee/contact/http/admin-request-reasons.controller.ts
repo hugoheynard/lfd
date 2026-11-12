@@ -26,6 +26,8 @@ import { CreateRequestReasonCommand } from "../application/commands/create-reque
 import { ReviseRequestReasonCommand } from "../application/commands/revise-request-reason.command.js";
 import { ListRequestReasonsQuery } from "../application/queries/list-request-reasons.query.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 
 /**
  * Les **motifs des demandes** au back-office (Réglages › Motifs des demandes,
@@ -53,9 +55,11 @@ export class AdminRequestReasonsController {
   @Post()
   async create(
     @Body(new ZodBody(requestReasonPayloadSchema)) payload: RequestReasonPayload,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedIdResponse> {
     const id = await this.commands.execute<CreateRequestReasonCommand, string>(
-      new CreateRequestReasonCommand(payload),
+      new CreateRequestReasonCommand(payload, staffUserId, intentKey),
     );
     return { id };
   }

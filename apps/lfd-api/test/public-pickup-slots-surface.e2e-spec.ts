@@ -16,6 +16,7 @@ import type { CreatedPickupResponse, PublicPickupSlot } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -70,7 +71,11 @@ const MORNING = {
 };
 
 async function createPoint(label: string): Promise<string> {
-  const response = await staff().post("/admin/pickup-addresses").send(point(label)).expect(201);
+  const response = await staff()
+    .post("/admin/pickup-addresses")
+    .set(INTENT_KEY, freshIntent())
+    .send(point(label))
+    .expect(201);
   return jsonBody<CreatedPickupResponse>(response).id;
 }
 

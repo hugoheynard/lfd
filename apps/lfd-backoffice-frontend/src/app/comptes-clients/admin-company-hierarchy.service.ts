@@ -13,6 +13,7 @@ import type {
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
+import { intentOptions } from '../shared/gesture-intents';
 import { CompanyDetailStore } from './company-cache/company-detail.store';
 
 /**
@@ -40,10 +41,21 @@ export class AdminCompanyHierarchyService {
     return (await this.details.get(companyId))?.hierarchy;
   }
 
-  /** Crée un sous-compte de `parentId`. Rend son identifiant. */
-  async createSubAccount(parentId: string, payload: CreateSubAccountPayload): Promise<string> {
+  /**
+   * Crée un sous-compte de `parentId`. Rend son identifiant. `intentKey` : la
+   * clé de l'intention, renvoyée à chaque clic jusqu'au succès.
+   */
+  async createSubAccount(
+    parentId: string,
+    payload: CreateSubAccountPayload,
+    intentKey: string,
+  ): Promise<string> {
     const created = await firstValueFrom(
-      this.http.post<CreatedIdResponse>(`${this.base(parentId)}/sub-accounts`, payload),
+      this.http.post<CreatedIdResponse>(
+        `${this.base(parentId)}/sub-accounts`,
+        payload,
+        intentOptions(intentKey),
+      ),
     );
     return created.id;
   }

@@ -1,5 +1,6 @@
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 /**
  * **La case « demande le froid » de la fiche** (lot 4 bis du plan
@@ -49,6 +50,7 @@ async function tarte(): Promise<string> {
   return jsonBody<{ id: string }>(
     await staff()
       .post(PRODUCTS)
+      .set(INTENT_KEY, freshIntent())
       .send({ name: { fr: "Tarte au citron" }, kind: "made_to_order", categoryId: category.id })
       .expect(201),
   ).id;

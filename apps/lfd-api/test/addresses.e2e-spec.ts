@@ -20,6 +20,7 @@ import {
 } from "../src/platform/shared/errors/persistence-errors.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const ADMIN = "auth0|admin";
 const MEMBER = "auth0|member";
@@ -89,6 +90,7 @@ describe("le mur des adresses", () => {
     await ctx
       .asSub(STRANGER)
       .post(`/companies/${companyId}/delivery-addresses`)
+      .set(INTENT_KEY, freshIntent())
       .send(delivery())
       .expect(404);
   });
@@ -98,6 +100,7 @@ describe("le mur des adresses", () => {
     await ctx
       .asSub(MEMBER)
       .post(`/companies/${companyId}/delivery-addresses`)
+      .set(INTENT_KEY, freshIntent())
       .send(delivery())
       .expect(403);
   });
@@ -130,6 +133,7 @@ describe("livraison — défaut, tri, archivage", () => {
     await ctx
       .asSub(ADMIN)
       .post(`/companies/${companyId}/delivery-addresses`)
+      .set(INTENT_KEY, freshIntent())
       .send(delivery())
       .expect(201);
     const view = await addressesOf(ADMIN);
@@ -141,11 +145,13 @@ describe("livraison — défaut, tri, archivage", () => {
     await ctx
       .asSub(ADMIN)
       .post(`/companies/${companyId}/delivery-addresses`)
+      .set(INTENT_KEY, freshIntent())
       .send(delivery({ label: "A" }))
       .expect(201);
     await ctx
       .asSub(ADMIN)
       .post(`/companies/${companyId}/delivery-addresses`)
+      .set(INTENT_KEY, freshIntent())
       .send(delivery({ label: "B", isDefault: true }))
       .expect(201);
 
@@ -160,11 +166,13 @@ describe("livraison — défaut, tri, archivage", () => {
     const created = await ctx
       .asSub(ADMIN)
       .post(`/companies/${companyId}/delivery-addresses`)
+      .set(INTENT_KEY, freshIntent())
       .send(delivery({ label: "A" }))
       .expect(201);
     await ctx
       .asSub(ADMIN)
       .post(`/companies/${companyId}/delivery-addresses`)
+      .set(INTENT_KEY, freshIntent())
       .send(delivery({ label: "B" }))
       .expect(201);
     const firstId = jsonBody<{ id: string }>(created).id;
@@ -192,6 +200,7 @@ describe("livraison — défaut, tri, archivage", () => {
         await ctx
           .asSub(ADMIN)
           .post(`/companies/${companyId}/delivery-addresses`)
+          .set(INTENT_KEY, freshIntent())
           .send(delivery({ label }))
           .expect(201),
       ).id;
@@ -213,6 +222,7 @@ describe("livraison — défaut, tri, archivage", () => {
     const created = await ctx
       .asSub(ADMIN)
       .post(`/companies/${companyId}/delivery-addresses`)
+      .set(INTENT_KEY, freshIntent())
       .send(
         delivery({
           specs: {
@@ -265,6 +275,7 @@ describe("livraison — défaut, tri, archivage", () => {
     await ctx
       .asSub(ADMIN)
       .post(`/companies/${companyId}/delivery-addresses`)
+      .set(INTENT_KEY, freshIntent())
       .send(
         delivery({
           specs: {
@@ -284,6 +295,7 @@ describe("livraison — défaut, tri, archivage", () => {
     const created = await ctx
       .asSub(ADMIN)
       .post(`/companies/${companyId}/delivery-addresses`)
+      .set(INTENT_KEY, freshIntent())
       .send(delivery({ specs: { ...base, stopMinutes: 25 } }))
       .expect(201);
     const id = jsonBody<{ id: string }>(created).id;
@@ -307,6 +319,7 @@ describe("livraison — défaut, tri, archivage", () => {
     await ctx
       .asSub(ADMIN)
       .post(`/companies/${other.id}/delivery-addresses`)
+      .set(INTENT_KEY, freshIntent())
       .send(delivery())
       .expect(404);
     const leaked = await ctx.prisma.address.count({ where: { companyId: other.id } });
@@ -387,6 +400,7 @@ describe("le mur dans les écritures du carnet", () => {
     const created = await ctx
       .asSub(ADMIN)
       .post(`/companies/${companyId}/delivery-addresses`)
+      .set(INTENT_KEY, freshIntent())
       .send(delivery())
       .expect(201);
     const id = jsonBody<{ id: string }>(created).id;
@@ -487,6 +501,7 @@ describe("encodage de `kind`", () => {
     await ctx
       .asSub(ADMIN)
       .post(`/companies/${companyId}/delivery-addresses`)
+      .set(INTENT_KEY, freshIntent())
       .send(delivery())
       .expect(201);
 

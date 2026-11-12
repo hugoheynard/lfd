@@ -67,7 +67,11 @@ export async function arrange(run: Run): Promise<void> {
   await ctx.prisma.promotionDeliveryZone.deleteMany();
   await ctx.prisma.promotion.deleteMany();
   for (const promotion of basket.promotions) {
-    const response = await http.as(E2E_STAFF_SUB).post("/admin/promotions").send(promotion);
+    const response = await http
+      .as(E2E_STAFF_SUB)
+      .post("/admin/promotions")
+      .set(INTENT_KEY, freshIntent())
+      .send(promotion);
     if (response.status !== 201) {
       throw new Error(
         `Golden master : promotion refusée (${String(response.status)}) ${JSON.stringify(response.body)}`,

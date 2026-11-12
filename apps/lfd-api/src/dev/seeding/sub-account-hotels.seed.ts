@@ -10,6 +10,7 @@ import { type NeighbourClient, seedFictiveClients } from "./neighbour-clients.se
 import { acceptSeededFounders } from "./seeded-founders.seed.js";
 import { asStaff, SEED_STAFF_SUB } from "./order-placing.seed.js";
 import { asCustomer, ensurePerson } from "./sub-account-people.seed.js";
+import { randomUUID } from "node:crypto";
 
 /**
  * **Le groupe hôtelier** — le second cas réel de `sous-comptes.md`
@@ -121,6 +122,7 @@ async function seedGroup(context: ClientContext): Promise<string> {
           HOTEL_GROUP.siret,
           "",
           HOTEL_GROUP.vatNumber,
+          randomUUID(),
         ),
       );
       await commands.execute(

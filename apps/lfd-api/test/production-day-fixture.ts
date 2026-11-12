@@ -208,6 +208,7 @@ export async function bagLines(
     await ctx
       .asSub(STAFF)
       .post(`${packingOrderPath(sheet.orderId)}/containers`)
+      .set(INTENT_KEY, freshIntent())
       .send(container)
       .expect(201),
   );
@@ -248,7 +249,11 @@ export async function fillOrder(ctx: E2eContext, order: PackingTarget): Promise<
     throw new Error(`La commande ${order.orderId} n'est pas au colisage du ${order.day}.`);
   }
   const opened = jsonBody<OpenedPackingContainer>(
-    await agent().post(`${path}/containers`).send(order.container).expect(201),
+    await agent()
+      .post(`${path}/containers`)
+      .set(INTENT_KEY, freshIntent())
+      .send(order.container)
+      .expect(201),
   );
   for (const line of sheet.lines) {
     await agent()

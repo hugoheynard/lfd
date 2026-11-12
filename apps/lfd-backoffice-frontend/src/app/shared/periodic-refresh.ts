@@ -5,7 +5,7 @@ import { DestroyRef, inject, PLATFORM_ID } from '@angular/core';
  * **La relecture des écrans qui suivent le jour.**
  *
  * Les écrans d'une journée ne relisent plus tout à ce rythme depuis le
- * 2026-09-28 : ils passent par `day-version/day-version-watcher.ts`, qui ne
+ * 2026-09-28 : ils passent par `version/version-watcher.ts`, qui ne
  * relit que si la version de la journée a changé. Restent ici la cloche et le
  * jour de la Supervision. Pourquoi une relecture et pas une websocket :
  * `documentation/fournil/relecture-des-postes.md`.

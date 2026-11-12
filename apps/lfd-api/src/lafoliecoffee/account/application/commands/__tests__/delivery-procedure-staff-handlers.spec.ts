@@ -22,6 +22,8 @@ import { RemoveDeliveryStepByStaffHandler } from "../remove-delivery-step-by-sta
 import { ReorderDeliveryStepsByStaffHandler } from "../reorder-delivery-steps-by-staff.handler.js";
 import { ReviseDeliveryStepByStaffHandler } from "../revise-delivery-step-by-staff.handler.js";
 import { COMPANY_LABEL, InMemoryCompanies, journalNames } from "./member-acts-doubles.js";
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 
 /**
  * **Les gestes d'un agent sur la procédure de livraison d'un client.**
@@ -54,15 +56,22 @@ function scene(live: readonly string[] = [ADDRESS]) {
     procedures,
     store,
     events,
-    add: new AddDeliveryStepByStaffHandler(...deps),
-    revise: new ReviseDeliveryStepByStaffHandler(...deps),
+    add: new AddDeliveryStepByStaffHandler(...deps, inMemoryIntents()),
+    revise: new ReviseDeliveryStepByStaffHandler(...deps, inMemoryIntents()),
     remove: new RemoveDeliveryStepByStaffHandler(...deps),
     reorder: new ReorderDeliveryStepsByStaffHandler(...deps),
   };
 }
 
 function addCommand(photo: Buffer | null = null): AddDeliveryStepByStaffCommand {
-  return new AddDeliveryStepByStaffCommand(COMPANY, ADDRESS, FIELDS, photo);
+  return new AddDeliveryStepByStaffCommand(
+    COMPANY,
+    ADDRESS,
+    FIELDS,
+    photo,
+    "staff_1",
+    randomUUID(),
+  );
 }
 
 describe("les gestes staff sur la procédure", () => {
@@ -71,7 +80,16 @@ describe("les gestes staff sur la procédure", () => {
     const first = await current.add.execute(addCommand());
     const second = await current.add.execute(addCommand());
     await current.revise.execute(
-      new ReviseDeliveryStepByStaffCommand(COMPANY, ADDRESS, first, FIELDS, false, null),
+      new ReviseDeliveryStepByStaffCommand(
+        COMPANY,
+        ADDRESS,
+        first,
+        FIELDS,
+        false,
+        null,
+        "staff_1",
+        randomUUID(),
+      ),
     );
     await current.reorder.execute(
       new ReorderDeliveryStepsByStaffCommand(COMPANY, ADDRESS, [second, first]),
@@ -103,7 +121,16 @@ describe("les gestes staff sur la procédure", () => {
     const current = scene();
     const stepId = await current.add.execute(addCommand(pngOf(8, 8)));
     const revise = (removePhoto: boolean, photo: Buffer | null): ReviseDeliveryStepByStaffCommand =>
-      new ReviseDeliveryStepByStaffCommand(COMPANY, ADDRESS, stepId, FIELDS, removePhoto, photo);
+      new ReviseDeliveryStepByStaffCommand(
+        COMPANY,
+        ADDRESS,
+        stepId,
+        FIELDS,
+        removePhoto,
+        photo,
+        "staff_1",
+        randomUUID(),
+      );
     await current.revise.execute(revise(false, pngOf(9, 9)));
     await current.revise.execute(revise(true, null));
     await current.revise.execute(revise(false, null));
@@ -114,6 +141,45 @@ describe("les gestes staff sur la procédure", () => {
       "step_photo_removed",
       "step_revised",
     ]);
+  });
+
+  /** Régression : un double envoi ajoutait deux étapes, rangeait deux photos et journalisait deux fois. */
+  it("rejouée sous la même clé, l'ajout rend la même étape sans rien réécrire", async () => {
+    const current = scene();
+    const key = randomUUID();
+    const once = (): AddDeliveryStepByStaffCommand =>
+      new AddDeliveryStepByStaffCommand(COMPANY, ADDRESS, FIELDS, pngOf(8, 8), "staff_1", key);
+
+    const first = await current.add.execute(once());
+    const replayed = await current.add.execute(once());
+
+    expect(replayed).toBe(first);
+    expect(current.store.objects.size).toBe(1);
+    expect(current.events.traced).toHaveLength(1);
+  });
+
+  /** Régression : une révision rejouée rangeait la photo une seconde fois et rejournalisait. */
+  it("rejouée sous la même clé, la révision ne refait rien", async () => {
+    const current = scene();
+    const stepId = await current.add.execute(addCommand());
+    const key = randomUUID();
+    const once = (): ReviseDeliveryStepByStaffCommand =>
+      new ReviseDeliveryStepByStaffCommand(
+        COMPANY,
+        ADDRESS,
+        stepId,
+        FIELDS,
+        false,
+        pngOf(9, 9),
+        "staff_1",
+        key,
+      );
+
+    await current.revise.execute(once());
+    await current.revise.execute(once());
+
+    expect(current.store.objects.size).toBe(1);
+    expect(current.events.traced).toHaveLength(2);
   });
 
   it("n'inscrit rien quand l'écriture échoue", async () => {

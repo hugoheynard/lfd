@@ -79,6 +79,9 @@ export class AdminStaffUsersController {
    * (plan `plan-outils-agent-droits.md`).
    */
   @Patch(":id")
+  @Idempotent(
+    "pose la fiche : rejouée, aucun champ ne change, aucun fait ne part, et l'adresse n'est propagée au fournisseur que si elle change",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async update(
     @Param("id") id: string,

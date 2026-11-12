@@ -6,6 +6,7 @@ import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { RequestActivationSupportCommand } from "../application/commands/request-activation-support.command.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 
 /** Ce que la demande de support renvoie : son identifiant. */
 export interface SupportRequestResponse {
@@ -35,9 +36,10 @@ export class SupportController {
   async request(
     @CurrentUser() user: Principal,
     @Body(new ZodBody(activationSupportPayloadSchema)) payload: ActivationSupportPayload,
+    @IntentKey() intentKey: string,
   ): Promise<SupportRequestResponse> {
     const id = await this.commands.execute<RequestActivationSupportCommand, string>(
-      new RequestActivationSupportCommand(user.userId, payload),
+      new RequestActivationSupportCommand(user.userId, payload, intentKey),
     );
     return { id };
   }

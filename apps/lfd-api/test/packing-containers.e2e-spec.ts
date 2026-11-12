@@ -173,6 +173,7 @@ function base(orderId: string): string {
 async function openBin(orderId: string, typeId: string): Promise<string> {
   const response = await staff()
     .post(`${base(orderId)}/containers`)
+    .set(INTENT_KEY, freshIntent())
     .send({ nature: "bin", binTypeId: typeId, half: false, innerBags: 0 })
     .expect(201);
   return jsonBody<OpenedPackingContainer>(response).containerId;
@@ -214,6 +215,7 @@ describe("la colonne Contenants — le colisage tient le contenu, la livraison g
 
     const refused = await staff()
       .post(`${base(delivery.orderId)}/containers`)
+      .set(INTENT_KEY, freshIntent())
       .send({ nature: "bin", binTypeId: typeId, half: false, innerBags: 0 });
 
     expect(refused.status).toBe(409);
@@ -344,17 +346,20 @@ describe("la colonne Contenants — le colisage tient le contenu, la livraison g
     // Et l'inverse : une livraison part en bacs, jamais en sac.
     const deliveryBag = await staff()
       .post(`${base(delivery.orderId)}/containers`)
+      .set(INTENT_KEY, freshIntent())
       .send({ nature: "bag" });
     expect(codeOf(deliveryBag)).toBe("packing.container.bag_on_delivery");
 
     const bin = await staff()
       .post(`${base(pickup.orderId)}/containers`)
+      .set(INTENT_KEY, freshIntent())
       .send({ nature: "bin", binTypeId: await binTypeId(ctx), half: false, innerBags: 0 });
     expect(codeOf(bin)).toBe("delivery.bins_not_declarable");
 
     const bag = jsonBody<OpenedPackingContainer>(
       await staff()
         .post(`${base(pickup.orderId)}/containers`)
+        .set(INTENT_KEY, freshIntent())
         .send({ nature: "bag" })
         .expect(201),
     );
@@ -386,6 +391,7 @@ describe("la colonne Contenants — le colisage tient le contenu, la livraison g
     expect((await depart(ctx, roundId)).status).toBe(204);
     const late = await staff()
       .post(`${base(delivery.orderId)}/containers`)
+      .set(INTENT_KEY, freshIntent())
       .send({ nature: "bin", binTypeId: typeId, half: false, innerBags: 0 });
     expect(late.status).toBe(409);
   });
@@ -397,6 +403,7 @@ describe("la colonne Contenants — le colisage tient le contenu, la livraison g
 
     const failed = await staff()
       .post(`${base(delivery.orderId)}/containers`)
+      .set(INTENT_KEY, freshIntent())
       .send({ nature: "bin", binTypeId: typeId, half: false, innerBags: 0 });
 
     expect(failed.status).toBe(500);

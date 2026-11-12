@@ -13,6 +13,11 @@ import { SuggestionFamilyReader } from "../../domain/ports/suggestion-family.rea
 import { SuggestionSiteReader } from "../../domain/ports/suggestion-site.reader.js";
 import { CreateStaffSuggestionCommand } from "./create-staff-suggestion.command.js";
 import { ensureInCatalogue } from "./staff-suggestion-writing.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
+import { CREATED_ID_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+
+/** Le nom stable du geste, dans le registre des intentions. */
+const GESTURE = "recommendations.create-staff-suggestion";
 
 /**
  * **Crée** une suggestion décidée : l'agrégat juge la règle (et refuse une
@@ -35,9 +40,33 @@ export class CreateStaffSuggestionHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: CreateStaffSuggestionCommand): Promise<string> {
+  /**
+   * **Une fois par intention** : la clé de l'écran est scellée avec
+   * l'écriture ; un double clic rend la suggestion déjà créée sans en créer une seconde.
+   *
+   * @throws {GestureInFlightError} la même clé est encore en vol.
+   * @throws {IntentKeyReusedError} la clé a servi pour un autre geste.
+   */
+  execute(command: CreateStaffSuggestionCommand): Promise<string> {
+    return this.intents.runSealed(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: GESTURE,
+        subject: intentSubject("staff-suggestion", command.rule),
+      },
+      CREATED_ID_REPLAY,
+      (seal) => this.create(command, seal),
+    );
+  }
+
+  private async create(
+    command: CreateStaffSuggestionCommand,
+    seal: (ruleId: string) => Promise<void>,
+  ): Promise<string> {
     const now = this.clock.now();
     const rule = StaffSuggestionRule.declare(
       this.ids.next(),
@@ -54,6 +83,7 @@ export class CreateStaffSuggestionHandler implements ICommandHandler<
     await this.uow.run(async () => {
       await this.rules.add(rule);
       await this.events.publishTraced(new StaffSuggestionCreatedEvent(created));
+      await seal(rule.id);
     });
     return rule.id;
   }

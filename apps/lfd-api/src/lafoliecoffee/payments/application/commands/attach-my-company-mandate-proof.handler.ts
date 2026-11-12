@@ -2,6 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { FieldCipher } from "../../../../platform/crypto/field-cipher.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { DocumentStore } from "../../../../platform/storage/document-store.js";
 import { Clock } from "../../../../platform/time/clock.js";
@@ -14,6 +15,7 @@ import { attachProofToDraft } from "../mandate-proof-support.js";
 import { ringProofDeposited } from "../mandate-staff-bell.js";
 import { AttachMyCompanyMandateProofCommand } from "./attach-my-company-mandate-proof.command.js";
 import { SiteGesturePublisher } from "../../../account/application/services/site-gesture.publisher.js";
+import { customerIntentActor } from "../../../shared/intent/customer-intent-actor.js";
 
 /**
  * Dépose le scan signé du client — **sur le brouillon seulement**, après le mur
@@ -26,6 +28,13 @@ import { SiteGesturePublisher } from "../../../account/application/services/site
  * hors transaction, et une cloche en panne n'annule pas le dépôt.
  *
  * `@hors-transaction` le fichier part au stockage objet avant la transaction.
+ *
+ * **Une fois par intention** : acteur, le client résolu en base ; sujet, la
+ * société. Chaque dépôt range sa pièce sous une clé neuve et périme la
+ * signature en cours : un double envoi aurait rangé deux pièces et sonné deux
+ * fois. La même clé ne redépose rien et ne sonne pas ; l'intention est
+ * scellée avec la référence écrite. Le mur passe avant : un non-membre est
+ * refusé sans laisser d'intention.
  */
 @CommandHandler(AttachMyCompanyMandateProofCommand)
 export class AttachMyCompanyMandateProofHandler implements ICommandHandler<
@@ -43,6 +52,7 @@ export class AttachMyCompanyMandateProofHandler implements ICommandHandler<
     private readonly uow: UnitOfWork,
     private readonly notifier: StaffNotifier,
     private readonly gestures: SiteGesturePublisher,
+    private readonly intents: OncePerIntent,
   ) {}
 
   async execute(command: AttachMyCompanyMandateProofCommand): Promise<void> {
@@ -51,7 +61,22 @@ export class AttachMyCompanyMandateProofHandler implements ICommandHandler<
       command.actorUserId,
       command.companyId,
     );
+    await this.intents.runSealed(
+      {
+        actorId: customerIntentActor(command.actorUserId),
+        key: command.intentKey,
+        gesture: ATTACH_MY_PROOF_GESTURE,
+        subject: command.companyId,
+      },
+      NOTHING_TO_REPLAY,
+      (seal) => this.attach(command, seal),
+    );
+  }
 
+  private async attach(
+    command: AttachMyCompanyMandateProofCommand,
+    seal: () => Promise<void>,
+  ): Promise<void> {
     const mandate = await attachProofToDraft(
       {
         mandates: this.mandates,
@@ -68,10 +93,15 @@ export class AttachMyCompanyMandateProofHandler implements ICommandHandler<
         bytes: command.bytes,
         actor: { kind: "customer", userId: command.actorUserId },
       },
+      seal,
     );
+    // Après la validation : un rejeu de la même clé ne parvient pas jusqu'ici.
     await ringProofDeposited(
       { notifier: this.notifier, mandates: this.mandates, clock: this.clock },
       mandate,
     );
   }
 }
+
+/** Le nom stable du geste, dans le registre des intentions. */
+const ATTACH_MY_PROOF_GESTURE = "payments.attach-my-company-mandate-proof";

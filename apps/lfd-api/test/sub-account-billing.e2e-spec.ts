@@ -38,6 +38,7 @@ import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./
 import { attachTo, createCompany, createUser, markDelivered } from "./factories.js";
 import { placeOrder as placeTestOrder } from "./order-factory.js";
 import { cardProvidersOverride } from "./card-payments.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const SERVICE_DAY = serviceDay();
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -168,6 +169,7 @@ async function rib(companyId: string, iban: string): Promise<string> {
 async function collectingEntity(): Promise<string> {
   const response = await staff()
     .post("/admin/accounting/legal-entities")
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: "La Folie Douce",
       legalForm: "SAS",
@@ -265,6 +267,7 @@ async function billedOrder(site: string, payer: string): Promise<string> {
 async function constitute(entityId: string): Promise<readonly string[]> {
   const response = await staff()
     .post(`${COLLECTION}/batches`)
+    .set(INTENT_KEY, freshIntent())
     .send({ legalEntityId: entityId })
     .expect(201);
   return jsonBody<ConstitutedBatchesView>(response).batchIds;
@@ -479,7 +482,10 @@ describe("le lot d'un principal et de ses sites (§2.1 ter)", () => {
     });
     const orderId = await billedOrder(g.site, g.principal);
 
-    await staff().post(`${COLLECTION}/batches`).send({ legalEntityId: entity });
+    await staff()
+      .post(`${COLLECTION}/batches`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ legalEntityId: entity });
 
     const view = await cycleOf(entity);
     // Le site est nommé, pas le principal : c'est son mandat qui manque.

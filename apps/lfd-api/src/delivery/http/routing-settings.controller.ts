@@ -11,6 +11,7 @@ import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { SetRoutingSettingsCommand } from "../application/commands/set-routing-settings.command.js";
 import { GetRoutingSettingsQuery } from "../application/queries/get-routing-settings.query.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Les réglages du calcul de tournée** — détour, vitesse, départ au plus tôt,
@@ -39,6 +40,7 @@ export class RoutingSettingsController {
   }
 
   @Put()
+  @Idempotent("pose les réglages entiers : rejoués à l'identique, ni écriture ni fait ne partent")
   @HttpCode(HttpStatus.NO_CONTENT)
   async set(
     @Body(new ZodBody(deliveryRoutingSettingsPayloadSchema))

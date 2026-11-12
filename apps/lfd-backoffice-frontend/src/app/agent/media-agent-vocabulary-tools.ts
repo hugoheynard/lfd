@@ -158,11 +158,11 @@ export function declareMediaVocabularyTools(media: MediaImagesApi): void {
     },
     execute: (args) =>
       said('Ouverture de la série', async () => {
-        const id = await series.openSeries({
-          title: args.title,
-          shotOn: args.shotOn ?? null,
-          note: args.note ?? null,
-        });
+        // Un appel d'outil est une intention : sa propre clé, jamais réutilisée.
+        const id = await series.openSeries(
+          { title: args.title, shotOn: args.shotOn ?? null, note: args.note ?? null },
+          crypto.randomUUID(),
+        );
         return `Série ouverte : ${id}`;
       }),
   });

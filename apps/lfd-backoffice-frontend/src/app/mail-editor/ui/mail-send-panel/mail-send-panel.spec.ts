@@ -79,7 +79,7 @@ describe('MailSendPanel — le détail d’un envoi', () => {
     });
     element.querySelector<HTMLButtonElement>('[data-reveal]')?.click();
     await settle();
-    expect(revealRecipient).toHaveBeenCalledWith('m1');
+    expect(revealRecipient).toHaveBeenCalledWith('m1', expect.any(String));
     expect(element.querySelector('[data-recipient]')?.textContent).toBe('claire@halles.fr');
     expect(element.textContent).toContain('Consultation inscrite au journal');
   });

@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { RecordingJournal } from "../../../platform/journal/__tests__/recording-journal.js";
 import { FixedClock } from "../../../platform/time/fixed-clock.js";
 import {
@@ -6,7 +8,11 @@ import {
   TrackingUnitOfWork,
 } from "../../directory/application/__tests__/staff-doubles.js";
 import { STAFF_FACTS } from "../../directory/domain/staff-facts.js";
-import { StaffUserNotFoundError } from "../../directory/domain/staff-user-errors.js";
+import {
+  StaffPasswordLinkAlreadyIssuedError,
+  StaffUserNotFoundError,
+} from "../../directory/domain/staff-user-errors.js";
+import { inMemoryIntents } from "../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { IssueStaffPasswordLinkCommand } from "../issue-staff-password-link.command.js";
 import { IssueStaffPasswordLinkHandler } from "../issue-staff-password-link.handler.js";
 import {
@@ -70,6 +76,7 @@ function harness(invitee: PendingStaffSubject | null, journalDown = false) {
     uow,
     staff,
     cache,
+    inMemoryIntents(),
   );
   return { handler, journal, identities, staff, cache };
 }
@@ -78,7 +85,9 @@ describe("IssueStaffPasswordLinkHandler — le lien à remettre à la main", () 
   it("journalise le geste, jamais le lien", async () => {
     const h = harness(SOPHIE);
 
-    const link = await h.handler.execute(new IssueStaffPasswordLinkCommand("s1"));
+    const link = await h.handler.execute(
+      new IssueStaffPasswordLinkCommand("s1", "admin-1", randomUUID()),
+    );
 
     expect(link.url).toBe("https://tenant.invalid/ticket");
     expect(h.journal.facts).toEqual([
@@ -97,17 +106,17 @@ describe("IssueStaffPasswordLinkHandler — le lien à remettre à la main", () 
   it("ne rend pas le lien quand le journal tombe", async () => {
     const h = harness(SOPHIE, true);
 
-    await expect(h.handler.execute(new IssueStaffPasswordLinkCommand("s1"))).rejects.toThrow(
-      "journal en panne",
-    );
+    await expect(
+      h.handler.execute(new IssueStaffPasswordLinkCommand("s1", "admin-1", randomUUID())),
+    ).rejects.toThrow("journal en panne");
   });
 
   it("refuse une personne qui n'attend plus, sans rien frapper ni tracer", async () => {
     const h = harness(null);
 
-    await expect(h.handler.execute(new IssueStaffPasswordLinkCommand("s1"))).rejects.toBeInstanceOf(
-      StaffUserNotFoundError,
-    );
+    await expect(
+      h.handler.execute(new IssueStaffPasswordLinkCommand("s1", "admin-1", randomUUID())),
+    ).rejects.toBeInstanceOf(StaffUserNotFoundError);
     expect(h.identities.issued).toEqual([]);
     expect(h.journal.facts).toEqual([]);
     expect(h.staff.writes).toEqual([]);
@@ -118,9 +127,21 @@ describe("IssueStaffPasswordLinkHandler — le lien à remettre à la main", () 
     // staff refuse une fiche `invited` dont l'invitation a expiré (§8.1 bis).
     const h = harness(SOPHIE);
 
-    await h.handler.execute(new IssueStaffPasswordLinkCommand("s1"));
+    await h.handler.execute(new IssueStaffPasswordLinkCommand("s1", "admin-1", randomUUID()));
 
     expect(h.staff.writes).toEqual([{ method: "markInvited", insideTransaction: true }]);
     expect(h.cache.forgotten).toEqual([{ insideTransaction: false }]);
+  });
+
+  /** Régression : un double clic fabriquait deux liens chez le fournisseur d'identité. */
+  it("le rejeu de la même clé est refusé en 409, sans second lien", async () => {
+    const h = harness(SOPHIE);
+    const key = randomUUID();
+
+    await h.handler.execute(new IssueStaffPasswordLinkCommand("s1", "admin-1", key));
+    await expect(
+      h.handler.execute(new IssueStaffPasswordLinkCommand("s1", "admin-1", key)),
+    ).rejects.toBeInstanceOf(StaffPasswordLinkAlreadyIssuedError);
+    expect(h.identities.issued).toHaveLength(1);
   });
 });

@@ -6,8 +6,14 @@ import { DomainEventPublisher } from "../../../../platform/events/domain-event-p
 import { KbisUploadedByStaffEvent } from "../../domain/events/staff-acts.event.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { DocumentStore } from "../../../../platform/storage/document-store.js";
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
+import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import { UploadKbisByStaffCommand } from "./upload-kbis-by-staff.command.js";
-import { ingestKbis } from "./ingest-kbis.js";
+import { ingestKbis, type KbisIngestionPorts } from "./ingest-kbis.js";
+
+/** Le nom stable du geste, dans le registre des intentions. */
+const UPLOAD_KBIS_GESTURE = "account.upload-kbis-by-staff";
 
 /**
  * Dépôt de l'extrait par un agent, à la place du client.
@@ -18,11 +24,16 @@ import { ingestKbis } from "./ingest-kbis.js";
  * d'écriture que son homologue client : la logique de persistance n'est écrite
  * qu'une fois, seul le mur diffère.
  *
- * `@hors-transaction` le fichier part d'abord au stockage objet, qui n'a pas de
- * transaction. Enfermer cet aller-retour réseau dans celle de la base coûterait
- * plus que le trou qu'il refermerait : une panne de journal échoue la requête
- * sans annuler le dépôt — l'agent le voit, et le fichier se redépose à la même
- * clé.
+ * Le fichier part d'abord au stockage objet, hors transaction ; les
+ * métadonnées, la trace et l'intention tombent ensemble ensuite.
+ *
+ * **Une fois par intention** : un dépôt range un fichier neuf, retire la
+ * certification et écrit un fait — rejoué, il le referait. La clé de l'écran
+ * est réclamée avant tout ; elle se scelle avec les métadonnées et la trace,
+ * dans la même transaction. Le sujet est la société et l'empreinte du fichier.
+ *
+ * @throws {GestureInFlightError} la même clé est encore en vol.
+ * @throws {IntentKeyReusedError} la clé a servi pour un autre fichier.
  */
 @CommandHandler(UploadKbisByStaffCommand)
 export class UploadKbisByStaffHandler implements ICommandHandler<UploadKbisByStaffCommand, void> {
@@ -32,24 +43,35 @@ export class UploadKbisByStaffHandler implements ICommandHandler<UploadKbisBySta
     private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
     private readonly ids: IdGenerator,
+    private readonly uow: UnitOfWork,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: UploadKbisByStaffCommand): Promise<void> {
-    const company = await ingestKbis(
-      command.companyId,
-      command.fileName,
-      command.bytes,
-      this.store,
-      this.companies,
-      this.events,
-      this.clock,
-      this.ids,
+  execute(command: UploadKbisByStaffCommand): Promise<void> {
+    return this.intents.runSealed(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: UPLOAD_KBIS_GESTURE,
+        subject: intentSubject(command.companyId, command.fileName, command.bytes),
+      },
+      NOTHING_TO_REPLAY,
+      (seal) =>
+        ingestKbis(command, this.ports(), async (company) => {
+          await this.events.publishTraced(new KbisUploadedByStaffEvent(company, command.fileName));
+          await seal();
+        }),
     );
-    // Tracé APRÈS, et hors transaction — seul acte du lot dans ce cas. Le dépôt
-    // range d'abord le fichier au stockage objet, qui n'a pas de transaction :
-    // enfermer cet aller-retour réseau dans celle de la base serait pire que le
-    // trou qu'on refermerait. Une panne de journal échoue donc la requête sans
-    // annuler le dépôt — l'agent le voit, et le fichier se redépose.
-    await this.events.publishTraced(new KbisUploadedByStaffEvent(company, command.fileName));
+  }
+
+  private ports(): KbisIngestionPorts {
+    return {
+      store: this.store,
+      companies: this.companies,
+      events: this.events,
+      clock: this.clock,
+      ids: this.ids,
+      uow: this.uow,
+    };
   }
 }

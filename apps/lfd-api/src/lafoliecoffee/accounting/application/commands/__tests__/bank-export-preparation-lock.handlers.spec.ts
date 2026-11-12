@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { LegalEntityNotFoundError } from "../../../domain/errors/accounting-errors.js";
 import { debitedAccount } from "../../../domain/services/__tests__/account-for-bank-export.fixture.js";
 import { ExportAccountsForBankCommand } from "../export-accounts-for-bank.command.js";
@@ -17,7 +18,7 @@ describe("le verrou de préparation d'un export bancaire", () => {
     const w = accountExportWorld();
     w.accounts.exportable = [debitedAccount("a")];
 
-    await w.prepare.execute(new ExportAccountsForBankCommand("le1", "staff_1"));
+    await w.prepare.execute(new ExportAccountsForBankCommand("le1", "staff_1", randomUUID()));
 
     expect(w.lock.acquired).toEqual([
       { legalEntityId: "le1", kind: "accounts", seen: "read:0 rank:0" },
@@ -28,7 +29,7 @@ describe("le verrou de préparation d'un export bancaire", () => {
     const w = bankExportWorld();
     w.mandates.exportable = [bankMandate("m1")];
 
-    await w.exportCommand.execute(new ExportMandatesForBankCommand("le1", "staff_1"));
+    await w.exportCommand.execute(new ExportMandatesForBankCommand("le1", "staff_1", randomUUID()));
 
     expect(w.lock.acquired).toEqual([
       { legalEntityId: "le1", kind: "mandates", seen: "read:0 rank:0" },
@@ -38,7 +39,7 @@ describe("le verrou de préparation d'un export bancaire", () => {
   it("une entité inconnue est refusée sans prendre de verrou", async () => {
     const w = accountExportWorld();
     await expect(
-      w.prepare.execute(new ExportAccountsForBankCommand("autre", "staff_1")),
+      w.prepare.execute(new ExportAccountsForBankCommand("autre", "staff_1", randomUUID())),
     ).rejects.toThrow(LegalEntityNotFoundError);
     expect(w.lock.acquired).toEqual([]);
   });

@@ -31,6 +31,7 @@ import type { Response } from "express";
 import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
 import { InvalidScannedDocumentError } from "../../../platform/shared/errors/storage-errors.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { AttachMyCompanyMandateProofCommand } from "../application/commands/attach-my-company-mandate-proof.command.js";
 import { MintMyCompanyMandateCommand } from "../application/commands/mint-my-company-mandate.command.js";
@@ -39,6 +40,7 @@ import { GetMyCompanyMandateDocumentQuery } from "../application/queries/get-my-
 import { GetMyCompanyMandateOptionsQuery } from "../application/queries/get-my-company-mandate-options.query.js";
 import { GetMyCompanyMandateQuery } from "../application/queries/get-my-company-mandate.query.js";
 import type { CustomerMandatePdf } from "../application/queries/preview-customer-mandate.handler.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /** Backstop DoS du multipart, aligné sur le staff et le KBIS (le domaine tranche à 10 Mo). */
 const PROOF_UPLOAD_HARD_LIMIT = 20 * 1024 * 1024;
@@ -92,6 +94,9 @@ export class CompanyMandateController {
    * enchaîne, aucun handler d'écriture ne rend de modèle de lecture.
    */
   @Post(":companyId/mandate")
+  @Idempotent(
+    "par sa propre clé : un brouillon par société (index unique) ; rejouée, la frappe rend le brouillon existant sans rien écrire",
+  )
   async mint(
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,
@@ -129,7 +134,10 @@ export class CompanyMandateController {
     return new StreamableFile(pdf.bytes);
   }
 
-  /** Renvoie le mandat signé — multipart `file`, PDF ou photo. Statut inchangé. */
+  /**
+   * Renvoie le mandat signé — multipart `file`, PDF ou photo. Statut inchangé.
+   * Une fois par intention : l'en-tête `Idempotency-Key` est le fichier choisi.
+   */
   @Put(":companyId/mandate/proof")
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: PROOF_UPLOAD_HARD_LIMIT } }))
@@ -137,6 +145,7 @@ export class CompanyMandateController {
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,
     @UploadedFile() file: UploadedFilePart | undefined,
+    @IntentKey() intentKey: string,
   ): Promise<void> {
     if (file === undefined) {
       throw new InvalidScannedDocumentError("aucun fichier reçu.");
@@ -147,6 +156,7 @@ export class CompanyMandateController {
         companyId,
         file.originalname,
         file.buffer,
+        intentKey,
       ),
     );
   }
@@ -172,6 +182,9 @@ export class CompanyMandateController {
    */
   @Put(":companyId/mandate-options")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose des valeurs : rejouées, les mêmes zones sont trouvées égales (equals) et rien n'est écrit, journalisé ni rendu caduc",
+  )
   async setOptions(
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,

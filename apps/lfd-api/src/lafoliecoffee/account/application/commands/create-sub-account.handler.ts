@@ -3,6 +3,8 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
+import { CREATED_ID_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { Company } from "../../domain/entities/company.js";
 import { SubAccountFollows } from "../../domain/entities/sub-account-follows.js";
@@ -22,6 +24,9 @@ import { PricingFollowJournal } from "../../domain/ports/pricing-follow.journal.
 import { loadCompany, named } from "../services/account-hierarchy-support.js";
 import { CreateSubAccountCommand } from "./create-sub-account.command.js";
 
+/** Le nom stable du geste, dans le registre des intentions. */
+const CREATE_SUB_ACCOUNT_GESTURE = "account.create-sub-account";
+
 /**
  * Crée un sous-compte rattaché à son principal, en UNE transaction : la
  * société, son lien, sa première adresse de livraison (si donnée) et ses suivis tombent
@@ -29,6 +34,14 @@ import { CreateSubAccountCommand } from "./create-sub-account.command.js";
  *
  * Sous le verrou de la hiérarchie (§5) : le principal est relu après le
  * verrou, et c'est l'agrégat qui refuse un principal lui-même sous-compte.
+ *
+ * **Une fois par intention** : la clé de l'écran est réclamée avant tout et
+ * scellée dans la transaction de la création ; un double clic rend le
+ * sous-compte déjà créé, sans second compte ni second fait. Le sujet est le
+ * principal et l'empreinte de la saisie.
+ *
+ * @throws {GestureInFlightError} la même clé est encore en vol.
+ * @throws {IntentKeyReusedError} la clé a servi pour une autre création.
  */
 @CommandHandler(CreateSubAccountCommand)
 export class CreateSubAccountHandler implements ICommandHandler<CreateSubAccountCommand, string> {
@@ -42,9 +55,26 @@ export class CreateSubAccountHandler implements ICommandHandler<CreateSubAccount
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
     private readonly pricingJournal: PricingFollowJournal,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: CreateSubAccountCommand): Promise<string> {
+  execute(command: CreateSubAccountCommand): Promise<string> {
+    return this.intents.runSealed(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: CREATE_SUB_ACCOUNT_GESTURE,
+        subject: intentSubject(command.parentId, command.payload),
+      },
+      CREATED_ID_REPLAY,
+      (seal) => this.create(command, seal),
+    );
+  }
+
+  private async create(
+    command: CreateSubAccountCommand,
+    seal: (companyId: string) => Promise<void>,
+  ): Promise<string> {
     const aspects = [...new Set(command.payload.follows)];
     if (aspects.includes("pricing") && !command.mayDecidePricing) {
       throw new PricingFollowNotAllowedError();
@@ -78,6 +108,7 @@ export class CreateSubAccountHandler implements ICommandHandler<CreateSubAccount
           ? this.pricingJournal.followStarted({ child, parent: named(parent), validFrom: now })
           : this.events.publishTraced(new ParentFollowedEvent(child, named(parent), aspect, now)));
       }
+      await seal(id);
       return id;
     });
     // Le fait d'entonnoir, best-effort comme à toute création staff.

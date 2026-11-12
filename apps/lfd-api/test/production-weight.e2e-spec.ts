@@ -145,6 +145,7 @@ async function openBag(orderId: string): Promise<string> {
     await ctx
       .asSub(STAFF)
       .post(`${packingOrderPath(orderId)}/containers`)
+      .set(INTENT_KEY, freshIntent())
       .send({ nature: "bag" })
       .expect(201),
   ).containerId;

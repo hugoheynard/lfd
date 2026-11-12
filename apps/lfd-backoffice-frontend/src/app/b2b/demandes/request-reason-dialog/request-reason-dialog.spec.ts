@@ -97,15 +97,13 @@ async function submit(fixture: ComponentFixture<RequestReasonDialog>): Promise<v
 }
 
 describe('RequestReasonDialog', () => {
-  it('ajout : le libellé français et une adresse e-mail sont requis', async () => {
+  it("ajout : le libellé français est requis ; l'adresse est facultative, mais valide si saisie", async () => {
     const fixture = await boot({ kind: 'contact', nextPosition: 3, canWrite: true });
     expect(submitButton(fixture)?.disabled).toBe(true);
     expect(host(fixture).querySelector('[data-issue]')).toBeNull();
 
     type(fixture, 'data-label', 'Facturation');
-    expect(host(fixture).querySelector('[data-issue]')?.textContent).toContain(
-      "l'adresse de destination",
-    );
+    expect(submitButton(fixture)?.disabled).toBe(false);
 
     type(fixture, 'data-recipient', 'pas-une-adresse');
     expect(submitButton(fixture)?.disabled).toBe(true);
@@ -115,6 +113,14 @@ describe('RequestReasonDialog', () => {
 
     type(fixture, 'data-recipient', ' compta@example.fr ');
     expect(submitButton(fixture)?.disabled).toBe(false);
+  });
+
+  it('ajout : sans adresse, le motif part sans e-mail (aucune adresse par défaut)', async () => {
+    const fixture = await boot({ kind: 'contact', nextPosition: 0, canWrite: true });
+    type(fixture, 'data-label', 'Facturation');
+    await submit(fixture);
+
+    expect(wire.creates[0]).toMatchObject({ recipientEmail: null });
   });
 
   it('ajout : envoie la saisie rognée, au rang proposé, et ferme sur un succès', async () => {

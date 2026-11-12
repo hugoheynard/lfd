@@ -17,8 +17,12 @@ import {
   FoldTextareaComponent,
 } from 'fold-ng';
 
+import { GestureIntents } from '../../shared/gesture-intents';
 import { familyOptions, reasonOptions } from '../delivery-incidents';
 import { MyDeliveryRoundService } from '../my-delivery-round.service';
+
+/** Le sujet de l'intention : le formulaire ne porte qu'un signalement à la fois. */
+const REPORT = 'report';
 
 /** L'arrêt en cours, qu'un problème de la tournée peut noter (§ 3 : « s'il y en a un »). */
 export interface CurrentStopRef {
@@ -51,6 +55,8 @@ export interface CurrentStopRef {
 })
 export class IncidentReportForm {
   private readonly service = inject(MyDeliveryRoundService);
+  /** Un signalement par intention : un envoi rejoué (réseau qui coupe) ne double rien. */
+  private readonly intents = new GestureIntents();
 
   readonly roundId = input.required<string>();
   readonly families = input.required<readonly DeliveryIncidentFamily[]>();
@@ -118,13 +124,19 @@ export class IncidentReportForm {
     this.sending.set(true);
     this.refusal.set(null);
     try {
-      await this.service.report(this.roundId(), {
-        family,
-        reason,
-        note: this.note().trim(),
-        stopId: this.stopId() ?? (this.linkCurrent() ? (this.currentStop()?.stopId ?? null) : null),
-        photo: this.photo(),
-      });
+      await this.service.report(
+        this.roundId(),
+        {
+          family,
+          reason,
+          note: this.note().trim(),
+          stopId:
+            this.stopId() ?? (this.linkCurrent() ? (this.currentStop()?.stopId ?? null) : null),
+          photo: this.photo(),
+        },
+        this.intents.keyFor(REPORT),
+      );
+      this.intents.done(REPORT);
       this.reported.emit();
     } catch (error) {
       this.refusal.set(httpErrorMessage(error, 'Le problème n’a pas pu être signalé.'));

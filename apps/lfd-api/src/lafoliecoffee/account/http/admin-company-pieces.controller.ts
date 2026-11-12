@@ -38,6 +38,7 @@ import { contentDispositionAttachment, sanitiseFileName } from "@lfd/storage";
 import type { Response } from "express";
 
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ChangeCompanyStatusCommand } from "../application/commands/change-company-status.command.js";
 import { ActivateCompanyByStaffCommand } from "../application/commands/activate-company.command.js";
@@ -110,19 +111,30 @@ export class AdminCompanyPiecesController {
     return new StreamableFile(kbis.bytes);
   }
 
-  /** Dépose (ou remplace) le KBIS. Multipart `file` ; le domaine valide le PDF. */
+  /**
+   * Dépose (ou remplace) le KBIS. Multipart `file` ; le domaine valide le PDF.
+   * Une fois par intention (`Idempotency-Key`).
+   */
   @Put(":companyId/kbis")
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: KBIS_UPLOAD_HARD_LIMIT } }))
   async uploadKbis(
     @Param("companyId") companyId: string,
     @UploadedFile() file: UploadedFilePart | undefined,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<void> {
     if (file === undefined) {
       throw new InvalidKbisFileError("aucun fichier reçu.");
     }
     await this.commands.execute<UploadKbisByStaffCommand, void>(
-      new UploadKbisByStaffCommand(companyId, file.originalname, file.buffer),
+      new UploadKbisByStaffCommand(
+        companyId,
+        file.originalname,
+        file.buffer,
+        staffUserId,
+        intentKey,
+      ),
     );
   }
 
@@ -137,9 +149,10 @@ export class AdminCompanyPiecesController {
     @Param("companyId") companyId: string,
     @StaffUserId() staffUserId: string,
     @Body(new ZodBody(certifyKbisPayloadSchema)) payload: CertifyKbisPayload,
+    @IntentKey() intentKey: string,
   ): Promise<void> {
     await this.commands.execute<CertifyKbisCommand, void>(
-      new CertifyKbisCommand(companyId, staffUserId, payload.issuedOn),
+      new CertifyKbisCommand(companyId, staffUserId, payload.issuedOn, intentKey),
     );
   }
 
@@ -269,15 +282,17 @@ export class AdminCompanyPiecesController {
     );
   }
 
-  /** Ajoute une adresse de livraison ; renvoie son `id`. */
+  /** Ajoute une adresse de livraison ; renvoie son `id`. Une fois par intention. */
   @Post(":companyId/delivery-addresses")
   @HttpCode(HttpStatus.CREATED)
   async addDelivery(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(deliveryAddressPayloadSchema)) payload: DeliveryAddressPayload,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedAddressResponse> {
     const id = await this.commands.execute<AddDeliveryAddressByStaffCommand, string>(
-      new AddDeliveryAddressByStaffCommand(companyId, payload),
+      new AddDeliveryAddressByStaffCommand(companyId, payload, staffUserId, intentKey),
     );
     return { id };
   }

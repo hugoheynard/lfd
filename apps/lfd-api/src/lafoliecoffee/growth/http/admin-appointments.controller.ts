@@ -28,6 +28,8 @@ import { TransitionAppointmentCommand } from "../application/commands/transition
 import { GetAppointmentQuery } from "../application/queries/get-appointment.query.js";
 import { ListAppointmentsQuery } from "../application/queries/list-appointments.query.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 
 /**
  * Surface **staff** de la file des rendez-vous : la lire, poser un rendez-vous
@@ -63,9 +65,11 @@ export class AdminAppointmentsController {
   @HttpCode(HttpStatus.CREATED)
   async schedule(
     @Body(new ZodBody(staffBookAppointmentPayloadSchema)) payload: StaffBookAppointmentPayload,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedAppointmentResponse> {
     const id = await this.commands.execute<ScheduleAppointmentCommand, string>(
-      new ScheduleAppointmentCommand(payload),
+      new ScheduleAppointmentCommand(payload, staffUserId, intentKey),
     );
     return { id };
   }

@@ -10,6 +10,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { DefineGeneralOrderCutoffCommand } from "../application/define-general-order-cutoff.command.js";
 import { GetGeneralOrderCutoffQuery } from "../application/get-general-order-cutoff.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Gestion **staff** de l'heure limite générale (Réglages › Commandes › Heure
@@ -41,6 +42,9 @@ export class AdminOrderCutoffsController {
   /** Pose ou règle la règle générale. Un point ou un jour est refusé (400). */
   @Put("general")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose la règle générale : rejouée, la même requête trouve une règle égale (differsFrom) et ne l'écrit ni ne la journalise",
+  )
   async define(
     @Body(new ZodBody(orderCutoffPayloadSchema)) payload: OrderCutoffPayload,
   ): Promise<void> {

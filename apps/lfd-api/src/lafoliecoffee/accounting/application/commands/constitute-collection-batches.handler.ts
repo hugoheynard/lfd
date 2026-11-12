@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
+import { OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import type { CreditorSnapshot } from "../../domain/creditor-snapshot.js";
 import type { CollectionBatch } from "../../domain/entities/collection-batch.js";
@@ -29,6 +30,7 @@ import {
 } from "../collection-constitution-ports.js";
 import { readAssembly, type ReadAssembly } from "../collection-constitution-support.js";
 import { noticesOf } from "../collection-notice-support.js";
+import { CREATED_IDS_REPLAY } from "../created-id-replay.js";
 import { ConstituteCollectionBatchesCommand } from "./constitute-collection-batches.command.js";
 import { unique } from "../unique-ids.js";
 
@@ -70,6 +72,10 @@ import { unique } from "../unique-ids.js";
  *
  * ⚠️ L'entité est lue par `CreditorReader` AVANT la transaction : une entité qui
  * ne peut pas encaisser refuse (409) sans rien verrouiller.
+ *
+ * **Le bouton, une fois par intention** : sujet, l'entité. Un double clic
+ * rend les lots du premier, scellés avec eux — sans le 409 « rien à
+ * constituer » qu'il lisait jusque-là. L'automatisme n'a pas de clé.
  */
 @CommandHandler(ConstituteCollectionBatchesCommand)
 export class ConstituteCollectionBatchesHandler implements ICommandHandler<
@@ -87,9 +93,30 @@ export class ConstituteCollectionBatchesHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: ConstituteCollectionBatchesCommand): Promise<readonly string[]> {
+  execute(command: ConstituteCollectionBatchesCommand): Promise<readonly string[]> {
+    const { author, intentKey } = command;
+    if (author.kind !== "staff" || intentKey === null) {
+      return this.constitute(command, NO_SEAL);
+    }
+    return this.intents.runSealed(
+      {
+        actorId: author.staffId,
+        key: intentKey,
+        gesture: CONSTITUTE_GESTURE,
+        subject: command.legalEntityId,
+      },
+      CREATED_IDS_REPLAY,
+      (seal) => this.constitute(command, seal),
+    );
+  }
+
+  private async constitute(
+    command: ConstituteCollectionBatchesCommand,
+    seal: (batchIds: readonly string[]) => Promise<void>,
+  ): Promise<readonly string[]> {
     const { legalEntityId } = command;
     const creditor = await this.creditors.snapshot(legalEntityId);
     if (creditor === null) {
@@ -109,7 +136,9 @@ export class ConstituteCollectionBatchesHandler implements ICommandHandler<
       const entity = { id: legalEntityId, name: creditor.name };
       await this.publish(made.batches, made.issued, entity, at, read.assembly.exclusions.length);
       await this.queue(made.notices, entity, at);
-      return made.batches.map((batch) => batch.id);
+      const batchIds = made.batches.map((batch) => batch.id);
+      await seal(batchIds);
+      return batchIds;
     });
   }
 
@@ -220,3 +249,9 @@ interface Constitution {
 function payersOf(batches: readonly CollectionBatch[]): readonly string[] {
   return unique(batches.flatMap((batch) => batch.lines.map((line) => line.debtorCompanyId)));
 }
+
+/** Le nom stable du geste, dans le registre des intentions. */
+const CONSTITUTE_GESTURE = "accounting.constitute-collection-batches";
+
+/** L'automatisme n'a pas d'intention à sceller. */
+const NO_SEAL = (): Promise<void> => Promise.resolve();

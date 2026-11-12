@@ -8,5 +8,7 @@ export class CreatePaymentLinkCommand {
     readonly amountCents: number,
     readonly label: string,
     readonly staffUserId: string,
+    /** La clé d'intention de l'écran : un second envoi rend le même lien. */
+    readonly intentKey: string,
   ) {}
 }

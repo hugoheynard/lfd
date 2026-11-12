@@ -45,6 +45,11 @@ export class UpdateOrderOpeningHandler implements ICommandHandler<UpdateOrderOpe
         at: this.clock.now(),
         author,
       });
+      // Rejouer le geste (ou redire l'état courant) ne change rien : ni
+      // écriture, ni fait au journal, ni purge des réglages publics.
+      if (!next.changes(previous)) {
+        return;
+      }
       await this.settings.put(next);
       await this.events.publishTraced(new OrderOpeningUpdatedEvent(next, previous));
       this.afterCommit.defer(() => this.edge.purge(), "order-opening.edge-purge");

@@ -24,6 +24,7 @@ import { CustomerRole } from "../src/platform/database/client/client.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const OWNER = "auth0|owner";
 const STRANGER = "auth0|stranger";
@@ -150,6 +151,7 @@ describe("les créneaux", () => {
     await ctx
       .asSub(OWNER)
       .post("/appointments")
+      .set(INTENT_KEY, freshIntent())
       .send({ startAt, channel: "phone", purpose: "discover", companyId: null })
       .expect(201);
     const { from, to } = window();
@@ -169,6 +171,7 @@ describe("la réservation", () => {
     const created = await ctx
       .asSub(OWNER)
       .post("/appointments")
+      .set(INTENT_KEY, freshIntent())
       .send({
         startAt,
         channel: "visio",
@@ -199,6 +202,7 @@ describe("la réservation", () => {
     await ctx
       .asSub(OWNER)
       .post("/appointments")
+      .set(INTENT_KEY, freshIntent())
       .send({ startAt, channel: "phone", purpose: "quote", companyId: null })
       .expect(201);
     const mine = await ctx.asSub(OWNER).get("/appointments/mine").expect(200);
@@ -213,11 +217,13 @@ describe("la réservation", () => {
     await ctx
       .asSub(OWNER)
       .post("/appointments")
+      .set(INTENT_KEY, freshIntent())
       .send({ startAt, channel: "phone", purpose: "other", companyId: null })
       .expect(400);
     await ctx
       .asSub(OWNER)
       .post("/appointments")
+      .set(INTENT_KEY, freshIntent())
       .send({
         startAt,
         channel: "phone",
@@ -235,6 +241,7 @@ describe("la réservation", () => {
     await ctx
       .asSub(OWNER)
       .post("/appointments")
+      .set(INTENT_KEY, freshIntent())
       .send({ startAt, channel: "phone", purpose: "discover", companyId })
       .expect(201);
     const mine = await ctx.asSub(OWNER).get("/appointments/mine").expect(200);
@@ -251,6 +258,7 @@ describe("la réservation", () => {
     await ctx
       .asSub(STRANGER)
       .post("/appointments")
+      .set(INTENT_KEY, freshIntent())
       .send({ startAt, channel: "phone", purpose: "discover", companyId })
       .expect(404);
     expect(await ctx.prisma.appointment.count()).toBe(0);
@@ -265,6 +273,7 @@ describe("la réservation", () => {
     await ctx
       .asSub(OWNER)
       .post("/appointments")
+      .set(INTENT_KEY, freshIntent())
       .send({ startAt: invented, channel: "phone", purpose: "discover", companyId: null })
       .expect(409);
     expect(await ctx.prisma.appointment.count()).toBe(0);
@@ -286,6 +295,7 @@ describe("la réservation", () => {
     await ctx
       .asSub(OWNER)
       .post("/appointments")
+      .set(INTENT_KEY, freshIntent())
       .send({ startAt, channel: "phone", purpose: "discover", companyId: null })
       .expect(409);
   });
@@ -297,6 +307,7 @@ describe("la réservation", () => {
     await ctx
       .http()
       .post("/appointments")
+      .set(INTENT_KEY, freshIntent())
       .send({ startAt, channel: "phone", purpose: "discover" })
       .expect(401);
   });
@@ -311,6 +322,7 @@ describe("l'exclusivité du créneau", () => {
       ctx
         .asSub(sub)
         .post("/appointments")
+        .set(INTENT_KEY, freshIntent())
         .send({ startAt, channel: "phone", purpose: "discover", companyId: null });
 
     // Lancées ensemble : elles passent toutes deux la revalidation applicative
@@ -328,6 +340,7 @@ describe("l'exclusivité du créneau", () => {
     const created = await ctx
       .asSub(OWNER)
       .post("/appointments")
+      .set(INTENT_KEY, freshIntent())
       .send({ startAt, channel: "phone", purpose: "discover", companyId: null })
       .expect(201);
     const { id } = jsonBody<CreatedAppointmentResponse>(created);
@@ -341,6 +354,7 @@ describe("l'exclusivité du créneau", () => {
     await ctx
       .asSub(STRANGER)
       .post("/appointments")
+      .set(INTENT_KEY, freshIntent())
       .send({ startAt, channel: "phone", purpose: "discover", companyId: null })
       .expect(201);
     expect(await ctx.prisma.appointment.count()).toBe(2);
@@ -355,6 +369,7 @@ describe("l'annulation par le client", () => {
     const created = await ctx
       .asSub(OWNER)
       .post("/appointments")
+      .set(INTENT_KEY, freshIntent())
       .send({ startAt, channel: "phone", purpose: "discover", companyId: null })
       .expect(201);
     const { id } = jsonBody<CreatedAppointmentResponse>(created);
@@ -371,6 +386,7 @@ describe("l'annulation par le client", () => {
     const created = await ctx
       .asSub(OWNER)
       .post("/appointments")
+      .set(INTENT_KEY, freshIntent())
       .send({ startAt, channel: "phone", purpose: "discover", companyId: null })
       .expect(201);
     const { id } = jsonBody<CreatedAppointmentResponse>(created);
@@ -386,6 +402,7 @@ describe("l'annulation par le client", () => {
     const created = await ctx
       .asSub(OWNER)
       .post("/appointments")
+      .set(INTENT_KEY, freshIntent())
       .send({ startAt, channel: "phone", purpose: "discover", companyId: null })
       .expect(201);
     const { id } = jsonBody<CreatedAppointmentResponse>(created);
@@ -548,6 +565,7 @@ describe("la surface staff", () => {
     const startAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
     const created = await staff()
       .post("/admin/appointments")
+      .set(INTENT_KEY, freshIntent())
       .send({
         startAt,
         channel: "phone",
@@ -575,6 +593,7 @@ describe("la surface staff", () => {
     const startAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
     const created = await staff()
       .post("/admin/appointments")
+      .set(INTENT_KEY, freshIntent())
       .send({
         startAt,
         channel: "phone",

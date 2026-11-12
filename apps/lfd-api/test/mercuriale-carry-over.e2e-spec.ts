@@ -92,6 +92,7 @@ async function detachedWithMercuriale(): Promise<{
   const partId = jsonBody<{ id: string }>(
     await staff()
       .post(`${PRODUCTS}/${fiche.id}/variants`)
+      .set(INTENT_KEY, freshIntent())
       .send({ name: { fr: "Ancolie part" } })
       .expect(201),
   ).id;
@@ -156,6 +157,7 @@ describe("le report d'une mercuriale sur la référence détachée (L7c)", () =>
     const site = jsonBody<CreatedIdResponse>(
       await staff()
         .post(`/admin/companies/${companyId}/sub-accounts`)
+        .set(INTENT_KEY, freshIntent())
         .send({ enseigne: "Site de Chamonix", deliveryAddress: DELIVERY, follows: [] })
         .expect(201),
     ).id;

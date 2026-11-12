@@ -30,6 +30,7 @@ import {
   recordOf,
   type NoticeScene,
 } from "./sub-account-notice-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const TEMPLATE = "customer.sub-account-gesture";
 const IBAN = "FR1420041010050500013M02606";
@@ -82,6 +83,7 @@ const staff = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);
 async function declareIssuer(): Promise<void> {
   const response = await staff()
     .post("/admin/accounting/legal-entities")
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: "Crazeativity",
       legalForm: "SAS",
@@ -229,10 +231,12 @@ describe("la preuve de mandat d'un site", () => {
     await ctx
       .asSub(s.housekeeper)
       .put(`/companies/${s.site}/mandate/proof`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", PDF, "scan-client.pdf")
       .expect(204);
     await staff()
       .put(`/admin/companies/${s.site}/mandate/proof`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", PDF, "scan-equipe.pdf")
       .expect(204);
     await ctx.drain();

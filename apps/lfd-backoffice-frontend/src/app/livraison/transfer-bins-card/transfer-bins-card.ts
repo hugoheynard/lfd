@@ -24,6 +24,7 @@ import {
 
 import { httpErrorMessage } from '@lfd/endpoints';
 
+import { GestureIntents } from '../../shared/gesture-intents';
 import { LabelPrinter } from '../../shared/label-printer/label-printer';
 import { DeliveryBinsService } from '../delivery-bins.service';
 import { DeliveryLoadingService } from '../delivery-loading.service';
@@ -51,6 +52,8 @@ import { transferBinsPayload, transferBinsSummary } from '../transfer-bins';
 })
 export class TransferBinsCard {
   private readonly loading = inject(DeliveryLoadingService);
+  /** Déclarer est un ajout : une clé par transfert, gardée jusqu'au succès. */
+  private readonly intents = new GestureIntents();
   private readonly bins = inject(DeliveryBinsService);
   private readonly labels = inject(LabelPrinter);
 
@@ -124,7 +127,13 @@ export class TransferBinsCard {
     this.saving.set(true);
     this.error.set(null);
     try {
-      const done = await this.loading.declareTransferBins(this.stop().transferId, payload);
+      const transferId = this.stop().transferId;
+      const done = await this.loading.declareTransferBins(
+        transferId,
+        payload,
+        this.intents.keyFor(transferId),
+      );
+      this.intents.done(transferId);
       this.justDeclared.set(done.binIds);
       this.declaring.set(false);
       this.declared.emit();

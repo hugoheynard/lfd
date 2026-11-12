@@ -6,7 +6,13 @@ import { CaptureLeadCommand } from "../src/lafoliecoffee/growth/application/comm
 import { ChangeLeadStatusCommand } from "../src/lafoliecoffee/growth/application/commands/change-lead-status.command.js";
 import { RecomputeLeadScoresCommand } from "../src/lafoliecoffee/growth/application/commands/recompute-lead-scores.command.js";
 import type { VerifiedToken } from "../src/platform/auth/principal.js";
-import { bootstrapHarness, SEED_STAFF, SYSTEM, type SeedHarness } from "./seed-growth/harness.js";
+import {
+  bootstrapHarness,
+  SEED_STAFF,
+  SEED_STAFF_ID,
+  SYSTEM,
+  type SeedHarness,
+} from "./seed-growth/harness.js";
 import { seedActivation } from "./seed-growth/phase-activation.js";
 import { seedFlagship, seedSatellites } from "./seed-growth/phase-flagship.js";
 import { seedLosses } from "./seed-growth/phase-losses.js";
@@ -14,6 +20,7 @@ import { seedRevenue } from "./seed-growth/phase-revenue.js";
 import { seedMarket } from "./seed-growth/phase-market.js";
 import { seedOrders } from "./seed-growth/phase-orders.js";
 import { persona } from "./seed-growth/personas.js";
+import { randomUUID } from "node:crypto";
 
 /**
  * Seed **growth** — corpus de démo/charge **additif, idempotent, piloté par les
@@ -143,7 +150,9 @@ async function seedLeads(harness: SeedHarness): Promise<number> {
       notes: "Rencontré au salon de la restauration.",
     };
     const leadId = await harness.runAt(capturedAt, SEED_STAFF, () =>
-      harness.commands.execute<CaptureLeadCommand, string>(new CaptureLeadCommand(payload)),
+      harness.commands.execute<CaptureLeadCommand, string>(
+        new CaptureLeadCommand(payload, SEED_STAFF_ID, randomUUID()),
+      ),
     );
     await advanceLead(harness, leadId, i, capturedAt);
     created += 1;

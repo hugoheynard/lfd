@@ -26,6 +26,7 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
+import { GestureIntents } from '../../shared/gesture-intents';
 import { DeliverySimulationScenariosService } from '../delivery-simulation-scenarios.service';
 import { scenarioSizeLabel, scenarioUpdatedLabel } from '../delivery-simulator';
 
@@ -69,6 +70,8 @@ const READ_COLUMNS: readonly FoldTableColumn[] = [
 export class SimulationScenarios {
   private readonly scenarios = inject(DeliverySimulationScenariosService);
   private readonly notify = inject(NotifyService);
+  /** Dupliquer crée une copie : une clé par scénario, gardée jusqu'au succès. */
+  private readonly duplicateIntents = new GestureIntents();
 
   /** Change quand la page a enregistré : la liste se relit. */
   readonly revision = input(0);
@@ -102,7 +105,14 @@ export class SimulationScenarios {
   }
 
   protected async duplicate(row: DeliverySimulationScenarioSummaryView): Promise<void> {
-    await this.act(row, () => this.scenarios.duplicate(row.id), `« ${row.name} » dupliqué.`);
+    const copied = await this.act(
+      row,
+      () => this.scenarios.duplicate(row.id, this.duplicateIntents.keyFor(row.id)),
+      `« ${row.name} » dupliqué.`,
+    );
+    if (copied) {
+      this.duplicateIntents.done(row.id);
+    }
   }
 
   protected async archive(row: DeliverySimulationScenarioSummaryView): Promise<void> {

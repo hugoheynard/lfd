@@ -4,6 +4,7 @@ import type { RequestKind, RequestReasonPayload, RequestReasonView } from '@lfd/
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../../api/api-config';
+import { intentOptions } from '../../shared/gesture-intents';
 
 /**
  * **Les motifs des demandes clients** — ce que le client choisit en écrivant
@@ -21,8 +22,11 @@ export class RequestReasonsService {
     return firstValueFrom(this.http.get<RequestReasonView[]>(this.base, { params: { kind } }));
   }
 
-  create(payload: RequestReasonPayload): Promise<void> {
-    return firstValueFrom(this.http.post<unknown>(this.base, payload)).then(() => undefined);
+  /** Crée un motif, une fois par intention (`Idempotency-Key`). */
+  create(payload: RequestReasonPayload, intentKey: string): Promise<void> {
+    return firstValueFrom(
+      this.http.post<unknown>(this.base, payload, intentOptions(intentKey)),
+    ).then(() => undefined);
   }
 
   update(id: string, payload: RequestReasonPayload): Promise<void> {

@@ -43,6 +43,7 @@ import { AccountBankExportsService } from '../../account-bank-exports.service';
 import { MandateBankExportsService } from '../../mandate-bank-exports.service';
 import { legalEntityStateLabel, legalEntityStateVariant } from '../../legal-entity-state';
 import { SampleMandateActions } from './sample-mandate-actions/sample-mandate-actions';
+import { GestureIntents } from '../../../shared/gesture-intents';
 
 /**
  * **La fiche d'une entité juridique** — tout ce qui se règle sur un émetteur.
@@ -108,6 +109,8 @@ import { SampleMandateActions } from './sample-mandate-actions/sample-mandate-ac
 })
 export class LegalEntityDetailPage {
   private readonly api = inject(LegalEntitiesService);
+  /** Une déclaration par intention : un réessai après une coupure rend la même entité. */
+  private readonly declareIntents = new GestureIntents();
   private readonly toasts = inject(FoldToastService);
   private readonly panels = inject(FoldPanelHostService);
   private readonly accountExports = inject(AccountBankExportsService);
@@ -229,7 +232,11 @@ export class LegalEntityDetailPage {
     if (payload === undefined || payload === null) {
       return;
     }
-    await this.run(() => this.api.declare(payload), 'Entité déclarée.');
+    const key = this.declareIntents.keyFor(payload.siren);
+    await this.run(async () => {
+      await this.api.declare(payload, key);
+      this.declareIntents.done(payload.siren);
+    }, 'Entité déclarée.');
   }
 
   protected async setArchived(entity: LegalEntityView, archived: boolean): Promise<void> {

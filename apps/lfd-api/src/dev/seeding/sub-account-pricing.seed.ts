@@ -114,6 +114,7 @@ async function signCommitment(
         validTo: to.toISOString(),
       },
       SEED_STAFF_SUB,
+      randomUUID(),
     ),
   );
 }
@@ -143,6 +144,7 @@ async function setHotelLadder(
         validTo: to,
       },
       SEED_STAFF_SUB,
+      randomUUID(),
     ),
   );
 }

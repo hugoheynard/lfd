@@ -10,6 +10,7 @@ import type {
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
+import { intentOptions } from '../shared/gesture-intents';
 
 const VEHICLES = `${B2B_API_BASE}/admin/delivery/vehicles`;
 const DEPARTURE = `${B2B_API_BASE}/admin/delivery/departure`;
@@ -31,16 +32,19 @@ export class DeliverySettingsService {
     return firstValueFrom(this.http.get<VehiclesView>(VEHICLES));
   }
 
-  async addVehicle(payload: VehiclePayload): Promise<void> {
-    await this.addVehicleAndGetId(payload);
+  /** `intentKey` : la clé du geste (`GestureIntents`) — un double clic ne crée qu'un véhicule. */
+  async addVehicle(payload: VehiclePayload, intentKey: string): Promise<void> {
+    await this.addVehicleAndGetId(payload, intentKey);
   }
 
   /**
    * La même création, qui rend l'identifiant du véhicule créé : l'outil agent
    * (`agent/vehicle-agent-tools.ts`) relit la fiche pour dire ses manques.
    */
-  async addVehicleAndGetId(payload: VehiclePayload): Promise<string> {
-    const created = await firstValueFrom(this.http.post<CreatedIdResponse>(VEHICLES, payload));
+  async addVehicleAndGetId(payload: VehiclePayload, intentKey: string): Promise<string> {
+    const created = await firstValueFrom(
+      this.http.post<CreatedIdResponse>(VEHICLES, payload, intentOptions(intentKey)),
+    );
     return created.id;
   }
 

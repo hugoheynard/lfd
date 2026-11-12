@@ -7,6 +7,7 @@ import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { ChooseDepartureCommand } from "../application/commands/choose-departure.command.js";
 import { GetDepartureQuery } from "../application/queries/get-departure.query.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **D'où partent les tournées** — un point de retrait, référencé
@@ -32,6 +33,9 @@ export class DepartureController {
   }
 
   @Put()
+  @Idempotent(
+    "pose le point de départ : rejoué sur le point déjà choisi, ni écriture ni fait ne partent",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   async choose(
     @Body(new ZodBody(departurePayloadSchema)) payload: DeparturePayload,

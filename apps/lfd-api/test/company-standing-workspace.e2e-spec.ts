@@ -20,6 +20,7 @@ import { poseSiteDiscount } from "./promotion-fixtures.js";
 import { bootCustomerScene, company, member } from "./order-customer-cancel-scene.js";
 import { resetScene } from "./order-staff-cancel-scene.js";
 import { detach, family, type Person, setStatus } from "./company-standing-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 let ctx: E2eContext;
 
@@ -40,6 +41,7 @@ async function prosOnlyPoint(): Promise<string> {
   const response = await ctx
     .asSub(E2E_STAFF_SUB)
     .post("/admin/pickup-addresses")
+    .set(INTENT_KEY, freshIntent())
     .send({
       label: "Labo",
       ligne1: "5 rue du Four",

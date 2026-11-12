@@ -21,6 +21,8 @@ import {
 import { SupportRequestedMail } from "../../services/support-requested-mail.service.js";
 import { OneRequest, REQUEST, Settings } from "../../services/__tests__/support-request-doubles.js";
 import { journalNames } from "./member-acts-doubles.js";
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 
 const PAYLOAD: ActivationSupportPayload = {
   companyId: "company_1",
@@ -99,9 +101,12 @@ describe("RequestActivationSupportHandler", () => {
       CLOCK,
       journalNames(),
       ...wiring(),
+      inMemoryIntents(),
     );
 
-    const id = await handler.execute(new RequestActivationSupportCommand("user_1", PAYLOAD));
+    const id = await handler.execute(
+      new RequestActivationSupportCommand("user_1", PAYLOAD, randomUUID()),
+    );
 
     expect(id).toBe("support_1");
     expect(recorder.recorded).toBe(1);
@@ -120,6 +125,34 @@ describe("RequestActivationSupportHandler", () => {
     ]);
   });
 
+  /**
+   * Régression : deux clics simultanés passaient tous deux la lecture « une
+   * demande ouverte ? » et déposaient deux demandes, deux courriels.
+   */
+  it("rejouée sous la même clé, rend la demande déposée sans en déposer une seconde", async () => {
+    const recorder = { recorded: 0 };
+    const handler = new RequestActivationSupportHandler(
+      memberships("orders"),
+      supportRepo(false, recorder),
+      eventBus([]),
+      CLOCK,
+      journalNames(),
+      ...wiring(),
+      inMemoryIntents(),
+    );
+    const key = randomUUID();
+
+    const first = await handler.execute(
+      new RequestActivationSupportCommand("user_1", PAYLOAD, key),
+    );
+    const replayed = await handler.execute(
+      new RequestActivationSupportCommand("user_1", PAYLOAD, key),
+    );
+
+    expect(replayed).toBe(first);
+    expect(recorder.recorded).toBe(1);
+  });
+
   it("refuse (409) si une demande est déjà ouverte", async () => {
     const recorder = { recorded: 0 };
     const handler = new RequestActivationSupportHandler(
@@ -129,10 +162,11 @@ describe("RequestActivationSupportHandler", () => {
       CLOCK,
       journalNames(),
       ...wiring(),
+      inMemoryIntents(),
     );
 
     await expect(
-      handler.execute(new RequestActivationSupportCommand("user_1", PAYLOAD)),
+      handler.execute(new RequestActivationSupportCommand("user_1", PAYLOAD, randomUUID())),
     ).rejects.toBeInstanceOf(OpenSupportRequestExistsError);
     expect(recorder.recorded).toBe(0);
   });
@@ -145,10 +179,11 @@ describe("RequestActivationSupportHandler", () => {
       CLOCK,
       journalNames(),
       ...wiring(),
+      inMemoryIntents(),
     );
 
     await expect(
-      handler.execute(new RequestActivationSupportCommand("user_x", PAYLOAD)),
+      handler.execute(new RequestActivationSupportCommand("user_x", PAYLOAD, randomUUID())),
     ).rejects.toBeInstanceOf(CompanyNotFoundError);
   });
 
@@ -166,10 +201,11 @@ describe("RequestActivationSupportHandler", () => {
       CLOCK,
       journalNames(),
       ...wiring(),
+      inMemoryIntents(),
     );
 
     const id = await handler.execute(
-      new RequestActivationSupportCommand("u1", { ...PAYLOAD, companyId: null }),
+      new RequestActivationSupportCommand("u1", { ...PAYLOAD, companyId: null }, randomUUID()),
     );
 
     expect(id).toBe("support_1");
@@ -196,9 +232,10 @@ describe("RequestActivationSupportHandler", () => {
       journalNames(),
       uow,
       mail,
+      inMemoryIntents(),
     );
 
-    await handler.execute(new RequestActivationSupportCommand("user_1", PAYLOAD));
+    await handler.execute(new RequestActivationSupportCommand("user_1", PAYLOAD, randomUUID()));
 
     expect(mails.queued.map((m) => [m.template, m.idempotencyKey])).toEqual([
       ["staff.support-requested", "mail:support.requested:support_1"],
@@ -218,10 +255,11 @@ describe("RequestActivationSupportHandler", () => {
       journalNames(),
       uow,
       staffMail(uow, mails).mail,
+      inMemoryIntents(),
     );
 
     await expect(
-      handler.execute(new RequestActivationSupportCommand("user_1", PAYLOAD)),
+      handler.execute(new RequestActivationSupportCommand("user_1", PAYLOAD, randomUUID())),
     ).rejects.toThrow("base indisponible");
     expect(published).toEqual([]);
   });

@@ -43,6 +43,7 @@ import { GetPromotionsSourceQuery } from "../application/queries/get-promotions-
 import { ListPromotionsQuery } from "../application/queries/list-promotions.query.js";
 import { promotionTermsOf } from "./promotion-terms.mapper.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 
 /**
  * **L'écran Promotions** (`documentation/promotions/promotions.md`, § 2.9, lots L7-L8), sous `b2b_pricing` — la ressource des règles de prix :
@@ -125,9 +126,10 @@ export class AdminPromotionsController {
   async pose(
     @Body(new ZodBody(promotionTermsPayloadSchema)) payload: PromotionTermsPayload,
     @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedIdResponse> {
     const id = await this.commands.execute<PosePromotionCommand, string>(
-      new PosePromotionCommand(promotionTermsOf(payload), staffUserId),
+      new PosePromotionCommand(promotionTermsOf(payload), staffUserId, intentKey),
     );
     return { id };
   }

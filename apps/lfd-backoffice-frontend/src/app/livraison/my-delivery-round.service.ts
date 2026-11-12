@@ -13,6 +13,7 @@ import type {
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
+import { intentOptions } from '../shared/gesture-intents';
 import { appendPosition } from './gesture-position';
 
 const MY_ROUND = `${B2B_API_BASE}/admin/delivery/my-round`;
@@ -108,8 +109,11 @@ export class MyDeliveryRoundService {
 
   // ── À la porte (`a-la-porte.md`, lot A), sous `delivery_doorstep` ──
 
-  /** « Déclarer un problème » — en multipart, la photo sous `photo`. */
-  async report(roundId: string, report: IncidentReport): Promise<string> {
+  /**
+   * « Déclarer un problème » — en multipart, la photo sous `photo`.
+   * `intentKey` : la clé du signalement — un envoi rejoué ne signale qu'une fois.
+   */
+  async report(roundId: string, report: IncidentReport, intentKey: string): Promise<string> {
     const body = new FormData();
     body.append('family', report.family);
     body.append('reason', report.reason);
@@ -121,7 +125,11 @@ export class MyDeliveryRoundService {
       body.append('photo', report.photo, 'signalement.jpg');
     }
     const created = await firstValueFrom(
-      this.http.post<ReportedDeliveryIncidentResponse>(`${roundUrl(roundId)}/incidents`, body),
+      this.http.post<ReportedDeliveryIncidentResponse>(
+        `${roundUrl(roundId)}/incidents`,
+        body,
+        intentOptions(intentKey),
+      ),
     );
     return created.id;
   }

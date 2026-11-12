@@ -3,6 +3,7 @@ import { CommandBus } from "@nestjs/cqrs";
 
 import { AdminSurface, RequirePermission } from "../../platform/auth/admin-surface.decorator.js";
 import { WakeRoadRoutingCommand } from "../application/commands/wake-road-routing.command.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Réveiller le calcul routier** — appelé par le back-office à l'ouverture
@@ -18,6 +19,9 @@ export class RoadRoutingWakeController {
   constructor(private readonly commands: CommandBus) {}
 
   @Post("wake")
+  @Idempotent(
+    "réveille le moteur d'itinéraires sans rien écrire ; rejoué dans l'intervalle, le réveil ne repart même pas",
+  )
   @HttpCode(HttpStatus.ACCEPTED)
   @RequirePermission("delivery_rounds:read")
   async wake(): Promise<void> {

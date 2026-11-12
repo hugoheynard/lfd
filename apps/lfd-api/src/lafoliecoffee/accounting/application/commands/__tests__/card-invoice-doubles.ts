@@ -98,9 +98,13 @@ export class MemoryCardOutcomes extends CardInvoiceOutcomes {
     this.rows.set(key.orderId, { key, invoiceId, message: null });
     return Promise.resolve();
   }
-  recordBlocked(key: CardInvoiceOutcomeKey, message: string): Promise<void> {
+  recordBlocked(key: CardInvoiceOutcomeKey, message: string): Promise<boolean> {
+    const known = this.rows.get(key.orderId);
+    if (known !== undefined && known.invoiceId === null && known.message === message) {
+      return Promise.resolve(false);
+    }
     this.rows.set(key.orderId, { key, invoiceId: null, message });
-    return Promise.resolve();
+    return Promise.resolve(true);
   }
 }
 

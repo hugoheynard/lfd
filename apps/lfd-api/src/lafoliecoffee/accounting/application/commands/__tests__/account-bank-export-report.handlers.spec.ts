@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { BankExportNotDepositedError } from "../../../domain/errors/bank-report-errors.js";
 import { NoAccountToExportError } from "../../../domain/errors/account-bank-export-errors.js";
 import { debitedAccount } from "../../../domain/services/__tests__/account-for-bank-export.fixture.js";
@@ -10,7 +11,7 @@ import { RejectBankAccountCommand } from "../reject-bank-account.command.js";
 import { ReportBankAccountKnownCommand } from "../report-bank-account-known.command.js";
 import { NOW, accountExportWorld } from "./account-bank-export-doubles.js";
 
-const prepare = () => new ExportAccountsForBankCommand("le1", "staff_1");
+const prepare = () => new ExportAccountsForBankCommand("le1", "staff_1", randomUUID());
 
 /** Un export d'un compte (rib_a), téléchargé puis — si demandé — déposé. */
 async function exported(deposit: boolean) {

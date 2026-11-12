@@ -12,6 +12,11 @@ import { PickupAddressCreatedEvent } from "../domain/pickup-address.events.js";
 import { PickupDiscount } from "../domain/pickup-discount.js";
 import { CreatePickupAddressCommand } from "./create-pickup-address.command.js";
 import { refuseLegacyPromotionEditor } from "../../promotions/domain/promotions-source.js";
+import { intentSubject } from "../../../platform/intent/intent-subject.js";
+import { CREATED_ID_REPLAY, OncePerIntent } from "../../../platform/intent/once-per-intent.js";
+
+/** Le nom stable du geste, dans le registre des intentions. */
+const GESTURE = "sites.create";
 
 /**
  * Handler **staff** : crée un point de retrait — un site neuf, qui remet, est
@@ -36,12 +41,35 @@ export class CreatePickupAddressHandler implements ICommandHandler<
     private readonly uow: UnitOfWork,
     private readonly afterCommit: AfterCommit,
     private readonly edge: PublicSettingsEdgeCache,
+    private readonly intents: OncePerIntent,
   ) {}
 
   /**
+   * **Une fois par intention** : la clé de l'écran est scellée avec le site et
+   * son fait ; un double clic rend le site déjà créé, sans second site, ni
+   * second fait, ni seconde purge.
+   *
    * @throws {LegacyPromotionEditorClosedError} une remise posée : elle se règle dans l'écran Promotions.
+   * @throws {GestureInFlightError} la même clé est encore en vol.
+   * @throws {IntentKeyReusedError} la clé a servi pour un autre site.
    */
-  async execute(command: CreatePickupAddressCommand): Promise<string> {
+  execute(command: CreatePickupAddressCommand): Promise<string> {
+    return this.intents.runSealed(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: GESTURE,
+        subject: intentSubject("site", command.payload),
+      },
+      CREATED_ID_REPLAY,
+      (seal) => this.create(command, seal),
+    );
+  }
+
+  private async create(
+    command: CreatePickupAddressCommand,
+    seal: (siteId: string) => Promise<void>,
+  ): Promise<string> {
     const { discounts, gps, ...fields } = command.payload;
     if (discounts.b2b !== null || discounts.b2c !== null) {
       // Depuis la bascule (plan des promotions, L8, L12), une remise de site
@@ -57,6 +85,7 @@ export class CreatePickupAddressHandler implements ICommandHandler<
       const written = writeOf(fields, resolved, position);
       await this.events.publishTraced(new PickupAddressCreatedEvent(site.id, written));
       this.afterCommit.defer(() => this.edge.purge(), "pickup-address.created.edge-purge");
+      await seal(site.id);
       return site.id;
     });
   }

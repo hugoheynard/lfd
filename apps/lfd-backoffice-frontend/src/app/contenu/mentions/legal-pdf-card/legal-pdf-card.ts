@@ -24,6 +24,7 @@ import {
 import { NotifyService } from '../../../notify.service';
 import { legalFileUrl, PlatformContentService } from '../../platform-content.service';
 import { dayOf, sizeOf, stampOf } from './legal-pdf-format';
+import { GestureIntents } from '../../../shared/gesture-intents';
 
 const COLUMNS: readonly FoldTableColumn[] = [
   { key: 'uploadedAt', label: 'Déposé le' },
@@ -63,6 +64,11 @@ const COLUMNS: readonly FoldTableColumn[] = [
 export class LegalPdfCard {
   private readonly api = inject(PlatformContentService);
   private readonly notify = inject(NotifyService);
+  /**
+   * L'intention de déposer : une clé tirée au premier envoi, renvoyée jusqu'au
+   * succès — un double clic ne dépose pas deux PDF.
+   */
+  private readonly intents = new GestureIntents();
 
   readonly document = input.required<SalesTermsDocument>();
   /** La date de la dernière révision du texte en ligne, `null` s'il n'a jamais été écrit. */
@@ -119,7 +125,9 @@ export class LegalPdfCard {
     }
     this.busy.set(true);
     try {
-      await this.api.depositLegalFile(this.document(), file);
+      const subject = `deposit:${this.document()}`;
+      await this.api.depositLegalFile(this.document(), file, this.intents.keyFor(subject));
+      this.intents.done(subject);
       this.notify.success('PDF déposé : il est désormais la version de référence.');
       await this.load(this.document());
     } catch (error) {

@@ -8,5 +8,7 @@ export class SetPriceFloorCommand {
     readonly clientele: FloorClientele,
     readonly policy: PriceFloorPolicy,
     readonly staffUserId: string,
+    /** La clé d'intention de l'écran (`Idempotency-Key`) : un rejeu ne refait pas le geste. */
+    readonly intentKey: string,
   ) {}
 }

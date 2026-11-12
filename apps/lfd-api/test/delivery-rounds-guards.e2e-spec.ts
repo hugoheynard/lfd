@@ -23,6 +23,7 @@ import {
   seedDelivery,
   VEHICLES,
 } from "./delivery-rounds-scene.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const DAY = serviceDay();
 
@@ -158,13 +159,21 @@ describe("le droit `delivery_rounds` (Q12)", () => {
   it("refuse le support en lecture comme en écriture (403)", async () => {
     const support = await asRole("support");
     await support.get(`${ROUNDS}?day=${DAY}`).expect(403);
-    await support.post(ROUNDS).send({ day: DAY, vehicleId: "x" }).expect(403);
+    await support
+      .post(ROUNDS)
+      .set(INTENT_KEY, freshIntent())
+      .send({ day: DAY, vehicleId: "x" })
+      .expect(403);
   });
 
   it("laisse le comptoir composer", async () => {
     const kangoo = await addVehicle(ctx, "Kangoo");
     const counter = await asRole("comptoir");
-    await counter.post(ROUNDS).send({ day: DAY, vehicleId: kangoo }).expect(201);
+    await counter
+      .post(ROUNDS)
+      .set(INTENT_KEY, freshIntent())
+      .send({ day: DAY, vehicleId: kangoo })
+      .expect(201);
     await counter.get(`${ROUNDS}?day=${DAY}`).expect(200);
   });
 });

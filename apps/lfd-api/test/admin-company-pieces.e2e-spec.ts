@@ -19,6 +19,7 @@ import {
 } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_ID, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const PDF = Buffer.from("%PDF-1.4\nfake kbis", "latin1");
 
@@ -75,6 +76,7 @@ describe("pièces d'activation staff (Porte B)", () => {
   it("dépose le KBIS sans membership", async () => {
     await staff()
       .put(`/admin/companies/${companyId}/kbis`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", PDF, "kbis.pdf")
       .expect(204);
 
@@ -160,6 +162,7 @@ describe("pièces d'activation staff (Porte B)", () => {
   it("ajoute une adresse de livraison et renvoie son id", async () => {
     const response = await staff()
       .post(`/admin/companies/${companyId}/delivery-addresses`)
+      .set(INTENT_KEY, freshIntent())
       .send(delivery)
       .expect(201);
 
@@ -312,10 +315,15 @@ describe("certification du KBIS", () => {
   it("exige la date de délivrance (400), et ne certifie rien sans elle", async () => {
     await staff()
       .put(`/admin/companies/${companyId}/kbis`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", PDF, "k.pdf")
       .expect(204);
 
-    await staff().post(`/admin/companies/${companyId}/kbis/certification`).send({}).expect(400);
+    await staff()
+      .post(`/admin/companies/${companyId}/kbis/certification`)
+      .set(INTENT_KEY, freshIntent())
+      .send({})
+      .expect(400);
 
     const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
     expect(company.kbisCertifiedAt).toBeNull();
@@ -324,11 +332,13 @@ describe("certification du KBIS", () => {
   it("refuse une date de délivrance future (400)", async () => {
     await staff()
       .put(`/admin/companies/${companyId}/kbis`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", PDF, "k.pdf")
       .expect(204);
 
     await staff()
       .post(`/admin/companies/${companyId}/kbis/certification`)
+      .set(INTENT_KEY, freshIntent())
       .send({ issuedOn: daysAgo(-3).slice(0, 10) })
       .expect(400);
   });
@@ -336,10 +346,12 @@ describe("certification du KBIS", () => {
   it("garde la date de délivrance, la sert au staff, et l'efface au dépôt suivant", async () => {
     await staff()
       .put(`/admin/companies/${companyId}/kbis`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", PDF, "k.pdf")
       .expect(204);
     await staff()
       .post(`/admin/companies/${companyId}/kbis/certification`)
+      .set(INTENT_KEY, freshIntent())
       .send({ issuedOn: ISSUED_ON })
       .expect(204);
 
@@ -348,6 +360,7 @@ describe("certification du KBIS", () => {
 
     await staff()
       .put(`/admin/companies/${companyId}/kbis`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", PDF, "k2.pdf")
       .expect(204);
     const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
@@ -359,6 +372,7 @@ describe("certification du KBIS", () => {
     // produirait un compte activable dont personne n'a jamais vu l'extrait.
     const response = await staff()
       .post(`/admin/companies/${companyId}/kbis/certification`)
+      .set(INTENT_KEY, freshIntent())
       .send({ issuedOn: ISSUED_ON });
     expect(response.status).toBe(404);
 
@@ -371,6 +385,7 @@ describe("certification du KBIS", () => {
     // faut-il qu'il puisse l'ouvrir depuis la fiche.
     await staff()
       .put(`/admin/companies/${companyId}/kbis`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", PDF, "k.pdf")
       .expect(204);
 
@@ -391,10 +406,12 @@ describe("certification du KBIS", () => {
   it("certifie un extrait déposé, et GARDE qui l'a fait", async () => {
     await staff()
       .put(`/admin/companies/${companyId}/kbis`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", PDF, "k.pdf")
       .expect(204);
     await staff()
       .post(`/admin/companies/${companyId}/kbis/certification`)
+      .set(INTENT_KEY, freshIntent())
       .send({ issuedOn: ISSUED_ON })
       .expect(204);
 
@@ -406,15 +423,18 @@ describe("certification du KBIS", () => {
   it("un NOUVEAU dépôt décertifie — la trace ne survit pas au fichier qu'elle visait", async () => {
     await staff()
       .put(`/admin/companies/${companyId}/kbis`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", PDF, "k.pdf")
       .expect(204);
     await staff()
       .post(`/admin/companies/${companyId}/kbis/certification`)
+      .set(INTENT_KEY, freshIntent())
       .send({ issuedOn: ISSUED_ON })
       .expect(204);
 
     await staff()
       .put(`/admin/companies/${companyId}/kbis`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", PDF, "k2.pdf")
       .expect(204);
 
@@ -426,10 +446,12 @@ describe("certification du KBIS", () => {
   it("se retire — un clic de trop doit pouvoir se défaire", async () => {
     await staff()
       .put(`/admin/companies/${companyId}/kbis`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", PDF, "k.pdf")
       .expect(204);
     await staff()
       .post(`/admin/companies/${companyId}/kbis/certification`)
+      .set(INTENT_KEY, freshIntent())
       .send({ issuedOn: ISSUED_ON })
       .expect(204);
 
@@ -460,6 +482,7 @@ describe("certification du KBIS", () => {
     });
     await staff()
       .put(`/admin/companies/${companyId}/kbis`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", PDF, "k.pdf")
       .expect(204);
 
@@ -495,6 +518,7 @@ describe("certification du KBIS", () => {
 
     await staff()
       .put(`/admin/companies/${companyId}/kbis`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", PDF, "k2.pdf")
       .expect(204);
 
@@ -549,10 +573,12 @@ describe("certification du KBIS", () => {
     });
     await staff()
       .put(`/admin/companies/${companyId}/kbis`)
+      .set(INTENT_KEY, freshIntent())
       .attach("file", PDF, "k.pdf")
       .expect(204);
     await staff()
       .post(`/admin/companies/${companyId}/kbis/certification`)
+      .set(INTENT_KEY, freshIntent())
       .send({ issuedOn: ISSUED_ON })
       .expect(204);
     await staff().post(`/admin/companies/${companyId}/activate`).expect(204);

@@ -2,7 +2,11 @@ import { Injectable, inject, signal } from '@angular/core';
 import type { MediaSeriesPayload, MediaSeriesView } from '@lfd/pim-contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 
+import { GestureIntents } from '../../shared/gesture-intents';
 import { MediaSeriesApi } from '../data/media-series-api';
+
+/** Le sujet de l'intention : une ouverture à la fois. */
+const OPEN = 'open';
 
 /**
  * **Les séries du fonds** — lues une fois, relues après chaque écriture.
@@ -14,6 +18,8 @@ import { MediaSeriesApi } from '../data/media-series-api';
 @Injectable()
 export class MediaSeriesStore {
   private readonly api = inject(MediaSeriesApi);
+  /** Ouvrir une série est une création : une clé, gardée jusqu'au succès. */
+  private readonly openIntents = new GestureIntents();
 
   private readonly list = signal<readonly MediaSeriesView[]>([]);
   readonly all = this.list.asReadonly();
@@ -34,9 +40,13 @@ export class MediaSeriesStore {
     return id === null ? null : (this.list().find((series) => series.id === id) ?? null);
   }
 
-  /** Ouvre une série, relit la liste, rend l'identifiant. Le refus est relancé. */
+  /**
+   * Ouvre une série, relit la liste, rend l'identifiant. Le refus est relancé,
+   * et la clé reste : le réessai ne peut pas ouvrir deux séries.
+   */
   async open(payload: MediaSeriesPayload): Promise<string> {
-    const id = await this.api.openSeries(payload);
+    const id = await this.api.openSeries(payload, this.openIntents.keyFor(OPEN));
+    this.openIntents.done(OPEN);
     await this.refresh();
     return id;
   }

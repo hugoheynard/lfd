@@ -35,7 +35,10 @@ export class CorrectVehicleHandler implements ICommandHandler<CorrectVehicleComm
       const vehicle = await loadVehicle(this.vehicles, command.vehicleId);
       const before = vehicle.identity;
       const wasMeasured = vehicle.measured;
-      vehicle.correct(command.payload, this.clock.now());
+      // Rejouer le geste ne change rien : ni écriture, ni fait au journal.
+      if (!vehicle.correct(command.payload, this.clock.now())) {
+        return;
+      }
       ensureMeasuredVehicleRemains({
         vehicle,
         wasMeasured,

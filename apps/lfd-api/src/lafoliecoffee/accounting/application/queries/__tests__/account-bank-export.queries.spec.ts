@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { instantToLocal } from "@lfd/contracts";
 import { AccountBankExportClosedError } from "../../../domain/errors/account-bank-export-errors.js";
 import {
@@ -64,7 +65,7 @@ describe("la carte « Comptes à la banque »", () => {
     ]);
     expect(before.accounts[1]).toMatchObject({ ibanCountry: "FR", bic: null });
 
-    await w.prepare.execute(new ExportAccountsForBankCommand("le1", "s"));
+    await w.prepare.execute(new ExportAccountsForBankCommand("le1", "s", randomUUID()));
     const after = await w.card.execute(new GetAccountBankExportsQuery("le1"));
     expect(after).toMatchObject({ toExport: [], inFlightCount: 1, knownCount: 0, debitedCount: 1 });
     expect(after.accounts[0]?.standing).toEqual({ kind: "in_flight", downloaded: false });
@@ -74,7 +75,7 @@ describe("la carte « Comptes à la banque »", () => {
   it("dit d'un compte en vol si son export a été téléchargé", async () => {
     const w = world();
     w.accounts.exportable = [debitedAccount("a")];
-    const id = await w.prepare.execute(new ExportAccountsForBankCommand("le1", "s"));
+    const id = await w.prepare.execute(new ExportAccountsForBankCommand("le1", "s", randomUUID()));
     await w.download.execute(new RecordAccountBankExportDownloadCommand("le1", id, "s"));
     const view = await w.card.execute(new GetAccountBankExportsQuery("le1"));
     expect(view.accounts[0]?.standing).toEqual({ kind: "in_flight", downloaded: true });
@@ -84,7 +85,7 @@ describe("la carte « Comptes à la banque »", () => {
   it("déposé, puis un compte signalé connu par le compte rendu : il se lit « signalé »", async () => {
     const w = world();
     w.accounts.exportable = [debitedAccount("a"), debitedAccount("b", { iban: IBAN_B })];
-    const id = await w.prepare.execute(new ExportAccountsForBankCommand("le1", "s"));
+    const id = await w.prepare.execute(new ExportAccountsForBankCommand("le1", "s", randomUUID()));
     await w.download.execute(new RecordAccountBankExportDownloadCommand("le1", id, "s"));
     await w.markImported.execute(new MarkAccountBankExportImportedCommand("le1", id, "s"));
     const importedAt = w.clock.now().toISOString();
@@ -102,7 +103,7 @@ describe("la carte « Comptes à la banque »", () => {
   it("dit pour chaque compte connu depuis quand et pourquoi", async () => {
     const w = world();
     w.accounts.exportable = [debitedAccount("a"), debitedAccount("b", { iban: IBAN_B })];
-    const id = await w.prepare.execute(new ExportAccountsForBankCommand("le1", "s"));
+    const id = await w.prepare.execute(new ExportAccountsForBankCommand("le1", "s", randomUUID()));
     await w.download.execute(new RecordAccountBankExportDownloadCommand("le1", id, "s"));
     await w.markImported.execute(new MarkAccountBankExportImportedCommand("le1", id, "s"));
     w.accounts.exportable = [
@@ -128,7 +129,7 @@ describe("le fichier d'un export des comptes", () => {
   it("se recalcule depuis les RIB, et se refuse si l'export est abandonné", async () => {
     const w = world();
     w.accounts.exportable = [debitedAccount("a")];
-    const id = await w.prepare.execute(new ExportAccountsForBankCommand("le1", "s"));
+    const id = await w.prepare.execute(new ExportAccountsForBankCommand("le1", "s", randomUUID()));
 
     const file = await w.file.execute(new ExportAccountBankFileQuery("le1", id));
     expect(file.csv.startsWith("I;Titulaire a;552100554;")).toBe(true);
@@ -145,7 +146,7 @@ describe("le fichier d'un export des comptes", () => {
   it("refuse (409) un fichier dont un RIB a changé depuis", async () => {
     const w = world();
     w.accounts.exportable = [debitedAccount("a")];
-    const id = await w.prepare.execute(new ExportAccountsForBankCommand("le1", "s"));
+    const id = await w.prepare.execute(new ExportAccountsForBankCommand("le1", "s", randomUUID()));
     w.accounts.exportable = [debitedAccount("a", { iban: IBAN_B })];
     await expect(w.file.execute(new ExportAccountBankFileQuery("le1", id))).rejects.toThrow(
       /Société a/u,

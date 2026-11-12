@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { addDays } from "@lfd/contracts";
 
 import { CollectionBatchNotFoundError } from "../../../domain/errors/collection-errors.js";
@@ -31,7 +32,7 @@ describe("la procédure de prélèvement — la lecture d'état", () => {
   it("un export de comptes en vol : en attente, l'onglet 2 reste verrouillé", async () => {
     const w = world();
     w.accounts.accounts.exportable = [debitedAccount("a")];
-    await w.accounts.prepare.execute(new ExportAccountsForBankCommand("le1", "s"));
+    await w.accounts.prepare.execute(new ExportAccountsForBankCommand("le1", "s", randomUUID()));
 
     const view = await w.read();
 
@@ -42,7 +43,9 @@ describe("la procédure de prélèvement — la lecture d'état", () => {
   it("un export de mandats non importé : l'onglet 2 attend « Marquer importé »", async () => {
     const w = world();
     w.mandates.mandates.exportable = [bankMandate("m1")];
-    await w.mandates.exportCommand.execute(new ExportMandatesForBankCommand("le1", "s"));
+    await w.mandates.exportCommand.execute(
+      new ExportMandatesForBankCommand("le1", "s", randomUUID()),
+    );
 
     const view = await w.read();
 

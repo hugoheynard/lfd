@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { BankExportNotDepositedError } from "../../../domain/errors/bank-report-errors.js";
 import { GetMandateBankExportsHandler } from "../../queries/get-mandate-bank-exports.handler.js";
 import { GetMandateBankExportsQuery } from "../../queries/mandate-bank-export-queries.js";
@@ -8,7 +9,7 @@ import { RejectMandateAtBankCommand } from "../reject-mandate-at-bank.command.js
 import { ReportMandateKnownToBankCommand } from "../report-mandate-known-to-bank.command.js";
 import { NOW, bankExportWorld, bankMandate } from "./mandate-bank-export-doubles.js";
 
-const prepare = () => new ExportMandatesForBankCommand("le1", "staff_1");
+const prepare = () => new ExportMandatesForBankCommand("le1", "staff_1", randomUUID());
 
 /** Un export d'un mandat (m1), téléchargé puis — si demandé — déposé. */
 async function exported(deposit: boolean) {

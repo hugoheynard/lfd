@@ -26,6 +26,9 @@ import {
   GetLegalEntityQuery,
   ListLegalEntitiesQuery,
 } from "../application/queries/legal-entity-queries.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 
 /**
  * **Le registre** des entités juridiques émettrices — qui elles sont, et
@@ -89,13 +92,18 @@ export class AdminLegalEntitiesController {
    * de lecture, l'appelant relit. Ce n'est pas une cérémonie — c'est ce qui
    * garantit que l'écran affiche ce que la base porte, et pas ce que le handler
    * croyait écrire.
+   *
+   * Une fois par intention (`Idempotency-Key`) : la même clé rend la même
+   * entité, jamais une seconde.
    */
   @Post()
   async declare(
+    @StaffUserId() staffUserId: string,
     @Body(new ZodBody(declareLegalEntityPayloadSchema)) payload: DeclareLegalEntityPayload,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedIdResponse> {
     const id = await this.commands.execute<DeclareLegalEntityCommand, string>(
-      new DeclareLegalEntityCommand(payload),
+      new DeclareLegalEntityCommand(payload, staffUserId, intentKey),
     );
     return { id };
   }
@@ -103,6 +111,9 @@ export class AdminLegalEntitiesController {
   /** Corrige l'identité et l'adresse. Les documents déjà émis en ont pris copie. */
   @Put(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose des valeurs : rejouée, la même fiche est trouvée égale (identité et siège) et rien n'est écrit ni journalisé",
+  )
   async correct(
     @Param("id") id: string,
     @Body(new ZodBody(correctLegalEntityPayloadSchema)) payload: CorrectLegalEntityPayload,
@@ -117,6 +128,9 @@ export class AdminLegalEntitiesController {
    */
   @Put(":id/invoice-payment-terms")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose des valeurs : rejouée, les mêmes mentions sont trouvées égales (equals) et rien n'est écrit ni journalisé",
+  )
   async setInvoicePaymentTerms(
     @Param("id") id: string,
     @Body(new ZodBody(setInvoicePaymentTermsPayloadSchema)) payload: SetInvoicePaymentTermsPayload,
@@ -131,6 +145,9 @@ export class AdminLegalEntitiesController {
    */
   @Put(":id/invoice-prefix")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose une valeur : rejoué, le même préfixe est trouvé égal et rien n'est écrit ni journalisé",
+  )
   async setInvoicePrefix(
     @Param("id") id: string,
     @Body(new ZodBody(setInvoicePrefixPayloadSchema)) payload: SetInvoicePrefixPayload,
@@ -145,6 +162,9 @@ export class AdminLegalEntitiesController {
    */
   @Put(":id/archived")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose un état : rejouée, l'entité est déjà archivée (sa date ne bouge pas) ou déjà en service, et rien n'est écrit ni journalisé",
+  )
   async setArchived(@Param("id") id: string, @Body("archived") archived: boolean): Promise<void> {
     await this.commands.execute(new SetLegalEntityArchivedCommand(id, archived === true));
   }

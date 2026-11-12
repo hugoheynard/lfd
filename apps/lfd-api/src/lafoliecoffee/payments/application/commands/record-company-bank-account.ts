@@ -38,9 +38,16 @@ export interface RecordBankAccountDeps extends DraftVoidingDeps, MandateBellDeps
  * `DebtorAccount` et le cycle charger → muter → sauver ne s'écrivent qu'une
  * fois. Même geste que `ingestKbis` côté `account`.
  *
+ * ## Un RIB identique ne fait rien (décidé par Hugo le 2026-11-12)
+ *
+ * Même compte, même BIC, même titulaire, même forme, même adresse
+ * (`DebtorAccount.equals`, après la fusion de la forme juridique) : aucune
+ * écriture, aucun fait, aucun avis, et le brouillon reste valide. C'est ce qui
+ * rend le geste idempotent par nature.
+ *
  * ## Le brouillon de mandat devient caduc (depuis le 2026-09-14)
  *
- * Tant qu'un brouillon existe, **toute** écriture du RIB le révoque, dans la
+ * Tant qu'un brouillon existe, toute écriture **qui change le RIB** du RIB le révoque, dans la
  * même unité de travail, fait au journal ; l'équipe est prévenue ensuite, hors
  * transaction (plan `documentation/comptabilite/mandat/plan-mandat-client.md` §9 #4).
  *
@@ -95,6 +102,11 @@ export async function recordCompanyBankAccount(
     payload.holderLegalForm === undefined
       ? submitted.withHolderLegalForm(existing?.account.holderLegalForm ?? "")
       : submitted;
+  // Le même RIB, déposé de nouveau (un double clic, un rejeu) : rien — ni
+  // écriture, ni fait, ni avis, ni brouillon caduc (Hugo, 2026-11-12).
+  if (existing?.account.equals(account) === true) {
+    return;
+  }
   const written = replaceOrDeclare(existing, account, companyId, deps.ids);
 
   const trigger = { cause: "bank_account_changed", via } as const;
@@ -110,8 +122,7 @@ export async function recordCompanyBankAccount(
     await deps.accounts.save(written);
     await deps.events.publishTraced(changed);
     // Ni IBAN, ni titulaire : le fait ne porte que le site, son principal lu
-    // sous verrou et l'auteur. Une requête rejouée fait un second avis —
-    // assumé : sur un RIB, deux avis valent mieux que zéro.
+    // sous verrou et l'auteur. Un dépôt identique n'arrive pas jusqu'ici.
     await deps.gestures.publish({ type: BANK_ACCOUNT_CHANGED, site, subjectId: written.id, actor });
   });
   if (voided !== null) {

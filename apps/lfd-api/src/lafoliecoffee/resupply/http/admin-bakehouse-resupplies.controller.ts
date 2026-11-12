@@ -170,6 +170,9 @@ export class AdminBakehouseResuppliesController {
 
   /** Envoyer un brouillon : le contenu de l'écran part, le brouillon passe `sent`. */
   @Post("drafts/:draftId/send")
+  @Idempotent(
+    "porte la version lue : rejouée, le brouillon déjà envoyé rend le réassort qu'il a produit (sentAfter) sans en écrire un second",
+  )
   async sendDraft(
     @Param("draftId") draftId: string,
     @Body(new ZodBody(updateBakehouseResupplyDraftSchema))

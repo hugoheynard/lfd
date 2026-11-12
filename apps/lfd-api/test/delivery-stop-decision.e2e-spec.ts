@@ -38,6 +38,7 @@ import {
 } from "./delivery-rounds-scene.js";
 import { forgetRoutingScene } from "./delivery-routing-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const DECIDE = "/admin/delivery/stop-decisions";
 
@@ -77,6 +78,7 @@ async function scene(signatureRequired = true) {
 async function reportNobody(agent: request.Agent, roundId: string, stopId: string): Promise<void> {
   await agent
     .post(`${MY_ROUND}/${roundId}/incidents`)
+    .set(INTENT_KEY, freshIntent())
     .field("family", "doorstep")
     .field("reason", "nobody_present")
     .field("note", "")
@@ -289,6 +291,7 @@ describe("« À décider » — le commercial décide (B3)", () => {
   ): Promise<string> {
     const response = await agent
       .post(`${MY_ROUND}/${roundId}/incidents`)
+      .set(INTENT_KEY, freshIntent())
       .field("family", family)
       .field("reason", reason)
       .field("note", "")

@@ -26,6 +26,7 @@ import { PricingMaterialsCache } from "../src/lafoliecoffee/pricing/infrastructu
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const REGISTERED = "auth0|zone-inscrit";
 const SKU = "VIE-001-1";
@@ -67,6 +68,7 @@ async function site(label: string): Promise<string> {
   return jsonBody<CreatedPickupResponse>(
     await staff()
       .post("/admin/pickup-addresses")
+      .set(INTENT_KEY, freshIntent())
       .send({
         label,
         ligne1: "5 rue du Four",
@@ -121,7 +123,7 @@ function terms(scene: Scene, over: Partial<PromotionTermsPayload> = {}): Promoti
 
 async function pose(body: PromotionTermsPayload): Promise<string> {
   const id = jsonBody<{ id: string }>(
-    await staff().post("/admin/promotions").send(body).expect(201),
+    await staff().post("/admin/promotions").set(INTENT_KEY, freshIntent()).send(body).expect(201),
   ).id;
   ctx.app.get(PricingMaterialsCache).invalidate();
   return id;
@@ -224,6 +226,7 @@ describe("ce que la promotion nomme doit exister (§ 9)", () => {
 
     const refused = await staff()
       .post("/admin/promotions")
+      .set(INTENT_KEY, freshIntent())
       .send(terms(sc, { fulfillment }))
       .expect(400);
 

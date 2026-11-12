@@ -10,6 +10,7 @@ import type { SubscriptionView } from "@lfd/contracts";
 import type { CreatedSubscription } from "../src/lafoliecoffee/subscriptions/domain/ports/subscription.repository.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const OWNER = "auth0|owner";
 const STRANGER = "auth0|stranger";
@@ -46,7 +47,12 @@ function weeklyPickup(): Record<string, unknown> {
 }
 
 async function createSubscription(): Promise<string> {
-  const response = await ctx.asSub(OWNER).post("/subscriptions").send(weeklyPickup()).expect(201);
+  const response = await ctx
+    .asSub(OWNER)
+    .post("/subscriptions")
+    .set(INTENT_KEY, freshIntent())
+    .send(weeklyPickup())
+    .expect(201);
   return jsonBody<CreatedSubscription>(response).id;
 }
 

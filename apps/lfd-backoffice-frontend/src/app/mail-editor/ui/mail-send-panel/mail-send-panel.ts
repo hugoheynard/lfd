@@ -39,6 +39,7 @@ import {
   mailSendWhen,
 } from '../../rules/mail-send-labels';
 import { mailSubjectDisplay } from '../../rules/mail-subjects';
+import { GestureIntents } from '../../../shared/gesture-intents';
 
 /** L'envoi à ouvrir. */
 export interface MailSendPanelData {
@@ -83,6 +84,8 @@ export class MailSendPanel implements FoldPanelContent<MailSendPanelData> {
 
   private readonly panel = inject<FoldPanelRef<void>>(FoldPanelRef);
   private readonly api = inject(MailSendsService);
+  /** Chaque affichage est une consultation comptée : une clé par ligne, gardée jusqu'au succès. */
+  private readonly intents = new GestureIntents();
 
   protected readonly natureLabels = MAIL_NATURE_LABELS;
   protected readonly state = signal<'loading' | 'ready' | 'failed'>('loading');
@@ -150,7 +153,8 @@ export class MailSendPanel implements FoldPanelContent<MailSendPanelData> {
     this.revealing.set(true);
     this.revealError.set(null);
     try {
-      this.revealed.set(await this.api.revealRecipient(send.id));
+      this.revealed.set(await this.api.revealRecipient(send.id, this.intents.keyFor(send.id)));
+      this.intents.done(send.id);
     } catch (error) {
       this.revealError.set(httpErrorMessage(error, 'L’adresse n’a pas pu être affichée.'));
     } finally {

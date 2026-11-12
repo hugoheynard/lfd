@@ -1354,6 +1354,15 @@ export type {
   PublishedShelfView,
   PublishedVariantView,
 } from "./published-catalog.js";
+export { pendingReviewOf, publishedShelvesOf } from "./published-catalog-counts.js";
+export type { PendingReviewCandidate, PublishedShelfFamily } from "./published-catalog-counts.js";
+export { catalogScreenRowsQuerySchema } from "./catalog-screen.js";
+export type {
+  CatalogScreenItemView,
+  CatalogScreenRowsQuery,
+  CatalogScreenRowsView,
+  CatalogScreenView,
+} from "./catalog-screen.js";
 export type { CatalogFamilyNodeView, CatalogFamilyView, CatalogItemView } from "./catalog.js";
 
 export {

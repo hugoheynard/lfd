@@ -10,6 +10,7 @@ import type {
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
+import { intentOptions } from '../shared/gesture-intents';
 
 /**
  * **Le prélèvement d'essai et nos établissements** (plan
@@ -46,10 +47,13 @@ export class CollectionTestsService {
     return firstValueFrom(this.http.get<CollectionTestsView>(this.tests));
   }
 
-  /** Génère et garde le fichier ; rend l'id de l'essai. */
-  async generate(payload: GenerateCollectionTestPayload): Promise<string> {
+  /**
+   * Génère et garde le fichier ; rend l'id de l'essai. Une fois par intention :
+   * la même clé rend le même essai.
+   */
+  async generate(payload: GenerateCollectionTestPayload, intentKey: string): Promise<string> {
     const created = await firstValueFrom(
-      this.http.post<CollectionTestCreatedView>(this.tests, payload),
+      this.http.post<CollectionTestCreatedView>(this.tests, payload, intentOptions(intentKey)),
     );
     return created.testId;
   }

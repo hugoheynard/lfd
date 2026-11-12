@@ -138,6 +138,7 @@ async function fillPickup(orderId: string): Promise<void> {
   const bag = jsonBody<OpenedPackingContainer>(
     await staff()
       .post(`${base(orderId)}/containers`)
+      .set(INTENT_KEY, freshIntent())
       .send({ nature: "bag" })
       .expect(201),
   );
@@ -153,6 +154,7 @@ async function fillDelivery(orderId: string): Promise<string> {
   const opened = jsonBody<OpenedPackingContainer>(
     await staff()
       .post(`${base(orderId)}/containers`)
+      .set(INTENT_KEY, freshIntent())
       .send({ nature: "bin", binTypeId: await binTypeId(ctx), half: false, innerBags: 0 })
       .expect(201),
   );
@@ -213,6 +215,7 @@ describe("GET admin/packing/:date/board — le poste lu au colisage", () => {
     const bag = jsonBody<OpenedPackingContainer>(
       await staff()
         .post(`${base(sheet.orderId)}/containers`)
+        .set(INTENT_KEY, freshIntent())
         .send({ nature: "bag" })
         .expect(201),
     );
@@ -270,6 +273,7 @@ describe("une commande colisée avec l'ancien poste (`counted`, K3c, §17.6)", (
 
     await staff()
       .post(`${base(pickup.orderId)}/containers`)
+      .set(INTENT_KEY, freshIntent())
       .send({ nature: "bag" })
       .expect(409);
   });

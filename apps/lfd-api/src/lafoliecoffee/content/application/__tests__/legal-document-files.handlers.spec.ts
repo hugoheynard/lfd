@@ -23,6 +23,9 @@ import { GetLegalDocumentFileHandler } from "../get-legal-document-file.handler.
 import { GetLegalDocumentFileQuery } from "../get-legal-document-file.query.js";
 import { ListLegalDocumentFilesHandler } from "../list-legal-document-files.handler.js";
 import { ListLegalDocumentFilesQuery } from "../list-legal-document-files.query.js";
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 
 // Comparée seulement aux dates qu'elle produit, jamais à l'horloge du mur.
 const NOW = new Date("2026-10-12T08:00:00.000Z");
@@ -107,6 +110,8 @@ function scene() {
     store,
     new FixedIdGenerator("ldf"),
     clock,
+    new DirectUnitOfWork(),
+    inMemoryIntents(),
   );
   const reader = new MemoryFilesReader(files);
   const list = new ListLegalDocumentFilesHandler(reader, new OneAuthor());
@@ -119,7 +124,7 @@ describe("DepositLegalDocumentFileHandler", () => {
     const { deposit, store, files } = scene();
 
     const id = await deposit.execute(
-      new DepositLegalDocumentFileCommand("salesTermsPro", PDF, "staff_1"),
+      new DepositLegalDocumentFileCommand("salesTermsPro", PDF, "staff_1", randomUUID()),
     );
 
     expect(id).toBe("ldf_000001");
@@ -133,9 +138,13 @@ describe("DepositLegalDocumentFileHandler", () => {
 
   it("le dépôt suivant REMPLACE le précédent sans l'écraser", async () => {
     const { deposit, store, files } = scene();
-    await deposit.execute(new DepositLegalDocumentFileCommand("salesTerms", PDF, "staff_1"));
+    await deposit.execute(
+      new DepositLegalDocumentFileCommand("salesTerms", PDF, "staff_1", randomUUID()),
+    );
 
-    await deposit.execute(new DepositLegalDocumentFileCommand("salesTerms", PDF, "staff_1"));
+    await deposit.execute(
+      new DepositLegalDocumentFileCommand("salesTerms", PDF, "staff_1", randomUUID()),
+    );
 
     expect(files.rows.map((row) => row.supersededAt)).toEqual([NOW, null]);
     expect([...store.objects.keys()]).toEqual([
@@ -144,11 +153,32 @@ describe("DepositLegalDocumentFileHandler", () => {
     ]);
   });
 
+  /** Régression : un double clic rangeait deux objets et remplaçait le PDF qu'il venait de déposer. */
+  it("rejoué sous la même clé, le dépôt rend le même sans rien ranger ni remplacer", async () => {
+    const { deposit, store, files } = scene();
+    const key = randomUUID();
+
+    const first = await deposit.execute(
+      new DepositLegalDocumentFileCommand("salesTerms", PDF, "staff_1", key),
+    );
+    const replayed = await deposit.execute(
+      new DepositLegalDocumentFileCommand("salesTerms", PDF, "staff_1", key),
+    );
+
+    expect(replayed).toBe(first);
+    expect(files.rows).toHaveLength(1);
+    expect(store.objects.size).toBe(1);
+  });
+
   it("les deux textes ont chacun leur PDF en vigueur", async () => {
     const { deposit, files } = scene();
-    await deposit.execute(new DepositLegalDocumentFileCommand("salesTerms", PDF, "staff_1"));
+    await deposit.execute(
+      new DepositLegalDocumentFileCommand("salesTerms", PDF, "staff_1", randomUUID()),
+    );
 
-    await deposit.execute(new DepositLegalDocumentFileCommand("salesTermsPro", PDF, "staff_1"));
+    await deposit.execute(
+      new DepositLegalDocumentFileCommand("salesTermsPro", PDF, "staff_1", randomUUID()),
+    );
 
     expect(files.rows.every((row) => row.supersededAt === null)).toBe(true);
   });
@@ -158,7 +188,9 @@ describe("DepositLegalDocumentFileHandler", () => {
     const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
     await expect(
-      deposit.execute(new DepositLegalDocumentFileCommand("salesTerms", png, "staff_1")),
+      deposit.execute(
+        new DepositLegalDocumentFileCommand("salesTerms", png, "staff_1", randomUUID()),
+      ),
     ).rejects.toBeInstanceOf(InvalidLegalPdfError);
     expect(store.objects.size).toBe(0);
     expect(files.rows).toEqual([]);
@@ -169,7 +201,9 @@ describe("DepositLegalDocumentFileHandler", () => {
     files.raceLost = true;
 
     await expect(
-      deposit.execute(new DepositLegalDocumentFileCommand("salesTerms", PDF, "staff_1")),
+      deposit.execute(
+        new DepositLegalDocumentFileCommand("salesTerms", PDF, "staff_1", randomUUID()),
+      ),
     ).rejects.toBeInstanceOf(LegalDocumentFileAlreadySupersededError);
   });
 });
@@ -177,8 +211,12 @@ describe("DepositLegalDocumentFileHandler", () => {
 describe("ListLegalDocumentFilesHandler", () => {
   it("rend l'historique, le plus récent d'abord, auteurs nommés par l'annuaire", async () => {
     const { deposit, list } = scene();
-    await deposit.execute(new DepositLegalDocumentFileCommand("salesTerms", PDF, "staff_1"));
-    await deposit.execute(new DepositLegalDocumentFileCommand("salesTerms", PDF, "staff_2"));
+    await deposit.execute(
+      new DepositLegalDocumentFileCommand("salesTerms", PDF, "staff_1", randomUUID()),
+    );
+    await deposit.execute(
+      new DepositLegalDocumentFileCommand("salesTerms", PDF, "staff_2", randomUUID()),
+    );
 
     const view = await list.execute(new ListLegalDocumentFilesQuery("salesTerms"));
 
@@ -192,7 +230,9 @@ describe("ListLegalDocumentFilesHandler", () => {
 describe("GetLegalDocumentFileHandler", () => {
   it("sert le PDF en vigueur sous un nom daté", async () => {
     const { deposit, get } = scene();
-    await deposit.execute(new DepositLegalDocumentFileCommand("salesTermsPro", PDF, "staff_1"));
+    await deposit.execute(
+      new DepositLegalDocumentFileCommand("salesTermsPro", PDF, "staff_1", randomUUID()),
+    );
 
     const download = await get.execute(new GetLegalDocumentFileQuery("salesTermsPro", null));
 
@@ -202,8 +242,12 @@ describe("GetLegalDocumentFileHandler", () => {
 
   it("sert un dépôt remplacé par son id — le PDF qu'une commande porte", async () => {
     const { deposit, get } = scene();
-    await deposit.execute(new DepositLegalDocumentFileCommand("salesTerms", PDF, "staff_1"));
-    await deposit.execute(new DepositLegalDocumentFileCommand("salesTerms", PDF, "staff_1"));
+    await deposit.execute(
+      new DepositLegalDocumentFileCommand("salesTerms", PDF, "staff_1", randomUUID()),
+    );
+    await deposit.execute(
+      new DepositLegalDocumentFileCommand("salesTerms", PDF, "staff_1", randomUUID()),
+    );
 
     const download = await get.execute(new GetLegalDocumentFileQuery("salesTerms", "ldf_000001"));
 
@@ -220,7 +264,9 @@ describe("GetLegalDocumentFileHandler", () => {
 
   it("un id d'un AUTRE texte rend 404, pas l'autre PDF", async () => {
     const { deposit, get } = scene();
-    await deposit.execute(new DepositLegalDocumentFileCommand("salesTerms", PDF, "staff_1"));
+    await deposit.execute(
+      new DepositLegalDocumentFileCommand("salesTerms", PDF, "staff_1", randomUUID()),
+    );
 
     await expect(
       get.execute(new GetLegalDocumentFileQuery("salesTermsPro", "ldf_000001")),

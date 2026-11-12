@@ -57,6 +57,9 @@ export class PurchaseVehicleCandidatesController {
   }
 
   @Post()
+  @Idempotent(
+    "par unicité : le nom d'un candidat de la bibliothèque est unique ; rejoué, la déclaration est refusée (409 PurchaseCandidateNameTakenError) avant toute écriture",
+  )
   @HttpCode(HttpStatus.CREATED)
   async declare(
     @Body(new ZodBody(purchaseVehicleCandidatePayloadSchema))
@@ -70,6 +73,7 @@ export class PurchaseVehicleCandidatesController {
   }
 
   @Put(":id")
+  @Idempotent("pose la fiche entière : rejouée, rien ne change et ni écriture ni fait ne partent")
   @HttpCode(HttpStatus.NO_CONTENT)
   async correct(
     @Param("id") id: string,

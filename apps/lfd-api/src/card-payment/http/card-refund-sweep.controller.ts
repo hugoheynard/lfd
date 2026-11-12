@@ -7,6 +7,7 @@ import {
   type CardRefundSweepReport,
   SweepCardRefundsCommand,
 } from "../application/commands/sweep-card-refunds.command.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Endpoint **batch** des remboursements par carte dus (plan M2, §6.8 :
@@ -25,6 +26,9 @@ export class CardRefundSweepController {
 
   @Post()
   @HttpCode(200)
+  @Idempotent(
+    "appelée par la machine (RecomputeGuard) : le bail de chaque demande exclut deux exécuteurs, et chaque émission porte la clé de la demande chez le prestataire (génération, tour) — un second passage ne rembourse pas deux fois",
+  )
   sweep(): Promise<CardRefundSweepReport> {
     return this.commands.execute<SweepCardRefundsCommand, CardRefundSweepReport>(
       new SweepCardRefundsCommand(),

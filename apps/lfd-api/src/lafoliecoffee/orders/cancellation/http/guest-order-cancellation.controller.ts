@@ -66,6 +66,9 @@ export class GuestOrderCancellationController {
   @Header("Cache-Control", "no-store")
   @Header("X-Robots-Tag", "noindex")
   @Header("Referrer-Policy", "no-referrer")
+  @Idempotent(
+    "route publique sans acteur (pas de clé d'intention possible, § 7) ; transition : rejouée, la commande est déjà annulée et la règle refuse (409) avant tout appel à Stripe",
+  )
   async confirm(
     @Body(new ZodBody(guestCancellationConfirmPayloadSchema))
     payload: GuestCancellationConfirmPayload,

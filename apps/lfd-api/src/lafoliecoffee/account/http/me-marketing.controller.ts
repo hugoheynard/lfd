@@ -52,6 +52,9 @@ export class MeMarketingController {
 
   @Post("subscriptions")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "rejouée, la préférence est déjà posée (acceptée ou en attente) : le bloc mail n'écrit rien et n'envoie aucune seconde confirmation",
+  )
   async subscribe(
     @CurrentUser() user: Principal,
     @Body(new ZodBody(subscribeMarketingPayloadSchema)) payload: SubscribeMarketingPayload,
@@ -84,6 +87,9 @@ export class MeMarketingController {
 
   @Post("partners")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "rejouée, les préférences des espaces partenaires sont déjà posées : le bloc mail n'écrit rien et n'envoie aucune seconde confirmation",
+  )
   async acceptPartners(
     @CurrentUser() user: Principal,
     @Body(new ZodBody(partnersConsentPayloadSchema)) payload: PartnersConsentPayload,

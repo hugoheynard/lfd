@@ -124,13 +124,14 @@ export class MemoryOutcomes extends MonthlyInvoiceOutcomes {
     });
     return Promise.resolve();
   }
-  recordBlocked(key: MonthlyInvoiceOutcomeKey, message: string): Promise<void> {
-    this.rows.set(invoiceGroupKey(key.payerCompanyId, key.mandateId), {
-      key,
-      invoiceId: null,
-      message,
-    });
-    return Promise.resolve();
+  recordBlocked(key: MonthlyInvoiceOutcomeKey, message: string): Promise<boolean> {
+    const group = invoiceGroupKey(key.payerCompanyId, key.mandateId);
+    const known = this.rows.get(group);
+    if (known !== undefined && (known.invoiceId !== null || known.message === message)) {
+      return Promise.resolve(false);
+    }
+    this.rows.set(group, { key, invoiceId: null, message });
+    return Promise.resolve(true);
   }
 }
 

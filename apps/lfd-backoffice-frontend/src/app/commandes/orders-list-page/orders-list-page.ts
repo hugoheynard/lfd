@@ -24,6 +24,7 @@ import {
 } from 'fold-ng';
 
 import { FROM_ORDER_LIST } from '../order-list-return';
+import { watchGlobalSubjects } from '../../shared/version/watch-global-subjects';
 import {
   ANY,
   CLIENTELE_CHOICES,
@@ -189,14 +190,26 @@ export class OrdersListPage {
       const page = this.currentPage();
       untracked(() => void this.load(filters, page));
     });
+    // Une commande passée ou changée ailleurs : la page se relit, filtres gardés.
+    watchGlobalSubjects(['orders-all'], () =>
+      this.load(this.filters(), this.currentPage(), { quiet: true }),
+    );
   }
 
+  /**
+   * `quiet` : relecture de fond (le veilleur) — la liste reste à l'écran
+   * pendant la lecture, et un échec la laisse telle quelle.
+   */
   protected async load(
     filters: OrderListFilters = this.filters(),
     page: number = this.currentPage(),
+    { quiet = false }: { readonly quiet?: boolean } = {},
   ): Promise<void> {
     const generation = ++this.generation;
-    this.state.set('loading');
+    const background = quiet && this.state() === 'ready';
+    if (!background) {
+      this.state.set('loading');
+    }
     try {
       const result = await this.orders.list({
         ...filtersToQuery(filters),
@@ -217,7 +230,7 @@ export class OrdersListPage {
       this.total.set(result.total);
       this.state.set('ready');
     } catch {
-      if (generation === this.generation) {
+      if (generation === this.generation && !background) {
         this.state.set('error');
       }
     }

@@ -24,9 +24,11 @@ import { DAY_JOURNALS, type DayJournal, isDayJournal, serviceDaySchema } from ".
  * - `companies` — les comptes clients (`public.company_change`), sous
  *   `b2b_companies:read` ;
  * - `orders-all` — toutes les commandes, quelle que soit leur journée
- *   (`public.order_change`), sous `b2b_orders:read` seul.
+ *   (`public.order_change`), sous `b2b_orders:read` seul ;
+ * - `catalog-admin` — l'écran Catalogue du back-office
+ *   (`public.catalog_admin_change`), sous `lfc_catalog:read`.
  */
-export const GLOBAL_VERSION_SUBJECTS = ["companies", "orders-all"] as const;
+export const GLOBAL_VERSION_SUBJECTS = ["companies", "orders-all", "catalog-admin"] as const;
 export type GlobalVersionSubject = (typeof GLOBAL_VERSION_SUBJECTS)[number];
 
 /** Tous les sujets du fil : les journaux de journée, puis les sujets globaux. */

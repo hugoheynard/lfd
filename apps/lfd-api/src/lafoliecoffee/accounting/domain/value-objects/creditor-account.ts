@@ -79,4 +79,14 @@ export class CreditorAccount {
   sameIdentityAs(other: CreditorAccount): boolean {
     return this.holder === other.holder && this.address.toString() === other.address.toString();
   }
+
+  /** Le même RIB recopié, aux quatre champs : une saisie rejouée ne change rien. */
+  equals(other: CreditorAccount): boolean {
+    return (
+      this.holder === other.holder &&
+      this.address.equals(other.address) &&
+      this.iban.value === other.iban.value &&
+      this.bic.value === other.bic.value
+    );
+  }
 }

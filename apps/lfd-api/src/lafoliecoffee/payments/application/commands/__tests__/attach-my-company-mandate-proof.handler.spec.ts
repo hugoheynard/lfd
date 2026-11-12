@@ -1,5 +1,6 @@
 import { Buffer } from "node:buffer";
 
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { AesGcmFieldCipher } from "../../../../../platform/crypto/aes-gcm-field-cipher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
@@ -51,9 +52,12 @@ function harness(
     new StepUnitOfWork(steps),
     notifier,
     silentGestures(),
+    inMemoryIntents(),
   );
-  const run = (bytes: Buffer = PDF) =>
-    handler.execute(new AttachMyCompanyMandateProofCommand("usr_1", "cmp_1", "mandat.pdf", bytes));
+  const run = (bytes: Buffer = PDF, intentKey = "cle-1") =>
+    handler.execute(
+      new AttachMyCompanyMandateProofCommand("usr_1", "cmp_1", "mandat.pdf", bytes, intentKey),
+    );
   return { steps, mandates, store, events, notifier, run };
 }
 
@@ -164,5 +168,39 @@ describe("AttachMyCompanyMandateProofHandler — le client renvoie son mandat si
 
     await expect(h.run(Buffer.from("MZ\x90\x00", "latin1"))).rejects.toThrow(/Pièce invalide/u);
     expect(h.store.objects.size).toBe(0);
+  });
+});
+
+describe("AttachMyCompanyMandateProofHandler — une fois par intention", () => {
+  /**
+   * Régression : un double envoi de la boutique rangeait deux pièces, périmait
+   * la signature en cours et sonnait deux fois la cloche du staff.
+   */
+  it("la même clé ne range, n'écrit ni ne sonne une seconde fois", async () => {
+    const h = harness();
+    h.mandates.draft = mandate();
+
+    await h.run();
+    await h.run();
+
+    expect(h.steps.log.filter((step) => step === "store")).toHaveLength(1);
+    expect(h.steps.log.filter((step) => step === "bell")).toHaveLength(1);
+    expect(h.mandates.saved).toHaveLength(1);
+  });
+
+  it("une autre clé — un autre fichier choisi — redépose", async () => {
+    const h = harness();
+    h.mandates.draft = mandate();
+
+    await h.run(PDF, "cle-1");
+    await h.run(PDF, "cle-2");
+
+    expect(h.steps.log.filter((step) => step === "store")).toHaveLength(2);
+  });
+
+  it("un non-membre est refusé avant toute intention : il ne laisse rien derrière lui", async () => {
+    const h = harness({ role: null });
+    await expect(h.run()).rejects.toBeInstanceOf(BankAccountCompanyNotFoundError);
+    expect(h.steps.log).not.toContain("store");
   });
 });

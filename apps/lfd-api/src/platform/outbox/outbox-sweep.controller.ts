@@ -5,6 +5,7 @@ import { Public } from "../auth/public.decorator.js";
 import { RecomputeGuard } from "../auth/recompute.guard.js";
 import type { OutboxSweepReport } from "./outbox-relay.js";
 import { SweepOutboxCommand } from "./sweep-outbox.command.js";
+import { Idempotent } from "../shared/http/idempotent.decorator.js";
 
 /**
  * Endpoint **batch** de la boîte d'envoi (plan §7, B3). Même porte
@@ -22,6 +23,9 @@ export class OutboxSweepController {
   constructor(private readonly commands: CommandBus) {}
 
   @Post()
+  @Idempotent(
+    "appelée par la machine (RecomputeGuard) : chaque livraison est réclamée sous bail et marquée livrée ; rejouée, elle ne relance que ce qui reste dû",
+  )
   @HttpCode(200)
   sweep(): Promise<OutboxSweepReport> {
     return this.commands.execute<SweepOutboxCommand, OutboxSweepReport>(new SweepOutboxCommand());

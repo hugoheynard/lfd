@@ -14,6 +14,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const MEMBER = "auth0|member";
 const COLLEAGUE = "auth0|colleague";
@@ -76,9 +77,24 @@ describe("GET /admin/companies/:companyId/subscriptions", () => {
     // Un client hors du compte : son panier ne doit pas entrer dans la liste.
     await createUser(ctx.prisma, { auth0Sub: OUTSIDER, email: "solo@exemple.fr" });
 
-    await ctx.asSub(MEMBER).post("/subscriptions").send(weeklyPickup("VIE-001-1")).expect(201);
-    await ctx.asSub(COLLEAGUE).post("/subscriptions").send(weeklyPickup("VIE-002-1")).expect(201);
-    await ctx.asSub(OUTSIDER).post("/subscriptions").send(weeklyPickup("PAI-001-1")).expect(201);
+    await ctx
+      .asSub(MEMBER)
+      .post("/subscriptions")
+      .set(INTENT_KEY, freshIntent())
+      .send(weeklyPickup("VIE-001-1"))
+      .expect(201);
+    await ctx
+      .asSub(COLLEAGUE)
+      .post("/subscriptions")
+      .set(INTENT_KEY, freshIntent())
+      .send(weeklyPickup("VIE-002-1"))
+      .expect(201);
+    await ctx
+      .asSub(OUTSIDER)
+      .post("/subscriptions")
+      .set(INTENT_KEY, freshIntent())
+      .send(weeklyPickup("PAI-001-1"))
+      .expect(201);
 
     const rows = jsonBody<readonly AdminSubscriptionRow[]>(
       await ctx.asSub("staff-e2e").get(`/admin/companies/${company.id}/subscriptions`).expect(200),

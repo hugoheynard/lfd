@@ -170,6 +170,7 @@ describe("🔴 régression R17 — la fin de la clôture est persistée", () => 
   it("règle de prix : archiver écrit `valid_to`", async () => {
     const created = await staff()
       .post("/admin/pricing/rules")
+      .set(INTENT_KEY, freshIntent())
       .send({
         // `geste` depuis L12 (2026-10-30) : l'étage `promotion` ne s'écrit plus, et la
         // mécanique éprouvée ici ne dépend pas de l'étage.
@@ -198,6 +199,7 @@ describe("🔴 régression R17 — la fin de la clôture est persistée", () => 
   it("barème de volume : archiver écrit `valid_to`", async () => {
     const created = await staff()
       .put("/admin/pricing/volume-ladders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         scope: { type: "product", id: SKU },
         audience: { type: "all", id: null },

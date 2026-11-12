@@ -13,5 +13,9 @@ export class UploadKbisByStaffCommand {
     readonly companyId: string,
     readonly fileName: string,
     readonly bytes: Buffer,
+    /** La fiche du staff qui agit : l'acteur de l'intention. */
+    readonly staffUserId: string,
+    /** La clé d'intention de l'écran (`Idempotency-Key`) : un rejeu ne refait pas le geste. */
+    readonly intentKey: string,
   ) {}
 }

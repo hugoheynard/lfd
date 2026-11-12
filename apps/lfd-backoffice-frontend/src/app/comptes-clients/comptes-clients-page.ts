@@ -36,6 +36,7 @@ import { parisToday } from '../shared/paris-today';
 import { SelfSignupPipeline } from './self-signup-pipeline/self-signup-pipeline';
 import { PortfolioMetricsService } from './portfolio-metrics.service';
 import { COMPANY_LIST_MAX_AGE_MS, CompanyListStore } from './company-cache/company-list.store';
+import { watchCompanySubjects } from './company-cache/company-subjects';
 import { STATUS_LABELS, type AdminCompany, type CompanyStatus } from './admin-company';
 import type { PortfolioMetricsView } from '@lfd/contracts';
 
@@ -381,10 +382,19 @@ export class ComptesClientsPage {
   constructor() {
     providePageHeader({ actions: this.headerActions, figures: this.headerFigures });
     void this.load();
+    // Un autre poste a touché un compte : la liste se relit sans démonter l'écran.
+    watchCompanySubjects(['companies'], () => this.load({ quiet: true }));
   }
 
-  protected async load(): Promise<void> {
-    this.state.set('loading');
+  /**
+   * `quiet` : relecture de fond (le veilleur) — la liste reste à l'écran
+   * pendant la lecture, et un échec la laisse telle quelle.
+   */
+  protected async load({ quiet = false }: { readonly quiet?: boolean } = {}): Promise<void> {
+    const background = quiet && this.state() === 'ready';
+    if (!background) {
+      this.state.set('loading');
+    }
     // Les deux lectures partent ENSEMBLE : la seconde ne dépend pas de la
     // première, et les enchaîner doublerait l'attente avant le premier pixel.
     const alerts = this.alerts.counts().catch(() => ({}));
@@ -396,7 +406,9 @@ export class ComptesClientsPage {
       this.companies.set(await this.service.list({ maxAgeMs: COMPANY_LIST_MAX_AGE_MS }));
       this.state.set('ready');
     } catch {
-      this.state.set('error');
+      if (!background) {
+        this.state.set('error');
+      }
     }
     this.pendingAlerts.set(await alerts);
     this.metrics.set(await metrics);

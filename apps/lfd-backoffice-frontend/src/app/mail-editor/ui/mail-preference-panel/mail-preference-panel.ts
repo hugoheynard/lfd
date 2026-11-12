@@ -36,6 +36,7 @@ import {
   mailPreferenceRecipient,
 } from '../../rules/mail-preference-labels';
 import { mailSendTime, mailSendWhen } from '../../rules/mail-send-labels';
+import { GestureIntents } from '../../../shared/gesture-intents';
 
 /** La ligne à ouvrir. */
 export interface MailPreferencePanelData {
@@ -81,6 +82,8 @@ export class MailPreferencePanel implements FoldPanelContent<MailPreferencePanel
 
   private readonly panel = inject<FoldPanelRef<MailPreferencePanelResult>>(FoldPanelRef);
   private readonly api = inject(MailPreferencesService);
+  /** Chaque affichage est une consultation comptée : une clé par ligne, gardée jusqu'au succès. */
+  private readonly intents = new GestureIntents();
   private readonly permissions = inject(PermissionsStore);
 
   protected readonly originLabels = MAIL_CONSENT_ORIGIN_LABELS;
@@ -141,7 +144,8 @@ export class MailPreferencePanel implements FoldPanelContent<MailPreferencePanel
     this.revealing.set(true);
     this.revealError.set(null);
     try {
-      this.revealed.set(await this.api.revealRecipient(line.id));
+      this.revealed.set(await this.api.revealRecipient(line.id, this.intents.keyFor(line.id)));
+      this.intents.done(line.id);
     } catch (error) {
       this.revealError.set(httpErrorMessage(error, 'L’adresse n’a pas pu être affichée.'));
     } finally {

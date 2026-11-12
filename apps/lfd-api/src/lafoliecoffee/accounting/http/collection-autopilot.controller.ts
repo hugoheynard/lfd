@@ -11,6 +11,7 @@ import {
   RunInvoiceAutopilotCommand,
   type InvoiceAutopilotReport,
 } from "../application/commands/run-invoice-autopilot.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /** Ce que le passage horaire a tenté : les factures du mois, puis les lots. */
 export interface HourlyAccountingReport extends CollectionAutopilotReport {
@@ -42,6 +43,9 @@ export class CollectionAutopilotController {
 
   @Post()
   @HttpCode(200)
+  @Idempotent(
+    "appelée par la machine (RecomputeGuard) : la facture saute ce qui est déjà émis, et la constitution, sous le verrou de l'entité, ne trouve plus rien pour un cycle déjà constitué (index collection_batch_one_live_per_cycle)",
+  )
   async run(): Promise<HourlyAccountingReport> {
     const invoices = await this.commands.execute<
       RunInvoiceAutopilotCommand,

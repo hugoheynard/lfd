@@ -7,6 +7,7 @@ import {
   type FirstPaymentsReplayReport,
   ReplayFirstPaymentsCommand,
 } from "../application/commands/replay-first-payments.command.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Endpoint **batch** du rattrapage des premiers paiements (plan M2, §4.3,
@@ -23,6 +24,9 @@ export class ReplayFirstPaymentsController {
 
   @Post()
   @HttpCode(200)
+  @Idempotent(
+    "appelée par la machine (RecomputeGuard) : chaque référence est relue sous claim et la ligne insérée absente ou avancée en retard, jamais en arrière ; rejoué, le rattrapage ne trouve plus rien à insérer ni à avancer",
+  )
   replay(): Promise<FirstPaymentsReplayReport> {
     return this.commands.execute<ReplayFirstPaymentsCommand, FirstPaymentsReplayReport>(
       new ReplayFirstPaymentsCommand(),

@@ -28,11 +28,12 @@ export abstract class DeliveryZoneRepository {
   abstract create(payload: DeliveryZonePayload): Promise<string>;
 
   /**
-   * Remplace une zone.
+   * Remplace une zone. Rend `false` sans rien écrire quand la zone porte déjà
+   * ces valeurs : un remplacement rejoué ne journalise ni ne purge.
    * @throws {DeliveryZoneNotFoundError} l'`id` n'existe pas.
    * @throws {DuplicatePostalCodeError} un préfixe est pris par une autre zone.
    */
-  abstract update(id: string, payload: DeliveryZonePayload): Promise<void>;
+  abstract update(id: string, payload: DeliveryZonePayload): Promise<boolean>;
 
   /**
    * Supprime une zone.

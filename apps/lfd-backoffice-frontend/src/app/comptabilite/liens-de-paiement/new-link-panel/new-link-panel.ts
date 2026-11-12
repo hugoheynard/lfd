@@ -23,6 +23,7 @@ import { centsOf } from '../../cents-field';
 import { copyLink } from '../../copy-link';
 import { NotifyService } from '../../../notify.service';
 import { PaymentLinksService } from '../../payment-links.service';
+import { GestureIntents } from '../../../shared/gesture-intents';
 
 /** Charge d'ouverture : le plafond en vigueur, pour le dire avant qu'on le heurte. */
 export interface NewLinkPanelData {
@@ -54,6 +55,8 @@ export interface NewLinkPanelData {
 })
 export class NewLinkPanel {
   private readonly api = inject(PaymentLinksService);
+  /** Un lien par intention : un double clic n'ouvre pas deux pages payables. */
+  private readonly intents = new GestureIntents();
   private readonly companiesApi = inject(AdminCompaniesService);
   private readonly notify = inject(NotifyService);
   private readonly ref = inject(FoldPanelRef<boolean>);
@@ -133,8 +136,12 @@ export class NewLinkPanel {
     this.error.set(null);
     try {
       this.created.set(
-        await this.api.createLink({ companyId, amountCents, label: this.trimmedLabel() }),
+        await this.api.createLink(
+          { companyId, amountCents, label: this.trimmedLabel() },
+          this.intents.keyFor(companyId),
+        ),
       );
+      this.intents.done(companyId);
     } catch (caught) {
       this.error.set(httpErrorMessage(caught, "Le lien n'a pas pu être créé."));
     } finally {

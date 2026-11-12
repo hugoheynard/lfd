@@ -36,6 +36,11 @@ export class DefineGeneralOrderCutoffHandler implements ICommandHandler<
         current === null
           ? GeneralOrderCutoffRule.define(this.ids.next(), command.payload)
           : current.redefine(command.payload);
+      // Rejouer le réglage (ou redire la règle en vigueur) ne change rien : ni
+      // écriture, ni fait au journal.
+      if (current !== null && !rule.differsFrom(current)) {
+        return;
+      }
       await this.repository.save(rule);
       const event =
         current === null

@@ -14,6 +14,12 @@ import { AccountJournalNames } from "../services/account-journal-names.service.j
 import { deliveryAddressOf } from "../../domain/events/journal-names.js";
 import { DELIVERY_ADDRESS_ADDED } from "../../domain/events/site-gesture.fact.js";
 import { SiteGesturePublisher } from "../services/site-gesture.publisher.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
+import { CREATED_ID_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { customerIntentActor } from "../../../shared/intent/customer-intent-actor.js";
+
+/** Le nom stable du geste, dans le registre des intentions. */
+const ADD_DELIVERY_GESTURE = "account.add-delivery-address";
 
 /**
  * Ajoute une adresse de livraison, réservé au gestionnaire de l'entreprise.
@@ -25,6 +31,13 @@ import { SiteGesturePublisher } from "../services/site-gesture.publisher.js";
  * Journalisé dans la transaction de l'écriture depuis le 2026-09-19 (plan
  * `documentation/journalisation/plan-journal-d-activite.md` §3, décision 1) —
  * sous le nom du geste staff jumeau, sans coordonnée.
+ *
+ * **Une fois par intention** : la clé de l'écran est réclamée après le mur et
+ * scellée dans la transaction de l'écriture ; un double envoi rend l'adresse déjà ajoutée,
+ * sans seconde adresse ni second fait. L'acteur est le client (`customer:<id>`).
+ *
+ * @throws {GestureInFlightError} la même clé est encore en vol.
+ * @throws {IntentKeyReusedError} la clé a servi pour une autre saisie.
  */
 @CommandHandler(AddDeliveryAddressCommand)
 export class AddDeliveryAddressHandler implements ICommandHandler<
@@ -40,12 +53,28 @@ export class AddDeliveryAddressHandler implements ICommandHandler<
     private readonly uow: UnitOfWork,
     private readonly names: AccountJournalNames,
     private readonly gestures: SiteGesturePublisher,
+    private readonly intents: OncePerIntent,
   ) {}
 
   async execute(command: AddDeliveryAddressCommand): Promise<string> {
     const role = await this.memberships.roleOf(command.actorUserId, command.companyId);
     ensureCompanyAdmin(role, command.companyId);
+    return this.intents.runSealed(
+      {
+        actorId: customerIntentActor(command.actorUserId),
+        key: command.intentKey,
+        gesture: ADD_DELIVERY_GESTURE,
+        subject: intentSubject(command.companyId, command.payload),
+      },
+      CREATED_ID_REPLAY,
+      (seal) => this.add(command, seal),
+    );
+  }
 
+  private async add(
+    command: AddDeliveryAddressCommand,
+    seal: (addressId: string) => Promise<void>,
+  ): Promise<string> {
     const book = await this.addresses.loadDeliveryBook(command.companyId);
     const addressId = this.ids.next();
     book.add(addressId, command.payload, this.clock.now());
@@ -65,6 +94,7 @@ export class AddDeliveryAddressHandler implements ICommandHandler<
           command.payload,
         ),
       );
+      await seal(addressId);
     });
 
     // Pièce d'activation « livraison » franchie (journal idempotent par étape).

@@ -16,6 +16,7 @@ import { httpErrorMessage } from '@lfd/endpoints';
 import { firstValueFrom, type Observable } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
+import { intentOptions } from '../shared/gesture-intents';
 
 /** Le statut d'une procédure qui a changé sous l'écran. */
 const CONFLICT = 409;
@@ -45,10 +46,15 @@ export class AdminDeliveryProcedureGateway extends DeliveryProcedureGateway {
     addressId: string,
     fields: DeliveryStepFields,
     photo: Blob | null,
+    intentKey: string,
   ): Promise<string> {
     const body = stepForm(fields, photo);
     const created = await this.send(
-      this.http.post<CreatedDeliveryStepResponse>(`${this.procedureUrl(addressId)}/steps`, body),
+      this.http.post<CreatedDeliveryStepResponse>(
+        `${this.procedureUrl(addressId)}/steps`,
+        body,
+        intentOptions(intentKey),
+      ),
     );
     return created.id;
   }
@@ -58,10 +64,13 @@ export class AdminDeliveryProcedureGateway extends DeliveryProcedureGateway {
     stepId: string,
     fields: DeliveryStepFields,
     change: DeliveryStepPhotoChange,
+    intentKey: string,
   ): Promise<void> {
     const body = stepForm(fields, change.kind === 'replace' ? change.photo : null);
     body.append('removePhoto', change.kind === 'remove' ? 'true' : 'false');
-    await this.send(this.http.patch<void>(this.stepUrl(addressId, stepId), body));
+    await this.send(
+      this.http.patch<void>(this.stepUrl(addressId, stepId), body, intentOptions(intentKey)),
+    );
   }
 
   async removeStep(addressId: string, stepId: string): Promise<void> {

@@ -17,6 +17,22 @@ import { IsoDate } from "../../domain/value-objects/iso-date.js";
 import { SubscriptionLine } from "../../domain/value-objects/subscription-line.js";
 import { SubscriptionGestures } from "../services/subscription-gestures.js";
 import { CreateSubscriptionCommand } from "./create-subscription.command.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
+import {
+  type IntentCodec,
+  OncePerIntent,
+  readIntentString,
+} from "../../../../platform/intent/once-per-intent.js";
+import { customerIntentActor } from "../../../../lafoliecoffee/shared/intent/customer-intent-actor.js";
+
+/** Ce que la création rend, gardé et relu au rejeu : l'identifiant du panier. */
+const CREATED_SUBSCRIPTION_REPLAY: IntentCodec<CreatedSubscription> = {
+  write: (created) => ({ id: created.id }),
+  read: (record, gesture) => ({ id: readIntentString(record, "id", gesture) }),
+};
+
+/** Le nom stable du geste, dans le registre des intentions. */
+const CREATE_SUBSCRIPTION_GESTURE = "subscriptions.create";
 
 /**
  * Ouvre un panier récurrent. On construit l'**agrégat** (`Subscription.open`) qui
@@ -36,8 +52,15 @@ import { CreateSubscriptionCommand } from "./create-subscription.command.js";
  *
  * La société est celle de l'espace (`companyId`) : le panier la porte pour
  * toujours. L'id est tiré par la base, donc le fait durable est écrit APRÈS
- * la création, dans la même unité de travail. Un POST rejoué crée deux paniers,
- * donc deux avis — assumé.
+ * la création, dans la même unité de travail.
+ *
+ * **Une fois par intention** : la clé de l'écran est réclamée avant
+ * l'écriture et scellée dans sa transaction ; un double envoi rend le panier
+ * déjà créé, sans second panier ni second avis. L'acteur est le client
+ * (`customer:<id>`).
+ *
+ * @throws {GestureInFlightError} la même clé est encore en vol.
+ * @throws {IntentKeyReusedError} la clé a servi pour un autre envoi.
  */
 @CommandHandler(CreateSubscriptionCommand)
 export class CreateSubscriptionHandler implements ICommandHandler<
@@ -52,6 +75,7 @@ export class CreateSubscriptionHandler implements ICommandHandler<
     private readonly gestures: SubscriptionGestures,
     private readonly saleUnits: ArticleSaleUnits,
     private readonly reserved: ReservedArticleGuard,
+    private readonly intents: OncePerIntent,
   ) {}
 
   /**
@@ -60,7 +84,23 @@ export class CreateSubscriptionHandler implements ICommandHandler<
    * @throws {SubscriptionSiteMembershipLostError} la société visée n'est pas celle de l'acteur.
    * @throws {ReservedArticleRefusedError} une ligne vise un article réservé à un autre compte.
    */
-  async execute(command: CreateSubscriptionCommand): Promise<CreatedSubscription> {
+  execute(command: CreateSubscriptionCommand): Promise<CreatedSubscription> {
+    return this.intents.runSealed(
+      {
+        actorId: customerIntentActor(command.actorUserId),
+        key: command.intentKey,
+        gesture: CREATE_SUBSCRIPTION_GESTURE,
+        subject: intentSubject(command.companyId ?? "personal", command.payload),
+      },
+      CREATED_SUBSCRIPTION_REPLAY,
+      (seal) => this.create(command, seal),
+    );
+  }
+
+  private async create(
+    command: CreateSubscriptionCommand,
+    seal: (created: CreatedSubscription) => Promise<void>,
+  ): Promise<CreatedSubscription> {
     const { payload } = command;
     // Avant l'agrégat : la règle dépend du catalogue, que l'abonnement ne lit
     // nulle part ailleurs (D6 du plan des opérations datées).
@@ -106,6 +146,7 @@ export class CreateSubscriptionHandler implements ICommandHandler<
         subscriptionId: written.id,
         actorUserId: command.actorUserId,
       });
+      await seal(written);
       return written;
     });
     // Signal « lead qualifié » : l'abonnement engage sur du récurrent.

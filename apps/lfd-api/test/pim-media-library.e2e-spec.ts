@@ -21,6 +21,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { MediaStore } from "../src/platform/storage/media-store.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { InMemoryMediaStore } from "./in-memory-media-store.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 /**
  * La seule frontière doublée : la vérification de signature Auth0.
@@ -129,6 +130,7 @@ async function aCategory(): Promise<string> {
 async function aProduct(categoryId: string, name: string): Promise<string> {
   const product = await staff()
     .post(PRODUCTS)
+    .set(INTENT_KEY, freshIntent())
     .send({ name: { fr: name }, kind: "daily", categoryId });
   expect(product.status).toBe(201);
   return jsonBody<{ id: string }>(product).id;

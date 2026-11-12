@@ -10,6 +10,13 @@ import { AvailabilityStore } from "../../../domain/ports/availability.store.js";
 import { CompanyNamer, type CompanyIdentity } from "../../../domain/ports/company-namer.js";
 import { BookAppointmentCommand } from "../book-appointment.command.js";
 import { BookAppointmentHandler } from "../book-appointment.handler.js";
+import { ScheduleAppointmentCommand } from "../schedule-appointment.command.js";
+import { ScheduleAppointmentHandler } from "../schedule-appointment.handler.js";
+import type { Lead } from "../../../domain/entities/lead.js";
+import { LeadRepository } from "../../../domain/ports/lead.repository.js";
+import { randomUUID } from "node:crypto";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 
 /**
  * Les dates ne sont comparées qu'à l'horloge FIXE du test, jamais au mur :
@@ -103,19 +110,27 @@ function setup(): { handler: BookAppointmentHandler; alert: RecordingAlert; step
     new FixedClock(NOW),
     new NoCompanies(),
     alert,
+    new DirectUnitOfWork(),
+    inMemoryIntents(),
   );
   return { handler, alert, steps };
 }
 
-const COMMAND = new BookAppointmentCommand("user_1", "karim@exemple.fr", [], {
-  startAt: START,
-  channel: "phone",
-  purpose: "quote",
-  companyId: null,
-  contactName: "Karim Benali",
-  contactPhone: "06 12 34 56 78",
-  message: "Pour 40 couverts",
-});
+const COMMAND = new BookAppointmentCommand(
+  "user_1",
+  "karim@exemple.fr",
+  [],
+  {
+    startAt: START,
+    channel: "phone",
+    purpose: "quote",
+    companyId: null,
+    contactName: "Karim Benali",
+    contactPhone: "06 12 34 56 78",
+    message: "Pour 40 couverts",
+  },
+  randomUUID(),
+);
 
 describe("BookAppointmentHandler — l'équipe est prévenue", () => {
   it("prévient APRÈS l'écriture, avec l'id rendu par la base et le rendez-vous réservé", async () => {
@@ -141,5 +156,74 @@ describe("BookAppointmentHandler — l'équipe est prévenue", () => {
     alert.failure = new Error("fournisseur indisponible");
 
     await expect(handler.execute(COMMAND)).resolves.toBe("appt_1");
+  });
+});
+
+describe("BookAppointmentHandler — une fois par intention", () => {
+  /** Régression : un double clic prenait deux rendez-vous et prévenait l'équipe deux fois. */
+  it("rejouée sous la même clé, rend le rendez-vous pris sans en prendre un second", async () => {
+    const { handler, alert, steps } = setup();
+
+    const first = await handler.execute(COMMAND);
+    const replayed = await handler.execute(COMMAND);
+
+    expect(replayed).toBe(first);
+    expect(steps.filter((step) => step === "create")).toHaveLength(1);
+    expect(alert.calls).toHaveLength(1);
+  });
+});
+
+class NoLeads extends LeadRepository {
+  create(): Promise<string> {
+    return Promise.resolve("lead_1");
+  }
+  load(): Promise<Lead | null> {
+    return Promise.resolve(null);
+  }
+  save(): Promise<void> {
+    return Promise.resolve();
+  }
+  findOpenByEmail(): Promise<Lead | null> {
+    return Promise.resolve(null);
+  }
+}
+
+describe("ScheduleAppointmentHandler — une fois par intention", () => {
+  /** Régression : un double clic du staff posait deux rendez-vous identiques. */
+  it("rejouée sous la même clé, rend le rendez-vous posé sans en poser un second", async () => {
+    const steps: string[] = [];
+    const recorder = new RecordingActivityRecorder();
+    const handler = new ScheduleAppointmentHandler(
+      new OpenAgenda(),
+      new Book(steps),
+      recorder,
+      new FixedClock(NOW),
+      new NoCompanies(),
+      new NoLeads(),
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
+    );
+    const command = new ScheduleAppointmentCommand(
+      {
+        startAt: START,
+        channel: "phone",
+        purpose: "quote",
+        subjectType: "company",
+        subjectId: "co_1",
+        contactName: "Karim Benali",
+        contactEmail: "",
+        contactPhone: "06 12 34 56 78",
+        message: "Pour 40 couverts",
+      },
+      "staff_1",
+      randomUUID(),
+    );
+
+    const first = await handler.execute(command);
+    const replayed = await handler.execute(command);
+
+    expect(replayed).toBe(first);
+    expect(steps).toEqual(["create"]);
+    expect(recorder.records).toHaveLength(1);
   });
 });

@@ -12,6 +12,7 @@ import { httpErrorMessage } from '@lfd/endpoints';
 import { PriceLimitsService } from '../../price-limits.service';
 import { runBulk, type BulkOutcome } from '../bulk-pose';
 import { FloorValueForm, type FloorValueDraft } from '../floor-value-form/floor-value-form';
+import { GestureIntents } from '../../../shared/gesture-intents';
 
 /** Un article de la sélection. */
 export interface BulkArticle {
@@ -49,6 +50,11 @@ export interface BulkFloorPanelData {
 export class BulkFloorPanel {
   private readonly limits = inject(PriceLimitsService);
   private readonly ref = inject(FoldPanelRef<boolean>);
+  /**
+   * L'intention de poser chaque limite : une clé tirée au premier envoi, renvoyée jusqu'au
+   * succès — un double clic ne pose pas deux versions d'une même limite.
+   */
+  private readonly intents = new GestureIntents();
 
   readonly data = input<BulkFloorPanelData | undefined>(undefined);
 
@@ -79,12 +85,16 @@ export class BulkFloorPanel {
       this.outcome.set(
         await runBulk(
           data.articles,
-          (article) =>
-            this.limits.setFloor({
-              scope: { type: 'product', id: article.sku },
-              clientele: data.clientele,
-              ...draft,
-            }),
+          async (article) => {
+            // Une intention par article : un réessai du lot ne repose pas les
+            // limites déjà posées.
+            const subject = `floor:${article.sku}`;
+            await this.limits.setFloor(
+              { scope: { type: 'product', id: article.sku }, clientele: data.clientele, ...draft },
+              this.intents.keyFor(subject),
+            );
+            this.intents.done(subject);
+          },
           (error) => httpErrorMessage(error, 'Refusée sans raison lisible.'),
         ),
       );

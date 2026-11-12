@@ -23,7 +23,8 @@ import { SystemRequestReasonLockedError } from "./errors/email-reply-errors.js";
 export interface RequestReasonSettings {
   readonly kind: RequestKind;
   readonly label: ContactLocalizedText;
-  readonly recipientEmail: string;
+  /** L'adresse qui reçoit les demandes ; vide ou `null` : aucun e-mail. */
+  readonly recipientEmail: string | null;
   readonly position: number;
   readonly active: boolean;
   readonly audience: ContactAudience;
@@ -34,7 +35,8 @@ export interface RequestReasonSettings {
 /** Le motif tel que la base le garde. */
 export interface RequestReasonState extends Omit<RequestReasonSettings, "recipientEmail"> {
   readonly id: string;
-  readonly recipientEmail: EmailAddress;
+  /** `null` : aucun e-mail, la demande arrive seulement dans « Demandes clients ». */
+  readonly recipientEmail: EmailAddress | null;
   readonly archivedAt: Date | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -47,8 +49,8 @@ export interface RequestReasonState extends Omit<RequestReasonSettings, "recipie
  *
  * Ses invariants : un TYPE connu et **immuable** — une demande reçue cite son
  * motif sous le formulaire d'où elle vient, et un motif qui changerait de
- * formulaire la ferait mentir ; un libellé français ; une adresse valide ; un
- * rang entier. Archivé, jamais supprimé.
+ * formulaire la ferait mentir ; un libellé français ; une adresse valide ou
+ * aucune (aucun e-mail ne part alors) ; un rang entier. Archivé, jamais supprimé.
  */
 export class RequestReason {
   private constructor(private state: RequestReasonState) {}
@@ -72,12 +74,12 @@ export class RequestReason {
 
   /** Réhydrate depuis la base : les valeurs-objets revalident. */
   static rehydrate(
-    state: Omit<RequestReasonState, "recipientEmail"> & { readonly recipientEmail: string },
+    state: Omit<RequestReasonState, "recipientEmail"> & { readonly recipientEmail: string | null },
   ): RequestReason {
     return new RequestReason({
       ...state,
       kind: knownKind(state.kind),
-      recipientEmail: EmailAddress.create(state.recipientEmail),
+      recipientEmail: recipientOf(state.recipientEmail),
     });
   }
 
@@ -130,8 +132,9 @@ export class RequestReason {
     return this.state.priority;
   }
 
-  get recipientEmail(): string {
-    return this.state.recipientEmail.value;
+  /** L'adresse qui reçoit les demandes, ou `null` : aucun e-mail ne part. */
+  get recipientEmail(): string | null {
+    return this.state.recipientEmail?.value ?? null;
   }
 
   toPersistence(): RequestReasonState {
@@ -144,6 +147,12 @@ function ensureNotSystem(kind: RequestKind): void {
   if (SYSTEM_REQUEST_KINDS.includes(kind)) {
     throw new SystemRequestReasonLockedError();
   }
+}
+
+/** Vide ou absente : aucune adresse, donc aucun e-mail. Sinon une adresse valide. */
+function recipientOf(email: string | null): EmailAddress | null {
+  const trimmed = email?.trim() ?? "";
+  return trimmed === "" ? null : EmailAddress.create(trimmed);
 }
 
 function knownKind(kind: string): RequestKind {
@@ -168,7 +177,7 @@ function validated(
   return {
     kind,
     label,
-    recipientEmail: EmailAddress.create(input.recipientEmail),
+    recipientEmail: recipientOf(input.recipientEmail),
     position: input.position,
     active: input.active,
     audience: input.audience,

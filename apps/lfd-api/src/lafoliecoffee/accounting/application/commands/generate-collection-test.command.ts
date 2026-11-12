@@ -15,5 +15,7 @@ export class GenerateCollectionTestCommand {
     /** `null` ou vide : « ESSAI PRELEVEMENT ». */
     readonly remittance: string | null,
     readonly staffUserId: string,
+    /** La clé d'intention de l'écran : un second envoi rend le même essai. */
+    readonly intentKey: string,
   ) {}
 }

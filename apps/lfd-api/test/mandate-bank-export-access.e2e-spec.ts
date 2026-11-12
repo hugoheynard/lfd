@@ -16,6 +16,7 @@ import {
   staff,
   useMandateBankExportScene,
 } from "./mandate-bank-export-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 useMandateBankExportScene();
 
@@ -43,7 +44,7 @@ describe("l'export des mandats pour la banque", () => {
     await asReader()
       .get(`${exportsOf(entityId)}/${exportId}/file.csv`)
       .expect(403);
-    await asReader().post(exportsOf(entityId)).send({}).expect(403);
+    await asReader().post(exportsOf(entityId)).set(INTENT_KEY, freshIntent()).send({}).expect(403);
     await asReader()
       .post(`${exportsOf(entityId)}/${exportId}/imported`)
       .expect(403);

@@ -34,6 +34,7 @@ import {
 } from "../application/commands/legal-entity-commands.js";
 import { SetMandateSchemeCommand } from "../application/commands/set-mandate-scheme.command.js";
 import { GetMandateSchemeUsageQuery } from "../application/queries/get-mandate-scheme-usage.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Ce qui décide de l'encaissement** — l'ICS, le compte, le délai de
@@ -70,6 +71,9 @@ export class AdminLegalEntityBankingController {
    */
   @Put(":id/creditor-identifier")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "une seule fois : rejoué, le même ICS est accepté sans écrire ni journaliser ; un autre est refusé (409)",
+  )
   async assignIcs(
     @Param("id") id: string,
     @Body(new ZodBody(assignCreditorIdentifierPayloadSchema))
@@ -103,6 +107,9 @@ export class AdminLegalEntityBankingController {
    */
   @Put(":id/creditor-account")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose un RIB : rejoué, le même compte est trouvé déjà en place ou déjà proposé, et rien n'est proposé, écrit ni journalisé — la proposition en attente garde son identifiant",
+  )
   async setAccount(
     @StaffUserId() staffUserId: string,
     @Param("id") id: string,
@@ -126,6 +133,9 @@ export class AdminLegalEntityBankingController {
    */
   @Put(":id/mandate-defaults")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose des valeurs : rejouée, la même description ne réimprime aucun brouillon ; l'entité est réécrite à l'identique, sans fait",
+  )
   async setMandateDefaults(
     @Param("id") id: string,
     @Body(new ZodBody(setMandateDefaultsPayloadSchema)) payload: SetMandateDefaultsPayload,
@@ -145,6 +155,9 @@ export class AdminLegalEntityBankingController {
    */
   @Put(":id/mandate-scheme")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose une valeur : rejoué, le même schéma est trouvé égal et rien n'est écrit, journalisé ni rendu caduc",
+  )
   async setMandateScheme(
     @Param("id") id: string,
     @Body(new ZodBody(setMandateSchemePayloadSchema)) payload: SetMandateSchemePayload,
@@ -173,6 +186,9 @@ export class AdminLegalEntityBankingController {
    */
   @Put(":id/pre-notification")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose une valeur : rejoué, le même délai est trouvé égal et rien n'est écrit ni journalisé",
+  )
   async setPreNotification(
     @Param("id") id: string,
     @Body(new ZodBody(setPreNotificationPayloadSchema)) payload: SetPreNotificationPayload,
@@ -189,6 +205,9 @@ export class AdminLegalEntityBankingController {
    */
   @Put(":id/collection-schedule")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose des valeurs : rejouée, le même calendrier est trouvé égal (equals) et rien n'est écrit ni journalisé",
+  )
   async setCollectionSchedule(
     @Param("id") id: string,
     @Body(new ZodBody(setCollectionSchedulePayloadSchema)) payload: SetCollectionSchedulePayload,
@@ -204,6 +223,9 @@ export class AdminLegalEntityBankingController {
    */
   @Put(":id/bank-collection-limits")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose des valeurs : rejoués, les mêmes plafonds sont trouvés égaux (equals) et rien n'est écrit ni journalisé",
+  )
   async setBankCollectionLimits(
     @Param("id") id: string,
     @Body(new ZodBody(setBankCollectionLimitsPayloadSchema))
@@ -219,6 +241,9 @@ export class AdminLegalEntityBankingController {
    */
   @Put(":id/auto-collection")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose un état : rejoué, le même réglage est trouvé égal et rien n'est écrit ni journalisé",
+  )
   async setAutoCollection(
     @Param("id") id: string,
     @Body(new ZodBody(setAutoCollectionPayloadSchema)) payload: SetAutoCollectionPayload,

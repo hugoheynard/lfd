@@ -32,6 +32,13 @@ async function requestOf(event: CustomerRequestReceivedEvent): Promise<Recording
 }
 
 describe("CustomerRequestMail — le courriel à l'adresse du motif, par le bloc `mail`", () => {
+  it("un motif sans adresse : aucun e-mail demandé", async () => {
+    const mails = await requestOf(
+      new CustomerRequestReceivedEvent(contactRequest({ body: "Bonjour" }), null),
+    );
+    expect(mails.queued).toEqual([]);
+  });
+
   it("« Nous écrire » : Reply-To = l'auteur, sans commande ni photo", async () => {
     const mails = await requestOf(CONTACT);
     expect(mails.queued).toEqual([

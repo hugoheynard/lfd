@@ -20,6 +20,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /** Un RIB déposé par un écran qui ne connaît pas encore la forme juridique du titulaire. */
 const RIB = {
@@ -63,6 +64,7 @@ const mandateUrl = (): string => `/admin/companies/${companyId}/mandate`;
 async function declareIssuer(): Promise<string> {
   const response = await staff()
     .post("/admin/accounting/legal-entities")
+    .set(INTENT_KEY, freshIntent())
     .send({
       name: "Crazeativity",
       legalForm: "SAS",

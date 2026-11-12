@@ -34,6 +34,10 @@ export abstract class MonthlyInvoiceOutcomes {
   /** Dans la transaction de l'émission : la facture et son issue partent ensemble. */
   abstract recordIssued(key: MonthlyInvoiceOutcomeKey, invoiceId: string): Promise<void>;
 
-  /** Le refus en clair ; remplace un refus antérieur de la même clôture. */
-  abstract recordBlocked(key: MonthlyInvoiceOutcomeKey, message: string): Promise<void>;
+  /**
+   * Le refus en clair ; remplace un refus antérieur de la même clôture. Rend
+   * `false` quand rien n'a changé — le même refus déjà rangé, ou une issue
+   * déjà émise : l'appelant ne le rejournalise pas.
+   */
+  abstract recordBlocked(key: MonthlyInvoiceOutcomeKey, message: string): Promise<boolean>;
 }

@@ -53,6 +53,7 @@ import type {
 import type { PricingRuleDraft } from "../domain/entities/pricing-rule.js";
 import type { PriceScope } from "../domain/price-rule.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 
 /**
  * **Le paramétrage tarifaire.**
@@ -134,6 +135,7 @@ export class AdminPricingController {
   async setVolumeLadder(
     @Body(new ZodBody(setVolumeLadderPayloadSchema)) payload: SetVolumeLadderPayload,
     @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedIdResponse> {
     const id = await this.commands.execute<SetVolumeLadderCommand, string>(
       new SetVolumeLadderCommand(
@@ -147,6 +149,7 @@ export class AdminPricingController {
           validTo: payload.validTo === null ? null : new Date(payload.validTo),
         },
         staffUserId,
+        intentKey,
       ),
     );
     return { id };
@@ -234,9 +237,10 @@ export class AdminPricingController {
   async createRule(
     @Body(new ZodBody(createPriceRulePayloadSchema)) payload: CreatePriceRulePayload,
     @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedIdResponse> {
     const id = await this.commands.execute<CreatePriceRuleCommand, string>(
-      new CreatePriceRuleCommand(toDraft(payload), staffUserId),
+      new CreatePriceRuleCommand(toDraft(payload), staffUserId, intentKey),
     );
     return { id };
   }
@@ -254,6 +258,9 @@ export class AdminPricingController {
    */
   @Patch("rules/:id/label")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose un libellé, aucun prix ne bouge : rejouée, la règle porte déjà ce nom et aucun acte n'est écrit",
+  )
   async renameRule(
     @Param("id") id: string,
     @Body(new ZodBody(renamePriceRulePayloadSchema)) payload: RenamePriceRulePayload,

@@ -53,10 +53,17 @@ describe('AdminClientNotesGateway', () => {
   });
 
   it('ajoute une note en multipart, photo ET vignette, et rend son identifiant', async () => {
-    const adding = gateway.add({ title: 'Visite', body: 'Rappeler lundi' }, photo, thumbnail);
+    const adding = gateway.add(
+      { title: 'Visite', body: 'Rappeler lundi' },
+      photo,
+      'key-1',
+      thumbnail,
+    );
 
     const request = http.expectOne((r) => r.url.endsWith(base));
     expect(request.request.method).toBe('POST');
+    // Une fois par intention : un double envoi n'ajoute pas deux notes.
+    expect(request.request.headers.get('Idempotency-Key')).toBe('key-1');
     const body = request.request.body as FormData;
     expect(body.get('title')).toBe('Visite');
     expect(body.get('body')).toBe('Rappeler lundi');
@@ -68,7 +75,7 @@ describe('AdminClientNotesGateway', () => {
   });
 
   it('une note sans photo ne joint aucun fichier', async () => {
-    const adding = gateway.add({ title: 'Visite', body: '' }, null);
+    const adding = gateway.add({ title: 'Visite', body: '' }, null, 'key-2');
     const request = http.expectOne((r) => r.url.endsWith(base));
     const body = request.request.body as FormData;
     expect(body.has('photo')).toBe(false);
@@ -78,7 +85,7 @@ describe('AdminClientNotesGateway', () => {
   });
 
   it('refuse d’envoyer une photo sans sa vignette — le serveur la refuserait', async () => {
-    await expect(gateway.add({ title: 'Visite', body: '' }, photo)).rejects.toBeInstanceOf(
+    await expect(gateway.add({ title: 'Visite', body: '' }, photo, 'key-3')).rejects.toBeInstanceOf(
       PhotoCardsWriteError,
     );
     http.expectNone((r) => r.url.endsWith(base));
@@ -88,7 +95,7 @@ describe('AdminClientNotesGateway', () => {
     [{ kind: 'keep' } as const, 'false'],
     [{ kind: 'remove' } as const, 'true'],
   ])('refaire une note (%o) envoie removePhoto=%s, sans fichier', async (change, removePhoto) => {
-    const revising = gateway.revise('n1', { title: 'T', body: '' }, change);
+    const revising = gateway.revise('n1', { title: 'T', body: '' }, change, 'key-4');
     const request = http.expectOne((r) => r.url.endsWith(`${base}/n1`));
     expect(request.request.method).toBe('PATCH');
     const body = request.request.body as FormData;
@@ -104,6 +111,7 @@ describe('AdminClientNotesGateway', () => {
       'n1',
       { title: 'T', body: '' },
       { kind: 'replace', photo, thumbnail },
+      'key-5',
     );
     const request = http.expectOne((r) => r.url.endsWith(`${base}/n1`));
     const body = request.request.body as FormData;

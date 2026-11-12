@@ -13,6 +13,8 @@ import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { CancelPaymentLinkCommand } from "../application/commands/cancel-payment-link.command.js";
 import { CreatePaymentLinkCommand } from "../application/commands/create-payment-link.command.js";
 import { ListPaymentLinksQuery } from "../application/queries/list-payment-links.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 
 /**
  * Surface **comptabilité** des liens de paiement libres (plan
@@ -37,11 +39,15 @@ export class AdminPaymentLinksController {
     );
   }
 
-  /** Ouvre une page Stripe hébergée ; rend l'URL à copier. */
+  /**
+   * Ouvre une page Stripe hébergée ; rend l'URL à copier. Une fois par
+   * intention (`Idempotency-Key`) : la même clé rend le même lien.
+   */
   @Post()
   create(
     @StaffUserId() staffUserId: string,
     @Body(new ZodBody(createPaymentLinkPayloadSchema)) payload: CreatePaymentLinkPayload,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedPaymentLink> {
     return this.commands.execute<CreatePaymentLinkCommand, CreatedPaymentLink>(
       new CreatePaymentLinkCommand(
@@ -49,12 +55,16 @@ export class AdminPaymentLinksController {
         payload.amountCents,
         payload.label,
         staffUserId,
+        intentKey,
       ),
     );
   }
 
   @Post(":id/cancel")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée, le lien n'est plus ouvert et l'agrégat refuse (409 PaymentLinkNotOpenError) avant toute écriture et avant tout appel au prestataire",
+  )
   async cancel(@StaffUserId() staffUserId: string, @Param("id") id: string): Promise<void> {
     await this.commands.execute<CancelPaymentLinkCommand, void>(
       new CancelPaymentLinkCommand(id, staffUserId),

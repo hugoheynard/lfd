@@ -20,6 +20,7 @@ import {
   roundOf,
   seedDelivery,
 } from "./delivery-rounds-scene.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const DAY = serviceDay();
 const OTHER_DAY = serviceDay(8);
@@ -65,9 +66,17 @@ describe("ouvrir", () => {
   });
 
   it("refuse un jour qui n'existe pas (400) et un véhicule inconnu (404)", async () => {
-    await admin(ctx).post(ROUNDS).send({ day: "2030-02-30", vehicleId: "x" }).expect(404);
+    await admin(ctx)
+      .post(ROUNDS)
+      .set(INTENT_KEY, freshIntent())
+      .send({ day: "2030-02-30", vehicleId: "x" })
+      .expect(404);
     const kangoo = await addVehicle(ctx, "Kangoo");
-    await admin(ctx).post(ROUNDS).send({ day: "2030-02-30", vehicleId: kangoo }).expect(400);
+    await admin(ctx)
+      .post(ROUNDS)
+      .set(INTENT_KEY, freshIntent())
+      .send({ day: "2030-02-30", vehicleId: kangoo })
+      .expect(400);
   });
 });
 

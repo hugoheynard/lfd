@@ -35,6 +35,7 @@ import { DetachedUnpaidCard } from '../detached-unpaid-card/detached-unpaid-card
 import { IssuedInvoicesCard } from '../issued-invoices-card/issued-invoices-card';
 import { PayerBillingModeNote } from '../payer-billing-mode-note/payer-billing-mode-note';
 import { TransferInvoicesCard } from '../transfer-invoices-card/transfer-invoices-card';
+import { watchCompanySubjects } from '../../comptes-clients/company-cache/company-subjects';
 import {
   groupByYear,
   ledgerRows,
@@ -207,10 +208,22 @@ export class ClientFacturationPage {
     effect(() => {
       void this.load(this.id());
     });
+    // Le compte et ses commandes, changés ailleurs : relus en place.
+    watchCompanySubjects(['companies', 'orders-all'], () => this.load(this.id(), { quiet: true }));
   }
 
-  protected async load(id: string = this.id()): Promise<void> {
-    this.state.set('loading');
+  /**
+   * `quiet` : relecture de fond (le veilleur) — la page reste à l'écran
+   * pendant la lecture, et un échec la laisse telle quelle.
+   */
+  protected async load(
+    id: string = this.id(),
+    { quiet = false }: { readonly quiet?: boolean } = {},
+  ): Promise<void> {
+    const background = quiet && this.state() === 'ready';
+    if (!background) {
+      this.state.set('loading');
+    }
     try {
       const [rows, company] = await Promise.all([
         this.orders.list({ companyId: id, limit: ORDERS_WINDOW }).then((page) => page.rows),
@@ -220,7 +233,9 @@ export class ClientFacturationPage {
       this.company.set(company ?? null);
       this.state.set('ready');
     } catch {
-      this.state.set('error');
+      if (!background) {
+        this.state.set('error');
+      }
     }
   }
 }

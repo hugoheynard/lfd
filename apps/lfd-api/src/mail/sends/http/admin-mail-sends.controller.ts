@@ -10,6 +10,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface, RequirePermission } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody, ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import { RevealMailRecipientCommand } from "../application/commands/reveal-mail-recipient.command.js";
 import { SearchMailByRecipientCommand } from "../application/commands/search-mail-by-recipient.command.js";
@@ -68,16 +69,19 @@ export class AdminMailSendsController {
   /**
    * Cherche les envois d'une adresse, donnée dans le CORPS : inscrit au
    * journal, même plafond que les révélations (`409` au-delà). Rend
-   * l'identifiant de la recherche.
+   * l'identifiant de la recherche. La clé d'intention de l'écran
+   * (`Idempotency-Key`, obligatoire) fait qu'un double clic ne compte qu'une
+   * consultation.
    */
   @Post("searches")
   @RequirePermission("mail_sends:read")
   async search(
     @Body(new ZodBody(mailSearchPayloadSchema)) payload: MailSearchPayload,
     @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<MailRecipientSearchCreatedView> {
     const id = await this.commands.execute<SearchMailByRecipientCommand, string>(
-      new SearchMailByRecipientCommand(payload.address, staffUserId),
+      new SearchMailByRecipientCommand(payload.address, staffUserId, intentKey),
     );
     return { id };
   }
@@ -101,14 +105,19 @@ export class AdminMailSendsController {
 
   /**
    * Révèle l'adresse : inscrit au journal, vaut 5 minutes pour son auteur.
-   * `409` au-delà de 30 consultations dans l'heure.
+   * `409` au-delà de 30 consultations dans l'heure. Une fois par clé
+   * d'intention (`Idempotency-Key`, obligatoire).
    */
   @Post(":id/recipient-reveal")
   @HttpCode(204)
   @RequirePermission("mail_sends:read")
-  async reveal(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
+  async reveal(
+    @Param("id") id: string,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+  ): Promise<void> {
     await this.commands.execute<RevealMailRecipientCommand, void>(
-      new RevealMailRecipientCommand(id, staffUserId),
+      new RevealMailRecipientCommand(id, staffUserId, intentKey),
     );
   }
 

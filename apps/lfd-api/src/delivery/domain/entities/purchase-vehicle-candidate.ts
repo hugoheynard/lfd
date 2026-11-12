@@ -1,3 +1,4 @@
+import { sameSheet } from "../services/same-sheet.js";
 import { InvalidPurchaseCandidateNameError } from "../errors/delivery-purchase-errors.js";
 import { InvalidWheelArchesError } from "../errors/delivery-floor-errors.js";
 import { CargoFloor } from "../value-objects/cargo-floor.js";
@@ -130,10 +131,19 @@ export class PurchaseVehicleCandidate {
    * Corrige la fiche ENTIÈRE. Permis sur un candidat archivé : corriger une
    * faute ne le remet pas dans la bibliothèque. Tout est validé avant la
    * moindre affectation.
+   *
+   * @returns `false` si la fiche reposée est celle qu'il porte déjà (rien ne change).
    */
-  correct(spec: PurchaseVehicleCandidateSpec, at: Date, author: DeliveryAuthor): void {
+  correct(spec: PurchaseVehicleCandidateSpec, at: Date, author: DeliveryAuthor): boolean {
+    const previous = this.sheet;
+    const before = this.specification;
     this.sheet = validSheetOf(spec);
+    if (sameSheet(before, this.specification)) {
+      this.sheet = previous;
+      return false;
+    }
     this.lifecycle.touch(at, author);
+    return true;
   }
 
   /** @throws {PurchaseCandidateAlreadyArchivedError} */

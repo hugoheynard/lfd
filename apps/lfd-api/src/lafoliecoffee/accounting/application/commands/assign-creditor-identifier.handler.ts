@@ -39,7 +39,10 @@ export class AssignCreditorIdentifierHandler implements ICommandHandler<
   async execute(command: AssignCreditorIdentifierCommand): Promise<void> {
     const entity = await loadOrFail(this.entities, command.legalEntityId);
     const ics = CreditorIdentifier.create(command.ics);
-    entity.assignCreditorIdentifier(ics);
+    // Le même ICS rejoué est accepté et ne se rejournalise pas.
+    if (!entity.assignCreditorIdentifier(ics)) {
+      return;
+    }
 
     const at = this.clock.now();
     await this.uow.run(async () => {

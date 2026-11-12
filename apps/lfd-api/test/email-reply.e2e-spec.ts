@@ -20,6 +20,7 @@ import { InboundMailReader } from "../src/platform/mailer/inbound/inbound-mail.r
 import { InboundMailUnreadableError } from "../src/platform/mailer/inbound/inbound-mail-unreadable.error.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const SECRET = "whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw";
 const ROUTE = "/webhooks/resend";
@@ -197,6 +198,7 @@ describe("une réponse par e-mail, de Resend à la boîte des demandes", () => {
     await ctx
       .asSub(E2E_STAFF_SUB)
       .post("/admin/request-reasons/system_email_reply/archive")
+      .set(INTENT_KEY, freshIntent())
       .expect(409);
   });
 });

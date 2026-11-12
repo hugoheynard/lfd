@@ -17,6 +17,7 @@ import { firstValueFrom, type Observable } from 'rxjs';
 
 import { AUTH_CONFIG } from '../auth/auth.config';
 import { AuthFacade } from '../auth/auth.facade';
+import { withIntent } from './gesture-intents';
 
 /** Le statut d'une procédure qui a changé sous l'écran (ordre périmé, plan §2.5). */
 const CONFLICT = 409;
@@ -53,11 +54,12 @@ export class ClientDeliveryProcedureGateway extends DeliveryProcedureGateway {
     addressId: string,
     fields: DeliveryStepFields,
     photo: Blob | null,
+    intentKey: string,
   ): Promise<string> {
     const body = stepForm(fields, photo);
     const created = await this.send((headers) =>
       this.http.post<CreatedDeliveryStepResponse>(`${this.procedureUrl(addressId)}/steps`, body, {
-        headers,
+        headers: withIntent(headers, intentKey),
       }),
     );
     return created.id;
@@ -68,11 +70,14 @@ export class ClientDeliveryProcedureGateway extends DeliveryProcedureGateway {
     stepId: string,
     fields: DeliveryStepFields,
     change: DeliveryStepPhotoChange,
+    intentKey: string,
   ): Promise<void> {
     const body = stepForm(fields, change.kind === 'replace' ? change.photo : null);
     body.append('removePhoto', change.kind === 'remove' ? 'true' : 'false');
     await this.send((headers) =>
-      this.http.patch<void>(this.stepUrl(addressId, stepId), body, { headers }),
+      this.http.patch<void>(this.stepUrl(addressId, stepId), body, {
+        headers: withIntent(headers, intentKey),
+      }),
     );
   }
 

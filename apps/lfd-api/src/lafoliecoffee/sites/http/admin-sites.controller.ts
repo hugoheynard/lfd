@@ -43,6 +43,8 @@ import { ListSitesQuery } from "../application/list-sites.query.js";
 import { SetSiteColorsCommand } from "../application/set-site-colors.command.js";
 import { SetSiteRolesCommand } from "../application/set-site-roles.command.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 
 /**
  * **Réglages › Sites** — l'API de l'écran, sous `lfc_site_settings` (doc
@@ -104,9 +106,11 @@ export class AdminSitesController {
   @HttpCode(HttpStatus.CREATED)
   async create(
     @Body(new ZodBody(pickupAddressPayloadSchema)) payload: PickupAddressPayload,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<CreatedPickupResponse> {
     const id = await this.commands.execute<CreatePickupAddressCommand, string>(
-      new CreatePickupAddressCommand(payload),
+      new CreatePickupAddressCommand(payload, staffUserId, intentKey),
     );
     return { id };
   }
@@ -114,6 +118,9 @@ export class AdminSitesController {
   /** Le lieu : adresse, heures pros, remise, GPS. Clientèles absentes = inchangées. */
   @Patch(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose le lieu : rejouée, la même requête trouve le lieu identique (Site.revise rend false) et rien n'est écrit, journalisé ni purgé",
+  )
   async update(
     @Param("id") id: string,
     @Body(new ZodBody(pickupAddressUpdatePayloadSchema)) payload: PickupAddressUpdatePayload,
@@ -126,6 +133,9 @@ export class AdminSitesController {
   /** Les rôles, en bloc : leur cohérence se juge sur l'ensemble. */
   @Put(":id/roles")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose les rôles en bloc : rejouée, la même requête les trouve identiques, point compris (Site.assignRoles rend false), et rien n'est écrit, journalisé ni purgé",
+  )
   async setRoles(
     @Param("id") id: string,
     @Body(new ZodBody(siteRolesPayloadSchema)) payload: SiteRolesPayload,
@@ -167,6 +177,9 @@ export class AdminSitesController {
 
   @Put(":id/creneaux-publics")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "remplace la grille en bloc : rejouée, la même requête trouve la grille identique (PickupSchedule.replace rend false) et rien n'est écrit ni journalisé",
+  )
   async savePublicSchedule(
     @Param("id") id: string,
     @Body(new ZodBody(publicPickupSchedulePayloadSchema)) payload: PublicPickupSchedulePayload,

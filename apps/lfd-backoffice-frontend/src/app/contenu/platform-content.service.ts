@@ -16,6 +16,7 @@ import type {
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
+import { intentOptions } from '../shared/gesture-intents';
 
 /**
  * La base des routes d'un document de mention.
@@ -185,15 +186,21 @@ export class PlatformContentService {
   /**
    * Dépose un PDF, qui devient celui en vigueur ; le précédent est remplacé,
    * jamais écrasé. Multipart `file` : le serveur juge les octets, pas le nom.
+   * Une fois par intention : `intentKey` part dans `Idempotency-Key`.
    */
   async depositLegalFile(
     document: SalesTermsDocument,
     file: File,
+    intentKey: string,
   ): Promise<LegalDocumentFileDeposited> {
     const form = new FormData();
     form.append('file', file, file.name);
     return firstValueFrom(
-      this.http.post<LegalDocumentFileDeposited>(`${legalBase(document)}/files`, form),
+      this.http.post<LegalDocumentFileDeposited>(
+        `${legalBase(document)}/files`,
+        form,
+        intentOptions(intentKey),
+      ),
     );
   }
 }

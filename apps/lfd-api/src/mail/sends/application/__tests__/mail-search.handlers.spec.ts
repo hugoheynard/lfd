@@ -1,3 +1,5 @@
+import { IntentKeyReusedError } from "../../../../platform/intent/intent-errors.js";
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
@@ -22,6 +24,10 @@ import {
   record,
 } from "./mail-sends-doubles.js";
 
+let intentCount = 0;
+/** Une clé d'intention neuve par geste voulu, comme l'écran. */
+const nextKey = (): string => `intent_${(intentCount += 1)}`;
+
 const NOW = new Date(Date.UTC(2026, 0, 1, 12));
 const ADDRESS = "colette@halles.fr";
 
@@ -38,6 +44,7 @@ function world() {
     new FixedIdGenerator("srch"),
     clock,
     new DirectUnitOfWork(),
+    inMemoryIntents(),
   );
   const results = new GetMailSearchResultsHandler(
     new InMemorySearchLedger(consultations),
@@ -48,11 +55,35 @@ function world() {
 }
 
 describe("SearchMailByRecipientHandler (décision 8)", () => {
+  /** Régression : un double clic sur « Chercher » rangeait deux recherches et comptait deux consultations. */
+  it("rejouée avec la même clé, rend la même recherche sans en ranger une autre", async () => {
+    const w = world();
+    const command = new SearchMailByRecipientCommand(ADDRESS, "colette", nextKey());
+
+    const first = await w.search.execute(command);
+    const replayed = await w.search.execute(command);
+
+    expect(replayed).toBe(first);
+    expect(w.consultations.savedSearches).toHaveLength(1);
+    expect(w.events.traced).toHaveLength(1);
+  });
+
+  it("refuse la même clé sur une autre adresse, sans rien ranger de plus", async () => {
+    const w = world();
+    const key = nextKey();
+    await w.search.execute(new SearchMailByRecipientCommand(ADDRESS, "colette", key));
+
+    await expect(
+      w.search.execute(new SearchMailByRecipientCommand("zoe@halles.fr", "colette", key)),
+    ).rejects.toThrow(IntentKeyReusedError);
+    expect(w.consultations.savedSearches).toHaveLength(1);
+  });
+
   it("cherche par l'adresse normalisée, range empreinte et envois trouvés, rend l'id", async () => {
     const w = world();
 
     const id = await w.search.execute(
-      new SearchMailByRecipientCommand(" Colette@Halles.fr", "colette"),
+      new SearchMailByRecipientCommand(" Colette@Halles.fr", "colette", nextKey()),
     );
 
     expect(id).toBe("srch_000001");
@@ -75,7 +106,7 @@ describe("SearchMailByRecipientHandler (décision 8)", () => {
   it("refuse une adresse mal formée, sans rien ranger", async () => {
     const w = world();
     await expect(
-      w.search.execute(new SearchMailByRecipientCommand("colette", "colette")),
+      w.search.execute(new SearchMailByRecipientCommand("colette", "colette", nextKey())),
     ).rejects.toThrow(InvalidMailSearchAddressError);
     expect(w.consultations.savedSearches).toEqual([]);
     expect(w.events.factTypes()).toEqual([]);
@@ -85,7 +116,7 @@ describe("SearchMailByRecipientHandler (décision 8)", () => {
     const w = world();
     w.consultations.searches.set("colette", MAIL_CONSULTATIONS_PER_HOUR);
     await expect(
-      w.search.execute(new SearchMailByRecipientCommand(ADDRESS, "colette")),
+      w.search.execute(new SearchMailByRecipientCommand(ADDRESS, "colette", nextKey())),
     ).rejects.toThrow(MailConsultationLimitReachedError);
   });
 });
@@ -93,7 +124,9 @@ describe("SearchMailByRecipientHandler (décision 8)", () => {
 describe("GetMailSearchResultsHandler", () => {
   it("rend à l'auteur les envois trouvés, masqués, problèmes compris", async () => {
     const w = world();
-    const id = await w.search.execute(new SearchMailByRecipientCommand(ADDRESS, "colette"));
+    const id = await w.search.execute(
+      new SearchMailByRecipientCommand(ADDRESS, "colette", nextKey()),
+    );
     w.clock.advanceMs(4 * 60_000);
 
     const view = await w.results.execute(new GetMailSearchResultsQuery(id, "colette"));
@@ -111,7 +144,9 @@ describe("GetMailSearchResultsHandler", () => {
 
   it("403 pour un collègue, et pour l'auteur après 5 minutes", async () => {
     const w = world();
-    const id = await w.search.execute(new SearchMailByRecipientCommand(ADDRESS, "colette"));
+    const id = await w.search.execute(
+      new SearchMailByRecipientCommand(ADDRESS, "colette", nextKey()),
+    );
 
     await expect(w.results.execute(new GetMailSearchResultsQuery(id, "bruno"))).rejects.toThrow(
       MailSearchNotReadableError,

@@ -32,6 +32,7 @@ import {
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble } from "./order-factory.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -190,7 +191,11 @@ describe("la validation avant la boutique publique", () => {
     await relayAll(ctx);
     await approve([fiche.variantSku]).expect(204);
 
-    await staff().post("/pim/channels/b2b/reemit").send({}).expect(202);
+    await staff()
+      .post("/pim/channels/b2b/reemit")
+      .set(INTENT_KEY, freshIntent())
+      .send({})
+      .expect(202);
     await relayAll(ctx);
 
     expect(await pendingOf(fiche.variantSku)).toEqual(NONE);

@@ -129,6 +129,22 @@ describe("les formats de bacs candidats (bibliothèque d'achat, B1)", () => {
     });
   });
 
+  /** Régression : une correction rejouée sans changement réécrivait la fiche et un fait au journal. */
+  it("rejouée sans changement, la correction n'écrit rien et ne trace rien", async () => {
+    const w = world(existing("pbc_a", "Caisse Dupont 50"));
+    const command = new CorrectPurchaseBinCandidateCommand(
+      "pbc_a",
+      { ...CAISSE, maxStack: 4 },
+      "staff_2",
+    );
+
+    await w.correct.execute(command);
+    await w.correct.execute(command);
+
+    expect(w.repo.saved).toHaveLength(1);
+    expect(w.events.traced).toHaveLength(1);
+  });
+
   it("archive, réactive, refuse de réactiver ce qui est en cours", async () => {
     const w = world(existing("pbc_a", "Caisse Dupont 50"));
 
