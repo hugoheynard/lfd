@@ -13,6 +13,7 @@ export const BILLING_VALUE_CARDS: Pick<
   | "debtor"
   | "day"
   | "document"
+  | "due"
   | "number"
   | "numbers"
   | "period"
@@ -88,6 +89,11 @@ export const BILLING_VALUE_CARDS: Pick<
     label: "Nom du mandat",
     description: "Le nom du mandat à signer, selon son schéma SEPA (particulier ou entreprise).",
     example: "mandat de prélèvement SEPA",
+  },
+  due: {
+    label: "Échéance de la facture",
+    description: "La date avant laquelle la facture au virement doit être réglée.",
+    example: "jeudi 15 octobre 2026",
   },
   number: {
     label: "Numéro de facture",

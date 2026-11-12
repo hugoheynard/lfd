@@ -18,6 +18,8 @@ export const BILLING_MAILS_IT: BillingMailsCopy = {
     addressedToLabel: "Intestata a",
     dueLabel: "Scadenza",
     paymentLabel: "Pagamento",
+    bankTransfer:
+      "Da pagare con bonifico entro il {due}, indicando il riferimento {number}: le coordinate bancarie figurano sulla fattura allegata.",
     totalLabel: "Totale IVA inclusa",
     cta: "Vedi le mie fatture",
     footer:

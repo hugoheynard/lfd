@@ -26,6 +26,7 @@ const INVOICE: B2bMails["customer.invoice-issued"] = {
   total: "1 234,56 €",
   dueOn: "jeudi 15 octobre 2026",
   paymentMeans: "Prélèvement SEPA — mandat RUM-1",
+  bankTransferReference: null,
   invoicesUrl: "https://shop.lfc.test/mes-factures",
   document: { fileName: "FA-LFD-2026-000001.pdf", pdfBase64: "JVBERi0=" },
   locale: "fr",
@@ -60,6 +61,7 @@ export const CUSTOMER_CASES: Pick<
   "customer.invoice-issued": {
     full: INVOICE,
     bare: { ...INVOICE, period: null, paymentMeans: null, invoicesUrl: "", document: null },
+    bankTransfer: { ...INVOICE, paymentMeans: null, bankTransferReference: "FA-LFD-2026-000001" },
   },
   "customer.mandate-to-sign": {
     core: {

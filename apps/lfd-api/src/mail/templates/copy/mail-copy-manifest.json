@@ -944,6 +944,17 @@
         "required": [],
         "fr": "Règlement"
       },
+      "bankTransfer": {
+        "variables": [
+          "due",
+          "number"
+        ],
+        "required": [
+          "due",
+          "number"
+        ],
+        "fr": "À régler par virement avant le {due}, en indiquant la référence {number} : les coordonnées bancaires figurent sur la facture jointe."
+      },
       "totalLabel": {
         "variables": [],
         "required": [],

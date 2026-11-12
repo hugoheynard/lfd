@@ -1,6 +1,10 @@
 import type { InvoiceVatCategory, InvoiceVatPart } from "@lfd/money";
 
-import { mandateReferenceOf, type InvoiceState } from "../entities/invoice.types.js";
+import {
+  mandateReferenceOf,
+  SEPA_CREDIT_TRANSFER,
+  type InvoiceState,
+} from "../entities/invoice.types.js";
 import {
   latePenaltiesText,
   operationText,
@@ -18,7 +22,7 @@ import {
   RIGHT,
   type TextStyle,
 } from "./invoice-pdf-sheet.js";
-import { euros, vatRateLabel } from "./invoice-pdf-wording.js";
+import { day, euros, printedIban, vatRateLabel } from "./invoice-pdf-wording.js";
 
 /**
  * **Le bas de la facture** (E3b) : la ventilation par taux, les totaux, le
@@ -87,9 +91,17 @@ export function drawTotals(sheet: InvoiceSheet, state: InvoiceState): void {
   sheet.advance(line * rows.length + GAP);
 }
 
-/** Un paragraphe titré : le titre et ses phrases, qui changent de page ensemble. */
-function paragraph(sheet: InvoiceSheet, title: string, sentences: readonly string[]): void {
-  const text = sentences.join(" ");
+/**
+ * Un paragraphe titré : le titre et ses phrases, qui changent de page ensemble.
+ * `lines` pose une phrase par ligne — un IBAN ne se coupe pas en deux.
+ */
+function paragraph(
+  sheet: InvoiceSheet,
+  title: string,
+  sentences: readonly string[],
+  lines = false,
+): void {
+  const text = sentences.join(lines ? "\n" : " ");
   const height = sheet.heightOf(title, SECTION) + sheet.heightOf(text, BODY);
   sheet.ensure(height);
   const titleHeight = sheet.put(title, LEFT, sheet.y, SECTION);
@@ -99,7 +111,7 @@ function paragraph(sheet: InvoiceSheet, title: string, sentences: readonly strin
 
 /**
  * Le règlement (BG-16 figé : prélèvement, RUM, ICS ; la carte : acquittée ;
- * sinon l'échéance seule),
+ * le virement : le compte à créditer et la référence ; sinon l'échéance seule),
  * les mentions de retard, la catégorie d'opération, les bons couverts.
  */
 export function drawMentions(sheet: InvoiceSheet, state: InvoiceState): void {
@@ -113,6 +125,9 @@ export function drawMentions(sheet: InvoiceSheet, state: InvoiceState): void {
   if (state.prepayment !== null) {
     paragraph(sheet, "Règlement", [settledText(state), "Reste à payer : 0,00 €."]);
   }
+  if (state.paymentMeans?.code === SEPA_CREDIT_TRANSFER) {
+    paragraph(sheet, "Règlement par virement", transferSentences(state), true);
+  }
   paragraph(sheet, "Conditions de paiement", [
     latePenaltiesText(state),
     recoveryIndemnityText(state),
@@ -122,6 +137,22 @@ export function drawMentions(sheet: InvoiceSheet, state: InvoiceState): void {
   if (state.orders.length > 0) {
     paragraph(sheet, "Commandes facturées", [ordersText(state.orders)]);
   }
+}
+
+/**
+ * Le virement (V5, K10) : les mêmes valeurs que BT-84, BT-86 et BT-83 du XML,
+ * relues sur le vendeur figé — jamais sur l'entité du jour. Le bénéficiaire
+ * est le vendeur : la pièce ne déclare pas de bénéficiaire distinct (BG-10).
+ */
+function transferSentences(state: InvoiceState): readonly string[] {
+  const { name, creditorIban, creditorBic } = state.seller;
+  return [
+    ...(state.dueOn === null ? [] : [`À régler par virement avant le ${day(state.dueOn)}.`]),
+    `Bénéficiaire : ${name}.`,
+    `IBAN : ${printedIban(creditorIban)}`,
+    ...(creditorBic === null ? [] : [`BIC : ${creditorBic}`]),
+    `Référence à reporter sur le virement : ${state.number}.`,
+  ];
 }
 
 /** Le pied de chaque page : la pièce, le vendeur, la page sur le total. */

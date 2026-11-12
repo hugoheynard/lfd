@@ -33,6 +33,13 @@ export interface InvoiceIssuedCopy {
   readonly addressedToLabel: string;
   readonly dueLabel: string;
   readonly paymentLabel: string;
+  /**
+   * `{due}`, `{number}` (la référence à reporter) — la ligne « Règlement » d'une facture au
+   * virement. Ni IBAN ni BIC : les coordonnées ne figurent que sur la facture
+   * jointe (décidé par Hugo le 2026-11-12), jamais dans les données d'un
+   * e-mail, donc ni dans la boîte d'envoi ni dans le suivi.
+   */
+  readonly bankTransfer: string;
   readonly totalLabel: string;
   readonly cta: string;
   readonly footer: string;

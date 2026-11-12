@@ -50,6 +50,11 @@ export function quantityLabel(
   return `${figure} ${PRINTED_UNIT_SYMBOLS[line.unitCode]}`;
 }
 
+/** `FR7630006000011234567890189` → « FR76 3000 6000 0112 3456 7890 189 », comme un RIB. */
+export function printedIban(iban: string): string {
+  return iban.replace(/(.{4})(?=.)/gu, "$1 ");
+}
+
 /** `AAAA-MM-JJ` → `JJ/MM/AAAA`. */
 export function day(isoDate: string): string {
   return frenchDate(isoDate);

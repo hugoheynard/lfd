@@ -8,11 +8,12 @@ import {
   line,
 } from "../../entities/__tests__/invoice-fixtures.js";
 import { Invoice } from "../../entities/invoice.js";
+import { SEPA_CREDIT_TRANSFER } from "../../entities/invoice.types.js";
 import { InvoiceNumber } from "../../value-objects/invoice-number.js";
 import { facturXArithmeticViolations } from "../facturx-arithmetic.js";
 import { renderFacturXml } from "../facturx-xml.js";
 import { renderInvoicePdf } from "../invoice-pdf.js";
-import { invoiceDocumentKey } from "../invoice-pdf-wording.js";
+import { invoiceDocumentKey, printedIban } from "../invoice-pdf-wording.js";
 import { TEST_FONTS } from "./invoice-fonts-fixture.js";
 import { drawnUnicodeText, pdfObjects, streamsWith } from "./pdf-objects.js";
 
@@ -156,6 +157,39 @@ describe("renderInvoicePdf — ce que la facture imprime", () => {
 
     expect(printed).toContain("mandat (RUM) RUM-PORT-1");
     expect(printed).toContain(`créancier (ICS) ${invoice.toState().seller.ics}`);
+  });
+
+  it("le virement figé (V5) : le compte du vendeur figé, la référence, l'échéance — jamais de RUM", async () => {
+    const invoice = Invoice.issue(issueInput({ paymentMeans: { code: SEPA_CREDIT_TRANSFER } }));
+    const { seller, number } = invoice.toState();
+    const printed = drawnUnicodeText(await render(invoice));
+
+    for (const expected of [
+      "Règlement par virement",
+      "À régler par virement avant le 14/10/2026.",
+      `Bénéficiaire : ${seller.name}.`,
+      `IBAN : ${printedIban(seller.creditorIban)}`,
+      `Référence à reporter sur le virement : ${number}.`,
+      "Indemnité forfaitaire pour frais de recouvrement : 40,00 €.",
+    ]) {
+      expect(printed).toContain(expected);
+    }
+    if (seller.creditorBic !== null) {
+      expect(printed).toContain(`BIC : ${seller.creditorBic}`);
+    }
+    expect(printed).not.toContain("RUM");
+    expect(printed).not.toMatch(/[Pp]rélev/u);
+  });
+
+  it("le prélèvement et la facture sans moyen n'impriment aucun bloc de virement", async () => {
+    const sepa = Invoice.issue(
+      issueInput({ paymentMeans: { code: "59", mandateReference: "RUM-PORT-1" } }),
+    );
+    for (const invoice of [sepa, issuedInvoice()]) {
+      const printed = drawnUnicodeText(await render(invoice));
+      expect(printed).not.toContain("virement");
+      expect(printed).not.toContain("IBAN");
+    }
   });
 
   it("un avoir dit AVOIR et la facture qu'il corrige, sans échéance", async () => {

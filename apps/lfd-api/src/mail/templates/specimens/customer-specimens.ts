@@ -57,6 +57,7 @@ export const CUSTOMER_SPECIMENS: Pick<
       total: "1 234,56 €",
       dueOn: "jeudi 15 octobre 2026",
       paymentMeans: `Prélèvement SEPA — mandat ${MANDATE}`,
+      bankTransferReference: null,
       invoicesUrl: `${SPECIMEN_URL}/mes-factures`,
       document: { fileName: `${INVOICE}.pdf`, pdfBase64: SPECIMEN_PDF_BASE64 },
       locale,

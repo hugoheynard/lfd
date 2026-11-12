@@ -130,6 +130,9 @@
     },
     "bare": {
       "textSha256": "57d00cf488f22ff493694e1feee6b0392afd0d82ad5cb1330be2ca7a65cf663c"
+    },
+    "bankTransfer": {
+      "textSha256": "94dc1f3993324a38942f481733de0853fb770cab608b88281560084d5a66a989"
     }
   },
   "customer.mandate-to-sign": {

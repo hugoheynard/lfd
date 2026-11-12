@@ -23,6 +23,7 @@ s'affiche à droite, et « Ouvrir dans un onglet » sert à l'imprimer.
 | Fournil           | compte à produire               | `admin/document-specimens/production-count.pdf`         | `production`                   | `renderProductionCountPdf`  |
 | Fournil           | dossier du jour                 | `admin/document-specimens/day-dossier.pdf`              | `production`                   | `renderDayDossierPdf`       |
 | Factures          | facture Factur-X (PDF/A-3)      | `admin/document-specimens/invoice.pdf`                  | `lafoliecoffee/accounting`     | `renderInvoicePdf`          |
+| Factures          | facture Factur-X au virement    | `admin/document-specimens/invoice-bank-transfer.pdf`    | `lafoliecoffee/accounting`     | `renderInvoicePdf`          |
 | Mandats           | mandat SEPA interentreprises    | `admin/document-specimens/sepa-mandate-b2b.pdf`         | `lafoliecoffee/accounting`     | `renderSepaMandatePdf`      |
 | Mandats           | mandat SEPA CORE                | `admin/document-specimens/sepa-mandate-core.pdf`        | `lafoliecoffee/accounting`     | `renderSepaMandatePdf`      |
 | Récapitulatifs    | récapitulatif de commandes      | `admin/document-specimens/order-summary.pdf`            | `lafoliecoffee/orders`         | `renderOrderSummaryPdf`     |
@@ -95,7 +96,10 @@ n'appartiennent à personne.
   d'exemple, passent par `simulateInvoiceDossier` puis `invoiceFromDossier`
   (donc `Invoice.issue` et ses refus) ; le XML EN 16931 est contrôlé comme pour
   une vraie pièce. Aucun compteur ne donne son numéro (rang `999999`), aucune
-  pièce n'est rangée. Sans logo.
+  pièce n'est rangée. Sans logo. Deux exemplaires : sans moyen figé
+  (l'échéance seule), et **au virement** — le bloc « Règlement par virement »
+  (échéance, bénéficiaire, IBAN et BIC du vendeur figé, référence à reporter :
+  le numéro de la facture), jamais de RUM.
 - **Fiche d'atelier** et **feuille de tournée** : les mêmes articles, recopiés
   et non importés. Le QR de colisage encode `/colisage/EXEMPLE-0001`.
 - **Compte à produire** et **dossier du jour**

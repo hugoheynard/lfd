@@ -8,6 +8,7 @@ import {
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { Invoice } from "../../../domain/entities/invoice.js";
+import { SEPA_CREDIT_TRANSFER } from "../../../domain/entities/invoice.types.js";
 import { issueInput } from "../../../domain/entities/__tests__/invoice-fixtures.js";
 import { InvoiceMailOrigins } from "../../../domain/ports/invoice-mail-origins.js";
 import { InvoiceSiteContactsReader } from "../../../domain/ports/invoice-site-contacts.reader.js";
@@ -52,9 +53,13 @@ class FixedOrigins extends InvoiceMailOrigins {
   }
 }
 
-function monthly(): Invoice {
+function monthly(transfer = false): Invoice {
   return Invoice.issue(
-    issueInput({ paymentMeans: { code: "59", mandateReference: "RUM-PORT-1" } }),
+    issueInput({
+      paymentMeans: transfer
+        ? { code: SEPA_CREDIT_TRANSFER }
+        : { code: "59", mandateReference: "RUM-PORT-1" },
+    }),
   );
 }
 
@@ -65,9 +70,10 @@ function setup(
     readonly origin?: string | null;
     readonly period?: BillingCycle;
     readonly documented?: boolean;
+    readonly transfer?: boolean;
   } = {},
 ) {
-  const invoice = monthly();
+  const invoice = monthly(options.transfer === true);
   if (options.documented === true) {
     invoice.attachDocument(DOCUMENT_KEY, "a".repeat(64));
   }
@@ -103,6 +109,25 @@ function setup(
 const PDF = { fileName: "FA-LFD-2026-000001.pdf", bytes: Buffer.from("%PDF-1.7 rendu") };
 
 describe("« Votre facture » est demandée à l'émission (E6, Q3 ; S2d)", () => {
+  it("au virement : la référence à reporter, et ni IBAN ni BIC dans les données de la demande", async () => {
+    const h = setup({ transfer: true });
+    const { creditorIban, creditorBic } = h.invoice.toState().seller;
+
+    await h.sender.send(h.invoice.id, null);
+
+    expect(h.mails.queued[0]?.data).toMatchObject({
+      paymentMeans: null,
+      bankTransferReference: "FA-LFD-2026-000001",
+    });
+    const stored = JSON.stringify(h.mails.queued.map((mail) => mail.data));
+    expect(creditorIban.length).toBeGreaterThan(0);
+    expect(stored).not.toContain(creditorIban);
+    expect(stored).not.toContain(creditorIban.slice(-4));
+    if (creditorBic !== null) {
+      expect(stored).not.toContain(creditorBic);
+    }
+  });
+
   it("dit la période rangée du payeur — une semaine, pas le mois où elle s'achève (M4a)", async () => {
     const h = setup({
       period: {

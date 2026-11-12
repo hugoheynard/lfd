@@ -8,6 +8,7 @@ export type SpecimenKey =
   | 'round-paper'
   | 'rounds-dossier'
   | 'invoice'
+  | 'invoice-bank-transfer'
   | 'sepa-mandate-b2b'
   | 'sepa-mandate-core'
   | 'order-summary'
@@ -27,6 +28,7 @@ export const SPECIMEN_LABELS: Readonly<Record<SpecimenKey, string>> = {
   'round-paper': 'Feuille de tournée (livreur)',
   'rounds-dossier': 'Dossier des tournées du jour',
   invoice: 'Facture Factur-X',
+  'invoice-bank-transfer': 'Facture Factur-X — virement',
   'sepa-mandate-b2b': 'Mandat SEPA interentreprises (B2B)',
   'sepa-mandate-core': 'Mandat SEPA CORE',
   'order-summary': 'Récapitulatif de commandes',
@@ -68,7 +70,7 @@ export const SPECIMEN_GROUPS: readonly SpecimenGroup[] = [
     'delivery-note-carrier',
   ]),
   group('Fournil', ['production-count', 'day-dossier']),
-  group('Factures', ['invoice']),
+  group('Factures', ['invoice', 'invoice-bank-transfer']),
   group('Mandats', ['sepa-mandate-b2b', 'sepa-mandate-core']),
   group('Récapitulatifs', ['order-summary']),
   group('Catalogue', ['allergen-matrix']),

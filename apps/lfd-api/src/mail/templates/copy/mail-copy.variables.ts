@@ -70,6 +70,7 @@ const DECLARED_VARIABLES = {
     subject: ["title", "seller"],
     intro: ["seller", "number", "buyer", "period", "total"],
     periodClause: ["period"],
+    bankTransfer: ["due", "number"],
   },
   "customer.collection-notice": {
     subject: ["title", "creditor", "day"],

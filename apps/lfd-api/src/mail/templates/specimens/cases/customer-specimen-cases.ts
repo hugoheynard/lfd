@@ -143,6 +143,11 @@ export const CUSTOMER_CASE_TABLES: Pick<
         invoicesUrl: "",
         document: null,
       })),
+      variantCase("customer.invoice-issued", "bankTransfer", "Facture au virement", (data) => ({
+        ...data,
+        paymentMeans: null,
+        bankTransferReference: data.invoiceNumber,
+      })),
     ],
     axes: [{ id: "document", values: PRESENCE, of: (data) => presence(data.document?.fileName) }],
   },

@@ -18,6 +18,8 @@ export const BILLING_MAILS_EN: BillingMailsCopy = {
     addressedToLabel: "Addressed to",
     dueLabel: "Due date",
     paymentLabel: "Payment",
+    bankTransfer:
+      "To be paid by bank transfer before {due}, quoting the reference {number}: the bank details are on the attached invoice.",
     totalLabel: "Total incl. VAT",
     cta: "See my invoices",
     footer:

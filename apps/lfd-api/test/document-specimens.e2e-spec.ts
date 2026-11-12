@@ -25,6 +25,8 @@ const DOCUMENTS = [
   "order-sheet-pro.pdf",
   "order-sheet-public.pdf",
   "invoice.pdf",
+  // La facture au virement (plan du paiement au compte par virement, V5).
+  "invoice-bank-transfer.pdf",
   "atelier-sheet.pdf",
   "round-paper.pdf",
   // Le dossier des tournées du jour (décision de Hugo du 2026-10-26).

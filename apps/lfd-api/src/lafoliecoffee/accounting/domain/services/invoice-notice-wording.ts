@@ -1,4 +1,8 @@
-import { mandateReferenceOf, type InvoiceState } from "../entities/invoice.types.js";
+import {
+  mandateReferenceOf,
+  SEPA_CREDIT_TRANSFER,
+  type InvoiceState,
+} from "../entities/invoice.types.js";
 import type { BillingCycle } from "./billing-cycle.js";
 import { noticeAmount, noticeDay } from "./collection-notice-wording.js";
 import { periodLabelOf } from "./invoicing-closures.js";
@@ -13,6 +17,8 @@ export interface InvoiceNoticeContent {
   readonly total: string;
   readonly dueOn: string;
   readonly paymentMeans: string | null;
+  /** Le numéro de la facture au virement, à reporter ; `null` pour tout autre moyen. */
+  readonly bankTransferReference: string | null;
   readonly invoicesUrl: string;
 }
 
@@ -22,7 +28,9 @@ export interface InvoiceNoticeContent {
  * et une facture 380 porte toujours son échéance (contrôle en base).
  *
  * Le moyen de paiement n'est écrit que s'il est figé sur la pièce (BG-16) :
- * jamais deviné du mandat du jour.
+ * jamais deviné du mandat du jour. Au virement, seule la référence part :
+ * l'IBAN et le BIC ne figurent que sur la facture jointe (décidé par Hugo le
+ * 2026-11-12), jamais dans les données d'un e-mail.
  *
  * La période est celle DU PAYEUR, rangée à l'émission (M4a) : « du 5 au 11
  * octobre 2026 » pour un hebdomadaire, plus le mois où elle s'achève.
@@ -44,6 +52,7 @@ export function invoiceNoticeContent(
     total: noticeAmount(state.vat.totalCents),
     dueOn: noticeDay(state.dueOn),
     paymentMeans: paymentMeansText(state),
+    bankTransferReference: state.paymentMeans?.code === SEPA_CREDIT_TRANSFER ? state.number : null,
     invoicesUrl,
   };
 }

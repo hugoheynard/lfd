@@ -6,7 +6,7 @@ import { InvoiceFontSource } from "../../domain/ports/invoice-font-source.js";
 import { facturXArithmeticViolations } from "../../domain/services/facturx-arithmetic.js";
 import { renderFacturXml } from "../../domain/services/facturx-xml.js";
 import { renderInvoicePdf } from "../../domain/services/invoice-pdf.js";
-import { specimenInvoice } from "../document-specimens/specimen-data.js";
+import { type InvoiceSpecimenMeans, specimenInvoice } from "../document-specimens/specimen-data.js";
 import type { InvoiceDocument } from "../invoice-document-support.js";
 import { GetInvoiceSpecimenQuery } from "./get-invoice-specimen.query.js";
 
@@ -22,6 +22,10 @@ import { GetInvoiceSpecimenQuery } from "./get-invoice-specimen.query.js";
 
 /** Le mot posé en travers de la facture d'exemple. */
 const SPECIMEN_WATERMARK = "EXEMPLE";
+const SPECIMEN_FILE_NAMES: Readonly<Record<InvoiceSpecimenMeans, string>> = {
+  none: "exemple-facture.pdf",
+  bank_transfer: "exemple-facture-virement.pdf",
+};
 @QueryHandler(GetInvoiceSpecimenQuery)
 export class GetInvoiceSpecimenHandler implements IQueryHandler<
   GetInvoiceSpecimenQuery,
@@ -32,8 +36,8 @@ export class GetInvoiceSpecimenHandler implements IQueryHandler<
     private readonly fonts: InvoiceFontSource,
   ) {}
 
-  async execute(): Promise<InvoiceDocument> {
-    const invoice = specimenInvoice(this.clock.now());
+  async execute(query: GetInvoiceSpecimenQuery): Promise<InvoiceDocument> {
+    const invoice = specimenInvoice(this.clock.now(), query.means);
     const xml = renderFacturXml(invoice);
     const violations = facturXArithmeticViolations(xml);
     if (violations.length > 0) {
@@ -47,6 +51,6 @@ export class GetInvoiceSpecimenHandler implements IQueryHandler<
       // Un exemple porte un numéro plausible : le filigrane le dit sur chaque page.
       watermark: SPECIMEN_WATERMARK,
     });
-    return { bytes, fileName: "exemple-facture.pdf" };
+    return { bytes, fileName: SPECIMEN_FILE_NAMES[query.means] };
   }
 }

@@ -23,6 +23,7 @@ function render(overrides: Partial<Parameters<typeof invoice>[0]> = {}) {
     total: "1 234,56 €",
     dueOn: "jeudi 15 octobre 2026",
     paymentMeans: "Prélèvement SEPA — mandat RUM-PORT-1",
+    bankTransferReference: null,
     invoicesUrl: "https://boutique.test/mon-compte#compte-invoices",
     document: null,
     locale: "fr",
@@ -74,6 +75,17 @@ describe("le courriel « votre facture »", () => {
     expect(rendered.html).not.toContain("Voir mes factures");
     expect(rendered.html).not.toContain("Règlement");
     expect(rendered.html).not.toContain("Période");
+  });
+
+  it("au virement : l'échéance et la référence, les coordonnées renvoyées à la facture jointe", () => {
+    const rendered = render({ paymentMeans: null, bankTransferReference: "FA-LFD-2026-000007" });
+
+    expect(rendered.text?.replace(/\s+/gu, " ")).toContain(
+      "À régler par virement avant le jeudi 15 octobre 2026, en indiquant la référence " +
+        "FA-LFD-2026-000007 : les coordonnées bancaires figurent sur la facture jointe.",
+    );
+    expect(rendered.html).not.toContain("RUM");
+    expect(rendered.html).not.toContain("IBAN");
   });
 
   it("dit ses mots dans la langue demandée — les valeurs restent celles reçues (suite (c))", () => {

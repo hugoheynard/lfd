@@ -32,6 +32,13 @@ export interface InvoiceIssuedMailData {
   readonly dueOn: string;
   /** « Prélèvement SEPA — mandat RUM-… », ou `null` : aucun moyen figé sur la facture. */
   readonly paymentMeans: string | null;
+  /**
+   * La référence à reporter sur le virement (le numéro de la facture), pour
+   * une facture au virement ; `null` pour tout autre moyen. Jamais d'IBAN ni
+   * de BIC ici : les coordonnées ne figurent que sur la facture jointe
+   * (décidé par Hugo le 2026-11-12).
+   */
+  readonly bankTransferReference: string | null;
   /** Le lien vers « Mes factures » ; vide quand l'origine de la boutique n'est pas connue. */
   readonly invoicesUrl: string;
   /** Le PDF/A-3 Factur-X de la facture, ou `null` : rendu en échec, l'e-mail part sans. */
@@ -109,7 +116,19 @@ function rowsOf(data: InvoiceIssuedMailData, copy: InvoiceIssuedCopy): readonly 
     ...(data.period === null ? [] : [{ label: copy.periodLabel, value: data.period }]),
     { label: copy.addressedToLabel, value: data.buyerName },
     { label: copy.dueLabel, value: data.dueOn },
-    ...(data.paymentMeans === null ? [] : [{ label: copy.paymentLabel, value: data.paymentMeans }]),
+    ...paymentRow(data, copy),
     { label: copy.totalLabel, value: data.total, strong: true },
   ];
+}
+
+/** La ligne « Règlement » : le virement et sa référence, sinon le moyen figé, sinon rien. */
+function paymentRow(data: InvoiceIssuedMailData, copy: InvoiceIssuedCopy): readonly LayoutRow[] {
+  if (data.bankTransferReference !== null) {
+    const value = fill(copy.bankTransfer, {
+      due: data.dueOn,
+      number: data.bankTransferReference,
+    });
+    return [{ label: copy.paymentLabel, value }];
+  }
+  return data.paymentMeans === null ? [] : [{ label: copy.paymentLabel, value: data.paymentMeans }];
 }

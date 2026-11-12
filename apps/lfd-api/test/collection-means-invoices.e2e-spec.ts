@@ -102,6 +102,31 @@ describe("la facture d'une période au virement (K10)", () => {
     expect(await ctx.prisma.orderCollection.count()).toBe(0);
   });
 
+  it("« Votre facture » au virement : la référence à reporter, et ni IBAN ni BIC dans la demande (V5)", async () => {
+    const entityId = await setUpEntity(staff);
+    const payer = await invoicedPayer(ctx, staff, entityId, closesAt);
+    await transferSinceMonthStart(entityId, payer);
+
+    await issue(entityId);
+    await ctx.drain();
+
+    const invoice = await ctx.prisma.invoice.findFirstOrThrow({
+      where: { payerCompanyId: payer },
+    });
+    const requested = await ctx.prisma.outboxMessage.findMany({
+      where: { type: "mail.requested", key: { startsWith: "mail.requested:invoice.notice:" } },
+    });
+    expect(requested.length).toBeGreaterThan(0);
+    for (const message of requested) {
+      const payload = JSON.stringify(message.payload);
+      expect(payload).toContain(`"bankTransferReference":"${invoice.number}"`);
+      expect(payload).toContain(`"paymentMeans":null`);
+      // L'IBAN de l'entité (`setUpEntity`) ne figure que sur la facture jointe.
+      expect(payload).not.toContain("FR1420041010050500013M02606");
+      expect(payload).not.toContain("M02606");
+    }
+  });
+
   it("un payeur revenu au prélèvement : le bon de sa facture au virement n'est PAS prélevé", async () => {
     const entityId = await setUpEntity(staff);
     const payer = await invoicedPayer(ctx, staff, entityId, closesAt);

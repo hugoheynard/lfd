@@ -192,6 +192,11 @@
       "subject": "Votre facture FA-LFD-2026-000001 — CRAZEATIVITY",
       "htmlSha256": "de02fae506a10ae21e3fd7d4ea12069e651b7f8b9687716767293fb4da8ddc81",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    },
+    "bankTransfer": {
+      "subject": "Votre facture FA-LFD-2026-000001 — CRAZEATIVITY",
+      "htmlSha256": "46b9fe51e4c58c9aafb9d74e13dca2cf9ddfbd569455693f0632c2d2595789f0",
+      "attachmentsSha256": "1acc23c2ee05f869cce7dc3ca27107216c38c6e574509a03a31673e3174a0867"
     }
   },
   "customer.mandate-to-sign": {

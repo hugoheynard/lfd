@@ -118,15 +118,18 @@ export const CUSTOMER_MAIL_LAYOUTS: Readonly<
       },
       {
         id: "summary",
-        texts: texts(
-          "invoiceLabel",
-          "dateLabel",
-          "periodLabel",
-          "addressedToLabel",
-          "dueLabel",
-          "paymentLabel",
-          "totalLabel",
-        ),
+        texts: [
+          ...texts(
+            "invoiceLabel",
+            "dateLabel",
+            "periodLabel",
+            "addressedToLabel",
+            "dueLabel",
+            "paymentLabel",
+            "totalLabel",
+          ),
+          ...variants({ bankTransfer: "Facture au virement" }),
+        ],
       },
       { id: "cta", texts: texts("cta") },
       { id: "footer", texts: texts("footer") },

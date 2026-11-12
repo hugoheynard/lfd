@@ -3,7 +3,12 @@ import { addDays, instantToLocal } from "@lfd/contracts";
 import type { OrderToPlace } from "../../../orders/domain/entities/order.js";
 import { specimenProOrderState } from "../../../orders/application/document-specimens/specimen-data.js";
 import type { Invoice } from "../../domain/entities/invoice.js";
-import type { InvoiceBuyer, InvoiceSeller } from "../../domain/entities/invoice.types.js";
+import {
+  SEPA_CREDIT_TRANSFER,
+  type InvoiceBuyer,
+  type InvoicePaymentMeans,
+  type InvoiceSeller,
+} from "../../domain/entities/invoice.types.js";
 import { simulateInvoiceDossier } from "../../domain/services/invoice-dossier.js";
 import type { FrozenInvoiceOrder } from "../../domain/services/invoice-dossier.types.js";
 import { invoiceFromDossier } from "../../domain/services/invoice-from-dossier.js";
@@ -107,8 +112,19 @@ function frozenOf(state: OrderToPlace, reference: string, createdAt: Date): Froz
   };
 }
 
+/**
+ * Le moyen de la facture d'exemple : aucun (l'échéance seule), ou le virement
+ * (V5) — l'IBAN, le BIC et la référence que le client reporte.
+ */
+export type InvoiceSpecimenMeans = "none" | "bank_transfer";
+
+const SPECIMEN_MEANS: Readonly<Record<InvoiceSpecimenMeans, InvoicePaymentMeans | null>> = {
+  none: null,
+  bank_transfer: { code: SEPA_CREDIT_TRANSFER },
+};
+
 /** **La facture d'exemple**, émise aujourd'hui (jour de Paris de `now`). */
-export function specimenInvoice(now: Date): Invoice {
+export function specimenInvoice(now: Date, means: InvoiceSpecimenMeans = "none"): Invoice {
   const today = instantToLocal(now).day;
   const state = specimenProOrderState(now);
   const frozen = ORDERS.map((order) => frozenOf(state, order.reference, now));
@@ -126,7 +142,7 @@ export function specimenInvoice(now: Date): Invoice {
       reference: order.reference,
       receivedOn: addDays(today, -order.daysBefore),
     })),
-    paymentMeans: null,
+    paymentMeans: SPECIMEN_MEANS[means],
     prepayment: null,
     computed: simulateInvoiceDossier(frozen).invoice,
   });

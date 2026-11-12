@@ -1,4 +1,5 @@
 import { Invoice } from "../../entities/invoice.js";
+import { SEPA_CREDIT_TRANSFER } from "../../entities/invoice.types.js";
 import {
   breakdownOf,
   issueInput,
@@ -29,6 +30,7 @@ describe("le contenu de « Votre facture » (E6)", () => {
       total: "16,55\u00A0€",
       dueOn: "mercredi 14 octobre 2026",
       paymentMeans: "Prélèvement SEPA — mandat RUM-PORT-1",
+      bankTransferReference: null,
       invoicesUrl: "https://boutique.test/mon-compte",
     });
   });
@@ -38,6 +40,18 @@ describe("le contenu de « Votre facture » (E6)", () => {
 
     expect(content?.paymentMeans).toBeNull();
     expect(content?.period).toBeNull();
+  });
+
+  it("au virement : la référence est le numéro, aucun moyen en clair, ni IBAN ni BIC", () => {
+    const state = Invoice.issue(
+      issueInput({ paymentMeans: { code: SEPA_CREDIT_TRANSFER } }),
+    ).toState();
+
+    const content = invoiceNoticeContent(state, SEPTEMBER, "");
+
+    expect(content?.bankTransferReference).toBe(state.number);
+    expect(content?.paymentMeans).toBeNull();
+    expect(JSON.stringify(content)).not.toContain(state.seller.creditorIban);
   });
 
   it("un avoir ne prévient personne", () => {
