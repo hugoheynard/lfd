@@ -32,6 +32,7 @@ import {
   UpdateDeliveryAddressCommand,
 } from "../application/commands/address-commands.js";
 import { ListCompanyAddressesQuery } from "../application/queries/list-company-addresses.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Adresses d'une entreprise — une facturation (unique) et N livraisons (une par
@@ -64,6 +65,9 @@ export class CompanyAddressesController {
   /** Enregistre l'adresse de facturation (gestionnaire). */
   @Patch(":companyId/billing-address")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose l'adresse de facturation : rejouée, la même adresse n'est ni réécrite ni journalisée",
+  )
   async saveBilling(
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,
@@ -95,6 +99,9 @@ export class CompanyAddressesController {
    */
   @Patch(":companyId/delivery-addresses/:addressId")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose une adresse du carnet : rejouée, le carnet la trouve identique et rien n'est écrit ni journalisé",
+  )
   async updateDelivery(
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,
@@ -109,6 +116,9 @@ export class CompanyAddressesController {
   /** Archive une adresse de livraison (gestionnaire). */
   @Delete(":companyId/delivery-addresses/:addressId")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "archive l'adresse : rejoué, elle n'est plus vivante au carnet et le geste est refusé (404) sans rien écrire",
+  )
   async removeDelivery(
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,
@@ -122,6 +132,9 @@ export class CompanyAddressesController {
   /** Désigne l'adresse de livraison par défaut (gestionnaire). */
   @Patch(":companyId/delivery-addresses/:addressId/default")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "désigne l'adresse par défaut : rejouée, elle l'est déjà et rien n'est écrit ni journalisé",
+  )
   async setDefault(
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,

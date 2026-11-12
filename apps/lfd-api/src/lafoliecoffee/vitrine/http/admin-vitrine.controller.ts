@@ -38,6 +38,7 @@ import { ListVitrineDeliveriesQuery } from "../application/queries/list-vitrine-
 import { ListVitrineNoticesQuery } from "../application/queries/list-vitrine-notices.query.js";
 import { ListVitrineSubscribersQuery } from "../application/queries/list-vitrine-subscribers.query.js";
 import { PreviewVitrineNoticeQuery } from "../application/queries/preview-vitrine-notice.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Les abonnés du webhook de la vitrine** au back-office, Gestion Boutique
@@ -77,6 +78,9 @@ export class AdminVitrineController {
 
   @Put("subscribers/:id/identity")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose le nom, la description et le contact de l'abonné : rejouée, la même requête laisse le même abonné, sans journal ni envoi",
+  )
   async updateIdentity(
     @Param("id") id: string,
     @Body(new ZodBody(updateVitrineSubscriberIdentityPayloadSchema))
@@ -94,6 +98,9 @@ export class AdminVitrineController {
 
   @Put("subscribers/:id/contents")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose les contenus de l'abonné : rejouée, la même requête laisse les mêmes contenus, sans journal ni envoi",
+  )
   async setContents(
     @Param("id") id: string,
     @Body(new ZodBody(setVitrineContentsPayloadSchema)) body: SetVitrineContentsPayload,
@@ -105,6 +112,7 @@ export class AdminVitrineController {
 
   @Put("subscribers/:id/active")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent("pose l'état actif de l'abonné : rejoué, `setActive` sort sans rien changer")
   async setActive(
     @Param("id") id: string,
     @Body(new ZodBody(setVitrineSubscriberActivePayloadSchema))
@@ -157,6 +165,7 @@ export class AdminVitrineController {
   /** L'aperçu d'une annonce — une lecture en `POST` parce qu'elle porte un brouillon. */
   @Post("notices/preview")
   @HttpCode(HttpStatus.OK)
+  @Idempotent("aperçu : rend l'avis tel qu'il partirait, sans l'envoyer ni rien écrire")
   previewNotice(
     @Body(new ZodBody(vitrineNoticeDraftPayloadSchema)) body: VitrineNoticeDraftPayload,
   ): Promise<VitrineNoticePreviewView> {

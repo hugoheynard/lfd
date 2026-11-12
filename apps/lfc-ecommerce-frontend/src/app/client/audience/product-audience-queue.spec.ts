@@ -30,11 +30,17 @@ class ManualTimer implements AudienceTimer {
   }
 }
 
+/** Des identifiants de lot prévisibles : `lot-1`, `lot-2`… */
+function sequence(): () => string {
+  let next = 0;
+  return () => `lot-${(next += 1)}`;
+}
+
 describe('ProductAudienceQueue', () => {
   it('porte la source et l’emplacement d’un geste de suggestion', () => {
     const transport = new RecordingTransport();
     const timer = new ManualTimer();
-    const queue = new ProductAudienceQueue(transport, timer);
+    const queue = new ProductAudienceQueue(transport, timer, sequence());
 
     queue.record('PAI-001', 'suggestion_shown', { source: 'staff', placement: '01jrule' });
     timer.fire();
@@ -44,6 +50,7 @@ describe('ProductAudienceQueue', () => {
         events: [
           { sku: 'PAI-001', event: 'suggestion_shown', source: 'staff', placement: '01jrule' },
         ],
+        batchId: 'lot-1',
       },
     ]);
   });
@@ -51,7 +58,7 @@ describe('ProductAudienceQueue', () => {
   it('regroupe les gestes et les envoie en UN lot, une fois le délai écoulé', () => {
     const transport = new RecordingTransport();
     const timer = new ManualTimer();
-    const queue = new ProductAudienceQueue(transport, timer);
+    const queue = new ProductAudienceQueue(transport, timer, sequence());
 
     queue.record('VIE-001', 'product_viewed');
     queue.record('VIE-001', 'added_to_cart');
@@ -65,13 +72,14 @@ describe('ProductAudienceQueue', () => {
           { sku: 'VIE-001', event: 'product_viewed', source: 'none' },
           { sku: 'VIE-001', event: 'added_to_cart', source: 'none' },
         ],
+        batchId: 'lot-1',
       },
     ]);
   });
 
   it("n'envoie rien quand la file est vide", () => {
     const transport = new RecordingTransport();
-    const queue = new ProductAudienceQueue(transport, new ManualTimer());
+    const queue = new ProductAudienceQueue(transport, new ManualTimer(), sequence());
 
     queue.flush(true);
     expect(transport.sent).toEqual([]);
@@ -80,7 +88,7 @@ describe('ProductAudienceQueue', () => {
 
   it('part tout de suite quand le lot est plein — le serveur refuse un lot trop gros', () => {
     const transport = new RecordingTransport();
-    const queue = new ProductAudienceQueue(transport, new ManualTimer());
+    const queue = new ProductAudienceQueue(transport, new ManualTimer(), sequence());
 
     for (let i = 0; i < MAX_AUDIENCE_EVENTS_PER_BATCH; i += 1) {
       queue.record('VIE-001', 'product_viewed');
@@ -90,11 +98,25 @@ describe('ProductAudienceQueue', () => {
 
   it('vide ce qui reste par balise au départ de la page', () => {
     const transport = new RecordingTransport();
-    const queue = new ProductAudienceQueue(transport, new ManualTimer());
+    const queue = new ProductAudienceQueue(transport, new ManualTimer(), sequence());
 
     queue.record('VIE-002', 'product_viewed');
     queue.flush(true);
     expect(transport.sent).toEqual([]);
     expect(transport.onLeave).toHaveLength(1);
+  });
+
+  // Un lot porte son identifiant : le serveur reconnaît sa copie rejouée par le réseau.
+  it('tire un identifiant neuf pour chaque lot, même aux gestes identiques', () => {
+    const transport = new RecordingTransport();
+    const timer = new ManualTimer();
+    const queue = new ProductAudienceQueue(transport, timer, sequence());
+
+    queue.record('VIE-001', 'product_viewed');
+    timer.fire();
+    queue.record('VIE-001', 'product_viewed');
+    timer.fire();
+
+    expect(transport.sent.map((body) => JSON.parse(body).batchId)).toEqual(['lot-1', 'lot-2']);
   });
 });

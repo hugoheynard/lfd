@@ -27,6 +27,7 @@ import { ScheduleAppointmentCommand } from "../application/commands/schedule-app
 import { TransitionAppointmentCommand } from "../application/commands/transition-appointment.command.js";
 import { GetAppointmentQuery } from "../application/queries/get-appointment.query.js";
 import { ListAppointmentsQuery } from "../application/queries/list-appointments.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Surface **staff** de la file des rendez-vous : la lire, poser un rendez-vous
@@ -71,6 +72,9 @@ export class AdminAppointmentsController {
 
   @Patch("appointments/:id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "fait avancer le rendez-vous : rejouée, l'état atteint n'admet pas la même transition, elle est refusée sans rien écrire, et l'activité porte une clé par rendez-vous",
+  )
   async transition(
     @Param("id") id: string,
     @Body(new ZodBody(appointmentTransitionPayloadSchema)) payload: AppointmentTransitionPayload,

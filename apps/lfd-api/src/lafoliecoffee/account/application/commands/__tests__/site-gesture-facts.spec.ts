@@ -41,6 +41,9 @@ import {
 } from "./member-acts-doubles.js";
 import { FixedSitePrincipals } from "./site-gesture-doubles.js";
 
+/** Une correction réelle de l'adresse semée : la même charge rejouée ne change rien. */
+const CORRECTED = { ...DELIVERY, ligne2: "Bâtiment B" };
+
 /** Un verrou qui note s'il a été pris DANS l'unité de travail. */
 class WitnessedLock extends FixedSitePrincipals {
   readonly insideUnit: boolean[] = [];
@@ -95,7 +98,7 @@ async function customerGestures(b: Built): Promise<string> {
     b.uow,
     b.names,
     b.gestures,
-  ).execute(new UpdateDeliveryAddressCommand("u1", "c1", added, DELIVERY));
+  ).execute(new UpdateDeliveryAddressCommand("u1", "c1", added, CORRECTED));
   await new SetDefaultDeliveryAddressHandler(
     b.member,
     b.addresses,
@@ -132,7 +135,7 @@ async function teamGestures(b: Built): Promise<string> {
     b.uow,
     b.names,
     b.gestures,
-  ).execute(new UpdateDeliveryAddressByStaffCommand("c1", added, DELIVERY));
+  ).execute(new UpdateDeliveryAddressByStaffCommand("c1", added, CORRECTED));
   await new SetDefaultDeliveryByStaffHandler(
     b.addresses,
     b.events,

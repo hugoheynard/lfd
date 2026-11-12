@@ -157,6 +157,14 @@ describe("Site.paint — des couleurs qu'on change sans les effacer", () => {
     expect(village.snapshot().colors.pickupB2c).toBe(BLUE);
   });
 
+  it("les mêmes couleurs → inchangé ; une seule couleur différente (même le transfert) → changé", () => {
+    const village = site();
+    expect(village.paint({ ...NO_COLORS, pickupB2c: GREY })).toBe(true);
+    expect(village.paint({ ...NO_COLORS, pickupB2c: SiteColor.of("#9CA3AF") })).toBe(false);
+    expect(village.paint({ ...NO_COLORS, pickupB2c: GREY, transfer: BLUE })).toBe(true);
+    expect(village.paint({ ...NO_COLORS, pickupB2c: GREY, transfer: BLUE })).toBe(false);
+  });
+
   it("revient à « pas de couleur » : une couleur posée s'efface (Hugo, 2026-10-13)", () => {
     const village = site();
     village.paint({ ...NO_COLORS, deliveryB2b: BLUE });

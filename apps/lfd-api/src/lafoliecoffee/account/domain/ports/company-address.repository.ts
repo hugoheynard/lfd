@@ -18,6 +18,9 @@ import type { DeliveryAddressBook } from "../entities/delivery-address-book.js";
  * qui appartient à l'entreprise, et le carnet le reporte dans son écriture.
  */
 export abstract class CompanyAddressRepository {
+  /** Relit l'adresse de **facturation** gardée, ou `null` s'il n'y en a pas. */
+  abstract findBilling(companyId: string): Promise<BillingAddressPayload | null>;
+
   /**
    * Enregistre l'unique adresse de **facturation** : la met à jour si elle
    * existe déjà, la crée sinon (une entreprise n'en a qu'une).

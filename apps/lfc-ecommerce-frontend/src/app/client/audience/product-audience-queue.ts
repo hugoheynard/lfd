@@ -51,9 +51,15 @@ export class ProductAudienceQueue {
   private pending: ProductAudienceEventInput[] = [];
   private armed = false;
 
+  /**
+   * `newBatchId` tire l'identifiant d'un lot : un nouveau à chaque lot, pour
+   * que le serveur reconnaisse un lot que le réseau lui livre deux fois. Il ne
+   * désigne pas le visiteur.
+   */
   constructor(
     private readonly transport: AudienceTransport,
     private readonly timer: AudienceTimer,
+    private readonly newBatchId: () => string = () => crypto.randomUUID(),
   ) {}
 
   /**
@@ -81,6 +87,7 @@ export class ProductAudienceQueue {
     while (this.pending.length > 0) {
       const payload: ProductAudienceBatchPayload = {
         events: this.pending.splice(0, MAX_AUDIENCE_EVENTS_PER_BATCH),
+        batchId: this.newBatchId(),
       };
       const body = JSON.stringify(payload);
       if (leaving) {

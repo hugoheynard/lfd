@@ -49,7 +49,10 @@ export class PreferFulfillmentHandler implements ICommandHandler<PreferFulfillme
       throw new CompanyNotFoundError(command.companyId);
     }
     const deliveryAddress = await this.ownDeliveryAddress(command);
-    company.preferFulfillment(command.preference);
+    // Rejouer le geste ne change rien : ni écriture, ni fait au journal.
+    if (!company.preferFulfillment(command.preference)) {
+      return;
+    }
     // La préférence telle que l'agrégat l'a retenue : l'adresse de l'autre mode
     // y est remise à `null`, et le journal dit ce qui a été posé.
     const kept = company.fulfillmentPreference;

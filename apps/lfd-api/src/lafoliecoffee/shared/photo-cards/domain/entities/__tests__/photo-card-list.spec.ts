@@ -137,8 +137,14 @@ describe("PhotoCardList — retrait définitif", () => {
 describe("PhotoCardList — réordonner", () => {
   it("range dans l'ordre donné", () => {
     const list = threeCards();
-    list.reorder(["c3", "c1", "c2"]);
+    expect(list.reorder(["c3", "c1", "c2"])).toBe(true);
     expect(idsOf(list)).toEqual(["c3", "c1", "c2"]);
+  });
+
+  it("le même ordre → inchangé ; une seule carte déplacée → changé", () => {
+    const list = threeCards();
+    expect(list.reorder(["c1", "c2", "c3"])).toBe(false);
+    expect(list.reorder(["c1", "c3", "c2"])).toBe(true);
   });
 
   it.each([

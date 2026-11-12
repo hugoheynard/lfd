@@ -25,6 +25,7 @@ import { ArchiveRequestReasonCommand } from "../application/commands/archive-req
 import { CreateRequestReasonCommand } from "../application/commands/create-request-reason.command.js";
 import { ReviseRequestReasonCommand } from "../application/commands/revise-request-reason.command.js";
 import { ListRequestReasonsQuery } from "../application/queries/list-request-reasons.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Les **motifs des demandes** au back-office (Réglages › Motifs des demandes,
@@ -61,6 +62,9 @@ export class AdminRequestReasonsController {
 
   @Put(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose les valeurs du motif : rejouée, la même requête laisse le même motif, sans journal",
+  )
   async revise(
     @Param("id") id: string,
     @Body(new ZodBody(requestReasonPayloadSchema)) payload: RequestReasonPayload,
@@ -73,6 +77,9 @@ export class AdminRequestReasonsController {
   /** Archiver, jamais supprimer : une demande reçue garde son motif. */
   @Post(":id/archive")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "archive le motif : rejoué, l'entité déjà archivée sort sans toucher sa date et rien ne change",
+  )
   async archive(@Param("id") id: string): Promise<void> {
     await this.commands.execute<ArchiveRequestReasonCommand, void>(
       new ArchiveRequestReasonCommand(id),

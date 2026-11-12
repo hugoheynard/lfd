@@ -43,7 +43,10 @@ export class UpdateCompanyContactHandler implements ICommandHandler<
     const details = ContactDetails.create(command.details);
     const company = await this.names.company(command.companyId);
     await this.uow.run(async () => {
-      await this.book.replace(command.companyId, command.contactId, details, command.role);
+      // Rejouer le geste ne change rien : ni fait au journal.
+      if (!(await this.book.replace(command.companyId, command.contactId, details, command.role))) {
+        return;
+      }
       await this.gestures.publish({
         type: CONTACT_UPDATED,
         site: company,

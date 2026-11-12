@@ -10,6 +10,8 @@ export interface SupportRequestScope {
 export interface HandledSupportRequest {
   readonly companyId: string | null;
   readonly requestedByUserId: string;
+  /** `false` quand la demande était déjà traitée : rien n'a été écrit. */
+  readonly newlyHandled: boolean;
 }
 
 /**

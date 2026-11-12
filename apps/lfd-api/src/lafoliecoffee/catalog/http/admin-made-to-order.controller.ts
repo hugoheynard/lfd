@@ -17,6 +17,7 @@ import { SetReservedVisibilityCommand } from "../application/commands/set-reserv
 import { GetArticleReservationQuery } from "../application/queries/get-article-reservation.query.js";
 import { ListCompanyReservedArticlesQuery } from "../application/queries/list-company-reserved-articles.query.js";
 import { ListMadeToOrderMarksQuery } from "../application/queries/list-made-to-order-marks.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Les articles sur mesure et leur réservation** (plan
@@ -65,6 +66,9 @@ export class AdminMadeToOrderController {
 
   @Put(":sku/reserved-visibility")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose la visibilité réservée : rejouée, le réglage ne change pas et le fait n'est journalisé que sur un changement",
+  )
   async setReservedVisibility(
     @Param("sku") sku: string,
     @Body(new ZodBody(setReservedVisibilityPayloadSchema)) payload: SetReservedVisibilityPayload,
@@ -77,6 +81,9 @@ export class AdminMadeToOrderController {
   /** Réserver : idempotent, un second appel ne change rien. */
   @Put(":sku/reservations/:companyId")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "réserve l'article à la société : rejouée, la réservation existe déjà, `reserve` rend faux et rien n'est journalisé",
+  )
   async reserve(
     @Param("sku") sku: string,
     @Param("companyId") companyId: string,
@@ -90,6 +97,9 @@ export class AdminMadeToOrderController {
   /** Retirer : idempotent ; l'écran a fait confirmer, le geste est journalisé. */
   @Delete(":sku/reservations/:companyId")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "libère l'article : rejouée, il n'y a plus de réservation, `release` rend faux et rien n'est journalisé",
+  )
   async release(@Param("sku") sku: string, @Param("companyId") companyId: string): Promise<void> {
     await this.commands.execute<ReleaseArticleCommand, void>(
       new ReleaseArticleCommand(sku, companyId),

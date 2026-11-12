@@ -56,6 +56,7 @@ import {
   type PreviewPlace,
 } from "../application/queries/preview-staff-suggestions.query.js";
 import { ruleInputOf } from "./staff-suggestion-rule-input.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Les suggestions décidées par le staff** — `/admin/suggestions`
@@ -91,6 +92,9 @@ export class AdminStaffSuggestionsController {
 
   @Put("order")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose l'ordre des suggestions : rejoué, l'ordre est déjà celui-là et le handler sort sans écrire ni journaliser",
+  )
   async setOrder(
     @Body(new ZodBody(setStaffSuggestionOrderPayloadSchema)) body: SetStaffSuggestionOrderPayload,
     @StaffUserId() staffUserId: string,
@@ -162,6 +166,7 @@ export class AdminStaffSuggestionsController {
   @Post("preview")
   @HttpCode(HttpStatus.OK)
   @RequirePermission("lfc_suggestions:read")
+  @Idempotent("aperçu : le `POST` porte la règle à essayer, la requête n'écrit rien")
   preview(
     @Body(new ZodBody(staffSuggestionPreviewPayloadSchema)) body: StaffSuggestionPreviewPayload,
   ): Promise<StaffSuggestionPreviewView> {
@@ -195,6 +200,9 @@ export class AdminStaffSuggestionsController {
 
   /** La règle entière : un `PUT` remplace tout. */
   @Put(":id")
+  @Idempotent(
+    "pose les valeurs de la règle : rejouée, aucun écart n'est trouvé et le handler sort sans écrire ni journaliser",
+  )
   async revise(
     @Param("id") id: string,
     @Body(new ZodBody(staffSuggestionRulePayloadSchema)) body: StaffSuggestionRulePayload,
@@ -207,6 +215,9 @@ export class AdminStaffSuggestionsController {
   }
 
   @Put(":id/active")
+  @Idempotent(
+    "pose l'état actif de la règle : rejoué, `setActive` ne change rien et le handler sort sans écrire ni journaliser",
+  )
   async setActive(
     @Param("id") id: string,
     @Body(new ZodBody(setStaffSuggestionActivePayloadSchema)) body: SetStaffSuggestionActivePayload,
@@ -219,6 +230,9 @@ export class AdminStaffSuggestionsController {
   }
 
   @Put(":id/archive")
+  @Idempotent(
+    "archive la règle : rejouée, la règle n'est plus vivante et l'archivage est refusé sans rien écrire",
+  )
   async archive(
     @Param("id") id: string,
     @StaffUserId() staffUserId: string,

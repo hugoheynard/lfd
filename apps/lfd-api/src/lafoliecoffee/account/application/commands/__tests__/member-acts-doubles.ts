@@ -4,7 +4,10 @@ import { Company } from "../../../domain/entities/company.js";
 import { DeliveryAddressBook } from "../../../domain/entities/delivery-address-book.js";
 import { CompanyAddressRepository } from "../../../domain/ports/company-address.repository.js";
 import { CompanyAddressReader } from "../../../domain/ports/company-address.reader.js";
-import { CompanyContactRepository } from "../../../domain/ports/company-contact.repository.js";
+import {
+  CompanyContactRepository,
+  type StoredContact,
+} from "../../../domain/ports/company-contact.repository.js";
 import {
   CompanyMemberRepository,
   type CompanyMemberRecord,
@@ -18,8 +21,11 @@ import {
 import { AccountJournalNames } from "../../services/account-journal-names.service.js";
 import { MembershipReader } from "../../../domain/ports/membership.reader.js";
 import { InvitationRenewal } from "../../../domain/ports/invitation-renewal.js";
-import type { CompanyRole } from "../../../domain/value-objects/company-role.js";
-import { ContactDetails } from "../../../domain/value-objects/contact-details.js";
+import type { AssignableRole, CompanyRole } from "../../../domain/value-objects/company-role.js";
+import {
+  ContactDetails,
+  contactSnapshotOf,
+} from "../../../domain/value-objects/contact-details.js";
 import { withSlotList } from "../../../domain/services/delivery-slot-list.js";
 
 /**
@@ -134,8 +140,14 @@ export class InMemoryAddresses extends CompanyAddressRepository {
     defaultId: "a1",
   });
 
-  saveBilling(): Promise<void> {
+  private billing: BillingAddressPayload | null = null;
+
+  findBilling(): Promise<BillingAddressPayload | null> {
+    return Promise.resolve(this.billing);
+  }
+  saveBilling(_companyId: string, payload: BillingAddressPayload): Promise<void> {
     this.writes.push("billing");
+    this.billing = payload;
     return Promise.resolve();
   }
   loadDeliveryBook(): Promise<DeliveryAddressBook> {
@@ -168,12 +180,23 @@ export class AddressReaderWithA1 extends CompanyAddressReader {
 
 export class InMemoryContacts extends CompanyContactRepository {
   readonly writes: string[] = [];
+  private readonly stored = new Map<string, StoredContact>();
+
+  find(_companyId: string, contactId: string): Promise<StoredContact | null> {
+    return Promise.resolve(this.stored.get(contactId) ?? null);
+  }
   add(): Promise<string> {
     this.writes.push("add");
     return Promise.resolve("contact_new");
   }
-  update(): Promise<void> {
+  update(
+    _companyId: string,
+    contactId: string,
+    details: ContactDetails,
+    role: AssignableRole,
+  ): Promise<void> {
     this.writes.push("update");
+    this.stored.set(contactId, { details: contactSnapshotOf(details), role });
     return Promise.resolve();
   }
   remove(): Promise<void> {

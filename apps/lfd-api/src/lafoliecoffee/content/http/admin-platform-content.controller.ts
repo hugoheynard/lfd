@@ -27,6 +27,7 @@ import { MoveLegalDocumentParagraphCommand } from "../application/move-legal-doc
 import { RemoveLegalDocumentParagraphCommand } from "../application/remove-legal-document-paragraph.command.js";
 import { SetLegalDocumentTitleCommand } from "../application/set-legal-document-title.command.js";
 import { LegalMentionParam } from "./legal-mention.pipe.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Édition **staff** des mentions légales (back-office → Réglages › Légal).
@@ -68,6 +69,9 @@ export class AdminPlatformContentController {
    */
   @Put("legal/:mention/title")
   @HttpCode(204)
+  @Idempotent(
+    "écrit sous la révision attendue du document : rejouée, la révision a avancé et le geste est refusé (409) sans rien écrire",
+  )
   async setLegalDocumentTitle(
     @Param("mention", LegalMentionParam) mention: LegalDocumentKey,
     @Body(new ZodBody(legalDocumentTitlePayloadSchema)) payload: LegalDocumentTitlePayload,
@@ -120,6 +124,9 @@ export class AdminPlatformContentController {
 
   @Put("legal/:mention/paragraphs/:paragraphId")
   @HttpCode(204)
+  @Idempotent(
+    "écrit sous la révision attendue du document : rejouée, la révision a avancé et le geste est refusé (409) sans rien écrire",
+  )
   async editLegalDocumentParagraph(
     @Param("mention", LegalMentionParam) mention: LegalDocumentKey,
     @Param("paragraphId") paragraphId: string,
@@ -142,6 +149,9 @@ export class AdminPlatformContentController {
   /** La révision lue passe en chaîne de requête : un `DELETE` n'a pas de corps. */
   @Delete("legal/:mention/paragraphs/:paragraphId")
   @HttpCode(204)
+  @Idempotent(
+    "écrit sous la révision attendue du document : rejouée, la révision a avancé et le geste est refusé (409) sans rien écrire",
+  )
   async removeLegalDocumentParagraph(
     @Param("mention", LegalMentionParam) mention: LegalDocumentKey,
     @Param("paragraphId") paragraphId: string,
@@ -164,6 +174,9 @@ export class AdminPlatformContentController {
    */
   @Put("legal/:mention/paragraphs/:paragraphId/position")
   @HttpCode(204)
+  @Idempotent(
+    "écrit sous la révision attendue du document : rejouée, la révision a avancé et le geste est refusé (409) sans rien écrire",
+  )
   async moveLegalDocumentParagraph(
     @Param("mention", LegalMentionParam) mention: LegalDocumentKey,
     @Param("paragraphId") paragraphId: string,

@@ -27,6 +27,7 @@ import { ClearFeatureOverrideCommand } from "../application/commands/clear-featu
 import { RemoveFeatureExemptionCommand } from "../application/commands/remove-feature-exemption.command.js";
 import { SetFeatureOverrideCommand } from "../application/commands/set-feature-override.command.js";
 import { GetFeatureAccessBoardQuery } from "../application/queries/get-feature-access-board.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Pilotage **staff** de l'accès aux fonctionnalités (`/admin/feature-access`).
@@ -52,6 +53,9 @@ export class AdminFeatureAccessController {
 
   @Put(":key")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose la valeur de la dérogation : rejouée, la même valeur n'est ni réécrite ni journalisée",
+  )
   async setOverride(
     @Param("key") key: string,
     @Body(new ZodBody(featureOverridePayloadSchema)) payload: FeatureOverridePayload,
@@ -65,6 +69,9 @@ export class AdminFeatureAccessController {
   /** Retour au défaut du code : la dérogation est supprimée. */
   @Delete(":key")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "retire la dérogation : rejouée, il n'y en a plus et le geste est refusé (404) sans rien écrire ni journaliser",
+  )
   async clearOverride(@Param("key") key: string): Promise<void> {
     await this.commands.execute<ClearFeatureOverrideCommand, void>(
       new ClearFeatureOverrideCommand(key),
@@ -87,6 +94,9 @@ export class AdminFeatureAccessController {
 
   @Delete(":key/exemptions/:id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "retire l'exemption : rejouée, elle n'existe plus et le geste est refusé (404) sans rien écrire ni journaliser",
+  )
   async removeExemption(@Param("key") key: string, @Param("id") id: string): Promise<void> {
     await this.commands.execute<RemoveFeatureExemptionCommand, void>(
       new RemoveFeatureExemptionCommand(key, id),

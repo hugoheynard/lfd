@@ -4,6 +4,7 @@ import { CommandBus } from "@nestjs/cqrs";
 import { Public } from "../../../platform/auth/public.decorator.js";
 import { RecomputeGuard } from "../../../platform/auth/recompute.guard.js";
 import { RecomputeProductNormsCommand } from "../application/commands/recompute-product-norms.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Endpoint **batch** : recalcule la norme catalogue (médiane par produit).
@@ -21,6 +22,9 @@ export class AdminRecomputeNormsController {
 
   @Post()
   @HttpCode(200)
+  @Idempotent(
+    "balayage sous `RecomputeGuard` : recalcule les normes depuis l'historique et remplace la table entière ; rejoué, il réécrit le même résultat",
+  )
   async recompute(): Promise<{ recomputed: number }> {
     const recomputed = await this.commands.execute<RecomputeProductNormsCommand, number>(
       new RecomputeProductNormsCommand(NORM_WINDOW_DAYS),

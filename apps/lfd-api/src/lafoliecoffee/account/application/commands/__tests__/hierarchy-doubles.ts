@@ -73,6 +73,9 @@ export class InMemoryCompanies extends CompanyRepository {
 
 export class InMemoryAddresses extends CompanyAddressRepository {
   readonly books: DeliveryAddressBook[] = [];
+  findBilling(): Promise<null> {
+    return Promise.resolve(null);
+  }
   saveBilling(_companyId: string, _payload: BillingAddressPayload): Promise<void> {
     return Promise.resolve();
   }

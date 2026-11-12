@@ -25,6 +25,7 @@ import { BookAppointmentCommand } from "../application/commands/book-appointment
 import { CancelOwnAppointmentCommand } from "../application/commands/cancel-own-appointment.command.js";
 import { GetSlotsQuery } from "../application/queries/get-slots.query.js";
 import { ListMyAppointmentsQuery } from "../application/queries/list-my-appointments.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Surface **client** de la prise de rendez-vous : voir les créneaux, réserver,
@@ -71,6 +72,9 @@ export class AppointmentsController {
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "annule le rendez-vous : rejouée, un rendez-vous annulé est clos et l'annulation est refusée sans rien écrire",
+  )
   async cancel(@CurrentUser() user: Principal, @Param("id") id: string): Promise<void> {
     await this.commands.execute<CancelOwnAppointmentCommand, void>(
       new CancelOwnAppointmentCommand(id, user.userId, companyIdsOf(user)),

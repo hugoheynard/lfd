@@ -34,7 +34,10 @@ export class UpdatePrimaryContactByStaffHandler implements ICommandHandler<
     if (company === null) {
       throw new CompanyNotFoundError(command.companyId);
     }
-    company.changePrimaryContact(ContactDetails.create(command.details));
+    // Rejouer le geste ne change rien : ni écriture, ni fait au journal.
+    if (!company.changePrimaryContact(ContactDetails.create(command.details))) {
+      return;
+    }
     await this.uow.run(async () => {
       await this.companies.save(company);
       await this.gestures.publish({

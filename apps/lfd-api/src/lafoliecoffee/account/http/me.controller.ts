@@ -39,6 +39,7 @@ import {
   updateProfilePayload,
   type UpdateProfilePayload,
 } from "./payloads.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /** Ce que la porte pro renvoie : la société ouverte, de quoi relire `/me`. */
 export interface DeclaredEstablishmentResponse {
@@ -124,6 +125,9 @@ export class MeController {
    * vérité après l'écriture. 409 si l'espace désigne une société étrangère.
    */
   @Patch("nav-prefs")
+  @Idempotent(
+    "fusionne les préférences de navigation : rejouée, la même requête laisse les mêmes préférences, sans journal",
+  )
   async updateNavPrefs(
     @CurrentUser() user: Principal,
     @Body(new ZodBody(updateNavPrefsPayload)) payload: UpdateNavPrefsPayload,

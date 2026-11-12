@@ -38,7 +38,10 @@ export class RequestPaymentTermHandler implements ICommandHandler<RequestPayment
       throw new CompanyNotFoundError(command.companyId);
     }
     const before = company.requestedTerm;
-    company.requestTerm(command.term);
+    // Rejouer le geste ne change rien : ni écriture, ni fait au journal.
+    if (!company.requestTerm(command.term)) {
+      return;
+    }
     await this.uow.run(async () => {
       await this.companies.save(company);
       await this.events.publishTraced(

@@ -109,7 +109,11 @@ describe("les contacts d'un site", () => {
     const id = await addAsSite(s);
     const site = ctx.asSub(s.housekeeper);
 
-    await site.patch(`/companies/${s.site}/contacts/${id}`).send(CONTACT).expect(200);
+    // Une vraie modification : la même fiche renvoyée ne change rien, et ne prévient personne.
+    await site
+      .patch(`/companies/${s.site}/contacts/${id}`)
+      .send({ ...CONTACT, phone: "06 12 88 54 31" })
+      .expect(200);
     await site.delete(`/companies/${s.site}/contacts/${id}`).expect(204);
     await site.patch(`/companies/${s.site}/contact`).send(CONTACT).expect(200);
     await ctx.drain();

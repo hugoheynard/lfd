@@ -51,6 +51,9 @@ import {
 } from "./member-acts-doubles.js";
 import { silentGestures } from "./site-gesture-doubles.js";
 
+/** Une correction réelle de l'adresse semée : la même charge rejouée ne change rien. */
+const CORRECTED = { ...DELIVERY, ligne2: "Bâtiment B" };
+
 /**
  * **Ce que le client inscrit quand il touche au compte de sa société** (plan
  * `documentation/journalisation/plan-journal-d-activite.md`, lot 1, tranche
@@ -109,7 +112,7 @@ describe("les adresses, par le client", () => {
       uow,
       names,
       silentGestures(),
-    ).execute(new UpdateDeliveryAddressCommand("u1", "c1", added, DELIVERY));
+    ).execute(new UpdateDeliveryAddressCommand("u1", "c1", added, CORRECTED));
     await new SetDefaultDeliveryAddressHandler(
       member,
       addresses,

@@ -38,6 +38,14 @@ export class FeatureOverride {
     }
     return new FeatureOverride(key, value, input.at, input.author);
   }
+
+  /**
+   * La dérogation change-t-elle la valeur en place ? Reposer la même valeur
+   * garde la dérogation d'origine (son auteur, sa date) : rien n'a changé.
+   */
+  changes(currentValue: string | null): boolean {
+    return currentValue !== this.value;
+  }
 }
 
 /**

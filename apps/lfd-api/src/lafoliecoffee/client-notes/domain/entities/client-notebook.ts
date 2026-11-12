@@ -174,9 +174,10 @@ export class ClientNotebook {
    *
    * @throws {ClientNotebookOrderStaleError} la liste n'est pas une permutation
    *   exacte des notes présentes.
+   * @returns `false` quand les notes sont déjà dans cet ordre.
    */
-  reorder(noteIds: readonly string[]): void {
-    this.notes.reorder(noteIds);
+  reorder(noteIds: readonly string[]): boolean {
+    return this.notes.reorder(noteIds);
   }
 
   /** L'état à écrire, notes dans l'ordre. */

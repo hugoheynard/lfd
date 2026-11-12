@@ -190,10 +190,35 @@ describe("le carnet d'adresses de livraison", () => {
     });
   });
 
+  describe("un geste déjà dans cet état est inchangé", () => {
+    // Régression : rejouer « modifier l'adresse » ou « par défaut » réécrivait et journalisait à chaque appel.
+    it("edit : la même adresse → inchangé ; seule la consigne change → changé", () => {
+      const book = bookOf([entry("a1", OLDEST)], "a1");
+      const same = { ...payload(false), label: "a1" };
+      expect(book.edit("a1", same)).toBe(false);
+      expect(book.edit("a1", { ...same, specs: { ...same.specs, note: "Sonner deux fois" } })).toBe(
+        true,
+      );
+      expect(book.deliveries()[0]?.specs.note).toBe("Sonner deux fois");
+    });
+
+    it("edit : la même adresse promue par défaut alors qu'elle ne l'est pas → changé", () => {
+      const book = bookOf([entry("a1", OLDEST), entry("a2", MIDDLE)], "a1");
+      expect(book.edit("a2", { ...payload(true), label: "a2" })).toBe(true);
+      expect(book.defaultId()).toBe("a2");
+    });
+
+    it("makeDefault : déjà par défaut → inchangé ; une autre → changé", () => {
+      const book = bookOf([entry("a1", OLDEST), entry("a2", MIDDLE)], "a1");
+      expect(book.makeDefault("a1")).toBe(false);
+      expect(book.makeDefault("a2")).toBe(true);
+    });
+  });
+
   describe("ce que le carnet ne contient pas", () => {
     it.each([
-      ["modifier", (book: DeliveryAddressBook): void => book.edit("inconnu", payload(false))],
-      ["désigner par défaut", (book: DeliveryAddressBook): void => book.makeDefault("inconnu")],
+      ["modifier", (book: DeliveryAddressBook): unknown => book.edit("inconnu", payload(false))],
+      ["désigner par défaut", (book: DeliveryAddressBook): unknown => book.makeDefault("inconnu")],
       ["archiver", (book: DeliveryAddressBook): void => book.archive("inconnu", ARCHIVED_AT)],
     ])("refuse de %s une adresse absente", (_geste, act) => {
       const book = bookOf([entry("a1", OLDEST)], "a1");

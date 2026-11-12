@@ -341,6 +341,18 @@ describe("SetSiteColorsHandler", () => {
     return events;
   }
 
+  // Régression : rejouer les mêmes couleurs réécrivait le site, purgeait les rayons et journalisait à chaque appel.
+  it("rejouées à l'identique (casse comprise), n'écrivent ni ne journalisent rien", async () => {
+    const sites = twoSites();
+    await paint(sites, { pickupColorB2c: "#9ca3af" });
+    const saved = sites.saved.length;
+
+    const events = await paint(sites, { pickupColorB2c: "#9CA3AF" });
+
+    expect(sites.saved).toHaveLength(saved);
+    expect(events.traced).toEqual([]);
+  });
+
   it("normalise en minuscules et enregistre", async () => {
     const sites = twoSites();
     await paint(sites, { pickupColorB2c: "#9CA3AF" });

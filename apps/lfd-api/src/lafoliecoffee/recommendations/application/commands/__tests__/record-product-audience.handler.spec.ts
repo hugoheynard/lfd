@@ -11,6 +11,7 @@ import { AudienceCounterWriter } from "../../../domain/ports/audience-counter.wr
 import { AudienceSkuReader } from "../../../domain/ports/audience-sku.reader.js";
 import { RecordProductAudienceCommand } from "../record-product-audience.command.js";
 import { RecordProductAudienceHandler } from "../record-product-audience.handler.js";
+import { InMemoryAudienceBatchLedger } from "../../../infrastructure/in-memory-audience-batch.ledger.js";
 
 const TODAY = "2026-03-10";
 
@@ -39,6 +40,16 @@ function clockAt(day: string, time: string): FixedClock {
   return new FixedClock(instant);
 }
 
+function ledgerAt(day: string): InMemoryAudienceBatchLedger {
+  return new InMemoryAudienceBatchLedger(clockAt(day, "10:00"));
+}
+
+class FailingCounters extends AudienceCounterWriter {
+  add(): Promise<void> {
+    return Promise.reject(new RangeError("base indisponible"));
+  }
+}
+
 describe("RecordProductAudienceHandler", () => {
   it("compte le lot totalisé sur le jour MÉTIER de Paris, pas le jour UTC", async () => {
     const counters = new RecordingCounters();
@@ -47,6 +58,7 @@ describe("RecordProductAudienceHandler", () => {
       new KnownSkus(["CRO"]),
       counters,
       clockAt(TODAY, "00:30"),
+      ledgerAt(TODAY),
     );
 
     await handler.execute(
@@ -72,6 +84,7 @@ describe("RecordProductAudienceHandler", () => {
       new KnownSkus(["CRO"]),
       counters,
       clockAt(TODAY, "10:00"),
+      ledgerAt(TODAY),
     );
 
     await expect(
@@ -91,6 +104,7 @@ describe("RecordProductAudienceHandler", () => {
       new KnownSkus(["CRO"]),
       counters,
       clockAt(TODAY, "10:00"),
+      ledgerAt(TODAY),
     );
     const events = Array.from({ length: 51 }, () => ({ sku: "CRO", event: "product_viewed" }));
 
@@ -106,6 +120,7 @@ describe("RecordProductAudienceHandler", () => {
       new KnownSkus(["CRO"]),
       counters,
       clockAt(TODAY, "10:00"),
+      ledgerAt(TODAY),
     );
 
     await expect(
@@ -116,5 +131,73 @@ describe("RecordProductAudienceHandler", () => {
       ),
     ).rejects.toThrow(AudienceSourceMismatchError);
     expect(counters.writes).toEqual([]);
+  });
+
+  describe("un lot rejoué ne compte qu'une fois", () => {
+    const VIEW = [{ sku: "CRO", event: "product_viewed" }];
+
+    function handlerWith(counters: AudienceCounterWriter) {
+      return new RecordProductAudienceHandler(
+        new KnownSkus(["CRO"]),
+        counters,
+        clockAt(TODAY, "10:00"),
+        ledgerAt(TODAY),
+      );
+    }
+
+    // Régression : un même lot reçu deux fois (réseau qui rejoue) comptait chaque vue deux fois.
+    it("le même identifiant de lot, reçu deux fois → une seule écriture", async () => {
+      const counters = new RecordingCounters();
+      const handler = handlerWith(counters);
+
+      await handler.execute(new RecordProductAudienceCommand(VIEW, "batch_a"));
+      await handler.execute(new RecordProductAudienceCommand(VIEW, "batch_a"));
+
+      expect(counters.writes).toHaveLength(1);
+    });
+
+    it("deux lots distincts aux vues identiques → deux écritures : rien n'est sous-compté", async () => {
+      const counters = new RecordingCounters();
+      const handler = handlerWith(counters);
+
+      await handler.execute(new RecordProductAudienceCommand(VIEW, "batch_a"));
+      await handler.execute(new RecordProductAudienceCommand(VIEW, "batch_b"));
+
+      expect(counters.writes).toHaveLength(2);
+    });
+
+    it("sans identifiant (écran d'avant), chaque lot compte comme avant", async () => {
+      const counters = new RecordingCounters();
+      const handler = handlerWith(counters);
+
+      await handler.execute(new RecordProductAudienceCommand(VIEW));
+      await handler.execute(new RecordProductAudienceCommand(VIEW));
+
+      expect(counters.writes).toHaveLength(2);
+    });
+
+    it("un comptage en échec rend le lot : son rejeu compte", async () => {
+      const counters = new RecordingCounters();
+      const ledger = ledgerAt(TODAY);
+      const failing = new RecordProductAudienceHandler(
+        new KnownSkus(["CRO"]),
+        new FailingCounters(),
+        clockAt(TODAY, "10:00"),
+        ledger,
+      );
+      const working = new RecordProductAudienceHandler(
+        new KnownSkus(["CRO"]),
+        counters,
+        clockAt(TODAY, "10:00"),
+        ledger,
+      );
+
+      await expect(
+        failing.execute(new RecordProductAudienceCommand(VIEW, "batch_a")),
+      ).rejects.toThrow(RangeError);
+      await working.execute(new RecordProductAudienceCommand(VIEW, "batch_a"));
+
+      expect(counters.writes).toHaveLength(1);
+    });
   });
 });

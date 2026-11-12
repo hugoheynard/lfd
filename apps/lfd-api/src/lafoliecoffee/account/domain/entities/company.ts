@@ -17,6 +17,7 @@ import type { SuspensionCause } from "../value-objects/suspension-cause.js";
 import { EmailAddress } from "../value-objects/email-address.js";
 import { PersonName } from "../value-objects/person-name.js";
 import { PhoneNumber } from "../value-objects/phone-number.js";
+import { contactSnapshotOf, sameContact } from "../value-objects/contact-details.js";
 import { LegalRegistration } from "../value-objects/legal-registration.js";
 import { ensureVatMatchesSiren, normalizedVatNumber } from "../value-objects/vat-number.js";
 import type { Siren } from "../value-objects/siren.js";
@@ -436,6 +437,37 @@ export class Company {
     }
   }
 
+  /**
+   * La correction d'identité du back-office : légale d'abord, puis souple —
+   * la TVA se compare au SIREN que la première vient de poser.
+   *
+   * @returns `false` quand l'identité relue est celle d'avant : rien n'a changé.
+   */
+  correctIdentity(input: {
+    raisonSociale: string;
+    formeJuridique: string;
+    siret: string;
+    siren: string;
+    enseigne: string;
+    vatNumber: string;
+  }): boolean {
+    const before = this.identityFingerprint();
+    this.correctLegalIdentity(input);
+    this.editSoftIdentity(input);
+    return this.identityFingerprint() !== before;
+  }
+
+  private identityFingerprint(): string {
+    return JSON.stringify([
+      this.raisonSocialeValue,
+      this.formeJuridiqueValue,
+      this.siretDigits,
+      this.sirenDigits,
+      this.enseigneValue,
+      this.vatNumberValue,
+    ]);
+  }
+
   get vatNumber(): string {
     return this.vatNumberValue;
   }
@@ -517,8 +549,12 @@ export class Company {
     this.nafCodeValue = optional(naf, "Code NAF");
   }
 
-  /** Remplace le contact **principal** (toujours présent — jamais supprimé). */
-  changePrimaryContact(contact: CompanyContact): void {
+  /**
+   * Remplace le contact **principal** (toujours présent — jamais supprimé).
+   *
+   * @returns `false` quand les coordonnées sont déjà celles-là : rien n'a changé.
+   */
+  changePrimaryContact(contact: CompanyContact): boolean {
     // On **corrige** un détenteur, on ne le crée pas : le désigner ouvre un
     // accès, et ce geste-là ne le fait pas. Sans ce refus, « modifier le
     // détenteur » sur une société qui n'en a pas posait un nom en fiche sans
@@ -526,7 +562,11 @@ export class Company {
     if (this.contactValue === null) {
       throw new CompanyHasNoHolderError(this.identityId ?? "");
     }
+    if (sameContact(contactSnapshotOf(this.contactValue), contactSnapshotOf(contact))) {
+      return false;
+    }
     this.contactValue = contact;
+    return true;
   }
 
   /** Les crédits accordés — vide veut dire « paie à la commande », comme tout le monde. */
@@ -592,9 +632,14 @@ export class Company {
    * Demander un terme **déjà accordé** revient à retirer la demande : il n'y a
    * alors rien « en attente » à afficher.
    */
-  requestTerm(term: DeferredTerm | null): void {
+  requestTerm(term: DeferredTerm | null): boolean {
     const alreadyGranted = term !== null && this.grantedTermsValue.includes(term);
-    this.requestedTermValue = alreadyGranted ? null : term;
+    const requested = alreadyGranted ? null : term;
+    if (requested === this.requestedTermValue) {
+      return false;
+    }
+    this.requestedTermValue = requested;
+    return true;
   }
 
   /**
@@ -605,9 +650,19 @@ export class Company {
    * interrupteurs, et deux clics rapides ne doivent pas laisser la fiche et la
    * base en désaccord. Les doublons sont écartés — accorder deux fois le même
    * crédit n'a pas de sens.
+   *
+   * @returns `false` quand ces crédits sont déjà accordés et qu'aucune demande
+   * n'attend : rien n'a changé.
    */
-  grantTerms(terms: readonly DeferredTerm[]): void {
-    this.grantedTermsValue = [...new Set(terms)];
+  grantTerms(terms: readonly DeferredTerm[]): boolean {
+    const granted = [...new Set(terms)];
+    const sameTerms =
+      granted.length === this.grantedTermsValue.length &&
+      granted.every((term) => this.grantedTermsValue.includes(term));
+    if (sameTerms && this.requestedTermValue === null) {
+      return false;
+    }
+    this.grantedTermsValue = granted;
     this.requestedTermValue = null;
     // Plus aucun crédit, plus rien à bloquer : garder le blocage laisserait un
     // blocage fantôme, qui ressurgirait au prochain octroi sans que personne
@@ -615,6 +670,7 @@ export class Company {
     if (this.grantedTermsValue.length === 0) {
       this.directDebitBlockValue = null;
     }
+    return true;
   }
 
   /** Comment ce client est servi d'habitude. */
@@ -633,9 +689,11 @@ export class Company {
    *
    * Les deux pointeurs restent facultatifs : `null` veut dire « le défaut du
    * moment », et c'est plus juste que de figer l'adresse par défaut actuelle.
+   *
+   * @returns `false` quand la préférence est déjà celle-là : rien n'a changé.
    */
-  preferFulfillment(preference: FulfillmentPreferenceView): void {
-    this.preferenceValue = {
+  preferFulfillment(preference: FulfillmentPreferenceView): boolean {
+    const next: FulfillmentPreferenceView = {
       method: preference.method,
       pickupAddressId: preference.method === "pickup" ? preference.pickupAddressId : null,
       deliveryAddressId: preference.method === "delivery" ? preference.deliveryAddressId : null,
@@ -643,6 +701,17 @@ export class Company {
       // le client bascule au retrait, parce qu'il redeviendra vrai au retour.
       signatureRequired: preference.signatureRequired,
     };
+    const current = this.preferenceValue;
+    if (
+      next.method === current.method &&
+      next.pickupAddressId === current.pickupAddressId &&
+      next.deliveryAddressId === current.deliveryAddressId &&
+      next.signatureRequired === current.signatureRequired
+    ) {
+      return false;
+    }
+    this.preferenceValue = next;
+    return true;
   }
 
   /** L'extrait déposé et son éventuelle certification, ou `null`. */
@@ -688,11 +757,15 @@ export class Company {
    * Idempotent, y compris sans extrait : décertifier ce qui ne l'est pas ne fait
    * rien, et ne se refuse pas — un refus obligerait l'appelant à distinguer deux
    * situations qui mènent au même état.
+   *
+   * @returns `false` quand rien n'était certifié : rien n'a changé.
    */
-  revokeKbisCertification(): void {
-    if (this.kbisValue !== null) {
-      this.kbisValue = this.kbisValue.revoke();
+  revokeKbisCertification(): boolean {
+    if (this.kbisValue === null || !this.kbisValue.certified) {
+      return false;
     }
+    this.kbisValue = this.kbisValue.revoke();
+    return true;
   }
 
   get status(): CompanyStatus {

@@ -47,7 +47,8 @@ function supportRepo(hasOpen: boolean, recorder?: { recorded: number }): Support
       return Promise.resolve("support_1");
     },
     list: () => Promise.resolve([]),
-    markHandled: () => Promise.resolve({ companyId: "company_1", requestedByUserId: "user_1" }),
+    markHandled: () =>
+      Promise.resolve({ companyId: "company_1", requestedByUserId: "user_1", newlyHandled: true }),
   } satisfies SupportRequestRepository;
 }
 

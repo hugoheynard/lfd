@@ -30,7 +30,10 @@ export class GrantTermsHandler implements ICommandHandler<GrantTermsCommand, voi
     if (company === null) {
       throw new CompanyNotFoundError(command.companyId);
     }
-    company.grantTerms(command.grantedTerms);
+    // Rejouer le geste ne change rien : ni écriture, ni fait au journal.
+    if (!company.grantTerms(command.grantedTerms)) {
+      return;
+    }
     await this.uow.run(async () => {
       await this.companies.save(company);
       await this.events.publishTraced(

@@ -20,6 +20,7 @@ import { SaveAvailabilityCommand } from "../application/commands/save-availabili
 import { SaveBookingPolicyCommand } from "../application/commands/save-booking-policy.command.js";
 import { GetAvailabilityQuery } from "../application/queries/get-availability.query.js";
 import { GetSlotsQuery } from "../application/queries/get-slots.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Commercial › Réglages › Disponibilité** — déclarer quand un prospect peut
@@ -52,6 +53,9 @@ export class AdminAvailabilityController {
 
   /** Écriture **en bloc** : le commercial édite sa grille, puis enregistre. */
   @Put()
+  @Idempotent(
+    "remplace les disponibilités : rejouée, la même requête laisse la même configuration, sans journal",
+  )
   saveAvailability(
     @Body(new ZodBody(availabilityConfigPayloadSchema)) payload: AvailabilityConfigPayload,
   ): Promise<AvailabilityConfigView> {
@@ -66,6 +70,9 @@ export class AdminAvailabilityController {
    * pas l'écraser avec un état qu'il aurait chargé il y a dix minutes.
    */
   @Put("policy")
+  @Idempotent(
+    "pose la règle de réservation : rejouée, la même requête laisse la même configuration, sans journal",
+  )
   savePolicy(
     @Body(new ZodBody(bookingPolicySchema)) policy: BookingPolicy,
   ): Promise<AvailabilityConfigView> {
@@ -79,6 +86,9 @@ export class AdminAvailabilityController {
    * congé ne doit pas renvoyer la grille, et ne peut donc pas l'écraser.
    */
   @Put("exceptions")
+  @Idempotent(
+    "remplace les exceptions de disponibilité : rejouée, la même requête laisse la même configuration, sans journal",
+  )
   saveExceptions(
     @Body(new ZodBody(availabilityExceptionsPayloadSchema)) payload: AvailabilityExceptionsPayload,
   ): Promise<AvailabilityConfigView> {

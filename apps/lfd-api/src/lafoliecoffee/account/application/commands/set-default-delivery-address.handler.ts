@@ -38,7 +38,10 @@ export class SetDefaultDeliveryAddressHandler implements ICommandHandler<
     ensureCompanyAdmin(role, command.companyId);
 
     const book = await this.addresses.loadDeliveryBook(command.companyId);
-    book.makeDefault(command.addressId);
+    // Rejouer le geste ne change rien : ni écriture, ni fait au journal.
+    if (!book.makeDefault(command.addressId)) {
+      return;
+    }
     const company = await this.names.company(command.companyId);
     await this.uow.run(async () => {
       await this.addresses.saveDeliveryBook(book);

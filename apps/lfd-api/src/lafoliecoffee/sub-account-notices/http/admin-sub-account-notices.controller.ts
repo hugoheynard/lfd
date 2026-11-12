@@ -15,6 +15,7 @@ import { ResetSubAccountNoticeRulesCommand } from "../application/commands/reset
 import { SetSubAccountNoticesEnabledCommand } from "../application/commands/set-sub-account-notices-enabled.command.js";
 import { SetSubAccountNoticeRuleCommand } from "../application/commands/set-sub-account-notice-rule.command.js";
 import { GetSubAccountNoticeRulesQuery } from "../application/queries/get-sub-account-notice-rules.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Le tableau des avis au principal**, depuis la fiche client du principal
@@ -45,6 +46,9 @@ export class AdminSubAccountNoticesController {
   /** Règle UNE cellule ; la remettre à sa valeur par défaut efface la dérogation. */
   @Put()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose la case (upsert), ou la retire si elle égale le défaut : rejouée, la même ligne reste, sans journal",
+  )
   async set(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(setSubAccountNoticeRulePayloadSchema))
@@ -65,6 +69,9 @@ export class AdminSubAccountNoticesController {
   /** Active ou coupe TOUS les avis du principal ; rien n'est rattrapé à la réactivation. */
   @Put("enabled")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose l'interrupteur du principal par `upsert` : rejoué, la même ligne reste, sans journal",
+  )
   async setEnabled(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(setSubAccountNoticesEnabledPayloadSchema))
@@ -79,6 +86,7 @@ export class AdminSubAccountNoticesController {
   /** « Revenir au défaut » : toutes les dérogations du principal sont effacées. */
   @Post("reset")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent("retire toutes les cases par `deleteMany` : rejoué, il n'y a plus rien à retirer")
   async reset(@Param("companyId") companyId: string): Promise<void> {
     await this.commands.execute<ResetSubAccountNoticeRulesCommand, void>(
       new ResetSubAccountNoticeRulesCommand(companyId),

@@ -47,6 +47,7 @@ import {
   type UploadedPhotoPart,
 } from "../../shared/photo-cards/http/photo-card-http.js";
 import { deliveryStepPhotoUpload } from "./delivery-procedure-http.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 const PROCEDURE = ":companyId/delivery-addresses/:addressId/procedure";
 const DOORSTEP_RULE = ":companyId/delivery-addresses/:addressId/doorstep-rule";
@@ -97,6 +98,9 @@ export class AdminCompanyDeliveryProcedureController {
 
   @Put(DOORSTEP_RULE)
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose la règle de porte : rejouée, `setDoorstepRule` ne change rien et le handler sort sans écrire ni journaliser",
+  )
   async setDoorstepRule(
     @Param("companyId") companyId: string,
     @Param("addressId") addressId: string,
@@ -146,6 +150,9 @@ export class AdminCompanyDeliveryProcedureController {
 
   @Delete(`${PROCEDURE}/steps/:stepId`)
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "retire l'étape : rejouée, elle n'existe plus et le geste est refusé (404) sans rien écrire ni journaliser",
+  )
   async removeStep(
     @Param("companyId") companyId: string,
     @Param("addressId") addressId: string,
@@ -158,6 +165,9 @@ export class AdminCompanyDeliveryProcedureController {
 
   @Put(`${PROCEDURE}/order`)
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "range les étapes dans l'ordre donné : rejoué, l'ordre est déjà celui-là et rien n'est écrit ni journalisé",
+  )
   async reorder(
     @Param("companyId") companyId: string,
     @Param("addressId") addressId: string,

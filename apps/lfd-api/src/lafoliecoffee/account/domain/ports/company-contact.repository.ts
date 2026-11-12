@@ -1,5 +1,14 @@
 import type { AssignableRole } from "../value-objects/company-role.js";
-import type { ContactDetails } from "../value-objects/contact-details.js";
+import type { ContactDetails, ContactSnapshot } from "../value-objects/contact-details.js";
+
+/**
+ * Un contact tel qu'il est gardé : ses coordonnées et son rôle (`null` sur un
+ * contact d'avant les rôles, « à préciser »).
+ */
+export interface StoredContact {
+  readonly details: ContactSnapshot;
+  readonly role: string | null;
+}
 
 /**
  * Port d'**écriture** des contacts additionnels d'une entreprise.
@@ -18,6 +27,12 @@ export abstract class CompanyContactRepository {
    * ne peut pas valoir `owner` — le détenteur n'est pas un contact du carnet.
    */
   abstract add(companyId: string, details: ContactDetails, role: AssignableRole): Promise<string>;
+
+  /**
+   * Relit un contact de l'entreprise, ou `null` s'il n'appartient pas à
+   * `companyId` — de quoi ne rien réécrire quand la saisie ne change rien.
+   */
+  abstract find(companyId: string, contactId: string): Promise<StoredContact | null>;
 
   /**
    * Remplace un contact de l'entreprise.

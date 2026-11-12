@@ -57,7 +57,8 @@ export interface PhotoCardGestures<A, C extends PhotoCardText> {
   readonly attachPhoto: (aggregate: A, cardId: string, photoKey: string) => string | null;
   readonly detachPhoto: (aggregate: A, cardId: string) => string | null;
   readonly remove: (aggregate: A, cardId: string) => string | null;
-  readonly reorder: (aggregate: A, cardIds: readonly string[]) => void;
+  /** `false` quand l'ordre est déjà celui-là : rien à écrire. */
+  readonly reorder: (aggregate: A, cardIds: readonly string[]) => boolean;
 }
 
 /** Les refus quand la cible n'a pas encore d'agrégat. */

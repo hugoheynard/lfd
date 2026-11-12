@@ -94,6 +94,7 @@ function companies(): CompanyRepository {
 
 function addresses(): CompanyAddressRepository {
   return {
+    findBilling: () => Promise.resolve(null),
     saveBilling: () => Promise.resolve(),
     loadDeliveryBook: () =>
       Promise.resolve(
@@ -105,6 +106,7 @@ function addresses(): CompanyAddressRepository {
 
 function contacts(): CompanyContactRepository {
   return {
+    find: () => Promise.resolve(null),
     add: () => Promise.resolve("contact_new"),
     update: () => Promise.resolve(),
     remove: () => Promise.resolve(),

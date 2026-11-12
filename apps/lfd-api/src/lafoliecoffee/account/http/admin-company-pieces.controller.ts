@@ -55,6 +55,7 @@ import { UpdateDeliveryAddressByStaffCommand } from "../application/commands/upd
 import { UpdateIdentityByStaffCommand } from "../application/commands/update-identity-by-staff.command.js";
 import { UploadKbisByStaffCommand } from "../application/commands/upload-kbis-by-staff.command.js";
 import { InvalidKbisFileError } from "../domain/errors/account-errors.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /** Backstop DoS du multipart, aligné sur le dépôt client (le domaine tranche à 10 Mo). */
 const KBIS_UPLOAD_HARD_LIMIT = 20 * 1024 * 1024;
@@ -145,6 +146,9 @@ export class AdminCompanyPiecesController {
   /** Retire la certification — un clic de trop doit pouvoir se défaire. */
   @Delete(":companyId/kbis/certification")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "retire la certification : rejouée, il n'y a plus rien de certifié et rien n'est écrit ni journalisé",
+  )
   async revokeKbisCertification(@Param("companyId") companyId: string): Promise<void> {
     await this.commands.execute<RevokeKbisCertificationCommand, void>(
       new RevokeKbisCertificationCommand(companyId),
@@ -154,6 +158,9 @@ export class AdminCompanyPiecesController {
   /** Édite l'identité souple (enseigne + n° de TVA). */
   @Patch(":companyId/identity")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose l'identité : rejouée, l'agrégat la relit identique et rien n'est écrit ni journalisé",
+  )
   async updateIdentity(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(updateIdentityPayloadSchema)) payload: UpdateIdentityPayload,
@@ -174,6 +181,9 @@ export class AdminCompanyPiecesController {
    */
   @Patch(":companyId/granted-terms")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose l'ensemble des crédits accordés : rejouée, l'agrégat les trouve identiques et rien n'est écrit ni journalisé",
+  )
   async grantTerms(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(grantTermsPayloadSchema)) payload: GrantTermsPayload,
@@ -193,6 +203,9 @@ export class AdminCompanyPiecesController {
    */
   @Patch(":companyId/fulfillment-preference")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose la préférence d'acheminement : rejouée, l'agrégat la trouve identique et rien n'est écrit ni journalisé",
+  )
   async preferFulfillment(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(fulfillmentPreferencePayloadSchema)) payload: FulfillmentPreferencePayload,
@@ -205,6 +218,9 @@ export class AdminCompanyPiecesController {
   /** Enregistre l'unique adresse de facturation (créée ou mise à jour). */
   @Patch(":companyId/billing-address")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose l'adresse de facturation : rejouée, la même adresse n'est ni réécrite ni journalisée",
+  )
   async saveBilling(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(billingAddressPayloadSchema)) payload: BillingAddressPayload,
@@ -227,6 +243,9 @@ export class AdminCompanyPiecesController {
    */
   @Patch(":companyId/status")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "suspendre, réactiver, résilier : rejouée, le compte n'est plus dans l'état de départ et la transition est refusée sans rien écrire",
+  )
   async changeStatus(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(companyStatusPayloadSchema)) payload: CompanyStatusPayload,
@@ -238,6 +257,9 @@ export class AdminCompanyPiecesController {
 
   @Post(":companyId/activate")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "active un compte en attente : rejouée, le compte n'est plus en attente et l'activation est refusée sans rien écrire",
+  )
   async activate(
     @Param("companyId") companyId: string,
     @StaffUserId() staffUserId: string,
@@ -269,6 +291,9 @@ export class AdminCompanyPiecesController {
    */
   @Patch(":companyId/delivery-addresses/:addressId")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose une adresse du carnet : rejouée, le carnet la trouve identique et rien n'est écrit ni journalisé",
+  )
   async updateDelivery(
     @Param("companyId") companyId: string,
     @Param("addressId") addressId: string,
@@ -282,6 +307,9 @@ export class AdminCompanyPiecesController {
   /** Désigne l'adresse de livraison par défaut. */
   @Patch(":companyId/delivery-addresses/:addressId/default")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "désigne l'adresse par défaut : rejouée, elle l'est déjà et rien n'est écrit ni journalisé",
+  )
   async setDefaultDelivery(
     @Param("companyId") companyId: string,
     @Param("addressId") addressId: string,
@@ -294,6 +322,9 @@ export class AdminCompanyPiecesController {
   /** Archive une adresse de livraison — jamais de suppression physique. */
   @Delete(":companyId/delivery-addresses/:addressId")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "archive l'adresse : rejoué, elle n'est plus vivante au carnet et le geste est refusé (404) sans rien écrire",
+  )
   async removeDelivery(
     @Param("companyId") companyId: string,
     @Param("addressId") addressId: string,

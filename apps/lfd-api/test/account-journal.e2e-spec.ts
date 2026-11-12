@@ -173,6 +173,8 @@ async function addAddress(label: string): Promise<string> {
 
 describe("le client, sur le compte de sa société", () => {
   it("ses adresses : un fait par geste, sous son id `users`, citées par ville et code postal", async () => {
+    // La première adresse est par défaut d'office : la seconde se désigne pour de vrai.
+    const firstId = await addAddress("Siège");
     const addressId = await addAddress("Boutique");
     await owner()
       .patch(`/companies/${companyId}/delivery-addresses/${addressId}`)
@@ -192,6 +194,7 @@ describe("le client, sur le compte de sa société", () => {
     // client (lot B, décision de Hugo du 2026-09-19, `a151ccee`).
     const cited = { subjectLabel: COMPANY_NAME, address: { id: addressId, ...PARIS } };
     expect(await facts("company.delivery_address_added")).toEqual([
+      { ...byClient, payload: { ...cited, address: { id: firstId, ...PARIS } } },
       { ...byClient, payload: cited },
     ]);
     expect(await facts("company.delivery_address_updated")).toEqual([

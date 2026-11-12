@@ -11,6 +11,7 @@ import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { SaveAlertRuleCommand } from "../application/commands/save-alert-rule.command.js";
 import { ListAlertRulesQuery } from "../application/queries/list-alert-rules.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Les **réglages globaux d'alerte**, côté staff (Commercial › Réglages ›
@@ -41,6 +42,9 @@ export class AdminAlertRulesController {
 
   @Put()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "écrit la règle sous la version attendue (`expectedUpdatedAt`) : rejouée, la version a avancé et le geste est refusé (409) sans rien écrire",
+  )
   async save(
     @Body(new ZodBody(saveAlertRulePayloadSchema)) payload: SaveAlertRulePayload,
     @StaffUserId() staffUserId: string,

@@ -9,6 +9,7 @@ import { BlockDirectDebitCommand } from "../application/commands/block-direct-de
 import { UnblockDirectDebitCommand } from "../application/commands/unblock-direct-debit.command.js";
 import { ListDirectDebitBlocksQuery } from "../application/queries/list-direct-debit-blocks.query.js";
 import { blockDirectDebitPayload, type BlockDirectDebitPayload } from "./payloads.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Surface **comptabilité** du blocage du prélèvement.
@@ -44,6 +45,9 @@ export class AdminDirectDebitBlocksController {
   @Post(":companyId")
   @RequirePermission("b2b_deferred_payment_block:write")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "bloque le prélèvement : rejoué, il est déjà bloqué et le geste est refusé sans rien écrire",
+  )
   async block(
     @StaffUserId() staffUserId: string,
     @Param("companyId") companyId: string,
@@ -58,6 +62,9 @@ export class AdminDirectDebitBlocksController {
   @Delete(":companyId")
   @RequirePermission("b2b_deferred_payment_block:write")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "débloque le prélèvement : rejoué, il n'est plus bloqué et le geste est refusé sans rien écrire",
+  )
   async unblock(@Param("companyId") companyId: string): Promise<void> {
     await this.commands.execute<UnblockDirectDebitCommand, void>(
       new UnblockDirectDebitCommand(companyId),

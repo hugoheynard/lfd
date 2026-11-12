@@ -24,6 +24,7 @@ import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ClearAccountAlertOverrideCommand } from "../application/commands/clear-account-alert-override.command.js";
 import { SaveAccountAlertOverrideCommand } from "../application/commands/save-account-alert-override.command.js";
 import { GetAccountAlertRulesQuery } from "../application/queries/get-account-alert-rules.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Les alertes **vues depuis un compte** (fiche client, onglet Alertes) : la règle
@@ -51,6 +52,9 @@ export class AdminAccountAlertRulesController {
 
   @Put()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose la dérogation d'alerte du compte (upsert), ou la retire si elle égale la règle globale : rejouée, la même ligne reste et rien n'est journalisé",
+  )
   async save(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(accountAlertOverrideSchema)) override: AccountAlertOverride,
@@ -63,6 +67,9 @@ export class AdminAccountAlertRulesController {
 
   @Delete(":kind")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "retire la dérogation par `deleteMany` : rejouée, il n'y a plus rien à retirer et rien ne s'écrit",
+  )
   async clear(@Param("companyId") companyId: string, @Param("kind") kind: string): Promise<void> {
     await this.commands.execute<ClearAccountAlertOverrideCommand, void>(
       new ClearAccountAlertOverrideCommand(companyId, parseKind(kind)),

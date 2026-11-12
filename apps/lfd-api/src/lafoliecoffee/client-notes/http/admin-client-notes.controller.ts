@@ -40,6 +40,7 @@ import { GetClientNotePhotoQuery } from "../application/queries/get-client-note-
 import { GetClientNoteThumbnailQuery } from "../application/queries/get-client-note-thumbnail.query.js";
 import { GetClientNotebookQuery } from "../application/queries/get-client-notebook.query.js";
 import { noteImageBytes, noteImagesUpload, type UploadedNoteImages } from "./client-note-http.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 const NOTES = ":companyId/notes";
 
@@ -110,6 +111,9 @@ export class AdminClientNotesController {
 
   @Delete(`${NOTES}/:noteId`)
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "retire la note : rejouée, elle n'existe plus et le geste est refusé (404) sans rien écrire ni journaliser",
+  )
   async remove(
     @Param("companyId") companyId: string,
     @Param("noteId") noteId: string,
@@ -121,6 +125,9 @@ export class AdminClientNotesController {
 
   @Put(`${NOTES}/order`)
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "range les notes dans l'ordre donné : rejoué, l'ordre est déjà celui-là et rien n'est écrit ni journalisé",
+  )
   async reorder(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(clientNotebookOrderPayloadSchema)) payload: ClientNotebookOrderPayload,

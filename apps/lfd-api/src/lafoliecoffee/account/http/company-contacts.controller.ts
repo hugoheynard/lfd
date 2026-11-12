@@ -16,6 +16,7 @@ import {
   type AdditionalContactPayload,
   type ContactPayload,
 } from "./payloads.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /** Ce que l'ajout d'un contact renvoie : son identifiant. */
 export interface CreatedContactResponse {
@@ -37,6 +38,9 @@ export class CompanyContactsController {
 
   /** Édite le contact principal. */
   @Patch(":companyId/contact")
+  @Idempotent(
+    "pose les coordonnées du détenteur : rejouée, l'agrégat les trouve identiques et rien n'est écrit ni journalisé",
+  )
   async updatePrimaryContact(
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,
@@ -63,6 +67,9 @@ export class CompanyContactsController {
 
   /** Remplace un contact additionnel. */
   @Patch(":companyId/contacts/:contactId")
+  @Idempotent(
+    "pose les coordonnées et le rôle d'un contact : rejouée, le carnet les trouve identiques et rien n'est écrit ni journalisé",
+  )
   async updateContact(
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,
@@ -77,6 +84,9 @@ export class CompanyContactsController {
   /** Retire un contact additionnel. */
   @Delete(":companyId/contacts/:contactId")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "retire l'interlocuteur : rejoué, il n'existe plus et le geste est refusé (404), la transaction annule tout",
+  )
   async removeContact(
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,

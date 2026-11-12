@@ -9,6 +9,7 @@ import { QueryBus } from "@nestjs/cqrs";
 import { ActingCompany } from "../../../platform/auth/acting-company.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ReadHomeSuggestionsQuery } from "../application/queries/read-home-suggestions.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Les suggestions de l'accueil d'une personne reconnue** — à part de la
@@ -21,6 +22,7 @@ export class MyShopHomeSuggestionsController {
 
   @Post("mine")
   @HttpCode(HttpStatus.OK)
+  @Idempotent("lecture : le `POST` porte le panier à évaluer, la requête n'écrit rien")
   read(
     @Body(new ZodBody(homeSuggestionsPayloadSchema)) payload: HomeSuggestionsPayload,
     @ActingCompany() companyId: string | null,

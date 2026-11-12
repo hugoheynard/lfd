@@ -122,6 +122,9 @@ describe("le carnet de livraison d'un site", () => {
 
   it("modifier, mettre par défaut, retirer : un avis par geste, chacun nommé", async () => {
     const s = await noticeScene(ctx);
+    // La première adresse du carnet est déjà par défaut : la seconde se modifie
+    // et se désigne pour de vrai (un geste qui ne change rien ne prévient personne).
+    await addAsSite(s);
     const id = await addAsSite(s);
     const site = ctx.asSub(s.housekeeper);
 
@@ -129,7 +132,10 @@ describe("le carnet de livraison d'un site", () => {
     // fin, ils arrivaient parfois dans le désordre (CI du 2026-10-28). Chaque
     // geste attend son avis : l'ordre attendu est celui des gestes.
     await ctx.drain();
-    await site.patch(`/companies/${s.site}/delivery-addresses/${id}`).send(ADDRESS).expect(204);
+    await site
+      .patch(`/companies/${s.site}/delivery-addresses/${id}`)
+      .send({ ...ADDRESS, ligne2: "Bâtiment B" })
+      .expect(204);
     await ctx.drain();
     await site.patch(`/companies/${s.site}/delivery-addresses/${id}/default`).expect(204);
     await ctx.drain();
@@ -138,6 +144,7 @@ describe("le carnet de livraison d'un site", () => {
 
     const toOwner = notices().filter((mail) => mail.to === mailOf(s.owner));
     expect(toOwner.map(gestureOf)).toEqual([
+      "delivery_address_added",
       "delivery_address_added",
       "delivery_address_updated",
       "default_delivery_set",

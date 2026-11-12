@@ -68,12 +68,15 @@ export class PrismaSupportRequestRepository extends SupportRequestRepository {
     }
     // Déjà traitée : on ne réécrit pas la date. Deux clics ne doivent pas faire
     // mentir le délai de traitement qu'on lira plus tard.
-    if (row.handledAt === null) {
-      await this.prisma.supportRequest.update({
-        where: { id: supportRequestId },
-        data: { handledAt },
-      });
-    }
-    return { companyId: row.companyId, requestedByUserId: row.requestedByUserId };
+    // Conditionnée en base : de deux clics simultanés, un seul dit « traitée ».
+    const { count } = await this.prisma.supportRequest.updateMany({
+      where: { id: supportRequestId, handledAt: null },
+      data: { handledAt },
+    });
+    return {
+      companyId: row.companyId,
+      requestedByUserId: row.requestedByUserId,
+      newlyHandled: count > 0,
+    };
   }
 }

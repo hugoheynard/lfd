@@ -14,6 +14,7 @@ import {
   type AdditionalContactPayload,
   type ContactPayload,
 } from "./payloads.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Contacts d'une société, **côté staff** (Porte B).
@@ -30,6 +31,9 @@ export class AdminCompanyContactsController {
 
   /** Édite le **détenteur** du compte (contact principal, aplati sur la société). */
   @Patch("contact")
+  @Idempotent(
+    "pose les coordonnées du détenteur : rejouée, l'agrégat les trouve identiques et rien n'est écrit ni journalisé",
+  )
   async updatePrimary(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(contactPayload)) payload: ContactPayload,
@@ -52,6 +56,9 @@ export class AdminCompanyContactsController {
   }
 
   @Patch("contacts/:contactId")
+  @Idempotent(
+    "pose les coordonnées et le rôle d'un contact : rejouée, le carnet les trouve identiques et rien n'est écrit ni journalisé",
+  )
   async update(
     @Param("companyId") companyId: string,
     @Param("contactId") contactId: string,
@@ -64,6 +71,9 @@ export class AdminCompanyContactsController {
 
   @Delete("contacts/:contactId")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "retire l'interlocuteur : rejoué, il n'existe plus et le geste est refusé (404), la transaction annule tout",
+  )
   async remove(
     @Param("companyId") companyId: string,
     @Param("contactId") contactId: string,

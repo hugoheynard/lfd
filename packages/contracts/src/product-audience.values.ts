@@ -40,6 +40,12 @@ export interface ProductAudienceEventInput {
 /** Ce que la boutique envoie : un lot, jamais un geste à la fois. */
 export interface ProductAudienceBatchPayload {
   readonly events: readonly ProductAudienceEventInput[];
+  /**
+   * Tiré au hasard par l'écran, une fois par lot : un même lot reçu deux fois
+   * (réseau qui rejoue) n'est compté qu'une fois. Ne désigne personne — un
+   * nouveau tirage à chaque lot. Absent sur un écran d'avant : compté tel quel.
+   */
+  readonly batchId?: string | undefined;
 }
 
 /** Un compteur relu par le staff. `day` = jour métier `YYYY-MM-DD`. */

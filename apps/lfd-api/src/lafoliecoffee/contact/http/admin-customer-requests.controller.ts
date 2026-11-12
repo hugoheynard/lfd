@@ -27,6 +27,7 @@ import { servePhoto } from "../../shared/photo-cards/http/photo-card-http.js";
 import { MarkCustomerRequestHandledCommand } from "../application/commands/mark-customer-request-handled.command.js";
 import { GetCustomerRequestPhotoQuery } from "../application/queries/get-customer-request-photo.query.js";
 import { ListCustomerRequestsQuery } from "../application/queries/list-customer-requests.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * La boîte **« Demandes clients »** au back-office (`/commercial/demandes`), sous
@@ -54,6 +55,9 @@ export class AdminCustomerRequestsController {
 
   @Post(":id/handled")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "une demande déjà traitée refuse de l'être encore : rejouée, le geste est refusé sans rien écrire ni journaliser",
+  )
   async markHandled(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<MarkCustomerRequestHandledCommand, void>(
       new MarkCustomerRequestHandledCommand(id, staffUserId),

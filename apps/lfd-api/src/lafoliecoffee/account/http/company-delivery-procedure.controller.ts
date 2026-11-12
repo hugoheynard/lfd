@@ -45,6 +45,7 @@ import {
   type UploadedPhotoPart,
 } from "../../shared/photo-cards/http/photo-card-http.js";
 import { deliveryStepPhotoUpload } from "./delivery-procedure-http.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 const PROCEDURE = ":companyId/delivery-addresses/:addressId/procedure";
 
@@ -120,6 +121,9 @@ export class CompanyDeliveryProcedureController {
   /** Supprime définitivement une étape (gestionnaire). */
   @Delete(`${PROCEDURE}/steps/:stepId`)
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "retire l'étape : rejouée, elle n'existe plus et le geste est refusé (404) sans rien écrire ni journaliser",
+  )
   async removeStep(
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,
@@ -134,6 +138,9 @@ export class CompanyDeliveryProcedureController {
   /** Range les étapes dans un nouvel ordre (gestionnaire). */
   @Put(`${PROCEDURE}/order`)
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "range les étapes dans l'ordre donné : rejoué, l'ordre est déjà celui-là et rien n'est écrit ni journalisé",
+  )
   async reorder(
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,

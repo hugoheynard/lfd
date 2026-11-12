@@ -13,6 +13,7 @@ import { ArchiveContactPhoneCommand } from "../application/commands/archive-cont
 import { CreateContactPhoneCommand } from "../application/commands/create-contact-phone.command.js";
 import { ReviseContactPhoneCommand } from "../application/commands/revise-contact-phone.command.js";
 import { ListContactPhonesQuery } from "../application/queries/list-contact-phones.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /** Les **numéros de contact** de la boutique au back-office, sous `b2b_contact`. */
 @Controller("admin/contact/phones")
@@ -42,6 +43,9 @@ export class AdminContactPhonesController {
 
   @Put(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose les valeurs du numéro : rejouée, la même requête laisse le même numéro, sans journal",
+  )
   async revise(
     @Param("id") id: string,
     @Body(new ZodBody(contactPhonePayloadSchema)) payload: ContactPhonePayload,
@@ -53,6 +57,9 @@ export class AdminContactPhonesController {
 
   @Post(":id/archive")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "archive le numéro : rejoué, l'entité déjà archivée sort sans toucher sa date et rien ne change",
+  )
   async archive(@Param("id") id: string): Promise<void> {
     await this.commands.execute<ArchiveContactPhoneCommand, void>(
       new ArchiveContactPhoneCommand(id),

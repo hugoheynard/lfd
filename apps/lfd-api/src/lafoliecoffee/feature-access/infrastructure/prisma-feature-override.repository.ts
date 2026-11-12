@@ -16,6 +16,14 @@ export class PrismaFeatureOverrideRepository extends FeatureOverrideRepository {
     super();
   }
 
+  async currentValue(key: string): Promise<string | null> {
+    const row = await this.prisma.featureAccessOverride.findUnique({
+      where: { key },
+      select: { value: true },
+    });
+    return row?.value ?? null;
+  }
+
   async put(override: FeatureOverride): Promise<string | null> {
     const previous = await this.prisma.featureAccessOverride.findUnique({
       where: { key: override.key },

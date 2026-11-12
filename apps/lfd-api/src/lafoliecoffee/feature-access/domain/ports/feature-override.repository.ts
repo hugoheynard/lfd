@@ -8,6 +8,9 @@ import type { FeatureOverride } from "../feature-override.js";
  * a accepté.
  */
 export abstract class FeatureOverrideRepository {
+  /** La valeur de la dérogation en place pour cette clé, ou `null`. */
+  abstract currentValue(key: string): Promise<string | null>;
+
   /**
    * Pose la dérogation (création ou remplacement).
    *

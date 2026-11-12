@@ -23,6 +23,7 @@ import { GenerateSiteTableQrCommand } from "../application/generate-site-table-q
 import { GetSiteTablesQuery } from "../application/get-site-tables.query.js";
 import { RemoveSiteTableQrCommand } from "../application/remove-site-table-qr.command.js";
 import { SetSiteTableCountCommand } from "../application/set-site-table-count.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Réglages › Sites › Tables** — la grille de la salle d'un site, sous
@@ -48,6 +49,9 @@ export class AdminSiteTablesController {
   /** Le nombre de tables : on en ajoute ou on en retire en fin de grille. */
   @Put()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose le nombre de tables : rejoué, le compte est déjà celui-là et le handler sort sans écrire ni journaliser",
+  )
   async setCount(
     @Param("id") id: string,
     @Body(new ZodBody(siteTableCountPayloadSchema)) payload: SiteTableCountPayload,
@@ -71,6 +75,9 @@ export class AdminSiteTablesController {
 
   @Delete(":number/qr")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "retire le QR d'une table : rejoué, la table n'en a plus et rien n'est écrit ni journalisé",
+  )
   async removeQr(
     @Param("id") id: string,
     @Param("number", ParseIntPipe) tableNumber: number,

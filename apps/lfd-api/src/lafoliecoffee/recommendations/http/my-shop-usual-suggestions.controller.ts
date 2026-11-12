@@ -9,6 +9,7 @@ import { QueryBus } from "@nestjs/cqrs";
 import { ActingCompany } from "../../../platform/auth/acting-company.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ListMyUsualsQuery } from "../application/queries/list-my-usuals.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **« Vos habituels »** (R1) — la route murée SEULE : il n'y a pas de route
@@ -22,6 +23,7 @@ export class MyShopUsualSuggestionsController {
 
   @Post("mine")
   @HttpCode(HttpStatus.OK)
+  @Idempotent("lecture : le `POST` porte le panier à évaluer, la requête n'écrit rien")
   read(
     @Body(new ZodBody(usualSuggestionsPayloadSchema)) payload: UsualSuggestionsPayload,
     @ActingCompany() companyId: string | null,

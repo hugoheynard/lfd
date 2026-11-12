@@ -47,7 +47,10 @@ export class RevokeKbisCertificationHandler implements ICommandHandler<
     // Sans cette trace, le retrait serait INTROUVABLE le lendemain : l'état
     // courant redevient « déposé, pas vérifié », comme si rien ne s'était passé.
     // `suspended` reste à faux — plus aucun retrait ne coupe l'accès.
-    company.revokeKbisCertification();
+    // Rejouer le geste ne change rien : ni écriture, ni fait au journal.
+    if (!company.revokeKbisCertification()) {
+      return;
+    }
     await this.uow.run(async () => {
       await this.companies.save(company);
       await this.events.publishTraced(

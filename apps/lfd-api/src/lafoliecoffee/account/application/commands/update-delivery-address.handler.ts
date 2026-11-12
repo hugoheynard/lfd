@@ -46,7 +46,10 @@ export class UpdateDeliveryAddressHandler implements ICommandHandler<
     ensureCompanyAdmin(role, command.companyId);
 
     const book = await this.addresses.loadDeliveryBook(command.companyId);
-    book.edit(command.addressId, command.payload);
+    // Rejouer le geste ne change rien : ni écriture, ni fait au journal.
+    if (!book.edit(command.addressId, command.payload)) {
+      return;
+    }
     const company = await this.names.company(command.companyId);
     const address = deliveryAddressOf(book, command.addressId);
     await this.uow.run(async () => {

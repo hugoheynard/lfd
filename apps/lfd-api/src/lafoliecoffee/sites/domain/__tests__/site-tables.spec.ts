@@ -123,6 +123,14 @@ describe("SiteTables", () => {
     expect(grid.snapshot().tables[0]).toEqual({ number: 1, token: null, qrCreatedAt: null });
   });
 
+  it("retirer le QR d'une table qui n'en a pas → inchangé ; qui en a un → changé", () => {
+    const grid = gridOf(2);
+    grid.attachQr(1, "tok", AT, site(true));
+    expect(grid.detachQr(2, site(true))).toBe(false);
+    expect(grid.detachQr(1, site(true))).toBe(true);
+    expect(grid.detachQr(1, site(true))).toBe(false);
+  });
+
   it("refuse un QR sur une table qui n'existe pas", () => {
     const grid = gridOf(2);
     expect(() => grid.attachQr(3, "tok", AT, site(true))).toThrow(SiteTableNotFoundError);

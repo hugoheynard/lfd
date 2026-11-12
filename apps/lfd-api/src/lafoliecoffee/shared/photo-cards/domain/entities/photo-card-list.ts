@@ -151,8 +151,9 @@ export class PhotoCardList<C extends PhotoCardText> {
    * présente, **une** fois ; sinon rien ne bouge.
    *
    * @throws la fabrique `orderStale` — carte manquante, en trop, répétée ou inconnue.
+   * @returns `false` quand les cartes sont déjà dans cet ordre : rien n'a changé.
    */
-  reorder(cardIds: readonly string[]): void {
+  reorder(cardIds: readonly string[]): boolean {
     const byId = new Map(this.cards.map((card) => [card.id, card]));
     const unique = new Set(cardIds);
     if (cardIds.length !== this.cards.length || unique.size !== cardIds.length) {
@@ -166,7 +167,11 @@ export class PhotoCardList<C extends PhotoCardText> {
       }
       ordered.push(card);
     }
+    if (ordered.every((card, index) => card === this.cards[index])) {
+      return false;
+    }
     this.cards = ordered;
+    return true;
   }
 
   /** Les cartes dans l'ordre, en copies : les muter ne touche pas la liste. */

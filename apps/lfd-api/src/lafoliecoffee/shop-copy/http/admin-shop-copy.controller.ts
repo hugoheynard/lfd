@@ -20,6 +20,7 @@ import { ResetShopCopyDraftCommand } from "../application/commands/reset-shop-co
 import { SaveShopCopyDraftCommand } from "../application/commands/save-shop-copy-draft.command.js";
 import { GetShopCopyAdminQuery } from "../application/queries/get-shop-copy-admin.query.js";
 import { GetShopCopyHistoryQuery } from "../application/queries/get-shop-copy-history.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Édition **staff** des textes de la boutique (plan §3, §10) — sous le droit
@@ -47,6 +48,9 @@ export class AdminShopCopyController {
   /** Écrit un brouillon, sur la révision lue — `409` si quelqu'un a écrit entre-temps. */
   @Put("drafts")
   @HttpCode(204)
+  @Idempotent(
+    "écrit le brouillon sous la révision attendue : rejouée, la révision a avancé et le geste est refusé (409) sans rien écrire",
+  )
   async saveDraft(
     @Body(new ZodBody(shopCopyDraftPayloadSchema)) payload: ShopCopyDraftPayload,
     @StaffUserId() staffUserId: string,
@@ -65,6 +69,9 @@ export class AdminShopCopyController {
   /** « Revenir à l'original » — appliqué au prochain « Publier », pas avant. */
   @Post("resets")
   @HttpCode(204)
+  @Idempotent(
+    "remet le brouillon sous la révision attendue : rejouée, la révision a avancé et le geste est refusé (409) sans rien écrire",
+  )
   async reset(
     @Body(new ZodBody(shopCopyResetPayloadSchema)) payload: ShopCopyResetPayload,
     @StaffUserId() staffUserId: string,
@@ -80,6 +87,9 @@ export class AdminShopCopyController {
   }
 
   @Post("publications")
+  @Idempotent(
+    "publie les brouillons en attente : rejouée, il n'y a plus rien à publier et le geste est refusé (409) sans écrire, journaliser ni purger",
+  )
   async publish(@StaffUserId() staffUserId: string): Promise<ShopCopyPublishedView> {
     const version = await this.commands.execute<PublishShopCopyCommand, number>(
       new PublishShopCopyCommand(staffUserId),

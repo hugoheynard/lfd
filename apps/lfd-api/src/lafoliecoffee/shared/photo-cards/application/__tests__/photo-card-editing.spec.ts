@@ -383,6 +383,21 @@ describe("réordonner", () => {
     ]);
   });
 
+  // Régression : rejouer le même ordre réécrivait la liste et journalisait à chaque appel.
+  it("rejoué dans l'ordre déjà en place, n'écrit ni ne trace rien", async () => {
+    const current = scene();
+    const first = await current.add(null, "Un");
+    const second = await current.add(null, "Deux");
+    await reorderPhotoCards(current.ports, current.usage, TARGET, [first, second], current.trace);
+    current.log.length = 0;
+
+    await reorderPhotoCards(current.ports, current.usage, TARGET, [first, second], current.trace);
+
+    expect(current.idsOf()).toEqual([first, second]);
+    expect(current.log).not.toContain("save");
+    expect(current.log).not.toContain("trace");
+  });
+
   it("refuse l'ordre d'une cible sans agrégat comme un ordre périmé, sans rien écrire", async () => {
     const current = scene();
     await expect(

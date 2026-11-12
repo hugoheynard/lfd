@@ -248,10 +248,17 @@ export class Site {
    * facultatives pour de bon.
    *
    * @throws {ArchivedSiteError} le site est archivé.
+   * @returns `false` quand les six couleurs sont déjà celles-là : rien n'a changé.
    */
-  paint(colors: SiteColors): void {
+  paint(colors: SiteColors): boolean {
     this.assertActive();
+    const current = this.state.colors;
+    const unchanged = COLOR_SLOTS.every((slot) => sameColor(current[slot], colors[slot]));
+    if (unchanged) {
+      return false;
+    }
     this.state = { ...this.state, colors };
+    return true;
   }
 
   /**
@@ -295,4 +302,18 @@ export class Site {
       throw new ArchivedSiteError(this.label);
     }
   }
+}
+
+/** Chacune des couleurs d'un site : toutes comptent pour dire « inchangé ». */
+const COLOR_SLOTS: readonly (keyof SiteColors)[] = [
+  "pickupB2b",
+  "pickupB2c",
+  "deliveryB2b",
+  "deliveryB2c",
+  "resupply",
+  "transfer",
+];
+
+function sameColor(left: SiteColor | null, right: SiteColor | null): boolean {
+  return left === null || right === null ? left === right : left.equals(right);
 }

@@ -52,7 +52,9 @@ import { RecordProductAudienceHandler } from "./application/commands/record-prod
 import { ListProductAudienceCountersHandler } from "./application/queries/list-product-audience-counters.handler.js";
 import { RecommendationFilter } from "./application/services/recommendation-filter.js";
 import { AudienceCounterReader } from "./domain/ports/audience-counter.reader.js";
+import { AudienceBatchLedger } from "./domain/ports/audience-batch.ledger.js";
 import { AudienceCounterWriter } from "./domain/ports/audience-counter.writer.js";
+import { InMemoryAudienceBatchLedger } from "./infrastructure/in-memory-audience-batch.ledger.js";
 import { AudienceSkuReader } from "./domain/ports/audience-sku.reader.js";
 import { RecommendationCutoffReader } from "./domain/ports/recommendation-cutoff.reader.js";
 import { AdminProductAudienceController } from "./http/admin-product-audience.controller.js";
@@ -160,6 +162,8 @@ import {
     // « Vos habituels » réunit une déclinaison détachée (L7d-bis).
     { provide: LatestSaleReferenceReader, useClass: CatalogLatestSaleReferenceReader },
     { provide: AudienceCounterWriter, useClass: PrismaAudienceCounterWriter },
+    // Un seul registre par processus : il garde les lots déjà comptés.
+    { provide: AudienceBatchLedger, useClass: InMemoryAudienceBatchLedger },
     { provide: AudienceCounterReader, useClass: PrismaAudienceCounterReader },
     { provide: StaffSuggestionRuleRepository, useClass: PrismaStaffSuggestionRuleRepository },
     { provide: StaffSuggestionRuleReader, useClass: PrismaStaffSuggestionRuleReader },

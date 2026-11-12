@@ -82,6 +82,9 @@ export function addressBook(
     archivedAt,
   });
   return new (class extends CompanyAddressRepository {
+    findBilling(): Promise<null> {
+      return Promise.resolve(null);
+    }
     saveBilling(): Promise<void> {
       return Promise.resolve();
     }

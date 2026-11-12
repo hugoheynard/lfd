@@ -4,6 +4,7 @@ import { CommandBus } from "@nestjs/cqrs";
 import { Public } from "../../../platform/auth/public.decorator.js";
 import { RecomputeGuard } from "../../../platform/auth/recompute.guard.js";
 import { RecomputeLeadScoresCommand } from "../application/commands/recompute-lead-scores.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Endpoint **batch** du cockpit : recalcule le read-model `lead_score`. Déclenché
@@ -21,6 +22,9 @@ export class AdminRecomputeController {
 
   @Post()
   @HttpCode(200)
+  @Idempotent(
+    "balayage sous `RecomputeGuard` : recalcule les scores depuis les événements et remplace la table entière ; rejoué, il réécrit le même résultat",
+  )
   async recompute(): Promise<{ recomputed: number }> {
     const recomputed = await this.commands.execute<RecomputeLeadScoresCommand, number>(
       new RecomputeLeadScoresCommand(),

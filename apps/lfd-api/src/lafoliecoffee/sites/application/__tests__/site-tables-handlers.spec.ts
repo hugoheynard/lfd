@@ -146,6 +146,18 @@ describe("GenerateSiteTableQrHandler / RemoveSiteTableQrHandler", () => {
     });
     expect(events.factTypes()).toEqual(["pickup_address.table_qr_removed"]);
   });
+
+  // Régression : retirer un QR déjà retiré réécrivait la grille et journalisait à chaque appel.
+  it("rejoué sur une table sans QR, n'écrit ni ne journalise rien", async () => {
+    const tables = gridOf(1);
+    const saved = tables.saved.length;
+    const events = new RecordingPublisher();
+    await new RemoveSiteTableQrHandler(eatInSite(), tables, events, new DirectUnitOfWork()).execute(
+      new RemoveSiteTableQrCommand("site_village", 1),
+    );
+    expect(tables.saved).toHaveLength(saved);
+    expect(events.traced).toEqual([]);
+  });
 });
 
 describe("SetSiteRolesHandler — la case « Sur place »", () => {

@@ -37,7 +37,10 @@ export class UpdateDeliveryAddressByStaffHandler implements ICommandHandler<
 
   async execute(command: UpdateDeliveryAddressByStaffCommand): Promise<void> {
     const book = await this.addresses.loadDeliveryBook(command.companyId);
-    book.edit(command.addressId, command.payload);
+    // Rejouer le geste ne change rien : ni écriture, ni fait au journal.
+    if (!book.edit(command.addressId, command.payload)) {
+      return;
+    }
     const company = await this.names.company(command.companyId);
     await this.uow.run(async () => {
       await this.addresses.saveDeliveryBook(book);

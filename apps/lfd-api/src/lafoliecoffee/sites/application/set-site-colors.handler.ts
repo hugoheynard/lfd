@@ -56,7 +56,10 @@ export class SetSiteColorsHandler implements ICommandHandler<SetSiteColorsComman
         resupply: givenResupply === undefined ? before.resupply : givenResupply,
         transfer: givenTransfer === undefined ? before.transfer : givenTransfer,
       };
-      site.paint(colors);
+      // Rejouer le geste ne change rien : ni écriture, ni fait au journal, ni purge.
+      if (!site.paint(colors)) {
+        return;
+      }
       await this.sites.save(site);
       await this.events.publishTraced(new SiteColorsSetEvent(site.id, site.label, before, colors));
     });

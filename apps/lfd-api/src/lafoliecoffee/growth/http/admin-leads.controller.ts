@@ -14,6 +14,7 @@ import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { CaptureLeadCommand } from "../application/commands/capture-lead.command.js";
 import { ChangeLeadStatusCommand } from "../application/commands/change-lead-status.command.js";
 import { ListLeadsQuery } from "../application/queries/list-leads.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Surface **staff** des leads cold (démarchage). Saisir un lead + lister la file.
@@ -45,6 +46,9 @@ export class AdminLeadsController {
 
   @Patch(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "un lead ne recule pas et ne repasse pas au même stade : rejouée, la transition est refusée sans rien écrire, et l'activité porte une clé par lead et par stade",
+  )
   async changeStatus(
     @Param("id") id: string,
     @Body(new ZodBody(advanceLeadStatusPayloadSchema)) payload: AdvanceLeadStatusPayload,

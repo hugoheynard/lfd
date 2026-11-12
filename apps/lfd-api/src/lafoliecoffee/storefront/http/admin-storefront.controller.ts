@@ -18,6 +18,7 @@ import { GetStorefrontQuery } from "../application/get-storefront.query.js";
 import { SaveStorefrontCommand } from "../application/save-storefront.command.js";
 import { GetStorefrontSettingsQuery } from "../application/get-storefront-settings.query.js";
 import { SetStorefrontAllergenDisplayCommand } from "../application/set-storefront-allergen-display.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **L'éditeur de la vitrine** — charger, enregistrer (plan
@@ -83,6 +84,9 @@ export class AdminStorefrontController {
    */
   @Put("settings")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose l'affichage des allergènes : rejoué, la valeur ne change pas et le fait n'est journalisé que sur un changement",
+  )
   async saveSettings(
     @Body(new ZodBody(storefrontSettingsPayloadSchema)) payload: StorefrontSettingsPayload,
     @StaffUserId() staffUserId: string,

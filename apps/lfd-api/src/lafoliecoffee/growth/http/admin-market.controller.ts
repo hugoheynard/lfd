@@ -16,6 +16,7 @@ import { RefreshMarketCommand } from "../application/commands/refresh-market.com
 import { RemoveMarketNafCommand } from "../application/commands/remove-market-naf.command.js";
 import { RemoveMarketZoneCommand } from "../application/commands/remove-market-zone.command.js";
 import { GetMarketConfigQuery } from "../application/queries/get-market-config.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Surface **staff** de la config marché (Réglages ▸ Commercial). Gérer les zones
@@ -37,6 +38,9 @@ export class AdminMarketController {
 
   @Post("zones")
   @HttpCode(HttpStatus.CREATED)
+  @Idempotent(
+    "ajoute le code postal par `upsert` : rejoué, la zone existe déjà et reste telle quelle",
+  )
   async addZone(
     @Body(new ZodBody(addMarketZonePayloadSchema)) payload: AddMarketZonePayload,
   ): Promise<MarketConfigView> {
@@ -48,6 +52,7 @@ export class AdminMarketController {
 
   @Delete("zones/:codePostal")
   @HttpCode(HttpStatus.OK)
+  @Idempotent("retire le code postal par `deleteMany` : rejoué, il n'y a plus rien à retirer")
   async removeZone(@Param("codePostal") codePostal: string): Promise<MarketConfigView> {
     await this.commands.execute<RemoveMarketZoneCommand, void>(
       new RemoveMarketZoneCommand(codePostal),
@@ -57,6 +62,7 @@ export class AdminMarketController {
 
   @Post("naf")
   @HttpCode(HttpStatus.CREATED)
+  @Idempotent("pose le code NAF et son libellé par `upsert` : rejoué, la même ligne reste")
   async addNaf(
     @Body(new ZodBody(addMarketNafPayloadSchema)) payload: AddMarketNafPayload,
   ): Promise<MarketConfigView> {
@@ -68,6 +74,7 @@ export class AdminMarketController {
 
   @Delete("naf/:code")
   @HttpCode(HttpStatus.OK)
+  @Idempotent("retire le code NAF par `deleteMany` : rejoué, il n'y a plus rien à retirer")
   async removeNaf(@Param("code") code: string): Promise<MarketConfigView> {
     await this.commands.execute<RemoveMarketNafCommand, void>(new RemoveMarketNafCommand(code));
     return this.config();

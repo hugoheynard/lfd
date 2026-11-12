@@ -12,7 +12,11 @@ import {
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { ensureHolderKeepsOwnership } from "../../domain/services/company-access.js";
 import type { AssignableRole } from "../../domain/value-objects/company-role.js";
-import type { ContactDetails } from "../../domain/value-objects/contact-details.js";
+import {
+  contactSnapshotOf,
+  sameContact,
+  type ContactDetails,
+} from "../../domain/value-objects/contact-details.js";
 
 /**
  * Le **carnet d'interlocuteurs** d'une société, et les deux règles qui le
@@ -47,17 +51,31 @@ export class CompanyContactBook {
     return contactId;
   }
 
-  /** Remplace un interlocuteur — coordonnées **et** rôle. */
+  /**
+   * Remplace un interlocuteur — coordonnées **et** rôle.
+   *
+   * @returns `false` quand le contact gardé est déjà celui-là : rien n'est
+   * écrit, et l'appelant ne journalise rien.
+   */
   async replace(
     companyId: string,
     contactId: string,
     details: ContactDetails,
     role: AssignableRole,
-  ): Promise<void> {
+  ): Promise<boolean> {
     await this.ensureNotTheHolder(companyId, details.email.value);
     const account = await this.accountToAlign(companyId, details.email.value, role);
+    const stored = await this.contacts.find(companyId, contactId);
+    if (
+      stored !== null &&
+      stored.role === role &&
+      sameContact(stored.details, contactSnapshotOf(details))
+    ) {
+      return false;
+    }
     await this.contacts.update(companyId, contactId, details, role);
     await this.alignAccess(account, companyId, role);
+    return true;
   }
 
   /**

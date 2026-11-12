@@ -9,6 +9,7 @@ import { QueryBus } from "@nestjs/cqrs";
 import { ActingCompany } from "../../../platform/auth/acting-company.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ReadProductSuggestionsQuery } from "../application/queries/read-product-suggestions.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Les suggestions de la fiche d'une personne reconnue** — à part de la route
@@ -23,6 +24,7 @@ export class MyShopProductSuggestionsController {
 
   @Post("mine")
   @HttpCode(HttpStatus.OK)
+  @Idempotent("lecture : le `POST` porte la fiche et le panier à évaluer, la requête n'écrit rien")
   read(
     @Body(new ZodBody(productSuggestionsPayloadSchema)) payload: ProductSuggestionsPayload,
     @ActingCompany() companyId: string | null,

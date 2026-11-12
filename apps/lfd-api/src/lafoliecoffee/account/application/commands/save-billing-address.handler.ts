@@ -1,5 +1,6 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { sameBillingAddress } from "../../domain/services/billing-address.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { BillingAddressSavedByMemberEvent } from "../../domain/events/member-acts.event.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
@@ -31,6 +32,11 @@ export class SaveBillingAddressHandler implements ICommandHandler<SaveBillingAdd
     const role = await this.memberships.roleOf(command.actorUserId, command.companyId);
     ensureCompanyAdmin(role, command.companyId);
 
+    // Rejouer le geste ne change rien : ni écriture, ni fait au journal, ni étape.
+    const stored = await this.addresses.findBilling(command.companyId);
+    if (sameBillingAddress(stored, command.payload)) {
+      return;
+    }
     const company = await this.names.company(command.companyId);
     await this.uow.run(async () => {
       await this.addresses.saveBilling(command.companyId, command.payload);

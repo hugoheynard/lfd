@@ -4,6 +4,7 @@ import { CommandBus } from "@nestjs/cqrs";
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { FollowParentCommand } from "../application/commands/follow-parent.command.js";
 import { StopFollowingParentCommand } from "../application/commands/stop-following-parent.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Suivre le tarif du principal** — une décision du commercial (plan
@@ -23,6 +24,9 @@ export class AdminCompanyPricingFollowController {
   /** Le sous-compte suit désormais la mercuriale et les engagements de son principal. */
   @Post()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "ouvre le suivi du tarif : rejoué, il est déjà suivi, `follow` rend faux et le handler sort sans écrire ni journaliser",
+  )
   async follow(@Param("companyId") companyId: string): Promise<void> {
     await this.commands.execute<FollowParentCommand, void>(
       new FollowParentCommand(companyId, "pricing"),
@@ -32,6 +36,9 @@ export class AdminCompanyPricingFollowController {
   /** Il cesse de les suivre, et retombe sur les siens. */
   @Post("stop")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "ferme le suivi du tarif : rejoué, il n'y a plus de période ouverte et le handler sort sans écrire ni journaliser",
+  )
   async stop(@Param("companyId") companyId: string): Promise<void> {
     await this.commands.execute<StopFollowingParentCommand, void>(
       new StopFollowingParentCommand(companyId, "pricing"),

@@ -31,6 +31,10 @@ export class SetFeatureOverrideHandler implements ICommandHandler<SetFeatureOver
       at: this.clock.now(),
       author: await authorOf(this.staff, command.staffUserId),
     });
+    // Rejouer le geste ne change rien : ni écriture, ni fait au journal.
+    if (!override.changes(await this.overrides.currentValue(override.key))) {
+      return;
+    }
     await this.uow.run(async () => {
       const previous = await this.overrides.put(override);
       await this.events.publishTraced(

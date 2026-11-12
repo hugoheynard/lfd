@@ -46,9 +46,10 @@ export class UpdateIdentityByStaffHandler implements ICommandHandler<
       siret: command.payload.siret,
       siren: command.payload.siren,
     };
-    company.correctLegalIdentity(identity);
-    // Après l'identité légale : la TVA se compare au SIREN qu'elle vient de poser.
-    company.editSoftIdentity(command.payload);
+    // Rejouer le geste ne change rien : ni écriture, ni fait au journal.
+    if (!company.correctIdentity(command.payload)) {
+      return;
+    }
     await this.uow.run(async () => {
       await this.companies.save(company);
       await this.events.publishTraced(

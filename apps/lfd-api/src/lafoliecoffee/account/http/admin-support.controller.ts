@@ -5,6 +5,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { HandleSupportRequestCommand } from "../application/commands/handle-support-request.command.js";
 import { ListSupportRequestsQuery } from "../application/queries/list-support-requests.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Surface **staff** des demandes de contact : la file, et sa clôture.
@@ -31,6 +32,9 @@ export class AdminSupportController {
 
   @Post(":id/handle")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "clôt la demande : rejouée, la clôture conditionnée en base ne réécrit pas la date et le traitement ne repart pas",
+  )
   async handle(@Param("id") id: string): Promise<void> {
     await this.commands.execute<HandleSupportRequestCommand, void>(
       new HandleSupportRequestCommand(id),

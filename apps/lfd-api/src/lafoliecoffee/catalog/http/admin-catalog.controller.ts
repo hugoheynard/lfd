@@ -33,6 +33,7 @@ import { GetPublishedCatalogQuery } from "../application/queries/get-published-c
 import { ExportCatalogCsvQuery } from "../application/queries/export-catalog-csv.query.js";
 import { GetCatalogSummaryQuery } from "../application/queries/get-catalog-summary.query.js";
 import { ListCatalogQuery } from "../application/queries/list-catalog.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Le paramétrage du catalogue** : ce que la plateforme décide par-dessus le
@@ -112,6 +113,9 @@ export class AdminCatalogController {
    */
   @Post("prices/retrace")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "retrace l'historique des prix depuis le référentiel : rejouée, aucun prix ne diverge plus de sa dernière trace, aucune ligne ni aucun fait ne s'écrit",
+  )
   async retracePrices(): Promise<void> {
     await this.commands.execute<RetracePricesFromReferentialCommand, void>(
       new RetracePricesFromReferentialCommand(),
@@ -138,6 +142,9 @@ export class AdminCatalogController {
    */
   @Post("review/approve")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "approuve les fiches encore à revoir : rejouée, aucune n'est plus à approuver et le handler sort sans écrire ni journaliser",
+  )
   async approveReview(
     @Body(new ZodBody(approveReviewPayloadSchema)) payload: ApproveReviewPayload,
   ): Promise<void> {
@@ -154,6 +161,9 @@ export class AdminCatalogController {
    */
   @Put(":sku/masking")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose le masquage pour une audience : rejoué, l'état ne change pas et le fait n'est journalisé que sur un changement",
+  )
   async setMasking(
     @Param("sku") sku: string,
     @Body(new ZodBody(setMaskingPayloadSchema)) payload: SetMaskingPayload,
@@ -166,6 +176,9 @@ export class AdminCatalogController {
 
   @Put(":sku/featured")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose la mise en avant pour une audience : rejouée, l'état ne change pas et le fait n'est journalisé que sur un changement",
+  )
   async setFeatured(
     @Param("sku") sku: string,
     @Body(new ZodBody(setCatalogFeaturedPayloadSchema)) payload: SetCatalogFeaturedPayload,

@@ -26,6 +26,7 @@ import { FollowParentCommand } from "../application/commands/follow-parent.comma
 import { SetCollectionFormCommand } from "../application/commands/set-collection-form.command.js";
 import { SetGroupWithoutDeliveryCommand } from "../application/commands/set-group-without-delivery.command.js";
 import { StopFollowingParentCommand } from "../application/commands/stop-following-parent.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Les sous-comptes, depuis la fiche client** (plan `sous-comptes.md`,
@@ -67,6 +68,9 @@ export class AdminCompanyHierarchyController {
   /** Rattache `:companyId` comme sous-compte de `parentId`. `409` si la profondeur passerait 1. */
   @Post("parent")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "rattache au principal : rejoué, le site y est déjà et le handler sort sans écrire ni journaliser",
+  )
   async attach(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(attachToParentPayloadSchema)) payload: AttachToParentPayload,
@@ -82,6 +86,9 @@ export class AdminCompanyHierarchyController {
    */
   @Post("parent/detach")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "détache du principal : rejoué, le site n'a plus de principal et le geste est refusé sans rien écrire",
+  )
   async detach(@Param("companyId") companyId: string): Promise<void> {
     await this.commands.execute<DetachFromParentCommand, void>(
       new DetachFromParentCommand(companyId),
@@ -91,6 +98,9 @@ export class AdminCompanyHierarchyController {
   /** Suivre la facturation ou les contacts du principal. */
   @Post("follows")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "ouvre le suivi d'un aspect : rejoué, il est déjà suivi, `follow` rend faux et le handler sort sans écrire ni journaliser",
+  )
   async follow(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(followAspectPayloadSchema)) payload: FollowAspectPayload,
@@ -103,6 +113,9 @@ export class AdminCompanyHierarchyController {
   /** Cesser de suivre la facturation ou les contacts du principal. */
   @Post("follows/stop")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "ferme le suivi d'un aspect : rejoué, il n'y a plus de période ouverte et le handler sort sans écrire ni journaliser",
+  )
   async stopFollowing(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(followAspectPayloadSchema)) payload: FollowAspectPayload,
@@ -115,6 +128,9 @@ export class AdminCompanyHierarchyController {
   /** La case « Compte de groupe, sans livraison » (§4). */
   @Post("group-without-delivery")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose le drapeau du groupe : rejoué, la valeur est déjà celle-là et le handler sort sans écrire ni journaliser",
+  )
   async setGroupWithoutDelivery(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(groupWithoutDeliveryPayloadSchema)) payload: GroupWithoutDeliveryPayload,
@@ -131,6 +147,9 @@ export class AdminCompanyHierarchyController {
    */
   @Put("collection-form")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "choisit la forme de recouvrement : rejoué, `choose` ne change rien et le handler sort sans écrire ni journaliser",
+  )
   async setCollectionForm(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(collectionFormPayloadSchema)) payload: CollectionFormPayload,

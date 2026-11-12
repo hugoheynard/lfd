@@ -76,6 +76,10 @@ export class InMemoryOverrides extends FeatureOverrideRepository {
     super();
   }
 
+  currentValue(key: string): Promise<string | null> {
+    return Promise.resolve(this.rows.get(key)?.value ?? null);
+  }
+
   put(override: FeatureOverride): Promise<string | null> {
     this.steps.log.push(`override:put:${override.key}`);
     const previous = this.rows.get(override.key)?.value ?? null;

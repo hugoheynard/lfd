@@ -1,5 +1,6 @@
-import { CommandHandler, EventBus, type ICommandHandler } from "@nestjs/cqrs";
+import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { SupportHandledEvent } from "../../domain/events/support-handled.event.js";
 import { SupportRequestNotFoundError } from "../../domain/errors/support-errors.js";
@@ -24,7 +25,7 @@ export class HandleSupportRequestHandler implements ICommandHandler<
 > {
   constructor(
     private readonly support: SupportRequestRepository,
-    private readonly events: EventBus,
+    private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
     private readonly names: AccountJournalNames,
   ) {}
@@ -34,6 +35,10 @@ export class HandleSupportRequestHandler implements ICommandHandler<
     const handled = await this.support.markHandled(command.supportRequestId, handledAt);
     if (handled === null) {
       throw new SupportRequestNotFoundError(command.supportRequestId);
+    }
+    // Rejouer le geste ne change rien : le traitement ne repart pas au journal.
+    if (!handled.newlyHandled) {
+      return;
     }
     this.events.publish(
       new SupportHandledEvent(

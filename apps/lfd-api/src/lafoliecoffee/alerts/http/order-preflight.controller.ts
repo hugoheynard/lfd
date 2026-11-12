@@ -10,6 +10,7 @@ import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { PreflightOrderAlertsQuery } from "../application/queries/preflight-order-alerts.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * `POST /orders/preflight` — le **contrôle de panier** du client.
@@ -32,6 +33,7 @@ export class OrderPreflightController {
 
   @Post("preflight")
   @HttpCode(HttpStatus.OK)
+  @Idempotent("lecture : le `POST` porte le panier à évaluer, la requête n'écrit rien")
   async preflight(
     @CurrentUser() user: Principal,
     @Body(new ZodBody(orderPreflightPayloadSchema)) payload: OrderPreflightPayload,

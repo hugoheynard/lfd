@@ -11,6 +11,7 @@ import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { UpdateContactSettingsCommand } from "../application/commands/update-contact-settings.command.js";
 import { GetContactSettingsQuery } from "../application/queries/get-contact-settings.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /** La **carte de contact** de la boutique au back-office, sous `b2b_contact`. */
 @Controller("admin/contact/settings")
@@ -30,6 +31,9 @@ export class AdminContactSettingsController {
 
   @Put()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose les réglages de contact : rejouée, la même requête laisse les mêmes réglages, sans journal",
+  )
   async update(
     @Body(new ZodBody(contactSettingsPayloadSchema)) payload: ContactSettingsPayload,
     @StaffUserId() staffUserId: string,

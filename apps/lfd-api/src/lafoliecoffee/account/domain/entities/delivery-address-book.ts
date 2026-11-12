@@ -156,15 +156,26 @@ export class DeliveryAddressBook {
    *
    * @throws {CompanyAddressNotFoundError} l'adresse n'est pas à ce carnet.
    * @throws {InvalidDeliveryStopMinutesError} un temps de livraison sur place hors bornes.
+   * @returns `false` quand l'adresse est déjà celle-là : rien n'a changé.
    */
-  edit(addressId: string, payload: DeliveryAddressPayload): void {
+  edit(addressId: string, payload: DeliveryAddressPayload): boolean {
     const entry = this.require(addressId);
     const specs = specsOf(payload, entry.specs);
-    entry.lines = linesOf(payload);
+    const lines = linesOf(payload);
+    const promoted = payload.isDefault && this.defaultIdValue !== addressId;
+    if (
+      !promoted &&
+      canonical(lines) === canonical(entry.lines) &&
+      canonical(specs) === canonical(entry.specs)
+    ) {
+      return false;
+    }
+    entry.lines = lines;
     entry.specs = specs;
     if (payload.isDefault) {
       this.defaultIdValue = addressId;
     }
+    return true;
   }
 
   /**
@@ -225,10 +236,15 @@ export class DeliveryAddressBook {
    * Désigne l'adresse par défaut.
    *
    * @throws {CompanyAddressNotFoundError} l'adresse n'est pas à ce carnet.
+   * @returns `false` quand elle l'est déjà : rien n'a changé.
    */
-  makeDefault(addressId: string): void {
+  makeDefault(addressId: string): boolean {
     this.require(addressId);
+    if (this.defaultIdValue === addressId) {
+      return false;
+    }
     this.defaultIdValue = addressId;
+    return true;
   }
 
   /**
@@ -286,4 +302,18 @@ interface BookEntry {
   parking: GpsPoint | null;
   readonly createdAt: Date;
   archivedAt: Date | null;
+}
+
+/**
+ * Une valeur en JSON aux clés triées : deux objets égaux champ par champ
+ * donnent la même chaîne, quel que soit l'ordre où leurs clés ont été posées.
+ */
+function canonical(value: unknown): string {
+  return JSON.stringify(value, (_key, inner: unknown) =>
+    inner !== null && typeof inner === "object" && !Array.isArray(inner)
+      ? Object.fromEntries(
+          Object.entries(inner).sort(([left], [right]) => left.localeCompare(right)),
+        )
+      : inner,
+  );
 }

@@ -74,6 +74,7 @@ function bookWith(
   };
 
   const contacts: CompanyContactRepository = {
+    find: () => Promise.resolve(null),
     add: (_companyId, _details, role) => {
       written.contacts.push({ role });
       return Promise.resolve("ct_1");

@@ -67,6 +67,9 @@ const DELIVERY: DeliveryAddressPayload = {
   },
 };
 
+/** Une correction réelle de l'adresse semée : la même charge rejouée ne change rien. */
+const CORRECTED = { ...DELIVERY, ligne2: "Bâtiment B" };
+
 const EMPTY_VIEW: CompanyAddressesView = { billing: null, deliveries: [] };
 
 interface Recorder {
@@ -101,6 +104,7 @@ function addressesRecorder(recorder: Recorder): CompanyAddressRepository {
     defaultId: "a1",
   });
   return {
+    findBilling: () => Promise.resolve(null),
     saveBilling: () => {
       recorder.writes.push("billing");
       return Promise.resolve();
@@ -234,7 +238,7 @@ describe("handlers d'adresses — les murs member / admin", () => {
       new DirectUnitOfWork(),
       names,
       silentGestures(),
-    ).execute(new UpdateDeliveryAddressCommand("u1", "c1", "a1", DELIVERY));
+    ).execute(new UpdateDeliveryAddressCommand("u1", "c1", "a1", CORRECTED));
     await new SetDefaultDeliveryAddressHandler(
       admin,
       repo,
@@ -242,7 +246,8 @@ describe("handlers d'adresses — les murs member / admin", () => {
       new DirectUnitOfWork(),
       names,
       silentGestures(),
-    ).execute(new SetDefaultDeliveryAddressCommand("u1", "c1", "a1"));
+      // L'adresse ajoutée : `a1` l'est déjà, et la désigner ne changerait rien.
+    ).execute(new SetDefaultDeliveryAddressCommand("u1", "c1", "addr_000001"));
     await new RemoveDeliveryAddressHandler(
       admin,
       repo,

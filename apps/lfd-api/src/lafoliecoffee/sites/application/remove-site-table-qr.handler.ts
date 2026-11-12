@@ -27,7 +27,10 @@ export class RemoveSiteTableQrHandler implements ICommandHandler<RemoveSiteTable
     await this.uow.run(async () => {
       const site = await requireSite(this.sites, command.siteId);
       const grid = await this.tables.load(site.id);
-      grid.detachQr(command.tableNumber, site);
+      // Rejouer le geste ne change rien : ni écriture, ni fait au journal.
+      if (!grid.detachQr(command.tableNumber, site)) {
+        return;
+      }
       await this.tables.save(grid);
       await this.events.publishTraced(
         new SiteTableQrRemovedEvent(site.id, site.label, command.tableNumber),

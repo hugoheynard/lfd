@@ -5,6 +5,7 @@ import { Throttle } from "@nestjs/throttler";
 
 import { Public } from "../../../platform/auth/public.decorator.js";
 import { RecordProductAudienceCommand } from "../application/commands/record-product-audience.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 import { BeaconBody } from "./beacon-body.pipe.js";
 
 /**
@@ -28,11 +29,14 @@ export class ShopProductAudienceController {
 
   @Post()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "lot d'audience porteur d'un identifiant tiré par l'écran : rejoué, il est reconnu et ne compte pas deux fois",
+  )
   record(
     @Body(new BeaconBody(productAudienceBatchSchema)) payload: ProductAudienceBatchPayload,
   ): Promise<void> {
     return this.commands.execute<RecordProductAudienceCommand, void>(
-      new RecordProductAudienceCommand(payload.events),
+      new RecordProductAudienceCommand(payload.events, payload.batchId ?? null),
     );
   }
 }

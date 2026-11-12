@@ -184,6 +184,20 @@ export class PrismaCompanyAddressRepository extends CompanyAddressRepository {
     super();
   }
 
+  async findBilling(companyId: string): Promise<BillingAddressPayload | null> {
+    return this.prisma.address.findFirst({
+      where: { companyId, kind: AddressKind.billing, archivedAt: null },
+      select: {
+        label: true,
+        ligne1: true,
+        ligne2: true,
+        codePostal: true,
+        ville: true,
+        pays: true,
+      },
+    });
+  }
+
   async saveBilling(companyId: string, payload: BillingAddressPayload): Promise<void> {
     // Une seule facturation par entreprise : on met à jour celle qui existe, on la
     // crée sinon. Pas d'`isDefault` sur une facturation (notion propre à la livraison).

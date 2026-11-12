@@ -41,6 +41,7 @@ export const productAudienceBatchSchema = z.object({
     )
     .min(1)
     .max(MAX_AUDIENCE_EVENTS_PER_BATCH),
+  batchId: z.string().min(1).max(MAX_TOKEN_LENGTH).optional(),
 });
 
 const isoDay = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "jour attendu au format AAAA-MM-JJ");

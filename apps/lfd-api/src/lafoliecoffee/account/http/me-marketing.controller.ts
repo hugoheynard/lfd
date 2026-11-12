@@ -17,6 +17,7 @@ import { AcceptMarketingPartnersCommand } from "../application/commands/accept-m
 import { SubscribeMyMarketingCommand } from "../application/commands/subscribe-my-marketing.command.js";
 import { UnsubscribeMyMarketingCommand } from "../application/commands/unsubscribe-my-marketing.command.js";
 import { GetMyMarketingPreferencesQuery } from "../application/queries/get-my-marketing-preferences.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **« Mes préférences » des e-mails d'offres** (plan
@@ -69,6 +70,9 @@ export class MeMarketingController {
 
   @Post("unsubscriptions")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "désinscrit l'adresse : rejouée, la préférence est déjà désinscrite et rien ne s'écrit",
+  )
   async unsubscribe(
     @CurrentUser() user: Principal,
     @Body(new ZodBody(unsubscribeMarketingPayloadSchema)) payload: UnsubscribeMarketingPayload,

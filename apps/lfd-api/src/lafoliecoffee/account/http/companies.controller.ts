@@ -21,6 +21,7 @@ import {
 import { CreateCompanyCommand } from "../application/commands/create-company.command.js";
 import { GetMyCompanyActivationQuery } from "../application/queries/get-my-company-activation.query.js";
 import { createCompanyPayload, type CreateCompanyPayload } from "./payloads.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /** Ce que la création renvoie : de quoi router, rien de plus. */
 export interface CreatedCompanyResponse {
@@ -82,6 +83,9 @@ export class CompaniesController {
   /** Édite l'identité souple (enseigne + n° de TVA) — gestionnaire. */
   @Patch(":companyId/identity")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose l'identité de la société : rejouée, aucun champ ne change et ni le fait ni l'étape ne sont publiés",
+  )
   async updateIdentity(
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,
@@ -100,6 +104,9 @@ export class CompaniesController {
    */
   @Patch(":companyId/fulfillment-preference")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose la préférence d'acheminement : rejouée, l'agrégat la trouve identique et rien n'est écrit ni journalisé",
+  )
   async preferFulfillment(
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,
@@ -113,6 +120,9 @@ export class CompaniesController {
   /** Enregistre la condition de règlement **demandée** — gestionnaire. */
   @Patch(":companyId/payment-term")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose la demande de délai : rejouée, l'agrégat la trouve identique et rien n'est écrit ni journalisé",
+  )
   async requestPaymentTerm(
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,

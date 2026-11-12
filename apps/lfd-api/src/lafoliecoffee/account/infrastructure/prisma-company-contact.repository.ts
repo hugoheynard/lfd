@@ -2,7 +2,10 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { CompanyContactNotFoundError } from "../domain/errors/account-errors.js";
-import { CompanyContactRepository } from "../domain/ports/company-contact.repository.js";
+import {
+  CompanyContactRepository,
+  type StoredContact,
+} from "../domain/ports/company-contact.repository.js";
 import type { AssignableRole } from "../domain/value-objects/company-role.js";
 import type { ContactDetails } from "../domain/value-objects/contact-details.js";
 
@@ -19,6 +22,26 @@ export class PrismaCompanyContactRepository extends CompanyContactRepository {
       select: { id: true },
     });
     return created.id;
+  }
+
+  async find(companyId: string, contactId: string): Promise<StoredContact | null> {
+    const row = await this.prisma.companyContact.findFirst({
+      where: { id: contactId, companyId },
+      select: { prenom: true, nom: true, fonction: true, email: true, telephone: true, role: true },
+    });
+    if (row === null) {
+      return null;
+    }
+    return {
+      details: {
+        firstName: row.prenom,
+        lastName: row.nom,
+        fonction: row.fonction,
+        email: row.email,
+        phone: row.telephone,
+      },
+      role: row.role,
+    };
   }
 
   async update(

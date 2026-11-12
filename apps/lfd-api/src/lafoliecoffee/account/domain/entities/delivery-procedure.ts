@@ -177,9 +177,10 @@ export class DeliveryProcedure {
    *
    * @throws {DeliveryProcedureOrderStaleError} la liste n'est pas une
    *   permutation exacte des étapes présentes.
+   * @returns `false` quand les étapes sont déjà dans cet ordre.
    */
-  reorder(stepIds: readonly string[]): void {
-    this.steps.reorder(stepIds);
+  reorder(stepIds: readonly string[]): boolean {
+    return this.steps.reorder(stepIds);
   }
 
   /** L'état à écrire, étapes dans l'ordre. */

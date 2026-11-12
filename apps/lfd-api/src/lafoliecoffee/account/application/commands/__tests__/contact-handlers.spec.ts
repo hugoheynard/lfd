@@ -89,6 +89,7 @@ function membersStub(): CompanyMemberRepository {
 
 function contactsRecorder(recorder: Recorder): CompanyContactRepository {
   return {
+    find: () => Promise.resolve(null),
     add: () => {
       recorder.writes.push("add");
       return Promise.resolve("contact_new");

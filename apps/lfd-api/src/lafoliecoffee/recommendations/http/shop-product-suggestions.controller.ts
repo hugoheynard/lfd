@@ -10,6 +10,7 @@ import { Throttle } from "@nestjs/throttler";
 import { Public } from "../../../platform/auth/public.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ReadProductSuggestionsQuery } from "../application/queries/read-product-suggestions.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Les suggestions de la fiche**, sans jeton — le lecteur est un particulier.
@@ -27,6 +28,9 @@ export class ShopProductSuggestionsController {
 
   @Post()
   @HttpCode(HttpStatus.OK)
+  @Idempotent(
+    "lecture publique : le `POST` porte la fiche et le panier à évaluer, la requête n'écrit rien",
+  )
   read(
     @Body(new ZodBody(productSuggestionsPayloadSchema)) payload: ProductSuggestionsPayload,
   ): Promise<readonly ProductSuggestionView[]> {

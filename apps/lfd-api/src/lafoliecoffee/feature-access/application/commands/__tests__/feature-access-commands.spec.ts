@@ -74,6 +74,29 @@ describe("SetFeatureOverrideHandler", () => {
     });
   });
 
+  // Régression : reposer la même valeur réécrivait la dérogation et journalisait à chaque appel.
+  it("rejouée avec la même valeur, n'écrit rien et ne journalise rien", async () => {
+    const h = harness();
+    await h.set.execute(new SetFeatureOverrideCommand("customerMandate", "open", "staff_admin"));
+    h.steps.log.length = 0;
+
+    await h.set.execute(new SetFeatureOverrideCommand("customerMandate", "open", "staff_other"));
+
+    expect(h.steps.log).toEqual([]);
+    expect(h.events.traced).toHaveLength(1);
+    expect(h.overrides.rows.get("customerMandate")?.author.staffUserId).toBe("staff_admin");
+  });
+
+  it("une autre valeur s'écrit et se journalise", async () => {
+    const h = harness();
+    await h.set.execute(new SetFeatureOverrideCommand("customerMandate", "open", "staff_admin"));
+
+    await h.set.execute(new SetFeatureOverrideCommand("customerMandate", "closed", "staff_admin"));
+
+    expect(h.events.traced).toHaveLength(2);
+    expect(h.overrides.rows.get("customerMandate")?.value).toBe("closed");
+  });
+
   it("fige l'auteur (id de fiche, nom, rôle) et l'instant du Clock", async () => {
     const h = harness();
 

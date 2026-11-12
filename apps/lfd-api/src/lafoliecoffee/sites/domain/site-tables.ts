@@ -103,9 +103,15 @@ export class SiteTables {
    *
    * @throws {ArchivedSiteError} le site est archivé.
    * @throws {SiteTableNotFoundError} la table n'existe pas.
+   * @returns `false` quand la table n'a déjà plus de QR : rien n'a changé.
    */
-  detachQr(tableNumber: number, site: Site): void {
+  detachQr(tableNumber: number, site: Site): boolean {
+    const table = this.state.tables.find((candidate) => candidate.number === tableNumber);
+    if (!site.isArchived && table !== undefined && table.token === null) {
+      return false;
+    }
     this.rewrite(tableNumber, site, { token: null, qrCreatedAt: null });
+    return true;
   }
 
   private rewrite(tableNumber: number, site: Site, qr: Omit<SiteTableState, "number">): void {

@@ -4,6 +4,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { Clock } from "../../../../platform/time/clock.js";
 import { AudienceEventBatch } from "../../domain/audience-event-batch.js";
 import { UnknownAudienceSkuError } from "../../domain/errors/recommendation-errors.js";
+import { AudienceBatchLedger } from "../../domain/ports/audience-batch.ledger.js";
 import { AudienceCounterWriter } from "../../domain/ports/audience-counter.writer.js";
 import { AudienceSkuReader } from "../../domain/ports/audience-sku.reader.js";
 import { RecordProductAudienceCommand } from "./record-product-audience.command.js";
@@ -25,6 +26,7 @@ export class RecordProductAudienceHandler implements ICommandHandler<
     private readonly skus: AudienceSkuReader,
     private readonly counters: AudienceCounterWriter,
     private readonly clock: Clock,
+    private readonly batches: AudienceBatchLedger,
   ) {}
 
   async execute(command: RecordProductAudienceCommand): Promise<void> {
@@ -34,6 +36,18 @@ export class RecordProductAudienceHandler implements ICommandHandler<
     if (unknown.length > 0) {
       throw new UnknownAudienceSkuError(unknown);
     }
-    await this.counters.add(instantToLocal(this.clock.now()).day, batch.increments);
+    const { batchId } = command;
+    // Un lot rejoué par le réseau (même identifiant) ne compte qu'une fois.
+    if (batchId !== null && !this.batches.claim(batchId)) {
+      return;
+    }
+    try {
+      await this.counters.add(instantToLocal(this.clock.now()).day, batch.increments);
+    } catch (error) {
+      if (batchId !== null) {
+        this.batches.release(batchId);
+      }
+      throw error;
+    }
   }
 }

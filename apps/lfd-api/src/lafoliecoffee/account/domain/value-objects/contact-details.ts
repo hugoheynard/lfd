@@ -50,6 +50,49 @@ export class ContactDetails {
   }
 }
 
+/**
+ * Les coordonnées d'un interlocuteur à plat, telles qu'elles sont gardées —
+ * de quoi dire si une saisie change quelque chose.
+ */
+export interface ContactSnapshot {
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly fonction: string;
+  readonly email: string;
+  readonly phone: string;
+}
+
+/** Ce qu'un contact validé (principal ou additionnel) porte. */
+interface ValidatedContact {
+  readonly firstName: PersonName;
+  readonly lastName: PersonName;
+  readonly fonction: string;
+  readonly email: EmailAddress;
+  readonly phone: PhoneNumber;
+}
+
+/** Les valeurs normalisées d'un contact validé. */
+export function contactSnapshotOf(contact: ValidatedContact): ContactSnapshot {
+  return {
+    firstName: contact.firstName.value,
+    lastName: contact.lastName.value,
+    fonction: contact.fonction,
+    email: contact.email.value,
+    phone: contact.phone.value,
+  };
+}
+
+/** Deux contacts identiques, champ par champ : la saisie ne change rien. */
+export function sameContact(left: ContactSnapshot, right: ContactSnapshot): boolean {
+  return (
+    left.firstName === right.firstName &&
+    left.lastName === right.lastName &&
+    left.fonction === right.fonction &&
+    left.email === right.email &&
+    left.phone === right.phone
+  );
+}
+
 /** Fonction facultative : vide autorisé, bornée sinon. */
 function fonction(raw: string): string {
   const trimmed = raw.trim().replace(/\s+/gu, " ");

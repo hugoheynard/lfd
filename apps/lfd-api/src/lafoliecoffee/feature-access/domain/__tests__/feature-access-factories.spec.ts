@@ -49,6 +49,24 @@ describe("FeatureOverride.pose — la valeur est confrontée au catalogue", () =
   });
 });
 
+describe("FeatureOverride.changes", () => {
+  const override = FeatureOverride.pose({
+    key: "customerMandate",
+    value: "open",
+    at: AT,
+    author: AUTHOR,
+  });
+
+  it("déjà à cette valeur → inchangé", () => {
+    expect(override.changes("open")).toBe(false);
+  });
+
+  it("une autre valeur, ou aucune dérogation → changement", () => {
+    expect(override.changes("closed")).toBe(true);
+    expect(override.changes(null)).toBe(true);
+  });
+});
+
 describe("FeatureExemption.grant", () => {
   it("refuse une clé hors catalogue", () => {
     expect(() =>

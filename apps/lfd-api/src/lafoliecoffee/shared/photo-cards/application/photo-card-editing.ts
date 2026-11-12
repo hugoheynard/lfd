@@ -127,7 +127,10 @@ export async function reorderPhotoCards<T, A, C extends PhotoCardText>(
     if (aggregate === null) {
       throw usage.missing.orderStale();
     }
-    usage.gestures.reorder(aggregate, cardIds);
+    // Le même ordre, rejoué : ni écriture, ni fait au journal.
+    if (!usage.gestures.reorder(aggregate, cardIds)) {
+      return;
+    }
     await usage.aggregates.save(aggregate);
     await inTransaction();
   });

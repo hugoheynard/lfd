@@ -7,6 +7,7 @@ import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { AcknowledgeAlertCommand } from "../application/commands/acknowledge-alert.command.js";
 import { CountPendingAlertsQuery } from "../application/queries/count-pending-alerts.query.js";
 import { ListAccountAlertsQuery } from "../application/queries/list-account-alerts.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Le **journal d'alertes** d'un compte (fiche client, onglet Alertes) et son
@@ -46,6 +47,9 @@ export class AdminAccountAlertsController {
 
   @Post("alerts/:alertId/acknowledge")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "acquitte l'alerte sous la condition `acknowledgedAt: null` : rejouée, la ligne déjà acquittée n'est pas touchée et garde son premier auteur",
+  )
   async acknowledge(
     @Param("alertId") alertId: string,
     @StaffUserId() staffUserId: string,

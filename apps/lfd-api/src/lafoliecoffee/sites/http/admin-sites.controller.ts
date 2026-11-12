@@ -42,6 +42,7 @@ import { GetSitePaletteQuery } from "../application/get-site-palette.query.js";
 import { ListSitesQuery } from "../application/list-sites.query.js";
 import { SetSiteColorsCommand } from "../application/set-site-colors.command.js";
 import { SetSiteRolesCommand } from "../application/set-site-roles.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Réglages › Sites** — l'API de l'écran, sous `lfc_site_settings` (doc
@@ -135,6 +136,9 @@ export class AdminSitesController {
   /** Les quatre couleurs, en bloc. */
   @Put(":id/couleurs")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose les couleurs en bloc : rejouées, l'agrégat les trouve identiques et rien n'est écrit, journalisé ni purgé",
+  )
   async setColors(
     @Param("id") id: string,
     @Body(new ZodBody(siteColorsPayloadSchema)) payload: SiteColorsPayload,
@@ -145,6 +149,9 @@ export class AdminSitesController {
   /** Archiver : plus proposé, toujours résolu par id. Il n'y a pas de suppression. */
   @Post(":id/archive")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "archive le site : rejoué, le site n'est plus actif et l'archivage est refusé sans rien écrire, journaliser ni purger",
+  )
   async archive(@Param("id") id: string): Promise<void> {
     await this.commands.execute<RemovePickupAddressCommand, void>(
       new RemovePickupAddressCommand(id),
