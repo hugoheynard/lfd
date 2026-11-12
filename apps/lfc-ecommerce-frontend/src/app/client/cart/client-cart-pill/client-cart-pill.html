@@ -38,8 +38,11 @@
       <!-- L'avertissement du jour, le même qu'au panier entier (2026-10-26) :
            « Modifier » referme le popover avant d'ouvrir le choix. DIFFÉRÉ à
            la première ouverture : il tire le magasin des jours et le
-           catalogue, et le popover est au démarrage (budget de 1 400 kB). -->
-      @defer (when open()) {
+           catalogue, et le popover est au démarrage (budget de 1 400 kB).
+           Son code se PRÉCHARGE quand la page est au repos : en 4G faible,
+           le télécharger à l'ouverture laissait un trou de plusieurs
+           secondes dans le panneau (décidé par Hugo le 2026-11-12). -->
+      @defer (when open(); prefetch on idle) {
         <app-service-day-callout (changing)="open.set(false)" />
         <app-first-day-moved-callout />
       }
