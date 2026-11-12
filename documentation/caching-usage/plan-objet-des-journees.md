@@ -1,5 +1,9 @@
 # Plan — l'objet des journées, lot 1 : les numéros
 
+> ✅ **Lot 1 bâti le 2026-11-12** : objet `DayVersions` (Worker de l'API, migration de classe v3), hôte `journees.interne`, briques communes `platform/cache-calls/` (garde borné, disjoncteur, mesure) que le rayon utilise aussi, mesure `day_versions` sur la page Santé.
+>
+> 🔴 **Runbook** : la migration de classe v3 de `wrangler.jsonc` ne se défait pas par un revert. Retirer l'objet demande une migration `deleted_classes: ["DayVersions"]` dans un nouveau tag, après avoir retiré la liaison et le code qui l'appelle. Sans l'objet (URL absente), l'API lit la base : la porte reste servie.
+
 > 📐 **Plan, 2026-11-12.** Rien n'est bâti. Demande de Hugo : « on commence
 > par day-versions », de préférence dans un Durable Object pour un cache
 > partagé. Décision d'origine : [`version-par-journee.md`](version-par-journee.md)

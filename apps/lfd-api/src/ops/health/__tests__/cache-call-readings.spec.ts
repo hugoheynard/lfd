@@ -49,4 +49,10 @@ describe("cacheCallReports — la durée des appels à l'objet des rayons (C5)",
   it("sans appel, pas de ligne : un 0 ms se lirait comme un appel gratuit", () => {
     expect(cacheCallReports([], [sample("read", "settled", 340)], 30)).toEqual([]);
   });
+
+  it("nomme le magasin qu'on lui donne : l'objet des journées a ses propres lignes", () => {
+    const [report] = cacheCallReports([sample("read", "in_time", 8)], [], 30, "day_versions");
+
+    expect(report).toMatchObject({ store: "day_versions", operation: "read", calls: 1 });
+  });
 });

@@ -14,6 +14,12 @@ export const SHELF_LATE_FINISH_TIMING = "shelf_cache.late_finish";
 /** Le magasin que ces mesures décrivent, tel que la carte le nomme. */
 const SHELF_STORE = "shelf_cache";
 
+/**
+ * L'objet des journées (`platform/day-versions`) : ses mesures portent son nom
+ * (`cacheCallTimingNames`, que `platform` partage avec `ops`).
+ */
+export const DAY_VERSIONS_STORE = "day_versions";
+
 /** L'issue d'un aller-retour abandonné au délai, au mot du producteur. */
 const LATE = "late";
 
@@ -21,7 +27,8 @@ const LATE = "late";
 const UNLABELLED = "?";
 
 /**
- * **La durée des appels à l'objet des rayons**, une ligne par opération — pur.
+ * **La durée des appels à un cache nommé** (les rayons par défaut), une ligne
+ * par opération — pur.
  *
  * Rien n'est jugé : le seuil (le délai du repli) appartient au producteur, et
  * la carte montre p50 / p95 à côté du nombre d'abandons. Une opération sans
@@ -31,6 +38,7 @@ export function cacheCallReports(
   roundTrips: readonly PricingSample[],
   lateFinishes: readonly PricingSample[],
   windowMinutes: number,
+  store: string = SHELF_STORE,
 ): readonly CacheCallReport[] {
   const byOperation = groupByOperation(roundTrips);
   const finishes = groupByOperation(lateFinishes);
@@ -39,7 +47,7 @@ export function cacheCallReports(
       const durations = group.map((one) => one.ms);
       const finished = (finishes.get(operation) ?? []).map((one) => one.ms);
       return {
-        store: SHELF_STORE,
+        store,
         operation,
         calls: group.length,
         late: group.filter((one) => one.labels["outcome"] === LATE).length,

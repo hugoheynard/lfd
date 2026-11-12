@@ -97,6 +97,7 @@ export class AppConfig {
   private readonly adminBaseUrlValue: string | null;
   private readonly geocoderUrlValue: string | null;
   private readonly shopShelfCacheUrlValue: string | null;
+  private readonly dayVersionsCacheUrlValue: string | null;
   private readonly catalogueSnapshotMemoryValue: boolean;
   private readonly outboxPurgeModeValue: PurgeMode;
   private readonly mailRequestPurgeModeValue: PurgeMode;
@@ -139,6 +140,7 @@ export class AppConfig {
     this.adminBaseUrlValue = optionalString("ADMIN_BASE_URL");
     this.geocoderUrlValue = optionalString("BAN_GEOCODER_URL");
     this.shopShelfCacheUrlValue = optionalString("SHOP_SHELF_CACHE_URL");
+    this.dayVersionsCacheUrlValue = optionalString("DAY_VERSIONS_CACHE_URL");
     this.catalogueSnapshotMemoryValue = optionalCatalogueSnapshotMemory();
     this.outboxPurgeModeValue = optionalPurgeMode("OUTBOX_PURGE");
     this.mailRequestPurgeModeValue = optionalPurgeMode("MAIL_REQUEST_PURGE");
@@ -351,6 +353,17 @@ export class AppConfig {
    */
   shopShelfCacheUrl(): string | null {
     return this.shopShelfCacheUrlValue;
+  }
+
+  /**
+   * L'adresse de l'objet des journées — `DAY_VERSIONS_CACHE_URL`, posée par le
+   * Worker à côté du gestionnaire de sortie qui l'intercepte
+   * (`container/day-versions-store.ts`). `null` hors du conteneur (dev local
+   * hors wrangler, e2e) : chaque question relit alors la base. Sans défaut,
+   * comme {@link shopShelfCacheUrl}.
+   */
+  dayVersionsCacheUrl(): string | null {
+    return this.dayVersionsCacheUrlValue;
   }
 
   /**

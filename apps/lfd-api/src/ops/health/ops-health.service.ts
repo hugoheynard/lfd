@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import type {
+  CacheCallReport,
   EcosystemHealth,
   HealthReason,
   HealthStatus,
@@ -21,8 +22,10 @@ import { MailBacklogReadings } from "./mail-backlog-readings.port.js";
 import { mailBacklogReadings } from "./mail-backlog-readings.js";
 import { vitalsReadings } from "./vitals-readings.js";
 import { cacheReports } from "./cache-readings.js";
+import { cacheCallTimingNames } from "../../platform/cache-calls/cache-call-timings.js";
 import {
   cacheCallReports,
+  DAY_VERSIONS_STORE,
   SHELF_LATE_FINISH_TIMING,
   SHELF_ROUND_TRIP_TIMING,
 } from "./cache-call-readings.js";
@@ -197,13 +200,27 @@ export class OpsHealthService {
       containerUsageGap: container.gap,
       // Mémoire de CETTE instance, lue sans aller-retour : pas de cache ici.
       caches: cacheReports(this.caches.read(), this.caches.windowMinutes),
-      // Même mémoire d'instance : la durée des appels à l'objet des rayons.
-      cacheCalls: cacheCallReports(
-        this.timings.read(SHELF_ROUND_TRIP_TIMING),
-        this.timings.read(SHELF_LATE_FINISH_TIMING),
-        this.timings.windowMinutes,
-      ),
+      // Même mémoire d'instance : la durée des appels aux objets des rayons
+      // et des journées.
+      cacheCalls: [
+        ...cacheCallReports(
+          this.timings.read(SHELF_ROUND_TRIP_TIMING),
+          this.timings.read(SHELF_LATE_FINISH_TIMING),
+          this.timings.windowMinutes,
+        ),
+        ...this.dayVersionsCalls(),
+      ],
     };
+  }
+
+  private dayVersionsCalls(): readonly CacheCallReport[] {
+    const names = cacheCallTimingNames(DAY_VERSIONS_STORE);
+    return cacheCallReports(
+      this.timings.read(names.roundTrip),
+      this.timings.read(names.lateFinish),
+      this.timings.windowMinutes,
+      DAY_VERSIONS_STORE,
+    );
   }
 
   /**

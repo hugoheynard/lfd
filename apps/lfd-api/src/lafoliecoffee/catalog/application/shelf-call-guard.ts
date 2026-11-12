@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
+import { BoundedCallGuard } from "../../../platform/cache-calls/bounded-call-guard.js";
 import { Stopwatch } from "../../../platform/metrics/stopwatch.js";
 import { TimingRecorder } from "../../../platform/metrics/timing-recorder.js";
 import { WallClock } from "../../../platform/time/wall-clock.js";
@@ -8,7 +9,6 @@ import { ShelfCallDeadline } from "../domain/ports/shelf-call-deadline.js";
 import {
   ShelfCacheSignals,
   type ShelfCacheOperation,
-  type ShelfFallbackReason,
 } from "../domain/ports/shelf-cache-signals.js";
 import { ShelfCacheBreaker } from "./shelf-cache-breaker.js";
 
@@ -39,6 +39,9 @@ export const SHELF_CALL_LIMIT_MS = 400;
  */
 export const SHELF_STORE_LIMIT_MS = 2000;
 
+/** Le nom du cache des rayons, préfixe de ses mesures. */
+const SHELF_CACHE_NAME = "shelf_cache";
+
 /**
  * Le nom de la mesure de durée d'un aller-retour, lu par la carte de santé (C5).
  * Étiquettes : `operation`, et `outcome` — `in_time`, `late` (durée jusqu'à
@@ -53,19 +56,17 @@ export const SHELF_ROUND_TRIP_TIMING = "shelf_cache.round_trip";
  */
 export const SHELF_LATE_FINISH_TIMING = "shelf_cache.late_finish";
 
-/** L'issue d'un aller-retour, telle que la mesure l'étiquette. */
-type RoundTripOutcome = "in_time" | "late" | "error";
-
 /**
  * **Le délai et le disjoncteur de TOUT appel au chemin `rayons.interne`** —
- * rayons pro (C2) comme rayon public (C3). Sorti de `ResilientShopShelfCache`
- * le 2026-11-04 pour être partagé : un seul disjoncteur, parce qu'il n'y a
- * qu'un chemin et qu'un objet derrière. Une panne vue par le rayon pro
+ * rayons pro (C2) comme rayon public (C3). Un seul disjoncteur, parce qu'il
+ * n'y a qu'un chemin et qu'un objet derrière : une panne vue par le rayon pro
  * épargne donc aussi le délai au rayon public, et l'inverse.
  *
- * Toute erreur, lenteur ou réponse illisible devient `null`, comptée sous un
- * nom stable. Rien de ce qui sort d'ici ne lève (§ 4 bis : « la prod ne peut
- * jamais tomber en panne »).
+ * La mécanique est celle de tout cache appelé par le réseau
+ * ({@link BoundedCallGuard}) ; ce garde n'y ajoute que les seuils du rayon,
+ * ses noms de mesure ({@link SHELF_ROUND_TRIP_TIMING}) et ses signaux. Toute
+ * erreur, lenteur ou réponse illisible devient `null`, comptée sous un nom
+ * stable. Rien de ce qui sort d'ici ne lève (§ 4 bis).
  *
  * `gated` : l'appel respecte-t-il le disjoncteur ? Les lectures oui ; les
  * effacements non — une purge est rare et c'est la seule chose qui rattrape
@@ -73,86 +74,39 @@ type RoundTripOutcome = "in_time" | "late" | "error";
  */
 @Injectable()
 export class ShelfCallGuard {
-  private readonly breaker = new ShelfCacheBreaker();
+  private readonly guard: BoundedCallGuard<ShelfCacheOperation>;
 
   constructor(
-    private readonly deadline: ShelfCallDeadline,
-    private readonly wall: WallClock,
-    private readonly stopwatch: Stopwatch,
-    private readonly timings: TimingRecorder,
-    private readonly signals: ShelfCacheSignals,
-  ) {}
+    deadline: ShelfCallDeadline,
+    wall: WallClock,
+    stopwatch: Stopwatch,
+    timings: TimingRecorder,
+    signals: ShelfCacheSignals,
+  ) {
+    this.guard = new BoundedCallGuard<ShelfCacheOperation>({
+      cache: SHELF_CACHE_NAME,
+      limitMs: SHELF_CALL_LIMIT_MS,
+      breaker: new ShelfCacheBreaker(),
+      deadline,
+      wall,
+      stopwatch,
+      timings,
+      listener: {
+        fallback: (operation, reason) => signals.emit({ name: "fallback", operation, reason }),
+        breakerOpened: (failures) => signals.emit({ name: "breaker_opened", failures }),
+        breakerClosed: () => signals.emit({ name: "breaker_closed" }),
+      },
+      isUnreadable: (error) => error instanceof UnreadableShelfReplyError,
+    });
+  }
 
   /** @param limitMs le délai de l'appel — {@link SHELF_CALL_LIMIT_MS}, sauf pour un rangement. */
-  async call<T>(
+  call<T>(
     operation: ShelfCacheOperation,
     work: () => Promise<T>,
     gated: boolean,
     limitMs: number = SHELF_CALL_LIMIT_MS,
   ): Promise<T | null> {
-    if (gated && !this.breaker.allows(this.wallMs())) {
-      this.signals.emit({ name: "fallback", operation, reason: "breaker_open" });
-      return null;
-    }
-    const elapsed = this.stopwatch.start();
-    try {
-      const pending = work();
-      const outcome = await this.deadline.within(pending, limitMs);
-      if (outcome.kind === "late") {
-        this.roundTrip(operation, "late", elapsed());
-        this.followLate(operation, pending, elapsed);
-        return this.fallen(operation, "timeout", gated);
-      }
-      this.roundTrip(operation, "in_time", elapsed());
-      this.recovered(gated);
-      return outcome.value;
-    } catch (error) {
-      this.roundTrip(operation, "error", elapsed());
-      const reason = error instanceof UnreadableShelfReplyError ? "unreadable" : "error";
-      return this.fallen(operation, reason, gated);
-    }
-  }
-
-  private roundTrip(operation: ShelfCacheOperation, outcome: RoundTripOutcome, ms: number): void {
-    this.timings.record(SHELF_ROUND_TRIP_TIMING, { operation, outcome }, ms, 1);
-  }
-
-  /**
-   * Mesure jusqu'au bout un appel abandonné : son résultat reste ignoré, sa
-   * durée seule est retenue. Non attendu, et c'est le but — `void` comme le
-   * journal des transitions de `ops/health/ops-health.service.ts` (vérifié le
-   * 2026-11-05) ; les deux issues sont tenues, rien ne peut rejeter.
-   */
-  private followLate<T>(
-    operation: ShelfCacheOperation,
-    pending: Promise<T>,
-    elapsed: () => number,
-  ): void {
-    const finish = (outcome: "settled" | "failed") => (): void => {
-      this.timings.record(SHELF_LATE_FINISH_TIMING, { operation, outcome }, elapsed(), 1);
-    };
-    void pending.then(finish("settled"), finish("failed"));
-  }
-
-  private fallen(
-    operation: ShelfCacheOperation,
-    reason: ShelfFallbackReason,
-    gated: boolean,
-  ): null {
-    this.signals.emit({ name: "fallback", operation, reason });
-    if (gated && this.breaker.failed(this.wallMs()) === "opened") {
-      this.signals.emit({ name: "breaker_opened", failures: this.breaker.consecutiveFailures() });
-    }
-    return null;
-  }
-
-  private recovered(gated: boolean): void {
-    if (gated && this.breaker.succeeded() === "closed") {
-      this.signals.emit({ name: "breaker_closed" });
-    }
-  }
-
-  private wallMs(): number {
-    return this.wall.elapsedNow().getTime();
+    return this.guard.call(operation, work, gated, limitMs);
   }
 }

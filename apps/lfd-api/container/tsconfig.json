@@ -10,5 +10,13 @@
     "noEmit": true,
     "skipLibCheck": true
   },
-  "include": ["worker.ts", "edge-guard.ts", "shelf-store.ts", "pro-shelves.ts", "public-shelf.ts"]
+  "include": [
+    "worker.ts",
+    "edge-guard.ts",
+    "shelf-store.ts",
+    "pro-shelves.ts",
+    "public-shelf.ts",
+    "day-versions-store.ts",
+    "day-versions.ts"
+  ]
 }

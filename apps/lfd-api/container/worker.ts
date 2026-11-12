@@ -28,6 +28,9 @@ import {
   type PurgeableTag,
 } from "./public-shelf";
 import type { ProShelves } from "./pro-shelves";
+import { DAY_VERSIONS_INSTANCE } from "./day-versions";
+import type { DayVersions } from "./day-versions";
+import { DAY_VERSIONS_ENV, DAY_VERSIONS_HOST, DAY_VERSIONS_ORIGIN } from "./day-versions-store";
 import {
   isTrustedCaller,
   SHELF_STORE_ENV,
@@ -38,6 +41,8 @@ import {
 // L'objet des rayons pro (lot C2) : exporté par le point d'entrée, comme toute
 // classe de Durable Object liée dans `wrangler.jsonc`.
 export { ProShelves } from "./pro-shelves";
+// L'objet des journées (`plan-objet-des-journees.md`, lot 1).
+export { DayVersions } from "./day-versions";
 
 // Le point d'entrée par lequel un gestionnaire de sortie répond au container
 // (lot C0b, `documentation/caching-usage/le-rayon-en-cache.md`).
@@ -193,6 +198,7 @@ type RuntimeKey = (typeof RUNTIME_KEYS)[number];
 interface Env extends Partial<Record<RuntimeKey, string>> {
   BACKEND: DurableObjectNamespace<Backend>;
   PRO_SHELVES: DurableObjectNamespace<ProShelves>;
+  DAY_VERSIONS: DurableObjectNamespace<DayVersions>;
   RATE_LIMITER: RateLimiter;
 }
 
@@ -224,7 +230,11 @@ export class Backend extends Container<Env> {
   // Secrets du Worker → env du container, plus l'adresse du magasin des rayons
   // pro : posée ICI, à côté du gestionnaire qui l'intercepte, pour que l'hôte
   // appelé et l'hôte intercepté ne puissent pas diverger (lot C2).
-  envVars = { ...pickEnv(this.env), [SHELF_STORE_ENV]: SHELF_STORE_ORIGIN };
+  envVars = {
+    ...pickEnv(this.env),
+    [SHELF_STORE_ENV]: SHELF_STORE_ORIGIN,
+    [DAY_VERSIONS_ENV]: DAY_VERSIONS_ORIGIN,
+  };
 
   /**
    * `container` : de l'entrée dans l'objet à la réponse du conteneur. Moins le
@@ -335,10 +345,35 @@ async function publicPurgeOutcome(
   }
 }
 
-Backend.outboundByHost = { [SHELF_STORE_HOST]: proShelvesGateway };
+/**
+ * **Le chemin conteneur → objet des journées** (`plan-objet-des-journees.md`,
+ * § 3 bis) : un second hôte, `http://journees.interne`, intercepté de la même
+ * façon que celui des rayons et refusé (403) à tout autre appelant que
+ * `Backend` — le refus fait retomber l'API sur la base.
+ */
+async function dayVersionsGateway(
+  request: Request,
+  env: Env,
+  ctx: OutboundHandlerContext,
+): Promise<Response> {
+  const trusted = [env.BACKEND.idFromName(PRIMARY_INSTANCE).toString()];
+  if (!isTrustedCaller(ctx.containerId, trusted)) {
+    return new Response(null, { status: 403 });
+  }
+  return dayVersions(env).fetch(request);
+}
+
+Backend.outboundByHost = {
+  [SHELF_STORE_HOST]: proShelvesGateway,
+  [DAY_VERSIONS_HOST]: dayVersionsGateway,
+};
 
 function proShelves(env: Env): DurableObjectStub<ProShelves> {
   return env.PRO_SHELVES.get(env.PRO_SHELVES.idFromName(PRO_SHELVES_INSTANCE), PLACEMENT);
+}
+
+function dayVersions(env: Env): DurableObjectStub<DayVersions> {
+  return env.DAY_VERSIONS.get(env.DAY_VERSIONS.idFromName(DAY_VERSIONS_INSTANCE), PLACEMENT);
 }
 
 /**

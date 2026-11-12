@@ -140,7 +140,9 @@ const CALLER_READS =
  * daté (2026-11-04, C3). La purge de Workers Cache — seul le point d'entrée
  * qui garde les réponses peut la faire ; le gestionnaire de sortie — le seul
  * chemin du conteneur vers l'objet ; une classe de Durable Object — un
- * magasin de rayons de plus se décide.
+ * magasin de plus se décide. `day-versions.ts` : l'objet des journées, décidé
+ * par Hugo le 2026-11-12 (`plan-objet-des-journees.md`, § 3 bis) — des
+ * numéros de journée, jamais une réponse servie à un appelant.
  */
 const CONTAINER_ADMITTED = [
   {
@@ -156,7 +158,7 @@ const CONTAINER_ADMITTED = [
   {
     pattern: /\bextends\s+DurableObject\b/gu,
     what: "une classe de Durable Object",
-    files: ["apps/lfd-api/container/pro-shelves.ts"],
+    files: ["apps/lfd-api/container/pro-shelves.ts", "apps/lfd-api/container/day-versions.ts"],
   },
 ];
 

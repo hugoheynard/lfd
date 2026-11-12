@@ -59,6 +59,24 @@ const SET_BY_WORKER: Readonly<Record<string, string>> = {
   // gestionnaire de sortie qui l'intercepte, pour que l'hôte appelé et l'hôte
   // intercepté ne puissent pas diverger.
   SHOP_SHELF_CACHE_URL: "posée par le Worker à côté de son gestionnaire de sortie",
+  // L'adresse de l'objet des journées : même raison, second hôte intercepté.
+  DAY_VERSIONS_CACHE_URL: "posée par le Worker à côté de son gestionnaire de sortie",
+};
+
+/** Où chaque réglage de {@link SET_BY_WORKER} est nommé, et comment le Worker le pose. */
+const SET_BY_WORKER_SOURCES: Readonly<
+  Record<string, { readonly file: string; readonly constant: string; readonly origin: string }>
+> = {
+  SHOP_SHELF_CACHE_URL: {
+    file: "shelf-store.ts",
+    constant: "SHELF_STORE_ENV",
+    origin: "SHELF_STORE_ORIGIN",
+  },
+  DAY_VERSIONS_CACHE_URL: {
+    file: "day-versions-store.ts",
+    constant: "DAY_VERSIONS_ENV",
+    origin: "DAY_VERSIONS_ORIGIN",
+  },
 };
 
 /** Les noms que le Worker accepte de transmettre au container. */
@@ -159,14 +177,19 @@ describe("les variables transmises au container", () => {
 
   it("pose vraiment ce qu'il dit poser lui-même, et rien que la configuration ne lise", () => {
     const worker = readFileSync(join(CONTAINER, "worker.ts"), "utf8");
-    const store = readFileSync(join(CONTAINER, "shelf-store.ts"), "utf8");
     const configured = new Set(configuredKeys());
 
     for (const name of Object.keys(SET_BY_WORKER)) {
-      expect(store).toContain(`SHELF_STORE_ENV = "${name}"`);
+      const source = SET_BY_WORKER_SOURCES[name];
+      expect(source).toBeDefined();
+      if (source === undefined) {
+        continue;
+      }
+      const store = readFileSync(join(CONTAINER, source.file), "utf8");
+      expect(store).toContain(`${source.constant} = "${name}"`);
       expect(configured.has(name)).toBe(true);
+      expect(worker).toContain(`[${source.constant}]: ${source.origin}`);
     }
-    expect(worker).toContain("[SHELF_STORE_ENV]: SHELF_STORE_ORIGIN");
   });
 
   it("ne laisse aucun réglage de développement franchir le Worker", () => {
