@@ -146,6 +146,11 @@ sujets), la liste et le détail des sociétés et le compteur du menu
 `/commandes` (`orders-all`). Les stores des comptes clients gardent leur
 relecture après une écriture locale et leur filet de 5 min.
 
+**Une borne sur les fiches gardées** (décidé par Hugo le 2026-11-12) : le
+store du détail ne garde que les 50 dernières fiches ouvertes et oublie la
+plus ancienne au-delà. Sans borne, un onglet ouvert plusieurs jours garde
+toutes les fiches vues, même périmées.
+
 ## 4. Le bâti
 
 - **V1 — l'API** : registre de sujets, sources `companies` et `orders-all`,
