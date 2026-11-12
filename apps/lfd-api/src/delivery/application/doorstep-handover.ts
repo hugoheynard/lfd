@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 
 import { AfterCommit } from "../../platform/database/after-commit.js";
+import { UnitOfWork } from "../../platform/database/unit-of-work.js";
 import { Clock } from "../../platform/time/clock.js";
 import {
   DoorstepHandoverAttestor,
@@ -70,8 +71,11 @@ interface WalledStop {
  * Le handler garde l'unité de travail et le fait au journal (`publishTraced`) :
  * c'est lui l'acte nommé, et `lint:journal-tracked` le lit dans son corps.
  *
- * 1. `perform` range les images, déjà refusées si fausses par le domaine, au
- *    stockage, HORS transaction ; il les retire si le geste n'a pas été écrit.
+ * 1. `perform` regarde d'abord, sous le verrou de la tournée, si l'arrêt est
+ *    déjà clos : un rejeu y est traité (republication ou refus nommé) sans
+ *    rien envoyer au stockage. Sinon il range les images, déjà refusées si
+ *    fausses par le domaine, au stockage, HORS transaction, et les retire si
+ *    le geste n'a pas été écrit (une course perdue entre les deux).
  * 2. `closeAtDoor`, DANS l'unité de travail du handler : la tournée
  *    verrouillée et l'arrêt, SOUS LE MUR du livreur ; un arrêt déjà clos par
  *    une remise à la porte republie l'attestation existante et rend `null`
@@ -94,16 +98,25 @@ export class DoorstepHandover {
     private readonly attestor: DoorstepHandoverAttestor,
     private readonly clock: Clock,
     private readonly afterCommit: AfterCommit,
+    private readonly uow: UnitOfWork,
   ) {}
 
   /**
-   * Range les images, puis `write` — qui rend `true` si le geste a été écrit.
-   * Sinon (refus, échec, « déjà fait »), les images sont retirées.
+   * Traite le rejeu d'un arrêt déjà clos sans rien ranger ; sinon range les
+   * images, puis `write` — qui rend `true` si le geste a été écrit. Sinon
+   * (refus, échec, « déjà fait » gagné par une course), les images sont
+   * retirées.
+   *
+   * @throws ceux de {@link closeAtDoor} pour le rejeu : mur, rapporté, clos sans remise.
    */
   async perform(
+    gesture: DoorstepHandoverGesture,
     images: DoorstepProofImages,
     write: (staged: StagedHandoverProofs) => Promise<boolean>,
   ): Promise<void> {
+    if (await this.uow.run(() => this.replayedIfClosed(gesture))) {
+      return;
+    }
     const staged = await this.attestor.stageProofs(images);
     let written = false;
     try {
@@ -149,6 +162,17 @@ export class DoorstepHandover {
     this.afterCommit.defer(publish, PUBLISH);
     return { round, order: citeStopOrder(stop.orderId, stop.reference) };
   }
+
+  /** `true` : l'arrêt était déjà clos, et le rejeu est traité. */
+  private async replayedIfClosed(gesture: DoorstepHandoverGesture): Promise<boolean> {
+    const { round, stop } = await this.walled(gesture);
+    if (!round.hasClosed(stop.stopId)) {
+      return false;
+    }
+    await this.replay(stop);
+    return true;
+  }
+
   private async walled(gesture: DoorstepHandoverGesture): Promise<WalledStop> {
     const round = await this.rounds.loadForDriver(gesture.roundId, gesture.staffUserId);
     if (round === null) {

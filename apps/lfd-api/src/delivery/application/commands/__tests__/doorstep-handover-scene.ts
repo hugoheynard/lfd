@@ -72,12 +72,14 @@ export function handoverScene(
   const attestor = new ScriptedDoorstepAttestor();
   const events = new RecordingPublisher();
   const afterCommit = new HeldAfterCommit();
+  const uow = new DirectUnitOfWork();
   const handover = new DoorstepHandover(
     rounds,
     new InMemoryDoorstepStops(PAUL, doorstep(options.stop)),
     attestor,
     new FixedClock(NOW),
     afterCommit,
+    uow,
   );
-  return { handover, rounds, attestor, events, afterCommit, uow: new DirectUnitOfWork() };
+  return { handover, rounds, attestor, events, afterCommit, uow };
 }

@@ -47,6 +47,7 @@ export class DepositStopHandler implements ICommandHandler<DepositStopCommand, v
       },
     };
     await this.handover.perform(
+      gesture,
       { photo: deposit.photo, signature: null, signedSlip: null },
       (staged) =>
         this.uow.run(async () => {

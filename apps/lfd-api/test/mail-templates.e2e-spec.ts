@@ -314,6 +314,20 @@ describe("les cas et l'essai de l'éditeur (S4d)", () => {
       .send({ locale: "fr", caseId: "inconnu" })
       .expect(404);
   });
+
+  it("un double clic sur « M'envoyer un essai » (même clé) n'envoie qu'un essai", async () => {
+    // Le handler de l'éditeur n'appelle pas OncePerIntent : la commande d'essai
+    // des textes, à qui il délègue avec la même clé, scelle (route rangée le 2026-11-12).
+    const intent = freshIntent();
+    for (let click = 0; click < 2; click += 1) {
+      await staff()
+        .post(`${EDITOR}/${RESET}/trials`)
+        .set(INTENT_KEY, intent)
+        .send({ locale: "fr" })
+        .expect(204);
+    }
+    expect(transport.sent).toHaveLength(1);
+  });
 });
 
 describe("l'éditeur couvre l'écran des textes (S5e)", () => {

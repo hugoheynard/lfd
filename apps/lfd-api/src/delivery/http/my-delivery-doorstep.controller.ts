@@ -124,6 +124,9 @@ export class MyDeliveryDoorstepController {
   @Post(":roundId/stops/:stopId/handover")
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseInterceptors(handoverPicturesUpload())
+  @Idempotent(
+    "rejouée sur un arrêt déjà clos, la requête le voit sous le verrou de la tournée AVANT tout envoi au stockage : ni pièce, ni clôture, ni fait au journal — l'attestation existante est réannoncée (réparation voulue, sans second effet chez le commerce), ou refus nommé",
+  )
   async handOver(
     @StaffUserId() staffUserId: string,
     @Param("roundId") roundId: string,
@@ -154,6 +157,9 @@ export class MyDeliveryDoorstepController {
   @Post(":roundId/stops/:stopId/drop-off")
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseInterceptors(incidentPhotoUpload())
+  @Idempotent(
+    "rejouée sur un arrêt déjà clos, la requête le voit sous le verrou de la tournée AVANT tout envoi au stockage : ni pièce, ni clôture, ni fait au journal — l'attestation existante est réannoncée (réparation voulue, sans second effet chez le commerce), ou refus nommé",
+  )
   async deposit(
     @StaffUserId() staffUserId: string,
     @Param("roundId") roundId: string,

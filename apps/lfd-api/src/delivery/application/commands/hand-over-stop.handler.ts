@@ -50,6 +50,7 @@ export class HandOverStopHandler implements ICommandHandler<HandOverStopCommand,
       },
     };
     await this.handover.perform(
+      gesture,
       { photo: receipt.photo, signature: receipt.signature, signedSlip: receipt.signedSlip },
       (staged) =>
         this.uow.run(async () => {

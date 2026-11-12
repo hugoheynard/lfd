@@ -202,6 +202,9 @@ export class AdminMailTemplatesController {
   /** « M'envoyer un essai » (S4d) — à l'adresse de la fiche de l'appelant, et à elle seule. */
   @Post(":template/trials")
   @HttpCode(204)
+  @Idempotent(
+    "par sa clé d'intention : le handler délègue à SendMailCopyTrialCommand, scellée par OncePerIntent.runSealed sous la même clé — un second clic n'envoie rien",
+  )
   async trial(
     @Param("template") template: string,
     @Body(new ZodBody(mailDocumentTrialPayloadSchema)) payload: MailDocumentSourcedTrialPayload,

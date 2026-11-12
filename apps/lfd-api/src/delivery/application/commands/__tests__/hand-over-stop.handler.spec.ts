@@ -239,9 +239,9 @@ describe("HandOverStopHandler — « Remis au client » (B1)", () => {
     expect(attestor.attested).toHaveLength(1);
     expect(events.traced).toHaveLength(1);
     expect(attestor.published).toEqual(["attested:o_1", "replayed:o_1"]);
-    expect(attestor.discarded).toEqual([
-      { photoKey: "proofs/2/photo", signatureKey: null, signedSlipKey: null },
-    ]);
+    // Régression : le rejeu envoyait ses pièces au stockage avant de voir l'arrêt clos (2026-11-12).
+    expect(attestor.staged).toHaveLength(1);
+    expect(attestor.discarded).toEqual([]);
   });
 
   it("🔴 rejeu sur un arrêt clos SANS remise : refusé en le nommant", async () => {
@@ -253,6 +253,7 @@ describe("HandOverStopHandler — « Remis au client » (B1)", () => {
       StopClosedWithoutHandoverError,
     );
     expect(attestor.attested).toEqual([]);
+    expect(attestor.staged).toEqual([]);
   });
 
   it("refuse une version périmée, et une tournée rentrée", async () => {
