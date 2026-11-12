@@ -21,7 +21,7 @@
 
 ## 2. Corriger
 
-1. **🔴 Les appels vers l'objet des journées arrivent à l'objet des rayons.**
+1. ✅ (`91f6856c2`, à prouver en production) **🔴 Les appels vers l'objet des journées arrivent à l'objet des rayons.**
    Constaté le 2026-11-12 à 22 h 17 dans l'onglet Cache : les deux objets
    rendent EXACTEMENT les mêmes compteurs, sous le nom `pro-shelves`.
    - **Ce qui est prouvé** : l'effet. Le nom `pro-shelves` n'est écrit que par
@@ -93,7 +93,7 @@ lots J3, J4, J5 du plan `ops/plan-idempotence-des-ecritures.md` § 8 :
   un tiers, deux clics simultanés sur un geste « par nature », risques
   assumés), chaque affirmation vérifiée dans le code.
 
-2 quater. **Refus d'écrire sur une fiche client périmée** (Hugo, 2026-11-12) :
+2 quater. ✅ (`c137414e2`) **Refus d'écrire sur une fiche client périmée** (Hugo, 2026-11-12) :
 une modification envoyée sur une fiche que quelqu'un a changée depuis sa
 lecture est refusée (409 nommé : « cette fiche a changé depuis que vous
 l'avez ouverte ») au lieu d'écraser. Court plan d'abord (où vit la version
@@ -147,5 +147,33 @@ e-mail.
 
 ## 7. Le rapport du matin
 
-(rempli au fil de la nuit : ce qui est fait avec son commit, ce qui a bloqué
-et pourquoi, l'audit de l'idempotence, et ce qui attend une décision)
+### À vérifier en premier, après le prochain déploiement
+
+1. **Onglet Cache** : deux lignes distinctes, `day-versions` et `pro-shelves`,
+   avec des chiffres différents. Sinon, la correction de l'aiguillage
+   (`91f6856c2`) n'a pas pris, et le cache partagé des journées, du catalogue
+   et du PIM ne sert toujours pas (rien de faux n'est servi : tout va en base).
+2. **Une fiche client** : ouvrir la même fiche dans deux onglets, enregistrer
+   l'identité dans l'un, puis dans l'autre → « Cette fiche a changé… ».
+3. **La vérification de dérive** (étape du déploiement de l'API, mode rapport)
+   : lire les écarts qu'elle liste au premier passage, et les inscrire ou les
+   corriger avant de la rendre bloquante (runbook).
+
+### Fait cette nuit
+
+- Préchargement du panier — `9482f4023`.
+- Purge des gestes à 7 jours, index sur la date — `61ce2cbdb`.
+- Vérification de dérive avant migration, mode rapport, sans bloquer si
+  l'étape tombe en panne — `6e87d7cc5`.
+- Aiguillage des objets partagés : un seul hôte, l'objet choisi par le
+  chemin. La cause exacte n'est pas prouvée (non reproduite en local) ;
+  l'effet l'est : tout allait en base depuis la mise en production du
+  cache des journées — `91f6856c2`.
+- Idempotence J3 : chaque route à clé rejouée, 80 sur 93 dont tout
+  l'argent, aucun double effet trouvé — `95574a15d`.
+- Fiche client périmée : révision par société, `If-Match`, 409 nommé,
+  rejeu sans refus. Choix fait : seule l'écriture d'un geste décidé sur une
+  fiche lue est conditionnée, pour ne pas casser la règle « deux gestes sur
+  des colonnes différentes gardent chacun le leur » — `c137414e2`.
+
+(suite au fil de la nuit)
