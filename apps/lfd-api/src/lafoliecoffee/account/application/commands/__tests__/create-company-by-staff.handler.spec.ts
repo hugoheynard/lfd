@@ -1,3 +1,4 @@
+import { UnitOfWork } from "../../../../../platform/database/unit-of-work.js";
 import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import type { Company } from "../../../domain/entities/company.js";
@@ -32,6 +33,36 @@ class FakeAccess extends AccountAccessGranter {
   }
 }
 
+/**
+ * Unité de travail doublée qui observe son périmètre : les écritures faites
+ * dedans ne sont gardées (`committed`) que si le travail aboutit, comme une
+ * transaction qui valide ou annule.
+ */
+class ScopedUnitOfWork extends UnitOfWork {
+  readonly committed: Company[] = [];
+  private pending: Company[] | null = null;
+
+  async run<T>(work: () => Promise<T>): Promise<T> {
+    this.pending = [];
+    try {
+      const result = await work();
+      this.committed.push(...this.pending);
+      return result;
+    } finally {
+      this.pending = null;
+    }
+  }
+
+  /** Écrit dans l'unité en cours ; hors unité, l'écriture serait gardée telle quelle. */
+  write(company: Company): void {
+    if (this.pending === null) {
+      this.committed.push(company);
+      return;
+    }
+    this.pending.push(company);
+  }
+}
+
 interface Doubles {
   readonly handler: CreateCompanyByStaffHandler;
   readonly access: FakeAccess;
@@ -40,9 +71,13 @@ interface Doubles {
   /** Vrai si une écriture **avec** propriétaire a eu lieu (ne doit jamais arriver). */
   readonly owned: { count: number };
   readonly events: RecordingPublisher;
+  readonly uow: ScopedUnitOfWork;
 }
 
-function doubles(options: { siretTaken?: boolean; access?: AccessGranted | Error } = {}): Doubles {
+function doubles(
+  options: { siretTaken?: boolean; access?: AccessGranted | Error; failAfterWrite?: boolean } = {},
+): Doubles {
+  const uow = new ScopedUnitOfWork();
   const unowned: Company[] = [];
   const owned = { count: 0 };
 
@@ -56,7 +91,10 @@ function doubles(options: { siretTaken?: boolean; access?: AccessGranted | Error
     },
     declareUnowned: (company) => {
       unowned.push(company);
-      return Promise.resolve("company_unowned");
+      uow.write(company);
+      return options.failAfterWrite === true
+        ? Promise.reject(new Error("écriture interrompue"))
+        : Promise.resolve("company_unowned");
     },
     kbisLocation: () => Promise.resolve(null),
   };
@@ -66,11 +104,12 @@ function doubles(options: { siretTaken?: boolean; access?: AccessGranted | Error
     options.access ?? { userId: "user_1", outcome: "identity_created", mailSent: true },
   );
   return {
-    handler: new CreateCompanyByStaffHandler(companies, access, events, inMemoryIntents()),
+    handler: new CreateCompanyByStaffHandler(companies, access, events, inMemoryIntents(), uow),
     access,
     unowned,
     owned,
     events,
+    uow,
   };
 }
 
@@ -198,5 +237,22 @@ describe("CreateCompanyByStaffHandler", () => {
     const { handler } = doubles({ access: new Error("canal indisponible") });
 
     await expect(handler.execute(command())).resolves.toMatchObject({ holder: "failed" });
+  });
+
+  /** Régression : la déclaration écrivait hors de toute unité de travail, une panne y laissait une société à moitié écrite. */
+  it("une écriture qui échoue dans la déclaration ne laisse aucune société, ni fait, ni accès", async () => {
+    const { handler, uow, events, access } = doubles({ failAfterWrite: true });
+
+    await expect(handler.execute(command())).rejects.toThrow("écriture interrompue");
+    expect(uow.committed).toEqual([]);
+    expect(events.published).toEqual([]);
+    expect(access.granted).toEqual([]);
+  });
+
+  it("garde la société une fois la déclaration validée", async () => {
+    const { handler, uow } = doubles();
+
+    await handler.execute(command());
+    expect(uow.committed).toHaveLength(1);
   });
 });

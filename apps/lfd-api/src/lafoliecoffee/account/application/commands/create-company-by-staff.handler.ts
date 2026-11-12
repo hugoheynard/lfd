@@ -1,6 +1,7 @@
 import { Logger } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import {
   type IntentCodec,
@@ -83,6 +84,7 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
     private readonly access: AccountAccessGranter,
     private readonly events: DomainEventPublisher,
     private readonly intents: OncePerIntent,
+    private readonly uow: UnitOfWork,
   ) {}
 
   /**
@@ -113,12 +115,16 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
     // Le contrôle d'unicité ne vaut que si on a un SIRET : sans lui, il n'y a
     // rien à dédupliquer, et comparer des chaînes vides ferait de la deuxième
     // société sans papiers un doublon de la première.
-    const siret = company.siret;
-    if (siret !== null && (await this.companies.existsBySiret(siret.value))) {
-      throw new SiretAlreadyRegisteredError(siret.value);
-    }
-
-    const companyId = await this.companies.declareUnowned(company);
+    const companyId = await this.uow.run(async () => {
+      const siret = company.siret;
+      if (siret !== null && (await this.companies.existsBySiret(siret.value))) {
+        throw new SiretAlreadyRegisteredError(siret.value);
+      }
+      return this.companies.declareUnowned(company);
+    });
+    // Publié APRÈS la validation, hors de l'unité : un abonné du bus lancé
+    // dedans hériterait de la transaction ambiante, close quand il écrit, et
+    // réagirait à une société que l'annulation ferait disparaître.
     // Déclarée par le staff (démarchage) : signal `staff`.
     this.events.publish(new CompanyDeclaredEvent(companyId, company.displayName(), "staff", null));
 
