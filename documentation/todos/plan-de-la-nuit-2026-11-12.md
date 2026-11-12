@@ -248,6 +248,16 @@ raisonne par fichier.
 - Virement : aperçu de l'écart par le serveur, « Réglée par virement le … »,
   moyen d'encaissement lu par la boutique — `7fbaa6bad`.
 
+### État au matin
+
+**CI de `dev` verte sur `6158cac4d`** (un lot e2e relancé une fois : image
+Docker MinIO non téléchargée chez le registre, pas le code). Tout ce qui est
+listé ici est sur `dev` ; rien n'est en production depuis `adb9c41e3`. La
+mise en production attend « pousse main ». Elle porte deux migrations
+additives relues (`20261112220000` index des intentions, `20261112233000`
+révision des fiches, avec `lock_timeout`), et la vérification de dérive
+tournera pour la première fois, en mode rapport.
+
 ### À trancher avec Hugo
 
 1. **Les 62 exceptions de J4** : l'agent a admis trois familles (clé métier ;
