@@ -50,3 +50,28 @@ Un fichier touché est un fichier corrigé.
 - Une boucle cachée derrière un appel de méthode (`this.helper(x)` qui lit) : le balayage ne la voit pas ; seules les lectures ouvertes l'ont trouvée.
 - Les **lectures indépendantes en série** (parallélisables par `Promise.all`) n'ont été relevées que par sondage.
 - Le nombre réel d'appels par route : la page Santé du back-office (temps par route, opérations par schéma) dit lesquels de ces chemins coûtent vraiment en production.
+
+## 6. Piste : une porte `reads-in-loops` (proposée le 2026-11-12, non décidée)
+
+Pour que le motif ne revienne pas une fois corrigé, sur le modèle de
+`write-idempotence` :
+
+- **Ce qu'elle lit** : `application/` et `infrastructure/` de l'API, par le
+  parseur TypeScript.
+- **Ce qu'elle signale** : un `await` d'un appel sur une dépendance injectée
+  (`this.<port>.<méthode>(…)`) ou sur `this.prisma.*` dans un `for`,
+  `for…of`, `while`, `.map(async …)` ou `.forEach(async …)` ; et
+  `Promise.all(xs.map(x => this.<port>.<méthode>(x)))`, qui fait aussi une
+  requête par élément. Elle suit un niveau d'appel dans la même classe
+  (`this.helper(x)` qui lit).
+- **Ce qu'elle admet** : une liste avec sa raison écrite (écriture en
+  transaction, ordre imposé contre l'interblocage, boucle bornée à quelques
+  éléments) ; les cas du relevé ci-dessus non encore corrigés sont une dette
+  comptée qui ne peut que décroître.
+- **Pourquoi pas `no-await-in-loop` d'ESLint** : elle signale aussi les
+  écritures séquentielles voulues (et le dépôt interdit `eslint-disable`),
+  et elle ne voit pas `Promise.all` sur une liste.
+- **Ses limites** : elle ne distingue pas lecture et écriture par le nom (une
+  écriture en boucle mérite aussi sa raison) ; elle ne voit pas au-delà d'un
+  niveau d'appel ni à travers un autre service ; elle ne voit pas les
+  lectures indépendantes en série hors boucle.
