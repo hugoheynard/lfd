@@ -106,10 +106,29 @@ de l'onglet ne relit rien (le veilleur voit un numéro égal à celui de la
 copie) ; relit tout quand le numéro diffère (le geste d'un collègue) ; filet
 de 5 min.
 
+### 3.5 Le contenu partagé dans l'objet
+
+Décidé par Hugo le 2026-11-12 (« j'aime pas trop l'idée de cache navigateur
+comparé au cache partagé »). La réponse de `admin/catalog/screen` **sans les
+marqueurs du sur mesure** est la même pour tout porteur de `lfc_catalog` :
+elle est rangée dans l'objet `DayVersions` sous la clé
+(révision, `catalog-admin`, numéro). Tant que le numéro ne bouge pas, tous les
+postes et tous les onglets la reçoivent sans toucher la base ; quand il
+bouge, une seule relecture pour tous (single-flight par instance, comme les
+numéros). Les marqueurs du sur mesure ne sont jamais rangés : ils sont lus à
+chaque appel, sous leur droit. Une réponse au-delà d'une taille plafond
+(1 Mo) n'est pas rangée et l'écart est journalisé ; objet indisponible →
+lecture directe de la base, comme pour les numéros. Les lignes relues après
+un geste ne passent pas par l'objet.
+
+Le store de l'onglet reste, plus mince : il garde la copie et son numéro pour
+remplacer une ligne après un geste et ignorer l'écho de son propre geste.
+
 ## 4. Le bâti
 
 - **K1 — l'API** : la route de l'écran, le journal filtré (migration
   additive, `lecteur-de-migrations`), l'élagueur, la source `catalog-admin`.
+- **K3 — le contenu partagé** (§ 3.5), dans le même lot que K1 côté API.
 - **K2 — l'écran** : le store, la page qui le lit, la relecture après un
   geste, le numéro retenu, l'abonnement.
 - **Mesure** : avant et après, sur dev, le nombre de requêtes à la base pour
