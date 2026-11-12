@@ -83,7 +83,7 @@
   `deploy_lfc_boutique.yml` l. 127 et 184). L'application mobile du
   back-office (Capacitor) charge le même site distant (`capacitor.config.ts`,
   `server.url`) : elle suit sans rien de plus.
-- **Le modèle de veille** existe : `day-version-watcher.ts` relit toutes les
+- **Le modèle de veille** existe : `version-watcher.ts` relit toutes les
   5 min, onglet visible seulement (`SAFETY_NET_MS`).
 
 ## 2. Le mécanisme
