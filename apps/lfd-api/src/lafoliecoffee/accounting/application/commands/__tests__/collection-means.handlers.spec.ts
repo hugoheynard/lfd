@@ -95,6 +95,7 @@ function world(whileWaiting: (modes: PayerModesStore) => void = () => undefined)
       clock,
       events,
       new DirectUnitOfWork(),
+      lock,
     ),
     read: new GetPayerCollectionMeansHandler(
       new OnlyLe1(),
@@ -212,6 +213,20 @@ describe("SetPayerCollectionMeansHandler", () => {
 });
 
 describe("CancelPayerCollectionMeansHandler", () => {
+  /**
+   * Régression : l'annulation lisait l'historique sans le verrou du payeur ; un
+   * moyen remplacé pendant ce temps restait programmé, l'ancien « annulé ».
+   */
+  it("annule sous le verrou du payeur, comme la pose", async () => {
+    const w = world();
+    await w.set.execute(toTransfer(PAYER.companyId));
+    w.lock.locked.length = 0;
+
+    await w.cancel.execute(new CancelPayerCollectionMeansCommand("le1", PAYER.companyId, "s"));
+
+    expect(w.lock.locked).toEqual([PAYER.companyId]);
+  });
+
   it("annule le programmé : garde la ligne, pose l'annulation, journalise `cancelled`", async () => {
     const w = world();
     await w.set.execute(toTransfer(PAYER.companyId));

@@ -112,6 +112,7 @@ function world(whileWaiting: (means: PayerMeansStore) => void = () => undefined)
       clock,
       events,
       new DirectUnitOfWork(),
+      lock,
     ),
   };
 }
@@ -280,6 +281,20 @@ describe("SetPayerBillingModeHandler / CancelPayerBillingModeHandler", () => {
       to: "monthly",
       cancelled: true,
     });
+  });
+
+  /**
+   * Régression : l'annulation lisait l'historique sans le verrou du payeur ; un
+   * mode remplacé pendant ce temps restait programmé, l'ancien « annulé ».
+   */
+  it("annule sous le verrou du payeur, comme la pose", async () => {
+    const w = world();
+    await w.setPayer.execute(new SetPayerBillingModeCommand("le1", PAYER.companyId, "weekly", "s"));
+    w.lock.locked.length = 0;
+
+    await w.cancelPayer.execute(new CancelPayerBillingModeCommand("le1", PAYER.companyId, "s2"));
+
+    expect(w.lock.locked).toEqual([PAYER.companyId]);
   });
 });
 

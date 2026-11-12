@@ -7,6 +7,7 @@ import { BillingPayerNotFoundError } from "../../domain/errors/billing-mode-erro
 import { PayerCollectionMeansChangedEvent } from "../../domain/events/collection-means.events.js";
 import { LegalEntityRepository } from "../../domain/ports/legal-entity.repository.js";
 import { PayerCollectionMeansRepository } from "../../domain/ports/payer-collection-means.repository.js";
+import { PayerChangeLock } from "../../domain/ports/payer-change-lock.js";
 import { PayerStandingReader } from "../../domain/ports/payer-standing.reader.js";
 import { loadOrFail } from "../legal-entity-support.js";
 import { CancelPayerCollectionMeansCommand } from "./cancel-payer-collection-means.command.js";
@@ -28,6 +29,7 @@ export class CancelPayerCollectionMeansHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly lock: PayerChangeLock,
   ) {}
 
   async execute(command: CancelPayerCollectionMeansCommand): Promise<void> {
@@ -38,9 +40,12 @@ export class CancelPayerCollectionMeansHandler implements ICommandHandler<
       throw new BillingPayerNotFoundError(command.payerCompanyId);
     }
     const payer = { id: standing.companyId, name: standing.name };
-    const history = await this.payerMeans.load(entity.id, payer);
-    const change = history.cancelScheduled({ at, staffId: command.staffId });
+    // Sous le verrou du payeur (K11), comme la pose : un changement remplacé
+    // pendant l'annulation est relu, jamais annulé à la place d'un autre.
     await this.uow.run(async () => {
+      await this.lock.lock(payer.id);
+      const history = await this.payerMeans.load(entity.id, payer);
+      const change = history.cancelScheduled({ at, staffId: command.staffId });
       await this.payerMeans.save(history);
       await this.events.publishTraced(
         new PayerCollectionMeansChangedEvent(
