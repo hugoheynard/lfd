@@ -3,11 +3,15 @@ import { DAY_JOURNALS, type DayJournal } from "@lfd/contracts";
 import type { DayVersionsCard } from "./day-versions-cache.js";
 
 /**
- * La fenêtre pendant laquelle une carte rangée se sert sans relire la base
- * (`plan-objet-des-journees.md`, § 1) : un écran voit un numéro au plus 5 s
- * après la base.
+ * La fenêtre pendant laquelle une carte rangée se sert sans relire la base :
+ * l'intervalle même des onglets (15 s, `day-version-watcher.ts`). Une seule
+ * relecture des six numéros par tranche de 15 s et par journée, quel que soit
+ * le nombre d'onglets : l'objet fait lire moins la base dès deux onglets
+ * (Hugo, 2026-11-12). Le prix : un écran voit un numéro au plus 15 s après la
+ * base, soit 30 s de retard au pire avec l'intervalle de l'onglet ; les
+ * gestes restent jugés par le serveur.
  */
-export const DAY_VERSIONS_FRESH_MS = 5000;
+export const DAY_VERSIONS_FRESH_MS = 15_000;
 
 /** Le numéro de chaque journal du registre. */
 export type CompleteDayVersions = Readonly<Record<DayJournal, number>>;

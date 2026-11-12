@@ -321,7 +321,7 @@ describe('SupervisionPage', () => {
     const fixture = await mount({ preparation });
     const watch = watched.at(-1);
 
-    expect(watch?.journals).toEqual(['orders', 'production']);
+    expect(watch?.journals).toEqual(['orders', 'production', 'delivery']);
     expect(watch?.date()).toBe(DATE);
 
     await watch?.reload();

@@ -410,9 +410,14 @@ describe("la porte unique des versions de journée (D8)", () => {
     expect(view.versions.production).toBeGreaterThan(0);
   });
 
-  it("`b2b_supervision:read` reçoit le commerce ET le fournil — les deux portes de la Supervision", async () => {
+  /** La Supervision montre aussi la place des livraisons dans leurs tournées. */
+  it("`b2b_supervision:read` reçoit le commerce, le fournil et la livraison", async () => {
     await allowRead("staff-version-supervision", "b2b_supervision");
-    expect(await journalsOf("staff-version-supervision")).toEqual(["orders", "production"]);
+    expect(await journalsOf("staff-version-supervision")).toEqual([
+      "delivery",
+      "orders",
+      "production",
+    ]);
   });
 
   /**
@@ -428,10 +433,13 @@ describe("la porte unique des versions de journée (D8)", () => {
     },
   );
 
-  /** Audit `livraisons/audit-2026-10-07.md`, B6 : le poste de retrait suit les deux. */
-  it("`handover_counter:read` reçoit le commerce et le fournil", async () => {
+  /**
+   * Régression : le transfert qu'un livreur dépose au point de retrait
+   * n'apparaissait au comptoir qu'au filet de 5 min (journal `delivery` non suivi).
+   */
+  it("`handover_counter:read` reçoit le commerce, le fournil et la livraison", async () => {
     await allowRead("staff-version-retrait", "handover_counter");
-    expect(await journalsOf("staff-version-retrait")).toEqual(["orders", "production"]);
+    expect(await journalsOf("staff-version-retrait")).toEqual(["delivery", "orders", "production"]);
   });
 
   it("🔴 qui n'a que le droit du commerce ne reçoit PAS `production` — sans refus de la porte", async () => {

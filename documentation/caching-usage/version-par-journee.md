@@ -99,7 +99,7 @@ rien.
 
 ## 4. Ce qui reste ouvert — décidé avec Hugo le 2026-11-04
 
-> ✅ **Lot 1 bâti le 2026-11-12** ([`plan-objet-des-journees.md`](plan-objet-des-journees.md)) : les **numéros** passent par l'objet `DayVersions`, dans le Worker de l'API. Ce qui diffère de la cible ci-dessous, décidé après `vitruve` : pas d'alarme pour les numéros (la première question d'une fenêtre de 5 s relit la base et range, les autres lisent l'objet, une seule relecture à la fois par instance) ; c'est l'API qui joint l'objet, par un second hôte intercepté (`journees.interne`), comme le rayon ; la carte rangée contient tous les journaux et le droit filtre après ; la révision du code est dans la clé. **Reste le lot 2** : le contenu des écrans partagés dans le même objet, avec l'alarme décrite ci-dessous.
+> ✅ **Lot 1 bâti le 2026-11-12** ([`plan-objet-des-journees.md`](plan-objet-des-journees.md)) : les **numéros** passent par l'objet `DayVersions`, dans le Worker de l'API. Ce qui diffère de la cible ci-dessous, décidé après `vitruve` : pas d'alarme pour les numéros (la première question d'une fenêtre de 15 s (l'intervalle des onglets, décidé par Hugo le 2026-11-12) relit la base et range, les autres lisent l'objet, une seule relecture à la fois par instance) ; c'est l'API qui joint l'objet, par un second hôte intercepté (`journees.interne`), comme le rayon ; la carte rangée contient tous les journaux et le droit filtre après ; la révision du code est dans la clé. **Reste le lot 2** : le contenu des écrans partagés dans le même objet, avec l'alarme décrite ci-dessous.
 
 Chaque question coûte une lecture par journal, et chaque « oui » fait relire
 **le même contenu** à chaque écran ouvert sur la même journée (la Supervision :

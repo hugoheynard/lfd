@@ -19,7 +19,7 @@ journal. Au rush, avec plusieurs écrans, ce sont des dizaines de lectures par
 minute pour une réponse qui change rarement.
 
 Le lot 1 met **un seul objet partagé** devant ces numéros : la première
-question d'une fenêtre de 5 secondes lit la base et range la réponse dans
+question d'une fenêtre de 15 secondes (5 s dans la première version) lit la base et range la réponse dans
 l'objet ; toutes les autres, de tous les onglets et de toutes les instances
 de l'API, la reçoivent de l'objet. Le contenu des écrans viendra au lot 2.
 

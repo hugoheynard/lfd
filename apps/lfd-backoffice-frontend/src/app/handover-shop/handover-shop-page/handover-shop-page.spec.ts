@@ -515,7 +515,7 @@ describe('HandoverShopPage — changer de journée', () => {
       await render(api);
       const watch = watched.at(-1);
 
-      expect(watch?.journals).toEqual(['orders', 'production']);
+      expect(watch?.journals).toEqual(['orders', 'production', 'delivery']);
       expect(watch?.date()).toBe(api.days[0]);
     });
 

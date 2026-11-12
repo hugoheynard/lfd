@@ -35,9 +35,14 @@ describe("DeliveryDayVersionSource", () => {
     expect(versions.asked).toEqual([]);
   });
 
-  it("se nomme `delivery` et s'ouvre aux tournées comme au chargement", () => {
+  it("se nomme `delivery` et s'ouvre aux tournées, au chargement, au comptoir et à la Supervision", () => {
     const source = new DeliveryDayVersionSource(new TableVersions(new Map()));
     expect(source.journal).toBe("delivery");
-    expect([...source.readers].sort()).toEqual(["delivery_loading:read", "delivery_rounds:read"]);
+    expect([...source.readers].sort()).toEqual([
+      "b2b_supervision:read",
+      "delivery_loading:read",
+      "delivery_rounds:read",
+      "handover_counter:read",
+    ]);
   });
 });

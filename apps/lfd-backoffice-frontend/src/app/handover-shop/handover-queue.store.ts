@@ -287,11 +287,12 @@ export class HandoverQueueStore {
       }
     }, TICK_MS);
     inject(DestroyRef).onDestroy(() => window.clearInterval(tick));
-    // 🔴 La file se relit quand l'une des deux journées bouge (D6,
+    // 🔴 La file se relit quand l'une des trois journées bouge (D6,
     // `version-par-journee.md`) : une commande passée au téléphone
-    // (commerce) ou un sac fermé au fournil (production). Filet de 5 min inclus.
+    // (commerce), un sac fermé au fournil (production), ou un transfert
+    // déposé au point de retrait par le livreur (livraison). Filet de 5 min inclus.
     inject(DayVersionWatcher).watch({
-      journals: ['orders', 'production'],
+      journals: ['orders', 'production', 'delivery'],
       date: this.day,
       reload: () => this.refresh(),
     });
