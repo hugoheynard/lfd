@@ -43,3 +43,5 @@ Les petits restes : [`../todos/todo-cache-restes.md`](../todos/todo-cache-restes
 Ailleurs, à lire avec :
 [`../pricing/moteur/optimisation-resolution-de-prix.md`](../pricing/moteur/optimisation-resolution-de-prix.md),
 ce que coûte un prix et le cache des règles de prix.
+
+Le plan de l'objet des journées (lot 1 : les numéros, dans un Durable Object partagé) : [`plan-objet-des-journees.md`](plan-objet-des-journees.md).
