@@ -32,3 +32,23 @@ export function cancellableOf<T extends AppendOnlyStamp>(
 ): T | null {
   return entries.find((entry) => entry.cancelledAt === null && entry.effectiveFrom > at) ?? null;
 }
+
+/**
+ * **Rien n'a bougé depuis `closure`** — la seconde condition de l'immédiat,
+ * commune au mode et au moyen d'encaissement d'un payeur : aucun segment
+ * vivant ne commence à elle ou après, ni n'a été écrit depuis — un seul
+ * immédiat par période. Un segment annulé ne compte pas : une annulation
+ * n'est admise qu'avant la prise d'effet (`cancellableOf`), il n'a donc
+ * jamais valu.
+ */
+export function isQuietSince<T extends AppendOnlyStamp>(
+  entries: readonly T[],
+  closure: Date,
+): boolean {
+  return !entries.some(
+    (entry) =>
+      entry.cancelledAt === null &&
+      (entry.createdAt.getTime() >= closure.getTime() ||
+        entry.effectiveFrom.getTime() >= closure.getTime()),
+  );
+}

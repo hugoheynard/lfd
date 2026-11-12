@@ -256,6 +256,14 @@ export const staffResourceSchema = z.enum([
    */
   "b2b_deferred_payment_block",
   /**
+   * **Changer le moyen d'encaissement d'un payeur au compte** — prélèvement ou
+   * virement (plan `plan-paiement-au-compte-par-virement.md`, V10). Changer de
+   * moyen arrête ou démarre un prélèvement : un geste de comptabilité à part
+   * de `b2b_accounting`. Lire le moyen reste sous `b2b_accounting:read`.
+   * Accordée à l'écran ; aucune migration ne la donne à un rôle.
+   */
+  "b2b_collection_means",
+  /**
    * **Le prélèvement d'essai** — déclarer nos établissements, générer un
    * fichier `pain.008` d'essai sur l'un d'eux, le télécharger, marquer un essai
    * remboursé (2026-10-22,
@@ -838,6 +846,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   b2b_payments: "Moyens de paiement",
   b2b_accounting: "Comptabilité",
   b2b_deferred_payment_block: "Blocage du prélèvement",
+  b2b_collection_means: "Moyen d'encaissement",
   collection_test: "Prélèvement d'essai",
   lfc_price_limits: "Limites de prix",
   b2b_late_fee: "Surtaxe de retard",
@@ -978,6 +987,7 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_payments: "write",
     b2b_accounting: "write",
     b2b_deferred_payment_block: "write",
+    b2b_collection_means: "write",
     // L'administrateur seul (2026-10-22, plan du prélèvement d'essai) : en
     // production, accordée à l'écran.
     collection_test: "write",

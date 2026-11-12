@@ -51,6 +51,7 @@ export const ACCOUNTING_FACTS = {
   billingModeDatesChanged: "legal_entity.billing_mode_dates_changed",
   /** Le mode de facturation d'un payeur est programmé, ou annulé (§16.6-7). */
   payerBillingModeChanged: "payer.billing_mode_changed",
+  payerCollectionMeansChanged: "payer.collection_means_changed",
   /** La constitution automatique est activée — des lots partiront sans clic. */
   autoCollectionEnabled: "legal_entity.auto_collection_enabled",
   autoCollectionDisabled: "legal_entity.auto_collection_disabled",

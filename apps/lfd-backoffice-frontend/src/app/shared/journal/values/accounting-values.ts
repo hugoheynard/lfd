@@ -21,6 +21,12 @@ export const SEPA_SCHEME = domain('schéma SEPA', SEPA_SCHEME_LABELS);
 /** Le genre d'un rythme de facturation (plan `plan-rythme-de-facturation.md`). */
 export const BILLING_RHYTHM_KIND = domain('rythme de facturation', BILLING_RHYTHM_KIND_LABELS);
 
+/** Comment un payeur au compte règle : `COLLECTION_MEANS` des contrats. */
+export const COLLECTION_MEANS = domain('moyen d’encaissement', {
+  sepa_debit: 'Prélèvement SEPA',
+  bank_transfer: 'Virement bancaire',
+});
+
 export const MANDATE_STATUS = domain('état d’un mandat', MANDATE_STATUS_LABELS);
 
 /** Pourquoi un brouillon de mandat a été annulé : ce qu'il affirmait a changé. */
@@ -128,6 +134,7 @@ export const ACCOUNTING_VALUES: ValueFamily = {
     VOUCHER_REINSTATEMENT,
     SEPA_SCHEME,
     BILLING_RHYTHM_KIND,
+    COLLECTION_MEANS,
     MANDATE_STATUS,
     DRAFT_VOIDING_CAUSE,
     PROOF_PURGE_CAUSE,

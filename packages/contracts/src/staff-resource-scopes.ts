@@ -146,6 +146,11 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write:
       "Bloquer ou débloquer le prélèvement d'un client au crédit. L'écran demande aussi Comptabilité en lecture.",
   },
+  b2b_collection_means: {
+    read: "N'ouvre rien : le moyen d'encaissement d'un payeur se lit avec Comptabilité.",
+    write:
+      "Passer un payeur au compte du prélèvement au virement, ou l'inverse, et annuler un changement programmé. L'écran demande aussi Comptabilité en lecture.",
+  },
   collection_test: {
     read: "Voir nos établissements et la liste des prélèvements d'essai. L'écran vit dans la Comptabilité, qui demande aussi son droit en lecture.",
     write:

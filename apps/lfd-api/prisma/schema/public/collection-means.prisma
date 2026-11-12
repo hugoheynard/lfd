@@ -1,0 +1,26 @@
+/// Le MOYEN D'ENCAISSEMENT d'un payeur au compte chez une entité — prélèvement
+/// SEPA ou virement (plan `plan-paiement-au-compte-par-virement.md`, V1, V2,
+/// C1). Son PROPRE historique, append-only comme `payer_billing_mode` : il ne
+/// crée aucune clôture, il lit celles du mode du payeur pour se dater.
+/// AUCUNE ligne = prélèvement. Le motif est obligatoire (V10).
+/// Déclencheur append-only, CHECK et index unique partiel : dans le
+/// `migration.sql` (`20261112150100_le_moyen_d_encaissement_du_payeur`).
+model PayerCollectionMeans {
+  id                 String      @id
+  legalEntityId      String      @map("legal_entity_id")
+  legalEntity        LegalEntity @relation(fields: [legalEntityId], references: [id], onDelete: Restrict)
+  /// Opaque, comme `payer_billing_mode.payer_company_id`.
+  payerCompanyId     String      @map("payer_company_id")
+  effectiveFrom      DateTime    @map("effective_from") @db.Timestamptz(3)
+  /// `sepa_debit` | `bank_transfer`.
+  means              String
+  reason             String
+  cancelledAt        DateTime?   @map("cancelled_at") @db.Timestamptz(3)
+  cancelledByStaffId String?     @map("cancelled_by_staff_id")
+  createdAt          DateTime    @map("created_at") @db.Timestamptz(3)
+  createdByStaffId   String      @map("created_by_staff_id")
+
+  @@index([legalEntityId, payerCompanyId, effectiveFrom], map: "payer_collection_means_entity_payer_effective_from_idx")
+  @@map("payer_collection_means")
+  @@schema("public")
+}

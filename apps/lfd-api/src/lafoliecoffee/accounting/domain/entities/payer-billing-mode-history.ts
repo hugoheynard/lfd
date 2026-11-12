@@ -7,6 +7,7 @@ import { PayerTimeline, type ModeTimelines } from "../services/payer-timeline.js
 import { DEFAULT_BILLING_MODE, type BillingMode } from "../value-objects/billing-mode.js";
 import {
   cancellableOf,
+  isQuietSince,
   pendingOf,
   type AppendOnlyStamp,
   type BillingGesture,
@@ -126,7 +127,7 @@ export class PayerBillingModeHistory {
     const timeline = this.timeline(modes);
     const next = timeline.closureAfter(gesture.at);
     const lastClosure = timeline.previousClosureOf(next);
-    const immediate = payer.opening && this.isQuietSince(lastClosure);
+    const immediate = payer.opening && isQuietSince(this.entries, lastClosure);
     const effectiveAt = immediate ? lastClosure : next;
     const from = timeline.modeAt(immediate ? gesture.at : effectiveAt).mode;
     if (mode === from && this.living().length > 0) {
@@ -175,20 +176,6 @@ export class PayerBillingModeHistory {
 
   private lastWritten(): PayerModeEntry | undefined {
     return [...this.living()].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()).at(-1);
-  }
-
-  /**
-   * Rien n'a bougé depuis `closure` : aucun segment vivant ne commence à elle
-   * ou après, ni n'a été écrit depuis — un seul immédiat par période. Un
-   * segment annulé ne compte pas : une annulation n'est admise qu'avant la
-   * prise d'effet (`cancellableOf`), il n'a donc jamais valu.
-   */
-  private isQuietSince(closure: Date): boolean {
-    return !this.living().some(
-      (entry) =>
-        entry.createdAt.getTime() >= closure.getTime() ||
-        entry.effectiveFrom.getTime() >= closure.getTime(),
-    );
   }
 
   private living(): readonly PayerModeEntry[] {

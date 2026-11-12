@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { billingRhythmKindSchema } from "../legal-entity.js";
 import { mandateStatusSchema } from "../payment-mandate.js";
+import { collectionMeansSchema } from "../payer-collection-means.js";
 import { COLLECTION_FACTS } from "./collection.js";
 import { COLLECTION_TEST_FACTS } from "./collection-test.js";
 import { CARD_PAYMENT_FACTS } from "./card-payment.js";
@@ -171,6 +172,25 @@ export const ACCOUNTING_FACTS = {
       cancelled: z.boolean(),
       /** Posé immédiatement, daté de la dernière clôture passée ; absent des faits d'avant. */
       immediate: z.boolean().optional(),
+    }),
+  ),
+  /**
+   * Le MOYEN d'encaissement d'un payeur — prélèvement ou virement (plan
+   * `plan-paiement-au-compte-par-virement.md`, V10) ; sujet : le payeur.
+   * `effectiveAt` : la prochaine clôture de sa suite, ou la dernière passée
+   * quand `immediate`. `cancelled` : le passage à `from` est annulé, `to`
+   * reste en vigueur. `reason` : le motif du geste, absent d'une annulation.
+   */
+  "payer.collection_means_changed": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      legalEntity: named("legal_entity"),
+      from: collectionMeansSchema,
+      to: collectionMeansSchema,
+      effectiveAt: instant(),
+      cancelled: z.boolean(),
+      immediate: z.boolean(),
+      reason: z.string().nullable(),
     }),
   ),
   /** La constitution automatique — un fait distinct du calendrier. */

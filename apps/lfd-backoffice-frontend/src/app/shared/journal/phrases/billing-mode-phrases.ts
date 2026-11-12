@@ -13,7 +13,7 @@ import {
   type PhraseFact,
   type Segment,
 } from '../phrase';
-import { BILLING_RHYTHM_KIND } from '../values/accounting-values';
+import { BILLING_RHYTHM_KIND, COLLECTION_MEANS } from '../values/accounting-values';
 import { billingRhythm, ENTITY, entity } from './accounting-phrases';
 
 /**
@@ -140,7 +140,73 @@ const payerBillingModeChanged: Phrase = (fact) => {
   );
 };
 
+/**
+ * « a passé le moyen d'encaissement de « Le Bistrot » chez l'entité émettrice
+ * « X » : virement bancaire, dès maintenant (au lieu de prélèvement SEPA) —
+ * motif : … » — programmé « à partir de la clôture du … », ou l'annulation
+ * d'un passage programmé. Le motif est consommé dans la phrase.
+ */
+const payerCollectionMeansChanged: Phrase = (fact) => {
+  const keys = [
+    'subjectLabel',
+    'legalEntity',
+    'from',
+    'to',
+    'effectiveAt',
+    'cancelled',
+    'immediate',
+    'reason',
+  ];
+  const means = (raw: unknown): Segment => valueIn(COLLECTION_MEANS, raw, { inSentence: true });
+  const atEntity = [text(' chez '), ...cite(ENTITY[''], fact.payload['legalEntity'])];
+  const reason = fact.payload['reason'];
+  const motive =
+    typeof reason === 'string' && reason.trim() !== '' ? [text(' — motif : '), value(reason)] : [];
+  if (fact.payload['cancelled'] === true) {
+    return byActor(
+      fact,
+      [
+        text('a annulé le passage de '),
+        ...payer(fact),
+        text(' au '),
+        means(fact.payload['from']),
+        text(' prévu à la clôture du '),
+        inUnit('instant', fact.payload['effectiveAt']),
+        ...atEntity,
+        text(' : il reste au '),
+        means(fact.payload['to']),
+        ...motive,
+      ],
+      keys,
+    );
+  }
+  const immediate = fact.payload['immediate'] === true;
+  return byActor(
+    fact,
+    [
+      text(
+        immediate
+          ? 'a passé le moyen d’encaissement de '
+          : 'a programmé le moyen d’encaissement de ',
+      ),
+      ...payer(fact),
+      ...atEntity,
+      text(' : '),
+      means(fact.payload['to']),
+      ...(immediate
+        ? [text(', dès maintenant')]
+        : [text(', à partir de la clôture du '), inUnit('instant', fact.payload['effectiveAt'])]),
+      text(' (au lieu de '),
+      means(fact.payload['from']),
+      text(')'),
+      ...motive,
+    ],
+    keys,
+  );
+};
+
 export const BILLING_MODE_PHRASES = {
   'legal_entity.billing_mode_dates_changed': billingModeDatesChanged,
   'payer.billing_mode_changed': payerBillingModeChanged,
+  'payer.collection_means_changed': payerCollectionMeansChanged,
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

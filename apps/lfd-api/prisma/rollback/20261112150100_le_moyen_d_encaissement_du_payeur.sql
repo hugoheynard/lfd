@@ -1,0 +1,14 @@
+-- RETOUR ARRIÈRE de 20261112150100_le_moyen_d_encaissement_du_payeur
+-- (documentation/comptabilite/plan-paiement-au-compte-par-virement.md, T1).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
+-- « appliquée ».
+--
+-- Le code d'avant ignore la table : le retour arrière est le retour du code
+-- seul. ⚠️ Les segments écrits y resteraient sans effet — le code d'avant
+-- prélève tout payeur au compte. Retirer la table serait un resserrement
+-- ultérieur, sur décision de Hugo, et efface les gestes du staff :
+--
+--   DROP TRIGGER payer_collection_means_append_only ON public.payer_collection_means;
+--   DROP FUNCTION public.payer_collection_means_append_only();
+--   DROP TABLE public.payer_collection_means;

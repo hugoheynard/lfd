@@ -91,6 +91,8 @@
   "test/collection-batch-preview.e2e-spec.ts": 7861,
   "test/collection-batch-race.e2e-spec.ts": 6297,
   "test/collection-batch-rejected-by-bank.e2e-spec.ts": 16308,
+  "test/collection-means-return.e2e-spec.ts": 8000,
+  "test/collection-means.e2e-spec.ts": 9000,
   "test/collection-notice-constitute.e2e-spec.ts": 5903,
   "test/collection-notice-deposit.e2e-spec.ts": 7568,
   "test/collection-notice-reconstitute.e2e-spec.ts": 10067,

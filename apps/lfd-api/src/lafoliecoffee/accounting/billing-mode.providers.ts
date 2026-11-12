@@ -18,6 +18,16 @@ import { PayerStandingReader } from "./domain/ports/payer-standing.reader.js";
 import { PayerStandingsReader } from "./domain/ports/payer-standings.reader.js";
 import { AdminCompanyBillingModeController } from "./http/admin-company-billing-mode.controller.js";
 import { AdminBillingModesController } from "./http/admin-billing-modes.controller.js";
+import { AdminPayerCollectionMeansController } from "./http/admin-payer-collection-means.controller.js";
+import { CancelPayerCollectionMeansHandler } from "./application/commands/cancel-payer-collection-means.handler.js";
+import { SetPayerCollectionMeansHandler } from "./application/commands/set-payer-collection-means.handler.js";
+import { GetPayerCollectionMeansHandler } from "./application/queries/get-payer-collection-means.handler.js";
+import { PayerCollectionMeansReader } from "./domain/ports/payer-collection-means.reader.js";
+import { PayerCollectionMeansRepository } from "./domain/ports/payer-collection-means.repository.js";
+import { PendingBankReturnsReader } from "./domain/ports/pending-bank-returns.reader.js";
+import { PrismaPayerCollectionMeansReader } from "./infrastructure/prisma-payer-collection-means.reader.js";
+import { PrismaPayerCollectionMeansRepository } from "./infrastructure/prisma-payer-collection-means.repository.js";
+import { PrismaPendingBankReturnsReader } from "./infrastructure/prisma-pending-bank-returns.reader.js";
 import { PrismaBillingModeDatesReader } from "./infrastructure/prisma-billing-mode-dates.reader.js";
 import { PrismaBillingModeDatesRepository } from "./infrastructure/prisma-billing-mode-dates.repository.js";
 import { PrismaPayerBillingModeRepository } from "./infrastructure/prisma-payer-billing-mode.repository.js";
@@ -50,9 +60,17 @@ export const BILLING_MODE_PROVIDERS: readonly Provider[] = [
   GetInitialPayerBillingModeHandler,
   ListBillingModeEntitiesHandler,
   GetBillingRhythmsCalendarHandler,
+  // Le moyen d'encaissement du payeur (plan-paiement-au-compte-par-virement.md, T1).
+  { provide: PayerCollectionMeansRepository, useClass: PrismaPayerCollectionMeansRepository },
+  { provide: PayerCollectionMeansReader, useClass: PrismaPayerCollectionMeansReader },
+  { provide: PendingBankReturnsReader, useClass: PrismaPendingBankReturnsReader },
+  SetPayerCollectionMeansHandler,
+  CancelPayerCollectionMeansHandler,
+  GetPayerCollectionMeansHandler,
 ];
 
 export const BILLING_MODE_CONTROLLERS: readonly Type[] = [
   AdminBillingModesController,
   AdminCompanyBillingModeController,
+  AdminPayerCollectionMeansController,
 ];

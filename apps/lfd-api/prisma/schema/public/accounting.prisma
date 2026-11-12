@@ -262,6 +262,7 @@ model LegalEntity {
   // Les dates des modes et le mode des payeurs (M1, `plan-rythme-de-facturation.md`).
   billingModeDates       BillingModeDates[]
   payerBillingModes      PayerBillingMode[]
+  payerCollectionMeans   PayerCollectionMeans[]
   // Les plafonds de la convention d'émission, par schéma (PL1,
   // `plan-plafonds-de-la-banque.md`). Côté inverse obligatoire.
   bankLimits             LegalEntityBankLimits[]

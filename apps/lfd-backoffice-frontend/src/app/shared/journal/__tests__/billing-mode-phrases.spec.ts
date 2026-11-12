@@ -112,3 +112,74 @@ describe('le mode d’un payeur', () => {
     expect(sentence).toContain('il reste au mode');
   });
 });
+
+describe('le moyen d’encaissement d’un payeur', () => {
+  const base = {
+    subjectLabel: 'Le Bistrot',
+    legalEntity: { id: 'le_1', name: 'La Folie Douce SAS' },
+    effectiveAt: NOV_1,
+    from: 'sepa_debit',
+    to: 'bank_transfer',
+    reason: 'Le client règle par virement',
+  };
+
+  it('dit le passage immédiat, ce qu’il remplace et le motif, sans détail en reste', () => {
+    const rendered = renderFact(
+      fact('payer.collection_means_changed', 'company', {
+        ...base,
+        cancelled: false,
+        immediate: true,
+      }),
+    );
+
+    expect(rendered.sentence).toContain('a passé le moyen d’encaissement de « Le Bistrot »');
+    expect(rendered.sentence).toContain('« La Folie Douce SAS »');
+    expect(rendered.sentence).toContain(
+      ': virement bancaire, dès maintenant (au lieu de prélèvement SEPA)',
+    );
+    expect(rendered.sentence).toContain('— motif : Le client règle par virement');
+    expect(rendered.detail).toEqual([]);
+  });
+
+  it('dit le passage programmé à la clôture', () => {
+    const { sentence } = renderFact(
+      fact('payer.collection_means_changed', 'company', {
+        ...base,
+        cancelled: false,
+        immediate: false,
+      }),
+    );
+
+    expect(sentence).toContain('a programmé le moyen d’encaissement');
+    expect(sentence).toContain('à partir de la clôture du');
+    expect(sentence).not.toContain('dès maintenant');
+  });
+
+  it('dit l’annulation, et le moyen qui reste', () => {
+    const { sentence } = renderFact(
+      fact('payer.collection_means_changed', 'company', {
+        ...base,
+        from: 'bank_transfer',
+        to: 'sepa_debit',
+        cancelled: true,
+        immediate: false,
+      }),
+    );
+
+    expect(sentence).toContain('a annulé le passage de « Le Bistrot » au virement bancaire');
+    expect(sentence).toContain('il reste au prélèvement SEPA');
+  });
+
+  it('se tait sur un motif absent', () => {
+    const { sentence } = renderFact(
+      fact('payer.collection_means_changed', 'company', {
+        ...base,
+        reason: null,
+        cancelled: false,
+        immediate: true,
+      }),
+    );
+
+    expect(sentence).not.toContain('motif');
+  });
+});

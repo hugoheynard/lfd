@@ -1845,6 +1845,24 @@
       "information": false
     },
     {
+      "colonne": "public.payer_collection_means.cancelled_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a annulé le changement programmé du moyen d'encaissement d'un client (`payer_collection_means`, plan-paiement-au-compte-par-virement V10).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.payer_collection_means.created_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a changé le moyen d'encaissement d'un client — prélèvement ou virement (`payer_collection_means`, plan-paiement-au-compte-par-virement V10).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.payment_links.cancelled_by_staff_id",
       "personne": "staff",
       "categorie": "auteur-geste",
