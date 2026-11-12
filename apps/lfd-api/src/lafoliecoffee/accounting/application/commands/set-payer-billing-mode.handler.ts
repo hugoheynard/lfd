@@ -8,6 +8,7 @@ import { PayerBillingModeChangedEvent } from "../../domain/events/billing-mode.e
 import { BillingModeDatesReader } from "../../domain/ports/billing-mode-dates.reader.js";
 import { LegalEntityRepository } from "../../domain/ports/legal-entity.repository.js";
 import { PayerBillingModeRepository } from "../../domain/ports/payer-billing-mode.repository.js";
+import { PayerOrderHistoryReader } from "../../domain/ports/payer-order-history.reader.js";
 import { PayerStandingReader } from "../../domain/ports/payer-standing.reader.js";
 import { requireBillingPayer } from "../../domain/services/billing-payer-guard.js";
 import { billingModeOf } from "../../domain/value-objects/billing-mode.js";
@@ -15,11 +16,12 @@ import { loadOrFail } from "../legal-entity-support.js";
 import { SetPayerBillingModeCommand } from "./set-payer-billing-mode.command.js";
 
 /**
- * Programme le mode d'un payeur. Le domaine juge qu'il est un payeur
- * (`requireBillingPayer`), puis l'historique fixe la prise d'effet — la
- * prochaine clôture de sa suite ACTUELLE, lue sur les dates des modes — et
- * tient « un seul changement à la fois ». Son mode actuel redemandé n'est pas
- * un fait.
+ * Change le mode d'un payeur. Le domaine juge qu'il est un payeur
+ * (`requireBillingPayer`), puis l'historique fixe la prise d'effet —
+ * immédiate pour un payeur qui n'a jamais commandé, sinon la prochaine
+ * clôture de sa suite ACTUELLE, lue sur les dates des modes — et tient « un
+ * seul changement à la fois ». Le mode qu'il a déjà choisi, redemandé, n'est
+ * pas un fait.
  */
 @CommandHandler(SetPayerBillingModeCommand)
 export class SetPayerBillingModeHandler implements ICommandHandler<
@@ -31,6 +33,7 @@ export class SetPayerBillingModeHandler implements ICommandHandler<
     private readonly standings: PayerStandingReader,
     private readonly modeDates: BillingModeDatesReader,
     private readonly payerModes: PayerBillingModeRepository,
+    private readonly orderHistory: PayerOrderHistoryReader,
     private readonly clock: Clock,
     private readonly ids: IdGenerator,
     private readonly events: DomainEventPublisher,
@@ -52,6 +55,7 @@ export class SetPayerBillingModeHandler implements ICommandHandler<
       mode,
       { segmentId: this.ids.next(), at, staffId: command.staffId },
       modes,
+      { opening: !(await this.orderHistory.hasEverOrdered(payer.id)) },
     );
     if (change === null) {
       return;

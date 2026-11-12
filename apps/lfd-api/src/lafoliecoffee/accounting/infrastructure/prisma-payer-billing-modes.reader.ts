@@ -18,7 +18,7 @@ export class PrismaPayerBillingModesReader extends PayerBillingModesReader {
   async segmentsOf(legalEntityId: string): Promise<readonly PayerModeSegments[]> {
     const rows = await this.prisma.payerBillingMode.findMany({
       where: { legalEntityId, cancelledAt: null },
-      select: { payerCompanyId: true, mode: true, effectiveFrom: true },
+      select: { payerCompanyId: true, mode: true, effectiveFrom: true, createdAt: true },
       orderBy: { effectiveFrom: "asc" },
     });
     const byPayer = new Map<string, PayerModeSegment[]>();
@@ -36,7 +36,7 @@ export class PrismaPayerBillingModesReader extends PayerBillingModesReader {
   ): Promise<readonly PayerModeSegment[]> {
     const rows = await this.prisma.payerBillingMode.findMany({
       where: { legalEntityId, payerCompanyId, cancelledAt: null },
-      select: { mode: true, effectiveFrom: true },
+      select: { mode: true, effectiveFrom: true, createdAt: true },
       orderBy: { effectiveFrom: "asc" },
     });
     return rows.map(payerModeSegmentOf);

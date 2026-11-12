@@ -80,7 +80,9 @@ class FixedBatches extends CollectionBatchReader {
 
 const WEEKLY: PayerModeSegments = {
   payerCompanyId: "c_week",
-  segments: [{ effectiveFrom: paris("2026-08-01"), mode: "weekly" }],
+  segments: [
+    { effectiveFrom: paris("2026-08-01"), mode: "weekly", writtenAt: paris("2026-08-01") },
+  ],
 };
 
 /** La facture mensuelle de septembre, rattrapée ; la semaine de l'hebdomadaire. */

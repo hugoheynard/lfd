@@ -6,7 +6,9 @@ import { defaultModes, paris } from "./billing-mode-fixtures.js";
 /** Des dates comparées entre elles seulement — aucune horloge. */
 const WEEKLY_PORT = {
   payerCompanyId: "c_port",
-  segments: [{ effectiveFrom: paris("2026-08-01"), mode: "weekly" as const }],
+  segments: [
+    { effectiveFrom: paris("2026-08-01"), mode: "weekly" as const, writtenAt: paris("2026-08-01") },
+  ],
 };
 
 const dates = (overrides: Partial<EntityBillingDates> = {}): EntityBillingDates => ({
@@ -33,7 +35,13 @@ describe("sameBillingDates — deux entités suivent-elles les mêmes suites ? (
   it("le même payeur à un autre mode : non", () => {
     const semimonthly = {
       payerCompanyId: "c_port",
-      segments: [{ effectiveFrom: paris("2026-08-01"), mode: "semimonthly" as const }],
+      segments: [
+        {
+          effectiveFrom: paris("2026-08-01"),
+          mode: "semimonthly" as const,
+          writtenAt: paris("2026-08-01"),
+        },
+      ],
     };
     expect(sameBillingDates(dates(), dates({ payers: [semimonthly] }))).toBe(false);
   });
@@ -41,7 +49,13 @@ describe("sameBillingDates — deux entités suivent-elles les mêmes suites ? (
   it("le même payeur depuis une autre clôture : non", () => {
     const later = {
       payerCompanyId: "c_port",
-      segments: [{ effectiveFrom: paris("2026-09-01"), mode: "weekly" as const }],
+      segments: [
+        {
+          effectiveFrom: paris("2026-09-01"),
+          mode: "weekly" as const,
+          writtenAt: paris("2026-09-01"),
+        },
+      ],
     };
     expect(sameBillingDates(dates(), dates({ payers: [later] }))).toBe(false);
   });

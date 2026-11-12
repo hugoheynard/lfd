@@ -36,7 +36,9 @@ const DEC_1 = "2026-11-30T23:00:00.000Z";
 /** Un payeur hebdomadaire au lundi depuis le 1er août 2026 (une clôture du mensuel). */
 const WEEKLY: PayerModeSegments = {
   payerCompanyId: "c_port",
-  segments: [{ effectiveFrom: paris("2026-08-01"), mode: "weekly" }],
+  segments: [
+    { effectiveFrom: paris("2026-08-01"), mode: "weekly", writtenAt: paris("2026-08-01") },
+  ],
 };
 
 class MemoryRuns extends InvoiceAutopilotRuns {
@@ -333,7 +335,9 @@ describe("RunInvoiceAutopilot — une tentative par (entité, clôture)", () => 
       payers: [
         {
           payerCompanyId: "c_port",
-          segments: [{ effectiveFrom: new Date(OCT_1), mode: "weekly" }],
+          segments: [
+            { effectiveFrom: new Date(OCT_1), mode: "weekly", writtenAt: new Date(OCT_1) },
+          ],
         },
       ],
       floor: new Date(SEP_1),
@@ -355,7 +359,9 @@ describe("RunInvoiceAutopilot — une tentative par (entité, clôture)", () => 
       payers: [
         {
           payerCompanyId: "c_port",
-          segments: [{ effectiveFrom: paris("2025-12-01"), mode: "weekly" }],
+          segments: [
+            { effectiveFrom: paris("2025-12-01"), mode: "weekly", writtenAt: paris("2025-12-01") },
+          ],
         },
       ],
       // Le lundi 5 janvier 2026 à 00h00 à Paris.

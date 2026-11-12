@@ -14,6 +14,7 @@ import {
   mandated,
   modeOf,
   nextMonthlyClosure,
+  ordered,
   read,
   staff,
   useBillingModeScene,
@@ -102,6 +103,9 @@ describe("le calendrier des trois rythmes", () => {
     const [byDefault, scheduled, unmandated] = ids;
     await mandated(id, byDefault ?? "");
     await mandated(id, scheduled ?? "");
+    // Ils ont déjà commandé : leur hebdomadaire est programmé, pas immédiat.
+    await ordered(scheduled ?? "");
+    await ordered(unmandated ?? "");
     for (const payer of [scheduled, unmandated]) {
       await staff()
         .put(`${BASE}/${id}/payers/${payer ?? ""}/billing-mode`)

@@ -18,7 +18,9 @@ import { defaultModes, paris } from "./billing-mode-fixtures.js";
 
 const WEEKLY_SINCE_AUGUST = {
   payerCompanyId: "c_week",
-  segments: [{ effectiveFrom: paris("2026-08-01"), mode: "weekly" as const }],
+  segments: [
+    { effectiveFrom: paris("2026-08-01"), mode: "weekly" as const, writtenAt: paris("2026-08-01") },
+  ],
 };
 
 /** Trois sondes par jour (08h, 23h54, 23h55 à Paris), sur toute l'année 2026. */
@@ -94,7 +96,9 @@ describe("InvoicingCalendar — la facture par payeur à sa clôture (M2)", () =
     const calendar = InvoicingCalendar.of(defaultModes(), [
       {
         payerCompanyId: "c_week",
-        segments: [{ effectiveFrom: paris("2026-10-01"), mode: "weekly" }],
+        segments: [
+          { effectiveFrom: paris("2026-10-01"), mode: "weekly", writtenAt: paris("2026-10-01") },
+        ],
       },
     ]);
     expect(calendar.isClosure(paris("2026-09-28"))).toBe(false);
@@ -110,8 +114,8 @@ describe("InvoicingCalendar — la facture par payeur à sa clôture (M2)", () =
       {
         payerCompanyId: "c_week",
         segments: [
-          { effectiveFrom: paris("2026-08-01"), mode: "weekly" },
-          { effectiveFrom: paris("2026-10-05"), mode: "monthly" },
+          { effectiveFrom: paris("2026-08-01"), mode: "weekly", writtenAt: paris("2026-08-01") },
+          { effectiveFrom: paris("2026-10-05"), mode: "monthly", writtenAt: paris("2026-10-05") },
         ],
       },
     ]);
@@ -157,7 +161,9 @@ describe("InvoicingCalendar — qui clôt, et le cycle du lot (M4c)", () => {
     const calendar = InvoicingCalendar.of(defaultModes(), [
       {
         payerCompanyId: "c_switch",
-        segments: [{ effectiveFrom: paris("2026-10-01"), mode: "weekly" }],
+        segments: [
+          { effectiveFrom: paris("2026-10-01"), mode: "weekly", writtenAt: paris("2026-10-01") },
+        ],
       },
     ]);
     expect(calendar.modesClosingAt(paris("2026-10-01"))).toEqual(["monthly"]);

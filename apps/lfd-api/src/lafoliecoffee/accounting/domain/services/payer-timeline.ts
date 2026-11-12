@@ -3,10 +3,17 @@ import type { BillingRhythm } from "../value-objects/billing-rhythm.js";
 import { closureAfter, previousClosureOf, type RhythmTimeline } from "./invoicing-closures.js";
 import { closuresBetween, type ModeDatesTimeline } from "./mode-dates-timeline.js";
 
-/** Un segment de mode vivant (non annulé) d'un payeur, à partir d'une clôture. */
+/**
+ * Un segment de mode vivant (non annulé) d'un payeur, à partir d'une clôture.
+ * `writtenAt` est l'instant de son écriture : un segment immédiat est daté
+ * d'une clôture passée et écrit après elle, et le calendrier de l'entité ne
+ * compte pas les clôtures qu'il ne connaissait pas encore
+ * (`isKnownClosure`).
+ */
 export interface PayerModeSegment {
   readonly effectiveFrom: Date;
   readonly mode: BillingMode;
+  readonly writtenAt: Date;
 }
 
 /** La timeline des dates de chacun des trois modes de l'entité. */
@@ -46,14 +53,33 @@ export class PayerTimeline implements RhythmTimeline {
 
   /** Le mode qui fait foi à `instant` — un segment dès sa prise d'effet. */
   modeAt(instant: Date): PayerModeInForce {
-    let inForce: PayerModeInForce = { mode: DEFAULT_BILLING_MODE, since: null };
+    const segment = this.segmentAt(instant);
+    return segment === null
+      ? { mode: DEFAULT_BILLING_MODE, since: null }
+      : { mode: segment.mode, since: segment.effectiveFrom };
+  }
+
+  /** Le segment en vigueur à `instant`, ou `null` avant le premier. */
+  private segmentAt(instant: Date): PayerModeSegment | null {
+    let inForce: PayerModeSegment | null = null;
     for (const segment of this.segments) {
       if (segment.effectiveFrom.getTime() > instant.getTime()) {
         break;
       }
-      inForce = { mode: segment.mode, since: segment.effectiveFrom };
+      inForce = segment;
     }
     return inForce;
+  }
+
+  /**
+   * Cette clôture du payeur était-elle connue quand elle est passée ? Le
+   * segment qui gouverne la période qu'elle ferme (celui en vigueur juste
+   * avant elle) a été écrit au plus tard à elle. Avant tout segment, le
+   * mensuel par défaut : toujours connu.
+   */
+  isKnownClosure(closesAt: Date): boolean {
+    const governing = this.segmentAt(new Date(closesAt.getTime() - 1));
+    return governing === null || governing.writtenAt.getTime() <= closesAt.getTime();
   }
 
   rhythmAt(instant: Date): BillingRhythm {

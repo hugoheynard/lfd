@@ -159,7 +159,13 @@ describe("l'aperçu du mois", () => {
     const weekly = new FixedPayerModes([
       {
         payerCompanyId: "c_port",
-        segments: [{ effectiveFrom: paris("2026-09-01"), mode: "weekly" as const }],
+        segments: [
+          {
+            effectiveFrom: paris("2026-09-01"),
+            mode: "weekly" as const,
+            writtenAt: paris("2026-09-01"),
+          },
+        ],
       },
     ]);
     const preview = new GetCollectionPreviewHandler(

@@ -145,7 +145,13 @@ describe("ProcedureInvoicesStep — l'onglet Factures de la procédure", () => {
     const mixed = InvoicingCalendar.of(defaultModes(), [
       {
         payerCompanyId: "c_week",
-        segments: [{ effectiveFrom: paris("2026-08-01"), mode: "weekly" as const }],
+        segments: [
+          {
+            effectiveFrom: paris("2026-08-01"),
+            mode: "weekly" as const,
+            writtenAt: paris("2026-08-01"),
+          },
+        ],
       },
     ]);
     // Le lundi 26 clôt l'hebdomadaire, pas le mensuel de `c1`.

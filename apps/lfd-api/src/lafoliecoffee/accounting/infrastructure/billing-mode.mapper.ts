@@ -78,6 +78,11 @@ export function modeTimelinesOf(rows: readonly Omit<ModeDatesRow, "id">[]): Mode
 export function payerModeSegmentOf(row: {
   readonly mode: string;
   readonly effectiveFrom: Date;
+  readonly createdAt: Date;
 }): PayerModeSegment {
-  return { effectiveFrom: row.effectiveFrom, mode: billingModeOf(row.mode) };
+  return {
+    effectiveFrom: row.effectiveFrom,
+    mode: billingModeOf(row.mode),
+    writtenAt: row.createdAt,
+  };
 }

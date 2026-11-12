@@ -38,7 +38,8 @@ export class BillingModeDatesChangedEvent implements JournaledEvent {
 }
 
 /**
- * Le mode d'un payeur a été programmé, ou un programmé annulé (§16.6-7). Sujet :
+ * Le mode d'un payeur a été programmé, posé immédiatement (`immediate`, daté
+ * de la dernière clôture passée), ou un programmé annulé (§16.6-7). Sujet :
  * le payeur — c'est sa fiche qui le raconte ; l'entité est citée par son nom.
  */
 export class PayerBillingModeChangedEvent implements JournaledEvent {
@@ -62,6 +63,7 @@ export class PayerBillingModeChangedEvent implements JournaledEvent {
         to: this.change.to,
         effectiveAt: this.change.effectiveAt.toISOString(),
         cancelled: this.change.kind === "cancelled",
+        immediate: this.change.immediate,
       },
     };
   }

@@ -220,6 +220,15 @@ export class FixedPayerModes extends PayerBillingModesReader {
  */
 export function weeklySince2026(payerCompanyId: string): FixedPayerModes {
   return new FixedPayerModes([
-    { payerCompanyId, segments: [{ effectiveFrom: paris("2026-01-01"), mode: "weekly" }] },
+    {
+      payerCompanyId,
+      segments: [
+        {
+          effectiveFrom: paris("2026-01-01"),
+          mode: "weekly",
+          writtenAt: paris("2026-01-01"),
+        },
+      ],
+    },
   ]);
 }

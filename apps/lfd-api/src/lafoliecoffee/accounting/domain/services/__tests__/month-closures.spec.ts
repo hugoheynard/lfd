@@ -11,7 +11,9 @@ import { defaultModes, paris } from "./billing-mode-fixtures.js";
 
 const WEEKLY = {
   payerCompanyId: "c_week",
-  segments: [{ effectiveFrom: paris("2026-08-01"), mode: "weekly" as const }],
+  segments: [
+    { effectiveFrom: paris("2026-08-01"), mode: "weekly" as const, writtenAt: paris("2026-08-01") },
+  ],
 };
 
 describe("closuresOfMonth — les clôtures du mois en cours, et la dernière passée", () => {

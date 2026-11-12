@@ -14,6 +14,7 @@ import {
   PayerBillingModesReader,
   type PayerModeSegments,
 } from "../../../domain/ports/payer-billing-modes.reader.js";
+import { PayerOrderHistoryReader } from "../../../domain/ports/payer-order-history.reader.js";
 import {
   PayerStandingReader,
   type PayerStanding,
@@ -157,7 +158,11 @@ export class StorePayerModesReader extends PayerBillingModesReader {
   private segments(legalEntityId: string, payerCompanyId: string): PayerModeSegment[] {
     return this.live(legalEntityId)
       .filter((row) => row.payerCompanyId === payerCompanyId)
-      .map((row) => ({ effectiveFrom: row.effectiveFrom, mode: row.mode }));
+      .map((row) => ({
+        effectiveFrom: row.effectiveFrom,
+        mode: row.mode,
+        writtenAt: row.createdAt,
+      }));
   }
 }
 
@@ -181,3 +186,14 @@ export const PAYER: PayerStanding = {
   active: true,
   follows: [],
 };
+
+/** Les payeurs qui ont déjà eu une commande au compte — ce qu'on lui donne. */
+export class FixedOrderHistory extends PayerOrderHistoryReader {
+  constructor(private readonly ordered: ReadonlySet<string>) {
+    super();
+  }
+
+  hasEverOrdered(payerCompanyId: string): Promise<boolean> {
+    return Promise.resolve(this.ordered.has(payerCompanyId));
+  }
+}

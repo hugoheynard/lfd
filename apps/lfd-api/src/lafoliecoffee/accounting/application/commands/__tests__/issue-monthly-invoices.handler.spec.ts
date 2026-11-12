@@ -548,7 +548,9 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
     // Mensuel jusqu'au 1er octobre, hebdomadaire au lundi ensuite.
     const switching: PayerModeSegments = {
       payerCompanyId: "c_port",
-      segments: [{ effectiveFrom: new Date(CLOSURE), mode: "weekly" }],
+      segments: [
+        { effectiveFrom: new Date(CLOSURE), mode: "weekly", writtenAt: new Date(CLOSURE) },
+      ],
     };
     const atFirst = harness({ payers: [switching] });
     atFirst.reader.orders = [bon("c_port")];
@@ -606,7 +608,9 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
 });
 
 /** Hebdomadaire au lundi depuis le 1er août 2026 (une clôture du mensuel). */
-const WEEKLY_SINCE_AUGUST = [{ effectiveFrom: paris("2026-08-01"), mode: "weekly" as const }];
+const WEEKLY_SINCE_AUGUST = [
+  { effectiveFrom: paris("2026-08-01"), mode: "weekly" as const, writtenAt: paris("2026-08-01") },
+];
 const WEEKLY_PORT: PayerModeSegments = { payerCompanyId: "c_port", segments: WEEKLY_SINCE_AUGUST };
 
 describe("IssueMonthlyInvoices — les annulées entre la préparation et l'émission (lot C5)", () => {

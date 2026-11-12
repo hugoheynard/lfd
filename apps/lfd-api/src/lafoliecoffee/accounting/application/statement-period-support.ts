@@ -66,7 +66,18 @@ export async function statementPeriodsOf(
   payerCompanyId: string | null,
 ): Promise<StatementPeriodSequence> {
   const calendar = await statementCalendar(deps);
-  return payerCompanyId === null ? calendar : timelinePeriods(calendar.timelineOf(payerCompanyId));
+  return payerCompanyId === null
+    ? entityPeriods(calendar)
+    : timelinePeriods(calendar.timelineOf(payerCompanyId));
+}
+
+/** Les périodes du calendrier de l'entité : il ne rend que des clôtures connues. */
+function entityPeriods(calendar: InvoicingCalendar): StatementPeriodSequence {
+  return {
+    closureAfter: (instant) => calendar.closureAfter(instant),
+    closureBefore: (closesAt) => calendar.closureBefore(closesAt),
+    isKnownClosure: (closesAt) => calendar.isClosure(closesAt),
+  };
 }
 
 /**

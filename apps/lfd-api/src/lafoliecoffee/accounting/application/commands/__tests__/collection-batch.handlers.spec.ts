@@ -234,7 +234,13 @@ describe("constituer, annuler, déposer un lot", () => {
     const WEEKLY_MONDAY = [
       {
         payerCompanyId: "c_port",
-        segments: [{ effectiveFrom: paris("2026-09-01"), mode: "weekly" as const }],
+        segments: [
+          {
+            effectiveFrom: paris("2026-09-01"),
+            mode: "weekly" as const,
+            writtenAt: paris("2026-09-01"),
+          },
+        ],
       },
     ];
     /** Mercredi 7 octobre 2026, midi à Paris. */

@@ -64,9 +64,14 @@ export class InvoicingCalendar implements ClosureSequence {
     return this.payers.get(payerCompanyId) ?? this.byDefault;
   }
 
-  /** Ce payeur clôt-il à `instant` ? — c'est ce qui le fait facturer à cette clôture. */
+  /**
+   * Ce payeur clôt-il à `instant` ? — c'est ce qui le fait facturer à cette
+   * clôture. Une clôture que son segment ne connaissait pas quand elle est
+   * passée (un mode immédiat, daté d'avant son écriture) n'en est pas une.
+   */
   closesFor(payerCompanyId: string, instant: Date): boolean {
-    return closesAt(instant, this.timelineOf(payerCompanyId));
+    const payer = this.payers.get(payerCompanyId);
+    return payer === undefined ? closesAt(instant, this.byDefault) : knownClosesAt(instant, payer);
   }
 
   /** La période d'un payeur close à `closesAt` : `[sa clôture précédente réelle, closesAt[`. */
@@ -85,9 +90,9 @@ export class InvoicingCalendar implements ClosureSequence {
     return previousClosureOf(lastClosureAtOrBefore(closesAtInstant, timeline), timeline);
   }
 
-  /** Cet instant est-il la clôture d'au moins un payeur (ou du mensuel) ? */
+  /** Cet instant est-il la clôture connue d'au moins un payeur (ou du mensuel) ? */
   isClosure(instant: Date): boolean {
-    return this.timelines().some((timeline) => closesAt(instant, timeline));
+    return this.sources().some((source) => knownClosesAt(instant, source));
   }
 
   /**
@@ -97,8 +102,8 @@ export class InvoicingCalendar implements ClosureSequence {
    * (`payerPeriodOf`).
    */
   periodOf(closesAtInstant: Date): BillingCycle {
-    const starts = this.timelines()
-      .filter((timeline) => closesAt(closesAtInstant, timeline))
+    const starts = this.sources()
+      .filter((source) => knownClosesAt(closesAtInstant, source))
       .map((timeline) => previousClosureOf(closesAtInstant, timeline).getTime());
     return { startsAt: new Date(Math.min(...starts)), closesAt: closesAtInstant };
   }
@@ -118,7 +123,7 @@ export class InvoicingCalendar implements ClosureSequence {
       modes.add(DEFAULT_BILLING_MODE);
     }
     for (const payer of this.payers.values()) {
-      if (closesAt(instant, payer)) {
+      if (knownClosesAt(instant, payer)) {
         modes.add(payer.modeAt(before).mode);
       }
     }
@@ -149,7 +154,7 @@ export class InvoicingCalendar implements ClosureSequence {
   /** La prochaine clôture du calendrier, strictement après `instant`. */
   closureAfter(instant: Date): Date {
     return new Date(
-      Math.min(...this.timelines().map((timeline) => closureAfter(instant, timeline).getTime())),
+      Math.min(...this.sources().map((source) => knownClosureAfter(instant, source).getTime())),
     );
   }
 
@@ -161,9 +166,7 @@ export class InvoicingCalendar implements ClosureSequence {
   /** La dernière clôture du calendrier atteinte à `now` (≤ `now`). */
   lastClosureAtOrBefore(now: Date): Date {
     return new Date(
-      Math.max(
-        ...this.timelines().map((timeline) => lastClosureAtOrBefore(now, timeline).getTime()),
-      ),
+      Math.max(...this.sources().map((source) => knownClosureAtOrBefore(now, source).getTime())),
     );
   }
 
@@ -198,11 +201,52 @@ export class InvoicingCalendar implements ClosureSequence {
     return closures;
   }
 
-  private timelines(): readonly RhythmTimeline[] {
+  /**
+   * Les suites que l'entité unit : le mensuel, puis chaque payeur. Les
+   * méthodes de l'entité n'y lisent que les clôtures CONNUES (§3.1 du plan
+   * `plan-changement-de-mode-immediat.md`) : un lundi passé ne devient
+   * jamais, après coup, une clôture à tenter ou manquée.
+   */
+  private sources(): readonly ClosureSource[] {
     return [this.byDefault, ...this.payers.values()];
   }
 }
 
+/** Une suite de l'entité : le mensuel (toujours connu) ou un payeur. */
+type ClosureSource = RhythmTimeline | PayerTimeline;
+
+function isKnown(instant: Date, source: ClosureSource): boolean {
+  return !(source instanceof PayerTimeline) || source.isKnownClosure(instant);
+}
+
 function closesAt(instant: Date, timeline: RhythmTimeline): boolean {
   return closureAfter(new Date(instant.getTime() - 1), timeline).getTime() === instant.getTime();
+}
+
+function knownClosesAt(instant: Date, source: ClosureSource): boolean {
+  return closesAt(instant, source) && isKnown(instant, source);
+}
+
+/**
+ * La prochaine clôture connue strictement après `instant`. Finie : une
+ * clôture postérieure à l'écriture de tous les segments est connue.
+ */
+function knownClosureAfter(instant: Date, source: ClosureSource): Date {
+  let cursor = closureAfter(instant, source);
+  while (!isKnown(cursor, source)) {
+    cursor = closureAfter(cursor, source);
+  }
+  return cursor;
+}
+
+/**
+ * La dernière clôture connue ≤ `now`. Finie : avant son premier segment, un
+ * payeur suit le mensuel par défaut, toujours connu.
+ */
+function knownClosureAtOrBefore(now: Date, source: ClosureSource): Date {
+  let cursor = lastClosureAtOrBefore(now, source);
+  while (!isKnown(cursor, source)) {
+    cursor = previousClosureOf(cursor, source);
+  }
+  return cursor;
 }

@@ -10,6 +10,10 @@ import { PayerBillingModeHistory, type PayerModeEntry } from "../payer-billing-m
 
 const PAYER = { id: "cmp_1", name: "Le Bistrot" };
 const gesture = (at: Date) => ({ segmentId: "seg_new", at, staffId: "staff_1" });
+/** Le payeur a déjà commandé : le changement est programmé. */
+const ORDERED = { opening: false };
+/** Le payeur n'a jamais commandé : première condition de l'immédiat. */
+const OPENING = { opening: true };
 
 function entry(effectiveFrom: Date, mode: BillingMode): PayerModeEntry {
   return {
@@ -30,23 +34,27 @@ describe("PayerBillingModeHistory — le mode d'un payeur (§16.1, §16.6)", () 
   it("mensuel par défaut → hebdomadaire à la prochaine clôture du mensuel", () => {
     const payer = history();
 
-    expect(payer.change("weekly", gesture(paris("2026-10-08")), defaultModes())).toEqual({
+    expect(payer.change("weekly", gesture(paris("2026-10-08")), defaultModes(), ORDERED)).toEqual({
       kind: "scheduled",
       from: "monthly",
       to: "weekly",
       effectiveAt: paris("2026-11-01"),
+      immediate: false,
     });
     expect(payer.toPersistence().freshIds).toEqual(["seg_new"]);
   });
 
-  it("son mode redemandé : rien", () => {
-    expect(history().change("monthly", gesture(paris("2026-10-08")), defaultModes())).toBeNull();
+  it("le mode qu'il a déjà choisi, redemandé : rien", () => {
+    const payer = history([entry(paris("2026-10-01"), "monthly")]);
+    expect(
+      payer.change("monthly", gesture(paris("2026-10-08")), defaultModes(), ORDERED),
+    ).toBeNull();
   });
 
   it("refuse un second changement avant la prise d'effet, en nommant le payeur et la date", () => {
     const payer = history([entry(paris("2026-11-01"), "weekly")]);
     const attempt = (): unknown =>
-      payer.change("semimonthly", gesture(paris("2026-10-20")), defaultModes());
+      payer.change("semimonthly", gesture(paris("2026-10-20")), defaultModes(), ORDERED);
 
     expect(attempt).toThrow(PayerBillingModeChangePendingError);
     expect(attempt).toThrow(/« Le Bistrot ».*1er novembre 2026.*annulez d'abord/su);
@@ -55,7 +63,9 @@ describe("PayerBillingModeHistory — le mode d'un payeur (§16.1, §16.6)", () 
   it("la prise d'effet suit sa timeline ACTUELLE : hebdomadaire depuis le 1er, le lundi suivant", () => {
     const payer = history([entry(paris("2026-11-01"), "weekly")]);
 
-    expect(payer.change("monthly", gesture(paris("2026-11-03")), defaultModes())).toMatchObject({
+    expect(
+      payer.change("monthly", gesture(paris("2026-11-03")), defaultModes(), ORDERED),
+    ).toMatchObject({
       from: "weekly",
       effectiveAt: paris("2026-11-09"),
     });
@@ -68,7 +78,7 @@ describe("PayerBillingModeHistory — le mode d'un payeur (§16.1, §16.6)", () 
       ]),
     });
 
-    expect(history().change("weekly", gesture(paris("2026-11-03")), modes)).toMatchObject({
+    expect(history().change("weekly", gesture(paris("2026-11-03")), modes, ORDERED)).toMatchObject({
       effectiveAt: paris("2026-11-15"),
     });
   });
@@ -80,7 +90,7 @@ describe("PayerBillingModeHistory — le mode d'un payeur (§16.1, §16.6)", () 
         { effectiveFrom: paris("2026-11-01"), rhythm: BillingRhythm.monthly(15) },
       ]),
     });
-    expect(history().change("weekly", gesture(paris("2026-10-08")), modes)).toMatchObject({
+    expect(history().change("weekly", gesture(paris("2026-10-08")), modes, ORDERED)).toMatchObject({
       effectiveAt: paris("2026-11-01"),
     });
   });
@@ -96,6 +106,7 @@ describe("PayerBillingModeHistory — le mode d'un payeur (§16.1, §16.6)", () 
       from: "semimonthly",
       to: "weekly",
       effectiveAt: paris("2026-12-07"),
+      immediate: false,
     });
     expect(payer.toPersistence().entries).toHaveLength(2);
     expect(payer.timeline(defaultModes()).modeAt(paris("2026-12-10")).mode).toBe("weekly");
@@ -105,5 +116,86 @@ describe("PayerBillingModeHistory — le mode d'un payeur (§16.1, §16.6)", () 
     expect(() => history().cancelScheduled({ at: paris("2026-10-08"), staffId: "s" })).toThrow(
       NoScheduledPayerBillingModeError,
     );
+  });
+});
+
+/** Un segment écrit à `createdAt`, annulé ou non. */
+function written(
+  effectiveFrom: Date,
+  mode: BillingMode,
+  createdAt: Date,
+  cancelledAt: Date | null = null,
+): PayerModeEntry {
+  return { ...entry(effectiveFrom, mode), createdAt, cancelledAt };
+}
+
+describe("PayerBillingModeHistory — l'immédiat et le premier choix (plan changement de mode immédiat, §3.2-3.3)", () => {
+  const AT = paris("2026-11-12", "11:00");
+
+  it("jamais commandé : immédiat, daté de la dernière clôture C0, écrit au geste", () => {
+    const payer = history();
+
+    expect(payer.change("weekly", gesture(AT), defaultModes(), OPENING)).toEqual({
+      kind: "scheduled",
+      from: "monthly",
+      to: "weekly",
+      effectiveAt: paris("2026-11-01"),
+      immediate: true,
+    });
+    expect(payer.toPersistence().entries).toEqual([
+      expect.objectContaining({ effectiveFrom: paris("2026-11-01"), createdAt: AT }),
+    ]);
+    expect(payer.timeline(defaultModes()).modeAt(AT).mode).toBe("weekly");
+  });
+
+  it("refus 1 — il a déjà commandé : programmé à la prochaine clôture", () => {
+    expect(history().change("weekly", gesture(AT), defaultModes(), ORDERED)).toMatchObject({
+      effectiveAt: paris("2026-12-01"),
+      immediate: false,
+    });
+  });
+
+  it("refus 2 — un segment vivant commence à C0 : programmé", () => {
+    // Hebdomadaire depuis le 1er (programmé en octobre) ; le 1er à midi, C0 est le 1er lui-même.
+    const payer = history([written(paris("2026-11-01"), "weekly", paris("2026-10-01"))]);
+
+    expect(
+      payer.change("monthly", gesture(paris("2026-11-01", "12:00")), defaultModes(), OPENING),
+    ).toMatchObject({ effectiveAt: paris("2026-11-02"), immediate: false });
+  });
+
+  it("refus 3 — un segment a été écrit depuis C0, même annulé : un seul immédiat par période", () => {
+    const payer = history([
+      written(paris("2026-12-01"), "weekly", paris("2026-11-05"), paris("2026-11-06")),
+    ]);
+
+    expect(payer.change("semimonthly", gesture(AT), defaultModes(), OPENING)).toMatchObject({
+      effectiveAt: paris("2026-12-01"),
+      immediate: false,
+    });
+  });
+
+  it("le premier choix écrit un segment même s'il redemande le mensuel — immédiat ou programmé", () => {
+    const opening = history();
+    expect(opening.change("monthly", gesture(AT), defaultModes(), OPENING)).toMatchObject({
+      from: "monthly",
+      to: "monthly",
+      effectiveAt: paris("2026-11-01"),
+      immediate: true,
+    });
+    expect(opening.toPersistence().freshIds).toEqual(["seg_new"]);
+
+    const ordered = history();
+    expect(ordered.change("monthly", gesture(AT), defaultModes(), ORDERED)).toMatchObject({
+      effectiveAt: paris("2026-12-01"),
+      immediate: false,
+    });
+  });
+
+  it("un choix seulement annulé n'est pas un choix : le premier geste écrit encore", () => {
+    const payer = history([
+      written(paris("2026-11-01"), "weekly", paris("2026-10-01"), paris("2026-10-02")),
+    ]);
+    expect(payer.change("monthly", gesture(AT), defaultModes(), ORDERED)).not.toBeNull();
   });
 });

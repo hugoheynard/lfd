@@ -21,7 +21,9 @@ import { defaultModes, paris } from "./billing-mode-fixtures.js";
 
 const WEEKLY_SINCE_AUGUST = {
   payerCompanyId: "c_week",
-  segments: [{ effectiveFrom: paris("2026-08-01"), mode: "weekly" as const }],
+  segments: [
+    { effectiveFrom: paris("2026-08-01"), mode: "weekly" as const, writtenAt: paris("2026-08-01") },
+  ],
 };
 const MIXED = InvoicingCalendar.of(defaultModes(), [WEEKLY_SINCE_AUGUST]);
 
@@ -127,7 +129,13 @@ describe("rythmes mêlés : un payeur hebdomadaire, les autres au mensuel", () =
     const fromOctober = InvoicingCalendar.of(defaultModes(), [
       {
         payerCompanyId: "c_week",
-        segments: [{ effectiveFrom: paris("2026-10-01"), mode: "weekly" as const }],
+        segments: [
+          {
+            effectiveFrom: paris("2026-10-01"),
+            mode: "weekly" as const,
+            writtenAt: paris("2026-10-01"),
+          },
+        ],
       },
     ]);
     const coverage = {

@@ -17,10 +17,15 @@
  * depuis l'instant présent.
  */
 import type { LegalEntityView } from "@lfd/contracts";
-import { nextClosureAfter } from "../src/lafoliecoffee/accounting/domain/services/billing-cycle.js";
+import {
+  closureAtOrBefore,
+  nextClosureAfter,
+} from "../src/lafoliecoffee/accounting/domain/services/billing-cycle.js";
 import { BillingRhythm } from "../src/lafoliecoffee/accounting/domain/value-objects/billing-rhythm.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { LATEST_DELIVERY_FULFILLMENT } from "./delivery-deadline-fixture.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { createUser } from "./factories.js";
 
 export const BASE = "/admin/accounting/legal-entities";
 
@@ -110,6 +115,43 @@ export async function mandated(entityId: string, companyId: string): Promise<voi
 /** La prochaine clôture du mensuel au 1er — la prise d'effet de tout premier changement. */
 export function nextMonthlyClosure(): string {
   return nextClosureAfter(new Date(daysAgo(0)), BillingRhythm.default()).toISOString();
+}
+
+/**
+ * La dernière clôture passée du mensuel au 1er — la date d'un changement
+ * immédiat (C0) pour un payeur resté au mensuel par défaut.
+ */
+export function lastMonthlyClosure(): string {
+  return closureAtOrBefore(new Date(daysAgo(0)), BillingRhythm.default()).toISOString();
+}
+
+let orderSeq = 0;
+
+/**
+ * Un bon au compte, non annulé, passé par `companyId` et facturé à
+ * `billedCompanyId` : la seule chose que lit « a-t-il déjà commandé ? ». Écrit
+ * par Prisma comme les autres bons semés hors du chemin de passation (dette
+ * notée en tête de `factories.ts`) : ni jour de livraison ni solde, l'immédiat
+ * se refuse dès la passation.
+ */
+export async function ordered(companyId: string, billedCompanyId = companyId): Promise<void> {
+  orderSeq += 1;
+  const buyer = await createUser(ctx.prisma, { auth0Sub: `modes-buyer-${String(orderSeq)}` });
+  await ctx.prisma.order.create({
+    data: {
+      vatMethod: "line_ht",
+      orderNumber: `ORD-${String(800_000 + orderSeq)}`,
+      companyId,
+      billedCompanyId,
+      placedByUserId: buyer.id,
+      subtotalCents: 1_000,
+      vatCents: 55,
+      totalCents: 1_055,
+      status: "placed",
+      paymentStatus: "not_required",
+      fulfillment: LATEST_DELIVERY_FULFILLMENT,
+    },
+  });
 }
 
 /**

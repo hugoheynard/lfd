@@ -9,7 +9,12 @@ import { defaultModes, paris } from "./billing-mode-fixtures.js";
  */
 
 const calendar = InvoicingCalendar.of(defaultModes(), [
-  { payerCompanyId: "c_week", segments: [{ effectiveFrom: paris("2026-08-01"), mode: "weekly" }] },
+  {
+    payerCompanyId: "c_week",
+    segments: [
+      { effectiveFrom: paris("2026-08-01"), mode: "weekly", writtenAt: paris("2026-08-01") },
+    ],
+  },
 ]);
 
 describe("lotPayerModes — les modes des clients prélevés, pas ceux qui closent", () => {
@@ -32,7 +37,9 @@ describe("lotPayerModes — les modes des clients prélevés, pas ceux qui close
     const switching = InvoicingCalendar.of(defaultModes(), [
       {
         payerCompanyId: "c_sw",
-        segments: [{ effectiveFrom: paris("2026-10-01"), mode: "weekly" }],
+        segments: [
+          { effectiveFrom: paris("2026-10-01"), mode: "weekly", writtenAt: paris("2026-10-01") },
+        ],
       },
     ]);
     expect(

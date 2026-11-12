@@ -118,7 +118,13 @@ describe("le lot de prélèvement", () => {
     const mixed = InvoicingCalendar.of(defaultModes(), [
       {
         payerCompanyId: "c_week",
-        segments: [{ effectiveFrom: paris("2026-08-01"), mode: "weekly" as const }],
+        segments: [
+          {
+            effectiveFrom: paris("2026-08-01"),
+            mode: "weekly" as const,
+            writtenAt: paris("2026-08-01"),
+          },
+        ],
       },
     ]);
     const monday = { startsAt: paris("2026-09-21"), closesAt: paris("2026-09-28") };

@@ -80,7 +80,9 @@ class OnlyLe1 extends LegalEntityReader {
 /** Un payeur hebdomadaire au lundi depuis le 1er août 2026. */
 const WEEKLY: PayerModeSegments = {
   payerCompanyId: "c_port",
-  segments: [{ effectiveFrom: paris("2026-08-01"), mode: "weekly" }],
+  segments: [
+    { effectiveFrom: paris("2026-08-01"), mode: "weekly", writtenAt: paris("2026-08-01") },
+  ],
 };
 
 function run(

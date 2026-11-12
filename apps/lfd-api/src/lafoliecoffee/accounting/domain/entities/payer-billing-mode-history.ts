@@ -19,13 +19,24 @@ export interface PayerModeEntry extends AppendOnlyStamp {
 /**
  * Ce qu'un geste a changé. `scheduled` : le payeur passe de `from` à `to` à
  * `effectiveAt`. `cancelled` : le passage à `from` prévu à `effectiveAt` est
- * annulé, `to` reste en vigueur.
+ * annulé, `to` reste en vigueur. `immediate` : le nouveau mode vaut dès le
+ * geste, daté de la dernière clôture passée (`effectiveAt`).
  */
 export interface PayerModeChange {
   readonly kind: "scheduled" | "cancelled";
   readonly from: BillingMode;
   readonly to: BillingMode;
   readonly effectiveAt: Date;
+  readonly immediate: boolean;
+}
+
+/**
+ * Ce que l'appelant sait du payeur au moment du geste : `opening` — il n'a
+ * jamais eu de commande au compte, par aucun chemin de rattachement. C'est la
+ * première condition de l'immédiat ; l'agrégat juge les deux autres.
+ */
+export interface PayerOpening {
+  readonly opening: boolean;
 }
 
 /** La forme persistée, et ce que ce chargement a créé ou annulé. */
@@ -74,18 +85,35 @@ export class PayerBillingModeHistory {
   /** La suite des clôtures du payeur, lue sur les dates des modes. */
   timeline(modes: ModeTimelines): PayerTimeline {
     return PayerTimeline.of(
-      this.entries.filter((entry) => entry.cancelledAt === null),
+      this.living().map((entry) => ({
+        effectiveFrom: entry.effectiveFrom,
+        mode: entry.mode,
+        writtenAt: entry.createdAt,
+      })),
       modes,
     );
   }
 
   /**
-   * Programme un mode.
+   * Change le mode du payeur. **Immédiat** (plan
+   * `plan-changement-de-mode-immediat.md`, §3.2) quand il n'a jamais commandé
+   * (`opening`), qu'aucun segment vivant ne commence à la dernière clôture
+   * passée C0 ou après, et qu'aucun segment n'a été écrit depuis C0 : le
+   * segment est daté de C0, une vraie clôture de sa suite, et écrit
+   * maintenant. Sinon **programmé** à sa prochaine clôture.
    *
-   * @returns ce qui a changé, ou `null` : c'est déjà son mode.
+   * Un payeur sans segment vivant n'a pas encore choisi : son premier geste
+   * écrit un segment même s'il redemande le mensuel (§3.3).
+   *
+   * @returns ce qui a changé, ou `null` : c'est déjà le mode qu'il a choisi.
    * @throws {PayerBillingModeChangePendingError} un changement n'a pas encore pris effet.
    */
-  change(mode: BillingMode, gesture: BillingGesture, modes: ModeTimelines): PayerModeChange | null {
+  change(
+    mode: BillingMode,
+    gesture: BillingGesture,
+    modes: ModeTimelines,
+    payer: PayerOpening,
+  ): PayerModeChange | null {
     const pending = pendingOf(this.entries, gesture.at);
     if (pending !== null) {
       throw new PayerBillingModeChangePendingError(
@@ -95,9 +123,12 @@ export class PayerBillingModeHistory {
       );
     }
     const timeline = this.timeline(modes);
-    const effectiveAt = timeline.closureAfter(gesture.at);
-    const from = timeline.modeAt(effectiveAt).mode;
-    if (mode === from) {
+    const next = timeline.closureAfter(gesture.at);
+    const lastClosure = timeline.previousClosureOf(next);
+    const immediate = payer.opening && this.isQuietSince(lastClosure);
+    const effectiveAt = immediate ? lastClosure : next;
+    const from = timeline.modeAt(immediate ? gesture.at : effectiveAt).mode;
+    if (mode === from && this.living().length > 0) {
       return null;
     }
     this.entries = [
@@ -113,7 +144,24 @@ export class PayerBillingModeHistory {
       },
     ];
     this.fresh.add(gesture.segmentId);
-    return { kind: "scheduled", from, to: mode, effectiveAt };
+    return { kind: "scheduled", from, to: mode, effectiveAt, immediate };
+  }
+
+  /**
+   * Rien n'a bougé depuis `closure` : aucun segment vivant ne commence à elle
+   * ou après, et aucun segment, annulé compris, n'a été écrit depuis — un
+   * seul immédiat par période.
+   */
+  private isQuietSince(closure: Date): boolean {
+    return !this.entries.some(
+      (entry) =>
+        entry.createdAt.getTime() >= closure.getTime() ||
+        (entry.cancelledAt === null && entry.effectiveFrom.getTime() >= closure.getTime()),
+    );
+  }
+
+  private living(): readonly PayerModeEntry[] {
+    return this.entries.filter((entry) => entry.cancelledAt === null);
   }
 
   /**
@@ -142,6 +190,7 @@ export class PayerBillingModeHistory {
       from: scheduled.mode,
       to: remaining.at(-1)?.mode ?? DEFAULT_BILLING_MODE,
       effectiveAt: scheduled.effectiveFrom,
+      immediate: false,
     };
   }
 

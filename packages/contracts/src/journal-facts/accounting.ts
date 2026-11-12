@@ -141,7 +141,8 @@ export const ACCOUNTING_FACTS = {
   }),
   /**
    * Le mode de facturation d'un PAYEUR (§16.6-7) — sujet : le payeur.
-   * `effectiveAt` : la prochaine clôture de sa suite actuelle. `cancelled` :
+   * `effectiveAt` : la prochaine clôture de sa suite actuelle, ou la dernière
+   * passée quand `immediate`. `cancelled` :
    * le passage à `from` est annulé, `to` reste en vigueur.
    */
   "payer.billing_mode_changed": fact(
@@ -152,6 +153,8 @@ export const ACCOUNTING_FACTS = {
       to: billingRhythmKindSchema,
       effectiveAt: instant(),
       cancelled: z.boolean(),
+      /** Posé immédiatement, daté de la dernière clôture passée ; absent des faits d'avant. */
+      immediate: z.boolean().optional(),
     }),
   ),
   /** La constitution automatique — un fait distinct du calendrier. */

@@ -20,6 +20,7 @@ import { ScheduleBillingModeDatesHandler } from "../schedule-billing-mode-dates.
 import { SetPayerBillingModeCommand } from "../set-payer-billing-mode.command.js";
 import { SetPayerBillingModeHandler } from "../set-payer-billing-mode.handler.js";
 import {
+  FixedOrderHistory,
   FixedStandings,
   InMemoryModeDates,
   InMemoryPayerModes,
@@ -48,6 +49,9 @@ const SITE = {
   ],
 };
 
+/** Un payeur qui n'a jamais commandé : son changement de mode est immédiat. */
+const NEWCOMER = { companyId: "cmp_new", name: "Le Nouveau", active: true, follows: [] };
+
 function world() {
   const entities = new StepEntities(new SettingSteps());
   entities.rows.set("le1", declaredEntity());
@@ -56,7 +60,7 @@ function world() {
   const clock = new FixedClock(NOW);
   const events = new RecordingPublisher();
   const ids = new FixedIdGenerator("seg");
-  const standings = new FixedStandings([PAYER, SITE]);
+  const standings = new FixedStandings([PAYER, SITE, NEWCOMER]);
   return {
     dates,
     payers,
@@ -82,6 +86,7 @@ function world() {
       standings,
       new StoreModeDatesReader(dates),
       new InMemoryPayerModes(payers),
+      new FixedOrderHistory(new Set([PAYER.companyId])),
       clock,
       ids,
       events,
@@ -192,7 +197,37 @@ describe("SetPayerBillingModeHandler / CancelPayerBillingModeHandler", () => {
       to: "weekly",
       effectiveAt: paris("2026-11-01").toISOString(),
       cancelled: false,
+      immediate: false,
     });
+  });
+
+  it("un payeur qui n'a jamais commandé : immédiat, daté de la dernière clôture, écrit maintenant", async () => {
+    const w = world();
+
+    await w.setPayer.execute(new SetPayerBillingModeCommand("le1", "cmp_new", "weekly", "s"));
+
+    expect(w.payers.rows[0]).toMatchObject({
+      payerCompanyId: "cmp_new",
+      mode: "weekly",
+      effectiveFrom: paris("2026-10-01"),
+      createdAt: NOW,
+    });
+    expect(w.events.traced[0]?.journalFact().payload).toMatchObject({
+      from: "monthly",
+      to: "weekly",
+      effectiveAt: paris("2026-10-01").toISOString(),
+      immediate: true,
+    });
+  });
+
+  it("le premier choix laisse une trace, même s'il redemande le mensuel", async () => {
+    const w = world();
+
+    await w.setPayer.execute(
+      new SetPayerBillingModeCommand("le1", PAYER.companyId, "monthly", "s"),
+    );
+
+    expect(w.payers.rows[0]).toMatchObject({ mode: "monthly", effectiveFrom: paris("2026-11-01") });
   });
 
   it("la prise d'effet lit les dates réglées du mode actuel", async () => {

@@ -19,7 +19,7 @@ describe("PayerTimeline — la suite d'un payeur (M1, §16.2, §16.6-3)", () => 
    */
   describe("bascule mensuel → hebdomadaire à T = 1er novembre, qui n'est pas un lundi", () => {
     const timeline = PayerTimeline.of(
-      [{ effectiveFrom: paris("2026-11-01"), mode: "weekly" }],
+      [{ effectiveFrom: paris("2026-11-01"), mode: "weekly", writtenAt: paris("2026-11-01") }],
       defaultModes(),
     );
 
@@ -60,7 +60,7 @@ describe("PayerTimeline — la suite d'un payeur (M1, §16.2, §16.6-3)", () => 
       ]),
     });
     const timeline = PayerTimeline.of(
-      [{ effectiveFrom: paris("2026-11-01"), mode: "semimonthly" }],
+      [{ effectiveFrom: paris("2026-11-01"), mode: "semimonthly", writtenAt: paris("2026-11-01") }],
       modes,
     );
 
@@ -98,7 +98,7 @@ describe("PayerTimeline — la suite d'un payeur (M1, §16.2, §16.6-3)", () => 
       ]),
     });
     const timeline = PayerTimeline.of(
-      [{ effectiveFrom: paris("2026-11-01"), mode: "weekly" }],
+      [{ effectiveFrom: paris("2026-11-01"), mode: "weekly", writtenAt: paris("2026-11-01") }],
       modes,
     );
 
@@ -110,8 +110,8 @@ describe("PayerTimeline — la suite d'un payeur (M1, §16.2, §16.6-3)", () => 
   it("retour hebdomadaire → mensuel en fin d'année : le 4 janvier clôt la semaine, puis le 1er février", () => {
     const timeline = PayerTimeline.of(
       [
-        { effectiveFrom: paris("2026-11-01"), mode: "weekly" },
-        { effectiveFrom: paris("2026-12-28"), mode: "monthly" },
+        { effectiveFrom: paris("2026-11-01"), mode: "weekly", writtenAt: paris("2026-11-01") },
+        { effectiveFrom: paris("2026-12-28"), mode: "monthly", writtenAt: paris("2026-12-28") },
       ],
       defaultModes(),
     );

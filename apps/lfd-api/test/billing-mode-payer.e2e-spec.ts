@@ -14,6 +14,7 @@ import {
   mandated,
   modeOf,
   nextMonthlyClosure,
+  ordered,
   staff,
   useBillingModeScene,
 } from "./billing-mode-scene.js";
@@ -25,6 +26,8 @@ describe("le mode d'un payeur", () => {
     const id = await declare();
     const payer = await createCompany(ctx.prisma, { raisonSociale: "Le Bistrot SAS" });
     await mandated(id, payer.id);
+    // Il a déjà commandé : le changement est programmé, pas immédiat.
+    await ordered(payer.id);
     const effectiveAt = nextMonthlyClosure();
 
     const before = jsonBody<PayerBillingModeView>(
@@ -59,6 +62,7 @@ describe("le mode d'un payeur", () => {
   it("refuse en 409 un second changement, puis admet l'annulation", async () => {
     const id = await declare();
     const payer = await createCompany(ctx.prisma);
+    await ordered(payer.id);
     const route = `${BASE}/${id}/payers/${payer.id}/billing-mode`;
     await staff().put(route).send({ mode: "weekly" }).expect(204);
 

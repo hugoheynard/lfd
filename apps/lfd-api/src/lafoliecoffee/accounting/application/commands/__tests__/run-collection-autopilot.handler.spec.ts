@@ -154,7 +154,13 @@ describe("le passage de la constitution automatique (PA3)", () => {
     const weekly = [
       {
         payerCompanyId: "c_port",
-        segments: [{ effectiveFrom: paris("2026-09-01"), mode: "weekly" as const }],
+        segments: [
+          {
+            effectiveFrom: paris("2026-09-01"),
+            mode: "weekly" as const,
+            writtenAt: paris("2026-09-01"),
+          },
+        ],
       },
     ];
     /** Lundi 5 et lundi 12 octobre 2026, 00h00 Paris. */

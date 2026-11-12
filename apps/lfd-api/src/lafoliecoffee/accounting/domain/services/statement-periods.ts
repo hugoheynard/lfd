@@ -9,6 +9,7 @@ import {
   previousClosureOf,
   type RhythmTimeline,
 } from "./invoicing-closures.js";
+import { PayerTimeline } from "./payer-timeline.js";
 
 /**
  * **Les périodes du relevé** (plan
@@ -34,6 +35,12 @@ export interface StatementPeriodSequence {
   closureAfter(instant: Date): Date;
   /** La clôture qui ouvre la période close à `closesAt` — la précédente réelle. */
   closureBefore(closesAt: Date): Date;
+  /**
+   * Cette clôture était-elle connue quand elle est passée ? Une période close
+   * par une clôture inconnue (un mode immédiat, daté d'avant son écriture)
+   * n'a pas existé : le relevé ne la propose pas.
+   */
+  isKnownClosure(closesAt: Date): boolean;
 }
 
 /** La suite des périodes d'une timeline (un payeur, un mode). */
@@ -41,6 +48,8 @@ export function timelinePeriods(timeline: RhythmTimeline): StatementPeriodSequen
   return {
     closureAfter: (instant) => closureAfter(instant, timeline),
     closureBefore: (closesAt) => previousClosureOf(closesAt, timeline),
+    isKnownClosure: (closesAt) =>
+      !(timeline instanceof PayerTimeline) || timeline.isKnownClosure(closesAt),
   };
 }
 
@@ -75,7 +84,10 @@ export function requestedStatementPeriod(
 ): StatementPeriod {
   const current = sequence.closureAfter(now);
   const period = periodClosedBy(closesAt, sequence, closesAt.getTime() === current.getTime());
-  if (sequence.closureAfter(period.cycle.startsAt).getTime() !== closesAt.getTime()) {
+  if (
+    sequence.closureAfter(period.cycle.startsAt).getTime() !== closesAt.getTime() ||
+    !sequence.isKnownClosure(closesAt)
+  ) {
     throw new NotAStatementPeriodError(closesAt);
   }
   if (closesAt.getTime() > current.getTime()) {
@@ -87,7 +99,7 @@ export function requestedStatementPeriod(
 /**
  * Les périodes proposées, la plus récente d'abord : celle en cours, puis
  * celles qui se sont closes APRÈS la mise en service de la facture par
- * période (`floor`) — une période close avant n'a été ni facturée ni
+ * période (`floor`) et qui étaient connues à leur clôture — une période close avant n'a été ni facturée ni
  * prélevée par période. Au plus {@link STATEMENT_PERIODS_LISTED}. Sans
  * mise en service connue, les douze dernières.
  */
@@ -103,7 +115,9 @@ export function listedStatementPeriods(
     periods.length < STATEMENT_PERIODS_LISTED &&
     (floor === null || closesAt.getTime() > floor.getTime())
   ) {
-    periods.push(periodClosedBy(closesAt, sequence, false));
+    if (sequence.isKnownClosure(closesAt)) {
+      periods.push(periodClosedBy(closesAt, sequence, false));
+    }
     closesAt = sequence.closureBefore(closesAt);
   }
   return periods;
