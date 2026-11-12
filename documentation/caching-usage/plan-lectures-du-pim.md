@@ -77,9 +77,8 @@ Tranché le 2026-11-12 avant le bâti (Hugo : « on enchaîne sur P2 »).
   correctif, nouvelle route) passe inaperçue, et il vit hors du schéma `pim`.
   Un déclencheur ne s'oublie pas.
 - **`pim.pim_change`**, en ajout seul dans le schéma `pim`, version =
-  `max(id)` + `count(*)`, déclencheurs `FOR EACH STATEMENT` qui n'écrivent que
-  sur un vrai changement (comme `catalog_admin_change` :
-  `new_rows EXCEPT ALL old_rows` en `to_jsonb`).
+  `max(id)` + `count(*)`, déclencheurs `FOR EACH STATEMENT` : une ligne par
+  instruction qui touche au moins une ligne (§ 4.4).
 - **Les tables** : toutes celles que lisent la liste des produits, les
   référentiels et le détail d'une fiche. Point de départ, à relire dans les
   lecteurs au bâti : `product`, `product_variant`, `product_editorial`,
@@ -123,6 +122,37 @@ servies sortent), une version par fiche.
   défaut, par une route neuve, en gardant la péremption de la signature
   déduite au front ; après un geste de déclinaison, elle relit le détail (servi
   par l'objet) sans les référentiels.
+
+### 4.4 Ce que `vitruve` a rendu sur P2 (2026-11-12), et ce qui en est fait
+
+- BLOQUANT relire la seule déclinaison : les déclinaisons alignées héritent
+  du défaut à la lecture → **retiré**. La fiche garde la relecture de son
+  détail après une section ; pas de route neuve, et la péremption de la
+  signature reste celle du serveur.
+- Le filtre « vrai changement » ne retient rien sur une écriture Prisma
+  (20 `@updatedAt`, `deleteMany` + `create` dans `save`) → **retiré** : le
+  journal écrit une ligne par instruction qui touche une ligne, comme
+  `company_change`. La promesse disparaît du § 4.1.
+- Le détail d'une fiche : clé `pim-product:<id>`, **une ligne par fiche**
+  dans l'objet (remplacée à chaque rangement), donc bornée par le nombre de
+  fiches ; la borne de 500 disparaît. Le numéro est global : pendant une
+  séance d'édition le détail se relit à chaque geste, et ne sert l'objet que
+  pour une fiche rouverte sans écriture entre-temps. La mesure dira si un
+  numéro par fiche vaut son prix.
+- Le détail lit hors du schéma `pim` : la péremption de la signature
+  (`growth.activity_events`) et le nom de celui qui l'a posée (annuaire
+  `staff`). Accepté et écrit : un fait de contenu accompagne toujours une
+  écriture dans `pim` (vérifié au bâti par un test), et un nom de staff
+  renommé reste ancien dans l'objet jusqu'au prochain changement du PIM.
+- La filiation : si le détail lit `catalog_revision_item`, la table entre au
+  numéro (vérifié au bâti).
+- Le droit du numéro s'ouvre aussi à `allergen_matrix:read`. Un store dont la
+  route n'est pas permise à la personne (TVA sans `pim_tax`) garde sa
+  relecture à l'ouverture, comme aujourd'hui.
+- `pim` entre dans `GLOBAL_VERSION_SUBJECTS` (`@lfd/contracts` : `pnpm test`
+  à la racine, par la CI) ; `pim.pim_change` entre à la couverture de la
+  purge du scénario ; la source est reliée par
+  `appBootstrap/day-version-sources.module.ts`.
 
 ## 5. Le bâti et la mesure
 
