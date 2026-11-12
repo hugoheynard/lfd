@@ -43,6 +43,7 @@ import {
   SCENE_DELIVERY,
   type Drawn,
 } from "./shortfall-decision-scene.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 /** Une seconde ligne au catalogue des e2e, que la scène ne met jamais au bac. */
 const BAGUETTE = "PAI-001-1";
@@ -218,6 +219,7 @@ describe("« Décider du départ » — reste abandonné (E6b + E6c1)", () => {
     await ctx
       .asSub(STAFF)
       .post(`${packingOrderPath(order.id)}/containers/${bag?.id ?? ""}/lines/${CROISSANT}`)
+      .set(INTENT_KEY, freshIntent())
       .send({ quantity: 1 })
       .expect(204);
 

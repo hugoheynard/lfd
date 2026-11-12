@@ -30,6 +30,7 @@ import {
   sheetOf,
   worksheetLine,
 } from "./production-day-fixture.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 /**
  * E2E — **la vente au poids au fournil et au colisage**
@@ -153,6 +154,7 @@ function put(orderId: string, bag: string, sku: string, quantity: number) {
   return ctx
     .asSub(STAFF)
     .post(`${packingOrderPath(orderId)}/containers/${bag}/lines/${sku}`)
+    .set(INTENT_KEY, freshIntent())
     .send({ quantity });
 }
 
@@ -304,6 +306,7 @@ describe("le colisage, au poids", () => {
       ctx
         .asSub(STAFF)
         .post(`${packingOrderPath(sheet.orderId)}/containers/${bag}/lines/${WEIGHED}/withdrawal`)
+        .set(INTENT_KEY, freshIntent())
         .send({ quantity });
 
     await withdraw(250).expect(400);

@@ -1,6 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
+import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../platform/intent/once-per-intent.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { BinDesk } from "../../channels/delivery/index.js";
 import { ContainerBinGoneError } from "../../domain/errors/packing-container-errors.js";
@@ -9,7 +10,7 @@ import {
   PackingContainerMovedEvent,
 } from "../../domain/events/packing-container.events.js";
 import { PackingSheetRepository } from "../../domain/ports/packing-sheet.repository.js";
-import { citedOrderOf, lockedSheet } from "./container-support.js";
+import { citedOrderOf, lockedSheet, movementIntent } from "./container-support.js";
 import { MoveBetweenContainersCommand } from "./move-between-containers.command.js";
 
 /**
@@ -24,6 +25,11 @@ import { MoveBetweenContainersCommand } from "./move-between-containers.command.
  *
  * Au journal : les deux faits existants, `emptied` à la source puis `filled`
  * à l'arrivée — un lecteur du contenu de chaque contenant reste juste.
+ *
+ * **Une fois par intention** : la clé de l'écran est scellée dans la même
+ * unité de travail que le mouvement ; un rejeu de la même clé ne refait rien
+ * et rend le même résultat (rien — la route rend 204), un échec rend
+ * l'intention et l'écran peut réessayer.
  *
  * @throws {PackingOrderNotDrawnYetError} @throws {PackedOrderSealedError}
  * @throws {ContainersCountedError} @throws {PackingContainerNotFoundError}
@@ -41,9 +47,21 @@ export class MoveBetweenContainersHandler implements ICommandHandler<
     private readonly desk: BinDesk,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: MoveBetweenContainersCommand): Promise<void> {
+  execute(command: MoveBetweenContainersCommand): Promise<void> {
+    return this.intents.runSealed(
+      movementIntent("packing.transfer", command, command.fromContainerId),
+      NOTHING_TO_REPLAY,
+      (seal) => this.move(command, seal),
+    );
+  }
+
+  private async move(
+    command: MoveBetweenContainersCommand,
+    seal: (result: void) => Promise<void>,
+  ): Promise<void> {
     await this.uow.run(async () => {
       const sheet = await lockedSheet(this.sheets, command.serviceDay, command.orderId);
       const line = sheet.lineToTouch(command.sku);
@@ -75,6 +93,7 @@ export class MoveBetweenContainersHandler implements ICommandHandler<
           ),
         );
       }
+      await seal(undefined);
     });
   }
 }

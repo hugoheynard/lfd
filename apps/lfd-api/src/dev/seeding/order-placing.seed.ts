@@ -492,6 +492,8 @@ async function packIntoContainers(
         line.sku,
         line.quantity,
         SEED_STAFF_SUB,
+        // Chaque ligne semée est un geste voulu : une intention neuve.
+        randomUUID(),
       ),
     );
   }

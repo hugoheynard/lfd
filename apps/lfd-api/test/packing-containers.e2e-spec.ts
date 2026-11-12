@@ -39,6 +39,7 @@ import {
   place,
   recordBatch,
 } from "./production-day-fixture.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 /** Une panne posée par le test, entre l'écriture du bac et celle du contenant. */
 class InjectedFailure extends TechnicalError {
@@ -228,12 +229,14 @@ describe("la colonne Contenants — le colisage tient le contenu, la livraison g
 
     await staff()
       .post(`${base(delivery.orderId)}/containers/${first}/lines/${CROISSANT}`)
+      .set(INTENT_KEY, freshIntent())
       .send({ quantity: 10 })
       .expect(204);
     const early = await staff().post(`${base(delivery.orderId)}/close`);
     expect(codeOf(early)).toBe("packing.containers.unallocated");
     await staff()
       .post(`${base(delivery.orderId)}/containers/${second}/lines/${CROISSANT}`)
+      .set(INTENT_KEY, freshIntent())
       .send({ quantity: 10 })
       .expect(204);
 
@@ -246,13 +249,56 @@ describe("la colonne Contenants — le colisage tient le contenu, la livraison g
       .expect(204);
   });
 
+  it("glisser, retirer, déplacer : un double clic (même clé) ne bouge les pièces qu'une fois", async () => {
+    const { delivery } = await day();
+    const typeId = await binTypeId(ctx);
+    const first = await openBin(delivery.orderId, typeId);
+    const second = await openBin(delivery.orderId, typeId);
+    const lines = `${base(delivery.orderId)}/containers/${first}/lines/${CROISSANT}`;
+    const stock = async () =>
+      (
+        await ctx.prisma.packingStock.findUniqueOrThrow({
+          where: { serviceDay_sku: { serviceDay: SERVICE_DAY, sku: CROISSANT } },
+        })
+      ).packed;
+    const twice = async (path: string, body: object) => {
+      const key = freshIntent();
+      await staff().post(path).set(INTENT_KEY, key).send(body).expect(204);
+      await staff().post(path).set(INTENT_KEY, key).send(body).expect(204);
+    };
+
+    await twice(lines, { quantity: 8 });
+    expect(await stock()).toBe(8);
+    await twice(`${lines}/withdrawal`, { quantity: 3 });
+    expect(await stock()).toBe(5);
+    await twice(`${lines}/transfer`, { toContainerId: second, quantity: 2 });
+    const sheet = await sheetOf(delivery.orderId);
+    expect(sheet?.containerList?.map((container) => container.pieces)).toEqual([3, 2]);
+    expect(await stock()).toBe(5);
+
+    // Un second geste VOULU (clé neuve) glisse à nouveau.
+    await staff().post(lines).set(INTENT_KEY, freshIntent()).send({ quantity: 1 }).expect(204);
+    expect(await stock()).toBe(6);
+  });
+
+  it("refuse un mouvement de pièces sans clé d'intention (400 intent.key_missing)", async () => {
+    const { delivery } = await day();
+    const first = await openBin(delivery.orderId, await binTypeId(ctx));
+    const refused = await staff()
+      .post(`${base(delivery.orderId)}/containers/${first}/lines/${CROISSANT}`)
+      .send({ quantity: 1 });
+
+    expect(refused.status).toBe(400);
+    expect(codeOf(refused)).toBe("intent.key_missing");
+  });
+
   it("déplace 18 croissants d'un bac à l'autre en un geste : la réserve et le poste n'en bougent pas", async () => {
     const { delivery } = await day();
     const typeId = await binTypeId(ctx);
     const first = await openBin(delivery.orderId, typeId);
     const second = await openBin(delivery.orderId, typeId);
     const lines = `${base(delivery.orderId)}/containers/${first}/lines/${CROISSANT}`;
-    await staff().post(lines).send({ quantity: 18 }).expect(204);
+    await staff().post(lines).set(INTENT_KEY, freshIntent()).send({ quantity: 18 }).expect(204);
     const counters = (view: ProductionPackingView) => ({
       resources: view.resources,
       orderCount: view.orderCount,
@@ -268,6 +314,7 @@ describe("la colonne Contenants — le colisage tient le contenu, la livraison g
 
     await staff()
       .post(`${lines}/transfer`)
+      .set(INTENT_KEY, freshIntent())
       .send({ toContainerId: second, quantity: 18 })
       .expect(204);
 
@@ -279,11 +326,13 @@ describe("la colonne Contenants — le colisage tient le contenu, la livraison g
 
     const beyond = await staff()
       .post(`${lines}/transfer`)
+      .set(INTENT_KEY, freshIntent())
       .send({ toContainerId: second, quantity: 1 });
     expect(beyond.status).toBe(409);
     expect(codeOf(beyond)).toBe("packing.container.withdraw_beyond");
     const same = await staff()
       .post(`${base(delivery.orderId)}/containers/${second}/lines/${CROISSANT}/transfer`)
+      .set(INTENT_KEY, freshIntent())
       .send({ toContainerId: second, quantity: 1 });
     expect(codeOf(same)).toBe("packing.container.move_to_same");
     expect((await sheetOf(delivery.orderId))?.containerList?.map((c) => c.pieces)).toEqual([0, 18]);
@@ -311,6 +360,7 @@ describe("la colonne Contenants — le colisage tient le contenu, la livraison g
     );
     await staff()
       .post(`${base(pickup.orderId)}/containers/${bag.containerId}/lines/${CROISSANT}`)
+      .set(INTENT_KEY, freshIntent())
       .send({ quantity: 4 })
       .expect(204);
 

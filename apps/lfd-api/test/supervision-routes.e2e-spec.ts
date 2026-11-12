@@ -41,6 +41,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const MEMBER = "auth0|member";
 const SUPERVISOR = "staff-supervision-seule";
@@ -184,6 +185,7 @@ async function seedWorkedDay(): Promise<void> {
     .post(
       `/admin/packing/${SERVICE_DAY}/orders/${orderId}/containers/${bag.containerId}/lines/${CROISSANT}`,
     )
+    .set(INTENT_KEY, freshIntent())
     .send({ quantity: 12 })
     .expect(204);
 }

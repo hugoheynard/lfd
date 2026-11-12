@@ -33,6 +33,7 @@ import {
   recordBatch,
 } from "./production-day-fixture.js";
 import { PACKING_SETTINGS, openHalfSharing } from "./packing-settings-scene.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const SITE = {
   label: "Maison",
@@ -286,11 +287,13 @@ describe("le retrait partiel d'une répartition", () => {
     ).containerId;
     await staff()
       .post(`${base(orderId)}/containers/${binId}/lines/${CROISSANT}`)
+      .set(INTENT_KEY, freshIntent())
       .send({ quantity: 20 })
       .expect(204);
 
     await staff()
       .post(`${base(orderId)}/containers/${binId}/lines/${CROISSANT}/withdrawal`)
+      .set(INTENT_KEY, freshIntent())
       .send({ quantity: 6 })
       .expect(204);
 
@@ -300,6 +303,7 @@ describe("le retrait partiel d'une répartition", () => {
     expect(after?.canDeclareReady).toBe(false);
     const beyond = await staff()
       .post(`${base(orderId)}/containers/${binId}/lines/${CROISSANT}/withdrawal`)
+      .set(INTENT_KEY, freshIntent())
       .send({ quantity: 15 });
     expect(codeOf(beyond)).toBe("packing.container.withdraw_beyond");
   });

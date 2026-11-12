@@ -27,6 +27,11 @@ import { InMemoryPackingSettings } from "./packing-settings-doubles.js";
 import { InMemoryResupplies, InMemoryResupplyRepository } from "./resupply-doubles.js";
 import { InMemoryShadow } from "./shadow-doubles.js";
 import { InMemorySheets, InMemoryStocks, RecordingDurable } from "./station-doubles.js";
+import { inMemoryIntents } from "../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+
+/** Une clé d'intention neuve par geste voulu. */
+let intentCount = 0;
+const nextKey = (): string => `intent_${(intentCount += 1)}`;
 
 /**
  * **Chaque geste qui fait « commencer » le colisage tient le plan arrêté
@@ -176,7 +181,16 @@ function sheetGestures(state: PlanHoldState, row: PackingSheetSnapshot) {
       InMemoryPackingSettings.sharingOpen().reader(),
       hold,
     ),
-    allocate: new AllocateToContainerHandler(sheets, stocks, desk, clock, events, uow, hold),
+    allocate: new AllocateToContainerHandler(
+      sheets,
+      stocks,
+      desk,
+      clock,
+      events,
+      uow,
+      hold,
+      inMemoryIntents(),
+    ),
     apply: new ApplyPackingProposalHandler(sheets, stocks, desk, ids, clock, events, uow, hold),
     close: new ClosePackingOrderHandler(sheets, new RecordingDurable(), clock, uow, hold),
   };
@@ -222,7 +236,9 @@ describe("Les gestes du colisage tiennent le plan arrêté, d'abord", () => {
   it("mettre au bac : le plan tenu avant le verrou du bac et son écriture", async () => {
     const { log, allocate } = sheetGestures("arrested", withEmptyBag());
 
-    await allocate.execute(new AllocateToContainerCommand(DAY, "ord_1", "ctn_1", "CRO", 4, STAFF));
+    await allocate.execute(
+      new AllocateToContainerCommand(DAY, "ord_1", "ctn_1", "CRO", 4, STAFF, nextKey()),
+    );
 
     expect(log).toEqual([`hold ${DAY}`, "sheet.lock", "sheet.save"]);
   });
@@ -275,7 +291,9 @@ describe("Un plan rouvert : chaque geste refuse sans rien verrouiller ni écrire
       name: "mettre au bac",
       row: withEmptyBag(),
       run: (g: ReturnType<typeof sheetGestures>) =>
-        g.allocate.execute(new AllocateToContainerCommand(DAY, "ord_1", "ctn_1", "CRO", 4, STAFF)),
+        g.allocate.execute(
+          new AllocateToContainerCommand(DAY, "ord_1", "ctn_1", "CRO", 4, STAFF, nextKey()),
+        ),
     },
     {
       name: "appliquer la proposition",

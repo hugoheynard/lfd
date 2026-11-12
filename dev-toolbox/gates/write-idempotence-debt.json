@@ -75,14 +75,6 @@
     },
     {
       "file": "apps/lfd-api/src/delivery/http/my-delivery-doorstep.controller.ts",
-      "method": "deposit"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/my-delivery-doorstep.controller.ts",
-      "method": "handOver"
-    },
-    {
-      "file": "apps/lfd-api/src/delivery/http/my-delivery-doorstep.controller.ts",
       "method": "report"
     },
     {
@@ -140,14 +132,6 @@
     {
       "file": "apps/lfd-api/src/dev/http/dev-seed.controller.ts",
       "method": "reloadOrders"
-    },
-    {
-      "file": "apps/lfd-api/src/handover/http/handover.controller.ts",
-      "method": "confirm"
-    },
-    {
-      "file": "apps/lfd-api/src/handover/http/handover.controller.ts",
-      "method": "confirmManually"
     },
     {
       "file": "apps/lfd-api/src/lafoliecoffee/account/http/admin-access-pending.controller.ts",
@@ -1666,10 +1650,6 @@
       "method": "sweep"
     },
     {
-      "file": "apps/lfd-api/src/mail/documents/http/admin-mail-templates.controller.ts",
-      "method": "trial"
-    },
-    {
       "file": "apps/lfd-api/src/mail/marketing/http/admin-marketing-preferences.controller.ts",
       "method": "reveal"
     },
@@ -1735,27 +1715,7 @@
     },
     {
       "file": "apps/lfd-api/src/packing/http/packing-containers.controller.ts",
-      "method": "allocate"
-    },
-    {
-      "file": "apps/lfd-api/src/packing/http/packing-containers.controller.ts",
       "method": "open"
-    },
-    {
-      "file": "apps/lfd-api/src/packing/http/packing-containers.controller.ts",
-      "method": "transfer"
-    },
-    {
-      "file": "apps/lfd-api/src/packing/http/packing-containers.controller.ts",
-      "method": "withdraw"
-    },
-    {
-      "file": "apps/lfd-api/src/packing/http/packing-orders.controller.ts",
-      "method": "close"
-    },
-    {
-      "file": "apps/lfd-api/src/packing/http/packing-orders.controller.ts",
-      "method": "reportShortfall"
     },
     {
       "file": "apps/lfd-api/src/pim/allergens/http/allergen.controller.ts",
@@ -1820,10 +1780,6 @@
     {
       "file": "apps/lfd-api/src/production/http/production-batch-shortcuts.controller.ts",
       "method": "create"
-    },
-    {
-      "file": "apps/lfd-api/src/production/http/production-day.controller.ts",
-      "method": "close"
     },
     {
       "file": "apps/lfd-api/src/production/http/production-dossier-recipients.controller.ts",

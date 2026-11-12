@@ -18,6 +18,11 @@ import { OpenPackingContainerCommand } from "../open-packing-container.command.j
 import { OpenPackingContainerHandler } from "../open-packing-container.handler.js";
 import { InMemoryPackingSettings } from "../../__tests__/packing-settings-doubles.js";
 import { RecordingPlanHold } from "../../__tests__/arrested-plan-doubles.js";
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+
+/** Une clé d'intention neuve par geste voulu. */
+let intentCount = 0;
+const nextKey = (): string => `intent_${(intentCount += 1)}`;
 
 // Un jour comparé à rien, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -67,9 +72,10 @@ async function setup(target: typeof BAG | typeof BIN = BAG) {
     events,
     uow,
     new RecordingPlanHold(),
-  ).execute(new AllocateToContainerCommand(DAY, "ord_1", from, "CRO", 18, STAFF));
+    inMemoryIntents(),
+  ).execute(new AllocateToContainerCommand(DAY, "ord_1", from, "CRO", 18, STAFF, nextKey()));
   events.traced.length = 0;
-  const move = new MoveBetweenContainersHandler(sheets, desk, events, uow);
+  const move = new MoveBetweenContainersHandler(sheets, desk, events, uow, inMemoryIntents());
   return { sheets, stocks, desk, events, move, from, to };
 }
 
@@ -77,7 +83,9 @@ describe("MoveBetweenContainersHandler — un geste, la réserve immobile", () =
   it("déplace les pièces, laisse la réserve, et journalise vidé puis rempli", async () => {
     const { move, sheets, stocks, events, from, to } = await setup();
 
-    await move.execute(new MoveBetweenContainersCommand(DAY, "ord_1", from, to, "CRO", 18));
+    await move.execute(
+      new MoveBetweenContainersCommand(DAY, "ord_1", from, to, "CRO", 18, STAFF, nextKey()),
+    );
 
     expect(sheets.of(DAY, "ord_1")?.containerList.map((c) => c.lines)).toEqual([
       [{ sku: "CRO", quantity: 0 }],
@@ -91,7 +99,9 @@ describe("MoveBetweenContainersHandler — un geste, la réserve immobile", () =
     const { move, sheets, events, from, to } = await setup();
 
     await expect(
-      move.execute(new MoveBetweenContainersCommand(DAY, "ord_1", from, to, "CRO", 19)),
+      move.execute(
+        new MoveBetweenContainersCommand(DAY, "ord_1", from, to, "CRO", 19, STAFF, nextKey()),
+      ),
     ).rejects.toThrow(WithdrawBeyondContentError);
     expect(sheets.of(DAY, "ord_1")?.containerList[0]?.lines).toEqual([
       { sku: "CRO", quantity: 18 },
@@ -104,7 +114,9 @@ describe("MoveBetweenContainersHandler — un geste, la réserve immobile", () =
     desk.dead.add("bin_1");
 
     await expect(
-      move.execute(new MoveBetweenContainersCommand(DAY, "ord_1", from, to, "CRO", 1)),
+      move.execute(
+        new MoveBetweenContainersCommand(DAY, "ord_1", from, to, "CRO", 1, STAFF, nextKey()),
+      ),
     ).rejects.toThrow(ContainerBinGoneError);
   });
 
@@ -112,7 +124,9 @@ describe("MoveBetweenContainersHandler — un geste, la réserve immobile", () =
   it("tient le bac d'arrivée chez la livraison avant d'y déplacer des pièces", async () => {
     const { move, desk, from, to } = await setup(BIN);
 
-    await move.execute(new MoveBetweenContainersCommand(DAY, "ord_1", from, to, "CRO", 1));
+    await move.execute(
+      new MoveBetweenContainersCommand(DAY, "ord_1", from, to, "CRO", 1, STAFF, nextKey()),
+    );
 
     expect(desk.heldBins).toEqual(["bin_1"]);
   });
@@ -121,7 +135,9 @@ describe("MoveBetweenContainersHandler — un geste, la réserve immobile", () =
     const { move, from, to } = await setup();
 
     await expect(
-      move.execute(new MoveBetweenContainersCommand(DAY, "ord_x", from, to, "CRO", 1)),
+      move.execute(
+        new MoveBetweenContainersCommand(DAY, "ord_x", from, to, "CRO", 1, STAFF, nextKey()),
+      ),
     ).rejects.toThrow(PackingOrderNotDrawnYetError);
   });
 });

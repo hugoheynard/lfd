@@ -11,6 +11,7 @@ import type {
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
+import { intentOptions } from '../shared/gesture-intents';
 
 /**
  * **La colonne Contenants du poste de colisage** (K2b,
@@ -23,6 +24,10 @@ import { B2B_API_BASE } from '../api/api-config';
  *
  * Aucun état ici : chaque geste part, et le poste se RELIT par
  * `GET admin/packing/:date/board`.
+ *
+ * Répartir, retirer et déplacer sont des DELTAS : chacun porte la clé
+ * d'intention de l'appelant (`Idempotency-Key`, exigée par l'API), et un
+ * double envoi ne bouge les pièces qu'une fois.
  */
 @Injectable({ providedIn: 'root' })
 export class PackingContainersService {
@@ -43,9 +48,16 @@ export class PackingContainersService {
     containerId: string,
     sku: string,
     quantity: number,
+    intentKey: string,
   ): Promise<void> {
     const body: MovePackingPieces = { quantity };
-    await firstValueFrom(this.http.post<void>(this.lineUrl(date, orderId, containerId, sku), body));
+    await firstValueFrom(
+      this.http.post<void>(
+        this.lineUrl(date, orderId, containerId, sku),
+        body,
+        intentOptions(intentKey),
+      ),
+    );
   }
 
   /** Retire `quantity` pièces d'une ligne d'un contenant. */
@@ -55,10 +67,15 @@ export class PackingContainersService {
     containerId: string,
     sku: string,
     quantity: number,
+    intentKey: string,
   ): Promise<void> {
     const body: MovePackingPieces = { quantity };
     await firstValueFrom(
-      this.http.post<void>(`${this.lineUrl(date, orderId, containerId, sku)}/withdrawal`, body),
+      this.http.post<void>(
+        `${this.lineUrl(date, orderId, containerId, sku)}/withdrawal`,
+        body,
+        intentOptions(intentKey),
+      ),
     );
   }
 
@@ -70,10 +87,15 @@ export class PackingContainersService {
     sku: string,
     toContainerId: string,
     quantity: number,
+    intentKey: string,
   ): Promise<void> {
     const body: TransferPackingPieces = { toContainerId, quantity };
     await firstValueFrom(
-      this.http.post<void>(`${this.lineUrl(date, orderId, fromContainerId, sku)}/transfer`, body),
+      this.http.post<void>(
+        `${this.lineUrl(date, orderId, fromContainerId, sku)}/transfer`,
+        body,
+        intentOptions(intentKey),
+      ),
     );
   }
 

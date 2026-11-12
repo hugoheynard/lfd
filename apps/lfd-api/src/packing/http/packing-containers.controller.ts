@@ -42,6 +42,7 @@ import { VoidPackingContainerCommand } from "../application/containers/void-pack
 import { WithdrawFromContainerCommand } from "../application/containers/withdraw-from-container.command.js";
 import { packingDayOf as dayOf } from "./packing-day-path.js";
 import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../platform/shared/http/intent-key.decorator.js";
 
 /** `?sacs=c1,c2` — les sacs à imprimer, validés dans leur FORME ; absent : tous. */
 const bagLabelsQuerySchema = z.object({ sacs: z.string().optional() });
@@ -62,6 +63,10 @@ const NO_CONTENT = 204;
  *
  * Le poste se RELIT par `GET admin/packing/:date/board` : ces routes ne
  * rendent rien d'autre qu'un identifiant de contenant.
+ *
+ * Glisser, retirer et déplacer sont des DELTAS : chacun lit la clé
+ * d'intention de l'écran (`Idempotency-Key`, obligatoire), et un double clic
+ * ne bouge les pièces qu'une fois.
  *
  * Il n'injecte que des bus — `lint:controller-buses`.
  */
@@ -88,8 +93,9 @@ export class PackingContainersController {
   }
 
   /**
-   * **Glisser** une quantité d'une ligne dans un contenant. `POST` : deux
-   * gestes font deux fois la quantité, comme deux poignées de croissants.
+   * **Glisser** une quantité d'une ligne dans un contenant. Deux gestes
+   * VOULUS font deux fois la quantité, comme deux poignées de croissants ; un
+   * double clic (même clé d'intention) n'en fait qu'un.
    */
   @Post("containers/:containerId/lines/:sku")
   @HttpCode(NO_CONTENT)
@@ -100,6 +106,7 @@ export class PackingContainersController {
     @Param("sku") sku: string,
     @Body(new ZodBody(movePackingPiecesSchema)) body: MovePackingPieces,
     @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<void> {
     await this.commands.execute<AllocateToContainerCommand, void>(
       new AllocateToContainerCommand(
@@ -109,6 +116,7 @@ export class PackingContainersController {
         sku,
         body.quantity,
         staffUserId,
+        intentKey,
       ),
     );
   }
@@ -122,9 +130,19 @@ export class PackingContainersController {
     @Param("containerId") containerId: string,
     @Param("sku") sku: string,
     @Body(new ZodBody(movePackingPiecesSchema)) body: MovePackingPieces,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<void> {
     await this.commands.execute<WithdrawFromContainerCommand, void>(
-      new WithdrawFromContainerCommand(dayOf(date), orderId, containerId, sku, body.quantity),
+      new WithdrawFromContainerCommand(
+        dayOf(date),
+        orderId,
+        containerId,
+        sku,
+        body.quantity,
+        staffUserId,
+        intentKey,
+      ),
     );
   }
 
@@ -140,6 +158,8 @@ export class PackingContainersController {
     @Param("containerId") containerId: string,
     @Param("sku") sku: string,
     @Body(new ZodBody(transferPackingPiecesSchema)) body: TransferPackingPieces,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
   ): Promise<void> {
     await this.commands.execute<MoveBetweenContainersCommand, void>(
       new MoveBetweenContainersCommand(
@@ -149,6 +169,8 @@ export class PackingContainersController {
         body.toContainerId,
         sku,
         body.quantity,
+        staffUserId,
+        intentKey,
       ),
     );
   }

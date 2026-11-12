@@ -27,6 +27,11 @@ import { PackingContainerVoiding } from "../../containers/packing-container-void
 import { PackingSheetWithdrawalDesk } from "../packing-sheet-withdrawal.desk.js";
 import { InMemoryPackingSettings } from "../../__tests__/packing-settings-doubles.js";
 import { RecordingPlanHold } from "../../__tests__/arrested-plan-doubles.js";
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+
+/** Une clé d'intention neuve par geste voulu. */
+let intentCount = 0;
+const nextKey = (): string => `intent_${(intentCount += 1)}`;
 
 /**
  * Le guichet du retrait au colisage (plan A1,
@@ -139,6 +144,7 @@ function setup() {
     events,
     uow,
     new RecordingPlanHold(),
+    inMemoryIntents(),
   );
   return { desk, sheets, stocks, binDesk, events, durable, tombstones, open, allocate };
 }
@@ -154,10 +160,10 @@ describe("PackingSheetWithdrawalDesk", () => {
       new OpenPackingContainerCommand(DAY, "ord_1", { nature: "bag" }, STAFF),
     );
     await context.allocate.execute(
-      new AllocateToContainerCommand(DAY, "ord_1", first, "CRO", 4, STAFF),
+      new AllocateToContainerCommand(DAY, "ord_1", first, "CRO", 4, STAFF, nextKey()),
     );
     await context.allocate.execute(
-      new AllocateToContainerCommand(DAY, "ord_1", second, "CRO", 2, STAFF),
+      new AllocateToContainerCommand(DAY, "ord_1", second, "CRO", 2, STAFF, nextKey()),
     );
     expect(context.stocks.packedOf(DAY, "CRO")).toBe(6);
 
@@ -183,7 +189,7 @@ describe("PackingSheetWithdrawalDesk", () => {
       new OpenPackingContainerCommand(DAY, "ord_1", { nature: "bag" }, STAFF),
     );
     await context.allocate.execute(
-      new AllocateToContainerCommand(DAY, "ord_1", bag, "CRO", 4, STAFF),
+      new AllocateToContainerCommand(DAY, "ord_1", bag, "CRO", 4, STAFF, nextKey()),
     );
 
     await context.desk.withdraw(DAY, "ord_1", "staff_cancel");

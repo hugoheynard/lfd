@@ -32,6 +32,7 @@ import {
   sheetOf,
   STAFF,
 } from "./production-day-fixture.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const DECISION_AWAITED = "packing.shortfall_reported";
 
@@ -84,6 +85,7 @@ async function addToBag(sheet: PackingSheet, quantity: number): Promise<void> {
   await ctx
     .asSub(STAFF)
     .post(`${packingOrderPath(sheet.orderId)}/containers/${bag.id}/lines/${CROISSANT}`)
+    .set(INTENT_KEY, freshIntent())
     .send({ quantity })
     .expect(204);
 }

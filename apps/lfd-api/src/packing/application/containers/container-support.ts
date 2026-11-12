@@ -1,5 +1,6 @@
 import type { SaleUnit } from "@lfd/money";
 
+import type { GestureIntent } from "../../../platform/intent/gesture-intent.js";
 import { FIRST_SHIPMENT_RANK } from "../../../production/channels/packing/index.js";
 import type { PackingSheet } from "../../domain/entities/packing-sheet.js";
 import { PackingOrderNotDrawnYetError } from "../../domain/errors/packing-station-errors.js";
@@ -57,4 +58,28 @@ export async function releaseToStock(
     stock.release(quantity, unit);
     await stocks.save(stock);
   }
+}
+
+/**
+ * L'intention d'un mouvement de pièces du poste : un glisser, un retrait ou
+ * un déplacement est un DELTA, et un double clic le referait (décision de
+ * Hugo du 2026-11-12). Le sujet est la ligne dans son contenant de départ :
+ * la même clé sur une autre ligne est refusée (409 nommé).
+ */
+export function movementIntent(
+  gesture: "packing.allocate" | "packing.withdraw" | "packing.transfer",
+  command: {
+    readonly staffUserId: string;
+    readonly intentKey: string;
+    readonly orderId: string;
+    readonly sku: string;
+  },
+  containerId: string,
+): GestureIntent {
+  return {
+    actorId: command.staffUserId,
+    key: command.intentKey,
+    gesture,
+    subject: `${command.orderId}/${containerId}/${command.sku}`,
+  };
 }

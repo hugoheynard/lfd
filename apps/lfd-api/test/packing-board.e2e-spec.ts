@@ -37,6 +37,7 @@ import {
   relayGate,
   releaseRelay,
 } from "./production-day-fixture.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const SITE = {
   label: "Maison",
@@ -142,6 +143,7 @@ async function fillPickup(orderId: string): Promise<void> {
   );
   await staff()
     .post(`${base(orderId)}/containers/${bag.containerId}/lines/${CROISSANT}`)
+    .set(INTENT_KEY, freshIntent())
     .send({ quantity: 4 })
     .expect(204);
 }
@@ -156,6 +158,7 @@ async function fillDelivery(orderId: string): Promise<string> {
   );
   await staff()
     .post(`${base(orderId)}/containers/${opened.containerId}/lines/${CROISSANT}`)
+    .set(INTENT_KEY, freshIntent())
     .send({ quantity: 20 })
     .expect(204);
   const sheet = (await board()).sheets.find((candidate) => candidate.orderId === orderId);
@@ -216,6 +219,7 @@ describe("GET admin/packing/:date/board — le poste lu au colisage", () => {
     const into = () =>
       staff()
         .post(`${base(sheet.orderId)}/containers/${bag.containerId}/lines/${CROISSANT}`)
+        .set(INTENT_KEY, freshIntent())
         .send({ quantity: 12 });
     expect((await into()).status).toBe(409);
 

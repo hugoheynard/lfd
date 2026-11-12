@@ -28,6 +28,11 @@ import { WithdrawFromContainerCommand } from "../withdraw-from-container.command
 import { WithdrawFromContainerHandler } from "../withdraw-from-container.handler.js";
 import { InMemoryPackingSettings } from "../../__tests__/packing-settings-doubles.js";
 import { RecordingPlanHold } from "../../__tests__/arrested-plan-doubles.js";
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+
+/** Une clé d'intention neuve par geste voulu. */
+let intentCount = 0;
+const nextKey = (): string => `intent_${(intentCount += 1)}`;
 
 // Un jour comparé à rien, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -86,8 +91,9 @@ function setup(options: { readonly mode?: ContainerMode; readonly received?: num
       events,
       uow,
       new RecordingPlanHold(),
+      inMemoryIntents(),
     ),
-    withdraw: new WithdrawFromContainerHandler(sheets, stocks, events, uow),
+    withdraw: new WithdrawFromContainerHandler(sheets, stocks, events, uow, inMemoryIntents()),
     void: new VoidPackingContainerHandler(
       sheets,
       new PackingContainerVoiding(stocks, desk, events),
@@ -196,10 +202,14 @@ describe("AllocateToContainerHandler / WithdrawFromContainerHandler — la rése
   it("prend les pièces à la réserve, et les rend au retrait", async () => {
     const { allocate, withdraw, stocks, events, id } = await withBag();
 
-    await allocate.execute(new AllocateToContainerCommand(DAY, "ord_1", id, "CRO", 12, STAFF));
+    await allocate.execute(
+      new AllocateToContainerCommand(DAY, "ord_1", id, "CRO", 12, STAFF, nextKey()),
+    );
     expect(stocks.packedOf(DAY, "CRO")).toBe(12);
 
-    await withdraw.execute(new WithdrawFromContainerCommand(DAY, "ord_1", id, "CRO", 2));
+    await withdraw.execute(
+      new WithdrawFromContainerCommand(DAY, "ord_1", id, "CRO", 2, STAFF, nextKey()),
+    );
     expect(stocks.packedOf(DAY, "CRO")).toBe(10);
     expect(events.factTypes()).toEqual([
       "packing_container.opened",
@@ -215,7 +225,9 @@ describe("AllocateToContainerHandler / WithdrawFromContainerHandler — la rése
     );
 
     await expect(
-      context.allocate.execute(new AllocateToContainerCommand(DAY, "ord_1", id, "CRO", 8, STAFF)),
+      context.allocate.execute(
+        new AllocateToContainerCommand(DAY, "ord_1", id, "CRO", 8, STAFF, nextKey()),
+      ),
     ).rejects.toThrow(LineNotProducedYetError);
   });
 
@@ -227,7 +239,9 @@ describe("AllocateToContainerHandler / WithdrawFromContainerHandler — la rése
     context.desk.dead.add("bin_1");
 
     await expect(
-      context.allocate.execute(new AllocateToContainerCommand(DAY, "ord_1", id, "CRO", 1, STAFF)),
+      context.allocate.execute(
+        new AllocateToContainerCommand(DAY, "ord_1", id, "CRO", 1, STAFF, nextKey()),
+      ),
     ).rejects.toThrow(ContainerBinGoneError);
   });
 
@@ -243,7 +257,7 @@ describe("AllocateToContainerHandler / WithdrawFromContainerHandler — la rése
     );
 
     await context.allocate.execute(
-      new AllocateToContainerCommand(DAY, "ord_1", id, "CRO", 1, STAFF),
+      new AllocateToContainerCommand(DAY, "ord_1", id, "CRO", 1, STAFF, nextKey()),
     );
 
     expect(context.desk.heldBins).toEqual(["bin_1"]);
@@ -257,7 +271,7 @@ describe("VoidPackingContainerHandler — un bac s'annule d'abord chez la livrai
       new OpenPackingContainerCommand(DAY, "ord_1", BIN, STAFF),
     );
     await context.allocate.execute(
-      new AllocateToContainerCommand(DAY, "ord_1", id, "CRO", 7, STAFF),
+      new AllocateToContainerCommand(DAY, "ord_1", id, "CRO", 7, STAFF, nextKey()),
     );
 
     await context.void.execute(new VoidPackingContainerCommand(DAY, "ord_1", id, STAFF));

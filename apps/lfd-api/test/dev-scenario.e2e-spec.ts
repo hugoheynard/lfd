@@ -25,6 +25,7 @@ import { seedDriverRole } from "./delivery-driver-scene.js";
 import { PAYMENT_GATEWAY_OVERRIDE } from "./dev-scenario-scene.js";
 import { ROAD_ROUTING_OVERRIDES } from "./delivery-routing-scene.js";
 import { seedWeighedArticles } from "./weighed-catalog-scene.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const SCENARIO = "/admin/dev/scenario";
 const RELOAD = "/admin/dev/seed/reload";
@@ -305,6 +306,7 @@ describe("le scénario du jour, étape par étape", () => {
       );
       await admin(ctx)
         .post(`${packing}/containers/${bag.containerId}/lines/${order.sku}`)
+        .set(INTENT_KEY, freshIntent())
         .send({ quantity: 1 })
         .expect(204);
       await admin(ctx).post(`${packing}/shortfall`).expect(204);

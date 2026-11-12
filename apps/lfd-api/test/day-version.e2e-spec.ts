@@ -32,6 +32,7 @@ import { placeLateByStaff } from "./staff-late-order.js";
 import { createUser } from "./factories.js";
 import { packingOrderPath } from "./production-day-fixture.js";
 import { openQualityControl } from "./quality-control-settings.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const MEMBER = "auth0|member-day-version";
 const DAY = serviceDay();
@@ -178,6 +179,7 @@ async function openBag(orderId: string): Promise<string> {
 const packLine = (orderId: string, containerId: string) =>
   staff()
     .post(`${packingOrderPath(orderId, DAY)}/containers/${containerId}/lines/${CROISSANT}`)
+    .set(INTENT_KEY, freshIntent())
     .send({ quantity: 6 })
     .expect(204);
 

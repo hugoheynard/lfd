@@ -20,6 +20,7 @@ import {
   type E2eOverride,
 } from "./e2e-harness.js";
 import { cardProvidersDouble, settleCardPayments } from "./card-payments.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 /**
  * **Une journée de fournil, par l'API** — ce que les suites des fournées
@@ -215,6 +216,7 @@ export async function bagLines(
     const response = await ctx
       .asSub(STAFF)
       .post(`${packingOrderPath(sheet.orderId)}/containers/${bag.containerId}/lines/${line.sku}`)
+      .set(INTENT_KEY, freshIntent())
       .send({ quantity: line.quantity });
     status = response.status;
   }
@@ -251,6 +253,7 @@ export async function fillOrder(ctx: E2eContext, order: PackingTarget): Promise<
   for (const line of sheet.lines) {
     await agent()
       .post(`${path}/containers/${opened.containerId}/lines/${line.sku}`)
+      .set(INTENT_KEY, freshIntent())
       .send({ quantity: line.quantity })
       .expect(204);
   }

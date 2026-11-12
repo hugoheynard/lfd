@@ -2,6 +2,7 @@ import { inject, Injectable, signal } from '@angular/core';
 
 import type { DeliveryBinFreeHalvesView, OpenPackingContainer } from '@lfd/contracts';
 
+import { GestureIntents } from '../../shared/gesture-intents';
 import { PackingContainersService } from '../packing-containers.service';
 import { serverCodeOf, serverMessageOf } from '../server-message';
 import { PackingDayReader } from './packing-day.reader';
@@ -21,6 +22,11 @@ export interface ContainerRefusal {
  * {@link PackingDayReader} de l'écran, et chaque geste — accepté OU refusé —
  * finit par sa relecture : ce qui s'affiche est ce que le serveur sert.
  *
+ * Répartir, retirer et déplacer portent une clé d'intention par geste voulu
+ * ({@link GestureIntents}) : gardée jusqu'au succès — un réessai après un
+ * refus ou une coupure repart avec elle et ne double rien —, renouvelée
+ * après, pour que le geste suivant compte.
+ *
  * 🔴 Les refus du serveur se disent TELS QUELS (bac chargé, tournée partie,
  * type archivé, proposition vide…) : il les écrit pour le personnel.
  */
@@ -28,6 +34,7 @@ export interface ContainerRefusal {
 export class PackingContainerGestures {
   private readonly api = inject(PackingContainersService);
   private readonly day = inject(PackingDayReader);
+  private readonly intents = new GestureIntents();
 
   private readonly inFlight = signal(false);
   readonly busy = this.inFlight.asReadonly();
@@ -47,11 +54,15 @@ export class PackingContainerGestures {
   }
 
   allocate(orderId: string, containerId: string, sku: string, quantity: number): Promise<boolean> {
-    return this.write((date) => this.api.allocate(date, orderId, containerId, sku, quantity));
+    return this.once(`allocate|${orderId}|${containerId}|${sku}`, (date, key) =>
+      this.api.allocate(date, orderId, containerId, sku, quantity, key),
+    );
   }
 
   withdraw(orderId: string, containerId: string, sku: string, quantity: number): Promise<boolean> {
-    return this.write((date) => this.api.withdraw(date, orderId, containerId, sku, quantity));
+    return this.once(`withdraw|${orderId}|${containerId}|${sku}`, (date, key) =>
+      this.api.withdraw(date, orderId, containerId, sku, quantity, key),
+    );
   }
 
   /** Déplace des pièces d'un contenant à l'autre, en un seul geste côté serveur. */
@@ -62,8 +73,10 @@ export class PackingContainerGestures {
     toContainerId: string,
     quantity: number,
   ): Promise<boolean> {
-    return this.write((date) =>
-      this.api.transfer(date, orderId, fromContainerId, sku, toContainerId, quantity),
+    return this.once(
+      `transfer|${orderId}|${fromContainerId}|${sku}|${toContainerId}`,
+      (date, key) =>
+        this.api.transfer(date, orderId, fromContainerId, sku, toContainerId, quantity, key),
     );
   }
 
@@ -82,6 +95,19 @@ export class PackingContainerGestures {
   /** Les moitiés libres des arrêts voisins — une lecture, sans relecture du poste. */
   shareableHalves(orderId: string): Promise<DeliveryBinFreeHalvesView> {
     return this.api.shareableHalves(this.day.date(), orderId);
+  }
+
+  /** Un geste porteur de sa clé d'intention, oubliée seulement s'il a abouti. */
+  private async once(
+    subject: string,
+    gesture: (date: string, intentKey: string) => Promise<void>,
+  ): Promise<boolean> {
+    const key = this.intents.keyFor(subject);
+    const accepted = await this.write((date) => gesture(date, key));
+    if (accepted) {
+      this.intents.done(subject);
+    }
+    return accepted;
   }
 
   /** Un geste, puis la relecture — qu'il ait été accepté ou refusé. */
