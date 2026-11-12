@@ -315,6 +315,34 @@ Font foi sur la section précédente.
   COMMENT la facture se règle, et une facture n'a qu'un moyen. La commande
   le reçoit de sa facture.
 
+## Dernières corrections avant le bâti (Hugo, 2026-11-12, cinquième relecture)
+
+- **K9 — les bons sans facture** (chemin des arrêtés, `collection-assembly.ts:169-175` :
+  plancher absent, ou prélèvement d'essai `simulateUninvoiced`,
+  `collection-constitution-support.ts:143`) lisent le moyen de LEUR période
+  (`collectionMeansAt` au début de la période de leur solde) ; un bon dont la
+  période est au virement y est refusé (V10 : jamais d'arrêté au virement).
+- **K10 — la facture dit « virement »** : `invoicePaymentMeansOf`
+  (`monthly-invoicing.ts:204-208`) se déduit du moyen de la période, plus du
+  seul mandat ; une facture au virement écrit dans `payment_means` le code
+  du virement (BG-16 : 58, IBAN du bénéficiaire BT-84, référence BT-83 — V5),
+  distinct de `null`. `CollectableInvoice` et `invoicesOf`
+  (`prisma-collection-candidates.reader.ts:194-217`) lisent ce moyen ; le lot
+  écarte une facture au virement. Une facture émise avec `null` (sans
+  mandat, ou d'avant le chantier) se lit « prélèvement », comme aujourd'hui.
+- **K11 — un verrou pour K1** : les gestes de mode et de moyen d'un payeur
+  prennent, dans leur transaction et AVANT de vérifier « aucun changement en
+  attente », le verrou de la ligne du payeur chez l'entité (`SELECT … FOR
+UPDATE` sur la société payeuse), dans le même ordre pour les deux.
+- **K12 — les dates des modes de l'entité** ne sont pas dans K1 : leur
+  changement est toujours programmé à `closureAfter` du mode
+  (`billing-mode-dates-history.ts`), et un moyen programmé tombe sur la
+  prochaine clôture du payeur, qui reste une clôture de la suite. Un test du
+  domaine le tient (moyen programmé, puis dates du mode changées : la limite
+  du moyen reste une clôture de `PayerTimeline`).
+- **K13 — la représentation après retour et l'autopilote** lisent le moyen
+  de la facture (K2, K10) ; le bâti les ouvre et le prouve par un test.
+
 ## T0 tel qu'il se bâtit (Hugo, 2026-11-12, après la troisième relecture)
 
 > ✅ **T0 bâti le 2026-11-12** (migration `20261112100000_le_compte_creancier_aux_quatre_yeux`, additive). Avant son déploiement : vérifier en production qu'aucune entité n'a `creditor_iban_sealed IS NULL AND creditor_iban IS NOT NULL` — l'instantané ne lit plus la colonne claire.
