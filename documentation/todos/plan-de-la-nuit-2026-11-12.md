@@ -21,10 +21,21 @@
 
 ## 2. Corriger
 
-1. **Onglet Cache : deux lignes nommées « pro-shelves ».** L'objet des journées
-   s'affiche sous le nom du cache des rayons. Trouver la cause (réponse de
-   l'objet, agrégation de l'API, ou clé de ligne de l'écran, `rowKey = cache`)
-   et la corriger, avec un test qui l'aurait vu.
+1. **🔴 Les appels vers l'objet des journées arrivent à l'objet des rayons.**
+   Constaté le 2026-11-12 à 22 h 17 dans l'onglet Cache : les deux objets
+   rendent EXACTEMENT les mêmes compteurs, sous le nom `pro-shelves`. Ni l'API
+   (`ops.module.ts`, deux adresses distinctes), ni le Worker (deux
+   gestionnaires par hôte, `outboundByHost`), ni `@cloudflare/containers`
+   0.3.7 (choix du gestionnaire par le nom d'hôte de l'URL) ne le montrent à la
+   lecture : l'hypothèse est que l'interception du runtime, pour deux hôtes
+   fictifs, livre au proxy des requêtes sous le PREMIER hôte enregistré. Si
+   c'est le cas, numéros des journées, numéros des sujets et contenus partagés
+   (catalogue, PIM) vivent dans l'objet des rayons, ou y échouent et retombent
+   sur la base sans le dire. À faire : le prouver (essai local `wrangler dev`
+   - Docker, journal des requêtes reçues par chaque objet), puis corriger de la
+     façon la plus sûre — un seul hôte intercepté (`objets.interne`) et un
+     aiguillage par préfixe de chemin dans le Worker — avec une porte ou un test
+     qui l'aurait vu. Sur `dev` seulement ; la production attend Hugo.
 
 ## 3. Construire
 
