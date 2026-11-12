@@ -189,12 +189,12 @@ describe("un geste, ses routes et elles seules", () => {
    * `b2b_orders:read` ouvrait — un rôle « retrait seul » prenait un 403 avalé
    * toutes les 15 s. Une version de journée n'est pas une commande.
    */
-  it("🔴 le retrait seul lit la version des commandes — pas les commandes", async () => {
+  it("🔴 le retrait seul lit les versions des commandes et de la livraison — pas les commandes", async () => {
     const agent = await holderOf("retrait-version", [
       { resource: "handover_counter", action: "read" },
     ]);
 
-    expect(await journalsOf(agent)).toEqual(["orders", "production"]);
+    expect(await journalsOf(agent)).toEqual(["delivery", "orders", "production"]);
     await expectGates(agent, [], ["listOrders"]);
   });
 
