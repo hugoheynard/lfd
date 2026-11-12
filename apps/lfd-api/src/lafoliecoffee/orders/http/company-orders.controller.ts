@@ -33,6 +33,7 @@ import type { CompanyOrderSummaryCsvFile } from "../application/queries/export-c
 import { ExportCompanyOrderSummaryCsvQuery } from "../application/queries/export-company-order-summary-csv.query.js";
 import type { CompanyOrderSummaryPdfFile } from "../application/queries/export-company-order-summary-pdf.handler.js";
 import { ExportCompanyOrderSummaryPdfQuery } from "../application/queries/export-company-order-summary-pdf.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Commandes d'une **entreprise** — lecture **murée** au niveau **membre**
@@ -91,6 +92,9 @@ export class CompanyOrdersController {
    */
   @Post(":companyId/orders/summary")
   @HttpCode(HttpStatus.OK)
+  @Idempotent(
+    "lecture en POST (la liste des commandes voyage dans le corps) : résume les commandes sous le mur de la société, n'écrit rien et n'envoie rien",
+  )
   async summary(
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,

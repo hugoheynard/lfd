@@ -31,6 +31,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const DAY = serviceDay(7);
 const NEXT_DAY = serviceDay(8);
@@ -87,6 +88,7 @@ async function placeOnAccount(): Promise<{ readonly id: string; readonly number:
   const response = await ctx
     .asSub(E2E_STAFF_SUB)
     .post("/admin/orders")
+    .set(INTENT_KEY, freshIntent())
     .send({
       companyId: company.id,
       buyerUserId: user.id,

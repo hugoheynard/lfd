@@ -22,6 +22,7 @@ import {
 } from "../application/commands/revise-order.command.js";
 import { QuoteOrderChangeRequestQuery } from "../../application/queries/quote-order-change-request.query.js";
 import { QuoteOrderRevisionQuery } from "../application/queries/quote-order-revision.query.js";
+import { Idempotent } from "../../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Le client modifie sa commande** (voir
@@ -47,6 +48,7 @@ export class OrderRevisionsController {
    */
   @Post(":id/revisions/quote")
   @HttpCode(HttpStatus.OK)
+  @Idempotent("calcul pur en POST : chiffre la révision en mémoire, n'écrit rien et n'envoie rien")
   async quote(
     @CurrentUser() user: Principal,
     @Param("id") id: string,
@@ -64,6 +66,9 @@ export class OrderRevisionsController {
    */
   @Post(":id/revisions/change-request-quote")
   @HttpCode(HttpStatus.OK)
+  @Idempotent(
+    "calcul pur en POST : chiffre la demande de modification en mémoire, n'écrit rien et n'envoie rien",
+  )
   async quoteChangeRequest(
     @CurrentUser() user: Principal,
     @Param("id") id: string,
@@ -81,6 +86,9 @@ export class OrderRevisionsController {
    */
   @Post(":id/revisions")
   @HttpCode(HttpStatus.OK)
+  @Idempotent(
+    "par sa propre clé : expectedRevision, obligatoire au corps, rejugé sous le verrou de la commande ; rejouée, la révision l'a fait monter et la requête est refusée (409 OrderRevisedElsewhereError) avant toute écriture, tout fait ni tout remboursement",
+  )
   async revise(
     @CurrentUser() user: Principal,
     @Param("id") id: string,

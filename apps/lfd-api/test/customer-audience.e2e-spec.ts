@@ -30,6 +30,7 @@ import {
 import { poseSiteDiscount } from "./promotion-fixtures.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const SERVICE_DAY = serviceDay();
 const PERSO = "auth0|perso";
@@ -271,6 +272,7 @@ describe("la livraison fermée à une clientèle", () => {
 
     const response = await staff()
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         companyId: activeCompanyId,
         buyerUserId: activeBuyerId,

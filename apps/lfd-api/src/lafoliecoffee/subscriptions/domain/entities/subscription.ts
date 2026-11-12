@@ -32,6 +32,28 @@ export interface OccurrenceOverride {
   readonly note: string;
 }
 
+/**
+ * **Deux dérogations identiques** : même date, même saut, même note, mêmes
+ * lignes dans le même ordre. Toute valeur que le geste pose y entre — une note
+ * corrigée seule reste un changement, à écrire.
+ */
+export function sameOccurrenceOverride(
+  before: OccurrenceOverride | null,
+  after: OccurrenceOverride,
+): boolean {
+  return (
+    before !== null &&
+    before.date.toString() === after.date.toString() &&
+    before.skipped === after.skipped &&
+    before.note === after.note &&
+    before.lines.length === after.lines.length &&
+    before.lines.every(
+      (line, index) =>
+        line.sku === after.lines[index]?.sku && line.quantity === after.lines[index]?.quantity,
+    )
+  );
+}
+
 /** Ce qu'il faut pour **ouvrir** un panier récurrent (aucun id : la base l'attribue). */
 export interface OpenSubscriptionInput {
   readonly placedByUserId: string;

@@ -30,6 +30,7 @@ import {
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardProvidersOverride } from "./card-payments.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const DAY = serviceDay(7);
 const BUYER = "auth0|l9-acheteur";
@@ -138,6 +139,7 @@ async function place(scene: Scene, pickupId: string): Promise<string> {
   return jsonBody<AdminPlacedOrderResponse>(
     await staff()
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         companyId: scene.companyId,
         buyerUserId: scene.userId,

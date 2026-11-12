@@ -24,6 +24,7 @@ import type { LateFeeSetting } from "../../orders/domain/ports/order-late-fee.re
 import { ClearOrderLateFeeCommand } from "../application/clear-order-late-fee.command.js";
 import { ReadOrderLateFeeQuery } from "../application/read-order-late-fee.query.js";
 import { SaveOrderLateFeeCommand } from "../application/save-order-late-fee.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **La surtaxe de commande tardive** — un réglage, une seule valeur.
@@ -63,6 +64,9 @@ export class AdminOrderLateFeeController {
 
   @Put()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête repose le même réglage et le journal se tait quand rien n'a changé (sameSetting)",
+  )
   async save(
     @Req() request: AuthenticatedStaffRequest,
     @Body(new ZodBody(orderLateFeePayloadSchema)) payload: OrderLateFeePayload,
@@ -78,6 +82,9 @@ export class AdminOrderLateFeeController {
   /** Retire la surtaxe : les dérogations redeviennent gratuites. */
   @Delete()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "retire le réglage : rejouée, il n'y en a plus et le handler rend avant toute écriture ni tout fait",
+  )
   async clear(): Promise<void> {
     await this.commands.execute<ClearOrderLateFeeCommand, void>(new ClearOrderLateFeeCommand());
   }

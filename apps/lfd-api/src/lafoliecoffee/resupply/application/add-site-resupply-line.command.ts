@@ -7,5 +7,12 @@ export class AddSiteResupplyLineCommand {
     readonly target: ResupplyTarget,
     readonly sku: string,
     readonly quantity: number,
+    /** Qui ajoute : la clé d'intention ne se partage pas entre deux personnes. */
+    readonly staffUserId: string,
+    /**
+     * La clé d'intention de l'écran (en-tête `Idempotency-Key`) : la même
+     * requête renvoyée n'additionne pas deux fois.
+     */
+    readonly intentKey: string,
   ) {}
 }

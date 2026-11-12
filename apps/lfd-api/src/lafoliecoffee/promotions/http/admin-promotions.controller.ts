@@ -42,6 +42,7 @@ import { GetPromotionQuery } from "../application/queries/get-promotion.query.js
 import { GetPromotionsSourceQuery } from "../application/queries/get-promotions-source.query.js";
 import { ListPromotionsQuery } from "../application/queries/list-promotions.query.js";
 import { promotionTermsOf } from "./promotion-terms.mapper.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **L'écran Promotions** (`documentation/promotions/promotions.md`, § 2.9, lots L7-L8), sous `b2b_pricing` — la ressource des règles de prix :
@@ -108,6 +109,9 @@ export class AdminPromotionsController {
   @Post("decimals")
   @HttpCode(HttpStatus.OK)
   @RequireAnyPermission("b2b_pricing:read")
+  @Idempotent(
+    "calcul pur en POST : rejoue la même lecture des prix pro, n'écrit rien et n'envoie rien",
+  )
   decimals(
     @Body(new ZodBody(promotionTermsPayloadSchema)) payload: PromotionTermsPayload,
   ): Promise<PromotionDecimalsView> {
@@ -130,6 +134,9 @@ export class AdminPromotionsController {
 
   @Put(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose des valeurs : rejouée, la promotion dit déjà ces termes (saysAlready) et le handler rend avant toute écriture, tout acte ni toute purge du cache",
+  )
   async revise(
     @Param("id") id: string,
     @Body(new ZodBody(revisePromotionPayloadSchema)) payload: RevisePromotionPayload,
@@ -142,6 +149,9 @@ export class AdminPromotionsController {
 
   @Post(":id/pause")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée sur une promotion en pause, l'agrégat refuse (409 PromotionAlreadyPausedError) avant toute écriture, tout acte ni toute purge du cache",
+  )
   async pause(
     @Param("id") id: string,
     @Body(new ZodBody(pricingReasonPayloadSchema)) payload: PricingReasonPayload,
@@ -154,6 +164,9 @@ export class AdminPromotionsController {
 
   @Post(":id/resume")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée sur une promotion en cours, l'agrégat refuse (409 PromotionNotPausedError) avant toute écriture, tout acte ni toute purge du cache",
+  )
   async resume(
     @Param("id") id: string,
     @Body(new ZodBody(pricingReasonPayloadSchema)) payload: PricingReasonPayload,
@@ -166,6 +179,9 @@ export class AdminPromotionsController {
 
   @Post(":id/archive")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée sur une promotion archivée, l'agrégat refuse (409 ArchivedPromotionIsSealedError) avant toute écriture, tout acte ni toute purge du cache",
+  )
   async archive(
     @Param("id") id: string,
     @Body(new ZodBody(archivePromotionPayloadSchema)) payload: ArchivePromotionPayload,

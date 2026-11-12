@@ -31,6 +31,7 @@ import {
   refusalOf,
 } from "./pricing-golden-master-record.js";
 import type { GoldenScene, ScenePro } from "./pricing-golden-master-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const LINES = [
   { sku: "VIE-001-1", quantity: 3 },
@@ -80,7 +81,11 @@ async function placeOnAccount(
   http: Agents,
   body: Record<string, unknown>,
 ): Promise<{ readonly orderId: string; readonly paths: Paths }> {
-  const response = await http.as(E2E_STAFF_SUB).post("/admin/orders").send(body);
+  const response = await http
+    .as(E2E_STAFF_SUB)
+    .post("/admin/orders")
+    .set(INTENT_KEY, freshIntent())
+    .send(body);
   const orderId = createdIdOf(response);
   if (orderId === null) {
     throw new Error(`Golden master : passation refusée ${JSON.stringify(response.body)}`);
@@ -184,6 +189,7 @@ async function suspendedOnAccount(
       await http
         .as(E2E_STAFF_SUB)
         .post("/admin/orders")
+        .set(INTENT_KEY, freshIntent())
         .send({ ...body, ...extra }),
     );
   return {

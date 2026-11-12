@@ -15,12 +15,14 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { AdjustLoyaltyPointsCommand } from "../application/commands/adjust-loyalty-points.command.js";
 import { CancelLoyaltyVoucherCommand } from "../application/commands/cancel-loyalty-voucher.command.js";
 import { SetLoyaltySettingsCommand } from "../application/commands/set-loyalty-settings.command.js";
 import { GetLoyaltySettingsQuery } from "../application/queries/get-loyalty-settings.query.js";
 import { ListLoyaltyBalancesQuery } from "../application/queries/list-loyalty-balances.query.js";
 import { ListLoyaltyVouchersQuery } from "../application/queries/list-loyalty-vouchers.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Gestion Boutique › Fidélité** (plan `plan-points-de-fidelite.md`, lot B) :
@@ -48,6 +50,9 @@ export class AdminLoyaltyController {
   /** Le réglage entier : aucune valeur n'a de défaut. N'altère aucun bon émis. */
   @Put("settings")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête trouve un réglage égal (equals) et ne sauve ni ne journalise",
+  )
   async writeSettings(
     @StaffUserId() staffUserId: string,
     @Body(new ZodBody(setLoyaltySettingsPayloadSchema)) payload: SetLoyaltySettingsPayload,
@@ -71,11 +76,13 @@ export class AdminLoyaltyController {
     );
   }
 
+  /** Un ajustement motivé — une fois par intention (`Idempotency-Key`). */
   @Post("adjustments")
   @HttpCode(HttpStatus.NO_CONTENT)
   async adjust(
     @StaffUserId() staffUserId: string,
     @Body(new ZodBody(adjustLoyaltyPointsPayloadSchema)) payload: AdjustLoyaltyPointsPayload,
+    @IntentKey() intentKey: string,
   ): Promise<void> {
     await this.commands.execute<AdjustLoyaltyPointsCommand, void>(
       new AdjustLoyaltyPointsCommand(
@@ -84,6 +91,7 @@ export class AdminLoyaltyController {
         payload.points,
         payload.reason,
         staffUserId,
+        intentKey,
       ),
     );
   }
@@ -91,6 +99,9 @@ export class AdminLoyaltyController {
   /** Annule un bon disponible ; ses points reviennent au titulaire. */
   @Post("vouchers/:id/cancel")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée, le bon relu sous le verrou de son titulaire est déjà annulé et l'agrégat refuse (409 LoyaltyVoucherNotAvailableError) avant tout tirage d'identifiant ni écriture ; l'index unique de la ligne de recrédit tient la même règle en base",
+  )
   async cancel(
     @StaffUserId() staffUserId: string,
     @Param("id") id: string,

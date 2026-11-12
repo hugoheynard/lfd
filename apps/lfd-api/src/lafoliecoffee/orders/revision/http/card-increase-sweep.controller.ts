@@ -11,6 +11,7 @@ import {
   type CardIncreaseSweepReport,
   SweepCardIncreasesCommand,
 } from "../application/commands/sweep-card-increases.command.js";
+import { Idempotent } from "../../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Endpoints **machine** des hausses payées par carte (doc
@@ -32,6 +33,9 @@ export class CardIncreaseSweepController {
 
   @Post("sweep")
   @HttpCode(200)
+  @Idempotent(
+    "appelée par la machine sous RecomputeGuard : état relu ; rejouée, un complément déjà appliqué n'est plus dû, et seul un complément encore en attente de paiement est revérifié chez le prestataire (lecture)",
+  )
   sweep(): Promise<CardIncreaseSweepReport> {
     return this.commands.execute<SweepCardIncreasesCommand, CardIncreaseSweepReport>(
       new SweepCardIncreasesCommand(),
@@ -40,6 +44,9 @@ export class CardIncreaseSweepController {
 
   @Post("expire")
   @HttpCode(200)
+  @Idempotent(
+    "appelée par la machine sous RecomputeGuard : état relu ; rejouée, un complément déjà abandonné ou soldé n'est plus en attente de paiement et il est sauté avant tout appel au prestataire",
+  )
   expire(): Promise<CardIncreaseExpiryReport> {
     return this.commands.execute<ExpireCardIncreasesCommand, CardIncreaseExpiryReport>(
       new ExpireCardIncreasesCommand(),

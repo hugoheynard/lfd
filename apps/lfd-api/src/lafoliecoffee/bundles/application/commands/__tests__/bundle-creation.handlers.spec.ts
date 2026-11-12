@@ -1,6 +1,6 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
-import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
+import { CountingIdGenerator } from "../../../../../platform/id/__tests__/counting-id-generator.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
   breakfast,
@@ -26,10 +26,11 @@ import {
 function scene(articles = BREAKFAST_ARTICLES, seed = [] as ReturnType<typeof createdBreakfast>[]) {
   const bundles = new InMemoryBundles(seed);
   const events = new RecordingPublisher();
+  const ids = new CountingIdGenerator("bundle");
   const handler = new CreateBundleHandler(
     bundles,
     new FixedChoiceCatalogue(articles),
-    new FixedIdGenerator("bundle"),
+    ids,
     new FixedClock(CREATED_AT),
     events,
     new DirectUnitOfWork(),
@@ -37,7 +38,7 @@ function scene(articles = BREAKFAST_ARTICLES, seed = [] as ReturnType<typeof cre
   const { name, description, groups } = breakfast();
   const create = (over: Partial<CreateBundleCommand["bundle"]> = {}) =>
     handler.execute(new CreateBundleCommand({ name, description, groups, ...over }, "staff_1"));
-  return { bundles, events, create };
+  return { bundles, events, create, ids };
 }
 
 describe("CreateBundleHandler", () => {
@@ -95,5 +96,18 @@ describe("CreateBundleHandler", () => {
 
     await expect(create({ name: "Petit-déjeuner" })).rejects.toThrow(BundleKeyTakenError);
     expect(bundles.adds).toBe(0);
+  });
+});
+
+describe("CreateBundleHandler — rejeu", () => {
+  /** Régression : l'identifiant était tiré avant le refus de la clé déjà prise. */
+  it("une création rejouée est refusée (clé prise) avant tout tirage d'identifiant", async () => {
+    const { create, ids, events } = scene();
+    await create();
+    const drawn = ids.drawn;
+
+    await expect(create()).rejects.toBeInstanceOf(BundleKeyTakenError);
+    expect(ids.drawn).toBe(drawn);
+    expect(events.traced).toHaveLength(1);
   });
 });

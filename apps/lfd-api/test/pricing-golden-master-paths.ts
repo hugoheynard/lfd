@@ -40,6 +40,7 @@ import {
   PENDING_SUB,
   type GoldenScene,
 } from "./pricing-golden-master-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 export type Paths = Record<string, Recorded>;
 
@@ -87,6 +88,7 @@ async function voucherFor(run: Run, steps: number): Promise<string> {
   await run.http
     .as(E2E_STAFF_SUB)
     .post("/admin/loyalty/adjustments")
+    .set(INTENT_KEY, freshIntent())
     .send({ holderKind: "user", holderId: holder, points: steps * 1_000, reason: "corpus" })
     .expect(204);
   return run.ctx.app
@@ -199,6 +201,7 @@ async function staffPlacements(
     http
       .as(E2E_STAFF_SUB)
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send(staffBody(scene, basket, settlement));
   const account = await place("account");
   return {

@@ -11,7 +11,7 @@ const STAMP = { at: new Date(0), author: { staffUserId: "s1", name: "Colette", r
 
 function company(id: string, companyId = "c1"): OrderOpeningExemption {
   return OrderOpeningExemption.grantToCompany({
-    id,
+    nextId: () => id,
     companyId,
     company: { name: "Chez Paul", status: "active" },
     active: [],
@@ -22,7 +22,7 @@ function company(id: string, companyId = "c1"): OrderOpeningExemption {
 describe("OrderOpeningExemption", () => {
   it("normalise l'adresse à l'ajout", () => {
     const exemption = OrderOpeningExemption.grantToEmail({
-      id: "x1",
+      nextId: () => "x1",
       email: "  Jean@Folie.FR ",
       active: [],
       stamp: STAMP,
@@ -34,7 +34,12 @@ describe("OrderOpeningExemption", () => {
 
   it("refuse une adresse qui n'en est pas une", () => {
     expect(() =>
-      OrderOpeningExemption.grantToEmail({ id: "x1", email: "jean", active: [], stamp: STAMP }),
+      OrderOpeningExemption.grantToEmail({
+        nextId: () => "x1",
+        email: "jean",
+        active: [],
+        stamp: STAMP,
+      }),
     ).toThrow(InvalidEmailError);
   });
 
@@ -45,7 +50,7 @@ describe("OrderOpeningExemption", () => {
   it("refuse une société inexistante", () => {
     expect(() =>
       OrderOpeningExemption.grantToCompany({
-        id: "x1",
+        nextId: () => "x1",
         companyId: "c9",
         company: null,
         active: [],
@@ -57,7 +62,7 @@ describe("OrderOpeningExemption", () => {
   it("refuse une société archivée, en proposant l'adresse", () => {
     expect(() =>
       OrderOpeningExemption.grantToCompany({
-        id: "x1",
+        nextId: () => "x1",
         companyId: "c1",
         company: { name: "Chez Paul", status: "terminated" },
         active: [],
@@ -69,7 +74,7 @@ describe("OrderOpeningExemption", () => {
   it("accepte une société suspendue ou en attente", () => {
     for (const status of ["suspended", "pending"] as const) {
       const exemption = OrderOpeningExemption.grantToCompany({
-        id: "x1",
+        nextId: () => "x1",
         companyId: "c1",
         company: { name: "Chez Paul", status },
         active: [],
@@ -81,7 +86,7 @@ describe("OrderOpeningExemption", () => {
 
   it("refuse une cible déjà exemptée, adresse comparée sans la casse", () => {
     const first = OrderOpeningExemption.grantToEmail({
-      id: "x1",
+      nextId: () => "x1",
       email: "jean@folie.fr",
       active: [],
       stamp: STAMP,
@@ -89,7 +94,7 @@ describe("OrderOpeningExemption", () => {
 
     expect(() =>
       OrderOpeningExemption.grantToEmail({
-        id: "x2",
+        nextId: () => "x2",
         email: "JEAN@folie.fr",
         active: [first],
         stamp: STAMP,
@@ -97,7 +102,7 @@ describe("OrderOpeningExemption", () => {
     ).toThrow(AlreadyExemptError);
     expect(() =>
       OrderOpeningExemption.grantToCompany({
-        id: "x3",
+        nextId: () => "x3",
         companyId: "c1",
         company: { name: "Chez Paul", status: "active" },
         active: [company("x4")],
@@ -112,7 +117,7 @@ describe("OrderOpeningExemption", () => {
 
     expect(() =>
       OrderOpeningExemption.grantToCompany({
-        id: "x2",
+        nextId: () => "x2",
         companyId: "c1",
         company: { name: "Chez Paul", status: "active" },
         active: [old],
@@ -133,5 +138,27 @@ describe("OrderOpeningExemption", () => {
 
   it("une société ne couvre pas une adresse, ni l'inverse", () => {
     expect(company("x1").covers({ companyId: null, email: "c1" })).toBe(false);
+  });
+});
+
+describe("OrderOpeningExemption — rejeu", () => {
+  /** Régression : l'identifiant était tiré avant le refus d'un ajout rejoué. */
+  it("un ajout rejoué est refusé sans tirer d'identifiant", () => {
+    const first = company("x1");
+    let drawn = 0;
+
+    expect(() =>
+      OrderOpeningExemption.grantToCompany({
+        nextId: () => {
+          drawn += 1;
+          return "x2";
+        },
+        companyId: "c1",
+        company: { name: "Chez Paul", status: "active" },
+        active: [first],
+        stamp: STAMP,
+      }),
+    ).toThrow(AlreadyExemptError);
+    expect(drawn).toBe(0);
   });
 });

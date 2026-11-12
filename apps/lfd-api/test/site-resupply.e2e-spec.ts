@@ -26,6 +26,7 @@ import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { counterSends, counterSent } from "./site-resupply-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -180,7 +181,11 @@ describe("le fournil envoie un réassort (R1d)", () => {
     const siteId = await seedSite("Val Village");
     const article = await firstArticle(desk);
     const draftRoute = `/admin/site-resupplies/sites/${siteId}/drafts/asap/lines`;
-    await desk.post(draftRoute).send({ sku: article.sku, quantity: 2 }).expect(201);
+    await desk
+      .post(draftRoute)
+      .set(INTENT_KEY, freshIntent())
+      .send({ sku: article.sku, quantity: 2 })
+      .expect(201);
     const before = (await listOf(desk, siteId)).drafts;
 
     const sent = await sender
@@ -348,6 +353,7 @@ describe("les droits", () => {
     await reader.get(`/admin/site-resupplies/sites/${siteId}`).expect(200);
     await reader
       .post(`/admin/site-resupplies/sites/${siteId}/drafts/asap/lines`)
+      .set(INTENT_KEY, freshIntent())
       .send({ sku: "VIE-001-1", quantity: 1 })
       .expect(403);
 

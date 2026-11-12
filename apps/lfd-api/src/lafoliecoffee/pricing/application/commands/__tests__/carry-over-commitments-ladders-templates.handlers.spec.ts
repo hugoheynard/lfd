@@ -8,7 +8,7 @@
  * l'horloge figée de la fixture.
  */
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
-import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
+import { CountingIdGenerator } from "../../../../../platform/id/__tests__/counting-id-generator.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { ArticleSaleUnits } from "../../../../catalog/application/article-sale-units.service.js";
 import { PriceTemplate } from "../../../domain/entities/price-template.js";
@@ -63,6 +63,7 @@ describe("CarryOverVolumeLadderHandler", () => {
     const trace: Trace = [];
     const uow = new TracingUnitOfWork(trace);
     const ladders = new StoredLadders(old);
+    const ids = new CountingIdGenerator("lad");
     const handler = new CarryOverVolumeLadderHandler(
       ladders,
       LINEAGE,
@@ -70,13 +71,13 @@ describe("CarryOverVolumeLadderHandler", () => {
       new InMemoryReservedElsewhere(),
       new InMemoryCarried(trace, uow, { volume_ladder: carried }),
       new TracingLock(trace, uow),
-      new FixedIdGenerator("lad"),
+      ids,
       new FixedClock(NOW),
       uow,
     );
     const run = () =>
       handler.execute(new CarryOverVolumeLadderCommand("lad_old", OLD, NEW, REASON, "staff|paul"));
-    return { ladders, run };
+    return { ladders, run, ids };
   }
 
   it("pose un barème neuf, journalisé `posed` avec le motif", async () => {
@@ -89,9 +90,11 @@ describe("CarryOverVolumeLadderHandler", () => {
   });
 
   it("refuse un second report pour la même audience", async () => {
-    const { ladders, run } = setup(["all:"]);
+    const { ladders, run, ids } = setup(["all:"]);
     await expect(run()).rejects.toBeInstanceOf(DecisionAlreadyCarriedError);
     expect(ladders.posed).toEqual([]);
+    // Régression : l'identifiant était tiré avant le refus d'un report rejoué.
+    expect(ids.drawn).toBe(0);
   });
 });
 
@@ -114,6 +117,7 @@ describe("CarryOverVolumeCommitmentHandler", () => {
     const uow = new TracingUnitOfWork(trace);
     const commitments = new StoredCommitments(old());
     const events = new RecordingPublisher();
+    const ids = new CountingIdGenerator("vc");
     const handler = new CarryOverVolumeCommitmentHandler(
       commitments,
       LINEAGE,
@@ -124,7 +128,7 @@ describe("CarryOverVolumeCommitmentHandler", () => {
       new ArticleSaleUnits(new PieceOnlyCatalog()),
       new NamedCompanies(),
       events,
-      new FixedIdGenerator("vc"),
+      ids,
       new FixedClock(NOW),
       uow,
     );
@@ -132,7 +136,7 @@ describe("CarryOverVolumeCommitmentHandler", () => {
       handler.execute(
         new CarryOverVolumeCommitmentCommand("vc_old", OLD, NEW, REASON, "staff|paul"),
       );
-    return { commitments, events, run };
+    return { commitments, events, run, ids };
   }
 
   it("signe la même promesse sur la nouvelle référence, et la journalise une fois", async () => {
@@ -154,9 +158,11 @@ describe("CarryOverVolumeCommitmentHandler", () => {
   });
 
   it("refuse un second report pour la même société", async () => {
-    const { commitments, run } = setup(["co_1"]);
+    const { commitments, run, ids } = setup(["co_1"]);
     await expect(run()).rejects.toBeInstanceOf(DecisionAlreadyCarriedError);
     expect(commitments.signed).toEqual([]);
+    // Régression : l'identifiant était tiré avant le refus d'un report rejoué.
+    expect(ids.drawn).toBe(0);
   });
 });
 

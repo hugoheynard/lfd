@@ -43,6 +43,7 @@ import {
   withdrawals,
 } from "./order-staff-cancel-scene.js";
 import { seedFreeOrder, seedOrder } from "./order-staff-cancel-orders.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 let ctx: E2eContext;
 
@@ -274,6 +275,7 @@ describe("le bon de fidélité", () => {
     await ctx
       .asSub(E2E_STAFF_SUB)
       .post("/admin/loyalty/adjustments")
+      .set(INTENT_KEY, freshIntent())
       .send({ holderKind: "user", holderId: user.id, points: 1_000, reason: "reprise" })
       .expect(204);
     const voucherId = await ctx.app

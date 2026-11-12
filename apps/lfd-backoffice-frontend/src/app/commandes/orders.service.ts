@@ -1,4 +1,5 @@
 import { HttpClient } from '@angular/common/http';
+import { intentOptions } from '../shared/gesture-intents';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom, type Observable } from 'rxjs';
 
@@ -316,10 +317,20 @@ export class AdminOrdersService {
    * Passe une commande **au nom d'un client**. Aucun prix n'est envoyé : le
    * serveur les ré-résout, et c'est lui qui rend le total et l'éventuel lien de
    * règlement.
+   *
+   * `intentKey` : la clé de l'intention de passer, tirée une fois et renvoyée
+   * à chaque clic jusqu'au succès — un double clic rend la même commande.
    */
-  async place(payload: AdminPlaceOrderPayload): Promise<AdminPlacedOrderResponse> {
+  async place(
+    payload: AdminPlaceOrderPayload,
+    intentKey: string,
+  ): Promise<AdminPlacedOrderResponse> {
     return firstValueFrom(
-      this.http.post<AdminPlacedOrderResponse>(`${B2B_API_BASE}/admin/orders`, payload),
+      this.http.post<AdminPlacedOrderResponse>(
+        `${B2B_API_BASE}/admin/orders`,
+        payload,
+        intentOptions(intentKey),
+      ),
     );
   }
 

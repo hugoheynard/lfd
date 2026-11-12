@@ -26,6 +26,7 @@ import {
 import { poseSiteDiscount } from "./promotion-fixtures.js";
 import { createUser } from "./factories.js";
 import { Prisma } from "../src/platform/database/client/client.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /**
  * E2E de la **commande d'un particulier composée en TTC** — lot C2 du plan
@@ -134,6 +135,7 @@ async function voucherOf(userId: string): Promise<string> {
   await ctx
     .asSub(E2E_STAFF_SUB)
     .post("/admin/loyalty/adjustments")
+    .set(INTENT_KEY, freshIntent())
     .send({ holderKind: "user", holderId: userId, points: 1_000, reason: "reprise" })
     .expect(204);
   return ctx.app

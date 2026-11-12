@@ -13,6 +13,7 @@ import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { GrantOrderOpeningExemptionCommand } from "../application/commands/grant-order-opening-exemption.command.js";
 import { WithdrawOrderOpeningExemptionCommand } from "../application/commands/withdraw-order-opening-exemption.command.js";
 import { ListOrderOpeningExemptionsQuery } from "../application/queries/list-order-opening-exemptions.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Les exemptions à la fermeture** (décision de Hugo du 2026-10-26) — sous
@@ -38,6 +39,9 @@ export class AdminOrderOpeningExemptionsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @Idempotent(
+    "création : rejouée, l'exemption est déjà active et l'agrégat refuse le doublon (409) sous transaction avant tout tirage d'identifiant ni écriture ; l'index unique partiel tient la course",
+  )
   async grant(
     @Body(new ZodBody(orderOpeningExemptionPayloadSchema)) payload: OrderOpeningExemptionPayload,
     @StaffUserId() staffUserId: string,
@@ -50,6 +54,9 @@ export class AdminOrderOpeningExemptionsController {
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "retire une exemption : rejouée, elle n'est plus active et l'agrégat refuse (404 OrderOpeningExemptionNotFoundError) avant toute écriture ni tout fait",
+  )
   async withdraw(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<WithdrawOrderOpeningExemptionCommand, void>(
       new WithdrawOrderOpeningExemptionCommand(id, staffUserId),

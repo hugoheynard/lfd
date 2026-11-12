@@ -37,6 +37,7 @@ import { attachTo, createCompany, createUser } from "./factories.js";
 import { frozenDiscountsCreate } from "./order-discount-fixtures.js";
 import { poseSiteDiscount } from "./promotion-fixtures.js";
 import { cardProvidersOverride } from "./card-payments.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const DAY = serviceDay(7);
 const PERSON = "auth0|particulier-controle";
@@ -121,6 +122,7 @@ async function proOrder(quantity = 10): Promise<string> {
     await ctx
       .asSub(E2E_STAFF_SUB)
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         companyId: buyer.companyId,
         buyerUserId: buyer.userId,

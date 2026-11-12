@@ -6,6 +6,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { AppConfig } from "../../../../platform/config/app-config.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { CommerceOrderPlacedFact } from "../../../../delivery/channels/commerce/index.js";
 import {
@@ -32,6 +33,7 @@ import {
   PlaceOrderForCustomerCommand,
   type PlaceOrderForCustomerResult,
 } from "./place-order-for-customer.command.js";
+import { STAFF_PLACEMENT_REPLAY, staffPlacementIntent } from "./staff-placement-intent.js";
 
 /**
  * Passe une commande **au nom d'un client**, depuis le back-office.
@@ -70,9 +72,32 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
     private readonly durable: DurablePublisher,
     private readonly shelf: ShelfCircuit,
     private readonly intake: OrderIntake,
+    private readonly intents: OncePerIntent,
   ) {}
 
-  async execute(command: PlaceOrderForCustomerCommand): Promise<PlaceOrderForCustomerResult> {
+  /**
+   * **Une fois par intention** : la clé de l'écran (en-tête `Idempotency-Key`)
+   * est réclamée avant tout — avant la préparation du lien de règlement, qui
+   * part au prestataire HORS transaction. Un double clic rend la commande
+   * déjà passée (même réponse), sans seconde commande ni second lien ; la clé
+   * se scelle dans la transaction qui écrit la commande. Un refus levé avant
+   * l'écriture rend la clé : le commercial corrige et renvoie.
+   *
+   * @throws {GestureInFlightError} la même clé est encore en vol.
+   * @throws {IntentKeyReusedError} la clé a déjà passé un autre panier.
+   */
+  execute(command: PlaceOrderForCustomerCommand): Promise<PlaceOrderForCustomerResult> {
+    return this.intents.runSealed(
+      staffPlacementIntent(command.staffUserId, command.intentKey, command.payload),
+      STAFF_PLACEMENT_REPLAY,
+      (seal) => this.placeOnce(command, seal),
+    );
+  }
+
+  private async placeOnce(
+    command: PlaceOrderForCustomerCommand,
+    seal: (result: PlaceOrderForCustomerResult) => Promise<void>,
+  ): Promise<PlaceOrderForCustomerResult> {
     const { payload } = command;
     const { companyId, buyerUserId } = payload;
 
@@ -94,7 +119,7 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
       companyId,
       isCounterEntry(payload.entryOrigin, payload.entryShortcut),
     );
-    const placed = await this.persist(order, payload.requestedDeliveryDate, intent);
+    const { placed, result } = await this.persist(order, payload, intent, seal);
 
     // La dérogation se consomme APRÈS la persistance, et son échec ne s'absorbe
     // pas : restée ouverte, elle laisserait passer une seconde commande tardive
@@ -110,12 +135,23 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
       new OrderPlacedEvent(placed.id, placed.orderNumber, buyerUserId, companyId, order.totalCents),
     );
 
-    const paymentUrl =
-      intent === null ? undefined : paymentUrlFor(this.config.clientBaseUrl(), placed.id);
+    return result;
+  }
+
+  /** La réponse de la passation — celle que le rejeu rendra à l'identique. */
+  private resultOf(
+    placed: PlacedOrder,
+    order: Order,
+    settlement: PlaceOrderForCustomerCommand["payload"]["settlement"],
+    hasIntent: boolean,
+  ): PlaceOrderForCustomerResult {
+    const paymentUrl = hasIntent
+      ? paymentUrlFor(this.config.clientBaseUrl(), placed.id)
+      : undefined;
     return {
       id: placed.id,
       orderNumber: placed.orderNumber,
-      settlement: payload.settlement,
+      settlement,
       totalCents: order.totalCents,
       ...(paymentUrl === null || paymentUrl === undefined ? {} : { paymentUrl }),
     };
@@ -126,22 +162,27 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
    * journée — ou, sur stock, la vitrine (plan du jour J, §12) — d'abord, sous
    * son verrou : l'arrêt du plan ou une passation concurrente ne passent plus
    * entre la composition et l'écriture (lot O3, S5). Un refus annule
-   * l'intention du lien, qui ne servirait plus à rien.
+   * l'intention du lien, qui ne servirait plus à rien. La clé d'intention se
+   * scelle dans la même transaction : une commande écrite a toujours sa clé
+   * résolue.
    */
   private async persist(
     order: Order,
-    requestedDeliveryDate: string | null,
+    payload: PlaceOrderForCustomerCommand["payload"],
     intent: PreparedCardPayment | null,
-  ): Promise<PlacedOrder> {
+    seal: (result: PlaceOrderForCustomerResult) => Promise<void>,
+  ): Promise<{ readonly placed: PlacedOrder; readonly result: PlaceOrderForCustomerResult }> {
     try {
       return await this.unitOfWork.run(async () => {
-        await this.drafting.holdSupply(order, requestedDeliveryDate);
+        await this.drafting.holdSupply(order, payload.requestedDeliveryDate);
         const written = await this.orders.place(order);
         if (intent !== null) {
           await this.payments.attach(orderCardSubject(written.id), intent, "first");
         }
         await this.durable.publish(new CommerceOrderPlacedFact(written.id).durableFact());
-        return written;
+        const result = this.resultOf(written, order, payload.settlement, intent !== null);
+        await seal(result);
+        return { placed: written, result };
       });
     } catch (error) {
       if (intent !== null) {

@@ -43,6 +43,8 @@ export const ARTICLES: readonly ResupplyArticleView[] = [
 /** La demande en cours, en mémoire : une version par geste, comme le serveur. */
 export class FakeResupplies {
   readonly calls: string[] = [];
+  /** La clé d'intention de chaque ajout, dans l'ordre. */
+  readonly addKeys: string[] = [];
   private readonly lines = new Map<ResupplyTarget, Map<string, number>>([
     ['asap', new Map()],
     ['tomorrow', new Map()],
@@ -100,8 +102,10 @@ export class FakeResupplies {
     target: ResupplyTarget,
     sku: string,
     quantity: number,
+    intentKey: string,
   ): Promise<{ id: string }> {
     this.calls.push(`add ${target} ${sku} ${String(quantity)}`);
+    this.addKeys.push(intentKey);
     const lines = this.lines.get(target);
     lines?.set(sku, (lines.get(sku) ?? 0) + quantity);
     this.version += 1;

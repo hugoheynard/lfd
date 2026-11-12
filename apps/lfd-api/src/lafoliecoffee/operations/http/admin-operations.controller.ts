@@ -30,6 +30,7 @@ import { SetOperationVisibilityCommand } from "../application/commands/set-opera
 import { GetOperationQuery } from "../application/queries/get-operation.query.js";
 import { ListOperationsQuery } from "../application/queries/list-operations.query.js";
 import { calendarOf, scheduleOf } from "./operation-payloads.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Les opérations datées, écrites au commerce** — `/admin/operations`
@@ -70,6 +71,9 @@ export class AdminOperationsController {
   }
 
   @Post()
+  @Idempotent(
+    "création à clé fournie : rejouée, la clé est prise et la requête est refusée (409 OperationKeyTakenError) avant toute écriture ni tout fait",
+  )
   async prepare(
     @Body(new ZodBody(prepareCommerceOperationPayloadSchema)) body: PrepareCommerceOperationPayload,
     @StaffUserId() staffUserId: string,
@@ -92,6 +96,9 @@ export class AdminOperationsController {
 
   /** Nom, accroche, image — ce que l'annonce affiche. */
   @Put(":key/presentation")
+  @Idempotent(
+    "pose des valeurs : rejouée, la même présentation ne change rien et le handler rend avant toute écriture ni tout fait",
+  )
   async edit(
     @Param("key") key: string,
     @Body(new ZodBody(editCommerceOperationPayloadSchema)) body: EditCommerceOperationPayload,
@@ -105,6 +112,9 @@ export class AdminOperationsController {
 
   /** Les cinq dates, ensemble. */
   @Put(":key/schedule")
+  @Idempotent(
+    "pose des valeurs : rejouée, le même calendrier ne change rien et le handler rend avant toute écriture ni tout fait",
+  )
   async reschedule(
     @Param("key") key: string,
     @Body(new ZodBody(rescheduleCommerceOperationPayloadSchema))
@@ -118,6 +128,9 @@ export class AdminOperationsController {
   }
 
   @Put(":key/audience")
+  @Idempotent(
+    "pose une valeur : rejouée, la même clientèle ne change rien et le handler rend avant toute écriture ni tout fait",
+  )
   async changeAudience(
     @Param("key") key: string,
     @Body(new ZodBody(setCommerceOperationAudiencePayloadSchema))
@@ -132,6 +145,9 @@ export class AdminOperationsController {
 
   /** Masquer ou afficher — réversible, et distinct de l'archivage. */
   @Put(":key/visibility")
+  @Idempotent(
+    "pose une valeur : rejouée, l'agrégat dit que la visibilité est déjà celle-là (setHidden rend faux) et rien n'est écrit ni journalisé",
+  )
   async setVisibility(
     @Param("key") key: string,
     @Body(new ZodBody(setCommerceOperationVisibilityPayloadSchema))
@@ -146,6 +162,9 @@ export class AdminOperationsController {
 
   /** La sélection ENTIÈRE, dans l'ordre du rayon. */
   @Put(":key/selection")
+  @Idempotent(
+    "pose des valeurs : rejouée, la même sélection dans le même ordre ne change rien et le handler rend avant toute écriture ni tout fait",
+  )
   async setSelection(
     @Param("key") key: string,
     @Body(new ZodBody(setCommerceOperationSelectionPayloadSchema))
@@ -159,6 +178,9 @@ export class AdminOperationsController {
   }
 
   @Put(":key/archive")
+  @Idempotent(
+    "transition : rejouée sur une opération archivée, l'agrégat refuse (409 OperationArchivedError) avant toute écriture ni tout fait",
+  )
   async archive(
     @Param("key") key: string,
     @StaffUserId() staffUserId: string,

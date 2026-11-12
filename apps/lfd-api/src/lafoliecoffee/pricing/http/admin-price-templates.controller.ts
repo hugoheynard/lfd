@@ -35,6 +35,7 @@ import { GetPriceTemplateQuery } from "../application/queries/get-price-template
 import { ListPriceTemplatesQuery } from "../application/queries/list-price-templates.query.js";
 import { ReadMercurialeBenchmarkQuery } from "../application/queries/read-mercuriale-benchmark.query.js";
 import type { CreatedIdResponse, PosedRulesResponse } from "@lfd/contracts";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Les gabarits tarifaires** — mercuriales et devis, même surface.
@@ -111,6 +112,9 @@ export class AdminPriceTemplatesController {
    */
   @Put(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête réécrit le même gabarit (upsert, sans acte ni effet)",
+  )
   async revise(
     @Param("id") id: string,
     @Body(new ZodBody(savePriceTemplatePayloadSchema)) payload: SavePriceTemplatePayload,
@@ -128,6 +132,9 @@ export class AdminPriceTemplatesController {
    */
   @Post(":id/archive")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée sur un gabarit archivé, l'agrégat refuse (409 ArchivedPriceTemplateIsSealedError) avant toute écriture",
+  )
   async archive(@Param("id") id: string): Promise<void> {
     await this.commands.execute<ArchivePriceTemplateCommand, void>(
       new ArchivePriceTemplateCommand(id),
@@ -159,6 +166,9 @@ export class AdminPriceTemplatesController {
    */
   @Post(":id/carry-over")
   @HttpCode(HttpStatus.CREATED)
+  @Idempotent(
+    "rejouée, la ligne porte déjà la nouvelle référence : l'agrégat refuse (409 DecisionNotOnReferenceError / DecisionAlreadyCarriedError) avant toute écriture",
+  )
   async carryOver(
     @Param("id") id: string,
     @Body(new ZodBody(carryOverDecisionPayloadSchema)) payload: CarryOverDecisionPayload,

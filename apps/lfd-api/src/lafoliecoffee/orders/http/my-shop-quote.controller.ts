@@ -11,6 +11,7 @@ import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { QuoteMyShopCartQuery } from "../application/queries/quote-my-shop-cart.handler.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Le décompte du panier d'un client reconnu** — le jumeau muré de
@@ -46,6 +47,7 @@ export class MyShopQuoteController {
 
   @Post("mine")
   @HttpCode(HttpStatus.OK)
+  @Idempotent("calcul pur en POST : chiffre le panier en mémoire, n'écrit rien et n'envoie rien")
   async quote(
     @Body(new ZodBody(shopQuotePayloadSchema)) payload: ShopQuotePayload,
     @ActingCompany() companyId: string | null,

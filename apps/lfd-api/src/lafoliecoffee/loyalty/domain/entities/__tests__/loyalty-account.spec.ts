@@ -31,11 +31,11 @@ function conversion(
   settings: LoyaltySettings | null = SETTINGS,
   expectedBalance: number | null = null,
 ): LoyaltyConversion {
+  const ids = ["v1", "e1"];
   return {
     steps,
     settings,
-    voucherId: "v1",
-    entryId: "e1",
+    nextId: () => ids.shift() ?? "id-de-trop",
     actorUserId: "u1",
     at: AT,
     expectedBalance,

@@ -68,10 +68,11 @@ export class SeeingPlaceOrderForCustomerHandler extends PlaceOrderForCustomerHan
   override execute(command: PlaceOrderForCustomerCommand): Promise<PlaceOrderForCustomerResult> {
     return confirmingSeenTotal(command.payload.expectedTotalCents, (expectedTotalCents) =>
       super.execute(
-        new PlaceOrderForCustomerCommand(command.staffUserId, {
-          ...command.payload,
-          expectedTotalCents,
-        }),
+        new PlaceOrderForCustomerCommand(
+          command.staffUserId,
+          { ...command.payload, expectedTotalCents },
+          command.intentKey,
+        ),
       ),
     );
   }

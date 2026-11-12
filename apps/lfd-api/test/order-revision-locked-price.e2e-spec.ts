@@ -36,6 +36,7 @@ import {
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { onlyVariant, posePromotion, promotionTerms } from "./promotion-fixtures.js";
 import { cardProvidersOverride } from "./card-payments.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const DAY = serviceDay(7);
 const BUYER = "auth0|prix-verrouille";
@@ -117,6 +118,7 @@ async function place(decor: Scene, quantity: number): Promise<string> {
   return jsonBody<AdminPlacedOrderResponse>(
     await staff()
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         companyId: decor.companyId,
         buyerUserId: decor.userId,

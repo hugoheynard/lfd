@@ -28,6 +28,7 @@ import { CardProviders } from "../src/card-payment/domain/ports/card-providers.j
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const MEMBER = "auth0|membre-o3";
 const STAFF = "staff-e2e";
@@ -141,6 +142,7 @@ async function openSameDay(): Promise<void> {
 function staffOrder(day: string) {
   return staff()
     .post("/admin/orders")
+    .set(INTENT_KEY, freshIntent())
     .send({
       companyId,
       buyerUserId: buyerId,

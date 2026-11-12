@@ -20,6 +20,7 @@ import type { AuthenticatedStaffRequest } from "../../../platform/auth/staff-pri
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ReadOrderDeliveryVatQuery } from "../application/read-order-delivery-vat.query.js";
 import { SaveOrderDeliveryVatCommand } from "../application/save-order-delivery-vat.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **La TVA de la livraison** — Comptabilité › « TVA de la livraison » (plan
@@ -49,6 +50,9 @@ export class AdminOrderDeliveryVatController {
 
   @Put()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose une valeur : rejouée, la même requête repose le même mode et le journal se tait quand rien n'a changé",
+  )
   async save(
     @Req() request: AuthenticatedStaffRequest,
     @Body(new ZodBody(orderDeliveryVatPayloadSchema)) payload: OrderDeliveryVatPayload,

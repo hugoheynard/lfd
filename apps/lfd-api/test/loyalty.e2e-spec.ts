@@ -42,6 +42,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const BASE = "/admin/loyalty";
 const SETTINGS: SetLoyaltySettingsPayload = {
@@ -88,6 +89,7 @@ async function person(): Promise<string> {
 async function credit(userId: string, points: number): Promise<void> {
   await staff()
     .post(`${BASE}/adjustments`)
+    .set(INTENT_KEY, freshIntent())
     .send({ holderKind: "user", holderId: userId, points, reason: "reprise de l'ancienne carte" })
     .expect(204);
 }
@@ -235,14 +237,36 @@ describe("l'ajustement motivé", () => {
     await credit(userId, 100);
     await staff()
       .post(`${BASE}/adjustments`)
+      .set(INTENT_KEY, freshIntent())
       .send({ holderKind: "user", holderId: userId, points: -101, reason: "erreur" })
       .expect(409);
     expect((await balances())[0]?.points).toBe(100);
   });
 
+  /** Régression : un double clic sur « Ajuster » créditait deux fois — un mouvement relatif sans clé. */
+  it("deux envois de même clé : un seul mouvement", async () => {
+    const userId = await person();
+    const key = freshIntent();
+    const body = { holderKind: "user", holderId: userId, points: 250, reason: "geste" };
+
+    await staff().post(`${BASE}/adjustments`).set(INTENT_KEY, key).send(body).expect(204);
+    await staff().post(`${BASE}/adjustments`).set(INTENT_KEY, key).send(body).expect(204);
+
+    expect((await balances())[0]?.points).toBe(250);
+  });
+
+  it("refuse un ajustement sans clé d'intention", async () => {
+    const userId = await person();
+    await staff()
+      .post(`${BASE}/adjustments`)
+      .send({ holderKind: "user", holderId: userId, points: 10, reason: "geste" })
+      .expect(400);
+  });
+
   it("rend un 404 pour un titulaire inconnu", async () => {
     await staff()
       .post(`${BASE}/adjustments`)
+      .set(INTENT_KEY, freshIntent())
       .send({ holderKind: "company", holderId: "absente", points: 10, reason: "geste" })
       .expect(404);
   });

@@ -24,6 +24,7 @@ import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { jsonBody, type E2eContext } from "./e2e-harness.js";
 import { bootstrapProductionDay, CROISSANT, SERVICE_DAY, STAFF } from "./production-day-fixture.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const EVE = addDays(SERVICE_DAY, -1);
 const clock = new FixedClock(new Date());
@@ -86,6 +87,7 @@ async function counterHasOpenDraft(site: string, sku: string): Promise<void> {
   await ctx
     .asSub(STAFF)
     .post(`/admin/site-resupplies/sites/${site}/drafts/tomorrow/lines`)
+    .set(INTENT_KEY, freshIntent())
     .send({ sku, quantity: 3 })
     .expect(201);
 }

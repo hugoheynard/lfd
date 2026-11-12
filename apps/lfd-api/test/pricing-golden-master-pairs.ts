@@ -27,6 +27,7 @@ import { staffBody, type Agents } from "./pricing-golden-master-bodies.js";
 import { createdIdOf } from "./pricing-golden-master-record.js";
 import { FIXED } from "./pricing-golden-master-refusals.js";
 import { anchoredDay, GOLDEN_CLOCK, type GoldenScene } from "./pricing-golden-master-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /** Ce que les deux temps du plan disent d'une journée. */
 export interface PlanVerdicts {
@@ -95,6 +96,7 @@ export async function waiverPair(
   const placed = await http
     .as(E2E_STAFF_SUB)
     .post("/admin/orders")
+    .set(INTENT_KEY, freshIntent())
     .send({
       ...staffBody(scene, FIXED, "link"),
       companyId: pro.companyId,

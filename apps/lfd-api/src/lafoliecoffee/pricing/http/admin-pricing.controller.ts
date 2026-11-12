@@ -52,6 +52,7 @@ import type {
 } from "@lfd/contracts";
 import type { PricingRuleDraft } from "../domain/entities/pricing-rule.js";
 import type { PriceScope } from "../domain/price-rule.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Le paramétrage tarifaire.**
@@ -162,6 +163,9 @@ export class AdminPricingController {
    */
   @Post("volume-ladders/:id/pause")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée sur un barème en pause, l'agrégat refuse (409 VolumeLadderAlreadyPausedError) avant toute écriture ni tout acte",
+  )
   async pauseLadder(
     @Param("id") id: string,
     @Body(new ZodBody(pricingReasonPayloadSchema)) payload: PricingReasonPayload,
@@ -175,6 +179,9 @@ export class AdminPricingController {
   /** **Reprendre** : le barème réagit à partir de maintenant. */
   @Post("volume-ladders/:id/resume")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée sur un barème en cours, l'agrégat refuse (409 VolumeLadderNotPausedError) avant toute écriture ni tout acte",
+  )
   async resumeLadder(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<ResumeVolumeLadderCommand, void>(
       new ResumeVolumeLadderCommand(id, staffUserId),
@@ -189,6 +196,9 @@ export class AdminPricingController {
    */
   @Post("volume-ladders/:id/archive")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée sur un barème archivé, l'agrégat refuse (409 ArchivedVolumeLadderIsSealedError) avant toute écriture ni tout acte",
+  )
   async archiveLadder(
     @Param("id") id: string,
     @Body(new ZodBody(pricingReasonPayloadSchema)) payload: PricingReasonPayload,
@@ -210,6 +220,7 @@ export class AdminPricingController {
    */
   @Post("projection")
   @HttpCode(HttpStatus.OK)
+  @Idempotent("calcul pur en POST : projette un prix en mémoire, n'écrit rien et n'envoie rien")
   async project(
     @Body(new ZodBody(priceProjectionPayloadSchema)) payload: PriceProjectionPayload,
   ): Promise<PriceProjectionView> {
@@ -263,6 +274,9 @@ export class AdminPricingController {
    */
   @Post("rules/:id/pause")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée sur une règle en pause, l'agrégat refuse (409 PriceRuleAlreadyPausedError) avant toute écriture ni tout acte",
+  )
   async pauseRule(
     @Param("id") id: string,
     @Body(new ZodBody(pricingReasonPayloadSchema)) payload: PricingReasonPayload,
@@ -276,6 +290,9 @@ export class AdminPricingController {
   /** **Reprendre** : la règle réagit à partir de maintenant. */
   @Post("rules/:id/resume")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée sur une règle en cours, l'agrégat refuse (409 PriceRuleNotPausedError) avant toute écriture ni tout acte",
+  )
   async resumeRule(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<ResumePriceRuleCommand, void>(
       new ResumePriceRuleCommand(id, staffUserId),
@@ -291,6 +308,9 @@ export class AdminPricingController {
    */
   @Post("rules/:id/archive")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée sur une règle archivée, l'agrégat refuse (409 ArchivedPriceRuleIsSealedError) avant toute écriture ni tout acte",
+  )
   async archiveRule(
     @Param("id") id: string,
     @Body(new ZodBody(pricingReasonPayloadSchema)) payload: PricingReasonPayload,
@@ -310,6 +330,9 @@ export class AdminPricingController {
    */
   @Delete("rules/:id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "archive la règle : rejouée sur une règle archivée, l'agrégat refuse (409 ArchivedPriceRuleIsSealedError) avant toute écriture ni tout acte",
+  )
   async removeRule(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<ArchivePriceRuleCommand, void>(
       new ArchivePriceRuleCommand(id, staffUserId, null),

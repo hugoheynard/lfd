@@ -15,6 +15,7 @@ import {
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { pickupSite, placeOrder } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /**
  * E2E — **d'où vient la saisie de l'équipe** (Hugo, 2026-11-04 ; migration
@@ -79,6 +80,7 @@ async function placeByStaff(s: Scene, origin: Record<string, unknown>): Promise<
   const order = jsonBody<AdminPlacedOrderResponse>(
     await staff()
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         companyId: s.companyId,
         buyerUserId: s.userId,

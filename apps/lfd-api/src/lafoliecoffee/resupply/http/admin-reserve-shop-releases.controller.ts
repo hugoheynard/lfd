@@ -11,6 +11,7 @@ import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js"
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody, ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import { SendReserveToShopCommand } from "../application/send-reserve-to-shop.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Envoyer en boutique depuis la réserve** (A1.4,
@@ -28,6 +29,9 @@ export class AdminReserveShopReleasesController {
   constructor(private readonly commands: CommandBus) {}
 
   @Post(":serviceDay")
+  @Idempotent(
+    "par sa propre clé : la clé d'envoi de l'écran (sendOnceUnderKey) ; rejouée, le réassort écrit sous cette clé est retrouvé, et ni l'écriture ni l'envoi à la réserve ne repartent",
+  )
   async send(
     @Param("serviceDay", new ZodQuery(resupplyServiceDaySchema)) serviceDay: string,
     @Body(new ZodBody(sendReserveToShopSchema)) body: SendReserveToShopPayload,

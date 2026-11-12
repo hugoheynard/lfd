@@ -1,6 +1,9 @@
-import { RESUPPLY_NAME_MAX, RESUPPLY_USED_NAMES_MAX } from "@lfd/contracts";
+import { randomUUID } from "node:crypto";
 
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+import { RESUPPLY_NAME_MAX, RESUPPLY_USED_NAMES_MAX } from "@lfd/contracts";
+
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { RecordingAdmissionDesk } from "../../../orders/application/commands/__tests__/plan-doubles.js";
@@ -54,7 +57,15 @@ function setup() {
   return {
     store,
     name: new NameSiteResupplyHandler(store, sites, clock, ids),
-    add: new AddSiteResupplyLineHandler(store, catalogue, sites, clock, ids),
+    add: new AddSiteResupplyLineHandler(
+      store,
+      catalogue,
+      sites,
+      clock,
+      ids,
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
+    ),
     send: new SendSiteResupplyHandler(
       store,
       new InMemorySiteResupplyPlanKeys(store),
@@ -87,7 +98,9 @@ function setup() {
 describe("nommer la demande en cours (R1g)", () => {
   it("nomme la demande déjà ouverte de la visée, sans toucher ses lignes", async () => {
     const { add, name, list } = setup();
-    const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "CRO", 4));
+    const id = await add.execute(
+      new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "CRO", 4, "staff_1", randomUUID()),
+    );
 
     const named = await name.execute(
       new NameSiteResupplyCommand(VILLAGE, "tomorrow", "  Vitrine du matin "),
@@ -106,7 +119,9 @@ describe("nommer la demande en cours (R1g)", () => {
   it("ouvre la demande si aucune ne l'est : on peut nommer avant le premier article", async () => {
     const { add, name, store } = setup();
     const id = await name.execute(new NameSiteResupplyCommand(VILLAGE, "asap", "Goûter"));
-    const added = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 1));
+    const added = await add.execute(
+      new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 1, "staff_1", randomUUID()),
+    );
 
     expect(added).toBe(id);
     expect(store.all()).toEqual([expect.objectContaining({ id, name: "Goûter" })]);
@@ -141,9 +156,13 @@ describe("nommer la demande en cours (R1g)", () => {
    */
   it("un ajout d'un autre poste pendant le nommage ne fait pas échouer le nom, ni ne se perd", async () => {
     const { add, name, store } = setup();
-    const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 1));
+    const id = await add.execute(
+      new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 1, "staff_1", randomUUID()),
+    );
     store.beforeNextSave = () =>
-      add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 2));
+      add.execute(
+        new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 2, "staff_1", randomUUID()),
+      );
 
     await expect(
       name.execute(new NameSiteResupplyCommand(VILLAGE, "asap", "Goûter")),
@@ -162,7 +181,9 @@ describe("nommer la demande en cours (R1g)", () => {
 
   it("le nom part avec l'envoi, et le prochain nom ouvre une nouvelle demande", async () => {
     const { add, name, send, list, store } = setup();
-    const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 2));
+    const id = await add.execute(
+      new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 2, "staff_1", randomUUID()),
+    );
     await name.execute(new NameSiteResupplyCommand(VILLAGE, "asap", "Vitrine du matin"));
     await send.execute(new SendSiteResupplyCommand(VILLAGE, id, 2, "staff_1"));
 
@@ -197,7 +218,9 @@ describe("nommer la demande en cours (R1g)", () => {
 
   it("une demande envoyée ne se renomme plus par son identifiant : l'agrégat refuse", async () => {
     const { add, send, store } = setup();
-    const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 2));
+    const id = await add.execute(
+      new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 2, "staff_1", randomUUID()),
+    );
     await send.execute(new SendSiteResupplyCommand(VILLAGE, id, 1, "staff_1"));
     const sent = await store.load(VILLAGE, id);
 

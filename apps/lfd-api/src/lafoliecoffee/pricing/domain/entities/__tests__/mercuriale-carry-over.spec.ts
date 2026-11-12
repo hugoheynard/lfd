@@ -41,7 +41,7 @@ const posed = (validFrom = FROM, validTo: Date | null = TO): CompanyMercuriale =
 
 const carry = (mercuriale: CompanyMercuriale, now = NOW, reason = REASON): CompanyMercuriale =>
   mercuriale.carryOver(
-    "amd_carry",
+    () => "amd_carry",
     { fromSku: "CHO-000-2", toSku: "CHO-001", reason },
     "staff|paul",
     now,
@@ -157,12 +157,31 @@ describe("CompanyMercuriale.carryOver", () => {
 
     expect(() =>
       once.carryOver(
-        "amd_again",
+        () => "amd_again",
         { fromSku: "CHO-000-2", toSku: "CHO-001", reason: REASON },
         "staff|paul",
         NOW,
       ),
     ).toThrow(SkuAlreadyNegotiatedError);
+  });
+
+  /** Régression : l'identifiant de l'avenant était tiré avant le refus d'un report rejoué. */
+  it("un report rejoué est refusé sans tirer d'identifiant", () => {
+    const once = carry(posed());
+    let drawn = 0;
+
+    expect(() =>
+      once.carryOver(
+        () => {
+          drawn += 1;
+          return "amd_again";
+        },
+        { fromSku: "CHO-000-2", toSku: "CHO-001", reason: REASON },
+        "staff|paul",
+        NOW,
+      ),
+    ).toThrow(SkuAlreadyNegotiatedError);
+    expect(drawn).toBe(0);
   });
 
   it("exige un motif, comme tout avenant", () => {

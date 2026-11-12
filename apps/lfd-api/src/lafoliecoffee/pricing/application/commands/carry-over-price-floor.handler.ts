@@ -69,8 +69,7 @@ export class CarryOverPriceFloorHandler implements ICommandHandler<
     // représentatif de la nouvelle référence — à ne pas tenir sous verrou.
     const articles = await this.catalog.all(staffViewer("pro"));
     const now = this.clock.now();
-    const id = this.ids.next();
-    await this.uow.run(async () => {
+    return this.uow.run(async () => {
       await this.lock.acquire("price_floor", carry.toSku);
       const source = await this.stored.load(command.floorId);
       if (source === null) {
@@ -85,6 +84,8 @@ export class CarryOverPriceFloorHandler implements ICommandHandler<
         await this.carried.carriedAudiences("price_floor", carry.fromSku, carry.toSku, now),
       );
       const target = { type: source.floor.asScopedFloor.scope.type, id: carry.toSku };
+      // Tiré une fois le report déjà fait écarté : un rejeu ne tire rien.
+      const id = this.ids.next();
       const floor = PricingFloor.carriedFrom(id, source, carry, {
         createdBy: command.staffUserId,
         now,
@@ -92,8 +93,8 @@ export class CarryOverPriceFloorHandler implements ICommandHandler<
         inForceOnTarget: (await this.floors.inForceFor(target, clientele, now)) !== null,
       });
       await this.write(floor, command, now);
+      return id;
     });
-    return id;
   }
 
   /** Le plancher et son acte `carried`, sur le sujet de la PORTÉE — jamais la version. */

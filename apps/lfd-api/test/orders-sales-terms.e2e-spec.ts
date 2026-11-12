@@ -36,6 +36,7 @@ import {
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { prose } from "./legal-document-writes.js";
 import { cardProvidersOverride } from "./card-payments.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const MEMBER = "auth0|membre-cgv";
 const PDF = Buffer.from("%PDF-1.7\n%%EOF", "latin1");
@@ -187,6 +188,7 @@ describe("l'équipe pour un client (place-order-for-customer)", () => {
     const placed = jsonBody<AdminPlacedOrderResponse>(
       await staff()
         .post("/admin/orders")
+        .set(INTENT_KEY, freshIntent())
         .send({ ...order(companyId), buyerUserId: buyerId, settlement: "account" })
         .expect(201),
     );

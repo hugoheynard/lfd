@@ -25,6 +25,7 @@ import { GrantOrderCutoffWaiverCommand } from "../application/grant-order-cutoff
 import { ListOpenOrderCutoffWaiversQuery } from "../application/list-open-order-cutoff-waivers.query.js";
 import { ListOrderCutoffWaiversQuery } from "../application/list-order-cutoff-waivers.query.js";
 import { RevokeOrderCutoffWaiverCommand } from "../application/revoke-order-cutoff-waiver.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Dérogations d'heure limite** — autoriser un client à commander en retard
@@ -85,6 +86,9 @@ export class AdminOrderCutoffWaiversController {
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "retire une dérogation encore ouverte : rejouée, il n'y en a plus et le dépôt refuse (404 OrderCutoffWaiverNotFoundError), la transaction annulée avant tout fait",
+  )
   async revoke(@Param("id") id: string): Promise<void> {
     await this.commands.execute<RevokeOrderCutoffWaiverCommand, void>(
       new RevokeOrderCutoffWaiverCommand(id),

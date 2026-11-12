@@ -56,9 +56,8 @@ export class CarryOverMercurialeLineHandler implements ICommandHandler<
     }
     await assertOnSale(this.references, [toSku], "pro");
     const now = this.clock.now();
-    const amendmentId = this.ids.next();
 
-    await this.uow.run(async () => {
+    return this.uow.run(async () => {
       const mercuriale = await this.mercuriales.lockForAmendment(mercurialeId);
       if (mercuriale === null) {
         throw new CarriedMercurialeNotFoundError(mercurialeId);
@@ -66,8 +65,13 @@ export class CarryOverMercurialeLineHandler implements ICommandHandler<
       // Ni vers un article réservé à un autre compte (Q1) : le compte n'est
       // connu qu'une fois la mercuriale chargée.
       await assertNotReservedElsewhere(this.reservations, mercuriale.companyId, [toSku]);
+      // Tiré par l'agrégat, une fois le report jugé : un rejeu ne tire rien.
+      let amendmentId = "";
       const carried = mercuriale.carryOver(
-        amendmentId,
+        () => {
+          amendmentId = this.ids.next();
+          return amendmentId;
+        },
         { fromSku, toSku, reason },
         staffUserId,
         now,
@@ -87,7 +91,7 @@ export class CarryOverMercurialeLineHandler implements ICommandHandler<
             : describeDiscountCarryOver(fromSku, toSku, amendment.validFrom, amendment.validTo),
         subjectLabel: carried.label,
       });
+      return amendmentId;
     });
-    return amendmentId;
   }
 }

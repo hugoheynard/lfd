@@ -35,6 +35,7 @@ import {
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const BUYER = "auth0|acheteur-bloque";
 const ROUTE = "/admin/accounting/direct-debit-blocks";
@@ -153,6 +154,7 @@ describe("le blocage refuse « au compte » côté serveur", () => {
 
     const response = await staff()
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send(staffOrder(companyId, buyerId))
       .expect(409);
 

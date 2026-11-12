@@ -29,6 +29,7 @@ import {
   type GoldenScene,
   type ScenePro,
 } from "./pricing-golden-master-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /** Un total qu'aucune commande du corpus n'atteint : le total vu est faux. */
 const UNSEEN_TOTAL = { expectedTotalCents: 1 } as const;
@@ -221,6 +222,7 @@ async function staffPaths(
         await http
           .as(E2E_STAFF_SUB)
           .post("/admin/orders")
+          .set(INTENT_KEY, freshIntent())
           .send(bodyOf(pro, settlement, variant)),
       );
   const estimate: Place = async (variant) =>

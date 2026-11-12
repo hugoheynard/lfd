@@ -35,6 +35,7 @@ import {
   willRefund,
 } from "./order-revision-card-refund-scene.js";
 import { createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 beforeAll(async () => {
   await bootCardRefundScene();
@@ -184,6 +185,7 @@ describe("Les cas d'avant et le bon (R4, R10)", () => {
     const user = await createUser(scene().prisma, { auth0Sub: BUYER, firstName: "Léa" });
     await staff()
       .post("/admin/loyalty/adjustments")
+      .set(INTENT_KEY, freshIntent())
       .send({ holderKind: "user", holderId: user.id, points: 1_000, reason: "reprise" })
       .expect(204);
     const voucherId = await scene()

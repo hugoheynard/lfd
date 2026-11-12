@@ -37,6 +37,7 @@ import { UnknownPriceScopeError } from "../domain/pricing-errors.js";
 import type { FloorClientele } from "../domain/entities/pricing-floor.js";
 import type { PriceFloorPolicy } from "../domain/floor-policy.js";
 import type { PriceFloor, PriceScope } from "../domain/price-rule.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Les limites** — ce qui empêche l'empilement des étages de descendre trop bas.
@@ -150,6 +151,9 @@ export class AdminPriceFloorsController {
    */
   @Post("floors/:id/carry-over")
   @HttpCode(HttpStatus.CREATED)
+  @Idempotent(
+    "report : rejoué, la décision est déjà reportée sur la nouvelle référence et le cas d'usage refuse (409 DecisionAlreadyCarriedError) sous le verrou du report, avant tout tirage d'identifiant ni écriture",
+  )
   async carryOverFloor(
     @Param("id") id: string,
     @Body(new ZodBody(carryOverDecisionPayloadSchema)) payload: CarryOverDecisionPayload,
@@ -177,6 +181,9 @@ export class AdminPriceFloorsController {
    */
   @Post("floors/global/archive")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "archive le plancher en vigueur : rejouée, il n'y en a plus et la requête est refusée (404 PriceFloorNotFoundError) avant toute écriture ni tout acte",
+  )
   async archiveGlobalFloor(
     @Body(new ZodBody(pricingReasonPayloadSchema)) payload: PricingReasonPayload,
     @Query(new ZodQuery(floorClienteleQuerySchema)) query: FloorClienteleQuery,
@@ -192,6 +199,9 @@ export class AdminPriceFloorsController {
 
   @Post("floors/:scopeType/:scopeId/archive")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "archive le plancher en vigueur : rejouée, il n'y en a plus et la requête est refusée (404 PriceFloorNotFoundError) avant toute écriture ni tout acte",
+  )
   async archiveScopedFloor(
     @Param("scopeType") scopeType: string,
     @Param("scopeId") scopeId: string,
@@ -209,6 +219,9 @@ export class AdminPriceFloorsController {
 
   @Delete("floors/global")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "archive le plancher en vigueur : rejouée, il n'y en a plus et la requête est refusée (404 PriceFloorNotFoundError) avant toute écriture ni tout acte",
+  )
   async removeGlobalFloor(
     @Query(new ZodQuery(floorClienteleQuerySchema)) query: FloorClienteleQuery,
     @StaffUserId() staffUserId: string,
@@ -218,6 +231,9 @@ export class AdminPriceFloorsController {
 
   @Delete("floors/:scopeType/:scopeId")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "archive le plancher en vigueur : rejouée, il n'y en a plus et la requête est refusée (404 PriceFloorNotFoundError) avant toute écriture ni tout acte",
+  )
   async removeFloor(
     @Param("scopeType") scopeType: string,
     @Param("scopeId") scopeId: string,

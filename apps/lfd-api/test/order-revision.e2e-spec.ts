@@ -40,6 +40,7 @@ import { poseSiteDiscount } from "./promotion-fixtures.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { untilWaiters } from "./day-lock-race.js";
 import { cardProvidersOverride } from "./card-payments.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const DAY = serviceDay(7);
 const NEXT_DAY = serviceDay(8);
@@ -138,6 +139,7 @@ async function scene(options: { readonly discounted?: boolean } = {}): Promise<S
   const placed = jsonBody<AdminPlacedOrderResponse>(
     await staff()
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         companyId: company.id,
         buyerUserId: user.id,

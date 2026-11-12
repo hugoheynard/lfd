@@ -44,6 +44,7 @@ import {
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const DAY = serviceDay(7);
 const BUYER = "auth0|acheteur-demande-modif";
@@ -150,6 +151,7 @@ async function scene(late = true): Promise<Scene> {
   const placed = jsonBody<AdminPlacedOrderResponse>(
     await staff()
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         companyId: company.id,
         buyerUserId: user.id,

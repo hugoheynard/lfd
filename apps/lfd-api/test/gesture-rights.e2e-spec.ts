@@ -23,6 +23,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const DAY = serviceDay();
 
@@ -65,7 +66,7 @@ async function holderOf(key: string, grants: readonly RoleGrant[]): Promise<requ
 type Call = (agent: request.Agent) => request.Test;
 
 const ROUTES = {
-  placeOrder: (agent) => agent.post("/admin/orders").send({}),
+  placeOrder: (agent) => agent.post("/admin/orders").set(INTENT_KEY, freshIntent()).send({}),
   quote: (agent) => agent.post("/admin/orders/quote").send({}),
   draft: (agent) => agent.get("/admin/order-drafts/societe-inconnue"),
   listOrders: (agent) => agent.get("/admin/orders"),

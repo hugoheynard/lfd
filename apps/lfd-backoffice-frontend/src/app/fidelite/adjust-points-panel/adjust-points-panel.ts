@@ -13,6 +13,10 @@ import { httpErrorMessage } from '@lfd/endpoints';
 
 import { formatPoints, holderName } from '../loyalty-format';
 import { LoyaltyService } from '../loyalty.service';
+import { GestureIntents } from '../../shared/gesture-intents';
+
+/** Le sujet de l'intention : un seul ajustement par panneau ouvert. */
+const ADJUST_INTENT = 'adjust';
 
 /** Charge d'ouverture : le titulaire visé et son solde tel que la liste le montre. */
 export interface AdjustPointsPanelData {
@@ -47,6 +51,11 @@ export interface AdjustPointsPanelData {
 export class AdjustPointsPanel {
   private readonly api = inject(LoyaltyService);
   private readonly ref = inject(FoldPanelRef<boolean>);
+  /**
+   * L'intention d'ajuster : une clé tirée au premier clic, renvoyée jusqu'au
+   * succès — un double clic ne crédite pas deux fois.
+   */
+  private readonly intents = new GestureIntents();
 
   readonly data = input<AdjustPointsPanelData | undefined>(undefined);
 
@@ -107,12 +116,16 @@ export class AdjustPointsPanel {
     this.saving.set(true);
     this.error.set(null);
     try {
-      await this.api.adjust({
-        holderKind: data.holder.kind,
-        holderId: data.holder.id,
-        points: delta,
-        reason: this.trimmed(),
-      });
+      await this.api.adjust(
+        {
+          holderKind: data.holder.kind,
+          holderId: data.holder.id,
+          points: delta,
+          reason: this.trimmed(),
+        },
+        this.intents.keyFor(ADJUST_INTENT),
+      );
+      this.intents.done(ADJUST_INTENT);
       this.ref.close(true);
     } catch (caught) {
       this.error.set(httpErrorMessage(caught, "L'ajustement n'a pas pu être enregistré."));

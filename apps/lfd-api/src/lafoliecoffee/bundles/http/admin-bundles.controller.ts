@@ -24,6 +24,7 @@ import { WithdrawBundleCommand } from "../application/commands/withdraw-bundle.c
 import { GetBundleQuery } from "../application/queries/get-bundle.query.js";
 import { ListBundlesQuery } from "../application/queries/list-bundles.query.js";
 import { SearchBundleChoicesQuery } from "../application/queries/search-bundle-choices.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 const searchTermSchema = z.string().optional();
 
@@ -68,6 +69,9 @@ export class AdminBundlesController {
   }
 
   @Post("bundles")
+  @Idempotent(
+    "création : rejouée, la clé tirée du nom est déjà prise et le cas d'usage refuse (409 BundleKeyTakenError) avant tout tirage d'identifiant ni écriture ; l'index unique tient la course entre deux onglets",
+  )
   async create(
     @Body(new ZodBody(createBundlePayloadSchema)) body: CreateBundlePayload,
     @StaffUserId() staffUserId: string,
@@ -80,6 +84,9 @@ export class AdminBundlesController {
 
   /** Nom et description. */
   @Put("bundles/:key/presentation")
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête laisse le nom et la description inchangés, et le handler rend avant toute écriture ni tout fait",
+  )
   async editPresentation(
     @Param("key") key: string,
     @Body(new ZodBody(editBundlePresentationPayloadSchema)) body: EditBundlePresentationPayload,
@@ -93,6 +100,9 @@ export class AdminBundlesController {
 
   /** Les groupes et leurs choix, ENTIERS, dans l'ordre voulu. */
   @Put("bundles/:key/composition")
+  @Idempotent(
+    "pose des valeurs : rejouée, la même composition laisse les groupes inchangés, et le handler rend avant toute écriture ni tout fait",
+  )
   async saveComposition(
     @Param("key") key: string,
     @Body(new ZodBody(saveBundleCompositionPayloadSchema)) body: SaveBundleCompositionPayload,
@@ -105,6 +115,9 @@ export class AdminBundlesController {
   }
 
   @Put("bundles/:key/withdraw")
+  @Idempotent(
+    "transition : rejouée sur une formule retirée, l'agrégat refuse (409 BundleAlreadyWithdrawnError) avant toute écriture ni tout fait",
+  )
   async withdraw(
     @Param("key") key: string,
     @StaffUserId() staffUserId: string,
@@ -116,6 +129,9 @@ export class AdminBundlesController {
   }
 
   @Put("bundles/:key/draft")
+  @Idempotent(
+    "transition : rejouée sur une formule en brouillon, l'agrégat refuse (409 BundleAlreadyDraftError) avant toute écriture ni tout fait",
+  )
   async returnToDraft(
     @Param("key") key: string,
     @StaffUserId() staffUserId: string,

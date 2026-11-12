@@ -27,6 +27,7 @@ import { passedLimit } from "./order-cutoff-scene.js";
 import { bootstrapE2e, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const MEMBER = "auth0|membre";
 const STAFF = "staff-e2e";
@@ -632,6 +633,7 @@ describe("la dérogation, seul chemin de sortie", () => {
     const response = await ctx
       .asSub(STAFF)
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         companyId,
         buyerUserId: buyerId,

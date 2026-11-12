@@ -4,6 +4,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { ArticleSaleUnits } from "../../../catalog/application/article-sale-units.service.js";
 import { ReservedArticleGuard } from "../../../catalog/application/reserved-article-guard.service.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { sameOccurrenceOverride } from "../../domain/entities/subscription.js";
 import { SubscriptionOccurrenceOverriddenEvent } from "../../domain/events/subscription-acts.events.js";
 import { SubscriptionRepository } from "../../domain/ports/subscription.repository.js";
 import { IsoDate } from "../../domain/value-objects/iso-date.js";
@@ -19,6 +20,10 @@ import { UpsertOccurrenceOverrideCommand } from "./upsert-occurrence-override.co
  *
  * Journalisé dans la transaction de l'écriture (depuis le 2026-09-19), avec la
  * dérogation que celle-ci remplace sur la même date.
+ *
+ * **Rien à faire** quand la dérogation demandée est celle déjà posée (toutes
+ * ses valeurs, note comprise) : ni écriture, ni fait — un rejeu ne journalise
+ * pas un changement qui n'a pas eu lieu.
  */
 @CommandHandler(UpsertOccurrenceOverrideCommand)
 export class UpsertOccurrenceOverrideHandler implements ICommandHandler<
@@ -65,6 +70,9 @@ export class UpsertOccurrenceOverrideHandler implements ICommandHandler<
           ),
       note: payload.note,
     });
+    if (sameOccurrenceOverride(before, after)) {
+      return;
+    }
     await this.uow.run(async () => {
       await this.subscriptions.save(subscription);
       await this.events.publishTraced(

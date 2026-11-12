@@ -11,6 +11,7 @@ import { E2E_STAFF_ID, E2E_STAFF_SUB } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { pickupSite, placeOrder, placeOrderForCustomer } from "./order-factory.js";
 import { context, DAY, scene } from "./order-staff-cancel-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /**
  * **Les commandes de la scène d'annulation staff**, passées par le vrai
@@ -178,6 +179,7 @@ export async function seedFreeOrder(): Promise<SeededOrder> {
   await ctx
     .asSub(E2E_STAFF_SUB)
     .post("/admin/loyalty/adjustments")
+    .set(INTENT_KEY, freshIntent())
     .send({ holderKind: "user", holderId: user.id, points: 1_000, reason: "reprise" })
     .expect(204);
   const voucherId = await ctx.app

@@ -38,6 +38,7 @@ import {
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const DAY = serviceDay(7);
 const NEXT_DAY = serviceDay(8);
@@ -119,6 +120,7 @@ function content(pickupId: string, quantity: number): Record<string, unknown> {
 async function placeOnAccount(where: Scene, quantity = 10): Promise<string> {
   const response = await staff()
     .post("/admin/orders")
+    .set(INTENT_KEY, freshIntent())
     .send({
       companyId: where.companyId,
       buyerUserId: where.buyerUserId,

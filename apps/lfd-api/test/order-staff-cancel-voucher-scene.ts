@@ -10,6 +10,7 @@ import { Clock } from "../src/platform/time/clock.js";
 import { E2E_STAFF_SUB, jsonBody } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 import { bootScene, context, DAY } from "./order-staff-cancel-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /**
  * **La scène du bon à l'annulation** (doc
@@ -63,6 +64,7 @@ export async function fidelity(points = 3_000): Promise<string> {
   await ctx
     .asSub(E2E_STAFF_SUB)
     .post("/admin/loyalty/adjustments")
+    .set(INTENT_KEY, freshIntent())
     .send({ holderKind: "user", holderId: user.id, points, reason: "reprise" })
     .expect(204);
   return user.id;

@@ -26,6 +26,7 @@ import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./
 import { posePromotion, promotionTerms } from "./promotion-fixtures.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /**
  * Le jour de **service** d'une commande de test. Obligatoire depuis que
@@ -146,6 +147,7 @@ describe("POST /admin/orders — le mur", () => {
 
     await staff()
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send(payload({ companyId, buyerUserId: outsider.id }))
       .expect(404);
 
@@ -157,6 +159,7 @@ describe("POST /admin/orders — le mur", () => {
 
     await staff()
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send(payload({ buyerUserId: buyerId }))
       .expect(400);
   });
@@ -166,6 +169,7 @@ describe("POST /admin/orders — le mur", () => {
 
     await staff()
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({ ...payload({ companyId, buyerUserId: buyerId }), settlement: undefined })
       .expect(400);
   });
@@ -188,6 +192,7 @@ describe("POST /admin/orders — le mur", () => {
 
     const refused = await staff()
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({ ...payload({ companyId, buyerUserId: buyerId }), requestedWindow: undefined })
       .expect(400);
 
@@ -204,6 +209,7 @@ describe("POST /admin/orders — le mur", () => {
 
     await staff()
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({ ...payload({ companyId, buyerUserId: buyerId }), requestedWindow: null })
       .expect(400);
   });
@@ -223,6 +229,7 @@ describe("POST /admin/orders — le mur", () => {
 
     const refused = await staff()
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         ...payload({ companyId, buyerUserId: buyerId }),
         fulfillmentMethod: "delivery",
@@ -251,6 +258,7 @@ describe("POST /admin/orders — la trace", () => {
     const placed = jsonBody<AdminPlacedOrderResponse>(
       await staff()
         .post("/admin/orders")
+        .set(INTENT_KEY, freshIntent())
         .send(payload({ companyId, buyerUserId: buyerId, settlement: "account" }))
         .expect(201),
     );
@@ -271,6 +279,7 @@ describe("POST /admin/orders — la trace", () => {
     const placed = jsonBody<AdminPlacedOrderResponse>(
       await staff()
         .post("/admin/orders")
+        .set(INTENT_KEY, freshIntent())
         .send(payload({ companyId, buyerUserId: buyerId, settlement: "account" }))
         .expect(201),
     );
@@ -284,6 +293,7 @@ describe("POST /admin/orders — la trace", () => {
     const { companyId, buyerId } = await seedCompany(true);
     await staff()
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send(payload({ companyId, buyerUserId: buyerId, settlement: "account" }))
       .expect(201);
 
@@ -303,6 +313,7 @@ describe("POST /admin/orders — le règlement", () => {
     const placed = jsonBody<AdminPlacedOrderResponse>(
       await staff()
         .post("/admin/orders")
+        .set(INTENT_KEY, freshIntent())
         .send(payload({ companyId, buyerUserId: buyerId, settlement: "account" }))
         .expect(201),
     );
@@ -320,6 +331,7 @@ describe("POST /admin/orders — le règlement", () => {
 
     await staff()
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send(payload({ companyId, buyerUserId: buyerId, settlement: "account" }))
       .expect(409);
 
@@ -332,6 +344,7 @@ describe("POST /admin/orders — le règlement", () => {
     const placed = jsonBody<AdminPlacedOrderResponse>(
       await staff()
         .post("/admin/orders")
+        .set(INTENT_KEY, freshIntent())
         .send(payload({ companyId, buyerUserId: buyerId, settlement: "link" }))
         .expect(201),
     );
@@ -352,6 +365,7 @@ describe("POST /admin/orders — le règlement", () => {
     const placed = jsonBody<AdminPlacedOrderResponse>(
       await staff()
         .post("/admin/orders")
+        .set(INTENT_KEY, freshIntent())
         .send(payload({ companyId, buyerUserId: buyerId, settlement: "link" }))
         .expect(201),
     );
@@ -368,6 +382,7 @@ describe("POST /admin/orders — le règlement", () => {
     const placed = jsonBody<AdminPlacedOrderResponse>(
       await staff()
         .post("/admin/orders")
+        .set(INTENT_KEY, freshIntent())
         .send(payload({ companyId, buyerUserId: buyerId, settlement: "link" }))
         .expect(201),
     );
@@ -387,6 +402,7 @@ describe("POST /admin/orders — le règlement", () => {
     const placed = jsonBody<AdminPlacedOrderResponse>(
       await staff()
         .post("/admin/orders")
+        .set(INTENT_KEY, freshIntent())
         .send(payload({ companyId, buyerUserId: buyerId, settlement: "account" }))
         .expect(201),
     );
@@ -404,6 +420,37 @@ describe("POST /admin/orders — le règlement", () => {
  * commande réelle** : c'est la seule assertion qui prouve que les deux chemins
  * n'ont pas divergé.
  */
+describe("POST /admin/orders — une fois par intention (Idempotency-Key)", () => {
+  /** Régression : un double clic sur « Valider » passait deux commandes et préparait deux liens. */
+  it("deux envois de même clé : une seule commande, la même réponse", async () => {
+    const { companyId, buyerId } = await seedCompany(false);
+    const key = freshIntent();
+    const body = payload({ companyId, buyerUserId: buyerId, settlement: "link" });
+
+    const first = jsonBody<AdminPlacedOrderResponse>(
+      await staff().post("/admin/orders").set(INTENT_KEY, key).send(body).expect(201),
+    );
+    const second = jsonBody<AdminPlacedOrderResponse>(
+      await staff().post("/admin/orders").set(INTENT_KEY, key).send(body).expect(201),
+    );
+
+    expect(second).toEqual(first);
+    expect(first.paymentUrl).toBeDefined();
+    expect(await ctx.prisma.order.count()).toBe(1);
+  });
+
+  it("refuse une passation sans clé, sans rien écrire", async () => {
+    const { companyId, buyerId } = await seedCompany(true);
+
+    await staff()
+      .post("/admin/orders")
+      .send(payload({ companyId, buyerUserId: buyerId, settlement: "account" }))
+      .expect(400);
+
+    expect(await ctx.prisma.order.count()).toBe(0);
+  });
+});
+
 describe("POST /admin/orders/quote — ce que ça coûtera", () => {
   it("rend le tarif du catalogue quand aucune règle ne joue", async () => {
     const { companyId } = await seedCompany(true);
@@ -486,6 +533,7 @@ describe("POST /admin/orders/quote — ce que ça coûtera", () => {
 
     await staff()
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send(payload({ companyId, buyerUserId: buyerId, settlement: "account" }))
       .expect(201);
 

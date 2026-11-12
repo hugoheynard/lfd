@@ -11,6 +11,7 @@ import {
   type DecisionCarry,
 } from "../../domain/entities/decision-carry-over.js";
 import { PricingRule } from "../../domain/entities/pricing-rule.js";
+import type { PriceRule } from "../../domain/price-rule.js";
 import { describeRule, ruleCitations } from "../../domain/pricing-act.js";
 import { CarriedDecisionNotFoundError } from "../../domain/pricing-errors.js";
 import { CarriedDecisionsReader } from "../../domain/ports/carried-decisions.reader.js";
@@ -68,16 +69,23 @@ export class CarryOverPriceRuleHandler implements ICommandHandler<
     const carry: DecisionCarry = { fromSku: command.fromSku, toSku: command.toSku };
     await assertDetachedFrom(this.lineage, carry);
     const now = this.clock.now();
-    const id = this.ids.next();
-    await this.uow.run(async () => {
+    return this.uow.run(async () => {
       await this.lock.acquire("price_rule", carry.toSku);
       const source = await this.rules.load(command.ruleId);
       if (source === null) {
         throw new CarriedDecisionNotFoundError("price_rule", command.ruleId);
       }
       assertRuleEditorOpen(source.asPriceRule.stage);
-      const rule = PricingRule.carriedFrom(id, source, carry, command.staffUserId, now);
-      await this.guard(rule, carry, now);
+      // Les gardes lisent la décision d'origine — le report en garde le public
+      // et la clé —, et l'identifiant n'est tiré qu'après : un rejeu ne tire rien.
+      await this.guard(source.asPriceRule, carry, now);
+      const rule = PricingRule.carriedFrom(
+        this.ids.next(),
+        source,
+        carry,
+        command.staffUserId,
+        now,
+      );
       const names = await ruleNamesOf(rule.asPriceRule, this.catalog, this.companies);
       await this.rules.save(rule, {
         subjectType: "rule",
@@ -90,13 +98,13 @@ export class CarryOverPriceRuleHandler implements ICommandHandler<
         subjectLabel: rule.label,
         ...ruleCitations(rule.asPriceRule, names),
       });
+      return rule.id;
     });
-    return id;
   }
 
   /** Ce que la nouvelle référence doit accepter : la vente (L5), la réservation, l'unicité du report. */
-  private async guard(rule: PricingRule, carry: DecisionCarry, now: Date): Promise<void> {
-    const { audience } = rule.asPriceRule;
+  private async guard(rule: PriceRule, carry: DecisionCarry, now: Date): Promise<void> {
+    const { audience } = rule;
     await assertOnSale(this.references, [carry.toSku], clienteleOfAudience(audience));
     if (audience.type === "company" && audience.id !== null) {
       await assertNotReservedElsewhere(this.reservations, audience.id, [carry.toSku]);
@@ -104,7 +112,7 @@ export class CarryOverPriceRuleHandler implements ICommandHandler<
     ensureNotYetCarried(
       "price_rule",
       carry,
-      ruleCarryKey(rule.asPriceRule),
+      ruleCarryKey(rule),
       await this.carried.carriedAudiences("price_rule", carry.fromSku, carry.toSku, now),
     );
   }

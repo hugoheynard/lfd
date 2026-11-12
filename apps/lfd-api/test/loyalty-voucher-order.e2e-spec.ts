@@ -49,6 +49,7 @@ import { cardPaid } from "./card-payments.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble } from "./order-factory.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /** Un palier : 1 000 points valent 5 € HT. */
 const SETTINGS: SetLoyaltySettingsPayload = {
@@ -121,6 +122,7 @@ async function holderWithVoucher(
   await ctx
     .asSub(E2E_STAFF_SUB)
     .post("/admin/loyalty/adjustments")
+    .set(INTENT_KEY, freshIntent())
     .send({ holderKind: "user", holderId: user.id, points: steps * 1_000, reason: "reprise" })
     .expect(204);
   const voucherId = await ctx.app

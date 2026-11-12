@@ -62,15 +62,22 @@ export class CarryOverVolumeLadderHandler implements ICommandHandler<
     const carry: DecisionCarry = { fromSku: command.fromSku, toSku: command.toSku };
     await assertDetachedFrom(this.lineage, carry);
     const now = this.clock.now();
-    const id = this.ids.next();
-    await this.uow.run(async () => {
+    return this.uow.run(async () => {
       await this.lock.acquire("volume_ladder", carry.toSku);
       const source = await this.ladders.load(command.ladderId);
       if (source === null) {
         throw new CarriedDecisionNotFoundError("volume_ladder", command.ladderId);
       }
-      const ladder = VolumeLadderAggregate.carriedFrom(id, source, carry, command.staffUserId, now);
-      await this.guard(ladder, carry, now);
+      // Les gardes lisent le palier d'origine — le report en garde le public —,
+      // et l'identifiant n'est tiré qu'après : un rejeu ne tire rien.
+      await this.guard(source, carry, now);
+      const ladder = VolumeLadderAggregate.carriedFrom(
+        this.ids.next(),
+        source,
+        carry,
+        command.staffUserId,
+        now,
+      );
       await this.ladders.pose(ladder, {
         subjectType: "ladder",
         subjectId: ladder.id,
@@ -81,8 +88,8 @@ export class CarryOverVolumeLadderHandler implements ICommandHandler<
         summary: describeLadder(ladder.asLadder),
         subjectLabel: ladder.label,
       });
+      return ladder.id;
     });
-    return id;
   }
 
   /** Ce que la nouvelle référence doit accepter : la vente (L5), la réservation, l'unicité du report. */

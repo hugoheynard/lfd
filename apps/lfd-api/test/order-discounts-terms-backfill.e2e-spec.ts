@@ -28,6 +28,7 @@ import {
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { posePromotion, promotionTerms } from "./promotion-fixtures.js";
 import { cardProvidersOverride } from "./card-payments.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const BUYER = "auth0|reprise-termes";
 
@@ -112,6 +113,7 @@ async function placedBeforeTerms(): Promise<{
   const orderId = jsonBody<AdminPlacedOrderResponse>(
     await staff()
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         companyId: company.id,
         buyerUserId: user.id,

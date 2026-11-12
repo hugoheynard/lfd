@@ -42,6 +42,7 @@ import {
   type GoldenScene,
 } from "./pricing-golden-master-scene.js";
 import { cardProvidersOverride } from "./card-payments.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const MINUTE_MS = 60_000;
 
@@ -193,6 +194,7 @@ describe("la passation compare le total vu (T2)", () => {
     const placed = await agents
       .as(E2E_STAFF_SUB)
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({ ...staffBody(scene, PICKUP, "account"), expectedTotalCents: seen });
 
     expect(placed.status).toBe(201);
@@ -201,6 +203,7 @@ describe("la passation compare le total vu (T2)", () => {
       await agents
         .as(E2E_STAFF_SUB)
         .post("/admin/orders")
+        .set(INTENT_KEY, freshIntent())
         .send({ ...staffBody(scene, PICKUP, "account"), expectedTotalCents: seen + 1 }),
       seen + 1,
       before,
@@ -331,6 +334,7 @@ describe("la passation compare le total vu (T2)", () => {
     await agents
       .as(E2E_STAFF_SUB)
       .post("/admin/loyalty/adjustments")
+      .set(INTENT_KEY, freshIntent())
       .send({ holderKind: "user", holderId: holder, points: 1_000, reason: "total vu" })
       .expect(204);
     const voucherId = await ctx.app

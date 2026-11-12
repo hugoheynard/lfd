@@ -39,8 +39,12 @@ export interface LoyaltyConversion {
   readonly steps: number;
   /** `null` = aucun réglage posé : le programme est fermé. */
   readonly settings: LoyaltySettings | null;
-  readonly voucherId: string;
-  readonly entryId: string;
+  /**
+   * Tire un identifiant — le bon d'abord, sa ligne de débit ensuite. Appelé
+   * seulement une fois toutes les gardes passées : un refus (solde changé,
+   * double clic) ne tire rien.
+   */
+  readonly nextId: () => string;
   readonly actorUserId: string;
   readonly at: Date;
   /**
@@ -139,14 +143,14 @@ export class LoyaltyAccount {
       throw new InsufficientLoyaltyPointsError(this.balanceValue, cost);
     }
     const voucher = LoyaltyVoucher.issue({
-      id: conversion.voucherId,
+      id: conversion.nextId(),
       holder: this.holder,
       steps,
       settings,
       issuedAt: conversion.at,
     });
     this.append({
-      id: conversion.entryId,
+      id: conversion.nextId(),
       kind: "converted",
       points: -cost,
       orderId: null,

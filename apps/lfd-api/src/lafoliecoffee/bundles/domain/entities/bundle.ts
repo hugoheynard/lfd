@@ -53,10 +53,7 @@ export class Bundle {
    */
   static create(input: CreateBundle, write: BundleWrite): Bundle {
     const name = boundedText(input.name, NAME_FIELD, BUNDLE_NAME_MAX_LENGTH);
-    const key = keyFrom(name);
-    if (key === "") {
-      throw new InvalidBundleTextError(NAME_FIELD, BUNDLE_NAME_MAX_LENGTH);
-    }
+    const key = Bundle.keyOf(input.name);
     const drafts = input.groups.map((group) => ({ key: null, ...group }));
     return new Bundle({
       id: input.id,
@@ -70,6 +67,21 @@ export class Bundle {
       writtenAt: write.at,
       writtenBy: write.by,
     });
+  }
+
+  /**
+   * La clé que porterait une formule de ce nom — la même règle que
+   * {@link create}, lisible avant elle : le cas d'usage confronte la clé aux
+   * autres sans avoir tiré d'identifiant.
+   *
+   * @throws {InvalidBundleTextError} nom vide, trop long, ou dont on ne tire aucune clé.
+   */
+  static keyOf(rawName: string): string {
+    const key = keyFrom(boundedText(rawName, NAME_FIELD, BUNDLE_NAME_MAX_LENGTH));
+    if (key === "") {
+      throw new InvalidBundleTextError(NAME_FIELD, BUNDLE_NAME_MAX_LENGTH);
+    }
+    return key;
   }
 
   /** Relue de la base : les invariants sont rejugés, une ligne corrompue lève. */

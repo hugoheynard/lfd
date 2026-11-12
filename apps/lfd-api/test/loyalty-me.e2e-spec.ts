@@ -31,6 +31,7 @@ import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble, handOver, payByCard, pickupSite, placeOrder } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /** Un palier : 1 000 points valent 5 € HT. */
 const SETTINGS: SetLoyaltySettingsPayload = {
@@ -82,6 +83,7 @@ async function personWith(sub: string, points: number): Promise<string> {
   if (points !== 0) {
     await staff()
       .post("/admin/loyalty/adjustments")
+      .set(INTENT_KEY, freshIntent())
       .send({ holderKind: "user", holderId: user.id, points, reason: "reprise du carnet papier" })
       .expect(204);
   }

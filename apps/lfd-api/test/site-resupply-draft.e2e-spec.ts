@@ -21,6 +21,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -130,6 +131,7 @@ function add(
 ): request.Test {
   return agent
     .post(`/admin/site-resupplies/sites/${siteId}/drafts/${target}/lines`)
+    .set(INTENT_KEY, freshIntent())
     .send({ sku, quantity });
 }
 
@@ -238,6 +240,25 @@ describe("la demande en cours", () => {
     // Le prochain ajout ouvre la demande de la journée en cours, à côté.
     await add(agent, siteId, "tomorrow", croissant.sku, 1).expect(201);
     expect((await draftOf(agent, siteId, "tomorrow")).id).not.toBe(stale.id);
+  });
+});
+
+describe("l'ajout, une fois par intention (Idempotency-Key)", () => {
+  /** Régression : la même requête d'ajout renvoyée doublait la quantité du brouillon. */
+  it("deux envois de même clé : la quantité ne s'additionne qu'une fois", async () => {
+    const agent = await counter();
+    const siteId = await seedSite("Val Village");
+    const [croissant] = await twoArticles(agent);
+    const key = freshIntent();
+    const route = `/admin/site-resupplies/sites/${siteId}/drafts/asap/lines`;
+    const body = { sku: croissant.sku, quantity: 4 };
+
+    const first = await agent.post(route).set(INTENT_KEY, key).send(body).expect(201);
+    const second = await agent.post(route).set(INTENT_KEY, key).send(body).expect(201);
+
+    expect(second.body).toEqual(first.body);
+    const draft = await draftOf(agent, siteId, "asap");
+    expect(draft.lines.map((line) => [line.sku, line.quantity])).toEqual([[croissant.sku, 4]]);
   });
 });
 

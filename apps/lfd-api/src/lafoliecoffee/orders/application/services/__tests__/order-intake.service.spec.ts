@@ -55,7 +55,7 @@ describe("OrderIntake.ensureOpenFor — exemptions", () => {
 
   it("laisse passer la société exemptée, et elle seule", async () => {
     const exempt = OrderOpeningExemption.grantToCompany({
-      id: "x1",
+      nextId: () => "x1",
       companyId: "c1",
       company: { name: "Chez Paul", status: "active" },
       active: [],
@@ -71,7 +71,7 @@ describe("OrderIntake.ensureOpenFor — exemptions", () => {
 
   it("lit l'adresse de la personne connectée et la compare sans la casse", async () => {
     const exempt = OrderOpeningExemption.grantToEmail({
-      id: "x1",
+      nextId: () => "x1",
       email: "jean@folie.fr",
       active: [],
       stamp: STAMP,
@@ -86,7 +86,7 @@ describe("OrderIntake.ensureOpenFor — exemptions", () => {
 
   it("laisse passer la commande sans compte dont l'adresse est exemptée", async () => {
     const exempt = OrderOpeningExemption.grantToEmail({
-      id: "x1",
+      nextId: () => "x1",
       email: GUEST.email,
       active: [],
       stamp: STAMP,
@@ -127,7 +127,7 @@ describe("OrderIntake — le premier jour commandable", () => {
 
   it("laisse passer l'adresse exemptée, boutique ouverte", async () => {
     const exempt = OrderOpeningExemption.grantToEmail({
-      id: "x1",
+      nextId: () => "x1",
       email: GUEST.email,
       active: [],
       stamp: STAMP,
@@ -175,7 +175,7 @@ describe("OrderIntake.admitStaffEntry", () => {
 
   it("laisse passer la société exemptée : l'exception passe par l'exemption", async () => {
     const exempt = OrderOpeningExemption.grantToCompany({
-      id: "x1",
+      nextId: () => "x1",
       companyId: "c1",
       company: { name: "Chez Paul", status: "active" },
       active: [],

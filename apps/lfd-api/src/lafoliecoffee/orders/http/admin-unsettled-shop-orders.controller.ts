@@ -7,6 +7,7 @@ import {
   ExpireUnsettledShopOrdersCommand,
   type UnsettledShopOrderExpiryReport,
 } from "../application/commands/expire-unsettled-shop-orders.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Endpoint **machine** de l'expiration des commandes boutique non réglées (plan
@@ -26,6 +27,9 @@ export class UnsettledShopOrdersController {
 
   @Post()
   @HttpCode(200)
+  @Idempotent(
+    "appelée par la machine sous RecomputeGuard : état relu ; rejouée, une commande déjà annulée n'est plus listée, l'annulation est conditionnée en base (canceller rend faux) et l'intention Stripe se rannule en already_cancelled",
+  )
   expire(): Promise<UnsettledShopOrderExpiryReport> {
     return this.commands.execute<ExpireUnsettledShopOrdersCommand, UnsettledShopOrderExpiryReport>(
       new ExpireUnsettledShopOrdersCommand(),

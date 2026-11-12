@@ -158,6 +158,7 @@ async function orderOnePart(
   const placed = jsonBody<AdminPlacedOrderResponse>(
     await staff()
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         companyId,
         buyerUserId: buyerId,

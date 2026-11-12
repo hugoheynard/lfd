@@ -377,6 +377,7 @@ async function onAccount(sku: string): Promise<string> {
   const placed = jsonBody<{ id: string }>(
     await staff()
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({ companyId: a, buyerUserId: buyerA, settlement: "account", ...content(sku) })
       .expect(201),
   );

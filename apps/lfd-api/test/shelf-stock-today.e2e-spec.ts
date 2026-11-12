@@ -18,6 +18,7 @@ import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { seedWeighedArticles } from "./weighed-catalog-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const CROISSANT = "VIE-001-1";
 const BREAD = "PAI-001-1";
@@ -133,6 +134,7 @@ async function openSameDay(over: Record<string, unknown> = {}): Promise<void> {
 async function closeToday(): Promise<void> {
   await staff()
     .post("/admin/orders")
+    .set(INTENT_KEY, freshIntent())
     .send({
       companyId: pro.companyId,
       buyerUserId: pro.userId,

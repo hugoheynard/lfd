@@ -60,7 +60,10 @@ export class SiteResuppliesStore {
 
   /** Ajoute à la demande en cours de la visée. Rend vrai si le serveur l'a acceptée. */
   addLine(target: ResupplyTarget, sku: string, quantity: number): Promise<boolean> {
-    return this.act((siteId) => this.service.addLine(siteId, target, sku, quantity));
+    // Une clé par geste voulu, tirée au clic : deux « +1 » cumulent, la même
+    // requête renvoyée non.
+    const intentKey = crypto.randomUUID();
+    return this.act((siteId) => this.service.addLine(siteId, target, sku, quantity, intentKey));
   }
 
   /** Nomme la demande en cours de la visée (R1g) ; vide retire le nom. */
@@ -78,6 +81,7 @@ export class SiteResuppliesStore {
    * on a cliqué : un « −1 » qui suit une saisie part de la saisie écrite.
    */
   setLine(target: ResupplyTarget, sku: string, wanted: number): Promise<boolean> {
+    const intentKey = crypto.randomUUID();
     return this.act((siteId) => {
       const view = this.view();
       const day = target === 'asap' ? view?.today : view?.tomorrow;
@@ -87,7 +91,7 @@ export class SiteResuppliesStore {
         return Promise.resolve();
       }
       if (draft === null || current === 0) {
-        return this.service.addLine(siteId, target, sku, wanted);
+        return this.service.addLine(siteId, target, sku, wanted, intentKey);
       }
       return wanted === 0
         ? this.service.withdrawLine(siteId, draft.id, sku, draft.version)

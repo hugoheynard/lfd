@@ -11,6 +11,7 @@ import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { GetOrderCutoffSettingsQuery } from "../application/get-order-cutoff-settings.query.js";
 import { UpdateOrderCutoffSettingsCommand } from "../application/update-order-cutoff-settings.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Le **jour même** — Réglages › Commandes › Jour même (§8.3 ; sa page depuis
@@ -41,6 +42,9 @@ export class AdminOrderCutoffSettingsController {
 
   @Patch()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête trouve un réglage égal (sameAs) et ne sauve ni ne journalise",
+  )
   async update(
     @Body(new ZodBody(orderCutoffSettingsPatchSchema)) patch: OrderCutoffSettingsPatch,
     @StaffUserId() staffUserId: string,

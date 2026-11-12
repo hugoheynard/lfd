@@ -22,6 +22,7 @@ import {
 } from "../application/commands/revise-order.command.js";
 import { ListOrderRevisionsQuery } from "../application/queries/list-order-revisions.query.js";
 import { QuoteOrderRevisionQuery } from "../application/queries/quote-order-revision.query.js";
+import { Idempotent } from "../../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **L'équipe modifie une commande** (voir
@@ -59,6 +60,7 @@ export class AdminOrderRevisionsController {
   @Post(":id/revisions/quote")
   @RequirePermission("b2b_place_order:write")
   @HttpCode(HttpStatus.OK)
+  @Idempotent("calcul pur en POST : chiffre la révision en mémoire, n'écrit rien et n'envoie rien")
   async quote(
     @Param("id") id: string,
     @StaffUserId() staffUserId: string,
@@ -73,6 +75,9 @@ export class AdminOrderRevisionsController {
   @Post(":id/revisions")
   @RequirePermission("b2b_place_order:write")
   @HttpCode(HttpStatus.OK)
+  @Idempotent(
+    "par sa propre clé : expectedRevision, obligatoire au corps, rejugé sous le verrou de la commande ; rejouée, la révision l'a fait monter et la requête est refusée (409 OrderRevisedElsewhereError) avant toute écriture, tout fait ni tout remboursement",
+  )
   async revise(
     @Param("id") id: string,
     @StaffUserId() staffUserId: string,

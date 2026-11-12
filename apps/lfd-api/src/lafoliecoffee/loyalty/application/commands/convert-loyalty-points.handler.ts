@@ -57,8 +57,7 @@ export class ConvertLoyaltyPointsHandler implements ICommandHandler<
       const voucher = account.convert({
         steps: command.steps,
         settings,
-        voucherId: this.ids.next(),
-        entryId: this.ids.next(),
+        nextId: () => this.ids.next(),
         actorUserId: command.actorUserId,
         at: this.clock.now(),
         expectedBalance: command.expectedBalancePoints,

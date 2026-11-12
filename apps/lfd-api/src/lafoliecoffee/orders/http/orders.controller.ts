@@ -53,6 +53,7 @@ import { GetOrderSheetQuery } from "../application/queries/get-order-sheet.query
 import type { OrderSheetPdf } from "../application/services/order-sheet-archive.service.js";
 import { GetOrderSheetPdfQuery } from "../application/queries/get-order-sheet-pdf.query.js";
 import { ListPersonalOrdersQuery } from "../application/queries/list-personal-orders.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Commandes du **client connecté** — **zéro friction**.
@@ -73,6 +74,9 @@ export class OrdersController {
   /** Passe une commande (personnelle, ou pour une entreprise dont on est membre). */
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @Idempotent(
+    "par sa propre clé : OrderIdempotency (idempotencyKey obligatoire du corps, réclamée avec l'empreinte du panier) ; rejouée, la clé résolue rend la commande déjà passée sans rien réécrire ni republier, une passation en vol est refusée (409) et une autre charge sous la même clé aussi (IdempotencyKeyReusedError)",
+  )
   async place(
     @CurrentUser() user: Principal,
     @Body(new ZodBody(placeOrderPayloadSchema)) payload: PlaceOrderPayload,
@@ -122,6 +126,7 @@ export class OrdersController {
    */
   @Post("quote")
   @HttpCode(HttpStatus.OK)
+  @Idempotent("calcul pur en POST : chiffre la commande en mémoire, n'écrit rien et n'envoie rien")
   async quote(
     @CurrentUser() user: Principal,
     @Body(new ZodBody(orderQuotePayloadSchema)) payload: OrderQuotePayload,

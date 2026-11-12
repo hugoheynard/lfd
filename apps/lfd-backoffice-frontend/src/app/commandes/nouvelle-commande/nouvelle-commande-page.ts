@@ -1,4 +1,5 @@
 import { PermissionsStore } from '../../auth/permissions.store';
+import { GestureIntents } from '../../shared/gesture-intents';
 import { isBelowMinimumRefusal } from './below-minimum-refusal';
 import { isGraceRefusal } from './grace-refusal';
 import { isDeliveryClosedRefusal } from './delivery-closed-refusal';
@@ -151,6 +152,9 @@ const CART_DRAWER_MEDIA = '(max-width: 1279px)';
  * déjà une réponse.
  */
 
+/** Le sujet de l'intention de passer : une seule passation par écran. */
+const PLACE_INTENT = 'place';
+
 @Component({
   selector: 'app-nouvelle-commande-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -173,6 +177,12 @@ export class NouvelleCommandePage {
 
   private readonly companies = inject(AdminCompaniesService);
   private readonly orders = inject(AdminOrdersService);
+  /**
+   * L'intention de passer la commande : une clé tirée au premier clic sur
+   * « Valider », renvoyée tant que la passation n'a pas abouti (un double clic
+   * rend la même commande), oubliée au succès.
+   */
+  private readonly placeIntents = new GestureIntents();
   private readonly waivers = inject(OrderCutoffWaiversService);
   private readonly permissions = inject(PermissionsStore);
   private readonly catalogService = inject(AdminCatalogService);
@@ -729,11 +739,15 @@ export class NouvelleCommandePage {
     }
     this.submitting.set(true);
     try {
-      const placed = await this.orders.place({
-        ...placePayloadOf(this.id(), draft, this.cart.toPayloadLines(), this.origin),
-        // Le TTC de l'estimation affichée : la passation refuse un autre total.
-        expectedTotalCents: amounts.totalCents,
-      });
+      const placed = await this.orders.place(
+        {
+          ...placePayloadOf(this.id(), draft, this.cart.toPayloadLines(), this.origin),
+          // Le TTC de l'estimation affichée : la passation refuse un autre total.
+          expectedTotalCents: amounts.totalCents,
+        },
+        this.placeIntents.keyFor(PLACE_INTENT),
+      );
+      this.placeIntents.done(PLACE_INTENT);
       this.cart.clear();
       // La commande est partie : le brouillon mis de côté n'a plus d'objet, et
       // le laisser ferait rouvrir l'écran sur une commande déjà passée. Son

@@ -8,6 +8,7 @@ import { CommandBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { CarryOverPriceRuleCommand } from "../application/commands/carry-over-price-rule.command.js";
 import { CarryOverVolumeLadderCommand } from "../application/commands/carry-over-volume-ladder.command.js";
@@ -29,6 +30,9 @@ export class AdminPricingCarryOverController {
   /** Rend l'identifiant de la règle posée sur `toSku`. */
   @Post("rules/:id/carry-over")
   @HttpCode(HttpStatus.CREATED)
+  @Idempotent(
+    "report : rejoué, la décision est déjà reportée sur la nouvelle référence et le cas d'usage refuse (409 DecisionAlreadyCarriedError) sous le verrou du report, avant tout tirage d'identifiant ni écriture",
+  )
   async carryOverRule(
     @Param("id") id: string,
     @Body(new ZodBody(carryOverDecisionPayloadSchema)) payload: CarryOverDecisionPayload,
@@ -49,6 +53,9 @@ export class AdminPricingCarryOverController {
   /** Rend l'identifiant du barème posé sur `toSku`. */
   @Post("volume-ladders/:id/carry-over")
   @HttpCode(HttpStatus.CREATED)
+  @Idempotent(
+    "report : rejoué, la décision est déjà reportée sur la nouvelle référence et le cas d'usage refuse (409 DecisionAlreadyCarriedError) sous le verrou du report, avant tout tirage d'identifiant ni écriture",
+  )
   async carryOverLadder(
     @Param("id") id: string,
     @Body(new ZodBody(carryOverDecisionPayloadSchema)) payload: CarryOverDecisionPayload,

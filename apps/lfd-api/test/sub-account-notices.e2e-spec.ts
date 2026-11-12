@@ -34,6 +34,7 @@ import {
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { enableNotices } from "./sub-account-notice-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const SERVICE_DAY = serviceDay();
 const TEMPLATE = "customer.sub-account-activity";
@@ -363,6 +364,7 @@ describe("une commande saisie par l'équipe pour un site", () => {
     await ctx
       .asSub(E2E_STAFF_SUB)
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         companyId: g.site,
         buyerUserId: buyer.id,

@@ -13,6 +13,7 @@ import type { Principal } from "../../../platform/auth/principal.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { SaveShopCartCommand } from "../application/commands/save-shop-cart.command.js";
 import { GetShopCartQuery } from "../application/queries/get-shop-cart.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Le panier en cours du client**, gardé chez nous — un par espace de travail.
@@ -82,6 +83,9 @@ export class ShopCartController {
 
   /** Met le panier de l'espace de côté. Propriétaire et espace viennent de la porte. */
   @Put()
+  @Idempotent(
+    "pose le panier : upsert sur (personne, espace) ; rejouée, la même ligne reçoit le même contenu, sans fait ni effet",
+  )
   async save(
     @CurrentUser() user: Principal,
     @ActingCompany() companyId: string | null,

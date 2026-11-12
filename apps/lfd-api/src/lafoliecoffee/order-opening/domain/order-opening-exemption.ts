@@ -61,7 +61,7 @@ export class OrderOpeningExemption {
    * @throws {AlreadyExemptError} elle est déjà exemptée.
    */
   static grantToCompany(input: {
-    readonly id: string;
+    readonly nextId: () => string;
     readonly companyId: string;
     readonly company: CompanyCandidate | null;
     readonly active: readonly OrderOpeningExemption[];
@@ -79,7 +79,7 @@ export class OrderOpeningExemption {
       companyId: input.companyId,
       companyName: company.name,
     };
-    return OrderOpeningExemption.grant(input.id, target, input.active, input.stamp);
+    return OrderOpeningExemption.grant(input.nextId, target, input.active, input.stamp);
   }
 
   /**
@@ -87,7 +87,7 @@ export class OrderOpeningExemption {
    * @throws {AlreadyExemptError} elle est déjà exemptée.
    */
   static grantToEmail(input: {
-    readonly id: string;
+    readonly nextId: () => string;
     readonly email: string;
     readonly active: readonly OrderOpeningExemption[];
     readonly stamp: ExemptionStamp;
@@ -96,7 +96,7 @@ export class OrderOpeningExemption {
       kind: "email",
       email: EmailAddress.create(input.email).value,
     };
-    return OrderOpeningExemption.grant(input.id, target, input.active, input.stamp);
+    return OrderOpeningExemption.grant(input.nextId, target, input.active, input.stamp);
   }
 
   /** Relit une exemption écrite : la cible a été contrôlée à l'ajout. */
@@ -109,17 +109,22 @@ export class OrderOpeningExemption {
     return new OrderOpeningExemption(input.id, input.target, input.granted, input.withdrawn);
   }
 
+  /**
+   * L'identifiant n'est tiré (`nextId`) qu'une fois le doublon écarté : un
+   * ajout rejoué est refusé sans rien tirer.
+   */
   private static grant(
-    id: string,
+    nextId: () => string,
     target: ExemptionTarget,
     active: readonly OrderOpeningExemption[],
     stamp: ExemptionStamp,
   ): OrderOpeningExemption {
-    const candidate = new OrderOpeningExemption(id, target, stamp, null);
-    if (active.some((existing) => existing.isActive() && existing.sameTarget(candidate))) {
-      throw new AlreadyExemptError(candidate.label);
+    if (
+      active.some((existing) => existing.isActive() && sameExemptionTarget(existing.target, target))
+    ) {
+      throw new AlreadyExemptError(target.kind === "company" ? target.companyName : target.email);
     }
-    return candidate;
+    return new OrderOpeningExemption(nextId(), target, stamp, null);
   }
 
   get withdrawn(): ExemptionStamp | null {
@@ -157,15 +162,6 @@ export class OrderOpeningExemption {
     }
     return party.email !== null && normalizedEmail(party.email) === this.target.email;
   }
-
-  private sameTarget(other: OrderOpeningExemption): boolean {
-    const mine = this.target;
-    const theirs = other.target;
-    if (mine.kind === "company" && theirs.kind === "company") {
-      return mine.companyId === theirs.companyId;
-    }
-    return mine.kind === "email" && theirs.kind === "email" && mine.email === theirs.email;
-  }
 }
 
 /**
@@ -176,4 +172,12 @@ export class OrderOpeningExemption {
  */
 function normalizedEmail(raw: string): string {
   return raw.trim().toLowerCase();
+}
+
+/** Deux cibles désignent la même société, ou la même adresse. */
+function sameExemptionTarget(mine: ExemptionTarget, theirs: ExemptionTarget): boolean {
+  if (mine.kind === "company" && theirs.kind === "company") {
+    return mine.companyId === theirs.companyId;
+  }
+  return mine.kind === "email" && theirs.kind === "email" && mine.email === theirs.email;
 }

@@ -218,6 +218,17 @@ describe('ResupplyStockTable', () => {
     ]);
   });
 
+  /** Régression : la même requête d'ajout renvoyée doublait la quantité — chaque geste porte sa clé. */
+  it('chaque ajout voulu porte sa propre clé d’intention', async () => {
+    const { resupplies } = await mount();
+
+    await store().addLine('asap', 'CRO', 1);
+    await store().addLine('asap', 'CRO', 1);
+
+    expect(resupplies.addKeys).toHaveLength(2);
+    expect(resupplies.addKeys[0]).not.toBe(resupplies.addKeys[1]);
+  });
+
   it('un seul « Envoyer », pour la visée affichée', async () => {
     const { fixture, table, resupplies } = await mount();
 

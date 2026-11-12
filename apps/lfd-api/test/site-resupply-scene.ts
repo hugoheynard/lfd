@@ -2,6 +2,7 @@ import type { ResupplyTarget, SiteResuppliesView } from "@lfd/contracts";
 import type request from "supertest";
 
 import { jsonBody, type E2eContext } from "./e2e-harness.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /**
  * Le geste du comptoir pour envoyer un réassort, par ses vraies routes (lot
@@ -19,6 +20,7 @@ export async function counterSends(
   for (const line of lines) {
     const added = await agent
       .post(`/admin/site-resupplies/sites/${siteId}/drafts/${target}/lines`)
+      .set(INTENT_KEY, freshIntent())
       .send(line)
       .expect(201);
     id = jsonBody<{ id: string }>(added).id;

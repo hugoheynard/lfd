@@ -7,6 +7,7 @@ import {
   ReconcileDeliveryNotesCommand,
   type DeliveryNoteReconciliationReport,
 } from "../application/commands/reconcile-delivery-notes.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Endpoint **machine** du réconciliateur des bons de livraison (plan
@@ -22,6 +23,9 @@ export class DeliveryNotesReconcileController {
 
   @Post()
   @HttpCode(200)
+  @Idempotent(
+    "appelée par la machine sous RecomputeGuard : réconciliation, état relu ; rejouée, chaque bon de livraison déjà aligné et chaque solde déjà posé est compté sans écriture",
+  )
   sweep(): Promise<DeliveryNoteReconciliationReport> {
     return this.commands.execute<ReconcileDeliveryNotesCommand, DeliveryNoteReconciliationReport>(
       new ReconcileDeliveryNotesCommand(),

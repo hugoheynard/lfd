@@ -10,6 +10,7 @@ import { AdminSurface, RequirePermission } from "../../../platform/auth/admin-su
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { EstimateOrderForCustomerQuery } from "../application/queries/estimate-order-for-customer.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Ce que la saisie de l'équipe coûterait, au centime**, avant de la passer
@@ -33,6 +34,9 @@ export class AdminOrderEstimatesController {
   @Post("estimate")
   @RequirePermission("b2b_place_order:write")
   @HttpCode(HttpStatus.OK)
+  @Idempotent(
+    "calcul pur en POST : compose le devis de la commande en mémoire, n'écrit rien et n'envoie rien",
+  )
   async estimate(
     @StaffUserId() staffUserId: string,
     @Body(new ZodBody(adminOrderEstimatePayloadSchema)) payload: AdminOrderEstimatePayload,

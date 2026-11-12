@@ -31,6 +31,7 @@ import { ReceiveUnorderedReceiptLineCommand } from "../application/receive-unord
 import { ReceiveSiteResupplyCommand } from "../application/receive-site-resupply.command.js";
 import { WithdrawUnorderedReceiptLineCommand } from "../application/withdraw-unordered-receipt-line.command.js";
 import { skuParam } from "./resupply-params.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **La réception du réapprovisionnement** — Comptoir › Réassort boutique
@@ -76,6 +77,9 @@ export class AdminResupplyReceiptsController {
   @Post(":siteId/resupplies/:resupplyId/receive")
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission("handover_counter:write")
+  @Idempotent(
+    "rejouée, la réception du réassort existe déjà et le handler rend avant toute écriture",
+  )
   async receiveResupply(
     @Param("siteId") siteId: string,
     @Param("resupplyId") resupplyId: string,
@@ -90,6 +94,9 @@ export class AdminResupplyReceiptsController {
   @Patch(":siteId/resupplies/:resupplyId/lines/:sku")
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission("handover_counter:write")
+  @Idempotent(
+    "pose une quantité reçue absolue : rejouée, la même requête repose la même quantité, sans fait ni effet",
+  )
   async correctReceived(
     @Param("siteId") siteId: string,
     @Param("resupplyId") resupplyId: string,
@@ -119,6 +126,9 @@ export class AdminResupplyReceiptsController {
   @Patch(":siteId/:day/lines/:sku")
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission("handover_counter:write")
+  @Idempotent(
+    "pose une quantité reçue absolue : rejouée, la même requête repose la même quantité, sans fait ni effet",
+  )
   async correct(
     @Param("siteId") siteId: string,
     @Param("day", new ZodQuery(resupplyServiceDaySchema)) day: string,
@@ -134,6 +144,9 @@ export class AdminResupplyReceiptsController {
   @Delete(":siteId/:day/lines/:sku")
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission("handover_counter:write")
+  @Idempotent(
+    "retire un article reçu sans commande : rejouée, il n'y est plus et l'agrégat refuse (404 ReceiptLineNotFoundError) avant toute écriture",
+  )
   async withdraw(
     @Param("siteId") siteId: string,
     @Param("day", new ZodQuery(resupplyServiceDaySchema)) day: string,

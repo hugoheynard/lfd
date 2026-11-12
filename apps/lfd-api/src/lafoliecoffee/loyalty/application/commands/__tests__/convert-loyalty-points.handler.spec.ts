@@ -1,6 +1,6 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
-import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
+import { CountingIdGenerator } from "../../../../../platform/id/__tests__/counting-id-generator.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
   InsufficientLoyaltyPointsError,
@@ -27,7 +27,10 @@ const NOW = new Date("2026-01-10T09:00:00.000Z");
 const PERSON = LoyaltyHolder.of("user", "u1");
 const COMPANY = LoyaltyHolder.of("company", "c1");
 
-function setup(settings: LoyaltySettingsInput | null = OPEN_TO_PUBLIC) {
+function setup(
+  settings: LoyaltySettingsInput | null = OPEN_TO_PUBLIC,
+  ids: CountingIdGenerator = new CountingIdGenerator("id"),
+) {
   const ledger = new InMemoryLedger();
   const vouchers = new InMemoryVouchers();
   const events = new RecordingPublisher();
@@ -37,7 +40,7 @@ function setup(settings: LoyaltySettingsInput | null = OPEN_TO_PUBLIC) {
     vouchers,
     new FixedGate(["user:u1>u1", "company:c1>u2"]),
     new FixedHolders({ "user:u1": "Léa Martin", "company:c1": "Boulangerie Dupont" }),
-    new FixedIdGenerator("id"),
+    ids,
     new FixedClock(NOW),
     events,
     new DirectUnitOfWork(),
@@ -134,5 +137,21 @@ describe("ConvertLoyaltyPointsHandler — des points contre un bon", () => {
     expect(ledger.balanceOf(PERSON)).toBe(1_340);
     // Le refus vient APRÈS le verrou : c'est le solde relu qui tranche.
     expect(ledger.calls.filter((call) => call.startsWith("lock:"))).toHaveLength(2);
+  });
+});
+
+describe("ConvertLoyaltyPointsHandler — rejeu", () => {
+  /** Régression : les identifiants du bon et du débit étaient tirés avant le refus du double clic. */
+  it("un double clic (solde vu périmé) est refusé sans tirer d'identifiant", async () => {
+    const ids = new CountingIdGenerator("id");
+    const { handler, ledger } = setup(OPEN_TO_PUBLIC, ids);
+    ledger.seedEarned(PERSON, 2_340);
+    await handler.execute(new ConvertLoyaltyPointsCommand("user", "u1", "u1", 1, 2_340));
+    const drawn = ids.drawn;
+
+    await expect(
+      handler.execute(new ConvertLoyaltyPointsCommand("user", "u1", "u1", 1, 2_340)),
+    ).rejects.toBeInstanceOf(LoyaltyBalanceChangedError);
+    expect(ids.drawn).toBe(drawn);
   });
 });

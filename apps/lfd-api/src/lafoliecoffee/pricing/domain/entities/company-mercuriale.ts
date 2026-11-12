@@ -44,6 +44,9 @@ export type {
   GeneralDiscountRule,
 } from "./general-discount.js";
 
+/** L'identifiant provisoire sous lequel un report est jugé avant d'être tiré. */
+const JUDGED_CARRY_OVER_ID = "carry-over-being-judged";
+
 /**
  * **La mercuriale d'un client, en tant qu'agrégat.**
  *
@@ -212,11 +215,18 @@ export class CompanyMercuriale {
    * **Reporter** sur la référence née d'un détachement le prix que l'ancienne
    * porte ici — un avenant dont l'origine est dite (cf. {@link carryOverDraft}).
    *
+   * L'avenant est d'abord jugé sous un identifiant provisoire — comme
+   * l'aperçu d'un avenant —, et `nextId` n'est tiré qu'une fois tous les
+   * refus passés : un report rejoué (le doublon) ne tire rien. Le jugement est
+   * pur, la seconde passe rend le même état sous le vrai identifiant.
+   *
    * @throws {NoNegotiatedLineToCarryError} l'ancienne référence n'a plus de prix ici.
    * @throws les refus de {@link amend}, dont le doublon.
    */
-  carryOver(id: string, carry: CarryOver, by: string, now: Date): CompanyMercuriale {
-    return this.amend(id, carryOverDraft(this.state, carry, now), by, now);
+  carryOver(nextId: () => string, carry: CarryOver, by: string, now: Date): CompanyMercuriale {
+    const draft = carryOverDraft(this.state, carry, now);
+    this.amend(JUDGED_CARRY_OVER_ID, draft, by, now);
+    return this.amend(nextId(), draft, by, now);
   }
 
   /**

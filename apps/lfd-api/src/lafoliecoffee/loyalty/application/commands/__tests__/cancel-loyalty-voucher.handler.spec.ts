@@ -1,6 +1,6 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
-import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
+import { CountingIdGenerator } from "../../../../../platform/id/__tests__/counting-id-generator.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
   LoyaltyVoucherExpiredError,
@@ -23,6 +23,11 @@ const ISSUED = new Date("2026-01-10T09:00:00.000Z");
 const DAY = 86_400_000;
 const PERSON = LoyaltyHolder.of("user", "u1");
 
+/** Les identifiants tirés dans l'ordre : le bon, puis sa ligne. */
+function idsOf(...ids: string[]): () => string {
+  return () => ids.shift() ?? "id-de-trop";
+}
+
 /** Un bon de 2 paliers, converti depuis 2 000 points — le livre est à zéro. */
 function setup(now: Date = ISSUED) {
   const ledger = new InMemoryLedger();
@@ -32,8 +37,7 @@ function setup(now: Date = ISSUED) {
   const voucher = account.convert({
     steps: 2,
     settings: LoyaltySettings.of({ ...OPEN_TO_PUBLIC, voucherValidityDays: 30 }),
-    voucherId: "v1",
-    entryId: "conv1",
+    nextId: idsOf("v1", "conv1"),
     actorUserId: "u1",
     at: ISSUED,
     expectedBalance: null,
@@ -41,16 +45,17 @@ function setup(now: Date = ISSUED) {
   ledger.entries.push(...account.pendingEntries);
   vouchers.rows.set(voucher.id, voucher.toPersistence());
   const events = new RecordingPublisher();
+  const ids = new CountingIdGenerator("adj");
   const handler = new CancelLoyaltyVoucherHandler(
     vouchers,
     ledger,
     new FixedHolders({ "user:u1": "Léa Martin" }),
-    new FixedIdGenerator("adj"),
+    ids,
     new FixedClock(now),
     events,
     new DirectUnitOfWork(),
   );
-  return { ledger, vouchers, events, handler };
+  return { ledger, vouchers, events, handler, ids };
 }
 
 describe("CancelLoyaltyVoucherHandler — annuler un bon rend ses points", () => {
@@ -95,5 +100,18 @@ describe("CancelLoyaltyVoucherHandler — annuler un bon rend ses points", () =>
     await expect(
       handler.execute(new CancelLoyaltyVoucherCommand("absent", "erreur", "staff_1")),
     ).rejects.toThrow(LoyaltyVoucherNotFoundError);
+  });
+});
+
+describe("CancelLoyaltyVoucherHandler — rejeu", () => {
+  it("une annulation rejouée est refusée avant tout tirage d'identifiant", async () => {
+    const { handler, ids } = setup();
+    await handler.execute(new CancelLoyaltyVoucherCommand("v1", "erreur", "staff_1"));
+    const drawn = ids.drawn;
+
+    await expect(
+      handler.execute(new CancelLoyaltyVoucherCommand("v1", "erreur", "staff_1")),
+    ).rejects.toBeInstanceOf(LoyaltyVoucherNotAvailableError);
+    expect(ids.drawn).toBe(drawn);
   });
 });

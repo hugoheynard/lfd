@@ -13,6 +13,11 @@ export class PlaceOrderForCustomerCommand {
   constructor(
     readonly staffUserId: string,
     readonly payload: AdminPlaceOrderPayload,
+    /**
+     * La clé d'intention de l'écran (en-tête `Idempotency-Key`) : un second
+     * envoi de même clé rend la commande déjà passée sans rien réécrire.
+     */
+    readonly intentKey: string,
   ) {}
 }
 

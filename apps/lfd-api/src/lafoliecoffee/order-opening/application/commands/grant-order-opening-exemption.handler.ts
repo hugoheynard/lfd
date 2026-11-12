@@ -58,13 +58,15 @@ export class GrantOrderOpeningExemptionHandler implements ICommandHandler<
     stamp: ExemptionStamp,
   ): Promise<OrderOpeningExemption> {
     const { payload } = command;
-    const id = this.ids.next();
+    // Tiré par l'agrégat, une fois le doublon écarté : un ajout rejoué est
+    // refusé sans rien tirer.
+    const nextId = (): string => this.ids.next();
     const active = await this.active.active();
     if (payload.kind === "email") {
-      return OrderOpeningExemption.grantToEmail({ id, email: payload.email, active, stamp });
+      return OrderOpeningExemption.grantToEmail({ nextId, email: payload.email, active, stamp });
     }
     return OrderOpeningExemption.grantToCompany({
-      id,
+      nextId,
       companyId: payload.companyId,
       company: await this.candidate(payload.companyId),
       active,

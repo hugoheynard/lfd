@@ -25,6 +25,7 @@ import {
   STAFF,
 } from "./production-day-fixture.js";
 import { counterSends, counterSent, seedLabo } from "./site-resupply-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const EVE = addDays(SERVICE_DAY, -1);
 const clock = new FixedClock(new Date());
@@ -103,6 +104,7 @@ describe("le double clic sur « Envoyer » au comptoir (D5)", () => {
     const base = `/admin/site-resupplies/sites/${labo}`;
     const added = await staff()
       .post(`${base}/drafts/tomorrow/lines`)
+      .set(INTENT_KEY, freshIntent())
       .send({ sku: CROISSANT, quantity: 4 })
       .expect(201);
     const id = jsonBody<{ id: string }>(added).id;

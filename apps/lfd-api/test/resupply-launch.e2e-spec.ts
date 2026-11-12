@@ -32,6 +32,7 @@ import {
   worksheetLine,
 } from "./production-day-fixture.js";
 import { seedLabo } from "./site-resupply-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const clock = new FixedClock(new Date());
 let ctx: E2eContext;
@@ -62,6 +63,7 @@ async function counterSendsAsap(site: string, quantity: number): Promise<string>
   const base = `/admin/site-resupplies/sites/${site}`;
   const added = await staff()
     .post(`${base}/drafts/asap/lines`)
+    .set(INTENT_KEY, freshIntent())
     .send({ sku: CROISSANT, quantity })
     .expect(201);
   const id = jsonBody<{ id: string }>(added).id;

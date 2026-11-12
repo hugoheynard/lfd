@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { ResupplyArticleUnitChangedError } from "../../domain/resupply-sale-unit-errors.js";
 import { AddSiteResupplyLineCommand } from "../add-site-resupply-line.command.js";
 import { ListSiteResuppliesQuery } from "../list-site-resupplies.query.js";
@@ -11,8 +13,12 @@ describe("la demande en cours — un article au poids (lot L2b-1)", () => {
   it("s'ajoute en grammes, son unité figée sur la ligne", async () => {
     const { add, list } = setup();
 
-    await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "SAU", 1250));
-    await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "SAU", 250));
+    await add.execute(
+      new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "SAU", 1250, "staff_1", randomUUID()),
+    );
+    await add.execute(
+      new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "SAU", 250, "staff_1", randomUUID()),
+    );
 
     const view = await list.execute(new ListSiteResuppliesQuery(VILLAGE));
     expect(view.drafts[0]?.lines).toEqual([
@@ -22,8 +28,12 @@ describe("la demande en cours — un article au poids (lot L2b-1)", () => {
 
   it("part au fournil avec sa ligne en grammes (L2b-3 : la garde d'envoi est retirée)", async () => {
     const { add, send, store } = setup();
-    const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "SAU", 500));
-    await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "CRO", 12));
+    const id = await add.execute(
+      new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "SAU", 500, "staff_1", randomUUID()),
+    );
+    await add.execute(
+      new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "CRO", 12, "staff_1", randomUUID()),
+    );
 
     await send.execute(new SendSiteResupplyCommand(VILLAGE, id, versionOf(store, id), "s"));
 

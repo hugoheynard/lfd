@@ -98,6 +98,10 @@ function noDeliveryDefaults(): DeliveryDefaultsReader {
   return { of: (): Promise<DeliveryDefaults> => Promise.resolve(NO_DELIVERY_DEFAULTS) };
 }
 import { PlaceOrderForCustomerCommand } from "../place-order-for-customer.command.js";
+import { randomUUID } from "node:crypto";
+import type { OncePerIntent } from "../../../../../platform/intent/once-per-intent.js";
+import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+import { IntentKeyReusedError } from "../../../../../platform/intent/intent-errors.js";
 import { PlaceOrderForCustomerHandler } from "../place-order-for-customer.handler.js";
 import { SeeingPlaceOrderForCustomerHandler, UNSEEN_TOTAL_CENTS } from "./seeing-total-handlers.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
@@ -393,6 +397,7 @@ interface HandlerOptions {
   readonly durable?: RecordingDurable;
   readonly shelf?: ShelfCircuit;
   readonly intake?: OrderIntake;
+  readonly intents?: OncePerIntent;
 }
 
 /** Ce que le constructeur de la composition lit des options d'un cas. */
@@ -473,7 +478,17 @@ function handler(
     options.durable ?? new RecordingDurable(),
     options.shelf ?? shelfCircuitOf(options.plans ?? openPlanGate()),
     options.intake ?? intakeAt(),
+    options.intents ?? inMemoryIntents(),
   );
+}
+
+/** Une passation de l'équipe, sous une intention neuve à chaque appel. */
+function placement(
+  staffUserId: string,
+  payload: AdminPlaceOrderPayload,
+  intentKey: string = randomUUID(),
+): PlaceOrderForCustomerCommand {
+  return new PlaceOrderForCustomerCommand(staffUserId, payload, intentKey);
 }
 
 /**
@@ -505,7 +520,7 @@ describe("PlaceOrderForCustomerHandler — la langue", () => {
     const sink = { placed: null as OrderToPlace | null };
 
     await handler(guard("orders", "active", "granted"), sink).execute(
-      new PlaceOrderForCustomerCommand("staff_1", payload()),
+      placement("staff_1", payload()),
     );
 
     expect(sink.placed?.locale).toBeNull();
@@ -517,7 +532,7 @@ describe("PlaceOrderForCustomerHandler — d'où vient la saisie (Hugo, 2026-11-
     const sink = { placed: null as OrderToPlace | null };
 
     await handler(guard("orders", "active", "granted"), sink).execute(
-      new PlaceOrderForCustomerCommand("staff_1", payload()),
+      placement("staff_1", payload()),
     );
 
     expect(sink.placed?.entryOrigin).toBe("commercial");
@@ -527,10 +542,7 @@ describe("PlaceOrderForCustomerHandler — d'où vient la saisie (Hugo, 2026-11-
     const sink = { placed: null as OrderToPlace | null };
 
     await handler(guard("orders", "active", "granted"), sink).execute(
-      new PlaceOrderForCustomerCommand(
-        "staff_1",
-        payload({ settlement: "account", entryOrigin: "counter" }),
-      ),
+      placement("staff_1", payload({ settlement: "account", entryOrigin: "counter" })),
     );
 
     expect(sink.placed?.entryOrigin).toBe("counter");
@@ -546,7 +558,7 @@ describe("PlaceOrderForCustomerHandler — le mur", () => {
     const sink = { placed: null as OrderToPlace | null };
 
     await handler(guard("orders", "active", "granted", asked), sink).execute(
-      new PlaceOrderForCustomerCommand("staff_1", payload()),
+      placement("staff_1", payload()),
     );
 
     expect(asked.userId).toBe("buyer_1");
@@ -556,7 +568,7 @@ describe("PlaceOrderForCustomerHandler — le mur", () => {
     const sink = { placed: null as OrderToPlace | null };
 
     await expect(
-      handler(guard(null), sink).execute(new PlaceOrderForCustomerCommand("staff_1", payload())),
+      handler(guard(null), sink).execute(placement("staff_1", payload())),
     ).rejects.toBeInstanceOf(OrderCompanyNotFoundError);
     expect(sink.placed).toBeNull();
   });
@@ -574,7 +586,7 @@ describe("PlaceOrderForCustomerHandler — l'arrêt du plan", () => {
     const plans = gateOf(new FixedClosedPlans([day]), new RecordingAdmissionDesk([day]));
 
     await handler(guard("orders", "active", "granted"), sink, { plans }).execute(
-      new PlaceOrderForCustomerCommand("staff_1", payload()),
+      placement("staff_1", payload()),
     );
 
     expect(sink.placed?.placedOffPlan).toBe(true);
@@ -586,7 +598,7 @@ describe("PlaceOrderForCustomerHandler — l'arrêt du plan", () => {
     const plans = gateOf(new FixedClosedPlans(), new RecordingAdmissionDesk([day]));
 
     await handler(guard("orders", "active", "granted"), sink, { plans }).execute(
-      new PlaceOrderForCustomerCommand("staff_1", payload()),
+      placement("staff_1", payload()),
     );
 
     expect(sink.placed?.placedOffPlan).toBe(true);
@@ -596,7 +608,7 @@ describe("PlaceOrderForCustomerHandler — l'arrêt du plan", () => {
     const sink = { placed: null as OrderToPlace | null };
 
     await handler(guard("orders", "active", "granted"), sink).execute(
-      new PlaceOrderForCustomerCommand("staff_1", payload()),
+      placement("staff_1", payload()),
     );
 
     expect(sink.placed?.placedOffPlan).toBe(false);
@@ -608,7 +620,7 @@ describe("PlaceOrderForCustomerHandler — l'arrêt du plan", () => {
 
     await expect(
       handler(guard("orders", "active", "granted"), sink).execute(
-        new PlaceOrderForCustomerCommand("staff_1", payload({ requestedDeliveryDate: today })),
+        placement("staff_1", payload({ requestedDeliveryDate: today })),
       ),
     ).rejects.toBeInstanceOf(SameDayOrderClosedError);
     expect(sink.placed).toBeNull();
@@ -620,7 +632,7 @@ describe("PlaceOrderForCustomerHandler — l'arrêt du plan", () => {
     const plans = gateOf(new FixedClosedPlans([today]), new RecordingAdmissionDesk([today]));
 
     await handler(guard("orders", "active", "granted"), sink, { plans }).execute(
-      new PlaceOrderForCustomerCommand("staff_1", payload({ requestedDeliveryDate: today })),
+      placement("staff_1", payload({ requestedDeliveryDate: today })),
     );
 
     expect(sink.placed?.placedOffPlan).toBe(true);
@@ -633,7 +645,7 @@ describe("PlaceOrderForCustomerHandler — l'arrêt du plan", () => {
 
     await handler(guard("orders", "active", "granted"), sink, {
       plans: gateOf(new FixedClosedPlans(), desk),
-    }).execute(new PlaceOrderForCustomerCommand("staff_1", payload()));
+    }).execute(placement("staff_1", payload()));
 
     expect(desk.held).toEqual([payload().requestedDeliveryDate]);
     expect(writtenWhenHeld).toEqual([false]);
@@ -679,7 +691,7 @@ describe("PlaceOrderForCustomerHandler — sur la vitrine (L4)", () => {
     await handler(guard("orders", "active", "granted"), sink, {
       plans,
       shelf: shelfFor(plans),
-    }).execute(new PlaceOrderForCustomerCommand("staff_1", shelfPayload()));
+    }).execute(placement("staff_1", shelfPayload()));
 
     expect(sink.placed).toMatchObject({ supply: "shelf", placedOffPlan: false });
     expect(desk.held).toEqual([]);
@@ -693,7 +705,7 @@ describe("PlaceOrderForCustomerHandler — sur la vitrine (L4)", () => {
       handler(guard("orders", "active", "granted"), sink, {
         plans,
         shelf: shelfFor(plans, { sameDay: new FixedSameDay({ sameDayPublicAllowed: true }) }),
-      }).execute(new PlaceOrderForCustomerCommand("staff_1", shelfPayload())),
+      }).execute(placement("staff_1", shelfPayload())),
     ).rejects.toBeInstanceOf(SameDayOrderClosedError);
     expect(sink.placed).toBeNull();
   });
@@ -706,7 +718,7 @@ describe("PlaceOrderForCustomerHandler — sur la vitrine (L4)", () => {
       handler(guard("orders", "active", "granted"), sink, {
         plans,
         shelf: shelfFor(plans, { left: 1 }),
-      }).execute(new PlaceOrderForCustomerCommand("staff_1", shelfPayload())),
+      }).execute(placement("staff_1", shelfPayload())),
     ).rejects.toBeInstanceOf(ShelfStockShortError);
     expect(sink.placed).toBeNull();
   });
@@ -727,7 +739,7 @@ describe("PlaceOrderForCustomerHandler — sur la vitrine (L4)", () => {
         shelf: shelfFor(plans),
         payments: payments(intents),
       }).execute(
-        new PlaceOrderForCustomerCommand(
+        placement(
           "staff_1",
           shelfPayload({ settlement: "link", entryShortcut: "immediate_pickup" }),
         ),
@@ -750,10 +762,7 @@ describe("PlaceOrderForCustomerHandler — sur la vitrine (L4)", () => {
       plans,
       shelf: shelfFor(plans),
     }).execute(
-      new PlaceOrderForCustomerCommand(
-        "staff_1",
-        shelfPayload({ settlement: "link", entryShortcut: "immediate_pickup" }),
-      ),
+      placement("staff_1", shelfPayload({ settlement: "link", entryShortcut: "immediate_pickup" })),
     );
 
     await expect(refusal).rejects.toMatchObject({
@@ -772,7 +781,7 @@ describe("PlaceOrderForCustomerHandler — sur la vitrine (L4)", () => {
         plans,
         shelf: shelfFor(plans),
       }).execute(
-        new PlaceOrderForCustomerCommand(
+        placement(
           "staff_1",
           shelfPayload({ settlement: "link", entryShortcut: "immediate_pickup" }),
         ),
@@ -789,7 +798,7 @@ describe("PlaceOrderForCustomerHandler — sur la vitrine (L4)", () => {
       plans,
       shelf: shelfFor(plans),
     }).execute(
-      new PlaceOrderForCustomerCommand(
+      placement(
         "staff_1",
         shelfPayload({ settlement: "account", entryShortcut: "immediate_pickup" }),
       ),
@@ -813,7 +822,7 @@ describe("PlaceOrderForCustomerHandler — sur la vitrine (L4)", () => {
         plans,
         payments: payments(intents),
         shelf: shelfFor(plans),
-      }).execute(new PlaceOrderForCustomerCommand("staff_1", shelfPayload({ settlement: "link" }))),
+      }).execute(placement("staff_1", shelfPayload({ settlement: "link" }))),
     ).rejects.toBeInstanceOf(ShelfWithoutCreditRefusedError);
     expect(intents.intent).toBeNull();
   });
@@ -829,7 +838,7 @@ describe("PlaceOrderForCustomerHandler — sur la vitrine (L4)", () => {
     const result = await handler(guard("orders", "active", "none"), sink, {
       plans,
       shelf: shelfFor(plans, { sameDay }),
-    }).execute(new PlaceOrderForCustomerCommand("staff_1", shelfPayload({ settlement: "link" })));
+    }).execute(placement("staff_1", shelfPayload({ settlement: "link" })));
 
     expect(sink.placed).toMatchObject({ supply: "shelf", paymentStatus: "pending" });
     expect(result.paymentUrl).toBeDefined();
@@ -848,7 +857,7 @@ describe("PlaceOrderForCustomerHandler — la livraison par clientèle", () => {
       handler(guard("orders"), sink, {
         delivery: { ...DEFAULT_DELIVERY_AVAILABILITY, openToB2b: false },
       }).execute(
-        new PlaceOrderForCustomerCommand(
+        placement(
           "staff_1",
           payload({
             fulfillmentMethod: "delivery",
@@ -873,9 +882,7 @@ describe("PlaceOrderForCustomerHandler — la trace", () => {
   it("porte la commande au nom du client ET marque qui l'a saisie", async () => {
     const sink = { placed: null as OrderToPlace | null };
 
-    await handler(guard("orders"), sink).execute(
-      new PlaceOrderForCustomerCommand("staff_1", payload()),
-    );
+    await handler(guard("orders"), sink).execute(placement("staff_1", payload()));
 
     expect(sink.placed).toMatchObject({
       companyId: "c1",
@@ -890,7 +897,7 @@ describe("PlaceOrderForCustomerHandler — la trace", () => {
     const sink = { placed: null as OrderToPlace | null };
 
     const placed = await handler(guard("orders"), sink, { durable }).execute(
-      new PlaceOrderForCustomerCommand("staff_1", payload()),
+      placement("staff_1", payload()),
     );
 
     expect(durable.facts).toEqual([new CommerceOrderPlacedFact(placed.id).durableFact()]);
@@ -900,9 +907,7 @@ describe("PlaceOrderForCustomerHandler — la trace", () => {
     const events = new RecordingPublisher();
     const sink = { placed: null as OrderToPlace | null };
 
-    await handler(guard("orders"), sink, { events }).execute(
-      new PlaceOrderForCustomerCommand("staff_1", payload()),
-    );
+    await handler(guard("orders"), sink, { events }).execute(placement("staff_1", payload()));
 
     const [event] = events.published;
     expect(event).toBeInstanceOf(OrderPlacedEvent);
@@ -917,7 +922,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
 
     const result = await handler(guard("orders", "active", "granted"), sink, {
       payments: payments(intents),
-    }).execute(new PlaceOrderForCustomerCommand("staff_1", payload({ settlement: "account" })));
+    }).execute(placement("staff_1", payload({ settlement: "account" })));
 
     expect(sink.placed?.paymentStatus).toBe("not_required");
     expect(intents.intent).toBeNull();
@@ -931,7 +936,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
 
     await expect(
       handler(guard("orders", "active", "none"), sink).execute(
-        new PlaceOrderForCustomerCommand("staff_1", payload({ settlement: "account" })),
+        placement("staff_1", payload({ settlement: "account" })),
       ),
     ).rejects.toBeInstanceOf(AccountSettlementNotGrantedError);
     expect(sink.placed).toBeNull();
@@ -943,7 +948,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
     const sink = { placed: null as OrderToPlace | null };
 
     const refusal = handler(guard("orders", "active", "blocked"), sink).execute(
-      new PlaceOrderForCustomerCommand("staff_1", payload({ settlement: "account" })),
+      placement("staff_1", payload({ settlement: "account" })),
     );
 
     await expect(refusal).rejects.toBeInstanceOf(AccountSettlementNotGrantedError);
@@ -956,7 +961,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
 
     await expect(
       handler(guard("orders", "pending", "granted"), sink).execute(
-        new PlaceOrderForCustomerCommand("staff_1", payload({ settlement: "account" })),
+        placement("staff_1", payload({ settlement: "account" })),
       ),
     ).rejects.toBeInstanceOf(AccountSettlementNotGrantedError);
   });
@@ -966,7 +971,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
     const sink = { placed: null as OrderToPlace | null };
 
     const result = await handler(guard("orders"), sink, { payments: payments(intents) }).execute(
-      new PlaceOrderForCustomerCommand("staff_1", payload({ settlement: "link" })),
+      placement("staff_1", payload({ settlement: "link" })),
     );
 
     expect(intents.intent).toEqual({ subjectType: "order", amountCents: 400, tag: "c1" });
@@ -980,7 +985,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
     const sink = { placed: null as OrderToPlace | null };
 
     const result = await handler(guard("orders"), sink, { clientBaseUrl: null }).execute(
-      new PlaceOrderForCustomerCommand("staff_1", payload({ settlement: "link" })),
+      placement("staff_1", payload({ settlement: "link" })),
     );
 
     expect(sink.placed?.paymentStatus).toBe("pending");
@@ -1061,11 +1066,10 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
       new RecordingDurable(),
       shelfCircuitOf(openPlanGate()),
       intakeAt(),
+      inMemoryIntents(),
     );
 
-    const result = await free.execute(
-      new PlaceOrderForCustomerCommand("staff_1", payload({ settlement: "link" })),
-    );
+    const result = await free.execute(placement("staff_1", payload({ settlement: "link" })));
 
     expect(intents.intent).toBeNull();
     expect(sink.placed?.paymentStatus).toBe("not_required");
@@ -1108,7 +1112,7 @@ describe("PlaceOrderForCustomerHandler — un site facturé à son principal", (
     };
 
     await handler(payerGuard, sink, { payers }).execute(
-      new PlaceOrderForCustomerCommand("staff_1", payload({ settlement: "account" })),
+      placement("staff_1", payload({ settlement: "account" })),
     );
 
     expect(sink.placed?.billedCompanyId).toBe("alpes");
@@ -1128,10 +1132,7 @@ describe("PlaceOrderForCustomerHandler — les CGV en vigueur", () => {
     const salesTerms = new FixedSalesTerms({ salesTermsPro: { revision: 2, fileId: "ldf_pro_9" } });
 
     await handler(guard("orders", "active", "granted"), sink, { salesTerms }).execute(
-      new PlaceOrderForCustomerCommand(
-        "staff_1",
-        payload({ expectedTotalCents: DEFAULT_TOTAL_CENTS }),
-      ),
+      placement("staff_1", payload({ expectedTotalCents: DEFAULT_TOTAL_CENTS })),
     );
 
     expect(sink.placed?.salesTerms).toEqual({
@@ -1151,7 +1152,7 @@ describe("PlaceOrderForCustomerHandler — les CGV en vigueur", () => {
 
     // Par lien de paiement : une société en attente n'a pas de compte.
     await handler(guard("orders", "pending", "granted"), sink, { salesTerms }).execute(
-      new PlaceOrderForCustomerCommand(
+      placement(
         "staff_1",
         payload({ settlement: "link", expectedTotalCents: DEFAULT_TOTAL_CENTS }),
       ),
@@ -1181,7 +1182,7 @@ describe("PlaceOrderForCustomerHandler — la porte de la boutique (E2)", () => 
     await expect(
       handler(guard("orders"), sink, {
         intake: intakeAt({ ordersOpenToB2b: false }, "active"),
-      }).execute(new PlaceOrderForCustomerCommand("staff_1", payload())),
+      }).execute(placement("staff_1", payload())),
     ).rejects.toBeInstanceOf(OrdersClosedForAudienceError);
     expect(sink.placed).toBeNull();
   });
@@ -1233,9 +1234,7 @@ describe("EstimateOrderForCustomerHandler", () => {
 
   it("rend les montants que la passation écrit, au centime", async () => {
     const sink = { placed: null as OrderToPlace | null };
-    await handler(guard("orders"), sink).execute(
-      new PlaceOrderForCustomerCommand("staff_1", payload()),
-    );
+    await handler(guard("orders"), sink).execute(placement("staff_1", payload()));
 
     const estimate = await estimator(guard("orders")).execute(
       new EstimateOrderForCustomerQuery("staff_1", payload()),
@@ -1254,9 +1253,7 @@ describe("EstimateOrderForCustomerHandler", () => {
   /** Plan L6 : le HT de l'estimation est la règle du bon sur la commande qu'elle compose. */
   it("porte le HT du bon, par la règle qui l'imprime", async () => {
     const sink = { placed: null as OrderToPlace | null };
-    await handler(guard("orders"), sink).execute(
-      new PlaceOrderForCustomerCommand("staff_1", payload()),
-    );
+    await handler(guard("orders"), sink).execute(placement("staff_1", payload()));
     const placed = sink.placed;
     if (placed === null) {
       throw new Error("la passation n'a rien composé");
@@ -1391,10 +1388,7 @@ describe("PlaceOrderForCustomerHandler — au comptoir, hors vitrine (E4 étendu
 
     await expect(
       handler(guard("orders", "active", "granted"), sink, { payments: payments(intents) }).execute(
-        new PlaceOrderForCustomerCommand(
-          "staff_1",
-          payload({ settlement: "link", entryOrigin: "counter" }),
-        ),
+        placement("staff_1", payload({ settlement: "link", entryOrigin: "counter" })),
       ),
     ).rejects.toBeInstanceOf(CounterLinkSettlementRefusedError);
     expect(intents.intent).toBeNull();
@@ -1405,7 +1399,7 @@ describe("PlaceOrderForCustomerHandler — au comptoir, hors vitrine (E4 étendu
     const sink = { placed: null as OrderToPlace | null };
 
     const result = await handler(guard("orders", "active", "granted"), sink).execute(
-      new PlaceOrderForCustomerCommand("staff_1", payload({ settlement: "link" })),
+      placement("staff_1", payload({ settlement: "link" })),
     );
 
     expect(result.paymentUrl).toBeDefined();
@@ -1428,10 +1422,7 @@ describe("PlaceOrderForCustomerHandler — au comptoir, hors vitrine (E4 étendu
       const sink = { placed: null as OrderToPlace | null };
 
       const refusal = handler(guard("orders", status, standing), sink).execute(
-        new PlaceOrderForCustomerCommand(
-          "staff_1",
-          payload({ settlement: "account", entryOrigin: "counter" }),
-        ),
+        placement("staff_1", payload({ settlement: "account", entryOrigin: "counter" })),
       );
 
       await expect(refusal).rejects.toMatchObject({ reason, code: `orders.counter.${reason}` });
@@ -1449,7 +1440,7 @@ describe("PlaceOrderForCustomerHandler — au comptoir, hors vitrine (E4 étendu
     const sink = { placed: null as OrderToPlace | null };
 
     const refusal = handler(guard("orders", "suspended", "granted"), sink).execute(
-      new PlaceOrderForCustomerCommand("staff_1", payload({ settlement: "account" })),
+      placement("staff_1", payload({ settlement: "account" })),
     );
 
     await expect(refusal).rejects.toBeInstanceOf(SuspendedCompanyAccountSettlementError);
@@ -1461,7 +1452,7 @@ describe("PlaceOrderForCustomerHandler — au comptoir, hors vitrine (E4 étendu
     const sink = { placed: null as OrderToPlace | null };
 
     const result = await handler(guard("orders", "suspended", "none"), sink).execute(
-      new PlaceOrderForCustomerCommand("staff_1", payload({ settlement: "link" })),
+      placement("staff_1", payload({ settlement: "link" })),
     );
 
     expect(result.paymentUrl).toBeDefined();
@@ -1472,7 +1463,7 @@ describe("PlaceOrderForCustomerHandler — au comptoir, hors vitrine (E4 étendu
 
     await expect(
       handler(guard("orders", "active", "none"), sink).execute(
-        new PlaceOrderForCustomerCommand("staff_1", payload({ settlement: "account" })),
+        placement("staff_1", payload({ settlement: "account" })),
       ),
     ).rejects.toThrow(new AccountSettlementNotGrantedError().message);
   });
@@ -1483,7 +1474,7 @@ describe("PlaceOrderForCustomerHandler — le total vu", () => {
   async function composedTotal(): Promise<number> {
     const sink = { placed: null as OrderToPlace | null };
     await handler(guard("orders", "active", "granted"), sink).execute(
-      new PlaceOrderForCustomerCommand("staff_1", payload({ settlement: "account" })),
+      placement("staff_1", payload({ settlement: "account" })),
     );
     return sink.placed?.totalCents ?? Number.NaN;
   }
@@ -1493,10 +1484,7 @@ describe("PlaceOrderForCustomerHandler — le total vu", () => {
     const sink = { placed: null as OrderToPlace | null };
 
     await handler(guard("orders", "active", "granted"), sink).execute(
-      new PlaceOrderForCustomerCommand(
-        "staff_1",
-        payload({ settlement: "account", expectedTotalCents: total }),
-      ),
+      placement("staff_1", payload({ settlement: "account", expectedTotalCents: total })),
     );
 
     expect(sink.placed?.totalCents).toBe(total);
@@ -1510,10 +1498,7 @@ describe("PlaceOrderForCustomerHandler — le total vu", () => {
     const refusal = handler(guard("orders", "active", "granted"), sink, {
       payments: payments(intents),
     }).execute(
-      new PlaceOrderForCustomerCommand(
-        "staff_1",
-        payload({ settlement: "link", expectedTotalCents: total + 1 }),
-      ),
+      placement("staff_1", payload({ settlement: "link", expectedTotalCents: total + 1 })),
     );
 
     await expect(refusal).rejects.toBeInstanceOf(OrderTotalChangedError);
@@ -1531,11 +1516,77 @@ describe("PlaceOrderForCustomerHandler — le total vu", () => {
 
     await expect(
       handler(guard("orders", "active", "none"), sink).execute(
-        new PlaceOrderForCustomerCommand(
-          "staff_1",
-          payload({ settlement: "account", expectedTotalCents: total + 1 }),
-        ),
+        placement("staff_1", payload({ settlement: "account", expectedTotalCents: total + 1 })),
       ),
     ).rejects.toBeInstanceOf(OrderTotalChangedError);
+  });
+});
+
+/** Le double du bloc `card-payment` qui compte les liens préparés. */
+class CountingCardPayments extends PreparingCardPayments {
+  prepared = 0;
+
+  override prepare(
+    subjectType: string,
+    amountCents: number,
+    tag: string,
+  ): Promise<CardPaymentPreparation> {
+    this.prepared += 1;
+    return super.prepare(subjectType, amountCents, tag);
+  }
+}
+
+describe("PlaceOrderForCustomerHandler — une fois par intention", () => {
+  /** Régression : un double clic sur « Valider » passait deux commandes et préparait deux liens. */
+  it("rejouée sous la même clé, rend la même commande sans la repasser ni repréparer le lien", async () => {
+    const placements: OrderToPlace[] = [];
+    const sink = {
+      set placed(order: OrderToPlace | null) {
+        if (order !== null) placements.push(order);
+      },
+      get placed(): OrderToPlace | null {
+        return placements.at(-1) ?? null;
+      },
+    };
+    const cards = new CountingCardPayments({ intent: null });
+    const placing = handler(guard("orders"), sink, { payments: cards, intents: inMemoryIntents() });
+    const key = randomUUID();
+    const body = payload({ settlement: "link" });
+
+    const first = await placing.execute(placement("staff_1", body, key));
+    const second = await placing.execute(placement("staff_1", body, key));
+
+    expect(second).toEqual(first);
+    expect(first.paymentUrl).toBe("https://boutique.lfc.fr/commandes/order_1/regler");
+    expect(placements).toHaveLength(1);
+    expect(cards.prepared).toBe(1);
+  });
+
+  it("refuse la même clé sur un AUTRE panier, une fois la première commande passée", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const placing = handler(guard("orders"), sink, { intents: inMemoryIntents() });
+    const key = randomUUID();
+    await placing.execute(placement("staff_1", payload(), key));
+
+    await expect(
+      placing.execute(placement("staff_1", payload({ settlement: "link" }), key)),
+    ).rejects.toBeInstanceOf(IntentKeyReusedError);
+  });
+
+  it("après un refus, la même clé repasse : l'intention a été rendue", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const intents = inMemoryIntents();
+    const key = randomUUID();
+    await expect(
+      handler(guard("orders", "pending", "granted"), sink, { intents }).execute(
+        placement("staff_1", payload({ settlement: "account" }), key),
+      ),
+    ).rejects.toBeInstanceOf(AccountSettlementNotGrantedError);
+
+    const placed = await handler(guard("orders"), sink, { intents }).execute(
+      placement("staff_1", payload({ settlement: "account" }), key),
+    );
+
+    expect(placed.id).toBe("order_1");
   });
 });

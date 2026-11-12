@@ -9,6 +9,7 @@ import {
 } from "../src/platform/database/client/client.js";
 import { E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /**
  * **La retardataire, par la vraie porte** (lot O3,
@@ -89,6 +90,7 @@ export async function placeByStaff(
   const response = await ctx
     .asSub(E2E_STAFF_SUB)
     .post("/admin/orders")
+    .set(INTENT_KEY, freshIntent())
     .send({ idempotencyKey: randomUUID(), settlement: "account", note: "", ...who, ...body });
   // Le corps dans l'échec : un refus nomme sa cause, le statut seul non.
   expect({

@@ -11,6 +11,7 @@ import type {
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
+import { intentOptions } from '../shared/gesture-intents';
 
 /**
  * Accès à la surface **staff** de la fidélité : le réglage du programme, les
@@ -42,8 +43,11 @@ export class LoyaltyService {
     return firstValueFrom(this.http.get<readonly LoyaltyVoucherView[]>(`${this.base}/vouchers`));
   }
 
-  async adjust(payload: AdjustLoyaltyPointsPayload): Promise<void> {
-    await firstValueFrom(this.http.post<void>(`${this.base}/adjustments`, payload));
+  /** `intentKey` : la clé de l'intention, renvoyée à chaque clic jusqu'au succès. */
+  async adjust(payload: AdjustLoyaltyPointsPayload, intentKey: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(`${this.base}/adjustments`, payload, intentOptions(intentKey)),
+    );
   }
 
   async cancelVoucher(id: string, reason: string): Promise<void> {

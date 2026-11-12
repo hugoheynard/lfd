@@ -26,6 +26,7 @@ import { DiscardOrderDraftCommand } from "../application/commands/discard-order-
 import { SaveOrderDraftCommand } from "../application/commands/save-order-draft.command.js";
 import { GetOrderDraftQuery } from "../application/queries/get-order-draft.query.js";
 import { ListOrderDraftSummariesQuery } from "../application/queries/list-order-draft-summaries.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Les **brouillons de commande** du back-office — une saisie interrompue,
@@ -76,6 +77,9 @@ export class AdminOrderDraftsController {
 
   /** Met la saisie de côté. L'auteur vient de la porte, jamais du corps. */
   @Put(":companyId")
+  @Idempotent(
+    "pose un brouillon : rejouée, la même requête réécrit le même brouillon de la société (upsert), sans fait ni effet",
+  )
   async save(
     @Req() request: AuthenticatedStaffRequest,
     @Param("companyId") companyId: string,
@@ -89,6 +93,9 @@ export class AdminOrderDraftsController {
   /** Jette le brouillon. Idempotent — `204` même s'il n'y en avait pas. */
   @Delete(":companyId")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "retire le brouillon : rejouée, il n'y en a plus et l'effacement ne touche rien, sans fait ni effet",
+  )
   async discard(@Param("companyId") companyId: string): Promise<void> {
     await this.commands.execute<DiscardOrderDraftCommand, void>(
       new DiscardOrderDraftCommand(companyId),

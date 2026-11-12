@@ -13,6 +13,7 @@ import {
   PlaceShopOrderCommand,
   type PlaceShopOrderResult,
 } from "../application/commands/place-shop-order.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Commander sans compte** — plan
@@ -60,6 +61,9 @@ export class ShopOrdersController {
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @Idempotent(
+    "par sa propre clé : ShopOrderIdempotency (idempotencyKey obligatoire du corps, réclamée avec l'empreinte du panier) ; rejouée, la clé résolue rend la commande déjà passée sans secret de paiement ni réécriture, une passation en vol est refusée (409) et une autre charge sous la même clé aussi (IdempotencyKeyReusedError)",
+  )
   async place(
     @Body(new ZodBody(placeShopOrderPayloadSchema)) payload: PlaceShopOrderPayload,
   ): Promise<PlacedOrderResponse> {

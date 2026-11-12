@@ -26,6 +26,7 @@ import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const fakeGateway = cardGatewayDouble("pi_counter");
 
@@ -145,6 +146,7 @@ async function placeImmediate(
 ): Promise<Placed> {
   const response = await staff()
     .post("/admin/orders")
+    .set(INTENT_KEY, freshIntent())
     .send({
       companyId: pro.companyId,
       buyerUserId: pro.userId,
@@ -274,6 +276,7 @@ describe("« Valider et remettre » (lot L6)", () => {
     const before = await ctx.prisma.order.count();
     const response = await staff()
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         companyId: pro.companyId,
         buyerUserId: pro.userId,
@@ -302,6 +305,7 @@ describe("« Valider et remettre » (lot L6)", () => {
     const before = await ctx.prisma.order.count();
     const response = await staff()
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         companyId: pro.companyId,
         buyerUserId: pro.userId,
@@ -324,6 +328,7 @@ describe("« Valider et remettre » (lot L6)", () => {
     const pro = await seedCreditedPro("pro-programme");
     const response = await staff()
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         companyId: pro.companyId,
         buyerUserId: pro.userId,
@@ -347,6 +352,7 @@ describe("le BL client au comptoir — le mur (lot L6)", () => {
     const planned = jsonBody<Placed>(
       await staff()
         .post("/admin/orders")
+        .set(INTENT_KEY, freshIntent())
         .send({
           companyId: pro.companyId,
           buyerUserId: pro.userId,

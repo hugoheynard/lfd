@@ -73,31 +73,32 @@ export class CarryOverVolumeCommitmentHandler implements ICommandHandler<
       await this.saleUnits.weightSoldAmong([carry.toSku]),
     );
     const now = this.clock.now();
-    const id = this.ids.next();
-    await this.uow.run(async () => {
+    return this.uow.run(async () => {
       await this.lock.acquire("volume_commitment", carry.toSku);
       const source = await this.commitments.load(command.commitmentId);
       if (source === null) {
         throw new CarriedDecisionNotFoundError("volume_commitment", command.commitmentId);
       }
+      // Les gardes lisent l'engagement d'origine — le report garde son compte —,
+      // et l'identifiant n'est tiré qu'après : un rejeu ne tire rien.
+      await assertNotReservedElsewhere(this.reservations, source.companyId, [carry.toSku]);
+      ensureNotYetCarried(
+        "volume_commitment",
+        carry,
+        source.companyId,
+        await this.carried.carriedAudiences("volume_commitment", carry.fromSku, carry.toSku, now),
+      );
       const commitment = VolumeCommitmentAggregate.carriedFrom(
-        id,
+        this.ids.next(),
         source,
         carry,
         command.staffUserId,
         now,
       );
-      await assertNotReservedElsewhere(this.reservations, commitment.companyId, [carry.toSku]);
-      ensureNotYetCarried(
-        "volume_commitment",
-        carry,
-        commitment.companyId,
-        await this.carried.carriedAudiences("volume_commitment", carry.fromSku, carry.toSku, now),
-      );
       await this.commitments.sign(commitment);
       const companyName = await this.companies.nameOf(commitment.companyId);
       await this.events.publishTraced(new VolumeCommitmentSignedEvent(commitment, companyName));
+      return commitment.id;
     });
-    return id;
   }
 }

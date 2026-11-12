@@ -34,6 +34,7 @@ import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardProvidersOverride } from "./card-payments.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const CROISSANT = "VIE-001-1";
 const BREAD = "PAI-001-1";
@@ -134,6 +135,7 @@ async function closeToday(): Promise<void> {
   const pro = await seedCreditedPro("auth0|pro-l4", "pro@l4.fr");
   await staff()
     .post("/admin/orders")
+    .set(INTENT_KEY, freshIntent())
     .send({
       companyId: pro.companyId,
       buyerUserId: pro.userId,
@@ -335,6 +337,7 @@ describe("la passation sur stock (L4) — la tenue du stock et les verrous", () 
     const pro = await seedCreditedPro("auth0|pro-l4-link", "lien@l4.fr");
     const placed = await staff()
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         companyId: pro.companyId,
         buyerUserId: pro.userId,
@@ -436,6 +439,7 @@ describe("la modification d'une commande sur stock (L5)", () => {
     const pro = await seedCreditedPro("auth0|pro-l5", "pro@l5.fr");
     const placed = await staff()
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         companyId: pro.companyId,
         buyerUserId: pro.userId,

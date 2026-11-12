@@ -15,6 +15,7 @@ import {
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { pickupSite } from "./order-factory.js";
 import { cardProvidersOverride } from "./card-payments.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /**
  * E2E — **la quantité minimale d'achat, refusée partout en dessous**
@@ -153,11 +154,16 @@ describe("la commande saisie par l'équipe (nouvelle commande pro, comptoir)", (
     await expectRefused(
       await staff()
         .post("/admin/orders")
+        .set(INTENT_KEY, freshIntent())
         .send(staffOrder(PRO_MINIMUM - 1)),
     );
   });
 
   it("au minimum pro : la commande passe", async () => {
-    await staff().post("/admin/orders").send(staffOrder(PRO_MINIMUM)).expect(201);
+    await staff()
+      .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
+      .send(staffOrder(PRO_MINIMUM))
+      .expect(201);
   });
 });

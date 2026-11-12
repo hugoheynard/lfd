@@ -46,6 +46,7 @@ import { SaveMercurialeDraftCommand } from "../application/commands/save-mercuri
 import { ReadCompanyPricingQuery } from "../application/queries/read-company-pricing.query.js";
 import { ReadMercurialeDraftQuery } from "../application/queries/read-mercuriale-draft.query.js";
 import { PreviewMercurialeAmendmentQuery } from "../application/queries/preview-mercuriale-amendment.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **La tarification d'UN client** — l'onglet « Tarifs » de sa fiche.
@@ -116,6 +117,9 @@ export class AdminCompanyPricingController {
    */
   @Post("mercuriale/close")
   @HttpCode(HttpStatus.OK)
+  @Idempotent(
+    "transition : rejouée sur une mercuriale close, l'agrégat refuse (409 ArchivedMercurialeIsSealedError) avant toute écriture ni tout acte",
+  )
   async close(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(closeCompanyMercurialePayloadSchema)) payload: CloseCompanyMercurialePayload,
@@ -156,6 +160,9 @@ export class AdminCompanyPricingController {
    */
   @Post("mercuriale/:mercurialeId/amendments/preview")
   @HttpCode(HttpStatus.OK)
+  @Idempotent(
+    "calcul pur en POST : compose l'aperçu de l'avenant en mémoire, n'écrit rien et n'envoie rien",
+  )
   async previewAmendment(
     @Param("companyId") companyId: string,
     @Param("mercurialeId") mercurialeId: string,
@@ -234,6 +241,9 @@ export class AdminCompanyPricingController {
    */
   @Put("mercuriale/draft")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose un brouillon : rejouée, la même requête réécrit le même brouillon de la société, sans acte ni effet",
+  )
   async saveDraft(
     @Param("companyId") companyId: string,
     @Body(new ZodBody(saveMercurialeDraftPayloadSchema)) payload: SaveMercurialeDraftPayload,
@@ -247,6 +257,9 @@ export class AdminCompanyPricingController {
   /** **Jeter le brouillon.** Silencieux s'il n'y en a pas : l'état visé est atteint. */
   @Delete("mercuriale/draft")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "retire le brouillon : rejouée, il n'y en a plus et l'effacement ne touche rien, sans acte ni effet",
+  )
   async discardDraft(@Param("companyId") companyId: string): Promise<void> {
     await this.commands.execute<DiscardMercurialeDraftCommand, void>(
       new DiscardMercurialeDraftCommand(companyId),

@@ -1,4 +1,5 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { AddSiteResupplyLineHandler } from "../add-site-resupply-line.handler.js";
@@ -51,7 +52,15 @@ export function setup(deadline: Date | null = null, stopped: readonly string[] =
     store,
     clock,
     desk,
-    add: new AddSiteResupplyLineHandler(store, catalogue, sites, clock, ids),
+    add: new AddSiteResupplyLineHandler(
+      store,
+      catalogue,
+      sites,
+      clock,
+      ids,
+      new DirectUnitOfWork(),
+      inMemoryIntents(),
+    ),
     correct: new CorrectSiteResupplyLineHandler(store),
     withdraw: new WithdrawSiteResupplyLineHandler(store),
     send: new SendSiteResupplyHandler(

@@ -9,6 +9,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { CarryOverMercurialeLineCommand } from "../application/commands/carry-over-mercuriale-line.command.js";
 import { ListSaleReferenceDecisionsQuery } from "../application/queries/list-sale-reference-decisions.query.js";
@@ -42,6 +43,9 @@ export class AdminSaleReferenceDecisionsController {
    */
   @Post(":sku/decisions/mercuriales/:mercurialeId/carry-over")
   @HttpCode(HttpStatus.CREATED)
+  @Idempotent(
+    "report : rejoué, la nouvelle référence est déjà négociée dans la mercuriale et l'agrégat refuse (409 SkuAlreadyNegotiatedError) sous le verrou du document, avant tout tirage d'identifiant ni écriture",
+  )
   async carryOver(
     @Param("sku") sku: string,
     @Param("mercurialeId") mercurialeId: string,

@@ -113,3 +113,64 @@ describe("UpsertOccurrenceOverrideHandler", () => {
     expect(events.traced).toHaveLength(0);
   });
 });
+
+describe("UpsertOccurrenceOverrideHandler — rejeu", () => {
+  /** Régression : la même dérogation renvoyée journalisait un fait à chaque rejeu, sans rien changer. */
+  it("la même dérogation rejouée n'écrit ni ne journalise une seconde fois", async () => {
+    const { repo, events, handler } = build();
+    repo.loadResult = activeSubscription();
+    const same = { skipped: false, lines: [{ sku: "SKU-2", quantity: 3 }], note: "Sonner" };
+
+    await handler.execute(new UpsertOccurrenceOverrideCommand("user_1", "sub_1", DATE, same));
+    await handler.execute(new UpsertOccurrenceOverrideCommand("user_1", "sub_1", DATE, same));
+
+    expect(repo.saved).toHaveLength(1);
+    expect(events.traced).toHaveLength(1);
+  });
+
+  it("une note corrigée seule reste un changement : écrite et journalisée", async () => {
+    const { repo, events, handler } = build();
+    repo.loadResult = activeSubscription();
+    const lines = [{ sku: "SKU-2", quantity: 3 }];
+
+    await handler.execute(
+      new UpsertOccurrenceOverrideCommand("user_1", "sub_1", DATE, {
+        skipped: false,
+        lines,
+        note: "a",
+      }),
+    );
+    await handler.execute(
+      new UpsertOccurrenceOverrideCommand("user_1", "sub_1", DATE, {
+        skipped: false,
+        lines,
+        note: "b",
+      }),
+    );
+
+    expect(repo.saved).toHaveLength(2);
+    expect(events.traced).toHaveLength(2);
+  });
+
+  it("une quantité changée reste un changement", async () => {
+    const { repo, handler } = build();
+    repo.loadResult = activeSubscription();
+
+    await handler.execute(
+      new UpsertOccurrenceOverrideCommand("user_1", "sub_1", DATE, {
+        skipped: false,
+        lines: [{ sku: "SKU-2", quantity: 3 }],
+        note: "",
+      }),
+    );
+    await handler.execute(
+      new UpsertOccurrenceOverrideCommand("user_1", "sub_1", DATE, {
+        skipped: false,
+        lines: [{ sku: "SKU-2", quantity: 4 }],
+        note: "",
+      }),
+    );
+
+    expect(repo.saved).toHaveLength(2);
+  });
+});

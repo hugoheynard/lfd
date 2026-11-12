@@ -24,6 +24,7 @@ import {
   GOLDEN_CLOCK,
   type GoldenScene,
 } from "./pricing-golden-master-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const MINUTE_MS = 60_000;
 const UNKNOWN_SKU = "ZZZ-999-1";
@@ -115,6 +116,7 @@ export async function refusalOrderCases(
       await http
         .as(E2E_STAFF_SUB)
         .post("/admin/orders")
+        .set(INTENT_KEY, freshIntent())
         .send({
           ...staffBody(scene, basket, settlement),
           companyId: payer.companyId,
@@ -201,7 +203,11 @@ export async function lateFeeCase(
     ),
     "C.admin-orders.account": await placed(
       ctx,
-      await http.as(E2E_STAFF_SUB).post("/admin/orders").send(staffPayload),
+      await http
+        .as(E2E_STAFF_SUB)
+        .post("/admin/orders")
+        .set(INTENT_KEY, freshIntent())
+        .send(staffPayload),
     ),
     "C.orders.company.account": await placed(
       ctx,

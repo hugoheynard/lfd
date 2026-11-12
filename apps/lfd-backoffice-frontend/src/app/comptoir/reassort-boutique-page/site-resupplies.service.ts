@@ -1,4 +1,5 @@
 import { HttpClient } from '@angular/common/http';
+import { intentOptions } from '../../shared/gesture-intents';
 import { inject, Injectable } from '@angular/core';
 import type {
   PlacedSiteResupplyResponse,
@@ -26,18 +27,24 @@ export class SiteResuppliesService {
     return firstValueFrom(this.http.get<SiteResuppliesView>(this.site(siteId)));
   }
 
-  /** Ajoute à la demande en cours de la visée ; un article présent voit sa quantité s'additionner. */
+  /**
+   * Ajoute à la demande en cours de la visée ; un article présent voit sa
+   * quantité s'additionner. `intentKey` : une clé par geste voulu — la même
+   * requête renvoyée n'additionne pas deux fois.
+   */
   addLine(
     siteId: string,
     target: ResupplyTarget,
     sku: string,
     quantity: number,
+    intentKey: string,
   ): Promise<PlacedSiteResupplyResponse> {
     return firstValueFrom(
-      this.http.post<PlacedSiteResupplyResponse>(`${this.site(siteId)}/drafts/${target}/lines`, {
-        sku,
-        quantity,
-      }),
+      this.http.post<PlacedSiteResupplyResponse>(
+        `${this.site(siteId)}/drafts/${target}/lines`,
+        { sku, quantity },
+        intentOptions(intentKey),
+      ),
     );
   }
 

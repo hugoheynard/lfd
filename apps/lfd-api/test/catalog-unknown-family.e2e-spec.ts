@@ -31,6 +31,7 @@ import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harne
 import { E2E_FAMILIES } from "./catalog-fixture.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /** L'id que le PIM a donné à la famille de la panne — un UUIDv7, inconnu du code. */
 const UNKNOWN_FAMILY = "01a031ff-146f-756f-a21b-4a2759a35e85";
@@ -297,6 +298,7 @@ describe("un brouillon et une commande qui le contiennent passent", () => {
     const placed = jsonBody<AdminPlacedOrderResponse>(
       await staff()
         .post("/admin/orders")
+        .set(INTENT_KEY, freshIntent())
         .send({
           companyId,
           buyerUserId: buyerId,

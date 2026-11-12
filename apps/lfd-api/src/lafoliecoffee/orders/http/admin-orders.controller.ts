@@ -53,6 +53,8 @@ import { ListAdminOrdersQuery } from "../application/queries/list-admin-orders.q
 import { GetOrderHandoverProofImageQuery } from "../application/queries/get-order-handover-proof-image.query.js";
 import { GetOrderHandoverProofQuery } from "../application/queries/get-order-handover-proof.query.js";
 import type { StoredDocument } from "../../../platform/storage/document-store.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 
 /**
  * Les commandes **vues du staff** — et, depuis la saisie assistée, prises par
@@ -160,6 +162,7 @@ export class AdminOrdersController {
   @Post("quote")
   @RequirePermission("b2b_place_order:write")
   @HttpCode(HttpStatus.OK)
+  @Idempotent("calcul pur en POST : chiffre la commande en mémoire, n'écrit rien et n'envoie rien")
   async quote(
     @Req() request: AuthenticatedStaffRequest,
     @Body(new ZodBody(orderQuotePayloadSchema)) payload: OrderQuotePayload,
@@ -190,6 +193,9 @@ export class AdminOrdersController {
    * L'identité du saisisseur vient de la **porte**, jamais du corps : un client
    * au nom de qui commander se choisit à l'écran, l'auteur d'une trace ne se
    * choisit pas.
+   *
+   * Une fois par intention : l'écran envoie sa clé (`Idempotency-Key`), tirée
+   * une fois par passation voulue ; un double clic rend la même commande.
    */
   @Post()
   @RequirePermission("b2b_place_order:write")
@@ -197,11 +203,12 @@ export class AdminOrdersController {
   async place(
     @Req() request: AuthenticatedStaffRequest,
     @Body(new ZodBody(adminPlaceOrderPayloadSchema)) payload: AdminPlaceOrderPayload,
+    @IntentKey() intentKey: string,
   ): Promise<AdminPlacedOrderResponse> {
     const placed = await this.commands.execute<
       PlaceOrderForCustomerCommand,
       PlaceOrderForCustomerResult
-    >(new PlaceOrderForCustomerCommand(staffUserIdOf(request), payload));
+    >(new PlaceOrderForCustomerCommand(staffUserIdOf(request), payload, intentKey));
     // `exactOptionalPropertyTypes` : `paymentUrl` est présent ou absent, jamais
     // présent-et-indéfini.
     return placed.paymentUrl === undefined

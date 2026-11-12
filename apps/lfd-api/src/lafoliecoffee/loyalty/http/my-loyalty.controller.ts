@@ -10,6 +10,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { ActingCompany } from "../../../platform/auth/acting-company.decorator.js";
 import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ConvertLoyaltyPointsCommand } from "../application/commands/convert-loyalty-points.command.js";
 import { GetMyLoyaltyQuery } from "../application/queries/get-my-loyalty.query.js";
@@ -49,6 +50,9 @@ export class MyLoyaltyController {
    */
   @Post("conversions")
   @HttpCode(HttpStatus.CREATED)
+  @Idempotent(
+    "par sa propre clé : le solde vu (expectedBalancePoints, obligatoire au contrat) ; rejouée, la conversion l'a fait baisser et l'agrégat refuse (409 LoyaltyBalanceChangedError) sous le verrou du titulaire, avant tout tirage d'identifiant ni écriture",
+  )
   async convert(
     @CurrentUser() user: Principal,
     @ActingCompany() companyId: string | null,

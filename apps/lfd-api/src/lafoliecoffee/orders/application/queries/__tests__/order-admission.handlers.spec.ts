@@ -17,7 +17,7 @@ const FIRST = addDays(TODAY, 3);
 
 const companyExemption = (companyId: string): OrderOpeningExemption =>
   OrderOpeningExemption.grantToCompany({
-    id: "x1",
+    nextId: () => "x1",
     companyId,
     company: { name: "Chez Paul", status: "active" },
     active: [],
@@ -25,7 +25,7 @@ const companyExemption = (companyId: string): OrderOpeningExemption =>
   });
 
 const emailExemption = (email: string): OrderOpeningExemption =>
-  OrderOpeningExemption.grantToEmail({ id: "x2", email, active: [], stamp: STAMP });
+  OrderOpeningExemption.grantToEmail({ nextId: () => "x2", email, active: [], stamp: STAMP });
 
 /** « Fermée, mais vous pouvez commander » — la porte lue sans refus (2026-10-26). */
 describe("GetMyOrderAdmissionHandler", () => {

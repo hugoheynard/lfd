@@ -6,6 +6,7 @@ import { Throttle } from "@nestjs/throttler";
 import { Public } from "../../../platform/auth/public.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { QuoteShopCartQuery } from "../application/queries/quote-shop-cart.handler.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Ce que le panier de la boutique coûte**, sans jeton — comme la vitrine.
@@ -50,6 +51,7 @@ export class ShopQuoteController {
 
   @Post()
   @HttpCode(HttpStatus.OK)
+  @Idempotent("calcul pur en POST : chiffre le panier en mémoire, n'écrit rien et n'envoie rien")
   async quote(
     @Body(new ZodBody(shopQuotePayloadSchema)) payload: ShopQuotePayload,
   ): Promise<ShopQuoteView> {

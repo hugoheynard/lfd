@@ -244,12 +244,18 @@ export function placeOrderForCustomer(
       settlement: seed.settlement,
       expectedTotalCents,
     });
+  // Une intention par commande semée ; le refus du total vu rend la clé.
+  const intentKey = randomUUID();
   return placeAt(ctx, seed.placedAt, { type: "staff", id: seed.staffUserId }, () =>
     seeingTotal(undefined, (expectedTotalCents) =>
       ctx.app
         .get(CommandBus)
         .execute<PlaceOrderForCustomerCommand, PlaceOrderForCustomerResult>(
-          new PlaceOrderForCustomerCommand(seed.staffUserId, payload(expectedTotalCents)),
+          new PlaceOrderForCustomerCommand(
+            seed.staffUserId,
+            payload(expectedTotalCents),
+            intentKey,
+          ),
         ),
     ),
   );

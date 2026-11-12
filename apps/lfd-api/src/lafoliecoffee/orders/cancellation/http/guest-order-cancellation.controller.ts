@@ -13,6 +13,7 @@ import { Public } from "../../../../platform/auth/public.decorator.js";
 import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import { CancelGuestOrderCommand } from "../application/commands/cancel-guest-order.command.js";
 import { GetGuestOrderCancellationQuery } from "../application/queries/get-guest-order-cancellation.query.js";
+import { Idempotent } from "../../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **L'annulation par l'invité, depuis le lien de son courriel** (doc
@@ -48,6 +49,9 @@ export class GuestOrderCancellationController {
   @Header("Cache-Control", "no-store")
   @Header("X-Robots-Tag", "noindex")
   @Header("Referrer-Policy", "no-referrer")
+  @Idempotent(
+    "lecture en POST (le jeton voyage dans le corps) : rend l'état d'annulation de la commande, n'écrit rien et n'envoie rien",
+  )
   view(
     @Body(new ZodBody(guestCancellationViewPayloadSchema)) payload: GuestCancellationViewPayload,
   ): Promise<GuestOrderCancellationView> {

@@ -11,6 +11,7 @@ import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { UpdateCustomerCancellationSettingsCommand } from "../application/commands/update-customer-cancellation-settings.command.js";
 import { GetCustomerCancellationSettingsQuery } from "../application/queries/get-customer-cancellation-settings.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Réglage **staff** « Réglages › Commandes » : les particuliers peuvent-ils
@@ -41,6 +42,9 @@ export class AdminCustomerCancellationController {
 
   @Patch()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose des valeurs : rejouée, la même requête repose les mêmes délais (seuls l'horodatage et l'auteur du réglage avancent), sans fait ni effet",
+  )
   async update(
     @Body(new ZodBody(customerCancellationSettingsPatchSchema))
     patch: CustomerCancellationSettingsPatch,

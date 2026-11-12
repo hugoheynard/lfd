@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { BusinessError } from "../../platform/shared/errors/app-error.js";
 import { AddSiteResupplyLineCommand } from "../../lafoliecoffee/resupply/application/add-site-resupply-line.command.js";
 import { NameSiteResupplyCommand } from "../../lafoliecoffee/resupply/application/name-site-resupply.command.js";
@@ -90,7 +92,14 @@ export async function seedVillageAfternoonResupply(
     );
     for (const article of articles) {
       await context.commands.execute(
-        new AddSiteResupplyLineCommand(village.id, "asap", article.sku, AFTERNOON_PIECES),
+        new AddSiteResupplyLineCommand(
+          village.id,
+          "asap",
+          article.sku,
+          AFTERNOON_PIECES,
+          SEED_STAFF_SUB,
+          randomUUID(),
+        ),
       );
     }
     const draft = await readSeeded(context, village.id, forDay);

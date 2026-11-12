@@ -43,6 +43,7 @@ import {
   worksheetLine,
 } from "./production-day-fixture.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const EVE = addDays(SERVICE_DAY, -1);
 const NAME = "Vitrine du matin";
@@ -120,6 +121,7 @@ async function counterSendsNamed(labo: string): Promise<string> {
   await staff().put(`${base}/drafts/tomorrow/name`).send({ name: NAME }).expect(200);
   const added = await staff()
     .post(`${base}/drafts/tomorrow/lines`)
+    .set(INTENT_KEY, freshIntent())
     .send({ sku: CROISSANT, quantity: ASKED })
     .expect(201);
   const id = jsonBody<{ id: string }>(added).id;

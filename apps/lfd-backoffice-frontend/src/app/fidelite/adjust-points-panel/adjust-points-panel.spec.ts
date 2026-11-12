@@ -15,9 +15,11 @@ import { AdjustPointsPanel } from './adjust-points-panel';
 
 class FakeApi {
   calls: AdjustLoyaltyPointsPayload[] = [];
+  keys: string[] = [];
   refuse: unknown = null;
 
-  adjust(payload: AdjustLoyaltyPointsPayload): Promise<void> {
+  adjust(payload: AdjustLoyaltyPointsPayload, intentKey: string): Promise<void> {
+    this.keys.push(intentKey);
     if (this.refuse !== null) {
       return Promise.reject(this.refuse);
     }
@@ -143,5 +145,24 @@ describe('AdjustPointsPanel', () => {
 
     expect(root(fixture).textContent).toContain('Le solde passerait sous zéro.');
     expect(closedWith).toEqual([]);
+  });
+
+  /** Régression : un double clic créditait deux fois — l'écran renvoie la même clé jusqu'au succès. */
+  it('renvoie la même clé d’intention après un refus, pour le même ajustement', async () => {
+    const api = new FakeApi();
+    api.refuse = { status: 503, error: { message: 'Indisponible.' } };
+    const { fixture } = await render(api);
+    points(fixture, '100');
+    reason(fixture, 'Geste');
+
+    submit(fixture).click();
+    await fixture.whenStable();
+    api.refuse = null;
+    submit(fixture).click();
+    await fixture.whenStable();
+
+    expect(api.keys).toHaveLength(2);
+    expect(api.keys[0]).toBe(api.keys[1]);
+    expect(api.calls).toHaveLength(1);
   });
 });

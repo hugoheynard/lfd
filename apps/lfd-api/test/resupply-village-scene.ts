@@ -25,6 +25,7 @@ import { seedVillage } from "./internal-transfer-scene.js";
 import { CROISSANT, MEMBER, SERVICE_DAY, STAFF, worksheetLine } from "./production-day-fixture.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 import { seedWeighedArticles } from "./weighed-catalog-scene.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 export const EVE = addDays(SERVICE_DAY, -1);
 export const NAME = "Vitrine du matin";
@@ -89,11 +90,13 @@ async function counterSendsNamed(s: VillageScene, village: string): Promise<stri
   await staffOf(s).put(`${base}/drafts/tomorrow/name`).send({ name: NAME }).expect(200);
   const added = await staffOf(s)
     .post(`${base}/drafts/tomorrow/lines`)
+    .set(INTENT_KEY, freshIntent())
     .send({ sku: CROISSANT, quantity: ASKED })
     .expect(201);
   // Le vrai envoi du comptoir, avec une ligne au poids : la garde de L2b-1 est retirée.
   await staffOf(s)
     .post(`${base}/drafts/tomorrow/lines`)
+    .set(INTENT_KEY, freshIntent())
     .send({ sku: GRAVLAX, quantity: ASKED_GRAMS })
     .expect(201);
   const id = jsonBody<{ id: string }>(added).id;

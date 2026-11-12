@@ -29,6 +29,7 @@ import { SavePublicPickupScheduleCommand } from "../application/save-public-pick
 import { CreatePickupAddressCommand } from "../application/create-pickup-address.command.js";
 import { RemovePickupAddressCommand } from "../application/remove-pickup-address.command.js";
 import { UpdatePickupAddressCommand } from "../application/update-pickup-address.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Gestion **staff** des points de retrait (page Réglages). Ajouter / éditer /
@@ -70,6 +71,9 @@ export class AdminPickupAddressesController {
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "archive un point de retrait : rejoué sur un site archivé, l'agrégat refuse (409 ArchivedSiteError) avant toute écriture, tout fait ni toute purge du cache",
+  )
   async remove(@Param("id") id: string): Promise<void> {
     await this.commands.execute<RemovePickupAddressCommand, void>(
       new RemovePickupAddressCommand(id),

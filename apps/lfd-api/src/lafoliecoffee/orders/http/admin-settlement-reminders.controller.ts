@@ -8,6 +8,7 @@ import {
   SendSettlementRemindersCommand,
   type SettlementRemindersReport,
 } from "../application/commands/send-settlement-reminders.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Endpoint **batch** du rappel de règlement (plan
@@ -34,6 +35,9 @@ export class SettlementRemindersController {
 
   @Post()
   @HttpCode(200)
+  @Idempotent(
+    "appelée par la machine sous RecomputeGuard : état relu ; rejouée, chaque rappel porte sa clé par commande (la cloche ne sonne qu'une fois) et la purge ne trouve plus rien d'échu",
+  )
   async remind(): Promise<SettlementRemindersReport> {
     const report = await this.commands.execute<
       SendSettlementRemindersCommand,

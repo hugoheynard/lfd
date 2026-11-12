@@ -38,6 +38,7 @@ import {
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { poseSiteDiscount } from "./promotion-fixtures.js";
 import { cardProvidersOverride } from "./card-payments.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const MINUTE_MS = 60_000;
 const CROISSANT = "VIE-001-1";
@@ -198,7 +199,7 @@ async function estimate(body: Record<string, unknown>): Promise<AdminOrderEstima
 async function expectParity(body: Record<string, unknown>): Promise<AdminOrderEstimateView> {
   const view = await estimate(body);
   expect(view.refusal).toBeNull();
-  const placed = await staff().post("/admin/orders").send(body);
+  const placed = await staff().post("/admin/orders").set(INTENT_KEY, freshIntent()).send(body);
   expect({
     status: placed.status,
     body: placed.status === 201 ? null : (placed.body as unknown),
@@ -306,7 +307,11 @@ describe("l'estimation de la saisie et la commande passée", () => {
     const body = pickupBody();
 
     const view = await estimate(body);
-    const refused = await staff().post("/admin/orders").send(body).expect(409);
+    const refused = await staff()
+      .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
+      .send(body)
+      .expect(409);
 
     expect(view.amounts).not.toBeNull();
     expect(view.warnings).toEqual([
@@ -330,7 +335,11 @@ describe("l'estimation de la saisie et la commande passée", () => {
     });
 
     const view = await estimate(body);
-    const refused = await staff().post("/admin/orders").send(body).expect(409);
+    const refused = await staff()
+      .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
+      .send(body)
+      .expect(409);
 
     expect(view.amounts).toBeNull();
     expect(view.refusal).toEqual({

@@ -25,6 +25,7 @@ import { CardProviders } from "../src/card-payment/domain/ports/card-providers.j
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const ROUTE = "/admin/counter/customers";
 const BUYER = "auth0|acheteur-comptoir";
@@ -170,6 +171,7 @@ describe("sous le rôle `comptoir`, l'écran de commande entier", () => {
       .expect(200);
     await agent
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         companyId,
         buyerUserId: view.buyers[0]?.userId,

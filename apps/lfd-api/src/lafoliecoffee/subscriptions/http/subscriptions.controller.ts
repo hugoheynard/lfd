@@ -32,6 +32,7 @@ import { SetSubscriptionStatusCommand } from "../application/commands/set-subscr
 import { UpsertOccurrenceOverrideCommand } from "../application/commands/upsert-occurrence-override.command.js";
 import type { CreatedSubscription } from "../domain/ports/subscription.repository.js";
 import { ListSubscriptionsQuery } from "../application/queries/list-subscriptions.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Paniers récurrents (abonnements) du **client connecté** — mur = son `userId`.
@@ -76,6 +77,9 @@ export class SubscriptionsController {
    */
   @Put(":id/occurrences/:date")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose une dérogation : rejouée, la même requête trouve une dérogation identique (sameOccurrenceOverride, note comprise) et ne sauve ni ne journalise",
+  )
   override(
     @CurrentUser() user: Principal,
     @Param("id") id: string,
@@ -91,6 +95,9 @@ export class SubscriptionsController {
   /** Met en pause / reprend un panier récurrent. Mur = le propriétaire (sinon `404`). */
   @Patch(":id/status")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée, le panier est déjà en pause (ou déjà actif) et l'agrégat refuse (409 SubscriptionAlreadyPausedError / SubscriptionAlreadyActiveError) avant toute écriture, tout fait ni tout avis au principal",
+  )
   setStatus(
     @CurrentUser() user: Principal,
     @Param("id") id: string,
@@ -104,6 +111,9 @@ export class SubscriptionsController {
   /** Supprime un panier récurrent. Mur = le propriétaire (sinon `404`). */
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "retire un panier : rejouée, il n'existe plus et le chargement refuse (404 SubscriptionNotFoundError) avant toute écriture, tout fait ni tout avis au principal",
+  )
   remove(@CurrentUser() user: Principal, @Param("id") id: string): Promise<void> {
     return this.commands.execute<DeleteSubscriptionCommand, void>(
       new DeleteSubscriptionCommand(user.userId, id),

@@ -12,6 +12,7 @@ import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { DeclareStockAlertCommand } from "../application/declare-stock-alert.command.js";
 import { LiftStockAlertCommand } from "../application/lift-stock-alert.command.js";
 import { ListSiteStockAlertsQuery } from "../application/list-site-stock-alerts.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Rupture et stock faible** — Comptoir › Réassort, pour le point du
@@ -51,6 +52,9 @@ export class AdminSiteStockAlertsController {
   @Post(":siteId/:alertId/lift")
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission("handover_counter:write")
+  @Idempotent(
+    "transition : rejouée sur une alerte levée, l'agrégat refuse (409 StockAlertAlreadyLiftedError) avant toute écriture",
+  )
   async lift(
     @Param("siteId") siteId: string,
     @Param("alertId") alertId: string,

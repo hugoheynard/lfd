@@ -8,14 +8,14 @@ const OPEN = { ordersOpenToB2b: true, ordersOpenToB2c: true };
 const CLOSED = { ordersOpenToB2b: false, ordersOpenToB2c: false };
 
 const companyExemption = OrderOpeningExemption.grantToCompany({
-  id: "x1",
+  nextId: () => "x1",
   companyId: "c1",
   company: { name: "Chez Paul", status: "active" },
   active: [],
   stamp: STAMP,
 });
 const emailExemption = OrderOpeningExemption.grantToEmail({
-  id: "x2",
+  nextId: () => "x2",
   email: "camille@visiteur.fr",
   active: [],
   stamp: STAMP,
@@ -78,7 +78,7 @@ describe("admitsOrder", () => {
 
   it("fermée, exemption retirée : refus", () => {
     const withdrawn = OrderOpeningExemption.grantToEmail({
-      id: "x3",
+      nextId: () => "x3",
       email: "camille@visiteur.fr",
       active: [],
       stamp: STAMP,

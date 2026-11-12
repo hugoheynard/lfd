@@ -18,6 +18,7 @@ import { SignVolumeCommitmentCommand } from "../application/commands/sign-volume
 import { CarryOverVolumeCommitmentCommand } from "../application/commands/carry-over-volume-commitment.command.js";
 import { ListVolumeCommitmentsQuery } from "../application/queries/list-volume-commitments.query.js";
 import type { CreatedIdResponse } from "@lfd/contracts";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Les engagements de volume**, côté back-office.
@@ -62,6 +63,9 @@ export class AdminVolumeCommitmentsController {
    */
   @Post(":id/close")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée sur un engagement clos, l'agrégat refuse (409 ArchivedVolumeCommitmentIsSealedError) avant toute écriture ni tout fait",
+  )
   async close(
     @Param("id") id: string,
     @Body(new ZodBody(pricingReasonPayloadSchema)) payload: PricingReasonPayload,
@@ -79,6 +83,9 @@ export class AdminVolumeCommitmentsController {
    */
   @Post(":id/carry-over")
   @HttpCode(HttpStatus.CREATED)
+  @Idempotent(
+    "report : rejoué, la décision est déjà reportée sur la nouvelle référence et le cas d'usage refuse (409 DecisionAlreadyCarriedError) sous le verrou du report, avant tout tirage d'identifiant ni écriture",
+  )
   async carryOver(
     @Param("id") id: string,
     @Body(new ZodBody(carryOverDecisionPayloadSchema)) payload: CarryOverDecisionPayload,

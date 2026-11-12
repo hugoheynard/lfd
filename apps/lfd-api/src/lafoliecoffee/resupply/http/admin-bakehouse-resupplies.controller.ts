@@ -30,6 +30,7 @@ import { ListResupplyArticlesQuery } from "../application/list-resupply-articles
 import { MarkResupplyMountedCommand } from "../application/mark-resupply-mounted.command.js";
 import { draftLineOf } from "../domain/bakehouse-resupply-draft-content.js";
 import { SendBakehouseResupplyCommand } from "../application/send-bakehouse-resupply.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Envoyer un réassort depuis le fournil** — « je t'envoie ça » (R1d,
@@ -66,6 +67,9 @@ export class AdminBakehouseResuppliesController {
   }
 
   @Post("sites/:siteId")
+  @Idempotent(
+    "par sa propre clé : la clé d'envoi de l'écran (sendOnceUnderKey) ; rejouée, le réassort écrit sous cette clé est retrouvé, relu sous transaction, et rien n'est réécrit",
+  )
   async send(
     @Param("siteId") siteId: string,
     @Body(new ZodBody(placeSiteResupplySchema)) body: PlaceSiteResupplyPayload,
@@ -92,6 +96,9 @@ export class AdminBakehouseResuppliesController {
    */
   @Post("sites/:siteId/:resupplyId/mounted")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée sur un réassort déjà arrivé, l'agrégat rend faux et ni l'écriture ni la cloche ne partent",
+  )
   async mounted(
     @Param("siteId") siteId: string,
     @Param("resupplyId") resupplyId: string,
@@ -113,6 +120,9 @@ export class AdminBakehouseResuppliesController {
 
   /** « Enregistrer comme brouillon », la première fois. */
   @Post("drafts")
+  @Idempotent(
+    "par sa propre clé : la clé du brouillon fournie par l'écran ; rejouée, le brouillon déjà écrit sous cette clé est rendu tel quel sans rien réécrire",
+  )
   createDraft(
     @Body(new ZodBody(createBakehouseResupplyDraftSchema))
     body: CreateBakehouseResupplyDraftPayload,
@@ -126,6 +136,9 @@ export class AdminBakehouseResuppliesController {
 
   /** Réécrire un brouillon repris, sous la version lue (409 si périmée). */
   @Put("drafts/:draftId")
+  @Idempotent(
+    "par sa propre clé : la version lue du brouillon ; rejouée, l'enregistrement l'a fait monter et la requête est refusée (409 BakehouseResupplyDraftChangedMeanwhileError) avant toute écriture",
+  )
   saveDraft(
     @Param("draftId") draftId: string,
     @Body(new ZodBody(updateBakehouseResupplyDraftSchema))
@@ -141,6 +154,9 @@ export class AdminBakehouseResuppliesController {
   /** « Supprimer le brouillon » : il passe `discarded`, la ligne reste. */
   @Post("drafts/:draftId/discard")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition sous la version lue : rejouée, le brouillon est écarté et l'agrégat refuse (409 BakehouseResupplyDraftClosedError) avant toute écriture",
+  )
   async discardDraft(
     @Param("draftId") draftId: string,
     @Body(new ZodBody(discardBakehouseResupplyDraftSchema))

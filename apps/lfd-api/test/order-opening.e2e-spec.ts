@@ -35,6 +35,7 @@ import {
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardProvidersOverride } from "./card-payments.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const SERVICE_DAY = serviceDay();
 const PERSO = "auth0|perso-ouverture";
@@ -128,6 +129,7 @@ async function placeAsGuest(email = "camille@visiteur.fr", day = SERVICE_DAY): P
 async function staffOrderForPro(day = SERVICE_DAY, expected = 201): Promise<{ code?: string }> {
   const response = await staff()
     .post("/admin/orders")
+    .set(INTENT_KEY, freshIntent())
     .send({
       companyId: pro.companyId,
       buyerUserId: pro.buyerId,

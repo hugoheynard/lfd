@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import {
   EmptyResupplyError,
   ResupplyAlreadyPlacedError,
@@ -28,10 +30,14 @@ import {
 describe("la demande en cours — envoyer", () => {
   it("l'envoie au nom du poste ; le prochain ajout ouvre une nouvelle demande", async () => {
     const { add, send, list, store } = setup();
-    const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 5));
+    const id = await add.execute(
+      new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 5, "staff_1", randomUUID()),
+    );
 
     await send.execute(new SendSiteResupplyCommand(VILLAGE, id, versionOf(store, id), "staff_lou"));
-    const next = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "PAC", 1));
+    const next = await add.execute(
+      new AddSiteResupplyLineCommand(VILLAGE, "asap", "PAC", 1, "staff_1", randomUUID()),
+    );
 
     const view = await list.execute(new ListSiteResuppliesQuery(VILLAGE));
     expect(next).not.toBe(id);
@@ -43,7 +49,9 @@ describe("la demande en cours — envoyer", () => {
 
   it("une demande envoyée ne bouge plus et ne se renvoie pas", async () => {
     const { add, send, correct, store } = setup();
-    const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 5));
+    const id = await add.execute(
+      new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 5, "staff_1", randomUUID()),
+    );
     await send.execute(new SendSiteResupplyCommand(VILLAGE, id, versionOf(store, id), "s"));
 
     await expect(
@@ -58,7 +66,9 @@ describe("la demande en cours — envoyer", () => {
 
   it("une demande vidée ne s'envoie pas", async () => {
     const { add, withdraw, send, store } = setup();
-    const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 5));
+    const id = await add.execute(
+      new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 5, "staff_1", randomUUID()),
+    );
     await withdraw.execute(
       new WithdrawSiteResupplyLineCommand(VILLAGE, id, "CRO", versionOf(store, id)),
     );
@@ -70,7 +80,9 @@ describe("la demande en cours — envoyer", () => {
 
   it("« pour demain » envoyé après l'heure du réassort est refusé, et reste en cours", async () => {
     const { add, send, store } = setup(new Date(NOW.getTime() - HOUR_MS));
-    const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "CRO", 5));
+    const id = await add.execute(
+      new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "CRO", 5, "staff_1", randomUUID()),
+    );
 
     const refusal = send.execute(
       new SendSiteResupplyCommand(VILLAGE, id, versionOf(store, id), "s"),
@@ -84,7 +96,9 @@ describe("la demande en cours — envoyer", () => {
 
   it("« pour demain » se tient au guichet du plan, sous le verrou de sa journée (R3a)", async () => {
     const { add, send, store, desk } = setup();
-    const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "CRO", 5));
+    const id = await add.execute(
+      new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "CRO", 5, "staff_1", randomUUID()),
+    );
 
     await send.execute(new SendSiteResupplyCommand(VILLAGE, id, versionOf(store, id), "s"));
 
@@ -94,7 +108,9 @@ describe("la demande en cours — envoyer", () => {
 
   it("« pour demain » est refusé sur un plan déjà arrêté, même avant l'heure (R3a)", async () => {
     const { add, send, store } = setup(null, [TOMORROW]);
-    const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "CRO", 5));
+    const id = await add.execute(
+      new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "CRO", 5, "staff_1", randomUUID()),
+    );
 
     await expect(
       send.execute(new SendSiteResupplyCommand(VILLAGE, id, versionOf(store, id), "s")),
@@ -104,7 +120,9 @@ describe("la demande en cours — envoyer", () => {
 
   it("une demande « pour demain » dont la journée est passée ne s'envoie plus, et quitte l'écran", async () => {
     const { add, send, list, store, clock } = setup();
-    const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "CRO", 5));
+    const id = await add.execute(
+      new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "CRO", 5, "staff_1", randomUUID()),
+    );
     clock.set(new Date(NOW.getTime() + 2 * DAY_MS));
 
     await expect(
@@ -121,7 +139,9 @@ describe("le fournil envoie à part : la demande en cours du comptoir n'est jama
    */
   it("un réassort du fournil ne s'ajoute ni n'envoie la demande « au plus tôt » du comptoir", async () => {
     const { add, bakehouse, store } = setup();
-    const draftId = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "PAC", 4));
+    const draftId = await add.execute(
+      new AddSiteResupplyLineCommand(VILLAGE, "asap", "PAC", 4, "staff_1", randomUUID()),
+    );
     const draftVersion = versionOf(store, draftId);
 
     const sentId = await bakehouse.execute(
@@ -155,7 +175,9 @@ describe("le fournil envoie à part : la demande en cours du comptoir n'est jama
       ),
     );
 
-    const draftId = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "PAC", 2));
+    const draftId = await add.execute(
+      new AddSiteResupplyLineCommand(VILLAGE, "asap", "PAC", 2, "staff_1", randomUUID()),
+    );
 
     const view = await list.execute(new ListSiteResuppliesQuery(VILLAGE));
     expect(view.drafts.map((draft) => draft.id)).toEqual([draftId]);

@@ -7,7 +7,7 @@
  * Ports doublés par de vraies sous-classes. Les dates ne sont comparées qu'à
  * l'horloge figée de la fixture.
  */
-import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
+import { CountingIdGenerator } from "../../../../../platform/id/__tests__/counting-id-generator.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { ReservedArticleRefusedError } from "../../../../catalog/domain/errors/reserved-article-refused.error.js";
 import { InMemoryProductCatalog } from "../../../../catalog/infrastructure/in-memory-product-catalog.js";
@@ -78,6 +78,7 @@ function ruleSetup(
 ) {
   const trace: Trace = [];
   const uow = new TracingUnitOfWork(trace);
+  const ids = new CountingIdGenerator("rule");
   const rules = new StoredRules(
     trace,
     uow,
@@ -90,7 +91,7 @@ function ruleSetup(
     options.reserved ?? new InMemoryReservedElsewhere(),
     new InMemoryCarried(trace, uow, { price_rule: options.carried ?? [] }),
     new TracingLock(trace, uow),
-    new FixedIdGenerator("rule"),
+    ids,
     new FixedClock(NOW),
     uow,
     new InMemoryProductCatalog([]),
@@ -98,7 +99,7 @@ function ruleSetup(
   );
   const run = () =>
     handler.execute(new CarryOverPriceRuleCommand("rule_old", OLD, NEW, REASON, "staff|paul"));
-  return { trace, rules, run };
+  return { trace, rules, run, ids };
 }
 
 describe("CarryOverPriceRuleHandler", () => {
@@ -149,9 +150,11 @@ describe("CarryOverPriceRuleHandler", () => {
   });
 
   it("refuse un second report pour la même société", async () => {
-    const { rules, run } = ruleSetup({ carried: ["geste|company:co_1|0"] });
+    const { rules, run, ids } = ruleSetup({ carried: ["geste|company:co_1|0"] });
     await expect(run()).rejects.toBeInstanceOf(DecisionAlreadyCarriedError);
     expect(rules.saved).toEqual([]);
+    // Régression : l'identifiant était tiré avant le refus d'un report rejoué.
+    expect(ids.drawn).toBe(0);
   });
 
   it("accepte une règle d'un AUTRE étage pour la même société : deux règles, deux reports", async () => {
@@ -187,6 +190,7 @@ function floorSetup(options: { inForce?: PricingFloor | null; carried?: readonly
   const trace: Trace = [];
   const uow = new TracingUnitOfWork(trace);
   const stored = new StoredFloors({ floor: publicFloor(), archivedAt: null });
+  const ids = new CountingIdGenerator("flr");
   const handler = new CarryOverPriceFloorHandler(
     stored,
     new FloorsInForce(options.inForce ?? null),
@@ -195,13 +199,13 @@ function floorSetup(options: { inForce?: PricingFloor | null; carried?: readonly
     new InMemoryCarried(trace, uow, { price_floor: options.carried ?? [] }),
     new TracingLock(trace, uow),
     new InMemoryProductCatalog([]),
-    new FixedIdGenerator("flr"),
+    ids,
     new FixedClock(NOW),
     uow,
   );
   const run = () =>
     handler.execute(new CarryOverPriceFloorCommand("flr_old", OLD, NEW, REASON, "staff|paul"));
-  return { trace, stored, run };
+  return { trace, stored, run, ids };
 }
 
 describe("CarryOverPriceFloorHandler", () => {
@@ -240,8 +244,10 @@ describe("CarryOverPriceFloorHandler", () => {
   });
 
   it("refuse un second report pour la même clientèle", async () => {
-    const { stored, run } = floorSetup({ carried: ["public"] });
+    const { stored, run, ids } = floorSetup({ carried: ["public"] });
     await expect(run()).rejects.toBeInstanceOf(DecisionAlreadyCarriedError);
     expect(stored.carried).toEqual([]);
+    // Régression : l'identifiant était tiré avant le refus d'un report rejoué.
+    expect(ids.drawn).toBe(0);
   });
 });

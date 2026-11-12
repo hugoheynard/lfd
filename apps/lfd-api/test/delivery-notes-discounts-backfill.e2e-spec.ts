@@ -32,6 +32,7 @@ import { attachTo, createCompany, createUser } from "./factories.js";
 import { asPlacedBeforeM3 } from "./order-discount-fixtures.js";
 import { poseSiteDiscount } from "./promotion-fixtures.js";
 import { cardGatewayDouble } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const DAY = serviceDay(7);
 const BUYER = "auth0|acheteur-reprise-bons";
@@ -102,6 +103,7 @@ async function discountedOrder(): Promise<{ readonly orderId: string; readonly p
   await attachTo(ctx.prisma, user.id, company.id, CustomerRole.owner);
   const response = await staff()
     .post("/admin/orders")
+    .set(INTENT_KEY, freshIntent())
     .send({
       companyId: company.id,
       buyerUserId: user.id,

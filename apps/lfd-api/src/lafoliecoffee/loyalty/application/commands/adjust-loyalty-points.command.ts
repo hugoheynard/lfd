@@ -8,5 +8,10 @@ export class AdjustLoyaltyPointsCommand {
     readonly points: number,
     readonly reason: string,
     readonly staffUserId: string,
+    /**
+     * La clé d'intention de l'écran (en-tête `Idempotency-Key`) : un second
+     * envoi de même clé ne réécrit pas le mouvement.
+     */
+    readonly intentKey: string,
   ) {}
 }

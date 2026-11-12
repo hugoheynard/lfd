@@ -16,6 +16,7 @@ import {
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { pickupSite } from "./order-factory.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /**
  * E2E — **le minimum d'une ligne GARDÉE qu'on change en révision staff**
@@ -74,6 +75,7 @@ async function placed(): Promise<{ readonly orderId: string; readonly pickupId: 
   const order = jsonBody<AdminPlacedOrderResponse>(
     await staff()
       .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
       .send({
         companyId: company.id,
         buyerUserId: user.id,

@@ -16,7 +16,7 @@ const OPEN = { ordersOpenToB2b: true, ordersOpenToB2c: true };
 const PARTY = { companyId: "c1", email: "camille@visiteur.fr" };
 
 const companyExemption = OrderOpeningExemption.grantToCompany({
-  id: "x1",
+  nextId: () => "x1",
   companyId: "c1",
   company: { name: "Chez Paul", status: "active" },
   active: [],

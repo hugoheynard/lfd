@@ -17,6 +17,7 @@ import {
   type PriceGridFile,
 } from "../application/queries/export-price-grid.query.js";
 import { ListPriceGridPromotionsQuery } from "../application/queries/list-price-grid-promotions.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **La grille de prix d'un public** — l'export d'une plaquette
@@ -35,6 +36,9 @@ export class AdminPriceGridController {
   @Post("promotions")
   @HttpCode(HttpStatus.OK)
   @RequirePermission("b2b_pricing:read")
+  @Idempotent(
+    "lecture en POST : liste les promotions applicables à la question posée, n'écrit rien et n'envoie rien",
+  )
   promotions(
     @Body(new ZodBody(priceGridQuestionSchema)) question: PriceGridQuestion,
   ): Promise<PriceGridPromotionsView> {
@@ -48,6 +52,9 @@ export class AdminPriceGridController {
   @HttpCode(HttpStatus.OK)
   @RequirePermission("b2b_pricing:read")
   @Header("Content-Type", "text/csv; charset=utf-8")
+  @Idempotent(
+    "rendu pur en POST : compose le fichier CSV en mémoire et le rend dans la réponse, n'écrit rien, ne range rien au stockage et n'envoie rien",
+  )
   async export(
     @Body(new ZodBody(priceGridExportPayloadSchema)) payload: PriceGridExportPayload,
     @Res({ passthrough: true }) response: Response,

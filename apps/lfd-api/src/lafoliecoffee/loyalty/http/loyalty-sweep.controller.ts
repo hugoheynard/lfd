@@ -16,6 +16,7 @@ import {
   SettleVoucherRemaindersCommand,
   type VoucherRemaindersReport,
 } from "../application/commands/settle-voucher-remainders.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /** Le compte rendu du passage : la seule observabilité d'un déclenchement machine. */
 export interface LoyaltySweepReport extends PendingOrderPointsReport {
@@ -49,6 +50,9 @@ export class LoyaltySweepController {
 
   @Post()
   @HttpCode(200)
+  @Idempotent(
+    "appelée par la machine sous RecomputeGuard : balayage, état relu sous le verrou du titulaire ; rejouée, les gains et bonus déjà écrits sont sautés, les bons expirés ou soldés rendent sans rien refaire, et la cloche d'un suspens porte sa clé par bon et commande",
+  )
   async sweep(): Promise<LoyaltySweepReport> {
     const credits = await this.commands.execute<
       CreditPendingOrderPointsCommand,

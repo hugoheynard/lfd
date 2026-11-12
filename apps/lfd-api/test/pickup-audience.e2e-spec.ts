@@ -30,6 +30,7 @@ import {
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardProvidersOverride } from "./card-payments.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const SERVICE_DAY = serviceDay();
 const PERSO = "auth0|retrait-perso";
@@ -145,7 +146,7 @@ function guestOrder(siteId: string): Record<string, unknown> {
 }
 
 function staffOrder(siteId: string, companyId: string, buyerUserId: string) {
-  return staff().post("/admin/orders").send({
+  return staff().post("/admin/orders").set(INTENT_KEY, freshIntent()).send({
     companyId,
     buyerUserId,
     settlement: "link",

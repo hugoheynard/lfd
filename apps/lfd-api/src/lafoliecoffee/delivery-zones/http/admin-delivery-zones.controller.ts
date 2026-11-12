@@ -25,6 +25,7 @@ import { ListAdminDeliveryZonesQuery } from "../application/list-admin-delivery-
 import { ListUncoveredPostalCodesQuery } from "../application/list-uncovered-postal-codes.query.js";
 import { RemoveDeliveryZoneCommand } from "../application/remove-delivery-zone.command.js";
 import { UpdateDeliveryZoneCommand } from "../application/update-delivery-zone.command.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * Gestion **staff** des zones de livraison (Exploitation › Livraison › Zones
@@ -87,6 +88,9 @@ export class AdminDeliveryZonesController {
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "retire une zone : rejouée, elle n'existe plus et la requête est refusée (404 DeliveryZoneNotFoundError) sous le verrou de la zone, avant toute écriture, tout fait ni toute purge du cache",
+  )
   async remove(@Param("id") id: string): Promise<void> {
     await this.commands.execute<RemoveDeliveryZoneCommand, void>(new RemoveDeliveryZoneCommand(id));
   }

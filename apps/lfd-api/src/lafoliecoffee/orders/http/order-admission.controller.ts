@@ -15,6 +15,7 @@ import { Public } from "../../../platform/auth/public.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { GetGuestOrderAdmissionQuery } from "../application/queries/get-guest-order-admission.query.js";
 import { GetMyOrderAdmissionQuery } from "../application/queries/get-my-order-admission.query.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **La boutique prendrait-elle MA commande ?** — doc
@@ -53,6 +54,9 @@ export class OrderAdmissionController {
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Header("Cache-Control", "no-store")
+  @Idempotent(
+    "lecture en POST (l'adresse voyage dans le corps) : dit si cette adresse peut commander, n'écrit rien et n'envoie rien",
+  )
   guest(
     @Body(new ZodBody(guestOrderAdmissionPayloadSchema)) payload: GuestOrderAdmissionPayload,
   ): Promise<GuestOrderAdmissionView> {
