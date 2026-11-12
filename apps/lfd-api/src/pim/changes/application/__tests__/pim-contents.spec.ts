@@ -101,4 +101,26 @@ describe("VersionedPimContents", () => {
     expect(versions.order).toEqual(["load"]);
     expect(cache.kept.size).toBe(0);
   });
+
+  it("rend la charge avec le numéro lu avant elle", async () => {
+    const { contents, versions, load } = around();
+    versions.version = 7;
+
+    const served = await contents.versionedContentOf("pim-products", load, listContent<string>());
+
+    expect(versions.order).toEqual(["version", "load"]);
+    expect(served).toEqual({ version: 7, content: ["charge 1"] });
+  });
+
+  it("rend le numéro aussi quand la charge rangée est servie", async () => {
+    const { contents, versions, load, loads } = around();
+    versions.version = 4;
+    await contents.versionedContentOf("pim-products", load, listContent<string>());
+    await settle();
+
+    const second = await contents.versionedContentOf("pim-products", load, listContent<string>());
+
+    expect(loads()).toBe(1);
+    expect(second).toEqual({ version: 4, content: ["charge 1"] });
+  });
 });

@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ProductComplianceFinding, ProductComplianceWarningView } from '@lfd/pim-contracts';
 
@@ -12,7 +12,7 @@ import { PermissionsStore } from '../../../auth/permissions.store';
 import type { ProductStatus } from '../../data/models';
 import { ProductsPage } from './products-page';
 import { CategoryStore } from '../category-store';
-import { VersionWatcher } from '../../../shared/version/version-watcher';
+import { VersionWatcher, type VersionWatch } from '../../../shared/version/version-watcher';
 
 function category(id: string, name: string, position: number): Category {
   return { id, name: { fr: name }, position, isArchived: false } as Category;
@@ -38,6 +38,11 @@ function product(
     variants,
   } as Product;
 }
+
+/** Le branchement que la page pose au veilleur, et le numéro que sert la liste. */
+let watched: VersionWatch | null = null;
+let served = 1;
+let listReads = 0;
 
 // Le pain est second au catalogue même s'il arrive premier : l'ordre est `position`.
 const CATEGORIES = [category('pain', 'Pains', 2), category('vien', 'Viennoiseries', 1)];
@@ -65,7 +70,14 @@ async function render(
     providers: [
       provideRouter([]),
       { provide: CategoryStore, useValue: { items: signal(CATEGORIES) } },
-      { provide: VersionWatcher, useValue: { watch: () => undefined } },
+      {
+        provide: VersionWatcher,
+        useValue: {
+          watch: (spec: VersionWatch) => {
+            watched = spec;
+          },
+        },
+      },
       {
         provide: PermissionsStore,
         useValue: {
@@ -78,7 +90,10 @@ async function render(
         provide: CatalogueApi,
         useValue: {
           // Les constats voyagent dans les lignes de la liste, comme au serveur.
-          listProducts: async () => withFindings(products, await compliance()),
+          listProducts: async () => {
+            listReads += 1;
+            return { version: served, items: withFindings(products, await compliance()) };
+          },
           listCategories: () => Promise.resolve(CATEGORIES),
           listVatRates: () => Promise.resolve([]),
           publishProduct,
@@ -572,5 +587,35 @@ describe('ProductsPage — supprimer une fiche archivée', () => {
     expect(element.querySelector('[data-products-delete-error]')?.textContent).toContain(
       'Seule une fiche archivée peut être supprimée.',
     );
+  });
+});
+
+/** Le veilleur et le numéro `pim` de la copie (`plan-lectures-du-pim.md`, § 4.3). */
+describe('ProductsPage — le numéro retenu', () => {
+  beforeEach(() => {
+    watched = null;
+    served = 1;
+    listReads = 0;
+  });
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('écho ignoré : le veilleur compare au numéro servi avec la liste', async () => {
+    served = 7;
+    await render();
+
+    expect(watched?.held?.('pim')).toBe(7);
+    expect(listReads).toBe(1);
+  });
+
+  it('numéro différent : la relecture relit la liste et adopte le nouveau numéro', async () => {
+    served = 7;
+    const { settle } = await render();
+    served = 9;
+
+    await watched?.reload();
+    await settle();
+
+    expect(listReads).toBe(2);
+    expect(watched?.held?.('pim')).toBe(9);
   });
 });

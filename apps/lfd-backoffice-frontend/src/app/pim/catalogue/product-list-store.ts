@@ -3,6 +3,7 @@ import { httpErrorMessage } from '@lfd/endpoints';
 
 import type { Product } from '../data/models';
 import { CatalogueApi } from './catalogue-api';
+import type { ProductListing } from './product-http-api';
 
 export type ProductListState = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -18,10 +19,9 @@ export type ProductListState = 'idle' | 'loading' | 'ready' | 'error';
  * - Après un geste, la liste entière se relit en fond : l'API n'a pas de
  *   lecture d'une ligne, et la liste est servie par l'objet partagé tant que
  *   personne d'autre n'a écrit.
- *
- * La réponse ne porte pas le numéro `pim` : la copie ne peut donc pas le
- * retenir, et l'écho du propre geste relit une fois de plus (servi par
- * l'objet, sans lecture en base).
+ * - La copie retient le numéro `pim` que le serveur a lu AVANT ses lignes, et
+ *   l'adopte à chaque relecture (toujours complète) : le veilleur ignore
+ *   ainsi l'écho du propre geste, et relit sur un numéro différent.
  */
 @Injectable({ providedIn: 'root' })
 export class ProductListStore {
@@ -30,11 +30,14 @@ export class ProductListStore {
   private readonly loadState = signal<ProductListState>('idle');
   private readonly list = signal<readonly Product[]>([]);
   private readonly failure = signal<string | null>(null);
+  private readonly heldVersion = signal<number | null>(null);
 
   readonly state = this.loadState.asReadonly();
   readonly products = this.list.asReadonly();
   /** Pourquoi la première lecture a échoué ; `null` sinon. */
   readonly loadError = this.failure.asReadonly();
+  /** Le numéro `pim` sous lequel la copie a été servie ; `null` avant toute lecture. */
+  readonly version = this.heldVersion.asReadonly();
 
   /** Charge à la première ouverture, ou après un échec ; sinon rien. */
   async open(): Promise<void> {
@@ -48,7 +51,7 @@ export class ProductListStore {
   async load(): Promise<void> {
     this.loadState.set('loading');
     try {
-      this.list.set(await this.api.listProducts());
+      this.adopt(await this.api.listProducts());
       this.failure.set(null);
       this.loadState.set('ready');
     } catch (caught) {
@@ -66,7 +69,7 @@ export class ProductListStore {
       return;
     }
     try {
-      this.list.set(await this.api.listProducts());
+      this.adopt(await this.api.listProducts());
     } catch {
       // La copie reste : le veilleur reposera la question.
     }
@@ -75,5 +78,10 @@ export class ProductListStore {
   /** Retire une fiche supprimée de la copie, sans attendre de relecture. */
   remove(id: string): void {
     this.list.update((items) => items.filter((item) => item.id !== id));
+  }
+
+  private adopt(listing: ProductListing): void {
+    this.list.set(listing.items);
+    this.heldVersion.set(listing.version);
   }
 }

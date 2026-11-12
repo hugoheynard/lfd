@@ -8,7 +8,7 @@ import type {
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { CategoryStore } from './category-store';
-import { ProductHttpApi } from './product-http-api';
+import { ProductHttpApi, type ProductListing } from './product-http-api';
 import { VatRateStore } from './vat-rates/vat-store';
 
 // Types re-exportés depuis le modèle central : les pages continuent d'importer
@@ -71,8 +71,9 @@ export class CatalogueApi {
 
   // ── Produits (backend `catalogue/products`, via ProductHttpApi) ──────────
 
-  async listProducts(): Promise<Product[]> {
-    return this.productsApi.list();
+  /** La liste de l'écran, avec son numéro `pim`. */
+  async listProducts(): Promise<ProductListing> {
+    return this.productsApi.listScreen();
   }
 
   /** Les constats d'une seule fiche — la liste lit les siens dans sa réponse. */

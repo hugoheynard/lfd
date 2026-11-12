@@ -304,6 +304,19 @@ describe("les contenus servis sous le numéro `pim`", () => {
     expect(second).toEqual(first);
   });
 
+  it("la liste de l'écran rend le numéro `pim` lu avant elle, et les lignes de la liste nue", async () => {
+    await aProduct("f");
+    const version = await pimVersion();
+
+    const screen = jsonBody<{ version: number; items: unknown[] }>(
+      await staff().get(`${PRODUCTS}/screen`).expect(200),
+    );
+    const bare = jsonBody<unknown[]>(await staff().get(PRODUCTS).expect(200));
+
+    expect(screen.version).toBe(version);
+    expect(screen.items).toEqual(bare);
+  });
+
   it("deux lectures d'une fiche au même numéro : la base n'est lue qu'une fois", async () => {
     const { productId } = await aProduct("d");
     const first = jsonBody<unknown>(await staff().get(`${PRODUCTS}/${productId}`).expect(200));

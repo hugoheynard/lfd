@@ -10,6 +10,7 @@ import {
   type ProductEditorialPayload,
   type ProductReadinessView,
   type ProductListView,
+  type ProductListScreenView,
   type UpdateProductIdentityPayload,
   type UpdateVariantPricingPayload,
   setProductMediaPayloadSchema,
@@ -85,9 +86,25 @@ export class ProductController {
     private readonly queries: QueryBus,
   ) {}
 
+  /** La liste nue — l'assistant et tout lecteur qui n'a pas de copie à garder. */
   @Get()
-  listProducts(): Promise<ProductListView[]> {
-    return this.queries.execute<ListProductsQuery, ProductListView[]>(new ListProductsQuery());
+  async listProducts(): Promise<ProductListView[]> {
+    const listing = await this.listing();
+    return [...listing.items];
+  }
+
+  /**
+   * La liste et le numéro `pim` lu avant elle : l'écran du référentiel le
+   * retient pour ignorer l'écho de son propre geste. Déclarée AVANT `:id`,
+   * qui l'avalerait sinon.
+   */
+  @Get("screen")
+  listProductsScreen(): Promise<ProductListScreenView> {
+    return this.listing();
+  }
+
+  private listing(): Promise<ProductListScreenView> {
+    return this.queries.execute<ListProductsQuery, ProductListScreenView>(new ListProductsQuery());
   }
 
   /**

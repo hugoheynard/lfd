@@ -42,11 +42,21 @@ export type ProductListItem = ProductSnapshot &
     readonly complianceWarnings: readonly ProductComplianceFinding[];
   };
 
+/**
+ * La liste et le numéro `pim` lu AVANT elle. La route nue n'en rend que les
+ * lignes ; l'écran du référentiel retient le numéro pour ignorer l'écho de
+ * son propre geste.
+ */
+export interface ProductListing {
+  readonly version: number;
+  readonly items: readonly ProductListItem[];
+}
+
 /** Lecture du catalogue — dispatchée par le `QueryBus`. Sans paramètre. */
 export class ListProductsQuery {}
 
 @QueryHandler(ListProductsQuery)
-export class ListProductsHandler implements IQueryHandler<ListProductsQuery, ProductListItem[]> {
+export class ListProductsHandler implements IQueryHandler<ListProductsQuery, ProductListing> {
   constructor(
     private readonly products: ProductRepository,
     private readonly categories: CategoryRepository,
@@ -59,14 +69,17 @@ export class ListProductsHandler implements IQueryHandler<ListProductsQuery, Pro
 
   /**
    * Servie sous le numéro `pim`, alertes comprises : rien n'y dépend de
-   * l'appelant, et chaque table lue en fait monter le numéro.
+   * l'appelant, et chaque table lue en fait monter le numéro. Le numéro
+   * rendu est celui sous lequel la liste est servie, lu avant elle : une
+   * écriture validée entre les deux le fait monter, et l'écran relira.
    */
-  execute(): Promise<ProductListItem[]> {
-    return this.contents.contentOf(
+  async execute(): Promise<ProductListing> {
+    const { version, content } = await this.contents.versionedContentOf(
       PIM_CONTENT_KEYS.products,
       () => this.fromBase(),
       listContent<ProductListItem>(),
     );
+    return { version, items: content };
   }
 
   /**

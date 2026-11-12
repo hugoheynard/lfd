@@ -195,6 +195,7 @@ export type {
   VariantView,
   ProductView,
   ProductListView,
+  ProductListScreenView,
   ProductActivationGapsView,
   ProductEditorialView,
   ProductDetailView,

@@ -112,7 +112,7 @@ servies sortent), une version par fiche.
 
 ### 4.3 Les écrans
 
-- `ProductListStore` : première ouverture seulement, numéro retenu, ligne
+- `ProductListStore` (lue par `GET catalogue/products/screen`, qui rend `{ version, items }`) : première ouverture seulement, numéro retenu, ligne
   relue après un geste (la copie garde son numéro : le veilleur relit tout,
   servi par l'objet), relecture en fond.
 - Les stores des familles, de la TVA, des contextes de vente, de la

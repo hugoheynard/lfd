@@ -1,7 +1,7 @@
 import { CategoryNotFoundError } from "../../../category/domain/errors/category-errors.js";
 import type { Category } from "../../../category/domain/entities/category.js";
 import type { ProductSnapshot } from "../../domain/entities/product.js";
-import { ListProductsHandler } from "../list-products.js";
+import { ListProductsHandler, type ProductListItem } from "../list-products.js";
 import {
   BOTH_RATES,
   FixedVatPercents,
@@ -22,6 +22,7 @@ function listing(
   product: ProductSnapshot,
   category: Category | null,
   illustrated: readonly string[] = [],
+  version = 0,
 ): ListProductsHandler {
   return new ListProductsHandler(
     new OneProduct(product),
@@ -30,21 +31,36 @@ function listing(
     new FixedActiveContexts(["b2b", "takeaway"]),
     new FixedCitedAllergens(),
     new FixedIllustratedProducts(illustrated),
-    new DirectPimContents(),
+    new DirectPimContents(version),
   );
 }
+
+/** Les seules lignes de la liste. */
+async function items(handler: ListProductsHandler): Promise<readonly ProductListItem[]> {
+  return (await handler.execute()).items;
+}
+
+/** L'écran retient le numéro pour ignorer l'écho de son geste (`plan-lectures-du-pim.md`, § 4.3). */
+describe("ListProductsHandler — le numéro", () => {
+  it("rend le numéro `pim` sous lequel la liste est servie", async () => {
+    const listingAt12 = await listing(tarte(), family("pro"), [], 12).execute();
+
+    expect(listingAt12.version).toBe(12);
+    expect(listingAt12.items).toHaveLength(1);
+  });
+});
 
 /** Le filtre « Sans image » du catalogue lit ce drapeau (2026-10-28). */
 describe("ListProductsHandler — les images", () => {
   it("dit qu'une fiche sans image n'est pas illustrée", async () => {
-    const [item] = await listing(tarte(), family("pro")).execute();
+    const [item] = await items(listing(tarte(), family("pro")));
 
     expect(item?.illustrated).toBe(false);
   });
 
   it("dit qu'une fiche qui porte une image est illustrée", async () => {
     const product = tarte();
-    const [item] = await listing(product, family("pro"), [product.id]).execute();
+    const [item] = await items(listing(product, family("pro"), [product.id]));
 
     expect(item?.illustrated).toBe(true);
   });
@@ -55,7 +71,7 @@ describe("ListProductsHandler — l'audience", () => {
   it("rend l'audience de la famille quand la fiche hérite", async () => {
     const handler = listing(tarte(), family("pro"));
 
-    const [item] = await handler.execute();
+    const [item] = await items(handler);
 
     expect(item).toMatchObject({
       audience: null,
@@ -67,7 +83,7 @@ describe("ListProductsHandler — l'audience", () => {
   it("rend l'audience propre de la fiche quand elle déroge", async () => {
     const handler = listing(tarte({ audience: "public" }), family("pro"));
 
-    const [item] = await handler.execute();
+    const [item] = await items(handler);
 
     expect(item).toMatchObject({
       audience: "public",
@@ -89,7 +105,7 @@ describe("ListProductsHandler — l'audience", () => {
  */
 describe("ListProductsHandler — l'activabilité", () => {
   it("dit activable un brouillon complet, sans manque", async () => {
-    const [item] = await listing(tarte(), family("pro")).execute();
+    const [item] = await items(listing(tarte(), family("pro")));
 
     expect(item).toMatchObject({
       activatable: true,
@@ -98,17 +114,19 @@ describe("ListProductsHandler — l'activabilité", () => {
   });
 
   it("dit non activable un brouillon sans prix pro saisi, et nomme le manque", async () => {
-    const [item] = await listing(
-      tarte({ variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: null }] }),
-      family("pro"),
-    ).execute();
+    const [item] = await items(
+      listing(
+        tarte({ variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: null }] }),
+        family("pro"),
+      ),
+    );
 
     expect(item?.activatable).toBe(false);
     expect(Object.keys(item?.activationGaps?.byVariant ?? {})).toEqual(["PAT-7-1"]);
   });
 
   it("dit non activable un brouillon sans prix ni allergènes", async () => {
-    const [item] = await listing(tarte({ variants: [bareVariant()] }), family("pro")).execute();
+    const [item] = await items(listing(tarte({ variants: [bareVariant()] }), family("pro")));
 
     expect(item?.activatable).toBe(false);
   });
@@ -116,7 +134,7 @@ describe("ListProductsHandler — l'activabilité", () => {
   it.each(["published", "archived"] as const)(
     "rend false et aucun manque pour une fiche %s, même complète",
     async (status) => {
-      const [item] = await listing(tarte({ status }), family("pro")).execute();
+      const [item] = await items(listing(tarte({ status }), family("pro")));
 
       expect(item).toMatchObject({ activatable: false, activationGaps: null });
     },
@@ -126,15 +144,15 @@ describe("ListProductsHandler — l'activabilité", () => {
 /** `plan-effacer-une-fiche-archivee.md`, point 5 : une supprimée est absente partout. */
 describe("ListProductsHandler — les fiches supprimées", () => {
   it("garde une archivée (l'onglet « Archivées »)", async () => {
-    const items = await listing(tarte({ status: "archived" }), family("pro")).execute();
+    const listed = await items(listing(tarte({ status: "archived" }), family("pro")));
 
-    expect(items.map((item) => item.status)).toEqual(["archived"]);
+    expect(listed.map((item) => item.status)).toEqual(["archived"]);
   });
 
   it("n'en rend aucune supprimée, archives comprises", async () => {
-    const items = await listing(tarte({ status: "deleted" }), family("pro")).execute();
+    const listed = await items(listing(tarte({ status: "deleted" }), family("pro")));
 
-    expect(items).toEqual([]);
+    expect(listed).toEqual([]);
   });
 });
 
@@ -143,7 +161,7 @@ describe("ListProductsHandler — les constats de conformité", () => {
   it("rend le constat d'une fiche vivante, sans autre lecture du catalogue", async () => {
     const product = tarte({ variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: null }] });
 
-    const [item] = await listing(product, family("both")).execute();
+    const [item] = await items(listing(product, family("both")));
 
     expect(item?.complianceWarnings).toEqual([
       {
@@ -162,13 +180,13 @@ describe("ListProductsHandler — les constats de conformité", () => {
       variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: null }],
     });
 
-    const [item] = await listing(product, family("both")).execute();
+    const [item] = await items(listing(product, family("both")));
 
     expect(item?.complianceWarnings).toEqual([]);
   });
 
   it("rend une liste vide pour une fiche sans constat", async () => {
-    const [item] = await listing(tarte(), family("both")).execute();
+    const [item] = await items(listing(tarte(), family("both")));
 
     expect(item?.complianceWarnings).toEqual([]);
   });

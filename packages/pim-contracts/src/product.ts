@@ -453,6 +453,17 @@ export interface ProductListView extends ProductView {
 }
 
 /**
+ * La liste des fiches telle que l'écran du référentiel la lit : les lignes,
+ * et le numéro `pim` lu AVANT elles. L'écran le retient pour que le veilleur
+ * ignore l'écho de son propre geste ; un numéro plus haut le fait relire.
+ * `GET catalogue/products` reste la liste nue, pour ses autres lecteurs.
+ */
+export interface ProductListScreenView {
+  readonly version: number;
+  readonly items: readonly ProductListView[];
+}
+
+/**
  * Couche éditoriale rendue **dans toutes ses langues** ; `null` = non renseigné.
  *
  * La vue rendait le français à plat, avec pour raison « le back-office est

@@ -23,6 +23,22 @@ export abstract class PimContents {
     load: () => Promise<T>,
     accepts: ContentGuard<T>,
   ): Promise<T>;
+
+  /**
+   * Le même contenu, rendu avec le numéro sous lequel il est servi — pour un
+   * écran qui le retient et ignore l'écho de son propre geste.
+   */
+  abstract versionedContentOf<T>(
+    key: string,
+    load: () => Promise<T>,
+    accepts: ContentGuard<T>,
+  ): Promise<VersionedContent<T>>;
+}
+
+/** Un contenu et le numéro `pim` lu avant lui. */
+export interface VersionedContent<T> {
+  readonly version: number;
+  readonly content: T;
 }
 
 /**
@@ -52,5 +68,15 @@ export class VersionedPimContents extends PimContents {
     }
     const version = await this.versions.versionOf();
     return this.contents.contentOf(key, version, load, accepts);
+  }
+
+  async versionedContentOf<T>(
+    key: string,
+    load: () => Promise<T>,
+    accepts: ContentGuard<T>,
+  ): Promise<VersionedContent<T>> {
+    const version = await this.versions.versionOf();
+    const content = await this.contents.contentOf(key, version, load, accepts);
+    return { version, content };
   }
 }

@@ -7,6 +7,7 @@ import type {
   ProductReadinessView,
   ProductEditorialView,
   ProductListView,
+  ProductListScreenView,
   ProductComplianceWarningView,
   ProductView,
   VariantNutritionView,
@@ -248,14 +249,18 @@ export class ProductHttpApi {
 
   async list(): Promise<Product[]> {
     const rows = await firstValueFrom(this.http.get<ProductListView[]>(this.url('products')));
-    // `activatable` n'existe que sur la liste : le serveur le juge avec le code
-    // même du refus d'activation, le front ne le recalcule pas.
-    return rows.map((row) => ({
-      ...backendToProduct(row),
-      activatable: row.activatable,
-      illustrated: row.illustrated,
-      complianceWarnings: row.complianceWarnings,
-    }));
+    return rows.map(listRowToProduct);
+  }
+
+  /**
+   * La liste de l'écran, avec le numéro `pim` lu avant elle : le store le
+   * retient pour que le veilleur ignore l'écho de son propre geste.
+   */
+  async listScreen(): Promise<ProductListing> {
+    const screen = await firstValueFrom(
+      this.http.get<ProductListScreenView>(this.url('products/screen')),
+    );
+    return { version: screen.version, items: screen.items.map(listRowToProduct) };
   }
 
   /**
@@ -680,4 +685,23 @@ export class ProductHttpApi {
   private url(path: string): string {
     return `${this.base}/catalogue/${path}`;
   }
+}
+
+/** Les fiches de l'écran et le numéro `pim` sous lequel le serveur les a servies. */
+export interface ProductListing {
+  readonly version: number;
+  readonly items: readonly Product[];
+}
+
+/**
+ * Une ligne de la liste. `activatable` n'existe que sur la liste : le serveur
+ * le juge avec le code même du refus d'activation, le front ne le recalcule pas.
+ */
+function listRowToProduct(row: ProductListView): Product {
+  return {
+    ...backendToProduct(row),
+    activatable: row.activatable,
+    illustrated: row.illustrated,
+    complianceWarnings: row.complianceWarnings,
+  };
 }
