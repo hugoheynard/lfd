@@ -187,7 +187,12 @@
 >   avec `lint:front-intent-keys` (J5) : un appel des écrans vers une route
 >   « par intention » passe la clé d'une `GestureIntents` (`intentOptions`,
 >   `withIntent`), et aucune clé d'intention n'est tirée au hasard hors de la
->   brique — une clé tirée au clic rouvre le doublon que la route ferme. C'est la
+>   brique — une clé tirée au clic rouvre le doublon que la route ferme. Et **73**
+>   depuis le 2026-11-13 avec `lint:internal-objects-door` : un objet partagé ne
+>   se joint que par `uncachedInternalCall` et ne répond que par `withNoStore` —
+>   le cache d'un point d'entrée du Worker a resservi un « absent » à l'API
+>   sans que l'objet le voie —, chaque préfixe est rejoué par le test du faux
+>   cache, et le Worker se compile avec la passerelle pure. C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -1437,7 +1442,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 72 portes du dépôt, toutes, et un résumé à la fin
+pnpm lint:gates         # les 73 portes du dépôt, toutes, et un résumé à la fin
 pnpm gate <nom>         # une porte (pnpm gate --list : la liste, avec ce qu'elle tient)
 pnpm lint:watch         # relance les portes dont un fichier lu change
 pnpm tool               # les outils occasionnels (digests, carte, axe…) ; pnpm tool <nom>

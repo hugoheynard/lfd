@@ -5,7 +5,9 @@
 > du PIM, l'onglet Cache, l'aiguillage des objets par le chemin (§ 3), les
 > contenus rangés en gzip, et les écrans de journée branchés sur l'objet
 > (§ 3.2 à 3.5) — ces derniers ne sont pas encore servis en production
-> (§ 7). Ce document
+> (§ 7). Le chemin vers les objets ne garde rien (§ 3.0) : passerelle
+> pure, test du faux cache et porte `internal-objects-door`, bâtis le
+> 2026-11-13 ; la confirmation en production reste à lire (§ 7). Ce document
 > remplace les cinq plans du chantier (veilleur unique, écran Catalogue,
 > lectures du PIM, onglet Cache, objet des journées) ; leurs versions et
 > leurs contradictions par `vitruve` sont dans l'historique git.
@@ -209,6 +211,86 @@ seul veilleur.
   journalisés (`versioned_contents.unreadable`) et l'API relit la base,
   jamais une erreur servie. Une ligne rangée en JSON clair (sans l'en-tête
   gzip) se lit telle quelle, et le prochain rangement la remplace.
+
+### 3.0 Le chemin ne garde rien
+
+Entre l'API et un objet, le cache du point d'entrée `ContainerProxy` (le
+Workers Cache est allumé, `wrangler.jsonc`) garderait toute réponse qui ne
+l'interdit pas, un 404 compris. Le chemin le lui interdit des deux côtés,
+et une porte l'exige de tout appel et de tout objet à venir.
+
+```mermaid
+flowchart LR
+  A["API (conteneur)"] --> U["uncachedInternalCall<br/>requête no-store"]
+  U --> M["Cache du point d'entrée<br/>ContainerProxy"]
+  M --> P["Passerelle pure<br/>403, 404, purge, objet"]
+  P --> O["ProShelves / DayVersions"]
+  O --> W["withNoStore<br/>no-store, private"]
+  W --> M
+```
+
+- **Côté API** : tout adaptateur qui reçoit l'adresse d'un objet appelle par
+  `this.fetchFn(url, uncachedInternalCall(…))`
+  (`apps/lfd-api/src/platform/outbound/uncached-internal-call.ts`), qui pose
+  `Cache-Control: no-store` sur la requête. Neuf adaptateurs aujourd'hui.
+- **Côté objets** : `DayVersions.fetch` et `ProShelves.fetch` répondent par
+  `withNoStore(…)` (`apps/lfd-api/container/no-store.ts`,
+  `no-store, private`), et la passerelle aussi, ses refus compris.
+- **C'est `withNoStore` qui porte la protection documentée.** La
+  documentation du Workers Cache (relue le 2026-11-13,
+  developers.cloudflare.com/workers/cache/configuration) nomme deux façons
+  de ne pas garder : une réponse `private` ou `no-store`, et l'option
+  `cache: "no-store"` d'un `fetch` entre Workers — que le `fetch` de Node,
+  dans le conteneur, ne peut pas poser. Un `Cache-Control: no-store` de
+  requête n'y est pas nommé : l'en-tête de l'API est une seconde ceinture,
+  pas la première.
+- **La passerelle est un module pur**
+  (`apps/lfd-api/container/internal-objects-gateway.ts`,
+  `answerInternalObjectsCall`) : ni `cloudflare:workers`, ni
+  `@cloudflare/containers`. Dans l'ordre : appelant étranger → 403, préfixe
+  inconnu → 404, `POST /rayons/public/purge` → relais de la purge publique
+  (étiquette hors liste → 400), sinon l'objet que nomme le préfixe, chemin
+  sans préfixe. `worker.ts` ne garde que ce qui lit `env` ou
+  `cloudflare:workers` — les liaisons des objets (`objectStubs`),
+  l'identifiant admis, le relais de purge — et l'affectation
+  `Backend.outboundByHost`, que `container-start` surveille. Le tsconfig du
+  Worker (`container/tsconfig.json`) inclut la passerelle : le contrat entre
+  les deux est compilé.
+- **Le test du faux cache**
+  (`apps/lfd-api/container/__tests__/no-cache-in-between.spec.ts`) rejoue le
+  trajet entier — l'appel, un cache au milieu, la passerelle, un objet de
+  test qui compte ses requêtes (`/journees` sur le vrai `DayContentsTable`,
+  `/rayons` un faux minimal) — pour **chaque** clé de
+  `INTERNAL_OBJECT_PREFIXES`. Le faux cache existe en deux variantes : l'une
+  respecte le `no-store` de requête, l'autre suit la documentation
+  Cloudflare et l'ignore. Les deux côtés posés : l'objet reçoit les deux
+  lectures. Aucun des deux : la 2ᵉ lecture est servie par le cache (le
+  témoin négatif). `uncachedInternalCall` seul : servie par le cache
+  documenté. `withNoStore` seul : l'objet reçoit tout. L'ordre de la
+  passerelle est figé par `internal-objects-gateway.spec.ts`.
+- **La porte `internal-objects-door`**
+  (`dev-toolbox/gates/internal-objects-door.mjs`) : (A) elle part des
+  lectures de `shopShelfCacheUrl()` / `dayVersionsCacheUrl()`, suit chaque
+  classe construite avec l'adresse (`new C(url, …)`, ou le tableau
+  `{ origin: config.…() }` d'`ops.module.ts`) jusqu'à son fichier, et y
+  refuse tout appel réseau autre que `this.fetchFn(url,
+uncachedInternalCall(…))` — seul le repli par défaut du constructeur,
+  `(url, init) => fetch(url, init)`, porte un `fetch` nu. Une lecture
+  qu'elle ne sait pas suivre (classe qui lit `AppConfig` elle-même,
+  fabrique, fonction) est refusée : on réécrit, on n'élargit pas. Hors de
+  ces fichiers, `objets.interne` et les deux variables d'environnement ne se
+  nomment que dans `app-config.ts`, `capability-audit.ts` et le message de
+  `shelf-cache-not-configured.error.ts`. (B) Tout `fetch` d'une classe
+  `extends DurableObject`, et toute fonction exportée de la passerelle, ne
+  rend que `withNoStore(…)`. (C) Le test du faux cache importe la table,
+  itère dessus, compare le nombre d'objets atteints au nombre de clés et
+  garde son témoin négatif. (D) Elle compile le Worker
+  (`tsc -p apps/lfd-api/container/tsconfig.json`).
+- **Qui tient quoi** : `cache-control` refuse un `Cache-Control` ouvert et
+  décide quels fichiers de `container/` portent une classe d'objet,
+  `outboundByHost` ou une purge ; `internal-objects-door` refuse une
+  réponse sans fermeture et un appel sans la fonction commune ;
+  `container-start` garde la forme de l'affectation.
 
 ### 3.1 Les contenus des écrans de journée
 
@@ -546,8 +628,6 @@ changement du PIM (`get-product-detail.ts`).
 
 ## 7. Reste à faire
 
-- **Un seul client pour tous les objets partagés** : plan [`plan-client-unique-des-objets.md`](plan-client-unique-des-objets.md) (décidé par Hugo le 2026-11-13).
-
 - 🔴 **Un « absent » de l'objet est gardé entre le conteneur et l'objet**
   (constaté en production le 2026-11-13) : Santé compte 9 lectures d'écran de
   journée, toutes « absent », sans repli et en ~40 ms, alors que l'objet n'en
@@ -563,17 +643,17 @@ changement du PIM (`get-product-detail.ts`).
     minutes. Le code du Worker n'appelle ni `caches.default`, ni `fetch` avec
     `cf.cacheTtl` (vérifié le 2026-11-13). Non prouvé en production : la
     mesure ci-dessous le tranche.
-  - **Le correctif** : les deux côtés disent `no-store`. L'API envoie
-    `Cache-Control: no-store` sur tout appel à `objets.interne`
-    (`uncachedInternalCall`, `apps/lfd-api/src/platform/outbound/` : contenus
-    de journée, numéros, contenus versionnés, rayons pro et public,
-    interrupteur, purges, compteurs). L'option `cache: "no-store"` n'est pas
-    posée : le `fetch` de Node n'a pas de cache et son type ne la déclare pas.
-    Les objets (`DayVersions`, `ProShelves`) et la passerelle de sortie, ses
-    refus compris, répondent `Cache-Control: no-store, private`
-    (`apps/lfd-api/container/no-store.ts`).
+  - **Le correctif** : les deux côtés disent `no-store` (§ 3.0), tenus par
+    le test du faux cache et la porte `internal-objects-door`.
   - **Ce qui le confirme après déploiement** : sous `day_contents`, des `hit`
     aux ouvertures suivantes ; une `GET` au Worker par lecture comptée.
+    Lue, cette entrée passe dans ce qui est prouvé (§ 3.0).
+  - **Une option, non décidée** : la même documentation recommande, pour
+    un point d'entrée de passerelle, de couper son cache dans la table
+    `exports` de `wrangler.jsonc` plutôt que de répondre `no-store` à tout —
+    sans quoi chaque appel consulte quand même les étages du cache avant
+    d'atteindre la passerelle. Ce serait un changement de configuration du
+    Worker, à mesurer.
 - **Les écrans de journée sont branchés** (§ 3.2 à 3.5). Reste à lire, sur
   l'environnement déployé, les appels par jour de chaque route (onglet Ops)
   pour chiffrer le gain, et à écrire le seuil sous lequel il ne vaut pas
@@ -589,3 +669,52 @@ changement du PIM (`get-product-detail.ts`).
 ["DayVersions"]` dans un nouveau tag de `wrangler.jsonc`, après avoir
   retiré la liaison et le code qui l'appelle : un revert ne défait pas la
   migration de classe ([`../ops/runbook.md`](../ops/runbook.md)).
+
+## 8. Marches à suivre
+
+### 8.1 Un nouveau besoin de cache
+
+**VersionedContents ou DayContents, jamais une troisième brique.**
+
+1. Choisir la brique : un contenu global suivi par numéro va dans
+   VersionedContents (§ 3) ; un contenu par journée va dans DayContents
+   (§ 3.1).
+2. Écrire la clé (sujet et jour), les numéros qui l'invalident, ce qui est
+   **lu hors numéro** (l'heure, la personne) et ce qui est **non rangeable**
+   (donnée personnelle, réponse partielle).
+3. L'adaptateur reçoit l'adresse par son constructeur et appelle par
+   `this.fetchFn(url, uncachedInternalCall(…))` ; la porte
+   `internal-objects-door` le vérifie.
+4. Vérifier en production : ouvrir deux fois l'écran, puis lire Santé. On
+   attend un `hit` à la 2ᵉ ouverture.
+
+### 8.2 Un nouvel objet
+
+1. Ajouter la classe, sa liaison et un tag de migration `new_sqlite_classes`
+   dans `wrangler.jsonc`. Un revert ne défait pas une migration.
+2. Ajouter le fichier de la classe à `CONTAINER_ADMITTED`
+   (`dev-toolbox/gates/cache-control.mjs`).
+3. Ajouter une ligne dans `INTERNAL_OBJECT_PREFIXES`
+   (`container/internal-objects.ts`) et une liaison dans `objectStubs`
+   (`container/worker.ts`) — le type l'exige.
+4. Faire répondre `fetch` par `withNoStore`.
+5. Donner à l'objet sa route de test dans `OBJECTS` du test du faux cache
+   (le type l'exige aussi) : le test rejoue chaque préfixe, et la porte
+   échoue tant que l'objet ne répond pas par `withNoStore`.
+
+## 9. Redis, plus tard
+
+Rien n'est construit aujourd'hui. Une abstraction faite le jour où Redis
+arrive devra :
+
+- garder la distinction entre **absent**, **illisible** (la base fait foi)
+  et **gardé** (202, `DAY_CONTENT_KEPT_STATUS`,
+  `container/day-contents.ts`), sans en faire des statuts HTTP ;
+- faire la comparaison de numéro par un script atomique (`EVAL`) au lieu de
+  la décision prise dans l'objet ;
+- remplacer le ménage SQL par une expiration par clé ;
+- porter les compteurs de Santé (aujourd'hui `/metrics` dans l'objet) ;
+- laisser la purge des caches publics côté Cloudflare.
+
+La garde et le disjoncteur resteraient où ils sont : chaque cache garde le
+sien (`platform/cache-calls/bounded-call-guard.ts`).

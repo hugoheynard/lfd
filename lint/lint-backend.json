@@ -495,6 +495,13 @@
       "watch": ["apps/lfd-api/src/**", "apps/lfd-backoffice-frontend/src/**"]
     },
     {
+      "name": "internal-objects-door",
+      "script": "dev-toolbox/gates/internal-objects-door.mjs",
+      "holds": "Un objet partagé ne se joint que par uncachedInternalCall, ne répond que par withNoStore, et chaque préfixe est rejoué par le test du faux cache.",
+      "since": "2026-11-13",
+      "watch": ["apps/lfd-api/src/**", "apps/lfd-api/container/**"]
+    },
+    {
       "name": "container-start",
       "script": "dev-toolbox/gates/container-start.mjs",
       "holds": "Un container qui intercepte ses sorties démarre quand même (ContainerProxy exporté, ctx.exports).",

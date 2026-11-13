@@ -143,6 +143,11 @@ const CALLER_READS =
  * magasin de plus se décide. `day-versions.ts` : l'objet des journées, décidé
  * par Hugo le 2026-11-12 (`le-cache-du-back-office.md`, § 3) — des
  * numéros de journée, jamais une réponse servie à un appelant.
+ *
+ * La passerelle pure (`internal-objects-gateway.ts`) n'y figure pas : elle ne
+ * porte ni purge, ni `outboundByHost`, ni classe d'objet — `worker.ts`
+ * l'inscrit. Qu'elle et les objets ferment chaque réponse (`withNoStore`),
+ * c'est `internal-objects-door` qui le tient.
  */
 const CONTAINER_ADMITTED = [
   {

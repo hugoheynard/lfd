@@ -15,11 +15,10 @@ import * as workersModule from "cloudflare:workers";
 import { guardedFetch } from "./edge-guard";
 import type { RateLimiter } from "./edge-guard";
 import { withServerTiming } from "./server-timing";
-import { withNoStore } from "./no-store";
+import { answerInternalObjectsCall } from "./internal-objects-gateway";
 import { PRO_SHELVES_INSTANCE } from "./pro-shelves";
 import {
   isPublicPurgeCall,
-  isPublicPurgeRelay,
   PUBLIC_PURGE_PROPS,
   PUBLIC_SHELF_PURGE_PATH,
   PURGE_TAG_PARAM,
@@ -35,12 +34,10 @@ import { DAY_VERSIONS_ENV } from "./day-versions-store";
 import {
   DAY_VERSIONS_ORIGIN,
   INTERNAL_OBJECTS_HOST,
-  internalObjectRouteOf,
-  objectUrlOf,
   SHELF_STORE_ORIGIN,
   type InternalObject,
 } from "./internal-objects";
-import { isTrustedCaller, SHELF_STORE_ENV } from "./shelf-store";
+import { SHELF_STORE_ENV } from "./shelf-store";
 
 // L'objet des rayons pro (lot C2) : exporté par le point d'entrée, comme toute
 // classe de Durable Object liée dans `wrangler.jsonc`.
@@ -256,13 +253,12 @@ export class Backend extends Container<Env> {
 /**
  * **Le chemin conteneur → objets partagés** (`le-rayon-en-cache.md`, § 4) :
  * le conteneur appelle `http://objets.interne/rayons/…` ou
- * `http://objets.interne/journees/…`, le Worker intercepte et transmet à
- * l'objet que nomme le PRÉFIXE du chemin, par sa liaison, chemin sans
- * préfixe. Ni route publique, ni jeton. Un préfixe inconnu rend 404.
- *
- * Il REFUSE tout appel dont le `containerId` n'est pas celui de `Backend` :
- * `ContainerProxy` est un point d'entrée exporté, qu'un autre Worker du compte
- * pourrait lier. Le refus (403) fait retomber l'API sur la base.
+ * `http://objets.interne/journees/…`, le Worker intercepte et la passerelle
+ * pure (`internal-objects-gateway.ts`) décide : 403 pour un appelant qui
+ * n'est pas `Backend`, 404 pour un préfixe inconnu, relais de la purge
+ * publique, puis l'objet que nomme le préfixe, chemin sans préfixe. Toute
+ * réponse porte `no-store`. Ici, seulement ce qui lit `env` et
+ * `cloudflare:workers`.
  *
  * ⚠️ Posé par AFFECTATION, après la classe, et non par `static outboundByHost =`
  * dans son corps : un champ statique se DÉFINIT sur la classe et masquerait
@@ -274,22 +270,13 @@ async function internalObjectsGateway(
   env: Env,
   ctx: OutboundHandlerContext,
 ): Promise<Response> {
-  const trusted = [env.BACKEND.idFromName(PRIMARY_INSTANCE).toString()];
-  if (!isTrustedCaller(ctx.containerId, trusted)) {
-    return new Response(null, { status: 403 });
-  }
-  const url = new URL(request.url);
-  const route = internalObjectRouteOf(url);
-  if (route === null) {
-    return new Response(null, { status: 404 });
-  }
-  if (route.object === "pro-shelves" && isPublicPurgeRelay(request.method, route.pathname)) {
-    const tag = purgeableTagOf(url);
-    return tag === null
-      ? new Response(null, { status: purgeStatusOf({ kind: "unknown_tag" }) })
-      : relayPublicPurge(tag);
-  }
-  return OBJECT_STUBS[route.object](env).fetch(new Request(objectUrlOf(url, route), request));
+  return answerInternalObjectsCall({
+    request,
+    containerId: ctx.containerId,
+    trustedIds: [env.BACKEND.idFromName(PRIMARY_INSTANCE).toString()],
+    stubs: objectStubs(env),
+    relayPublicPurge,
+  });
 }
 
 /** La boucle locale vers le point d'entrée par défaut (`ctx.exports`), telle que le runtime la donne. */
@@ -355,20 +342,7 @@ async function publicPurgeOutcome(
   }
 }
 
-/**
- * Toute réponse de la passerelle porte `no-store` — ses propres refus
- * compris : le Workers Cache de `ContainerProxy` ne garde rien de ce chemin
- * (`no-store.ts`).
- */
-async function uncachedInternalObjectsGateway(
-  request: Request,
-  env: Env,
-  ctx: OutboundHandlerContext,
-): Promise<Response> {
-  return withNoStore(await internalObjectsGateway(request, env, ctx));
-}
-
-Backend.outboundByHost = { [INTERNAL_OBJECTS_HOST]: uncachedInternalObjectsGateway };
+Backend.outboundByHost = { [INTERNAL_OBJECTS_HOST]: internalObjectsGateway };
 
 function proShelves(env: Env): DurableObjectStub<ProShelves> {
   return env.PRO_SHELVES.get(env.PRO_SHELVES.idFromName(PRO_SHELVES_INSTANCE), PLACEMENT);
@@ -378,11 +352,14 @@ function dayVersions(env: Env): DurableObjectStub<DayVersions> {
   return env.DAY_VERSIONS.get(env.DAY_VERSIONS.idFromName(DAY_VERSIONS_INSTANCE), PLACEMENT);
 }
 
-/** La liaison de chaque objet joint par le chemin interne. */
-const OBJECT_STUBS: Readonly<Record<InternalObject, (env: Env) => Fetcher>> = {
-  "pro-shelves": proShelves,
-  "day-versions": dayVersions,
-};
+/**
+ * La liaison de chaque objet joint par le chemin interne (`OBJECT_STUBS`) :
+ * un objet de plus est une ligne de plus, et le type l'exige pour chaque
+ * préfixe de `INTERNAL_OBJECT_PREFIXES`.
+ */
+function objectStubs(env: Env): Readonly<Record<InternalObject, () => Fetcher>> {
+  return { "pro-shelves": () => proShelves(env), "day-versions": () => dayVersions(env) };
+}
 
 /**
  * Le nom de l'instance unique — **déterministe, et c'est tout l'intérêt** : un
