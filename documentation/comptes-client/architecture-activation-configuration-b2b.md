@@ -113,13 +113,13 @@ pas l'avertissement. Le moyen se lit par lot avec la règle de la
 comptabilité (`transfer-payers.projection.ts`, `collectionMeansAt`) ; une
 entité où rien n'a changé le prélève, d'où ce choix prudent.
 
-Trois limites, la dernière à corriger :
+Un **site facturé chez son principal** (suivi `billing` ouvert) ne reçoit
+jamais `mandat_absent` : le principal est le payeur, il porte crédit, mandat
+et moyen, et c'est sur sa propre ligne que le manque apparaît — une fois,
+dans la galerie comme dans le compteur du menu. La fiche du site
+(`debitSteps`, back-office) l'écarte par la même règle.
 
-- **Un site facturé chez son principal** peut recevoir `mandat_absent` à
-  tort : le moyen se lit bien sur le payeur réel (`warningPayerOf`), mais
-  le crédit et le mandat sur la ligne du site lui-même
-  (`company-warnings.projection.ts`), alors que c'est le principal qui
-  détient le mandat (point ouvert, carte des chantiers).
+Deux limites :
 
 - **`activation_bloquee` sous-déclare** : il ne lit pas le téléphone, qui peut
   vivre sur n'importe quel interlocuteur. Un dossier auquel il ne manque que le

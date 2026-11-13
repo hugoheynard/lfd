@@ -52,6 +52,7 @@ export function warningInputOf(
   now: Date,
   transferPayers: ReadonlySet<string>,
 ): WarningInput {
+  const payer = warningPayerOf(company.id, company.follows, now);
   return {
     status: company.status,
     createdAt: company.createdAt,
@@ -63,7 +64,8 @@ export function warningInputOf(
     hasBillingAddress: company.addresses.length > 0,
     hasGrantedTerms: company.grantedTerms.length > 0,
     hasActiveMandate: company.mandates.length > 0,
-    collectsByTransfer: transferPayers.has(warningPayerOf(company.id, company.follows, now)),
+    collectsByTransfer: transferPayers.has(payer),
+    billedByParent: payer !== company.id,
     kbisUploadedAt: company.kbisUploadedAt,
     kbisCertifiedAt: company.kbisCertifiedAt,
     legalIdentityCarriedByParent: billingCarriedAt(company.parentCompany, company.follows, now),

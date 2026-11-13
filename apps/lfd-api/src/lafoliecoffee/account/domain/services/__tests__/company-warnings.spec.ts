@@ -13,6 +13,7 @@ function company(over: Partial<WarningInput> = {}): WarningInput {
     hasGrantedTerms: false,
     hasActiveMandate: false,
     collectsByTransfer: false,
+    billedByParent: false,
     kbisUploadedAt: null,
     kbisCertifiedAt: null,
     legalIdentityCarriedByParent: false,
@@ -43,6 +44,13 @@ describe("les avertissements d'un dossier", () => {
     expect(
       companyWarnings(company({ hasGrantedTerms: true, collectsByTransfer: true }), NOW),
     ).toEqual([]);
+  });
+
+  /** Régression : un site facturé chez son principal recevait « mandat absent » lu sur sa propre ligne. */
+  it("ne réclame pas de mandat à un site facturé chez son principal", () => {
+    expect(companyWarnings(company({ hasGrantedTerms: true, billedByParent: true }), NOW)).toEqual(
+      [],
+    );
   });
 
   it("signale un extrait déposé que personne n'a ouvert", () => {

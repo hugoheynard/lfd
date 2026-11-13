@@ -22,6 +22,11 @@ export interface WarningInput {
    * virement chez toutes les entités : ni RIB ni mandat ne lui servent.
    */
   readonly collectsByTransfer: boolean;
+  /**
+   * Il suit `billing` d'un principal : c'est le principal qui est facturé, et
+   * lui qui porte le crédit, le mandat et le moyen d'encaissement.
+   */
+  readonly billedByParent: boolean;
   /** Déposé le… `null` si aucun extrait. */
   readonly kbisUploadedAt: Date | null;
   readonly kbisCertifiedAt: Date | null;
@@ -76,7 +81,16 @@ export function companyWarnings(company: WarningInput, now: Date): readonly Comp
   // qui n'existe pas n'a pas d'âge, et dater ça de l'ouverture du compte ferait
   // vieillir un fait qui n'a pas commencé ce jour-là.
   // Un payeur au virement n'a pas besoin de mandat.
-  if (company.hasGrantedTerms && !company.hasActiveMandate && !company.collectsByTransfer) {
+  // Un site facturé chez son principal ne le reçoit jamais : le manque, s'il
+  // existe, est celui du payeur, et c'est sur SA ligne qu'il apparaît. Le
+  // recopier sur chaque site le compterait plusieurs fois dans le menu, pour
+  // un seul mandat à poser — et la fiche (`debitSteps`) l'écarte déjà.
+  if (
+    !company.billedByParent &&
+    company.hasGrantedTerms &&
+    !company.hasActiveMandate &&
+    !company.collectsByTransfer
+  ) {
     found.push({ kind: "mandat_absent", since: null });
   }
 
