@@ -15,6 +15,7 @@ import * as workersModule from "cloudflare:workers";
 import { guardedFetch } from "./edge-guard";
 import type { RateLimiter } from "./edge-guard";
 import { withServerTiming } from "./server-timing";
+import { withNoStore } from "./no-store";
 import { PRO_SHELVES_INSTANCE } from "./pro-shelves";
 import {
   isPublicPurgeCall,
@@ -354,7 +355,20 @@ async function publicPurgeOutcome(
   }
 }
 
-Backend.outboundByHost = { [INTERNAL_OBJECTS_HOST]: internalObjectsGateway };
+/**
+ * Toute réponse de la passerelle porte `no-store` — ses propres refus
+ * compris : le Workers Cache de `ContainerProxy` ne garde rien de ce chemin
+ * (`no-store.ts`).
+ */
+async function uncachedInternalObjectsGateway(
+  request: Request,
+  env: Env,
+  ctx: OutboundHandlerContext,
+): Promise<Response> {
+  return withNoStore(await internalObjectsGateway(request, env, ctx));
+}
+
+Backend.outboundByHost = { [INTERNAL_OBJECTS_HOST]: uncachedInternalObjectsGateway };
 
 function proShelves(env: Env): DurableObjectStub<ProShelves> {
   return env.PRO_SHELVES.get(env.PRO_SHELVES.idFromName(PRO_SHELVES_INSTANCE), PLACEMENT);

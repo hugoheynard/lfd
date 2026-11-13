@@ -7,6 +7,7 @@ import {
 } from "../domain/ports/public-shelf-state.reader.js";
 import type { ShelfFetch } from "./durable-object-shop-shelf-cache.js";
 import { assertOutsideTransaction } from "../../../platform/database/outside-transaction.js";
+import { uncachedInternalCall } from "../../../platform/outbound/uncached-internal-call.js";
 
 /** Contrat de `container/shelf-store.ts` (`PUBLIC_SHELF_STATE_PATH`) : servi par l'objet. */
 const STATE_PATH = "/public/state";
@@ -63,10 +64,13 @@ export class InternalPublicShelf extends PublicShelfStateReader implements Publi
   }
 
   private call(path: string, init: RequestInit): Promise<Response> {
-    return this.fetchFn(`${this.origin.replace(/\/+$/u, "")}${path}`, {
-      ...init,
-      signal: AbortSignal.timeout(SOCKET_TIMEOUT_MS),
-    });
+    return this.fetchFn(
+      `${this.origin.replace(/\/+$/u, "")}${path}`,
+      uncachedInternalCall({
+        ...init,
+        signal: AbortSignal.timeout(SOCKET_TIMEOUT_MS),
+      }),
+    );
   }
 }
 

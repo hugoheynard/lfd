@@ -9,6 +9,7 @@ import { DurableObject } from "cloudflare:workers";
 
 import { parseMetricsCall, PRO_SHELVES_METRICS_CACHE, servedPersonOf } from "./cache-metrics-store";
 import { HourlyCacheMetrics } from "./hourly-cache-metrics";
+import { withNoStore } from "./no-store";
 import {
   isEnabled,
   isPublicEnabled,
@@ -60,7 +61,12 @@ export class ProShelves extends DurableObject<ProShelvesEnv> {
     this.metrics = new HourlyCacheMetrics(this.ctx.storage.sql);
   }
 
+  /** Toute réponse de l'objet porte `no-store` (`no-store.ts`). */
   override async fetch(request: Request): Promise<Response> {
+    return withNoStore(await this.route(request));
+  }
+
+  private async route(request: Request): Promise<Response> {
     // L'heure est une mesure : aucune décision de l'objet n'en dépend.
     this.metrics.request(Date.now());
     const url = new URL(request.url);

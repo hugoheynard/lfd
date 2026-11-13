@@ -25,6 +25,7 @@ import {
 import { DayContentsTable } from "./day-contents";
 import { parseDayContentCall } from "./day-contents-store";
 import { HourlyCacheMetrics } from "./hourly-cache-metrics";
+import { withNoStore } from "./no-store";
 import { VersionedContentsTable } from "./versioned-contents";
 import { parseContentCall } from "./versioned-contents-store";
 
@@ -74,7 +75,12 @@ export class DayVersions extends DurableObject<DayVersionsEnv> {
     this.dayContents = new DayContentsTable(this.ctx.storage.sql, this.metrics);
   }
 
+  /** Toute réponse de l'objet porte `no-store` (`no-store.ts`). */
   override async fetch(request: Request): Promise<Response> {
+    return withNoStore(await this.route(request));
+  }
+
+  private async route(request: Request): Promise<Response> {
     // L'heure est une mesure : aucune décision de l'objet n'en dépend.
     this.metrics.request(Date.now());
     const url = new URL(request.url);

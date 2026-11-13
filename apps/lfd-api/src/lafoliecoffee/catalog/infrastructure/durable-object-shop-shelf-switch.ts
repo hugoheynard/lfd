@@ -6,6 +6,7 @@ import {
 } from "../domain/ports/shop-shelf-switch.js";
 import type { ShelfFetch } from "./durable-object-shop-shelf-cache.js";
 import { assertOutsideTransaction } from "../../../platform/database/outside-transaction.js";
+import { uncachedInternalCall } from "../../../platform/outbound/uncached-internal-call.js";
 
 /** Le chemin de l'interrupteur chez l'objet (contrat de `container/shelf-store.ts`). */
 const SWITCH_PATH = "/switch";
@@ -31,12 +32,15 @@ export class DurableObjectShopShelfSwitch extends ShopShelfSwitch {
 
   async apply(action: ShelfSwitchAction): Promise<ShelfCacheState> {
     assertOutsideTransaction("cache-des-rayons.switch");
-    const response = await this.fetchFn(`${this.origin.replace(/\/+$/u, "")}${SWITCH_PATH}`, {
-      method: "POST",
-      body: JSON.stringify({ action }),
-      headers: { "content-type": "application/json" },
-      signal: AbortSignal.timeout(SWITCH_TIMEOUT_MS),
-    });
+    const response = await this.fetchFn(
+      `${this.origin.replace(/\/+$/u, "")}${SWITCH_PATH}`,
+      uncachedInternalCall({
+        method: "POST",
+        body: JSON.stringify({ action }),
+        headers: { "content-type": "application/json" },
+        signal: AbortSignal.timeout(SWITCH_TIMEOUT_MS),
+      }),
+    );
     if (response.status !== HTTP_OK) {
       throw new UnreadableShelfReplyError(`interrupteur, statut ${response.status}`);
     }

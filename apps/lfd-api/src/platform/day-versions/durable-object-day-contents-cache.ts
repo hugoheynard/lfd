@@ -6,6 +6,7 @@ import { type DayContentAddress, DayContentsCache } from "./day-contents-cache.j
 import type { DayVersionsFetch } from "./durable-object-day-versions-cache.js";
 import { CONTENT_RAW_BYTES_HEADER } from "./durable-object-versioned-content-cache.js";
 import { UnreadableDayVersionsReplyError } from "./unreadable-day-versions-reply.error.js";
+import { uncachedInternalCall } from "../outbound/uncached-internal-call.js";
 
 /** Le filet du socket, au-delà du délai du repli — celui des contenus. */
 const DAY_CONTENT_SOCKET_TIMEOUT_MS = 2000;
@@ -97,9 +98,12 @@ export class DurableObjectDayContentsCache extends DayContentsCache {
     const path =
       `/day-contents/${encodeURIComponent(address.screen)}/${encodeURIComponent(address.day)}` +
       `?${query.toString()}`;
-    return this.fetchFn(`${this.origin.replace(/\/+$/u, "")}${path}`, {
-      ...init,
-      signal: AbortSignal.timeout(DAY_CONTENT_SOCKET_TIMEOUT_MS),
-    });
+    return this.fetchFn(
+      `${this.origin.replace(/\/+$/u, "")}${path}`,
+      uncachedInternalCall({
+        ...init,
+        signal: AbortSignal.timeout(DAY_CONTENT_SOCKET_TIMEOUT_MS),
+      }),
+    );
   }
 }

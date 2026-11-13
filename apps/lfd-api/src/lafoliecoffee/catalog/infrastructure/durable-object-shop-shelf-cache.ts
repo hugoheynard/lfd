@@ -10,6 +10,7 @@ import {
 import type { ShopShelfEraser } from "../domain/ports/shop-shelf-eraser.js";
 import { packedShelf, shelfPath, unpackedShelf } from "./shelf-wire.js";
 import { assertOutsideTransaction } from "../../../platform/database/outside-transaction.js";
+import { uncachedInternalCall } from "../../../platform/outbound/uncached-internal-call.js";
 
 /**
  * Le filet du socket, au-delà du délai du repli (`SHELF_CALL_LIMIT_MS`) : le
@@ -112,10 +113,13 @@ export class DurableObjectShopShelfCache extends ShopShelfCache implements ShopS
   }
 
   private call(path: string, init: RequestInit): Promise<Response> {
-    return this.fetchFn(`${this.origin.replace(/\/+$/u, "")}${path}`, {
-      ...init,
-      signal: AbortSignal.timeout(SHELF_SOCKET_TIMEOUT_MS),
-    });
+    return this.fetchFn(
+      `${this.origin.replace(/\/+$/u, "")}${path}`,
+      uncachedInternalCall({
+        ...init,
+        signal: AbortSignal.timeout(SHELF_SOCKET_TIMEOUT_MS),
+      }),
+    );
   }
 }
 

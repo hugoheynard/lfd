@@ -3,6 +3,7 @@ import type { PackedContent } from "./content-compression.js";
 import type { DayVersionsFetch } from "./durable-object-day-versions-cache.js";
 import { UnreadableDayVersionsReplyError } from "./unreadable-day-versions-reply.error.js";
 import { VersionedContentCache } from "./versioned-content-cache.js";
+import { uncachedInternalCall } from "../outbound/uncached-internal-call.js";
 
 /** Le filet du socket, au-delà du délai du repli — celui des numéros. */
 const CONTENT_SOCKET_TIMEOUT_MS = 2000;
@@ -63,9 +64,12 @@ export class DurableObjectVersionedContentCache extends VersionedContentCache {
   private call(key: string, version: number, init: RequestInit): Promise<Response> {
     const query = new URLSearchParams({ revision: this.revision, version: String(version) });
     const path = `/contents/${encodeURIComponent(key)}?${query.toString()}`;
-    return this.fetchFn(`${this.origin.replace(/\/+$/u, "")}${path}`, {
-      ...init,
-      signal: AbortSignal.timeout(CONTENT_SOCKET_TIMEOUT_MS),
-    });
+    return this.fetchFn(
+      `${this.origin.replace(/\/+$/u, "")}${path}`,
+      uncachedInternalCall({
+        ...init,
+        signal: AbortSignal.timeout(CONTENT_SOCKET_TIMEOUT_MS),
+      }),
+    );
   }
 }

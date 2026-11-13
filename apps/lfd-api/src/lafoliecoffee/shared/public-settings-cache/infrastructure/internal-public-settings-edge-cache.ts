@@ -4,6 +4,7 @@ import {
   PublicSettingsEdgeCache,
 } from "../domain/ports/public-settings-edge-cache.js";
 import { assertOutsideTransaction } from "../../../../platform/database/outside-transaction.js";
+import { uncachedInternalCall } from "../../../../platform/outbound/uncached-internal-call.js";
 
 /**
  * Contrat de `container/public-shelf.ts` (`PUBLIC_SHELF_PURGE_PATH`, `PURGE_TAG_PARAM`) :
@@ -46,10 +47,13 @@ export class InternalPublicSettingsEdgeCache extends PublicSettingsEdgeCache {
 
   async purge(): Promise<void> {
     assertOutsideTransaction("purge-cache.reglages-publics");
-    const response = await this.fetchFn(`${this.origin.replace(/\/+$/u, "")}${PURGE_PATH}`, {
-      method: "POST",
-      signal: AbortSignal.timeout(SOCKET_TIMEOUT_MS),
-    });
+    const response = await this.fetchFn(
+      `${this.origin.replace(/\/+$/u, "")}${PURGE_PATH}`,
+      uncachedInternalCall({
+        method: "POST",
+        signal: AbortSignal.timeout(SOCKET_TIMEOUT_MS),
+      }),
+    );
     if (response.status !== HTTP_NO_CONTENT) {
       throw new PublicSettingsEdgePurgeFailedError(response.status);
     }

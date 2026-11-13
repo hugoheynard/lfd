@@ -546,38 +546,32 @@ changement du PIM (`get-product-detail.ts`).
 
 ## 7. Reste à faire
 
-- 🔴 **Les écrans de journée ne sont jamais servis depuis l'objet en
-  production** (cause non trouvée) : à la première ouverture de la
-  Supervision, l'API lit l'objet (`GET … → 404` signé) puis range
-  (`PUT → 201`) ; aux ouvertures suivantes, aux mêmes étiquettes, les
-  journaux du Worker ne montrent que des `PUT → 201`, aucun `GET`. Ces
-  écrans lisent alors la base à chaque appel (rien de faux n'est servi,
-  aucun gain).
-  - **Ce n'est pas le disjoncteur de l'API** (vérifié dans le code le
-    2026-11-13) : la lecture et le rangement passent par le même
-    `BoundedCallGuard`, tous deux soumis au disjoncteur (`gated`). Ouvert, il
-    supprimerait le `PUT` avec le `GET` ; un `PUT` parti prouve qu'il était
-    fermé. Le seul autre chemin sans `GET` serait une exception levée avant
-    l'appel (`assertOutsideTransaction` en mode `enforce`), qui frapperait
-    aussi le rangement. Un `PUT` à la même étiquette prouve seulement que la
-    lecture a rendu « rien » : 404, délai dépassé (400 ms), erreur, ou charge
-    illisible.
-  - **Le code de l'API relit à chaque ouverture** : devant un objet qui
-    répond comme celui de production (404 signé, 201, puis 200 et la
-    charge), trois ouvertures font `GET, PUT, GET, GET` et une seule lecture
-    en base (`apps/lfd-api/src/platform/day-versions/__tests__/day-contents-object-replies.spec.ts`). La cause est donc entre
-    la sortie de l'API et le Worker (l'interception de sortie du conteneur),
-    ou dans une lecture partie mais non journalisée et rendue en repli.
-  - **Ce qui le tranche après déploiement** : chaque lecture d'un écran de
-    journée est comptée par instance sous `day_contents` — `hit`, `miss`
-    (l'objet a répondu « absent »), `unreadable`, `fallback` (aucune réponse
-    utilisable : délai, erreur, disjoncteur) — dans la section « Caches de
-    l'API » de Santé, avec la durée des appels aux trois magasins de l'objet
-    des journées (numéros, contenus versionnés, écrans de journée). Un
-    `fallback` y nomme sa raison dans l'onglet Cache (`<cache>.fallback`) ;
-    un `miss` sans `GET` au Worker désigne l'interception ; un 404 qui ne
-    vient pas de l'objet est journalisé (`day_contents.unrouted`).
-  - Le plan du lot 2 reste ouvert jusqu'à sa résolution.
+- 🔴 **Un « absent » de l'objet est gardé entre le conteneur et l'objet**
+  (constaté en production le 2026-11-13) : Santé compte 9 lectures d'écran de
+  journée, toutes « absent », sans repli et en ~40 ms, alors que l'objet n'en
+  reçoit qu'une par écran et que les journaux du Worker ne montrent que la
+  première `GET` ; les `PUT` arrivent tous. En local, sans l'interception de
+  sortie du conteneur, l'objet sert. Le premier 404 (signé
+  `x-day-content: absent`) est donc resservi sans atteindre l'objet.
+  - **Le gardien probable** : le Worker a le Workers Cache allumé
+    (`"cache": { "enabled": true }`, `wrangler.jsonc`), et chaque point
+    d'entrée a le sien — `ContainerProxy`, par lequel passe l'interception
+    (`internalObjectsGateway`), compris. Aucune réponse des objets ne portait
+    de `Cache-Control`, et Cloudflare garde par défaut un 404 quelques
+    minutes. Le code du Worker n'appelle ni `caches.default`, ni `fetch` avec
+    `cf.cacheTtl` (vérifié le 2026-11-13). Non prouvé en production : la
+    mesure ci-dessous le tranche.
+  - **Le correctif** : les deux côtés disent `no-store`. L'API envoie
+    `Cache-Control: no-store` sur tout appel à `objets.interne`
+    (`uncachedInternalCall`, `apps/lfd-api/src/platform/outbound/` : contenus
+    de journée, numéros, contenus versionnés, rayons pro et public,
+    interrupteur, purges, compteurs). L'option `cache: "no-store"` n'est pas
+    posée : le `fetch` de Node n'a pas de cache et son type ne la déclare pas.
+    Les objets (`DayVersions`, `ProShelves`) et la passerelle de sortie, ses
+    refus compris, répondent `Cache-Control: no-store, private`
+    (`apps/lfd-api/container/no-store.ts`).
+  - **Ce qui le confirme après déploiement** : sous `day_contents`, des `hit`
+    aux ouvertures suivantes ; une `GET` au Worker par lecture comptée.
 - **Les écrans de journée sont branchés** (§ 3.2 à 3.5). Reste à lire, sur
   l'environnement déployé, les appels par jour de chaque route (onglet Ops)
   pour chiffrer le gain, et à écrire le seuil sous lequel il ne vaut pas

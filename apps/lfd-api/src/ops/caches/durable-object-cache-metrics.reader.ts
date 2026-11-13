@@ -6,6 +6,7 @@ import {
   SharedCacheMetricsReader,
   type SharedObjectReading,
 } from "./shared-cache-metrics.reader.js";
+import { uncachedInternalCall } from "../../platform/outbound/uncached-internal-call.js";
 
 /** Ce que l'adaptateur appelle — `fetch`, ou une réponse fabriquée en test. */
 export type CacheMetricsFetch = (url: string, init: RequestInit) => Promise<Response>;
@@ -57,10 +58,13 @@ export class DurableObjectCacheMetricsReader extends SharedCacheMetricsReader {
     assertOutsideTransaction("objets-partages.metrics");
     try {
       const url = `${origin.replace(/\/+$/u, "")}${METRICS_PATH}?since=${String(sinceMs)}`;
-      const response = await this.fetchFn(url, {
-        method: "GET",
-        signal: AbortSignal.timeout(METRICS_TIMEOUT_MS),
-      });
+      const response = await this.fetchFn(
+        url,
+        uncachedInternalCall({
+          method: "GET",
+          signal: AbortSignal.timeout(METRICS_TIMEOUT_MS),
+        }),
+      );
       const reply = response.ok ? sharedCacheMetricsReplyOf(await response.json()) : null;
       if (reply === null) {
         this.logger.warn(`Compteurs de l'objet ${object} illisibles (statut ${response.status})`);

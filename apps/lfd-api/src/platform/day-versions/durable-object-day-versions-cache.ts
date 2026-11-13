@@ -1,6 +1,7 @@
 import { assertOutsideTransaction } from "../database/outside-transaction.js";
 import { DayVersionsCache, type SubjectReading, type VersionsCard } from "./day-versions-cache.js";
 import { UnreadableDayVersionsReplyError } from "./unreadable-day-versions-reply.error.js";
+import { uncachedInternalCall } from "../outbound/uncached-internal-call.js";
 
 /**
  * Le filet du socket, au-delà du délai du repli : le repli a déjà rendu la
@@ -71,10 +72,13 @@ export class DurableObjectDayVersionsCache extends DayVersionsCache {
   private call(scope: string, init: RequestInit): Promise<Response> {
     const query = new URLSearchParams({ revision: this.revision });
     const path = `/scopes/${encodeURIComponent(scope)}?${query.toString()}`;
-    return this.fetchFn(`${this.origin.replace(/\/+$/u, "")}${path}`, {
-      ...init,
-      signal: AbortSignal.timeout(DAY_VERSIONS_SOCKET_TIMEOUT_MS),
-    });
+    return this.fetchFn(
+      `${this.origin.replace(/\/+$/u, "")}${path}`,
+      uncachedInternalCall({
+        ...init,
+        signal: AbortSignal.timeout(DAY_VERSIONS_SOCKET_TIMEOUT_MS),
+      }),
+    );
   }
 }
 
