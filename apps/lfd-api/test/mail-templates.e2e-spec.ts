@@ -110,9 +110,8 @@ function arranged(starting: MailDocument): MailDocument {
 describe("ouvrir un e-mail", () => {
   it("liste les e-mails du registre et ouvre le document de départ sans rien écrire", async () => {
     const list = jsonBody<MailEditorListView>(await staff().get(EDITOR).expect(200));
-    // 35 au registre (la commande modifiée, 2026-11-10), moins la sonde de
-    // déploiement, hors de l'éditeur (2026-11-07).
-    expect(list.mails).toHaveLength(34);
+    // Les e-mails du registre, moins la sonde de déploiement, hors de l'éditeur.
+    expect(list.mails).toHaveLength(35);
     expect(list.mails.map((mail) => mail.template)).not.toContain("ops.deploy-check");
     const view = await open();
     expect(view).toMatchObject({ source: "starting", revision: 0, published: null });
