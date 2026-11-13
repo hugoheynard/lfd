@@ -274,12 +274,14 @@ tournera pour la première fois, en mode rapport.
    lien, devenu mort — à vérifier côté e-mails.
 5. **L'IBAN de l'entité à l'écran du staff** : aujourd'hui réduit à ses 4
    derniers caractères (contrat actuel) ; l'afficher en entier ?
+   **Tranché par Hugo le 2026-11-13 : on garde les 4 derniers caractères.**
 6. **Décisions de la nuit sur le virement** (écart nul pour valider, avoirs
    non déduits, qui voit le moyen côté client) : à relire, écrites sans
    `vitruve`.
 7. **La fiche périmée** : seule l'écriture d'un geste décidé sur une fiche
    lue est conditionnée (pour garder « deux gestes sur des colonnes
    différentes gardent chacun le leur ») ; d'accord ?
+   **Validé par Hugo le 2026-11-13.**
 
 ### Pas fait cette nuit
 
