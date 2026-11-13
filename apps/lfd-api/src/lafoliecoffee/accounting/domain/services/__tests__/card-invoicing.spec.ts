@@ -1,6 +1,7 @@
 import {
   cardInvoiceDueOn,
   cardInvoiceVerdict,
+  outsideCardInvoicing,
   type CardInvoiceCandidate,
 } from "../card-invoicing.js";
 import { frozenOrder } from "./collection-fixtures.js";
@@ -23,6 +24,7 @@ function candidate(overrides: Partial<CardInvoiceCandidate> = {}): CardInvoiceCa
     cancelled: false,
     paymentStatus: "paid",
     totalCents: 1_000,
+    billableCents: 1_000,
     paidAt: PLACED,
     handedOverAt: PLACED,
     receivedOn: "2026-09-15",
@@ -93,7 +95,12 @@ describe("cardInvoiceVerdict — l'argent qui ne tombe pas juste (G3)", () => {
   it("encaissé − ajustement = total dû : la facture part, sur le total baissé", () => {
     expect(
       cardInvoiceVerdict(
-        candidate({ totalCents: 700, chargedCents: 1_000, adjustmentRefundedCents: 300 }),
+        candidate({
+          totalCents: 700,
+          billableCents: 700,
+          chargedCents: 1_000,
+          adjustmentRefundedCents: 300,
+        }),
       ),
     ).toBe("issuable");
   });
@@ -113,6 +120,106 @@ describe("cardInvoiceVerdict — l'argent qui ne tombe pas juste (G3)", () => {
     expect(cardInvoiceVerdict(candidate({ paymentStatus: "refunded", refundedCents: 1_000 }))).toBe(
       "fully_refunded",
     );
+  });
+});
+
+/** Plan E9, lot F, § 3.2 : la facture carte se juge au FACTURABLE du solde. */
+describe("cardInvoiceVerdict — au facturable du solde (lot F)", () => {
+  it("retirée, solde pas encore posé : `awaiting_settlement`", () => {
+    expect(cardInvoiceVerdict(candidate({ billableCents: null }))).toBe("awaiting_settlement");
+  });
+
+  it("avant la remise, le verdict d'aujourd'hui, sans regarder le solde", () => {
+    const before = { handedOverAt: null, receivedOn: null, billableCents: null };
+    expect(cardInvoiceVerdict(candidate(before))).toBe("awaiting_handover");
+    expect(cardInvoiceVerdict(candidate({ ...before, chargedCents: 1_200 }))).toBe("blocked");
+  });
+
+  it("encaissé 100, facturable 60, ajustement 40 : `issuable`", () => {
+    const delivered = { billableCents: 60, chargedCents: 100, totalCents: 100 };
+    expect(cardInvoiceVerdict(candidate({ ...delivered, adjustmentRefundedCents: 40 }))).toBe(
+      "issuable",
+    );
+    expect(cardInvoiceVerdict(candidate(delivered))).toBe("blocked");
+  });
+
+  it("ajustement arrêté : `blocked` ; « Réglé autrement » (ligne manual comptée) : `issuable`", () => {
+    const delivered = { billableCents: 60, chargedCents: 100, totalCents: 100 };
+    expect(cardInvoiceVerdict(candidate({ ...delivered, adjustmentStopped: true }))).toBe(
+      "blocked",
+    );
+    expect(
+      cardInvoiceVerdict(
+        candidate({ ...delivered, adjustmentRefundedCents: 40, refundedCents: 40 }),
+      ),
+    ).toBe("issuable");
+  });
+
+  it("baisse M2 de plus de la moitié : facturée, pas « remboursée en totalité »", () => {
+    expect(
+      cardInvoiceVerdict(
+        candidate({
+          totalCents: 300,
+          billableCents: 300,
+          chargedCents: 1_000,
+          adjustmentRefundedCents: 700,
+          refundedCents: 700,
+        }),
+      ),
+    ).toBe("issuable");
+  });
+
+  /** Régression : ajustement + retour couvraient le total, une vente de 100 restait sans facture. */
+  it("total 100, encaissé 130, ajustement 30, retour 80 : `issuable` (était `fully_refunded`)", () => {
+    expect(
+      cardInvoiceVerdict(
+        candidate({
+          totalCents: 100,
+          billableCents: 100,
+          chargedCents: 130,
+          adjustmentRefundedCents: 30,
+          refundedCents: 110,
+        }),
+      ),
+    ).toBe("issuable");
+  });
+
+  it("hausse, baisse puis retour total : `fully_refunded`", () => {
+    // Commandé 100, hausse encaissée +30 (130), baisse rendue 30, retour de tout le livré.
+    expect(
+      cardInvoiceVerdict(
+        candidate({
+          paymentStatus: "refunded",
+          totalCents: 100,
+          billableCents: 100,
+          chargedCents: 130,
+          adjustmentRefundedCents: 30,
+          refundedCents: 130,
+        }),
+      ),
+    ).toBe("fully_refunded");
+  });
+
+  it("un remboursement hors plateforme qui couvre le facturable : `fully_refunded`", () => {
+    expect(
+      cardInvoiceVerdict(
+        candidate({ billableCents: 600, chargedCents: 600, totalCents: 1_000, refundedCents: 600 }),
+      ),
+    ).toBe("fully_refunded");
+  });
+});
+
+describe("outsideCardInvoicing — le filtre du réveil au solde", () => {
+  it.each<[string, Partial<CardInvoiceCandidate>, boolean]>([
+    ["une carte pro", {}, false],
+    ["une carte pas encore encaissée", { paymentStatus: "pending" }, false],
+    ["au compte", { paymentStatus: "not_required" }, true],
+    ["publique", { clientele: "public" }, true],
+    ["sans société", { companyId: null }, true],
+    ["gratuite", { totalCents: 0 }, true],
+    ["annulée", { cancelled: true }, true],
+  ])("%s → %s", (_label, overrides, outside) => {
+    expect(outsideCardInvoicing(candidate(overrides))).toBe(outside);
   });
 });
 

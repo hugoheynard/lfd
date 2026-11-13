@@ -158,7 +158,8 @@ export interface CardInvoiceSignalsView {
 /**
  * Ce que « Réessayer » a donné (`POST admin/accounting/card-invoices/:orderId/retry`) :
  * émise, de nouveau signalée, ou rien à émettre — déjà facturée, pas une
- * commande carte, pas encore payée ou retirée, remboursée en totalité.
+ * commande carte, pas encore payée ou retirée, solde pas encore posé (la
+ * facture partira seule au solde), remboursée en totalité.
  */
 export type CardInvoiceOutcome =
   | "issued"
@@ -167,6 +168,7 @@ export type CardInvoiceOutcome =
   | "not_card"
   | "awaiting_payment"
   | "awaiting_handover"
+  | "awaiting_settlement"
   | "fully_refunded";
 
 export interface CardInvoiceRetryView {

@@ -20,7 +20,14 @@ dans [`../arbitrages-en-absence.md`](../arbitrages-en-absence.md).
 - **La facture suit la livraison** : elle naît quand la commande est **retirée
   ET payée**, dans n'importe quel ordre. Datée du jour de l'émission (`Clock`) ;
   le jour du retrait est la date de livraison imprimée.
-- Une commande remboursée **en totalité** avant son retrait n'est pas facturée.
+- **Elle porte le livré** : après le retrait, la facture attend le **solde**
+  de la commande (`billable_total_cents`, posé par `OrderBillingCloser`) et se
+  remplit de ses montants facturables et des lignes des BL remis
+  (`toBillableInvoiceOrder`), comme la facture du mois. TTC et acompte
+  (BT-113) = le facturable, égal à l'encaissé net des ajustements.
+- Une commande dont les **retours** et remboursements hors plateforme couvrent
+  le facturable n'est pas facturée (`fully_refunded`). Un **ajustement** n'y
+  compte pas : il rend un trop-perçu, il n'annule pas la vente.
 - **Le remboursement reste un geste Stripe** : on le constate, on ne l'initie pas.
 - **L'acheteur est le payeur légal** (`billedPayerOf`). Une commande sans
   `clientele` est pro si elle a une société.
@@ -66,6 +73,7 @@ flowchart LR
   R["order.fulfilled<br/>(retrait, durable)"] --> I["IssueCardInvoice(orderId)<br/>sous verrou de la commande"]
   P["order.paid<br/>(encaissement, durable)"] --> I
   B["« Réessayer »<br/>(b2b_accounting:write)"] --> I
+  S2["order.billing_settled<br/>(solde posé ou corrigé, durable)"] -->|"carte pro seulement"| I
   I -->|"pro · payée · retirée · pas facturée"| F["380 acquittée<br/>BT-113 = TTC · code 48"]
   I -->|"refus jugé AVANT le numéro"| S["card_invoice_outcome = blocked<br/>+ journal"]
   F --> C["ReconcileRefunds"]
@@ -80,12 +88,29 @@ flowchart LR
   Abonnés dans `lafoliecoffee/accounting` : `issue-card-invoice-on-fulfilled`,
   `issue-card-invoice-on-paid`, `reconcile-refunds-on-refund`. Le retrait écouté
   est `order.fulfilled` (un par commande), jamais `handover.handed_over`.
-- **`IssueCardInvoice`** est sans effet si une 380 couvre déjà le bon. **Tout
+- **Le réveil au solde** : `OrderBillingCloser` publie `order.billing_settled`
+  à chaque écriture du solde (`closed` à la remise ou au rapprochement,
+  `corrected`), dans la transaction qui l'écrit ; clé
+  `order.billing_settled:<id d'écriture>` (`IdGenerator`), unique par écriture.
+  L'abonné `issue-card-invoice-on-billing-settled` lit d'abord le périmètre sur
+  la ligne `orders` (`CardInvoiceScopeReader`) et écarte sans lever une
+  commande au compte, publique, sans société, gratuite ou annulée ; sinon il
+  rejoue `IssueCardInvoice`. Une commande retirée sans solde rend
+  `awaiting_settlement` (rien n'est rangé) et repart seule au solde. À la
+  remise d'une commande carte pro, `…-on-fulfilled` et `…-on-billing-settled`
+  tournent tous les deux : le second trouve `already_invoiced` sous le verrou
+  et ne fait que rejouer le rapprochement des remboursements.
+- **Limite** : une commande remise sans jour de réception (`received_on` NULL)
+  n'est jamais soldée, donc jamais facturée par carte ; l'écart est listé par le
+  rapprochement des BL (zéro en production au 2026-11-13 ; toute remise pose
+  `receivedOn`).
+- **`IssueCardInvoice`** est sans effet si une 380 couvre déjà le bon (il
+  rejoue seulement le rapprochement des remboursements). **Tout
   refus se juge avant le numéro** (`prepareCardInvoice`, brouillon construit à
   blanc) : aucun rang consommé pour rien. Refus signalés dans
   `card_invoice_outcome` : manques de l'émetteur ou de l'acheteur
   (`invoiceIssuanceBlockers`), bon non facturable, entité qui ne peut pas
-  encaisser, TTC recalculé ≠ encaissé. L'abonné ne boucle pas.
+  encaisser, TTC recalculé ≠ facturable. L'abonné ne boucle pas.
 - **Acquittée** : moyen de paiement 48 (carte), déjà payé = TTC (BT-113,
   `paid_on`), `DuePayableAmount` = 0 ; échéance = le plus tard du jour du
   paiement et du jour d'émission (`cardInvoiceDueOn`). BT-72 (date de

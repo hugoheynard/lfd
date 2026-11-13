@@ -14,7 +14,9 @@ import { OrderInvoicingLock } from "../../domain/ports/order-invoicing-lock.js";
 import { StatementBuyerReader } from "../../domain/ports/statement-buyer.reader.js";
 import {
   CARD_INVOICE_AWAITS_REFUND,
+  CARD_INVOICE_AWAITS_SETTLEMENT,
   cardInvoiceVerdict,
+  type CardInvoiceVerdict,
 } from "../../domain/services/card-invoicing.js";
 import { prepareCardInvoice, type CardInvoicePreparation } from "../card-invoice-support.js";
 import { InvoiceIssuer } from "../services/invoice-issuer.js";
@@ -74,10 +76,10 @@ export class IssueCardInvoiceHandler implements ICommandHandler<
           // Le rattrapage d'un rapprochement interrompu ne coûte rien.
           await this.reconciler.reconcile(command.orderId);
         }
-        // `blocked` (plan M2, §6.1) n'est pas rangé : le remboursement réglé
-        // réveille la facture, rien n'est à corriger dans une fiche.
-        const message = verdict === "blocked" ? CARD_INVOICE_AWAITS_REFUND : null;
-        return { outcome: verdict, number: null, message };
+        // `blocked` (plan M2, §6.1) et `awaiting_settlement` (plan E9, F) ne
+        // sont pas rangés : le remboursement réglé, ou le solde posé, réveille
+        // la facture — rien n'est à corriger dans une fiche.
+        return { outcome: verdict, number: null, message: waitingMessageOf(verdict) };
       }
       const readers = { creditors: this.creditors, issuers: this.issuers, buyers: this.buyers };
       const prepared = await prepareCardInvoice(
@@ -119,4 +121,12 @@ export class IssueCardInvoiceHandler implements ICommandHandler<
     });
     return { outcome: "blocked", number: null, message: prepared.message };
   }
+}
+
+/** La phrase d'une facture qui attend un réveil ; `null` pour les autres verdicts. */
+function waitingMessageOf(verdict: CardInvoiceVerdict): string | null {
+  if (verdict === "blocked") {
+    return CARD_INVOICE_AWAITS_REFUND;
+  }
+  return verdict === "awaiting_settlement" ? CARD_INVOICE_AWAITS_SETTLEMENT : null;
 }

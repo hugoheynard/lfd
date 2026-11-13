@@ -29,6 +29,7 @@ function order(overrides: Partial<CardInvoiceCandidate> = {}): CardInvoiceCandid
     cancelled: false,
     paymentStatus: "paid",
     totalCents: 1_000,
+    billableCents: 1_000,
     paidAt: PAID,
     handedOverAt: RETRAIT,
     receivedOn: "2026-09-30",

@@ -32,6 +32,7 @@ const RETRIED: Readonly<Record<CardInvoiceOutcome, string>> = {
   not_card: 'Pas une commande carte : rien à facturer',
   awaiting_payment: 'Pas encore payée : la facture partira à l’encaissement',
   awaiting_handover: 'Pas encore retirée : la facture partira au retrait',
+  awaiting_settlement: 'Solde pas encore posé : la facture partira au solde',
   fully_refunded: 'Remboursée en totalité : pas de facture',
 };
 

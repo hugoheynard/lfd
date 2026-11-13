@@ -3,6 +3,7 @@ import { instantToLocal } from "@lfd/contracts";
 import { BusinessError, DomainError } from "../../../platform/shared/errors/app-error.js";
 import { statementSellerOf } from "../domain/entities/billing-statement.js";
 import type { Invoice } from "../domain/entities/invoice.js";
+import { UnsettledCardInvoicePreparationError } from "../domain/errors/card-invoice-errors.js";
 import { InvoiceIssuanceBlockedError } from "../domain/errors/invoice-errors.js";
 import type { CardInvoiceOutcomeKey } from "../domain/ports/card-invoice-outcomes.js";
 import type { CreditorReader } from "../domain/ports/creditor.reader.js";
@@ -105,11 +106,12 @@ export async function prepareCardInvoice(
       entityId,
     );
   }
+  const billable = billableOf(candidate);
   const computed = simulateInvoiceDossier([candidate.frozen]).invoice;
-  if (computed.vat.totalCents !== candidate.totalCents) {
+  if (computed.vat.totalCents !== billable) {
     return blocked(
       `Le TTC recalculé du bon ${candidate.orderNumber} (${String(computed.vat.totalCents)} c) ` +
-        `diffère de l'encaissé (${String(candidate.totalCents)} c) : la facture acquittée ne ` +
+        `diffère du facturable (${String(billable)} c) : la facture acquittée ne ` +
         "tomberait pas juste — le signaler à l'équipe technique.",
       entityId,
     );
@@ -142,7 +144,8 @@ export async function prepareCardInvoice(
           },
         ],
         paymentMeans: CARD_PAYMENT_MEANS,
-        prepayment: { amountCents: candidate.totalCents, paidOn },
+        // Le facturable, égal par le verdict à l'encaissé net d'ajustements.
+        prepayment: { amountCents: billable, paidOn },
         computed,
       });
     // À blanc, sous un numéro de la bonne année et du préfixe de l'entité :
@@ -155,4 +158,17 @@ export async function prepareCardInvoice(
     }
     throw error;
   }
+}
+
+/**
+ * Le facturable du solde. Le verdict ne rend `issuable` qu'avec un solde posé ;
+ * un candidat sans solde ici est un défaut de code, pas un état métier : une
+ * `TechnicalError`, que le `catch` de la préparation ne range PAS en `blocked`
+ * et laisse remonter (relance bornée de la boîte d'envoi, ou 500 au `retry`).
+ */
+function billableOf(candidate: CardInvoiceCandidate): number {
+  if (candidate.billableCents === null) {
+    throw new UnsettledCardInvoicePreparationError(candidate.orderNumber);
+  }
+  return candidate.billableCents;
 }

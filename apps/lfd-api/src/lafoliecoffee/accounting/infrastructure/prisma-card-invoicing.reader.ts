@@ -9,11 +9,12 @@ import { orderCardSubject } from "../../orders/application/services/order-card-s
 import { COMMERCIAL_INVOICE } from "../domain/entities/invoice.types.js";
 import { CardInvoicingReader } from "../domain/ports/card-invoicing.reader.js";
 import type { CardInvoiceCandidate } from "../domain/services/card-invoicing.js";
+import { toFrozenInvoiceOrder } from "./frozen-invoice-order.mapper.js";
 import {
-  FROZEN_INVOICE_ORDER_SELECT,
-  toFrozenInvoiceOrder,
-} from "./frozen-invoice-order.mapper.js";
-import { handedOverNoteNumbersOf } from "./billable-invoice-order.mapper.js";
+  BILLABLE_INVOICE_ORDER_SELECT,
+  handedOverNoteNumbersOf,
+  toBillableInvoiceOrder,
+} from "./billable-invoice-order.mapper.js";
 
 /** `AAAA-MM-JJ` — la longueur d'un jour ISO. */
 const DAY_LENGTH = 10;
@@ -41,7 +42,7 @@ export class PrismaCardInvoicingReader extends CardInvoicingReader {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
       select: {
-        ...FROZEN_INVOICE_ORDER_SELECT,
+        ...BILLABLE_INVOICE_ORDER_SELECT,
         id: true,
         companyId: true,
         billedCompanyId: true,
@@ -51,11 +52,6 @@ export class PrismaCardInvoicingReader extends CardInvoicingReader {
         paidAt: true,
         handedOverAt: true,
         receivedOn: true,
-        deliveryNotes: {
-          where: { status: "handed_over" },
-          orderBy: { rank: "asc" },
-          select: { number: true },
-        },
       },
     });
     if (order === null) {
@@ -79,6 +75,7 @@ export class PrismaCardInvoicingReader extends CardInvoicingReader {
       cancelled: order.status === "cancelled",
       paymentStatus: order.paymentStatus,
       totalCents: order.totalCents,
+      billableCents: order.billableTotalCents,
       paidAt: order.paidAt,
       handedOverAt: order.handedOverAt,
       // `@db.Date` : minuit UTC du jour, dont la date ISO EST le jour de Paris.
@@ -86,9 +83,15 @@ export class PrismaCardInvoicingReader extends CardInvoicingReader {
       invoiced: invoiced > 0,
       ...moneyOf(position),
       follows,
-      // La facture carte garde les totaux de la COMMANDE (plan E6c2, § 4) : pas
-      // de départ incomplet par carte, et elle part à la remise, avant tout solde.
-      frozen: toFrozenInvoiceOrder(order),
+      // La facture carte porte le LIVRÉ (plan E9, lot F) : les montants
+      // facturables du solde, lus sur la colonne brute ; sans solde, le verdict
+      // attend (`awaiting_settlement`) et le mapper du livré n'est jamais
+      // appelé — il lèverait `UnsettledPartialOrderError` sur une commande
+      // décidée. Ce repli sur la commande ne sert jamais à émettre.
+      frozen:
+        order.billableTotalCents === null
+          ? toFrozenInvoiceOrder(order)
+          : toBillableInvoiceOrder(order),
       deliveryNoteNumbers: handedOverNoteNumbersOf(order),
     };
   }

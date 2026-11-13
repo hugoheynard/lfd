@@ -1,8 +1,11 @@
 import { Injectable, Logger } from "@nestjs/common";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { IdGenerator } from "../../../../platform/id/id-generator.js";
+import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import type { OrderBilling } from "../../../orders/domain/entities/order-billing.js";
+import { OrderBillingSettledFact } from "../../../orders/domain/events/order-billing-settled.fact.js";
 import { AccountOrderEngagementReader } from "../../../orders/domain/ports/account-order-engagement.js";
 import { AccountOrderSettlement } from "../../../orders/domain/ports/account-order-settlement.js";
 import { OrderBillingRepository } from "../../../orders/domain/ports/order-billing.repository.js";
@@ -58,6 +61,8 @@ export class OrderBillingCloser {
     private readonly settlement: AccountOrderSettlement,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly facts: DurablePublisher,
+    private readonly ids: IdGenerator,
   ) {}
 
   /** À la remise, dans l'unité de travail du geste : pose le solde s'il est atteint. */
@@ -154,18 +159,34 @@ export class OrderBillingCloser {
     }
   }
 
-  /** Pose le solde, puis recale l'encaissement `due` dessus — dans l'unité de travail de l'appelant. */
+  /**
+   * Pose le solde, recale l'encaissement `due` dessus, et publie
+   * `order.billing_settled` — dans l'unité de travail de l'appelant (la remise,
+   * ou celle de {@link repair}) : le fait est écrit avec le solde, ou pas du
+   * tout. Rien ne part sur un `save` refusé.
+   */
   private async persist(billing: OrderBilling): Promise<boolean> {
+    const write = billing.pendingWrite;
     if (!(await this.billings.save(billing))) {
       return false;
     }
-    const { billable } = billing.toSnapshot();
+    const { billable, settledOn } = billing.toSnapshot();
     if (billable !== null) {
       await this.settlement.alignOnSettlement(
         billing.orderId,
         billable.totalCents,
         this.clock.now(),
       );
+      if (write !== null && settledOn !== null) {
+        const fact = new OrderBillingSettledFact(
+          this.ids.next(),
+          billing.orderId,
+          write,
+          billable.totalCents,
+          settledOn,
+        );
+        await this.facts.publish(fact.durableFact());
+      }
     }
     return true;
   }

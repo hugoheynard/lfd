@@ -2,6 +2,7 @@ import type { Provider } from "@nestjs/common";
 
 import { IssueCardInvoiceHandler } from "./application/commands/issue-card-invoice.handler.js";
 import { ReconcileRefundsHandler } from "./application/commands/reconcile-refunds.handler.js";
+import { IssueCardInvoiceOnBillingSettled } from "./application/handlers/issue-card-invoice-on-billing-settled.handler.js";
 import { IssueCardInvoiceOnFulfilled } from "./application/handlers/issue-card-invoice-on-fulfilled.handler.js";
 import { IssueCardInvoiceOnPaid } from "./application/handlers/issue-card-invoice-on-paid.handler.js";
 import { IssueCardInvoiceOnRefundSettled } from "./application/handlers/issue-card-invoice-on-refund-settled.handler.js";
@@ -11,6 +12,7 @@ import { GetCardInvoiceSignalsHandler } from "./application/queries/get-card-inv
 import { ListOrderInvoicesHandler } from "./application/queries/list-order-invoices.handler.js";
 import { RefundReconciler } from "./application/services/refund-reconciler.js";
 import { CardInvoiceOutcomes } from "./domain/ports/card-invoice-outcomes.js";
+import { CardInvoiceScopeReader } from "./domain/ports/card-invoice-scope.reader.js";
 import { CardInvoiceSignalsReader } from "./domain/ports/card-invoice-signals.reader.js";
 import { CardInvoicingReader } from "./domain/ports/card-invoicing.reader.js";
 import { OrderInvoicesReader } from "./domain/ports/order-invoices.reader.js";
@@ -20,6 +22,7 @@ import {
   PrismaCardInvoiceOutcomes,
   PrismaCardInvoiceSignalsReader,
 } from "./infrastructure/prisma-card-invoice-outcomes.js";
+import { PrismaCardInvoiceScopeReader } from "./infrastructure/prisma-card-invoice-scope.reader.js";
 import { PrismaCardInvoicingReader } from "./infrastructure/prisma-card-invoicing.reader.js";
 import { PrismaOrderInvoicesReader } from "./infrastructure/prisma-order-invoices.reader.js";
 import { PrismaOrderInvoicingLock } from "./infrastructure/prisma-order-invoicing-lock.js";
@@ -35,6 +38,7 @@ import {
  */
 export const CARD_INVOICE_PROVIDERS: readonly Provider[] = [
   { provide: CardInvoicingReader, useClass: PrismaCardInvoicingReader },
+  { provide: CardInvoiceScopeReader, useClass: PrismaCardInvoiceScopeReader },
   { provide: OrderInvoicingLock, useClass: PrismaOrderInvoicingLock },
   { provide: CardInvoiceOutcomes, useClass: PrismaCardInvoiceOutcomes },
   { provide: CardInvoiceSignalsReader, useClass: PrismaCardInvoiceSignalsReader },
@@ -47,6 +51,7 @@ export const CARD_INVOICE_PROVIDERS: readonly Provider[] = [
   IssueCardInvoiceOnFulfilled,
   IssueCardInvoiceOnPaid,
   IssueCardInvoiceOnRefundSettled,
+  IssueCardInvoiceOnBillingSettled,
   ReconcileRefundsOnRefund,
   RingRefundNotCredited,
   GetCardInvoiceSignalsHandler,

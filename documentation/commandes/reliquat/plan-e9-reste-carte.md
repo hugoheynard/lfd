@@ -1,6 +1,7 @@
 # Plan E9 — rembourser le reste d'une commande payée par carte (v5)
 
-> Statut : **doc-first, rien n'est bâti.** v1 à v4 contredites par `vitruve`
+> Statut : **lot F bâti le 2026-11-13 (non commité à l'écriture)** ; E9a et
+> E9b doc-first. v1 à v4 contredites par `vitruve`
 > (§ 12) ; cette v5 répond à chaque objection, revérifiée dans le code le
 > 2026-11-13. Décisions de Hugo :
 >
@@ -250,7 +251,7 @@ WHERE "order_number" = $1 FOR UPDATE`
   - commande d'émission : `IssueCardInvoiceHandler.execute`
     (`accounting/application/commands/issue-card-invoice.handler.ts:64-89`),
     sous verrou ; seul `blocked` est rangé dans `card_invoice_outcome`
-    (CHECK `issued|blocked`, `prisma/schema/invoice.prisma:245`) ;
+    (CHECK `issued|blocked`, `apps/lfd-api/prisma/schema/public/invoice.prisma`) ;
   - déclencheurs durables : `IssueCardInvoiceOnPaid`, `…OnFulfilled`,
     `…OnRefundSettled` (`accounting/application/handlers/`), liés dans
     `accounting/card-invoice.providers.ts` ;
@@ -453,31 +454,54 @@ de livrer. Le test de non-régression (§ 3.8) compare le Factur-X entier.
 - **`order.fulfilled`** : sans effet ; le solde est posé dans la même
   transaction (`delivery-note-follower.ts:49-52`), et une commande sans
   décision a pour facturable la recopie de ses totaux.
-- **Une commande remise à facturable NULL** : aujourd'hui `issuable`, demain
-  `awaiting_settlement`, **réveillée** quand le réconciliateur pose le solde
-  (§ 3.5). Si le solde ne peut pas être posé (`received_on` NULL, BL sans
-  en-tête), elle attend que l'écart soit réparé.
+- **Une commande remise à facturable NULL** : `awaiting_settlement`,
+  **réveillée** quand le réconciliateur pose le solde (§ 3.5). Si le solde ne
+  peut pas être posé (BL sans en-tête), elle attend que l'écart soit réparé.
+- **Limite** : une commande complète ancienne à `received_on` NULL n'est ni
+  soldée ni listée comme écart (`settlementOf` rend `null` sans jour de
+  réception, `settlementGapOf` ne la nomme pas) : sa facture carte attend sans
+  signal. Zéro en production au 2026-11-13 (`en_ecart`) ; toute remise pose
+  `receivedOn` (`mark-order-fulfilled.handler.ts:95`).
 - **Toute commande avec ajustement** que l'ancien `fully_refunded` écartait
   est facturée (§ 3.2) ; Q4 les compte.
 
 #### 3.5 Le réveil : `order.billing_settled` et `IssueCardInvoiceOnBillingSettled`
 
 **Le fait.** `order.billing_settled`, publié par `OrderBillingCloser.persist`
-après un `save` réussi, pour `closed` **et** `corrected`. Payload
-`{ orderId, write, billableTotalCents, settledOn }`. Clé
-`order.billing_settled:<orderId>:<billableTotalCents>:<settledOn>`.
-`OrderBillingCloser` injecte un `DurablePublisher` (constructeur l. 54).
-`persist` tourne toujours dans une unité de travail (celle de la remise ou
-celle de `repair`, l. 136) : le fait est écrit avec le solde.
+après un `save` réussi, pour `closed` **et** `corrected`, jamais sur un `save`
+refusé ni sur un écart gelé. Payload
+`{ orderId, write, billableTotalCents, settledOn }`. **Clé
+`order.billing_settled:<writeId>`**, `writeId` tiré de l'`IdGenerator` à
+chaque écriture : unique par écriture. Une clé dérivée du contenu
+(`orderId:total:jour`) aurait été avalée par l'`ON CONFLICT DO NOTHING` de la
+boîte d'envoi sur une correction de TVA seule ou un aller-retour A → B → A.
+`OrderBillingCloser` injecte `DurablePublisher` et `IdGenerator`. `persist`
+tourne toujours dans une unité de travail (celle de la remise ou celle de
+`repair`) : le fait est écrit avec le solde.
 
 **L'abonné.** `IssueCardInvoiceOnBillingSettled`, dans
 `accounting/application/handlers/`, nom stable
-`accounting.issue-card-invoice.on-billing-settled`, recopié sur
-`IssueCardInvoiceOnRefundSettled` : il rejoue `IssueCardInvoiceCommand(orderId)`.
-Lié dans `card-invoice.providers.ts`. Sans effet quand une 380 existe, ou que
-la commande n'est pas une carte pro (verdicts sans écriture). Le doublon avec
-`IssueCardInvoiceOnFulfilled` à la remise est sans danger : la commande est
-sous verrou et idempotente (`already_invoiced`).
+`accounting.issue-card-invoice.on-billing-settled`. Le fait part pour **toute**
+commande soldée, au compte et particuliers compris : l'abonné lit d'abord le
+périmètre sur la ligne `orders` seule (port `CardInvoiceScopeReader`, cinq
+colonnes par clé primaire, sans verrou ni position carte) et rend sans rien
+faire si `outsideCardInvoicing` (sans société, publique, annulée, gratuite, au
+compte) ou si la commande est introuvable. Sinon il rejoue
+`IssueCardInvoiceCommand(orderId)`. Aucune commande hors carte ne finit en
+relance ni en lettre morte (`OrderToInvoiceNotFoundError` ne part que d'une
+commande inexistante, et l'abonné l'écarte avant). **Le périmètre n'est pas
+dans le payload** : un champ de plus y serait définitif pour économiser une
+lecture par clé primaire, et le règlement se lit au moment de juger.
+
+**Double exécution à la remise, gardée.** À la remise d'une commande carte
+pro, `…OnFulfilled` et `…OnBillingSettled` tournent tous les deux : le second
+trouve `already_invoiced` sous le verrou et lance `reconciler.reconcile` —
+ce n'est pas « sans écriture », c'est le rapprochement des remboursements,
+idempotent. `…OnFulfilled` n'est pas retiré : sa couverture n'est pas
+prouvée identique (une remise qui ne passe pas par `closeLocked` ne serait
+réveillée qu'au passage suivant du rapprochement, et ses livraisons en attente
+portent son nom). Coût : un verrou et une lecture du candidat de plus par
+commande carte pro remise.
 
 **La porte.** `delivery-notes` (publieur) et `accounting` (abonné) sont dans
 le même bloc `lafoliecoffee` ; l'abonné est un `@DurableHandler`. La porte
@@ -608,14 +632,18 @@ livraison (Q7), car **F les émettra seul** au prochain réveil ;
 - `accounting/infrastructure/billable-invoice-order.mapper.ts` — doc l. 43-47.
 - `accounting/application/card-invoice-support.ts` — l. 109-115 et l. 145.
 - `accounting/application/commands/issue-card-invoice.handler.ts` — message.
-- `accounting/application/handlers/issue-card-invoice-on-billing-settled.handler.ts`
+- `lafoliecoffee/accounting/application/handlers/issue-card-invoice-on-billing-settled.handler.ts`
   (nouveau) et `accounting/card-invoice.providers.ts`.
+- `lafoliecoffee/accounting/domain/ports/card-invoice-scope.reader.ts` et
+  `lafoliecoffee/accounting/infrastructure/prisma-card-invoice-scope.reader.ts` (nouveaux).
+- `accounting/domain/errors/card-invoice-errors.ts` —
+  `UnsettledCardInvoicePreparationError`.
 - `delivery-notes/application/services/order-billing-closer.ts` — publieur,
   `persist`.
-- `orders/domain/events/order-billing-settled.fact.ts` (nouveau, à côté de
-  `order-refund-succeeded.fact.ts`).
+- `lafoliecoffee/orders/domain/events/order-billing-settled.fact.ts` (nouveau,
+  à côté de `order-refund-succeeded.fact.ts`).
 - `packages/contracts/src/issued-invoices.ts` — `CardInvoiceOutcome`.
-- `apps/lfd-backoffice-frontend/.../card-invoice-signals.ts` — `RETRIED`.
+- `apps/lfd-backoffice-frontend/src/app/comptabilite/procedure-de-prelevement/card-invoice-signals/card-invoice-signals.ts` — `RETRIED`.
 
 #### 3.8 Tests de F
 
@@ -650,6 +678,28 @@ livraison (Q7), car **F les émettra seul** au prochain réveil ;
   (§ 3.3).
 - **`pnpm test` à la racine** : le contrat (`packages/contracts`) et le
   back-office se compilent avec la nouvelle valeur.
+
+#### 3.8 bis Ce qui est bâti (2026-11-13)
+
+- Unitaires : `card-invoicing.spec.ts` (verdicts du § 3.2, filtre
+  `outsideCardInvoicing`), `issue-card-invoice-billable.handler.spec.ts`
+  (attente, contenu « TTC = acompte = facturable » sur un livré de 600 pour
+  1 000 encaissés et 400 d'ajustement, refus « diffère du facturable »,
+  `UnsettledCardInvoicePreparationError`), `order-billing-closer-fact.spec.ts`
+  (fait sur `closed` et `corrected` seulement, deux clés pour deux écritures au
+  même contenu), `issue-card-invoice-on-billing-settled.handler.spec.ts`
+  (commande au compte, particulier, sans société, introuvable : rien, sans
+  erreur).
+- E2E `test/card-invoice-billable.e2e-spec.ts` : réveil par le rapprochement
+  sans « Réessayer » ; commande au compte livrée du premier coup à l'abonné,
+  sans facture ; non-régression sur une commande carte complète avec remise de
+  panier et parts sur le BL — le Factur-X préparé sur le livré est **égal** à
+  celui préparé sur la commande (numéro, identifiant et instant d'émission
+  neutralisés, identiques des deux côtés). L'« instantané de l'ancien code »
+  est rejoué dans le test par l'ancienne lecture (`toFrozenInvoiceOrder`,
+  jugée au total commandé) au lieu d'un fichier figé.
+- Écart au § 3.2 : aucun. Écart au § 3.5 : clé par écriture et filtre de
+  l'abonné (objections de la relecture de la v5).
 
 #### 3.9 Livraison et retour arrière
 

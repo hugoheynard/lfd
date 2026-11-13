@@ -19,6 +19,9 @@ import {
 import { AccountOrderSettlement } from "../../../orders/domain/ports/account-order-settlement.js";
 import { OrderBillingRepository } from "../../../orders/domain/ports/order-billing.repository.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
+import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
+import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
+import type { DurableFact } from "../../../../platform/outbox/durable-event.js";
 import {
   RemainderDecisionReader,
   ShortfallDecisionReader,
@@ -235,6 +238,16 @@ export class RecordingSettlement extends AccountOrderSettlement {
   }
 }
 
+/** Les faits durables publiés, dans l'ordre. */
+export class RecordingBillingFacts extends DurablePublisher {
+  readonly published: DurableFact[] = [];
+
+  publish(fact: DurableFact): Promise<void> {
+    this.published.push(fact);
+    return Promise.resolve();
+  }
+}
+
 /** L'instant du solde, sans importance pour la règle : seul le montant est vérifié. */
 const SETTLEMENT_CLOCK = new FixedClock(new Date(0));
 
@@ -244,6 +257,7 @@ export function billingCloserOf(
   billings: OrderBillingRepository = new InMemoryOrderBillings(),
   engagements: AccountOrderEngagementReader = new FixedEngagements(),
   settlement: AccountOrderSettlement = new RecordingSettlement(),
+  facts: DurablePublisher = new RecordingBillingFacts(),
 ): OrderBillingCloser {
   return new OrderBillingCloser(
     billings,
@@ -252,5 +266,7 @@ export function billingCloserOf(
     settlement,
     SETTLEMENT_CLOCK,
     new DirectUnitOfWork(),
+    facts,
+    new FixedIdGenerator("write"),
   );
 }
