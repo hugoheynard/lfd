@@ -153,7 +153,7 @@ function ribOf(raw: unknown): Segment[] {
   ];
 }
 
-/** « mensuel », « mensuel, trimestriel » — des conditions de règlement. */
+/** « paiement au compte » — des conditions de règlement. */
 function termsOf(raw: unknown): Segment[] {
   const terms = Array.isArray(raw) ? raw : [];
   return terms.flatMap((term, index) => [
@@ -298,7 +298,7 @@ const identityEdited: Phrase = (fact) => {
   );
 };
 
-/** « … a accordé au client « X » les conditions de règlement : mensuel » ; une liste vide les retire. */
+/** « … a accordé au client « X » les conditions de règlement : paiement au compte » ; une liste vide les retire. */
 const paymentTermsGranted: Phrase = (fact) => {
   const terms = termsOf(fact.payload['terms']);
   return terms.length === 0
@@ -320,8 +320,8 @@ const paymentTermsGranted: Phrase = (fact) => {
 };
 
 /**
- * « … a demandé un règlement mensuel pour le client « X » », « … a retiré la
- * demande de règlement mensuel du client « X » ».
+ * « … a demandé le paiement au compte pour le client « X » », « … a retiré la
+ * demande de paiement au compte du client « X » ».
  */
 const paymentTermRequested: Phrase = (fact) => {
   const p = fact.payload;
@@ -333,8 +333,9 @@ const paymentTermRequested: Phrase = (fact) => {
     return byActor(
       fact,
       [
-        text('a retiré la demande de règlement'),
-        ...(before === null ? [] : [text(' '), term(before)]),
+        ...(before === null
+          ? [text('a retiré la demande de règlement')]
+          : [text('a retiré la demande de '), term(before)]),
         text(' '),
         ...client(fact, 'of'),
       ],
@@ -344,7 +345,7 @@ const paymentTermRequested: Phrase = (fact) => {
   return byActor(
     fact,
     [
-      text('a demandé un règlement '),
+      text('a demandé le '),
       term(after),
       text(' pour '),
       ...client(fact, 'the'),

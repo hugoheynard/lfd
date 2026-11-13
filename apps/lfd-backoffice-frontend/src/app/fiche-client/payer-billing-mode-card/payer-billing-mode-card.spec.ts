@@ -223,6 +223,16 @@ async function settle(fixture: ComponentFixture<PayerBillingModeCard>): Promise<
 }
 
 describe('PayerBillingModeCard — le mode de facturation d’un client', () => {
+  it('rend le mode lu à qui l’écoute — la section paiement y lit le rythme', async () => {
+    const fixture = await boot(modeView());
+    const heard: (PayerBillingModeView | null)[] = [];
+    fixture.componentInstance.modeChange.subscribe((view) => heard.push(view));
+
+    await fixture.componentInstance['load']();
+
+    expect(heard).toEqual([wire.view]);
+  });
+
   it('un payeur sans choix : « Mode non choisi », l’invitation, la règle et trois clôtures', async () => {
     const fixture = await boot(modeView());
 

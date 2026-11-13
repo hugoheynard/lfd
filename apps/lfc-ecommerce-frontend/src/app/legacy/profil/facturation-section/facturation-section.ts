@@ -35,7 +35,7 @@ export class FacturationSection {
   /** Le crédit reste accordé, mais la comptabilité en a suspendu le prélèvement. */
   protected readonly note = computed(() =>
     directDebitSuspended(this.company())
-      ? 'Prélèvement mensuel suspendu — vos commandes se règlent par carte.'
+      ? 'Prélèvement suspendu — vos commandes se règlent par carte.'
       : "Définie avec votre commercial La Folie Coffee. Toute évolution passe par lui et s'appliquera à vos prochaines commandes.",
   );
   protected readonly canManage = computed(() => canManageCompany(this.company().role));

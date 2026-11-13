@@ -200,7 +200,7 @@ describe('l’identité et le règlement d’un client', () => {
         company('company.payment_terms_granted', { subjectLabel: CAFE, terms: ['monthly'] }),
       ),
     ).toBe(
-      'Colette Martin a accordé au client « Café des Halles » les conditions de règlement : mensuel',
+      'Colette Martin a accordé au client « Café des Halles » les conditions de règlement : paiement au compte',
     );
     expect(sentence(company('company.payment_terms_granted', { terms: [] }))).toBe(
       'Colette Martin a retiré les conditions de règlement d’un client',
@@ -216,7 +216,7 @@ describe('l’identité et le règlement d’un client', () => {
           after: 'monthly',
         }),
       ),
-    ).toBe('Colette Martin a demandé un règlement mensuel pour le client « Café des Halles »');
+    ).toBe('Colette Martin a demandé le paiement au compte pour le client « Café des Halles »');
     expect(
       sentence(
         company('company.payment_term_requested', {
@@ -225,7 +225,9 @@ describe('l’identité et le règlement d’un client', () => {
           after: null,
         }),
       ),
-    ).toBe('Colette Martin a retiré la demande de règlement mensuel du client « Café des Halles »');
+    ).toBe(
+      'Colette Martin a retiré la demande de paiement au compte du client « Café des Halles »',
+    );
   });
 
   it('dit le geste sur le statut du compte', () => {

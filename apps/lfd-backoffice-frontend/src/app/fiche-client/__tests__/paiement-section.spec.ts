@@ -5,6 +5,7 @@ import type {
   DeferredTerm,
   MandateSectionView,
   MintBlocker,
+  PayerBillingModeView,
   PaymentMandateView,
   SepaScheme,
 } from '@lfd/contracts';
@@ -153,7 +154,7 @@ describe('section Moyens de paiement — le socle et les crédits', () => {
 
     expect(host.textContent).toContain('1 · Coordonnées bancaires');
     expect(host.textContent).toContain('2 · Mandat SEPA');
-    expect(host.textContent).toContain('3 · Règlement périodique');
+    expect(host.textContent).toContain('3 · Paiement au compte');
   });
 
   it('décrit la frise par des libellés, pas par des pastilles seules', async () => {
@@ -166,7 +167,7 @@ describe('section Moyens de paiement — le socle et les crédits', () => {
     expect(steps.map((step) => step.label)).toEqual([
       'Aucun RIB enregistré',
       'Aucun mandat de prélèvement',
-      'Aucun règlement périodique ouvert',
+      'Paiement au compte non accordé',
     ]);
     expect(steps.every((step) => step.done === false)).toBe(true);
   });
@@ -220,6 +221,30 @@ describe('section Moyens de paiement — le socle et les crédits', () => {
     expect(host.textContent).toContain('Demandé par le client');
   });
 
+  /**
+   * Régression : le crédit accordé s'affichait « Mensuel » chez un client au
+   * mode HEBDOMADAIRE — le libellé du crédit tenait lieu de rythme.
+   */
+  it('dit le rythme du MODE de facturation, jamais celui du crédit', () => {
+    const { host, section } = render({ grantedTerms: ['monthly'] });
+
+    section['billingMode'].set({
+      legalEntityId: 'le_1',
+      payerCompanyId: 'cmp_1',
+      mode: 'weekly',
+      since: '2026-10-01',
+      scheduled: { mode: 'monthly', effectiveAt: '2026-12-01' },
+      changeLockedUntil: null,
+      upcomingClosures: [],
+    } satisfies PayerBillingModeView);
+    TestBed.tick();
+
+    const said = host.querySelector('[data-account-rhythm]')?.textContent ?? '';
+    expect(said).toContain('Hebdomadaire');
+    expect(said).toContain('programmé : Mensuel');
+    expect(host.textContent).not.toContain('Règlement périodique');
+  });
+
   it('ne le signale plus une fois accordé', () => {
     const { host } = render({ grantedTerms: ['monthly'], requestedTerm: 'monthly' });
 
@@ -248,7 +273,7 @@ describe('section Moyens de paiement — la zone de danger', () => {
 
     expect(host.querySelector('fold-danger-zone')).not.toBeNull();
     expect(section['dangerous']()).toEqual([
-      expect.objectContaining({ key: 'monthly', match: 'Mensuel' }),
+      expect.objectContaining({ key: 'monthly', match: 'Paiement au compte' }),
     ]);
   });
 

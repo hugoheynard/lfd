@@ -4,7 +4,9 @@ import {
   computed,
   effect,
   inject,
+  booleanAttribute,
   input,
+  output,
   signal,
   untracked,
 } from '@angular/core';
@@ -83,6 +85,10 @@ const SHOWN_CLOSURES = 3;
 })
 export class PayerBillingModeCard {
   readonly company = input.required<AdminCompanyDetail>();
+  /** Posée dans une autre carte (le bloc « Paiement différé ») : surface en retrait. */
+  readonly nested = input(false, { transform: booleanAttribute });
+  /** Le mode lu (ou relu après un geste) ; `null` tant qu'il n'y en a pas de lisible. */
+  readonly modeChange = output<PayerBillingModeView | null>();
 
   private readonly entitiesApi = inject(LegalEntitiesService);
   private readonly api = inject(PayerBillingModeService);
@@ -202,12 +208,16 @@ export class PayerBillingModeCard {
       this.entityId.set(chosen);
       if (chosen === null) {
         this.view.set(null);
+        this.modeChange.emit(null);
         this.state.set('no-entity');
         return;
       }
-      this.view.set(await this.api.get(chosen, companyId));
+      const view = await this.api.get(chosen, companyId);
+      this.view.set(view);
+      this.modeChange.emit(view);
       this.state.set('ready');
     } catch {
+      this.modeChange.emit(null);
       this.state.set('error');
     }
   }

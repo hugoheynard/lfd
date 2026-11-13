@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import {
+  BILLING_RHYTHM_KIND_LABELS,
   DEFERRED_TERM_LABELS,
   deferredTermSchema,
   MANDATE_STATUS_LABELS,
@@ -20,6 +21,7 @@ import {
   type CompanyBankAccountView,
   type DeferredTerm,
   type MintBlocker,
+  type PayerBillingModeView,
   type PaymentMandateView,
 } from '@lfd/contracts';
 import {
@@ -37,7 +39,10 @@ import {
   type FoldTimelineNode,
 } from 'fold-ng';
 
+import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
+import { longDay } from '../../comptabilite/collection-month-wording';
 import { saveBlob } from '../../shared/download/save-blob';
+import { PayerBillingModeCard } from '../payer-billing-mode-card/payer-billing-mode-card';
 import {
   MandatePreviewPanel,
   type MandatePreviewPanelData,
@@ -121,6 +126,7 @@ const PROOF_REPLACED_ON_SIGN =
   selector: 'app-paiement-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    PayerBillingModeCard,
     DatePipe,
     BankAccountSection,
     BankTransferMeans,
@@ -172,6 +178,12 @@ export class PaiementSection {
    * case « forme » d'un RIB vide. `''` = inconnue, rien ne se propose.
    */
   readonly companyLegalForm = input('');
+  /**
+   * Le compte entier, pour la carte du mode de facturation, qui vit dans le
+   * bloc « Paiement différé » ; `null` à l'ouverture d'un compte, où la
+   * société n'existe pas encore.
+   */
+  readonly company = input<AdminCompanyDetail | null>(null);
 
   /** Le staff change l'ensemble complet des crédits accordés. */
   readonly grantedTermsChange = output<readonly DeferredTerm[]>();
@@ -264,6 +276,27 @@ export class PaiementSection {
     target?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  /**
+   * Le mode de facturation du payeur, tel que la carte du mode l'a lu ;
+   * `null` tant qu'il n'est pas lu (ou pas lisible, faute du droit
+   * comptabilité). Le rythme du paiement au compte, c'est lui : le crédit
+   * accordé n'en porte aucun.
+   */
+  protected readonly billingMode = signal<PayerBillingModeView | null>(null);
+
+  /** Le rythme dit en clair — le mode en vigueur, et le programmé s'il y en a un. */
+  protected readonly rhythm = computed<string | null>(() => {
+    const view = this.billingMode();
+    if (view === null) {
+      return null;
+    }
+    const current = BILLING_RHYTHM_KIND_LABELS[view.mode];
+    const said = view.since === null ? `${current} (mode non choisi)` : current;
+    return view.scheduled === null
+      ? said
+      : `${said} — programmé : ${BILLING_RHYTHM_KIND_LABELS[view.scheduled.mode]}, à partir du ${longDay(view.scheduled.effectiveAt)}`;
+  });
+
   protected readonly rows = computed<readonly PaymentMeanRow[]>(() => {
     const granted = this.grantedTerms();
     return deferredTermSchema.options.map((term) => ({
@@ -337,8 +370,8 @@ export class PaiementSection {
         icon: 'repeat',
         label:
           granted.length === 0
-            ? 'Aucun règlement périodique ouvert'
-            : granted.map((term) => DEFERRED_TERM_LABELS[term]).join(', ') + ' — ouvert',
+            ? 'Paiement au compte non accordé'
+            : granted.map((term) => DEFERRED_TERM_LABELS[term]).join(', ') + ' — accordé',
         done: granted.length > 0,
       },
     ];
@@ -377,11 +410,11 @@ export class PaiementSection {
   protected readonly dangerous = computed<readonly DangerousAction[]>(() => {
     const credits = this.grantedTerms().map((term) => ({
       key: term,
-      // On retire un RÉGIME — le paiement différé à cette échéance —, pas une
-      // somme : le mot « crédit » le faisait lire comme un montant accordé.
-      label: `Retirer le paiement différé (échéance ${DEFERRED_TERM_LABELS[term].toLowerCase()})`,
+      // On retire un RÉGIME — le paiement au compte —, pas une somme : le mot
+      // « crédit » le ferait lire comme un montant accordé.
+      label: `Retirer le ${DEFERRED_TERM_LABELS[term].toLowerCase()}`,
       consequence: 'Le client devra régler à la commande, dès la prochaine.',
-      question: `Retirer le paiement différé (échéance ${DEFERRED_TERM_LABELS[term].toLowerCase()}) à ce client ?`,
+      question: `Retirer le ${DEFERRED_TERM_LABELS[term].toLowerCase()} à ce client ?`,
       match: DEFERRED_TERM_LABELS[term],
     }));
     const current = this.mandate();

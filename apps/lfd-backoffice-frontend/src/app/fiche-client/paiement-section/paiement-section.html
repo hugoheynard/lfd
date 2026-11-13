@@ -63,7 +63,7 @@
         <p class="pm-lede">
           Trois étapes, dans cet ordre&nbsp;: le <strong>RIB</strong> du client, le
           <strong>mandat SEPA</strong> qu'il signe, puis l'<strong
-            >activation du règlement périodique</strong
+            >ouverture du paiement au compte</strong
           >. Chacune sert la suivante — sans RIB, pas de mandat à imprimer&nbsp;; sans mandat, rien
           pour encaisser ce qu'on aura facturé.
         </p>
@@ -364,11 +364,13 @@
 
       <!-- Étape 3 — ce qu'on ouvre une fois qu'on saura encaisser.
              Elle, on peut la faire tout de suite : un crédit s'accorde à
-             l'ouverture, et le reste suit. -->
+             l'ouverture, et le reste suit. Le crédit ne porte AUCUN rythme :
+             le rythme est celui du mode de facturation, lu par la carte du
+             mode juste en dessous. -->
       <fold-element-title
         variant="caps"
         icon="repeat"
-        [title]="byTransfer() ? 'Règlement périodique' : '3 · Règlement périodique'"
+        [title]="byTransfer() ? 'Paiement au compte' : '3 · Paiement au compte'"
       />
 
       @for (row of rows(); track row.term) {
@@ -378,6 +380,11 @@
             <span class="pm-note">
               @if (row.granted) {
                 Porté au compte par défaut&nbsp;; le client peut régler une commande à part.
+                @if (rhythm(); as said) {
+                  <span data-account-rhythm>Facturé au rythme de son mode&nbsp;: {{ said }}.</span>
+                } @else {
+                  <span data-account-rhythm>Facturé au rythme de son mode de facturation.</span>
+                }
               } @else {
                 Crédit non accordé.
               }
@@ -415,6 +422,14 @@
           <strong>Rien pour encaisser.</strong> Ce client est facturé au terme, mais aucun mandat
           actif ne permet de le prélever — les échéances devront être réclamées à la main.
         </fold-callout>
+      }
+
+      <!-- Le mode de facturation : il rythme les clôtures de TOUT compte, au
+           compte ou non — un client qui paie à la commande reçoit aussi sa
+           facture de période. Il vit donc ici quel que soit le crédit, et le
+           rythme affiché plus haut est celui qu'il lit. -->
+      @if (company(); as c) {
+        <app-payer-billing-mode-card nested [company]="c" (modeChange)="billingMode.set($event)" />
       }
     </div>
   </fold-page-section>

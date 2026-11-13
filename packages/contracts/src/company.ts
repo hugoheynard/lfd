@@ -34,7 +34,7 @@ export type DeferredTerm = z.infer<typeof deferredTermSchema>;
  * vit qu'à l'écran.
  */
 export const DEFERRED_TERM_LABELS: Readonly<Record<DeferredTerm, string>> = {
-  monthly: "Mensuel",
+  monthly: "Paiement au compte",
 };
 
 /**

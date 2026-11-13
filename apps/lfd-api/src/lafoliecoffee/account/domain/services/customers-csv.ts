@@ -51,7 +51,7 @@ const STATUS: Readonly<Record<string, string>> = {
 
 /** Les délais de règlement, dits en français. */
 const TERMS: Readonly<Record<string, string>> = {
-  monthly: "Mensuel",
+  monthly: "Paiement au compte",
 };
 
 export function customersCsv(companies: readonly AdminCompanyView[]): string {

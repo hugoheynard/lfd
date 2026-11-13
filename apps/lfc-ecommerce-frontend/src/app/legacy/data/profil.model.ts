@@ -18,7 +18,7 @@ export type PaymentTerm = 'per_order' | 'monthly';
 /** Libellés lisibles, dans l'ordre d'affichage du sélecteur. */
 export const PAYMENT_TERMS: readonly { readonly value: PaymentTerm; readonly label: string }[] = [
   { value: 'per_order', label: 'À la commande' },
-  { value: 'monthly', label: 'Mensuel — relevé de fin de mois' },
+  { value: 'monthly', label: 'Paiement au compte' },
 ];
 
 /** Résout le libellé d'une condition de paiement (fallback = la valeur brute). */

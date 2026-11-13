@@ -118,7 +118,7 @@ describe("customersCsv", () => {
     );
 
     expect(line).toContain("Suspendu");
-    expect(line).toContain("Mensuel");
+    expect(line).toContain("Paiement au compte");
   });
 
   it("échappe un point-virgule dans une raison sociale", () => {
