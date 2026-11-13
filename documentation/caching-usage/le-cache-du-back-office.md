@@ -373,7 +373,8 @@ changement du PIM (`get-product-detail.ts`).
   journée (Supervision, atelier, colisage, comptoir, tournées) dans l'objet,
   clé (révision, écran, journée, numéro), la seule DERNIÈRE version par
   écran et par journée, une alarme de ménage qui oublie les journées de plus
-  de 3 jours. À trancher avec Hugo.
+  de 3 jours. Plan : [`plan-lot-2-ecrans-de-journee.md`](plan-lot-2-ecrans-de-journee.md)
+  (décisions de Hugo du 2026-11-13).
 - **La taille en clair dans l'onglet Cache** : la colonne `contents.raw_bytes`
   existe ; la relever dans `metrics_hourly` et la servir à l'écran reste à
   faire.
