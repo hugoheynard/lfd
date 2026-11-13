@@ -90,7 +90,7 @@ describe("les courses (§ 2.4)", () => {
     }
   });
 
-  it("annulation × décision de manque : pas d'interblocage, la carte refuse le départ incomplet", async () => {
+  it("annulation × décision de manque (carte encaissée) : pas d'interblocage, l'état suit l'ordre réel", async () => {
     const order = await startedOrder(1);
     expect((await ctx.asSub(STAFF).post(`${packingOrderPath(order.id)}/shortfall`)).status).toBe(
       204,
@@ -104,9 +104,24 @@ describe("les courses (§ 2.4)", () => {
         .post(`/admin/orders/${order.id}/shortfall-decision`)
         .send({ remainder: "abandoned" }),
     ]);
+    await ctx.drain();
 
+    // Aucun interblocage (500). L'annulation ne lit pas la décision : elle
+    // gagne toujours. La décision, elle, ne passe que si elle prend la
+    // commande encore confirmée ; après l'annulation, « pas confirmée ».
     expect(cancelled.status).toBe(204);
-    expect(decided.status).toBe(409);
+    expect([204, 409]).toContain(decided.status);
+    const decisions = await ctx.prisma.orderShortfallDecision.count({
+      where: { orderId: order.id },
+    });
+    if (decided.status === 204) {
+      expect(decisions).toBe(1);
+    } else {
+      expect(codeOf(decided)).toBe("orders.shortfall_decision.not_confirmed");
+      expect(decisions).toBe(0);
+    }
+    const row = await ctx.prisma.order.findUniqueOrThrow({ where: { id: order.id } });
+    expect(row.status).toBe(OrderStatus.cancelled);
     expect((await packingRowOf(ctx, order.id))?.withdrawnAt).not.toBeNull();
   });
 
