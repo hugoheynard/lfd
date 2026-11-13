@@ -23,6 +23,8 @@ import {
   sizesByContentCache,
   servedPersonOf,
 } from "./cache-metrics-store";
+import { DayContentsTable } from "./day-contents";
+import { parseDayContentCall } from "./day-contents-store";
 import { HourlyCacheMetrics } from "./hourly-cache-metrics";
 import {
   acceptsContentBody,
@@ -65,6 +67,7 @@ interface ContentRow extends Record<string, ArrayBuffer | string | number> {
  */
 export class DayVersions extends DurableObject<DayVersionsEnv> {
   private readonly metrics: HourlyCacheMetrics;
+  private readonly dayContents: DayContentsTable;
 
   constructor(ctx: DurableObjectState, env: DayVersionsEnv) {
     super(ctx, env);
@@ -85,6 +88,9 @@ export class DayVersions extends DurableObject<DayVersionsEnv> {
     );
     this.addRawBytesColumn();
     this.metrics = new HourlyCacheMetrics(this.ctx.storage.sql);
+    // Les contenus des écrans de journée (`day-contents.ts`) : leur table,
+    // servie à étiquette égale.
+    this.dayContents = new DayContentsTable(this.ctx.storage.sql, this.metrics);
   }
 
   override async fetch(request: Request): Promise<Response> {
@@ -94,6 +100,10 @@ export class DayVersions extends DurableObject<DayVersionsEnv> {
     const metrics = parseMetricsCall(request.method, url);
     if (metrics !== null) {
       return Response.json(this.metrics.read(metrics.sinceMs));
+    }
+    const dayContent = parseDayContentCall(request.method, url);
+    if (dayContent !== null) {
+      return this.dayContents.respond(dayContent, request, Date.now());
     }
     const content = parseContentCall(request.method, url);
     if (content !== null) {

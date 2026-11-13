@@ -16,6 +16,10 @@ import { DurableObjectVersionedContentCache } from "./durable-object-versioned-c
 import { NoVersionedContentCache } from "./no-versioned-content-cache.js";
 import { VersionedContentCache } from "./versioned-content-cache.js";
 import { VersionedContents } from "./versioned-contents.js";
+import { DayContents } from "./day-contents.js";
+import { DayContentsCache } from "./day-contents-cache.js";
+import { DurableObjectDayContentsCache } from "./durable-object-day-contents-cache.js";
+import { NoDayContentsCache } from "./no-day-contents-cache.js";
 
 /**
  * Les portes des versions — `admin/versions`, et `admin/day-versions` le
@@ -60,6 +64,21 @@ import { VersionedContents } from "./versioned-contents.js";
       },
     },
     VersionedContents,
+    {
+      provide: DayContentsCache,
+      inject: [AppConfig],
+      useFactory: (config: AppConfig): DayContentsCache => {
+        const url = config.dayVersionsCacheUrl();
+        return url === null
+          ? new NoDayContentsCache()
+          : new DurableObjectDayContentsCache(
+              url,
+              config.revision(),
+              personStampedFetch(config.cachePersonSalt()),
+            );
+      },
+    },
+    DayContents,
     { provide: CallDeadline, useClass: NodeCallDeadline },
     ResilientDayVersionsCache,
     ScopeVersions,
@@ -67,7 +86,8 @@ import { VersionedContents } from "./versioned-contents.js";
     GetVersionsHandler,
   ],
   // Les contenus versionnés (`le-cache-du-back-office.md`, § 4.5) : la
-  // porte générique que les blocs appellent.
-  exports: [VersionedContents],
+  // porte générique que les blocs appellent ; et les contenus des écrans de
+  // journée (§ 3.1).
+  exports: [VersionedContents, DayContents],
 })
 export class DayVersionsModule {}

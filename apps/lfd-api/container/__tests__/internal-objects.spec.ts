@@ -1,9 +1,11 @@
 import { DurableObjectShopShelfSwitch } from "../../src/lafoliecoffee/catalog/infrastructure/durable-object-shop-shelf-switch";
 import { InternalPublicShelf } from "../../src/lafoliecoffee/catalog/infrastructure/internal-public-shelf";
 import { DurableObjectCacheMetricsReader } from "../../src/ops/caches/durable-object-cache-metrics.reader";
+import { DurableObjectDayContentsCache } from "../../src/platform/day-versions/durable-object-day-contents-cache";
 import { DurableObjectDayVersionsCache } from "../../src/platform/day-versions/durable-object-day-versions-cache";
 import { DurableObjectVersionedContentCache } from "../../src/platform/day-versions/durable-object-versioned-content-cache";
 import { parseMetricsCall } from "../cache-metrics-store";
+import { parseDayContentCall } from "../day-contents-store";
 import { parseDayVersionsCall } from "../day-versions-store";
 import {
   DAY_VERSIONS_ORIGIN,
@@ -66,7 +68,8 @@ function dayVersionsUnderstands({ method, url }: Delivery): boolean {
   return (
     parseMetricsCall(method, url) !== null ||
     parseDayVersionsCall(method, url) !== null ||
-    parseContentCall(method, url) !== null
+    parseContentCall(method, url) !== null ||
+    parseDayContentCall(method, url) !== null
   );
 }
 
@@ -91,6 +94,11 @@ describe("le chemin interne vers les objets partagés", () => {
       "catalogue",
       3,
     );
+    await new DurableObjectDayContentsCache(DAY_VERSIONS_ORIGIN, "rev-1", fetchFn).read({
+      screen: "worksheet",
+      day: "2030-03-12",
+      tag: "orders:7.production:4",
+    });
     await new DurableObjectShopShelfSwitch(SHELF_STORE_ORIGIN, fetchFn)
       .apply("off")
       .catch(() => undefined);
@@ -99,11 +107,12 @@ describe("le chemin interne vers les objets partagés", () => {
 
     const at = (object: InternalObject): readonly Delivery[] =>
       deliveries.filter((delivery) => delivery.object === object);
-    expect(deliveries).toHaveLength(7);
+    expect(deliveries).toHaveLength(8);
     expect(at("day-versions").map((delivery) => delivery.url.pathname)).toEqual([
       "/metrics",
       "/scopes/global",
       "/contents/catalogue",
+      "/day-contents/worksheet/2030-03-12",
     ]);
     expect(at("pro-shelves").map((delivery) => delivery.url.pathname)).toEqual([
       "/metrics",

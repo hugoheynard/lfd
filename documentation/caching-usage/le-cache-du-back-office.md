@@ -208,6 +208,49 @@ seul veilleur.
   jamais une erreur servie. Une ligne rangée en JSON clair (sans l'en-tête
   gzip) se lit telle quelle, et le prochain rangement la remplace.
 
+### 3.1 Les contenus des écrans de journée
+
+La plateforme est en place ; **aucun écran n'y est encore branché** (plan
+[`plan-lot-2-ecrans-de-journee.md`](plan-lot-2-ecrans-de-journee.md), lots 2
+à 5).
+
+- **La table** `day_contents(key, screen, day, tag, body, raw_bytes)` de
+  l'objet (`container/day-contents.ts`, décisions dans
+  `container/day-contents-store.ts`) : une ligne par (révision, écran,
+  journée), `key = r:<révision>/<écran>/<AAAA-MM-JJ>`.
+- **L'étiquette** est la liste des numéros en clair, sujets triés
+  (`orders:12.production:4`), sans hachage : une collision servirait un
+  mauvais contenu en silence. L'API la construit (`day-content-tag.ts`) à
+  partir des numéros lus en base avant les données ; l'objet refuse une
+  étiquette non canonique.
+- **Servie à étiquette ÉGALE** seulement ; une autre est un raté (404).
+- **Un rangement ne remplace la ligne que si chaque numéro de son étiquette
+  est ≥ celui gardé** : les numéros ne font que monter, aucune horloge
+  n'entre dans la décision. Une étiquette plus ancienne ou **incomparable**
+  (plus haute sur un sujet, plus basse sur un autre) laisse la ligne en
+  place, réponse 202 : la lecture suivante lit des numéros ≥ aux deux et la
+  remplace.
+- **Le ménage se fait au rangement** : les journées de plus de 3 jours
+  (`FORGET_AFTER_DAYS`) avant celle rangée s'oublient, toutes révisions
+  comprises, et une autre révision du même écran et de la même journée est
+  retirée.
+- **La route** : `GET` / `PUT /journees/day-contents/<écran>/<AAAA-MM-JJ>?revision=…&tag=…`,
+  sous le même hôte interne ; plafond de 1 Mo compressé, 413 au-delà.
+- **Côté API**, `DayContents.contentOf({ screen, day, versions }, load, { accepts, storable })`
+  (`apps/lfd-api/src/platform/day-versions/day-contents.ts`, port
+  `DayContentsCache`, adaptateurs `DurableObjectDayContentsCache` et
+  `NoDayContentsCache`) : mêmes garde, disjoncteur et gzip que les contenus
+  versionnés, une relecture à la fois par (écran, journée, étiquette) et par
+  instance ; un contenu dégradé (`storable` faux) est servi, jamais rangé.
+  Mesures sous `day_contents.*`.
+- **L'onglet Cache** compte chaque écran sous `day-<écran>`.
+- **L'hôte interne n'est pas joignable du dehors** (vérifié le 2026-11-13) :
+  la passerelle n'atteint `lfd-api` que par sa liaison de service, qui
+  aboutit au `fetch` par défaut du Worker ; celui-ci ne transmet qu'au
+  conteneur. L'aiguillage vers les objets n'est inscrit que comme
+  interception des appels SORTANTS du conteneur (`Backend.outboundByHost`),
+  et refuse un autre conteneur (403) ; `workers_dev` est coupé.
+
 ## 4. L'écran Catalogue
 
 ### 4.1 Une route pour l'écran
@@ -369,11 +412,9 @@ changement du PIM (`get-product-detail.ts`).
 - **Retirer au déploiement suivant** les anciens hôtes `rayons.interne` et
   `journees.interne` (`LEGACY_OBJECT_HOSTS`), et l'ancienne porte
   `GET admin/day-versions`.
-- **Le lot 2 de l'objet des journées, non bâti** : le contenu des écrans de
-  journée (Supervision, atelier, colisage, comptoir, tournées) dans l'objet,
-  clé (révision, écran, journée, numéro), la seule DERNIÈRE version par
-  écran et par journée, une alarme de ménage qui oublie les journées de plus
-  de 3 jours. Plan : [`plan-lot-2-ecrans-de-journee.md`](plan-lot-2-ecrans-de-journee.md)
+- **Le lot 2 de l'objet des journées, écrans non branchés** : la plateforme
+  est bâtie (§ 3.1) ; restent la fiche du fournil, le colisage, la file de
+  retrait et les tournées. Plan : [`plan-lot-2-ecrans-de-journee.md`](plan-lot-2-ecrans-de-journee.md)
   (décisions de Hugo du 2026-11-13).
 - **La taille en clair dans l'onglet Cache** : la colonne `contents.raw_bytes`
   existe ; la relever dans `metrics_hourly` et la servir à l'écran reste à

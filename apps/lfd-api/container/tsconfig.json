@@ -21,6 +21,8 @@
     "day-versions.ts",
     "versioned-contents-store.ts",
     "cache-metrics-store.ts",
-    "hourly-cache-metrics.ts"
+    "hourly-cache-metrics.ts",
+    "day-contents-store.ts",
+    "day-contents.ts"
   ]
 }
