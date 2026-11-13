@@ -426,13 +426,18 @@ describe("la porte unique des versions de journée (D8)", () => {
    * fournil s'ouvre à n'importe lequel des quatre gestes du fournil et du
    * retrait — et plus à `b2b_orders:read`, qui ne les porte plus.
    */
-  it.each(["production_plan", "production_worksheet", "production_packing"] as const)(
-    "`%s:read` reçoit le fournil, pas le commerce",
+  it.each(["production_plan", "production_worksheet"] as const)(
+    "`%s:read` reçoit le fournil et le commerce : la fiche se relit quand une commande change",
     async (resource) => {
       await allowRead(`staff-version-${resource}`, resource);
-      expect(await journalsOf(`staff-version-${resource}`)).toEqual(["production"]);
+      expect(await journalsOf(`staff-version-${resource}`)).toEqual(["orders", "production"]);
     },
   );
+
+  it("`production_packing:read` reçoit le fournil, pas le commerce", async () => {
+    await allowRead("staff-version-production_packing", "production_packing");
+    expect(await journalsOf("staff-version-production_packing")).toEqual(["production"]);
+  });
 
   /**
    * Régression : le transfert qu'un livreur dépose au point de retrait

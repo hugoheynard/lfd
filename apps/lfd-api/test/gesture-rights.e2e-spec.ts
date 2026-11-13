@@ -158,7 +158,7 @@ describe("un geste, ses routes et elles seules", () => {
     const agent = await holderOf("plan-seul", [{ resource: "production_plan", action: "read" }]);
 
     await expectGates(agent, ["batch", "dayStatus", "worksheet"], ["packing", "packed"]);
-    expect(await journalsOf(agent)).toEqual(["production"]);
+    expect(await journalsOf(agent)).toEqual(["orders", "production"]);
   });
 
   it("la fiche d'atelier seule : la fiche — pas l'état de la journée", async () => {
@@ -167,7 +167,7 @@ describe("un geste, ses routes et elles seules", () => {
     ]);
 
     await expectGates(agent, ["worksheet"], ["dayStatus", "batch", "packing"]);
-    expect(await journalsOf(agent)).toEqual(["production"]);
+    expect(await journalsOf(agent)).toEqual(["orders", "production"]);
   });
 
   it("le retrait seul : la file et la version du fournil — pas les commandes", async () => {
