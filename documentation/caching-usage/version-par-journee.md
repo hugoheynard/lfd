@@ -1,9 +1,9 @@
 # La version par journée — ne relire que ce qui a bougé
 
-> ✅ **Décrit le code au 2026-11-04.** Ce document remplace le plan du
+> ✅ **Décrit le code au 2026-11-13.** Ce document remplace le plan du
 > 2026-09-28 (lots V1 à V4 bâtis, la porte unique D8 le 2026-11-03) ; le récit
-> des routes retirées est dans l'historique git. La partie « Ce qui reste
-> ouvert » porte la suite décidée avec Hugo le 2026-11-04. Partie 1 :
+> des routes retirées est dans l'historique git. Le § 4 décrit
+> l'objet des journées qui garde les numéros et les écrans (2026-11-13). Partie 1 :
 > comprendre. Partie 2 : le code.
 
 # Partie 1 — Comprendre
@@ -82,9 +82,9 @@ leurs blocs.
 
 | Journal      | Droits (l'un suffit)                                                                                                            | Source                                                        |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `orders`     | `b2b_orders:read`, `handover_counter:read`, `b2b_supervision:read`                                                              | `OrdersDayVersionSource` (commerce)                           |
+| `orders`     | `b2b_orders:read`, `handover_counter:read`, `b2b_supervision:read`, `production_worksheet:read`, `production_plan:read`         | `OrdersDayVersionSource` (commerce)                           |
 | `production` | `production_plan:read`, `production_worksheet:read`, `production_packing:read`, `handover_counter:read`, `b2b_supervision:read` | `ProductionDayVersionSource` (fournil + colisage)             |
-| `delivery`   | `delivery_rounds:read`, `delivery_loading:read`                                                                                 | `DeliveryDayVersionSource` (livraison)                        |
+| `delivery`   | `delivery_rounds:read`, `delivery_loading:read`, `handover_counter:read`, `b2b_supervision:read`                                | `DeliveryDayVersionSource` (livraison)                        |
 | `my-round`   | `delivery_driving:read`                                                                                                         | `MyRoundDayVersionSource` (livraison + commerce par son port) |
 
 - Un journal inconnu est un 400 qui le nomme ; un journal non permis est
@@ -104,52 +104,27 @@ tous les écrans de l'onglet ; relecture de l'écran si un numéro a changé
 (égalité, jamais ordre) ; filet de 5 min (`SAFETY_NET_MS`) ; un échec ne relit
 rien.
 
-## 4. Ce qui reste ouvert — décidé avec Hugo le 2026-11-04
+## 4. L'objet des journées
 
-> ✅ **Lot 1 bâti le 2026-11-12** ([`le-cache-du-back-office.md`](le-cache-du-back-office.md)) : les **numéros** passent par l'objet `DayVersions`, dans le Worker de l'API. Ce qui diffère de la cible ci-dessous, décidé après `vitruve` : pas d'alarme pour les numéros (la première question d'une fenêtre de 15 s (l'intervalle des onglets, décidé par Hugo le 2026-11-12) relit la base et range, les autres lisent l'objet, une seule relecture à la fois par instance) ; c'est l'API qui joint l'objet, par un second hôte intercepté (`journees.interne`), comme le rayon ; la carte rangée contient tous les journaux et le droit filtre après ; la révision du code est dans la clé. **Reste le lot 2** : le contenu des écrans partagés dans le même objet, avec l'alarme décrite ci-dessous.
+Au-dessus des journaux, l'objet partagé `DayVersions` (dans le Worker de
+l'API) évite que chaque instance et chaque onglet relise la même chose :
 
-Chaque question coûte une lecture par journal, et chaque « oui » fait relire
-**le même contenu** à chaque écran ouvert sur la même journée (la Supervision :
-~11 lectures). Au rush, avec plusieurs écrans et plusieurs instances de l'API,
-c'est là que part la facture.
+- **Les numéros** : la première question d'une fenêtre de 15 s relit la base
+  et range la carte des numéros, les autres la lisent dans l'objet ; une
+  seule relecture à la fois par instance ; la carte contient tous les
+  journaux et le droit filtre après ; la révision du code est dans la clé.
+- **Le contenu des écrans de journée** (fiche du fournil et Préparation de
+  la Supervision, colisage, files de retrait, tournées) : une ligne par
+  écran et par journée, servie quand les numéros lus **en base** avant les
+  données sont égaux à ceux du rangement ; le droit reste à la porte de la
+  route. Prouvé en production le 2026-11-13.
+- **Pas d'alarme, pas de recalcul poussé par l'objet, pas de WebSockets** :
+  l'objet ne fait que garder ce que l'API a lu, et l'API le joint par un
+  hôte intercepté (`http://objets.interne/journees`). Objet injoignable →
+  l'API lit la base.
+- **Le numéro reste écrit par la base** (le déclencheur), jamais par le
+  code.
 
-**La cible : un Durable Object « des journées », singleton pour toutes les
-instances**, construit après le déploiement du 2026-11-04 :
-
-```mermaid
-flowchart LR
-  O["Objet des journées<br/>singleton"] -->|"alarme toutes les 5 s<br/>tant qu'un écran regarde"| A["API, route interne"]
-  A --> B[("Base")]
-  A -->|"numéros"| O
-  O -->|"numéro changé : fait recalculer<br/>le contenu des écrans regardés"| O
-  S["Écrans, toutes les 15 s"] --> A2["API : droits"]
-  A2 -->|"lit le numéro et le contenu"| O
-```
-
-- **Le numéro reste écrit par la base** (le déclencheur) : l'objet ne fait que
-  le relire, par l'API, jamais par son propre accès à la base. Le faire monter
-  par le code serait revenir sur la décision D1 du plan d'origine.
-- **5 secondes** entre deux relectures du numéro : le retard maximal d'un écran
-  passe de 15 s à 20 s, et l'équipe agit sur ce qu'elle voit — plus court vaut
-  mieux. Les gestes restent vérifiés au serveur (un retrait déjà fait, une
-  journée close sont refusés par leur nom).
-- **Le contenu des écrans partagés** est rangé sous la clé « écran, jour,
-  **numéro** » : un contenu rangé sous 45 est celui de la version 45, rien à
-  purger. Écrans partagés : Supervision, fiche d'atelier, colisage, comptoir
-  (par point de retrait), plan des tournées. Exclus : « Ma tournée » (par
-  livreur), la cloche (par personne). Chaque écran est vérifié avant d'entrer :
-  son contenu ne dépend ni de la personne, ni de ses droits au-delà de l'accès
-  à l'écran, ni de l'heure (un compte à rebours se calcule sur l'écran).
-- **L'alarme ne tourne que si quelqu'un regarde** (chaque lecture la prolonge
-  de quelques minutes), et ne fait recalculer que les écrans lus récemment.
-- **L'objet joint l'API par le Worker**, comme les tâches planifiées, sur une
-  route interne gardée par le jeton des balayages (`RECOMPUTE_TOKEN`).
-- **Repli** : objet injoignable → l'API lit la base, comme aujourd'hui.
-- **Les WebSockets sont écartés** : reconnexions, droits sur la connexion,
-  passage par la passerelle, et un écran qui se croit à jour sur une connexion
-  morte — pour passer de 15 s à 1 s, dont les écrans d'atelier n'ont pas
-  besoin. L'objet les rendrait possibles plus tard.
-
-**Avant de bâtir : mesurer**, au rush, combien d'écrans regardent la même
-journée en même temps, et ce que coûte chaque relecture d'écran. Le plan
-passera par `vitruve`.
+Le détail — clés, étiquettes, ce qui est lu hors numéro, les décisions de
+Hugo, la mesure — est dans
+[`le-cache-du-back-office.md`](le-cache-du-back-office.md) § 3.

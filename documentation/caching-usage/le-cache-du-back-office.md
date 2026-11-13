@@ -4,12 +4,11 @@
 > numéros par sujet, l'objet des journées, l'écran Catalogue, les lectures
 > du PIM, l'onglet Cache, l'aiguillage des objets par le chemin (§ 3), les
 > contenus rangés en gzip, et les écrans de journée branchés sur l'objet
-> (§ 3.2 à 3.5) — ces derniers ne sont pas encore servis en production
-> (§ 7). Le chemin vers les objets ne garde rien (§ 3.0) : passerelle
-> pure, test du faux cache et porte `internal-objects-door`, bâtis le
-> 2026-11-13 ; la confirmation en production reste à lire (§ 7). Ce document
-> remplace les cinq plans du chantier (veilleur unique, écran Catalogue,
-> lectures du PIM, onglet Cache, objet des journées) ; leurs versions et
+> (§ 3.1 à 3.6), servis depuis l'objet en production (prouvé le 2026-11-13,
+> § 3.0). Le chemin vers les objets ne garde rien (§ 3.0) : passerelle
+> pure, test du faux cache et porte `internal-objects-door`. Ce document
+> remplace les six plans du chantier (veilleur unique, écran Catalogue,
+> lectures du PIM, onglet Cache, objet des journées, écrans de journée) ;
 > leurs contradictions par `vitruve` sont dans l'historique git.
 
 # Partie 1 — L'explication simple
@@ -286,6 +285,13 @@ uncachedInternalCall(…))` — seul le repli par défaut du constructeur,
   itère dessus, compare le nombre d'objets atteints au nombre de clés et
   garde son témoin négatif. (D) Elle compile le Worker
   (`tsc -p apps/lfd-api/container/tsconfig.json`).
+- **Prouvé en production le 2026-11-13** (`main` = `482cb0d9e`) : trois
+  ouvertures de la Supervision, puis Santé, section « Caches de l'API » —
+  écrans de journée 9 lectures, 6 servies depuis l'objet (66,7 %), 3 ratées
+  (la première ouverture, une par écran), 3 rangements, aucun repli, lecture
+  médiane 57 ms. Sans les deux fermetures, le premier 404 de l'objet
+  (`x-day-content: absent`) était resservi par le cache du point d'entrée
+  sans atteindre l'objet.
 - **Qui tient quoi** : `cache-control` refuse un `Cache-Control` ouvert et
   décide quels fichiers de `container/` portent une classe d'objet,
   `outboundByHost` ou une purge ; `internal-objects-door` refuse une
@@ -347,7 +353,7 @@ Les trois routes de la fiche — `GET admin/production/worksheet?date=`,
 `GET admin/production/worksheet/current` — passent par
 `WorksheetContents` (`apps/lfd-api/src/production/application/services/worksheet-contents.service.ts`)
 et partagent **une clé, l'écran `worksheet`** : les deux premières envoient
-la même requête et rendent les mêmes octets (mesuré au lot 0, tenu par
+la même requête et rendent les mêmes octets (mesuré le 2026-11-13, § 3.6, tenu par
 `apps/lfd-api/test/production-worksheet-contents.e2e-spec.ts`). La fiche en cours résout
 sa journée hors de l'objet (l'heure, l'arrêt du plan de demain), puis lit
 le contenu de cette journée par la même clé.
@@ -368,7 +374,7 @@ le contenu de cette journée par la même clé.
   lecture (`ProductionWorksheetReading.contentOf`) ne lit pas l'horloge.
 - **Gain** : un appel servi depuis l'objet coûte les deux lectures de
   numéros (3 opérations Prisma) au lieu de la fiche entière (23 opérations
-  sur la journée la plus chargée de la base de dev, mesure du lot 0).
+  sur la journée la plus chargée de la base de dev, § 3.6).
 - **L'atelier** suit `production` et `orders` dans son veilleur
   (`fiche-atelier.ts`) : une commande du jour fait relire la fiche.
 
@@ -420,7 +426,7 @@ celle de la journée entière. Les chiffres du cockpit
   rien n'est rangé.
 - **Gain** : un appel servi par l'objet coûte quatre lectures de numéros au
   lieu de la file (environ 11 requêtes sur la journée la plus chargée de la
-  base de dev, mesure du lot 0 : file, attestations, retenues, transferts,
+  base de dev, § 3.6 : file, attestations, retenues, transferts,
   réassort, tournées).
 
 Code : `handover/application/queries/get-handover-queue.handler.ts`,
@@ -463,6 +469,58 @@ tournée » n'y passe pas : sa réponse dépend de la personne.
 Code : `delivery/application/queries/get-delivery-rounds-day.handler.ts`,
 `apps/lfd-api/src/delivery/application/rounds-day-reading.service.ts`, `apps/lfd-api/src/delivery/application/rounds-day-live.service.ts`,
 `apps/lfd-api/src/delivery/application/rounds-day-composition.ts`, `delivery-rounds-view.ts`.
+
+### 3.6 Ce qui est tranché, et ce qui est mesuré
+
+**Les décisions de Hugo (2026-11-13)** :
+
+- **Un contenu par (écran, journée), jamais par droit ni par personne.** Les
+  lectures rangées ne reçoivent que la date : ni droits, ni personne, ni
+  site (le personnel n'a pas de rattachement à un site dans les droits). Le
+  droit se vérifie à la porte de la route. Un champ un jour réservé à un
+  droit plus étroit se lira à part, sur le modèle du catalogue — jamais par
+  un masque.
+- **Une route par usage** pour le retrait (§ 3.4) : le comptoir
+  (`handover_counter`) ne reçoit que les retraits, et aucune tournée ; la
+  Supervision reçoit la journée entière ; le bandeau du cockpit lit
+  `GET admin/cockpit/handovers?jour=` (`b2b_growth`, dans `handover/http/`),
+  qui ne rend que ses chiffres (`CockpitHandoversView`) et ne passe pas par
+  l'objet. Le droit `handover_counter` couvre la consultation d'une commande
+  par son QR, son identifiant ou sa référence, livraison comprise ; seule la
+  **tournée** n'est pas de son ressort.
+- **Ce qui est lu hors journal est accepté vieux jusqu'au prochain numéro**
+  pour la fiche et le colisage ; livreurs et flotte des tournées sont lus à
+  chaque appel (§ 3.5).
+- **Les numéros sont lus en base**, jamais depuis la carte de l'objet : son
+  propre geste se voit tout de suite.
+- **Le ménage se fait au rangement**, sans alarme ; les contenus ont leur
+  table, `day_contents` ; l'atelier suit aussi `orders`.
+- **Hors de l'objet** : le bandeau de la Supervision (il dépend de l'heure
+  en profondeur), les relances et le stock (lus hors journaux), la qualité,
+  « Ma tournée » (par personne). Ni recalcul poussé par l'objet, ni alarme,
+  ni WebSockets.
+
+**La mesure (2026-11-13)**, API locale sur la base de dev, une ligne par
+appel ORM (l'unité que Prisma facture), seconde de deux lectures retenue,
+journée 2026-11-03 (26 commandes dont 18 livraisons, la plus chargée) :
+
+| Écran (route)                         | Opérations |      Brut / gzip |
+| ------------------------------------- | ---------: | ---------------: |
+| `admin/production/worksheet?date=`    |         23 | 41,1 Ko / 2,2 Ko |
+| `admin/supervision/preparation?date=` |         23 | 41,1 Ko / 2,2 Ko |
+| `admin/packing/:date/board`           |         18 | 57,5 Ko / 5,0 Ko |
+| `admin/supervision/handover?jour=`    |         11 | 16,9 Ko / 2,2 Ko |
+| `admin/delivery/rounds?day=`          |         19 |  4,0 Ko / 0,9 Ko |
+
+Compressées, toutes les réponses tiennent sous 5 Ko. La fiche datée et la
+Supervision rendent les mêmes octets, d'où leur clé commune (§ 3.2).
+
+**Les bacs vivants se lisent en une requête.** `BinDesk.liveBins`, que le
+colisage lit pour la fiche et le tableau, passe par
+`DeliveryBinOffice.liveAmong`, qui lit tous les bacs d'un coup
+(`DeliveryBinRepository.loadMany`, un `findMany … in`), comme
+`assertAtHand`. Lus un par un, ils coûtaient 73 opérations à la fiche et 68
+au colisage sur la même journée.
 
 ## 4. L'écran Catalogue
 
@@ -628,37 +686,17 @@ changement du PIM (`get-product-detail.ts`).
 
 ## 7. Reste à faire
 
-- 🔴 **Un « absent » de l'objet est gardé entre le conteneur et l'objet**
-  (constaté en production le 2026-11-13) : Santé compte 9 lectures d'écran de
-  journée, toutes « absent », sans repli et en ~40 ms, alors que l'objet n'en
-  reçoit qu'une par écran et que les journaux du Worker ne montrent que la
-  première `GET` ; les `PUT` arrivent tous. En local, sans l'interception de
-  sortie du conteneur, l'objet sert. Le premier 404 (signé
-  `x-day-content: absent`) est donc resservi sans atteindre l'objet.
-  - **Le gardien probable** : le Worker a le Workers Cache allumé
-    (`"cache": { "enabled": true }`, `wrangler.jsonc`), et chaque point
-    d'entrée a le sien — `ContainerProxy`, par lequel passe l'interception
-    (`internalObjectsGateway`), compris. Aucune réponse des objets ne portait
-    de `Cache-Control`, et Cloudflare garde par défaut un 404 quelques
-    minutes. Le code du Worker n'appelle ni `caches.default`, ni `fetch` avec
-    `cf.cacheTtl` (vérifié le 2026-11-13). Non prouvé en production : la
-    mesure ci-dessous le tranche.
-  - **Le correctif** : les deux côtés disent `no-store` (§ 3.0), tenus par
-    le test du faux cache et la porte `internal-objects-door`.
-  - **Ce qui le confirme après déploiement** : sous `day_contents`, des `hit`
-    aux ouvertures suivantes ; une `GET` au Worker par lecture comptée.
-    Lue, cette entrée passe dans ce qui est prouvé (§ 3.0).
-  - **Une option, non décidée** : la même documentation recommande, pour
-    un point d'entrée de passerelle, de couper son cache dans la table
-    `exports` de `wrangler.jsonc` plutôt que de répondre `no-store` à tout —
-    sans quoi chaque appel consulte quand même les étages du cache avant
-    d'atteindre la passerelle. Ce serait un changement de configuration du
-    Worker, à mesurer.
-- **Les écrans de journée sont branchés** (§ 3.2 à 3.5). Reste à lire, sur
+- **Option non décidée : couper le cache du point d'entrée de la
+  passerelle** dans la table `exports` de `wrangler.jsonc`, comme la
+  documentation du Workers Cache le recommande, plutôt que de répondre
+  `no-store` à tout — sinon chaque appel consulte quand même les étages du
+  cache avant d'atteindre la passerelle. Changement de configuration du
+  Worker, à mesurer. Le défaut du 404 gardé, lui, est corrigé et prouvé en
+  production le 2026-11-13 (§ 3.0).
+- **Les écrans de journée sont servis par l'objet** (§ 3.1 à 3.6). Reste à lire, sur
   l'environnement déployé, les appels par jour de chaque route (onglet Ops)
   pour chiffrer le gain, et à écrire le seuil sous lequel il ne vaut pas
-  l'objet. Plan bâti :
-  [`plan-lot-2-ecrans-de-journee.md`](plan-lot-2-ecrans-de-journee.md).
+  l'objet (mesure locale : § 3.6).
 - **La mesure avant / après** des requêtes de l'écran Catalogue, de la liste
   et d'une fiche du PIM, d'un filtre de la matrice (journal des requêtes
   Prisma) : pas faite. Elle dira si un numéro par fiche du PIM vaut son prix.

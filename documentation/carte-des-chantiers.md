@@ -89,23 +89,18 @@ production (`350d78c64`).
 
 Tout en production (`350d78c64`).
 
-| Chantier                                | Ce qui est livré                                                                                                                                                                                                                                                                         | Doc                                                                                                 |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| **L'échéance du virement**              | un réglage de l'entité : N jours après l'émission (15 par défaut, 1 à 45), figée, retard au premier jour ouvré (`57485425d`) ; le plan est fondu dans la doc d'état                                                                                                                      | `comptabilite/le-paiement-par-virement.md` § 4                                                      |
-| **Les tentatives de carte abandonnées** | hors de la liste des commandes (onglet « Tentatives abandonnées »), du comptoir, des tournées (`b87abf8c5`) et des statistiques de croissance (`0415c9bab`)                                                                                                                              | `commandes/reglement/architecture-abandon-du-reglement.md` § 7 bis                                  |
-| **Une route par usage**                 | le comptoir ne reçoit plus les livraisons, la Supervision garde la journée entière, le cockpit a ses compteurs sous `b2b_growth` (`e4dbefadc`)                                                                                                                                           | `droits-et-permissions/droits-des-commandes.md`                                                     |
-| **Comptes clients**                     | pas de « mandat absent » pour un payeur au virement (`433a44a9a`) ; la fiche dit « Paiement au compte », le rythme est celui du mode (`64496bedf`) ; la création rejouée ne crée pas de seconde société (`6c7d2bc36`)                                                                    | `comptes-client/architecture-activation-configuration-b2b.md`, `ops/l-idempotence-des-ecritures.md` |
-| **Le cache**                            | contenus de l'objet rangés en gzip (`bd55b313e`) ; les bacs vivants lus en une requête (`2d93e0951`) ; le lot 2 des écrans de journée (fiche du fournil, colisage, file de retrait, tournées, comptoir et Supervision : `1c3965e3f`, `eb33be38f`, `4a17858cc`, `50231053c`, `c59dc2e07`) | `caching-usage/le-cache-du-back-office.md`                                                          |
-| **PIM**                                 | `pim.nutrition_declaration` retirée du schéma (`571249026`, `IF EXISTS`, sans effet en production)                                                                                                                                                                                       | —                                                                                                   |
+| Chantier                                | Ce qui est livré                                                                                                                                                                                                                                                                                                                     | Doc                                                                                                 |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| **L'échéance du virement**              | un réglage de l'entité : N jours après l'émission (15 par défaut, 1 à 45), figée, retard au premier jour ouvré (`57485425d`) ; le plan est fondu dans la doc d'état                                                                                                                                                                  | `comptabilite/le-paiement-par-virement.md` § 4                                                      |
+| **Les tentatives de carte abandonnées** | hors de la liste des commandes (onglet « Tentatives abandonnées »), du comptoir, des tournées (`b87abf8c5`) et des statistiques de croissance (`0415c9bab`)                                                                                                                                                                          | `commandes/reglement/architecture-abandon-du-reglement.md` § 7 bis                                  |
+| **Une route par usage**                 | le comptoir ne reçoit plus les livraisons, la Supervision garde la journée entière, le cockpit a ses compteurs sous `b2b_growth` (`e4dbefadc`)                                                                                                                                                                                       | `droits-et-permissions/droits-des-commandes.md`                                                     |
+| **Comptes clients**                     | pas de « mandat absent » pour un payeur au virement (`433a44a9a`) ; la fiche dit « Paiement au compte », le rythme est celui du mode (`64496bedf`) ; la création rejouée ne crée pas de seconde société (`6c7d2bc36`)                                                                                                                | `comptes-client/architecture-activation-configuration-b2b.md`, `ops/l-idempotence-des-ecritures.md` |
+| **Le cache**                            | contenus de l'objet rangés en gzip (`bd55b313e`) ; les bacs vivants lus en une requête (`2d93e0951`) ; le lot 2 des écrans de journée, fait et prouvé en production le 2026-11-13 (fiche du fournil, colisage, file de retrait, tournées, comptoir et Supervision : `1c3965e3f`, `eb33be38f`, `4a17858cc`, `50231053c`, `c59dc2e07`) | `caching-usage/le-cache-du-back-office.md`                                                          |
+| **PIM**                                 | `pim.nutrition_declaration` retirée du schéma (`571249026`, `IF EXISTS`, sans effet en production)                                                                                                                                                                                                                                   | —                                                                                                   |
 
 ## 2. En cours
 
-- 🔴 **Les écrans de journée ne sont jamais servis depuis l'objet en
-  production** : l'onglet Cache compte 0 réussite, 1 relecture, 1 rangement
-  après deux ouvertures. Enquête en cours ; rien de faux n'est servi, tout va
-  en base. Le plan du lot 2 reste ouvert jusqu'à sa résolution
-  (`caching-usage/le-cache-du-back-office.md` § 7,
-  `caching-usage/plan-lot-2-ecrans-de-journee.md`).
+Rien.
 
 ## 3. Prêts à bâtir, sans décision à prendre
 
@@ -255,8 +250,7 @@ vitals ; la médiathèque à 600 lignes.
 
 ## 8. Mon conseil d'ordre
 
-0. **(2026-11-13)** Résoudre le défaut des écrans de journée (§ 2) avant de
-   fermer le plan du lot 2 ; puis les vérifications en production du § 0
+0. **(2026-11-13)** Les vérifications en production du § 0
    (rôles, fiche périmée, liens Auth0) ; puis l'entité juridique (TVA,
    mentions), qui bloque l'émission du mois.
 1. **Les échéances du § 0**, parce qu'elles ont une date : les adresses de facturation avant le 30 novembre.
