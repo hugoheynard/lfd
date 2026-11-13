@@ -1,4 +1,5 @@
 import type {
+  AdminOrderListView,
   AdminOrdersQuery,
   FulfillmentMethod,
   OrderClientele,
@@ -22,6 +23,12 @@ import { CLIENTELE_LABELS, METHOD_LABELS } from '../shared/order-identity/order-
  * par des `Record` exhaustifs, que le compilateur complète quand un état naît.
  */
 export interface OrderListFilters {
+  /**
+   * `abandoned_attempts` : les seules tentatives de règlement par carte
+   * abandonnées ; `null` : les commandes. Un onglet, pas un filtre — « Retirer
+   * les filtres » le garde.
+   */
+  readonly view: 'abandoned_attempts' | null;
   readonly clientele: OrderClientele | null;
   readonly method: FulfillmentMethod | null;
   readonly status: OrderStatus | null;
@@ -40,6 +47,7 @@ export const ANY = 'any';
 export type Choice<T extends string> = T | typeof ANY;
 
 export const NO_FILTERS: OrderListFilters = {
+  view: null,
   clientele: null,
   method: null,
   status: null,
@@ -71,6 +79,9 @@ const PAYMENT_STATUSES: Readonly<Record<PaymentStatus, true>> = {
   refunded: true,
 };
 
+/** Les deux listes, et l'onglet qui les nomme. */
+export type OrderListTab = AdminOrderListView;
+
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 
 function keysOf<T extends string>(record: Readonly<Record<T, unknown>>): T[] {
@@ -100,6 +111,7 @@ export { clienteleLabel, methodLabel } from '../shared/order-identity/order-iden
  */
 export function filtersFromParams(params: Readonly<Record<string, unknown>>): OrderListFilters {
   return {
+    view: params['view'] === 'abandoned_attempts' ? 'abandoned_attempts' : null,
     clientele: oneOf(CLIENTELE_LABELS, params['clientele']),
     method: oneOf(METHOD_LABELS, params['method']),
     status: oneOf(STATUSES, params['status']),
@@ -124,6 +136,7 @@ export function filtersToParams(filters: OrderListFilters): Record<string, strin
 /** Des filtres → la requête du serveur, sans les vides. */
 export function filtersToQuery(filters: OrderListFilters): Partial<AdminOrdersQuery> {
   const query: { -readonly [K in keyof AdminOrdersQuery]?: AdminOrdersQuery[K] } = {};
+  if (filters.view !== null) query.view = filters.view;
   if (filters.clientele !== null) query.clientele = filters.clientele;
   if (filters.method !== null) query.method = filters.method;
   if (filters.status !== null) query.status = filters.status;
@@ -136,9 +149,12 @@ export function filtersToQuery(filters: OrderListFilters): Partial<AdminOrdersQu
   return query;
 }
 
-/** Vrai quand au moins un filtre est posé — le vide se dit alors autrement. */
+/**
+ * Vrai quand au moins un filtre est posé — le vide se dit alors autrement.
+ * L'onglet n'en est pas un.
+ */
 export function hasFilters(filters: OrderListFilters): boolean {
-  return Object.values(filters).some((value) => value !== null);
+  return Object.entries(filters).some(([key, value]) => key !== 'view' && value !== null);
 }
 
 function withAny<T extends string>(

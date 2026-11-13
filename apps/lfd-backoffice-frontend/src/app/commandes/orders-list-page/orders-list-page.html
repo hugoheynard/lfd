@@ -1,6 +1,18 @@
 <fold-page-layout icon="shopping-cart" title="Commandes">
   <p description>Toutes les commandes, pro et particuliers — la plus récente en tête.</p>
 
+  <fold-tabs
+    tabNav
+    #bar="foldTabs"
+    size="compact"
+    activeStyle="fill"
+    background="surface"
+    [tabs]="tabs"
+    [activeKey]="tab()"
+    (activeKeyChange)="selectTab($event)"
+    data-tabs="view"
+  />
+
   <!-- Les filtres restent à l'écran dans les quatre états : c'est par eux qu'on
        sort d'une liste vide ou d'un échec. -->
   <section class="ol-filters" aria-label="Filtres">
@@ -91,47 +103,49 @@
     </div>
   </section>
 
-  @switch (state()) {
-    @case ('loading') {
-      <fold-loading message="Chargement des commandes…" />
-    }
-    @case ('error') {
-      <fold-empty-state
-        tone="alert"
-        title="Impossible de charger les commandes"
-        subtitle="La lecture a échoué — les commandes, elles, sont intactes."
-      >
-        <button foldButton (click)="load()">Réessayer</button>
-      </fold-empty-state>
-    }
-    @default {
-      @if (rows().length === 0) {
+  <fold-tab-panel [tabs]="bar" [key]="tab()">
+    @switch (state()) {
+      @case ('loading') {
+        <fold-loading message="Chargement des commandes…" />
+      }
+      @case ('error') {
         <fold-empty-state
-          icon="shopping-cart"
-          [title]="empty().title"
-          [subtitle]="empty().subtitle ?? ''"
-        />
-      } @else {
-        <app-orders-table
-          caption="Toutes les commandes"
-          [wide]="true"
-          [rows]="rows()"
-          [palette]="palette.sites()"
-          [empty]="empty()"
-          (opened)="openOrder($event)"
-        />
+          tone="alert"
+          title="Impossible de charger les commandes"
+          subtitle="La lecture a échoué — les commandes, elles, sont intactes."
+        >
+          <button foldButton (click)="load()">Réessayer</button>
+        </fold-empty-state>
       }
+      @default {
+        @if (rows().length === 0) {
+          <fold-empty-state
+            icon="shopping-cart"
+            [title]="empty().title"
+            [subtitle]="empty().subtitle ?? ''"
+          />
+        } @else {
+          <app-orders-table
+            [caption]="tab() === 'orders' ? 'Toutes les commandes' : 'Tentatives abandonnées'"
+            [wide]="true"
+            [rows]="rows()"
+            [palette]="palette.sites()"
+            [empty]="empty()"
+            (opened)="openOrder($event)"
+          />
+        }
 
-      @if (total() > pageSize) {
-        <fold-paginator
-          [currentPage]="currentPage()"
-          [pageSize]="pageSize"
-          [totalItems]="total()"
-          [pageSizeOptions]="pageSizes"
-          [labels]="paginatorLabels"
-          (pageChange)="goToPage($event)"
-        />
+        @if (total() > pageSize) {
+          <fold-paginator
+            [currentPage]="currentPage()"
+            [pageSize]="pageSize"
+            [totalItems]="total()"
+            [pageSizeOptions]="pageSizes"
+            [labels]="paginatorLabels"
+            (pageChange)="goToPage($event)"
+          />
+        }
       }
     }
-  }
+  </fold-tab-panel>
 </fold-page-layout>

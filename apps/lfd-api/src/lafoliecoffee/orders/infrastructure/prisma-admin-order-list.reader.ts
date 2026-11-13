@@ -10,6 +10,7 @@ import {
   type AdminOrderListSlice,
 } from "../domain/ports/admin-order-list.reader.js";
 import { orderEntryOriginOf, orderOriginOf } from "../domain/services/order-origin.js";
+import { abandonedAttemptWhere, notAbandonedAttemptWhere } from "./abandoned-attempt.where.js";
 import { customerLabelOf } from "./handover-order.query.js";
 import { fulfillmentOf, windowOf } from "./order-fulfillment.parse.js";
 import { pickupLabelOf, siteIdOf } from "./pickup-site.parse.js";
@@ -92,6 +93,7 @@ export class PrismaAdminOrderListReader extends AdminOrderListReader {
 /** Chaque filtre posé est une clause ; aucune ne s'écrase l'une l'autre. */
 function whereOf(criteria: AdminOrderListCriteria): Prisma.OrderWhereInput[] {
   const clauses: Prisma.OrderWhereInput[] = [
+    viewWhere(criteria),
     companyWhere(criteria),
     ...criteria.searchTerms.map(searchWhere),
   ];
@@ -110,6 +112,18 @@ function whereOf(criteria: AdminOrderListCriteria): Prisma.OrderWhereInput[] {
     clauses.push({ requestedDeliveryDate: { lte: dateColumnOf(criteria.fulfillmentTo) } });
   }
   return clauses;
+}
+
+/**
+ * La vue : les commandes, ou les seules tentatives abandonnées. Une recherche
+ * exacte du numéro d'une tentative ne la trouve QUE dans sa vue — les deux
+ * listes sont disjointes, et la recherche ne fait pas sortir une tentative de
+ * la sienne.
+ */
+function viewWhere(criteria: AdminOrderListCriteria): Prisma.OrderWhereInput {
+  return criteria.view === "abandoned_attempts"
+    ? abandonedAttemptWhere()
+    : notAbandonedAttemptWhere();
 }
 
 /** Strictement après le curseur — hors du total, qui compte toute la liste. */

@@ -10,6 +10,7 @@ import { siteIdOf } from "./pickup-site.parse.js";
 import { abandonedOf, decisionMarkOf } from "./prisma-shortfall-aftermath.reader.js";
 import { departingOf } from "./prisma-shortfall-decision.reader.js";
 import { shortfallLinesOf } from "./prisma-order-shortfall.repository.js";
+import { notAbandonedAttemptWhere } from "./abandoned-attempt.where.js";
 
 /**
  * **La lecture d'une commande POUR LA REMISE**, partagée par les deux
@@ -107,20 +108,24 @@ function parseAddress(value: Prisma.JsonValue | null): BillingAddressPayload | n
 }
 
 /**
- * **« Attendue ce jour-là »** — le filtre que la file du comptoir et la feuille
- * de route partagent, écrit UNE fois.
+ * **« Attendue ce jour-là »** — le filtre que la file du comptoir, la feuille
+ * de route et la composition des tournées partagent, écrit UNE fois.
  *
- * Deux règles, et elles lisent l'énuméré des statuts du commerce, donc elles
+ * Trois règles, et elles lisent l'énuméré des statuts du commerce, donc elles
  * vivent ici : les **brouillons sont écartés** (une commande jamais passée
- * n'attend personne), les **annulées sont rendues** (c'est à l'état de le dire,
- * pas à une liste qui les cache). Recopiées dans chaque adaptateur, elles
- * divergeraient le jour où l'une se corrige — et le comptoir et le livreur
- * verraient deux journées différentes.
+ * n'attend personne) ; les **tentatives de règlement par carte abandonnées sont
+ * écartées** (jamais payées, elles n'ont jamais été attendues — décidé par Hugo
+ * le 2026-11-13, `abandonedAttemptWhere`) ; les **vraies commandes
+ * annulées sont rendues** (c'est à l'état de le dire, pas à une liste qui les
+ * cache). Recopiées dans chaque adaptateur, elles divergeraient le jour où
+ * l'une se corrige — et le comptoir et le livreur verraient deux journées
+ * différentes.
  */
 export function expectedOnWhere(day: string): Prisma.OrderWhereInput {
   return {
     requestedDeliveryDate: new Date(`${day}T00:00:00.000Z`),
     status: { not: "draft" },
+    ...notAbandonedAttemptWhere(),
   };
 }
 

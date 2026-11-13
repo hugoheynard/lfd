@@ -19,7 +19,10 @@ import {
   FoldPageLayoutComponent,
   FoldPaginatorComponent,
   FoldSearchComponent,
+  FoldTabPanelComponent,
+  FoldTabsComponent,
   type FoldPaginatorLabels,
+  type FoldTabItem,
   type FoldTableEmpty,
 } from 'fold-ng';
 
@@ -39,6 +42,7 @@ import {
   type Choice,
   type OrderListFilterKey,
   type OrderListFilters,
+  type OrderListTab,
 } from '../order-list-filters';
 import { SitePaletteStore } from '../../shared/logistics-colors/site-palette.store';
 import { AdminOrdersService } from '../orders.service';
@@ -59,6 +63,39 @@ const PAGINATOR_LABELS: FoldPaginatorLabels = {
   empty: 'Aucune commande',
   page: (page) => `Page ${page}`,
   range: (start, end, total) => `${start}–${end} sur ${total}`,
+};
+
+/**
+ * Les deux listes. Une tentative de règlement par carte abandonnée garde son
+ * numéro, mais n'est pas une commande : elle se consulte à part (décidé par
+ * Hugo le 2026-11-13).
+ */
+const TABS: readonly FoldTabItem<OrderListTab>[] = [
+  { key: 'orders', label: 'Commandes', icon: 'shopping-cart' },
+  { key: 'abandoned_attempts', label: 'Tentatives abandonnées', icon: 'credit-card' },
+];
+
+/** Le vide de chaque liste, sans filtre puis avec. */
+const EMPTY: Readonly<
+  Record<OrderListTab, { readonly bare: FoldTableEmpty; readonly filtered: FoldTableEmpty }>
+> = {
+  orders: {
+    bare: { title: 'Aucune commande', subtitle: "Rien n'a encore été commandé." },
+    filtered: {
+      title: 'Aucune commande ne correspond',
+      subtitle: 'Élargissez la période ou retirez un filtre.',
+    },
+  },
+  abandoned_attempts: {
+    bare: {
+      title: 'Aucune tentative abandonnée',
+      subtitle: "Aucun règlement par carte n'a été abandonné sans avoir été payé.",
+    },
+    filtered: {
+      title: 'Aucune tentative ne correspond',
+      subtitle: 'Élargissez la période ou retirez un filtre.',
+    },
+  },
 };
 
 /** Le numéro de page de l'adresse ; tout ce qui n'est pas un entier ≥ 1 vaut 1. */
@@ -105,6 +142,8 @@ function sameFilters(left: OrderListFilters, right: OrderListFilters): boolean {
     FoldPageLayoutComponent,
     FoldPaginatorComponent,
     FoldSearchComponent,
+    FoldTabPanelComponent,
+    FoldTabsComponent,
     OrdersTable,
   ],
   templateUrl: './orders-list-page.html',
@@ -112,6 +151,7 @@ function sameFilters(left: OrderListFilters, right: OrderListFilters): boolean {
 })
 export class OrdersListPage {
   // Les paramètres d'URL, sous les noms mêmes de `GET /admin/orders`.
+  readonly view = input<string>();
   readonly clientele = input<string>();
   readonly method = input<string>();
   readonly status = input<string>();
@@ -133,6 +173,7 @@ export class OrdersListPage {
   protected readonly filters = computed<OrderListFilters>(
     () =>
       filtersFromParams({
+        view: this.view(),
         clientele: this.clientele(),
         method: this.method(),
         status: this.status(),
@@ -166,14 +207,12 @@ export class OrdersListPage {
 
   protected readonly filtered = computed(() => hasFilters(this.filters()));
 
+  protected readonly tabs = TABS;
+  protected readonly tab = computed<OrderListTab>(() => this.filters().view ?? 'orders');
+
   /** Le vide d'un filtre n'est pas le vide de la maison : il ne dit pas la même chose. */
   protected readonly empty = computed<FoldTableEmpty>(() =>
-    this.filtered()
-      ? {
-          title: 'Aucune commande ne correspond',
-          subtitle: 'Élargissez la période ou retirez un filtre.',
-        }
-      : { title: 'Aucune commande', subtitle: "Rien n'a encore été commandé." },
+    this.filtered() ? EMPTY[this.tab()].filtered : EMPTY[this.tab()].bare,
   );
 
   /**
@@ -264,8 +303,14 @@ export class OrdersListPage {
     this.apply({ q: term === '' ? null : term });
   }
 
+  /** Change de liste ; les filtres suivent, la page repart de la première. */
+  protected selectTab(tab: OrderListTab): void {
+    this.apply({ view: tab === 'orders' ? null : tab });
+  }
+
+  /** Les filtres tombent ; l'onglet reste. */
   protected clearFilters(): void {
-    this.apply(NO_FILTERS);
+    this.apply({ ...NO_FILTERS, view: this.filters().view });
   }
 
   /**

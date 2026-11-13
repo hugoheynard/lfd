@@ -279,6 +279,14 @@ describe("l'état du portefeuille", () => {
     const view = await portfolio();
 
     expect(view.failedPayments).toBe(2);
+
+    // Une tentative abandonnée (annulée en `failed`) n'est plus une relance.
+    const refused = await ctx.prisma.order.findFirstOrThrow({
+      where: { companyId: company.id, paymentStatus: "failed" },
+      select: { id: true },
+    });
+    await ctx.prisma.order.update({ where: { id: refused.id }, data: { status: "cancelled" } });
+    expect((await portfolio()).failedPayments).toBe(1);
   });
 
   it("est murée staff", async () => {

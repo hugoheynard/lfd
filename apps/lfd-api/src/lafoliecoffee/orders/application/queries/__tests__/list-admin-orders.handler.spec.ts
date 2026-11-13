@@ -112,4 +112,21 @@ describe("ListAdminOrdersHandler", () => {
 
     expect(page.total).toBe(51);
   });
+
+  it("lit les commandes par défaut, et les seules tentatives abandonnées sur demande", async () => {
+    const reader = new SlicedReader({ rows: [], hasMore: false, total: 0 });
+    const handler = new ListAdminOrdersHandler(reader);
+
+    await handler.execute(queryOf({}));
+    await handler.execute(queryOf({ view: "abandoned_attempts" }));
+
+    expect(reader.received.map((criteria) => criteria.view)).toEqual([
+      "orders",
+      "abandoned_attempts",
+    ]);
+  });
+
+  it("refuse une vue inconnue à la forme", () => {
+    expect(() => queryOf({ view: "toutes" })).toThrow();
+  });
 });

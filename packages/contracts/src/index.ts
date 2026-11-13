@@ -788,7 +788,12 @@ export type {
   PickupDiscountBaseView,
   VatShareView,
 } from "./order.js";
-export type { AdminOrderRow, AdminOrdersPage, AdminOrdersQuery } from "./admin-order-list.js";
+export type {
+  AdminOrderListView,
+  AdminOrderRow,
+  AdminOrdersPage,
+  AdminOrdersQuery,
+} from "./admin-order-list.js";
 export type {
   AdminCancelOrderPayload,
   AdminCancellationRefund,

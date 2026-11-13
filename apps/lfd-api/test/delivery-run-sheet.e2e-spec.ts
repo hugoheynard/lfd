@@ -246,6 +246,37 @@ describe("la feuille de route du jour", () => {
     expect(serialized).not.toMatch(/cents|price|amount|"total(?!Units)/iu);
   });
 
+  /**
+   * Une tentative de carte abandonnée (annulée, `failed`, jamais payée) n'a
+   * jamais été attendue : ni le livreur ni le comptoir ne la voient. Une vraie
+   * commande annulée reste rendue, marquée annulée. États posés en base : c'est
+   * le filtre du jour qu'on éprouve, pas les chemins qui les écrivent.
+   */
+  it("écarte une tentative abandonnée, rend une vraie commande annulée", async () => {
+    const { addressId } = await seedCompany(OWNER, "Boulangerie du Col");
+    const kept = await place(OWNER, "delivery", addressId);
+    const abandoned = await place(OWNER, "delivery", addressId);
+    const cancelled = await place(OWNER, "delivery", addressId);
+    await ctx.prisma.order.update({
+      where: { id: abandoned },
+      data: { status: "cancelled", paymentStatus: "failed" },
+    });
+    await ctx.prisma.order.update({
+      where: { id: cancelled },
+      data: { status: "cancelled", paymentStatus: "refunded" },
+    });
+
+    const stops = (await runSheet()).stops.map((stop) => stop.orderId);
+    const queue = (await staff().get(`/admin/supervision/handover?jour=${DAY}`).expect(200))
+      .body as HandoverQueueView;
+    const states = new Map(queue.entries.map((entry) => [entry.orderId, entry.state]));
+
+    expect(stops.sort()).toEqual([kept, cancelled].sort());
+    expect(states.has(abandoned)).toBe(false);
+    expect(states.get(cancelled)).toBe("cancelled");
+    expect(states.has(kept)).toBe(true);
+  });
+
   it("🔴 ne relie PAS une commande à l'adresse d'une autre société", async () => {
     await seedCompany(OWNER, "Boulangerie du Col");
     const other = await seedCompany(OTHER_OWNER, "Autre Maison");

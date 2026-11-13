@@ -1,4 +1,5 @@
 import type {
+  AdminOrderListView,
   AdminOrderRow,
   FulfillmentMethod,
   OrderClientele,
@@ -14,6 +15,11 @@ import type { AdminOrderCursor } from "../value-objects/admin-order-cursor.js";
  * des mots. `null` = pas de filtre.
  */
 export interface AdminOrderListCriteria {
+  /**
+   * `orders` : les commandes, sans les tentatives de règlement par carte
+   * abandonnées ; `abandoned_attempts` : elles seules. Le total suit la vue.
+   */
+  readonly view: AdminOrderListView;
   readonly companyId: string | null;
   readonly withSubAccounts: boolean;
   readonly status: OrderStatus | null;

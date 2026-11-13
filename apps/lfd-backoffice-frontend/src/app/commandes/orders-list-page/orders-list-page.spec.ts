@@ -228,4 +228,38 @@ describe('OrdersListPage — la liste de toutes les commandes', () => {
     expect(router.url).toBe('/commandes/a');
     expect(router.lastSuccessfulNavigation()?.extras.state).toEqual({ [FROM_ORDER_LIST]: true });
   });
+
+  it("l'onglet des tentatives abandonnées s'écrit en `view` et part au serveur", async () => {
+    const orders = new FakeOrders();
+    const harness = await open('/commandes?method=pickup', orders);
+    const tabs = harness.fixture.debugElement.query(By.css('[data-tabs="view"]'));
+    // `activeKey` est un modèle : l'écrire émet `activeKeyChange`, comme un clic.
+    (tabs.componentInstance as { activeKey: { set(k: string): void } }).activeKey.set(
+      'abandoned_attempts',
+    );
+    await settle(harness);
+    expect(TestBed.inject(Router).url).toContain('view=abandoned_attempts');
+    expect(orders.calls.at(-1)).toEqual({
+      view: 'abandoned_attempts',
+      method: 'pickup',
+      page: 1,
+      limit: 50,
+    });
+  });
+
+  it('dit son propre vide, et « Retirer les filtres » garde l’onglet', async () => {
+    const orders = new FakeOrders();
+    const harness = await open('/commandes?view=abandoned_attempts&method=pickup', orders);
+    expect(root(harness).textContent).toContain('Aucune tentative ne correspond');
+    (root(harness).querySelector('[data-clear-filters]') as HTMLButtonElement).click();
+    await settle(harness);
+    expect(TestBed.inject(Router).url).toBe('/commandes?view=abandoned_attempts');
+    expect(root(harness).textContent).toContain('Aucune tentative abandonnée');
+  });
+
+  it('la liste par défaut ne demande pas de vue', async () => {
+    const orders = new FakeOrders();
+    await open('/commandes?view=nimporte', orders);
+    expect(orders.calls.at(-1)).toEqual({ page: 1, limit: 50 });
+  });
 });

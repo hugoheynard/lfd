@@ -154,6 +154,11 @@ export const adminOrderClienteleSchema = z.enum([
  */
 const parisDaySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "jour attendu au format AAAA-MM-JJ");
 
+/** Les deux listes du back-office : les commandes, ou les tentatives abandonnées. */
+export const ADMIN_ORDER_LIST_VIEWS = ["orders", "abandoned_attempts"] as const;
+export const adminOrderListViewSchema = z.enum(ADMIN_ORDER_LIST_VIEWS);
+export type AdminOrderListView = z.infer<typeof adminOrderListViewSchema>;
+
 /** La longueur au-delà de laquelle une recherche n'est plus une recherche. */
 const SEARCH_MAX_LENGTH = 100;
 
@@ -202,6 +207,13 @@ export const adminOrdersQuerySchema = z
      * dans l'un de ces champs (« léa martin »).
      */
     q: z.string().trim().min(1).max(SEARCH_MAX_LENGTH).optional(),
+    /**
+     * Quelle liste lire. Absent ou `orders` : les commandes, SANS les tentatives
+     * de règlement par carte abandonnées. `abandoned_attempts` : ces seules
+     * tentatives — annulées sans avoir jamais été payées (décidé par Hugo le
+     * 2026-11-13 : elles gardent leur numéro, mais se consultent à part).
+     */
+    view: adminOrderListViewSchema.optional(),
     /** Le `nextCursor` de la page précédente, tel quel. */
     cursor: z.string().trim().min(1).optional(),
     /**

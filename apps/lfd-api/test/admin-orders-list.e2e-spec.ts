@@ -138,6 +138,12 @@ async function seedScene(): Promise<{ pro: string; publicPickup: string; deliver
   });
   const pro = await place(MEMBER, pickup(company.id));
   const publicPickup = await place(SOLO, pickup(null));
+  // Réglée avant la suivante : sans quoi la seconde commande carte de Léa la
+  // remplace (annulée, `failed`), et une tentative abandonnée quitte la liste.
+  await ctx.prisma.order.update({
+    where: { orderNumber: publicPickup },
+    data: { paymentStatus: "paid" },
+  });
   const delivery = await place(SOLO, {
     companyId: null,
     fulfillmentMethod: "delivery",
@@ -312,6 +318,70 @@ describe("GET /admin/orders — filtres", () => {
     expect(numbersOf((await list(`?q=${scene.delivery.toLowerCase()}`)).rows)).toEqual([
       scene.delivery,
     ]);
+  });
+});
+
+describe("GET /admin/orders — les tentatives abandonnées se consultent à part", () => {
+  /**
+   * Les états sont posés en base : chacun est celui qu'écrit son chemin (abandon,
+   * remboursement C4, annulation au compte, refus pro avant la clôture), et
+   * c'est la LISTE qu'on éprouve ici, pas ces chemins.
+   */
+  async function seedSettlements(): Promise<{
+    abandoned: string;
+    refunded: string;
+    onAccount: string;
+    refusedPro: string;
+  }> {
+    const scene = await seedScene();
+    const states = [
+      [scene.publicPickup, { status: "cancelled", paymentStatus: "failed" }],
+      [scene.delivery, { status: "cancelled", paymentStatus: "refunded" }],
+      [scene.pro, { status: "placed", paymentStatus: "failed" }],
+    ] as const;
+    for (const [orderNumber, data] of states) {
+      await ctx.prisma.order.update({ where: { orderNumber }, data });
+    }
+    const onAccount = await place(MEMBER, pickup((await ctx.prisma.company.findFirstOrThrow()).id));
+    await ctx.prisma.order.update({
+      where: { orderNumber: onAccount },
+      data: { status: "cancelled", paymentStatus: "not_required" },
+    });
+    return {
+      abandoned: scene.publicPickup,
+      refunded: scene.delivery,
+      onAccount,
+      refusedPro: scene.pro,
+    };
+  }
+
+  it("sort une carte abandonnée de la liste, et de son total", async () => {
+    const scene = await seedSettlements();
+
+    const page = await list("");
+
+    expect(numbersOf(page.rows)).toEqual(
+      [scene.refunded, scene.onAccount, scene.refusedPro].sort(),
+    );
+    expect(page.total).toBe(3);
+  });
+
+  it("ne rend qu'elle dans la vue des tentatives, et la retrouve par son numéro", async () => {
+    const scene = await seedSettlements();
+
+    const page = await list("?view=abandoned_attempts");
+
+    expect(numbersOf(page.rows)).toEqual([scene.abandoned]);
+    expect(page.total).toBe(1);
+    expect(numbersOf((await list(`?view=abandoned_attempts&q=${scene.abandoned}`)).rows)).toEqual([
+      scene.abandoned,
+    ]);
+    // Les deux listes sont disjointes : la recherche ne la fait pas revenir.
+    expect((await list(`?q=${scene.abandoned}`)).rows).toHaveLength(0);
+  });
+
+  it("refuse une vue inconnue en 400", async () => {
+    await ctx.asSub(E2E_STAFF_SUB).get("/admin/orders?view=toutes").expect(400);
   });
 });
 

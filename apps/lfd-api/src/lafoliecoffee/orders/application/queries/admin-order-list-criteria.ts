@@ -19,6 +19,7 @@ const PARIS_MIDNIGHT = "00:00";
  */
 export function adminOrderListCriteriaOf(query: AdminOrdersQuery): AdminOrderListCriteria {
   return {
+    view: query.view ?? "orders",
     companyId: query.companyId ?? null,
     withSubAccounts: query.withSubAccounts === true,
     status: query.status ?? null,

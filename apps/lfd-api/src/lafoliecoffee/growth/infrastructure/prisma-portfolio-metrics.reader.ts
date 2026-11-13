@@ -32,8 +32,12 @@ export class PrismaPortfolioMetricsReader extends PortfolioMetricsReader {
         this.prisma.company.count({ where: { status: "active" } }),
         this.prisma.company.count({ where: { activatedAt: { gte: currentStart } } }),
         // Le compte des COMMANDES, pas des sociétés : deux échecs sur le même
-        // compte sont deux relances à passer.
-        this.prisma.order.count({ where: { paymentStatus: "failed" } }),
+        // compte sont deux relances à passer. Une commande annulée en `failed`
+        // est une tentative de carte abandonnée : il n'y a rien à relancer, et
+        // elle ne compte pas dans l'activité (décidé par Hugo le 2026-11-13).
+        this.prisma.order.count({
+          where: { paymentStatus: "failed", status: { not: "cancelled" } },
+        }),
         this.revenueByCompany(currentStart, now),
         this.revenueByCompany(previousStart, currentStart),
       ]);
