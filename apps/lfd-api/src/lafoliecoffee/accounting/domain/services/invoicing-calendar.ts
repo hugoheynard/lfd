@@ -211,8 +211,8 @@ export class InvoicingCalendar implements ClosureSequence {
 
   /**
    * Les suites que l'entité unit : le mensuel, puis chaque payeur. Les
-   * méthodes de l'entité n'y lisent que les clôtures CONNUES (§3.1 du plan
-   * `plan-changement-de-mode-immediat.md`) : un lundi passé ne devient
+   * méthodes de l'entité n'y lisent que les clôtures CONNUES (`le-mode-de-facturation-d-un-client.md`,
+   * § 2.1) : un lundi passé ne devient
    * jamais, après coup, une clôture à tenter ou manquée.
    */
   private sources(): readonly ClosureSource[] {

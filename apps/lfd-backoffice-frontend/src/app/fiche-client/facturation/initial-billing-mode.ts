@@ -2,8 +2,8 @@ import type { BillingRhythmKind } from '@lfd/contracts';
 
 /**
  * Le mode de facturation choisi à l'ouverture ou à l'activation d'un compte
- * (plan `documentation/comptabilite/facturation/plan-changement-de-mode-immediat.md`,
- * I3) — posé par la route du mode du payeur, juste après le geste.
+ * (`documentation/comptabilite/facturation/le-mode-de-facturation-d-un-client.md`,
+ * § 2.3) — posé par la route du mode du payeur, juste après le geste.
  *
  * - `chosen` : un mode, chez une entité émettrice ;
  * - `missing` : le choix est exigé et n'est pas fait — le geste attend ;

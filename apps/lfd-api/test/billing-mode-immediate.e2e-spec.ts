@@ -1,7 +1,6 @@
 /**
- * E2E du **changement de mode immédiat** (plan
- * `documentation/comptabilite/facturation/plan-changement-de-mode-immediat.md`,
- * lot I2) : un payeur qui n'a jamais commandé change de mode tout de suite,
+ * E2E du **changement de mode immédiat** (`documentation/comptabilite/facturation/le-mode-de-facturation-d-un-client.md`,
+ * § 2.2) : un payeur qui n'a jamais commandé change de mode tout de suite,
  * daté de la dernière clôture passée ; dès qu'une commande le touche, par
  * lui ou facturée à lui, le changement est programmé.
  *

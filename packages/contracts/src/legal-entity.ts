@@ -294,7 +294,7 @@ export interface LegalEntityView {
    * choisi AUCUN mode chez elle : facturés au mensuel par défaut, sans trace
    * d'un choix. La page le dit « N clients sans mode choisi », pour qu'un
    * choix perdu entre la création d'un compte et son mode se voie sans ouvrir
-   * chaque fiche (plan `plan-changement-de-mode-immediat.md`, I3).
+   * chaque fiche (`le-mode-de-facturation-d-un-client.md`, § 2.3).
    */
   readonly payersWithoutModeCount: number;
   /**

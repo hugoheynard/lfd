@@ -3,8 +3,8 @@ import { missedClosures } from "../missed-closures.js";
 import { defaultModes, paris } from "./billing-mode-fixtures.js";
 
 /**
- * Une clôture de l'entité est une clôture CONNUE (plan
- * `plan-changement-de-mode-immediat.md`, §3.1) : un payeur devenu
+ * Une clôture de l'entité est une clôture CONNUE (`le-mode-de-facturation-d-un-client.md`,
+ * § 2.1) : un payeur devenu
  * hebdomadaire immédiatement le 12 novembre, daté du 1er, ne fait pas des
  * lundis 2 et 9 des clôtures de l'entité. Les dates sont le sujet et ne se
  * comparent qu'aux instants donnés : aucune horloge n'est lue.

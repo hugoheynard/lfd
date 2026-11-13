@@ -1,7 +1,7 @@
 /**
  * **Ce payeur a-t-il déjà eu une commande au compte ?** — la première
- * condition du mode immédiat (plan `plan-changement-de-mode-immediat.md`,
- * §3.2). La lecture est LARGE exprès : un faux « non » programme le
+ * condition du mode immédiat (`le-mode-de-facturation-d-un-client.md`,
+ * § 2.2). La lecture est LARGE exprès : un faux « non » programme le
  * changement, un faux « oui » ferait une période fausse.
  */
 export abstract class PayerOrderHistoryReader {

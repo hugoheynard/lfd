@@ -108,15 +108,15 @@ export class PayerBillingModeHistory {
   }
 
   /**
-   * Change le mode du payeur. **Immédiat** (plan
-   * `plan-changement-de-mode-immediat.md`, §3.2) quand il n'a jamais commandé
+   * Change le mode du payeur. **Immédiat** (`le-mode-de-facturation-d-un-client.md`,
+   * § 2.2) quand il n'a jamais commandé
    * (`opening`), qu'aucun segment vivant ne commence à la dernière clôture
    * passée C0 ou après, et qu'aucun segment vivant n'a été écrit depuis C0 : le
    * segment est daté de C0, une vraie clôture de sa suite, et écrit
    * maintenant. Sinon **programmé** à sa prochaine clôture.
    *
    * Un payeur sans segment vivant n'a pas encore choisi : son premier geste
-   * écrit un segment même s'il redemande le mensuel (§3.3).
+   * écrit un segment même s'il redemande le mensuel (§ 2.3).
    *
    * @returns ce qui a changé, ou `null` : c'est déjà le mode qu'il a choisi.
    * @throws {PayerBillingModeChangePendingError} un changement n'a pas encore pris effet.

@@ -48,8 +48,8 @@ export function isRhythmFollowed(mode: BillingMode, payerCount: number): boolean
  * **Combien de clients n'ont choisi aucun mode** chez l'entité : parmi
  * `payerIds` (les mêmes que `payerCountsAt`, pour que la page ne compte pas
  * un client que ses barres ignorent), ceux qui n'ont aucun segment vivant.
- * Un payeur sans segment n'a pas choisi (plan
- * `plan-changement-de-mode-immediat.md`, §3.3) ; un choix programmé, lui,
+ * Un payeur sans segment n'a pas choisi (`le-mode-de-facturation-d-un-client.md`,
+ * § 2.3) ; un choix programmé, lui,
  * est un choix.
  */
 export function payersWithoutModeCount(
