@@ -193,3 +193,11 @@ export async function settle(): Promise<void> {
     await Promise.resolve();
   }
 }
+
+/** Le registre des sujets autour des sources données — journaux et sujets globaux. */
+export function versionRegistryOf(
+  days: Record<DayJournal, RecordingSource> = sources(),
+  globals: Record<GlobalVersionSubject, RecordingGlobalSource> = globalSources(),
+): VersionRegistry {
+  return new VersionRegistry(new DayVersionRegistry(Object.values(days)), Object.values(globals));
+}

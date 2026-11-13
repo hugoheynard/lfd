@@ -7,6 +7,7 @@ import {
   type VersionSubject,
 } from "@lfd/contracts";
 
+import type { DaySubjectVersion } from "./day-content-tag.js";
 import { GLOBAL_SCOPE } from "./day-versions-cache.js";
 import { DayVersionRegistry, DayVersionRegistryMisassembledError } from "./day-version-registry.js";
 import type { GlobalVersionSource } from "./global-version-source.js";
@@ -77,6 +78,28 @@ export class VersionRegistry {
         versionOf: (serviceDay: string) => source.versionOf(serviceDay),
       };
     });
+  }
+
+  /**
+   * Les numéros de ces sujets, lus EN BASE : un journal pour la journée
+   * `AAAA-MM-JJ`, un sujet global (`companies`…) sans journée — l'étiquette
+   * d'un contenu de journée qui lit aussi un référentiel global. Lus AVANT
+   * les données de l'écran (`DayVersionRegistry.versionsOf`).
+   *
+   * @throws {DomainError} la journée n'existe pas au calendrier.
+   */
+  versionsOf(
+    subjects: readonly VersionSubject[],
+    serviceDay: string,
+  ): Promise<DaySubjectVersion[]> {
+    return Promise.all(
+      subjects.map(async (subject) => ({
+        subject,
+        version: isDayJournal(subject)
+          ? await this.days.sourceOf(subject).versionOf(serviceDay)
+          : await this.globalSource(subject).versionOf(),
+      })),
+    );
   }
 
   private globalSource(subject: GlobalVersionSubject): GlobalVersionSource {

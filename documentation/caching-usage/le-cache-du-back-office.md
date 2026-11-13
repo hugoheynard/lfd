@@ -210,10 +210,11 @@ seul veilleur.
 
 ### 3.1 Les contenus des écrans de journée
 
-La plateforme est en place ; **la fiche du fournil y est branchée** (§ 3.2),
-le colisage, la file de retrait et les tournées pas encore (plan
-[`plan-lot-2-ecrans-de-journee.md`](plan-lot-2-ecrans-de-journee.md), lots 3
-à 5).
+Cinq écrans y sont branchés : la fiche du fournil (§ 3.2), le colisage
+(§ 3.3), les deux files de retrait (§ 3.4) et les tournées (§ 3.5). Chacun lit
+les numéros de son étiquette par le registre — `DayVersionRegistry.versionsOf`
+pour des journaux de journée, `VersionRegistry.versionsOf` quand un sujet
+global (`companies`) s'y ajoute —, en base, avant ses données.
 
 - **La table** `day_contents(key, screen, day, tag, body, raw_bytes)` de
   l'objet (`container/day-contents.ts`, décisions dans
@@ -298,6 +299,83 @@ réponse, et rien n'est rangé. `relativeDay` est recalculé à chaque réponse
 des ports (environ 18 requêtes sur une journée colisée) pour 4 lectures de
 numéros. Code : `packing/application/board/get-packing-board.handler.ts`,
 `packing-board-reading.service.ts`, `packing-board-content.ts`.
+
+### 3.4 La file du retrait
+
+Deux routes, deux périmètres posés par la route, **deux clés** (leurs octets
+diffèrent) :
+
+| Route                                  | Droit              | Périmètre   | Clé                |
+| -------------------------------------- | ------------------ | ----------- | ------------------ |
+| `GET admin/handover/file?jour=`        | `handover_counter` | `counter`   | `handover-counter` |
+| `GET admin/supervision/handover?jour=` | `b2b_supervision`  | `whole_day` | `handover-day`     |
+
+Le comptoir ne reçoit ni livraison ni tournée : la lecture retire les
+livraisons avant de lire les tournées, et sa clé ne se partage jamais avec
+celle de la journée entière. Les chiffres du cockpit
+(`admin/cockpit/handovers`) ne passent pas par l'objet.
+
+- **L'étiquette** : `orders` (la commande, son règlement et son retrait,
+  écrits dans la même transaction), `production` (retenues qualité, prêt du
+  colisage), `delivery` (transferts, réassort, place en tournée) et le sujet
+  **global** `companies` : la ligne porte la raison sociale, l'enseigne et le
+  nom de qui a commandé (`handover-order.query.ts`), que le journal des
+  comptes suit (`companies`, `users`). Lus en base par
+  `VersionRegistry.versionsOf`, avant les tables ; l'étiquette s'écrit
+  `companies:…delivery:…orders:…production:…`. Les veilleurs du comptoir et
+  de la Supervision ne suivent pas `companies` : la porte ne le rend qu'à
+  `b2b_companies:read`, que leurs droits n'impliquent pas. Un nom changé se
+  voit au prochain numéro de la journée, ou au filet.
+- **Aucune heure** : la vue rangée est servie telle quelle.
+- **Lu hors journal, accepté vieux jusqu'au prochain numéro** : le libellé du
+  site d'un transfert.
+- **Aucun repli dégradé** : une panne d'une lecture fait échouer la réponse,
+  rien n'est rangé.
+- **Gain** : un appel servi par l'objet coûte quatre lectures de numéros au
+  lieu de la file (environ 11 requêtes sur la journée la plus chargée de la
+  base de dev, mesure du lot 0 : file, attestations, retenues, transferts,
+  réassort, tournées).
+
+Code : `handover/application/queries/get-handover-queue.handler.ts`,
+`apps/lfd-api/src/handover/application/queries/handover-queue-content.ts`, `apps/lfd-api/src/handover/application/services/handover-queue-reading.service.ts`.
+
+### 3.5 Les tournées
+
+`GET admin/delivery/rounds?day=` (`delivery_rounds`), clé `rounds`. « Ma
+tournée » n'y passe pas : sa réponse dépend de la personne.
+
+- **L'étiquette** : `delivery` et `orders`, lus en base avant les tables. Pas
+  de `companies` : l'écran ne sert que la référence et la clientèle d'une
+  commande, jamais un nom.
+- **Ce qui est rangé** (`RoundsDayComposition`,
+  `apps/lfd-api/src/delivery/application/rounds-day-composition.ts`) :
+  ce que les numéros de CETTE journée suivent — les tournées et la place de
+  leurs arrêts, les livraisons attendues du jour non annulées, les
+  signalements.
+- **Ce qui est lu à CHAQUE appel** (`RoundsDayLiveReading`) et posé sur le
+  contenu par `servedRoundsDay` :
+  - les livreurs, leurs droits et leur nom (Hugo, 2026-11-13) : un droit
+    retiré se voit au prochain appel ;
+  - la flotte (Hugo, 2026-11-13) : zones autorisées (« hors zone ») et
+    véhicule retiré ;
+  - la place au dépôt : elle se tire de la charge des véhicules — la flotte —
+    et des réglages de tournée ; rangée, elle avertirait sur une flotte qui
+    n'est plus ;
+  - les commandes rapportées à replacer et la date de chaque retour : elles
+    viennent de n'importe quel jour, qu'aucun numéro de CETTE journée ne suit ;
+  - ce que le commerce dit des commandes composées (annulée, jour, retrait
+    au comptoir, zone, clientèle, référence), et les attendues déjà placées
+    dans une tournée vivante : une commande d'un autre jour annulée, ou
+    placée dans une tournée d'un autre jour, fait monter le numéro de CET
+    autre jour, jamais celui de l'écran.
+- **Aucun repli dégradé** dans ce qui est rangé.
+- **Gain** : un appel servi par l'objet épargne les tournées, les attendues
+  et les signalements (trois lectures de ports) pour deux lectures de
+  numéros ; tout le reste est lu à chaque appel.
+
+Code : `delivery/application/queries/get-delivery-rounds-day.handler.ts`,
+`apps/lfd-api/src/delivery/application/rounds-day-reading.service.ts`, `apps/lfd-api/src/delivery/application/rounds-day-live.service.ts`,
+`apps/lfd-api/src/delivery/application/rounds-day-composition.ts`, `delivery-rounds-view.ts`.
 
 ## 4. L'écran Catalogue
 
@@ -460,10 +538,11 @@ changement du PIM (`get-product-detail.ts`).
 - **Retirer au déploiement suivant** les anciens hôtes `rayons.interne` et
   `journees.interne` (`LEGACY_OBJECT_HOSTS`), et l'ancienne porte
   `GET admin/day-versions`.
-- **Le lot 2 de l'objet des journées, écrans non branchés** : la plateforme
-  est bâtie (§ 3.1) et la fiche du fournil branchée (§ 3.2) ; restent le
-  colisage, la file de retrait et les tournées. Plan : [`plan-lot-2-ecrans-de-journee.md`](plan-lot-2-ecrans-de-journee.md)
-  (décisions de Hugo du 2026-11-13).
+- **Les écrans de journée sont branchés** (§ 3.2 à 3.5). Reste à lire, sur
+  l'environnement déployé, les appels par jour de chaque route (onglet Ops)
+  pour chiffrer le gain, et à écrire le seuil sous lequel il ne vaut pas
+  l'objet. Plan bâti :
+  [`plan-lot-2-ecrans-de-journee.md`](plan-lot-2-ecrans-de-journee.md).
 - **La taille en clair dans l'onglet Cache** : la colonne `contents.raw_bytes`
   existe ; la relever dans `metrics_hourly` et la servir à l'écran reste à
   faire.

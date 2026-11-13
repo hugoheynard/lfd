@@ -13,6 +13,7 @@ import { GetCockpitHandoversHandler } from "./application/queries/get-cockpit-ha
 import { HandoverCockpitController } from "./http/handover-cockpit.controller.js";
 import { GetHandoverHandler } from "./application/queries/get-handover.handler.js";
 import { HandoverCounterView } from "./application/services/handover-counter-view.js";
+import { HandoverQueueReading } from "./application/services/handover-queue-reading.service.js";
 import { AttestingCounterHandoverDesk } from "./application/services/attesting-counter-handover.desk.js";
 import { PreviewingCounterHandoverReader } from "./application/services/previewing-counter-handover.reader.js";
 import { HandoverAttestation } from "./application/services/handover-attestation.service.js";
@@ -36,6 +37,7 @@ import { PrismaHandoverProofEraser } from "./infrastructure/prisma-handover-proo
 import { PrismaHandoverProofRepository } from "./infrastructure/prisma-handover-proof.repository.js";
 import { PrismaOrderDepartureRepository } from "./infrastructure/prisma-order-departure.repository.js";
 import { PrismaOrderHandoverRepository } from "./infrastructure/prisma-order-handover.repository.js";
+import { DayVersionsModule } from "../platform/day-versions/day-versions.module.js";
 
 /**
  * **Le retrait.**
@@ -67,6 +69,7 @@ import { PrismaOrderHandoverRepository } from "./infrastructure/prisma-order-han
  * (`documentation/livraisons/livreur/a-la-porte.md`).
  */
 @Module({
+  imports: [DayVersionsModule],
   controllers: [
     HandoverController,
     HandoverSupervisionController,
@@ -85,6 +88,7 @@ import { PrismaOrderHandoverRepository } from "./infrastructure/prisma-order-han
     GetHandoverByOrderHandler,
     GetHandoverHandler,
     GetHandoverQueueHandler,
+    HandoverQueueReading,
     GetCockpitHandoversHandler,
     HandoverAttestation,
     HandoverCounterView,

@@ -1,7 +1,6 @@
 import type { DayJournal, ProductionWorksheetView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
-import type { DaySubjectVersion } from "../../../platform/day-versions/day-content-tag.js";
 import { DayContents } from "../../../platform/day-versions/day-contents.js";
 import { DayVersionRegistry } from "../../../platform/day-versions/day-version-registry.js";
 import { Clock } from "../../../platform/time/clock.js";
@@ -55,21 +54,12 @@ export class WorksheetContents {
   ) {}
 
   async read(day: ServiceDay): Promise<ProductionWorksheetView> {
-    const versions = await this.versionsOf(day);
+    const versions = await this.journals.versionsOf(WORKSHEET_JOURNALS, day.value);
     const content = await this.contents.contentOf(
       { screen: WORKSHEET_SCREEN, day: day.value, versions },
       () => this.reading.contentOf(day),
       { accepts: isWorksheetContent, storable: isStorableWorksheet },
     );
     return servedWorksheet(content, this.clock.now());
-  }
-
-  private versionsOf(day: ServiceDay): Promise<DaySubjectVersion[]> {
-    return Promise.all(
-      WORKSHEET_JOURNALS.map(async (journal) => ({
-        subject: journal,
-        version: await this.journals.sourceOf(journal).versionOf(day.value),
-      })),
-    );
   }
 }

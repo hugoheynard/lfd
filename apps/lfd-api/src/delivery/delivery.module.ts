@@ -80,6 +80,9 @@ import { RemoveDeliveryStopHandler } from "./application/commands/remove-deliver
 import { ReorderDeliveryRoundHandler } from "./application/commands/reorder-delivery-round.handler.js";
 import { RetireVehicleHandler } from "./application/commands/retire-vehicle.handler.js";
 import { GetDeliveryRoundsDayHandler } from "./application/queries/get-delivery-rounds-day.handler.js";
+import { RoundsDayLiveReading } from "./application/rounds-day-live.service.js";
+import { RoundsDayReading } from "./application/rounds-day-reading.service.js";
+import { DayVersionsModule } from "../platform/day-versions/day-versions.module.js";
 import { GetDepartureHandler } from "./application/queries/get-departure.handler.js";
 import { ListVehiclesHandler } from "./application/queries/list-vehicles.handler.js";
 import { DeliveryRoundRepository } from "./domain/ports/delivery-round.repository.js";
@@ -157,7 +160,7 @@ import {
  */
 @Module({
   // Le logo des étiquettes de bac (2026-10-25).
-  imports: [BrandModule],
+  imports: [BrandModule, DayVersionsModule],
   controllers: [
     VehiclesController,
     DepartureController,
@@ -200,6 +203,8 @@ import {
     RemoveDeliveryStopHandler,
     RemoveDeliveryRoundHandler,
     GetDeliveryRoundsDayHandler,
+    RoundsDayReading,
+    RoundsDayLiveReading,
     // Le guichet des bacs (K2b) : servi au colisage, qui l'atteint par
     // `BinDesk` (relié par `PackingBinsModule`), et à l'annulation de la
     // livraison. Déclarer et partager n'ont plus de route ici (2026-10-10).

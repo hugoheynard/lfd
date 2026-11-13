@@ -1,4 +1,3 @@
-import type { RoundPlace } from "../domain/services/round-place.js";
 import type {
   DeliveryRoundDriverView,
   DeliveryRoundOrderRef,
@@ -10,21 +9,29 @@ import type {
 
 import type { DeliveryOrderFacts, DeliveryOrderRef } from "../channels/commerce/index.js";
 import { activeOnDay } from "../domain/entities/vehicle.js";
-import type { RoundRow, RoundStopRow } from "../domain/ports/delivery-rounds.reader.js";
-import { orderStopsOf, transferStopsOf } from "../domain/entities/delivery-round-state.js";
+import type { RoundPlace } from "../domain/services/round-place.js";
+import {
+  type RoundsDayComposition,
+  roundsDayCompositionOf,
+  type RoundsDayReadings,
+  type RoundsDayRound,
+  type RoundsDayStop,
+} from "./rounds-day-composition.js";
 
-/** Ce que la vue du jour assemble : trois lectures faites au même moment. */
-export interface DeliveryRoundsDayInputs {
-  readonly day: string;
-  /** La place de chaque tournée au dépôt, par id ; une tournée partie n'y est pas. */
-  readonly places: ReadonlyMap<string, RoundPlace>;
-  readonly rounds: readonly RoundRow[];
-  /** Les livraisons attendues ce jour, annulées comprises. */
-  readonly expected: readonly DeliveryOrderRef[];
+/**
+ * Ce qui se lit à CHAQUE appel, jamais rangé (Hugo, 2026-11-13) : les
+ * livreurs (droits du personnel), la flotte, la place au dépôt (réglages et
+ * capacité, tirées de la flotte), les commandes rapportées à replacer, et
+ * tout ce qui peut changer sous le numéro d'un AUTRE jour : l'état des
+ * commandes composées, et les attendues déjà placées ailleurs.
+ */
+export interface RoundsDayLive {
   /** Les commandes composées, relues par leur id. */
   readonly composed: ReadonlyMap<string, DeliveryOrderFacts>;
   /** Parmi les attendues, celles qui sont dans une tournée vivante, de n'importe quel jour. */
   readonly assigned: ReadonlySet<string>;
+  /** La place de chaque tournée au dépôt, par id ; une tournée partie n'y est pas. */
+  readonly places: ReadonlyMap<string, RoundPlace>;
   /**
    * Les fiches qui peuvent livrer, maintenant : elles tiennent EFFECTIVEMENT le
    * droit de conduire ET celui des gestes à la porte (MT-D2 v2 ; audit
@@ -42,7 +49,12 @@ export interface DeliveryRoundsDayInputs {
   readonly broughtBack: ReadonlyMap<string, Date>;
   /** Les zones autorisées des véhicules RESTREINTS ; absent : partout (2026-10-06). */
   readonly vehicleZones: ReadonlyMap<string, ReadonlySet<string>>;
+  /** Le retrait de chaque véhicule connu de la flotte ; absent : celui de la composition. */
+  readonly vehicleRetiredAt: ReadonlyMap<string, Date | null>;
 }
+
+/** Ce que la vue du jour assemble d'un seul tenant : la journée et ce qui se lit à chaque appel. */
+export type DeliveryRoundsDayInputs = RoundsDayReadings & Omit<RoundsDayLive, "vehicleRetiredAt">;
 
 /**
  * **La composition d'un jour**, calculée par le serveur (C4) : la colonne « à
@@ -60,70 +72,63 @@ export interface DeliveryRoundsDayInputs {
  * - **hors zone** : le véhicule n'est pas autorisé sur la zone de l'arrêt
  *   (2026-10-06) — dit, jamais défait.
  *
- * Les signalements de la journée s'y ajoutent dans le handler : ils ne
- * dépendent d'aucune de ces entrées.
+ * Les signalements de la journée s'y ajoutent dans le handler.
  */
 export function deliveryRoundsDayView(
   inputs: DeliveryRoundsDayInputs,
 ): Omit<DeliveryRoundsDayView, "incidents"> {
+  return servedRoundsDay(roundsDayCompositionOf(inputs), {
+    ...inputs,
+    vehicleRetiredAt: new Map(),
+  });
+}
+
+/** La composition rangée, servie avec ce qui se lit à chaque appel. */
+export function servedRoundsDay(
+  composition: RoundsDayComposition,
+  live: RoundsDayLive,
+): Omit<DeliveryRoundsDayView, "incidents"> {
   return {
-    day: inputs.day,
-    rounds: inputs.rounds.map((round) => roundView(round, inputs)),
-    unassigned: unassignedOf(inputs),
+    day: composition.day,
+    rounds: composition.rounds.map((round) => roundView(round, composition.day, live)),
+    unassigned: unassignedOf(composition, live),
   };
 }
 
-function unassignedOf(inputs: DeliveryRoundsDayInputs): readonly DeliveryRoundOrderRef[] {
-  const awaitingIds = new Set(inputs.awaiting.map((order) => order.orderId));
-  const ofDay = inputs.expected.filter(
-    (order) =>
-      order.status !== "cancelled" &&
-      !inputs.assigned.has(order.orderId) &&
-      !awaitingIds.has(order.orderId),
-  );
-  return [...inputs.awaiting, ...ofDay].map((order) =>
-    orderRef(order, inputs.broughtBack.get(order.orderId)),
-  );
+function unassignedOf(
+  composition: RoundsDayComposition,
+  live: RoundsDayLive,
+): readonly DeliveryRoundOrderRef[] {
+  const awaitingIds = new Set(live.awaiting.map((order) => order.orderId));
+  return [
+    ...live.awaiting.map((order) => ({ orderId: order.orderId, reference: order.reference })),
+    ...composition.ofDay.filter(
+      (order) => !awaitingIds.has(order.orderId) && !live.assigned.has(order.orderId),
+    ),
+  ].map((order) => orderRef(order, live.broughtBack.get(order.orderId)));
 }
 
-function orderRef(order: DeliveryOrderRef, broughtBackAt: Date | undefined): DeliveryRoundOrderRef {
+function orderRef(
+  order: DeliveryRoundOrderRef,
+  broughtBackAt: Date | undefined,
+): DeliveryRoundOrderRef {
   const ref = { orderId: order.orderId, reference: order.reference };
   return broughtBackAt === undefined ? ref : { ...ref, broughtBackAt: broughtBackAt.toISOString() };
 }
 
-function roundView(round: RoundRow, inputs: DeliveryRoundsDayInputs): DeliveryRoundView {
+function roundView(round: RoundsDayRound, day: string, live: RoundsDayLive): DeliveryRoundView {
+  const { vehicleRetiredAt, driverStaffId, stops, ...fixed } = round;
+  const retiredAt = live.vehicleRetiredAt.has(round.vehicleId)
+    ? (live.vehicleRetiredAt.get(round.vehicleId) ?? null)
+    : vehicleRetiredAt === null
+      ? null
+      : new Date(vehicleRetiredAt);
   return {
-    id: round.id,
-    vehicleId: round.vehicleId,
-    vehicleName: round.vehicleName,
-    passage: round.passage,
-    version: round.version,
-    vehicleRetired: !activeOnDay(round.vehicleRetiredAt, inputs.day),
-    departedAt: round.departedAt?.toISOString() ?? null,
-    returnedAt: round.returnedAt?.toISOString() ?? null,
-    planned:
-      round.planned === null
-        ? null
-        : {
-            departureAt: round.planned.departureAt.toISOString(),
-            returnAt: round.planned.returnAt.toISOString(),
-            meters: round.planned.meters,
-          },
-    driver: driverView(round.driverStaffId, inputs),
-    stops: orderStopsOf(round.stops).map((stop) => stopView(stop, round.vehicleId, inputs)),
-    transferStops: transferStopsOf(round.stops).map((stop) => {
-      const transfer = round.transfers.get(stop.transferId);
-      return {
-        stopId: stop.stopId,
-        transferId: stop.transferId,
-        siteLabel: transfer?.siteLabel ?? "",
-        ...(transfer === undefined ? {} : { siteId: transfer.siteId }),
-        position: stop.position,
-        orderCount: transfer?.orderCount ?? 0,
-        resupplyCount: transfer?.resupplyCount ?? 0,
-      };
-    }),
-    place: inputs.places.get(round.id) ?? null,
+    ...fixed,
+    vehicleRetired: !activeOnDay(retiredAt, day),
+    driver: driverView(driverStaffId, live),
+    stops: stops.map((stop) => stopView(stop, round.vehicleId, day, live)),
+    place: live.places.get(round.id) ?? null,
   };
 }
 
@@ -134,25 +139,26 @@ function roundView(round: RoundRow, inputs: DeliveryRoundsDayInputs): DeliveryRo
  */
 function driverView(
   staffUserId: string | null,
-  inputs: DeliveryRoundsDayInputs,
+  live: RoundsDayLive,
 ): DeliveryRoundDriverView | null {
   if (staffUserId === null) {
     return null;
   }
   return {
     staffUserId,
-    name: inputs.driverNames.get(staffUserId) ?? null,
-    canDrive: inputs.drivers.has(staffUserId),
+    name: live.driverNames.get(staffUserId) ?? null,
+    canDrive: live.drivers.has(staffUserId),
   };
 }
 
 function stopView(
-  stop: Extract<RoundStopRow, { readonly kind: "order" }>,
+  stop: RoundsDayStop,
   vehicleId: string,
-  inputs: DeliveryRoundsDayInputs,
+  day: string,
+  live: RoundsDayLive,
 ): DeliveryRoundStopView {
-  const order = inputs.composed.get(stop.orderId);
-  const broughtBackAt = inputs.broughtBack.get(stop.orderId);
+  const order = live.composed.get(stop.orderId);
+  const broughtBackAt = live.broughtBack.get(stop.orderId);
   const view: DeliveryRoundStopView = {
     stopId: stop.stopId,
     orderId: stop.orderId,
@@ -160,10 +166,10 @@ function stopView(
     // effacé) n'a pas de numéro : on n'en invente pas.
     reference: order?.reference ?? "",
     position: stop.position,
-    signals: order === undefined ? [] : signalsOf(order, inputs.day, broughtBackAt !== undefined),
+    signals: order === undefined ? [] : signalsOf(order, day, broughtBackAt !== undefined),
     orderDay: order?.day ?? null,
   };
-  const flagged = outOfZone(order?.zoneId ?? null, inputs.vehicleZones.get(vehicleId))
+  const flagged = outOfZone(order?.zoneId ?? null, live.vehicleZones.get(vehicleId))
     ? { ...view, outOfZone: true }
     : view;
   const clientele = order?.clientele ?? null;

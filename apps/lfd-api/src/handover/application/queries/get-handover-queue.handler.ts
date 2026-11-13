@@ -1,55 +1,46 @@
-import type {
-  HandoverQueueEntryView,
-  HandoverQueueRoundView,
-  HandoverQueueView,
-  OrderTransferView,
-  ResupplyTransferView,
-} from "@lfd/contracts";
+import type { HandoverQueueView, VersionSubject } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
-import { HandoverQueueReader, type HandoverQueueEntry } from "../../channels/commerce/index.js";
+import { DayContents } from "../../../platform/day-versions/day-contents.js";
+import { VersionRegistry } from "../../../platform/day-versions/version-registry.js";
+import { HandoverQueueReading } from "../services/handover-queue-reading.service.js";
+import { GetHandoverQueueQuery } from "./get-handover-queue.query.js";
 import {
-  HandoverAttestationsReader,
-  type AttestedHandover,
-} from "../../domain/ports/handover-attestations.reader.js";
-import { queueStateOf, showsInQueue } from "../../domain/services/queue-state.js";
-import { QualityHoldsReader } from "../../../production/channels/handover/index.js";
-import {
-  type OrderTransferStatus,
-  type ResupplyOnlyTransferStatus,
-  ResupplyTransfersReader,
-  type RoundPlacement,
-  type RoundPlacements,
-  RoundPlacementsReader,
-  TransferStatusReader,
-} from "../../../delivery/channels/handover/index.js";
-import { GetHandoverQueueQuery, type HandoverQueueScope } from "./get-handover-queue.query.js";
+  HANDOVER_QUEUE_SCREENS,
+  isHandoverQueueContent,
+  isStorableHandoverQueue,
+} from "./handover-queue-content.js";
 
 /**
- * **La file du comptoir** — ce que le commerce attend ce jour-là, croisé avec ce
- * que le retrait a déjà attesté.
+ * Les sujets dont la file lit les tables : le commerce (`orders` — la
+ * commande, son règlement, son retrait, écrits dans la même transaction),
+ * le fournil (`production` — les retenues qualité, le prêt du colisage), la
+ * livraison (`delivery` — transferts, réassort, place en tournée) et le
+ * sujet GLOBAL `companies` : la ligne porte la raison sociale, l'enseigne et
+ * le nom de qui a commandé (`handover-order.query.ts`), que le journal des
+ * comptes suit (`companies`, `users`).
+ */
+const HANDOVER_QUEUE_SUBJECTS: readonly VersionSubject[] = [
+  "orders",
+  "production",
+  "delivery",
+  "companies",
+];
+
+/**
+ * **La file du retrait d'une journée, servie depuis l'objet des journées**
+ * tant que ses numéros ne bougent pas (`le-cache-du-back-office.md`, § 3.4).
+ * Une clé par périmètre posé par la route : `handover-counter` (le comptoir,
+ * retraits seuls) et `handover-day` (la Supervision, journée entière).
  *
- * ## Deux lectures, deux propriétaires, et c'est tout le dossier
+ * 🔴 Les numéros sont lus EN BASE, AVANT les données : une écriture validée
+ * entre les deux fait monter un numéro après celui de l'étiquette, et le
+ * veilleur de l'écran fait relire. Lus après, ils couvriraient une écriture
+ * que le contenu n'a pas — servie vieille jusqu'au numéro suivant.
  *
- * Ce que le client a commandé appartient au **commerce** : on le lui demande,
- * on ne le recopie pas. Ce qui a été remis appartient au **retrait** : il le
- * lit chez lui, et ne le redemande à personne.
- *
- * 🔴 C'est le seul endroit du contexte où les deux se rencontrent, et il fallait
- * que ce soit un handler plutôt qu'un port : fusionner les deux lectures dans un
- * adaptateur aurait obligé le commerce à connaître les attestations, ou le
- * retrait à joindre `orders` — c'est-à-dire à franchir la frontière que tout ce
- * chantier vient de poser.
- *
- * ## Quatre questions, jamais N + 1
- *
- * Une pour la file, une pour les attestations du lot, une pour les retenues
- * qualité du lot (`QualityHoldsReader`, publié par la production —
- * `plan-controle-qualite.md`, D4), et une pour les transferts de réassort
- * seul de la journée (R3c, R3e). Plus la place des livraisons dans leurs
- * tournées (`RoundPlacementsReader`), en lot elle aussi — et seulement
- * quand le périmètre porte une livraison. Demander ligne par ligne ferait autant
- * d'allers-retours que de commandes pour peindre un écran.
+ * Rien n'y dépend de l'heure : la vue rangée est servie telle quelle. Lu
+ * hors journal, accepté vieux jusqu'au prochain numéro (Hugo, 2026-11-13) :
+ * le libellé d'un site de transfert.
  */
 @QueryHandler(GetHandoverQueueQuery)
 export class GetHandoverQueueHandler implements IQueryHandler<
@@ -57,145 +48,17 @@ export class GetHandoverQueueHandler implements IQueryHandler<
   HandoverQueueView
 > {
   constructor(
-    private readonly queue: HandoverQueueReader,
-    private readonly attestations: HandoverAttestationsReader,
-    private readonly holds: QualityHoldsReader,
-    private readonly transfers: TransferStatusReader,
-    private readonly resupplyTransfers: ResupplyTransfersReader,
-    private readonly rounds: RoundPlacementsReader,
+    private readonly subjects: VersionRegistry,
+    private readonly contents: DayContents,
+    private readonly reading: HandoverQueueReading,
   ) {}
 
   async execute(query: GetHandoverQueueQuery): Promise<HandoverQueueView> {
-    const expected = inScope(await this.queue.expectedOn(query.day), query.scope);
-    const orderIds = expected.map((entry) => entry.orderId);
-    const deliveryIds = expected
-      .filter((entry) => entry.fulfillmentMethod === "delivery")
-      .map((entry) => entry.orderId);
-    const [attested, held, transfers, resupplyOnly, placements] = await Promise.all([
-      this.attestations.forOrders(orderIds),
-      this.holds.heldOrders(query.day, orderIds),
-      this.transfers.statusOf(orderIds),
-      this.resupplyTransfers.resupplyOnlyOn(query.day),
-      this.placementsOf(query.day, deliveryIds),
-    ]);
-    return {
-      day: query.day,
-      // Une commande ni réglée, ni retirée, ni annulée n'attend personne
-      // au comptoir — cf. `showsInQueue`.
-      entries: expected
-        .filter((entry) => showsInQueue(entry, attested.get(entry.orderId)))
-        .map((entry) => ({
-          ...toEntryView(entry, attested.get(entry.orderId), held.has(entry.orderId)),
-          // Lot T2 du transfert interne : « Réceptionner » tant qu'il n'est pas reçu.
-          transfer: transferViewOf(transfers.get(entry.orderId)),
-          round: roundViewOf(placements.byOrder.get(entry.orderId)),
-        })),
-      // R3c, R3e : un transfert de réassort seul, qu'aucune ligne ne désigne.
-      resupplyTransfers: resupplyOnly.map(resupplyTransferViewOf),
-    };
+    const versions = await this.subjects.versionsOf(HANDOVER_QUEUE_SUBJECTS, query.day);
+    return this.contents.contentOf(
+      { screen: HANDOVER_QUEUE_SCREENS[query.scope], day: query.day, versions },
+      () => this.reading.contentOf(query.day, query.scope),
+      { accepts: isHandoverQueueContent, storable: isStorableHandoverQueue },
+    );
   }
-
-  /**
-   * Les tournées ne sont lues que s'il y a une livraison à placer : la file
-   * du comptoir n'en a aucune, et ne touche donc jamais aux tournées.
-   */
-  private placementsOf(day: string, deliveryIds: readonly string[]): Promise<RoundPlacements> {
-    return deliveryIds.length === 0
-      ? Promise.resolve(NO_PLACEMENTS)
-      : this.rounds.placementsOf(day, deliveryIds);
-  }
-}
-
-/**
- * Les lignes que le périmètre montre : le comptoir ne reçoit aucune
- * livraison — le critère est l'acheminement, pas l'absence de point de
- * retrait (une commande sans point se remet bien en boutique).
- */
-function inScope(
-  entries: readonly HandoverQueueEntry[],
-  scope: HandoverQueueScope,
-): readonly HandoverQueueEntry[] {
-  return scope === "counter"
-    ? entries.filter((entry) => entry.fulfillmentMethod !== "delivery")
-    : entries;
-}
-
-/** Une ligne de file, dans le vocabulaire de l'écran. */
-function toEntryView(
-  entry: HandoverQueueEntry,
-  attestation: AttestedHandover | undefined,
-  held: boolean,
-): HandoverQueueEntryView {
-  const state = queueStateOf(entry, attestation);
-  return {
-    orderId: entry.orderId,
-    reference: entry.reference,
-    customerLabel: entry.customerLabel,
-    tradeName: entry.tradeName,
-    clientele: entry.clientele,
-    pickupLabel: entry.pickupLabel,
-    siteId: entry.siteId,
-    fulfillmentMethod: entry.fulfillmentMethod,
-    window: entry.window,
-    totalUnits: entry.totalUnits,
-    abandonedRemainder: entry.abandoned,
-    placedAt: entry.placedAt.toISOString(),
-    state,
-    // L'ordre de `handoverBlocker` (D4) : une commande retirée ou annulée dit
-    // cela d'abord, jamais « en vérification » — la production peut retenir
-    // un sac déjà parti sans le savoir.
-    heldForQuality: held && (state === "ready" || state === "expected"),
-    handedOverAt: attestation === undefined ? null : attestation.handedOverAt.toISOString(),
-    handedOverVia: attestation?.via ?? null,
-    readyAt: entry.readyAt === null ? null : entry.readyAt.toISOString(),
-  };
-}
-
-const NO_PLACEMENTS: RoundPlacements = { roundCount: 0, byOrder: new Map() };
-
-function roundViewOf(placement: RoundPlacement | undefined): HandoverQueueRoundView | null {
-  return placement === undefined
-    ? null
-    : {
-        label: placement.label,
-        position: placement.position,
-        plannedDepartureAt: placement.plannedDepartureAt?.toISOString() ?? null,
-        departedAt: placement.departedAt?.toISOString() ?? null,
-        loaded: placement.loaded,
-      };
-}
-
-function transferViewOf(status: OrderTransferStatus | undefined): OrderTransferView | null {
-  if (status === undefined) {
-    return null;
-  }
-  // Lot T3, F4 : aucun transfert ne la porte encore — ni identifiant, ni instant, ni bac.
-  if (status.state === "awaiting") {
-    return {
-      transferId: null,
-      siteLabel: status.siteLabel,
-      state: "awaiting",
-      at: null,
-      binCount: 0,
-    };
-  }
-  return {
-    transferId: status.transferId,
-    siteLabel: status.siteLabel,
-    state: status.state,
-    at: status.at.toISOString(),
-    binCount: status.binCount,
-  };
-}
-
-function resupplyTransferViewOf(status: ResupplyOnlyTransferStatus): ResupplyTransferView {
-  return {
-    transferId: status.transferId,
-    siteId: status.siteId,
-    siteLabel: status.siteLabel,
-    state: status.state,
-    at: status.at.toISOString(),
-    binCount: status.binCount,
-    resupplyCount: status.resupplyCount,
-  };
 }

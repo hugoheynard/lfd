@@ -1,6 +1,7 @@
 import { DAY_JOURNALS, type DayJournal } from "@lfd/contracts";
 
 import { TechnicalError } from "../shared/errors/app-error.js";
+import type { DaySubjectVersion } from "./day-content-tag.js";
 import type { DayVersionSource } from "./day-version-source.js";
 
 /** Un montage qui laisse un sujet sans source, ou lui en donne deux. */
@@ -53,5 +54,22 @@ export class DayVersionRegistry {
       throw new DayVersionRegistryMisassembledError(`aucune source pour « ${journal} »`);
     }
     return source;
+  }
+
+  /**
+   * Les numéros de ces journaux pour la journée `AAAA-MM-JJ`, lus EN BASE —
+   * l'étiquette d'un contenu de journée (`DayContents`). L'écran les lit
+   * AVANT ses données : lus après, ils couvriraient une écriture que le
+   * contenu n'a pas.
+   *
+   * @throws {DomainError} la journée n'existe pas au calendrier.
+   */
+  versionsOf(journals: readonly DayJournal[], serviceDay: string): Promise<DaySubjectVersion[]> {
+    return Promise.all(
+      journals.map(async (journal) => ({
+        subject: journal,
+        version: await this.sourceOf(journal).versionOf(serviceDay),
+      })),
+    );
   }
 }

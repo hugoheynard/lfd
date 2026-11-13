@@ -7,6 +7,9 @@ import {
 } from "../../../domain/ports/handover-attestations.reader.js";
 import { FixedQualityHolds } from "../../__tests__/fixed-quality-holds.js";
 import { FixedRoundPlacements } from "./run-sheet-doubles.js";
+import { dayContentsOver } from "../../../../platform/day-versions/__tests__/day-contents-doubles.js";
+import { versionRegistryOf } from "../../../../platform/day-versions/__tests__/day-versions-doubles.js";
+import { HandoverQueueReading } from "../../services/handover-queue-reading.service.js";
 import { GetHandoverQueueHandler } from "../get-handover-queue.handler.js";
 import { GetHandoverQueueQuery } from "../get-handover-queue.query.js";
 
@@ -93,12 +96,9 @@ function handlerOf(
   const queue = new RecordingHandoverQueueReader(entries);
   const attestations = new RecordingHandoverAttestationsReader(attested);
   const handler = new GetHandoverQueueHandler(
-    queue,
-    attestations,
-    holds,
-    transfers,
-    resupplyTransfers,
-    rounds,
+    versionRegistryOf(),
+    dayContentsOver(),
+    new HandoverQueueReading(queue, attestations, holds, transfers, resupplyTransfers, rounds),
   );
   return { handler, queue, attestations, holds, rounds };
 }

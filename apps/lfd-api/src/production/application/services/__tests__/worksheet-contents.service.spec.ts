@@ -1,10 +1,5 @@
 import { type CatalogFamilyView, instantToLocal } from "@lfd/contracts";
 
-import type { PackedContent } from "../../../../platform/day-versions/content-compression.js";
-import {
-  type DayContentAddress,
-  DayContentsCache,
-} from "../../../../platform/day-versions/day-contents-cache.js";
 import { DayVersionRegistry } from "../../../../platform/day-versions/day-version-registry.js";
 import { sources } from "../../../../platform/day-versions/__tests__/day-versions-doubles.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
@@ -27,7 +22,10 @@ import { FixedOvenWaitingOrders } from "../../__tests__/oven-waiting-doubles.js"
 import { InMemoryDisplaySettings } from "../../__tests__/production-display-settings-doubles.js";
 import { InMemoryTrancheSettings } from "../../__tests__/production-tranche-settings-doubles.js";
 import { CheckTable, closedDay, InMemoryCheckReader } from "../../__tests__/quality-doubles.js";
-import { dayContentsOver } from "../../__tests__/worksheet-contents-doubles.js";
+import {
+  dayContentsOver,
+  MemoryDayContents,
+} from "../../../../platform/day-versions/__tests__/day-contents-doubles.js";
 import { ProductionWorksheetReading } from "../production-worksheet-reading.service.js";
 import { WorksheetContents } from "../worksheet-contents.service.js";
 import { WorksheetDeadlinesReading } from "../worksheet-deadlines-reading.service.js";
@@ -41,22 +39,6 @@ const NOW = new Date();
 const TODAY = instantToLocal(NOW).day;
 const DAY = ServiceDay.of(TODAY);
 const DAY_AFTER = new Date(NOW.getTime() + 24 * 60 * 60 * 1000);
-
-class MemoryCache extends DayContentsCache {
-  readonly kept = new Map<string, { readonly tag: string; readonly body: Uint8Array }>();
-  readonly stored: DayContentAddress[] = [];
-
-  read(address: DayContentAddress): Promise<Uint8Array | null> {
-    const kept = this.kept.get(`${address.screen}/${address.day}`);
-    return Promise.resolve(kept?.tag === address.tag ? kept.body : null);
-  }
-
-  store(address: DayContentAddress, content: PackedContent): Promise<void> {
-    this.stored.push(address);
-    this.kept.set(`${address.screen}/${address.day}`, { tag: address.tag, body: content.bytes });
-    return Promise.resolve();
-  }
-}
 
 /** La journée, qui note chaque lecture dans le journal partagé. */
 class LoggedDays extends ProductionDayRepository {
@@ -133,7 +115,7 @@ function around(outage: Outage = "none") {
     new FixedOvenWaitingOrders(outage === "waiting" ? "down" : undefined),
     new InMemoryDisplaySettings().reader(),
   );
-  const cache = new MemoryCache();
+  const cache = new MemoryDayContents();
   const clock = new FixedClock(NOW);
   const worksheets = new WorksheetContents(
     new DayVersionRegistry(Object.values(all)),

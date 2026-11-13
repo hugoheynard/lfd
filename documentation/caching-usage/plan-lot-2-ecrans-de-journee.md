@@ -1,6 +1,8 @@
 # Plan — lot 2 : le contenu des écrans de journée dans l'objet partagé
 
-> Statut : **doc-first, rien n'est bâti.** Demandé par Hugo le 2026-11-13.
+> Statut : **bâti** (lots 0 à 5, 2026-11-13) — état décrit au présent dans
+> [`le-cache-du-back-office.md`](le-cache-du-back-office.md) § 3.1 à 3.5.
+> Demandé par Hugo le 2026-11-13.
 > Touche ce qui est servi à qui : à contredire par `vitruve` avant Hugo.
 > Doc d'état : [`le-cache-du-back-office.md`](le-cache-du-back-office.md) § 7 ;
 > cible d'origine : [`version-par-journee.md`](version-par-journee.md).

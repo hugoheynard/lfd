@@ -1,7 +1,6 @@
 import type { DayJournal, ProductionPackingView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
-import type { DaySubjectVersion } from "../../../platform/day-versions/day-content-tag.js";
 import { DayContents } from "../../../platform/day-versions/day-contents.js";
 import { DayVersionRegistry } from "../../../platform/day-versions/day-version-registry.js";
 import { Clock } from "../../../platform/time/clock.js";
@@ -55,21 +54,12 @@ export class GetPackingBoardHandler implements IQueryHandler<
   ) {}
 
   async execute(query: GetPackingBoardQuery): Promise<ProductionPackingView> {
-    const versions = await this.versionsOf(query.serviceDay);
+    const versions = await this.journals.versionsOf(PACKING_JOURNALS, query.serviceDay);
     const content = await this.contents.contentOf(
       { screen: PACKING_SCREEN, day: query.serviceDay, versions },
       () => this.reading.contentOf(query.serviceDay),
       { accepts: isPackingBoardContent, storable: isStorablePackingBoard },
     );
     return servedPackingBoard(content, this.clock.now());
-  }
-
-  private versionsOf(serviceDay: string): Promise<DaySubjectVersion[]> {
-    return Promise.all(
-      PACKING_JOURNALS.map(async (journal) => ({
-        subject: journal,
-        version: await this.journals.sourceOf(journal).versionOf(serviceDay),
-      })),
-    );
   }
 }

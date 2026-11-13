@@ -1,0 +1,203 @@
+import type {
+  HandoverQueueEntryView,
+  HandoverQueueRoundView,
+  HandoverQueueView,
+  OrderTransferView,
+  ResupplyTransferView,
+} from "@lfd/contracts";
+import { Injectable } from "@nestjs/common";
+
+import { HandoverQueueReader, type HandoverQueueEntry } from "../../channels/commerce/index.js";
+import {
+  HandoverAttestationsReader,
+  type AttestedHandover,
+} from "../../domain/ports/handover-attestations.reader.js";
+import { queueStateOf, showsInQueue } from "../../domain/services/queue-state.js";
+import { QualityHoldsReader } from "../../../production/channels/handover/index.js";
+import {
+  type OrderTransferStatus,
+  type ResupplyOnlyTransferStatus,
+  ResupplyTransfersReader,
+  type RoundPlacement,
+  type RoundPlacements,
+  RoundPlacementsReader,
+  TransferStatusReader,
+} from "../../../delivery/channels/handover/index.js";
+import type { HandoverQueueScope } from "../queries/get-handover-queue.query.js";
+
+/**
+ * **La lecture de la file en base** — ce que le commerce attend ce jour-là, croisé avec ce
+ * que le retrait a déjà attesté.
+ *
+ * ## Deux lectures, deux propriétaires, et c'est tout le dossier
+ *
+ * Ce que le client a commandé appartient au **commerce** : on le lui demande,
+ * on ne le recopie pas. Ce qui a été remis appartient au **retrait** : il le
+ * lit chez lui, et ne le redemande à personne.
+ *
+ * 🔴 C'est le seul endroit du contexte où les deux se rencontrent, et il fallait
+ * que ce soit un handler plutôt qu'un port : fusionner les deux lectures dans un
+ * adaptateur aurait obligé le commerce à connaître les attestations, ou le
+ * retrait à joindre `orders` — c'est-à-dire à franchir la frontière que tout ce
+ * chantier vient de poser.
+ *
+ * ## Quatre questions, jamais N + 1
+ *
+ * Une pour la file, une pour les attestations du lot, une pour les retenues
+ * qualité du lot (`QualityHoldsReader`, publié par la production —
+ * `plan-controle-qualite.md`, D4), et une pour les transferts de réassort
+ * seul de la journée (R3c, R3e). Plus la place des livraisons dans leurs
+ * tournées (`RoundPlacementsReader`), en lot elle aussi — et seulement
+ * quand le périmètre porte une livraison. Demander ligne par ligne ferait autant
+ * d'allers-retours que de commandes pour peindre un écran.
+ *
+ * Cette lecture est ce que `GetHandoverQueueHandler` range dans l'objet des
+ * journées : elle ne reçoit que la journée et le périmètre, ni personne ni
+ * droit ni horloge.
+ */
+@Injectable()
+export class HandoverQueueReading {
+  constructor(
+    private readonly queue: HandoverQueueReader,
+    private readonly attestations: HandoverAttestationsReader,
+    private readonly holds: QualityHoldsReader,
+    private readonly transfers: TransferStatusReader,
+    private readonly resupplyTransfers: ResupplyTransfersReader,
+    private readonly rounds: RoundPlacementsReader,
+  ) {}
+
+  /** La file de la journée `AAAA-MM-JJ` dans ce périmètre — sans horloge : rien n'y dépend de l'heure. */
+  async contentOf(day: string, scope: HandoverQueueScope): Promise<HandoverQueueView> {
+    const expected = inScope(await this.queue.expectedOn(day), scope);
+    const orderIds = expected.map((entry) => entry.orderId);
+    const deliveryIds = expected
+      .filter((entry) => entry.fulfillmentMethod === "delivery")
+      .map((entry) => entry.orderId);
+    const [attested, held, transfers, resupplyOnly, placements] = await Promise.all([
+      this.attestations.forOrders(orderIds),
+      this.holds.heldOrders(day, orderIds),
+      this.transfers.statusOf(orderIds),
+      this.resupplyTransfers.resupplyOnlyOn(day),
+      this.placementsOf(day, deliveryIds),
+    ]);
+    return {
+      day,
+      // Une commande ni réglée, ni retirée, ni annulée n'attend personne
+      // au comptoir — cf. `showsInQueue`.
+      entries: expected
+        .filter((entry) => showsInQueue(entry, attested.get(entry.orderId)))
+        .map((entry) => ({
+          ...toEntryView(entry, attested.get(entry.orderId), held.has(entry.orderId)),
+          // Lot T2 du transfert interne : « Réceptionner » tant qu'il n'est pas reçu.
+          transfer: transferViewOf(transfers.get(entry.orderId)),
+          round: roundViewOf(placements.byOrder.get(entry.orderId)),
+        })),
+      // R3c, R3e : un transfert de réassort seul, qu'aucune ligne ne désigne.
+      resupplyTransfers: resupplyOnly.map(resupplyTransferViewOf),
+    };
+  }
+
+  /**
+   * Les tournées ne sont lues que s'il y a une livraison à placer : la file
+   * du comptoir n'en a aucune, et ne touche donc jamais aux tournées.
+   */
+  private placementsOf(day: string, deliveryIds: readonly string[]): Promise<RoundPlacements> {
+    return deliveryIds.length === 0
+      ? Promise.resolve(NO_PLACEMENTS)
+      : this.rounds.placementsOf(day, deliveryIds);
+  }
+}
+
+/**
+ * Les lignes que le périmètre montre : le comptoir ne reçoit aucune
+ * livraison — le critère est l'acheminement, pas l'absence de point de
+ * retrait (une commande sans point se remet bien en boutique).
+ */
+function inScope(
+  entries: readonly HandoverQueueEntry[],
+  scope: HandoverQueueScope,
+): readonly HandoverQueueEntry[] {
+  return scope === "counter"
+    ? entries.filter((entry) => entry.fulfillmentMethod !== "delivery")
+    : entries;
+}
+
+/** Une ligne de file, dans le vocabulaire de l'écran. */
+function toEntryView(
+  entry: HandoverQueueEntry,
+  attestation: AttestedHandover | undefined,
+  held: boolean,
+): HandoverQueueEntryView {
+  const state = queueStateOf(entry, attestation);
+  return {
+    orderId: entry.orderId,
+    reference: entry.reference,
+    customerLabel: entry.customerLabel,
+    tradeName: entry.tradeName,
+    clientele: entry.clientele,
+    pickupLabel: entry.pickupLabel,
+    siteId: entry.siteId,
+    fulfillmentMethod: entry.fulfillmentMethod,
+    window: entry.window,
+    totalUnits: entry.totalUnits,
+    abandonedRemainder: entry.abandoned,
+    placedAt: entry.placedAt.toISOString(),
+    state,
+    // L'ordre de `handoverBlocker` (D4) : une commande retirée ou annulée dit
+    // cela d'abord, jamais « en vérification » — la production peut retenir
+    // un sac déjà parti sans le savoir.
+    heldForQuality: held && (state === "ready" || state === "expected"),
+    handedOverAt: attestation === undefined ? null : attestation.handedOverAt.toISOString(),
+    handedOverVia: attestation?.via ?? null,
+    readyAt: entry.readyAt === null ? null : entry.readyAt.toISOString(),
+  };
+}
+
+const NO_PLACEMENTS: RoundPlacements = { roundCount: 0, byOrder: new Map() };
+
+function roundViewOf(placement: RoundPlacement | undefined): HandoverQueueRoundView | null {
+  return placement === undefined
+    ? null
+    : {
+        label: placement.label,
+        position: placement.position,
+        plannedDepartureAt: placement.plannedDepartureAt?.toISOString() ?? null,
+        departedAt: placement.departedAt?.toISOString() ?? null,
+        loaded: placement.loaded,
+      };
+}
+
+function transferViewOf(status: OrderTransferStatus | undefined): OrderTransferView | null {
+  if (status === undefined) {
+    return null;
+  }
+  // Lot T3, F4 : aucun transfert ne la porte encore — ni identifiant, ni instant, ni bac.
+  if (status.state === "awaiting") {
+    return {
+      transferId: null,
+      siteLabel: status.siteLabel,
+      state: "awaiting",
+      at: null,
+      binCount: 0,
+    };
+  }
+  return {
+    transferId: status.transferId,
+    siteLabel: status.siteLabel,
+    state: status.state,
+    at: status.at.toISOString(),
+    binCount: status.binCount,
+  };
+}
+
+function resupplyTransferViewOf(status: ResupplyOnlyTransferStatus): ResupplyTransferView {
+  return {
+    transferId: status.transferId,
+    siteId: status.siteId,
+    siteLabel: status.siteLabel,
+    state: status.state,
+    at: status.at.toISOString(),
+    binCount: status.binCount,
+    resupplyCount: status.resupplyCount,
+  };
+}

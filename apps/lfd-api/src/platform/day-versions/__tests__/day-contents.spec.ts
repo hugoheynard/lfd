@@ -1,8 +1,8 @@
 import { ScriptedCallDeadline } from "../../cache-calls/__tests__/cache-call-doubles.js";
 import { FixedStopwatch, RecordingTimings } from "../../metrics/__tests__/metrics-doubles.js";
 import { FixedWallClock } from "../../time/fixed-wall-clock.js";
-import { type PackedContent, packContent } from "../content-compression.js";
-import { type DayContentAddress, DayContentsCache } from "../day-contents-cache.js";
+import { packContent } from "../content-compression.js";
+import { MemoryDayContents } from "./day-contents-doubles.js";
 import { DAY_CONTENT_MAX_BYTES, type DayContentRequest, DayContents } from "../day-contents.js";
 import { InvalidDayContentTagError } from "../invalid-day-content-tag.error.js";
 
@@ -30,26 +30,6 @@ const at = (orders: number, production = 4): DayContentRequest => ({
     { subject: "orders", version: orders },
   ],
 });
-
-class MemoryDayContents extends DayContentsCache {
-  readonly kept = new Map<string, { tag: string; body: Uint8Array }>();
-  failing = false;
-  readonly stored: DayContentAddress[] = [];
-
-  read(address: DayContentAddress): Promise<Uint8Array | null> {
-    if (this.failing) {
-      return Promise.reject(new Error("objet injoignable"));
-    }
-    const kept = this.kept.get(`${address.screen}/${address.day}`);
-    return Promise.resolve(kept?.tag === address.tag ? kept.body : null);
-  }
-
-  store(address: DayContentAddress, content: PackedContent): Promise<void> {
-    this.stored.push(address);
-    this.kept.set(`${address.screen}/${address.day}`, { tag: address.tag, body: content.bytes });
-    return Promise.resolve();
-  }
-}
 
 function around() {
   const cache = new MemoryDayContents();

@@ -1,21 +1,13 @@
 import { localToInstant } from "@lfd/contracts";
 
-import { ScriptedCallDeadline } from "../../../../platform/cache-calls/__tests__/cache-call-doubles.js";
-import type { PackedContent } from "../../../../platform/day-versions/content-compression.js";
+import type { DayContentsCache } from "../../../../platform/day-versions/day-contents-cache.js";
 import {
-  type DayContentAddress,
-  DayContentsCache,
-} from "../../../../platform/day-versions/day-contents-cache.js";
-import { DayContents } from "../../../../platform/day-versions/day-contents.js";
+  dayContentsOver,
+  MemoryDayContents,
+} from "../../../../platform/day-versions/__tests__/day-contents-doubles.js";
 import { DayVersionRegistry } from "../../../../platform/day-versions/day-version-registry.js";
 import { sources } from "../../../../platform/day-versions/__tests__/day-versions-doubles.js";
-import { NoDayContentsCache } from "../../../../platform/day-versions/no-day-contents-cache.js";
-import {
-  FixedStopwatch,
-  RecordingTimings,
-} from "../../../../platform/metrics/__tests__/metrics-doubles.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
-import { FixedWallClock } from "../../../../platform/time/fixed-wall-clock.js";
 import {
   PlannedDestinationsReader,
   QualityHeldOrdersReader,
@@ -41,7 +33,6 @@ import { PackingBoardReading } from "../packing-board-reading.service.js";
 
 // Des instants comparés entre eux, jamais au mur.
 export const AT = new Date(1_000);
-const WALL_START = new Date(Date.UTC(2030, 0, 1));
 
 /** Les tables du colisage : la journée posée, chaque lecture notée dans le journal partagé. */
 export class FixedBoard extends PackingBoardReader {
@@ -125,23 +116,6 @@ export class FixedAftermath extends ShortfallAftermathReader {
   }
 }
 
-/** L'objet des journées en mémoire : une charge par (écran, journée), servie à étiquette égale. */
-export class MemoryDayContents extends DayContentsCache {
-  readonly kept = new Map<string, { readonly tag: string; readonly body: Uint8Array }>();
-  readonly stored: DayContentAddress[] = [];
-
-  read(address: DayContentAddress): Promise<Uint8Array | null> {
-    const kept = this.kept.get(`${address.screen}/${address.day}`);
-    return Promise.resolve(kept?.tag === address.tag ? kept.body : null);
-  }
-
-  store(address: DayContentAddress, content: PackedContent): Promise<void> {
-    this.stored.push(address);
-    this.kept.set(`${address.screen}/${address.day}`, { tag: address.tag, body: content.bytes });
-    return Promise.resolve();
-  }
-}
-
 export function parisAt(day: string, time: string): Date {
   const instant = localToInstant(day, time);
   if (instant === null) {
@@ -169,6 +143,8 @@ export function order(orderId: string, packedBy: string | null): BoardOrder {
     shortfallReportedAt: null,
   };
 }
+
+export { MemoryDayContents };
 
 export interface BoardAround {
   readonly known?: readonly OrderDeparture[];
@@ -210,13 +186,7 @@ export function boardAround(day: PackingBoardDay, options: BoardAround = {}) {
     reprints,
     aftermath,
   );
-  const contents = new DayContents(
-    options.cache ?? new NoDayContentsCache(),
-    new ScriptedCallDeadline(),
-    new FixedWallClock(WALL_START),
-    new FixedStopwatch(3),
-    new RecordingTimings(),
-  );
+  const contents = dayContentsOver(options.cache);
   const handler = new GetPackingBoardHandler(
     new DayVersionRegistry(Object.values(journals)),
     contents,

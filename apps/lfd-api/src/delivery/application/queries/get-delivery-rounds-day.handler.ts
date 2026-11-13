@@ -1,33 +1,38 @@
-import type { RoundRow } from "../../domain/ports/delivery-rounds.reader.js";
-import { RoutingSettingsReader } from "../../domain/ports/routing-settings.reader.js";
-import { type RoundPlace, roundPlaceOf } from "../../domain/services/round-place.js";
-import { routingSettingsOf } from "../delivery-routing-support.js";
-import { ProposalCapacity } from "../proposal-capacity.js";
-import type { DeliveryRoundsDayView } from "@lfd/contracts";
+import type { DayJournal, DeliveryRoundsDayView } from "@lfd/contracts";
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
-import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
-import { StaffPermissionHolders } from "../../../staff/directory/domain/staff-permission-holders.js";
-import { DeliveryOrdersReader, DeliveryOrderStatesReader } from "../../channels/commerce/index.js";
-import { BroughtBackOrdersReader } from "../../domain/ports/brought-back-orders.reader.js";
-import { DeliveryIncidentsReader } from "../../domain/ports/delivery-incidents.reader.js";
-import { DeliveryRoundsReader } from "../../domain/ports/delivery-rounds.reader.js";
-import { FleetReader } from "../../domain/ports/fleet.reader.js";
-import { ordersToReplace } from "../brought-back-support.js";
-import { deliveryIncidentView } from "../delivery-incident-view.js";
-import { driverNamesOf, driversNow } from "../delivery-driver-support.js";
-import { deliveryRoundsDayView } from "../delivery-rounds-view.js";
+import { DayContents } from "../../../platform/day-versions/day-contents.js";
+import { DayVersionRegistry } from "../../../platform/day-versions/day-version-registry.js";
+import { servedRoundsDay } from "../delivery-rounds-view.js";
+import { isRoundsDayContent, isStorableRoundsDay, ROUNDS_SCREEN } from "../rounds-day-content.js";
+import { RoundsDayLiveReading } from "../rounds-day-live.service.js";
+import { RoundsDayReading } from "../rounds-day-reading.service.js";
 import { GetDeliveryRoundsDayQuery } from "./get-delivery-rounds-day.query.js";
-import { orderIdsOf } from "../../domain/entities/delivery-round-state.js";
 
 /**
- * La composition d'un jour : les tournées, leurs arrêts signalés, leur
+ * Les journaux dont la composition rangée lit les tables : la livraison
+ * (`delivery` — tournées, arrêts, transferts, signalements) et le commerce
+ * (`orders` — les livraisons attendues et leur état). L'écran ne sert aucun
+ * nom de société ni de client (la référence et la clientèle seules) : le
+ * sujet global `companies` n'entre pas dans la clé.
+ */
+const ROUNDS_JOURNALS: readonly DayJournal[] = ["delivery", "orders"];
+
+/**
+ * **La composition d'un jour** — les tournées, leurs arrêts signalés, leur
  * livreur (et s'il peut encore livrer : conduire ET les gestes à la porte,
- * audit 2026-10-07, B8), ce qui reste à répartir, et les
- * problèmes signalés par les livreurs (`a-la-porte.md`, § 3), et les
- * commandes rapportées à replacer, quel que soit le jour (lot RL1), et les
- * arrêts posés hors des zones de leur véhicule (2026-10-06). Une
- * lecture : elle n'écrit rien.
+ * audit 2026-10-07, B8), ce qui reste à répartir, les problèmes signalés par
+ * les livreurs (`a-la-porte.md`, § 3), les commandes rapportées à replacer,
+ * quel que soit le jour (lot RL1), et les arrêts posés hors des zones de
+ * leur véhicule (2026-10-06). Une lecture : elle n'écrit rien.
+ *
+ * Servie depuis l'objet des journées tant que ses numéros ne bougent pas
+ * (`le-cache-du-back-office.md`, § 3.5), clé `rounds`. 🔴 Les numéros sont
+ * lus EN BASE, AVANT les données : lus après, ils couvriraient une écriture
+ * que le contenu n'a pas.
+ *
+ * Livreurs, flotte, place au dépôt et commandes rapportées sont lus à
+ * chaque appel (`RoundsDayLiveReading`) et posés sur le contenu.
  */
 @QueryHandler(GetDeliveryRoundsDayQuery)
 export class GetDeliveryRoundsDayHandler implements IQueryHandler<
@@ -35,82 +40,20 @@ export class GetDeliveryRoundsDayHandler implements IQueryHandler<
   DeliveryRoundsDayView
 > {
   constructor(
-    private readonly rounds: DeliveryRoundsReader,
-    private readonly orders: DeliveryOrdersReader,
-    private readonly holders: StaffPermissionHolders,
-    private readonly directory: StaffAuthorDirectory,
-    private readonly incidents: DeliveryIncidentsReader,
-    private readonly broughtBack: BroughtBackOrdersReader,
-    private readonly states: DeliveryOrderStatesReader,
-    private readonly fleet: FleetReader,
-    private readonly settings: RoutingSettingsReader,
-    private readonly place: ProposalCapacity,
+    private readonly journals: DayVersionRegistry,
+    private readonly contents: DayContents,
+    private readonly reading: RoundsDayReading,
+    private readonly live: RoundsDayLiveReading,
   ) {}
 
   async execute(query: GetDeliveryRoundsDayQuery): Promise<DeliveryRoundsDayView> {
-    const [rounds, expected, incidents, awaiting] = await Promise.all([
-      this.rounds.roundsOn(query.day),
-      this.orders.expectedOn(query.day),
-      this.incidents.ofDay(query.day),
-      ordersToReplace(this.broughtBack, this.orders, this.states),
-    ]);
-    const composedIds = rounds.flatMap((round) => orderIdsOf(round.stops));
-    const driverIds = rounds.flatMap((round) =>
-      round.driverStaffId === null ? [] : [round.driverStaffId],
+    const versions = await this.journals.versionsOf(ROUNDS_JOURNALS, query.day);
+    const content = await this.contents.contentOf(
+      { screen: ROUNDS_SCREEN, day: query.day, versions },
+      () => this.reading.contentOf(query.day),
+      { accepts: isRoundsDayContent, storable: isStorableRoundsDay },
     );
-    const [composed, assigned, drivers, driverNames, broughtBack, fleet, places] =
-      await Promise.all([
-        this.orders.byIds(composedIds),
-        this.rounds.composedAmong(expected.map((order) => order.orderId)),
-        driversNow(this.holders),
-        driverNamesOf(this.directory, driverIds),
-        this.broughtBack.lastAmong([...composedIds, ...awaiting.map((order) => order.orderId)]),
-        this.fleet.list(),
-        this.placesOf(rounds),
-      ]);
-    const view = deliveryRoundsDayView({
-      day: query.day,
-      places,
-      rounds,
-      expected,
-      composed: new Map(composed.map((order) => [order.orderId, order])),
-      assigned,
-      drivers,
-      driverNames,
-      awaiting,
-      broughtBack,
-      vehicleZones: new Map(
-        fleet
-          .filter((vehicle) => vehicle.allowedZoneIds.length > 0)
-          .map((vehicle) => [vehicle.id, new Set(vehicle.allowedZoneIds)]),
-      ),
-    });
-    return { ...view, incidents: incidents.map(deliveryIncidentView) };
-  }
-
-  /**
-   * La place des tournées au dépôt (2026-10-07) : la garde de « Proposer »,
-   * pour AVERTIR après une affectation à la main. Une tournée partie n'est
-   * plus composée : elle n'est pas jugée.
-   */
-  private async placesOf(rounds: readonly RoundRow[]): Promise<ReadonlyMap<string, RoundPlace>> {
-    const atDepot = rounds.filter((round) => round.departedAt === null && round.stops.length > 0);
-    if (atDepot.length === 0) {
-      return new Map();
-    }
-    const { settings } = await routingSettingsOf(this.settings);
-    const orderIds = atDepot.flatMap((round) => orderIdsOf(round.stops));
-    const { capacity, unknown } = await this.place.of(orderIds, settings);
-    return new Map(
-      atDepot.map((round) => [
-        round.id,
-        roundPlaceOf({
-          capacity,
-          unknown,
-          vehicleId: round.vehicleId,
-          orderIds: orderIdsOf(round.stops),
-        }),
-      ]),
-    );
+    const live = await this.live.around(content.composition);
+    return { ...servedRoundsDay(content.composition, live), incidents: content.incidents };
   }
 }
