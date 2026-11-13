@@ -24,7 +24,7 @@ export function watchSupervisionDay(
   refresh: (columns: 'always' | 'on-turn') => Promise<void>,
 ): void {
   inject(VersionWatcher).watch({
-    subjects: ['orders', 'production', 'delivery'],
+    subjects: ['orders', 'production', 'delivery', 'companies'],
     date,
     reload: () => refresh('always'),
   });

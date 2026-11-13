@@ -8,11 +8,15 @@ class FixedReader extends CompanyChangeVersionReader {
 }
 
 describe("CompaniesVersionSource", () => {
-  it("rend le numéro du journal des comptes clients, sous `b2b_companies:read`, à 30 s", async () => {
+  it("rend le numéro du journal des comptes clients, sous les droits des comptes, du comptoir et de la Supervision, à 30 s", async () => {
     const source = new CompaniesVersionSource(new FixedReader());
 
     await expect(source.versionOf()).resolves.toBe(17);
-    expect(source.readers).toEqual(["b2b_companies:read"]);
+    expect(source.readers).toEqual([
+      "b2b_companies:read",
+      "handover_counter:read",
+      "b2b_supervision:read",
+    ]);
     expect(source.freshMs).toBe(COMPANIES_FRESH_MS);
   });
 });

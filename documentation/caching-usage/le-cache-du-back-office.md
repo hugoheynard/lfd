@@ -323,9 +323,9 @@ celle de la journée entière. Les chiffres du cockpit
   comptes suit (`companies`, `users`). Lus en base par
   `VersionRegistry.versionsOf`, avant les tables ; l'étiquette s'écrit
   `companies:…delivery:…orders:…production:…`. Les veilleurs du comptoir et
-  de la Supervision ne suivent pas `companies` : la porte ne le rend qu'à
-  `b2b_companies:read`, que leurs droits n'impliquent pas. Un nom changé se
-  voit au prochain numéro de la journée, ou au filet.
+  de la Supervision suivent aussi `companies`, ouvert à `handover_counter` et
+  `b2b_supervision` (décidé par Hugo le 2026-11-13) : un nom changé se relit
+  dans les 30 s.
 - **Aucune heure** : la vue rangée est servie telle quelle.
 - **Lu hors journal, accepté vieux jusqu'au prochain numéro** : le libellé du
   site d'un transfert.

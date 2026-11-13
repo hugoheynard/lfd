@@ -291,7 +291,7 @@ export class HandoverQueueStore {
     // (commerce), un sac fermé au fournil (production), ou un transfert
     // déposé au point de retrait par le livreur (livraison). Filet de 5 min inclus.
     inject(VersionWatcher).watch({
-      subjects: ['orders', 'production', 'delivery'],
+      subjects: ['orders', 'production', 'delivery', 'companies'],
       date: this.day,
       reload: () => this.refresh(),
     });
