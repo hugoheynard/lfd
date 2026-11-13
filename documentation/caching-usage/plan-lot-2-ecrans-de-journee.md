@@ -47,6 +47,51 @@ dans le navigateur (§ 4).
   depuis la passerelle publique ; un seuil écrit sous lequel le gain mesuré
   au lot 0 fait abandonner le lot.
 
+## Mesure du lot 0 (2026-11-13)
+
+**Méthode.** API locale (`nest build` puis `node dist/main.js`) sur la base de
+dev `lfc_b2b_dev`, contournement d'authentification de dev (aucune lecture de
+principal comptée — en production, la résolution du principal s'ajoute, en
+cache). Compteur posé **temporairement** dans `counted-prisma.ts` : une ligne
+par appel ORM (`$allOperations`, l'unité que Prisma facture), étiquetée par le
+`traceId` de la requête (en-tête `traceparent` choisi par appel) ; retiré
+ensuite, `dist/` reconstruit sans lui, rien de commité. Chaque route appelée
+deux fois, la seconde retenue (la première ne diffère que d'une opération au
+plus). Taille : corps brut, et `gzip -9`. Journées : 2026-11-03 (26 commandes
+dont 18 livraisons, la plus chargée de la base de dev) et 2026-11-04
+(25 commandes, 22 livraisons, peu colisées).
+
+| Écran (route)                                  | Opérations 11-03 | Brut / gzip 11-03 | Opérations 11-04 | Brut / gzip 11-04 |
+| ---------------------------------------------- | ---------------: | ----------------: | ---------------: | ----------------: |
+| `admin/production/worksheet?date=`             |           **73** |  41,1 Ko / 2,2 Ko |               25 |  12,3 Ko / 1,1 Ko |
+| `admin/production/worksheet/current` (13 nov.) |               14 |     135 o / 138 o |               14 |     135 o / 138 o |
+| `admin/supervision/preparation?date=`          |           **73** |  41,1 Ko / 2,2 Ko |               26 |  12,3 Ko / 1,1 Ko |
+| `admin/packing/:date/board`                    |           **68** |  57,5 Ko / 5,0 Ko |                6 |     148 o / 138 o |
+| `admin/handover/file?jour=` (avant correction) |               11 |  16,9 Ko / 2,2 Ko |                9 |  12,4 Ko / 1,5 Ko |
+| `admin/supervision/handover?jour=`             |               11 |  16,9 Ko / 2,2 Ko |                9 |  12,4 Ko / 1,5 Ko |
+| `admin/delivery/rounds?day=`                   |               19 |   4,0 Ko / 0,9 Ko |               10 |   1,4 Ko / 0,5 Ko |
+
+Lecture :
+
+- **51 des 73 opérations de la fiche, et 51 des 68 du colisage, sont des
+  `DeliveryBin.findUnique`** sur la journée colisée (11-03) : une lecture de
+  bac par bac, pas en lot. C'est un N + 1 qui grandit avec le colisage ; sans
+  lui la fiche tient en ~22 opérations et le colisage en ~17. Le corriger
+  rapporte plus, et plus tôt, que le rangement du lot 2 ; à trancher avant le
+  lot 1 (non corrigé ici, hors du lot 0).
+- La fiche datée et la Supervision rendent **les mêmes octets** (41 100 o,
+  même compte) : la preuve demandée pour partager une clé est faite sur ces
+  deux journées.
+- `worksheet/current` résolvait une journée vide le 13 novembre en local : ses
+  14 opérations sont le coût de la résolution plus une fiche vide.
+- Compressées, toutes les réponses tiennent sous 5 Ko — bien sous l'estimation
+  de 5 à 20 Ko du § 7.
+- **Les appels par jour en production ne se mesurent pas en local.** Ils se
+  lisent sur l'environnement déployé : onglet Ops, trafic par route
+  , sur une journée de service entière, pour chacune des sept
+  routes ; c'est ce nombre, multiplié par les opérations ci-dessus, qui dit le
+  gain du lot 2 — et le seuil d'abandon reste à écrire.
+
 ## Partie 1 — En clair
 
 Aujourd'hui, quand un numéro de journée monte, chaque onglet ouvert relit son

@@ -24,7 +24,7 @@ type SupervisionHandoverQuery = z.infer<typeof supervisionHandoverQuerySchema>;
  * (`documentation/supervision/architecture-supervision-du-jour.md`, §3).
  *
  * Une seconde PORTE sur la file du comptoir : même query que
- * `HandoverController.queue`, sous `b2b_supervision` au lieu de `b2b_orders` —
+ * `HandoverController.queue`, sous `b2b_supervision` au lieu de `handover_counter` —
  * qui ouvrirait aussi la confirmation du retrait. Il n'injecte que le
  * `QueryBus`.
  */
