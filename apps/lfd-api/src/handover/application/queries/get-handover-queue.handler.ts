@@ -19,10 +19,11 @@ import {
   type ResupplyOnlyTransferStatus,
   ResupplyTransfersReader,
   type RoundPlacement,
+  type RoundPlacements,
   RoundPlacementsReader,
   TransferStatusReader,
 } from "../../../delivery/channels/handover/index.js";
-import { GetHandoverQueueQuery } from "./get-handover-queue.query.js";
+import { GetHandoverQueueQuery, type HandoverQueueScope } from "./get-handover-queue.query.js";
 
 /**
  * **La file du comptoir** — ce que le commerce attend ce jour-là, croisé avec ce
@@ -46,8 +47,8 @@ import { GetHandoverQueueQuery } from "./get-handover-queue.query.js";
  * qualité du lot (`QualityHoldsReader`, publié par la production —
  * `plan-controle-qualite.md`, D4), et une pour les transferts de réassort
  * seul de la journée (R3c, R3e). Plus la place des livraisons dans leurs
- * tournées (`RoundPlacementsReader`, ajouté le 2026-10-25 pour la
- * Supervision), en lot elle aussi. Demander ligne par ligne ferait autant
+ * tournées (`RoundPlacementsReader`), en lot elle aussi — et seulement
+ * quand le périmètre porte une livraison. Demander ligne par ligne ferait autant
  * d'allers-retours que de commandes pour peindre un écran.
  */
 @QueryHandler(GetHandoverQueueQuery)
@@ -65,7 +66,7 @@ export class GetHandoverQueueHandler implements IQueryHandler<
   ) {}
 
   async execute(query: GetHandoverQueueQuery): Promise<HandoverQueueView> {
-    const expected = await this.queue.expectedOn(query.day);
+    const expected = inScope(await this.queue.expectedOn(query.day), query.scope);
     const orderIds = expected.map((entry) => entry.orderId);
     const deliveryIds = expected
       .filter((entry) => entry.fulfillmentMethod === "delivery")
@@ -75,7 +76,7 @@ export class GetHandoverQueueHandler implements IQueryHandler<
       this.holds.heldOrders(query.day, orderIds),
       this.transfers.statusOf(orderIds),
       this.resupplyTransfers.resupplyOnlyOn(query.day),
-      this.rounds.placementsOf(query.day, deliveryIds),
+      this.placementsOf(query.day, deliveryIds),
     ]);
     return {
       day: query.day,
@@ -93,6 +94,30 @@ export class GetHandoverQueueHandler implements IQueryHandler<
       resupplyTransfers: resupplyOnly.map(resupplyTransferViewOf),
     };
   }
+
+  /**
+   * Les tournées ne sont lues que s'il y a une livraison à placer : la file
+   * du comptoir n'en a aucune, et ne touche donc jamais aux tournées.
+   */
+  private placementsOf(day: string, deliveryIds: readonly string[]): Promise<RoundPlacements> {
+    return deliveryIds.length === 0
+      ? Promise.resolve(NO_PLACEMENTS)
+      : this.rounds.placementsOf(day, deliveryIds);
+  }
+}
+
+/**
+ * Les lignes que le périmètre montre : le comptoir ne reçoit aucune
+ * livraison — le critère est l'acheminement, pas l'absence de point de
+ * retrait (une commande sans point se remet bien en boutique).
+ */
+function inScope(
+  entries: readonly HandoverQueueEntry[],
+  scope: HandoverQueueScope,
+): readonly HandoverQueueEntry[] {
+  return scope === "counter"
+    ? entries.filter((entry) => entry.fulfillmentMethod !== "delivery")
+    : entries;
 }
 
 /** Une ligne de file, dans le vocabulaire de l'écran. */
@@ -125,6 +150,8 @@ function toEntryView(
     readyAt: entry.readyAt === null ? null : entry.readyAt.toISOString(),
   };
 }
+
+const NO_PLACEMENTS: RoundPlacements = { roundCount: 0, byOrder: new Map() };
 
 function roundViewOf(placement: RoundPlacement | undefined): HandoverQueueRoundView | null {
   return placement === undefined

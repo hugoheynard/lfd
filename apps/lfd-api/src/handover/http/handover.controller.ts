@@ -90,11 +90,14 @@ export class HandoverController {
    * de son horloge : un comptoir ouvert à cheval sur minuit, ou un écran laissé
    * ouvert toute la nuit, montreraient alors la mauvaise journée sans que
    * personne comprenne pourquoi.
+   *
+   * 🔴 Les retraits seuls : aucune livraison ni tournée ne sort par ce droit
+   * (périmètre `counter`). La journée entière est à la Supervision.
    */
   @Get("file")
   async queue(@Query("jour") day: string): Promise<HandoverQueueView> {
     return this.queries.execute<GetHandoverQueueQuery, HandoverQueueView>(
-      new GetHandoverQueueQuery(day),
+      new GetHandoverQueueQuery(day, "counter"),
     );
   }
 

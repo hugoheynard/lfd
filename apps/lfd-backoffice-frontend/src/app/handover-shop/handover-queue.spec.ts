@@ -11,7 +11,6 @@ import type {
 } from '@lfd/contracts';
 
 import {
-  atTheCounter,
   clockOf,
   entriesForTab,
   formatHour,
@@ -414,27 +413,6 @@ describe('clockOf', () => {
   });
 });
 
-describe('atTheCounter', () => {
-  it('🔴 écarte les LIVRAISONS, et elles seules', () => {
-    const kept = atTheCounter([
-      entry({ orderId: 'a', fulfillmentMethod: 'pickup' }),
-      entry({ orderId: 'b', fulfillmentMethod: 'delivery' }),
-    ]);
-
-    expect(kept.map((row) => row.orderId)).toEqual(['a']);
-  });
-
-  it('🔴 un RETRAIT sans point de retrait reste dans la file', () => {
-    // Régression de conception : le critère a failli être `pickupLabel === null`,
-    // qui confond deux choses — une livraison n'a pas de point, mais une
-    // commande antérieure aux points de retrait non plus, et elle se remet bien
-    // en boutique. Couper là l'aurait fait disparaître de TOUS les écrans.
-    const kept = atTheCounter([entry({ fulfillmentMethod: 'pickup', pickupLabel: null })]);
-
-    expect(kept).toHaveLength(1);
-  });
-});
-
 describe('matchingQueue', () => {
   it('un terme vide ne filtre rien', () => {
     const all = [entry({ orderId: 'a' }), entry({ orderId: 'b' })];
@@ -514,8 +492,8 @@ describe("le type ferme ce qu'une chaîne laissait ouvert", () => {
   });
 
   it('🔴 un acheminement inventé ne compile pas', () => {
-    // `atTheCounter` écarte `'delivery'` ; une troisième valeur passerait
-    // silencieusement au comptoir.
+    // La route du comptoir écarte `'delivery'` ; une troisième valeur
+    // passerait silencieusement à l'écran.
     const rejected: Rejects<FulfillmentMethod, 'coursier'> = true;
 
     expect(rejected).toBe(true);
@@ -554,8 +532,8 @@ describe('outsideTheCounter', () => {
   });
 
   it('🔴 annonce une livraison, quel que soit l’onglet ouvert', () => {
-    // `atTheCounter` les a retirées de la file : ce code n'a AUCUNE ligne à
-    // l'écran, et c'est la seule façon de le dire à qui se présente.
+    // La route du comptoir ne sert aucune livraison : ce code n'a AUCUNE ligne
+    // à l'écran, et c'est la seule façon de le dire à qui se présente.
     for (const tab of ['Le Labo', NO_PICKUP, '']) {
       expect(outsideTheCounter(subject({ fulfillmentMethod: 'delivery' }), tab)).toContain(
         'livraison',

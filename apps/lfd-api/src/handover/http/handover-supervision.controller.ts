@@ -23,10 +23,11 @@ type SupervisionHandoverQuery = z.infer<typeof supervisionHandoverQuerySchema>;
  * **Le retrait vu depuis la Supervision** — la colonne 3, aucun geste
  * (`documentation/supervision/architecture-supervision-du-jour.md`, §3).
  *
- * Une seconde PORTE sur la file du comptoir : même query que
- * `HandoverController.queue`, sous `b2b_supervision` au lieu de `handover_counter` —
- * qui ouvrirait aussi la confirmation du retrait. Il n'injecte que le
- * `QueryBus`.
+ * Une seconde PORTE sur la file : même query que `HandoverController.queue`,
+ * sous `b2b_supervision` au lieu de `handover_counter` — qui ouvrirait aussi la
+ * confirmation du retrait —, et sur la journée ENTIÈRE (`whole_day`) : la
+ * Supervision voit les livraisons et leur tournée, le comptoir non. Il
+ * n'injecte que le `QueryBus`.
  */
 @Controller("admin/supervision")
 @AdminSurface("b2b_supervision")
@@ -38,7 +39,7 @@ export class HandoverSupervisionController {
     @Query(new ZodQuery(supervisionHandoverQuerySchema)) query: SupervisionHandoverQuery,
   ): Promise<HandoverQueueView> {
     return this.queries.execute<GetHandoverQueueQuery, HandoverQueueView>(
-      new GetHandoverQueueQuery(query.jour),
+      new GetHandoverQueueQuery(query.jour, "whole_day"),
     );
   }
 }

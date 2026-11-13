@@ -1443,6 +1443,7 @@ export type {
   OrderHandoverShipmentView,
   OrderHandoverView,
 } from "./order-handover.js";
+export type { CockpitHandoverSplitView, CockpitHandoversView } from "./cockpit-handovers.js";
 // Le retrait par envoi, plan E7 reliquat, lot L4c (2026-10-26).
 export { confirmHandoverPayloadSchema, HANDOVER_RANKS_MAX } from "./order-handover-confirm.js";
 export type { ConfirmHandoverPayload } from "./order-handover-confirm.js";

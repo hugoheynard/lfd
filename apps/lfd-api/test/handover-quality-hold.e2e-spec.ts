@@ -193,9 +193,13 @@ async function tokenAndReference(orderId: string) {
   return { token: row.handoverToken ?? "", reference: row.orderNumber };
 }
 
+/**
+ * La file de la journée ENTIÈRE — celle de la Supervision : la retenue d'une
+ * livraison s'y lit, la file du comptoir ne sert aucune livraison.
+ */
 async function queue(): Promise<HandoverQueueView> {
   return jsonBody<HandoverQueueView>(
-    await staff().get(`/admin/handover/file?jour=${DAY}`).expect(200),
+    await staff().get(`/admin/supervision/handover?jour=${DAY}`).expect(200),
   );
 }
 

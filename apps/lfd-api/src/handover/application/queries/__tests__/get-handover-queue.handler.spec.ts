@@ -133,7 +133,7 @@ describe("GetHandoverQueueHandler — la tournée d'une livraison", () => {
       rounds,
     );
 
-    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10", "whole_day"));
 
     expect(rounds.calls).toEqual([{ day: "2026-09-10", orderIds: ["ord_liv"] }]);
     expect(view.entries.find((line) => line.orderId === "ord_liv")?.round).toEqual({
@@ -159,7 +159,7 @@ describe("GetHandoverQueueHandler — une commande non réglée", () => {
       new Map(),
     );
 
-    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10", "whole_day"));
 
     expect(view.entries.map((line) => line.orderId)).toEqual(["ord_paid"]);
   });
@@ -170,7 +170,7 @@ describe("GetHandoverQueueHandler — une commande non réglée", () => {
       new Map([["ord_1", attestation()]]),
     );
 
-    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10", "whole_day"));
 
     expect(view.entries[0]?.state).toBe("handed_over");
   });
@@ -181,7 +181,7 @@ describe("GetHandoverQueueHandler — une commande non réglée", () => {
       new Map(),
     );
 
-    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10", "whole_day"));
 
     expect(view.entries[0]?.state).toBe("cancelled");
   });
@@ -197,7 +197,7 @@ describe("GetHandoverQueueHandler — état d'une ligne (stateOf)", () => {
       new Map([["ord_1", attestation()]]),
     );
 
-    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10", "whole_day"));
 
     expect(view.entries[0]?.state).toBe("handed_over");
   });
@@ -205,7 +205,7 @@ describe("GetHandoverQueueHandler — état d'une ligne (stateOf)", () => {
   it("refuse — `cancelled` — une commande annulée et jamais attestée", async () => {
     const { handler } = handlerOf([entry({ orderId: "ord_1", status: "cancelled" })], new Map());
 
-    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10", "whole_day"));
 
     expect(view.entries[0]?.state).toBe("cancelled");
   });
@@ -216,7 +216,7 @@ describe("GetHandoverQueueHandler — état d'une ligne (stateOf)", () => {
       new Map(),
     );
 
-    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10", "whole_day"));
 
     expect(view.entries[0]?.state).toBe("ready");
   });
@@ -227,7 +227,7 @@ describe("GetHandoverQueueHandler — état d'une ligne (stateOf)", () => {
       new Map(),
     );
 
-    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10", "whole_day"));
 
     expect(view.entries[0]?.state).toBe("expected");
   });
@@ -239,7 +239,7 @@ describe("GetHandoverQueueHandler — état d'une ligne (stateOf)", () => {
     });
     const { handler } = handlerOf([entry({ orderId: "ord_1" })], new Map([["ord_1", attested]]));
 
-    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10", "whole_day"));
 
     expect(view.entries[0]?.handedOverAt).toBe("2026-09-10T09:00:00.000Z");
     expect(view.entries[0]?.handedOverVia).toBe("manual");
@@ -248,7 +248,7 @@ describe("GetHandoverQueueHandler — état d'une ligne (stateOf)", () => {
   it("rend `handedOverAt` et `handedOverVia` à `null` sans attestation", async () => {
     const { handler } = handlerOf([entry({ orderId: "ord_1" })], new Map());
 
-    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10", "whole_day"));
 
     expect(view.entries[0]?.handedOverAt).toBeNull();
     expect(view.entries[0]?.handedOverVia).toBeNull();
@@ -262,7 +262,7 @@ describe("GetHandoverQueueHandler — jamais N + 1", () => {
       new Map(),
     );
 
-    await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+    await handler.execute(new GetHandoverQueueQuery("2026-09-10", "whole_day"));
 
     expect(queue.calls).toEqual(["2026-09-10"]);
     expect(attestations.calls).toEqual([["ord_1", "ord_2"]]);
@@ -274,7 +274,7 @@ describe("GetHandoverQueueHandler — jamais N + 1", () => {
     // requête batched qu'avec dix lignes. C'est ce qui garde le contrat simple.
     const { handler, attestations } = handlerOf([], new Map());
 
-    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10", "whole_day"));
 
     expect(view.entries).toEqual([]);
     expect(attestations.calls).toEqual([[]]);
@@ -285,7 +285,7 @@ describe("GetHandoverQueueHandler — la vue", () => {
   it("renvoie le jour demandé tel quel", async () => {
     const { handler } = handlerOf([], new Map());
 
-    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10", "whole_day"));
 
     expect(view.day).toBe("2026-09-10");
   });
@@ -295,7 +295,7 @@ describe("GetHandoverQueueHandler — la vue", () => {
     async (clientele) => {
       const { handler } = handlerOf([entry({ clientele })], new Map());
 
-      const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+      const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10", "whole_day"));
 
       expect(view.entries[0]?.clientele).toBe(clientele);
     },
@@ -306,7 +306,7 @@ describe("GetHandoverQueueHandler — la vue", () => {
     // écrirait « public » sur la commande d'un pro multi-sociétés (plan, D4/D5).
     const { handler } = handlerOf([entry({ clientele: null })], new Map());
 
-    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10", "whole_day"));
 
     expect(view.entries[0]?.clientele).toBeNull();
   });
@@ -321,7 +321,7 @@ describe("GetHandoverQueueHandler — la retenue qualité (plan-controle-qualite
       holds,
     );
 
-    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10", "whole_day"));
 
     expect(holds.asked).toEqual([{ serviceDay: "2026-09-10", orderIds: ["ord_1", "ord_2"] }]);
     expect(view.entries.map((line) => line.heldForQuality)).toEqual([false, true]);
@@ -338,7 +338,7 @@ describe("GetHandoverQueueHandler — la retenue qualité (plan-controle-qualite
       holds,
     );
 
-    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10", "whole_day"));
 
     expect(view.entries.map((line) => line.heldForQuality)).toEqual([true, true]);
   });
@@ -353,7 +353,7 @@ describe("GetHandoverQueueHandler — la retenue qualité (plan-controle-qualite
       holds,
     );
 
-    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10", "whole_day"));
 
     expect(view.entries.map((line) => [line.state, line.heldForQuality])).toEqual([
       ["handed_over", false],
@@ -366,7 +366,7 @@ describe("GetHandoverQueueHandler — le site qui remet (lot S2)", () => {
   it("rend le site figé, clé des onglets du comptoir", async () => {
     const { handler } = handlerOf([entry({ siteId: "site_village" })], new Map());
 
-    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10", "whole_day"));
 
     expect(view.entries[0]?.siteId).toBe("site_village");
   });
@@ -374,7 +374,7 @@ describe("GetHandoverQueueHandler — le site qui remet (lot S2)", () => {
   it("rend `null` pour une commande d'avant le lot : le comptoir retombe sur le libellé", async () => {
     const { handler } = handlerOf([entry({ siteId: null })], new Map());
 
-    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10", "whole_day"));
 
     expect(view.entries[0]).toMatchObject({ siteId: null, pickupLabel: "Le labo" });
   });
@@ -394,7 +394,7 @@ describe("GetHandoverQueueHandler — le transfert d'une ligne (lots T2, T3)", (
       ),
     );
 
-    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10", "whole_day"));
 
     expect(view.entries.map((line) => line.transfer)).toEqual([
       {
@@ -431,7 +431,7 @@ describe("GetHandoverQueueHandler — un transfert de réassort seul (R3c, R3e)"
       resupplies,
     );
 
-    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10", "whole_day"));
 
     expect(resupplies.asked).toEqual(["2026-09-10"]);
     expect(view.entries).toEqual([]);
@@ -456,8 +456,64 @@ describe("GetHandoverQueueHandler — un départ incomplet décidé", () => {
     ];
     const { handler } = handlerOf([entry({ totalUnits: 1, abandoned })], new Map());
 
-    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10", "whole_day"));
 
     expect(view.entries[0]).toMatchObject({ totalUnits: 1, abandonedRemainder: abandoned });
+  });
+});
+
+/**
+ * Régression : la file du comptoir (`handover_counter`) envoyait les
+ * livraisons et leur tournée, matière de `delivery_rounds` (2026-11-13).
+ */
+describe("GetHandoverQueueHandler — le périmètre du comptoir", () => {
+  const placed = new Map([
+    [
+      "ord_liv",
+      {
+        roundId: "rnd_1",
+        label: "Kangoo blanc",
+        position: 1,
+        plannedDepartureAt: null,
+        departedAt: null,
+        loaded: false,
+      },
+    ],
+  ]);
+  const day = [
+    entry({ orderId: "ord_liv", fulfillmentMethod: "delivery", pickupLabel: null }),
+    entry({ orderId: "ord_ret" }),
+    entry({ orderId: "ord_sans_point", pickupLabel: null }),
+  ];
+
+  it("ne rend aucune livraison, et ne lit aucune tournée", async () => {
+    const rounds = new FixedRoundPlacements(placed);
+    const { handler, attestations } = handlerOf(
+      day,
+      new Map(),
+      undefined,
+      undefined,
+      undefined,
+      rounds,
+    );
+
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10", "counter"));
+
+    expect(view.entries.map((line) => line.orderId)).toEqual(["ord_ret", "ord_sans_point"]);
+    expect(view.entries.every((line) => line.round === null)).toBe(true);
+    expect(rounds.calls).toEqual([]);
+    expect(attestations.calls).toEqual([["ord_ret", "ord_sans_point"]]);
+  });
+
+  it("la journée entière garde la livraison et sa tournée", async () => {
+    const rounds = new FixedRoundPlacements(placed);
+    const { handler } = handlerOf(day, new Map(), undefined, undefined, undefined, rounds);
+
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10", "whole_day"));
+
+    expect(view.entries.map((line) => line.orderId)).toContain("ord_liv");
+    expect(view.entries.find((line) => line.orderId === "ord_liv")?.round?.label).toBe(
+      "Kangoo blanc",
+    );
   });
 });

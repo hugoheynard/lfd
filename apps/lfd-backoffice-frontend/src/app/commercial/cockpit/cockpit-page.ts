@@ -26,7 +26,7 @@ import type {
   PortfolioMetricsView,
   ProductionForecastView,
 } from '@lfd/contracts';
-import type { HandoverQueueView, SupportRequestView } from '@lfd/contracts';
+import type { CockpitHandoversView, SupportRequestView } from '@lfd/contracts';
 
 import type { AdminCompany } from '../../comptes-clients/admin-company';
 import { NotifyService } from '../../notify.service';
@@ -35,8 +35,8 @@ import { PortfolioMetricsService } from '../../comptes-clients/portfolio-metrics
 import { ProductionService } from '../../production/production.service';
 import { isoDay, shiftDay } from '../../production/previsionnel/previsionnel-range';
 import { providePageHeader } from '../page-header.store';
-import { HandoverQueueService } from '../../handover-shop/handover-queue.service';
 import { CockpitBar, type CockpitKpi } from './cockpit-bar/cockpit-bar';
+import { CockpitHandoversService } from './cockpit-handovers.service';
 import { todayHandovers, type TodayHandovers } from './cockpit-bar/today-handovers';
 import { tomorrowOrders, type TomorrowOrders } from './cockpit-bar/tomorrow-orders';
 import { type ChartOption } from '../../shared/chart/chart';
@@ -100,7 +100,7 @@ export class CockpitPage {
   private readonly companiesApi = inject(AdminCompaniesService);
   private readonly portfolioApi = inject(PortfolioMetricsService);
   private readonly productionApi = inject(ProductionService);
-  private readonly handoverApi = inject(HandoverQueueService);
+  private readonly handoverApi = inject(CockpitHandoversService);
   private readonly pins = inject(PinnedAccountsStore);
   private readonly sheetsApi = inject(CustomerSheetService);
   private readonly notify = inject(NotifyService);
@@ -115,8 +115,8 @@ export class CockpitPage {
   protected readonly portfolio = signal<PortfolioMetricsView | null>(null);
   /** Le prévisionnel du fournil, réduit à J+1 — `null` si la lecture a échoué. */
   private readonly forecast = signal<ProductionForecastView | null>(null);
-  /** La file du comptoir du jour — `null` si la lecture a échoué. */
-  private readonly handoverQueue = signal<HandoverQueueView | null>(null);
+  /** Les remises du jour, en chiffres — `null` si la lecture a échoué. */
+  private readonly handoverCounts = signal<CockpitHandoversView | null>(null);
   private readonly appointments = signal<readonly AppointmentView[]>([]);
   private readonly companies = signal<readonly AdminCompany[]>([]);
   /** Les fiches des comptes suivis QUI demandent un indicateur — pas les autres. */
@@ -173,7 +173,7 @@ export class CockpitPage {
 
   /** Les remises attendues aujourd'hui, séparées en retrait et coursier. */
   protected readonly handovers = computed<TodayHandovers | null>(() =>
-    todayHandovers(this.handoverQueue()),
+    todayHandovers(this.handoverCounts()),
   );
 
   protected readonly spark = computed<ChartOption | null>(() => {
@@ -232,7 +232,7 @@ export class CockpitPage {
       this.loadInto(this.companies, () => this.companiesApi.list(), []),
       this.loadInto(this.portfolio, () => this.portfolioApi.load(), null),
       this.loadForecast(),
-      this.loadInto(this.handoverQueue, () => this.handoverApi.forDay(isoDay(new Date())), null),
+      this.loadInto(this.handoverCounts, () => this.handoverApi.forDay(isoDay(new Date())), null),
       this.loadSheets(),
     ]);
   }

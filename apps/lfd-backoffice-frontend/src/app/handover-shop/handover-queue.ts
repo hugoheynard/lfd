@@ -22,28 +22,9 @@ import { causeOf } from '../supervision/handover-slots';
  */
 
 /**
- * **Ce qui se remet AU COMPTOIR** — les retraits, et rien d'autre.
- *
- * 🔴 Le critère est l'acheminement, pas l'absence de point. Les deux se
- * confondaient : une livraison n'a pas de point de retrait, mais une commande
- * antérieure aux points de retrait n'en a pas non plus, et elle se remet bien
- * en boutique. Couper sur `pickupLabel === null` ferait disparaître la seconde
- * de tous les écrans — exactement ce que l'onglet « Sans point de retrait »
- * avait été créé pour empêcher.
- *
- * Une livraison part par coursier : personne ne l'attend devant ce comptoir, et
- * elle aura son propre écran. La laisser ici faisait compter « en attente » des
- * sacs que le comptoir ne tendra jamais.
- */
-export function atTheCounter(
-  entries: readonly HandoverQueueEntryView[],
-): readonly HandoverQueueEntryView[] {
-  return entries.filter((entry) => entry.fulfillmentMethod !== 'delivery');
-}
-
-/**
- * L'onglet des lignes **sans point de retrait** : une livraison par coursier,
- * ou une commande antérieure aux points de retrait.
+ * L'onglet des lignes **sans point de retrait** : une commande antérieure aux
+ * points de retrait. La file du comptoir ne sert aucune livraison — la route
+ * (`admin/handover/file`) les retire au serveur.
  *
  * 🔴 Il existe pour que ces lignes ne disparaissent pas. Des onglets dérivés
  * des seuls `pickupLabel` présents les laisseraient hors de tout onglet, donc
@@ -583,8 +564,8 @@ export function outsideTheCounter(
   openTab: string,
 ): string | null {
   if (subject.fulfillmentMethod === 'delivery') {
-    // La file ne montre plus aucune livraison depuis `atTheCounter` : ce code
-    // n'a donc AUCUNE ligne à l'écran, quel que soit l'onglet ouvert.
+    // La route de la file ne sert aucune livraison : ce code n'a donc AUCUNE
+    // ligne à l'écran, quel que soit l'onglet ouvert.
     return 'Cette commande part en livraison — elle n’est dans aucune file de comptoir.';
   }
   if (openTab === '') {

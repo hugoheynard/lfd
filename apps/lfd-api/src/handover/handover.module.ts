@@ -9,6 +9,8 @@ import { PurgeHandoverProofsOlderThanHandler } from "./application/commands/purg
 import { GetDeliveryRunSheetHandler } from "./application/queries/get-delivery-run-sheet.handler.js";
 import { GetHandoverByOrderHandler } from "./application/queries/get-handover-by-order.handler.js";
 import { GetHandoverQueueHandler } from "./application/queries/get-handover-queue.handler.js";
+import { GetCockpitHandoversHandler } from "./application/queries/get-cockpit-handovers.handler.js";
+import { HandoverCockpitController } from "./http/handover-cockpit.controller.js";
 import { GetHandoverHandler } from "./application/queries/get-handover.handler.js";
 import { HandoverCounterView } from "./application/services/handover-counter-view.js";
 import { AttestingCounterHandoverDesk } from "./application/services/attesting-counter-handover.desk.js";
@@ -65,7 +67,12 @@ import { PrismaOrderHandoverRepository } from "./infrastructure/prisma-order-han
  * (`documentation/livraisons/livreur/a-la-porte.md`).
  */
 @Module({
-  controllers: [HandoverController, HandoverSupervisionController, DeliveryRunSheetController],
+  controllers: [
+    HandoverController,
+    HandoverSupervisionController,
+    HandoverCockpitController,
+    DeliveryRunSheetController,
+  ],
   providers: [
     ConfirmHandoverHandler,
     ConfirmManualHandoverHandler,
@@ -78,6 +85,7 @@ import { PrismaOrderHandoverRepository } from "./infrastructure/prisma-order-han
     GetHandoverByOrderHandler,
     GetHandoverHandler,
     GetHandoverQueueHandler,
+    GetCockpitHandoversHandler,
     HandoverAttestation,
     HandoverCounterView,
     { provide: OrderHandoverRepository, useClass: PrismaOrderHandoverRepository },

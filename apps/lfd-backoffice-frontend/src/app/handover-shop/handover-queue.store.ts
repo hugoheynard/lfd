@@ -14,7 +14,6 @@ import { VersionWatcher } from '../shared/version/version-watcher';
 import { PickupAddressesService } from '../b2b/reglages/pickup-addresses.service';
 import { HandoverQueueService } from './handover-queue.service';
 import {
-  atTheCounter,
   clockOf,
   type CounterPlace,
   entriesForTab,
@@ -307,9 +306,9 @@ export class HandoverQueueStore {
     this.state.set('loading');
     try {
       const view = await this.api.forDay(day);
-      // 🔴 La coupe est faite UNE fois, à la lecture : les onglets, les
-      // compteurs, la file et la sélection en dérivent tous.
-      this.entriesState.set(atTheCounter(view.entries));
+      // 🔴 Le périmètre est celui de la route : aucune livraison n'arrive
+      // ici. Les onglets, les compteurs, la file et la sélection en dérivent.
+      this.entriesState.set(view.entries);
       this.resupplyTransfersState.set(view.resupplyTransfers ?? []);
       this.nowState.set(new Date());
       this.refreshFailed.set(false);
@@ -334,7 +333,7 @@ export class HandoverQueueStore {
     try {
       const view = await this.api.forDay(day);
       if (day === this.day()) {
-        this.entriesState.set(atTheCounter(view.entries));
+        this.entriesState.set(view.entries);
         this.resupplyTransfersState.set(view.resupplyTransfers ?? []);
         this.refreshFailed.set(false);
       }

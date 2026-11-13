@@ -206,6 +206,18 @@ const rowTexts = (fixture: ComponentFixture<RetraitHost>): readonly string[] =>
   );
 
 describe('HandoverShopPage', () => {
+  it('🔴 un retrait sans point de retrait reste à l’écran : la file ne refiltre pas ce que la route sert', async () => {
+    // Le périmètre (aucune livraison) est posé par `admin/handover/file`, au
+    // serveur ; l'écran prend les lignes telles quelles.
+    const api = new FakeQueue();
+    api.entries = [entry({ orderId: 'a', pickupLabel: null, reference: 'ORD-SANS-POINT' })];
+
+    const fixture = await render(api);
+
+    expect(rowTexts(fixture)).toHaveLength(1);
+    expect(rowTexts(fixture)[0]).toContain('ORD-SANS-POINT');
+  });
+
   it('la bande annonce les retraits faits, au singulier comme au pluriel', async () => {
     const api = new FakeQueue();
     api.entries = [

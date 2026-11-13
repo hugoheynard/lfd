@@ -20,10 +20,25 @@ dans le navigateur (§ 4).
   commande, livraison comprise, par son QR, son identifiant ou une référence
   (`OrderHandoverView` ne porte aucune tournée, vérifié le 2026-11-13). La
   seule entorse aux droits est la **tournée** (`HandoverQueueRoundView`,
-  matière de `delivery_rounds`) envoyée dans la file du comptoir. Le lot 0
-  retire les livraisons de `admin/handover/file` côté serveur ; le filtre du
-  front à retirer est dans `handover-queue.store.ts` (`atTheCounter`, appelé
-  aux deux lectures). Le mot « fuite » du § 4 vaut pour la tournée seule.
+  matière de `delivery_rounds`) envoyée dans la file du comptoir. Le mot
+  « fuite » du § 4 vaut pour la tournée seule.
+- **Une route par usage** (Hugo, 2026-11-13) :
+  - `admin/handover/file` (`handover_counter`) ne sert que les retraits : le
+    serveur retire les livraisons (périmètre `counter` de
+    `GetHandoverQueueQuery`) et ne lit aucune tournée. Le comptoir prend les
+    lignes telles quelles ; il n'a plus de filtre à lui ;
+  - `admin/supervision/handover` (`b2b_supervision`) sert la journée entière
+    (périmètre `whole_day`), livraisons et tournées comprises ;
+  - `admin/cockpit/handovers?jour=` (`b2b_growth`, le droit de
+    `admin/cockpit` et de la page du cockpit) rend les seuls chiffres du
+    bandeau (`CockpitHandoversView` : retraits et livraisons, attendus et
+    remis, annulées et non réglées exclues). Elle vit dans `handover/http/`,
+    à côté des données qu'elle compte, comme la porte de la Supervision :
+    aucun import ne traverse de bloc. Le cockpit ne lit plus la file.
+
+  Ces trois routes ont donc trois clés distinctes au lot 2 : leurs octets
+  diffèrent.
+
 - **Le sujet global `companies` entre dans la clé** de tout écran qui lit le
   nom d'une société ou d'un client (`handover-order.query.ts` lit
   `company { raisonSociale, enseigne }` et `placedBy { … }` ; à vérifier pour
@@ -79,6 +94,12 @@ Lecture :
   lui la fiche tient en ~22 opérations et le colisage en ~17. Le corriger
   rapporte plus, et plus tôt, que le rangement du lot 2 ; à trancher avant le
   lot 1 (non corrigé ici, hors du lot 0).
+- **N + 1 corrigé le 2026-11-13** : `DeliveryBinOffice.liveAmong` (derrière
+  `BinDesk.liveBins`, que le colisage lit pour la fiche et le tableau) lisait
+  un bac par bac ; il lit désormais en un `findMany … in`
+  (`DeliveryBinRepository.loadMany`), `assertAtHand` aussi. Même méthode, même
+  journée (11-03), mêmes octets : fiche datée et Supervision **73 → 23**
+  opérations (41 100 o), colisage **68 → 18** (57 461 o).
 - La fiche datée et la Supervision rendent **les mêmes octets** (41 100 o,
   même compte) : la preuve demandée pour partager une clé est faite sur ces
   deux journées.
