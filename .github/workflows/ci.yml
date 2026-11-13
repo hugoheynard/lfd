@@ -451,6 +451,10 @@ jobs:
         env:
           E2E_WORKERS: 2
           E2E_BOOT_LOG: ${{ runner.temp }}/e2e-boot-${{ matrix.shard }}.jsonl
+          # Les durées de CET éclat, hors du dépôt : `pnpm tool
+          # e2e:durations-from-ci` les fusionne depuis un run vert pour
+          # réécrire `test/e2e-durations.json` (cf. documentation/ci-cd/pipelines.md).
+          E2E_DURATIONS_OUT: ${{ runner.temp }}/e2e-durations-${{ matrix.shard }}.json
       - name: Coût du démarrage de l'application e2e
         if: always()
         run: |
@@ -465,6 +469,20 @@ jobs:
           path: ${{ runner.temp }}/e2e-boot-${{ matrix.shard }}.jsonl
           if-no-files-found: ignore
           retention-days: 14
+      # Les durées de l'éclat, que l'outil `e2e:durations-from-ci` relit. Hors
+      # d'un run annulé seulement : un éclat rouge écrit quand même ses durées
+      # (l'outil refuse un run non vert, pas l'étape). Le rapporteur n'écrit
+      # rien si Jest n'a pas fini — `ignore` ; et une panne du téléversement
+      # ne doit jamais rougir les e2e — `continue-on-error`.
+      - name: Téléverser les durées des suites
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-durations-${{ matrix.shard }}
+          path: ${{ runner.temp }}/e2e-durations-${{ matrix.shard }}.json
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Sauvegarder le cache Jest
         if: github.ref == 'refs/heads/dev' && matrix.shard == 1
         uses: actions/cache/save@v6

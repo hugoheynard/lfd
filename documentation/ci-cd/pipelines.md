@@ -259,8 +259,20 @@ commande. Il refuse de démarrer si une autre chaîne e2e tourne. Mesuré en loc
 le 2026-11-03 : **199 suites, 2145 tests, 23 min 33** (1413 s).
 
 **Les durées sont VERSIONNÉES** (`apps/lfd-api/test/e2e-durations.json`),
-régénérées à la main par `pnpm --filter lfd-api e2e:rebalance`, et non tirées
-d'un cache réécrit à chaque run. Un cache enregistrerait surtout le **bruit** :
+régénérées à la main, et non tirées d'un cache réécrit à chaque run.
+
+**Le geste : `pnpm tool e2e:durations-from-ci [run-id]`.** Chaque éclat e2e de la
+CI écrit les durées de ses suites (`E2E_DURATIONS_OUT`) et les dépose en artefact
+`e2e-durations-<éclat>` (7 jours, téléversement qui ne fait jamais rougir le
+job). L'outil (`dev-toolbox/ci/e2e-durations-from-ci.mjs`) télécharge ceux d'un
+run — par défaut le dernier run vert de `ci.yml` sur `dev` —, les fusionne, les
+ramène à l'échelle locale (÷ 2,9, le ratio CI/local stable, pour qu'une durée
+ajoutée à la main reste comparable) et réécrit le fichier, trié par nom. Il
+refuse un run non vert, un run sans ces artefacts (e2e sautées par le filtre de
+chemins, ou expirés) et un run qui ne couvre pas toutes les suites du disque, en
+les nommant. On relit le diff, on commite. `pnpm --filter lfd-api e2e:rebalance`
+(toutes les suites en série en local, plusieurs heures) reste possible, mais
+n'est plus le geste. Un cache enregistrerait surtout le **bruit** :
 les runners varient du simple au triple (mesuré : les mêmes 51 suites en 6 min 40
 puis 16 min 45). Le découpage danserait sans que rien de réel n'ait changé, et
 deux runs du même commit ne feraient pas le même travail. Un fichier committé se

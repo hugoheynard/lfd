@@ -2,6 +2,11 @@
   "$comment": "Les outils occasionnels du dépôt, sortis du package.json racine le 2026-11-06 pour qu'un nouvel arrivant n'y lise que l'essentiel. `pnpm tool` les liste, `pnpm tool <nom> [arguments…]` en lance un. `run` est passé à un shell, les arguments suivent.",
   "tools": [
     {
+      "name": "e2e:durations-from-ci",
+      "run": "node dev-toolbox/ci/e2e-durations-from-ci.mjs",
+      "does": "Réécrit apps/lfd-api/test/e2e-durations.json depuis les durées d'un run CI vert (dernier vert de dev par défaut, ou [run-id]) ; refuse un run rouge ou qui ne couvre pas toutes les suites."
+    },
+    {
       "name": "copy:digest",
       "run": "node dev-toolbox/shop-copy-digest.mjs",
       "does": "Régénère le recueil des textes de la boutique et son manifeste après un texte changé (porte shop-copy-digest)."

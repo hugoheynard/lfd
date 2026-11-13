@@ -12,7 +12,8 @@
  * matin en décidant de déséquilibrer la CI, elle dérive d'un oubli à la fois.
  * Cette porte compte les oublis à l'entrée.
  *
- * Le remède est une commande : `pnpm --filter lfd-api e2e:rebalance`.
+ * Le remède est une commande : `pnpm tool e2e:durations-from-ci` (depuis un
+ * run CI vert), ou la durée locale de la suite ajoutée à la main.
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -50,7 +51,7 @@ if (missing.length > 0 || ghosts.length > 0) {
   for (const suite of ghosts) {
     console.error(`  - ${suite}  (mesurée, mais le fichier n'existe plus)`);
   }
-  console.error("\n  pnpm --filter lfd-api e2e:rebalance\n");
+  console.error("\n  pnpm tool e2e:durations-from-ci   (depuis le dernier run CI vert de dev)\n");
   process.exit(1);
 }
 

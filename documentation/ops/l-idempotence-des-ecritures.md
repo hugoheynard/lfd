@@ -362,8 +362,7 @@ aujourd'hui :
   dette du rejeu.
 - **La dette du rejeu** : 13 routes sans scénario (§ 5), plafond qui ne fait
   que baisser.
-- **`e2e:rebalance`** (`pnpm --filter lfd-api e2e:rebalance`) : l'e2e du rejeu
-  dure près de deux minutes ; les durées des trois suites de l'idempotence
-  sont inscrites dans `test/e2e-durations.json`, mais un passage complet qui
-  rééquilibre les tranches de la CI reste à lancer (pas en même temps qu'une
-  autre chaîne e2e).
+- **Durées e2e** (`pnpm tool e2e:durations-from-ci`, cf. `ci-cd/pipelines.md`) :
+  l'e2e du rejeu dure près de deux minutes ; les durées des trois suites de
+  l'idempotence sont inscrites à la main dans `test/e2e-durations.json`, et le
+  rééquilibrage des tranches se fait depuis un run CI vert.
