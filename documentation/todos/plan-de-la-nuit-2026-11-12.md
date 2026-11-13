@@ -4,6 +4,14 @@
 > de la nuit où on voit tous les points que tu vas attaquer ». Chaque point se
 > raye ici (date + commit) quand il est fait. Rien ne part sur `main` sans
 > « pousse main ».
+>
+> **État au 2026-11-13 (après-midi)** : tout ce qui a été bâti cette nuit et le
+> lendemain est en production (`origin/main` = `350d78c64`). Le plan n'est
+> **pas entièrement soldé** : restent les points 9 et 10 (§ 5), l'audit de
+> sécurité et les protections de coût (§ 6, à trancher par Hugo), la relecture
+> des décisions sur le virement, le test de la fiche périmée en production,
+> le cas du lien mort, le moyen figé dans la vue d'une facture et
+> `e2e:rebalance` — tous repris dans `../carte-des-chantiers.md`.
 
 ## Règles de la nuit
 
@@ -21,7 +29,7 @@
 
 ## 2. Corriger
 
-1. ✅ (`91f6856c2`, à prouver en production) **🔴 Les appels vers l'objet des journées arrivent à l'objet des rayons.**
+1. ✅ (`91f6856c2`, en production ; le défaut restant des écrans de journée est suivi dans `caching-usage/le-cache-du-back-office.md` § 7) **🔴 Les appels vers l'objet des journées arrivent à l'objet des rayons.**
    Constaté le 2026-11-12 à 22 h 17 dans l'onglet Cache : les deux objets
    rendent EXACTEMENT les mêmes compteurs, sous le nom `pro-shelves`.
    - **Ce qui est prouvé** : l'effet. Le nom `pro-shelves` n'est écrit que par
@@ -46,7 +54,7 @@
      pour l'HTTPS, sans le dire pour l'HTTP : l'hypothèse reste que le
      runtime de production aiguille par l'adresse, commune aux deux hôtes, et
      reconstruit l'URL avec le premier.
-   - **Correction (non commitée, non déployée)** : un seul hôte intercepté,
+   - **Correction (`91f6856c2`, en production)** : un seul hôte intercepté,
      `objets.interne`, et l'objet choisi par le préfixe du chemin
      (`apps/lfd-api/container/internal-objects.ts` : `/rayons/…` → `ProShelves`,
      `/journees/…` → `DayVersions`, préfixe retiré, 404 sinon). Refus 403 et
@@ -69,14 +77,14 @@
    qui purge les journaux, comme `day_change` ; une clé rejouée après la purge
    referait le geste, d'où une durée qui couvre largement les renvois réels
    (réseau, onglet rouvert, coursier hors ligne) et Stripe (24 h).
-3. ✅ (`6e87d7cc5`, mode rapport par défaut) **Vérification de dérive avant migration** dans
+3. ✅ (`6e87d7cc5` ; **bloquante** en production depuis le 2026-11-13, `MIGRATION_DRIFT_MODE=enforce`, 0 écart) **Vérification de dérive avant migration** dans
    `deploy_lfd_api.yml` : comparer la base de production aux migrations
    appliquées (`prisma migrate diff`, lecture seule) avant `migrate deploy` ;
    arrêter le déploiement sur un écart non inscrit ; la liste des écarts
    connus, avec leur raison, dans un fichier du dépôt. Le premier passage
    montrera les écarts anciens : ils sont listés, pas corrigés cette nuit.
 
-2 bis. **Finir l'idempotence** (Hugo, 2026-11-12 : « l'intégralité ») —
+2 bis. ✅ (J3 `95574a15d`, J4 `0c8196adc`, J5 `a079267d8`, failles `97d638522`, doc d'état `051a814b0`) **Finir l'idempotence** (Hugo, 2026-11-12 : « l'intégralité ») —
 lots J3, J4, J5 (repères dans `ops/l-idempotence-des-ecritures.md`, § 7) :
 
 - **J3** : un e2e de rejeu généré depuis l'inventaire de la porte, qui
@@ -87,7 +95,7 @@ lots J3, J4, J5 (repères dans `ops/l-idempotence-des-ecritures.md`, § 7) :
 - **J5** : côté écrans (back-office et boutique), tout appel vers une route
   « par intention » passe par `GestureIntents`, jamais une clé tirée au clic.
   Puis le plan devient une **doc d'état** de l'idempotence.
-  2 ter. **Audit du système de garantie de l'idempotence**, rendu au rapport du
+  2 ter. ✅ (`b76ea292f`, § 7) **Audit du système de garantie de l'idempotence**, rendu au rapport du
   matin (§ 7) : ce que la porte, le scellement, les tests et les écrans
   garantissent réellement, ce qui échappe (écritures hors HTTP, effets chez
   un tiers, deux clics simultanés sur un geste « par nature », risques
@@ -98,7 +106,7 @@ une modification envoyée sur une fiche que quelqu'un a changée depuis sa
 lecture est refusée (409 nommé : « cette fiche a changé depuis que vous
 l'avez ouverte ») au lieu d'écraser. Court plan d'abord (où vit la version
 de la société, quels gestes de la fiche la portent), vérifié dans le code.
-2 quinquies. **Finir le paiement par virement** (Hugo, 2026-11-12) : T4
+2 quinquies. ✅ (T4 et T5 `d7161d4a0`, décisions `7fbaa6bad` ; à relire avec Hugo, § 7 point 6) **Finir le paiement par virement** (Hugo, 2026-11-12) : T4
 (l'écran) et T5 (la boutique) du plan
 `comptabilite/le-paiement-par-virement.md`, plus les trois
 petites décisions (écart avant de valider, déduction d'un avoir, état dans
@@ -108,7 +116,7 @@ e-mail.
 
 ## 4. Documenter
 
-4. ✅ (2026-11-12, non commité) **Les plans finis deviennent des docs d'état**,
+4. ✅ (2026-11-12, `97d638522`) **Les plans finis deviennent des docs d'état**,
    les plans sont retirés et leurs liens repointés : les cinq plans du cache
    (veilleur unique, écran Catalogue, lectures du PIM, onglet Cache, objet
    des journées) → `caching-usage/le-cache-du-back-office.md` (le lot 2 des
@@ -116,15 +124,15 @@ e-mail.
    `comptabilite/le-paiement-par-virement.md` (le moyen figé dans la vue
    d'une facture y reste à faire). Le plan de l'idempotence est devenu
    `ops/l-idempotence-des-ecritures.md` (doc d'état, après `97d638522`).
-5. ✅ (2026-11-12, non commité) **La carte des chantiers** : ce qui est fait,
+5. ✅ (2026-11-12, `97d638522`) **La carte des chantiers** : ce qui est fait,
    ce qui reste, dans l'ordre.
-6. ✅ (2026-11-12, non commité) **Les 🟦 « sur dev » passés à ✅** pour ce
+6. ✅ (2026-11-12, `97d638522`) **Les 🟦 « sur dev » passés à ✅** pour ce
    qui est en production (`adb9c41e3`).
-7. ✅ (2026-11-12, non commité) **Le runbook** : l'incident
+7. ✅ (2026-11-12, `97d638522`) **Le runbook** : l'incident
    `nutrition_declaration` (42P01), le geste `rolled_back_at` en console
    Prisma, et la vérification des tables avant une migration qui pose des
    déclencheurs.
-8. ✅ (2026-11-12, non commité) **`documentation/README.md`** : l'index des
+8. ✅ (2026-11-12, `97d638522`) **`documentation/README.md`** : l'index des
    docs créées ou retirées aujourd'hui.
 
 ## 5. Si le temps le permet
@@ -137,13 +145,13 @@ e-mail.
 
 ## 6. À trancher avec Hugo (pas cette nuit)
 
-- Lot 2 des journées (demain matin).
+- ~~Lot 2 des journées~~ — bâti le 2026-11-13 (`1c3965e3f`, `eb33be38f`, `4a17858cc`, `50231053c`, `c59dc2e07`), en production ; défaut en enquête (`caching-usage/le-cache-du-back-office.md` § 7).
 - Audit de sécurité : capture de la fiche racine, fuite d'une facture d'un
   site frère, `RECOMPUTE_TOKEN`, en-têtes des fronts, propriétaire des
   abonnements push.
 - Protections de coût : alertes de budget, limites de débit Cloudflare,
   Turnstile.
-- Refus d'écrire sur une fiche client périmée.
+- ~~Refus d'écrire sur une fiche client périmée~~ — `c137414e2`, validé par Hugo le 2026-11-13 ; reste le test en production (§ 7, point 2).
 
 ## 7. Le rapport du matin
 
@@ -155,8 +163,8 @@ e-mail.
    et du PIM ne sert toujours pas (rien de faux n'est servi : tout va en base).
 2. **Une fiche client** : ouvrir la même fiche dans deux onglets, enregistrer
    l'identité dans l'un, puis dans l'autre → « Cette fiche a changé… ».
-3. **La vérification de dérive** (étape du déploiement de l'API, mode rapport)
-   : lire les écarts qu'elle liste au premier passage, et les inscrire ou les
+3. ~~**La vérification de dérive**~~ — fait : 0 écart, bloquante depuis le
+   2026-11-13 (runbook). Texte d'origine : lire les écarts qu'elle liste au premier passage, et les inscrire ou les
    corriger avant de la rendre bloquante (runbook).
 
 ### Fait cette nuit
@@ -292,9 +300,9 @@ tournera pour la première fois, en mode rapport.
 
 ### Pas fait cette nuit
 
-- Lot 2 des journées (prévu avec Hugo).
+- ~~Lot 2 des journées~~ — bâti le 2026-11-13 (voir § 6).
 - Mesure avant/après des requêtes ; test de la saisie dans un panneau
   pendant une relecture.
 - ~~Couleurs et rôles d'un site réécrits sans verrou~~ — fait le 2026-11-13
-  (`loadLocked`, e2e concurrent dans `sites.e2e-spec.ts`, non commité) ; moyen d'encaissement figé dans la vue de la facture.
+  (`loadLocked`, e2e concurrent dans `sites.e2e-spec.ts`, `25805afd0`) ; moyen d'encaissement figé dans la vue de la facture.
 - `e2e:rebalance` (durées des suites neuves ajoutées à la main).

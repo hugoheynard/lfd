@@ -1,6 +1,6 @@
 # L'idempotence des écritures
 
-> ✅ **Doc d'état**, vérifiée dans le code le 2026-11-12 (après `97d638522`).
+> ✅ **Doc d'état**, vérifiée dans le code le 2026-11-13 (après `6c7d2bc36`).
 > Elle remplace le plan qui l'a bâtie (lots J0 à J5, corrections de `vitruve`,
 > failles F1 à F4 de l'audit) ; le tableau des [repères](#7-les-repères-du-plan)
 > renvoie chaque numéro que le code cite à la règle d'aujourd'hui.

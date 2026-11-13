@@ -341,6 +341,37 @@ est visible de tout le back-office. Clé d'idempotence par commande **et** par
 cause : un refus puis la clôture de la même commande font deux nouvelles. Une
 clientèle `public` ou `NULL` ne sonne pas.
 
+## 7 bis. La tentative abandonnée n'est pas une commande
+
+**En clair.** Un client qui quitte l'écran de paiement, une carte qui
+expire, une journée qui clôt sur un règlement dû : la commande est annulée
+sans avoir jamais été payée. Elle garde son numéro, mais ce n'est pas une
+commande qu'on a eue — elle ne s'affiche donc ni dans la liste du
+back-office, ni au comptoir, ni sur la feuille de route, ni dans les
+statistiques. Elle se consulte à part, dans l'onglet « Tentatives
+abandonnées » de la liste des commandes. Décidé par Hugo le 2026-11-13.
+
+**Le critère, écrit une fois** : `status = cancelled` **et**
+`paymentStatus = failed`
+([`abandoned-attempt.where.ts`](../../../apps/lfd-api/src/lafoliecoffee/orders/infrastructure/abandoned-attempt.where.ts),
+`abandonedAttemptWhere` / `notAbandonedAttemptWhere`). `failed` ne s'écrit que
+depuis `pending` : une commande payée puis annulée reste `paid` ou `refunded`,
+une commande au compte reste `not_required`, et toutes deux restent des
+commandes. Un pro refusé reste `placed` + `failed` jusqu'à la clôture : il
+reste dans la liste, c'est une commande à suivre.
+
+| Lecteur                                                   | Où                                                                                                                      | Ce qu'il fait                                                                          |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| liste des commandes du back-office                        | `prisma-admin-order-list.reader.ts`, vue `orders` ou `abandoned_attempts` (`ADMIN_ORDER_LIST_VIEWS`, `@lfd/contracts`)  | deux onglets ; le total suit la vue                                                    |
+| comptoir, feuille de route, tournées                      | `expectedOnWhere` (`handover-order.query.ts`)                                                                           | écartées ; les vraies annulées restent rendues                                         |
+| cockpit (paiements échoués)                               | `growth/infrastructure/prisma-portfolio-metrics.reader.ts`                                                              | un `failed` annulé n'est pas une relance à passer                                      |
+| croissance (acquisition, cohortes, concentration, tunnel) | `growth/domain/abandoned-attempts.ts` (`withoutAbandonedAttempts`), `growth/infrastructure/abandoned-attempt-orders.ts` | le fait `order.placed` reste au journal, la lecture l'écarte ; `order.abandoned` passe |
+
+Éprouvé par `list-admin-orders.handler.spec.ts`, `abandoned-attempts.spec.ts`,
+`test/admin-orders-list.e2e-spec.ts`, `test/delivery-run-sheet.e2e-spec.ts`,
+`test/growth-stats-abandoned-attempts.e2e-spec.ts` et
+`orders-list-page.spec.ts` (back-office).
+
 ## 8. Où c'est éprouvé
 
 | Niveau      | Fichiers                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
@@ -380,7 +411,6 @@ substituent un faux `PaymentGateway`.
   commande annulée est remboursé automatiquement
   ([`annulation-par-le-staff.md`](../annulation/annulation-par-le-staff.md), C4.11), comme l'annulation d'une
   commande payée.
-- **La croissance** (S11) : `order.placed` reste compté après un abandon.
 - Les JSDoc de code que ce chantier périmait (`PAYMENTS_AWAITING`,
   `absorbedByPlan`, `ClientOrders.paymentFor`) sont réécrits le 2026-09-26.
 

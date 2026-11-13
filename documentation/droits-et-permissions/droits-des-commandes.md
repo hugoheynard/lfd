@@ -190,7 +190,7 @@ préfixes : `/admin/handover` et `/admin/production/handover`.
 
 | Méthode et chemin          | Exige                                          |
 | -------------------------- | ---------------------------------------------- |
-| `GET …/file`               | `handover_counter:read` — la file du jour      |
+| `GET …/file`               | `handover_counter:read` — les retraits du jour |
 | `GET …/order/:id`          | `handover_counter:read`                        |
 | `GET …/:token`             | `handover_counter:read` — lire un QR           |
 | `POST …/:token`            | `handover_counter:write` — attester le retrait |
@@ -198,6 +198,20 @@ préfixes : `/admin/handover` et `/admin/production/handover`.
 
 Il ouvre aussi les journaux `orders` et `production` de la porte unique des
 versions de journée (ci-dessus).
+
+**Une route par usage** (décidé par Hugo le 2026-11-13) : la journée du
+retrait a trois portes, et c'est la route qui pose le périmètre, jamais
+l'écran.
+
+| Route                             | Droit                   | Ce qu'elle sert                                             |
+| --------------------------------- | ----------------------- | ----------------------------------------------------------- |
+| `GET /admin/handover/file`        | `handover_counter:read` | les retraits seuls (périmètre `counter`), aucune tournée    |
+| `GET /admin/supervision/handover` | `b2b_supervision:read`  | la journée entière, livraisons et tournées (`whole_day`)    |
+| `GET /admin/cockpit/handovers`    | `b2b_growth:read`       | deux compteurs par acheminement, aucune commande ni tournée |
+
+Le comptoir n'a donc plus besoin de `delivery_rounds` pour ouvrir sa file, et
+le commercial n'a pas besoin de `handover_counter` (qui ouvrirait la
+confirmation du retrait) pour son cockpit.
 
 **Back-office** : `/comptoir/retrait` et `/comptoir/reassort` (garde
 `handover_counter:read`), `/retrait/:token` (garde `handover_counter:write`),

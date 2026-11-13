@@ -1,13 +1,13 @@
 # Le paiement au compte par virement
 
-> ✅ **Doc d'état, relue dans le code le 2026-11-12.** En production depuis
-> `adb9c41e3` : le compte créancier aux quatre yeux, le moyen d'encaissement
-> daté du payeur, la facture au virement, le virement reçu qui règle ses
-> factures, les virements en retard. Sur `dev` seulement : l'écran « Moyens
-> de paiement » de la fiche client et la boutique (`d7161d4a0`), l'écart
-> montré avant de valider et « Réglée par virement le … » (`7fbaa6bad`). Ce
-> document remplace le plan du chantier ; ses versions et ses cinq
-> relectures par `vitruve` sont dans l'historique git.
+> ✅ **Doc d'état, relue dans le code le 2026-11-13.** En production : le
+> compte créancier aux quatre yeux, le moyen d'encaissement daté du payeur,
+> la facture au virement, le virement reçu qui règle ses factures, les
+> virements en retard, l'écran « Moyens de paiement » de la fiche client et
+> la boutique, l'écart montré avant de valider, « Réglée par virement le … »,
+> et l'échéance au virement réglée par entité (`57485425d`, § 4). Ce document
+> remplace les plans du chantier, dont celui de l'échéance ; leurs versions
+> et leurs relectures par `vitruve` sont dans l'historique git.
 
 # Partie 1 — L'explication simple
 
@@ -237,8 +237,11 @@ Migrations `20261112170000_la_commande_reglee_par_virement` et
   s'annule. Le dessous du virement (`fiche-client/bank-transfer-means/`) :
   titulaire, BIC, IBAN par ses quatre derniers caractères, l'échéance
   (« N jours après l'émission de la facture », lue sur
-  `transferDueDaysAfterIssue` de l'entité), les factures à régler. La carte
-  du mode reste où elle est. Le réglage lui-même se fait sur la fiche de
+  `transferDueDaysAfterIssue` de l'entité), les factures à régler. La
+  dernière étape s'appelle « Paiement au compte » : le crédit accordé ne
+  porte aucun rythme, et la carte du mode de facturation, posée juste en
+  dessous dans « Paiement différé », dit le rythme réel (hebdomadaire,
+  deux fois par mois, mensuel) — jamais « Mensuel » tiré du crédit. Le réglage lui-même se fait sur la fiche de
   l'entité émettrice (`comptabilite/entites-juridiques/detail/transfer-due-card/`,
   `PUT admin/accounting/legal-entities/:id/transfer-due-days`).
 - **Boutique** : `GET companies/:companyId/collection-means` → `{ means }`

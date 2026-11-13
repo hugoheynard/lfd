@@ -93,12 +93,12 @@ back-office fausserait le score.
 telle. Quatre motifs, dans `packages/contracts/src/company-warning.ts`, du plus
 coûteux au moins pressant :
 
-| Motif (`kind`)       | Ce qu'il dit                                                     | `since`                          |
-| -------------------- | ---------------------------------------------------------------- | -------------------------------- |
-| `mandat_absent`      | un règlement différé accordé sans mandat SEPA actif              | `null` — un manque n'a pas d'âge |
-| `activation_bloquee` | dossier en attente, identité, détenteur ou facturation manquants | ouverture du compte              |
-| `attente_prolongee`  | en attente depuis 14 jours ou plus                               | ouverture du compte              |
-| `kbis_a_verifier`    | l'extrait est là, personne ne l'a ouvert                         | dépôt de l'extrait               |
+| Motif (`kind`)       | Ce qu'il dit                                                                                                       | `since`                          |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------ | -------------------------------- |
+| `mandat_absent`      | un règlement différé accordé sans mandat SEPA actif, à un payeur qui n'est pas au virement chez toutes les entités | `null` — un manque n'a pas d'âge |
+| `activation_bloquee` | dossier en attente, identité, détenteur ou facturation manquants                                                   | ouverture du compte              |
+| `attente_prolongee`  | en attente depuis 14 jours ou plus                                                                                 | ouverture du compte              |
+| `kbis_a_verifier`    | l'extrait est là, personne ne l'a ouvert                                                                           | dépôt de l'extrait               |
 
 Le calcul est **une fonction pure côté serveur**, `companyWarnings`
 (`apps/lfd-api/src/lafoliecoffee/account/domain/services/company-warnings.ts`), à côté
@@ -107,7 +107,19 @@ tableau **ordonné** (le plus grave d'abord, à gravité égale le plus vieux), 
 `AdminCompanyView` le porte en `warnings` (`packages/contracts/src/admin-company.ts`)
 — un tableau, pas un booléen KBIS qu'il aurait fallu défaire au deuxième motif.
 
-Deux limites, assumées dans le code :
+Le moyen d'encaissement entre dans `mandat_absent` : un payeur au virement
+chez **toutes** les entités n'a besoin ni de RIB ni de mandat, et ne reçoit
+pas l'avertissement. Le moyen se lit par lot avec la règle de la
+comptabilité (`transfer-payers.projection.ts`, `collectionMeansAt`) ; une
+entité où rien n'a changé le prélève, d'où ce choix prudent.
+
+Trois limites, la dernière à corriger :
+
+- **Un site facturé chez son principal** peut recevoir `mandat_absent` à
+  tort : le moyen se lit bien sur le payeur réel (`warningPayerOf`), mais
+  le crédit et le mandat sur la ligne du site lui-même
+  (`company-warnings.projection.ts`), alors que c'est le principal qui
+  détient le mandat (point ouvert, carte des chantiers).
 
 - **`activation_bloquee` sous-déclare** : il ne lit pas le téléphone, qui peut
   vivre sur n'importe quel interlocuteur. Un dossier auquel il ne manque que le

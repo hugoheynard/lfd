@@ -1006,14 +1006,22 @@ rend `0`.
 lecture des colonnes, qui n'ont pas bougé. Les lignes retracées restent dans
 l'historique — elles disent le prix réellement servi pendant l'intervalle.
 
-## La dérive de schéma avant migration — passer en mode bloquant
+## La dérive de schéma avant migration — en mode bloquant
 
 **En clair.** Avant « Migrer la base », le déploiement de l'API compare la base de
 production à ce que ses migrations **déjà appliquées** décrivent (étape « Vérifier
 la dérive de la base », lecture seule). Un écart — une table que les migrations
 créent et que la base n'a pas, un index posé à la main — est listé dans le
-journal de l'étape. Par défaut, il est seulement **signalé** (avertissement
-jaune) ; en mode bloquant, il **arrête** le déploiement avant toute écriture.
+journal de l'étape et **arrête** le déploiement avant toute écriture : la
+production est en mode bloquant (`MIGRATION_DRIFT_MODE=enforce`) depuis le
+2026-11-13, avec **0 écart** constaté et aucune inscription dans
+`known-drift.json`. En mode rapport (`report`, le défaut si la variable
+manque), l'écart n'est qu'un avertissement jaune.
+
+**Si le déploiement s'arrête sur la dérive** : lire chaque `✗` du journal de
+l'étape, puis corriger la base par une migration ou inscrire l'écart (étape 2
+ci-dessous). Repasser en `report` n'est qu'un geste de dépannage, à défaire au
+déploiement suivant.
 
 **Technique.** `dev-toolbox/ci/migration-drift.mjs` lit `prisma migrate status`
 pour exclure les migrations en attente, rejoue les autres sur une base fantôme
@@ -1022,7 +1030,7 @@ pour exclure les migrations en attente, rejoue les autres sur une base fantôme
 Chaque instruction rendue est un écart ; celles inscrites dans
 `apps/lfd-api/prisma/known-drift.json` (avec leur `reason`) sont retirées.
 
-Passer en mode bloquant :
+Passer en mode bloquant (fait le 2026-11-13) :
 
 1. Lire le journal de l'étape au dernier déploiement : chaque `✗` est
    l'instruction qui ramènerait la base à ses migrations.

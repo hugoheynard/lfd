@@ -111,6 +111,17 @@ chemins de refus.
 **Le fournil n'est nulle part dans le retrait.** Entre le colisage et le scan, il
 n'y a qu'un courriel au client.
 
+### Trois portes sur la journée, une par usage
+
+Le comptoir lit les **retraits seuls** (`GET /admin/handover/file`, périmètre
+`counter` de `GetHandoverQueueQuery`) : une livraison n'attend personne au
+comptoir, et sa tournée relève du droit des tournées. La Supervision lit la
+**journée entière** (`GET /admin/supervision/handover`, `whole_day`). Le cockpit
+commercial lit **deux compteurs par acheminement** sur sa propre route
+(`GET /admin/cockpit/handovers`, `GetCockpitHandoversQuery`, `b2b_growth`).
+Le périmètre est posé par la route, jamais par l'écran (décidé par Hugo le
+2026-11-13). Les droits : [`droits-des-commandes.md`](../droits-et-permissions/droits-des-commandes.md).
+
 ## 5. Les invariants, et où ils sont tenus
 
 | Invariant                                               | Tenu par                                             |

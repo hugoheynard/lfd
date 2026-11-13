@@ -1,9 +1,11 @@
 # Le cache du back-office — un numéro par sujet, un veilleur par onglet
 
-> ✅ **Doc d'état, relue dans le code le 2026-11-12.** En production depuis
-> `adb9c41e3` : les numéros par sujet, l'objet des journées, l'écran
-> Catalogue, les lectures du PIM, l'onglet Cache. Sur `dev` seulement :
-> l'aiguillage des objets par le chemin (`91f6856c2`, § 3). Ce document
+> ✅ **Doc d'état, relue dans le code le 2026-11-13.** En production : les
+> numéros par sujet, l'objet des journées, l'écran Catalogue, les lectures
+> du PIM, l'onglet Cache, l'aiguillage des objets par le chemin (§ 3), les
+> contenus rangés en gzip, et les écrans de journée branchés sur l'objet
+> (§ 3.2 à 3.5) — ces derniers ne sont pas encore servis en production
+> (§ 7). Ce document
 > remplace les cinq plans du chantier (veilleur unique, écran Catalogue,
 > lectures du PIM, onglet Cache, objet des journées) ; leurs versions et
 > leurs contradictions par `vitruve` sont dans l'historique git.
@@ -538,6 +540,12 @@ changement du PIM (`get-product-detail.ts`).
 - **Retirer au déploiement suivant** les anciens hôtes `rayons.interne` et
   `journees.interne` (`LEGACY_OBJECT_HOSTS`), et l'ancienne porte
   `GET admin/day-versions`.
+- 🔴 **Les écrans de journée ne sont jamais servis depuis l'objet en
+  production** (défaut en cours d'enquête) : l'onglet Cache compte 0
+  réussite, 1 relecture et 1 rangement après deux ouvertures d'un écran de
+  journée. Tant qu'il n'est pas compris, ces écrans lisent la base à chaque
+  appel (rien de faux n'est servi, aucun gain non plus). Le plan du lot 2
+  reste ouvert jusqu'à sa résolution.
 - **Les écrans de journée sont branchés** (§ 3.2 à 3.5). Reste à lire, sur
   l'environnement déployé, les appels par jour de chaque route (onglet Ops)
   pour chiffrer le gain, et à écrire le seuil sous lequel il ne vaut pas
