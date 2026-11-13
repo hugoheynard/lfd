@@ -76,21 +76,21 @@ flowchart LR
 
 Nouveau dossier : `apps/lfd-api/src/platform/shared-cache/`.
 
-- **`shared-cache-store.ts` — le port** (classe abstraite, comme `CacheOutcomeRecorder`). C'est le vocabulaire d'un stockage partagé, sans HTTP :
+- **_shared-cache-store.ts_ (à créer) — le port** (classe abstraite, comme `CacheOutcomeRecorder`). C'est le vocabulaire d'un stockage partagé, sans HTTP :
   - `read(object, path, query?, headers?)` → `{ status: "hit", body, meta } | { status: "absent" } | null`. `null` veut dire « lis la base » ;
   - `write(object, path, body, options)` avec `options.ifVersion` (CAS) ;
   - `command(object, path, method, body?)` pour l'interrupteur, les purges et les compteurs.
 
   `object` est une clé de la table officielle, `InternalObject`, réexportée et non recopiée.
 
-- **`shared-cache-client.ts` — la réalisation unique de l'appel borné.** Elle compose le port avec `BoundedCallGuard` (délai, disjoncteur, mesures) et `CacheOutcomeRecorder` (comptage Santé). Les adaptateurs métier ne voient que ce client.
-- **`cloudflare/durable-object-shared-cache-store.ts` — la seule réalisation Cloudflare.** Elle construit `http://objets.interne<préfixe><path>` à partir de `INTERNAL_OBJECT_PREFIXES`, pose `uncachedInternalCall`, applique `AbortSignal.timeout` et prend un `fetchFn` injectable pour les tests. C'est **le seul fichier** de `src/` qui appelle `fetch` vers un objet.
+- **_shared-cache-client.ts_ (à créer) — la réalisation unique de l'appel borné.** Elle compose le port avec `BoundedCallGuard` (délai, disjoncteur, mesures) et `CacheOutcomeRecorder` (comptage Santé). Les adaptateurs métier ne voient que ce client.
+- **_cloudflare/durable-object-shared-cache-store.ts_ (à créer) — la seule réalisation Cloudflare.** Elle construit `http://objets.interne<préfixe><path>` à partir de `INTERNAL_OBJECT_PREFIXES`, pose `uncachedInternalCall`, applique `AbortSignal.timeout` et prend un `fetchFn` injectable pour les tests. C'est **le seul fichier** de `src/` qui appelle `fetch` vers un objet.
 
 Ce que garde chaque adaptateur actuel : seulement la traduction métier (sérialisation du rayon, clé de journée). Les 9 `fetchFn` et les 9 timeouts disparaissent. Le délai de chaque appel devient un paramètre déclaré à l'appel, avec les mêmes valeurs qu'aujourd'hui, donc sans changement de comportement.
 
 **Partage du code entre `container/` et `src/`.** La table vit dans `container/internal-objects.ts`, qui a « zéro import » (`internal-objects.ts:10`). Le client l'importe en chemin relatif (à confirmer dans le lot 1, voir question 2), sinon un fichier miroir vérifié par la porte.
 
-**Ce qui changerait pour Redis (un seul adaptateur, `redis/redis-shared-cache-store.ts`) :**
+**Ce qui changerait pour Redis (un seul adaptateur, _redis/redis-shared-cache-store.ts_ (à créer)) :**
 
 - **CAS** : `write(..., ifVersion)` devient un script Lua (`EVAL` : lire le numéro, comparer, écrire), au lieu de la décision prise dans l'objet ;
 - **ménage** : un `EXPIRE`/`PX` sur chaque clé remplace le nettoyage SQL de l'objet ;
@@ -102,7 +102,7 @@ Ce que garde chaque adaptateur actuel : seulement la traduction métier (sérial
 
 ### 2.2 Côté objets : une fonction de réponse commune
 
-Nouveau fichier `container/object-response.ts`, qui remplace `no-store.ts`. Il exporte `serveObject(route: (request) => Promise<Response>)`, qui renvoie le `fetch` d'une classe d'objet :
+Nouveau fichier _container/object-response.ts_ (à créer), qui remplace `no-store.ts`. Il exporte `serveObject(route: (request) => Promise<Response>)`, qui renvoie le `fetch` d'une classe d'objet :
 
 - il enveloppe toujours la réponse avec `withNoStore` ;
 - il compte `metrics.request` s'il est fourni.
@@ -123,13 +123,13 @@ Nouveau fichier `container/object-response.ts`, qui remplace `no-store.ts`. Il e
 
 ## 3. La porte `shared-object-door`
 
-Fichier : `dev-toolbox/gates/shared-object-door.mjs`, sur le modèle de `day-version-door.mjs` (commentaires retirés, tests non lus, ROOT = `process.cwd()`).
+Fichier : _dev-toolbox/gates/shared-object-door.mjs_ (à créer), sur le modèle de `day-version-door.mjs` (commentaires retirés, tests non lus, ROOT = `process.cwd()`).
 
 Elle refuse :
 
 1. **dans `apps/lfd-api/src`** : toute mention de `objets.interne`, de `INTERNAL_OBJECTS_HOST`, de `SHOP_SHELF_CACHE_URL`/`DAY_VERSIONS_CACHE_URL` ou d'un préfixe de la table utilisé dans une URL, hors de `platform/shared-cache/cloudflare/**` et de `app-config.ts`. Elle refuse aussi tout import de `uncached-internal-call` hors de ce dossier ;
 2. **dans `apps/lfd-api/container`** : toute classe qui `extends DurableObject` dont le `fetch` ne passe pas par `serveObject`. Elle refuse aussi tout `return` de la passerelle hors `serveObject`/`withNoStore`. Une classe ou une passerelle qu'elle ne sait pas lire échoue (même règle que `cache-control.mjs:15-16`) ;
-3. **un préfixe de la table sans test** : chaque clé de `INTERNAL_OBJECT_PREFIXES` doit apparaître dans le test du faux cache (§ 4). La porte lit la table et cherche la clé dans `container/__tests__/no-cache-in-between.spec.ts`.
+3. **un préfixe de la table sans test** : chaque clé de `INTERNAL_OBJECT_PREFIXES` doit apparaître dans le test du faux cache (§ 4). La porte lit la table et cherche la clé dans _container/**tests**/no-cache-in-between.spec.ts_ (à créer).
 
 Pour l'inscrire :
 
@@ -141,7 +141,7 @@ Recouvrement avec `cache-control` : cette porte-là refuse un `Cache-Control` ou
 
 ## 4. Le test qui rejoue la production
 
-**Choix : un test d'intégration du conteneur sous `node:sqlite`** (`container/__tests__/no-cache-in-between.spec.ts`). On assemble le vrai chemin :
+**Choix : un test d'intégration du conteneur sous `node:sqlite`** (_container/**tests**/no-cache-in-between.spec.ts_ (à créer)). On assemble le vrai chemin :
 
 - le vrai client et sa réalisation Cloudflare ;
 - leur `fetchFn` branché sur un **faux cache** qui imite le cache des Workers. Il garde toute réponse sans `Cache-Control`, y compris un 404, et respecte `no-store`/`private` ;
@@ -176,7 +176,7 @@ La seule preuve sur le vrai runtime reste la vérification en production (§ 5).
 
 1. **L0 — Le test du faux cache d'abord**, sur l'existant. Il doit être vert puisque le correctif est en place. Le témoin négatif est rouge sans `withNoStore`.
 2. **L1 — La table enrichie** : la liaison passe dans la ligne, `OBJECT_STUBS` est dérivé de la table, la purge est déclarée comme relais. On vérifie l'import de la table depuis `src/`.
-3. **L2 — `serveObject`** : `no-store.ts` devient `object-response.ts`. On branche DayVersions, ProShelves et la passerelle.
+3. **L2 — `serveObject`** : `no-store.ts` devient _object-response.ts_ (à créer). On branche DayVersions, ProShelves et la passerelle.
 4. **L3 — Le port, le client et la réalisation Cloudflare**, avec leurs tests. Aucun appelant pour l'instant.
 5. **L4a à L4c — La migration des adaptateurs, par famille** : journées (3), rayons (3), purges, interrupteur et compteurs (3). À chaque fois, on garde les délais existants et on adapte les tests existants (no-store, timeouts).
 6. **L5 — La garde et le comptage entrent dans le client.** Les 4 `new BoundedCallGuard` deviennent des déclarations par opération (nom du cache, délai, `gated`). Les noms de mesures restent identiques, pour que Santé ne voie rien changer.
