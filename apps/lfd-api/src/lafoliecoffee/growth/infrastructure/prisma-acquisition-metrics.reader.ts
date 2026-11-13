@@ -3,10 +3,12 @@ import type { AcquisitionMetricsView } from "@lfd/contracts";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { Clock } from "../../../platform/time/clock.js";
+import { withoutAbandonedAttempts } from "../domain/abandoned-attempts.js";
 import { ACTIVITY_TYPES } from "../domain/activity-event.js";
 import { computeAcquisitionMetrics } from "../domain/acquisition-metrics.js";
 import { dayKey, dayRange, weekStarts } from "../domain/growth-stats.js";
 import { AcquisitionMetricsReader } from "../domain/ports/acquisition-metrics.reader.js";
+import { abandonedAttemptOrderIds } from "./abandoned-attempt-orders.js";
 
 const WINDOW_WEEKS = 13;
 
@@ -20,7 +22,7 @@ const TYPES = [
 /**
  * Adaptateur Prisma de l'**acquisition & churn au grain jour** : lit le journal (les
  * `order.placed` sur TOUT l'historique, pour que la « 1re commande » d'une personne
- * reste la vraie première) et les **résiliations confirmées** de la fenêtre, puis
+ * reste la vraie première, tentatives de carte abandonnées écartées) et les **résiliations confirmées** de la fenêtre, puis
  * délègue au calcul pur. Fenêtre jour calée sur le premier lundi des 13 semaines.
  */
 @Injectable()
@@ -39,16 +41,21 @@ export class PrismaAcquisitionMetricsReader extends AcquisitionMetricsReader {
     const window = dayRange(first, dayKey(now));
     const start = new Date(`${first}T00:00:00.000Z`);
 
-    const [events, terminations] = await Promise.all([
+    const [rows, terminations, abandoned] = await Promise.all([
       this.prisma.activityEvent.findMany({
         where: { type: { in: TYPES } },
-        select: { type: true, subjectId: true, occurredAt: true },
+        select: { type: true, subjectId: true, occurredAt: true, payload: true },
       }),
       this.prisma.companyTermination.findMany({
         where: { outcome: "confirmed", createdAt: { gte: start } },
         select: { createdAt: true },
       }),
+      abandonedAttemptOrderIds(this.prisma),
     ]);
+    const events = withoutAbandonedAttempts(
+      rows.map((row) => ({ ...row, payload: asRecord(row.payload) })),
+      abandoned,
+    );
 
     return computeAcquisitionMetrics(
       window,
@@ -57,4 +64,11 @@ export class PrismaAcquisitionMetricsReader extends AcquisitionMetricsReader {
       now,
     );
   }
+}
+
+function asRecord(value: unknown): Readonly<Record<string, unknown>> {
+  if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return {};
 }

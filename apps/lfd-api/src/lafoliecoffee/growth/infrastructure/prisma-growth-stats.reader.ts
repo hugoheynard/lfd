@@ -2,11 +2,14 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { Clock } from "../../../platform/time/clock.js";
+import { withoutAbandonedAttempts } from "../domain/abandoned-attempts.js";
 import { ACTIVITY_TYPES } from "../domain/activity-event.js";
 import { deriveGrowthStats, type GrowthStatsEvent } from "../domain/growth-stats.js";
 import { GrowthStatsReader } from "../domain/ports/growth-stats.reader.js";
 import { LeadReader } from "../domain/ports/lead.reader.js";
 import type { GrowthStatsView } from "@lfd/contracts";
+
+import { abandonedAttemptOrderIds } from "./abandoned-attempt-orders.js";
 
 /** Types de journal nourrissant le dashboard de croissance. */
 const STATS_TYPES = [
@@ -25,7 +28,7 @@ const STATS_TYPES = [
 
 /**
  * Adaptateur Prisma des stats : lit le journal (`growth.activity_events`) + les
- * leads cold, puis délègue à `deriveGrowthStats` (pur). Instant = `Clock` (fenêtre
+ * leads cold, écarte les tentatives de carte abandonnées, puis délègue à `deriveGrowthStats` (pur). Instant = `Clock` (fenêtre
  * hebdo déterministe en test).
  */
 @Injectable()
@@ -39,7 +42,7 @@ export class PrismaGrowthStatsReader extends GrowthStatsReader {
   }
 
   async load(): Promise<GrowthStatsView> {
-    const [rows, leads] = await Promise.all([
+    const [rows, leads, abandoned] = await Promise.all([
       this.prisma.activityEvent.findMany({
         where: { type: { in: STATS_TYPES } },
         select: {
@@ -52,6 +55,7 @@ export class PrismaGrowthStatsReader extends GrowthStatsReader {
         },
       }),
       this.leads.list(),
+      abandonedAttemptOrderIds(this.prisma),
     ]);
 
     const events: GrowthStatsEvent[] = rows.map((row) => ({
@@ -63,7 +67,7 @@ export class PrismaGrowthStatsReader extends GrowthStatsReader {
       payload: asRecord(row.payload),
     }));
 
-    return deriveGrowthStats(events, leads, this.clock.now());
+    return deriveGrowthStats(withoutAbandonedAttempts(events, abandoned), leads, this.clock.now());
   }
 }
 
