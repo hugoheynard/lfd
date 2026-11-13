@@ -1,4 +1,5 @@
 import { ScriptedCallDeadline } from "../../../../platform/cache-calls/__tests__/cache-call-doubles.js";
+import type { PackedContent } from "../../../../platform/day-versions/content-compression.js";
 import { VersionedContentCache } from "../../../../platform/day-versions/versioned-content-cache.js";
 import { VersionedContents } from "../../../../platform/day-versions/versioned-contents.js";
 import {
@@ -16,13 +17,13 @@ import { VersionedPimContents } from "../pim-contents.js";
  */
 
 class MemoryContents extends VersionedContentCache {
-  readonly kept = new Map<string, { version: number; body: string }>();
-  read(key: string, version: number): Promise<string | null> {
+  readonly kept = new Map<string, { version: number; body: Uint8Array }>();
+  read(key: string, version: number): Promise<Uint8Array | null> {
     const kept = this.kept.get(key);
     return Promise.resolve(kept?.version === version ? kept.body : null);
   }
-  store(key: string, version: number, body: string): Promise<void> {
-    this.kept.set(key, { version, body });
+  store(key: string, version: number, content: PackedContent): Promise<void> {
+    this.kept.set(key, { version, body: content.bytes });
     return Promise.resolve();
   }
 }

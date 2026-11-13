@@ -193,9 +193,20 @@ seul veilleur.
   `container/__tests__/internal-objects.spec.ts`, qui fait passer les vrais
   adaptateurs par l'aiguillage du Worker.
 - **Les contenus** (`versioned-contents.ts`, port `VersionedContentCache`) :
-  une ligne par clé, remplacée à chaque rangement, sous un numéro. Une
-  réponse au-delà de 1 Mo (`CONTENT_MAX_BYTES`) n'est pas rangée, l'écart est
-  journalisé. Une clé admet `[a-z0-9:-]{1,64}`.
+  une ligne par clé, remplacée à chaque rangement, sous un numéro. Une clé
+  admet `[a-z0-9:-]{1,64}`.
+- **La charge est compressée** (décidé par Hugo le 2026-11-13) : l'API la
+  compresse en gzip avant l'envoi et la décompresse à la lecture
+  (`apps/lfd-api/src/platform/day-versions/content-compression.ts`, `CompressionStream` du standard Web, global sous
+  Node 22). L'objet range des **octets opaques** (`contents.body`, un BLOB) et
+  la taille en clair que l'API annonce (en-tête `x-content-raw-bytes`,
+  colonne `contents.raw_bytes`). Le plafond de 1 Mo (`CONTENT_MAX_BYTES`,
+  `VERSIONED_CONTENT_MAX_BYTES`) se mesure **compressé** ; au-delà, la
+  réponse n'est pas rangée et l'écart est journalisé avec ses deux tailles.
+- **Une charge illisible est un raté** : des octets que gzip refuse sont
+  journalisés (`versioned_contents.unreadable`) et l'API relit la base,
+  jamais une erreur servie. Une ligne rangée en JSON clair (sans l'en-tête
+  gzip) se lit telle quelle, et le prochain rangement la remplace.
 
 ## 4. L'écran Catalogue
 
@@ -322,11 +333,15 @@ changement du PIM (`get-product-detail.ts`).
 - **Les compteurs vivent dans les objets** (`ProShelves` et `DayVersions`),
   seul endroit commun à tous les conteneurs : par cache et par heure, les
   lectures servies (réussites), les relectures (ratés), les rangements, les
-  refus trop gros, la taille rangée (octets, entrées), le pic de requêtes en
+  refus trop gros, la taille rangée (octets **compressés** pour les contenus,
+  tels que l'objet les garde ; entrées), le pic de requêtes en
   une seconde et les personnes distinctes servies. Table SQLite horaire
   gardée 30 jours (`container/cache-metrics-store.ts`,
   `hourly-cache-metrics.ts`, `METRICS_KEEP_DAYS`), lue par
   `GET <adresse de l'objet>/metrics`.
+- **La taille en clair** des contenus est gardée par ligne
+  (`contents.raw_bytes`) mais pas encore relevée dans la table horaire ni
+  montrée à l'écran.
 - **Les personnes** : l'API joint à chaque appel l'empreinte
   `sha256(sel, type, identifiant interne)` dans l'en-tête `x-cache-person`
   (`platform/cache-calls/served-person.ts`) — jamais d'e-mail, de nom ni de
@@ -359,6 +374,9 @@ changement du PIM (`get-product-detail.ts`).
   clé (révision, écran, journée, numéro), la seule DERNIÈRE version par
   écran et par journée, une alarme de ménage qui oublie les journées de plus
   de 3 jours. À trancher avec Hugo.
+- **La taille en clair dans l'onglet Cache** : la colonne `contents.raw_bytes`
+  existe ; la relever dans `metrics_hourly` et la servir à l'écran reste à
+  faire.
 - **La mesure avant / après** des requêtes de l'écran Catalogue, de la liste
   et d'une fiche du PIM, d'un filtre de la matrice (journal des requêtes
   Prisma) : pas faite. Elle dira si un numéro par fiche du PIM vaut son prix.

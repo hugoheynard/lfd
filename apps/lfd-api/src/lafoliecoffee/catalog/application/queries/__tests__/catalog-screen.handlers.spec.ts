@@ -7,6 +7,7 @@ import type {
 } from "@lfd/contracts";
 
 import { ScriptedCallDeadline } from "../../../../../platform/cache-calls/__tests__/cache-call-doubles.js";
+import type { PackedContent } from "../../../../../platform/day-versions/content-compression.js";
 import { VersionedContentCache } from "../../../../../platform/day-versions/versioned-content-cache.js";
 import { VersionedContents } from "../../../../../platform/day-versions/versioned-contents.js";
 import {
@@ -154,12 +155,12 @@ class CountingMadeToOrder extends MadeToOrderAdminReader {
 
 /** L'objet, en mémoire : la charge rangée au dernier numéro. */
 class MemoryContents extends VersionedContentCache {
-  private kept: { version: number; body: string } | null = null;
-  read(_key: string, version: number): Promise<string | null> {
+  private kept: { version: number; body: Uint8Array } | null = null;
+  read(_key: string, version: number): Promise<Uint8Array | null> {
     return Promise.resolve(this.kept?.version === version ? this.kept.body : null);
   }
-  store(_key: string, version: number, body: string): Promise<void> {
-    this.kept = { version, body };
+  store(_key: string, version: number, content: PackedContent): Promise<void> {
+    this.kept = { version, body: content.bytes };
     return Promise.resolve();
   }
 }

@@ -3,6 +3,7 @@ import {
   CONTENT_MAX_BYTES,
   contentKeyOf,
   parseContentCall,
+  rawBytesOf,
   servesContent,
 } from "../versioned-contents-store";
 
@@ -69,9 +70,17 @@ describe("objet des journées — les contenus versionnés", () => {
     expect(servesContent(null, 42)).toBe(false);
   });
 
-  it("refuse une charge au-delà du plafond, ou qui n'est pas du JSON", () => {
-    expect(acceptsContentBody('{"a":1}')).toBe(true);
-    expect(acceptsContentBody(`"${"x".repeat(CONTENT_MAX_BYTES)}"`)).toBe(false);
-    expect(acceptsContentBody("pas du json")).toBe(false);
+  it("range des octets opaques jusqu'au plafond, pas au-delà ni vides", () => {
+    expect(acceptsContentBody(new Uint8Array([0x1f, 0x8b, 1]))).toBe(true);
+    expect(acceptsContentBody(new Uint8Array(CONTENT_MAX_BYTES))).toBe(true);
+    expect(acceptsContentBody(new Uint8Array(CONTENT_MAX_BYTES + 1))).toBe(false);
+    expect(acceptsContentBody(new Uint8Array(0))).toBe(false);
+  });
+
+  it("lit la taille en clair annoncée par l'API, et ignore une valeur mal formée", () => {
+    expect(rawBytesOf("1042000")).toBe(1_042_000);
+    expect(rawBytesOf(null)).toBeNull();
+    expect(rawBytesOf("-3")).toBeNull();
+    expect(rawBytesOf("12ko")).toBeNull();
   });
 });

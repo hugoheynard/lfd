@@ -1,10 +1,14 @@
 // Les contenus versionnés de l'objet des journées
 // (`documentation/caching-usage/le-cache-du-back-office.md`, § 4.5) : par
 // (révision, clé opaque), la DERNIÈRE charge rangée et le numéro qu'elle
-// porte. L'objet ne sait pas ce qu'il garde ; ces fonctions pures sont sous
+// porte. L'objet ne sait pas ce qu'il garde — des octets opaques, le JSON
+// que l'API a compressé (gzip) ; ces fonctions pures sont sous
 // tests, `day-versions.ts` les relie au stockage SQLite.
 
-/** Au-delà, une charge n'est pas rangée (413) : l'API la sert depuis la base. */
+/**
+ * Au-delà, une charge n'est pas rangée (413) : l'API la sert depuis la base.
+ * Mesuré sur les octets reçus, c'est-à-dire compressés.
+ */
 export const CONTENT_MAX_BYTES = 1_048_576;
 
 const CONTENT_PATH = /^\/contents\/([^/]+)$/u;
@@ -51,17 +55,21 @@ export function servesContent(keptVersion: number | null, askedVersion: number):
   return keptVersion !== null && keptVersion === askedVersion;
 }
 
-/** Une charge rangeable : du JSON, sous le plafond. */
-export function acceptsContentBody(body: string): boolean {
-  if (new TextEncoder().encode(body).byteLength > CONTENT_MAX_BYTES) {
-    return false;
+/** L'en-tête où l'API dit la taille en clair d'une charge (`durable-object-versioned-content-cache.ts`). */
+export const CONTENT_RAW_BYTES_HEADER = "x-content-raw-bytes";
+
+/** Une charge rangeable : des octets, non vides, sous le plafond. */
+export function acceptsContentBody(body: Uint8Array): boolean {
+  return body.byteLength > 0 && body.byteLength <= CONTENT_MAX_BYTES;
+}
+
+/** La taille en clair annoncée par l'API ; `null` si absente ou mal formée. */
+export function rawBytesOf(header: string | null): number | null {
+  if (header === null || !WHOLE.test(header)) {
+    return null;
   }
-  try {
-    JSON.parse(body);
-    return true;
-  } catch {
-    return false;
-  }
+  const bytes = Number(header);
+  return Number.isSafeInteger(bytes) ? bytes : null;
 }
 
 /** Le segment de chemin décodé (`%3A` → `:`) ; `null` s'il est mal encodé. */

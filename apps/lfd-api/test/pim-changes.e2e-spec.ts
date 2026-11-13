@@ -28,6 +28,7 @@ import {
 import { PrismaIllustratedProductsReader } from "../src/pim/catalogue/product/infrastructure/prisma-illustrated-products.reader.js";
 import { PrismaReadinessRepository } from "../src/pim/catalogue/product/infrastructure/prisma-readiness.repository.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import type { PackedContent } from "../src/platform/day-versions/content-compression.js";
 import { VersionedContentCache } from "../src/platform/day-versions/versioned-content-cache.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { freshIntent, INTENT_KEY } from "./intent-key.js";
@@ -47,13 +48,13 @@ const stubAdminVerifier = {
 
 /** L'objet des journées, en mémoire : les e2e n'ont pas de Durable Object. */
 class MemoryContents extends VersionedContentCache {
-  private readonly kept = new Map<string, { version: number; body: string }>();
-  read(key: string, version: number): Promise<string | null> {
+  private readonly kept = new Map<string, { version: number; body: Uint8Array }>();
+  read(key: string, version: number): Promise<Uint8Array | null> {
     const kept = this.kept.get(key);
     return Promise.resolve(kept?.version === version ? kept.body : null);
   }
-  store(key: string, version: number, body: string): Promise<void> {
-    this.kept.set(key, { version, body });
+  store(key: string, version: number, content: PackedContent): Promise<void> {
+    this.kept.set(key, { version, body: content.bytes });
     return Promise.resolve();
   }
 }

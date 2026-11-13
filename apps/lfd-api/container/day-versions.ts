@@ -26,8 +26,10 @@ import {
 import { HourlyCacheMetrics } from "./hourly-cache-metrics";
 import {
   acceptsContentBody,
+  CONTENT_RAW_BYTES_HEADER,
   type ContentCall,
   parseContentCall,
+  rawBytesOf,
   servesContent,
 } from "./versioned-contents-store";
 
@@ -46,9 +48,9 @@ interface SubjectRow extends Record<string, string | number> {
   read_at: number;
 }
 
-interface ContentRow extends Record<string, string | number> {
+interface ContentRow extends Record<string, ArrayBuffer | string | number> {
   version: number;
-  body: string;
+  body: ArrayBuffer | string;
 }
 
 /**
@@ -73,11 +75,15 @@ export class DayVersions extends DurableObject<DayVersionsEnv> {
         "PRIMARY KEY (key, subject))",
     );
     // Une ligne par clé : la charge rangée remplace la précédente, les
-    // versions remplacées ne s'accumulent pas.
+    // versions remplacées ne s'accumulent pas. `body` porte les octets
+    // compressés par l'API (un BLOB : SQLite ne convertit pas un BLOB rangé
+    // dans une colonne d'affinité TEXT) ; une ligne rangée en clair avant la
+    // compression reste lisible par l'API, et le prochain rangement la remplace.
     this.ctx.storage.sql.exec(
       "CREATE TABLE IF NOT EXISTS contents (key TEXT PRIMARY KEY, version INTEGER NOT NULL, " +
         "body TEXT NOT NULL)",
     );
+    this.addRawBytesColumn();
     this.metrics = new HourlyCacheMetrics(this.ctx.storage.sql);
   }
 
@@ -157,24 +163,40 @@ export class DayVersions extends DurableObject<DayVersionsEnv> {
     }
   }
 
+  /**
+   * La taille en clair, ajoutée à une table créée avant la compression. SQLite
+   * n'a pas d'`ADD COLUMN IF NOT EXISTS` : une colonne déjà là refuse
+   * l'ajout, et seul ce refus-là est attendu.
+   */
+  private addRawBytesColumn(): void {
+    try {
+      this.ctx.storage.sql.exec("ALTER TABLE contents ADD COLUMN raw_bytes INTEGER");
+    } catch (error) {
+      if (!String(error).includes("duplicate column")) {
+        throw error;
+      }
+    }
+  }
+
   private async contentResponse(call: ContentCall, request: Request): Promise<Response> {
     if (call.kind === "content-read") {
       const [row] = this.ctx.storage.sql
         .exec<ContentRow>("SELECT version, body FROM contents WHERE key = ?", call.key)
         .toArray();
       return row !== undefined && servesContent(row.version, call.version)
-        ? new Response(row.body, { headers: { "content-type": "application/json" } })
+        ? new Response(row.body, { headers: { "content-type": "application/octet-stream" } })
         : new Response(null, { status: 404 });
     }
-    const body = await request.text();
+    const body = new Uint8Array(await request.arrayBuffer());
     if (!acceptsContentBody(body)) {
       return new Response(null, { status: 413 });
     }
     this.ctx.storage.sql.exec(
-      "INSERT OR REPLACE INTO contents (key, version, body) VALUES (?, ?, ?)",
+      "INSERT OR REPLACE INTO contents (key, version, body, raw_bytes) VALUES (?, ?, ?, ?)",
       call.key,
       call.version,
-      body,
+      body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength),
+      rawBytesOf(request.headers.get(CONTENT_RAW_BYTES_HEADER)),
     );
     return new Response(null, { status: 201 });
   }

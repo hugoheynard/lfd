@@ -1,4 +1,5 @@
 import { assertOutsideTransaction } from "../database/outside-transaction.js";
+import type { PackedContent } from "./content-compression.js";
 import type { DayVersionsFetch } from "./durable-object-day-versions-cache.js";
 import { UnreadableDayVersionsReplyError } from "./unreadable-day-versions-reply.error.js";
 import { VersionedContentCache } from "./versioned-content-cache.js";
@@ -9,6 +10,9 @@ const CONTENT_SOCKET_TIMEOUT_MS = 2000;
 const HTTP_OK = 200;
 const HTTP_CREATED = 201;
 const HTTP_NOT_FOUND = 404;
+
+/** La taille en clair d'une charge rangée, pour l'onglet Cache (`versioned-contents-store.ts`). */
+export const CONTENT_RAW_BYTES_HEADER = "x-content-raw-bytes";
 
 /**
  * **Les contenus versionnés, dans le Durable Object `DayVersions`** — le même
@@ -27,7 +31,7 @@ export class DurableObjectVersionedContentCache extends VersionedContentCache {
     super();
   }
 
-  async read(key: string, version: number): Promise<string | null> {
+  async read(key: string, version: number): Promise<Uint8Array | null> {
     assertOutsideTransaction("objet-des-journees.content-read");
     const response = await this.call(key, version, { method: "GET" });
     if (response.status === HTTP_NOT_FOUND) {
@@ -36,15 +40,18 @@ export class DurableObjectVersionedContentCache extends VersionedContentCache {
     if (response.status !== HTTP_OK) {
       throw new UnreadableDayVersionsReplyError(`contenu ${key}, statut ${response.status}`);
     }
-    return response.text();
+    return new Uint8Array(await response.arrayBuffer());
   }
 
-  async store(key: string, version: number, body: string): Promise<void> {
+  async store(key: string, version: number, content: PackedContent): Promise<void> {
     assertOutsideTransaction("objet-des-journees.content-store");
     const response = await this.call(key, version, {
       method: "PUT",
-      body,
-      headers: { "content-type": "application/json" },
+      body: content.bytes,
+      headers: {
+        "content-type": "application/octet-stream",
+        [CONTENT_RAW_BYTES_HEADER]: String(content.rawBytes),
+      },
     });
     if (response.status !== HTTP_CREATED) {
       throw new UnreadableDayVersionsReplyError(
