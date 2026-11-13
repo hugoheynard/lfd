@@ -131,7 +131,7 @@ Le plus gros levier de la carte : chaque ligne débloque un chantier entier.
 [`comptabilite/etat-argent-et-comptabilite.md`](comptabilite/etat-argent-et-comptabilite.md),
 et il prime sur les lignes ci-dessous — M2 (hausse et baisse) est en
 production, l'avoir après un remboursement carte est émis, la remise acquise
-est bâtie (reste la reprise en production) ; E9, les avoirs sur bon, R2, R13,
+est bâtie (reste la reprise en production) ; E9 a son plan, [`commandes/reliquat/plan-e9-reste-carte.md`](commandes/reliquat/plan-e9-reste-carte.md) (v5, lot F d'abord) ; les avoirs sur bon, R2, R13,
 R16, « payé sur place » et le poids en abonnement ne sont pas faits.
 
 | Chantier                                                                                                                                                                                                                      | État dans le code (2026-11-02)                                                                                                                                                            | Ce qu'il faut décider                                                                                                                                                                                         | Touche                                          | Doc                                                                                                    |
