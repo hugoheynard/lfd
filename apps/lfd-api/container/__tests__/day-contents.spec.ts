@@ -2,7 +2,12 @@ import { DatabaseSync, type SQLInputValue } from "node:sqlite";
 
 import { CONTENT_MAX_BYTES } from "../versioned-contents-store";
 import type { MetricsSql, MetricsSqlValue } from "../cache-metrics-store";
-import { DAY_CONTENT_KEPT_STATUS, DayContentsTable } from "../day-contents";
+import {
+  DAY_CONTENT_ABSENT,
+  DAY_CONTENT_ABSENT_HEADER,
+  DAY_CONTENT_KEPT_STATUS,
+  DayContentsTable,
+} from "../day-contents";
 import {
   type DayContentCall,
   dayContentKeyOf,
@@ -208,5 +213,15 @@ describe("objet des journées — la table des contenus de journée", () => {
 
     const [row] = metrics.read(0).rows.filter((r) => r.cache === "day-worksheet");
     expect(row).toMatchObject({ hits: 1, misses: 1, stores: 1, bytes: 2, entries: 1 });
+  });
+
+  it("signe son propre 404 de lecture, pour que l'API le distingue d'un appel non aiguillé", async () => {
+    const { table } = around();
+    const asked = call("GET", "orders:1");
+
+    const missed = await table.respond(asked, new Request(BASE), NOW_MS);
+
+    expect(missed.status).toBe(404);
+    expect(missed.headers.get(DAY_CONTENT_ABSENT_HEADER)).toBe(DAY_CONTENT_ABSENT);
   });
 });

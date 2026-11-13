@@ -65,9 +65,20 @@ export interface SharedObjectReport {
 /** Les replis vers la base d'un magasin, vus par CETTE instance. */
 export interface CacheFallbackCount {
   readonly store: string;
-  /** Appels abandonnés au délai ou en erreur : la donnée est venue de la base. */
+  /**
+   * Lectures et rangements qui n'ont pas servi : abandonnés au délai, en
+   * erreur, illisibles, ou coupés par le disjoncteur ouvert — la donnée est
+   * venue de la base.
+   */
   readonly count: number;
+  /** Le même compte par raison ; une raison absente n'a rien compté. */
+  readonly reasons: Readonly<Partial<Record<CacheFallbackReason, number>>>;
+  /** Ouvertures du disjoncteur sur la fenêtre. */
+  readonly breakerOpenings: number;
 }
+
+/** Pourquoi un appel au cache n'a pas servi, au mot du garde de l'API. */
+export type CacheFallbackReason = "timeout" | "error" | "unreadable" | "breaker_open";
 
 /** Ce que l'instance qui répond a mesuré elle-même, sur sa fenêtre. */
 export interface InstanceCacheReport {

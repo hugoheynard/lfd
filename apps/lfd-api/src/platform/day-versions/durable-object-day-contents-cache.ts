@@ -1,3 +1,5 @@
+import { Logger } from "@nestjs/common";
+
 import { assertOutsideTransaction } from "../database/outside-transaction.js";
 import type { PackedContent } from "./content-compression.js";
 import { type DayContentAddress, DayContentsCache } from "./day-contents-cache.js";
@@ -15,16 +17,31 @@ const HTTP_KEPT = 202;
 const HTTP_NOT_FOUND = 404;
 
 /**
+ * L'en-tête que l'objet pose sur son propre 404 de lecture
+ * (`container/day-contents.ts`, `DAY_CONTENT_ABSENT_HEADER`), recopié ici :
+ * `src/` n'importe pas le conteneur.
+ */
+const DAY_CONTENT_ABSENT_HEADER = "x-day-content";
+const DAY_CONTENT_ABSENT = "absent";
+
+/**
  * **Les contenus de journée, dans le Durable Object `DayVersions`** — le même
  * hôte que les numéros (`http://objets.interne/journees`), sous
  * `/day-contents/<écran>/<AAAA-MM-JJ>`. La révision et l'étiquette partent
  * avec chaque appel.
  *
- * Toute réponse inattendue est {@link UnreadableDayVersionsReplyError} ; une
+ * Un 404 de l'objet (en-tête `x-day-content: absent`) est un raté ordinaire.
+ * Un 404 SANS cet en-tête n'est pas venu de l'objet — le Worker n'a pas
+ * aiguillé l'appel : il est journalisé (`day_contents.unrouted`), puis lu
+ * comme un raté, la base sert.
+ *
+ * Toute autre réponse inattendue est {@link UnreadableDayVersionsReplyError} ; une
  * charge refusée par l'objet (413) aussi. Un rangement gardé de côté (202)
  * n'est pas une panne.
  */
 export class DurableObjectDayContentsCache extends DayContentsCache {
+  private readonly logger = new Logger("DayContentsObject");
+
   constructor(
     private readonly origin: string,
     private readonly revision: string,
@@ -37,6 +54,9 @@ export class DurableObjectDayContentsCache extends DayContentsCache {
     assertOutsideTransaction("objet-des-journees.day-content-read");
     const response = await this.call(address, { method: "GET" });
     if (response.status === HTTP_NOT_FOUND) {
+      if (response.headers.get(DAY_CONTENT_ABSENT_HEADER) !== DAY_CONTENT_ABSENT) {
+        this.unrouted(address.screen, address.day);
+      }
       return null;
     }
     if (response.status !== HTTP_OK) {
@@ -45,6 +65,14 @@ export class DurableObjectDayContentsCache extends DayContentsCache {
       );
     }
     return new Uint8Array(await response.arrayBuffer());
+  }
+
+  private unrouted(screen: string, day: string): void {
+    this.logger.warn({
+      message: `Contenu de journée ${screen} ${day} : 404 qui ne vient pas de l'objet (appel non aiguillé par le Worker), relu en base`,
+      metric: "day_contents.unrouted",
+      screen,
+    });
   }
 
   async store(address: DayContentAddress, content: PackedContent): Promise<void> {

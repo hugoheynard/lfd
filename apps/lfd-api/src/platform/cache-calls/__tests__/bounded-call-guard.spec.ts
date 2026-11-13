@@ -71,6 +71,7 @@ describe("BoundedCallGuard — un appel borné à un cache nommé", () => {
     expect(listener.heard).toEqual(["fallback:read:timeout"]);
     expect(timings.recorded.map((one) => one.name)).toEqual([
       "essai.round_trip",
+      "essai.fallback",
       "essai.late_finish",
     ]);
   });
@@ -109,5 +110,27 @@ describe("BoundedCallGuard — un appel borné à un cache nommé", () => {
     wall.advanceMs(30_000);
     await expect(guard.call("read", () => Promise.resolve(7), true)).resolves.toBe(7);
     expect(listener.heard.at(-1)).toBe("closed");
+  });
+
+  /**
+   * Régression : un repli imposé par le disjoncteur ouvert ne laissait aucune
+   * mesure — l'onglet Cache ne voyait ni l'ouverture ni les relectures en base.
+   */
+  it("compte chaque repli par raison, disjoncteur ouvert compris, et son ouverture", async () => {
+    const { guard, timings } = rig();
+    const failing = () => Promise.reject(new TypeError("panne"));
+    await guard.call("read", failing, true);
+    await guard.call("read", failing, true);
+    await guard.call("read", () => Promise.resolve(1), true);
+
+    const counted = timings.recorded
+      .filter((one) => one.name !== "essai.round_trip")
+      .map((one) => `${one.name}:${one.labels["reason"] ?? ""}`);
+    expect(counted).toEqual([
+      "essai.fallback:error",
+      "essai.fallback:error",
+      "essai.breaker_opened:",
+      "essai.fallback:breaker_open",
+    ]);
   });
 });

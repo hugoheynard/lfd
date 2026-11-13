@@ -70,7 +70,7 @@ const REPORT: CacheMetricsReport = {
         windowMinutes: 30,
       },
     ],
-    fallbacks: [{ store: 'pro-shelves', count: 3 }],
+    fallbacks: [{ store: 'pro-shelves', count: 3, reasons: { timeout: 3 }, breakerOpenings: 0 }],
     outcomes: [],
   },
 };

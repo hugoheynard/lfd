@@ -2,6 +2,7 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import type { CacheMetricsReport } from "@lfd/ops-contract";
 
 import { cacheCallTimingNames } from "../../platform/cache-calls/cache-call-timings.js";
+import { DAY_CONTENTS_CACHE_NAME } from "../../platform/day-versions/day-contents.js";
 import { VERSIONED_CONTENTS_CACHE_NAME } from "../../platform/day-versions/versioned-contents.js";
 import { CacheOutcomeReader } from "../../platform/metrics/cache-outcome.reader.js";
 import { TimingWindowReader } from "../../platform/metrics/timing-window.reader.js";
@@ -75,16 +76,20 @@ export class ReadCacheMetricsHandler implements IQueryHandler<
         store,
         roundTrips: this.timings.read(names.roundTrip),
         lateFinishes: this.timings.read(names.lateFinish),
+        fallbacks: this.timings.read(names.fallback),
+        breakerOpenings: this.timings.read(names.breakerOpened),
       };
     };
+    const shelf = named(SHELF_STORE);
     return [
       {
-        store: SHELF_STORE,
+        ...shelf,
         roundTrips: this.timings.read(SHELF_ROUND_TRIP_TIMING),
         lateFinishes: this.timings.read(SHELF_LATE_FINISH_TIMING),
       },
       named(DAY_VERSIONS_STORE),
       named(VERSIONED_CONTENTS_CACHE_NAME),
+      named(DAY_CONTENTS_CACHE_NAME),
     ];
   }
 }

@@ -22,6 +22,15 @@ const SCHEMA =
   "CREATE TABLE IF NOT EXISTS day_contents (key TEXT PRIMARY KEY, screen TEXT NOT NULL, " +
   "day TEXT NOT NULL, tag TEXT NOT NULL, body BLOB NOT NULL, raw_bytes INTEGER)";
 
+/**
+ * L'en-tête d'un 404 de l'OBJET sur une lecture : « rien de gardé sous cette
+ * étiquette ». Un 404 sans lui vient d'ailleurs (aiguillage du Worker) et
+ * l'API le journalise. Recopié par l'API
+ * (`durable-object-day-contents-cache.ts`), qui ne peut pas importer d'ici.
+ */
+export const DAY_CONTENT_ABSENT_HEADER = "x-day-content";
+export const DAY_CONTENT_ABSENT = "absent";
+
 /** Statut d'un rangement refusé parce que la ligne gardée est plus récente ou incomparable. */
 export const DAY_CONTENT_KEPT_STATUS = 202;
 
@@ -75,6 +84,12 @@ export class DayContentsTable {
       nowMs,
       servedPersonOf(request.headers),
     );
+    if (reply.body === null && call.kind === "day-content-read") {
+      return new Response(null, {
+        status: reply.status,
+        headers: { [DAY_CONTENT_ABSENT_HEADER]: DAY_CONTENT_ABSENT },
+      });
+    }
     return reply.body === null
       ? new Response(null, { status: reply.status })
       : new Response(reply.body, { headers: { "content-type": "application/octet-stream" } });

@@ -13,6 +13,7 @@ export type { HealthReason, NodeReading, NodeHealth, EcosystemHealth } from "./h
 export type { CacheCallReport, CacheOutcomeView, CacheReport } from "./cache.js";
 export type {
   CacheFallbackCount,
+  CacheFallbackReason,
   CacheMetricsReport,
   InstanceCacheReport,
   ObjectPeakPoint,

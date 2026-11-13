@@ -532,20 +532,30 @@ changement du PIM (`get-product-detail.ts`).
 
 ## 7. Reste à faire
 
-- **Prouver l'aiguillage en production** après le déploiement de
-  `91f6856c2` : l'onglet Cache doit montrer `day-versions` d'un côté et
-  `pro-shelves` de l'autre. Tant que ce n'est pas vu, les numéros et les
-  contenus du catalogue et du PIM vont en base à chaque lecture (rien de
-  faux n'est servi).
 - **Retirer au déploiement suivant** les anciens hôtes `rayons.interne` et
   `journees.interne` (`LEGACY_OBJECT_HOSTS`), et l'ancienne porte
   `GET admin/day-versions`.
 - 🔴 **Les écrans de journée ne sont jamais servis depuis l'objet en
-  production** (défaut en cours d'enquête) : l'onglet Cache compte 0
-  réussite, 1 relecture et 1 rangement après deux ouvertures d'un écran de
-  journée. Tant qu'il n'est pas compris, ces écrans lisent la base à chaque
-  appel (rien de faux n'est servi, aucun gain non plus). Le plan du lot 2
-  reste ouvert jusqu'à sa résolution.
+  production** (cause non trouvée) : l'onglet Cache compte 0 réussite,
+  1 relecture et 1 rangement après plusieurs ouvertures d'un écran de
+  journée, et les ouvertures suivantes n'atteignent pas l'objet. Ces écrans
+  lisent alors la base à chaque appel (rien de faux n'est servi, aucun gain).
+  - **Non reproduit en local** (2026-11-13) : l'API sur l'hôte, devant le
+    vrai `DayVersions` sous `wrangler dev` et la base de dev, sert la
+    deuxième ouverture du jour depuis l'objet (`200` sur la fiche, le
+    colisage et le retrait). Ce banc n'a pas l'interception de sortie du
+    conteneur : la cause est donc à chercher dans la production (cette
+    interception, ou un disjoncteur ouvert par d'autres échecs).
+  - **Ce qui le rendra visible après déploiement** : `day_contents` figure
+    dans l'onglet (durée des appels, replis) ; chaque repli est compté par
+    raison, et le disjoncteur ouvert compte (`<cache>.fallback`,
+    `<cache>.breaker_opened`, `bounded-call-guard.ts`) ; un 404 qui ne vient
+    pas de l'objet est journalisé (`day_contents.unrouted`), l'objet signant
+    son propre raté (`x-day-content: absent`).
+  - Vu en local, hors de ce défaut : une journée de plus de trois jours
+    (`FORGET_AFTER_DAYS`) est rangée puis effacée dans le même appel par le
+    ménage ; chaque ouverture la relit en base et la range pour rien.
+    Le plan du lot 2 reste ouvert jusqu'à sa résolution.
 - **Les écrans de journée sont branchés** (§ 3.2 à 3.5). Reste à lire, sur
   l'environnement déployé, les appels par jour de chaque route (onglet Ops)
   pour chiffrer le gain, et à écrire le seuil sous lequel il ne vaut pas

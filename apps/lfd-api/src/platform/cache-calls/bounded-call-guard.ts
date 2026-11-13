@@ -47,7 +47,8 @@ type RoundTripOutcome = "in_time" | "late" | "error";
  * capable de rattraper une donnée fausse (une purge) peut le contourner.
  *
  * Mesuré sous `<cache>.round_trip` (`operation`, `outcome` : `in_time`,
- * `late`, `error`) et `<cache>.late_finish` (`settled`, `failed`).
+ * `late`, `error`), `<cache>.late_finish` (`settled`, `failed`),
+ * `<cache>.fallback` (`operation`, `reason`) et `<cache>.breaker_opened`.
  */
 export class BoundedCallGuard<Operation extends string> {
   private readonly names: CacheCallTimingNames;
@@ -63,7 +64,7 @@ export class BoundedCallGuard<Operation extends string> {
     limitMs: number = this.parts.limitMs,
   ): Promise<T | null> {
     if (gated && !this.parts.breaker.allows(this.wallMs())) {
-      this.parts.listener.fallback(operation, "breaker_open");
+      this.counted(operation, "breaker_open");
       return null;
     }
     const elapsed = this.parts.stopwatch.start();
@@ -101,11 +102,18 @@ export class BoundedCallGuard<Operation extends string> {
   }
 
   private fallen(operation: Operation, reason: CallFallbackReason, gated: boolean): null {
-    this.parts.listener.fallback(operation, reason);
+    this.counted(operation, reason);
     if (gated && this.parts.breaker.failed(this.wallMs()) === "opened") {
+      this.parts.timings.record(this.names.breakerOpened, {}, 0, 1);
       this.parts.listener.breakerOpened(this.parts.breaker.consecutiveFailures());
     }
     return null;
+  }
+
+  /** Un repli, compté par raison — y compris celui que le disjoncteur ouvert impose sans appel. */
+  private counted(operation: Operation, reason: CallFallbackReason): void {
+    this.parts.timings.record(this.names.fallback, { operation, reason }, 0, 1);
+    this.parts.listener.fallback(operation, reason);
   }
 
   private recovered(gated: boolean): void {
