@@ -97,7 +97,7 @@ export function formatReport({ unknown, tolerated, stale }) {
     );
     for (const s of unknown) out.push(`  ✗ ${s};`);
     out.push(
-      "Chaque ligne est l'instruction qui ramènerait la base à ses migrations. Corriger la base, ou inscrire l'écart avec sa raison dans apps/lfd-api/prisma/known-drift.json.",
+      "Chaque ligne est l'instruction qui mènerait de ce que décrivent les migrations à ce qu'est la base (une table que la base n'a pas se lit DROP TABLE). Corriger la base, ou inscrire l'écart avec sa raison dans apps/lfd-api/prisma/known-drift.json.",
     );
   }
   return out.join("\n");

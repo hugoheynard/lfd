@@ -296,11 +296,6 @@ model ProductVariant {
   /// renverse le choix initial de les modéliser en déclinaisons plates.
   packagings ProductPackaging[]
 
-  /// ⚠️ **Le dos de relation d'une table que plus aucun code n'ouvre.** Prisma
-  /// exige les deux côtés ; il est donc déclaré, et rien ne le lit. La table
-  /// `nutrition_declaration` n'est plus ni lue ni écrite depuis le 2026-09-22
-  /// (`plan-separer-allergenes-et-nutrition.md`).
-  nutrition       NutritionDeclaration?
   /// Les deux moitiés de la fiche réglementaire, qui l'ont remplacée : ce que
   /// la déclinaison CONTIENT d'un côté, ce qu'elle VAUT de l'autre. L'absence
   /// de ligne est un état — personne ne s'est prononcé.
