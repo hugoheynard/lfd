@@ -73,6 +73,7 @@ describe("ResilientShopShelfCache — le repli", () => {
     await expect(resilient.read("co_a", NOW)).resolves.toBeNull();
     expect(timings.recorded.map((t) => [t.name, t.labels])).toEqual([
       [SHELF_ROUND_TRIP_TIMING, { operation: "read", outcome: "late" }],
+      ["shelf_cache.fallback", { operation: "read", reason: "timeout" }],
     ]);
 
     slow.release();
@@ -80,6 +81,7 @@ describe("ResilientShopShelfCache — le repli", () => {
 
     expect(timings.recorded.map((t) => [t.name, t.labels])).toEqual([
       [SHELF_ROUND_TRIP_TIMING, { operation: "read", outcome: "late" }],
+      ["shelf_cache.fallback", { operation: "read", reason: "timeout" }],
       [SHELF_LATE_FINISH_TIMING, { operation: "read", outcome: "settled" }],
     ]);
   });
@@ -91,6 +93,7 @@ describe("ResilientShopShelfCache — le repli", () => {
 
     expect(timings.recorded.map((t) => t.labels)).toEqual([
       { operation: "read", outcome: "error" },
+      { operation: "read", reason: "error" },
     ]);
   });
 
