@@ -154,7 +154,7 @@ export class FicheAtelier {
     // par le voisin resterait « à faire » ici, et on la fabriquerait deux fois.
     // Elle ne relit que si la journée du fournil a bougé (`version-par-journee.md`).
     inject(VersionWatcher).watch({
-      subjects: ['production'],
+      subjects: ['production', 'orders'],
       date: this.day.date,
       // Les paliers arrivent avec la ligne : relire la fiche suffit.
       reload: () => this.day.refresh(),

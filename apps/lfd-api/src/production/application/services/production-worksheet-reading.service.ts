@@ -7,7 +7,6 @@ import type {
 } from "@lfd/contracts";
 import { Injectable, Logger } from "@nestjs/common";
 
-import { Clock } from "../../../platform/time/clock.js";
 import { DayOrdersReader } from "../../channels/commerce/day-orders.reader.js";
 import { ExpectedProductionReader } from "../../channels/commerce/expected-production.reader.js";
 import {
@@ -32,10 +31,10 @@ import {
   type Worksheet,
   type WorksheetLine,
 } from "../../domain/services/production-worksheet.js";
-import { relativeDayOf } from "../../domain/services/relative-day.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 import { ServiceRange } from "../../domain/value-objects/service-range.value-object.js";
 import { qualityLinesOf } from "./quality-views.js";
+import type { WorksheetContent } from "./worksheet-content.js";
 import { WorksheetDeadlinesReading } from "./worksheet-deadlines-reading.service.js";
 
 /**
@@ -71,6 +70,14 @@ import { WorksheetDeadlinesReading } from "./worksheet-deadlines-reading.service
  * port que le fournil déclare. Sans nom de client. Une panne du colisage est
  * **journalisée** et met `waitingOrders: null` partout : la fiche reste servie.
  *
+ * ## Sans horloge
+ *
+ * Le contenu ne lit pas l'heure : il se range tel quel dans l'objet des
+ * journées (`WorksheetContents`), et ce qui dépend de maintenant
+ * (`relativeDay`) est posé à chaque réponse par `servedWorksheet`. Il dit
+ * aussi s'il est complet : rayons, paliers ou attente du four en panne
+ * donnent une fiche servie, jamais rangée.
+ *
  * Il n'écrit rien, pas même un compteur — §4.
  */
 @Injectable()
@@ -83,14 +90,14 @@ export class ProductionWorksheetReading {
     private readonly orders: DayOrdersReader,
     private readonly containers: ProductionContainerReader,
     private readonly shelves: WorkshopShelvesReader,
-    private readonly clock: Clock,
     private readonly deadlines: WorksheetDeadlinesReading,
     private readonly checks: QualityCheckReader,
     private readonly waiting: OvenWaitingOrdersReader,
     private readonly display: ProductionDisplaySettingsReader,
   ) {}
 
-  async read(day: ServiceDay): Promise<ProductionWorksheetView> {
+  /** Le contenu de la fiche d'une journée, sans rien qui dépende de l'heure. */
+  async contentOf(day: ServiceDay): Promise<WorksheetContent> {
     const [current, expected, producible, containers, tranches, checks, waiting, display] =
       await Promise.all([
         this.days.load(day),
@@ -125,7 +132,7 @@ export class ProductionWorksheetReading {
       quality: new Map(qualityLinesOf(current, checks).map((status) => [status.sku, status])),
       waiting,
     });
-    return {
+    const sheet = {
       date: day.value,
       generatedAt: worksheet.generatedAt?.toISOString() ?? null,
       retakenAt: worksheet.retakenAt?.toISOString() ?? null,
@@ -137,8 +144,8 @@ export class ProductionWorksheetReading {
         (display ?? ProductionDisplaySettings.defaults()).showSubcategories,
       ).map((group) => groupView(group, viewOf)),
       shelvesKnown: shelves !== null,
-      relativeDay: relativeDayOf(day.value, this.clock.now()),
     };
+    return { sheet, complete: shelves !== null && tranches !== null && waiting !== null };
   }
 
   /**

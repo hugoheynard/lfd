@@ -210,8 +210,9 @@ seul veilleur.
 
 ### 3.1 Les contenus des écrans de journée
 
-La plateforme est en place ; **aucun écran n'y est encore branché** (plan
-[`plan-lot-2-ecrans-de-journee.md`](plan-lot-2-ecrans-de-journee.md), lots 2
+La plateforme est en place ; **la fiche du fournil y est branchée** (§ 3.2),
+le colisage, la file de retrait et les tournées pas encore (plan
+[`plan-lot-2-ecrans-de-journee.md`](plan-lot-2-ecrans-de-journee.md), lots 3
 à 5).
 
 - **La table** `day_contents(key, screen, day, tag, body, raw_bytes)` de
@@ -250,6 +251,38 @@ La plateforme est en place ; **aucun écran n'y est encore branché** (plan
   conteneur. L'aiguillage vers les objets n'est inscrit que comme
   interception des appels SORTANTS du conteneur (`Backend.outboundByHost`),
   et refuse un autre conteneur (403) ; `workers_dev` est coupé.
+
+### 3.2 La fiche du fournil
+
+Les trois routes de la fiche — `GET admin/production/worksheet?date=`,
+`GET admin/supervision/preparation?date=` et
+`GET admin/production/worksheet/current` — passent par
+`WorksheetContents` (`apps/lfd-api/src/production/application/services/worksheet-contents.service.ts`)
+et partagent **une clé, l'écran `worksheet`** : les deux premières envoient
+la même requête et rendent les mêmes octets (mesuré au lot 0, tenu par
+`apps/lfd-api/test/production-worksheet-contents.e2e-spec.ts`). La fiche en cours résout
+sa journée hors de l'objet (l'heure, l'arrêt du plan de demain), puis lit
+le contenu de cette journée par la même clé.
+
+- **L'étiquette** : les numéros `production` (fournil + colisage) et
+  `orders` de la journée, lus **en base** par les `DayVersionSource` du
+  registre (`DayVersionRegistry`, déclaré dans `platform`), **avant** les
+  données. La fiche ne porte aucun nom de société ni de client : le sujet
+  `companies` n'en est pas.
+- **Lu hors journal, accepté vieux jusqu'au prochain numéro** (Hugo,
+  2026-11-13) : les contenants, le réglage d'affichage, les rayons du
+  catalogue, le réglage des tranches (paliers d'échéance), les contrôles
+  qualité.
+- **Jamais rangée** : une fiche dont les rayons, les paliers ou l'attente du
+  four sont en panne (`WorksheetContent.complete` faux) — servie, relue au
+  prochain appel.
+- **Recalculé à chaque réponse** : `relativeDay` (`servedWorksheet`) ; la
+  lecture (`ProductionWorksheetReading.contentOf`) ne lit pas l'horloge.
+- **Gain** : un appel servi depuis l'objet coûte les deux lectures de
+  numéros (3 opérations Prisma) au lieu de la fiche entière (23 opérations
+  sur la journée la plus chargée de la base de dev, mesure du lot 0).
+- **L'atelier** suit `production` et `orders` dans son veilleur
+  (`fiche-atelier.ts`) : une commande du jour fait relire la fiche.
 
 ## 4. L'écran Catalogue
 
@@ -413,8 +446,8 @@ changement du PIM (`get-product-detail.ts`).
   `journees.interne` (`LEGACY_OBJECT_HOSTS`), et l'ancienne porte
   `GET admin/day-versions`.
 - **Le lot 2 de l'objet des journées, écrans non branchés** : la plateforme
-  est bâtie (§ 3.1) ; restent la fiche du fournil, le colisage, la file de
-  retrait et les tournées. Plan : [`plan-lot-2-ecrans-de-journee.md`](plan-lot-2-ecrans-de-journee.md)
+  est bâtie (§ 3.1) et la fiche du fournil branchée (§ 3.2) ; restent le
+  colisage, la file de retrait et les tournées. Plan : [`plan-lot-2-ecrans-de-journee.md`](plan-lot-2-ecrans-de-journee.md)
   (décisions de Hugo du 2026-11-13).
 - **La taille en clair dans l'onglet Cache** : la colonne `contents.raw_bytes`
   existe ; la relever dans `metrics_hourly` et la servir à l'écran reste à

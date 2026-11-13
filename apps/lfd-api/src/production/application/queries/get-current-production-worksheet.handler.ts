@@ -5,7 +5,7 @@ import { Clock } from "../../../platform/time/clock.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { todayOf, tomorrowOf } from "../../domain/services/relative-day.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
-import { ProductionWorksheetReading } from "../services/production-worksheet-reading.service.js";
+import { WorksheetContents } from "../services/worksheet-contents.service.js";
 import { GetCurrentProductionWorksheetQuery } from "./get-current-production-worksheet.query.js";
 
 /**
@@ -20,10 +20,9 @@ import { GetCurrentProductionWorksheetQuery } from "./get-current-production-wor
  * fournil n'est pas une autorité, et deux postes réglés différemment ouvriraient
  * deux fiches le même matin.
  *
- * ⚠️ La journée de demain est chargée ici, puis rechargée par la lecture de la
- * fiche quand c'est elle qu'on sert. Une requête de plus, assumée : le service
- * partagé reste une lecture d'un jour, sans variante « déjà chargé » que la
- * route datée n'utiliserait pas.
+ * La journée se résout ICI, hors de l'objet des journées (elle dépend de
+ * l'heure et de l'arrêt du plan) ; le contenu de la journée retenue se lit
+ * ensuite par la clé datée, celle de la fiche nommée.
  */
 @QueryHandler(GetCurrentProductionWorksheetQuery)
 export class GetCurrentProductionWorksheetHandler implements IQueryHandler<
@@ -32,7 +31,7 @@ export class GetCurrentProductionWorksheetHandler implements IQueryHandler<
 > {
   constructor(
     private readonly days: ProductionDayRepository,
-    private readonly reading: ProductionWorksheetReading,
+    private readonly worksheets: WorksheetContents,
     private readonly clock: Clock,
   ) {}
 
@@ -41,6 +40,6 @@ export class GetCurrentProductionWorksheetHandler implements IQueryHandler<
     const tomorrow = ServiceDay.of(tomorrowOf(now));
     const next = await this.days.load(tomorrow);
     const worked = next.isClosed ? tomorrow : ServiceDay.of(todayOf(now));
-    return this.reading.read(worked);
+    return this.worksheets.read(worked);
   }
 }

@@ -33,6 +33,7 @@ import { FixedOvenWaitingOrders } from "../../__tests__/oven-waiting-doubles.js"
 import { FixedDueThresholds } from "../../__tests__/due-thresholds-doubles.js";
 import { InMemoryTrancheSettings } from "../../__tests__/production-tranche-settings-doubles.js";
 import { CheckTable, InMemoryCheckReader } from "../../__tests__/quality-doubles.js";
+import { worksheetContentsAround } from "../../__tests__/worksheet-contents-doubles.js";
 import { WorksheetDeadlinesReading } from "../../services/worksheet-deadlines-reading.service.js";
 
 /**
@@ -135,20 +136,22 @@ function handlerFor(
   display: InMemoryDisplaySettings = new InMemoryDisplaySettings(),
 ): GetProductionWorksheetHandler {
   return new GetProductionWorksheetHandler(
-    new ProductionWorksheetReading(
-      new Days(current),
-      new Expected(expected),
-      commerce,
-      new Containers(rules),
-      shelves,
-      new FixedClock(NOW),
-      new WorksheetDeadlinesReading(
-        new FixedDueThresholds(),
-        new InMemoryTrancheSettings().reader(),
+    worksheetContentsAround(
+      new ProductionWorksheetReading(
+        new Days(current),
+        new Expected(expected),
+        commerce,
+        new Containers(rules),
+        shelves,
+        new WorksheetDeadlinesReading(
+          new FixedDueThresholds(),
+          new InMemoryTrancheSettings().reader(),
+        ),
+        new InMemoryCheckReader(new CheckTable()),
+        new FixedOvenWaitingOrders(),
+        display.reader(),
       ),
-      new InMemoryCheckReader(new CheckTable()),
-      new FixedOvenWaitingOrders(),
-      display.reader(),
+      new FixedClock(NOW),
     ),
   );
 }

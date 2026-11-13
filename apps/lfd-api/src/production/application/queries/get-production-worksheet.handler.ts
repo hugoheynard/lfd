@@ -2,14 +2,15 @@ import type { ProductionWorksheetView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
-import { ProductionWorksheetReading } from "../services/production-worksheet-reading.service.js";
+import { WorksheetContents } from "../services/worksheet-contents.service.js";
 import { GetProductionWorksheetQuery } from "./get-production-worksheet.query.js";
 
 /**
  * **La fiche du fournil d'un jour NOMMÉ** — celle d'un lien partagé.
  *
  * Le handler ne tranche rien : il valide le jour et confie la lecture à
- * `ProductionWorksheetReading`, que la fiche « en cours » partage. L'arbitrage
+ * `WorksheetContents` (l'objet des journées, puis la base), que la fiche
+ * « en cours » et la Préparation de la Supervision partagent. L'arbitrage
  * des sources vit dans `worksheetOf`, le rangement par rayon dans
  * `worksheetGroupsOf` — tous deux purs, donc éprouvés sans Nest ni base.
  *
@@ -20,9 +21,9 @@ export class GetProductionWorksheetHandler implements IQueryHandler<
   GetProductionWorksheetQuery,
   ProductionWorksheetView
 > {
-  constructor(private readonly reading: ProductionWorksheetReading) {}
+  constructor(private readonly worksheets: WorksheetContents) {}
 
   execute(query: GetProductionWorksheetQuery): Promise<ProductionWorksheetView> {
-    return this.reading.read(ServiceDay.of(query.serviceDay));
+    return this.worksheets.read(ServiceDay.of(query.serviceDay));
   }
 }

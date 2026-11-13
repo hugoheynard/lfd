@@ -14,7 +14,9 @@ import { OrderDayVersionReader } from "../../domain/ports/order-day-version.read
  * (relevés le 2026-11-03 dans `admin-supervision.controller.ts` et
  * `admin-orders.controller.ts`) : `b2b_supervision:read` (la Supervision),
  * `b2b_orders:read` et `handover_counter:read` (le comptoir, audit
- * `livraisons/audit-2026-10-07.md`, B6). Un numéro de journée n'est pas une
+ * `livraisons/audit-2026-10-07.md`, B6), et `production_worksheet:read` /
+ * `production_plan:read` : la fiche du fournil se relit quand une commande du
+ * jour change, et elle en montre déjà les quantités. Un numéro de journée n'est pas une
  * commande : il ne dit rien de ce qui est commandé ni de qui commande.
  */
 @Injectable()
@@ -24,6 +26,8 @@ export class OrdersDayVersionSource extends DayVersionSource {
     "b2b_orders:read",
     "handover_counter:read",
     "b2b_supervision:read",
+    "production_worksheet:read",
+    "production_plan:read",
   ];
 
   constructor(private readonly versions: OrderDayVersionReader) {

@@ -128,6 +128,8 @@ import { ListProductionContainersHandler } from "./application/queries/list-prod
 import { ProductionPapers } from "./application/services/production-paper.service.js";
 import { ProductionWorksheetReading } from "./application/services/production-worksheet-reading.service.js";
 import { WorksheetDeadlinesReading } from "./application/services/worksheet-deadlines-reading.service.js";
+import { DayVersionsModule } from "../platform/day-versions/day-versions.module.js";
+import { WorksheetContents } from "./application/services/worksheet-contents.service.js";
 import { ProductionContainerReader } from "./domain/ports/production-container.reader.js";
 import { ProductionContainerRepository } from "./domain/ports/production-container.repository.js";
 import { ProductionDayRepository } from "./domain/ports/production-day.repository.js";
@@ -188,7 +190,7 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
 @Module({
   // Le logo de l'en-tête des papiers du fournil (Hugo, 2026-10-25).
   // Les raccourcis du fournil (plan des raccourcis, S1) : leur propre module.
-  imports: [BrandModule, ProductionBatchShortcutsModule],
+  imports: [BrandModule, ProductionBatchShortcutsModule, DayVersionsModule],
   controllers: [
     ProductionDayController,
     ProductionWorksheetController,
@@ -241,6 +243,7 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     // La lecture de la fiche, partagée par la route datée et la route « en
     // cours » : un handler n'en appelle pas un autre (§4).
     ProductionWorksheetReading,
+    WorksheetContents,
     WorksheetDeadlinesReading,
     { provide: ProductionDayRepository, useClass: PrismaProductionDayRepository },
     { provide: ProductionBatchRepository, useClass: PrismaProductionBatchRepository },

@@ -28,7 +28,7 @@ import { WorkshopKeypadOpener } from './workshop-keypad-opener';
  * Le veilleur de journée, doublé : il garde la relecture que l'écran lui
  * confie, et le test la déclenche comme le ferait une version qui bouge.
  */
-const watched: { reload: () => Promise<void> }[] = [];
+const watched: VersionWatch[] = [];
 const fakeWatcher = {
   watch: (spec: VersionWatch): void => {
     watched.push(spec);
@@ -522,6 +522,16 @@ describe('la fiche d’atelier', () => {
     function relancer(): void {
       void watched.at(-1)?.reload();
     }
+
+    /**
+     * La fiche lit les commandes du jour (arrivées, demande, paliers) : une
+     * commande passée doit la faire relire, comme une fournée déclarée.
+     */
+    it('suit la journée du fournil ET celle des commandes', async () => {
+      await render();
+
+      expect(watched.at(-1)?.subjects).toEqual(['production', 'orders']);
+    });
 
     it('montre une fournée déclarée sur un autre poste', async () => {
       const { fixture, el } = await render();

@@ -2,10 +2,13 @@ import {
   orderLine,
   producibleOrder,
 } from "../../../channels/commerce/__tests__/producible-order.fixture.js";
-import { instantToLocal, type CatalogFamilyView } from "@lfd/contracts";
+import {
+  instantToLocal,
+  type CatalogFamilyView,
+  type ProductionWorksheetView,
+} from "@lfd/contracts";
 
 import { InMemoryDisplaySettings } from "../../__tests__/production-display-settings-doubles.js";
-import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
   DayOrdersReader,
   type ProducibleOrder,
@@ -28,6 +31,7 @@ import { FixedDueThresholds } from "../../__tests__/due-thresholds-doubles.js";
 import { InMemoryTrancheSettings } from "../../__tests__/production-tranche-settings-doubles.js";
 import { CheckTable, InMemoryCheckReader } from "../../__tests__/quality-doubles.js";
 import { ProductionWorksheetReading } from "../production-worksheet-reading.service.js";
+import { servedWorksheet } from "../worksheet-content.js";
 import { WorksheetDeadlinesReading } from "../worksheet-deadlines-reading.service.js";
 
 /**
@@ -110,7 +114,17 @@ const DUE: DayDueThresholds = {
   ],
 };
 
+/** La fiche servie à maintenant — le contenu, puis ce qui dépend de l'heure. */
 function readingWith(
+  due: DayDueThresholds | "down",
+  checks: CheckTable,
+  waiting: FixedOvenWaitingOrders = new FixedOvenWaitingOrders(),
+): { read(day: ServiceDay): Promise<ProductionWorksheetView> } {
+  const reading = bareReading(due, checks, waiting);
+  return { read: async (day) => servedWorksheet(await reading.contentOf(day), NOW) };
+}
+
+function bareReading(
   due: DayDueThresholds | "down",
   checks: CheckTable,
   waiting: FixedOvenWaitingOrders = new FixedOvenWaitingOrders(),
@@ -124,7 +138,6 @@ function readingWith(
     new NoOrders(),
     new NoContainers(),
     new NoShelves(),
-    new FixedClock(NOW),
     new WorksheetDeadlinesReading(new FixedDueThresholds(due), settings.reader()),
     new InMemoryCheckReader(checks),
     waiting,

@@ -19,7 +19,7 @@ describe("OrdersDayVersionSource", () => {
     await expect(source.versionOf("2026-10-04")).resolves.toBe(0);
   });
 
-  it("se nomme `orders` et s'ouvre aux trois droits de ses anciennes portes", () => {
+  it("se nomme `orders` et s'ouvre aux droits de ses anciennes portes et à ceux de la fiche du fournil", () => {
     const source = new OrdersDayVersionSource(new TableVersions(new Map()));
 
     expect(source.journal).toBe("orders");
@@ -27,6 +27,8 @@ describe("OrdersDayVersionSource", () => {
       "b2b_orders:read",
       "b2b_supervision:read",
       "handover_counter:read",
+      "production_plan:read",
+      "production_worksheet:read",
     ]);
   });
 });

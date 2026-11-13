@@ -89,16 +89,16 @@ export class DayContents {
     load: () => Promise<T>,
     rules: DayContentRules<T>,
   ): Promise<T> {
-    const address: DayContentAddress = {
+    const slot: DayContentAddress = {
       screen: request.screen,
       day: request.day,
       tag: dayContentTagOf(request.versions),
     };
-    const kept = await this.kept(address, rules.accepts);
+    const kept = await this.kept(slot, rules.accepts);
     if (kept !== null) {
       return kept;
     }
-    const flight = `${address.screen}/${address.day}@${address.tag}`;
+    const flight = `${slot.screen}/${slot.day}@${slot.tag}`;
     const pending = this.inFlight.get(flight);
     if (pending !== undefined) {
       const shared = await pending;
@@ -106,7 +106,7 @@ export class DayContents {
         return shared;
       }
     }
-    const loading = this.loadAndStore(address, load, rules.storable);
+    const loading = this.loadAndStore(slot, load, rules.storable);
     this.inFlight.set(flight, loading);
     try {
       return await loading;
@@ -115,8 +115,8 @@ export class DayContents {
     }
   }
 
-  private async kept<T>(address: DayContentAddress, accepts: ContentGuard<T>): Promise<T | null> {
-    const bytes = await this.guard.call("read", () => this.cache.read(address), true);
+  private async kept<T>(slot: DayContentAddress, accepts: ContentGuard<T>): Promise<T | null> {
+    const bytes = await this.guard.call("read", () => this.cache.read(slot), true);
     if (bytes === null) {
       return null;
     }
@@ -126,16 +126,16 @@ export class DayContents {
       return parsed;
     }
     this.logger.warn({
-      message: `Contenu de journée ${address.screen} ${address.day} illisible dans l'objet : relu en base`,
+      message: `Contenu de journée ${slot.screen} ${slot.day} illisible dans l'objet : relu en base`,
       metric: `${DAY_CONTENTS_CACHE_NAME}.unreadable`,
-      screen: address.screen,
+      screen: slot.screen,
       bytes: bytes.byteLength,
     });
     return null;
   }
 
   private async loadAndStore<T>(
-    address: DayContentAddress,
+    slot: DayContentAddress,
     load: () => Promise<T>,
     storable: (content: T) => boolean,
   ): Promise<T> {
@@ -143,11 +143,11 @@ export class DayContents {
     if (!storable(content)) {
       return content;
     }
-    const packed = await this.packed(address, content);
+    const packed = await this.packed(slot, content);
     if (packed !== null) {
       void this.guard.call(
         "store",
-        () => this.cache.store(address, packed).then(() => true),
+        () => this.cache.store(slot, packed).then(() => true),
         true,
         DAY_VERSIONS_STORE_LIMIT_MS,
       );
@@ -156,17 +156,14 @@ export class DayContents {
   }
 
   /** La charge compressée, ou `null` si elle ne se range pas (trop lourde). */
-  private async packed(
-    address: DayContentAddress,
-    content: unknown,
-  ): Promise<PackedContent | null> {
+  private async packed(slot: DayContentAddress, content: unknown): Promise<PackedContent | null> {
     const packed = await packContent(JSON.stringify(content));
     const bytes = packed.bytes.byteLength;
     if (bytes > DAY_CONTENT_MAX_BYTES) {
       this.logger.warn({
-        message: `Contenu de journée ${address.screen} ${address.day} trop lourd pour l'objet : servi depuis la base, pas rangé`,
+        message: `Contenu de journée ${slot.screen} ${slot.day} trop lourd pour l'objet : servi depuis la base, pas rangé`,
         metric: `${DAY_CONTENTS_CACHE_NAME}.too_large`,
-        screen: address.screen,
+        screen: slot.screen,
         bytes,
         rawBytes: packed.rawBytes,
         limit: DAY_CONTENT_MAX_BYTES,
