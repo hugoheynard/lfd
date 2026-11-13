@@ -1,5 +1,9 @@
 import { ScriptedCallDeadline } from "../../cache-calls/__tests__/cache-call-doubles.js";
-import { FixedStopwatch, RecordingTimings } from "../../metrics/__tests__/metrics-doubles.js";
+import {
+  FixedStopwatch,
+  RecordingCacheOutcomes,
+  RecordingTimings,
+} from "../../metrics/__tests__/metrics-doubles.js";
 import { FixedWallClock } from "../../time/fixed-wall-clock.js";
 import type { PackedContent } from "../content-compression.js";
 import { type DayContentAddress, DayContentsCache } from "../day-contents-cache.js";
@@ -41,6 +45,7 @@ export function dayContentsOver(cache: DayContentsCache = new NoDayContentsCache
     new FixedWallClock(WALL_START),
     new FixedStopwatch(3),
     new RecordingTimings(),
+    new RecordingCacheOutcomes(),
   );
 }
 

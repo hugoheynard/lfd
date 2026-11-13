@@ -23,6 +23,8 @@ import { mailBacklogReadings } from "./mail-backlog-readings.js";
 import { vitalsReadings } from "./vitals-readings.js";
 import { cacheReports } from "./cache-readings.js";
 import { cacheCallTimingNames } from "../../platform/cache-calls/cache-call-timings.js";
+import { DAY_CONTENTS_CACHE_NAME } from "../../platform/day-versions/day-contents.js";
+import { VERSIONED_CONTENTS_CACHE_NAME } from "../../platform/day-versions/versioned-contents.js";
 import {
   cacheCallReports,
   DAY_VERSIONS_STORE,
@@ -201,7 +203,7 @@ export class OpsHealthService {
       // Mémoire de CETTE instance, lue sans aller-retour : pas de cache ici.
       caches: cacheReports(this.caches.read(), this.caches.windowMinutes),
       // Même mémoire d'instance : la durée des appels aux objets des rayons
-      // et des journées.
+      // et des journées (numéros, contenus versionnés, écrans de journée).
       cacheCalls: [
         ...cacheCallReports(
           this.timings.read(SHELF_ROUND_TRIP_TIMING),
@@ -213,13 +215,18 @@ export class OpsHealthService {
     };
   }
 
+  /** Les appels à l'objet des journées : ses numéros, ses contenus versionnés, ses écrans de journée. */
   private dayVersionsCalls(): readonly CacheCallReport[] {
-    const names = cacheCallTimingNames(DAY_VERSIONS_STORE);
-    return cacheCallReports(
-      this.timings.read(names.roundTrip),
-      this.timings.read(names.lateFinish),
-      this.timings.windowMinutes,
-      DAY_VERSIONS_STORE,
+    return [DAY_VERSIONS_STORE, VERSIONED_CONTENTS_CACHE_NAME, DAY_CONTENTS_CACHE_NAME].flatMap(
+      (store) => {
+        const names = cacheCallTimingNames(store);
+        return cacheCallReports(
+          this.timings.read(names.roundTrip),
+          this.timings.read(names.lateFinish),
+          this.timings.windowMinutes,
+          store,
+        );
+      },
     );
   }
 

@@ -1,5 +1,9 @@
 import { ScriptedCallDeadline } from "../../cache-calls/__tests__/cache-call-doubles.js";
-import { FixedStopwatch, RecordingTimings } from "../../metrics/__tests__/metrics-doubles.js";
+import {
+  FixedStopwatch,
+  RecordingCacheOutcomes,
+  RecordingTimings,
+} from "../../metrics/__tests__/metrics-doubles.js";
 import { FixedWallClock } from "../../time/fixed-wall-clock.js";
 import { packContent } from "../content-compression.js";
 import { MemoryDayContents } from "./day-contents-doubles.js";
@@ -40,6 +44,7 @@ function around() {
     new FixedWallClock(new Date(Date.UTC(2030, 0, 1))),
     new FixedStopwatch(3),
     new RecordingTimings(),
+    new RecordingCacheOutcomes(),
   );
   let loads = 0;
   const load =

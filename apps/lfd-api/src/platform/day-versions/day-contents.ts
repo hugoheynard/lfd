@@ -4,6 +4,7 @@ import { BoundedCallGuard } from "../cache-calls/bounded-call-guard.js";
 import { CallBreaker } from "../cache-calls/call-breaker.js";
 import { CallDeadline } from "../cache-calls/call-deadline.js";
 import { LoggingCallGuardListener } from "../cache-calls/logging-call-guard-listener.js";
+import { CacheOutcomeRecorder } from "../metrics/cache-outcome-recorder.js";
 import { Stopwatch } from "../metrics/stopwatch.js";
 import { TimingRecorder } from "../metrics/timing-recorder.js";
 import { WallClock } from "../time/wall-clock.js";
@@ -26,6 +27,19 @@ export const DAY_CONTENTS_CACHE_NAME = "day_contents";
 export const DAY_CONTENT_MAX_BYTES = 1_048_576;
 
 type DayContentOperation = "read" | "store";
+
+/**
+ * L'issue d'une lecture, comptée par instance sous `day_contents` (la
+ * section « par instance » de l'onglet Cache) : servie, absente de l'objet,
+ * illisible, ou repli sans réponse (délai, erreur, disjoncteur ouvert — la
+ * raison est dans `day_contents.fallback`).
+ */
+export const DAY_CONTENT_OUTCOMES = {
+  hit: "hit",
+  miss: "miss",
+  unreadable: "unreadable",
+  fallback: "fallback",
+} as const;
 
 /** Ce qu'un écran demande : sa journée, et les numéros lus en base AVANT ses données. */
 export interface DayContentRequest {
@@ -69,6 +83,7 @@ export class DayContents {
     wall: WallClock,
     stopwatch: Stopwatch,
     timings: TimingRecorder,
+    private readonly outcomes: CacheOutcomeRecorder,
   ) {
     this.guard = new BoundedCallGuard<DayContentOperation>({
       cache: DAY_CONTENTS_CACHE_NAME,
@@ -116,15 +131,28 @@ export class DayContents {
   }
 
   private async kept<T>(slot: DayContentAddress, accepts: ContentGuard<T>): Promise<T | null> {
-    const bytes = await this.guard.call("read", () => this.cache.read(slot), true);
+    // L'objet a répondu (enveloppe), ou le garde a replié sans réponse (`null`).
+    const reply = await this.guard.call(
+      "read",
+      async () => ({ bytes: await this.cache.read(slot) }),
+      true,
+    );
+    if (reply === null) {
+      this.counted(DAY_CONTENT_OUTCOMES.fallback);
+      return null;
+    }
+    const { bytes } = reply;
     if (bytes === null) {
+      this.counted(DAY_CONTENT_OUTCOMES.miss);
       return null;
     }
     const body = await unpackContent(bytes);
     const parsed = body === null ? null : parsedOrNull(body);
     if (accepts(parsed)) {
+      this.counted(DAY_CONTENT_OUTCOMES.hit);
       return parsed;
     }
+    this.counted(DAY_CONTENT_OUTCOMES.unreadable);
     this.logger.warn({
       message: `Contenu de journée ${slot.screen} ${slot.day} illisible dans l'objet : relu en base`,
       metric: `${DAY_CONTENTS_CACHE_NAME}.unreadable`,
@@ -132,6 +160,10 @@ export class DayContents {
       bytes: bytes.byteLength,
     });
     return null;
+  }
+
+  private counted(outcome: string): void {
+    this.outcomes.record(DAY_CONTENTS_CACHE_NAME, outcome);
   }
 
   private async loadAndStore<T>(

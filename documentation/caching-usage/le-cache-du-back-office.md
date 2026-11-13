@@ -532,6 +532,14 @@ changement du PIM (`get-product-detail.ts`).
   clair, refus trop gros et trop vieux), et les replis de l'instance par
   cache et par raison (délai, erreur, illisible, disjoncteur ouvert) avec
   les ouvertures du disjoncteur. Relu à l'ouverture.
+- **La section « Caches de l'API » de Santé** (par instance, 30 min,
+  `ops/cache-outcomes/`) compte les issues que l'API enregistre
+  (`CacheOutcomeRecorder`) : le principal et les rayons de la boutique, les
+  matériaux de prix, et les écrans de journée (`day_contents` : `hit`,
+  `miss`, `unreadable`, `fallback`). Les numéros et les contenus versionnés
+  n'y comptent pas d'issue : leurs compteurs sont ceux de l'objet, plus haut.
+  Sous les issues, la durée des appels de l'instance à chaque magasin
+  partagé (objet des rayons, et les trois de l'objet des journées).
 - Un compteur ne fait jamais échouer ni ralentir une lecture : il s'écrit en
   fin de réponse, et une erreur de comptage est avalée et journalisée une
   fois.
@@ -539,22 +547,36 @@ changement du PIM (`get-product-detail.ts`).
 ## 7. Reste à faire
 
 - 🔴 **Les écrans de journée ne sont jamais servis depuis l'objet en
-  production** (cause non trouvée) : l'onglet Cache compte 0 réussite,
-  1 relecture et 1 rangement après plusieurs ouvertures d'un écran de
-  journée, et les ouvertures suivantes n'atteignent pas l'objet. Ces écrans
-  lisent alors la base à chaque appel (rien de faux n'est servi, aucun gain).
-  - **Non reproduit en local** (2026-11-13) : l'API sur l'hôte, devant le
-    vrai `DayVersions` sous `wrangler dev` et la base de dev, sert la
-    deuxième ouverture du jour depuis l'objet (`200` sur la fiche, le
-    colisage et le retrait). Ce banc n'a pas l'interception de sortie du
-    conteneur : la cause est donc à chercher dans la production (cette
-    interception, ou un disjoncteur ouvert par d'autres échecs).
-  - **Ce qui le rendra visible après déploiement** : `day_contents` figure
-    dans l'onglet (durée des appels, replis) ; chaque repli est compté par
-    raison, et le disjoncteur ouvert compte (`<cache>.fallback`,
-    `<cache>.breaker_opened`, `bounded-call-guard.ts`) ; un 404 qui ne vient
-    pas de l'objet est journalisé (`day_contents.unrouted`), l'objet signant
-    son propre raté (`x-day-content: absent`).
+  production** (cause non trouvée) : à la première ouverture de la
+  Supervision, l'API lit l'objet (`GET … → 404` signé) puis range
+  (`PUT → 201`) ; aux ouvertures suivantes, aux mêmes étiquettes, les
+  journaux du Worker ne montrent que des `PUT → 201`, aucun `GET`. Ces
+  écrans lisent alors la base à chaque appel (rien de faux n'est servi,
+  aucun gain).
+  - **Ce n'est pas le disjoncteur de l'API** (vérifié dans le code le
+    2026-11-13) : la lecture et le rangement passent par le même
+    `BoundedCallGuard`, tous deux soumis au disjoncteur (`gated`). Ouvert, il
+    supprimerait le `PUT` avec le `GET` ; un `PUT` parti prouve qu'il était
+    fermé. Le seul autre chemin sans `GET` serait une exception levée avant
+    l'appel (`assertOutsideTransaction` en mode `enforce`), qui frapperait
+    aussi le rangement. Un `PUT` à la même étiquette prouve seulement que la
+    lecture a rendu « rien » : 404, délai dépassé (400 ms), erreur, ou charge
+    illisible.
+  - **Le code de l'API relit à chaque ouverture** : devant un objet qui
+    répond comme celui de production (404 signé, 201, puis 200 et la
+    charge), trois ouvertures font `GET, PUT, GET, GET` et une seule lecture
+    en base (`apps/lfd-api/src/platform/day-versions/__tests__/day-contents-object-replies.spec.ts`). La cause est donc entre
+    la sortie de l'API et le Worker (l'interception de sortie du conteneur),
+    ou dans une lecture partie mais non journalisée et rendue en repli.
+  - **Ce qui le tranche après déploiement** : chaque lecture d'un écran de
+    journée est comptée par instance sous `day_contents` — `hit`, `miss`
+    (l'objet a répondu « absent »), `unreadable`, `fallback` (aucune réponse
+    utilisable : délai, erreur, disjoncteur) — dans la section « Caches de
+    l'API » de Santé, avec la durée des appels aux trois magasins de l'objet
+    des journées (numéros, contenus versionnés, écrans de journée). Un
+    `fallback` y nomme sa raison dans l'onglet Cache (`<cache>.fallback`) ;
+    un `miss` sans `GET` au Worker désigne l'interception ; un 404 qui ne
+    vient pas de l'objet est journalisé (`day_contents.unrouted`).
   - Le plan du lot 2 reste ouvert jusqu'à sa résolution.
 - **Les écrans de journée sont branchés** (§ 3.2 à 3.5). Reste à lire, sur
   l'environnement déployé, les appels par jour de chaque route (onglet Ops)

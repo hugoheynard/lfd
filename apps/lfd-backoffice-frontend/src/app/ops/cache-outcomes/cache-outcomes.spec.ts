@@ -109,7 +109,7 @@ describe('CacheOutcomes', () => {
     expect(text(fixture)).toContain('0 % servis sans aller en base');
   });
 
-  it("affiche la mesure de l'appel à l'objet des rayons, par opération", () => {
+  it('affiche la mesure des appels aux objets, par magasin et par opération', () => {
     const fixture = render(
       [],
       [
@@ -136,13 +136,13 @@ describe('CacheOutcomes', () => {
       ],
     );
     const content = text(fixture);
-    expect(content).toContain("Appel à l'objet des rayons");
+    expect(content).toContain('Appels aux objets partagés');
     expect(content).toContain(
-      'lecture : 120 appels — médiane 12 ms, 95 % sous 85 ms — 4 abandonnés (délai dépassé)',
+      'Objet des rayons — lecture : 120 appels — médiane 12 ms, 95 % sous 85 ms — 4 abandonnés (délai dépassé)',
     );
     expect(content).toContain('les abandonnés finissaient en 140 ms');
     expect(content).toContain(
-      'rangement : 10 appels — médiane 20 ms, 95 % sous 40 ms — 0 abandonnés',
+      'Objet des rayons — rangement : 10 appels — médiane 20 ms, 95 % sous 40 ms — 0 abandonnés',
     );
     expect(content.match(/finissaient en/g)?.length).toBe(1);
   });
@@ -156,6 +156,6 @@ describe('CacheOutcomes', () => {
         outcomes: [{ outcome: 'memory', count: 1, share: 1 }],
       },
     ]);
-    expect(text(fixture)).not.toContain("Appel à l'objet");
+    expect(text(fixture)).not.toContain('Appels aux objets');
   });
 });

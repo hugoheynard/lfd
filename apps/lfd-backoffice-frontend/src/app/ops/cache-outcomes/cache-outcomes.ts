@@ -17,6 +17,15 @@ const CACHE_LABEL: Readonly<Record<string, string>> = {
   'shelf.store': "Rayon d'une société — rangement",
   'shelf.public': 'Rayon public',
   'pricing.materials': 'Matériaux de prix',
+  day_contents: 'Écrans de journée (objet des journées)',
+};
+
+/** Les magasins appelés par le réseau ; un magasin inconnu s'affiche tel quel. */
+const STORE_LABEL: Readonly<Record<string, string>> = {
+  shelf_cache: 'Objet des rayons',
+  day_versions: 'Objet des journées — numéros',
+  versioned_contents: 'Objet des journées — contenus versionnés',
+  day_contents: 'Objet des journées — écrans de journée',
 };
 
 /** Les mots des producteurs ; une issue inconnue s'affiche telle quelle. */
@@ -34,6 +43,8 @@ const OUTCOME_LABEL: Readonly<Record<string, string>> = {
   stale_refused: 'refusé : périmé',
   not_kept: 'non gardé',
   fallback_timeout: 'délai dépassé',
+  fallback: 'repli sans réponse',
+  unreadable: 'illisible',
 };
 
 /**
@@ -58,6 +69,9 @@ const OUTCOME_HINT: Readonly<Record<string, string>> = {
   stale_refused: 'une version plus récente était déjà rangée : rien écrasé',
   not_kept: 'non gardé (rien à ranger)',
   fallback_timeout: "le cache n'a pas répondu à temps : recalculé sans lui",
+  fallback:
+    "l'objet n'a pas répondu (délai, erreur ou disjoncteur ouvert) : relu en base — la raison est dans l'onglet Cache",
+  unreadable: "la charge relue n'était pas reconnue : relu en base",
 };
 
 /** Les issues où le cache a rendu service sans retourner en base. */
@@ -141,7 +155,7 @@ export class CacheOutcomes {
   protected readonly callLines = computed<readonly CallLine[]>(() =>
     (this.calls() ?? []).map((call) => ({
       key: `${call.store}:${call.operation}`,
-      label: OPERATION_LABEL[call.operation] ?? call.operation,
+      label: `${STORE_LABEL[call.store] ?? call.store} — ${OPERATION_LABEL[call.operation] ?? call.operation}`,
       calls: call.calls,
       late: call.late,
       p50Ms: call.p50Ms,
