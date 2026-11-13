@@ -23,6 +23,7 @@ const DRAFT: OrderShortfallDraftData = {
     { product: "Pain au chocolat", quantity: 2 },
   ],
   missing: [{ product: "Croissant", quantity: 2 }],
+  cardWillBeRefunded: false,
   locale: "fr",
 };
 

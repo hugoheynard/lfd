@@ -44,12 +44,19 @@
       </lfd-order-detail>
 
       <!-- Le manque signalé au colisage (E6a) : rien sans signalement en vigueur. -->
-      <app-order-shortfall-banner [shortfall]="o.shortfall" [lines]="o.lines" />
+      <app-order-shortfall-banner
+        [shortfall]="o.shortfall"
+        [lines]="o.lines"
+        [settlement]="o.settlement"
+        [increasePending]="o.cardIncrease !== null"
+      />
       <!-- La décision du départ (E6b), sous le bandeau : rien sans manque signalé. -->
       <app-order-shortfall-decision
         [orderId]="o.id"
         [shortfall]="o.shortfall"
         [lines]="o.lines"
+        [settlement]="o.settlement"
+        [increasePending]="o.cardIncrease !== null"
         (decided)="onShortfallDecided()"
       />
       <!-- « Écrire au client » (E6d), après la décision : jamais automatique. -->

@@ -548,6 +548,13 @@
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },
+  "customer.order-shortfall-refunded": {
+    "only": {
+      "subject": "Commande ORD-4812 : le reste vous est remboursé",
+      "htmlSha256": "769c554ee4ba1eb6401efc1d92b9398e4f685ca3dbb54534f5feb81e9a0ebbce",
+      "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    }
+  },
   "customer.order-delayed": {
     "full": {
       "subject": "Votre commande ORD-4812 prend du retard",

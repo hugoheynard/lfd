@@ -10,7 +10,13 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import type { AdminOrderShortfall, OrderLineView, OrderSaleUnit, StaffNote } from '@lfd/contracts';
+import type {
+  AdminOrderShortfall,
+  OrderLineView,
+  OrderSaleUnit,
+  SettlementRegime,
+  StaffNote,
+} from '@lfd/contracts';
 import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 import { httpErrorMessage } from '@lfd/endpoints';
 import { FoldButtonComponent, FoldCalloutComponent, FoldInlineConfirmComponent } from 'fold-ng';
@@ -21,6 +27,11 @@ import { DeliveryNotesService, REPRINT_SENTENCE } from '../delivery-notes.servic
 import { AbandonedRemainder } from '../abandoned-remainder/abandoned-remainder';
 import { AdminOrdersService } from '../orders.service';
 import { abandonedOfShortfall } from '../shortfall-remainder';
+import {
+  isShortfallCardRefusal,
+  SHORTFALL_CARD_TEXT,
+  shortfallCardTermsOf,
+} from '../shortfall-card-terms';
 
 /** Une ligne qui part, nommée par la commande. */
 interface DepartingLine {
@@ -59,6 +70,10 @@ export class OrderShortfallDecision {
   readonly orderId = input.required<string>();
   readonly shortfall = input.required<AdminOrderShortfall | null>();
   readonly lines = input.required<readonly Pick<OrderLineView, 'sku' | 'productName'>[]>();
+  /** Le régime de règlement de la commande (`AdminOrderView.settlement`) ; `null` : inconnu. */
+  readonly settlement = input<SettlementRegime | null>(null);
+  /** Une hausse par carte est vivante (`AdminOrderView.cardIncrease`). */
+  readonly increasePending = input(false);
 
   /** « 3 » ou « 750 g » : une quantité dans l'unité de l'article. */
   protected figure(quantity: number, unit: OrderSaleUnit): string {
@@ -80,6 +95,26 @@ export class OrderShortfallDecision {
   protected readonly error = signal<string | null>(null);
   /** Les BL imprimés puis changés, relus après la décision. */
   protected readonly toReprint = signal<readonly StaffNote[]>([]);
+
+  /** Ce que la carte fait au départ (plan E9) : un refus dit avant le geste, ou le reste remboursé. */
+  private readonly cardTerms = computed(() =>
+    shortfallCardTermsOf(this.settlement(), this.increasePending()),
+  );
+  /** La phrase du refus de la carte, à la place du geste ; `null` : le geste est offert. */
+  protected readonly cardRefusal = computed(() => {
+    const terms = this.cardTerms();
+    return terms !== null && isShortfallCardRefusal(terms) ? SHORTFALL_CARD_TEXT[terms] : null;
+  });
+  /** La carte est encaissée : le reste abandonné sera remboursé au solde. */
+  protected readonly refundedAtSettlement = computed(
+    () => this.cardTerms() === 'refunded_at_settlement',
+  );
+  protected readonly confirmMessage = computed(
+    () =>
+      'Ce qui est au bac part ; le reste est abandonné et ne sera pas facturé.' +
+      (this.refundedAtSettlement() ? ' Il sera remboursé sur la carte au solde.' : '') +
+      ' Une pièce qui arriverait ensuite reste en réserve. La décision est définitive.',
+  );
 
   /** Le départ décidé : ce qui n'est pas parti, ligne par ligne (Hugo, 2026-10-25). */
   protected readonly abandoned = computed(() =>

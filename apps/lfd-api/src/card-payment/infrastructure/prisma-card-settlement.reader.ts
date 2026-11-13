@@ -177,6 +177,7 @@ function refundViewOf({ paymentId, line }: PaymentRefund): CardRefundView {
   return {
     refundId: line.id,
     paymentId,
+    requestId: line.requestId,
     source: line.source,
     status: line.status,
     amountCents: line.amountCents,

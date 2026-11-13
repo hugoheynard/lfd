@@ -75,6 +75,8 @@ describe("« Écrire au client » (E6d)", () => {
     expect(draft.message).toContain(order.orderNumber);
     expect(draft.message).toContain("Ce qui part :\n– 1 ×");
     expect(draft.message).toContain("Ce qui manque :\n– 2 ×");
+    // Au compte : rien n'est rendu sur une carte (plan E9, § 7).
+    expect(draft.message).not.toContain("remboursé sur votre carte");
 
     const relu = `${draft.message}\n\nNous vous rappelons demain.`;
     expect((await write(order.id, relu)).status).toBe(204);

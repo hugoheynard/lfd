@@ -28,6 +28,7 @@ export const ORDER_ANSWER_CASE_TABLES: Pick<
   | "customer.order-change-refused"
   | "customer.order-revised"
   | "customer.order-shortfall"
+  | "customer.order-shortfall-refunded"
 > = {
   "customer.order-cancelled": {
     cases: [
@@ -205,4 +206,5 @@ export const ORDER_ANSWER_CASE_TABLES: Pick<
     ],
   },
   "customer.order-shortfall": specimenOnly("customer.order-shortfall"),
+  "customer.order-shortfall-refunded": specimenOnly("customer.order-shortfall-refunded"),
 };

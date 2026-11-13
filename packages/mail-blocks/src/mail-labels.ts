@@ -88,6 +88,12 @@ const MAIL_LABELS: Readonly<Record<string, MailLabel>> = {
     moment:
       "quand l’équipe écrit au client après la décision d’un départ incomplet — jamais automatiquement ; les paragraphes sont la proposition qu’elle relit avant d’envoyer",
   },
+  "customer.order-shortfall-refunded": {
+    title: "Reste remboursé sur la carte",
+    recipient: "Le client qui a passé la commande",
+    moment:
+      "quand le prestataire confirme le remboursement du reste d’un départ incomplet payé par carte — une part rendue, un e-mail ; jamais pour un remboursement réglé autrement",
+  },
   "customer.invoice-issued": {
     title: "Facture émise",
     recipient: "La facturation du payeur et des sous-comptes",

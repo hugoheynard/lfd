@@ -95,6 +95,12 @@ export interface SucceededCardRefund {
 export interface CardRefundView {
   readonly refundId: string;
   readonly paymentId: string;
+  /**
+   * La demande qui l'a émis — `null` pour un `re_…` fait hors de la
+   * plateforme. Le sujet y lit la raison de la demande (le reste d'un départ
+   * incomplet, plan `documentation/commandes/reliquat/plan-e9-reste-carte.md`, § 7).
+   */
+  readonly requestId: string | null;
   readonly source: CardRefundSource;
   readonly status: CardRefundStatus;
   readonly amountCents: number;

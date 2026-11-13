@@ -53,6 +53,7 @@ export const MAIL_LINK_CARDS: { readonly [K in keyof B2bMails]: MailLinkCards } 
   "customer.order-revised": { cta: { label: "Voir ma commande" } },
   "customer.order-change-refused": {},
   "customer.order-shortfall": {},
+  "customer.order-shortfall-refunded": {},
   "staff.appointment-booked": { cta: { label: "Le rendez-vous" } },
   "staff.account-alert": { cta: { label: "Alertes du compte" } },
   "staff.invited": { cta: { label: "Choisir son mot de passe" } },

@@ -1,4 +1,4 @@
-import type { AdminShortfallLetterDraft } from "@lfd/contracts";
+import type { AdminShortfallLetterDraft, SettlementRegime } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { DEFAULT_MAIL_LOCALE } from "../../../../mail/channels/templates/mail-locale.js";
@@ -13,7 +13,8 @@ import { GetShortfallLetterDraftQuery } from "./get-shortfall-letter-draft.query
 
 /**
  * Rédige la proposition que l'équipe relit avant d'écrire au client (lot E6d) :
- * ce qui part, ce qui manque, la suite — par le dictionnaire des e-mails, dans
+ * ce qui part, ce qui manque, le reste rendu sur une carte encaissée, la
+ * suite — par le dictionnaire des e-mails, dans
  * la langue de la commande (le français pour une commande sans langue).
  *
  * Les textes PUBLIÉS à l'écran des textes s'appliquent, comme à l'envoi : la
@@ -23,6 +24,9 @@ import { GetShortfallLetterDraftQuery } from "./get-shortfall-letter-draft.query
  * @throws {ShortfallLetterWithoutDecisionError} commande inconnue, ou départ non décidé.
  * @throws {ShortfallCustomerAlreadyNotifiedError} le client a déjà été prévenu.
  */
+/** Une carte encaissée : le reste se rend au solde (plan E9, § 7). */
+const PAID_CARD: SettlementRegime = "paid";
+
 @QueryHandler(GetShortfallLetterDraftQuery)
 export class GetShortfallLetterDraftHandler implements IQueryHandler<
   GetShortfallLetterDraftQuery,
@@ -45,6 +49,7 @@ export class GetShortfallLetterDraftHandler implements IQueryHandler<
     const message = await this.drafter.draft({
       reference: subject.reference,
       ...lines,
+      cardWillBeRefunded: subject.settlementRegime === PAID_CARD,
       locale: subject.locale ?? DEFAULT_MAIL_LOCALE,
     });
     return { message };

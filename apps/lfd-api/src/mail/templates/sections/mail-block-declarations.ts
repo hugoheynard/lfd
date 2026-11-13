@@ -36,6 +36,7 @@ const CHARTERS: PerMail<MailCharter> = {
   "customer.order-revised": "lfc",
   "customer.order-change-refused": "lfc",
   "customer.order-shortfall": "lfc",
+  "customer.order-shortfall-refunded": "lfc",
   "customer.sub-account-activity": "lfc",
   "customer.sub-account-gesture": "lfc",
   "customer.order-payment-link": "lfc",
@@ -84,6 +85,7 @@ const FOLLOWS_RECIPIENT_LOCALE: ReadonlySet<keyof B2bMails> = new Set<keyof B2bM
   "customer.order-change-applied",
   "customer.order-change-refused",
   "customer.order-shortfall",
+  "customer.order-shortfall-refunded",
   "customer.marketing-confirm",
 ]);
 
@@ -109,6 +111,7 @@ const NATURES: PerMail<MailNature> = {
   "customer.order-revised": "transactional",
   "customer.order-change-refused": "transactional",
   "customer.order-shortfall": "transactional",
+  "customer.order-shortfall-refunded": "transactional",
   "customer.sub-account-activity": "transactional",
   "customer.sub-account-gesture": "transactional",
   "customer.order-payment-link": "transactional",

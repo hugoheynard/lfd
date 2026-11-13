@@ -5,8 +5,7 @@ import type { ShortfallRefundMoney } from "../../domain/services/shortfall-refun
 import { orderCardSubject } from "./order-card-subject.js";
 import { RefundablePayments, type RefundablesMode } from "./refundable-payments.js";
 
-/** Le code de la demande — 🔴 une valeur écrite (`card_payment.refund_request.reason`). */
-export const SHORTFALL_REFUND_REASON = "shortfall";
+export { SHORTFALL_REFUND_REASON } from "../../domain/services/shortfall-refunded.js";
 
 /**
  * **L'argent carte d'une commande, pour le reste d'un départ incomplet** (plan

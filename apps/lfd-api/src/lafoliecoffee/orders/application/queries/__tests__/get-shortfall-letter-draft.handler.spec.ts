@@ -16,6 +16,7 @@ import { GetShortfallLetterDraftQuery } from "../get-shortfall-letter-draft.quer
 const SUBJECT: ShortfallLetterSubject = {
   reference: "ORD-0001",
   locale: null,
+  settlementRegime: "account",
   notified: false,
   lines: [
     { sku: "CRO", due: 3, packed: 1 },
@@ -78,8 +79,19 @@ describe("la proposition « Écrire au client » (E6d)", () => {
         { product: "Pain au chocolat", quantity: 2 },
       ],
       missing: [{ product: "Croissant", quantity: 2 }],
+      cardWillBeRefunded: false,
       locale: "fr",
     });
+  });
+
+  /** Plan E9, § 7 : une carte encaissée se rend au solde ; la proposition le dit. */
+  it("annonce le reste rendu sur la carte pour une carte encaissée, et seulement elle", async () => {
+    expect((await draft({ ...SUBJECT, settlementRegime: "paid" })).asked?.cardWillBeRefunded).toBe(
+      true,
+    );
+    for (const settlementRegime of ["account", "due", "free"] as const) {
+      expect((await draft({ ...SUBJECT, settlementRegime })).asked?.cardWillBeRefunded).toBe(false);
+    }
   });
 
   /** P6 de `pricing/vente-au-poids.md` : un manquant au poids se dit en grammes, pas en pièces. */

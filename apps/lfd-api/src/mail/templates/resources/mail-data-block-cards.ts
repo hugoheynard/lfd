@@ -133,6 +133,7 @@ export const MAIL_DATA_BLOCK_CARDS: { readonly [K in keyof B2bMails]: MailDataBl
   },
   "customer.order-change-refused": { summary: ONE_LINE_SUMMARY("le mot de notre équipe") },
   "customer.order-shortfall": {},
+  "customer.order-shortfall-refunded": { summary: ONE_LINE_SUMMARY("le montant remboursé") },
   "staff.appointment-booked": {},
   "staff.account-alert": {},
   "staff.invited": {},

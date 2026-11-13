@@ -31,8 +31,8 @@ function brandOf(html: string): string | null {
 const MAILS = mailKeys();
 
 describe("les déclarations de l'éditeur par blocs (S4a)", () => {
-  it("couvrent les 35 e-mails du registre", () => {
-    expect(MAILS).toHaveLength(35);
+  it("couvrent les 36 e-mails du registre", () => {
+    expect(MAILS).toHaveLength(36);
     expect(new Set(MAILS)).toEqual(new Set(Object.keys(MAIL_LAYOUTS)));
   });
 

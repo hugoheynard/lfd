@@ -72,8 +72,8 @@ function reversedOrder(key: keyof B2bMails): readonly LayoutSectionId[] {
   );
 }
 
-it("couvre les 35 e-mails du registre", () => {
-  expect(KEYS).toHaveLength(35);
+it("couvre les 36 e-mails du registre", () => {
+  expect(KEYS).toHaveLength(36);
 });
 
 describe.each(KEYS)("le document de départ de « %s »", (key) => {

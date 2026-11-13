@@ -55,6 +55,7 @@ export const ORDER_VALUE_CARDS: Pick<
       "customer.order-revised": ORDER_REFERENCE,
       "customer.order-change-refused": ORDER_REFERENCE,
       "customer.order-shortfall": ORDER_REFERENCE,
+      "customer.order-shortfall-refunded": ORDER_REFERENCE,
       "customer.mandate-to-sign": {
         label: "Référence du mandat (RUM)",
         description:

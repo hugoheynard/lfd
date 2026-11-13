@@ -55,6 +55,7 @@ const NOT_SHOWN_AS_TEXT = new Set([
   "customer.order-shortfall|departedHeading",
   "customer.order-shortfall|missingHeading",
   "customer.order-shortfall|line",
+  "customer.order-shortfall|cardWillBeRefunded",
   "customer.order-shortfall|contactSales",
   "customer.order-shortfall|closing",
 ]);

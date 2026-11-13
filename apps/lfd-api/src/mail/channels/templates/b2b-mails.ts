@@ -19,6 +19,7 @@ import type {
 } from "../../templates/order-revised-mail.js";
 import type { OrderSheetMailDocument } from "../../templates/order-sheet-mail-document.js";
 import type { OrderShortfallMailData } from "../../templates/order-shortfall-mail.js";
+import type { OrderShortfallRefundedMailData } from "../../templates/order-shortfall-refunded-mail.js";
 import type { PickupPoint } from "../../templates/pickup-itinerary.js";
 import type { ProductionDossierMailData } from "../../templates/production-dossier-mail.js";
 import type { SubAccountActivityMailData } from "../../templates/sub-account-activity-mail.js";
@@ -188,6 +189,14 @@ export interface B2bMails {
    * un abonné. Destinataire : le client. Cf. `order-shortfall-mail.ts`.
    */
   "customer.order-shortfall": OrderShortfallMailData;
+  /**
+   * **« Le reste vous a été remboursé »** — le reste d'un départ incomplet
+   * payé par carte, rendu au solde (plan
+   * `documentation/commandes/reliquat/plan-e9-reste-carte.md`, § 7). Envoyé
+   * par un abonné au succès d'un remboursement du prestataire, une part = un
+   * courriel. Destinataire : le client. Cf. `order-shortfall-refunded-mail.ts`.
+   */
+  "customer.order-shortfall-refunded": OrderShortfallRefundedMailData;
   /**
    * **Un de vos sites a agi** — l'avis au principal (plan
    * `documentation/comptes-client/plan-notifications-sous-comptes.md`, N2).

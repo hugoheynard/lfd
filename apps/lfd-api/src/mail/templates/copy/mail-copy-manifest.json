@@ -2889,6 +2889,11 @@
         ],
         "fr": "– {quantity} × {product}"
       },
+      "cardWillBeRefunded": {
+        "variables": [],
+        "required": [],
+        "fr": "Le reste vous sera remboursé sur votre carte."
+      },
       "contactSales": {
         "variables": [],
         "required": [],
@@ -2898,6 +2903,53 @@
         "variables": [],
         "required": [],
         "fr": "Toutes nos excuses pour ce manque."
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Un doute ou une erreur ? Appelez le fournil."
+      }
+    },
+    "customer.order-shortfall-refunded": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Remboursement"
+      },
+      "subject": {
+        "variables": [
+          "ref"
+        ],
+        "required": [
+          "ref"
+        ],
+        "fr": "Commande {ref} : le reste vous est remboursé"
+      },
+      "title": {
+        "variables": [],
+        "required": [],
+        "fr": "Le reste de votre commande vous est remboursé."
+      },
+      "intro": {
+        "variables": [
+          "amount",
+          "ref"
+        ],
+        "required": [
+          "amount",
+          "ref"
+        ],
+        "fr": "{amount} vous ont été remboursés sur votre carte, pour ce qui n'a pas pu partir avec votre commande {ref}."
+      },
+      "delay": {
+        "variables": [],
+        "required": [],
+        "fr": "Selon votre banque, le montant apparaît sur votre compte sous quelques jours."
+      },
+      "amountLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Montant remboursé"
       },
       "footer": {
         "variables": [],

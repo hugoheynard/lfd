@@ -48,6 +48,12 @@ export const BILLING_VALUE_CARDS: Pick<
           "La différence entre le nouveau total et l'ancien, en plus ou en moins : en HT pour un pro au compte, en TTC sinon.",
         example: "4,50 €",
       },
+      "customer.order-shortfall-refunded": {
+        label: "Montant remboursé",
+        description:
+          "Le reste d'un départ incomplet que le prestataire de paiement a rendu sur la carte — une part, telle qu'il l'a confirmée.",
+        example: "11,40 €",
+      },
     },
   },
   buyer: {

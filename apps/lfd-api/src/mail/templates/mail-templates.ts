@@ -30,6 +30,7 @@ import { totalIsPretaxOnly } from "./order-total-form.js";
 import { renderDeliveryEnRouteMail } from "./delivery-en-route-mail.js";
 import { renderProductionDossierMail } from "./production-dossier-mail.js";
 import { renderOrderShortfallMail } from "./order-shortfall-mail.js";
+import { renderOrderShortfallRefundedMail } from "./order-shortfall-refunded-mail.js";
 import { withAttachments } from "./order-sheet-mail-document.js";
 import { pickupItinerary } from "./pickup-itinerary.js";
 import { discountMailRows } from "./pickup-discount-mail-label.js";
@@ -376,6 +377,8 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
         recapRows(data.sheet, data.locale, settlementCopyKeyOf(data.sheet)),
       ),
     "customer.order-shortfall": (data) => renderOrderShortfallMail(data, customerMail),
+    "customer.order-shortfall-refunded": (data) =>
+      renderOrderShortfallRefundedMail(data, customerMail),
     "customer.sub-account-activity": (data) => renderSubAccountActivityMail(data, customerMail),
     "customer.sub-account-gesture": (data) => renderSubAccountGestureMail(data, customerMail),
     "customer.order-placed": (data) => {

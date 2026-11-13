@@ -1,4 +1,4 @@
-import type { ContentLocale } from "@lfd/contracts";
+import type { ContentLocale, SettlementRegime } from "@lfd/contracts";
 import type { SaleUnit } from "@lfd/money";
 
 import type { ShortfallQuantity } from "../entities/order-shortfall.js";
@@ -8,6 +8,11 @@ export interface ShortfallLetterSubject {
   readonly reference: string;
   /** La langue de la commande ; `null` = commande sans langue. */
   readonly locale: ContentLocale | null;
+  /**
+   * Le régime de règlement (`settlementRegimeOf`) : `paid`, la carte est
+   * encaissée et le reste sera rendu au solde (plan E9, § 7).
+   */
+  readonly settlementRegime: SettlementRegime;
   /** Le client a déjà été prévenu de cette décision. */
   readonly notified: boolean;
   /** Le signal décidé : dû et au bac, par article. */

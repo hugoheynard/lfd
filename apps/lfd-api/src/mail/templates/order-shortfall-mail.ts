@@ -36,6 +36,12 @@ export interface OrderShortfallDraftData {
   readonly reference: string;
   readonly departed: readonly OrderShortfallDraftLine[];
   readonly missing: readonly OrderShortfallDraftLine[];
+  /**
+   * La commande est payée par carte et ENCAISSÉE : le reste sera rendu au
+   * solde (plan `documentation/commandes/reliquat/plan-e9-reste-carte.md`,
+   * § 7). La proposition le dit, sans montant — il n'est connu qu'au solde.
+   */
+  readonly cardWillBeRefunded: boolean;
   readonly locale: ContentLocale;
 }
 
@@ -61,7 +67,8 @@ export function renderOrderShortfallMail(
 
 /**
  * **La proposition** que l'équipe relit avant d'envoyer : ce qui part, ce qui
- * manque, la suite (« contactez le service commercial », Hugo, 2026-10-28).
+ * manque, le reste rendu sur la carte quand elle est encaissée (plan E9),
+ * la suite (« contactez le service commercial », Hugo, 2026-10-28).
  * Textes EFFECTIFS du dictionnaire : un texte publié à l'écran des textes s'y
  * applique quand l'appelant a ouvert son périmètre.
  */
@@ -75,6 +82,7 @@ export function draftOrderShortfallMessage(data: OrderShortfallDraftData): strin
     fill(copy.intro, { ref: data.reference }),
     `${copy.departedHeading}\n${listOf(data.departed)}`,
     `${copy.missingHeading}\n${listOf(data.missing)}`,
+    ...(data.cardWillBeRefunded ? [copy.cardWillBeRefunded] : []),
     copy.contactSales,
     copy.closing,
   ].join("\n\n");

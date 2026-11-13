@@ -4,6 +4,12 @@
       <fold-callout appearance="inset" variant="info" data-shortfall-decided>
         Départ décidé le {{ d.decidedAt | date: "dd/MM 'à' HH:mm" }} : ce qui était au bac est
         parti, le reste est abandonné.
+        @if (refundedAtSettlement()) {
+          <span data-shortfall-refunded-at-settlement>
+            Réglée par carte : il est remboursé sur la carte au solde, et suivi dans le bandeau des
+            remboursements.
+          </span>
+        }
       </fold-callout>
       <app-abandoned-remainder [lines]="abandoned()" />
       @for (note of toReprint(); track note.number) {
@@ -16,6 +22,10 @@
           </div>
         </fold-callout>
       }
+    } @else if (allowed() && cardRefusal(); as refusal) {
+      <fold-callout appearance="inset" variant="warning" data-shortfall-card-refusal>{{
+        refusal
+      }}</fold-callout>
     } @else if (allowed()) {
       @if (open()) {
         <ul class="departing" data-shortfall-departing>
@@ -28,7 +38,7 @@
         </ul>
       }
       <fold-inline-confirm
-        message="Ce qui est au bac part ; le reste est abandonné et ne sera pas facturé. Une pièce qui arriverait ensuite reste en réserve. La décision est définitive."
+        [message]="confirmMessage()"
         [labels]="{ confirm: 'Confirmer : reste abandonné', cancel: 'Attendre' }"
         keepOpenOnConfirm
         [loading]="saving()"

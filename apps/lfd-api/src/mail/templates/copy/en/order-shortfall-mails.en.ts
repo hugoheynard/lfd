@@ -11,8 +11,19 @@ export const ORDER_SHORTFALL_MAILS_EN: OrderShortfallMailsCopy = {
     departedHeading: "What leaves:",
     missingHeading: "What is missing:",
     line: "– {quantity} × {product}",
+    cardWillBeRefunded: "The rest will be refunded to your card.",
     contactSales: "Contact our sales team.",
     closing: "We apologise for the missing items.",
+    footer: "Any doubt or mistake? Call the bakery.",
+  },
+  "customer.order-shortfall-refunded": {
+    kicker: "Refund",
+    subject: "Order {ref}: the rest is refunded",
+    title: "The rest of your order is refunded.",
+    intro:
+      "{amount} has been refunded to your card, for what could not leave with your order {ref}.",
+    delay: "Depending on your bank, the amount shows on your account within a few days.",
+    amountLabel: "Amount refunded",
     footer: "Any doubt or mistake? Call the bakery.",
   },
 };

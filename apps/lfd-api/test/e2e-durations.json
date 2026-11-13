@@ -576,6 +576,8 @@
   "test/shop-state-carry-over-migration.e2e-spec.ts": 6204,
   "test/shortfall-by-shipment-migration.e2e-spec.ts": 3307,
   "test/shortfall-by-shipment.e2e-spec.ts": 9964,
+  "test/shortfall-card-refund-gestures.e2e-spec.ts": 11000,
+  "test/shortfall-card-refund-journey.e2e-spec.ts": 14000,
   "test/shortfall-card-refund.e2e-spec.ts": 5000,
   "test/shortfall-decision.e2e-spec.ts": 16751,
   "test/shortfall-letter.e2e-spec.ts": 7817,

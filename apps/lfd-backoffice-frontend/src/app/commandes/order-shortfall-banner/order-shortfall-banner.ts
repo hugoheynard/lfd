@@ -1,8 +1,15 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import type { AdminOrderShortfall, OrderLineView, OrderSaleUnit } from '@lfd/contracts';
+import type {
+  AdminOrderShortfall,
+  OrderLineView,
+  OrderSaleUnit,
+  SettlementRegime,
+} from '@lfd/contracts';
 import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 import { FoldCalloutComponent } from 'fold-ng';
+
+import { SHORTFALL_CARD_SHORT_TEXT, shortfallCardTermsOf } from '../shortfall-card-terms';
 
 /** Une ligne au manque, nommée par la commande. */
 interface ShortLine {
@@ -35,6 +42,20 @@ export class OrderShortfallBanner {
   readonly shortfall = input.required<AdminOrderShortfall | null>();
   /** Les lignes de la commande, pour nommer les articles. */
   readonly lines = input.required<readonly Pick<OrderLineView, 'sku' | 'productName'>[]>();
+  /** Le régime de règlement de la commande (`AdminOrderView.settlement`) ; `null` : inconnu. */
+  readonly settlement = input<SettlementRegime | null>(null);
+  /** Une hausse par carte est vivante (`AdminOrderView.cardIncrease`). */
+  readonly increasePending = input(false);
+
+  /**
+   * Ce que la carte fait à la décision attendue (plan E9) : la refuse tant
+   * qu'elle n'est pas encaissée ou qu'une hausse est vivante, ou rembourse le
+   * reste au solde. `null` : pas une carte.
+   */
+  protected readonly cardSentence = computed(() => {
+    const terms = shortfallCardTermsOf(this.settlement(), this.increasePending());
+    return terms === null ? null : SHORTFALL_CARD_SHORT_TEXT[terms];
+  });
 
   /** « 3 » ou « 750 g » : une quantité dans l'unité de l'article. */
   protected figure(quantity: number, unit: OrderSaleUnit): string {

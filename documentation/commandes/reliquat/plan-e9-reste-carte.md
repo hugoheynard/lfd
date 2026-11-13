@@ -1,7 +1,7 @@
 # Plan E9 — rembourser le reste d'une commande payée par carte (v5)
 
-> Statut : **lot F bâti et en production** ; **E9a bâti le 2026-11-13 (non
-> commité à l'écriture, § 4.9)** ; E9b doc-first. v1 à v4 contredites par `vitruve`
+> Statut : **lot F bâti et en production** ; **E9a bâti le 2026-11-13**
+> (commit `51a2b6f9f`, § 4.9) ; **E9b bâti le 2026-11-13** (§ 7). v1 à v4 contredites par `vitruve`
 > (§ 12) ; cette v5 répond à chaque objection, revérifiée dans le code le
 > 2026-11-13. Décisions de Hugo :
 >
@@ -918,8 +918,8 @@ code (§ 4.7).
   réussi, et les frais de retard), l'abonné (livraison inversée, rejeu,
   correction à la baisse, chaque cause, refus en phase 2), le geste (clé,
   recalcul, 409), la visibilité, le gel au réconciliateur.
-- Reste au § 9 pour E9a : voir le rapport du lot (intégration par la vraie
-  `DurableDeliveryGuard` et parcours e2e).
+- Intégration par la vraie `DurableDeliveryGuard` et parcours e2e : écrits
+  avec E9b (§ 9).
 
 ### 5. Facture déjà émise : exclusion
 
@@ -934,20 +934,33 @@ facture reste `blocked`. Après `refund.succeeded` ou « Réglé autrement »,
 `order.refund_succeeded` part, `IssueCardInvoiceOnRefundSettled` rejuge,
 l'égalité tombe juste, la facture part sur le livré, sans avoir.
 
-### 7. Courriels et écran (E9b)
+### 7. Courriels et écran (E9b, bâti)
 
-- `customer.order-shortfall` gagne `cardWillBeRefunded` : « Le reste vous sera
-  remboursé sur votre carte. » Sans montant (fr/en/it, manifeste, rendu de
-  référence).
-- Nouveau `customer.order-shortfall-refunded` (« {amount} vous ont été
-  remboursés sur votre carte »), abonné durable à `order.refund_succeeded`, au
-  succès, si `source = provider` et demande de raison `shortfall`.
-  `CardRefundView` gagne `requestId` (additif). Une part = un courriel. Clé
-  `customer.order-shortfall-refunded:<refundId>`. Conforme à
-  `lint:mail-status-honest`.
-- Refus `card_unpaid` et `card_increase_pending` libellés dans l'aperçu du
-  comptoir, `order-shortfall-decision` et `order-shortfall-banner`.
-- Fiche commande : journal de blocage et « Rembourser le reste ».
+- **La proposition « Écrire au client »** dit « Le reste vous sera remboursé
+  sur votre carte. », sans montant, pour une commande de régime `paid`
+  (`ShortfallLetterSubject.settlementRegime`, `cardWillBeRefunded` de
+  `OrderShortfallDraftData`) — texte `cardWillBeRefunded` de
+  `customer.order-shortfall`, en fr/en/it, entre « ce qui manque » et la suite.
+- **`customer.order-shortfall-refunded`** (« {amount} vous ont été remboursés
+  sur votre carte »), gabarit `mail/templates/order-shortfall-refunded-mail.ts`,
+  données `{ reference, amountCents, locale }`. Envoyé par l'abonné durable
+  `SendShortfallRefundedMail` (`orders.send-shortfall-refunded-mail.on-refund-succeeded`)
+  à `order.refund_succeeded` : il relit au bloc `card-payment` la ligne
+  (`CardRefundView.requestId`, additif) et ses demandes, et n'écrit que si la
+  ligne est `succeeded`, `source = provider`, et sa demande de raison
+  `shortfall` (`shortfallRefundedCentsOf`, pur). « Réglé autrement » publie le
+  même fait et n'envoie rien. Une part = un courriel, clé
+  `customer.order-shortfall-refunded:<refundId>` (l'id de la ligne au carnet),
+  `mail.send`, destinataire le client qui a passé la commande, dans la langue
+  de la commande.
+- **Back-office** : le bandeau du manque (`order-shortfall-banner`) dit, sur
+  une commande par carte, « carte pas encore encaissée », « hausse par carte
+  en cours » ou « le reste abandonné sera remboursé au solde » ; la décision
+  (`order-shortfall-decision`) remplace le geste par la phrase du refus
+  `card_unpaid` / `card_increase_pending`, et sa confirmation dit le reste
+  remboursé au solde. Règle relue sur la fiche (`shortfall-card-terms.ts`,
+  `settlement` et `cardIncrease`) ; le serveur reste juge.
+- Fiche commande : journal de blocage et « Rembourser le reste » (E9a).
 
 ### 8. Lots
 
@@ -957,7 +970,8 @@ l'égalité tombe juste, la facture part sur le livré, sans avoir.
    `RefundShortfallOnBillingSettled` en deux phases, `RefundablePayments` et
    `splitRefund` partagés, port `OrderShortfallRefundReader`, `engaged()`,
    journal, « Rembourser le reste ».
-3. **E9b** — courriels, `requestId` dans `CardRefundView`, libellés.
+3. **E9b** — courriels, `requestId` dans `CardRefundView`, libellés. _Bâti
+   le 2026-11-13._
 
 ### 9. Tests d'E9a et E9b
 
@@ -973,6 +987,14 @@ l'égalité tombe juste, la facture part sur le livré, sans avoir.
 - **Intégration** : vraie `DurableDeliveryGuard` — refus de phase 2 forcé sur
   la seconde part : aucune demande, aucune adoption, reçu absent,
   `attempts = 1`.
+- **Où** : `refund-shortfall-on-billing-settled.guard.spec.ts` (intégration),
+  `send-shortfall-refunded-mail.handler.spec.ts`, `shortfall-refunded.spec.ts`,
+  `test/shortfall-card-refund{,-journey,-gestures}.e2e-spec.ts`. Une carte
+  `due` n'atteint pas la décision par le parcours (elle n'entre pas au plan du
+  soir, donc jamais au colisage) : l'e2e le prouve, le refus `card_unpaid` est
+  éprouvé au domaine. Le `not_covered` de l'e2e est fabriqué par une demande
+  d'ajustement émise pour un autre montant puis arrêtée, que « Réglé
+  autrement » répare.
 - **E2E** (Stripe doublé) : parcours pro complet ; rejeu sans seconde demande ;
   refus → « Relancer » → facture ; refus → « Réglé autrement » → facture, pas
   de courriel ; « Rembourser le reste » après `not_covered`, rejoué avec la

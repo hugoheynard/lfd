@@ -7,6 +7,9 @@
         {{ line.name }}, {{ figure(line.packed, line.saleUnit) }} au bac sur
         {{ figure(line.due, line.saleUnit) }}{{ last ? '.' : ' ;' }}
       }
+      @if (cardSentence(); as sentence) {
+        <span data-shortfall-card-terms>{{ sentence }}</span>
+      }
     </fold-callout>
   }
 }

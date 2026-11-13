@@ -362,6 +362,11 @@
       "textSha256": "e8d6de06c31e044faa1ed70657709d07ee1786304a70bdc65cbaacd52b36811c"
     }
   },
+  "customer.order-shortfall-refunded": {
+    "only": {
+      "textSha256": "ffabe42e45b170178f7c2ce6cfbadbccea58416684fc823cdbfb0b3751659351"
+    }
+  },
   "customer.marketing-confirm": {
     "fr": {
       "textSha256": "b070a63540e112c6e2e3ad5d8f8e836b35e29d0c4280f4c6a756377d7ca7deca"
