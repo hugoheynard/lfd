@@ -15,6 +15,8 @@
 > [`../../comptabilite/etat-argent-et-comptabilite.md`](../../comptabilite/etat-argent-et-comptabilite.md),
 > [`../modification/plan-m2-historique-de-transactions.md`](../modification/plan-m2-historique-de-transactions.md) § 3.6.
 
+> **Requête préalable lancée en production le 2026-11-13 par Hugo : 0 partout** (`a_rattraper`, `en_ecart`, `facturable_different`, `cartes_partielles`, commandes bloquées en « remboursée en totalité », remboursements hors plateforme). Aucune facture en retard ne partira au déploiement de F : la question des e-mails ne se pose pas.
+
 ## Partie 1 — En clair
 
 ### Toutes les branches, d'un coup d'œil
