@@ -14,7 +14,7 @@ la pré-notification SEPA. Ce délai n'a rien à voir avec un virement.
 Demain :
 
 - un **réglage par entité juridique**, à côté des réglages du prélèvement :
-  « Échéance des factures au virement : N jours après l'émission », **30 jours**
+  « Échéance des factures au virement : N jours après l'émission », **15 jours**
   par défaut ;
 - **au plus 45 jours après l'émission**. L'article L441-10 du code de commerce
   admet 60 jours après l'émission ou 45 jours fin de mois ; 45 jours nets
@@ -68,7 +68,7 @@ Demain :
 ### Lots
 
 1. **Domaine et base** : migration additive
-   `transfer_due_days_after_issue INT NOT NULL DEFAULT 30` sur `legal_entity` ;
+   `transfer_due_days_after_issue INT NOT NULL DEFAULT 15` sur `legal_entity` ;
    constantes `TRANSFER_DUE_DAYS_MIN = 1`, `TRANSFER_DUE_DAYS_MAX = 45`
    (commentées, L441-10) ; `LegalEntity.setTransferDueDays(days)` sur le modèle
    de `setPreNotificationDays`, erreur de domaine hors bornes, fait au journal ;
@@ -88,13 +88,13 @@ Demain :
 ### Tests
 
 - Domaine : bornes du réglage (1 et 45 acceptés, 0 et 46 refusés, entier),
-  défaut 30 ; `transferDueDay` en fin de mois, année bissextile, samedi gardé.
+  défaut 15 ; `transferDueDay` en fin de mois, année bissextile, samedi gardé.
 - Émission : dans un même passage, payeur au prélèvement inchangé, payeur au
   virement `issuedOn + N` ; émission tardive toujours `issuedOn + N`.
 - Figement : changer le réglage après émission laisse `dueOn`, le PDF et
   Factur-X inchangés.
 - `transfer_overdue` le jour `issuedOn + N + 1`.
-- Une entité existante lit 30 ; specs front du bloc et du réglage.
+- Une entité existante lit 15 ; specs front du bloc et du réglage.
 
 ### Ce que le plan ne fait pas
 
@@ -104,7 +104,21 @@ Demain :
   automatique.
 - La lecture juridique de L441-10 revient au cabinet.
 
-### Questions pour Hugo
+### Décisions de Hugo (2026-11-13), après vitruve
 
-1. **Défaut de 30 jours** et **réglage par entité** (pas par client) : choix
-   du plan, à confirmer.
+1. **Défaut : 15 jours après l'émission**, posé en base par Hugo (pas une
+   valeur choisie d'office). Réglage par entité.
+2. **Le délai part de l'émission réelle** : une émission rattrapée en retard
+   décale l'échéance d'autant.
+3. **L'échéance imprimée n'est pas reportée** ; le constat de retard
+   (`transfer_overdue`, écran des virements en retard, jours de retard) ne
+   commence qu'au **premier jour ouvré qui suit l'échéance**.
+4. **Seul `bank_transfer` change** : tout autre moyen (prélèvement, au compte
+   sans mandat) garde l'échéance du cycle.
+
+Ajouts issus de vitruve : l'e-mail « facture émise » (`invoice-issued-mail.ts`)
+est un lecteur de `dueOn` et entre dans le test de figement ; le réglage a son
+fait au registre du journal (`journal-facts/accounting.ts`) et son contrat ;
+l'exemple de facture au virement de la planche des PDF reflète le réglage.
+Irréversible : une échéance émise ne se corrige que par avoir ; la fenêtre
+gratuite est avant le premier passage mensuel qui suit le déploiement.
