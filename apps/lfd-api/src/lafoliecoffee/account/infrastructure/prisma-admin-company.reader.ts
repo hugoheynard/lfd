@@ -11,7 +11,8 @@ import {
   type AdminCompanyView,
 } from "../domain/ports/admin-company.reader.js";
 import { companyWarnings } from "../domain/services/company-warnings.js";
-import { warningInputOf } from "./company-warnings.projection.js";
+import { warningInputOf, warningPayersOf } from "./company-warnings.projection.js";
+import { transferPayersAmong } from "./transfer-payers.projection.js";
 import { dossierPieces } from "../domain/services/dossier-pieces.js";
 import { requiresVatNumber } from "../domain/value-objects/vat-liability.js";
 import { projectContacts } from "./company-contacts.projection.js";
@@ -95,7 +96,7 @@ const COMPANY_SELECT = {
   parentCompany: { select: { id: true, enseigne: true, status: true } },
   follows: {
     where: { aspect: "billing", validTo: null },
-    select: { validFrom: true },
+    select: { validFrom: true, parentId: true },
     take: 1,
   },
 } satisfies Prisma.CompanySelect;
@@ -127,7 +128,8 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
       select: COMPANY_SELECT,
     });
     const now = this.clock.now();
-    return rows.map((row) => toView(row, now));
+    const transfer = await transferPayersAmong(this.prisma, warningPayersOf(rows, now), now);
+    return rows.map((row) => toView(row, now, transfer));
   }
 
   async byId(companyId: string): Promise<AdminCompanyDetailView | null> {
@@ -145,7 +147,7 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
     // carnet n'a pas de lien de base vers un compte, et c'est l'e-mail qui les
     // relie — la même clé humaine que le commercial a sous les yeux.
     const now = this.clock.now();
-    const [addresses, book, access, hierarchy] = await Promise.all([
+    const [addresses, book, access, hierarchy, transfer] = await Promise.all([
       this.addresses.read(companyId),
       this.prisma.companyContact.findMany({
         where: { companyId },
@@ -173,9 +175,10 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
         },
       }),
       readHierarchy(this.prisma, row, now),
+      transferPayersAmong(this.prisma, warningPayersOf([row], now), now),
     ]);
     return {
-      ...toView(row, this.clock.now()),
+      ...toView(row, this.clock.now(), transfer),
       revision: row.revision,
       vatNumberRequired: requiresVatNumber(row.formeJuridique),
       hasBankAccount: row.bankAccount !== null,
@@ -216,7 +219,11 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
 }
 
 /** Mappe une ligne société vers la vue admin de liste (champs propres). */
-function toView(company: CompanyRow, now: Date): AdminCompanyView {
+function toView(
+  company: CompanyRow,
+  now: Date,
+  transferPayers: ReadonlySet<string>,
+): AdminCompanyView {
   return {
     id: company.id,
     reference: company.reference,
@@ -265,7 +272,7 @@ function toView(company: CompanyRow, now: Date): AdminCompanyView {
     owner: company.memberships[0]?.user ?? null,
     hasOpenSupportRequest: company.supportRequests.length > 0,
     createdAt: company.createdAt.toISOString(),
-    warnings: companyWarnings(warningInputOf(company, now), now),
+    warnings: companyWarnings(warningInputOf(company, now, transferPayers), now),
     parent:
       company.parentCompany === null
         ? null

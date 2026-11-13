@@ -2,6 +2,7 @@ import type { Prisma } from "../../../platform/database/client/client.js";
 
 import type { WarningInput } from "../domain/services/company-warnings.js";
 import { billingCarriedAt } from "./company-hierarchy.projection.js";
+import { warningPayerOf } from "./transfer-payers.projection.js";
 
 /**
  * Les colonnes que le calcul des avertissements lit, et elles seules.
@@ -11,6 +12,7 @@ import { billingCarriedAt } from "./company-hierarchy.projection.js";
  * entrée, et ne peuvent donc pas diverger sur ce qui compte.
  */
 export const WARNING_SELECT = {
+  id: true,
   status: true,
   createdAt: true,
   raisonSociale: true,
@@ -33,15 +35,23 @@ export const WARNING_SELECT = {
   parentCompany: { select: { status: true } },
   follows: {
     where: { aspect: "billing", validTo: null },
-    select: { validFrom: true },
+    select: { validFrom: true, parentId: true },
     take: 1,
   },
 } satisfies Prisma.CompanySelect;
 
 type WarningRow = Prisma.CompanyGetPayload<{ select: typeof WARNING_SELECT }>;
 
-/** Traduit une ligne société en l'entrée pure du calcul des avertissements. */
-export function warningInputOf(company: WarningRow, now: Date): WarningInput {
+/**
+ * Traduit une ligne société en l'entrée pure du calcul des avertissements.
+ * `transferPayers` : les payeurs au virement du lot (`transferPayersAmong`),
+ * lus une fois pour toutes les lignes.
+ */
+export function warningInputOf(
+  company: WarningRow,
+  now: Date,
+  transferPayers: ReadonlySet<string>,
+): WarningInput {
   return {
     status: company.status,
     createdAt: company.createdAt,
@@ -53,8 +63,14 @@ export function warningInputOf(company: WarningRow, now: Date): WarningInput {
     hasBillingAddress: company.addresses.length > 0,
     hasGrantedTerms: company.grantedTerms.length > 0,
     hasActiveMandate: company.mandates.length > 0,
+    collectsByTransfer: transferPayers.has(warningPayerOf(company.id, company.follows, now)),
     kbisUploadedAt: company.kbisUploadedAt,
     kbisCertifiedAt: company.kbisCertifiedAt,
     legalIdentityCarriedByParent: billingCarriedAt(company.parentCompany, company.follows, now),
   };
+}
+
+/** Les payeurs d'un lot de lignes, pour `transferPayersAmong`. */
+export function warningPayersOf(rows: readonly WarningRow[], now: Date): readonly string[] {
+  return rows.map((row) => warningPayerOf(row.id, row.follows, now));
 }

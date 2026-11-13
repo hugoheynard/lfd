@@ -12,6 +12,7 @@ function company(over: Partial<WarningInput> = {}): WarningInput {
     hasBillingAddress: true,
     hasGrantedTerms: false,
     hasActiveMandate: false,
+    collectsByTransfer: false,
     kbisUploadedAt: null,
     kbisCertifiedAt: null,
     legalIdentityCarriedByParent: false,
@@ -34,6 +35,13 @@ describe("les avertissements d'un dossier", () => {
   it("se tait quand le mandat existe", () => {
     expect(
       companyWarnings(company({ hasGrantedTerms: true, hasActiveMandate: true }), NOW),
+    ).toEqual([]);
+  });
+
+  /** Régression : un payeur au virement voyait « il faut le compte à prélever, puis le mandat ». */
+  it("ne réclame pas de mandat à un payeur qui règle par virement", () => {
+    expect(
+      companyWarnings(company({ hasGrantedTerms: true, collectsByTransfer: true }), NOW),
     ).toEqual([]);
   });
 

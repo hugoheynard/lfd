@@ -17,6 +17,11 @@ export interface WarningInput {
   /** Un règlement différé a été accordé — donc on prélèvera. */
   readonly hasGrantedTerms: boolean;
   readonly hasActiveMandate: boolean;
+  /**
+   * Le payeur (lui-même, ou le principal qu'il suit en `billing`) règle par
+   * virement chez toutes les entités : ni RIB ni mandat ne lui servent.
+   */
+  readonly collectsByTransfer: boolean;
   /** Déposé le… `null` si aucun extrait. */
   readonly kbisUploadedAt: Date | null;
   readonly kbisCertifiedAt: Date | null;
@@ -70,7 +75,8 @@ export function companyWarnings(company: WarningInput, now: Date): readonly Comp
   // Un crédit accordé sans moyen de l'encaisser. Pas de date propre : un mandat
   // qui n'existe pas n'a pas d'âge, et dater ça de l'ouverture du compte ferait
   // vieillir un fait qui n'a pas commencé ce jour-là.
-  if (company.hasGrantedTerms && !company.hasActiveMandate) {
+  // Un payeur au virement n'a pas besoin de mandat.
+  if (company.hasGrantedTerms && !company.hasActiveMandate && !company.collectsByTransfer) {
     found.push({ kind: "mandat_absent", since: null });
   }
 
