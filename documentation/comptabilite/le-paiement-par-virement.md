@@ -159,8 +159,11 @@ Migrations `20261112150000_le_droit_du_moyen_d_encaissement` (la ressource
   BT-84 l'IBAN figé de l'entité (BT-86 le BIC s'il est connu), BT-83 la
   référence (le numéro de facture).
 - **L'échéance suit le cycle de facturation**, quel que soit le moyen :
-  celle que l'émission calcule déjà. Le réglage du calendrier refuse une
-  échéance à plus de 45 jours de l'émission.
+  celle que l'émission calcule déjà (le délai du prélèvement après la
+  clôture, reporté au premier jour ouvré). **Aucun plafond n'est contrôlé
+  aujourd'hui** : une émission tardive peut porter l'échéance au-delà de
+  45 jours. Le réglage propre au virement est un plan
+  ([`plan-echeance-du-virement.md`](plan-echeance-du-virement.md)).
 - **Le PDF** porte le bloc « Règlement par virement » avec IBAN et
   référence. **L'e-mail** « facture émise »
   (`apps/lfd-api/src/mail/templates/invoice-issued-mail.ts`) ne porte aucune
@@ -239,7 +242,7 @@ aujourd'hui.
 | V2       | un changement prend effet au début d'une période, jamais au milieu                                                            | § 2     |
 | V3', V4' | le moyen d'une période est celui en vigueur à son début ; facture et lot lisent le même                                       | § 3     |
 | V5       | la facture porte IBAN, BIC, référence, échéance, et en Factur-X 58, BT-84, BT-83                                              | § 4     |
-| V6       | l'échéance suit le cycle de facturation ; plafond de 45 jours                                                                 | § 4     |
+| V6       | l'échéance suit le cycle de facturation ; aucun plafond contrôlé                                                              | § 4     |
 | V7       | le virement reçu règle une ou plusieurs factures, écart nul, par `OrderCollection`                                            | § 5     |
 | V8, C7   | une facture au virement non réglée à l'échéance remonte dans les virements en retard ; pas de relance par e-mail              | § 5     |
 | V9, K4   | le blocage vaut pour les deux moyens : « paiement au compte suspendu »                                                        | § 3     |
