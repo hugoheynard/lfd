@@ -174,7 +174,7 @@ describe("Aperçu du départ incomplet — chaque cas rend son code", () => {
     expect(view.handoverRefusalReason).toEqual(expect.any(String));
   });
 
-  it("une carte réglée, tirée : « card », et le bac est montré", async () => {
+  it("une carte réglée, tirée : rien ne s'y oppose (plan E9), et le bac est montré", async () => {
     const buyer = await createUser(ctx.prisma, { auth0Sub: MEMBER });
     const placed = await placeOrder(ctx, {
       buyerUserId: buyer.id,
@@ -188,7 +188,7 @@ describe("Aperçu du départ incomplet — chaque cas rend son code", () => {
 
     const view = await preview(order.id);
 
-    expect(view.refusal).toBe("card");
+    expect(view.refusal).toBeNull();
     expect(view.lines.map((line) => line.departing)).toEqual([1]);
   });
 

@@ -30,7 +30,17 @@ import type { VoucherRestitution } from "../../../domain/ports/loyalty-voucher-r
 import { VoucherRestitutionPreview } from "../../../domain/ports/voucher-restitution-preview.js";
 import { VoucherRestitutionRefusal } from "../../services/voucher-restitution-refusal.js";
 import { AdminOrderRefundView } from "../../services/admin-order-refund-view.js";
-import { FixedCardRefundRequests } from "../../commands/__tests__/refund-doubles.js";
+import { AdminShortfallRefundView } from "../../services/admin-shortfall-refund-view.js";
+import { RefundablePayments } from "../../services/refundable-payments.js";
+import { ShortfallRefundMoneyReader } from "../../services/shortfall-refund-money.js";
+import {
+  AppliedProposals,
+  FixedShortfallRefundSubjects,
+} from "../../services/__tests__/shortfall-refund-doubles.js";
+import {
+  FixedCardAdoption,
+  FixedCardRefundRequests,
+} from "../../commands/__tests__/refund-doubles.js";
 import { GetAdminOrderHandler } from "../get-admin-order.handler.js";
 import type { CardIncreaseProposal } from "../../../revision/domain/entities/card-increase-proposal.js";
 import { FixedProposalReader } from "../../../revision/application/commands/__tests__/card-increase-scene.js";
@@ -283,6 +293,14 @@ function adminHandler(
     ),
     new FixedShortfall(shortfall),
     new FixedProposalReader(new Steps(), increase),
+    // Le reste d'un départ incomplet : aucune commande ici n'en porte (sa règle a sa suite).
+    new AdminShortfallRefundView(
+      new FixedShortfallRefundSubjects(null),
+      new ShortfallRefundMoneyReader(
+        new RefundablePayments(new FixedCardAdoption(null), new AppliedProposals(), refunds),
+        refunds,
+      ),
+    ),
   );
 }
 
@@ -312,6 +330,7 @@ describe("GetAdminOrderHandler", () => {
       revision: 2,
       shortfall: null,
       cardIncrease: null,
+      shortfallRefund: null,
     });
   });
 

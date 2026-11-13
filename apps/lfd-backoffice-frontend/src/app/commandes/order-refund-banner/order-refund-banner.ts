@@ -8,7 +8,12 @@ import {
   output,
   signal,
 } from '@angular/core';
-import type { AdminRefundRequest, AdminRefundRequestState } from '@lfd/contracts';
+import type {
+  AdminRefundRequest,
+  AdminRefundRequestState,
+  AdminShortfallRefund,
+  ShortfallRefundCause,
+} from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import { GestureIntents } from '../../shared/gesture-intents';
 import { formatCents } from '@lfd/b2b-ui/order';
@@ -33,7 +38,27 @@ export const SETTLE_REASON_MAX_LENGTH = 500;
 const REASONS: Readonly<Record<string, string>> = {
   cancellation: 'annulation',
   paid_after_cancellation: 'paiement arrivé après l’annulation',
+  shortfall: 'reste d’un départ incomplet',
 };
+
+/**
+ * Ce qui bloque encore le reste, dit avant le clic (plan E9, § 4.5). Seules
+ * les causes qu'un geste répare arrivent ici : le serveur tait les autres.
+ */
+export const SHORTFALL_REFUND_CAUSE_TEXT: Readonly<Record<ShortfallRefundCause, string>> = {
+  already_invoiced:
+    'Une facture porte déjà la commande : rendez le reste à la main, avec un avoir.',
+  increase_pending:
+    'Une hausse par carte est en cours : réglez-la (payée et appliquée, ou abandonnée) avant de rembourser.',
+  unattributed_refund:
+    'Un remboursement a été fait hors de la plateforme : rendez le reste à la main.',
+  payment_not_paid: 'Un paiement par carte n’est pas encore encaissé : attendez l’encaissement.',
+  not_covered:
+    'Ce qui reste sur les paiements ne couvre pas le reste : relancez ou réglez autrement le remboursement arrêté d’abord.',
+};
+
+/** La clé d'intention du reste : un seul par commande. */
+const SHORTFALL_SUBJECT = 'shortfall';
 
 /** Une demande, déjà mise en forme pour le bandeau. */
 interface RequestRow {
@@ -100,6 +125,13 @@ interface RequestError {
 })
 export class OrderRefundBanner {
   readonly requests = input.required<readonly AdminRefundRequest[]>();
+  /** La commande, pour « Rembourser le reste ». */
+  readonly orderId = input.required<string>();
+  /**
+   * Le reste d'un départ incomplet à rembourser, lu sur l'état par le serveur
+   * (`null`, ou absent d'un serveur plus ancien : pas de bouton).
+   */
+  readonly shortfallRefund = input<AdminShortfallRefund | null>(null);
 
   /** Une demande a été relancée ou notée rendue : au parent de relire le détail. */
   readonly changed = output<void>();
@@ -108,10 +140,21 @@ export class OrderRefundBanner {
   private readonly permissions = inject(PermissionsStore);
   /** Une relance par intention : un double clic ne relance pas deux fois. */
   private readonly retryIntents = new GestureIntents();
+  /** « Rembourser le reste » par intention : un double clic ne demande pas deux fois. */
+  private readonly shortfallIntents = new GestureIntents();
 
   protected readonly maxLength = SETTLE_REASON_MAX_LENGTH;
   protected readonly allowed = computed(() => this.permissions.can('card_payments:write'));
   protected readonly rows = computed(() => this.requests().map(rowOf));
+  protected readonly shortfall = computed(() => {
+    const refund = this.shortfallRefund();
+    return refund === null
+      ? null
+      : {
+          amount: formatCents(refund.amountCents),
+          blockedBy: refund.cause === null ? null : SHORTFALL_REFUND_CAUSE_TEXT[refund.cause],
+        };
+  });
 
   /** La demande dont un geste est en vol, ou `null`. */
   protected readonly saving = signal<string | null>(null);
@@ -137,6 +180,15 @@ export class OrderRefundBanner {
     await this.run(requestId, () => this.api.retryRefund(requestId, key), {
       fallback: "La relance n'a pas abouti. Réessayez.",
       onSuccess: () => this.retryIntents.done(requestId),
+    });
+  }
+
+  protected async refundShortfall(): Promise<void> {
+    const orderId = this.orderId();
+    const key = this.shortfallIntents.keyFor(SHORTFALL_SUBJECT);
+    await this.run(SHORTFALL_SUBJECT, () => this.api.refundShortfall(orderId, key), {
+      fallback: "Le reste n'a pas pu être remboursé. Réessayez.",
+      onSuccess: () => this.shortfallIntents.done(SHORTFALL_SUBJECT),
     });
   }
 

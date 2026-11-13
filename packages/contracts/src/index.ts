@@ -817,7 +817,9 @@ export type {
   AdminShortfallDecisionPayload,
   AdminShortfallLetterDraft,
   AdminShortfallLetterPayload,
+  AdminShortfallRefund,
   CounterIncompleteHandoverPayload,
+  ShortfallRefundCause,
   ShortfallRemainder,
 } from "./admin-order-detail.js";
 export type {

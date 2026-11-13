@@ -32,6 +32,7 @@ import { settlementRegimeOf } from "../../domain/services/settlement-regime.js";
 import type { CancellationSubject } from "../../cancellation/domain/ports/cancellation-subject.reader.js";
 import { adminCardIncreaseOf } from "../../revision/application/services/admin-order-card-increase.js";
 import { AdminOrderRefundView } from "../services/admin-order-refund-view.js";
+import { AdminShortfallRefundView } from "../services/admin-shortfall-refund-view.js";
 import { OrderRevisabilityReading } from "../../revision/application/services/order-revisability-reading.js";
 import { CancellationPreview } from "../../cancellation/application/services/cancellation-preview.js";
 import { VoucherRestitutionRefusal } from "../services/voucher-restitution-refusal.js";
@@ -63,6 +64,10 @@ import { GetAdminOrderQuery } from "./get-admin-order.query.js";
  * La hausse par carte (`documentation/commandes/modification/modifier-une-commande.md`, §2.7.10) :
  * et la hausse par carte qui attend, le projet vivant — lu par la commande
  * déjà servie, sans autre mur que le sien.
+ *
+ * Le reste d'un départ incomplet payé par carte (plan
+ * `documentation/commandes/reliquat/plan-e9-reste-carte.md`, § 4.5) : ce que
+ * « Rembourser le reste » rendrait, lu sur l'état.
  */
 @QueryHandler(GetAdminOrderQuery)
 export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, AdminOrderView> {
@@ -80,19 +85,29 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
     private readonly revisions: OrderRevisabilityReading,
     private readonly shortfalls: OrderShortfallReader,
     private readonly cardIncreases: CardIncreaseProposalReader,
+    private readonly shortfallRefunds: AdminShortfallRefundView,
   ) {}
 
   async execute(query: GetAdminOrderQuery): Promise<AdminOrderView> {
-    const [owned, author, cancellability, refundRequests, revision, shortfall, increase] =
-      await Promise.all([
-        this.orders.findById(query.orderId),
-        this.authors.authorOf(query.orderId),
-        this.cancellabilityOf(query.orderId),
-        this.refunds.of(query.orderId),
-        this.revisions.forStaff(query.orderId),
-        this.shortfalls.of(query.orderId),
-        this.cardIncreases.liveOf(query.orderId),
-      ]);
+    const [
+      owned,
+      author,
+      cancellability,
+      refundRequests,
+      revision,
+      shortfall,
+      increase,
+      shortfallRefund,
+    ] = await Promise.all([
+      this.orders.findById(query.orderId),
+      this.authors.authorOf(query.orderId),
+      this.cancellabilityOf(query.orderId),
+      this.refunds.of(query.orderId),
+      this.revisions.forStaff(query.orderId),
+      this.shortfalls.of(query.orderId),
+      this.cardIncreases.liveOf(query.orderId),
+      this.shortfallRefunds.of(query.orderId),
+    ]);
     if (owned === null || author === null || cancellability === null || revision === null) {
       throw new OrderNotFoundError(query.orderId);
     }
@@ -115,6 +130,7 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
       revision: revision.revision,
       shortfall: shortfall === null ? null : shortfallViewOf(shortfall, staffAuthors),
       cardIncrease: adminCardIncreaseOf(increase),
+      shortfallRefund,
     };
   }
 

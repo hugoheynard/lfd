@@ -193,7 +193,7 @@ describe("« Décider du départ » — reste abandonné (E6b + E6c1)", () => {
     });
   });
 
-  it("refuse une commande réglée par carte", async () => {
+  it("décide une commande réglée par carte : le reste se rembourse au solde (plan E9)", async () => {
     const buyer = await createUser(ctx.prisma, { auth0Sub: MEMBER });
     const placed = await placeOrder(ctx, {
       buyerUserId: buyer.id,
@@ -205,11 +205,8 @@ describe("« Décider du départ » — reste abandonné (E6b + E6c1)", () => {
     const order = await drawn(placed, 1);
     await report(order.id);
 
-    expect(await decide(order.id)).toMatchObject({
-      status: 409,
-      code: "orders.shortfall_decision.card",
-    });
-    expect((await sheetOf(ctx, order.orderNumber)).lines.map((line) => line.quantity)).toEqual([3]);
+    expect((await decide(order.id)).status).toBe(204);
+    expect((await sheetOf(ctx, order.orderNumber)).lines.map((line) => line.quantity)).toEqual([1]);
   });
 
   it("refuse quand le bac a changé depuis le signal, sans rien écrire", async () => {

@@ -6,7 +6,8 @@ import type {
   ShortfallDecisionSubject,
 } from "../entities/shortfall-decision.js";
 import {
-  CardOrderShortfallError,
+  CardIncreasePendingShortfallError,
+  CardOrderUnpaidShortfallError,
   OrderTooOldForShortfallError,
   RemainderNotDecidableError,
   ShortfallAlreadyDecidedError,
@@ -17,13 +18,20 @@ import {
 /**
  * Pourquoi le départ de cet envoi ne se décide pas, sans lire le bac — dans
  * l'ordre où la décision juge : déjà décidé, envoi plus à coliser (commande
- * pas confirmée, reliquat pas prévu), carte, bon de fidélité, termes non
- * figés.
+ * pas confirmée, reliquat pas prévu), carte pas encore encaissée, hausse par
+ * carte en cours, bon de fidélité, termes non figés.
  */
 export type ShortfallDecisionRefusal =
-  "already_decided" | "not_confirmed" | "remainder_not_planned" | "card" | "voucher" | "too_old";
+  | "already_decided"
+  | "not_confirmed"
+  | "remainder_not_planned"
+  | "card_unpaid"
+  | "card_increase_pending"
+  | "voucher"
+  | "too_old";
 
-const CARD_REGIMES: ReadonlySet<SettlementRegime> = new Set(["due", "paid"]);
+const UNPAID_CARD: SettlementRegime = "due";
+const PAID_CARD: SettlementRegime = "paid";
 
 /** Le rang de la commande elle-même (comme `order-billing.ts`). */
 const FIRST_SHIPMENT_RANK = 1;
@@ -61,9 +69,19 @@ function shipmentToPackRefusalOf(
   return subject.remainderNoteStatus === DECIDABLE_REMAINDER_NOTE ? null : "remainder_not_planned";
 }
 
+/**
+ * Une carte ENCAISSÉE se décide : le reste se rembourse au solde (plan
+ * `documentation/commandes/reliquat/plan-e9-reste-carte.md`, § 2.1). Pas
+ * encore encaissée, il n'y a rien à rendre ; une hausse vivante changerait le
+ * total sous la décision — la révision la refuse ensuite
+ * (`ensureNoShortfallDecision`), la décision la refuse avant.
+ */
 function termsRefusalOf(subject: ShortfallDecisionSubject): ShortfallDecisionRefusal | null {
-  if (CARD_REGIMES.has(subject.settlementRegime)) {
-    return "card";
+  if (subject.settlementRegime === UNPAID_CARD) {
+    return "card_unpaid";
+  }
+  if (subject.settlementRegime === PAID_CARD && subject.increasePending) {
+    return "card_increase_pending";
   }
   if (subject.voucherDiscountCents > 0) {
     return "voucher";
@@ -82,7 +100,8 @@ const REFUSAL_ERRORS: Readonly<
     new ShortfallOrderNotConfirmedError(subject.reference, subject.status),
   remainder_not_planned: (subject) =>
     new RemainderNotDecidableError(subject.reference, subject.rank, subject.remainderNoteStatus),
-  card: (subject) => new CardOrderShortfallError(subject.reference),
+  card_unpaid: (subject) => new CardOrderUnpaidShortfallError(subject.reference),
+  card_increase_pending: (subject) => new CardIncreasePendingShortfallError(subject.reference),
   voucher: (subject) => new VoucherOrderShortfallError(subject.reference),
   too_old: (subject) => new OrderTooOldForShortfallError(subject.reference),
 };

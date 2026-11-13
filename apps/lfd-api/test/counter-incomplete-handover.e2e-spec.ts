@@ -222,7 +222,7 @@ describe("Départ incomplet au comptoir — ce qui est au bac part, le reste est
     expect(await ctx.prisma.orderHandover.count()).toBe(0);
   });
 
-  it("refuse une commande par carte, réglée, sans rien écrire", async () => {
+  it("une commande par carte ENCAISSÉE part incomplète : le reste se rembourse au solde (plan E9)", async () => {
     const buyer = await createUser(ctx.prisma, { auth0Sub: MEMBER });
     const placed = await placeOrder(ctx, {
       buyerUserId: buyer.id,
@@ -234,11 +234,8 @@ describe("Départ incomplet au comptoir — ce qui est au bac part, le reste est
     const order = await drawn(ctx, placed, 1);
     openCounterOnServiceDay();
 
-    expect(await handOverPacked(ctx.asSub(STAFF), order.id)).toEqual({
-      status: 409,
-      code: "orders.shortfall_decision.card",
-    });
-    await expectNothingWritten(order);
+    expect(await handOverPacked(ctx.asSub(STAFF), order.id)).toEqual({ status: 204, code: null });
+    expect(await ctx.prisma.orderShortfallDecision.count({ where: { orderId: order.id } })).toBe(1);
   });
 
   it("refuse rien au bac, sans rien écrire", async () => {

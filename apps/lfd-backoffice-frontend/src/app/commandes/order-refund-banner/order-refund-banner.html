@@ -1,3 +1,29 @@
+@if (shortfall(); as rest) {
+  <fold-callout appearance="inset" variant="alert" data-shortfall-refund>
+    Le reste du départ incomplet, {{ rest.amount }}, n’est pas remboursé sur la carte.
+    @if (rest.blockedBy) {
+      {{ rest.blockedBy }}
+    }
+    <div actions>
+      <button
+        foldButton
+        size="sm"
+        emphasis="outline"
+        [disabled]="!allowed()"
+        [loading]="saving() === 'shortfall'"
+        (click)="refundShortfall()"
+        data-shortfall-refund-button
+      >
+        Rembourser le reste
+      </button>
+    </div>
+  </fold-callout>
+  @if (errorOf('shortfall'); as message) {
+    <fold-callout appearance="inset" variant="alert" announce data-refund-error>{{
+      message
+    }}</fold-callout>
+  }
+}
 @if (rows().length > 0) {
   <div class="requests">
     @for (row of rows(); track row.request.id) {

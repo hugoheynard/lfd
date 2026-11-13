@@ -9,6 +9,7 @@ import { OrderBillingSettledFact } from "../../../orders/domain/events/order-bil
 import { AccountOrderEngagementReader } from "../../../orders/domain/ports/account-order-engagement.js";
 import { AccountOrderSettlement } from "../../../orders/domain/ports/account-order-settlement.js";
 import { OrderBillingRepository } from "../../../orders/domain/ports/order-billing.repository.js";
+import { OrderShortfallRefundReader } from "../../../orders/domain/ports/order-shortfall-refund.reader.js";
 import type { DeliveryNote } from "../../domain/entities/delivery-note.js";
 import { DeliveryNoteRepository } from "../../domain/ports/delivery-note.repository.js";
 import { handedOverAmountsOf } from "../../domain/services/handed-over-amounts.js";
@@ -19,8 +20,9 @@ export interface BillingGap {
   readonly orderNumber: string;
   readonly fields: readonly string[];
   /**
-   * Déjà ENGAGÉE — facturée, relevée ou prélevée (plan E6c2, § 4) : rien n'a
-   * été corrigé, le gel l'interdit ; un écart s'y reprend par un avoir.
+   * Déjà ENGAGÉE — facturée, relevée ou prélevée (plan E6c2, § 4), ou son
+   * reste déjà demandé à la carte (plan E9, § 4.7) : rien n'a été corrigé, le
+   * gel l'interdit ; un écart s'y reprend à la main.
    */
   readonly engaged: boolean;
 }
@@ -63,6 +65,7 @@ export class OrderBillingCloser {
     private readonly uow: UnitOfWork,
     private readonly facts: DurablePublisher,
     private readonly ids: IdGenerator,
+    private readonly shortfallRefunds: OrderShortfallRefundReader,
   ) {}
 
   /** À la remise, dans l'unité de travail du geste : pose le solde s'il est atteint. */
@@ -196,9 +199,18 @@ export class OrderBillingCloser {
    * re-présenté, réglée autrement (plan E6c2, § 4 BLOQUANT 1). Un engagement
    * qu'on ne sait pas établir se traite comme engagé : on ne corrige pas à
    * l'aveugle.
+   *
+   * Et le reste d'un départ incomplet déjà demandé à la carte (plan
+   * `documentation/commandes/reliquat/plan-e9-reste-carte.md`, § 4.7) : une
+   * demande `shortfall`, dans n'importe quel état, gèle le solde dont elle a
+   * tiré son montant. Une commande carte n'a pas de ligne d'encaissement : ce
+   * gel est tenu ici, pas en base.
    */
   private async engaged(orderId: string): Promise<boolean> {
     const engagement = await this.engagements.engagementOf(orderId);
-    return engagement === null || engagement.kind !== "free";
+    if (engagement === null || engagement.kind !== "free") {
+      return true;
+    }
+    return this.shortfallRefunds.hasShortfallRefund(orderId);
   }
 }

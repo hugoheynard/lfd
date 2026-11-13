@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import { shortfallRemainderSchema } from "../admin-order-detail.js";
-import { count, fact, namedOrBare, payload, ref, subjectLabel } from "./fact.js";
+import { SHORTFALL_REFUND_CAUSES, shortfallRemainderSchema } from "../admin-order-detail.js";
+import { cents, count, fact, namedOrBare, payload, ref, subjectLabel } from "./fact.js";
 
 /**
  * **Le départ incomplet décidé** (plan
@@ -21,6 +21,25 @@ export const ORDER_SHORTFALL_FACTS = {
       decidedBy: namedOrBare("staff_user"),
       departing: z.array(z.object({ sku: z.string().min(1), quantity: count() })),
       remainder: shortfallRemainderSchema,
+    }),
+  ),
+  /**
+   * **Le reste d'un départ incomplet n'a pas été remboursé** (plan
+   * `documentation/commandes/reliquat/plan-e9-reste-carte.md`, § 4.4) : au
+   * solde, l'abonné a jugé qu'aucune demande ne pouvait partir, et n'a rien
+   * écrit côté argent. Écrit par la machine (acteur `system`). Le sujet est la
+   * COMMANDE, son libellé son numéro. `amountCents` : le reste calculé, `null`
+   * quand la cause est jugée avant le calcul (facture émise, hausse en
+   * cours) ; `stoppedAmount` : parmi les paiements qui se rendent, une demande
+   * arrêtée attend « Relancer » ou « Réglé autrement » — la sortie d'un
+   * `not_covered`. 🔴 Type et causes irréversibles.
+   */
+  "order.shortfall_refund_blocked": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      cause: z.enum(SHORTFALL_REFUND_CAUSES),
+      amountCents: cents().nullable(),
+      stoppedAmount: z.boolean(),
     }),
   ),
 };

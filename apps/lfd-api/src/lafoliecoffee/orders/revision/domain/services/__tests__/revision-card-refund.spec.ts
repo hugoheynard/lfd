@@ -1,5 +1,9 @@
 import { CardRefundNotCoveredError } from "../../errors/revision-card-refund-errors.js";
-import { splitCardRefund, type CardRefundSplitInput } from "../revision-card-refund.js";
+import {
+  splitCardRefund,
+  splitRefund,
+  type CardRefundSplitInput,
+} from "../revision-card-refund.js";
 
 /**
  * **La répartition d'une baisse sur les paiements** (plan
@@ -117,5 +121,36 @@ describe("splitCardRefund — R6", () => {
       openRequests: [{ paymentId: "pay_1", form: "remainder", state: "stopped" }],
     });
     expect(refusal.stopped).toBe(false);
+  });
+});
+
+describe("splitRefund — la répartition pure, partagée avec le reste d'un départ incomplet (plan E9, § 4.2)", () => {
+  it("couvert : les parts, sans acteur ni commande", () => {
+    expect(
+      splitRefund({
+        refundCents: 500,
+        payments: [
+          { paymentId: "pay_1", remainderCents: 400 },
+          { paymentId: "pay_2", remainderCents: 200 },
+        ],
+        openRequests: [],
+      }),
+    ).toEqual({
+      kind: "split",
+      parts: [
+        { paymentId: "pay_2", amountCents: 200 },
+        { paymentId: "pay_1", amountCents: 300 },
+      ],
+    });
+  });
+
+  it("pas couvert : rend `uncovered` sans lever, avec la demande arrêtée qui en est la sortie", () => {
+    expect(
+      splitRefund({
+        refundCents: 500,
+        payments: [{ paymentId: "pay_1", remainderCents: 100 }],
+        openRequests: [{ paymentId: "pay_1", form: "amount", state: "stopped" }],
+      }),
+    ).toEqual({ kind: "uncovered", hasStoppedAmount: true });
   });
 });

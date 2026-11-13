@@ -44,13 +44,30 @@ export class RemainderNotDecidableError extends BusinessError {
   }
 }
 
-/** § 7 : le trop-perçu d'une carte n'a pas encore de chemin de retour. */
-export class CardOrderShortfallError extends BusinessError {
+/**
+ * La carte n'est pas encore encaissée : le reste se rembourse sur ce qui a été
+ * payé, et rien ne l'est (plan `documentation/commandes/reliquat/plan-e9-reste-carte.md`, § 2.1).
+ */
+export class CardOrderUnpaidShortfallError extends BusinessError {
   constructor(reference: string) {
     super(
-      "orders.shortfall_decision.card",
-      `${reference} est réglée par carte : le départ incomplet viendra avec le remboursement partiel (E9). ` +
-        "D'ici là, complétez la commande, ou annulez-la et recommandez ce qui est au bac.",
+      "orders.shortfall_decision.card_unpaid",
+      `${reference} est réglée par carte, et la carte n'est pas encore encaissée : ` +
+        "le départ incomplet attend le paiement. Relancez le règlement, ou complétez la commande.",
+    );
+  }
+}
+
+/**
+ * Une hausse par carte attend son paiement ou son application : le reste
+ * se calculerait sur un total qui va changer (plan E9, § 2.2).
+ */
+export class CardIncreasePendingShortfallError extends BusinessError {
+  constructor(reference: string) {
+    super(
+      "orders.shortfall_decision.card_increase_pending",
+      `${reference} a une hausse par carte en cours : le départ incomplet ne se décide pas tant ` +
+        "qu'elle n'est ni payée et appliquée, ni abandonnée. Réglez-la depuis la fiche commande, puis recommencez.",
     );
   }
 }

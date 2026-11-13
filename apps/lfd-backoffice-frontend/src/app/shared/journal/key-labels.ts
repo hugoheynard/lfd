@@ -336,6 +336,8 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   startsOn: 'Premier jour',
   status: 'Statut',
   step: 'Étape',
+  // Plan E9 : un remboursement arrêté attend un geste (`order.shortfall_refund_blocked`).
+  stoppedAmount: 'Remboursement arrêté en attente',
   story: 'Histoire',
   subjectLabel: 'Sujet',
   subscriptionId: 'Panier récurrent',

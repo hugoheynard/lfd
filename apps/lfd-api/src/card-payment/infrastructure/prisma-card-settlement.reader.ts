@@ -97,6 +97,7 @@ export class PrismaCardSettlementReader extends CardSettlementReader {
       .map(({ paymentId, line }) => ({
         refundId: line.id,
         paymentId,
+        requestId: line.requestId,
         amountCents: line.amountCents,
         nature: line.nature,
         source: line.source,

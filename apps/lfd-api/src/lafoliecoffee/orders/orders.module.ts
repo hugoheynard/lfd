@@ -44,6 +44,11 @@ import { CancelledOrderPaymentReader } from "./cancellation/domain/ports/cancell
 import { PrismaCancelledOrderPaymentReader } from "./cancellation/infrastructure/prisma-cancelled-order-payment.reader.js";
 import { ORDER_CARD_REFUND_PROVIDERS } from "./order-card-refund.providers.js";
 import {
+  ORDER_SHORTFALL_REFUND_CONTROLLERS,
+  ORDER_SHORTFALL_REFUND_EXPORTS,
+  ORDER_SHORTFALL_REFUND_PROVIDERS,
+} from "./order-shortfall-refund.providers.js";
+import {
   ORDER_REVISION_CONTROLLERS,
   ORDER_REVISION_PROVIDERS,
 } from "./revision/order-revision.providers.js";
@@ -370,6 +375,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     ...ORDER_REVISION_CONTROLLERS,
     ...CARD_INCREASE_CONTROLLERS,
     ...ORDER_SHORTFALL_CONTROLLERS,
+    ...ORDER_SHORTFALL_REFUND_CONTROLLERS,
     OrdersController,
     MyShopCatalogueController,
     MyShopQuoteController,
@@ -595,6 +601,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     RingRefundRejected,
     // Lot C4, par `card-payment` depuis P1.c : rembourser une commande payée qu'on annule.
     ...ORDER_CARD_REFUND_PROVIDERS,
+    // Le reste d'un départ incomplet payé par carte, remboursé au solde (plan E9, lot E9a).
+    ...ORDER_SHORTFALL_REFUND_PROVIDERS,
     // Le composeur de l'accusé, partagé par les deux chemins ci-dessus.
     OrderPlacedMail,
     // Prévient le propriétaire d'une adresse qu'une commande sans compte l'a
@@ -788,6 +796,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // l'appellent en remettant le BL du reste (plan E7 reliquat, L5b).
     RemainderSettlement,
     ...ORDER_SHORTFALL_EXPORTS,
+    ...ORDER_SHORTFALL_REFUND_EXPORTS,
   ],
 })
 export class OrdersModule {}

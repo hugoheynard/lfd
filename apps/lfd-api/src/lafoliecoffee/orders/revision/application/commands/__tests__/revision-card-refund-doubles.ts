@@ -15,6 +15,7 @@ import type { CardIncreaseProposal } from "../../../domain/entities/card-increas
 import { CardIncreaseProposalReader } from "../../../domain/ports/card-increase-proposal.reader.js";
 import { CardIncreaseProposalRepository } from "../../../domain/ports/card-increase-proposal.repository.js";
 import { OrderCardAdoption } from "../../../../domain/ports/order-card-payments.js";
+import { RefundablePayments } from "../../../../application/services/refundable-payments.js";
 import { RevisionCardRefund } from "../../services/revision-card-refund.js";
 
 /**
@@ -201,11 +202,15 @@ export class RecordingAmountRefunds extends CardRefunds {
 /** Le service de M1 monté sur ces doubles, et ses demandes. */
 export function cardRefundOf(setup: CardRefundSetup, trace: string[]) {
   const refunds = new RecordingAmountRefunds(trace);
+  const reader = new SetupProposalReader(setup, trace);
   const service = new RevisionCardRefund(
-    new SetupProposalReader(setup, trace),
+    reader,
     new SetupProposalRepository(setup, trace),
-    new SetupAdoption(setup, trace),
-    new SetupPositions(setup, trace),
+    new RefundablePayments(
+      new SetupAdoption(setup, trace),
+      reader,
+      new SetupPositions(setup, trace),
+    ),
     refunds,
   );
   return { service, refunds };

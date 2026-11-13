@@ -1,22 +1,17 @@
 import { Injectable } from "@nestjs/common";
 
-import {
-  CardRefunds,
-  CardSettlementReader,
-} from "../../../../../card-payment/channels/requests/index.js";
+import { CardRefunds } from "../../../../../card-payment/channels/requests/index.js";
 import type { RevisableOrder, RevisionActor } from "../../domain/entities/order-revision.js";
 import type { RevisionSettlement } from "../../domain/entities/revision-settlement.js";
 import { RevisionProposalPendingError } from "../../domain/errors/card-increase-proposal-errors.js";
 import { CardIncreaseProposalReader } from "../../domain/ports/card-increase-proposal.reader.js";
 import { CardIncreaseProposalRepository } from "../../domain/ports/card-increase-proposal.repository.js";
-import { OrderCardAdoption } from "../../../domain/ports/order-card-payments.js";
 import { isCardSettlement } from "../../domain/services/order-revisability.js";
 import {
   type CardRefundPart,
-  type RefundablePayment,
   splitCardRefund,
 } from "../../domain/services/revision-card-refund.js";
-import { orderCardSubject } from "../../../application/services/order-card-subject.js";
+import { RefundablePayments } from "../../../application/services/refundable-payments.js";
 
 /**
  * Le code de la demande — 🔴 une valeur écrite
@@ -49,8 +44,7 @@ export class RevisionCardRefund {
   constructor(
     private readonly proposals: CardIncreaseProposalReader,
     private readonly lockedProposals: CardIncreaseProposalRepository,
-    private readonly cards: OrderCardAdoption,
-    private readonly settlements: CardSettlementReader,
+    private readonly refundables: RefundablePayments,
     private readonly refunds: CardRefunds,
   ) {}
 
@@ -92,12 +86,14 @@ export class RevisionCardRefund {
     if (settlement.kind !== "card_refund") {
       return NOTHING;
     }
-    const { payments, openRequests } = await this.refundablesOf(locked.orderId);
+    // R4 : le premier paiement adopté s'il manque, dans la transaction
+    // ambiante — sans quoi son reste vaudrait 0 et le refus mentirait.
+    const { payments, position } = await this.refundables.of(locked.orderId, "adopt");
     return splitCardRefund({
       orderId: locked.orderId,
       refundCents: settlement.refundCents,
       payments,
-      openRequests,
+      openRequests: position?.openRequests ?? [],
       by,
     });
   }
@@ -113,26 +109,5 @@ export class RevisionCardRefund {
         requestedBy: actor.kind === "staff" ? actor.staffId : null,
       });
     }
-  }
-
-  /**
-   * R4 : le premier paiement (adopté s'il manque, dans la transaction
-   * ambiante — sans quoi son reste vaudrait 0 et le refus mentirait) et les
-   * compléments `applied`, dans l'ordre de la position, avec leurs restes.
-   */
-  private async refundablesOf(orderId: string) {
-    const first = await this.cards.ensureFirst(orderId);
-    const applied = await this.proposals.appliedPaymentsOf(orderId);
-    const refundable = new Set([...(first === null ? [] : [first.paymentId]), ...applied]);
-    const [position] = await this.settlements.positionOf([orderCardSubject(orderId)]);
-    const payments: RefundablePayment[] = [];
-    for (const line of position?.payments ?? []) {
-      if (refundable.has(line.paymentId)) {
-        // Un à un : la même transaction, sous le même verrou.
-        const remainderCents = await this.settlements.remainderOf(line.paymentId);
-        payments.push({ paymentId: line.paymentId, remainderCents });
-      }
-    }
-    return { payments, openRequests: position?.openRequests ?? [] };
   }
 }

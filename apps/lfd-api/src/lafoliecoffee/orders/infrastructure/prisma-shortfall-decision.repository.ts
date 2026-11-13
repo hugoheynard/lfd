@@ -10,6 +10,7 @@ import {
   DISCOUNT_COVERAGE_LINES_SELECT,
 } from "./order-discounts.columns.js";
 import { settlementRegimeOf } from "../domain/services/settlement-regime.js";
+import { LIVE_CARD_INCREASE_STATES } from "../revision/domain/entities/card-increase-proposal.js";
 import {
   ShortfallDecisionRepository,
   type LockedShortfallSubject,
@@ -47,6 +48,7 @@ interface ShipmentRows {
     select: typeof SHORTFALL_STATE_SELECT & { decision: { select: { id: true } } };
   }> | null;
   readonly remainderNoteStatus: string | null;
+  readonly increasePending: boolean;
 }
 
 function lockedOf(row: SubjectRow, shipment: ShipmentRows): LockedShortfallSubject {
@@ -58,6 +60,7 @@ function lockedOf(row: SubjectRow, shipment: ShipmentRows): LockedShortfallSubje
       status: row.status,
       remainderNoteStatus: shipment.remainderNoteStatus,
       settlementRegime: settlementRegimeOf(row.paymentStatus, row.totalCents),
+      increasePending: shipment.increasePending,
       voucherDiscountCents: row.voucherDiscountCents,
       frozenTerms: [
         { amountCents: row.discountCents, hasAdjustment: discountsHaveAdjustments(row) },
@@ -122,6 +125,10 @@ export class PrismaShortfallDecisionRepository extends ShortfallDecisionReposito
  * La commande et l'envoi `rank`, relus SANS verrou — partagé par
  * `lockSubject` (qui verrouille d'abord) et l'aperçu du départ incomplet au
  * comptoir (C1b, 2026-11-03). `null` : commande inconnue.
+ *
+ * Le projet de hausse vivant se lit ici aussi (plan E9, § 2.1) : la décision
+ * le lit sous le verrou de la commande, que la révision prend aussi ;
+ * l'aperçu sans verrou, comme le reste.
  */
 export async function readShortfallSubject(
   prisma: PrismaService,
@@ -132,14 +139,22 @@ export async function readShortfallSubject(
   if (row === null) {
     return null;
   }
-  const [shortfall, remainderNoteStatus] = await Promise.all([
+  const [shortfall, remainderNoteStatus, liveIncreases] = await Promise.all([
     prisma.orderShortfall.findUnique({
       where: { orderId_rank: { orderId, rank } },
       select: { ...SHORTFALL_STATE_SELECT, decision: { select: { id: true } } },
     }),
     remainderNoteStatusOf(prisma, orderId, rank),
+    prisma.orderRevisionProposal.count({
+      where: { orderId, state: { in: [...LIVE_CARD_INCREASE_STATES] } },
+    }),
   ]);
-  return lockedOf(row, { rank, shortfall, remainderNoteStatus });
+  return lockedOf(row, {
+    rank,
+    shortfall,
+    remainderNoteStatus,
+    increasePending: liveIncreases > 0,
+  });
 }
 
 /**

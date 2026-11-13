@@ -75,6 +75,43 @@ export interface AdminOrderView extends OrderView {
    * projet vivant (`awaiting_payment | ready | stalled`), ou `null`.
    */
   readonly cardIncrease: AdminOrderCardIncrease | null;
+  /**
+   * **Le reste d'un départ incomplet à rembourser sur la carte** (plan
+   * `documentation/commandes/reliquat/plan-e9-reste-carte.md`, § 4.5) — lu
+   * sur l'ÉTAT, sans verrou : la commande décidée, encaissée, soldée, sans
+   * facture et sans demande de remboursement du reste, dont le reste est
+   * remboursable ou bloqué par une cause qu'un geste répare. `null` sinon :
+   * rien à rembourser, déjà demandé, ou une cause que le bouton ne répare
+   * pas (facture déjà émise, remboursement fait hors de la plateforme).
+   *
+   * Facultatif : un serveur plus ancien ne le sert pas, et l'écran se tait.
+   */
+  readonly shortfallRefund?: AdminShortfallRefund | null;
+}
+
+/**
+ * Ce qui empêche le remboursement automatique du reste (plan E9, § 4.4).
+ * 🔴 Valeurs écrites au journal (`order.shortfall_refund_blocked`) : elles ne
+ * se renomment plus.
+ */
+export const SHORTFALL_REFUND_CAUSES = [
+  "already_invoiced",
+  "increase_pending",
+  "unattributed_refund",
+  "payment_not_paid",
+  "not_covered",
+] as const;
+export type ShortfallRefundCause = (typeof SHORTFALL_REFUND_CAUSES)[number];
+
+/**
+ * Le reste à rembourser, tel que la fiche commande le montre avec « Rembourser
+ * le reste ». `cause` : `null` quand rien ne bloque aujourd'hui (le geste
+ * rembourse), sinon la cause qui le refuserait encore — le bouton reste, et
+ * son refus dit quoi réparer.
+ */
+export interface AdminShortfallRefund {
+  readonly amountCents: number;
+  readonly cause: ShortfallRefundCause | null;
 }
 
 /** Le manque signalé : l'instant ISO, et, par article, la quantité due et celle au bac. */

@@ -272,6 +272,23 @@ export class AdminOrdersService {
   }
 
   /**
+   * **« Rembourser le reste »** d'un départ incomplet payé par carte (plan
+   * `documentation/commandes/reliquat/plan-e9-reste-carte.md`, § 4.5) :
+   * `202`, la demande part à Stripe après validation, l'écran relit le
+   * détail. Les refus (`404`, `409` — une cause qui bloque encore, ou rien à
+   * rembourser) portent leur phrase. Une fois par intention.
+   */
+  async refundShortfall(orderId: string, intentKey: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(
+        `${B2B_API_BASE}/admin/orders/${encodeURIComponent(orderId)}/shortfall-refund`,
+        {},
+        intentOptions(intentKey),
+      ),
+    );
+  }
+
+  /**
    * **« Rendu autrement »** (plan M2, §5.5) : une demande arrêtée est notée
    * remboursée hors de la plateforme, avec le motif de l'équipe. Les refus
    * (`400` motif, `404`, `409` pas arrêtée ou plus rien à rendre) portent leur

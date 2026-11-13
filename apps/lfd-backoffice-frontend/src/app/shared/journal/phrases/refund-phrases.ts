@@ -13,7 +13,12 @@ import {
   type PhraseFact,
   type Segment,
 } from '../phrase';
-import { REFUND_NOT_CREDITED, REFUND_REJECTION, REFUND_STATUS } from '../values/orders-values';
+import {
+  REFUND_NOT_CREDITED,
+  REFUND_REJECTION,
+  REFUND_STATUS,
+  SHORTFALL_REFUND_CAUSE,
+} from '../values/orders-values';
 
 /**
  * **Les remboursements Stripe constatés** (plan
@@ -147,6 +152,28 @@ const refundIssued: Phrase = (fact) =>
     ['subjectLabel', 'issuedCents', 'announcedCents'],
   );
 
+/**
+ * Plan E9, § 4.4 : au solde, le reste d'un départ incomplet n'a pas pu être
+ * demandé à la carte — écrit par la machine. La fiche commande offre
+ * « Rembourser le reste » quand la cause se répare.
+ */
+const shortfallRefundBlocked: Phrase = (fact) => {
+  const amount = fact.payload['amountCents'];
+  return said(
+    [
+      text('Le reste du départ incomplet de '),
+      ...order(fact),
+      ...(typeof amount === 'number' ? [text(' ('), inUnit('cents', amount), text(')')] : []),
+      text(' n’a pas été remboursé sur la carte : '),
+      valueIn(SHORTFALL_REFUND_CAUSE, fact.payload['cause'], { inSentence: true }),
+      ...(fact.payload['stoppedAmount'] === true
+        ? [text(' — un remboursement arrêté attend « Relancer » ou « Réglé autrement »')]
+        : []),
+    ],
+    ['subjectLabel', 'amountCents', 'cause', 'stoppedAmount'],
+  );
+};
+
 export const REFUND_PHRASES = {
   'order.refund_recorded': refundRecorded,
   'order.fully_refunded': fullyRefunded,
@@ -156,4 +183,5 @@ export const REFUND_PHRASES = {
   'order.card_invoice_blocked': cardInvoiceBlocked,
   'order.refund_attempt_failed': refundAttemptFailed,
   'order.refund_issued': refundIssued,
+  'order.shortfall_refund_blocked': shortfallRefundBlocked,
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

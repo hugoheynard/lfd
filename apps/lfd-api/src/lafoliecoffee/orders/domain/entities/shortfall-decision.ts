@@ -40,6 +40,12 @@ export interface ShortfallDecisionSubject {
    */
   readonly remainderNoteStatus: string | null;
   readonly settlementRegime: SettlementRegime;
+  /**
+   * Un projet de hausse par carte est vivant (`awaiting_payment`, `ready`,
+   * `stalled`) — relu sous le verrou de la commande pour la décision, sans
+   * verrou pour l'aperçu du comptoir.
+   */
+  readonly increasePending: boolean;
   readonly voucherDiscountCents: number;
   /** La remise, les frais de livraison et la surtaxe. */
   readonly frozenTerms: readonly FrozenTerm[];
@@ -91,7 +97,7 @@ export class ShortfallDecision {
   /**
    * @throws {ShortfallAlreadyDecidedError} @throws {NoShortfallToDecideError}
    * @throws {ShortfallOrderNotConfirmedError} @throws {RemainderNotDecidableError}
-   * @throws {CardOrderShortfallError}
+   * @throws {CardOrderUnpaidShortfallError} @throws {CardIncreasePendingShortfallError}
    * @throws {VoucherOrderShortfallError} @throws {OrderTooOldForShortfallError}
    * @throws {NothingDepartsError}
    */
@@ -133,7 +139,8 @@ export class ShortfallDecision {
    * départ ne se décidera pas. `decide` les rejuge : ce sont les mêmes.
    *
    * @throws {ShortfallAlreadyDecidedError} @throws {ShortfallOrderNotConfirmedError}
-   * @throws {RemainderNotDecidableError} @throws {CardOrderShortfallError}
+   * @throws {RemainderNotDecidableError} @throws {CardOrderUnpaidShortfallError}
+   * @throws {CardIncreasePendingShortfallError}
    * @throws {VoucherOrderShortfallError} @throws {OrderTooOldForShortfallError}
    */
   static assertDecidable(subject: ShortfallDecisionSubject): void {

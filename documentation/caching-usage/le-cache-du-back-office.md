@@ -546,6 +546,8 @@ changement du PIM (`get-product-detail.ts`).
 
 ## 7. Reste à faire
 
+- **Un seul client pour tous les objets partagés** : plan [`plan-client-unique-des-objets.md`](plan-client-unique-des-objets.md) (décidé par Hugo le 2026-11-13).
+
 - 🔴 **Un « absent » de l'objet est gardé entre le conteneur et l'objet**
   (constaté en production le 2026-11-13) : Santé compte 9 lectures d'écran de
   journée, toutes « absent », sans repli et en ~40 ms, alors que l'objet n'en

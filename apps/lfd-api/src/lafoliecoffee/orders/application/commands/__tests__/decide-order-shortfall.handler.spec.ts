@@ -16,7 +16,7 @@ import type {
 } from "../../../domain/entities/shortfall-decision.js";
 import { OrderNotFoundError } from "../../../domain/errors/order-errors.js";
 import {
-  CardOrderShortfallError,
+  CardOrderUnpaidShortfallError,
   NothingDepartsError,
 } from "../../../domain/errors/shortfall-decision-errors.js";
 import { OrderShortfallRepository } from "../../../domain/ports/order-shortfall.repository.js";
@@ -118,7 +118,7 @@ class BoxClosedError extends BusinessError {
 type SignalLine = { readonly sku: string; readonly due: number; readonly packed: number };
 
 function locked(
-  settlementRegime: "account" | "paid" = "account",
+  settlementRegime: "account" | "due" | "paid" = "account",
   lines: readonly SignalLine[] = [{ sku: "CRO", due: 12, packed: 9 }],
   shipment: { readonly rank: number; readonly status: "confirmed" | "ready" } = {
     rank: 1,
@@ -133,6 +133,7 @@ function locked(
       status: shipment.status,
       remainderNoteStatus: shipment.rank === 1 ? null : "planned",
       settlementRegime,
+      increasePending: false,
       voucherDiscountCents: 0,
       frozenTerms: [],
       decided: false,
@@ -241,9 +242,9 @@ describe("DecideOrderShortfallHandler — « Décider du départ » (E6b)", () =
   });
 
   it("un refus de l'agrégat n'écrit rien, et le colisage n'est pas appelé", async () => {
-    const { trace, notes, handler } = scene(locked("paid"));
+    const { trace, notes, handler } = scene(locked("due"));
 
-    await expect(handler.execute(COMMAND)).rejects.toThrow(CardOrderShortfallError);
+    await expect(handler.execute(COMMAND)).rejects.toThrow(CardOrderUnpaidShortfallError);
     expect(trace).toEqual(["lock-order"]);
     expect(notes.calls).toEqual([]);
   });

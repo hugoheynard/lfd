@@ -1,7 +1,8 @@
 import type { ShortfallDecisionSubject } from "../../entities/shortfall-decision.js";
 import { ShortfallDecision } from "../../entities/shortfall-decision.js";
 import {
-  CardOrderShortfallError,
+  CardIncreasePendingShortfallError,
+  CardOrderUnpaidShortfallError,
   OrderTooOldForShortfallError,
   RemainderNotDecidableError,
   ShortfallAlreadyDecidedError,
@@ -27,6 +28,7 @@ function subject(overrides: Partial<ShortfallDecisionSubject> = {}): ShortfallDe
     status: "confirmed",
     remainderNoteStatus: null,
     settlementRegime: "account",
+    increasePending: false,
     voucherDiscountCents: 0,
     frozenTerms: [
       { amountCents: 500, hasAdjustment: true },
@@ -57,7 +59,21 @@ describe("decidabilityRefusalOf — la règle de la décision, rendue", () => {
       { rank: 2, remainderNoteStatus: "prepared" },
       RemainderNotDecidableError,
     ],
-    ["card", { settlementRegime: "due", voucherDiscountCents: 100 }, CardOrderShortfallError],
+    [
+      "card_unpaid",
+      { settlementRegime: "due", voucherDiscountCents: 100 },
+      CardOrderUnpaidShortfallError,
+    ],
+    [
+      "card_increase_pending",
+      { settlementRegime: "paid", increasePending: true, voucherDiscountCents: 100 },
+      CardIncreasePendingShortfallError,
+    ],
+    [
+      "voucher",
+      { settlementRegime: "paid", voucherDiscountCents: 100 },
+      VoucherOrderShortfallError,
+    ],
     ["voucher", { voucherDiscountCents: 100 }, VoucherOrderShortfallError],
     [
       "too_old",
@@ -67,6 +83,17 @@ describe("decidabilityRefusalOf — la règle de la décision, rendue", () => {
   ])("« %s » — dans l'ordre du geste, qui lève le même refus", (refusal, overrides, error) => {
     expect(decidabilityRefusalOf(subject(overrides))).toBe(refusal);
     expect(() => ShortfallDecision.assertDecidable(subject(overrides))).toThrow(error);
+  });
+
+  it("une carte ENCAISSÉE se décide : le reste se rembourse au solde (plan E9, § 2.1)", () => {
+    expect(decidabilityRefusalOf(subject({ settlementRegime: "paid" }))).toBeNull();
+    expect(() =>
+      ShortfallDecision.assertDecidable(subject({ settlementRegime: "paid" })),
+    ).not.toThrow();
+  });
+
+  it("une hausse vivante n'est lue que sur une carte encaissée", () => {
+    expect(decidabilityRefusalOf(subject({ increasePending: true }))).toBeNull();
   });
 
   it("un reliquat prévu se décide", () => {

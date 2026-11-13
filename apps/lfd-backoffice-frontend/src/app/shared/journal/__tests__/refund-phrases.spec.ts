@@ -93,4 +93,34 @@ describe('les remboursements constatés', () => {
       'La facture carte de la commande CMD-142 n’a pas pu être émise : La facture ne peut pas être émise : SIREN manquant.',
     );
   });
+
+  it('plan E9 : dit le reste non remboursé, son montant et sa cause', () => {
+    expect(
+      sentence(
+        refundFact('order.shortfall_refund_blocked', {
+          subjectLabel: 'CMD-142',
+          cause: 'not_covered',
+          amountCents: 400,
+          stoppedAmount: true,
+        }),
+      ),
+    ).toBe(
+      'Le reste du départ incomplet de la commande CMD-142 (4,00 €) n’a pas été remboursé sur la carte : ce qui reste sur les paiements ne couvre pas le reste — un remboursement arrêté attend « Relancer » ou « Réglé autrement »',
+    );
+  });
+
+  it('plan E9 : sans montant quand la cause est jugée avant le calcul', () => {
+    expect(
+      sentence(
+        refundFact('order.shortfall_refund_blocked', {
+          subjectLabel: 'CMD-142',
+          cause: 'already_invoiced',
+          amountCents: null,
+          stoppedAmount: false,
+        }),
+      ),
+    ).toBe(
+      'Le reste du départ incomplet de la commande CMD-142 n’a pas été remboursé sur la carte : une facture porte déjà la commande — à rendre à la main, avec un avoir',
+    );
+  });
 });

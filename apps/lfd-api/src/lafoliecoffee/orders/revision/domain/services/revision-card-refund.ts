@@ -28,20 +28,28 @@ export interface CardRefundSplitInput {
   readonly by: RevisionActor["kind"];
 }
 
+/** Le reste d'un paiement couvert : les parts ; sinon, ce qu'il faut pour dire la sortie. */
+export type CardRefundSplit =
+  | { readonly kind: "split"; readonly parts: readonly CardRefundPart[] }
+  | { readonly kind: "uncovered"; readonly hasStoppedAmount: boolean };
+
+/** Ce que la répartition pure lit — sans l'acteur, qui ne sert qu'au message du refus. */
+export type RefundSplitInput = Omit<CardRefundSplitInput, "orderId" | "by">;
+
 /**
- * **Répartir une baisse sur les paiements qui se rendent** (plan
- * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.12) — pure :
- * du plus récent au plus ancien, chacun jusqu'à son reste, et la somme des
- * parts vaut EXACTEMENT `refundCents`. Un complément payé en dernier rend
- * donc d'abord (R9 : 52 − 8 = 44, la facture tombe juste).
+ * **Répartir un montant sur les paiements qui se rendent** (plan
+ * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.12 ;
+ * partagé avec le reste d'un départ incomplet, plan
+ * `documentation/commandes/reliquat/plan-e9-reste-carte.md`, § 4.2) — pure,
+ * sans lever : du plus récent au plus ancien, chacun jusqu'à son reste, et la
+ * somme des parts vaut EXACTEMENT `refundCents`. Un complément payé en
+ * dernier rend donc d'abord (R9 : 52 − 8 = 44, la facture tombe juste).
  *
- * Restes insuffisants : refus, avec le geste de sortie réel — une demande
- * `amount` arrêtée parmi les paiements de R4 seulement (une demande arrêtée
- * sur un complément refusé ou clos n'est pas la sortie de cette baisse).
- *
- * @throws {CardRefundNotCoveredError} les restes ne couvrent pas la baisse.
+ * Restes insuffisants : `uncovered`, avec `hasStoppedAmount` — une demande
+ * `amount` arrêtée parmi les paiements visés seulement (une demande arrêtée
+ * sur un complément refusé ou clos n'est pas la sortie de ce montant).
  */
-export function splitCardRefund(input: CardRefundSplitInput): readonly CardRefundPart[] {
+export function splitRefund(input: RefundSplitInput): CardRefundSplit {
   const parts: CardRefundPart[] = [];
   let left = input.refundCents;
   for (const payment of [...input.payments].reverse()) {
@@ -54,13 +62,26 @@ export function splitCardRefund(input: CardRefundSplitInput): readonly CardRefun
       left -= amountCents;
     }
   }
-  if (left > 0) {
-    throw new CardRefundNotCoveredError(input.orderId, hasStoppedAmount(input), input.by);
-  }
-  return parts;
+  return left > 0
+    ? { kind: "uncovered", hasStoppedAmount: hasStoppedAmount(input) }
+    : { kind: "split", parts };
 }
 
-function hasStoppedAmount(input: CardRefundSplitInput): boolean {
+/**
+ * **La répartition d'une baisse**, qui refuse : {@link splitRefund}, dont
+ * `uncovered` devient le refus de la révision avec son geste de sortie.
+ *
+ * @throws {CardRefundNotCoveredError} les restes ne couvrent pas la baisse.
+ */
+export function splitCardRefund(input: CardRefundSplitInput): readonly CardRefundPart[] {
+  const split = splitRefund(input);
+  if (split.kind === "uncovered") {
+    throw new CardRefundNotCoveredError(input.orderId, split.hasStoppedAmount, input.by);
+  }
+  return split.parts;
+}
+
+function hasStoppedAmount(input: RefundSplitInput): boolean {
   const refundable = new Set(input.payments.map((payment) => payment.paymentId));
   return input.openRequests.some(
     (request) =>

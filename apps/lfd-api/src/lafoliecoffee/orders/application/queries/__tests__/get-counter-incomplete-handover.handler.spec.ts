@@ -33,6 +33,7 @@ function subject(overrides: Partial<ShortfallDecisionSubject> = {}): ShortfallDe
     status: "confirmed",
     remainderNoteStatus: null,
     settlementRegime: "account",
+    increasePending: false,
     voucherDiscountCents: 0,
     frozenTerms: [],
     decided: false,
@@ -187,7 +188,8 @@ describe("GetCounterIncompleteHandoverHandler — l'aperçu avant le geste", () 
 
   it.each([
     [{ status: "ready" as const }, "not_confirmed"],
-    [{ settlementRegime: "due" as const }, "card"],
+    [{ settlementRegime: "due" as const }, "card_unpaid"],
+    [{ settlementRegime: "paid" as const, increasePending: true }, "card_increase_pending"],
     [{ voucherDiscountCents: 50 }, "voucher"],
     [{ frozenTerms: [{ amountCents: 200, hasAdjustment: false }] }, "too_old"],
   ])("la décision refuse %o → %s, avant le bac, qui reste montré", async (overrides, refusal) => {

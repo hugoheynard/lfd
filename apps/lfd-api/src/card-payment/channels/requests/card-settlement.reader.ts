@@ -78,6 +78,14 @@ export interface CardSettlementPosition extends SubjectRefundPosition {
 export interface SucceededCardRefund {
   readonly refundId: string;
   readonly paymentId: string;
+  /**
+   * La demande qui l'a émis — `null` pour un `re_…` fait hors de la
+   * plateforme. Une demande encore ouverte peut déjà porter un réussi (une
+   * génération précédente arrivée tard, une `amount` émise pour un autre
+   * montant puis arrêtée) : c'est ce qui permet de ne pas compter deux fois
+   * le même euro (plan `documentation/commandes/reliquat/plan-e9-reste-carte.md`, § 4.2).
+   */
+  readonly requestId: string | null;
   readonly amountCents: number;
   readonly nature: CardRefundNature | null;
   readonly source: CardRefundSource;

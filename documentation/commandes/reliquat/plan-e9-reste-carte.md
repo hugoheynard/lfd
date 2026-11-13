@@ -1,7 +1,7 @@
 # Plan E9 — rembourser le reste d'une commande payée par carte (v5)
 
-> Statut : **lot F bâti le 2026-11-13 (non commité à l'écriture)** ; E9a et
-> E9b doc-first. v1 à v4 contredites par `vitruve`
+> Statut : **lot F bâti et en production** ; **E9a bâti le 2026-11-13 (non
+> commité à l'écriture, § 4.9)** ; E9b doc-first. v1 à v4 contredites par `vitruve`
 > (§ 12) ; cette v5 répond à chaque objection, revérifiée dans le code le
 > 2026-11-13. Décisions de Hugo :
 >
@@ -11,6 +11,10 @@
 >   code, par le port `OrderShortfallRefundReader` (§ 4.7) ;
 > - 2026-11-13 (v4) : F d'abord, seul, sans migration (confirmé) ; **un schéma
 >   qui montre toutes les branches** (Partie 1).
+> - 2026-11-13 (relecture d'E9a) : six corrections qui **priment sur le texte
+>   d'origine** — montant relu sous le verrou, refus dans le contrat servi,
+>   journal défini, formule sans double compte, route nommée, § 1 au présent.
+>   Elles sont reportées aux § 1, 2.1, 4.2, 4.4, 4.5 et 4.9.
 >
 > Contexte : [`reliquat.md`](reliquat.md), [`todo-reliquat.md`](todo-reliquat.md),
 > [`../../comptabilite/etat-argent-et-comptabilite.md`](../../comptabilite/etat-argent-et-comptabilite.md),
@@ -206,15 +210,17 @@ WHERE "order_number" = $1 FOR UPDATE`
   et que la révision (`orders/revision/infrastructure/prisma-order-revision.repository.ts:47-50`).
 - **Écrivain du solde** : `OrderBillingCloser`
   (`delivery-notes/application/services/order-billing-closer.ts`).
-  Constructeur l. 54 (`billings`, `notes`, `engagements`, `settlement`,
-  `clock`, `uow` — aucun publieur) ; `closeLocked` l. 64, appelé par
+  Constructeur l. 59 (`billings`, `notes`, `engagements`, `settlement`,
+  `clock`, `uow`, `facts` — le `DurablePublisher` de F —, `ids`, et depuis
+  E9a `shortfallRefunds`) ; `closeLocked` l. 72, appelé par
   `delivery-note-follower.ts:51` (remise) et
   `hand-over-remainder-note.handler.ts:76` (reste remis) ; le réconciliateur
-  `reconcile` → `verdictOf` (l. 97-129, `frozen` l. 128) → `repair`
-  (l. 131-156, sa propre `uow.run`, `closed` ou `corrected` l. 150) ;
-  `persist` l. 158 ; `engaged()` l. 179.
-  **Aucun déclencheur de facture n'écoute un solde posé par `repair`** :
-  c'est l'objection bloquante de la v4, corrigée en F (§ 3.5).
+  `reconcile` l. 88 → `verdictOf` (l. 105, `frozen` l. 136) → `repair`
+  (l. 139, sa propre `uow.run`, `closed` ou `corrected` l. 158) ; `persist`
+  l. 171 publie `order.billing_settled` (l. 191) après un `save` réussi ;
+  `engaged()` l. 209 lit l'engagement au compte **et** le reste demandé à la
+  carte (§ 4.7). Le réveil de la facture par un solde posé au rattrapage est
+  `IssueCardInvoiceOnBillingSettled` (F, § 3.5).
 - **Engagement** : `AccountOrderEngagementReader`
   (`orders/domain/ports/account-order-engagement.ts`) lit la facture 380 et
   la ligne d'encaissement au compte, **rien de la carte**.
@@ -315,14 +321,29 @@ WHERE "order_number" = $1 FOR UPDATE`
 
 #### 2.1 Les refus
 
-`termsRefusalOf` : `due` → nouveau refus **`card_unpaid`**
-(`CardOrderUnpaidShortfallError`, « la carte n'est pas encore encaissée ») ;
-`paid` avec un projet de hausse vivant → nouveau refus
-**`card_increase_pending`** ; `paid` sinon → permis. Le projet vivant est lu
-sous le verrou du `LockedShortfallSubject` et versé au sujet : la règle reste
-pure et sert aussi l'aperçu du comptoir. Le bon reste refusé.
+`termsRefusalOf` (`orders/domain/services/shortfall-decidability.ts`) : `due`
+→ **`card_unpaid`** (`CardOrderUnpaidShortfallError`, « la carte n'est pas
+encore encaissée ») ; `paid` avec un projet de hausse vivant →
+**`card_increase_pending`** (`CardIncreasePendingShortfallError`) ; `paid`
+sinon → permis. Le projet vivant se lit dans `readShortfallSubject`
+(`orders/infrastructure/prisma-shortfall-decision.repository.ts`,
+`order_revision_proposal` aux états de `LIVE_CARD_INCREASE_STATES`) et entre
+au sujet (`ShortfallDecisionSubject.increasePending`) : sous le verrou de la
+commande pour la décision (`lockSubject`), **sans verrou** pour l'aperçu du
+comptoir (`PrismaShortfallDecisionSubjectReader` → `readShortfallSubject`). La
+règle reste pure et sert les deux. Le bon reste refusé, après la carte.
 `ShortfallDeparture.decide` ne prend aucun port d'argent ;
 `order.shortfall_decided` ne gagne aucun champ.
+
+**Le contrat servi.** `CounterIncompleteHandoverRefusal`
+(`packages/contracts/src/counter-incomplete-handover.ts`) gagne `card_unpaid`
+et `card_increase_pending` ; `DECISION_REFUSALS`
+(`counter-incomplete-handover-preview.ts`) les traduit. **`card` n'est plus
+produit** mais reste dans la liste (un contrat servi ne se casse pas sans
+décision ; un écran ancien la libelle), dit en JSDoc. Le back-office libelle
+les deux nouvelles valeurs (`INCOMPLETE_HANDOVER_REFUSAL_TEXT`,
+`incomplete-handover-dialog.ts`) ; `SETTLED_REFUSALS` ne change pas : aucune
+des deux ne dit un départ déjà tranché.
 
 #### 2.2 Aucune hausse vivante au solde : la règle
 
@@ -346,9 +367,9 @@ pure et sert aussi l'aperçu du comptoir. Le bon reste refusé.
 La fenêtre est **couverte**. La garde `increase_pending` reste dans l'abonné
 (§ 4.4) comme filet.
 
-### 3. Lot F — la facture carte porte le livré (à bâtir et livrer d'abord)
+### 3. Lot F — la facture carte porte le livré (bâti, en production)
 
-F se livre **seul**, avant toute ligne d'E9a. Il ne touche ni à l'argent, ni à
+F a été livré **seul**, avant toute ligne d'E9a. Il ne touche ni à l'argent, ni à
 la décision, ni à la base : **aucune migration**. Il publie un fait nouveau,
 `order.billing_settled` (§ 3.5), dont le nom et la clé deviennent définitifs
 au premier merge (§ 11).
@@ -744,17 +765,40 @@ sans point de reprise. D'où deux phases.
    reçu** (et le journal ou les demandes) quand l'abonné rend, ou **annulée
    avec tout** quand il lève.
 5. `unattributed > 0` → cause `unattributed_refund`.
-6. **Montant** = `chargedCents − refundedByNature.adjustment − Σ announcedCents
-des demandes adjustment non terminales − billableTotalCents`.
-7. Montant ≤ 0 → rien.
+6. **Montant** = `chargedCents − refundedByNature.adjustment − Σ (announcedCents
+− réussi déjà rattaché à la demande, jamais < 0) des demandes adjustment non
+terminales − billableTotalCents`. Le facturable est **la colonne relue sous
+   le verrou**, jamais le payload du fait : le relais peut livrer un `closed`
+   après le `corrected` qui le suit (`prisma-outbox-relay-store.ts:49`). Une
+   demande `to_issue`, `issued` ou `stopped` peut déjà porter un remboursement
+   `succeeded` — un `re_…` d'une génération précédente arrivé tard (la ligne
+   entre au carnet, la demande ne bouge pas, `card-refund-observation.ts`), ou
+   une `amount` émise pour un autre montant puis arrêtée
+   (`issued_amount_mismatch`, `issuanceStopOf`) : ce réussi est déjà dans
+   `refundedByNature.adjustment`, la demande n'annonce plus que le reste. Pour
+   le savoir, `SucceededCardRefund` gagne `requestId` (additif, canal
+   `card-payment`).
+7. Montant ≤ 0 → rien. Un facturable plus haut que l'encaissé (des frais de
+   retard non encaissés) ne rend rien, ne réclame rien, n'écrit rien au
+   journal ; la facture carte, dont l'égalité ne tombe pas, reste `blocked`
+   (lot F) et se reprend à la main.
 8. Un paiement visé non `paid` → cause `payment_not_paid`.
 9. **`splitRefund`** (pure, extraite de `splitCardRefund`) rend
    `{ kind: "split", parts }` ou `{ kind: "uncovered", hasStoppedAmount }`,
    sans lever. `uncovered` → cause `not_covered`.
 
-Toute cause : journal `order.shortfall_refund_blocked` (cause, montant
-calculé), l'abonné **rend normalement** ; reçu, journal et adoption sont
-validés ensemble ; le fait est acquitté.
+Toute cause : journal `order.shortfall_refund_blocked`, l'abonné **rend
+normalement** ; reçu, journal et adoption sont validés ensemble ; le fait est
+acquitté. Le fait du journal (`packages/contracts/src/journal-facts/order-shortfalls.ts`) :
+sujet la **commande** (`subjectType: "order"`, libellé son numéro), payload
+`{ subjectLabel, cause, amountCents | null, stoppedAmount }` — `amountCents`
+`null` quand la cause est jugée avant le calcul, `stoppedAmount` le
+`hasStoppedAmount` de `splitRefund` (une demande `amount` arrêtée parmi les
+paiements visés, sortie d'un `not_covered`). **Acteur : la machine**
+(`system`), comme `OnRefundWithoutOrder` (`payments/application/handlers/`),
+le précédent d'un `@DurableHandler` qui écrit au journal : hors requête, le
+contexte porte l'acteur `system`. Phrase au back-office :
+`shared/journal/phrases/refund-phrases.ts`, valeurs `SHORTFALL_REFUND_CAUSE`.
 
 **Phase 2 — écrire.** `requestAmount` par part (nature `adjustment`, raison
 **`shortfall`**, `requestedBy: null`). **Aucune erreur n'y est attrapée.**
@@ -764,7 +808,8 @@ boîte d'envoi relance, au plus 10 fois, puis lettre morte visible.
 
 **Révision** : `splitCardRefund` enveloppe `splitRefund` et convertit
 `uncovered` en `CardRefundNotCoveredError(orderId, hasStoppedAmount, by)` ;
-ses tests passent tels quels.
+ses tests passent tels quels. `splitRefund` ne prend ni commande ni acteur :
+seul le refus de la révision en avait besoin pour sa phrase.
 
 #### 4.3 Verrous
 
@@ -784,15 +829,39 @@ Commande (`FOR UPDATE orders`) → paiement (`CardRefundScope.lock`). Ordre du
 
 #### 4.5 Le geste de reprise : « Rembourser le reste »
 
-`POST admin/orders/:orderId/shortfall-refund`, permission `card_payments:write`.
+`POST admin/orders/:orderId/shortfall-refund`, contrôleur
+`AdminOrderShortfallRefundController`
+(`orders/http/admin-order-shortfall-refund.controller.ts`), sous
+`@AdminSurface("b2b_orders")` comme les autres gestes de la fiche commande, et
+`@RequirePermission("card_payments:write")` : c'est de l'argent qui part.
+`202`.
 
-- Idempotence par intention (`@IntentKey()` + `OncePerIntent.runSealed`) ;
-  seconde défense : le recalcul sous verrou trouve 0.
-- Même service (phases 1 et 2), dans sa propre unité de travail ; une cause
-  rend un **409** avec sa phrase, rien n'est écrit.
-- Visibilité par lecture d'état : décidée `partial`, régime `paid`, facturable
-  posé, pas de 380, aucune demande de raison `shortfall` (tous états), et un
-  journal `order.shortfall_refund_blocked`.
+- Idempotence par intention : `@IntentKey()` + `OncePerIntent.runSealed`
+  (geste `orders.refund-shortfall`, sujet la commande). Le sceau est posé
+  **dans la même `uow.run`** que les demandes : le registre des intentions
+  écrit par le client routé, qui rejoint la transaction ambiante. Porte
+  `write-idempotence` : la route porte `@IntentKey`, le handler scelle.
+  Seconde défense : le recalcul sous verrou trouve 0.
+- Même service (`ShortfallRefunding`, phases 1 et 2), dans sa propre unité de
+  travail ; une cause rend un **409** avec sa phrase
+  (`ShortfallRefundBlockedError`, code `orders.shortfall_refund.<cause>`),
+  rien à rembourser un 409 (`NoShortfallRefundError`), rien n'est écrit.
+- **Visibilité, lue sur l'ÉTAT** (`AdminShortfallRefundView`, champ
+  facultatif `shortfallRefund` du détail staff, sans verrou ni adoption) :
+  décision `partial`, régime `paid`, facturable posé, pas de 380, aucune
+  demande de raison `shortfall` (tous états), un reste positif, et ni
+  `unattributed_refund` ni `already_invoiced` (rien n'y peut réussir). Le
+  bouton se montre donc sur un reste remboursable **ou** bloqué par une cause
+  qu'un geste répare (`increase_pending`, `payment_not_paid`, `not_covered`),
+  avec la phrase de la cause. Ce n'est pas le journal qui le montre : un
+  `not_covered` réparé (« Réglé autrement ») ne réveille pas l'abonné, et
+  c'est ce bouton qui reprend.
+- **Une lettre morte de la phase 2 ne se voit qu'à l'écran des lettres
+  mortes.** La fiche commande la lit comme un reste remboursable, et le
+  bouton rejoue la même phase 2.
+- Front : le bouton vit dans le bandeau des remboursements de la fiche
+  commande (`order-refund-banner`), sous une clé d'intention
+  (`GestureIntents`, porte `front-intent-keys`).
 
 #### 4.6 Idempotence
 
@@ -820,6 +889,37 @@ lèverait le gel en silence.
 Ce que le gel en code ne couvre pas : une écriture de `billable_*` hors
 `OrderBillingCloser` ; une demande supprimée ou purgée ; un écart gelé n'est
 pas repris par E9 (listé, traité à la main).
+
+#### 4.8 Livraison d'E9a
+
+1. **Back-office d'abord** : il libelle `card_unpaid`, `card_increase_pending`
+   et le fait `order.shortfall_refund_blocked`, et lit `shortfallRefund`
+   comme facultatif.
+2. **Puis l'API.** Un back-office ancien recevrait des refus et un fait qu'il
+   ne sait pas libeller.
+
+Aucune migration : la raison `shortfall` est une valeur de
+`card_payment.refund_request.reason` (texte libre borné), le gel est dans le
+code (§ 4.7).
+
+#### 4.9 Ce qui est bâti (2026-11-13)
+
+- Domaine : `orders/domain/services/shortfall-refund.ts` (le jugement pur,
+  `pendingAdjustmentCentsOf`), `shortfall-decidability.ts` (deux refus),
+  `revision/domain/services/revision-card-refund.ts` (`splitRefund`),
+  ports `shortfall-refund-subject.ts` et `order-shortfall-refund.reader.ts`,
+  erreurs `shortfall-refund-errors.ts`.
+- Application : `RefundablePayments` (sorti de `RevisionCardRefund`),
+  `ShortfallRefundMoneyReader`, `ShortfallRefunding`, l'abonné
+  `RefundShortfallOnBillingSettled` (`orders.refund-shortfall.on-billing-settled`),
+  `RefundShortfallCommand` / `RefundShortfallHandler`,
+  `AdminShortfallRefundView`, et `OrderBillingCloser.engaged()`.
+- Tests unitaires : la règle pure (dont la demande ouverte qui porte déjà un
+  réussi, et les frais de retard), l'abonné (livraison inversée, rejeu,
+  correction à la baisse, chaque cause, refus en phase 2), le geste (clé,
+  recalcul, 409), la visibilité, le gel au réconciliateur.
+- Reste au § 9 pour E9a : voir le rapport du lot (intégration par la vraie
+  `DurableDeliveryGuard` et parcours e2e).
 
 ### 5. Facture déjà émise : exclusion
 

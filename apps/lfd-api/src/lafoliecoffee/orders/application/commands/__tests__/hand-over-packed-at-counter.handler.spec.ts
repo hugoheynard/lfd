@@ -21,7 +21,7 @@ import type {
 import { OrderNotFoundError } from "../../../domain/errors/order-errors.js";
 import { ShortfallSignalOutrunError } from "../../../domain/errors/order-shortfall-errors.js";
 import {
-  CardOrderShortfallError,
+  CardOrderUnpaidShortfallError,
   NothingDepartsError,
 } from "../../../domain/errors/shortfall-decision-errors.js";
 import { OrderShortfallRepository } from "../../../domain/ports/order-shortfall.repository.js";
@@ -154,6 +154,7 @@ function locked(
       status: "confirmed",
       remainderNoteStatus: null,
       settlementRegime: "account",
+      increasePending: false,
       voucherDiscountCents: 0,
       frozenTerms: [],
       decided: false,
@@ -271,10 +272,10 @@ describe("HandOverPackedAtCounterHandler — le départ incomplet décidé au co
     expect(durable.facts).toEqual([]);
   });
 
-  it("refuse une commande par carte AVANT de figer le bac", async () => {
-    const { handler, trace } = scene({ subject: locked({ settlementRegime: "paid" }) });
+  it("refuse une carte pas encore encaissée AVANT de figer le bac", async () => {
+    const { handler, trace } = scene({ subject: locked({ settlementRegime: "due" }) });
 
-    await expect(handler.execute(COMMAND)).rejects.toBeInstanceOf(CardOrderShortfallError);
+    await expect(handler.execute(COMMAND)).rejects.toBeInstanceOf(CardOrderUnpaidShortfallError);
     expect(trace).toEqual(["lock-order", "vet-handover"]);
   });
 

@@ -63,7 +63,12 @@
       />
 
       <!-- L'argent à rendre par carte (C4.9, plan M2 §5.3) : une ligne par demande, rien sans demande. -->
-      <app-order-refund-banner [requests]="o.refundRequests" (changed)="load()" />
+      <app-order-refund-banner
+        [requests]="o.refundRequests"
+        [orderId]="o.id"
+        [shortfallRefund]="o.shortfallRefund ?? null"
+        (changed)="load()"
+      />
 
       <!-- Les remboursements constatés, et le total servi : rien quand il n'y en a pas. -->
       <app-order-refunds-card [refunds]="o.refunds" [refundedCents]="o.refundedCents" />

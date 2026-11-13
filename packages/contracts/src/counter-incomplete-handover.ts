@@ -16,7 +16,9 @@ import type { OrderSaleUnit } from "./order.js";
  * | `handover_refused`   | `handover.refused`, `handover.transfer_*` — phrase dans `handoverRefusalReason` |
  * | `already_decided`    | `orders.shortfall_decision.already_decided`       |
  * | `not_confirmed`      | `orders.shortfall_decision.not_confirmed`         |
- * | `card`               | `orders.shortfall_decision.card`                  |
+ * | `card`               | — plus produit (voir plus bas)                     |
+ * | `card_unpaid`        | `orders.shortfall_decision.card_unpaid`           |
+ * | `card_increase_pending` | `orders.shortfall_decision.card_increase_pending` |
  * | `voucher`            | `orders.shortfall_decision.voucher`               |
  * | `too_old`            | `orders.shortfall_decision.too_old`               |
  * | `not_drawn`          | `packing.order.not_drawn_yet`                     |
@@ -26,6 +28,13 @@ import type { OrderSaleUnit } from "./order.js";
  * | `already_authorized` | `packing.shortfall.already_authorized`            |
  * | `nothing_short`      | `packing.shortfall.nothing_short` — « Remettre » suffit |
  * | `nothing_departs`    | `orders.shortfall_decision.nothing_departs` — renvoyer à l'annulation |
+ *
+ * 🔴 **`card` n'est plus produit** : une carte encaissée se décide, et le
+ * reste se rembourse au solde (plan
+ * `documentation/commandes/reliquat/plan-e9-reste-carte.md`, lot E9a). Une
+ * carte pas encore encaissée rend `card_unpaid`, une hausse par carte en
+ * cours `card_increase_pending`. La valeur reste dans la liste : un contrat
+ * servi ne la retire pas sans décision, et un écran ancien la libelle encore.
  */
 export const COUNTER_INCOMPLETE_HANDOVER_REFUSALS = [
   "not_a_pickup",
@@ -34,6 +43,8 @@ export const COUNTER_INCOMPLETE_HANDOVER_REFUSALS = [
   "already_decided",
   "not_confirmed",
   "card",
+  "card_unpaid",
+  "card_increase_pending",
   "voucher",
   "too_old",
   "not_drawn",

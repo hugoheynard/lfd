@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
-import type { AdminRefundRequest, StaffPermission } from '@lfd/contracts';
+import type { AdminRefundRequest, AdminShortfallRefund, StaffPermission } from '@lfd/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
@@ -42,18 +42,26 @@ const STOPPED: AdminRefundRequest = {
 interface Answers {
   readonly retry?: () => Promise<void>;
   readonly settle?: () => Promise<void>;
+  readonly shortfall?: () => Promise<void>;
 }
 
 function mount(
   requests: readonly AdminRefundRequest[],
   permissions: readonly StaffPermission[] = CAN,
   answers: Answers = {},
+  shortfallRefund: AdminShortfallRefund | null = null,
 ) {
   const retryRefund = vi.fn(answers.retry ?? (async () => undefined));
   const settleRefundElsewhere = vi.fn(answers.settle ?? (async () => undefined));
+  const refundShortfall = vi.fn<(orderId: string, intentKey: string) => Promise<void>>(
+    answers.shortfall ?? (async () => undefined),
+  );
   TestBed.configureTestingModule({
     providers: [
-      { provide: AdminOrdersService, useValue: { retryRefund, settleRefundElsewhere } },
+      {
+        provide: AdminOrdersService,
+        useValue: { retryRefund, settleRefundElsewhere, refundShortfall },
+      },
       {
         provide: PermissionsStore,
         useValue: { can: (p: StaffPermission): boolean => permissions.includes(p) },
@@ -62,10 +70,12 @@ function mount(
   });
   const fixture = TestBed.createComponent(OrderRefundBanner);
   fixture.componentRef.setInput('requests', requests);
+  fixture.componentRef.setInput('orderId', 'ord_1');
+  fixture.componentRef.setInput('shortfallRefund', shortfallRefund);
   const changed = vi.fn();
   fixture.componentInstance.changed.subscribe(changed);
   fixture.detectChanges();
-  return { fixture, retryRefund, settleRefundElsewhere, changed };
+  return { fixture, retryRefund, settleRefundElsewhere, refundShortfall, changed };
 }
 
 const el = (f: ComponentFixture<OrderRefundBanner>) => f.nativeElement as HTMLElement;
@@ -230,5 +240,65 @@ describe('le bandeau des remboursements par carte (plan M2, §5.3)', () => {
 
     expect(settleRefundElsewhere).toHaveBeenCalledWith('rrq_2', 'Virement du 12/03');
     expect(changed).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('OrderRefundBanner — « Rembourser le reste » (plan E9, § 4.5)', () => {
+  beforeEach(() => TestBed.resetTestingModule());
+
+  const shortfallBox = (f: ComponentFixture<OrderRefundBanner>) =>
+    el(f).querySelector<HTMLElement>('[data-shortfall-refund]');
+  const shortfallButton = (f: ComponentFixture<OrderRefundBanner>) =>
+    el(f).querySelector<HTMLButtonElement>('[data-shortfall-refund-button]');
+
+  it('rien à rembourser : ni bandeau ni bouton', () => {
+    const { fixture } = mount([]);
+
+    expect(shortfallBox(fixture)).toBeNull();
+  });
+
+  it('dit le montant et la cause qui bloque encore, même sans aucune demande', () => {
+    const { fixture } = mount([], CAN, {}, { amountCents: 400, cause: 'not_covered' });
+
+    expect(text(shortfallBox(fixture))).toContain('4,00');
+    expect(text(shortfallBox(fixture))).toContain('relancez ou réglez autrement');
+  });
+
+  it('un clic envoie la clé d’intention, la garde après un refus, et relit au succès', async () => {
+    let refuse = true;
+    const { fixture, refundShortfall, changed } = mount(
+      [],
+      CAN,
+      {
+        shortfall: async () => {
+          if (refuse) {
+            throw new HttpErrorResponse({
+              status: 409,
+              error: { message: 'Le reste de ORD-1 n’est pas remboursé.' },
+            });
+          }
+        },
+      },
+      { amountCents: 400, cause: null },
+    );
+
+    shortfallButton(fixture)?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(text(el(fixture))).toContain('n’est pas remboursé');
+    refuse = false;
+    shortfallButton(fixture)?.click();
+    await fixture.whenStable();
+
+    const [first, second] = refundShortfall.mock.calls;
+    expect(first?.[0]).toBe('ord_1');
+    expect(second?.[1]).toBe(first?.[1]);
+    expect(changed).toHaveBeenCalledTimes(1);
+  });
+
+  it('sans card_payments:write, le bouton est désactivé', () => {
+    const { fixture } = mount([], ['b2b_orders:read'], {}, { amountCents: 400, cause: null });
+
+    expect(shortfallButton(fixture)?.disabled).toBe(true);
   });
 });

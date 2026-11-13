@@ -28,6 +28,7 @@ import {
   type DecidedDeparture,
 } from "../../../orders/domain/ports/shortfall-decision.reader.js";
 import { DeliveryNote, type DeliveryNoteState } from "../../domain/entities/delivery-note.js";
+import { OrderShortfallRefundReader } from "../../../orders/domain/ports/order-shortfall-refund.reader.js";
 import { OrderBillingCloser } from "../services/order-billing-closer.js";
 import { DeliveryNoteRepository } from "../../domain/ports/delivery-note.repository.js";
 
@@ -248,6 +249,17 @@ export class RecordingBillingFacts extends DurablePublisher {
   }
 }
 
+/** Le reste d'un départ incomplet déjà demandé à la carte, par commande (plan E9, § 4.7). */
+export class FixedShortfallRefunds extends OrderShortfallRefundReader {
+  constructor(private readonly requested: ReadonlySet<string> = new Set()) {
+    super();
+  }
+
+  hasShortfallRefund(orderId: string): Promise<boolean> {
+    return Promise.resolve(this.requested.has(orderId));
+  }
+}
+
 /** L'instant du solde, sans importance pour la règle : seul le montant est vérifié. */
 const SETTLEMENT_CLOCK = new FixedClock(new Date(0));
 
@@ -258,6 +270,7 @@ export function billingCloserOf(
   engagements: AccountOrderEngagementReader = new FixedEngagements(),
   settlement: AccountOrderSettlement = new RecordingSettlement(),
   facts: DurablePublisher = new RecordingBillingFacts(),
+  shortfallRefunds: OrderShortfallRefundReader = new FixedShortfallRefunds(),
 ): OrderBillingCloser {
   return new OrderBillingCloser(
     billings,
@@ -268,5 +281,6 @@ export function billingCloserOf(
     new DirectUnitOfWork(),
     facts,
     new FixedIdGenerator("write"),
+    shortfallRefunds,
   );
 }

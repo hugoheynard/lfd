@@ -1,6 +1,7 @@
 import { NoShortfallToDecideError } from "../../errors/order-shortfall-errors.js";
 import {
-  CardOrderShortfallError,
+  CardIncreasePendingShortfallError,
+  CardOrderUnpaidShortfallError,
   NothingDepartsError,
   OrderTooOldForShortfallError,
   RemainderNotDecidableError,
@@ -29,6 +30,7 @@ function subject(overrides: Partial<ShortfallDecisionSubject> = {}): ShortfallDe
     status: "confirmed",
     remainderNoteStatus: null,
     settlementRegime: "account",
+    increasePending: false,
     voucherDiscountCents: 0,
     frozenTerms: [
       { amountCents: 500, hasAdjustment: true },
@@ -104,10 +106,29 @@ describe("ShortfallDecision — « Décider du départ » (E6b)", () => {
     },
   );
 
-  it.each(["due", "paid"] as const)("refuse une commande carte (%s)", (settlementRegime) => {
-    expect(() => ShortfallDecision.decide(subject({ settlementRegime }), signalled(), ACT)).toThrow(
-      CardOrderShortfallError,
+  it("refuse une carte pas encore encaissée", () => {
+    expect(() =>
+      ShortfallDecision.decide(subject({ settlementRegime: "due" }), signalled(), ACT),
+    ).toThrow(CardOrderUnpaidShortfallError);
+  });
+
+  it("refuse une carte encaissée dont une hausse est en cours", () => {
+    expect(() =>
+      ShortfallDecision.decide(
+        subject({ settlementRegime: "paid", increasePending: true }),
+        signalled(),
+        ACT,
+      ),
+    ).toThrow(CardIncreasePendingShortfallError);
+  });
+
+  it("décide une carte encaissée : le reste se rembourse au solde (plan E9)", () => {
+    const decision = ShortfallDecision.decide(
+      subject({ settlementRegime: "paid" }),
+      signalled(),
+      ACT,
     );
+    expect(decision.toSnapshot().orderId).toBe("ord_1");
   });
 
   it("refuse une commande qui porte un bon de fidélité", () => {
@@ -138,8 +159,8 @@ describe("ShortfallDecision — « Décider du départ » (E6b)", () => {
   it("un refus laisse le signal en attente", () => {
     const shortfall = signalled();
     expect(() =>
-      ShortfallDecision.decide(subject({ settlementRegime: "paid" }), shortfall, ACT),
-    ).toThrow(CardOrderShortfallError);
+      ShortfallDecision.decide(subject({ settlementRegime: "due" }), shortfall, ACT),
+    ).toThrow(CardOrderUnpaidShortfallError);
     expect(shortfall.awaitingDecision).toBe(true);
   });
 });
@@ -290,11 +311,11 @@ describe("ShortfallDecision — le manque d'un reliquat (LB)", () => {
     );
   });
 
-  it("garde les refus de la commande : une carte ne part pas incomplète, même au rang 2", () => {
-    const card = subject({ rank: 2, remainderNoteStatus: "planned", settlementRegime: "paid" });
+  it("garde les refus de la commande : une carte pas encaissée ne part pas incomplète, même au rang 2", () => {
+    const card = subject({ rank: 2, remainderNoteStatus: "planned", settlementRegime: "due" });
 
     expect(() => ShortfallDecision.decide(card, remainderSignalled(), ACT)).toThrow(
-      CardOrderShortfallError,
+      CardOrderUnpaidShortfallError,
     );
   });
 });
@@ -311,8 +332,8 @@ describe("ShortfallDecision.assertDecidable — les refus jugés avant de lire l
     expect(() => ShortfallDecision.assertDecidable(subject({ status: "ready" }))).toThrow(
       ShortfallOrderNotConfirmedError,
     );
-    expect(() => ShortfallDecision.assertDecidable(subject({ settlementRegime: "paid" }))).toThrow(
-      CardOrderShortfallError,
+    expect(() => ShortfallDecision.assertDecidable(subject({ settlementRegime: "due" }))).toThrow(
+      CardOrderUnpaidShortfallError,
     );
     expect(() => ShortfallDecision.assertDecidable(subject({ voucherDiscountCents: 100 }))).toThrow(
       VoucherOrderShortfallError,

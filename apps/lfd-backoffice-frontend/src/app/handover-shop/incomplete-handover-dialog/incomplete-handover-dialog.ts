@@ -56,7 +56,12 @@ export const INCOMPLETE_HANDOVER_REFUSAL_TEXT: Readonly<
   handover_refused: 'Le retrait refuse cette remise.',
   already_decided: 'Le manque de cette commande est déjà tranché : relisez la file.',
   not_confirmed: 'La commande n’est pas confirmée : elle ne peut pas partir incomplète.',
+  // Plus produit par l'API (plan E9, lot E9a) : gardé pour une réponse d'un serveur plus ancien.
   card: 'Réglée par carte : un départ incomplet demande un remboursement partiel, pas encore possible.',
+  card_unpaid:
+    'Réglée par carte, et la carte n’est pas encore encaissée : le départ incomplet attend le paiement.',
+  card_increase_pending:
+    'Une hausse par carte est en cours : réglez-la depuis la fiche commande avant de décider le départ incomplet.',
   voucher:
     'Réglée en partie par un bon de fidélité : un départ incomplet demande de le recalculer, pas encore possible.',
   too_old:

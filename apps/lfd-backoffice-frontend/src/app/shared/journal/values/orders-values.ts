@@ -192,6 +192,18 @@ export const REFUND_NOT_CREDITED = domain('motif d’un remboursement sans avoir
   exceeds_invoice: 'Au-delà de ce que la facture porte encore',
 });
 
+/**
+ * Pourquoi le reste d'un départ incomplet n'a pas été remboursé sur la carte
+ * (`order.shortfall_refund_blocked`, plan E9, § 4.4).
+ */
+export const SHORTFALL_REFUND_CAUSE = domain('cause d’un reste non remboursé', {
+  already_invoiced: 'Une facture porte déjà la commande — à rendre à la main, avec un avoir',
+  increase_pending: 'Une hausse par carte est en cours',
+  unattributed_refund: 'Un remboursement a été fait hors de la plateforme — à rendre à la main',
+  payment_not_paid: 'Un paiement par carte n’est pas encaissé',
+  not_covered: 'Ce qui reste sur les paiements ne couvre pas le reste',
+});
+
 /** Le verdict d'un contrôle qualité ; `warning` se dit « Réserve » à l'écran. */
 export const QUALITY_VERDICT = domain('verdict d’un contrôle qualité', {
   ok: 'OK',
@@ -328,6 +340,7 @@ export const ORDERS_VALUES: ValueFamily = {
     REFUND_STATUS,
     REFUND_REJECTION,
     REFUND_NOT_CREDITED,
+    SHORTFALL_REFUND_CAUSE,
     CARD_INCREASE_ABANDON_CAUSE,
     QUALITY_VERDICT,
     QUALITY_LIFTING_VERDICT,
