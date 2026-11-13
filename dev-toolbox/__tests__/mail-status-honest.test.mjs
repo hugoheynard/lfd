@@ -84,6 +84,6 @@ test("portée : contrats et couches servies, pas le domaine ni l'infrastructure 
 test("chaque entrée de dette porte son compte, sa date et sa raison", () => {
   for (const { count, reason } of Object.values(DEBT)) {
     assert.ok(Number.isInteger(count) && count > 0);
-    assert.match(reason, /^2026-11-08 — .+/);
+    assert.match(reason, /^\d{4}-\d{2}-\d{2} — .+/);
   }
 });
