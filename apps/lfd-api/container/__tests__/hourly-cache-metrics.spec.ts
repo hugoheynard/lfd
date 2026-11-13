@@ -85,12 +85,53 @@ describe("HourlyCacheMetrics", () => {
   it("garde le dernier relevé de taille de l'heure", () => {
     const metrics = new HourlyCacheMetrics(new NodeSql());
 
-    metrics.size("pro-shelves", { bytes: 100, entries: 1 }, NOW);
+    metrics.size("pro-shelves", { bytes: 100, entries: 1, rawBytes: null }, NOW);
     metrics.count("pro-shelves", "store", NOW + 1);
-    metrics.size("pro-shelves", { bytes: 250, entries: 2 }, NOW + 2);
+    metrics.size("pro-shelves", { bytes: 250, entries: 2, rawBytes: null }, NOW + 2);
 
     expect(metrics.read(NOW).rows).toEqual([
-      expect.objectContaining({ stores: 1, bytes: 250, entries: 2 }),
+      expect.objectContaining({ stores: 1, bytes: 250, entries: 2, rawBytes: null }),
+    ]);
+  });
+
+  it("garde la taille en clair à côté de la taille rangée", () => {
+    const metrics = new HourlyCacheMetrics(new NodeSql());
+
+    metrics.size("catalog-admin", { bytes: 120, entries: 1, rawBytes: 900 }, NOW);
+
+    expect(metrics.read(NOW).rows).toEqual([
+      expect.objectContaining({ bytes: 120, entries: 1, rawBytes: 900 }),
+    ]);
+  });
+
+  it("compte les rangements trop vieux, à part des trop gros", () => {
+    const metrics = new HourlyCacheMetrics(new NodeSql());
+
+    metrics.count("day-worksheet", "too_old", NOW);
+    metrics.count("day-worksheet", "too_old", NOW + 1);
+
+    expect(metrics.read(NOW).rows).toEqual([
+      expect.objectContaining({ tooOld: 2, tooLarge: 0, stores: 0 }),
+    ]);
+  });
+
+  it("ajoute les colonnes manquantes à une table créée avant elles, sans perdre ses heures", () => {
+    const sql = new NodeSql();
+    sql.exec(
+      "CREATE TABLE metrics_hourly (cache TEXT NOT NULL, hour INTEGER NOT NULL, " +
+        "hits INTEGER NOT NULL DEFAULT 0, misses INTEGER NOT NULL DEFAULT 0, " +
+        "stores INTEGER NOT NULL DEFAULT 0, too_large INTEGER NOT NULL DEFAULT 0, " +
+        "bytes INTEGER, entries INTEGER, persons INTEGER NOT NULL DEFAULT 0, " +
+        "PRIMARY KEY (cache, hour))",
+    );
+    sql.exec("INSERT INTO metrics_hourly (cache, hour, hits) VALUES (?, ?, 3)", "pim", NOW);
+
+    const metrics = new HourlyCacheMetrics(sql);
+    metrics.count("pim", "too_old", NOW);
+    new HourlyCacheMetrics(sql);
+
+    expect(metrics.read(NOW).rows).toEqual([
+      expect.objectContaining({ hits: 3, tooOld: 1, rawBytes: null }),
     ]);
   });
 
@@ -148,7 +189,7 @@ describe("HourlyCacheMetrics", () => {
     expect(() => {
       metrics.request(NOW);
       metrics.count("pim-product", "hit", NOW, PERSON_A);
-      metrics.size("pim-product", { bytes: 1, entries: 1 }, NOW);
+      metrics.size("pim-product", { bytes: 1, entries: 1, rawBytes: null }, NOW);
     }).not.toThrow();
     expect(metrics.read(NOW)).toEqual({ rows: [], peaks: [] });
     expect(reported).toHaveLength(1);

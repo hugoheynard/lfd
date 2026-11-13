@@ -20,20 +20,13 @@ import {
   contentCacheOfPath,
   DAY_VERSIONS_METRICS_CACHE,
   parseMetricsCall,
-  sizesByContentCache,
   servedPersonOf,
 } from "./cache-metrics-store";
 import { DayContentsTable } from "./day-contents";
 import { parseDayContentCall } from "./day-contents-store";
 import { HourlyCacheMetrics } from "./hourly-cache-metrics";
-import {
-  acceptsContentBody,
-  CONTENT_RAW_BYTES_HEADER,
-  type ContentCall,
-  parseContentCall,
-  rawBytesOf,
-  servesContent,
-} from "./versioned-contents-store";
+import { VersionedContentsTable } from "./versioned-contents";
+import { parseContentCall } from "./versioned-contents-store";
 
 /** Le nom de l'instance unique : une seule copie, quel que soit le nombre d'API. */
 export const DAY_VERSIONS_INSTANCE = "day-versions-weur";
@@ -50,14 +43,9 @@ interface SubjectRow extends Record<string, string | number> {
   read_at: number;
 }
 
-interface ContentRow extends Record<string, ArrayBuffer | string | number> {
-  version: number;
-  body: ArrayBuffer | string;
-}
-
 /**
- * Le magasin des numéros, et des contenus versionnés (`contents`, § 3.5 de
- * `le-cache-du-back-office.md`). Un Durable Object traite ses requêtes une à une ;
+ * Le magasin des numéros, des contenus versionnés (`versioned-contents.ts`)
+ * et des contenus de journée (`day-contents.ts`). Un Durable Object traite ses requêtes une à une ;
  * la comparaison des instants et l'écriture se font d'un seul tenant, après
  * le dernier `await`.
  *
@@ -68,6 +56,7 @@ interface ContentRow extends Record<string, ArrayBuffer | string | number> {
 export class DayVersions extends DurableObject<DayVersionsEnv> {
   private readonly metrics: HourlyCacheMetrics;
   private readonly dayContents: DayContentsTable;
+  private readonly contents: VersionedContentsTable;
 
   constructor(ctx: DurableObjectState, env: DayVersionsEnv) {
     super(ctx, env);
@@ -77,17 +66,9 @@ export class DayVersions extends DurableObject<DayVersionsEnv> {
         "subject TEXT NOT NULL, version INTEGER NOT NULL, read_at INTEGER NOT NULL, " +
         "PRIMARY KEY (key, subject))",
     );
-    // Une ligne par clé : la charge rangée remplace la précédente, les
-    // versions remplacées ne s'accumulent pas. `body` porte les octets
-    // compressés par l'API (un BLOB : SQLite ne convertit pas un BLOB rangé
-    // dans une colonne d'affinité TEXT) ; une ligne rangée en clair avant la
-    // compression reste lisible par l'API, et le prochain rangement la remplace.
-    this.ctx.storage.sql.exec(
-      "CREATE TABLE IF NOT EXISTS contents (key TEXT PRIMARY KEY, version INTEGER NOT NULL, " +
-        "body TEXT NOT NULL)",
-    );
-    this.addRawBytesColumn();
     this.metrics = new HourlyCacheMetrics(this.ctx.storage.sql);
+    // Les contenus versionnés (`versioned-contents.ts`), servis à numéro égal.
+    this.contents = new VersionedContentsTable(this.ctx.storage.sql, this.metrics);
     // Les contenus des écrans de journée (`day-contents.ts`) : leur table,
     // servie à étiquette égale.
     this.dayContents = new DayContentsTable(this.ctx.storage.sql, this.metrics);
@@ -107,7 +88,7 @@ export class DayVersions extends DurableObject<DayVersionsEnv> {
     }
     const content = parseContentCall(request.method, url);
     if (content !== null) {
-      return this.content(content, request, contentCacheOfPath(url.pathname));
+      return this.contents.respond(content, request, contentCacheOfPath(url.pathname), Date.now());
     }
     const call = parseDayVersionsCall(request.method, url);
     if (call === null) {
@@ -127,88 +108,6 @@ export class DayVersions extends DurableObject<DayVersionsEnv> {
     return card === null
       ? new Response(null, { status: 400 })
       : this.store(call.key, call.scope, card);
-  }
-
-  private async content(call: ContentCall, request: Request, cache: string): Promise<Response> {
-    const response = await this.contentResponse(call, request);
-    this.countContent(call, cache, response.status, servedPersonOf(request.headers));
-    return response;
-  }
-
-  /**
-   * Les compteurs d'un appel de contenu, au nom du cache que la clé porte en
-   * préfixe. L'heure est une mesure : le seul `Date.now()` de l'objet, et
-   * aucune décision n'en dépend.
-   */
-  private countContent(
-    call: ContentCall,
-    cache: string,
-    status: number,
-    person: string | null,
-  ): void {
-    const nowMs = Date.now();
-    if (call.kind === "content-read") {
-      this.metrics.count(cache, status === 200 ? "hit" : "miss", nowMs, person);
-      return;
-    }
-    this.metrics.count(cache, status === 201 ? "store" : "too_large", nowMs);
-    if (status === 201) {
-      this.recordContentSize(cache, nowMs);
-    }
-  }
-
-  private recordContentSize(cache: string, nowMs: number): void {
-    try {
-      const rows = this.ctx.storage.sql
-        .exec<{ key: string; bytes: number }>(
-          "SELECT key, length(CAST(body AS BLOB)) AS bytes FROM contents",
-        )
-        .toArray();
-      const size = sizesByContentCache(rows).get(cache);
-      if (size !== undefined) {
-        this.metrics.size(cache, size, nowMs);
-      }
-    } catch (error) {
-      console.error("Taille des contenus non relevée", error);
-    }
-  }
-
-  /**
-   * La taille en clair, ajoutée à une table créée avant la compression. SQLite
-   * n'a pas d'`ADD COLUMN IF NOT EXISTS` : une colonne déjà là refuse
-   * l'ajout, et seul ce refus-là est attendu.
-   */
-  private addRawBytesColumn(): void {
-    try {
-      this.ctx.storage.sql.exec("ALTER TABLE contents ADD COLUMN raw_bytes INTEGER");
-    } catch (error) {
-      if (!String(error).includes("duplicate column")) {
-        throw error;
-      }
-    }
-  }
-
-  private async contentResponse(call: ContentCall, request: Request): Promise<Response> {
-    if (call.kind === "content-read") {
-      const [row] = this.ctx.storage.sql
-        .exec<ContentRow>("SELECT version, body FROM contents WHERE key = ?", call.key)
-        .toArray();
-      return row !== undefined && servesContent(row.version, call.version)
-        ? new Response(row.body, { headers: { "content-type": "application/octet-stream" } })
-        : new Response(null, { status: 404 });
-    }
-    const body = new Uint8Array(await request.arrayBuffer());
-    if (!acceptsContentBody(body)) {
-      return new Response(null, { status: 413 });
-    }
-    this.ctx.storage.sql.exec(
-      "INSERT OR REPLACE INTO contents (key, version, body, raw_bytes) VALUES (?, ?, ?, ?)",
-      call.key,
-      call.version,
-      body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength),
-      rawBytesOf(request.headers.get(CONTENT_RAW_BYTES_HEADER)),
-    );
-    return new Response(null, { status: 201 });
   }
 
   private rows(key: string): SubjectRow[] {
@@ -273,7 +172,7 @@ export class DayVersions extends DurableObject<DayVersionsEnv> {
       if (size !== undefined) {
         this.metrics.size(
           DAY_VERSIONS_METRICS_CACHE,
-          { bytes: size.bytes ?? 0, entries: size.entries },
+          { bytes: size.bytes ?? 0, entries: size.entries, rawBytes: null },
           nowMs,
         );
       }

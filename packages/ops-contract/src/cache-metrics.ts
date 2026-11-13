@@ -14,8 +14,21 @@ export interface SharedCacheFigures {
   readonly stores: number;
   /** Rangements refusés par l'objet parce que trop gros. */
   readonly tooLarge: number;
-  /** La dernière taille rangée relevée, en octets ; `null` si jamais relevée. */
+  /**
+   * Rangements que l'objet n'a pas écrits parce que la journée serait oubliée
+   * aussitôt (contenus des écrans de journée) ; 0 ailleurs.
+   */
+  readonly tooOld: number;
+  /**
+   * La dernière taille rangée relevée, en octets, telle que l'objet la garde
+   * — compressée pour les contenus ; `null` si jamais relevée.
+   */
   readonly bytes: number | null;
+  /**
+   * La même taille EN CLAIR, avant compression ; `null` si inconnue (rayons,
+   * numéros, ou une ligne rangée sans la taille annoncée).
+   */
+  readonly rawBytes: number | null;
   readonly entries: number | null;
   /**
    * Personnes distinctes servies — sur une heure ; sur plusieurs heures, le

@@ -8,8 +8,7 @@
  * du fournil ne fait pas bouger la livraison. Le dialogue en base qui passait
  * par aucun port est coupé dans les deux sens.
  *
- * Lue par la porte unique `GET admin/day-versions`, journal `delivery`, depuis
- * le 2026-11-03 (`version-par-journee.md`, D8).
+ * Lue par la porte `GET admin/versions`, sujet `delivery`.
  */
 import { DAY_VERSIONS, dayVersionOf, dayVersionsOf } from "./day-versions-door.js";
 import { bootstrapE2e, serviceDay, type E2eContext } from "./e2e-harness.js";
@@ -75,9 +74,9 @@ describe("le journal `delivery` de la porte unique", () => {
   });
 
   it("refuse une date absente, mal formée ou hors calendrier", async () => {
-    await admin(ctx).get(`${DAY_VERSIONS}?journals=delivery`).expect(400);
-    await admin(ctx).get(`${DAY_VERSIONS}?date=03/10/2026&journals=delivery`).expect(400);
-    await admin(ctx).get(`${DAY_VERSIONS}?date=2030-02-30&journals=delivery`).expect(400);
+    await admin(ctx).get(`${DAY_VERSIONS}?subjects=delivery`).expect(400);
+    await admin(ctx).get(`${DAY_VERSIONS}?date=03/10/2026&subjects=delivery`).expect(400);
+    await admin(ctx).get(`${DAY_VERSIONS}?date=2030-02-30&subjects=delivery`).expect(400);
   });
 });
 

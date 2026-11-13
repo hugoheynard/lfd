@@ -40,10 +40,16 @@ function hourOf(raw: unknown): SharedCacheHour | null {
   const counts = ["hourMs", "hits", "misses", "stores", "tooLarge", "persons"].map(field);
   const bytes = field("bytes");
   const entries = field("entries");
+  // Absents d'un objet d'une image antérieure : inconnue, et rien compté.
+  const rawBytes = field("rawBytes") ?? null;
+  const tooOld = field("tooOld") ?? 0;
   if (typeof cache !== "string" || !counts.every(isCount)) {
     return null;
   }
-  if (!isCountOrNull(bytes) || !isCountOrNull(entries)) {
+  if (!isCountOrNull(bytes) || !isCountOrNull(entries) || !isCountOrNull(rawBytes)) {
+    return null;
+  }
+  if (!isCount(tooOld)) {
     return null;
   }
   const [hourMs, hits, misses, stores, tooLarge, persons] = counts.filter(isCount);
@@ -57,6 +63,8 @@ function hourOf(raw: unknown): SharedCacheHour | null {
     bytes,
     entries,
     persons: persons ?? 0,
+    rawBytes,
+    tooOld,
   };
 }
 

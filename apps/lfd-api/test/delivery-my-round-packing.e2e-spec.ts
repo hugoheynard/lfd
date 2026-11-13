@@ -5,8 +5,8 @@
  * - la fiche de chaque arrêt : les produits de la commande, SANS un champ
  *   d'argent alors que la base en porte ;
  * - l'avancement : un bac déclaré, une commande prête ;
- * - la version de « ma tournée » (journal `my-round` de la porte unique
- *   `admin/day-versions` depuis le 2026-11-03) : elle bouge sur un bac déclaré (journal de
+ * - la version de « ma tournée » (sujet `my-round` de la porte
+ *   `admin/versions`) : elle bouge sur un bac déclaré (journal de
  *   la livraison, par le nouveau déclencheur de `delivery_bin`) et sur une
  *   commande prête (journal du commerce, par son port) ;
  * - le chargement de SA tournée : le scan charge le bac ; la tournée d'un

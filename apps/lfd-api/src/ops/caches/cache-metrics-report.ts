@@ -91,10 +91,14 @@ function byCache(hours: readonly SharedCacheHour[]): ReadonlyMap<string, SharedC
 
 function pointsOf(hours: readonly SharedCacheHour[]): readonly HourPoint[] {
   let bytes: number | null = null;
+  let rawBytes: number | null = null;
   let entries: number | null = null;
   return [...hours]
     .sort((left, right) => left.hourMs - right.hourMs)
     .map((hour) => {
+      // La taille en clair suit la taille rangée : relevées ensemble, une
+      // heure qui relève l'une sans l'autre la dit inconnue.
+      rawBytes = hour.bytes === null ? rawBytes : hour.rawBytes;
       bytes = hour.bytes ?? bytes;
       entries = hour.entries ?? entries;
       return {
@@ -104,7 +108,9 @@ function pointsOf(hours: readonly SharedCacheHour[]): readonly HourPoint[] {
         hitRate: rateOf(hour.hits, hour.misses),
         stores: hour.stores,
         tooLarge: hour.tooLarge,
+        tooOld: hour.tooOld,
         bytes,
+        rawBytes,
         entries,
         persons: hour.persons,
       };
@@ -128,7 +134,9 @@ function figuresOf(
     hitRate: rateOf(hits, misses),
     stores: sum(points, (one) => one.stores),
     tooLarge: sum(points, (one) => one.tooLarge),
+    tooOld: sum(points, (one) => one.tooOld),
     bytes: latest?.bytes ?? null,
+    rawBytes: latest?.rawBytes ?? null,
     entries: latest?.entries ?? null,
     persons: points.reduce((max, one) => Math.max(max, one.persons), 0),
   };

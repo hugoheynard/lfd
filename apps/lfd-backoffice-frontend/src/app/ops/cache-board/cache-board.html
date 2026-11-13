@@ -45,7 +45,10 @@
         <div class="gauge">
           <span class="gauge-label">Taille rangée</span>
           <span class="gauge-value">{{ bytesLabel(head().day.bytes) }}</span>
-          <span class="gauge-note">dernier relevé, tous caches</span>
+          <span class="gauge-note"
+            >dernier relevé, tous caches · en clair :
+            {{ bytesLabel(head().day.rawBytes) }} (contenus)</span
+          >
         </div>
         <div class="gauge">
           <span class="gauge-label">Personnes servies</span>
@@ -134,6 +137,22 @@
           [rows]="caches()"
           [rowKey]="rowKey"
           [empty]="nothing"
+        />
+      </fold-card>
+
+      <fold-card>
+        <fold-element-title
+          variant="title"
+          title="Replis vers la base, par raison"
+          [subtitle]="'Cette instance, ' + head().windowMinutes + ' min.'"
+        />
+        <fold-data-table
+          caption="Replis vers la base, par cache et par raison"
+          narrowLayout="cards"
+          [columns]="fallbackColumns"
+          [rows]="fallbacks()"
+          [rowKey]="fallbackKey"
+          [empty]="noFallback"
         />
       </fold-card>
     }

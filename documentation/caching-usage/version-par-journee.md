@@ -25,7 +25,7 @@ a-t-il bougé ? » ; il ne relit son contenu que si oui.
 flowchart LR
   E["Une écriture<br/>commande, fournée, colis"] --> B[("Base")]
   B -->|"un déclencheur<br/>inscrit le changement"| J["Journal des changements<br/>de la journée"]
-  S["Écran, toutes les 15 s"] --> P["GET admin/day-versions"]
+  S["Écran, toutes les 15 s"] --> P["GET admin/versions"]
   P --> J
   P -->|"le numéro a bougé ?"| S
   S -->|"oui : relit"| C["Contenu de l'écran"]
@@ -75,9 +75,10 @@ leurs blocs.
 
 ## 2. La porte unique (D8, 2026-11-03)
 
-`GET admin/day-versions?date=AAAA-MM-JJ&journals=orders,production` →
-`{ date, versions: { … } }` (`dayVersionsQuerySchema` / `dayVersionsViewSchema`,
-`@lfd/contracts`) :
+`GET admin/versions?date=AAAA-MM-JJ&subjects=orders,production` →
+`{ date, versions: { … } }` (`versionsQuerySchema` / `versionsViewSchema`,
+`@lfd/contracts` ; la même porte sert aussi les sujets globaux,
+`le-cache-du-back-office.md` § 2.3) :
 
 | Journal      | Droits (l'un suffit)                                                                                                            | Source                                                        |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |

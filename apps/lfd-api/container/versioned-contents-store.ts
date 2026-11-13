@@ -18,9 +18,13 @@ const CONTENT_KEY = /^[a-z0-9:-]{1,64}$/u;
 const WHOLE = /^\d+$/u;
 
 /** Un appel de contenu compris par l'objet. */
-export type ContentCall =
-  | { readonly kind: "content-read"; readonly key: string; readonly version: number }
-  | { readonly kind: "content-store"; readonly key: string; readonly version: number };
+export interface ContentCall {
+  readonly kind: "content-read" | "content-store";
+  readonly key: string;
+  readonly version: number;
+  /** Le début de toute clé rangée sous cette révision (`r:<révision>/`). */
+  readonly revisionPrefix: string;
+}
 
 /** La clé de stockage : la révision du code et la clé opaque de l'appelant. */
 export function contentKeyOf(revision: string, key: string): string {
@@ -44,10 +48,11 @@ export function parseContentCall(method: string, url: URL): ContentCall | null {
     return null;
   }
   const stored = contentKeyOf(revision, key);
+  const revisionPrefix = contentKeyOf(revision, "");
   if (method === "GET") {
-    return { kind: "content-read", key: stored, version };
+    return { kind: "content-read", key: stored, version, revisionPrefix };
   }
-  return method === "PUT" ? { kind: "content-store", key: stored, version } : null;
+  return method === "PUT" ? { kind: "content-store", key: stored, version, revisionPrefix } : null;
 }
 
 /** La charge gardée sert-elle cette question ? Par ÉGALITÉ du numéro, jamais par ordre. */

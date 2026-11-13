@@ -10,7 +10,7 @@ describe("DurableObjectCacheMetricsReader", () => {
   it("lit chaque objet par sa route interne, depuis l'heure demandée", async () => {
     const asked: string[] = [];
     const reader = new DurableObjectCacheMetricsReader(
-      [{ object: "day-versions", origin: "http://journees.interne/" }],
+      [{ object: "day-versions", origin: "http://objets.interne/journees/" }],
       (url) => {
         asked.push(url);
         return Promise.resolve(Response.json(REPLY));
@@ -19,7 +19,7 @@ describe("DurableObjectCacheMetricsReader", () => {
 
     const [reading] = await reader.read(7_200_000);
 
-    expect(asked).toEqual(["http://journees.interne/metrics?since=7200000"]);
+    expect(asked).toEqual(["http://objets.interne/journees/metrics?since=7200000"]);
     expect(reading).toEqual({
       object: "day-versions",
       state: "read",

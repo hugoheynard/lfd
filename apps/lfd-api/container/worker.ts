@@ -35,7 +35,6 @@ import {
   DAY_VERSIONS_ORIGIN,
   INTERNAL_OBJECTS_HOST,
   internalObjectRouteOf,
-  LEGACY_OBJECT_HOSTS,
   objectUrlOf,
   SHELF_STORE_ORIGIN,
   type InternalObject,
@@ -355,14 +354,7 @@ async function publicPurgeOutcome(
   }
 }
 
-// L'hôte unique d'abord ; les anciens hôtes, un déploiement, pour un
-// conteneur démarré avant la bascule (`internal-objects.ts`).
-Backend.outboundByHost = {
-  [INTERNAL_OBJECTS_HOST]: internalObjectsGateway,
-  ...Object.fromEntries(
-    Object.keys(LEGACY_OBJECT_HOSTS).map((host) => [host, internalObjectsGateway]),
-  ),
-};
+Backend.outboundByHost = { [INTERNAL_OBJECTS_HOST]: internalObjectsGateway };
 
 function proShelves(env: Env): DurableObjectStub<ProShelves> {
   return env.PRO_SHELVES.get(env.PRO_SHELVES.idFromName(PRO_SHELVES_INSTANCE), PLACEMENT);

@@ -146,15 +146,9 @@ describe("le chemin interne vers les objets partagés", () => {
     }
   });
 
-  it("aiguille encore par l'hôte un conteneur démarré avant la bascule", () => {
-    expect(internalObjectRouteOf(new URL("http://rayons.interne/metrics"))).toEqual({
-      object: "pro-shelves",
-      pathname: "/metrics",
-    });
-    expect(internalObjectRouteOf(new URL("http://journees.interne/metrics"))).toEqual({
-      object: "day-versions",
-      pathname: "/metrics",
-    });
+  it("n'aiguille plus les anciens hôtes, retirés", () => {
+    expect(internalObjectRouteOf(new URL("http://rayons.interne/metrics"))).toBeNull();
+    expect(internalObjectRouteOf(new URL("http://journees.interne/metrics"))).toBeNull();
   });
 
   it("ignore tout autre hôte", () => {

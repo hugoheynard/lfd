@@ -6,12 +6,11 @@
  *
  * Six routes de version, une par journal et par droit, avaient poussé en un
  * mois ; chaque écran choisissait la sienne. La porte unique
- * `GET admin/day-versions` les a remplacées, avec un registre qui tient UNE
- * déclaration par journal. Cette porte-ci empêche le retour en arrière :
+ * `GET admin/versions` les remplace, avec un registre qui tient UNE
+ * déclaration par sujet. Cette porte-ci empêche le retour en arrière :
  *
  * - **côté API** (`apps/lfd-api/src`) : aucune route dont un mot du chemin est
- *   `version` (`@Controller`, `@Get`, `@Post`…), sauf `admin/versions` (la
- *   porte des sujets) et `admin/day-versions` (servie un déploiement de plus). Un
+ *   `version` (`@Controller`, `@Get`, `@Post`…), sauf `admin/versions`. Un
  *   journal de plus est une source de plus dans
  *   `appBootstrap/day-version-sources.module.ts`, jamais une route ;
  * - **côté back-office** (`apps/lfd-backoffice-frontend/src`) : la porte
@@ -31,16 +30,15 @@ const API_ROOT = "apps/lfd-api/src";
 const FRONT_ROOT = "apps/lfd-backoffice-frontend/src";
 const SKIP_DIRS = new Set(["node_modules", "dist", "coverage", ".turbo", "__tests__"]);
 
-/** L'ancienne porte, servie un déploiement de plus ; plus aucun code du front ne l'appelle. */
+/** L'ancienne porte, retirée : ni route, ni appelant. */
 const DOOR = "admin/day-versions";
 /** La porte que le front appelle (`le-cache-du-back-office.md`, § 2.4). */
 const FRONT_DOOR = "admin/versions";
 /**
- * Les chemins de route qui ont le droit de dire « version » : la porte des
- * sujets (`le-cache-du-back-office.md`, § 2.3) et l'ancienne, servie un
- * déploiement de plus pour les onglets restés sur l'ancien bundle.
+ * Le seul chemin de route qui a le droit de dire « version » : la porte des
+ * sujets (`le-cache-du-back-office.md`, § 2.3).
  */
-const API_DOORS = new Set([DOOR, "admin/versions"]);
+const API_DOORS = new Set([FRONT_DOOR]);
 /** Le seul fichier du front qui l'appelle. */
 const FRONT_CALLER = `${FRONT_ROOT}/app/shared/version/version.service.ts`;
 
@@ -90,7 +88,7 @@ function selfCheck() {
     ['@Get("version")', 1],
     ['@Controller("admin/production")\n@Get(\n  "day-version",\n)', 1],
     ["@Get('production-version')", 1],
-    ['@Controller("admin/day-versions")', 0],
+    ['@Controller("admin/day-versions")', 1],
     ['@Controller("admin/versions")', 0],
     ['// @Get("version")', 0],
     ['@Get(":id/history")', 0],

@@ -79,6 +79,7 @@ describe("l'onglet Cache de la santé", () => {
       "shelf_cache",
       "day_versions",
       "versioned_contents",
+      "day_contents",
     ]);
   });
 });

@@ -11,6 +11,10 @@ export interface SharedCacheHour {
   readonly bytes: number | null;
   readonly entries: number | null;
   readonly persons: number;
+  /** La taille en clair ; `null` si l'objet ne l'a pas relevée. */
+  readonly rawBytes: number | null;
+  /** Rangements refusés parce que la journée serait oubliée aussitôt. */
+  readonly tooOld: number;
 }
 
 /** Le pic de requêtes par seconde d'une heure. */

@@ -169,9 +169,8 @@ La vue du jour, de la passation au retrait
 
 ## Les versions de journée — une porte, un droit par journal
 
-Depuis le 2026-11-03 (`caching-usage/version-par-journee.md`, D8), les
-six routes de version par journal sont retirées au profit de
-`GET /admin/day-versions?date=&journals=` (`DayVersionsController`, surface
+Une seule porte sert les versions (`caching-usage/version-par-journee.md`,
+D8) : `GET /admin/versions?date=&subjects=` (`VersionsController`, surface
 réflexive : il suffit d'une fiche staff). Le droit se tranche **par
 journal** ; un journal non permis est **absent** de la réponse, sans refus.
 

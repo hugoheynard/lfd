@@ -22,7 +22,7 @@ import { ProductionModule } from "../production/production.module.js";
  * **Le registre des sujets de version, relié** (`version-par-journee.md`, D8 ;
  * `le-cache-du-back-office.md`, § 2.1). `platform/day-versions/` déclare les
  * ports `DayVersionSource` (portée journée) et `GlobalVersionSource` (portée
- * globale) et sert les portes `GET admin/versions` et `admin/day-versions` ;
+ * globale) et sert la porte `GET admin/versions` ;
  * chaque bloc qui tient un journal les implémente chez lui. Ce module est le
  * SEUL endroit qui les nomme ensemble : un sujet de plus est une source de
  * plus dans cette liste, jamais une route de plus.

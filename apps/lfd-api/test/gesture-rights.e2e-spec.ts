@@ -12,7 +12,7 @@
  * absentes, corps invalide) n'est pas le sujet. Un geste fermé se lit 403 :
  * le refus de la garde, avant tout pipe.
  */
-import { DAY_JOURNALS, type DayVersionsView, type RoleGrant } from "@lfd/contracts";
+import { DAY_JOURNALS, type VersionsView, type RoleGrant } from "@lfd/contracts";
 import type request from "supertest";
 
 import {
@@ -97,9 +97,9 @@ async function statusOf(agent: request.Agent, route: RouteName): Promise<number>
  */
 async function journalsOf(agent: request.Agent): Promise<readonly string[]> {
   const response = await agent
-    .get(`/admin/day-versions?date=${DAY}&journals=${DAY_JOURNALS.join(",")}`)
+    .get(`/admin/versions?date=${DAY}&subjects=${DAY_JOURNALS.join(",")}`)
     .expect(200);
-  return Object.keys(jsonBody<DayVersionsView>(response).versions).sort();
+  return Object.keys(jsonBody<VersionsView>(response).versions).sort();
 }
 
 /** Les routes qu'un porteur DOIT atteindre, et celles qui lui restent fermées. */

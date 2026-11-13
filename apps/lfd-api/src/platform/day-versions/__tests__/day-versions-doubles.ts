@@ -6,7 +6,6 @@ import { FixedWallClock } from "../../time/fixed-wall-clock.js";
 import { DayVersionRegistry } from "../day-version-registry.js";
 import { DayVersionSource } from "../day-version-source.js";
 import { DayVersionsCache, type VersionsCard } from "../day-versions-cache.js";
-import { GetDayVersionsHandler } from "../get-day-versions.handler.js";
 import { GetVersionsHandler } from "../get-versions.handler.js";
 import { GlobalVersionSource } from "../global-version-source.js";
 import { ResilientDayVersionsCache } from "../resilient-day-versions-cache.js";
@@ -182,9 +181,8 @@ export function handlerAround(
   );
   const registry = new VersionRegistry(new DayVersionRegistry(all), globals);
   const scopes = new ScopeVersions(registry, resilient, wall);
-  const handler = new GetDayVersionsHandler(registry, scopes);
   const versions = new GetVersionsHandler(registry, scopes);
-  return { handler, versions, cache, deadline, wall, timings };
+  return { versions, cache, deadline, wall, timings };
 }
 
 /** Laisse partir les rangements non attendus. */

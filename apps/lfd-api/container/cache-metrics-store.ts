@@ -23,7 +23,7 @@ export const DAY_VERSIONS_METRICS_CACHE = "day-versions";
 export const PRO_SHELVES_METRICS_CACHE = "pro-shelves";
 
 /** Ce qu'un compteur compte. */
-export type CacheMetricEvent = "hit" | "miss" | "store" | "too_large";
+export type CacheMetricEvent = "hit" | "miss" | "store" | "too_large" | "too_old";
 
 /** Une valeur de cellule SQLite, sous Workers comme sous Node. */
 export type MetricsSqlValue = ArrayBuffer | string | number | null;
@@ -65,6 +65,13 @@ export interface CacheMetricsRow {
   readonly entries: number | null;
   /** Les personnes distinctes servies pendant l'heure (lectures portant une empreinte). */
   readonly persons: number;
+  /**
+   * La même taille EN CLAIR (avant la compression de l'API) ; `null` si
+   * l'heure n'en a pas relevé, ou si une ligne rangée ne la porte pas.
+   */
+  readonly rawBytes: number | null;
+  /** Rangements refusés parce que la journée serait oubliée aussitôt (contenus de journée). */
+  readonly tooOld: number;
 }
 
 /** Le pic d'une heure : le plus de requêtes reçues par l'objet en une seconde. */
@@ -116,8 +123,11 @@ export class PerSecondCounter {
 
 /** La taille rangée d'un cache. */
 export interface CacheSize {
+  /** Les octets tels que l'objet les garde (compressés pour les contenus). */
   readonly bytes: number;
   readonly entries: number;
+  /** Les mêmes en clair ; `null` si inconnue (rayons, numéros, ligne sans taille annoncée). */
+  readonly rawBytes: number | null;
 }
 
 /** Le début de l'heure d'un instant. */
@@ -156,17 +166,34 @@ export function storedContentCacheOf(storedKey: string): string {
   return contentCacheOf(separator === -1 ? storedKey : storedKey.slice(separator + 1));
 }
 
-/** La taille rangée par cache, les contenus regroupés par préfixe. */
+/**
+ * La taille rangée par cache, les contenus regroupés par préfixe. La taille
+ * en clair n'est rendue que si CHAQUE ligne du cache la porte : une somme
+ * partielle se lirait comme un taux de compression faux.
+ */
 export function sizesByContentCache(
-  rows: readonly { readonly key: string; readonly bytes: number }[],
+  rows: readonly {
+    readonly key: string;
+    readonly bytes: number;
+    readonly rawBytes: number | null;
+  }[],
 ): ReadonlyMap<string, CacheSize> {
   const sizes = new Map<string, CacheSize>();
   for (const row of rows) {
     const cache = storedContentCacheOf(row.key);
-    const kept = sizes.get(cache) ?? { bytes: 0, entries: 0 };
-    sizes.set(cache, { bytes: kept.bytes + row.bytes, entries: kept.entries + 1 });
+    const kept = sizes.get(cache) ?? { bytes: 0, entries: 0, rawBytes: 0 };
+    sizes.set(cache, {
+      bytes: kept.bytes + row.bytes,
+      entries: kept.entries + 1,
+      rawBytes: addKnown(kept.rawBytes, row.rawBytes),
+    });
   }
   return sizes;
+}
+
+/** Une somme de tailles connues : une inconnue rend le total inconnu. */
+export function addKnown(total: number | null, bytes: number | null): number | null {
+  return total === null || bytes === null ? null : total + bytes;
 }
 
 const CONTENT_PATH = /^\/contents\/([^/]+)$/u;

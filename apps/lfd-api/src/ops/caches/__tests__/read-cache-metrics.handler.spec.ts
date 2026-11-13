@@ -79,6 +79,8 @@ describe("ReadCacheMetricsHandler", () => {
             bytes: 900,
             entries: 1,
             persons: 2,
+            rawBytes: 7200,
+            tooOld: 0,
           },
         ],
         peaks: [{ hourMs: CURRENT, perSecond: 5 }],

@@ -30,6 +30,7 @@ describe("objet des journées — les contenus versionnés", () => {
       kind: "content-read",
       key: contentKeyOf("abc", "catalog-admin"),
       version: 42,
+      revisionPrefix: "r:abc/",
     });
     expect(store?.kind).toBe("content-store");
   });
@@ -41,7 +42,12 @@ describe("objet des journées — les contenus versionnés", () => {
       new URL(`${URL_BASE}/contents/${encodeURIComponent(key)}?revision=abc&version=7`),
     );
 
-    expect(read).toEqual({ kind: "content-read", key: contentKeyOf("abc", key), version: 7 });
+    expect(read).toEqual({
+      kind: "content-read",
+      key: contentKeyOf("abc", key),
+      version: 7,
+      revisionPrefix: "r:abc/",
+    });
   });
 
   it("deux révisions ne partagent pas une clé", () => {

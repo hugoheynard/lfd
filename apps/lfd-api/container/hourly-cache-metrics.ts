@@ -22,13 +22,15 @@ const COLUMN_OF: Readonly<Record<CacheMetricEvent, string>> = {
   miss: "misses",
   store: "stores",
   too_large: "too_large",
+  too_old: "too_old",
 };
 
 const SCHEMA = [
   "CREATE TABLE IF NOT EXISTS metrics_hourly (cache TEXT NOT NULL, hour INTEGER NOT NULL, " +
     "hits INTEGER NOT NULL DEFAULT 0, misses INTEGER NOT NULL DEFAULT 0, " +
     "stores INTEGER NOT NULL DEFAULT 0, too_large INTEGER NOT NULL DEFAULT 0, " +
-    "bytes INTEGER, entries INTEGER, persons INTEGER NOT NULL DEFAULT 0, " +
+    "bytes INTEGER, entries INTEGER, persons INTEGER NOT NULL DEFAULT 0, raw_bytes INTEGER, " +
+    "too_old INTEGER NOT NULL DEFAULT 0, " +
     "PRIMARY KEY (cache, hour))",
   // Les empreintes de l'heure EN COURS seulement : vidées à la clôture de
   // l'heure, seul leur compte reste dans `metrics_hourly.persons`.
@@ -48,6 +50,8 @@ interface StoredRow extends Record<string, MetricsSqlValue> {
   bytes: number | null;
   entries: number | null;
   persons: number;
+  raw_bytes: number | null;
+  too_old: number;
 }
 
 interface PeakRow extends Record<string, MetricsSqlValue> {
@@ -76,6 +80,7 @@ export class HourlyCacheMetrics {
         this.sql.exec(statement);
       }
     });
+    this.safely(() => this.addMissingColumns());
   }
 
   /** Une requête reçue, toutes routes confondues : le pic par seconde. */
@@ -110,16 +115,21 @@ export class HourlyCacheMetrics {
     });
   }
 
-  /** Relève la taille rangée du cache ; le dernier relevé de l'heure l'emporte. */
+  /**
+   * Relève la taille rangée du cache — telle que l'objet la garde, et en
+   * clair quand elle est connue ; le dernier relevé de l'heure l'emporte.
+   */
   size(cache: string, size: CacheSize, nowMs: number): void {
     this.safely(() => {
       this.sql.exec(
-        "INSERT INTO metrics_hourly (cache, hour, bytes, entries) VALUES (?, ?, ?, ?) " +
-          "ON CONFLICT(cache, hour) DO UPDATE SET bytes = excluded.bytes, entries = excluded.entries",
+        "INSERT INTO metrics_hourly (cache, hour, bytes, entries, raw_bytes) VALUES (?, ?, ?, ?, ?) " +
+          "ON CONFLICT(cache, hour) DO UPDATE SET bytes = excluded.bytes, " +
+          "entries = excluded.entries, raw_bytes = excluded.raw_bytes",
         cache,
         hourOf(nowMs),
         size.bytes,
         size.entries,
+        size.rawBytes,
       );
     });
   }
@@ -141,7 +151,7 @@ export class HourlyCacheMetrics {
   private rows(sinceMs: number): readonly CacheMetricsRow[] {
     return this.sql
       .exec<StoredRow>(
-        "SELECT cache, hour, hits, misses, stores, too_large, bytes, entries, persons " +
+        "SELECT cache, hour, hits, misses, stores, too_large, bytes, entries, persons, raw_bytes, too_old " +
           "FROM metrics_hourly WHERE hour >= ? ORDER BY cache, hour",
         hourOf(sinceMs),
       )
@@ -156,6 +166,8 @@ export class HourlyCacheMetrics {
         bytes: row.bytes,
         entries: row.entries,
         persons: row.persons,
+        rawBytes: row.raw_bytes,
+        tooOld: row.too_old,
       }));
   }
 
@@ -208,6 +220,26 @@ export class HourlyCacheMetrics {
     this.sql.exec("DELETE FROM served_persons WHERE hour < ?", hour);
     this.sql.exec("DELETE FROM metrics_hourly WHERE hour < ?", oldestKeptHour(nowMs));
     this.sql.exec("DELETE FROM object_peaks WHERE hour < ?", oldestKeptHour(nowMs));
+  }
+
+  /**
+   * La taille en clair et les rangements trop vieux, ajoutés à une table
+   * créée avant eux. SQLite n'a pas d'`ADD COLUMN IF NOT EXISTS` : on lit les
+   * colonnes présentes avant d'ajouter.
+   */
+  private addMissingColumns(): void {
+    const present = new Set(
+      this.sql
+        .exec<{ name: string }>("SELECT name FROM pragma_table_info('metrics_hourly')")
+        .toArray()
+        .map((column) => column.name),
+    );
+    if (!present.has("raw_bytes")) {
+      this.sql.exec("ALTER TABLE metrics_hourly ADD COLUMN raw_bytes INTEGER");
+    }
+    if (!present.has("too_old")) {
+      this.sql.exec("ALTER TABLE metrics_hourly ADD COLUMN too_old INTEGER NOT NULL DEFAULT 0");
+    }
   }
 
   private safely(work: () => void): void {

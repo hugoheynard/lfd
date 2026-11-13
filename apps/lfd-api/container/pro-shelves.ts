@@ -111,7 +111,7 @@ export class ProShelves extends DurableObject<ProShelvesEnv> {
       if (size !== undefined) {
         this.metrics.size(
           PRO_SHELVES_METRICS_CACHE,
-          { bytes: size.bytes ?? 0, entries: size.entries },
+          { bytes: size.bytes ?? 0, entries: size.entries, rawBytes: null },
           nowMs,
         );
       }

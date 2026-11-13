@@ -194,6 +194,21 @@ describe("objet des journées — la table des contenus de journée", () => {
     );
   });
 
+  /** Régression : une journée de plus de trois jours était rangée (201) puis effacée dans le même appel. */
+  it("ne range pas une journée que le ménage oublierait aussitôt : 202, rien d'écrit, compté trop vieux", () => {
+    const { table, metrics, keys } = around();
+    const today = Date.UTC(2030, 2, 12);
+    const old = call("PUT", "orders:1", "2030-03-08"); // J−4
+
+    const reply = table.answer(old, new Uint8Array([1]), 1, today, null);
+
+    expect(reply.status).toBe(DAY_CONTENT_KEPT_STATUS);
+    expect(keys()).toEqual([]);
+    expect(metrics.read(0).rows).toEqual([
+      expect.objectContaining({ cache: "day-worksheet", tooOld: 1, stores: 0 }),
+    ]);
+  });
+
   it("refuse une charge au-delà du plafond ou vide (413), et ne la range pas", () => {
     const { table, read } = around();
     const tooBig = new Uint8Array(CONTENT_MAX_BYTES + 1);
@@ -212,7 +227,7 @@ describe("objet des journées — la table des contenus de journée", () => {
     read(call("GET", "orders:2"));
 
     const [row] = metrics.read(0).rows.filter((r) => r.cache === "day-worksheet");
-    expect(row).toMatchObject({ hits: 1, misses: 1, stores: 1, bytes: 2, entries: 1 });
+    expect(row).toMatchObject({ hits: 1, misses: 1, stores: 1, bytes: 2, entries: 1, rawBytes: 2 });
   });
 
   it("signe son propre 404 de lecture, pour que l'API le distingue d'un appel non aiguillé", async () => {

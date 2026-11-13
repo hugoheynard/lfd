@@ -279,10 +279,10 @@ describe("la porte et ses droits, sujet par sujet", () => {
     await ctx.asSub(E2E_STAFF_SUB).get(`${VERSIONS}`).expect(400);
   });
 
-  it("l'ancienne porte `admin/day-versions` reste servie", async () => {
+  it("l'ancienne porte `admin/day-versions` n'est plus servie", async () => {
     await ctx
       .asSub(E2E_STAFF_SUB)
       .get(`/admin/day-versions?date=${DAY}&journals=orders`)
-      .expect(200);
+      .expect(404);
   });
 });

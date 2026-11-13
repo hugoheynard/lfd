@@ -31,7 +31,10 @@ const SCHEMA =
 export const DAY_CONTENT_ABSENT_HEADER = "x-day-content";
 export const DAY_CONTENT_ABSENT = "absent";
 
-/** Statut d'un rangement refusé parce que la ligne gardée est plus récente ou incomparable. */
+/**
+ * Statut d'un rangement non écrit : la ligne gardée est plus récente ou
+ * incomparable, ou la journée est déjà assez vieille pour être oubliée.
+ */
 export const DAY_CONTENT_KEPT_STATUS = 202;
 
 interface TagRow extends Record<string, MetricsSqlValue> {
@@ -46,6 +49,8 @@ interface BodyRow extends Record<string, MetricsSqlValue> {
 interface SizeRow extends Record<string, MetricsSqlValue> {
   bytes: number | null;
   entries: number;
+  raw_bytes: number | null;
+  raw_known: number;
 }
 
 /** Ce qu'un appel rend : le statut, et les octets d'une lecture servie. */
@@ -108,6 +113,10 @@ export class DayContentsTable {
       const reply = this.read(call);
       this.metrics.count(cache, reply.status === 200 ? "hit" : "miss", nowMs, person);
       return reply;
+    }
+    if (isForgotten(call.day, nowMs)) {
+      this.metrics.count(cache, "too_old", nowMs);
+      return { status: DAY_CONTENT_KEPT_STATUS, body: null };
     }
     const reply = this.store(call, body ?? new Uint8Array(), rawBytes, nowMs);
     if (reply.status === 413) {
@@ -177,14 +186,33 @@ export class DayContentsTable {
   private recordSize(screen: string, cache: string, nowMs: number): void {
     const [size] = this.sql
       .exec<SizeRow>(
-        "SELECT SUM(length(body)) AS bytes, COUNT(*) AS entries FROM day_contents WHERE screen = ?",
+        "SELECT SUM(length(body)) AS bytes, COUNT(*) AS entries, SUM(raw_bytes) AS raw_bytes, " +
+          "COUNT(raw_bytes) AS raw_known FROM day_contents WHERE screen = ?",
         screen,
       )
       .toArray();
     if (size !== undefined) {
-      this.metrics.size(cache, { bytes: size.bytes ?? 0, entries: size.entries }, nowMs);
+      this.metrics.size(
+        cache,
+        {
+          bytes: size.bytes ?? 0,
+          entries: size.entries,
+          // Une somme partielle se lirait comme un taux de compression faux.
+          rawBytes: size.raw_known === size.entries ? (size.raw_bytes ?? 0) : null,
+        },
+        nowMs,
+      );
     }
   }
+}
+
+/**
+ * Une journée que le ménage effacerait au même rangement (`forget`) : la
+ * ranger écrirait pour rien, et chaque ouverture la relirait en base pour la
+ * ranger encore. On ne l'écrit pas.
+ */
+function isForgotten(day: string, nowMs: number): boolean {
+  return day < oldestKeptDay(nowMs);
 }
 
 /** Les octets dans un `ArrayBuffer` à soi : SQLite range un BLOB, pas une vue. */

@@ -11,8 +11,8 @@ import { PrismaDeliveryDayVersionReader } from "./infrastructure/prisma-delivery
 /**
  * **Le journal des journées de la livraison** (`plan-schema-delivery.md`,
  * SD-D3), rangé à part pour que `delivery.module.ts` reste lisible : lire la
- * version d'une journée (la source `delivery` de la porte unique
- * `admin/day-versions`), et balayer les traces anciennes. Deux ports, deux
+ * version d'une journée (la source `delivery` de la porte
+ * `admin/versions`), et balayer les traces anciennes. Deux ports, deux
  * adaptateurs (ISP).
  */
 export const DAY_JOURNAL_CONTROLLERS: readonly Type[] = [DeliveryDayChangeSweepController];

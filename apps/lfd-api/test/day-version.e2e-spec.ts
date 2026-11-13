@@ -10,9 +10,8 @@ import { randomUUID } from "node:crypto";
  * version, un écran resterait figé sans le dire — c'est ce que cette suite
  * est là pour voir.
  *
- * La version se lit par la porte unique `GET admin/day-versions` (D8,
- * 2026-11-03), qui a remplacé les routes par journal du lot V2 ; ses droits,
- * journal par journal, sont éprouvés à la fin.
+ * La version se lit par la porte `GET admin/versions` ; ses droits, journal
+ * par journal, sont éprouvés à la fin.
  */
 import type { OpenedPackingContainer } from "@lfd/contracts";
 
@@ -468,14 +467,14 @@ describe("la porte unique des versions de journée (D8)", () => {
 
   it("refuse un journal inconnu en le nommant", async () => {
     const response = await staff()
-      .get(`${DAY_VERSIONS}?date=${DAY}&journals=orders,stock`)
+      .get(`${DAY_VERSIONS}?date=${DAY}&subjects=orders,stock`)
       .expect(400);
     expect(JSON.stringify(response.body)).toContain("stock");
   });
 
   it("refuse une date absente ou mal formée, et une liste absente", async () => {
-    await staff().get(`${DAY_VERSIONS}?journals=orders`).expect(400);
-    await staff().get(`${DAY_VERSIONS}?date=03/10/2026&journals=orders`).expect(400);
+    await staff().get(`${DAY_VERSIONS}?subjects=orders`).expect(400);
+    await staff().get(`${DAY_VERSIONS}?date=03/10/2026&subjects=orders`).expect(400);
     await staff().get(`${DAY_VERSIONS}?date=${DAY}`).expect(400);
   });
 

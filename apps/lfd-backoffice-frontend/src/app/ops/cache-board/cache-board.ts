@@ -11,11 +11,11 @@ import {
   FoldListboxComponent,
   FoldLoadingStateComponent,
   type FoldSelectOption,
-  type FoldTableColumn,
   type FoldTableEmpty,
 } from 'fold-ng';
 
 import type {
+  CacheFallbackCount,
   CacheMetricsReport,
   SharedCacheFigures,
   SharedCacheSeries,
@@ -24,6 +24,7 @@ import type {
 
 import { bytesLabel, chartLineOf, type ChartLine } from '../cache-chart';
 import { OpsService } from '../ops.service';
+import { CACHE_COLUMNS, FALLBACK_COLUMNS } from './cache-board-columns';
 
 type LoadState = 'loading' | 'error' | 'ready';
 
@@ -42,26 +43,30 @@ const OBJECT_NOTICE: Readonly<Record<'unreachable' | 'not-configured', string>> 
   'not-configured': 'pas configuré sur cette instance : il ne compte rien.',
 };
 
-/** Le total de plusieurs caches. Les personnes ne s'additionnent pas : on garde le plus fort. */
+/**
+ * Le total de plusieurs caches. Les personnes ne s'additionnent pas : on garde
+ * le plus fort. La taille en clair ne somme que les caches qui la connaissent
+ * (les contenus) : la tête le dit.
+ */
 function combine(figures: readonly SharedCacheFigures[]): {
   readonly hits: number;
   readonly hitRate: number | null;
   readonly persons: number;
   readonly bytes: number | null;
+  readonly rawBytes: number | null;
 } {
   const hits = figures.reduce((sum, f) => sum + f.hits, 0);
   const reads = hits + figures.reduce((sum, f) => sum + f.misses, 0);
   const sizes = figures.map((f) => f.bytes).filter((b): b is number => b !== null);
+  const raw = figures.map((f) => f.rawBytes).filter((b): b is number => b !== null);
   return {
     hits,
     hitRate: reads === 0 ? null : hits / reads,
     persons: Math.max(0, ...figures.map((f) => f.persons)),
     bytes: sizes.length === 0 ? null : sizes.reduce((sum, b) => sum + b, 0),
+    rawBytes: raw.length === 0 ? null : raw.reduce((sum, b) => sum + b, 0),
   };
 }
-
-const rate = (value: number | null): string =>
-  value === null ? '—' : `${(value * 100).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} %`;
 
 /**
  * **Onglet Cache de Santé** — les compteurs que les objets partagés tiennent
@@ -171,59 +176,14 @@ export class CacheBoard {
         );
   });
 
-  protected readonly columns: readonly FoldTableColumn<SharedCacheSeries>[] = [
-    { key: 'cache', label: 'Cache', value: (row) => row.cache },
-    { key: 'object', label: 'Objet', value: (row) => row.object },
-    {
-      key: 'rateHour',
-      label: 'Réussite (heure)',
-      numeric: true,
-      value: (row) => rate(row.lastHour.hitRate),
-    },
-    {
-      key: 'rateDay',
-      label: 'Réussite (24 h)',
-      numeric: true,
-      value: (row) => rate(row.last24h.hitRate),
-    },
-    {
-      key: 'hits',
-      label: 'Lectures évitées (24 h)',
-      numeric: true,
-      value: (row) => row.last24h.hits,
-    },
-    {
-      key: 'misses',
-      label: 'Relectures (24 h)',
-      numeric: true,
-      value: (row) => row.last24h.misses,
-    },
-    {
-      key: 'stores',
-      label: 'Rangements (24 h)',
-      numeric: true,
-      value: (row) => row.last24h.stores,
-    },
-    {
-      key: 'tooLarge',
-      label: 'Refusés, trop gros',
-      numeric: true,
-      value: (row) => row.last24h.tooLarge,
-    },
-    {
-      key: 'bytes',
-      label: 'Taille rangée',
-      numeric: true,
-      value: (row) => bytesLabel(row.last24h.bytes),
-    },
-    { key: 'entries', label: 'Entrées', numeric: true, value: (row) => row.last24h.entries ?? '—' },
-    {
-      key: 'persons',
-      label: 'Personnes servies',
-      numeric: true,
-      value: (row) => row.last24h.persons,
-    },
-  ];
+  protected readonly columns = CACHE_COLUMNS;
+  protected readonly fallbackColumns = FALLBACK_COLUMNS;
+  protected readonly fallbacks = computed(() => this.report()?.instance.fallbacks ?? []);
+  protected readonly fallbackKey = (row: CacheFallbackCount): string => row.store;
+  protected readonly noFallback: FoldTableEmpty = {
+    title: 'Aucun repli',
+    subtitle: "Cette instance n'a relu la base pour aucun cache sur sa fenêtre.",
+  };
 
   protected readonly nothing: FoldTableEmpty = {
     title: 'Aucun cache compté',

@@ -11,7 +11,9 @@ const figures = (over: Partial<SharedCacheFigures>): SharedCacheFigures => ({
   hitRate: null,
   stores: 0,
   tooLarge: 0,
+  tooOld: 0,
   bytes: null,
+  rawBytes: null,
   entries: null,
   persons: 0,
   ...over,
@@ -36,7 +38,15 @@ const REPORT: CacheMetricsReport = {
       cache: 'day-versions',
       object: 'day-versions',
       lastHour: figures({ hits: 10, misses: 0, hitRate: 1, bytes: 1024, persons: 6 }),
-      last24h: figures({ hits: 100, misses: 0, hitRate: 1, bytes: 1024, persons: 7 }),
+      last24h: figures({
+        hits: 100,
+        misses: 0,
+        hitRate: 1,
+        bytes: 1024,
+        rawBytes: 10_240,
+        tooOld: 4,
+        persons: 7,
+      }),
       points: [],
     },
   ],
@@ -70,7 +80,15 @@ const REPORT: CacheMetricsReport = {
         windowMinutes: 30,
       },
     ],
-    fallbacks: [{ store: 'pro-shelves', count: 3, reasons: { timeout: 3 }, breakerOpenings: 0 }],
+    fallbacks: [
+      { store: 'pro-shelves', count: 3, reasons: { timeout: 3 }, breakerOpenings: 0 },
+      {
+        store: 'day_contents',
+        count: 7,
+        reasons: { error: 2, breaker_open: 5 },
+        breakerOpenings: 1,
+      },
+    ],
     outcomes: [],
   },
 };
@@ -119,7 +137,26 @@ describe('CacheBoard', () => {
     expect(values[3]).toBe('6');
     expect(values[4]).toContain('12');
     expect(values[5]).toContain('21');
-    expect(values[6]).toBe('3');
+    expect(values[6]).toBe('10');
+  });
+
+  it('montre la taille rangée et la taille en clair, en tête et par cache', async () => {
+    const f = await render(new FakeOps());
+    const note = (f.nativeElement as HTMLElement).querySelectorAll('.gauge-note')[2];
+    expect(note?.textContent).toContain('en clair');
+    expect(note?.textContent).toContain('10 ko');
+    expect(text(f)).toContain('En clair');
+    expect(text(f)).toContain('Refusés, journée trop vieille');
+  });
+
+  it('détaille les replis par raison, et les ouvertures du disjoncteur', async () => {
+    const f = await render(new FakeOps());
+    const tables = (f.nativeElement as HTMLElement).querySelectorAll('fold-data-table');
+    const fallbacks = tables[1]?.textContent ?? '';
+    expect(fallbacks).toContain('day_contents');
+    expect(fallbacks).toContain('Disjoncteur ouvert');
+    expect(fallbacks).toContain('Ouvertures du disjoncteur');
+    expect(fallbacks).toContain('Délai dépassé');
   });
 
   it('dit un objet injoignable par un encart, et garde le reste', async () => {

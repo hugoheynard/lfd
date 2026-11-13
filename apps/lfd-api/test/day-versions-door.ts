@@ -1,25 +1,25 @@
-import type { DayJournal, DayVersionsView } from "@lfd/contracts";
+import type { DayJournal, VersionsView } from "@lfd/contracts";
 import type request from "supertest";
 
 import { jsonBody } from "./e2e-harness.js";
 
 /**
- * **La porte unique des versions de journée**, vue des e2e
- * (`documentation/caching-usage/version-par-journee.md`, D8, 2026-11-03).
- * Les six routes par journal sont retirées : chaque suite lit ici.
+ * **La porte des versions**, vue des e2e pour les sujets journaliers
+ * (`documentation/caching-usage/le-cache-du-back-office.md`, § 2.3) : chaque
+ * suite lit ici.
  */
-export const DAY_VERSIONS = "/admin/day-versions";
+export const DAY_VERSIONS = "/admin/versions";
 
 /** Les versions permises à cet agent, pour ces journaux et ce jour. */
 export async function dayVersionsOf(
   agent: request.Agent,
   day: string,
   journals: readonly DayJournal[],
-): Promise<DayVersionsView> {
+): Promise<VersionsView> {
   const response = await agent
-    .get(`${DAY_VERSIONS}?date=${day}&journals=${journals.join(",")}`)
+    .get(`${DAY_VERSIONS}?date=${day}&subjects=${journals.join(",")}`)
     .expect(200);
-  const view = jsonBody<DayVersionsView>(response);
+  const view = jsonBody<VersionsView>(response);
   expect(view.date).toBe(day);
   return view;
 }

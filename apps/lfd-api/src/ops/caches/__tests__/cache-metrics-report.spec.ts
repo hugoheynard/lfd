@@ -21,6 +21,8 @@ function hour(hourMs: number, fields: Partial<SharedCacheHour> = {}): SharedCach
     bytes: null,
     entries: null,
     persons: 0,
+    rawBytes: null,
+    tooOld: 0,
     ...fields,
   };
 }
@@ -60,6 +62,37 @@ describe("sharedCacheSeries", () => {
 
     expect(series?.points.map((one) => one.bytes)).toEqual([500, 500]);
     expect(series?.lastHour).toMatchObject({ bytes: 500, entries: 3, hitRate: 1 });
+  });
+
+  it("reporte la taille en clair avec la taille rangée, et somme les rangements trop vieux", () => {
+    const [series] = sharedCacheSeries(
+      [
+        reading([
+          hour(CURRENT - 2 * HOUR_MS, { stores: 1, bytes: 500, rawBytes: 4000, entries: 3 }),
+          hour(CURRENT - HOUR_MS, { tooOld: 2 }),
+          hour(CURRENT, { tooOld: 1 }),
+        ]),
+      ],
+      NOW,
+    );
+
+    expect(series?.points.map((one) => one.rawBytes)).toEqual([4000, 4000, 4000]);
+    expect(series?.lastHour).toMatchObject({ bytes: 500, rawBytes: 4000, tooOld: 1 });
+    expect(series?.last24h.tooOld).toBe(3);
+  });
+
+  it("une taille rangée relevée sans taille en clair rend celle-ci inconnue", () => {
+    const [series] = sharedCacheSeries(
+      [
+        reading([
+          hour(CURRENT - HOUR_MS, { bytes: 500, rawBytes: 4000, entries: 1 }),
+          hour(CURRENT, { bytes: 600, rawBytes: null, entries: 2 }),
+        ]),
+      ],
+      NOW,
+    );
+
+    expect(series?.lastHour).toMatchObject({ bytes: 600, rawBytes: null });
   });
 
   it("n'invente pas de taux sans lecture", () => {

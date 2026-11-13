@@ -131,9 +131,6 @@ journalier est demandé ; un sujet inconnu est un 400 qui le nomme. Le droit
 se tranche **par sujet** dans `get-versions.handler.ts` : un sujet non permis
 est absent, sans refuser les autres.
 
-L'ancienne porte `GET admin/day-versions` (`day-versions.controller.ts`) est
-encore servie pour un onglet resté sur un ancien bundle (§ 7).
-
 L'objet garde deux sortes de cartes : (révision, journée) et (révision,
 `global`). **La carte rangée contient tous les sujets de sa portée** ; le
 droit filtre après la lecture, jamais avant (un poste limité ne fait pas
@@ -177,12 +174,10 @@ seul veilleur.
   l'objet par le **préfixe du chemin** (`container/internal-objects.ts` :
   `/rayons/…` → `ProShelves`, `/journees/…` → `DayVersions`, préfixe retiré,
   404 sinon). Deux hôtes fictifs distincts livraient en production les appels
-  des journées à `ProShelves` (constaté dans l'onglet Cache le 2026-11-12) :
-  l'objet répondait 400, l'API relisait la base, rien de faux n'était servi
-  mais rien n'était gardé. La cause exacte côté runtime n'est pas prouvée
-  (non reproduite sous `wrangler dev`) ; le préfixe ne dépend d'aucun choix
-  d'hôte. Les anciens hôtes `rayons.interne` et `journees.interne` restent
-  aiguillés par l'hôte, pour un conteneur démarré avant la bascule.
+  des journées à `ProShelves` : l'objet répondait 400, l'API relisait la
+  base, rien de faux n'était servi mais rien n'était gardé. La cause exacte
+  côté runtime n'est pas prouvée (non reproduite sous `wrangler dev`) ; le
+  préfixe ne dépend d'aucun choix d'hôte.
 - **Les briques de l'appel** (`apps/lfd-api/src/platform/cache-calls/`) :
   garde borné (`bounded-call-guard.ts`), disjoncteur (`call-breaker.ts`),
   mesure par cache nommé (`cache-call-timings.ts`), partagées avec le rayon.
@@ -196,7 +191,12 @@ seul veilleur.
   adaptateurs par l'aiguillage du Worker.
 - **Les contenus** (`versioned-contents.ts`, port `VersionedContentCache`) :
   une ligne par clé, remplacée à chaque rangement, sous un numéro. Une clé
-  admet `[a-z0-9:-]{1,64}`.
+  admet `[a-z0-9:-]{1,64}`. Côté objet, la table `contents`
+  (`apps/lfd-api/container/versioned-contents.ts`, décisions dans
+  `versioned-contents-store.ts`) : un rangement **efface les lignes de toute
+  autre révision du code**, que ce code ne lira plus. Pendant un déploiement,
+  deux révisions qui rangent tour à tour s'effacent l'une l'autre, ce qui ne
+  coûte qu'une relecture en base le temps que l'ancienne s'arrête.
 - **La charge est compressée** (décidé par Hugo le 2026-11-13) : l'API la
   compresse en gzip avant l'envoi et la décompresse à la lecture
   (`apps/lfd-api/src/platform/day-versions/content-compression.ts`, `CompressionStream` du standard Web, global sous
@@ -235,9 +235,12 @@ global (`companies`) s'y ajoute —, en base, avant ses données.
   place, réponse 202 : la lecture suivante lit des numéros ≥ aux deux et la
   remplace.
 - **Le ménage se fait au rangement** : les journées de plus de 3 jours
-  (`FORGET_AFTER_DAYS`) avant celle rangée s'oublient, toutes révisions
-  comprises, et une autre révision du même écran et de la même journée est
-  retirée.
+  (`FORGET_AFTER_DAYS`) avant l'horloge de l'objet s'oublient, toutes
+  révisions comprises, et une autre révision du même écran et de la même
+  journée est retirée. Le rangement d'une journée déjà assez vieille pour
+  être oubliée n'est **pas écrit** (202) et se compte « trop vieux » dans
+  l'onglet Cache : l'écrire pour l'effacer aussitôt ferait relire la base à
+  chaque ouverture pour rien.
 - **La route** : `GET` / `PUT /journees/day-contents/<écran>/<AAAA-MM-JJ>?revision=…&tag=…`,
   sous le même hôte interne ; plafond de 1 Mo compressé, 413 au-delà.
 - **Côté API**, `DayContents.contentOf({ screen, day, versions }, load, { accepts, storable })`
@@ -504,15 +507,15 @@ changement du PIM (`get-product-detail.ts`).
 - **Les compteurs vivent dans les objets** (`ProShelves` et `DayVersions`),
   seul endroit commun à tous les conteneurs : par cache et par heure, les
   lectures servies (réussites), les relectures (ratés), les rangements, les
-  refus trop gros, la taille rangée (octets **compressés** pour les contenus,
-  tels que l'objet les garde ; entrées), le pic de requêtes en
-  une seconde et les personnes distinctes servies. Table SQLite horaire
+  refus trop gros, les refus « journée trop vieille » (contenus de journée),
+  la taille rangée (octets **compressés** pour les contenus, tels que l'objet
+  les garde ; entrées), la même taille **en clair** (somme des `raw_bytes`
+  des lignes ; inconnue si une ligne ne la porte pas, et pour les rayons et
+  les numéros), le pic de requêtes en une seconde et les personnes
+  distinctes servies. Table SQLite horaire
   gardée 30 jours (`container/cache-metrics-store.ts`,
   `hourly-cache-metrics.ts`, `METRICS_KEEP_DAYS`), lue par
   `GET <adresse de l'objet>/metrics`.
-- **La taille en clair** des contenus est gardée par ligne
-  (`contents.raw_bytes`) mais pas encore relevée dans la table horaire ni
-  montrée à l'écran.
 - **Les personnes** : l'API joint à chaque appel l'empreinte
   `sha256(sel, type, identifiant interne)` dans l'en-tête `x-cache-person`
   (`platform/cache-calls/served-person.ts`) — jamais d'e-mail, de nom ni de
@@ -524,17 +527,17 @@ changement du PIM (`get-product-detail.ts`).
   replis et durées d'appel mesurés par l'API.
 - **L'écran** : onglet Cache de Santé
   (`apps/lfd-backoffice-frontend/src/app/ops/cache-board/`), chiffres clés en
-  tête, courbes de taille et de taux de réussite par cache. Relu à
-  l'ouverture.
+  tête (taille rangée, et en clair pour les contenus), courbes de taille et
+  de taux de réussite par cache, un tableau par cache (taille rangée et en
+  clair, refus trop gros et trop vieux), et les replis de l'instance par
+  cache et par raison (délai, erreur, illisible, disjoncteur ouvert) avec
+  les ouvertures du disjoncteur. Relu à l'ouverture.
 - Un compteur ne fait jamais échouer ni ralentir une lecture : il s'écrit en
   fin de réponse, et une erreur de comptage est avalée et journalisée une
   fois.
 
 ## 7. Reste à faire
 
-- **Retirer au déploiement suivant** les anciens hôtes `rayons.interne` et
-  `journees.interne` (`LEGACY_OBJECT_HOSTS`), et l'ancienne porte
-  `GET admin/day-versions`.
 - 🔴 **Les écrans de journée ne sont jamais servis depuis l'objet en
   production** (cause non trouvée) : l'onglet Cache compte 0 réussite,
   1 relecture et 1 rangement après plusieurs ouvertures d'un écran de
@@ -552,18 +555,12 @@ changement du PIM (`get-product-detail.ts`).
     `<cache>.breaker_opened`, `bounded-call-guard.ts`) ; un 404 qui ne vient
     pas de l'objet est journalisé (`day_contents.unrouted`), l'objet signant
     son propre raté (`x-day-content: absent`).
-  - Vu en local, hors de ce défaut : une journée de plus de trois jours
-    (`FORGET_AFTER_DAYS`) est rangée puis effacée dans le même appel par le
-    ménage ; chaque ouverture la relit en base et la range pour rien.
-    Le plan du lot 2 reste ouvert jusqu'à sa résolution.
+  - Le plan du lot 2 reste ouvert jusqu'à sa résolution.
 - **Les écrans de journée sont branchés** (§ 3.2 à 3.5). Reste à lire, sur
   l'environnement déployé, les appels par jour de chaque route (onglet Ops)
   pour chiffrer le gain, et à écrire le seuil sous lequel il ne vaut pas
   l'objet. Plan bâti :
   [`plan-lot-2-ecrans-de-journee.md`](plan-lot-2-ecrans-de-journee.md).
-- **La taille en clair dans l'onglet Cache** : la colonne `contents.raw_bytes`
-  existe ; la relever dans `metrics_hourly` et la servir à l'écran reste à
-  faire.
 - **La mesure avant / après** des requêtes de l'écran Catalogue, de la liste
   et d'une fiche du PIM, d'un filtre de la matrice (journal des requêtes
   Prisma) : pas faite. Elle dira si un numéro par fiche du PIM vaut son prix.

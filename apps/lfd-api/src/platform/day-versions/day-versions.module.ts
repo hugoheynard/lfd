@@ -4,10 +4,8 @@ import { CallDeadline, NodeCallDeadline } from "../cache-calls/call-deadline.js"
 import { personStampedFetch } from "../cache-calls/served-person.js";
 import { AppConfig } from "../config/app-config.js";
 import { DayVersionsCache } from "./day-versions-cache.js";
-import { DayVersionsController } from "./day-versions.controller.js";
 import { VersionsController } from "./versions.controller.js";
 import { DurableObjectDayVersionsCache } from "./durable-object-day-versions-cache.js";
-import { GetDayVersionsHandler } from "./get-day-versions.handler.js";
 import { GetVersionsHandler } from "./get-versions.handler.js";
 import { NoDayVersionsCache } from "./no-day-versions-cache.js";
 import { ResilientDayVersionsCache } from "./resilient-day-versions-cache.js";
@@ -22,8 +20,7 @@ import { DurableObjectDayContentsCache } from "./durable-object-day-contents-cac
 import { NoDayContentsCache } from "./no-day-contents-cache.js";
 
 /**
- * Les portes des versions — `admin/versions`, et `admin/day-versions` le
- * temps d'un déploiement. Le registre qu'elles lisent (`VersionRegistry`)
+ * La porte des versions — `admin/versions`. Le registre qu'elles lisent (`VersionRegistry`)
  * n'est PAS fourni ici : `platform` ne connaît aucun
  * bloc, et c'est `appBootstrap/day-version-sources.module.ts` (global) qui le
  * construit à partir des sources des blocs.
@@ -33,7 +30,7 @@ import { NoDayContentsCache } from "./no-day-contents-cache.js";
  * « sans objet » — chaque question relit la base.
  */
 @Module({
-  controllers: [DayVersionsController, VersionsController],
+  controllers: [VersionsController],
   providers: [
     {
       provide: DayVersionsCache,
@@ -82,7 +79,6 @@ import { NoDayContentsCache } from "./no-day-contents-cache.js";
     { provide: CallDeadline, useClass: NodeCallDeadline },
     ResilientDayVersionsCache,
     ScopeVersions,
-    GetDayVersionsHandler,
     GetVersionsHandler,
   ],
   // Les contenus versionnés (`le-cache-du-back-office.md`, § 4.5) : la

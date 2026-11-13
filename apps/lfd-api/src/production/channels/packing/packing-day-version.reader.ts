@@ -2,7 +2,7 @@
  * **La version d'une journée au colisage** — port que le fournil DÉCLARE et que
  * le colisage IMPLÉMENTE (plan `colisage/colisage.md`, K2, §10.3).
  *
- * Le poste du fournil relit sa journée quand le journal `production` de `GET admin/day-versions`
+ * Le poste du fournil relit sa journée quand le journal `production` de `GET admin/versions`
  * change. Sur une journée `packing`, les gestes du poste écrivent au colisage,
  * dont le journal (`packing.day_change`) est à part (D3 de
  * `caching-usage/version-par-journee.md`) : sans lui, l'écran ne verrait

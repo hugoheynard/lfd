@@ -29,12 +29,21 @@ describe("compteurs des objets — décisions pures", () => {
 
   it("regroupe la taille rangée par préfixe, toutes révisions confondues", () => {
     const sizes = sizesByContentCache([
-      { key: "r:a/pim-product:1", bytes: 10 },
-      { key: "r:b/pim-product:2", bytes: 5 },
-      { key: "r:a/catalog-admin", bytes: 7 },
+      { key: "r:a/pim-product:1", bytes: 10, rawBytes: 40 },
+      { key: "r:b/pim-product:2", bytes: 5, rawBytes: 20 },
+      { key: "r:a/catalog-admin", bytes: 7, rawBytes: null },
     ]);
-    expect(sizes.get("pim-product")).toEqual({ bytes: 15, entries: 2 });
-    expect(sizes.get("catalog-admin")).toEqual({ bytes: 7, entries: 1 });
+    expect(sizes.get("pim-product")).toEqual({ bytes: 15, entries: 2, rawBytes: 60 });
+    expect(sizes.get("catalog-admin")).toEqual({ bytes: 7, entries: 1, rawBytes: null });
+  });
+
+  it("ne rend pas de taille en clair partielle : une ligne sans elle la rend inconnue", () => {
+    const sizes = sizesByContentCache([
+      { key: "r:a/pim-product:1", bytes: 10, rawBytes: 40 },
+      { key: "r:a/pim-product:2", bytes: 5, rawBytes: null },
+      { key: "r:a/pim-product:3", bytes: 5, rawBytes: 30 },
+    ]);
+    expect(sizes.get("pim-product")).toEqual({ bytes: 20, entries: 3, rawBytes: null });
   });
 
   it("comprend la lecture des compteurs, et seulement elle", () => {
