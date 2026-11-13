@@ -270,11 +270,14 @@ tournera pour la première fois, en mode rapport.
    plus ne touche que la boîte de l'administrateur ; une clé empêcherait de
    rejouer le contrôle après une correction de configuration).
 3. **Le « +1 » du réassort d'un site** : une clé par clic, admise ; garder ?
+   **Tranché par Hugo le 2026-11-13 : on garde** (chaque clic compte).
 4. **Cinq risques assumés à lien ou e-mail** (société créée, titulaire
    rattaché, membre client invité, membre du staff invité, lien de mot de
    passe) : à fermer par le plan « lien fabriqué à l'envoi ». Vu en route :
    une invitation reprise après le bail pourrait n'envoyer que le premier
    lien, devenu mort — à vérifier côté e-mails.
+   **Tranché par Hugo le 2026-11-13 : risque assumé gardé ; on vérifie le cas
+   du lien mort, et s'il existe, on ouvre le chantier « lien fabriqué à l'envoi ».**
 5. **L'IBAN de l'entité à l'écran du staff** : aujourd'hui réduit à ses 4
    derniers caractères (contrat actuel) ; l'afficher en entier ?
    **Tranché par Hugo le 2026-11-13 : on garde les 4 derniers caractères.**
