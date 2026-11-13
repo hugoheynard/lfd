@@ -266,6 +266,9 @@ tournera pour la première fois, en mode rapport.
    avec leur écran.
 2. **`mail-check`** : il envoie volontairement un nouvel essai à chaque appel ;
    risque assumé nommé, ou clé tirée de la révision ?
+   **Tranché par Hugo le 2026-11-13 : risque assumé, inchangé** (un essai de
+   plus ne touche que la boîte de l'administrateur ; une clé empêcherait de
+   rejouer le contrôle après une correction de configuration).
 3. **Le « +1 » du réassort d'un site** : une clé par clic, admise ; garder ?
 4. **Cinq risques assumés à lien ou e-mail** (société créée, titulaire
    rattaché, membre client invité, membre du staff invité, lien de mot de
