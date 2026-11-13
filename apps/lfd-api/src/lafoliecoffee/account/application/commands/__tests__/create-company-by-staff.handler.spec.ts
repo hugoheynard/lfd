@@ -10,6 +10,16 @@ import { CompanyDeclaredEvent } from "../../../domain/events/company-declared.ev
 import { CompanyRepository } from "../../../domain/ports/company.repository.js";
 import type { ContactDetailsInput } from "../../../domain/value-objects/contact-details.js";
 import {
+  MailSubjectDeliveries,
+  type SubjectMail,
+} from "../../../../../mail/channels/deliveries/mail-subject-deliveries.js";
+import type { MailSubjectType } from "../../../../../mail/channels/requests/mail-subject.js";
+import {
+  CompanyMemberReader,
+  type CompanyMemberRecord,
+} from "../../../domain/ports/company-member.repository.js";
+import { CompanyOpeningReplay } from "../../services/company-opening-replay.js";
+import {
   AccountAccessGranter,
   type AccessGranted,
   type AccessToGrant,
@@ -21,7 +31,7 @@ import { CreateCompanyByStaffHandler } from "../create-company-by-staff.handler.
 /** Accès doublé : capture la demande, ou échoue pour simuler un canal absent. */
 class FakeAccess extends AccountAccessGranter {
   readonly granted: AccessToGrant[] = [];
-  constructor(private readonly outcome: AccessGranted | Error) {
+  constructor(readonly outcome: AccessGranted | Error) {
     super();
   }
 
@@ -60,6 +70,58 @@ class ScopedUnitOfWork extends UnitOfWork {
       return;
     }
     this.pending.push(company);
+  }
+}
+
+/** Les membres tels que l'accès doublé les a laissés : un détenteur s'il a abouti. */
+class MembersLeftBy extends CompanyMemberReader {
+  constructor(private readonly access: FakeAccess) {
+    super();
+  }
+
+  listOf(): Promise<readonly CompanyMemberRecord[]> {
+    const outcome = this.access.outcome;
+    if (this.access.granted.length === 0 || outcome instanceof Error) {
+      return Promise.resolve([]);
+    }
+    return Promise.resolve([
+      {
+        userId: outcome.userId,
+        email: "camille@halles.fr",
+        firstName: "Camille",
+        lastName: "Rousseau",
+        phone: "",
+        role: "owner",
+        status: "invited",
+        joinedAt: new Date(0),
+      },
+    ]);
+  }
+}
+
+/** Le suivi tel que l'accès doublé l'a laissé : un e-mail accepté s'il est parti. */
+class MailsLeftBy extends MailSubjectDeliveries {
+  constructor(private readonly access: FakeAccess) {
+    super();
+  }
+
+  forSubjects(
+    _type: MailSubjectType,
+    ids: readonly string[],
+  ): Promise<ReadonlyMap<string, readonly SubjectMail[]>> {
+    const outcome = this.access.outcome;
+    if (outcome instanceof Error || !outcome.mailSent) {
+      return Promise.resolve(new Map());
+    }
+    const mail: SubjectMail = {
+      requestId: "mail_1",
+      template: "customer.access-opened",
+      requestedAt: new Date(0),
+      state: "accepted",
+      delivery: null,
+      deliveryAt: null,
+    };
+    return Promise.resolve(new Map(ids.map((id) => [id, [mail]])));
   }
 }
 
@@ -104,7 +166,14 @@ function doubles(
     options.access ?? { userId: "user_1", outcome: "identity_created", mailSent: true },
   );
   return {
-    handler: new CreateCompanyByStaffHandler(companies, access, events, inMemoryIntents(), uow),
+    handler: new CreateCompanyByStaffHandler(
+      companies,
+      access,
+      events,
+      inMemoryIntents(),
+      uow,
+      new CompanyOpeningReplay(new MembersLeftBy(access), new MailsLeftBy(access)),
+    ),
     access,
     unowned,
     owned,
@@ -164,6 +233,15 @@ describe("CreateCompanyByStaffHandler", () => {
     await expect(handler.execute(command())).resolves.toEqual(first);
     expect(unowned).toHaveLength(1);
     expect(access.granted).toHaveLength(1);
+  });
+
+  /** Régression : sans SIRET, rien ne refusait le rejeu d'une création — il déclarait une seconde société. */
+  it("un rejeu sans SIRET rend la même société, sans en déclarer une seconde", async () => {
+    const { handler, unowned } = doubles();
+
+    const first = await handler.execute(commandWithoutHolder());
+    await expect(handler.execute(commandWithoutHolder())).resolves.toEqual(first);
+    expect(unowned).toHaveLength(1);
   });
 
   it("crée la société SANS propriétaire et retourne son seul identifiant", async () => {
@@ -229,6 +307,15 @@ describe("CreateCompanyByStaffHandler", () => {
     // d'adresse, donc pas d'accès à ouvrir — et surtout pas d'incident à
     // annoncer.
     expect(access.granted).toEqual([]);
+  });
+
+  it("un rejeu après un accès en panne relit « failed », sans retenter l'accès", async () => {
+    const { handler, access } = doubles({ access: new Error("canal indisponible") });
+
+    const first = await handler.execute(command());
+    await expect(handler.execute(command())).resolves.toEqual(first);
+    expect(first.holder).toBe("failed");
+    expect(access.granted).toHaveLength(1);
   });
 
   it("distingue « pas de détenteur » d'un canal d'identité en panne", async () => {

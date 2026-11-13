@@ -25,6 +25,16 @@ const CONTACT = {
   role: "orders",
 };
 
+/** Une ouverture par l'équipe sur la seule enseigne, avec son détenteur. */
+export const COMPANY_WITHOUT_SIRET = {
+  enseigne: "Café du Rejeu",
+  primaryContact: {
+    firstName: "Karim",
+    lastName: "Benali",
+    email: "titulaire@replay.test",
+  },
+};
+
 const DELIVERY = {
   label: "Boutique",
   ligne1: "9 rue de la Roquette",
@@ -80,6 +90,10 @@ async function reviseStepScenario(ctx: E2eContext, prefix: "" | "/admin"): Promi
 
 /** Les comptes clients : contacts, adresses, KBIS, sous-comptes, procédures. */
 export const ACCOUNT_SCENARIOS: ScenarioSet = {
+  // Sans SIRET : rien d'autre que le scellement ne refuse une seconde société.
+  [routeKey(`${HTTP}/admin-companies.controller.ts`, "create")]: () =>
+    Promise.resolve({ sub: STAFF, path: "/admin/companies", body: COMPANY_WITHOUT_SIRET }),
+
   [routeKey(`${HTTP}/admin-company-contacts.controller.ts`, "add")]: async ({ ctx }) => {
     const company = await createCompany(ctx.prisma);
     return { sub: STAFF, path: `/admin/companies/${company.id}/contacts`, body: CONTACT };

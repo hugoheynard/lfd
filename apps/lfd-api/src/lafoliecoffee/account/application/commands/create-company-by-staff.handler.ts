@@ -3,19 +3,14 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
-import {
-  type IntentCodec,
-  OncePerIntent,
-  readIntentBoolean,
-  readIntentChoice,
-  readIntentString,
-} from "../../../../platform/intent/once-per-intent.js";
+import { CREATED_ID_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { Company } from "../../domain/entities/company.js";
 import { SiretAlreadyRegisteredError } from "../../domain/errors/account-errors.js";
 import { CompanyDeclaredEvent } from "../../domain/events/company-declared.event.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { ContactDetails } from "../../domain/value-objects/contact-details.js";
+import { CompanyOpeningReplay } from "../services/company-opening-replay.js";
 import { AccountAccessGranter } from "../services/grant-account-access.service.js";
 import { CreateCompanyByStaffCommand } from "./create-company-by-staff.command.js";
 
@@ -86,15 +81,24 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly intents: OncePerIntent,
     private readonly uow: UnitOfWork,
+    private readonly replay: CompanyOpeningReplay,
   ) {}
 
   /**
-   * **Une fois par intention** (revue, cas 4) : un second clic de même clé
-   * rend la société du premier, sans en déclarer une seconde ni renvoyer
-   * l'e-mail. Le sujet est le SIRET saisi, jamais l'adresse du contact.
+   * **Une fois par intention** : l'identifiant de la société est scellé dans
+   * la transaction qui l'écrit. Un rejeu de même clé — double clic, ou appel
+   * repris après le bail d'un premier tombé avant la fin — rend la société du
+   * premier, sans en déclarer une seconde ni rouvrir l'accès ni renvoyer
+   * l'e-mail ; le sort du détenteur et de l'e-mail est relu sur l'état réel.
+   * Le sujet est le SIRET saisi, jamais l'adresse du contact.
+   *
+   * Une panne entre la validation et l'e-mail laisse une société sans
+   * détenteur rattaché (rejeu : `holder: "failed"`) : le geste de sortie est
+   * « Rattacher le détenteur » (`POST /admin/companies/:id/holder`).
    */
-  execute(command: CreateCompanyByStaffCommand): Promise<CompanyOpened> {
-    return this.intents.run(
+  async execute(command: CreateCompanyByStaffCommand): Promise<CompanyOpened> {
+    const fresh: { opened?: CompanyOpened } = {};
+    const companyId = await this.intents.runSealed(
       {
         actorId: command.invitedBy,
         key: command.intentKey,
@@ -108,12 +112,19 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
           contact: command.contact,
         }),
       },
-      OPENED_REPLAY,
-      () => this.open(command),
+      CREATED_ID_REPLAY,
+      async (seal) => {
+        fresh.opened = await this.open(command, seal);
+        return fresh.opened.id;
+      },
     );
+    return fresh.opened ?? (await this.replay.read(companyId, command.contact !== null));
   }
 
-  private async open(command: CreateCompanyByStaffCommand): Promise<CompanyOpened> {
+  private async open(
+    command: CreateCompanyByStaffCommand,
+    seal: (companyId: string) => Promise<void>,
+  ): Promise<CompanyOpened> {
     // Contact saisi par le staff : on le fait passer par le value object, qui en
     // tient les règles (e-mail valide, fonction bornée). Absent, c'est `null` —
     // pas un contact aux champs vides (cf. `CompanyContact`).
@@ -128,7 +139,9 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
       if (siret !== null && (await this.companies.existsBySiret(siret.value))) {
         throw new SiretAlreadyRegisteredError(siret.value);
       }
-      return this.companies.declareUnowned(company);
+      const id = await this.companies.declareUnowned(company);
+      await seal(id);
+      return id;
     });
     // Publié APRÈS la validation, hors de l'unité : un abonné du bus lancé
     // dedans hériterait de la transaction ambiante, close quand il écrit, et
@@ -179,14 +192,3 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
     }
   }
 }
-
-const HOLDER_OUTCOMES: readonly HolderOutcome[] = ["attached", "deferred", "failed"];
-
-const OPENED_REPLAY: IntentCodec<CompanyOpened> = {
-  write: (result) => ({ id: result.id, holder: result.holder, mailSent: result.mailSent }),
-  read: (record, gesture) => ({
-    id: readIntentString(record, "id", gesture),
-    holder: readIntentChoice(record, "holder", gesture, HOLDER_OUTCOMES),
-    mailSent: readIntentBoolean(record, "mailSent", gesture),
-  }),
-};

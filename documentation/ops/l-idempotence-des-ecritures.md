@@ -62,11 +62,11 @@ le serveur décide.
 Toutes les routes d'écriture n'ont pas besoin d'une clé. Chacune est rangée
 dans une case, et une porte de CI refuse celle qui ne l'est pas :
 
-| Case              | Ce qu'elle dit                                                                                  | Exemple                                              |
-| ----------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| **Par intention** | la route lit la clé, et le geste est gardé par le registre                                      | créer un client, enregistrer un virement             |
-| **Par nature**    | rejouer la même requête laisse le même état et ne déclenche rien de plus — la raison est écrite | poser des couleurs, une transition déjà faite        |
-| **Risque assumé** | un rejeu peut refaire le geste, quelqu'un l'a décidé, et c'est écrit                            | les cinq gestes qui envoient un lien de mot de passe |
+| Case              | Ce qu'elle dit                                                                                  | Exemple                                                |
+| ----------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| **Par intention** | la route lit la clé, et le geste est gardé par le registre                                      | créer un client, enregistrer un virement               |
+| **Par nature**    | rejouer la même requête laisse le même état et ne déclenche rien de plus — la raison est écrite | poser des couleurs, une transition déjà faite          |
+| **Risque assumé** | un rejeu peut refaire le geste, quelqu'un l'a décidé, et c'est écrit                            | les quatre gestes qui envoient un lien de mot de passe |
 
 ## Partie 2 — technique
 
@@ -141,6 +141,17 @@ C'est le handler qui sait.
   second reprend l'intention et scelle d'abord, le `resolve` du premier ne
   touche aucune ligne, lève `IntentAlreadySealedError`, et sa transaction est
   annulée — le geste ne s'écrit qu'une fois.
+- **Un résultat qui dépend d'un effet postérieur** : on ne scelle que ce
+  que la transaction connaît, et le rejeu relit le reste sur l'état réel.
+  `create-company-by-staff.handler.ts` (client créé par l'équipe) scelle
+  `{ id }` (`CREATED_ID_REPLAY`) dans la transaction qui écrit la société ;
+  l'accès et son e-mail partent après la validation. Un rejeu rend la même
+  société sans rouvrir l'accès ni renvoyer l'e-mail, et relit le détenteur
+  sur les membres de la société et `mailSent` sur le suivi du bloc `mail`
+  (`MailSubjectDeliveries`, sujet `company`) — `CompanyOpeningReplay`. Avec
+  ou sans SIRET, un rejeu ne crée jamais une seconde société. Une panne
+  entre la validation et l'e-mail se lit `holder: "failed"`, et se rattrape
+  par « Rattacher le détenteur » (`POST /admin/companies/:id/holder`).
 - **`run`** — résout **après** le geste, hors de sa transaction : une panne
   entre les deux laisse le bail expirer, et un rejeu tardif refait le geste.
   Admis seulement pour un geste qui n'écrit pas en base (au 2026-11-12 :
@@ -277,8 +288,9 @@ clé de l'écran.
   par Hugo le 2026-11-12) — leur e-mail porte un lien de mot de passe, que la
   boîte d'envoi rangerait en clair ; une panne entre l'écriture et la
   résolution, puis un rejeu après le bail, refait le geste :
-  - `admin-companies.controller.ts#create` (client créé par l'équipe) ;
-  - `admin-companies.controller.ts#attachHolder` (titulaire rattaché) ;
+  - `admin-companies.controller.ts#attachHolder` (titulaire rattaché) : un
+    rejeu après le bail ne refait pas le rattachement, il est refusé
+    (`CompanyAlreadyHasOwnerError`) ;
   - `admin-company-members.controller.ts#invite` (membre d'une société) ;
   - `me.controller.ts#requestPasswordLink` (le fait part au journal hors
     transaction ; `runSealed` n'y changerait rien) ;
@@ -333,7 +345,7 @@ aujourd'hui :
 
 ### 8. Reste à faire
 
-- **Fermer les cinq risques assumés à lien** : le lien fabriqué à l'envoi
+- **Fermer les quatre risques assumés à lien** : le lien fabriqué à l'envoi
   (notre lien signé, le ticket Auth0 demandé au clic), avant le lancement
   commercial — [`../mail/plan-lien-fabrique-a-l-envoi.md`](../mail/plan-lien-fabrique-a-l-envoi.md).
   Ils passeront alors en `runSealed`.

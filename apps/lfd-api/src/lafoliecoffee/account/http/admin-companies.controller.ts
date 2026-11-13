@@ -148,10 +148,6 @@ export class AdminCompaniesController {
    * qu'il a encore au téléphone.
    */
   @Post()
-  @AcceptedReplay(
-    "OncePerIntent.run : son e-mail porte un lien de mot de passe, que la boîte d'envoi rangerait en clair ; une panne entre l'écriture et la résolution de l'intention, puis un rejeu après le bail, refait le geste et renvoie un lien",
-    "décidé par Hugo le 2026-11-12",
-  )
   @HttpCode(HttpStatus.CREATED)
   async create(
     @StaffUserId() staffUserId: string,

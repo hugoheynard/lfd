@@ -32,7 +32,10 @@ import { databaseState, stateDelta } from "./write-replay/database-state.js";
 import { REPLAY_OVERRIDES, cards, clock, customerIdentity } from "./write-replay/doubles.js";
 import { intentRoutes, matchesPath, type InventoryRoute } from "./write-replay/inventory.js";
 import { REPLAY_DEBT, REPLAY_DEBT_CEILING } from "./write-replay/replay-debt.js";
+import { COMPANY_WITHOUT_SIRET } from "./write-replay/account-scenarios.js";
 import { REPLAY_SCENARIOS } from "./write-replay/replay-scenarios.js";
+import { STAFF } from "./write-replay/scenario.js";
+import { GESTURE_INTENT_LEASE_MS } from "../src/platform/intent/gesture-intent.js";
 import type { ReplayRequest } from "./write-replay/scenario.js";
 
 const ROUTES = intentRoutes();
@@ -142,6 +145,33 @@ describe("rejeu d'une route « par intention » — la même clé ne refait rien
       }
     },
   );
+});
+
+describe("rejeu d'une création de client par l'équipe, après le bail", () => {
+  beforeEach(async () => {
+    clock.set(new Date());
+    await ctx.reset();
+  });
+
+  /** Régression : sans SIRET, un rejeu après le bail déclarait une seconde société, avec un second e-mail d'accès. */
+  it("sans SIRET, la même clé rejouée après le bail ne crée qu'une société", async () => {
+    const key = freshIntent();
+    const create = () =>
+      ctx.asSub(STAFF).post("/admin/companies").set(INTENT_KEY, key).send(COMPANY_WITHOUT_SIRET);
+
+    const first = await create();
+    expect(first.status).toBe(201);
+    await ctx.drain();
+    const afterFirst = await databaseState(ctx.prisma);
+    clock.set(new Date(clock.now().getTime() + GESTURE_INTENT_LEASE_MS + 1));
+    const second = await create();
+    const afterSecond = await databaseState(ctx.prisma);
+
+    expect(second.status).toBe(201);
+    expect(second.body).toEqual(first.body);
+    expect(await ctx.prisma.company.count()).toBe(1);
+    expect(stateDelta(afterFirst, afterSecond)).toEqual({});
+  });
 });
 
 describe("la couverture du rejeu — une dette qui ne peut que décroître", () => {

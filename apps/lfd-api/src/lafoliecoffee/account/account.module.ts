@@ -110,6 +110,7 @@ import {
   AccountAccessGranter,
   GrantAccountAccess,
 } from "./application/services/grant-account-access.service.js";
+import { CompanyOpeningReplay } from "./application/services/company-opening-replay.js";
 import { AccountJournalNames } from "./application/services/account-journal-names.service.js";
 import { CommerceDeliveryAddressPointCorrector } from "./application/services/commerce-delivery-address-point-corrector.js";
 import { CompanyContactBook } from "./application/services/company-contact-book.service.js";
@@ -330,6 +331,7 @@ import {
     UpdateContactByStaffHandler,
     RemoveContactByStaffHandler,
     { provide: AccountAccessGranter, useClass: GrantAccountAccess },
+    CompanyOpeningReplay,
     // La même instance, vue par le geste qui envoie après sa transaction (cas 9).
     { provide: AccountAccessOpener, useExisting: AccountAccessGranter },
     // Le carnet d'interlocuteurs : ses deux règles (une adresse, un rôle) valent
