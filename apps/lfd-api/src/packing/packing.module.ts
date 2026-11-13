@@ -36,6 +36,8 @@ import { PrismaPackingSheetRepository } from "./infrastructure/prisma-packing-sh
 import { PrismaPackingStockRepository } from "./infrastructure/prisma-packing-stock.repository.js";
 import { BoardOvenWaitingOrdersReader } from "./application/board/board-oven-waiting-orders.reader.js";
 import { GetPackingBoardHandler } from "./application/board/get-packing-board.handler.js";
+import { PackingBoardReading } from "./application/board/packing-board-reading.service.js";
+import { DayVersionsModule } from "../platform/day-versions/day-versions.module.js";
 import { ClosePackingOrderHandler } from "./application/station/close-packing-order.handler.js";
 import { ReportPackingShortfallHandler } from "./application/station/report-packing-shortfall.handler.js";
 import { ReopenPackingOrderHandler } from "./application/station/reopen-packing-order.handler.js";
@@ -119,7 +121,7 @@ import { PrismaPackingSettingsRepository } from "./infrastructure/prisma-packing
  */
 @Module({
   // Le logo des étiquettes de sac (2026-10-25).
-  imports: [BrandModule],
+  imports: [BrandModule, DayVersionsModule],
   controllers: [
     PackingContainersController,
     PackingBoardController,
@@ -163,6 +165,7 @@ import { PrismaPackingSettingsRepository } from "./infrastructure/prisma-packing
     PrismaContainerManagedOrders,
     // Le poste servi par le colisage (K3a).
     GetPackingBoardHandler,
+    PackingBoardReading,
     ClosePackingOrderHandler,
     ReportPackingShortfallHandler,
     // Le départ incomplet décidé par le commerce (E6b), relié par `PackingFeedModule`.

@@ -400,6 +400,7 @@
   "test/orders.e2e-spec.ts": 22344,
   "test/outbox.e2e-spec.ts": 12560,
   "test/packing-bag-labels.e2e-spec.ts": 14147,
+  "test/packing-board-contents.e2e-spec.ts": 8000,
   "test/packing-board.e2e-spec.ts": 16481,
   "test/packing-clientele.e2e-spec.ts": 7187,
   "test/packing-containers.e2e-spec.ts": 16888,

@@ -284,6 +284,21 @@ le contenu de cette journée par la même clé.
 - **L'atelier** suit `production` et `orders` dans son veilleur
   (`fiche-atelier.ts`) : une commande du jour fait relire la fiche.
 
+### 3.3 Le colisage
+
+`GET admin/packing/:date/board` (`production_packing:read` ou
+`b2b_supervision:read`) rend la même réponse au poste et à la Supervision :
+une clé `packing`. Les numéros `production`, `orders` et `delivery` sont lus
+en base avant les tables ; pas de `companies` (le nom du client est
+l'instantané rangé par le colisage). Lu hors journal et accepté vieux jusqu'au
+prochain numéro : les noms du personnel (qui a fermé un bac, qui a décidé un
+départ incomplet). Aucun repli dégradé : une panne d'un canal fait échouer la
+réponse, et rien n'est rangé. `relativeDay` est recalculé à chaque réponse
+(`servedPackingBoard`). Un appel servi par l'objet épargne les huit lectures
+des ports (environ 18 requêtes sur une journée colisée) pour 4 lectures de
+numéros. Code : `packing/application/board/get-packing-board.handler.ts`,
+`packing-board-reading.service.ts`, `packing-board-content.ts`.
+
 ## 4. L'écran Catalogue
 
 ### 4.1 Une route pour l'écran

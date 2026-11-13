@@ -57,13 +57,33 @@ export interface BoardSources {
   readonly aftermath?: readonly DecidedShipmentShortfall[];
 }
 
+/** Les sources du contenu : tout, sauf l'instant. */
+export type ContentSources = Omit<BoardSources, "now">;
+
 /**
- * Assemble le poste : bacs par heure « prête pour » (lot L2, 2026-10-14 —
- * ce qui part le plus tôt d'abord, sans heure en dernier), puis par
- * référence ; articles par nom.
+ * **Le poste sans ce qui dépend de l'heure** : ce que l'objet des journées
+ * garde pour une journée (`le-cache-du-back-office.md`, § 3.1). Seul
+ * `relativeDay` lit l'horloge ; il est recalculé à chaque réponse par
+ * {@link servedPackingBoard}.
  */
+export type PackingBoardContent = Omit<ProductionPackingView, "relativeDay">;
+
+/** Le poste servi : le contenu, plus « aujourd'hui » / « demain » à l'instant de la réponse. */
+export function servedPackingBoard(content: PackingBoardContent, now: Date): ProductionPackingView {
+  return { ...content, relativeDay: relativeDayOf(content.date, now) };
+}
+
+/** Assemble le poste à l'instant `now` — {@link packingBoardContentOf}, puis servi. */
 export function packingBoardOf(sources: BoardSources): ProductionPackingView {
-  const relativeDay = relativeDayOf(sources.date, sources.now);
+  return servedPackingBoard(packingBoardContentOf(sources), sources.now);
+}
+
+/**
+ * Assemble le poste, sans horloge : bacs par heure « prête pour » (lot L2,
+ * 2026-10-14 — ce qui part le plus tôt d'abord, sans heure en dernier), puis
+ * par référence ; articles par nom.
+ */
+export function packingBoardContentOf(sources: ContentSources): PackingBoardContent {
   const { orders } = sources.day;
   const closedAt = firstDrawnAt(sources.day);
   if (closedAt === null) {
@@ -76,7 +96,6 @@ export function packingBoardOf(sources: BoardSources): ProductionPackingView {
       orderCount: 0,
       todoCount: 0,
       readyCount: 0,
-      relativeDay,
     };
   }
   const awaiting = awaitingOf(sources.day);
@@ -102,7 +121,6 @@ export function packingBoardOf(sources: BoardSources): ProductionPackingView {
     orderCount: orders.length,
     todoCount: orders.length - readyCount,
     readyCount,
-    relativeDay,
   };
 }
 
