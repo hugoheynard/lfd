@@ -30,7 +30,7 @@ Moyens de paiement (fiche client)
    2 · Comment il règle                 Prélèvement SEPA  |  Virement bancaire
    3 · Ce que ce choix demande
        ├─ Prélèvement : RIB → mandat → règlement périodique
-       └─ Virement    : nos coordonnées, l'échéance du cycle, les factures à régler
+       └─ Virement    : nos coordonnées, l'échéance (N jours après l'émission), les factures à régler
 ```
 
 ```mermaid
@@ -158,12 +158,31 @@ Migrations `20261112150000_le_droit_du_moyen_d_encaissement` (la ressource
 - **Factur-X** (`domain/services/facturx-settlement.ts`) : BT-81 = 58,
   BT-84 l'IBAN figé de l'entité (BT-86 le BIC s'il est connu), BT-83 la
   référence (le numéro de facture).
-- **L'échéance suit le cycle de facturation**, quel que soit le moyen :
-  celle que l'émission calcule déjà (le délai du prélèvement après la
-  clôture, reporté au premier jour ouvré). **Aucun plafond n'est contrôlé
-  aujourd'hui** : une émission tardive peut porter l'échéance au-delà de
-  45 jours. Le réglage propre au virement est un plan
-  ([`plan-echeance-du-virement.md`](plan-echeance-du-virement.md)).
+- **L'échéance d'une facture au virement est un réglage de l'entité** :
+  N jours après l'**émission réelle** (une émission rattrapée en retard
+  décale l'échéance d'autant), **15 par défaut**, de **1 à 45 jours**
+  (`LegalEntity.setTransferDueDays`, colonne
+  `legal_entities.transfer_due_days_after_issue`, migration
+  `20261113120000_l_echeance_du_virement`). 45 jours nets respectent les
+  deux régimes de l'article L441-10 quelle que soit la date d'émission —
+  un plafond de prudence, pas le maximum légal ; la lecture juridique
+  revient au cabinet. Route `PUT
+admin/accounting/legal-entities/:id/transfer-due-days` `{ days }` (400
+  hors bornes), fait `legal_entity.transfer_due_days_changed`, champ
+  `transferDueDaysAfterIssue` de `LegalEntityView`.
+- **L'échéance est figée à l'émission** (`transferDueDay`,
+  `domain/services/invoice-due-day.ts`, choisie par `draftOf` dans
+  `application/monthly-invoice-issuance.ts` quand le moyen figé est le
+  virement) : changer le réglage ne touche aucune facture émise — ni son
+  `due_on`, ni le PDF, ni Factur-X (BT-9), ni l'e-mail. **Elle n'est pas
+  reportée au jour ouvré** : c'est le client qui agit, « avant le X » reste
+  valable un dimanche. Seul le virement change : le prélèvement et la
+  facture sans mandat gardent l'échéance du cycle (délai après la clôture,
+  reportée au premier jour ouvré).
+- **Le retard se constate au premier jour ouvré qui suit l'échéance**
+  (`transferOverdueFrom`, `domain/services/transfer-arrears.ts`, calendrier
+  TARGET2 des lots) : échéance un mercredi → en retard le jeudi ; un
+  vendredi, un samedi ou un dimanche → le lundi ; le 24 décembre → le 28. Les jours de retard se comptent ensuite depuis l'échéance imprimée.
 - **Le PDF** porte le bloc « Règlement par virement » avec IBAN et
   référence. **L'e-mail** « facture émise »
   (`apps/lfd-api/src/mail/templates/invoice-issued-mail.ts`) ne porte aucune
@@ -171,7 +190,7 @@ Migrations `20261112150000_le_droit_du_moyen_d_encaissement` (la ressource
   (`mail/templates/__tests__/invoice-issued-mail.spec.ts`).
 - **Le statut** (`domain/services/invoice-settlement.ts`) :
   `transfer_expected`, puis `settled` par un virement reçu, ou
-  `transfer_overdue` après l'échéance.
+  `transfer_overdue` dès le premier jour ouvré qui suit l'échéance.
 
 ## 5. Le virement reçu
 
@@ -216,8 +235,12 @@ Migrations `20261112170000_la_commande_reglee_par_virement` et
   changer ; changer demande un motif, la confirmation annonce la date d'effet
   que le serveur posera. Un changement programmé ferme le choix et
   s'annule. Le dessous du virement (`fiche-client/bank-transfer-means/`) :
-  titulaire, BIC, IBAN par ses quatre derniers caractères, l'échéance du
-  cycle, les factures à régler. La carte du mode reste où elle est.
+  titulaire, BIC, IBAN par ses quatre derniers caractères, l'échéance
+  (« N jours après l'émission de la facture », lue sur
+  `transferDueDaysAfterIssue` de l'entité), les factures à régler. La carte
+  du mode reste où elle est. Le réglage lui-même se fait sur la fiche de
+  l'entité émettrice (`comptabilite/entites-juridiques/detail/transfer-due-card/`,
+  `PUT admin/accounting/legal-entities/:id/transfer-due-days`).
 - **Boutique** : `GET companies/:companyId/collection-means` → `{ means }`
   (`http/company-collection-means.controller.ts`) — tout membre de la
   société (404 non divulguant sinon), le moyen du principal pour un site qui
@@ -232,32 +255,32 @@ Migrations `20261112170000_la_commande_reglee_par_virement` et
 Le code cite les règles par ces repères ; chacun dit ce qui est vrai
 aujourd'hui.
 
-| Repère   | La règle                                                                                                                      | Section |
-| -------- | ----------------------------------------------------------------------------------------------------------------------------- | ------- |
-| T0       | le compte créancier aux quatre yeux                                                                                           | § 1     |
-| T1       | le moyen d'encaissement daté du payeur                                                                                        | § 2–3   |
-| T2, T3   | la facture au virement, son statut, le virement reçu, les virements en retard                                                 | § 4–5   |
-| T4, T5   | l'écran de la fiche client, la boutique                                                                                       | § 6     |
-| V1       | le moyen est une propriété du payeur ; un site qui suit son principal prend le sien                                           | § 2     |
-| V2       | un changement prend effet au début d'une période, jamais au milieu                                                            | § 2     |
-| V3', V4' | le moyen d'une période est celui en vigueur à son début ; facture et lot lisent le même                                       | § 3     |
-| V5       | la facture porte IBAN, BIC, référence, échéance, et en Factur-X 58, BT-84, BT-83                                              | § 4     |
-| V6       | l'échéance suit le cycle de facturation ; aucun plafond contrôlé                                                              | § 4     |
-| V7       | le virement reçu règle une ou plusieurs factures, écart nul, par `OrderCollection`                                            | § 5     |
-| V8, C7   | une facture au virement non réglée à l'échéance remonte dans les virements en retard ; pas de relance par e-mail              | § 5     |
-| V9, K4   | le blocage vaut pour les deux moyens : « paiement au compte suspendu »                                                        | § 3     |
-| V10      | changer de moyen : geste daté, motif, journal, droit `b2b_collection_means` ; jamais d'arrêté au virement                     | § 2–3   |
-| V11      | les mandats restent en place au passage au virement                                                                           | § 2     |
-| V12      | pas de rapprochement bancaire automatique                                                                                     | § 8     |
-| C1       | le moyen a son propre historique, hors `PayerTimeline` et `InvoicingCalendar`                                                 | § 2     |
-| C3–C6    | l'IBAN confirmé est le seul lu par l'instantané ; double saisie à l'aveugle ; la confirmation désigne sa saisie ; quatre yeux | § 1     |
-| K1, K11  | un seul changement en attente par payeur, mode et moyen confondus, sous le verrou du payeur                                   | § 2     |
-| K2, K9   | le lot lit le moyen de la facture de chaque bon ; un bon sans facture lit celui de sa période                                 | § 3     |
-| K3       | le moyen entre dans `VerdictContext`                                                                                          | § 3     |
-| K5       | un payeur au virement est compté « au compte »                                                                                | § 3     |
-| K7       | la clé de `invoice_monthly_outcome` ne change pas                                                                             | § 3     |
-| K10      | `invoicePaymentMeansOf` rend le virement ; une facture émise avec `null` se lit « prélèvement »                               | § 3–4   |
-| K12, K13 | les dates du mode restent hors de K1 ; la représentation après retour et l'autopilote lisent le moyen de la facture           | § 3     |
+| Repère   | La règle                                                                                                                        | Section |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| T0       | le compte créancier aux quatre yeux                                                                                             | § 1     |
+| T1       | le moyen d'encaissement daté du payeur                                                                                          | § 2–3   |
+| T2, T3   | la facture au virement, son statut, le virement reçu, les virements en retard                                                   | § 4–5   |
+| T4, T5   | l'écran de la fiche client, la boutique                                                                                         | § 6     |
+| V1       | le moyen est une propriété du payeur ; un site qui suit son principal prend le sien                                             | § 2     |
+| V2       | un changement prend effet au début d'une période, jamais au milieu                                                              | § 2     |
+| V3', V4' | le moyen d'une période est celui en vigueur à son début ; facture et lot lisent le même                                         | § 3     |
+| V5       | la facture porte IBAN, BIC, référence, échéance, et en Factur-X 58, BT-84, BT-83                                                | § 4     |
+| V6       | l'échéance au virement : N jours après l'émission (15 par défaut, 1 à 45), figée, sans report ; le retard au jour ouvré suivant | § 4     |
+| V7       | le virement reçu règle une ou plusieurs factures, écart nul, par `OrderCollection`                                              | § 5     |
+| V8, C7   | une facture au virement non réglée à l'échéance remonte dans les virements en retard ; pas de relance par e-mail                | § 5     |
+| V9, K4   | le blocage vaut pour les deux moyens : « paiement au compte suspendu »                                                          | § 3     |
+| V10      | changer de moyen : geste daté, motif, journal, droit `b2b_collection_means` ; jamais d'arrêté au virement                       | § 2–3   |
+| V11      | les mandats restent en place au passage au virement                                                                             | § 2     |
+| V12      | pas de rapprochement bancaire automatique                                                                                       | § 8     |
+| C1       | le moyen a son propre historique, hors `PayerTimeline` et `InvoicingCalendar`                                                   | § 2     |
+| C3–C6    | l'IBAN confirmé est le seul lu par l'instantané ; double saisie à l'aveugle ; la confirmation désigne sa saisie ; quatre yeux   | § 1     |
+| K1, K11  | un seul changement en attente par payeur, mode et moyen confondus, sous le verrou du payeur                                     | § 2     |
+| K2, K9   | le lot lit le moyen de la facture de chaque bon ; un bon sans facture lit celui de sa période                                   | § 3     |
+| K3       | le moyen entre dans `VerdictContext`                                                                                            | § 3     |
+| K5       | un payeur au virement est compté « au compte »                                                                                  | § 3     |
+| K7       | la clé de `invoice_monthly_outcome` ne change pas                                                                               | § 3     |
+| K10      | `invoicePaymentMeansOf` rend le virement ; une facture émise avec `null` se lit « prélèvement »                                 | § 3–4   |
+| K12, K13 | les dates du mode restent hors de K1 ; la représentation après retour et l'autopilote lisent le moyen de la facture             | § 3     |
 
 ## 8. Reste à faire
 

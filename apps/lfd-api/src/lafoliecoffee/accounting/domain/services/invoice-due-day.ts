@@ -1,3 +1,5 @@
+import { addDays } from "@lfd/contracts";
+
 import { collectionDayOf } from "./collection-calendar.js";
 
 /** La suite des clôtures, vue de l'échéance : la prochaine après un instant. */
@@ -44,4 +46,18 @@ export function invoiceDueDay(
     settings.preNotificationDays,
     settings.collectionDaysAfterClosure,
   );
+}
+
+/**
+ * **L'échéance d'une facture réglée par virement** (V6) : le jour d'émission
+ * réel plus N jours de calendrier — une émission rattrapée en retard décale
+ * l'échéance d'autant (Hugo, 2026-11-13).
+ *
+ * 🔴 **Aucun report au jour ouvré** : c'est le client qui agit, « avant le X »
+ * reste valable un dimanche, et un report pourrait dépasser le plafond de
+ * 45 jours. Le jour fermé n'est pris en compte qu'au constat du retard
+ * (`transferOverdueFrom`).
+ */
+export function transferDueDay(issuedOn: string, days: number): string {
+  return addDays(issuedOn, days);
 }

@@ -25,6 +25,7 @@ const CREDITOR: CreditorSnapshot = {
   creditorIban: "FR7630006000011234567890189",
   preNotificationDays: 14,
   collectionDaysAfterClosure: null,
+  transferDueDaysAfterIssue: 15,
   mandateContractDescription: "Fourniture de cafe et de viennoiseries",
   mandatePaymentType: "recurrent" as const,
   mandateScheme: "B2B",

@@ -15,6 +15,14 @@ export const PRE_NOTIFICATION_MIN_DAYS = 3;
 export const PRE_NOTIFICATION_MAX_DAYS = 60;
 
 /**
+ * Les bornes de l'**échéance des factures au virement**, en jours après
+ * l'émission, recopiées du domaine (`LegalEntity.setTransferDueDays`), qui
+ * reste l'autorité. 45 : plafond de prudence sous l'article L441-10.
+ */
+export const TRANSFER_DUE_DAYS_MIN = 1;
+export const TRANSFER_DUE_DAYS_MAX = 45;
+
+/**
  * Les bornes du **calendrier de prélèvement**, recopiées du domaine
  * (`CollectionSchedule`), qui reste l'autorité. Plan
  * `documentation/comptabilite/prelevement/prelevement-automatique.md`, PA1.
@@ -259,6 +267,12 @@ export interface LegalEntityView {
    */
   readonly pendingCreditorAccount: PendingCreditorAccountView | null;
   readonly preNotificationDays: number;
+  /**
+   * L'échéance d'une facture réglée par virement, en jours après son
+   * émission (15 par défaut). Figée sur chaque facture émise : la changer ne
+   * touche aucune facture déjà émise.
+   */
+  readonly transferDueDaysAfterIssue: number;
   /** La constitution automatique — désactivée par défaut. */
   readonly autoCollectionEnabled: boolean;
   /** Heures entre la clôture et la constitution automatique. */
@@ -552,6 +566,10 @@ export const setPreNotificationPayloadSchema = z.object({
   days: z.int().min(PRE_NOTIFICATION_MIN_DAYS).max(PRE_NOTIFICATION_MAX_DAYS),
 });
 export type SetPreNotificationPayload = z.infer<typeof setPreNotificationPayloadSchema>;
+
+/** L'échéance des factures au virement. La FORME seulement — l'agrégat juge les bornes. */
+export const setTransferDueDaysPayloadSchema = z.strictObject({ days: z.int() });
+export type SetTransferDueDaysPayload = z.infer<typeof setTransferDueDaysPayloadSchema>;
 
 /**
  * Le calendrier de prélèvement de l'entité. La FORME seulement : les bornes et

@@ -189,6 +189,11 @@ model LegalEntity {
   // déploiement, et deux entités peuvent ne pas avoir le même.
   preNotificationDays Int @default(14) @map("pre_notification_days")
 
+  // L'échéance d'une facture AU VIREMENT, en jours après son émission (V6,
+  // `le-paiement-par-virement.md`). Bornes 1..45 tenues par l'agrégat ; chaque
+  // facture fige la sienne dans `invoice.due_on`.
+  transferDueDaysAfterIssue Int @default(15) @map("transfer_due_days_after_issue")
+
   // Le PRÉLÈVEMENT AUTOMATIQUE (plan `prelevement-automatique.md`, PA1).
   // Désactivé par défaut, et aucune migration ne l'active : c'est un fait de
   // journal. Le délai (1 à 23 h) garde la constitution le jour de la clôture.

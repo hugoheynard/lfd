@@ -32,7 +32,7 @@ import { StatementBuyerReader } from "../../domain/ports/statement-buyer.reader.
 import type { BillingCycle } from "../../domain/services/billing-cycle.js";
 import type { InvoiceSellerFacts } from "../../domain/services/invoice-issuance-blockers.js";
 import type { MonthlyInvoiceReport } from "../../domain/services/monthly-invoice-report.js";
-import { invoiceDueDay } from "../../domain/services/invoice-due-day.js";
+import { invoiceDueDay, transferDueDay } from "../../domain/services/invoice-due-day.js";
 import type { InvoicingCalendar } from "../../domain/services/invoicing-calendar.js";
 import {
   invoicingMomentOf,
@@ -85,7 +85,8 @@ import { IssueMonthlyInvoicesCommand } from "./issue-monthly-invoices.command.js
  * tenir le compteur pendant toute la période des autres.
  *
  * - émise la **veille de la clôture** (jour local), échéance = la date de
- *   prélèvement du lot qui la prendra (`invoiceDueDay`) ;
+ *   prélèvement du lot qui la prendra (`invoiceDueDay`) — sauf au virement :
+ *   le jour d'émission plus le réglage de l'entité (`transferDueDay`, V6) ;
  * - moyen figé (BG-16) : le virement si SA période l'est (K10) ; sinon le
  *   mandat effectif, aucun pour la facture des bons sans mandat ;
  * - un refus (manque nommé, numérotation, base) : la facture n'est pas
@@ -197,7 +198,8 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
       periodLabel,
       calendar,
       issuedOn,
-      dueOn: later(
+      transferDueOn: transferDueDay(issuedOn, creditor.transferDueDaysAfterIssue),
+      collectionDueOn: later(
         issuedOn,
         invoiceDueDay(closesAt, at, calendar, { preNotificationDays, collectionDaysAfterClosure }),
       ),

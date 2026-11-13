@@ -74,6 +74,7 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
     missingToInvoice: [],
     invoicePrefix: 'LFD',
     invoicePrefixFrozen: false,
+    transferDueDaysAfterIssue: 15,
     ...over,
   };
 }

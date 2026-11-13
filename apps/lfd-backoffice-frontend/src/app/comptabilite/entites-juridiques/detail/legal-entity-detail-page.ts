@@ -36,6 +36,7 @@ import { MandateSettingsCard } from './mandate-settings-card/mandate-settings-ca
 import { CreditorAccountCard } from './creditor-account-card/creditor-account-card';
 import { BillingModesCard } from './billing-modes-card/billing-modes-card';
 import { CollectionSettingsCard } from './collection-settings-card/collection-settings-card';
+import { TransferDueCard } from './transfer-due-card/transfer-due-card';
 import { InvoicePrefixCard } from './invoice-prefix-card/invoice-prefix-card';
 import { InvoiceTermsCard } from './invoice-terms-card/invoice-terms-card';
 import { RouterLink } from '@angular/router';
@@ -97,6 +98,7 @@ import { GestureIntents } from '../../../shared/gesture-intents';
     MandateSettingsCard,
     BillingModesCard,
     CollectionSettingsCard,
+    TransferDueCard,
     InvoicePrefixCard,
     InvoiceTermsCard,
     RouterLink,

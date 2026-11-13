@@ -52,6 +52,7 @@ const CREDITOR: CreditorSnapshot = {
   accountAddressLines: ["Route de la Balme", "73150 Val d'Isère", "FR"],
   preNotificationDays: 14,
   collectionDaysAfterClosure: null,
+  transferDueDaysAfterIssue: 15,
   mandateContractDescription: "Fourniture de pains et viennoiseries",
   mandatePaymentType: "recurrent",
   mandateScheme: "B2B",

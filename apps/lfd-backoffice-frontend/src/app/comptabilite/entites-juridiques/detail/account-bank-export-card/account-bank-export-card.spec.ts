@@ -97,6 +97,7 @@ const BASE_ENTITY: LegalEntityView = {
   missingToInvoice: [],
   invoicePrefix: 'LFD',
   invoicePrefixFrozen: false,
+  transferDueDaysAfterIssue: 15,
 };
 
 // Les dates ne sont comparées qu'au texte qu'elles produisent, jamais à l'horloge.

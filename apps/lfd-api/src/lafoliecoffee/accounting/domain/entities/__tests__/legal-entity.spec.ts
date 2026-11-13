@@ -182,6 +182,7 @@ describe("LegalEntity — encaisser demande tout", () => {
       creditorIban: "FR1420041010050500013M02606",
       preNotificationDays: PRE_NOTIFICATION_DEFAULT_DAYS,
       collectionDaysAfterClosure: null,
+      transferDueDaysAfterIssue: 15,
     });
   });
 

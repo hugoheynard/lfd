@@ -105,6 +105,8 @@ export const ACCOUNTING_FACTS = {
     last4: z.string(),
   }),
   "legal_entity.pre_notification_changed": labelled({ days: days() }),
+  /** L'échéance des factures au virement, en jours après l'émission, APRÈS le changement (V6). */
+  "legal_entity.transfer_due_days_changed": labelled({ days: days() }),
   /**
    * Le calendrier de prélèvement APRÈS le changement (plan
    * `prelevement-automatique.md`, PA1). `daysAfterClosure` nul = le délai

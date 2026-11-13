@@ -1,0 +1,25 @@
+<fold-page-section
+  title="Échéance des factures au virement"
+  description="Le client qui règle par virement vire pour cette date. Elle est imprimée sur chaque facture."
+  separator
+>
+  <div class="td-stack">
+    <fold-number-input
+      label="Échéance des factures au virement (jours après l'émission)"
+      [hint]="'Au plus ' + maxDays + ' jours (art. L441-10 du code de commerce).'"
+      integer
+      [min]="minDays"
+      [max]="maxDays"
+      [value]="daysDraft()"
+      (valueChange)="daysDraft.set($event)"
+    />
+    <p class="td-said" data-transfer-due-scope>
+      S'applique aux factures émises ensuite&nbsp;; une facture émise garde son échéance.
+    </p>
+    <div class="td-actions">
+      <button foldButton [disabled]="busy() || outOfRange() || unchanged()" (click)="save()">
+        Enregistrer
+      </button>
+    </div>
+  </div>
+</fold-page-section>

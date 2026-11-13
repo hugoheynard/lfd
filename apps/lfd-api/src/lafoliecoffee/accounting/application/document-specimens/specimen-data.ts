@@ -9,7 +9,9 @@ import {
   type InvoicePaymentMeans,
   type InvoiceSeller,
 } from "../../domain/entities/invoice.types.js";
+import { TRANSFER_DUE_DAYS_DEFAULT } from "../../domain/entities/legal-entity.js";
 import { simulateInvoiceDossier } from "../../domain/services/invoice-dossier.js";
+import { transferDueDay } from "../../domain/services/invoice-due-day.js";
 import type { FrozenInvoiceOrder } from "../../domain/services/invoice-dossier.types.js";
 import { invoiceFromDossier } from "../../domain/services/invoice-from-dossier.js";
 import type { InvoiceSellerFacts } from "../../domain/services/invoice-issuance-blockers.js";
@@ -33,7 +35,7 @@ import { InvoicePaymentTerms } from "../../domain/value-objects/invoice-payment-
 
 /** Le numéro imprimé : le dernier rang de l'année, qu'aucune pièce réelle n'atteindra. */
 const SPECIMEN_SEQUENCE = 999_999;
-/** L'échéance : trente jours, comme les mentions de paiement le diraient. */
+/** L'échéance sans moyen : trente jours, comme les mentions de paiement le diraient. */
 const DUE_AFTER_DAYS = 30;
 
 const SELLER: InvoiceSeller = {
@@ -132,7 +134,7 @@ export function specimenInvoice(now: Date, means: InvoiceSpecimenMeans = "none")
     id: "specimen-invoice",
     number: InvoiceNumber.compose(SPECIMEN_PREFIX, Number(today.slice(0, 4)), SPECIMEN_SEQUENCE),
     issuedOn: today,
-    dueOn: addDays(today, DUE_AFTER_DAYS),
+    dueOn: specimenDueOn(today, means),
     sellerFacts: SELLER_FACTS,
     seller: SELLER,
     buyer: BUYER,
@@ -146,4 +148,14 @@ export function specimenInvoice(now: Date, means: InvoiceSpecimenMeans = "none")
     prepayment: null,
     computed: simulateInvoiceDossier(frozen).invoice,
   });
+}
+
+/**
+ * Au virement, l'échéance de l'émission réelle : le jour d'émission plus le
+ * réglage par défaut d'une entité (V6), sans report — ce que le client lira.
+ */
+function specimenDueOn(issuedOn: string, means: InvoiceSpecimenMeans): string {
+  return means === "bank_transfer"
+    ? transferDueDay(issuedOn, TRANSFER_DUE_DAYS_DEFAULT)
+    : addDays(issuedOn, DUE_AFTER_DAYS);
 }

@@ -33,6 +33,7 @@ export const SPECIMEN_CREDITOR: CreditorSnapshot = {
   accountAddressLines: ["EXEMPLE — route de la Balme", "73150 Val d'Isère", "FR"],
   preNotificationDays: 14,
   collectionDaysAfterClosure: null,
+  transferDueDaysAfterIssue: 15,
   mandateContractDescription: "EXEMPLE — fourniture de pains et de viennoiseries",
   mandatePaymentType: "recurrent",
   mandateScheme: "B2B",

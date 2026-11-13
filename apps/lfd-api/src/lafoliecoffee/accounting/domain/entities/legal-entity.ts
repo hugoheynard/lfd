@@ -49,6 +49,20 @@ export const PRE_NOTIFICATION_DEFAULT_DAYS = 14;
 export const PRE_NOTIFICATION_MIN_DAYS = 3;
 export const PRE_NOTIFICATION_MAX_DAYS = 60;
 
+/**
+ * L'échéance d'une facture réglée par virement, en jours après son émission
+ * (V6, `le-paiement-par-virement.md`). 15 par défaut (Hugo, 2026-11-13), posé
+ * par la migration pour les entités existantes et ici pour les nouvelles.
+ */
+export const TRANSFER_DUE_DAYS_DEFAULT = 15;
+export const TRANSFER_DUE_DAYS_MIN = 1;
+/**
+ * L441-10 du code de commerce admet 60 jours après l'émission ou 45 jours fin
+ * de mois : 45 jours nets respectent les deux, quelle que soit la date
+ * d'émission. Un plafond de prudence, pas le maximum légal.
+ */
+export const TRANSFER_DUE_DAYS_MAX = 45;
+
 /** L'identité déclarée à la création. Les coordonnées bancaires viennent après. */
 export interface LegalEntityDeclaration {
   readonly id: string;
@@ -126,6 +140,8 @@ export interface LegalEntitySnapshot {
    */
   readonly firstMandateIssuedAt: Date | null;
   readonly preNotificationDays: number;
+  /** L'échéance d'une facture au virement, en jours après l'émission. */
+  readonly transferDueDaysAfterIssue: number;
   readonly mandateContractDescription: string;
   readonly mandatePaymentType: MandatePaymentType;
   /** Le schéma des mandats frappés DÉSORMAIS — chaque mandat fige le sien. */
@@ -208,6 +224,7 @@ export class LegalEntity {
     private versionValue: number,
     private readonly firstMandateIssuedAtValue: Date | null,
     private preNotificationDaysValue: number,
+    private transferDueDaysValue: number,
     private mandateDefaultsValue: MandateDefaults,
     private mandateSchemeValue: SepaScheme,
     private logoKeyValue: string | null,
@@ -243,6 +260,7 @@ export class LegalEntity {
       0,
       null,
       PRE_NOTIFICATION_DEFAULT_DAYS,
+      TRANSFER_DUE_DAYS_DEFAULT,
       // Rien à dire du contrat, et récurrent : le régime de l'immense majorité
       // des mandats, et celui qu'on corrige le moins souvent.
       MandateDefaults.initial(),
@@ -295,6 +313,7 @@ export class LegalEntity {
       snapshot.version,
       snapshot.firstMandateIssuedAt,
       snapshot.preNotificationDays,
+      snapshot.transferDueDaysAfterIssue,
       MandateDefaults.create(snapshot.mandateContractDescription, snapshot.mandatePaymentType),
       snapshot.mandateScheme,
       snapshot.logoKey,
@@ -591,6 +610,34 @@ export class LegalEntity {
     return true;
   }
 
+  /** L'échéance d'une facture au virement, en jours après son émission. */
+  get transferDueDaysAfterIssue(): number {
+    return this.transferDueDaysValue;
+  }
+
+  /**
+   * Règle l'échéance des factures au virement. Aucun gel : chaque facture
+   * fige SA date à l'émission, et changer le réglage n'en touche aucune.
+   *
+   * @returns `false` quand le délai est déjà celui-là (rien à écrire).
+   * @throws {InvalidLegalEntityError} hors de 1 à 45 jours, ou non entier.
+   */
+  setTransferDueDays(days: number): boolean {
+    if (!Number.isInteger(days) || days < TRANSFER_DUE_DAYS_MIN || days > TRANSFER_DUE_DAYS_MAX) {
+      throw new InvalidLegalEntityError(
+        "Échéance des factures au virement",
+        `au moins ${TRANSFER_DUE_DAYS_MIN} jour et au plus ${TRANSFER_DUE_DAYS_MAX} jours après ` +
+          `l'émission (plafond de prudence sous l'article L441-10), en nombre entier — saisissez ` +
+          `un délai dans ces bornes`,
+      );
+    }
+    if (days === this.transferDueDaysValue) {
+      return false;
+    }
+    this.transferDueDaysValue = days;
+    return true;
+  }
+
   get collectionSchedule(): CollectionSchedule {
     return this.collectionScheduleValue;
   }
@@ -832,6 +879,7 @@ export class LegalEntity {
       accountAddressLines: this.creditorAccountValue?.address.lines() ?? [],
       preNotificationDays: this.preNotificationDaysValue,
       collectionDaysAfterClosure: this.collectionScheduleValue.daysAfterClosure,
+      transferDueDaysAfterIssue: this.transferDueDaysValue,
       mandateContractDescription: this.mandateDefaultsValue.contractDescription,
       mandatePaymentType: this.mandateDefaultsValue.paymentType,
       mandateScheme: this.mandateSchemeValue,
@@ -866,6 +914,7 @@ export class LegalEntity {
       version: this.versionValue,
       firstMandateIssuedAt: this.firstMandateIssuedAtValue,
       preNotificationDays: this.preNotificationDaysValue,
+      transferDueDaysAfterIssue: this.transferDueDaysValue,
       mandateContractDescription: this.mandateDefaultsValue.contractDescription,
       mandatePaymentType: this.mandateDefaultsValue.paymentType,
       mandateScheme: this.mandateSchemeValue,

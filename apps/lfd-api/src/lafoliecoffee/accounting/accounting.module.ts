@@ -155,6 +155,7 @@ import { SetLegalEntityLogoHandler } from "./application/commands/set-legal-enti
 import { SetMandateDefaultsHandler } from "./application/commands/set-mandate-defaults.handler.js";
 import { SetMandateSchemeHandler } from "./application/commands/set-mandate-scheme.handler.js";
 import { SetPreNotificationHandler } from "./application/commands/set-pre-notification.handler.js";
+import { SetTransferDueDaysHandler } from "./application/commands/set-transfer-due-days.handler.js";
 import { SetCollectionScheduleHandler } from "./application/commands/set-collection-schedule.handler.js";
 import { SetBankCollectionLimitsHandler } from "./application/commands/set-bank-collection-limits.handler.js";
 import { SetAutoCollectionHandler } from "./application/commands/set-auto-collection.handler.js";
@@ -374,6 +375,7 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     SetMandateDefaultsHandler,
     SetMandateSchemeHandler,
     SetPreNotificationHandler,
+    SetTransferDueDaysHandler,
     SetCollectionScheduleHandler,
     SetBankCollectionLimitsHandler,
     SetAutoCollectionHandler,

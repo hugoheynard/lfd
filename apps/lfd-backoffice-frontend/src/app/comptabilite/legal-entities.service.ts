@@ -21,6 +21,7 @@ import type {
   SetMandateDefaultsPayload,
   SetMandateSchemePayload,
   SetPreNotificationPayload,
+  SetTransferDueDaysPayload,
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
@@ -203,6 +204,15 @@ export class LegalEntitiesService {
 
   async setPreNotification(id: string, payload: SetPreNotificationPayload): Promise<void> {
     await firstValueFrom(this.http.put<void>(`${this.base}/${id}/pre-notification`, payload));
+  }
+
+  /**
+   * L'échéance des factures au virement, en jours après l'émission (1 à 45).
+   * Figée sur chaque facture à l'émission : le réglage ne touche que les
+   * suivantes. 400 hors bornes.
+   */
+  async setTransferDueDays(id: string, payload: SetTransferDueDaysPayload): Promise<void> {
+    await firstValueFrom(this.http.put<void>(`${this.base}/${id}/transfer-due-days`, payload));
   }
 
   /**

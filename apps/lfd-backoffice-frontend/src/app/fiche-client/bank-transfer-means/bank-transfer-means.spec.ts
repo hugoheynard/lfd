@@ -16,8 +16,7 @@ type EntityFacts = Pick<
   | 'creditorAccountHolder'
   | 'creditorBic'
   | 'pendingCreditorAccount'
-  | 'collectionDaysAfterClosure'
-  | 'preNotificationDays'
+  | 'transferDueDaysAfterIssue'
 >;
 
 const CONFIRMED: EntityFacts = {
@@ -26,8 +25,7 @@ const CONFIRMED: EntityFacts = {
   creditorAccountHolder: 'LA FOLIE DOUCE SAS',
   creditorBic: 'AGRIFRPP882',
   pendingCreditorAccount: null,
-  collectionDaysAfterClosure: null,
-  preNotificationDays: 14,
+  transferDueDaysAfterIssue: 15,
 };
 
 async function boot(entity: EntityFacts): Promise<ComponentFixture<BankTransferMeans>> {
@@ -70,17 +68,18 @@ describe('BankTransferMeans — ce que le virement demande', () => {
     expect(find(fixture, '[data-transfer-pending-account]')).toBeNull();
   });
 
-  it('l’échéance suit le délai de pré-notification quand l’entité n’en règle pas d’autre', async () => {
+  it('l’échéance se compte en jours après l’émission, et dit qu’une facture émise garde la sienne', async () => {
     const fixture = await boot(CONFIRMED);
-    expect(find(fixture, '[data-transfer-due]')?.textContent).toContain(
-      '14 jours après la clôture',
-    );
+    const said = find(fixture, '[data-transfer-due]')?.textContent ?? '';
+    expect(said).toContain('15 jours après l’émission de la facture');
+    expect(said).toContain('ne touche pas les factures déjà émises');
+    expect(said).not.toContain('clôture');
   });
 
-  it('l’échéance suit le délai réglé sur l’entité', async () => {
-    const fixture = await boot({ ...CONFIRMED, collectionDaysAfterClosure: 10 });
+  it('l’échéance suit le réglage de l’entité', async () => {
+    const fixture = await boot({ ...CONFIRMED, transferDueDaysAfterIssue: 30 });
     expect(find(fixture, '[data-transfer-due]')?.textContent).toContain(
-      '10 jours après la clôture',
+      '30 jours après l’émission',
     );
   });
 

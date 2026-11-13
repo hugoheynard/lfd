@@ -56,6 +56,11 @@ export interface CreditorSnapshot {
    * `prelevement-automatique.md`, PA1).
    */
   readonly collectionDaysAfterClosure: number | null;
+  /**
+   * L'échéance d'une facture au virement, en jours après son émission — lue
+   * une fois par passage d'émission, puis figée sur chaque facture (V6).
+   */
+  readonly transferDueDaysAfterIssue: number;
 
   /**
    * **Zone 20** du mandat — ce que le contrat couvre, en une ligne.

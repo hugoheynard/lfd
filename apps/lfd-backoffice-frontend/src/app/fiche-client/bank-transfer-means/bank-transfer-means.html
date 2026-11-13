@@ -28,9 +28,8 @@
 
 <fold-element-title variant="caps" icon="calendar" title="Échéance" />
 <p class="said" data-transfer-due>
-  La même que pour un prélèvement&nbsp;: {{ dueDays() }} jours après la clôture de la période,
-  reportée au premier jour ouvré. Elle est imprimée sur chaque facture, et le client vire pour cette
-  date.
+  {{ dueDays() }} jours après l’émission de la facture. Imprimée sur chaque facture&nbsp;; changer
+  le réglage ne touche pas les factures déjà émises.
 </p>
 
 <app-transfer-invoices-card [companyId]="companyId()" />

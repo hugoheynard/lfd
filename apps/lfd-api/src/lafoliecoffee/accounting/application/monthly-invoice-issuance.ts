@@ -1,4 +1,5 @@
 import type { CreditorSnapshot } from "../domain/creditor-snapshot.js";
+import { SEPA_CREDIT_TRANSFER } from "../domain/entities/invoice.types.js";
 import { statementSellerOf } from "../domain/entities/billing-statement.js";
 import type { MonthlyInvoiceOutcomeKey } from "../domain/ports/monthly-invoice-outcomes.js";
 import type { BillingCycle } from "../domain/services/billing-cycle.js";
@@ -30,7 +31,13 @@ export interface Issuance {
   /** Le calendrier des payeurs : la période de CHACUN se lit dessus (M2). */
   readonly calendar: InvoicingCalendar;
   readonly issuedOn: string;
-  readonly dueOn: string;
+  /**
+   * L'échéance du cycle — le jour de prélèvement du lot qui prendra la
+   * facture. Celle de tout moyen autre que le virement.
+   */
+  readonly collectionDueOn: string;
+  /** L'échéance d'une facture au virement : `issuedOn` plus le réglage de l'entité (V6). */
+  readonly transferDueOn: string;
   readonly creditor: CreditorSnapshot;
   readonly sellerFacts: InvoiceSellerFacts;
   readonly context: MonthlyContext;
@@ -59,11 +66,17 @@ export function draftOf(
   number: Parameters<typeof invoiceFromDossier>[0]["number"],
 ): ReturnType<typeof invoiceFromDossier> {
   const { context } = issuance;
+  const paymentMeans = invoicePaymentMeansOf(payer);
   return invoiceFromDossier({
     id,
     number,
     issuedOn: issuance.issuedOn,
-    dueOn: issuance.dueOn,
+    // Seul le virement change d'échéance ; le prélèvement et la facture sans
+    // mandat gardent celle du cycle (Hugo, 2026-11-13).
+    dueOn:
+      paymentMeans?.code === SEPA_CREDIT_TRANSFER
+        ? issuance.transferDueOn
+        : issuance.collectionDueOn,
     sellerFacts: issuance.sellerFacts,
     seller: statementSellerOf(issuance.creditor),
     buyer: context.buyers.get(payer.payerId) ?? null,
@@ -77,7 +90,7 @@ export function draftOf(
       deliveryNoteNumbers: order.deliveryNoteNumbers,
       ...(order.settlement === "unsettled" ? { unsettled: true } : {}),
     })),
-    paymentMeans: invoicePaymentMeansOf(payer),
+    paymentMeans,
     // Rien n'est payé d'avance sur un bon au compte : il sera prélevé ou viré.
     prepayment: null,
     computed: simulateInvoiceDossier(payer.billable.map((order) => order.frozen)).invoice,

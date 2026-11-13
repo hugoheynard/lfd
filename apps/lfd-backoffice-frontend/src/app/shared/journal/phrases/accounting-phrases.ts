@@ -643,6 +643,12 @@ export const ACCOUNTING_PHRASES = {
     (fact) => [text(' à '), inUnit('days', fact.payload['days'])],
     ['days'],
   ),
+  'legal_entity.transfer_due_days_changed': onEntity(
+    'a fixé l’échéance des factures au virement',
+    'de',
+    (fact) => [text(' à '), inUnit('days', fact.payload['days']), text(' après l’émission')],
+    ['days'],
+  ),
   'legal_entity.collection_schedule_changed': onEntity(
     'a réglé le calendrier de prélèvement',
     'de',

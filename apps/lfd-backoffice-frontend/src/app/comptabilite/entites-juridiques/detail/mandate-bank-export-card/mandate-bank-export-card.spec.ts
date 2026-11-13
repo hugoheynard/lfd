@@ -96,6 +96,7 @@ const BASE_ENTITY: LegalEntityView = {
   missingToInvoice: [],
   invoicePrefix: 'LFD',
   invoicePrefixFrozen: false,
+  transferDueDaysAfterIssue: 15,
 };
 
 function row(

@@ -27,6 +27,7 @@ const CREDITOR: CreditorSnapshot = {
   creditorIban: "FR7630006000011234567890189",
   preNotificationDays: 14,
   collectionDaysAfterClosure: null,
+  transferDueDaysAfterIssue: 15,
   // Zones 20 et 12 du mandat et schéma des frappes à venir. Le `pain.008` ne lit
   // que la zone 12, et seulement pour un fichier vide : le lot suit le MANDAT.
   mandateContractDescription: "Fourniture de pains et viennoiseries",

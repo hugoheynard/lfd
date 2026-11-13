@@ -31,11 +31,8 @@ export class BankTransferMeans {
   protected readonly pending = computed(() => this.entity().pendingCreditorAccount !== null);
 
   /**
-   * Le délai de l'échéance après la clôture : le réglage de l'entité, sinon le
-   * délai de pré-notification — la même échéance qu'un prélèvement (V6).
+   * Le délai de l'échéance au virement, en jours après l'émission : le
+   * réglage de l'entité. Chaque facture fige la sienne à l'émission.
    */
-  protected readonly dueDays = computed(() => {
-    const entity = this.entity();
-    return entity.collectionDaysAfterClosure ?? entity.preNotificationDays;
-  });
+  protected readonly dueDays = computed(() => this.entity().transferDueDaysAfterIssue);
 }

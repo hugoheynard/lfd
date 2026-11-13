@@ -2,6 +2,7 @@ import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/dir
 import { mandateReferenceOf } from "../../../domain/entities/invoice.types.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
+import type { CreditorSnapshot } from "../../../domain/creditor-snapshot.js";
 import type { StatementBuyer } from "../../../domain/entities/billing-statement.js";
 import { SELLER_FACTS } from "../../../domain/entities/__tests__/invoice-fixtures.js";
 import {
@@ -10,7 +11,14 @@ import {
   NotTheInvoicingEntityError,
   PeriodNotYetInvoiceableError,
 } from "../../../domain/errors/monthly-invoice-errors.js";
+import { CreditorReader } from "../../../domain/ports/creditor.reader.js";
 import { StatementBuyerReader } from "../../../domain/ports/statement-buyer.reader.js";
+import { noticeDay } from "../../../domain/services/collection-notice-wording.js";
+import { renderFacturXml } from "../../../domain/services/facturx-xml.js";
+import { invoiceNoticeContent } from "../../../domain/services/invoice-notice-wording.js";
+import { renderInvoicePdf } from "../../../domain/services/invoice-pdf.js";
+import { TEST_FONTS } from "../../../domain/services/__tests__/invoice-fonts-fixture.js";
+import { drawnUnicodeText } from "../../../domain/services/__tests__/pdf-objects.js";
 import {
   CREDITOR,
   ENTITY_ID,
@@ -110,6 +118,10 @@ function harness(
     closure?: string;
     /** Les moyens d'encaissement des payeurs ; aucun : tous au prélèvement. */
     means?: PayerMeansStore;
+    /** L'émetteur ; par défaut, échéance au virement à 15 jours. */
+    creditor?: CreditorSnapshot;
+    /** Le lecteur de l'émetteur, quand le test change le réglage entre deux passages. */
+    creditors?: CreditorReader;
   } = {},
 ) {
   const invoices = new MemoryInvoices();
@@ -130,7 +142,7 @@ function harness(
     reader,
     new FixedModeDates(),
     new FixedPayerModes(options.payers),
-    new FixedCreditors(CREDITOR),
+    options.creditors ?? new FixedCreditors(options.creditor ?? CREDITOR),
     new FixedIssuers([SELLER_FACTS]),
     options.buyers ?? new FixedBuyers(),
     mandates,
@@ -194,7 +206,7 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
   it("un payeur dont la période est au virement : code 58, aucun mandat (K10)", async () => {
     const means = new PayerMeansStore();
     means.rows.push(meansRow("c_port", "bank_transfer", paris("2026-08-01"), ENTITY_ID));
-    const h = harness({ means });
+    const h = harness({ means, creditor: { ...CREDITOR, transferDueDaysAfterIssue: 30 } });
     h.reader.orders = [bon("c_port"), bon("c_principal")];
 
     await h.run();
@@ -204,8 +216,10 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
     const principal = states.find((state) => state.buyer.companyId === "c_principal");
     expect(port?.paymentMeans).toEqual({ code: "58" });
     expect(mandateReferenceOf(port?.paymentMeans ?? null)).toBeNull();
-    // L'échéance suit le cycle, quel que soit le moyen (V6).
-    expect(port?.dueOn).toBe(principal?.dueOn);
+    // Au virement : l'émission (30 septembre) plus le réglage de l'entité, sans
+    // report (V6) ; le prélèvement garde l'échéance du cycle, le jeudi 15.
+    expect(port?.dueOn).toBe("2026-10-30");
+    expect(principal?.dueOn).toBe("2026-10-15");
     expect(principal?.paymentMeans).toEqual({ code: "59", mandateReference: "RUM-c-principal" });
     // La clé d'issue est celle d'une facture sans mandat (K7).
     expect(h.outcomes.rows.get(invoiceGroupKey("c_port", null))?.invoiceId).toBe(port?.id);
@@ -763,5 +777,76 @@ describe("IssueMonthlyInvoices — la date de livraison (M5, lot ZA)", () => {
     expect(h.invoices.inserted[0]?.toState().orders.map((order) => order.receivedOn)).toEqual([
       "2026-09-16",
     ]);
+  });
+});
+
+/** Un émetteur dont le réglage change entre deux passages — comme à l'écran. */
+class SettableCreditors extends CreditorReader {
+  constructor(public current: CreditorSnapshot) {
+    super();
+  }
+  snapshot(): Promise<CreditorSnapshot | null> {
+    return Promise.resolve(this.current);
+  }
+  soleIssuer(): Promise<CreditorSnapshot | null> {
+    return Promise.resolve(this.current);
+  }
+}
+
+describe("IssueMonthlyInvoices — l'échéance au virement (V6)", () => {
+  function onTransfer(): PayerMeansStore {
+    const means = new PayerMeansStore();
+    means.rows.push(meansRow("c_port", "bank_transfer", paris("2026-08-01"), ENTITY_ID));
+    return means;
+  }
+
+  it("émise en retard : l'échéance part de l'émission RÉELLE, un samedi gardé tel quel", async () => {
+    // Le 2 octobre 2026, 10h à Paris : 2 + 15 = samedi 17 octobre, sans report.
+    const h = harness({ at: new Date("2026-10-02T08:00:00.000Z"), means: onTransfer() });
+    h.reader.orders = [bon("c_port")];
+
+    await h.run();
+
+    const state = h.invoices.inserted[0]?.toState();
+    expect(state?.issuedOn).toBe("2026-10-02");
+    expect(state?.dueOn).toBe("2026-10-17");
+  });
+
+  it("une facture sans mandat ni virement garde l'échéance du cycle", async () => {
+    const h = harness({ creditor: { ...CREDITOR, transferDueDaysAfterIssue: 30 } });
+    h.reader.orders = [bon("c_port"), bon("c_quai")];
+
+    await h.run();
+
+    expect(h.invoices.inserted.map((invoice) => invoice.toState().dueOn)).toEqual([
+      "2026-10-15",
+      "2026-10-15",
+    ]);
+  });
+
+  it("changer le réglage après l'émission ne touche ni l'échéance, ni le PDF, ni Factur-X, ni l'e-mail", async () => {
+    const creditors = new SettableCreditors({ ...CREDITOR, transferDueDaysAfterIssue: 30 });
+    const h = harness({ means: onTransfer(), creditors });
+    h.reader.orders = [bon("c_port")];
+    await h.run();
+
+    creditors.current = { ...CREDITOR, transferDueDaysAfterIssue: 5 };
+    const replay = await h.run();
+
+    expect(replay.alreadyInvoiced).toBe(1);
+    expect(h.invoices.inserted).toHaveLength(1);
+    const invoice = h.invoices.inserted[0];
+    if (invoice === undefined) {
+      throw new Error("aucune facture émise");
+    }
+    const state = invoice.toState();
+    expect(state.dueOn).toBe("2026-10-30");
+    const xml = renderFacturXml(invoice);
+    expect(xml).toContain(">20261030<");
+    const pdf = await renderInvoicePdf({ invoice, xml, fonts: TEST_FONTS, logo: null });
+    expect(drawnUnicodeText(pdf)).toContain("Date d'échéance : 30/10/2026");
+    expect(invoiceNoticeContent(state, null, "https://exemple.test")?.dueOn).toBe(
+      noticeDay("2026-10-30"),
+    );
   });
 });

@@ -62,6 +62,8 @@ export const ACCOUNTING_FACTS = {
    * recouvrement, escompte (plan `facture-emise.md`).
    */
   invoicePaymentTermsChanged: "legal_entity.invoice_payment_terms_changed",
+  /** L'échéance des factures au virement, en jours après l'émission (V6). */
+  transferDueDaysChanged: "legal_entity.transfer_due_days_changed",
   /**
    * Le préfixe de numéro des factures est posé (plan `plan-zero-faille.md`,
    * lot ZA) — libre tant que l'entité n'a rien émis, gelé ensuite.

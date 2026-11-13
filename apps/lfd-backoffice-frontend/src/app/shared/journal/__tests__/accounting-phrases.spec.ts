@@ -59,6 +59,16 @@ describe('l’entité émettrice', () => {
     );
   });
 
+  it('dit l’échéance des factures au virement, comptée depuis l’émission', () => {
+    expect(
+      sentence(
+        entity('legal_entity.transfer_due_days_changed', { subjectLabel: ENTITY, days: 30 }),
+      ),
+    ).toBe(
+      'Colette Martin a fixé l’échéance des factures au virement de l’entité émettrice « La Folie Douce SAS » à 30 jours après l’émission',
+    );
+  });
+
   it('dit le calendrier de prélèvement, et le cut-off à renseigner tel quel', () => {
     expect(
       sentence(

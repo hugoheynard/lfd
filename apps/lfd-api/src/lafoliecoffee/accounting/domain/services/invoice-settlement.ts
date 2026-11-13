@@ -2,6 +2,7 @@ import {
   isDeadBatchStatus,
   type CollectionBatchStatus,
 } from "../entities/collection-batch-status.js";
+import { isTransferOverdue } from "./transfer-arrears.js";
 
 /**
  * **Le statut de règlement d'une facture, vu par le client** (plan
@@ -14,7 +15,8 @@ import {
  * 2. payée par carte → acquittée ;
  * 2 bis. au virement (`le-paiement-par-virement.md`, V7, V8) :
  *    réglée dès qu'un virement reçu la règle (le jour de réception), sinon
- *    « virement attendu » jusqu'à l'échéance comprise, « en retard » après ;
+ *    « virement attendu », puis « en retard » dès le premier jour ouvré qui
+ *    suit l'échéance (`transferOverdueFrom`) ;
  * 3. sa DERNIÈRE ligne de prélèvement dans un lot non annulé (par instant de
  *    constitution — un lot annulé relâche ses factures) dit l'état : lot
  *    constitué, déposé, ou le retour de la banque et ce que l'équipe en a fait ;
@@ -108,7 +110,7 @@ function transferSettlement(facts: InvoiceSettlementFacts): InvoiceSettlement {
   if (facts.transferReceivedOn !== null) {
     return settlement("settled", facts.transferReceivedOn, 0);
   }
-  const overdue = facts.dueOn !== null && facts.today > facts.dueOn;
+  const overdue = facts.dueOn !== null && isTransferOverdue(facts.dueOn, facts.today);
   return settlement(overdue ? "transfer_overdue" : "transfer_expected", facts.dueOn, 0);
 }
 

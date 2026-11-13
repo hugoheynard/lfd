@@ -140,6 +140,17 @@ export class SetInvoicePaymentTermsCommand {
 }
 
 /**
+ * L'échéance des factures au virement, en jours après l'émission (V6,
+ * `le-paiement-par-virement.md`).
+ */
+export class SetTransferDueDaysCommand {
+  constructor(
+    readonly legalEntityId: string,
+    readonly days: number,
+  ) {}
+}
+
+/**
  * Le préfixe de numéro des factures (plan `plan-zero-faille.md`, F14, lot ZA)
  * — un geste à part, jamais un champ de la correction : il se gèle à la
  * première pièce, et un geste sans retour ne se range pas parmi des champs

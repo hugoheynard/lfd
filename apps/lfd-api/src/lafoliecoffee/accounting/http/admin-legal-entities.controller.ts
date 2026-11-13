@@ -11,6 +11,8 @@ import {
   type SetInvoicePaymentTermsPayload,
   setInvoicePrefixPayloadSchema,
   type SetInvoicePrefixPayload,
+  setTransferDueDaysPayloadSchema,
+  type SetTransferDueDaysPayload,
 } from "@lfd/contracts";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
@@ -21,6 +23,7 @@ import {
   SetInvoicePaymentTermsCommand,
   SetInvoicePrefixCommand,
   SetLegalEntityArchivedCommand,
+  SetTransferDueDaysCommand,
 } from "../application/commands/legal-entity-commands.js";
 import {
   GetLegalEntityQuery,
@@ -136,6 +139,22 @@ export class AdminLegalEntitiesController {
     @Body(new ZodBody(setInvoicePaymentTermsPayloadSchema)) payload: SetInvoicePaymentTermsPayload,
   ): Promise<void> {
     await this.commands.execute(new SetInvoicePaymentTermsCommand(id, payload));
+  }
+
+  /**
+   * L'échéance des factures au virement, en jours après l'émission (V6).
+   * Répond 400 hors de 1 à 45 jours. Les factures déjà émises gardent la leur.
+   */
+  @Put(":id/transfer-due-days")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "pose une valeur : rejouée, le même délai est trouvé égal et rien n'est écrit ni journalisé",
+  )
+  async setTransferDueDays(
+    @Param("id") id: string,
+    @Body(new ZodBody(setTransferDueDaysPayloadSchema)) payload: SetTransferDueDaysPayload,
+  ): Promise<void> {
+    await this.commands.execute(new SetTransferDueDaysCommand(id, payload.days));
   }
 
   /**

@@ -208,6 +208,13 @@ describe("le statut d'une facture au virement (plan virement, V7, V8)", () => {
     });
   });
 
+  it("échéance un samedi : attendu le week-end, en retard le lundi (premier jour ouvré qui suit)", () => {
+    // Samedi 17 octobre 2026.
+    const saturday = (today: string) => transfer({ dueOn: "2026-10-17", today });
+    expect(settlementOf(saturday("2026-10-18"))?.status).toBe("transfer_expected");
+    expect(settlementOf(saturday("2026-10-19"))?.status).toBe("transfer_overdue");
+  });
+
   it("réglée par un virement reçu, au jour de réception — même en retard, même bloquée", () => {
     expect(
       settlementOf(

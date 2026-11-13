@@ -19,6 +19,10 @@ import type {
   RecordedBankTransferView,
   UnpaidTransferInvoicesView,
 } from "@lfd/contracts";
+import {
+  daysLateOf,
+  transferOverdueFrom,
+} from "../src/lafoliecoffee/accounting/domain/services/transfer-arrears.js";
 import { jsonBody } from "./e2e-harness.js";
 import { FIRST_KEY, record, SECOND_KEY, today, transferInvoice } from "./bank-transfer-scene.js";
 import {
@@ -26,7 +30,6 @@ import {
   closesAt,
   COLLECTION,
   ctx,
-  DAY_MS,
   HOUR_MS,
   invoicedPayer,
   setUpEntity,
@@ -159,8 +162,11 @@ describe("le statut et les impayés d'une facture au virement (V8, C7)", () => {
     ]);
     expect((await unpaid(`legalEntityId=${entityId}&overdue=true`)).invoices).toEqual([]);
 
-    // Deux jours après l'échéance, à midi.
-    clock.set(new Date(invoice.dueOn.getTime() + 2 * DAY_MS + 12 * HOUR_MS));
+    // Le lendemain du premier jour ouvré qui suit l'échéance, à midi : en
+    // retard quel que soit le jour de la semaine où l'échéance tombe.
+    const dueDay = invoice.dueOn.toISOString().slice(0, 10);
+    const lateDay = transferOverdueFrom(transferOverdueFrom(dueDay));
+    clock.set(new Date(Date.parse(lateDay) + 12 * HOUR_MS));
 
     expect((await mine()).invoices[0]?.settlement).toEqual({
       status: "transfer_overdue",
@@ -169,7 +175,11 @@ describe("le statut et les impayés d'une facture au virement (V8, C7)", () => {
     });
     const overdue = await unpaid(`legalEntityId=${entityId}&overdue=true`);
     expect(overdue.invoices).toEqual([
-      expect.objectContaining({ number: invoice.number, overdue: true, daysLate: 2 }),
+      expect.objectContaining({
+        number: invoice.number,
+        overdue: true,
+        daysLate: daysLateOf(dueDay, lateDay),
+      }),
     ]);
     expect(overdue.overdueCents).toBe(invoice.totalTtcCents);
 

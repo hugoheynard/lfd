@@ -294,6 +294,28 @@ export class InvoicePrefixSetEvent implements JournaledEvent {
   }
 }
 
+/**
+ * L'échéance des factures au virement a changé. L'APRÈS au payload : « quelle
+ * échéance portaient les factures de mars, et qui l'avait réglée » se lit seul.
+ */
+export class TransferDueDaysChangedEvent implements JournaledEvent {
+  constructor(
+    readonly entity: LegalEntitySubject,
+    readonly at: Date,
+    readonly days: number,
+  ) {}
+
+  journalFact(): JournalFact {
+    return {
+      type: ACCOUNTING_FACTS.transferDueDaysChanged,
+      subjectType: SUBJECT,
+      subjectId: this.entity.id,
+      occurredAt: this.at,
+      payload: { subjectLabel: this.entity.name, days: this.days },
+    };
+  }
+}
+
 export class InvoicePaymentTermsChangedEvent implements JournaledEvent {
   constructor(
     readonly entity: LegalEntitySubject,

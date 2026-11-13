@@ -34,4 +34,11 @@ describe("la facture d'exemple", () => {
     expect(state.vat.allowancesCents).toBe(0);
     expect(state.vat.chargesCents).toBe(2 * order.deliveryFeeCents);
   });
+
+  it("au virement, échoit au jour d'émission plus le réglage par défaut, sans report", () => {
+    const state = specimenInvoice(NOW, "bank_transfer").toState();
+
+    expect(state.issuedOn).toBe(TODAY);
+    expect(state.dueOn).toBe(addDays(TODAY, 15));
+  });
 });

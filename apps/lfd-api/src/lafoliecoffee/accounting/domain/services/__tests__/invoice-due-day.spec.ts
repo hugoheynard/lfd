@@ -1,5 +1,5 @@
 import { collectionDayOf } from "../collection-calendar.js";
-import { invoiceDueDay, type NextClosure } from "../invoice-due-day.js";
+import { invoiceDueDay, type NextClosure, transferDueDay } from "../invoice-due-day.js";
 
 /**
  * Les dates ne sont comparées qu'entre elles (aucune horloge lue) : l'exception
@@ -40,5 +40,25 @@ describe("invoiceDueDay — l'échéance qu'une facture annonce", () => {
     expect(invoiceDueDay(CLOSURE, CLOSURE, closures, SETTINGS)).toBe(
       collectionDayOf(NEXT_CLOSURE, 14, null),
     );
+  });
+});
+
+describe("transferDueDay — l'échéance d'une facture au virement (V6)", () => {
+  it("le jour d'émission plus N jours de calendrier", () => {
+    expect(transferDueDay("2026-11-02", 15)).toBe("2026-11-17");
+    expect(transferDueDay("2026-11-02", 1)).toBe("2026-11-03");
+    expect(transferDueDay("2026-11-02", 45)).toBe("2026-12-17");
+  });
+
+  it("franchit la fin de mois, de l'année, et le 29 février d'une année bissextile", () => {
+    expect(transferDueDay("2026-01-31", 15)).toBe("2026-02-15");
+    expect(transferDueDay("2026-12-20", 15)).toBe("2027-01-04");
+    expect(transferDueDay("2028-02-20", 9)).toBe("2028-02-29");
+  });
+
+  it("n'est jamais reportée au jour ouvré : un samedi ou un jour fermé reste imprimé", () => {
+    // Samedi 14 novembre 2026, puis vendredi 25 décembre 2026.
+    expect(transferDueDay("2026-10-30", 15)).toBe("2026-11-14");
+    expect(transferDueDay("2026-12-10", 15)).toBe("2026-12-25");
   });
 });

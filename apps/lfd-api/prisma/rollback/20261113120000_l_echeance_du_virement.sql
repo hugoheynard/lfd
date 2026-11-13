@@ -1,0 +1,11 @@
+-- RETOUR ARRIÈRE de 20261113120000_l_echeance_du_virement
+-- (documentation/comptabilite/le-paiement-par-virement.md, V6).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
+-- « appliquée ».
+--
+-- Le code d'avant ignore la colonne : le retour arrière est le retour du code
+-- seul. Les factures émises entre-temps gardent leur `due_on`. Retirer la
+-- colonne serait un resserrement ultérieur, sur décision de Hugo :
+--
+--   ALTER TABLE public.legal_entities DROP COLUMN transfer_due_days_after_issue;
