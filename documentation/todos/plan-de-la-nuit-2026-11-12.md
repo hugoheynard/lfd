@@ -264,6 +264,7 @@ tournera pour la première fois, en mode rapport.
    transition refusée avant écriture, désormais sous verrou ; réseau sans
    effet durable). La lettre stricte du plan en ferait passer ~45 sous clé,
    avec leur écran.
+   **Tranché par Hugo le 2026-11-13 : les exceptions sont admises.**
 2. **`mail-check`** : il envoie volontairement un nouvel essai à chaque appel ;
    risque assumé nommé, ou clé tirée de la révision ?
    **Tranché par Hugo le 2026-11-13 : risque assumé, inchangé** (un essai de
