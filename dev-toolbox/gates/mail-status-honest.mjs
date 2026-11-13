@@ -82,10 +82,14 @@ export const DEBT = {
   },
   "apps/lfd-api/src/lafoliecoffee/account/application/commands/create-company-by-staff.handler.ts":
     {
-      count: 6,
-      reason:
-        "2026-11-08 — ouverture de compte : mailSent servi = acceptée (+ codec de rejeu d'intention)",
+      count: 4,
+      reason: "2026-11-08 — ouverture de compte : mailSent servi = acceptée",
     },
+  "apps/lfd-api/src/lafoliecoffee/account/application/services/company-opening-replay.ts": {
+    count: 2,
+    reason:
+      "2026-11-13 — le même mailSent servi, relu au rejeu sur le suivi (acceptée) ; déplacé du codec de l'ouverture, le total ne monte pas",
+  },
   "apps/lfd-api/src/lafoliecoffee/account/application/commands/invite-company-member.handler.ts": {
     count: 5,
     reason:
