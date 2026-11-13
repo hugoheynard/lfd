@@ -8,6 +8,12 @@ import type { DeliveryBin } from "../entities/delivery-bin.js";
 export abstract class DeliveryBinRepository {
   abstract load(binId: string): Promise<DeliveryBin | null>;
 
+  /**
+   * Ceux de ces bacs qui existent, annulés compris, en UNE lecture — sans
+   * ordre garanti. Les écrans de journée en interrogent des dizaines à la fois.
+   */
+  abstract loadMany(binIds: readonly string[]): Promise<readonly DeliveryBin[]>;
+
   /** Le bac de ce code, annulé compris ; `null` si aucun. */
   abstract findByCode(code: string): Promise<DeliveryBin | null>;
 

@@ -213,9 +213,11 @@ export class DeliveryBinOffice {
   async assertAtHand(orderId: string, binIds: readonly string[]): Promise<void> {
     await this.uow.run(async () => {
       const loading = await this.loadings.forOrder(orderId);
+      const found = await this.bins.loadMany(binIds);
+      const byId = new Map(found.map((bin) => [bin.id, bin]));
       for (const binId of new Set(binIds)) {
-        const bin = await this.bins.load(binId);
-        if (bin !== null && bin.voidedAt === null) {
+        const bin = byId.get(binId);
+        if (bin !== undefined && bin.voidedAt === null) {
           bin.ensureAtHand(loading);
         }
       }
@@ -250,13 +252,7 @@ export class DeliveryBinOffice {
 
   /** Ceux de ces bacs qui existent et ne sont pas annulés — une lecture, sans verrou. */
   async liveAmong(binIds: readonly string[]): Promise<ReadonlySet<string>> {
-    const live = new Set<string>();
-    for (const binId of new Set(binIds)) {
-      const bin = await this.bins.load(binId);
-      if (bin !== null && bin.voidedAt === null) {
-        live.add(binId);
-      }
-    }
-    return live;
+    const found = await this.bins.loadMany(binIds);
+    return new Set(found.filter((bin) => bin.voidedAt === null).map((bin) => bin.id));
   }
 }

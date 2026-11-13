@@ -29,6 +29,9 @@ export class ScriptedDrawer extends BinCodeDrawer {
 /** Des bacs en mémoire, stockés par leur instantané comme en base. */
 export class InMemoryBins extends DeliveryBinRepository {
   readonly byId = new Map<string, DeliveryBin>();
+  /** Lectures une à une, et par lot — de quoi voir un N + 1 revenir. */
+  loadCalls = 0;
+  loadManyCalls = 0;
 
   constructor(...bins: readonly DeliveryBin[]) {
     super();
@@ -38,8 +41,19 @@ export class InMemoryBins extends DeliveryBinRepository {
   }
 
   load(binId: string): Promise<DeliveryBin | null> {
+    this.loadCalls += 1;
     const found = this.byId.get(binId);
     return Promise.resolve(found === undefined ? null : DeliveryBin.restore(found.toSnapshot()));
+  }
+
+  loadMany(binIds: readonly string[]): Promise<readonly DeliveryBin[]> {
+    this.loadManyCalls += 1;
+    return Promise.resolve(
+      [...new Set(binIds)].flatMap((binId) => {
+        const found = this.byId.get(binId);
+        return found === undefined ? [] : [DeliveryBin.restore(found.toSnapshot())];
+      }),
+    );
   }
 
   findByCode(code: string): Promise<DeliveryBin | null> {

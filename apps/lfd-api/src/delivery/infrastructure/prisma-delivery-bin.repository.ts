@@ -58,6 +58,17 @@ export class PrismaDeliveryBinRepository extends DeliveryBinRepository {
     return row === null ? null : toDomain(row);
   }
 
+  async loadMany(binIds: readonly string[]): Promise<readonly DeliveryBin[]> {
+    if (binIds.length === 0) {
+      return [];
+    }
+    const rows = await this.prisma.deliveryBin.findMany({
+      where: { id: { in: [...new Set(binIds)] } },
+      select: BIN_SELECT,
+    });
+    return rows.map(toDomain);
+  }
+
   async findByCode(code: string): Promise<DeliveryBin | null> {
     const row = await this.prisma.deliveryBin.findUnique({ where: { code }, select: BIN_SELECT });
     return row === null ? null : toDomain(row);
