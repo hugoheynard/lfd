@@ -273,11 +273,11 @@ suivi. Le lot S6 ne se met pas en service avant.
 5. **S5** — réattribuer, et le bloc des inscriptions spontanées (§ 3.5).
 6. **S6** — les consultations de fiche (§ 3.6), après l'information de
    l'équipe.
-7. **S7** — ⏸ **en attente (Hugo, 2026-11-14)** : la durée de conservation
-   des traces d'activité du staff n'est pas décidée (registre :
-   `a-decider`). Piste : l'auteur et le suiveur vivent avec la fiche ;
-   l'auteur des faits du journal est anonymisé au bout de 12 à 36 mois,
-   sans effacer le fait.
+7. **S7** — ⏸ **en attente.** Décidé par Hugo le 2026-11-14 : pour l'instant,
+   on garde tout, sans anonymisation ni purge (registre :
+   `aucune-limite-decidee`, compté comme dette par `lint:rgpd-staff`). Piste
+   le jour où une durée est fixée : l'auteur et le suiveur vivent avec la
+   fiche ; l'auteur des faits du journal est anonymisé, sans effacer le fait.
 
 ## 5. Questions pour Hugo
 
