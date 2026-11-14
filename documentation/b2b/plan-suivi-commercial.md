@@ -168,6 +168,43 @@ this.work.track`), l'acteur lu dans le contexte de la requête
   Hugo. S'il existe un CSE, il est consulté avant, la page pouvant servir à
   évaluer le travail. Le plan ne met rien en service avant ce geste.
 
+### 3.5 Les inscriptions spontanées (lot S5)
+
+Une fiche inscrite par le client (`declared_via = self`) a son bloc sur la
+page : niveau, ancienneté, et en tête **celles qu'aucun commercial ne suit**.
+Un signal quand une inscription reste sans suiveur plus de 2 jours ouvrés
+(seuil à confirmer) : un prospect venu de lui-même et que personne ne rappelle
+est le manque le plus cher. L'attribution est le geste de S5
+(`Company.assignFollower`).
+
+### 3.6 Les consultations de fiche (lot S6)
+
+**Ce qui est compté** : combien de fois une personne de l'équipe a ouvert une
+fiche, **par fiche, par personne et par jour** — une ligne mise à jour
+(`growth.company_sheet_views` : société, staff, jour, nombre), jamais une
+ligne par clic ni une chronologie à la minute. C'est ce qui reste
+proportionné, et ce qui coûte une écriture par fiche et par jour au plus.
+
+**Qui n'est pas compté** (demandé par Hugo le 2026-11-14) :
+
+- **le superadmin** (la fiche de secours, rôle résolu `superadmin`) : ses
+  ouvertures ne sont **pas enregistrées du tout** — rien n'est gardé qui ne
+  sert pas ;
+- **les personnes qui pilotent** (celles qui ont `b2b_sales_oversight`) : leurs
+  ouvertures sont enregistrées à part et montrées sous « pilotage », jamais
+  mêlées au travail des commerciaux — la cheffe qui relit une fiche ne la
+  « travaille » pas.
+
+**Ce que la page en tire** : « ouverte 0 fois depuis 21 jours » à côté d'une
+fiche au niveau Annuaire ; dans le récap du jour, le nombre de fiches
+consultées par commercial.
+
+**Condition, avant toute écriture** : l'équipe est informée par écrit que les
+consultations sont comptées (une trace prise à son insu ne pourrait pas servir
+à évaluer son travail, Code du travail, art. L1222-4), le CSE consulté s'il
+existe, la table inscrite au registre RGPD avec la même durée que le reste du
+suivi. Le lot S6 ne se met pas en service avant.
+
 ## 4. Lots
 
 1. **S1** — colonnes d'auteur et de suivi, posées à l'ouverture ; registre et
@@ -177,7 +214,9 @@ this.work.track`), l'acteur lu dans le contexte de la requête
 3. **S3** — la ressource, la route, la page (tableau, manquements, envois
    d'accès).
 4. **S4** — le récap du jour.
-5. **S5** — réattribuer, et attribuer les inscriptions spontanées.
+5. **S5** — réattribuer, et le bloc des inscriptions spontanées (§ 3.5).
+6. **S6** — les consultations de fiche (§ 3.6), après l'information de
+   l'équipe.
 
 ## 5. Questions pour Hugo
 
@@ -191,4 +230,5 @@ this.work.track`), l'acteur lu dans le contexte de la requête
    proposé.
 5. **Qui voit** : la cheffe et l'admin seulement, ou chaque commercial voit-il
    aussi sa propre ligne ?
-6. **Un CSE existe-t-il** ? (Il change l'ordre de la mise en service.)
+6. **Un CSE existe-t-il** ?
+7. **Inscription sans suiveur** : 2 jours ouvrés avant le signal ? (Il change l'ordre de la mise en service.)
