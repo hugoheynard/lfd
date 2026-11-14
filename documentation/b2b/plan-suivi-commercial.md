@@ -229,6 +229,13 @@ suivi. Le lot S6 ne se met pas en service avant.
 
 ## 5. Questions pour Hugo
 
+> **Le 2026-11-14, Hugo : « commence ».** Les questions ouvertes sont tranchées
+> par les valeurs proposées, à revoir sur la production : seuils 7 j / 14 j /
+> 2 envois / 2 jours ouvrés ; « Contactée » = nom et (e-mail ou téléphone) ;
+> le commercial attitré est créé ; conservation 12 mois ; la page est vue par
+> la cheffe et l'admin. S6 (consultations) attend l'information écrite de
+> l'équipe.
+
 1. **Les seuils** : 7 jours au niveau Annuaire, 14 au niveau Contactée, 2
    envois d'accès sans connexion — à confirmer.
 2. **« Contactée »** : un nom ET un e-mail ou un téléphone suffit-il, ou faut-il
