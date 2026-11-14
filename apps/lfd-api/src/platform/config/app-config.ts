@@ -103,6 +103,8 @@ export class AppConfig {
   private readonly mailRequestPurgeModeValue: PurgeMode;
   private readonly networkCallModeValue: NetworkCallMode;
   private readonly routePlannerEndpointValue: RoutePlannerEndpoint | null;
+  private readonly diagnosticSecretValue: string | null;
+  private readonly diagnosticBaseUrlValue: string | null;
   private readonly exposeDetail: boolean;
   private readonly production: boolean;
   private readonly fieldKey: Buffer;
@@ -152,6 +154,8 @@ export class AppConfig {
       token: optionalString("ROUTE_PLANNER_TOKEN"),
       production: this.production,
     });
+    this.diagnosticSecretValue = optionalString("DIAGNOSTIC_SECRET");
+    this.diagnosticBaseUrlValue = optionalString("DIAGNOSTIC_BASE_URL");
     this.exposeDetail = !this.production;
     const configuredFieldKey = optionalFieldEncryptionKey();
     this.fieldKeyIsConfigured = configuredFieldKey !== null;
@@ -421,6 +425,24 @@ export class AppConfig {
    */
   routePlannerEndpoint(): RoutePlannerEndpoint | null {
     return this.routePlannerEndpointValue;
+  }
+
+  /**
+   * Le secret de diagnostic — le même que la passerelle vérifie sur
+   * `x-lfd-diagnostic` —, ou `null`. Il ne sert qu'aux mesures lancées depuis
+   * la Santé (`documentation/ops/mesures-privees.md`, § 4) ; absent, la
+   * mesure se dit non configurée. Jamais journalisé, jamais rendu.
+   */
+  diagnosticSecret(): string | null {
+    return this.diagnosticSecretValue;
+  }
+
+  /**
+   * L'adresse publique de l'API derrière la passerelle
+   * (`https://lafoliecoffee.info/api/lfd`), d'où partent ces mesures, ou `null`.
+   */
+  diagnosticBaseUrl(): string | null {
+    return this.diagnosticBaseUrlValue;
   }
 
   /**

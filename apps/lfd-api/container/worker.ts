@@ -103,6 +103,11 @@ const RUNTIME_KEYS = [
   // l'autre éteint « Proposer » — et le bulletin de démarrage le dit.
   "ROUTE_PLANNER_URL",
   "ROUTE_PLANNER_TOKEN",
+  // Les mesures lancées depuis la Santé (plan des mesures privées, § 4) : le
+  // secret que la passerelle vérifie, et son adresse publique. Absents, la
+  // mesure se dit non configurée.
+  "DIAGNOSTIC_SECRET",
+  "DIAGNOSTIC_BASE_URL",
   // Courrier : sans la clé, le mailer rend les gabarits et n'envoie rien.
   "RESEND_MAILER_B2B_API_KEY",
   "RESEND_API_KEY",

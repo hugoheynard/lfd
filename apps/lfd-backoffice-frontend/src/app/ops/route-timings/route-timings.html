@@ -1,0 +1,68 @@
+<fold-card>
+  <fold-element-title
+    variant="title"
+    title="Vitesse des routes"
+    subtitle="Mesures prises depuis le serveur, à travers la passerelle, avec le secret de diagnostic."
+  >
+    <button
+      titleAction
+      foldButton
+      type="button"
+      [loading]="state() === 'loading'"
+      [disabled]="state() === 'loading'"
+      (click)="measure()"
+    >
+      Mesurer
+    </button>
+  </fold-element-title>
+
+  @switch (state()) {
+    @case ('idle') {
+      <fold-empty-state
+        title="Aucune mesure"
+        subtitle="Chaque mesure appelle réellement les routes publiques, deux fois de suite : rien ne part sans un clic."
+      >
+        <fold-icon empty-icon name="clock" [size]="28" />
+      </fold-empty-state>
+    }
+    @case ('loading') {
+      <fold-loading message="Appel des routes en cours…" />
+    }
+    @case ('error') {
+      <fold-empty-state
+        tone="alert"
+        title="Mesure impossible"
+        subtitle="L'appel à l'API a échoué : aucune route n'a été mesurée."
+      >
+        <button foldButton type="button" (click)="measure()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @switch (report()?.state) {
+        @case ('secret-missing') {
+          <fold-empty-state
+            title="Secret non configuré"
+            subtitle="DIAGNOSTIC_SECRET manque sur l'API : aucune route n'a été appelée."
+          />
+        }
+        @case ('base-url-missing') {
+          <fold-empty-state
+            title="Adresse non configurée"
+            subtitle="DIAGNOSTIC_BASE_URL manque sur l'API : aucune route n'a été appelée."
+          />
+        }
+        @default {
+          <fold-data-table
+            caption="Vitesse des routes publiques, passage froid puis chaud"
+            narrowLayout="cards"
+            [columns]="columns"
+            [rows]="rows()"
+            [rowKey]="rowKey"
+            [rowTone]="toneOf"
+            [empty]="nothing"
+          />
+        }
+      }
+    }
+  }
+</fold-card>

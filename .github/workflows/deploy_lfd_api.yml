@@ -288,6 +288,13 @@ jobs:
           # fois posée, la retirer de GitHub ne la retire pas du Worker : poser
           # `on` pour revenir.
           CATALOGUE_SNAPSHOT_MEMORY: ${{ vars.CATALOGUE_SNAPSHOT_MEMORY }}
+          # Les mesures lancées depuis la Santé (plan des mesures privées, § 4) :
+          # le MÊME secret GitHub que deploy_lfd_gateway.yml recopie sur la
+          # passerelle, et l'adresse publique de l'API par elle
+          # (`https://lafoliecoffee.info/api/lfd`), une VARIABLE comme
+          # ROUTE_PLANNER_URL. Absents, « Mesurer » se dit non configuré.
+          DIAGNOSTIC_SECRET: ${{ secrets.DIAGNOSTIC_SECRET }}
+          DIAGNOSTIC_BASE_URL: ${{ vars.DIAGNOSTIC_BASE_URL || 'https://lafoliecoffee.info/api/lfd' }}
         run: |
           for name in DATABASE_LFD_URL \
                       AUTH0_DOMAIN AUTH0_AUDIENCE AUTH0_ADMIN_AUDIENCE \
@@ -312,7 +319,7 @@ jobs:
                       VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT \
                       RECOMPUTE_TOKEN \
                       FIELD_ENCRYPTION_KEY BAN_GEOCODER_URL ROUTE_PLANNER_URL ROUTE_PLANNER_TOKEN \
-                      CATALOGUE_SNAPSHOT_MEMORY; do
+                      CATALOGUE_SNAPSHOT_MEMORY DIAGNOSTIC_SECRET DIAGNOSTIC_BASE_URL; do
             value="${!name}"
             if [ -n "$value" ]; then
               printf '%s' "$value" | pnpm exec wrangler secret put "$name"

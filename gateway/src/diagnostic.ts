@@ -1,6 +1,6 @@
 /**
  * Les mesures de chaque réponse (`Server-Timing`, `X-Shelf-Cache`) ne sortent
- * que pour qui porte le secret de diagnostic — `documentation/todos/plan-mesures-privees.md`.
+ * que pour qui porte le secret de diagnostic — `documentation/ops/mesures-privees.md`.
  *
  * Le tri se fait à la SORTIE de la passerelle : c'est le seul qui tient pour
  * une réponse venue d'un cache de l'API, gardée avec les mesures de la requête

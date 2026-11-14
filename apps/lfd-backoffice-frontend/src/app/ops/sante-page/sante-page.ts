@@ -30,6 +30,7 @@ import { ChargeTable } from '../charge-table/charge-table';
 import { DeadLetters } from '../dead-letters/dead-letters';
 import { MediaThresholds } from '../media-thresholds/media-thresholds';
 import { PricingProbe } from '../pricing-probe/pricing-probe';
+import { RouteTimings } from '../route-timings/route-timings';
 import { EcosystemMap } from '../ecosystem-map/ecosystem-map';
 import { PermissionsStore } from '../../auth/permissions.store';
 import { POST_DEPLOY_PATH } from '../post-deploy-path';
@@ -86,6 +87,7 @@ const TABS: readonly FoldTabItem<SanteTab>[] = [
     FoldTabsComponent,
     MediaThresholds,
     PricingProbe,
+    RouteTimings,
     RouterLink,
   ],
   templateUrl: './sante-page.html',

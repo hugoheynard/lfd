@@ -9,6 +9,7 @@ import type {
   EcosystemHealth,
   MediaThresholdsReport,
   PricingProbeReport,
+  RouteTimingsReport,
   TrafficReport,
 } from '@lfd/ops-contract';
 
@@ -44,6 +45,13 @@ export class OpsService {
   pricingProbe(): Promise<PricingProbeReport> {
     return firstValueFrom(
       this.http.get<PricingProbeReport>(`${B2B_API_BASE}/admin/ops/health/pricing`),
+    );
+  }
+
+  /** Appelle les routes publiques à travers la passerelle, deux fois chacune. Pas de corps : relancer n'écrit rien. */
+  routeTimings(): Promise<RouteTimingsReport> {
+    return firstValueFrom(
+      this.http.post<RouteTimingsReport>(`${B2B_API_BASE}/admin/ops/route-timings`, null),
     );
   }
 

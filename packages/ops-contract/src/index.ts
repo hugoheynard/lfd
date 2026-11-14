@@ -67,3 +67,12 @@ export type {
   PostDeployRunState,
   PostDeployRunView,
 } from "./post-deploy.js";
+
+export type {
+  RouteTiming,
+  RouteTimingFailure,
+  RouteTimingPass,
+  RouteTimingsReport,
+  RouteTimingsState,
+  ServerTimingMark,
+} from "./route-timings.js";

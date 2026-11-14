@@ -38,6 +38,10 @@ import { DurableObjectCacheMetricsReader } from "./caches/durable-object-cache-m
 import { ReadCacheMetricsHandler } from "./caches/read-cache-metrics.handler.js";
 import { SharedCacheMetricsReader } from "./caches/shared-cache-metrics.reader.js";
 import { PostDeployModule } from "./post-deploy/post-deploy.module.js";
+import { AdminRouteTimingsController } from "./route-timings/admin-route-timings.controller.js";
+import { FetchRouteTimingTransport } from "./route-timings/fetch-route-timing.transport.js";
+import { MeasureRouteTimingsHandler } from "./route-timings/measure-route-timings.handler.js";
+import { RouteTimingTransport } from "./route-timings/route-timing-transport.port.js";
 
 /**
  * Les sondes de fronts sont **dérivées de la carte**, pas listées à la main :
@@ -76,6 +80,7 @@ const FRONTEND_PROBES: readonly NodeProbe[] = TOPOLOGY.flatMap((node) =>
     AdminTrafficController,
     AdminHealthController,
     AdminPricingProbeController,
+    AdminRouteTimingsController,
     AdminMediaThresholdsController,
     AdminCapabilitiesController,
     AdminCachesController,
@@ -114,6 +119,13 @@ const FRONTEND_PROBES: readonly NodeProbe[] = TOPOLOGY.flatMap((node) =>
     // La sonde du calcul des prix : la fenêtre vient de `platform/metrics`,
     // où le commerce écrit sans savoir qui lit.
     ReadPricingProbeHandler,
+    // Les mesures des routes publiques, à travers la passerelle et avec le
+    // secret de diagnostic ; le transport est un port, doublé en test.
+    MeasureRouteTimingsHandler,
+    {
+      provide: RouteTimingTransport,
+      useFactory: (): RouteTimingTransport => new FetchRouteTimingTransport(),
+    },
     // Les capacités éteintes : le bulletin de démarrage (global, `platform/`),
     // lu par un port étroit — la même source que la route au jeton.
     ReadCapabilitiesHandler,
