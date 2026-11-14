@@ -61,6 +61,9 @@ attribuée ». Pas de tableau par commercial à part.
 └───────────────────────────────────────────────────────────────────┘
 ```
 
+Le filtre **Canal** a deux valeurs : « commercial » (fiche ouverte par
+l'équipe) et « auto-inscription » (le client s'est inscrit lui-même).
+
 Les compteurs par niveau et le récap du jour suivent le filtre : choisir
 « Commerciale A » donne ses chiffres, « Tous » ceux de l'équipe.
 
