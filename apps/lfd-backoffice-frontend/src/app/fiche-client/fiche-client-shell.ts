@@ -6,6 +6,7 @@ import {
   FoldIconComponent,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
+  FoldPanelHostService,
   FoldSurfaceDirective,
   FoldViewNavComponent,
   type FoldViewNavItem,
@@ -26,6 +27,8 @@ import { ClientSheetStore } from './client-sheet.store';
 import { CompanyDetailStore } from '../comptes-clients/company-cache/company-detail.store';
 import { watchCompanySubjects } from '../comptes-clients/company-cache/company-subjects';
 import { CompteChiffres } from '../shared/compte-chiffres/compte-chiffres';
+import { dialogSide } from '../b2b/reglages/delivery-zones-section/delivery-audiences';
+import { NoteContactPanel } from './panels/note-contact-panel/note-contact-panel';
 
 /**
  * La **coquille d'un compte client** : un en-tête qui porte le nom de la société
@@ -169,6 +172,7 @@ export class FicheClientShell {
   private readonly details = inject(CompanyDetailStore);
   private readonly pins = inject(PinnedAccountsStore);
   private readonly notify = inject(NotifyService);
+  private readonly panelHost = inject(FoldPanelHostService);
 
   /**
    * Barre repliée en accordéon d'icônes sur un écran étroit : chaque onglet
@@ -232,6 +236,25 @@ export class FicheClientShell {
     // CA, les dernières commandes, les paniers) : un geste fait ailleurs les
     // relit sans démonter la fiche.
     watchCompanySubjects(['companies', 'orders-all'], () => this.store.refresh());
+  }
+
+  /** Noter un contact écrit sur la fiche : le droit d'écrire les comptes. */
+  protected readonly canNoteContact = computed(() => this.permissions.can('b2b_companies:write'));
+
+  /**
+   * Ouvre « Noter un contact ». Un succès relit la fiche : l'échange entre
+   * dans son historique (`company.contacted`).
+   */
+  protected noteContact(): void {
+    const ref = this.panelHost.open(NoteContactPanel, {
+      side: dialogSide(),
+      data: { companyId: this.id(), companyName: this.title() },
+    });
+    void ref.closed.then((noted) => {
+      if (noted === true) {
+        void this.store.reload();
+      }
+    });
   }
 
   protected isPinned(): boolean {

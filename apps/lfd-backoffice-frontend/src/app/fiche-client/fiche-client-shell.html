@@ -38,6 +38,13 @@
       <!-- L'épingle vit dans l'en-tête du compte, pas dans une vue : on décide
            de suivre un client, pas une de ses pages. -->
       <div class="masthead-actions">
+        <!-- Noter un échange avec le client : ce qui le fait passer
+             « Contactée » au suivi commercial. Seulement à qui écrit la fiche. -->
+        @if (canNoteContact()) {
+          <button foldButton size="sm" emphasis="outline" icon="phone" (click)="noteContact()">
+            Noter un contact
+          </button>
+        }
         <button
           foldButton
           size="sm"

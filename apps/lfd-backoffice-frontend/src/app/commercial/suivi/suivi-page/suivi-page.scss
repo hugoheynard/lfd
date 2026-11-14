@@ -1,0 +1,46 @@
+:host {
+  display: block;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xl);
+  padding-bottom: var(--fold-space-2xl);
+  max-width: 78rem;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fold-space-md);
+}
+
+.counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-md);
+  margin: 0;
+  color: var(--fold-color-text-secondary);
+}
+
+.primary,
+.secondary {
+  display: block;
+}
+
+.primary {
+  font-weight: 600;
+}
+
+.secondary {
+  color: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-sm);
+}
+
+.signals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}

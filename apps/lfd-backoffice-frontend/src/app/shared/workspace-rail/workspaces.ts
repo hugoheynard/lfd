@@ -90,6 +90,15 @@ export const COMMERCIAL_VIEWS: readonly CommercialView[] = [
       "Sur tous les comptes, qui a un détenteur et qui s'est déjà connecté. On relance d'ici l'e-mail d'accès d'un invité.",
   },
   {
+    key: 'suivi',
+    label: 'Suivi commercial',
+    link: '/commercial/suivi',
+    icon: 'stats',
+    needs: 'b2b_sales_oversight:read',
+    description:
+      'Chaque fiche ouverte et son niveau de travail : ce qui a été fait, et ce qui manque encore.',
+  },
+  {
     key: 'prospects',
     label: 'Prospects',
     link: '/commercial/prospects',

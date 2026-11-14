@@ -56,6 +56,15 @@ export const commercialRoutes: Routes = [
           import('./acces-clients/acces-clients-page').then((m) => m.AccesClientsPage),
       },
       {
+        // La page de la cheffe des commerciaux : un tableau de toutes les
+        // fiches principales, par niveau de travail. Même droit que la route
+        // serveur (`b2b_sales_oversight`).
+        path: 'suivi',
+        canActivate: [permissionGuard('b2b_sales_oversight:read')],
+        title: 'Suivi commercial — LFC B2B admin',
+        loadComponent: () => import('./suivi/suivi-page/suivi-page').then((m) => m.SuiviPage),
+      },
+      {
         path: 'prospects',
         canActivate: [permissionGuard('b2b_growth:read')],
         title: 'Prospects — LFC B2B admin',

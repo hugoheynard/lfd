@@ -1,0 +1,51 @@
+<fold-panel-header title="Noter un contact" [subtitle]="data()?.companyName ?? ''" />
+
+<fold-panel-body>
+  <div class="form">
+    @if (refusal(); as refusal) {
+      <fold-callout variant="alert" data-refusal>{{ refusal }}</fold-callout>
+    }
+
+    <fold-listbox
+      label="Mode"
+      placeholder="Comment avez-vous échangé ?"
+      [options]="modes"
+      [value]="mode()"
+      (selectionChange)="mode.set($event)"
+    />
+
+    <fold-date
+      label="Jour de l’échange"
+      [max]="today"
+      [value]="date()"
+      [hint]="dateProblem() ?? undefined"
+      (valueChange)="date.set($event)"
+    />
+
+    <fold-textarea
+      label="Note"
+      optional
+      [rows]="3"
+      placeholder="Ce qui s’est dit, en une phrase."
+      [hint]="noteHint()"
+      [value]="note()"
+      (valueChange)="note.set($event)"
+    />
+    @if (noteTooLong()) {
+      <fold-callout variant="alert">La note dépasse {{ maxLength }} caractères.</fold-callout>
+    }
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button
+    foldButton
+    data-submit
+    [loading]="pending()"
+    [disabled]="payload() === null || pending()"
+    (click)="submit()"
+  >
+    Noter le contact
+  </button>
+</fold-panel-footer>

@@ -18,6 +18,7 @@ import type {
   InitialPayerBillingModePayload,
   InitialPayerBillingModeView,
   InviteCompanyMemberPayload,
+  NoteCompanyContactPayload,
   UpdateIdentityPayload,
 } from '@lfd/contracts';
 import type { CompanyContactDraft, CompanyIdentityDraft } from '@lfd/b2b-ui/company';
@@ -152,6 +153,25 @@ export class AdminCompaniesService {
     return firstValueFrom(
       this.http.post<CompanyMemberInvitedView>(
         `${B2B_API_BASE}/admin/companies/${companyId}/members`,
+        payload,
+        intentOptions(intentKey),
+      ),
+    );
+  }
+
+  /**
+   * **Note un contact** avec la société (mode, jour, note courte) : le geste
+   * qui la fait passer « Contactée » au suivi commercial. Une fois par
+   * intention — un double clic ne note pas deux échanges.
+   */
+  async noteContact(
+    companyId: string,
+    payload: NoteCompanyContactPayload,
+    intentKey: string,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(
+        `${B2B_API_BASE}/admin/companies/${companyId}/noted-contacts`,
         payload,
         intentOptions(intentKey),
       ),

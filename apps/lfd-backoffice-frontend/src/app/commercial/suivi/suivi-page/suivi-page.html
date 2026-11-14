@@ -1,0 +1,118 @@
+<section class="page">
+  <div class="filters">
+    <fold-listbox
+      size="sm"
+      label="Commercial"
+      [options]="followerOptions()"
+      [value]="selected(filters().follower)"
+      (selectionChange)="setFilter('follower', $event)"
+    />
+    <fold-listbox
+      size="sm"
+      label="Niveau"
+      [options]="levelOptions"
+      [value]="selected(filters().level)"
+      (selectionChange)="setFilter('level', $event)"
+    />
+    <fold-listbox
+      size="sm"
+      label="Signal"
+      [options]="signalOptions"
+      [value]="selected(filters().signal)"
+      (selectionChange)="setFilter('signal', $event)"
+    />
+    <fold-listbox
+      size="sm"
+      label="Canal"
+      [options]="channelOptions"
+      [value]="selected(filters().channel)"
+      (selectionChange)="setFilter('channel', $event)"
+    />
+  </div>
+
+  @switch (state()) {
+    @case ('too-large') {
+      <fold-empty-state
+        tone="alert"
+        title="Trop de fiches pour ce filtre"
+        subtitle="Filtrez par commercial ou par canal pour réduire la liste."
+      />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de lire le suivi commercial">
+        <button foldButton (click)="reload()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (counts().length > 0) {
+        <p class="counts" data-counts>
+          @for (count of counts(); track count.level) {
+            <span>{{ count.label }}</span>
+          }
+        </p>
+      }
+
+      <fold-data-table
+        caption="Suivi commercial"
+        toolbarSurface="accent"
+        hover
+        clickable
+        [columns]="columns"
+        [rows]="view()?.rows ?? []"
+        [rowKey]="rowKey"
+        [loading]="state() === 'loading'"
+        [empty]="empty"
+        [rowNote]="hasMissing"
+        (rowClick)="open($event)"
+      >
+        <fold-element-title foldToolbar variant="bar" [title]="tableTitle()" />
+
+        <ng-template foldCell="company" let-row>
+          <span class="primary">{{ row.name }}</span>
+        </ng-template>
+
+        <ng-template foldCell="reference" let-row>
+          <span class="secondary">{{ row.reference }}</span>
+        </ng-template>
+
+        <ng-template foldCell="level" let-row>
+          <fold-badge [variant]="levelVariant(row)" [content]="levelLabel(row)" />
+        </ng-template>
+
+        <ng-template foldCell="age" let-row>{{ row.ageDays }} j</ng-template>
+
+        <ng-template foldCell="follower" let-row>{{ follower(row) }}</ng-template>
+
+        <ng-template foldCell="signals" let-row>
+          <span class="signals">
+            @for (badge of badges(row); track badge.key) {
+              <fold-badge [variant]="badge.variant" [content]="badge.label" />
+            }
+            @if (selfDeclared(row)) {
+              <fold-badge variant="neutral" content="Inscrit" />
+            }
+          </span>
+        </ng-template>
+
+        <!-- Ce qui manque, sous la ligne : la question « qu'est-ce qui n'a pas
+             été fait ? » se lit avec la fiche, pas dans une colonne de plus. -->
+        <ng-template foldRowNote let-row>
+          <span class="secondary" data-missing>{{ missing(row) }}</span>
+        </ng-template>
+      </fold-data-table>
+
+      @if (view(); as current) {
+        @if (current.total > current.pageSize) {
+          <fold-paginator
+            [currentPage]="current.page"
+            [pageSize]="current.pageSize"
+            [totalItems]="current.total"
+            [pageSizeOptions]="[]"
+            [labels]="paginatorLabels"
+            (pageChange)="setPage($event)"
+          />
+        }
+      }
+    }
+  }
+</section>

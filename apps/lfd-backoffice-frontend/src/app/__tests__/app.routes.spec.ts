@@ -50,6 +50,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'commercial/comptes-clients': 'b2b_companies:read',
   // Qui a un détenteur, qui est entré — même droit que la liste des comptes.
   'commercial/acces-clients': 'b2b_companies:read',
+  // La page de la cheffe des commerciaux, sous sa propre ressource.
+  'commercial/suivi': 'b2b_sales_oversight:read',
   'comptes-clients/nouveau': 'b2b_companies:write',
   // La liste de TOUTES les commandes (page-commandes.md, C2).
   commandes: 'b2b_orders:read',
