@@ -232,6 +232,18 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
     }),
   ),
   /**
+   * Le commercial qui suit la fiche change (suivi commercial, § 3.1) : avant
+   * et après, chacun cité sous son nom du moment, `null` quand personne ne la
+   * suivait ou ne la suit plus. Celui qui décide est l'acteur de la ligne.
+   */
+  "company.follower_changed": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      before: person("staff_user").nullable(),
+      after: person("staff_user").nullable(),
+    }),
+  ),
+  /**
    * LES SOUS-COMPTES (plan `documentation/comptes-client/sous-comptes.md`, lot S1,
    * 2026-10-05). Le sujet est toujours le SOUS-COMPTE ; le principal est cité
    * nommé, sous son nom du moment. Nés ce jour-là : aucune forme d'avant.

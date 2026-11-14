@@ -2,7 +2,7 @@
 
 > Plan du 2026-11-14 (v3 : montées calculées à la lecture, lecture directe
 > assumée dans growth ; v2), demandé par Hugo pour la cheffe des commerciaux.
-> Pas encore bâti. La v1 a été contredite par `vitruve` (niveau « Ouverte »
+> S1 à S5 bâtis le 2026-11-14 (non déployés) ; S6 et S7 en attente. La v1 a été contredite par `vitruve` (niveau « Ouverte »
 > sans donnée, sites comptés comme des ouvertures, montées de niveau sans
 > source, adresses multiples contraires au modèle). Touche une frontière
 > d'accès et le registre RGPD du staff.
@@ -241,6 +241,16 @@ Un signal quand une inscription reste sans suiveur plus de 2 jours ouvrés
 est le manque le plus cher. L'attribution est le geste de S5
 (`Company.assignFollower`).
 
+Bâti (S5) : `PUT /admin/companies/:id/follower` `{ followerStaffId | null }`,
+sous `b2b_sales_oversight` en écriture, clé d'intention de l'écran. Un site
+est refusé (409), une personne inconnue (404) ou suspendue (409) aussi ; un
+suiveur inchangé n'écrit rien. Le fait `company.follower_changed` cite
+l'ancien et le nouveau suiveur sous leur nom du moment. La page propose à
+l'attribution les personnes non suspendues qui tiennent `b2b_growth:write`
+(`assignable`). Le signal `unassigned_signup` : inscription du client, sans
+suiveur, plus de 2 jours ouvrés (lundi–vendredi, jours fériés non retirés,
+calendrier de Paris) depuis sa création.
+
 ### 3.6 Les consultations de fiche (lot S6)
 
 **Ce qui est compté** : combien de fois une personne de l'équipe a ouvert une
@@ -285,6 +295,8 @@ d'hiver comprises). La ligne « Aujourd'hui » suit les filtres :
   encore tenu ; « Active » est daté par la plus tardive de l'activation et de
   la première commande ;
 - **accès renvoyés** : les demandes du jour de l'e-mail d'accès client.
+
+## 4. Lots
 
 1. **S1** — colonnes d'auteur et de suivi, posées à l'ouverture ; registre et
    porte RGPD ; script de reprise (relu, lancé à part).

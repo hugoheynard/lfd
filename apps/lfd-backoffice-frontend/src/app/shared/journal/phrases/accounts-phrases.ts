@@ -820,6 +820,25 @@ const companyContacted: Phrase = (fact) =>
     ['subjectLabel', 'mode', 'date'],
   );
 
+/**
+ * « … a confié le client « X » à Lou Martin (suivi jusque-là par Ana Martin) »,
+ * « … a confié le client « X » à Lou Martin », « … a retiré le suivi du client
+ * « X » (suivi jusque-là par Ana Martin) ».
+ */
+const companyFollowerChanged: Phrase = (fact) => {
+  const before = fact.payload['before'];
+  const after = fact.payload['after'];
+  const head =
+    after === null || after === undefined
+      ? [text('a retiré le suivi '), ...client(fact, 'of')]
+      : [text('a confié '), ...client(fact, 'the'), text(' à '), ...citePerson(after)];
+  const previous =
+    before === null || before === undefined
+      ? []
+      : [text(' (suivi jusque-là par '), ...citePerson(before), text(')')];
+  return byActor(fact, [...head, ...previous], ['subjectLabel', 'before', 'after']);
+};
+
 export const ACCOUNTS_PHRASES = {
   'company.declared': companyDeclared,
   'company.step_reached': (fact) =>
@@ -846,6 +865,7 @@ export const ACCOUNTS_PHRASES = {
   'company.direct_debit_blocked': directDebitBlocked,
   'company.direct_debit_unblocked': onClient('a rétabli le prélèvement mensuel ', 'of'),
   'company.contacted': companyContacted,
+  'company.follower_changed': companyFollowerChanged,
   'company.billing_address_saved': billingAddressSaved,
   'company.delivery_address_added': onDeliveryAddress('a ajouté', 'to'),
   'company.delivery_address_updated': onDeliveryAddress('a modifié', 'of'),

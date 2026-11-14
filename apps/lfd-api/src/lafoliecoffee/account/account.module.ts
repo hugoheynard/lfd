@@ -154,6 +154,7 @@ import { StaffBlockDirectory } from "./infrastructure/staff-block-directory.js";
 import { StaffDirectory } from "./domain/ports/staff-directory.js";
 import { CertifyKbisHandler } from "./application/commands/certify-kbis.handler.js";
 import { NoteCompanyContactHandler } from "./application/commands/note-company-contact.handler.js";
+import { AssignCompanyFollowerHandler } from "./application/commands/assign-company-follower.handler.js";
 import { RevokeKbisCertificationHandler } from "./application/commands/revoke-kbis-certification.handler.js";
 import { PrismaMembershipReader } from "./infrastructure/prisma-membership.reader.js";
 import { PrismaNavPreferencesRepository } from "./infrastructure/prisma-nav-preferences.repository.js";
@@ -184,6 +185,7 @@ import { PrismaCompanyFollowsRepository } from "./infrastructure/prisma-company-
 import { AdminCompanyMembersController } from "./http/admin-company-members.controller.js";
 import { AdminCompanyContactsController } from "./http/admin-company-contacts.controller.js";
 import { AdminCompanyNotedContactsController } from "./http/admin-company-noted-contacts.controller.js";
+import { AdminCompanyFollowerController } from "./http/admin-company-follower.controller.js";
 import { AdminCompanyPiecesController } from "./http/admin-company-pieces.controller.js";
 import { CompaniesController } from "./http/companies.controller.js";
 import { AdminAccessPendingController } from "./http/admin-access-pending.controller.js";
@@ -280,6 +282,7 @@ import {
     AdminCompanyMembersController,
     AdminCompanyContactsController,
     AdminCompanyNotedContactsController,
+    AdminCompanyFollowerController,
     AdminCompanyPiecesController,
     CompanyDeliveryProcedureController,
     AdminCompanyDeliveryProcedureController,
@@ -382,6 +385,7 @@ import {
     UploadKbisByStaffHandler,
     CertifyKbisHandler,
     NoteCompanyContactHandler,
+    AssignCompanyFollowerHandler,
     RevokeKbisCertificationHandler,
     UpdateIdentityByStaffHandler,
     GrantTermsHandler,

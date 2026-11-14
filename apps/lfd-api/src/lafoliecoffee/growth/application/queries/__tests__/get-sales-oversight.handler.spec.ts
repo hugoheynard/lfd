@@ -14,6 +14,10 @@ import {
   StaffContacts,
   type StaffContact,
 } from "../../../../../staff/directory/domain/staff-contacts.js";
+import {
+  StaffPermissionHolders,
+  type StaffPermissionHolder,
+} from "../../../../../staff/directory/domain/staff-permission-holders.js";
 import { SalesOversightTooLargeError } from "../../../domain/errors/sales-oversight-errors.js";
 import { SalesDayReader, type SalesDayScope } from "../../../domain/ports/sales-day.reader.js";
 import {
@@ -95,6 +99,17 @@ class FakeStaff extends StaffContacts {
   }
 }
 
+class FakeHolders extends StaffPermissionHolders {
+  readonly asked: string[] = [];
+  constructor(private readonly holders: readonly StaffPermissionHolder[] = []) {
+    super();
+  }
+  holdersOf(permission: string): Promise<readonly StaffPermissionHolder[]> {
+    this.asked.push(permission);
+    return Promise.resolve(this.holders);
+  }
+}
+
 function person(id: string, firstName: string, active = true): StaffContact {
   return {
     staffUserId: id,
@@ -148,8 +163,9 @@ function handler(
   mails = new FakeMails(),
   staff = new FakeStaff(),
   days = new FakeDays(),
+  holders = new FakeHolders(),
 ) {
-  return new GetSalesOversightHandler(sheets, mails, staff, days, new FixedClock(NOW));
+  return new GetSalesOversightHandler(sheets, mails, staff, days, holders, new FixedClock(NOW));
 }
 
 describe("GetSalesOversightHandler — le filtre de la base", () => {
@@ -300,3 +316,35 @@ describe("GetSalesOversightHandler — le récap du jour", () => {
 function dayOfNow(): string {
   return NOW.toISOString().slice(0, 10);
 }
+
+describe("GetSalesOversightHandler — à qui confier une fiche", () => {
+  it("propose les tenants de b2b_growth:write, par nom", async () => {
+    const holders = new FakeHolders([
+      { staffUserId: "staff_z", firstName: "Zoé", lastName: "Commerciale" },
+      { staffUserId: "staff_b", firstName: "Béa", lastName: "Commerciale" },
+    ]);
+    const view = await handler(
+      new FakeSheets([]),
+      new FakeMails(),
+      new FakeStaff(),
+      new FakeDays(),
+      holders,
+    ).execute(query());
+
+    expect(holders.asked).toEqual(["b2b_growth:write"]);
+    expect(view.assignable).toEqual([
+      { id: "staff_b", name: "Béa Commerciale" },
+      { id: "staff_z", name: "Zoé Commerciale" },
+    ]);
+  });
+
+  it("signale une inscription du client restée sans suiveur", async () => {
+    const view = await handler(
+      new FakeSheets([
+        sheet("c_self", { declaredVia: "self", followedByStaffId: null, createdAt: daysBefore(7) }),
+      ]),
+    ).execute(query());
+
+    expect(view.rows[0]?.signals).toContain("unassigned_signup");
+  });
+});

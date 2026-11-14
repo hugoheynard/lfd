@@ -654,6 +654,8 @@ export {
   noteCompanyContactPayloadSchema,
 } from "./company-contact-note.js";
 export type { CompanyContactMode, NoteCompanyContactPayload } from "./company-contact-note.js";
+export { assignCompanyFollowerPayloadSchema } from "./company-follower.js";
+export type { AssignCompanyFollowerPayload } from "./company-follower.js";
 export {
   SALES_OVERSIGHT_CHANNELS,
   SALES_OVERSIGHT_PAGE_SIZE,

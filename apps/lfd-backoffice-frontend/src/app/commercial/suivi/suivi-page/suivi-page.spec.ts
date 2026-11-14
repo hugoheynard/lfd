@@ -2,9 +2,12 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, type Params } from '@angular/router';
 import type { SalesOversightRowView, SalesOversightView } from '@lfd/contracts';
+import { FoldPanelHostService } from 'fold-ng';
 import { BehaviorSubject } from 'rxjs';
 import { describe, expect, it } from 'vitest';
 
+import { PermissionsStore } from '../../../auth/permissions.store';
+import { AssignFollowerPanel } from '../assign-follower-panel/assign-follower-panel';
 import type { SalesOversightFilters } from '../sales-oversight-filters';
 import { SalesOversightService } from '../sales-oversight.service';
 import { SuiviPage } from './suivi-page';
@@ -35,6 +38,10 @@ function view(over: Partial<SalesOversightView> = {}): SalesOversightView {
     pageSize: 50,
     total: 1,
     followers: [{ id: 'st_a', name: 'Commerciale A' }],
+    assignable: [
+      { id: 'st_a', name: 'Commerciale A' },
+      { id: 'st_b', name: 'Commerciale B' },
+    ],
     today: {
       day: '2030-01-15',
       opened: 12,
@@ -63,19 +70,41 @@ class FakeRouter {
   }
 }
 
+/** Les droits de l'agent : la cheffe a l'écriture, un lecteur non. */
+class FakePermissions {
+  constructor(private readonly writes: boolean) {}
+  can(permission: string): boolean {
+    return permission === 'b2b_sales_oversight:read' || this.writes;
+  }
+}
+
+/** L'hôte des panneaux : garde ce qu'on ouvre, et ferme comme on le lui dit. */
+class FakePanels {
+  readonly opened: { component: unknown; data: unknown }[] = [];
+  result: boolean = true;
+  open(component: unknown, options: { data: unknown }): { closed: Promise<boolean> } {
+    this.opened.push({ component, data: options.data });
+    return { closed: Promise.resolve(this.result) };
+  }
+}
+
 interface Rendered {
+  readonly panels: FakePanels;
   readonly fixture: ComponentFixture<SuiviPage>;
   readonly api: FakeApi;
   readonly router: FakeRouter;
   readonly params: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
 }
 
-async function render(query: Params = {}, api = new FakeApi()): Promise<Rendered> {
+async function render(query: Params = {}, api = new FakeApi(), writes = true): Promise<Rendered> {
   const params = new BehaviorSubject(convertToParamMap(query));
   const router = new FakeRouter();
+  const panels = new FakePanels();
   TestBed.configureTestingModule({
     imports: [SuiviPage],
     providers: [
+      { provide: PermissionsStore, useValue: new FakePermissions(writes) },
+      { provide: FoldPanelHostService, useValue: panels },
       { provide: SalesOversightService, useValue: api },
       { provide: Router, useValue: router },
       {
@@ -86,7 +115,7 @@ async function render(query: Params = {}, api = new FakeApi()): Promise<Rendered
   });
   const fixture = TestBed.createComponent(SuiviPage);
   await settle(fixture);
-  return { fixture, api, router, params };
+  return { fixture, api, router, params, panels };
 }
 
 async function settle(fixture: ComponentFixture<SuiviPage>): Promise<void> {
@@ -210,5 +239,52 @@ describe('SuiviPage — le suivi commercial', () => {
     params.next(convertToParamMap({ level: 'active' }));
     await settle(fixture);
     expect(api.asked.at(-1)?.level).toBe('active');
+  });
+});
+
+describe('SuiviPage — confier une fiche', () => {
+  const assignButtons = (fixture: ComponentFixture<SuiviPage>): HTMLButtonElement[] => [
+    ...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('[data-assign]'),
+  ];
+
+  it('propose « Attribuer » sans suiveur, « Réattribuer » sinon', async () => {
+    const api = new FakeApi();
+    api.answer = () =>
+      Promise.resolve(
+        view({ rows: [row(), row({ companyId: 'co_2', followedBy: null })], total: 2 }),
+      );
+    const { fixture } = await render({}, api);
+    expect(assignButtons(fixture).map((button) => button.textContent?.trim())).toEqual([
+      'Réattribuer',
+      'Attribuer',
+    ]);
+  });
+
+  it('ne propose rien sans le droit d’écrire le suivi', async () => {
+    const { fixture } = await render({}, new FakeApi(), false);
+    expect(assignButtons(fixture)).toEqual([]);
+  });
+
+  it('ouvre le dialogue sans ouvrir la fiche, puis relit la page sur un succès', async () => {
+    const { fixture, panels, router, api } = await render();
+    assignButtons(fixture)[0]?.click();
+    await settle(fixture);
+    expect(panels.opened[0]?.component).toBe(AssignFollowerPanel);
+    expect(panels.opened[0]?.data).toEqual({
+      companyId: 'co_1',
+      companyName: 'Boulangerie X',
+      currentFollowerId: 'st_a',
+      assignable: view().assignable,
+    });
+    expect(router.navigations).toEqual([]);
+    expect(api.asked).toHaveLength(2);
+  });
+
+  it('nomme le signal d’une inscription sans suivi', async () => {
+    const api = new FakeApi();
+    api.answer = () =>
+      Promise.resolve(view({ rows: [row({ signals: ['unassigned_signup'], followedBy: null })] }));
+    const { fixture } = await render({}, api);
+    expect(text(fixture)).toContain('Inscription sans suivi');
   });
 });

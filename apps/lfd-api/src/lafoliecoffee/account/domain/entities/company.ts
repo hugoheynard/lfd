@@ -14,6 +14,7 @@ import {
 import { NO_FULFILLMENT_PREFERENCE, toLegalForm } from "@lfd/contracts";
 import type { DeferredTerm, FulfillmentPreferenceView } from "@lfd/contracts";
 import type { CompanyDeclarationChannel } from "../value-objects/company-declaration-channel.js";
+import { InvalidFollowerError, SiteHasNoFollowerError } from "../errors/follower-errors.js";
 import { CompanyOpening } from "../value-objects/company-opening.js";
 import type { CompanyStatus } from "../value-objects/company-status.js";
 import type { StaffTrace } from "../value-objects/staff-trace.js";
@@ -260,7 +261,7 @@ export class Company {
     /** Fait de naissance, jamais muté — cf. {@link CompanyDeclarationChannel}. */
     private readonly declaredViaValue: CompanyDeclarationChannel | null,
     /** Qui l'a ouverte (fait de naissance) et qui la suit. */
-    private readonly openingValue: CompanyOpening,
+    private openingValue: CompanyOpening,
     /** La révision chargée : celle contre laquelle une fiche lue se compare. */
     private readonly revisionValue = 0,
   ) {
@@ -974,6 +975,34 @@ export class Company {
    */
   detachFromParent(): void {
     this.hierarchyValue = this.hierarchyValue.detach(this.identityId);
+  }
+
+  /**
+   * **Confie le suivi commercial** de la fiche à une personne de l'équipe, ou
+   * le retire (`null`). Un site n'a pas de suiveur : le suivi commercial est
+   * celui de son principal, et un site suivi apparaîtrait comme une
+   * acquisition qu'il n'est pas.
+   *
+   * L'existence et l'activité de la personne se jugent dans l'annuaire, hors
+   * de l'agrégat ; ici, la forme seule.
+   *
+   * @returns `false` quand le suiveur est déjà celui-là : rien à écrire, rien à journaliser.
+   * @throws {SiteHasNoFollowerError} la société est un site.
+   * @throws {InvalidFollowerError} l'identifiant est blanc.
+   */
+  assignFollower(staffUserId: string | null): boolean {
+    if (this.hierarchyValue.parentCompanyId !== null) {
+      throw new SiteHasNoFollowerError(this.identityId ?? "", this.hierarchyValue.parentCompanyId);
+    }
+    const follower = staffUserId === null ? null : staffUserId.trim();
+    if (follower === "") {
+      throw new InvalidFollowerError();
+    }
+    if (follower === this.openingValue.followerStaffId) {
+      return false;
+    }
+    this.openingValue = this.openingValue.withFollower(follower);
+    return true;
   }
 
   /** Coche ou décoche « Compte de groupe, sans livraison » (§4). */

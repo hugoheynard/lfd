@@ -6,6 +6,7 @@ import type {
 
 import type { SubjectMail } from "../../../../mail/channels/deliveries/mail-subject-deliveries.js";
 import type { StaffContact } from "../../../../staff/directory/domain/staff-contacts.js";
+import type { StaffPermissionHolder } from "../../../../staff/directory/domain/staff-permission-holders.js";
 import {
   NO_ACCESS_REQUEST,
   type AccessRequests,
@@ -33,7 +34,7 @@ export function accessRequestsOf(mails: readonly SubjectMail[] | undefined): Acc
 }
 
 /** « Prénom Nom », ou `null` si la fiche n'en porte pas. */
-function nameOf(person: StaffContact): string | null {
+function nameOf(person: { readonly firstName: string; readonly lastName: string }): string | null {
   const name = `${person.firstName} ${person.lastName}`.trim();
   return name === "" ? null : name;
 }
@@ -66,6 +67,15 @@ export function followerOptionsOf(
       const person = staff.get(id);
       return person === undefined || !person.active ? [] : [{ id, name: nameOf(person) }];
     })
+    .sort((left, right) => (left.name ?? "").localeCompare(right.name ?? "", "fr"));
+}
+
+/** À qui confier une fiche : les tenants du droit, déjà non suspendus, par nom. */
+export function assignableOptionsOf(
+  holders: readonly StaffPermissionHolder[],
+): SalesOversightFollowerOption[] {
+  return holders
+    .map((holder) => ({ id: holder.staffUserId, name: nameOf(holder) }))
     .sort((left, right) => (left.name ?? "").localeCompare(right.name ?? "", "fr"));
 }
 

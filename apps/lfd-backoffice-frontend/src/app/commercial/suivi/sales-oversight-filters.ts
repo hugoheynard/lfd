@@ -44,6 +44,7 @@ export const SIGNAL_LABELS: Readonly<Record<SalesOversightSignal, string>> = {
   late: 'En retard',
   access_resent: 'Accès renvoyé',
   multiple_addresses: 'Plusieurs adresses',
+  unassigned_signup: 'Inscription sans suivi',
 };
 
 export const CHANNEL_LABELS: Readonly<Record<SalesOversightChannel, string>> = {

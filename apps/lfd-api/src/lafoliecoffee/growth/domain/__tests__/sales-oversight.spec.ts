@@ -104,6 +104,38 @@ describe("readSalesSheet — les relances et les adresses", () => {
   });
 });
 
+describe("readSalesSheet — les inscriptions sans suiveur", () => {
+  // NOW est un mardi : sept jours avant, un mardi aussi (5 jours ouvrés
+  // écoulés) ; la veille, un lundi (un seul).
+  const signup = (ageDays: number, followedByStaffId: string | null = null): SalesSheetFacts => ({
+    ...facts({}, ageDays),
+    declaredVia: "self",
+    followedByStaffId,
+  });
+
+  it("signale une inscription du client que personne ne suit après le seuil", () => {
+    expect(readSalesSheet(signup(7), NO_ACCESS_REQUEST, NOW).signals).toContain(
+      "unassigned_signup",
+    );
+  });
+
+  it("ne la signale pas avant le seuil", () => {
+    expect(readSalesSheet(signup(1), NO_ACCESS_REQUEST, NOW).signals).not.toContain(
+      "unassigned_signup",
+    );
+  });
+
+  it("ne signale ni une inscription suivie, ni une fiche ouverte par l'équipe", () => {
+    expect(readSalesSheet(signup(7, "staff_a"), NO_ACCESS_REQUEST, NOW).signals).not.toContain(
+      "unassigned_signup",
+    );
+    const staffOpened = { ...facts({}, 7), followedByStaffId: null };
+    expect(readSalesSheet(staffOpened, NO_ACCESS_REQUEST, NOW).signals).not.toContain(
+      "unassigned_signup",
+    );
+  });
+});
+
 describe("selectSalesSheets", () => {
   const directoryLate = readSalesSheet(facts({}, 30), NO_ACCESS_REQUEST, NOW);
   const directoryFresh = readSalesSheet(facts({}, 1), NO_ACCESS_REQUEST, NOW);

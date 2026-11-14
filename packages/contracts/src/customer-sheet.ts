@@ -132,6 +132,7 @@ export const COMMERCIAL_TIMELINE_TYPES: readonly string[] = [
   // suivi commercial. L'historique ne sert que le type, l'instant et
   // l'auteur — la note reste au journal.
   "company.contacted",
+  "company.follower_changed",
   "order.placed",
   "subscription.created",
   "appointment.requested",

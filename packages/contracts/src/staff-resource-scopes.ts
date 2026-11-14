@@ -130,7 +130,7 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
   },
   b2b_sales_oversight: {
     read: "Voir le suivi commercial : chaque fiche ouverte, son niveau de travail, ce qui lui manque, qui la suit et les signaux (retard, accès renvoyés, adresses multiples). Montre le travail de chaque commercial.",
-    write: "N'ajoute rien : le suivi commercial se lit seulement.",
+    write: "Confier, réattribuer ou retirer le commercial qui suit une fiche.",
   },
   b2b_support: {
     read: "Voir les demandes envoyées par les clients.",

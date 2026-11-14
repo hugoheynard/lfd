@@ -97,6 +97,20 @@
           </span>
         </ng-template>
 
+        <ng-template foldCell="assign" let-row>
+          <!-- Le clic ne doit pas ouvrir la fiche : la ligne entière y mène. -->
+          <button
+            foldButton
+            size="sm"
+            emphasis="outline"
+            intent="neutral"
+            data-assign
+            (click)="$event.stopPropagation(); assign(row)"
+          >
+            {{ assignLabel(row) }}
+          </button>
+        </ng-template>
+
         <!-- Ce qui manque, sous la ligne : la question « qu'est-ce qui n'a pas
              été fait ? » se lit avec la fiche, pas dans une colonne de plus. -->
         <ng-template foldRowNote let-row>

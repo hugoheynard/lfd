@@ -805,3 +805,42 @@ describe('un point d’adresse corrigé d’après les livraisons (§6)', () => 
     ).toContain('a posé le stationnement');
   });
 });
+
+describe('le suivi commercial d’un client', () => {
+  it('dit à qui la fiche est confiée, et qui la suivait', () => {
+    expect(
+      sentence(
+        company('company.follower_changed', {
+          subjectLabel: CAFE,
+          before: null,
+          after: { id: 'st_b', name: 'Lou Martin' },
+        }),
+      ),
+    ).toBe('Colette Martin a confié le client « Café des Halles » à Lou Martin');
+    expect(
+      sentence(
+        company('company.follower_changed', {
+          subjectLabel: CAFE,
+          before: { id: 'st_a', name: 'Ana Roy' },
+          after: { id: 'st_b', name: 'Lou Martin' },
+        }),
+      ),
+    ).toBe(
+      'Colette Martin a confié le client « Café des Halles » à Lou Martin (suivi jusque-là par Ana Roy)',
+    );
+  });
+
+  it('dit le retrait du suiveur, et un ancien membre sans nom par son identifiant', () => {
+    expect(
+      sentence(
+        company('company.follower_changed', {
+          subjectLabel: CAFE,
+          before: { id: 'st_gone' },
+          after: null,
+        }),
+      ),
+    ).toBe(
+      'Colette Martin a retiré le suivi du client « Café des Halles » (suivi jusque-là par une personne (identifiant st_gone))',
+    );
+  });
+});

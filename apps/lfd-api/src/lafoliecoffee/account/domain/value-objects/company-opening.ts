@@ -32,8 +32,8 @@ export interface CompanyOpeningRecord {
  * - une inscription du client (`none`) : ni auteur ni suiveur, tant que
  *   personne ne l'attribue.
  *
- * L'auteur est un fait de naissance, jamais muté ; le suiveur, lui, pourra
- * changer par un geste nommé de la société.
+ * L'auteur est un fait de naissance, jamais muté ; le suiveur, lui, change
+ * par un geste nommé de la société (`Company.assignFollower`).
  */
 export class CompanyOpening {
   private constructor(
@@ -64,6 +64,11 @@ export class CompanyOpening {
    */
   static siteOpenedBy(author: OpeningAuthor): CompanyOpening {
     return new CompanyOpening(checkedAuthor(author), null);
+  }
+
+  /** La même ouverture, suivie par `followerStaffId` (ou par personne) ; l'auteur ne bouge pas. */
+  withFollower(followerStaffId: string | null): CompanyOpening {
+    return new CompanyOpening(this.author, followerStaffId);
   }
 
   /** Relit ce que la base a rangé, sans le revalider : une ligne lue est déjà passée par ici. */

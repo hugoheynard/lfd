@@ -37,9 +37,16 @@ export type SalesWorkGap =
  * Les signaux, qui ne sont pas des niveaux : `late` (resté trop longtemps à
  * Annuaire ou Contactée), `access_resent` (accès envoyé deux fois ou plus sans
  * connexion du détenteur), `multiple_addresses` (plus d'une adresse de
- * livraison vivante — un lieu de plus est un site).
+ * livraison vivante — un lieu de plus est un site), `unassigned_signup` (une
+ * inscription du client qu'aucun commercial ne suit depuis plus de 2 jours
+ * ouvrés).
  */
-export const SALES_OVERSIGHT_SIGNALS = ["late", "access_resent", "multiple_addresses"] as const;
+export const SALES_OVERSIGHT_SIGNALS = [
+  "late",
+  "access_resent",
+  "multiple_addresses",
+  "unassigned_signup",
+] as const;
 export const salesOversightSignalSchema = z.enum(SALES_OVERSIGHT_SIGNALS);
 export type SalesOversightSignal = z.infer<typeof salesOversightSignalSchema>;
 
@@ -113,6 +120,11 @@ export interface SalesOversightView {
   /** Les fiches qui passent TOUS les filtres, niveau compris. */
   readonly total: number;
   readonly followers: readonly SalesOversightFollowerOption[];
+  /**
+   * À qui l'on peut confier une fiche : les personnes non suspendues qui
+   * tiennent `b2b_growth:write` (créer et suivre un prospect), par nom.
+   */
+  readonly assignable: readonly SalesOversightFollowerOption[];
   /** Le récap du jour, selon les filtres commercial et canal. */
   readonly today: SalesOversightTodayView;
 }

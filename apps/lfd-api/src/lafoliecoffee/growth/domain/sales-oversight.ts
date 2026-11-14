@@ -4,6 +4,7 @@ import {
   type WorkLevel,
   type WorkLevelInput,
 } from "../../account/domain/services/work-level.js";
+import { businessDaysBetween } from "./business-days.js";
 import type { SheetMilestones } from "./sales-today.js";
 
 /**
@@ -23,10 +24,12 @@ export const LATE_CONTACTED_DAYS = 14;
 export const ACCESS_RESENT_THRESHOLD = 2;
 /** Au-delà de ce nombre d'adresses de livraison vivantes, un lieu de plus est un site. */
 export const DELIVERY_ADDRESSES_PER_SHEET = 1;
+/** Une inscription du client sans suiveur depuis plus de ce nombre de jours ouvrés n'a été rappelée par personne (§ 3.5). */
+export const UNASSIGNED_SIGNUP_BUSINESS_DAYS = 2;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export type SalesSignal = "late" | "access_resent" | "multiple_addresses";
+export type SalesSignal = "late" | "access_resent" | "multiple_addresses" | "unassigned_signup";
 export type SalesChannel = "self" | "staff";
 
 /** Ce que la base dit d'une fiche principale — des faits, pas un verdict. */
@@ -74,7 +77,7 @@ export function readSalesSheet(
     missing,
     ageDays,
     access,
-    signals: signalsOf(facts, level, ageDays, access),
+    signals: [...signalsOf(facts, level, ageDays, access), ...signupSignalsOf(facts, now)],
   };
 }
 
@@ -95,6 +98,18 @@ function signalsOf(
     signals.push("multiple_addresses");
   }
   return signals;
+}
+
+/**
+ * Un prospect venu de lui-même et que personne ne suit : le manque le plus
+ * cher. Au-delà du seuil de jours ouvrés depuis son inscription, il se signale.
+ */
+function signupSignalsOf(facts: SalesSheetFacts, now: Date): SalesSignal[] {
+  const unassignedSignup =
+    facts.declaredVia === "self" &&
+    facts.followedByStaffId === null &&
+    businessDaysBetween(facts.createdAt, now) > UNASSIGNED_SIGNUP_BUSINESS_DAYS;
+  return unassignedSignup ? ["unassigned_signup"] : [];
 }
 
 /** L'âge se compte depuis l'ouverture de la fiche, la seule date que tient chaque niveau bas. */

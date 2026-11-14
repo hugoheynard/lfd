@@ -28,6 +28,7 @@ import {
   FoldEmptyStateComponent,
   FoldListboxComponent,
   FoldPaginatorComponent,
+  FoldPanelHostService,
   type FoldBadgeVariant,
   type FoldPaginatorLabels,
   type FoldSelectItem,
@@ -48,7 +49,10 @@ import {
   type SalesOversightFilters,
   type SignalBadge,
 } from '../sales-oversight-filters';
+import { PermissionsStore } from '../../../auth/permissions.store';
+import { dialogSide } from '../../../b2b/reglages/delivery-zones-section/delivery-audiences';
 import { CONTACT_MODE_LABELS } from '../../../fiche-client/panels/note-contact-panel/note-contact-panel';
+import { AssignFollowerPanel } from '../assign-follower-panel/assign-follower-panel';
 import { SalesOversightService } from '../sales-oversight.service';
 
 /** Le code du refus « trop de fiches pour ce filtre ». */
@@ -99,6 +103,8 @@ export class SuiviPage {
   private readonly api = inject(SalesOversightService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly permissions = inject(PermissionsStore);
+  private readonly panelHost = inject(FoldPanelHostService);
 
   protected readonly filters = toSignal(this.route.queryParamMap.pipe(map(filtersFromParams)), {
     initialValue: filtersFromParams(this.route.snapshot.queryParamMap),
@@ -170,6 +176,9 @@ export class SuiviPage {
     { key: 'age', label: 'Âge', width: '5rem' },
     { key: 'follower', label: 'Suivie par', width: '11rem' },
     { key: 'signals', label: 'Signaux', width: '16rem' },
+    ...(this.permissions.can('b2b_sales_oversight:write')
+      ? [{ key: 'assign', label: 'Suivi', width: '9rem' }]
+      : []),
   ];
 
   protected readonly empty: FoldTableEmpty = {
@@ -225,6 +234,29 @@ export class SuiviPage {
       queryParams: { page: page === 1 ? null : page },
       queryParamsHandling: 'merge',
     });
+  }
+
+  /**
+   * Ouvre le dialogue qui confie la fiche. Un succès relit la page : le
+   * suiveur, les compteurs et les signaux en dépendent.
+   */
+  protected assign(row: SalesOversightRowView): void {
+    const ref = this.panelHost.open(AssignFollowerPanel, {
+      side: dialogSide(),
+      data: {
+        companyId: row.companyId,
+        companyName: row.name,
+        currentFollowerId: row.followedBy?.id ?? null,
+        assignable: this.view()?.assignable ?? [],
+      },
+    });
+    void ref.closed.then((changed) => {
+      if (changed === true) this.reload();
+    });
+  }
+
+  protected assignLabel(row: SalesOversightRowView): string {
+    return row.followedBy === null ? 'Attribuer' : 'Réattribuer';
   }
 
   protected open(row: SalesOversightRowView): void {

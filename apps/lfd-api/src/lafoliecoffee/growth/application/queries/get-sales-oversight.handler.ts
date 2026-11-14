@@ -3,19 +3,26 @@ import {
   SALES_OVERSIGHT_UNASSIGNED,
   type SalesOversightQuery,
   type SalesOversightView,
+  type StaffPermission,
 } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { MailSubjectDeliveries } from "../../../../mail/channels/deliveries/mail-subject-deliveries.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { StaffContacts } from "../../../../staff/directory/domain/staff-contacts.js";
+import { StaffPermissionHolders } from "../../../../staff/directory/domain/staff-permission-holders.js";
 import { SalesDayReader, type SalesDayScope } from "../../domain/ports/sales-day.reader.js";
 import type { SalesSheetScope } from "../../domain/ports/sales-sheet.reader.js";
 import { SalesSheetReader } from "../../domain/ports/sales-sheet.reader.js";
 import { readSalesSheet, selectSalesSheets } from "../../domain/sales-oversight.js";
 import { parisDayOf } from "../../domain/sales-today.js";
 import { GetSalesOversightQuery } from "./get-sales-oversight.query.js";
-import { accessRequestsOf, followerOptionsOf, rowViewOf } from "./sales-oversight-view.js";
+import {
+  accessRequestsOf,
+  assignableOptionsOf,
+  followerOptionsOf,
+  rowViewOf,
+} from "./sales-oversight-view.js";
 import { todayViewOf } from "./sales-today-view.js";
 
 /**
@@ -25,6 +32,9 @@ import { todayViewOf } from "./sales-today-view.js";
  * lecture est refusée et l'écran invite à filtrer.
  */
 export const SALES_OVERSIGHT_MAX_SHEETS = 1000;
+
+/** Qui peut suivre une fiche : qui peut créer et suivre un prospect. */
+export const SALES_FOLLOWER_PERMISSION: StaffPermission = "b2b_growth:write";
 
 /**
  * **Le suivi commercial** : les fiches principales du filtre, lues par lots
@@ -45,6 +55,7 @@ export class GetSalesOversightHandler implements IQueryHandler<
     private readonly mails: MailSubjectDeliveries,
     private readonly staff: StaffContacts,
     private readonly days: SalesDayReader,
+    private readonly holders: StaffPermissionHolders,
     private readonly clock: Clock,
   ) {}
 
@@ -52,11 +63,12 @@ export class GetSalesOversightHandler implements IQueryHandler<
     const now = this.clock.now();
     const day = parisDayOf(now);
     const dayScope = dayScopeOf(filters);
-    const [facts, followerIds, opened, contacts] = await Promise.all([
+    const [facts, followerIds, opened, contacts, assignable] = await Promise.all([
       this.sheets.read(scopeOf(filters), SALES_OVERSIGHT_MAX_SHEETS),
       this.sheets.followerIds(),
       this.days.openedOn(dayScope, day),
       this.days.contactsOn(dayScope, day),
+      this.holders.holdersOf(SALES_FOLLOWER_PERMISSION),
     ]);
     const followed = facts.flatMap((fact) =>
       fact.followedByStaffId === null ? [] : [fact.followedByStaffId],
@@ -84,6 +96,7 @@ export class GetSalesOversightHandler implements IQueryHandler<
       pageSize: SALES_OVERSIGHT_PAGE_SIZE,
       total: page.total,
       followers: followerOptionsOf(followerIds, staff),
+      assignable: assignableOptionsOf(assignable),
       today: todayViewOf({ day, opened, contacts, sheets, mails }),
     };
   }

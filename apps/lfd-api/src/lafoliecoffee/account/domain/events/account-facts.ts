@@ -62,6 +62,8 @@ export const ACCOUNT_FACTS = {
   directDebitUnblocked: "company.direct_debit_unblocked",
   /** Un membre de l'équipe a noté un échange avec la société — suivi commercial. */
   companyContacted: "company.contacted",
+  /** Le commercial qui suit la fiche change : confié, réattribué ou retiré. */
+  companyFollowerChanged: "company.follower_changed",
   /** Sous-comptes (sous-comptes, S1) : le lien vers un principal est posé. */
   parentAttached: "company.parent_attached",
   /** Le lien est retiré ; les périodes de suivi en cours sont closes. */

@@ -1,0 +1,42 @@
+<fold-panel-header [title]="title()" [subtitle]="data()?.companyName ?? ''" />
+
+<fold-panel-body>
+  <div class="form">
+    @if (refusal(); as refusal) {
+      <fold-callout variant="alert" data-refusal>{{ refusal }}</fold-callout>
+    }
+
+    <fold-listbox
+      label="Commercial"
+      placeholder="Qui suivra cette fiche ?"
+      [options]="options()"
+      [value]="chosen()"
+      (selectionChange)="chosen.set($event)"
+    />
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  @if (canRemove()) {
+    <button
+      foldButton
+      emphasis="outline"
+      intent="neutral"
+      data-remove
+      [disabled]="pending()"
+      (click)="remove()"
+    >
+      Retirer le suiveur
+    </button>
+  }
+  <button
+    foldButton
+    data-submit
+    [loading]="pending()"
+    [disabled]="chosen() === null || pending()"
+    (click)="assign()"
+  >
+    Confier la fiche
+  </button>
+</fold-panel-footer>
