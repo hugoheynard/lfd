@@ -152,12 +152,19 @@ describe("une clé de passation ne sert qu'une fois", () => {
   it("deux appels SIMULTANÉS ne produisent qu'une commande", async () => {
     const payload = order();
 
-    const outcomes = await Promise.all([
-      place(payload).then((r) => r.status),
-      place(payload).then((r) => r.status),
-    ]);
+    const responses = await Promise.all([place(payload), place(payload)]);
+    const outcomes = responses.map((response) => response.status);
 
-    expect(outcomes.filter((status) => status === 201)).toHaveLength(1);
+    // Le statut ET le corps de chaque réponse quand la règle tombe : une course
+    // perdue en CI doit dire pourquoi le gagnant n'a pas écrit.
+    const created = outcomes.filter((status) => status === 201);
+    if (created.length !== 1) {
+      throw new Error(
+        `attendu exactement un 201, reçu : ${JSON.stringify(
+          responses.map((response) => ({ status: response.status, body: response.text })),
+        )}`,
+      );
+    }
     // Le perdant : soit la course est serrée (409 « en vol »), soit le gagnant a
     // déjà résolu sa clé et c'est un rejeu (201, la même commande).
     expect(outcomes).toContain(outcomes.find((status) => status === 409 || status === 201));
