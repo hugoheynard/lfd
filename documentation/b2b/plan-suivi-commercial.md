@@ -239,5 +239,10 @@ suivi. Le lot S6 ne se met pas en service avant.
    proposé.
 5. **Qui voit** : la cheffe et l'admin seulement, ou chaque commercial voit-il
    aussi sa propre ligne ?
-6. **Un CSE existe-t-il** ?
+6. ~~**Un CSE existe-t-il** ?~~ Répondu par Hugo le 2026-11-14 : pas encore,
+   l'activité n'a pas commencé. Le CSE n'existe qu'à partir de 11 salariés
+   pendant 12 mois ; quand il existera (et au-delà de 50, où il est consulté
+   sur les outils de suivi de l'activité), la page lui sera présentée. En
+   attendant, l'information écrite de chaque commercial reste obligatoire
+   avant la mise en service.
 7. **Inscription sans suiveur** : 2 jours ouvrés avant le signal ? (Il change l'ordre de la mise en service.)
