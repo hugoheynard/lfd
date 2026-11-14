@@ -37,6 +37,8 @@ export interface WarningInput {
    * porte laisserait passer.
    */
   readonly legalIdentityCarriedByParent: boolean;
+  /** Les adresses de livraison vivantes (non archivées) du carnet. */
+  readonly deliveryAddressCount: number;
 }
 
 /**
@@ -62,6 +64,7 @@ const URGENCE: readonly CompanyWarningKind[] = [
   "activation_bloquee",
   "attente_prolongee",
   "kbis_a_verifier",
+  "adresses_multiples",
 ];
 
 /**
@@ -110,6 +113,13 @@ export function companyWarnings(company: WarningInput, now: Date): readonly Comp
   // besoin d'être vu ailleurs que dans une porte.
   if (company.kbisUploadedAt !== null && company.kbisCertifiedAt === null) {
     found.push({ kind: "kbis_a_verifier", since: iso(company.kbisUploadedAt) });
+  }
+
+  // Un lieu de plus est un site (décidé par Hugo le 2026-11-14). Un signal,
+  // jamais un refus : le carnet admet plusieurs adresses. Pas de date propre —
+  // l'âge de la seconde adresse ne dit rien de l'urgence.
+  if (company.deliveryAddressCount > 1) {
+    found.push({ kind: "adresses_multiples", since: null });
   }
 
   return found.sort(byUrgency);

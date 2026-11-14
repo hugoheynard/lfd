@@ -8,6 +8,7 @@ import { companyMemberRoleSchema } from "../company-member.js";
 import { fulfillmentMethodSchema } from "../order.js";
 import { recurrenceSchema, subscriptionStatusSchema } from "../subscription.js";
 import { supportChannelSchema } from "../support.js";
+import { companyContactModeSchema } from "../company-contact-note.js";
 import {
   count,
   day,
@@ -217,6 +218,19 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
     payload({ subjectLabel: subjectLabel(), reason: z.string().min(1) }),
   ),
   "company.direct_debit_unblocked": fact(payload({ subjectLabel: subjectLabel() })),
+  /**
+   * Un membre de l'équipe a noté un échange avec la société (suivi commercial,
+   * § 3.2 ter) : le mode, le jour de l'échange (pas celui de la saisie, qui est
+   * l'instant de la ligne), et une note courte quand il en a laissé une.
+   */
+  "company.contacted": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      mode: companyContactModeSchema,
+      date: day(),
+      note: z.string().min(1).optional(),
+    }),
+  ),
   /**
    * LES SOUS-COMPTES (plan `documentation/comptes-client/sous-comptes.md`, lot S1,
    * 2026-10-05). Le sujet est toujours le SOUS-COMPTE ; le principal est cité

@@ -153,6 +153,7 @@ import { PrismaCompanyNafWriter } from "./infrastructure/prisma-company-naf.writ
 import { StaffBlockDirectory } from "./infrastructure/staff-block-directory.js";
 import { StaffDirectory } from "./domain/ports/staff-directory.js";
 import { CertifyKbisHandler } from "./application/commands/certify-kbis.handler.js";
+import { NoteCompanyContactHandler } from "./application/commands/note-company-contact.handler.js";
 import { RevokeKbisCertificationHandler } from "./application/commands/revoke-kbis-certification.handler.js";
 import { PrismaMembershipReader } from "./infrastructure/prisma-membership.reader.js";
 import { PrismaNavPreferencesRepository } from "./infrastructure/prisma-nav-preferences.repository.js";
@@ -182,6 +183,7 @@ import { PrismaCompanyFollowsReader } from "./infrastructure/prisma-company-foll
 import { PrismaCompanyFollowsRepository } from "./infrastructure/prisma-company-follows.repository.js";
 import { AdminCompanyMembersController } from "./http/admin-company-members.controller.js";
 import { AdminCompanyContactsController } from "./http/admin-company-contacts.controller.js";
+import { AdminCompanyNotedContactsController } from "./http/admin-company-noted-contacts.controller.js";
 import { AdminCompanyPiecesController } from "./http/admin-company-pieces.controller.js";
 import { CompaniesController } from "./http/companies.controller.js";
 import { AdminAccessPendingController } from "./http/admin-access-pending.controller.js";
@@ -277,6 +279,7 @@ import {
     AdminCounterCustomersController,
     AdminCompanyMembersController,
     AdminCompanyContactsController,
+    AdminCompanyNotedContactsController,
     AdminCompanyPiecesController,
     CompanyDeliveryProcedureController,
     AdminCompanyDeliveryProcedureController,
@@ -378,6 +381,7 @@ import {
     GetCustomerSheetHandler,
     UploadKbisByStaffHandler,
     CertifyKbisHandler,
+    NoteCompanyContactHandler,
     RevokeKbisCertificationHandler,
     UpdateIdentityByStaffHandler,
     GrantTermsHandler,

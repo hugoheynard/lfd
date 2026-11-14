@@ -60,6 +60,8 @@ export const ACCOUNT_FACTS = {
   directDebitBlocked: "company.direct_debit_blocked",
   /** La comptabilité rétablit le prélèvement mensuel. */
   directDebitUnblocked: "company.direct_debit_unblocked",
+  /** Un membre de l'équipe a noté un échange avec la société — suivi commercial. */
+  companyContacted: "company.contacted",
   /** Sous-comptes (sous-comptes, S1) : le lien vers un principal est posé. */
   parentAttached: "company.parent_attached",
   /** Le lien est retiré ; les périodes de suivi en cours sont closes. */

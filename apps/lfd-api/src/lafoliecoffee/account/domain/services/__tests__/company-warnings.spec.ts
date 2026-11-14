@@ -17,6 +17,7 @@ function company(over: Partial<WarningInput> = {}): WarningInput {
     kbisUploadedAt: null,
     kbisCertifiedAt: null,
     legalIdentityCarriedByParent: false,
+    deliveryAddressCount: 1,
     ...over,
   };
 }
@@ -133,5 +134,21 @@ describe("les avertissements d'un dossier", () => {
     expect(companyWarnings(chalet, NOW).map((warning) => warning.kind)).toEqual([
       "activation_bloquee",
     ]);
+  });
+
+  it("signale plus d'une adresse de livraison, sans date propre", () => {
+    expect(companyWarnings(company({ deliveryAddressCount: 2 }), NOW)).toEqual([
+      { kind: "adresses_multiples", since: null },
+    ]);
+  });
+
+  it("se tait sur une adresse de livraison, ou aucune", () => {
+    expect(companyWarnings(company({ deliveryAddressCount: 1 }), NOW)).toEqual([]);
+    expect(companyWarnings(company({ deliveryAddressCount: 0 }), NOW)).toEqual([]);
+  });
+
+  it("range les adresses multiples après tout ce qui bloque", () => {
+    const found = companyWarnings(company({ deliveryAddressCount: 3, hasGrantedTerms: true }), NOW);
+    expect(found.map((warning) => warning.kind)).toEqual(["mandat_absent", "adresses_multiples"]);
   });
 });

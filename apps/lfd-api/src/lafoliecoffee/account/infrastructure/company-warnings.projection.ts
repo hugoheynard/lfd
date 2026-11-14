@@ -32,6 +32,10 @@ export const WARNING_SELECT = {
     select: { id: true },
     take: 1,
   },
+  // Un COMPTE : la relation `addresses` est déjà prise par la facturation.
+  _count: {
+    select: { addresses: { where: { kind: "delivery", archivedAt: null } } },
+  },
   parentCompany: { select: { status: true } },
   follows: {
     where: { aspect: "billing", validTo: null },
@@ -69,6 +73,7 @@ export function warningInputOf(
     kbisUploadedAt: company.kbisUploadedAt,
     kbisCertifiedAt: company.kbisCertifiedAt,
     legalIdentityCarriedByParent: billingCarriedAt(company.parentCompany, company.follows, now),
+    deliveryAddressCount: company._count.addresses,
   };
 }
 

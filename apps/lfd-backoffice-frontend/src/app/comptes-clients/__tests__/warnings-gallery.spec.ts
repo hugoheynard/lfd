@@ -88,4 +88,14 @@ describe('la galerie d’avertissements', () => {
 
     expect(sansEnseigne[0]?.companyName).toBe('Le Comptoir SAS');
   });
+
+  it('nomme la sortie des adresses multiples : un site par adresse', () => {
+    const [card] = warningCards(
+      [company({ warnings: [{ kind: 'adresses_multiples', since: null }] })],
+      NOW,
+    );
+
+    expect(card?.detail).toContain('créer un site par adresse');
+    expect(card?.age).toBe('');
+  });
 });

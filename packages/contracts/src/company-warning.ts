@@ -17,12 +17,16 @@ import { z } from "zod";
  * - `kbis_a_verifier` — l'extrait est déposé, personne ne l'a ouvert. Ne bloque
  *   rien (convention interne), et c'est précisément pour ça qu'il faut le voir
  *   quelque part.
+ * - `adresses_multiples` — plus d'une adresse de livraison vivante. Un lieu de
+ *   plus est un site : la sortie est de créer un site par adresse. Un signal,
+ *   jamais un refus.
  */
 export const companyWarningKindSchema = z.enum([
   "mandat_absent",
   "activation_bloquee",
   "attente_prolongee",
   "kbis_a_verifier",
+  "adresses_multiples",
 ]);
 export type CompanyWarningKind = z.infer<typeof companyWarningKindSchema>;
 

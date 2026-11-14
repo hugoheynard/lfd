@@ -138,6 +138,12 @@ this.work.track`), l'acteur lu dans le contexte de la requête
 
 ### 3.2 Le niveau de travail (domaine pur), et ses traces
 
+- **Le niveau est le plus haut dont la condition propre est tenue**, pas une
+  marche : un client actif sans contact noté est « Active », et le contact
+  noté manquant reste listé dans ce qui manque. Une société sans livraison
+  (retrait seul, ou groupe sans livraison) n'a pas besoin d'adresse de
+  livraison. Route du geste : `POST /admin/companies/:id/noted-contacts`
+  (`…/contacts` est déjà le carnet des interlocuteurs).
 - Un service `workLevelOf(input)` à côté de `company-warnings.ts`, même forme,
   testé cas par cas : il rend le niveau **et ce qui manque pour le suivant**.
   Les vides se testent comme vides (`contactEmail` n'est jamais `null`).

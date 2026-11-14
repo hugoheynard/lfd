@@ -648,6 +648,12 @@ export type {
 export { activationPieceSchema } from "./platform-settings.js";
 export { companyWarningKindSchema, companyWarningSchema } from "./company-warning.js";
 export type { CompanyWarning, CompanyWarningKind } from "./company-warning.js";
+export {
+  COMPANY_CONTACT_MODES,
+  companyContactModeSchema,
+  noteCompanyContactPayloadSchema,
+} from "./company-contact-note.js";
+export type { CompanyContactMode, NoteCompanyContactPayload } from "./company-contact-note.js";
 export type { ActivationPiece } from "./platform-settings.js";
 export {
   alertKindSchema,

@@ -181,6 +181,16 @@ export const CUSTOMER_REQUEST_KIND = domain('type de demande client', {
   order_change: 'Demande de modification',
 });
 
+/** Le mode d'un échange noté par l'équipe (`company.contacted`). */
+export const COMPANY_CONTACT_MODE = domain('mode d’un contact noté', {
+  phone: 'Téléphone',
+  email: 'E-mail',
+  visit: 'Visite',
+  visio: 'Visio',
+  trade_show: 'Salon',
+  other: 'Autre',
+});
+
 export const ACCOUNTS_VALUES: ValueFamily = {
   enums: [
     DECLARED_VIA,
@@ -200,6 +210,7 @@ export const ACCOUNTS_VALUES: ValueFamily = {
     PARENT_LINK_VIA,
     COLLECTION_FORM,
     CUSTOMER_REQUEST_KIND,
+    COMPANY_CONTACT_MODE,
   ],
   strings: {
     fields: CHANGED_FIELD,

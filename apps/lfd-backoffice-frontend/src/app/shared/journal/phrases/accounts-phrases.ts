@@ -26,6 +26,7 @@ import {
 import {
   ACTIVATION_STEP,
   CLIENT_NOTE_ACTION,
+  COMPANY_CONTACT_MODE,
   COMPANY_ROLE,
   COMPANY_STATUS_ACTION,
   DEFERRED_TERM,
@@ -801,6 +802,24 @@ function exemption(verb: string, end: string): Phrase {
   return (fact) => byActor(fact, [text(`${verb} `), ...feature(fact), text(end)], ['subjectLabel']);
 }
 
+/**
+ * « … a noté un contact (Téléphone) le 14 novembre 2026 avec le client « X » ».
+ * La note reste au détail : une phrase ne cite pas un texte libre.
+ */
+const companyContacted: Phrase = (fact) =>
+  byActor(
+    fact,
+    [
+      text('a noté un contact ('),
+      valueIn(COMPANY_CONTACT_MODE, fact.payload['mode']),
+      text(') le '),
+      inUnit('day', fact.payload['date']),
+      text(' avec '),
+      ...client(fact, 'the'),
+    ],
+    ['subjectLabel', 'mode', 'date'],
+  );
+
 export const ACCOUNTS_PHRASES = {
   'company.declared': companyDeclared,
   'company.step_reached': (fact) =>
@@ -826,6 +845,7 @@ export const ACCOUNTS_PHRASES = {
   'company.status_changed': statusChanged,
   'company.direct_debit_blocked': directDebitBlocked,
   'company.direct_debit_unblocked': onClient('a rétabli le prélèvement mensuel ', 'of'),
+  'company.contacted': companyContacted,
   'company.billing_address_saved': billingAddressSaved,
   'company.delivery_address_added': onDeliveryAddress('a ajouté', 'to'),
   'company.delivery_address_updated': onDeliveryAddress('a modifié', 'of'),

@@ -42,6 +42,11 @@ const TEXTS: Readonly<
     detail: "L'extrait est déposé, personne ne l'a encore ouvert.",
     tone: 'info',
   },
+  adresses_multiples: {
+    title: 'Plusieurs adresses de livraison',
+    detail: 'Un lieu de plus est un site : créer un site par adresse.',
+    tone: 'info',
+  },
 };
 
 /**
