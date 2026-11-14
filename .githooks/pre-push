@@ -8,16 +8,14 @@
 #
 # ── Deux niveaux, parce qu'il y a deux gestes ───────────────────────────────
 # `dev` ne déploie RIEN : la CI y tourne, et c'est elle qui juge. Le hook n'y
-# fait donc que les portes du dépôt — dix-huit gates qui lisent des fichiers
-# sans rien compiler, cinq secondes à elles toutes. Elles auraient évité, le
-# 2026-08-29, un `lint:fold-tokens` rouge sur 21 variables inexistantes : CI
-# rouge, déploiement boutique perdu, un cycle complet pour s'en apercevoir.
+# fait que les portes du dépôt (`pnpm lint:gates`) et les typechecks de ce qui
+# a changé — ce qui casse le plus souvent la CI, pour quelques dizaines de
+# secondes.
 #
-# `main` DÉPLOIE. Une promotion vers `main` (`git push origin dev:main`) est
-# donc la seule occasion où l'on regarde ce que la CI a dit du commit qu'on
-# promeut. C'est exactement la surprise qu'on s'est offerte ce jour-là : promu,
-# puis CI rouge, puis deux déploiements morts en attendant.
-#
+# `main` DÉPLOIE. Une promotion vers `main` (`git push origin dev:main`) pousse
+# exactement le `dev` publié ; le hook vérifie que c'est bien lui, et lit ce
+# que la CI a dit de ce commit. Il ne relance rien sur le disque (voir plus bas).
+
 # ── Ce qui reste en CI ──────────────────────────────────────────────────────
 # Le typecheck et l'ESLint type-aware de `lfd-api` coûtent près d'une minute, et
 # les tests bien davantage. Les mettre ici ferait ce que le `pre-commit` refuse.
@@ -27,9 +25,6 @@
 #
 # S'installe seul au `pnpm install` (script `prepare`).
 set -e
-
-echo "→ portes du dépôt…"
-pnpm lint:gates
 
 # ── Les typechecks, SUR CE QUI A CHANGÉ ─────────────────────────────────────
 #
@@ -74,15 +69,52 @@ typecheck_if_touched() {
 # On ne lit QUE la ref distante : c'est elle qui dit où ça atterrit. Pousser
 # `dev:main` promeut, pousser `dev` ne promeut pas — la ref locale mentirait.
 promotion=""
+pushes_other_than_main=""
+last_local_sha=""
+run_typechecks=""
 CHANGED=""
 while read -r _local_ref local_sha remote_ref remote_sha; do
   CHANGED="$CHANGED
 $(changed_files "$remote_sha" "$local_sha")"
   case "$remote_ref" in
     refs/heads/main) promotion="$local_sha" ;;
+    *)
+      pushes_other_than_main=1
+      last_local_sha="$local_sha"
+      ;;
   esac
 done
 
+# ── Ce que les portes lisent : le DISQUE, pas le commit poussé ──────────────
+# Les portes et les typechecks lisent les fichiers de l'arbre de travail. Ils
+# ne jugent donc le commit qui part que si l'arbre lui est identique. Les lancer
+# sur le commit lui-même, dans un arbre à part, a été mesuré le 2026-11-14 :
+# plus de deux minutes et demie (installation, client Prisma, paquets, recueils
+# générés), et des portes rouges faute de fichiers générés. Trop cher pour
+# chaque push.
+#
+# D'où deux règles :
+#   - une PROMOTION seule (vers `main`) ne relance rien sur le disque : elle
+#     pousse exactement le `dev` publié, que la CI a jugé SHA pour SHA, et c'est
+#     ce verdict qu'on lit plus bas. Relancer les portes sur l'arbre local la
+#     refusait à tort dès qu'un travail local non poussé cassait une porte ;
+#   - un push vers `dev` les lance sur le disque, et DIT quand le disque diffère
+#     du commit poussé : un refus peut alors venir d'un fichier qui ne part pas,
+#     et un passage ne prouve rien du commit — la CI tranche.
+if [ -n "$promotion" ] && [ "$pushes_other_than_main" = "" ]; then
+  echo "→ promotion seule : la CI du commit fait foi, rien à relancer sur le disque."
+else
+  if [ -n "$(git status --porcelain --untracked-files=normal)" ] || [ "$(git rev-parse HEAD)" != "$last_local_sha" ]; then
+    echo "⚠️  l'arbre local diffère du commit poussé : les portes jugent le disque." >&2
+    echo "   Un refus peut venir d'un fichier qui ne part pas ; un passage ne prouve" >&2
+    echo "   rien du commit. La CI de dev, elle, juge le commit." >&2
+  fi
+  echo "→ portes du dépôt…"
+  pnpm lint:gates
+  run_typechecks=1
+fi
+
+if [ -n "$run_typechecks" ]; then
 typecheck_if_touched "apps/lfd-api/" "backend (app)" \
   pnpm --filter lfd-api exec tsc --noEmit
 typecheck_if_touched "apps/lfd-api/" "backend (specs)" \
@@ -91,6 +123,7 @@ typecheck_if_touched "apps/lfd-backoffice-frontend/" "front admin" \
   pnpm --filter lfd-backoffice-frontend exec tsc -p tsconfig.app.json --noEmit
 typecheck_if_touched "apps/lfc-ecommerce-frontend/" "front boutique" \
   pnpm --filter lfc-ecommerce-frontend exec tsc -p tsconfig.app.json --noEmit
+fi
 
 if [ -z "$promotion" ]; then
   exit 0

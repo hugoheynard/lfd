@@ -374,11 +374,11 @@ routage en production, et il porte la réécriture de l'IP cliente.
 
 ## 3bis. Les hooks — ce qui est attrapé avant le push
 
-| Hook                | Ce qu'il fait                                       | Coût      |
-| ------------------- | --------------------------------------------------- | --------- |
-| `pre-commit`        | Prettier sur ce qui est indexé                      | ~1 s      |
-| `pre-push`          | les 18 portes + les typechecks de ce qui a changé   | **~10 s** |
-| `pre-push` → `main` | + c'est bien `origin/dev`, et sa CI n'est pas rouge | ~1 s      |
+| Hook                | Ce qu'il fait                                                                                              | Coût       |
+| ------------------- | ---------------------------------------------------------------------------------------------------------- | ---------- |
+| `pre-commit`        | Prettier sur ce qui est indexé                                                                             | ~1 s       |
+| `pre-push` → `dev`  | les portes + les typechecks de ce qui a changé, sur le disque (il prévient si le disque diffère du commit) | **~1 min** |
+| `pre-push` → `main` | c'est bien `origin/dev`, et sa CI n'est pas rouge — rien de relancé sur le disque                          | ~1 s       |
 
 Le partage n'est pas arbitraire. Un commit est cent fois plus fréquent qu'un
 push : y mettre autre chose que du formatage ferait contourner le hook au
