@@ -1,8 +1,10 @@
 # Plan — le suivi commercial : ce qui a été fait, et ce qui ne l'a pas été
 
-> Plan du 2026-11-14, demandé par Hugo pour la cheffe des commerciaux. Pas
-> encore bâti. Touche une frontière d'accès (une ressource neuve) et le
-> registre RGPD du staff : `vitruve` avant Hugo.
+> Plan du 2026-11-14 (v2), demandé par Hugo pour la cheffe des commerciaux.
+> Pas encore bâti. La v1 a été contredite par `vitruve` (niveau « Ouverte »
+> sans donnée, sites comptés comme des ouvertures, montées de niveau sans
+> source, adresses multiples contraires au modèle). Touche une frontière
+> d'accès et le registre RGPD du staff.
 
 ## 1. En simple
 
@@ -10,169 +12,183 @@ Une page, pour la cheffe des commerciaux, qui répond à deux questions :
 
 1. **Qu'a fait l'équipe aujourd'hui ?** — le récap du jour, par commercial.
 2. **Qu'est-ce qui n'a pas été fait ?** — les fiches ouvertes et laissées en
-   plan : sans interlocuteur, sans adresse, jamais activées, jamais commandé.
+   plan.
 
 Le cœur : **une fiche qui n'a que le nom et le SIRET n'est pas une acquisition,
-c'est une ligne d'annuaire.** Chaque fiche reçoit un **niveau de travail**,
-calculé sur ce qu'elle contient réellement — jamais sur ce qu'on déclare :
+c'est une ligne d'annuaire.** Chaque fiche ouverte par l'équipe reçoit un
+**niveau de travail**, calculé sur ce qu'elle contient — jamais sur ce qu'on
+déclare :
 
-| Niveau            | Ce que la fiche contient                                      |
-| ----------------- | ------------------------------------------------------------- |
-| **0 · Annuaire**  | nom et/ou SIRET, rien d'autre                                 |
-| **1 · Contactée** | un interlocuteur réel : nom ET (e-mail OU téléphone)          |
-| **2 · Qualifiée** | une adresse de facturation ET une adresse de livraison        |
-| **3 · Ouverte**   | un accès client envoyé, et les pièces de son mode de paiement |
-| **4 · Active**    | activée, avec au moins une commande                           |
+| Niveau            | Ce que la fiche contient                                                  |
+| ----------------- | ------------------------------------------------------------------------- |
+| **0 · Annuaire**  | nom et/ou SIRET, rien d'autre                                             |
+| **1 · Contactée** | un interlocuteur réel : nom ET (e-mail OU téléphone) non vides            |
+| **2 · Qualifiée** | une adresse de facturation, et une adresse de livraison sauf retrait seul |
+| **3 · Ouverte**   | le détenteur s'est connecté au moins une fois                             |
+| **4 · Active**    | activée, avec au moins une commande                                       |
+
+Trois signaux s'y ajoutent, qui ne sont pas des niveaux :
+
+- **Relances sans réponse** : l'accès client a été envoyé **2 fois ou plus**
+  et personne ne s'est encore connecté — le signe d'un e-mail renvoyé au lieu
+  d'un appel. Un seul envoi suivi d'une connexion est normal.
+- **Plusieurs adresses de livraison** (décidé par Hugo le 2026-11-14) : un
+  lieu de plus est un **site**. Avertissement seulement, jamais un refus.
+  Mesuré le même jour en production : aucune fiche n'a plus d'une adresse de
+  livraison vivante — le signal ne gêne aucune fiche existante.
+- **En retard** : au niveau Annuaire depuis plus de 7 jours, au niveau
+  Contactée depuis plus de 14 (seuils à confirmer).
 
 ```text
 ┌ Suivi commercial ──────────────────────────────── aujourd'hui · 14 nov. ┐
-│                                                                         │
-│  Par commercial      Annuaire  Contactée  Qualifiée  Ouverte  Active    │
-│  ─────────────────────────────────────────────────────────────────────  │
-│  Commerciale A          38 ●       2         0         0        0      │
-│  Commercial B            3        6         4         2        5      │
-│                                                                         │
+│  Par commercial    Annuaire  Contactée  Qualifiée  Ouverte  Active      │
+│  Commerciale A        38 ●       2         0         0        0        │
+│  Commercial B          3        6         4         2        5        │
 │  ● 38 fiches au niveau Annuaire depuis plus de 7 jours                  │
 │                                                                         │
-│  Manquements  [Annuaire ▾] [Commerciale A ▾] [> 7 jours ▾]              │
-│  ─────────────────────────────────────────────────────────────────────  │
-│  Boulangerie X   C-4F2K1A   Annuaire   ouverte il y a 21 j   A   ▸     │
-│     manque : interlocuteur · adresses · accès client                    │
-│  Café Y          C-9QZ3LM   Contactée  ouverte il y a 12 j   A   ▸     │
-│     manque : adresses · accès client                                    │
+│  Manquements   [Annuaire ▾] [Commerciale A ▾] [> 7 jours ▾]             │
+│  Boulangerie X  C-4F2K1A  Annuaire   21 j   accès envoyé 0×   A   ▸    │
+│     manque : interlocuteur · adresses                                   │
+│  Café Y         C-9QZ3LM  Contactée  12 j   accès envoyé 3× ⚠  A   ▸   │
+│     manque : connexion du détenteur · adresses                          │
 │                                                                         │
 │  Aujourd'hui                                                            │
-│  ─────────────────────────────────────────────────────────────────────  │
-│  Commerciale A   12 fiches ouvertes · 0 montée de niveau                │
-│  Commercial B     1 fiche ouverte · 3 montées · 1 activation            │
+│  Commerciale A  12 fiches ouvertes · 0 montée · 4 accès renvoyés        │
+│  Commercial B    1 fiche ouverte · 3 montées · 1 activation             │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-Ce que la page rend visible d'un coup d'œil : douze fiches ouvertes dans la
-journée, aucune qui monte, c'est du travail d'annuaire.
+**Ce qui n'est pas compté comme une ouverture** : un **site** (sous-compte)
+créé sous un principal — c'est de la structure, pas de l'acquisition ; il
+apparaît à part. Une fiche **inscrite par le client** n'a ni auteur ni niveau
+« Contactée » d'office : elle entre dans la page quand la cheffe l'attribue.
 
 ## 2. Ce qui existe (vérifié dans le code le 2026-11-14)
 
-- **Le canal d'ouverture** est gardé : `companies.declared_via` (`self` |
-  `staff`, nullable), `prisma/schema/public/account.prisma:159`.
-- **L'auteur ne l'est pas.** `Company` n'a ni `created_by` ni commercial
-  attitré. Le seul fil est le fait `company.declared` dans
-  `growth.activity_events` (acteur figé : `actor_id`, `actor_name`,
-  `actor_role`), écrit **au mieux** par un abonné hors requête
-  (`on-company-declared.handler.ts:27` — `void this.work.track`), l'acteur lu
-  dans le contexte de la requête (`prisma-activity-recorder.ts:100`). Une
-  trace d'audit, pas une donnée sur laquelle bâtir une page de pilotage.
-- **Les avertissements** (`company-warnings.ts`) couvrent l'activation
-  bloquée, l'attente ≥ 14 j, le mandat absent, le KBIS à vérifier. Ni
-  « sans commande », ni « sans adresse de livraison », ni niveau.
-- **Le journal** se lit par auteur et par période (`GET /admin/activity`,
-  filtres `actorId`, `since`, `until`), réservé à l'admin (`activity`). Aucune
-  agrégation par commercial ni récap du jour.
-- **Les rôles** sont des lignes (`StaffRoleDefinition`), éditables à l'écran
-  `/admin/staff-roles` ; aucun rôle « cheffe des commerciaux » n'existe dans
-  le code.
-- **Le registre RGPD** ne mentionne ni les colonnes d'acteur du journal, ni
-  une finalité de suivi commercial.
+- **Canal d'ouverture** : `companies.declared_via` (`self` | `staff`, nullable),
+  `prisma/schema/public/account.prisma:159`. **Pas d'auteur** ni de commercial
+  attitré sur `Company`.
+- **Le fait `company.declared`** est écrit dans `growth.activity_events` par un
+  abonné hors requête (`on-company-declared.handler.ts:27`, `void
+this.work.track`), l'acteur lu dans le contexte de la requête
+  (`prisma-activity-recorder.ts:100`). Il sert aux ouvertures `self`,
+  `staff` **et aux sites** (`create-sub-account.handler.ts:82` déclare en
+  `staff`). Une trace d'audit, pas une donnée de pilotage.
+- **Les chemins qui créent une société** : `create-company-by-staff`,
+  `create-sub-account` (un site), `create-company` (client),
+  `declare-my-establishment` (client, contact repris de son profil), et le
+  semis de démonstration (`src/dev/seeding/client.seed.ts`).
+- **Connexion du détenteur** : `User.firstLoginAt` (`account.prisma:458`).
+- **Envois de l'accès client** : le modèle `customer.access-opened`
+  (`grant-account-access.service.ts`), rattaché aux sujets `account` et
+  `company` ; le bloc `mail` les sert **par lot** par son canal
+  `MailSubjectDeliveries.forSubjects` (`mail/channels/deliveries/`).
+- **Adresses** : `public.addresses`, `kind` `billing` | `delivery`,
+  `archived_at` ; plusieurs adresses de livraison sont admises par le modèle
+  (`DeliveryAddressBook`, un seul défaut).
+- **Avertissements** (`company-warnings.ts`) : activation bloquée, attente
+  ≥ 14 j, mandat absent, KBIS à vérifier.
+- **Journal** : `GET /admin/activity` filtre par auteur et période, réservé à
+  l'admin ; index `(type, occurred_at)` et `(actor_id)` sur
+  `growth.activity_events` (`growth.prisma:71,76`).
+- **RGPD** : la porte `lint:rgpd-staff` reconnaît `_by`, `_by_name`,
+  `_staff_id` (`dev-toolbox/gates/rgpd-staff.mjs:72-80`) ; elle ne voit pas les
+  colonnes d'acteur du journal (`actor_id`, `actor_name`, `actor_role`).
 
 ## 3. Technique
 
 ### 3.1 Qui a ouvert, qui suit (migration additive)
 
-- `companies.declared_by_staff_id` (nullable) et `declared_by_name` (figé,
-  comme `activated_by_name`) : posés **dans la transaction** de
-  `create-company-by-staff` et `create-sub-account`, depuis l'acteur de la
-  commande — plus jamais déduits d'un journal écrit au mieux.
-- `companies.followed_by_staff_id` (nullable) : le **commercial qui suit** la
-  fiche. Vaut l'auteur à l'ouverture par l'équipe ; une fiche inscrite par le
-  client n'en a pas tant que la cheffe ne l'attribue pas. Réattribuable par la
-  cheffe (geste tracé, `company.follower_changed`).
-- **Reprise** des fiches existantes : `declared_by_*` lu dans
-  `growth.activity_events` (`company.declared`, acteur `staff`) ; sans trace,
-  la colonne reste vide et la page dit « auteur inconnu » — jamais une
-  valeur inventée. Script de reprise relu avant de tourner en production.
+- `companies.declared_by_staff_id` (nullable) et `declared_by_name` (figé),
+  posés **dans la transaction** de `create-company-by-staff` depuis l'acteur
+  de la commande. Un site (`create-sub-account`) porte aussi son auteur, mais
+  la page le range à part (`parent_company_id` non nul).
+- `companies.followed_by_staff_id` (nullable) : le commercial qui suit. Vaut
+  l'auteur à l'ouverture par l'équipe ; vide pour une inscription client tant
+  que la cheffe ne l'attribue pas. Index `(followed_by_staff_id)`.
+- **Réattribuer** est un geste : une méthode de l'agrégat
+  (`Company.assignFollower(staffId)`), une commande scellée par la clé
+  d'intention de l'écran (`@IntentKey`, `runSealed`), un fait
+  `company.follower_changed`.
+- **Reprise** des fiches existantes, une fois, par script relu : auteur lu
+  dans `growth.activity_events` (`company.declared`, acteur `staff`), **sites
+  exclus** ; un acteur introuvable laisse la colonne vide, et la page dit
+  « auteur inconnu » — jamais une valeur inventée. Le script imprime ce qu'il
+  écrirait avant d'écrire ; une erreur se corrige ligne par ligne, c'est dit.
+- Semis de démonstration : il pose l'auteur comme le ferait l'équipe.
 
-### 3.2 Le niveau de travail (domaine pur)
+### 3.2 Le niveau de travail (domaine pur), et ses traces
 
-Un service de domaine `workLevelOf(input)` à côté de `company-warnings.ts`,
-même forme (entrée projetée, sortie pure), testé cas par cas. Il rend le
-niveau **et la liste de ce qui manque pour le suivant**. Les seuils (jours
-avant le rouge) sont des constantes nommées, puis un réglage si la cheffe
-veut les changer.
+- Un service `workLevelOf(input)` à côté de `company-warnings.ts`, même forme,
+  testé cas par cas : il rend le niveau **et ce qui manque pour le suivant**.
+  Les vides se testent comme vides (`contactEmail` n'est jamais `null`).
+- **Les montées de niveau ont une source** : quand un geste fait changer le
+  niveau d'une fiche suivie, un fait `company.work_level_reached` (niveau,
+  suiveur) est écrit au journal. Le récap du jour les compte ; sans ce fait,
+  « 3 montées » n'aurait aucune origine.
+- **Avertissement `adresses_multiples`** ajouté à `company-warnings.ts`
+  (adresses de livraison vivantes > 1), servi là où les autres le sont, et
+  compté par le compteur du menu ; son texte nomme la sortie : « créer un site
+  par adresse ».
 
-L'entrée lit ce que la projection des avertissements lit déjà, plus :
-l'adresse de livraison, l'existence d'une première commande (un `EXISTS`, pas
-un comptage), l'envoi de l'accès client.
+### 3.3 La page, et ce qu'elle coûte
 
-### 3.2 bis Une mauvaise pratique, pas un manque : plusieurs adresses de livraison
-
-Décidé par Hugo le 2026-11-14 : **une fiche qui porte plusieurs adresses de
-livraison est signalée.** Le dépôt modélise un établissement de plus comme un
-**site** (un sous-compte rattaché à son principal, `parentCompanyId`), pas
-comme une adresse de plus : chaque site a ses commandes, ses tournées, son
-retrait et sa facturation suivie ou non par le principal. Plusieurs adresses
-sur une seule fiche font passer plusieurs lieux pour un seul — les tournées,
-les étiquettes et la facture ne savent plus lequel est livré.
-
-- Un avertissement `adresses_multiples` (adresses de livraison **non
-  archivées** > 1), à côté de ceux de `company-warnings.ts`, visible sur la
-  fiche, dans la liste des sociétés et sur la page de suivi.
-- Le geste de sortie est nommé dans le texte : « créer un site par adresse ».
-- Ce n'est pas un niveau : une fiche active peut le porter, et il ne bloque
-  pas l'activation tant que Hugo n'en décide pas autrement.
-
-### 3.3 La page
-
-- `GET /admin/sales-oversight` (une lecture, `QueryBus`) : par commercial, les
-  comptes par niveau et les fiches en retard ; la liste des manquements,
-  filtrable (niveau, commercial, ancienneté) et paginée ; **le mur des
-  données** : jamais d'e-mail ni de téléphone de prospect dans la réponse,
-  seulement « présent / absent ».
-- **Le récap du jour** : agrégé à la lecture depuis `growth.activity_events`
-  (fiches ouvertes, montées de niveau, activations, rendez-vous) par acteur,
-  sur la journée de Paris. Pas de nouvelle table.
-- Une **ressource neuve** `b2b_sales_oversight` (lecture). Une migration
-  ajoute la ressource, **jamais le droit** : la cheffe le reçoit à l'écran
-  des rôles (règle du dépôt, `lint:no-role-grants-in-migrations`).
+- Une lecture `GET /admin/sales-oversight` (`QueryBus`), dans le bloc
+  `lafoliecoffee/growth` ; elle lit les sociétés par le lecteur qu'`account`
+  publie déjà pour la croissance, les envois d'accès par
+  `MailSubjectDeliveries.forSubjects` (canal du bloc `mail`), et le journal
+  qui est le sien. `lint:prisma-model-ownership` et `lint:context-boundaries`
+  le vérifient au bâti.
+- **Coût** (base facturée à l'opération) : une page = une liste paginée des
+  fiches suivies (50), un `EXISTS` commande et un compte d'adresses **par
+  lot** sur ces 50 ids, un appel `forSubjects` pour ces 50 ids, et une
+  agrégation du journal du jour sur l'index `(type, occurred_at)`. Aucun
+  appel par ligne. Les comptes par niveau du tableau se calculent sur les
+  fiches suivies (quelques centaines), une requête par tableau.
+- **Mur des données** : la réponse ne porte aucun e-mail ni téléphone de
+  prospect — seulement « présent / absent » ; aucun journal n'écrit une
+  adresse (`lint:log-no-email`).
+- Une **ressource neuve** `b2b_sales_oversight` (lecture). La migration ajoute
+  la ressource, jamais le droit (`lint:no-role-grants-in-migrations`) : la
+  cheffe le reçoit à l'écran des rôles.
 - Front : `apps/lfd-backoffice-frontend/src/app/commercial/suivi/`, fold-ng
-  d'abord, chaque ligne mène à la fiche client.
+  d'abord, chaque ligne mène à la fiche.
 
-### 3.4 RGPD — ce suivi porte sur des salariés
+### 3.4 RGPD et droit du travail — ce suivi porte sur des salariés
 
-C'est un traitement de données personnelles **sur l'équipe**. Il est légitime
-(piloter l'acquisition) et encadré :
-
-- **Registre** (`documentation/legal/rgpd-registre.json`) : les colonnes neuves
-  (`declared_by_*`, `followed_by_staff_id`) et les colonnes d'acteur de
-  `growth.activity_events` (absentes aujourd'hui), avec la finalité « suivi de
-  l'acquisition commerciale » et une durée de conservation ;
+- **Registre** : les colonnes neuves, et les colonnes d'acteur de
+  `growth.activity_events`, avec la finalité « suivi de l'acquisition
+  commerciale » et une durée de conservation (question 4). **La porte apprend
+  la table** (`ALL_PERSONAL_TABLES` de `rgpd-staff.mjs`) : sans quoi
+  l'inscription resterait de la prose.
 - **Accès** : la ressource `b2b_sales_oversight`, donnée à la cheffe et à
-  l'admin, à personne d'autre ;
-- **Information de l'équipe** : chaque commercial est informé, avant la mise
-  en service, que ce suivi existe, ce qu'il montre et à qui. C'est aussi ce
-  qui permet de s'en servir pour un recadrage.
+  l'admin seulement.
+- **Information de l'équipe, avant la mise en service** : un écrit remis à
+  chaque commercial (ce que la page montre, à qui, combien de temps), par
+  Hugo. S'il existe un CSE, il est consulté avant, la page pouvant servir à
+  évaluer le travail. Le plan ne met rien en service avant ce geste.
 
 ## 4. Lots
 
-1. **S1** — colonnes d'auteur et de suivi, posées à l'ouverture, reprise
-   depuis le journal ; registre RGPD.
-2. **S2** — le niveau de travail (domaine + projection), et la liste des
-   manquements par niveau.
-3. **S3** — la route, la ressource, la page (tableau par commercial +
-   manquements).
+1. **S1** — colonnes d'auteur et de suivi, posées à l'ouverture ; registre et
+   porte RGPD ; script de reprise (relu, lancé à part).
+2. **S2** — niveau de travail, fait `work_level_reached`, avertissement
+   `adresses_multiples`.
+3. **S3** — la ressource, la route, la page (tableau, manquements, envois
+   d'accès).
 4. **S4** — le récap du jour.
-5. **S5** — réattribuer une fiche, et attribuer les inscriptions spontanées.
+5. **S5** — réattribuer, et attribuer les inscriptions spontanées.
 
 ## 5. Questions pour Hugo
 
-1. **Les seuils** : combien de jours au niveau Annuaire avant le rouge
-   (7 proposé) ? au niveau Contactée (14 proposé) ?
+1. **Les seuils** : 7 jours au niveau Annuaire, 14 au niveau Contactée, 2
+   envois d'accès sans connexion — à confirmer.
 2. **« Contactée »** : un nom ET un e-mail ou un téléphone suffit-il, ou faut-il
    une trace d'échange (rendez-vous, note du commercial) ?
-3. **Le commercial attitré** : le crée-t-on (S1, S5), ou la page se contente-t-elle
-   de l'auteur de l'ouverture ?
-4. **La durée de conservation** des traces d'activité du staff (aucune n'est
-   décidée aujourd'hui) : 12 mois proposé.
-5. **Plusieurs adresses de livraison** : un avertissement seulement (proposé),
-   ou un refus d'activation ?
-6. **Qui voit** : la cheffe et l'admin seulement, ou chaque commercial voit-il
+3. **Le commercial attitré** : on le crée (S1, S5), ou la page se contente de
+   l'auteur ?
+4. **La durée de conservation** des traces d'activité du staff : 12 mois
+   proposé.
+5. **Qui voit** : la cheffe et l'admin seulement, ou chaque commercial voit-il
    aussi sa propre ligne ?
+6. **Un CSE existe-t-il** ? (Il change l'ordre de la mise en service.)
