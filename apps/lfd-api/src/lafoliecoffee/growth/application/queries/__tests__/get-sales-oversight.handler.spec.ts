@@ -1,4 +1,8 @@
-import { salesOversightQuerySchema, type SalesOversightQuery } from "@lfd/contracts";
+import {
+  salesOversightQuerySchema,
+  type CompanyContactMode,
+  type SalesOversightQuery,
+} from "@lfd/contracts";
 
 import {
   MailSubjectDeliveries,
@@ -11,11 +15,13 @@ import {
   type StaffContact,
 } from "../../../../../staff/directory/domain/staff-contacts.js";
 import { SalesOversightTooLargeError } from "../../../domain/errors/sales-oversight-errors.js";
+import { SalesDayReader, type SalesDayScope } from "../../../domain/ports/sales-day.reader.js";
 import {
   SalesSheetReader,
   type SalesSheetScope,
 } from "../../../domain/ports/sales-sheet.reader.js";
 import type { SalesSheetFacts } from "../../../domain/sales-oversight.js";
+import { NO_MILESTONE, type ParisDay } from "../../../domain/sales-today.js";
 import { GetSalesOversightHandler } from "../get-sales-oversight.handler.js";
 import { GetSalesOversightQuery } from "../get-sales-oversight.query.js";
 
@@ -54,6 +60,25 @@ class FakeMails extends MailSubjectDeliveries {
   ): Promise<ReadonlyMap<string, readonly SubjectMail[]>> {
     this.asked.push(ids);
     return Promise.resolve(this.mails);
+  }
+}
+
+class FakeDays extends SalesDayReader {
+  readonly scopes: SalesDayScope[] = [];
+  readonly days: ParisDay[] = [];
+  constructor(
+    private readonly opened = 0,
+    private readonly contacts: readonly CompanyContactMode[] = [],
+  ) {
+    super();
+  }
+  openedOn(scope: SalesDayScope, day: ParisDay): Promise<number> {
+    this.scopes.push(scope);
+    this.days.push(day);
+    return Promise.resolve(this.opened);
+  }
+  contactsOn(_scope: SalesDayScope, _day: ParisDay): Promise<readonly CompanyContactMode[]> {
+    return Promise.resolve(this.contacts);
   }
 }
 
@@ -99,6 +124,7 @@ function sheet(id: string, overrides: Partial<SalesSheetFacts> = {}): SalesSheet
       activated: false,
       hasOrder: false,
     },
+    milestones: NO_MILESTONE,
     ...overrides,
   };
 }
@@ -117,8 +143,13 @@ function accessMail(requestedAt: Date, template = "customer.access-opened"): Sub
 const query = (raw: Record<string, string> = {}): GetSalesOversightQuery =>
   new GetSalesOversightQuery(salesOversightQuerySchema.parse(raw) satisfies SalesOversightQuery);
 
-function handler(sheets: FakeSheets, mails = new FakeMails(), staff = new FakeStaff()) {
-  return new GetSalesOversightHandler(sheets, mails, staff, new FixedClock(NOW));
+function handler(
+  sheets: FakeSheets,
+  mails = new FakeMails(),
+  staff = new FakeStaff(),
+  days = new FakeDays(),
+) {
+  return new GetSalesOversightHandler(sheets, mails, staff, days, new FixedClock(NOW));
 }
 
 describe("GetSalesOversightHandler — le filtre de la base", () => {
@@ -215,3 +246,57 @@ describe("GetSalesOversightHandler — la réponse", () => {
     expect(view.rows[0]?.missing).toEqual(["noted_contact"]);
   });
 });
+
+describe("GetSalesOversightHandler — le récap du jour", () => {
+  it("lit le jour civil de Paris, et range « non attribuée » sous toute l'équipe", async () => {
+    const days = new FakeDays();
+    await handler(new FakeSheets([]), new FakeMails(), new FakeStaff(), days).execute(
+      query({ follower: "unassigned", channel: "commercial" }),
+    );
+    await handler(new FakeSheets([]), new FakeMails(), new FakeStaff(), days).execute(
+      query({ follower: "staff_a" }),
+    );
+
+    expect(days.scopes).toEqual([
+      { actor: undefined, unassigned: true, channel: "staff" },
+      { actor: "staff_a", unassigned: false, channel: undefined },
+    ]);
+    expect(days.days[0]?.start.getTime()).toBeLessThanOrEqual(NOW.getTime());
+    expect(days.days[0]?.end.getTime()).toBeGreaterThan(NOW.getTime());
+  });
+
+  it("compte ouvertures, contacts par mode, montées et accès du jour sans relire les e-mails", async () => {
+    const mails = new FakeMails(
+      new Map([
+        ["c1", [accessMail(NOW), accessMail(daysBefore(1))]],
+        ["c2", [accessMail(NOW, "customer.company-attached")]],
+      ]),
+    );
+    const sheets = new FakeSheets([
+      sheet("c1", {
+        work: { ...sheet("c1").work, notedContacts: 1 },
+        milestones: { ...NO_MILESTONE, firstContactDay: dayOfNow() },
+      }),
+      sheet("c2"),
+    ]);
+    const days = new FakeDays(3, ["phone", "phone", "visit"]);
+
+    const view = await handler(sheets, mails, new FakeStaff(), days).execute(
+      query({ level: "directory" }),
+    );
+
+    expect(mails.asked).toHaveLength(1);
+    expect(view.today).toEqual({
+      day: dayOfNow(),
+      opened: 3,
+      levelUps: 1,
+      accessResent: 1,
+      contacts: { phone: 2, email: 0, visit: 1, visio: 0, trade_show: 0, other: 0 },
+    });
+  });
+});
+
+/** Le jour de Paris de `NOW` (10 h UTC en janvier : le même jour). */
+function dayOfNow(): string {
+  return NOW.toISOString().slice(0, 10);
+}

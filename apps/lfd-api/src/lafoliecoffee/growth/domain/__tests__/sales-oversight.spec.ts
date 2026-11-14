@@ -7,6 +7,7 @@ import {
   selectSalesSheets,
   type SalesSheetFacts,
 } from "../sales-oversight.js";
+import { NO_MILESTONE } from "../sales-today.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** L'instant de la lecture ; chaque date de fiche s'écrit relativement à lui. */
@@ -32,6 +33,7 @@ function facts(overrides: Partial<SalesSheetFacts["work"]> = {}, ageDays = 1): S
       hasOrder: false,
       ...overrides,
     },
+    milestones: NO_MILESTONE,
   };
 }
 

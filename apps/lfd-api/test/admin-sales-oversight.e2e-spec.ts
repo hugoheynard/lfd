@@ -19,9 +19,11 @@ import {
   E2E_STAFF_ID,
   E2E_STAFF_SUB,
   jsonBody,
+  serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
 import { createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /** Le jeton porteur EST le `sub` : chaque agent a sa fiche. */
 const stubAdminVerifier = {
@@ -186,5 +188,64 @@ describe("GET /admin/sales-oversight", () => {
     expect(res.text).not.toContain(PROSPECT_EMAIL);
     expect(res.text).not.toContain("0612345678");
     expect(res.text).not.toContain("Camille");
+  });
+});
+
+describe("GET /admin/sales-oversight — le récap du jour", () => {
+  /** Note un contact par la vraie route, sous l'agent des e2e. */
+  async function noteContact(companyId: string, mode: string, date: string): Promise<void> {
+    await ctx
+      .asSub(E2E_STAFF_SUB)
+      .post(`/admin/companies/${companyId}/noted-contacts`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ mode, date })
+      .expect(201);
+  }
+
+  it("compte un contact noté aujourd'hui par mode, et pas celui daté d'hier", async () => {
+    const company = await sheet("Contactée", { by: E2E_STAFF_ID, via: "staff" });
+    await noteContact(company, "phone", serviceDay(0));
+    await noteContact(company, "visit", serviceDay(-1));
+
+    const today = (await read()).today;
+
+    expect(today.day).toBe(serviceDay(0));
+    expect(today.contacts).toMatchObject({ phone: 1, visit: 0 });
+    expect((await read(`?follower=${E2E_STAFF_ID}`)).today.contacts.phone).toBe(1);
+    expect((await read("?follower=staff_quelqu_un_d_autre")).today.contacts.phone).toBe(0);
+  });
+
+  it("compte les fiches principales ouvertes aujourd'hui, auto-inscriptions comprises, jamais un site", async () => {
+    const opened = await createCompany(ctx.prisma, { raisonSociale: "Ouverte" });
+    await ctx.prisma.company.update({
+      where: { id: opened.id },
+      data: {
+        declaredByStaffId: E2E_STAFF_ID,
+        declaredVia: "staff",
+        followedByStaffId: E2E_STAFF_ID,
+      },
+    });
+    const site = await createCompany(ctx.prisma, { raisonSociale: "Site" });
+    await ctx.prisma.company.update({
+      where: { id: site.id },
+      data: { parentCompanyId: opened.id, declaredByStaffId: E2E_STAFF_ID, declaredVia: "staff" },
+    });
+    const signup = await createCompany(ctx.prisma, { raisonSociale: "Inscrite" });
+    await ctx.prisma.company.update({ where: { id: signup.id }, data: { declaredVia: "self" } });
+    await sheet("Ancienne", { by: E2E_STAFF_ID, via: "staff", ageDays: 3 });
+
+    expect((await read()).today.opened).toBe(2);
+    expect((await read("?channel=self")).today.opened).toBe(1);
+    expect((await read("?channel=commercial")).today.opened).toBe(1);
+    expect((await read("?follower=unassigned")).today.opened).toBe(1);
+    expect((await read(`?follower=${E2E_STAFF_ID}`)).today.opened).toBe(1);
+  });
+
+  it("compte un accès envoyé aujourd'hui sur une fiche du filtre", async () => {
+    const company = await sheet("Relancée", { by: E2E_STAFF_ID, via: "staff" });
+    await accessRequested(company, 1);
+
+    expect((await read()).today.accessResent).toBe(1);
+    expect((await read("?follower=unassigned")).today.accessResent).toBe(0);
   });
 });

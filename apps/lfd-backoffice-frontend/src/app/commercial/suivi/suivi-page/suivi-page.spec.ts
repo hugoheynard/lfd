@@ -35,6 +35,13 @@ function view(over: Partial<SalesOversightView> = {}): SalesOversightView {
     pageSize: 50,
     total: 1,
     followers: [{ id: 'st_a', name: 'Commerciale A' }],
+    today: {
+      day: '2030-01-15',
+      opened: 12,
+      levelUps: 0,
+      accessResent: 4,
+      contacts: { phone: 2, email: 0, visit: 1, visio: 0, trade_show: 0, other: 0 },
+    },
     ...over,
   };
 }
@@ -119,6 +126,34 @@ describe('SuiviPage — le suivi commercial', () => {
     expect(shown).toContain('Commerciale A');
     expect(shown).toContain('En retard');
     expect(shown).toContain('manque : interlocuteur · contact noté');
+  });
+
+  it('dit le récap du jour sous les compteurs, contacts par mode', async () => {
+    const { fixture } = await render();
+    const line = (fixture.nativeElement as HTMLElement).querySelector('[data-today]');
+    expect(line?.textContent).toContain(
+      'Aujourd’hui : 12 fiches ouvertes · 0 montée · 4 accès renvoyés · contacts : 2 téléphone, 1 visite',
+    );
+  });
+
+  it('dit « aucun contact » un jour sans contact', async () => {
+    const api = new FakeApi();
+    api.answer = () =>
+      Promise.resolve(
+        view({
+          today: {
+            day: '2030-01-15',
+            opened: 1,
+            levelUps: 2,
+            accessResent: 1,
+            contacts: { phone: 0, email: 0, visit: 0, visio: 0, trade_show: 0, other: 0 },
+          },
+        }),
+      );
+    const { fixture } = await render({}, api);
+    expect(text(fixture)).toContain(
+      '1 fiche ouverte · 2 montées · 1 accès renvoyé · aucun contact',
+    );
   });
 
   it('dit « Ancien membre », « Non attribuée » et le nombre d’envois', async () => {

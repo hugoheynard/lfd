@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { CompanyContactMode } from "./company-contact-note.js";
+
 /**
  * **Le suivi commercial** — la page de la cheffe des commerciaux
  * (`GET /admin/sales-oversight`, droit `b2b_sales_oversight`,
@@ -111,4 +113,28 @@ export interface SalesOversightView {
   /** Les fiches qui passent TOUS les filtres, niveau compris. */
   readonly total: number;
   readonly followers: readonly SalesOversightFollowerOption[];
+  /** Le récap du jour, selon les filtres commercial et canal. */
+  readonly today: SalesOversightTodayView;
+}
+
+/**
+ * **Le récap du jour** : ce que l'équipe (ou le commercial filtré) a fait le
+ * jour civil de Paris de la lecture. Il suit les filtres commercial et canal,
+ * jamais ceux de niveau ni de signal. Un commercial filtré : ses gestes ;
+ * « non attribuée » ou aucun filtre : toute l'équipe.
+ */
+export interface SalesOversightTodayView {
+  /** Le jour civil de Paris, `AAAA-MM-JJ`. */
+  readonly day: string;
+  /** Fiches principales créées ce jour (sites exclus) : celles du commercial filtré comme auteur ; sinon toutes, auto-inscriptions comprises ; sans suiveur sous « non attribuée ». */
+  readonly opened: number;
+  /**
+   * Fiches suivies montées ce jour d'au moins un niveau, comptées une fois
+   * chacune. « Contactée » est daté par le PREMIER contact noté.
+   */
+  readonly levelUps: number;
+  /** Demandes d'envoi de l'accès client faites ce jour, sur les fiches suivies du filtre. */
+  readonly accessResent: number;
+  /** Contacts du jour par mode : contacts notés datés de ce jour et rendez-vous honorés. */
+  readonly contacts: Readonly<Record<CompanyContactMode, number>>;
 }

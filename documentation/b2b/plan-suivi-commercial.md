@@ -269,7 +269,22 @@ consultations sont comptées (une trace prise à son insu ne pourrait pas servir
 existe, la table inscrite au registre RGPD avec la même durée que le reste du
 suivi. Le lot S6 ne se met pas en service avant.
 
-## 4. Lots
+### 3.7 Le récap du jour (lot S4)
+
+Le jour est le jour civil de Paris (de minuit à minuit, heures d'été et
+d'hiver comprises). La ligne « Aujourd'hui » suit les filtres :
+
+- **fiches ouvertes** : avec un commercial choisi, celles dont il est
+  l'auteur ; avec « Tous », toutes les fiches principales créées dans la
+  journée, auto-inscriptions comprises (le filtre canal les trie) ; avec
+  « non attribuée », celles qui n'ont pas de suiveur ;
+- **contacts par mode** : les contacts notés dont la date est aujourd'hui,
+  sous qui les a notés ; les rendez-vous honorés du jour, sous le suiveur de
+  la fiche (un rendez-vous n'a pas d'auteur) ;
+- **montées** : une par fiche, au niveau le plus haut atteint aujourd'hui et
+  encore tenu ; « Active » est daté par la plus tardive de l'activation et de
+  la première commande ;
+- **accès renvoyés** : les demandes du jour de l'e-mail d'accès client.
 
 1. **S1** — colonnes d'auteur et de suivi, posées à l'ouverture ; registre et
    porte RGPD ; script de reprise (relu, lancé à part).

@@ -672,6 +672,7 @@ export type {
   SalesOversightQuery,
   SalesOversightRowView,
   SalesOversightSignal,
+  SalesOversightTodayView,
   SalesOversightView,
   SalesWorkGap,
   SalesWorkLevel,

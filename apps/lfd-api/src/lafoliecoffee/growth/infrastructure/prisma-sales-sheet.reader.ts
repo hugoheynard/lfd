@@ -1,3 +1,4 @@
+import { instantToLocal } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
@@ -5,10 +6,14 @@ import { ACCOUNT_FACTS } from "../../account/domain/events/account-facts.js";
 import { SalesOversightTooLargeError } from "../domain/errors/sales-oversight-errors.js";
 import { SalesSheetReader, type SalesSheetScope } from "../domain/ports/sales-sheet.reader.js";
 import type { SalesSheetFacts } from "../domain/sales-oversight.js";
+import type { SheetMilestones } from "../domain/sales-today.js";
+import { notedContactOf } from "./noted-contact-payload.js";
 
 /** Le statut d'un rendez-vous qui a eu lieu : il compte comme un contact noté. */
 const HONORED = "honored";
 const COMPANY_SUBJECT = "company";
+/** Les étapes du parcours qui datent « Qualifiée » : les deux adresses. */
+const QUALIFYING_STEPS: ReadonlySet<unknown> = new Set(["billing", "delivery"]);
 
 const SHEET_SELECT = {
   id: true,
@@ -33,15 +38,17 @@ type SheetRow = Awaited<ReturnType<typeof readCompanies>>[number];
 interface SheetBatch {
   readonly billing: ReadonlySet<string>;
   readonly deliveries: ReadonlyMap<string, number>;
-  readonly loggedIn: ReadonlySet<string>;
-  readonly ordered: ReadonlySet<string>;
+  readonly loggedIn: ReadonlyMap<string, Date>;
+  readonly ordered: ReadonlyMap<string, Date>;
   readonly contacts: ReadonlyMap<string, number>;
+  readonly firstContactDays: ReadonlyMap<string, string>;
+  readonly qualifiedSteps: ReadonlyMap<string, Date>;
 }
 
 /**
- * Les fiches du suivi commercial, en **six lectures** quel que soit leur
+ * Les fiches du suivi commercial, en **sept lectures** quel que soit leur
  * nombre : la liste, puis adresses, détenteurs connectés, commandes, contacts
- * notés et rendez-vous honorés, chacune par lot sur tous les ids.
+ * notés, rendez-vous honorés et étapes d'adresse franchies, chacune par lot sur tous les ids.
  *
  * Il lit directement les tables du compte et des commandes, comme les autres
  * lecteurs de `growth` (`prisma-portfolio-metrics.reader.ts`) : le bloc est le
@@ -74,7 +81,7 @@ export class PrismaSalesSheetReader extends SalesSheetReader {
 
   private async batch(ids: readonly string[]): Promise<SheetBatch> {
     const companyId = { in: [...ids] };
-    const [addresses, owners, orders, noted, honored] = await Promise.all([
+    const [addresses, owners, orders, noted, honored, steps] = await Promise.all([
       this.prisma.address.groupBy({
         by: ["companyId", "kind"],
         where: { companyId, archivedAt: null },
@@ -82,33 +89,38 @@ export class PrismaSalesSheetReader extends SalesSheetReader {
       }),
       this.prisma.membership.findMany({
         where: { companyId, role: "owner", user: { firstLoginAt: { not: null } } },
-        distinct: ["companyId"],
-        select: { companyId: true },
+        select: { companyId: true, user: { select: { firstLoginAt: true } } },
       }),
-      this.prisma.order.findMany({
+      this.prisma.order.groupBy({
+        by: ["companyId"],
         where: { companyId },
-        distinct: ["companyId"],
-        select: { companyId: true },
+        _min: { createdAt: true },
       }),
-      this.prisma.activityEvent.groupBy({
-        by: ["subjectId"],
+      this.prisma.activityEvent.findMany({
         where: {
           type: ACCOUNT_FACTS.companyContacted,
           subjectType: COMPANY_SUBJECT,
           subjectId: companyId,
         },
-        _count: { _all: true },
+        select: { subjectId: true, payload: true },
       }),
-      this.prisma.appointment.groupBy({
-        by: ["subjectId"],
+      this.prisma.appointment.findMany({
         where: { status: HONORED, subjectType: COMPANY_SUBJECT, subjectId: companyId },
-        _count: { _all: true },
+        select: { subjectId: true, startAt: true },
+      }),
+      this.prisma.activityEvent.findMany({
+        where: {
+          type: ACCOUNT_FACTS.companyStepReached,
+          subjectType: COMPANY_SUBJECT,
+          subjectId: companyId,
+        },
+        select: { subjectId: true, payload: true, occurredAt: true },
       }),
     ]);
-    const contacts = new Map<string, number>();
-    for (const row of [...noted, ...honored]) {
-      contacts.set(row.subjectId, (contacts.get(row.subjectId) ?? 0) + row._count._all);
-    }
+    const contactDays = [
+      ...noted.map((row) => ({ id: row.subjectId, day: notedContactOf(row.payload)?.date })),
+      ...honored.map((row) => ({ id: row.subjectId, day: instantToLocal(row.startAt).day })),
+    ];
     return {
       billing: new Set(
         addresses.filter((row) => row.kind === "billing").map((row) => row.companyId),
@@ -118,9 +130,29 @@ export class PrismaSalesSheetReader extends SalesSheetReader {
           .filter((row) => row.kind === "delivery")
           .map((row) => [row.companyId, row._count._all]),
       ),
-      loggedIn: new Set(owners.map((row) => row.companyId)),
-      ordered: new Set(orders.flatMap((row) => (row.companyId === null ? [] : [row.companyId]))),
-      contacts,
+      loggedIn: earliestBy(
+        owners.flatMap((row) =>
+          row.user.firstLoginAt === null ? [] : [[row.companyId, row.user.firstLoginAt] as const],
+        ),
+      ),
+      ordered: earliestBy(
+        orders.flatMap((row) =>
+          row.companyId === null || row._min.createdAt === null
+            ? []
+            : [[row.companyId, row._min.createdAt] as const],
+        ),
+      ),
+      contacts: countBy(contactDays.map((row) => row.id)),
+      firstContactDays: earliestBy(
+        contactDays.flatMap((row) => (row.day === undefined ? [] : [[row.id, row.day] as const])),
+      ),
+      qualifiedSteps: latestBy(
+        steps.flatMap((row) =>
+          QUALIFYING_STEPS.has(stepOf(row.payload))
+            ? [[row.subjectId, row.occurredAt] as const]
+            : [],
+        ),
+      ),
     };
   }
 }
@@ -163,5 +195,56 @@ function toFacts(row: SheetRow, batch: SheetBatch): SalesSheetFacts {
       activated: row.activatedAt !== null,
       hasOrder: batch.ordered.has(row.id),
     },
+    milestones: milestonesOf(row, batch),
   };
+}
+
+function milestonesOf(row: SheetRow, batch: SheetBatch): SheetMilestones {
+  return {
+    firstContactDay: batch.firstContactDays.get(row.id) ?? null,
+    qualifiedStepAt: batch.qualifiedSteps.get(row.id) ?? null,
+    holderFirstLoginAt: batch.loggedIn.get(row.id) ?? null,
+    activatedAt: row.activatedAt,
+    firstOrderAt: batch.ordered.get(row.id) ?? null,
+  };
+}
+
+/** L'étape d'un `company.step_reached`, telle qu'écrite ; `undefined` hors forme. */
+function stepOf(payload: unknown): unknown {
+  return typeof payload === "object" && payload !== null && "step" in payload
+    ? payload.step
+    : undefined;
+}
+
+function countBy(ids: readonly string[]): ReadonlyMap<string, number> {
+  const counts = new Map<string, number>();
+  for (const id of ids) {
+    counts.set(id, (counts.get(id) ?? 0) + 1);
+  }
+  return counts;
+}
+
+/** La plus petite valeur par société (un jour `AAAA-MM-JJ` se compare comme un texte). */
+function earliestBy<T extends Date | string>(
+  pairs: readonly (readonly [string, T])[],
+): ReadonlyMap<string, T> {
+  const found = new Map<string, T>();
+  for (const [id, value] of pairs) {
+    const known = found.get(id);
+    if (known === undefined || value < known) {
+      found.set(id, value);
+    }
+  }
+  return found;
+}
+
+function latestBy(pairs: readonly (readonly [string, Date])[]): ReadonlyMap<string, Date> {
+  const found = new Map<string, Date>();
+  for (const [id, value] of pairs) {
+    const known = found.get(id);
+    if (known === undefined || value > known) {
+      found.set(id, value);
+    }
+  }
+  return found;
 }

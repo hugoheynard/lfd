@@ -51,6 +51,9 @@
           }
         </p>
       }
+      @if (todayLine(); as line) {
+        <p class="today" data-today>Aujourd’hui : {{ line }}</p>
+      }
 
       <fold-data-table
         caption="Suivi commercial"

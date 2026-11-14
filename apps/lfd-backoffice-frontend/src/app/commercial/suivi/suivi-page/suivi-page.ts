@@ -9,6 +9,7 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
+  COMPANY_CONTACT_MODES,
   SALES_OVERSIGHT_CHANNELS,
   SALES_OVERSIGHT_SIGNALS,
   SALES_OVERSIGHT_UNASSIGNED,
@@ -47,6 +48,7 @@ import {
   type SalesOversightFilters,
   type SignalBadge,
 } from '../sales-oversight-filters';
+import { CONTACT_MODE_LABELS } from '../../../fiche-client/panels/note-contact-panel/note-contact-panel';
 import { SalesOversightService } from '../sales-oversight.service';
 
 /** Le code du refus « trop de fiches pour ce filtre ». */
@@ -136,6 +138,24 @@ export class SuiviPage {
       level,
       label: `${counts[level]} ${LEVEL_LABELS[level]}`,
     }));
+  });
+
+  /**
+   * « Aujourd'hui : 12 fiches ouvertes · 0 montée · … » — le jour civil de
+   * Paris, selon les filtres commercial et canal (jamais niveau ni signal).
+   */
+  protected readonly todayLine = computed(() => {
+    const today = this.view()?.today;
+    if (today === undefined) return null;
+    const contacts = COMPANY_CONTACT_MODES.filter((mode) => today.contacts[mode] > 0).map(
+      (mode) => `${today.contacts[mode]} ${CONTACT_MODE_LABELS[mode].toLowerCase()}`,
+    );
+    return [
+      plural(today.opened, 'fiche ouverte', 'fiches ouvertes'),
+      plural(today.levelUps, 'montée', 'montées'),
+      plural(today.accessResent, 'accès renvoyé', 'accès renvoyés'),
+      contacts.length === 0 ? 'aucun contact' : `contacts : ${contacts.join(', ')}`,
+    ].join(' · ');
   });
 
   protected readonly tableTitle = computed(() => {
@@ -230,4 +250,9 @@ export class SuiviPage {
   protected selfDeclared(row: SalesOversightRowView): boolean {
     return row.declaredVia === 'self';
   }
+}
+
+/** « 0 montée », « 1 montée », « 2 montées ». */
+function plural(count: number, one: string, many: string): string {
+  return `${count} ${count > 1 ? many : one}`;
 }

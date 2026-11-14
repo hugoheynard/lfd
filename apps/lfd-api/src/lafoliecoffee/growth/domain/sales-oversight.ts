@@ -4,6 +4,7 @@ import {
   type WorkLevel,
   type WorkLevelInput,
 } from "../../account/domain/services/work-level.js";
+import type { SheetMilestones } from "./sales-today.js";
 
 /**
  * **Le suivi commercial**, la part pure : lire une fiche (niveau, manques,
@@ -37,6 +38,8 @@ export interface SalesSheetFacts {
   readonly declaredVia: SalesChannel | null;
   readonly followedByStaffId: string | null;
   readonly work: WorkLevelInput;
+  /** Les dates de niveau, pour les montées du récap du jour. */
+  readonly milestones: SheetMilestones;
 }
 
 /** Les demandes d'envoi de l'accès client d'une fiche. */
