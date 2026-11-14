@@ -38,6 +38,8 @@ la baisse d'une commande carte le répartit déjà sur ses paiements
 
 ## 2. Le reliquat à l'écran (L7, L8, L9)
 
+Plan de L7 et L8 : [`plan-l7-l8-reste-relivre.md`](plan-l7-l8-reste-relivre.md).
+
 **Ce qui manque.** Aucun geste ne crée un reste : `DeliveryNote.planRemainder`
 n'est appelé que par les tests, et le sort du reste n'a qu'une valeur
 (`shortfallRemainderSchema = z.literal("abandoned")`,
