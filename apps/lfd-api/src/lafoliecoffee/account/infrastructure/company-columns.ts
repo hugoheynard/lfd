@@ -1,4 +1,5 @@
 import type { Company, CompanySoftState } from "../domain/entities/company.js";
+import type { CompanyOpening } from "../domain/value-objects/company-opening.js";
 import { DirectDebitBlock } from "../domain/value-objects/direct-debit-block.js";
 import { KbisDeposit } from "../domain/value-objects/kbis-deposit.js";
 
@@ -29,6 +30,24 @@ export function companyColumnsOf(state: ReturnType<Company["toPersistence"]>) {
     deliverySignatureRequired: state.fulfillmentPreference.signatureRequired,
     ...kbisColumns(state.kbis),
     ...directDebitBlockColumns(state.directDebitBlock),
+    followedByStaffId: state.followedByStaffId,
+  };
+}
+
+/**
+ * Les trois colonnes de l'ouverture, écrites à la NAISSANCE seulement :
+ * l'auteur ne bouge plus ensuite, et le suiveur passe par `save` comme le
+ * reste (`companyColumnsOf`).
+ */
+export function openingColumns(opening: CompanyOpening): {
+  readonly declaredByStaffId: string | null;
+  readonly declaredByName: string | null;
+  readonly followedByStaffId: string | null;
+} {
+  return {
+    declaredByStaffId: opening.author?.staffUserId ?? null,
+    declaredByName: opening.author?.name ?? null,
+    followedByStaffId: opening.followerStaffId,
   };
 }
 

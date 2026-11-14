@@ -26,6 +26,7 @@ import {
 } from "../../services/grant-account-access.service.js";
 import { CreateCompanyByStaffCommand } from "../create-company-by-staff.command.js";
 import { CreateCompanyByStaffHandler } from "../create-company-by-staff.handler.js";
+import { KnownStaff } from "./hierarchy-doubles.js";
 
 /** Publisher doublé : capture les événements publiés (extension du port, sans cast). */
 /** Accès doublé : capture la demande, ou échoue pour simuler un canal absent. */
@@ -173,6 +174,7 @@ function doubles(
       inMemoryIntents(),
       uow,
       new CompanyOpeningReplay(new MembersLeftBy(access), new MailsLeftBy(access)),
+      new KnownStaff(new Map([["staff-sub", { name: "Lou Martin", role: "Commerciale" }]])),
     ),
     access,
     unowned,
@@ -266,6 +268,25 @@ describe("CreateCompanyByStaffHandler", () => {
     expect(declared.companyId).toBe("company_unowned");
     expect(declared.via).toBe("staff");
     expect(declared.owner).toBeNull();
+  });
+
+  it("l'acteur ouvre ET suit la fiche, son nom figé à l'ouverture", async () => {
+    const { handler, unowned } = doubles();
+
+    await handler.execute(command());
+
+    expect(unowned[0]?.opening.author).toEqual({ staffUserId: "staff-sub", name: "Lou Martin" });
+    expect(unowned[0]?.opening.followerStaffId).toBe("staff-sub");
+  });
+
+  it("un acteur inconnu de l'annuaire garde son id, sans nom inventé", async () => {
+    const { handler, unowned } = doubles();
+
+    await handler.execute(
+      new CreateCompanyByStaffCommand("", "Bistrot", "", "", "", "", null, "seed|dev", INTENT),
+    );
+
+    expect(unowned[0]?.opening.author).toEqual({ staffUserId: "seed|dev", name: null });
   });
 
   it("porte le contact saisi par le staff, fonction incluse", async () => {

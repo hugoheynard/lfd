@@ -131,7 +131,10 @@ this.work.track`), l'acteur lu dans le contexte de la requête
   dit avant d'écrire. Un acteur introuvable laisse la colonne vide (« auteur
   inconnu »), jamais une valeur inventée. Il imprime ce qu'il écrirait avant
   d'écrire.
-- Semis de démonstration : il pose l'auteur comme le ferait l'équipe.
+- Semis de démonstration : `client.seed.ts` déclare ses sociétés par le chemin
+  client (`declared_via = self`) ; elles n'ont donc ni auteur ni suiveur, ce
+  qui est juste. Les sites semés passent par `CreateSubAccount` et reçoivent
+  leur auteur.
 
 ### 3.2 Le niveau de travail (domaine pur), et ses traces
 
@@ -270,6 +273,8 @@ suivi. Le lot S6 ne se met pas en service avant.
 5. **S5** — réattribuer, et le bloc des inscriptions spontanées (§ 3.5).
 6. **S6** — les consultations de fiche (§ 3.6), après l'information de
    l'équipe.
+7. **S7** — la purge à 12 mois des traces d'activité du staff (décidée, pas
+   encore écrite : le registre porte `purge: null`).
 
 ## 5. Questions pour Hugo
 

@@ -1,3 +1,4 @@
+import { CompanyOpening } from "../../value-objects/company-opening.js";
 import { CompanyChangedSinceReadError } from "../../errors/account-errors.js";
 import { Company } from "../company.js";
 
@@ -43,6 +44,7 @@ describe("Company — la révision de la fiche", () => {
       },
       null,
       "staff",
+      CompanyOpening.openedBy({ staffUserId: "staff_1", name: null }),
     );
     expect(declared.revision).toBe(0);
   });

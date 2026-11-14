@@ -106,6 +106,14 @@ const ADMITTED = [
     file: "src/lafoliecoffee/catalog/infrastructure/catalog-review-states.ts",
     since: "2026-11-04",
   },
+  // 2026-11-14 — la reprise de l'auteur des fiches (`plan-suivi-commercial.md`,
+  // § 3.1), lancée à part par un script : elle n'écrit que
+  // `declared_by_staff_id`, `declared_by_name` et `followed_by_staff_id`,
+  // qu'aucun lecteur du rayon ne lit (vérifié le 2026-11-14).
+  {
+    file: "src/lafoliecoffee/account/infrastructure/prisma-company-opener-backfill.ts",
+    since: "2026-11-14",
+  },
 ];
 
 const WRITE_METHODS = [

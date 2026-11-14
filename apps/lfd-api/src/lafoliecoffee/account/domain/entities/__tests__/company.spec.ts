@@ -1,3 +1,4 @@
+import { CompanyOpening } from "../../value-objects/company-opening.js";
 import {
   CompanyActivationBlockedError,
   CompanyAlreadyHasOwnerError,
@@ -226,7 +227,14 @@ describe("Company.attachHolder", () => {
 
 describe("Company — le canal de déclaration (plan auto-acquisition pro, P1)", () => {
   it("garde le canal donné à la naissance", () => {
-    expect(Company.declare(identity, null, "staff").declaredVia).toBe("staff");
+    expect(
+      Company.declare(
+        identity,
+        null,
+        "staff",
+        CompanyOpening.openedBy({ staffUserId: "staff_1", name: null }),
+      ).declaredVia,
+    ).toBe("staff");
     expect(Company.declare(identity, null, "self").declaredVia).toBe("self");
   });
 

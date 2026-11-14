@@ -158,6 +158,15 @@ model Company {
   // `20261025200000_le_canal_de_declaration`, et on n'invente pas son canal.
   declaredVia CompanyDeclarationChannel? @map("declared_via")
 
+  // QUI, dans l'équipe, l'a ouverte, et qui la SUIT (plan-suivi-commercial.md,
+  // § 3.1). Ids de fiche staff sans clé étrangère, comme les autres traces ;
+  // le nom est un INSTANTANÉ figé à l'ouverture. Vides pour une inscription du
+  // client, et pour une fiche dont l'auteur n'a pas pu être retrouvé : on
+  // n'invente pas d'auteur. Un site porte son auteur mais pas de suiveur.
+  declaredByStaffId String? @map("declared_by_staff_id")
+  declaredByName    String? @map("declared_by_name")
+  followedByStaffId String? @map("followed_by_staff_id")
+
   // KBIS — l'extrait déposé par le client, demandé pour la validation. Le fichier
   // vit dans le stockage objet (R2) ; on ne garde ici que ses métadonnées et sa
   // CLÉ de stockage. Tous null = aucun KBIS déposé. La **certification** est
@@ -323,6 +332,7 @@ model Company {
   @@index([siret])
   @@index([siren])
   @@index([parentCompanyId])
+  @@index([followedByStaffId])
   @@map("companies")
   @@schema("public")
 }

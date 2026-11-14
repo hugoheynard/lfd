@@ -1,0 +1,15 @@
+-- RETOUR ARRIÈRE de 20261114120000_qui_a_ouvert_qui_suit
+-- (documentation/b2b/plan-suivi-commercial.md, § 3.1).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
+-- « appliquée ».
+--
+-- Le code d'avant ignore les colonnes : le retour arrière est le retour du
+-- code seul. Les retirer serait un resserrement ultérieur, sur décision de
+-- Hugo :
+--
+--   DROP INDEX public.companies_followed_by_staff_id_idx;
+--   ALTER TABLE public.companies
+--     DROP COLUMN declared_by_staff_id,
+--     DROP COLUMN declared_by_name,
+--     DROP COLUMN followed_by_staff_id;

@@ -46,3 +46,12 @@ test("une personne inconnue reste refusée", () => {
   assert.equal(problems.length, 1);
   assert.match(problems[0], /`personne` doit valoir/u);
 });
+
+test("les colonnes d'acteur du journal d'activité sont candidates, pas le reste de la table", () => {
+  assert.equal(isCandidate("growth.activity_events.actor_id"), true);
+  assert.equal(isCandidate("growth.activity_events.actor_name"), true);
+  assert.equal(isCandidate("growth.activity_events.actor_role"), true);
+  assert.equal(isCandidate("growth.activity_events.actor_type"), false);
+  assert.equal(isCandidate("growth.activity_events.payload"), false);
+  assert.equal(isCandidate("public.staff_audit.actor_id"), false);
+});

@@ -7,11 +7,14 @@ import {
   InvalidCompanyIdentityError,
   KbisNotFoundError,
   InvalidLegalFormError,
+  InvalidOpeningAuthorError,
+  SelfDeclaredWithAuthorError,
   VatNumberFrozenError,
 } from "../errors/account-errors.js";
 import { NO_FULFILLMENT_PREFERENCE, toLegalForm } from "@lfd/contracts";
 import type { DeferredTerm, FulfillmentPreferenceView } from "@lfd/contracts";
 import type { CompanyDeclarationChannel } from "../value-objects/company-declaration-channel.js";
+import { CompanyOpening } from "../value-objects/company-opening.js";
 import type { CompanyStatus } from "../value-objects/company-status.js";
 import type { StaffTrace } from "../value-objects/staff-trace.js";
 import type { SuspensionCause } from "../value-objects/suspension-cause.js";
@@ -125,6 +128,8 @@ export interface ReconstituteCompanyInput {
    * par la migration, et on n'invente pas son canal.
    */
   readonly declaredVia?: CompanyDeclarationChannel | null;
+  /** Qui l'a ouverte et qui la suit, **facultatif** : absent = ni auteur ni suiveur connus. */
+  readonly opening?: CompanyOpening;
   /**
    * La révision lue, **facultative** : absente = 0, celle d'une fiche jamais
    * réécrite depuis la colonne.
@@ -203,6 +208,8 @@ export interface CompanySoftState {
    * correction d'identité.
    */
   readonly statusChange: { readonly status: CompanyStatus } | null;
+  /** Le commercial qui suit la fiche, ou `null` — l'auteur, lui, ne s'écrit qu'à la naissance. */
+  readonly followedByStaffId: string | null;
 }
 
 /**
@@ -252,6 +259,8 @@ export class Company {
     private hierarchyValue: HierarchyPlace,
     /** Fait de naissance, jamais muté — cf. {@link CompanyDeclarationChannel}. */
     private readonly declaredViaValue: CompanyDeclarationChannel | null,
+    /** Qui l'a ouverte (fait de naissance) et qui la suit. */
+    private readonly openingValue: CompanyOpening,
     /** La révision chargée : celle contre laquelle une fiche lue se compare. */
     private readonly revisionValue = 0,
   ) {
@@ -277,12 +286,37 @@ export class Company {
    * `via` est décidé par l'appelant, qui SAIT par quelle porte il entre : le
    * client qui se déclare dit `self`, le staff dit `staff`. Il entre à la
    * naissance et n'en ressort plus.
+   *
+   * Une ouverture par l'équipe porte son **auteur** (`opening`) ; une
+   * inscription du client n'en a pas. Les deux règles sont tenues ici, et la
+   * signature empêche déjà d'oublier l'auteur côté équipe.
+   *
+   * @throws {InvalidOpeningAuthorError} une ouverture `staff` sans auteur.
+   * @throws {SelfDeclaredWithAuthorError} une inscription `self` avec un auteur.
    */
   static declare(
     identity: CompanyIdentityInput,
     contact: CompanyContact | null,
+    via: "self",
+  ): Company;
+  static declare(
+    identity: CompanyIdentityInput,
+    contact: CompanyContact | null,
+    via: "staff",
+    opening: CompanyOpening,
+  ): Company;
+  static declare(
+    identity: CompanyIdentityInput,
+    contact: CompanyContact | null,
     via: CompanyDeclarationChannel,
+    opening: CompanyOpening = CompanyOpening.none(),
   ): Company {
+    if (via === "staff" && opening.author === null) {
+      throw new InvalidOpeningAuthorError();
+    }
+    if (via === "self" && opening.author !== null) {
+      throw new SelfDeclaredWithAuthorError();
+    }
     return new Company(
       null,
       // L'ENSEIGNE est ce qu'on exige : c'est le nom que le commercial a en
@@ -316,6 +350,7 @@ export class Company {
       // Seule : un sous-compte naît par `attachTo`, sous le verrou de la hiérarchie.
       HierarchyPlace.standalone(),
       via,
+      opening,
     );
   }
 
@@ -341,6 +376,7 @@ export class Company {
       input.directDebitBlock ?? null,
       input.hierarchy ?? HierarchyPlace.standalone(),
       input.declaredVia ?? null,
+      input.opening ?? CompanyOpening.none(),
       input.revision ?? 0,
     );
   }
@@ -390,6 +426,11 @@ export class Company {
   /** Par qui elle a été déclarée, ou `null` si on ne l'a jamais su. */
   get declaredVia(): CompanyDeclarationChannel | null {
     return this.declaredViaValue;
+  }
+
+  /** Qui l'a ouverte et qui la suit (`plan-suivi-commercial.md`, § 3.1). */
+  get opening(): CompanyOpening {
+    return this.openingValue;
   }
 
   get raisonSociale(): string {
@@ -1021,6 +1062,7 @@ export class Company {
         this.identityId === null || this.statusValue !== this.loadedStatus
           ? { status: this.statusValue }
           : null,
+      followedByStaffId: this.openingValue.followerStaffId,
     };
   }
 }

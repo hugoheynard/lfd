@@ -19,6 +19,7 @@ import { StopFollowingParentHandler } from "../stop-following-parent.handler.js"
 import { DELIVERY } from "./member-acts-doubles.js";
 import {
   CallLog,
+  KnownStaff,
   InMemoryAddresses,
   InMemoryCompanies,
   InMemoryFollows,
@@ -128,6 +129,7 @@ describe("le suivi du tarif, au journal des prix", () => {
       new DirectUnitOfWork(),
       w.pricing,
       inMemoryIntents(),
+      new KnownStaff(),
     ).execute(
       new CreateSubAccountCommand(
         "groupe",

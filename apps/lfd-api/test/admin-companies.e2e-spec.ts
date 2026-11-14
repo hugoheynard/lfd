@@ -349,6 +349,25 @@ describe("GET /admin/companies — canal de déclaration et pièces", () => {
       declaredVia: "staff",
       piecesReached: ["vat"],
     });
+
+    // Plan suivi commercial, S1 : l'opérateur ouvre ET suit, nom figé ; la
+    // porte pro ne porte ni auteur ni suiveur.
+    const openers = await ctx.prisma.company.findMany({
+      where: { id: { in: [selfId, staffId] } },
+      select: { id: true, declaredByStaffId: true, declaredByName: true, followedByStaffId: true },
+    });
+    expect(openers.find((row) => row.id === staffId)).toEqual({
+      id: staffId,
+      declaredByStaffId: E2E_STAFF_ID,
+      declaredByName: "Opérateur E2E",
+      followedByStaffId: E2E_STAFF_ID,
+    });
+    expect(openers.find((row) => row.id === selfId)).toEqual({
+      id: selfId,
+      declaredByStaffId: null,
+      declaredByName: null,
+      followedByStaffId: null,
+    });
   });
 
   it("rend `null` pour une société d'avant la colonne, et compte la facturation", async () => {

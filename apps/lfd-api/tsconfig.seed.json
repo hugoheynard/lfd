@@ -33,7 +33,9 @@
     "prisma/reset-growth.ts",
     "prisma/mercuriale",
     "prisma/backfill-order-discounts.ts",
-    "prisma/backfill-order-discounts-options.ts"
+    "prisma/backfill-order-discounts-options.ts",
+    "prisma/backfill-company-openers.ts",
+    "prisma/backfill-company-openers-options.ts"
   ],
   "exclude": ["dist", "dist-seed", "node_modules", "test", "**/*.spec.ts"]
 }

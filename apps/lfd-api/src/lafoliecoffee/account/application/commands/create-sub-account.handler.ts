@@ -21,6 +21,8 @@ import { CompanyAddressRepository } from "../../domain/ports/company-address.rep
 import { CompanyFollowsRepository } from "../../domain/ports/company-follows.repository.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { PricingFollowJournal } from "../../domain/ports/pricing-follow.journal.js";
+import { StaffDirectory } from "../../domain/ports/staff-directory.js";
+import { CompanyOpening } from "../../domain/value-objects/company-opening.js";
 import { loadCompany, named } from "../services/account-hierarchy-support.js";
 import { CreateSubAccountCommand } from "./create-sub-account.command.js";
 
@@ -56,6 +58,7 @@ export class CreateSubAccountHandler implements ICommandHandler<CreateSubAccount
     private readonly uow: UnitOfWork,
     private readonly pricingJournal: PricingFollowJournal,
     private readonly intents: OncePerIntent,
+    private readonly staff: StaffDirectory,
   ) {}
 
   execute(command: CreateSubAccountCommand): Promise<string> {
@@ -79,7 +82,12 @@ export class CreateSubAccountHandler implements ICommandHandler<CreateSubAccount
     if (aspects.includes("pricing") && !command.mayDecidePricing) {
       throw new PricingFollowNotAllowedError();
     }
-    const company = Company.declare(command.payload, null, "staff");
+    const company = Company.declare(
+      command.payload,
+      null,
+      "staff",
+      await this.siteOpenedBy(command.staffUserId),
+    );
     const siret = company.siret;
     if (siret !== null && (await this.companies.existsBySiret(siret.value))) {
       throw new SiretAlreadyRegisteredError(siret.value);
@@ -114,6 +122,16 @@ export class CreateSubAccountHandler implements ICommandHandler<CreateSubAccount
     // Le fait d'entonnoir, best-effort comme à toute création staff.
     this.events.publish(new CompanyDeclaredEvent(companyId, company.displayName(), "staff", null));
     return companyId;
+  }
+
+  /**
+   * Un site garde son auteur, nom figé à cet instant, mais aucun suiveur : le
+   * suivi commercial est celui du principal. Inconnu de l'annuaire, le nom
+   * reste vide — on n'invente pas de nom.
+   */
+  private async siteOpenedBy(staffUserId: string): Promise<CompanyOpening> {
+    const author = await this.staff.identify(staffUserId);
+    return CompanyOpening.siteOpenedBy({ staffUserId, name: author?.name ?? null });
   }
 
   /**

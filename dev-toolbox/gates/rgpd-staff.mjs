@@ -116,6 +116,17 @@ const POSITION_SCHEMA = "delivery";
 const THIRD_PARTY_TABLE = /^public\.vitrine_/u;
 const THIRD_PARTY_PATTERNS = [/(^|_)email$/u];
 
+/**
+ * Les colonnes d'ACTEUR du journal d'activité (2026-11-14,
+ * `plan-suivi-commercial.md` § 3.4) : qui a fait un geste, son nom et sa
+ * fonction figés — le suivi commercial les lit pour dire ce qu'a fait chaque
+ * commercial. `actor_type` (customer | staff | system) n'est pas une donnée
+ * personnelle, et le reste de la table (type, sujet, charge) ne désigne pas un
+ * membre du staff : un motif ciblé plutôt que toute la table.
+ */
+const ACTOR_TABLES = new Set(["growth.activity_events"]);
+const ACTOR_PATTERNS = [/^actor_(id|name|role)$/u];
+
 /** Les colonnes du schéma, `schema.table.colonne`, telles que Postgres les nomme. */
 export function columnsOf(source) {
   const columns = [];
@@ -161,6 +172,9 @@ export function isCandidate(qualified) {
   const [schema, table, column] = qualified.split(".");
   if (ALL_PERSONAL_TABLES.has(`${schema}.${table}`)) return true;
   if (NAME_PATTERNS.some((pattern) => pattern.test(column))) return true;
+  if (ACTOR_TABLES.has(`${schema}.${table}`)) {
+    if (ACTOR_PATTERNS.some((p) => p.test(column))) return true;
+  }
   if (THIRD_PARTY_TABLE.test(`${schema}.${table}`)) {
     if (THIRD_PARTY_PATTERNS.some((p) => p.test(column))) return true;
   }

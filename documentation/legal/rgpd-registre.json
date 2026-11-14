@@ -1197,6 +1197,72 @@
       "information": false
     },
     {
+      "colonne": "public.companies.declared_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Suivi de l'acquisition commerciale (`documentation/b2b/plan-suivi-commercial.md`) : quel membre du staff a ouvert la fiche. Conservation de 12 mois décidée par Hugo le 2026-11-14 ; purge pas encore écrite.",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.companies.declared_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Suivi de l'acquisition commerciale (`documentation/b2b/plan-suivi-commercial.md`) : nom figé de l'auteur de l'ouverture, lisible même si la fiche staff change. Conservation de 12 mois décidée par Hugo le 2026-11-14 ; purge pas encore écrite.",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.companies.followed_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Suivi de l'acquisition commerciale (`documentation/b2b/plan-suivi-commercial.md`) : le commercial qui suit la fiche. Conservation de 12 mois décidée par Hugo le 2026-11-14 ; purge pas encore écrite.",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "growth.activity_events.actor_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Suivi de l'acquisition commerciale (`documentation/b2b/plan-suivi-commercial.md`) et journal d'activité : qui a fait le geste (id de fiche staff, ou id client quand le client agit). Conservation de 12 mois décidée par Hugo le 2026-11-14 ; purge pas encore écrite.",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "growth.activity_events.actor_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Suivi de l'acquisition commerciale (`documentation/b2b/plan-suivi-commercial.md`) et journal d'activité : nom figé de l'auteur du geste. Conservation de 12 mois décidée par Hugo le 2026-11-14 ; purge pas encore écrite.",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "growth.activity_events.actor_role",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Suivi de l'acquisition commerciale (`documentation/b2b/plan-suivi-commercial.md`) et journal d'activité : fonction figée de l'auteur du geste. Conservation de 12 mois décidée par Hugo le 2026-11-14 ; purge pas encore écrite.",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.company_mercuriale_amendments.archived_by",
       "personne": "staff",
       "categorie": "auteur-geste",

@@ -20,6 +20,7 @@ function columns(over: Partial<CompanyColumns> = {}): CompanyColumns {
     activatedByStaffId: null,
     activatedByName: null,
     activatedByRole: null,
+    followedByStaffId: null,
     suspensionCause: null,
     nafCode: "",
     preferredFulfillmentMethod: null,

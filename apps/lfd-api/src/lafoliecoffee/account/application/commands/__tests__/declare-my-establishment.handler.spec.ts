@@ -187,6 +187,9 @@ describe("DeclareMyEstablishmentHandler", () => {
     expect(declared?.company.enseigne).toBe("Le Pain Quotidien du Marais");
     // Plan auto-acquisition pro, P1 : la société SAIT qu'elle s'est déclarée seule.
     expect(declared?.company.declaredVia).toBe("self");
+    // Ni auteur ni suiveur : elle entre au suivi quand on l'attribue.
+    expect(declared?.company.opening.author).toBeNull();
+    expect(declared?.company.opening.followerStaffId).toBeNull();
     expect(declared?.company.toPersistence().contact).toMatchObject({
       firstName: "Camille",
       lastName: "Rousseau",

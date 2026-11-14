@@ -1,3 +1,4 @@
+import { CompanyOpening } from "../../value-objects/company-opening.js";
 import {
   InvalidLegalFormError,
   InvalidVatNumberError,
@@ -63,7 +64,12 @@ describe("la TVA d'une société", () => {
 
   it("à la déclaration, compare le numéro au SIRET déclaré avec lui", () => {
     expect(() =>
-      Company.declare({ ...DECLARATION, siret: SIRET, vatNumber: OTHER_VAT }, null, "staff"),
+      Company.declare(
+        { ...DECLARATION, siret: SIRET, vatNumber: OTHER_VAT },
+        null,
+        "staff",
+        CompanyOpening.openedBy({ staffUserId: "staff_1", name: null }),
+      ),
     ).toThrow(VatSirenMismatchError);
   });
 
@@ -122,12 +128,22 @@ describe("la TVA d'une société", () => {
 describe("la forme juridique d'une société", () => {
   it("refuse une forme hors de la liste", () => {
     expect(() =>
-      Company.declare({ ...DECLARATION, formeJuridique: "Entreprise géniale" }, null, "staff"),
+      Company.declare(
+        { ...DECLARATION, formeJuridique: "Entreprise géniale" },
+        null,
+        "staff",
+        CompanyOpening.openedBy({ staffUserId: "staff_1", name: null }),
+      ),
     ).toThrow(InvalidLegalFormError);
   });
 
   it("accepte une forme reconnue, écrite comme avant la liste fermée", () => {
-    const company = Company.declare({ ...DECLARATION, formeJuridique: "S.A.S." }, null, "staff");
+    const company = Company.declare(
+      { ...DECLARATION, formeJuridique: "S.A.S." },
+      null,
+      "staff",
+      CompanyOpening.openedBy({ staffUserId: "staff_1", name: null }),
+    );
     expect(company.formeJuridique).toBe("S.A.S.");
   });
 

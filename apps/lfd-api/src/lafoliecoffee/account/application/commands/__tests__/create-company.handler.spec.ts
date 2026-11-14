@@ -124,6 +124,15 @@ describe("CreateCompanyHandler", () => {
     expect(events.published).toEqual([]);
   });
 
+  it("une inscription du client ne porte ni auteur ni suiveur dans l'équipe", async () => {
+    const { handler, declared } = doubles();
+
+    await handler.execute(command());
+
+    expect(declared[0]?.company.opening.author).toBeNull();
+    expect(declared[0]?.company.opening.followerStaffId).toBeNull();
+  });
+
   it("reprend le profil du créateur comme contact de la société", async () => {
     const { handler, declared } = doubles();
 

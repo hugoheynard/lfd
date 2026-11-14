@@ -9,6 +9,8 @@ import { Company } from "../../domain/entities/company.js";
 import { SiretAlreadyRegisteredError } from "../../domain/errors/account-errors.js";
 import { CompanyDeclaredEvent } from "../../domain/events/company-declared.event.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
+import { StaffDirectory } from "../../domain/ports/staff-directory.js";
+import { CompanyOpening } from "../../domain/value-objects/company-opening.js";
 import { ContactDetails } from "../../domain/value-objects/contact-details.js";
 import { CompanyOpeningReplay } from "../services/company-opening-replay.js";
 import { AccountAccessGranter } from "../services/grant-account-access.service.js";
@@ -82,6 +84,7 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
     private readonly intents: OncePerIntent,
     private readonly uow: UnitOfWork,
     private readonly replay: CompanyOpeningReplay,
+    private readonly staff: StaffDirectory,
   ) {}
 
   /**
@@ -129,7 +132,15 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
     // tient les règles (e-mail valide, fonction bornée). Absent, c'est `null` —
     // pas un contact aux champs vides (cf. `CompanyContact`).
     const contact = command.contact === null ? null : ContactDetails.create(command.contact);
-    const company = Company.declare(command, contact, "staff");
+    // L'auteur ouvre ET suit : son nom est figé ici, comme celui d'une
+    // activation — un nom résolu à la lecture changerait l'histoire. Inconnu
+    // de l'annuaire, il reste vide : on garde l'id, on n'invente pas de nom.
+    const author = await this.staff.identify(command.invitedBy);
+    const opening = CompanyOpening.openedBy({
+      staffUserId: command.invitedBy,
+      name: author?.name ?? null,
+    });
+    const company = Company.declare(command, contact, "staff", opening);
 
     // Le contrôle d'unicité ne vaut que si on a un SIRET : sans lui, il n'y a
     // rien à dédupliquer, et comparer des chaînes vides ferait de la deuxième

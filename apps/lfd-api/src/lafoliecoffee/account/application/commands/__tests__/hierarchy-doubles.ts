@@ -11,6 +11,7 @@ import {
   type PricingFollowEntry,
 } from "../../../domain/ports/pricing-follow.journal.js";
 import { SiteMandateRevocation } from "../../../domain/ports/site-mandate-revocation.js";
+import { StaffDirectory, type StaffIdentity } from "../../../domain/ports/staff-directory.js";
 import { CollectionFormHistory } from "../../../domain/entities/collection-form-history.js";
 import { CollectionFormRepository } from "../../../domain/ports/collection-form.repository.js";
 import { CompanyFollowsRepository } from "../../../domain/ports/company-follows.repository.js";
@@ -171,5 +172,19 @@ export class InMemoryCollectionForms extends CollectionFormRepository {
   save(history: CollectionFormHistory): Promise<void> {
     this.saved.push(history);
     return Promise.resolve();
+  }
+}
+
+/**
+ * L'annuaire du staff doublé : les fiches qu'il connaît, par référence. Une
+ * référence absente rend `null`, comme un marqueur de semis.
+ */
+export class KnownStaff extends StaffDirectory {
+  constructor(private readonly known: ReadonlyMap<string, StaffIdentity> = new Map()) {
+    super();
+  }
+
+  identify(reference: string): Promise<StaffIdentity | null> {
+    return Promise.resolve(this.known.get(reference) ?? null);
   }
 }

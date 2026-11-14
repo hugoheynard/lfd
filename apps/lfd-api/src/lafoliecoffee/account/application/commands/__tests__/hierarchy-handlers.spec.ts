@@ -30,6 +30,7 @@ import { StopFollowingParentHandler } from "../stop-following-parent.handler.js"
 import { DELIVERY } from "./member-acts-doubles.js";
 import {
   CallLog,
+  KnownStaff,
   InMemoryAddresses,
   InMemoryCompanies,
   InMemoryFollows,
@@ -94,6 +95,7 @@ function createHandler(w: World): CreateSubAccountHandler {
     new DirectUnitOfWork(),
     w.pricing,
     inMemoryIntents(),
+    new KnownStaff(new Map([["staff_1", { name: "Lou Martin", role: "Commerciale" }]])),
   );
 }
 
@@ -145,6 +147,18 @@ describe("Créer un sous-compte", () => {
       "company.parent_followed",
       "company.parent_followed",
     ]);
+  });
+
+  it("garde l'auteur du site, nom figé, mais ne lui donne aucun suiveur", async () => {
+    const w = world([principalCompany()]);
+
+    await createHandler(w).execute(
+      new CreateSubAccountCommand("groupe", payload(), false, "staff_1", randomUUID()),
+    );
+
+    const opening = w.companies.declared[0]?.opening;
+    expect(opening?.author).toEqual({ staffUserId: "staff_1", name: "Lou Martin" });
+    expect(opening?.followerStaffId).toBeNull();
   });
 
   it("crée un sous-compte au nom seul, sans adresse de livraison", async () => {

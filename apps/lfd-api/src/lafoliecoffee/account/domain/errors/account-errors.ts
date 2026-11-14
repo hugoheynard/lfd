@@ -92,6 +92,33 @@ export class InvalidKbisIssueDateError extends DomainError {
   }
 }
 
+/**
+ * Une ouverture de fiche attribuée à un membre de l'équipe sans identifiant :
+ * c'est une commande mal formée, pas une saisie à corriger. L'acteur vient du
+ * jeton du back-office ; reconnectez-vous puis recommencez l'ouverture.
+ */
+export class InvalidOpeningAuthorError extends DomainError {
+  constructor() {
+    super(
+      "account.company.opening_author_invalid",
+      "L'ouverture de cette fiche n'a pas d'auteur identifié : reconnectez-vous au back-office puis recommencez.",
+    );
+  }
+}
+
+/**
+ * Une société déclarée par le client qu'on prétend ouverte par l'équipe :
+ * un auteur ne s'attache qu'à une ouverture du back-office.
+ */
+export class SelfDeclaredWithAuthorError extends DomainError {
+  constructor() {
+    super(
+      "account.company.self_declared_with_author",
+      "Une société inscrite par le client n'a pas d'auteur dans l'équipe : ouvrez-la depuis le back-office pour la rattacher à un commercial.",
+    );
+  }
+}
+
 /** Une forme juridique hors de la liste reconnue (SAS, SARL, EI…). */
 export class InvalidLegalFormError extends DomainError {
   constructor(readonly raw: string) {

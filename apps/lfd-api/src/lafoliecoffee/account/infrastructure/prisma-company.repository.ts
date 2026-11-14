@@ -14,6 +14,7 @@ import {
   SiretAlreadyRegisteredError,
 } from "../domain/errors/account-errors.js";
 import { CompanyRepository, type KbisLocation } from "../domain/ports/company.repository.js";
+import { CompanyOpening } from "../domain/value-objects/company-opening.js";
 import { ContactDetails } from "../domain/value-objects/contact-details.js";
 import { HierarchyPlace } from "../domain/value-objects/hierarchy-place.js";
 import {
@@ -22,6 +23,7 @@ import {
   contactColumns,
   directDebitBlockOf,
   kbisOf,
+  openingColumns,
   type CompanyColumns,
 } from "./company-columns.js";
 
@@ -181,6 +183,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
           ...contactColumns(company.toPersistence().contact),
           // Fait de naissance : écrit ici, jamais par `save`.
           declaredVia: company.declaredVia,
+          ...openingColumns(company.opening),
           // Un sous-compte naît rattaché (sous-comptes §4) ; le verrou de
           // la hiérarchie est pris par le handler.
           parentCompanyId: company.parentCompanyId,
@@ -243,6 +246,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
             },
       suspensionCause: row.suspensionCause,
       declaredVia: row.declaredVia,
+      opening: CompanyOpening.reconstitute(row),
       nafCode: row.nafCode,
       kbis: kbisOf(row),
       directDebitBlock: directDebitBlockOf(row),
