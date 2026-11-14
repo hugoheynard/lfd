@@ -24,6 +24,8 @@ personne, le rayon par société.
 
 ## La correction proposée
 
+> Plan retenu le 2026-11-14 : [`plan-mesures-privees.md`](plan-mesures-privees.md).
+
 1. **La passerelle (`gateway/`) retire `Server-Timing` et `X-Shelf-Cache`** de
    toute réponse publique — elle est déjà la frontière de confiance.
 2. **Elle les garde pour une requête de diagnostic** qui porte un en-tête

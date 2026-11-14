@@ -3,6 +3,7 @@ import { forwardedSearch } from "./cache-key";
 import type { BackendKey, Target } from "./routes";
 import { guardTarget } from "./route-planner-guard";
 import type { RoutePlannerGuardEnv } from "./route-planner-guard";
+import { isDiagnostic, sortDiagnosticHeaders, withoutDiagnosticSecret } from "./diagnostic";
 import { withServerTiming } from "./server-timing";
 import { formatTrafficPoint, trafficPoint } from "./traffic";
 import type { TrafficObservation } from "./traffic";
@@ -57,6 +58,8 @@ interface Env extends RoutePlannerGuardEnv {
    * empêcher une requête de passer — OPS observe, il n'arbitre rien.
    */
   TRAFFIC?: AnalyticsEngineDataset;
+  /** Le secret de diagnostic, posé par Hugo (`wrangler secret put`). Absent : aucune mesure ne sort. */
+  DIAGNOSTIC_SECRET?: string;
 }
 
 /** Une requête traitée : ce qu'on rend, et ce qu'on en retient pour OPS. */
@@ -68,9 +71,16 @@ interface Handled {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const startedAt = Date.now();
-    const handled = await handle(request, new URL(request.url), env);
+    const diagnostic = await isDiagnostic(request, env.DIAGNOSTIC_SECRET);
+    const handled = await handle(withoutDiagnosticSecret(request), new URL(request.url), env);
     observe(env, { ...handled.observation, durationMs: Date.now() - startedAt });
-    return handled.response;
+    // Un seul point de tri, pour toutes les sorties. S'il échouait, on rend
+    // une faute de la passerelle — jamais la réponse non triée.
+    try {
+      return sortDiagnosticHeaders(handled.response, diagnostic);
+    } catch {
+      return new Response("Gateway LFC : réponse illisible.", { status: 502 });
+    }
   },
 };
 
