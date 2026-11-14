@@ -23,7 +23,7 @@ déclare :
 | Niveau            | Ce que la fiche contient                                                  |
 | ----------------- | ------------------------------------------------------------------------- |
 | **0 · Annuaire**  | nom et/ou SIRET, rien d'autre                                             |
-| **1 · Contactée** | un interlocuteur réel : nom ET (e-mail OU téléphone) non vides            |
+| **1 · Contactée** | un interlocuteur réel ET au moins un **contact noté** (§ 3.2 ter)         |
 | **2 · Qualifiée** | une adresse de facturation, et une adresse de livraison sauf retrait seul |
 | **3 · Ouverte**   | le détenteur s'est connecté au moins une fois                             |
 | **4 · Active**    | activée, avec au moins une commande                                       |
@@ -141,14 +141,34 @@ this.work.track`), l'acteur lu dans le contexte de la requête
 - **Les montées de niveau se calculent à la lecture**, jamais écrites : leurs
   dates existent déjà — `users.first_login_at` (Ouverte), `activated_at` et le
   fait `order.placed` (Active), le fait `company.step_reached`
-  (`billing`/`delivery`, Qualifiée). Le passage à « Contactée » n'a pas de
-  date : il ne compte pas dans les montées du jour, c'est dit sur la page. Un
+  (`billing`/`delivery`, Qualifiée). Le passage à « Contactée » est daté par le premier contact
+  noté (§ 3.2 ter). Un
   niveau peut redescendre (adresse archivée) : la page montre l'état, pas
   l'historique.
 - **Avertissement `adresses_multiples`** ajouté à `company-warnings.ts`
   (adresses de livraison vivantes > 1), servi là où les autres le sont, et
   compté par le compteur du menu ; son texte nomme la sortie : « créer un site
   par adresse ».
+
+### 3.2 ter Noter un contact (lot S2)
+
+Décidé par Hugo le 2026-11-14 : **une fiche n'est « Contactée » que si un
+contact a été noté.** Un nom et un numéro sans contact noté restent au niveau
+Annuaire — c'est précisément le travail d'annuaire à rendre visible.
+
+- **Le geste** « Noter un contact », sur la fiche : mode (téléphone, e-mail,
+  visite, visio, salon, autre), date (aujourd'hui par défaut, jamais dans le
+  futur), une note courte facultative ; l'auteur est l'acteur de la requête.
+  Une commande scellée par la clé d'intention de l'écran.
+- **Il devient un fait du journal**, `company.contacted` (mode, date, auteur) —
+  pas de table neuve. Il entre dans l'historique de la fiche, il date la
+  montée vers « Contactée », et le récap du jour le compte par mode.
+- **Un rendez-vous honoré compte comme un contact**, sans double saisie :
+  `growth.appointments` au statut `honored`, sujet `company`, canal
+  `phone` → téléphone, `visio` → visio, `onsite` → visite, daté de son
+  `start_at`. La page lit les deux sources.
+- La note ne porte jamais de donnée personnelle du prospect au-delà de ce que
+  la fiche porte déjà ; elle n'est pas servie hors de la fiche et de la page.
 
 ### 3.3 La page, et ce qu'elle coûte
 
@@ -242,6 +262,7 @@ suivi. Le lot S6 ne se met pas en service avant.
 1. **S1** — colonnes d'auteur et de suivi, posées à l'ouverture ; registre et
    porte RGPD ; script de reprise (relu, lancé à part).
 2. **S2** — niveau de travail (domaine pur, montées calculées à la lecture),
+   le geste « Noter un contact » et les rendez-vous honorés comptés,
    et l'avertissement `adresses_multiples` (surface des avertissements, à part).
 3. **S3** — la ressource, la route, la page (tableau, manquements, envois
    d'accès).
