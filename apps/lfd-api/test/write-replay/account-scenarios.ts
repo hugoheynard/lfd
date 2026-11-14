@@ -1,6 +1,6 @@
 import { CompanyStatus } from "../../src/platform/database/client/client.js";
 import { seedCompanyWithDelivery } from "../delivery-procedure-scene.js";
-import { daysAgo, jsonBody, type E2eContext } from "../e2e-harness.js";
+import { daysAgo, E2E_STAFF_ID, jsonBody, type E2eContext } from "../e2e-harness.js";
 import { createCompany } from "../factories.js";
 import { INTENT_KEY, freshIntent } from "../intent-key.js";
 import {
@@ -97,6 +97,26 @@ export const ACCOUNT_SCENARIOS: ScenarioSet = {
   [routeKey(`${HTTP}/admin-company-contacts.controller.ts`, "add")]: async ({ ctx }) => {
     const company = await createCompany(ctx.prisma);
     return { sub: STAFF, path: `/admin/companies/${company.id}/contacts`, body: CONTACT };
+  },
+
+  // Un contact noté passé : le scellement seul empêche qu'il soit noté deux fois.
+  [routeKey(`${HTTP}/admin-company-noted-contacts.controller.ts`, "note")]: async ({ ctx }) => {
+    const company = await createCompany(ctx.prisma);
+    return {
+      sub: STAFF,
+      path: `/admin/companies/${company.id}/noted-contacts`,
+      body: { mode: "phone", date: "2026-01-05", note: "Rappeler jeudi" },
+    };
+  },
+
+  // Confier la fiche à l'opérateur e2e, actif et admin.
+  [routeKey(`${HTTP}/admin-company-follower.controller.ts`, "assign")]: async ({ ctx }) => {
+    const company = await createCompany(ctx.prisma);
+    return {
+      sub: STAFF,
+      path: `/admin/companies/${company.id}/follower`,
+      body: { followerStaffId: E2E_STAFF_ID },
+    };
   },
 
   [routeKey(`${HTTP}/company-contacts.controller.ts`, "addContact")]: async ({ ctx }) => {
