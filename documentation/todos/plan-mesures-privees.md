@@ -111,8 +111,7 @@ navigateur, ou recharger une fois avant de mesurer.
 ### 3.5 Mise en service
 
 1. Bâtir, tests, push `dev`.
-2. **Hugo** pose le secret sur la passerelle (`wrangler secret put
-DIAGNOSTIC_SECRET`) — avant ou après le déploiement : sans lui, tout est
+2. **Hugo** pose le secret sur la passerelle (secret GitHub `DIAGNOSTIC_SECRET`, recopié sur la passerelle à chaque déploiement par `deploy_lfd_gateway.yml`) — avant ou après le déploiement : sans lui, tout est
    effacé, ce qui est sûr.
 3. Contrôle : un `curl -sI` sans en-tête ne montre plus `Server-Timing` ;
    Hugo vérifie avec son extension qu'il les voit.

@@ -97,15 +97,18 @@ jobs:
       #
       # AVANT le déploiement : le nouveau code trouve son jeton dès sa
       # première requête.
-      - name: Synchroniser les jetons de /api/route-planner
+      # `DIAGNOSTIC_SECRET` : le secret qui laisse sortir les mesures de chaque
+      # réponse (`gateway/src/diagnostic.ts`). Absent : aucune mesure ne sort.
+      - name: Synchroniser les jetons de /api/route-planner et le secret de diagnostic
         working-directory: gateway
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFD_GATEWAY }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           ROUTE_PLANNER_TOKEN: ${{ secrets.ROUTE_PLANNER_TOKEN }}
           ROUTE_PLANNER_TOKEN_NEXT: ${{ secrets.ROUTE_PLANNER_TOKEN_NEXT }}
+          DIAGNOSTIC_SECRET: ${{ secrets.DIAGNOSTIC_SECRET }}
         run: |
-          for name in ROUTE_PLANNER_TOKEN ROUTE_PLANNER_TOKEN_NEXT; do
+          for name in ROUTE_PLANNER_TOKEN ROUTE_PLANNER_TOKEN_NEXT DIAGNOSTIC_SECRET; do
             value="${!name}"
             if [ -n "$value" ]; then
               printf '%s' "$value" | pnpm exec wrangler secret put "$name"
