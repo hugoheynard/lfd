@@ -39,24 +39,30 @@ Trois signaux s'y ajoutent, qui ne sont pas des niveaux :
 - **En retard** : au niveau Annuaire depuis plus de 7 jours, au niveau
   Contactée depuis plus de 14 (seuils à confirmer).
 
+Décidé par Hugo le 2026-11-14 : **un seul tableau global**, une ligne par
+fiche, filtrable par commercial — le commercial attribué à la fiche, ou « non
+attribuée ». Pas de tableau par commercial à part.
+
 ```text
-┌ Suivi commercial ──────────────────────────────── aujourd'hui · 14 nov. ┐
-│  Par commercial    Annuaire  Contactée  Qualifiée  Ouverte  Active      │
-│  Commerciale A        38 ●       2         0         0        0        │
-│  Commercial B          3        6         4         2        5        │
-│  ● 38 fiches au niveau Annuaire depuis plus de 7 jours                  │
-│                                                                         │
-│  Manquements   [Annuaire ▾] [Commerciale A ▾] [> 7 jours ▾]             │
-│  Boulangerie X  C-4F2K1A  Annuaire   21 j   accès envoyé 0×   A   ▸    │
-│     manque : interlocuteur · adresses                                   │
-│  Café Y         C-9QZ3LM  Contactée  12 j   accès envoyé 3× ⚠  A   ▸   │
-│     manque : connexion du détenteur · adresses                          │
-│                                                                         │
-│  Aujourd'hui                                                            │
-│  Commerciale A  12 fiches ouvertes · 0 montée · 4 accès renvoyés        │
-│  Commercial B    1 fiche ouverte · 3 montées · 1 activation             │
-└─────────────────────────────────────────────────────────────────────────┘
+┌ Suivi commercial ─────────────────────────────────────── 14 nov. ┐
+│ Commercial [Tous ▾]  Niveau [Tous ▾]  Signal [Tous ▾]  Canal [Tous ▾] │
+│ 38 Annuaire · 8 Contactée · 4 Qualifiée · 2 Ouverte · 5 Active   │
+│                                                                   │
+│ Fiche          Réf.      Niveau     Âge  Suivie par     Signaux   │
+│ Boulangerie X  C-4F2K1A  Annuaire   21 j Commerciale A  ● retard  │
+│   manque : interlocuteur · adresses · consultée 0× en 21 j        │
+│ Café Y         C-9QZ3LM  Contactée  12 j Commerciale A  ⚠ accès 3×│
+│   manque : connexion du détenteur · adresses                      │
+│ Bistro Z       C-2MX8QA  Qualifiée   3 j non attribuée  inscrit   │
+│   manque : connexion du détenteur                                 │
+│                                                                   │
+│ Aujourd'hui (filtre appliqué) : 12 fiches ouvertes · 0 montée ·   │
+│ 4 accès renvoyés · 3 fiches consultées                            │
+└───────────────────────────────────────────────────────────────────┘
 ```
+
+Les compteurs par niveau et le récap du jour suivent le filtre : choisir
+« Commerciale A » donne ses chiffres, « Tous » ceux de l'équipe.
 
 **Ce qui n'est pas compté comme une ouverture** : un **site** (sous-compte)
 créé sous un principal — c'est de la structure, pas de l'acquisition ; il
