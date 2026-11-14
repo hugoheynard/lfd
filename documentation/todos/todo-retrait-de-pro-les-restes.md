@@ -26,11 +26,10 @@ et `lfc-b2b.lafoliedouce.eu` (ces deux dernières ne résolvent plus). La
 boutique envoie toujours `origin + base` (`app-base-url.ts`), donc
 `https://lafoliecoffee.info` en production.
 
-## Reste : basculer la coque native sur la zone
+## La coque native vise la zone
 
 `server.url` de la coque Capacitor (`apps/lfc-ecommerce-frontend/capacitor.config.ts`)
-vise `https://lfc-ecommerce.pages.dev`, **qui n'est autorisée nulle part dans
-Auth0** : une connexion depuis la coque est refusée aujourd'hui. Le geste :
-`server.url` → `https://lafoliecoffee.info`, à la prochaine build de la coque.
-Ouvrir la boutique directement sur `lfc-ecommerce.pages.dev` ne permet pas non
-plus de se connecter, et c'est voulu : une seule adresse publique.
+vise `https://lafoliecoffee.info` depuis le 2026-11-14. Rien n'est publié :
+la ligne servira à la prochaine build de la coque, qui reste à faire (reconstruire
+et signer l'app). Ouvrir la boutique directement sur `lfc-ecommerce.pages.dev`
+ne permet pas de se connecter, et c'est voulu : une seule adresse publique.

@@ -14,10 +14,9 @@ import type { CapacitorConfig } from '@capacitor/cli';
  *
  * Contrepartie assumée, la même que l'admin : **aucun mode hors-ligne**.
  *
- * ⚠️ `server.url` pointera sur `https://lafoliecoffee.info` (la racine, depuis
- * le 2026-09-15 ; c'était `/pro` avant) quand on basculera la coque. En attendant, l'adresse du projet lui-même — celle
- * que nos déploiements mettent à jour, cf. la note sous `url`. C'est la seule
- * ligne à changer.
+ * `server.url` vise `https://lafoliecoffee.info`, la seule adresse de la
+ * boutique qu'Auth0 autorise (Callback, Logout et Web Origins, relu le
+ * 2026-11-14) : depuis une autre, la connexion est refusée au retour.
  *
  * Pour passer en mode embarqué (App Store, ou vrai hors-ligne) : retirer le
  * bloc `server`, lancer `pnpm build:capacitor` — cette configuration-là garde
@@ -36,14 +35,10 @@ const config: CapacitorConfig = {
     // qu'elle est définie, donc une adresse périmée livre une app figée à qui
     // l'a installée — sans qu'aucun déploiement ne rougisse.
     //
-    // `lfc-ecommerce.pages.dev` depuis le 2026-09-22, en remplacement de
-    // `lfc-b2b-eu7.pages.dev`. Adresse LUE — annoncée par Cloudflare à la
-    // création du projet, puis confirmée par le log du déploiement et par le
-    // bundle réellement servi. Le nom court était libre, donc aucun suffixe :
-    // c'est précisément le suffixe silencieux (`lfc-b2b` → `lfc-b2b-eu7`) qui
-    // avait déjà coûté une panne CORS muette et, le 2026-09-21, un déploiement
-    // entier parti dans un projet vide.
-    url: 'https://lfc-ecommerce.pages.dev',
+    // L'adresse publique de la boutique, celle que la passerelle sert et
+    // qu'Auth0 autorise — jamais l'adresse technique du projet Pages, que
+    // la connexion refuserait.
+    url: 'https://lafoliecoffee.info',
     // Pas de HTTP en clair : la WebView doit refuser un downgrade, comme le
     // ferait Safari. C'est le défaut, on l'écrit pour que ça reste vrai.
     cleartext: false,
