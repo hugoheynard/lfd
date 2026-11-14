@@ -192,13 +192,21 @@ jobs:
   # des specs 53 s, tsc 35 s : 535 s au total (run 38347525043), pour des
   # étapes qui ne partagent rien d'autre que l'installation (~25 s). Côte à
   # côte, le job le plus long tient seul la durée ; rien n'a été retiré.
+  # Le lint lit les types et durait ~6 min 20 d'un seul tenant : il est
+  # découpé en 3 morceaux de fichiers (`dev-toolbox/ci/lint-shard.mjs`), chacun
+  # avec tous les types chargés. Pas de cache ESLint : il ne regarde que le
+  # fichier lui-même, et un type changé ailleurs ne le rendrait pas rouge.
   b2b-lint:
-    name: Backend B2B · lint
+    name: Backend B2B · lint ${{ matrix.shard }}/3
     runs-on: ubuntu-latest
     # Limite ≈ 3× la durée mesurée : voir le commentaire de `b2b-unit`.
-    timeout-minutes: 15
+    timeout-minutes: 10
     needs: changes
     if: needs.changes.outputs.api == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -210,7 +218,15 @@ jobs:
       - name: Construire les paquets dont dépend le backend
         run: pnpm --filter "./packages/**" build
       - name: Lint
-        run: pnpm --filter lfd-api lint:ci
+        working-directory: apps/lfd-api
+        env:
+          NODE_OPTIONS: --max-old-space-size=10240
+        # La liste est lue AVANT ESLint : si le découpage échoue, le pas
+        # échoue — jamais un ESLint lancé sans fichiers, qui serait vert.
+        run: |
+          files=$(node ../../dev-toolbox/ci/lint-shard.mjs ${{ matrix.shard }} 3)
+          echo "$(printf '%s\n' "$files" | wc -l) fichiers dans ce morceau"
+          pnpm exec eslint --no-warn-ignored $files
 
   b2b-typecheck:
     name: Backend B2B · typecheck
