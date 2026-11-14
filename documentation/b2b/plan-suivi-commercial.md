@@ -1,6 +1,7 @@
 # Plan — le suivi commercial : ce qui a été fait, et ce qui ne l'a pas été
 
-> Plan du 2026-11-14 (v2), demandé par Hugo pour la cheffe des commerciaux.
+> Plan du 2026-11-14 (v3 : montées calculées à la lecture, lecture directe
+> assumée dans growth ; v2), demandé par Hugo pour la cheffe des commerciaux.
 > Pas encore bâti. La v1 a été contredite par `vitruve` (niveau « Ouverte »
 > sans donnée, sites comptés comme des ouvertures, montées de niveau sans
 > source, adresses multiples contraires au modèle). Touche une frontière
@@ -108,6 +109,8 @@ this.work.track`), l'acteur lu dans le contexte de la requête
 
 ### 3.1 Qui a ouvert, qui suit (migration additive)
 
+- Identifiants de staff en `String` sans clé étrangère, comme ailleurs dans
+  le dépôt (`account-bank-export.prisma`).
 - `companies.declared_by_staff_id` (nullable) et `declared_by_name` (figé),
   posés **dans la transaction** de `create-company-by-staff` depuis l'acteur
   de la commande. Un site (`create-sub-account`) porte aussi son auteur, mais
@@ -119,11 +122,15 @@ this.work.track`), l'acteur lu dans le contexte de la requête
   (`Company.assignFollower(staffId)`), une commande scellée par la clé
   d'intention de l'écran (`@IntentKey`, `runSealed`), un fait
   `company.follower_changed`.
-- **Reprise** des fiches existantes, une fois, par script relu : auteur lu
-  dans `growth.activity_events` (`company.declared`, acteur `staff`), **sites
-  exclus** ; un acteur introuvable laisse la colonne vide, et la page dit
-  « auteur inconnu » — jamais une valeur inventée. Le script imprime ce qu'il
-  écrirait avant d'écrire ; une erreur se corrige ligne par ligne, c'est dit.
+- **Reprise** des fiches existantes, une fois, par script relu : deux lectures
+  séparées (`public.companies` sans `parent_company_id`, puis
+  `growth.activity_events` de type `company.declared`, acteur `staff`),
+  jointes en mémoire — jamais une jointure SQL entre schémas
+  (`lint:cross-schema-join`). Le script compte d'abord combien de
+  déclarations historiques ont un `actor_id` : s'il en manque beaucoup, on le
+  dit avant d'écrire. Un acteur introuvable laisse la colonne vide (« auteur
+  inconnu »), jamais une valeur inventée. Il imprime ce qu'il écrirait avant
+  d'écrire.
 - Semis de démonstration : il pose l'auteur comme le ferait l'équipe.
 
 ### 3.2 Le niveau de travail (domaine pur), et ses traces
@@ -131,10 +138,13 @@ this.work.track`), l'acteur lu dans le contexte de la requête
 - Un service `workLevelOf(input)` à côté de `company-warnings.ts`, même forme,
   testé cas par cas : il rend le niveau **et ce qui manque pour le suivant**.
   Les vides se testent comme vides (`contactEmail` n'est jamais `null`).
-- **Les montées de niveau ont une source** : quand un geste fait changer le
-  niveau d'une fiche suivie, un fait `company.work_level_reached` (niveau,
-  suiveur) est écrit au journal. Le récap du jour les compte ; sans ce fait,
-  « 3 montées » n'aurait aucune origine.
+- **Les montées de niveau se calculent à la lecture**, jamais écrites : leurs
+  dates existent déjà — `users.first_login_at` (Ouverte), `activated_at` et le
+  fait `order.placed` (Active), le fait `company.step_reached`
+  (`billing`/`delivery`, Qualifiée). Le passage à « Contactée » n'a pas de
+  date : il ne compte pas dans les montées du jour, c'est dit sur la page. Un
+  niveau peut redescendre (adresse archivée) : la page montre l'état, pas
+  l'historique.
 - **Avertissement `adresses_multiples`** ajouté à `company-warnings.ts`
   (adresses de livraison vivantes > 1), servi là où les autres le sont, et
   compté par le compteur du menu ; son texte nomme la sortie : « créer un site
@@ -143,11 +153,21 @@ this.work.track`), l'acteur lu dans le contexte de la requête
 ### 3.3 La page, et ce qu'elle coûte
 
 - Une lecture `GET /admin/sales-oversight` (`QueryBus`), dans le bloc
-  `lafoliecoffee/growth` ; elle lit les sociétés par le lecteur qu'`account`
-  publie déjà pour la croissance, les envois d'accès par
-  `MailSubjectDeliveries.forSubjects` (canal du bloc `mail`), et le journal
-  qui est le sien. `lint:prisma-model-ownership` et `lint:context-boundaries`
-  le vérifient au bâti.
+  `lafoliecoffee/growth`. Son adaptateur Prisma lit **directement**
+  `companies`, `addresses` (compte par lot), `users.first_login_at` et
+  `orders` (`EXISTS` par lot), comme les lecteurs de growth le font déjà
+  (`prisma-portfolio-metrics.reader.ts`, `prisma-company-namer.ts`) : growth
+  et account sont dans le même bloc, et la porte de propriété raisonne par
+  bloc. Les envois d'accès viennent de `MailSubjectDeliveries.forSubjects`
+  (canal du bloc `mail`, déjà appelé par `company-opening-replay.ts`), sujet
+  **`company` seul**, filtrés en mémoire sur le modèle
+  `customer.access-opened` ; on compte les **demandes** (`requestedAt`). Les
+  noms du staff (suiveur, auteur) se lisent dans l'annuaire du bloc `staff`
+  (« autorisation » dans la matrice) ; un suiveur archivé s'affiche « ancien
+  membre » et sort du filtre.
+- **Le jour** du récap est le jour civil de Paris, calculé depuis
+  `Clock.now()` par l'aide existante (`growth/domain/growth-stats.ts`),
+  jamais un jour UTC.
 - **Coût** (base facturée à l'opération) : une page = une liste paginée des
   fiches suivies (50), un `EXISTS` commande et un compte d'adresses **par
   lot** sur ces 50 ids, un appel `forSubjects` pour ces 50 ids, et une
@@ -157,7 +177,10 @@ this.work.track`), l'acteur lu dans le contexte de la requête
 - **Mur des données** : la réponse ne porte aucun e-mail ni téléphone de
   prospect — seulement « présent / absent » ; aucun journal n'écrit une
   adresse (`lint:log-no-email`).
-- Une **ressource neuve** `b2b_sales_oversight` (lecture). La migration ajoute
+- Une **ressource neuve** `b2b_sales_oversight` (lecture) : valeur de l'enum
+  `StaffResource` (`staff.prisma`, migration `ALTER TYPE … ADD VALUE` à part),
+  `packages/contracts/src/staff-access.ts` et son test, l'écran des rôles ;
+  `packages/` bouge, donc la suite racine. La migration ajoute
   la ressource, jamais le droit (`lint:no-role-grants-in-migrations`) : la
   cheffe le reçoit à l'écran des rôles.
 - Front : `apps/lfd-backoffice-frontend/src/app/commercial/suivi/`, fold-ng
@@ -218,8 +241,8 @@ suivi. Le lot S6 ne se met pas en service avant.
 
 1. **S1** — colonnes d'auteur et de suivi, posées à l'ouverture ; registre et
    porte RGPD ; script de reprise (relu, lancé à part).
-2. **S2** — niveau de travail, fait `work_level_reached`, avertissement
-   `adresses_multiples`.
+2. **S2** — niveau de travail (domaine pur, montées calculées à la lecture),
+   et l'avertissement `adresses_multiples` (surface des avertissements, à part).
 3. **S3** — la ressource, la route, la page (tableau, manquements, envois
    d'accès).
 4. **S4** — le récap du jour.
