@@ -59,20 +59,43 @@ quatre workers (`staff-roles`, 2026-10-04).
 ## 3. Le travail de fond est drainé avant de vider et de fermer
 
 `ctx.reset()` et `ctx.close()` attendent `BackgroundWork.whenIdle()` avant le
-`TRUNCATE` et avant `app.close()` (`test/e2e-harness.ts`). Un courriel envoyé
+vidage et avant `app.close()` (`test/e2e-harness.ts`). Un courriel envoyé
 en tâche de fond ne peut plus arriver après la remise à zéro (`production-batch`,
 2026-10-04).
 
-## 4. Une base de worker encombrée est signalée au provisionnement
+## 4. La remise à zéro ne vide que ce qui est rempli
 
-Chaque `ctx.reset()` tronque toutes les tables : chaque table reçoit un fichier
-neuf, et l'ancien reste sur disque **jusqu'au prochain checkpoint**. Mesuré le
-2026-10-19 après un run de 20 suites : **63 396** fichiers sans relation dans
-`lfc_b2b_test_w1` (46 000 à 65 000 sur les quatre), **zéro** après un
-`CHECKPOINT`. Ce qui survit au checkpoint est un vrai orphelin — celui d'un
-serveur arrêté brutalement — que Postgres ne nettoie jamais : c'est ce qui a
-porté les bases à ~400 000 fichiers chacune le 2026-10-03, et fait tomber 39
-suites en `No space left on device` (inodes du volume Docker).
+`ctx.reset()` (`truncateAll`, `test/e2e-harness.ts`) cherche d'abord les tables
+qui contiennent des lignes, ne tronque qu'elles, puis remet à 1 chaque compteur
+d'identifiant avancé. Tronquer les ~300 tables à chaque remise coûtait ~1,8 s
+en CI, soit **56 %** du temps de toute la suite e2e, mesuré le 2026-11-14 sur
+les durées publiées par la CI (5 762 remises, 172 min sur 305) ; un test
+n'écrit que dans quelques dizaines de tables. En local, `staff-access` est
+passé de 37,9 s à 13,1 s, `company-pricing` de 28,1 s à 15,1 s.
+
+**La règle, pour toujours :** la remise à zéro ne paie que ce que les tests ont
+écrit. `test/e2e-harness.e2e-spec.ts` tient ses deux promesses — la base
+revient au même état quoi qu'un test ait écrit, et un compteur repart à 1, y
+compris sur une table qu'un test a vidée lui-même. Les durées des remises sont
+publiées à chaque CI (`resetMs`, `resetCount` dans l'artefact `e2e-boot-*`) :
+c'est là qu'une régression se lit.
+
+L'API, elle, démarre **une fois par fichier** (648 fichiers, ~1,7 s chacun,
+6 % du temps) : Jest isole chaque fichier, et c'est ce qui garantit qu'un
+fichier ne voit jamais les caches mémoire d'un autre. Partager une API entre
+fichiers ne vaut pas cette isolation.
+
+## 5. Une base de worker encombrée est signalée au provisionnement
+
+Chaque table tronquée reçoit un fichier neuf, et l'ancien reste sur disque
+**jusqu'au prochain checkpoint** — d'où l'intérêt, aussi, de n'en tronquer que
+quelques dizaines. Mesuré le 2026-10-19 après un run de 20 suites, quand toutes
+étaient tronquées : **63 396** fichiers sans relation dans `lfc_b2b_test_w1`
+(46 000 à 65 000 sur les quatre), **zéro** après un `CHECKPOINT`. Ce qui
+survit au checkpoint est un vrai orphelin — celui d'un serveur arrêté
+brutalement — que Postgres ne nettoie jamais : c'est ce qui a porté les bases
+à ~400 000 fichiers chacune le 2026-10-03, et fait tomber 39 suites en
+`No space left on device` (inodes du volume Docker).
 
 `pnpm --filter lfd-api db:test:setup` (`test/setup-test-database.ts`) fait donc,
 pour chaque base de worker : `CHECKPOINT`, puis compte les fichiers de
@@ -87,7 +110,7 @@ pnpm --filter lfd-api db:test:setup
 La mesure demande un superutilisateur (`lfc` l'est dans le conteneur de dev) ;
 sans ce droit, elle le dit et le provisionnement continue.
 
-## 5. Ce qu'on ne fait pas
+## 6. Ce qu'on ne fait pas
 
 - **Remettre `maxWorkers: 1`** : `jest.e2e.cjs` l'interdit, et la raison tient
   — un test rouge en parallèle et vert seul accuse un état partagé.

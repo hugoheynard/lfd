@@ -689,39 +689,84 @@ function declaredSchemas(): string[] {
   return [...declared[1]!.matchAll(/"([a-z_]+)"/gu)].map((match) => match[1]!);
 }
 
+/**
+ * Les tables que la remise à zéro ne vide jamais : le registre des
+ * migrations, et le vocabulaire posé par migration que le harnais préserve.
+ */
+const PRESERVED_TABLES = [
+  "_prisma_migrations",
+  "sales_context",
+  "allergen_category",
+  "allergen_entry",
+] as const;
+
+/**
+ * Vide ce que les tests ont écrit — **les seules tables qui contiennent des
+ * lignes** — et remet à 1 tout compteur d'identifiant avancé.
+ *
+ * Postgres paie un coût fixe par table tronquée, vide ou non : tronquer les
+ * ~300 tables à chaque remise coûtait ~1,8 s en CI et 56 % du temps de toute
+ * la suite e2e (mesuré le 2026-11-14), alors qu'un test n'écrit que dans
+ * quelques dizaines. Chaque table tronquée laisse aussi un fichier sur disque
+ * jusqu'au prochain checkpoint (`e2e-connexions-et-isolation.md`, § 4).
+ *
+ * Les compteurs se remettent à part : une table qu'un test a remplie puis
+ * vidée lui-même est vide, donc pas tronquée, et son compteur resterait
+ * avancé — un identifiant qui dépendrait de l'ordre des suites.
+ *
+ * Les schémas sont lus dans le `datasource` (`declaredSchemas`) : un schéma
+ * ajouté est nettoyé sans seconde liste à tenir. `e2e-harness.e2e-spec.ts`
+ * vérifie les deux promesses.
+ */
 async function truncateAll(prisma: PrismaService): Promise<void> {
-  // 🔴 DEUXIÈME VERROU, au point où le dégât se produit. Le premier est à
-  // l'amorçage ; celui-ci garantit qu'aucun chemin futur — un harnais
-  // parallèle, une remise à zéro appelée à la main — n'atteigne le TRUNCATE
-  // sans être passé par la vérification.
+  // Second verrou, au point où le dégât se produit : aucun chemin n'atteint le
+  // TRUNCATE sans avoir vérifié que la base est jetable.
   if (disposableDatabase === null) {
     throw new Error("REFUS : base non vérifiée comme jetable — `truncateAll` n'a rien tronqué.");
   }
-  // 🔴 Les schémas sont LUS dans le `datasource`, plus recopiés ici.
-  //
-  // Cette liste était en dur — `('public', 'growth', 'ops', 'pim')` — et le
-  // cinquième schéma est arrivé sans elle : les tables de `production`
-  // survivaient d'un test à l'autre, et une journée close par un cas rendait le
-  // suivant `alreadyClosed` dès sa première clôture. Un échec qui accuse le
-  // mauvais test.
-  //
-  // C'est exactement la dérive que `lint:cross-schema-join` avait déjà corrigée
-  // de la même façon : une liste recopiée diverge de sa source, et le jour où
-  // elle diverge, personne ne regarde là.
+  const schemas = declaredSchemas();
+  const preserved = [...PRESERVED_TABLES];
   const tables = await prisma.$queryRaw<{ schemaname: string; tablename: string }[]>`
     SELECT schemaname, tablename FROM pg_tables
-    WHERE schemaname = ANY (${declaredSchemas()}::text[])
-      AND tablename NOT IN (
-        '_prisma_migrations', 'sales_context', 'allergen_category', 'allergen_entry'
-      )
+    WHERE schemaname = ANY (${schemas}::text[])
+      AND tablename <> ALL (${preserved}::text[])
   `;
-  if (tables.length === 0) {
-    return;
+  if (tables.length > 0) {
+    const probe = tables
+      .map(({ schemaname, tablename }) => {
+        const name = `"${schemaname}"."${tablename}"`;
+        return `SELECT '${name}' AS name WHERE EXISTS (SELECT 1 FROM ${name})`;
+      })
+      .join(" UNION ALL ");
+    const filled = await prisma.$queryRawUnsafe<{ name: string }[]>(probe);
+    if (filled.length > 0) {
+      // Un seul TRUNCATE : CASCADE gère les clés étrangères sans ordonner les
+      // suppressions, et RESTART IDENTITY remet les compteurs des tables vidées.
+      const names = filled.map(({ name }) => name).join(", ");
+      await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${names} RESTART IDENTITY CASCADE`);
+    }
   }
-  const quoted = tables
-    .map(({ schemaname, tablename }) => `"${schemaname}"."${tablename}"`)
-    .join(", ");
-  // Un seul TRUNCATE pour toutes les tables : CASCADE gère les FK sans avoir à
-  // ordonner les suppressions, et RESTART IDENTITY remet les séquences à zéro.
-  await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${quoted} RESTART IDENTITY CASCADE`);
+  await restartAdvancedSequences(prisma, schemas, preserved);
+}
+
+/** Remet à 1 chaque compteur avancé d'une table que la remise vide. */
+async function restartAdvancedSequences(
+  prisma: PrismaService,
+  schemas: readonly string[],
+  preserved: readonly string[],
+): Promise<void> {
+  const advanced = await prisma.$queryRaw<{ schemaname: string; sequencename: string }[]>`
+    SELECT s.schemaname, s.sequencename
+    FROM pg_sequences s
+    JOIN pg_namespace n ON n.nspname = s.schemaname
+    JOIN pg_class c ON c.relname = s.sequencename AND c.relnamespace = n.oid
+    LEFT JOIN pg_depend d ON d.objid = c.oid AND d.deptype IN ('a', 'i')
+    LEFT JOIN pg_class t ON t.oid = d.refobjid
+    WHERE s.schemaname = ANY (${[...schemas]}::text[])
+      AND s.last_value IS NOT NULL
+      AND COALESCE(t.relname, '') <> ALL (${[...preserved]}::text[])
+  `;
+  for (const { schemaname, sequencename } of advanced) {
+    await prisma.$executeRawUnsafe(`ALTER SEQUENCE "${schemaname}"."${sequencename}" RESTART`);
+  }
 }
