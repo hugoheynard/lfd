@@ -48,6 +48,8 @@ export interface CapabilitySnapshot {
    * `https://` (livraison, lots 8 et 8 bis).
    */
   readonly hasRoadRouting: boolean;
+  /** Le secret de diagnostic ET l'adresse de la passerelle : « Mesurer » de la Santé. */
+  readonly hasRouteTimings: boolean;
   /** Compte, jeton ET application Containers : la lecture du CPU de l'API. */
   readonly hasContainerMetrics: boolean;
   /**
@@ -279,6 +281,14 @@ const CHECKS: readonly Check[] = [
       "« Proposer », « Chronométrer » et le simulateur de tournée sont refusés : il n'y a plus de repli à vol d'oiseau (L10b-C5), les tournées existantes restent composables à la main",
     severity: "degraded",
     present: (s) => s.hasRoadRouting,
+  },
+  {
+    capability: "Vitesse des routes (bouton « Mesurer » de la Santé)",
+    setting: "DIAGNOSTIC_SECRET / DIAGNOSTIC_BASE_URL",
+    consequence:
+      "« Mesurer » répond « secret non configuré » ou « adresse non configurée » : la boutique n'est pas touchée, seules les mesures manquent",
+    severity: "degraded",
+    present: (s) => s.hasRouteTimings,
   },
   {
     capability: "CPU et mémoire du container de l'API (carte de santé)",

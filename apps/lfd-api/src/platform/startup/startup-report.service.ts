@@ -122,6 +122,8 @@ export class StartupReport implements OnApplicationBootstrap {
       hasAdminBaseUrl: this.config.adminBaseUrl() !== null,
       hasGeocoderUrl: this.config.geocoderUrl() !== null,
       hasRoadRouting: this.config.routePlannerEndpoint() !== null,
+      hasRouteTimings:
+        this.config.diagnosticSecret() !== null && this.config.diagnosticBaseUrl() !== null,
       hasContainerMetrics: this.config.containerMetricsConfig() !== null,
       hasShelfCache: this.config.shopShelfCacheUrl() !== null,
       hasDayVersionsCache: this.config.dayVersionsCacheUrl() !== null,

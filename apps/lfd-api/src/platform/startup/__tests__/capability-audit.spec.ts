@@ -26,6 +26,7 @@ const ALL_PRESENT: CapabilitySnapshot = {
   hasAdminBaseUrl: true,
   hasGeocoderUrl: true,
   hasRoadRouting: true,
+  hasRouteTimings: true,
   hasContainerMetrics: true,
   hasShelfCache: true,
   hasDayVersionsCache: true,
