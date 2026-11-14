@@ -136,8 +136,10 @@ describe('grantGroups', () => {
    * le suivi des e-mails (mail/le-suivi-des-e-mails.md, T2). 71 le 2026-11-10 :
    * `card_payments`, les paiements par carte
    * (commandes/modification/plan-m2-historique-de-transactions.md, P1).
+   * 73 le 2026-11-14 : `b2b_sales_oversight`, le suivi commercial
+   * (b2b/plan-suivi-commercial.md, S3).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(72);
+    expect(RESOURCE_COUNT).toBe(73);
   });
 });

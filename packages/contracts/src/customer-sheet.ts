@@ -128,6 +128,10 @@ export const COMMERCIAL_TIMELINE_TYPES: readonly string[] = [
   // inexplicable le lendemain.
   "company.kbis_certified",
   "company.kbis_revoked",
+  // Un échange noté par l'équipe : il date la montée vers « Contactée » du
+  // suivi commercial. L'historique ne sert que le type, l'instant et
+  // l'auteur — la note reste au journal.
+  "company.contacted",
   "order.placed",
   "subscription.created",
   "appointment.requested",

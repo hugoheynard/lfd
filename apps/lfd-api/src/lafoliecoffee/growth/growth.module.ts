@@ -74,6 +74,10 @@ import { LeadRepository } from "./domain/ports/lead.repository.js";
 import { LeadScoreReader } from "./domain/ports/lead-score.reader.js";
 import { LeadScoreStore } from "./domain/ports/lead-score.store.js";
 import { AdminActivationsController } from "./http/admin-activations.controller.js";
+import { AdminSalesOversightController } from "./http/admin-sales-oversight.controller.js";
+import { GetSalesOversightHandler } from "./application/queries/get-sales-oversight.handler.js";
+import { SalesSheetReader } from "./domain/ports/sales-sheet.reader.js";
+import { PrismaSalesSheetReader } from "./infrastructure/prisma-sales-sheet.reader.js";
 import { AdminAppointmentsController } from "./http/admin-appointments.controller.js";
 import { AdminAvailabilityController } from "./http/admin-availability.controller.js";
 import { AppointmentsController } from "./http/appointments.controller.js";
@@ -139,6 +143,7 @@ import { PrismaLeadScoreStore } from "./infrastructure/prisma-lead-score.store.j
   controllers: [
     AdminProspectsController,
     AdminActivationsController,
+    AdminSalesOversightController,
     AdminRecomputeController,
     AdminCockpitController,
     AdminLeadsController,
@@ -172,6 +177,8 @@ import { PrismaLeadScoreStore } from "./infrastructure/prisma-lead-score.store.j
     ReadActivityJournalHandler,
     ReadTaxActivityJournalHandler,
     { provide: ActivationReader, useClass: PrismaActivationReader },
+    { provide: SalesSheetReader, useClass: PrismaSalesSheetReader },
+    GetSalesOversightHandler,
     { provide: LeadEventSource, useClass: PrismaLeadEventSource },
     { provide: LeadScoreStore, useClass: PrismaLeadScoreStore },
     { provide: LeadScoreReader, useClass: PrismaLeadScoreReader },

@@ -227,6 +227,15 @@ export const staffResourceSchema = z.enum([
    * accordée : elle s'accorde à l'écran.
    */
   "b2b_commercial_alert",
+  /**
+   * **Le suivi commercial** — lecture seule : le tableau des fiches ouvertes,
+   * leur niveau de travail, ce qui manque et les signaux, par commercial
+   * (`documentation/b2b/plan-suivi-commercial.md`, § 3.3 et § 3.4). Il montre
+   * le travail des salariés : réservé à la cheffe des commerciaux et à
+   * l'administrateur. Ajoutée sans être accordée : elle s'accorde à l'écran ;
+   * la graine ne la donne qu'à l'administrateur.
+   */
+  "b2b_sales_oversight",
   /** Les demandes des clients. À ne pas confondre avec `staff_notifications`. */
   "b2b_support",
   /** Les moyens de paiement : mandats de prélèvement. Pas une donnée de compte. */
@@ -842,6 +851,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   b2b_appointments: "Rendez-vous",
   b2b_commercial_appointment: "Disponibilité des rendez-vous",
   b2b_commercial_alert: "Règles d'alerte globales",
+  b2b_sales_oversight: "Suivi commercial",
   b2b_support: "Demandes clients",
   b2b_payments: "Moyens de paiement",
   b2b_accounting: "Comptabilité",
@@ -1031,6 +1041,10 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // ces deux droits s'accordent à l'écran.
     b2b_commercial_appointment: "write",
     b2b_commercial_alert: "write",
+    // L'administrateur seul (2026-11-14, suivi commercial, S3) : en
+    // production, accordée à l'écran. `write` sur une lecture seule :
+    // l'administrateur couvre tout, sans trou.
+    b2b_sales_oversight: "write",
     media_library: "write",
     b2b_storefront: "write",
     // Graine seulement (dev, e2e) : en production, accordée à l'écran (§5.6).

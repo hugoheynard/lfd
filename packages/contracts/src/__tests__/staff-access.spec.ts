@@ -90,6 +90,17 @@ describe("resolveStaffPermissions — le rôle seul", () => {
     expect(readers).toEqual(["admin"]);
   });
 
+  it("ne sème le suivi commercial qu'à l'administrateur", () => {
+    // La page montre le travail de chaque salarié : la cheffe la reçoit à
+    // l'écran des rôles, aucune graine ne la donne à un rôle métier.
+    const readers = staffRoleSchema.options.filter((role) =>
+      hasStaffPermission(resolveStaffPermissions(role), "b2b_sales_oversight:read"),
+    );
+
+    expect(readers).toEqual(["admin"]);
+    expect(GRANTABLE_STAFF_RESOURCES).toContain("b2b_sales_oversight");
+  });
+
   it("garde le rôle technique hors des données clients", () => {
     // ⚠️ La ressource `tech` a DISPARU au découpage par outil (2026-09-01) :
     // aucune route ne la vérifiait, et un droit que personne ne lit est un droit

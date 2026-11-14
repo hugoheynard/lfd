@@ -128,6 +128,10 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     read: "Voir les règles d'alerte globales, qui valent pour tous les comptes clients.",
     write: "Modifier ces règles — ce qui change les alertes levées sur chaque compte.",
   },
+  b2b_sales_oversight: {
+    read: "Voir le suivi commercial : chaque fiche ouverte, son niveau de travail, ce qui lui manque, qui la suit et les signaux (retard, accès renvoyés, adresses multiples). Montre le travail de chaque commercial.",
+    write: "N'ajoute rien : le suivi commercial se lit seulement.",
+  },
   b2b_support: {
     read: "Voir les demandes envoyées par les clients.",
     write: "Marquer une demande comme traitée.",

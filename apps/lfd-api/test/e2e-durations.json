@@ -18,6 +18,7 @@
   "test/admin-companies.e2e-spec.ts": 6758,
   "test/admin-company-contacts.e2e-spec.ts": 4797,
   "test/admin-company-noted-contacts.e2e-spec.ts": 11965,
+  "test/admin-sales-oversight.e2e-spec.ts": 9100,
   "test/admin-company-pieces.e2e-spec.ts": 6463,
   "test/admin-customer-access.e2e-spec.ts": 4468,
   "test/admin-order-drafts.e2e-spec.ts": 3982,

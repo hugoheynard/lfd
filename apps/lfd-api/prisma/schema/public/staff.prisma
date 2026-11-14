@@ -94,6 +94,10 @@ enum StaffResource {
   /// LES RÈGLES D'ALERTE GLOBALES (même jour). Sorties de `b2b_alerts`.
   /// Accordée à l'écran.
   b2b_commercial_alert
+  /// LE SUIVI COMMERCIAL — le tableau des fiches ouvertes, leur niveau de
+  /// travail et leurs signaux, par commercial, en lecture seule (2026-11-14,
+  /// `documentation/b2b/plan-suivi-commercial.md` §3.3). Accordée à l'écran.
+  b2b_sales_oversight
   b2b_support
   b2b_payments
   b2b_accounting

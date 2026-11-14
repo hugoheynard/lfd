@@ -70,8 +70,11 @@ Les compteurs par niveau et le récap du jour suivent le filtre : choisir
 
 **Ce qui n'est pas compté comme une ouverture** : un **site** (sous-compte)
 créé sous un principal — c'est de la structure, pas de l'acquisition ; il
-apparaît à part. Une fiche **inscrite par le client** n'a ni auteur ni niveau
-« Contactée » d'office : elle entre dans la page quand la cheffe l'attribue.
+n'entre pas dans la page. Toutes les fiches principales y sont, attribuées ou
+non, ouvertes par l'équipe ou par auto-inscription : les filtres « non
+attribuée » et « canal » les trient. Une fiche résiliée y reste, avec son
+niveau. Le tableau va des plus récentes aux plus anciennes, et se limite à
+1 000 fiches par filtre (au-delà, la page demande de filtrer).
 
 ## 2. Ce qui existe (vérifié dans le code le 2026-11-14)
 
@@ -296,8 +299,7 @@ suivi. Le lot S6 ne se met pas en service avant.
 
 1. **Les seuils** : 7 jours au niveau Annuaire, 14 au niveau Contactée, 2
    envois d'accès sans connexion — à confirmer.
-2. **« Contactée »** : un nom ET un e-mail ou un téléphone suffit-il, ou faut-il
-   une trace d'échange (rendez-vous, note du commercial) ?
+2. ~~**« Contactée »**~~ : tranché — un contact noté est exigé (§ 3.2 ter).
 3. **Le commercial attitré** : on le crée (S1, S5), ou la page se contente de
    l'auteur ?
 4. **La durée de conservation** des traces d'activité du staff : 12 mois

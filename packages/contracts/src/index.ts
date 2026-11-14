@@ -654,6 +654,28 @@ export {
   noteCompanyContactPayloadSchema,
 } from "./company-contact-note.js";
 export type { CompanyContactMode, NoteCompanyContactPayload } from "./company-contact-note.js";
+export {
+  SALES_OVERSIGHT_CHANNELS,
+  SALES_OVERSIGHT_PAGE_SIZE,
+  SALES_OVERSIGHT_SIGNALS,
+  SALES_OVERSIGHT_UNASSIGNED,
+  SALES_WORK_LEVELS,
+  salesOversightChannelSchema,
+  salesOversightQuerySchema,
+  salesOversightSignalSchema,
+  salesWorkLevelSchema,
+} from "./sales-oversight.js";
+export type {
+  SalesOversightChannel,
+  SalesOversightFollowerOption,
+  SalesOversightFollowerView,
+  SalesOversightQuery,
+  SalesOversightRowView,
+  SalesOversightSignal,
+  SalesOversightView,
+  SalesWorkGap,
+  SalesWorkLevel,
+} from "./sales-oversight.js";
 export type { ActivationPiece } from "./platform-settings.js";
 export {
   alertKindSchema,
