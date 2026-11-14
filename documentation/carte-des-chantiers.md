@@ -190,7 +190,7 @@ modèle des réglages), sous-comptes S6.
 | **Un vrai fichier bancaire** | l'import pain.002 / camt.054 est bâti (`bank-return-file.ts`), reste à l'éprouver sur un vrai fichier        | `comptabilite/prelevement/retours-bancaires.md`    |
 | **Un achat**                 | les imprimantes thermiques : Brother TD-2350DSAH300 choisie le 2026-10-26, pas encore achetée                | `impression/plan-imprimantes-thermiques.md`        |
 | **Le terrain**               | la mesure MAX_WAYPOINTS sur iPhone ; le DPO pour la position du livreur                                      | `livraisons/livreur/gps-y-aller-et-position.md` §7 |
-| **Un téléphone**             | le bandeau d'installation de l'app cliente, et le contrôle en production de l'invitation expirée             | `todos/todo-installation-app-cliente.md`           |
+| **Un téléphone**             | le contrôle en production de l'invitation expirée                                                            | —                                                  |
 
 ## 6. Le ménage documentaire
 
@@ -237,7 +237,7 @@ présents) : `comptabilite/fidelite/plan-points-de-fidelite.md`,
 - `lafoliecoffee/account/domain/entities/company.ts` : **891 lignes** (règle ≲ 300 ; 740 le 2026-10-10), découpe « à la cinquième transition » (`todos/todo-agregat-company-trop-gros.md`).
 - `accueil-public.ts` de la boutique : 866 lignes. (`mediatheque-page.ts` est retombé à 176.)
 - PIM : `ChangeVariantSku` absent ; `SKU_PATTERN` non partagé (`sku.value-object.ts:15`) ; l'écran Conditionnements dit encore « Écran à venir » (`packaging-page.html:10`).
-- La redirection `/pro` reste en 302, **délibérément** (`gateway/src/index.ts:127`) ; le retrait des URL Auth0 est non revérifié (`todos/todo-retrait-de-pro-les-restes.md`).
+- La redirection `/pro/…` reste en 302, **délibérément** (`redirectTo`, `gateway/src/index.ts`) ; Auth0 n'autorise plus que `lafoliecoffee.info` et la coque native la vise (2026-11-14).
 - `ci-cd/todo-flake-des-e2e.md`, `ci-cd/todo-tests-unitaires-en-ci.md` : la cause n'est pas trouvée ; `dev-scenario-stability` rouge une fois en 40 runs, à surveiller (`commandes/architecture-jeu-de-donnees-par-etapes.md` §2 bis).
 - Médiathèque (`mediatheque/mediatheque.md` §11) : l'image d'une opération ne suit qu'au push ; recadrage au centre des images de vitrine. Non revérifiés le 2026-11-02.
 - Les écrans qui remettent un lien d'invitation (`admin-companies.service.ts`, `pending-access.service.ts`) n'envoient pas la société — non revérifié.

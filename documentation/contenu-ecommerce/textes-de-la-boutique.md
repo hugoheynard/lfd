@@ -36,7 +36,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Confirmation](#espace-done) | `done` | 28 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 12 |
 | **Le reste de la boutique** | | |
-| [Le cadre — bandeaux, installation, erreurs générales](#espace-chrome) | `chrome` | 56 |
+| [Le cadre — bandeaux et erreurs générales](#espace-chrome) | `chrome` | 56 |
 | [La navigation](#espace-nav) | `nav` | 16 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
 | [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 282 |
@@ -929,7 +929,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 <a id="espace-chrome"></a>
 
-### Le cadre — bandeaux, installation, erreurs générales — `chrome`
+### Le cadre — bandeaux et erreurs générales — `chrome`
 
 Source : `fr.ts · en.ts · it.ts` · 56 textes.
 

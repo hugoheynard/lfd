@@ -101,7 +101,7 @@ export const OTHER_SPACES = [
   {
     kind: "dictionary",
     space: "chrome",
-    title: "Le cadre — bandeaux, installation, erreurs générales",
+    title: "Le cadre — bandeaux et erreurs générales",
   },
   { kind: "dictionary", space: "nav", title: "La navigation" },
   { kind: "dictionary", space: "aside", title: "La colonne d’accompagnement" },

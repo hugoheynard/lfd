@@ -50,7 +50,7 @@ export const SHOP_COPY_SPACES: readonly ShopCopySpace[] = [
   { space: 'qr', title: 'Confirmation — le QR de retrait', journey: true },
   {
     space: 'chrome',
-    title: 'Le cadre — bandeaux, installation, erreurs générales',
+    title: 'Le cadre — bandeaux et erreurs générales',
     journey: false,
   },
   { space: 'nav', title: 'La navigation', journey: false },
