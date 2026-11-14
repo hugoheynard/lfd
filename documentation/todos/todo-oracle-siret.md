@@ -1,6 +1,31 @@
 # TODO — `SiretAlreadyRegisteredError` dit qui est client
 
-**Statut** : 🟠 relevé le 2026-09-14, rien n'est décidé.
+**Statut** : 📝 **risque accepté par Hugo le 2026-11-14** — l'oracle reste,
+rien n'est bâti. Le plan de la piste 1 est prêt, contredit quatre fois par
+`vitruve`, et rangé : [`../auth-inscription/plan-siret-sans-oracle.md`](../auth-inscription/plan-siret-sans-oracle.md).
+
+## La décision du 2026-11-14
+
+Ce que l'oracle révèle est faible : « cette maison est cliente », sans prix,
+sans volume, sans donnée personnelle — et le fournisseur d'un café se voit
+souvent sur place. Il faut connaître les SIRET à tester et les essayer un à un
+depuis un compte ouvert chez nous ; la limite de requêtes par IP de la
+passerelle le freine.
+
+Ce que coûtait la fermeture (plan v4) : un statut de plus au cycle de vie d'une
+société (`declined`), le tri de dix lecteurs de `terminated`, deux gestes
+staff, une migration qui ne se défait plus après le premier doublon — et un
+oracle humain qui reste (un doublon n'est jamais activé). Trop de surface pour
+une fuite faible.
+
+**À rouvrir** si la fuite devient sensible (ouverture commerciale, concurrent
+identifié) : le plan v4 est la réponse. Un entre-deux a été écarté le même
+jour, et reste disponible : une limite de déclarations de société par compte
+et par jour, et une alerte dans la Santé sur les refus répétés.
+
+Le geste « décliner une ouverture » (`pending → declined`) a de la valeur hors
+de l'oracle — fermer une ouverture abandonnée, impossible aujourd'hui — et
+peut sortir seul, avec son statut (plan v4, § 2.2).
 **Origine** : `documentation/auth-inscription/plan-inscription-pro-seule.md` §1.7 et §3.4.
 
 ## Le constat
