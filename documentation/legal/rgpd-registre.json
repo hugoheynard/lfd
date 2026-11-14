@@ -1201,9 +1201,7 @@
       "personne": "staff",
       "categorie": "auteur-geste",
       "finalite": "Suivi de l'acquisition commerciale (`documentation/b2b/plan-suivi-commercial.md`) : quel membre du staff a ouvert la fiche. Conservation de 12 mois décidée par Hugo le 2026-11-14 ; purge pas encore écrite.",
-      "conservation": {
-        "jours": 365
-      },
+      "conservation": "a-decider",
       "purge": null,
       "information": false
     },
@@ -1212,9 +1210,7 @@
       "personne": "staff",
       "categorie": "identite",
       "finalite": "Suivi de l'acquisition commerciale (`documentation/b2b/plan-suivi-commercial.md`) : nom figé de l'auteur de l'ouverture, lisible même si la fiche staff change. Conservation de 12 mois décidée par Hugo le 2026-11-14 ; purge pas encore écrite.",
-      "conservation": {
-        "jours": 365
-      },
+      "conservation": "a-decider",
       "purge": null,
       "information": false
     },
@@ -1223,9 +1219,7 @@
       "personne": "staff",
       "categorie": "auteur-geste",
       "finalite": "Suivi de l'acquisition commerciale (`documentation/b2b/plan-suivi-commercial.md`) : le commercial qui suit la fiche. Conservation de 12 mois décidée par Hugo le 2026-11-14 ; purge pas encore écrite.",
-      "conservation": {
-        "jours": 365
-      },
+      "conservation": "a-decider",
       "purge": null,
       "information": false
     },
@@ -1234,9 +1228,7 @@
       "personne": "staff",
       "categorie": "auteur-geste",
       "finalite": "Suivi de l'acquisition commerciale (`documentation/b2b/plan-suivi-commercial.md`) et journal d'activité : qui a fait le geste (id de fiche staff, ou id client quand le client agit). Conservation de 12 mois décidée par Hugo le 2026-11-14 ; purge pas encore écrite.",
-      "conservation": {
-        "jours": 365
-      },
+      "conservation": "a-decider",
       "purge": null,
       "information": false
     },
@@ -1245,9 +1237,7 @@
       "personne": "staff",
       "categorie": "identite",
       "finalite": "Suivi de l'acquisition commerciale (`documentation/b2b/plan-suivi-commercial.md`) et journal d'activité : nom figé de l'auteur du geste. Conservation de 12 mois décidée par Hugo le 2026-11-14 ; purge pas encore écrite.",
-      "conservation": {
-        "jours": 365
-      },
+      "conservation": "a-decider",
       "purge": null,
       "information": false
     },
@@ -1256,9 +1246,7 @@
       "personne": "staff",
       "categorie": "identite",
       "finalite": "Suivi de l'acquisition commerciale (`documentation/b2b/plan-suivi-commercial.md`) et journal d'activité : fonction figée de l'auteur du geste. Conservation de 12 mois décidée par Hugo le 2026-11-14 ; purge pas encore écrite.",
-      "conservation": {
-        "jours": 365
-      },
+      "conservation": "a-decider",
       "purge": null,
       "information": false
     },

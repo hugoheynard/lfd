@@ -273,15 +273,18 @@ suivi. Le lot S6 ne se met pas en service avant.
 5. **S5** — réattribuer, et le bloc des inscriptions spontanées (§ 3.5).
 6. **S6** — les consultations de fiche (§ 3.6), après l'information de
    l'équipe.
-7. **S7** — la purge à 12 mois des traces d'activité du staff (décidée, pas
-   encore écrite : le registre porte `purge: null`).
+7. **S7** — ⏸ **en attente (Hugo, 2026-11-14)** : la durée de conservation
+   des traces d'activité du staff n'est pas décidée (registre :
+   `a-decider`). Piste : l'auteur et le suiveur vivent avec la fiche ;
+   l'auteur des faits du journal est anonymisé au bout de 12 à 36 mois,
+   sans effacer le fait.
 
 ## 5. Questions pour Hugo
 
 > **Le 2026-11-14, Hugo : « commence ».** Les questions ouvertes sont tranchées
 > par les valeurs proposées, à revoir sur la production : seuils 7 j / 14 j /
 > 2 envois / 2 jours ouvrés ; « Contactée » = nom et (e-mail ou téléphone) ;
-> le commercial attitré est créé ; conservation 12 mois ; la page est vue par
+> le commercial attitré est créé ; conservation en attente ; la page est vue par
 > la cheffe et l'admin. S6 (consultations) attend l'information écrite de
 > l'équipe.
 
