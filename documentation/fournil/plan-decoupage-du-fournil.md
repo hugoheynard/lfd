@@ -152,6 +152,12 @@ métier n'écoute que les faits qu'un autre métier publie par son `index.ts`.
   ce qui doit être lu ailleurs est exporté par l'`index.ts`.
 - **Les tests** d'un sous-contexte lisent son intérieur librement ; ceux qui
   doublent le port d'un autre passent par son `index.ts`.
+- **Entre métiers, un abonné est durable** (décidé par Hugo le 2026-11-15),
+  comme entre blocs (`lint:durable-cross-block`) : un abonné qui écoute le
+  fait d'un autre sous-contexte est un `@DurableHandler`, écrit dans la boîte
+  d'envoi et rejoué. Un abonné en mémoire perdrait le fait au redémarrage, et
+  deux métiers du fournil divergeraient sans que personne le voie. La porte
+  compte ceux d'aujourd'hui comme une dette qui ne peut que décroître.
 - **Les racines sont exemptées** : `appBootstrap/`, `dev/` et `test/`
   composent l'application et relient des adaptateurs concrets — elles lisent
   l'intérieur, et la porte le dit.
