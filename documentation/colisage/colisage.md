@@ -338,7 +338,7 @@ s'en sert plus que pour l'annulation d'une fournée : sur une journée
 `packing`, elle passe par une demande de retour ; sur une journée `legacy`,
 elle reste immédiate et le fait `return_requested` le dit (`legacy: true`).
 Pour tout le reste, une journée `legacy` n'a plus de bac fermé aux yeux du
-fournil (`SealedDayReading` demande au colisage pour toute journée).
+fournil (la règle `withSeals` pose ce que le colisage répond, pour toute journée).
 
 ### 4.7 La feuille retirée — l'annulation après l'arrêt (plan A1, 2026-10-25)
 

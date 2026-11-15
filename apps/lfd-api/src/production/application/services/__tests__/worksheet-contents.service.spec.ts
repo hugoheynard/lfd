@@ -28,7 +28,7 @@ import {
 } from "../../../../platform/day-versions/__tests__/day-contents-doubles.js";
 import { ProductionWorksheetReading } from "../production-worksheet-reading.service.js";
 import { WorksheetContents } from "../worksheet-contents.service.js";
-import { WorksheetDeadlinesReading } from "../../../day/application/services/worksheet-deadlines-reading.service.js";
+import { WorksheetDeadlinesReading } from "../worksheet-deadlines-reading.service.js";
 
 /**
  * La fiche du fournil servie depuis l'objet des journées

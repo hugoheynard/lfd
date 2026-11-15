@@ -32,7 +32,7 @@ import {
   dossierCalendarOf,
 } from "../../domain/services/day-dossier-calendar.js";
 import { ServiceDay } from "../../day/index.js";
-import { WorksheetDeadlinesReading } from "../../day/application/services/worksheet-deadlines-reading.service.js";
+import { DossierDeadlinesReading } from "./dossier-deadlines-reading.service.js";
 import { countPaperRowsOf } from "../../shared/print/index.js";
 import { dayDossierPdfKey, renderDayDossierPdf } from "../../domain/services/day-dossier-pdf.js";
 import type { PaperDraft, PaperSlot } from "../../shared/print/index.js";
@@ -93,7 +93,7 @@ interface DossierInputs {
   readonly logo: Awaited<ReturnType<BrandLogoSource["load"]>>;
   readonly deliveryNotes: ReadonlyMap<string, DeliveryNoteDrawing> | null;
   readonly showSubcategories: boolean;
-  readonly tranches: Awaited<ReturnType<WorksheetDeadlinesReading["read"]>>;
+  readonly tranches: Awaited<ReturnType<DossierDeadlinesReading["read"]>>;
 }
 
 /**
@@ -120,8 +120,8 @@ export class ProductionPaperRenderer {
     private readonly display: ProductionDisplaySettingsReader,
     // Le seul geste lu : `read`. Typé étroit pour qu'un test le double sans
     // la classe ; le jeton reste la classe, pour l'injection.
-    @Inject(WorksheetDeadlinesReading)
-    private readonly tranches: Pick<WorksheetDeadlinesReading, "read">,
+    @Inject(DossierDeadlinesReading)
+    private readonly tranches: Pick<DossierDeadlinesReading, "read">,
   ) {}
 
   /**

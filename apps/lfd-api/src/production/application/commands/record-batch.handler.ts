@@ -6,7 +6,7 @@ import { ProductionBatchRepository } from "../../day/index.js";
 import { ProductionDayLock } from "../../day/index.js";
 import { ProductionDayRepository } from "../../day/index.js";
 import { ServiceDay } from "../../day/index.js";
-import { PackingHandoffs } from "../../day/application/services/packing-handoffs.service.js";
+import { PackingHandoffs } from "../services/packing-handoffs.service.js";
 import { RecordBatchCommand } from "./record-batch.command.js";
 
 /**

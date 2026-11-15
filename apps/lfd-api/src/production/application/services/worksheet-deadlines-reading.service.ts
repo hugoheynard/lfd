@@ -1,23 +1,18 @@
 import { Injectable, Logger } from "@nestjs/common";
 
-import { DueThresholdsReader } from "../../../channels/commerce/due-thresholds.reader.js";
-import { ProductionTrancheSettings } from "../../domain/entities/production-tranche-settings.js";
-import { ProductionTrancheSettingsReader } from "../../domain/ports/production-tranche-settings.reader.js";
-import {
-  rangeInTranches,
-  type TrancheThreshold,
-} from "../../domain/services/production-tranches.js";
-import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { DueThresholdsReader } from "../../channels/commerce/due-thresholds.reader.js";
+import { ProductionTrancheSettingsReader, trancheThresholdsBySku } from "../../day/index.js";
+import type { ServiceDay, TrancheThreshold } from "../../day/index.js";
 
 /**
  * **Les tranches de chaque SKU d'une journée**, rangées par le réglage de
  * l'atelier — ce dont la fiche fait ses paliers (plan
  * `documentation/fournil/la-fiche-d-atelier.md`, §2).
  *
- * La même lecture que `GetProductionDueThresholdsHandler` : les besoins du
- * commerce par son port, le réglage par le sien, et `rangeInTranches` pour la
- * règle. Rien n'est recopié ; un service plutôt qu'un appel au handler, parce
- * qu'un handler n'en appelle pas un autre (§4).
+ * Les besoins du commerce par son port, le réglage par celui du noyau, et la
+ * règle du noyau (`trancheThresholdsBySku`) : rien n'est recopié. La lecture
+ * du canal vit ici, à l'atelier ; le dossier du jour a la sienne
+ * (`DossierDeadlinesReading`), sur la même règle.
  *
  * ## Des besoins illisibles ne coûtent pas la fiche
  *
@@ -41,13 +36,7 @@ export class WorksheetDeadlinesReading {
         this.thresholds.dueThresholdsFor(day),
         this.tranches.current(),
       ]);
-      const settings = posed ?? ProductionTrancheSettings.defaults();
-      const fixedTranches = settings.mode === "fixed" ? settings.fixedTranches : [];
-      return new Map(
-        rangeInTranches(due.items, settings.mode, fixedTranches).map(
-          (line) => [line.sku, line.thresholds] as const,
-        ),
-      );
+      return trancheThresholdsBySku(due.items, posed);
     } catch (error) {
       this.logger.error(
         `Fiche d'atelier du ${day.value} : tranches illisibles, servie sans paliers.`,

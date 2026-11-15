@@ -82,6 +82,11 @@ export function closedDay(day: ServiceDay, at: Date, packed: readonly string[]):
   });
 }
 
+/** La même journée, colisée au poste du colisage (K3a). */
+export function packingDay(day: ProductionDay): ProductionDay {
+  return ProductionDay.fromSnapshot({ ...day.toSnapshot(), packingOwner: "packing" });
+}
+
 export class FixedDays extends ProductionDayRepository {
   constructor(public current: ProductionDay) {
     super();

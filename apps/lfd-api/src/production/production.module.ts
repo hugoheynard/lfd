@@ -129,7 +129,8 @@ import { ListProductionContainersHandler } from "./application/queries/list-prod
 import { ProductionPaperArchive } from "./shared/print/application/services/production-paper-archive.service.js";
 import { ProductionPaperRenderer } from "./application/services/production-paper.service.js";
 import { ProductionWorksheetReading } from "./application/services/production-worksheet-reading.service.js";
-import { WorksheetDeadlinesReading } from "./day/application/services/worksheet-deadlines-reading.service.js";
+import { DossierDeadlinesReading } from "./application/services/dossier-deadlines-reading.service.js";
+import { WorksheetDeadlinesReading } from "./application/services/worksheet-deadlines-reading.service.js";
 import { DayVersionsModule } from "../platform/day-versions/day-versions.module.js";
 import { WorksheetContents } from "./application/services/worksheet-contents.service.js";
 import { ProductionContainerReader } from "./domain/ports/production-container.reader.js";
@@ -158,12 +159,12 @@ import { ArrestedPlanHold } from "./channels/packing/arrested-plan.hold.js";
 import { LaunchedResupplyLookup } from "./domain/ports/launched-resupply.lookup.js";
 import { ProductionDayStatusReader } from "./day/domain/ports/production-day-status.reader.js";
 import { PrismaProductionPlanReader } from "./infrastructure/prisma-production-plan.reader.js";
-import { PackingHandoffs } from "./day/application/services/packing-handoffs.service.js";
+import { PackingHandoffs } from "./application/services/packing-handoffs.service.js";
 import { ProductionHandoffLedger } from "./day/domain/ports/production-handoff.ledger.js";
 import { ProductionHandoffReader } from "./day/domain/ports/production-handoff.reader.js";
 import { PrismaProductionHandoffLedger } from "./day/infrastructure/prisma-production-handoff.ledger.js";
 import { PrismaProductionHandoffReader } from "./day/infrastructure/prisma-production-handoff.reader.js";
-import { SealedDayReading } from "./day/application/services/sealed-day-reading.service.js";
+import { SealedDayReading } from "./application/services/sealed-day-reading.service.js";
 import { ResupplyLaunchGestures } from "./application/services/resupply-launch-gesture.js";
 import { ResupplyLaunchReading } from "./application/services/resupply-launch-reading.js";
 import { ResupplyLaunchRecording } from "./application/services/resupply-launch-recording.js";
@@ -255,6 +256,7 @@ import { PrismaProductionReturnRequests } from "./day/infrastructure/prisma-prod
     ProductionWorksheetReading,
     WorksheetContents,
     WorksheetDeadlinesReading,
+    DossierDeadlinesReading,
     { provide: ProductionDayRepository, useClass: PrismaProductionDayRepository },
     { provide: ProductionBatchRepository, useClass: PrismaProductionBatchRepository },
     { provide: ProductionDayLock, useClass: PrismaProductionDayLock },

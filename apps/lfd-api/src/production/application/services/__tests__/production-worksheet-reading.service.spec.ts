@@ -32,7 +32,7 @@ import { InMemoryTrancheSettings } from "../../__tests__/production-tranche-sett
 import { CheckTable, qualityLinesFrom } from "../../__tests__/quality-doubles.js";
 import { ProductionWorksheetReading } from "../production-worksheet-reading.service.js";
 import { servedWorksheet } from "../worksheet-content.js";
-import { WorksheetDeadlinesReading } from "../../../day/application/services/worksheet-deadlines-reading.service.js";
+import { WorksheetDeadlinesReading } from "../worksheet-deadlines-reading.service.js";
 
 /**
  * Les paliers et la pastille qualité d'une ligne de la fiche (plan

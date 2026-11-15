@@ -58,7 +58,7 @@ export interface ProductionOrderSnapshot {
   /**
    * La fermeture du bac **au colisage**, ou `null`. Le dépôt ne la lit ni ne
    * l'écrit depuis K3c (`colisage/colisage.md` §17.3) : elle vaut
-   * `null` au chargement, et seule `SealedDayReading` la pose, en lecture, à
+   * `null` au chargement, et seule la règle `withSeals` la pose, en lecture, à
    * partir de `PackedOrdersReader`. Les colonnes `production_order.packed_*` et
    * `container_count` restent en base, mortes.
    */

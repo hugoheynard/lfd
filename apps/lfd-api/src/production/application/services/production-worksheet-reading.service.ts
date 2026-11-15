@@ -22,7 +22,7 @@ import {
 import { ServiceDay } from "../../day/index.js";
 import { ServiceRange } from "../../day/index.js";
 import type { WorksheetContent } from "./worksheet-content.js";
-import { WorksheetDeadlinesReading } from "../../day/application/services/worksheet-deadlines-reading.service.js";
+import { WorksheetDeadlinesReading } from "./worksheet-deadlines-reading.service.js";
 import { groupView, lineViewOf } from "./worksheet-line-views.js";
 
 /**

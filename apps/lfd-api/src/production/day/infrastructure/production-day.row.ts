@@ -110,7 +110,7 @@ export function daySnapshotOf(row: DayRow): ProductionDaySnapshot {
 function orderOf(order: DayRow["orders"][number]): ProductionDaySnapshot["orders"][number] {
   return {
     // Le colisage n'est plus lu ici depuis K3c (§17.3) : c'est le colisage
-    // qui le tient, et `SealedDayReading` le pose en lecture.
+    // qui le tient, et `withSeals` le pose en lecture.
     packed: null,
     orderId: order.orderId,
     rank: order.rank,

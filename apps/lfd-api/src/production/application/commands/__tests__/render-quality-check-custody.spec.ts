@@ -1,5 +1,5 @@
 import { InMemoryQualityControlSettings } from "../../__tests__/quality-control-settings-doubles.js";
-import { SealedDayReading } from "../../../day/application/services/sealed-day-reading.service.js";
+import { SealedDayReading } from "../../services/sealed-day-reading.service.js";
 import { sealedAt } from "../../__tests__/station-doubles.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";

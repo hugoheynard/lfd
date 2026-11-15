@@ -61,7 +61,8 @@ section qui déborde dit « (1/2) », « (2/2) » dans son titre. L'ordre :
    libellés et cases rétrécissent (jusqu'à 55 %), pour que dix colonnes du
    mode « calculé » tiennent sur la feuille. La règle est celle de la
    journée par tranche à l'écran : le total figé du produit, **réparti** par
-   les tranches de la fiche d'atelier (`WorksheetDeadlinesReading`), le reste
+   les tranches de la fiche d'atelier (`DossierDeadlinesReading`, même règle
+   que la fiche : `trancheThresholdsBySku`), le reste
    en « Sans heure » — la somme d'une ligne est toujours le total. Des
    échéances qui dépassent le total ne répartissent rien, et la ligne le dit.
    Tranches illisibles : le dossier part sans calendrier, **non archivé**.

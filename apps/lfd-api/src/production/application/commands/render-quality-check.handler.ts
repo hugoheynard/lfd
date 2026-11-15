@@ -33,7 +33,7 @@ import {
 import { refuseOrderOutOfHand } from "../../domain/services/refuse-order-out-of-hand.js";
 import { holdTransition } from "../../domain/services/quality-holds.js";
 import { ServiceDay } from "../../day/index.js";
-import { SealedDayReading } from "../../day/application/services/sealed-day-reading.service.js";
+import { SealedDayReading } from "../services/sealed-day-reading.service.js";
 import { QualityPhotoAttachment } from "../services/quality-photo-attachment.service.js";
 import { RenderQualityCheckCommand } from "./render-quality-check.command.js";
 

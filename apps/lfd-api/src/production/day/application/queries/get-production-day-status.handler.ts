@@ -3,7 +3,9 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { PendingCommerceOrdersReader } from "../../../channels/commerce/pending-orders.reader.js";
 import { AttestedHandoversReader } from "../../../channels/handover/index.js";
-import { SealedDayReading } from "../services/sealed-day-reading.service.js";
+import { PackedOrdersReader } from "../../../channels/packing/packed-orders.reader.js";
+import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
+import { withSeals } from "../../domain/services/packing-overlay.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 import { GetProductionDayStatusQuery } from "./get-production-day-status.query.js";
 
@@ -41,7 +43,8 @@ export class GetProductionDayStatusHandler implements IQueryHandler<
   ProductionDayStatus
 > {
   constructor(
-    private readonly days: SealedDayReading,
+    private readonly days: ProductionDayRepository,
+    private readonly packed: PackedOrdersReader,
     private readonly pending: PendingCommerceOrdersReader,
     private readonly handovers: AttestedHandoversReader,
   ) {}
@@ -50,7 +53,7 @@ export class GetProductionDayStatusHandler implements IQueryHandler<
     const day = ServiceDay.of(query.serviceDay);
     // Sur une journée `packing`, le bac fermé se lit au colisage
     // (`PackedOrdersReader`, K3a).
-    const current = await this.days.load(day);
+    const current = withSeals(await this.days.load(day), await this.packed.packedOn(day.value));
     const closedAt = current.closedAt;
     const base = {
       date: day.value,

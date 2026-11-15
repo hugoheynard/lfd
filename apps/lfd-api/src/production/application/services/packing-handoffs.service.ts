@@ -1,28 +1,33 @@
 import { Injectable } from "@nestjs/common";
 
-import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
-import { HandedToPackingEvent } from "../../../channels/packing/handed-to-packing.event.js";
-import { ReturnRequestedEvent } from "../../../channels/packing/return-requested.event.js";
+import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
+import { IdGenerator } from "../../../platform/id/id-generator.js";
+import { HandedToPackingEvent } from "../../channels/packing/handed-to-packing.event.js";
+import { ReturnRequestedEvent } from "../../channels/packing/return-requested.event.js";
+import {
+  handedShareOf,
+  handoffOf,
+  ProductionHandoffLedger,
+  ProductionHandoffReader,
+  ProductionReturnRequests,
+  returnOf,
+} from "../../day/index.js";
 import type {
   PackedMark,
+  PackingOwner,
   ProductionBatchSnapshot,
   ProductionDay,
-} from "../../domain/entities/production-day.js";
-import { ProductionHandoffLedger } from "../../domain/ports/production-handoff.ledger.js";
-import { ProductionHandoffReader } from "../../domain/ports/production-handoff.reader.js";
-import { ProductionReturnRequests } from "../../domain/ports/production-return.requests.js";
-import { IdGenerator } from "../../../../platform/id/id-generator.js";
-import { handedShareOf } from "../../domain/services/on-site-share.js";
-import { handoffOf, returnOf } from "../../domain/services/production-handoff.js";
-import type { PackingOwner } from "../../domain/value-objects/packing-owner.js";
-import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+  ServiceDay,
+} from "../../day/index.js";
 
 /**
  * **Remettre au colisage, et reprendre** — le registre et le fait durable,
  * ensemble (plan `documentation/colisage/colisage.md`, §11.2, §13).
  *
- * Partagé par les gestes de fournée (déclarer, annuler) et la réponse du
- * colisage : la règle « une remise = une ligne + un fait » s'écrit une fois.
+ * Le point de sortie des faits du fournil vers l'aval : rangé à l'atelier,
+ * qui déclenche le geste (déclarer, annuler une fournée), à côté du canal
+ * `channels/packing/` qu'il alimente. Les règles (`handoffOf`, `returnOf`,
+ * `handedShareOf`) et les ports du registre sont au noyau, lus par sa porte.
  *
  * 🔴 Il tourne dans l'unité de travail de l'APPELANT, et n'en ouvre pas : la
  * fournée, sa remise et le fait partent ensemble, ou rien ne part. La boîte

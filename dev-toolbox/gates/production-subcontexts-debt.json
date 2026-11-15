@@ -30,13 +30,10 @@
   "subscribers": [],
   "indexCycles": [],
   "door": {
-    "atelier → day": 3,
-    "atelier → quality": 1,
-    "plan → day": 1,
-    "quality → day": 1
+    "atelier → quality": 1
   },
   "testDoor": {
-    "atelier → day": 15,
+    "atelier → day": 11,
     "atelier → plan": 1,
     "atelier → quality": 1,
     "day → atelier": 1,
@@ -44,7 +41,7 @@
     "day → resupply": 3,
     "plan → atelier": 2,
     "plan → day": 10,
-    "quality → day": 6,
+    "quality → day": 2,
     "resupply → day": 3,
     "shared-print → atelier": 1,
     "shared-print → plan": 2
@@ -53,5 +50,6 @@
   "$c2": "2026-11-15, C2 (décidé par Hugo) : un contrôleur par métier, mêmes routes ; −3 arêtes interdites, plan → resupply 1→0, +1 atelier → shared-print (10→11 : la fiche PDF importe la mise en forme depuis son contrôleur de l'atelier), que D1 efface.",
   "$c3": "2026-11-15, C3 (décidé par Hugo) : la fiche lit les pastilles qualité par le port QualityLineStatusReader ; atelier → quality 2→1, +2 quality → day (18→20 : le port et son adaptateur lisent la journée), et +1 test quality → day (17→18 : le test de l'adaptateur), que D1 efface.",
   "$c4": "2026-11-15, C4 (décidé par Hugo) : l'heure limite et l'heure maison, et le type de la commande partie, rejoignent le noyau ; le balayage qualité et l'élagage de la journée sont deux routes, appelées par le même cron. −3 arêtes canaux → plan/qualité ; +6 plan → day et +2 tests plan → day (les lecteurs du plan importent désormais ces règles du noyau), que D1 efface.",
-  "$d1": "2026-11-15, D1 : la journée (day/) et les primitives d’impression (shared/print/) déménagent et posent leur index.ts. Imports hors porte 210→6 (reste atelier → quality 1, et vers day PackingHandoffs, SealedDayReading et WorksheetDeadlinesReading, que day/index.ts n’exporte pas parce qu’ils chargent un canal, § 1 bis). Imports de tests hors porte 139→59 (les doubles qui construisent une ProductionDay l’importent en direct : la porte n’en exporte que le type). Les deux arêtes du noyau vers l’impression changent de chemin, pas de nombre."
+  "$d1": "2026-11-15, D1 : la journée (day/) et les primitives d’impression (shared/print/) déménagent et posent leur index.ts. Imports hors porte 210→6 (reste atelier → quality 1, et vers day PackingHandoffs, SealedDayReading et WorksheetDeadlinesReading, que day/index.ts n’exporte pas parce qu’ils chargent un canal, § 1 bis). Imports de tests hors porte 139→59 (les doubles qui construisent une ProductionDay l’importent en direct : la porte n’en exporte que le type). Les deux arêtes du noyau vers l’impression changent de chemin, pas de nombre.",
+  "$c5": "2026-11-15, C5 : le noyau n’orchestre plus. PackingHandoffs (atelier) et SealedDayReading (qualité) sortent de day/ à plat ; WorksheetDeadlinesReading est coupée en deux lectures (atelier : la fiche ; plan : DossierDeadlinesReading, le dossier) au-dessus de la règle pure trancheThresholdsBySku ; le statut de la journée applique withSeals lui-même. day/index.ts exporte les règles pures et les ports du registre des remises, et ne charge aucun canal. Imports hors porte 6→1 (reste atelier → quality 1) ; tests hors porte atelier → day 15→11, quality → day 6→2."
 }

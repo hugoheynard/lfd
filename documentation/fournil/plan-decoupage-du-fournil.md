@@ -309,6 +309,16 @@ mêlent jamais dans un lot.
       se range à côté du canal qu'elle alimente, et son vocabulaire est traité à
       part ([`plan-faits-agnostiques.md`](plan-faits-agnostiques.md)). La règle
       « `day/index.ts` ne charge aucun canal » reste stricte.
+      **Bâti le 2026-11-15.** `PackingHandoffs` (un seul métier : déclarer et
+      annuler une fournée) va à l'atelier, à plat
+      (`application/services/packing-handoffs.service.ts`), et lit ses règles
+      et les ports du registre par `day/index.ts`. `SealedDayReading` va à la
+      qualité, seul service qui la lit ; la règle pure `withSeals` reste au
+      noyau, et le statut de la journée l'applique lui-même.
+      `WorksheetDeadlinesReading` est coupée en deux lectures sur la règle pure
+      `trancheThresholdsBySku` : la fiche (atelier, même nom) et le dossier
+      (plan, `DossierDeadlinesReading`). Imports hors porte 6 → 1, tests hors
+      porte 59 → 51.
       **D1 — déplacer le noyau** (`day/`) et `shared/print/` (✅ bâti le 2026-11-15 : 105 fichiers et 42 tests ; imports hors porte 210 → 6, tests hors porte 139 → 59. `PackingHandoffs`, `SealedDayReading` et `WorksheetDeadlinesReading` chargent un canal : `day/index.ts` ne les exporte pas, leurs lecteurs restent en dette).
 7. **D2 — déplacer la qualité. D3 — le réassort. D4 — le plan. D5 —
    l'atelier** (dont `production-batch-shortcuts.module.ts`).
@@ -398,3 +408,6 @@ par sous-contexte, sur le modèle de `PimPrismaService`
 (`apps/lfd-api/src/pim/infra/database/pim-prisma.service.ts`), qui n'expose
 que ses modèles. La lecture d'une table d'un autre métier ne serait plus
 interdite : elle ne compilerait plus.
+Reste après C5 : `get-production-day-status.handler` (l'état du jour, une
+lecture du prod manager) est encore au noyau et lit trois canaux ; il
+rejoint `plan/` en D4.

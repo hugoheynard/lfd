@@ -1,7 +1,6 @@
-import { ProductionDay } from "../../../domain/entities/production-day.js";
-import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
-import { closedDay, FixedDays } from "../../../../application/__tests__/quality-doubles.js";
-import { FixedPackedOrders } from "../../../../application/__tests__/station-doubles.js";
+import { ServiceDay } from "../../../day/index.js";
+import { closedDay, FixedDays, packingDay } from "../../__tests__/quality-doubles.js";
+import { FixedPackedOrders } from "../../__tests__/station-doubles.js";
 import { SealedDayReading } from "../sealed-day-reading.service.js";
 
 // Un jour et un instant comparés entre eux, jamais au mur.
@@ -24,10 +23,7 @@ describe("SealedDayReading — la journée et ses bacs fermés (K3a)", () => {
   });
 
   it("une journée `packing` lit « colisée ? » au colisage, et seulement ça", async () => {
-    const packing = ProductionDay.fromSnapshot({
-      ...closedDay(DAY, AT, ["ord_2"]).toSnapshot(),
-      packingOwner: "packing",
-    });
+    const packing = packingDay(closedDay(DAY, AT, ["ord_2"]));
     const packed = new FixedPackedOrders(new Map([["ord_1", { at: AT, by: "s1" }]]));
 
     const day = await new SealedDayReading(new FixedDays(packing), packed).load(DAY);
