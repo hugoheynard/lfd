@@ -373,6 +373,25 @@ mêlent jamais dans un lot.
    celui du dossier — une décision, pas un déplacement. Restent en dette
    `get-atelier-sheet-pdf → production-paper.service` (atelier → plan) et les
    deux lectures du noyau vers l'impression.
+   **D7b — la fiche de commande à l'imprimerie** (décidé par Hugo le
+   2026-11-15 : la fiche est un papier commun, imprimée seule par l'atelier
+   et en série dans le dossier du jour ; ✅ bâti le 2026-11-15).
+   `OrderSheetPaper` (`shared/print/application/services/`) rend la fiche
+   seule (`sheetOf`, mêmes octets) et, pour un lot, ce que le dossier pose
+   sur chaque fiche (`marksOf` : couleurs par `orderId`, URL du QR) ; il
+   collecte seul la couleur (`OrderPrintColorsReader`), l'URL de colisage
+   (`AppConfig`) et le logo de la fiche. `atelierSheetSlotOf` le suit.
+   `ProductionPrintModule` le fournit et l'exporte (et importe `BrandModule`) ;
+   `shared/print/index.ts` l'exporte, sans cycle d'index (`day/index.ts` ne
+   charge toujours aucun canal). Le rendu du plan perd `sheetOf`, `AppConfig`
+   et le port des couleurs : le dossier et le compte lisent les marques de
+   l'imprimerie. `GetAtelierSheetPdfHandler` lit l'imprimerie et rejoint le
+   module de l'atelier : `ProductionModule` n'a plus aucun fournisseur. La
+   porte admet `shared-print → channels/commerce/order-print-colors*` et ce
+   seul fichier (`ADMITTED_FILES`). Arêtes 3 → 2, modèles 10 → 10, tests hors
+   porte inchangés, imports hors porte 0 → 0 ; dette non réécrite (l'entrée
+   `get-atelier-sheet-pdf → production-paper.service` est à retirer).
+   Empreintes des PDF inchangées.
 9. **R — resserrer le noyau** (ajouté par Hugo le 2026-11-15 : « je veux
    surtout avoir un tronc solide pour étendre sereinement »). Après D6, le
    noyau est le tronc : un métier neuf ne devrait avoir à apprendre que
@@ -389,6 +408,11 @@ mêlent jamais dans un lot.
    `production/application/__tests__/quality-doubles.ts`, partagé par les
    tests du noyau, de l'atelier, du plan et de la qualité, en doubles rangés
    chacun dans son métier.
+   Et le bus (ajouté par Hugo le 2026-11-15) : le bus de `@nestjs/cqrs` est
+   global, et seule la porte tient la frontière d'un message. Elle refuse
+   qu'un fichier envoie une commande ou une requête, ou écoute un fait, d'un
+   autre métier autrement que par son `index.ts` et selon les arêtes admises —
+   la classe du message lue, pas seulement son import.
 10. **Après le dernier déménagement** : remettre à jour
     `architecture-contexte-production.md` (la liste des contrôleurs sous
     « `http/` », périmée depuis D1) en une seule fois.
