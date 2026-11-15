@@ -640,10 +640,13 @@ colonne, qu'une ligne retirée ne compte plus. Donc :
   avec **la même requête** qu'aurait écrite l'appelant, jamais « tout charger
   puis filtrer ». Le propriétaire peut alors changer ses tables sans prévenir
   personne, tant que ses réponses restent les mêmes.
-- **Il émet ses faits.** Un changement d'état produit son fait dans
-  l'agrégat, dans le vocabulaire du propriétaire, écrit dans la boîte d'envoi
-  avec l'état — jamais par un service de métier qu'un geste pourrait oublier
-  d'appeler, ni dans le vocabulaire de l'aval.
+- **Il émet ses faits.** Un fait dit ce que le propriétaire a fait ou décidé,
+  dans ses mots, écrit dans la boîte d'envoi dans la même transaction que
+  l'état. Un geste réellement partagé avec un voisin (la remise d'une fournée
+  au colisage, une demande de retour et sa réponse) peut nommer ce voisin :
+  c'est le propriétaire qui le décide. Ce qui ne passe pas, c'est un mot qui
+  ne dit plus rien de vrai (un « ancien poste » retiré, une « ombre »
+  disparue).
 - **Le catalogue se lit dans la porte.** L'`index.ts` (ou le canal) range ces
   lectures et ces faits sous un titre — « ce que la journée sait répondre » —
   pour qu'un nouveau métier voie d'un coup d'œil ce qu'il peut demander.
@@ -654,7 +657,7 @@ tableau de bord — une vue lourde se bâtit sur les lectures publiées ou sur u
 projection tenue par les faits. Référence :
 `apps/lfd-api/src/production/day/index.ts` et
 [`documentation/fournil/plan-decoupage-du-fournil.md`](documentation/fournil/plan-decoupage-du-fournil.md)
-(R4), [`plan-faits-agnostiques.md`](documentation/fournil/plan-faits-agnostiques.md) § 4.
+(R4), [`plan-faits-agnostiques.md`](documentation/fournil/plan-faits-agnostiques.md) § 1.
 
 Règles non négociables :
 
