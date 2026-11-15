@@ -103,19 +103,10 @@ async function replaceEveningPlan(tx: Prisma.TransactionClient, snapshot: DaySna
 }
 
 /**
- * Le compte à produire, remplacé : il naît sans coche (`done_*` n'est plus écrit).
- *
- * ⚠️ Effacer le compte efface les coches de l'ancien poste (`done_*`) qu'il
- * portait. Ce n'est sans perte qu'à une condition : **qu'aucune coche vivante
- * ne soit sous le compte effacé**. Elle tient pour chaque geste qui le
- * remplace (vérifié le 2026-11-02) — le retirage, le lancement « au plus
- * tôt » et la révision matérialisent d'abord les coches en fournées
- * (`ProductionDay.materialize`, écrites par `recordInherited`) ; l'arrêt part
- * d'une journée ouverte, dont le compte est vide ; la réouverture refuse une
- * journée cochée (`assertReopenable`). Depuis le 2026-11-03, le domaine
- * l'impose au lieu de cette phrase : chaque geste qui refait le compte
- * refuse une coche héritée non matérialisée (`assertChecksCarried`). Une
- * journée `fromSnapshot` (base inconnue) n'a aucun appelant qui l'écrive.
+ * Le compte à produire, remplacé. Il ne porte que ce qu'il faut produire :
+ * ce qui est sorti du four vit dans les fournées (`production_batch`), qu'un
+ * compte refait ne touche pas. Les colonnes `done_*` restent en base, ni lues
+ * ni écrites, jusqu'à leur suppression.
  */
 async function replaceCounts(tx: Prisma.TransactionClient, snapshot: DaySnapshot) {
   await tx.productionCount.deleteMany({ where: { serviceDay: snapshot.serviceDay } });

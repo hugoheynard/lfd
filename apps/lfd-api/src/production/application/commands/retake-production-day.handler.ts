@@ -16,16 +16,14 @@ import { RetakeProductionDayCommand } from "./retake-production-day.command.js";
  * **Le retirage** : la fiche reprend ce qui est arrivé depuis qu'elle est tirée.
  *
  * Sous le verrou de la journée, dans une unité de travail : la journée
- * RECHARGÉE (chargée avant, un geste concurrent était effacé par `save`), les
- * coches héritées matérialisées AVANT d'absorber (sans quoi 30 cochés puis
- * 30 → 42 deviendraient 42 sortis), puis les retraits et les commandes lus
+ * RECHARGÉE (chargée avant, un geste concurrent était effacé par `save`), puis
+ * les retraits et les commandes lus
  * sous le même verrou que la passation — une commande admise entre une
  * lecture faite avant et le verrou manquait au tirage (corrigé le 2026-11-02).
  *
  * Il ne filtre pas les commandes déjà au plan : `ProductionDay.retake` les
  * écarte par `orderId` (vérifié le 2026-11-02). Deux filtres pour un fait
- * finiraient par diverger. Ce qu'il écrit et publie — fournées héritées,
- * journée, liste à coliser des arrivées, `production.day_retaken` — est dans
+ * finiraient par diverger. Ce qu'il écrit et publie — journée, liste à coliser des arrivées, `production.day_retaken` — est dans
  * {@link RetakeRecording} ; il journalise `production_day.retaken` dans la
  * même transaction. Il ne publie rien AU COMMERCE : les commandes absorbées
  * sont des `placed` qu'une réannonce de l'arrêt lui apprend.
@@ -60,13 +58,12 @@ export class RetakeProductionDayHandler implements ICommandHandler<
     const current = await this.uow.run(async () => {
       await this.lock.lock(day);
       const locked = await this.reading.dayUnderLock(day);
-      const inherited = locked.materialize();
       const before = locked.orders;
       const { withdrawn, producible } = await this.reading.retakeUnderLock(day);
       const now = this.clock.now();
       const absorbed = locked.retake(producible, withdrawn, now, command.staffUserId, byName);
       if (absorbed > 0) {
-        await this.recording.record({ day, before, current: locked, inherited, at: now, absorbed });
+        await this.recording.record({ day, before, current: locked, at: now, absorbed });
         await this.events.publishTraced(new ProductionDayRetakenJournalEvent(day.value, absorbed));
       }
       return { locked, absorbed };

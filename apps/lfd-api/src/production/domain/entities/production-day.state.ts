@@ -41,8 +41,8 @@ export abstract class ProductionDayState implements batching.BatchState {
 
   /**
    * Ce que les gestes ont touché depuis la lecture — l'adaptateur n'écrit que
-   * ça. Les fournées n'y figurent pas : elles ont leur port, et l'appelant
-   * écrit celles que `materialize` lui rend.
+   * ça. Les fournées n'y figurent pas : elles ont leur port
+   * (`ProductionBatchRepository`).
    */
   get changes(): ProductionDayChanges {
     return this.planValue.changes;
@@ -131,12 +131,12 @@ export abstract class ProductionDayState implements batching.BatchState {
     return this.planValue.counts;
   }
 
-  /** Les fournées du jour, annulées comprises — sans les implicites (§5.2). */
+  /** Les fournées du jour, annulées comprises. */
   get batches(): readonly ProductionBatchSnapshot[] {
     return this.batchesValue;
   }
 
-  /** Sorti du four pour ce SKU, coches héritées comprises. Cf. `production-day.batches.ts`. */
+  /** Sorti du four pour ce SKU. Cf. `production-day.batches.ts`. */
   producedOf(sku: string): number {
     return batching.producedOf(this, sku);
   }
@@ -160,23 +160,12 @@ export abstract class ProductionDayState implements batching.BatchState {
     batching.assertSameCharge(this.day.value, requested, storedDay, stored);
   }
 
-  /** L'ancien « cocher » : le reste de la ligne, ou `null` si complète (D3). */
-  batchToComplete(sku: string, recorded: DoneMark): ProductionBatchSnapshot | null {
-    return batching.batchToComplete(this, this.itemToMark(sku), recorded);
-  }
-
   /** Garde de l'annulation, sans muter — refus : `production-day.batches.ts`. */
   batchToCancel(id: string): ProductionBatchSnapshot | null {
     return batching.batchToCancel(this, id);
   }
 
-  /** L'ancien « décocher » : toutes les fournées de la ligne, sans muter (D3). */
-  batchesToUncheck(sku: string): readonly ProductionBatchSnapshot[] {
-    this.itemToMark(sku);
-    return batching.batchesToUncheck(this, sku);
-  }
-
-  /** La ligne qu'on s'apprête à cocher, sans muter — refus : `production-day.batches.ts`. */
+  /** La ligne qui reçoit une fournée, sans muter — refus : `production-day.batches.ts`. */
   itemToMark(sku: string): ProducedItemSnapshot {
     return batching.itemToMark(this, sku);
   }

@@ -41,8 +41,8 @@ export type ProductionWorksheetQuery = z.infer<typeof productionWorksheetQuerySc
  * fournils écrivent déjà.
  *
  * Deux à trois caractères, et pas un nom : c'est la trace qui sert quand une
- * ligne manque à 7 h, pas un registre du personnel. Vides autorisées — on coche
- * d'abord, on signe si on veut.
+ * ligne manque à 7 h, pas un registre du personnel. Vides autorisées — on
+ * déclare la fournée d'abord, on signe si on veut.
  */
 export const workshopInitialsSchema = z
   .string()
@@ -50,17 +50,11 @@ export const workshopInitialsSchema = z
   .max(3, "trois lettres au plus")
   .regex(/^[\p{L}]*$/u, "des lettres, rien d'autre");
 
-/** Le geste de cocher. L'auteur vient du jeton, jamais de la charge. */
-export const markWorkshopLineSchema = z.object({
-  initials: workshopInitialsSchema,
-});
-export type MarkWorkshopLine = z.infer<typeof markWorkshopLineSchema>;
-
 /**
  * Une ligne de la fiche : quoi, combien, dans quel contenant, et par qui.
  *
- * L'ordre des champs suit celui de l'écran, qui est celui du geste : on coche,
- * on lit la quantité, on lit le nom. Cette colonne de gauche ne bouge d'aucun
+ * L'ordre des champs suit celui de l'écran, qui est celui du geste : on déclare
+ * une fournée, on lit la quantité, on lit le nom. Cette colonne de gauche ne bouge d'aucun
  * support.
  */
 export interface WorkshopLine {
@@ -82,9 +76,8 @@ export interface WorkshopLine {
    */
   readonly containerLabel: string | null;
   /**
-   * **La ligne est complète** : sorti ≥ quantité (D2 des fournées). Le nom
-   * reste celui de l'ancienne case, pour qu'un front déployé qui ne connaît
-   * qu'elle continue d'afficher juste.
+   * **La ligne est complète** : sorti ≥ quantité (D2 des fournées), lu sur
+   * les seules fournées.
    */
   readonly done: boolean;
   /**
@@ -171,7 +164,7 @@ export const UNSHELVED_WORKSHOP_GROUP_KEY = "?";
  * serveur.
  *
  * 🔴 L'écran n'additionne rien et ne filtre rien : `pending` et `done` arrivent
- * séparées, dans l'ordre de la fiche, qui ne bouge pas quand on coche.
+ * séparées, dans l'ordre de la fiche, qui ne bouge pas quand une fournée sort.
  */
 export interface WorkshopGroup {
   /**

@@ -16,7 +16,7 @@ import {
 import { ProductionDay } from "../../../domain/entities/production-day.js";
 import { ProductionDayRepository } from "../../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
-import { InMemoryBatches, RecordingDayLock } from "../../__tests__/batch-doubles.js";
+import { RecordingDayLock } from "../../__tests__/batch-doubles.js";
 import { RecordingDurable } from "../../__tests__/handoff-doubles.js";
 import { intakeReadingOf } from "../../__tests__/plan-intake-doubles.js";
 import { InMemoryWithdrawals } from "../../__tests__/withdrawal-doubles.js";
@@ -77,20 +77,10 @@ export class Days extends ProductionDayRepository {
 }
 
 /** Une journée arrêtée sur la seule commande `ord_1`, coche de l'ancien poste posée ou non. */
-export function closedDay(initials: string | null = null): ProductionDay {
+export function closedDay(): ProductionDay {
   const day = ProductionDay.open(ServiceDay.of(DAY));
   day.close([order("ord_1", 30)], new Set<string>(), TIRAGE, null);
-  if (initials === null) {
-    return day;
-  }
-  const marked = day.toSnapshot();
-  return ProductionDay.fromSnapshot({
-    ...marked,
-    counts: marked.counts.map((item) => ({
-      ...item,
-      done: { at: TIRAGE, by: "staff-1", initials },
-    })),
-  });
+  return day;
 }
 
 /** Les pièces qu'un test change ; le reste a un défaut neutre. */
@@ -107,7 +97,6 @@ export function retakeScene(
   const trace: string[] = [];
   const days = new Days(day, trace);
   const events = new RecordingPublisher();
-  const batches = new InMemoryBatches(trace);
   const durable = new RecordingDurable();
   const handler = new RetakeProductionDayHandler(
     intakeReadingOf({
@@ -115,7 +104,7 @@ export function retakeScene(
       orders: new Commerce(rows, trace),
       withdrawals: parts.withdrawals ?? new InMemoryWithdrawals(),
     }),
-    new RetakeRecording(days, batches, durable),
+    new RetakeRecording(days, durable),
     new FixedStaffAuthorDirectory(
       authorsKnownAs({ firstName: "Marie", lastName: "Dupont" }, "staff-1"),
     ),
@@ -124,5 +113,5 @@ export function retakeScene(
     new DirectUnitOfWork(),
     new RecordingDayLock(trace),
   );
-  return { handler, days, events, batches, durable, trace };
+  return { handler, days, events, durable, trace };
 }

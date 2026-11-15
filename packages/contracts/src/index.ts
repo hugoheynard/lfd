@@ -1091,13 +1091,11 @@ export {
   SHELF_LABEL_OFF_CATALOG,
   SHELF_LABEL_UNKNOWN,
   UNSHELVED_WORKSHOP_GROUP_KEY,
-  markWorkshopLineSchema,
   productionContainerSchema,
   productionWorksheetQuerySchema,
   workshopInitialsSchema,
 } from "./production-worksheet.js";
 export type {
-  MarkWorkshopLine,
   ProductionContainerRule,
   ProductionContainerView,
   ProductionWorksheetQuery,

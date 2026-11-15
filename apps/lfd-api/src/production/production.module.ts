@@ -62,12 +62,10 @@ import {
   PrismaDossierRecipientsRepository,
 } from "./infrastructure/prisma-dossier-recipients.repository.js";
 import { CloseProductionDayHandler } from "./application/commands/close-production-day.handler.js";
-import { MarkWorksheetLineHandler } from "./application/commands/mark-worksheet-line.handler.js";
 import { RemoveProductionContainerHandler } from "./application/commands/remove-production-container.handler.js";
 import { RetakeProductionDayHandler } from "./application/commands/retake-production-day.handler.js";
 import { ReopenProductionDayHandler } from "./application/commands/reopen-production-day.handler.js";
 import { SetProductionContainerHandler } from "./application/commands/set-production-container.handler.js";
-import { UnmarkWorksheetLineHandler } from "./application/commands/unmark-worksheet-line.handler.js";
 import { CancelBatchHandler } from "./application/commands/cancel-batch.handler.js";
 import { RecordBatchHandler } from "./application/commands/record-batch.handler.js";
 import { DepositQualityPhotoHandler } from "./application/commands/deposit-quality-photo.handler.js";
@@ -217,8 +215,6 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     { provide: AutoCloseRoundReader, useClass: PrismaAutoCloseRoundReader },
     { provide: AutoCloseAttempts, useClass: PrismaAutoCloseAttempts },
     { provide: AutoCloseAttemptLog, useClass: PrismaAutoCloseAttemptLog },
-    MarkWorksheetLineHandler,
-    UnmarkWorksheetLineHandler,
     RecordBatchHandler,
     CancelBatchHandler,
     RetakeProductionDayHandler,

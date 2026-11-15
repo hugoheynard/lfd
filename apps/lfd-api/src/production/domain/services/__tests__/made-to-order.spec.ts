@@ -46,7 +46,6 @@ describe("countPaperRowsOf — la part sur mesure à part (Q2)", () => {
     productName: sku,
     quantity,
     saleUnit: "piece" as const,
-    done: null,
   });
 
   it("un article tout sur mesure : une seule ligne, marquée", () => {
@@ -109,7 +108,7 @@ describe("les papiers disent « SUR MESURE »", () => {
 
   it("le compte à produire, sur la ligne sur mesure", async () => {
     const rows = countPaperRowsOf(
-      [{ sku: "GAT-001", productName: "Entremets", quantity: 2, saleUnit: "piece", done: null }],
+      [{ sku: "GAT-001", productName: "Entremets", quantity: 2, saleUnit: "piece" }],
       [MARKED],
     );
     const [page] = pdfPages(await renderProductionCountPdf(rows, SHEET, []));

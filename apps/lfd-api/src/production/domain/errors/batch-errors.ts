@@ -66,27 +66,10 @@ export class BatchReturnPendingError extends BusinessError {
 }
 
 /**
- * **Un compte refait par-dessus une coche de l'ancien poste** — un défaut de
- * code, pas un refus métier. Les coches héritées vivent dans le compte
- * (`done_*`) ; le réécrire les efface. Un geste qui refait le compte doit
- * donc les matérialiser en fournées AVANT (`ProductionDay.materialize`) :
- * jusqu'au 2026-11-03, seule une phrase de l'adaptateur le demandait.
- */
-export class UncarriedInheritedChecksError extends TechnicalError {
-  constructor(serviceDay: string, skus: readonly string[]) {
-    super(
-      "production.batch.inherited_checks_not_carried",
-      `Le compte du ${serviceDay} allait être refait alors que des coches de l'ancien poste n'étaient pas encore reportées en fournées (${skus.join(", ")}) : elles auraient été effacées. Rien n'a été écrit ; signalez-le à l'équipe technique.`,
-    );
-  }
-}
-
-/**
  * **La fournée à annuler n'est pas en base** — un défaut de code : l'agrégat,
- * relu sous le verrou, venait de la laisser passer. Jusqu'au 2026-11-03,
- * l'annulation ne regardait pas le nombre de lignes touchées : zéro passait
- * pour « déjà annulée », et une fournée implicite qu'on aurait oublié
- * d'écrire restait comptée sans un mot.
+ * relu sous le verrou, venait de la laisser passer. L'annulation lit le
+ * nombre de lignes touchées : zéro ne passe pour « déjà annulée » qu'après
+ * relecture, sans quoi une fournée absente serait comptée sans un mot.
  */
 export class BatchToCancelMissingError extends TechnicalError {
   constructor(id: string, serviceDay: string) {

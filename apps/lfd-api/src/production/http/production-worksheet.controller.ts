@@ -1,12 +1,10 @@
 import {
-  type MarkWorkshopLine,
   type ProductionContainerRule,
   type ProductionContainerView,
   type ProductionWorksheetQuery,
   type ProductionWorksheetRetake,
   type ProductionWorksheetView,
   type RecordWorkshopBatch,
-  markWorkshopLineSchema,
   productionContainerSchema,
   productionWorksheetQuerySchema,
   recordWorkshopBatchSchema,
@@ -26,10 +24,8 @@ import { ZodBody, ZodParam, ZodQuery } from "../../platform/shared/http/zod-body
 import { CancelBatchCommand } from "../application/commands/cancel-batch.command.js";
 import { RecordBatchCommand } from "../application/commands/record-batch.command.js";
 import { RemoveProductionContainerCommand } from "../application/commands/remove-production-container.command.js";
-import { MarkWorksheetLineCommand } from "../application/commands/mark-worksheet-line.command.js";
 import { RetakeProductionDayCommand } from "../application/commands/retake-production-day.command.js";
 import { SetProductionContainerCommand } from "../application/commands/set-production-container.command.js";
-import { UnmarkWorksheetLineCommand } from "../application/commands/unmark-worksheet-line.command.js";
 import { ListProductionContainersQuery } from "../application/queries/list-production-containers.query.js";
 import { GetCurrentProductionWorksheetQuery } from "../application/queries/get-current-production-worksheet.query.js";
 import { GetProductionWorksheetQuery } from "../application/queries/get-production-worksheet.query.js";
@@ -53,15 +49,15 @@ const NO_CONTENT = 204;
  *
  * Un contrôleur à part de `ProductionDayController`, qui frôle les 300 lignes :
  * ce n'est pas un découpage de confort mais la SRP appliquée aux surfaces — la
- * journée (clore, coliser, imprimer) et la fiche (cocher, reprendre, régler) ne
+ * journée (clore, coliser, imprimer) et la fiche (déclarer une fournée, reprendre, régler) ne
  * changent pas pour les mêmes raisons. Le préfixe reste le même, parce que c'est
  * le même fournil qui les ouvre.
  *
  * Il n'injecte que des **bus**, comme tous les autres : ni service, ni dépôt, ni
  * port de lecture. `lint:controller-buses` le tient.
  *
- * L'identité staff vient du guard, jamais de la charge utile — une coche sans
- * auteur ne se conteste pas, elle s'efface.
+ * L'identité staff vient du guard, jamais de la charge utile — une fournée
+ * sans auteur ne se conteste pas, elle s'efface.
  *
  * `production_worksheet` depuis le 2026-10-01 (`documentation/livraisons/droits/plan-droits-par-geste.md`, 5.1).
  * Le contenant se LIT sous ce droit (la fiche en a besoin pour « + 1 plaque »),
@@ -118,61 +114,12 @@ export class ProductionWorksheetController {
   }
 
   /**
-   * **La ligne est sortie du four.**
-   *
-   * `PUT` et non `POST` : cocher est idempotent du point de vue de l'état — la
-   * case est faite, et recocher la refait avec les initiales du dernier geste.
-   * C'est le pendant du `DELETE` juste en dessous, et les deux ensemble disent
-   * exactement ce qu'une case à cocher fait.
-   *
-   * Rend 204 : le client relit la fiche, il ne reconstruit pas son état depuis
-   * une réponse — §4.
-   */
-  @Put("worksheet/:date/lines/:sku/done")
-  @Idempotent(
-    "coche une ligne : rejouée, la ligne est complète, l'agrégat ne rend aucune fournée et rien n'est écrit",
-  )
-  @HttpCode(NO_CONTENT)
-  async mark(
-    @Param("date", DAY) date: string,
-    @Param("sku") sku: string,
-    @Body(new ZodBody(markWorkshopLineSchema)) body: MarkWorkshopLine,
-    @StaffUserId() staffUserId: string,
-  ): Promise<void> {
-    await this.commands.execute<MarkWorksheetLineCommand, void>(
-      new MarkWorksheetLineCommand(date, sku, body.initials, staffUserId),
-    );
-  }
-
-  /**
-   * **La coche s'enlève** — toutes les fournées de la ligne sont annulées.
-   *
-   * Autorisé, contrairement au colisage : une case cochée par erreur à 4 h du
-   * matin doit pouvoir se reprendre. Refusé (409) si des pièces de l'article
-   * sont déjà dans des sacs : il faut les ressortir du bac d'abord.
-   */
-  @Delete("worksheet/:date/lines/:sku/done")
-  @Idempotent(
-    "décoche une ligne : rejouée, ses fournées sont annulées (rien à décocher) ou leur retour est déjà demandé au colisage (409 BatchReturnPendingError)",
-  )
-  @HttpCode(NO_CONTENT)
-  async unmark(
-    @Param("date", DAY) date: string,
-    @Param("sku") sku: string,
-    @StaffUserId() staffUserId: string,
-  ): Promise<void> {
-    await this.commands.execute<UnmarkWorksheetLineCommand, void>(
-      new UnmarkWorksheetLineCommand(date, sku, staffUserId),
-    );
-  }
-
-  /**
    * **Une fournée est sortie** (plan des fournées, D3).
    *
    * `PUT` sur l'identifiant tiré par l'écran : rejouer la même requête rend le
    * même état (succès silencieux), un autre contenu sous le même identifiant
-   * est refusé (409). Même droit que la case — c'est le même geste, en
-   * plusieurs fois.
+   * est refusé (409). Une ligne avance par fournées, et « faite » se lit
+   * sur elles.
    */
   @Put("worksheet/:date/lines/:sku/batches/:batchId")
   @Idempotent(
@@ -215,8 +162,8 @@ export class ProductionWorksheetController {
    * **Reprendre le tirage** : absorber ce qui est arrivé depuis la clôture.
    *
    * Le seul geste du lot qui recalcule le compte à produire, et il est **attesté**
-   * — l'écran vient de montrer les lignes qui changent et de dire laquelle est
-   * déjà cochée. Sans auteur, ce serait le recalcul silencieux que l'agrégat
+   * — l'écran vient de montrer les lignes qui changent et de dire laquelle a
+   * déjà une fournée. Sans auteur, ce serait le recalcul silencieux que l'agrégat
    * refuse.
    *
    * `absorbed: 0` n'est pas une erreur : rien n'était arrivé, et la réponse rend

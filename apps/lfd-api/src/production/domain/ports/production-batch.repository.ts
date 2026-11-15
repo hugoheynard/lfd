@@ -31,24 +31,13 @@ export abstract class ProductionBatchRepository {
   abstract record(day: ServiceDay, batch: ProductionBatchSnapshot): Promise<RecordedBatch>;
 
   /**
-   * Écrit EN UNE REQUÊTE les coches héritées que `ProductionDay.materialize`
-   * vient de rendre (`ON CONFLICT DO NOTHING`) — sans relecture : leur `id`
-   * est celui du rattrapage, déterministe, et un rejeu n'a rien à comparer.
-   * Une fournée déjà là reste telle qu'elle est.
-   */
-  abstract recordInherited(
-    day: ServiceDay,
-    batches: readonly ProductionBatchSnapshot[],
-  ): Promise<void>;
-
-  /**
    * Annule une fournée, **conditionné en base** (`cancelled_at IS NULL`) : la
    * première annulation est la seule tracée. Rien n'est jamais supprimé.
    *
-   * Une écriture CIBLÉE, et c'est voulu (justification relue le 2026-11-03) :
-   * les trois appelants — l'annulation, la décoche, la réponse du colisage —
+   * Une écriture CIBLÉE, et c'est voulu (justification relue le 2026-11-15) :
+   * les deux appelants — l'annulation, la réponse du colisage —
    * relisent la journée SOUS le verrou et laissent l'agrégat refuser
-   * (`batchToCancel`, `batchesToUncheck`) avant d'appeler ; la fournée vit
+   * (`batchToCancel`) avant d'appeler ; la fournée vit
    * hors de `save`, qui ne l'écrit pas. Ce port n'écrit que ce que
    * l'agrégat a laissé passer.
    *

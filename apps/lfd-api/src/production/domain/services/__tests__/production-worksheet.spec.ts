@@ -1,5 +1,8 @@
 import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
-import type { ProducedItemSnapshot } from "../../entities/production-day.js";
+import type {
+  ProducedItemSnapshot,
+  ProductionBatchSnapshot,
+} from "../../entities/production-day.js";
 import {
   worksheetOf,
   type ContainerRule,
@@ -23,19 +26,21 @@ const TOURNEUSE: ContainerRule = {
   plural: "tourneuses",
 };
 
-/** Une ligne du compte à produire, faite ou non. */
-function count(
-  sku: string,
-  productName: string,
-  quantity: number,
-  initials: string | null = null,
-): ProducedItemSnapshot {
+/** Une ligne du compte à produire. */
+function count(sku: string, productName: string, quantity: number): ProducedItemSnapshot {
+  return { sku, productName, quantity, saleUnit: "piece" };
+}
+
+/** Toute la ligne sortie en une fournée, signée `initials`. */
+function ovenBatch(sku: string, quantity: number, initials: string): ProductionBatchSnapshot {
   return {
+    id: `four-${sku}`,
     sku,
-    productName,
     quantity,
-    saleUnit: "piece",
-    done: initials === null ? null : { at: SORTIE_DU_FOUR, by: "staff-1", initials },
+    recorded: { at: SORTIE_DU_FOUR, by: "staff-1", initials },
+    cancelled: null,
+    returned: 0,
+    pendingReturn: 0,
   };
 }
 
@@ -143,19 +148,27 @@ describe("worksheetOf — la journée ARRÊTÉE", () => {
     expect(sheet.lines[0]?.quantity).toBe(42);
   });
 
-  it("rend la coche, ses initiales et son heure", () => {
+  it("rend « faite », les initiales et l'heure de la fournée qui la complète", () => {
     const sheet = worksheetOf(
-      sources({ closedAt: TIRAGE, counts: [count("PAI-SEI", "Pain de seigle", 42, "MB")] }),
+      sources({
+        closedAt: TIRAGE,
+        counts: [count("PAI-SEI", "Pain de seigle", 42)],
+        batches: [ovenBatch("PAI-SEI", 42, "MB")],
+      }),
     );
 
     expect(sheet.lines[0]).toMatchObject({ done: true, initials: "MB", doneAt: SORTIE_DU_FOUR });
   });
 
-  it("rend `null` en initiales sur une ligne cochée sans signature", () => {
+  it("rend `null` en initiales sur une ligne complétée sans signature", () => {
     // La chaîne vide n'est pas une signature : la colonne reste vide plutôt que
     // de montrer un blanc qui ressemble à une case à remplir.
     const sheet = worksheetOf(
-      sources({ closedAt: TIRAGE, counts: [count("PAI-SEI", "Pain de seigle", 42, "")] }),
+      sources({
+        closedAt: TIRAGE,
+        counts: [count("PAI-SEI", "Pain de seigle", 42)],
+        batches: [ovenBatch("PAI-SEI", 42, "")],
+      }),
     );
 
     expect(sheet.lines[0]).toMatchObject({ done: true, initials: null });
@@ -182,14 +195,15 @@ describe("worksheetOf — l'écart", () => {
     expect(sheet.drift?.lines[0]).toMatchObject({ sku: "PAI-SEI", from: 30, to: 42 });
   });
 
-  it("dit qu'une ligne qui monte est DÉJÀ COCHÉE", () => {
+  it("dit qu'une ligne qui monte a DÉJÀ une fournée", () => {
     // Le seul cas réellement dangereux du lot : quelqu'un a déclaré avoir sorti
     // 30 pièces d'un article qui en demande 42, et personne ne s'en apercevrait
     // avant le colisage.
     const sheet = worksheetOf(
       sources({
         closedAt: TIRAGE,
-        counts: [count("PAI-SEI", "Pain de seigle", 30, "MB")],
+        counts: [count("PAI-SEI", "Pain de seigle", 30)],
+        batches: [ovenBatch("PAI-SEI", 30, "MB")],
         arrivals: [arrival("ord_1", [["PAI-SEI", "Pain de seigle", 12]])],
       }),
     );
@@ -375,15 +389,6 @@ describe("worksheetOf — les fournées (plan des fournées, D2, §4)", () => {
     );
 
     expect(sheet.lines[0]).toMatchObject({ produced: 30, remaining: 12, done: false });
-  });
-
-  it("une coche héritée SANS fournée se lit comme une fournée implicite", () => {
-    const sheet = worksheetOf(
-      sources({ closedAt: TIRAGE, counts: [count("VIE-CRO", "Croissant", 30, "KA")] }),
-    );
-
-    expect(sheet.lines[0]).toMatchObject({ produced: 30, done: true, initials: "KA" });
-    expect(sheet.lines[0]?.batches[0]?.id).toBe("backfill-2026-09-13-VIE-CRO");
   });
 
   it("l'écart dit « déjà commencée » dès la première pièce sortie", () => {

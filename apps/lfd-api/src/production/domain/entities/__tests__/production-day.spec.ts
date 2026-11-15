@@ -9,8 +9,8 @@ import { AT, opened, order } from "./production-day-fixtures.js";
 /**
  * L'agrégat, éprouvé **sans Nest et sans base** : on instancie, on appelle une
  * méthode métier, on assert — y compris les refus, qui sont sa raison d'être.
- * Le colisage (`-packing-owner`), les auteurs et les retraits (`-authors`),
- * les coches héritées (`-carried-checks`) ont leur spec.
+ * Le colisage (`-packing-owner`), les auteurs et les retraits (`-authors`)
+ * ont leur spec.
  */
 
 describe("arrêter une journée", () => {
@@ -23,9 +23,9 @@ describe("arrêter une journée", () => {
     expect(day.closedAt).toBe(AT);
     expect(day.orders).toHaveLength(1);
     expect(day.counts).toEqual([
-      // `done: null` : une journée qu'on vient d'arrêter n'a rien de sorti du
-      // four. Écrit plutôt que laissé deviner — comme `packed` sur la commande.
-      { sku: "VIE-001", productName: "Croissant", quantity: 40, saleUnit: "piece", done: null },
+      // Le compte ne dit que ce qu'il faut produire : ce qui est sorti du four
+      // vit dans les fournées.
+      { sku: "VIE-001", productName: "Croissant", quantity: 40, saleUnit: "piece" },
     ]);
   });
 
@@ -68,7 +68,7 @@ describe("arrêter une journée", () => {
     );
 
     expect(day.counts).toEqual([
-      { sku: "VIE-001", productName: "Croissant", quantity: 52, saleUnit: "piece", done: null },
+      { sku: "VIE-001", productName: "Croissant", quantity: 52, saleUnit: "piece" },
     ]);
   });
 

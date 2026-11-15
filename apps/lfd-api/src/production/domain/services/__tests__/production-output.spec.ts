@@ -1,26 +1,15 @@
-import type {
-  DoneMark,
-  ProducedItemSnapshot,
-  ProductionBatchSnapshot,
-} from "../../entities/production-day.js";
-import {
-  activeBatchesOf,
-  implicitBatchId,
-  countedBatch,
-  implicitBatchesOf,
-  outputOf,
-} from "../production-output.js";
+import type { ProductionBatchSnapshot } from "../../entities/production-day.js";
+import { activeBatchesOf, countedBatch, outputOf } from "../production-output.js";
 
 /**
- * **Les dérivés d'une ligne** (plan `la-fiche-d-atelier.md`, D2) et la
- * fournée implicite d'une coche héritée (§5.2) — en fonctions pures.
+ * **Les dérivés d'une ligne** (plan `la-fiche-d-atelier.md`, D2) — en
+ * fonctions pures, sur les seules fournées.
  *
  * Ces instants ne sont comparés qu'entre eux (l'ordre de sortie), jamais à
  * l'horloge : l'exception étroite du §5.
  */
 const FIVE = new Date("2026-09-13T05:00:00.000Z");
 const SIX = new Date("2026-09-13T06:00:00.000Z");
-const DAY = "2026-09-13";
 
 function batch(
   id: string,
@@ -37,10 +26,6 @@ function batch(
     returned: 0,
     pendingReturn: 0,
   };
-}
-
-function count(quantity: number, done: DoneMark | null): ProducedItemSnapshot {
-  return { sku: "VIE-001", productName: "Croissant", quantity, saleUnit: "piece", done };
 }
 
 describe("outputOf — l'état d'une ligne se DÉDUIT", () => {
@@ -90,34 +75,6 @@ describe("activeBatchesOf", () => {
   });
 });
 
-describe("implicitBatchesOf — la coche de l'ancien binaire", () => {
-  const coche: DoneMark = { at: FIVE, by: "auth0|karim", initials: "KA" };
-
-  it("vaut une fournée de la quantité, sous l'id du rattrapage", () => {
-    expect(implicitBatchesOf(DAY, [count(30, coche)], [])).toEqual([
-      {
-        id: implicitBatchId(DAY, "VIE-001"),
-        sku: "VIE-001",
-        quantity: 30,
-        recorded: coche,
-        cancelled: null,
-        returned: 0,
-        pendingReturn: 0,
-      },
-    ]);
-    expect(implicitBatchId(DAY, "VIE-001")).toBe(`backfill-${DAY}-VIE-001`);
-  });
-
-  it("disparaît dès qu'une fournée existe pour ce SKU — ANNULÉE comprise", () => {
-    // Sinon décocher (qui annule tout) ferait renaître la coche héritée.
-    expect(implicitBatchesOf(DAY, [count(30, coche)], [batch("a", 30, FIVE, true)])).toEqual([]);
-  });
-
-  it("n'existe pas sans coche", () => {
-    expect(implicitBatchesOf(DAY, [count(30, null)], [])).toEqual([]);
-  });
-});
-
 describe("frontières du compte", () => {
   it("pile à la quantité : complète, sans surplus ni reste, datée par la fournée qui y arrive", () => {
     // `produced ≥ quantity` est inclusif : 48/48 est complet, pas « presque ».
@@ -147,12 +104,6 @@ describe("frontières du compte", () => {
 
     expect(forward.map((entry) => entry.id)).toEqual(["a", "b"]);
     expect(backward.map((entry) => entry.id)).toEqual(["a", "b"]);
-  });
-
-  it("une ligne à quantité zéro n'engendre pas de fournée implicite, même cochée", () => {
-    const coche: DoneMark = { at: FIVE, by: "auth0|karim", initials: "KA" };
-
-    expect(implicitBatchesOf(DAY, [count(0, coche)], [])).toEqual([]);
   });
 });
 

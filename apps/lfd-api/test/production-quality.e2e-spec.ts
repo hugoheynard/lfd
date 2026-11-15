@@ -36,7 +36,7 @@ import {
 import { createUser } from "./factories.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 import { storageKeys } from "./storage.js";
-import { coliseOrder } from "./production-day-fixture.js";
+import { coliseOrder, completeLine } from "./production-day-fixture.js";
 import { openQualityControl } from "./quality-control-settings.js";
 import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
@@ -133,10 +133,7 @@ async function seedDay(): Promise<{ packed: string; open: string }> {
     { sku: BAGUETTE, quantity: 2 },
   ]);
   await admin().post(`/admin/production/batch/${DAY}/close`).expect(201);
-  await admin()
-    .put(`/admin/production/worksheet/${DAY}/lines/${CROISSANT}/done`)
-    .send({ initials: "KA" })
-    .expect(204);
+  expect(await completeLine(ctx, CROISSANT, DAY, E2E_STAFF_SUB)).toBe(204);
   // Depuis K2, la journée naît au colisage : la liste à coliser et la remise
   // lui arrivent par la boîte d'envoi, hors de la requête.
   await ctx.drain();

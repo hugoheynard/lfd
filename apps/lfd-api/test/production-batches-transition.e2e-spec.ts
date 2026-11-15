@@ -7,15 +7,16 @@
  * - **le rattrapage** de la migration `20260928160000_les_fournees`, rejoué deux
  *   fois — y compris après un `save` qui régénère les `id` du compte — ne double
  *   aucune fournée (objections B1, B2 de `vitruve`) ;
- * - **30 cochés puis 30 → 42** : le retirage matérialise la coche avant de
- *   changer la quantité, et la ligne n'est pas complète ;
+ * - **la coche n'est plus lue** : « fait » se lit sur les seules fournées ; une
+ *   ligne cochée sans fournée n'a rien sorti, un retirage ne la matérialise
+ *   pas, et une fournée de rattrapage annulée ne bloque plus la réouverture ;
  * - **le retirage** ne détruit pas le colisage de l'ANCIEN poste : `save`
  *   recharge la journée sous le verrou, et recopie telles quelles les colonnes
  *   `packed_*` qu'il ne lit plus (K3c) — un historique réel y est écrit.
  *
  * 🔴 Deux gestes sont écrits en SQL, et chacun le dit : la coche de l'ANCIEN
- * binaire (le nouveau n'écrit plus `done_*`, aucun handler ne sait donc la
- * produire), et le rattrapage lui-même, relu dans le fichier de migration pour
+ * binaire (le code n'écrit ni ne lit plus `done_*`, colonnes gardées en base
+ * jusqu'à leur suppression), et le rattrapage lui-même, relu dans le fichier de migration pour
  * que ce soit SA requête qu'on éprouve, pas une copie.
  */
 import { readFileSync } from "node:fs";
@@ -27,8 +28,10 @@ import {
   CROISSANT,
   MEMBER,
   SERVICE_DAY,
+  STAFF,
   bagLines,
   bootstrapProductionDay,
+  cancelBatch,
   closePlan,
   packing,
   place,
@@ -75,8 +78,8 @@ async function runBackfill(): Promise<void> {
 
 /**
  * Ce que l'ANCIEN binaire faisait en cochant : écrire `done_*` sur la ligne du
- * compte. Le nouveau ne le fait plus, d'où le SQL — c'est l'état qu'un poste
- * resté sur le binaire précédent laisse pendant la fenêtre de déploiement.
+ * compte. Plus rien ne l'écrit ni ne le lit, d'où l'écriture directe : c'est
+ * l'état qu'une ligne cochée avant les fournées a laissé en base.
  */
 async function legacyCheck(sku = CROISSANT): Promise<void> {
   await ctx.prisma.productionCount.updateMany({
@@ -108,19 +111,49 @@ describe("le rattrapage", () => {
     expect(await storedBatches(ctx)).toHaveLength(1);
     expect((await worksheetLine(ctx)).produced).toBe(30);
   });
+});
 
-  it("une coche héritée non rattrapée se lit quand même comme sortie", async () => {
+describe("la coche n'est plus lue", () => {
+  it("🔴 une ligne cochée sans fournée n'a rien sorti", async () => {
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 30 }]);
     await closePlan(ctx);
     await legacyCheck();
 
-    expect(await worksheetLine(ctx)).toMatchObject({ produced: 30, done: true, initials: "LG" });
+    expect(await worksheetLine(ctx)).toMatchObject({
+      produced: 0,
+      done: false,
+      initials: null,
+      doneAt: null,
+    });
     expect(await storedBatches(ctx)).toHaveLength(0);
+  });
+
+  it("une ligne entièrement fournée est faite, coche ou non", async () => {
+    await place(ctx, issued, [{ sku: CROISSANT, quantity: 30 }]);
+    await closePlan(ctx);
+    expect(await recordBatch(ctx, "01K6A0000000000000000000F1", 30)).toBe(204);
+
+    const line = await worksheetLine(ctx);
+    expect(line).toMatchObject({ produced: 30, done: true, initials: "KA" });
+    expect(line.doneAt).not.toBeNull();
+  });
+
+  it("🔴 une ligne dont la fournée de rattrapage est annulée ne bloque plus la réouverture", async () => {
+    await place(ctx, issued, [{ sku: CROISSANT, quantity: 30 }]);
+    await closePlan(ctx);
+    await legacyCheck();
+    await runBackfill();
+    expect(await cancelBatch(ctx, `backfill-${SERVICE_DAY}-${CROISSANT}`)).toBe(204);
+    await ctx.drain();
+
+    const response = await ctx.asSub(STAFF).post(`/admin/production/batch/${SERVICE_DAY}/reopen`);
+
+    expect(response.status).toBe(201);
   });
 });
 
 describe("le retirage", () => {
-  it("🔴 30 cochés puis 30 → 42 : la ligne n'est PAS complète", async () => {
+  it("une coche seule n'est pas matérialisée par un retirage", async () => {
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 30 }]);
     await closePlan(ctx);
     await legacyCheck();
@@ -128,16 +161,8 @@ describe("le retirage", () => {
 
     await retake(ctx);
 
-    expect(await worksheetLine(ctx)).toMatchObject({
-      quantity: 42,
-      produced: 30,
-      remaining: 12,
-      done: false,
-    });
-    // La coche a été matérialisée sous l'id du rattrapage, avant d'absorber.
-    expect(await storedBatches(ctx)).toEqual([
-      expect.objectContaining({ id: `backfill-${SERVICE_DAY}-${CROISSANT}`, quantity: 30 }),
-    ]);
+    expect(await worksheetLine(ctx)).toMatchObject({ quantity: 42, produced: 0, done: false });
+    expect(await storedBatches(ctx)).toHaveLength(0);
   });
 
   it("🔴 le colisage de l'ancien poste, écrit PENDANT un retirage, n'est pas effacé", async () => {
@@ -149,7 +174,6 @@ describe("le retirage", () => {
     // l'ancien poste dans la même fenêtre, on relâche.
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
     await closePlan(ctx);
-    await legacyCheck();
     const { reference } = await ctx.prisma.productionOrder.findFirstOrThrow({
       where: { serviceDay: SERVICE_DAY },
       select: { reference: true },
@@ -195,7 +219,7 @@ describe("le retirage", () => {
     await closePlan(ctx);
     await placeLateByStaff(ctx, SERVICE_DAY, [{ sku: CROISSANT, quantity: 6 }]);
     await retake(ctx);
-    // Une fournée REMISE au colisage — une coche héritée ne l'est jamais.
+    // Une fournée REMISE au colisage : le bac ne se remplit que de ce qui est sorti.
     expect(await recordBatch(ctx, "01K6A0000000000000000000T1", 18)).toBe(204);
     for (let round = 0; round < 4; round += 1) {
       await ctx.drain();

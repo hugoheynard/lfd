@@ -26,25 +26,16 @@ import { RecordBatchCommand } from "./record-batch.command.js";
  * journée rouverte, ou un SKU sorti du compte. Le geste prend donc le verrou
  * de la journée, la RECHARGE, puis demande à l'agrégat — comme l'annulation.
  *
- * ## La coche héritée d'abord
- *
- * Une ligne cochée par l'ancien binaire se lit comme une fournée implicite tant
- * qu'aucune fournée réelle n'existe. La première fournée réelle l'effacerait :
- * on la matérialise donc avant (même `id` que le rattrapage, idempotent).
- *
  * ## La remise au colisage, dans la même unité de travail (2026-10-04)
  *
  * Sortir une fournée, c'est la remettre au colisage (plan
- * `colisage/colisage.md`, §11.2 ; §13, B3) : matérialiser,
- * déclarer, écrire la remise et publier `production.handed_to_packing` partent
+ * `colisage/colisage.md`, §11.2 ; §13, B3) : déclarer, écrire la remise et publier `production.handed_to_packing` partent
  * ensemble. `handoffId` = l'`id` de la fournée — un rejeu est absorbé. Une
  * fournée rejouée APRÈS son annulation ne se remet pas : elle ne compte plus.
- * Les coches héritées matérialisées ne sont jamais remises.
  *
  * Rend `void` : le client relit la fiche — §4.
  *
- * @sans-journal geste d'atelier, sous le même régime que la coche (plan, D7) :
- * la dette du TODO `documentation/journalisation/todo-journal-activite.md`
+ * @sans-journal geste d'atelier (plan, D7) : la dette du TODO `documentation/journalisation/todo-journal-activite.md`
  * s'en trouve élargie, et c'est dit.
  */
 @CommandHandler(RecordBatchCommand)
@@ -68,7 +59,6 @@ export class RecordBatchHandler implements ICommandHandler<RecordBatchCommand, v
         by: command.staffUserId,
         initials: command.initials,
       });
-      await this.batches.recordInherited(day, current.materialize(command.sku));
       const stored = await this.batches.record(day, batch);
       current.acknowledge(batch, stored.serviceDay, stored.batch);
       if (stored.batch.cancelled === null) {

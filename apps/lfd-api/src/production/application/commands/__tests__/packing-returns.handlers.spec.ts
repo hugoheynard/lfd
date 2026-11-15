@@ -21,8 +21,6 @@ import { CancelBatchCommand } from "../cancel-batch.command.js";
 import { CancelBatchHandler } from "../cancel-batch.handler.js";
 import { RecordBatchCommand } from "../record-batch.command.js";
 import { RecordBatchHandler } from "../record-batch.handler.js";
-import { UnmarkWorksheetLineCommand } from "../unmark-worksheet-line.command.js";
-import { UnmarkWorksheetLineHandler } from "../unmark-worksheet-line.handler.js";
 
 /**
  * **L'annulation sur une journée `packing`** (plan
@@ -73,7 +71,6 @@ function setup() {
     ...handoffs,
     record: new RecordBatchHandler(days, store, lock, clock, uow, handoffs.service),
     cancel: new CancelBatchHandler(days, store, lock, clock, uow, handoffs.service),
-    unmark: new UnmarkWorksheetLineHandler(days, store, lock, clock, uow, handoffs.service),
     answer: new OnPackingReturned(
       handoffs.requests,
       handoffs.ledger,
@@ -118,19 +115,6 @@ describe("annuler une fournée remise, sur une journée `packing`", () => {
     await expect(
       cancel.execute(new CancelBatchCommand(DAY, FIRST, "staff-3")),
     ).rejects.toBeInstanceOf(BatchReturnPendingError);
-  });
-
-  it("décocher la ligne demande le retour de chaque fournée remise", async () => {
-    const { record, unmark, durable, days } = setup();
-    await record.execute(new RecordBatchCommand(DAY, SKU, FIRST, 12, "MB", "staff-1"));
-    await record.execute(
-      new RecordBatchCommand(DAY, SKU, "01K6A0000000000000000000B2", 6, "", "s"),
-    );
-
-    await unmark.execute(new UnmarkWorksheetLineCommand(DAY, SKU, "staff-9"));
-
-    expect(durable.of(RETURN_REQUESTED)).toHaveLength(2);
-    expect(await producedAfter(days)).toBe(18);
   });
 });
 

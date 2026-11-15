@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { ulid } from "ulid";
 /**
  * E2E de **la version par journée** — `documentation/caching-usage/version-par-journee.md`,
  * lots V1 et V2, sur le vrai Postgres jetable.
@@ -29,7 +30,7 @@ import {
 } from "./e2e-harness.js";
 import { placeLateByStaff } from "./staff-late-order.js";
 import { createUser } from "./factories.js";
-import { packingOrderPath } from "./production-day-fixture.js";
+import { completeLine, packingOrderPath } from "./production-day-fixture.js";
 import { openQualityControl } from "./quality-control-settings.js";
 import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
@@ -147,11 +148,8 @@ async function planned(orderId: string) {
   });
 }
 
-const bake = (sku: string) =>
-  staff()
-    .put(`/admin/production/worksheet/${DAY}/lines/${sku}/done`)
-    .send({ initials: "KA" })
-    .expect(204);
+const bake = async (sku: string) =>
+  expect(await completeLine(ctx, sku, DAY, E2E_STAFF_SUB)).toBe(204);
 
 /** Une commande du jour, arrêtée, sa ligne sortie du four : prête au colisage. */
 async function readyToPack(): Promise<{ orderId: string; reference: string }> {
@@ -495,13 +493,13 @@ describe("la porte unique des versions de journée (D8)", () => {
    * LIT sous `production_plan:read`, comme les échéances ; le geste « sorti »
    * reste au fournil.
    */
-  it("la fiche datée se lit sous `production_plan:read`, sans ouvrir la case « sorti »", async () => {
+  it("la fiche datée se lit sous `production_plan:read`, sans ouvrir la fournée", async () => {
     await allowRead("staff-prevision-fiche", "production_plan");
     const planner = ctx.asSub("staff-prevision-fiche");
     await planner.get(`/admin/production/worksheet?date=${DAY}`).expect(200);
     await planner
-      .put(`/admin/production/worksheet/${DAY}/lines/${CROISSANT}/done`)
-      .send({ initials: "PM" })
+      .put(`/admin/production/worksheet/${DAY}/lines/${CROISSANT}/batches/${ulid()}`)
+      .send({ quantity: 1, initials: "PM" })
       .expect(403);
   });
 });

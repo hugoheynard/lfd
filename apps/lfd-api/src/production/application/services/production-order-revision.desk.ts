@@ -14,7 +14,6 @@ import {
 import { RevisedOrderInscribedElsewhereError } from "../../domain/errors/order-revision-errors.js";
 import { OrderQuantitiesRaisedEvent } from "../../domain/events/order-quantities-raised.events.js";
 import { OrderRevisionNoticeLedger } from "../../domain/ports/order-revision-notice.ledger.js";
-import { ProductionBatchRepository } from "../../domain/ports/production-batch.repository.js";
 import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
@@ -34,8 +33,7 @@ interface InscribedRevision {
  *
  * Inscrite, sous `staff_quantities` (plan A2, § 7, B3), et au jour même
  * qu'on révise (sinon `RevisedOrderInscribedElsewhereError`) — toujours sous
- * le verrou de la journée, seule : la journée est rechargée, les coches
- * héritées matérialisées et écrites en fournées (le chemin du retirage), le
+ * le verrou de la journée, seule : la journée est rechargée, le
  * dû de la commande révisé et le compte refait sans baisser. Une hausse
  * publie `production.order_quantities_raised`, durable et journalisé.
  *
@@ -50,7 +48,6 @@ export class ProductionOrderRevisionDesk extends OrderRevisionDesk {
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
     private readonly days: ProductionDayRepository,
-    private readonly batches: ProductionBatchRepository,
     private readonly events: DomainEventPublisher,
     private readonly durable: DurablePublisher,
   ) {
@@ -93,15 +90,13 @@ export class ProductionOrderRevisionDesk extends OrderRevisionDesk {
     });
   }
 
-  /** Sous le verrou déjà pris : le chemin du retirage, puis le dû révisé. */
+  /** Sous le verrou déjà pris : le dû révisé, le compte refait. */
   private async reviseInscribed(
     day: ServiceDay,
     revised: InscribedRevision,
   ): Promise<OrderRevisionOutcome> {
     const plan = await this.days.load(day);
-    const inherited = plan.materialize();
     const raised = plan.reviseOrder(revised.orderId, revised.lines);
-    await this.batches.recordInherited(day, inherited);
     await this.days.save(plan);
     if (raised.length === 0) {
       return "unchanged";

@@ -127,16 +127,12 @@ describe("chaque mutateur de ProductionDay marque ce qu'il change", () => {
     launchResupply: (day) => day.launchResupply(resupply("rs_asap"), gesture, NOTHING_PENDING),
     reviseOrder: (day) => day.reviseOrder("ord_1", [{ sku: "VIE-001", quantity: 9 }]),
   };
-  /** `materialize` touche les fournées, qui ont leur port : l'appelant les écrit. */
-  const BATCH_PORT = ["materialize"];
   /** Les lectures et les gardes qui refusent sans muter. */
   const READERS = [
     "producedOf",
     "batchToRecord",
     "acknowledge",
-    "batchToComplete",
     "batchToCancel",
-    "batchesToUncheck",
     "itemToMark",
     "toSnapshot",
   ];
@@ -153,9 +149,7 @@ describe("chaque mutateur de ProductionDay marque ce qu'il change", () => {
     const own = methodsOf(ProductionDay.prototype);
     const inherited = methodsOf(Object.getPrototypeOf(ProductionDay.prototype) as object);
 
-    expect([...own, ...inherited].sort()).toEqual(
-      [...Object.keys(SAVED), ...BATCH_PORT, ...READERS].sort(),
-    );
+    expect([...own, ...inherited].sort()).toEqual([...Object.keys(SAVED), ...READERS].sort());
   });
 
   it.each(Object.keys(SAVED))("%s change l'instantané ET le dit à `save`", (name) => {

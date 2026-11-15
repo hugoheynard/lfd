@@ -21,8 +21,8 @@ import type { ServiceDay } from "../../domain/value-objects/service-day.value-ob
  * **Remettre au colisage, et reprendre** — le registre et le fait durable,
  * ensemble (plan `documentation/colisage/colisage.md`, §11.2, §13).
  *
- * Partagé par les quatre gestes de fournée (déclarer, cocher, annuler,
- * décocher) : la règle « une remise = une ligne + un fait » s'écrit une fois.
+ * Partagé par les gestes de fournée (déclarer, annuler) et la réponse du
+ * colisage : la règle « une remise = une ligne + un fait » s'écrit une fois.
  *
  * 🔴 Il tourne dans l'unité de travail de l'APPELANT, et n'en ouvre pas : la
  * fournée, sa remise et le fait partent ensemble, ou rien ne part. La boîte
@@ -81,7 +81,7 @@ export class PackingHandoffs {
 
   /**
    * Les fournées annulées qui avaient été remises sont reprises. Une fournée
-   * jamais remise (d'avant K1, ou implicite) ne demande rien au colisage.
+   * jamais remise (d'avant K1, ou du rattrapage) ne demande rien au colisage.
    *
    * Sur une journée `legacy`, l'annulation a DÉJÀ eu lieu, synchrone, sous la
    * garde de l'ancien poste : le fait le dit (`legacy: true`), et le colisage

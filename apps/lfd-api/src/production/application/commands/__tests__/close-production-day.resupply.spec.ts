@@ -34,8 +34,8 @@ describe("le réassort au plan figé (lot R3a)", () => {
       },
     ]);
     expect(days.saved?.counts).toEqual([
-      { sku: "PAIN-001", productName: "Baguette", quantity: 5, saleUnit: "piece", done: null },
-      { sku: "VIE-001", productName: "Croissant", quantity: 52, saleUnit: "piece", done: null },
+      { sku: "PAIN-001", productName: "Baguette", quantity: 5, saleUnit: "piece" },
+      { sku: "VIE-001", productName: "Croissant", quantity: 52, saleUnit: "piece" },
     ]);
   });
 

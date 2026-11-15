@@ -72,7 +72,6 @@ describe("countOf — au poids", () => {
         productName: "Saumon gravlax",
         quantity: 2500,
         saleUnit: "weight",
-        done: null,
       },
     ]);
   });
@@ -86,9 +85,8 @@ describe("countOf — au poids", () => {
         productName: "Saumon gravlax",
         quantity: 1250,
         saleUnit: "weight",
-        done: null,
       },
-      { sku: "VIE-001", productName: "Croissant", quantity: 12, saleUnit: "piece", done: null },
+      { sku: "VIE-001", productName: "Croissant", quantity: 12, saleUnit: "piece" },
     ]);
   });
 
@@ -125,7 +123,6 @@ describe("countOf — au poids", () => {
         productName: "Saumon gravlax",
         quantity: 1250,
         saleUnit: "weight",
-        done: null,
       },
     ]);
   });

@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { ulid } from "ulid";
 import type {
   OpenPackingContainer,
   OpenedPackingContainer,
@@ -35,6 +36,9 @@ export const MEMBER = "auth0|member";
 export const STAFF = "staff-e2e";
 /** Le croissant du catalogue de test — `VIE-001-1`, « Croissant ». */
 export const CROISSANT = "VIE-001-1";
+
+/** Le statut d'une écriture réussie sans corps. */
+const NO_CONTENT = 204;
 
 const SITE = {
   label: "Boutique",
@@ -157,13 +161,37 @@ export async function cancelBatch(ctx: E2eContext, id: string): Promise<number> 
   return response.status;
 }
 
-/** L'ancienne case : rendre la ligne complète. */
-export async function markLine(ctx: E2eContext, sku = CROISSANT): Promise<number> {
+/**
+ * **Rendre la ligne complète** par la seule route qui la fait avancer : une
+ * fournée du reste, lu sur la fiche. Une ligne déjà complète ne déclare rien
+ * et rend 204, comme une fournée rejouée.
+ */
+export async function completeLine(
+  ctx: E2eContext,
+  sku = CROISSANT,
+  day = SERVICE_DAY,
+  sub = STAFF,
+): Promise<number> {
+  const view = jsonBody<ProductionWorksheetView>(
+    await ctx.asSub(sub).get(`/admin/production/worksheet?date=${day}`).expect(200),
+  );
+  const line = view.groups.flatMap((group) => group.lines).find((entry) => entry.sku === sku);
+  if (line === undefined) {
+    throw new Error(`La fiche du ${day} ne porte aucune ligne « ${sku} ».`);
+  }
+  if (line.remaining === 0) {
+    return NO_CONTENT;
+  }
   const response = await ctx
-    .asSub(STAFF)
-    .put(`/admin/production/worksheet/${SERVICE_DAY}/lines/${sku}/done`)
-    .send({ initials: "MB" });
+    .asSub(sub)
+    .put(`/admin/production/worksheet/${day}/lines/${sku}/batches/${ulid()}`)
+    .send({ quantity: line.remaining, initials: "MB" });
   return response.status;
+}
+
+/** La ligne du croissant (ou de `sku`) complète au jour du fixture. */
+export async function markLine(ctx: E2eContext, sku = CROISSANT): Promise<number> {
+  return completeLine(ctx, sku);
 }
 
 /**

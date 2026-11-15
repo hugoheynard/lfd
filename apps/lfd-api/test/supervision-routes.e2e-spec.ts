@@ -42,6 +42,7 @@ import {
 } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 import { freshIntent, INTENT_KEY } from "./intent-key.js";
+import { completeLine } from "./production-day-fixture.js";
 
 const MEMBER = "auth0|member";
 const SUPERVISOR = "staff-supervision-seule";
@@ -165,10 +166,7 @@ async function seedWorkedDay(): Promise<void> {
   ]);
   const staff = ctx.asSub(E2E_STAFF_SUB);
   await staff.post(`/admin/production/batch/${SERVICE_DAY}/close`).expect(201);
-  await staff
-    .put(`/admin/production/worksheet/${SERVICE_DAY}/lines/${CROISSANT}/done`)
-    .send({ initials: "KA" })
-    .expect(204);
+  expect(await completeLine(ctx, CROISSANT, SERVICE_DAY, E2E_STAFF_SUB)).toBe(204);
   await ctx.drain();
   const packing = jsonBody<ProductionPackingView>(await staff.get(BOARD).expect(200));
   const orderId = packing.sheets[0]?.orderId;

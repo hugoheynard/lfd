@@ -29,7 +29,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { binTypeId } from "./delivery-loading-scene.js";
-import { fillOrder, packingOrderPath } from "./production-day-fixture.js";
+import { completeLine, fillOrder, packingOrderPath } from "./production-day-fixture.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardProvidersDouble, settleCardPayments } from "./card-payments.js";
 
@@ -301,11 +301,7 @@ async function readyToClose(
     select: { orderId: true, fulfillmentMethod: true, lines: { select: { sku: true } } },
   });
   for (const { sku } of order.lines) {
-    await context
-      .asSub("staff-e2e")
-      .put(`/admin/production/worksheet/${day}/lines/${sku}/done`)
-      .send({ initials: "KA" })
-      .expect(204);
+    expect(await completeLine(context, sku, day, "staff-e2e")).toBe(204);
   }
   await settle(context);
   const target = { staff: "staff-e2e", day, orderId: order.orderId };

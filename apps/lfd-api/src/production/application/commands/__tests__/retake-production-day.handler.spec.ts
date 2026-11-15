@@ -63,31 +63,21 @@ describe("reprendre le tirage d'une journée arrêtée", () => {
     expect(trace).toEqual([`lock:${DAY}`, "load", "producibleFor", "save"]);
   });
 
-  it("matérialise la coche héritée avant d'absorber, et ne la recopie plus", async () => {
-    // Plan des fournées, §5.3–5.4 : 30 cochés puis 30 → 42 ne doivent pas se
-    // lire 42 sortis. La coche devient une fournée de 30 (même id que le
-    // rattrapage), écrite avant la journée ; le compte recréé naît sans coche.
-    const { handler, days, batches, trace } = retakeScene(closedDay("MB"), [
+  it("le compte refait ne porte que la quantité : « sorti » vit dans les fournées", async () => {
+    const { handler, days, trace } = retakeScene(closedDay(), [
       order("ord_1", 30),
       order("ord_2", 12),
     ]);
 
     await handler.execute(new RetakeProductionDayCommand(DAY, "staff-1"));
 
-    const inherited = `backfill-${DAY}-PAI-SEI`;
-    expect(trace).toEqual([`lock:${DAY}`, "load", "producibleFor", `record:${inherited}`, "save"]);
-    expect(batches.batches).toEqual([
-      {
-        id: inherited,
-        sku: "PAI-SEI",
-        quantity: 30,
-        recorded: { at: TIRAGE, by: "staff-1", initials: "MB" },
-        cancelled: null,
-        returned: 0,
-        pendingReturn: 0,
-      },
-    ]);
-    expect(days.saved?.counts[0]).toMatchObject({ quantity: 42, done: null });
+    expect(trace).toEqual([`lock:${DAY}`, "load", "producibleFor", "save"]);
+    expect(days.saved?.counts[0]).toEqual({
+      sku: "PAI-SEI",
+      productName: "Pain de seigle",
+      quantity: 42,
+      saleUnit: "piece",
+    });
   });
 
   it("n'écrit rien quand rien n'est arrivé, et rend le tirage affiché", async () => {

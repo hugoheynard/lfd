@@ -14,7 +14,7 @@ export const PRODUCTION_HANDED_TO_PACKING = "production.handed_to_packing";
  *
  * `{ handoffId, serviceDay, sku, quantity, handedAt }`. `handoffId` est l'`id`
  * de la fournée : une déclaration rejouée calcule le même, donc le fait ne
- * s'écrit qu'une fois. Une fournée implicite (coche héritée) n'est JAMAIS
+ * s'écrit qu'une fois. Une fournée du rattrapage (`backfill-…`) n'est JAMAIS
  * publiée.
  *
  * ## La clé

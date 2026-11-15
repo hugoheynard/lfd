@@ -1,7 +1,4 @@
-import type {
-  ProducedItemSnapshot,
-  ProductionBatchSnapshot,
-} from "../entities/production-day.snapshot.js";
+import type { ProductionBatchSnapshot } from "../entities/production-day.snapshot.js";
 
 /**
  * **Ce que le four a sorti d'un article** — des dérivés, jamais une colonne.
@@ -22,52 +19,10 @@ export interface LineOutput {
   readonly remaining: number;
   /** `max(0, produced − quantity)` — un écart, pas un stock (décision 4). */
   readonly surplus: number;
-  /** `produced ≥ quantity`. Remplace le sens de l'ancienne coche. */
+  /** `produced ≥ quantity` : « fait » se lit ici, sur les seules fournées. */
   readonly complete: boolean;
   /** La fournée qui a fait passer la ligne à complète, ou `null`. */
   readonly completedBy: ProductionBatchSnapshot | null;
-}
-
-/**
- * L'`id` de la fournée implicite d'une coche héritée — **le même** que celui du
- * rattrapage de la migration `20260928160000_les_fournees`. Les deux chemins qui
- * l'écrivent (le rattrapage, le binaire qui matérialise) ne peuvent donc pas se
- * doubler : le second tombe sur le `ON CONFLICT`.
- */
-export function implicitBatchId(serviceDay: string, sku: string): string {
-  return `backfill-${serviceDay}-${sku}`;
-}
-
-/**
- * **Les fournées implicites** : une par ligne cochée par l'ancien binaire et qui
- * n'a AUCUNE fournée réelle, annulée comprise (§5.2).
- *
- * « Aucune, annulée comprise » est la condition du rattrapage, et elle doit le
- * rester : une ligne que le nouveau binaire a déjà touchée est tenue par ses
- * fournées. Sans elle, décocher (qui annule tout) ferait renaître la coche
- * héritée, et la ligne resterait complète.
- */
-export function implicitBatchesOf(
-  serviceDay: string,
-  counts: readonly ProducedItemSnapshot[],
-  batches: readonly ProductionBatchSnapshot[],
-): readonly ProductionBatchSnapshot[] {
-  const touched = new Set(batches.map((batch) => batch.sku));
-  return counts.flatMap((item) =>
-    item.done === null || item.quantity <= 0 || touched.has(item.sku)
-      ? []
-      : [
-          {
-            id: implicitBatchId(serviceDay, item.sku),
-            sku: item.sku,
-            quantity: item.quantity,
-            recorded: item.done,
-            cancelled: null,
-            returned: 0,
-            pendingReturn: 0,
-          },
-        ],
-  );
 }
 
 /**

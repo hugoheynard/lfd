@@ -1,5 +1,5 @@
 import { CloseProductionDayCommand } from "../../../production/application/commands/close-production-day.command.js";
-import { MarkWorksheetLineCommand } from "../../../production/application/commands/mark-worksheet-line.command.js";
+import { RecordBatchCommand } from "../../../production/application/commands/record-batch.command.js";
 import { currentRequestContext } from "../../../platform/context/request-context.store.js";
 import {
   type AutoComposedRounds,
@@ -44,7 +44,7 @@ function recorder(settings: PlanStopSettings = stopSettings()) {
         journal.push(
           command instanceof CloseProductionDayCommand
             ? `close ${command.serviceDay}`
-            : `mark ${command.serviceDay} ${command.sku}`,
+            : `bake ${command.serviceDay} ${command.sku} ${String(command.quantity)}`,
         );
         const now = currentRequestContext()?.now;
         if (now !== undefined) {
@@ -155,14 +155,17 @@ describe("closeTodayPlan — étape 1", () => {
 });
 
 describe("bakeToday — étape 2", () => {
-  it("coche chaque article du compte, dans l'ordre du SKU, puis attend une fois", async () => {
+  it("sort chaque article du compte en une fournée, dans l'ordre du SKU, puis attend une fois", async () => {
     const { journal, context } = recorder();
     const read: unknown[] = [];
     const prisma = {
       productionCount: {
         findMany: (args: unknown) => {
           read.push(args);
-          return Promise.resolve([{ sku: "PAI-001" }, { sku: "VIE-001" }]);
+          return Promise.resolve([
+            { sku: "PAI-001", quantity: 4 },
+            { sku: "VIE-001", quantity: 30 },
+          ]);
         },
       },
     };
@@ -171,12 +174,16 @@ describe("bakeToday — étape 2", () => {
 
     expect(items).toBe(2);
     expect(read).toEqual([
-      { where: { serviceDay: "2026-10-05" }, select: { sku: true }, orderBy: { sku: "asc" } },
+      {
+        where: { serviceDay: "2026-10-05" },
+        select: { sku: true, quantity: true },
+        orderBy: { sku: "asc" },
+      },
     ]);
-    expect(journal).toEqual(["mark 2026-10-05 PAI-001", "mark 2026-10-05 VIE-001", "settle"]);
+    expect(journal).toEqual(["bake 2026-10-05 PAI-001 4", "bake 2026-10-05 VIE-001 30", "settle"]);
   });
 
-  it("ne coche rien et attend quand même, sur une journée sans compte", async () => {
+  it("ne sort rien et attend quand même, sur une journée sans compte", async () => {
     const { journal, context } = recorder();
     const prisma = { productionCount: { findMany: () => Promise.resolve([]) } };
 
@@ -198,7 +205,9 @@ describe("les gestes envoyés", () => {
       },
       settle: () => Promise.resolve(),
     };
-    const prisma = { productionCount: { findMany: () => Promise.resolve([{ sku: "VIE-001" }]) } };
+    const prisma = {
+      productionCount: { findMany: () => Promise.resolve([{ sku: "VIE-001", quantity: 30 }]) },
+    };
     const rounds = {
       ...stopSettings(),
       deliveryRoundStop: { deleteMany: () => Promise.resolve() },
@@ -210,6 +219,6 @@ describe("les gestes envoyés", () => {
     await bakeToday({ ...context, prisma }, DAY);
 
     expect(sent[0]).toBeInstanceOf(CloseProductionDayCommand);
-    expect(sent[1]).toBeInstanceOf(MarkWorksheetLineCommand);
+    expect(sent[1]).toBeInstanceOf(RecordBatchCommand);
   });
 });

@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { ulid } from "ulid";
 /**
  * E2E de la **fiche du fournil servie par l'objet des journées**
  * (`le-cache-du-back-office.md`, § 3.1) — sans objet ici (`NoDayContentsCache`,
@@ -110,15 +111,15 @@ describe("la fiche servie par l'objet des journées", () => {
     expect(croissantOf(await worksheet()).quantity).toBe(17);
   });
 
-  it("rend une coche du fournil faite juste après une première lecture", async () => {
+  it("rend une fournée sortie juste après une première lecture", async () => {
     await place(12);
     await ctx.asSub(STAFF).post(`/admin/production/batch/${SERVICE_DAY}/close`).expect(201);
     expect(croissantOf(await worksheet()).done).toBe(false);
 
     await ctx
       .asSub(STAFF)
-      .put(`/admin/production/worksheet/${SERVICE_DAY}/lines/${CROISSANT}/done`)
-      .send({ initials: "HH" })
+      .put(`/admin/production/worksheet/${SERVICE_DAY}/lines/${CROISSANT}/batches/${ulid()}`)
+      .send({ quantity: 12, initials: "HH" })
       .expect(204);
 
     expect(croissantOf(await worksheet()).done).toBe(true);

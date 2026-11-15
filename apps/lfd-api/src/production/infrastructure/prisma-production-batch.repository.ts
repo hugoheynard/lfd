@@ -110,20 +110,6 @@ export class PrismaProductionBatchRepository extends ProductionBatchRepository {
     return { serviceDay: stored.serviceDay, batch: batchOf(stored) };
   }
 
-  /** Une seule requête, quel que soit le nombre de coches héritées. */
-  async recordInherited(
-    day: ServiceDay,
-    batches: readonly ProductionBatchSnapshot[],
-  ): Promise<void> {
-    if (batches.length === 0) {
-      return;
-    }
-    await this.prisma.productionBatch.createMany({
-      data: batches.map((batch) => batchRowOf(day, batch)),
-      skipDuplicates: true,
-    });
-  }
-
   /**
    * Le compte des lignes touchées est lu : zéro veut dire « déjà annulée »
    * (succès sans effet) OU « absente » (défaut) — la relecture tranche.

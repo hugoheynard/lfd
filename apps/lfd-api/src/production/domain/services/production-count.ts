@@ -110,11 +110,6 @@ export function countOf(orders: readonly CountedItem[]): readonly ProducedItemSn
         productName: known?.productName ?? line.productName,
         quantity: (known?.quantity ?? 0) + line.quantity,
         saleUnit: line.saleUnit,
-        // 🔴 Plus aucune coche recopiée (plan des fournées, §5.4) : « sorti »
-        // vit dans les fournées, qui ne dépendent pas du compte. Recopier une
-        // coche ferait renaître « fait » sur une quantité qui a changé — 30
-        // cochés, puis 30 → 42, lus complets.
-        done: null,
       });
     }
   }
@@ -130,8 +125,8 @@ export function countOf(orders: readonly CountedItem[]): readonly ProducedItemSn
  * surplus ira en réserve au colisage, comme pour une commande retirée (A1).
  *
  * Trié par SKU comme {@link countOf}. Le nom est celui du compte refait
- * quand il connaît l'article, sinon celui d'avant. Aucune coche recopiée :
- * l'appelant a matérialisé les coches héritées en fournées avant.
+ * quand il connaît l'article, sinon celui d'avant. « Sorti » vit dans les
+ * fournées, que le compte ne porte pas.
  */
 export function floorCounts(
   previous: readonly ProducedItemSnapshot[],
@@ -139,11 +134,11 @@ export function floorCounts(
 ): readonly ProducedItemSnapshot[] {
   const bySku = new Map<string, ProducedItemSnapshot>();
   for (const item of previous) {
-    bySku.set(item.sku, { ...item, done: null });
+    bySku.set(item.sku, item);
   }
   for (const item of next) {
     const before = bySku.get(item.sku)?.quantity ?? 0;
-    bySku.set(item.sku, { ...item, quantity: Math.max(before, item.quantity), done: null });
+    bySku.set(item.sku, { ...item, quantity: Math.max(before, item.quantity) });
   }
   return [...bySku.values()].sort((left, right) => left.sku.localeCompare(right.sku));
 }
@@ -178,9 +173,8 @@ export interface AbsorbedArrivals {
  * abonné en échec laisse des commandes `placed` DÉJÀ inscrites au plan. Sans le
  * filtre, un retirage les compterait une seconde fois.
  *
- * Les coches héritées NE sont PAS recopiées (§5.4 des fournées) : l'appelant
- * les a matérialisées en fournées avant, sous le verrou de la journée. Ce qui
- * est sorti survit donc au retirage par les fournées, pas par le compte.
+ * Le compte ne porte pas ce qui est sorti : ce qui est sorti survit au
+ * retirage par les fournées, que le compte refait ne touche pas.
  *
  * Le compte, lui, n'est plus calculé ici depuis A2 (2026-10-25) : l'agrégat le
  * refait par sa méthode unique (`ProductionDay.recount`), depuis TOUTES les

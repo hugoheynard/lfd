@@ -105,33 +105,12 @@ describe("annuler une fournée (D3)", () => {
   });
 });
 
-describe("l'ancienne case, traduite", () => {
-  it("cocher déclare le reste, sous un id déterministe", () => {
-    expect(day([batch("a", 10)]).batchToComplete(SKU, MARK)).toEqual({
-      ...batch(`mark-${DAY}-${SKU}-10-1`, 14),
-    });
+describe("« sorti » se lit sur les seules fournées", () => {
+  it("Σ des fournées actives : une fournée annulée ne compte pas", () => {
+    expect(day([batch("a", 10), batch("b", 2, true), batch("c", 14)]).producedOf(SKU)).toBe(24);
   });
 
-  it("cocher une ligne complète ne déclare rien", () => {
-    expect(day([batch("a", 30)]).batchToComplete(SKU, MARK)).toBeNull();
-  });
-
-  it("décocher rend les fournées actives", () => {
-    expect(day([batch("a", 10), batch("b", 2, true)]).batchesToUncheck(SKU)).toEqual([
-      batch("a", 10),
-    ]);
-  });
-
-  it("matérialise une coche héritée, une seule fois", () => {
-    const snapshot = day([]).toSnapshot();
-    const legacy = ProductionDay.fromSnapshot({
-      ...snapshot,
-      counts: snapshot.counts.map((item) => ({ ...item, done: MARK })),
-    });
-
-    expect(legacy.producedOf(SKU)).toBe(24);
-    expect(legacy.materialize().map((entry) => entry.id)).toEqual([`backfill-${DAY}-${SKU}`]);
-    expect(legacy.materialize()).toEqual([]);
-    expect(legacy.producedOf(SKU)).toBe(24);
+  it("une ligne sans fournée n'a rien sorti, quoi qu'en dise l'ancienne coche", () => {
+    expect(day([]).producedOf(SKU)).toBe(0);
   });
 });

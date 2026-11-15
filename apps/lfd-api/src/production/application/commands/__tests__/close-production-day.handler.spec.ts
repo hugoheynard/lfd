@@ -35,7 +35,7 @@ describe("clore une journée", () => {
       closedAt: NOW.toISOString(),
     });
     expect(days.saved?.counts).toEqual([
-      { sku: "VIE-001", productName: "Croissant", quantity: 80, saleUnit: "piece", done: null },
+      { sku: "VIE-001", productName: "Croissant", quantity: 80, saleUnit: "piece" },
     ]);
     expect(events.published).toEqual([new ProductionDayClosedJournalEvent(DAY, 2)]);
     // Puis la liste à coliser, une commande par fait (colisage, K1, §11 B1).

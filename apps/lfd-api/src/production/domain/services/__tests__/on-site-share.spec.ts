@@ -94,7 +94,6 @@ describe("la part servie sur place", () => {
           productName: "Croissant",
           quantity: 14,
           saleUnit: "piece" as const,
-          done: null,
         },
       ],
       resupplies: [resupply(false, 4)],

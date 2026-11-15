@@ -28,7 +28,6 @@ const counted = (
   productName: sku,
   quantity,
   saleUnit,
-  done: null,
 });
 
 function batch(id: string, sku: string, quantity: number): ProductionBatchSnapshot {

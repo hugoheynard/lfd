@@ -7,7 +7,6 @@ import {
 } from "../errors/production-errors.js";
 import { LEGACY_PACKING_OWNER, PACKING_PACKING_OWNER } from "../value-objects/packing-owner.js";
 import { ServiceDay } from "../value-objects/service-day.value-object.js";
-import * as batching from "./production-day.batches.js";
 import { ProductionDayState } from "./production-day.state.js";
 import { type ProductionDayChanges, UNCHANGED_DAY, WHOLE_DAY } from "./production-day.changes.js";
 import {
@@ -21,7 +20,7 @@ import {
 import { assertReopenable, type DownstreamProgress } from "./production-day.reopening.js";
 import { DayPlan, withoutWithdrawn } from "./production-day.plan.js";
 import type { RaisedLine, RevisedLine } from "./production-day.revision.js";
-import type { ProductionBatchSnapshot, ProductionDaySnapshot } from "./production-day.snapshot.js";
+import type { ProductionDaySnapshot } from "./production-day.snapshot.js";
 import { type PlanSigner, staffSigner } from "./plan-signer.js";
 
 // La forme de la journée vit à côté ; réexportée : l'agrégat reste le point d'entrée.
@@ -105,24 +104,6 @@ export class ProductionDay extends ProductionDayState {
   }
 
   /**
-   * **Matérialise** les coches héritées (§5.3) et les rend pour que l'appelant
-   * les écrive — raisons : `inheritedBatchesOf`, `production-day.batches.ts`.
-   *
-   * Ne marque PAS {@link changes}, et c'est voulu : `changes` ne décrit que
-   * ce que `ProductionDayRepository.save` écrit, et les fournées ont leur port
-   * (`ProductionBatchRepository.recordInherited`). L'appelant écrit donc
-   * lui-même ce qui est rendu ici, dans la même unité de travail. Ce que le
-   * domaine impose : un geste qui refait le compte refuse une coche héritée
-   * encore vivante, non matérialisée (`assertChecksCarried`) — le compte
-   * réécrit l'effacerait. Qu'elle soit ensuite ÉCRITE reste à l'appelant.
-   */
-  materialize(sku?: string): readonly ProductionBatchSnapshot[] {
-    const inherited = batching.inheritedBatchesOf(this, sku);
-    this.batchesValue = [...this.batchesValue, ...inherited];
-    return inherited;
-  }
-
-  /**
    * **Arrête la journée** : fige les commandes et calcule le compte à produire.
    * Elle naît au colisage (`packing`) — décision de Hugo du 2026-10-04 ; une
    * journée `legacy` ne se relit que depuis la base.
@@ -151,7 +132,6 @@ export class ProductionDay extends ProductionDayState {
     if (this.isClosed) {
       throw new ProductionDayAlreadyClosedError(this.day.value);
     }
-    batching.assertChecksCarried(this);
     const kept = withoutWithdrawn(orders, withdrawn);
     if (this.planValue.isEmptyWith(kept, resupplies)) {
       throw new ProductionDayEmptyError(this.day.value);
@@ -167,14 +147,12 @@ export class ProductionDay extends ProductionDayState {
    *
    * Il ne contredit pas l'invariant de l'en-tête : c'est un recalcul ATTESTÉ,
    * signé par `by` — la raison complète est au-dessus d'`absorbArrivals`.
-   * L'appelant a matérialisé les coches héritées ({@link materialize}) AVANT,
-   * sous le verrou de la journée. Les commandes `withdrawn` ne sont pas
+   * L'appelant tient le verrou de la journée. Les commandes `withdrawn` ne sont pas
    * absorbées — même règle qu'à l'arrêt.
    *
    * @returns le nombre de commandes absorbées. Zéro = rien n'était arrivé,
    *   et c'est une information, pas une erreur : rien ne change.
    * @throws {ProductionDayNotClosedError} il n'y a pas de tirage à reprendre.
-   * @throws {UncarriedInheritedChecksError} une coche héritée non matérialisée.
    */
   retake(
     orders: readonly ProducibleOrder[],
@@ -186,7 +164,6 @@ export class ProductionDay extends ProductionDayState {
     if (!this.isClosed) {
       throw new ProductionDayNotClosedError(this.day.value);
     }
-    batching.assertChecksCarried(this);
     const { plan, count } = this.planValue.absorbed(withoutWithdrawn(orders, withdrawn));
     if (count === 0) {
       return 0;
@@ -213,7 +190,7 @@ export class ProductionDay extends ProductionDayState {
     if (!this.isClosed) {
       throw new ProductionDayNotClosedError(this.day.value);
     }
-    assertReopenable(this.day.value, this.counts, this.batchesValue, progress);
+    assertReopenable(this.day.value, this.batchesValue, progress);
     const released = this.orders.map((order) => order.orderId);
     this.closedAtValue = null;
     this.closedByValue = null;
@@ -227,8 +204,7 @@ export class ProductionDay extends ProductionDayState {
   /**
    * **Lance un réassort « au plus tôt »** (`reassort-boutiques/au-plus-tot.md`) :
    * le réassort, lu par l'appelant SOUS le verrou, entre au plan à part de
-   * ceux du soir, et ses lignes au compte. L'appelant a matérialisé les
-   * coches héritées avant ({@link materialize}).
+   * ceux du soir, et ses lignes au compte.
    *
    * Sur une journée JAMAIS arrêtée (Q5), le lancement l'ARRÊTE avec ce seul
    * réassort, signé de qui lance — s'il n'y a rien d'autre à figer
@@ -244,7 +220,6 @@ export class ProductionDay extends ProductionDayState {
     pending: PendingPlan,
   ): boolean {
     assertNotLaunched(this.day.value, this.planValue.launched, resupply.resupplyId);
-    batching.assertChecksCarried(this);
     const opening = !this.isClosed;
     if (opening) {
       assertNotReopened(this.day.value, this.reopenedValue);
@@ -263,8 +238,7 @@ export class ProductionDay extends ProductionDayState {
    * **Révise le dû d'une commande inscrite**
    * (`documentation/commandes/modification/modifier-une-commande.md`,
    * § 2.4 « Après l'inscription » (A2)) : ses lignes disent la quantité révisée, dans les deux sens ; le
-   * compte du jour ne baisse jamais. L'appelant a matérialisé les coches
-   * héritées avant ({@link materialize}), sous le verrou de la journée.
+   * compte du jour ne baisse jamais. L'appelant tient le verrou de la journée.
    *
    * @returns les lignes montées — vide si rien n'a monté (une baisse, ou rien).
    * @throws {ProductionDayNotClosedError} rien n'est arrêté : rien n'est inscrit.
@@ -274,7 +248,6 @@ export class ProductionDay extends ProductionDayState {
     if (!this.isClosed) {
       throw new ProductionDayNotClosedError(this.day.value);
     }
-    batching.assertChecksCarried(this);
     const { plan, raised } = this.planValue.revised(this.day.value, orderId, lines);
     this.planValue = plan;
     return raised;

@@ -3,12 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import type { PlacedResupply } from "../../channels/commerce/day-resupplies.reader.js";
 import { ResupplyLaunchedEvent } from "../../channels/commerce/resupply-launched.event.js";
-import type {
-  ProductionDay,
-  ProductionBatchSnapshot,
-  ResupplyLaunchGesture,
-} from "../../domain/entities/production-day.js";
-import { ProductionBatchRepository } from "../../domain/ports/production-batch.repository.js";
+import type { ProductionDay, ResupplyLaunchGesture } from "../../domain/entities/production-day.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 
@@ -18,15 +13,12 @@ export interface DecidedLaunch {
   readonly current: ProductionDay;
   readonly resupply: PlacedResupply;
   readonly gesture: ResupplyLaunchGesture;
-  /** Les coches héritées matérialisées avant le lancement. */
-  readonly inherited: readonly ProductionBatchSnapshot[];
   /** Le lancement a-t-il arrêté une journée jamais arrêtée ? */
   readonly openedPlan: boolean;
 }
 
 /**
- * **Écrit et annonce un lancement « au plus tôt »** — les fournées héritées,
- * la journée, puis le fait `production.resupply_launched` que le commerce
+ * **Écrit et annonce un lancement « au plus tôt »** — la journée, puis le fait `production.resupply_launched` que le commerce
  * écoute (l'affichage, le colisage, la livraison). Sorti de
  * `LaunchResupplyHandler` (audit du réassort, 2026-11-02) ; à appeler dans
  * l'unité de travail du handler, sous le verrou de la journée. Le journal
@@ -42,13 +34,11 @@ export interface DecidedLaunch {
 export class ResupplyLaunchRecording {
   constructor(
     private readonly days: ProductionDayRepository,
-    private readonly batches: ProductionBatchRepository,
     private readonly durable: DurablePublisher,
   ) {}
 
   async record(launch: DecidedLaunch): Promise<void> {
     const { day, current, resupply, gesture, openedPlan } = launch;
-    await this.batches.recordInherited(day, launch.inherited);
     await this.days.save(current);
     const reopenedAt = current.reopened?.at ?? null;
     await this.durable.publish(

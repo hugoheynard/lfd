@@ -7,14 +7,8 @@ import {
   InvalidBatchQuantityError,
   BatchNotFoundError,
   BatchReturnPendingError,
-  UncarriedInheritedChecksError,
 } from "../errors/batch-errors.js";
-import {
-  activeBatchesOf,
-  countedBatch,
-  implicitBatchesOf,
-  outputOf,
-} from "../services/production-output.js";
+import { activeBatchesOf, countedBatch } from "../services/production-output.js";
 import type { ServiceDay } from "../value-objects/service-day.value-object.js";
 import type {
   DoneMark,
@@ -24,8 +18,8 @@ import type {
 } from "./production-day.snapshot.js";
 
 /**
- * **Les gardes des fournées** — ce qu'une journée refuse qu'on déclare, qu'on
- * annule ou qu'on décoche, **sans rien muter** (plan
+ * **Les gardes des fournées** — ce qu'une journée refuse qu'on déclare ou
+ * annule, **sans rien muter** (plan
  * `documentation/fournil/la-fiche-d-atelier.md`, D3, D4).
  *
  * Des fonctions pures sur {@link BatchState}, sans transition : elles ne
@@ -44,17 +38,14 @@ export interface BatchState {
 }
 
 /**
- * Les fournées réelles ET les implicites des coches héritées (§5.2), chacune
- * pour ce qu'elle compte — rendus du colisage déduits (K2, `countedBatch`).
+ * Les fournées de la journée, chacune pour ce qu'elle compte — rendus du
+ * colisage déduits (K2, `countedBatch`).
  */
 export function effectiveBatchesOf(state: BatchState): readonly ProductionBatchSnapshot[] {
-  return [
-    ...state.batches.map(countedBatch),
-    ...implicitBatchesOf(state.day.value, state.counts, state.batches),
-  ];
+  return state.batches.map(countedBatch);
 }
 
-/** Σ des fournées qui comptent pour ce SKU, implicites comprises. */
+/** Σ des fournées qui comptent pour ce SKU. */
 export function producedOf(state: BatchState, sku: string): number {
   return activeBatchesOf(effectiveBatchesOf(state), sku).reduce(
     (total, batch) => total + batch.quantity,
@@ -78,43 +69,6 @@ function productNameOf(state: BatchState, sku: string): string {
 }
 
 /**
- * La fournée que l'ancienne commande « cocher » déclare : le **reste**, pour
- * rendre la ligne complète (D3). `null` = elle l'est déjà, et recocher passe
- * sans effet — recocher passait.
- *
- * ## L'identifiant, et l'écart au plan
- *
- * Le plan écrit `mark-<jour>-<sku>-<produced>`. Il y manque un terme : après un
- * décocher (qui annule tout), `produced` revient à 0, le même `id` est
- * recalculé, et l'idempotence le lit comme le rejeu d'une fournée annulée —
- * succès silencieux, ligne restée vide. Le nombre de fournées déjà écrites pour
- * ce SKU, annulées comprises, les distingue : deux cochers simultanés lisent le
- * même état et calculent toujours le même `id`, ce qui garde la propriété que
- * le plan voulait.
- */
-export function batchToComplete(
-  state: BatchState,
-  item: ProducedItemSnapshot,
-  recorded: DoneMark,
-): ProductionBatchSnapshot | null {
-  const effective = effectiveBatchesOf(state);
-  const output = outputOf(item.quantity, activeBatchesOf(effective, item.sku));
-  if (output.complete) {
-    return null;
-  }
-  const written = effective.filter((batch) => batch.sku === item.sku).length;
-  return {
-    id: `mark-${state.day.value}-${item.sku}-${String(output.produced)}-${String(written)}`,
-    sku: item.sku,
-    quantity: output.remaining,
-    recorded,
-    cancelled: null,
-    returned: 0,
-    pendingReturn: 0,
-  };
-}
-
-/**
  * La fournée qu'on s'apprête à annuler. `null` = déjà annulée : annuler deux
  * fois est un succès silencieux (D3).
  *
@@ -133,26 +87,6 @@ export function batchToCancel(state: BatchState, id: string): ProductionBatchSna
     throw new BatchReturnPendingError(productNameOf(state, target.sku), target.pendingReturn);
   }
   return target;
-}
-
-/**
- * Les fournées que l'ancienne commande « décocher » annule : **toutes** celles
- * de la ligne (D3). Ce qui est au bac, le colisage le tranche : la décoche
- * d'une fournée remise lui DEMANDE un retour (K2) ; la garde « déjà au bac »
- * de l'ancien poste est retirée avec lui (K3c).
- *
- * @throws {BatchReturnPendingError} un retour est déjà demandé au colisage (K2).
- */
-export function batchesToUncheck(
-  state: BatchState,
-  sku: string,
-): readonly ProductionBatchSnapshot[] {
-  const active = activeBatchesOf(effectiveBatchesOf(state), sku);
-  const pending = active.reduce((total, batch) => total + batch.pendingReturn, 0);
-  if (pending > 0) {
-    throw new BatchReturnPendingError(productNameOf(state, sku), pending);
-  }
-  return active;
 }
 
 /**
@@ -191,17 +125,14 @@ function chargeOf(serviceDay: string, batch: ProductionBatchSnapshot): string {
 }
 
 /**
- * La ligne qu'on s'apprête à cocher — **sans rien muter**.
+ * La ligne à laquelle on s'apprête à ajouter une fournée — **sans rien muter**.
  *
- * Même figure que `sheetToPack`, et pour la même raison : elle porte les
- * deux refus STRUCTURELS — la journée n'est pas arrêtée, ou ce SKU n'est pas
- * au compte du jour — en un seul endroit plutôt que recopiés chez les deux
- * appelants (cocher, décocher).
+ * Même figure que `sheetToPack` : elle porte les deux refus STRUCTURELS — la
+ * journée n'est pas arrêtée, ou ce SKU n'est pas au compte du jour — en un
+ * seul endroit. Une ligne déjà complète n'est pas un refus : une fournée de
+ * plus est un surplus (décision 4).
  *
- * Elle ne dit rien de l'état de la case. « Déjà cochée » n'est pas un refus
- * ici, contrairement au colisage : voir la note de l'adaptateur.
- *
- * @throws {ProductionDayNotClosedError} rien n'est arrêté, donc rien à cocher.
+ * @throws {ProductionDayNotClosedError} rien n'est arrêté, donc rien à déclarer.
  * @throws {ProducedItemNotFoundError} ce SKU n'est pas au compte du jour.
  */
 export function itemToMark(state: BatchState, sku: string): ProducedItemSnapshot {
@@ -234,38 +165,4 @@ export function batchToRecord(
     throw new InvalidBatchQuantityError(quantity);
   }
   return { id, sku, quantity, recorded, cancelled: null, returned: 0, pendingReturn: 0 };
-}
-
-/**
- * **Les coches héritées à matérialiser** (§5.3), pour un SKU ou tous : elles
- * deviennent des fournées de la journée, sous le même `id` que le rattrapage.
- * Tout geste qui ajoute ou retire une fournée d'un SKU le fait d'abord — sinon
- * la première fournée réelle effacerait la coche implicite, et 30 cochés plus
- * 5 deviendraient 5.
- */
-export function inheritedBatchesOf(
-  state: BatchState,
-  sku?: string,
-): readonly ProductionBatchSnapshot[] {
-  return implicitBatchesOf(state.day.value, state.counts, state.batches).filter(
-    (batch) => sku === undefined || batch.sku === sku,
-  );
-}
-
-/**
- * Refuse de refaire le compte tant qu'une coche héritée n'est pas reportée en
- * fournée : le compte réécrit l'effacerait (cf. `replaceCounts`, côté
- * adaptateur). Après `materialize`, la ligne a sa fournée, et plus rien
- * n'est implicite.
- *
- * @throws {UncarriedInheritedChecksError}
- */
-export function assertChecksCarried(state: BatchState): void {
-  const pending = inheritedBatchesOf(state);
-  if (pending.length > 0) {
-    throw new UncarriedInheritedChecksError(
-      state.day.value,
-      pending.map((batch) => batch.sku),
-    );
-  }
 }

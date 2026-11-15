@@ -119,16 +119,6 @@ export interface ProducedItemSnapshot {
    */
   readonly quantity: number;
   readonly saleUnit: SaleUnit;
-  /**
-   * **La coche de l'ANCIEN binaire**, telle que `done_*` la porte encore.
-   *
-   * Depuis les fournées (plan `la-fiche-d-atelier.md`, §5), plus rien
-   * ne l'écrit : elle ne sert qu'à lire une ligne cochée avant le déploiement,
-   * ou par un poste resté sur le binaire précédent, comme une **fournée
-   * implicite** de `quantity` — tant qu'aucune fournée réelle n'existe pour ce
-   * SKU. `null` = rien de coché par l'ancien système.
-   */
-  readonly done: DoneMark | null;
 }
 
 /**
@@ -141,7 +131,7 @@ export interface ProducedItemSnapshot {
  * supprime ni ne se corrige (D3). `null` = elle compte.
  */
 export interface ProductionBatchSnapshot {
-  /** Donné par le client (ULID), ou déterministe (`backfill-…`, `mark-…`). */
+  /** Donné par le client (ULID) ; les fournées anciennes gardent leur `id` déterministe (`backfill-…`, `mark-…`). */
   readonly id: string;
   readonly sku: string;
   readonly quantity: number;

@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { ulid } from "ulid";
 /**
  * E2E de la **fiche d'atelier** — ce que le fournil a à sortir, et ce qui l'est.
  *
@@ -130,11 +131,17 @@ async function worksheet(): Promise<ProductionWorksheetView> {
   );
 }
 
-async function mark(sku: string, initials: string, expected = 204): Promise<void> {
+/** Une fournée de `quantity` pièces, signée `initials`, sous un ULID tiré « par l'écran ». */
+async function bake(
+  sku: string,
+  quantity: number,
+  initials: string,
+  expected = 204,
+): Promise<void> {
   await ctx
     .asSub(STAFF)
-    .put(`/admin/production/worksheet/${SERVICE_DAY}/lines/${sku}/done`)
-    .send({ initials })
+    .put(`/admin/production/worksheet/${SERVICE_DAY}/lines/${sku}/batches/${ulid()}`)
+    .send({ quantity, initials })
     .expect(expected);
 }
 
@@ -170,10 +177,10 @@ describe("la fiche d'une journée OUVERTE", () => {
     });
   });
 
-  it("refuse de cocher : rien n'est arrêté, donc il n'y a rien à cocher", async () => {
+  it("refuse une fournée : rien n'est arrêté, donc il n'y a rien à sortir", async () => {
     await place(CROISSANT, 12);
 
-    await mark(CROISSANT, "MB", 409);
+    await bake(CROISSANT, 12, "MB", 409);
   });
 });
 
@@ -227,11 +234,11 @@ describe("la fiche d'une journée ARRÊTÉE", () => {
     expect(line.waitingOrders?.earliestHandover).toMatch(/^\d{2}:\d{2}$/u);
   });
 
-  it("montre la coche, ses initiales et son heure après un geste du fournil", async () => {
+  it("montre « faite », les initiales et l'heure de la fournée qui complète la ligne", async () => {
     await place(CROISSANT, 12);
     await closePlan();
 
-    await mark(CROISSANT, "MB");
+    await bake(CROISSANT, 12, "MB");
     const view = await worksheet();
 
     const line = lineOf(view, CROISSANT);
@@ -240,35 +247,11 @@ describe("la fiche d'une journée ARRÊTÉE", () => {
     expect(line.doneAt).not.toBeNull();
   });
 
-  it("enlève la coche quand on décoche — un doigt fariné n'est pas un incident", async () => {
-    await place(CROISSANT, 12);
-    await closePlan();
-    await ctx.drain();
-    await mark(CROISSANT, "MB");
-    await ctx.drain();
-
-    // Décocher une fournée remise DEMANDE un retour au colisage (K2) : la coche
-    // ne tombe qu'à sa réponse, qui arrive par la boîte d'envoi.
-    await ctx
-      .asSub(STAFF)
-      .delete(`/admin/production/worksheet/${SERVICE_DAY}/lines/${CROISSANT}/done`)
-      .expect(204);
-    for (let round = 0; round < 4; round += 1) {
-      await ctx.drain();
-    }
-
-    expect(lineOf(await worksheet(), CROISSANT)).toMatchObject({
-      done: false,
-      initials: null,
-      doneAt: null,
-    });
-  });
-
   it("refuse un SKU qui n'est pas au compte du jour", async () => {
     await place(CROISSANT, 12);
     await closePlan();
 
-    await mark("PAI-999-1", "MB", 404);
+    await bake("PAI-999-1", 1, "MB", 404);
   });
 });
 
@@ -299,13 +282,11 @@ describe("l'écart et le retirage", () => {
     // La journée est effacée puis recréée par `save` : c'est là que les coches
     // se perdraient, et le fournil referait ce qui est déjà sorti du four.
     //
-    // Depuis les fournées (plan `la-fiche-d-atelier.md`, D2, §5.4), la
-    // coche est une fournée de 12 : elle survit au retirage, mais 12 sur 18
-    // n'est plus « fait » — c'est ce que l'ancienne recopie de la coche
-    // cachait, et que le bandeau nommait.
+    // La fournée de 12 survit au retirage, mais 12 sur 18 n'est pas « fait » :
+    // « fait » se lit sur les fournées, jamais recopié du compte d'avant.
     await place(CROISSANT, 12);
     await closePlan();
-    await mark(CROISSANT, "MB");
+    await bake(CROISSANT, 12, "MB");
     await placeLate(CROISSANT, 6);
 
     const retake = jsonBody<ProductionWorksheetRetake>(
@@ -410,7 +391,7 @@ describe("les fiches par rayon", () => {
     await place(BAGUETTE, 30);
     await place(CROISSANT, 12);
     await closePlan();
-    await mark(BAGUETTE, "MB");
+    await bake(BAGUETTE, 30, "MB");
 
     const view = await worksheet();
 

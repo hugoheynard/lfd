@@ -116,14 +116,14 @@ fournées non annulées** ; aucun compteur tenu à côté.
   au colisage ([`../colisage/colisage.md`](../colisage/colisage.md)). Une
   fournée absente que l'agrégat a laissé passer est un défaut nommé
   (`production.batch.cancel_missing`).
-- **L'ancienne case** — `PUT|DELETE …/lines/:sku/done` restent servies :
-  cocher déclare une fournée du reste (`id` déterministe `mark-…`), décocher
-  annule les fournées de la ligne.
-- **La coche héritée** — une ligne de `production_count` cochée par l'ancien
-  poste (`done_at` non nul) et sans fournée compte comme une fournée implicite
-  de toute la quantité, en lecture. Tout geste qui change la quantité ou
-  déclare une fournée la matérialise d'abord (`id` `backfill-<jour>-<sku>`) ;
-  l'agrégat refuse de refaire le compte par-dessus une coche non matérialisée.
+- **« Faite » se lit sur les seules fournées** — `done`, `doneAt` et
+  `initials` d'une ligne sont ceux de la fournée qui l'a complétée. Il n'y a
+  plus de case à cocher : ni route, ni lecture de l'ancienne coche. Les
+  colonnes `production_count.done_at/done_by/done_initials` restent en base,
+  ni lues ni écrites, jusqu'à leur suppression. Les fournées d'`id`
+  `backfill-<jour>-<sku>` (le rattrapage des coches) et `mark-…` (l'ancienne
+  route) restent des fournées comme les autres : annulées, elles ne comptent
+  plus, et une journée dont toutes les fournées sont annulées se rouvre.
 - **Pas de journal d'activité** pour les fournées : une ligne datée et signée
   en tient lieu ([`../journalisation/todo-journal-activite.md`](../journalisation/todo-journal-activite.md)).
 
@@ -154,7 +154,8 @@ Le bandeau d'écart (`fiche-atelier/drift-banner/`) se lit sur les commandes que
 le commerce rend pour la journée, **moins celles que la journée porte déjà**
 (par `orderId`) : il annonce exactement ce que le geste absorbera. « Reprendre
 le tirage » (`POST …/worksheet/:date/retake`, `ProductionDay.retake`) absorbe
-ces commandes, refait le compte en matérialisant les coches héritées, signe
+ces commandes, refait le compte (ce qui est sorti vit dans les fournées, que
+le compte refait ne touche pas), signe
 `retaken_at` / `retaken_by`, publie `production.day_retaken` et renvoie le
 dossier complété. Une ligne déjà commencée dont la quantité change est nommée
 dans le bandeau avant le geste.
@@ -180,9 +181,10 @@ de diffusion commun.
 
 ## Reste à faire
 
-- Resserrer la bascule des fournées : rejouer le rattrapage, retirer la lecture
-  de la coche héritée, puis les colonnes `production_count.done_*` (routes
-  `…/done` comprises).
+- Supprimer les colonnes `production_count.done_at/done_by/done_initials`,
+  après le déploiement du code qui ne les lit plus (lot B de
+  [`plan-fin-des-coches.md`](plan-fin-des-coches.md)) ; l'entrée `done_by` sort
+  alors du registre RGPD.
 - Deux postes qui déclarent la même ligne dans le même quart de minute se
   croisent toujours : seule une diffusion en direct fermerait la fenêtre.
 - Non porté par le modèle, donc absent de l'écran : un taux de casse, un ordre

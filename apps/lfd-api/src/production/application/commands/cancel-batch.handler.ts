@@ -17,9 +17,7 @@ import { CancelBatchCommand } from "./cancel-batch.command.js";
  * entre la lecture et l'écriture rendrait ce refus faux. Verrou, PUIS relecture,
  * PUIS écriture — dans une seule unité de travail.
  *
- * Annuler une fournée déjà annulée est un succès silencieux. Annuler une coche
- * héritée (fournée implicite, §5.2) la matérialise d'abord : on n'annule pas
- * une ligne qui n'existe pas.
+ * Annuler une fournée déjà annulée est un succès silencieux.
  *
  * Une fournée déjà REMISE au colisage est reprise dans la même unité de
  * travail : une remise négative et `production.return_requested` (colisage,
@@ -34,7 +32,7 @@ import { CancelBatchCommand } from "./cancel-batch.command.js";
  * l'annule. Le contrat de la route reste servi tel quel — 204 —, et c'est sa
  * sémantique sur une journée `packing` : « retour demandé ».
  *
- * @sans-journal geste d'atelier, sous le même régime que la coche (plan, D7).
+ * @sans-journal geste d'atelier (plan, D7).
  */
 @CommandHandler(CancelBatchCommand)
 export class CancelBatchHandler implements ICommandHandler<CancelBatchCommand, void> {
@@ -56,7 +54,6 @@ export class CancelBatchHandler implements ICommandHandler<CancelBatchCommand, v
       if (target === null) {
         return;
       }
-      await this.batches.recordInherited(day, current.materialize(target.sku));
       const mark = { at: this.clock.now(), by: command.staffUserId };
       if (current.packingOwner === "packing") {
         for (const unhanded of await this.handoffs.requestReturns(day, [target], mark)) {

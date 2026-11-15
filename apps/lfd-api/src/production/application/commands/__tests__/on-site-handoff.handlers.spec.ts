@@ -12,8 +12,6 @@ import {
 import { handoffsOnDoubles } from "../../__tests__/handoff-doubles.js";
 import { CancelBatchCommand } from "../cancel-batch.command.js";
 import { CancelBatchHandler } from "../cancel-batch.handler.js";
-import { MarkWorksheetLineCommand } from "../mark-worksheet-line.command.js";
-import { MarkWorksheetLineHandler } from "../mark-worksheet-line.handler.js";
 import { RecordBatchCommand } from "../record-batch.command.js";
 import { RecordBatchHandler } from "../record-batch.handler.js";
 
@@ -85,7 +83,6 @@ function setup() {
       uow,
       handoffs.service,
     ),
-    mark: new MarkWorksheetLineHandler(days, store, clock, uow, handoffs.service),
     cancel: new CancelBatchHandler(
       days,
       store,
@@ -123,14 +120,6 @@ describe("la part du Labo monte directement", () => {
 
     expect(handedQuantities(ledger)).toEqual([[FIRST, 26]]);
     expect(durable.of(HANDED)).toHaveLength(1);
-  });
-
-  it("cocher la ligne déclare le reste, et n'en remet que la part du colisage", async () => {
-    const { mark, ledger } = setup();
-
-    await mark.execute(new MarkWorksheetLineCommand(DAY, SKU, "MB", "staff-1"));
-
-    expect(handedQuantities(ledger)).toEqual([[expect.any(String), 26]]);
   });
 
   it("annuler une fournée coupée ne redemande au colisage que ce qu'il a reçu", async () => {

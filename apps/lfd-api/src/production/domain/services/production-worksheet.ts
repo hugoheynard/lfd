@@ -2,7 +2,7 @@ import type { SaleUnit } from "@lfd/money";
 
 import type { ProducibleOrder } from "../../channels/commerce/day-orders.reader.js";
 import type { ProducedItemSnapshot, ProductionBatchSnapshot } from "../entities/production-day.js";
-import { activeBatchesOf, countedBatch, implicitBatchesOf, outputOf } from "./production-output.js";
+import { activeBatchesOf, countedBatch, outputOf } from "./production-output.js";
 import { driftOf } from "./production-worksheet-drift.js";
 import { byWeightThenName } from "./worksheet-order.js";
 
@@ -38,14 +38,14 @@ export interface DemandedItem {
 
 /** Ce que le handler pose sur la table. */
 export interface WorksheetSources {
-  /** `AAAA-MM-JJ` — l'`id` des fournées implicites en dépend (§5.2 des fournées). */
+  /** `AAAA-MM-JJ`. */
   readonly serviceDay: string;
   /** `null` = la journée n'est pas arrêtée. */
   readonly closedAt: Date | null;
   readonly retakenAt: Date | null;
   /** L'instantané. Vide et non pertinent tant que rien n'est arrêté. */
   readonly counts: readonly ProducedItemSnapshot[];
-  /** Les fournées réelles du jour, annulées comprises — les implicites se déduisent ici. */
+  /** Les fournées du jour, annulées comprises : « sorti » et « fait » se lisent sur elles. */
   readonly batches: readonly ProductionBatchSnapshot[];
   /** Ce que le commerce annonce pour ce jour — la source des journées ouvertes. */
   readonly demand: readonly DemandedItem[];
@@ -155,23 +155,16 @@ export function worksheetOf(sources: WorksheetSources): Worksheet {
   };
 }
 
-/**
- * Les fournées réelles — pour ce qu'elles comptent, rendus du colisage déduits
- * (K2) —, et les implicites des coches héritées (§5.2).
- */
+/** Les fournées, pour ce qu'elles comptent — rendus du colisage déduits (K2). */
 function effectiveBatches(sources: WorksheetSources): readonly ProductionBatchSnapshot[] {
-  return [
-    ...sources.batches.map(countedBatch),
-    ...implicitBatchesOf(sources.serviceDay, sources.counts, sources.batches),
-  ];
+  return sources.batches.map(countedBatch);
 }
 
 /**
  * Une ligne : sa quantité, ses fournées et leurs dérivés (D2), son contenant.
  *
- * `done`, `doneAt` et `initials` gardent leurs noms d'avant les fournées : ils
- * disent désormais « complète », et l'heure et la signature de la fournée qui
- * l'a complétée (§4).
+ * `done`, `doneAt` et `initials` se lisent sur les seules fournées : « complète »,
+ * puis l'heure et la signature de la fournée qui l'a complétée (§4).
  */
 function line(
   item: DemandedItem,

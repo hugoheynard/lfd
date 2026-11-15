@@ -31,7 +31,6 @@ import { RecordBatchHandler } from "../record-batch.handler.js";
  * Aucune comparaison à l'horloge ici : ces instants ne sont que recopiés.
  */
 const NOW = new Date("2026-09-13T05:10:00.000Z");
-const EARLIER = new Date("2026-09-13T04:40:00.000Z");
 const DAY = "2026-09-13";
 const SKU = "VIE-001";
 const FIRST = "01K6A0000000000000000000A1";
@@ -73,18 +72,6 @@ function closedDay(): ProductionDay {
   day.close(ORDERS, new Set<string>(), new Date("2026-09-13T04:20:00.000Z"), null);
   // L'ancien poste : depuis K2, une clôture naît au colisage.
   return legacyOf(day);
-}
-
-/** Cochée par l'ANCIEN binaire (`done_*`), sans aucune fournée : 30 implicites. */
-function legacyChecked(): ProductionDay {
-  const snapshot = closedDay().toSnapshot();
-  return ProductionDay.fromSnapshot({
-    ...snapshot,
-    counts: snapshot.counts.map((item) => ({
-      ...item,
-      done: { at: EARLIER, by: "auth0|karim", initials: "KA" },
-    })),
-  });
 }
 
 function setup(base: ProductionDay = closedDay()) {
@@ -187,20 +174,13 @@ describe("RecordBatchHandler", () => {
     );
   });
 
-  it("matérialise la coche héritée AVANT la première fournée réelle : 30 + 5", async () => {
-    // Sans ça, la fournée réelle effacerait la fournée implicite, et la ligne
-    // tomberait de 30 sortis à 5.
-    const { store, trace, record: handler } = setup(legacyChecked());
+  it("n'écrit que la fournée déclarée : la coche de l'ancien poste n'est plus lue", async () => {
+    const { store, trace, record: handler } = setup();
 
     await handler.execute(record(FIRST, 5));
 
-    expect(trace).toEqual([
-      `lock:${DAY}`,
-      "load",
-      `record:backfill-${DAY}-${SKU}`,
-      `record:${FIRST}`,
-    ]);
-    expect(store.batches.map((batch) => batch.quantity)).toEqual([30, 5]);
+    expect(trace).toEqual([`lock:${DAY}`, "load", `record:${FIRST}`]);
+    expect(store.batches.map((batch) => batch.quantity)).toEqual([5]);
   });
 });
 
@@ -231,15 +211,5 @@ describe("CancelBatchHandler", () => {
     await expect(
       setup().cancel.execute(new CancelBatchCommand(DAY, SECOND, "staff-3")),
     ).rejects.toBeInstanceOf(BatchNotFoundError);
-  });
-
-  it("annule une coche héritée en la matérialisant d'abord", async () => {
-    const { store, trace, cancel } = setup(legacyChecked());
-    const inherited = `backfill-${DAY}-${SKU}`;
-
-    await cancel.execute(new CancelBatchCommand(DAY, inherited, "staff-3"));
-
-    expect(trace).toEqual([`lock:${DAY}`, "load", `record:${inherited}`, `cancel:${inherited}`]);
-    expect(store.batches[0]?.cancelled).toEqual({ at: NOW, by: "staff-3" });
   });
 });

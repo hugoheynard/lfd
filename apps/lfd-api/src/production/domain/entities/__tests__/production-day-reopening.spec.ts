@@ -93,17 +93,23 @@ describe("ProductionDay.reopen", () => {
     expect(cancelled.reopen(NOTHING, REOPENED, "s1")).toHaveLength(2);
   });
 
-  it("refuse une ligne cochée par l'ancien poste", () => {
-    const snapshot = closedDay().toSnapshot();
-    const ticked = ProductionDay.fromSnapshot({
-      ...snapshot,
-      counts: snapshot.counts.map((item) => ({
-        ...item,
-        done: { at: RETAKEN, by: "s1", initials: "AB" },
-      })),
-    });
+  it("une ligne dont la fournée de rattrapage est annulée ne bloque plus la réouverture", () => {
+    // La coche de l'ancien poste n'est plus lue : seule une fournée non
+    // annulée dit « cuit », et celle du rattrapage, annulée, ne compte plus.
+    const day = closedDay();
+    const snapshot = day.toSnapshot();
+    const backfill = {
+      id: `backfill-${snapshot.serviceDay}-PAI-SEI`,
+      sku: "PAI-SEI",
+      quantity: 30,
+      recorded: { at: RETAKEN, by: "s1", initials: "AB" },
+      cancelled: { at: RETAKEN, by: "s1" },
+      returned: 0,
+      pendingReturn: 0,
+    };
+    const cancelled = ProductionDay.fromSnapshot({ ...snapshot, batches: [backfill] });
 
-    expect(() => ticked.reopen(NOTHING, REOPENED, "s1")).toThrow(ReopenAfterBatchesError);
+    expect(cancelled.reopen(NOTHING, REOPENED, "s1")).toHaveLength(2);
   });
 
   it("refuse quand le colisage a commencé", () => {

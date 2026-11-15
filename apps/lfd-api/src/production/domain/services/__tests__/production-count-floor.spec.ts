@@ -7,7 +7,6 @@ const item = (sku: string, quantity: number, productName = `Article ${sku}`) => 
   productName,
   quantity,
   saleUnit: "piece" as const,
-  done: null,
 });
 
 describe("floorCounts", () => {
@@ -22,10 +21,8 @@ describe("floorCounts", () => {
     expect(floorCounts([item("A", 10)], [item("B", 2)])).toEqual([item("A", 10), item("B", 2)]);
   });
 
-  it("trie par SKU et efface toute coche héritée", () => {
-    const marked = { ...item("B", 3), done: { at: new Date(0), by: "s", initials: "" } };
-
-    expect(floorCounts([marked], [item("A", 1)])).toEqual([item("A", 1), item("B", 3)]);
+  it("trie par SKU", () => {
+    expect(floorCounts([item("B", 3)], [item("A", 1)])).toEqual([item("A", 1), item("B", 3)]);
   });
 
   it("prend le nom du compte refait quand il connaît l'article", () => {

@@ -1,4 +1,3 @@
-import { InMemoryBatches } from "../../__tests__/batch-doubles.js";
 import { RecordingDurable } from "../../__tests__/handoff-doubles.js";
 import { SavedDays } from "../../__tests__/revision-desk-doubles.js";
 import { producibleOrder } from "../../../channels/commerce/__tests__/producible-order.fixture.js";
@@ -16,7 +15,6 @@ function retaken() {
   const day = ProductionDay.open(DAY);
   day.close([producibleOrder()], new Set<string>(), CLOSED_AT, null);
   const before = day.orders;
-  const inherited = day.materialize();
   const absorbed = day.retake(
     [producibleOrder(), producibleOrder("ord_2")],
     new Set<string>(),
@@ -24,21 +22,17 @@ function retaken() {
     "staff-1",
     null,
   );
-  return { day, before, inherited, absorbed };
+  return { day, before, absorbed };
 }
 
 describe("écrire un retirage", () => {
-  it("écrit les fournées héritées, puis la journée, puis la liste des seules arrivées et le fait du retirage", async () => {
+  it("écrit la journée, puis la liste des seules arrivées et le fait du retirage", async () => {
     const trace: string[] = [];
     const durable = new RecordingDurable(trace);
-    const recording = new RetakeRecording(
-      new SavedDays(ProductionDay.open(DAY), trace),
-      new InMemoryBatches(trace),
-      durable,
-    );
-    const { day, before, inherited, absorbed } = retaken();
+    const recording = new RetakeRecording(new SavedDays(ProductionDay.open(DAY), trace), durable);
+    const { day, before, absorbed } = retaken();
 
-    await recording.record({ day: DAY, before, current: day, inherited, at: RETAKEN_AT, absorbed });
+    await recording.record({ day: DAY, before, current: day, at: RETAKEN_AT, absorbed });
 
     expect(trace).toEqual([
       "save",

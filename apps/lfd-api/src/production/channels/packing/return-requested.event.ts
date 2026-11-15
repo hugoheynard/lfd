@@ -6,8 +6,8 @@ import { instantOf, piecesOf, textOf } from "../payload-fields.js";
 export const PRODUCTION_RETURN_REQUESTED = "production.return_requested";
 
 /**
- * **Le fournil reprend des pièces qu'il avait remises** — l'annulation ou la
- * décoche d'une fournée déjà remise (plan
+ * **Le fournil reprend des pièces qu'il avait remises** — l'annulation d'une
+ * fournée déjà remise (plan
  * `documentation/colisage/colisage.md`, §12.1, §13, B2).
  *
  * ## `legacy`, et ce que le colisage en fait

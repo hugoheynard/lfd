@@ -12,12 +12,8 @@ import {
 import { handoffsOnDoubles } from "../../__tests__/handoff-doubles.js";
 import { CancelBatchCommand } from "../cancel-batch.command.js";
 import { CancelBatchHandler } from "../cancel-batch.handler.js";
-import { MarkWorksheetLineCommand } from "../mark-worksheet-line.command.js";
-import { MarkWorksheetLineHandler } from "../mark-worksheet-line.handler.js";
 import { RecordBatchCommand } from "../record-batch.command.js";
 import { RecordBatchHandler } from "../record-batch.handler.js";
-import { UnmarkWorksheetLineCommand } from "../unmark-worksheet-line.command.js";
-import { UnmarkWorksheetLineHandler } from "../unmark-worksheet-line.handler.js";
 
 /**
  * **La remise au colisage** (plan `colisage/colisage.md`, K1 :
@@ -31,7 +27,6 @@ const EARLIER = new Date("2026-09-13T04:40:00.000Z");
 const DAY = "2026-09-13";
 const SKU = "VIE-001";
 const FIRST = "01K6A0000000000000000000A1";
-const SECOND = "01K6A0000000000000000000B2";
 const HANDED = "production.handed_to_packing";
 const RETURNED = "production.return_requested";
 
@@ -57,18 +52,6 @@ function closedDay(): ProductionDay {
   return legacyOf(day);
 }
 
-/** Cochée par l'ANCIEN binaire, sans fournée : 30 implicites. */
-function legacyChecked(): ProductionDay {
-  const snapshot = closedDay().toSnapshot();
-  return ProductionDay.fromSnapshot({
-    ...snapshot,
-    counts: snapshot.counts.map((item) => ({
-      ...item,
-      done: { at: EARLIER, by: "auth0|karim", initials: "KA" },
-    })),
-  });
-}
-
 function setup(base: ProductionDay = closedDay()) {
   const store = new InMemoryBatches();
   const days = new BatchBackedDays(base, store);
@@ -82,8 +65,6 @@ function setup(base: ProductionDay = closedDay()) {
     durable: handoffs.durable,
     record: new RecordBatchHandler(days, store, lock, clock, uow, handoffs.service),
     cancel: new CancelBatchHandler(days, store, lock, clock, uow, handoffs.service),
-    mark: new MarkWorksheetLineHandler(days, store, clock, uow, handoffs.service),
-    unmark: new UnmarkWorksheetLineHandler(days, store, lock, clock, uow, handoffs.service),
   };
 }
 
@@ -133,15 +114,6 @@ describe("déclarer une fournée, c'est la remettre au colisage", () => {
     expect(durable.of(HANDED)).toHaveLength(1);
   });
 
-  it("ne remet JAMAIS la coche héritée qu'elle matérialise", async () => {
-    const { record: handler, store, ledger } = setup(legacyChecked());
-
-    await handler.execute(record(FIRST, 5));
-
-    expect(store.batches.map((batch) => batch.id)).toEqual([`backfill-${DAY}-${SKU}`, FIRST]);
-    expect(ledger.handoffs.map((handoff) => handoff.id)).toEqual([FIRST]);
-  });
-
   it("le rejeu d'une fournée ANNULÉE ne la remet pas : elle ne compte plus", async () => {
     const { record: handler, store, ledger, durable } = setup();
     await store.record(ServiceDay.of(DAY), {
@@ -158,25 +130,6 @@ describe("déclarer une fournée, c'est la remettre au colisage", () => {
 
     expect(ledger.handoffs).toEqual([]);
     expect(durable.facts).toEqual([]);
-  });
-
-  it("cocher la ligne remet la fournée du RESTE", async () => {
-    const { mark, ledger, durable } = setup();
-
-    await mark.execute(new MarkWorksheetLineCommand(DAY, SKU, "MB", "staff-1"));
-
-    const id = `mark-${DAY}-${SKU}-0-0`;
-    expect(ledger.handoffs.map((handoff) => [handoff.id, handoff.quantity])).toEqual([[id, 30]]);
-    expect(durable.of(HANDED).map((fact) => fact.key)).toEqual([`${HANDED}:${id}`]);
-  });
-
-  it("cocher une ligne déjà complète ne remet rien", async () => {
-    const { record: handler, mark, ledger } = setup();
-    await handler.execute(record(FIRST, 30));
-
-    await mark.execute(new MarkWorksheetLineCommand(DAY, SKU, "MB", "staff-1"));
-
-    expect(ledger.handoffs.map((handoff) => handoff.id)).toEqual([FIRST]);
   });
 });
 
@@ -241,24 +194,5 @@ describe("annuler une fournée remise, c'est la reprendre (journée `legacy`)", 
     await cancel.execute(new CancelBatchCommand(DAY, FIRST, "staff-3"));
 
     expect(durable.of(RETURNED)).toHaveLength(1);
-  });
-
-  it("décocher reprend chaque fournée remise de la ligne, et elles seules", async () => {
-    const { store, record: handler, unmark, durable } = setup();
-    await store.record(ServiceDay.of(DAY), {
-      id: SECOND,
-      sku: SKU,
-      quantity: 4,
-      recorded: { at: EARLIER, by: "staff-1", initials: "MB" },
-      cancelled: null,
-      returned: 0,
-      pendingReturn: 0,
-    });
-    await handler.execute(record(FIRST, 12));
-
-    await unmark.execute(new UnmarkWorksheetLineCommand(DAY, SKU, "staff-9"));
-
-    expect(store.batches.every((batch) => batch.cancelled !== null)).toBe(true);
-    expect(durable.of(RETURNED).map((fact) => fact.key)).toEqual([`${RETURNED}:return-${FIRST}`]);
   });
 });

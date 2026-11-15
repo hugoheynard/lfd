@@ -24,7 +24,7 @@ import {
 } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 import { binTypeId } from "./delivery-loading-scene.js";
-import { coliseOrder } from "./production-day-fixture.js";
+import { coliseOrder, completeLine } from "./production-day-fixture.js";
 import { openQualityControl } from "./quality-control-settings.js";
 
 const MEMBER = "auth0|member-quality-hold";
@@ -155,10 +155,7 @@ async function seedDay() {
   const delivery = await place([{ sku: CROISSANT, quantity: 6 }], "delivery");
   await staff().post(`/admin/production/batch/${DAY}/close`).expect(201);
   // Un bac ne se remplit que de ce qui est sorti du four : la fournée d'abord.
-  await staff()
-    .put(`/admin/production/worksheet/${DAY}/lines/${CROISSANT}/done`)
-    .send({ initials: "KA" })
-    .expect(204);
+  expect(await completeLine(ctx, CROISSANT, DAY, E2E_STAFF_SUB)).toBe(204);
   // Depuis K2, la journée naît au colisage : la liste à coliser et la remise
   // lui arrivent par la boîte d'envoi, hors de la requête.
   await ctx.drain();

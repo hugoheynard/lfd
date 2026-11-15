@@ -17,7 +17,7 @@ import type { PrismaClient } from "../../platform/database/client/client.js";
 import { withSaleSkus } from "./sale-references.seed.js";
 import { AllocateToContainerCommand } from "../../packing/application/containers/allocate-to-container.command.js";
 import { OpenPackingContainerCommand } from "../../packing/application/containers/open-packing-container.command.js";
-import { MarkWorksheetLineCommand } from "../../production/application/commands/mark-worksheet-line.command.js";
+import { RecordBatchCommand } from "../../production/application/commands/record-batch.command.js";
 import { ClosePackingOrderCommand } from "../../packing/application/station/close-packing-order.command.js";
 import { acceptedSalesTermsFor } from "./accepted-sales-terms.seed.js";
 import { carnetWindowOf } from "./carnet-window.seed.js";
@@ -44,8 +44,33 @@ const MINUTES_PER_HOUR = 60;
  */
 export const SEED_STAFF_SUB = "seed|dev";
 
-/** Les initiales du semis sur les coches — deux lettres, comme au crayon. */
+/** Les initiales du semis sur les fournées — deux lettres, comme au crayon. */
 export const SEED_INITIALS = "SD";
+
+/**
+ * **Toute la ligne en une fournée**, comme l'atelier la déclare quand tout
+ * sort d'un coup : « faite » se lit sur les fournées, et le semis en pose une
+ * de la quantité du compte.
+ *
+ * L'identifiant est déterministe et porte la quantité : rejouer le semis sur
+ * la même ligne est un rejeu de la même fournée (succès silencieux), et un
+ * compte qui a changé entre deux semis donne une autre fournée plutôt qu'un
+ * conflit de charge.
+ */
+export function wholeBatchOf(
+  serviceDay: string,
+  sku: string,
+  quantity: number,
+): RecordBatchCommand {
+  return new RecordBatchCommand(
+    serviceDay,
+    sku,
+    `seed-${serviceDay}-${sku}-${String(quantity)}`,
+    quantity,
+    SEED_INITIALS,
+    SEED_STAFF_SUB,
+  );
+}
 
 /** Le minimum dont le semis de commandes a besoin : la base, le bus, et de quoi dater. */
 export interface SeedContext {
@@ -405,8 +430,19 @@ const UNSEEN_TOTAL_CENTS = Number.MAX_SAFE_INTEGER;
 /** Un sac : le contenant d'un retrait, qui naît et vit au colisage. */
 export const ONE_BAG: readonly OpenPackingContainer[] = [{ nature: "bag" }];
 
+/** Toute la ligne du compte en une fournée ; rien si l'article n'y est pas. */
+async function bakeWholeLine(context: SeedContext, serviceDay: string, sku: string): Promise<void> {
+  const count = await context.prisma.productionCount.findFirst({
+    where: { serviceDay, sku },
+    select: { quantity: true },
+  });
+  if (count !== null) {
+    await context.commands.execute(wholeBatchOf(serviceDay, sku, count.quantity));
+  }
+}
+
 /**
- * **La commande, faite comme au fournil** : chaque produit coché en fournée
+ * **La commande, faite comme au fournil** : chaque produit sorti en une fournée
  * (une fois par jour), ses contenants ouverts au colisage, chaque ligne glissée
  * dedans, la commande déclarée prête. Lu dans la liste à coliser : ce sont SES
  * lignes qu'on pose, pas celles du panier.
@@ -416,9 +452,8 @@ export const ONE_BAG: readonly OpenPackingContainer[] = [{ nature: "bag" }];
  * chez la livraison ; un retrait, un sac. Une commande `counted` n'est plus
  * colisable — le semis n'en produit pas.
  *
- * @param baked les produits déjà cochés en fournée ce jour — PARTAGÉ entre le
- *   comptoir et la livraison du même jour : une ligne de fournée ne se coche
- *   qu'une fois.
+ * @param baked les produits déjà sortis en fournée ce jour — PARTAGÉ entre le
+ *   comptoir et la livraison du même jour : une ligne ne sort qu'une fois.
  * @param containers les contenants à ouvrir, dans l'ordre ; les lignes s'y
  *   répartissent une par une, à tour de rôle.
  */
@@ -435,9 +470,7 @@ export async function packFully(
   });
   for (const { sku } of lines) {
     if (!baked.has(sku)) {
-      await context.commands.execute(
-        new MarkWorksheetLineCommand(serviceDay, sku, SEED_INITIALS, SEED_STAFF_SUB),
-      );
+      await bakeWholeLine(context, serviceDay, sku);
       baked.add(sku);
     }
   }

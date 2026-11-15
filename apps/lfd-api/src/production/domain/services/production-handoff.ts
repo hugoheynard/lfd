@@ -36,9 +36,9 @@ export function returnRequestIdOf(batchId: string): string {
 /**
  * La remise d'une fournée déclarée — son `id`, sa quantité, son geste.
  *
- * ⚠️ Jamais pour une fournée implicite (coche héritée) : elles n'existent que
- * sur des journées d'avant les fournées (§13, B3). C'est l'appelant qui ne
- * passe que la fournée qu'il vient de DÉCLARER, pas celles qu'il matérialise.
+ * ⚠️ Seulement pour la fournée que l'appelant vient de DÉCLARER : celles du
+ * rattrapage (`backfill-…`) datent d'avant les fournées et n'ont jamais été
+ * remises (§13, B3).
  */
 export function handoffOf(
   batch: ProductionBatchSnapshot,

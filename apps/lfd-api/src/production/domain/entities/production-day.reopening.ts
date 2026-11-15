@@ -3,7 +3,7 @@ import {
   ReopenAfterDispatchError,
   ReopenAfterPackingError,
 } from "../errors/reopening-errors.js";
-import type { ProducedItemSnapshot, ProductionBatchSnapshot } from "./production-day.snapshot.js";
+import type { ProductionBatchSnapshot } from "./production-day.snapshot.js";
 
 /**
  * **Ce qui a commencé en aval du plan**, tel que le colisage et la livraison
@@ -23,22 +23,18 @@ export interface DownstreamProgress {
  * Refuse une réouverture dès que quelque chose s'appuie sur le plan.
  *
  * Les fournées sont lues ANNULÉES EXCLUES : une fournée saisie par erreur
- * puis annulée n'a rien sorti du four. Une coche de l'ancien poste (`done`)
- * compte comme une fournée — c'est ce qu'elle est (§5.3 des fournées).
+ * puis annulée n'a rien sorti du four. « Cuit » se lit sur les seules
+ * fournées : la coche de l'ancien poste n'est plus lue.
  *
  * @throws {ReopenAfterBatchesError} @throws {ReopenAfterPackingError}
  * @throws {ReopenAfterDispatchError}
  */
 export function assertReopenable(
   serviceDay: string,
-  counts: readonly ProducedItemSnapshot[],
   batches: readonly ProductionBatchSnapshot[],
   progress: DownstreamProgress,
 ): void {
-  const baked =
-    batches.some((batch) => batch.cancelled === null) ||
-    counts.some((count) => count.done !== null);
-  if (baked) {
+  if (batches.some((batch) => batch.cancelled === null)) {
     throw new ReopenAfterBatchesError(serviceDay);
   }
   if (progress.packingStarted) {

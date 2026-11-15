@@ -23,7 +23,7 @@ import {
 } from "../../../domain/errors/resupply-launch-errors.js";
 import { ProductionDayRepository } from "../../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
-import { InMemoryBatches, RecordingDayLock } from "../../__tests__/batch-doubles.js";
+import { RecordingDayLock } from "../../__tests__/batch-doubles.js";
 import { RecordingDurable } from "../../__tests__/handoff-doubles.js";
 import { DayResupplies } from "../../__tests__/settings-doubles.js";
 import { InMemoryWithdrawals } from "../../__tests__/withdrawal-doubles.js";
@@ -119,7 +119,7 @@ function subject(day: ProductionDay, orders: readonly ProducibleOrder[] = [ORDER
       new Commerce(orders, trace),
       new InMemoryWithdrawals(trace),
     ),
-    new ResupplyLaunchRecording(days, new InMemoryBatches(), durable),
+    new ResupplyLaunchRecording(days, durable),
     events,
   );
   return { handler, days, resupplies, events, durable, trace };

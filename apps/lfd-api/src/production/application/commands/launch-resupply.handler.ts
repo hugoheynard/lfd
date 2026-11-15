@@ -45,11 +45,8 @@ export class LaunchResupplyHandler implements ICommandHandler<LaunchResupplyComm
     await this.uow.run(async () => {
       await this.lock.lock(day);
       const { current, resupply, pending } = await this.reading.underLock(day, command.resupplyId);
-      // Les coches héritées sont matérialisées AVANT : le compte se refait, et
-      // une coche de l'ancien poste y serait perdue (§5.3 des fournées).
-      const inherited = current.materialize();
       const openedPlan = current.launchResupply(resupply, gesture, pending);
-      await this.recording.record({ day, current, resupply, gesture, inherited, openedPlan });
+      await this.recording.record({ day, current, resupply, gesture, openedPlan });
       await this.events.publishTraced(
         new ProductionResupplyLaunchedJournalEvent(day.value, resupply, openedPlan),
       );

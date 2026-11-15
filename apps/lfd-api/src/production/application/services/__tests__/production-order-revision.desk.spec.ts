@@ -8,7 +8,7 @@ import {
 import { ProductionDay } from "../../../domain/entities/production-day.js";
 import { RevisedOrderInscribedElsewhereError } from "../../../domain/errors/order-revision-errors.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
-import { InMemoryBatches, RecordingDayLock } from "../../__tests__/batch-doubles.js";
+import { RecordingDayLock } from "../../__tests__/batch-doubles.js";
 import { RecordingDurable } from "../../__tests__/handoff-doubles.js";
 import { SavedDays } from "../../__tests__/revision-desk-doubles.js";
 import {
@@ -38,7 +38,6 @@ function subject(
   const trace: string[] = [];
   const notices = new InMemoryRevisionNotices();
   const days = new SavedDays(plan, trace);
-  const batches = new InMemoryBatches(trace);
   const events = new RecordingPublisher();
   const durable = new RecordingDurable(trace);
   const desk = new ProductionOrderRevisionDesk(
@@ -48,11 +47,10 @@ function subject(
     new FixedClock(NOW),
     new DirectUnitOfWork(),
     days,
-    batches,
     events,
     durable,
   );
-  return { desk, trace, notices, days, batches, events, durable };
+  return { desk, trace, notices, days, events, durable };
 }
 
 describe("ProductionOrderRevisionDesk", () => {
@@ -100,8 +98,8 @@ describe("ProductionOrderRevisionDesk", () => {
   });
 });
 
-/** Une journée arrêtée avec une commande `ord_1` de 10 baguettes ; une coche héritée si `marked`. */
-function closedPlan(marked = false): ProductionDay {
+/** Une journée arrêtée avec une commande `ord_1` de 10 baguettes. */
+function closedPlan(): ProductionDay {
   const open = ProductionDay.open(EARLY);
   open.close(
     [
@@ -115,13 +113,7 @@ function closedPlan(marked = false): ProductionDay {
     NOW,
     null,
   );
-  const snapshot = open.toSnapshot();
-  return ProductionDay.fromSnapshot({
-    ...snapshot,
-    counts: snapshot.counts.map((item) =>
-      marked ? { ...item, done: { at: NOW, by: "staff_four", initials: "" } } : item,
-    ),
-  });
+  return ProductionDay.fromSnapshot(open.toSnapshot());
 }
 
 const INSCRIBED = new Map([["ord_1", EARLY.value]]);
@@ -168,15 +160,6 @@ describe("ProductionOrderRevisionDesk — plan A2, `staff_quantities`", () => {
     expect(days.day.counts[0]?.quantity).toBe(10);
     expect(events.factTypes()).toEqual([]);
     expect(durable.facts).toEqual([]);
-  });
-
-  it("matérialise d'abord les coches héritées, et les écrit en fournées", async () => {
-    const { desk, days, batches } = subject(INSCRIBED, closedPlan(true));
-
-    await desk.note([EARLY], "ord_1", 3, [{ sku: "BAG", quantity: 12 }], "staff_quantities");
-
-    expect(batches.batches.map((batch) => [batch.sku, batch.quantity])).toEqual([["BAG", 10]]);
-    expect(days.day.counts[0]?.done).toBeNull();
   });
 
   it("deux journées (la date change) : « inscribed », rien n'est relu ni écrit", async () => {

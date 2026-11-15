@@ -252,16 +252,11 @@ model ProductionCount {
   /// `piece` ou `weight` (CHECK), P6 de `pricing/vente-au-poids.md`.
   saleUnit    String @default("piece") @map("sale_unit")
 
-  /// **La ligne est sortie du four**, telle que le fournil la constate.
-  ///
-  /// Trois colonnes qui vont ensemble, comme `packed_at` / `packed_by` sur la
-  /// commande : un instant sans auteur ne se conteste pas, il s'efface. Les
-  /// initiales, elles, peuvent manquer sur une ligne pourtant faite — on coche
-  /// d'abord, on signe si on veut — d'où le `""` par défaut plutôt qu'un
-  /// troisième nullable qui laisserait croire à un quatrième état.
-  ///
-  /// `done_at = null` est le seul état « pas fait ». L'agrégat ne produit
-  /// jamais un auteur sans instant.
+  /// **L'ancienne coche de la ligne — ni lue ni écrite.** « Fait » se lit sur
+  /// les seules fournées (`production_batch`) ; l'auteur d'une coche y est
+  /// porté par `recorded_by`. Les trois colonnes restent en base, inutilisées,
+  /// jusqu'à leur suppression (`documentation/fournil/la-fiche-d-atelier.md`) :
+  /// l'image précédente, en service pendant le déploiement, les lit encore.
   doneAt       DateTime? @map("done_at")
   doneBy       String?   @map("done_by")
   doneInitials String    @default("") @map("done_initials")
@@ -279,8 +274,9 @@ model ProductionCount {
 /// qui, ni quand, ni quoi annuler.
 ///
 /// L'`id` vient du CLIENT (ULID) : un double appui ou une requête rejouée ne
-/// compte pas deux fois. Les `id` en `backfill-…` et `mark-…` sont écrits par le
-/// serveur (rattrapage, coche héritée) et sont déterministes pour la même raison.
+/// compte pas deux fois. Les `id` en `backfill-…` et `mark-…` ont été écrits par le
+/// serveur (le rattrapage, l'ancienne route de la coche), déterministes pour la
+/// même raison ; plus rien ne les écrit.
 ///
 /// Jamais supprimée : une erreur de saisie s'ANNULE, tracée par
 /// `cancelled_at` / `cancelled_by` (deux ensemble, tenu par un CHECK).
@@ -298,7 +294,7 @@ model ProductionBatch {
   recordedAt DateTime @map("recorded_at") @db.Timestamptz(6)
   /// La fiche staff qui a déclaré, figée. Elle ne vient jamais de la charge.
   recordedBy String   @map("recorded_by")
-  /// Vides autorisées, comme sur la coche : on déclare d'abord, on signe si on veut.
+  /// Vides autorisées : on déclare d'abord, on signe si on veut.
   initials   String   @default("")
 
   cancelledAt DateTime? @map("cancelled_at") @db.Timestamptz(6)
@@ -312,8 +308,8 @@ model ProductionBatch {
 /// **Une remise au colisage** — ce que le fournil a transféré au colisage, ou
 /// repris (`documentation/colisage/colisage.md`, §10.3, §11.2,
 /// §13). La remise EST la sortie du four : une fournée déclarée en écrit une,
-/// d'`id` = l'`id` de la fournée. Une fournée implicite (coche héritée) n'en
-/// écrit JAMAIS.
+/// d'`id` = l'`id` de la fournée. Une fournée du rattrapage (`backfill-…`) n'en
+/// a JAMAIS.
 ///
 /// `quantity` est SIGNÉE : positive pour une remise, négative pour un retour
 /// accepté. La part encore annulable par le fournil se calculera
@@ -348,7 +344,7 @@ model ProductionHandoff {
 
 /// **Une demande de retour au colisage**, sur une journée `packing` (plan
 /// `documentation/colisage/colisage.md`, K2, §13 B2). L'annulation
-/// ou la décoche d'une fournée remise ne baisse pas « sorti » : elle écrit ici,
+/// d'une fournée remise ne baisse pas « sorti » : elle écrit ici,
 /// et publie `production.return_requested`. Seule la réponse (`packing.returned`)
 /// la clôt — `answered_at` et `returned` ensemble (CHECK) — et fait baisser
 /// « sorti » de `returned`.

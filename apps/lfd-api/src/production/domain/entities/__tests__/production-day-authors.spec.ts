@@ -46,7 +46,7 @@ describe("ProductionDay — les commandes retirées par l'annulation staff", () 
 
     expect(day.orders.map((frozen) => frozen.orderId)).toEqual(["ord_1"]);
     expect(day.counts).toEqual([
-      { sku: "VIE-001", productName: "Croissant", quantity: 40, saleUnit: "piece", done: null },
+      { sku: "VIE-001", productName: "Croissant", quantity: 40, saleUnit: "piece" },
     ]);
   });
 

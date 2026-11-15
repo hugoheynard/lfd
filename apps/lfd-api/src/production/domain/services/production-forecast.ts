@@ -5,13 +5,10 @@ import type { ServiceRange } from "../value-objects/service-range.value-object.j
 /**
  * Un article et son poids, pour un mur de planning.
  *
- * ⚠️ **Il ne réutilise plus `ProducedItemSnapshot`**, et c'est un resserrement,
- * pas une duplication (2026-09-13). Depuis que le compte à produire porte la
- * COCHE du fournil, ce type-là dit deux choses : ce qu'il y a à fabriquer, et
- * ce qui est déjà sorti. Le prévisionnel ne sait rien de la seconde et n'a rien
- * à en faire — une demande encore ouverte n'a personne pour la cocher. Le lui
- * servir obligeait à poser un `done: null` dans chaque lecture, c'est-à-dire à
- * inventer « pas fait » pour des journées qui n'ont même pas de tirage.
+ * ⚠️ **Il ne réutilise pas `ProducedItemSnapshot`**, et c'est voulu : celui-ci
+ * est la ligne du compte d'une journée ARRÊTÉE, celui-là une demande encore
+ * ouverte, sans tirage. Deux notions qui divergeront ne partagent pas leur
+ * type.
  */
 export interface DemandItem {
   readonly sku: string;

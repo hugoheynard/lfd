@@ -30,7 +30,6 @@ import {
   bootstrapProductionDay,
   cancelBatch,
   closePlan,
-  markLine,
   packing,
   place,
   recordBatch,
@@ -219,32 +218,5 @@ describe("le colisage puise dans ce qui est sorti (D4)", () => {
     expect(await bagOf(second)).toBe(409);
     await recordBatch(ctx, SECOND, 12);
     expect(await bagOf(second)).toBe(204);
-  });
-});
-
-describe("l'ancienne case, traduite", () => {
-  it("cocher rejoué sur une ligne complète est un succès sans effet", async () => {
-    await twoBagsOfTwelve();
-
-    expect(await markLine(ctx)).toBe(204);
-    expect(await markLine(ctx)).toBe(204);
-
-    expect(await storedBatches(ctx)).toHaveLength(1);
-    expect(await worksheetLine(ctx)).toMatchObject({ produced: 24, done: true, initials: "MB" });
-  });
-
-  it("🔴 décocher ce qui est au bac : le colisage n'en rend que le reste", async () => {
-    const [first] = await twoBagsOfTwelve();
-    await markLine(ctx);
-    expect(await bagOf(first)).toBe(204);
-
-    await ctx
-      .asSub(STAFF)
-      .delete(`/admin/production/worksheet/${SERVICE_DAY}/lines/${CROISSANT}/done`)
-      .expect(204);
-    await settle();
-
-    // 24 sortis, 12 dans un sac : le colisage rend 12, la fiche en garde 12.
-    expect((await worksheetLine(ctx)).produced).toBe(12);
   });
 });

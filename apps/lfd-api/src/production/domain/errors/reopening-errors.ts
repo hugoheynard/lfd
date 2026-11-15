@@ -9,7 +9,7 @@ import { BusinessError } from "../../../platform/shared/errors/app-error.js";
  * Rouvrir effacerait le plan sur lequel ce travail s'appuie.
  */
 
-/** Une fournée de la journée est déclarée (ou une ligne cochée par l'ancien poste). */
+/** Une fournée non annulée de la journée est déclarée. */
 export class ReopenAfterBatchesError extends BusinessError {
   constructor(serviceDay: string) {
     super(

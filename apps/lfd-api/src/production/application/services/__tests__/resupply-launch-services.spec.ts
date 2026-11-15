@@ -7,7 +7,6 @@ import { producibleOrder } from "../../../channels/commerce/__tests__/producible
 import { NOTHING_PENDING, ProductionDay } from "../../../domain/entities/production-day.js";
 import { ResupplyToLaunchNotFoundError } from "../../../domain/errors/resupply-launch-errors.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
-import { InMemoryBatches } from "../../__tests__/batch-doubles.js";
 import { RecordingDurable } from "../../__tests__/handoff-doubles.js";
 import { FixedDayOrders } from "../../__tests__/plan-intake-doubles.js";
 import { SavedDays } from "../../__tests__/revision-desk-doubles.js";
@@ -111,12 +110,11 @@ describe("ce que le lancement lit sous le verrou", () => {
 });
 
 describe("écrire un lancement", () => {
-  it("écrit les fournées héritées, puis la journée, puis le seul fait du lancement", async () => {
+  it("écrit la journée, puis le seul fait du lancement", async () => {
     const trace: string[] = [];
     const durable = new RecordingDurable(trace);
     const recording = new ResupplyLaunchRecording(
       new SavedDays(ProductionDay.open(DAY), trace),
-      new InMemoryBatches(trace),
       durable,
     );
     const current = ProductionDay.open(DAY);
@@ -128,7 +126,6 @@ describe("écrire un lancement", () => {
       current,
       resupply: ASAP,
       gesture,
-      inherited: [],
       openedPlan,
     });
 

@@ -61,14 +61,11 @@ export const DAY_COLUMNS = {
       productName: true,
       quantity: true,
       saleUnit: true,
-      doneAt: true,
-      doneBy: true,
-      doneInitials: true,
     },
     orderBy: { sku: "asc" },
   },
-  // Annulées comprises : « aucune fournée » (qui décide d'une fournée
-  // implicite, §5.2 des fournées) se lit annulées comprises.
+  // Annulées comprises : annuler une fournée déjà annulée est un succès
+  // silencieux, qui se lit sur la fournée elle-même.
   batches: { select: BATCH_COLUMNS, orderBy: [{ recordedAt: "asc" }, { id: "asc" }] },
   // Les retours demandés au colisage (K2) : ce qu'il a rendu, ce qui attend.
   returns: {
@@ -144,11 +141,5 @@ function countOf(count: DayRow["counts"][number]): ProductionDaySnapshot["counts
     productName: count.productName,
     quantity: count.quantity,
     saleUnit: productionSaleUnitOf(count.sku, count.saleUnit),
-    // `doneAt` seul décide : c'est la colonne nullable, et les initiales ont
-    // un défaut vide. Une ligne faite sans signature reste une ligne faite.
-    done:
-      count.doneAt === null || count.doneBy === null
-        ? null
-        : { at: count.doneAt, by: count.doneBy, initials: count.doneInitials },
   };
 }

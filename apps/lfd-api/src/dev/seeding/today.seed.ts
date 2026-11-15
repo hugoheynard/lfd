@@ -2,7 +2,7 @@ import { DEFAULT_RESUPPLY_CUTOFF_TIME } from "@lfd/contracts";
 
 import type { DayComposer } from "../../delivery/application/day-composer.js";
 import { CloseProductionDayCommand } from "../../production/application/commands/close-production-day.command.js";
-import { MarkWorksheetLineCommand } from "../../production/application/commands/mark-worksheet-line.command.js";
+import type { RecordBatchCommand } from "../../production/application/commands/record-batch.command.js";
 import { planStopOf, planStopRules } from "../../production/domain/services/latest-order-cutoff.js";
 import {
   COUNTER,
@@ -26,12 +26,11 @@ import {
   asStaff,
   atHour,
   isoDay,
-  SEED_INITIALS,
-  SEED_STAFF_SUB,
   type SeedContext,
   type SeedLine,
   shiftDays,
   type Target,
+  wholeBatchOf,
 } from "./order-placing.seed.js";
 import { seedReturnedBatch } from "./packing-return.seed.js";
 import { seedVillageAfternoonResupply } from "./village-resupply.seed.js";
@@ -92,7 +91,7 @@ export interface ScenarioDay {
  */
 export interface StepContext {
   readonly commands: {
-    execute(command: CloseProductionDayCommand | MarkWorksheetLineCommand): Promise<unknown>;
+    execute(command: CloseProductionDayCommand | RecordBatchCommand): Promise<unknown>;
   };
   readonly settle: () => Promise<void>;
 }
@@ -166,9 +165,9 @@ export interface ProductionCountTable {
   readonly productionCount: {
     findMany(args: {
       readonly where: { readonly serviceDay: string };
-      readonly select: { readonly sku: true };
+      readonly select: { readonly sku: true; readonly quantity: true };
       readonly orderBy: { readonly sku: "asc" };
-    }): Promise<readonly { readonly sku: string }[]>;
+    }): Promise<readonly { readonly sku: string; readonly quantity: number }[]>;
   };
 }
 
@@ -259,8 +258,8 @@ async function clearAutoComposed(prisma: AutoComposedRounds, forDay: string): Pr
 
 /**
  * **Étape 3 — toutes les fournées du jour sorties du four**, et remises au
- * colisage : chaque ligne du compte cochée, comme à l'atelier. Cocher une ligne
- * déjà complète ne fait rien (`MarkWorksheetLineHandler`).
+ * colisage : chaque ligne du compte sort en une fournée (`wholeBatchOf`).
+ * Rejouer l'étape rejoue les mêmes fournées, sans effet.
  *
  * @returns le nombre d'articles du compte.
  */
@@ -270,14 +269,12 @@ export async function bakeToday(
 ): Promise<number> {
   const counts = await context.prisma.productionCount.findMany({
     where: { serviceDay: day.forDay },
-    select: { sku: true },
+    select: { sku: true, quantity: true },
     orderBy: { sku: "asc" },
   });
-  for (const { sku } of counts) {
+  for (const { sku, quantity } of counts) {
     await asStaff(atHour(day.today, PACKED_HOUR), () =>
-      context.commands.execute(
-        new MarkWorksheetLineCommand(day.forDay, sku, SEED_INITIALS, SEED_STAFF_SUB),
-      ),
+      context.commands.execute(wholeBatchOf(day.forDay, sku, quantity)),
     );
   }
   // Les fournées sont des remises : le colisage doit les avoir reçues.
@@ -325,8 +322,8 @@ export async function composeToday(
  */
 export async function packToday(context: SeedContext, day: ScenarioDay): Promise<number> {
   const { counter, deliveries } = await readToday(context, day);
-  // Vide : `packFully` coche ce qui ne l'est pas encore, et une ligne déjà
-  // complète (étape 3) ne fait rien. Partagé entre comptoir et livraison.
+  // Vide : `packFully` sort chaque ligne en une fournée, et celle de l'étape 3
+  // est la même (même identifiant) : rejouée, elle ne fait rien. Partagé entre comptoir et livraison.
   const baked = new Set<string>();
   // Les types de bacs AVANT le colisage : une livraison ouvre ses bacs au
   // colisage depuis K3c, celle du comptoir comprise.
