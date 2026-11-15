@@ -211,7 +211,7 @@ export class HandoverColumn {
   }
 
   /**
-   * Une commande retenue le dit d'abord (`plan-controle-qualite.md`, D7) ; le
+   * Une commande retenue le dit d'abord (`le-controle-qualite.md`, D7) ; le
    * reste de la sous-ligne suit, pour ne rien perdre de son créneau.
    */
   /**

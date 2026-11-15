@@ -93,7 +93,7 @@ import {
     // catalogue et la seule table famille → rayon.
     { provide: WorkshopShelvesReader, useClass: CatalogWorkshopShelvesReader },
     // Les articles vendables, pour la page des raccourcis du fournil (plan
-    // `fournil/plan-raccourcis-du-fournil.md`, S1) : même miroir, même lieu.
+    // `fournil/la-fiche-d-atelier.md`, S1) : même miroir, même lieu.
     { provide: SellableArticlesReader, useClass: CatalogSellableArticlesReader },
     // Le seul port du canal qui ÉCRIT chez le commerce : la clôture lui demande
     // de trancher les règlements en vol avant de compter (plan d'abandon, B1).

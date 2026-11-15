@@ -65,7 +65,7 @@ function toPersistence(state: BatchShortcutState): ShortcutRow {
 }
 
 /**
- * Le dépôt des raccourcis du fournil (plan `fournil/plan-raccourcis-du-fournil.md`,
+ * Le dépôt des raccourcis du fournil (plan `fournil/la-fiche-d-atelier.md`,
  * S1). Le chargement prend `pg_advisory_xact_lock` sur le produit, tenu
  * jusqu'au `COMMIT` : deux ajouts concurrents se suivent, et le plafond que
  * l'agrégat compte reste vrai. La sauvegarde écrit chaque raccourci touché

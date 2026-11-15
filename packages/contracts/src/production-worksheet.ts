@@ -139,7 +139,7 @@ export interface WorkshopLine {
    * 8 h 45 »), sans nom de client. `null` = aucune n'attend.
    *
    * Lu au colisage par un port que le fournil déclare (Hugo, 2026-10-28,
-   * `documentation/fournil/plan-fournee-v3.md` §3). Facultatif dans le TYPE
+   * `documentation/fournil/la-fiche-d-atelier.md` §3). Facultatif dans le TYPE
    * seulement : le serveur l'envoie toujours.
    */
   readonly waitingOrders?: WorkshopWaitingOrders | null;

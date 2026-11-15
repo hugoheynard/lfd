@@ -203,7 +203,7 @@
   //    /admin/production/quality/sweep) : retire les photos déposées depuis
   //    plus de 24 h et jamais rattachées à un verdict, et les fichiers
   //    provisoires dont la libération a échoué (plan
-  //    `documentation/production/plan-controle-qualite.md`, D8). Un quart
+  //    `documentation/fournil/le-controle-qualite.md`, D8). Un quart
   //    d'heure après le ramassage des visuels. Recopié dans
   //    `QUALITY_UPLOAD_SWEEP_CRON` (worker.ts), à l'identique.
   //

@@ -45,7 +45,7 @@ import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Le contrôle qualité, depuis la Supervision** (plan
- * `documentation/fournil/plan-controle-qualite.md`, D3, D8).
+ * `documentation/fournil/le-controle-qualite.md`, D3, D8).
  *
  * Le seul GESTE de la Supervision : elle n'agit pas sur la commande, elle la
  * juge (§1). `b2b_supervision:write` est le droit de juger ; les `POST` le

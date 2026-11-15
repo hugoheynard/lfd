@@ -57,7 +57,7 @@ export interface SlotRow {
   readonly overdueCause: OverdueCause | null;
   readonly method: FulfillmentMethod;
   /**
-   * Retenue par un contrôle qualité : le scan la refusera (`plan-controle-qualite.md`,
+   * Retenue par un contrôle qualité : le scan la refusera (`le-controle-qualite.md`,
    * D4, D7). Lu tel quel dans la file — jamais `true` sur une retirée ou une annulée.
    */
   readonly heldForQuality: boolean;

@@ -225,7 +225,7 @@ export class HandoverAttestation {
    * 🔴 La retenue est lue ici, AVANT l'écriture et sans verrou commun avec le
    * contrôle : un blocage rendu dans l'intervalle laisse partir le sac. C'est
    * une vérification, pas une interdiction — assumé au plan
-   * (`plan-controle-qualite.md`, D4, « La course »). Séquentiel, pas
+   * (`le-controle-qualite.md`, D4, « La course »). Séquentiel, pas
    * `Promise.all` : appelé sous une unité de travail, les lectures
    * partageraient le client de la transaction, que `pg` file en silence
    * (DeprecationWarning, retiré de pg@9) — cf. le blocage e2e du 2026-10-26.

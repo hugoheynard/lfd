@@ -105,7 +105,7 @@ interface FocusedShipment {
   readonly handover: OrderHandover | null;
   /**
    * Exigé, pas optionnel : sans lui l'écran dirait « remettable » d'une
-   * commande que le geste refuse (`plan-controle-qualite.md`, D4).
+   * commande que le geste refuse (`le-controle-qualite.md`, D4).
    */
   readonly qualityHold: boolean;
 }

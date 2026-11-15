@@ -20,7 +20,7 @@ const NO_ANSWER =
 
 /**
  * La dernière fournée acceptée, pour « Annuler la dernière » (plan
- * `documentation/fournil/plan-fournee-v3.md` §4.5) : son `id` est celui que
+ * `documentation/fournil/la-fiche-d-atelier.md` §4.5) : son `id` est celui que
  * l'écran a tiré, donc celui que le serveur a gardé.
  */
 export interface LastBatch {
@@ -38,7 +38,7 @@ interface Unanswered {
 /**
  * **CE QU'ON FAIT** à la fiche d'atelier — déclarer une fournée, en annuler
  * une, retirer — avec l'état de chaque envoi et de chaque échec
- * (`plan-fournees-progressives.md`, D3, D5).
+ * (`la-fiche-d-atelier.md`, D3, D5).
  *
  * Fourni par l'écran, comme {@link WorkshopDayReader} qu'il injecte. Chaque
  * geste accepté finit par une relecture : aucun chiffre n'est calculé ici, la

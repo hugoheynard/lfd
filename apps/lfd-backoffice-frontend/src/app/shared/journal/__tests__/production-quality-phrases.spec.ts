@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { renderFact, type FactInput } from '../render-fact';
 
-/** **Les phrases du contrôle qualité** (plan `plan-controle-qualite.md`, D9). */
+/** **Les phrases du contrôle qualité** (plan `le-controle-qualite.md`, D9). */
 
 function fact(type: FactInput['type'], payload: Record<string, unknown>): FactInput {
   return {

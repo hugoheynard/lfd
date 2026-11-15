@@ -17,7 +17,7 @@
 > (❌), puis les **questions** (❓). Relu dans le code et les plans le
 > 2026-10-01 : le plan du poste de colisage et celui du « + » qui choisit un
 > bac (tous deux retirés le 2026-10-05), `chargement-les-bacs.md`,
-> `plan-controle-qualite.md`.
+> `le-controle-qualite.md`.
 
 ## Où on en est (relu le 2026-10-02)
 

@@ -12,7 +12,7 @@ import { MarkWorksheetLineCommand } from "./mark-worksheet-line.command.js";
  * **La ligne est faite** — l'ancienne case, traduite en fournée.
  *
  * Servie au même contrat tant qu'un front déployé l'appelle (CLAUDE.md §0).
- * Depuis les fournées (plan `plan-fournees-progressives.md`, D3), cocher veut
+ * Depuis les fournées (plan `la-fiche-d-atelier.md`, D3), cocher veut
  * dire « rendre la ligne complète » : l'agrégat calcule le RESTE et le déclare
  * comme une fournée d'`id` déterministe. Elle n'écrit plus `done_*` (§5).
  *

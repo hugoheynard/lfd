@@ -66,7 +66,7 @@ const NO_CONTENT = 204;
  * `production_worksheet` depuis le 2026-10-01 (`documentation/livraisons/droits/plan-droits-par-geste.md`, 5.1).
  * Le contenant se LIT sous ce droit (la fiche en a besoin pour « + 1 plaque »),
  * mais se RÈGLE sous `production_settings:write` depuis le 2026-10-28 (plan
- * `documentation/fournil/plan-fournee-v3.md`, §5) : c'est la page des
+ * `documentation/fournil/la-fiche-d-atelier.md`, §5) : c'est la page des
  * raccourcis qui le règle, et c'est son droit.
  */
 @Controller("admin/production")

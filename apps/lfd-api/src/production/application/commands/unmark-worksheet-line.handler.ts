@@ -11,7 +11,7 @@ import { UnmarkWorksheetLineCommand } from "./unmark-worksheet-line.command.js";
 
 /**
  * **La coche s'enlève** — l'ancienne case, traduite : toutes les fournées de
- * la ligne sont annulées (plan `plan-fournees-progressives.md`, D3).
+ * la ligne sont annulées (plan `la-fiche-d-atelier.md`, D3).
  *
  * 🔴 **Elle peut désormais être refusée**, et c'est le seul changement de
  * comportement de l'ancien contrat : si des pièces de cet article sont dans

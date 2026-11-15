@@ -61,7 +61,7 @@ type LoadState =
 
 /**
  * **Réglages › Production › Raccourcis du fournil** (plan
- * `documentation/fournil/plan-raccourcis-du-fournil.md`, S1).
+ * `documentation/fournil/la-fiche-d-atelier.md`, S1).
  *
  * Une `fold-data-table` de tous les produits vendables, filtrée par famille
  * et par recherche sur une ligne au-dessus (la forme de la table du
@@ -69,7 +69,7 @@ type LoadState =
  * et un bouton « Ajouter un raccourci » ; une pastille ouvre son dialogue.
  *
  * Elle règle aussi le **contenant principal** de chaque produit (plan
- * `documentation/fournil/plan-fournee-v3.md`, §5) — celui du gros bouton « + 1
+ * `documentation/fournil/la-fiche-d-atelier.md`, §5) — celui du gros bouton « + 1
  * plaque » de la fiche — par son propre dialogue. Les raccourcis restent des
  * boutons en plus.
  *

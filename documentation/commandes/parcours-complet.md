@@ -159,7 +159,7 @@ flowchart TD
 Documents d'état : [`../colisage/colisage.md`](../colisage/colisage.md),
 [`../colisage/parcours-du-coliseur.md`](../colisage/parcours-du-coliseur.md),
 [`../colisage/chargement-les-bacs.md`](../colisage/chargement-les-bacs.md),
-[`../fournil/plan-controle-qualite.md`](../fournil/plan-controle-qualite.md).
+[`../fournil/le-controle-qualite.md`](../fournil/le-controle-qualite.md).
 
 ```mermaid
 flowchart TD

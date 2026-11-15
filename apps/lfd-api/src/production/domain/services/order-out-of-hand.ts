@@ -19,7 +19,7 @@ export type OrderOutOfHand = "departed" | "handed_over";
  * Seule la cible **commande** est visée. Un verdict de **ligne** juge un lot
  * du fournil, qui est encore là ; s'il bloque, les commandes déjà parties qui
  * portent ce SKU sont retenues sans effet — la règle du retrait dit d'abord
- * « déjà retirée » (`plan-controle-qualite.md`, D6).
+ * « déjà retirée » (`le-controle-qualite.md`, D6).
  *
  * @throws {QualityOrderDepartedError} @throws {QualityOrderHandedOverError}
  */

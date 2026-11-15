@@ -72,7 +72,7 @@ function presses(line: WorkshopLine): boolean {
  * TYPE plutôt qu'en consigne — il n'y a pas de champ à laisser vide.
  *
  * 🔴 **L'écran ne calcule rien** (décidé le 2026-09-14,
- * `documentation/fournil/plan-fiche-atelier.md` §10). La journée, les rayons,
+ * `documentation/fournil/la-fiche-d-atelier.md` §10). La journée, les rayons,
  * les deux listes et tous les comptes viennent du serveur ; l'écran relit après
  * chaque fournée acceptée.
  *

@@ -45,7 +45,7 @@ import type { HandoverQueueScope } from "../queries/get-handover-queue.query.js"
  *
  * Une pour la file, une pour les attestations du lot, une pour les retenues
  * qualité du lot (`QualityHoldsReader`, publié par la production —
- * `plan-controle-qualite.md`, D4), et une pour les transferts de réassort
+ * `le-controle-qualite.md`, D4), et une pour les transferts de réassort
  * seul de la journée (R3c, R3e). Plus la place des livraisons dans leurs
  * tournées (`RoundPlacementsReader`), en lot elle aussi — et seulement
  * quand le périmètre porte une livraison. Demander ligne par ligne ferait autant

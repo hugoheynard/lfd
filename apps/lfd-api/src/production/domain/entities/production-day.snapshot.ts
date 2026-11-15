@@ -122,7 +122,7 @@ export interface ProducedItemSnapshot {
   /**
    * **La coche de l'ANCIEN binaire**, telle que `done_*` la porte encore.
    *
-   * Depuis les fournées (plan `plan-fournees-progressives.md`, §5), plus rien
+   * Depuis les fournées (plan `la-fiche-d-atelier.md`, §5), plus rien
    * ne l'écrit : elle ne sert qu'à lire une ligne cochée avant le déploiement,
    * ou par un poste resté sur le binaire précédent, comme une **fournée
    * implicite** de `quantity` — tant qu'aucune fournée réelle n'existe pour ce

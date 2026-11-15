@@ -9,7 +9,7 @@ import { BatchShortcutRepository } from "../../domain/ports/batch-shortcut.repos
 import { RemoveBatchShortcutCommand } from "./remove-batch-shortcut.command.js";
 
 /**
- * **Supprimer un raccourci** (plan `fournil/plan-raccourcis-du-fournil.md`,
+ * **Supprimer un raccourci** (plan `fournil/la-fiche-d-atelier.md`,
  * S1). 404 sur un raccourci inconnu ou déjà supprimé : un retrait vise une
  * ligne précise, et l'écran doit savoir qu'il était périmé. La ligne
  * s'archive ; son nom se libère pour un nouveau raccourci.

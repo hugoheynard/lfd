@@ -65,7 +65,7 @@ export interface HandoverCandidate {
 /**
  * La phrase d'une retenue au contrôle. Elle ne dit PAS le motif : elle est lue
  * devant le client, et le motif est sur la Supervision
- * (`plan-controle-qualite.md`, D4).
+ * (`le-controle-qualite.md`, D4).
  */
 export const QUALITY_HOLD_REASON = "Commande en cours de vérification.";
 
@@ -96,7 +96,7 @@ export const UNSETTLED_REASON =
  * faut être **deux**.
  *
  * 🔴 **La retenue qualité est lue EN DERNIER**, après « annulée », « pas
- * passée » et « déjà retirée » (`plan-controle-qualite.md`, D4). La production
+ * passée » et « déjà retirée » (`le-controle-qualite.md`, D4). La production
  * ne peut pas savoir ce qui est parti — `order_handover` n'est pas à elle —, et
  * un blocage de ligne retient toutes les commandes du plan qui portent le
  * produit, parties comprises (D6). Lue avant, elle ferait répondre « en

@@ -3,7 +3,7 @@
  * fournil PUBLIE et implémente, que le colisage lit pour composer son poste
  * (plan `colisage/colisage.md`, §17.1, K3a).
  *
- * Le contrôle est un fait du fournil (`plan-controle-qualite.md`, D1) : le
+ * Le contrôle est un fait du fournil (`le-controle-qualite.md`, D1) : le
  * colisage ne le copie pas, il pose la question, par lot, pour les commandes
  * de sa journée. La règle est `heldOrderIds` — celle que lit le retrait au
  * comptoir —, et elle reste chez le fournil.

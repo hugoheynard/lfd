@@ -11,7 +11,7 @@ import { saleUnitOfSku } from "./batch-shortcut-sale-unit.js";
 import { UpdateBatchShortcutCommand } from "./update-batch-shortcut.command.js";
 
 /**
- * **Modifier un raccourci** (plan `fournil/plan-raccourcis-du-fournil.md`,
+ * **Modifier un raccourci** (plan `fournil/la-fiche-d-atelier.md`,
  * S1). 404 sur un raccourci inconnu ou déjà supprimé. Reposer le même nom et
  * les mêmes pièces n'écrit ni ne journalise rien.
  */

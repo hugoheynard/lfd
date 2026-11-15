@@ -5,7 +5,7 @@ import type { QualityCheck } from "../entities/quality-check.js";
 
 /**
  * **Les faits du contrôle qualité** (plan
- * `documentation/fournil/plan-controle-qualite.md`, D9).
+ * `documentation/fournil/le-controle-qualite.md`, D9).
  *
  * Écrits dans la transaction du verdict par `publishTraced` : un journal en
  * panne annule le verdict, comme `production_day.closed`. Le sujet est le

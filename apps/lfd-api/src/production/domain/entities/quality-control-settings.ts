@@ -1,7 +1,7 @@
 import { QualityControlDisabledError } from "../errors/quality-control-settings-errors.js";
 import type { QualityCheckTarget } from "../value-objects/quality-check-target.js";
 
-/** Les deux niveaux où un verdict se rend (`plan-controle-qualite.md`, §0). */
+/** Les deux niveaux où un verdict se rend (`le-controle-qualite.md`, §0). */
 export type QualityControlLevel = QualityCheckTarget["kind"];
 
 /** Ce que dit le refus, par niveau — lu au fournil, sans le code sous les yeux. */

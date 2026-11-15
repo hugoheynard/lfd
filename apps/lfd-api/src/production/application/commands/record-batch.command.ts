@@ -1,6 +1,6 @@
 /**
  * **Déclarer une fournée** — « il en est sorti 48 » (plan
- * `plan-fournees-progressives.md`, D3).
+ * `la-fiche-d-atelier.md`, D3).
  *
  * L'`id` vient du poste (ULID) : c'est la clé d'idempotence. Un double appui ou
  * une requête rejouée après une coupure ne compte pas deux fois.

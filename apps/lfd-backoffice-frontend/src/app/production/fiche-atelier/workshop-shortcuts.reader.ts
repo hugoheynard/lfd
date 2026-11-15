@@ -5,7 +5,7 @@ import { BatchShortcutsService } from '../batch-shortcuts.service';
 
 /**
  * **Les raccourcis du fournil**, lus pour la fiche d'atelier (plan
- * `documentation/fournil/plan-raccourcis-du-fournil.md`, S2).
+ * `documentation/fournil/la-fiche-d-atelier.md`, S2).
  *
  * Une lecture pour toute la fiche, jamais une par ligne. Une lecture qui
  * échoue ne retire rien : le champ « Pièces sorties » se tape à la main.

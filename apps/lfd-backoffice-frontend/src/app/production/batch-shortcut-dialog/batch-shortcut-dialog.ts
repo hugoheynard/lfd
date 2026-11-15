@@ -48,7 +48,7 @@ export interface BatchShortcutDialogData {
 
 /**
  * **Le dialogue d'un raccourci du fournil** (plan
- * `documentation/fournil/plan-raccourcis-du-fournil.md`, §2, S1) : un nom
+ * `documentation/fournil/la-fiche-d-atelier.md`, §2, S1) : un nom
  * et un nombre de pièces ; en modification, une `fold-danger-zone` pour le
  * supprimer. Centré au bureau, feuille du bas en mobile — c'est la page qui
  * choisit le côté à l'ouverture.

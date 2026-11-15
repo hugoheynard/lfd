@@ -5,7 +5,7 @@
  * matin doit pouvoir se reprendre, et le refuser transformerait un doigt fariné
  * en incident.
  *
- * Depuis les fournées (plan `plan-fournees-progressives.md`, D3), décocher
+ * Depuis les fournées (plan `la-fiche-d-atelier.md`, D3), décocher
  * ANNULE toutes les fournées de la ligne — et une annulation est tracée par son
  * auteur. D'où l'identité, que la commande ne portait pas quand décocher
  * effaçait un fait sans en écrire.

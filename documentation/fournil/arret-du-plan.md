@@ -1,64 +1,27 @@
 # L'arrêt du plan de production
 
-**État au 2026-10-06, arrêt réécrit le 2026-10-21.** Remplace le plan de l’arrêt du plan (lots A0 à A3
-bâtis le 2026-10-06, retiré ce jour-là — il vit dans l'historique git).
+Ce que l'arrêt fait aux commandes (jour plus proposé, client refusé, équipe
+reçue hors plan), avec les autres limites de commande :
+[`../limites-de-commande/README.md`](../limites-de-commande/README.md). Le
+contexte qui le porte : [`architecture-contexte-production.md`](architecture-contexte-production.md).
 
-> Ce que l'arrêt fait aux commandes (jour plus proposé, client refusé,
-> équipe reçue hors plan), avec les autres limites de commande :
-> [`../limites-de-commande/README.md`](../limites-de-commande/README.md)
-> (2026-10-21).
-
-## En une phrase
+## En bref
 
 **Arrêter le plan d'une journée, c'est figer ce que le fournil va produire.**
-Tant qu'un plan n'est pas arrêté, rien ne part en fournée : pas d'heure de
-tirage, pas de liste à coliser, pas de tournée composée.
+Tant qu'un plan n'est pas arrêté, rien ne part en fournée : pas de compte à
+produire, pas de liste à coliser, pas de tournée composée, pas de dossier du
+jour.
 
-**Depuis le 2026-10-21, l'heure limite générale déclenche tout** (décision de
-Hugo, [`../limites-de-commande/plan-une-seule-heure.md`](../limites-de-commande/plan-une-seule-heure.md)
-§5) : le plan de la journée J s'arrête **tout seul** à la fin du rattrapage de
-la règle générale pour J (« la veille, 23 h » + rattrapage). Il n'y a plus de
-mode manuel ou automatique, plus d'heure d'arrêt à part, plus d'alerte du
-soir. Un arrêt à la main **avant** cet instant est refusé ; après (un arrêt
-automatique qui a échoué), il reste ouvert. Rouvrir reste possible, et
-l'équipe saisit toujours « hors plan ».
-
-**Depuis le lot R3a du réassort (2026-10-21)**, l'arrêt tombe à la **plus
-tardive** de la fin du rattrapage de la règle générale et de l'**heure du
-réassort** (« la veille, HH:MM », 20:00 par défaut, Réglages › Commandes ›
-Heure limite) — `PlanStopRules` (`apps/lfd-api/src/production/application/services/plan-stop-rules.ts`),
-seul lecteur des quatre usages : le tour automatique, le refus d'un arrêt
-anticipé, le prévisionnel et la page Production › Réglages. Le fournil lit
-l'heure du réassort au commerce par `ResupplyCutoffTimeReader`
-(`production/channels/commerce/`). Ce qui se déclenche à l'arrêt se décale
-d'autant quand l'heure du réassort est la plus tardive : le balayage des
-paiements en suspens, la confirmation des commandes, la liste à coliser, la
-composition des tournées (abonné de `production.day_closed`) et l'envoi du
-dossier du jour.
-
-### Les réassorts figés à l'arrêt (lot R3a)
-
-L'arrêt lit, **sous le verrou de la journée**, les réassorts « pour demain »
-envoyés et non annulés (`DayResuppliesReader`, implémenté par le commerce,
-`apps/lfd-api/src/lafoliecoffee/resupply/infrastructure/production-day-resupplies.ts`) et les fige à part
-des commandes (`production.production_resupply` + `_line`, aucune clé vers
-`public`). Le compte à produire est le **total** commandes + réassorts — les
-fournées se cochent sur lui ; le journal compte toujours les seules
-commandes. Une journée n'est vide que sans commande **ni** réassort.
-`production.day_closed` et `production.day_reopened` portent `resupplyIds`
-(absent des faits d'avant : relu vide ; aucun abonné ne le lit encore — R3b,
-R3c).
-
-L'envoi et l'annulation d'un réassort « pour demain » prennent le même
-verrou (`ResupplyPlanGate` → `PlanAdmissionDesk`) : passé l'arrêt, l'envoi
-est refusé (le comptoir : « demandez au fournil » ; le fournil : produire hors
-plan) et l'annulation aussi (« réceptionnez avec un écart »). Aucun réassort
-ne peut donc arriver après l'arrêt : le retirage n'en absorbe aucun, il garde
-seulement les réassorts figés dans le compte qu'il refait. La réouverture
-les dégèle (ils redeviennent annulables) et retire les fiches de réassort
-intouchées du colisage, par un statut (`withdrawn_at`, `3968aa218`).
-
-## Ce que fait un arrêt
+- Le plan du jour J s'arrête **tout seul**, à la plus tardive de deux heures :
+  la fin du rattrapage de l'heure limite générale pour J (« la veille, 23 h »
+  - rattrapage) et l'**heure du réassort** (« la veille, 20:00 » par défaut).
+    Les deux se règlent dans Réglages › Commandes › Heure limite.
+- Un arrêt à la main **avant** cette heure est refusé ; après (un arrêt
+  automatique qui a échoué), il reste possible.
+- Une journée arrêtée par erreur se **rouvre** depuis le Prod manager, tant
+  que rien n'a commencé en aval.
+- Une commande arrivée après l'arrêt n'est pas perdue : « Reprendre le
+  tirage » (le retirage, sur la fiche d'atelier) l'ajoute.
 
 ```mermaid
 sequenceDiagram
@@ -70,11 +33,11 @@ sequenceDiagram
     É->>F: arrêter le plan du jour J
     F->>C: annuler les paiements restés en suspens pour J
     F->>F: verrou de la journée J, relecture
-    F->>C: les commandes de J (sous le verrou)
+    F->>C: les commandes et les réassorts de J (sous le verrou)
     alt déjà arrêtée
         F-->>É: « déjà arrêté » (le fait est réannoncé)
-    else ouverte, avec commandes
-        F->>F: fige le compte à produire
+    else ouverte, avec commandes ou réassorts
+        F->>F: fige le plan et le compte à produire
         F-->>C: production.day_closed (commandes inscrites au plan)
         F-->>L: production.day_closed (tournées composées)
         F-->>K: la liste à coliser
@@ -83,152 +46,100 @@ sequenceDiagram
     end
 ```
 
-- **Une seule fermeture, même à deux.** Deux arrêts simultanés (deux clics,
-  ou l'arrêt automatique contre un arrêt anticipé) ne ferment qu'une fois : la
-  journée est verrouillée par un verrou consultatif sur sa clé, puis relue
-  sous lui (`infrastructure/prisma-production-day.lock.ts`). Le second trouve
-  la journée close et réannonce seulement. Le retirage passe par le même verrou.
-- **Les commandes sont lues sous le verrou** (depuis le 2026-11-02). La
-  passation et la révision prennent ce verrou par leur guichet jusqu'à leur
-  validation : une commande admise avant l'arrêt est figée, une commande qui
-  arrive après est refusée « plan arrêté » (ou reçue « hors plan » si
-  l'équipe la saisit). Lues avant le verrou, une commande admise entre la
-  lecture et lui manquait au plan sans qu'aucun refus ne le dise. Seul le
-  balayage des règlements reste avant le verrou : il écrit chez le commerce.
-- **Une commande arrivée après l'arrêt** n'est pas perdue : « Reprendre le
-  tirage » (le retirage, fiche d'atelier) l'ajoute à la fournée.
-- **Un arrêt se défait** tant que rien n'a commencé : voir « Rouvrir une
-  journée arrêtée » ci-dessous.
+---
 
-### Le handler de l'arrêt, étape par étape
+## Partie technique
 
-Ce paragraphe vivait dans la JSDoc de `CloseProductionDayHandler` jusqu'au
-2026-11-02 (cent lignes au-dessus d'une classe de cent) ; le handler n'en garde
-que le plan, et renvoie ici. Code : `application/commands/close-production-day.handler.ts`,
-ce qui précède le verrou (heure limite, balayage, signataire)
-`apps/lfd-api/src/production/application/services/plan-arrest-admission.ts` (depuis le 2026-11-03),
-lectures sous verrou `apps/lfd-api/src/production/application/services/plan-intake-reading.ts`,
-écriture et faits `apps/lfd-api/src/production/application/services/plan-arrest-recording.ts`.
+### L'heure de l'arrêt
 
-- **Pas avant l'heure limite** (depuis le 2026-10-21). Le plan s'arrête tout
-  seul à la plus tardive de la fin du rattrapage de l'heure limite générale
-  (`limites-de-commande/plan-une-seule-heure.md` §5) et de l'heure du
-  réassort (`PlanStopRules`). Un arrêt demandé plus tôt, à la main, est refusé
-  AVANT le balayage, qui annulerait sinon les paiements de clients encore en
-  train de commander. Une réannonce n'est pas un arrêt : elle n'est pas
-  refusée. **La décision se reprend sous le verrou** (depuis le 2026-11-03) :
-  le contrôle d'avant le balayage ne se fait que si l'en-tête lu hors verrou
-  dit « ouverte », et une réouverture validée pendant que l'arrêt attendait
-  le verrou laissait jusque-là figer la journée avant l'heure. La journée
-  RELUE ouverte sous le verrou repasse le contrôle ; l'e2e
-  `production-day-close-race` rejoue la course (rouge sur l'ancien code :
-  201 au lieu de 409). Ce qui reste : dans cette course, le balayage a déjà
-  tourné quand le refus tombe — il tranche les règlements en l'air d'une
-  journée qu'on croyait arrêtée.
-- **Balayer d'abord, compter ensuite** (depuis le 2026-09-26). Le fournil
-  DEMANDE au commerce de trancher les règlements restés en l'air pour la
-  journée (`PendingSettlementSweeper`, port déclaré par le fournil,
-  implémenté par le commerce —
-  `commandes/reglement/architecture-abandon-du-reglement.md`). Sans ce geste,
-  une journée où aucune carte n'est payée resterait vide, donc inarrêtable,
-  et ses règlements vivraient pour toujours. Le balayage tourne à **chaque**
-  appel, réannonce comprise : une commande passée après le premier arrêt doit
-  mourir aussi. Le refus « journée vide » vient après lui, et ne dit plus que
-  la vérité : personne n'a payé.
-- **Pourquoi un geste, alors que le cycle de vie dit « pas un clic ».** Le
-  dossier du cycle de vie écrit que `confirmed` est automatique. Les deux
-  façons d'y arriver sans geste humain étaient fermées : pas de planificateur
-  dans l'API à l'époque, et une lecture n'écrit rien. Reste le geste que
-  l'équipe faisait déjà — arrêter de prendre pour demain. Ce que le dossier
-  refuse est une décision **par commande** ; une bascule **par journée** acte
-  une heure, pas un tri. L'arrêt automatique (plus bas) fait aujourd'hui ce
-  geste à l'heure dite.
-- **Une seule décision, sous le verrou.** La journée est verrouillée puis
-  RECHARGÉE dans une unité de travail (depuis le 2026-10-06 : chargée hors
-  verrou, deux arrêts concurrents fermaient tous les deux). Les retraits de
-  l'annulation staff, les réassorts « pour demain » et les commandes sont lus
-  sous le même verrou (les commandes depuis le 2026-11-02).
-- **La réannonce n'est pas un arrêt de plus.** Rejouer l'arrêt ne recalcule
-  rien — le compte à produire est un instantané. Le fait est **republié**
-  sous une clé neuve (`ProductionDayClosedEvent`), avec la liste à coliser
-  (même clé par commande, la boîte d'envoi absorbe). Le fait est durable
-  depuis le 2026-10-04 (`journalisation/plan-boite-d-envoi.md`) : la boîte
-  d'envoi reprend un abonné qui échoue, et la réannonce n'est plus que le
-  filet — celui qui fait apprendre au commerce les commandes d'un retirage.
-  La réponse dit laquelle des deux choses vient d'arriver (`alreadyClosed`).
-- **Une journée arrêtée par un lancement « au plus tôt »** (la journée jamais
-  arrêtée qu'un « Lancer » ouvre arrêtée, `reassort-boutiques/au-plus-tot.md`)
-  n'a jamais publié `production.day_closed`, et sa réannonce n'en publie pas
-  non plus (2026-11-02) : le fait annoncerait au commerce et à la livraison
-  un arrêt du plan qui n'a pas eu lieu. Le fait du lancement (`openedPlan`)
-  l'a déjà dit. `ProductionDay.openedByLaunch` le reconnaît : l'instant de
-  l'arrêt est celui d'un lancé — **déduit, pas stocké** (aucune colonne ; le
-  cas où un lancement sur une journée déjà arrêtée tomberait à la
-  milliseconde de l'arrêt est écrit au type, 2026-11-03).
-- **Le journal et la boîte d'envoi dans la MÊME transaction.** L'arrêt écrit
-  `production_day.closed` au journal et `production.day_closed` dans la boîte
-  d'envoi, dans l'unité de travail qui tient le verrou et où la journée
-  s'écrit : les trois, ou aucun. La réannonce n'écrit AUCUN fait au journal —
-  un second « arrêtée » mentirait sur l'heure et l'auteur. Les abonnés ne
-  tournent pas dans cette transaction : le relais les livre après la
-  validation, chacun dans sa propre unité de travail.
-- **La liste à coliser.** Un `production.packing_list_drawn` par commande de
-  l'instantané (`colisage/colisage.md` §11), et un
-  `production.resupply_list_drawn` par réassort d'un point servi par
-  transfert, même unité de travail, même instant.
-- **Qui colisera.** Toute journée arrêtée naît au colisage (`packing_owner =
-packing`, Hugo, 2026-10-04 : « on bascule direct »). Une journée arrêtée
-  avant la bascule garde `legacy`.
-- **L'accusé.** La commande rend `{ date, absorbed, alreadyClosed, closedAt }`.
-  Ce n'est pas un modèle de lecture mais l'accusé du geste (décision D2 de
-  l'audit du réassort, 2026-11-02, écrite sur `CloseProductionDayCommand`) ;
-  même exception pour le retirage et la réouverture.
+`PlanStopRules` (`apps/lfd-api/src/production/application/services/plan-stop-rules.ts`)
+est le seul lecteur de la règle, pour ses quatre usages : le tour
+automatique, le refus d'un arrêt anticipé, le prévisionnel et la page
+Production › Réglages. Il lit l'heure limite générale
+(`channels/commerce/order-cutoff-rules.reader.ts`) et l'heure du réassort
+(`ResupplyCutoffTimeReader`). L'instant d'arrêt : `planClosesAt`
+(`domain/services/latest-order-cutoff.ts`) ; le refus anticipé :
+`domain/services/early-close.ts`. Quand l'heure du réassort est la plus
+tardive, tout ce qui suit l'arrêt se décale d'autant.
 
-## Rouvrir une journée arrêtée
+Un arrêt à la main avant l'heure est refusé en 409,
+`production.day.before_order_cutoff`, **avant** le balayage des paiements :
+« Le plan du mardi 8 septembre s'arrête tout seul à l'heure limite générale,
+rattrapage compris : le lundi 7 septembre à 23:00. … Pour figer le plan plus
+tôt, avancez l'heure limite dans Réglages › Commandes › Heure limite. » Une
+journée déjà arrêtée se réannonce sans ce contrôle — à condition de l'être
+encore sous le verrou : rouverte entre-temps, elle le repasse. Sans heure
+limite posée, rien n'arrête le plan tout seul et l'arrêt à la main reste
+ouvert.
 
-**État au 2026-10-14** (décision de Hugo, plan de lancement §3). Bâti, pas
-encore déployé.
+### Le handler, étape par étape
 
-Une journée arrêtée par erreur se **rouvre** depuis le **Prod manager**
-(`/prod-manager`) : bouton « Rouvrir la journée du … » à côté de l'arrêt quand
-la prochaine journée est arrêtée, et dans le dossier du jour de toute journée
-arrêtée. La confirmation dit l'effet : les clients peuvent de nouveau commander
-pour ce jour, le plan est retiré et refait au prochain arrêt. Même droit que
-l'arrêt (`production_count_stop:write`), route
-`POST admin/production/batch/:date/reopen`.
+`application/commands/close-production-day.handler.ts` ; avant le verrou
+`application/services/plan-arrest-admission.ts`, sous le verrou
+`plan-intake-reading.ts`, écriture et faits `plan-arrest-recording.ts`.
 
-**Refusée** — le message nomme le cas — dès que quelque chose s'appuie sur le
-plan : une fournée déclarée et non annulée (ou une ligne cochée par l'ancien
-poste), un colisage commencé (un contenant ouvert, même annulé, une ligne au
-bac, un bac fermé), une tournée chargée (un bac chargé) ou partie. Le fournil
-pose la question au colisage et à la livraison par deux ports qu'il déclare
-(`DayPackingProgressReader`, `DayDispatchProgressReader`), **sous** le verrou
-de l'arrêt (depuis le 2026-11-02 — lue avant, un colisage commencé entre la
-lecture et le verrou n'était pas vu) ; l'agrégat (`ProductionDay.reopen`)
-décide. L'autre moitié de la garde : un geste du colisage ou de la livraison
-tient le même verrou en mode **partagé** (`ArrestedPlanHold`,
-`production/channels/packing/`) ; validé avant la réouverture, elle le voit ;
-arrivé après, il trouve le plan rouvert.
+1. **Pas avant l'heure** — contrôlé avant le balayage si l'en-tête lu hors
+   verrou dit « ouverte », puis repris sous le verrou si la journée y est
+   relue ouverte (e2e `production-day-close-race`).
+2. **Balayer d'abord** — le fournil demande au commerce de trancher les
+   règlements restés en l'air pour J (`PendingSettlementSweeper`,
+   [`../commandes/reglement/architecture-abandon-du-reglement.md`](../commandes/reglement/architecture-abandon-du-reglement.md)),
+   à chaque appel, réannonce comprise. Le refus « journée vide » vient après.
+3. **Une seule décision, sous le verrou** — verrou consultatif sur la clé de
+   la journée, puis rechargement (`infrastructure/prisma-production-day.lock.ts`).
+   Deux arrêts simultanés ne ferment qu'une fois ; le second réannonce. Sous
+   le même verrou sont lus les commandes (`DayOrdersReader`), les réassorts
+   « pour demain » envoyés et non annulés (`DayResuppliesReader`, implémenté
+   par `lafoliecoffee/resupply/infrastructure/production-day-resupplies.ts`) et
+   les retraits de l'annulation staff. La passation, la révision et l'envoi
+   d'un réassort prennent ce verrou par leur guichet (`PlanAdmissionDesk`,
+   `ResupplyPlanGate`) : admis avant l'arrêt, figé ; arrivé après, refusé
+   « plan arrêté » (ou reçu « hors plan » si l'équipe le saisit).
+4. **Figer** — commandes (`production_order`, avec la copie de l'en-tête du
+   bon), réassorts (`production_resupply`), et le compte à produire = commandes
+   - réassorts. `packing_owner = packing`.
+5. **Écrire ensemble** — `production_day.closed` au journal et
+   `production.day_closed` dans la boîte d'envoi, dans l'unité de travail qui
+   tient le verrou ; puis un `production.packing_list_drawn` par commande et un
+   `production.resupply_list_drawn` par réassort d'un point servi par
+   transfert ([`../colisage/colisage.md`](../colisage/colisage.md)). Les
+   abonnés tournent après validation, chacun dans sa transaction.
+6. **La réannonce n'est pas un arrêt de plus** — rien n'est recalculé, aucun
+   fait n'est écrit au journal, le fait est republié sous une clé neuve avec la
+   liste à coliser. C'est le filet : il fait apprendre au commerce les
+   commandes d'un retirage.
+7. **L'accusé** — `{ date, absorbed, alreadyClosed, closedAt }`, l'accusé du
+   geste et non un modèle de lecture ; même chose pour le retirage et la
+   réouverture.
 
-Le port rend l'état du plan, lu sous le verrou : `arrested` (`closed_at`
-posé), `reopened` (`closed_at` nul, `reopened_at` posé — arrêtée puis
-rouverte), `never_arrested` (sinon). Branché le 2026-11-02 :
+Une journée ouverte arrêtée par un lancement « au plus tôt »
+([`../reassort-boutiques/au-plus-tot.md`](../reassort-boutiques/au-plus-tot.md))
+n'a jamais publié `production.day_closed`, et sa réannonce n'en publie pas :
+`ProductionDay.openedByLaunch` la reconnaît, l'instant étant déduit, pas
+stocké.
 
-- au **colisage** — ouvrir un contenant, appliquer « Proposer », mettre au
-  bac, fermer le bac, saisir ou clore une fiche de réassort : en premier dans
-  la transaction, refus `packing.plan_reopened` si le plan est `reopened`.
-  Une journée jamais arrêtée passe la garde, et le geste refuse lui-même
-  (« pas encore arrivé au poste de colisage ») : la garde disait « rouvert »,
-  ce qui était faux (corrigé le 2026-11-03) ([colisage](../colisage/colisage.md)
-  §2 ; e2e `packing-plan-hold-race`) ;
-- à la **livraison** — charger un bac (`LoadDeliveryBinHandler`, que le
-  chargement du livreur réutilise), faire partir une tournée
-  (`departAndFreeze`, commun aux deux portes du départ) : après la lecture qui
-  donne la journée, avant toute écriture, refus `delivery.plan_reopened` si le
-  plan est `reopened` **seulement**. Une journée jamais arrêtée se charge et
-  part comme avant (décision du 2026-11-02 ; e2e `delivery-plan-hold-race`).
-  Pas d'inter-blocage : la réouverture, qui tient l'exclusif, ne verrouille
-  aucune ligne de la livraison.
+Passé l'arrêt, un réassort « pour demain » ne s'envoie plus (le comptoir :
+« demandez au fournil » ; le fournil : produire hors plan) et ne s'annule plus
+(« réceptionnez avec un écart ») : le retirage n'en absorbe donc aucun, il
+garde ceux qui sont figés.
+
+### Rouvrir une journée arrêtée
+
+Prod manager : bouton « Rouvrir la journée du … » à côté de l'arrêt et dans le
+dossier du jour d'une journée arrêtée (`previsionnel/reopen-day/`). La
+confirmation dit l'effet. Route `POST admin/production/batch/:date/reopen`,
+droit `production_count_stop:write`, `ProductionDay.reopen`.
+
+**Refusée**, avec le cas nommé, dès qu'une fournée non annulée existe (ou une
+ligne cochée par l'ancien poste), qu'un colisage a commencé (contenant ouvert
+même annulé, ligne au bac, bac fermé), ou qu'une tournée est chargée ou
+partie. Le fournil le demande sous son verrou par `DayPackingProgressReader`
+et `DayDispatchProgressReader`. L'autre moitié de la garde : les gestes du
+colisage (ouvrir un contenant, « Proposer », mettre au bac, fermer le bac,
+fiche de réassort) et de la livraison (charger un bac, faire partir une
+tournée) prennent le même verrou en mode **partagé** (`ArrestedPlanHold`) et
+refusent si le plan est `reopened` (`packing.plan_reopened`,
+`delivery.plan_reopened`). Une journée jamais arrêtée passe cette garde.
 
 ```mermaid
 sequenceDiagram
@@ -245,190 +156,96 @@ sequenceDiagram
     F-->>C: production.day_reopened
     F-->>K: production.day_reopened
     F-->>L: production.day_reopened
-    C->>C: confirmed → placed (commandes confirmées par CET arrêt)
-    K->>K: retire la liste à coliser de J (commandes intouchées)
+    C->>C: confirmed vers placed (commandes confirmées par CET arrêt)
+    K->>K: retire la liste à coliser de J (fiches intouchées)
     L->>L: oublie le plan arrêté, sort les arrêts des tournées au dépôt
 ```
 
-Ce qui est **défait** : chez le fournil, l'arrêt (`closed_at`, auteur), les
-commandes inscrites, le compte à produire et le retirage — la trace reste
-(`reopened_at`, `reopened_by`, migration `20261014400000_la_journee_rouverte`)
-et le journal dit `production_day.reopened` avec son auteur ; au commerce, les
-commandes confirmées par cet arrêt redeviennent `placed` ; au colisage, la
-liste du jour ; à la livraison, le plan arrêté qu'elle avait appris et les
-arrêts de commande posés dans les tournées au dépôt.
+**Défait** : l'arrêt, les commandes inscrites, le compte, le retirage (la trace
+reste : `reopened_at`, `reopened_by`, `production_day.reopened` au journal) ;
+au commerce, les commandes dont `confirmed_at` est l'instant de cet arrêt ; au
+colisage, la liste du jour et les fiches de réassort intouchées
+(`withdrawn_at`) ; à la livraison, le plan appris et les arrêts posés dans les
+tournées au dépôt. Les réassorts figés redeviennent annulables.
 
-Ce qui **ne l'est pas** :
+**Pas défait** : les tournées elles-mêmes, les transferts internes, le dossier
+déjà envoyé, les fournées annulées, le drapeau « reçue hors plan », la
+tentative d'arrêt automatique du jour — une journée rouverte s'arrête à la
+main.
 
-- les **tournées** elles-mêmes, même vides : la prochaine composition les
-  réutilise ;
-- les **transferts internes** et leurs arrêts : un retrait d'un site servi
-  par transfert y entre dès sa passation, il reste dû ;
-- le **dossier du jour déjà envoyé** par e-mail : le prochain arrêt en envoie
-  un nouveau ;
-- les fournées **annulées** : l'historique du four, pas du plan ;
-- le drapeau « reçue hors plan » d'une commande saisie par l'équipe après
-  l'arrêt : il reste posé ;
-- l'**arrêt automatique** : sa tentative du jour est déjà tracée, il ne
-  repasse pas — une journée rouverte s'arrête **à la main** (son heure limite
-  est passée, l'arrêt à la main est donc permis).
+Chaque abonné ne défait que si la journée est **toujours ouverte**, lu par
+`ArrestedPlanHold` sous le verrou partagé jusqu'à son `COMMIT` (e2e
+`reopened-fact-rearrest-race`). Le fait de la liste à coliser porte la
+réouverture dans sa clé, sans quoi la boîte d'envoi avalerait le nouveau
+tirage. E2e : `production-day-reopened`.
 
-L'ordre des faits n'est pas garanti par la boîte d'envoi : chaque abonné ne
-défait que si la journée est **toujours ouverte**. Le colisage et la livraison
-le lisent par `ArrestedPlanHold`, sous le verrou partagé, dans la transaction
-du reçu et jusqu'à son `COMMIT` (audit final du réassort, 2026-11-03 — lue
-avant par `ClosedPlansReader`, sans verrou, un réarrêt validé entre la
-question et le retrait voyait son nouveau colisage retiré et ses tournées
-défaites ; e2e `reopened-fact-rearrest-race`). La livraison ne juge une
-tournée « partie » qu'une fois verrouillée et relue, et sort les réassorts de
-leur transfert sous le verrou des transferts du jour ; le
-commerce ne rend que les commandes dont `confirmed_at` est l'instant de l'arrêt
-défait. Le fait de la liste à coliser porte la réouverture dans sa clé : sans
-elle, le nouveau tirage d'une commande avait la clé de l'ancien et la boîte
-d'envoi l'avalait.
+### L'arrêt automatique et les alertes
 
-L'e2e de la réouverture (`production-day-reopened`) joue « arrêter → rouvrir →
-commander → arrêter » et les refus.
+Le Worker appelle toutes les cinq minutes `POST admin/production/auto-close`
+(`apps/lfd-api/container/worker.ts`, jeton du Worker). Tour :
+`domain/services/auto-close-round.ts`, `run-auto-close-round.handler.ts` ;
+arrêt signé « automatiquement » `application/services/bus-automatic-day-closer.ts` ;
+alertes `plan-arrest-bell.ts`.
 
-**Décidé le 2026-10-14 (Hugo)** : c'est le **Prod manager** qui décide de ce
-qui entre au compte après l'arrêt, pas la fiche d'atelier — pour la
-réouverture comme pour la reprise (le retirage). La reprise vit encore sur la
-fiche d'atelier (bandeau d'écart) ; son déménagement est au plan de lancement.
+| Situation                                                                            | Ce qui se passe                                                                                              |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| le lendemain est fermé, déjà arrêté, ou aucune heure limite n'est posée              | rien                                                                                                         |
+| l'heure d'arrêt du lendemain est passée                                              | l'arrêt, **une seule tentative par journée** (`production_auto_close_attempt`, prise par une seule instance) |
+| … le lendemain est vide                                                              | alerte « Rien à arrêter pour le … : aucune commande »                                                        |
+| … l'arrêt échoue                                                                     | alerte avec la raison ; pas de nouvelle tentative                                                            |
+| … la tentative reste en cours plus de 15 minutes                                     | alerte « L'arrêt automatique du plan du … n'a pas abouti »                                                   |
+| l'arrêt d'aujourd'hui tombe aujourd'hui (rattrapage après minuit)                    | même tentative (`todayOutcome`)                                                                              |
+| le plan d'aujourd'hui n'est pas arrêté, porte des commandes, et son heure est passée | alerte « Le plan d'aujourd'hui n'a pas été arrêté » ; jamais arrêté d'office : la fournée est déjà au four   |
 
-## Le réglage — Production › Réglages
+Les alertes vont à la cloche et en push, aux personnes qui ont
+`production_count_stop`, une par type et par journée, et ouvrent le
+prévisionnel.
 
-**Plus de réglage d'arrêt** depuis le 2026-10-21. La page affiche en lecture
-« Arrêt automatique à l'heure limite : la veille, 23 h (rattrapage compris) —
-se règle dans Réglages › Commandes › Heure limite », avec le lien
+### Production › Réglages
+
+La page (`production/production-settings-page/`) affiche en lecture l'heure
+d'arrêt automatique, avec un lien vers Réglages › Commandes
 (`GET admin/production/settings` rend `automaticClose: { daysBefore, time }`,
-rattrapage compris, ou `null` sans heure limite posée). La route `PUT
-admin/production/settings/close` est retirée. Les colonnes
-`production.production_settings.close_mode`, `close_at`, `alert_at` restent
-en base, ni lues ni écrites (aucune migration) ; le fait
-`production_settings.close_changed` est **retiré** du catalogue mais reste
-lisible au journal.
+ou `null`). Elle tient aussi le **calendrier des jours fermés** du fournil
+(`production_closed_day`, `POST|DELETE admin/production/settings/closed-days`) :
+la veille d'un jour fermé, ni arrêt ni alerte. Les colonnes
+`production_settings.close_mode`, `close_at`, `alert_at` ne sont plus lues.
 
-Un arrêt à la main avant l'heure limite (rattrapage compris) est refusé en 409,
-`production.day.before_order_cutoff`, **avant** le balayage des paiements :
-« Le plan du mardi 8 septembre s'arrête tout seul à l'heure limite générale,
-rattrapage compris : le lundi 7 septembre à 23:00. … Pour figer le plan plus
-tôt, avancez l'heure limite dans Réglages › Commandes › Heure limite. » Une
-journée déjà arrêtée se réannonce sans ce contrôle — à condition de l'être
-encore SOUS le verrou : rouverte entre-temps, elle repasse le contrôle
-(2026-11-03). Sans heure limite posée,
-rien n'arrête le plan tout seul et l'arrêt à la main reste ouvert.
+### Au prévisionnel
 
-**Le calendrier des jours fermés du fournil** se tient sur la même page. La
-veille d'un jour fermé, ni arrêt ni alerte.
+L'état de chaque colonne vient du serveur (`domain/services/forecast-day-state.ts`) :
 
-## L'arrêt automatique et les alertes
+| État                            | Rendu                                             |
+| ------------------------------- | ------------------------------------------------- |
+| plan non arrêté, en retard      | colonne rouge, « Plan non arrêté », barres rouges |
+| production du jour, plan arrêté | surcouche accent, « Arrêté »                      |
+| journée future arrêtée          | « Arrêté » dans l'en-tête                         |
+| journée passée                  | surcouche grise                                   |
+| jour fermé                      | hachures, « Fournil fermé »                       |
 
-Le Worker réveille l'API toutes les cinq minutes ; il appelle la route machine
-`POST admin/production/auto-close` (jeton du Worker, pas de droit staff). À
-chaque tour, à l'heure de Paris :
+Un bandeau rouge, sur toutes les semaines, dit que le plan d'aujourd'hui n'est
+pas arrêté (« Arrêter le plan du … maintenant ») ; le bouton du soir dit
+« Arrêt automatique lundi à 23:00 » (désactivé, `closesAt` de la colonne),
+puis « Arrêter le plan du <lendemain> » une fois l'heure passée. Les deux
+boutons suivent `production_count_stop:write` ; sans ce droit, le bandeau
+reste sans bouton. La page se relit toutes les 60 secondes. Le reste de
+l'écran : [`le-previsionnel.md`](le-previsionnel.md).
 
-| Situation                                                                                               | Ce qui se passe                                                                                                                                                            |
-| ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Le lendemain est un jour fermé, ou déjà arrêté, ou aucune heure limite n'est posée                      | rien                                                                                                                                                                       |
-| Fin du rattrapage de l'heure limite pour le lendemain passée                                            | le vrai arrêt, **une seule tentative par journée** (trace `production.production_auto_close_attempt`, prise par une seule instance). Journal : « arrêté automatiquement ». |
-| … et le lendemain est vide                                                                              | alerte « Rien à arrêter pour le … : aucune commande »                                                                                                                      |
-| … et l'arrêt échoue                                                                                     | alerte avec la raison ; **pas de nouvelle tentative** (relancer toutes les cinq minutes rappellerait Stripe sur une panne qui ne guérit pas seule)                         |
-| … et la tentative reste en cours plus de **15 minutes**                                                 | alerte « L'arrêt automatique du plan du … n'a pas abouti »                                                                                                                 |
-| L'arrêt d'**aujourd'hui** tombe aujourd'hui même (rattrapage qui passe minuit, limite « le jour même ») | même tentative que pour le lendemain (`todayOutcome`)                                                                                                                      |
-| Le plan **d'aujourd'hui** n'est pas arrêté, porte des commandes, et son arrêt tombait avant aujourd'hui | alerte « Le plan d'aujourd'hui n'a pas été arrêté ». Jamais arrêté d'office : la fournée est déjà au four.                                                                 |
+### Les droits
 
-Les alertes vont dans la cloche et en push, aux personnes qui ont
-`production_count_stop`, **une par type et par journée** même avec plusieurs
-instances, et ouvrent le prévisionnel.
+| Droit                   | Ce qu'il donne                                                                                                                                                           |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `production_count_stop` | arrêter et rouvrir le plan ; recevoir les alertes                                                                                                                        |
+| `production_settings`   | lire l'arrêt automatique ; tenir les jours fermés                                                                                                                        |
+| `production_plan`       | lire le plan. Son `write` ne donne rien : [`../droits-et-permissions/todo-ressources-en-lecture-seule.md`](../droits-et-permissions/todo-ressources-en-lecture-seule.md) |
 
-## Le prévisionnel
-
-L'état de chaque colonne est calculé par le serveur, avec les mêmes seuils que
-l'arrêt automatique (`domain/services/forecast-day-state.ts`) :
-
-| État                            | Rendu                                                                             |
-| ------------------------------- | --------------------------------------------------------------------------------- |
-| Plan non arrêté, en retard      | colonne en surcouche rouge, « Plan non arrêté », barres rouges en tête et au pied |
-| Production du jour, plan arrêté | colonne en surcouche accent, « Arrêté »                                           |
-| Journée future arrêtée          | « Arrêté » dans l'en-tête                                                         |
-| Journée passée                  | surcouche grise                                                                   |
-| Jour fermé du fournil           | hachures, « Fournil fermé »                                                       |
-
-- **Bandeau rouge, en haut de la page, sur toutes les semaines** : le plan
-  d'aujourd'hui n'est pas arrêté. Bouton « Arrêter le plan du … maintenant ».
-- **Bouton du soir**, toujours à la même place, sur toutes les semaines :
-  avant l'heure limite, désactivé, « Arrêt automatique lundi à 23:00 »
-  (chaque colonne porte `closesAt`, calculé par le serveur) ; l'heure passée
-  sans arrêt, « Arrêter le plan du <lendemain> ». Sans rien à arrêter, il reste,
-  désactivé : « Rien à arrêter » ou « Plan du … arrêté ».
-- **Les deux boutons suivent `production_count_stop:write`** (2026-10-07) :
-  sans ce droit, le bandeau rouge reste — l'oubli est un fait sur la journée —
-  mais sans bouton, et le bouton du soir n'a pas de place.
-- La page se relit toutes les 60 secondes : le retard vient de l'heure, pas
-  d'un changement de données.
-- Le **dossier du jour** s'ouvre par un bouton ; « Imprimer le dossier » ouvre
-  le PDF figé à l'arrêt, et n'existe donc qu'**après** l'arrêt (voir
-  [`dossier-prod-du-jour.md`](dossier-prod-du-jour.md)).
-
-## Les droits
-
-| Droit                   | Ce qu'il donne                                                                                                                                                                                                                                                               |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `production_count_stop` | arrêter le plan (soir, anticipé, rattrapage) ; recevoir les alertes                                                                                                                                                                                                          |
-| `production_settings`   | lire l'arrêt automatique ; lire / modifier les jours fermés                                                                                                                                                                                                                  |
-| `production_plan`       | lire le plan du soir. ⚠️ Son `write` ne donne **plus rien** : proposé à l'écran des rôles, décrit « N'ajoute rien » — incohérence assumée, voir [`droits-et-permissions/todo-ressources-en-lecture-seule.md`](../droits-et-permissions/todo-ressources-en-lecture-seule.md). |
-
-Les migrations ajoutent ces ressources sans les accorder : on les règle à
-l'écran (`/admin/staff-roles`). La graine dev / e2e les donne aux rôles qui
-arrêtaient le plan.
-
-## Où vit le code
-
-- Fournil (`apps/lfd-api/src/production/`) : instant d'arrêt
-  `domain/services/latest-order-cutoff.ts` (`planClosesAt`), refus d'un arrêt
-  anticipé `apps/lfd-api/src/production/domain/services/early-close.ts`, jours fermés
-  `domain/entities/production-closed-day.ts`, tour
-  `domain/services/auto-close-round.ts` et
-  `application/commands/run-auto-close-round.handler.ts`, arrêt signé
-  automatique `application/services/bus-automatic-day-closer.ts`, alertes
-  `application/services/plan-arrest-bell.ts`, routes
-  `http/production-settings.controller.ts` et `http/auto-close.controller.ts`.
-- Heure limite générale lue au commerce par le canal
-  `channels/commerce/order-cutoff-rules.reader.ts` (`production → b2b` reste
-  interdit) — par le tour, le prévisionnel, la clôture et la page.
-- Worker : `apps/lfd-api/container/worker.ts`.
-- Écrans : `apps/lfd-backoffice-frontend/src/app/production/previsionnel/`,
-  `…/production/production-settings-page/`.
-- Migrations : `20261006100000_les_droits_de_l_arret_du_plan`,
-  `20261006100100_le_reglage_de_l_arret_du_plan`,
-  `20261006120000_la_tentative_d_arret_automatique`,
-  `20261006140000_le_previsionnel_suit_l_arret_du_plan` — toutes additives.
+Les ressources s'accordent à l'écran (`/admin/staff-roles`), jamais par
+migration.
 
 ## Reste à faire
 
-1. **Le déploiement en production** (rien n'est encore sur `main`) :
-   - faire relire les quatre migrations par `lecteur-de-migrations` ;
-   - **avant** la promotion, Hugo lance en production les deux requêtes qui
-     listent qui arrête le plan aujourd'hui :
-     ```sql
-     SELECT r.key, r.label,
-            (SELECT count(*) FROM public.staff_users u WHERE u.role_key = r.key AND u.status = 'active') AS titulaires_actifs
-     FROM public.staff_role_definitions r
-     CROSS JOIN LATERAL jsonb_array_elements(r.grants) AS g
-     WHERE r.archived_at IS NULL AND g->>'resource' = 'production_plan' AND g->>'action' = 'write'
-     ORDER BY r.key;
-
-     SELECT u.email, u.role_key, o.effect
-     FROM public.staff_permission_overrides o JOIN public.staff_users u ON u.id = o.staff_user_id
-     WHERE o.resource = 'production_plan' AND o.action = 'write'
-     ORDER BY u.email;
-     ```
-   - 🔴 le jour même, **avant 20:00**, accorder `production_count_stop` à ces
-     rôles et personnes à l'écran (sinon plus personne n'arrête le plan), et
-     `production_settings` à qui règle le fournil.
-2. **Rouvrir un plan arrêté par erreur** (Hugo, Q7) : « Rouvrir le plan »,
-   tant que rien n'a commencé en aval (aucune fournée cochée, rien au
-   colisage, aucune tournée partie ou retouchée), sous `production_count_stop`,
-   par un fait « plan rouvert » que commerce, livraison et colisage savent
-   défaire. À concevoir avant d'être bâti ; en attendant, le retirage couvre
-   un arrêt trop tôt.
+- Dans la course « arrêt anticipé contre réouverture », le balayage des
+  règlements a déjà tourné quand le refus tombe sous le verrou : il a tranché
+  les règlements d'une journée qu'on croyait arrêtée.
+- `production_plan:write` proposé à l'écran des rôles sans rien donner (TODO
+  ci-dessus).

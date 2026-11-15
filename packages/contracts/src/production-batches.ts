@@ -5,7 +5,7 @@ import { workshopInitialsSchema } from "./production-worksheet.js";
 /**
  * **Les fournées** — ce que le four a sorti d'une ligne de la fiche d'atelier,
  * déclaré au fil de l'eau plutôt que coché une fois (plan
- * `documentation/fournil/plan-fournees-progressives.md`, D1, D3).
+ * `documentation/fournil/la-fiche-d-atelier.md`, D1, D3).
  */
 
 /** Un ULID : 26 caractères de l'alphabet de Crockford. */
@@ -72,7 +72,7 @@ export interface WorkshopLineContainer {
 
 /**
  * **Un palier** d'une ligne — « 120 avant 7 h 00 » (plan
- * `documentation/fournil/plan-fournee-v3.md`, §2). Les paliers d'une ligne
+ * `documentation/fournil/la-fiche-d-atelier.md`, §2). Les paliers d'une ligne
  * sont ses tranches de production, rangées par le serveur selon le réglage de
  * l'atelier, et **non cumulés** : la somme des `quantity` vaut la quantité de
  * la ligne. L'écran les cumule lui-même.

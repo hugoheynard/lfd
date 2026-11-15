@@ -102,7 +102,7 @@ describe("handoverBlocker", () => {
     expect(blocker).toBe("Cette commande est annulée.");
   });
 
-  describe("la retenue qualité (plan-controle-qualite.md, D4)", () => {
+  describe("la retenue qualité (le-controle-qualite.md, D4)", () => {
     it("refuse une commande retenue, avec la phrase lue devant le client", () => {
       expect(handoverBlocker(candidate({ qualityHold: true }))).toBe(
         "Commande en cours de vérification.",

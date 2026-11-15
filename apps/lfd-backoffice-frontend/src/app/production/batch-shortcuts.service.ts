@@ -16,7 +16,7 @@ const WORKSHOP = `${B2B_API_BASE}/admin/production/shortcuts`;
 
 /**
  * **Les raccourcis du fournil** (plan
- * `documentation/fournil/plan-raccourcis-du-fournil.md`) — la page de
+ * `documentation/fournil/la-fiche-d-atelier.md`) — la page de
  * réglage sous `production_settings`, et la lecture de la fiche d'atelier
  * sous `production_worksheet`.
  *

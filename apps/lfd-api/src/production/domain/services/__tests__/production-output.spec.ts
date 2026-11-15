@@ -12,7 +12,7 @@ import {
 } from "../production-output.js";
 
 /**
- * **Les dérivés d'une ligne** (plan `plan-fournees-progressives.md`, D2) et la
+ * **Les dérivés d'une ligne** (plan `la-fiche-d-atelier.md`, D2) et la
  * fournée implicite d'une coche héritée (§5.2) — en fonctions pures.
  *
  * Ces instants ne sont comparés qu'entre eux (l'ordre de sortie), jamais à

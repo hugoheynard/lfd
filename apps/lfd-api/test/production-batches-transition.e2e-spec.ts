@@ -1,6 +1,6 @@
 /**
  * E2E de **la bascule vers les fournées** — plan
- * `documentation/fournil/plan-fournees-progressives.md`, §5 et D4.
+ * `documentation/fournil/la-fiche-d-atelier.md`, §5 et D4.
  *
  * Ce qui ne se prouve que contre la base migrée :
  *

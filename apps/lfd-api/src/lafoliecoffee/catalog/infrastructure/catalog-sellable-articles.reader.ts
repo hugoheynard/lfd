@@ -11,7 +11,7 @@ import { staffViewer } from "../domain/catalog-viewer.js";
 
 /**
  * **Les articles vendables, pour les raccourcis du fournil** (plan
- * `documentation/fournil/plan-raccourcis-du-fournil.md`, §3), lus dans le
+ * `documentation/fournil/la-fiche-d-atelier.md`, §3), lus dans le
  * miroir du catalogue par `CatalogReader.listSellable`.
  *
  * Le fournil fabrique pour les pros ET pour la vitrine : on lit les deux

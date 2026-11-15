@@ -14,7 +14,7 @@ export interface QualityUploadSweepReport {
 
 /**
  * Endpoint **batch** du balayage des photos de contrôle en attente (plan
- * `plan-controle-qualite.md`, D8). Même porte machine-à-machine que
+ * `le-controle-qualite.md`, D8). Même porte machine-à-machine que
  * `admin/media/sweep` et `admin/loyalty/sweep` : le `RecomputeGuard` et son
  * jeton, présentés par le Worker sur un Cron Trigger.
  *

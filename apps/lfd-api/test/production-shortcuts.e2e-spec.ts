@@ -1,6 +1,6 @@
 /**
  * E2E des **raccourcis du fournil** (plan
- * `documentation/fournil/plan-raccourcis-du-fournil.md`, S1 et S2), sur le
+ * `documentation/fournil/la-fiche-d-atelier.md`, S1 et S2), sur le
  * vrai Postgres jetable.
  *
  * Ce que seule cette suite prouve : les articles vendables lus au commerce par

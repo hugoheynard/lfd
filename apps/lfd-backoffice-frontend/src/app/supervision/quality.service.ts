@@ -16,7 +16,7 @@ import { intentOptions } from '../shared/gesture-intents';
 const QUALITY = `${B2B_API_BASE}/admin/supervision/quality`;
 
 /**
- * **Le contrôle qualité de la Supervision** (`plan-controle-qualite.md`, D3,
+ * **Le contrôle qualité de la Supervision** (`le-controle-qualite.md`, D3,
  * D8) — `admin/supervision/quality`.
  *
  * Deux niveaux de lecture, et c'est le serveur qui les tient : les pastilles

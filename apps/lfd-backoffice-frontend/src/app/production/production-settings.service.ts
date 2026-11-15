@@ -40,7 +40,7 @@ export class ProductionSettingsService {
     await firstValueFrom(this.http.delete(`${SETTINGS}/closed-days/${encodeURIComponent(date)}`));
   }
 
-  /** Les tranches de production (plan `fournil/plan-tranches-de-production.md`, T1). */
+  /** Les tranches de production (plan `fournil/le-previsionnel.md`, T1). */
   async saveTranches(payload: ProductionTranchesPayload): Promise<void> {
     await firstValueFrom(this.http.put(`${SETTINGS}/tranches`, payload));
   }

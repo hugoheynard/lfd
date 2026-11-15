@@ -12,7 +12,7 @@ import { ServiceDay } from "../../value-objects/service-day.value-object.js";
 import { ProductionDay, type ProductionBatchSnapshot } from "../production-day.js";
 
 /**
- * **Les fournées dans la journée** (plan `plan-fournees-progressives.md`, D3,
+ * **Les fournées dans la journée** (plan `la-fiche-d-atelier.md`, D3,
  * D4) — l'agrégat seul, sans Nest ni base.
  *
  * Ces instants ne sont que recopiés et comparés entre eux, jamais à l'horloge.

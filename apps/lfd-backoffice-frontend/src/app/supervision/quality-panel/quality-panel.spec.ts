@@ -9,7 +9,7 @@ import { QualityService } from '../quality.service';
 import { QualityPanel, type QualityPanelData } from './quality-panel';
 
 /**
- * Ce que le panneau de contrôle tient (`plan-controle-qualite.md`, §5, D8) :
+ * Ce que le panneau de contrôle tient (`le-controle-qualite.md`, §5, D8) :
  * la note dès la réserve, les photos déposées dès le choix, un seul `id` par
  * ouverture — rejoué tel quel —, et l'historique de la cible.
  */

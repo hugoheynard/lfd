@@ -652,7 +652,7 @@ describe('SupervisionPage', () => {
     expect(root(fixture).querySelector('[data-hit-nav]')).toBeNull();
   });
 
-  /** `plan-controle-qualite.md`, D7 : « N commandes retenues » sur la carte Retrait. */
+  /** `le-controle-qualite.md`, D7 : « N commandes retenues » sur la carte Retrait. */
   it('dit les commandes retenues au masthead, et la ligne dit « Retenue »', async () => {
     const held: HandoverQueueView = {
       ...QUEUE,

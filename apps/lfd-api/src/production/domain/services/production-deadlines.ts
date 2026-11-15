@@ -2,7 +2,7 @@ import type { TrancheThreshold } from "./production-tranches.js";
 
 /**
  * **Les paliers d'une ligne de la fiche** (plan
- * `documentation/fournil/plan-fournee-v3.md`, §2) — ses tranches, rendues non
+ * `documentation/fournil/la-fiche-d-atelier.md`, §2) — ses tranches, rendues non
  * cumulées et ajustées à la quantité que la fiche affiche.
  *
  * Fonction pure. Elle ne range rien : le rangement (mode fixe ou calculé,

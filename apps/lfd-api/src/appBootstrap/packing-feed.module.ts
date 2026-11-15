@@ -58,7 +58,7 @@ import { ProductionModule } from "../production/production.module.js";
  *   le contrôle qualité.
  * - `OvenWaitingOrdersReader` (2026-10-28) — la production DÉCLARE, le
  *   colisage implémente : les commandes qui attendent le four, par SKU, pour
- *   la ligne de la fiche d'atelier (`fournil/plan-fournee-v3.md`, §3).
+ *   la ligne de la fiche d'atelier (`fournil/la-fiche-d-atelier.md`, §3).
  *
  * - `PackedResuppliesReader` (réassort R3b, 2026-10-21) — le colisage
  *   DÉCLARE ET IMPLÉMENTE, le commerce lit : l'emballé d'un réassort, pour

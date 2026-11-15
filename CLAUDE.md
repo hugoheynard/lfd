@@ -539,7 +539,7 @@ d'un envoi remis sans avoir été colisé. `handover → packing` reste interdit
 le retrait publie, il ne sait pas qui écoute.
 
 🔴 **Le fournil lit ce qui attend le four au colisage** (2026-10-28, Hugo ;
-[`documentation/fournil/plan-fournee-v3.md`](documentation/fournil/plan-fournee-v3.md) §3).
+[`documentation/fournil/la-fiche-d-atelier.md`](documentation/fournil/la-fiche-d-atelier.md) §3).
 La production DÉCLARE `OvenWaitingOrdersReader` dans `production/channels/packing/`
 et le colisage l'IMPLÉMENTE (`BoardOvenWaitingOrdersReader`), avec la règle
 même de la Supervision (`awaitingProduction`) ; `appBootstrap/packing-feed.module.ts`

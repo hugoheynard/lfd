@@ -1,7 +1,7 @@
 import type { ServiceDay } from "../value-objects/service-day.value-object.js";
 
 /**
- * **Où ranger une photo de contrôle** (plan `plan-controle-qualite.md`, D8).
+ * **Où ranger une photo de contrôle** (plan `le-controle-qualite.md`, D8).
  *
  * La clé ne vient JAMAIS du client : elle se compose d'identifiants que le
  * serveur a tirés (le dépôt) ou vérifiés (le contrôle, sa journée). Deux

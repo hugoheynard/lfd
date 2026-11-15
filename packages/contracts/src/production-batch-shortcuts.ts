@@ -4,7 +4,7 @@ import type { OrderSaleUnit } from "./order.js";
 
 /**
  * **Les raccourcis du fournil** — compter en plaques (plan
- * `documentation/fournil/plan-raccourcis-du-fournil.md`, 2026-10-28).
+ * `documentation/fournil/la-fiche-d-atelier.md`, 2026-10-28).
  *
  * Un raccourci est, pour UN produit, un nom (« 1 plaque » par défaut) et un
  * nombre de pièces. Sur la fiche d'atelier, chaque appui AJOUTE ses pièces au

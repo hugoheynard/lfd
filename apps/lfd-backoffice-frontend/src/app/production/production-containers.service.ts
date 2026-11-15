@@ -9,7 +9,7 @@ const CONTAINERS = `${B2B_API_BASE}/admin/production/containers`;
 
 /**
  * **Le contenant principal de chaque produit** — celui du gros bouton « + 1
- * plaque » de la fiche d'atelier (plan `documentation/fournil/plan-fournee-v3.md`,
+ * plaque » de la fiche d'atelier (plan `documentation/fournil/la-fiche-d-atelier.md`,
  * §5). Lu sous `production_worksheet:read` ou `production_settings:read`, réglé
  * sous `production_settings:write`.
  *

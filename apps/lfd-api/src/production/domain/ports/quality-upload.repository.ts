@@ -1,7 +1,7 @@
 import type { QualityUpload } from "../entities/quality-upload.js";
 
 /**
- * **Les dépôts de photos en attente** (plan `plan-controle-qualite.md`, D8).
+ * **Les dépôts de photos en attente** (plan `le-controle-qualite.md`, D8).
  *
  * Un dépôt n'a qu'une règle — {@link QualityUpload.assertAttachableBy} — et elle
  * vit dans l'entité. Ce port range, relit, et marque la libération de l'objet

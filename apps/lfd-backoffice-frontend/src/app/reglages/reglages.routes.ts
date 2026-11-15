@@ -134,7 +134,7 @@ export const reglagesRoutes: Routes = [
       },
       {
         // Où le contrôle qualité se rend (Hugo, 2026-10-26,
-        // `plan-controle-qualite.md` D10) : même droit que les voisins.
+        // `le-controle-qualite.md` D10) : même droit que les voisins.
         path: 'commandes/controle-qualite',
         canActivate: [permissionGuard('lfc_order_settings:read')],
         title: 'Contrôle qualité — LFC B2B admin',
@@ -169,7 +169,7 @@ export const reglagesRoutes: Routes = [
       },
       {
         // Les raccourcis du fournil — compter en plaques (plan
-        // `fournil/plan-raccourcis-du-fournil.md`, S1, 2026-10-28). Même
+        // `fournil/la-fiche-d-atelier.md`, S1, 2026-10-28). Même
         // droit que le fournil ; la page se fige sans `:write`.
         path: 'production/raccourcis',
         canActivate: [permissionGuard('production_settings:read')],

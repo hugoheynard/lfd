@@ -1,0 +1,189 @@
+# La fiche d'atelier
+
+L'écran du fournil (`/fournil`) : ce qu'il faut sortir du four aujourd'hui,
+rayon par rayon, et le geste qui déclare ce qui est sorti. Le contexte qui le
+sert : [`architecture-contexte-production.md`](architecture-contexte-production.md).
+
+## En bref
+
+- **Une ligne par produit** du compte à produire, rangée dans l'onglet de sa
+  catégorie racine. Une barre montre ce qui est sorti face à ce qu'il faut, par
+  **paliers** : « 120 avant 07:00, puis 120 avant 09:30 ».
+- On déclare une **fournée** : « + 1 plaque » (le contenant du produit), un
+  raccourci, ou une saisie au pavé. Une fournée s'ajoute, elle ne remplace
+  rien, et elle part **aussitôt au colisage**.
+- Une erreur se corrige en **annulant** la fournée (bandeau « Annuler » pendant
+  quelques secondes, puis la puce de la fournée). Rien n'est effacé.
+- Plusieurs postes travaillent ensemble : chaque écran **se relit toutes les
+  15 secondes**.
+- Si des commandes sont arrivées après l'arrêt du plan, un bandeau le dit et
+  propose de **reprendre le tirage** (le retirage).
+
+```mermaid
+sequenceDiagram
+    participant É as Fiche d'atelier
+    participant F as Fournil
+    participant K as Colisage
+    É->>F: déclarer 24 croissants (id de la fournée choisi par l'écran)
+    F->>F: verrou de la journée, l'agrégat accepte
+    F->>F: fournée et remise au colisage, même transaction
+    F-->>K: production.handed_to_packing
+    É->>F: relecture
+    F-->>É: sorti 48 sur 120, palier 1 tenu
+```
+
+---
+
+## Partie technique
+
+### Quelle journée, quelles lignes
+
+`GET admin/production/worksheet/current` choisit la journée au serveur, à
+l'heure de Paris : **demain si son plan est arrêté, aujourd'hui sinon**.
+`GET …/worksheet?date=` sert un lien partagé. La réponse
+(`packages/contracts/src/production-worksheet.ts`) dit `relativeDay`.
+
+| La journée est… | Les lignes viennent de                              | `generatedAt`                            |
+| --------------- | --------------------------------------------------- | ---------------------------------------- |
+| arrêtée         | `production_count` (l'instantané)                   | `closedAt`                               |
+| ouverte         | la demande du commerce (`ExpectedProductionReader`) | `null` — l'écran dit « plan non arrêté » |
+
+**La fiche ne calcule rien** : groupes, ordre, compteurs (`doneCount`,
+`doneUnits`, `remainingUnits`) et listes `pending` / `done` viennent du
+serveur (`production-worksheet-groups.ts`, `production-worksheet-reading.service.ts`).
+L'écran garde l'état d'une case pendant son envoi, la fiche ouverte (retenue
+par personne, `worksheetCategory` dans les préférences staff) et la mise en
+forme.
+
+### Le rangement par catégorie racine
+
+Les rayons viennent du commerce par `WorkshopShelvesReader`
+(`channels/commerce/`), implémenté par `CatalogWorkshopShelvesReader` sur la
+vue des familles (`CatalogFamilyView.root`, `path`). Un onglet par **catégorie
+racine** ; le réglage « Afficher les sous-catégories » (Réglages › Production,
+carte « Rangement des fiches », `PUT admin/production/settings/display`,
+table `production_display_settings`, défaut non) pose des intertitres
+(`WorkshopGroup.sections`), jamais un onglet. Ordre : racines par `position`
+puis nom ; dans une racine, les articles rangés directement en tête, puis les
+sous-catégories. Un SKU sans famille va dans « Hors catalogue » ; une lecture
+des rayons en échec rend `shelvesKnown: false` et un groupe « Rayon inconnu »,
+la fiche reste servie. Le même rangement vaut au prévisionnel et au dossier
+du jour ([`le-previsionnel.md`](le-previsionnel.md)).
+
+### Une ligne
+
+`WorkshopLine` porte, en plus du produit et de la quantité :
+
+| Champ                            | Ce que c'est                                                                                                                                                                                                                                                                                              |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `produced`, `surplus`, `batches` | Σ des fournées non annulées, le dépassement (« 52 / 48 »), la liste des fournées annulables                                                                                                                                                                                                               |
+| `container`                      | le contenant réglé (« plaque », 24 pièces) ou `null` — sans contenant, pas de « + 1 plaque »                                                                                                                                                                                                              |
+| `deadlines`                      | les **paliers** : les tranches de production non cumulées, somme = quantité (`deadlinesOf`, `WorksheetDeadlinesReading`). Une fiche arrêtée qui compte moins que les besoins rogne les paliers en partant du dernier ; sans échéance, `before: null` ; tranches illisibles, `[]` et une panne journalisée |
+| `waitingOrders`                  | « 1 commande attend · remise 8 h 45 » : `OvenWaitingOrdersReader` (`channels/packing/`), implémenté par le colisage ; `null` si le colisage ne répond pas                                                                                                                                                 |
+| `quality`                        | le dernier verdict du produit ([`le-controle-qualite.md`](le-controle-qualite.md))                                                                                                                                                                                                                        |
+| `saleUnit`                       | `piece` ou `weight` : un article au poids se compte en grammes                                                                                                                                                                                                                                            |
+
+Les fonctions de palier (palier en cours, reste, retard) sont pures, côté
+écran : `fiche-atelier/workshop-deadlines.ts`, « maintenant » venant de
+l'horloge de la fiche (`workshop-clock.ts`).
+
+### L'écran
+
+`production/fiche-atelier/` : deux vues (« Par produit » et « Par tranche »,
+une carte par heure limite : dépassée, la prochaine, à venir, tenue), le
+`fold-meter` segmenté pour la barre à paliers, le pavé 3 × 4
+(`workshop-keypad/`) prérempli du reste du palier, les raccourcis
+(`workshop-shortcuts.reader.ts`), « Annuler la dernière » (`undoLast`,
+`workshop-gestures.ts`), l'horloge murale (`workshop-wall-clock/`), et au
+téléphone une carte par ligne avec les faites épinglées au pied.
+
+### Les fournées
+
+`production_batch` : une ligne par sortie, en ajout seul. **Sorti(sku) = Σ des
+fournées non annulées** ; aucun compteur tenu à côté.
+
+- **Déclarer** — `PUT …/worksheet/:date/lines/:sku/batches/:batchId`
+  (`RecordBatchCommand`). L'`id` vient de l'écran (ULID) : un rejeu de même
+  charge réussit sans rien écrire, même si la fournée a été annulée depuis ;
+  une autre charge sous le même `id` est refusée (409). Refus : journée non
+  arrêtée, SKU hors compte, quantité < 1. Le geste prend le verrou de la
+  journée, la recharge, écrit la fournée **et** la remise au colisage
+  (`production_handoff`, même `id`) et publie `production.handed_to_packing`
+  dans la même unité de travail.
+- **Annuler** — `DELETE …/worksheet/:date/batches/:batchId`
+  (`CancelBatchCommand`) : entière, tracée (`cancelled_at/by`), jamais
+  supprimée. Refusée si les pièces sont déjà au bac : la part annulable se lit
+  au colisage ([`../colisage/colisage.md`](../colisage/colisage.md)). Une
+  fournée absente que l'agrégat a laissé passer est un défaut nommé
+  (`production.batch.cancel_missing`).
+- **L'ancienne case** — `PUT|DELETE …/lines/:sku/done` restent servies :
+  cocher déclare une fournée du reste (`id` déterministe `mark-…`), décocher
+  annule les fournées de la ligne.
+- **La coche héritée** — une ligne de `production_count` cochée par l'ancien
+  poste (`done_at` non nul) et sans fournée compte comme une fournée implicite
+  de toute la quantité, en lecture. Tout geste qui change la quantité ou
+  déclare une fournée la matérialise d'abord (`id` `backfill-<jour>-<sku>`) ;
+  l'agrégat refuse de refaire le compte par-dessus une coche non matérialisée.
+- **Pas de journal d'activité** pour les fournées : une ligne datée et signée
+  en tient lieu ([`../journalisation/todo-journal-activite.md`](../journalisation/todo-journal-activite.md)).
+
+### Le contenant et les raccourcis
+
+Réglés sur une seule page, **Réglages › Production › Raccourcis du fournil**
+(`/reglages/production/raccourcis`, `production/batch-shortcuts-page/`), une
+table de tous les articles vendables (pro et public, `SellableArticlesReader`)
+avec filtre de familles et recherche.
+
+- **Le contenant principal** (`production_container` : `sku`,
+  `units_per_container`, `singular`, `plural`) — le gros bouton « + 1 plaque »
+  et les touches « 1 plaque / 2 plaques » du pavé. Routes
+  `GET|PUT|DELETE admin/production/containers[/:sku]`, écriture sous
+  `production_settings:write`. C'est un fait du four, pas un conditionnement
+  de vente : il vit dans le fournil, pas au référentiel.
+- **Les raccourcis** (`production_batch_shortcut`) — par produit, au plus 6
+  (`MAX_BATCH_SHORTCUTS_PER_PRODUCT`), nom de 1 à 30 caractères unique par
+  produit, pièces ≥ 1, retrait tracé (`removed_at`). Agrégat
+  `ProductBatchShortcuts`. Routes `admin/production/settings/shortcuts`
+  (`production_settings`) ; la fiche les lit par `GET admin/production/shortcuts`
+  (`production_worksheet`). Un raccourci ouvre le pavé posé sur sa valeur :
+  seul « Déclarer » enregistre.
+
+### Le retirage
+
+Le bandeau d'écart (`fiche-atelier/drift-banner/`) se lit sur les commandes que
+le commerce rend pour la journée, **moins celles que la journée porte déjà**
+(par `orderId`) : il annonce exactement ce que le geste absorbera. « Reprendre
+le tirage » (`POST …/worksheet/:date/retake`, `ProductionDay.retake`) absorbe
+ces commandes, refait le compte en matérialisant les coches héritées, signe
+`retaken_at` / `retaken_by`, publie `production.day_retaken` et renvoie le
+dossier complété. Une ligne déjà commencée dont la quantité change est nommée
+dans le bandeau avant le geste.
+
+### La relecture des postes
+
+`apps/lfd-backoffice-frontend/src/app/shared/periodic-refresh.ts`
+(`REFRESH_INTERVAL_MS = 15_000`), partagé avec le colisage et la Supervision :
+
+| Règle                                                            | Pourquoi                                                          |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------- |
+| toutes les 15 s, onglet visible                                  | le temps de sortir une plaque ; rien la nuit derrière une fenêtre |
+| tout de suite au retour                                          | un écran retrouvé ne montre pas du périmé                         |
+| jamais deux relectures à la fois                                 | au sous-sol, une lecture peut durer plus qu'un intervalle         |
+| une réponse partie avant la dernière écriture acceptée est jetée | sinon elle défairait un geste sous les doigts                     |
+
+La relecture est silencieuse ; ce qui change sous les yeux se dit (la fiche
+passe à demain quand le plan est arrêté ; le pied dit « relue à 4 h 12 » ou
+« relecture impossible depuis… »). Pas de file hors ligne : un geste part
+directement au serveur, et revient en arrière en le disant s'il échoue. Pas de
+websocket : l'API est sans état et multi-instance, il faudrait d'abord un point
+de diffusion commun.
+
+## Reste à faire
+
+- Resserrer la bascule des fournées : rejouer le rattrapage, retirer la lecture
+  de la coche héritée, puis les colonnes `production_count.done_*` (routes
+  `…/done` comprises).
+- Deux postes qui déclarent la même ligne dans le même quart de minute se
+  croisent toujours : seule une diffusion en direct fermerait la fenêtre.
+- Non porté par le modèle, donc absent de l'écran : un taux de casse, un ordre
+  de cuisson, une qualification de poste.

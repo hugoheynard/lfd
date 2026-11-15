@@ -9,7 +9,7 @@ export interface OvenWaitingOrders {
 /**
  * **« Quelles commandes du jour attendent le four, SKU par SKU ? »** — port
  * étroit que le fournil DÉCLARE et que le colisage IMPLÉMENTE (plan
- * `documentation/fournil/plan-fournee-v3.md`, §3 ; Hugo, 2026-10-28).
+ * `documentation/fournil/la-fiche-d-atelier.md`, §3 ; Hugo, 2026-10-28).
  *
  * « Attend le four » est la règle de la Supervision (`awaitingProduction`) :
  * une ligne ouverte dont le reste à poser dépasse le libre de la réserve.

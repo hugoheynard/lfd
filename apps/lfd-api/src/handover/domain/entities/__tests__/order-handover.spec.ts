@@ -84,7 +84,7 @@ describe("OrderHandover.attest", () => {
 
   it("refuse une commande RETENUE au contrôle qualité, sans en dire le motif", () => {
     // Le geste — scan, saisie, coursier — passe tout entier par ici : c'est
-    // l'endroit où la retenue doit refuser (plan-controle-qualite.md, D4).
+    // l'endroit où la retenue doit refuser (le-controle-qualite.md, D4).
     expect(() =>
       OrderHandover.attest(
         subject(),

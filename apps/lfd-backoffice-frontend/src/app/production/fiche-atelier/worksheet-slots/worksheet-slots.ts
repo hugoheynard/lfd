@@ -34,7 +34,7 @@ interface ShownSlot {
 }
 
 /**
- * **La vue par tranche** (plan `documentation/fournil/plan-fournee-v3.md` §4.8,
+ * **La vue par tranche** (plan `documentation/fournil/la-fiche-d-atelier.md` §4.8,
  * SPEC v3 §4) — une carte par heure limite, dans l'ordre : Dépassée, La
  * prochaine (une seule), À venir, Tenue ; une rangée par produit qui a un
  * palier à cette heure.

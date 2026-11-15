@@ -471,7 +471,7 @@ async function triggerSettlementReminders(env: Env): Promise<void> {
 
 /**
  * Réveille le container et déclenche le balayage des photos de contrôle qualité
- * déposées et jamais rattachées (plan `documentation/fournil/plan-controle-qualite.md`, D8),
+ * déposées et jamais rattachées (plan `documentation/fournil/le-controle-qualite.md`, D8),
  * qui balaie aussi le journal des journées du fournil — puis celui de la
  * livraison (`documentation/livraisons/architecture/plan-schema-delivery.md`, SD-D3), par sa
  * propre route : le fournil ne connaît pas la livraison — et enfin la purge du

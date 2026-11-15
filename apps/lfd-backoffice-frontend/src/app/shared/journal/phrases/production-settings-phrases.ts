@@ -91,7 +91,7 @@ const dossierSent: Phrase = (fact) => {
 
 /**
  * « tranches fixes à 05:00, 07:00 », « tranches fixes, aucune heure »,
- * « tranches calculées » (plan `fournil/plan-tranches-de-production.md`, T1).
+ * « tranches calculées » (plan `fournil/le-previsionnel.md`, T1).
  */
 function trancheTerms(raw: unknown): Segment[] {
   const settings = recordOf(raw);
@@ -118,7 +118,7 @@ function trancheTerms(raw: unknown): Segment[] {
 
 /**
  * « a ajouté le raccourci du fournil 1 plaque (VIE-001), 24 pièces » (plan
- * `fournil/plan-raccourcis-du-fournil.md`, S1). Le nom et le produit sont
+ * `fournil/la-fiche-d-atelier.md`, S1). Le nom et le produit sont
  * le sujet ; les pièces se disent.
  */
 const batchShortcut =

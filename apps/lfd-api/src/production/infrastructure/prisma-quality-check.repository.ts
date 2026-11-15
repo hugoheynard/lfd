@@ -57,7 +57,7 @@ interface CheckRow {
 
 /**
  * Le contrôle qualité dans le schéma `production` (plan
- * `plan-controle-qualite.md`, D2).
+ * `le-controle-qualite.md`, D2).
  *
  * Deux classes pour deux ports — lire une journée et écrire un verdict sont
  * deux besoins (ISP) —, et les mappers en fonctions du module : `toDomain`

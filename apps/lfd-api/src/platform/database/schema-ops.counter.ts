@@ -234,7 +234,7 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   ProductionOrder: "production",
   ProductionOrderLine: "production",
   ProductionCount: "production",
-  // Les fournées (2026-09-28, plan `plan-fournees-progressives.md`, D1) : une
+  // Les fournées (2026-09-28, plan `la-fiche-d-atelier.md`, D1) : une
   // ligne par sortie de four, lue avec la journée.
   ProductionBatch: "production",
   // Le paramétrage du four — combien de pièces tiennent dans un contenant. Il
@@ -256,7 +256,7 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   OrderWithdrawal: "production",
   // La révision d'une commande notée sous le verrou de la journée (plan de modification, §9.1).
   OrderRevisionNotice: "production",
-  // Le contrôle qualité du superviseur (2026-09-28, plan `plan-controle-qualite.md`,
+  // Le contrôle qualité du superviseur (2026-09-28, plan `le-controle-qualite.md`,
   // QC2) : un verdict par ligne, ses photos, et les dépôts qui attendent leur verdict.
   ProductionQualityCheck: "production",
   ProductionQualityPhoto: "production",

@@ -31,7 +31,7 @@ export interface ProductionSettingsView {
   readonly automaticClose: ProductionAutomaticCloseView | null;
   /** Les jours fermés d'aujourd'hui (compris) à plus tard, `AAAA-MM-JJ`, dans l'ordre. */
   readonly closedDays: readonly string[];
-  /** Les tranches de production (plan `fournil/plan-tranches-de-production.md`, T1). */
+  /** Les tranches de production (plan `fournil/le-previsionnel.md`, T1). */
   readonly tranches: ProductionTranchesView;
   /**
    * Le rangement des écrans et papiers du fournil (2026-10-30). Facultatif

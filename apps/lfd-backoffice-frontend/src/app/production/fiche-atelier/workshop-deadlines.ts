@@ -2,7 +2,7 @@ import type { WorkshopLine } from '@lfd/contracts';
 
 /**
  * **Les paliers d'une ligne, côté écran** (plan
- * `documentation/fournil/plan-fournee-v3.md` §2, SPEC v3 §1).
+ * `documentation/fournil/la-fiche-d-atelier.md` §2, SPEC v3 §1).
  *
  * Le serveur sert les paliers NON cumulés (`WorkshopLine.deadlines`) ; l'écran
  * les cumule, et les fournées les remplissent dans l'ordre, sans attribution

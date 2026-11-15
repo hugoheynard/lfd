@@ -36,7 +36,7 @@ const SEGMENT_SCALE = 100;
 
 /**
  * **Une ligne de la fiche, vue par produit** (plan
- * `documentation/fournil/plan-fournee-v3.md` §4.2–4.7).
+ * `documentation/fournil/la-fiche-d-atelier.md` §4.2–4.7).
  *
  * À gauche, le **reste du palier en cours** en gros, son heure et le total ; au
  * milieu, le nom, le contenant et les pastilles (retard, ce qui presse,

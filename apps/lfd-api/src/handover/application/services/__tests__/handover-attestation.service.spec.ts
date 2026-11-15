@@ -368,7 +368,7 @@ describe("HandoverAttestation", () => {
     });
   });
 
-  describe("la retenue qualité (plan-controle-qualite.md, D4)", () => {
+  describe("la retenue qualité (le-controle-qualite.md, D4)", () => {
     // La date demandée range la commande dans un plan : c'est le jour que la
     // question porte. Elle n'est jamais comparée à l'horloge ici.
     const planned = (): HandoverSubject => ({

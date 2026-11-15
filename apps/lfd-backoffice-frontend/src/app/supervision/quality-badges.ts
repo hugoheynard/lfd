@@ -8,7 +8,7 @@ import type {
 import type { FoldBadgeVariant } from 'fold-ng';
 
 /**
- * **Les pastilles du contrôle qualité** (`plan-controle-qualite.md`, D5, D7).
+ * **Les pastilles du contrôle qualité** (`le-controle-qualite.md`, D5, D7).
  * Fonctions pures : la page les pose, les colonnes les lisent.
  *
  * L'état se DIT en toutes lettres — « Réserve », « Bloquant », « À revoir » —,

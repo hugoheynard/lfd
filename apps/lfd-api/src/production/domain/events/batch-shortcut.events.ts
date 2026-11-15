@@ -5,7 +5,7 @@ import type { BatchShortcut, BatchShortcutTerms } from "../entities/batch-shortc
 
 /**
  * **Les faits des raccourcis du fournil** (Réglages › Production, plan
- * `fournil/plan-raccourcis-du-fournil.md`, S1). La ligne ne garde que le
+ * `fournil/la-fiche-d-atelier.md`, S1). La ligne ne garde que le
  * dernier état et son créateur ; le journal dit qui l'a modifié ou supprimé,
  * et ce qu'il disait avant.
  */

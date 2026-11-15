@@ -13,7 +13,7 @@ export interface WaitingOrdersOfSku {
 }
 
 /**
- * **Ce qui attend le four, SKU par SKU** (plan `fournil/plan-fournee-v3.md`,
+ * **Ce qui attend le four, SKU par SKU** (plan `fournil/la-fiche-d-atelier.md`,
  * §3) — fonction pure.
  *
  * La règle est celle de la Supervision, ligne pour ligne (`linesOf` de

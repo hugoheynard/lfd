@@ -1,5 +1,5 @@
 /**
- * E2E des **fournées** — plan `documentation/fournil/plan-fournees-progressives.md`,
+ * E2E des **fournées** — plan `documentation/fournil/la-fiche-d-atelier.md`,
  * D1, D3, D4, D6.
  *
  * Ce qui ne se prouve que contre le vrai Postgres :

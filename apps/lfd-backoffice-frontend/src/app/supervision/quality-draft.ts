@@ -13,7 +13,7 @@ import { clockLabel } from './supervision-labels';
 /**
  * **Le brouillon d'un contrôle** — ce que le panneau tient avant Enregistrer.
  * Fonctions pures : le panneau les appelle, les specs les lisent sans monter
- * de composant (`plan-controle-qualite.md`, §0, D8).
+ * de composant (`le-controle-qualite.md`, §0, D8).
  */
 
 /** Une photo choisie : déposée dès le choix, rattachée au verdict par son `uploadId`. */

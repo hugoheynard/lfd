@@ -6,7 +6,7 @@ import { BatchShortcutReader } from "../../domain/ports/batch-shortcut.reader.js
 import { GetBatchShortcutsSettingsQuery } from "./get-batch-shortcuts-settings.query.js";
 
 /**
- * La page des raccourcis (plan `fournil/plan-raccourcis-du-fournil.md`,
+ * La page des raccourcis (plan `fournil/la-fiche-d-atelier.md`,
  * S1) : les articles vendables, demandés au commerce par le canal, et les
  * raccourcis vivants. Les deux se lisent ensemble ; un raccourci dont
  * l'article n'est plus vendu reste servi — l'écran ne le montre pas, la fiche

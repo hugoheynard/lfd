@@ -8,7 +8,7 @@ export interface RecordedBatch {
 }
 
 /**
- * **Le port d'écriture des fournées** (plan `plan-fournees-progressives.md`,
+ * **Le port d'écriture des fournées** (plan `la-fiche-d-atelier.md`,
  * D1, D3).
  *
  * Un port à part de `ProductionDayRepository` (ISP) : déclarer une fournée ne

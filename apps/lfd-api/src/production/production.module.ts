@@ -265,7 +265,7 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     // classes abstraites.
     { provide: ProductionContainerReader, useClass: PrismaProductionContainerReader },
     { provide: ProductionContainerRepository, useClass: PrismaProductionContainerRepository },
-    // Le contrôle qualité du superviseur (plan `plan-controle-qualite.md`, QC2) :
+    // Le contrôle qualité du superviseur (plan `le-controle-qualite.md`, QC2) :
     // son schéma est `production`, ses ports se relient donc ici. Lire une
     // journée et écrire un verdict sont deux ports (ISP), les dépôts un troisième.
     DepositQualityPhotoHandler,

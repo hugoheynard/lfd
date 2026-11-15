@@ -25,7 +25,7 @@ interface ShownBatch {
 
 /**
  * **Les fournées d'une ligne**, en puces — chacune s'annule en deux temps :
- * ✕, puis « Annuler 24 ? » (plan `documentation/fournil/plan-fournee-v3.md`
+ * ✕, puis « Annuler 24 ? » (plan `documentation/fournil/la-fiche-d-atelier.md`
  * §4.5). N'importe quel poste annule celle d'un autre : le serveur trace qui.
  *
  * 🔴 Sur une journée tenue par le colisage, annuler une fournée déjà remise

@@ -48,7 +48,7 @@ import { ProductionModule } from "../production/production.module.js";
  *   sens : le fournil demande lesquelles sont parties ou retirées.
  * - `QualityHoldsReader` et `AtelierSheetsReader` — la **production publie ET
  *   implémente**, la remise lit. Le comptoir demande quelles commandes un contrôle retient ; la
- *   réponse est un fait de la production (`plan-controle-qualite.md`, D4).
+ *   réponse est un fait de la production (`le-controle-qualite.md`, D4).
  *
  * - `HandoverProofReader` (2026-10-02) — la **remise publie ET implémente**,
  *   le commerce lit : les preuves de remise à la porte, pour la fiche d'une

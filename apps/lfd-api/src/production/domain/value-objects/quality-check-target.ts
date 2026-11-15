@@ -2,7 +2,7 @@ import { QualityCheckTargetError } from "../errors/quality-check-errors.js";
 
 /**
  * **Ce qu'un contrôle juge** — une ligne de préparation OU une commande colisée
- * (`plan-controle-qualite.md`, §0 et D2).
+ * (`le-controle-qualite.md`, §0 et D2).
  *
  * Une union discriminée : une fois construite, une cible « à moitié ligne, à
  * moitié commande » est inexprimable. La factory {@link qualityCheckTargetOf}

@@ -26,7 +26,7 @@ import type {
 /**
  * **Les gardes des fournées** — ce qu'une journée refuse qu'on déclare, qu'on
  * annule ou qu'on décoche, **sans rien muter** (plan
- * `documentation/fournil/plan-fournees-progressives.md`, D3, D4).
+ * `documentation/fournil/la-fiche-d-atelier.md`, D3, D4).
  *
  * Des fonctions pures sur {@link BatchState}, sans transition : elles ne
  * lisent qu'un état et refusent. La journée reste le seul point d'entrée —

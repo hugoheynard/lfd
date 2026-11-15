@@ -43,7 +43,7 @@ const MAX_WEIGHT_DIGITS = 7;
 const DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'] as const;
 
 /**
- * **Le pavé 3 × 4** (plan `documentation/fournil/plan-fournee-v3.md` §4.4) —
+ * **Le pavé 3 × 4** (plan `documentation/fournil/la-fiche-d-atelier.md` §4.4) —
  * des touches qu'on vise les doigts farinés, à la place du champ et de son
  * clavier système qui recouvrait la fiche.
  *

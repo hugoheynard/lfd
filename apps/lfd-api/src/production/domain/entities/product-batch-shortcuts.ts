@@ -25,7 +25,7 @@ export interface BatchShortcutChange {
 
 /**
  * **Les raccourcis d'UN produit** — l'agrégat (plan
- * `documentation/fournil/plan-raccourcis-du-fournil.md`, §2-§3).
+ * `documentation/fournil/la-fiche-d-atelier.md`, §2-§3).
  *
  * Ses invariants regardent l'ensemble, d'où sa frontière au produit : au plus
  * {@link MAX_BATCH_SHORTCUTS_PER_PRODUCT} vivants, et jamais deux fois le même

@@ -1,11 +1,10 @@
 # Le dossier de production du jour
 
-**État au 2026-10-06.** Ce que contient le papier qui part au fournil, **d'où
-vient chaque information**, et comment il part par e-mail. Remplace le plan de
-l'envoi du dossier (lots E1, E1b, E2, E3, bâtis le 2026-10-06, retiré ce
-jour-là — il vit dans l'historique git).
+Ce que contient le papier qui part au fournil, **d'où vient chaque
+information**, et comment il part par e-mail. Il naît de l'arrêt du plan :
+[`arret-du-plan.md`](arret-du-plan.md).
 
-## Ce que c'est
+## En bref
 
 Le paquet que le fournil reçoit pour une journée : un récapitulatif de ce qu'il
 faut fabriquer, puis un bon par commande. Il se lit à deux endroits :
@@ -15,14 +14,30 @@ faut fabriquer, puis un bon par commande. Il se lit à deux endroits :
 | **Aperçu à l'écran** — Prévisionnel › Dossier du jour (onglets Récapitulatif / Bons)                                                              | une lecture, depuis les commandes **en direct** | à tout moment                                                                                 |
 | **Le PDF** — bouton « Imprimer le dossier » (ouvre le PDF dans un onglet), `GET /admin/production/batch/:date/dossier.pdf`, et l'envoi par e-mail | **le papier**, depuis ce que l'arrêt a **figé** | seulement une fois le plan **arrêté** ; avant, le bouton dit « Arrêtez d'abord le plan du … » |
 
-Depuis le 2026-10-06, on n'imprime plus depuis le navigateur : l'impression était l'écran, menu compris.
+On n'imprime pas depuis le navigateur : le papier est toujours le PDF du
+serveur.
 
 Le PDF serveur ne bouge plus une fois tiré : il est archivé
-(`<jour>/dossier-du-jour-v11.pdf`). Après un retirage qui ajoute des commandes,
-un second dossier « complété » est archivé à côté
-(`<jour>/dossier-du-jour-v11-retirage-<instant>.pdf`) ; l'original reste.
+(`<jour>/dossier-du-jour-v13.pdf`, `DOSSIER_LAYOUT_VERSION` dans
+`day-dossier-pdf.ts`). Après un retirage qui ajoute des commandes, un second
+dossier « complété » est archivé à côté
+(`<jour>/dossier-du-jour-v13-retirage-<instant>.pdf`) ; l'original reste. Le
+dossier ne porte **aucun prix ni total en euros** : le fournil fabrique, il ne
+facture pas.
 
-## La mise en page (2026-10-25, Hugo)
+```mermaid
+flowchart LR
+  A[Arrêt du plan] --> F[Ce qui est figé : commandes, en-têtes, réassorts]
+  F --> P[PDF du dossier, archivé au premier tirage]
+  P --> M[E-mail aux destinataires]
+  R[Retirage] --> P2[Dossier complété, archivé à côté] --> M
+```
+
+---
+
+## Partie technique
+
+### La mise en page
 
 Chaque page porte une **en-tête** : le logo, le titre de la page, « Lot pour le
 lun. 26 oct. » à droite ; le pied porte le **numéro de page encadré**. Une
@@ -32,11 +47,11 @@ section qui déborde dit « (1/2) », « (2/2) » dans son titre. L'ordre :
    lot compté, les commandes par acheminement, les rayons et leur total, les
    réassorts. Rien que les pages suivantes ne détaillent.
 2. **Un rayon par page** — « Viennoiseries — total à produire ».
-   **Suivi de son calendrier** (2026-11-02, Hugo) — « Viennoiseries — par
-   tranche horaire », **tournée d'un quart de tour sur une feuille A4
-   portrait** — une vraie page paysage au milieu du dossier ferait poser la
-   question du sens à l'impression, et un pilote qui la tranche mal recadre
-   (Hugo, 2026-11-02) ; on la lit en tournant la feuille. Les produits du rayon en lignes (avec
+   **Suivi de son calendrier** — « Viennoiseries — par tranche horaire »,
+   **tournée d'un quart de tour sur une feuille A4 portrait** : une vraie page
+   paysage au milieu du dossier ferait poser la question du sens à
+   l'impression (décidé par Hugo le 2026-11-02) ; on la lit en tournant la
+   feuille. Les produits du rayon en lignes (avec
    leurs sous-catégories si le réglage est actif), les tranches horaires en
    colonnes (« avant 05:00 »…, puis « Dans la journée » et « Sans heure »), la
    quantité à sortir dans chaque case avec **une case à cocher**, le total du
@@ -63,9 +78,9 @@ La fiche d'atelier (« ORD-… // Fiche de préparation », clé
 `fiche-atelier-v2.pdf`) et le compte à produire (clé
 `compte-a-produire-v2.pdf`) prennent le même cadre.
 
-Les tableaux ci-dessous décrivent ce que chaque page DIT ; la place a changé.
+Les tableaux ci-dessous décrivent ce que chaque page dit.
 
-## Page 1 — le récapitulatif
+### Le récapitulatif (couverture et rayons)
 
 | Ce qu'on lit                                                                                                                                                                                        | D'où ça vient                                                                                                                    |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
@@ -75,7 +90,7 @@ Les tableaux ci-dessous décrivent ce que chaque page DIT ; la place a changé.
 | « Hors catalogue »                                                                                                                                                                                  | un SKU qui n'a plus de rayon                                                                                                     |
 | « Rayon inconnu »                                                                                                                                                                                   | la lecture des rayons a échoué : le dossier est servi quand même, **mais pas archivé**, pour qu'un tirage suivant ait les rayons |
 
-## Pages suivantes — un bon par commande
+### Un bon par commande
 
 Triés par référence, sous le bandeau « LOT POUR LE MER. 7 OCT. · BON i/N » —
 le jour où la marchandise est attendue, pas celui où on la fabrique.
@@ -93,34 +108,28 @@ le jour où la marchandise est attendue, pas celui où on la fabrique.
 | La note du client                                                               | commerce, la note de la commande — **figée**                                                               |
 | Le QR de colisage                                                               | calculé depuis la référence, si l'adresse du back-office est configurée                                    |
 
-**Une commande figée avant le 2026-10-06** n'a pas ces champs : son bon garde
-l'ancien rendu (un seul libellé, la destination sur une ligne, « Pour HH:mm »),
+Une commande figée sans ces champs (journées les plus anciennes) garde un
+rendu court — un seul libellé, la destination sur une ligne, « Pour HH:mm » —
 et ce qui manque est omis, jamais deviné.
 
-**Le numéro de révision** n'est pas imprimé : le commerce ne connaît pas
-encore d'avenant, il vaudrait toujours 0.
+**Le numéro de révision** d'une commande révisée après l'arrêt
+(`order_revision_notice`) n'est pas imprimé sur son bon.
 
-## Le pied de chaque page
+### Le pied de chaque page
 
 « Arrêté par Marie Dupont le mardi 6 octobre 2026 à 20:00 » — « Arrêté
 automatiquement le … » pour l'arrêt automatique, « Arrêté le … » quand l'auteur
-est inconnu (journée arrêtée avant le 2026-10-06) —, puis « — complété par … le
+est inconnu —, puis « — complété par … le
 … » après un retirage, puis le folio « x/N » (« 3/12 ») : toutes les pages du fichier sont
 comptées, pages de suite et de BL comprises — une feuille manquante se voit. Le jour de
 la semaine est aussi dans les pieds de la feuille d'atelier et du compte à
 produire (même formatteur). L'auteur de l'arrêt est **figé à l'arrêt** (`production_day.closed_by` : l'id de
 la fiche, ou `auto-close` ; `closed_by_name` : son nom ce jour-là), et celui du
 retirage au retirage (`retaken_by_name`) : le papier ne bouge pas si la fiche
-est renommée. Depuis le 2026-10-06, la clé d'archive est `v4` (l'auteur, et le
-compte retrait/livraison). L'heure est **celle de Paris** (jusqu'au 2026-10-06, les papiers du
-fournil l'écrivaient en UTC : un arrêt fait après 22 h ou 23 h s'imprimait à la
-veille).
+est renommée. L'heure est **celle de Paris** : en UTC, un arrêt fait après
+22 h ou 23 h s'imprimerait à la veille.
 
-## Ce qui n'y est jamais
-
-Aucun prix ni total en euros : le fournil fabrique, il ne facture pas.
-
-## L'envoi par e-mail
+### L'envoi par e-mail
 
 **Production › Réglages › Dossier du jour par e-mail** tient la liste des
 destinataires (`production_settings`) :
@@ -129,7 +138,7 @@ destinataires (`production_settings`) :
   à chaque envoi — un changement d'adresse suit, une fiche suspendue ou sans
   adresse est sautée ;
 - **une autre personne** : seul l'e-mail est requis ; prénom, nom et poste
-  sont facultatifs (2026-10-06). Sans nom, la liste rend `firstName` /
+  sont facultatifs. Sans nom, la liste rend `firstName` /
   `lastName` à `null`, le journal et l'alerte la disent « un destinataire
   externe » — jamais son adresse —, et l'e-mail la salue « Bonjour, ».
 
@@ -182,7 +191,7 @@ envoi, seule la clé Resend (environ 24 h) évite le doublon.
 pas retenté ; une alerte (cloche + push, `production_count_stop`) nomme qui ne
 l'a pas reçu. Journal : « Le dossier du … a été envoyé à N destinataires ».
 
-## Où vit le code
+### Où vit le code
 
 - Contenu : `apps/lfd-api/src/production/domain/services/day-dossier.ts`
   (récapitulatif, ordre) et `dossier-sheet-head.ts` (en-tête d'un bon).
@@ -205,3 +214,9 @@ l'a pas reçu. Journal : « Le dossier du … a été envoyé à N destinataires
   `http/production-dossier-recipients.controller.ts`.
 - Écrans : `apps/lfd-backoffice-frontend/src/app/production/previsionnel/dossier-du-jour/`,
   `…/production/dossier-recipients-card/`.
+
+## Reste à faire
+
+- Le numéro de révision d'une commande n'est pas imprimé sur son bon.
+- Si la transaction de l'envoi est annulée après un envoi, seule la clé
+  d'idempotence de Resend (environ 24 h) évite le doublon.

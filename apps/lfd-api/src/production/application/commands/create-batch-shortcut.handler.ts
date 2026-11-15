@@ -12,7 +12,7 @@ import { saleUnitOfSku } from "./batch-shortcut-sale-unit.js";
 import { CreateBatchShortcutCommand } from "./create-batch-shortcut.command.js";
 
 /**
- * **Ajouter un raccourci** à un produit (plan `fournil/plan-raccourcis-du-fournil.md`,
+ * **Ajouter un raccourci** à un produit (plan `fournil/la-fiche-d-atelier.md`,
  * S1). L'agrégat du produit, chargé sous verrou, juge la saisie, le plafond
  * et le doublon ; l'écriture et son fait partent ensemble — un journal en
  * panne annule l'ajout. Rend l'identifiant du raccourci.

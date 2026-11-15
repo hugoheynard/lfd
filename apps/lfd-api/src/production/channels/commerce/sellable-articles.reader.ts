@@ -16,7 +16,7 @@ export interface SellableArticle {
 
 /**
  * **Les articles vendables, demandés au commerce** (plan
- * `documentation/fournil/plan-raccourcis-du-fournil.md`, §3).
+ * `documentation/fournil/la-fiche-d-atelier.md`, §3).
  *
  * La page « Raccourcis du fournil » liste tous les produits pour qu'on leur
  * pose des raccourcis. Or la production ne lit pas le catalogue : elle connaît

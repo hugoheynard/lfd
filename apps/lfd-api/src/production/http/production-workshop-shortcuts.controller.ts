@@ -7,7 +7,7 @@ import { GetWorkshopShortcutsQuery } from "../application/queries/get-workshop-s
 
 /**
  * **Les raccourcis, vus de la fiche d'atelier** (plan
- * `documentation/fournil/plan-raccourcis-du-fournil.md`, S2).
+ * `documentation/fournil/la-fiche-d-atelier.md`, S2).
  *
  * Sous `production_worksheet`, le droit de la fiche — et non sous
  * `production_settings` : le fournil qui compte en plaques n'a pas à tenir le

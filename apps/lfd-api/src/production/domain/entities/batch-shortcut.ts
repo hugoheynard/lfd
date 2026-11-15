@@ -70,7 +70,7 @@ export function batchShortcutLabelKey(label: string): string {
 
 /**
  * **Un raccourci du fournil** — pour un produit, un nom et un nombre de pièces
- * (plan `documentation/fournil/plan-raccourcis-du-fournil.md`, §2).
+ * (plan `documentation/fournil/la-fiche-d-atelier.md`, §2).
  *
  * Ses règles propres — nom rogné de 1 à 30 caractères, pièces entières ≥ 1 —
  * se jugent ici, à la création comme à la modification. Celles qui regardent

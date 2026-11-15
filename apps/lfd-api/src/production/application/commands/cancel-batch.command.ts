@@ -1,6 +1,6 @@
 /**
  * **Annuler une fournée** saisie par erreur — entière, tracée, jamais supprimée
- * (plan `plan-fournees-progressives.md`, D3). Pour corriger 48 en 36 : annuler,
+ * (plan `la-fiche-d-atelier.md`, D3). Pour corriger 48 en 36 : annuler,
  * redéclarer 36.
  *
  * Tout poste du fournil peut annuler la fournée d'un autre (Hugo, 2026-09-28,

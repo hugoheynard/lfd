@@ -37,7 +37,7 @@ import { QualityPhotoAttachment } from "../services/quality-photo-attachment.ser
 import { RenderQualityCheckCommand } from "./render-quality-check.command.js";
 
 /**
- * **Le verdict du superviseur** (plan `plan-controle-qualite.md`, D2, D8, D9).
+ * **Le verdict du superviseur** (plan `le-controle-qualite.md`, D2, D8, D9).
  *
  * ## L'idempotence d'abord
  *

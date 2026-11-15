@@ -6,7 +6,7 @@ import { GetWorkshopShortcutsQuery } from "./get-workshop-shortcuts.query.js";
 
 /**
  * Les raccourcis que la fiche d'atelier propose sous « Pièces sorties » (plan
- * `fournil/plan-raccourcis-du-fournil.md`, S2), rangés par SKU dans
+ * `fournil/la-fiche-d-atelier.md`, S2), rangés par SKU dans
  * l'ordre de leur position. Une lecture pour toute la fiche, pas une par
  * ligne. Lecture pure.
  */

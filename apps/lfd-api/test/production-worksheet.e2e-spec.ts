@@ -299,7 +299,7 @@ describe("l'écart et le retirage", () => {
     // La journée est effacée puis recréée par `save` : c'est là que les coches
     // se perdraient, et le fournil referait ce qui est déjà sorti du four.
     //
-    // Depuis les fournées (plan `plan-fournees-progressives.md`, D2, §5.4), la
+    // Depuis les fournées (plan `la-fiche-d-atelier.md`, D2, §5.4), la
     // coche est une fournée de 12 : elle survit au retirage, mais 12 sur 18
     // n'est plus « fait » — c'est ce que l'ancienne recopie de la coche
     // cachait, et que le bandeau nommait.

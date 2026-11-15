@@ -2,7 +2,7 @@ import type { QualityCheck } from "../entities/quality-check.js";
 
 /**
  * **Le port d'écriture du contrôle qualité** — il prend et rend l'AGRÉGAT
- * (plan `plan-controle-qualite.md`, D2).
+ * (plan `le-controle-qualite.md`, D2).
  *
  * Pas de `update` : un contrôle est une ligne jamais réécrite. Lever un blocage,
  * c'est `save` un nouveau contrôle. `load` sert l'idempotence (D8) — rejouer un

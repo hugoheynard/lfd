@@ -8,7 +8,7 @@ import {
 
 /**
  * Les refus des **raccourcis du fournil** (Réglages › Production, plan
- * `documentation/fournil/plan-raccourcis-du-fournil.md`, §2). Lus par qui
+ * `documentation/fournil/la-fiche-d-atelier.md`, §2). Lus par qui
  * règle l'écran : chacun nomme le cas et ce qu'il faut faire.
  */
 

@@ -12,7 +12,7 @@ import type { ServiceDay } from "../../domain/value-objects/service-day.value-ob
 /**
  * **Les tranches de chaque SKU d'une journée**, rangées par le réglage de
  * l'atelier — ce dont la fiche fait ses paliers (plan
- * `documentation/fournil/plan-fournee-v3.md`, §2).
+ * `documentation/fournil/la-fiche-d-atelier.md`, §2).
  *
  * La même lecture que `GetProductionDueThresholdsHandler` : les besoins du
  * commerce par son port, le réglage par le sien, et `rangeInTranches` pour la

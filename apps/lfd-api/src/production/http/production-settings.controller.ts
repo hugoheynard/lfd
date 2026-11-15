@@ -50,7 +50,7 @@ export class ProductionSettingsController {
   }
 
   /**
-   * Pose les tranches de production (plan `fournil/plan-tranches-de-production.md`,
+   * Pose les tranches de production (plan `fournil/le-previsionnel.md`,
    * T1). 400 sur une heure mal formée, un doublon ou plus de huit heures.
    */
   @Put("tranches")

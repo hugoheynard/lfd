@@ -231,7 +231,7 @@ describe('causeOf — qui a dépassé le créneau', () => {
 });
 
 describe('handoverBoard — le contrôle qualité', () => {
-  /** `plan-controle-qualite.md`, D7 : la retenue est lue telle quelle dans la file. */
+  /** `le-controle-qualite.md`, D7 : la retenue est lue telle quelle dans la file. */
   it('porte la retenue sur la ligne et la compte, retrait et livraison confondus', () => {
     const board = handoverBoard(
       {

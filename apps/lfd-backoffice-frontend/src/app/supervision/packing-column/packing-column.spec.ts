@@ -462,7 +462,7 @@ describe('PackingColumn', () => {
     expect(upcoming.querySelector('[data-reference="CMD-9"] [data-packing-shelf]')).not.toBeNull();
   });
 
-  /** `plan-controle-qualite.md`, §5 : seule une commande colisée se juge. */
+  /** `le-controle-qualite.md`, §5 : seule une commande colisée se juge. */
   it('ne propose « Contrôler » que sur une colisée, et seulement à qui peut juger', async () => {
     const fixture = await mountFixture(BOARD, NO_MATCHES, { canCheck: true });
     const element: HTMLElement = fixture.nativeElement;

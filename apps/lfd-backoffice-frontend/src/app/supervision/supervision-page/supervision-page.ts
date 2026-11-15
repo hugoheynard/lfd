@@ -120,7 +120,7 @@ export class SupervisionPage {
   private readonly permissions = inject(PermissionsStore);
   private readonly router = inject(Router);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
-  /** Les pastilles du contrôle qualité et son panneau (`plan-controle-qualite.md`). */
+  /** Les pastilles du contrôle qualité et son panneau (`le-controle-qualite.md`). */
   protected readonly quality = inject(QualityBoardStore);
   /** « Envoyer en boutique » le pain rendu par une annulation (plan A1, lot A1.4). */
   protected readonly reserveShop = inject(ReserveShopLauncher);

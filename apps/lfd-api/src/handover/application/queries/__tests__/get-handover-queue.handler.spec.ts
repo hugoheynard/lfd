@@ -312,7 +312,7 @@ describe("GetHandoverQueueHandler — la vue", () => {
   });
 });
 
-describe("GetHandoverQueueHandler — la retenue qualité (plan-controle-qualite.md, D4)", () => {
+describe("GetHandoverQueueHandler — la retenue qualité (le-controle-qualite.md, D4)", () => {
   it("pose UNE question pour toute la file, avec le jour et les ids", async () => {
     const holds = new FixedQualityHolds(["ord_2"]);
     const { handler } = handlerOf(

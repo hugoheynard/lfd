@@ -57,7 +57,7 @@ interface ShelfLine {
  * geste de la fournée, et la Supervision n'agit pas (plan §1). Le renvoi
  * « Ouvrir la fournée » n'est montré qu'à qui peut l'ouvrir.
  *
- * Le seul geste est de JUGER (`plan-controle-qualite.md`, §5) : chaque ligne
+ * Le seul geste est de JUGER (`le-controle-qualite.md`, §5) : chaque ligne
  * porte la pastille de son contrôle et, pour qui a le droit, « Contrôler » ;
  * le rayon porte la pire pastille de ses lignes.
  */

@@ -25,7 +25,7 @@ import { RecordBatchCommand } from "../record-batch.command.js";
 import { RecordBatchHandler } from "../record-batch.handler.js";
 
 /**
- * **Déclarer et annuler une fournée** (plan `plan-fournees-progressives.md`,
+ * **Déclarer et annuler une fournée** (plan `la-fiche-d-atelier.md`,
  * D3), orchestrés sur des ports doublés.
  *
  * Aucune comparaison à l'horloge ici : ces instants ne sont que recopiés.

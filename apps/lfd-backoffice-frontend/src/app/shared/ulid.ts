@@ -8,7 +8,7 @@
  * de `crypto.getRandomValues`, jamais de `Math.random()`.
  *
  * Premier usage : la clé d'idempotence d'un contrôle qualité
- * (`plan-controle-qualite.md`, D8) — le même `id` rejoué rend le contrôle déjà
+ * (`le-controle-qualite.md`, D8) — le même `id` rejoué rend le contrôle déjà
  * écrit au lieu d'en créer un second.
  */
 const CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';

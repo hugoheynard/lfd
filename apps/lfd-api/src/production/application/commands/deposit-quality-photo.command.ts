@@ -1,6 +1,6 @@
 /**
  * **Déposer une photo de contrôle**, seule, dès qu'elle est prise (plan
- * `plan-controle-qualite.md`, D8, première moitié du geste).
+ * `le-controle-qualite.md`, D8, première moitié du geste).
  *
  * Les octets arrivent bruts : `QualityPhoto` les refuse ou les reconnaît.
  */

@@ -9,7 +9,7 @@ import type { StoredDocument } from "../../platform/storage/document-store.js";
  *
  * Réécrit ici plutôt qu'emprunté aux cartes à photo (`lafoliecoffee/shared/photo-cards`),
  * que la production n'a pas le droit d'importer (`CLAUDE.md` §3, plan
- * `plan-controle-qualite.md`, D8). Même mécanique, bornes à elle.
+ * `le-controle-qualite.md`, D8). Même mécanique, bornes à elle.
  */
 
 /** Le champ multipart qui porte la photo. */

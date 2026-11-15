@@ -36,7 +36,7 @@ import { WorksheetDeadlinesReading } from "../worksheet-deadlines-reading.servic
 
 /**
  * Les paliers et la pastille qualité d'une ligne de la fiche (plan
- * `documentation/fournil/plan-fournee-v3.md`, §2–§3). Le jour est dérivé de
+ * `documentation/fournil/la-fiche-d-atelier.md`, §2–§3). Le jour est dérivé de
  * maintenant ; les heures `HH:mm` des besoins ne sont comparées qu'entre elles.
  */
 const NOW = new Date();

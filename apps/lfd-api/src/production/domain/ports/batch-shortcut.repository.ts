@@ -2,7 +2,7 @@ import type { ProductBatchShortcuts } from "../entities/product-batch-shortcuts.
 
 /**
  * Port d'**écriture** des raccourcis du fournil (plan
- * `fournil/plan-raccourcis-du-fournil.md`, S1) : l'agrégat d'un produit se
+ * `fournil/la-fiche-d-atelier.md`, S1) : l'agrégat d'un produit se
  * charge entier — ses raccourcis vivants — et se sauve par ce qui a changé.
  *
  * Le chargement se fait DANS l'unité de travail et y verrouille le produit :

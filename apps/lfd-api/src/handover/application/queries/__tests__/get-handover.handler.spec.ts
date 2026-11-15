@@ -17,7 +17,7 @@ import { GetHandoverQuery } from "../get-handover.query.js";
 /**
  * Les deux écrans AVANT le geste — le scan et le rail de la file — disent la
  * retenue qualité par `blockedReason`, dans l'ordre de la règle
- * (`plan-controle-qualite.md`, D4). En oublier un, c'est un écran qui dit
+ * (`le-controle-qualite.md`, D4). En oublier un, c'est un écran qui dit
  * « remettable » et un scan qui refuse.
  */
 

@@ -256,7 +256,7 @@ export interface HandoverQueueEntryView {
   readonly readyAt: string | null;
   /**
    * **Retenue par un contrôle qualité** : le scan la refusera avec « Commande
-   * en cours de vérification. » (`plan-controle-qualite.md`, D4).
+   * en cours de vérification. » (`le-controle-qualite.md`, D4).
    *
    * Toujours `false` sur une ligne `handed_over` ou `cancelled` : la règle du
    * retrait dit ces refus-là d'abord. Le motif n'est pas ici — il est sur la

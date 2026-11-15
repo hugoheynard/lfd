@@ -188,7 +188,7 @@ export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
     needs: 'production_settings:read',
   },
   {
-    // Les raccourcis du fournil (plan `fournil/plan-raccourcis-du-fournil.md`,
+    // Les raccourcis du fournil (plan `fournil/la-fiche-d-atelier.md`,
     // S1, 2026-10-28) : compter en plaques sur la fiche d'atelier.
     key: 'reglages-raccourcis',
     label: 'Raccourcis du fournil',
@@ -353,7 +353,7 @@ export const EXPLOITATION_VIEWS: readonly WorkspaceView[] = [
     needs: 'lfc_order_settings:read',
   },
   {
-    // Où le contrôle qualité se rend (Hugo, 2026-10-26, `plan-controle-qualite.md` D10).
+    // Où le contrôle qualité se rend (Hugo, 2026-10-26, `le-controle-qualite.md` D10).
     key: 'commandes-controle-qualite',
     label: 'Contrôle qualité',
     link: '/reglages/commandes/controle-qualite',

@@ -6,7 +6,7 @@ import {
 } from "../../../platform/shared/errors/app-error.js";
 
 /**
- * Les refus des **fournées** (plan `plan-fournees-progressives.md`, D3).
+ * Les refus des **fournées** (plan `la-fiche-d-atelier.md`, D3).
  *
  * À part de `production-errors.ts`, qui approchait les trois cents lignes : les
  * fournées ont leur propre raison de changer, et leurs messages sont lus au

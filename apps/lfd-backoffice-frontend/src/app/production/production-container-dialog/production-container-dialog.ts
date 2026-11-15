@@ -43,7 +43,7 @@ export interface ProductionContainerDialogData {
 
 /**
  * **Le dialogue du contenant principal** d'un produit (plan
- * `documentation/fournil/plan-fournee-v3.md`, §5) : singulier, pluriel,
+ * `documentation/fournil/la-fiche-d-atelier.md`, §5) : singulier, pluriel,
  * pièces ; s'il est réglé, une `fold-danger-zone` pour le retirer. Même forme
  * que le dialogue d'un raccourci, dont il partage la page.
  *

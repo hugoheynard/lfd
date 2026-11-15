@@ -23,7 +23,7 @@ const NO_CONTENT = 204;
 
 /**
  * **Réglages › Production › Raccourcis du fournil** (plan
- * `documentation/fournil/plan-raccourcis-du-fournil.md`, S1).
+ * `documentation/fournil/la-fiche-d-atelier.md`, S1).
  *
  * Sous `production_settings` : lire en `GET`, régler sinon. Le contrôleur ne
  * juge que la FORME ; le nom, les pièces, le plafond et le doublon sont jugés

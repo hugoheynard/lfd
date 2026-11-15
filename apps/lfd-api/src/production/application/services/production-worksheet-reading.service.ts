@@ -57,7 +57,7 @@ import { WorksheetDeadlinesReading } from "./worksheet-deadlines-reading.service
  * « Rayon inconnu » : le fournil sort ses pièces quand même, et l'écran le dit.
  * Refuser la fiche pour un rangement ferait d'un confort une panne de production.
  *
- * ## Paliers et pastilles (plan `documentation/fournil/plan-fournee-v3.md`, §3)
+ * ## Paliers et pastilles (plan `documentation/fournil/la-fiche-d-atelier.md`, §3)
  *
  * Chaque ligne porte ses paliers — ses tranches, rangées par le réglage de
  * l'atelier — et le verdict qualité courant de son SKU, le même que la

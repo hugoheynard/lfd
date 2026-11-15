@@ -61,7 +61,7 @@ export class OrderHandover {
    * `standing` porte ce que le sujet ne sait pas : `handedOverAt` vient de la
    * table du retrait — le commerce n'est plus l'autorité sur ce fait, et le lui
    * demander rouvrirait la porte aux deux vérités —, `qualityHold` de la
-   * production (`plan-controle-qualite.md`, D4). Les deux passent par la même
+   * production (`le-controle-qualite.md`, D4). Les deux passent par la même
    * règle, dans l'ordre qu'elle fixe.
    *
    * @throws {HandoverRefusedError} l'état interdit le retrait, ou l'auteur manque.

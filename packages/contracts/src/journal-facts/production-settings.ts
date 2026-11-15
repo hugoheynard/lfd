@@ -66,7 +66,7 @@ export const PRODUCTION_SETTINGS_FACTS = {
   ),
   /**
    * Les tranches de production (Réglages › Production, plan
-   * `fournil/plan-tranches-de-production.md`, T1, 2026-10-28) : l'état posé
+   * `fournil/le-previsionnel.md`, T1, 2026-10-28) : l'état posé
    * et celui qu'il remplace, défauts compris. Un réglage unique, sans
    * `subjectLabel`.
    */
@@ -92,7 +92,7 @@ export const PRODUCTION_SETTINGS_FACTS = {
     }),
   ),
   /**
-   * Un raccourci du fournil (plan `fournil/plan-raccourcis-du-fournil.md`,
+   * Un raccourci du fournil (plan `fournil/la-fiche-d-atelier.md`,
    * S1, 2026-10-28) : pour un produit, un nom et un nombre de pièces. Nommé
    * « 1 plaque (VIE-001) » — le nom et le SKU produit.
    */

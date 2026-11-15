@@ -22,7 +22,7 @@ type QualityLevel = keyof QualityControlSettingsPayload;
 
 /**
  * **Contrôle qualité** — Réglages › Commandes (décision de Hugo, 2026-10-26,
- * `plan-controle-qualite.md`, D10). Deux cases : au fournil (lignes de
+ * `le-controle-qualite.md`, D10). Deux cases : au fournil (lignes de
  * préparation, désactivé par défaut) et au colisage (commandes colisées,
  * activé par défaut).
  *

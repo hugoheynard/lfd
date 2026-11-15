@@ -12,7 +12,7 @@ import { ServiceDay } from "../domain/value-objects/service-day.value-object.js"
 
 /**
  * **La retenue au retrait**, dite par la production (plan
- * `plan-controle-qualite.md`, D4, D6) — l'adaptateur du port qu'elle publie.
+ * `le-controle-qualite.md`, D4, D6) — l'adaptateur du port qu'elle publie.
  *
  * La règle n'est pas ici : elle est `heldOrderIds`, pure, la même que lit la
  * Supervision. Ici, deux lectures du schéma `production` — les contrôles de la

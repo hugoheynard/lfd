@@ -1,6 +1,6 @@
 /**
  * **Ce que la production répond au retrait** : lesquelles de ces commandes
- * sont retenues par un contrôle qualité (`plan-controle-qualite.md`, D4, D6).
+ * sont retenues par un contrôle qualité (`le-controle-qualite.md`, D4, D6).
  *
  * 🔴 **Le sens est l'INVERSE de `AttestedHandoversReader`**, rangé dans le même
  * dossier. Ici, la production PUBLIE et implémente ; le retrait lit. C'est la

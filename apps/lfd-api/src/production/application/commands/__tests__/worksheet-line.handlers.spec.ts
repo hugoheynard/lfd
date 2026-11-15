@@ -21,7 +21,7 @@ import { UnmarkWorksheetLineHandler } from "../unmark-worksheet-line.handler.js"
 
 /**
  * L'ancienne case de la fiche d'atelier, **traduite en fournées** (plan
- * `plan-fournees-progressives.md`, D3) : cocher = déclarer le reste, décocher =
+ * `la-fiche-d-atelier.md`, D3) : cocher = déclarer le reste, décocher =
  * tout annuler. Servie au même contrat tant qu'un front déployé l'appelle.
  *
  * Aucune comparaison à l'horloge ici : ces instants ne sont que recopiés.

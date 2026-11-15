@@ -227,7 +227,7 @@ describe("les droits", () => {
 
 /**
  * Le contenant d'un article se règle sur la page des raccourcis depuis le
- * 2026-10-28 (plan `documentation/fournil/plan-fournee-v3.md`, §5) : son
+ * 2026-10-28 (plan `documentation/fournil/la-fiche-d-atelier.md`, §5) : son
  * écriture passe sous `production_settings:write`, sa lecture reste ouverte à
  * la fiche d'atelier.
  */

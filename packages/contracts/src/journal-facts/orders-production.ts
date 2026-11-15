@@ -352,7 +352,7 @@ const qualityTarget = () =>
  * Le socle des trois faits du contrôle qualité : le libellé est le SKU d'une
  * ligne ou la référence d'une commande. ⚠️ Ni la note ni les photos n'y
  * entrent : elles ne se lisent qu'en `b2b_supervision:write` (plan
- * `documentation/fournil/plan-controle-qualite.md`, D3), et le journal a
+ * `documentation/fournil/le-controle-qualite.md`, D3), et le journal a
  * d'autres lecteurs.
  */
 const qualityFact = <S extends Record<string, z.ZodType>>(extra: S) =>

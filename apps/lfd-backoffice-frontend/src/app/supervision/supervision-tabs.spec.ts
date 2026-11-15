@@ -104,7 +104,7 @@ describe('blockersOf', () => {
 });
 
 describe('blockersOf — le contrôle qualité', () => {
-  /** `plan-controle-qualite.md`, D7 : « N commandes retenues » sur la carte Retrait. */
+  /** `le-controle-qualite.md`, D7 : « N commandes retenues » sur la carte Retrait. */
   it('compte les commandes retenues', () => {
     expect(blockersOf(packing(), handover({ held: 2 })).heldLabel).toBe('2 commandes retenues');
     expect(blockersOf(packing(), handover({ held: 1 })).heldLabel).toBe('1 commande retenue');

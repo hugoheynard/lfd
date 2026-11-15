@@ -96,7 +96,7 @@ export interface SupervisionBlockers {
   readonly overdueCustomer: number;
   readonly overdueCustomerLabel: string;
   /**
-   * Les commandes retenues par un contrôle qualité (`plan-controle-qualite.md`,
+   * Les commandes retenues par un contrôle qualité (`le-controle-qualite.md`,
    * D7) — sur la carte Retrait : c'est la colonne qui retient.
    */
   readonly held: number;

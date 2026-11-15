@@ -2,7 +2,7 @@ import type { ServiceDay } from "../value-objects/service-day.value-object.js";
 
 /**
  * **Le verrou d'une journée** — ce qui sérialise l'invariant « au bac ≤ sorti »
- * (plan `plan-fournees-progressives.md`, D4).
+ * (plan `la-fiche-d-atelier.md`, D4).
  *
  * Trois écrivains le touchent : mettre au bac (ou ressortir), annuler une
  * fournée, et `save` de la journée (clôture, retirage), qui réécrit les lignes

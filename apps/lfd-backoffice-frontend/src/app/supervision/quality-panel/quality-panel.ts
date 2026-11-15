@@ -73,7 +73,7 @@ export interface QualityPanelData extends QualityRequest {
 const VERDICTS: readonly QualityVerdictCode[] = ['ok', 'warning', 'blocking'];
 
 /**
- * **Le panneau de contrôle** (`plan-controle-qualite.md`, §5, D8) — le seul
+ * **Le panneau de contrôle** (`le-controle-qualite.md`, §5, D8) — le seul
  * geste de la Supervision : elle n'agit pas sur la commande, elle la juge.
  *
  * Trois choix, la note (obligatoire dès la réserve), des photos facultatives

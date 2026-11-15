@@ -11,7 +11,7 @@ function secondsNow(): number {
 
 /**
  * **L'horloge de la fiche** — « maintenant », mis à jour chaque seconde (plan
- * `documentation/fournil/plan-fournee-v3.md` §2), lu par l'horloge du bandeau.
+ * `documentation/fournil/la-fiche-d-atelier.md` §2), lu par l'horloge du bandeau.
  * `minutes` ne change qu'à la minute : un retard ne se recalcule pas à chaque
  * seconde (un signal égal ne relance rien).
  *

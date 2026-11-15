@@ -68,7 +68,7 @@ const BADGES: Readonly<
  * carte = un client. Ni cases de colis, ni Étiquettes, ni Bon de commande :
  * ce sont les gestes du poste, et la carte y renvoie (plan §1).
  *
- * Une commande COLISÉE se juge (`plan-controle-qualite.md`, §5) : elle porte
+ * Une commande COLISÉE se juge (`le-controle-qualite.md`, §5) : elle porte
  * la pastille de son contrôle et, pour qui a le droit, « Contrôler ».
  *
  * Supervision v2 (A4, A5, A7, B7) : la colonne ne décide pas de la mise en

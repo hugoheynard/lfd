@@ -246,7 +246,7 @@ describe('PreparationColumn', () => {
     expect(element.querySelector('fold-callout')?.textContent).toContain('Rayon inconnu');
   });
 
-  /** `plan-controle-qualite.md`, §5 et D5 ; v2 A6 : le résumé n/m sur le rayon fini replié. */
+  /** `le-controle-qualite.md`, §5 et D5 ; v2 A6 : le résumé n/m sur le rayon fini replié. */
   it('pose la pastille de chaque ligne, dit la péremption, et résume le rayon replié', async () => {
     TestBed.configureTestingModule({ providers: [provideRouter([])] });
     const fixture = TestBed.createComponent(PreparationColumn);

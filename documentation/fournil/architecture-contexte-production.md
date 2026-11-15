@@ -1,248 +1,156 @@
-# La production tient sa propre écriture — le contexte, ses tables, ses pièces
+# Le fournil — le contexte `production`
 
-**Décidé le 2026-09-07 · ⛔ non implémenté.** Ce document dit ce que la
-production **possède** : un contexte à part entière dans `lfd-api`, ses propres
-tables (schéma Postgres `production`), et les deux pièces qu'elle produit — la
-feuille d'atelier d'une commande, le compte à produire d'une journée.
+Ce que le bloc `apps/lfd-api/src/production/` possède, ce qu'il demande aux
+autres blocs et ce qu'il leur annonce. Les écrans et les gestes du fournil ont
+leurs propres documents :
 
-⚠️ **Rien de tout cela n'existe encore.** `src/` ne porte pas de dossier
-`production`, et `prisma/schema/datasource.prisma` déclare quatre schémas (`public`, `growth`,
-`ops`, `pim`), pas un cinquième. Ce qui suit est la cible ; l'état du jour est
-décrit dès la première section, et il n'est pas flatteur.
+| Sujet                                              | Document                                             |
+| -------------------------------------------------- | ---------------------------------------------------- |
+| Figer le plan d'une journée, le rouvrir, l'alerte  | [`arret-du-plan.md`](arret-du-plan.md)               |
+| Le papier du jour et son envoi par e-mail          | [`dossier-prod-du-jour.md`](dossier-prod-du-jour.md) |
+| La matrice des jours, les tranches, le rangement   | [`le-previsionnel.md`](le-previsionnel.md)           |
+| La fiche d'atelier, les fournées, les raccourcis   | [`la-fiche-d-atelier.md`](la-fiche-d-atelier.md)     |
+| Le verdict du superviseur et la retenue au retrait | [`le-controle-qualite.md`](le-controle-qualite.md)   |
 
-Le cycle de vie d'une commande — l'énuméré, les transitions, qui les écrit — vit
-à côté : [`../commandes/la-commande/architecture-cycle-de-vie-commande.md`](../commandes/la-commande/architecture-cycle-de-vie-commande.md).
+## En bref
+
+Le fournil fabrique ce que les commandes et les réassorts demandent pour une
+journée. Le soir, le **plan** de la journée est **arrêté** : le fournil copie
+chez lui les commandes et les réassorts du jour, et en tire le **compte à
+produire** (un article, une quantité). Le lendemain, il déclare ce qui sort du
+four (les **fournées**) ; ce qui sort part au colisage.
+
+Le fournil ne connaît une commande que par **un identifiant et une copie**
+prise à l'arrêt, jamais par une jointure : une commande renommée ou annulée
+chez le commerce ne fait pas disparaître ce qu'on a fabriqué. Il ne porte
+**aucun montant** : il fabrique, il ne facture pas.
+
+```mermaid
+flowchart LR
+  C[Commerce : commandes, réassorts, heure limite] -->|ports que le fournil déclare| F[Fournil : la journée, le compte, les fournées]
+  F -->|faits durables| C
+  F -->|faits durables et lecteurs| K[Colisage]
+  F -->|fait de l'arrêt, lecteurs| L[Livraison]
+  R[Retrait] -->|lit la retenue qualité, les fiches| F
+```
 
 ---
 
-## Ce que c'est aujourd'hui
+## Partie technique
 
-La production **n'a rien à elle**. Elle vit dans `lafoliecoffee/orders` et lit les tables
-de commerce en direct : `OrderReader.listForProduction(date)` et
-`findForPacking(reference)`, dont l'adaptateur compose la feuille d'atelier en
-joignant `orders`, `order_lines` et `companies`.
+### Ce qu'il possède — le schéma `production`
 
-Ça marche, et ça a une conséquence qu'on paie déjà : **le fournil dépend de la
-forme des tables du commerce**. Un renommage côté commande casse un écran
-d'atelier, et rien ne le dit avant l'exécution — c'est une frontière qui n'existe
-que dans les noms de dossiers.
+Toutes les tables sont dans `apps/lfd-api/prisma/schema/production.prisma`,
+schéma Postgres `production`, sans clé étrangère vers `public`.
 
-## La journée, un agrégat — et son plan à part
+| Table                                                                           | Ce qu'elle tient                                                                                              |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `production_day`                                                                | la journée : arrêt (`closed_at`, auteur), retirage, réouverture, qui colise                                   |
+| `production_order`, `production_order_line`                                     | les commandes figées à l'arrêt, avec leur copie (en-tête du bon, échéance, lignes)                            |
+| `production_resupply`, `_line`                                                  | les réassorts figés à l'arrêt                                                                                 |
+| `production_count`                                                              | le compte à produire, `(service_day, sku)` ; `done_*` = coche de l'ancien poste                               |
+| `production_batch`                                                              | les fournées, en ajout seul, annulables                                                                       |
+| `production_handoff`, `production_return_request`                               | ce qui a été remis au colisage, et les retours demandés                                                       |
+| `production_container`, `production_batch_shortcut`                             | le contenant d'un produit (« 1 plaque · 24 ») et les raccourcis                                               |
+| `production_quality_check`, `_photo`, `_upload`, `_quality_settings`            | le contrôle qualité                                                                                           |
+| `production_settings`, `production_closed_day`, `production_auto_close_attempt` | jours fermés, tentative d'arrêt automatique (les colonnes d'arrêt de `production_settings` ne sont plus lues) |
+| `production_tranche_settings`, `production_display_settings`                    | tranches fixes ou calculées, affichage des sous-catégories                                                    |
+| `production_dossier_recipient`, `production_dossier_dispatch`                   | destinataires du dossier du jour, envois faits                                                                |
+| `order_withdrawal`, `order_revision_notice`                                     | retraits et révisions d'une commande déjà inscrite                                                            |
+| `production_day_change`                                                         | le journal des versions de journée, qui fait relire les écrans                                                |
 
-`ProductionDay` (`apps/lfd-api/src/production/domain/entities/production-day.ts`)
-est un agrégat, pas un CRUD : deux règles peuvent refuser une écriture, et
-elles coûtent cher si on les rate.
+### La journée, un agrégat
 
-1. **Une journée arrêtée ne se recalcule pas.** Le compte à produire est un
-   instantané pris à l'arrêt ; les commandes bougent après. Le refaire
-   donnerait un autre nombre que celui sur lequel le fournil a lancé ses
-   fournées. Seuls trois gestes signés le touchent ensuite — le retirage, le
-   lancement d'un réassort « au plus tôt », la révision d'une commande
-   inscrite — et aucun ne fait descendre un article sous ce qui a déjà été
-   demandé au four (`floorCounts`).
-2. **Une journée sans commande ni réassort ne s'arrête pas.** Fermer le vide
-   écrirait « ce jour-là on a produit ceci » là où il n'y a rien eu.
+`ProductionDay` (`domain/entities/production-day.ts`, et ses parties
+`production-day.*.ts`) porte le **cycle** : arrêtée, retirée, rouverte, lancée
+« au plus tôt », révisée, et les fournées. `DayPlan`
+(`production-day.plan.ts`) porte le **calcul** du compte à partir des
+commandes et des réassorts. Deux refus structurent tout :
 
-Les commandes et leurs lignes sont **dedans** : elles n'ont aucun cycle de vie
-propre. Le **calcul** du plan — commandes, réassorts du soir, réassorts lancés,
-compte — vit dans `DayPlan` (`apps/lfd-api/src/production/domain/entities/production-day.plan.ts`, sorti le 2026-11-02) ;
-l'agrégat garde le **cycle** (arrêtée, reprise, rouverte, qui colise, les
-fournées) et les refus. **Aucun montant** : le fournil fabrique, il ne facture
-pas, et `ProducibleLine` n'a pas de champ de prix.
+1. **Une journée arrêtée ne se recalcule pas.** Seuls des gestes signés la
+   refont : le retirage, le lancement d'un réassort « au plus tôt », la
+   révision ou le retrait d'une commande inscrite. Aucun ne fait descendre un
+   article sous ce qui a déjà été demandé au four (`floorCounts`), et refaire
+   le compte par-dessus une coche de l'ancien poste non matérialisée lève
+   `UncarriedInheritedChecksError`.
+2. **Une journée sans commande ni réassort ne s'arrête pas.**
 
-## Comment les deux contextes se parlent, et QUAND
+Les gestes qui touchent la journée prennent un verrou consultatif sur sa clé
+puis la rechargent (`infrastructure/prisma-production-day.lock.ts`) ; les
+gestes du colisage et de la livraison le prennent en mode partagé
+(`ArrestedPlanHold`).
 
-Cinq échanges, et un seul est synchrone. Le sens compte plus que le nombre : le
-fournil **demande** ce dont il a besoin et **annonce** ce qu'il a fait ; le
-commerce répond et écoute. Jamais l'inverse.
+### Les canaux
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Staff as Staff (fournil)
-    participant P as production
-    participant B as b2b (commerce)
+Le fournil **déclare** ce qu'il demande et **publie** ce qu'il fait ; il
+n'importe jamais un autre bloc métier (`production → lafoliecoffee`, `→ packing`,
+`→ delivery`, `→ handover` sont interdits, CLAUDE.md § 3). `appBootstrap` relie
+chaque port à son adaptateur.
 
-    Note over P,B: ① La clôture du plan du soir — le seul aller-retour synchrone
-    Staff->>P: POST /admin/production/batch/{jour}/close
-    P->>P: load(jour) — refuse si déjà arrêtée
-    P->>B: DayOrdersReader.producibleFor(jour)
-    B-->>P: commandes `placed` (snapshot, sans montant)
-    P->>P: close() — fige les commandes, arrête le compte
-    P->>P: save() — schéma `production`
-    P--)B: ProductionDayClosedEvent
-    P-->>Staff: { absorbed, alreadyClosed, closedAt }
-    Note right of B: en ARRIÈRE-PLAN (BackgroundWork)
-    B->>B: absorbIntoPlan — placed → confirmed
+| Canal                | Implémenté par                                      | Ce qu'il porte                                                                                                                                                                                                                                                                                                                                              |
+| -------------------- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `channels/commerce/` | le commerce                                         | les commandes du jour (`DayOrdersReader`), les réassorts (`DayResuppliesReader`), la demande attendue, les seuils d'échéance, l'heure limite, les rayons (`WorkshopShelvesReader`), les guichets d'admission, de retrait et de révision, le balayage des règlements, les BL ; faits `production.day_closed`, `production.day_reopened`, `resupply_launched` |
+| `channels/packing/`  | le fournil publie, le colisage écoute ou implémente | faits `handed_to_packing`, `packing_list_drawn`, `resupply_list_drawn`, `return_requested`… ; `ArrestedPlanHold`, lecteurs d'en-tête et d'étiquette ; `OvenWaitingOrdersReader`, `PackedOrdersReader`, `DayPackingProgressReader` (déclarés par le fournil, implémentés par le colisage)                                                                    |
+| `channels/delivery/` | la livraison écoute ou implémente                   | fait `production.day_retaken`, réassorts figés, `DayDispatchProgressReader`                                                                                                                                                                                                                                                                                 |
+| `channels/handover/` | les deux sens                                       | `QualityHoldsReader` et `AtelierSheetsReader` publiés par le fournil pour le retrait ; `AttestedHandoversReader` et `OrderCustodyReader` que le retrait implémente                                                                                                                                                                                          |
 
-    Note over P,B: ② Le papier — la production ne demande plus rien
-    Staff->>P: GET …/compte-a-produire.pdf · …/sheets/{réf}.pdf
-    P->>P: lit SES tables, archive au 1ᵉʳ tirage (bucket production)
-    P-->>Staff: PDF
+Les faits sont **durables** : écrits dans la boîte d'envoi dans la même
+transaction que la journée, relayés après validation, repris en cas d'échec
+([`../journalisation/plan-boite-d-envoi.md`](../journalisation/plan-boite-d-envoi.md)).
+Rejouer l'arrêt réannonce le fait sous une clé neuve : c'est le filet.
 
-    Note over P,B: ③ Le colisage — un geste du labo, devant la fiche
-    Staff->>P: POST …/batch/{jour}/sheets/{réf}/packed
-    alt la journée n'est pas arrêtée, ou la fiche n'est pas au plan
-        P-->>Staff: 409 / 404 — le geste n'a pas de sens ici
-    else le bac n'était pas encore fait
-        P->>P: markPacked (CONDITIONNELLE) + production.order_packed dans la boîte d'envoi, même transaction
-        P--)B: production.order_packed (relais de la boîte d'envoi, depuis le 2026-10-04)
-        P-->>Staff: { packedAt, packedBy, alreadyPacked: false }
-        Note right of B: livré au moins une fois, repris s'il échoue
-        B->>B: MarkOrderReady — confirmed → ready, courriel au client (sans effet si déjà prête)
-    else le bac est DÉJÀ fait — rescan
-        P--)B: production.order_packed (fait neuf par rescan, valeurs du 1ᵉʳ scan)
-        P-->>Staff: { …, alreadyPacked: true }
-    end
+L'état de la journée (`GET admin/production/batch/:date/status`) rend trois
+écarts lus au commerce — `pendingInCommerce`, `packedBehind`,
+`handedOverBehind` (`get-production-day-status.handler.ts`) — pour voir ce
+qu'un abonné n'aurait pas encore appliqué.
 
-    Note over P,B: ④ La remise — au comptoir du labo, ou au chargement
-    Staff->>P: GET · POST …/production/handover/{jeton}
-    P->>B: HandoverSubjectReader.byToken(jeton)
-    B-->>P: la commande (état, client, lignes) — AUCUN champ de remise
-    P->>P: OrderHandover.attest — refuse annulée / brouillon / déjà remise
-    alt l'attestation s'écrit (unicité en base)
-        P--)B: OrderHandedOverEvent
-        P-->>Staff: l'attestation — qui, quand, `scan` ou `manual`
-        Note right of B: en ARRIÈRE-PLAN (BackgroundWork)
-        B->>B: MarkOrderFulfilled — recopie le snapshot, passe `fulfilled`
-    else déjà remise — le sac est parti
-        P--)B: OrderHandedOverEvent (réannonce, valeurs de la vraie remise)
-        P-->>Staff: 409 — le GESTE est refusé, la PROPAGATION est réparée
-    end
+Ce que deviennent les faits ailleurs : le colisage
+([`../colisage/colisage.md`](../colisage/colisage.md)), le retrait
+([`../retrait/le-retrait.md`](../retrait/le-retrait.md)), la composition des
+tournées ([`../livraisons/tournees/composition-automatique.md`](../livraisons/tournees/composition-automatique.md)),
+le cycle de la commande
+([`../commandes/la-commande/architecture-cycle-de-vie-commande.md`](../commandes/la-commande/architecture-cycle-de-vie-commande.md)).
 
-    Note over P,B: ⑤ Le contrepoids — voir ce que chaque fait a pu perdre
-    Staff->>P: GET …/batch/{jour}/status
-    P->>B: pendingFor · behindOnPacking · behindOnHandover
-    B-->>P: trois comptes — un par fait annoncé
-    P-->>Staff: { pendingInCommerce, packedBehind, handedOverBehind }
-```
+### Le papier
 
-### Ce que le trait pointillé veut dire, et ce qu'il coûte
+`application/services/production-paper.service.ts` tire et archive au premier
+tirage, dans le bucket `production`
+([`../commandes/bon-et-pieces/architecture-pieces-en-r2.md`](../commandes/bon-et-pieces/architecture-pieces-en-r2.md)),
+trois pièces : la fiche d'atelier d'une commande
+(`orders/<id>/fiche-atelier-v2.pdf`), le compte à produire
+(`<jour>/compte-a-produire-v2.pdf`) et le dossier du jour. Chacune a son
+spécimen sur la planche des documents.
 
-`P--)B` est **asynchrone** : le bus vit en processus, l'événement n'est ni
-persisté ni rejoué. La réponse part **avant** que le commerce ait écrit.
+### Les routes
 
-C'est le couplage minimal, choisi en connaissance de cause : chaque contexte
-n'écrit que ses tables, et la production ne saurait pas dire si l'abonné a
-réussi. Ce que ça coûte est réel — un container qui tombe entre ① et l'écriture
-laisse des commandes `placed` sur une journée close.
+| Contrôleur (`http/`)                                                       | Préfixe                                        | Droit                                                                           |
+| -------------------------------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------- |
+| `production-day.controller.ts`                                             | `admin/production/batch/:date/…`, `forecast`   | `production_plan` ; arrêt et réouverture sous `production_count_stop:write`     |
+| `production-worksheet.controller.ts`                                       | `admin/production/worksheet…`, `containers`    | `production_worksheet` ; contenant en écriture sous `production_settings:write` |
+| `production-settings.controller.ts`                                        | `admin/production/settings`                    | `production_settings`                                                           |
+| `production-batch-shortcuts.controller.ts`                                 | `admin/production/settings/shortcuts`          | `production_settings`                                                           |
+| `production-dossier-recipients.controller.ts`                              | `admin/production/settings/dossier-recipients` | `production_settings`                                                           |
+| `production-resupply-launch.controller.ts`                                 | `…/batch/:date/resupplies/:id/launch`          | `production_resupply`                                                           |
+| `production-quality.controller.ts`, `production-supervision.controller.ts` | `admin/supervision/…`                          | `b2b_supervision`                                                               |
+| `quality-control-settings.controller.ts`                                   | `admin/production/quality-settings`            | `lfc_order_settings`                                                            |
+| `auto-close.controller.ts`, `quality-upload-sweep.controller.ts`           | routes machine du Worker                       | jeton du Worker                                                                 |
 
-Trois choses le rendent **rattrapable** plutôt que perdu :
+### Les écrans du back-office
 
-|                                |                                                |
-| ------------------------------ | ---------------------------------------------- |
-| L'écriture est idempotente     | `status` contraint dans le `where`             |
-| **Les trois sont rejouables**  | reclore, rescanner la feuille, rescanner le QR |
-| **Les trois écarts se voient** | ⑤, un compteur par fait                        |
+| Écran                                                                  | Où (`apps/lfd-backoffice-frontend/src/app/`)                               |
+| ---------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Prod manager › Prévisionnel (`/prod-manager/previsionnel`)             | `production/previsionnel/`                                                 |
+| Prod manager › Réassorts                                               | `production/reassorts-a-produire/`                                         |
+| Fournil — la fiche d'atelier (`/fournil`)                              | `production/fiche-atelier/`                                                |
+| Réglages › Production (`/reglages/production/fournil`, `…/raccourcis`) | `production/production-settings-page/`, `production/batch-shortcuts-page/` |
+| Supervision (contrôle qualité)                                         | `supervision/`                                                             |
 
-⚠️ **Deux des trois ne l'étaient pas jusqu'au 2026-09-08**, et c'est le défaut le
-plus sérieux qu'a porté ce chantier. Le colisage et la remise refusaient le
-second scan (`409`) : le refus fermait le seul geste qui répare, et aucun
-compteur ne montrait l'écart. Une commande pouvait rester `confirmed` **pour
-toujours**, sans que personne puisse l'apprendre autrement qu'en comparant deux
-tables à la main.
+`/production` et `/production/previsionnel` redirigent vers le Prod manager.
 
-Le motif de la clôture — « presser à nouveau le bouton est le rattrapage » —
-existait pourtant depuis le premier jour du contexte. Il a été copié sans son
-rattrapage, ce qui est la façon la plus discrète de perdre une garantie.
+## Reste à faire
 
-**La remise garde son refus**, et c'est délibéré : le sac est parti, la personne
-en face doit le savoir. Ce qui a changé est qu'elle republie **avant** de
-refuser. Le geste et la propagation sont deux questions ; une seule réponse les
-confondait.
-
-⚠️ Ce qu'on n'a **pas** : une file, un outbox, un rejeu automatique. Ce serait la
-vraie réponse à « l'événement ne doit jamais se perdre », et c'est un chantier en
-soi. L'écrire ici évite qu'on croie l'avoir.
-
-### Le sens de chaque flèche, et pourquoi il ne s'inverse pas
-
-- **P → B** passe toujours par un **port que la production déclare**
-  (`channels/commerce/`), implémenté par le commerce, relié dans `appBootstrap`.
-- **B → P** n'existe pas comme appel : le commerce **s'abonne** — aux trois
-  faits : la clôture, le colisage, la remise —, il n'est jamais appelé par le
-  fournil pour écrire chez lui. Le fournil ne sait donc pas qu'une commande devient `ready` ; il sait
-  qu'un bac est fait, et c'est le commerce qui en tire un statut.
-- `lint:context-boundaries` tient les deux : `production → b2b` est interdit, et
-  `b2b → production` n'est permis que par le canal.
-
-### Pourquoi la remise a sa propre table, et pas deux colonnes de plus
-
-La règle de remise laisse passer une commande encore `placed` — refuser
-renverrait un client physiquement présent, colis prêt, parce qu'un écran
-d'atelier n'a pas été cliqué. Une commande passée **après** la clôture de sa
-journée n'est donc dans aucun plan, et reste remettable.
-
-L'accrocher à `production_order` aurait obligé à créer sa ligne de plan à la
-volée, ce qui fausserait le compte à produire — un instantané qui ne se
-recalcule pas. `order_handover` est indépendante de la journée, et ses deux
-uniques (`order_id`, `reference`) rendent la seconde remise **inexprimable**
-plutôt que refusée par un `WHERE` : c'est le seul endroit du dossier où le
-déménagement a rendu une garantie plus forte qu'elle ne l'était.
-
-⚠️ Un événement qu'un autre bloc consomme fait **partie de la surface publiée**,
-au même titre qu'un port — il vit donc dans `channels/commerce/`, pas dans
-`domain/events/`. La porte l'a refusé avant qu'on n'y pense.
-
-## Ce que la cible change
-
-|                          | Aujourd'hui                          | Cible                             |
-| ------------------------ | ------------------------------------ | --------------------------------- |
-| Où vit la production     | `lafoliecoffee/orders`               | `src/production/`                 |
-| Ses tables               | aucune — elle lit celles du commerce | schéma `production`               |
-| La feuille d'atelier     | composée à la volée depuis `orders`  | **possédée**, produite par elle   |
-| Le compte à produire     | n'existe pas                         | **possédé**, arrêté à la clôture  |
-| Le lien vers la commande | jointure SQL                         | **identifiant opaque + snapshot** |
-| Le colisage              | acté chez le commerce                | **acté au fournil**, puis annoncé |
-| La remise                | attestée sur la ligne de commande    | **table à elle**, unicité en base |
-
-Le dernier point est le cœur, et ce n'est pas une nouveauté : c'est **exactement
-la règle que le dépôt applique déjà entre `b2b` et `pim`**. Une `OrderLine`
-porte le SKU du référentiel en `string`, avec copie du nom et du prix au moment
-de la commande — jamais une jointure. La production suit la même discipline vis-
-à-vis du commerce.
-
-## Quand la commande s'inscrit — et pourquoi ce moment
-
-**À la clôture du plan du soir**, c'est-à-dire à la transition `confirmed`.
-
-C'est le seul instant qui a un sens : avant, la commande peut encore changer et
-le fournil n'a rien à en faire ; après, la journée est arrêtée et ce qu'on
-fabrique ne bouge plus. C'est déjà le moment où `absorbIntoPlan` fait basculer
-une journée entière, et où le compte à produire est **arrêté** — la seule pièce
-de tout ce dossier qui ne se refabrique pas, parce qu'elle est un instantané.
-
-⚠️ **À confirmer avant de bâtir.** Un fournil qui voudrait voir arriver les
-commandes au fil de l'eau, avant la clôture, demanderait une inscription à la
-passation et une mise à jour jusqu'à la clôture — un modèle différent, avec des
-avenants à propager. Le choix ci-dessus est le plus simple qui tienne, pas le
-seul possible.
-
-## Les trois questions qu'un snapshot ouvre, et qu'il faut trancher
-
-**Qui fait autorité en cas d'écart ?** Le commerce, toujours : c'est lui qui a
-encaissé. La copie de production documente ce qu'on a **fabriqué**, pas ce qu'on
-a vendu. Un écart entre les deux est un fait à lire, jamais à réconcilier en
-écrasant l'un par l'autre.
-
-**Que devient une commande annulée après la clôture ?** La production doit
-l'apprendre — sans quoi le fournil produit pour rien. C'est un second fait à
-propager, et il ne peut pas être une suppression : le compte à produire du jour a
-déjà été arrêté, et il doit rester ce qu'il était.
-
-**Un avenant après la clôture ?** Il n'existe pas aujourd'hui. Le jour où il
-existera, il ajoutera une révision à la feuille d'atelier — comme il en ajoute
-une au bon de commande — et le compte du jour, lui, ne bougera pas.
-
-## Ce que ça implique ailleurs
-
-- **La matrice des frontières** du `CLAUDE.md` gagne une ligne : `production`
-  peut atteindre `staff` (autorisation) et `platform`, et le commerce **par
-  port** — jamais l'inverse. `lint:context-boundaries` la transcrira.
-- **Le schéma `production`** entre dans le `datasource`, donc
-  `lint:cross-schema-join` le surveillera automatiquement — il lit les schémas
-  déclarés plutôt qu'une liste écrite en dur.
-- **Le bucket `production`** existe déjà en configuration, en dev et en test, et
-  attend précisément ces deux pièces :
-  [`../commandes/bon-et-pieces/architecture-pieces-en-r2.md`](../commandes/bon-et-pieces/architecture-pieces-en-r2.md). Il n'a aucun
-  écrivain — ce chantier est son premier.
+- Retirer les colonnes `production_count.done_*` et la lecture de la coche
+  héritée comme fournée implicite (dernier temps de la bascule des fournées,
+  [`la-fiche-d-atelier.md`](la-fiche-d-atelier.md)).
+- Retirer les colonnes d'arrêt mortes de `production_settings` (`close_mode`,
+  `close_at`, `alert_at`) — sur ordre de Hugo, une colonne morte reste en base.

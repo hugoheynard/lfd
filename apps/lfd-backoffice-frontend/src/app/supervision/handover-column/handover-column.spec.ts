@@ -178,7 +178,7 @@ describe('HandoverColumn', () => {
     );
   });
 
-  /** `plan-controle-qualite.md`, D7 : une commande retenue le dit, et sa carte passe en alerte. */
+  /** `le-controle-qualite.md`, D7 : une commande retenue le dit, et sa carte passe en alerte. */
   it('dit « Retenue » sur une commande retenue, carte en alerte', async () => {
     const held = row('RETENUE', { heldForQuality: true });
     const board: HandoverBoard = {
