@@ -59,6 +59,57 @@ imports respectent (`prisma-model-ownership` raisonne par bloc,
 
 ### 1 bis. Une surface publique par métier (décidé par Hugo le 2026-11-15)
 
+**Aujourd'hui** : tout est à plat, et n'importe quel fichier en lit
+n'importe quel autre.
+
+```mermaid
+flowchart LR
+  subgraph aujourdhui["production/ aujourd'hui — un seul tas"]
+    A1[fiche d'atelier] --- P1[réglages des tranches]
+    P2[dossier du jour] --- A2[rangement de la fiche]
+    Q1[contrôle qualité] --- A1
+    PDF[service des PDF] --- A1
+    PDF --- P2
+    R1[réassort] --- P1
+  end
+```
+
+**Demain** : chaque métier est une pièce fermée avec **une seule porte**
+(son `index.ts`). On entre par la porte ; l'intérieur est privé.
+
+```mermaid
+flowchart TB
+  subgraph DAY["day/ — la journée"]
+    DAYI(["porte : dépôt, verrou, version, tranches"])
+    DAYP["privé : agrégat, compte, fournées, colonnes"]
+  end
+  subgraph QUALITY["quality/"]
+    QI(["porte : poser un contrôle, tableau, retenues"])
+    QP["privé : verdicts, photos, balayage"]
+  end
+  subgraph PLAN["plan/"]
+    PI(["porte : arrêter, rouvrir, retirer, clôturer, prévisionnel, dossier"])
+    PP["privé : règles d'arrêt, envoi du dossier, PDF du dossier"]
+  end
+  subgraph ATELIER["atelier/"]
+    AI(["porte : fournée, fiche, affichage"])
+    AP["privé : lecture de la fiche, raccourcis, PDF de la fiche"]
+  end
+  subgraph RESUPPLY["resupply/"]
+    RI(["porte : lancer un réassort, lire les réassorts"])
+    RP["privé : enregistrement du lancement"]
+  end
+  PLAN -->|par la porte| DAYI
+  ATELIER -->|par la porte| DAYI
+  QUALITY -->|par la porte| DAYI
+  RESUPPLY -->|par la porte| DAYI
+  ATELIER -->|lit les retenues| QI
+  PLAN -->|consigne les réassorts| RI
+```
+
+Une flèche qui viserait l'intérieur d'une pièce (« privé ») est refusée par
+la porte au commit, et par le module Nest au démarrage.
+
 Chaque sous-contexte expose **une petite porte d'entrée**, et garde le reste
 privé. Trois couches la tiennent :
 
