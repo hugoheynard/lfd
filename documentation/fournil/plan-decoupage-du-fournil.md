@@ -413,6 +413,12 @@ mêlent jamais dans un lot.
    qu'un fichier envoie une commande ou une requête, ou écoute un fait, d'un
    autre métier autrement que par son `index.ts` et selon les arêtes admises —
    la classe du message lue, pas seulement son import.
+   Et les exemptions (ajouté par Hugo le 2026-11-15) : `appBootstrap/`
+   importe les modules des métiers et ce qu'ils exportent, plus leurs
+   classes internes une à une ; `dev/` passe par le bus et les `index.ts`,
+   comme un client ordinaire. La porte cesse de les exempter. `test/` garde
+   son droit de regarder dedans : un e2e qui vérifie une ligne en base doit
+   pouvoir le faire.
 10. **Après le dernier déménagement** : remettre à jour
     `architecture-contexte-production.md` (la liste des contrôleurs sous
     « `http/` », périmée depuis D1) en une seule fois.
