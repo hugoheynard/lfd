@@ -1,6 +1,7 @@
 # Plan — découper le fournil en métiers autour de la journée
 
-> Plan du 2026-11-15 (v3 : une surface publique par métier, tenue par la
+> Plan du 2026-11-15 (v4 : les canaux et la journée se lisent déjà dans les
+> deux sens, d'où la règle anti-cycle des index ; v3 : une surface publique par métier, tenue par la
 > porte et par les modules Nest ; v2, après `vitruve` : le noyau importait encore le
 > plan par les tranches, et la matrice oubliait l'impression), demandé par Hugo (« je veux une belle isolation »).
 > Pas encore bâti. Touche une frontière du dépôt (une porte neuve) :
@@ -41,6 +42,7 @@ flowchart TB
   ATELIER --> PRINT
   PRINT --> DAY
   DAY --> CH
+  CH -->|valeurs de la journée, en direct| DAY
   PLAN --> CH
   ATELIER --> CH
   QUALITY --> CH
@@ -131,7 +133,32 @@ la carte de D0 le mesure, et la surface de départ en sort.
 n'importe quel émetteur, quel que soit son module. Les modules protègent les
 services injectés (dépôts, ports, lecteurs), **pas les messages du bus**.
 Une commande ou une requête n'est donc publique que si l'`index.ts` de son
-sous-contexte l'exporte — et c'est la porte, pas Nest, qui le tient.
+sous-contexte l'exporte — et c'est la porte, pas Nest, qui le tient. Il en va
+de même des **faits** : un abonné (`@DurableHandler`, `@EventsHandler`) d'un
+métier n'écoute que les faits qu'un autre métier publie par son `index.ts`.
+
+**Les règles de la porte, tranchées** (v4, après `vitruve`) :
+
+- **Aucun cycle entre `index.ts`.** Un `index.ts` ne fait que réexporter ; la
+  porte refuse tout cycle d'imports qui traverse un `index.ts` — un cycle de
+  « barrels » rend une classe `undefined` au moment où Nest lit ses
+  métadonnées d'injection (`emitDecoratorMetadata`), et l'API refuse de
+  démarrer sur une erreur qui ne nomme pas la cause.
+- **`channels/` n'est pas un sous-contexte** : il importe les fichiers de
+  `day/` **en direct** (les valeurs `ServiceDay`, `ServiceRange`), et
+  `day/index.ts` n'exporte rien qui charge un canal.
+- **Les types passent aussi par la porte** : un `import type` vers
+  l'intérieur d'un autre sous-contexte est refusé comme un import de valeur ;
+  ce qui doit être lu ailleurs est exporté par l'`index.ts`.
+- **Les tests** d'un sous-contexte lisent son intérieur librement ; ceux qui
+  doublent le port d'un autre passent par son `index.ts`.
+- **Les racines sont exemptées** : `appBootstrap/`, `dev/` et `test/`
+  composent l'application et relient des adaptateurs concrets — elles lisent
+  l'intérieur, et la porte le dit.
+- C'est un **mécanisme neuf** : la porte des frontières entre blocs tient
+  les canaux par préfixe de dossier (`PORT_SURFACE`,
+  `context-boundaries.mjs:481`), pas par fichier d'entrée ; celle-ci s'écrit
+  et s'éprouve entière, cycles compris.
 
 ## 2. Ce qui existe (cartographie du 2026-11-15)
 
@@ -221,7 +248,12 @@ mêlent jamais dans un lot.
    et exporte la journée (dépôt, verrou, version, tranches) ; les quatre
    métiers l'importent, jamais l'inverse, et aucun `forwardRef` (zéro
    aujourd'hui, la porte le refuse). `ProductionModule` ne fait plus
-   qu'importer et réexporter les 14 fournisseurs qu'`appBootstrap` relie. Seul
+   qu'importer et réexporter les 13 fournisseurs qu'`appBootstrap` relie
+   (`production.module.ts:384-396`), chacun exporté d'abord par le module de
+   son métier. La carte de D0 fournit la liste des ports par module et
+   range les abonnés qui touchent plusieurs métiers (ex.
+   `on-packing-returned.handler.ts`) là où vit la majorité de leurs ports,
+   les autres lus par `index.ts`. Seul
    lot qui peut changer l'ordre d'instanciation : il passe la suite e2e du
    fournil entière et le semis dev.
 
