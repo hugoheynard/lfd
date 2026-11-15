@@ -63,17 +63,22 @@ beforeEach(async () => {
   await ctx.reset();
 });
 
-/** Les anciennes colonnes d'auteur, supprimées par l'étape 5C. */
+/**
+ * Les colonnes d'auteur supprimées depuis la conversion : les anciennes
+ * colonnes `*_sub` (étape 5C), et la coche de la fiche d'atelier
+ * (`production_count.done_by`, migration `20261115200000_la_fin_des_coches`).
+ */
 const DROPPED_COLUMNS = [
   "updated_by_sub",
   "created_by_sub",
   "kbis_certified_by_sub",
   "activated_by_sub",
   "staff_sub",
+  "done_by",
 ] as const;
 
 /** Autant d'instructions de la migration visent une colonne supprimée. */
-const STATEMENTS_ON_DROPPED_COLUMNS = 7;
+const STATEMENTS_ON_DROPPED_COLUMNS = 8;
 
 function targetsDroppedColumn(statement: string): boolean {
   return DROPPED_COLUMNS.some((column) => statement.includes(`"${column}"`));
@@ -82,7 +87,7 @@ function targetsDroppedColumn(statement: string): boolean {
 /**
  * Les instructions de la migration, dans l'ordre : commentaires `--` retirés,
  * découpées sur le `;` de fin de ligne. On éprouve CE SQL-là, pas une copie —
- * moins les instructions sur les colonnes que 5C a supprimées, et exactement
+ * moins les instructions sur les colonnes supprimées depuis, et exactement
  * elles : un compte qui bouge fait échouer la suite plutôt que d'en retirer
  * davantage.
  */
