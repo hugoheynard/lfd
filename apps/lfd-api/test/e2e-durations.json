@@ -225,6 +225,7 @@
   "test/delivery-zones-public.e2e-spec.ts": 4698,
   "test/delivery-zones-uncovered.e2e-spec.ts": 2650,
   "test/dev-scenario-purge-coverage.e2e-spec.ts": 2145,
+  "test/dev-seed-reset-coverage.e2e-spec.ts": 2145,
   "test/dev-scenario-stability.e2e-spec.ts": 64151,
   "test/dev-scenario.e2e-spec.ts": 109925,
   "test/dev-seed-driver.e2e-spec.ts": 27552,

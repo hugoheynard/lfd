@@ -247,9 +247,12 @@ async function trimStation(prisma: PrismaClient): Promise<{ pickupPoints: number
   // à cocher, § 8.2, § 9) : le point par sa clé étrangère `RESTRICT`, la zone
   // parce que sa liaison partirait en cascade et laisserait la promotion
   // illisible. Les promotions ne sont pas coupées par ce module.
-  const points = await prisma.site.deleteMany({
-    where: { label: { notIn: [...SEEDED_POINT_LABELS] }, promotionPoints: { none: {} } },
-  });
+  // Un point d'essai part avec ses règles de réduction (des décisions
+  // tarifaires, qui partent toutes) et ses tables de service sur place.
+  const dropped = { label: { notIn: [...SEEDED_POINT_LABELS] }, promotionPoints: { none: {} } };
+  await prisma.pickupDiscountRule.deleteMany({ where: { site: dropped } });
+  await prisma.siteTable.deleteMany({ where: { site: dropped } });
+  const points = await prisma.site.deleteMany({ where: dropped });
   const zones = await prisma.deliveryZone.deleteMany({
     where: { label: { notIn: [...SEEDED_ZONE_LABELS] }, promotionTargets: { none: {} } },
   });

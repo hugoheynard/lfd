@@ -77,6 +77,20 @@ stateDiagram-v2
   et `test/dev-scenario-purge-coverage.e2e-spec.ts` la confronte à
   `pg_constraint` : une clé non couverte, ou une inscription qui ne correspond
   plus à aucune clé, échoue en nommant la table, la clé et le fichier.
+- **« Tout recharger » sait aussi ce qui peut le bloquer.** C'est l'autre geste
+  de remise à blanc (`POST /admin/dev/seed/reload`) : il retire toute société
+  et toute personne hors du client de référence, avec leurs commandes, et les
+  points et zones que le semis ne déclare pas (`seeding/reset.seed.ts`, et
+  `seeding/order-restricted-children.seed.ts` pour ce qui tient une commande).
+  Même panne, même garde : la couverture est déclarée dans
+  `seeding/reset-coverage.ts` — chaque table qu'il retire, les tables qui la
+  tiennent par une clé bloquante et qu'il retire avant elle, et ses exemptions
+  (`card_invoice_outcome` comme la purge ; les promotions sur un point ou une
+  zone, que le filtre `promotion…: { none: {} }` laisse en place) —, et
+  `test/dev-seed-reset-coverage.e2e-spec.ts` la confronte à `pg_constraint`.
+  Les deux gardes lisent le catalogue par `test/blocking-keys.ts`. Elles
+  vérifient qu'aucun enfant n'est oublié, pas l'ordre des suppressions, qui se
+  lit dans le code juste au-dessus de chaque parent.
 - Les serrures du `DevSeedService` (base locale seulement, pas en production, mur
   staff, stockage local) restent la condition de tout geste.
 
@@ -103,6 +117,11 @@ dans `dev-scenario-steps.ts` (écrits côté écran, les nombres viennent du ser
   restent en cours.
 - Pas d'étape « tournées parties » : le départ se fait à l'écran, c'est ce qu'on
   montre.
+- **Reste à faire** (relevé en déroulant la journée le 2026-11-15) : une étape
+  qui échoue en cours de route ne se rejoue pas — « Colisage complet » bute sur
+  ce qu'elle a elle-même déjà posé (« Il ne reste que 0 … à répartir »), et il
+  faut remettre à l'état de base ; et quand le reset échoue (503), l'écran reste
+  sur « En cours… » au lieu de montrer l'échec.
 - La phrase d'état dit « étape N **sur 5** » alors qu'il y a six étapes (0 à 5) ;
   cohérent avec l'étape finale 5, mais à ne pas relire « six » au sens de
   « 6/6 ». Non revérifié à l'écran.

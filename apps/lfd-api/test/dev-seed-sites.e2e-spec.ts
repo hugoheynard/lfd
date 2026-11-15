@@ -293,4 +293,38 @@ describe("le semis, à la norme des sites", () => {
     },
     TIMEOUT_MS,
   );
+
+  /**
+   * Régression : « Tout recharger » retirait les sociétés d'essai sans leurs
+   * liens de paiement (ni leur fidélité, ni leur formulaire de prélèvement),
+   * tenus en `RESTRICT`, et mourait en 409 « Une ressource liée est
+   * introuvable » (constaté le 2026-11-15).
+   */
+  it(
+    "« Tout recharger » se rejoue quand une société retirée porte un lien de paiement",
+    async () => {
+      const victim = await ctx.prisma.company.findFirstOrThrow({
+        where: { NOT: { raisonSociale: CLIENT_RAISON_SOCIALE } },
+        select: { id: true },
+      });
+      // Un lien de paiement naît d'une session Stripe : on pose la ligne qu'il écrirait.
+      await ctx.prisma.paymentLink.create({
+        data: {
+          id: "payment-link-regression",
+          companyId: victim.id,
+          amountCents: 1_000,
+          label: "Régression",
+          stripeSessionId: "cs_test_regression",
+          url: "https://checkout.stripe.test/regression",
+          createdAt: new Date(daysAgo(1)),
+          createdByStaffId: "staff-regression",
+        },
+      });
+
+      await reload();
+
+      expect(await ctx.prisma.company.count({ where: { id: victim.id } })).toBe(0);
+    },
+    TIMEOUT_MS,
+  );
 });

@@ -13,42 +13,8 @@ import {
   SCENARIO_PURGED_TABLES,
   SCENARIO_PURGE_EXEMPTIONS,
 } from "../src/dev/scenario/purge/purge-coverage.js";
+import { readBlockingKeys, readTables, type BlockingKey } from "./blocking-keys.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
-
-/** Une clé étrangère qui bloque la suppression de la table qu'elle vise. */
-interface BlockingKey {
-  readonly child: string;
-  readonly constraint: string;
-  readonly target: string;
-}
-
-/**
- * `confdeltype` : `c` cascade, `n` set null, `d` set default suivent la
- * suppression ; `r` (RESTRICT) et `a` (NO ACTION) la refusent.
- */
-async function readBlockingKeys(ctx: E2eContext): Promise<readonly BlockingKey[]> {
-  return ctx.prisma.$queryRaw<BlockingKey[]>`
-    SELECT cn.nspname || '.' || c.relname AS child,
-           con.conname::text              AS "constraint",
-           tn.nspname || '.' || t.relname AS target
-      FROM pg_constraint con
-      JOIN pg_class c      ON c.oid = con.conrelid
-      JOIN pg_namespace cn ON cn.oid = c.relnamespace
-      JOIN pg_class t      ON t.oid = con.confrelid
-      JOIN pg_namespace tn ON tn.oid = t.relnamespace
-     WHERE con.contype = 'f'
-       AND con.confdeltype NOT IN ('c', 'n', 'd')
-     ORDER BY 3, 1, 2`;
-}
-
-async function readTables(ctx: E2eContext): Promise<ReadonlySet<string>> {
-  const rows = await ctx.prisma.$queryRaw<{ readonly name: string }[]>`
-    SELECT n.nspname || '.' || c.relname AS name
-      FROM pg_class c
-      JOIN pg_namespace n ON n.oid = c.relnamespace
-     WHERE c.relkind IN ('r', 'p')`;
-  return new Set(rows.map((row) => row.name));
-}
 
 const purged = new Map(SCENARIO_PURGED_TABLES.map((entry) => [entry.table, entry]));
 
