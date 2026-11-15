@@ -193,6 +193,7 @@ async function wipe(prisma: PrismaClient, companyIds: string[], userIds: string[
   };
   await dropOrderRestrictedChildren(prisma, ofOrders);
   await prisma.order.deleteMany({ where: ofOrders });
+  await dropHolderRestrictedRows(prisma, companyIds, userIds);
   // `company_id` en `Restrict` (N4e) : le panier d'une personne hors périmètre
   // posé sur une société du périmètre partirait sinon en erreur.
   await prisma.subscription.deleteMany({
@@ -253,4 +254,30 @@ async function trimStation(prisma: PrismaClient): Promise<{ pickupPoints: number
     where: { label: { notIn: [...SEEDED_ZONE_LABELS] }, promotionTargets: { none: {} } },
   });
   return { pickupPoints: points.count, zones: zones.count };
+}
+
+/**
+ * Ce qui tient une société ou une personne en `RESTRICT` sans passer par une
+ * commande : la fidélité (écritures, puis bons — un reliquat tient le bon dont
+ * il est né, donc on retire les feuilles d'abord), les liens de paiement et
+ * le formulaire de prélèvement. Après les commandes, qui tiennent les bons
+ * qu'elles ont consommés.
+ */
+async function dropHolderRestrictedRows(
+  prisma: PrismaClient,
+  companyIds: string[],
+  userIds: string[],
+): Promise<void> {
+  const held = { OR: [{ companyId: { in: companyIds } }, { userId: { in: userIds } }] };
+  await prisma.loyaltyLedgerEntry.deleteMany({ where: held });
+  for (;;) {
+    const leaves = await prisma.loyaltyVoucher.deleteMany({
+      where: { ...held, remainders: { none: {} } },
+    });
+    if (leaves.count === 0) {
+      break;
+    }
+  }
+  await prisma.paymentLink.deleteMany({ where: { companyId: { in: companyIds } } });
+  await prisma.companyCollectionForm.deleteMany({ where: { companyId: { in: companyIds } } });
 }
