@@ -346,6 +346,13 @@ mêlent jamais dans un lot.
    comme une dette qui ne peut que décroître. Aucun comportement ne change :
    mêmes preuves que les déplacements (empreintes PDF, table des routes, e2e
    du fournil).
+   À emporter aussi (relevé en D2, 2026-11-15) : couper
+   `production/application/__tests__/quality-doubles.ts`, partagé par les
+   tests du noyau, de l'atelier, du plan et de la qualité, en doubles rangés
+   chacun dans son métier.
+10. **Après le dernier déménagement** : remettre à jour
+    `architecture-contexte-production.md` (la liste des contrôleurs sous
+    « `http/` », périmée depuis D1) en une seule fois.
 
 **Tranché après D0 (2026-11-15)** : les réassorts lancés
 (`ProductionResupply` et sa ligne) appartiennent au noyau, qui les écrit dans
