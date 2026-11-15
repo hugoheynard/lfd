@@ -143,7 +143,12 @@ d'abord (écran des lettres mortes). Aujourd'hui : aucune (requête de Hugo).
 4. **La fenêtre de bascule**, dite plutôt que tue : entre la migration et la
    nouvelle image, l'ancienne image peut encore écrire un fait vers un nom
    `packing.shadow.*`, que la nouvelle ne connaîtra pas. En pré-release, sans
-   activité, c'est improbable ; le lot B le rattrape (ci-dessous).
+   activité, c'est improbable ; le lot B le rattrape (ci-dessous). L'autre
+   sens n'est pas rattrapé : une image d'avant le lot A ne connaît pas les
+   nouveaux noms. **Revenir en arrière après le lot A exige l'UPDATE inverse**
+   (`packing.<geste>` → `packing.shadow.<geste>` pour les trois gestes) avant
+   de rebasculer l'image — un geste obligatoire, écrit ici pour qu'il ne
+   s'improvise pas.
 5. **Docs** : `colisage.md` (les quatre passages), `arret-du-plan.md:100`, la
    ligne d'index `README.md:338`, au présent ; la doc de l'identifiant de
    retour dans `return-requested.event.ts`. Le commentaire `///` de
