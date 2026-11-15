@@ -118,7 +118,7 @@ fournil, figé à l'arrêt (`served_by_transfer`) ; le fait
   commande » pour une journée à réassorts seuls.
 - **La part sur place ne descend pas** : une fournée ne remet au colisage que
   la part du colisage ; celle d'un réassort servi sur place monte directement
-  (`production/day/domain/services/on-site-share.ts:37` — le colisage d'abord,
+  (`production/atelier/domain/services/on-site-share.ts:37` — le colisage d'abord,
   puis le point sur place, puis le surplus au colisage). Une demande de
   retour ne porte que ce qui a été remis.
 - **L'emballé** se lit par `PackedResuppliesReader`

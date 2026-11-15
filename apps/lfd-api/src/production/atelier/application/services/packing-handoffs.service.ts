@@ -5,7 +5,6 @@ import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { HandedToPackingEvent } from "../../../channels/packing/handed-to-packing.event.js";
 import { ReturnRequestedEvent } from "../../../channels/packing/return-requested.event.js";
 import {
-  handedShareOf,
   handoffOf,
   ProductionHandoffLedger,
   ProductionHandoffReader,
@@ -19,6 +18,7 @@ import type {
   ProductionDay,
   ServiceDay,
 } from "../../../day/index.js";
+import { handedShareOf } from "../../domain/services/on-site-share.js";
 
 /**
  * **Remettre au colisage, et reprendre** — le registre et le fait durable,

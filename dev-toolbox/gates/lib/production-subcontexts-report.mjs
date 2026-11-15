@@ -49,4 +49,6 @@ export function printReport(contexts, surface, found, detailed) {
   console.log(`    cycles par un index.ts   ${found.indexCycles.length}`);
   console.log(`    messages hors porte      ${found.messages.size}`);
   console.log(`    racines hors porte       ${total("roots")}`);
+  const sizes = [...(found.indexSize ?? new Map())].map(([context, size]) => `${context} ${size}`);
+  console.log(`    taille des index         ${sizes.join(", ") || "—"}`);
 }

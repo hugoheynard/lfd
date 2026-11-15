@@ -458,6 +458,27 @@ mêlent jamais dans un lot.
    `useClass` qu'aucun module n'exporte : `PrismaArrestedPlanHold`,
    `PrismaFrozenResuppliesReader`, `PrismaAtelierSheetsReader`,
    `PrismaQualityHoldsReader`. Racines 23 → 4 (mesurées avant correction) ; dette non réécrite.
+   **R3 — ✅ bâti le 2026-11-15** : le noyau resserré. Mesure de
+   `day/index.ts` (78 noms) : aucun n'est lu par `appBootstrap/`, le semis
+   n'y prend que `planStopOf` et `planStopRules`, `channels/` seulement en
+   test (`OrderCutoffRule`). Rendu à l'atelier, son seul lecteur :
+   `on-site-share.ts` (`handedShareOf`, la part d'une fournée remise au
+   colisage), avec son test. Retirés de l'index sans lecteur hors du noyau :
+   `SealedOrders`, `AnsweredReturn`, `ReturnRequest`, `ProductionHandoff` (les
+   doubles du noyau les lisent en direct). Les autres noms lus par un seul
+   métier restent : ils appartiennent à l'agrégat (instantanés, refus, faits),
+   à un port qu'il implémente, ou à un fichier que le noyau, un canal ou le
+   colisage lit aussi (`production-deadlines` reste au noyau, § 3). Aucun
+   regroupement : les combinaisons répétées (`DossierDeadlinesReading` et
+   `WorksheetDeadlinesReading` ; `withSeals` sur la journée chargée, au statut
+   du plan et dans `SealedDayReading`) lisent un canal, que `day/index.ts` ne
+   charge pas ; le reste n'est combiné que par un seul appelant. L'index est
+   rangé en six sections (la journée et ses valeurs, ce qu'elle sait répondre,
+   ce qu'on écrit, les règles, les faits, les refus). La porte compte la taille
+   de chaque index (`indexSize`,
+   `dev-toolbox/gates/lib/production-subcontexts-index-size.mjs`) :
+   day 78 → 73, shared-print 38, atelier 2, plan 1, quality 1, resupply 0 ; un
+   `export *` est refusé. Dette non réécrite (la clé `indexSize` est à poser).
    **R4 — chaque table lue chez son propriétaire** (ajouté par Hugo le
    2026-11-15). Dix lectures vont encore dans les tables du noyau sans
    passer par lui (`models` de la dette) : le plan (arrêt, clôture

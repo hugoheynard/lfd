@@ -10,6 +10,10 @@ import {
   productionModels,
   testContext,
 } from "../gates/lib/production-subcontexts-graph.mjs";
+import {
+  exportedNames,
+  indexSizeFailures,
+} from "../gates/lib/production-subcontexts-index-size.mjs";
 import { isRootEntry, moduleProvidersOf } from "../gates/lib/production-subcontexts-wiring.mjs";
 
 const SCHEMA = [
@@ -376,4 +380,55 @@ test("racines : entrent par un index.ts, un module de métier, le module du bloc
   ];
   const { found } = analyse([], { files: {}, models: OWNERS }, MODELS, list);
   assert.deepEqual([...found.roots], [["appBootstrap/feed.module.ts", 1]]);
+});
+
+test("taille d'un index : chaque nom exporté compte une fois, commentaires et alias compris", () => {
+  const source = [
+    "/** export { Fantome } from './x.js'; */",
+    'export { A, type B, C as D } from "./a.js";',
+    'export type { E,\n  F } from "./e.js";',
+    "export const G = 1;",
+    "export class H {}",
+    'export { A } from "./again.js";',
+  ].join("\n");
+  assert.deepEqual([...exportedNames(source)].sort(), ["A", "B", "D", "E", "F", "G", "H"]);
+  assert.equal(exportedNames('export * from "./a.js";'), null);
+});
+
+test("taille d'un index : mesurée par métier, un export * est un problème", () => {
+  const { found, problems } = run({
+    "day/index.ts": 'export { A, B } from "./a.js";\n',
+    "plan/index.ts": 'export * from "./p.js";\n',
+    "quality/index.ts": "export {};\n",
+  });
+  assert.deepEqual(
+    [...found.indexSize],
+    [
+      ["day", 2],
+      ["quality", 0],
+    ],
+  );
+  assert.match(problems.join("\n"), /plan\/index\.ts : un export \*/u);
+});
+
+test("taille d'un index : grandir échoue, baisser demande d'abaisser le compte, l'exact passe", () => {
+  const sizes = new Map([["day", 3]]);
+  assert.deepEqual(indexSizeFailures(sizes, { day: 3 }), []);
+  assert.match(indexSizeFailures(sizes, { day: 2 })[0], /3 noms exportés.*en admet 2/u);
+  assert.match(indexSizeFailures(sizes, {})[0], /en admet 0/u);
+  assert.match(indexSizeFailures(sizes, { day: 4 })[0], /baisse le compte \(indexSize\)/u);
+  assert.match(indexSizeFailures(new Map(), { plan: 1 })[0], /plan {2}0 noms/u);
+  const found = {
+    edges: new Set(),
+    models: new Set(),
+    subscribers: new Set(),
+    indexCycles: [],
+    messages: new Set(),
+    providers: new Set(),
+    door: new Map(),
+    testDoor: new Map(),
+    roots: new Map(),
+    indexSize: sizes,
+  };
+  assert.match(verdict(found, { indexSize: { day: 1 } })[0], /en admet 1/u);
 });

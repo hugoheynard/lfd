@@ -2,7 +2,7 @@ import type {
   ProducedItemSnapshot,
   ProductionBatchSnapshot,
   ProductionResupplySnapshot,
-} from "../entities/production-day.snapshot.js";
+} from "../../../day/index.js";
 
 /**
  * **Ce qui part au colisage, et ce qui monte directement** (réassort, R3c,

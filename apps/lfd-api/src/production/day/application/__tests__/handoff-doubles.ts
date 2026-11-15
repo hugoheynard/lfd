@@ -1,14 +1,14 @@
 import type { DurableFact } from "../../../../platform/outbox/durable-event.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
+import { ProductionHandoffLedger } from "../../domain/ports/production-handoff.ledger.js";
+import { ProductionHandoffReader } from "../../domain/ports/production-handoff.reader.js";
 import {
   type AnsweredReturn,
-  type ProductionHandoff,
-  ProductionHandoffLedger,
-  ProductionHandoffReader,
   ProductionReturnRequests,
   type ReturnRequest,
-  type ServiceDay,
-} from "../../index.js";
+} from "../../domain/ports/production-return.requests.js";
+import type { ProductionHandoff } from "../../domain/services/production-handoff.js";
+import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 
 /**
  * Les doublés de la remise au colisage (plan `colisage/colisage.md`,

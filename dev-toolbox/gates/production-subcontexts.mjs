@@ -47,7 +47,10 @@
  *   passe par `exports` d'un module et `imports` de l'autre ;
  * - **une racine qui lit l'intérieur d'un métier** : `appBootstrap/` et `dev/`
  *   entrent par `<métier>/index.ts`, un module à la racine d'un métier,
- *   `production.module.ts` ou `channels/` — dette comptée par fichier.
+ *   `production.module.ts` ou `channels/` — dette comptée par fichier ;
+ * - **un index qui grandit** : le nombre de noms qu'exporte chaque
+ *   `<métier>/index.ts` est une dette décroissante (`indexSize`,
+ *   `lib/production-subcontexts-index-size.mjs`).
  *
  * Exemptés : `production.module.ts` (racine de composition du bloc, qui
  * importe les modules de métier ; chacun d'eux est jugé comme les autres
@@ -88,6 +91,7 @@ import {
   productionModels,
   testContext,
 } from "./lib/production-subcontexts-graph.mjs";
+import { indexSizeFailures, indexSizes } from "./lib/production-subcontexts-index-size.mjs";
 import { printReport } from "./lib/production-subcontexts-report.mjs";
 import {
   crossMessages,
@@ -187,6 +191,7 @@ export function analyse(files, map, models, roots = []) {
   found.messages = crossMessages(files, contexts);
   found.providers = duplicatedProviders(files);
   found.roots = rootImports(roots);
+  found.indexSize = indexSizes(files, problems);
   return { contexts, problems, found, surface };
 }
 
@@ -237,6 +242,7 @@ export function verdict(found, debt) {
         );
     }
   }
+  failures.push(...indexSizeFailures(found.indexSize ?? new Map(), debt.indexSize));
   return failures;
 }
 
@@ -267,19 +273,9 @@ function main() {
     const plain = (name) => [...found[name]].sort();
     const counts = (name) =>
       Object.fromEntries([...found[name]].sort(([a], [b]) => a.localeCompare(b)));
-    const draft = {
-      edges: plain("edges"),
-      models: plain("models"),
-      subscribers: plain("subscribers"),
-    };
-    Object.assign(draft, {
-      indexCycles: plain("indexCycles"),
-      messages: plain("messages"),
-      providers: plain("providers"),
-      door: counts("door"),
-      testDoor: counts("testDoor"),
-      roots: counts("roots"),
-    });
+    const lists = ["edges", "models", "subscribers", "indexCycles", "messages", "providers"];
+    const draft = Object.fromEntries(lists.map((name) => [name, plain(name)]));
+    for (const name of ["door", "testDoor", "roots", "indexSize"]) draft[name] = counts(name);
     console.log(JSON.stringify(draft, null, 2));
     return;
   }

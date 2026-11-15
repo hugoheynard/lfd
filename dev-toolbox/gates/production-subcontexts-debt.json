@@ -46,5 +46,14 @@
     "appBootstrap/packing-feed.module.ts": 1,
     "appBootstrap/production-delivery-feed.module.ts": 1
   },
-  "$r2": "R2 (2026-11-15) : la porte juge les messages du bus (envoi, écoute, handler) par le fichier qui déclare leur classe, refuse un fournisseur déclaré dans deux modules, et juge appBootstrap/ et dev/ (entrées : index.ts, module d’un métier, racine, canaux). messages 0, providers 0, racines 23 → 4 : quatre adaptateurs reliés en useClass, rangés avec leur lecture au noyau en R4."
+  "$r2": "R2 (2026-11-15) : la porte juge les messages du bus (envoi, écoute, handler) par le fichier qui déclare leur classe, refuse un fournisseur déclaré dans deux modules, et juge appBootstrap/ et dev/ (entrées : index.ts, module d’un métier, racine, canaux). messages 0, providers 0, racines 23 → 4 : quatre adaptateurs reliés en useClass, rangés avec leur lecture au noyau en R4.",
+  "indexSize": {
+    "atelier": 2,
+    "day": 73,
+    "plan": 1,
+    "quality": 1,
+    "resupply": 0,
+    "shared-print": 38
+  },
+  "$r3": "R3 (2026-11-15) : day/index.ts rangé en six sections et ramené de 78 à 73 noms ; ce qu’un seul métier lit et qui n’appartient pas à l’agrégat lui est rendu. La taille de chaque index est désormais une dette décroissante (indexSize)."
 }

@@ -1,7 +1,4 @@
-import type {
-  ProductionBatchSnapshot,
-  ProductionResupplySnapshot,
-} from "../../entities/production-day.snapshot.js";
+import type { ProductionBatchSnapshot, ProductionResupplySnapshot } from "../../../../day/index.js";
 import { handedQuantityOf, handedShareOf, onSiteShareOf } from "../on-site-share.js";
 
 /**
