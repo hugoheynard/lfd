@@ -1,5 +1,5 @@
-import { CloseProductionDayCommand } from "../../../production/plan/application/commands/close-production-day.command.js";
-import { RecordBatchCommand } from "../../../production/atelier/application/commands/record-batch.command.js";
+import { CloseProductionDayCommand } from "../../../production/plan/index.js";
+import { RecordBatchCommand } from "../../../production/atelier/index.js";
 import { currentRequestContext } from "../../../platform/context/request-context.store.js";
 import {
   type AutoComposedRounds,

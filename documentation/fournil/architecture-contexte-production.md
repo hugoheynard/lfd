@@ -121,6 +121,21 @@ trois pièces : la fiche d'atelier d'une commande
 (`<jour>/compte-a-produire-v2.pdf`) et le dossier du jour. Chacune a son
 spécimen sur la planche des documents.
 
+### Les modules du fournil
+
+Un module Nest par métier (`day/`, `plan/`, `atelier/` et ses raccourcis,
+`quality/`, `resupply/`, `shared/print/`), réunis par `production.module.ts`.
+La journée est importée par les métiers, jamais l'inverse : `day/` ne connaît
+aucun d'eux.
+
+Un fournisseur (ou un contrôleur) ne figure que dans **un seul** module.
+Nest en fait un exemplaire par module qui le déclare : un service qui garde
+quelque chose en mémoire aurait deux caches qui divergent, et ni le typecheck
+ni les tests ne le voient. Le partage passe par `exports` du module qui le
+déclare et `imports` de celui qui s'en sert. `lint:production-subcontexts` le
+vérifie sur tous les `*.module.ts` du fournil, et nomme le fournisseur et les
+deux modules.
+
 ### Les routes
 
 | Contrôleur (`http/`)                                                                                          | Préfixe                                                         | Droit                                                                           |

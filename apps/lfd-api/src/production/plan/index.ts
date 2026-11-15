@@ -11,10 +11,11 @@
  * hors du schéma, comptées en dette, qu'une porte ne rendrait pas légitimes.
  * Les canaux que le plan implémente sont reliés par les racines de composition
  * (`production.module.ts`, `appBootstrap/`), qui importent les adaptateurs en
- * direct. La porte est donc vide, et un besoin neuf s'y ajoute ici.
+ * direct. La porte n'exporte que les commandes qu'un client du bus envoie
+ * (le semis de `dev/`), et un besoin neuf s'y ajoute ici.
  *
  * Ce fichier ne fait que réexporter, et rien de ce qu'il réexporterait ne doit
  * charger un autre métier : un cycle d'imports à travers un `index.ts` rend une
  * classe `undefined` quand Nest lit ses métadonnées.
  */
-export {};
+export { CloseProductionDayCommand } from "./application/commands/close-production-day.command.js";

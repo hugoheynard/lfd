@@ -438,6 +438,38 @@ mêlent jamais dans un lot.
    `ProductionModule` réexporte `ProductionPrintModule`. Arêtes 2 → 0, tests hors
    porte 36 → 33 (day → plan 2 → 0, quality → day 2 → 1), imports hors porte
    0 → 0 ; dette non réécrite. Empreintes des PDF et table des routes inchangées.
+   **R2 — ✅ bâti le 2026-11-15** : la porte lit le bus et les racines
+   (`dev-toolbox/gates/lib/production-subcontexts-wiring.mjs`). Le bus : pour
+   chaque `new XCommand|XQuery(…)`, `execute<X…>`, `@CommandHandler`,
+   `@QueryHandler`, `@EventsHandler` et `@DurableHandler({ type })`, elle
+   remonte les réexportations jusqu'au fichier qui déclare la classe (ou la
+   constante) et juge l'arête déclarant → utilisateur : arête admise et entrée
+   par l'`index.ts` du déclarant (un canal est public) ; un handler d'un
+   message d'un autre métier est refusé. Existant : 0 (`messages`). Les
+   modules : un fournisseur ou un contrôleur ne figure que dans un seul
+   `*.module.ts` du fournil (Hugo, 2026-11-15 : deux exemplaires, deux caches
+   qui divergent) ; existant : 0 sur 140 jetons (`providers`). Les racines :
+   `appBootstrap/` et `dev/` ne sont plus exemptés ; ils entrent par
+   `<métier>/index.ts`, un module à la racine d'un métier,
+   `production.module.ts` ou `channels/`. Le semis prend ses commandes par les
+   `index.ts` de l'atelier et du plan ; la racine prend les fournisseurs que
+   les modules exportent dans le fichier du module, qui les réexporte. Restent
+   en dette (`roots`, par fichier) les quatre adaptateurs reliés en
+   `useClass` qu'aucun module n'exporte : `PrismaArrestedPlanHold`,
+   `PrismaFrozenResuppliesReader`, `PrismaAtelierSheetsReader`,
+   `PrismaQualityHoldsReader`. Racines 23 → 4 (mesurées avant correction) ; dette non réécrite.
+   **R4 — chaque table lue chez son propriétaire** (ajouté par Hugo le
+   2026-11-15). Dix lectures vont encore dans les tables du noyau sans
+   passer par lui (`models` de la dette) : le plan (arrêt, clôture
+   automatique, plans arrêtés, plan du jour), le réassort (réassorts lancés
+   et figés), l'atelier (fiches à imprimer), la qualité (lignes retenues).
+   Le noyau publie pour chacune une lecture nommée, qu'il implémente avec
+   **la même requête SQL** : un port ne devient jamais « charger la journée
+   puis filtrer », qui coûterait des lectures en production. Le verrou de
+   l'arrêt (`prisma-arrested-plan.hold`) garde exactement sa requête et sa
+   transaction : c'est lui qui ferme la course entre un départ de tournée et
+   un verdict qualité. Les quatre adaptateurs restés en `roots` après R2
+   suivent leur lecture au noyau. Fin : `models` à 0.
 10. **Après le dernier déménagement** : remettre à jour
     `architecture-contexte-production.md` (la liste des contrôleurs sous
     « `http/` », périmée depuis D1) en une seule fois.

@@ -36,12 +36,23 @@
  *   frontière que ses imports respectent ;
  * - **un abonné en mémoire** (`@EventsHandler`) qui écoute un fait d'un autre
  *   sous-contexte : entre métiers, l'abonné est un `@DurableHandler` ;
- * - **un cycle d'imports d'exécution qui traverse un `index.ts`**.
+ * - **un cycle d'imports d'exécution qui traverse un `index.ts`** ;
+ * - **un message d'un autre métier** — commande envoyée, requête posée, fait
+ *   écouté — hors des arêtes admises ou à côté de son `index.ts`, et tout
+ *   `@CommandHandler`/`@QueryHandler` d'un message d'un autre métier. Le bus
+ *   est global : on lit la classe du message jusqu'au fichier qui la déclare,
+ *   pas seulement son import (`lib/production-subcontexts-wiring.mjs`) ;
+ * - **un fournisseur ou un contrôleur déclaré dans deux modules du fournil** :
+ *   Nest en ferait deux exemplaires, et deux caches qui divergent. Le partage
+ *   passe par `exports` d'un module et `imports` de l'autre ;
+ * - **une racine qui lit l'intérieur d'un métier** : `appBootstrap/` et `dev/`
+ *   entrent par `<métier>/index.ts`, un module à la racine d'un métier,
+ *   `production.module.ts` ou `channels/` — dette comptée par fichier.
  *
  * Exemptés : `production.module.ts` (racine de composition du bloc, qui
  * importe les modules de métier ; chacun d'eux est jugé comme les autres
- * fichiers de son dossier), et hors
- * de la lecture, `appBootstrap/`, `dev/` et `test/`.
+ * fichiers de son dossier), et `test/` : un e2e qui vérifie une ligne en base
+ * doit pouvoir regarder dedans.
  *
  * ## La dette, décroissante
  *
@@ -77,8 +88,16 @@ import {
   productionModels,
   testContext,
 } from "./lib/production-subcontexts-graph.mjs";
+import { printReport } from "./lib/production-subcontexts-report.mjs";
+import {
+  crossMessages,
+  duplicatedProviders,
+  rootImports,
+} from "./lib/production-subcontexts-wiring.mjs";
 
-const PRODUCTION = "apps/lfd-api/src/production";
+const SOURCES = "apps/lfd-api/src";
+const PRODUCTION = `${SOURCES}/production`;
+const ROOTS = ["appBootstrap", "dev"];
 const HERE = fileURLToPath(new URL(".", import.meta.url));
 const MAP_FILE = join(HERE, "production-subcontexts.map.json");
 const DEBT_FILE = join(HERE, "production-subcontexts-debt.json");
@@ -107,9 +126,10 @@ function addTo(map, key, value) {
 
 /**
  * Tout ce qui traverse, sur `{ path, source }` (chemins sous `production/`).
- * `map` : `{ files, models }` de la carte ; `models` : ceux du schéma.
+ * `map` : `{ files, models }` de la carte ; `models` : ceux du schéma ;
+ * `roots` : les fichiers des racines, chemins sous `src/`.
  */
-export function analyse(files, map, models) {
+export function analyse(files, map, models, roots = []) {
   const paths = files.map((file) => file.path);
   const { contexts, problems } = classify(paths, map.files);
   const found = {
@@ -164,6 +184,9 @@ export function analyse(files, map, models) {
     }
   }
   found.indexCycles = indexCycles(runtime);
+  found.messages = crossMessages(files, contexts);
+  found.providers = duplicatedProviders(files);
+  found.roots = rootImports(roots);
   return { contexts, problems, found, surface };
 }
 
@@ -173,10 +196,15 @@ const LISTS = {
   models: "modèle lu hors de son sous-contexte — lis-le par un port que son propriétaire publie",
   subscribers: "abonné en mémoire sur le fait d'un autre métier — fais-en un @DurableHandler",
   indexCycles: "cycle d'exécution à travers un index.ts — l'API ne démarrerait pas ; coupe-le",
+  messages:
+    "message d'un autre métier hors de sa porte ou des arêtes admises — passe par son index.ts, ou par un port",
+  providers:
+    "fournisseur déclaré dans deux modules : deux exemplaires — exporte-le de l'un, importe le module dans l'autre",
 };
 const COUNTS = {
   door: "imports hors porte",
   testDoor: "imports de tests hors porte",
+  roots: "imports d'une racine dans l'intérieur d'un métier",
 };
 
 /** Le verdict : ce qui est neuf, ce qui ne viole plus, ce qui est compté trop haut. */
@@ -220,30 +248,6 @@ function sourceFiles(directory) {
   });
 }
 
-/** La carte : par sous-contexte, ses fichiers, et ce qu'il utilise chez les autres. */
-function printMap(contexts, surface, detailed) {
-  const owners = new Map();
-  for (const [path, context] of contexts) addTo(owners, context, path);
-  const uses = new Map();
-  for (const [theirs, entries] of surface) {
-    for (const entry of entries)
-      addTo(uses, entry.split("\t")[1], `${theirs}\t${entry.split("\t")[0]}`);
-  }
-  console.log("  La carte (fichiers hors tests) :");
-  for (const context of [...GATED, "channels", ROOT_CONTEXT]) {
-    const used = [...(uses.get(context) ?? [])].map((entry) => entry.split("\t"));
-    const byTarget = new Map();
-    for (const [theirs, file] of used) addTo(byTarget, theirs, file);
-    const summary = [...byTarget].map(([theirs, set]) => `${theirs} ${set.size}`).join(", ");
-    const exposed = new Set([...(surface.get(context) ?? [])].map((entry) => entry.split("\t")[0]));
-    console.log(
-      `    ${context.padEnd(13)} ${String(owners.get(context)?.size ?? 0).padStart(3)} fichiers · ` +
-        `surface ${String(exposed.size).padStart(3)} · utilise : ${summary || "—"}`,
-    );
-    if (detailed) for (const file of [...exposed].sort()) console.log(`        ${file}`);
-  }
-}
-
 function main() {
   const root = join(process.cwd(), PRODUCTION);
   const files = sourceFiles(root).map((file) => ({
@@ -252,7 +256,13 @@ function main() {
   }));
   const map = JSON.parse(readFileSync(MAP_FILE, "utf8"));
   const models = productionModels(prismaSchemaSource());
-  const { contexts, problems, found, surface } = analyse(files, map, models);
+  const roots = ROOTS.flatMap((root) =>
+    sourceFiles(join(process.cwd(), SOURCES, root)).map((file) => ({
+      path: relative(join(process.cwd(), SOURCES), file).split("\\").join("/"),
+      source: readFileSync(file, "utf8"),
+    })),
+  );
+  const { contexts, problems, found, surface } = analyse(files, map, models, roots);
   if (process.argv.includes("--brouillon-dette")) {
     const plain = (name) => [...found[name]].sort();
     const counts = (name) =>
@@ -264,8 +274,11 @@ function main() {
     };
     Object.assign(draft, {
       indexCycles: plain("indexCycles"),
+      messages: plain("messages"),
+      providers: plain("providers"),
       door: counts("door"),
       testDoor: counts("testDoor"),
+      roots: counts("roots"),
     });
     console.log(JSON.stringify(draft, null, 2));
     return;
@@ -277,17 +290,7 @@ function main() {
     process.exit(1);
   }
   console.log("✓ production-subcontexts : aucune traversée neuve entre les métiers du fournil.");
-  printMap(contexts, surface, process.argv.includes("--carte"));
-  const total = (name) => [...found[name].values()].reduce((sum, count) => sum + count, 0);
-  console.log("  Dette restante — comptée, pas ignorée :");
-  console.log(`    arêtes hors du schéma    ${found.edges.size}`);
-  console.log(
-    `    imports hors porte       ${total("door")}  (${[...found.door].map(([p, c]) => `${p} ${c}`).join(", ")})`,
-  );
-  console.log(`    tests hors porte         ${total("testDoor")}`);
-  console.log(`    modèles hors propriétaire ${found.models.size}`);
-  console.log(`    abonnés en mémoire       ${found.subscribers.size}`);
-  console.log(`    cycles par un index.ts   ${found.indexCycles.length}`);
+  printReport(contexts, surface, found, process.argv.includes("--carte"));
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

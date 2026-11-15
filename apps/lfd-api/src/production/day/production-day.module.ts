@@ -113,3 +113,17 @@ import { PrismaProductionTrancheSettingsRepository } from "./infrastructure/pris
   ],
 })
 export class ProductionDayModule {}
+
+/**
+ * Les fournisseurs que ce module exporte et que la racine de composition
+ * (`appBootstrap/`) relie à un port d'un autre bloc : elle les prend ici,
+ * jamais dans l'intérieur du métier.
+ */
+export {
+  DayInscribedOrderHeaderReader,
+  DayPlannedDestinationsReader,
+  PrismaOrderInscriptionReader,
+  ProductionDayVersionSource,
+  ProductionOrderRevisionDesk,
+  ProductionOrderWithdrawalDesk,
+};

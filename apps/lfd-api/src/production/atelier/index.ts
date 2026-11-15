@@ -13,10 +13,12 @@
  * qu'une porte ne rendrait pas légitimes. Les contrôleurs, les adaptateurs et
  * le module des raccourcis sont reliés par les racines de composition
  * (`production.module.ts`, `appBootstrap/`), qui les importent en direct. La
- * porte est donc vide, et un besoin neuf s'y ajoute ici.
+ * porte n'exporte que les commandes qu'un client du bus envoie (le semis de
+ * `dev/`), et un besoin neuf s'y ajoute ici.
  *
  * Ce fichier ne fait que réexporter, et rien de ce qu'il réexporterait ne doit
  * charger un autre métier : un cycle d'imports à travers un `index.ts` rend une
  * classe `undefined` quand Nest lit ses métadonnées.
  */
-export {};
+export { CancelBatchCommand } from "./application/commands/cancel-batch.command.js";
+export { RecordBatchCommand } from "./application/commands/record-batch.command.js";

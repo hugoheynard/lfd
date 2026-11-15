@@ -35,10 +35,12 @@ import {
   PlannedDestinationsReader,
   QualityHeldOrdersReader,
 } from "../production/channels/packing/index.js";
-import { ChannelQualityHeldOrdersReader } from "../production/quality/application/services/channel-quality-held-orders.reader.js";
-import { DayPlannedDestinationsReader } from "../production/day/application/services/day-planned-destinations.reader.js";
-import { DayInscribedOrderHeaderReader } from "../production/day/application/services/day-inscribed-order-header.reader.js";
-import { DayOrderLabelHeadReader } from "../production/shared/print/application/services/day-order-label-head.reader.js";
+import { ChannelQualityHeldOrdersReader } from "../production/quality/production-quality.module.js";
+import {
+  DayInscribedOrderHeaderReader,
+  DayPlannedDestinationsReader,
+} from "../production/day/production-day.module.js";
+import { DayOrderLabelHeadReader } from "../production/shared/print/production-print.module.js";
 import { ProductionModule } from "../production/production.module.js";
 
 /**

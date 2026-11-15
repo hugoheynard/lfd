@@ -75,3 +75,10 @@ import { PrismaQualityUploadRepository } from "./infrastructure/prisma-quality-u
   ],
 })
 export class ProductionQualityModule {}
+
+/**
+ * Les fournisseurs que ce module exporte et que la racine de composition
+ * (`appBootstrap/`) relie à un port d'un autre bloc : elle les prend ici,
+ * jamais dans l'intérieur du métier.
+ */
+export { ChannelQualityHeldOrdersReader };

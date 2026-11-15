@@ -10,6 +10,7 @@ import {
   productionModels,
   testContext,
 } from "../gates/lib/production-subcontexts-graph.mjs";
+import { isRootEntry, moduleProvidersOf } from "../gates/lib/production-subcontexts-wiring.mjs";
 
 const SCHEMA = [
   "model ProductionDay {",
@@ -255,8 +256,11 @@ test("verdict : neuf, périmé, compte trop haut ou trop bas échouent ; la dett
     models: new Set(),
     subscribers: new Set(),
     indexCycles: [],
+    messages: new Set(),
+    providers: new Set(),
     door: new Map([["plan → day", 3]]),
     testDoor: new Map(),
+    roots: new Map(),
   };
   assert.deepEqual(verdict(found, { edges: ["a → b"], door: { "plan → day": 3 } }), []);
   assert.match(verdict(found, { door: { "plan → day": 3 } })[0], /arête hors du schéma/u);
@@ -269,4 +273,107 @@ test("verdict : neuf, périmé, compte trop haut ou trop bas échouent ; la dett
     verdict(found, { edges: ["a → b"], door: { "plan → day": 4 } })[0],
     /baisse le compte/u,
   );
+});
+
+const cmd = (name) => `export class ${name} {}\n`;
+
+test("bus : envoyer la commande d'un métier admis par son index.ts passe", () => {
+  const { found } = run({
+    "day/index.ts": 'export { CloseCommand } from "./c.js";\n',
+    "day/c.ts": cmd("CloseCommand"),
+    "plan/a.ts":
+      'import { CloseCommand } from "../day/index.js";\nbus.execute(new CloseCommand());\n',
+  });
+  assert.deepEqual([...found.messages], []);
+});
+
+test("bus : une commande relayée par une autre porte est jugée sur son déclarant", () => {
+  const { found } = run({
+    "plan/index.ts": 'export { CloseCommand } from "./c.js";\n',
+    "plan/c.ts": cmd("CloseCommand"),
+    "shared/print/index.ts": 'export { CloseCommand } from "../../plan/index.js";\n',
+    "atelier/a.ts":
+      'import { CloseCommand } from "../shared/print/index.js";\nbus.execute<CloseCommand, void>(x);\n',
+  });
+  assert.deepEqual([...found.messages], ["atelier/a.ts → CloseCommand (plan, arête refusée)"]);
+});
+
+test("bus : la requête d'un métier admis prise à côté de son index.ts est refusée", () => {
+  const { found } = run({
+    "day/index.ts": "export {};\n",
+    "day/q.ts": cmd("ReadQuery"),
+    "plan/a.ts": 'import { ReadQuery } from "../day/q.js";\nbus.execute(new ReadQuery());\n',
+  });
+  assert.deepEqual([...found.messages], ["plan/a.ts → ReadQuery (day, hors de day/index.ts)"]);
+});
+
+test("bus : le handler d'une commande d'un autre métier est refusé, même par sa porte", () => {
+  const { found } = run({
+    "day/index.ts": 'export { CloseCommand } from "./c.js";\n',
+    "day/c.ts": cmd("CloseCommand"),
+    "plan/h.ts": 'import { CloseCommand } from "../day/index.js";\n@CommandHandler(CloseCommand)\n',
+  });
+  assert.deepEqual(
+    [...found.messages],
+    ["plan/h.ts → CloseCommand (day, handler d'un message d'un autre métier)"],
+  );
+});
+
+test("bus : écouter un fait d'un métier refusé, en mémoire ou durable, est refusé ; un canal passe", () => {
+  const { found } = run({
+    "plan/index.ts": 'export { PLAN_DONE } from "./e.js";\n',
+    "plan/e.ts": 'export const PLAN_DONE = "x";\n',
+    "channels/commerce/e.ts": 'export const DAY_CLOSED = "y";\n',
+    "atelier/h.ts":
+      'import { PLAN_DONE } from "../plan/index.js";\n@DurableHandler({ type: PLAN_DONE, subscriber: S })\n',
+    "quality/h.ts":
+      'import { DAY_CLOSED } from "../channels/commerce/e.js";\n@DurableHandler({ type: DAY_CLOSED, subscriber: S })\n',
+  });
+  assert.deepEqual([...found.messages], ["atelier/h.ts → PLAN_DONE (plan, arête refusée)"]);
+});
+
+test("modules : un fournisseur dans un seul module passe, dans deux il est refusé", () => {
+  const one = run({
+    "day/day.module.ts":
+      "@Module({ providers: [A, { provide: P, useClass: B }], controllers: [C] })",
+    "plan/plan.module.ts": "@Module({ imports: [DayModule], providers: [D] })",
+  });
+  assert.deepEqual([...one.found.providers], []);
+  const two = run({
+    "day/day.module.ts": "@Module({ providers: [A, { provide: P, useClass: B }] })",
+    "plan/plan.module.ts":
+      "@Module({ providers: [{ provide: P, useExisting: X }], controllers: [A] })",
+  });
+  assert.deepEqual([...two.found.providers].sort(), [
+    "A : day/day.module.ts + plan/plan.module.ts",
+    "P : day/day.module.ts + plan/plan.module.ts",
+  ]);
+  assert.deepEqual(
+    moduleProvidersOf("@Module({ providers: [A, { provide: P, useFactory: (a) => f(a, [1]) }] })"),
+    ["A", "P"],
+  );
+});
+
+test("racines : entrent par un index.ts, un module de métier, le module du bloc ou un canal", () => {
+  for (const ok of [
+    "production/day/index.ts",
+    "production/plan/production-plan.module.ts",
+    "production/shared/print/production-print.module.ts",
+    "production/production.module.ts",
+    "production/channels/commerce/index.ts",
+    "production/channels/packing/x.ts",
+    "packing/x.ts",
+  ])
+    assert.equal(isRootEntry(ok), true, ok);
+  for (const ko of ["production/day/domain/x.ts", "production/plan/infrastructure/r.ts"])
+    assert.equal(isRootEntry(ko), false, ko);
+  const list = [
+    {
+      path: "appBootstrap/feed.module.ts",
+      source: imp("../production/day/index.js") + imp("../production/plan/infrastructure/r.js"),
+    },
+    { path: "dev/seed.ts", source: imp("../production/atelier/index.js") },
+  ];
+  const { found } = analyse([], { files: {}, models: OWNERS }, MODELS, list);
+  assert.deepEqual([...found.roots], [["appBootstrap/feed.module.ts", 1]]);
 });

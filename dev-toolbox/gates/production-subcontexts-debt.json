@@ -38,5 +38,13 @@
   "$d5": "D5 (2026-11-15) : l’atelier déménage dans atelier/ ; atelier/index.ts n’exporte rien. Tous les comptes inchangés (tests hors porte 40), seuls des chemins changent. La carte ne range plus que production.module.ts à plat.",
   "$d7": "D7 (2026-11-15) : l’imprimerie — gabarit de la fiche, réglages d’affichage et données de spécimen rangés dans shared/print/ ; le plan et l’atelier n’en dépendent plus l’un de l’autre que par la fiche PDF. Arêtes 12 → 3, tests hors porte 40 → 36. Le rendu des papiers reste au plan : il lit des canaux et les délais du dossier.",
   "$d7b": "D7b (2026-11-15) : la fiche de commande appartient à l’imprimerie (OrderSheetPaper), seule à lire la couleur d’une commande (canal admis fichier par fichier). Arêtes 3 → 2 ; la racine n’a plus aucun fournisseur.",
-  "$r1": "R1 (2026-11-15) : les doubles partagés rangés chez le propriétaire de ce qu’ils doublent ; l’en-tête d’étiquette du colisage rangé à l’imprimerie. Arêtes 2 → 0, tests hors porte 36 → 33."
+  "$r1": "R1 (2026-11-15) : les doubles partagés rangés chez le propriétaire de ce qu’ils doublent ; l’en-tête d’étiquette du colisage rangé à l’imprimerie. Arêtes 2 → 0, tests hors porte 36 → 33.",
+  "messages": [],
+  "providers": [],
+  "roots": {
+    "appBootstrap/handover-feed.module.ts": 2,
+    "appBootstrap/packing-feed.module.ts": 1,
+    "appBootstrap/production-delivery-feed.module.ts": 1
+  },
+  "$r2": "R2 (2026-11-15) : la porte juge les messages du bus (envoi, écoute, handler) par le fichier qui déclare leur classe, refuse un fournisseur déclaré dans deux modules, et juge appBootstrap/ et dev/ (entrées : index.ts, module d’un métier, racine, canaux). messages 0, providers 0, racines 23 → 4 : quatre adaptateurs reliés en useClass, rangés avec leur lecture au noyau en R4."
 }

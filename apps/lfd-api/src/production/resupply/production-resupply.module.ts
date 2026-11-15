@@ -33,3 +33,10 @@ import { PrismaLaunchedResupplyLookup } from "./infrastructure/prisma-launched-r
   exports: [ProductionLaunchedResupplies],
 })
 export class ProductionResupplyModule {}
+
+/**
+ * Les fournisseurs que ce module exporte et que la racine de composition
+ * (`appBootstrap/`) relie à un port d'un autre bloc : elle les prend ici,
+ * jamais dans l'intérieur du métier.
+ */
+export { ProductionLaunchedResupplies };
