@@ -296,7 +296,20 @@ mêlent jamais dans un lot.
    journée : elle rejoint `day/`, et le métier la lit de là. Le contrôleur du
    balayage qualité (`quality-upload-sweep.controller`) qui déclenche aussi
    l'élagage de la journée est coupé en deux dans le même lot.
-6. **D1 — déplacer le noyau** (`day/`) et `shared/print/` (✅ bâti le 2026-11-15 : 105 fichiers et 42 tests ; imports hors porte 210 → 6, tests hors porte 139 → 59. `PackingHandoffs`, `SealedDayReading` et `WorksheetDeadlinesReading` chargent un canal : `day/index.ts` ne les exporte pas, leurs lecteurs restent en dette).
+6. 6. **C5 — le noyau n'orchestre plus** (relevé par D1, décidé avec Hugo le
+      2026-11-15) : trois services rangés au noyau parce que plusieurs métiers
+      s'en servent chargent un canal — la remise des fournées vers l'aval
+      (`packing-handoffs.service`), la lecture scellée de la journée
+      (`sealed-day-reading.service`), la lecture des délais
+      (`worksheet-deadlines-reading.service`). Ce sont des services
+      d'application, pas des règles de la journée. Chacun quitte le noyau : un
+      service d'un seul métier va dans ce métier ; un service de deux métiers est
+      coupé en deux usages au-dessus des règles pures du noyau. La remise des
+      fournées est le point de sortie des faits du fournil vers l'aval : elle
+      se range à côté du canal qu'elle alimente, et son vocabulaire est traité à
+      part ([`plan-faits-agnostiques.md`](plan-faits-agnostiques.md)). La règle
+      « `day/index.ts` ne charge aucun canal » reste stricte.
+      **D1 — déplacer le noyau** (`day/`) et `shared/print/` (✅ bâti le 2026-11-15 : 105 fichiers et 42 tests ; imports hors porte 210 → 6, tests hors porte 139 → 59. `PackingHandoffs`, `SealedDayReading` et `WorksheetDeadlinesReading` chargent un canal : `day/index.ts` ne les exporte pas, leurs lecteurs restent en dette).
 7. **D2 — déplacer la qualité. D3 — le réassort. D4 — le plan. D5 —
    l'atelier** (dont `production-batch-shortcuts.module.ts`).
 8. **D6 — un module Nest par métier.** `day/` devient un module qui fournit
