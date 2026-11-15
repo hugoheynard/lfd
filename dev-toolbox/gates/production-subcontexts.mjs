@@ -3,11 +3,10 @@
  * Gate : **le fournil est un noyau, et des métiers autour** (plan
  * `documentation/fournil/plan-decoupage-du-fournil.md`, § 1 et § 1 bis).
  *
- * `src/production/` est un seul contexte à plat. Le découpage le range en
- * `day/` (la journée), `plan/`, `atelier/`, `quality/`, `resupply/`,
- * `shared/print/` et `channels/`. Cette porte tient la forme AVANT que le
- * premier fichier bouge : elle publie la carte, mesure la surface de départ
- * de chaque sous-contexte, et compte ce qui la viole aujourd'hui.
+ * `src/production/` se range en `day/` (la journée), `plan/`, `atelier/`,
+ * `quality/`, `resupply/`, `shared/print/` et `channels/`. Cette porte tient
+ * cette forme : elle publie la carte, et compte en dette décroissante ce qui
+ * la viole.
  *
  * ## Où se lit le sous-contexte d'un fichier
  *

@@ -147,8 +147,6 @@ import { PrismaProductionSettingsReader } from "./infrastructure/prisma-producti
   exports: [
     // Ce que la racine de composition relie aux autres blocs.
     ProductionPlanAdmissionDesk,
-    // Ce que la fiche PDF de l'atelier, gardée par `ProductionModule`, injecte.
-    ProductionPaperRenderer,
   ],
 })
 export class ProductionPlanModule {}
