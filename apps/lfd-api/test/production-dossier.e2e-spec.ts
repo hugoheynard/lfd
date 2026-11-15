@@ -7,9 +7,9 @@
 import { Buffer } from "node:buffer";
 
 import { DossierDispatchLog } from "../src/production/domain/ports/dossier-dispatch.log.js";
-import { ProductionDayRepository } from "../src/production/domain/ports/production-day.repository.js";
+import { ProductionDayRepository } from "../src/production/day/domain/ports/production-day.repository.js";
 import { pdfPages } from "../src/platform/pdf/__tests__/pdf-text.js";
-import { ServiceDay } from "../src/production/domain/value-objects/service-day.value-object.js";
+import { ServiceDay } from "../src/production/day/domain/value-objects/service-day.value-object.js";
 import { jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 import {

@@ -3,7 +3,10 @@ import { DEFAULT_RESUPPLY_CUTOFF_TIME } from "@lfd/contracts";
 import type { DayComposer } from "../../delivery/application/day-composer.js";
 import { CloseProductionDayCommand } from "../../production/application/commands/close-production-day.command.js";
 import type { RecordBatchCommand } from "../../production/application/commands/record-batch.command.js";
-import { planStopOf, planStopRules } from "../../production/domain/services/latest-order-cutoff.js";
+import {
+  planStopOf,
+  planStopRules,
+} from "../../production/day/domain/services/latest-order-cutoff.js";
 import {
   COUNTER,
   packCounter,

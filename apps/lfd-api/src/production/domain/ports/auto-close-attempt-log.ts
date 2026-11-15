@@ -1,5 +1,5 @@
 import type { AttemptTrace } from "../services/auto-close-round.js";
-import type { ServiceRange } from "../value-objects/service-range.value-object.js";
+import type { ServiceRange } from "../../day/index.js";
 
 /** Une tentative, avec la journée qu'elle visait. */
 export interface DatedAttemptTrace extends AttemptTrace {

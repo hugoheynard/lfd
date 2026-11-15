@@ -4,7 +4,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../platform/time/clock.js";
 import { DayOrdersReader } from "../../channels/commerce/day-orders.reader.js";
-import { ProductionDayEmptyError } from "../../domain/errors/production-errors.js";
+import { ProductionDayEmptyError } from "../../day/index.js";
 import { AutoCloseAttempts } from "../../domain/ports/auto-close-attempts.js";
 import { AutoCloseRoundReader } from "../../domain/ports/auto-close-round.reader.js";
 import { AutomaticDayCloser } from "../../domain/ports/automatic-day-closer.js";
@@ -14,9 +14,9 @@ import {
   closesOnItsOwnDay,
   todayNeedsCatchUp,
 } from "../../domain/services/auto-close-round.js";
-import { planStopsAt } from "../../domain/services/latest-order-cutoff.js";
+import { planStopsAt } from "../../day/index.js";
 import { PlanStopRules } from "../services/plan-stop-rules.js";
-import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { ServiceDay } from "../../day/index.js";
 import { PlanArrestBell } from "../services/plan-arrest-bell.js";
 import {
   RunAutoCloseRoundCommand,

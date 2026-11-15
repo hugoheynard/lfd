@@ -1,6 +1,6 @@
 import { addDays, instantToLocal } from "@lfd/contracts";
 
-import type { ProductionOrderSnapshot } from "../../domain/entities/production-day.js";
+import type { ProductionOrderSnapshot } from "../../day/index.js";
 
 /**
  * **Les données d'exemple de la fiche d'atelier** — la planche des documents

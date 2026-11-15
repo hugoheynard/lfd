@@ -4,7 +4,7 @@ import { PrismaService } from "../../platform/database/prisma.service.js";
 import { currentTransaction } from "../../platform/database/transaction.store.js";
 import { TechnicalError } from "../../platform/shared/errors/app-error.js";
 import { ArrestedPlanHold, type PlanHoldState } from "../channels/packing/arrested-plan.hold.js";
-import { dayLockKey } from "./prisma-production-day.lock.js";
+import { dayLockKey } from "../day/index.js";
 
 /** Le plan tenu hors d'une unité de travail : un défaut de code, pas un refus. */
 class PlanHoldOutsideTransactionError extends TechnicalError {

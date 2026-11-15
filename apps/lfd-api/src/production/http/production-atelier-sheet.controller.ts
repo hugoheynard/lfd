@@ -6,7 +6,7 @@ import type { Response } from "express";
 import { AdminSurface, RequirePermission } from "../../platform/auth/admin-surface.decorator.js";
 import { ZodParam } from "../../platform/shared/http/zod-body.pipe.js";
 import { GetAtelierSheetPdfQuery } from "../application/queries/get-atelier-sheet-pdf.query.js";
-import { type ProductionPaper, servePaper } from "./production-paper-response.js";
+import { type ProductionPaper, servePaper } from "../shared/print/index.js";
 
 /** Le jour du chemin, validé dans sa FORME par un pipe : un 400 qui nomme le paramètre. */
 const DAY = new ZodParam(productionBatchQuerySchema.shape.date, "date");

@@ -8,10 +8,10 @@ import {
   type ProducibleOrder,
 } from "../../../channels/commerce/day-orders.reader.js";
 import { producibleOrder } from "../../../channels/commerce/__tests__/producible-order.fixture.js";
-import { ProductionDay } from "../../../domain/entities/production-day.js";
-import { ProductionDayRepository } from "../../../domain/ports/production-day.repository.js";
-import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
-import { ProductionDayStatusReader } from "../../../domain/ports/production-day-status.reader.js";
+import { ProductionDay } from "../../../day/domain/entities/production-day.js";
+import { ProductionDayRepository } from "../../../day/domain/ports/production-day.repository.js";
+import { ServiceDay } from "../../../day/domain/value-objects/service-day.value-object.js";
+import { ProductionDayStatusReader } from "../../../day/domain/ports/production-day-status.reader.js";
 import { admissionOf, FixedStatus, intakeReadingOf } from "../../__tests__/plan-intake-doubles.js";
 import { DayResupplies } from "../../__tests__/settings-doubles.js";
 import { PlanArrestRecording } from "../../services/plan-arrest-recording.js";

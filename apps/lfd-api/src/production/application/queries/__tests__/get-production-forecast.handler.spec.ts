@@ -14,7 +14,7 @@ import {
 } from "../../../domain/ports/auto-close-attempt-log.js";
 import { ProductionPlanReader } from "../../../domain/ports/production-plan.reader.js";
 import type { DayDemand, DayResupplyDemand } from "../../../domain/services/production-forecast.js";
-import type { ServiceRange } from "../../../domain/value-objects/service-range.value-object.js";
+import type { ServiceRange } from "../../../day/index.js";
 import { GetProductionForecastHandler } from "../get-production-forecast.handler.js";
 import { GetProductionForecastQuery } from "../get-production-forecast.query.js";
 import {

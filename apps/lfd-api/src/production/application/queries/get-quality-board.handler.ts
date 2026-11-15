@@ -2,10 +2,10 @@ import type { QualityBoardView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { QualityControlSettings } from "../../domain/entities/quality-control-settings.js";
-import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
+import { ProductionDayRepository } from "../../day/index.js";
 import { QualityCheckReader } from "../../domain/ports/quality-check.reader.js";
 import { QualityControlSettingsReader } from "../../domain/ports/quality-control-settings.reader.js";
-import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { ServiceDay } from "../../day/index.js";
 import { qualityBoardOf } from "../services/quality-views.js";
 import { GetQualityBoardQuery } from "./get-quality-board.query.js";
 

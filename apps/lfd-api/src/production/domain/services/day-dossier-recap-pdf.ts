@@ -1,7 +1,7 @@
 import type { DayDossier, DossierRecapGroup } from "./day-dossier.js";
 import type { MakeRoom } from "./day-dossier-resupplies-pdf.js";
 import { methodSplitOf } from "./dossier-addressees.js";
-import { figureFontSize, lineFigure } from "./line-tally.js";
+import { figureFontSize, lineFigure } from "../../shared/print/index.js";
 import {
   LEFT,
   MM,

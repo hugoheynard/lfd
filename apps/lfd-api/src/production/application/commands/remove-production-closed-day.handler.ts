@@ -4,7 +4,7 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { ProductionClosedDayRemovedEvent } from "../../domain/events/production-settings.events.js";
 import { ProductionClosedDayRepository } from "../../domain/ports/production-closed-day.repository.js";
-import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { ServiceDay } from "../../day/index.js";
 import { RemoveProductionClosedDayCommand } from "./remove-production-closed-day.command.js";
 
 /**

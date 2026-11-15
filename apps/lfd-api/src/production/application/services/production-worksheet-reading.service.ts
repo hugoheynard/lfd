@@ -11,7 +11,7 @@ import { WorkshopShelvesReader } from "../../channels/commerce/workshop-shelves.
 import { ProductionDisplaySettings } from "../../domain/entities/production-display-settings.js";
 import { ProductionDisplaySettingsReader } from "../../domain/ports/production-display-settings.reader.js";
 import { ProductionContainerReader } from "../../domain/ports/production-container.reader.js";
-import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
+import { ProductionDayRepository } from "../../day/index.js";
 import { QualityLineStatusReader } from "../../domain/ports/quality-line-status.reader.js";
 import { worksheetGroupsOf } from "../../domain/services/production-worksheet-groups.js";
 import {
@@ -19,10 +19,10 @@ import {
   type DemandedItem,
   type Worksheet,
 } from "../../domain/services/production-worksheet.js";
-import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
-import { ServiceRange } from "../../domain/value-objects/service-range.value-object.js";
+import { ServiceDay } from "../../day/index.js";
+import { ServiceRange } from "../../day/index.js";
 import type { WorksheetContent } from "./worksheet-content.js";
-import { WorksheetDeadlinesReading } from "./worksheet-deadlines-reading.service.js";
+import { WorksheetDeadlinesReading } from "../../day/application/services/worksheet-deadlines-reading.service.js";
 import { groupView, lineViewOf } from "./worksheet-line-views.js";
 
 /**

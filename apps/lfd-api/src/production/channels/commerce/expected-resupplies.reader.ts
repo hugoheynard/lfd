@@ -1,4 +1,4 @@
-import type { ServiceRange } from "../../domain/value-objects/service-range.value-object.js";
+import type { ServiceRange } from "../../day/domain/value-objects/service-range.value-object.js";
 import type { ExpectedItem } from "./expected-production.reader.js";
 
 /** Les réassorts « pour demain » attendus une journée, fusionnés par article. */

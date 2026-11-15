@@ -7,7 +7,7 @@ import { BusinessError, ResourceNotFoundError } from "../../../platform/shared/e
  * (plan `documentation/colisage/colisage.md`, K2, §12.2).
  *
  * 🔴 Les CODES et les messages sont ceux du poste d'avant
- * (`production/domain/errors/production-errors.ts`) : le contrat des routes ne
+ * (`production/day/domain/errors/production-errors.ts`) : le contrat des routes ne
  * change pas, et l'écran qui lit un code le retrouve à l'identique. Seul le
  * propriétaire de la règle a changé. Les originaux du fournil sont retirés
  * avec l'ancien poste (K3c).

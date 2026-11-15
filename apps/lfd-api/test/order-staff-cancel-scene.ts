@@ -5,7 +5,7 @@ import type { CardPaymentCancellation } from "../src/card-payment/channels/reque
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { OutboxRelay } from "../src/platform/outbox/outbox-relay.js";
-import { ProductionOrderWithdrawalDesk } from "../src/production/application/services/production-order-withdrawal.desk.js";
+import { ProductionOrderWithdrawalDesk } from "../src/production/day/application/services/production-order-withdrawal.desk.js";
 import {
   DayOrdersReader,
   OrderWithdrawalDesk,

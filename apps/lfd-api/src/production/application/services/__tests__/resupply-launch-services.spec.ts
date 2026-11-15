@@ -4,9 +4,9 @@ import {
 } from "../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { producibleOrder } from "../../../channels/commerce/__tests__/producible-order.fixture.js";
-import { NOTHING_PENDING, ProductionDay } from "../../../domain/entities/production-day.js";
-import { ResupplyToLaunchNotFoundError } from "../../../domain/errors/resupply-launch-errors.js";
-import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { NOTHING_PENDING, ProductionDay } from "../../../day/domain/entities/production-day.js";
+import { ResupplyToLaunchNotFoundError } from "../../../day/domain/errors/resupply-launch-errors.js";
+import { ServiceDay } from "../../../day/domain/value-objects/service-day.value-object.js";
 import { RecordingDurable } from "../../__tests__/handoff-doubles.js";
 import { FixedDayOrders } from "../../__tests__/plan-intake-doubles.js";
 import { SavedDays } from "../../__tests__/revision-desk-doubles.js";

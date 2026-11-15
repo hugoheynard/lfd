@@ -4,7 +4,7 @@ import {
   QualityCheckPhotoPositionError,
   QualityCheckTooManyPhotosError,
 } from "../errors/quality-check-errors.js";
-import type { ServiceDay } from "../value-objects/service-day.value-object.js";
+import type { ServiceDay } from "../../day/index.js";
 import {
   qualityCheckTargetOf,
   type QualityCheckTarget,

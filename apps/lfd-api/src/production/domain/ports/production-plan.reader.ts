@@ -1,5 +1,5 @@
 import type { DayDemand, DayResupplyDemand } from "../services/production-forecast.js";
-import type { ServiceRange } from "../value-objects/service-range.value-object.js";
+import type { ServiceRange } from "../../day/index.js";
 
 /**
  * **Les comptes à produire déjà ARRÊTÉS**, sur une plage de jours.

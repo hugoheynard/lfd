@@ -34,7 +34,7 @@
 > noyau (`CancellationAllowanceGate`). `before_packing` ne lève PAS encore le
 > refus « inscrite » : choisir « prête » ne change rien tant qu'A1.2 n'est pas
 > bâti. Vérifié au bâti : l'arrêt automatique tombe au plus tôt à la fin de la
-> grâce (`production/domain/services/latest-order-cutoff.ts`, `planClosesAt`).
+> grâce (`production/day/domain/services/latest-order-cutoff.ts`, `planClosesAt`).
 
 > **Doc-first, 2026-10-25. Rien n'est bâti.** Premier lot né de
 > l'[étude de l'arrêt du plan](../etude-arret-du-plan-publication.md) (§ 5,

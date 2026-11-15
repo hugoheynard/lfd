@@ -1,4 +1,4 @@
-import { NOTHING_PENDING, ProductionDay } from "../../../domain/entities/production-day.js";
+import { NOTHING_PENDING, ProductionDay } from "../../../day/domain/entities/production-day.js";
 import { CloseProductionDayCommand } from "../close-production-day.command.js";
 import {
   closedFact,

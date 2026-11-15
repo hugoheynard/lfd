@@ -3,9 +3,9 @@ import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import { BrandLogoSource } from "../../../platform/brand/brand-logo.source.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { renderProductionCountPdf } from "../../domain/services/atelier-sheet-pdf.js";
-import { countColorSharesOf } from "../../domain/services/count-color-shares.js";
-import { countPaperRowsOf } from "../../domain/services/made-to-order.js";
-import { countOf } from "../../domain/services/production-count.js";
+import { countColorSharesOf } from "../../shared/print/index.js";
+import { countPaperRowsOf } from "../../shared/print/index.js";
+import { countOf } from "../../day/index.js";
 import { specimenServiceDay } from "../document-specimens/specimen-data.js";
 import {
   SPECIMEN_DAY_COLORS,
@@ -13,7 +13,7 @@ import {
   SPECIMEN_DAY_RESUPPLIES,
   SPECIMEN_DAY_RESUPPLY_COLORS,
 } from "../document-specimens/specimen-day.js";
-import type { ProductionPaper } from "../services/production-paper-archive.service.js";
+import type { ProductionPaper } from "../../shared/print/index.js";
 import { GetProductionCountSpecimenQuery } from "./get-production-count-specimen.query.js";
 
 /**

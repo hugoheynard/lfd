@@ -1,6 +1,6 @@
 import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { InMemoryQualityControlSettings } from "../../__tests__/quality-control-settings-doubles.js";
-import { SealedDayReading } from "../../services/sealed-day-reading.service.js";
+import { SealedDayReading } from "../../../day/application/services/sealed-day-reading.service.js";
 import { sealedAt } from "../../__tests__/station-doubles.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
@@ -18,7 +18,7 @@ import {
   QualityUploadReleasedError,
 } from "../../../domain/errors/quality-record-errors.js";
 import type { QualityTargetRequest } from "../../../domain/services/quality-check-scope.js";
-import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { ServiceDay } from "../../../day/index.js";
 import {
   CheckTable,
   closedDay,

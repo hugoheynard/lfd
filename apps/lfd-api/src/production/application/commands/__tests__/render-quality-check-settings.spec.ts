@@ -4,7 +4,7 @@ import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { QualityControlSettings } from "../../../domain/entities/quality-control-settings.js";
 import { QualityControlDisabledError } from "../../../domain/errors/quality-control-settings-errors.js";
 import type { QualityTargetRequest } from "../../../domain/services/quality-check-scope.js";
-import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { ServiceDay } from "../../../day/index.js";
 import { InMemoryQualityControlSettings } from "../../__tests__/quality-control-settings-doubles.js";
 import {
   CheckTable,
@@ -19,7 +19,7 @@ import {
 } from "../../__tests__/quality-doubles.js";
 import { sealedAt } from "../../__tests__/station-doubles.js";
 import { QualityPhotoAttachment } from "../../services/quality-photo-attachment.service.js";
-import { SealedDayReading } from "../../services/sealed-day-reading.service.js";
+import { SealedDayReading } from "../../../day/application/services/sealed-day-reading.service.js";
 import { RenderQualityCheckCommand } from "../render-quality-check.command.js";
 import { RecordingDayLock } from "../../__tests__/batch-doubles.js";
 import { RenderQualityCheckHandler } from "../render-quality-check.handler.js";

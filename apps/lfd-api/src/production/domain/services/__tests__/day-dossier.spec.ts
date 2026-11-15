@@ -4,7 +4,7 @@ import {
   type CatalogFamilyView,
 } from "@lfd/contracts";
 
-import type { ProductionOrderSnapshot } from "../../entities/production-day.js";
+import type { ProductionOrderSnapshot } from "../../../day/index.js";
 import { dayDossierOf } from "../day-dossier.js";
 
 /**

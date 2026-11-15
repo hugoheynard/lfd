@@ -8,7 +8,7 @@ import {
 } from "../../channels/commerce/planned-delivery-notes.reader.js";
 import { PAPER_LOGO } from "../../domain/services/__tests__/paper-logo.fixture.js";
 import { put } from "../../../platform/pdf/paper-pdf-kit.js";
-import type { TrancheThreshold } from "../../domain/services/production-tranches.js";
+import type { TrancheThreshold } from "../../day/domain/services/production-tranches.js";
 
 /** Le logo du dépôt, servi sans disque. */
 export class FixedPaperLogo extends BrandLogoSource {

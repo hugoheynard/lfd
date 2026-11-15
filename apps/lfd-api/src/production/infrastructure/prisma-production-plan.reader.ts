@@ -7,8 +7,8 @@ import type {
   DayResupplyDemand,
   DemandItem,
 } from "../domain/services/production-forecast.js";
-import type { ServiceRange } from "../domain/value-objects/service-range.value-object.js";
-import { productionSaleUnitOf } from "./sale-unit.column.js";
+import type { ServiceRange } from "../day/index.js";
+import { productionSaleUnitOf } from "../day/index.js";
 
 /**
  * Les comptes à produire arrêtés, lus **dans le schéma de la production**.

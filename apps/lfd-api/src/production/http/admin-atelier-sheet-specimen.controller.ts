@@ -5,7 +5,7 @@ import type { Response } from "express";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { GetAtelierSheetSpecimenQuery } from "../application/queries/get-atelier-sheet-specimen.query.js";
-import type { ProductionPaper } from "../application/services/production-paper-archive.service.js";
+import type { ProductionPaper } from "../shared/print/index.js";
 
 /**
  * **La fiche d'atelier d'EXEMPLE** — la planche des documents de la

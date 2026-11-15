@@ -89,4 +89,4 @@ export {
   ShipmentRef,
   shipmentKeySuffix,
   shipmentRankOf,
-} from "../../domain/value-objects/shipment-ref.value-object.js";
+} from "../../day/domain/value-objects/shipment-ref.value-object.js";

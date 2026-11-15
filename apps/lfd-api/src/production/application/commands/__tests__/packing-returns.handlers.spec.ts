@@ -3,9 +3,9 @@ import type { DurableDelivery } from "../../../../platform/outbox/durable-event.
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
 import { PackingReturnedEvent } from "../../../channels/packing/packing-returned.event.js";
-import { ProductionDay } from "../../../domain/entities/production-day.js";
-import { BatchReturnPendingError } from "../../../domain/errors/batch-errors.js";
-import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { ProductionDay } from "../../../day/domain/entities/production-day.js";
+import { BatchReturnPendingError } from "../../../day/domain/errors/batch-errors.js";
+import { ServiceDay } from "../../../day/index.js";
 import {
   BatchBackedDays,
   InMemoryBatches,
@@ -16,7 +16,7 @@ import {
   InMemoryHandoffReader,
   returnCountsOf,
 } from "../../__tests__/handoff-doubles.js";
-import { OnPackingReturned } from "../../handlers/on-packing-returned.handler.js";
+import { OnPackingReturned } from "../../../day/application/handlers/on-packing-returned.handler.js";
 import { CancelBatchCommand } from "../cancel-batch.command.js";
 import { CancelBatchHandler } from "../cancel-batch.handler.js";
 import { RecordBatchCommand } from "../record-batch.command.js";

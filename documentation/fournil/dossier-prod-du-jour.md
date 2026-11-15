@@ -205,7 +205,7 @@ l'a pas reçu. Journal : « Le dossier du … a été envoyé à N destinataires
 - Ce que l'arrêt fige : le port `production/channels/commerce/day-orders.reader.ts`
   (`sheetDetails`), implémenté par
   `apps/lfd-api/src/lafoliecoffee/orders/infrastructure/prisma-day-orders.source.ts`,
-  rangé par `production/infrastructure/production-order-sheet.columns.ts`.
+  rangé par `production/day/infrastructure/production-order-sheet.columns.ts`.
 - Envoi : `application/services/dossier-dispatch.service.ts`, abonnés
   `application/handlers/send-dossier-on-day-closed.handler.ts` et
   `send-dossier-on-day-retaken.handler.ts`, gabarit

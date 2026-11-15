@@ -6,8 +6,8 @@ import {
   type PlanAdmission,
   PlanAdmissionDesk,
 } from "../../channels/commerce/plan-admission.desk.js";
-import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
-import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { ProductionDayLock } from "../../day/index.js";
+import type { ServiceDay } from "../../day/index.js";
 
 /**
  * Le guichet d'admission, tel que le fournil l'implémente — cf.

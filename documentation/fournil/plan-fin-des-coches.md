@@ -20,8 +20,8 @@ coche du code, puis de la base.
   `done_initials` (`done_initials` est `NOT NULL DEFAULT ''`,
   `prisma/schema/production.prisma:263-267`).
 - Les lecteurs de la colonne, tous dans `src/production/` :
-  `infrastructure/production-day.row.ts` (select `:64-66`, lecture `:150`),
-  `domain/services/production-output.ts` (`implicitBatchesOf`, la coche lue
+  `day/infrastructure/production-day.row.ts` (select `:64-66`, lecture `:150`),
+  `day/domain/services/production-output.ts` (`implicitBatchesOf`, la coche lue
   comme fournée implicite, `:41-57`), `domain/…/production-day.reopening.ts:40`
   (une coche bloque la réouverture), `application/commands/record-batch.handler.ts`
   (matérialisation avant la première fournée), et les commandes

@@ -270,7 +270,7 @@ Le §7 du plan A2 l'a emporté sur ses §§1 à 5, et c'est lui que le code tien
 - **Deux grandeurs au fournil.** Les lignes de la commande au fournil disent
   le **dû**, dans les deux sens (`ProductionDay.reviseOrder`). Le **compte du
   four par article** ne baisse jamais après l'arrêt : `floorCounts`
-  (`production/domain/services/production-count.ts`) prend le plus grand du
+  (`production/day/domain/services/production-count.ts`) prend le plus grand du
   compte précédent et du compte refait, après matérialisation des coches.
   Une baisse laisse le surplus partir en réserve au colisage, comme A1. Fait
   `production.order_quantities_raised` sur une hausse seulement.

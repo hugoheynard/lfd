@@ -1,7 +1,7 @@
 import type { QualityLineStatus } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
-import type { ProductionDay } from "../../domain/entities/production-day.js";
+import type { ProductionDay } from "../../day/index.js";
 import { QualityCheckReader } from "../../domain/ports/quality-check.reader.js";
 import { QualityLineStatusReader } from "../../domain/ports/quality-line-status.reader.js";
 import { qualityLinesOf } from "./quality-views.js";

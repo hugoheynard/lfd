@@ -1,7 +1,7 @@
 import type { ProductionWorksheetView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
-import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { ServiceDay } from "../../day/index.js";
 import { WorksheetContents } from "../services/worksheet-contents.service.js";
 import { GetProductionWorksheetQuery } from "./get-production-worksheet.query.js";
 

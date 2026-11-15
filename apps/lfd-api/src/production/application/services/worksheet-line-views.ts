@@ -6,8 +6,8 @@ import type {
 } from "@lfd/contracts";
 
 import type { OvenWaitingOrders } from "../../channels/packing/oven-waiting-orders.reader.js";
-import { deadlinesOf } from "../../domain/services/production-deadlines.js";
-import type { TrancheThreshold } from "../../domain/services/production-tranches.js";
+import { deadlinesOf } from "../../day/index.js";
+import type { TrancheThreshold } from "../../day/index.js";
 import type { WorksheetGroup } from "../../domain/services/production-worksheet-groups.js";
 import type { WorksheetLine } from "../../domain/services/production-worksheet.js";
 

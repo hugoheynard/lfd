@@ -9,11 +9,11 @@
     "application/queries/get-production-forecast.handler.ts → domain/ports/production-display-settings.reader.ts",
     "application/queries/get-production-settings.handler.ts → domain/entities/production-display-settings.ts",
     "application/queries/get-production-settings.handler.ts → domain/ports/production-display-settings.reader.ts",
-    "application/services/day-order-label-head.reader.ts → domain/services/dossier-sheet-head.ts",
-    "application/services/day-order-label-head.reader.ts → domain/services/fulfillment-method-label.ts",
     "application/services/production-paper.service.ts → domain/entities/production-display-settings.ts",
     "application/services/production-paper.service.ts → domain/ports/production-display-settings.reader.ts",
-    "application/services/production-paper.service.ts → domain/services/atelier-sheet-pdf.ts"
+    "application/services/production-paper.service.ts → domain/services/atelier-sheet-pdf.ts",
+    "day/application/services/day-order-label-head.reader.ts → shared/print/domain/services/dossier-sheet-head.ts",
+    "day/application/services/day-order-label-head.reader.ts → shared/print/domain/services/fulfillment-method-label.ts"
   ],
   "models": [
     "infrastructure/prisma-arrested-plan.hold.ts → ProductionDay (day)",
@@ -30,34 +30,28 @@
   "subscribers": [],
   "indexCycles": [],
   "door": {
-    "atelier → day": 33,
+    "atelier → day": 3,
     "atelier → quality": 1,
-    "atelier → shared-print": 11,
-    "plan → day": 96,
-    "plan → shared-print": 25,
-    "quality → day": 20,
-    "resupply → day": 19,
-    "shared-print → day": 5
+    "plan → day": 1,
+    "quality → day": 1
   },
   "testDoor": {
-    "atelier → day": 34,
+    "atelier → day": 15,
     "atelier → plan": 1,
     "atelier → quality": 1,
     "day → atelier": 1,
     "day → plan": 14,
     "day → resupply": 3,
-    "day → shared-print": 1,
     "plan → atelier": 2,
-    "plan → day": 47,
-    "plan → shared-print": 3,
-    "quality → day": 18,
-    "resupply → day": 8,
+    "plan → day": 10,
+    "quality → day": 6,
+    "resupply → day": 3,
     "shared-print → atelier": 1,
-    "shared-print → day": 3,
     "shared-print → plan": 2
   },
   "$c1": "2026-11-15, C1 (décidé par Hugo) : l'archivage des papiers sort du rendu et devient une primitive partagée (shared-print) ; −2 arêtes interdites, +14 imports hors porte (atelier→shared-print 7→10, plan→shared-print 17→25, tests plan→shared-print 1→3, tests day→shared-print 0→1), que D1 efface en posant shared/print/index.ts.",
   "$c2": "2026-11-15, C2 (décidé par Hugo) : un contrôleur par métier, mêmes routes ; −3 arêtes interdites, plan → resupply 1→0, +1 atelier → shared-print (10→11 : la fiche PDF importe la mise en forme depuis son contrôleur de l'atelier), que D1 efface.",
   "$c3": "2026-11-15, C3 (décidé par Hugo) : la fiche lit les pastilles qualité par le port QualityLineStatusReader ; atelier → quality 2→1, +2 quality → day (18→20 : le port et son adaptateur lisent la journée), et +1 test quality → day (17→18 : le test de l'adaptateur), que D1 efface.",
-  "$c4": "2026-11-15, C4 (décidé par Hugo) : l'heure limite et l'heure maison, et le type de la commande partie, rejoignent le noyau ; le balayage qualité et l'élagage de la journée sont deux routes, appelées par le même cron. −3 arêtes canaux → plan/qualité ; +6 plan → day et +2 tests plan → day (les lecteurs du plan importent désormais ces règles du noyau), que D1 efface."
+  "$c4": "2026-11-15, C4 (décidé par Hugo) : l'heure limite et l'heure maison, et le type de la commande partie, rejoignent le noyau ; le balayage qualité et l'élagage de la journée sont deux routes, appelées par le même cron. −3 arêtes canaux → plan/qualité ; +6 plan → day et +2 tests plan → day (les lecteurs du plan importent désormais ces règles du noyau), que D1 efface.",
+  "$d1": "2026-11-15, D1 : la journée (day/) et les primitives d’impression (shared/print/) déménagent et posent leur index.ts. Imports hors porte 210→6 (reste atelier → quality 1, et vers day PackingHandoffs, SealedDayReading et WorksheetDeadlinesReading, que day/index.ts n’exporte pas parce qu’ils chargent un canal, § 1 bis). Imports de tests hors porte 139→59 (les doubles qui construisent une ProductionDay l’importent en direct : la porte n’en exporte que le type). Les deux arêtes du noyau vers l’impression changent de chemin, pas de nombre."
 }

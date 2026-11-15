@@ -1,6 +1,6 @@
 import type { QualityLineStatus } from "@lfd/contracts";
 
-import type { ProductionDay } from "../entities/production-day.js";
+import type { ProductionDay } from "../../day/index.js";
 
 /**
  * **Ce que l'atelier sait des retenues qualité** : la pastille de chaque ligne

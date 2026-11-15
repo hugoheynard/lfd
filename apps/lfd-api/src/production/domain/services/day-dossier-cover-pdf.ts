@@ -1,11 +1,11 @@
-import type { ProductionOrderSnapshot } from "../entities/production-day.js";
+import type { ProductionOrderSnapshot } from "../../day/index.js";
 import type { DayDossier } from "./day-dossier.js";
 import { resupplySheetTitleOf } from "./day-dossier.js";
 import { lotCount } from "./day-dossier-recap-pdf.js";
 import type { MakeRoom } from "./day-dossier-resupplies-pdf.js";
-import { fulfillmentLabelOf } from "./fulfillment-method-label.js";
-import { piecesOfLines, type TalliedLine } from "./line-tally.js";
-import { drawOrderSwatch } from "./order-color-swatch.js";
+import { fulfillmentLabelOf } from "../../shared/print/index.js";
+import { piecesOfLines, type TalliedLine } from "../../shared/print/index.js";
+import { drawOrderSwatch } from "../../shared/print/index.js";
 import {
   LEFT,
   MM,

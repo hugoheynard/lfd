@@ -1,7 +1,7 @@
 import { OrderInscriptionReader } from "../../channels/commerce/order-inscription.reader.js";
-import { OrderWithdrawalLedger } from "../../domain/ports/order-withdrawal.ledger.js";
-import { OrderWithdrawalsReader } from "../../domain/ports/order-withdrawals.reader.js";
-import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { OrderWithdrawalLedger } from "../../day/domain/ports/order-withdrawal.ledger.js";
+import { OrderWithdrawalsReader } from "../../day/domain/ports/order-withdrawals.reader.js";
+import type { ServiceDay } from "../../day/domain/value-objects/service-day.value-object.js";
 
 /**
  * Les retraits d'une journée, en mémoire, avec la sémantique de la table :

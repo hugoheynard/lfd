@@ -7,8 +7,8 @@ import { ResupplyCutoffTimeReader } from "../../channels/commerce/resupply-cutof
 import type { ProductionClosedDay } from "../../domain/entities/production-closed-day.js";
 import { ProductionClosedDayRepository } from "../../domain/ports/production-closed-day.repository.js";
 import { ProductionSettingsReader } from "../../domain/ports/production-settings.reader.js";
-import type { OrderCutoffRule } from "../../domain/services/latest-order-cutoff.js";
-import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import type { OrderCutoffRule } from "../../day/index.js";
+import type { ServiceDay } from "../../day/index.js";
 import { PlanStopRules } from "../services/plan-stop-rules.js";
 
 /** Le calendrier doublé : un ensemble de jours, qui dit s'il a changé. */

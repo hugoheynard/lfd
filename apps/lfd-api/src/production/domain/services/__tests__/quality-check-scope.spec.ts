@@ -1,11 +1,11 @@
-import { ProductionDay } from "../../entities/production-day.js";
+import { ProductionDay } from "../../../day/domain/entities/production-day.js";
 import { QualityCheck } from "../../entities/quality-check.js";
 import {
   QualityLineNotCountedError,
   QualityOrderNotInPlanError,
   QualityOrderNotPackedError,
 } from "../../errors/quality-record-errors.js";
-import { ServiceDay } from "../../value-objects/service-day.value-object.js";
+import { ServiceDay } from "../../../day/index.js";
 import {
   isSameQualityIntent,
   plannedLinesOf,

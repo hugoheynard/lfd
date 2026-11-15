@@ -20,13 +20,13 @@ import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
 import { ProductionDayClosedEvent } from "../../../channels/commerce/production-day-closed.event.js";
 import { ProductionDayRetakenEvent, ShipmentRef } from "../../../channels/delivery/index.js";
-import { ProductionDay } from "../../../domain/entities/production-day.js";
+import { ProductionDay } from "../../../day/domain/entities/production-day.js";
 import {
   DossierRecipientsReader,
   type StoredDossierRecipient,
 } from "../../../domain/ports/dossier-recipients.reader.js";
-import { ProductionDayRepository } from "../../../domain/ports/production-day.repository.js";
-import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { ProductionDayRepository } from "../../../day/index.js";
+import { ServiceDay } from "../../../day/index.js";
 import { Directory, RecipientsRows, staffCard } from "../../__tests__/dossier-recipient-doubles.js";
 import {
   Bell,
@@ -39,7 +39,7 @@ import {
 import { InMemoryProductionStore } from "../../__tests__/quality-doubles.js";
 import { DossierDispatch } from "../../services/dossier-dispatch.service.js";
 import { PlanArrestBell } from "../../services/plan-arrest-bell.js";
-import { ProductionPaperArchive } from "../../services/production-paper-archive.service.js";
+import { ProductionPaperArchive } from "../../../shared/print/index.js";
 import { ProductionPaperRenderer } from "../../services/production-paper.service.js";
 import {
   FixedOrderPrintColors,

@@ -37,7 +37,7 @@ import {
   PendingCommerceOrdersReader,
   ServiceDay,
 } from "../src/production/channels/commerce/index.js";
-import { ServiceRange } from "../src/production/domain/value-objects/service-range.value-object.js";
+import { ServiceRange } from "../src/production/day/domain/value-objects/service-range.value-object.js";
 import {
   bootstrapE2e,
   E2E_STAFF_ID,

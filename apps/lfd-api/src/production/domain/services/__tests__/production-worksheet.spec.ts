@@ -1,8 +1,5 @@
 import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
-import type {
-  ProducedItemSnapshot,
-  ProductionBatchSnapshot,
-} from "../../entities/production-day.js";
+import type { ProducedItemSnapshot, ProductionBatchSnapshot } from "../../../day/index.js";
 import {
   worksheetOf,
   type ContainerRule,

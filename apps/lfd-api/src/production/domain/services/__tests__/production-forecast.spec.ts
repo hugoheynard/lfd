@@ -1,5 +1,5 @@
 import { forecastMatrix, type DayDemand } from "../production-forecast.js";
-import { ServiceRange } from "../../value-objects/service-range.value-object.js";
+import { ServiceRange } from "../../../day/index.js";
 
 const WEEK = ServiceRange.of("2026-09-03", "2026-09-09");
 

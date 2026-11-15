@@ -3,9 +3,9 @@ import { Injectable } from "@nestjs/common";
 import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import type { PlacedResupply } from "../../channels/commerce/day-resupplies.reader.js";
 import { ResupplyLaunchedEvent } from "../../channels/commerce/resupply-launched.event.js";
-import type { ProductionDay, ResupplyLaunchGesture } from "../../domain/entities/production-day.js";
-import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
-import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import type { ProductionDay, ResupplyLaunchGesture } from "../../day/index.js";
+import { ProductionDayRepository } from "../../day/index.js";
+import type { ServiceDay } from "../../day/index.js";
 
 /** Un lancement décidé par l'agrégat, prêt à écrire. */
 export interface DecidedLaunch {

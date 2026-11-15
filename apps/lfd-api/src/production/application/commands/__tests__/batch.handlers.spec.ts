@@ -2,17 +2,17 @@ import { legacyOf } from "../../../application/__tests__/station-doubles.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
-import { ProductionDay } from "../../../domain/entities/production-day.js";
+import { ProductionDay } from "../../../day/domain/entities/production-day.js";
 import {
   BatchConflictError,
   BatchNotFoundError,
   InvalidBatchQuantityError,
-} from "../../../domain/errors/batch-errors.js";
+} from "../../../day/domain/errors/batch-errors.js";
 import {
   ProducedItemNotFoundError,
   ProductionDayNotClosedError,
-} from "../../../domain/errors/production-errors.js";
-import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+} from "../../../day/domain/errors/production-errors.js";
+import { ServiceDay } from "../../../day/index.js";
 import { handoffsOnDoubles } from "../../__tests__/handoff-doubles.js";
 import {
   BatchBackedDays,

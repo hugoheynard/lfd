@@ -4,7 +4,7 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { OrderCustodyReader } from "../../channels/handover/index.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
-import type { ProductionDay } from "../../domain/entities/production-day.js";
+import type { ProductionDay } from "../../day/index.js";
 import { type QualityPhotoRef, QualityCheck } from "../../domain/entities/quality-check.js";
 import { QualityControlSettings } from "../../domain/entities/quality-control-settings.js";
 import {
@@ -18,7 +18,7 @@ import {
   QualityHoldLiftedJournalEvent,
   QualityHoldRaisedJournalEvent,
 } from "../../domain/events/quality-check.events.js";
-import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
+import { ProductionDayLock } from "../../day/index.js";
 import { QualityCheckReader } from "../../domain/ports/quality-check.reader.js";
 import { QualityCheckRepository } from "../../domain/ports/quality-check.repository.js";
 import { QualityControlSettingsReader } from "../../domain/ports/quality-control-settings.reader.js";
@@ -32,8 +32,8 @@ import {
 } from "../../domain/services/quality-check-scope.js";
 import { refuseOrderOutOfHand } from "../../domain/services/refuse-order-out-of-hand.js";
 import { holdTransition } from "../../domain/services/quality-holds.js";
-import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
-import { SealedDayReading } from "../services/sealed-day-reading.service.js";
+import { ServiceDay } from "../../day/index.js";
+import { SealedDayReading } from "../../day/application/services/sealed-day-reading.service.js";
 import { QualityPhotoAttachment } from "../services/quality-photo-attachment.service.js";
 import { RenderQualityCheckCommand } from "./render-quality-check.command.js";
 

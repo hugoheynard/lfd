@@ -3,7 +3,7 @@ import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import {
   shipmentKeySuffix,
   shipmentRankOf,
-} from "../../domain/value-objects/shipment-ref.value-object.js";
+} from "../../day/domain/value-objects/shipment-ref.value-object.js";
 
 /** Nom stable du fait, clé de routage vers `@DurableHandler`. */
 export const PACKING_ORDER_PACKED = "packing.order_packed";

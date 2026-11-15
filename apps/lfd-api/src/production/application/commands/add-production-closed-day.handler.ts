@@ -6,8 +6,8 @@ import { Clock } from "../../../platform/time/clock.js";
 import { ProductionClosedDay } from "../../domain/entities/production-closed-day.js";
 import { ProductionClosedDayAddedEvent } from "../../domain/events/production-settings.events.js";
 import { ProductionClosedDayRepository } from "../../domain/ports/production-closed-day.repository.js";
-import { todayOf } from "../../domain/services/relative-day.js";
-import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { todayOf } from "../../day/index.js";
+import { ServiceDay } from "../../day/index.js";
 import { AddProductionClosedDayCommand } from "./add-production-closed-day.command.js";
 
 /**

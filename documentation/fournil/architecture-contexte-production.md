@@ -61,7 +61,7 @@ schéma Postgres `production`, sans clé étrangère vers `public`.
 
 ### La journée, un agrégat
 
-`ProductionDay` (`domain/entities/production-day.ts`, et ses parties
+`ProductionDay` (`day/domain/entities/production-day.ts`, et ses parties
 `production-day.*.ts`) porte le **cycle** : arrêtée, retirée, rouverte, lancée
 « au plus tôt », révisée, et les fournées. `DayPlan`
 (`production-day.plan.ts`) porte le **calcul** du compte à partir des
@@ -76,7 +76,7 @@ commandes et des réassorts. Deux refus structurent tout :
 2. **Une journée sans commande ni réassort ne s'arrête pas.**
 
 Les gestes qui touchent la journée prennent un verrou consultatif sur sa clé
-puis la rechargent (`infrastructure/prisma-production-day.lock.ts`) ; les
+puis la rechargent (`day/infrastructure/prisma-production-day.lock.ts`) ; les
 gestes du colisage et de la livraison le prennent en mode partagé
 (`ArrestedPlanHold`).
 

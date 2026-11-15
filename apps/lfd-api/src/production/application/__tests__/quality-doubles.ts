@@ -2,16 +2,16 @@ import type { StoredDocument } from "../../../platform/storage/document-store.js
 import { ProductionDocumentStore } from "../../../platform/storage/production-document-store.js";
 import type { ProducibleOrder } from "../../channels/commerce/day-orders.reader.js";
 import { OrderCustodyReader, type OrderOutOfHand } from "../../channels/handover/index.js";
-import { ProductionDay } from "../../domain/entities/production-day.js";
+import { ProductionDay } from "../../day/domain/entities/production-day.js";
 import type { QualityCheck, QualityPhotoRef } from "../../domain/entities/quality-check.js";
 import { QualityUpload, type QualityUploadState } from "../../domain/entities/quality-upload.js";
 import { QualityCheckWriteRaceError } from "../../domain/errors/quality-record-errors.js";
-import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
+import { ProductionDayRepository } from "../../day/index.js";
 import { QualityCheckReader } from "../../domain/ports/quality-check.reader.js";
 import { QualityCheckRepository } from "../../domain/ports/quality-check.repository.js";
 import { QualityUploadRepository } from "../../domain/ports/quality-upload.repository.js";
 import type { QualityLineStatusReader } from "../../domain/ports/quality-line-status.reader.js";
-import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import type { ServiceDay } from "../../day/index.js";
 import { CheckedQualityLinesReader } from "../services/checked-quality-lines.reader.js";
 
 /**

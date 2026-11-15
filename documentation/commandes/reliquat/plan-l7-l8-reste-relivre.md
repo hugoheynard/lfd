@@ -208,7 +208,7 @@ IN ('abandoned'))` (`prisma/migrations/20261025140100_la_decision_du_depart/migr
 | `planWhere`                                              | `status: placed` + règlement + pas de vitrine                                                   | `orders/infrastructure/plan-filter.ts:53-55`, `STATUS_IN_PLAN = "placed"` `orders/domain/services/production-plan.ts:157`                                                                                         |
 | Prévisionnel                                             | `planWhere()`                                                                                   | `orders/infrastructure/prisma-expected-production.reader.ts:68`                                                                                                                                                   |
 | Port du fournil                                          | `DayOrdersReader.producibleFor(day)`, `ProducibleOrder` **sans rang**                           | `production/channels/commerce/day-orders.reader.ts:173-174`                                                                                                                                                       |
-| Retirage                                                 | `absorbArrivals` filtre **par `orderId` seul** ; `freezeOrder` pose `rank: FIRST_SHIPMENT_RANK` | `production/domain/services/production-count.ts:194-195`, `:40` ; `production-day.plan.ts:119-133`                                                                                                                |
+| Retirage                                                 | `absorbArrivals` filtre **par `orderId` seul** ; `freezeOrder` pose `rank: FIRST_SHIPMENT_RANK` | `production/day/domain/services/production-count.ts:194-195`, `:40` ; `production-day.plan.ts:119-133`                                                                                                            |
 | Base du fournil                                          | unique `(serviceDay, orderId, rank)`                                                            | `prisma/schema/production.prisma:187`                                                                                                                                                                             |
 | Colisage                                                 | nourri par la liste à coliser du fournil, rang porté                                            | `production/channels/packing/packing-list-drawn.event.ts:43` ; `packing.prisma` clés `(serviceDay, orderId, rank)` l. 67                                                                                          |
 | Attendues ce jour (comptoir, feuille de route, tournées) | `expectedOnWhere(day)` = `requestedDeliveryDate`                                                | `orders/infrastructure/handover-order.query.ts:124-130` ; file `prisma-handover-queue.reader.ts:51` ; tournées `prisma-delivery-orders.reader.ts:107` ; feuille de route `prisma-delivery-run-sheet.reader.ts:19` |
@@ -218,7 +218,7 @@ IN ('abandoned'))` (`prisma/migrations/20261025140100_la_decision_du_depart/migr
 | Supervision du jour                                      | `requestedDeliveryDate`                                                                         | `orders/infrastructure/prisma-day-supervision.reader.ts:61`                                                                                                                                                       |
 
 Le fournil porte déjà le rang dans son instantané
-(`production/domain/entities/production-day.snapshot.ts:72`, commentaire :
+(`production/day/domain/entities/production-day.snapshot.ts:72`, commentaire :
 « Rien n'inscrit encore de reliquat au plan (L7, L8) »).
 
 #### 1.6 Journée ouverte, tirée, fermée
@@ -475,10 +475,10 @@ depuis l'écran, avoir sur facture émise, reprise auto du retirage.
 - apps/lfd-api/src/production/channels/commerce/plan-admission.desk.ts
 - apps/lfd-api/src/production/channels/commerce/closed-plans.reader.ts
 - apps/lfd-api/src/production/channels/commerce/planned-delivery-notes.reader.ts
-- apps/lfd-api/src/production/domain/services/production-count.ts
-- apps/lfd-api/src/production/domain/entities/production-day.ts
-- apps/lfd-api/src/production/domain/entities/production-day.plan.ts
-- apps/lfd-api/src/production/domain/entities/production-day.snapshot.ts
+- apps/lfd-api/src/production/day/domain/services/production-count.ts
+- apps/lfd-api/src/production/day/domain/entities/production-day.ts
+- apps/lfd-api/src/production/day/domain/entities/production-day.plan.ts
+- apps/lfd-api/src/production/day/domain/entities/production-day.snapshot.ts
 - apps/lfd-api/src/production/application/commands/retake-production-day.handler.ts
 - apps/lfd-api/src/delivery/channels/commerce/delivery-orders.reader.ts
 - apps/lfd-api/src/mail/templates/order-shortfall-mail.ts

@@ -5,7 +5,7 @@ import type {
   QualityOrderStatus,
 } from "@lfd/contracts";
 
-import type { ProductionDay } from "../../domain/entities/production-day.js";
+import type { ProductionDay } from "../../day/index.js";
 import type { QualityCheck } from "../../domain/entities/quality-check.js";
 import type { QualityControlSettings } from "../../domain/entities/quality-control-settings.js";
 import { plannedLinesOf } from "../../domain/services/quality-check-scope.js";

@@ -1,4 +1,4 @@
-import type { ServiceDay } from "../value-objects/service-day.value-object.js";
+import type { ServiceDay } from "../../day/index.js";
 
 /**
  * **Où ranger une photo de contrôle** (plan `le-controle-qualite.md`, D8).

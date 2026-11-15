@@ -2,8 +2,8 @@ import { legacyOf } from "../../../application/__tests__/station-doubles.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
-import { ProductionDay } from "../../../domain/entities/production-day.js";
-import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { ProductionDay } from "../../../day/domain/entities/production-day.js";
+import { ServiceDay } from "../../../day/index.js";
 import {
   BatchBackedDays,
   InMemoryBatches,

@@ -1,8 +1,8 @@
 import { addDays } from "@lfd/contracts";
 
 import { PastClosedDayError } from "../../errors/production-settings-errors.js";
-import { todayOf } from "../../services/relative-day.js";
-import { ServiceDay } from "../../value-objects/service-day.value-object.js";
+import { todayOf } from "../../../day/index.js";
+import { ServiceDay } from "../../../day/index.js";
 import { ProductionClosedDay } from "../production-closed-day.js";
 
 const NOW = new Date();

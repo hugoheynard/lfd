@@ -1,6 +1,6 @@
 import type { SaleUnit } from "@lfd/money";
 
-import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import type { ServiceDay } from "../../day/domain/value-objects/service-day.value-object.js";
 
 /** Une ligne d'un réassort : l'article, son nom, la quantité demandée. Aucun prix. */
 export interface PlacedResupplyLine {

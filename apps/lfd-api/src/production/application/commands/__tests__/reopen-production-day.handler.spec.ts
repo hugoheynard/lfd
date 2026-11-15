@@ -12,14 +12,14 @@ import {
 } from "../../../channels/commerce/production-day-reopened.event.js";
 import { DayDispatchProgressReader } from "../../../channels/delivery/day-dispatch-progress.reader.js";
 import { DayPackingProgressReader } from "../../../channels/packing/day-packing-progress.reader.js";
-import { ProductionDay } from "../../../domain/entities/production-day.js";
-import { ProductionDayNotClosedError } from "../../../domain/errors/production-errors.js";
+import { ProductionDay } from "../../../day/domain/entities/production-day.js";
+import { ProductionDayNotClosedError } from "../../../day/index.js";
 import {
   ReopenAfterDispatchError,
   ReopenAfterPackingError,
-} from "../../../domain/errors/reopening-errors.js";
-import { ProductionDayRepository } from "../../../domain/ports/production-day.repository.js";
-import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+} from "../../../day/domain/errors/reopening-errors.js";
+import { ProductionDayRepository } from "../../../day/index.js";
+import { ServiceDay } from "../../../day/index.js";
 import { RecordingDayLock } from "../../__tests__/batch-doubles.js";
 import { RecordingDurable } from "../../__tests__/handoff-doubles.js";
 import { ReopenProductionDayCommand } from "../reopen-production-day.command.js";

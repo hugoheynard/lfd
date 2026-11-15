@@ -3,7 +3,7 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
 import { QualityCheckReader } from "../../domain/ports/quality-check.reader.js";
-import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { ServiceDay } from "../../day/index.js";
 import { newestFirst, qualityCheckViewOf } from "../services/quality-views.js";
 import { ListQualityChecksQuery } from "./list-quality-checks.query.js";
 

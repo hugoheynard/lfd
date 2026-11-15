@@ -13,13 +13,13 @@ import {
   type StaffNotice,
 } from "../../../staff/notifications/domain/ports/staff-notifier.js";
 import { WorkshopShelvesReader } from "../../channels/commerce/workshop-shelves.reader.js";
-import type { ProductionDay } from "../../domain/entities/production-day.js";
+import type { ProductionDay } from "../../day/domain/entities/production-day.js";
 import {
   DossierDispatchLog,
   type DossierDispatchOutcome,
   type DossierDispatchSlot,
 } from "../../domain/ports/dossier-dispatch.log.js";
-import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
+import { ProductionDayRepository } from "../../day/domain/ports/production-day.repository.js";
 
 /** La journée doublée : une seule, relue telle quelle. */
 export class OneDay extends ProductionDayRepository {

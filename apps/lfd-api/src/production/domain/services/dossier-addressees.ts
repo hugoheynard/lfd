@@ -1,10 +1,7 @@
 import { type DossierStaffCard, UNNAMED_EXTERNAL_LABEL } from "../entities/dossier-recipient.js";
-import type {
-  ProductionOrderSnapshot,
-  ProductionResupplySnapshot,
-} from "../entities/production-day.js";
+import type { ProductionOrderSnapshot, ProductionResupplySnapshot } from "../../day/index.js";
 import type { StoredDossierRecipient } from "../ports/dossier-recipients.reader.js";
-import { piecesOfLines, type TalliedLine } from "./line-tally.js";
+import { piecesOfLines, type TalliedLine } from "../../shared/print/index.js";
 
 /**
  * **À qui le dossier part, ce jour-là** (plan

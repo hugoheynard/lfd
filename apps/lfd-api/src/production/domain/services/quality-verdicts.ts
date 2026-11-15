@@ -1,5 +1,5 @@
 import type { QualityCheck } from "../entities/quality-check.js";
-import type { ServiceDay } from "../value-objects/service-day.value-object.js";
+import type { ServiceDay } from "../../day/index.js";
 import { qualityTargetKey } from "../value-objects/quality-check-target.js";
 
 /**

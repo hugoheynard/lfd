@@ -1,7 +1,7 @@
 import { instantToLocal } from "@lfd/contracts";
 
 import { QualityCheck } from "../../../domain/entities/quality-check.js";
-import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { ServiceDay } from "../../../day/index.js";
 import {
   BAGUETTE,
   CheckTable,

@@ -3,9 +3,9 @@ import {
   FixedStaffAuthorDirectory,
 } from "../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
-import { ProductionDay } from "../../../domain/entities/production-day.js";
-import { PlanClosedBeforeOrderCutoffError } from "../../../domain/errors/production-errors.js";
-import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { ProductionDay } from "../../../day/domain/entities/production-day.js";
+import { PlanClosedBeforeOrderCutoffError } from "../../../day/index.js";
+import { ServiceDay } from "../../../day/index.js";
 import { CloseProductionDayCommand } from "../../commands/close-production-day.command.js";
 import { admissionOf, FixedStatus, SilentSweeper } from "../../__tests__/plan-intake-doubles.js";
 import { SavedDays } from "../../__tests__/revision-desk-doubles.js";

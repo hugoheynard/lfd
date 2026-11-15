@@ -5,7 +5,7 @@ import { Buffer } from "node:buffer";
 
 import { pdfPages } from "../src/platform/pdf/__tests__/pdf-text.js";
 import { ExpectedProductionReader } from "../src/production/channels/commerce/expected-production.reader.js";
-import { ServiceRange } from "../src/production/domain/value-objects/service-range.value-object.js";
+import { ServiceRange } from "../src/production/day/domain/value-objects/service-range.value-object.js";
 import { settleCardPayments } from "./card-payments.js";
 import { markCustomRecipe } from "./custom-recipe-fixture.js";
 import { E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";

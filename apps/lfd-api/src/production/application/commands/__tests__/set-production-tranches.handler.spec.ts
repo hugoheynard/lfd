@@ -5,8 +5,8 @@ import {
   FixedStaffAuthorDirectory,
   authorsKnownAs,
 } from "../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
-import { ProductionTrancheSettings } from "../../../domain/entities/production-tranche-settings.js";
-import { DuplicateTrancheError } from "../../../domain/errors/production-tranches-errors.js";
+import { ProductionTrancheSettings } from "../../../day/index.js";
+import { DuplicateTrancheError } from "../../../day/domain/errors/production-tranches-errors.js";
 import { InMemoryTrancheSettings } from "../../__tests__/production-tranche-settings-doubles.js";
 import { SetProductionTranchesCommand } from "../set-production-tranches.command.js";
 import { SetProductionTranchesHandler } from "../set-production-tranches.handler.js";

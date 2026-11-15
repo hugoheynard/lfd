@@ -3,8 +3,8 @@ import { Injectable } from "@nestjs/common";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { LaunchedResupplies } from "../../channels/commerce/launched-resupplies.js";
 import { LaunchedResupplyLookup } from "../../domain/ports/launched-resupply.lookup.js";
-import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
-import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { ProductionDayLock } from "../../day/index.js";
+import type { ServiceDay } from "../../day/index.js";
 
 /**
  * {@link LaunchedResupplies} tel que le fournil l'implémente : verrou de la

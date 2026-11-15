@@ -4,10 +4,10 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
-import { ProductionTrancheSettings } from "../../domain/entities/production-tranche-settings.js";
-import { ProductionTrancheSettingsUpdatedEvent } from "../../domain/events/production-tranche-settings.events.js";
-import { ProductionTrancheSettingsReader } from "../../domain/ports/production-tranche-settings.reader.js";
-import { ProductionTrancheSettingsRepository } from "../../domain/ports/production-tranche-settings.repository.js";
+import { ProductionTrancheSettings } from "../../day/index.js";
+import { ProductionTrancheSettingsUpdatedEvent } from "../../day/index.js";
+import { ProductionTrancheSettingsReader } from "../../day/index.js";
+import { ProductionTrancheSettingsRepository } from "../../day/index.js";
 import { SetProductionTranchesCommand } from "./set-production-tranches.command.js";
 
 /**

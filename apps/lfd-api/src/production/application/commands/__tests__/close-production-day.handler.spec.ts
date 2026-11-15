@@ -1,5 +1,5 @@
-import { ProductionDayClosedJournalEvent } from "../../../domain/events/production-day.events.js";
-import { ProductionDayEmptyError } from "../../../domain/errors/production-errors.js";
+import { ProductionDayClosedJournalEvent } from "../../../day/index.js";
+import { ProductionDayEmptyError } from "../../../day/index.js";
 import { InMemoryWithdrawals } from "../../__tests__/withdrawal-doubles.js";
 import { CloseProductionDayCommand } from "../close-production-day.command.js";
 import {

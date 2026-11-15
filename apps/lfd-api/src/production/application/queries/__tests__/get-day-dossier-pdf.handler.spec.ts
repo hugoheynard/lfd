@@ -10,11 +10,11 @@ import { AppConfig } from "../../../../platform/config/app-config.js";
 import { pdfPages } from "../../../../platform/pdf/__tests__/pdf-text.js";
 import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
 import { WorkshopShelvesReader } from "../../../channels/commerce/workshop-shelves.reader.js";
-import { ProductionDay } from "../../../domain/entities/production-day.js";
-import { ProductionDayNotClosedError } from "../../../domain/errors/production-errors.js";
-import { ProductionDayRepository } from "../../../domain/ports/production-day.repository.js";
+import { ProductionDay } from "../../../day/domain/entities/production-day.js";
+import { ProductionDayNotClosedError } from "../../../day/index.js";
+import { ProductionDayRepository } from "../../../day/index.js";
 import { dayDossierPdfKey } from "../../../domain/services/day-dossier-pdf.js";
-import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { ServiceDay } from "../../../day/index.js";
 import {
   FixedOrderPrintColors,
   FixedResupplyPrintColors,
@@ -25,7 +25,7 @@ import {
   FixedPlannedDeliveryNotes,
 } from "../../__tests__/paper-doubles.js";
 import { InMemoryProductionStore } from "../../__tests__/quality-doubles.js";
-import { ProductionPaperArchive } from "../../services/production-paper-archive.service.js";
+import { ProductionPaperArchive } from "../../../shared/print/index.js";
 import { ProductionPaperRenderer } from "../../services/production-paper.service.js";
 import { GetDayDossierPdfHandler } from "../get-day-dossier-pdf.handler.js";
 import { GetDayDossierPdfQuery } from "../get-day-dossier-pdf.query.js";

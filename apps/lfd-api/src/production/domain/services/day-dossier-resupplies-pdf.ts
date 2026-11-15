@@ -1,7 +1,7 @@
-import type { ProductionResupplySnapshot } from "../entities/production-day.js";
+import type { ProductionResupplySnapshot } from "../../day/index.js";
 import { resupplySheetTitleOf } from "./day-dossier.js";
-import { figureFontSize, lineFigure, piecesOfLines } from "./line-tally.js";
-import { drawOrderSwatch } from "./order-color-swatch.js";
+import { figureFontSize, lineFigure, piecesOfLines } from "../../shared/print/index.js";
+import { drawOrderSwatch } from "../../shared/print/index.js";
 import {
   LEFT,
   MM,

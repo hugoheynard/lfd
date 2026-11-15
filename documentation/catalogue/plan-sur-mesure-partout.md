@@ -35,7 +35,7 @@
   (`apps/lfd-api/src/lafoliecoffee/orders/infrastructure/prisma-day-orders.source.ts:84,106`).
   Le fournil la fige à son tour dans `ProductionOrderLine`
   (`apps/lfd-api/prisma/schema/production.prisma:305-318`) et dans
-  `ProductionLineSnapshot` (`apps/lfd-api/src/production/domain/entities/production-day.snapshot.ts:24`).
+  `ProductionLineSnapshot` (`apps/lfd-api/src/production/day/domain/entities/production-day.snapshot.ts:24`).
 - L'attendu des jours à venir passe par `ExpectedItem`
   (`apps/lfd-api/src/production/channels/commerce/expected-production.reader.ts:6-12`),
   fusionné **par SKU tous clients confondus** ; l'implémentation reprend le nom

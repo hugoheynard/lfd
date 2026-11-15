@@ -1,5 +1,5 @@
-import { ProductionDay } from "../../domain/entities/production-day.js";
-import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
+import { ProductionDay } from "../../day/domain/entities/production-day.js";
+import { ProductionDayRepository } from "../../day/domain/ports/production-day.repository.js";
 
 /**
  * La journée, en mémoire, telle que la révision après l'arrêt la relit et

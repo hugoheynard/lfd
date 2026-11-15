@@ -2,7 +2,7 @@ import { InMemoryQualityControlSettings } from "../../__tests__/quality-control-
 import { QualityCheck, type QualityVerdict } from "../../../domain/entities/quality-check.js";
 import { QualityPhotoNotFoundError } from "../../../domain/errors/quality-record-errors.js";
 import type { QualityCheckTargetInput } from "../../../domain/value-objects/quality-check-target.js";
-import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { ServiceDay } from "../../../day/index.js";
 import {
   StaffAuthorDirectory,
   StaffAuthors,

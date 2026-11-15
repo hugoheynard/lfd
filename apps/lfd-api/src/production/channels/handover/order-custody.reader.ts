@@ -1,4 +1,4 @@
-import type { OrderOutOfHand } from "../../domain/services/order-out-of-hand.js";
+import type { OrderOutOfHand } from "../../day/domain/services/order-out-of-hand.js";
 
 export type { OrderOutOfHand };
 

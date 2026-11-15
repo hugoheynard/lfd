@@ -1,15 +1,9 @@
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
-import {
-  AtelierSheetNotFoundError,
-  ProductionDayNotClosedError,
-} from "../../domain/errors/production-errors.js";
-import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
-import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
-import {
-  ProductionPaperArchive,
-  type ProductionPaper,
-} from "../services/production-paper-archive.service.js";
+import { AtelierSheetNotFoundError, ProductionDayNotClosedError } from "../../day/index.js";
+import { ProductionDayRepository } from "../../day/index.js";
+import { ServiceDay } from "../../day/index.js";
+import { ProductionPaperArchive, type ProductionPaper } from "../../shared/print/index.js";
 import {
   ProductionPaperRenderer,
   atelierSheetSlotOf,

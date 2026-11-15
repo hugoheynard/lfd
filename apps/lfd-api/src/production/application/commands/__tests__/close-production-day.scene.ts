@@ -16,10 +16,10 @@ import {
 import { PendingSettlementSweeper } from "../../../channels/commerce/pending-settlement.sweeper.js";
 import { ProductionDayClosedEvent } from "../../../channels/commerce/production-day-closed.event.js";
 import { PackingListDrawnEvent } from "../../../channels/packing/packing-list-drawn.event.js";
-import { ProductionDay } from "../../../domain/entities/production-day.js";
-import type { ProductionDayStatusReader } from "../../../domain/ports/production-day-status.reader.js";
-import { ProductionDayRepository } from "../../../domain/ports/production-day.repository.js";
-import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { ProductionDay } from "../../../day/domain/entities/production-day.js";
+import type { ProductionDayStatusReader } from "../../../day/domain/ports/production-day-status.reader.js";
+import { ProductionDayRepository } from "../../../day/domain/ports/production-day.repository.js";
+import { ServiceDay } from "../../../day/domain/value-objects/service-day.value-object.js";
 import { RecordingDayLock } from "../../__tests__/batch-doubles.js";
 import { admissionOf, intakeReadingOf } from "../../__tests__/plan-intake-doubles.js";
 import {

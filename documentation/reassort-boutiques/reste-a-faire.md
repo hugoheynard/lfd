@@ -132,7 +132,7 @@ Laissé, et pourquoi :
 
 - La journée du fournil s'écrit **par différence** : `ProductionDay.changes`
   dit ce que chaque geste a touché, et `writeDayChanges`
-  (`production/infrastructure/production-day-children.writer.ts`) n'écrit
+  (`production/day/infrastructure/production-day-children.writer.ts`) n'écrit
   que ça — un lancement « au plus tôt » n'écrit plus que son réassort et le
   compte. Une journée de base inconnue (`fromSnapshot`) s'écrit en entier.
 - La fiche de réassort retirée par une réouverture n'est plus effacée : elle

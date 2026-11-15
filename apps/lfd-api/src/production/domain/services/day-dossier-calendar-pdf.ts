@@ -1,6 +1,6 @@
 import type { CalendarPage, CalendarRow } from "./day-dossier-calendar.js";
 import type { MakeRoom } from "./day-dossier-resupplies-pdf.js";
-import { figureFontSize, lineFigure } from "./line-tally.js";
+import { figureFontSize, lineFigure } from "../../shared/print/index.js";
 import {
   BLACK,
   LEFT,

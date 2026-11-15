@@ -1,10 +1,7 @@
 import { PackingListDrawnEvent } from "../../channels/packing/packing-list-drawn.event.js";
 import { ResupplyListDrawnEvent } from "../../channels/packing/resupply-list-drawn.event.js";
-import type {
-  ProductionOrderSnapshot,
-  ProductionResupplySnapshot,
-} from "../../domain/entities/production-day.js";
-import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import type { ProductionOrderSnapshot, ProductionResupplySnapshot } from "../../day/index.js";
+import type { ServiceDay } from "../../day/index.js";
 
 /**
  * **La liste à coliser, en faits** — un par commande (plan

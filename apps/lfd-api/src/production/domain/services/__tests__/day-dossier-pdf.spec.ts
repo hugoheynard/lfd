@@ -1,7 +1,7 @@
 import type { Buffer } from "node:buffer";
 
 import type { DeliveryNoteDrawing } from "../../../channels/commerce/planned-delivery-notes.reader.js";
-import type { ProductionOrderSnapshot } from "../../entities/production-day.js";
+import type { ProductionOrderSnapshot } from "../../../day/index.js";
 import { type DayDossier, dayDossierOf } from "../day-dossier.js";
 import { type DossierStamp, dayDossierPdfKey, renderDayDossierPdf } from "../day-dossier-pdf.js";
 import { dossierCalendarOf } from "../day-dossier-calendar.js";

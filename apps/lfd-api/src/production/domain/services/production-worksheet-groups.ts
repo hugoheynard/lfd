@@ -5,8 +5,8 @@ import {
   type CatalogFamilyView,
 } from "@lfd/contracts";
 
-import { linePieces } from "./line-tally.js";
-import { rootShelvesOf, sectionOrdered, type ShelfSection } from "./root-shelves.js";
+import { linePieces } from "../../shared/print/index.js";
+import { rootShelvesOf, sectionOrdered, type ShelfSection } from "../../shared/print/index.js";
 import type { WorksheetLine } from "./production-worksheet.js";
 
 /**

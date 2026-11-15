@@ -13,9 +13,9 @@ import {
   DayOrdersReader,
   type ProducibleOrder,
 } from "../../../channels/commerce/day-orders.reader.js";
-import { ProductionDay } from "../../../domain/entities/production-day.js";
-import { ProductionDayRepository } from "../../../domain/ports/production-day.repository.js";
-import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { ProductionDay } from "../../../day/domain/entities/production-day.js";
+import { ProductionDayRepository } from "../../../day/domain/ports/production-day.repository.js";
+import { ServiceDay } from "../../../day/domain/value-objects/service-day.value-object.js";
 import { RecordingDayLock } from "../../__tests__/batch-doubles.js";
 import { RecordingDurable } from "../../__tests__/handoff-doubles.js";
 import { intakeReadingOf } from "../../__tests__/plan-intake-doubles.js";

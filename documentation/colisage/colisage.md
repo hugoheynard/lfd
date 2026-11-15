@@ -160,7 +160,7 @@ four, et un retour du fournil ne reprend pas ce qui part au point.
 - **Ce que le four remet** (R3c) : une fournée ne remet au colisage que la
   part du colisage — commandes et points servis par transfert ; la part d'un
   réassort servi sur place (le Labo) monte directement et n'entre jamais dans
-  `packing_stock` (`apps/lfd-api/src/production/domain/services/on-site-share.ts`). Une demande
+  `packing_stock` (`apps/lfd-api/src/production/day/domain/services/on-site-share.ts`). Une demande
   de retour ne porte que ce qui a été remis.
 
 ### 2.3 Le réassort « au plus tôt » et sa réserve (lot R4b, 2026-10-22)

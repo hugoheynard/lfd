@@ -8,7 +8,7 @@ import {
   heldOrderIds,
   type PlannedOrderLine,
 } from "../domain/services/quality-verdicts.js";
-import { ServiceDay } from "../domain/value-objects/service-day.value-object.js";
+import { ServiceDay } from "../day/index.js";
 
 /**
  * **La retenue au retrait**, dite par la production (plan

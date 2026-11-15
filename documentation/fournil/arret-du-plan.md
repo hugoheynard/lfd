@@ -58,7 +58,7 @@ automatique, le refus d'un arrêt anticipé, le prévisionnel et la page
 Production › Réglages. Il lit l'heure limite générale
 (`channels/commerce/order-cutoff-rules.reader.ts`) et l'heure du réassort
 (`ResupplyCutoffTimeReader`). L'instant d'arrêt : `planClosesAt`
-(`domain/services/latest-order-cutoff.ts`) ; le refus anticipé :
+(`day/domain/services/latest-order-cutoff.ts`) ; le refus anticipé :
 `domain/services/early-close.ts`. Quand l'heure du réassort est la plus
 tardive, tout ce qui suit l'arrêt se décale d'autant.
 
@@ -86,7 +86,7 @@ ouvert.
    [`../commandes/reglement/architecture-abandon-du-reglement.md`](../commandes/reglement/architecture-abandon-du-reglement.md)),
    à chaque appel, réannonce comprise. Le refus « journée vide » vient après.
 3. **Une seule décision, sous le verrou** — verrou consultatif sur la clé de
-   la journée, puis rechargement (`infrastructure/prisma-production-day.lock.ts`).
+   la journée, puis rechargement (`day/infrastructure/prisma-production-day.lock.ts`).
    Deux arrêts simultanés ne ferment qu'une fois ; le second réannonce. Sous
    le même verrou sont lus les commandes (`DayOrdersReader`), les réassorts
    « pour demain » envoyés et non annulés (`DayResuppliesReader`, implémenté

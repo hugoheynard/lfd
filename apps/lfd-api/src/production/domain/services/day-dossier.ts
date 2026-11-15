@@ -10,8 +10,8 @@ import type {
   ProductionLineSnapshot,
   ProductionOrderSnapshot,
   ProductionResupplySnapshot,
-} from "../entities/production-day.js";
-import { rootShelvesOf, sectionOrdered } from "./root-shelves.js";
+} from "../../day/index.js";
+import { rootShelvesOf, sectionOrdered } from "../../shared/print/index.js";
 
 /**
  * **Le dossier du jour** — ce que le fournil imprime le soir de l'arrêt :

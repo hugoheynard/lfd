@@ -2,11 +2,11 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { Clock } from "../../../platform/time/clock.js";
-import { ProductionBatchRepository } from "../../domain/ports/production-batch.repository.js";
-import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
-import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
-import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
-import { PackingHandoffs } from "../services/packing-handoffs.service.js";
+import { ProductionBatchRepository } from "../../day/index.js";
+import { ProductionDayLock } from "../../day/index.js";
+import { ProductionDayRepository } from "../../day/index.js";
+import { ServiceDay } from "../../day/index.js";
+import { PackingHandoffs } from "../../day/application/services/packing-handoffs.service.js";
 import { CancelBatchCommand } from "./cancel-batch.command.js";
 
 /**

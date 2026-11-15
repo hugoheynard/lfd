@@ -1,16 +1,16 @@
 import type { DurableFact } from "../../../platform/outbox/durable-event.js";
 import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
-import { ProductionHandoffLedger } from "../../domain/ports/production-handoff.ledger.js";
-import { ProductionHandoffReader } from "../../domain/ports/production-handoff.reader.js";
+import { ProductionHandoffLedger } from "../../day/domain/ports/production-handoff.ledger.js";
+import { ProductionHandoffReader } from "../../day/domain/ports/production-handoff.reader.js";
 import {
   type AnsweredReturn,
   ProductionReturnRequests,
   type ReturnRequest,
-} from "../../domain/ports/production-return.requests.js";
+} from "../../day/domain/ports/production-return.requests.js";
 import { FixedIdGenerator } from "../../../platform/id/fixed-id-generator.js";
-import type { ProductionHandoff } from "../../domain/services/production-handoff.js";
-import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
-import { PackingHandoffs } from "../services/packing-handoffs.service.js";
+import type { ProductionHandoff } from "../../day/domain/services/production-handoff.js";
+import type { ServiceDay } from "../../day/domain/value-objects/service-day.value-object.js";
+import { PackingHandoffs } from "../../day/application/services/packing-handoffs.service.js";
 
 /**
  * Les doublés de la remise au colisage (plan `colisage/colisage.md`,

@@ -9,8 +9,8 @@ import {
 import { AutoCloseAttempts, type AutoCloseOutcome } from "../domain/ports/auto-close-attempts.js";
 import { AutoCloseRoundReader } from "../domain/ports/auto-close-round.reader.js";
 import type { AttemptTrace } from "../domain/services/auto-close-round.js";
-import type { ServiceDay } from "../domain/value-objects/service-day.value-object.js";
-import type { ServiceRange } from "../domain/value-objects/service-range.value-object.js";
+import type { ServiceDay } from "../day/index.js";
+import type { ServiceRange } from "../day/index.js";
 
 /** Une issue que le domaine ne connaît pas : un défaut de schéma, pas un refus. */
 class UnknownAutoCloseOutcomeError extends TechnicalError {

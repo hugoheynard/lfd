@@ -8,9 +8,9 @@
  * pour une fournée ABSENTE de la base, que l'agrégat venait pourtant de
  * laisser passer : rien n'était annulé, et rien ne le disait.
  */
-import { ProductionBatchRepository } from "../src/production/domain/ports/production-batch.repository.js";
-import { BatchToCancelMissingError } from "../src/production/domain/errors/batch-errors.js";
-import { ServiceDay } from "../src/production/domain/value-objects/service-day.value-object.js";
+import { ProductionBatchRepository } from "../src/production/day/domain/ports/production-batch.repository.js";
+import { BatchToCancelMissingError } from "../src/production/day/domain/errors/batch-errors.js";
+import { ServiceDay } from "../src/production/day/domain/value-objects/service-day.value-object.js";
 import { createUser } from "./factories.js";
 import type { E2eContext } from "./e2e-harness.js";
 import {

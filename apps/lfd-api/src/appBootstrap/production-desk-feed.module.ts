@@ -1,7 +1,7 @@
 import { Global, Module } from "@nestjs/common";
 
-import { ProductionOrderWithdrawalDesk } from "../production/application/services/production-order-withdrawal.desk.js";
-import { ProductionOrderRevisionDesk } from "../production/application/services/production-order-revision.desk.js";
+import { ProductionOrderWithdrawalDesk } from "../production/day/application/services/production-order-withdrawal.desk.js";
+import { ProductionOrderRevisionDesk } from "../production/day/application/services/production-order-revision.desk.js";
 import { ProductionPlanAdmissionDesk } from "../production/application/services/production-plan-admission.desk.js";
 import { ProductionLaunchedResupplies } from "../production/application/services/production-launched-resupplies.js";
 import {
@@ -13,7 +13,7 @@ import {
   PlanAdmissionDesk,
 } from "../production/channels/commerce/index.js";
 import { PrismaClosedPlansReader } from "../production/infrastructure/prisma-closed-plans.reader.js";
-import { PrismaOrderInscriptionReader } from "../production/infrastructure/prisma-order-inscription.reader.js";
+import { PrismaOrderInscriptionReader } from "../production/day/infrastructure/prisma-order-inscription.reader.js";
 import { ProductionModule } from "../production/production.module.js";
 
 /**

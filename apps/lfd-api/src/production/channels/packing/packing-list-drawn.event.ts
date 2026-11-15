@@ -5,7 +5,7 @@ import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import {
   shipmentKeySuffix,
   shipmentRankOf,
-} from "../../domain/value-objects/shipment-ref.value-object.js";
+} from "../../day/domain/value-objects/shipment-ref.value-object.js";
 import type { Clientele } from "../commerce/day-orders.reader.js";
 import { instantOf, piecesOf, recordOf, saleUnitOf, textOf } from "../payload-fields.js";
 

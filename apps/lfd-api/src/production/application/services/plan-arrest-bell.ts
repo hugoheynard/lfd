@@ -6,7 +6,7 @@ import {
   type StaffNotice,
 } from "../../../staff/notifications/domain/ports/staff-notifier.js";
 import { frenchDayLabel } from "../../domain/services/auto-close-round.js";
-import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import type { ServiceDay } from "../../day/index.js";
 
 /**
  * Qui reçoit : ceux qui peuvent arrêter le plan (plan `arret-du-plan.md`,

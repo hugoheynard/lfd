@@ -2,15 +2,15 @@ import {
   ProductionDay,
   type PackedMark,
   type ProductionBatchSnapshot,
-} from "../../domain/entities/production-day.js";
+} from "../../day/domain/entities/production-day.js";
 import {
   ProductionBatchRepository,
   type RecordedBatch,
-} from "../../domain/ports/production-batch.repository.js";
-import { BatchToCancelMissingError } from "../../domain/errors/batch-errors.js";
-import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
-import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
-import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+} from "../../day/domain/ports/production-batch.repository.js";
+import { BatchToCancelMissingError } from "../../day/domain/errors/batch-errors.js";
+import { ProductionDayLock } from "../../day/domain/ports/production-day.lock.js";
+import { ProductionDayRepository } from "../../day/domain/ports/production-day.repository.js";
+import type { ServiceDay } from "../../day/domain/value-objects/service-day.value-object.js";
 
 /**
  * Les doublés des fournées et du verrou — chacun ÉTEND son port, donc aucun

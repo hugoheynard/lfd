@@ -1,4 +1,4 @@
-import type { ProductionOrderSnapshot } from "../../entities/production-day.js";
+import type { ProductionOrderSnapshot } from "../../../day/index.js";
 import { renderAtelierSheetPdf, renderProductionCountPdf } from "../atelier-sheet-pdf.js";
 import { pdfPages } from "../../../../platform/pdf/__tests__/pdf-text.js";
 import { PAPER_LOGO } from "./paper-logo.fixture.js";

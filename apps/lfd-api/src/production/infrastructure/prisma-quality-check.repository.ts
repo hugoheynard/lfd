@@ -13,7 +13,7 @@ import {
 } from "../domain/errors/quality-record-errors.js";
 import { QualityCheckReader } from "../domain/ports/quality-check.reader.js";
 import { QualityCheckRepository } from "../domain/ports/quality-check.repository.js";
-import { ServiceDay } from "../domain/value-objects/service-day.value-object.js";
+import { ServiceDay } from "../day/index.js";
 
 /** Code Prisma d'une violation de contrainte d'unicité. */
 const UNIQUE_VIOLATION = "P2002";

@@ -2,9 +2,9 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
-import { ProductionResupplyLaunchedJournalEvent } from "../../domain/events/production-day.events.js";
-import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
-import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { ProductionResupplyLaunchedJournalEvent } from "../../day/index.js";
+import { ProductionDayLock } from "../../day/index.js";
+import { ServiceDay } from "../../day/index.js";
 import { ResupplyLaunchGestures } from "../services/resupply-launch-gesture.js";
 import { ResupplyLaunchReading } from "../services/resupply-launch-reading.js";
 import { ResupplyLaunchRecording } from "../services/resupply-launch-recording.js";

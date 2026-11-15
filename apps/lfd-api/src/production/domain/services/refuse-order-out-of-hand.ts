@@ -2,7 +2,7 @@ import {
   QualityOrderDepartedError,
   QualityOrderHandedOverError,
 } from "../errors/quality-record-errors.js";
-import type { OrderOutOfHand } from "./order-out-of-hand.js";
+import type { OrderOutOfHand } from "../../day/index.js";
 import type { ScopedQualityTarget } from "./quality-check-scope.js";
 
 /**

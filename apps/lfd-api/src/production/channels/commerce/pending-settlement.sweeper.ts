@@ -1,4 +1,4 @@
-import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import type { ServiceDay } from "../../day/domain/value-objects/service-day.value-object.js";
 
 /**
  * **Le balayage des règlements restés en l'air**, demandé par la clôture AVANT

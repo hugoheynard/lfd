@@ -3,7 +3,7 @@ import {
   PRODUCTION_RESUPPLY_LIST_DRAWN,
   ResupplyListDrawnEvent,
 } from "../../../channels/packing/resupply-list-drawn.event.js";
-import { ProductionDayClosedJournalEvent } from "../../../domain/events/production-day.events.js";
+import { ProductionDayClosedJournalEvent } from "../../../day/domain/events/production-day.events.js";
 import { CutoffRules, DayResupplies, ResupplyTime } from "../../__tests__/settings-doubles.js";
 import { CloseProductionDayCommand } from "../close-production-day.command.js";
 import {

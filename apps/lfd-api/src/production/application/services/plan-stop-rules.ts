@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { OrderCutoffRulesReader } from "../../channels/commerce/order-cutoff-rules.reader.js";
 import { ResupplyCutoffTimeReader } from "../../channels/commerce/resupply-cutoff-time.reader.js";
-import { type PlanStopRule, planStopRules } from "../../domain/services/latest-order-cutoff.js";
+import { type PlanStopRule, planStopRules } from "../../day/index.js";
 
 /**
  * **Les heures qui arrêtent le plan**, lues au commerce par les deux ports du

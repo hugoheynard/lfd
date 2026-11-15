@@ -8,10 +8,10 @@ import {
   DayResuppliesReader,
   type PlacedResupply,
 } from "../../channels/commerce/day-resupplies.reader.js";
-import type { ProductionDay } from "../../domain/entities/production-day.js";
-import { OrderWithdrawalsReader } from "../../domain/ports/order-withdrawals.reader.js";
-import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
-import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import type { ProductionDay } from "../../day/index.js";
+import { OrderWithdrawalsReader } from "../../day/index.js";
+import { ProductionDayRepository } from "../../day/index.js";
+import type { ServiceDay } from "../../day/index.js";
 
 /** Ce que le retirage absorbe : les commandes du commerce, moins les retraits. */
 export interface OrderIntake {

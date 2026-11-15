@@ -25,8 +25,8 @@ export {
   type SheetContact,
   type SheetWindow,
 } from "./day-orders.reader.js";
-export { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
-export { ServiceRange } from "../../domain/value-objects/service-range.value-object.js";
+export { ServiceDay } from "../../day/domain/value-objects/service-day.value-object.js";
+export { ServiceRange } from "../../day/domain/value-objects/service-range.value-object.js";
 export {
   ExpectedProductionReader,
   type ExpectedDayProduction,
@@ -58,7 +58,7 @@ export {
 } from "./due-thresholds.reader.js";
 // L'heure limite générale, qui déclenche l'arrêt automatique du plan (2026-10-21).
 export { OrderCutoffRulesReader } from "./order-cutoff-rules.reader.js";
-export type { OrderCutoffRule } from "../../domain/services/latest-order-cutoff.js";
+export type { OrderCutoffRule } from "../../day/domain/services/latest-order-cutoff.js";
 // Le réassort au plan figé (lot R3a, 2026-10-21) : l'heure du réassort, qui
 // repousse l'arrêt, et les réassorts envoyés pour la journée, figés à l'arrêt.
 export { ResupplyCutoffTimeReader } from "./resupply-cutoff-time.reader.js";
@@ -134,4 +134,4 @@ export {
   ShipmentRef,
   shipmentKeySuffix,
   shipmentRankOf,
-} from "../../domain/value-objects/shipment-ref.value-object.js";
+} from "../../day/domain/value-objects/shipment-ref.value-object.js";

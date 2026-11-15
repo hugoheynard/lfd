@@ -1,6 +1,6 @@
 import { producibleOrder } from "../../../channels/commerce/__tests__/producible-order.fixture.js";
-import { ProductionDay } from "../../../domain/entities/production-day.js";
-import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { ProductionDay } from "../../../day/domain/entities/production-day.js";
+import { ServiceDay } from "../../../day/index.js";
 import { FixedDayOrders, intakeReadingOf } from "../../__tests__/plan-intake-doubles.js";
 import { SavedDays } from "../../__tests__/revision-desk-doubles.js";
 import { DayResupplies } from "../../__tests__/settings-doubles.js";

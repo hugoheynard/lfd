@@ -1,14 +1,14 @@
 import { BrandModule } from "../platform/brand/brand.module.js";
 import { Module } from "@nestjs/common";
 
-import { ProductionOrderWithdrawalDesk } from "./application/services/production-order-withdrawal.desk.js";
-import { DayInscribedOrderHeaderReader } from "./application/services/day-inscribed-order-header.reader.js";
-import { DayOrderLabelHeadReader } from "./application/services/day-order-label-head.reader.js";
-import { ProductionOrderRevisionDesk } from "./application/services/production-order-revision.desk.js";
-import { OrderRevisionNoticeLedger } from "./domain/ports/order-revision-notice.ledger.js";
-import { OrderRevisionNoticesReader } from "./domain/ports/order-revision-notices.reader.js";
-import { PrismaOrderRevisionNoticeLedger } from "./infrastructure/prisma-order-revision-notice.ledger.js";
-import { PrismaOrderRevisionNoticesReader } from "./infrastructure/prisma-order-revision-notices.reader.js";
+import { ProductionOrderWithdrawalDesk } from "./day/application/services/production-order-withdrawal.desk.js";
+import { DayInscribedOrderHeaderReader } from "./day/application/services/day-inscribed-order-header.reader.js";
+import { DayOrderLabelHeadReader } from "./day/application/services/day-order-label-head.reader.js";
+import { ProductionOrderRevisionDesk } from "./day/application/services/production-order-revision.desk.js";
+import { OrderRevisionNoticeLedger } from "./day/domain/ports/order-revision-notice.ledger.js";
+import { OrderRevisionNoticesReader } from "./day/domain/ports/order-revision-notices.reader.js";
+import { PrismaOrderRevisionNoticeLedger } from "./day/infrastructure/prisma-order-revision-notice.ledger.js";
+import { PrismaOrderRevisionNoticesReader } from "./day/infrastructure/prisma-order-revision-notices.reader.js";
 import { PlanStopRules } from "./application/services/plan-stop-rules.js";
 import { ProductionPlanAdmissionDesk } from "./application/services/production-plan-admission.desk.js";
 import { ProductionLaunchedResupplies } from "./application/services/production-launched-resupplies.js";
@@ -20,12 +20,12 @@ import { LaunchResupplyHandler } from "./application/commands/launch-resupply.ha
 import { ProductionResupplyLaunchController } from "./http/production-resupply-launch.controller.js";
 import { ClosedPlansReader } from "./channels/commerce/closed-plans.reader.js";
 import { OrderInscriptionReader } from "./channels/commerce/order-inscription.reader.js";
-import { OrderWithdrawalLedger } from "./domain/ports/order-withdrawal.ledger.js";
-import { OrderWithdrawalsReader } from "./domain/ports/order-withdrawals.reader.js";
-import { PrismaOrderInscriptionReader } from "./infrastructure/prisma-order-inscription.reader.js";
+import { OrderWithdrawalLedger } from "./day/domain/ports/order-withdrawal.ledger.js";
+import { OrderWithdrawalsReader } from "./day/domain/ports/order-withdrawals.reader.js";
+import { PrismaOrderInscriptionReader } from "./day/infrastructure/prisma-order-inscription.reader.js";
 import { PrismaClosedPlansReader } from "./infrastructure/prisma-closed-plans.reader.js";
-import { PrismaOrderWithdrawalLedger } from "./infrastructure/prisma-order-withdrawal.ledger.js";
-import { PrismaOrderWithdrawalsReader } from "./infrastructure/prisma-order-withdrawals.reader.js";
+import { PrismaOrderWithdrawalLedger } from "./day/infrastructure/prisma-order-withdrawal.ledger.js";
+import { PrismaOrderWithdrawalsReader } from "./day/infrastructure/prisma-order-withdrawals.reader.js";
 
 import { RunAutoCloseRoundHandler } from "./application/commands/run-auto-close-round.handler.js";
 import { BusAutomaticDayCloser } from "./application/services/bus-automatic-day-closer.js";
@@ -71,12 +71,12 @@ import { CancelBatchHandler } from "./application/commands/cancel-batch.handler.
 import { RecordBatchHandler } from "./application/commands/record-batch.handler.js";
 import { DepositQualityPhotoHandler } from "./application/commands/deposit-quality-photo.handler.js";
 import { RenderQualityCheckHandler } from "./application/commands/render-quality-check.handler.js";
-import { PruneProductionDayChangesHandler } from "./application/commands/prune-production-day-changes.handler.js";
-import { ProductionDayVersionSource } from "./application/services/production-day-version.source.js";
-import { ProductionDayChangePruner } from "./domain/ports/production-day-change.pruner.js";
-import { ProductionDayVersionReader } from "./domain/ports/production-day-version.reader.js";
-import { PrismaProductionDayChangePruner } from "./infrastructure/prisma-production-day-change.pruner.js";
-import { PrismaProductionDayVersionReader } from "./infrastructure/prisma-production-day-version.reader.js";
+import { PruneProductionDayChangesHandler } from "./day/application/commands/prune-production-day-changes.handler.js";
+import { ProductionDayVersionSource } from "./day/application/services/production-day-version.source.js";
+import { ProductionDayChangePruner } from "./day/domain/ports/production-day-change.pruner.js";
+import { ProductionDayVersionReader } from "./day/domain/ports/production-day-version.reader.js";
+import { PrismaProductionDayChangePruner } from "./day/infrastructure/prisma-production-day-change.pruner.js";
+import { PrismaProductionDayVersionReader } from "./day/infrastructure/prisma-production-day-version.reader.js";
 import { SweepQualityUploadsHandler } from "./application/commands/sweep-quality-uploads.handler.js";
 import { GetQualityBoardHandler } from "./application/queries/get-quality-board.handler.js";
 import { GetQualityPhotoHandler } from "./application/queries/get-quality-photo.handler.js";
@@ -93,10 +93,10 @@ import { ProductionDisplaySettingsReader } from "./domain/ports/production-displ
 import { ProductionDisplaySettingsRepository } from "./domain/ports/production-display-settings.repository.js";
 import { PrismaProductionDisplaySettingsReader } from "./infrastructure/prisma-production-display-settings.reader.js";
 import { PrismaProductionDisplaySettingsRepository } from "./infrastructure/prisma-production-display-settings.repository.js";
-import { ProductionTrancheSettingsReader } from "./domain/ports/production-tranche-settings.reader.js";
-import { ProductionTrancheSettingsRepository } from "./domain/ports/production-tranche-settings.repository.js";
-import { PrismaProductionTrancheSettingsReader } from "./infrastructure/prisma-production-tranche-settings.reader.js";
-import { PrismaProductionTrancheSettingsRepository } from "./infrastructure/prisma-production-tranche-settings.repository.js";
+import { ProductionTrancheSettingsReader } from "./day/domain/ports/production-tranche-settings.reader.js";
+import { ProductionTrancheSettingsRepository } from "./day/domain/ports/production-tranche-settings.repository.js";
+import { PrismaProductionTrancheSettingsReader } from "./day/infrastructure/prisma-production-tranche-settings.reader.js";
+import { PrismaProductionTrancheSettingsRepository } from "./day/infrastructure/prisma-production-tranche-settings.repository.js";
 import { QualityControlSettingsController } from "./http/quality-control-settings.controller.js";
 import { SetQualityControlSettingsHandler } from "./application/commands/set-quality-control-settings.handler.js";
 import { GetQualityControlSettingsHandler } from "./application/queries/get-quality-control-settings.handler.js";
@@ -104,7 +104,7 @@ import { QualityControlSettingsReader } from "./domain/ports/quality-control-set
 import { QualityControlSettingsRepository } from "./domain/ports/quality-control-settings.repository.js";
 import { PrismaQualityControlSettingsReader } from "./infrastructure/prisma-quality-control-settings.reader.js";
 import { PrismaQualityControlSettingsRepository } from "./infrastructure/prisma-quality-control-settings.repository.js";
-import { ProductionDayChangeSweepController } from "./http/production-day-change-sweep.controller.js";
+import { ProductionDayChangeSweepController } from "./day/http/production-day-change-sweep.controller.js";
 import { QualityUploadSweepController } from "./http/quality-upload-sweep.controller.js";
 import {
   PrismaQualityCheckReader,
@@ -121,22 +121,22 @@ import { GetCurrentProductionWorksheetHandler } from "./application/queries/get-
 import { GetDayDossierPdfHandler } from "./application/queries/get-day-dossier-pdf.handler.js";
 import { GetDayResuppliesHandler } from "./application/queries/get-day-resupplies.handler.js";
 import { GetProductionCountPdfHandler } from "./application/queries/get-production-count-pdf.handler.js";
-import { GetProductionDayStatusHandler } from "./application/queries/get-production-day-status.handler.js";
+import { GetProductionDayStatusHandler } from "./day/application/queries/get-production-day-status.handler.js";
 import { GetProductionForecastHandler } from "./application/queries/get-production-forecast.handler.js";
-import { GetProductionDueThresholdsHandler } from "./application/queries/get-production-due-thresholds.handler.js";
+import { GetProductionDueThresholdsHandler } from "./day/application/queries/get-production-due-thresholds.handler.js";
 import { GetProductionWorksheetHandler } from "./application/queries/get-production-worksheet.handler.js";
 import { ListProductionContainersHandler } from "./application/queries/list-production-containers.handler.js";
-import { ProductionPaperArchive } from "./application/services/production-paper-archive.service.js";
+import { ProductionPaperArchive } from "./shared/print/application/services/production-paper-archive.service.js";
 import { ProductionPaperRenderer } from "./application/services/production-paper.service.js";
 import { ProductionWorksheetReading } from "./application/services/production-worksheet-reading.service.js";
-import { WorksheetDeadlinesReading } from "./application/services/worksheet-deadlines-reading.service.js";
+import { WorksheetDeadlinesReading } from "./day/application/services/worksheet-deadlines-reading.service.js";
 import { DayVersionsModule } from "../platform/day-versions/day-versions.module.js";
 import { WorksheetContents } from "./application/services/worksheet-contents.service.js";
 import { ProductionContainerReader } from "./domain/ports/production-container.reader.js";
 import { ProductionContainerRepository } from "./domain/ports/production-container.repository.js";
-import { ProductionDayRepository } from "./domain/ports/production-day.repository.js";
-import { ProductionBatchRepository } from "./domain/ports/production-batch.repository.js";
-import { ProductionDayLock } from "./domain/ports/production-day.lock.js";
+import { ProductionDayRepository } from "./day/domain/ports/production-day.repository.js";
+import { ProductionBatchRepository } from "./day/domain/ports/production-batch.repository.js";
+import { ProductionDayLock } from "./day/domain/ports/production-day.lock.js";
 import { ProductionPlanReader } from "./domain/ports/production-plan.reader.js";
 import { ProductionDayController } from "./http/production-day.controller.js";
 import { ProductionAtelierSheetController } from "./http/production-atelier-sheet.controller.js";
@@ -148,36 +148,36 @@ import {
   PrismaProductionContainerReader,
   PrismaProductionContainerRepository,
 } from "./infrastructure/prisma-production-container.repository.js";
-import { PrismaProductionDayRepository } from "./infrastructure/prisma-production-day.repository.js";
-import { PrismaProductionBatchRepository } from "./infrastructure/prisma-production-batch.repository.js";
-import { PrismaProductionDayLock } from "./infrastructure/prisma-production-day.lock.js";
+import { PrismaProductionDayRepository } from "./day/infrastructure/prisma-production-day.repository.js";
+import { PrismaProductionBatchRepository } from "./day/infrastructure/prisma-production-batch.repository.js";
+import { PrismaProductionDayLock } from "./day/infrastructure/prisma-production-day.lock.js";
 import { PrismaArrestedPlanHold } from "./infrastructure/prisma-arrested-plan.hold.js";
 import { PrismaLaunchedResupplyLookup } from "./infrastructure/prisma-launched-resupply.lookup.js";
-import { PrismaProductionDayStatusReader } from "./infrastructure/prisma-production-day-status.reader.js";
+import { PrismaProductionDayStatusReader } from "./day/infrastructure/prisma-production-day-status.reader.js";
 import { ArrestedPlanHold } from "./channels/packing/arrested-plan.hold.js";
 import { LaunchedResupplyLookup } from "./domain/ports/launched-resupply.lookup.js";
-import { ProductionDayStatusReader } from "./domain/ports/production-day-status.reader.js";
+import { ProductionDayStatusReader } from "./day/domain/ports/production-day-status.reader.js";
 import { PrismaProductionPlanReader } from "./infrastructure/prisma-production-plan.reader.js";
-import { PackingHandoffs } from "./application/services/packing-handoffs.service.js";
-import { ProductionHandoffLedger } from "./domain/ports/production-handoff.ledger.js";
-import { ProductionHandoffReader } from "./domain/ports/production-handoff.reader.js";
-import { PrismaProductionHandoffLedger } from "./infrastructure/prisma-production-handoff.ledger.js";
-import { PrismaProductionHandoffReader } from "./infrastructure/prisma-production-handoff.reader.js";
-import { SealedDayReading } from "./application/services/sealed-day-reading.service.js";
+import { PackingHandoffs } from "./day/application/services/packing-handoffs.service.js";
+import { ProductionHandoffLedger } from "./day/domain/ports/production-handoff.ledger.js";
+import { ProductionHandoffReader } from "./day/domain/ports/production-handoff.reader.js";
+import { PrismaProductionHandoffLedger } from "./day/infrastructure/prisma-production-handoff.ledger.js";
+import { PrismaProductionHandoffReader } from "./day/infrastructure/prisma-production-handoff.reader.js";
+import { SealedDayReading } from "./day/application/services/sealed-day-reading.service.js";
 import { ResupplyLaunchGestures } from "./application/services/resupply-launch-gesture.js";
 import { ResupplyLaunchReading } from "./application/services/resupply-launch-reading.js";
 import { ResupplyLaunchRecording } from "./application/services/resupply-launch-recording.js";
 import { ChannelQualityHeldOrdersReader } from "./application/services/channel-quality-held-orders.reader.js";
 import { CheckedQualityLinesReader } from "./application/services/checked-quality-lines.reader.js";
-import { DayPlannedDestinationsReader } from "./application/services/day-planned-destinations.reader.js";
-import { OnPackingReturned } from "./application/handlers/on-packing-returned.handler.js";
+import { DayPlannedDestinationsReader } from "./day/application/services/day-planned-destinations.reader.js";
+import { OnPackingReturned } from "./day/application/handlers/on-packing-returned.handler.js";
 import { SendDossierOnDayClosed } from "./application/handlers/send-dossier-on-day-closed.handler.js";
 import { SendDossierOnDayRetaken } from "./application/handlers/send-dossier-on-day-retaken.handler.js";
 import { DossierDispatch } from "./application/services/dossier-dispatch.service.js";
 import { DossierDispatchLog } from "./domain/ports/dossier-dispatch.log.js";
 import { PrismaDossierDispatchLog } from "./infrastructure/prisma-dossier-dispatch.log.js";
-import { ProductionReturnRequests } from "./domain/ports/production-return.requests.js";
-import { PrismaProductionReturnRequests } from "./infrastructure/prisma-production-return.requests.js";
+import { ProductionReturnRequests } from "./day/domain/ports/production-return.requests.js";
+import { PrismaProductionReturnRequests } from "./day/infrastructure/prisma-production-return.requests.js";
 
 /**
  * **Le fournil.**

@@ -1,6 +1,6 @@
 import { pieceTally, saleQuantity, type SaleUnit } from "@lfd/money";
 
-import type { ServiceRange } from "../value-objects/service-range.value-object.js";
+import type { ServiceRange } from "../../day/index.js";
 
 /**
  * Un article et son poids, pour un mur de planning.

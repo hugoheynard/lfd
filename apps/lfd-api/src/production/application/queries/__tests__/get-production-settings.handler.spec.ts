@@ -3,8 +3,8 @@ import { addDays } from "@lfd/contracts";
 import { InMemoryDisplaySettings } from "../../__tests__/production-display-settings-doubles.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { ProductionDisplaySettings } from "../../../domain/entities/production-display-settings.js";
-import { ProductionTrancheSettings } from "../../../domain/entities/production-tranche-settings.js";
-import { todayOf } from "../../../domain/services/relative-day.js";
+import { ProductionTrancheSettings } from "../../../day/index.js";
+import { todayOf } from "../../../day/index.js";
 import {
   ClosedDaysTable,
   CutoffRules,

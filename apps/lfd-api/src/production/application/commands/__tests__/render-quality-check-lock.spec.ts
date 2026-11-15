@@ -1,5 +1,5 @@
 import { InMemoryQualityControlSettings } from "../../__tests__/quality-control-settings-doubles.js";
-import { SealedDayReading } from "../../services/sealed-day-reading.service.js";
+import { SealedDayReading } from "../../../day/application/services/sealed-day-reading.service.js";
 import { sealedAt } from "../../__tests__/station-doubles.js";
 import { RecordingDayLock } from "../../__tests__/batch-doubles.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
@@ -7,7 +7,7 @@ import { RecordingPublisher } from "../../../../platform/events/__tests__/record
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { OrderCustodyReader, type OrderOutOfHand } from "../../../channels/handover/index.js";
 import { QualityOrderDepartedError } from "../../../domain/errors/quality-record-errors.js";
-import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { ServiceDay } from "../../../day/index.js";
 import {
   CheckTable,
   closedDay,

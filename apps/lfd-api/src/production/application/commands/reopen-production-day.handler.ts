@@ -8,11 +8,11 @@ import { Clock } from "../../../platform/time/clock.js";
 import { ProductionDayReopenedEvent } from "../../channels/commerce/production-day-reopened.event.js";
 import { DayDispatchProgressReader } from "../../channels/delivery/day-dispatch-progress.reader.js";
 import { DayPackingProgressReader } from "../../channels/packing/day-packing-progress.reader.js";
-import type { DownstreamProgress } from "../../domain/entities/production-day.js";
-import { ProductionDayReopenedJournalEvent } from "../../domain/events/production-day.events.js";
-import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
-import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
-import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import type { DownstreamProgress } from "../../day/index.js";
+import { ProductionDayReopenedJournalEvent } from "../../day/index.js";
+import { ProductionDayLock } from "../../day/index.js";
+import { ProductionDayRepository } from "../../day/index.js";
+import { ServiceDay } from "../../day/index.js";
 import { ReopenProductionDayCommand } from "./reopen-production-day.command.js";
 
 /**

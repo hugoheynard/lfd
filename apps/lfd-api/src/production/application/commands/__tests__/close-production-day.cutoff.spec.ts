@@ -1,4 +1,4 @@
-import { PlanClosedBeforeOrderCutoffError } from "../../../domain/errors/production-errors.js";
+import { PlanClosedBeforeOrderCutoffError } from "../../../day/domain/errors/production-errors.js";
 import { FixedStatus } from "../../__tests__/plan-intake-doubles.js";
 import { CutoffRules } from "../../__tests__/settings-doubles.js";
 import { CloseProductionDayCommand } from "../close-production-day.command.js";

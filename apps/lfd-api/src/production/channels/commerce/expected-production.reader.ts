@@ -1,6 +1,6 @@
 import type { SaleUnit } from "@lfd/money";
 
-import type { ServiceRange } from "../../domain/value-objects/service-range.value-object.js";
+import type { ServiceRange } from "../../day/domain/value-objects/service-range.value-object.js";
 
 /** Ce qui est attendu d'un article, un jour donné, tous clients confondus. */
 export interface ExpectedItem {

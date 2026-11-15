@@ -4,7 +4,7 @@ import { Injectable } from "@nestjs/common";
 import { DayContents } from "../../../platform/day-versions/day-contents.js";
 import { DayVersionRegistry } from "../../../platform/day-versions/day-version-registry.js";
 import { Clock } from "../../../platform/time/clock.js";
-import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import type { ServiceDay } from "../../day/index.js";
 import { ProductionWorksheetReading } from "./production-worksheet-reading.service.js";
 import {
   isStorableWorksheet,

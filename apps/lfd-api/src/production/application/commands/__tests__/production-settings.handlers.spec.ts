@@ -4,7 +4,7 @@ import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { PastClosedDayError } from "../../../domain/errors/production-settings-errors.js";
-import { todayOf } from "../../../domain/services/relative-day.js";
+import { todayOf } from "../../../day/index.js";
 import { ClosedDaysTable } from "../../__tests__/settings-doubles.js";
 import { AddProductionClosedDayCommand } from "../add-production-closed-day.command.js";
 import { AddProductionClosedDayHandler } from "../add-production-closed-day.handler.js";

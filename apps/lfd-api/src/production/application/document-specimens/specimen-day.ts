@@ -1,11 +1,8 @@
 import type { CatalogFamilyView } from "@lfd/contracts";
 
-import type {
-  ProductionOrderSnapshot,
-  ProductionResupplySnapshot,
-} from "../../domain/entities/production-day.js";
+import type { ProductionOrderSnapshot, ProductionResupplySnapshot } from "../../day/index.js";
 import { SPECIMEN_ORDER } from "./specimen-data.js";
-import type { TrancheThreshold } from "../../domain/services/production-tranches.js";
+import type { TrancheThreshold } from "../../day/index.js";
 
 /**
  * **La journée d'exemple du fournil** — le compte à produire et le dossier du

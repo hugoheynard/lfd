@@ -1,6 +1,6 @@
 import type { ProductionWorksheetView } from "@lfd/contracts";
 
-import { relativeDayOf } from "../../domain/services/relative-day.js";
+import { relativeDayOf } from "../../day/index.js";
 
 /** Le nom de l'écran dans l'objet des journées — la fiche datée et la Préparation. */
 export const WORKSHEET_SCREEN = "worksheet";

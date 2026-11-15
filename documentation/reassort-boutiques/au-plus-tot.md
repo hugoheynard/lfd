@@ -51,9 +51,9 @@ sequenceDiagram
 ```
 
 - **L'agrégat** : `ProductionDay.launchResupply`
-  (`apps/lfd-api/src/production/domain/entities/production-day.ts`, règles
+  (`apps/lfd-api/src/production/day/domain/entities/production-day.ts`, règles
   dans `production-day.launch.ts`, compte dans
-  `apps/lfd-api/src/production/domain/entities/production-day.plan.ts`) — un geste à part du retirage, qui
+  `apps/lfd-api/src/production/day/domain/entities/production-day.plan.ts`) — un geste à part du retirage, qui
   n'absorbe que des commandes. Le lancé est rangé à part des réassorts du
   soir (`launchedResupplies`, `production_resupply.kind = asap`, CHECK « asap
   ⇔ lancé »), ajouté au compte des fournées. Refus : déjà lancé

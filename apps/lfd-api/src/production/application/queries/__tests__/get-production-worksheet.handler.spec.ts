@@ -21,11 +21,11 @@ import {
   type ExpectedDayProduction,
 } from "../../../channels/commerce/expected-production.reader.js";
 import { WorkshopShelvesReader } from "../../../channels/commerce/workshop-shelves.reader.js";
-import { ProductionDay } from "../../../domain/entities/production-day.js";
+import { ProductionDay } from "../../../day/domain/entities/production-day.js";
 import { ProductionContainerReader } from "../../../domain/ports/production-container.reader.js";
-import { ProductionDayRepository } from "../../../domain/ports/production-day.repository.js";
+import { ProductionDayRepository } from "../../../day/index.js";
 import type { ContainerRule } from "../../../domain/services/production-worksheet.js";
-import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { ServiceDay } from "../../../day/index.js";
 import { GetProductionWorksheetHandler } from "../get-production-worksheet.handler.js";
 import { GetProductionWorksheetQuery } from "../get-production-worksheet.query.js";
 import { ProductionWorksheetReading } from "../../services/production-worksheet-reading.service.js";
@@ -34,7 +34,7 @@ import { FixedDueThresholds } from "../../__tests__/due-thresholds-doubles.js";
 import { InMemoryTrancheSettings } from "../../__tests__/production-tranche-settings-doubles.js";
 import { CheckTable, qualityLinesFrom } from "../../__tests__/quality-doubles.js";
 import { worksheetContentsAround } from "../../__tests__/worksheet-contents-doubles.js";
-import { WorksheetDeadlinesReading } from "../../services/worksheet-deadlines-reading.service.js";
+import { WorksheetDeadlinesReading } from "../../../day/application/services/worksheet-deadlines-reading.service.js";
 
 /**
  * Le jour est DÉRIVÉ de maintenant : `relativeDay` le compare à l'horloge, et un

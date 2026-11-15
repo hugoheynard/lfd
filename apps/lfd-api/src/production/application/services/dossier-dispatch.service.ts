@@ -4,8 +4,8 @@ import { Mail } from "../../../mail/channels/requests/mail.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { StaffContacts } from "../../../staff/directory/domain/staff-contacts.js";
-import { signedBy, staffSigner } from "../../domain/entities/plan-signer.js";
-import type { ProductionDay } from "../../domain/entities/production-day.js";
+import { signedBy, staffSigner } from "../../day/index.js";
+import type { ProductionDay } from "../../day/index.js";
 import { DossierSentJournalEvent } from "../../domain/events/dossier-dispatch.events.js";
 import {
   DossierDispatchLog,
@@ -19,10 +19,7 @@ import {
 } from "../../domain/services/dossier-addressees.js";
 import { parisDateTime, weekdayLongDate } from "../../../platform/pdf/paper-pdf-kit.js";
 import { PlanArrestBell } from "./plan-arrest-bell.js";
-import {
-  ProductionPaperArchive,
-  type ProductionPaper,
-} from "./production-paper-archive.service.js";
+import { ProductionPaperArchive, type ProductionPaper } from "../../shared/print/index.js";
 import { ProductionPaperRenderer, dayDossierSlotOf } from "./production-paper.service.js";
 
 /** L'envoi demandé : à quel instant d'origine, et s'il complète un envoi précédent. */

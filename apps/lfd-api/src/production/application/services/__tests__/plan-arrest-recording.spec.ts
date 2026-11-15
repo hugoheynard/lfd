@@ -1,8 +1,9 @@
 import { RecordingDurable } from "../../__tests__/handoff-doubles.js";
 import { SavedDays } from "../../__tests__/revision-desk-doubles.js";
 import { producibleOrder } from "../../../channels/commerce/__tests__/producible-order.fixture.js";
-import { NOTHING_PENDING, ProductionDay } from "../../../domain/entities/production-day.js";
-import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { NOTHING_PENDING } from "../../../day/index.js";
+import { ProductionDay } from "../../../day/domain/entities/production-day.js";
+import { ServiceDay } from "../../../day/index.js";
 import { PlanArrestRecording } from "../plan-arrest-recording.js";
 
 /**

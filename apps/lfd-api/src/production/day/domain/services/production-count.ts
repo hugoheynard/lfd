@@ -1,0 +1,194 @@
+import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
+import type { PlacedResupply } from "../../../channels/commerce/day-resupplies.reader.js";
+import type {
+  ProducedItemSnapshot,
+  ProductionLineSnapshot,
+  ProductionOrderSnapshot,
+  ProductionResupplySnapshot,
+} from "../entities/production-day.snapshot.js";
+import { MixedSaleUnitCountError } from "../errors/production-sale-unit-errors.js";
+import { FIRST_SHIPMENT_RANK } from "../value-objects/shipment-ref.value-object.js";
+
+/** Ce que le compte additionne : une commande ou un réassort — des lignes. */
+export interface CountedItem {
+  readonly lines: readonly ProductionLineSnapshot[];
+}
+
+/**
+ * **Le compte à produire, et la copie des commandes qu'il résume** — deux
+ * calculs purs de la journée de fabrication.
+ *
+ * Ils ne lisent ni ne modifient l'état d'une journée : ils fabriquent ce que la
+ * clôture et le retirage vont y inscrire. C'est ce qui les rend éprouvables
+ * seuls, et ce qui les a fait sortir de `production-day.ts` le 2026-09-14.
+ *
+ * ⚠️ **Une seule fonction pour le tirage et le retirage**, et c'est l'invariant
+ * qu'elle porte : un tirage et un retirage des mêmes commandes ne peuvent pas
+ * compter différemment. Ne pas en écrire une seconde « pour le retirage ».
+ */
+
+/** La commande, recopiée telle qu'elle était — jamais une référence vers elle. */
+export function freezeOrder(order: ProducibleOrder): ProductionOrderSnapshot {
+  return {
+    // Une journée qu'on vient d'arrêter n'a rien de colisé. L'écrire ici
+    // plutôt que de le laisser deviner évite qu'un champ absent passe pour un
+    // bac fait.
+    packed: null,
+    orderId: order.orderId,
+    // Ce que le commerce sert au plan est la commande elle-même (rang 1) :
+    // aucun reliquat n'entre encore au plan (plan E7 reliquat, L7 et L8).
+    rank: FIRST_SHIPMENT_RANK,
+    reference: order.reference,
+    customerLabel: order.customerLabel,
+    fulfillmentMethod: order.fulfillmentMethod,
+    destination: order.destination,
+    dueAt: order.dueAt,
+    clientele: order.clientele,
+    siteId: order.siteId,
+    lines: order.lines.map((line) => ({
+      sku: line.sku,
+      productName: line.productName,
+      quantity: line.quantity,
+      saleUnit: line.saleUnit,
+      madeToOrder: line.madeToOrder,
+    })),
+    sheetDetails: order.sheetDetails,
+  };
+}
+
+/** Le réassort, recopié tel qu'il était à l'arrêt (lot R3a). */
+export function freezeResupply(resupply: PlacedResupply): ProductionResupplySnapshot {
+  return {
+    resupplyId: resupply.resupplyId,
+    siteId: resupply.siteId,
+    siteLabel: resupply.siteLabel,
+    name: resupply.name,
+    servedByTransfer: resupply.servedByTransfer,
+    lines: resupply.lines.map((line) => ({
+      sku: line.sku,
+      productName: line.productName,
+      quantity: line.quantity,
+      // L'unité de la ligne au commerce (lot L2b-2 du plan du jour J) : un
+      // réassort au poids se compte en grammes, comme une commande (P6).
+      saleUnit: line.saleUnit,
+    })),
+  };
+}
+
+/**
+ * Le compte à produire, **trié par SKU** — commandes ET réassorts depuis le
+ * lot R3a (décision B, Hugo 2026-10-21 : les fournées se cochent sur le
+ * total).
+ *
+ * Trié, et pas dans l'ordre d'arrivée des commandes : deux clôtures des mêmes
+ * commandes doivent rendre le même compte, sans quoi le PDF qu'on en tire
+ * cesserait d'être déterministe — et c'est la propriété sur laquelle repose son
+ * rangement sans verrou.
+ *
+ * Le nom retenu est celui de la PREMIÈRE ligne rencontrée pour ce SKU. Deux
+ * commandes d'une même journée portent le même catalogue ; si elles divergeaient,
+ * c'est le SKU qui ferait foi, pas le libellé.
+ */
+export function countOf(orders: readonly CountedItem[]): readonly ProducedItemSnapshot[] {
+  const bySku = new Map<string, ProducedItemSnapshot>();
+  for (const order of orders) {
+    for (const line of order.lines) {
+      const known = bySku.get(line.sku);
+      if (known !== undefined && known.saleUnit !== line.saleUnit) {
+        // Additionner des pièces et des grammes d'un même article rendrait un
+        // nombre qui ne veut rien dire — entre deux commandes comme entre une
+        // commande et un réassort (lot L2b-2). Le référentiel refuse de changer
+        // l'unité d'une référence déjà commandée (`Variant.changeSaleTerms`,
+        // vérifié le 2026-10-29) ou déjà demandée en réassort (le commerce
+        // compte `site_resupply_line` comme un usage, `prisma-sale-reference-
+        // usage.ts`, vérifié le 2026-11-02) : ce cas ne naît que d'une course
+        // entre le geste et une première ligne, ou d'un commerce qui a menti.
+        throw new MixedSaleUnitCountError(line.sku);
+      }
+      bySku.set(line.sku, {
+        sku: line.sku,
+        productName: known?.productName ?? line.productName,
+        quantity: (known?.quantity ?? 0) + line.quantity,
+        saleUnit: line.saleUnit,
+      });
+    }
+  }
+  return [...bySku.values()].sort((left, right) => left.sku.localeCompare(right.sku));
+}
+
+/**
+ * **Le compte d'après l'arrêt ne baisse jamais** (A2,
+ * `documentation/commandes/modification/modifier-une-commande.md`,
+ * § 2.4 « Après l'inscription ») : par article, le plus grand du compte précédent et du compte
+ * refait. Une commande dont la quantité baisse après l'arrêt dit son dû
+ * révisé dans ses lignes ; ce qui a été demandé au four, lui, reste — le
+ * surplus ira en réserve au colisage, comme pour une commande retirée (A1).
+ *
+ * Trié par SKU comme {@link countOf}. Le nom est celui du compte refait
+ * quand il connaît l'article, sinon celui d'avant. « Sorti » vit dans les
+ * fournées, que le compte ne porte pas.
+ */
+export function floorCounts(
+  previous: readonly ProducedItemSnapshot[],
+  next: readonly ProducedItemSnapshot[],
+): readonly ProducedItemSnapshot[] {
+  const bySku = new Map<string, ProducedItemSnapshot>();
+  for (const item of previous) {
+    bySku.set(item.sku, item);
+  }
+  for (const item of next) {
+    const before = bySku.get(item.sku)?.quantity ?? 0;
+    bySku.set(item.sku, { ...item, quantity: Math.max(before, item.quantity) });
+  }
+  return [...bySku.values()].sort((left, right) => left.sku.localeCompare(right.sku));
+}
+
+/** Ce que le retirage inscrit dans la journée — ou rien, s'il n'y a rien à absorber. */
+export interface AbsorbedArrivals {
+  readonly orders: readonly ProductionOrderSnapshot[];
+  /** Le nombre de commandes réellement absorbées. `0` = rien n'était arrivé. */
+  readonly count: number;
+}
+
+/**
+ * **Ce que le retirage absorbe**, calculé sans toucher la journée.
+ *
+ * ## Pourquoi le retirage ne contredit pas l'invariant de `ProductionDay`
+ *
+ * « Une journée arrêtée ne se recalcule pas » vise le recalcul **silencieux**
+ * — celui qui donnerait un autre nombre que celui sur lequel le fournil a
+ * lancé ses fournées, sans que personne l'ait voulu. Le retirage est l'autre
+ * chose : un geste **attesté**, fait par quelqu'un à qui l'écran vient de
+ * montrer les lignes qui changent et de dire laquelle est déjà cochée. D'où
+ * `retakenBy` : sans auteur, ce serait exactement le recalcul qu'on refuse.
+ *
+ * L'invariant n'est donc pas levé, il est nommé — impossible par accident,
+ * possible par décision, et traçable.
+ *
+ * ## Ce qu'il absorbe, et ce qu'il ne touche pas
+ *
+ * Seules les commandes que la journée ne porte pas encore, **par `orderId`**.
+ * C'est ce filtre qui rend le geste idempotent, et qui le protège du cas tordu :
+ * la clôture publie un événement en processus, ni persisté ni rejoué, donc un
+ * abonné en échec laisse des commandes `placed` DÉJÀ inscrites au plan. Sans le
+ * filtre, un retirage les compterait une seconde fois.
+ *
+ * Le compte ne porte pas ce qui est sorti : ce qui est sorti survit au
+ * retirage par les fournées, que le compte refait ne touche pas.
+ *
+ * Le compte, lui, n'est plus calculé ici depuis A2 (2026-10-25) : l'agrégat le
+ * refait par sa méthode unique (`ProductionDay.recount`), depuis TOUTES les
+ * commandes et les réassorts figés, avec le plancher de {@link floorCounts} —
+ * la même pour le retirage, le lancement d'un réassort et la révision.
+ */
+export function absorbArrivals(
+  known: readonly ProductionOrderSnapshot[],
+  incoming: readonly ProducibleOrder[],
+): AbsorbedArrivals {
+  const knownIds = new Set(known.map((order) => order.orderId));
+  const arrivals = incoming.filter((order) => !knownIds.has(order.orderId));
+  if (arrivals.length === 0) {
+    return { orders: known, count: 0 };
+  }
+  return { orders: [...known, ...arrivals.map(freezeOrder)], count: arrivals.length };
+}

@@ -296,7 +296,7 @@ mêlent jamais dans un lot.
    journée : elle rejoint `day/`, et le métier la lit de là. Le contrôleur du
    balayage qualité (`quality-upload-sweep.controller`) qui déclenche aussi
    l'élagage de la journée est coupé en deux dans le même lot.
-6. **D1 — déplacer le noyau** (`day/`) et `shared/print/`.
+6. **D1 — déplacer le noyau** (`day/`) et `shared/print/` (✅ bâti le 2026-11-15 : 105 fichiers et 42 tests ; imports hors porte 210 → 6, tests hors porte 139 → 59. `PackingHandoffs`, `SealedDayReading` et `WorksheetDeadlinesReading` chargent un canal : `day/index.ts` ne les exporte pas, leurs lecteurs restent en dette).
 7. **D2 — déplacer la qualité. D3 — le réassort. D4 — le plan. D5 —
    l'atelier** (dont `production-batch-shortcuts.module.ts`).
 8. **D6 — un module Nest par métier.** `day/` devient un module qui fournit

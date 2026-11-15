@@ -1,4 +1,4 @@
-import type { ServiceDay } from "../value-objects/service-day.value-object.js";
+import type { ServiceDay } from "../../day/index.js";
 
 /**
  * **« Ce réassort est-il lancé au plan de cette journée ? »** — une ligne de

@@ -1,4 +1,4 @@
-import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import type { ServiceDay } from "../../day/domain/value-objects/service-day.value-object.js";
 
 /**
  * **« Ce réassort est-il lancé ? »** — port que le fournil DÉCLARE et

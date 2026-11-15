@@ -1,15 +1,15 @@
 import type { Buffer } from "node:buffer";
 
 import type { DeliveryNoteDrawing } from "../../channels/commerce/planned-delivery-notes.reader.js";
-import { type PlanSigner, signedVerb, staffSigner } from "../entities/plan-signer.js";
-import type { ProductionOrderSnapshot } from "../entities/production-day.js";
+import { type PlanSigner, signedVerb, staffSigner } from "../../day/index.js";
+import type { ProductionOrderSnapshot } from "../../day/index.js";
 import type { DayDossier } from "./day-dossier.js";
 import type { CalendarPage } from "./day-dossier-calendar.js";
 import { drawCalendarPage } from "./day-dossier-calendar-pdf.js";
 import { drawDossierCover } from "./day-dossier-cover-pdf.js";
 import { drawRecapGroup } from "./day-dossier-recap-pdf.js";
-import { dossierSheetHeadOf, type DossierSheetHead } from "./dossier-sheet-head.js";
-import { figureFontSize, lineFigure, piecesOfLines } from "./line-tally.js";
+import { dossierSheetHeadOf, type DossierSheetHead } from "../../shared/print/index.js";
+import { figureFontSize, lineFigure, piecesOfLines } from "../../shared/print/index.js";
 import { drawResupplySheet } from "./day-dossier-resupplies-pdf.js";
 import {
   LEFT,
@@ -27,8 +27,8 @@ import {
   weekdayShortDate,
   type Doc,
 } from "../../../platform/pdf/paper-pdf-kit.js";
-import { isMadeToOrder, MADE_TO_ORDER_MENTION } from "./made-to-order.js";
-import { drawRouting } from "./order-routing-pdf.js";
+import { isMadeToOrder, MADE_TO_ORDER_MENTION } from "../../shared/print/index.js";
+import { drawRouting } from "../../shared/print/index.js";
 import { contentRightOf, PaperPages } from "../../../platform/pdf/paper-pages.js";
 
 /**

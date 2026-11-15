@@ -13,7 +13,7 @@ import {
   DayOrdersReader,
   type ProducibleOrder,
 } from "../../../channels/commerce/day-orders.reader.js";
-import { ProductionDayEmptyError } from "../../../domain/errors/production-errors.js";
+import { ProductionDayEmptyError } from "../../../day/index.js";
 import {
   AutoCloseAttempts,
   type AutoCloseOutcome,
@@ -21,8 +21,8 @@ import {
 import { AutoCloseRoundReader } from "../../../domain/ports/auto-close-round.reader.js";
 import { AutomaticDayCloser } from "../../../domain/ports/automatic-day-closer.js";
 import type { AttemptTrace } from "../../../domain/services/auto-close-round.js";
-import type { OrderCutoffRule } from "../../../domain/services/latest-order-cutoff.js";
-import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import type { OrderCutoffRule } from "../../../day/index.js";
+import { ServiceDay } from "../../../day/index.js";
 import {
   ClosedDaysTable,
   CutoffRules,

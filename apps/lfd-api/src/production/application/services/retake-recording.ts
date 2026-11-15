@@ -2,14 +2,11 @@ import { Injectable } from "@nestjs/common";
 
 import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import { ProductionDayRetakenEvent } from "../../channels/delivery/index.js";
-import type {
-  ProductionDay,
-  ProductionOrderSnapshot,
-} from "../../domain/entities/production-day.js";
-import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
-import { arrivalsBetween } from "../../domain/services/production-handoff.js";
-import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
-import { ShipmentRef } from "../../domain/value-objects/shipment-ref.value-object.js";
+import type { ProductionDay, ProductionOrderSnapshot } from "../../day/index.js";
+import { ProductionDayRepository } from "../../day/index.js";
+import { arrivalsBetween } from "../../day/index.js";
+import type { ServiceDay } from "../../day/index.js";
+import { ShipmentRef } from "../../day/index.js";
 import { packingListFactsOf } from "./packing-list-facts.js";
 
 /** Un retirage décidé par l'agrégat, prêt à écrire. */

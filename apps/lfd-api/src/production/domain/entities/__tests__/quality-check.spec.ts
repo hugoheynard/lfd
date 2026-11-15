@@ -5,7 +5,7 @@ import {
   QualityCheckTargetError,
   QualityCheckTooManyPhotosError,
 } from "../../errors/quality-check-errors.js";
-import { ServiceDay } from "../../value-objects/service-day.value-object.js";
+import { ServiceDay } from "../../../day/index.js";
 import { QualityCheck, type RenderQualityCheck } from "../quality-check.js";
 
 /**

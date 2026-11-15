@@ -7,9 +7,9 @@ import { WorkshopShelvesReader } from "../../../channels/commerce/workshop-shelv
 import {
   ProductionDay,
   type ProductionOrderSnapshot,
-} from "../../../domain/entities/production-day.js";
+} from "../../../day/domain/entities/production-day.js";
 import { atelierSheetPdfKey } from "../../../domain/services/atelier-sheet-pdf.js";
-import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { ServiceDay } from "../../../day/domain/value-objects/service-day.value-object.js";
 import {
   FixedOrderPrintColors,
   FixedResupplyPrintColors,
@@ -20,7 +20,7 @@ import {
   FixedPlannedDeliveryNotes,
 } from "../../__tests__/paper-doubles.js";
 import { InMemoryProductionStore } from "../../__tests__/quality-doubles.js";
-import { ProductionPaperArchive } from "../production-paper-archive.service.js";
+import { ProductionPaperArchive } from "../../../shared/print/index.js";
 import { ProductionPaperRenderer, atelierSheetSlotOf } from "../production-paper.service.js";
 
 /**

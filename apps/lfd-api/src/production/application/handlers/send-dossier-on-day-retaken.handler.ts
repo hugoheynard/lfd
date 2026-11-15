@@ -11,8 +11,8 @@ import {
   PRODUCTION_DAY_RETAKEN,
   ProductionDayRetakenEvent,
 } from "../../channels/delivery/index.js";
-import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
-import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { ProductionDayRepository } from "../../day/index.js";
+import { ServiceDay } from "../../day/index.js";
 import { DossierDispatch, type DossierOccasion } from "../services/dossier-dispatch.service.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */

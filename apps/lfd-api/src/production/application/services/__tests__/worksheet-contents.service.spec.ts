@@ -12,11 +12,11 @@ import {
   ExpectedProductionReader,
 } from "../../../channels/commerce/expected-production.reader.js";
 import { WorkshopShelvesReader } from "../../../channels/commerce/workshop-shelves.reader.js";
-import type { ProductionDay } from "../../../domain/entities/production-day.js";
+import type { ProductionDay } from "../../../day/index.js";
 import { ProductionContainerReader } from "../../../domain/ports/production-container.reader.js";
-import { ProductionDayRepository } from "../../../domain/ports/production-day.repository.js";
+import { ProductionDayRepository } from "../../../day/index.js";
 import type { ContainerRule } from "../../../domain/services/production-worksheet.js";
-import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { ServiceDay } from "../../../day/index.js";
 import { FixedDueThresholds } from "../../__tests__/due-thresholds-doubles.js";
 import { FixedOvenWaitingOrders } from "../../__tests__/oven-waiting-doubles.js";
 import { InMemoryDisplaySettings } from "../../__tests__/production-display-settings-doubles.js";
@@ -28,7 +28,7 @@ import {
 } from "../../../../platform/day-versions/__tests__/day-contents-doubles.js";
 import { ProductionWorksheetReading } from "../production-worksheet-reading.service.js";
 import { WorksheetContents } from "../worksheet-contents.service.js";
-import { WorksheetDeadlinesReading } from "../worksheet-deadlines-reading.service.js";
+import { WorksheetDeadlinesReading } from "../../../day/application/services/worksheet-deadlines-reading.service.js";
 
 /**
  * La fiche du fournil servie depuis l'objet des journées

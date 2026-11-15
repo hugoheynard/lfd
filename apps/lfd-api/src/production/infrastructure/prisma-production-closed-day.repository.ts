@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../platform/database/prisma.service.js";
 import type { ProductionClosedDay } from "../domain/entities/production-closed-day.js";
 import { ProductionClosedDayRepository } from "../domain/ports/production-closed-day.repository.js";
-import type { ServiceDay } from "../domain/value-objects/service-day.value-object.js";
+import type { ServiceDay } from "../day/index.js";
 
 /**
  * Le calendrier des jours fermés, dans `production.production_closed_day`.

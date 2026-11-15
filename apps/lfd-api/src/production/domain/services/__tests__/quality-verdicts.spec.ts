@@ -1,6 +1,6 @@
 import { QualityCheck, type QualityVerdict } from "../../entities/quality-check.js";
 import type { QualityCheckTargetInput } from "../../value-objects/quality-check-target.js";
-import { ServiceDay } from "../../value-objects/service-day.value-object.js";
+import { ServiceDay } from "../../../day/index.js";
 import {
   currentChecks,
   heldOrderIds,

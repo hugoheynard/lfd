@@ -1,4 +1,4 @@
-import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import type { ServiceDay } from "../../day/domain/value-objects/service-day.value-object.js";
 
 /** Ce que le guichet constate, sous le verrou : la journée prend encore des commandes, ou non. */
 export type PlanAdmission = "open" | "closed";

@@ -215,7 +215,7 @@ de vie **par bon** plutôt qu'une commande de suite (« A »).
 
 - **L'envoi.** Un envoi se désigne par `(commande, rang)` ; le rang 1 est la
   commande elle-même, ses écrans et ses clés n'ont pas changé.
-  `ShipmentRef` (`production/domain/value-objects/shipment-ref.value-object.ts`)
+  `ShipmentRef` (`production/day/domain/value-objects/shipment-ref.value-object.ts`)
   porte le rang dans les faits du flux ; les clés d'idempotence gagnent
   `:r<rang>` au-delà du rang 1. Le rang est en base au fournil, au colisage,
   à la livraison et au retrait (migrations `20261026070000` à `20261026090000`).

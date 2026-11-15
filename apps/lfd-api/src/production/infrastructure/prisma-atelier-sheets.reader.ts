@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../platform/database/prisma.service.js";
 import { AtelierSheetsReader } from "../channels/handover/atelier-sheets.reader.js";
-import { ServiceDay } from "../domain/value-objects/service-day.value-object.js";
+import { ServiceDay } from "../day/index.js";
 
 /**
  * **Les commandes sans feuille d'atelier**, dites par la production —

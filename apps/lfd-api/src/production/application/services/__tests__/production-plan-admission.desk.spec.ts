@@ -1,6 +1,6 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { ClosedPlansReader } from "../../../channels/commerce/closed-plans.reader.js";
-import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { ServiceDay } from "../../../day/index.js";
 import { RecordingDayLock } from "../../__tests__/batch-doubles.js";
 import { ProductionPlanAdmissionDesk } from "../production-plan-admission.desk.js";
 

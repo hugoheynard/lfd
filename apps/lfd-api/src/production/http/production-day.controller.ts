@@ -22,12 +22,12 @@ import { CloseProductionDayCommand } from "../application/commands/close-product
 import { ReopenProductionDayCommand } from "../application/commands/reopen-production-day.command.js";
 import { GetDayDossierPdfQuery } from "../application/queries/get-day-dossier-pdf.query.js";
 import { GetProductionCountPdfQuery } from "../application/queries/get-production-count-pdf.query.js";
-import { GetProductionDayStatusQuery } from "../application/queries/get-production-day-status.query.js";
+import { GetProductionDayStatusQuery } from "../day/index.js";
 import { GetProductionForecastQuery } from "../application/queries/get-production-forecast.query.js";
-import { GetProductionDueThresholdsQuery } from "../application/queries/get-production-due-thresholds.query.js";
+import { GetProductionDueThresholdsQuery } from "../day/index.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
-import { type ProductionPaper, servePaper } from "./production-paper-response.js";
+import { type ProductionPaper, servePaper } from "../shared/print/index.js";
 
 /**
  * Le jour du chemin, validé dans sa FORME par un pipe : un `.parse` écrit dans

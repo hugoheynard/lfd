@@ -3,12 +3,12 @@ import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../platform/time/clock.js";
 import { ProductionDisplaySettings } from "../../domain/entities/production-display-settings.js";
-import { ProductionTrancheSettings } from "../../domain/entities/production-tranche-settings.js";
+import { ProductionTrancheSettings } from "../../day/index.js";
 import { ProductionDisplaySettingsReader } from "../../domain/ports/production-display-settings.reader.js";
-import { ProductionTrancheSettingsReader } from "../../domain/ports/production-tranche-settings.reader.js";
+import { ProductionTrancheSettingsReader } from "../../day/index.js";
 import { ProductionSettingsReader } from "../../domain/ports/production-settings.reader.js";
-import { latestOrderCutoff } from "../../domain/services/latest-order-cutoff.js";
-import { todayOf } from "../../domain/services/relative-day.js";
+import { latestOrderCutoff } from "../../day/index.js";
+import { todayOf } from "../../day/index.js";
 import { PlanStopRules } from "../services/plan-stop-rules.js";
 import { GetProductionSettingsQuery } from "./get-production-settings.query.js";
 

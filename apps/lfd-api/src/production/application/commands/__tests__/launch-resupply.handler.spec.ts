@@ -15,14 +15,14 @@ import {
   PRODUCTION_RESUPPLY_LAUNCHED,
   ResupplyLaunchedEvent,
 } from "../../../channels/commerce/resupply-launched.event.js";
-import { ProductionDay } from "../../../domain/entities/production-day.js";
+import { ProductionDay } from "../../../day/domain/entities/production-day.js";
 import {
   ResupplyAlreadyLaunchedError,
   ResupplyLaunchOnUnarrestedPlanError,
   ResupplyToLaunchNotFoundError,
-} from "../../../domain/errors/resupply-launch-errors.js";
-import { ProductionDayRepository } from "../../../domain/ports/production-day.repository.js";
-import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+} from "../../../day/domain/errors/resupply-launch-errors.js";
+import { ProductionDayRepository } from "../../../day/index.js";
+import { ServiceDay } from "../../../day/index.js";
 import { RecordingDayLock } from "../../__tests__/batch-doubles.js";
 import { RecordingDurable } from "../../__tests__/handoff-doubles.js";
 import { DayResupplies } from "../../__tests__/settings-doubles.js";

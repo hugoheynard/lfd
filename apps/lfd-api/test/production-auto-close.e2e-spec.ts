@@ -16,7 +16,7 @@ import type request from "supertest";
 
 import { Clock } from "../src/platform/time/clock.js";
 import { AutoCloseAttempts } from "../src/production/domain/ports/auto-close-attempts.js";
-import { ServiceDay } from "../src/production/domain/value-objects/service-day.value-object.js";
+import { ServiceDay } from "../src/production/day/domain/value-objects/service-day.value-object.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import type { E2eContext } from "./e2e-harness.js";
 import { jsonBody } from "./e2e-harness.js";

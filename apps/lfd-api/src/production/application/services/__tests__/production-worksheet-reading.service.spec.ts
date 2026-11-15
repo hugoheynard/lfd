@@ -19,20 +19,20 @@ import {
   type ExpectedDayProduction,
 } from "../../../channels/commerce/expected-production.reader.js";
 import { WorkshopShelvesReader } from "../../../channels/commerce/workshop-shelves.reader.js";
-import { ProductionDay } from "../../../domain/entities/production-day.js";
-import { ProductionTrancheSettings } from "../../../domain/entities/production-tranche-settings.js";
+import { ProductionDay } from "../../../day/domain/entities/production-day.js";
+import { ProductionTrancheSettings } from "../../../day/index.js";
 import { QualityCheck } from "../../../domain/entities/quality-check.js";
 import { ProductionContainerReader } from "../../../domain/ports/production-container.reader.js";
-import { ProductionDayRepository } from "../../../domain/ports/production-day.repository.js";
+import { ProductionDayRepository } from "../../../day/index.js";
 import type { ContainerRule } from "../../../domain/services/production-worksheet.js";
-import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { ServiceDay } from "../../../day/index.js";
 import { FixedOvenWaitingOrders } from "../../__tests__/oven-waiting-doubles.js";
 import { FixedDueThresholds } from "../../__tests__/due-thresholds-doubles.js";
 import { InMemoryTrancheSettings } from "../../__tests__/production-tranche-settings-doubles.js";
 import { CheckTable, qualityLinesFrom } from "../../__tests__/quality-doubles.js";
 import { ProductionWorksheetReading } from "../production-worksheet-reading.service.js";
 import { servedWorksheet } from "../worksheet-content.js";
-import { WorksheetDeadlinesReading } from "../worksheet-deadlines-reading.service.js";
+import { WorksheetDeadlinesReading } from "../../../day/application/services/worksheet-deadlines-reading.service.js";
 
 /**
  * Les paliers et la pastille qualité d'une ligne de la fiche (plan

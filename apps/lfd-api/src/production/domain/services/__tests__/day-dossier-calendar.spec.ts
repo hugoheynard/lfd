@@ -1,7 +1,7 @@
 import type { DossierRecapGroup, DossierRecapLine } from "../day-dossier.js";
 import { dossierCalendarOf } from "../day-dossier-calendar.js";
 import { calendarScale } from "../day-dossier-calendar-pdf.js";
-import type { TrancheThreshold } from "../production-tranches.js";
+import type { TrancheThreshold } from "../../../day/index.js";
 
 /**
  * **Le calendrier du dossier** — le total du récapitulatif réparti dans les

@@ -1,4 +1,4 @@
-import type { ProductionDay } from "../entities/production-day.js";
+import type { ProductionDay } from "../../day/index.js";
 import type { QualityVerdict, QualityCheck } from "../entities/quality-check.js";
 import {
   QualityLineNotCountedError,
@@ -6,7 +6,7 @@ import {
   QualityOrderNotPackedError,
 } from "../errors/quality-record-errors.js";
 import type { QualityCheckTargetInput } from "../value-objects/quality-check-target.js";
-import type { ServiceDay } from "../value-objects/service-day.value-object.js";
+import type { ServiceDay } from "../../day/index.js";
 import type { PlannedOrderLine } from "./quality-verdicts.js";
 
 /**

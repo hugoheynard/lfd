@@ -1,6 +1,6 @@
 import type { SaleUnit } from "@lfd/money";
 
-import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import type { ServiceDay } from "../../day/domain/value-objects/service-day.value-object.js";
 
 /**
  * Une ligne d'une commande, **telle que le fournil en a besoin**.

@@ -3,9 +3,9 @@ import {
   NOTHING_PENDING,
   ProductionDay,
   type ProductionDaySnapshot,
-} from "../src/production/domain/entities/production-day.js";
-import { ProductionDayRepository } from "../src/production/domain/ports/production-day.repository.js";
-import { ServiceDay } from "../src/production/domain/value-objects/service-day.value-object.js";
+} from "../src/production/day/domain/entities/production-day.js";
+import { ProductionDayRepository } from "../src/production/day/domain/ports/production-day.repository.js";
+import { ServiceDay } from "../src/production/day/domain/value-objects/service-day.value-object.js";
 import { bootstrapE2e, serviceDay, type E2eContext } from "./e2e-harness.js";
 
 /**

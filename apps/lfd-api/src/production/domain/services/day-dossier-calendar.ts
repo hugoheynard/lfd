@@ -1,5 +1,5 @@
 import type { DossierRecapGroup, DossierRecapLine } from "./day-dossier.js";
-import type { TrancheThreshold } from "./production-tranches.js";
+import type { TrancheThreshold } from "../../day/index.js";
 
 /**
  * **Le calendrier du dossier** — une page paysage par catégorie racine, ses

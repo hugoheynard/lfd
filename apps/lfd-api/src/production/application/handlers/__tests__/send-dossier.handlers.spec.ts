@@ -1,7 +1,7 @@
 import { parisDateTime, weekdayLongDate } from "../../../../platform/pdf/paper-pdf-kit.js";
-import { AUTOMATIC_SIGNER, staffSigner } from "../../../domain/entities/plan-signer.js";
-import { ProductionDay } from "../../../domain/entities/production-day.js";
-import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { AUTOMATIC_SIGNER, staffSigner } from "../../../day/domain/entities/plan-signer.js";
+import { ProductionDay } from "../../../day/domain/entities/production-day.js";
+import { ServiceDay } from "../../../day/domain/value-objects/service-day.value-object.js";
 import {
   CLOSED,
   closedDay,

@@ -1,5 +1,5 @@
-import type { ProductionOrderSnapshot } from "../../../domain/entities/production-day.js";
-import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import type { ProductionOrderSnapshot } from "../../../day/index.js";
+import { ServiceDay } from "../../../day/index.js";
 import { packingListFactsOf } from "../packing-list-facts.js";
 
 /** Recopié dans le fait, jamais comparé à l'horloge. */

@@ -1,4 +1,4 @@
-import type { OrderCutoffRule } from "../../domain/services/latest-order-cutoff.js";
+import type { OrderCutoffRule } from "../../day/domain/services/latest-order-cutoff.js";
 
 /**
  * **Les heures limites de commande**, telles que le commerce les tient (plan

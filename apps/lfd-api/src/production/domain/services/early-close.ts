@@ -1,8 +1,8 @@
 import { instantToLocal } from "@lfd/contracts";
 
-import { PlanClosedBeforeOrderCutoffError } from "../errors/production-errors.js";
+import { PlanClosedBeforeOrderCutoffError } from "../../day/index.js";
 import { closeDue, frenchDayLabel } from "./auto-close-round.js";
-import type { PlanStop } from "./latest-order-cutoff.js";
+import type { PlanStop } from "../../day/index.js";
 
 /**
  * **Pas d'arrêt avant l'heure limite** (Hugo, 2026-10-21 —

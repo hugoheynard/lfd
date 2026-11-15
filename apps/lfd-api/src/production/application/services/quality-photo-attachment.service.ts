@@ -14,7 +14,7 @@ import {
   pendingQualityPhotoKey,
   qualityPhotoKey,
 } from "../../domain/services/quality-storage-keys.js";
-import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import type { ServiceDay } from "../../day/index.js";
 
 const logger = new Logger("QualityPhotoAttachment");
 

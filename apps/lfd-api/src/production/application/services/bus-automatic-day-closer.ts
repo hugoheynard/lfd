@@ -9,7 +9,7 @@ import {
 import { newTraceId } from "../../../platform/context/trace-context.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { AutomaticDayCloser } from "../../domain/ports/automatic-day-closer.js";
-import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import type { ServiceDay } from "../../day/index.js";
 import { CloseProductionDayCommand } from "../commands/close-production-day.command.js";
 
 /**

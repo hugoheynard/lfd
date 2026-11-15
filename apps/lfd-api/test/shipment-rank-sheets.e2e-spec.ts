@@ -13,10 +13,10 @@ import { OnPackingListDrawn } from "../src/packing/application/handlers/on-packi
 import { PackingSheetRepository } from "../src/packing/domain/ports/packing-sheet.repository.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { PackingListDrawnEvent } from "../src/production/channels/packing/index.js";
-import { ProductionDay } from "../src/production/domain/entities/production-day.js";
-import type { ProductionOrderSnapshot } from "../src/production/domain/entities/production-day.js";
-import { ProductionDayRepository } from "../src/production/domain/ports/production-day.repository.js";
-import { ServiceDay } from "../src/production/domain/value-objects/service-day.value-object.js";
+import { ProductionDay } from "../src/production/day/domain/entities/production-day.js";
+import type { ProductionOrderSnapshot } from "../src/production/day/domain/entities/production-day.js";
+import { ProductionDayRepository } from "../src/production/day/domain/ports/production-day.repository.js";
+import { ServiceDay } from "../src/production/day/domain/value-objects/service-day.value-object.js";
 import { bootstrapE2e, serviceDay, type E2eContext } from "./e2e-harness.js";
 
 const SERVICE_DAY = serviceDay();

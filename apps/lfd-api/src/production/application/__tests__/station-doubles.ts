@@ -2,7 +2,7 @@ import {
   PackedOrdersReader,
   type PackedOrderSeal,
 } from "../../channels/packing/packed-orders.reader.js";
-import { ProductionDay } from "../../domain/entities/production-day.js";
+import { ProductionDay } from "../../day/domain/entities/production-day.js";
 
 /**
  * La même journée, arrêtée avant la bascule (`legacy`) : depuis K2, une clôture

@@ -17,25 +17,25 @@ import type {
   ProductionDaySnapshot,
   ProductionLineSnapshot,
   ProductionOrderSnapshot,
-} from "../../domain/entities/production-day.js";
-import { ProductionDayNotClosedError } from "../../domain/errors/production-errors.js";
+} from "../../day/index.js";
+import { ProductionDayNotClosedError } from "../../day/index.js";
 import {
   atelierSheetPdfKey,
   productionCountPdfKey,
   renderAtelierSheetPdf,
   renderProductionCountPdf,
 } from "../../domain/services/atelier-sheet-pdf.js";
-import { countColorSharesOf } from "../../domain/services/count-color-shares.js";
+import { countColorSharesOf } from "../../shared/print/index.js";
 import { dayDossierOf } from "../../domain/services/day-dossier.js";
 import {
   type CalendarPage,
   dossierCalendarOf,
 } from "../../domain/services/day-dossier-calendar.js";
-import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
-import { WorksheetDeadlinesReading } from "./worksheet-deadlines-reading.service.js";
-import { countPaperRowsOf } from "../../domain/services/made-to-order.js";
+import { ServiceDay } from "../../day/index.js";
+import { WorksheetDeadlinesReading } from "../../day/application/services/worksheet-deadlines-reading.service.js";
+import { countPaperRowsOf } from "../../shared/print/index.js";
 import { dayDossierPdfKey, renderDayDossierPdf } from "../../domain/services/day-dossier-pdf.js";
-import type { PaperDraft, PaperSlot } from "./production-paper-archive.service.js";
+import type { PaperDraft, PaperSlot } from "../../shared/print/index.js";
 
 type ClosedSnapshot = ProductionDaySnapshot & { readonly closedAt: Date };
 

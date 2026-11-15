@@ -36,7 +36,7 @@ flowchart LR
 `GET admin/production/forecast?from=&to=` (`GetProductionForecastHandler`,
 contrat `packages/contracts/src/production-forecast.ts`).
 
-- `ServiceRange` (`domain/value-objects/service-range.value-object.ts`) refuse
+- `ServiceRange` (`day/domain/value-objects/service-range.value-object.ts`) refuse
   une fin avant le début et plus de 31 jours ; l'arithmétique des jours se fait
   en UTC, à minuit, pour ne jamais redoubler un jour au changement d'heure.
 - Par jour : **arrêté** → `production_count` (lu par `ProductionPlanReader`,
@@ -78,7 +78,7 @@ du transfert. Le fournil les lit par `DueThresholdsReader`
 (`channels/commerce/`).
 
 **Le rangement** est une règle du fournil, `rangeInTranches`
-(`domain/services/production-tranches.ts`) :
+(`day/domain/services/production-tranches.ts`) :
 
 | Mode               | Les tranches sont…                                 |
 | ------------------ | -------------------------------------------------- |
