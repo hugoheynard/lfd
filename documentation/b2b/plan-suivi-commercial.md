@@ -76,6 +76,33 @@ attribuée » et « canal » les trient. Une fiche résiliée y reste, avec son
 niveau. Le tableau va des plus récentes aux plus anciennes, et se limite à
 1 000 fiches par filtre (au-delà, la page demande de filtrer).
 
+## 1 bis. La grille (décidée par Hugo le 2026-11-15, lot S3b)
+
+La v1 de la page parlait en niveaux (« Annuaire », « Ouverte »…) et en jargon
+(« contact noté », « connexion du détenteur ») : illisible pour qui n'a pas le
+code sous les yeux. Elle devient une **grille d'étapes**, une colonne par
+étape, cochée ou dite en mots :
+
+| Colonne         | Ce qu'elle dit                                                                                                                                      |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Établissement   | nom ; dessous « créée par un commercial / inscrite par le client · il y a N j »                                                                     |
+| Commercial      | qui suit, ou « Personne »                                                                                                                           |
+| Contact         | ✓ si un contact est noté (appel, e-mail, visite, visio, salon, autre) ou un rendez-vous honoré                                                      |
+| Fiche remplie   | ✓, ou « N sur 4 » (identité légale, TVA si requise, téléphone, adresse de facturation), ou « nom seul » ; détail au survol                          |
+| KBIS            | ✓ certifié, « à vérifier » si déposé, sinon —                                                                                                       |
+| Paiement        | « À la commande », ou « Au compte · hebdo / 2×/mois / mensuel · prélèvement / virement » ; « demandé : au compte » si demandé, pas accordé          |
+| Prêt à prélever | ✓ (RIB et mandat signé), « RIB manquant », « mandat à signer », « bloqué par la compta » ; « sans objet » hors prélèvement                          |
+| Livraison       | ✓ adresse de livraison, « retrait » si retrait seul ou groupe sans livraison                                                                        |
+| Client connecté | ✓, ou « accès envoyé N× »                                                                                                                           |
+| Activé · cdes   | nombre de commandes une fois activé                                                                                                                 |
+| Prochaine étape | une seule action, dans l'ordre : attribuer, contacter, compléter la fiche, RIB puis mandat, relancer la connexion, activer ; « Rien à faire » sinon |
+
+Cartes en tête : « Sans aucun contact », « Au compte, pas prêts à
+prélever », « Prêts, pas encore activés », « Clients qui commandent » — un
+clic filtre. Le filtre « Niveau » devient « Prochaine étape ». Les niveaux
+restent calculés côté serveur (le récap du jour en dépend) mais ne sont plus
+montrés.
+
 ## 2. Ce qui existe (vérifié dans le code le 2026-11-14)
 
 - **Canal d'ouverture** : `companies.declared_via` (`self` | `staff`, nullable),
