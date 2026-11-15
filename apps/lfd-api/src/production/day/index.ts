@@ -1,8 +1,8 @@
 /**
  * La porte de la journée (`day/`) : le tronc sur lequel poussent les métiers du
  * fournil — plan, atelier, qualité, réassort — et les primitives d'impression.
- * Tout le reste de `day/` est privé (plan
- * `documentation/fournil/plan-decoupage-du-fournil.md`, § 1 bis ; porte
+ * Tout le reste de `day/` est privé (on y entre par cet
+ * index, qui ne fait que réexporter : `documentation/fournil/architecture-contexte-production.md`, « Les règles de la surface » ; porte
  * `lint:production-subcontexts`, qui compte aussi la taille de cet index).
  *
  * Un métier neuf lit les sections dans l'ordre : la journée et ses valeurs, ce

@@ -193,8 +193,8 @@
 >   le cache d'un point d'entrée du Worker a resservi un « absent » à l'API
 >   sans que l'objet le voie —, chaque préfixe est rejoué par le test du faux
 >   cache, et le Worker se compile avec la passerelle pure. Et **74** depuis le
->   2026-11-15 avec `lint:production-subcontexts` (plan
->   `documentation/fournil/plan-decoupage-du-fournil.md`, D0) : le fournil est
+>   2026-11-15 avec `lint:production-subcontexts` (doc
+>   `documentation/fournil/architecture-contexte-production.md`) : le fournil est
 >   un noyau (`day/`) et des métiers autour ; la porte tient la carte fichier →
 >   sous-contexte, les arêtes admises, l'entrée par `index.ts`, le propriétaire
 >   de chaque modèle du schéma `production` et les abonnés durables entre
@@ -656,8 +656,8 @@ adaptateur lit ses propres tables), ni une jointure entre domaines pour un
 tableau de bord — une vue lourde se bâtit sur les lectures publiées ou sur une
 projection tenue par les faits. Référence :
 `apps/lfd-api/src/production/day/index.ts` et
-[`documentation/fournil/plan-decoupage-du-fournil.md`](documentation/fournil/plan-decoupage-du-fournil.md)
-(R4), [`plan-faits-agnostiques.md`](documentation/fournil/plan-faits-agnostiques.md) § 1.
+[`documentation/fournil/architecture-contexte-production.md`](documentation/fournil/architecture-contexte-production.md)
+(« Le propriétaire parle de ce qui est à lui »), [`plan-faits-agnostiques.md`](documentation/fournil/plan-faits-agnostiques.md) § 1.
 
 Règles non négociables :
 

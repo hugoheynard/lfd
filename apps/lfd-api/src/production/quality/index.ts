@@ -1,7 +1,7 @@
 /**
  * La porte de la qualité (`quality/`) : ce que les autres métiers du fournil
- * lisent du contrôle qualité. Tout le reste de `quality/` est privé (plan
- * `documentation/fournil/plan-decoupage-du-fournil.md`, § 1 bis ; porte
+ * lisent du contrôle qualité. Tout le reste de `quality/` est privé (on y entre par cet
+ * index, qui ne fait que réexporter : `documentation/fournil/architecture-contexte-production.md`, « Les règles de la surface » ; porte
  * `lint:production-subcontexts`).
  *
  * On ne rend public que ce que les autres utilisent réellement : la fiche

@@ -55,7 +55,8 @@ import { PrismaProductionTrancheSettingsRepository } from "./infrastructure/pris
 
 /**
  * **La journée du fournil** — le noyau, et le seul module que les métiers
- * importent (plan `documentation/fournil/plan-decoupage-du-fournil.md`, § 1 bis).
+ * importent, jamais l'inverse
+ * (`documentation/fournil/architecture-contexte-production.md`, « Les modules du fournil »).
  *
  * Il exporte deux choses, et rien d'autre : ce que les métiers injectent du
  * noyau (dépôt, verrou, fournées, état, tranches, retraits, remises, et les

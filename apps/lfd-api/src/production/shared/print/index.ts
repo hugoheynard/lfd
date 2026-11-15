@@ -1,8 +1,8 @@
 /**
  * La porte des primitives d'impression (`shared/print/`) : pastilles,
  * camemberts, pages, gabarit de la fiche et du compte, réglages d'affichage,
- * données d'exemple, archive des papiers et fiche de commande (`OrderSheetPaper`), lus par le plan et l'atelier. Tout le reste est privé (plan
- * `documentation/fournil/plan-decoupage-du-fournil.md`, § 1 bis ; porte
+ * données d'exemple, archive des papiers et fiche de commande (`OrderSheetPaper`), lus par le plan et l'atelier. Tout le reste est privé (on y entre par cet
+ * index, qui ne fait que réexporter : `documentation/fournil/architecture-contexte-production.md`, « Les règles de la surface » ; porte
  * `lint:production-subcontexts`). Ce fichier ne fait que réexporter.
  */
 export {

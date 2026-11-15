@@ -1,8 +1,8 @@
 /**
  * La porte de l'atelier (`atelier/`) : ce que les autres métiers du fournil
  * lisent de l'atelier — fournées, fiche, affichage, raccourcis, contenants.
- * Tout le reste d'`atelier/` est privé (plan
- * `documentation/fournil/plan-decoupage-du-fournil.md`, § 1 bis ; porte
+ * Tout le reste d'`atelier/` est privé (on y entre par cet
+ * index, qui ne fait que réexporter : `documentation/fournil/architecture-contexte-production.md`, « Les règles de la surface » ; porte
  * `lint:production-subcontexts`).
  *
  * On ne rend public que ce que les autres utilisent réellement, et aucun autre

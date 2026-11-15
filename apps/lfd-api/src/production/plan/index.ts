@@ -1,8 +1,8 @@
 /**
  * La porte du plan (`plan/`) : ce que les autres métiers du fournil lisent du
  * prod manager — prévisionnel, arrêt, réouverture, retirage, clôture, tranches,
- * dossier du jour. Tout le reste de `plan/` est privé (plan
- * `documentation/fournil/plan-decoupage-du-fournil.md`, § 1 bis ; porte
+ * dossier du jour. Tout le reste de `plan/` est privé (on y entre par cet
+ * index, qui ne fait que réexporter : `documentation/fournil/architecture-contexte-production.md`, « Les règles de la surface » ; porte
  * `lint:production-subcontexts`).
  *
  * On ne rend public que ce que les autres utilisent réellement, et aucun autre

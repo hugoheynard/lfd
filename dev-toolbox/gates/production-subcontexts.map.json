@@ -1,5 +1,5 @@
 {
-  "$comment": "La carte du fournil (plan documentation/fournil/plan-decoupage-du-fournil.md, D0), lue par dev-toolbox/gates/production-subcontexts.mjs. files : le sous-contexte de chaque fichier ENCORE À PLAT (hors tests et hors channels/, que leur dossier range) — construit le 2026-11-15 sur le graphe d'imports réel, règle : là où vivent la majorité de ses dépendances et de ses lecteurs, § 3 du plan d'abord. Un fichier déplacé dans son dossier sort d'ici. reasons : la raison des cas non évidents. models : le propriétaire de chaque modèle du schéma production — le sous-contexte qui l'écrit.",
+  "$comment": "La carte du fournil (documentation/fournil/architecture-contexte-production.md, « La porte production-subcontexts »), lue par dev-toolbox/gates/production-subcontexts.mjs. files : le sous-contexte de chaque fichier ENCORE À PLAT (hors tests et hors channels/, que leur dossier range) — construit le 2026-11-15 sur le graphe d'imports réel, règle : là où vivent la majorité de ses dépendances et de ses lecteurs, Un fichier déplacé dans son dossier sort d'ici. reasons : la raison des cas non évidents. models : le propriétaire de chaque modèle du schéma production — le sous-contexte qui l'écrit.",
   "models": {
     "OrderRevisionNotice": "day",
     "OrderWithdrawal": "day",

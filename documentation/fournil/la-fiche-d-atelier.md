@@ -118,9 +118,11 @@ fournées non annulées** ; aucun compteur tenu à côté.
   (`production.batch.cancel_missing`).
 - **« Faite » se lit sur les seules fournées** — `done`, `doneAt` et
   `initials` d'une ligne sont ceux de la fournée qui l'a complétée. Il n'y a
-  plus de case à cocher : ni route, ni lecture de l'ancienne coche. Les
-  colonnes `production_count.done_at/done_by/done_initials` restent en base,
-  ni lues ni écrites, jusqu'à leur suppression. Les fournées d'`id`
+  plus de case à cocher : ni route, ni colonne. La coche n'existe plus en
+  base depuis la migration `20261115200000_la_fin_des_coches`, qui a retiré
+  `production_count.done_at/done_by/done_initials` après avoir vérifié
+  qu'aucune ligne cochée n'était sans fournée ; l'auteur vit dans
+  `production_batch.recorded_by`. Les fournées d'`id`
   `backfill-<jour>-<sku>` (le rattrapage des coches) et `mark-…` (l'ancienne
   route) restent des fournées comme les autres : annulées, elles ne comptent
   plus, et une journée dont toutes les fournées sont annulées se rouvre.
@@ -181,10 +183,6 @@ de diffusion commun.
 
 ## Reste à faire
 
-- Supprimer les colonnes `production_count.done_at/done_by/done_initials`,
-  après le déploiement du code qui ne les lit plus (lot B de
-  [`plan-fin-des-coches.md`](plan-fin-des-coches.md)) ; l'entrée `done_by` sort
-  alors du registre RGPD.
 - Deux postes qui déclarent la même ligne dans le même quart de minute se
   croisent toujours : seule une diffusion en direct fermerait la fenêtre.
 - Non porté par le modèle, donc absent de l'écran : un taux de casse, un ordre

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Gate : **le fournil est un noyau, et des métiers autour** (plan
- * `documentation/fournil/plan-decoupage-du-fournil.md`, § 1 et § 1 bis).
+ * Gate : **le fournil est un noyau, et des métiers autour** (`documentation/fournil/architecture-contexte-production.md`,
+ * « La porte `production-subcontexts` » et « Les règles de la surface »).
  *
  * `src/production/` se range en `day/` (la journée), `plan/`, `atelier/`,
  * `quality/`, `resupply/`, `shared/print/` et `channels/`. Cette porte tient

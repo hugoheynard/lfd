@@ -285,6 +285,42 @@ zéro partout sauf deux comptes :
 `pnpm gate production-subcontexts --carte` détaille la surface lue par les
 autres.
 
+### Les règles de la surface
+
+- **Une seule porte par métier** : son `index.ts`, qui ne fait que
+  réexporter. On n'y met que ce qu'un autre métier lit réellement ; le reste
+  est privé.
+- **Les types passent aussi par la porte** : un `import type` vers
+  l'intérieur d'un autre métier est refusé comme un import de valeur.
+- **Aucun cycle à travers un `index.ts`** : un cycle de réexports rend une
+  classe `undefined` quand Nest lit ses métadonnées d'injection, et l'API
+  refuse de démarrer sur une erreur qui ne nomme pas la cause.
+- **`channels/` n'est pas un métier** : il importe les fichiers de `day/` en
+  direct, et `day/index.ts` ne charge aucun canal.
+- **Les tests** d'un métier lisent son intérieur ; ceux qui doublent le port
+  d'un autre passent par son `index.ts`.
+- **Les racines** (`appBootstrap/`, `dev/`, `production.module.ts`)
+  composent l'application et relient des adaptateurs concrets ; elles entrent
+  par un `index.ts`, un module ou `channels/`. `test/` est exempté.
+
+### Les limites assumées
+
+- **Le bus de `@nestjs/cqrs` est global** : un handler répond à n'importe
+  quel émetteur. Les modules Nest protègent les services injectés, pas les
+  commandes, requêtes et faits — c'est la porte qui les tient.
+- **Une seule base, un seul client Prisma** : rien ne rend physiquement
+  impossible de lire la table d'un autre métier ; la porte par modèle
+  l'interdit, c'est une discipline outillée.
+- **Les lectures entre métiers sont synchrones** (par port) : le bon choix
+  pour un monolithe, mais un couplage à l'exécution.
+- **`test/` lit l'intérieur** des métiers : un e2e vérifie une ligne en base.
+
+La piste pour aller plus loin, métier par métier : un client Prisma restreint
+par sous-contexte, sur le modèle de `PimPrismaService`
+(`apps/lfd-api/src/pim/infra/database/pim-prisma.service.ts`), qui n'expose
+que ses modèles. Lire la table d'un autre métier ne serait plus interdit : ça
+ne compilerait plus.
+
 ### Les routes
 
 Les chemins d'API sont ceux d'avant le découpage ; seul le dossier du
@@ -372,8 +408,5 @@ documents.
   ([`plan-faits-agnostiques.md`](plan-faits-agnostiques.md)).
 - Vider la dette `testDoor` de la porte (33 imports de tests hors porte).
 
-- Retirer les colonnes `production_count.done_*` et la lecture de la coche
-  héritée comme fournée implicite (dernier temps de la bascule des fournées,
-  [`la-fiche-d-atelier.md`](la-fiche-d-atelier.md)).
 - Retirer les colonnes d'arrêt mortes de `production_settings` (`close_mode`,
   `close_at`, `alert_at`) — sur ordre de Hugo, une colonne morte reste en base.

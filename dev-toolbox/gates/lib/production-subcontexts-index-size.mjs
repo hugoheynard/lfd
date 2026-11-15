@@ -2,8 +2,8 @@
  * **La taille de chaque porte** de `production-subcontexts.mjs` : le nombre de
  * noms qu'exporte `<métier>/index.ts`.
  *
- * Le noyau est le tronc sur lequel poussent les métiers (plan
- * `documentation/fournil/plan-decoupage-du-fournil.md`, lot 9) : un métier neuf
+ * Le noyau est le tronc sur lequel poussent les métiers (`documentation/fournil/architecture-contexte-production.md`,
+ * « Ce que chaque porte expose ») : un métier neuf
  * doit n'en apprendre que quelques entrées stables. Un index qui grandit en
  * silence redevient une trentaine de petites pièces. La taille est donc une
  * dette qui ne peut que décroître : un index qui grandit échoue, un index qui

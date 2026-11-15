@@ -68,8 +68,8 @@ function routeTable(): readonly string[] {
 /**
  * La table des routes du fournil, telle que l'appelant la voit : verbe, chemin,
  * surface, droits exigés, statut, porte publique et gardes. Le découpage des
- * contrôleurs par métier (plan `plan-decoupage-du-fournil.md`, § 4) range les
- * routes autrement ; il ne doit en changer aucune.
+ * contrôleurs par métier (`documentation/fournil/architecture-contexte-production.md`,
+ * « Les routes ») range les routes autrement ; il ne doit en changer aucune.
  */
 describe("la table des routes du fournil", () => {
   it("reste celle d'avant le découpage des contrôleurs", () => {

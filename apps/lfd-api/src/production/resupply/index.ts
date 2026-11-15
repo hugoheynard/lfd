@@ -1,7 +1,7 @@
 /**
  * La porte du réassort (`resupply/`) : ce que les autres métiers du fournil
  * lisent du lancement des réassorts. Tout le reste de `resupply/` est privé
- * (plan `documentation/fournil/plan-decoupage-du-fournil.md`, § 1 bis ; porte
+ * (on y entre par cet index : `documentation/fournil/architecture-contexte-production.md`, « Les règles de la surface » ; porte
  * `lint:production-subcontexts`).
  *
  * On ne rend public que ce que les autres utilisent réellement, et aucun autre
