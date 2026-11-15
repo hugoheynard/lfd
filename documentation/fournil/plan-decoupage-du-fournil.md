@@ -508,7 +508,7 @@ mêlent jamais dans un lot.
    `PlannedOrderLinesReader` (`CheckedQualityHoldsReader`, à la qualité).
    `productionSaleUnitOf` quitte l'index (plus de lecteur hors du noyau).
    `models` 10 → 0, racines 4 → 0, `day/index.ts` 73 → 75 (admis pour R4).
-10. **Après le dernier déménagement** : remettre à jour
+10. **Après le dernier déménagement** (✅ fait le 2026-11-15) : remettre à jour
     `architecture-contexte-production.md` (la liste des contrôleurs sous
     « `http/` », périmée depuis D1) en une seule fois.
 
