@@ -1,6 +1,7 @@
 # Plan — découper le fournil en métiers autour de la journée
 
-> Plan du 2026-11-15 (v2, après `vitruve` : le noyau importait encore le
+> Plan du 2026-11-15 (v3 : une surface publique par métier, tenue par la
+> porte et par les modules Nest ; v2, après `vitruve` : le noyau importait encore le
 > plan par les tranches, et la matrice oubliait l'impression), demandé par Hugo (« je veux une belle isolation »).
 > Pas encore bâti. Touche une frontière du dépôt (une porte neuve) :
 > `vitruve` avant Hugo. S'ouvre après la fin des coches
@@ -55,6 +56,31 @@ sous-contexte, et l'infrastructure d'un autre sous-contexte ne le lit pas —
 sans quoi une lecture en Prisma direct franchirait la frontière que les
 imports respectent (`prisma-model-ownership` raisonne par bloc,
 `dev-toolbox/gates/prisma-model-ownership.mjs:63`).
+
+### 1 bis. Une surface publique par métier (décidé par Hugo le 2026-11-15)
+
+Chaque sous-contexte expose **une petite porte d'entrée**, et garde le reste
+privé. Trois couches la tiennent :
+
+| Couche                                 | Ce qu'elle tient                                                                                                                        | Quand                 |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| `index.ts` du sous-contexte            | la liste de ce qui est public : ses commandes et requêtes (classes), ses ports publiés, ses types de vue                                | —                     |
+| la porte `lint:production-subcontexts` | aucun import d'un autre sous-contexte ne passe à côté de son `index.ts` (même mécanisme que `PORT_SURFACE` pour les canaux entre blocs) | à chaque commit       |
+| le module Nest du sous-contexte        | un module n'injecte que ce qu'un autre **exporte**                                                                                      | au démarrage de l'API |
+
+Exemples de surfaces : `quality/` publie « poser un contrôle », « lire le
+tableau qualité » et le port `QualityHoldsReader` ; `plan/` publie arrêter,
+rouvrir, retirer, clôturer, lire le prévisionnel, produire le dossier ;
+`atelier/` publie enregistrer ou annuler une fournée, lire la fiche, régler
+l'affichage ; `day/` publie son dépôt, son verrou, sa version et ses
+tranches. **On ne rend public que ce que les autres utilisent réellement** :
+la carte de D0 le mesure, et la surface de départ en sort.
+
+⚠️ **Le bus de `@nestjs/cqrs` est global** : un handler enregistré répond à
+n'importe quel émetteur, quel que soit son module. Les modules protègent les
+services injectés (dépôts, ports, lecteurs), **pas les messages du bus**.
+Une commande ou une requête n'est donc publique que si l'`index.ts` de son
+sous-contexte l'exporte — et c'est la porte, pas Nest, qui le tient.
 
 ## 2. Ce qui existe (cartographie du 2026-11-15)
 
@@ -125,8 +151,12 @@ mêlent jamais dans un lot.
 1. **D0 — la porte et la carte.** `lint:production-subcontexts` lit le graphe
    d'imports réel de `src/production/` et la propriété des modèles ; elle
    publie la **carte vérifiée** fichier → sous-contexte (remplace le
-   classement par nom du § 2) et **compte** les imports et lectures interdits
-   d'aujourd'hui comme une dette qui ne peut que décroître.
+   classement par nom du § 2), mesure ce que chaque sous-contexte utilise
+   chez les autres (la surface de départ des `index.ts`, § 1 bis) et
+   **compte** les imports et lectures interdits d'aujourd'hui comme une
+   dette qui ne peut que décroître. Les `index.ts` sont posés à chaque
+   déplacement ; tant qu'un sous-contexte n'a pas le sien, la porte compte
+   ses imports internes comme dette.
 2. **C1 — couper `ProductionPapers`** en rendu et archivage.
 3. **C2 — couper les contrôleurs** à plusieurs métiers
    (`production-day`, `production-worksheet`, `production-settings`) : un
