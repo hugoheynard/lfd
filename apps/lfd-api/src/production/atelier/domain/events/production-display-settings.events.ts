@@ -1,7 +1,7 @@
 import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
 import type { JournalFact, JournaledEvent } from "../../../../platform/journal/journal-fact.js";
-import type { ProductionDisplaySettingsState } from "../entities/production-display-settings.js";
+import type { ProductionDisplaySettingsState } from "../../../shared/print/index.js";
 
 /**
  * **Le fait du rangement du fournil** (Réglages › Production, 2026-10-30). La

@@ -4,6 +4,7 @@ import { BrandModule } from "../../platform/brand/brand.module.js";
 import { DayVersionsModule } from "../../platform/day-versions/day-versions.module.js";
 import { ProductionDayModule } from "../day/production-day.module.js";
 import { ProductionQualityModule } from "../quality/production-quality.module.js";
+import { ProductionPrintModule } from "../shared/print/production-print.module.js";
 import { CancelBatchHandler } from "./application/commands/cancel-batch.handler.js";
 import { RecordBatchHandler } from "./application/commands/record-batch.handler.js";
 import { RemoveProductionContainerHandler } from "./application/commands/remove-production-container.handler.js";
@@ -19,8 +20,6 @@ import { WorksheetContents } from "./application/services/worksheet-contents.ser
 import { WorksheetDeadlinesReading } from "./application/services/worksheet-deadlines-reading.service.js";
 import { ProductionContainerReader } from "./domain/ports/production-container.reader.js";
 import { ProductionContainerRepository } from "./domain/ports/production-container.repository.js";
-import { ProductionDisplaySettingsReader } from "./domain/ports/production-display-settings.reader.js";
-import { ProductionDisplaySettingsRepository } from "./domain/ports/production-display-settings.repository.js";
 import { AdminAtelierSheetSpecimenController } from "./http/admin-atelier-sheet-specimen.controller.js";
 import { ProductionAtelierSheetController } from "./http/production-atelier-sheet.controller.js";
 import { ProductionDisplaySettingsController } from "./http/production-display-settings.controller.js";
@@ -30,23 +29,22 @@ import {
   PrismaProductionContainerReader,
   PrismaProductionContainerRepository,
 } from "./infrastructure/prisma-production-container.repository.js";
-import { PrismaProductionDisplaySettingsReader } from "./infrastructure/prisma-production-display-settings.reader.js";
-import { PrismaProductionDisplaySettingsRepository } from "./infrastructure/prisma-production-display-settings.repository.js";
 import { ProductionBatchShortcutsModule } from "./production-batch-shortcuts.module.js";
 
 /**
  * **L'atelier** : les fournées, la fiche d'atelier, les contenants, l'affichage
  * et les raccourcis (`documentation/fournil/la-fiche-d-atelier.md`).
  *
- * Il lit la journée et les pastilles de la qualité, les deux seuls modules du
- * fournil qu'il a le droit d'importer. Il exporte le lecteur des réglages
- * d'affichage pour les papiers que la racine du fournil garde (voir
- * `ProductionModule`).
+ * Il lit la journée, les pastilles de la qualité et l'imprimerie
+ * (`shared/print/`), les seuls modules du fournil qu'il a le droit
+ * d'importer. Il n'exporte rien.
  */
 @Module({
   imports: [
     ProductionDayModule,
     ProductionQualityModule,
+    // L'imprimerie : les réglages d'affichage, lus par la fiche et réglés ici.
+    ProductionPrintModule,
     // Les articles des raccourcis viennent du canal `channels/commerce/`, global.
     ProductionBatchShortcutsModule,
     // Le logo de l'exemplaire de la fiche ; les contenus versionnés de la fiche.
@@ -78,15 +76,10 @@ import { ProductionBatchShortcutsModule } from "./production-batch-shortcuts.mod
     // Le contenant est du paramétrage du fournil : lire et régler sont deux ports (ISP).
     { provide: ProductionContainerReader, useClass: PrismaProductionContainerReader },
     { provide: ProductionContainerRepository, useClass: PrismaProductionContainerRepository },
+    // Régler l'affichage : les deux ports viennent de l'imprimerie.
     SetProductionDisplayHandler,
-    { provide: ProductionDisplaySettingsReader, useClass: PrismaProductionDisplaySettingsReader },
-    {
-      provide: ProductionDisplaySettingsRepository,
-      useClass: PrismaProductionDisplaySettingsRepository,
-    },
     // La remise au colisage d'une fournée déclarée ou annulée.
     PackingHandoffs,
   ],
-  exports: [ProductionDisplaySettingsReader],
 })
 export class ProductionAtelierModule {}

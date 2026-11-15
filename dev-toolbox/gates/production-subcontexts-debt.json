@@ -3,17 +3,8 @@
   "since": "2026-11-15",
   "edges": [
     "atelier/application/queries/get-atelier-sheet-pdf.handler.ts → plan/application/services/production-paper.service.ts",
-    "atelier/application/queries/get-atelier-sheet-specimen.handler.ts → plan/application/document-specimens/specimen-data.ts",
     "day/application/services/day-order-label-head.reader.ts → shared/print/domain/services/dossier-sheet-head.ts",
-    "day/application/services/day-order-label-head.reader.ts → shared/print/domain/services/fulfillment-method-label.ts",
-    "plan/application/queries/get-production-count-specimen.handler.ts → atelier/domain/services/atelier-sheet-pdf.ts",
-    "plan/application/queries/get-production-forecast.handler.ts → atelier/domain/entities/production-display-settings.ts",
-    "plan/application/queries/get-production-forecast.handler.ts → atelier/domain/ports/production-display-settings.reader.ts",
-    "plan/application/queries/get-production-settings.handler.ts → atelier/domain/entities/production-display-settings.ts",
-    "plan/application/queries/get-production-settings.handler.ts → atelier/domain/ports/production-display-settings.reader.ts",
-    "plan/application/services/production-paper.service.ts → atelier/domain/entities/production-display-settings.ts",
-    "plan/application/services/production-paper.service.ts → atelier/domain/ports/production-display-settings.reader.ts",
-    "plan/application/services/production-paper.service.ts → atelier/domain/services/atelier-sheet-pdf.ts"
+    "day/application/services/day-order-label-head.reader.ts → shared/print/domain/services/fulfillment-method-label.ts"
   ],
   "models": [
     "atelier/infrastructure/prisma-atelier-sheets.reader.ts → ProductionDay (day)",
@@ -35,11 +26,9 @@
     "atelier → plan": 1,
     "atelier → quality": 1,
     "day → plan": 2,
-    "plan → atelier": 3,
     "plan → day": 14,
     "quality → day": 2,
     "resupply → day": 3,
-    "shared-print → atelier": 1,
     "shared-print → plan": 2
   },
   "$c1": "2026-11-15, C1 (décidé par Hugo) : l'archivage des papiers sort du rendu et devient une primitive partagée (shared-print) ; −2 arêtes interdites, +14 imports hors porte (atelier→shared-print 7→10, plan→shared-print 17→25, tests plan→shared-print 1→3, tests day→shared-print 0→1), que D1 efface en posant shared/print/index.ts.",
@@ -51,5 +40,6 @@
   "$d2": "2026-11-15, D2 : la qualité (quality/) déménage et pose son index.ts, qui n’exporte que QualityLineStatusReader (la fiche de l’atelier le lit). Imports hors porte 1→0 (atelier → quality). La lecture de ProductionOrderLine par le lecteur des retenues change de chemin, pas de nombre ; tests hors porte inchangés (51). quality-doubles.ts reste à plat : la journée, l’atelier et le plan s’en servent.",
   "$d3": "D3 (2026-11-15) : le réassort déménage dans resupply/ ; resupply/index.ts n’exporte rien, aucun autre métier ne le lit. Les deux lectures Prisma de ProductionResupply restent en dette (models) jusqu’au port de day/ prévu au plan. Tests hors porte day → resupply 3 → 0, resupply → day 3 → 3 (deux refus du réassort passent par day/index.ts).",
   "$d4": "D4 (2026-11-15) : le plan déménage dans plan/, avec l’état du jour sorti du noyau ; plan/index.ts n’exporte rien. Tests hors porte 48 → 40 : les tests qui suivent le plan changent de paire (day → plan 14 → 2, day → atelier 1 → 0) et deux paires montent sur les mêmes imports relabellisés, plan → day 10 → 14 (doubles qui construisent une ProductionDay, valeur que day/index.ts n’exporte qu’en type) et plan → atelier 2 → 3. Admis parce que le total baisse ; le lot R les vide.",
-  "$d5": "D5 (2026-11-15) : l’atelier déménage dans atelier/ ; atelier/index.ts n’exporte rien. Tous les comptes inchangés (tests hors porte 40), seuls des chemins changent. La carte ne range plus que production.module.ts à plat."
+  "$d5": "D5 (2026-11-15) : l’atelier déménage dans atelier/ ; atelier/index.ts n’exporte rien. Tous les comptes inchangés (tests hors porte 40), seuls des chemins changent. La carte ne range plus que production.module.ts à plat.",
+  "$d7": "D7 (2026-11-15) : l’imprimerie — gabarit de la fiche, réglages d’affichage et données de spécimen rangés dans shared/print/ ; le plan et l’atelier n’en dépendent plus l’un de l’autre que par la fiche PDF. Arêtes 12 → 3, tests hors porte 40 → 36. Le rendu des papiers reste au plan : il lit des canaux et les délais du dossier."
 }

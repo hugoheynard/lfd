@@ -5,7 +5,7 @@ import {
   FixedStaffAuthorDirectory,
   authorsKnownAs,
 } from "../../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
-import { ProductionDisplaySettings } from "../../../domain/entities/production-display-settings.js";
+import { ProductionDisplaySettings } from "../../../../shared/print/index.js";
 import { InMemoryDisplaySettings } from "../../../../application/__tests__/production-display-settings-doubles.js";
 import { SetProductionDisplayCommand } from "../set-production-display.command.js";
 import { SetProductionDisplayHandler } from "../set-production-display.handler.js";

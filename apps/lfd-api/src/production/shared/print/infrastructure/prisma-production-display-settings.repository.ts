@@ -1,9 +1,9 @@
 import { Injectable } from "@nestjs/common";
 
-import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { PrismaService } from "../../../../platform/database/prisma.service.js";
 import type { ProductionDisplaySettings } from "../domain/entities/production-display-settings.js";
 import { ProductionDisplaySettingsRepository } from "../domain/ports/production-display-settings.repository.js";
-import type { TrancheSettingsAuthor } from "../../day/index.js";
+import type { TrancheSettingsAuthor } from "../../../day/index.js";
 import { PRODUCTION_DISPLAY_SETTINGS_KEY } from "./production-display-settings.key.js";
 
 /** Adaptateur Prisma de l'écriture du rangement du fournil : un `upsert` sur la clé naturelle. */

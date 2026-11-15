@@ -1,10 +1,7 @@
 import type { CatalogFamilyView } from "@lfd/contracts";
 
 import type { ProductionLineSnapshot, ProductionOrderSnapshot } from "../../../day/index.js";
-import {
-  renderAtelierSheetPdf,
-  renderProductionCountPdf,
-} from "../../../atelier/domain/services/atelier-sheet-pdf.js";
+import { renderAtelierSheetPdf, renderProductionCountPdf } from "../../../shared/print/index.js";
 import { countColorSharesOf } from "../../../shared/print/index.js";
 import { dayDossierOf, recapPieces } from "../../../plan/domain/services/day-dossier.js";
 import { dossierCountsOf } from "../../../plan/domain/services/dossier-addressees.js";

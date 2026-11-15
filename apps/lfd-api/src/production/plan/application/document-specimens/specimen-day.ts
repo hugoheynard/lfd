@@ -1,7 +1,7 @@
 import type { CatalogFamilyView } from "@lfd/contracts";
 
 import type { ProductionOrderSnapshot, ProductionResupplySnapshot } from "../../../day/index.js";
-import { SPECIMEN_ORDER } from "./specimen-data.js";
+import { SPECIMEN_ORDER } from "../../../shared/print/index.js";
 import type { TrancheThreshold } from "../../../day/index.js";
 
 /**

@@ -8,8 +8,8 @@ import {
   type OvenWaitingOrders,
 } from "../../../channels/packing/oven-waiting-orders.reader.js";
 import { WorkshopShelvesReader } from "../../../channels/commerce/workshop-shelves.reader.js";
-import { ProductionDisplaySettings } from "../../domain/entities/production-display-settings.js";
-import { ProductionDisplaySettingsReader } from "../../domain/ports/production-display-settings.reader.js";
+import { ProductionDisplaySettings } from "../../../shared/print/index.js";
+import { ProductionDisplaySettingsReader } from "../../../shared/print/index.js";
 import { ProductionContainerReader } from "../../domain/ports/production-container.reader.js";
 import { ProductionDayRepository } from "../../../day/index.js";
 import { QualityLineStatusReader } from "../../../quality/index.js";

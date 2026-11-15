@@ -1,8 +1,5 @@
 import type { ProductionOrderSnapshot } from "../../../../../day/index.js";
-import {
-  renderAtelierSheetPdf,
-  renderProductionCountPdf,
-} from "../../../../../atelier/domain/services/atelier-sheet-pdf.js";
+import { renderAtelierSheetPdf, renderProductionCountPdf } from "../atelier-sheet-pdf.js";
 import { dayDossierOf } from "../../../../../plan/domain/services/day-dossier.js";
 import { renderDayDossierPdf } from "../../../../../plan/domain/services/day-dossier-pdf.js";
 import { countPaperRowsOf } from "../made-to-order.js";

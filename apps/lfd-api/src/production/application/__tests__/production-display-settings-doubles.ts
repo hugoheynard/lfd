@@ -1,6 +1,6 @@
-import { ProductionDisplaySettings } from "../../atelier/domain/entities/production-display-settings.js";
-import { ProductionDisplaySettingsReader } from "../../atelier/domain/ports/production-display-settings.reader.js";
-import { ProductionDisplaySettingsRepository } from "../../atelier/domain/ports/production-display-settings.repository.js";
+import { ProductionDisplaySettings } from "../../shared/print/index.js";
+import { ProductionDisplaySettingsReader } from "../../shared/print/index.js";
+import { ProductionDisplaySettingsRepository } from "../../shared/print/index.js";
 import type { TrancheSettingsAuthor } from "../../day/index.js";
 
 /** Le rangement du fournil, en mémoire : `null` tant que personne ne l'a posé. */

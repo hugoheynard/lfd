@@ -7,7 +7,7 @@ import { SpecimenDeliveryNoteReader } from "../../../channels/commerce/planned-d
 import { staffSigner } from "../../../day/index.js";
 import { dayDossierOf } from "../../domain/services/day-dossier.js";
 import { renderDayDossierPdf } from "../../domain/services/day-dossier-pdf.js";
-import { SPECIMEN_ORDER, specimenServiceDay } from "../document-specimens/specimen-data.js";
+import { SPECIMEN_ORDER, specimenServiceDay } from "../../../shared/print/index.js";
 import {
   SPECIMEN_DAY_COLORS,
   SPECIMEN_DAY_RESUPPLY_COLORS,

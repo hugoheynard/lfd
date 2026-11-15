@@ -1,16 +1,30 @@
 /**
  * La porte des primitives d'impression (`shared/print/`) : pastilles,
- * camemberts, pages, archive et service des papiers, lus par le plan et
- * l'atelier. Tout le reste est privé (plan
+ * camemberts, pages, gabarit de la fiche et du compte, réglages d'affichage,
+ * données d'exemple et archive des papiers, lus par le plan et l'atelier. Tout le reste est privé (plan
  * `documentation/fournil/plan-decoupage-du-fournil.md`, § 1 bis ; porte
  * `lint:production-subcontexts`). Ce fichier ne fait que réexporter.
  */
+export {
+  SPECIMEN_ORDER,
+  specimenServiceDay,
+} from "./application/document-specimens/specimen-data.js";
 export { ProductionPaperArchive } from "./application/services/production-paper-archive.service.js";
 export type {
   PaperDraft,
   PaperSlot,
   ProductionPaper,
 } from "./application/services/production-paper-archive.service.js";
+export { ProductionDisplaySettings } from "./domain/entities/production-display-settings.js";
+export type { ProductionDisplaySettingsState } from "./domain/entities/production-display-settings.js";
+export { ProductionDisplaySettingsReader } from "./domain/ports/production-display-settings.reader.js";
+export { ProductionDisplaySettingsRepository } from "./domain/ports/production-display-settings.repository.js";
+export {
+  atelierSheetPdfKey,
+  productionCountPdfKey,
+  renderAtelierSheetPdf,
+  renderProductionCountPdf,
+} from "./domain/services/atelier-sheet-pdf.js";
 export { drawCountPie } from "./domain/services/count-color-pie.js";
 export { countColorSharesOf } from "./domain/services/count-color-shares.js";
 export type { CountColorShare } from "./domain/services/count-color-shares.js";

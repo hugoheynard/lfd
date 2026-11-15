@@ -10,8 +10,8 @@ import {
 } from "../../../channels/commerce/planned-delivery-notes.reader.js";
 import { ResupplyPrintColorsReader } from "../../../channels/commerce/resupply-print-colors.reader.js";
 import { WorkshopShelvesReader } from "../../../channels/commerce/workshop-shelves.reader.js";
-import { ProductionDisplaySettings } from "../../../atelier/domain/entities/production-display-settings.js";
-import { ProductionDisplaySettingsReader } from "../../../atelier/domain/ports/production-display-settings.reader.js";
+import { ProductionDisplaySettings } from "../../../shared/print/index.js";
+import { ProductionDisplaySettingsReader } from "../../../shared/print/index.js";
 import type {
   ProductionDay,
   ProductionDaySnapshot,
@@ -24,7 +24,7 @@ import {
   productionCountPdfKey,
   renderAtelierSheetPdf,
   renderProductionCountPdf,
-} from "../../../atelier/domain/services/atelier-sheet-pdf.js";
+} from "../../../shared/print/index.js";
 import { countColorSharesOf } from "../../../shared/print/index.js";
 import { dayDossierOf } from "../../domain/services/day-dossier.js";
 import {

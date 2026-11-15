@@ -1,6 +1,6 @@
 import { Buffer } from "node:buffer";
 
-import type { ProductionOrderSnapshot } from "../../../day/index.js";
+import type { ProductionOrderSnapshot } from "../../../../day/index.js";
 import {
   LEFT,
   MM,
@@ -16,17 +16,13 @@ import {
   render,
   rule,
   type Doc,
-} from "../../../../platform/pdf/paper-pdf-kit.js";
-import { drawCountPie } from "../../../shared/print/index.js";
-import { figureFontSize, lineFigure, piecesOfLines } from "../../../shared/print/index.js";
-import type { CountColorShare } from "../../../shared/print/index.js";
-import {
-  type CountPaperRow,
-  isMadeToOrder,
-  MADE_TO_ORDER_MENTION,
-} from "../../../shared/print/index.js";
-import { drawRouting } from "../../../shared/print/index.js";
-import { PaperPages } from "../../../../platform/pdf/paper-pages.js";
+} from "../../../../../platform/pdf/paper-pdf-kit.js";
+import { drawCountPie } from "./count-color-pie.js";
+import { figureFontSize, lineFigure, piecesOfLines } from "./line-tally.js";
+import type { CountColorShare } from "./count-color-shares.js";
+import { type CountPaperRow, isMadeToOrder, MADE_TO_ORDER_MENTION } from "./made-to-order.js";
+import { drawRouting } from "./order-routing-pdf.js";
+import { PaperPages } from "../../../../../platform/pdf/paper-pages.js";
 
 /**
  * **Les papiers du fournil** — la feuille d'une commande, et le compte du jour.

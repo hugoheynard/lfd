@@ -4,10 +4,10 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
-import { ProductionDisplaySettings } from "../../domain/entities/production-display-settings.js";
+import { ProductionDisplaySettings } from "../../../shared/print/index.js";
 import { ProductionDisplaySettingsUpdatedEvent } from "../../domain/events/production-display-settings.events.js";
-import { ProductionDisplaySettingsReader } from "../../domain/ports/production-display-settings.reader.js";
-import { ProductionDisplaySettingsRepository } from "../../domain/ports/production-display-settings.repository.js";
+import { ProductionDisplaySettingsReader } from "../../../shared/print/index.js";
+import { ProductionDisplaySettingsRepository } from "../../../shared/print/index.js";
 import { SetProductionDisplayCommand } from "./set-production-display.command.js";
 
 /**

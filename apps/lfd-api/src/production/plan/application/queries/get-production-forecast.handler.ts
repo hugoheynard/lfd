@@ -13,8 +13,8 @@ import {
   type DatedAttemptTrace,
 } from "../../domain/ports/auto-close-attempt-log.js";
 import { ProductionPlanReader } from "../../domain/ports/production-plan.reader.js";
-import { ProductionDisplaySettings } from "../../../atelier/domain/entities/production-display-settings.js";
-import { ProductionDisplaySettingsReader } from "../../../atelier/domain/ports/production-display-settings.reader.js";
+import { ProductionDisplaySettings } from "../../../shared/print/index.js";
+import { ProductionDisplaySettingsReader } from "../../../shared/print/index.js";
 import { ProductionSettingsReader } from "../../domain/ports/production-settings.reader.js";
 import { forecastDayState, type HouseMoment } from "../../domain/services/forecast-day-state.js";
 import { type OrderCutoffRule, planStopsAt } from "../../../day/index.js";

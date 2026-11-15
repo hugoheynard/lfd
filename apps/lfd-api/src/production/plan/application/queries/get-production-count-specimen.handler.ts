@@ -2,11 +2,11 @@ import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
 import { BrandLogoSource } from "../../../../platform/brand/brand-logo.source.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { renderProductionCountPdf } from "../../../atelier/domain/services/atelier-sheet-pdf.js";
+import { renderProductionCountPdf } from "../../../shared/print/index.js";
 import { countColorSharesOf } from "../../../shared/print/index.js";
 import { countPaperRowsOf } from "../../../shared/print/index.js";
 import { countOf } from "../../../day/index.js";
-import { specimenServiceDay } from "../document-specimens/specimen-data.js";
+import { specimenServiceDay } from "../../../shared/print/index.js";
 import {
   SPECIMEN_DAY_COLORS,
   SPECIMEN_DAY_ORDERS,

@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { PrismaService } from "../../../../platform/database/prisma.service.js";
 import { ProductionDisplaySettings } from "../domain/entities/production-display-settings.js";
 import { ProductionDisplaySettingsReader } from "../domain/ports/production-display-settings.reader.js";
 import { PRODUCTION_DISPLAY_SETTINGS_KEY } from "./production-display-settings.key.js";

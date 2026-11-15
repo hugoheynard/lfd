@@ -347,19 +347,32 @@ mêlent jamais dans un lot.
    les mêmes arêtes : `day/index.ts` ne peut pas exporter le module de la
    journée, qui charge des canaux. Dette inchangée (arêtes 12, modèles 10,
    tests hors porte 40, imports hors porte 0).
-   ⚠️ **Reste à trancher** : neuf fournisseurs restent dans
-   `ProductionModule` — `ProductionPaperRenderer` (plan, lit l'affichage de
-   l'atelier), `GetAtelierSheetPdfHandler` (atelier, lit le rendu du plan),
-   `GetProductionCountPdfHandler`, `GetDayDossierPdfHandler`,
-   `DossierDispatch`, `SendDossierOnDayClosed`, `SendDossierOnDayRetaken`,
-   `GetProductionForecastHandler`, `GetProductionSettingsHandler` (plan, lisent
-   le rendu ou l'affichage). Les ranger dans le plan ou l'atelier ferait
-   importer l'un par l'autre : une arête refusée (`plan ↔ atelier`), et un
-   cycle de modules si les deux sens restent. Les deux arêtes en dette
-   (papier du plan lu par l'atelier, affichage de l'atelier lu par le plan)
-   doivent être coupées, ou l'une admise, avant que la racine se vide ; le
-   plan, l'atelier et la journée exportent en attendant ce que ces neuf
-   injectent.
+   Les neuf fournisseurs que la racine gardait : voir D7.
+   **D7 — l'imprimerie** (décidé par Hugo le 2026-11-15 : le papier du
+   fournil va dans `shared/print/`, que le plan et l'atelier utilisent tous
+   deux, le métier d'aucun ; ✅ bâti en partie le 2026-11-15 : 8 fichiers et
+   1 test). Rejoignent `shared/print/` le gabarit de la fiche et du compte
+   (`atelier-sheet-pdf`), les réglages d'affichage (entité, deux ports, deux
+   adaptateurs Prisma, la clé ; `ProductionDisplaySettings` change de
+   propriétaire, atelier → shared-print, dans `models` de la carte) et les
+   données d'exemple (`specimen-data`, lues par les exemples du plan et de
+   l'atelier). `ProductionPrintModule` fournit et exporte l'archive et les
+   deux ports d'affichage ; l'atelier l'importe et n'exporte plus rien ; le
+   plan l'importe et range huit des neuf : le rendu, les PDF du dossier et du
+   compte, `DossierDispatch` et ses deux abonnés, le prévisionnel et les
+   réglages. `shared/print/index.ts` exporte en plus les réglages
+   d'affichage, le gabarit et les données d'exemple. Arêtes 12 → 3, modèles
+   10 → 10, tests hors porte 40 → 36 (plan → atelier 3 → 0, shared-print →
+   atelier 1 → 0), imports hors porte 0 → 0 ; dette non réécrite.
+   ⚠️ **Reste à trancher** : le rendu (`ProductionPaperRenderer`) reste au
+   plan, et la fiche PDF de l'atelier (`GetAtelierSheetPdfHandler`), qui le
+   lit, reste seule dans `ProductionModule`. Le rendu lit quatre canaux du
+   commerce et la lecture des tranches du dossier ; `shared/print/` n'a le
+   droit de lire que `day/` (`ALLOWED` de la porte). Le déplacer demande
+   d'admettre `shared-print → channels`, ou de couper le rendu de la fiche de
+   celui du dossier — une décision, pas un déplacement. Restent en dette
+   `get-atelier-sheet-pdf → production-paper.service` (atelier → plan) et les
+   deux lectures du noyau vers l'impression.
 9. **R — resserrer le noyau** (ajouté par Hugo le 2026-11-15 : « je veux
    surtout avoir un tronc solide pour étendre sereinement »). Après D6, le
    noyau est le tronc : un métier neuf ne devrait avoir à apprendre que
