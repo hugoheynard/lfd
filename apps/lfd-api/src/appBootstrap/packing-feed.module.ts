@@ -23,7 +23,6 @@ import { PackingShortfallFreezeDesk } from "../packing/application/station/packi
 import { PrismaPackedResuppliesReader } from "../packing/infrastructure/prisma-packed-resupplies.reader.js";
 import { PrismaOrderPackingStateReader } from "../packing/infrastructure/prisma-order-packing-state.reader.js";
 import { PackingModule } from "../packing/packing.module.js";
-import { PrismaArrestedPlanHold } from "../production/plan/infrastructure/prisma-arrested-plan.hold.js";
 import {
   ArrestedPlanHold,
   DayPackingProgressReader,
@@ -39,6 +38,7 @@ import { ChannelQualityHeldOrdersReader } from "../production/quality/production
 import {
   DayInscribedOrderHeaderReader,
   DayPlannedDestinationsReader,
+  PrismaArrestedPlanHold,
 } from "../production/day/production-day.module.js";
 import { DayOrderLabelHeadReader } from "../production/shared/print/production-print.module.js";
 import { ProductionModule } from "../production/production.module.js";
@@ -114,11 +114,10 @@ import { ProductionModule } from "../production/production.module.js";
     // Tenir le plan arrêté pendant un geste du colisage (audit du réassort,
     // 2026-11-02) — la production déclare ET implémente, le colisage appelle
     // au début de la transaction de ses gestes, la livraison au chargement et
-    // au départ (le module est global : relié une seule fois, ici). `useClass` et non
-    // `useExisting` : le jeton est celui que `ProductionModule` fournit
-    // localement, il ne peut pas se désigner lui-même ici ; l'adaptateur est
-    // sans état.
-    { provide: ArrestedPlanHold, useClass: PrismaArrestedPlanHold },
+    // au départ (le module est global : relié une seule fois, ici). Le noyau
+    // l'implémente : la même requête, le même verrou partagé, dans la
+    // transaction de l'appelant.
+    { provide: ArrestedPlanHold, useExisting: PrismaArrestedPlanHold },
   ],
   exports: [
     PackingDayVersionReader,

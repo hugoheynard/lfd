@@ -2,18 +2,7 @@
   "$comment": "La dette du découpage du fournil, relevée le 2026-11-15 à la naissance de dev-toolbox/gates/production-subcontexts.mjs (plan documentation/fournil/plan-decoupage-du-fournil.md, D0). Elle ne grandit pas, elle se vide : une violation absente d'ici échoue, une entrée qui ne viole plus échoue, un compte trop haut échoue. edges, models, subscribers, indexCycles : une entrée par violation (C1–C3 et D1–D6 les retirent). door et testDoor : imports qui entrent dans un autre sous-contexte à côté de son index.ts, comptés PAR PAIRE parce qu'ils changent de chemin à chaque déménagement — chaque lot D les fait baisser en posant les index.ts.",
   "since": "2026-11-15",
   "edges": [],
-  "models": [
-    "atelier/infrastructure/prisma-atelier-sheets.reader.ts → ProductionDay (day)",
-    "plan/infrastructure/prisma-arrested-plan.hold.ts → ProductionDay (day)",
-    "plan/infrastructure/prisma-auto-close-round.ts → ProductionDay (day)",
-    "plan/infrastructure/prisma-closed-plans.reader.ts → ProductionDay (day)",
-    "plan/infrastructure/prisma-production-plan.reader.ts → ProductionCount (day)",
-    "plan/infrastructure/prisma-production-plan.reader.ts → ProductionOrder (day)",
-    "plan/infrastructure/prisma-production-plan.reader.ts → ProductionResupplyLine (day)",
-    "quality/infrastructure/prisma-quality-holds.reader.ts → ProductionOrderLine (day)",
-    "resupply/infrastructure/prisma-frozen-resupplies.reader.ts → ProductionResupply (day)",
-    "resupply/infrastructure/prisma-launched-resupply.lookup.ts → ProductionResupply (day)"
-  ],
+  "models": [],
   "subscribers": [],
   "indexCycles": [],
   "door": {},
@@ -41,19 +30,16 @@
   "$r1": "R1 (2026-11-15) : les doubles partagés rangés chez le propriétaire de ce qu’ils doublent ; l’en-tête d’étiquette du colisage rangé à l’imprimerie. Arêtes 2 → 0, tests hors porte 36 → 33.",
   "messages": [],
   "providers": [],
-  "roots": {
-    "appBootstrap/handover-feed.module.ts": 2,
-    "appBootstrap/packing-feed.module.ts": 1,
-    "appBootstrap/production-delivery-feed.module.ts": 1
-  },
+  "roots": {},
   "$r2": "R2 (2026-11-15) : la porte juge les messages du bus (envoi, écoute, handler) par le fichier qui déclare leur classe, refuse un fournisseur déclaré dans deux modules, et juge appBootstrap/ et dev/ (entrées : index.ts, module d’un métier, racine, canaux). messages 0, providers 0, racines 23 → 4 : quatre adaptateurs reliés en useClass, rangés avec leur lecture au noyau en R4.",
   "indexSize": {
     "atelier": 2,
-    "day": 73,
+    "day": 75,
     "plan": 1,
     "quality": 1,
     "resupply": 0,
     "shared-print": 38
   },
-  "$r3": "R3 (2026-11-15) : day/index.ts rangé en six sections et ramené de 78 à 73 noms ; ce qu’un seul métier lit et qui n’appartient pas à l’agrégat lui est rendu. La taille de chaque index est désormais une dette décroissante (indexSize)."
+  "$r3": "R3 (2026-11-15) : day/index.ts rangé en six sections et ramené de 78 à 73 noms ; ce qu’un seul métier lit et qui n’appartient pas à l’agrégat lui est rendu. La taille de chaque index est désormais une dette décroissante (indexSize).",
+  "$r4": "R4 (2026-11-15) : chaque table du noyau est lue chez lui — quatre adaptateurs déplacés au noyau avec la même requête, deux lectures coupées en un port du noyau (ArrestedPlanLinesReader, PlannedOrderLinesReader) et une règle restée au métier, le port des réassorts lancés passé au noyau. models 10 → 0, roots 4 → 0. day/index.ts 73 → 75, admis : trois capacités publiées, une sortie."
 }

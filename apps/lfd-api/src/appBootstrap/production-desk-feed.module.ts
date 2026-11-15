@@ -1,14 +1,12 @@
 import { Global, Module } from "@nestjs/common";
 
 import {
+  PrismaClosedPlansReader,
   PrismaOrderInscriptionReader,
   ProductionOrderRevisionDesk,
   ProductionOrderWithdrawalDesk,
 } from "../production/day/production-day.module.js";
-import {
-  PrismaClosedPlansReader,
-  ProductionPlanAdmissionDesk,
-} from "../production/plan/production-plan.module.js";
+import { ProductionPlanAdmissionDesk } from "../production/plan/production-plan.module.js";
 import { ProductionLaunchedResupplies } from "../production/resupply/production-resupply.module.js";
 import {
   ClosedPlansReader,

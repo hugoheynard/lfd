@@ -28,8 +28,8 @@ import {
   OrderCustodyReader,
   QualityHoldsReader,
 } from "../production/channels/handover/index.js";
-import { PrismaAtelierSheetsReader } from "../production/atelier/infrastructure/prisma-atelier-sheets.reader.js";
-import { PrismaQualityHoldsReader } from "../production/quality/infrastructure/prisma-quality-holds.reader.js";
+import { PrismaAtelierSheetsReader } from "../production/day/production-day.module.js";
+import { CheckedQualityHoldsReader } from "../production/quality/production-quality.module.js";
 import { ProductionModule } from "../production/production.module.js";
 
 /**
@@ -81,9 +81,9 @@ import { ProductionModule } from "../production/production.module.js";
     { provide: HandoverQueueReader, useClass: PrismaHandoverQueueReader },
     { provide: HandoverOrderLock, useClass: PrismaHandoverOrderLock },
     { provide: AttestedHandoversReader, useClass: PrismaAttestedHandoversReader },
-    { provide: QualityHoldsReader, useClass: PrismaQualityHoldsReader },
+    { provide: QualityHoldsReader, useExisting: CheckedQualityHoldsReader },
     { provide: DeliveryRunSheetReader, useClass: PrismaDeliveryRunSheetReader },
-    { provide: AtelierSheetsReader, useClass: PrismaAtelierSheetsReader },
+    { provide: AtelierSheetsReader, useExisting: PrismaAtelierSheetsReader },
     { provide: OrderCustodyReader, useClass: PrismaOrderCustodyReader },
     { provide: HandoverProofReader, useClass: PrismaHandoverProofReader },
     { provide: OrderHandoverHistoryReader, useClass: PrismaOrderHandoverHistoryReader },

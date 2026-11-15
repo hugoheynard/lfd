@@ -80,7 +80,8 @@ ce bucket doit exclure `quality/` (hors `quality/pending/`).
 
 `handover → production` passe par `production/channels/handover/` :
 `QualityHoldsReader.heldOrders(serviceDay, orderIds)`, par lot, publié par le
-fournil (`production/quality/infrastructure/prisma-quality-holds.reader.ts`) et lu par le retrait.
+fournil (`apps/lfd-api/src/production/quality/application/services/checked-quality-holds.reader.ts`, qui lit
+les lignes du plan au noyau par `PlannedOrderLinesReader`) et lu par le retrait.
 `handoverBlocker` (`apps/lfd-api/src/handover/domain/services/handover.ts`)
 lit la retenue **après** « annulée », « pas passée » et « déjà retirée » : un
 sac déjà parti ne répond jamais « en vérification ». La file du comptoir sert

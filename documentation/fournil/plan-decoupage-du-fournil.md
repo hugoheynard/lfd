@@ -491,6 +491,23 @@ mêlent jamais dans un lot.
    transaction : c'est lui qui ferme la course entre un départ de tournée et
    un verdict qualité. Les quatre adaptateurs restés en `roots` après R2
    suivent leur lecture au noyau. Fin : `models` à 0.
+   **R4 — ✅ bâti le 2026-11-15** : les quatre adaptateurs de canal qui ne
+   lisaient que les tables du noyau y déménagent tels quels, requête,
+   verrou et transaction compris (`day/infrastructure/` :
+   `prisma-arrested-plan.hold`, `prisma-closed-plans.reader`,
+   `prisma-frozen-resupplies.reader`, `prisma-atelier-sheets.reader`) ;
+   `ProductionDayModule` les fournit et les exporte, et la racine les relie
+   en `useExisting` par le module (plus de `useClass` hors module). Le
+   réassort lancé : le port `LaunchedResupplyLookup` passe au noyau avec son
+   adaptateur (même nom de jeton). Trois lectures prennent une lecture
+   nommée du noyau, même requête : le tour d'arrêt automatique lit
+   `ProductionDayStatusReader` (requête identique, déjà publiée), le
+   prévisionnel `ArrestedPlanLinesReader` (le compte, les réassorts et les
+   feuilles des journées closes ; le regroupement reste au plan,
+   `ArrestedProductionPlanReader`), la retenue au retrait
+   `PlannedOrderLinesReader` (`CheckedQualityHoldsReader`, à la qualité).
+   `productionSaleUnitOf` quitte l'index (plus de lecteur hors du noyau).
+   `models` 10 → 0, racines 4 → 0, `day/index.ts` 73 → 75 (admis pour R4).
 10. **Après le dernier déménagement** : remettre à jour
     `architecture-contexte-production.md` (la liste des contrôleurs sous
     « `http/` », périmée depuis D1) en une seule fois.

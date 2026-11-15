@@ -5,7 +5,8 @@ import {
   DayDispatchProgressReader,
   FrozenResuppliesReader,
 } from "../production/channels/delivery/index.js";
-import { PrismaFrozenResuppliesReader } from "../production/resupply/infrastructure/prisma-frozen-resupplies.reader.js";
+import { PrismaFrozenResuppliesReader } from "../production/day/production-day.module.js";
+import { ProductionModule } from "../production/production.module.js";
 
 /**
  * **Ce que le fournil demande à la livraison, relié** (2026-10-14).
@@ -20,14 +21,16 @@ import { PrismaFrozenResuppliesReader } from "../production/resupply/infrastruct
  * Les faits, eux, vont par la boîte d'envoi.
  *
  * `@Global` pour la raison des autres fils : ni `production/` ni `delivery/`
- * ne peuvent importer le module de l'autre. L'adaptateur ne demande que
- * `PrismaService`, global : aucun module à importer.
+ * ne peuvent importer le module de l'autre. Les réassorts figés sont lus par
+ * le noyau du fournil, qui exporte son adaptateur : la racine le relie par le
+ * module.
  */
 @Global()
 @Module({
+  imports: [ProductionModule],
   providers: [
     { provide: DayDispatchProgressReader, useClass: PrismaDayDispatchProgressReader },
-    { provide: FrozenResuppliesReader, useClass: PrismaFrozenResuppliesReader },
+    { provide: FrozenResuppliesReader, useExisting: PrismaFrozenResuppliesReader },
   ],
   exports: [DayDispatchProgressReader, FrozenResuppliesReader],
 })

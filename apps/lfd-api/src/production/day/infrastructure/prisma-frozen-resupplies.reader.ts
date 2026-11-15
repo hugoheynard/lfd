@@ -5,7 +5,7 @@ import {
   type FrozenResupply,
   FrozenResuppliesReader,
 } from "../../channels/delivery/frozen-resupplies.reader.js";
-import { productionSaleUnitOf } from "../../day/index.js";
+import { productionSaleUnitOf } from "./sale-unit.column.js";
 
 /**
  * Les réassorts figés d'une journée (lot R3c) — `production_resupply` et ses

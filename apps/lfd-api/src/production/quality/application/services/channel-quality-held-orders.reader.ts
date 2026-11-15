@@ -6,7 +6,7 @@ import { QualityHeldOrdersReader } from "../../../channels/packing/quality-held-
 /**
  * L'implémentation du port publié `QualityHeldOrdersReader` (K3a) : la même
  * réponse que celle servie au retrait, par le même adaptateur
- * (`PrismaQualityHoldsReader`). Deux canaux, une seule règle — `heldOrderIds`.
+ * (`CheckedQualityHoldsReader`). Deux canaux, une seule règle — `heldOrderIds`.
  */
 @Injectable()
 export class ChannelQualityHeldOrdersReader extends QualityHeldOrdersReader {

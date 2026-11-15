@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 
+import { ClosedPlansReader } from "../channels/commerce/closed-plans.reader.js";
 import { OrderInscriptionReader } from "../channels/commerce/order-inscription.reader.js";
 import { PruneProductionDayChangesHandler } from "./application/commands/prune-production-day-changes.handler.js";
 import { OnPackingReturned } from "./application/handlers/on-packing-returned.handler.js";
@@ -9,10 +10,13 @@ import { DayPlannedDestinationsReader } from "./application/services/day-planned
 import { ProductionDayVersionSource } from "./application/services/production-day-version.source.js";
 import { ProductionOrderRevisionDesk } from "./application/services/production-order-revision.desk.js";
 import { ProductionOrderWithdrawalDesk } from "./application/services/production-order-withdrawal.desk.js";
+import { ArrestedPlanLinesReader } from "./domain/ports/arrested-plan-lines.reader.js";
+import { LaunchedResupplyLookup } from "./domain/ports/launched-resupply.lookup.js";
 import { OrderRevisionNoticeLedger } from "./domain/ports/order-revision-notice.ledger.js";
 import { OrderRevisionNoticesReader } from "./domain/ports/order-revision-notices.reader.js";
 import { OrderWithdrawalLedger } from "./domain/ports/order-withdrawal.ledger.js";
 import { OrderWithdrawalsReader } from "./domain/ports/order-withdrawals.reader.js";
+import { PlannedOrderLinesReader } from "./domain/ports/planned-order-lines.reader.js";
 import { ProductionBatchRepository } from "./domain/ports/production-batch.repository.js";
 import { ProductionDayChangePruner } from "./domain/ports/production-day-change.pruner.js";
 import { ProductionDayStatusReader } from "./domain/ports/production-day-status.reader.js";
@@ -25,11 +29,18 @@ import { ProductionReturnRequests } from "./domain/ports/production-return.reque
 import { ProductionTrancheSettingsReader } from "./domain/ports/production-tranche-settings.reader.js";
 import { ProductionTrancheSettingsRepository } from "./domain/ports/production-tranche-settings.repository.js";
 import { ProductionDayChangeSweepController } from "./http/production-day-change-sweep.controller.js";
+import { PrismaArrestedPlanLinesReader } from "./infrastructure/prisma-arrested-plan-lines.reader.js";
+import { PrismaArrestedPlanHold } from "./infrastructure/prisma-arrested-plan.hold.js";
+import { PrismaAtelierSheetsReader } from "./infrastructure/prisma-atelier-sheets.reader.js";
+import { PrismaClosedPlansReader } from "./infrastructure/prisma-closed-plans.reader.js";
+import { PrismaFrozenResuppliesReader } from "./infrastructure/prisma-frozen-resupplies.reader.js";
+import { PrismaLaunchedResupplyLookup } from "./infrastructure/prisma-launched-resupply.lookup.js";
 import { PrismaOrderInscriptionReader } from "./infrastructure/prisma-order-inscription.reader.js";
 import { PrismaOrderRevisionNoticeLedger } from "./infrastructure/prisma-order-revision-notice.ledger.js";
 import { PrismaOrderRevisionNoticesReader } from "./infrastructure/prisma-order-revision-notices.reader.js";
 import { PrismaOrderWithdrawalLedger } from "./infrastructure/prisma-order-withdrawal.ledger.js";
 import { PrismaOrderWithdrawalsReader } from "./infrastructure/prisma-order-withdrawals.reader.js";
+import { PrismaPlannedOrderLinesReader } from "./infrastructure/prisma-planned-order-lines.reader.js";
 import { PrismaProductionBatchRepository } from "./infrastructure/prisma-production-batch.repository.js";
 import { PrismaProductionDayChangePruner } from "./infrastructure/prisma-production-day-change.pruner.js";
 import { PrismaProductionDayStatusReader } from "./infrastructure/prisma-production-day-status.reader.js";
@@ -47,7 +58,8 @@ import { PrismaProductionTrancheSettingsRepository } from "./infrastructure/pris
  * importent (plan `documentation/fournil/plan-decoupage-du-fournil.md`, § 1 bis).
  *
  * Il exporte deux choses, et rien d'autre : ce que les métiers injectent du
- * noyau (dépôt, verrou, fournées, état, tranches, retraits, remises), et les
+ * noyau (dépôt, verrou, fournées, état, tranches, retraits, remises, et les
+ * lectures nommées sur ses tables), et les
  * guichets et lecteurs que la racine de composition relie aux autres blocs.
  * Il n'importe aucun métier : un métier qui a besoin de la journée l'importe,
  * jamais l'inverse.
@@ -90,6 +102,21 @@ import { PrismaProductionTrancheSettingsRepository } from "./infrastructure/pris
     // Publiés pour le colisage et la pierre tombale ; reliés par `PackingFeedModule`.
     DayPlannedDestinationsReader,
     DayInscribedOrderHeaderReader,
+    // Les lectures nommées que les métiers font sur les tables du noyau : le
+    // prévisionnel du plan, la retenue de la qualité, le réassort lancé.
+    { provide: ArrestedPlanLinesReader, useClass: PrismaArrestedPlanLinesReader },
+    { provide: PlannedOrderLinesReader, useClass: PrismaPlannedOrderLinesReader },
+    { provide: LaunchedResupplyLookup, useClass: PrismaLaunchedResupplyLookup },
+    // Les canaux que le noyau implémente sur ses tables : l'arrêt du plan comme
+    // limite (relié par `ProductionDeskFeedModule`, lu aussi par le guichet
+    // d'admission du plan), le plan tenu arrêté (`PackingFeedModule`), les
+    // réassorts figés (`ProductionDeliveryFeedModule`), les commandes sans
+    // feuille (`HandoverFeedModule`).
+    PrismaClosedPlansReader,
+    { provide: ClosedPlansReader, useExisting: PrismaClosedPlansReader },
+    PrismaArrestedPlanHold,
+    PrismaFrozenResuppliesReader,
+    PrismaAtelierSheetsReader,
   ],
   exports: [
     // Ce que les métiers injectent du noyau.
@@ -103,6 +130,10 @@ import { PrismaProductionTrancheSettingsRepository } from "./infrastructure/pris
     ProductionHandoffLedger,
     ProductionHandoffReader,
     ProductionReturnRequests,
+    ArrestedPlanLinesReader,
+    PlannedOrderLinesReader,
+    LaunchedResupplyLookup,
+    ClosedPlansReader,
     // Ce que la racine de composition relie aux autres blocs.
     ProductionDayVersionSource,
     DayPlannedDestinationsReader,
@@ -110,6 +141,10 @@ import { PrismaProductionTrancheSettingsRepository } from "./infrastructure/pris
     DayInscribedOrderHeaderReader,
     ProductionOrderRevisionDesk,
     PrismaOrderInscriptionReader,
+    PrismaClosedPlansReader,
+    PrismaArrestedPlanHold,
+    PrismaFrozenResuppliesReader,
+    PrismaAtelierSheetsReader,
   ],
 })
 export class ProductionDayModule {}
@@ -122,6 +157,10 @@ export class ProductionDayModule {}
 export {
   DayInscribedOrderHeaderReader,
   DayPlannedDestinationsReader,
+  PrismaArrestedPlanHold,
+  PrismaAtelierSheetsReader,
+  PrismaClosedPlansReader,
+  PrismaFrozenResuppliesReader,
   PrismaOrderInscriptionReader,
   ProductionDayVersionSource,
   ProductionOrderRevisionDesk,

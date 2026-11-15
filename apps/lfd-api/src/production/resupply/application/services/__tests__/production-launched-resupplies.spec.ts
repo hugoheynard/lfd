@@ -1,5 +1,5 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
-import { LaunchedResupplyLookup } from "../../../domain/ports/launched-resupply.lookup.js";
+import { LaunchedResupplyLookup } from "../../../../day/index.js";
 import { ServiceDay } from "../../../../day/index.js";
 import { RecordingDayLock } from "../../../../day/application/__tests__/batch-doubles.js";
 import { ProductionLaunchedResupplies } from "../production-launched-resupplies.js";

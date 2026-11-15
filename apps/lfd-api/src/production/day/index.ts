@@ -66,6 +66,12 @@ export { ProductionHandoffReader } from "./domain/ports/production-handoff.reade
 export { OrderWithdrawalsReader } from "./domain/ports/order-withdrawals.reader.js";
 export { ProductionTrancheSettingsReader } from "./domain/ports/production-tranche-settings.reader.js";
 export { GetProductionDueThresholdsQuery } from "./application/queries/get-production-due-thresholds.query.js";
+/** Le compte, les réassorts et les feuilles des plans arrêtés d'une plage (le prévisionnel du plan). */
+export { ArrestedPlanLinesReader } from "./domain/ports/arrested-plan-lines.reader.js";
+/** Les lignes du plan de ces commandes qui portent ces articles (la retenue de la qualité). */
+export { PlannedOrderLinesReader } from "./domain/ports/planned-order-lines.reader.js";
+/** Un réassort est-il lancé au plan de la journée, sous le verrou de l'appelant (le réassort). */
+export { LaunchedResupplyLookup } from "./domain/ports/launched-resupply.lookup.js";
 
 /**
  * ## Ce qu'on écrit
@@ -89,8 +95,6 @@ export type { TrancheSettingsAuthor } from "./domain/ports/production-tranche-se
  * Des fonctions pures : l'heure d'arrêt du plan, le compte, la production
  * faite, les paliers d'une ligne, la remise et la reprise d'une fournée, le
  * jour relatif. Un métier les appelle au lieu de recopier la règle.
- * `productionSaleUnitOf` lit la colonne `sale_unit` du noyau pour les
- * adaptateurs qui lisent encore ses tables en direct.
  */
 export {
   latestOrderCutoff,
@@ -111,7 +115,6 @@ export type { TrancheThreshold } from "./domain/services/production-tranches.js"
 export { trancheThresholdsBySku } from "./domain/services/tranche-thresholds-by-sku.js";
 export { arrivalsBetween, handoffOf, returnOf } from "./domain/services/production-handoff.js";
 export { relativeDayOf, todayOf, tomorrowOf } from "./domain/services/relative-day.js";
-export { productionSaleUnitOf } from "./infrastructure/sale-unit.column.js";
 
 /**
  * ## Les faits

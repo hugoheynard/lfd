@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { LaunchedResupplies } from "../../../channels/commerce/launched-resupplies.js";
-import { LaunchedResupplyLookup } from "../../domain/ports/launched-resupply.lookup.js";
+import { LaunchedResupplyLookup } from "../../../day/index.js";
 import { ProductionDayLock } from "../../../day/index.js";
 import type { ServiceDay } from "../../../day/index.js";
 

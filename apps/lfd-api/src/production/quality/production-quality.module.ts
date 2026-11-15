@@ -9,6 +9,7 @@ import { GetQualityBoardHandler } from "./application/queries/get-quality-board.
 import { GetQualityControlSettingsHandler } from "./application/queries/get-quality-control-settings.handler.js";
 import { GetQualityPhotoHandler } from "./application/queries/get-quality-photo.handler.js";
 import { ListQualityChecksHandler } from "./application/queries/list-quality-checks.handler.js";
+import { CheckedQualityHoldsReader } from "./application/services/checked-quality-holds.reader.js";
 import { ChannelQualityHeldOrdersReader } from "./application/services/channel-quality-held-orders.reader.js";
 import { CheckedQualityLinesReader } from "./application/services/checked-quality-lines.reader.js";
 import { QualityPhotoAttachment } from "./application/services/quality-photo-attachment.service.js";
@@ -65,6 +66,8 @@ import { PrismaQualityUploadRepository } from "./infrastructure/prisma-quality-u
     SealedDayReading,
     // Publié pour le poste servi par le colisage ; relié par `PackingFeedModule`.
     ChannelQualityHeldOrdersReader,
+    // La retenue au retrait ; reliée par `HandoverFeedModule`.
+    CheckedQualityHoldsReader,
   ],
   exports: [
     // La fiche de l'atelier lit les pastilles.
@@ -72,6 +75,7 @@ import { PrismaQualityUploadRepository } from "./infrastructure/prisma-quality-u
     // La retenue publiée au retrait (`channels/handover/`) et au colisage.
     QualityCheckReader,
     ChannelQualityHeldOrdersReader,
+    CheckedQualityHoldsReader,
   ],
 })
 export class ProductionQualityModule {}
@@ -81,4 +85,4 @@ export class ProductionQualityModule {}
  * (`appBootstrap/`) relie à un port d'un autre bloc : elle les prend ici,
  * jamais dans l'intérieur du métier.
  */
-export { ChannelQualityHeldOrdersReader };
+export { ChannelQualityHeldOrdersReader, CheckedQualityHoldsReader };

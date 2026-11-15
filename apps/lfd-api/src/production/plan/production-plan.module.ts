@@ -1,8 +1,6 @@
 import { Module } from "@nestjs/common";
 
 import { BrandModule } from "../../platform/brand/brand.module.js";
-import { ClosedPlansReader } from "../channels/commerce/closed-plans.reader.js";
-import { ArrestedPlanHold } from "../channels/packing/arrested-plan.hold.js";
 import { ProductionDayModule } from "../day/production-day.module.js";
 import { ProductionPrintModule } from "../shared/print/production-print.module.js";
 import { AddExternalDossierRecipientHandler } from "./application/commands/add-external-dossier-recipient.handler.js";
@@ -36,6 +34,7 @@ import { PlanIntakeReading } from "./application/services/plan-intake-reading.js
 import { PlanStopRules } from "./application/services/plan-stop-rules.js";
 import { ProductionPlanAdmissionDesk } from "./application/services/production-plan-admission.desk.js";
 import { ProductionPaperRenderer } from "./application/services/production-paper.service.js";
+import { ArrestedProductionPlanReader } from "./application/services/arrested-production-plan.reader.js";
 import { RetakeRecording } from "./application/services/retake-recording.js";
 import { AutoCloseAttemptLog } from "./domain/ports/auto-close-attempt-log.js";
 import { AutoCloseAttempts } from "./domain/ports/auto-close-attempts.js";
@@ -53,20 +52,17 @@ import { ProductionDayRetakeController } from "./http/production-day-retake.cont
 import { ProductionDayController } from "./http/production-day.controller.js";
 import { ProductionDossierRecipientsController } from "./http/production-dossier-recipients.controller.js";
 import { ProductionSettingsController } from "./http/production-settings.controller.js";
-import { PrismaArrestedPlanHold } from "./infrastructure/prisma-arrested-plan.hold.js";
 import {
   PrismaAutoCloseAttemptLog,
   PrismaAutoCloseAttempts,
   PrismaAutoCloseRoundReader,
 } from "./infrastructure/prisma-auto-close-round.js";
-import { PrismaClosedPlansReader } from "./infrastructure/prisma-closed-plans.reader.js";
 import { PrismaDossierDispatchLog } from "./infrastructure/prisma-dossier-dispatch.log.js";
 import {
   PrismaDossierRecipientsReader,
   PrismaDossierRecipientsRepository,
 } from "./infrastructure/prisma-dossier-recipients.repository.js";
 import { PrismaProductionClosedDayRepository } from "./infrastructure/prisma-production-closed-day.repository.js";
-import { PrismaProductionPlanReader } from "./infrastructure/prisma-production-plan.reader.js";
 import { PrismaProductionSettingsReader } from "./infrastructure/prisma-production-settings.reader.js";
 
 /**
@@ -75,8 +71,7 @@ import { PrismaProductionSettingsReader } from "./infrastructure/prisma-producti
  * dossier.
  *
  * Il importe la journée et l'imprimerie (`shared/print/`). Ses exports servent
- * deux lecteurs : la racine de composition (le plan arrêté tenu, la limite des
- * commandes, le guichet d'admission) et la fiche PDF de l'atelier, que la
+ * deux lecteurs : la racine de composition (le guichet d'admission) et la fiche PDF de l'atelier, que la
  * racine du fournil garde parce qu'elle lit le rendu des papiers (voir
  * `ProductionModule`).
  */
@@ -116,11 +111,8 @@ import { PrismaProductionSettingsReader } from "./infrastructure/prisma-producti
     RetakeRecording,
     // L'arrêt suit la plus tardive de l'heure limite générale et de l'heure du réassort.
     PlanStopRules,
-    // Tenir le plan arrêté pendant un geste du colisage ou de la livraison :
-    // publié par `channels/packing/`.
-    { provide: ArrestedPlanHold, useClass: PrismaArrestedPlanHold },
     // La lecture du plan arrêté est un port à part du dépôt d'écriture.
-    { provide: ProductionPlanReader, useClass: PrismaProductionPlanReader },
+    { provide: ProductionPlanReader, useClass: ArrestedProductionPlanReader },
     SetProductionTranchesHandler,
     GetDayDossierSpecimenHandler,
     GetProductionCountSpecimenHandler,
@@ -150,15 +142,10 @@ import { PrismaProductionSettingsReader } from "./infrastructure/prisma-producti
     { provide: DossierRecipientsRepository, useClass: PrismaDossierRecipientsRepository },
     { provide: DossierRecipientsReader, useClass: PrismaDossierRecipientsReader },
     { provide: DossierDispatchLog, useClass: PrismaDossierDispatchLog },
-    // L'arrêt du plan comme limite : relié par `ProductionDeskFeedModule`.
-    PrismaClosedPlansReader,
-    { provide: ClosedPlansReader, useExisting: PrismaClosedPlansReader },
     ProductionPlanAdmissionDesk,
   ],
   exports: [
     // Ce que la racine de composition relie aux autres blocs.
-    ArrestedPlanHold,
-    PrismaClosedPlansReader,
     ProductionPlanAdmissionDesk,
     // Ce que la fiche PDF de l'atelier, gardée par `ProductionModule`, injecte.
     ProductionPaperRenderer,
@@ -171,4 +158,4 @@ export class ProductionPlanModule {}
  * (`appBootstrap/`) relie à un port d'un autre bloc : elle les prend ici,
  * jamais dans l'intérieur du métier.
  */
-export { PrismaClosedPlansReader, ProductionPlanAdmissionDesk };
+export { ProductionPlanAdmissionDesk };

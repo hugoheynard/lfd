@@ -9,6 +9,7 @@ import {
 import { AutoCloseAttempts, type AutoCloseOutcome } from "../domain/ports/auto-close-attempts.js";
 import { AutoCloseRoundReader } from "../domain/ports/auto-close-round.reader.js";
 import type { AttemptTrace } from "../domain/services/auto-close-round.js";
+import { ProductionDayStatusReader } from "../../day/index.js";
 import type { ServiceDay } from "../../day/index.js";
 import type { ServiceRange } from "../../day/index.js";
 
@@ -33,19 +34,22 @@ function outcomeOf(value: string): AutoCloseOutcome {
   return outcome;
 }
 
-/** Ce que le tour lit : la journée du fournil, et la trace de sa tentative. */
+/**
+ * Ce que le tour lit : l'arrêt de la journée, que le noyau répond
+ * (`ProductionDayStatusReader`, `closed_at` seul par la clé), et la trace de
+ * sa tentative.
+ */
 @Injectable()
 export class PrismaAutoCloseRoundReader extends AutoCloseRoundReader {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly status: ProductionDayStatusReader,
+  ) {
     super();
   }
 
-  async isPlanClosed(day: ServiceDay): Promise<boolean> {
-    const row = await this.prisma.productionDay.findUnique({
-      where: { serviceDay: day.value },
-      select: { closedAt: true },
-    });
-    return row?.closedAt != null;
+  isPlanClosed(day: ServiceDay): Promise<boolean> {
+    return this.status.isClosed(day);
   }
 
   async attemptOf(day: ServiceDay): Promise<AttemptTrace | null> {
