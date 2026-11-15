@@ -2,12 +2,17 @@ import { instantToLocal } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { Clock } from "../../../platform/time/clock.js";
 import { ACCOUNT_FACTS } from "../../account/domain/events/account-facts.js";
 import { SalesOversightTooLargeError } from "../domain/errors/sales-oversight-errors.js";
 import { SalesSheetReader, type SalesSheetScope } from "../domain/ports/sales-sheet.reader.js";
 import type { SalesSheetFacts } from "../domain/sales-oversight.js";
 import type { SheetMilestones } from "../domain/sales-today.js";
+import type { SheetStepFacts } from "../domain/sheet-steps.js";
+import { DEFAULT_BILLING_MODE } from "../../accounting/domain/value-objects/billing-mode.js";
+import { DEFAULT_COLLECTION_MEANS } from "../../accounting/domain/value-objects/collection-means.js";
 import { notedContactOf } from "./noted-contact-payload.js";
+import { readStepBatch, type StepBatch } from "./sales-sheet-steps.batch.js";
 
 /** Le statut d'un rendez-vous qui a eu lieu : il compte comme un contact noté. */
 const HONORED = "honored";
@@ -30,7 +35,18 @@ const SHEET_SELECT = {
   followedByStaffId: true,
   preferredFulfillmentMethod: true,
   groupWithoutDelivery: true,
+  formeJuridique: true,
+  siret: true,
+  vatNumber: true,
+  grantedTerms: true,
+  requestedTerm: true,
+  directDebitBlockedAt: true,
+  kbisUploadedAt: true,
+  kbisCertifiedAt: true,
 } as const;
+
+/** Les défauts de la comptabilité : jamais atteints, `readStepBatch` lit chaque id. */
+const DEFAULT_COLLECTION = { rhythm: DEFAULT_BILLING_MODE, means: DEFAULT_COLLECTION_MEANS };
 
 type SheetRow = Awaited<ReturnType<typeof readCompanies>>[number];
 
@@ -40,15 +56,18 @@ interface SheetBatch {
   readonly deliveries: ReadonlyMap<string, number>;
   readonly loggedIn: ReadonlyMap<string, Date>;
   readonly ordered: ReadonlyMap<string, Date>;
+  readonly orderCounts: ReadonlyMap<string, number>;
   readonly contacts: ReadonlyMap<string, number>;
   readonly firstContactDays: ReadonlyMap<string, string>;
+  readonly lastContactDays: ReadonlyMap<string, string>;
   readonly qualifiedSteps: ReadonlyMap<string, Date>;
 }
 
 /**
- * Les fiches du suivi commercial, en **sept lectures** quel que soit leur
+ * Les fiches du suivi commercial, en **treize lectures** quel que soit leur
  * nombre : la liste, puis adresses, détenteurs connectés, commandes, contacts
- * notés, rendez-vous honorés et étapes d'adresse franchies, chacune par lot sur tous les ids.
+ * notés, rendez-vous honorés et étapes d'adresse franchies, chacune par lot
+ * sur tous les ids ; et les six de la grille d'étapes (`readStepBatch`).
  *
  * Il lit directement les tables du compte et des commandes, comme les autres
  * lecteurs de `growth` (`prisma-portfolio-metrics.reader.ts`) : le bloc est le
@@ -57,7 +76,11 @@ interface SheetBatch {
  */
 @Injectable()
 export class PrismaSalesSheetReader extends SalesSheetReader {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    /** Le rythme et le moyen du payeur se lisent à l'instant de la requête. */
+    private readonly clock: Clock,
+  ) {
     super();
   }
 
@@ -66,8 +89,12 @@ export class PrismaSalesSheetReader extends SalesSheetReader {
     if (rows.length > limit) {
       throw new SalesOversightTooLargeError(limit);
     }
-    const batch = await this.batch(rows.map((row) => row.id));
-    return rows.map((row) => toFacts(row, batch));
+    const ids = rows.map((row) => row.id);
+    const [batch, steps] = await Promise.all([
+      this.batch(ids),
+      readStepBatch(this.prisma, ids, this.clock.now()),
+    ]);
+    return rows.map((row) => toFacts(row, batch, steps));
   }
 
   async followerIds(): Promise<readonly string[]> {
@@ -95,6 +122,7 @@ export class PrismaSalesSheetReader extends SalesSheetReader {
         by: ["companyId"],
         where: { companyId },
         _min: { createdAt: true },
+        _count: { _all: true },
       }),
       this.prisma.activityEvent.findMany({
         where: {
@@ -142,8 +170,16 @@ export class PrismaSalesSheetReader extends SalesSheetReader {
             : [[row.companyId, row._min.createdAt] as const],
         ),
       ),
+      orderCounts: new Map(
+        orders.flatMap((row) =>
+          row.companyId === null ? [] : [[row.companyId, row._count._all] as const],
+        ),
+      ),
       contacts: countBy(contactDays.map((row) => row.id)),
       firstContactDays: earliestBy(
+        contactDays.flatMap((row) => (row.day === undefined ? [] : [[row.id, row.day] as const])),
+      ),
+      lastContactDays: latestBy(
         contactDays.flatMap((row) => (row.day === undefined ? [] : [[row.id, row.day] as const])),
       ),
       qualifiedSteps: latestBy(
@@ -172,7 +208,7 @@ function readCompanies(prisma: PrismaService, scope: SalesSheetScope, limit: num
   });
 }
 
-function toFacts(row: SheetRow, batch: SheetBatch): SalesSheetFacts {
+function toFacts(row: SheetRow, batch: SheetBatch, steps: StepBatch): SalesSheetFacts {
   return {
     companyId: row.id,
     reference: row.reference,
@@ -196,6 +232,28 @@ function toFacts(row: SheetRow, batch: SheetBatch): SalesSheetFacts {
       hasOrder: batch.ordered.has(row.id),
     },
     milestones: milestonesOf(row, batch),
+    steps: stepFactsOf(row, batch, steps),
+  };
+}
+
+function stepFactsOf(row: SheetRow, batch: SheetBatch, steps: StepBatch): SheetStepFacts {
+  return {
+    legal: {
+      raisonSociale: row.raisonSociale,
+      formeJuridique: row.formeJuridique,
+      siret: row.siret,
+      vatNumber: row.vatNumber,
+      primaryPhone: row.contactTelephone,
+      otherPhones: steps.otherPhones.get(row.id) ?? [],
+    },
+    kbis: { uploadedAt: row.kbisUploadedAt, certifiedAt: row.kbisCertifiedAt },
+    terms: { granted: row.grantedTerms, requested: row.requestedTerm },
+    collection: steps.collection.get(row.id) ?? DEFAULT_COLLECTION,
+    hasBankAccount: steps.bankAccounts.has(row.id),
+    hasActiveMandate: steps.activeMandates.has(row.id),
+    directDebitBlocked: row.directDebitBlockedAt !== null,
+    orderCount: batch.orderCounts.get(row.id) ?? 0,
+    lastContactDay: batch.lastContactDays.get(row.id) ?? null,
   };
 }
 
@@ -238,8 +296,11 @@ function earliestBy<T extends Date | string>(
   return found;
 }
 
-function latestBy(pairs: readonly (readonly [string, Date])[]): ReadonlyMap<string, Date> {
-  const found = new Map<string, Date>();
+/** La plus grande valeur par société (un jour `AAAA-MM-JJ` se compare comme un texte). */
+function latestBy<T extends Date | string>(
+  pairs: readonly (readonly [string, T])[],
+): ReadonlyMap<string, T> {
+  const found = new Map<string, T>();
   for (const [id, value] of pairs) {
     const known = found.get(id);
     if (known === undefined || value > known) {

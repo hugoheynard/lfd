@@ -5,7 +5,17 @@ import {
   type WorkLevelInput,
 } from "../../account/domain/services/work-level.js";
 import { businessDaysBetween } from "./business-days.js";
-import type { SheetMilestones } from "./sales-today.js";
+import { parisDayOf, type SheetMilestones } from "./sales-today.js";
+import {
+  isContactStale,
+  nextStepActorOf,
+  nextStepOf,
+  sheetStepsOf,
+  type NextStep,
+  type NextStepActor,
+  type SheetStepFacts,
+  type SheetSteps,
+} from "./sheet-steps.js";
 
 /**
  * **Le suivi commercial**, la part pure : lire une fiche (niveau, manques,
@@ -29,7 +39,8 @@ export const UNASSIGNED_SIGNUP_BUSINESS_DAYS = 2;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export type SalesSignal = "late" | "access_resent" | "multiple_addresses" | "unassigned_signup";
+export type SalesSignal =
+  "late" | "access_resent" | "multiple_addresses" | "unassigned_signup" | "stale_contact";
 export type SalesChannel = "self" | "staff";
 
 /** Ce que la base dit d'une fiche principale — des faits, pas un verdict. */
@@ -43,6 +54,8 @@ export interface SalesSheetFacts {
   readonly work: WorkLevelInput;
   /** Les dates de niveau, pour les montées du récap du jour. */
   readonly milestones: SheetMilestones;
+  /** Ce que la grille d'étapes lit en plus du niveau. */
+  readonly steps: SheetStepFacts;
 }
 
 /** Les demandes d'envoi de l'accès client d'une fiche. */
@@ -61,6 +74,9 @@ export interface SalesSheet {
   readonly ageDays: number;
   readonly signals: readonly SalesSignal[];
   readonly access: AccessRequests;
+  readonly steps: SheetSteps;
+  readonly nextStep: NextStep;
+  readonly nextStepActor: NextStepActor;
 }
 
 /** Lit une fiche à l'instant `now`. Pur. */
@@ -71,13 +87,22 @@ export function readSalesSheet(
 ): SalesSheet {
   const { level, missing } = workLevelOf(facts.work);
   const ageDays = Math.max(0, Math.floor((now.getTime() - facts.createdAt.getTime()) / DAY_MS));
+  const steps = sheetStepsOf(facts.work, facts.steps, parisDayOf(now).day);
+  const nextStep = nextStepOf(facts.followedByStaffId !== null, steps);
   return {
+    steps,
+    nextStep,
+    nextStepActor: nextStepActorOf(nextStep, steps),
     facts,
     level,
     missing,
     ageDays,
     access,
-    signals: [...signalsOf(facts, level, ageDays, access), ...signupSignalsOf(facts, now)],
+    signals: [
+      ...signalsOf(facts, level, ageDays, access),
+      ...signupSignalsOf(facts, now),
+      ...(isContactStale(steps) ? (["stale_contact"] as const) : []),
+    ],
   };
 }
 
@@ -124,11 +149,22 @@ function isLate(level: WorkLevel, ageDays: number): boolean {
 export interface SalesSheetSelection {
   readonly level?: WorkLevel | undefined;
   readonly signal?: SalesSignal | undefined;
+  readonly nextStep?: NextStep | undefined;
+  readonly card?: SalesCard | undefined;
   readonly page: number;
   readonly pageSize: number;
 }
 
+/** Les cartes en tête, sur tout ce que la base a rendu. */
+export interface SalesCards {
+  readonly noContact: number;
+  readonly onAccountNotDebitReady: number;
+  readonly readyNotActivated: number;
+  readonly ordering: number;
+}
+
 export interface SalesSheetPage {
+  readonly cards: SalesCards;
   /** Par niveau, après le filtre de signal — jamais celui de niveau. */
   readonly counts: Readonly<Record<WorkLevel, number>>;
   readonly total: number;
@@ -136,9 +172,10 @@ export interface SalesSheetPage {
 }
 
 /**
- * Compte, filtre et découpe. Les compteurs ignorent le filtre de niveau :
- * ils servent à choisir un niveau, et ne doivent pas tomber à zéro dès qu'on
- * en a choisi un. L'ordre est celui reçu.
+ * Compte, filtre et découpe. Les compteurs ignorent les filtres de niveau et
+ * de prochaine étape : ils servent à choisir, et ne doivent pas tomber à zéro
+ * dès qu'on a choisi. Les cartes ignorent en plus le signal : elles portent
+ * sur tout le périmètre commercial et canal. L'ordre est celui reçu.
  */
 export function selectSalesSheets(
   sheets: readonly SalesSheet[],
@@ -158,8 +195,43 @@ export function selectSalesSheets(
     counts[sheet.level] += 1;
   }
   const kept = signalled.filter(
-    (sheet) => selection.level === undefined || sheet.level === selection.level,
+    (sheet) =>
+      (selection.level === undefined || sheet.level === selection.level) &&
+      (selection.nextStep === undefined || sheet.nextStep === selection.nextStep) &&
+      (selection.card === undefined || CARD_RULES[selection.card](sheet)),
   );
   const start = (selection.page - 1) * selection.pageSize;
-  return { counts, total: kept.length, rows: kept.slice(start, start + selection.pageSize) };
+  return {
+    cards: cardsOf(sheets),
+    counts,
+    total: kept.length,
+    rows: kept.slice(start, start + selection.pageSize),
+  };
+}
+
+/** « Pas prête à prélever » : au prélèvement au compte, et pas encore prête. */
+const NOT_DEBIT_READY: ReadonlySet<string> = new Set([
+  "bank_account_missing",
+  "mandate_missing",
+  "blocked",
+]);
+
+export type SalesCard = keyof SalesCards;
+
+/** Une carte, une règle : la même compte la carte et filtre ses fiches. */
+const CARD_RULES: Readonly<Record<SalesCard, (sheet: SalesSheet) => boolean>> = {
+  noContact: (sheet) => sheet.steps.contact.last === null,
+  onAccountNotDebitReady: (sheet) => NOT_DEBIT_READY.has(sheet.steps.debitReady),
+  readyNotActivated: (sheet) => sheet.nextStep === "activate",
+  ordering: (sheet) => sheet.steps.orders > 0,
+};
+
+function cardsOf(sheets: readonly SalesSheet[]): SalesCards {
+  const count = (card: SalesCard): number => sheets.filter(CARD_RULES[card]).length;
+  return {
+    noContact: count("noContact"),
+    onAccountNotDebitReady: count("onAccountNotDebitReady"),
+    readyNotActivated: count("readyNotActivated"),
+    ordering: count("ordering"),
+  };
 }

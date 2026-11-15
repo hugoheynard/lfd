@@ -35,7 +35,8 @@ export type SalesWorkGap =
 
 /**
  * Les signaux, qui ne sont pas des niveaux : `late` (resté trop longtemps à
- * Annuaire ou Contactée), `access_resent` (accès envoyé deux fois ou plus sans
+ * Annuaire ou Contactée), `stale_contact` (dernier contact de plus de
+ * 30 jours sur une fiche pas encore active), `access_resent` (accès envoyé deux fois ou plus sans
  * connexion du détenteur), `multiple_addresses` (plus d'une adresse de
  * livraison vivante — un lieu de plus est un site), `unassigned_signup` (une
  * inscription du client qu'aucun commercial ne suit depuis plus de 2 jours
@@ -46,9 +47,105 @@ export const SALES_OVERSIGHT_SIGNALS = [
   "access_resent",
   "multiple_addresses",
   "unassigned_signup",
+  "stale_contact",
 ] as const;
 export const salesOversightSignalSchema = z.enum(SALES_OVERSIGHT_SIGNALS);
 export type SalesOversightSignal = z.infer<typeof salesOversightSignalSchema>;
+
+/**
+ * La prochaine étape d'une fiche, une seule, dans l'ordre du plan (§ 1 bis) :
+ * attribuer, contacter, compléter la fiche, RIB, mandat, connexion du client,
+ * activer ; `none` quand il n'y a rien à faire.
+ */
+export const SALES_NEXT_STEPS = [
+  "assign",
+  "contact",
+  "complete_sheet",
+  "bank_account",
+  "mandate",
+  "login",
+  "activate",
+  "none",
+] as const;
+export const salesNextStepSchema = z.enum(SALES_NEXT_STEPS);
+export type SalesNextStep = z.infer<typeof salesNextStepSchema>;
+
+/**
+ * Qui doit agir : le commercial (attribuer, contacter, compléter, demander le
+ * RIB, activer), le client (signer le mandat, se connecter), la comptabilité
+ * (lever un blocage du prélèvement quand il ne reste rien d'autre).
+ */
+export type SalesNextStepActor = "commercial" | "client" | "accounting" | "none";
+
+/** Les quatre pièces de « Fiche remplie », dans l'ordre de l'écran. */
+export type SalesLegalPiece = "legal_identity" | "vat" | "phone" | "billing_address";
+
+/** Où en est le prélèvement d'une fiche au compte. */
+export type SalesDebitReadiness =
+  "ready" | "bank_account_missing" | "mandate_missing" | "blocked" | "not_applicable";
+
+/**
+ * Les étapes d'une fiche, en DONNÉES : l'écran en tire ses mots (§ 1 bis).
+ */
+export interface SalesSheetStepsView {
+  /**
+   * Le DERNIER contact noté ou rendez-vous honoré : son jour de Paris
+   * (`AAAA-MM-JJ`) et son âge en jours ; les deux `null` sans contact.
+   */
+  readonly contact: { readonly last: string | null; readonly daysAgo: number | null };
+  readonly legal: {
+    readonly done: number;
+    readonly of: 4;
+    /** Les pièces manquantes, dans l'ordre de l'écran. */
+    readonly missing: readonly SalesLegalPiece[];
+    /** Aucune des quatre et pas de SIRET : l'écran dit « nom seul ». */
+    readonly nameOnly: boolean;
+  };
+  /** `to_verify` : déposé, pas certifié. */
+  readonly kbis: "certified" | "to_verify" | "missing";
+  readonly payment: {
+    readonly terms: "on_order" | "on_account";
+    /** Un crédit demandé par le client et pas accordé. */
+    readonly requested: boolean;
+    /** Le rythme et le moyen du payeur aujourd'hui ; `null` à la commande. */
+    readonly rhythm: "weekly" | "semimonthly" | "monthly" | null;
+    readonly means: "sepa_debit" | "bank_transfer" | null;
+  };
+  /** `not_applicable` : à la commande, ou au compte par virement. */
+  readonly debitReady: SalesDebitReadiness;
+  /** `pickup` : retrait seul, ou groupe sans livraison. */
+  readonly delivery: "address" | "pickup" | "missing";
+  /** Le détenteur s'est connecté au moins une fois. */
+  readonly login: boolean;
+  readonly activated: boolean;
+  /** Commandes passées par la fiche, toutes. */
+  readonly orders: number;
+}
+
+/**
+ * Les cartes en tête, sur le périmètre des filtres commercial et canal
+ * seulement (jamais niveau, signal ni prochaine étape).
+ */
+export interface SalesOversightCardsView {
+  /** Aucun contact noté ni rendez-vous honoré. */
+  readonly noContact: number;
+  /** Au compte, au prélèvement, et pas prêtes à prélever. */
+  readonly onAccountNotDebitReady: number;
+  /** Tout est prêt, il ne reste qu'à activer (prochaine étape `activate`). */
+  readonly readyNotActivated: number;
+  /** Au moins une commande. */
+  readonly ordering: number;
+}
+
+/** Les cartes en tête, chacune aussi un filtre (même définition que `SalesOversightCardsView`). */
+export const SALES_OVERSIGHT_CARDS = [
+  "noContact",
+  "onAccountNotDebitReady",
+  "readyNotActivated",
+  "ordering",
+] as const;
+export const salesOversightCardSchema = z.enum(SALES_OVERSIGHT_CARDS);
+export type SalesOversightCard = z.infer<typeof salesOversightCardSchema>;
 
 /** Le canal d'ouverture : par l'équipe (`commercial`) ou par le client (`self`). */
 export const SALES_OVERSIGHT_CHANNELS = ["commercial", "self"] as const;
@@ -67,7 +164,10 @@ export const SALES_OVERSIGHT_PAGE_SIZE = 50;
  */
 export const salesOversightQuerySchema = z.object({
   follower: z.string().trim().min(1).optional(),
+  /** Gardé pour les écrans qui le passent encore ; l'écran filtre désormais par `nextStep`. */
   level: salesWorkLevelSchema.optional(),
+  nextStep: salesNextStepSchema.optional(),
+  card: salesOversightCardSchema.optional(),
   signal: salesOversightSignalSchema.optional(),
   channel: salesOversightChannelSchema.optional(),
   /** Pagination numérotée, à partir de 1. */
@@ -103,6 +203,10 @@ export interface SalesOversightRowView {
   readonly lastAccessSentAt: string | null;
   /** Adresses de livraison vivantes. */
   readonly deliveryAddressCount: number;
+  readonly steps: SalesSheetStepsView;
+  readonly nextStep: SalesNextStep;
+  /** Qui doit agir pour la prochaine étape. */
+  readonly nextStepActor: SalesNextStepActor;
 }
 
 /** Un commercial proposé au filtre : actif, et qui suit au moins une fiche. */
@@ -114,10 +218,11 @@ export interface SalesOversightFollowerOption {
 export interface SalesOversightView {
   /** Les fiches par niveau, selon les filtres commercial, canal et signal. */
   readonly counts: Readonly<Record<SalesWorkLevel, number>>;
+  readonly cards: SalesOversightCardsView;
   readonly rows: readonly SalesOversightRowView[];
   readonly page: number;
   readonly pageSize: number;
-  /** Les fiches qui passent TOUS les filtres, niveau compris. */
+  /** Les fiches qui passent TOUS les filtres, niveau et prochaine étape compris. */
   readonly total: number;
   readonly followers: readonly SalesOversightFollowerOption[];
   /**

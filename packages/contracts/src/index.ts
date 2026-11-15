@@ -657,17 +657,27 @@ export type { CompanyContactMode, NoteCompanyContactPayload } from "./company-co
 export { assignCompanyFollowerPayloadSchema } from "./company-follower.js";
 export type { AssignCompanyFollowerPayload } from "./company-follower.js";
 export {
+  SALES_OVERSIGHT_CARDS,
   SALES_OVERSIGHT_CHANNELS,
   SALES_OVERSIGHT_PAGE_SIZE,
   SALES_OVERSIGHT_SIGNALS,
   SALES_OVERSIGHT_UNASSIGNED,
+  SALES_NEXT_STEPS,
   SALES_WORK_LEVELS,
+  salesOversightCardSchema,
   salesOversightChannelSchema,
   salesOversightQuerySchema,
   salesOversightSignalSchema,
+  salesNextStepSchema,
   salesWorkLevelSchema,
 } from "./sales-oversight.js";
 export type {
+  SalesDebitReadiness,
+  SalesLegalPiece,
+  SalesNextStep,
+  SalesNextStepActor,
+  SalesOversightCard,
+  SalesOversightCardsView,
   SalesOversightChannel,
   SalesOversightFollowerOption,
   SalesOversightFollowerView,
@@ -676,6 +686,7 @@ export type {
   SalesOversightSignal,
   SalesOversightTodayView,
   SalesOversightView,
+  SalesSheetStepsView,
   SalesWorkGap,
   SalesWorkLevel,
 } from "./sales-oversight.js";

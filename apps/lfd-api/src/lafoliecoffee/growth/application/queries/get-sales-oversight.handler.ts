@@ -86,11 +86,14 @@ export class GetSalesOversightHandler implements IQueryHandler<
     const page = selectSalesSheets(sheets, {
       level: filters.level,
       signal: filters.signal,
+      nextStep: filters.nextStep,
+      card: filters.card,
       page: filters.page,
       pageSize: SALES_OVERSIGHT_PAGE_SIZE,
     });
     return {
       counts: page.counts,
+      cards: page.cards,
       rows: page.rows.map((sheet) => rowViewOf(sheet, staff)),
       page: filters.page,
       pageSize: SALES_OVERSIGHT_PAGE_SIZE,

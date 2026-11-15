@@ -26,6 +26,7 @@ import {
 } from "../../../domain/ports/sales-sheet.reader.js";
 import type { SalesSheetFacts } from "../../../domain/sales-oversight.js";
 import { NO_MILESTONE, type ParisDay } from "../../../domain/sales-today.js";
+import { BARE_STEP_FACTS } from "../../../domain/__tests__/sheet-step-facts.fixture.js";
 import { GetSalesOversightHandler } from "../get-sales-oversight.handler.js";
 import { GetSalesOversightQuery } from "../get-sales-oversight.query.js";
 
@@ -140,6 +141,7 @@ function sheet(id: string, overrides: Partial<SalesSheetFacts> = {}): SalesSheet
       hasOrder: false,
     },
     milestones: NO_MILESTONE,
+    steps: BARE_STEP_FACTS,
     ...overrides,
   };
 }
@@ -346,5 +348,54 @@ describe("GetSalesOversightHandler — à qui confier une fiche", () => {
     ).execute(query());
 
     expect(view.rows[0]?.signals).toContain("unassigned_signup");
+  });
+});
+
+describe("GetSalesOversightHandler — la grille d'étapes", () => {
+  it("sert les étapes et la prochaine étape de chaque ligne, filtre par étape, et compte les cartes sur tout le filtre", async () => {
+    const sheets = new FakeSheets([
+      sheet("c_assign", { followedByStaffId: null }),
+      sheet("c_rib", {
+        work: { ...sheet("c").work, notedContacts: 1, hasBillingAddress: true },
+        steps: {
+          ...BARE_STEP_FACTS,
+          legal: {
+            raisonSociale: "X",
+            formeJuridique: "SAS",
+            siret: "12345678900011",
+            vatNumber: "FR00123456789",
+            primaryPhone: "",
+            otherPhones: ["0611223344"],
+          },
+          terms: { granted: ["monthly"], requested: null },
+          collection: { rhythm: "weekly", means: "sepa_debit" },
+          orderCount: 2,
+          lastContactDay: dayOfNow(),
+        },
+      }),
+    ]);
+
+    const view = await handler(sheets).execute(query({ nextStep: "bank_account" }));
+
+    expect(view.total).toBe(1);
+    expect(view.rows[0]).toMatchObject({
+      companyId: "c_rib",
+      nextStep: "bank_account",
+      nextStepActor: "commercial",
+      steps: {
+        contact: { last: dayOfNow(), daysAgo: 0 },
+        legal: { done: 4, of: 4, missing: [], nameOnly: false },
+        payment: { terms: "on_account", requested: false, rhythm: "weekly", means: "sepa_debit" },
+        debitReady: "bank_account_missing",
+        orders: 2,
+      },
+    });
+    expect(view.cards).toEqual({
+      noContact: 1,
+      onAccountNotDebitReady: 1,
+      readyNotActivated: 0,
+      ordering: 1,
+    });
+    expect(JSON.stringify(view)).not.toContain("0611223344");
   });
 });

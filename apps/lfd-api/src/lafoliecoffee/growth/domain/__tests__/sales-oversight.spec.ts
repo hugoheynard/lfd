@@ -8,6 +8,7 @@ import {
   type SalesSheetFacts,
 } from "../sales-oversight.js";
 import { NO_MILESTONE } from "../sales-today.js";
+import { BARE_STEP_FACTS } from "./sheet-step-facts.fixture.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** L'instant de la lecture ; chaque date de fiche s'écrit relativement à lui. */
@@ -34,6 +35,7 @@ function facts(overrides: Partial<SalesSheetFacts["work"]> = {}, ageDays = 1): S
       ...overrides,
     },
     milestones: NO_MILESTONE,
+    steps: BARE_STEP_FACTS,
   };
 }
 
@@ -162,5 +164,118 @@ describe("selectSalesSheets", () => {
     expect(selectSalesSheets(all, { page: 2, pageSize: 2 }).rows).toEqual([contactedFresh]);
     expect(selectSalesSheets(all, { page: 3, pageSize: 2 }).rows).toEqual([]);
     expect(selectSalesSheets(all, { page: 3, pageSize: 2 }).total).toBe(3);
+  });
+});
+
+describe("selectSalesSheets — prochaine étape et cartes", () => {
+  const withSteps = (
+    id: string,
+    work: Partial<SalesSheetFacts["work"]>,
+    steps: Partial<SalesSheetFacts["steps"]>,
+    followedByStaffId: string | null = "staff_a",
+  ) =>
+    readSalesSheet(
+      { ...facts(work), companyId: id, followedByStaffId, steps: { ...BARE_STEP_FACTS, ...steps } },
+      NO_ACCESS_REQUEST,
+      NOW,
+    );
+  const fullLegal = {
+    legal: {
+      raisonSociale: "X",
+      formeJuridique: "SAS",
+      siret: "12345678900011",
+      vatNumber: "FR00123456789",
+      primaryPhone: "0102030405",
+      otherPhones: [],
+    },
+  };
+  const ready = { ...contacted, hasBillingAddress: true, holderLoggedIn: true };
+  const unassigned = withSteps("u", {}, {}, null);
+  const silent = withSteps("s", {}, {});
+  const recent = { lastContactDay: "2030-01-10" };
+  const noRib = withSteps("r", ready, {
+    ...fullLegal,
+    ...recent,
+    terms: { granted: ["monthly"], requested: null },
+  });
+  const toActivate = withSteps("a", ready, { ...fullLegal, ...recent });
+  const ordering = withSteps(
+    "o",
+    { ...ready, activated: true, hasOrder: true },
+    {
+      ...fullLegal,
+      ...recent,
+      orderCount: 4,
+    },
+  );
+  const all = [unassigned, silent, noRib, toActivate, ordering];
+
+  it("filtre par prochaine étape sans toucher aux compteurs de niveau", () => {
+    const page = selectSalesSheets(all, { nextStep: "bank_account", page: 1, pageSize: 50 });
+
+    expect(page.rows.map((sheet) => sheet.facts.companyId)).toEqual(["r"]);
+    expect(page.total).toBe(1);
+    expect(Object.values(page.counts).reduce((sum, n) => sum + n, 0)).toBe(5);
+  });
+
+  it("compte les cartes sur tout le périmètre, filtres de signal et d'étape ignorés", () => {
+    const page = selectSalesSheets(all, {
+      nextStep: "none",
+      signal: "late",
+      page: 1,
+      pageSize: 50,
+    });
+
+    expect(page.cards).toEqual({
+      noContact: 2,
+      onAccountNotDebitReady: 1,
+      readyNotActivated: 1,
+      ordering: 1,
+    });
+    expect(ordering.nextStep).toBe("none");
+    expect(toActivate.nextStep).toBe("activate");
+  });
+
+  it.each([
+    ["noContact", ["u", "s"]],
+    ["onAccountNotDebitReady", ["r"]],
+    ["readyNotActivated", ["a"]],
+    ["ordering", ["o"]],
+  ] as const)("le filtre de carte %s retient ses fiches, cartes inchangées", (card, ids) => {
+    const page = selectSalesSheets(all, { card, page: 1, pageSize: 50 });
+
+    expect(page.rows.map((sheet) => sheet.facts.companyId)).toEqual(ids);
+    expect(page.cards.noContact).toBe(2);
+  });
+});
+
+describe("readSalesSheet — la récence du contact", () => {
+  const sheetContactedOn = (day: string, activated = false) =>
+    readSalesSheet(
+      {
+        ...facts({ notedContacts: 1, activated }),
+        steps: { ...BARE_STEP_FACTS, lastContactDay: day },
+      },
+      NO_ACCESS_REQUEST,
+      NOW,
+    );
+
+  it("signale et fait recontacter une fiche pas active dont le dernier contact a plus de 30 jours", () => {
+    const stale = sheetContactedOn("2029-12-01");
+
+    expect(stale.steps.contact).toEqual({ last: "2029-12-01", daysAgo: 45 });
+    expect(stale.signals).toContain("stale_contact");
+    expect(stale.nextStep).toBe("contact");
+    expect(stale.nextStepActor).toBe("commercial");
+  });
+
+  it("ne signale pas un contact de 30 jours pile, ni une fiche active", () => {
+    expect(sheetContactedOn("2029-12-16").signals).not.toContain("stale_contact");
+    expect(sheetContactedOn("2029-12-01", true).signals).not.toContain("stale_contact");
+  });
+
+  it("ne compte pas une fiche recontactable dans « sans aucun contact »", () => {
+    const page = selectSalesSheets([sheetContactedOn("2029-12-01")], { page: 1, pageSize: 50 });
+    expect(page.cards.noContact).toBe(0);
   });
 });

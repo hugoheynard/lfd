@@ -91,7 +91,7 @@ function isDone(company: AdminCompanyDetailView, piece: ActivationPiece): boolea
   switch (piece) {
     case "vat":
       // Non assujetti ⇒ la TVA n'est jamais « manquante » (rien à exiger).
-      return !company.vatNumberRequired || company.vatNumber.trim() !== "";
+      return hasRequiredVat(company);
     case "kbis":
       // **Certifié**, et non « déposé ». Se contenter de la présence reviendrait
       // à cocher sur la foi d'un PDF que personne n'a ouvert — n'importe quel
@@ -117,8 +117,23 @@ function isLegallyCarried(company: AdminCompanyDetailView): boolean {
   );
 }
 
-/** Raison sociale + forme juridique + SIRET : de quoi facturer. */
-function hasLegalIdentity(company: AdminCompanyDetailView): boolean {
+/**
+ * La TVA est-elle en règle ? Non assujetti : toujours. Exportée pour le suivi
+ * commercial, qui compte la même pièce.
+ */
+export function hasRequiredVat(
+  company: Pick<AdminCompanyDetailView, "vatNumberRequired" | "vatNumber">,
+): boolean {
+  return !company.vatNumberRequired || company.vatNumber.trim() !== "";
+}
+
+/**
+ * Raison sociale + forme juridique + SIRET : de quoi facturer. Exportée pour
+ * le suivi commercial, qui compte la même pièce.
+ */
+export function hasLegalIdentity(
+  company: Pick<AdminCompanyDetailView, "raisonSociale" | "formeJuridique" | "siret">,
+): boolean {
   return (
     company.raisonSociale.trim() !== "" &&
     company.formeJuridique.trim() !== "" &&
@@ -134,8 +149,14 @@ function hasHolder(company: AdminCompanyDetailView): boolean {
   return company.primaryContact.email.trim() !== "";
 }
 
-/** Au moins un numéro joignable, sur le détenteur ou sur un interlocuteur. */
-function isReachable(company: AdminCompanyDetailView): boolean {
+/**
+ * Au moins un numéro joignable, sur le détenteur ou sur un interlocuteur.
+ * Exportée pour le suivi commercial, qui compte la même pièce.
+ */
+export function isReachable(company: {
+  readonly primaryContact: { readonly phone: string };
+  readonly contacts: readonly { readonly phone: string }[];
+}): boolean {
   return (
     company.primaryContact.phone.trim() !== "" ||
     company.contacts.some((contact) => contact.phone.trim() !== "")

@@ -98,5 +98,8 @@ export function rowViewOf(
     accessSentCount: sheet.access.count,
     lastAccessSentAt: sheet.access.last?.toISOString() ?? null,
     deliveryAddressCount: facts.work.deliveryAddressCount,
+    steps: sheet.steps,
+    nextStep: sheet.nextStep,
+    nextStepActor: sheet.nextStepActor,
   };
 }
