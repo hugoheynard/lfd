@@ -1095,9 +1095,9 @@ globales — c'est voulu, pas à contourner avec `ignoreDeprecations`.
   volontairement découplé : un hoquet Postgres ne doit **pas** faire tuer le
   container via la liveness.
 
-> Le reste du contrat de déploiement (origine stable devant le fan-out, backends
-> stateless, passerelle, CI self-bootstrap) vit dans
-> [`documentation/suite/architecture-suite-gateway-scaling.md`](documentation/suite/architecture-suite-gateway-scaling.md).
+> Le reste du contrat de déploiement (origine stable, backends sans état,
+> passerelle et son routage) vit dans
+> [`documentation/ci-cd/architecture-deploiement.md`](documentation/ci-cd/architecture-deploiement.md).
 
 ---
 
@@ -1273,7 +1273,7 @@ les commentaires.
   doc-first). Un doc créé sans sa ligne d'index est un doc que personne ne
   retrouvera.
 - Docs d'architecture et décisions → `documentation/<projet>/` — `b2b/`,
-  `pim/`, `suite/`. La racine ne porte que l'index et le plan de release courant.
+  `pim/`, `ops/`, `ci-cd/`. La racine ne porte que l'index et le plan de release courant.
 - TODO / roadmaps / inventaires de dette → `documentation/todos/`.
   **Exception : un sujet qui a son dossier y garde ses TODO** (`todo-*.md`).
   C'est le cas de `comptabilite/`, et de `commandes/` depuis le 2026-09-17

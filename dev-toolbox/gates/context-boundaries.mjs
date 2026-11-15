@@ -4,7 +4,7 @@
  *
  * Aujourd'hui, ce qui empêche le PIM d'importer le moteur de prix du B2B, c'est
  * le **réseau** : les deux vivent dans deux processus. Le jour où ils se
- * rejoignent (cf. `documentation/suite/architecture-topologie-apps.md`, étape
+ * rejoignent (cf. `documentation/ops/qui-lit-quelle-table.md`, étape
  * B2), ce mur disparaît — et rien ne le remplace tout seul. En six mois,
  * quelqu'un écrit l'import qui traverse, personne ne le voit en revue, et le
  * monolithe modulaire devient une god app.

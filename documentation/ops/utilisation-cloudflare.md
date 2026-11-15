@@ -30,10 +30,8 @@
 
 ## 2. Le plan Cloudflare
 
-Le dépôt ne l'écrit nulle part comme un **fait relevé** : il l'écrit comme une
-exigence de plan ([`../suite/architecture-suite-gateway-scaling.md`](../suite/architecture-suite-gateway-scaling.md),
-§11 : « Workers Paid $5/mo requis », relevé le 2026-07-31). Il se **déduit**
-pourtant sans ambiguïté : Containers n'existe que sur Workers Paid (la page de
+Le dépôt ne l'écrit nulle part comme un **fait relevé**. Il se **déduit**
+sans ambiguïté : Containers n'existe que sur Workers Paid (la page de
 prix l'indique « N/A » en Free — [Containers pricing](https://developers.cloudflare.com/containers/pricing/), lu le 2026-10-19),
 et deux Workers à container sont déployés. Les colonnes « Free » ci-dessous ne
 servent donc qu'à situer ; **à confirmer d'un coup d'œil** dans le tableau de
@@ -236,8 +234,7 @@ passerelle n'est pas du CPU.
 carte à partir du **p95** : 0 sous `P95_CALM_MS = 120` (l. 26), 1 à
 `P95_SATURATED_MS = 1000` (l. 23), linéaire entre les deux ; ou à partir de la
 part de `429`. **Ce n'est ni du CPU ni de la mémoire.** Le seuil de 1 000 ms est
-choisi, pas étalonné
-([`../suite/architecture-ops-ecosystem-health.md`](../suite/architecture-ops-ecosystem-health.md), reste à faire).
+choisi, pas étalonné (la carte est décrite dans [`la-sante.md`](la-sante.md)).
 
 ### 5.3 Les autres lectures de la page Santé
 

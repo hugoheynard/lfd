@@ -381,7 +381,7 @@ jobs:
       #    Elle ne disparaît pas pour autant : un déplacement de données sur une
       #    base VIVANTE se fait en trois déploiements (étendre / basculer /
       #    resserrer), jamais en une migration qui `DROP` ce que le code lit
-      #    encore. Cf. documentation/suite/CONTAINERIZE-NOTES.md.
+      #    encore. Cf. CLAUDE.md §0.
       #
       #    `migrate deploy` n'applique QUE les migrations existantes : il n'en
       #    génère aucune et ne réinitialise jamais. Il échoue plutôt que de

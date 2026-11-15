@@ -3,7 +3,7 @@ import type { BackendKey, FrontKey } from "./routes";
 /**
  * Ce que la gateway **observe** de son propre trafic — la troisième source
  * d'OPS, à côté du heartbeat (ce qu'un nœud dit de lui-même) et du probe (ce
- * qu'on constate du dehors). Design : `documentation/suite/architecture-ops-ecosystem-health.md` §12.
+ * qu'on constate du dehors). Cf. `documentation/ops/la-sante.md`.
  *
  * Toute la décision vit ici, en fonctions **pures**, comme `routes.ts` : ce
  * fichier ne connaît ni `Request`, ni Analytics Engine, ni le monde Workers.

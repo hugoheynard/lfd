@@ -23,8 +23,8 @@ fronts vivent dans [`../ci-cd/`](../ci-cd/) ; la table ci-dessous y renvoie.
 Voir aussi, hors de ce dossier :
 [`b2b/admin-app-ios-capacitor.md`](../b2b/admin-app-ios-capacitor.md) (l'admin en
 app iPhone) et
-[`suite/architecture-suite-gateway-scaling.md`](../suite/architecture-suite-gateway-scaling.md)
-(le plan d'origine, dont la partie « sous-domaines » attend un domaine).
+[`ci-cd/architecture-deploiement.md`](../ci-cd/architecture-deploiement.md)
+(la passerelle, ses invariants et son routage).
 
 ## Le résumé en dix lignes
 

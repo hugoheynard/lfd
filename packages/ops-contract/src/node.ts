@@ -2,8 +2,8 @@ import { z } from "zod";
 
 /**
  * Vocabulaire des **nœuds** de l'écosystème et de leur **santé**. Un nœud = une
- * brique du système (API externe, worker, service, datastore). Voir le design :
- * `documentation/suite/architecture-ops-ecosystem-health.md`.
+ * brique du système (API externe, worker, service, datastore). Voir
+ * `documentation/ops/la-sante.md`.
  */
 
 export const nodeKindSchema = z.enum([

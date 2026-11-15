@@ -89,6 +89,43 @@ backend le réécrit parce qu'il reste la frontière de confiance de son propre
 périmètre. Si demain la passerelle disparaissait du chemin, le Worker
 tiendrait toujours. Cf. [`../ops/securite-frontiere-de-confiance.md`](../ops/securite-frontiere-de-confiance.md).
 
+## 2 bis. La passerelle — ce qu'elle garantit, et comment elle route
+
+`lfd-gateway` (`gateway/`) est le **seul chemin public** vers les backends.
+Elle ne porte aucun métier ; toute décision de routage est dans
+`gateway/src/routes.ts`, sous tests. Trois invariants :
+
+- **Une origine stable, jamais une instance.** La passerelle appelle un
+  Worker par _service binding_ ; c'est lui qui choisit l'instance du
+  container. Personne n'adresse une machine.
+- **Des backends sans état propre.** L'état métier vit en Postgres et dans
+  les objets partagés (Durable Objects) ; ce qu'un process garde en mémoire
+  (caches locaux, mesures, compteurs de sonde) peut se perdre au redémarrage
+  sans faute. C'est ce qui permet de remplacer une instance à tout moment.
+- **Le jeton est vérifié par le backend.** La passerelle transmet
+  `Authorization` tel quel ; c'est l'API qui vérifie la signature Auth0 et
+  relit en base qui est l'appelant. La passerelle ne fait foi que de l'IP
+  (`x-lfc-client-ip`) et de la trace (`traceparent`).
+
+**Le routage, par préfixe de chemin** (`API_PREFIXES`) :
+
+| Préfixe              | Binding         | Worker              | Particularité                                                                                            |
+| -------------------- | --------------- | ------------------- | -------------------------------------------------------------------------------------------------------- |
+| `/api/lfd`           | `LFD_BACKEND`   | `lfd-api`           | préfixe retiré avant transmission                                                                        |
+| `/api/route-planner` | `ROUTE_PLANNER` | `lfd-route-planner` | jeton `ROUTE_PLANNER_TOKEN` exigé avant de router, sauf `GET\|HEAD …/tiles/…` ; limites de débit propres |
+
+Les deux Workers de destination ont `workers_dev = false` : sans adresse
+publique, le binding est leur seule entrée. Les API sont résolues **avant**
+les fronts : un préfixe d'API ne peut pas être capté par un front. Un chemin
+qui contient `//` ne répond nulle part.
+
+**La zone `lafoliecoffee.info`** est servie par Cloudflare, et la passerelle y
+a une route `lafoliecoffee.info/*` (`gateway/wrangler.toml`). Sur cet hôte, les
+API passent d'abord, tout le reste part au projet Pages de la boutique (section
+« Le front client à la racine » plus bas). La passerelle garde
+`workers_dev = true` : son adresse `lfd-gateway.lafoliedouce.workers.dev` est
+`LFD_API_URL`, compilée dans les bundles des fronts.
+
 ## 3. Où tournent les containers, et pourquoi c'est écrit
 
 Les deux containers sont **contraints à l'Europe de l'Ouest** :
@@ -175,8 +212,7 @@ la même façon.
 
 |                                       | État                                                         |
 | ------------------------------------- | ------------------------------------------------------------ |
-| Zone Cloudflare                       | **aucune** — le compte n'héberge aucun domaine               |
-| Domaine personnalisé                  | aucun ; tout est en `*.workers.dev` / `*.pages.dev`          |
+| Zone Cloudflare                       | `lafoliecoffee.info` seulement — cf. §2 bis                  |
 | `lafoliecoffee.xyz`                   | **n'existe pas en DNS**                                      |
 | `api-b2b` / `api-pim.lafoliedouce.eu` | **ne résolvent pas** ; `lafoliedouce.eu` est chez Proximedia |
 | WAF, règles de rate limiting          | indisponibles — ce sont des produits **de zone**             |
