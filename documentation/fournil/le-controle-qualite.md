@@ -49,7 +49,7 @@ un nouveau verdict. Colonnes : `id` (fourni par l'écran), `service_day`,
 (`ok` | `warning` | `blocking`), `note`, `checked_by`, `checked_at`,
 `quantity_seen`. En base : exactement une cible, note non vide hors `ok`.
 `production_quality_photo` : `UNIQUE (check_id, position)`. Agrégat
-`QualityCheck` (`domain/entities/quality-check.ts`), au plus 6 photos
+`QualityCheck` (`production/quality/domain/entities/quality-check.ts`), au plus 6 photos
 (`MAX_QUALITY_PHOTOS`), JPEG / PNG / WebP / HEIC, 10 Mo
 (`QUALITY_PHOTO_MAX_BYTES`).
 
@@ -80,7 +80,7 @@ ce bucket doit exclure `quality/` (hors `quality/pending/`).
 
 `handover → production` passe par `production/channels/handover/` :
 `QualityHoldsReader.heldOrders(serviceDay, orderIds)`, par lot, publié par le
-fournil (`infrastructure/prisma-quality-holds.reader.ts`) et lu par le retrait.
+fournil (`production/quality/infrastructure/prisma-quality-holds.reader.ts`) et lu par le retrait.
 `handoverBlocker` (`apps/lfd-api/src/handover/domain/services/handover.ts`)
 lit la retenue **après** « annulée », « pas passée » et « déjà retirée » : un
 sac déjà parti ne répond jamais « en vérification ». La file du comptoir sert

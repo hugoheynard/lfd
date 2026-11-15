@@ -320,7 +320,7 @@ mêlent jamais dans un lot.
       (plan, `DossierDeadlinesReading`). Imports hors porte 6 → 1, tests hors
       porte 59 → 51.
       **D1 — déplacer le noyau** (`day/`) et `shared/print/` (✅ bâti le 2026-11-15 : 105 fichiers et 42 tests ; imports hors porte 210 → 6, tests hors porte 139 → 59. `PackingHandoffs`, `SealedDayReading` et `WorksheetDeadlinesReading` chargent un canal : `day/index.ts` ne les exporte pas, leurs lecteurs restent en dette).
-7. **D2 — déplacer la qualité. D3 — le réassort. D4 — le plan. D5 —
+7. **D2 — déplacer la qualité** (✅ bâti le 2026-11-15 : 52 fichiers et 18 tests, 109 tests ; `quality/index.ts` n'exporte que `QualityLineStatusReader` ; imports hors porte 1 → 0, tests hors porte 51 → 51 ; `quality-doubles.ts` reste à plat, la journée, l'atelier et le plan s'en servent). **D3 — le réassort. D4 — le plan. D5 —
    l'atelier** (dont `production-batch-shortcuts.module.ts`).
 8. **D6 — un module Nest par métier.** `day/` devient un module qui fournit
    et exporte la journée (dépôt, verrou, version, tranches) ; les quatre
@@ -334,6 +334,18 @@ mêlent jamais dans un lot.
    les autres lus par `index.ts`. Seul
    lot qui peut changer l'ordre d'instanciation : il passe la suite e2e du
    fournil entière et le semis dev.
+9. **R — resserrer le noyau** (ajouté par Hugo le 2026-11-15 : « je veux
+   surtout avoir un tronc solide pour étendre sereinement »). Après D6, le
+   noyau est le tronc : un métier neuf ne devrait avoir à apprendre que
+   quelques entrées stables, pas une trentaine de petites pièces. Le lot
+   relit qui importe quoi par `day/index.ts`, regroupe ce que plusieurs
+   métiers combinent toujours de la même façon (pistes : « lire une
+   journée » avec compte, production faite et délais déjà calculés ; « les
+   règles d'horaire » en un seul objet), et retire de l'index ce qu'un seul
+   métier lit en le lui rendant. La porte compte la taille de chaque index
+   comme une dette qui ne peut que décroître. Aucun comportement ne change :
+   mêmes preuves que les déplacements (empreintes PDF, table des routes, e2e
+   du fournil).
 
 **Tranché après D0 (2026-11-15)** : les réassorts lancés
 (`ProductionResupply` et sa ligne) appartiennent au noyau, qui les écrit dans

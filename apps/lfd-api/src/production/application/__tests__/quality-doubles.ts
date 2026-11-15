@@ -3,16 +3,19 @@ import { ProductionDocumentStore } from "../../../platform/storage/production-do
 import type { ProducibleOrder } from "../../channels/commerce/day-orders.reader.js";
 import { OrderCustodyReader, type OrderOutOfHand } from "../../channels/handover/index.js";
 import { ProductionDay } from "../../day/domain/entities/production-day.js";
-import type { QualityCheck, QualityPhotoRef } from "../../domain/entities/quality-check.js";
-import { QualityUpload, type QualityUploadState } from "../../domain/entities/quality-upload.js";
-import { QualityCheckWriteRaceError } from "../../domain/errors/quality-record-errors.js";
+import type { QualityCheck, QualityPhotoRef } from "../../quality/domain/entities/quality-check.js";
+import {
+  QualityUpload,
+  type QualityUploadState,
+} from "../../quality/domain/entities/quality-upload.js";
+import { QualityCheckWriteRaceError } from "../../quality/domain/errors/quality-record-errors.js";
 import { ProductionDayRepository } from "../../day/index.js";
-import { QualityCheckReader } from "../../domain/ports/quality-check.reader.js";
-import { QualityCheckRepository } from "../../domain/ports/quality-check.repository.js";
-import { QualityUploadRepository } from "../../domain/ports/quality-upload.repository.js";
-import type { QualityLineStatusReader } from "../../domain/ports/quality-line-status.reader.js";
+import { QualityCheckReader } from "../../quality/domain/ports/quality-check.reader.js";
+import { QualityCheckRepository } from "../../quality/domain/ports/quality-check.repository.js";
+import { QualityUploadRepository } from "../../quality/domain/ports/quality-upload.repository.js";
+import type { QualityLineStatusReader } from "../../quality/domain/ports/quality-line-status.reader.js";
 import type { ServiceDay } from "../../day/index.js";
-import { CheckedQualityLinesReader } from "../services/checked-quality-lines.reader.js";
+import { CheckedQualityLinesReader } from "../../quality/application/services/checked-quality-lines.reader.js";
 
 /**
  * Les doublés du contrôle qualité — chacun ÉTEND son port, donc aucun cast.

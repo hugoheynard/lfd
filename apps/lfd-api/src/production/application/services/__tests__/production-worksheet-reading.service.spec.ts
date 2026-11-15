@@ -21,7 +21,7 @@ import {
 import { WorkshopShelvesReader } from "../../../channels/commerce/workshop-shelves.reader.js";
 import { ProductionDay } from "../../../day/domain/entities/production-day.js";
 import { ProductionTrancheSettings } from "../../../day/index.js";
-import { QualityCheck } from "../../../domain/entities/quality-check.js";
+import { QualityCheck } from "../../../quality/domain/entities/quality-check.js";
 import { ProductionContainerReader } from "../../../domain/ports/production-container.reader.js";
 import { ProductionDayRepository } from "../../../day/index.js";
 import type { ContainerRule } from "../../../domain/services/production-worksheet.js";

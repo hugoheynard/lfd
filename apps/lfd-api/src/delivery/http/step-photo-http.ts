@@ -11,7 +11,7 @@ export interface StepPhotoResponseHeaders {
  * Les en-têtes de la photo d'une étape servie au livreur — les MÊMES que la
  * route du staff (`lafoliecoffee/shared/photo-cards/http/photo-card-http.ts`,
  * `servePhoto`), recopiés parce que `delivery → b2b` est interdit (même
- * geste que `production/http/quality-photo-http.ts`, vérifié le 2026-10-01).
+ * geste que `production/quality/http/quality-photo-http.ts`, vérifié le 2026-10-01).
  *
  * `Content-Type` relu dans les octets, `nosniff`, et `private, immutable` :
  * l'URL de l'écran porte `?rev=` (la `photoRevision` de la vue), qui change à

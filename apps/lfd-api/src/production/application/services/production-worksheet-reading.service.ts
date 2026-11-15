@@ -12,7 +12,7 @@ import { ProductionDisplaySettings } from "../../domain/entities/production-disp
 import { ProductionDisplaySettingsReader } from "../../domain/ports/production-display-settings.reader.js";
 import { ProductionContainerReader } from "../../domain/ports/production-container.reader.js";
 import { ProductionDayRepository } from "../../day/index.js";
-import { QualityLineStatusReader } from "../../domain/ports/quality-line-status.reader.js";
+import { QualityLineStatusReader } from "../../quality/index.js";
 import { worksheetGroupsOf } from "../../domain/services/production-worksheet-groups.js";
 import {
   worksheetOf,

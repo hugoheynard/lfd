@@ -15,7 +15,7 @@ export const DOCUMENTS_SCENARIOS: ScenarioSet = {
         ],
       }),
 
-  [routeKey("production/http/production-quality.controller.ts", "deposit")]: () =>
+  [routeKey("production/quality/http/production-quality.controller.ts", "deposit")]: () =>
     Promise.resolve({
       sub: STAFF,
       path: "/admin/supervision/quality/photos",
