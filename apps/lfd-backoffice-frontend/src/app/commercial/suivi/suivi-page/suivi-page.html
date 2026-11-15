@@ -9,21 +9,21 @@
     />
     <fold-listbox
       size="sm"
-      label="Niveau"
-      [options]="levelOptions"
-      [value]="selected(filters().level)"
-      (selectionChange)="setFilter('level', $event)"
+      label="Prochaine étape"
+      [options]="nextStepOptions"
+      [value]="selected(filters().nextStep)"
+      (selectionChange)="setFilter('nextStep', $event)"
     />
     <fold-listbox
       size="sm"
-      label="Signal"
+      label="Alertes"
       [options]="signalOptions"
       [value]="selected(filters().signal)"
       (selectionChange)="setFilter('signal', $event)"
     />
     <fold-listbox
       size="sm"
-      label="Canal"
+      label="Créée par"
       [options]="channelOptions"
       [value]="selected(filters().channel)"
       (selectionChange)="setFilter('channel', $event)"
@@ -44,79 +44,266 @@
       </fold-empty-state>
     }
     @default {
-      @if (counts().length > 0) {
-        <p class="counts" data-counts>
-          @for (count of counts(); track count.level) {
-            <span>{{ count.label }}</span>
+      @if (cards().length > 0) {
+        <div class="cards" data-cards>
+          @for (card of cards(); track card.key) {
+            <fold-card
+              interactive
+              padding="sm"
+              [surface]="card.active ? 'accent' : 'card'"
+              [ariaLabel]="card.ariaLabel"
+              [attr.aria-pressed]="card.active"
+              [attr.data-card]="card.key"
+              (activated)="toggleCard(card.key)"
+            >
+              <span class="card-count">{{ card.count }}</span>
+              <span class="card-label">{{ card.label }}</span>
+            </fold-card>
           }
-        </p>
+        </div>
       }
       @if (todayLine(); as line) {
         <p class="today" data-today>Aujourd’hui : {{ line }}</p>
       }
 
-      <fold-data-table
-        caption="Suivi commercial"
-        toolbarSurface="accent"
-        hover
-        clickable
-        [columns]="columns"
-        [rows]="view()?.rows ?? []"
-        [rowKey]="rowKey"
-        [loading]="state() === 'loading'"
-        [empty]="empty"
-        [rowNote]="hasMissing"
-        (rowClick)="open($event)"
-      >
-        <fold-element-title foldToolbar variant="bar" [title]="tableTitle()" />
+      <div class="grid">
+        <fold-data-table
+          caption="Suivi commercial"
+          toolbarSurface="accent"
+          hover
+          clickable
+          [columns]="columns"
+          [rows]="view()?.rows ?? []"
+          [rowKey]="rowKey"
+          [loading]="state() === 'loading'"
+          [empty]="empty"
+          (rowClick)="open($event)"
+        >
+          <fold-element-title foldToolbar variant="bar" [title]="tableTitle()" />
 
-        <ng-template foldCell="company" let-row>
-          <span class="primary">{{ row.name }}</span>
-        </ng-template>
+          <ng-template foldCell="company" let-row>
+            <span class="primary">{{ row.name }}</span>
+            <span class="secondary" data-origin
+              >{{ origin(row) }} ·
+              <span [class.tone-alert]="late(row)" [attr.data-late]="late(row) ? '' : null">{{
+                age(row)
+              }}</span>
+              @if (late(row)) {
+                <span class="sr-only">, en retard</span>
+              }
+            </span>
+          </ng-template>
 
-        <ng-template foldCell="reference" let-row>
-          <span class="secondary">{{ row.reference }}</span>
-        </ng-template>
-
-        <ng-template foldCell="level" let-row>
-          <fold-badge [variant]="levelVariant(row)" [content]="levelLabel(row)" />
-        </ng-template>
-
-        <ng-template foldCell="age" let-row>{{ row.ageDays }} j</ng-template>
-
-        <ng-template foldCell="follower" let-row>{{ follower(row) }}</ng-template>
-
-        <ng-template foldCell="signals" let-row>
-          <span class="signals">
-            @for (badge of badges(row); track badge.key) {
-              <fold-badge [variant]="badge.variant" [content]="badge.label" />
+          <ng-template foldCell="follower" let-row>
+            <span class="step">{{ follower(row) }}</span>
+            @if (unfollowedSignup(row)) {
+              <span class="secondary tone-alert" data-unfollowed
+                >inscrite, personne ne rappelle</span
+              >
             }
-            @if (selfDeclared(row)) {
-              <fold-badge variant="neutral" content="Inscrit" />
-            }
-          </span>
-        </ng-template>
+          </ng-template>
 
-        <ng-template foldCell="assign" let-row>
-          <!-- Le clic ne doit pas ouvrir la fiche : la ligne entière y mène. -->
-          <button
-            foldButton
-            size="sm"
-            emphasis="outline"
-            intent="neutral"
-            data-assign
-            (click)="$event.stopPropagation(); assign(row)"
-          >
-            {{ assignLabel(row) }}
-          </button>
-        </ng-template>
+          <ng-template foldCell="contact" let-row>
+            @let c = cell(row, 'contact');
+            <span
+              class="step"
+              [class.tone-done]="c.tone === 'done'"
+              [class.tone-pending]="c.tone === 'pending'"
+              [class.tone-alert]="c.tone === 'alert'"
+              [class.tone-none]="c.tone === 'none'"
+              [attr.data-step]="'contact'"
+            >
+              <span [attr.aria-hidden]="c.text !== c.spoken ? 'true' : null">{{ c.text }}</span>
+              @if (c.text !== c.spoken) {
+                <span class="sr-only">{{ c.spoken }}</span>
+              }
+              @if (c.detail; as detail) {
+                <span class="secondary" [class.tone-warning]="c.detailTone === 'warning'">{{
+                  detail
+                }}</span>
+              }
+            </span>
+          </ng-template>
 
-        <!-- Ce qui manque, sous la ligne : la question « qu'est-ce qui n'a pas
-             été fait ? » se lit avec la fiche, pas dans une colonne de plus. -->
-        <ng-template foldRowNote let-row>
-          <span class="secondary" data-missing>{{ missing(row) }}</span>
-        </ng-template>
-      </fold-data-table>
+          <ng-template foldCell="legal" let-row>
+            @let c = cell(row, 'legal');
+            <span
+              class="step"
+              [class.tone-done]="c.tone === 'done'"
+              [class.tone-pending]="c.tone === 'pending'"
+              [class.tone-alert]="c.tone === 'alert'"
+              [class.tone-none]="c.tone === 'none'"
+              [attr.data-step]="'legal'"
+            >
+              <span [attr.aria-hidden]="c.text !== c.spoken ? 'true' : null">{{ c.text }}</span>
+              @if (c.text !== c.spoken) {
+                <span class="sr-only">{{ c.spoken }}</span>
+              }
+              @if (c.detail; as detail) {
+                <span class="secondary" [class.tone-warning]="c.detailTone === 'warning'">{{
+                  detail
+                }}</span>
+              }
+            </span>
+          </ng-template>
+
+          <ng-template foldCell="kbis" let-row>
+            @let c = cell(row, 'kbis');
+            <span
+              class="step"
+              [class.tone-done]="c.tone === 'done'"
+              [class.tone-pending]="c.tone === 'pending'"
+              [class.tone-alert]="c.tone === 'alert'"
+              [class.tone-none]="c.tone === 'none'"
+              [attr.data-step]="'kbis'"
+            >
+              <span [attr.aria-hidden]="c.text !== c.spoken ? 'true' : null">{{ c.text }}</span>
+              @if (c.text !== c.spoken) {
+                <span class="sr-only">{{ c.spoken }}</span>
+              }
+              @if (c.detail; as detail) {
+                <span class="secondary" [class.tone-warning]="c.detailTone === 'warning'">{{
+                  detail
+                }}</span>
+              }
+            </span>
+          </ng-template>
+
+          <ng-template foldCell="payment" let-row>
+            @let c = cell(row, 'payment');
+            <span
+              class="step"
+              [class.tone-done]="c.tone === 'done'"
+              [class.tone-pending]="c.tone === 'pending'"
+              [class.tone-alert]="c.tone === 'alert'"
+              [class.tone-none]="c.tone === 'none'"
+              [attr.data-step]="'payment'"
+            >
+              <span [attr.aria-hidden]="c.text !== c.spoken ? 'true' : null">{{ c.text }}</span>
+              @if (c.text !== c.spoken) {
+                <span class="sr-only">{{ c.spoken }}</span>
+              }
+              @if (c.detail; as detail) {
+                <span class="secondary" [class.tone-warning]="c.detailTone === 'warning'">{{
+                  detail
+                }}</span>
+              }
+            </span>
+          </ng-template>
+
+          <ng-template foldCell="debit" let-row>
+            @let c = cell(row, 'debit');
+            <span
+              class="step"
+              [class.tone-done]="c.tone === 'done'"
+              [class.tone-pending]="c.tone === 'pending'"
+              [class.tone-alert]="c.tone === 'alert'"
+              [class.tone-none]="c.tone === 'none'"
+              [attr.data-step]="'debit'"
+            >
+              <span [attr.aria-hidden]="c.text !== c.spoken ? 'true' : null">{{ c.text }}</span>
+              @if (c.text !== c.spoken) {
+                <span class="sr-only">{{ c.spoken }}</span>
+              }
+              @if (c.detail; as detail) {
+                <span class="secondary" [class.tone-warning]="c.detailTone === 'warning'">{{
+                  detail
+                }}</span>
+              }
+            </span>
+          </ng-template>
+
+          <ng-template foldCell="delivery" let-row>
+            @let c = cell(row, 'delivery');
+            <span
+              class="step"
+              [class.tone-done]="c.tone === 'done'"
+              [class.tone-pending]="c.tone === 'pending'"
+              [class.tone-alert]="c.tone === 'alert'"
+              [class.tone-none]="c.tone === 'none'"
+              [attr.data-step]="'delivery'"
+            >
+              <span [attr.aria-hidden]="c.text !== c.spoken ? 'true' : null">{{ c.text }}</span>
+              @if (c.text !== c.spoken) {
+                <span class="sr-only">{{ c.spoken }}</span>
+              }
+              @if (c.detail; as detail) {
+                <span class="secondary" [class.tone-warning]="c.detailTone === 'warning'">{{
+                  detail
+                }}</span>
+              }
+            </span>
+          </ng-template>
+
+          <ng-template foldCell="login" let-row>
+            @let c = cell(row, 'login');
+            <span
+              class="step"
+              [class.tone-done]="c.tone === 'done'"
+              [class.tone-pending]="c.tone === 'pending'"
+              [class.tone-alert]="c.tone === 'alert'"
+              [class.tone-none]="c.tone === 'none'"
+              [attr.data-step]="'login'"
+            >
+              <span [attr.aria-hidden]="c.text !== c.spoken ? 'true' : null">{{ c.text }}</span>
+              @if (c.text !== c.spoken) {
+                <span class="sr-only">{{ c.spoken }}</span>
+              }
+              @if (c.detail; as detail) {
+                <span class="secondary" [class.tone-warning]="c.detailTone === 'warning'">{{
+                  detail
+                }}</span>
+              }
+            </span>
+          </ng-template>
+
+          <ng-template foldCell="orders" let-row>
+            @let c = cell(row, 'orders');
+            <span
+              class="step"
+              [class.tone-done]="c.tone === 'done'"
+              [class.tone-pending]="c.tone === 'pending'"
+              [class.tone-alert]="c.tone === 'alert'"
+              [class.tone-none]="c.tone === 'none'"
+              [attr.data-step]="'orders'"
+            >
+              <span [attr.aria-hidden]="c.text !== c.spoken ? 'true' : null">{{ c.text }}</span>
+              @if (c.text !== c.spoken) {
+                <span class="sr-only">{{ c.spoken }}</span>
+              }
+              @if (c.detail; as detail) {
+                <span class="secondary" [class.tone-warning]="c.detailTone === 'warning'">{{
+                  detail
+                }}</span>
+              }
+            </span>
+          </ng-template>
+
+          <ng-template foldCell="next" let-row>
+            @let step = next(row);
+            <span class="step" data-step="next">
+              <fold-badge [variant]="step.variant" [content]="step.label" />
+              @if (step.actor; as actor) {
+                <span class="secondary">{{ actor }}</span>
+              }
+            </span>
+          </ng-template>
+
+          <ng-template foldCell="assign" let-row>
+            <!-- Le clic ne doit pas ouvrir la fiche : la ligne entière y mène. -->
+            <button
+              foldButton
+              size="sm"
+              emphasis="outline"
+              intent="neutral"
+              data-assign
+              (click)="$event.stopPropagation(); assign(row)"
+            >
+              {{ assignLabel(row) }}
+            </button>
+          </ng-template>
+        </fold-data-table>
+      </div>
 
       @if (view(); as current) {
         @if (current.total > current.pageSize) {

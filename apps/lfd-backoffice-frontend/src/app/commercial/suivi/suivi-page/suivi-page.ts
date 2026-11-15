@@ -10,10 +10,12 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   COMPANY_CONTACT_MODES,
+  SALES_NEXT_STEPS,
+  SALES_OVERSIGHT_CARDS,
   SALES_OVERSIGHT_CHANNELS,
   SALES_OVERSIGHT_SIGNALS,
   SALES_OVERSIGHT_UNASSIGNED,
-  SALES_WORK_LEVELS,
+  type SalesOversightCard,
   type SalesOversightRowView,
   type SalesOversightView,
 } from '@lfd/contracts';
@@ -21,15 +23,14 @@ import { httpErrorCode } from '@lfd/endpoints';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
+  FoldCardComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
-  FoldDataTableRowNoteDirective,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldListboxComponent,
   FoldPaginatorComponent,
   FoldPanelHostService,
-  type FoldBadgeVariant,
   type FoldPaginatorLabels,
   type FoldSelectItem,
   type FoldTableColumn,
@@ -38,16 +39,26 @@ import {
 import { map } from 'rxjs';
 
 import {
+  CARD_LABELS,
   CHANNEL_LABELS,
-  LEVEL_LABELS,
-  LEVEL_VARIANTS,
+  NEXT_STEP_LABELS,
   SIGNAL_LABELS,
+  contactCell,
+  debitCell,
+  deliveryCell,
   filtersFromParams,
   followerLabel,
-  missingLabel,
-  signalBadges,
+  kbisCell,
+  legalCell,
+  loginCell,
+  nextStepBadge,
+  ordersCell,
+  ageLabel,
+  originLabel,
+  paymentCell,
+  type NextStepBadge,
   type SalesOversightFilters,
-  type SignalBadge,
+  type StepCell,
 } from '../sales-oversight-filters';
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { dialogSide } from '../../../b2b/reglages/delivery-zones-section/delivery-audiences';
@@ -76,8 +87,9 @@ const PAGINATOR_LABELS: FoldPaginatorLabels = {
 
 /**
  * **Le suivi commercial** — un seul tableau, une ligne par fiche principale,
- * filtrable par commercial, niveau, signal et canal
- * (`documentation/b2b/plan-suivi-commercial.md`, § 1 et § 3.3).
+ * filtrable par commercial, prochaine étape, alerte et
+ * canal, une colonne par étape (`documentation/b2b/plan-suivi-commercial.md`,
+ * § 1 bis et § 3.3).
  *
  * Les filtres vivent dans l'URL : un lien collé rouvre le même tableau, et
  * l'URL est la seule source — changer un filtre navigue, la lecture suit.
@@ -88,9 +100,9 @@ const PAGINATOR_LABELS: FoldPaginatorLabels = {
   imports: [
     FoldBadgeComponent,
     FoldButtonComponent,
+    FoldCardComponent,
     FoldDataTableCellDirective,
     FoldDataTableComponent,
-    FoldDataTableRowNoteDirective,
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
     FoldListboxComponent,
@@ -123,9 +135,9 @@ export class SuiviPage {
     })),
     { value: SALES_OVERSIGHT_UNASSIGNED, label: 'Non attribuée' },
   ]);
-  protected readonly levelOptions: readonly FoldSelectItem<string>[] = [
-    { value: ALL, label: 'Tous' },
-    ...SALES_WORK_LEVELS.map((level) => ({ value: level, label: LEVEL_LABELS[level] })),
+  protected readonly nextStepOptions: readonly FoldSelectItem<string>[] = [
+    { value: ALL, label: 'Toutes' },
+    ...SALES_NEXT_STEPS.map((step) => ({ value: step, label: NEXT_STEP_LABELS[step] })),
   ];
   protected readonly signalOptions: readonly FoldSelectItem<string>[] = [
     { value: ALL, label: 'Tous' },
@@ -136,13 +148,20 @@ export class SuiviPage {
     ...SALES_OVERSIGHT_CHANNELS.map((key) => ({ value: key, label: CHANNEL_LABELS[key] })),
   ];
 
-  /** « 38 Annuaire · 8 Contactée · … » selon les filtres. */
-  protected readonly counts = computed(() => {
-    const counts = this.view()?.counts;
-    if (counts === undefined) return [];
-    return SALES_WORK_LEVELS.map((level) => ({
-      level,
-      label: `${counts[level]} ${LEVEL_LABELS[level]}`,
+  /**
+   * Les quatre cartes en tête, chacune un filtre : un clic le pose, un second
+   * le retire. Leurs nombres suivent les filtres commercial et canal seulement.
+   */
+  protected readonly cards = computed(() => {
+    const cards = this.view()?.cards;
+    if (cards === undefined) return [];
+    const active = this.filters().card;
+    return SALES_OVERSIGHT_CARDS.map((key) => ({
+      key,
+      label: CARD_LABELS[key],
+      count: cards[key],
+      active: active === key,
+      ariaLabel: `${CARD_LABELS[key]} : ${cards[key]}${active === key ? ' (filtre actif, cliquer pour le retirer)' : ''}`,
     }));
   });
 
@@ -170,14 +189,19 @@ export class SuiviPage {
   });
 
   protected readonly columns: readonly FoldTableColumn<SalesOversightRowView>[] = [
-    { key: 'company', label: 'Fiche' },
-    { key: 'reference', label: 'Réf.', width: '8rem' },
-    { key: 'level', label: 'Niveau', width: '8rem' },
-    { key: 'age', label: 'Âge', width: '5rem' },
-    { key: 'follower', label: 'Suivie par', width: '11rem' },
-    { key: 'signals', label: 'Signaux', width: '16rem' },
+    { key: 'company', label: 'Établissement', width: '13rem' },
+    { key: 'follower', label: 'Commercial', width: '8rem' },
+    { key: 'contact', label: 'Contact', width: '5.5rem' },
+    { key: 'legal', label: 'Fiche remplie', width: '6rem' },
+    { key: 'kbis', label: 'KBIS', width: '5.5rem' },
+    { key: 'payment', label: 'Paiement', width: '9rem' },
+    { key: 'debit', label: 'Prêt à prélever', width: '7rem' },
+    { key: 'delivery', label: 'Livraison', width: '5rem' },
+    { key: 'login', label: 'Client connecté', width: '6.5rem' },
+    { key: 'orders', label: 'Activé · cdes', width: '5rem', numeric: true },
+    { key: 'next', label: 'Prochaine étape', width: '9.5rem' },
     ...(this.permissions.can('b2b_sales_oversight:write')
-      ? [{ key: 'assign', label: 'Suivi', width: '9rem' }]
+      ? [{ key: 'assign', label: 'Suivi', width: '7.5rem' }]
       : []),
   ];
 
@@ -187,7 +211,6 @@ export class SuiviPage {
   };
 
   protected readonly paginatorLabels = PAGINATOR_LABELS;
-  protected readonly hasMissing = (row: SalesOversightRowView): boolean => row.missing.length > 0;
   protected readonly rowKey = (row: SalesOversightRowView): string => row.companyId;
 
   constructor() {
@@ -220,10 +243,19 @@ export class SuiviPage {
   }
 
   /** Un filtre change : l'URL le dit, et la liste repart de la première page. */
-  protected setFilter(key: 'follower' | 'level' | 'signal' | 'channel', value: string): void {
+  protected setFilter(key: 'follower' | 'nextStep' | 'signal' | 'channel', value: string): void {
     void this.router.navigate([], {
       relativeTo: this.route,
       queryParams: { [key]: value === ALL ? null : value, page: null },
+      queryParamsHandling: 'merge',
+    });
+  }
+
+  /** Une carte : un clic pose son filtre, un clic sur la carte active le retire. */
+  protected toggleCard(card: SalesOversightCard): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { card: this.filters().card === card ? null : card, page: null },
       queryParamsHandling: 'merge',
     });
   }
@@ -264,25 +296,42 @@ export class SuiviPage {
   }
 
   // `let-row` n'est pas typé : on entre par des méthodes qui rendent la ligne typée.
-  protected levelLabel(row: SalesOversightRowView): string {
-    return LEVEL_LABELS[row.level];
-  }
-  protected levelVariant(row: SalesOversightRowView): FoldBadgeVariant {
-    return LEVEL_VARIANTS[row.level];
-  }
-  protected badges(row: SalesOversightRowView): readonly SignalBadge[] {
-    return signalBadges(row);
-  }
-  protected missing(row: SalesOversightRowView): string | null {
-    return missingLabel(row);
-  }
   protected follower(row: SalesOversightRowView): string {
     return followerLabel(row);
   }
-  protected selfDeclared(row: SalesOversightRowView): boolean {
-    return row.declaredVia === 'self';
+  protected origin(row: SalesOversightRowView): string {
+    return originLabel(row);
+  }
+  protected age(row: SalesOversightRowView): string {
+    return ageLabel(row);
+  }
+  protected late(row: SalesOversightRowView): boolean {
+    return row.signals.includes('late');
+  }
+  protected unfollowedSignup(row: SalesOversightRowView): boolean {
+    return row.signals.includes('unassigned_signup');
+  }
+  protected cell(
+    row: SalesOversightRowView,
+    step: 'contact' | 'legal' | 'kbis' | 'payment' | 'debit' | 'delivery' | 'login' | 'orders',
+  ): StepCell {
+    return STEP_CELLS[step](row);
+  }
+  protected next(row: SalesOversightRowView): NextStepBadge {
+    return nextStepBadge(row);
   }
 }
+
+const STEP_CELLS = {
+  contact: contactCell,
+  legal: legalCell,
+  kbis: kbisCell,
+  payment: paymentCell,
+  debit: debitCell,
+  delivery: deliveryCell,
+  login: loginCell,
+  orders: ordersCell,
+} as const;
 
 /** « 0 montée », « 1 montée », « 2 montées ». */
 function plural(count: number, one: string, many: string): string {

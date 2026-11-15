@@ -1,7 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, type Params } from '@angular/router';
-import type { SalesOversightRowView, SalesOversightView } from '@lfd/contracts';
+import type {
+  SalesOversightRowView,
+  SalesOversightView,
+  SalesSheetStepsView,
+} from '@lfd/contracts';
 import { FoldPanelHostService } from 'fold-ng';
 import { BehaviorSubject } from 'rxjs';
 import { describe, expect, it } from 'vitest';
@@ -26,6 +30,24 @@ function row(over: Partial<SalesOversightRowView> = {}): SalesOversightRowView {
     accessSentCount: 0,
     lastAccessSentAt: null,
     deliveryAddressCount: 0,
+    steps: steps(),
+    nextStep: 'contact',
+    nextStepActor: 'commercial',
+    ...over,
+  };
+}
+
+function steps(over: Partial<SalesSheetStepsView> = {}): SalesSheetStepsView {
+  return {
+    contact: { last: null, daysAgo: null },
+    legal: { done: 2, of: 4, missing: ['vat', 'phone'], nameOnly: false },
+    kbis: 'missing',
+    payment: { terms: 'on_order', requested: false, rhythm: null, means: null },
+    debitReady: 'not_applicable',
+    delivery: 'missing',
+    login: false,
+    activated: false,
+    orders: 0,
     ...over,
   };
 }
@@ -33,6 +55,7 @@ function row(over: Partial<SalesOversightRowView> = {}): SalesOversightRowView {
 function view(over: Partial<SalesOversightView> = {}): SalesOversightView {
   return {
     counts: { directory: 38, contacted: 8, qualified: 4, opened: 2, active: 5 },
+    cards: { noContact: 38, onAccountNotDebitReady: 3, readyNotActivated: 2, ordering: 5 },
     rows: [row()],
     page: 1,
     pageSize: 50,
@@ -125,6 +148,22 @@ async function settle(fixture: ComponentFixture<SuiviPage>): Promise<void> {
   }
 }
 
+const card = (fixture: ComponentFixture<SuiviPage>, key: string): HTMLElement | null =>
+  (fixture.nativeElement as HTMLElement).querySelector(`[data-card="${key}"]`);
+
+/** Le texte de la cellule `step` de la ligne `index`, ses morceaux séparés d'une espace. */
+function cellText(fixture: ComponentFixture<SuiviPage>, step: string, index = 0): string {
+  const cells = (fixture.nativeElement as HTMLElement).querySelectorAll(`[data-step="${step}"]`);
+  const parts = [...(cells[index]?.children ?? [])].map((part) => part.textContent?.trim() ?? '');
+  return parts.filter((part) => part !== '').join(' ');
+}
+
+async function renderRows(rows: SalesOversightRowView[]): Promise<Rendered> {
+  const api = new FakeApi();
+  api.answer = () => Promise.resolve(view({ rows, total: rows.length }));
+  return render({}, api);
+}
+
 const text = (fixture: ComponentFixture<SuiviPage>): string =>
   (fixture.nativeElement as HTMLElement).textContent ?? '';
 
@@ -132,29 +171,32 @@ describe('SuiviPage — le suivi commercial', () => {
   it('lit les filtres de l’URL, et ignore une valeur inconnue', async () => {
     const { api } = await render({
       follower: 'unassigned',
-      level: 'contacted',
+      card: 'ordering',
+      nextStep: 'mandate',
       signal: 'bogus',
       channel: 'self',
       page: '2',
     });
     expect(api.asked[0]).toEqual({
       follower: 'unassigned',
-      level: 'contacted',
+      card: 'ordering',
+      nextStep: 'mandate',
       signal: null,
       channel: 'self',
       page: 2,
     });
   });
 
-  it('montre les compteurs, le niveau, le suiveur, les signaux et ce qui manque', async () => {
+  it('montre les cartes, l’établissement, son origine et le commercial', async () => {
     const { fixture } = await render();
     const shown = text(fixture);
-    expect(shown).toContain('38 Annuaire');
-    expect(shown).toContain('5 Active');
+    expect(card(fixture, 'noContact')?.textContent).toContain('38');
+    expect(card(fixture, 'noContact')?.textContent).toContain('Sans aucun contact');
+    expect(card(fixture, 'ordering')?.textContent).toContain('Clients qui commandent');
+    expect(shown).not.toContain('Annuaire');
     expect(shown).toContain('Boulangerie X');
+    expect(shown).toContain('créée par un commercial · il y a 21 j');
     expect(shown).toContain('Commerciale A');
-    expect(shown).toContain('En retard');
-    expect(shown).toContain('manque : interlocuteur · contact noté');
   });
 
   it('dit le récap du jour sous les compteurs, contacts par mode', async () => {
@@ -210,8 +252,8 @@ describe('SuiviPage — le suivi commercial', () => {
     const shown = text(fixture);
     expect(shown).toContain('Ancien membre');
     expect(shown).not.toContain('Partie');
-    expect(shown).toContain('Non attribuée');
-    expect(shown).toContain('Accès envoyé 3×');
+    expect(shown).toContain('Personne');
+    expect(cellText(fixture, 'login', 1)).toContain('accès envoyé 3×');
   });
 
   it('un 409 « trop de fiches » demande de filtrer par commercial ou par canal', async () => {
@@ -236,9 +278,9 @@ describe('SuiviPage — le suivi commercial', () => {
 
   it('suit l’URL : un nouveau filtre relit le tableau', async () => {
     const { fixture, api, params } = await render();
-    params.next(convertToParamMap({ level: 'active' }));
+    params.next(convertToParamMap({ nextStep: 'activate' }));
     await settle(fixture);
-    expect(api.asked.at(-1)?.level).toBe('active');
+    expect(api.asked.at(-1)?.nextStep).toBe('activate');
   });
 });
 
@@ -279,12 +321,200 @@ describe('SuiviPage — confier une fiche', () => {
     expect(router.navigations).toEqual([]);
     expect(api.asked).toHaveLength(2);
   });
+});
 
-  it('nomme le signal d’une inscription sans suivi', async () => {
-    const api = new FakeApi();
-    api.answer = () =>
-      Promise.resolve(view({ rows: [row({ signals: ['unassigned_signup'], followedBy: null })] }));
-    const { fixture } = await render({}, api);
-    expect(text(fixture)).toContain('Inscription sans suivi');
+describe('SuiviPage — les cartes filtrent', () => {
+  it('un clic pose le filtre dans l’URL, et repart de la première page', async () => {
+    const { fixture, router } = await render();
+    card(fixture, 'onAccountNotDebitReady')?.click();
+    expect(router.navigations.at(-1)?.queryParams).toEqual({
+      card: 'onAccountNotDebitReady',
+      page: null,
+    });
+  });
+
+  it('la carte active se voit, et un second clic retire le filtre', async () => {
+    const { fixture, router, api } = await render({ card: 'ordering' });
+    expect(api.asked[0]?.card).toBe('ordering');
+    expect(card(fixture, 'ordering')?.getAttribute('aria-pressed')).toBe('true');
+    expect(card(fixture, 'noContact')?.getAttribute('aria-pressed')).toBe('false');
+    card(fixture, 'ordering')?.click();
+    expect(router.navigations.at(-1)?.queryParams).toEqual({ card: null, page: null });
+  });
+});
+
+describe('SuiviPage — la grille d’étapes', () => {
+  it('dit chaque forme de paiement', async () => {
+    const { fixture } = await renderRows([
+      row({ companyId: 'a' }),
+      row({
+        companyId: 'b',
+        steps: steps({
+          payment: { terms: 'on_order', requested: true, rhythm: null, means: null },
+        }),
+      }),
+      row({
+        companyId: 'c',
+        steps: steps({
+          payment: { terms: 'on_account', requested: false, rhythm: 'weekly', means: 'sepa_debit' },
+        }),
+      }),
+      row({
+        companyId: 'd',
+        steps: steps({
+          payment: {
+            terms: 'on_account',
+            requested: false,
+            rhythm: 'semimonthly',
+            means: 'bank_transfer',
+          },
+        }),
+      }),
+      row({
+        companyId: 'e',
+        steps: steps({
+          payment: {
+            terms: 'on_account',
+            requested: false,
+            rhythm: 'monthly',
+            means: 'sepa_debit',
+          },
+        }),
+      }),
+    ]);
+    expect(cellText(fixture, 'payment', 0)).toBe('À la commande');
+    expect(cellText(fixture, 'payment', 1)).toBe('À la commande demandé : au compte');
+    expect(cellText(fixture, 'payment', 2)).toBe('Au compte · hebdo · prélèvement');
+    expect(cellText(fixture, 'payment', 3)).toBe('Au compte · 2×/mois · virement');
+    expect(cellText(fixture, 'payment', 4)).toBe('Au compte · mensuel · prélèvement');
+  });
+
+  it('dit où en est le prélèvement', async () => {
+    const states = [
+      'ready',
+      'bank_account_missing',
+      'mandate_missing',
+      'blocked',
+      'not_applicable',
+    ] as const;
+    const { fixture } = await renderRows(
+      states.map((debitReady, index) =>
+        row({ companyId: `co_${index}`, steps: steps({ debitReady }) }),
+      ),
+    );
+    expect(states.map((_, index) => cellText(fixture, 'debit', index))).toEqual([
+      '✓ prêt à prélever',
+      'RIB manquant',
+      'mandat à signer',
+      'bloqué par la compta',
+      'sans objet',
+    ]);
+  });
+
+  it('dit la fiche remplie, le KBIS, la livraison, le contact et les commandes', async () => {
+    const { fixture } = await renderRows([
+      row({
+        companyId: 'a',
+        steps: steps({
+          contact: { last: '2030-01-01', daysAgo: 45 },
+          legal: { done: 4, of: 4, missing: [], nameOnly: false },
+          kbis: 'certified',
+          delivery: 'address',
+          login: true,
+          activated: true,
+          orders: 7,
+        }),
+      }),
+      row({
+        companyId: 'b',
+        steps: steps({
+          contact: { last: '2030-01-10', daysAgo: 3 },
+          legal: {
+            done: 0,
+            of: 4,
+            missing: ['legal_identity', 'vat', 'phone', 'billing_address'],
+            nameOnly: true,
+          },
+          kbis: 'to_verify',
+          delivery: 'pickup',
+        }),
+      }),
+      row({ companyId: 'c' }),
+    ]);
+    expect(cellText(fixture, 'contact', 0)).toContain('il y a 45 j');
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('[data-step="contact"]')[0]
+        ?.classList,
+    ).toContain('tone-alert');
+    expect(cellText(fixture, 'contact', 2)).toBe('— aucun contact');
+    expect(cellText(fixture, 'legal', 0)).toBe('✓ fiche remplie');
+    expect(cellText(fixture, 'legal', 1)).toContain('nom seul');
+    expect(cellText(fixture, 'legal', 2)).toBe('2 sur 4 manque : n° de TVA, téléphone');
+    expect(cellText(fixture, 'kbis', 0)).toBe('✓ KBIS certifié');
+    expect(cellText(fixture, 'kbis', 1)).toBe('à vérifier');
+    expect(cellText(fixture, 'delivery', 1)).toBe('retrait');
+    expect(cellText(fixture, 'login', 0)).toBe('✓ client connecté');
+    expect(cellText(fixture, 'orders', 0)).toBe('7 activé, 7 commandes');
+    expect(cellText(fixture, 'orders', 2)).toBe('— pas activé');
+  });
+
+  it('dit la prochaine étape, et qui agit', async () => {
+    const { fixture } = await renderRows([
+      row({ companyId: 'a', followedBy: null, nextStep: 'assign', nextStepActor: 'commercial' }),
+      row({ companyId: 'b', nextStep: 'contact', signals: ['stale_contact'] }),
+      row({ companyId: 'c', nextStep: 'contact', signals: [] }),
+      row({ companyId: 'd', nextStep: 'mandate', nextStepActor: 'client' }),
+      row({ companyId: 'e', nextStep: 'activate', nextStepActor: 'accounting' }),
+      row({ companyId: 'f', nextStep: 'none', nextStepActor: 'none' }),
+    ]);
+    expect([0, 1, 2, 3, 4, 5].map((index) => cellText(fixture, 'next', index))).toEqual([
+      'Attribuer commercial',
+      'Recontacter commercial',
+      'Contacter commercial',
+      'Faire signer le mandat client',
+      'Activer compta',
+      'Rien à faire',
+    ]);
+  });
+
+  it('« En retard » : l’âge passe en rouge et se dit', async () => {
+    const { fixture } = await renderRows([
+      row({ companyId: 'a', signals: ['late'] }),
+      row({ companyId: 'b', signals: [] }),
+    ]);
+    const origins = (fixture.nativeElement as HTMLElement).querySelectorAll('[data-origin]');
+    expect(origins[0]?.querySelector('[data-late]')?.classList).toContain('tone-alert');
+    expect(origins[0]?.textContent).toContain('en retard');
+    expect(origins[1]?.querySelector('[data-late]')).toBeNull();
+    expect(origins[1]?.textContent).not.toContain('en retard');
+  });
+
+  it('« Plusieurs adresses » : la livraison dit combien, en orange', async () => {
+    const { fixture } = await renderRows([
+      row({
+        companyId: 'a',
+        signals: ['multiple_addresses'],
+        deliveryAddressCount: 3,
+        steps: steps({ delivery: 'address' }),
+      }),
+      row({ companyId: 'b', deliveryAddressCount: 1, steps: steps({ delivery: 'address' }) }),
+    ]);
+    expect(cellText(fixture, 'delivery', 0)).toBe('✓ adresse de livraison 3 adresses');
+    const detail = (fixture.nativeElement as HTMLElement)
+      .querySelectorAll('[data-step="delivery"]')[0]
+      ?.querySelector('.secondary');
+    expect(detail?.classList).toContain('tone-warning');
+    expect(cellText(fixture, 'delivery', 1)).toBe('✓ adresse de livraison');
+  });
+
+  it('« Inscription sans suivi » : sous « Personne », en rouge', async () => {
+    const { fixture } = await renderRows([
+      row({ companyId: 'a', followedBy: null, signals: ['unassigned_signup'] }),
+      row({ companyId: 'b', followedBy: null, signals: [] }),
+    ]);
+    const flags = (fixture.nativeElement as HTMLElement).querySelectorAll('[data-unfollowed]');
+    expect(flags).toHaveLength(1);
+    expect(flags[0]?.textContent).toContain('inscrite, personne ne rappelle');
+    expect(flags[0]?.classList).toContain('tone-alert');
   });
 });

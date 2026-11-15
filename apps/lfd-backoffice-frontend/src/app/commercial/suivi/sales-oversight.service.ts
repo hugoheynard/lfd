@@ -18,7 +18,8 @@ export class SalesOversightService {
   read(filters: SalesOversightFilters): Promise<SalesOversightView> {
     let params = new HttpParams().set('page', filters.page);
     if (filters.follower !== null) params = params.set('follower', filters.follower);
-    if (filters.level !== null) params = params.set('level', filters.level);
+    if (filters.card !== null) params = params.set('card', filters.card);
+    if (filters.nextStep !== null) params = params.set('nextStep', filters.nextStep);
     if (filters.signal !== null) params = params.set('signal', filters.signal);
     if (filters.channel !== null) params = params.set('channel', filters.channel);
     return firstValueFrom(

@@ -7,7 +7,6 @@
   flex-direction: column;
   gap: var(--fold-space-xl);
   padding-bottom: var(--fold-space-2xl);
-  max-width: 78rem;
 }
 
 .filters {
@@ -17,22 +16,48 @@
   gap: var(--fold-space-md);
 }
 
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--fold-space-md);
+}
+
+.card-count,
+.card-label {
+  display: block;
+}
+
+.card-count {
+  font-size: var(--fold-text-xl);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.card-label {
+  font-size: var(--fold-text-sm);
+}
+
 .today {
   margin: 0;
   color: var(--fold-color-text-secondary);
   font-size: var(--fold-text-sm);
 }
 
-.counts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-md);
-  margin: 0;
-  color: var(--fold-color-text-secondary);
+// La grille fait ~80rem : au bureau elle tient ; en dessous, elle défile
+// horizontalement dans son cadre au lieu d'écraser ses colonnes.
+.grid {
+  overflow-x: auto;
+  font-size: var(--fold-text-sm);
+
+  fold-data-table {
+    display: block;
+    min-width: 80rem;
+  }
 }
 
 .primary,
-.secondary {
+.secondary,
+.step {
   display: block;
 }
 
@@ -42,11 +67,35 @@
 
 .secondary {
   color: var(--fold-color-text-secondary);
-  font-size: var(--fold-text-sm);
+  font-size: var(--fold-text-xs);
 }
 
-.signals {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-xs);
+.tone-done {
+  color: var(--fold-color-success-text);
+}
+
+.tone-pending {
+  color: var(--fold-color-text);
+}
+
+.tone-alert {
+  color: var(--fold-color-alert-text);
+}
+
+.tone-warning {
+  color: var(--fold-color-warning-text);
+}
+
+.tone-none {
+  color: var(--fold-color-text-secondary);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
