@@ -93,7 +93,7 @@ Prod manager est un espace à onglets (`apps/lfd-backoffice-frontend/src/app/pro
   l'écran : `production/previsionnel/dossier-du-jour/bon-reassort/`. L'e-mail
   du dossier compte les réassorts comme l'en-tête du PDF
   (`dossierCountsOf(day.orders, day.resupplies)`,
-  `production/application/services/dossier-dispatch.service.ts:211`).
+  `production/plan/application/services/dossier-dispatch.service.ts:211`).
 
 ## 3. Le colisage — seulement les points servis par transfert
 

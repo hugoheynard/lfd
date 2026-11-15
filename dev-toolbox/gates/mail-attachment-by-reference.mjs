@@ -40,7 +40,7 @@ const BYTES = /\bpdfBase64\b/g;
 /** Les envoyeurs qui joignent encore des octets, et pourquoi (2026-11-06). */
 export const ADMITTED = new Map([
   [
-    "apps/lfd-api/src/production/application/services/dossier-dispatch.service.ts",
+    "apps/lfd-api/src/production/plan/application/services/dossier-dispatch.service.ts",
     "le dossier du fournil est rangé au stockage du FOURNIL (`ProductionDocumentStore`), que le " +
       "bloc `mail` n'ouvre pas ; le ranger chez les pièces client contredirait le partage " +
       "« opposable / opérationnel » (`customer-document-store.ts`). En attente d'une décision " +

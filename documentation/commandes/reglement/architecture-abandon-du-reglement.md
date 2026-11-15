@@ -221,7 +221,7 @@ le fournil **déclare** un port synchrone et le commerce l'implémente :
 | [`PendingSettlementSweep`](../../../apps/lfd-api/src/lafoliecoffee/orders/application/services/pending-settlement-sweep.service.ts) | `lafoliecoffee/orders`, implémenté       |
 | `{ provide: PendingSettlementSweeper, useExisting: PendingSettlementSweep }`                                                        | `appBootstrap/production-feed.module.ts` |
 
-[`CloseProductionDayHandler`](../../../apps/lfd-api/src/production/application/commands/close-production-day.handler.ts)
+[`CloseProductionDayHandler`](../../../apps/lfd-api/src/production/plan/application/commands/close-production-day.handler.ts)
 appelle `sweep(day)` en **première** ligne (l. 94) : avant de charger la
 journée, et donc aussi sur une réannonce d'une journée déjà close (S4). Le
 comptage `producibleFor` vient après.

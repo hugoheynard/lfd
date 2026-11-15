@@ -3,8 +3,8 @@ import type { CatalogFamilyView } from "@lfd/contracts";
 import type { ProductionLineSnapshot, ProductionOrderSnapshot } from "../../../day/index.js";
 import { renderAtelierSheetPdf, renderProductionCountPdf } from "../atelier-sheet-pdf.js";
 import { countColorSharesOf } from "../../../shared/print/index.js";
-import { dayDossierOf, recapPieces } from "../day-dossier.js";
-import { dossierCountsOf } from "../dossier-addressees.js";
+import { dayDossierOf, recapPieces } from "../../../plan/domain/services/day-dossier.js";
+import { dossierCountsOf } from "../../../plan/domain/services/dossier-addressees.js";
 import { pdfPages } from "../../../../platform/pdf/__tests__/pdf-text.js";
 import { PAPER_LOGO } from "./paper-logo.fixture.js";
 

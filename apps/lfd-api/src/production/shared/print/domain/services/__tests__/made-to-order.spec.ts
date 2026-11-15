@@ -3,8 +3,8 @@ import {
   renderAtelierSheetPdf,
   renderProductionCountPdf,
 } from "../../../../../domain/services/atelier-sheet-pdf.js";
-import { dayDossierOf } from "../../../../../domain/services/day-dossier.js";
-import { renderDayDossierPdf } from "../../../../../domain/services/day-dossier-pdf.js";
+import { dayDossierOf } from "../../../../../plan/domain/services/day-dossier.js";
+import { renderDayDossierPdf } from "../../../../../plan/domain/services/day-dossier-pdf.js";
 import { countPaperRowsOf } from "../made-to-order.js";
 import { pdfPages } from "../../../../../../platform/pdf/__tests__/pdf-text.js";
 import { PAPER_LOGO } from "../../../../../domain/services/__tests__/paper-logo.fixture.js";

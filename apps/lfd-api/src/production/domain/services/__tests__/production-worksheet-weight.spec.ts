@@ -1,6 +1,6 @@
 import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
 import type { ProducedItemSnapshot, ProductionBatchSnapshot } from "../../../day/index.js";
-import { forecastMatrix } from "../production-forecast.js";
+import { forecastMatrix } from "../../../plan/domain/services/production-forecast.js";
 import { worksheetGroupsOf } from "../production-worksheet-groups.js";
 import { worksheetOf, type WorksheetSources } from "../production-worksheet.js";
 import { ServiceRange } from "../../../day/index.js";

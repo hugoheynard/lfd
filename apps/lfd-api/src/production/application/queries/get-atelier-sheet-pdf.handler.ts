@@ -7,7 +7,7 @@ import { ProductionPaperArchive, type ProductionPaper } from "../../shared/print
 import {
   ProductionPaperRenderer,
   atelierSheetSlotOf,
-} from "../services/production-paper.service.js";
+} from "../../plan/application/services/production-paper.service.js";
 import { GetAtelierSheetPdfQuery } from "./get-atelier-sheet-pdf.query.js";
 
 /**

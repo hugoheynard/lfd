@@ -129,7 +129,7 @@ export const DEBT = {
     reason:
       "2026-11-08 — codec de rejeu : la clé `mailSent` est aussi une VALEUR rangée dans les intentions déjà écrites",
   },
-  "apps/lfd-api/src/production/application/services/dossier-dispatch.service.ts": {
+  "apps/lfd-api/src/production/plan/application/services/dossier-dispatch.service.ts": {
     count: 2,
     reason: "2026-11-08 — dossier du fournil : sent = destinataires acceptés",
   },

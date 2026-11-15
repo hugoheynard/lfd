@@ -52,7 +52,7 @@ sequenceDiagram
 
 ### L'heure de l'arrêt
 
-`PlanStopRules` (`apps/lfd-api/src/production/application/services/plan-stop-rules.ts`)
+`PlanStopRules` (`apps/lfd-api/src/production/plan/application/services/plan-stop-rules.ts`)
 est le seul lecteur de la règle, pour ses quatre usages : le tour
 automatique, le refus d'un arrêt anticipé, le prévisionnel et la page
 Production › Réglages. Il lit l'heure limite générale

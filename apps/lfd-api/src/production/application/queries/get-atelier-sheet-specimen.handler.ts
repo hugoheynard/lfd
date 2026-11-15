@@ -4,7 +4,10 @@ import { BrandLogoSource } from "../../../platform/brand/brand-logo.source.js";
 import { AppConfig } from "../../../platform/config/app-config.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { renderAtelierSheetPdf } from "../../domain/services/atelier-sheet-pdf.js";
-import { SPECIMEN_ORDER, specimenServiceDay } from "../document-specimens/specimen-data.js";
+import {
+  SPECIMEN_ORDER,
+  specimenServiceDay,
+} from "../../plan/application/document-specimens/specimen-data.js";
 import type { ProductionPaper } from "../../shared/print/index.js";
 import { GetAtelierSheetSpecimenQuery } from "./get-atelier-sheet-specimen.query.js";
 

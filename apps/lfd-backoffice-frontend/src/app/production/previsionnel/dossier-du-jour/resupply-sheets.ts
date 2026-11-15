@@ -5,7 +5,7 @@ import { resupplyTitle } from '../../../shared/resupply-labels';
 /**
  * **La pile des bons de réassort** (R3d-bis) — un bon par réassort, jamais
  * fusionnés : le même rangement que le PDF du serveur
- * (`production/domain/services/day-dossier.ts`), par point puis par
+ * (`production/plan/domain/services/day-dossier.ts`), par point puis par
  * identifiant. Un point sans nom se dit par son identifiant.
  */
 export function resupplySheetsOf(

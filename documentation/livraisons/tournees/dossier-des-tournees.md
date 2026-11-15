@@ -9,7 +9,7 @@
 > d'où ce dossier s'ouvre. La section « À vérifier » porte ses alertes.
 
 Un seul PDF qui part au dépôt le matin, sur le modèle du dossier du jour du
-fournil (`production/domain/services/day-dossier-pdf.ts`) : même cadre
+fournil (`production/plan/domain/services/day-dossier-pdf.ts`) : même cadre
 (`platform/pdf/paper-pages.ts` — logo, titre de section, « (1/2) » quand une
 section déborde, numéro de page encadré, « Tiré le … » au pied).
 

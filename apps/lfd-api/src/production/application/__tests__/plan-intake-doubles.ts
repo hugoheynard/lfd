@@ -11,8 +11,8 @@ import { OrderWithdrawalsReader } from "../../day/domain/ports/order-withdrawals
 import { ProductionDayStatusReader } from "../../day/domain/ports/production-day-status.reader.js";
 import { ProductionDayRepository } from "../../day/domain/ports/production-day.repository.js";
 import type { ServiceDay } from "../../day/domain/value-objects/service-day.value-object.js";
-import { PlanArrestAdmission } from "../services/plan-arrest-admission.js";
-import { PlanIntakeReading } from "../services/plan-intake-reading.js";
+import { PlanArrestAdmission } from "../../plan/application/services/plan-arrest-admission.js";
+import { PlanIntakeReading } from "../../plan/application/services/plan-intake-reading.js";
 import { InMemoryWithdrawals } from "./withdrawal-doubles.js";
 import { CutoffRules, DayResupplies, ResupplyTime, stopRulesOf } from "./settings-doubles.js";
 

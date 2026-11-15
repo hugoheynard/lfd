@@ -232,7 +232,7 @@ Le fournil porte déjà le rang dans son instantané
   verrou, pour proposer.
 - Retirage : `RetakeProductionDayHandler` relit sous verrou
   `retakeUnderLock(day)` puis `locked.retake`
-  (`production/application/commands/retake-production-day.handler.ts:46-57`) ;
+  (`production/plan/application/commands/retake-production-day.handler.ts:46-57`) ;
   le commentaire l. 16-17 : « les commandes absorbées sont des `placed` ».
 - Jours fermés du fournil : `add-production-closed-day` / `remove-…`
   (`production/application/commands/`).
@@ -479,7 +479,7 @@ depuis l'écran, avoir sur facture émise, reprise auto du retirage.
 - apps/lfd-api/src/production/day/domain/entities/production-day.ts
 - apps/lfd-api/src/production/day/domain/entities/production-day.plan.ts
 - apps/lfd-api/src/production/day/domain/entities/production-day.snapshot.ts
-- apps/lfd-api/src/production/application/commands/retake-production-day.handler.ts
+- apps/lfd-api/src/production/plan/application/commands/retake-production-day.handler.ts
 - apps/lfd-api/src/delivery/channels/commerce/delivery-orders.reader.ts
 - apps/lfd-api/src/mail/templates/order-shortfall-mail.ts
 - apps/lfd-api/prisma/schema/public/delivery-notes.prisma

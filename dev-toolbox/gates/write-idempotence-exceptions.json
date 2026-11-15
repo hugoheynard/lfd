@@ -368,7 +368,7 @@
       "verified": "2026-11-12"
     },
     {
-      "route": "apps/lfd-api/src/production/http/production-dossier-recipients.controller.ts#add",
+      "route": "apps/lfd-api/src/production/plan/http/production-dossier-recipients.controller.ts#add",
       "effects": ["creates"],
       "reason": "par unicité : un destinataire n'est qu'une fois dans la liste ; rejoué, l'ajout est refusé (409 DuplicateDossierRecipientError) avant toute écriture",
       "verified": "2026-11-12"

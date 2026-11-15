@@ -23,7 +23,7 @@ import { PackingShortfallFreezeDesk } from "../packing/application/station/packi
 import { PrismaPackedResuppliesReader } from "../packing/infrastructure/prisma-packed-resupplies.reader.js";
 import { PrismaOrderPackingStateReader } from "../packing/infrastructure/prisma-order-packing-state.reader.js";
 import { PackingModule } from "../packing/packing.module.js";
-import { PrismaArrestedPlanHold } from "../production/infrastructure/prisma-arrested-plan.hold.js";
+import { PrismaArrestedPlanHold } from "../production/plan/infrastructure/prisma-arrested-plan.hold.js";
 import {
   ArrestedPlanHold,
   DayPackingProgressReader,

@@ -4,12 +4,12 @@ import {
 } from "../../channels/commerce/day-resupplies.reader.js";
 import { OrderCutoffRulesReader } from "../../channels/commerce/order-cutoff-rules.reader.js";
 import { ResupplyCutoffTimeReader } from "../../channels/commerce/resupply-cutoff-time.reader.js";
-import type { ProductionClosedDay } from "../../domain/entities/production-closed-day.js";
-import { ProductionClosedDayRepository } from "../../domain/ports/production-closed-day.repository.js";
-import { ProductionSettingsReader } from "../../domain/ports/production-settings.reader.js";
+import type { ProductionClosedDay } from "../../plan/domain/entities/production-closed-day.js";
+import { ProductionClosedDayRepository } from "../../plan/domain/ports/production-closed-day.repository.js";
+import { ProductionSettingsReader } from "../../plan/domain/ports/production-settings.reader.js";
 import type { OrderCutoffRule } from "../../day/index.js";
 import type { ServiceDay } from "../../day/index.js";
-import { PlanStopRules } from "../services/plan-stop-rules.js";
+import { PlanStopRules } from "../../plan/application/services/plan-stop-rules.js";
 
 /** Le calendrier doublé : un ensemble de jours, qui dit s'il a changé. */
 export class ClosedDaysTable extends ProductionClosedDayRepository {

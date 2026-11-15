@@ -194,7 +194,7 @@ l'a pas reçu. Journal : « Le dossier du … a été envoyé à N destinataires
 
 ### Où vit le code
 
-- Contenu : `apps/lfd-api/src/production/domain/services/day-dossier.ts`
+- Contenu : `apps/lfd-api/src/production/plan/domain/services/day-dossier.ts`
   (récapitulatif, ordre) et `dossier-sheet-head.ts` (en-tête d'un bon).
 - Mise en page : `day-dossier-pdf.ts`, sur la trousse `paper-pdf-kit.ts`.
 - Calendrier par tranche : `day-dossier-calendar.ts` (la grille) et

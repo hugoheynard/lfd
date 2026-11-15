@@ -14,7 +14,6 @@
  * dans le métier qui s'en sert, et lit ici les règles pures (`withSeals`,
  * `trancheThresholdsBySku`, `handoffOf`…) et les ports.
  */
-export { GetProductionDayStatusQuery } from "./application/queries/get-production-day-status.query.js";
 export { GetProductionDueThresholdsQuery } from "./application/queries/get-production-due-thresholds.query.js";
 export {
   AUTOMATIC_SIGNER,
@@ -46,6 +45,11 @@ export {
   ProductionDayEmptyError,
   ProductionDayNotClosedError,
 } from "./domain/errors/production-errors.js";
+export { DuplicateTrancheError } from "./domain/errors/production-tranches-errors.js";
+export {
+  ReopenAfterDispatchError,
+  ReopenAfterPackingError,
+} from "./domain/errors/reopening-errors.js";
 export {
   ResupplyAlreadyLaunchedError,
   ResupplyLaunchOnUnarrestedPlanError,

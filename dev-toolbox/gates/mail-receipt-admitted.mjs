@@ -62,7 +62,7 @@ export const ADMITTED = {
     "2026-11-06, S2d — renvoi de facture par le staff : il attend la réponse",
   [`${SRC}/lafoliecoffee/payments/application/commands/send-mandate.handler.ts`]:
     "2026-11-06, S2e — mandat : le fait publié lit le reçu, PDF en octets",
-  [`${SRC}/production/application/services/dossier-dispatch.service.ts`]:
+  [`${SRC}/production/plan/application/services/dossier-dispatch.service.ts`]:
     "2026-11-06, S2f — dossier du fournil : le fait lit le reçu, PDF en octets",
   [`${SRC}/staff/invitations/open-staff-access.service.ts`]:
     "2026-11-06, S2g — ouverture d'accès d'équipe : le staff lit le résultat à l'écran",

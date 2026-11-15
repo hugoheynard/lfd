@@ -1,4 +1,4 @@
-import { CloseProductionDayCommand } from "../../../production/application/commands/close-production-day.command.js";
+import { CloseProductionDayCommand } from "../../../production/plan/application/commands/close-production-day.command.js";
 import { RecordBatchCommand } from "../../../production/application/commands/record-batch.command.js";
 import { currentRequestContext } from "../../../platform/context/request-context.store.js";
 import {
