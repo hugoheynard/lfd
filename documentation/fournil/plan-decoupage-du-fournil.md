@@ -289,3 +289,37 @@ Tests de régression : deux contrôles qualité simultanés sur la même journé
 ne posent qu'une retenue, et un contrôle sur une commande partie pendant
 qu'il s'écrit est refusé ; un `settle` rejoué ne réécrit pas une issue déjà
 posée.
+
+## 6. Où en est l'architecture, et où elle irait
+
+Évaluation du 2026-11-15, sur la revue SOLID du bloc et sur ce plan.
+
+**Aujourd'hui : 6,5/10.** Solide : les couches sont tenues (aucun type
+Prisma hors `infrastructure/`, temps par le `Clock`, erreurs par catégorie),
+les ports sont étroits, l'agrégat de la journée refuse lui-même ses
+transitions, et les frontières avec les autres blocs sont gardées par des
+portes. Ce qui manque : l'intérieur est à plat avec trois cycles entre
+métiers ; deux défauts réels (§ 5) ; la mise en page PDF vit dans le
+domaine ; quelques fichiers dépassent la borne.
+
+**Après le découpage : environ 8,5/10.** Une surface publique par métier,
+tenue à la compilation par la porte et au démarrage par les modules Nest ;
+plus de cycle ; les deux défauts corrigés.
+
+**Ce qui l'empêche d'aller plus haut, et c'est assumé :**
+
+1. **Le bus de `@nestjs/cqrs` est global** : les commandes, requêtes et faits
+   ne sont protégés que par la porte, pas par Nest à l'exécution.
+2. **Une seule base, un seul client Prisma** : rien ne rend physiquement
+   impossible la lecture de la table d'un autre métier ; la porte par modèle
+   l'interdit, c'est une discipline outillée, pas une impossibilité.
+3. **Les lectures entre métiers restent synchrones** (par port) : le bon
+   choix pour un monolithe, mais un couplage à l'exécution.
+4. **Des exemptions** : `appBootstrap/`, `dev/` et `test/` lisent l'intérieur
+   des métiers.
+
+**Vers 9,5/10, plus tard et métier par métier** : un client Prisma restreint
+par sous-contexte, sur le modèle de `PimPrismaService`
+(`apps/lfd-api/src/pim/infra/database/pim-prisma.service.ts`), qui n'expose
+que ses modèles. La lecture d'une table d'un autre métier ne serait plus
+interdite : elle ne compilerait plus.
