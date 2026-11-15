@@ -98,13 +98,24 @@ function migrationStatements(): readonly string[] {
   if (statements.length === 0 || !statements.every((s) => /^(INSERT|UPDATE)\b/.test(s))) {
     throw new Error("Découpage de la migration de conversion inattendu : relire le fichier.");
   }
-  const kept = statements.filter((statement) => !targetsDroppedColumn(statement));
+  const kept = statements
+    .filter((statement) => !targetsDroppedColumn(statement))
+    .map(inMovedSchema);
   if (statements.length - kept.length !== STATEMENTS_ON_DROPPED_COLUMNS) {
     throw new Error(
       `La conversion ne porte plus ${String(STATEMENTS_ON_DROPPED_COLUMNS)} instructions sur les colonnes supprimées : relire le fichier.`,
     );
   }
   return kept;
+}
+
+/**
+ * Les tables du retrait vivent dans le schéma `handover` (migration
+ * `20261103110000_le_retrait_dans_son_schema`) : une instruction écrite quand
+ * elles étaient dans `production` vise la même table sous son schéma actuel.
+ */
+function inMovedSchema(statement: string): string {
+  return statement.replaceAll('"production"."order_handover"', '"handover"."order_handover"');
 }
 
 /** Joue la migration entière dans UNE transaction, comme `migrate deploy`. */
