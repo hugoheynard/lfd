@@ -15,6 +15,8 @@ import { addDays, localToInstant } from "@lfd/contracts";
 import type request from "supertest";
 
 import { Clock } from "../src/platform/time/clock.js";
+import { AutoCloseAttempts } from "../src/production/domain/ports/auto-close-attempts.js";
+import { ServiceDay } from "../src/production/domain/value-objects/service-day.value-object.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import type { E2eContext } from "./e2e-harness.js";
 import { jsonBody } from "./e2e-harness.js";
@@ -243,5 +245,21 @@ describe("la porte machine", () => {
   it("refuse (401) sans le jeton, et avec un mauvais", async () => {
     await ctx.http().post(ROUTE).expect(401);
     await ctx.http().post(ROUTE).set("x-lfc-recompute-token", "faux").expect(401);
+  });
+});
+
+describe("une issue, une fois", () => {
+  /** Régression : `settle` écrivait sur la clé seule et écrasait une issue déjà posée. */
+  it("un settle rejoué ne réécrit pas une issue déjà posée", async () => {
+    const attempts = ctx.app.get(AutoCloseAttempts);
+    const day = ServiceDay.of(SERVICE_DAY);
+    expect(await attempts.claim(day, clock.now())).toBe(true);
+
+    await attempts.settle(day, "closed", null, clock.now());
+    await attempts.settle(day, "failed", "rejoué", clock.now());
+
+    expect(await ctx.prisma.productionAutoCloseAttempt.findMany()).toMatchObject([
+      { serviceDay: SERVICE_DAY, outcome: "closed", failure: null },
+    ]);
   });
 });

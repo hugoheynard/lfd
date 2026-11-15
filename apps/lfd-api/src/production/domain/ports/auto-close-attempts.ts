@@ -25,7 +25,13 @@ export abstract class AutoCloseAttempts {
    */
   abstract claim(day: ServiceDay, at: Date): Promise<boolean>;
 
-  /** Écrit l'issue. `failure` : le message du refus, seulement en `failed`. */
+  /**
+   * Écrit l'issue — **une issue, une fois** : seule une tentative encore
+   * `pending` est réglée. Une tentative déjà réglée reste telle quelle, sans
+   * erreur : un rejeu ne réécrit pas ce qui a été annoncé (la cloche est déjà
+   * partie sur la première issue). `failure` : le message du refus, seulement
+   * en `failed`.
+   */
   abstract settle(
     day: ServiceDay,
     outcome: Exclude<AutoCloseOutcome, "pending">,

@@ -21,6 +21,7 @@ import { sealedAt } from "../../__tests__/station-doubles.js";
 import { QualityPhotoAttachment } from "../../services/quality-photo-attachment.service.js";
 import { SealedDayReading } from "../../services/sealed-day-reading.service.js";
 import { RenderQualityCheckCommand } from "../render-quality-check.command.js";
+import { RecordingDayLock } from "../../__tests__/batch-doubles.js";
 import { RenderQualityCheckHandler } from "../render-quality-check.handler.js";
 
 /**
@@ -49,6 +50,7 @@ function subject(settings: InMemoryQualityControlSettings) {
     events,
     clock,
     new DirectUnitOfWork(),
+    new RecordingDayLock(),
   );
   return { table, store, events, handler };
 }

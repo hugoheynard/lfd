@@ -24,6 +24,7 @@ import {
 } from "../../__tests__/quality-doubles.js";
 import { QualityPhotoAttachment } from "../../services/quality-photo-attachment.service.js";
 import { RenderQualityCheckCommand } from "../render-quality-check.command.js";
+import { RecordingDayLock } from "../../__tests__/batch-doubles.js";
 import { RenderQualityCheckHandler } from "../render-quality-check.handler.js";
 
 /**
@@ -52,6 +53,7 @@ function subject(gone: ReadonlyMap<string, OrderOutOfHand> = new Map()) {
     events,
     clock,
     new DirectUnitOfWork(),
+    new RecordingDayLock(),
   );
   return { handler, table, events };
 }
@@ -135,6 +137,7 @@ describe("RenderQualityCheckHandler — la garde (BQ)", () => {
       new RecordingPublisher(),
       new FixedClock(new Date(0)),
       new DirectUnitOfWork(),
+      new RecordingDayLock(),
     );
 
     await expect(after.execute(command(ORDER_2, "01JQD999999999999999999999"))).resolves.toBe(id);

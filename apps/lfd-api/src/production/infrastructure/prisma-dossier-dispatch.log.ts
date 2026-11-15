@@ -27,8 +27,9 @@ export class PrismaDossierDispatchLog extends DossierDispatchLog {
     outcome: DossierDispatchOutcome,
     at: Date,
   ): Promise<void> {
-    await this.prisma.productionDossierDispatch.update({
-      where: { serviceDay_occasionAt_recipientId: slot },
+    // Conditionnée en base : une issue posée ne se réécrit pas (cf. le port).
+    await this.prisma.productionDossierDispatch.updateMany({
+      where: { ...slot, outcome: "pending" },
       data:
         outcome.kind === "sent"
           ? { outcome: "sent", providerId: outcome.providerId, settledAt: at }

@@ -105,8 +105,10 @@ export class PrismaAutoCloseAttempts extends AutoCloseAttempts {
     failure: string | null,
     at: Date,
   ): Promise<void> {
-    await this.prisma.productionAutoCloseAttempt.update({
-      where: { serviceDay: day.value },
+    const pending: AutoCloseOutcome = "pending";
+    // Conditionnée en base : une issue posée ne se réécrit pas (cf. le port).
+    await this.prisma.productionAutoCloseAttempt.updateMany({
+      where: { serviceDay: day.value, outcome: pending },
       data: { outcome, failure, settledAt: at },
     });
   }

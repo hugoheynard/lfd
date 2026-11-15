@@ -429,6 +429,21 @@ describe("le journal (D9)", () => {
     expect((await board()).heldOrderIds).toEqual([]);
   });
 
+  /** Régression : la retenue se calculait hors verrou ; deux blocages simultanés l'annonçaient deux fois. */
+  it("deux contrôles simultanés sur la même journée ne posent qu'une retenue", async () => {
+    await seedDay();
+    const blocking = { target: { kind: "line", sku: CROISSANT }, verdict: "blocking" } as const;
+
+    await Promise.all([
+      render({ ...blocking, note: "Brûlés" }),
+      render({ ...blocking, note: "Écrasés" }),
+    ]);
+
+    const raised = (await facts()).filter((fact) => fact.type.endsWith(".hold_raised"));
+    expect(raised).toHaveLength(1);
+    await expect(ctx.prisma.productionQualityCheck.count()).resolves.toBe(2);
+  });
+
   it("un journal en panne annule le verdict", async () => {
     await seedDay();
     await breakJournal("production_quality.hold_raised");

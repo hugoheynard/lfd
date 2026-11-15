@@ -54,7 +54,10 @@ export class DispatchTable extends DossierDispatchLog {
     if (row === undefined) {
       return Promise.reject(new RangeError("envoi non pris"));
     }
-    row.outcome = outcome;
+    // Une issue, une fois : comme le `WHERE outcome = 'pending'` de l'adaptateur.
+    if (row.outcome === null) {
+      row.outcome = outcome;
+    }
     return Promise.resolve();
   }
 }

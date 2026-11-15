@@ -6,6 +6,7 @@
  */
 import { Buffer } from "node:buffer";
 
+import { DossierDispatchLog } from "../src/production/domain/ports/dossier-dispatch.log.js";
 import { ProductionDayRepository } from "../src/production/domain/ports/production-day.repository.js";
 import { pdfPages } from "../src/platform/pdf/__tests__/pdf-text.js";
 import { ServiceDay } from "../src/production/domain/value-objects/service-day.value-object.js";
@@ -142,3 +143,19 @@ describe("GET admin/production/batch/:date/dossier.pdf", () => {
 function orderSheetPage(pages: readonly string[]): string {
   return pages.find((page) => page.includes("Fiche de commande")) ?? "";
 }
+
+describe("la trace d'envoi : une issue, une fois", () => {
+  /** Régression : `settle` écrivait sur la clé seule et écrasait une issue déjà posée. */
+  it("un settle rejoué ne réécrit pas une issue déjà posée", async () => {
+    const log = ctx.app.get(DossierDispatchLog);
+    const slot = { serviceDay: SERVICE_DAY, occasionAt: new Date(), recipientId: "rcp_1" };
+    expect(await log.claim(slot, "Marie Dupont", new Date())).toBe(true);
+
+    await log.settle(slot, { kind: "sent", providerId: "prov_1" }, new Date());
+    await log.settle(slot, { kind: "failed", failure: "rejoué" }, new Date());
+
+    expect(await ctx.prisma.productionDossierDispatch.findMany()).toMatchObject([
+      { outcome: "sent", providerId: "prov_1", failure: null },
+    ]);
+  });
+});

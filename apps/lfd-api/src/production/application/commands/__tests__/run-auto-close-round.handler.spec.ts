@@ -94,8 +94,11 @@ class Attempts extends AutoCloseAttempts {
     outcome: Exclude<AutoCloseOutcome, "pending">,
     failure: string | null,
   ): Promise<void> {
-    this.fournil.attempts.set(day.value, outcome);
-    this.failures.set(day.value, failure);
+    // Une issue, une fois : comme le `WHERE outcome = 'pending'` de l'adaptateur.
+    if (this.fournil.attempts.get(day.value) === "pending") {
+      this.fournil.attempts.set(day.value, outcome);
+      this.failures.set(day.value, failure);
+    }
     return Promise.resolve();
   }
 }

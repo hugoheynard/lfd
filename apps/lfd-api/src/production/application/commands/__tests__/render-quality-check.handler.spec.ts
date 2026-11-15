@@ -35,6 +35,7 @@ import { QualityPhotoAttachment } from "../../services/quality-photo-attachment.
 import { DepositQualityPhotoCommand } from "../deposit-quality-photo.command.js";
 import { DepositQualityPhotoHandler } from "../deposit-quality-photo.handler.js";
 import { RenderQualityCheckCommand } from "../render-quality-check.command.js";
+import { RecordingDayLock } from "../../__tests__/batch-doubles.js";
 import { RenderQualityCheckHandler } from "../render-quality-check.handler.js";
 
 let intentCount = 0;
@@ -69,6 +70,7 @@ function subject(packed: readonly string[] = ["ord_2"]) {
     events,
     clock,
     new DirectUnitOfWork(),
+    new RecordingDayLock(),
   );
   const deposit = new DepositQualityPhotoHandler(
     uploads,

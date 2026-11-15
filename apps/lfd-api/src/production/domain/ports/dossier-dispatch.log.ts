@@ -30,7 +30,12 @@ export abstract class DossierDispatchLog {
    */
   abstract claim(slot: DossierDispatchSlot, recipientName: string, at: Date): Promise<boolean>;
 
-  /** Note ce que l'envoi a donné. */
+  /**
+   * Note ce que l'envoi a donné — **une issue, une fois** : seul un envoi
+   * encore `pending` est réglé. Déjà réglé, il reste tel quel, sans erreur :
+   * un `failed` noté après un `sent` (une panne après la remise au service
+   * d'e-mails) ne fait pas mentir la trace sur un dossier parti.
+   */
   abstract settle(
     slot: DossierDispatchSlot,
     outcome: DossierDispatchOutcome,
