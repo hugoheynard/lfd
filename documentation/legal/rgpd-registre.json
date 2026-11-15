@@ -648,15 +648,6 @@
       "information": false
     },
     {
-      "colonne": "production.production_count.done_by",
-      "personne": "staff",
-      "categorie": "auteur-geste",
-      "finalite": "Tracer quel membre du staff a fait le geste (`done_by`) sur `production_count`.",
-      "conservation": "aucune-limite-decidee",
-      "purge": null,
-      "information": false
-    },
-    {
       "colonne": "production.production_day.closed_by",
       "personne": "staff",
       "categorie": "auteur-geste",

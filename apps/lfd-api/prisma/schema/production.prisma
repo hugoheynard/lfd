@@ -252,15 +252,6 @@ model ProductionCount {
   /// `piece` ou `weight` (CHECK), P6 de `pricing/vente-au-poids.md`.
   saleUnit    String @default("piece") @map("sale_unit")
 
-  /// **L'ancienne coche de la ligne — ni lue ni écrite.** « Fait » se lit sur
-  /// les seules fournées (`production_batch`) ; l'auteur d'une coche y est
-  /// porté par `recorded_by`. Les trois colonnes restent en base, inutilisées,
-  /// jusqu'à leur suppression (`documentation/fournil/la-fiche-d-atelier.md`) :
-  /// l'image précédente, en service pendant le déploiement, les lit encore.
-  doneAt       DateTime? @map("done_at")
-  doneBy       String?   @map("done_by")
-  doneInitials String    @default("") @map("done_initials")
-
   @@unique([serviceDay, sku])
   @@map("production_count")
   @@schema("production")
