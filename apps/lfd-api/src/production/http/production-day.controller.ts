@@ -1,5 +1,4 @@
 import {
-  type ProductionDayResuppliesView,
   type ProductionDayStatus,
   type ProductionDueThresholdsView,
   type ProductionForecastQuery,
@@ -10,7 +9,6 @@ import {
   productionForecastQuerySchema,
 } from "@lfd/contracts";
 import { Controller, Get, Param, Post, Query, Res, StreamableFile } from "@nestjs/common";
-import { contentDispositionAttachment, sanitiseFileName } from "@lfd/storage";
 import type { Response } from "express";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
@@ -22,16 +20,14 @@ import {
 import { ZodParam, ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import { CloseProductionDayCommand } from "../application/commands/close-production-day.command.js";
 import { ReopenProductionDayCommand } from "../application/commands/reopen-production-day.command.js";
-import { GetAtelierSheetPdfQuery } from "../application/queries/get-atelier-sheet-pdf.query.js";
 import { GetDayDossierPdfQuery } from "../application/queries/get-day-dossier-pdf.query.js";
-import { GetDayResuppliesQuery } from "../application/queries/get-day-resupplies.query.js";
 import { GetProductionCountPdfQuery } from "../application/queries/get-production-count-pdf.query.js";
 import { GetProductionDayStatusQuery } from "../application/queries/get-production-day-status.query.js";
 import { GetProductionForecastQuery } from "../application/queries/get-production-forecast.query.js";
 import { GetProductionDueThresholdsQuery } from "../application/queries/get-production-due-thresholds.query.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
-import type { ProductionPaper } from "../application/services/production-paper-archive.service.js";
 import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
+import { type ProductionPaper, servePaper } from "./production-paper-response.js";
 
 /**
  * Le jour du chemin, validé dans sa FORME par un pipe : un `.parse` écrit dans
@@ -41,7 +37,12 @@ import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 const DAY = new ZodParam(productionBatchQuerySchema.shape.date, "date");
 
 /**
- * **La journée de fabrication, côté fournil.**
+ * **Le plan de la journée** — arrêt, réouverture, état, prévisionnel,
+ * échéances, et les deux papiers du plan (dossier, compte à produire).
+ *
+ * Le préfixe `admin/production` est partagé avec les contrôleurs des autres
+ * métiers du fournil (fiche d'atelier, réassorts, retirage) : un contrôleur
+ * par métier, des chemins qui ne changent pas.
  *
  * 🔴 Cette route vivait dans `lafoliecoffee/orders/http/` — une surface de production
  * hébergée par le commerce, sous un chemin qui disait déjà `admin/production`.
@@ -56,9 +57,7 @@ const DAY = new ZodParam(productionBatchQuerySchema.shape.date, "date");
  * dépôt, ni port de lecture. `lint:controller-buses` le tient.
  *
  * `production_plan` — l'état, le prévisionnel, le compte à produire —, sauf
- * l'arrêt, sous `production_count_stop` depuis le 2026-10-06, et sauf la
- * fiche d'atelier imprimable, qui sert un autre poste et porte sa garde (`production_worksheet`, 2026-10-01,
- * `documentation/livraisons/droits/plan-droits-par-geste.md`, 5.1). « Prête » ne vit
+ * l'arrêt, sous `production_count_stop` depuis le 2026-10-06. « Prête » ne vit
  * plus ici depuis K3c : elle se déclare au colisage
  * (`POST admin/packing/:date/orders/:orderId/close`).
  */
@@ -85,7 +84,7 @@ export class ProductionDayController {
     @Param("date", DAY) date: string,
     @Res({ passthrough: true }) response: Response,
   ): Promise<StreamableFile> {
-    return this.paper(
+    return servePaper(
       response,
       await this.queries.execute<GetProductionCountPdfQuery, ProductionPaper>(
         new GetProductionCountPdfQuery(date),
@@ -105,47 +104,12 @@ export class ProductionDayController {
     @Param("date", DAY) date: string,
     @Res({ passthrough: true }) response: Response,
   ): Promise<StreamableFile> {
-    return this.paper(
+    return servePaper(
       response,
       await this.queries.execute<GetDayDossierPdfQuery, ProductionPaper>(
         new GetDayDossierPdfQuery(date),
       ),
     );
-  }
-
-  /**
-   * **La feuille d'atelier d'une commande, en PDF** — celle qui part au fournil.
-   *
-   * Elle se lit dans la JOURNÉE, jamais dans le commerce : c'est ce que la
-   * production a inscrit à la clôture, et c'est ce papier-là qui est parti.
-   *
-   * ⚠️ Elle porte son **QR de colisage**, et c'est l'inverse du bon de commande :
-   * ce code encode un NOM (`/colisage/{référence}`), pas un secret. La référence
-   * est déjà écrite en toutes lettres au-dessus.
-   */
-  @Get("batch/:date/sheets/:reference.pdf")
-  @RequirePermission("production_worksheet:read")
-  async sheet(
-    @Param("date", DAY) date: string,
-    @Param("reference") reference: string,
-    @Res({ passthrough: true }) response: Response,
-  ): Promise<StreamableFile> {
-    return this.paper(
-      response,
-      await this.queries.execute<GetAtelierSheetPdfQuery, ProductionPaper>(
-        new GetAtelierSheetPdfQuery(date, reference),
-      ),
-    );
-  }
-
-  /** Les en-têtes d'un PDF servi, écrits une fois. */
-  private paper(response: Response, paper: ProductionPaper): StreamableFile {
-    response.setHeader("Content-Type", "application/pdf");
-    response.setHeader(
-      "Content-Disposition",
-      contentDispositionAttachment(sanitiseFileName(paper.fileName, "document.pdf")),
-    );
-    return new StreamableFile(paper.bytes);
   }
 
   /**
@@ -185,18 +149,6 @@ export class ProductionDayController {
   async dueThresholds(@Param("date", DAY) date: string): Promise<ProductionDueThresholdsView> {
     return this.queries.execute<GetProductionDueThresholdsQuery, ProductionDueThresholdsView>(
       new GetProductionDueThresholdsQuery(date),
-    );
-  }
-
-  /**
-   * **Les réassorts d'une journée** (lot R3d du réassort) — figés si elle est
-   * arrêtée, envoyés « pour demain » sinon. Le dossier du jour les montre à
-   * part des commandes.
-   */
-  @Get("batch/:date/resupplies")
-  async resupplies(@Param("date", DAY) date: string): Promise<ProductionDayResuppliesView> {
-    return this.queries.execute<GetDayResuppliesQuery, ProductionDayResuppliesView>(
-      new GetDayResuppliesQuery(date),
     );
   }
 

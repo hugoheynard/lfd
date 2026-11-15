@@ -283,8 +283,8 @@ mêlent jamais dans un lot.
    leur propriétaire est donc le noyau, et les deux lecteurs du métier
    `resupply/` sont en dette. Le plan ne disait pas à qui ils appartiennent.
 
-2. **C1 — couper `ProductionPapers`** en rendu et archivage.
-3. **C2 — couper les contrôleurs** à plusieurs métiers
+2. **C1 — couper `ProductionPapers`** (✅ bâti le 2026-11-15) en rendu et archivage.
+3. **C2 — couper les contrôleurs** (✅ bâti le 2026-11-15 ; le balayage qualité reste pour C4) à plusieurs métiers
    (`production-day`, `production-worksheet`, `production-settings`) : un
    contrôleur par métier, mêmes chemins d'API, e2e inchangés.
 4. **C3 — le port `QualityHoldsReader`** et la coupe de

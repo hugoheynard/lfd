@@ -46,6 +46,7 @@ import { GetProductionSettingsHandler } from "./application/queries/get-producti
 import { ProductionClosedDayRepository } from "./domain/ports/production-closed-day.repository.js";
 import { ProductionSettingsReader } from "./domain/ports/production-settings.reader.js";
 import { ProductionSettingsController } from "./http/production-settings.controller.js";
+import { ProductionDisplaySettingsController } from "./http/production-display-settings.controller.js";
 import { ProductionBatchShortcutsModule } from "./production-batch-shortcuts.module.js";
 import { PrismaProductionClosedDayRepository } from "./infrastructure/prisma-production-closed-day.repository.js";
 import { PrismaProductionSettingsReader } from "./infrastructure/prisma-production-settings.reader.js";
@@ -136,6 +137,9 @@ import { ProductionBatchRepository } from "./domain/ports/production-batch.repos
 import { ProductionDayLock } from "./domain/ports/production-day.lock.js";
 import { ProductionPlanReader } from "./domain/ports/production-plan.reader.js";
 import { ProductionDayController } from "./http/production-day.controller.js";
+import { ProductionAtelierSheetController } from "./http/production-atelier-sheet.controller.js";
+import { ProductionDayResuppliesController } from "./http/production-day-resupplies.controller.js";
+import { ProductionDayRetakeController } from "./http/production-day-retake.controller.js";
 import { ProductionSupervisionController } from "./http/production-supervision.controller.js";
 import { ProductionWorksheetController } from "./http/production-worksheet.controller.js";
 import {
@@ -192,12 +196,16 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
   imports: [BrandModule, ProductionBatchShortcutsModule, DayVersionsModule],
   controllers: [
     ProductionDayController,
+    ProductionDayResuppliesController,
+    ProductionAtelierSheetController,
+    ProductionDayRetakeController,
     ProductionWorksheetController,
     ProductionSupervisionController,
     ProductionQualityController,
     QualityControlSettingsController,
     QualityUploadSweepController,
     ProductionSettingsController,
+    ProductionDisplaySettingsController,
     // La fiche d'atelier d'EXEMPLE de la planche des documents (2026-10-20).
     AdminAtelierSheetSpecimenController,
     AdminDayPapersSpecimensController,

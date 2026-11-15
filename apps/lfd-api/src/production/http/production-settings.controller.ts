@@ -1,10 +1,8 @@
 import {
   type ProductionClosedDayPayload,
-  type ProductionDisplayPayload,
   type ProductionSettingsView,
   type ProductionTranchesPayload,
   productionClosedDayPayloadSchema,
-  productionDisplayPayloadSchema,
   productionTranchesPayloadSchema,
 } from "@lfd/contracts";
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put } from "@nestjs/common";
@@ -14,7 +12,6 @@ import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { AddProductionClosedDayCommand } from "../application/commands/add-production-closed-day.command.js";
-import { SetProductionDisplayCommand } from "../application/commands/set-production-display.command.js";
 import { SetProductionTranchesCommand } from "../application/commands/set-production-tranches.command.js";
 import { RemoveProductionClosedDayCommand } from "../application/commands/remove-production-closed-day.command.js";
 import { GetProductionSettingsQuery } from "../application/queries/get-production-settings.query.js";
@@ -25,7 +22,10 @@ const NO_CONTENT = 204;
 
 /**
  * **Production › Réglages** — l'arrêt automatique en lecture et les jours
- * fermés (plan `documentation/fournil/arret-du-plan.md`, Q6, lot A1).
+ * fermés (plan `documentation/fournil/arret-du-plan.md`, Q6, lot A1), et les
+ * tranches. Le rangement de la fiche (`PUT display`) est un réglage de
+ * l'atelier : son contrôleur est `ProductionDisplaySettingsController`, sous
+ * le même préfixe.
  *
  * Sous `production_settings` : lire en `GET`, régler sinon. `PUT close` (le
  * mode et ses heures) est retiré le 2026-10-21 : l'arrêt suit l'heure limite
@@ -64,24 +64,6 @@ export class ProductionSettingsController {
   ): Promise<void> {
     await this.commands.execute<SetProductionTranchesCommand, void>(
       new SetProductionTranchesCommand(body.mode, body.fixedTranches, staffUserId),
-    );
-  }
-
-  /**
-   * Pose le rangement du fournil (2026-10-30) : afficher ou non les
-   * sous-catégories en intertitres dans chaque groupe racine.
-   */
-  @Put("display")
-  @Idempotent(
-    "pose des valeurs : rejouée, la même requête trouve un réglage égal et ne sauve ni ne journalise",
-  )
-  @HttpCode(NO_CONTENT)
-  async setDisplay(
-    @Body(new ZodBody(productionDisplayPayloadSchema)) body: ProductionDisplayPayload,
-    @StaffUserId() staffUserId: string,
-  ): Promise<void> {
-    await this.commands.execute<SetProductionDisplayCommand, void>(
-      new SetProductionDisplayCommand(body.showSubcategories, staffUserId),
     );
   }
 

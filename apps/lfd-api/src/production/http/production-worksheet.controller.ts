@@ -2,7 +2,6 @@ import {
   type ProductionContainerRule,
   type ProductionContainerView,
   type ProductionWorksheetQuery,
-  type ProductionWorksheetRetake,
   type ProductionWorksheetView,
   type RecordWorkshopBatch,
   productionContainerSchema,
@@ -11,7 +10,7 @@ import {
   workshopBatchIdSchema,
   workshopBatchRefSchema,
 } from "@lfd/contracts";
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Param, Put, Query } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import {
@@ -24,7 +23,6 @@ import { ZodBody, ZodParam, ZodQuery } from "../../platform/shared/http/zod-body
 import { CancelBatchCommand } from "../application/commands/cancel-batch.command.js";
 import { RecordBatchCommand } from "../application/commands/record-batch.command.js";
 import { RemoveProductionContainerCommand } from "../application/commands/remove-production-container.command.js";
-import { RetakeProductionDayCommand } from "../application/commands/retake-production-day.command.js";
 import { SetProductionContainerCommand } from "../application/commands/set-production-container.command.js";
 import { ListProductionContainersQuery } from "../application/queries/list-production-containers.query.js";
 import { GetCurrentProductionWorksheetQuery } from "../application/queries/get-current-production-worksheet.query.js";
@@ -49,9 +47,10 @@ const NO_CONTENT = 204;
  *
  * Un contrôleur à part de `ProductionDayController`, qui frôle les 300 lignes :
  * ce n'est pas un découpage de confort mais la SRP appliquée aux surfaces — la
- * journée (clore, coliser, imprimer) et la fiche (déclarer une fournée, reprendre, régler) ne
+ * journée (clore, coliser, imprimer) et la fiche (déclarer une fournée, régler) ne
  * changent pas pour les mêmes raisons. Le préfixe reste le même, parce que c'est
- * le même fournil qui les ouvre.
+ * le même fournil qui les ouvre. Le retirage, geste du plan, a son contrôleur
+ * (`ProductionDayRetakeController`), sous le même chemin.
  *
  * Il n'injecte que des **bus**, comme tous les autres : ni service, ni dépôt, ni
  * port de lecture. `lint:controller-buses` le tient.
@@ -155,30 +154,6 @@ export class ProductionWorksheetController {
   ): Promise<void> {
     await this.commands.execute<CancelBatchCommand, void>(
       new CancelBatchCommand(date, batchId, staffUserId),
-    );
-  }
-
-  /**
-   * **Reprendre le tirage** : absorber ce qui est arrivé depuis la clôture.
-   *
-   * Le seul geste du lot qui recalcule le compte à produire, et il est **attesté**
-   * — l'écran vient de montrer les lignes qui changent et de dire laquelle a
-   * déjà une fournée. Sans auteur, ce serait le recalcul silencieux que l'agrégat
-   * refuse.
-   *
-   * `absorbed: 0` n'est pas une erreur : rien n'était arrivé, et la réponse rend
-   * le tirage que la fiche montre déjà.
-   */
-  @Post("worksheet/:date/retake")
-  @Idempotent(
-    "reprend les commandes arrivées : rejouée, il n'y a plus rien à absorber et ni l'écriture ni le journal ne partent",
-  )
-  async retake(
-    @Param("date", DAY) date: string,
-    @StaffUserId() staffUserId: string,
-  ): Promise<ProductionWorksheetRetake> {
-    return this.commands.execute<RetakeProductionDayCommand, ProductionWorksheetRetake>(
-      new RetakeProductionDayCommand(date, staffUserId),
     );
   }
 
