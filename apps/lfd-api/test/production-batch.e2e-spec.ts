@@ -1365,19 +1365,10 @@ describe("la file de remise", () => {
     expect(view.day).toBe("2019-01-01");
   });
 
-  it("🔴 sert encore l'ANCIEN chemin, qui est déprécié et non supprimé", async () => {
-    // Le back-office est une SPA déployée par son propre workflow : un onglet
-    // resté ouvert garde son bundle et appelle encore ce préfixe. Ce test est ce
-    // qui empêche de le retirer par mégarde avant le déploiement prévu.
-    const reference = await placePickup(1);
-
-    const view = jsonBody<HandoverQueueView>(
-      await ctx
-        .asSub("staff-e2e")
-        .get(`/admin/production/handover/file?jour=${SERVICE_DAY}`)
-        .expect(200),
-    );
-
-    expect(view.entries.some((line) => line.reference === reference)).toBe(true);
+  it("ne sert plus l'ancien chemin admin/production/handover", async () => {
+    await ctx
+      .asSub("staff-e2e")
+      .get(`/admin/production/handover/file?jour=${SERVICE_DAY}`)
+      .expect(404);
   });
 });

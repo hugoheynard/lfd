@@ -15,10 +15,7 @@ import { confirmPayloadOf } from '../handover-shop/handover-queue.service';
  * n'ont rien à se transmettre. La confirmation rend d'ailleurs la vue à jour, ce
  * qui évite un rechargement — c'est le back-office qui décide, pas l'écran.
  *
- * 🔴 **Le chemin d'API a changé DEUX FOIS** — `/admin/production/handover` le
- * 2026-09-07, puis `/admin/handover` le 2026-09-10, quand le retrait a pris son
- * propre contexte. L'API sert encore l'ancien préfixe, déprécié, le temps qu'un
- * onglet resté ouvert soit rechargé ; cet écran, lui, vise le nouveau.
+ * Le chemin d'API est `/admin/handover`.
  *
  * ⚠️ **La route de CET écran ne bouge pas**, et c'est ce qui rend les deux
  * déménagements sans danger : `/retrait/:token` est ce que le QR déjà parti dans

@@ -22,20 +22,11 @@ import { GetHandoverQuery } from "../application/queries/get-handover.query.js";
 import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
- * **Les deux chemins de cette surface**, et pourquoi il y en a deux.
- *
- * 🔴 `admin/production/handover` est **déprécié**, pas mort. Le back-office est
- * une SPA déployée par SON PROPRE workflow, indépendant de celui de l'API : un
- * onglet resté ouvert garde son bundle, et le QR d'un client peut l'ouvrir à
- * tout moment. Le `CLAUDE.md` §0 est explicite — « Un contrat déjà servi ne se
- * casse pas. […] il se déprécie, il ne disparaît pas dans le même déploiement. »
- *
- * Le retrait de l'ancien chemin est une tranche à part, au déploiement suivant.
- * Nest accepte un tableau de préfixes : les deux servent les mêmes handlers,
- * donc il n'y a **rien à maintenir en double** — c'est ce qui rend la
- * dépréciation gratuite, et donc tenable.
+ * Le chemin de cette surface. Le QR d'un client n'encode pas ce chemin mais la
+ * route `/retrait/:token` du back-office, qui ne bouge jamais : seul ce chemin
+ * d'API peut changer, et l'écran se redéploie avec lui.
  */
-const HANDOVER_ROUTES = ["admin/handover", "admin/production/handover"];
+const HANDOVER_ROUTES = ["admin/handover"];
 
 /**
  * Le **retrait** — la surface que le QR d'un client ouvre, et son chemin de

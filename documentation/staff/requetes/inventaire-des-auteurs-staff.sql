@@ -64,7 +64,7 @@ UNION ALL
 UNION ALL
   SELECT 'public.orders.handed_over_by', handed_over_by::text FROM public.orders WHERE handed_over_by IS NOT NULL
 UNION ALL
-  SELECT 'production.order_handover.handed_over_by', handed_over_by::text FROM production.order_handover WHERE handed_over_by IS NOT NULL
+  SELECT 'handover.order_handover.handed_over_by', handed_over_by::text FROM handover.order_handover WHERE handed_over_by IS NOT NULL
 UNION ALL
   SELECT 'pim.order_time_limit.updated_by', updated_by::text FROM pim.order_time_limit WHERE updated_by IS NOT NULL
 UNION ALL

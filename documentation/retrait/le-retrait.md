@@ -56,9 +56,9 @@ abonné échoue.
 
 `order_id` est **opaque** : aucune clé étrangère vers le commerce. Les tables
 ont été déplacées par `SET SCHEMA` (migration
-`20261103110000_le_retrait_dans_son_schema`), qui laisse dans `production` trois
-**vues de transition** du même nom (lignes 29-31 de cette migration) pour
-l'image précédente pendant un déploiement.
+`20261103110000_le_retrait_dans_son_schema`), et les trois vues de transition qu'elle avait laissées dans
+`production` sont supprimées (`20261115100000_les_vues_du_retrait_retirees`).
+Le seul chemin d'API est `/admin/handover`.
 
 ### Le bloc
 
@@ -123,14 +123,10 @@ le chemin d'API qu'elle appelle peut changer. Les e2e du bloc sont
 
 ## Reste à faire
 
-- **Retirer les trois vues de transition** `production.order_handover`,
-  `production.order_handover_proof`, `production.order_departure` : migration
-  `DROP VIEW` ×3 (aucune migration ne les supprime aujourd'hui). Point
-  d'irréversibilité : revenir à `production` demanderait ensuite un nouveau
-  `SET SCHEMA` en trois déploiements.
-- **Retirer l'alias d'URL déprécié** `admin/production/handover`
-  (`handover.controller.ts:38`, `HANDOVER_ROUTES`), avec l'appel qui l'atteste
-  encore dans `test/production-batch.e2e-spec.ts:1377`.
+Les points de modèle à ouvrir (envoi contre commande, garde éclatée, remise
+non corrigeable, états du comptoir, QR par envoi) sont dans
+[`points-a-explorer.md`](points-a-explorer.md).
+
 - **Les états de comptoir** — « au frais », « client appelé », « passera à
   9 h » — n'existent pas. Ce sont des faits qui naissent au comptoir : ils
   reviendront à une table du retrait.
