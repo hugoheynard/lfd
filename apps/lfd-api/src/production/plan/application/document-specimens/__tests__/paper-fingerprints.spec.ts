@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { pdfFingerprint } from "../../../../shared/print/__tests__/pdf-fingerprint.js";
 
 import { AppConfig } from "../../../../../platform/config/app-config.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
@@ -36,9 +36,9 @@ import { GetProductionCountSpecimenHandler } from "../../queries/get-production-
  * `FINGERPRINTS`, et dire dans le commit pourquoi le papier a changé.
  */
 const FINGERPRINTS = {
-  dayDossier: "b4c876e6c627e0b8c1410a3ac311ae806658d1f261195bf4f09bb273dbc1576f",
-  dayDossierWithQr: "140651a1596d98e3c8dff97f1b8ad1861f0e827c966b22da9cf153d6e8401f6d",
-  productionCount: "83ca24edf942bc55b9640153af6295a0e6940126c64d4cde327bf17a4ecc13ef",
+  dayDossier: "b7cd318c003f941f975e1515f09333f881b910ff242f2a3b33dcd7d7c90c8acf",
+  dayDossierWithQr: "bf626d629e7b3cd6aba2c01901d9288afd2edde716cddffe9439e8dc49014432",
+  productionCount: "ae2d87bb35d06986769dd95ccf739611500577940a16bc5e93bd45f310e5af39",
 } as const;
 
 const AT = new Date("2026-03-10T15:30:00.000Z");
@@ -55,8 +55,8 @@ class AdminOrigin extends AppConfig {
   }
 }
 
-function sha256(bytes: Uint8Array): string {
-  return createHash("sha256").update(bytes).digest("hex");
+function fingerprint(bytes: Uint8Array): string {
+  return pdfFingerprint(bytes);
 }
 
 async function dayDossier(origin: string | null): Promise<string> {
@@ -66,7 +66,7 @@ async function dayDossier(origin: string | null): Promise<string> {
     new FixedPaperLogo(),
     new FixedSpecimenDeliveryNote(),
   ).execute();
-  return sha256(paper.bytes);
+  return fingerprint(paper.bytes);
 }
 
 describe("l'empreinte des papiers du fournil", () => {
@@ -83,7 +83,7 @@ describe("l'empreinte des papiers du fournil", () => {
       new FixedClock(AT),
       new FixedPaperLogo(),
     ).execute();
-    expect(sha256(paper.bytes)).toBe(FINGERPRINTS.productionCount);
+    expect(fingerprint(paper.bytes)).toBe(FINGERPRINTS.productionCount);
   });
 
   it("deux rendus du même spécimen sont identiques à l'octet", async () => {
