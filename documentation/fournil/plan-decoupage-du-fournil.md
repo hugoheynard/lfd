@@ -146,7 +146,7 @@ métier n'écoute que les faits qu'un autre métier publie par son `index.ts`.
   démarrer sur une erreur qui ne nomme pas la cause.
 - **`channels/` n'est pas un sous-contexte** : il importe les fichiers de
   `day/` **en direct** (les valeurs `ServiceDay`, `ServiceRange`), et
-  `day/index.ts` n'exporte rien qui charge un canal.
+  _day/index.ts_ (à créer) n'exporte rien qui charge un canal.
 - **Les types passent aussi par la porte** : un `import type` vers
   l'intérieur d'un autre sous-contexte est refusé comme un import de valeur ;
   ce qui doit être lu ailleurs est exporté par l'`index.ts`.
