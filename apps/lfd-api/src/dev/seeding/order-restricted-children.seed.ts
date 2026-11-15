@@ -2,10 +2,12 @@ import type { Prisma, PrismaClient } from "../../platform/database/client/client
 
 /**
  * **Ce qui tient une commande en `RESTRICT`, et qu'un semis doit retirer
- * avant elle** : les bons de livraison (plan E1) et leurs lignes, et les
+ * avant elle** : les bons de livraison (plan E1) et leurs lignes, les
  * remises de panier (M2) — la remise d'un BL et la part d'une ligne tiennent
- * la remise de la commande, qui tient la commande. Même ordre que la purge du
- * scénario (`purgeCommerce`).
+ * la remise de la commande, qui tient la commande —, ce que les gestes
+ * d'après l'arrêt écrivent sous elle (le manque d'un envoi et sa décision,
+ * l'historique d'une modification) et les projets de hausse. Même liste et
+ * même ordre que la purge du scénario (`purgeCommerce`, `purgeOrderChildren`).
  *
  * Une seule liste pour les quatre semis qui retirent des commandes (reset,
  * retraits sans site, sous-comptes, factures, relus le 2026-11-01) : chacun
@@ -24,6 +26,10 @@ export async function dropOrderRestrictedChildren(
   await prisma.orderDiscount.deleteMany({ where: { order: orders } });
   await prisma.deliveryNoteLine.deleteMany({ where: { note: { order: orders } } });
   await prisma.deliveryNote.deleteMany({ where: { order: orders } });
+  // La décision d'abord : elle tient le manque de son envoi.
+  await prisma.orderShortfallDecision.deleteMany({ where: { order: orders } });
+  await prisma.orderShortfall.deleteMany({ where: { order: orders } });
+  await prisma.orderRevisionEntry.deleteMany({ where: { order: orders } });
   // Les projets de hausse par carte (plan S2) tiennent aussi la commande, et
   // leur déclencheur refuse le DELETE hors `orders.purge` — un réglage LOCAL,
   // qui ne vit que dans une transaction.

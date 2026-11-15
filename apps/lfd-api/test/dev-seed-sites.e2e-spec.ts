@@ -245,4 +245,52 @@ describe("le semis, à la norme des sites", () => {
     },
     TIMEOUT_MS,
   );
+
+  /**
+   * Régression : « Tout recharger » retirait les commandes des sociétés
+   * d'essai sans la décision de manquant de leur envoi, tenue en `RESTRICT`, et
+   * mourait en 409 « Une ressource liée est introuvable »
+   * (`order_shortfall_decision_order_id_fkey`, constaté le 2026-11-15).
+   */
+  it(
+    "« Tout recharger » se rejoue quand une commande retirée porte un manquant décidé",
+    async () => {
+      const kept = await ctx.prisma.company.findFirstOrThrow({
+        where: { raisonSociale: CLIENT_RAISON_SOCIALE },
+        select: { id: true },
+      });
+      const victim = await ctx.prisma.order.findFirstOrThrow({
+        where: { NOT: { companyId: kept.id }, companyId: { not: null } },
+        select: { id: true },
+      });
+      // Un manquant décidé ne se fabrique pas sans toute une journée de
+      // colisage : on pose les deux lignes qu'un retrait incomplet écrirait.
+      await ctx.prisma.orderShortfall.create({
+        data: {
+          orderId: victim.id,
+          rank: 1,
+          reportedAt: new Date(daysAgo(1)),
+          lines: [],
+          decidedAt: new Date(daysAgo(1)),
+        },
+      });
+      await ctx.prisma.orderShortfallDecision.create({
+        data: {
+          id: "decision-regression",
+          orderId: victim.id,
+          rank: 1,
+          decidedAt: new Date(daysAgo(1)),
+          decidedByStaffId: "staff-regression",
+          remainder: "abandoned",
+          departing: [],
+          signalReportedAt: new Date(daysAgo(1)),
+        },
+      });
+
+      await reload();
+
+      expect(await ctx.prisma.order.count({ where: { id: victim.id } })).toBe(0);
+    },
+    TIMEOUT_MS,
+  );
 });
