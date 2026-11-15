@@ -23,10 +23,10 @@ import {
 } from "../../../../day/index.js";
 import { ProductionDayRepository } from "../../../../day/index.js";
 import { ServiceDay } from "../../../../day/index.js";
-import { RecordingDayLock } from "../../../../application/__tests__/batch-doubles.js";
-import { RecordingDurable } from "../../../../application/__tests__/handoff-doubles.js";
-import { DayResupplies } from "../../../../application/__tests__/settings-doubles.js";
-import { InMemoryWithdrawals } from "../../../../application/__tests__/withdrawal-doubles.js";
+import { RecordingDayLock } from "../../../../day/application/__tests__/batch-doubles.js";
+import { RecordingDurable } from "../../../../day/application/__tests__/handoff-doubles.js";
+import { DayResupplies } from "../../../../channels/commerce/__tests__/day-resupplies-doubles.js";
+import { InMemoryWithdrawals } from "../../../../day/application/__tests__/withdrawal-doubles.js";
 import { ResupplyLaunchGestures } from "../../services/resupply-launch-gesture.js";
 import { ResupplyLaunchReading } from "../../services/resupply-launch-reading.js";
 import { ResupplyLaunchRecording } from "../../services/resupply-launch-recording.js";

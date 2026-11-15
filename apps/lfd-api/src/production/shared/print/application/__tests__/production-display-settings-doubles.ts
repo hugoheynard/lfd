@@ -1,7 +1,7 @@
-import { ProductionDisplaySettings } from "../../shared/print/index.js";
-import { ProductionDisplaySettingsReader } from "../../shared/print/index.js";
-import { ProductionDisplaySettingsRepository } from "../../shared/print/index.js";
-import type { TrancheSettingsAuthor } from "../../day/index.js";
+import { ProductionDisplaySettings } from "../../index.js";
+import { ProductionDisplaySettingsReader } from "../../index.js";
+import { ProductionDisplaySettingsRepository } from "../../index.js";
+import type { TrancheSettingsAuthor } from "../../../../day/index.js";
 
 /** Le rangement du fournil, en mémoire : `null` tant que personne ne l'a posé. */
 export class InMemoryDisplaySettings extends ProductionDisplaySettingsRepository {

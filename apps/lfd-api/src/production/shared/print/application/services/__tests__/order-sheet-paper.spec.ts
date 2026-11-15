@@ -1,9 +1,9 @@
 import { AppConfig } from "../../../../../../platform/config/app-config.js";
 import type { ProducibleOrder } from "../../../../../channels/commerce/day-orders.reader.js";
 import type { ProductionOrderSnapshot } from "../../../../../day/index.js";
-import { FixedOrderPrintColors } from "../../../../../application/__tests__/order-print-colors-doubles.js";
-import { FixedPaperLogo } from "../../../../../application/__tests__/paper-doubles.js";
-import { InMemoryProductionStore } from "../../../../../application/__tests__/quality-doubles.js";
+import { FixedOrderPrintColors } from "../../../../../channels/commerce/__tests__/order-print-colors-doubles.js";
+import { FixedPaperLogo } from "../../__tests__/paper-logo-doubles.js";
+import { InMemoryProductionStore } from "../../__tests__/production-store-doubles.js";
 import { atelierSheetPdfKey } from "../../../domain/services/atelier-sheet-pdf.js";
 import { OrderSheetPaper, atelierSheetSlotOf } from "../order-sheet-paper.service.js";
 import { ProductionPaperArchive } from "../production-paper-archive.service.js";

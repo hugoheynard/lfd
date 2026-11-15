@@ -9,9 +9,9 @@ import { RequestMethod, type Type } from "@nestjs/common";
 import {
   ADMIN_PERMISSION_KEY,
   ADMIN_RESOURCE_KEY,
-} from "../../../platform/auth/admin-surface.keys.js";
-import { IS_PUBLIC_KEY } from "../../../platform/auth/public.decorator.js";
-import { ProductionModule } from "../../production.module.js";
+} from "../../platform/auth/admin-surface.keys.js";
+import { IS_PUBLIC_KEY } from "../../platform/auth/public.decorator.js";
+import { ProductionModule } from "../production.module.js";
 
 /** Une ligne de la table : ce qu'un appelant voit d'une route, sans le nom de sa classe. */
 function describeRoute(controller: Type, method: string): string | null {

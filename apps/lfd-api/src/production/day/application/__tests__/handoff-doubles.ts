@@ -1,6 +1,5 @@
-import type { DurableFact } from "../../../platform/outbox/durable-event.js";
-import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
-import { FixedIdGenerator } from "../../../platform/id/fixed-id-generator.js";
+import type { DurableFact } from "../../../../platform/outbox/durable-event.js";
+import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import {
   type AnsweredReturn,
   type ProductionHandoff,
@@ -9,8 +8,7 @@ import {
   ProductionReturnRequests,
   type ReturnRequest,
   type ServiceDay,
-} from "../../day/index.js";
-import { PackingHandoffs } from "../../atelier/application/services/packing-handoffs.service.js";
+} from "../../index.js";
 
 /**
  * Les doublés de la remise au colisage (plan `colisage/colisage.md`,
@@ -129,29 +127,5 @@ export function returnCountsOf(
       }
     }
     return { returned, pendingReturn };
-  };
-}
-
-/** Le service réel, branché sur les doublés. */
-export function handoffsOnDoubles(trace: string[] = []): {
-  readonly service: PackingHandoffs;
-  readonly ledger: InMemoryHandoffs;
-  readonly durable: RecordingDurable;
-  readonly requests: InMemoryReturnRequests;
-} {
-  const ledger = new InMemoryHandoffs();
-  const durable = new RecordingDurable(trace);
-  const requests = new InMemoryReturnRequests();
-  return {
-    service: new PackingHandoffs(
-      ledger,
-      new InMemoryHandoffReader(ledger),
-      durable,
-      requests,
-      new FixedIdGenerator("ask"),
-    ),
-    ledger,
-    durable,
-    requests,
   };
 }

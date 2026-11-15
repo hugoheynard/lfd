@@ -1,7 +1,7 @@
 import type { ProductionOrderSnapshot } from "../../../../../day/index.js";
 import { renderAtelierSheetPdf, renderProductionCountPdf } from "../atelier-sheet-pdf.js";
 import { pdfPages } from "../../../../../../platform/pdf/__tests__/pdf-text.js";
-import { PAPER_LOGO } from "../../../../../domain/services/__tests__/paper-logo.fixture.js";
+import { PAPER_LOGO } from "./paper-logo.fixture.js";
 
 /** Le compte à produire : la date de son pied. Instant recopié, jamais comparé à l'horloge. */
 describe("renderProductionCountPdf", () => {

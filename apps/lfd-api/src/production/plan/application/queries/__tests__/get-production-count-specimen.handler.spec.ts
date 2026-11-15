@@ -1,6 +1,6 @@
 import { pdfPages } from "../../../../../platform/pdf/__tests__/pdf-text.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
-import { FixedPaperLogo } from "../../../../application/__tests__/paper-doubles.js";
+import { FixedPaperLogo } from "../../../../shared/print/application/__tests__/paper-logo-doubles.js";
 import { GetProductionCountSpecimenHandler } from "../get-production-count-specimen.handler.js";
 
 const clock = new FixedClock(new Date());

@@ -2,12 +2,8 @@ import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/dir
 import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
-import {
-  CheckTable,
-  InMemoryProductionStore,
-  InMemoryUploads,
-  JPEG,
-} from "../../../../application/__tests__/quality-doubles.js";
+import { CheckTable, InMemoryUploads, JPEG } from "../../__tests__/quality-doubles.js";
+import { InMemoryProductionStore } from "../../../../shared/print/application/__tests__/production-store-doubles.js";
 import { DepositQualityPhotoCommand } from "../deposit-quality-photo.command.js";
 import { DepositQualityPhotoHandler } from "../deposit-quality-photo.handler.js";
 import { SweepQualityUploadsHandler } from "../sweep-quality-uploads.handler.js";

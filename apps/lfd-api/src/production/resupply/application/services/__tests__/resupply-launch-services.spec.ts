@@ -7,11 +7,11 @@ import { producibleOrder } from "../../../../channels/commerce/__tests__/produci
 import { NOTHING_PENDING, ProductionDay } from "../../../../day/domain/entities/production-day.js";
 import { ResupplyToLaunchNotFoundError } from "../../../../day/index.js";
 import { ServiceDay } from "../../../../day/index.js";
-import { RecordingDurable } from "../../../../application/__tests__/handoff-doubles.js";
-import { FixedDayOrders } from "../../../../application/__tests__/plan-intake-doubles.js";
-import { SavedDays } from "../../../../application/__tests__/revision-desk-doubles.js";
-import { DayResupplies } from "../../../../application/__tests__/settings-doubles.js";
-import { InMemoryWithdrawals } from "../../../../application/__tests__/withdrawal-doubles.js";
+import { RecordingDurable } from "../../../../day/application/__tests__/handoff-doubles.js";
+import { FixedDayOrders } from "../../../../channels/commerce/__tests__/day-orders-doubles.js";
+import { SavedDays } from "../../../../day/application/__tests__/revision-desk-doubles.js";
+import { DayResupplies } from "../../../../channels/commerce/__tests__/day-resupplies-doubles.js";
+import { InMemoryWithdrawals } from "../../../../day/application/__tests__/withdrawal-doubles.js";
 import { ResupplyLaunchGestures } from "../resupply-launch-gesture.js";
 import { ResupplyLaunchReading } from "../resupply-launch-reading.js";
 import { ResupplyLaunchRecording } from "../resupply-launch-recording.js";

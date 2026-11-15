@@ -23,13 +23,11 @@ import { AutomaticDayCloser } from "../../../domain/ports/automatic-day-closer.j
 import type { AttemptTrace } from "../../../domain/services/auto-close-round.js";
 import type { OrderCutoffRule } from "../../../../day/index.js";
 import { ServiceDay } from "../../../../day/index.js";
+import { ClosedDaysTable, SettingsReader, stopRulesOf } from "../../__tests__/settings-doubles.js";
 import {
-  ClosedDaysTable,
   CutoffRules,
   ResupplyTime,
-  SettingsReader,
-  stopRulesOf,
-} from "../../../../application/__tests__/settings-doubles.js";
+} from "../../../../channels/commerce/__tests__/order-cutoff-doubles.js";
 import { PlanArrestBell } from "../../services/plan-arrest-bell.js";
 import { RunAutoCloseRoundHandler } from "../run-auto-close-round.handler.js";
 

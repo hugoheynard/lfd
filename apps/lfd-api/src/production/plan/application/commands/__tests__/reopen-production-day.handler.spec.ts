@@ -17,8 +17,8 @@ import { ProductionDayNotClosedError } from "../../../../day/index.js";
 import { ReopenAfterDispatchError, ReopenAfterPackingError } from "../../../../day/index.js";
 import { ProductionDayRepository } from "../../../../day/index.js";
 import { ServiceDay } from "../../../../day/index.js";
-import { RecordingDayLock } from "../../../../application/__tests__/batch-doubles.js";
-import { RecordingDurable } from "../../../../application/__tests__/handoff-doubles.js";
+import { RecordingDayLock } from "../../../../day/application/__tests__/batch-doubles.js";
+import { RecordingDurable } from "../../../../day/application/__tests__/handoff-doubles.js";
 import { ReopenProductionDayCommand } from "../reopen-production-day.command.js";
 import { ReopenProductionDayHandler } from "../reopen-production-day.handler.js";
 

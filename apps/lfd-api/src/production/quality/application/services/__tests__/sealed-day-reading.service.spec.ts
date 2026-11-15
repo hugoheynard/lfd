@@ -3,8 +3,8 @@ import {
   closedDay,
   FixedDays,
   packingDay,
-} from "../../../../application/__tests__/quality-doubles.js";
-import { FixedPackedOrders } from "../../../../application/__tests__/station-doubles.js";
+} from "../../../../day/application/__tests__/closed-day-doubles.js";
+import { FixedPackedOrders } from "../../../../channels/packing/__tests__/packed-orders-doubles.js";
 import { SealedDayReading } from "../sealed-day-reading.service.js";
 
 // Un jour et un instant comparés entre eux, jamais au mur.

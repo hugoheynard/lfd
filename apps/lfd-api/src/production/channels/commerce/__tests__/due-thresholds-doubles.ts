@@ -1,7 +1,4 @@
-import {
-  type DayDueThresholds,
-  DueThresholdsReader,
-} from "../../channels/commerce/due-thresholds.reader.js";
+import { type DayDueThresholds, DueThresholdsReader } from "../due-thresholds.reader.js";
 
 /** Le commerce sans besoin daté : aucune marge, aucun seuil. */
 export const NO_DUE: DayDueThresholds = {

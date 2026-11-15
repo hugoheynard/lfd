@@ -3,14 +3,14 @@ import { RecordingPublisher } from "../../../../../platform/events/__tests__/rec
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { ProductionDay } from "../../../domain/entities/production-day.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
-import { RecordingDayLock } from "../../../../application/__tests__/batch-doubles.js";
-import { RecordingDurable } from "../../../../application/__tests__/handoff-doubles.js";
-import { closedDay, FixedDays } from "../../../../application/__tests__/quality-doubles.js";
+import { RecordingDayLock } from "../../__tests__/batch-doubles.js";
+import { RecordingDurable } from "../../__tests__/handoff-doubles.js";
+import { closedDay, FixedDays } from "../../__tests__/closed-day-doubles.js";
+import { FixedInscriptions } from "../../../../channels/commerce/__tests__/order-inscription-doubles.js";
 import {
-  FixedInscriptions,
   InMemoryWithdrawalLedger,
   InMemoryWithdrawals,
-} from "../../../../application/__tests__/withdrawal-doubles.js";
+} from "../../__tests__/withdrawal-doubles.js";
 import { ProductionOrderWithdrawalDesk } from "../production-order-withdrawal.desk.js";
 
 /**

@@ -38,7 +38,7 @@
     "day/application/handlers/on-packing-returned.handler.ts": "Abonné qui touche la journée, ses fournées et ses remises : tous ses ports sont du noyau.",
     "day/application/queries/get-production-day-status.handler.ts": "Statut de la journée (scellée, en attente) : lit le noyau et un canal — noyau.",
     "quality/application/services/checked-quality-lines.reader.ts": "L'adaptateur du port `QualityLineStatusReader` : contrôles et règle de verdict de la qualité, que l'atelier ne lit plus (C3).",
-    "day/application/services/day-order-label-head.reader.ts": "Implémente un lecteur du colisage sur la journée (noyau) ; importe deux primitives d'impression : compté en dette (le noyau n'importe pas `shared/print/`).",
+    "shared/print/application/services/day-order-label-head.reader.ts": "Implémente l'étiquette d'un sac que le colisage lit (`channels/packing/order-label-head.reader`) avec le libellé d'acheminement et l'en-tête du dossier : des mots de papier, donc l'imprimerie ; lit la journée par `day/index.ts`. Seul lecteur : le colisage, relié par `appBootstrap/packing-feed.module.ts`.",
     "plan/application/services/packing-list-facts.ts": "Faits de la liste à coliser publiés à l'arrêt et au retirage : ses deux seuls lecteurs sont `plan-arrest-recording` et `retake-recording`.",
     "resupply/application/services/production-launched-resupplies.ts": "Implémente `channels/commerce/launched-resupplies` : les réassorts lancés.",
     "day/application/services/production-order-revision.desk.ts": "Implémente le guichet de révision du commerce : verrou, dépôt et registre de la journée — le noyau.",

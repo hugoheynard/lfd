@@ -6,9 +6,9 @@ import {
 import { ProductionDayClosedJournalEvent } from "../../../../day/index.js";
 import {
   CutoffRules,
-  DayResupplies,
   ResupplyTime,
-} from "../../../../application/__tests__/settings-doubles.js";
+} from "../../../../channels/commerce/__tests__/order-cutoff-doubles.js";
+import { DayResupplies } from "../../../../channels/commerce/__tests__/day-resupplies-doubles.js";
 import { CloseProductionDayCommand } from "../close-production-day.command.js";
 import {
   closeScene,

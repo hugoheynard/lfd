@@ -1,7 +1,7 @@
 import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { InMemoryQualityControlSettings } from "../../__tests__/quality-control-settings-doubles.js";
 import { SealedDayReading } from "../../services/sealed-day-reading.service.js";
-import { sealedAt } from "../../../../application/__tests__/station-doubles.js";
+import { sealedAt } from "../../../../channels/packing/__tests__/packed-orders-doubles.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
@@ -21,21 +21,23 @@ import type { QualityTargetRequest } from "../../../domain/services/quality-chec
 import { ServiceDay } from "../../../../day/index.js";
 import {
   CheckTable,
+  InMemoryCheckReader,
+  InMemoryChecks,
+  InMemoryUploads,
+  JPEG,
+} from "../../__tests__/quality-doubles.js";
+import {
   closedDay,
   CROISSANT,
   FixedDays,
-  FixedOrderCustody,
-  InMemoryCheckReader,
-  InMemoryChecks,
-  InMemoryProductionStore,
-  InMemoryUploads,
-  JPEG,
-} from "../../../../application/__tests__/quality-doubles.js";
+} from "../../../../day/application/__tests__/closed-day-doubles.js";
+import { FixedOrderCustody } from "../../../../channels/handover/__tests__/order-custody-doubles.js";
+import { InMemoryProductionStore } from "../../../../shared/print/application/__tests__/production-store-doubles.js";
 import { QualityPhotoAttachment } from "../../services/quality-photo-attachment.service.js";
 import { DepositQualityPhotoCommand } from "../deposit-quality-photo.command.js";
 import { DepositQualityPhotoHandler } from "../deposit-quality-photo.handler.js";
 import { RenderQualityCheckCommand } from "../render-quality-check.command.js";
-import { RecordingDayLock } from "../../../../application/__tests__/batch-doubles.js";
+import { RecordingDayLock } from "../../../../day/application/__tests__/batch-doubles.js";
 import { RenderQualityCheckHandler } from "../render-quality-check.handler.js";
 
 let intentCount = 0;

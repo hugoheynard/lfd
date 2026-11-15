@@ -7,13 +7,11 @@ import { ProductionDay } from "../../../../day/domain/entities/production-day.js
 import { PlanClosedBeforeOrderCutoffError } from "../../../../day/index.js";
 import { ServiceDay } from "../../../../day/index.js";
 import { CloseProductionDayCommand } from "../../commands/close-production-day.command.js";
-import {
-  admissionOf,
-  FixedStatus,
-  SilentSweeper,
-} from "../../../../application/__tests__/plan-intake-doubles.js";
-import { SavedDays } from "../../../../application/__tests__/revision-desk-doubles.js";
-import { CutoffRules } from "../../../../application/__tests__/settings-doubles.js";
+import { admissionOf } from "../../__tests__/plan-intake-doubles.js";
+import { FixedStatus } from "../../../../day/application/__tests__/day-status-doubles.js";
+import { SilentSweeper } from "../../../../channels/commerce/__tests__/day-orders-doubles.js";
+import { SavedDays } from "../../../../day/application/__tests__/revision-desk-doubles.js";
+import { CutoffRules } from "../../../../channels/commerce/__tests__/order-cutoff-doubles.js";
 
 /**
  * `PlanArrestAdmission` — ce que l'arrêt fait avant le verrou, et la seule

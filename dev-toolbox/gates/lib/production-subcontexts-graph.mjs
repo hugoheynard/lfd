@@ -55,9 +55,14 @@ export const ALLOWED = Object.freeze({
  * chemin par chemin. L'imprimerie lit la couleur d'une commande pour la
  * dessiner, et rien d'autre du commerce — Hugo, 2026-11-15 : la fiche de
  * commande est un papier commun, et la collecte de sa pastille vit avec elle.
+ * Et l'étiquette d'un sac, que le colisage déclare : ses mots (acheminement,
+ * créneau) sont ceux des papiers du fournil, que seule l'imprimerie écrit.
  */
 export const ADMITTED_FILES = Object.freeze({
-  "shared-print": Object.freeze([/^channels\/commerce\/order-print-colors[^/]*\.ts$/u]),
+  "shared-print": Object.freeze([
+    /^channels\/commerce\/order-print-colors[^/]*\.ts$/u,
+    /^channels\/packing\/order-label-head\.reader\.ts$/u,
+  ]),
 });
 
 /** `to` est-il un fichier que `from` (sous-contexte) lit par exception nommée ? */

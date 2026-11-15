@@ -1,6 +1,6 @@
 import { PlanClosedBeforeOrderCutoffError } from "../../../../day/index.js";
-import { FixedStatus } from "../../../../application/__tests__/plan-intake-doubles.js";
-import { CutoffRules } from "../../../../application/__tests__/settings-doubles.js";
+import { FixedStatus } from "../../../../day/application/__tests__/day-status-doubles.js";
+import { CutoffRules } from "../../../../channels/commerce/__tests__/order-cutoff-doubles.js";
 import { CloseProductionDayCommand } from "../close-production-day.command.js";
 import { closedDay, closeScene, DAY, openDay, order } from "./close-production-day.scene.js";
 

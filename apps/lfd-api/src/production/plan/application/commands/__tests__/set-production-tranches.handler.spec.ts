@@ -7,7 +7,7 @@ import {
 } from "../../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
 import { ProductionTrancheSettings } from "../../../../day/index.js";
 import { DuplicateTrancheError } from "../../../../day/index.js";
-import { InMemoryTrancheSettings } from "../../../../application/__tests__/production-tranche-settings-doubles.js";
+import { InMemoryTrancheSettings } from "../../../../day/application/__tests__/production-tranche-settings-doubles.js";
 import { SetProductionTranchesCommand } from "../set-production-tranches.command.js";
 import { SetProductionTranchesHandler } from "../set-production-tranches.handler.js";
 

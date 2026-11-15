@@ -3,12 +3,8 @@ import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-mem
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { InvalidQualityPhotoError } from "../../../domain/errors/quality-record-errors.js";
-import {
-  CheckTable,
-  InMemoryProductionStore,
-  InMemoryUploads,
-  JPEG,
-} from "../../../../application/__tests__/quality-doubles.js";
+import { CheckTable, InMemoryUploads, JPEG } from "../../__tests__/quality-doubles.js";
+import { InMemoryProductionStore } from "../../../../shared/print/application/__tests__/production-store-doubles.js";
 import { DepositQualityPhotoCommand } from "../deposit-quality-photo.command.js";
 import { DepositQualityPhotoHandler } from "../deposit-quality-photo.handler.js";
 

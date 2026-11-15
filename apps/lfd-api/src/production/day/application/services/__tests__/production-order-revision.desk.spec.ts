@@ -8,14 +8,14 @@ import {
 import { ProductionDay } from "../../../domain/entities/production-day.js";
 import { RevisedOrderInscribedElsewhereError } from "../../../domain/errors/order-revision-errors.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
-import { RecordingDayLock } from "../../../../application/__tests__/batch-doubles.js";
-import { RecordingDurable } from "../../../../application/__tests__/handoff-doubles.js";
-import { SavedDays } from "../../../../application/__tests__/revision-desk-doubles.js";
+import { RecordingDayLock } from "../../__tests__/batch-doubles.js";
+import { RecordingDurable } from "../../__tests__/handoff-doubles.js";
+import { SavedDays } from "../../__tests__/revision-desk-doubles.js";
 import {
   InMemoryRevisionNoticeLedger,
   InMemoryRevisionNotices,
 } from "../../__tests__/revision-notice-doubles.js";
-import { FixedInscriptions } from "../../../../application/__tests__/withdrawal-doubles.js";
+import { FixedInscriptions } from "../../../../channels/commerce/__tests__/order-inscription-doubles.js";
 import { ProductionOrderRevisionDesk } from "../production-order-revision.desk.js";
 
 /**

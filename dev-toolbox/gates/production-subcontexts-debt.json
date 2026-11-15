@@ -1,10 +1,7 @@
 {
   "$comment": "La dette du découpage du fournil, relevée le 2026-11-15 à la naissance de dev-toolbox/gates/production-subcontexts.mjs (plan documentation/fournil/plan-decoupage-du-fournil.md, D0). Elle ne grandit pas, elle se vide : une violation absente d'ici échoue, une entrée qui ne viole plus échoue, un compte trop haut échoue. edges, models, subscribers, indexCycles : une entrée par violation (C1–C3 et D1–D6 les retirent). door et testDoor : imports qui entrent dans un autre sous-contexte à côté de son index.ts, comptés PAR PAIRE parce qu'ils changent de chemin à chaque déménagement — chaque lot D les fait baisser en posant les index.ts.",
   "since": "2026-11-15",
-  "edges": [
-    "day/application/services/day-order-label-head.reader.ts → shared/print/domain/services/dossier-sheet-head.ts",
-    "day/application/services/day-order-label-head.reader.ts → shared/print/domain/services/fulfillment-method-label.ts"
-  ],
+  "edges": [],
   "models": [
     "atelier/infrastructure/prisma-atelier-sheets.reader.ts → ProductionDay (day)",
     "plan/infrastructure/prisma-arrested-plan.hold.ts → ProductionDay (day)",
@@ -24,9 +21,8 @@
     "atelier → day": 11,
     "atelier → plan": 1,
     "atelier → quality": 1,
-    "day → plan": 2,
     "plan → day": 14,
-    "quality → day": 2,
+    "quality → day": 1,
     "resupply → day": 3,
     "shared-print → plan": 2
   },
@@ -41,5 +37,6 @@
   "$d4": "D4 (2026-11-15) : le plan déménage dans plan/, avec l’état du jour sorti du noyau ; plan/index.ts n’exporte rien. Tests hors porte 48 → 40 : les tests qui suivent le plan changent de paire (day → plan 14 → 2, day → atelier 1 → 0) et deux paires montent sur les mêmes imports relabellisés, plan → day 10 → 14 (doubles qui construisent une ProductionDay, valeur que day/index.ts n’exporte qu’en type) et plan → atelier 2 → 3. Admis parce que le total baisse ; le lot R les vide.",
   "$d5": "D5 (2026-11-15) : l’atelier déménage dans atelier/ ; atelier/index.ts n’exporte rien. Tous les comptes inchangés (tests hors porte 40), seuls des chemins changent. La carte ne range plus que production.module.ts à plat.",
   "$d7": "D7 (2026-11-15) : l’imprimerie — gabarit de la fiche, réglages d’affichage et données de spécimen rangés dans shared/print/ ; le plan et l’atelier n’en dépendent plus l’un de l’autre que par la fiche PDF. Arêtes 12 → 3, tests hors porte 40 → 36. Le rendu des papiers reste au plan : il lit des canaux et les délais du dossier.",
-  "$d7b": "D7b (2026-11-15) : la fiche de commande appartient à l’imprimerie (OrderSheetPaper), seule à lire la couleur d’une commande (canal admis fichier par fichier). Arêtes 3 → 2 ; la racine n’a plus aucun fournisseur."
+  "$d7b": "D7b (2026-11-15) : la fiche de commande appartient à l’imprimerie (OrderSheetPaper), seule à lire la couleur d’une commande (canal admis fichier par fichier). Arêtes 3 → 2 ; la racine n’a plus aucun fournisseur.",
+  "$r1": "R1 (2026-11-15) : les doubles partagés rangés chez le propriétaire de ce qu’ils doublent ; l’en-tête d’étiquette du colisage rangé à l’imprimerie. Arêtes 2 → 0, tests hors porte 36 → 33."
 }

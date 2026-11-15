@@ -1,6 +1,6 @@
 import type { Buffer } from "node:buffer";
 
-import { InMemoryDisplaySettings } from "../../../../application/__tests__/production-display-settings-doubles.js";
+import { InMemoryDisplaySettings } from "../../../../shared/print/application/__tests__/production-display-settings-doubles.js";
 import { instantToLocal } from "@lfd/contracts";
 import type { MailReceipt } from "@lfd/mailer";
 
@@ -36,7 +36,7 @@ import {
   RecordingDossierMails,
   Shelves,
 } from "../../__tests__/dossier-dispatch-doubles.js";
-import { InMemoryProductionStore } from "../../../../application/__tests__/quality-doubles.js";
+import { InMemoryProductionStore } from "../../../../shared/print/application/__tests__/production-store-doubles.js";
 import { DossierDispatch } from "../../services/dossier-dispatch.service.js";
 import { PlanArrestBell } from "../../services/plan-arrest-bell.js";
 import { OrderSheetPaper, ProductionPaperArchive } from "../../../../shared/print/index.js";
@@ -44,12 +44,10 @@ import { ProductionPaperRenderer } from "../../services/production-paper.service
 import {
   FixedOrderPrintColors,
   FixedResupplyPrintColors,
-} from "../../../../application/__tests__/order-print-colors-doubles.js";
-import {
-  FixedTrancheReading,
-  FixedPaperLogo,
-  FixedPlannedDeliveryNotes,
-} from "../../../../application/__tests__/paper-doubles.js";
+} from "../../../../channels/commerce/__tests__/order-print-colors-doubles.js";
+import { FixedTrancheReading } from "../../__tests__/tranche-reading-doubles.js";
+import { FixedPaperLogo } from "../../../../shared/print/application/__tests__/paper-logo-doubles.js";
+import { FixedPlannedDeliveryNotes } from "../../../../channels/commerce/__tests__/planned-delivery-notes-doubles.js";
 import { SendDossierOnDayClosed } from "../send-dossier-on-day-closed.handler.js";
 import { SendDossierOnDayRetaken } from "../send-dossier-on-day-retaken.handler.js";
 

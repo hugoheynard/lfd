@@ -16,10 +16,10 @@ import {
 import { ProductionDay } from "../../../../day/domain/entities/production-day.js";
 import { ProductionDayRepository } from "../../../../day/index.js";
 import { ServiceDay } from "../../../../day/index.js";
-import { RecordingDayLock } from "../../../../application/__tests__/batch-doubles.js";
-import { RecordingDurable } from "../../../../application/__tests__/handoff-doubles.js";
-import { intakeReadingOf } from "../../../../application/__tests__/plan-intake-doubles.js";
-import { InMemoryWithdrawals } from "../../../../application/__tests__/withdrawal-doubles.js";
+import { RecordingDayLock } from "../../../../day/application/__tests__/batch-doubles.js";
+import { RecordingDurable } from "../../../../day/application/__tests__/handoff-doubles.js";
+import { intakeReadingOf } from "../../__tests__/plan-intake-doubles.js";
+import { InMemoryWithdrawals } from "../../../../day/application/__tests__/withdrawal-doubles.js";
 import { RetakeRecording } from "../../services/retake-recording.js";
 import { RetakeProductionDayHandler } from "../retake-production-day.handler.js";
 

@@ -1,5 +1,5 @@
-import { OrderPrintColorsReader } from "../../channels/commerce/order-print-colors.reader.js";
-import { ResupplyPrintColorsReader } from "../../channels/commerce/resupply-print-colors.reader.js";
+import { OrderPrintColorsReader } from "../order-print-colors.reader.js";
+import { ResupplyPrintColorsReader } from "../resupply-print-colors.reader.js";
 
 /**
  * Le commerce doublé : une couleur par commande, ou aucune. Compte les

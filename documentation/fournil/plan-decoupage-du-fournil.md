@@ -405,7 +405,7 @@ mêlent jamais dans un lot.
    mêmes preuves que les déplacements (empreintes PDF, table des routes, e2e
    du fournil).
    À emporter aussi (relevé en D2, 2026-11-15) : couper
-   `production/application/__tests__/quality-doubles.ts`, partagé par les
+   `quality-doubles.ts` (alors à plat), partagé par les
    tests du noyau, de l'atelier, du plan et de la qualité, en doubles rangés
    chacun dans son métier.
    Et le bus (ajouté par Hugo le 2026-11-15) : le bus de `@nestjs/cqrs` est
@@ -419,6 +419,25 @@ mêlent jamais dans un lot.
    comme un client ordinaire. La porte cesse de les exempter. `test/` garde
    son droit de regarder dedans : un e2e qui vérifie une ligne en base doit
    pouvoir le faire.
+   **R1 — ✅ bâti le 2026-11-15** : plus rien à plat dans `production/` hors
+   `production.module.ts`, `channels/` et `__tests__/production-route-table.spec.ts`.
+   Chaque double va chez le propriétaire du port ou de l'entité qu'il double,
+   contenu recopié, seuls les chemins changent : le noyau
+   (`day/application/__tests__/` : fournées et verrou, remises, retraits,
+   révision, tranches, en-tête de statut, journée arrêtée `closed-day-doubles`,
+   journée `legacy`), la qualité (`quality-doubles`, coupé), le plan (calendrier
+   et arrêt, lecture et admission, tranches du dossier), l'atelier (le service
+   des remises sur doublés), l'imprimerie (logo, réglages d'affichage, bucket),
+   et les canaux (`channels/commerce|handover|packing/__tests__/`). Pas de point
+   d'entrée de doubles : la porte ne compte un test que sur ce qu'il importe du
+   code, un double importé d'un autre `__tests__/` ne compte pas. Le colisage
+   n'utilisait pas `station-doubles` du fournil (il a le sien). L'étiquette d'un
+   sac (`DayOrderLabelHeadReader`) quitte le noyau pour l'imprimerie : son seul
+   lecteur est le colisage, et elle ne fait que poser les mots des papiers ; la
+   porte admet ce seul fichier de `channels/packing/` (`ADMITTED_FILES`), et
+   `ProductionModule` réexporte `ProductionPrintModule`. Arêtes 2 → 0, tests hors
+   porte 36 → 33 (day → plan 2 → 0, quality → day 2 → 1), imports hors porte
+   0 → 0 ; dette non réécrite. Empreintes des PDF et table des routes inchangées.
 10. **Après le dernier déménagement** : remettre à jour
     `architecture-contexte-production.md` (la liste des contrôleurs sous
     « `http/` », périmée depuis D1) en une seule fois.

@@ -1,13 +1,11 @@
 import { producibleOrder } from "../../../../channels/commerce/__tests__/producible-order.fixture.js";
 import { ProductionDay } from "../../../../day/domain/entities/production-day.js";
 import { ServiceDay } from "../../../../day/index.js";
-import {
-  FixedDayOrders,
-  intakeReadingOf,
-} from "../../../../application/__tests__/plan-intake-doubles.js";
-import { SavedDays } from "../../../../application/__tests__/revision-desk-doubles.js";
-import { DayResupplies } from "../../../../application/__tests__/settings-doubles.js";
-import { InMemoryWithdrawals } from "../../../../application/__tests__/withdrawal-doubles.js";
+import { FixedDayOrders } from "../../../../channels/commerce/__tests__/day-orders-doubles.js";
+import { intakeReadingOf } from "../../__tests__/plan-intake-doubles.js";
+import { SavedDays } from "../../../../day/application/__tests__/revision-desk-doubles.js";
+import { DayResupplies } from "../../../../channels/commerce/__tests__/day-resupplies-doubles.js";
+import { InMemoryWithdrawals } from "../../../../day/application/__tests__/withdrawal-doubles.js";
 
 /** `PlanIntakeReading` — ce que l'arrêt et le retirage lisent sous le verrou, et dans quel ordre. */
 const DAY = ServiceDay.of("2026-09-08");

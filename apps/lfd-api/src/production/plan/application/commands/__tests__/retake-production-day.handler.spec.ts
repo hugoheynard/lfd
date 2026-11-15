@@ -1,7 +1,7 @@
 import { ProductionDay } from "../../../../day/domain/entities/production-day.js";
 import { ProductionDayNotClosedError } from "../../../../day/index.js";
 import { ServiceDay } from "../../../../day/index.js";
-import { InMemoryWithdrawals } from "../../../../application/__tests__/withdrawal-doubles.js";
+import { InMemoryWithdrawals } from "../../../../day/application/__tests__/withdrawal-doubles.js";
 import { RetakeProductionDayCommand } from "../retake-production-day.command.js";
 import { closedDay, DAY, NOW, order, retakeScene, TIRAGE } from "./retake-production-day.scene.js";
 

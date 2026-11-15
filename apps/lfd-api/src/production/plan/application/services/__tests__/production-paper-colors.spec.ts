@@ -1,6 +1,6 @@
 import type { CatalogFamilyView } from "@lfd/contracts";
 
-import { InMemoryDisplaySettings } from "../../../../application/__tests__/production-display-settings-doubles.js";
+import { InMemoryDisplaySettings } from "../../../../shared/print/application/__tests__/production-display-settings-doubles.js";
 import { AppConfig } from "../../../../../platform/config/app-config.js";
 import type { ProducibleOrder } from "../../../../channels/commerce/day-orders.reader.js";
 import { WorkshopShelvesReader } from "../../../../channels/commerce/workshop-shelves.reader.js";
@@ -12,12 +12,10 @@ import { ServiceDay } from "../../../../day/index.js";
 import {
   FixedOrderPrintColors,
   FixedResupplyPrintColors,
-} from "../../../../application/__tests__/order-print-colors-doubles.js";
-import {
-  FixedTrancheReading,
-  FixedPaperLogo,
-  FixedPlannedDeliveryNotes,
-} from "../../../../application/__tests__/paper-doubles.js";
+} from "../../../../channels/commerce/__tests__/order-print-colors-doubles.js";
+import { FixedTrancheReading } from "../../__tests__/tranche-reading-doubles.js";
+import { FixedPaperLogo } from "../../../../shared/print/application/__tests__/paper-logo-doubles.js";
+import { FixedPlannedDeliveryNotes } from "../../../../channels/commerce/__tests__/planned-delivery-notes-doubles.js";
 import { OrderSheetPaper } from "../../../../shared/print/index.js";
 import { ProductionPaperRenderer } from "../production-paper.service.js";
 

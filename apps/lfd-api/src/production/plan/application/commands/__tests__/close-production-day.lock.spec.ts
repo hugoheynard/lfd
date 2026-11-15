@@ -12,15 +12,12 @@ import { ProductionDay } from "../../../../day/domain/entities/production-day.js
 import { ProductionDayRepository } from "../../../../day/index.js";
 import { ServiceDay } from "../../../../day/index.js";
 import { ProductionDayStatusReader } from "../../../../day/index.js";
-import {
-  admissionOf,
-  FixedStatus,
-  intakeReadingOf,
-} from "../../../../application/__tests__/plan-intake-doubles.js";
-import { DayResupplies } from "../../../../application/__tests__/settings-doubles.js";
+import { admissionOf, intakeReadingOf } from "../../__tests__/plan-intake-doubles.js";
+import { FixedStatus } from "../../../../day/application/__tests__/day-status-doubles.js";
+import { DayResupplies } from "../../../../channels/commerce/__tests__/day-resupplies-doubles.js";
 import { PlanArrestRecording } from "../../services/plan-arrest-recording.js";
-import { InMemoryWithdrawals } from "../../../../application/__tests__/withdrawal-doubles.js";
-import { RecordingDayLock } from "../../../../application/__tests__/batch-doubles.js";
+import { InMemoryWithdrawals } from "../../../../day/application/__tests__/withdrawal-doubles.js";
+import { RecordingDayLock } from "../../../../day/application/__tests__/batch-doubles.js";
 import { CloseProductionDayCommand } from "../close-production-day.command.js";
 import { CloseProductionDayHandler } from "../close-production-day.handler.js";
 

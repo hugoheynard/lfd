@@ -3,11 +3,10 @@ import { Injectable } from "@nestjs/common";
 import {
   OrderLabelHeadReader,
   type OrderLabelHead,
-} from "../../../channels/packing/order-label-head.reader.js";
-import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
-import { dossierSheetHeadOf } from "../../../shared/print/domain/services/dossier-sheet-head.js";
-import { fulfillmentLabelOf } from "../../../shared/print/domain/services/fulfillment-method-label.js";
-import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+} from "../../../../channels/packing/order-label-head.reader.js";
+import { ProductionDayRepository, ServiceDay } from "../../../../day/index.js";
+import { dossierSheetHeadOf } from "../../domain/services/dossier-sheet-head.js";
+import { fulfillmentLabelOf } from "../../domain/services/fulfillment-method-label.js";
 
 /**
  * L'implémentation du port publié `OrderLabelHeadReader` : la journée, lue par

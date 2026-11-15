@@ -1,18 +1,16 @@
 import { addDays } from "@lfd/contracts";
 
-import { InMemoryDisplaySettings } from "../../../../application/__tests__/production-display-settings-doubles.js";
+import { InMemoryDisplaySettings } from "../../../../shared/print/application/__tests__/production-display-settings-doubles.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { ProductionDisplaySettings } from "../../../../shared/print/index.js";
 import { ProductionTrancheSettings } from "../../../../day/index.js";
 import { todayOf } from "../../../../day/index.js";
+import { ClosedDaysTable, SettingsReader, stopRulesOf } from "../../__tests__/settings-doubles.js";
 import {
-  ClosedDaysTable,
   CutoffRules,
   ResupplyTime,
-  SettingsReader,
-  stopRulesOf,
-} from "../../../../application/__tests__/settings-doubles.js";
-import { InMemoryTrancheSettings } from "../../../../application/__tests__/production-tranche-settings-doubles.js";
+} from "../../../../channels/commerce/__tests__/order-cutoff-doubles.js";
+import { InMemoryTrancheSettings } from "../../../../day/application/__tests__/production-tranche-settings-doubles.js";
 import { GetProductionSettingsHandler } from "../get-production-settings.handler.js";
 
 const NOW = new Date();

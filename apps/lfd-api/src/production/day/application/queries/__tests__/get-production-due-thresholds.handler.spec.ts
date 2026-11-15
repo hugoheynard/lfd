@@ -5,7 +5,7 @@ import {
 import { ProductionTrancheSettings } from "../../../domain/entities/production-tranche-settings.js";
 import { InvalidServiceDayError } from "../../../domain/errors/production-errors.js";
 import type { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
-import { InMemoryTrancheSettings } from "../../../../application/__tests__/production-tranche-settings-doubles.js";
+import { InMemoryTrancheSettings } from "../../__tests__/production-tranche-settings-doubles.js";
 import { GetProductionDueThresholdsHandler } from "../get-production-due-thresholds.handler.js";
 import { GetProductionDueThresholdsQuery } from "../get-production-due-thresholds.query.js";
 

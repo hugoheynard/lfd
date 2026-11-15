@@ -1,6 +1,8 @@
 import { Module } from "@nestjs/common";
 
 import { BrandModule } from "../../../platform/brand/brand.module.js";
+import { ProductionDayModule } from "../../day/production-day.module.js";
+import { DayOrderLabelHeadReader } from "./application/services/day-order-label-head.reader.js";
 import { OrderSheetPaper } from "./application/services/order-sheet-paper.service.js";
 import { ProductionPaperArchive } from "./application/services/production-paper-archive.service.js";
 import { ProductionDisplaySettingsReader } from "./domain/ports/production-display-settings.reader.js";
@@ -19,10 +21,13 @@ import { PrismaProductionDisplaySettingsRepository } from "./infrastructure/pris
 @Module({
   // Le logo de la fiche. La couleur d'une commande vient du canal
   // `channels/commerce/`, relié globalement par la racine de composition.
-  imports: [BrandModule],
+  // La journée : l'étiquette d'un sac la lit pour titrer une commande.
+  imports: [BrandModule, ProductionDayModule],
   providers: [
     ProductionPaperArchive,
     OrderSheetPaper,
+    // L'étiquette d'un sac, publiée pour le colisage ; reliée par `PackingFeedModule`.
+    DayOrderLabelHeadReader,
     // Les réglages d'affichage : lire et régler sont deux ports (ISP).
     { provide: ProductionDisplaySettingsReader, useClass: PrismaProductionDisplaySettingsReader },
     {
@@ -35,6 +40,7 @@ import { PrismaProductionDisplaySettingsRepository } from "./infrastructure/pris
     OrderSheetPaper,
     ProductionDisplaySettingsReader,
     ProductionDisplaySettingsRepository,
+    DayOrderLabelHeadReader,
   ],
 })
 export class ProductionPrintModule {}

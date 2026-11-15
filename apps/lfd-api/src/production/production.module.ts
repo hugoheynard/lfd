@@ -35,6 +35,7 @@ import { ProductionPrintModule } from "./shared/print/production-print.module.js
   // chacun exporté par le module de son métier.
   exports: [
     ProductionDayModule,
+    ProductionPrintModule,
     ProductionQualityModule,
     ProductionResupplyModule,
     ProductionPlanModule,

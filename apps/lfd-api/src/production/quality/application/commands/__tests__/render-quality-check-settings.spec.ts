@@ -8,20 +8,22 @@ import { ServiceDay } from "../../../../day/index.js";
 import { InMemoryQualityControlSettings } from "../../__tests__/quality-control-settings-doubles.js";
 import {
   CheckTable,
+  InMemoryCheckReader,
+  InMemoryChecks,
+  InMemoryUploads,
+} from "../../__tests__/quality-doubles.js";
+import {
   closedDay,
   CROISSANT,
   FixedDays,
-  FixedOrderCustody,
-  InMemoryCheckReader,
-  InMemoryChecks,
-  InMemoryProductionStore,
-  InMemoryUploads,
-} from "../../../../application/__tests__/quality-doubles.js";
-import { sealedAt } from "../../../../application/__tests__/station-doubles.js";
+} from "../../../../day/application/__tests__/closed-day-doubles.js";
+import { FixedOrderCustody } from "../../../../channels/handover/__tests__/order-custody-doubles.js";
+import { InMemoryProductionStore } from "../../../../shared/print/application/__tests__/production-store-doubles.js";
+import { sealedAt } from "../../../../channels/packing/__tests__/packed-orders-doubles.js";
 import { QualityPhotoAttachment } from "../../services/quality-photo-attachment.service.js";
 import { SealedDayReading } from "../../services/sealed-day-reading.service.js";
 import { RenderQualityCheckCommand } from "../render-quality-check.command.js";
-import { RecordingDayLock } from "../../../../application/__tests__/batch-doubles.js";
+import { RecordingDayLock } from "../../../../day/application/__tests__/batch-doubles.js";
 import { RenderQualityCheckHandler } from "../render-quality-check.handler.js";
 
 /**

@@ -2,10 +2,8 @@ import { pdfFingerprint } from "../../../../shared/print/__tests__/pdf-fingerpri
 
 import { AppConfig } from "../../../../../platform/config/app-config.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
-import {
-  FixedPaperLogo,
-  FixedSpecimenDeliveryNote,
-} from "../../../../application/__tests__/paper-doubles.js";
+import { FixedPaperLogo } from "../../../../shared/print/application/__tests__/paper-logo-doubles.js";
+import { FixedSpecimenDeliveryNote } from "../../../../channels/commerce/__tests__/planned-delivery-notes-doubles.js";
 import { GetDayDossierSpecimenHandler } from "../../queries/get-day-dossier-specimen.handler.js";
 import { GetProductionCountSpecimenHandler } from "../../queries/get-production-count-specimen.handler.js";
 

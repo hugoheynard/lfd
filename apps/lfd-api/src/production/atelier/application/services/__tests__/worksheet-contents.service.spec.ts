@@ -17,15 +17,15 @@ import { ProductionContainerReader } from "../../../domain/ports/production-cont
 import { ProductionDayRepository } from "../../../../day/index.js";
 import type { ContainerRule } from "../../../domain/services/production-worksheet.js";
 import { ServiceDay } from "../../../../day/index.js";
-import { FixedDueThresholds } from "../../../../application/__tests__/due-thresholds-doubles.js";
+import { FixedDueThresholds } from "../../../../channels/commerce/__tests__/due-thresholds-doubles.js";
 import { FixedOvenWaitingOrders } from "../../__tests__/oven-waiting-doubles.js";
-import { InMemoryDisplaySettings } from "../../../../application/__tests__/production-display-settings-doubles.js";
-import { InMemoryTrancheSettings } from "../../../../application/__tests__/production-tranche-settings-doubles.js";
+import { InMemoryDisplaySettings } from "../../../../shared/print/application/__tests__/production-display-settings-doubles.js";
+import { InMemoryTrancheSettings } from "../../../../day/application/__tests__/production-tranche-settings-doubles.js";
 import {
   CheckTable,
-  closedDay,
   qualityLinesFrom,
-} from "../../../../application/__tests__/quality-doubles.js";
+} from "../../../../quality/application/__tests__/quality-doubles.js";
+import { closedDay } from "../../../../day/application/__tests__/closed-day-doubles.js";
 import {
   dayContentsOver,
   MemoryDayContents,

@@ -1,9 +1,9 @@
-import { ProductionTrancheSettings } from "../../day/domain/entities/production-tranche-settings.js";
-import { ProductionTrancheSettingsReader } from "../../day/domain/ports/production-tranche-settings.reader.js";
+import { ProductionTrancheSettings } from "../../domain/entities/production-tranche-settings.js";
+import { ProductionTrancheSettingsReader } from "../../domain/ports/production-tranche-settings.reader.js";
 import {
   ProductionTrancheSettingsRepository,
   type TrancheSettingsAuthor,
-} from "../../day/domain/ports/production-tranche-settings.repository.js";
+} from "../../domain/ports/production-tranche-settings.repository.js";
 
 /** Les tranches de production, en mémoire : `null` tant que personne ne les a posées. */
 export class InMemoryTrancheSettings extends ProductionTrancheSettingsRepository {

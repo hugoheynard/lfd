@@ -1,5 +1,5 @@
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
-import { closedDay, FixedDays } from "../../../../application/__tests__/quality-doubles.js";
+import { closedDay, FixedDays } from "../../__tests__/closed-day-doubles.js";
 import { DayInscribedOrderHeaderReader } from "../day-inscribed-order-header.reader.js";
 
 /**

@@ -2,8 +2,8 @@ import { ProductionTrancheSettings, ServiceDay } from "../../../../day/index.js"
 import {
   FixedDueThresholds,
   NO_DUE,
-} from "../../../../application/__tests__/due-thresholds-doubles.js";
-import { InMemoryTrancheSettings } from "../../../../application/__tests__/production-tranche-settings-doubles.js";
+} from "../../../../channels/commerce/__tests__/due-thresholds-doubles.js";
+import { InMemoryTrancheSettings } from "../../../../day/application/__tests__/production-tranche-settings-doubles.js";
 import { DossierDeadlinesReading } from "../dossier-deadlines-reading.service.js";
 
 const DAY = ServiceDay.of("2030-03-12");

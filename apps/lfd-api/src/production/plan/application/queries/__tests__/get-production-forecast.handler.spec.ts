@@ -1,6 +1,6 @@
 import { localToInstant } from "@lfd/contracts";
 
-import { InMemoryDisplaySettings } from "../../../../application/__tests__/production-display-settings-doubles.js";
+import { InMemoryDisplaySettings } from "../../../../shared/print/application/__tests__/production-display-settings-doubles.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { ExpectedDayProduction } from "../../../../channels/commerce/expected-production.reader.js";
 import { ExpectedProductionReader } from "../../../../channels/commerce/expected-production.reader.js";
@@ -17,12 +17,8 @@ import type { DayDemand, DayResupplyDemand } from "../../../domain/services/prod
 import type { ServiceRange } from "../../../../day/index.js";
 import { GetProductionForecastHandler } from "../get-production-forecast.handler.js";
 import { GetProductionForecastQuery } from "../get-production-forecast.query.js";
-import {
-  ClosedDaysTable,
-  CutoffRules,
-  SettingsReader,
-  stopRulesOf,
-} from "../../../../application/__tests__/settings-doubles.js";
+import { ClosedDaysTable, SettingsReader, stopRulesOf } from "../../__tests__/settings-doubles.js";
+import { CutoffRules } from "../../../../channels/commerce/__tests__/order-cutoff-doubles.js";
 
 /** L'instant de la maison `time` le jour `day` — les dates sont le SUJET, l'horloge est fixée. */
 function at(day: string, time: string): Date {

@@ -1,6 +1,6 @@
 import { addDays, instantToLocal, localToInstant, type CatalogFamilyView } from "@lfd/contracts";
 
-import { InMemoryDisplaySettings } from "../../../../application/__tests__/production-display-settings-doubles.js";
+import { InMemoryDisplaySettings } from "../../../../shared/print/application/__tests__/production-display-settings-doubles.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
   DayOrdersReader,
@@ -19,9 +19,12 @@ import { ServiceDay } from "../../../../day/index.js";
 import { ProductionWorksheetReading } from "../../services/production-worksheet-reading.service.js";
 import { GetCurrentProductionWorksheetHandler } from "../get-current-production-worksheet.handler.js";
 import { FixedOvenWaitingOrders } from "../../__tests__/oven-waiting-doubles.js";
-import { FixedDueThresholds } from "../../../../application/__tests__/due-thresholds-doubles.js";
-import { InMemoryTrancheSettings } from "../../../../application/__tests__/production-tranche-settings-doubles.js";
-import { CheckTable, qualityLinesFrom } from "../../../../application/__tests__/quality-doubles.js";
+import { FixedDueThresholds } from "../../../../channels/commerce/__tests__/due-thresholds-doubles.js";
+import { InMemoryTrancheSettings } from "../../../../day/application/__tests__/production-tranche-settings-doubles.js";
+import {
+  CheckTable,
+  qualityLinesFrom,
+} from "../../../../quality/application/__tests__/quality-doubles.js";
 import { worksheetContentsAround } from "../../__tests__/worksheet-contents-doubles.js";
 import { WorksheetDeadlinesReading } from "../../services/worksheet-deadlines-reading.service.js";
 

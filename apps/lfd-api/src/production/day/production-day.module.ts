@@ -5,7 +5,6 @@ import { PruneProductionDayChangesHandler } from "./application/commands/prune-p
 import { OnPackingReturned } from "./application/handlers/on-packing-returned.handler.js";
 import { GetProductionDueThresholdsHandler } from "./application/queries/get-production-due-thresholds.handler.js";
 import { DayInscribedOrderHeaderReader } from "./application/services/day-inscribed-order-header.reader.js";
-import { DayOrderLabelHeadReader } from "./application/services/day-order-label-head.reader.js";
 import { DayPlannedDestinationsReader } from "./application/services/day-planned-destinations.reader.js";
 import { ProductionDayVersionSource } from "./application/services/production-day-version.source.js";
 import { ProductionOrderRevisionDesk } from "./application/services/production-order-revision.desk.js";
@@ -91,7 +90,6 @@ import { PrismaProductionTrancheSettingsRepository } from "./infrastructure/pris
     // Publiés pour le colisage et la pierre tombale ; reliés par `PackingFeedModule`.
     DayPlannedDestinationsReader,
     DayInscribedOrderHeaderReader,
-    DayOrderLabelHeadReader,
   ],
   exports: [
     // Ce que les métiers injectent du noyau.
@@ -110,7 +108,6 @@ import { PrismaProductionTrancheSettingsRepository } from "./infrastructure/pris
     DayPlannedDestinationsReader,
     ProductionOrderWithdrawalDesk,
     DayInscribedOrderHeaderReader,
-    DayOrderLabelHeadReader,
     ProductionOrderRevisionDesk,
     PrismaOrderInscriptionReader,
   ],

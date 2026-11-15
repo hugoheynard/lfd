@@ -2,7 +2,7 @@ import { pdfFingerprint } from "../../../../shared/print/__tests__/pdf-fingerpri
 
 import { AppConfig } from "../../../../../platform/config/app-config.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
-import { FixedPaperLogo } from "../../../../application/__tests__/paper-doubles.js";
+import { FixedPaperLogo } from "../../../../shared/print/application/__tests__/paper-logo-doubles.js";
 import { GetAtelierSheetSpecimenHandler } from "../get-atelier-sheet-specimen.handler.js";
 
 /**

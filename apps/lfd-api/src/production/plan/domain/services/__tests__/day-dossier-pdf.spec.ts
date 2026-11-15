@@ -5,7 +5,7 @@ import type { ProductionOrderSnapshot } from "../../../../day/index.js";
 import { type DayDossier, dayDossierOf } from "../day-dossier.js";
 import { type DossierStamp, dayDossierPdfKey, renderDayDossierPdf } from "../day-dossier-pdf.js";
 import { dossierCalendarOf } from "../day-dossier-calendar.js";
-import { PAPER_LOGO } from "../../../../domain/services/__tests__/paper-logo.fixture.js";
+import { PAPER_LOGO } from "../../../../shared/print/domain/services/__tests__/paper-logo.fixture.js";
 import { pdfPages } from "../../../../../platform/pdf/__tests__/pdf-text.js";
 
 /**

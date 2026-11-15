@@ -4,7 +4,7 @@ import { dayDossierOf } from "../../../../../plan/domain/services/day-dossier.js
 import { renderDayDossierPdf } from "../../../../../plan/domain/services/day-dossier-pdf.js";
 import { countPaperRowsOf } from "../made-to-order.js";
 import { pdfPages } from "../../../../../../platform/pdf/__tests__/pdf-text.js";
-import { PAPER_LOGO } from "../../../../../domain/services/__tests__/paper-logo.fixture.js";
+import { PAPER_LOGO } from "./paper-logo.fixture.js";
 
 /**
  * **« SUR MESURE » sur les papiers du fournil** (plan

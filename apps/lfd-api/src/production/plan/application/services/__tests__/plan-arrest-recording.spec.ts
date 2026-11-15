@@ -1,5 +1,5 @@
-import { RecordingDurable } from "../../../../application/__tests__/handoff-doubles.js";
-import { SavedDays } from "../../../../application/__tests__/revision-desk-doubles.js";
+import { RecordingDurable } from "../../../../day/application/__tests__/handoff-doubles.js";
+import { SavedDays } from "../../../../day/application/__tests__/revision-desk-doubles.js";
 import { producibleOrder } from "../../../../channels/commerce/__tests__/producible-order.fixture.js";
 import { NOTHING_PENDING } from "../../../../day/index.js";
 import { ProductionDay } from "../../../../day/domain/entities/production-day.js";

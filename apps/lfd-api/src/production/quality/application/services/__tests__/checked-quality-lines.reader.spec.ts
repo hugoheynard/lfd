@@ -4,11 +4,10 @@ import { QualityCheck } from "../../../domain/entities/quality-check.js";
 import { ServiceDay } from "../../../../day/index.js";
 import {
   BAGUETTE,
-  CheckTable,
   closedDay,
   CROISSANT,
-  qualityLinesFrom,
-} from "../../../../application/__tests__/quality-doubles.js";
+} from "../../../../day/application/__tests__/closed-day-doubles.js";
+import { CheckTable, qualityLinesFrom } from "../../__tests__/quality-doubles.js";
 
 /**
  * Le port que la qualité publie pour la fiche d'atelier : les pastilles des

@@ -8,8 +8,8 @@ import {
   BatchBackedDays,
   InMemoryBatches,
   RecordingDayLock,
-} from "../../../../application/__tests__/batch-doubles.js";
-import { handoffsOnDoubles } from "../../../../application/__tests__/handoff-doubles.js";
+} from "../../../../day/application/__tests__/batch-doubles.js";
+import { handoffsOnDoubles } from "../../__tests__/packing-handoffs-doubles.js";
 import { CancelBatchCommand } from "../cancel-batch.command.js";
 import { CancelBatchHandler } from "../cancel-batch.handler.js";
 import { RecordBatchCommand } from "../record-batch.command.js";

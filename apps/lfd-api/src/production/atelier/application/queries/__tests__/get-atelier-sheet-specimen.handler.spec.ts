@@ -1,7 +1,7 @@
 import { AppConfig } from "../../../../../platform/config/app-config.js";
 import { pdfPages } from "../../../../../platform/pdf/__tests__/pdf-text.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
-import { FixedPaperLogo } from "../../../../application/__tests__/paper-doubles.js";
+import { FixedPaperLogo } from "../../../../shared/print/application/__tests__/paper-logo-doubles.js";
 import { GetAtelierSheetSpecimenHandler } from "../get-atelier-sheet-specimen.handler.js";
 
 /** L'origine du back-office, donnée d'avance — `null` : aucun QR. */

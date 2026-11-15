@@ -9,14 +9,12 @@ import {
 } from "../../../../../staff/directory/domain/staff-author-directory.js";
 import {
   BAGUETTE,
-  CheckTable,
   closedDay,
   CROISSANT,
   FixedDays,
-  InMemoryCheckReader,
-  InMemoryProductionStore,
-  JPEG,
-} from "../../../../application/__tests__/quality-doubles.js";
+} from "../../../../day/application/__tests__/closed-day-doubles.js";
+import { CheckTable, InMemoryCheckReader, JPEG } from "../../__tests__/quality-doubles.js";
+import { InMemoryProductionStore } from "../../../../shared/print/application/__tests__/production-store-doubles.js";
 import { GetQualityBoardHandler } from "../get-quality-board.handler.js";
 import { GetQualityBoardQuery } from "../get-quality-board.query.js";
 import { GetQualityPhotoHandler } from "../get-quality-photo.handler.js";

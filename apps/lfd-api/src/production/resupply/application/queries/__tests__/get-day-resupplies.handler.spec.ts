@@ -5,7 +5,7 @@ import type { ProducibleOrder } from "../../../../channels/commerce/day-orders.r
 import { ProductionDay } from "../../../../day/domain/entities/production-day.js";
 import { ProductionDayRepository } from "../../../../day/index.js";
 import { ServiceDay } from "../../../../day/index.js";
-import { DayResupplies } from "../../../../application/__tests__/settings-doubles.js";
+import { DayResupplies } from "../../../../channels/commerce/__tests__/day-resupplies-doubles.js";
 import { GetDayResuppliesHandler } from "../get-day-resupplies.handler.js";
 import { GetDayResuppliesQuery } from "../get-day-resupplies.query.js";
 

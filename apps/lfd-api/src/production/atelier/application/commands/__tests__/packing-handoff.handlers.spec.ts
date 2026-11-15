@@ -1,4 +1,4 @@
-import { legacyOf } from "../../../../application/__tests__/station-doubles.js";
+import { legacyOf } from "../../../../day/application/__tests__/legacy-day-doubles.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { ProducibleOrder } from "../../../../channels/commerce/day-orders.reader.js";
@@ -8,8 +8,8 @@ import {
   BatchBackedDays,
   InMemoryBatches,
   RecordingDayLock,
-} from "../../../../application/__tests__/batch-doubles.js";
-import { handoffsOnDoubles } from "../../../../application/__tests__/handoff-doubles.js";
+} from "../../../../day/application/__tests__/batch-doubles.js";
+import { handoffsOnDoubles } from "../../__tests__/packing-handoffs-doubles.js";
 import { CancelBatchCommand } from "../cancel-batch.command.js";
 import { CancelBatchHandler } from "../cancel-batch.handler.js";
 import { RecordBatchCommand } from "../record-batch.command.js";
