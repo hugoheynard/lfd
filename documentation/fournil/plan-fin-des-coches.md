@@ -1,6 +1,6 @@
 # Plan — la fin des coches de la fiche d'atelier
 
-> Plan du 2026-11-15, ordonné par Hugo. **Lot A bâti le 2026-11-15** ; le lot B attend son déploiement. Termine la bascule des fournées
+> Plan du 2026-11-15, ordonné par Hugo. **Lot A bâti et déployé en production le 2026-11-15** (`8fae69f58`) ; le lot B peut partir, sur ordre de Hugo. Termine la bascule des fournées
 > décrite dans [`la-fiche-d-atelier.md`](la-fiche-d-atelier.md). Porte une
 > suppression de colonnes : `vitruve` avant le bâti, le lecteur de migrations
 > avant tout push.

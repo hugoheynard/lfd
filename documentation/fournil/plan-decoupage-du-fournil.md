@@ -4,7 +4,7 @@
 > deux sens, d'où la règle anti-cycle des index ; v3 : une surface publique par métier, tenue par la
 > porte et par les modules Nest ; v2, après `vitruve` : le noyau importait encore le
 > plan par les tranches, et la matrice oubliait l'impression), demandé par Hugo (« je veux une belle isolation »).
-> D0 bâti le 2026-11-15 (la porte et la carte) ; le reste pas encore. Touche une frontière du dépôt (une porte neuve) :
+> **Bâti en entier (D0–D7b, R1–R4, 10) et déployé en production le 2026-11-15** (`8fae69f58`). Touche une frontière du dépôt (une porte neuve) :
 > `vitruve` avant Hugo. S'ouvre après la fin des coches
 > ([`plan-fin-des-coches.md`](plan-fin-des-coches.md)), qui touche l'atelier.
 
