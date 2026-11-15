@@ -199,7 +199,7 @@ flowchart TD
 ## 4. Le départ : comptoir ou tournée
 
 Documents d'état : [`la-commande/vie-du-qr-d-une-commande.md`](la-commande/vie-du-qr-d-une-commande.md),
-[`../retrait/architecture-contexte-retrait.md`](../retrait/architecture-contexte-retrait.md),
+[`../retrait/le-retrait.md`](../retrait/le-retrait.md),
 [`../livraisons/tournees/composition-automatique.md`](../livraisons/tournees/composition-automatique.md),
 [`../livraisons/livreur/a-la-porte.md`](../livraisons/livreur/a-la-porte.md),
 [`../livraisons/livreur/parcours-du-livreur.md`](../livraisons/livreur/parcours-du-livreur.md),

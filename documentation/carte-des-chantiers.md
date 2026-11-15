@@ -202,7 +202,6 @@ d'état, ou à corriger) :
 
 - `promotions/plan-jours-et-heures.md`, `promotions/plan-la-mercuriale-decide.md` (« rien n'est bâti ») ; `promotions/plan-chaque-audience-son-information.md`, `promotions/plan-texte-de-la-vignette.md` (« non commité ») ; `promotions/promotions.md` dit encore une partie « sur `dev` seulement » (`main` = `e35b566c9`).
 - `catalogue/plan-quantite-minimale.md` (« rien bâti » en tête, M4 écrans faits le 2026-10-29) ; `pim/plan-propager-allergenes-d-un-ingredient.md` (« rien n'est bâti », P1–P2 faits le 2026-10-27).
-- `retrait/plan-contexte-retrait.md` (« rien de ce document n'est bâti »).
 - `colisage/todo-colisage-tri-par-echeance.md` : pris par L2, à retirer.
 - `comptes-client/sous-comptes.md` l.541 « rien n'est bâti ».
 

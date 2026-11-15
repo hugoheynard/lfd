@@ -62,7 +62,7 @@ directement. Tout est dans [`../commandes/reliquat/reliquat.md`](../commandes/re
 ## Où lire le reste
 
 - Le retrait comme **bloc métier** (`src/handover/`, la garde, comptoir ou
-  livraison) : [`../retrait/architecture-contexte-retrait.md`](../retrait/architecture-contexte-retrait.md).
+  livraison) : [`../retrait/le-retrait.md`](../retrait/le-retrait.md).
 - Le QR d'une commande : [`../commandes/la-commande/vie-du-qr-d-une-commande.md`](../commandes/la-commande/vie-du-qr-d-une-commande.md).
 - La commande pro au comptoir et son droit : [`architecture-commande-au-comptoir.md`](architecture-commande-au-comptoir.md).
 - Le réassort, vu du comptoir puis du fournil : [`../reassort-boutiques/commander.md`](../reassort-boutiques/commander.md).

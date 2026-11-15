@@ -242,7 +242,7 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   // le compteur, c'est qu'une lecture le redemande par ligne au lieu d'un coup.
   ProductionContainer: "production",
   // Les trois tables du retrait, dans leur schéma depuis le 2026-11-03
-  // (`documentation/retrait/plan-schema-handover.md`).
+  // (`documentation/retrait/le-retrait.md`).
   OrderHandover: "handover",
   // La garde passée au livreur (2026-10-01, `a-la-porte.md`, BQ) : écrite
   // par le retrait après un départ, lue par le fournil avant un verdict.

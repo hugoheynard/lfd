@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // LE RETRAIT — son schéma `handover` (2026-11-03, plan
-// `documentation/retrait/plan-schema-handover.md`). Les trois tables vivaient
+// `documentation/retrait/le-retrait.md`). Les trois tables vivaient
 // dans `production`, héritage du temps où le retrait était un sous-dossier du
 // fournil ; elles y ont été déplacées par `SET SCHEMA`, sans recopie.
 // ─────────────────────────────────────────────────────────────────────────────

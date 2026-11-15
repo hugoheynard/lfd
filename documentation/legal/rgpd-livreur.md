@@ -5,7 +5,7 @@
 >
 > ⚠️ **Le 2026-11-03, l'empreinte a changé sans nouvelle version du texte** :
 > les tables du retrait ont quitté `production` pour leur schéma `handover`
-> ([`../retrait/plan-schema-handover.md`](../retrait/plan-schema-handover.md)),
+> ([`../retrait/le-retrait.md`](../retrait/le-retrait.md)),
 > et l'empreinte hache les noms qualifiés des colonnes. Ce que le texte dit au
 > livreur — quelles données, pour quoi, combien de temps — n'a pas changé : le
 > réafficher en version 4 lui ferait accuser un renommage. L'empreinte
