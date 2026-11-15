@@ -5,7 +5,7 @@ import {
   DayDispatchProgressReader,
   FrozenResuppliesReader,
 } from "../production/channels/delivery/index.js";
-import { PrismaFrozenResuppliesReader } from "../production/infrastructure/prisma-frozen-resupplies.reader.js";
+import { PrismaFrozenResuppliesReader } from "../production/resupply/infrastructure/prisma-frozen-resupplies.reader.js";
 
 /**
  * **Ce que le fournil demande à la livraison, relié** (2026-10-14).

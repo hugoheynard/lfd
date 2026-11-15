@@ -1,9 +1,9 @@
 import type { ProductionDayResupply, ProductionDayResuppliesView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
-import { DayResuppliesReader } from "../../channels/commerce/day-resupplies.reader.js";
-import { ProductionDayRepository } from "../../day/index.js";
-import { ServiceDay } from "../../day/index.js";
+import { DayResuppliesReader } from "../../../channels/commerce/day-resupplies.reader.js";
+import { ProductionDayRepository } from "../../../day/index.js";
+import { ServiceDay } from "../../../day/index.js";
 import { GetDayResuppliesQuery } from "./get-day-resupplies.query.js";
 
 /**

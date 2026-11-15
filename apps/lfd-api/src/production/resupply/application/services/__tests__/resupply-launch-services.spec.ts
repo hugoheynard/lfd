@@ -1,17 +1,17 @@
 import {
   authorsKnownAs,
   FixedStaffAuthorDirectory,
-} from "../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
-import { FixedClock } from "../../../../platform/time/fixed-clock.js";
-import { producibleOrder } from "../../../channels/commerce/__tests__/producible-order.fixture.js";
-import { NOTHING_PENDING, ProductionDay } from "../../../day/domain/entities/production-day.js";
-import { ResupplyToLaunchNotFoundError } from "../../../day/domain/errors/resupply-launch-errors.js";
-import { ServiceDay } from "../../../day/domain/value-objects/service-day.value-object.js";
-import { RecordingDurable } from "../../__tests__/handoff-doubles.js";
-import { FixedDayOrders } from "../../__tests__/plan-intake-doubles.js";
-import { SavedDays } from "../../__tests__/revision-desk-doubles.js";
-import { DayResupplies } from "../../__tests__/settings-doubles.js";
-import { InMemoryWithdrawals } from "../../__tests__/withdrawal-doubles.js";
+} from "../../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
+import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
+import { producibleOrder } from "../../../../channels/commerce/__tests__/producible-order.fixture.js";
+import { NOTHING_PENDING, ProductionDay } from "../../../../day/domain/entities/production-day.js";
+import { ResupplyToLaunchNotFoundError } from "../../../../day/index.js";
+import { ServiceDay } from "../../../../day/index.js";
+import { RecordingDurable } from "../../../../application/__tests__/handoff-doubles.js";
+import { FixedDayOrders } from "../../../../application/__tests__/plan-intake-doubles.js";
+import { SavedDays } from "../../../../application/__tests__/revision-desk-doubles.js";
+import { DayResupplies } from "../../../../application/__tests__/settings-doubles.js";
+import { InMemoryWithdrawals } from "../../../../application/__tests__/withdrawal-doubles.js";
 import { ResupplyLaunchGestures } from "../resupply-launch-gesture.js";
 import { ResupplyLaunchReading } from "../resupply-launch-reading.js";
 import { ResupplyLaunchRecording } from "../resupply-launch-recording.js";

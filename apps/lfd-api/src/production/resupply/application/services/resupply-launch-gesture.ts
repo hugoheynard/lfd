@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
-import { Clock } from "../../../platform/time/clock.js";
-import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
-import type { ResupplyLaunchGesture } from "../../day/index.js";
+import { Clock } from "../../../../platform/time/clock.js";
+import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
+import type { ResupplyLaunchGesture } from "../../../day/index.js";
 
 /**
  * **Qui lance, et quand** — le geste « Lancer » : l'instant du `Clock` et le

@@ -20,8 +20,8 @@
     "infrastructure/prisma-atelier-sheets.reader.ts → ProductionDay (day)",
     "infrastructure/prisma-auto-close-round.ts → ProductionDay (day)",
     "infrastructure/prisma-closed-plans.reader.ts → ProductionDay (day)",
-    "infrastructure/prisma-frozen-resupplies.reader.ts → ProductionResupply (day)",
-    "infrastructure/prisma-launched-resupply.lookup.ts → ProductionResupply (day)",
+    "resupply/infrastructure/prisma-frozen-resupplies.reader.ts → ProductionResupply (day)",
+    "resupply/infrastructure/prisma-launched-resupply.lookup.ts → ProductionResupply (day)",
     "infrastructure/prisma-production-plan.reader.ts → ProductionCount (day)",
     "infrastructure/prisma-production-plan.reader.ts → ProductionOrder (day)",
     "infrastructure/prisma-production-plan.reader.ts → ProductionResupplyLine (day)",
@@ -36,7 +36,6 @@
     "atelier → quality": 1,
     "day → atelier": 1,
     "day → plan": 14,
-    "day → resupply": 3,
     "plan → atelier": 2,
     "plan → day": 10,
     "quality → day": 2,
@@ -50,5 +49,6 @@
   "$c4": "2026-11-15, C4 (décidé par Hugo) : l'heure limite et l'heure maison, et le type de la commande partie, rejoignent le noyau ; le balayage qualité et l'élagage de la journée sont deux routes, appelées par le même cron. −3 arêtes canaux → plan/qualité ; +6 plan → day et +2 tests plan → day (les lecteurs du plan importent désormais ces règles du noyau), que D1 efface.",
   "$d1": "2026-11-15, D1 : la journée (day/) et les primitives d’impression (shared/print/) déménagent et posent leur index.ts. Imports hors porte 210→6 (reste atelier → quality 1, et vers day PackingHandoffs, SealedDayReading et WorksheetDeadlinesReading, que day/index.ts n’exporte pas parce qu’ils chargent un canal, § 1 bis). Imports de tests hors porte 139→59 (les doubles qui construisent une ProductionDay l’importent en direct : la porte n’en exporte que le type). Les deux arêtes du noyau vers l’impression changent de chemin, pas de nombre.",
   "$c5": "2026-11-15, C5 : le noyau n’orchestre plus. PackingHandoffs (atelier) et SealedDayReading (qualité) sortent de day/ à plat ; WorksheetDeadlinesReading est coupée en deux lectures (atelier : la fiche ; plan : DossierDeadlinesReading, le dossier) au-dessus de la règle pure trancheThresholdsBySku ; le statut de la journée applique withSeals lui-même. day/index.ts exporte les règles pures et les ports du registre des remises, et ne charge aucun canal. Imports hors porte 6→1 (reste atelier → quality 1) ; tests hors porte atelier → day 15→11, quality → day 6→2.",
-  "$d2": "2026-11-15, D2 : la qualité (quality/) déménage et pose son index.ts, qui n’exporte que QualityLineStatusReader (la fiche de l’atelier le lit). Imports hors porte 1→0 (atelier → quality). La lecture de ProductionOrderLine par le lecteur des retenues change de chemin, pas de nombre ; tests hors porte inchangés (51). quality-doubles.ts reste à plat : la journée, l’atelier et le plan s’en servent."
+  "$d2": "2026-11-15, D2 : la qualité (quality/) déménage et pose son index.ts, qui n’exporte que QualityLineStatusReader (la fiche de l’atelier le lit). Imports hors porte 1→0 (atelier → quality). La lecture de ProductionOrderLine par le lecteur des retenues change de chemin, pas de nombre ; tests hors porte inchangés (51). quality-doubles.ts reste à plat : la journée, l’atelier et le plan s’en servent.",
+  "$d3": "D3 (2026-11-15) : le réassort déménage dans resupply/ ; resupply/index.ts n’exporte rien, aucun autre métier ne le lit. Les deux lectures Prisma de ProductionResupply restent en dette (models) jusqu’au port de day/ prévu au plan. Tests hors porte day → resupply 3 → 0, resupply → day 3 → 3 (deux refus du réassort passent par day/index.ts)."
 }

@@ -1,11 +1,11 @@
 import { Injectable } from "@nestjs/common";
 
-import { PrismaService } from "../../platform/database/prisma.service.js";
+import { PrismaService } from "../../../platform/database/prisma.service.js";
 import {
   type FrozenResupply,
   FrozenResuppliesReader,
-} from "../channels/delivery/frozen-resupplies.reader.js";
-import { productionSaleUnitOf } from "../day/index.js";
+} from "../../channels/delivery/frozen-resupplies.reader.js";
+import { productionSaleUnitOf } from "../../day/index.js";
 
 /**
  * Les réassorts figés d'une journée (lot R3c) — `production_resupply` et ses

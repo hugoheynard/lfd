@@ -1,11 +1,11 @@
 import { instantToLocal } from "@lfd/contracts";
 
-import type { PlacedResupply } from "../../../channels/commerce/day-resupplies.reader.js";
-import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
-import { ProductionDay } from "../../../day/domain/entities/production-day.js";
-import { ProductionDayRepository } from "../../../day/index.js";
-import { ServiceDay } from "../../../day/index.js";
-import { DayResupplies } from "../../__tests__/settings-doubles.js";
+import type { PlacedResupply } from "../../../../channels/commerce/day-resupplies.reader.js";
+import type { ProducibleOrder } from "../../../../channels/commerce/day-orders.reader.js";
+import { ProductionDay } from "../../../../day/domain/entities/production-day.js";
+import { ProductionDayRepository } from "../../../../day/index.js";
+import { ServiceDay } from "../../../../day/index.js";
+import { DayResupplies } from "../../../../application/__tests__/settings-doubles.js";
 import { GetDayResuppliesHandler } from "../get-day-resupplies.handler.js";
 import { GetDayResuppliesQuery } from "../get-day-resupplies.query.js";
 

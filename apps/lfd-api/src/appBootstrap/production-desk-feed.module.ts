@@ -3,7 +3,7 @@ import { Global, Module } from "@nestjs/common";
 import { ProductionOrderWithdrawalDesk } from "../production/day/application/services/production-order-withdrawal.desk.js";
 import { ProductionOrderRevisionDesk } from "../production/day/application/services/production-order-revision.desk.js";
 import { ProductionPlanAdmissionDesk } from "../production/application/services/production-plan-admission.desk.js";
-import { ProductionLaunchedResupplies } from "../production/application/services/production-launched-resupplies.js";
+import { ProductionLaunchedResupplies } from "../production/resupply/application/services/production-launched-resupplies.js";
 import {
   ClosedPlansReader,
   LaunchedResupplies,

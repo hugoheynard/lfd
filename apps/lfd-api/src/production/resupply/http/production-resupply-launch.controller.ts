@@ -2,11 +2,11 @@ import { productionBatchQuerySchema } from "@lfd/contracts";
 import { Controller, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 
-import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
-import { StaffUserId } from "../../platform/auth/staff.decorator.js";
-import { ZodParam } from "../../platform/shared/http/zod-body.pipe.js";
+import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { ZodParam } from "../../../platform/shared/http/zod-body.pipe.js";
 import { LaunchResupplyCommand } from "../application/commands/launch-resupply.command.js";
-import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
+import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /** Le jour du chemin, validé dans sa FORME par un pipe (400 nommant le paramètre). */
 const DAY = new ZodParam(productionBatchQuerySchema.shape.date, "date");

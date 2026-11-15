@@ -46,7 +46,11 @@ export {
   ProductionDayEmptyError,
   ProductionDayNotClosedError,
 } from "./domain/errors/production-errors.js";
-export { ResupplyToLaunchNotFoundError } from "./domain/errors/resupply-launch-errors.js";
+export {
+  ResupplyAlreadyLaunchedError,
+  ResupplyLaunchOnUnarrestedPlanError,
+  ResupplyToLaunchNotFoundError,
+} from "./domain/errors/resupply-launch-errors.js";
 export {
   ProductionDayClosedJournalEvent,
   ProductionDayReopenedJournalEvent,

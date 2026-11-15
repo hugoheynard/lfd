@@ -2,8 +2,8 @@ import { type ProductionDayResuppliesView, productionBatchQuerySchema } from "@l
 import { Controller, Get, Param } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 
-import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
-import { ZodParam } from "../../platform/shared/http/zod-body.pipe.js";
+import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
+import { ZodParam } from "../../../platform/shared/http/zod-body.pipe.js";
 import { GetDayResuppliesQuery } from "../application/queries/get-day-resupplies.query.js";
 
 /** Le jour du chemin, validé dans sa FORME par un pipe : un 400 qui nomme le paramètre. */
