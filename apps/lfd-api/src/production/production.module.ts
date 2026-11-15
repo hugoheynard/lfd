@@ -104,6 +104,7 @@ import { QualityControlSettingsReader } from "./domain/ports/quality-control-set
 import { QualityControlSettingsRepository } from "./domain/ports/quality-control-settings.repository.js";
 import { PrismaQualityControlSettingsReader } from "./infrastructure/prisma-quality-control-settings.reader.js";
 import { PrismaQualityControlSettingsRepository } from "./infrastructure/prisma-quality-control-settings.repository.js";
+import { ProductionDayChangeSweepController } from "./http/production-day-change-sweep.controller.js";
 import { QualityUploadSweepController } from "./http/quality-upload-sweep.controller.js";
 import {
   PrismaQualityCheckReader,
@@ -206,6 +207,7 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     ProductionQualityController,
     QualityControlSettingsController,
     QualityUploadSweepController,
+    ProductionDayChangeSweepController,
     ProductionSettingsController,
     ProductionDisplaySettingsController,
     // La fiche d'atelier d'EXEMPLE de la planche des documents (2026-10-20).

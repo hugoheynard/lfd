@@ -156,7 +156,7 @@ voient donc bouger les tournées par l'effet des déclencheurs :
 > aujourd'hui — hors de ce plan.
 >
 > **Déclencheur d'élagage** : il n'y en a pas UN. Le fournil balaie son journal
-> dans `POST admin/production/quality/sweep` (cron `45 3 * * *`,
+> dans `POST admin/production/journal/sweep` (cron `45 3 * * *`,
 > `QUALITY_UPLOAD_SWEEP_CRON`), le commerce dans
 > `POST admin/orders/settlement-reminders` (cron `0 * * * *`). La livraison a sa
 > route, `POST admin/delivery/journal/sweep`, appelée par le Worker dans le

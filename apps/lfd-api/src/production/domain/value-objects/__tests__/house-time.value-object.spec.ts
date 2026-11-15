@@ -1,4 +1,4 @@
-import { InvalidHouseTimeError } from "../../errors/production-settings-errors.js";
+import { InvalidHouseTimeError } from "../../errors/house-time-errors.js";
 import { HouseTime } from "../house-time.value-object.js";
 
 describe("HouseTime — une heure de la maison", () => {

@@ -30,7 +30,7 @@ import {
   type ScopedQualityTarget,
   scopeQualityTarget,
 } from "../../domain/services/quality-check-scope.js";
-import { refuseOrderOutOfHand } from "../../domain/services/order-out-of-hand.js";
+import { refuseOrderOutOfHand } from "../../domain/services/refuse-order-out-of-hand.js";
 import { holdTransition } from "../../domain/services/quality-holds.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 import { SealedDayReading } from "../services/sealed-day-reading.service.js";

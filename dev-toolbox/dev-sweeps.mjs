@@ -58,6 +58,7 @@ export const NOT_IN_DEV = new Map([
   ],
   ["admin/loyalty/sweep", "la nuit de la fidélité : fait expirer des points"],
   ["admin/production/quality/sweep", "purge des photos de contrôle"],
+  ["admin/production/journal/sweep", "purge du journal des journées du fournil"],
   ["admin/delivery/journal/sweep", "purge du journal de livraison"],
   ["admin/pim/changes/sweep", "purge du journal du référentiel"],
   ["admin/delivery/geocoding/sweep", "purge du géocodage"],

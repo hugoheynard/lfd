@@ -13,10 +13,7 @@
     "application/services/day-order-label-head.reader.ts → domain/services/fulfillment-method-label.ts",
     "application/services/production-paper.service.ts → domain/entities/production-display-settings.ts",
     "application/services/production-paper.service.ts → domain/ports/production-display-settings.reader.ts",
-    "application/services/production-paper.service.ts → domain/services/atelier-sheet-pdf.ts",
-    "channels/commerce/index.ts → domain/services/latest-order-cutoff.ts",
-    "channels/commerce/order-cutoff-rules.reader.ts → domain/services/latest-order-cutoff.ts",
-    "channels/handover/order-custody.reader.ts → domain/services/order-out-of-hand.ts"
+    "application/services/production-paper.service.ts → domain/services/atelier-sheet-pdf.ts"
   ],
   "models": [
     "infrastructure/prisma-arrested-plan.hold.ts → ProductionDay (day)",
@@ -36,7 +33,7 @@
     "atelier → day": 33,
     "atelier → quality": 1,
     "atelier → shared-print": 11,
-    "plan → day": 90,
+    "plan → day": 96,
     "plan → shared-print": 25,
     "quality → day": 20,
     "resupply → day": 19,
@@ -51,7 +48,7 @@
     "day → resupply": 3,
     "day → shared-print": 1,
     "plan → atelier": 2,
-    "plan → day": 45,
+    "plan → day": 47,
     "plan → shared-print": 3,
     "quality → day": 18,
     "resupply → day": 8,
@@ -61,5 +58,6 @@
   },
   "$c1": "2026-11-15, C1 (décidé par Hugo) : l'archivage des papiers sort du rendu et devient une primitive partagée (shared-print) ; −2 arêtes interdites, +14 imports hors porte (atelier→shared-print 7→10, plan→shared-print 17→25, tests plan→shared-print 1→3, tests day→shared-print 0→1), que D1 efface en posant shared/print/index.ts.",
   "$c2": "2026-11-15, C2 (décidé par Hugo) : un contrôleur par métier, mêmes routes ; −3 arêtes interdites, plan → resupply 1→0, +1 atelier → shared-print (10→11 : la fiche PDF importe la mise en forme depuis son contrôleur de l'atelier), que D1 efface.",
-  "$c3": "2026-11-15, C3 (décidé par Hugo) : la fiche lit les pastilles qualité par le port QualityLineStatusReader ; atelier → quality 2→1, +2 quality → day (18→20 : le port et son adaptateur lisent la journée), et +1 test quality → day (17→18 : le test de l'adaptateur), que D1 efface."
+  "$c3": "2026-11-15, C3 (décidé par Hugo) : la fiche lit les pastilles qualité par le port QualityLineStatusReader ; atelier → quality 2→1, +2 quality → day (18→20 : le port et son adaptateur lisent la journée), et +1 test quality → day (17→18 : le test de l'adaptateur), que D1 efface.",
+  "$c4": "2026-11-15, C4 (décidé par Hugo) : l'heure limite et l'heure maison, et le type de la commande partie, rejoignent le noyau ; le balayage qualité et l'élagage de la journée sont deux routes, appelées par le même cron. −3 arêtes canaux → plan/qualité ; +6 plan → day et +2 tests plan → day (les lecteurs du plan importent désormais ces règles du noyau), que D1 efface."
 }

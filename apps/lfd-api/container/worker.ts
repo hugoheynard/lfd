@@ -472,7 +472,8 @@ async function triggerSettlementReminders(env: Env): Promise<void> {
 /**
  * Réveille le container et déclenche le balayage des photos de contrôle qualité
  * déposées et jamais rattachées (plan `documentation/fournil/le-controle-qualite.md`, D8),
- * qui balaie aussi le journal des journées du fournil — puis celui de la
+ * puis le journal des journées du fournil, par sa propre route (la qualité et
+ * la journée sont deux métiers du fournil) — puis celui de la
  * livraison (`documentation/livraisons/architecture/plan-schema-delivery.md`, SD-D3), par sa
  * propre route : le fournil ne connaît pas la livraison — et enfin la purge du
  * cache du géocodage à 365 jours (`documentation/legal/rgpd-purge-du-geocodage.md`),
@@ -494,6 +495,9 @@ async function triggerQualityUploadSweep(env: Env): Promise<void> {
   // L'échec est écrit dans les logs du Worker, puis rattrapé la nuit suivante.
   for (const path of [
     "admin/production/quality/sweep",
+    // Le journal des journées du fournil (`version-par-journee.md`, D2) : sa
+    // propre route, la qualité ne porte pas la journée.
+    "admin/production/journal/sweep",
     "admin/delivery/journal/sweep",
     // Le journal du référentiel (`documentation/caching-usage/le-cache-du-back-office.md`,
     // § 5.2) : sa propre route, la passe du commerce n'atteint pas le PIM.

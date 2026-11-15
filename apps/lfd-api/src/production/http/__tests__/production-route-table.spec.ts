@@ -99,6 +99,7 @@ const EXPECTED: readonly string[] = [
   'POST | admin/production/batch/:date/close | production_plan | ["production_count_stop:write"] | - | public | AdminAuthGuard+StaffAccessGuard',
   'POST | admin/production/batch/:date/reopen | production_plan | ["production_count_stop:write"] | - | public | AdminAuthGuard+StaffAccessGuard',
   "POST | admin/production/batch/:date/resupplies/:resupplyId/launch | production_resupply | [] | 204 | public | AdminAuthGuard+StaffAccessGuard",
+  "POST | admin/production/journal/sweep | - | [] | 200 | public | RecomputeGuard",
   "POST | admin/production/quality/sweep | - | [] | 200 | public | RecomputeGuard",
   "POST | admin/production/settings/closed-days | production_settings | [] | 204 | public | AdminAuthGuard+StaffAccessGuard",
   "POST | admin/production/settings/dossier-recipients | production_settings | [] | - | public | AdminAuthGuard+StaffAccessGuard",

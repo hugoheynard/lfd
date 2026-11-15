@@ -3,7 +3,6 @@ import { CommandBus } from "@nestjs/cqrs";
 
 import { Public } from "../../platform/auth/public.decorator.js";
 import { RecomputeGuard } from "../../platform/auth/recompute.guard.js";
-import { PruneProductionDayChangesCommand } from "../application/commands/prune-production-day-changes.command.js";
 import { SweepQualityUploadsCommand } from "../application/commands/sweep-quality-uploads.command.js";
 import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
@@ -21,12 +20,9 @@ export interface QualityUploadSweepReport {
  * Appelé chaque nuit par le cron `45 3 * * *` (`QUALITY_UPLOAD_SWEEP_CRON`,
  * `container/worker.ts`, depuis `74672d5c6`).
  *
- * **Le même passage balaie le journal des journées du fournil**
- * (`version-par-journee.md`, D2) : c'est le passage nocturne du schéma
- * `production`, et un second cron serait un réglage Cloudflare de plus pour
- * une suppression de quelques centaines de lignes. Deux commandes, deux
- * handlers — seule la porte est partagée. Le compte rendu reste celui des
- * photos : un balayage de numéros d'affichage n'a rien à y annoncer.
+ * Le journal des journées du fournil a sa propre route
+ * (`admin/production/journal/sweep`), appelée par le même cron juste après :
+ * la qualité ne porte pas la journée.
  */
 @Controller("admin/production/quality/sweep")
 @Public()
@@ -36,15 +32,12 @@ export class QualityUploadSweepController {
 
   @Post()
   @Idempotent(
-    "balayage appelé par la machine sous RecomputeGuard, état relu : il ne libère que les dépôts expirés pas encore libérés et ne purge que l'historique d'avant la rétention — un second passage ne trouve plus rien",
+    "balayage appelé par la machine sous RecomputeGuard, état relu : il ne libère que les dépôts expirés pas encore libérés — un second passage ne trouve plus rien",
   )
   @HttpCode(200)
   async sweep(): Promise<QualityUploadSweepReport> {
     const released = await this.commands.execute<SweepQualityUploadsCommand, number>(
       new SweepQualityUploadsCommand(),
-    );
-    await this.commands.execute<PruneProductionDayChangesCommand, number>(
-      new PruneProductionDayChangesCommand(),
     );
     return { released };
   }

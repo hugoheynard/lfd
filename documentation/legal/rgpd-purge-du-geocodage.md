@@ -55,7 +55,7 @@ sequenceDiagram
     participant H as PurgeStaleGeocodesHandler
     participant DB as delivery.delivery_geocode
     CF->>W: scheduled (QUALITY_UPLOAD_SWEEP_CRON)
-    W->>API: après quality/sweep et livraison/journal/sweep, jeton x-lfc-recompute-token
+    W->>API: après quality/sweep, production/journal/sweep et livraison/journal/sweep, jeton x-lfc-recompute-token
     API->>H: PurgeStaleGeocodesCommand (RecomputeGuard)
     loop tant qu'un lot est plein (500)
         H->>DB: choisir 500 empreintes avec geocoded_at < now - 365 j

@@ -289,7 +289,7 @@ mêlent jamais dans un lot.
    contrôleur par métier, mêmes chemins d'API, e2e inchangés.
 4. **C3 — le port des retenues de la fiche** (✅ bâti le 2026-11-15 sous le nom `QualityLineStatusReader` : `QualityHoldsReader` existe déjà, dans `channels/handover/`, pour les commandes retenues ; la fiche lit la journée puis les contrôles, un aller-retour assumé par Hugo) et la coupe de
    `production-worksheet-reading.service`.
-5. **C4 — les canaux ne portent plus de règle d'un métier** (relevé par D0) :
+5. **C4 — les canaux ne portent plus de règle d'un métier** (✅ bâti le 2026-11-15 ; option (b) de Hugo : deux routes, `quality/sweep` et `journal/sweep`, appelées par le même cron) :
    `channels/commerce` exporte la règle d'heure limite du plan
    (`latest-order-cutoff`) et `channels/handover` celle de la qualité
    (`order-out-of-hand`). Une règle lue par un canal est une règle de la

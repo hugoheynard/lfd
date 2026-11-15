@@ -1,4 +1,4 @@
-import { type HouseTimeRole, InvalidHouseTimeError } from "../errors/production-settings-errors.js";
+import { type HouseTimeRole, InvalidHouseTimeError } from "../errors/house-time-errors.js";
 
 const CLOCK_TIME = /^([01]\d|2[0-3]):([0-5]\d)$/u;
 const MINUTES_PER_HOUR = 60;

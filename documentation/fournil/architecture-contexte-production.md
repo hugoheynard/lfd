@@ -123,21 +123,21 @@ spécimen sur la planche des documents.
 
 ### Les routes
 
-| Contrôleur (`http/`)                                                       | Préfixe                                        | Droit                                                                           |
-| -------------------------------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------- |
-| `production-day.controller.ts`                                             | `admin/production/batch/:date/…`, `forecast`   | `production_plan` ; arrêt et réouverture sous `production_count_stop:write`     |
-| `production-worksheet.controller.ts`                                       | `admin/production/worksheet…`, `containers`    | `production_worksheet` ; contenant en écriture sous `production_settings:write` |
-| `production-settings.controller.ts`                                        | `admin/production/settings`                    | `production_settings`                                                           |
-| `production-day-resupplies.controller.ts`                                  | `…/batch/:date/resupplies`                     | `production_plan`                                                               |
-| `production-atelier-sheet.controller.ts`                                   | `…/batch/:date/sheets/:reference.pdf`          | `production_plan` ; `production_worksheet:read` exigé                           |
-| `production-day-retake.controller.ts`                                      | `admin/production/worksheet/:date/retake`      | `production_worksheet`                                                          |
-| `production-display-settings.controller.ts`                                | `admin/production/settings/display`            | `production_settings`                                                           |
-| `production-batch-shortcuts.controller.ts`                                 | `admin/production/settings/shortcuts`          | `production_settings`                                                           |
-| `production-dossier-recipients.controller.ts`                              | `admin/production/settings/dossier-recipients` | `production_settings`                                                           |
-| `production-resupply-launch.controller.ts`                                 | `…/batch/:date/resupplies/:id/launch`          | `production_resupply`                                                           |
-| `production-quality.controller.ts`, `production-supervision.controller.ts` | `admin/supervision/…`                          | `b2b_supervision`                                                               |
-| `quality-control-settings.controller.ts`                                   | `admin/production/quality-settings`            | `lfc_order_settings`                                                            |
-| `auto-close.controller.ts`, `quality-upload-sweep.controller.ts`           | routes machine du Worker                       | jeton du Worker                                                                 |
+| Contrôleur (`http/`)                                                                                          | Préfixe                                                         | Droit                                                                           |
+| ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `production-day.controller.ts`                                                                                | `admin/production/batch/:date/…`, `forecast`                    | `production_plan` ; arrêt et réouverture sous `production_count_stop:write`     |
+| `production-worksheet.controller.ts`                                                                          | `admin/production/worksheet…`, `containers`                     | `production_worksheet` ; contenant en écriture sous `production_settings:write` |
+| `production-settings.controller.ts`                                                                           | `admin/production/settings`                                     | `production_settings`                                                           |
+| `production-day-resupplies.controller.ts`                                                                     | `…/batch/:date/resupplies`                                      | `production_plan`                                                               |
+| `production-atelier-sheet.controller.ts`                                                                      | `…/batch/:date/sheets/:reference.pdf`                           | `production_plan` ; `production_worksheet:read` exigé                           |
+| `production-day-retake.controller.ts`                                                                         | `admin/production/worksheet/:date/retake`                       | `production_worksheet`                                                          |
+| `production-display-settings.controller.ts`                                                                   | `admin/production/settings/display`                             | `production_settings`                                                           |
+| `production-batch-shortcuts.controller.ts`                                                                    | `admin/production/settings/shortcuts`                           | `production_settings`                                                           |
+| `production-dossier-recipients.controller.ts`                                                                 | `admin/production/settings/dossier-recipients`                  | `production_settings`                                                           |
+| `production-resupply-launch.controller.ts`                                                                    | `…/batch/:date/resupplies/:id/launch`                           | `production_resupply`                                                           |
+| `production-quality.controller.ts`, `production-supervision.controller.ts`                                    | `admin/supervision/…`                                           | `b2b_supervision`                                                               |
+| `quality-control-settings.controller.ts`                                                                      | `admin/production/quality-settings`                             | `lfc_order_settings`                                                            |
+| `auto-close.controller.ts`, `quality-upload-sweep.controller.ts`, `production-day-change-sweep.controller.ts` | routes machine du Worker (`…/quality/sweep`, `…/journal/sweep`) | jeton du Worker                                                                 |
 
 ### Les écrans du back-office
 

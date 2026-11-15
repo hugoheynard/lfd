@@ -440,16 +440,28 @@ describe("le balayage des journaux", () => {
 
   it("le passage nocturne du fournil retire les traces du fournil de plus de sept jours", async () => {
     await seedTraces();
-    await ctx
+    const response = await ctx
       .http()
-      .post("/admin/production/quality/sweep")
+      .post("/admin/production/journal/sweep")
       .set("x-lfc-recompute-token", TEST_RECOMPUTE_TOKEN)
       .expect(200);
+    expect(response.body).toEqual({ pruned: 1 });
     const left = await ctx.prisma.productionDayChange.findMany({ select: { serviceDay: true } });
     expect(left).toEqual([{ serviceDay: "recent" }]);
     // Le journal du commerce n'est pas le sien, ni celui de la livraison.
     expect(await ctx.prisma.orderDayChange.count()).toBe(2);
     expect(await ctx.prisma.deliveryDayChange.count()).toBe(2);
+  });
+
+  it("le balayage des photos de contrôle ne touche plus au journal du fournil : il a sa route", async () => {
+    await seedTraces();
+    await ctx
+      .http()
+      .post("/admin/production/quality/sweep")
+      .set("x-lfc-recompute-token", TEST_RECOMPUTE_TOKEN)
+      .expect(200);
+    expect(await ctx.prisma.productionDayChange.count()).toBe(2);
+    await ctx.http().post("/admin/production/journal/sweep").expect(401);
   });
 
   it("la passe horaire du commerce retire les traces du commerce de plus de sept jours", async () => {
