@@ -629,6 +629,33 @@ les tables d'un domaine en Prisma direct. C'est arrivé deux fois, et c'est
 `lint:prisma-model-ownership` qui le tient depuis le 2026-09-09 (corrigé ici le
 2026-10-19).
 
+🔴 **Le propriétaire parle de ce qui est à lui** (décidé par Hugo le
+2026-11-15, sur le découpage du fournil). Celui qui écrit une table est le seul
+à savoir ce qu'elle veut dire — qu'une journée « arrêtée » se lit sur telle
+colonne, qu'une ligne retirée ne compte plus. Donc :
+
+- **Il publie ses lectures.** Un autre métier ne lit pas ses tables : il
+  appelle une lecture nommée que le propriétaire déclare (un port étroit par
+  capacité, ISP — jamais une classe `XReadings` fourre-tout) et implémente
+  avec **la même requête** qu'aurait écrite l'appelant, jamais « tout charger
+  puis filtrer ». Le propriétaire peut alors changer ses tables sans prévenir
+  personne, tant que ses réponses restent les mêmes.
+- **Il émet ses faits.** Un changement d'état produit son fait dans
+  l'agrégat, dans le vocabulaire du propriétaire, écrit dans la boîte d'envoi
+  avec l'état — jamais par un service de métier qu'un geste pourrait oublier
+  d'appeler, ni dans le vocabulaire de l'aval.
+- **Le catalogue se lit dans la porte.** L'`index.ts` (ou le canal) range ces
+  lectures et ces faits sous un titre — « ce que la journée sait répondre » —
+  pour qu'un nouveau métier voie d'un coup d'œil ce qu'il peut demander.
+
+Ce que la règle n'exige pas : un port **à l'intérieur** d'un métier (son
+adaptateur lit ses propres tables), ni une jointure entre domaines pour un
+tableau de bord — une vue lourde se bâtit sur les lectures publiées ou sur une
+projection tenue par les faits. Référence :
+`apps/lfd-api/src/production/day/index.ts` et
+[`documentation/fournil/plan-decoupage-du-fournil.md`](documentation/fournil/plan-decoupage-du-fournil.md)
+(R4), [`plan-faits-agnostiques.md`](documentation/fournil/plan-faits-agnostiques.md) § 4.
+
 Règles non négociables :
 
 - **La validation vit dans le domaine.** L'entité ou le value object refuse une
