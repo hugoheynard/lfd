@@ -46,3 +46,20 @@ La frontière technique est respectée aujourd'hui (le fournil déclare
    renommage des abonnés `lfc.…`), messages en vol compris.
 4. Sortir `PackingOwner` du fournil.
 5. Décider du registre : production du fournil, ou réception du colisage.
+
+## 4. Qui émet : la journée (décidé avec Hugo le 2026-11-15)
+
+Les faits sur un changement d'état de la journée sont **émis par l'agrégat**
+`ProductionDay` (« une fournée est sortie », « une fournée est annulée »,
+« la journée est arrêtée »), recueillis par son dépôt et écrits dans la boîte
+d'envoi dans la même transaction que l'état. Aucun service de métier ne les
+publie : un geste qui oublierait d'appeler le service laisserait l'aval dans
+l'ignorance, alors qu'une mutation de l'agrégat produit toujours son fait.
+
+- Le noyau **déclare** ces faits dans son vocabulaire ; `channels/packing/` les
+  réexpose pour l'aval. `day/index.ts` ne charge toujours aucun canal : le
+  canal dépend du noyau, pas l'inverse.
+- Un métier ne publie que les faits de ce qu'il possède (la qualité ses
+  verdicts, le plan l'envoi du dossier). L'atelier, qui ne possède aucun
+  état, ne publie plus rien : `PackingHandoffs` disparaît.
+- S'ouvre après le lot R du découpage.
