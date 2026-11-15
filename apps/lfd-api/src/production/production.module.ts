@@ -1,6 +1,5 @@
 import { Module } from "@nestjs/common";
 
-import { GetAtelierSheetPdfHandler } from "./atelier/application/queries/get-atelier-sheet-pdf.handler.js";
 import { ProductionAtelierModule } from "./atelier/production-atelier.module.js";
 import { ProductionDayModule } from "./day/production-day.module.js";
 import { ProductionPlanModule } from "./plan/production-plan.module.js";
@@ -20,13 +19,8 @@ import { ProductionPrintModule } from "./shared/print/production-print.module.js
  * est une question — `AttestedHandoversReader`, déclarée dans
  * `channels/handover/` et implémentée par le retrait.
  *
- * ⚠️ Un fournisseur reste ici, et ce n'est pas sa place : la fiche PDF de
- * l'atelier (`GetAtelierSheetPdfHandler`) lit le rendu des papiers
- * (`ProductionPaperRenderer`), qui est au plan. La ranger dans l'atelier
- * ferait importer le plan par l'atelier, une arête que le découpage refuse ;
- * le rendu ne rejoint pas l'imprimerie (`shared/print/`) tant qu'elle n'a pas
- * le droit de lire les canaux qu'il lit
- * (`documentation/fournil/plan-decoupage-du-fournil.md`, D7).
+ * Elle n'a aucun fournisseur propre : chacun est rangé dans le module de
+ * son métier.
  */
 @Module({
   imports: [
@@ -37,7 +31,6 @@ import { ProductionPrintModule } from "./shared/print/production-print.module.js
     ProductionPlanModule,
     ProductionAtelierModule,
   ],
-  providers: [GetAtelierSheetPdfHandler],
   // Les fournisseurs que la racine de composition relie aux autres blocs,
   // chacun exporté par le module de son métier.
   exports: [

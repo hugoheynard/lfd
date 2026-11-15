@@ -95,6 +95,22 @@ test("arêtes : le noyau qui importe un métier ou l'impression est refusé, typ
   ]);
 });
 
+test("arêtes : l'imprimerie lit le seul port de la couleur d'une commande, aucun autre canal", () => {
+  const { found } = run({
+    "shared/print/a.ts":
+      imp("../../channels/commerce/order-print-colors.reader.js") +
+      imp("../../channels/commerce/workshop-shelves.reader.js"),
+    "shared/print/b.ts": imp("../../channels/packing/arrested-plan.hold.js"),
+    "channels/commerce/order-print-colors.reader.ts": "",
+    "channels/commerce/workshop-shelves.reader.ts": "",
+    "channels/packing/arrested-plan.hold.ts": "",
+  });
+  assert.deepEqual([...found.edges].sort(), [
+    "shared/print/a.ts → channels/commerce/workshop-shelves.reader.ts",
+    "shared/print/b.ts → channels/packing/arrested-plan.hold.ts",
+  ]);
+});
+
 test("arêtes : seules atelier → quality et plan → resupply relient deux métiers", () => {
   const { found } = run({
     "atelier/a.ts": imp("../quality/index.js"),

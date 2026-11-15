@@ -25,7 +25,7 @@ import {
   FixedPlannedDeliveryNotes,
 } from "../../../../application/__tests__/paper-doubles.js";
 import { InMemoryProductionStore } from "../../../../application/__tests__/quality-doubles.js";
-import { ProductionPaperArchive } from "../../../../shared/print/index.js";
+import { OrderSheetPaper, ProductionPaperArchive } from "../../../../shared/print/index.js";
 import { ProductionPaperRenderer } from "../../services/production-paper.service.js";
 import { GetDayDossierPdfHandler } from "../get-day-dossier-pdf.handler.js";
 import { GetDayDossierPdfQuery } from "../get-day-dossier-pdf.query.js";
@@ -94,9 +94,8 @@ function setup(
   const store = new InMemoryProductionStore();
   const shelves = new Shelves();
   const renderer = new ProductionPaperRenderer(
-    new NoAdminOrigin(),
     shelves,
-    colors,
+    new OrderSheetPaper(new NoAdminOrigin(), colors, new FixedPaperLogo()),
     new FixedResupplyPrintColors(),
     new FixedPaperLogo(),
     deliveryNotes,

@@ -3,11 +3,12 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import { AtelierSheetNotFoundError, ProductionDayNotClosedError } from "../../../day/index.js";
 import { ProductionDayRepository } from "../../../day/index.js";
 import { ServiceDay } from "../../../day/index.js";
-import { ProductionPaperArchive, type ProductionPaper } from "../../../shared/print/index.js";
 import {
-  ProductionPaperRenderer,
+  OrderSheetPaper,
+  ProductionPaperArchive,
   atelierSheetSlotOf,
-} from "../../../plan/application/services/production-paper.service.js";
+  type ProductionPaper,
+} from "../../../shared/print/index.js";
 import { GetAtelierSheetPdfQuery } from "./get-atelier-sheet-pdf.query.js";
 
 /**
@@ -25,7 +26,7 @@ export class GetAtelierSheetPdfHandler implements IQueryHandler<
 > {
   constructor(
     private readonly days: ProductionDayRepository,
-    private readonly renderer: ProductionPaperRenderer,
+    private readonly sheets: OrderSheetPaper,
     private readonly archive: ProductionPaperArchive,
   ) {}
 
@@ -40,7 +41,7 @@ export class GetAtelierSheetPdfHandler implements IQueryHandler<
       throw new AtelierSheetNotFoundError(query.reference, query.serviceDay);
     }
     return this.archive.storedOr(atelierSheetSlotOf(order), () =>
-      this.renderer.sheetOf(order, query.serviceDay, closedAt),
+      this.sheets.sheetOf(order, query.serviceDay, closedAt),
     );
   }
 }

@@ -10,6 +10,7 @@ import { RecordBatchHandler } from "./application/commands/record-batch.handler.
 import { RemoveProductionContainerHandler } from "./application/commands/remove-production-container.handler.js";
 import { SetProductionContainerHandler } from "./application/commands/set-production-container.handler.js";
 import { SetProductionDisplayHandler } from "./application/commands/set-production-display.handler.js";
+import { GetAtelierSheetPdfHandler } from "./application/queries/get-atelier-sheet-pdf.handler.js";
 import { GetAtelierSheetSpecimenHandler } from "./application/queries/get-atelier-sheet-specimen.handler.js";
 import { GetCurrentProductionWorksheetHandler } from "./application/queries/get-current-production-worksheet.handler.js";
 import { GetProductionWorksheetHandler } from "./application/queries/get-production-worksheet.handler.js";
@@ -43,7 +44,8 @@ import { ProductionBatchShortcutsModule } from "./production-batch-shortcuts.mod
   imports: [
     ProductionDayModule,
     ProductionQualityModule,
-    // L'imprimerie : les réglages d'affichage, lus par la fiche et réglés ici.
+    // L'imprimerie : les réglages d'affichage, lus par la fiche et réglés
+    // ici ; la fiche PDF d'une commande.
     ProductionPrintModule,
     // Les articles des raccourcis viennent du canal `channels/commerce/`, global.
     ProductionBatchShortcutsModule,
@@ -68,6 +70,8 @@ import { ProductionBatchShortcutsModule } from "./production-batch-shortcuts.mod
     GetCurrentProductionWorksheetHandler,
     ListProductionContainersHandler,
     GetAtelierSheetSpecimenHandler,
+    // La fiche d'une commande, imprimée par l'imprimerie et archivée.
+    GetAtelierSheetPdfHandler,
     // La lecture de la fiche, partagée par la route datée et la route « en
     // cours » : un handler n'en appelle pas un autre (§4).
     ProductionWorksheetReading,

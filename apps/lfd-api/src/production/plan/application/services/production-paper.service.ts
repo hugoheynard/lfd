@@ -2,8 +2,6 @@ import type { CatalogFamilyView } from "@lfd/contracts";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { BrandLogoSource } from "../../../../platform/brand/brand-logo.source.js";
-import { AppConfig } from "../../../../platform/config/app-config.js";
-import { OrderPrintColorsReader } from "../../../channels/commerce/order-print-colors.reader.js";
 import {
   type DeliveryNoteDrawing,
   PlannedDeliveryNotesReader,
@@ -16,13 +14,12 @@ import type {
   ProductionDay,
   ProductionDaySnapshot,
   ProductionLineSnapshot,
-  ProductionOrderSnapshot,
 } from "../../../day/index.js";
 import { ProductionDayNotClosedError } from "../../../day/index.js";
 import {
-  atelierSheetPdfKey,
+  OrderSheetPaper,
+  type OrderSheetMarks,
   productionCountPdfKey,
-  renderAtelierSheetPdf,
   renderProductionCountPdf,
 } from "../../../shared/print/index.js";
 import { countColorSharesOf } from "../../../shared/print/index.js";
@@ -47,14 +44,6 @@ function closedSnapshotOf(day: ProductionDay): ClosedSnapshot {
     throw new ProductionDayNotClosedError(snapshot.serviceDay);
   }
   return { ...snapshot, closedAt };
-}
-
-/** La place de la feuille d'atelier d'une commande. */
-export function atelierSheetSlotOf(order: ProductionOrderSnapshot): PaperSlot {
-  return {
-    key: atelierSheetPdfKey(order.orderId),
-    fileName: `fiche-atelier-${order.reference}.pdf`,
-  };
 }
 
 /**
@@ -88,7 +77,7 @@ export function dayDossierSlotOf(day: ProductionDay): PaperSlot {
 /** Ce que le dossier lit au tirage, chaque lecture faillible à `null`. */
 interface DossierInputs {
   readonly shelves: ReadonlyMap<string, CatalogFamilyView> | null;
-  readonly colors: Awaited<ReturnType<OrderPrintColorsReader["colorsOf"]>>;
+  readonly marks: OrderSheetMarks;
   readonly resupplyColors: Awaited<ReturnType<ResupplyPrintColorsReader["colorsOf"]>>;
   readonly logo: Awaited<ReturnType<BrandLogoSource["load"]>>;
   readonly deliveryNotes: ReadonlyMap<string, DeliveryNoteDrawing> | null;
@@ -98,7 +87,8 @@ interface DossierInputs {
 
 /**
  * **Le rendu des papiers du fournil** : lire ce que chacun affiche et en
- * produire les octets. Il ne range rien — l'archive est à
+ * produire les octets. La fiche de chaque commande, et ce qu'elle porte
+ * (pastille, QR), sont à l'imprimerie (`OrderSheetPaper`). Il ne range rien — l'archive est à
  * `ProductionPaperArchive`, et chaque cas d'usage relie les deux.
  *
  * Le compte à produire est un **instantané arrêté à la clôture**, et les
@@ -111,9 +101,8 @@ export class ProductionPaperRenderer {
   private readonly logger = new Logger(ProductionPaperRenderer.name);
 
   constructor(
-    private readonly config: AppConfig,
     private readonly shelves: WorkshopShelvesReader,
-    private readonly colors: OrderPrintColorsReader,
+    private readonly sheets: OrderSheetPaper,
     private readonly resupplyColors: ResupplyPrintColorsReader,
     private readonly logo: BrandLogoSource,
     private readonly deliveryNotes: PlannedDeliveryNotesReader,
@@ -125,28 +114,6 @@ export class ProductionPaperRenderer {
   ) {}
 
   /**
-   * La feuille d'une commande, avec son QR de colisage et la pastille de sa
-   * couleur, lue au tirage. Toujours archivable.
-   */
-  async sheetOf(
-    order: ProductionOrderSnapshot,
-    serviceDay: string,
-    closedAt: Date,
-  ): Promise<PaperDraft> {
-    const [colors, logo] = await Promise.all([
-      this.colors.colorsOf([order.orderId]),
-      this.logo.load(),
-    ]);
-    const bytes = await renderAtelierSheetPdf(
-      order,
-      { serviceDay, closedAt, logo },
-      this.colisageUrl(order.reference),
-      colors.get(order.orderId) ?? null,
-    );
-    return { bytes, archivable: true };
-  }
-
-  /**
    * Le compte à produire d'une journée. Toujours archivable.
    *
    * @throws {ProductionDayNotClosedError} la journée n'est pas arrêtée.
@@ -154,8 +121,8 @@ export class ProductionPaperRenderer {
   async countOf(day: ProductionDay): Promise<PaperDraft> {
     const snapshot = closedSnapshotOf(day);
     const resupplies = snapshot.resupplies ?? [];
-    const [colors, resupplyColors, logo] = await Promise.all([
-      this.colors.colorsOf(snapshot.orders.map((order) => order.orderId)),
+    const [{ colors }, resupplyColors, logo] = await Promise.all([
+      this.sheets.marksOf(snapshot.orders.map((order) => order.orderId)),
       this.resupplyColors.colorsOf([...new Set(resupplies.map((resupply) => resupply.siteId))]),
       this.logo.load(),
     ]);
@@ -202,8 +169,8 @@ export class ProductionPaperRenderer {
       },
       {
         logo: inputs.logo,
-        colisageUrlOf: (reference) => this.colisageUrl(reference),
-        colors: inputs.colors,
+        colisageUrlOf: inputs.marks.colisageUrlOf,
+        colors: inputs.marks.colors,
         resupplyColors: inputs.resupplyColors,
         deliveryNotes: inputs.deliveryNotes ?? new Map(),
       },
@@ -221,8 +188,8 @@ export class ProductionPaperRenderer {
       ...resupplies.flatMap((resupply) => resupply.lines),
     ]);
     const orderIds = snapshot.orders.map((order) => order.orderId);
-    const [colors, resupplyColors, logo, deliveryNotes, display, tranches] = await Promise.all([
-      this.colors.colorsOf(orderIds),
+    const [marks, resupplyColors, logo, deliveryNotes, display, tranches] = await Promise.all([
+      this.sheets.marksOf(orderIds),
       this.resupplyColors.colorsOf([...new Set(resupplies.map((resupply) => resupply.siteId))]),
       this.logo.load(),
       this.deliveryNotesOrNull(snapshot.serviceDay, orderIds),
@@ -234,7 +201,7 @@ export class ProductionPaperRenderer {
     // Le rangement (sous-catégories) est lu au tirage et figé avec le papier
     // archivé, comme les rayons.
     const { showSubcategories } = display ?? ProductionDisplaySettings.defaults();
-    return { shelves, colors, resupplyColors, logo, deliveryNotes, showSubcategories, tranches };
+    return { shelves, marks, resupplyColors, logo, deliveryNotes, showSubcategories, tranches };
   }
 
   /**
@@ -275,17 +242,5 @@ export class ProductionPaperRenderer {
       );
       return null;
     }
-  }
-
-  /**
-   * L'URL que le QR encode, ou une chaîne vide.
-   *
-   * Vide ⇒ **aucun code n'est imprimé**, plutôt qu'un carré qui ne mènerait
-   * nulle part une fois scanné devant un four. Même conduite que l'écran du QR
-   * client quand l'origine admin n'est pas configurée.
-   */
-  private colisageUrl(reference: string): string {
-    const base = this.config.adminBaseUrl();
-    return base === null ? "" : `${base}/colisage/${encodeURIComponent(reference)}`;
   }
 }

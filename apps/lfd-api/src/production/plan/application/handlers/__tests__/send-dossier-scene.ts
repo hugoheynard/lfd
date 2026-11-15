@@ -39,7 +39,7 @@ import {
 import { InMemoryProductionStore } from "../../../../application/__tests__/quality-doubles.js";
 import { DossierDispatch } from "../../services/dossier-dispatch.service.js";
 import { PlanArrestBell } from "../../services/plan-arrest-bell.js";
-import { ProductionPaperArchive } from "../../../../shared/print/index.js";
+import { OrderSheetPaper, ProductionPaperArchive } from "../../../../shared/print/index.js";
 import { ProductionPaperRenderer } from "../../services/production-paper.service.js";
 import {
   FixedOrderPrintColors,
@@ -199,9 +199,8 @@ export function setup(
     options.recipients ?? new RecipientsRows(rows),
     new Directory().put(staffCard()),
     new ProductionPaperRenderer(
-      new NoAdminOrigin(),
       new Shelves(),
-      new FixedOrderPrintColors(),
+      new OrderSheetPaper(new NoAdminOrigin(), new FixedOrderPrintColors(), new FixedPaperLogo()),
       new FixedResupplyPrintColors(),
       new FixedPaperLogo(),
       new FixedPlannedDeliveryNotes(),

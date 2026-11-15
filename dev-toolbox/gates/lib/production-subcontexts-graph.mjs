@@ -50,6 +50,21 @@ export const ALLOWED = Object.freeze({
   resupply: SHARED,
 });
 
+/**
+ * Les SEULS fichiers d'un sous-contexte refusé qu'un autre a le droit de lire,
+ * chemin par chemin. L'imprimerie lit la couleur d'une commande pour la
+ * dessiner, et rien d'autre du commerce — Hugo, 2026-11-15 : la fiche de
+ * commande est un papier commun, et la collecte de sa pastille vit avec elle.
+ */
+export const ADMITTED_FILES = Object.freeze({
+  "shared-print": Object.freeze([/^channels\/commerce\/order-print-colors[^/]*\.ts$/u]),
+});
+
+/** `to` est-il un fichier que `from` (sous-contexte) lit par exception nommée ? */
+export function isAdmittedFile(from, to) {
+  return (ADMITTED_FILES[from] ?? []).some((pattern) => pattern.test(to));
+}
+
 /** Le sous-contexte qu'un chemin donne par son dossier, ou `null` tant qu'il est à plat. */
 export function contextFromPath(path) {
   for (const [context, directory] of Object.entries(DIRECTORIES)) {

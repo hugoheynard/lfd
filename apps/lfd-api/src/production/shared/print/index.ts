@@ -1,7 +1,7 @@
 /**
  * La porte des primitives d'impression (`shared/print/`) : pastilles,
  * camemberts, pages, gabarit de la fiche et du compte, réglages d'affichage,
- * données d'exemple et archive des papiers, lus par le plan et l'atelier. Tout le reste est privé (plan
+ * données d'exemple, archive des papiers et fiche de commande (`OrderSheetPaper`), lus par le plan et l'atelier. Tout le reste est privé (plan
  * `documentation/fournil/plan-decoupage-du-fournil.md`, § 1 bis ; porte
  * `lint:production-subcontexts`). Ce fichier ne fait que réexporter.
  */
@@ -9,6 +9,11 @@ export {
   SPECIMEN_ORDER,
   specimenServiceDay,
 } from "./application/document-specimens/specimen-data.js";
+export {
+  OrderSheetPaper,
+  atelierSheetSlotOf,
+} from "./application/services/order-sheet-paper.service.js";
+export type { OrderSheetMarks } from "./application/services/order-sheet-paper.service.js";
 export { ProductionPaperArchive } from "./application/services/production-paper-archive.service.js";
 export type {
   PaperDraft,

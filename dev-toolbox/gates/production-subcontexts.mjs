@@ -19,7 +19,8 @@
  * ## Ce qu'elle refuse
  *
  * - **une arête hors du schéma** : chaque métier lit `day/`, `shared/print/`
- *   et `channels/` ; `shared/print/` lit `day/` ; `channels/` lit `day/` en
+ *   et `channels/` ; `shared/print/` lit `day/`, et du commerce le SEUL
+ *   port de la couleur d'une commande (`ADMITTED_FILES`) ; `channels/` lit `day/` en
  *   direct ; seules `atelier → quality` et `plan → resupply` relient deux
  *   métiers ; `day/` n'importe que `channels/`. Les types comptent ;
  * - **un import qui passe à côté de la porte** : entre sous-contextes, on
@@ -68,6 +69,7 @@ import {
   doorOf,
   importsOf,
   indexCycles,
+  isAdmittedFile,
   isContextModule,
   isTest,
   memorySubscriptions,
@@ -88,7 +90,7 @@ const DEBT_FILE = join(HERE, "production-subcontexts-debt.json");
  */
 function judgeEdge(a, b, from, to) {
   if (a === b || a === ROOT_CONTEXT || b === ROOT_CONTEXT || b === undefined) return null;
-  if (!ALLOWED[a]?.includes(b)) return "edge";
+  if (!ALLOWED[a]?.includes(b) && !isAdmittedFile(a, to)) return "edge";
   if (isContextModule(from, a) && isContextModule(to, b)) return null;
   if (GATED.includes(a) && GATED.includes(b) && to !== doorOf(b)) return "door";
   return null;
