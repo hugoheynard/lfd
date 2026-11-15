@@ -4,7 +4,6 @@
   "edges": [
     "application/queries/get-atelier-sheet-pdf.handler.ts → application/services/production-paper.service.ts",
     "application/queries/get-atelier-sheet-specimen.handler.ts → application/document-specimens/specimen-data.ts",
-    "application/queries/get-atelier-sheet-specimen.handler.ts → application/services/production-paper.service.ts",
     "application/queries/get-production-count-specimen.handler.ts → domain/services/atelier-sheet-pdf.ts",
     "application/queries/get-production-forecast.handler.ts → domain/entities/production-display-settings.ts",
     "application/queries/get-production-forecast.handler.ts → domain/ports/production-display-settings.reader.ts",
@@ -18,7 +17,6 @@
     "channels/commerce/index.ts → domain/services/latest-order-cutoff.ts",
     "channels/commerce/order-cutoff-rules.reader.ts → domain/services/latest-order-cutoff.ts",
     "channels/handover/order-custody.reader.ts → domain/services/order-out-of-hand.ts",
-    "http/admin-atelier-sheet-specimen.controller.ts → application/services/production-paper.service.ts",
     "http/production-day.controller.ts → application/queries/get-atelier-sheet-pdf.query.ts",
     "http/production-settings.controller.ts → application/commands/set-production-display.command.ts",
     "http/production-worksheet.controller.ts → application/commands/retake-production-day.command.ts"
@@ -40,10 +38,10 @@
   "door": {
     "atelier → day": 33,
     "atelier → quality": 2,
-    "atelier → shared-print": 7,
+    "atelier → shared-print": 10,
     "plan → day": 90,
     "plan → resupply": 1,
-    "plan → shared-print": 17,
+    "plan → shared-print": 25,
     "quality → day": 18,
     "resupply → day": 19,
     "shared-print → day": 5
@@ -55,13 +53,15 @@
     "day → atelier": 1,
     "day → plan": 14,
     "day → resupply": 3,
+    "day → shared-print": 1,
     "plan → atelier": 2,
     "plan → day": 45,
-    "plan → shared-print": 1,
+    "plan → shared-print": 3,
     "quality → day": 17,
     "resupply → day": 8,
     "shared-print → atelier": 1,
     "shared-print → day": 3,
     "shared-print → plan": 2
-  }
+  },
+  "$c1": "2026-11-15, C1 (décidé par Hugo) : l'archivage des papiers sort du rendu et devient une primitive partagée (shared-print) ; −2 arêtes interdites, +14 imports hors porte (atelier→shared-print 7→10, plan→shared-print 17→25, tests plan→shared-print 1→3, tests day→shared-print 0→1), que D1 efface en posant shared/print/index.ts."
 }

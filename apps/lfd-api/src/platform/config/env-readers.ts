@@ -175,7 +175,7 @@ export interface R2StorageState {
  *
  * ⚠️ **`production` a ses écrivains depuis `985d21bf`** (2026-09-16) : la
  * question « faut-il archiver la feuille d'atelier ? » a été tranchée par
- * l'affirmative, et `ProductionPapers` y range les deux papiers du fournil au
+ * l'affirmative, et `ProductionPaperArchive` y range les deux papiers du fournil au
  * premier tirage. Cette page a dit « aucun écrivain » jusque-là, et le disait
  * encore le jour où le débit est arrivé.
  *

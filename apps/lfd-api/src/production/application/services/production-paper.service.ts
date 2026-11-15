@@ -1,12 +1,8 @@
-import { Buffer } from "node:buffer";
-
 import type { CatalogFamilyView } from "@lfd/contracts";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { BrandLogoSource } from "../../../platform/brand/brand-logo.source.js";
 import { AppConfig } from "../../../platform/config/app-config.js";
-import { DocumentStorageUnavailableError } from "../../../platform/shared/errors/storage-errors.js";
-import { ProductionDocumentStore } from "../../../platform/storage/production-document-store.js";
 import { OrderPrintColorsReader } from "../../channels/commerce/order-print-colors.reader.js";
 import {
   type DeliveryNoteDrawing,
@@ -18,6 +14,7 @@ import { ProductionDisplaySettings } from "../../domain/entities/production-disp
 import { ProductionDisplaySettingsReader } from "../../domain/ports/production-display-settings.reader.js";
 import type {
   ProductionDay,
+  ProductionDaySnapshot,
   ProductionLineSnapshot,
   ProductionOrderSnapshot,
 } from "../../domain/entities/production-day.js";
@@ -38,47 +35,82 @@ import { ServiceDay } from "../../domain/value-objects/service-day.value-object.
 import { WorksheetDeadlinesReading } from "./worksheet-deadlines-reading.service.js";
 import { countPaperRowsOf } from "../../domain/services/made-to-order.js";
 import { dayDossierPdfKey, renderDayDossierPdf } from "../../domain/services/day-dossier-pdf.js";
+import type { PaperDraft, PaperSlot } from "./production-paper-archive.service.js";
 
-/** Un papier servi : ses octets et le nom proposé au téléchargement. */
-export interface ProductionPaper {
-  readonly bytes: Buffer;
-  readonly fileName: string;
+type ClosedSnapshot = ProductionDaySnapshot & { readonly closedAt: Date };
+
+/** Le cliché d'une journée arrêtée. @throws {ProductionDayNotClosedError} */
+function closedSnapshotOf(day: ProductionDay): ClosedSnapshot {
+  const snapshot = day.toSnapshot();
+  const closedAt = snapshot.closedAt;
+  if (closedAt === null) {
+    throw new ProductionDayNotClosedError(snapshot.serviceDay);
+  }
+  return { ...snapshot, closedAt };
+}
+
+/** La place de la feuille d'atelier d'une commande. */
+export function atelierSheetSlotOf(order: ProductionOrderSnapshot): PaperSlot {
+  return {
+    key: atelierSheetPdfKey(order.orderId),
+    fileName: `fiche-atelier-${order.reference}.pdf`,
+  };
 }
 
 /**
- * **Les papiers du fournil : les relire s'ils existent, les fabriquer sinon.**
+ * La place du compte à produire d'une journée.
  *
- * Au pluriel : un `ProductionPaper` est UNE pièce, ce service les sert toutes.
+ * @throws {ProductionDayNotClosedError} la journée n'est pas arrêtée.
+ */
+export function productionCountSlotOf(day: ProductionDay): PaperSlot {
+  const { serviceDay } = closedSnapshotOf(day);
+  return {
+    key: productionCountPdfKey(serviceDay),
+    fileName: `compte-a-produire-${serviceDay}.pdf`,
+  };
+}
+
+/**
+ * La place du dossier du jour : **par tirage arrêté**. La clé porte l'instant
+ * du dernier retirage (`dayDossierPdfKey`), si bien qu'un retirage fabrique un
+ * dossier complété sans écraser celui qui était parti avant.
  *
- * ## Pourquoi on les archive
+ * @throws {ProductionDayNotClosedError} la journée n'est pas arrêtée.
+ */
+export function dayDossierSlotOf(day: ProductionDay): PaperSlot {
+  const snapshot = closedSnapshotOf(day);
+  return {
+    key: dayDossierPdfKey(snapshot.serviceDay, snapshot.retaken?.at ?? null),
+    fileName: `dossier-du-jour-${snapshot.serviceDay}.pdf`,
+  };
+}
+
+/** Ce que le dossier lit au tirage, chaque lecture faillible à `null`. */
+interface DossierInputs {
+  readonly shelves: ReadonlyMap<string, CatalogFamilyView> | null;
+  readonly colors: Awaited<ReturnType<OrderPrintColorsReader["colorsOf"]>>;
+  readonly resupplyColors: Awaited<ReturnType<ResupplyPrintColorsReader["colorsOf"]>>;
+  readonly logo: Awaited<ReturnType<BrandLogoSource["load"]>>;
+  readonly deliveryNotes: ReadonlyMap<string, DeliveryNoteDrawing> | null;
+  readonly showSubcategories: boolean;
+  readonly tranches: Awaited<ReturnType<WorksheetDeadlinesReading["read"]>>;
+}
+
+/**
+ * **Le rendu des papiers du fournil** : lire ce que chacun affiche et en
+ * produire les octets. Il ne range rien — l'archive est à
+ * `ProductionPaperArchive`, et chaque cas d'usage relie les deux.
  *
- * Parce que **tout le papier doit exister**. Une feuille partie au fournil et un
- * compte à produire affiché au mur sont des faits ; les refaire plus tard
- * donnerait d'autres documents, et c'est précisément quand on cherche ce qui
- * s'est passé qu'on en a besoin.
- *
- * Le compte à produire est le cas extrême : c'est un **instantané arrêté à la
- * clôture**, et les commandes bougent après. Il ne se refabrique pas depuis
- * l'état d'aujourd'hui — seulement depuis ce que la journée a figé, ce que
- * l'agrégat garantit en refusant de se rouvrir.
- *
- * ## Écrits au premier tirage, comme le bon de commande
- *
- * Même mécanisme, même raison : la plupart des journées ne verront jamais leur
- * PDF demandé, et le rendu est **déterministe** — deux tirages simultanés
- * écrivent les mêmes octets sous la même clé, le second écrase le premier par un
- * objet identique. Ni verrou, ni réservation.
- *
- * Le rangement est **best-effort** : un R2 en panne ne doit pas empêcher le
- * fournil d'imprimer. On rend les octets qu'on vient de fabriquer, et le
- * rangement retentera au tirage suivant.
+ * Le compte à produire est un **instantané arrêté à la clôture**, et les
+ * commandes bougent après. Il ne se refabrique pas depuis l'état
+ * d'aujourd'hui — seulement depuis ce que la journée a figé, ce que l'agrégat
+ * garantit en refusant de se rouvrir.
  */
 @Injectable()
-export class ProductionPapers {
-  private readonly logger = new Logger(ProductionPapers.name);
+export class ProductionPaperRenderer {
+  private readonly logger = new Logger(ProductionPaperRenderer.name);
 
   constructor(
-    private readonly documents: ProductionDocumentStore,
     private readonly config: AppConfig,
     private readonly shelves: WorkshopShelvesReader,
     private readonly colors: OrderPrintColorsReader,
@@ -94,59 +126,45 @@ export class ProductionPapers {
 
   /**
    * La feuille d'une commande, avec son QR de colisage et la pastille de sa
-   * couleur, lue au tirage (§0 bis du plan de la planche des documents v2).
+   * couleur, lue au tirage. Toujours archivable.
    */
   async sheetOf(
     order: ProductionOrderSnapshot,
     serviceDay: string,
     closedAt: Date,
-  ): Promise<ProductionPaper> {
-    return this.storedOr(
-      atelierSheetPdfKey(order.orderId),
-      `fiche-atelier-${order.reference}.pdf`,
-      async () => {
-        const [colors, logo] = await Promise.all([
-          this.colors.colorsOf([order.orderId]),
-          this.logo.load(),
-        ]);
-        return renderAtelierSheetPdf(
-          order,
-          { serviceDay, closedAt, logo },
-          this.colisageUrl(order.reference),
-          colors.get(order.orderId) ?? null,
-        );
-      },
+  ): Promise<PaperDraft> {
+    const [colors, logo] = await Promise.all([
+      this.colors.colorsOf([order.orderId]),
+      this.logo.load(),
+    ]);
+    const bytes = await renderAtelierSheetPdf(
+      order,
+      { serviceDay, closedAt, logo },
+      this.colisageUrl(order.reference),
+      colors.get(order.orderId) ?? null,
     );
+    return { bytes, archivable: true };
   }
 
   /**
-   * Le compte à produire d'une journée.
+   * Le compte à produire d'une journée. Toujours archivable.
    *
    * @throws {ProductionDayNotClosedError} la journée n'est pas arrêtée.
    */
-  async countOf(day: ProductionDay): Promise<ProductionPaper> {
-    const snapshot = day.toSnapshot();
-    const closedAt = snapshot.closedAt;
-    if (closedAt === null) {
-      throw new ProductionDayNotClosedError(snapshot.serviceDay);
-    }
-    return this.storedOr(
-      productionCountPdfKey(snapshot.serviceDay),
-      `compte-a-produire-${snapshot.serviceDay}.pdf`,
-      async () => {
-        const resupplies = snapshot.resupplies ?? [];
-        const [colors, resupplyColors, logo] = await Promise.all([
-          this.colors.colorsOf(snapshot.orders.map((order) => order.orderId)),
-          this.resupplyColors.colorsOf([...new Set(resupplies.map((resupply) => resupply.siteId))]),
-          this.logo.load(),
-        ]);
-        return renderProductionCountPdf(
-          countPaperRowsOf(snapshot.counts, snapshot.orders),
-          { serviceDay: snapshot.serviceDay, closedAt, logo },
-          countColorSharesOf(snapshot.orders, resupplies, colors, resupplyColors),
-        );
-      },
+  async countOf(day: ProductionDay): Promise<PaperDraft> {
+    const snapshot = closedSnapshotOf(day);
+    const resupplies = snapshot.resupplies ?? [];
+    const [colors, resupplyColors, logo] = await Promise.all([
+      this.colors.colorsOf(snapshot.orders.map((order) => order.orderId)),
+      this.resupplyColors.colorsOf([...new Set(resupplies.map((resupply) => resupply.siteId))]),
+      this.logo.load(),
+    ]);
+    const bytes = await renderProductionCountPdf(
+      countPaperRowsOf(snapshot.counts, snapshot.orders),
+      { serviceDay: snapshot.serviceDay, closedAt: snapshot.closedAt, logo },
+      countColorSharesOf(snapshot.orders, resupplies, colors, resupplyColors),
     );
+    return { bytes, archivable: true };
   }
 
   /**
@@ -154,30 +172,49 @@ export class ProductionPapers {
    * un bon par commande suivi de son BL de transport, et un bon par réassort,
    * lus dans ce que la journée a figé (les BL, eux, au tirage).
    *
-   * Archivé **par tirage arrêté** : la clé porte l'instant du dernier retirage
-   * (`dayDossierPdfKey`), si bien qu'un retirage fabrique un dossier complété
-   * sans écraser celui qui était parti avant.
-   *
    * ⚠️ Les rayons viennent du catalogue d'AUJOURD'HUI (comme l'écran) et sont
    * figés au premier tirage. Un commerce muet ne bloque pas le papier — tout va
-   * en « Rayon inconnu » —, mais ce dossier dégradé n'est **pas archivé** : le
-   * tirage suivant le refera avec ses rayons.
+   * en « Rayon inconnu » —, mais ce dossier dégradé n'est **pas archivable** :
+   * le tirage suivant le refera avec ses rayons. Idem sans BL ni tranches.
    *
    * @throws {ProductionDayNotClosedError} la journée n'est pas arrêtée.
    */
-  async dossierOf(day: ProductionDay): Promise<ProductionPaper> {
-    const snapshot = day.toSnapshot();
-    const closedAt = snapshot.closedAt;
-    if (closedAt === null) {
-      throw new ProductionDayNotClosedError(snapshot.serviceDay);
-    }
-    const retakenAt = snapshot.retaken?.at ?? null;
-    const key = dayDossierPdfKey(snapshot.serviceDay, retakenAt);
-    const fileName = `dossier-du-jour-${snapshot.serviceDay}.pdf`;
-    const archived = await this.readArchived(key);
-    if (archived !== null) {
-      return { bytes: archived, fileName };
-    }
+  async dossierOf(day: ProductionDay): Promise<PaperDraft> {
+    const snapshot = closedSnapshotOf(day);
+    const resupplies = snapshot.resupplies ?? [];
+    const inputs = await this.dossierInputsOf(snapshot);
+    const dossier = dayDossierOf(
+      snapshot.orders,
+      inputs.shelves,
+      resupplies,
+      inputs.showSubcategories,
+    );
+    const calendar: readonly CalendarPage[] =
+      inputs.tranches === null ? [] : dossierCalendarOf(dossier.recap, inputs.tranches);
+    const bytes = await renderDayDossierPdf(
+      dossier,
+      {
+        serviceDay: snapshot.serviceDay,
+        closedAt: snapshot.closedAt,
+        closedBy: snapshot.closedBy,
+        retakenAt: snapshot.retaken?.at ?? null,
+        retakenByName: snapshot.retakenByName,
+      },
+      {
+        logo: inputs.logo,
+        colisageUrlOf: (reference) => this.colisageUrl(reference),
+        colors: inputs.colors,
+        resupplyColors: inputs.resupplyColors,
+        deliveryNotes: inputs.deliveryNotes ?? new Map(),
+      },
+      calendar,
+    );
+    const archivable =
+      inputs.shelves !== null && inputs.deliveryNotes !== null && inputs.tranches !== null;
+    return { bytes, archivable };
+  }
+
+  private async dossierInputsOf(snapshot: ClosedSnapshot): Promise<DossierInputs> {
     const resupplies = snapshot.resupplies ?? [];
     const shelves = await this.shelvesOrNull(snapshot.serviceDay, [
       ...snapshot.orders.flatMap((order) => order.lines),
@@ -190,39 +227,14 @@ export class ProductionPapers {
       this.logo.load(),
       this.deliveryNotesOrNull(snapshot.serviceDay, orderIds),
       this.display.current(),
-      // Le calendrier par tranche (2026-11-02) : les tranches de la fiche
-      // d'atelier. Illisibles, le dossier part sans calendrier et n'est pas
-      // archivé — le tirage suivant le refera complet.
+      // Le calendrier par tranche : les tranches de la fiche d'atelier.
+      // Illisibles, le dossier part sans calendrier et n'est pas archivé.
       this.tranches.read(ServiceDay.of(snapshot.serviceDay)),
     ]);
-    // Le rangement (sous-catégories, 2026-10-30) est lu au tirage et figé
-    // avec le papier archivé, comme les rayons.
+    // Le rangement (sous-catégories) est lu au tirage et figé avec le papier
+    // archivé, comme les rayons.
     const { showSubcategories } = display ?? ProductionDisplaySettings.defaults();
-    const dossier = dayDossierOf(snapshot.orders, shelves, resupplies, showSubcategories);
-    const calendar: readonly CalendarPage[] =
-      tranches === null ? [] : dossierCalendarOf(dossier.recap, tranches);
-    const bytes = await renderDayDossierPdf(
-      dossier,
-      {
-        serviceDay: snapshot.serviceDay,
-        closedAt,
-        closedBy: snapshot.closedBy,
-        retakenAt,
-        retakenByName: snapshot.retakenByName,
-      },
-      {
-        logo,
-        colisageUrlOf: (reference) => this.colisageUrl(reference),
-        colors,
-        resupplyColors,
-        deliveryNotes: deliveryNotes ?? new Map(),
-      },
-      calendar,
-    );
-    if (shelves !== null && deliveryNotes !== null && tranches !== null) {
-      await this.archive(key, bytes);
-    }
-    return { bytes, fileName };
+    return { shelves, colors, resupplyColors, logo, deliveryNotes, showSubcategories, tranches };
   }
 
   /**
@@ -275,41 +287,5 @@ export class ProductionPapers {
   private colisageUrl(reference: string): string {
     const base = this.config.adminBaseUrl();
     return base === null ? "" : `${base}/colisage/${encodeURIComponent(reference)}`;
-  }
-
-  private async storedOr(
-    key: string,
-    fileName: string,
-    make: () => Promise<Buffer>,
-  ): Promise<ProductionPaper> {
-    const archived = await this.readArchived(key);
-    if (archived !== null) {
-      return { bytes: archived, fileName };
-    }
-    const bytes = await make();
-    await this.archive(key, bytes);
-    return { bytes, fileName };
-  }
-
-  /** L'archive, ou `null` — y compris quand le stockage est en panne. */
-  private async readArchived(key: string): Promise<Buffer | null> {
-    try {
-      return await this.documents.readIfPresent(key);
-    } catch (error) {
-      if (error instanceof DocumentStorageUnavailableError) {
-        return null;
-      }
-      throw error;
-    }
-  }
-
-  /** Le rangement ne fait pas échouer le tirage — cf. l'en-tête. */
-  private async archive(key: string, bytes: Buffer): Promise<void> {
-    try {
-      await this.documents.save(key, { bytes, contentType: "application/pdf" });
-    } catch {
-      // Silence volontaire : l'adaptateur a journalisé, le fournil a son papier,
-      // et le prochain tirage retentera.
-    }
   }
 }

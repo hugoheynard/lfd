@@ -17,7 +17,7 @@ import {
   SPECIMEN_DAY_TRANCHES,
 } from "../document-specimens/specimen-day.js";
 import { dossierCalendarOf } from "../../domain/services/day-dossier-calendar.js";
-import type { ProductionPaper } from "../services/production-paper.service.js";
+import type { ProductionPaper } from "../services/production-paper-archive.service.js";
 import { GetDayDossierSpecimenQuery } from "./get-day-dossier-specimen.query.js";
 
 /**
@@ -25,7 +25,7 @@ import { GetDayDossierSpecimenQuery } from "./get-day-dossier-specimen.query.js"
  * vrai dossier (`dayDossierOf`, `renderDayDossierPdf`) : récapitulatif par
  * rayon, le calendrier par tranche horaire, un bon par commande avec sa pastille, le BL de transport d'exemple
  * derrière le premier, un bon de réassort — sans
- * `ProductionPapers`, qui archive par tirage, ce qu'un exemple ne fait pas.
+ * `ProductionPaperArchive`, qui archive par tirage, ce qu'un exemple ne fait pas.
  *
  * Arrêté par un membre du staff d'EXEMPLE (aucun identifiant réel), jamais
  * retiré. Les QR de colisage s'impriment comme sur la fiche d'atelier

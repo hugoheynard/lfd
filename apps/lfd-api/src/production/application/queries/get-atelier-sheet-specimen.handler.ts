@@ -5,12 +5,12 @@ import { AppConfig } from "../../../platform/config/app-config.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { renderAtelierSheetPdf } from "../../domain/services/atelier-sheet-pdf.js";
 import { SPECIMEN_ORDER, specimenServiceDay } from "../document-specimens/specimen-data.js";
-import type { ProductionPaper } from "../services/production-paper.service.js";
+import type { ProductionPaper } from "../services/production-paper-archive.service.js";
 import { GetAtelierSheetSpecimenQuery } from "./get-atelier-sheet-specimen.query.js";
 
 /**
  * **Rend la fiche d'atelier d'exemple** par le rendu même des vraies fiches
- * (`renderAtelierSheetPdf`) — sans `ProductionPapers`, qui range sous la clé
+ * (`renderAtelierSheetPdf`) — sans `ProductionPaperArchive`, qui range sous la clé
  * d'une commande, ce qu'un exemple ne fait pas.
  *
  * Le QR de colisage s'imprime comme sur une vraie fiche (il encode un nom,

@@ -6,7 +6,14 @@ import {
 } from "../../domain/errors/production-errors.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
-import { ProductionPapers, type ProductionPaper } from "../services/production-paper.service.js";
+import {
+  ProductionPaperArchive,
+  type ProductionPaper,
+} from "../services/production-paper-archive.service.js";
+import {
+  ProductionPaperRenderer,
+  atelierSheetSlotOf,
+} from "../services/production-paper.service.js";
 import { GetAtelierSheetPdfQuery } from "./get-atelier-sheet-pdf.query.js";
 
 /**
@@ -24,7 +31,8 @@ export class GetAtelierSheetPdfHandler implements IQueryHandler<
 > {
   constructor(
     private readonly days: ProductionDayRepository,
-    private readonly papers: ProductionPapers,
+    private readonly renderer: ProductionPaperRenderer,
+    private readonly archive: ProductionPaperArchive,
   ) {}
 
   async execute(query: GetAtelierSheetPdfQuery): Promise<ProductionPaper> {
@@ -37,6 +45,8 @@ export class GetAtelierSheetPdfHandler implements IQueryHandler<
     if (order === undefined) {
       throw new AtelierSheetNotFoundError(query.reference, query.serviceDay);
     }
-    return this.papers.sheetOf(order, query.serviceDay, closedAt);
+    return this.archive.storedOr(atelierSheetSlotOf(order), () =>
+      this.renderer.sheetOf(order, query.serviceDay, closedAt),
+    );
   }
 }

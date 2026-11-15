@@ -123,7 +123,8 @@ import { GetProductionForecastHandler } from "./application/queries/get-producti
 import { GetProductionDueThresholdsHandler } from "./application/queries/get-production-due-thresholds.handler.js";
 import { GetProductionWorksheetHandler } from "./application/queries/get-production-worksheet.handler.js";
 import { ListProductionContainersHandler } from "./application/queries/list-production-containers.handler.js";
-import { ProductionPapers } from "./application/services/production-paper.service.js";
+import { ProductionPaperArchive } from "./application/services/production-paper-archive.service.js";
+import { ProductionPaperRenderer } from "./application/services/production-paper.service.js";
 import { ProductionWorksheetReading } from "./application/services/production-worksheet-reading.service.js";
 import { WorksheetDeadlinesReading } from "./application/services/worksheet-deadlines-reading.service.js";
 import { DayVersionsModule } from "../platform/day-versions/day-versions.module.js";
@@ -235,7 +236,8 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     GetAtelierSheetSpecimenHandler,
     GetDayDossierSpecimenHandler,
     GetProductionCountSpecimenHandler,
-    ProductionPapers,
+    ProductionPaperRenderer,
+    ProductionPaperArchive,
     // La lecture de la fiche, partagée par la route datée et la route « en
     // cours » : un handler n'en appelle pas un autre (§4).
     ProductionWorksheetReading,

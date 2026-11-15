@@ -13,13 +13,13 @@ import {
   SPECIMEN_DAY_RESUPPLIES,
   SPECIMEN_DAY_RESUPPLY_COLORS,
 } from "../document-specimens/specimen-day.js";
-import type { ProductionPaper } from "../services/production-paper.service.js";
+import type { ProductionPaper } from "../services/production-paper-archive.service.js";
 import { GetProductionCountSpecimenQuery } from "./get-production-count-specimen.query.js";
 
 /**
  * **Rend le compte à produire d'exemple** par le rendu et les calculs mêmes
  * de la clôture (`countOf`, `countColorSharesOf`, `renderProductionCountPdf`)
- * — sans `ProductionPapers`, qui archive sous la clé d'une journée, ce qu'un
+ * — sans `ProductionPaperArchive`, qui archive sous la clé d'une journée, ce qu'un
  * exemple ne fait pas.
  */
 @QueryHandler(GetProductionCountSpecimenQuery)

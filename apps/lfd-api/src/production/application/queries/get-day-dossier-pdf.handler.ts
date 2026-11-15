@@ -2,7 +2,11 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
-import { ProductionPapers, type ProductionPaper } from "../services/production-paper.service.js";
+import {
+  ProductionPaperArchive,
+  type ProductionPaper,
+} from "../services/production-paper-archive.service.js";
+import { ProductionPaperRenderer, dayDossierSlotOf } from "../services/production-paper.service.js";
 import { GetDayDossierPdfQuery } from "./get-day-dossier-pdf.query.js";
 
 /**
@@ -16,11 +20,12 @@ export class GetDayDossierPdfHandler implements IQueryHandler<
 > {
   constructor(
     private readonly days: ProductionDayRepository,
-    private readonly papers: ProductionPapers,
+    private readonly renderer: ProductionPaperRenderer,
+    private readonly archive: ProductionPaperArchive,
   ) {}
 
   async execute(query: GetDayDossierPdfQuery): Promise<ProductionPaper> {
     const day = await this.days.load(ServiceDay.of(query.serviceDay));
-    return this.papers.dossierOf(day);
+    return this.archive.storedOr(dayDossierSlotOf(day), () => this.renderer.dossierOf(day));
   }
 }

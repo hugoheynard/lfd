@@ -39,7 +39,8 @@ import {
 import { InMemoryProductionStore } from "../../__tests__/quality-doubles.js";
 import { DossierDispatch } from "../../services/dossier-dispatch.service.js";
 import { PlanArrestBell } from "../../services/plan-arrest-bell.js";
-import { ProductionPapers } from "../../services/production-paper.service.js";
+import { ProductionPaperArchive } from "../../services/production-paper-archive.service.js";
+import { ProductionPaperRenderer } from "../../services/production-paper.service.js";
 import {
   FixedOrderPrintColors,
   FixedResupplyPrintColors,
@@ -197,8 +198,7 @@ export function setup(
   const dispatch = new DossierDispatch(
     options.recipients ?? new RecipientsRows(rows),
     new Directory().put(staffCard()),
-    new ProductionPapers(
-      options.store ?? new InMemoryProductionStore(),
+    new ProductionPaperRenderer(
       new NoAdminOrigin(),
       new Shelves(),
       new FixedOrderPrintColors(),
@@ -208,6 +208,7 @@ export function setup(
       new InMemoryDisplaySettings().reader(),
       new FixedTrancheReading(),
     ),
+    new ProductionPaperArchive(options.store ?? new InMemoryProductionStore()),
     log,
     mailer,
     new PlanArrestBell(bell),

@@ -19,7 +19,11 @@ import {
 } from "../../domain/services/dossier-addressees.js";
 import { parisDateTime, weekdayLongDate } from "../../../platform/pdf/paper-pdf-kit.js";
 import { PlanArrestBell } from "./plan-arrest-bell.js";
-import { ProductionPapers, type ProductionPaper } from "./production-paper.service.js";
+import {
+  ProductionPaperArchive,
+  type ProductionPaper,
+} from "./production-paper-archive.service.js";
+import { ProductionPaperRenderer, dayDossierSlotOf } from "./production-paper.service.js";
 
 /** L'envoi demandé : à quel instant d'origine, et s'il complète un envoi précédent. */
 export interface DossierOccasion {
@@ -46,8 +50,9 @@ interface DispatchTally {
  * **Envoyer le dossier du jour à sa liste** (plan
  * `documentation/fournil/dossier-prod-du-jour.md`, décisions 2 et 5, E3).
  *
- * Un e-mail par destinataire, PDF joint (`ProductionPapers.dossierOf` : le
- * même papier que le téléchargement, archivé par tirage).
+ * Un e-mail par destinataire, PDF joint (`ProductionPaperRenderer.dossierOf`,
+ * rangé par `ProductionPaperArchive` : le même papier que le téléchargement,
+ * archivé par tirage).
  *
  * ## Deux temps (2026-10-07, audit B1)
  *
@@ -104,7 +109,8 @@ export class DossierDispatch {
   constructor(
     private readonly recipients: DossierRecipientsReader,
     private readonly staff: StaffContacts,
-    private readonly papers: ProductionPapers,
+    private readonly renderer: ProductionPaperRenderer,
+    private readonly archive: ProductionPaperArchive,
     private readonly log: DossierDispatchLog,
     private readonly mail: Mail,
     private readonly bell: PlanArrestBell,
@@ -163,7 +169,7 @@ export class DossierDispatch {
     occasion: DossierOccasion,
   ): Promise<ProductionPaper | null> {
     try {
-      return await this.papers.dossierOf(day);
+      return await this.archive.storedOr(dayDossierSlotOf(day), () => this.renderer.dossierOf(day));
     } catch (error) {
       this.logger.error(
         `Dossier du ${day.day.value} non fabriqué : personne ne l'a reçu.`,

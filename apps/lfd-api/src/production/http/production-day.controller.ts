@@ -30,7 +30,7 @@ import { GetProductionDayStatusQuery } from "../application/queries/get-producti
 import { GetProductionForecastQuery } from "../application/queries/get-production-forecast.query.js";
 import { GetProductionDueThresholdsQuery } from "../application/queries/get-production-due-thresholds.query.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
-import type { ProductionPaper } from "../application/services/production-paper.service.js";
+import type { ProductionPaper } from "../application/services/production-paper-archive.service.js";
 import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**

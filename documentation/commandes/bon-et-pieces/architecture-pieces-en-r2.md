@@ -13,7 +13,7 @@ code, en dev et en test** ; ce qui les sépare est ci-dessous.
 
 ⚠️ **Relu le 2026-09-16 : `production` a ses écrivains.** La question « faut-il
 archiver la feuille d'atelier ? » (§2) a été tranchée par l'affirmative, et
-`ProductionPapers` range les deux papiers au premier tirage — comme le bon de
+`ProductionPaperArchive` range les deux papiers au premier tirage — comme le bon de
 commande, et pour la même raison. **Deux écarts subsistent entre ce document et
 le code** : la feuille d'atelier est rangée sous `orders/{orderId}/fiche-atelier.pdf`,
 **sans révision** (le tableau du §3 en annonce une), et le bulletin de démarrage

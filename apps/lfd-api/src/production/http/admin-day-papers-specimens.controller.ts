@@ -6,7 +6,7 @@ import type { Response } from "express";
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { GetDayDossierSpecimenQuery } from "../application/queries/get-day-dossier-specimen.query.js";
 import { GetProductionCountSpecimenQuery } from "../application/queries/get-production-count-specimen.query.js";
-import type { ProductionPaper } from "../application/services/production-paper.service.js";
+import type { ProductionPaper } from "../application/services/production-paper-archive.service.js";
 
 /**
  * **Le compte à produire et le dossier du jour d'EXEMPLE** — la planche des

@@ -25,7 +25,8 @@ import {
   FixedPlannedDeliveryNotes,
 } from "../../__tests__/paper-doubles.js";
 import { InMemoryProductionStore } from "../../__tests__/quality-doubles.js";
-import { ProductionPapers } from "../../services/production-paper.service.js";
+import { ProductionPaperArchive } from "../../services/production-paper-archive.service.js";
+import { ProductionPaperRenderer } from "../../services/production-paper.service.js";
 import { GetDayDossierPdfHandler } from "../get-day-dossier-pdf.handler.js";
 import { GetDayDossierPdfQuery } from "../get-day-dossier-pdf.query.js";
 
@@ -92,8 +93,7 @@ function setup(
 } {
   const store = new InMemoryProductionStore();
   const shelves = new Shelves();
-  const papers = new ProductionPapers(
-    store,
+  const renderer = new ProductionPaperRenderer(
     new NoAdminOrigin(),
     shelves,
     colors,
@@ -103,7 +103,15 @@ function setup(
     new InMemoryDisplaySettings().reader(),
     tranches,
   );
-  return { handler: new GetDayDossierPdfHandler(new Days(day), papers), store, shelves };
+  return {
+    handler: new GetDayDossierPdfHandler(
+      new Days(day),
+      renderer,
+      new ProductionPaperArchive(store),
+    ),
+    store,
+    shelves,
+  };
 }
 
 function closedDay(): ProductionDay {

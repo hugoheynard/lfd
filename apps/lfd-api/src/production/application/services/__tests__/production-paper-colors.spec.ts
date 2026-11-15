@@ -20,7 +20,8 @@ import {
   FixedPlannedDeliveryNotes,
 } from "../../__tests__/paper-doubles.js";
 import { InMemoryProductionStore } from "../../__tests__/quality-doubles.js";
-import { ProductionPapers } from "../production-paper.service.js";
+import { ProductionPaperArchive } from "../production-paper-archive.service.js";
+import { ProductionPaperRenderer, atelierSheetSlotOf } from "../production-paper.service.js";
 
 /**
  * **La pastille de la fiche d'atelier** (plan de la planche des documents v2,
@@ -65,13 +66,13 @@ function papersWith(
   resupplyColors = new FixedResupplyPrintColors(),
   deliveryNotes = new FixedPlannedDeliveryNotes(),
 ): {
-  papers: ProductionPapers;
+  papers: ProductionPaperRenderer;
+  archive: ProductionPaperArchive;
   store: InMemoryProductionStore;
 } {
   const store = new InMemoryProductionStore();
   return {
-    papers: new ProductionPapers(
-      store,
+    papers: new ProductionPaperRenderer(
       new NoAdminOrigin(),
       new NoShelves(),
       colors,
@@ -81,6 +82,7 @@ function papersWith(
       new InMemoryDisplaySettings().reader(),
       new FixedTrancheReading(),
     ),
+    archive: new ProductionPaperArchive(store),
     store,
   };
 }
@@ -100,7 +102,7 @@ function dayWithResupplies(): ProductionDay {
   return day;
 }
 
-describe("ProductionPapers.sheetOf — la pastille de la commande", () => {
+describe("ProductionPaperRenderer.sheetOf — la pastille de la commande", () => {
   it("demande la couleur de SA commande, et la pose : le papier diffère d'une fiche sans couleur", async () => {
     const colors = new FixedOrderPrintColors(new Map([["ord-1", "#2e86ab"]]));
     const colored = await papersWith(colors).papers.sheetOf(ORDER, DAY, CLOSED);
@@ -112,9 +114,11 @@ describe("ProductionPapers.sheetOf — la pastille de la commande", () => {
 
   it("une fiche déjà archivée est resservie sans relire la couleur", async () => {
     const colors = new FixedOrderPrintColors(new Map([["ord-1", "#2e86ab"]]));
-    const { papers, store } = papersWith(colors);
-    const first = await papers.sheetOf(ORDER, DAY, CLOSED);
-    const second = await papers.sheetOf(ORDER, DAY, CLOSED);
+    const { papers, archive, store } = papersWith(colors);
+    const sheet = () =>
+      archive.storedOr(atelierSheetSlotOf(ORDER), () => papers.sheetOf(ORDER, DAY, CLOSED));
+    const first = await sheet();
+    const second = await sheet();
 
     expect(colors.asked).toHaveLength(1);
     expect(second.bytes.equals(first.bytes)).toBe(true);
@@ -122,7 +126,7 @@ describe("ProductionPapers.sheetOf — la pastille de la commande", () => {
   });
 });
 
-describe("ProductionPapers.countOf — la teinte du réassort (Hugo, 2026-10-22)", () => {
+describe("ProductionPaperRenderer.countOf — la teinte du réassort (Hugo, 2026-10-22)", () => {
   it("demande la teinte du site destinataire, une fois, et la pose dans le camembert", async () => {
     const resupplyColors = new FixedResupplyPrintColors(new Map([["site-v", "#26a69a"]]));
     const tinted = await papersWith(new FixedOrderPrintColors(), resupplyColors).papers.countOf(
@@ -135,7 +139,7 @@ describe("ProductionPapers.countOf — la teinte du réassort (Hugo, 2026-10-22)
   });
 });
 
-describe("ProductionPapers.dossierOf — la pastille du bon de réassort (Hugo, 2026-10-22)", () => {
+describe("ProductionPaperRenderer.dossierOf — la pastille du bon de réassort (Hugo, 2026-10-22)", () => {
   it("demande la teinte du site destinataire, une fois, et la pose sur le bon", async () => {
     const resupplyColors = new FixedResupplyPrintColors(new Map([["site-v", "#26a69a"]]));
     const tinted = await papersWith(new FixedOrderPrintColors(), resupplyColors).papers.dossierOf(
