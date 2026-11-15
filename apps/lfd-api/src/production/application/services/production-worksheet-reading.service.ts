@@ -1,10 +1,4 @@
-import type {
-  CatalogFamilyView,
-  ProductionWorksheetView,
-  QualityLineStatus,
-  WorkshopLine,
-  WorkshopWaitingOrders,
-} from "@lfd/contracts";
+import type { CatalogFamilyView } from "@lfd/contracts";
 import { Injectable, Logger } from "@nestjs/common";
 
 import { DayOrdersReader } from "../../channels/commerce/day-orders.reader.js";
@@ -18,24 +12,18 @@ import { ProductionDisplaySettings } from "../../domain/entities/production-disp
 import { ProductionDisplaySettingsReader } from "../../domain/ports/production-display-settings.reader.js";
 import { ProductionContainerReader } from "../../domain/ports/production-container.reader.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
-import { QualityCheckReader } from "../../domain/ports/quality-check.reader.js";
-import { deadlinesOf } from "../../domain/services/production-deadlines.js";
-import type { TrancheThreshold } from "../../domain/services/production-tranches.js";
-import {
-  worksheetGroupsOf,
-  type WorksheetGroup,
-} from "../../domain/services/production-worksheet-groups.js";
+import { QualityLineStatusReader } from "../../domain/ports/quality-line-status.reader.js";
+import { worksheetGroupsOf } from "../../domain/services/production-worksheet-groups.js";
 import {
   worksheetOf,
   type DemandedItem,
   type Worksheet,
-  type WorksheetLine,
 } from "../../domain/services/production-worksheet.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 import { ServiceRange } from "../../domain/value-objects/service-range.value-object.js";
-import { qualityLinesOf } from "./quality-views.js";
 import type { WorksheetContent } from "./worksheet-content.js";
 import { WorksheetDeadlinesReading } from "./worksheet-deadlines-reading.service.js";
+import { groupView, lineViewOf } from "./worksheet-line-views.js";
 
 /**
  * **La lecture d'une fiche d'atelier**, partagée par ses deux routes.
@@ -61,7 +49,9 @@ import { WorksheetDeadlinesReading } from "./worksheet-deadlines-reading.service
  *
  * Chaque ligne porte ses paliers — ses tranches, rangées par le réglage de
  * l'atelier — et le verdict qualité courant de son SKU, le même que la
- * Supervision. Des tranches illisibles laissent la fiche servie, sans paliers.
+ * Supervision, lu par le port que la qualité publie (`QualityLineStatusReader`).
+ * Des tranches illisibles laissent la fiche servie, sans paliers. La
+ * traduction d'une ligne vers le contrat vit dans `worksheet-line-views.ts`.
  *
  * ## Ce qui attend le four (§3, Hugo, 2026-10-28)
  *
@@ -91,21 +81,24 @@ export class ProductionWorksheetReading {
     private readonly containers: ProductionContainerReader,
     private readonly shelves: WorkshopShelvesReader,
     private readonly deadlines: WorksheetDeadlinesReading,
-    private readonly checks: QualityCheckReader,
+    private readonly quality: QualityLineStatusReader,
     private readonly waiting: OvenWaitingOrdersReader,
     private readonly display: ProductionDisplaySettingsReader,
   ) {}
 
   /** Le contenu de la fiche d'une journée, sans rien qui dépende de l'heure. */
   async contentOf(day: ServiceDay): Promise<WorksheetContent> {
-    const [current, expected, producible, containers, tranches, checks, waiting, display] =
+    // La journée part avec les autres lectures ; les pastilles la suivent, car
+    // un verdict se périme contre le compte ACTUEL de la journée.
+    const loading = this.days.load(day);
+    const [current, expected, producible, containers, tranches, quality, waiting, display] =
       await Promise.all([
-        this.days.load(day),
+        loading,
         this.expected.expectedBetween(ServiceRange.of(day.value, day.value)),
         this.orders.producibleFor(day),
         this.containers.allBySku(),
         this.deadlines.read(day),
-        this.checks.forDay(day),
+        loading.then((loaded) => this.quality.linesOf(loaded)),
         this.waitingOrNull(day),
         this.display.current(),
       ]);
@@ -129,7 +122,7 @@ export class ProductionWorksheetReading {
     const shelves = await this.shelvesOrNull(day, worksheet.lines);
     const viewOf = lineViewOf({
       tranches,
-      quality: new Map(qualityLinesOf(current, checks).map((status) => [status.sku, status])),
+      quality: new Map(quality.map((status) => [status.sku, status])),
       waiting,
     });
     const sheet = {
@@ -195,82 +188,4 @@ function demandOf(
   day: ServiceDay,
 ): readonly DemandedItem[] {
   return expected.find((entry) => entry.day === day.value)?.items ?? [];
-}
-
-/** Ce que la ligne lit hors de la journée : ses tranches, son verdict. */
-interface LineMarks {
-  /** `null` = tranches illisibles : la ligne part sans paliers. */
-  readonly tranches: ReadonlyMap<string, readonly TrancheThreshold[]> | null;
-  readonly quality: ReadonlyMap<string, QualityLineStatus>;
-  /** `null` = le colisage n'a pas répondu : aucune ligne n'affirme rien. */
-  readonly waiting: ReadonlyMap<string, OvenWaitingOrders> | null;
-}
-
-/** Le domaine parle en `Date`, le contrat en ISO. La traduction vit ici. */
-function lineViewOf(marks: LineMarks): (line: WorksheetLine) => WorkshopLine {
-  return (line) => ({
-    ...lineView(line),
-    deadlines:
-      marks.tranches === null
-        ? []
-        : deadlinesOf(line.quantity, marks.tranches.get(line.sku) ?? []).map((step) => ({
-            ...step,
-          })),
-    quality: marks.quality.get(line.sku) ?? null,
-    waitingOrders: waitingOf(marks.waiting, line.sku),
-  });
-}
-
-/** Une copie au contrat ; `null` = aucune commande, ou colisage muet. */
-function waitingOf(
-  waiting: ReadonlyMap<string, OvenWaitingOrders> | null,
-  sku: string,
-): WorkshopWaitingOrders | null {
-  const found = waiting?.get(sku);
-  return found === undefined
-    ? null
-    : { count: found.count, earliestHandover: found.earliestHandover };
-}
-
-function lineView(line: WorksheetLine): WorkshopLine {
-  return {
-    sku: line.sku,
-    productName: line.productName,
-    quantity: line.quantity,
-    saleUnit: line.saleUnit,
-    containerLabel: line.containerLabel,
-    done: line.done,
-    initials: line.initials,
-    doneAt: line.doneAt?.toISOString() ?? null,
-    produced: line.produced,
-    remaining: line.remaining,
-    surplus: line.surplus,
-    batches: line.batches.map((batch) => ({
-      id: batch.id,
-      quantity: batch.quantity,
-      recordedAt: batch.recorded.at.toISOString(),
-      initials: batch.recorded.initials === "" ? null : batch.recorded.initials,
-      pendingReturn: batch.pendingReturn,
-    })),
-    pendingReturn: line.pendingReturn,
-    container:
-      line.container === null
-        ? null
-        : {
-            unitsPerContainer: line.container.unitsPerContainer,
-            singular: line.container.singular,
-          },
-  };
-}
-
-function groupView(
-  group: WorksheetGroup,
-  viewOf: (line: WorksheetLine) => WorkshopLine,
-): ProductionWorksheetView["groups"][number] {
-  return {
-    ...group,
-    lines: group.lines.map(viewOf),
-    pending: group.pending.map(viewOf),
-    done: group.done.map(viewOf),
-  };
 }

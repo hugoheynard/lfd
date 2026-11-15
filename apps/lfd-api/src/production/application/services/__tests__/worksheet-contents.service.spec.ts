@@ -21,7 +21,7 @@ import { FixedDueThresholds } from "../../__tests__/due-thresholds-doubles.js";
 import { FixedOvenWaitingOrders } from "../../__tests__/oven-waiting-doubles.js";
 import { InMemoryDisplaySettings } from "../../__tests__/production-display-settings-doubles.js";
 import { InMemoryTrancheSettings } from "../../__tests__/production-tranche-settings-doubles.js";
-import { CheckTable, closedDay, InMemoryCheckReader } from "../../__tests__/quality-doubles.js";
+import { CheckTable, closedDay, qualityLinesFrom } from "../../__tests__/quality-doubles.js";
 import {
   dayContentsOver,
   MemoryDayContents,
@@ -111,7 +111,7 @@ function around(outage: Outage = "none") {
       new FixedDueThresholds(outage === "deadlines" ? "down" : undefined),
       new InMemoryTrancheSettings().reader(),
     ),
-    new InMemoryCheckReader(new CheckTable()),
+    qualityLinesFrom(new CheckTable()),
     new FixedOvenWaitingOrders(outage === "waiting" ? "down" : undefined),
     new InMemoryDisplaySettings().reader(),
   );

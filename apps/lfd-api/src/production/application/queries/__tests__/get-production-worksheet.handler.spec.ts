@@ -32,7 +32,7 @@ import { ProductionWorksheetReading } from "../../services/production-worksheet-
 import { FixedOvenWaitingOrders } from "../../__tests__/oven-waiting-doubles.js";
 import { FixedDueThresholds } from "../../__tests__/due-thresholds-doubles.js";
 import { InMemoryTrancheSettings } from "../../__tests__/production-tranche-settings-doubles.js";
-import { CheckTable, InMemoryCheckReader } from "../../__tests__/quality-doubles.js";
+import { CheckTable, qualityLinesFrom } from "../../__tests__/quality-doubles.js";
 import { worksheetContentsAround } from "../../__tests__/worksheet-contents-doubles.js";
 import { WorksheetDeadlinesReading } from "../../services/worksheet-deadlines-reading.service.js";
 
@@ -147,7 +147,7 @@ function handlerFor(
           new FixedDueThresholds(),
           new InMemoryTrancheSettings().reader(),
         ),
-        new InMemoryCheckReader(new CheckTable()),
+        qualityLinesFrom(new CheckTable()),
         new FixedOvenWaitingOrders(),
         display.reader(),
       ),

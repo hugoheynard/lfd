@@ -287,7 +287,7 @@ mêlent jamais dans un lot.
 3. **C2 — couper les contrôleurs** (✅ bâti le 2026-11-15 ; le balayage qualité reste pour C4) à plusieurs métiers
    (`production-day`, `production-worksheet`, `production-settings`) : un
    contrôleur par métier, mêmes chemins d'API, e2e inchangés.
-4. **C3 — le port `QualityHoldsReader`** et la coupe de
+4. **C3 — le port des retenues de la fiche** (✅ bâti le 2026-11-15 sous le nom `QualityLineStatusReader` : `QualityHoldsReader` existe déjà, dans `channels/handover/`, pour les commandes retenues ; la fiche lit la journée puis les contrôles, un aller-retour assumé par Hugo) et la coupe de
    `production-worksheet-reading.service`.
 5. **C4 — les canaux ne portent plus de règle d'un métier** (relevé par D0) :
    `channels/commerce` exporte la règle d'heure limite du plan

@@ -128,6 +128,7 @@
     "application/queries/list-quality-checks.query.ts": "quality",
     "application/services/bus-automatic-day-closer.ts": "plan",
     "application/services/channel-quality-held-orders.reader.ts": "quality",
+    "application/services/checked-quality-lines.reader.ts": "quality",
     "application/services/day-inscribed-order-header.reader.ts": "day",
     "application/services/day-order-label-head.reader.ts": "day",
     "application/services/day-planned-destinations.reader.ts": "day",
@@ -157,6 +158,7 @@
     "application/services/worksheet-content.ts": "atelier",
     "application/services/worksheet-contents.service.ts": "atelier",
     "application/services/worksheet-deadlines-reading.service.ts": "day",
+    "application/services/worksheet-line-views.ts": "atelier",
     "domain/entities/batch-shortcut.ts": "atelier",
     "domain/entities/dossier-recipient.ts": "plan",
     "domain/entities/dossier-recipients.ts": "plan",
@@ -238,6 +240,7 @@
     "domain/ports/quality-check.repository.ts": "quality",
     "domain/ports/quality-control-settings.reader.ts": "quality",
     "domain/ports/quality-control-settings.repository.ts": "quality",
+    "domain/ports/quality-line-status.reader.ts": "quality",
     "domain/ports/quality-upload.repository.ts": "quality",
     "domain/services/atelier-sheet-pdf.ts": "atelier",
     "domain/services/auto-close-round.ts": "plan",
@@ -372,7 +375,7 @@
     "application/services/production-order-withdrawal.desk.ts": "Implémente le guichet de retrait du commerce : verrou, dépôt et registre de la journée — le noyau.",
     "application/services/production-paper-archive.service.ts": "L'archive des papiers (coupée de ProductionPapers en C1) : ne sait rien de ce qu'elle range, lue par le plan (dossier, compte) et l'atelier (fiche) — une primitive d'impression, § 3 du plan.",
     "application/services/production-paper.service.ts": "Le rendu des papiers (coupé de ProductionPapers en C1) : le dossier et le compte sont des documents du plan ; la fiche d'atelier qu'il rend encore et ses lecteurs d'atelier sont comptés en dette.",
-    "application/services/production-worksheet-reading.service.ts": "La lecture de la fiche (C3 la coupe) : atelier ; ses lectures de la qualité sont comptées en dette jusqu'au port `QualityHoldsReader`.",
+    "application/services/production-worksheet-reading.service.ts": "La lecture de la fiche : atelier ; elle lit les pastilles qualité par le port que la qualité publie (`QualityLineStatusReader`) et les tranches au noyau.",
     "application/services/sealed-day-reading.service.ts": "§ 3 le range au noyau ; lu par la qualité et par le statut de la journée.",
     "application/services/worksheet-deadlines-reading.service.ts": "Lecture des échéances des tranches (port et règle du noyau) ; lue par la fiche ET par le dossier : au noyau, avec les tranches (§ 3).",
     "domain/entities/plan-signer.ts": "Signataire de l'arrêt : un champ de l'agrégat (état, instantané) — le noyau le porte, le plan le remplit (§ 3 : « l'agrégat et ses fichiers »).",
@@ -397,6 +400,9 @@
     "infrastructure/prisma-production-plan.reader.ts": "Adaptateur du port `production-plan.reader` (plan).",
     "infrastructure/production-day-signer.columns.ts": "Colonnes du signataire, lues par la ligne de la journée : colonnes partagées du noyau.",
     "infrastructure/production-resupply.columns.ts": "Colonnes des réassorts écrites par le dépôt de la journée (`production-day.row`, `production-day-children.writer`) : colonnes partagées du noyau (§ 3).",
-    "production.module.ts": "La racine de composition du bloc : relie les adaptateurs de tous les métiers (D6 la réduit à importer les modules) — exemptée comme `appBootstrap/`."
+    "production.module.ts": "La racine de composition du bloc : relie les adaptateurs de tous les métiers (D6 la réduit à importer les modules) — exemptée comme `appBootstrap/`.",
+    "application/services/checked-quality-lines.reader.ts": "L'adaptateur du port `QualityLineStatusReader` : contrôles et règle de verdict de la qualité, que l'atelier ne lit plus (C3).",
+    "domain/ports/quality-line-status.reader.ts": "Le port que la qualité publie pour la fiche d'atelier (C3, § 3) : les pastilles des lignes, rien d'autre.",
+    "application/services/worksheet-line-views.ts": "La traduction d'une ligne de la fiche vers le contrat (paliers, pastille, attente du four), coupée de la lecture en C3 : l'affichage de l'atelier."
   }
 }

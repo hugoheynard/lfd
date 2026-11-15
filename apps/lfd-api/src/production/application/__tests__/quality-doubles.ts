@@ -10,7 +10,9 @@ import { ProductionDayRepository } from "../../domain/ports/production-day.repos
 import { QualityCheckReader } from "../../domain/ports/quality-check.reader.js";
 import { QualityCheckRepository } from "../../domain/ports/quality-check.repository.js";
 import { QualityUploadRepository } from "../../domain/ports/quality-upload.repository.js";
+import type { QualityLineStatusReader } from "../../domain/ports/quality-line-status.reader.js";
 import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { CheckedQualityLinesReader } from "../services/checked-quality-lines.reader.js";
 
 /**
  * Les doublés du contrôle qualité — chacun ÉTEND son port, donc aucun cast.
@@ -148,6 +150,15 @@ export class InMemoryCheckReader extends QualityCheckReader {
     const check = this.table.rows.get(checkId);
     return Promise.resolve(check?.photos.find((p) => p.position === position) ?? null);
   }
+}
+
+/**
+ * Le port que la qualité publie pour la fiche d'atelier, sur une table de
+ * contrôles : la VRAIE règle de verdict (`CheckedQualityLinesReader`), pas une
+ * réponse figée — la fiche doit marquer ses lignes comme la Supervision.
+ */
+export function qualityLinesFrom(checks: CheckTable): QualityLineStatusReader {
+  return new CheckedQualityLinesReader(new InMemoryCheckReader(checks));
 }
 
 export class InMemoryUploads extends QualityUploadRepository {

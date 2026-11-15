@@ -29,7 +29,7 @@ import { ServiceDay } from "../../../domain/value-objects/service-day.value-obje
 import { FixedOvenWaitingOrders } from "../../__tests__/oven-waiting-doubles.js";
 import { FixedDueThresholds } from "../../__tests__/due-thresholds-doubles.js";
 import { InMemoryTrancheSettings } from "../../__tests__/production-tranche-settings-doubles.js";
-import { CheckTable, InMemoryCheckReader } from "../../__tests__/quality-doubles.js";
+import { CheckTable, qualityLinesFrom } from "../../__tests__/quality-doubles.js";
 import { ProductionWorksheetReading } from "../production-worksheet-reading.service.js";
 import { servedWorksheet } from "../worksheet-content.js";
 import { WorksheetDeadlinesReading } from "../worksheet-deadlines-reading.service.js";
@@ -139,7 +139,7 @@ function bareReading(
     new NoContainers(),
     new NoShelves(),
     new WorksheetDeadlinesReading(new FixedDueThresholds(due), settings.reader()),
-    new InMemoryCheckReader(checks),
+    qualityLinesFrom(checks),
     waiting,
     new InMemoryDisplaySettings().reader(),
   );

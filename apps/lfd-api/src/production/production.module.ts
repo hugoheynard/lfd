@@ -83,6 +83,7 @@ import { GetQualityPhotoHandler } from "./application/queries/get-quality-photo.
 import { ListQualityChecksHandler } from "./application/queries/list-quality-checks.handler.js";
 import { QualityPhotoAttachment } from "./application/services/quality-photo-attachment.service.js";
 import { QualityCheckReader } from "./domain/ports/quality-check.reader.js";
+import { QualityLineStatusReader } from "./domain/ports/quality-line-status.reader.js";
 import { QualityCheckRepository } from "./domain/ports/quality-check.repository.js";
 import { QualityUploadRepository } from "./domain/ports/quality-upload.repository.js";
 import { ProductionQualityController } from "./http/production-quality.controller.js";
@@ -166,6 +167,7 @@ import { ResupplyLaunchGestures } from "./application/services/resupply-launch-g
 import { ResupplyLaunchReading } from "./application/services/resupply-launch-reading.js";
 import { ResupplyLaunchRecording } from "./application/services/resupply-launch-recording.js";
 import { ChannelQualityHeldOrdersReader } from "./application/services/channel-quality-held-orders.reader.js";
+import { CheckedQualityLinesReader } from "./application/services/checked-quality-lines.reader.js";
 import { DayPlannedDestinationsReader } from "./application/services/day-planned-destinations.reader.js";
 import { OnPackingReturned } from "./application/handlers/on-packing-returned.handler.js";
 import { SendDossierOnDayClosed } from "./application/handlers/send-dossier-on-day-closed.handler.js";
@@ -283,6 +285,7 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     QualityPhotoAttachment,
     { provide: QualityCheckRepository, useClass: PrismaQualityCheckRepository },
     { provide: QualityCheckReader, useClass: PrismaQualityCheckReader },
+    { provide: QualityLineStatusReader, useClass: CheckedQualityLinesReader },
     { provide: QualityUploadRepository, useClass: PrismaQualityUploadRepository },
     SetQualityControlSettingsHandler,
     GetQualityControlSettingsHandler,
