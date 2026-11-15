@@ -4,7 +4,7 @@
 > deux sens, d'où la règle anti-cycle des index ; v3 : une surface publique par métier, tenue par la
 > porte et par les modules Nest ; v2, après `vitruve` : le noyau importait encore le
 > plan par les tranches, et la matrice oubliait l'impression), demandé par Hugo (« je veux une belle isolation »).
-> Pas encore bâti. Touche une frontière du dépôt (une porte neuve) :
+> D0 bâti le 2026-11-15 (la porte et la carte) ; le reste pas encore. Touche une frontière du dépôt (une porte neuve) :
 > `vitruve` avant Hugo. S'ouvre après la fin des coches
 > ([`plan-fin-des-coches.md`](plan-fin-des-coches.md)), qui touche l'atelier.
 
@@ -241,16 +241,65 @@ mêlent jamais dans un lot.
    dette qui ne peut que décroître. Les `index.ts` sont posés à chaque
    déplacement ; tant qu'un sous-contexte n'a pas le sien, la porte compte
    ses imports internes comme dette.
+
+   **Bâti le 2026-11-15.** `dev-toolbox/gates/production-subcontexts.mjs`
+   (lecture du graphe dans `dev-toolbox/gates/lib/production-subcontexts-graph.mjs`, tests dans
+   `dev-toolbox/__tests__/production-subcontexts.test.mjs`), branchée dans
+   `lint:gates`. La carte vit dans `dev-toolbox/gates/production-subcontexts.map.json` tant que
+   les fichiers sont à plat — `files` (le sous-contexte de chaque fichier,
+   `reasons` pour les cas tranchés), `models` (le propriétaire de chaque
+   modèle : celui qui l'écrit) ; un fichier déplacé sort de la carte, son
+   dossier fait foi. `pnpm gate production-subcontexts --carte` détaille la
+   surface de départ.
+
+   | Sous-contexte   | Fichiers | Surface lue par les autres |
+   | --------------- | -------- | -------------------------- |
+   | `day/`          | 89       | 32                         |
+   | `plan/`         | 97       | 4                          |
+   | `atelier/`      | 65       | 5                          |
+   | `quality/`      | 49       | 3                          |
+   | `resupply/`     | 12       | 1                          |
+   | `shared/print/` | 9        | 9                          |
+   | `channels/`     | 52       | 43                         |
+
+   `production.module.ts` est rangé à part (`root`) : racine de composition
+   du bloc, exemptée comme `appBootstrap/` jusqu'à D6.
+
+   Dette de départ (`dev-toolbox/gates/production-subcontexts-debt.json`) : **20 arêtes hors
+   du schéma** (dont `channels/commerce` → `latest-order-cutoff` du plan,
+   `channels/handover` → `order-out-of-hand` de la qualité, le plan qui lit
+   les réglages d'affichage de l'atelier, le noyau qui lit deux primitives
+   d'impression par `day-order-label-head.reader`) ; **10 lectures de modèle
+   hors propriétaire** (les réassorts et le plan lisent `ProductionResupply`,
+   `ProductionCount`, `ProductionOrder` en Prisma direct ; la qualité lit
+   `ProductionOrderLine`) ; **192 imports hors porte** (plan → day 90,
+   atelier → day 33, resupply → day 19, quality → day 18, plan →
+   shared-print 17, atelier → shared-print 7, shared-print → day 5,
+   atelier → quality 2, plan → resupply 1) ; **133 imports de tests hors
+   porte** ; aucun abonné en mémoire, aucun cycle par un `index.ts`.
+
+   ⚠️ Les réassorts (`ProductionResupply`, `ProductionResupplyLine`) sont
+   ÉCRITS par le dépôt de la journée (`production-day-children.writer`) :
+   leur propriétaire est donc le noyau, et les deux lecteurs du métier
+   `resupply/` sont en dette. Le plan ne disait pas à qui ils appartiennent.
+
 2. **C1 — couper `ProductionPapers`** en rendu et archivage.
 3. **C2 — couper les contrôleurs** à plusieurs métiers
    (`production-day`, `production-worksheet`, `production-settings`) : un
    contrôleur par métier, mêmes chemins d'API, e2e inchangés.
 4. **C3 — le port `QualityHoldsReader`** et la coupe de
    `production-worksheet-reading.service`.
-5. **D1 — déplacer le noyau** (`day/`) et `shared/print/`.
-6. **D2 — déplacer la qualité. D3 — le réassort. D4 — le plan. D5 —
+5. **C4 — les canaux ne portent plus de règle d'un métier** (relevé par D0) :
+   `channels/commerce` exporte la règle d'heure limite du plan
+   (`latest-order-cutoff`) et `channels/handover` celle de la qualité
+   (`order-out-of-hand`). Une règle lue par un canal est une règle de la
+   journée : elle rejoint `day/`, et le métier la lit de là. Le contrôleur du
+   balayage qualité (`quality-upload-sweep.controller`) qui déclenche aussi
+   l'élagage de la journée est coupé en deux dans le même lot.
+6. **D1 — déplacer le noyau** (`day/`) et `shared/print/`.
+7. **D2 — déplacer la qualité. D3 — le réassort. D4 — le plan. D5 —
    l'atelier** (dont `production-batch-shortcuts.module.ts`).
-7. **D6 — un module Nest par métier.** `day/` devient un module qui fournit
+8. **D6 — un module Nest par métier.** `day/` devient un module qui fournit
    et exporte la journée (dépôt, verrou, version, tranches) ; les quatre
    métiers l'importent, jamais l'inverse, et aucun `forwardRef` (zéro
    aujourd'hui, la porte le refuse). `ProductionModule` ne fait plus
@@ -262,6 +311,13 @@ mêlent jamais dans un lot.
    les autres lus par `index.ts`. Seul
    lot qui peut changer l'ordre d'instanciation : il passe la suite e2e du
    fournil entière et le semis dev.
+
+**Tranché après D0 (2026-11-15)** : les réassorts lancés
+(`ProductionResupply` et sa ligne) appartiennent au noyau, qui les écrit dans
+l'agrégat (`launchResupply`) ; `resupply/` les lit par un port de `day/` en D3,
+plus en Prisma direct. `production.module.ts` reste exempté comme une racine
+jusqu'à D6. La dette d'imports est comptée par paire de sous-contextes, et les
+tests ne relèvent que de la règle de porte.
 
 **Ce que chaque déplacement doit emporter**, listé dans son lot :
 
