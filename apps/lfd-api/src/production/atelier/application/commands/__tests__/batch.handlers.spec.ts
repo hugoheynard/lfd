@@ -1,0 +1,215 @@
+import { legacyOf } from "../../../../application/__tests__/station-doubles.js";
+import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
+import type { ProducibleOrder } from "../../../../channels/commerce/day-orders.reader.js";
+import { ProductionDay } from "../../../../day/domain/entities/production-day.js";
+import {
+  BatchConflictError,
+  BatchNotFoundError,
+  InvalidBatchQuantityError,
+} from "../../../../day/domain/errors/batch-errors.js";
+import {
+  ProducedItemNotFoundError,
+  ProductionDayNotClosedError,
+} from "../../../../day/domain/errors/production-errors.js";
+import { ServiceDay } from "../../../../day/index.js";
+import { handoffsOnDoubles } from "../../../../application/__tests__/handoff-doubles.js";
+import {
+  BatchBackedDays,
+  InMemoryBatches,
+  RecordingDayLock,
+} from "../../../../application/__tests__/batch-doubles.js";
+import { CancelBatchCommand } from "../cancel-batch.command.js";
+import { CancelBatchHandler } from "../cancel-batch.handler.js";
+import { RecordBatchCommand } from "../record-batch.command.js";
+import { RecordBatchHandler } from "../record-batch.handler.js";
+
+/**
+ * **Déclarer et annuler une fournée** (plan `la-fiche-d-atelier.md`,
+ * D3), orchestrés sur des ports doublés.
+ *
+ * Aucune comparaison à l'horloge ici : ces instants ne sont que recopiés.
+ */
+const NOW = new Date("2026-09-13T05:10:00.000Z");
+const DAY = "2026-09-13";
+const SKU = "VIE-001";
+const FIRST = "01K6A0000000000000000000A1";
+const SECOND = "01K6A0000000000000000000B2";
+
+const ORDERS: readonly ProducibleOrder[] = [
+  {
+    orderId: "ord_1",
+    reference: "ORD-0001",
+    customerLabel: "Trois Ponts",
+    fulfillmentMethod: "pickup",
+    destination: "Le Labo",
+    dueAt: null,
+    clientele: null,
+    siteId: null,
+    sheetDetails: null,
+    lines: [
+      { sku: SKU, productName: "Croissant", quantity: 24, saleUnit: "piece", madeToOrder: null },
+    ],
+  },
+  {
+    orderId: "ord_2",
+    reference: "ORD-0002",
+    customerLabel: "Le Chalet",
+    fulfillmentMethod: "delivery",
+    destination: "Val d'Isère",
+    dueAt: null,
+    clientele: null,
+    siteId: null,
+    sheetDetails: null,
+    lines: [
+      { sku: SKU, productName: "Croissant", quantity: 6, saleUnit: "piece", madeToOrder: null },
+    ],
+  },
+];
+
+function closedDay(): ProductionDay {
+  const day = ProductionDay.open(ServiceDay.of(DAY));
+  day.close(ORDERS, new Set<string>(), new Date("2026-09-13T04:20:00.000Z"), null);
+  // L'ancien poste : depuis K2, une clôture naît au colisage.
+  return legacyOf(day);
+}
+
+function setup(base: ProductionDay = closedDay()) {
+  const trace: string[] = [];
+  const store = new InMemoryBatches(trace);
+  const days = new BatchBackedDays(base, store, trace);
+  const lock = new RecordingDayLock(trace);
+  const clock = new FixedClock(NOW);
+  const handoffs = handoffsOnDoubles();
+  const uow = new DirectUnitOfWork();
+  return {
+    store,
+    trace,
+    lock,
+    handoffs,
+    record: new RecordBatchHandler(days, store, lock, clock, uow, handoffs.service),
+    cancel: new CancelBatchHandler(days, store, lock, clock, uow, handoffs.service),
+  };
+}
+
+function record(id: string, quantity: number, sku = SKU, day = DAY): RecordBatchCommand {
+  return new RecordBatchCommand(day, sku, id, quantity, "MB", "staff-1");
+}
+
+describe("RecordBatchHandler", () => {
+  it("écrit la fournée avec l'horloge et l'identité du guard", async () => {
+    const { store, record: handler } = setup();
+
+    await handler.execute(record(FIRST, 12));
+
+    expect(store.batches).toEqual([
+      {
+        id: FIRST,
+        sku: SKU,
+        quantity: 12,
+        recorded: { at: NOW, by: "staff-1", initials: "MB" },
+        cancelled: null,
+        returned: 0,
+        pendingReturn: 0,
+      },
+    ]);
+  });
+
+  /**
+   * Régression C-D (audit du 2026-11-02) : la journée était chargée et gardée
+   * HORS verrou ; une réouverture passée entre la lecture et l'écriture
+   * laissait entrer une fournée sur une journée rouverte.
+   */
+  it("prend le verrou de la journée AVANT de la charger et de la garder", async () => {
+    const { trace, record: handler } = setup();
+
+    await handler.execute(record(FIRST, 12));
+
+    expect(trace.slice(0, 3)).toEqual([`lock:${DAY}`, "load", `record:${FIRST}`]);
+  });
+
+  it("un rejeu de la même charge est un succès silencieux", async () => {
+    const { store, record: handler } = setup();
+    await handler.execute(record(FIRST, 12));
+
+    await handler.execute(record(FIRST, 12));
+
+    expect(store.writes).toEqual([FIRST]);
+  });
+
+  it("le rejeu d'une fournée ANNULÉE réussit et ne la ressuscite pas", async () => {
+    const { store, record: handler, cancel } = setup();
+    await handler.execute(record(FIRST, 12));
+    await cancel.execute(new CancelBatchCommand(DAY, FIRST, "staff-3"));
+
+    await handler.execute(record(FIRST, 12));
+
+    expect(store.batches[0]?.cancelled).toEqual({ at: NOW, by: "staff-3" });
+  });
+
+  it("le même id pour une autre charge est refusé (409), rien n'est compté", async () => {
+    const { store, record: handler } = setup();
+    await handler.execute(record(FIRST, 12));
+
+    await expect(handler.execute(record(FIRST, 18))).rejects.toBeInstanceOf(BatchConflictError);
+    expect(store.batches.map((batch) => batch.quantity)).toEqual([12]);
+  });
+
+  it("refuse moins d'une pièce, sans rien écrire", async () => {
+    const { store, record: handler } = setup();
+
+    await expect(handler.execute(record(FIRST, 0))).rejects.toBeInstanceOf(
+      InvalidBatchQuantityError,
+    );
+    expect(store.writes).toHaveLength(0);
+  });
+
+  it("porte les refus de la coche : journée ouverte, SKU hors compte", async () => {
+    const open = setup(ProductionDay.open(ServiceDay.of(DAY)));
+    await expect(open.record.execute(record(FIRST, 12))).rejects.toBeInstanceOf(
+      ProductionDayNotClosedError,
+    );
+    await expect(setup().record.execute(record(FIRST, 12, "INCONNU"))).rejects.toBeInstanceOf(
+      ProducedItemNotFoundError,
+    );
+  });
+
+  it("n'écrit que la fournée déclarée : la coche de l'ancien poste n'est plus lue", async () => {
+    const { store, trace, record: handler } = setup();
+
+    await handler.execute(record(FIRST, 5));
+
+    expect(trace).toEqual([`lock:${DAY}`, "load", `record:${FIRST}`]);
+    expect(store.batches.map((batch) => batch.quantity)).toEqual([5]);
+  });
+});
+
+describe("CancelBatchHandler", () => {
+  it("annule sous le verrou, APRÈS l'avoir pris — tracée au nom du guard", async () => {
+    const { store, trace, record: handler, cancel } = setup();
+    await handler.execute(record(FIRST, 12));
+    trace.length = 0;
+
+    await cancel.execute(new CancelBatchCommand(DAY, FIRST, "staff-3"));
+
+    expect(trace).toEqual([`lock:${DAY}`, "load", `cancel:${FIRST}`]);
+    expect(store.batches[0]?.cancelled).toEqual({ at: NOW, by: "staff-3" });
+  });
+
+  it("annuler deux fois est un succès silencieux", async () => {
+    const { trace, record: handler, cancel } = setup();
+    await handler.execute(record(FIRST, 12));
+    await cancel.execute(new CancelBatchCommand(DAY, FIRST, "staff-3"));
+    trace.length = 0;
+
+    await cancel.execute(new CancelBatchCommand(DAY, FIRST, "staff-4"));
+
+    expect(trace).toEqual([`lock:${DAY}`, "load"]);
+  });
+
+  it("une fournée inconnue ce jour-là est introuvable (404)", async () => {
+    await expect(
+      setup().cancel.execute(new CancelBatchCommand(DAY, SECOND, "staff-3")),
+    ).rejects.toBeInstanceOf(BatchNotFoundError);
+  });
+});

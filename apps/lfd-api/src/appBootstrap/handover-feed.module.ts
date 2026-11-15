@@ -28,7 +28,7 @@ import {
   OrderCustodyReader,
   QualityHoldsReader,
 } from "../production/channels/handover/index.js";
-import { PrismaAtelierSheetsReader } from "../production/infrastructure/prisma-atelier-sheets.reader.js";
+import { PrismaAtelierSheetsReader } from "../production/atelier/infrastructure/prisma-atelier-sheets.reader.js";
 import { PrismaQualityHoldsReader } from "../production/quality/infrastructure/prisma-quality-holds.reader.js";
 import { ProductionModule } from "../production/production.module.js";
 

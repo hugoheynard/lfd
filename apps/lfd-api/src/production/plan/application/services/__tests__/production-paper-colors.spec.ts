@@ -8,7 +8,7 @@ import {
   ProductionDay,
   type ProductionOrderSnapshot,
 } from "../../../../day/domain/entities/production-day.js";
-import { atelierSheetPdfKey } from "../../../../domain/services/atelier-sheet-pdf.js";
+import { atelierSheetPdfKey } from "../../../../atelier/domain/services/atelier-sheet-pdf.js";
 import { ServiceDay } from "../../../../day/index.js";
 import {
   FixedOrderPrintColors,

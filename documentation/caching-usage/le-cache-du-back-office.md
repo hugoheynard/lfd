@@ -351,7 +351,7 @@ global (`companies`) s'y ajoute —, en base, avant ses données.
 Les trois routes de la fiche — `GET admin/production/worksheet?date=`,
 `GET admin/supervision/preparation?date=` et
 `GET admin/production/worksheet/current` — passent par
-`WorksheetContents` (`apps/lfd-api/src/production/application/services/worksheet-contents.service.ts`)
+`WorksheetContents` (`apps/lfd-api/src/production/atelier/application/services/worksheet-contents.service.ts`)
 et partagent **une clé, l'écran `worksheet`** : les deux premières envoient
 la même requête et rendent les mêmes octets (mesuré le 2026-11-13, § 3.6, tenu par
 `apps/lfd-api/test/production-worksheet-contents.e2e-spec.ts`). La fiche en cours résout

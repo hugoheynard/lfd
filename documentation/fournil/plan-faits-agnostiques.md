@@ -26,7 +26,7 @@ La frontière technique est respectée aujourd'hui (le fournil déclare
 
 ## 2. Ce qui existe (vérifié le 2026-11-15)
 
-- `apps/lfd-api/src/production/application/services/packing-handoffs.service.ts` (à l'atelier
+- `apps/lfd-api/src/production/atelier/application/services/packing-handoffs.service.ts` (à l'atelier
   depuis C5 du découpage ; `PackingHandoffs`, ~165 lignes) : registre `ProductionHandoffLedger`,
   lecteur `ProductionHandoffReader`, `ProductionReturnRequests` ; publie
   `HandedToPackingEvent` et `ReturnRequestedEvent`

@@ -23,11 +23,11 @@ coche du code, puis de la base.
   `day/infrastructure/production-day.row.ts` (select `:64-66`, lecture `:150`),
   `day/domain/services/production-output.ts` (`implicitBatchesOf`, la coche lue
   comme fournée implicite, `:41-57`), `domain/…/production-day.reopening.ts:40`
-  (une coche bloque la réouverture), `application/commands/record-batch.handler.ts`
+  (une coche bloque la réouverture), `atelier/application/commands/record-batch.handler.ts`
   (matérialisation avant la première fournée), et les commandes
   `mark-worksheet-line` / `unmark-worksheet-line` derrière les routes
   `PUT`/`DELETE …/worksheet/:date/lines/:sku/done`
-  (`http/production-worksheet.controller.ts:131,154`). Aucun appel du
+  (`atelier/http/production-worksheet.controller.ts:131,154`). Aucun appel du
   back-office. Le colisage, le réassort, le dossier PDF et la révision ne
   lisent pas la colonne.
 - Les tests qui l'écrivent ou citent les fournées `backfill-` :

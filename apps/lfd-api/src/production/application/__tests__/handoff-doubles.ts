@@ -10,7 +10,7 @@ import {
   type ReturnRequest,
   type ServiceDay,
 } from "../../day/index.js";
-import { PackingHandoffs } from "../services/packing-handoffs.service.js";
+import { PackingHandoffs } from "../../atelier/application/services/packing-handoffs.service.js";
 
 /**
  * Les doublés de la remise au colisage (plan `colisage/colisage.md`,

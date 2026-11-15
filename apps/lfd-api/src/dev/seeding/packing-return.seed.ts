@@ -1,5 +1,5 @@
-import { CancelBatchCommand } from "../../production/application/commands/cancel-batch.command.js";
-import { RecordBatchCommand } from "../../production/application/commands/record-batch.command.js";
+import { CancelBatchCommand } from "../../production/atelier/application/commands/cancel-batch.command.js";
+import { RecordBatchCommand } from "../../production/atelier/application/commands/record-batch.command.js";
 import { SEED_STAFF_SUB, type SeedContext } from "./order-placing.seed.js";
 
 /** Les pièces de la fournée sortie par erreur, puis reprise. */

@@ -2,9 +2,9 @@ import type { ProductionSettingsView } from "@lfd/contracts";
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../../platform/time/clock.js";
-import { ProductionDisplaySettings } from "../../../domain/entities/production-display-settings.js";
+import { ProductionDisplaySettings } from "../../../atelier/domain/entities/production-display-settings.js";
 import { ProductionTrancheSettings } from "../../../day/index.js";
-import { ProductionDisplaySettingsReader } from "../../../domain/ports/production-display-settings.reader.js";
+import { ProductionDisplaySettingsReader } from "../../../atelier/domain/ports/production-display-settings.reader.js";
 import { ProductionTrancheSettingsReader } from "../../../day/index.js";
 import { ProductionSettingsReader } from "../../domain/ports/production-settings.reader.js";
 import { latestOrderCutoff } from "../../../day/index.js";

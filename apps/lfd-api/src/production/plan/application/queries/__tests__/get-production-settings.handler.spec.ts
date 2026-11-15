@@ -2,7 +2,7 @@ import { addDays } from "@lfd/contracts";
 
 import { InMemoryDisplaySettings } from "../../../../application/__tests__/production-display-settings-doubles.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
-import { ProductionDisplaySettings } from "../../../../domain/entities/production-display-settings.js";
+import { ProductionDisplaySettings } from "../../../../atelier/domain/entities/production-display-settings.js";
 import { ProductionTrancheSettings } from "../../../../day/index.js";
 import { todayOf } from "../../../../day/index.js";
 import {

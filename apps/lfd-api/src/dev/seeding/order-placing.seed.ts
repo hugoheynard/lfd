@@ -17,7 +17,7 @@ import type { PrismaClient } from "../../platform/database/client/client.js";
 import { withSaleSkus } from "./sale-references.seed.js";
 import { AllocateToContainerCommand } from "../../packing/application/containers/allocate-to-container.command.js";
 import { OpenPackingContainerCommand } from "../../packing/application/containers/open-packing-container.command.js";
-import { RecordBatchCommand } from "../../production/application/commands/record-batch.command.js";
+import { RecordBatchCommand } from "../../production/atelier/application/commands/record-batch.command.js";
 import { ClosePackingOrderCommand } from "../../packing/application/station/close-packing-order.command.js";
 import { acceptedSalesTermsFor } from "./accepted-sales-terms.seed.js";
 import { carnetWindowOf } from "./carnet-window.seed.js";

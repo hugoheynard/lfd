@@ -38,7 +38,7 @@ les factures** (ni avoirs) : pièces comptables, sans couleur de destination
   le **vrai** bon de commande trace un trait de la couleur de la commande sous
   son titre (`order-sheet-pdf-header.ts`, L5 de `tri-depart-et-couleurs.md`)
   ; la planche passe `color = null`, donc ne le montre jamais. La **fiche
-  d'atelier** (`production/domain/services/atelier-sheet-pdf.ts`) ne porte
+  d'atelier** (`production/atelier/domain/services/atelier-sheet-pdf.ts`) ne porte
   **aucune** couleur, même pour une vraie commande.
 - Pas de transfert interne, pas de manifeste, pas de numéros de commande réels.
 

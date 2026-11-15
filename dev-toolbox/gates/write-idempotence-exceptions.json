@@ -362,7 +362,7 @@
       "verified": "2026-11-12"
     },
     {
-      "route": "apps/lfd-api/src/production/http/production-batch-shortcuts.controller.ts#create",
+      "route": "apps/lfd-api/src/production/atelier/http/production-batch-shortcuts.controller.ts#create",
       "effects": ["creates"],
       "reason": "par unicité : le libellé d'un raccourci est unique pour un article ; rejoué, la création est refusée (409) avant toute écriture",
       "verified": "2026-11-12"

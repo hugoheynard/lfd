@@ -2,7 +2,7 @@ import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
 import { BrandLogoSource } from "../../../../platform/brand/brand-logo.source.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { renderProductionCountPdf } from "../../../domain/services/atelier-sheet-pdf.js";
+import { renderProductionCountPdf } from "../../../atelier/domain/services/atelier-sheet-pdf.js";
 import { countColorSharesOf } from "../../../shared/print/index.js";
 import { countPaperRowsOf } from "../../../shared/print/index.js";
 import { countOf } from "../../../day/index.js";
