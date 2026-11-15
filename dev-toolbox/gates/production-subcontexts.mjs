@@ -23,8 +23,10 @@
  *   direct ; seules `atelier → quality` et `plan → resupply` relient deux
  *   métiers ; `day/` n'importe que `channels/`. Les types comptent ;
  * - **un import qui passe à côté de la porte** : entre sous-contextes, on
- *   entre par `index.ts` (`channels/` n'en est pas un). Tant que la porte
- *   n'existe pas, ces imports sont la dette, comptée par paire ;
+ *   entre par `index.ts` (`channels/` n'en est pas un) ; le module Nest d'un
+ *   métier (`<dossier>/*.module.ts`) entre chez un autre par son module Nest,
+ *   sur les mêmes arêtes. Tant que la porte n'existe pas, ces imports sont
+ *   la dette, comptée par paire ;
  * - **un test** qui lit l'intérieur d'un AUTRE sous-contexte (le sien est
  *   libre) — même règle de porte, compté à part ;
  * - **un modèle lu hors de son sous-contexte** : chaque modèle du schéma
@@ -35,7 +37,9 @@
  *   sous-contexte : entre métiers, l'abonné est un `@DurableHandler` ;
  * - **un cycle d'imports d'exécution qui traverse un `index.ts`**.
  *
- * Exemptés : `production.module.ts` (racine de composition du bloc), et hors
+ * Exemptés : `production.module.ts` (racine de composition du bloc, qui
+ * importe les modules de métier ; chacun d'eux est jugé comme les autres
+ * fichiers de son dossier), et hors
  * de la lecture, `appBootstrap/`, `dev/` et `test/`.
  *
  * ## La dette, décroissante
@@ -64,6 +68,7 @@ import {
   doorOf,
   importsOf,
   indexCycles,
+  isContextModule,
   isTest,
   memorySubscriptions,
   modelsTouched,
@@ -76,10 +81,15 @@ const HERE = fileURLToPath(new URL(".", import.meta.url));
 const MAP_FILE = join(HERE, "production-subcontexts.map.json");
 const DEBT_FILE = join(HERE, "production-subcontexts-debt.json");
 
-/** Ce qu'un import de `from` (contexte `a`) vers `to` (contexte `b`) viole, ou `null`. */
-function judgeEdge(a, b, to) {
+/**
+ * Ce qu'un import de `from` (contexte `a`) vers `to` (contexte `b`) viole, ou
+ * `null`. Un module Nest de métier entre chez un autre par son module Nest :
+ * l'arête reste jugée, la porte est l'autre.
+ */
+function judgeEdge(a, b, from, to) {
   if (a === b || a === ROOT_CONTEXT || b === ROOT_CONTEXT || b === undefined) return null;
   if (!ALLOWED[a]?.includes(b)) return "edge";
+  if (isContextModule(from, a) && isContextModule(to, b)) return null;
   if (GATED.includes(a) && GATED.includes(b) && to !== doorOf(b)) return "door";
   return null;
 }
@@ -134,7 +144,7 @@ export function analyse(files, map, models) {
     for (const { target, typeOnly } of imports) {
       if (!typeOnly) runtime.push([path, target]);
       const theirs = contexts.get(target);
-      const verdict = judgeEdge(own, theirs, target);
+      const verdict = judgeEdge(own, theirs, path, target);
       if (verdict === "edge") found.edges.add(`${path} → ${target}`);
       if (verdict === "door") bump(found.door, `${own} → ${theirs}`);
       if (own !== theirs && own !== ROOT_CONTEXT && theirs !== ROOT_CONTEXT) {

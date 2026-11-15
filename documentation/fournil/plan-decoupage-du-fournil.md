@@ -334,6 +334,32 @@ mêlent jamais dans un lot.
    les autres lus par `index.ts`. Seul
    lot qui peut changer l'ordre d'instanciation : il passe la suite e2e du
    fournil entière et le semis dev.
+   **Bâti en partie le 2026-11-15** : six modules — `ProductionDayModule`
+   (`day/`), `ProductionPlanModule`, `ProductionAtelierModule` (qui importe
+   `ProductionBatchShortcutsModule`), `ProductionQualityModule`,
+   `ProductionResupplyModule`, `ProductionPrintModule` (`shared/print/`,
+   l'archivage). Les métiers importent la journée, l'atelier la qualité,
+   aucun `forwardRef` ; mêmes 169 contrôleurs et fournisseurs, même table des
+   routes (41). `ProductionModule` importe les six et réexporte la journée,
+   le plan, la qualité et le réassort (Nest n'exporte pas un fournisseur
+   importé, seulement son module). La porte admet qu'un module de métier
+   entre chez un autre par son module Nest (`<dossier>/*.module.ts`), sur
+   les mêmes arêtes : `day/index.ts` ne peut pas exporter le module de la
+   journée, qui charge des canaux. Dette inchangée (arêtes 12, modèles 10,
+   tests hors porte 40, imports hors porte 0).
+   ⚠️ **Reste à trancher** : neuf fournisseurs restent dans
+   `ProductionModule` — `ProductionPaperRenderer` (plan, lit l'affichage de
+   l'atelier), `GetAtelierSheetPdfHandler` (atelier, lit le rendu du plan),
+   `GetProductionCountPdfHandler`, `GetDayDossierPdfHandler`,
+   `DossierDispatch`, `SendDossierOnDayClosed`, `SendDossierOnDayRetaken`,
+   `GetProductionForecastHandler`, `GetProductionSettingsHandler` (plan, lisent
+   le rendu ou l'affichage). Les ranger dans le plan ou l'atelier ferait
+   importer l'un par l'autre : une arête refusée (`plan ↔ atelier`), et un
+   cycle de modules si les deux sens restent. Les deux arêtes en dette
+   (papier du plan lu par l'atelier, affichage de l'atelier lu par le plan)
+   doivent être coupées, ou l'une admise, avant que la racine se vide ; le
+   plan, l'atelier et la journée exportent en attendant ce que ces neuf
+   injectent.
 9. **R — resserrer le noyau** (ajouté par Hugo le 2026-11-15 : « je veux
    surtout avoir un tronc solide pour étendre sereinement »). Après D6, le
    noyau est le tronc : un métier neuf ne devrait avoir à apprendre que

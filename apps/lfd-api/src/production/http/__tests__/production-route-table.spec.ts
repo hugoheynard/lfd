@@ -40,8 +40,21 @@ function describeRoute(controller: Type, method: string): string | null {
   ].join(" | ");
 }
 
+/**
+ * Les contrôleurs du fournil : ceux de la racine et des modules de métier
+ * qu'elle importe. Les raccourcis, module à part importé par l'atelier, n'en
+ * ont jamais fait partie.
+ */
+function productionControllers(): readonly Type[] {
+  const modules = [
+    ProductionModule,
+    ...((Reflect.getMetadata("imports", ProductionModule) ?? []) as Type[]),
+  ];
+  return modules.flatMap((module) => (Reflect.getMetadata("controllers", module) ?? []) as Type[]);
+}
+
 function routeTable(): readonly string[] {
-  const controllers = (Reflect.getMetadata("controllers", ProductionModule) ?? []) as Type[];
+  const controllers = productionControllers();
   return controllers
     .flatMap((controller) =>
       Object.getOwnPropertyNames(controller.prototype).map((method) =>

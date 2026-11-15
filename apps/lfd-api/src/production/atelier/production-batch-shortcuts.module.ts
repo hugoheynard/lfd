@@ -15,8 +15,8 @@ import { PrismaBatchShortcutRepository } from "./infrastructure/prisma-batch-sho
 /**
  * **Les raccourcis du fournil** (plan
  * `documentation/fournil/la-fiche-d-atelier.md`, S1-S2) — un
- * module à part de `ProductionModule`, qui passe déjà les 300 lignes : rien
- * de la journée ne les lit, et ils ne lisent rien d'elle.
+ * module à part, importé par celui de l’atelier : rien de la journée ne les
+ * lit, et ils ne lisent rien d’elle.
  *
  * Les articles vendables viennent du canal `channels/commerce/`
  * (`SellableArticlesReader`), relié par `ProductionFeedModule`, global.

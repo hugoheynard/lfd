@@ -148,6 +148,20 @@ export function doorOf(context) {
   return `${DIRECTORIES[context]}index.ts`;
 }
 
+/**
+ * Le module Nest d'un sous-contexte : un `*.module.ts` à la racine de son
+ * dossier. C'est la seconde porte (§ 1 bis : « un module n'injecte que ce
+ * qu'un autre exporte »), et un module de métier n'entre chez un autre que
+ * par elle — `day/index.ts` ne peut pas l'exporter, le module de la journée
+ * charge des canaux.
+ */
+export function isContextModule(path, context) {
+  const directory = DIRECTORIES[context];
+  if (directory === undefined || !path.startsWith(directory)) return false;
+  const rest = path.slice(directory.length);
+  return !rest.includes("/") && rest.endsWith(".module.ts");
+}
+
 /** Les modèles du schéma `production` : `{ name, accessor, table }`. */
 export function productionModels(schemaSource) {
   const models = [];

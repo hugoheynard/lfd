@@ -149,6 +149,36 @@ test("tests : à plat, le test prend le sous-contexte du fichier qu'il éprouve"
   assert.equal(testContext("domain/__tests__/doubles.ts", imports, contexts), "day");
 });
 
+test("modules : un module de métier entre chez un autre par son module Nest, sur les arêtes admises", () => {
+  const { found } = run({
+    "plan/production-plan.module.ts": imp("../day/production-day.module.js"),
+    "atelier/production-atelier.module.ts":
+      imp("../quality/production-quality.module.js") + imp("../plan/production-plan.module.js"),
+    "day/production-day.module.ts": "",
+    "quality/production-quality.module.ts": "",
+  });
+  assert.deepEqual([...found.door], []);
+  assert.deepEqual(
+    [...found.edges],
+    ["atelier/production-atelier.module.ts → plan/production-plan.module.ts"],
+  );
+});
+
+test("modules : un fichier ordinaire n'entre pas par un module Nest, ni un module par l'intérieur", () => {
+  const { found } = run({
+    "plan/a.ts": imp("../day/production-day.module.js"),
+    "quality/production-quality.module.ts": imp("../day/domain/d.js"),
+    "resupply/http/x.module.ts": imp("../../day/production-day.module.js"),
+    "day/production-day.module.ts": "",
+    "day/domain/d.ts": "",
+  });
+  assert.deepEqual([...found.door].sort(), [
+    ["plan → day", 1],
+    ["quality → day", 1],
+    ["resupply → day", 1],
+  ]);
+});
+
 test("racine : production.module.ts lit l'intérieur de tout le monde sans dette", () => {
   const { found } = run(
     { "production.module.ts": imp("./domain/a.js"), "domain/a.ts": "" },

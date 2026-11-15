@@ -1,416 +1,73 @@
-import { BrandModule } from "../platform/brand/brand.module.js";
 import { Module } from "@nestjs/common";
 
-import { ProductionOrderWithdrawalDesk } from "./day/application/services/production-order-withdrawal.desk.js";
-import { DayInscribedOrderHeaderReader } from "./day/application/services/day-inscribed-order-header.reader.js";
-import { DayOrderLabelHeadReader } from "./day/application/services/day-order-label-head.reader.js";
-import { ProductionOrderRevisionDesk } from "./day/application/services/production-order-revision.desk.js";
-import { OrderRevisionNoticeLedger } from "./day/domain/ports/order-revision-notice.ledger.js";
-import { OrderRevisionNoticesReader } from "./day/domain/ports/order-revision-notices.reader.js";
-import { PrismaOrderRevisionNoticeLedger } from "./day/infrastructure/prisma-order-revision-notice.ledger.js";
-import { PrismaOrderRevisionNoticesReader } from "./day/infrastructure/prisma-order-revision-notices.reader.js";
-import { PlanStopRules } from "./plan/application/services/plan-stop-rules.js";
-import { ProductionPlanAdmissionDesk } from "./plan/application/services/production-plan-admission.desk.js";
-import { ProductionLaunchedResupplies } from "./resupply/application/services/production-launched-resupplies.js";
-import { PlanArrestRecording } from "./plan/application/services/plan-arrest-recording.js";
-import { PlanArrestAdmission } from "./plan/application/services/plan-arrest-admission.js";
-import { PlanIntakeReading } from "./plan/application/services/plan-intake-reading.js";
-import { RetakeRecording } from "./plan/application/services/retake-recording.js";
-import { LaunchResupplyHandler } from "./resupply/application/commands/launch-resupply.handler.js";
-import { ProductionResupplyLaunchController } from "./resupply/http/production-resupply-launch.controller.js";
-import { ClosedPlansReader } from "./channels/commerce/closed-plans.reader.js";
-import { OrderInscriptionReader } from "./channels/commerce/order-inscription.reader.js";
-import { OrderWithdrawalLedger } from "./day/domain/ports/order-withdrawal.ledger.js";
-import { OrderWithdrawalsReader } from "./day/domain/ports/order-withdrawals.reader.js";
-import { PrismaOrderInscriptionReader } from "./day/infrastructure/prisma-order-inscription.reader.js";
-import { PrismaClosedPlansReader } from "./plan/infrastructure/prisma-closed-plans.reader.js";
-import { PrismaOrderWithdrawalLedger } from "./day/infrastructure/prisma-order-withdrawal.ledger.js";
-import { PrismaOrderWithdrawalsReader } from "./day/infrastructure/prisma-order-withdrawals.reader.js";
-
-import { RunAutoCloseRoundHandler } from "./plan/application/commands/run-auto-close-round.handler.js";
-import { BusAutomaticDayCloser } from "./plan/application/services/bus-automatic-day-closer.js";
-import { PlanArrestBell } from "./plan/application/services/plan-arrest-bell.js";
-import { AutoCloseAttemptLog } from "./plan/domain/ports/auto-close-attempt-log.js";
-import { AutoCloseAttempts } from "./plan/domain/ports/auto-close-attempts.js";
-import { AutoCloseRoundReader } from "./plan/domain/ports/auto-close-round.reader.js";
-import { AutomaticDayCloser } from "./plan/domain/ports/automatic-day-closer.js";
-import { AutoCloseController } from "./plan/http/auto-close.controller.js";
-import {
-  PrismaAutoCloseAttemptLog,
-  PrismaAutoCloseAttempts,
-  PrismaAutoCloseRoundReader,
-} from "./plan/infrastructure/prisma-auto-close-round.js";
-import { AddProductionClosedDayHandler } from "./plan/application/commands/add-production-closed-day.handler.js";
-import { RemoveProductionClosedDayHandler } from "./plan/application/commands/remove-production-closed-day.handler.js";
-import { GetProductionSettingsHandler } from "./plan/application/queries/get-production-settings.handler.js";
-import { ProductionClosedDayRepository } from "./plan/domain/ports/production-closed-day.repository.js";
-import { ProductionSettingsReader } from "./plan/domain/ports/production-settings.reader.js";
-import { ProductionSettingsController } from "./plan/http/production-settings.controller.js";
-import { ProductionDisplaySettingsController } from "./atelier/http/production-display-settings.controller.js";
-import { ProductionBatchShortcutsModule } from "./atelier/production-batch-shortcuts.module.js";
-import { PrismaProductionClosedDayRepository } from "./plan/infrastructure/prisma-production-closed-day.repository.js";
-import { PrismaProductionSettingsReader } from "./plan/infrastructure/prisma-production-settings.reader.js";
-import { AddExternalDossierRecipientHandler } from "./plan/application/commands/add-external-dossier-recipient.handler.js";
-import { AddStaffDossierRecipientHandler } from "./plan/application/commands/add-staff-dossier-recipient.handler.js";
-import { RemoveDossierRecipientHandler } from "./plan/application/commands/remove-dossier-recipient.handler.js";
-import { ListDossierRecipientsHandler } from "./plan/application/queries/list-dossier-recipients.handler.js";
-import { ListDossierStaffCandidatesHandler } from "./plan/application/queries/list-dossier-staff-candidates.handler.js";
-import { DossierRecipientsReader } from "./plan/domain/ports/dossier-recipients.reader.js";
-import { DossierRecipientsRepository } from "./plan/domain/ports/dossier-recipients.repository.js";
-import { ProductionDossierRecipientsController } from "./plan/http/production-dossier-recipients.controller.js";
-import {
-  PrismaDossierRecipientsReader,
-  PrismaDossierRecipientsRepository,
-} from "./plan/infrastructure/prisma-dossier-recipients.repository.js";
-import { CloseProductionDayHandler } from "./plan/application/commands/close-production-day.handler.js";
-import { RemoveProductionContainerHandler } from "./atelier/application/commands/remove-production-container.handler.js";
-import { RetakeProductionDayHandler } from "./plan/application/commands/retake-production-day.handler.js";
-import { ReopenProductionDayHandler } from "./plan/application/commands/reopen-production-day.handler.js";
-import { SetProductionContainerHandler } from "./atelier/application/commands/set-production-container.handler.js";
-import { CancelBatchHandler } from "./atelier/application/commands/cancel-batch.handler.js";
-import { RecordBatchHandler } from "./atelier/application/commands/record-batch.handler.js";
-import { DepositQualityPhotoHandler } from "./quality/application/commands/deposit-quality-photo.handler.js";
-import { RenderQualityCheckHandler } from "./quality/application/commands/render-quality-check.handler.js";
-import { PruneProductionDayChangesHandler } from "./day/application/commands/prune-production-day-changes.handler.js";
-import { ProductionDayVersionSource } from "./day/application/services/production-day-version.source.js";
-import { ProductionDayChangePruner } from "./day/domain/ports/production-day-change.pruner.js";
-import { ProductionDayVersionReader } from "./day/domain/ports/production-day-version.reader.js";
-import { PrismaProductionDayChangePruner } from "./day/infrastructure/prisma-production-day-change.pruner.js";
-import { PrismaProductionDayVersionReader } from "./day/infrastructure/prisma-production-day-version.reader.js";
-import { SweepQualityUploadsHandler } from "./quality/application/commands/sweep-quality-uploads.handler.js";
-import { GetQualityBoardHandler } from "./quality/application/queries/get-quality-board.handler.js";
-import { GetQualityPhotoHandler } from "./quality/application/queries/get-quality-photo.handler.js";
-import { ListQualityChecksHandler } from "./quality/application/queries/list-quality-checks.handler.js";
-import { QualityPhotoAttachment } from "./quality/application/services/quality-photo-attachment.service.js";
-import { QualityCheckReader } from "./quality/domain/ports/quality-check.reader.js";
-import { QualityLineStatusReader } from "./quality/domain/ports/quality-line-status.reader.js";
-import { QualityCheckRepository } from "./quality/domain/ports/quality-check.repository.js";
-import { QualityUploadRepository } from "./quality/domain/ports/quality-upload.repository.js";
-import { ProductionQualityController } from "./quality/http/production-quality.controller.js";
-import { SetProductionTranchesHandler } from "./plan/application/commands/set-production-tranches.handler.js";
-import { SetProductionDisplayHandler } from "./atelier/application/commands/set-production-display.handler.js";
-import { ProductionDisplaySettingsReader } from "./atelier/domain/ports/production-display-settings.reader.js";
-import { ProductionDisplaySettingsRepository } from "./atelier/domain/ports/production-display-settings.repository.js";
-import { PrismaProductionDisplaySettingsReader } from "./atelier/infrastructure/prisma-production-display-settings.reader.js";
-import { PrismaProductionDisplaySettingsRepository } from "./atelier/infrastructure/prisma-production-display-settings.repository.js";
-import { ProductionTrancheSettingsReader } from "./day/domain/ports/production-tranche-settings.reader.js";
-import { ProductionTrancheSettingsRepository } from "./day/domain/ports/production-tranche-settings.repository.js";
-import { PrismaProductionTrancheSettingsReader } from "./day/infrastructure/prisma-production-tranche-settings.reader.js";
-import { PrismaProductionTrancheSettingsRepository } from "./day/infrastructure/prisma-production-tranche-settings.repository.js";
-import { QualityControlSettingsController } from "./quality/http/quality-control-settings.controller.js";
-import { SetQualityControlSettingsHandler } from "./quality/application/commands/set-quality-control-settings.handler.js";
-import { GetQualityControlSettingsHandler } from "./quality/application/queries/get-quality-control-settings.handler.js";
-import { QualityControlSettingsReader } from "./quality/domain/ports/quality-control-settings.reader.js";
-import { QualityControlSettingsRepository } from "./quality/domain/ports/quality-control-settings.repository.js";
-import { PrismaQualityControlSettingsReader } from "./quality/infrastructure/prisma-quality-control-settings.reader.js";
-import { PrismaQualityControlSettingsRepository } from "./quality/infrastructure/prisma-quality-control-settings.repository.js";
-import { ProductionDayChangeSweepController } from "./day/http/production-day-change-sweep.controller.js";
-import { QualityUploadSweepController } from "./quality/http/quality-upload-sweep.controller.js";
-import {
-  PrismaQualityCheckReader,
-  PrismaQualityCheckRepository,
-} from "./quality/infrastructure/prisma-quality-check.repository.js";
-import { PrismaQualityUploadRepository } from "./quality/infrastructure/prisma-quality-upload.repository.js";
+import { BrandModule } from "../platform/brand/brand.module.js";
 import { GetAtelierSheetPdfHandler } from "./atelier/application/queries/get-atelier-sheet-pdf.handler.js";
-import { GetAtelierSheetSpecimenHandler } from "./atelier/application/queries/get-atelier-sheet-specimen.handler.js";
-import { GetDayDossierSpecimenHandler } from "./plan/application/queries/get-day-dossier-specimen.handler.js";
-import { GetProductionCountSpecimenHandler } from "./plan/application/queries/get-production-count-specimen.handler.js";
-import { AdminAtelierSheetSpecimenController } from "./atelier/http/admin-atelier-sheet-specimen.controller.js";
-import { AdminDayPapersSpecimensController } from "./plan/http/admin-day-papers-specimens.controller.js";
-import { GetCurrentProductionWorksheetHandler } from "./atelier/application/queries/get-current-production-worksheet.handler.js";
-import { GetDayDossierPdfHandler } from "./plan/application/queries/get-day-dossier-pdf.handler.js";
-import { GetDayResuppliesHandler } from "./resupply/application/queries/get-day-resupplies.handler.js";
-import { GetProductionCountPdfHandler } from "./plan/application/queries/get-production-count-pdf.handler.js";
-import { GetProductionDayStatusHandler } from "./plan/application/queries/get-production-day-status.handler.js";
-import { GetProductionForecastHandler } from "./plan/application/queries/get-production-forecast.handler.js";
-import { GetProductionDueThresholdsHandler } from "./day/application/queries/get-production-due-thresholds.handler.js";
-import { GetProductionWorksheetHandler } from "./atelier/application/queries/get-production-worksheet.handler.js";
-import { ListProductionContainersHandler } from "./atelier/application/queries/list-production-containers.handler.js";
-import { ProductionPaperArchive } from "./shared/print/application/services/production-paper-archive.service.js";
-import { ProductionPaperRenderer } from "./plan/application/services/production-paper.service.js";
-import { ProductionWorksheetReading } from "./atelier/application/services/production-worksheet-reading.service.js";
-import { DossierDeadlinesReading } from "./plan/application/services/dossier-deadlines-reading.service.js";
-import { WorksheetDeadlinesReading } from "./atelier/application/services/worksheet-deadlines-reading.service.js";
-import { DayVersionsModule } from "../platform/day-versions/day-versions.module.js";
-import { WorksheetContents } from "./atelier/application/services/worksheet-contents.service.js";
-import { ProductionContainerReader } from "./atelier/domain/ports/production-container.reader.js";
-import { ProductionContainerRepository } from "./atelier/domain/ports/production-container.repository.js";
-import { ProductionDayRepository } from "./day/domain/ports/production-day.repository.js";
-import { ProductionBatchRepository } from "./day/domain/ports/production-batch.repository.js";
-import { ProductionDayLock } from "./day/domain/ports/production-day.lock.js";
-import { ProductionPlanReader } from "./plan/domain/ports/production-plan.reader.js";
-import { ProductionDayController } from "./plan/http/production-day.controller.js";
-import { ProductionAtelierSheetController } from "./atelier/http/production-atelier-sheet.controller.js";
-import { ProductionDayResuppliesController } from "./resupply/http/production-day-resupplies.controller.js";
-import { ProductionDayRetakeController } from "./plan/http/production-day-retake.controller.js";
-import { ProductionSupervisionController } from "./atelier/http/production-supervision.controller.js";
-import { ProductionWorksheetController } from "./atelier/http/production-worksheet.controller.js";
-import {
-  PrismaProductionContainerReader,
-  PrismaProductionContainerRepository,
-} from "./atelier/infrastructure/prisma-production-container.repository.js";
-import { PrismaProductionDayRepository } from "./day/infrastructure/prisma-production-day.repository.js";
-import { PrismaProductionBatchRepository } from "./day/infrastructure/prisma-production-batch.repository.js";
-import { PrismaProductionDayLock } from "./day/infrastructure/prisma-production-day.lock.js";
-import { PrismaArrestedPlanHold } from "./plan/infrastructure/prisma-arrested-plan.hold.js";
-import { PrismaLaunchedResupplyLookup } from "./resupply/infrastructure/prisma-launched-resupply.lookup.js";
-import { PrismaProductionDayStatusReader } from "./day/infrastructure/prisma-production-day-status.reader.js";
-import { ArrestedPlanHold } from "./channels/packing/arrested-plan.hold.js";
-import { LaunchedResupplyLookup } from "./resupply/domain/ports/launched-resupply.lookup.js";
-import { ProductionDayStatusReader } from "./day/domain/ports/production-day-status.reader.js";
-import { PrismaProductionPlanReader } from "./plan/infrastructure/prisma-production-plan.reader.js";
-import { PackingHandoffs } from "./atelier/application/services/packing-handoffs.service.js";
-import { ProductionHandoffLedger } from "./day/domain/ports/production-handoff.ledger.js";
-import { ProductionHandoffReader } from "./day/domain/ports/production-handoff.reader.js";
-import { PrismaProductionHandoffLedger } from "./day/infrastructure/prisma-production-handoff.ledger.js";
-import { PrismaProductionHandoffReader } from "./day/infrastructure/prisma-production-handoff.reader.js";
-import { SealedDayReading } from "./quality/application/services/sealed-day-reading.service.js";
-import { ResupplyLaunchGestures } from "./resupply/application/services/resupply-launch-gesture.js";
-import { ResupplyLaunchReading } from "./resupply/application/services/resupply-launch-reading.js";
-import { ResupplyLaunchRecording } from "./resupply/application/services/resupply-launch-recording.js";
-import { ChannelQualityHeldOrdersReader } from "./quality/application/services/channel-quality-held-orders.reader.js";
-import { CheckedQualityLinesReader } from "./quality/application/services/checked-quality-lines.reader.js";
-import { DayPlannedDestinationsReader } from "./day/application/services/day-planned-destinations.reader.js";
-import { OnPackingReturned } from "./day/application/handlers/on-packing-returned.handler.js";
+import { ProductionAtelierModule } from "./atelier/production-atelier.module.js";
+import { ProductionDayModule } from "./day/production-day.module.js";
 import { SendDossierOnDayClosed } from "./plan/application/handlers/send-dossier-on-day-closed.handler.js";
 import { SendDossierOnDayRetaken } from "./plan/application/handlers/send-dossier-on-day-retaken.handler.js";
+import { GetDayDossierPdfHandler } from "./plan/application/queries/get-day-dossier-pdf.handler.js";
+import { GetProductionCountPdfHandler } from "./plan/application/queries/get-production-count-pdf.handler.js";
+import { GetProductionForecastHandler } from "./plan/application/queries/get-production-forecast.handler.js";
+import { GetProductionSettingsHandler } from "./plan/application/queries/get-production-settings.handler.js";
 import { DossierDispatch } from "./plan/application/services/dossier-dispatch.service.js";
-import { DossierDispatchLog } from "./plan/domain/ports/dossier-dispatch.log.js";
-import { PrismaDossierDispatchLog } from "./plan/infrastructure/prisma-dossier-dispatch.log.js";
-import { ProductionReturnRequests } from "./day/domain/ports/production-return.requests.js";
-import { PrismaProductionReturnRequests } from "./day/infrastructure/prisma-production-return.requests.js";
+import { ProductionPaperRenderer } from "./plan/application/services/production-paper.service.js";
+import { ProductionPlanModule } from "./plan/production-plan.module.js";
+import { ProductionQualityModule } from "./quality/production-quality.module.js";
+import { ProductionResupplyModule } from "./resupply/production-resupply.module.js";
+import { ProductionPrintModule } from "./shared/print/production-print.module.js";
 
 /**
- * **Le fournil.**
+ * **Le fournil** — la racine de composition du bloc : elle importe un module
+ * par métier (la journée, le plan, l'atelier, la qualité, le réassort,
+ * l'archivage des papiers) et réexporte ceux dont `appBootstrap` relie les
+ * fournisseurs aux autres blocs.
  *
  * Il ne déclare PAS `DayOrdersReader` : c'est le port qu'il publie et que le
  * commerce implémente, relié dans la racine de composition
- * (`ProductionFeedModule`). Le brancher ici obligerait ce module à connaître
- * `b2b`, ce que la matrice des frontières interdit — et ce serait franchir la
- * frontière par la porte de service.
+ * (`ProductionFeedModule`). Le retrait non plus : ce que le fournil en garde
+ * est une question — `AttestedHandoversReader`, déclarée dans
+ * `channels/handover/` et implémentée par le retrait.
  *
- * ⚠️ **Le retrait n'est plus ici** depuis le 2026-09-10 : il a son bloc, son
- * module et son contrôleur. Ce que le fournil en garde est une QUESTION —
- * `AttestedHandoversReader`, qu'il déclare dans `channels/handover/` et que le
- * retrait implémente. Il ne tient plus son dépôt d'écriture.
+ * ⚠️ Neuf fournisseurs restent ici, et ce n'est pas leur place : le rendu des
+ * papiers (`ProductionPaperRenderer`) est au plan et lit l'affichage de
+ * l'atelier, la fiche PDF de l'atelier le lit en retour, et le prévisionnel
+ * et les réglages du plan lisent aussi l'affichage. Les ranger dans le plan
+ * ou dans l'atelier ferait importer l'un par l'autre — une arête que le
+ * découpage refuse, et un cycle de modules dans un sens. Ils restent dans la
+ * racine, qui voit les deux, jusqu'à ce que le plan du découpage tranche
+ * (`documentation/fournil/plan-decoupage-du-fournil.md`, D6).
  */
 @Module({
-  // Le logo de l'en-tête des papiers du fournil (Hugo, 2026-10-25).
-  // Les raccourcis du fournil (plan des raccourcis, S1) : leur propre module.
-  imports: [BrandModule, ProductionBatchShortcutsModule, DayVersionsModule],
-  controllers: [
-    ProductionDayController,
-    ProductionDayResuppliesController,
-    ProductionAtelierSheetController,
-    ProductionDayRetakeController,
-    ProductionWorksheetController,
-    ProductionSupervisionController,
-    ProductionQualityController,
-    QualityControlSettingsController,
-    QualityUploadSweepController,
-    ProductionDayChangeSweepController,
-    ProductionSettingsController,
-    ProductionDisplaySettingsController,
-    // La fiche d'atelier d'EXEMPLE de la planche des documents (2026-10-20).
-    AdminAtelierSheetSpecimenController,
-    AdminDayPapersSpecimensController,
-    ProductionDossierRecipientsController,
-    AutoCloseController,
-    // « Lancer » un réassort « au plus tôt » (R4a, `reassort-boutiques/au-plus-tot.md`).
-    ProductionResupplyLaunchController,
+  imports: [
+    ProductionDayModule,
+    ProductionPrintModule,
+    ProductionQualityModule,
+    ProductionResupplyModule,
+    ProductionPlanModule,
+    ProductionAtelierModule,
+    // Le logo de l'en-tête des papiers du fournil.
+    BrandModule,
   ],
   providers: [
-    CloseProductionDayHandler,
-    // Le tour de l'arrêt automatique (plan `arret-du-plan.md`, lot A2) :
-    // la vraie clôture par le bus, sous l'acteur système, et la cloche du staff.
-    RunAutoCloseRoundHandler,
-    PlanArrestBell,
-    { provide: AutomaticDayCloser, useClass: BusAutomaticDayCloser },
-    { provide: AutoCloseRoundReader, useClass: PrismaAutoCloseRoundReader },
-    { provide: AutoCloseAttempts, useClass: PrismaAutoCloseAttempts },
-    { provide: AutoCloseAttemptLog, useClass: PrismaAutoCloseAttemptLog },
-    RecordBatchHandler,
-    CancelBatchHandler,
-    RetakeProductionDayHandler,
-    ReopenProductionDayHandler,
-    LaunchResupplyHandler,
-    SetProductionContainerHandler,
-    RemoveProductionContainerHandler,
-    GetProductionDayStatusHandler,
-    GetProductionForecastHandler,
-    GetProductionDueThresholdsHandler,
-    GetProductionWorksheetHandler,
-    GetCurrentProductionWorksheetHandler,
-    ListProductionContainersHandler,
+    ProductionPaperRenderer,
+    GetAtelierSheetPdfHandler,
     GetProductionCountPdfHandler,
     GetDayDossierPdfHandler,
-    GetDayResuppliesHandler,
-    GetAtelierSheetPdfHandler,
-    GetAtelierSheetSpecimenHandler,
-    GetDayDossierSpecimenHandler,
-    GetProductionCountSpecimenHandler,
-    ProductionPaperRenderer,
-    ProductionPaperArchive,
-    // La lecture de la fiche, partagée par la route datée et la route « en
-    // cours » : un handler n'en appelle pas un autre (§4).
-    ProductionWorksheetReading,
-    WorksheetContents,
-    WorksheetDeadlinesReading,
-    DossierDeadlinesReading,
-    { provide: ProductionDayRepository, useClass: PrismaProductionDayRepository },
-    { provide: ProductionBatchRepository, useClass: PrismaProductionBatchRepository },
-    { provide: ProductionDayLock, useClass: PrismaProductionDayLock },
-    // L'en-tête seul, et un réassort lancé seul (2026-11-02) : deux lectures
-    // ciblées, à part du dépôt qui relit la journée entière (ISP).
-    { provide: ProductionDayStatusReader, useClass: PrismaProductionDayStatusReader },
-    { provide: LaunchedResupplyLookup, useClass: PrismaLaunchedResupplyLookup },
-    // Tenir le plan arrêté pendant un geste du colisage ou de la livraison
-    // (2026-11-02) : publié par `channels/packing/`, exporté pour leurs modules.
-    { provide: ArrestedPlanHold, useClass: PrismaArrestedPlanHold },
-    // La lecture du plan arrêté est un port À PART du dépôt d'écriture, et son
-    // adaptateur vit chez la production : c'est SON schéma qu'il interroge.
-    { provide: ProductionPlanReader, useClass: PrismaProductionPlanReader },
-    // Le contenant est du PARAMÉTRAGE du fournil, et ses deux ports sont reliés
-    // ici : c'est le schéma `production` qu'ils interrogent, donc rien n'a à
-    // remonter dans la racine de composition. Deux adaptateurs pour deux ports —
-    // lire et régler sont deux besoins (ISP), et TypeScript n'hérite pas de deux
-    // classes abstraites.
-    { provide: ProductionContainerReader, useClass: PrismaProductionContainerReader },
-    { provide: ProductionContainerRepository, useClass: PrismaProductionContainerRepository },
-    // Le contrôle qualité du superviseur (plan `le-controle-qualite.md`, QC2) :
-    // son schéma est `production`, ses ports se relient donc ici. Lire une
-    // journée et écrire un verdict sont deux ports (ISP), les dépôts un troisième.
-    DepositQualityPhotoHandler,
-    RenderQualityCheckHandler,
-    SweepQualityUploadsHandler,
-    GetQualityBoardHandler,
-    ListQualityChecksHandler,
-    GetQualityPhotoHandler,
-    QualityPhotoAttachment,
-    { provide: QualityCheckRepository, useClass: PrismaQualityCheckRepository },
-    { provide: QualityCheckReader, useClass: PrismaQualityCheckReader },
-    { provide: QualityLineStatusReader, useClass: CheckedQualityLinesReader },
-    { provide: QualityUploadRepository, useClass: PrismaQualityUploadRepository },
-    SetQualityControlSettingsHandler,
-    GetQualityControlSettingsHandler,
-    SetProductionTranchesHandler,
-    SetProductionDisplayHandler,
-    { provide: ProductionDisplaySettingsReader, useClass: PrismaProductionDisplaySettingsReader },
-    {
-      provide: ProductionDisplaySettingsRepository,
-      useClass: PrismaProductionDisplaySettingsRepository,
-    },
-    { provide: ProductionTrancheSettingsReader, useClass: PrismaProductionTrancheSettingsReader },
-    {
-      provide: ProductionTrancheSettingsRepository,
-      useClass: PrismaProductionTrancheSettingsRepository,
-    },
-    { provide: QualityControlSettingsReader, useClass: PrismaQualityControlSettingsReader },
-    {
-      provide: QualityControlSettingsRepository,
-      useClass: PrismaQualityControlSettingsRepository,
-    },
-    // La version par journée (`version-par-journee.md`, V1-V2) : lire et
-    // balayer le journal sont deux ports (ISP), sur le schéma `production`.
-    ProductionDayVersionSource,
-    PruneProductionDayChangesHandler,
-    { provide: ProductionDayVersionReader, useClass: PrismaProductionDayVersionReader },
-    { provide: ProductionDayChangePruner, useClass: PrismaProductionDayChangePruner },
-    // La remise au colisage (plan `colisage/colisage.md`, K1).
-    PackingHandoffs,
-    { provide: ProductionHandoffLedger, useClass: PrismaProductionHandoffLedger },
-    { provide: ProductionHandoffReader, useClass: PrismaProductionHandoffReader },
-    // La bascule (K2) : les retours demandés au colisage, et sa réponse.
-    { provide: ProductionReturnRequests, useClass: PrismaProductionReturnRequests },
-    OnPackingReturned,
-    // Les bacs fermés seulement — l'état du jour et le contrôle qualité (K3a).
-    SealedDayReading,
-    ResupplyLaunchGestures,
-    ResupplyLaunchReading,
-    ResupplyLaunchRecording,
-    // L'arrêt et le retirage : ce qu'ils lisent sous le verrou, ce qu'ils
-    // écrivent et publient (sortis des handlers le 2026-11-02).
-    PlanIntakeReading,
-    PlanArrestAdmission,
-    PlanArrestRecording,
-    RetakeRecording,
-    // Publiés pour le poste servi par le colisage (K3a) ; reliés par
-    // `PackingFeedModule`.
-    ChannelQualityHeldOrdersReader,
-    DayPlannedDestinationsReader,
-    // Les réglages du fournil — les jours fermés (A1) : schéma `production`,
-    // un dépôt et un lecteur (ISP). L'arrêt automatique suit l'heure limite
-    // générale (2026-10-21), lue au commerce par `OrderCutoffRulesReader`,
-    // relié par `ProductionFeedModule`. Depuis le lot R3a du réassort, à la
-    // plus tardive d'elle et de l'heure du réassort : `PlanStopRules`.
-    PlanStopRules,
-    AddProductionClosedDayHandler,
-    RemoveProductionClosedDayHandler,
-    GetProductionSettingsHandler,
-    { provide: ProductionClosedDayRepository, useClass: PrismaProductionClosedDayRepository },
-    { provide: ProductionSettingsReader, useClass: PrismaProductionSettingsReader },
-    // Les destinataires du dossier du jour (`dossier-prod-du-jour.md`, E2) :
-    // schéma `production` ; les fiches du personnel se relisent par les ports
-    // de lecture de l'annuaire (`StaffContacts`, `ReachableStaff`), globaux.
-    AddStaffDossierRecipientHandler,
-    AddExternalDossierRecipientHandler,
-    RemoveDossierRecipientHandler,
-    ListDossierRecipientsHandler,
-    ListDossierStaffCandidatesHandler,
-    { provide: DossierRecipientsRepository, useClass: PrismaDossierRecipientsRepository },
-    { provide: DossierRecipientsReader, useClass: PrismaDossierRecipientsReader },
-    // L'envoi du dossier (E3) : deux abonnés durables du fournil, un service
-    // partagé, et sa trace d'envoi dans le schéma `production`.
+    // L'envoi du dossier : deux abonnés durables et le service qu'ils partagent.
+    DossierDispatch,
     SendDossierOnDayClosed,
     SendDossierOnDayRetaken,
-    DossierDispatch,
-    { provide: DossierDispatchLog, useClass: PrismaDossierDispatchLog },
-    // L'annulation staff (doc `documentation/commandes/annulation/annulation-par-le-staff.md`,
-    // C3.4) : le registre des retraits, lu par la clôture et le retirage sous le
-    // verrou, et le guichet que le commerce appelle — relié par
-    // `ProductionDeskFeedModule`, comme l'inscription qu'il affiche.
-    { provide: OrderWithdrawalLedger, useClass: PrismaOrderWithdrawalLedger },
-    { provide: OrderWithdrawalsReader, useClass: PrismaOrderWithdrawalsReader },
-    PrismaOrderInscriptionReader,
-    { provide: OrderInscriptionReader, useExisting: PrismaOrderInscriptionReader },
-    ProductionOrderWithdrawalDesk,
-    // L'en-tête figé d'une commande, pour la pierre tombale du colisage (plan A1).
-    DayInscribedOrderHeaderReader,
-    // L'acheminement et le créneau d'une commande, pour l'étiquette d'un sac.
-    DayOrderLabelHeadReader,
-    // La modification d'une commande (voir `documentation/commandes/modification/modifier-une-commande.md`,
-    // § 2.8 « Les autres blocs ») : les notes de révision, écrites par le guichet sous le verrou de
-    // la journée. Plus aucun lecteur depuis le 2026-11-02 : la clôture et le
-    // retirage lisent les commandes sous le verrou, ce qui couvre les révisions.
-    { provide: OrderRevisionNoticeLedger, useClass: PrismaOrderRevisionNoticeLedger },
-    { provide: OrderRevisionNoticesReader, useClass: PrismaOrderRevisionNoticesReader },
-    ProductionOrderRevisionDesk,
-    // L'arrêt du plan comme limite (lot O3) : relié par `ProductionDeskFeedModule`.
-    PrismaClosedPlansReader,
-    { provide: ClosedPlansReader, useExisting: PrismaClosedPlansReader },
-    ProductionPlanAdmissionDesk,
-    // Le refus synchrone d'annuler un réassort lancé (R4a) : relié par
-    // `ProductionDeskFeedModule`, comme le guichet d'admission.
-    ProductionLaunchedResupplies,
+    GetProductionForecastHandler,
+    GetProductionSettingsHandler,
   ],
-  // La lecture des contrôles sert aussi la retenue que la production PUBLIE au
-  // retrait (`channels/handover/`, QC3) — son adaptateur est relié par la
-  // racine de composition, qui a besoin de ce port pour le construire.
+  // Les fournisseurs que la racine de composition relie aux autres blocs,
+  // chacun exporté par le module de son métier.
   exports: [
-    // La source du journal du fournil, reliée au registre par `appBootstrap/day-version-sources.module.ts`.
-    ProductionDayVersionSource,
-    QualityCheckReader,
-    ChannelQualityHeldOrdersReader,
-    DayPlannedDestinationsReader,
-    ProductionOrderWithdrawalDesk,
-    DayInscribedOrderHeaderReader,
-    DayOrderLabelHeadReader,
-    ProductionOrderRevisionDesk,
-    PrismaOrderInscriptionReader,
-    PrismaClosedPlansReader,
-    ProductionPlanAdmissionDesk,
-    ProductionLaunchedResupplies,
-    ArrestedPlanHold,
+    ProductionDayModule,
+    ProductionQualityModule,
+    ProductionResupplyModule,
+    ProductionPlanModule,
   ],
 })
 export class ProductionModule {}
