@@ -355,10 +355,10 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
       ]),
     );
     fixture.detectChanges();
-    expect(said(el.querySelector('[data-line-stock="CRO"]'))).toBe('57 en stock');
-    expect(said(el.querySelector('[data-line-stock="PAC"]'))).toBe('0 en stock');
+    expect(said(el.querySelector('[data-line-stock="CRO"]'))).toBe('57 à répartir');
+    expect(said(el.querySelector('[data-line-stock="PAC"]'))).toBe('0 à répartir');
     const short = el.querySelector('[data-line-stock="BRI"]');
-    expect(said(short)).toBe('-3 en stock');
+    expect(said(short)).toBe('-3 à répartir');
     expect(short?.classList.contains('is-short')).toBe(true);
     // Un SKU absent de la marchandise servie : rien d'inventé.
     expect(el.querySelector('[data-line-stock="BAG"]')).toBeNull();

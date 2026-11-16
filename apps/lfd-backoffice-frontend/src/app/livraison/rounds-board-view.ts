@@ -107,7 +107,10 @@ export function mapSubtitleOf(
   departure: MapDeparture | null,
   inVehicle: boolean,
 ): string {
-  const count = mains.reduce((total, round) => total + round.stops.length, 0);
+  const count = mains.reduce(
+    (total, round) => total + round.stops.length + (round.transferStops?.length ?? 0),
+    0,
+  );
   const parts = [count === 1 ? '1 arrêt' : `${String(count)} arrêts`];
   if (departure !== null) {
     parts.push(`départ et retour ${departure.label}`);

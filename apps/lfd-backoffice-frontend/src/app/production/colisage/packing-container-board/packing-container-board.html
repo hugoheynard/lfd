@@ -45,10 +45,10 @@
                 class="cb-stock"
                 [class.is-short]="remaining < 0"
                 [attr.data-line-stock]="line.sku"
-                >{{ remaining }} en stock</span
+                >{{ remaining }} à répartir</span
               >
             } @else if (stock().has(line.sku)) {
-              <span class="cb-stock" [attr.data-line-stock]="line.sku">0 en stock</span>
+              <span class="cb-stock" [attr.data-line-stock]="line.sku">0 à répartir</span>
             }
           </span>
           <span class="cb-name">

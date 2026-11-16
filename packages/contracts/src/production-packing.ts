@@ -309,8 +309,9 @@ export interface PackingSheet {
 }
 
 /**
- * **La ressource d'un article** : ce que le four a sorti, ce que les bacs ont
- * déjà pris.
+ * **La ressource d'un article** : ce que la journée prévoit d'en fabriquer, ce
+ * que les bacs ont déjà pris. Ce n'est pas un stock : le compte vaut dès l'arrêt
+ * du plan, avant la première fournée — l'écran dit « à répartir ».
  *
  * C'est la moitié que la fiche d'atelier ne porte pas, et c'est elle qui fait de
  * cet écran une balance plutôt qu'une liste de cases. Celui qui colise a besoin
@@ -328,7 +329,7 @@ export interface PackingResource {
   readonly produced: number;
   /** La somme des lignes DÉJÀ cochées, tous bacs confondus. */
   readonly allocated: number;
-  /** `produced - allocated`. Négatif = les bacs veulent plus que le four n'a sorti. */
+  /** `produced - allocated`. Négatif = les bacs veulent plus que la journée ne prévoit. */
   readonly remaining: number;
   /**
    * **Plus rien à répartir** : le reste est à zéro, et l'article est sorti du

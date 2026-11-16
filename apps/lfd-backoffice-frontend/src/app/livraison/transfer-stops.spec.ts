@@ -13,7 +13,7 @@ import { loadingProgress } from './loading-progress';
 import { myStopOf } from './my-round.fixture';
 import { interleavedStops, openTransferStops, transferStopLabel } from './my-round-transfers';
 import type { BoardRound } from './rounds-board-model';
-import { transferTargetsOf } from './rounds-board-view';
+import { mapSubtitleOf, transferTargetsOf } from './rounds-board-view';
 import { transferBinsPayload, transferBinsSummary } from './transfer-bins';
 import { manifestFreshness, manifestSections } from './transfer-manifest';
 
@@ -271,5 +271,21 @@ describe('transferTargetsOf', () => {
       'r1',
     );
     expect(targets).toEqual([{ value: 'r2', label: 'Master' }]);
+  });
+
+  /**
+   * Régression : la carte disait 17 arrêts quand la feuille de route en
+   * imprimait 18 — le transfert au site n'était pas compté (répétition du
+   * 2026-11-15).
+   */
+  it('le transfert au site compte pour un arrêt, comme sur la feuille de route', () => {
+    const villageStop = {
+      stopId: 's-t',
+      transferId: 't1',
+      siteLabel: 'Le Village',
+      position: 1,
+      orderCount: 3,
+    };
+    expect(mapSubtitleOf([round({ transferStops: [villageStop] })], null, false)).toBe('1 arrêt');
   });
 });

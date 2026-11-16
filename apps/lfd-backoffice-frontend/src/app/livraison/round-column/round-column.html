@@ -83,7 +83,9 @@
       </div>
     }
 
-    <div class="count" data-stop-count>{{ stopCountLabel(round().stops.length) }}</div>
+    <div class="count" data-stop-count>
+      {{ stopCountLabel(round().stops.length + transferStops().length) }}
+    </div>
 
     @if (canSort()) {
       <button
