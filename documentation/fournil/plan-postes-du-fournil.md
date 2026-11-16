@@ -195,6 +195,30 @@ site.
 Le contrat `WorkshopGroup` gagne `workstation: { id, name } | null` et
 `unplaced: boolean`.
 
+#### La même découpe de page (décidé par Hugo le 2026-11-16)
+
+Le dossier du jour et la fiche d'atelier gardent **exactement** leur
+découpe : un poste prend la place d'un rayon, et rien d'autre ne bouge.
+
+- **Une section par groupe.** Le titre est le nom du poste au lieu du nom du
+  rayon. Le calendrier par tranche, l'ordre des lignes (le plus gros d'abord),
+  les sauts de page et les annexes restent les mêmes.
+- **Les intertitres** (avec `showSubcategories`) deviennent les rayons de
+  boutique à l'intérieur du poste, à la place des sous-catégories. Le
+  mécanisme est le même.
+- **Un groupe « à ranger »** a la forme d'un groupe de rayon. Seul son titre
+  porte la mention : « Traiteur salé — à ranger ».
+
+C'est tenu par la construction : `recapOf` (`plan/domain/services/day-dossier.ts`)
+et `worksheetGroupsOf` rendent déjà des groupes `{ titre, lignes,
+intertitres }`, et la mise en page ne lit que ces groupes (vérifié le
+2026-11-16). Le changement se fait **en amont**, dans le choix des groupes ;
+le gabarit du PDF n'est pas touché.
+
+**Test (W2) :** une journée où chaque rayon a exactement un poste du même nom
+rend un dossier dont les groupes sont identiques, titres compris, à ceux du
+mode boutique.
+
 ### 3.5 Le figement
 
 Le dossier du jour est figé à l'arrêt : il garde les postes du moment, sans
