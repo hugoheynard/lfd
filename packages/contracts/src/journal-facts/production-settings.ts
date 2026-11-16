@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { PRODUCTION_GROUPINGS } from "../production-settings.js";
 import { clockTime, count, day, fact, payload, retired, subjectLabel } from "./fact.js";
 
 /**
@@ -16,6 +17,9 @@ const closeSettings = () =>
     closeAt: clockTime().nullable(),
     alertAt: clockTime().nullable(),
   });
+
+/** Le rangement du fournil : par rayon de boutique ou par poste. */
+const grouping = () => z.enum(PRODUCTION_GROUPINGS);
 
 const closedDay = () => payload({ subjectLabel: subjectLabel(), serviceDay: day() });
 
@@ -85,10 +89,16 @@ export const PRODUCTION_SETTINGS_FACTS = {
    * l'état posé et celui qu'il remplace, défaut compris. Un réglage unique,
    * sans `subjectLabel`.
    */
+  /**
+   * Le rangement du fournil. `grouping` (rayon ou poste, plan
+   * `fournil/plan-postes-du-fournil.md`) est absent des faits écrits avant
+   * qu'il existe : ils valaient tous `shelf`.
+   */
   "production_display_settings.updated": fact(
     payload({
       showSubcategories: z.boolean(),
-      previous: payload({ showSubcategories: z.boolean() }),
+      grouping: grouping().optional(),
+      previous: payload({ showSubcategories: z.boolean(), grouping: grouping().optional() }),
     }),
   ),
   /**

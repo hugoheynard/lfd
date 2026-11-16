@@ -27,6 +27,8 @@ import { OrderSheetPaper, ProductionPaperArchive } from "../../../../shared/prin
 import { ProductionPaperRenderer } from "../../services/production-paper.service.js";
 import { GetDayDossierPdfHandler } from "../get-day-dossier-pdf.handler.js";
 import { GetDayDossierPdfQuery } from "../get-day-dossier-pdf.query.js";
+import { DossierGroupingReading } from "../../services/dossier-grouping-reading.service.js";
+import { placementPorts } from "../../../../workstations/application/__tests__/placement-doubles.js";
 
 /**
  * **Le dossier du jour, servi** : refusé avant l'arrêt, archivé au premier
@@ -92,7 +94,7 @@ function setup(
   const store = new InMemoryProductionStore();
   const shelves = new Shelves();
   const renderer = new ProductionPaperRenderer(
-    shelves,
+    new DossierGroupingReading(shelves, ...placementPorts()),
     new OrderSheetPaper(new NoAdminOrigin(), colors, new FixedPaperLogo()),
     new FixedResupplyPrintColors(),
     new FixedPaperLogo(),

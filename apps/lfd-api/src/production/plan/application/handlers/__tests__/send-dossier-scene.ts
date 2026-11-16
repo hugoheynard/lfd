@@ -50,6 +50,8 @@ import { FixedPaperLogo } from "../../../../shared/print/application/__tests__/p
 import { FixedPlannedDeliveryNotes } from "../../../../channels/commerce/__tests__/planned-delivery-notes-doubles.js";
 import { SendDossierOnDayClosed } from "../send-dossier-on-day-closed.handler.js";
 import { SendDossierOnDayRetaken } from "../send-dossier-on-day-retaken.handler.js";
+import { DossierGroupingReading } from "../../services/dossier-grouping-reading.service.js";
+import { placementPorts } from "../../../../workstations/application/__tests__/placement-doubles.js";
 
 /**
  * **La scène des deux abonnés du dossier du jour** (plan
@@ -197,7 +199,7 @@ export function setup(
     options.recipients ?? new RecipientsRows(rows),
     new Directory().put(staffCard()),
     new ProductionPaperRenderer(
-      new Shelves(),
+      new DossierGroupingReading(new Shelves(), ...placementPorts()),
       new OrderSheetPaper(new NoAdminOrigin(), new FixedOrderPrintColors(), new FixedPaperLogo()),
       new FixedResupplyPrintColors(),
       new FixedPaperLogo(),

@@ -1,6 +1,6 @@
 import type { JournalFactType } from '@lfd/contracts/journal-facts';
 
-import { recordOf } from '../payload-read';
+import { recordOf, type Payload } from '../payload-read';
 import {
   byActor,
   countOf,
@@ -38,6 +38,32 @@ function closeTerms(raw: unknown): Segment[] {
     hours.push(text(', arrêt à '), inUnit('clockTime', settings['closeAt']));
   }
   return [valueIn(PRODUCTION_CLOSE_MODE, settings['mode'], { inSentence: true }), ...hours];
+}
+
+/**
+ * « a rangé le fournil par poste (mode prod) », ou ce qui a changé des
+ * sous-catégories, ou les deux. Un fait écrit avant les postes n'a pas de
+ * `grouping` : il valait le mode boutique, et ne parle que des sous-catégories.
+ */
+function displayTerms(payload: Payload): Segment[] {
+  const previous = recordOf(payload['previous']);
+  const grouping = payload['grouping'] ?? 'shelf';
+  const groupingChanged = grouping !== (previous?.['grouping'] ?? 'shelf');
+  const subcategories = text(
+    payload['showSubcategories'] === true
+      ? 'a affiché les sous-catégories au fournil'
+      : 'a masqué les sous-catégories au fournil',
+  );
+  if (!groupingChanged) {
+    return [subcategories];
+  }
+  const mode = text(
+    grouping === 'workstation'
+      ? 'a rangé le fournil par poste (mode prod)'
+      : 'a rangé le fournil par rayon (mode boutique)',
+  );
+  const subcategoriesChanged = payload['showSubcategories'] !== previous?.['showSubcategories'];
+  return subcategoriesChanged ? [mode, text(' et '), subcategories] : [mode];
 }
 
 const closedDay =
@@ -171,17 +197,7 @@ export const PRODUCTION_SETTINGS_PHRASES = {
       ['mode', 'fixedTranches', 'previous'],
     ),
   'production_display_settings.updated': (fact) =>
-    byActor(
-      fact,
-      [
-        text(
-          fact.payload['showSubcategories'] === true
-            ? 'a affiché les sous-catégories au fournil'
-            : 'a masqué les sous-catégories au fournil',
-        ),
-      ],
-      ['showSubcategories', 'previous'],
-    ),
+    byActor(fact, displayTerms(fact.payload), ['showSubcategories', 'grouping', 'previous']),
   'production_settings.close_changed': (fact) =>
     byActor(
       fact,

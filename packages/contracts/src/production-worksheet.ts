@@ -159,6 +159,20 @@ export const SHELF_LABEL_UNKNOWN = "Rayon inconnu";
 /** La clé du groupe sans rayon — aucune catégorie ne la porte. */
 export const UNSHELVED_WORKSHOP_GROUP_KEY = "?";
 
+/** Le suffixe du titre d'un groupe dont les lignes n'ont pas de poste, en mode prod. */
+export const UNPLACED_GROUP_SUFFIX = " — à ranger";
+
+/** Le préfixe de la clé d'une fiche de poste : `ws:<id du poste>`. */
+export const WORKSTATION_GROUP_KEY_PREFIX = "ws:";
+
+/**
+ * Ce qu'une fiche range : un poste (mode prod), un rayon de boutique, un
+ * rayon dont les produits n'ont pas de poste (mode prod), ou les SKU sans
+ * rayon connu.
+ */
+export const WORKSHOP_GROUP_KINDS = ["workstation", "shelf", "unplaced", "off_catalog"] as const;
+export type WorkshopGroupKind = (typeof WORKSHOP_GROUP_KINDS)[number];
+
 /**
  * **Une fiche** : un rayon, ses deux listes, et où elle en est — tout compté au
  * serveur.
@@ -168,12 +182,29 @@ export const UNSHELVED_WORKSHOP_GROUP_KEY = "?";
  */
 export interface WorkshopGroup {
   /**
-   * L'id de la famille du référentiel, ou `UNSHELVED_WORKSHOP_GROUP_KEY`. Sert
-   * d'onglet et de préférence.
+   * L'id de la famille du référentiel, `ws:<id du poste>` pour une fiche de
+   * poste, ou `UNSHELVED_WORKSHOP_GROUP_KEY`. Sert d'onglet et de préférence.
    */
   readonly key: string;
-  /** `null` = SKU hors catalogue, ou rayons illisibles (`shelvesKnown: false`). */
+  /**
+   * Le rayon racine du groupe. `null` pour une fiche de poste, des SKU hors
+   * catalogue ou des rayons illisibles (`shelvesKnown: false`) : lire
+   * {@link kind} pour savoir lequel.
+   */
   readonly family: CatalogFamilyView | null;
+  /**
+   * Ce que la fiche range. Facultatif dans le TYPE pour les fixtures ; le
+   * serveur l'émet toujours.
+   */
+  readonly kind?: WorkshopGroupKind;
+  /** Le poste d'une fiche de poste ; `null` ailleurs. Émis toujours par le serveur. */
+  readonly workstation?: { readonly id: string; readonly name: string } | null;
+  /**
+   * `true` : en mode prod, ses lignes n'ont pas de poste — un rayon ou le
+   * hors catalogue, « à ranger ». Toujours `false` en mode boutique. Émis
+   * toujours par le serveur.
+   */
+  readonly unplaced?: boolean;
   /**
    * @deprecated remplacé par {@link family} le 2026-09-26. Servi **toujours à
    * `null`** tant qu'un front déployé le lit ; retiré dans une livraison

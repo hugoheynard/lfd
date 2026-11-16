@@ -1,3 +1,5 @@
+import type { ProductionGrouping } from "@lfd/contracts";
+
 import { ProductionDisplaySettings } from "../../index.js";
 import { ProductionDisplaySettingsReader } from "../../index.js";
 import { ProductionDisplaySettingsRepository } from "../../index.js";
@@ -8,6 +10,7 @@ export class InMemoryDisplaySettings extends ProductionDisplaySettingsRepository
   posed: ProductionDisplaySettings | null;
   readonly writes: {
     readonly showSubcategories: boolean;
+    readonly grouping: ProductionGrouping;
     readonly at: Date;
     readonly author: TrancheSettingsAuthor;
   }[] = [];
@@ -19,7 +22,9 @@ export class InMemoryDisplaySettings extends ProductionDisplaySettingsRepository
 
   /** Les sous-catégories affichées — le cas des suites qui éprouvent les intertitres. */
   static showing(): InMemoryDisplaySettings {
-    return new InMemoryDisplaySettings(ProductionDisplaySettings.of({ showSubcategories: true }));
+    return new InMemoryDisplaySettings(
+      ProductionDisplaySettings.of({ showSubcategories: true, grouping: "shelf" }),
+    );
   }
 
   save(
@@ -28,7 +33,12 @@ export class InMemoryDisplaySettings extends ProductionDisplaySettingsRepository
     author: TrancheSettingsAuthor,
   ): Promise<void> {
     this.posed = settings;
-    this.writes.push({ showSubcategories: settings.showSubcategories, at, author });
+    this.writes.push({
+      showSubcategories: settings.showSubcategories,
+      grouping: settings.grouping,
+      at,
+      author,
+    });
     return Promise.resolve();
   }
 

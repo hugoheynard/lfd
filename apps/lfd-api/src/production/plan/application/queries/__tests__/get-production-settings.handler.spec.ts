@@ -40,7 +40,7 @@ describe("GetProductionSettingsHandler", () => {
       automaticClose: null,
       closedDays: [],
       tranches: { mode: "fixed", fixedTranches: [] },
-      display: { showSubcategories: false },
+      display: { showSubcategories: false, grouping: "shelf" },
     });
   });
 
@@ -60,15 +60,18 @@ describe("GetProductionSettingsHandler", () => {
       automaticClose: { daysBefore: 1, time: "23:15" },
       closedDays: [TODAY, addDays(TODAY, 5)],
       tranches: { mode: "fixed", fixedTranches: [] },
-      display: { showSubcategories: false },
+      display: { showSubcategories: false, grouping: "shelf" },
     });
   });
 
   it("rend le rangement du fournil posé — les sous-catégories affichées", async () => {
     const { handler, display } = subject();
-    display.posed = ProductionDisplaySettings.of({ showSubcategories: true });
+    display.posed = ProductionDisplaySettings.of({ showSubcategories: true, grouping: "shelf" });
 
-    expect((await handler.execute()).display).toEqual({ showSubcategories: true });
+    expect((await handler.execute()).display).toEqual({
+      showSubcategories: true,
+      grouping: "shelf",
+    });
   });
 
   it("un rattrapage qui passe minuit arrête le plan le jour même", async () => {

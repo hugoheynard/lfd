@@ -1,4 +1,3 @@
-import type { CatalogFamilyView } from "@lfd/contracts";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { BrandLogoSource } from "../../../../platform/brand/brand-logo.source.js";
@@ -7,14 +6,9 @@ import {
   PlannedDeliveryNotesReader,
 } from "../../../channels/commerce/planned-delivery-notes.reader.js";
 import { ResupplyPrintColorsReader } from "../../../channels/commerce/resupply-print-colors.reader.js";
-import { WorkshopShelvesReader } from "../../../channels/commerce/workshop-shelves.reader.js";
 import { ProductionDisplaySettings } from "../../../shared/print/index.js";
 import { ProductionDisplaySettingsReader } from "../../../shared/print/index.js";
-import type {
-  ProductionDay,
-  ProductionDaySnapshot,
-  ProductionLineSnapshot,
-} from "../../../day/index.js";
+import type { ProductionDay, ProductionDaySnapshot } from "../../../day/index.js";
 import { ProductionDayNotClosedError } from "../../../day/index.js";
 import {
   OrderSheetPaper,
@@ -23,13 +17,17 @@ import {
   renderProductionCountPdf,
 } from "../../../shared/print/index.js";
 import { countColorSharesOf } from "../../../shared/print/index.js";
-import { dayDossierOf } from "../../domain/services/day-dossier.js";
+import { dayDossierFrom } from "../../domain/services/day-dossier.js";
 import {
   type CalendarPage,
   dossierCalendarOf,
 } from "../../domain/services/day-dossier-calendar.js";
 import { ServiceDay } from "../../../day/index.js";
 import { DossierDeadlinesReading } from "./dossier-deadlines-reading.service.js";
+import {
+  type DossierGrouping,
+  DossierGroupingReading,
+} from "./dossier-grouping-reading.service.js";
 import { countPaperRowsOf } from "../../../shared/print/index.js";
 import { dayDossierPdfKey, renderDayDossierPdf } from "../../domain/services/day-dossier-pdf.js";
 import type { PaperDraft, PaperSlot } from "../../../shared/print/index.js";
@@ -76,7 +74,7 @@ export function dayDossierSlotOf(day: ProductionDay): PaperSlot {
 
 /** Ce que le dossier lit au tirage, chaque lecture faillible à `null`. */
 interface DossierInputs {
-  readonly shelves: ReadonlyMap<string, CatalogFamilyView> | null;
+  readonly grouping: DossierGrouping;
   readonly marks: OrderSheetMarks;
   readonly resupplyColors: Awaited<ReturnType<ResupplyPrintColorsReader["colorsOf"]>>;
   readonly logo: Awaited<ReturnType<BrandLogoSource["load"]>>;
@@ -101,7 +99,7 @@ export class ProductionPaperRenderer {
   private readonly logger = new Logger(ProductionPaperRenderer.name);
 
   constructor(
-    private readonly shelves: WorkshopShelvesReader,
+    private readonly grouping: DossierGroupingReading,
     private readonly sheets: OrderSheetPaper,
     private readonly resupplyColors: ResupplyPrintColorsReader,
     private readonly logo: BrandLogoSource,
@@ -142,7 +140,8 @@ export class ProductionPaperRenderer {
    * ⚠️ Les rayons viennent du catalogue d'AUJOURD'HUI (comme l'écran) et sont
    * figés au premier tirage. Un commerce muet ne bloque pas le papier — tout va
    * en « Rayon inconnu » —, mais ce dossier dégradé n'est **pas archivable** :
-   * le tirage suivant le refera avec ses rayons. Idem sans BL ni tranches.
+   * le tirage suivant le refera avec ses rayons. Idem sans BL, sans tranches,
+   * et en mode prod sans postes.
    *
    * @throws {ProductionDayNotClosedError} la journée n'est pas arrêtée.
    */
@@ -150,9 +149,9 @@ export class ProductionPaperRenderer {
     const snapshot = closedSnapshotOf(day);
     const resupplies = snapshot.resupplies ?? [];
     const inputs = await this.dossierInputsOf(snapshot);
-    const dossier = dayDossierOf(
+    const dossier = dayDossierFrom(
       snapshot.orders,
-      inputs.shelves,
+      inputs.grouping.source,
       resupplies,
       inputs.showSubcategories,
     );
@@ -176,17 +175,36 @@ export class ProductionPaperRenderer {
       },
       calendar,
     );
-    const archivable =
-      inputs.shelves !== null && inputs.deliveryNotes !== null && inputs.tranches !== null;
-    return { bytes, archivable };
+    return { bytes, archivable: this.archivable(snapshot.serviceDay, inputs) };
+  }
+
+  /**
+   * Un dossier dégradé n'est pas gardé : le tirage suivant le refera. Chaque
+   * refus est journalisé avec ses causes — rayons, BL, tranches, et en mode
+   * prod les postes (plan `fournil/plan-postes-du-fournil.md`, § 3.5).
+   */
+  private archivable(serviceDay: string, inputs: DossierInputs): boolean {
+    const causes = [
+      inputs.grouping.shelvesRead ? null : "rayons",
+      inputs.deliveryNotes === null ? "bons de livraison" : null,
+      inputs.tranches === null ? "tranches" : null,
+      inputs.grouping.workstationsRead ? null : "postes",
+    ].filter((cause): cause is string => cause !== null);
+    if (causes.length === 0) {
+      return true;
+    }
+    this.logger.warn(
+      `Dossier du ${serviceDay} : tiré sans être archivé (illisibles : ${causes.join(", ")}) — le prochain tirage le refera.`,
+    );
+    return false;
   }
 
   private async dossierInputsOf(snapshot: ClosedSnapshot): Promise<DossierInputs> {
     const resupplies = snapshot.resupplies ?? [];
-    const shelves = await this.shelvesOrNull(snapshot.serviceDay, [
+    const lines = [
       ...snapshot.orders.flatMap((order) => order.lines),
       ...resupplies.flatMap((resupply) => resupply.lines),
-    ]);
+    ];
     const orderIds = snapshot.orders.map((order) => order.orderId);
     const [marks, resupplyColors, logo, deliveryNotes, display, tranches] = await Promise.all([
       this.sheets.marksOf(orderIds),
@@ -198,30 +216,12 @@ export class ProductionPaperRenderer {
       // Illisibles, le dossier part sans calendrier et n'est pas archivé.
       this.tranches.read(ServiceDay.of(snapshot.serviceDay)),
     ]);
-    // Le rangement (sous-catégories) est lu au tirage et figé avec le papier
-    // archivé, comme les rayons.
-    const { showSubcategories } = display ?? ProductionDisplaySettings.defaults();
-    return { shelves, marks, resupplyColors, logo, deliveryNotes, showSubcategories, tranches };
-  }
-
-  /**
-   * Les rayons des SKU du jour — commandes ET réassorts, qui vont sur les mêmes
-   * fiches de poste (R3d-bis) —, ou `null` : panne journalisée, jamais tue.
-   */
-  private async shelvesOrNull(
-    serviceDay: string,
-    lines: readonly ProductionLineSnapshot[],
-  ): Promise<ReadonlyMap<string, CatalogFamilyView> | null> {
-    const skus = [...new Set(lines.map((line) => line.sku))];
-    try {
-      return await this.shelves.shelvesOf(skus);
-    } catch (error) {
-      this.logger.error(
-        `Dossier du ${serviceDay} : rayons illisibles, tiré en « Rayon inconnu » et non archivé.`,
-        error instanceof Error ? error.stack : String(error),
-      );
-      return null;
-    }
+    // Le rangement (mode, sous-catégories, postes) est lu au tirage et figé
+    // avec le papier archivé, comme les rayons.
+    const settings = display ?? ProductionDisplaySettings.defaults();
+    const grouping = await this.grouping.read(snapshot.serviceDay, lines, settings.grouping);
+    const { showSubcategories } = settings;
+    return { grouping, marks, resupplyColors, logo, deliveryNotes, showSubcategories, tranches };
   }
 
   /**

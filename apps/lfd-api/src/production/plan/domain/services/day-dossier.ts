@@ -1,9 +1,4 @@
-import {
-  SHELF_LABEL_OFF_CATALOG,
-  SHELF_LABEL_UNKNOWN,
-  type CatalogFamilyView,
-  resupplyTitleOf,
-} from "@lfd/contracts";
+import { type CatalogFamilyView, resupplyTitleOf } from "@lfd/contracts";
 import type { SaleUnit } from "@lfd/money";
 
 import type {
@@ -11,7 +6,12 @@ import type {
   ProductionOrderSnapshot,
   ProductionResupplySnapshot,
 } from "../../../day/index.js";
-import { rootShelvesOf, sectionOrdered } from "../../../shared/print/index.js";
+import {
+  groupingOf,
+  sectionOrdered,
+  type GroupingSource,
+  type ProductionGroup,
+} from "../../../shared/print/index.js";
 
 /**
  * **Le dossier du jour** — ce que le fournil imprime le soir de l'arrêt :
@@ -99,7 +99,7 @@ interface Tally {
   resupplyCount: number;
 }
 
-/** Monte le dossier d'une journée à partir de ses commandes et réassorts figés. */
+/** Monte le dossier d'une journée à partir de ses commandes et réassorts figés, rangé par rayon. */
 export function dayDossierOf(
   orders: readonly ProductionOrderSnapshot[],
   shelves: ReadonlyMap<string, CatalogFamilyView> | null,
@@ -107,7 +107,21 @@ export function dayDossierOf(
   /** Le réglage « Afficher les sous-catégories » (2026-10-30). */
   showSubcategories = false,
 ): DayDossier {
-  const recap = recapOf(talliesOf(orders, resupplies), shelves, showSubcategories);
+  return dayDossierFrom(orders, { mode: "shelf", shelves }, resupplies, showSubcategories);
+}
+
+/**
+ * Monte le dossier dans le mode du réglage (plan
+ * `fournil/plan-postes-du-fournil.md`, § 3.4) : par rayon comme
+ * {@link dayDossierOf}, ou par poste — un poste prend la place d'un rayon.
+ */
+export function dayDossierFrom(
+  orders: readonly ProductionOrderSnapshot[],
+  source: GroupingSource,
+  resupplies: readonly ProductionResupplySnapshot[] = [],
+  showSubcategories = false,
+): DayDossier {
+  const recap = recapOf(talliesOf(orders, resupplies), source, showSubcategories);
   return {
     recap,
     sheets: [...orders].sort((left, right) => compareCodes(left.reference, right.reference)),
@@ -171,29 +185,31 @@ function talliesOf(
 
 function recapOf(
   lines: readonly DossierRecapLine[],
-  shelves: ReadonlyMap<string, CatalogFamilyView> | null,
+  source: GroupingSource,
   showSubcategories: boolean,
 ): readonly DossierRecapGroup[] {
-  const shelving = rootShelvesOf(lines, (line) => shelves?.get(line.sku));
-  const groups = shelving.shelves.map((shelf) => {
-    if (!showSubcategories) {
-      return groupOf(shelf.root.name, shelf.items);
-    }
-    const ordered = sectionOrdered(shelf.sections, biggestFirst);
-    const intertitles = new Map<string, string>();
-    for (const section of shelf.sections) {
-      const first = [...section.items].sort(biggestFirst)[0];
-      if (section.family !== null && first !== undefined) {
-        intertitles.set(first.sku, section.family.name);
-      }
-    }
-    return { ...groupOf(shelf.root.name, ordered, false), intertitles };
-  });
-  if (shelving.unshelved.length === 0) {
-    return groups;
+  return groupingOf(lines, (line) => line.sku, source).map((group) =>
+    recapGroupOf(group, showSubcategories),
+  );
+}
+
+/** Un groupe du rangement, en fiche de poste du récapitulatif. */
+function recapGroupOf(
+  group: ProductionGroup<DossierRecapLine>,
+  showSubcategories: boolean,
+): DossierRecapGroup {
+  if (!showSubcategories || group.kind === "off_catalog") {
+    return groupOf(group.title, group.lines);
   }
-  const label = shelves === null ? SHELF_LABEL_UNKNOWN : SHELF_LABEL_OFF_CATALOG;
-  return [...groups, groupOf(label, shelving.unshelved)];
+  const ordered = sectionOrdered(group.sections, biggestFirst);
+  const intertitles = new Map<string, string>();
+  for (const section of group.sections) {
+    const first = [...section.items].sort(biggestFirst)[0];
+    if (section.family !== null && first !== undefined) {
+      intertitles.set(first.sku, section.family.name);
+    }
+  }
+  return { ...groupOf(group.title, ordered, false), intertitles };
 }
 
 /**

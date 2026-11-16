@@ -36,6 +36,7 @@ import {
 import { ProductionWorksheetReading } from "../production-worksheet-reading.service.js";
 import { servedWorksheet } from "../worksheet-content.js";
 import { WorksheetDeadlinesReading } from "../worksheet-deadlines-reading.service.js";
+import { placementPorts } from "../../../../workstations/application/__tests__/placement-doubles.js";
 
 /**
  * Les paliers et la pastille qualité d'une ligne de la fiche (plan
@@ -145,6 +146,7 @@ function bareReading(
     qualityLinesFrom(checks),
     waiting,
     new InMemoryDisplaySettings().reader(),
+    ...placementPorts(),
   );
 }
 

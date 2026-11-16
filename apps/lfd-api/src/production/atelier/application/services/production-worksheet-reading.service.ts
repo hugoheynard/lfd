@@ -1,4 +1,4 @@
-import type { CatalogFamilyView } from "@lfd/contracts";
+import type { CatalogFamilyView, ProductionGrouping } from "@lfd/contracts";
 import { Injectable, Logger } from "@nestjs/common";
 
 import { DayOrdersReader } from "../../../channels/commerce/day-orders.reader.js";
@@ -13,7 +13,13 @@ import { ProductionDisplaySettingsReader } from "../../../shared/print/index.js"
 import { ProductionContainerReader } from "../../domain/ports/production-container.reader.js";
 import { ProductionDayRepository } from "../../../day/index.js";
 import { QualityLineStatusReader } from "../../../quality/index.js";
-import { worksheetGroupsOf } from "../../domain/services/production-worksheet-groups.js";
+import { worksheetGroupsFrom } from "../../domain/services/production-worksheet-groups.js";
+import type { GroupingSource } from "../../../shared/print/index.js";
+import { WorkstationOfProducts } from "../../../workstations/index.js";
+import {
+  type ProductionArticle,
+  ProductionArticlesReader,
+} from "../../../channels/commerce/production-articles.reader.js";
 import {
   worksheetOf,
   type DemandedItem,
@@ -44,6 +50,14 @@ import { groupView, lineViewOf } from "./worksheet-line-views.js";
  * panne est **journalisée**, `shelvesKnown` vaut `false`, et tout va dans
  * « Rayon inconnu » : le fournil sort ses pièces quand même, et l'écran le dit.
  * Refuser la fiche pour un rangement ferait d'un confort une panne de production.
+ *
+ * ## Mode boutique, mode prod
+ *
+ * Le réglage d'affichage choisit le rangement (plan
+ * `fournil/plan-postes-du-fournil.md`, § 3.4). En mode boutique, seuls les
+ * rayons sont lus. En mode prod, les articles et les postes le sont
+ * (`WorkstationPlacementReading`) ; s'ils ne répondent pas, la fiche est
+ * rangée par rayon, la panne journalisée, et le contenu n'est pas complet.
  *
  * ## Paliers et pastilles (plan `documentation/fournil/la-fiche-d-atelier.md`, §3)
  *
@@ -84,6 +98,8 @@ export class ProductionWorksheetReading {
     private readonly quality: QualityLineStatusReader,
     private readonly waiting: OvenWaitingOrdersReader,
     private readonly display: ProductionDisplaySettingsReader,
+    private readonly articles: ProductionArticlesReader,
+    private readonly workstations: WorkstationOfProducts,
   ) {}
 
   /** Le contenu de la fiche d'une journée, sans rien qui dépende de l'heure. */
@@ -119,7 +135,8 @@ export class ProductionWorksheetReading {
       arrivals: producible.filter((order) => !known.has(order.orderId)),
       containers,
     });
-    const shelves = await this.shelvesOrNull(day, worksheet.lines);
+    const settings = display ?? ProductionDisplaySettings.defaults();
+    const grouping = await this.groupingOf(day, worksheet.lines, settings.grouping);
     const viewOf = lineViewOf({
       tranches,
       quality: new Map(quality.map((status) => [status.sku, status])),
@@ -131,14 +148,60 @@ export class ProductionWorksheetReading {
       retakenAt: worksheet.retakenAt?.toISOString() ?? null,
       lines: worksheet.lines.map(viewOf),
       drift: worksheet.drift,
-      groups: worksheetGroupsOf(
-        worksheet.lines,
-        shelves,
-        (display ?? ProductionDisplaySettings.defaults()).showSubcategories,
-      ).map((group) => groupView(group, viewOf)),
-      shelvesKnown: shelves !== null,
+      groups: worksheetGroupsFrom(worksheet.lines, grouping.source, settings.showSubcategories).map(
+        (group) => groupView(group, viewOf),
+      ),
+      shelvesKnown: grouping.shelvesKnown,
     };
-    return { sheet, complete: shelves !== null && tranches !== null && waiting !== null };
+    const complete = grouping.shelvesKnown && grouping.complete && tranches !== null;
+    return { sheet, complete: complete && waiting !== null };
+  }
+
+  /**
+   * Le produit et le rayon de chaque SKU au commerce, sans les filtres de
+   * vente, puis le poste de ces produits. Une panne lève.
+   */
+  private async placementOf(
+    skus: readonly string[],
+  ): Promise<Extract<GroupingSource, { readonly mode: "workstation" }>["placement"]> {
+    const articles: ReadonlyMap<string, ProductionArticle> =
+      skus.length === 0 ? new Map() : await this.articles.articlesOf(skus);
+    const productSkus = [...new Set([...articles.values()].map((item) => item.productSku))];
+    const { workstations, byProduct } = await this.workstations.workstationsOf(productSkus);
+    return { workstations, articles, byProduct };
+  }
+
+  /**
+   * Ce que le rangement lit, selon le mode. Le mode boutique ne lit que les
+   * rayons. Le mode prod lit les articles et les postes ; leur panne range la
+   * fiche comme en mode boutique, **journalisée**, et la fiche n'est pas
+   * rangée comme complète.
+   */
+  private async groupingOf(
+    day: ServiceDay,
+    lines: Worksheet["lines"],
+    mode: ProductionGrouping,
+  ): Promise<WorksheetGrouping> {
+    if (mode === "workstation") {
+      try {
+        const skus = lines.map((line) => line.sku);
+        const placement = await this.placementOf(skus);
+        return { source: { mode, placement }, shelvesKnown: true, complete: true };
+      } catch (error) {
+        this.logger.error(
+          `Fiche d'atelier du ${day.value} : postes illisibles, servie rangée par rayon.`,
+          error instanceof Error ? error.stack : String(error),
+        );
+        const shelves = await this.shelvesOrNull(day, lines);
+        return {
+          source: { mode: "shelf", shelves },
+          shelvesKnown: shelves !== null,
+          complete: false,
+        };
+      }
+    }
+    const shelves = await this.shelvesOrNull(day, lines);
+    return { source: { mode: "shelf", shelves }, shelvesKnown: shelves !== null, complete: true };
   }
 
   /**
@@ -180,6 +243,15 @@ export class ProductionWorksheetReading {
       return null;
     }
   }
+}
+
+/** Le rangement de la fiche, et ce que ses lectures ont pu dire. */
+interface WorksheetGrouping {
+  readonly source: GroupingSource;
+  /** `false` : les rayons n'ont pas pu être lus — tout est en « Rayon inconnu ». */
+  readonly shelvesKnown: boolean;
+  /** `false` : le mode prod n'a pas pu lire ses postes, la fiche est rangée par rayon. */
+  readonly complete: boolean;
 }
 
 /** Ce que le commerce annonce pour CE jour — rien du tout s'il ne dit rien. */

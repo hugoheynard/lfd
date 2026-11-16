@@ -476,3 +476,12 @@ boutique », quel que soit le réglage.
 - **La porte `journal-tracked`** connaît `WorkstationMapGesture`, qui fait le
   cycle charger, muter, sauver et journaliser des cinq gestes sous une seule
   unité de travail, comme `DELIVERY_DELEGATES`.
+- **W2, la clé d'un groupe « à ranger »** est l'id de son rayon, la même qu'en
+  mode boutique. « Rayon inconnu » est un `off_catalog`, que le front distingue
+  par `shelvesKnown`.
+- **Pour W3, le contrat doit dire au front que les postes n'ont pas pu être
+  lus** (par exemple `workstationsKnown`), pour le message du § 3.6.
+- **Pour W3, le cache de la fiche** (`WorksheetContents`) ne suit que les
+  journaux `production` et `orders`. Un placement ou un changement de mode
+  serait servi vieux jusqu'au prochain mouvement de la journée. Les gestes des
+  postes et du réglage doivent faire monter sa version.

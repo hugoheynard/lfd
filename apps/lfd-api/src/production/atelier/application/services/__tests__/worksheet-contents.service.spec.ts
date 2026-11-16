@@ -33,6 +33,7 @@ import {
 import { ProductionWorksheetReading } from "../production-worksheet-reading.service.js";
 import { WorksheetContents } from "../worksheet-contents.service.js";
 import { WorksheetDeadlinesReading } from "../worksheet-deadlines-reading.service.js";
+import { placementPorts } from "../../../../workstations/application/__tests__/placement-doubles.js";
 
 /**
  * La fiche du fournil servie depuis l'objet des journées
@@ -118,6 +119,7 @@ function around(outage: Outage = "none") {
     qualityLinesFrom(new CheckTable()),
     new FixedOvenWaitingOrders(outage === "waiting" ? "down" : undefined),
     new InMemoryDisplaySettings().reader(),
+    ...placementPorts(),
   );
   const cache = new MemoryDayContents();
   const clock = new FixedClock(NOW);

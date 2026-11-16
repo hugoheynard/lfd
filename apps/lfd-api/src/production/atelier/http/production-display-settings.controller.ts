@@ -24,7 +24,10 @@ const NO_CONTENT = 204;
 export class ProductionDisplaySettingsController {
   constructor(private readonly commands: CommandBus) {}
 
-  /** Afficher ou non les sous-catégories en intertitres dans chaque groupe racine. */
+  /**
+   * Afficher ou non les sous-catégories en intertitres, et ranger par rayon
+   * (mode boutique) ou par poste (mode prod). `grouping` absent : inchangé.
+   */
   @Put("display")
   @Idempotent(
     "pose des valeurs : rejouée, la même requête trouve un réglage égal et ne sauve ni ne journalise",
@@ -35,7 +38,7 @@ export class ProductionDisplaySettingsController {
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<SetProductionDisplayCommand, void>(
-      new SetProductionDisplayCommand(body.showSubcategories, staffUserId),
+      new SetProductionDisplayCommand(body.showSubcategories, staffUserId, body.grouping),
     );
   }
 }

@@ -36,12 +36,13 @@ const WORKSHEET_JOURNALS: readonly DayJournal[] = ["production", "orders"];
  * ## Lu hors journal, accepté vieux jusqu'au prochain numéro (Hugo, 2026-11-13)
  *
  * - les contenants (`ProductionContainerReader`) ;
- * - le réglage d'affichage (sous-catégories) ;
- * - les rayons du catalogue ;
+ * - le réglage d'affichage (sous-catégories, mode boutique ou prod) ;
+ * - les rayons du catalogue, et en mode prod les articles du commerce ;
+ * - les postes et le poste de chaque produit (mode prod) ;
  * - le réglage des tranches, dont les paliers d'échéance sont faits ;
  * - les contrôles qualité.
  *
- * Une fiche incomplète (rayons, paliers ou attente du four en panne) est
+ * Une fiche incomplète (rayons, postes, paliers ou attente du four en panne) est
  * servie, jamais rangée. `relativeDay` est recalculé à chaque réponse.
  */
 @Injectable()

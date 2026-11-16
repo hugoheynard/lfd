@@ -30,7 +30,6 @@ export {
   renderAtelierSheetPdf,
   renderProductionCountPdf,
 } from "./domain/services/atelier-sheet-pdf.js";
-export { drawCountPie } from "./domain/services/count-color-pie.js";
 export { countColorSharesOf } from "./domain/services/count-color-shares.js";
 export type { CountColorShare } from "./domain/services/count-color-shares.js";
 export { dossierSheetHeadOf } from "./domain/services/dossier-sheet-head.js";
@@ -51,6 +50,7 @@ export {
 export type { CountPaperRow } from "./domain/services/made-to-order.js";
 export { drawOrderSwatch } from "./domain/services/order-color-swatch.js";
 export { drawRouting } from "./domain/services/order-routing-pdf.js";
-export { rootShelvesOf, sectionOrdered } from "./domain/services/root-shelves.js";
-export type { ShelfSection } from "./domain/services/root-shelves.js";
+export { groupingOf } from "./domain/services/production-grouping.js";
+export type { GroupingSource, ProductionGroup } from "./domain/services/production-grouping.js";
+export { sectionOrdered } from "./domain/services/root-shelves.js";
 export { servePaper } from "./http/production-paper-response.js";

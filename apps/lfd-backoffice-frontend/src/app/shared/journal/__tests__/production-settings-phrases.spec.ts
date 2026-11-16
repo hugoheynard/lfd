@@ -119,3 +119,41 @@ describe('les raccourcis du fournil (production_batch_shortcut.*)', () => {
     expect(renderFact(updated).detail).toEqual([]);
   });
 });
+
+describe('le rangement du fournil (production_display_settings.updated)', () => {
+  it('un fait écrit avant les postes ne parle que des sous-catégories', () => {
+    const shown = fact('production_display_settings.updated', {
+      showSubcategories: true,
+      previous: { showSubcategories: false },
+    });
+    expect(sentence(shown)).toBe('Colette Martin a affiché les sous-catégories au fournil');
+    expect(renderFact(shown).detail).toEqual([]);
+  });
+
+  it('dit la bascule en mode prod, et le retour en mode boutique', () => {
+    const toWorkstation = fact('production_display_settings.updated', {
+      showSubcategories: false,
+      grouping: 'workstation',
+      previous: { showSubcategories: false, grouping: 'shelf' },
+    });
+    expect(sentence(toWorkstation)).toBe('Colette Martin a rangé le fournil par poste (mode prod)');
+    expect(renderFact(toWorkstation).detail).toEqual([]);
+    const toShelf = fact('production_display_settings.updated', {
+      showSubcategories: true,
+      grouping: 'shelf',
+      previous: { showSubcategories: false, grouping: 'workstation' },
+    });
+    expect(sentence(toShelf)).toBe(
+      'Colette Martin a rangé le fournil par rayon (mode boutique) et a affiché les sous-catégories au fournil',
+    );
+  });
+
+  it('le mode inchangé laisse la phrase des sous-catégories', () => {
+    const hidden = fact('production_display_settings.updated', {
+      showSubcategories: false,
+      grouping: 'workstation',
+      previous: { showSubcategories: true, grouping: 'workstation' },
+    });
+    expect(sentence(hidden)).toBe('Colette Martin a masqué les sous-catégories au fournil');
+  });
+});

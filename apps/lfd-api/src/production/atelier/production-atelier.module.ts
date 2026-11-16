@@ -5,6 +5,7 @@ import { DayVersionsModule } from "../../platform/day-versions/day-versions.modu
 import { ProductionDayModule } from "../day/production-day.module.js";
 import { ProductionQualityModule } from "../quality/production-quality.module.js";
 import { ProductionPrintModule } from "../shared/print/production-print.module.js";
+import { ProductionWorkstationsModule } from "../workstations/production-workstations.module.js";
 import { CancelBatchHandler } from "./application/commands/cancel-batch.handler.js";
 import { RecordBatchHandler } from "./application/commands/record-batch.handler.js";
 import { RemoveProductionContainerHandler } from "./application/commands/remove-production-container.handler.js";
@@ -36,9 +37,9 @@ import { ProductionBatchShortcutsModule } from "./production-batch-shortcuts.mod
  * **L'atelier** : les fournées, la fiche d'atelier, les contenants, l'affichage
  * et les raccourcis (`documentation/fournil/la-fiche-d-atelier.md`).
  *
- * Il lit la journée, les pastilles de la qualité et l'imprimerie
- * (`shared/print/`), les seuls modules du fournil qu'il a le droit
- * d'importer. Il n'exporte rien.
+ * Il lit la journée, les pastilles de la qualité, l'imprimerie
+ * (`shared/print/`) et les postes (`workstations/`), les seuls modules du
+ * fournil qu'il a le droit d'importer. Il n'exporte rien.
  */
 @Module({
   imports: [
@@ -47,6 +48,8 @@ import { ProductionBatchShortcutsModule } from "./production-batch-shortcuts.mod
     // L'imprimerie : les réglages d'affichage, lus par la fiche et réglés
     // ici ; la fiche PDF d'une commande.
     ProductionPrintModule,
+    // Les postes : le rangement par poste (mode prod) et sa garde de bascule.
+    ProductionWorkstationsModule,
     // Les articles des raccourcis viennent du canal `channels/commerce/`, global.
     ProductionBatchShortcutsModule,
     // Le logo de l'exemplaire de la fiche ; les contenus versionnés de la fiche.

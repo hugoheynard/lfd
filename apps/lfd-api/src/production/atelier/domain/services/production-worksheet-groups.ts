@@ -1,12 +1,12 @@
-import {
-  SHELF_LABEL_OFF_CATALOG,
-  SHELF_LABEL_UNKNOWN,
-  UNSHELVED_WORKSHOP_GROUP_KEY,
-  type CatalogFamilyView,
-} from "@lfd/contracts";
+import type { CatalogFamilyView, WorkshopGroupKind } from "@lfd/contracts";
 
 import { linePieces } from "../../../shared/print/index.js";
-import { rootShelvesOf, sectionOrdered, type ShelfSection } from "../../../shared/print/index.js";
+import {
+  groupingOf,
+  sectionOrdered,
+  type GroupingSource,
+  type ProductionGroup,
+} from "../../../shared/print/index.js";
 import type { WorksheetLine } from "./production-worksheet.js";
 
 /**
@@ -23,9 +23,14 @@ import type { WorksheetLine } from "./production-worksheet.js";
 
 /** Une fiche, dans le vocabulaire du domaine (instants en `Date`). */
 export interface WorksheetGroup {
-  /** L'id de la famille, ou `UNSHELVED_WORKSHOP_GROUP_KEY`. */
+  /** L'id de la famille, `ws:<id>` pour un poste, ou `UNSHELVED_WORKSHOP_GROUP_KEY`. */
   readonly key: string;
+  /** Le rayon racine ; `null` pour un poste, le hors catalogue ou des rayons illisibles. */
   readonly family: CatalogFamilyView | null;
+  readonly kind: WorkshopGroupKind;
+  readonly workstation: ProductionGroup<WorksheetLine>["workstation"];
+  /** En mode prod, des lignes sans poste — « à ranger ». */
+  readonly unplaced: boolean;
   /** Déprécié au contrat, servi toujours à `null` (cf. `WorkshopGroup.category`). */
   readonly category: null;
   readonly label: string;
@@ -80,27 +85,46 @@ export function worksheetGroupsOf(
   shelves: ReadonlyMap<string, CatalogFamilyView> | null,
   showSubcategories = false,
 ): readonly WorksheetGroup[] {
-  const shelving = rootShelvesOf(lines, (line) => shelves?.get(line.sku));
-  const groups = shelving.shelves.map((shelf) => {
-    const family: CatalogFamilyView = { ...shelf.root };
-    if (!showSubcategories) {
-      return groupOf(shelf.root.id, family, shelf.root.name, shelf.items);
-    }
-    // L'ordre reçu, section par section : `sort` est stable, un comparateur nul le garde.
-    const ordered = sectionOrdered(shelf.sections, () => 0);
-    return {
-      ...groupOf(shelf.root.id, family, shelf.root.name, ordered),
-      sections: shelf.sections.map(sectionOf),
-    };
-  });
-  if (shelving.unshelved.length === 0) {
-    return groups;
-  }
-  const label = shelves === null ? SHELF_LABEL_UNKNOWN : SHELF_LABEL_OFF_CATALOG;
-  return [...groups, groupOf(UNSHELVED_WORKSHOP_GROUP_KEY, null, label, shelving.unshelved)];
+  return worksheetGroupsFrom(lines, { mode: "shelf", shelves }, showSubcategories);
 }
 
-function sectionOf(section: ShelfSection<WorksheetLine>): WorksheetSection {
+/**
+ * Range les lignes dans le mode du réglage (plan
+ * `fournil/plan-postes-du-fournil.md`, § 3.4) : par rayon comme
+ * {@link worksheetGroupsOf}, ou par poste — un poste prend la place d'un
+ * rayon, et ses intertitres sont les rayons d'où viennent ses lignes.
+ */
+export function worksheetGroupsFrom(
+  lines: readonly WorksheetLine[],
+  source: GroupingSource,
+  showSubcategories = false,
+): readonly WorksheetGroup[] {
+  return groupingOf(lines, (line) => line.sku, source).map((group) =>
+    worksheetGroupOf(group, showSubcategories),
+  );
+}
+
+function worksheetGroupOf(
+  group: ProductionGroup<WorksheetLine>,
+  showSubcategories: boolean,
+): WorksheetGroup {
+  const head = {
+    key: group.key,
+    family: group.shelf === null ? null : { ...group.shelf },
+    kind: group.kind,
+    workstation: group.workstation,
+    unplaced: group.unplaced,
+    label: group.title,
+  };
+  if (!showSubcategories || group.kind === "off_catalog") {
+    return groupOf(head, group.lines);
+  }
+  // L'ordre reçu, section par section : `sort` est stable, un comparateur nul le garde.
+  const ordered = sectionOrdered(group.sections, () => 0);
+  return { ...groupOf(head, ordered), sections: group.sections.map(sectionOf) };
+}
+
+function sectionOf(section: ProductionGroup<WorksheetLine>["sections"][number]): WorksheetSection {
   return {
     key: section.family?.id ?? null,
     label: section.family?.name ?? null,
@@ -108,13 +132,13 @@ function sectionOf(section: ShelfSection<WorksheetLine>): WorksheetSection {
   };
 }
 
+type GroupHead = Pick<
+  WorksheetGroup,
+  "key" | "family" | "kind" | "workstation" | "unplaced" | "label"
+>;
+
 /** Une fiche et ses compteurs — les deux listes dans l'ordre reçu. */
-function groupOf(
-  key: string,
-  family: CatalogFamilyView | null,
-  label: string,
-  lines: readonly WorksheetLine[],
-): WorksheetGroup {
+function groupOf(head: GroupHead, lines: readonly WorksheetLine[]): WorksheetGroup {
   const pending = lines.filter((line) => !line.done);
   const done = lines.filter((line) => line.done);
   const totalUnits = unitsOf(lines);
@@ -122,10 +146,8 @@ function groupOf(
   // ce qui est sorti, et le surplus ne gonfle pas l'avancement.
   const doneUnits = lines.reduce((total, line) => total + doneUnitsOf(line), 0);
   return {
-    key,
-    family,
+    ...head,
     category: null,
-    label,
     lineCount: lines.length,
     doneCount: done.length,
     totalUnits,

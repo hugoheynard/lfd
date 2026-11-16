@@ -1,4 +1,4 @@
-import type { ProductionSettingsView } from "@lfd/contracts";
+import type { ProductionDisplayView, ProductionSettingsView } from "@lfd/contracts";
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../../platform/time/clock.js";
@@ -51,9 +51,12 @@ export class GetProductionSettingsHandler implements IQueryHandler<
         close === null ? null : { daysBefore: close.daysBefore, time: close.time.value },
       closedDays,
       tranches: { mode: posed.mode, fixedTranches: [...posed.fixedTranches] },
-      display: {
-        showSubcategories: (display ?? ProductionDisplaySettings.defaults()).showSubcategories,
-      },
+      display: displayView(display ?? ProductionDisplaySettings.defaults()),
     };
   }
+}
+
+/** Le rangement tel que l'écran des réglages le lit. */
+function displayView(display: ProductionDisplaySettings): ProductionDisplayView {
+  return { showSubcategories: display.showSubcategories, grouping: display.grouping };
 }

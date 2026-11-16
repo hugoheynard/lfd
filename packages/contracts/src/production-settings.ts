@@ -48,10 +48,29 @@ export interface ProductionSettingsView {
  */
 export interface ProductionDisplayView {
   readonly showSubcategories: boolean;
+  /**
+   * Le rangement des lignes (plan `fournil/plan-postes-du-fournil.md`) :
+   * `shelf` (mode boutique, par rayon) ou `workstation` (mode prod, par
+   * poste). Sans réglage enregistré : `shelf`. Facultatif dans le TYPE pour
+   * les fixtures ; le serveur l'émet toujours.
+   */
+  readonly grouping?: ProductionGrouping;
 }
 
-/** `PUT /admin/production/settings/display` — la forme. */
-export const productionDisplayPayloadSchema = z.object({ showSubcategories: z.boolean() }).strict();
+/** Les deux rangements du fournil : par rayon de boutique, ou par poste. */
+export const PRODUCTION_GROUPINGS = ["shelf", "workstation"] as const;
+export type ProductionGrouping = (typeof PRODUCTION_GROUPINGS)[number];
+
+/**
+ * `PUT /admin/production/settings/display` — la forme. `grouping` absent :
+ * le rangement en vigueur ne change pas.
+ */
+export const productionDisplayPayloadSchema = z
+  .object({
+    showSubcategories: z.boolean(),
+    grouping: z.enum(PRODUCTION_GROUPINGS).optional(),
+  })
+  .strict();
 export type ProductionDisplayPayload = z.infer<typeof productionDisplayPayloadSchema>;
 
 /**

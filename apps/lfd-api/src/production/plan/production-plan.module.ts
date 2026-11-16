@@ -3,6 +3,7 @@ import { Module } from "@nestjs/common";
 import { BrandModule } from "../../platform/brand/brand.module.js";
 import { ProductionDayModule } from "../day/production-day.module.js";
 import { ProductionPrintModule } from "../shared/print/production-print.module.js";
+import { ProductionWorkstationsModule } from "../workstations/production-workstations.module.js";
 import { AddExternalDossierRecipientHandler } from "./application/commands/add-external-dossier-recipient.handler.js";
 import { AddProductionClosedDayHandler } from "./application/commands/add-production-closed-day.handler.js";
 import { AddStaffDossierRecipientHandler } from "./application/commands/add-staff-dossier-recipient.handler.js";
@@ -27,6 +28,7 @@ import { ListDossierStaffCandidatesHandler } from "./application/queries/list-do
 import { BusAutomaticDayCloser } from "./application/services/bus-automatic-day-closer.js";
 import { DossierDispatch } from "./application/services/dossier-dispatch.service.js";
 import { DossierDeadlinesReading } from "./application/services/dossier-deadlines-reading.service.js";
+import { DossierGroupingReading } from "./application/services/dossier-grouping-reading.service.js";
 import { PlanArrestAdmission } from "./application/services/plan-arrest-admission.js";
 import { PlanArrestBell } from "./application/services/plan-arrest-bell.js";
 import { PlanArrestRecording } from "./application/services/plan-arrest-recording.js";
@@ -80,6 +82,8 @@ import { PrismaProductionSettingsReader } from "./infrastructure/prisma-producti
     ProductionDayModule,
     // L'archive des papiers et les réglages d'affichage.
     ProductionPrintModule,
+    // Les postes : le rangement par poste (mode prod) et sa garde de bascule.
+    ProductionWorkstationsModule,
     // Le logo des exemplaires du dossier et du compte.
     BrandModule,
   ],
@@ -117,6 +121,8 @@ import { PrismaProductionSettingsReader } from "./infrastructure/prisma-producti
     GetDayDossierSpecimenHandler,
     GetProductionCountSpecimenHandler,
     DossierDeadlinesReading,
+    // Ce que le dossier lit pour se ranger : rayons, ou articles et postes.
+    DossierGroupingReading,
     // Les papiers du plan : le rendu, le dossier et le compte.
     ProductionPaperRenderer,
     GetProductionCountPdfHandler,

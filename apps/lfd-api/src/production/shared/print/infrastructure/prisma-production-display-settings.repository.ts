@@ -20,6 +20,7 @@ export class PrismaProductionDisplaySettingsRepository extends ProductionDisplay
   ): Promise<void> {
     const row = {
       showSubcategories: settings.showSubcategories,
+      grouping: settings.grouping,
       updatedAt: at,
       updatedByStaffId: author.staffUserId,
       updatedByName: author.name,

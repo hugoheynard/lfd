@@ -29,7 +29,11 @@ export class ProductionDisplaySettingsUpdatedEvent implements JournaledEvent {
       subjectId: PRODUCTION_DISPLAY_SETTINGS_SUBJECT,
       payload: {
         showSubcategories: this.next.showSubcategories,
-        previous: { showSubcategories: this.previous.showSubcategories },
+        grouping: this.next.grouping,
+        previous: {
+          showSubcategories: this.previous.showSubcategories,
+          grouping: this.previous.grouping,
+        },
       },
     };
   }

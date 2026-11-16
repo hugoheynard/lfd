@@ -263,6 +263,12 @@ export const PRODUCTION_CLOSE_MODE = domain('mode d’arrêt du plan', {
   manual: 'Manuel',
 });
 
+/** Le rangement du fournil (`production_display_settings.updated`) : par rayon ou par poste. */
+export const PRODUCTION_GROUPING = domain('rangement du fournil', {
+  shelf: 'Par rayon (mode boutique)',
+  workstation: 'Par poste (mode prod)',
+});
+
 /** Le mode des tranches de production (`production_tranche_settings.updated`, T1). */
 export const PRODUCTION_TRANCHE_MODE = domain('mode des tranches de production', {
   fixed: 'Fixes',
@@ -351,6 +357,7 @@ export const ORDERS_VALUES: ValueFamily = {
     SITE_COLOR_FIELD,
     CONTAINER_NATURE,
     PRODUCTION_CLOSE_MODE,
+    PRODUCTION_GROUPING,
     PRODUCTION_TRANCHE_MODE,
     DOSSIER_RECIPIENT_KIND,
     DELIVERY_VAT_MODE,

@@ -1091,6 +1091,9 @@ export {
   SHELF_LABEL_OFF_CATALOG,
   SHELF_LABEL_UNKNOWN,
   UNSHELVED_WORKSHOP_GROUP_KEY,
+  UNPLACED_GROUP_SUFFIX,
+  WORKSTATION_GROUP_KEY_PREFIX,
+  WORKSHOP_GROUP_KINDS,
   productionContainerSchema,
   productionWorksheetQuerySchema,
   workshopInitialsSchema,
@@ -1106,6 +1109,7 @@ export type {
   WorkshopGroup,
   WorkshopLine,
   WorkshopSection,
+  WorkshopGroupKind,
 } from "./production-worksheet.js";
 export {
   recordWorkshopBatchSchema,
@@ -1120,6 +1124,7 @@ export type {
 } from "./production-batches.js";
 export {
   MAX_FIXED_TRANCHES,
+  PRODUCTION_GROUPINGS,
   PRODUCTION_TRANCHE_MODES,
   productionClosedDayPayloadSchema,
   productionDisplayPayloadSchema,
@@ -1129,6 +1134,7 @@ export type {
   ProductionAutomaticCloseView,
   ProductionClosedDayPayload,
   ProductionDisplayPayload,
+  ProductionGrouping,
   ProductionDisplayView,
   ProductionSettingsView,
   ProductionTrancheMode,

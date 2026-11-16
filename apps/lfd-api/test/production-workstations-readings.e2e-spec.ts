@@ -8,7 +8,10 @@
 import type { CreatedIdResponse } from "@lfd/contracts";
 
 import type { PlacedResupply, ProducibleOrder } from "../src/production/channels/commerce/index.js";
-import { ProductionArticlesReader } from "../src/production/channels/commerce/index.js";
+import {
+  ProductionArticlesReader,
+  WorkshopShelvesReader,
+} from "../src/production/channels/commerce/index.js";
 import {
   KnownArticles,
   ProductionDayRepository,
@@ -16,7 +19,18 @@ import {
   ServiceRange,
 } from "../src/production/day/index.js";
 import { PlacedProducts, WorkstationOfProducts } from "../src/production/workstations/index.js";
-import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
+import type { ProductionWorksheetView } from "@lfd/contracts";
+import {
+  ProductionDisplaySettings,
+  ProductionDisplaySettingsRepository,
+} from "../src/production/shared/print/index.js";
+import {
+  bootstrapE2e,
+  E2E_STAFF_ID,
+  jsonBody,
+  serviceDay,
+  type E2eContext,
+} from "./e2e-harness.js";
 import { ADMIN_VERIFIER_OVERRIDE, admin } from "./delivery-rounds-scene.js";
 import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
@@ -119,6 +133,24 @@ describe("ProductionArticlesReader — le commerce, sans les filtres de vente", 
   });
 });
 
+describe("Le rayon d'un article vendable, lu par les deux ports", () => {
+  // Le mode boutique range par `WorkshopShelvesReader`, le mode prod par
+  // `ProductionArticlesReader` : pour un article vendu, ils disent le même rayon.
+  it("rend, pour chaque SKU vendable du miroir, le même rayon par les deux ports", async () => {
+    const all = await ctx.app.get(ProductionArticlesReader).allArticles();
+    const sellable = all.filter((item) => item.sellable);
+    expect(sellable.length).toBeGreaterThan(0);
+    const skus = sellable.map((item) => item.sku);
+
+    const shelves = await ctx.app.get(WorkshopShelvesReader).shelvesOf(skus);
+    const articles = await ctx.app.get(ProductionArticlesReader).articlesOf(skus);
+
+    for (const sku of skus) {
+      expect([sku, articles.get(sku)?.family]).toEqual([sku, shelves.get(sku)]);
+    }
+  });
+});
+
 describe("Ce que les postes savent répondre", () => {
   it("le poste des seuls produits demandés, les postes dans l'ordre, et le compte des placés", async () => {
     expect(await ctx.app.get(PlacedProducts).count()).toBe(0);
@@ -143,5 +175,60 @@ describe("Ce que les postes savent répondre", () => {
     expect(answer.workstations.map((station) => station.id)).toEqual([bread, pastry]);
     expect(answer.byProduct).toEqual(new Map([["SAL-001", pastry]]));
     expect(await ctx.app.get(PlacedProducts).count()).toBe(2);
+  });
+});
+
+describe("La fiche d'atelier en mode prod", () => {
+  /**
+   * Le mode prod est posé par le port d'écriture, sous la garde provisoire de
+   * la route (W3b l'ouvrira) : c'est la lecture de la fiche qu'on éprouve.
+   */
+  it("range par poste ce qui est placé, et par rayon « à ranger » le reste", async () => {
+    const created = await admin(ctx)
+      .post("/admin/production/workstations")
+      .set(INTENT_KEY, freshIntent())
+      .send({ name: "Pâtisserie" })
+      .expect(201);
+    const pastry = jsonBody<CreatedIdResponse>(created).id;
+    await admin(ctx)
+      .put("/admin/production/workstations/placements")
+      .set(INTENT_KEY, freshIntent())
+      .send({ productSkus: ["VIE-001"], workstationId: pastry })
+      .expect(204);
+    await ctx.app
+      .get(ProductionDisplaySettingsRepository)
+      .save(
+        ProductionDisplaySettings.of({ showSubcategories: false, grouping: "workstation" }),
+        CLOSED_AT,
+        { staffUserId: E2E_STAFF_ID, name: null },
+      );
+    const day = serviceDay(1);
+    const days = ctx.app.get(ProductionDayRepository);
+    const closed = await days.load(ServiceDay.of(day));
+    closed.close(
+      [order("VIE-001-1", "Croissant"), order("VIE-002-1", "Pain au chocolat")],
+      NONE,
+      CLOSED_AT,
+      null,
+    );
+    await days.save(closed);
+
+    const sheet = jsonBody<ProductionWorksheetView>(
+      await admin(ctx).get(`/admin/production/worksheet?date=${day}`).expect(200),
+    );
+
+    expect(
+      sheet.groups.map((group) => [
+        group.key,
+        group.kind,
+        group.unplaced,
+        group.lines.map((l) => l.sku),
+      ]),
+    ).toEqual([
+      [`ws:${pastry}`, "workstation", false, ["VIE-001-1"]],
+      ["fam-vien", "unplaced", true, ["VIE-002-1"]],
+    ]);
+    expect(sheet.groups[0]?.workstation).toEqual({ id: pastry, name: "Pâtisserie" });
+    expect(sheet.shelvesKnown).toBe(true);
   });
 });

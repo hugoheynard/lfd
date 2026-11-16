@@ -18,6 +18,8 @@ import { FixedPaperLogo } from "../../../../shared/print/application/__tests__/p
 import { FixedPlannedDeliveryNotes } from "../../../../channels/commerce/__tests__/planned-delivery-notes-doubles.js";
 import { OrderSheetPaper } from "../../../../shared/print/index.js";
 import { ProductionPaperRenderer } from "../production-paper.service.js";
+import { DossierGroupingReading } from "../dossier-grouping-reading.service.js";
+import { placementPorts } from "../../../../workstations/application/__tests__/placement-doubles.js";
 
 /**
  * **La teinte du réassort** sur le compte et le dossier (Hugo, 2026-10-22) :
@@ -64,7 +66,7 @@ function papersWith(
 ): { papers: ProductionPaperRenderer } {
   return {
     papers: new ProductionPaperRenderer(
-      new NoShelves(),
+      new DossierGroupingReading(new NoShelves(), ...placementPorts()),
       new OrderSheetPaper(new NoAdminOrigin(), colors, new FixedPaperLogo()),
       resupplyColors,
       new FixedPaperLogo(),

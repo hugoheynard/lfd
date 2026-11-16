@@ -38,6 +38,7 @@ import {
 } from "../../../../quality/application/__tests__/quality-doubles.js";
 import { worksheetContentsAround } from "../../__tests__/worksheet-contents-doubles.js";
 import { WorksheetDeadlinesReading } from "../../services/worksheet-deadlines-reading.service.js";
+import { placementPorts } from "../../../../workstations/application/__tests__/placement-doubles.js";
 
 /**
  * Le jour est DÉRIVÉ de maintenant : `relativeDay` le compare à l'horloge, et un
@@ -153,6 +154,7 @@ function handlerFor(
         qualityLinesFrom(new CheckTable()),
         new FixedOvenWaitingOrders(),
         display.reader(),
+        ...placementPorts(),
       ),
       new FixedClock(NOW),
     ),
