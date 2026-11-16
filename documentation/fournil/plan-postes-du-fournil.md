@@ -137,19 +137,41 @@ production.workstation_article
   déplace d'abord. Un poste vide part sans laisser d'article orphelin.
 - `updated_by` entre au registre RGPD (`lint:rgpd-staff`).
 
-### 3.3 Les gestes
+### 3.3 L'agrégat et les gestes
 
-Un CRUD avec deux refus, assez petit pour se passer d'agrégat : un nom en
-double, et l'archivage d'un poste encore occupé.
+Trois règles peuvent refuser une écriture : deux postes vivants ne portent
+pas le même nom, un poste qui porte des articles ne s'archive pas, et aucun
+article ne va à un poste archivé. Selon la question de tri de CLAUDE.md
+(§ 3.1), c'est donc un **agrégat**, et non un CRUD.
 
-- `DeclareWorkstation`, `RenameWorkstation`, `ReorderWorkstations`,
-  `ArchiveWorkstation` ;
-- `PlaceArticles(skus, workstationId | null)` : un ou plusieurs articles à un
-  poste, `null` pour les remettre « à ranger ». Le geste « tout ce rayon → ce
-  poste » de l'écran l'appelle avec les SKU du rayon : il affecte les articles
-  un par un et ne laisse aucune règle derrière lui ;
-- la requête `ListWorkstations` : les postes, leurs articles, les articles à
-  ranger.
+**`WorkstationMap`**, la carte entière du fournil, c'est-à-dire ses postes et
+le poste de chaque article. Les trois règles portent sur l'ensemble : l'unicité
+d'un nom se vérifie contre les autres postes, et l'archivage contre les
+articles. Elle reste petite, avec une dizaine de postes et quelques centaines
+d'articles au plus.
+
+- La factory `WorkstationMap.empty()`, puis les méthodes métier, qui refusent
+  chacune la transition illégale (`BusinessError`, avec un message qui nomme le
+  poste et le geste de sortie) :
+  - `declare(name)` ;
+  - `rename(id, name)` ;
+  - `reorder(ids)` ;
+  - `archive(id)` ;
+  - `place(skus, workstationId | null)`, où `null` remet les articles « à
+    ranger ».
+- Les value objects : `WorkstationName` (nom non vide, borné, comparé sans
+  casse ni espaces de bord) et `Sku`, celui du fournil.
+- Le port d'écriture `WorkstationMapRepository` : `load(): Promise<WorkstationMap>`
+  et `save(map)`. L'adaptateur Prisma porte `toDomain` et `toPersistence`, et
+  un verrou consultatif sérialise deux gestes simultanés.
+- Les commandes : `DeclareWorkstation`, `RenameWorkstation`,
+  `ReorderWorkstations`, `ArchiveWorkstation`, `PlaceArticles`. Chacune charge
+  la carte, appelle une méthode, puis sauve. Le geste « tout ce rayon → ce
+  poste » de l'écran appelle `PlaceArticles` avec les SKU du rayon, sans
+  laisser de règle derrière lui.
+- La lecture `ListWorkstations`, et la lecture publiée `WorkstationOfArticles`,
+  passent par un port de **lecture** distinct (ISP), qui ne charge pas
+  l'agrégat.
 
 ### 3.4 Le rangement
 
@@ -229,7 +251,7 @@ la répartition avant de basculer en mode prod.
 | Lot     | Contenu                                                                                                                                                                                            | Tests                                                                                                         |
 | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | **W0**  | La porte `production-subcontexts` connaît `workstations/`, ses deux modèles et ses deux arêtes, avant que le dossier existe.                                                                       | un import hors `index.ts` échoue                                                                              |
-| **W1**  | Migration (deux tables, ressource), gestes et requête, dépôt Prisma, `WorkstationOfArticles`, routes `/admin/production/workstations`. `lecteur-de-migrations`.                                    | les deux refus, `PlaceArticles` à `null`, e2e                                                                 |
+| **W1**  | Migration (deux tables, ressource), gestes et requête, dépôt Prisma, `WorkstationOfArticles`, routes `/admin/production/workstations`. `lecteur-de-migrations`.                                    | domaine : les trois refus et `place` à `null`, sans Nest ; handlers à ports doublés ; e2e                     |
 | **W2**  | `workstationGroupsOf` ; la fiche d'atelier et le dossier l'appellent ; la couverture du dossier nomme les articles à ranger ; le contrat.                                                          | **sans poste, sortie identique à aujourd'hui** ; toutes les lignes ressortent ; la panne                      |
 | **W2b** | La simulation du catalogue en production : requête, route, couverture de contrôle, filigrane.                                                                                                      | tous les articles vendables ressortent une seule fois ; mode prod et mode boutique ; rien n'est écrit en base |
 | **W3**  | La page Postes, l'option mode boutique / mode prod, et l'alerte du Prod manager (`pablo`), le rail et les tuiles ; le prévisionnel, les filtres des réassorts et le récapitulatif suivent le mode. | spec de l'écran ; essai dans Chrome sur le scénario de commandes                                              |
