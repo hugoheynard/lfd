@@ -18,6 +18,8 @@ import { SendDossierOnDayClosed } from "./application/handlers/send-dossier-on-d
 import { SendDossierOnDayRetaken } from "./application/handlers/send-dossier-on-day-retaken.handler.js";
 import { GetDayDossierPdfHandler } from "./application/queries/get-day-dossier-pdf.handler.js";
 import { GetDayDossierSpecimenHandler } from "./application/queries/get-day-dossier-specimen.handler.js";
+import { GetProductionSimulationPdfHandler } from "./application/queries/get-production-simulation-pdf.handler.js";
+import { GetProductionSimulationSpecimenHandler } from "./application/queries/get-production-simulation-specimen.handler.js";
 import { GetProductionCountPdfHandler } from "./application/queries/get-production-count-pdf.handler.js";
 import { GetProductionCountSpecimenHandler } from "./application/queries/get-production-count-specimen.handler.js";
 import { GetProductionDayStatusHandler } from "./application/queries/get-production-day-status.handler.js";
@@ -54,6 +56,7 @@ import { ProductionDayRetakeController } from "./http/production-day-retake.cont
 import { ProductionDayController } from "./http/production-day.controller.js";
 import { ProductionDossierRecipientsController } from "./http/production-dossier-recipients.controller.js";
 import { ProductionSettingsController } from "./http/production-settings.controller.js";
+import { ProductionSimulationController } from "./http/production-simulation.controller.js";
 import {
   PrismaAutoCloseAttemptLog,
   PrismaAutoCloseAttempts,
@@ -94,6 +97,8 @@ import { PrismaProductionSettingsReader } from "./infrastructure/prisma-producti
     AdminDayPapersSpecimensController,
     ProductionDossierRecipientsController,
     AutoCloseController,
+    // La simulation du catalogue, sous la page Postes : elle rend une partie du dossier.
+    ProductionSimulationController,
   ],
   providers: [
     CloseProductionDayHandler,
@@ -119,6 +124,8 @@ import { PrismaProductionSettingsReader } from "./infrastructure/prisma-producti
     { provide: ProductionPlanReader, useClass: ArrestedProductionPlanReader },
     SetProductionTranchesHandler,
     GetDayDossierSpecimenHandler,
+    GetProductionSimulationPdfHandler,
+    GetProductionSimulationSpecimenHandler,
     GetProductionCountSpecimenHandler,
     DossierDeadlinesReading,
     // Ce que le dossier lit pour se ranger : rayons, ou articles et postes.

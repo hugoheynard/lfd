@@ -6,10 +6,12 @@ import type { Response } from "express";
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { GetDayDossierSpecimenQuery } from "../application/queries/get-day-dossier-specimen.query.js";
 import { GetProductionCountSpecimenQuery } from "../application/queries/get-production-count-specimen.query.js";
+import { GetProductionSimulationSpecimenQuery } from "../application/queries/get-production-simulation-specimen.query.js";
 import type { ProductionPaper } from "../../shared/print/index.js";
 
 /**
- * **Le compte à produire et le dossier du jour d'EXEMPLE** — la planche des
+ * **Le compte à produire, le dossier du jour et la simulation du catalogue
+ * d'EXEMPLE** — la planche des
  * documents de la Comptabilité (`documentation/comptabilite/planche-des-documents.md`).
  *
  * 🔴 Sous `b2b_accounting`, comme la fiche d'atelier d'exemple : la planche
@@ -34,6 +36,16 @@ export class AdminDayPapersSpecimensController {
       new GetDayDossierSpecimenQuery(),
     );
     return served(response, pdf, "exemple-dossier-du-jour.pdf");
+  }
+
+  @Get("production-simulation.pdf")
+  async productionSimulation(
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const pdf = await this.queries.execute<GetProductionSimulationSpecimenQuery, ProductionPaper>(
+      new GetProductionSimulationSpecimenQuery(),
+    );
+    return served(response, pdf, "exemple-simulation-catalogue.pdf");
   }
 }
 

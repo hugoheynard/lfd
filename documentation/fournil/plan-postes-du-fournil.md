@@ -485,3 +485,9 @@ boutique », quel que soit le réglage.
   journaux `production` et `orders`. Un placement ou un changement de mode
   serait servi vieux jusqu'au prochain mouvement de la journée. Les gestes des
   postes et du réglage doivent faire monter sa version.
+- **W2b, la simulation** vit dans `plan/` (elle rend une partie du dossier, que
+  seul `plan` monte), sous l'URL des postes. Son calendrier n'a qu'une colonne
+  « Sans heure » : une commande fictive n'a pas d'échéance, et la page montre
+  la répartition, pas un horaire. Une panne de lecture la **refuse** au lieu de
+  la dégrader, sinon elle montrerait un autre rangement que celui demandé. Une
+  pièce par article, même vendu au poids.

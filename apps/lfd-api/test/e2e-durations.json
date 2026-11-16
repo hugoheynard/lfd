@@ -655,5 +655,6 @@
   "test/volume-ladder-carry-over.e2e-spec.ts": 4493,
   "test/write-replay.e2e-spec.ts": 35238,
   "test/production-workstations.e2e-spec.ts": 9700,
-  "test/production-workstations-readings.e2e-spec.ts": 4700
+  "test/production-workstations-readings.e2e-spec.ts": 4700,
+  "test/production-workstations-simulation.e2e-spec.ts": 9500
 }

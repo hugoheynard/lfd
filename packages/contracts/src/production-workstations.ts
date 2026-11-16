@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { CatalogFamilyView } from "./catalog.js";
+import { PRODUCTION_GROUPINGS } from "./production-settings.js";
 
 /**
  * **Les postes du fournil** — Prod manager › Postes (plan
@@ -47,6 +48,15 @@ export const placeProductsPayloadSchema = z.object({
   workstationId: z.string().min(1).nullable(),
 });
 export type PlaceProductsPayload = z.infer<typeof placeProductsPayloadSchema>;
+
+/**
+ * `GET admin/production/workstations/simulation.pdf?mode=…` — le mode dans
+ * lequel ranger le catalogue simulé, quel que soit le réglage du fournil.
+ */
+export const productionSimulationQuerySchema = z.object({
+  mode: z.enum(PRODUCTION_GROUPINGS),
+});
+export type ProductionSimulationQuery = z.infer<typeof productionSimulationQuerySchema>;
 
 /** Un poste en service, dans l'ordre des fiches. */
 export interface WorkstationView {

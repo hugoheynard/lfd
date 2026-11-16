@@ -3304,6 +3304,7 @@ export type {
 export {
   declareWorkstationPayloadSchema,
   placeProductsPayloadSchema,
+  productionSimulationQuerySchema,
   renameWorkstationPayloadSchema,
   reorderWorkstationsPayloadSchema,
 } from "./production-workstations.js";
@@ -3311,6 +3312,7 @@ export type {
   DeclareWorkstationPayload,
   OffCatalogArticleView,
   PlaceProductsPayload,
+  ProductionSimulationQuery,
   RenameWorkstationPayload,
   ReorderWorkstationsPayload,
   WorkstationProductVariantView,

@@ -100,18 +100,7 @@ export function renderDayDossierPdf(
         orders: print.colors,
         resupplies: print.resupplyColors,
       });
-      // Chaque rayon : son total du jour, puis son calendrier par tranche
-      // horaire juste derrière (Hugo, 2026-11-02 : « pour respecter un ordre
-      // logique »).
-      const calendarOf = new Map(calendar.map((page) => [page.label, page]));
-      for (const group of dossier.recap) {
-        drawRecapGroup(doc, group, pages.open(`${group.label} — total à produire`), room);
-        const page = calendarOf.get(group.label);
-        if (page !== undefined && page.rows.length > 0) {
-          const top = pages.openLandscape(`${page.label} — par tranche horaire`);
-          drawCalendarPage(doc, page, top, room, contentRightOf("landscape"));
-        }
-      }
+      drawRecapWithCalendars(doc, pages, dossier.recap, calendar);
       dossier.sheets.forEach((order, index) => {
         const rank = `bon ${String(index + 1)}/${String(dossier.sheets.length)}`;
         const top = pages.open(`${order.reference} — Fiche de commande`);
@@ -142,6 +131,30 @@ export function renderDayDossierPdf(
     },
     true,
   );
+}
+
+/**
+ * Chaque rayon : son total du jour, puis son calendrier par tranche horaire
+ * juste derrière (Hugo, 2026-11-02 : « pour respecter un ordre logique »).
+ * La partie « un rayon et son calendrier » du dossier, que la simulation du
+ * catalogue rend aussi.
+ */
+export function drawRecapWithCalendars(
+  doc: Doc,
+  pages: PaperPages,
+  recap: DayDossier["recap"],
+  calendar: readonly CalendarPage[],
+): void {
+  const room = (at: number, needed: number): number => pages.room(at, needed);
+  const calendarOf = new Map(calendar.map((page) => [page.label, page]));
+  for (const group of recap) {
+    drawRecapGroup(doc, group, pages.open(`${group.label} — total à produire`), room);
+    const page = calendarOf.get(group.label);
+    if (page !== undefined && page.rows.length > 0) {
+      const top = pages.openLandscape(`${page.label} — par tranche horaire`);
+      drawCalendarPage(doc, page, top, room, contentRightOf("landscape"));
+    }
+  }
 }
 
 /** Où et comment dessiner un bon : son haut, son rang, le lot, la page à tourner. */

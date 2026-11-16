@@ -37,6 +37,7 @@ const DOCUMENTS = [
   "allergen-matrix.pdf",
   "production-count.pdf",
   "day-dossier.pdf",
+  "production-simulation.pdf",
   "delivery-note-carrier.pdf",
   "delivery-note-client-pro.pdf",
   // Les étiquettes A6 du colisage (2026-10-25) : le sac, et le bac de la livraison.
