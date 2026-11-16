@@ -77,8 +77,11 @@ que le fournil ne fera jamais. Un état calculé ne ment pas.
   - le dossier du jour : `plan/domain/services/day-dossier.ts`, lu par
     `plan/application/services/production-paper.service.ts`, figé et archivé
     à l'arrêt.
-- **Le réglage `showSubcategories`** vit dans `ProductionDisplaySettings`
-  (`atelier/http/production-display-settings.controller.ts`).
+- **Le réglage `showSubcategories`** appartient à l'imprimerie
+  (`shared/print/infrastructure/prisma-production-display-settings.*`), lue
+  par la fiche comme par le dossier ; seule sa route vit dans `atelier/http/`.
+  Le mode boutique / mode prod la rejoint là, et non dans `workstations/` :
+  c'est une règle de rangement, que les deux métiers lisent déjà.
 - **Les articles vendables, nommés et rangés**, arrivent déjà au fournil par
   `production/channels/commerce/sellable-articles.reader.ts`
   (`SellableArticlesReader`, la table des raccourcis). La page Postes les
@@ -241,7 +244,7 @@ la répartition avant de basculer en mode prod.
   fait par deux postes n'est pas traité ici ; il demanderait la recette.
 - **Q2 — tranchée par Hugo le 2026-11-16 : une option du fournil, « mode
   boutique » ou « mode prod ».** Un réglage `grouping: "shelf" | "workstation"`
-  rejoint `ProductionDisplaySettings`, à côté de `showSubcategories`, et vaut
+  rejoint `ProductionDisplaySettings` (imprimerie), à côté de `showSubcategories`, et vaut
   pour **tous** les rangements du fournil : la fiche d'atelier, le dossier du
   jour, le prévisionnel, les filtres des réassorts et le récapitulatif. En mode
   boutique, tout est rangé par rayon, comme aujourd'hui, même si des postes
