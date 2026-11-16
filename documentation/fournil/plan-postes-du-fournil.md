@@ -1,99 +1,124 @@
 # Plan — les postes du fournil
 
 **État : 📝 plan, rien n'est bâti.** Demande de Hugo, le 2026-11-16 : un
-article rangé en « Traiteur salé » à la boutique peut être fait par la
+produit rangé en « Traiteur salé » à la boutique peut être fait par la
 pâtisserie au fournil. Aujourd'hui, la fiche d'atelier et le dossier de
-production le rangent quand même sous « Traiteur salé ». Il faut pouvoir
-ranger chaque article au poste qui le fait, sans toucher au rangement de la
-boutique et sans rien apprendre du référentiel.
+production le rangent quand même sous « Traiteur salé ». Le fournil doit
+pouvoir ranger chaque produit au poste qui le fait, sans toucher au rangement
+de la boutique et sans rien apprendre du référentiel.
 
-Forme retenue avec Hugo le même jour : **un poste par article**, réglé par le
-fournil, sans règle par rayon. Ni argent, ni migration de données (deux tables
-neuves et une colonne de réglage, additives), ni frontière de sécurité, ni runbook. Hugo a
-pourtant demandé quatre contradictions de `vitruve`, et leurs réponses sont
-aux §§ 7 à 10. Ses affirmations sur l'existant ont été vérifiées en ouvrant le
-code le 2026-11-16 (§ 2).
+Texte unique réécrit le 2026-11-16 après cinq contradictions de `vitruve`.
+Leurs objections y sont intégrées, et leur historique est dans git. Les
+décisions de Hugo sont datées.
 
 ---
 
 ## 1. En simple
 
-La boutique range ses articles en **rayons**, pour le client. Le fournil
-s'organise en **postes**, pour l'équipe. La quiche est au rayon « Traiteur
-salé », et c'est la pâtisserie qui la fait.
+La boutique range ses produits en **rayons**, pour le client. Le fournil
+s'organise en **postes**, pour l'équipe : boulangerie, tourier, pâtisserie…
+La quiche est au rayon « Traiteur salé », et c'est la pâtisserie qui la fait.
 
-Le fournil tient donc deux choses, et rien d'autre :
+Le fournil tient deux choses, et rien d'autre :
 
-- **sa liste de postes** : Tourière, Pâtisserie, Traiteur… un nom et un ordre ;
-- **le poste de chaque article** qu'il fabrique.
+- **sa liste de postes**, que Hugo nomme et ordonne à l'écran ;
+- **le poste de chaque produit**. Toutes ses déclinaisons (quiche 6 parts,
+  8 parts) en héritent.
 
-La fiche d'atelier et le dossier du jour rangent alors par poste. Un article
-qui n'a pas encore de poste reste sous son rayon de boutique, marqué « à
+Un réglage du fournil choisit le rangement : **mode boutique** (par rayon,
+comme aujourd'hui, le défaut) ou **mode prod** (par poste). En mode prod, la
+fiche d'atelier devient des **fiches de poste**, et le dossier du jour, le
+prévisionnel, le récapitulatif et les filtres des réassorts du fournil sont
+rangés par poste. Un produit sans poste reste sous son rayon, marqué « à
 ranger ».
 
 ```mermaid
 flowchart LR
-    A["Un article du jour"] --> B{"A-t-il un poste ?"}
+    A["Une ligne du jour<br/>(quiche 8 parts)"] --> M{"Mode ?"}
+    M -- boutique --> R0["Son rayon<br/>(comme aujourd'hui)"]
+    M -- prod --> B{"Son produit<br/>a-t-il un poste ?"}
     B -- oui --> P["Fiche de son poste"]
-    B -- non --> R["Sous son rayon de boutique,<br/>marqué « à ranger »"]
+    B -- non --> R["Son rayon,<br/>marqué « à ranger »"]
 ```
 
-- **Rien ne change le premier jour.** Sans poste, tout est rangé comme
-  aujourd'hui.
+- **Rien ne change tant qu'on ne bascule pas.** Le mode boutique est le
+  défaut, et il ne lit même pas les postes.
+- **On ne bascule pas à vide.** Le passage en mode prod est refusé tant
+  qu'aucun produit n'a de poste. S'il en reste sans poste, la bascule demande
+  une confirmation qui en donne le compte.
+- **On contrôle avant de basculer.** « Simuler le catalogue en production »
+  sort un dossier avec tous les produits, rangés comme ils le seraient, pour
+  chaque mode.
 - **La boutique et le référentiel n'en savent rien.** Le fournil ne range que
-  des SKU, qu'il connaît déjà.
-- **Un nouvel article** arrive « à ranger ». Quelqu'un le range une fois, et
-  c'est le fournil qui sait qui le fait.
-
-### Ce qui protège d'un article oublié
-
-1. **Il ne peut pas disparaître, par construction.** Le rangement place chaque
-   ligne quelque part : son poste, sinon son rayon, sinon « Hors catalogue ».
-   Un test vérifie que toutes les lignes qui entrent ressortent dans un groupe.
-2. **Il se voit.** Son groupe porte « à ranger ». La page Postes compte les
-   articles sans poste, et la couverture du dossier du jour les nomme.
-3. **Il se voit à temps.** Le Prod manager signale, avant l'arrêt, les articles
-   de la journée qui n'ont pas de poste.
-
-Il n'y a **pas d'événement « article publié »** à écouter : « ce qui reste à
-ranger » se calcule au moment de la lecture, sur les articles que le fournil
-a réellement à produire. Un événement peut se perdre, ou concerner un article
-que le fournil ne fera jamais. Un état calculé ne ment pas.
+  des références opaques que le commerce lui donne déjà.
+- **Un produit oublié ne peut pas disparaître.** Il reste sous son rayon,
+  marqué « à ranger », la page Postes le compte, et le Prod manager le signale
+  dès qu'il est commandé, avant l'arrêt.
 
 ---
 
 ## 2. Ce qui existe (vérifié le 2026-11-16)
 
-- **Le fournil ne connaît un article que par son SKU.** Il demande le rayon au
-  commerce par un port qu'il déclare :
-  `production/channels/commerce/workshop-shelves.reader.ts`
-  (`WorkshopShelvesReader.shelvesOf(skus)`). Le commerce l'implémente sur son
-  miroir des familles
-  (`lafoliecoffee/catalog/infrastructure/catalog-workshop-shelves.reader.ts`).
-  Ce plan n'y touche pas.
-- **Deux lecteurs rangent par rayon côté serveur**, tous deux par
-  `rootShelvesOf` de l'imprimerie (`production/shared/print/`) :
-  - la fiche d'atelier : `atelier/domain/services/production-worksheet-groups.ts`
-    (`worksheetGroupsOf`) ;
-  - le dossier du jour : `plan/domain/services/day-dossier.ts`, lu par
-    `plan/application/services/production-paper.service.ts`, figé et archivé
-    à l'arrêt.
-- **Le réglage `showSubcategories`** appartient à l'imprimerie
-  (`shared/print/infrastructure/prisma-production-display-settings.*`), lue
-  par la fiche comme par le dossier ; seule sa route vit dans `atelier/http/`.
-  Le mode boutique / mode prod la rejoint là, et non dans `workstations/` :
-  c'est une règle de rangement, que les deux métiers lisent déjà.
-- **Les articles vendables, nommés et rangés**, arrivent déjà au fournil par
-  `production/channels/commerce/sellable-articles.reader.ts`
-  (`SellableArticlesReader`, la table des raccourcis). La page Postes les
-  liste par ce port.
-- **La porte `production-subcontexts`** n'admet entre métiers que
-  `atelier → quality` et `plan → resupply`. Ses sous-contextes et ses arêtes
-  sont déclarés dans `dev-toolbox/gates/lib/production-subcontexts-graph.mjs`
+- **Le fournil ne connaît un article que par son SKU**, celui de la
+  déclinaison : chaque déclinaison se vend sous sa référence, le défaut
+  compris (`lafoliecoffee/catalog/domain/shop-sku.ts`). Une quiche 6 parts et
+  une 8 parts sont deux lignes sur la fiche. Le commerce connaît la référence
+  du produit de chaque déclinaison (`productSku`, dans
+  `lafoliecoffee/catalog/domain/ports/catalog.reader.ts`).
+- **Les ports que le fournil déclare et que le commerce implémente**
+  (`production/channels/commerce/`) :
+  - `WorkshopShelvesReader.shelvesOf(skus)` : le rayon de chaque SKU, lu en
+    vue pro. Un SKU masqué ou inconnu est absent de la réponse.
+  - `SellableArticlesReader.sellableArticles()` : les articles vendables, mais
+    **seulement la déclinaison par défaut** de chaque produit (filtre
+    `isDefault`, `catalog-sellable-articles.reader.ts`).
+  - `ExpectedProductionReader.expectedBetween(range)` : la demande des
+    commandes par jour et par SKU (au plus 31 jours, `ServiceRange`).
+  - `ExpectedResuppliesReader.expectedBetween(range)` : la même chose pour les
+    réassorts. Elle charge les réassorts entiers, puis fusionne en mémoire.
+- **Les lignes du fournil appartiennent à `day/`.** `ProductionOrderLine` et
+  `ProductionResupplyLine` portent `sku` et `productName`, et ne sont écrites
+  qu'à l'arrêt d'une journée (`day/infrastructure/production-day-children.writer.ts`).
+- **Deux rangements côté serveur**, par `rootShelvesOf` de l'imprimerie
+  (`production/shared/print/`) :
+  - la fiche d'atelier, `worksheetGroupsOf`
+    (`atelier/domain/services/production-worksheet-groups.ts`). Ses groupes
+    ont `key` = id de famille, et le front indexe ses onglets sur `key` ;
+  - le dossier du jour, `recapOf` (`plan/domain/services/day-dossier.ts`),
+    avec des groupes `{ label, quantity, lines, intertitles }`.
+- **Le dossier n'est pas figé à l'arrêt.** Il est rangé à chaque tirage, et
+  le premier tirage **archivable** est gardé
+  (`plan/application/services/production-paper.service.ts`, `archivable`).
+- **Le réglage d'affichage** (`showSubcategories`) appartient à l'imprimerie
+  (`shared/print/infrastructure/prisma-production-display-settings.*`), sa
+  route est `PUT /admin/production/settings/display` dans `atelier/http/`, et
+  son changement émet `production_display_settings.updated`.
+- **Trois écrans du front rangent eux-mêmes**, sur le catalogue :
+  - le prévisionnel (`previsionnel/previsionnel-matrix.ts`, `catalogRootShelves`) ;
+  - le récapitulatif (`production-recap.ts`) ;
+  - les filtres des réassorts à produire (`reassorts-a-produire/`), qui
+    filtrent par la catégorie portée par l'article (`categoryId`), sans
+    racine.
+
+  Le réassort du comptoir (`comptoir/reassort-boutique-page/`) est un écran
+  de la boutique.
+
+- **Les droits.** Le prévisionnel et le récapitulatif relèvent de
+  `production_plan:read`, et les réassorts du fournil de
+  `production_resupply:read`. `StaffAccessGuard` déduit le droit de la méthode
+  HTTP : un POST demande `:write`, sauf décorateur explicite
+  (`platform/auth/staff-access.guard.ts`).
+- **La porte `production-subcontexts`** déclare ses sous-contextes et ses
+  arêtes dans `dev-toolbox/gates/lib/production-subcontexts-graph.mjs`
   (`DIRECTORIES`, `GATED`, `ALLOWED`), et ses modèles dans
-  `dev-toolbox/gates/production-subcontexts.map.json`.
-- **Le mot « station »** est déjà pris (`PackingStation`, `StationContext`).
-  Le poste s'appelle `Workstation` dans le code.
+  `dev-toolbox/gates/production-subcontexts.map.json`. Entre métiers, elle
+  n'admet que `atelier → quality` et `plan → resupply`.
+- **Les tables du fournil sans journée** sont listées, avec leur raison, dans
+  `test/day-change-triggers.e2e-spec.ts` (`UNWATCHED`). La suite vérifie que
+  chaque table inscrite existe.
+- **Les mots.** « Station » est pris (`PackingStation`, `StationContext`),
+  donc un poste s'appelle `Workstation` dans le code. Le front appelle
+  « poste fixe » la tablette, en fiche d'atelier comme en livraison.
 
 ---
 
@@ -104,487 +129,281 @@ que le fournil ne fera jamais. Un état calculé ne ment pas.
 Les postes sont le vocabulaire du fournil. Ils vivent dans le schéma
 `production`, dans un nouveau métier `src/production/workstations/`, avec son
 `index.ts` et son module Nest. Ni dans `day/`, qui ne connaît aucun métier, ni
-dans `atelier/`, que `plan/` n'a pas le droit de lire.
+dans `atelier/`, que `plan/` ne lit pas.
 
-Il publie **une lecture nommée** :
+`workstations/` lit le partagé (`day/`, `shared/print/`, `channels/`), comme
+tout métier. `atelier/` et `plan/` lisent `workstations/`. Ce sont les deux
+seules arêtes neuves entre métiers.
 
-```ts
-/** Le poste de chaque SKU ; un SKU absent n'a pas de poste. */
-export abstract class WorkstationOfArticles {
-  abstract workstationsOf(skus: readonly string[]): Promise<ReadonlyMap<string, WorkstationView>>;
-}
-```
+Il publie, dans son `index.ts`, sous « ce que les postes savent répondre » :
 
-La porte gagne deux arêtes, avec leur raison : `atelier → workstations` et
-`plan → workstations`.
+- `WorkstationOfProducts.workstationsOf(productSkus)` : le poste de chaque
+  produit, ou rien ;
+- `ProductionGrouping.groupingOf(lines, mode)` : le rangement complet (§ 3.4),
+  pour ceux qui rangent.
 
-### 3.2 Les tables
+### 3.2 Les tables (migration additive)
 
 ```
 production.production_workstation
-  id           text pk            (ULID)
-  name         text not null      unique parmi les postes vivants
-  position     int  not null      l'ordre des fiches
-  archived_at  timestamptz null   pas de DELETE physique
+  id                   text pk           ULID
+  name                 text not null     unique parmi les postes vivants (sans casse)
+  position             int  not null     l'ordre des fiches
+  archived_at          timestamptz null  pas de DELETE physique
   updated_at, updated_by_staff_id, updated_by_name
 
-production.production_workstation_article
-  sku             text pk         un article, un poste
-  workstation_id  text not null → production_workstation (RESTRICT)
+production.production_workstation_product
+  product_sku          text pk           la référence du produit, opaque
+  workstation_id       text not null → production_workstation (RESTRICT)
   updated_at, updated_by_staff_id, updated_by_name
+
+production.production_display_settings
+  + grouping           text not null default 'shelf'
+                       CHECK (grouping in ('shelf', 'workstation'))
 ```
 
-- **Aucune clé ne sort du schéma `production`.** Le SKU y est déjà opaque,
-  comme dans `ProductionOrderLine`.
-- **Archiver un poste** est refusé tant qu'il porte des articles : on les
-  déplace d'abord. Un poste vide part sans laisser d'article orphelin.
-- `updated_by` entre au registre RGPD (`lint:rgpd-staff`).
+- **Aucune clé ne sort du schéma `production`.** La référence produit est
+  opaque, comme le SKU des lignes.
+- La migration crée aussi la ressource `production_workstations`, accordée à
+  l'écran, jamais par migration.
+- Les deux tables entrent à `UNWATCHED` (un réglage, pas un fait du jour)
+  **dans le même lot** que la migration. Les colonnes `updated_by_*` entrent
+  au registre RGPD.
+- Une ligne de réglage absente vaut `grouping: 'shelf'`.
 
-### 3.3 L'agrégat et les gestes
+### 3.3 L'agrégat `WorkstationMap`
 
-Trois règles peuvent refuser une écriture : deux postes vivants ne portent
-pas le même nom, un poste qui porte des articles ne s'archive pas, et aucun
-article ne va à un poste archivé. Selon la question de tri de CLAUDE.md
-(§ 3.1), c'est donc un **agrégat**, et non un CRUD.
+Trois règles peuvent refuser une écriture, donc c'est un agrégat (CLAUDE.md
+§ 3.1) :
 
-**`WorkstationMap`**, la carte entière du fournil, c'est-à-dire ses postes et
-le poste de chaque article. Les trois règles portent sur l'ensemble : l'unicité
-d'un nom se vérifie contre les autres postes, et l'archivage contre les
-articles. Elle reste petite, avec une dizaine de postes et quelques centaines
-d'articles au plus.
+- deux postes vivants ne portent pas le même nom ;
+- un poste qui porte des produits ne s'archive pas ;
+- aucun produit ne va à un poste archivé.
 
-- La factory `WorkstationMap.empty()`, puis les méthodes métier, qui refusent
-  chacune la transition illégale (`BusinessError`, avec un message qui nomme le
-  poste et le geste de sortie) :
-  - `declare(name)` ;
-  - `rename(id, name)` ;
-  - `reorder(ids)` ;
-  - `archive(id)` ;
-  - `place(skus, workstationId | null)`, où `null` remet les articles « à
-    ranger ».
-- Les value objects : `WorkstationName` (nom non vide, borné, comparé sans
-  casse ni espaces de bord) et `Sku`, celui du fournil.
-- Le port d'écriture `WorkstationMapRepository` : `load(): Promise<WorkstationMap>`
-  et `save(map)`. L'adaptateur Prisma porte `toDomain` et `toPersistence`, et
-  un verrou consultatif sérialise deux gestes simultanés.
-- Les commandes : `DeclareWorkstation`, `RenameWorkstation`,
-  `ReorderWorkstations`, `ArchiveWorkstation`, `PlaceArticles`. Chacune charge
-  la carte, appelle une méthode, puis sauve. Le geste « tout ce rayon → ce
-  poste » de l'écran appelle `PlaceArticles` avec les SKU du rayon, sans
-  laisser de règle derrière lui.
-- La lecture `ListWorkstations`, et la lecture publiée `WorkstationOfArticles`,
-  passent par un port de **lecture** distinct (ISP), qui ne charge pas
+La carte entière fait l'agrégat (une dizaine de postes, quelques centaines de
+produits) :
+
+- `WorkstationMap.empty()` ;
+- les méthodes `declare(name)`, `rename(id, name)`, `reorder(ids)`,
+  `archive(id)` et `place(productSkus, workstationId | null)`, chacune
+  refusant la transition illégale par une `BusinessError` qui nomme le poste et
+  le geste de sortie ;
+- les value objects `WorkstationName` (non vide, au plus 40 caractères,
+  comparé sans casse ni espaces de bord) et `ProductSku`, à créer dans
+  `workstations/domain/` ;
+- le port `WorkstationMapRepository` : `load()` et `save(map)`. L'adaptateur
+  écrit la **différence**, sous un verrou consultatif, avec `toDomain` et
+  `toPersistence` ;
+- cinq commandes (`DeclareWorkstation`, `RenameWorkstation`,
+  `ReorderWorkstations`, `ArchiveWorkstation`, `PlaceProducts`), toutes
+  **par intention** : `@IntentKey`, `runSealed`, et la clé d'une
+  `GestureIntents` côté écran. Rejouer un renommage après celui de quelqu'un
+  d'autre le déferait ;
+- un fait par geste, dans la même transaction (`production_workstation.declared`,
+  `.renamed`, `.reordered`, `.archived`, `.products_placed`), inscrit au
+  catalogue `packages/contracts/src/journal-facts/` avec ses phrases de
+  journal ;
+- les lectures passent par un port de lecture distinct, qui ne charge pas
   l'agrégat.
 
 ### 3.4 Le rangement
 
-`rootShelvesOf` reste tel quel. Une fonction voisine de l'imprimerie,
-`workstationGroupsOf(lines, workstationOf, shelfOf)`, rend :
+Une seule fonction pure de l'imprimerie, `groupingOf`, rend des
+**groupements neutres** :
 
-1. un groupe par poste qui a des lignes, dans l'ordre des postes ;
-2. puis, pour ce qui n'a pas de poste, un groupe par rayon de boutique marqué
-   `unplaced: true` (« à ranger »), dans l'ordre d'aujourd'hui ;
-3. puis « Hors catalogue » ou « Rayon inconnu », comme aujourd'hui.
+```
+{ key, title, kind: "workstation" | "shelf" | "unplaced" | "off_catalog",
+  workstation: { id, name } | null, sections, lines }
+```
 
-**Invariant testé :** toutes les lignes qui entrent ressortent, une seule
-fois. Une **panne** de la lecture des postes se traite comme la panne des
-rayons aujourd'hui : on journalise, et tout est rangé par rayon. Un poste
-n'empêche jamais de produire.
+- **Mode boutique :** exactement `rootShelvesOf` d'aujourd'hui. Un groupe par
+  rayon (`kind: "shelf"`), puis « Hors catalogue » ou « Rayon inconnu ».
+  Aucune lecture des postes.
+- **Mode prod :**
+  1. un groupe par poste qui a des lignes, dans l'ordre des postes ;
+  2. pour les produits sans poste, un groupe par rayon, `kind: "unplaced"`,
+     titré « Traiteur salé — à ranger » ;
+  3. « Hors catalogue — à ranger » pour un SKU que le commerce ne connaît
+     plus (sans produit, il ne peut pas recevoir de poste) ;
+  4. sections : avec `showSubcategories`, les rayons de boutique d'où
+     viennent les lignes du poste.
 
-Avec `showSubcategories`, les sections d'un groupe-poste sont les rayons de
-boutique d'où viennent ses articles. On y retrouve la quiche en lisant le
-site.
+**Invariant testé :** toute ligne qui entre ressort une fois, dans les deux
+modes. Une **panne** de la lecture des postes en mode prod rend le
+rangement du mode boutique, journalise la panne, et le dossier n'est pas
+archivé (§ 3.5).
 
-Le contrat `WorkshopGroup` gagne `workstation: { id, name } | null` et
-`unplaced: boolean`.
+**Le produit d'une ligne.** Le port des rayons, `WorkshopShelvesReader.shelvesOf`,
+rend en plus la référence produit de chaque SKU (`productSku`, que le
+commerce porte déjà). C'est un champ de plus dans une réponse qui existe, pas
+une lecture de plus.
 
-#### La même découpe de page (décidé par Hugo le 2026-11-16)
+**La même découpe de page** (décision de Hugo, 2026-11-16). `recapOf` et
+`worksheetGroupsOf` traduisent ces groupements dans leur forme d'aujourd'hui.
+Le gabarit du PDF et la mise en page de la fiche ne changent pas : un poste
+prend la place d'un rayon. Le contrat `WorkshopGroup` gagne `kind`,
+`workstation` et `unplaced`. `key` vaut `ws:<id>` pour un poste. Le JSDoc de
+`family` dit qu'il vaut `null` pour un poste, un hors catalogue ou des rayons
+illisibles, et qu'il faut lire `kind`.
 
-Le dossier du jour et la fiche d'atelier gardent **exactement** leur
-découpe : un poste prend la place d'un rayon, et rien d'autre ne bouge.
+### 3.5 Le figement du dossier
 
-- **Une section par groupe.** Le titre est le nom du poste au lieu du nom du
-  rayon. Le calendrier par tranche, l'ordre des lignes (le plus gros d'abord),
-  les sauts de page et les annexes restent les mêmes.
-- **Les intertitres** (avec `showSubcategories`) deviennent les rayons de
-  boutique à l'intérieur du poste, à la place des sous-catégories. Le
-  mécanisme est le même.
-- **Un groupe « à ranger »** a la forme d'un groupe de rayon. Seul son titre
-  porte la mention : « Traiteur salé — à ranger ».
+Le dossier est gardé au **premier tirage archivable**, avec le mode et les
+postes de ce tirage. En mode prod, `archivable` exige aussi « postes lus ».
+Chaque tirage non archivable est journalisé avec sa cause. **Limite
+assumée :** un réglage changé entre l'arrêt et ce tirage s'y voit. On ne règle
+pas les postes pendant le service.
 
-C'est tenu par la construction : `recapOf` (`plan/domain/services/day-dossier.ts`)
-et `worksheetGroupsOf` rendent déjà des groupes `{ titre, lignes,
-intertitres }`, et la mise en page ne lit que ces groupes (vérifié le
-2026-11-16). Le changement se fait **en amont**, dans le choix des groupes ;
-le gabarit du PDF n'est pas touché.
+### 3.6 Les fiches de poste (décision de Hugo, 2026-11-16)
 
-**Test (W2) :** une journée où chaque rayon a exactement un poste du même nom
-rend un dossier dont les groupes sont identiques, titres compris, à ceux du
-mode boutique.
+En mode prod, `/fournil` montre **une fiche par poste**. Les onglets de la
+tablette et le sélecteur du téléphone listent les postes, avec leur
+avancement, et l'en-tête dit « Fiche de poste — Pâtisserie · fiche 2 sur 5 ».
+La fiche elle-même ne change pas.
 
-#### Les fiches d'atelier deviennent des fiches de poste (décidé par Hugo le 2026-11-16)
+- `/fournil?poste=<id>` ouvre la fiche d'un poste. Le dernier ouvert est
+  retenu par personne, dans `nav_prefs.worksheetCategory`, avec la clé du
+  contrat (`ws:<id>`, 29 caractères pour une limite de 40).
+- Les messages suivent le mode : « Les postes n'ont pas pu être lus — les
+  fiches sont rangées par rayon ».
+- « Poste fixe » devient « tablette » dans tout le back-office (fiche
+  d'atelier et livraison).
 
-En mode prod, la fiche d'atelier (`/fournil`) montre **une fiche par poste** :
-l'onglet sur tablette et le sélecteur sur téléphone listent les postes, avec
-leur avancement, à la place des rayons. L'en-tête dit « Fiche de poste —
-Pâtisserie · fiche 2 sur 5 ». La fiche elle-même (lignes, tranches, fournées,
-pavé numérique) ne change pas.
+### 3.7 Le rangement servi au front
 
-- **Ouvrir directement sa fiche :** `/fournil?poste=<id>` ouvre la fiche d'un
-  poste. La tablette de la pâtisserie peut garder ce lien en favori. Le dernier
-  poste ouvert est retenu **par personne**, dans les préférences de navigation
-  (`nav_prefs.worksheetCategory`, comme le rayon aujourd'hui), jamais dans le
-  stockage du navigateur.
-- **Un poste sans ligne ce jour-là n'a pas de fiche,** comme un rayon vide
-  aujourd'hui.
-- **Les messages suivent le mode.** « Les rayons n'ont pas pu être lus »
-  devient, en mode prod, « Les postes n'ont pas pu être lus — les fiches sont
-  rangées par rayon ».
-- **Le mot.** Le front appelle aujourd'hui « poste fixe » la tablette posée à
-  l'atelier, par opposition au téléphone (`fiche-atelier.html`, vérifié le
-  2026-11-16). Avec les postes du fournil, ce mot désignerait deux choses. Il
-  devient « tablette » dans les commentaires et les libellés (W3), et
-  « poste » ne désigne plus que le métier de l'atelier.
+Le prévisionnel, le récapitulatif et les filtres des réassorts du fournil ne
+rangent plus eux-mêmes. Ils appellent :
 
-### 3.5 Le figement
+```
+POST /admin/production/workstations/grouping
+corps : { skus: string[] }        Zod : 1 à N SKU, chacun de 1 à 64 caractères
+réponse : le groupement de chaque SKU (clé, titre, kind, ordre, section)
+```
 
-Le dossier du jour est figé au **premier tirage archivable** (§ 7, B1) : il
-garde le mode et les postes de ce tirage-là. **Limite assumée :** un réglage
-changé entre l'arrêt et ce tirage s'y voit. Le tirage suit l'arrêt de près, et
-on ne règle pas les postes pendant le service. La fiche d'atelier est vivante : un changement de poste se voit
-au rafraîchissement suivant.
+- C'est une **lecture** : une `Query` sur le bus, `@Idempotent("lecture :
+n'écrit rien")`, `@HttpCode(200)`, et
+  `@RequireAnyPermission("production_plan:read", "production_resupply:read")`,
+  puisque le garde déduirait `:write` d'un POST. Ce n'est pas une route par
+  intention.
+- **La borne N** : à mesurer en W3b, à quelques fois le nombre réel de SKU
+  vendables, déclinaisons comprises, avec sa raison écrite. Le corps tient de
+  toute façon sous `JSON_BODY_LIMIT` (512 Ko).
+- **En mode boutique,** les filtres des réassorts gardent leur filtre par
+  `categoryId`, et le prévisionnel et le récapitulatif restent rangés comme
+  aujourd'hui (le serveur rend le rangement par rayon). Le réassort du
+  **comptoir** n'est jamais concerné.
 
-### 3.6 L'écran
+### 3.8 La page Postes
 
-Prod manager → **Postes** :
+Prod manager → **Postes** (`production_workstations`) :
 
-- en tête, les postes : ajouter, renommer, monter ou descendre, archiver ;
-- dessous, **les articles fabriqués**, chacun avec son rayon de boutique et un
-  `fold-listbox` « Poste ». Un filtre « à ranger » avec son compte, un filtre
-  par rayon, et le geste « tout ce rayon → ce poste » ;
-- le bouton **« Simuler le catalogue en production »** (§ 3.7) ;
-- le réglage **mode boutique / mode prod** y est rappelé, avec un lien vers les réglages du fournil ;
-- en mode prod, le Prod manager affiche « N articles du jour à ranger » avec un lien vers ce
-  filtre, tant qu'il en reste.
+- en tête, les postes : ajouter (nommé par Hugo), renommer, monter ou
+  descendre, archiver. « Partir des rayons » crée un poste par rayon racine
+  et y place ses produits, comme premier jeu de noms à corriger ;
+- dessous, **les produits**, chacun avec son rayon, ses déclinaisons en
+  dessous pour information, et un `fold-listbox` « Poste ». Un filtre « à
+  ranger » avec son compte, un filtre par rayon, et « tout ce rayon → ce
+  poste », qui appelle `PlaceProducts` sans laisser de règle ;
+- le réglage **mode boutique / mode prod**, et les deux boutons de
+  simulation.
 
-Une ressource `production_workstations` est créée par migration et accordée
-**à l'écran** (règle des droits, CLAUDE.md § 3).
+**Les produits listés** sont l'union de quatre sources, ramenée au produit
+par la réponse du commerce :
 
-### 3.7 Simuler le catalogue en production
+1. les articles vendables (`SellableArticlesReader`, qui rend désormais
+   **toutes** les déclinaisons et leur `productSku`) ;
+2. les lignes des journées arrêtées de J−30 à la dernière, commandes et
+   réassorts : la lecture nommée `KnownArticles`, publiée par `day/` ;
+3. la demande des commandes des 14 prochains jours (`ExpectedProductionReader`) ;
+4. celle des réassorts (`ExpectedResuppliesReader`), hors réassorts « au plus
+   tôt », qui n'entrent pas au plan.
 
-Demande de Hugo, le 2026-11-16 : un bouton **« Simuler le catalogue en
-production »** sur la page Postes, qui sort un dossier de production avec
-**tous** les articles fabricables, rangés comme ils le seraient, pour contrôler
-la répartition avant de basculer en mode prod.
+Un SKU que le commerce ne rattache plus à aucun produit est listé à part,
+« hors catalogue ». Il ne peut pas recevoir de poste.
 
-- **La source :** tous les articles vendables, que le fournil lit déjà par
-  `SellableArticlesReader`, une pièce de chacun, dans une seule commande
-  fictive.
-- **Le rendu :** la partie « un rayon et son calendrier » du **vrai** dossier
-  du jour (`plan/domain/services/day-dossier.ts`), avec les postes et le mode
-  du moment. Le code est le même, donc ce qu'on contrôle est ce qu'on
-  imprimera. Ni fiche par commande, ni BL, ni réassorts : une commande fictive
-  n'a rien à y montrer.
-- **Le choix du mode :** « Simuler en mode prod » et « Simuler en mode
-  boutique », quel que soit le réglage en cours. On compare les deux avant de
-  basculer.
-- **La couverture** compte les articles par poste et nomme ceux qui sont « à
-  ranger ». C'est la liste de contrôle.
-- **Jamais persistée,** comme la journée d'exemple de la planche des
-  documents (`plan/application/document-specimens/specimen-day.ts`, même
-  principe) : aucune journée, aucun archivage, aucun envoi. Chaque page porte
+### 3.9 La bascule en mode prod
+
+`PUT /admin/production/settings/display` porte `grouping`. Le fait
+`production_display_settings.updated` porte `grouping` et `previous.grouping`.
+
+- **Refusée tant qu'aucun produit n'a de poste** : « Aucun produit n'a de
+  poste : rangez-les depuis la page Postes, ou partez de “Simuler le
+  catalogue en production”. »
+- **Si des produits de la demande des 14 jours n'ont pas de poste,** l'écran
+  demande une confirmation qui en donne le compte. Le serveur ne refuse pas.
+- **Avant W3b,** le serveur refuse `workstation` (« le mode prod arrive avec le
+  rangement des écrans du prévisionnel ») : sans ça, la fiche serait rangée
+  par poste et le prévisionnel encore par rayon.
+- Retirer des postes après la bascule ne fait pas revenir en mode boutique.
+  L'alerte le signale.
+
+### 3.10 L'alerte du Prod manager
+
+En mode prod, « N produits du jour à ranger », avec un lien vers le filtre.
+Avant l'arrêt, elle lit la demande attendue **du seul jour** (commandes et
+réassorts). Après, elle lit les lignes du jour (`KnownArticles` borné au
+jour). Elle est servie par une requête de `workstations/`.
+
+### 3.11 Simuler le catalogue en production (pour chaque mode)
+
+Sur la page Postes : « Simuler en mode prod » et « Simuler en mode
+boutique », quel que soit le réglage.
+
+- Une pièce de chaque article vendable, déclinaisons comprises, dans une seule
+  commande fictive, rendue par la partie « un rayon et son calendrier » du
+  **vrai** dossier, avec le rangement du mode demandé.
+- La couverture compte les lignes par groupe et nomme les produits « à
+  ranger ».
+- Rien n'est persisté, ni archivé, ni envoyé. Chaque page porte
   « SIMULATION — ne pas produire ».
-- **La route :** `GET /admin/production/workstations/simulation.pdf?mode=workstation|shelf`,
-  une requête qui n'écrit rien, sous la ressource `production_workstations`.
+- `GET /admin/production/workstations/simulation.pdf?mode=workstation|shelf`,
+  sous `production_workstations`. Son exemple figure sur la planche des
+  documents (`lint:pdf-specimens`).
+- **À vérifier en W2b :** le calendrier d'une commande fictive sans tranches
+  réelles.
 
 ---
 
-## 4. Les lots
+## 4. Décisions de Hugo (2026-11-16)
 
-| Lot     | Contenu                                                                                                                                                                                                                                                                                                                                                                                                         | Tests                                                                                                         |
-| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| **W0**  | La porte `production-subcontexts` : `workstations: SHARED` (`day`, `shared-print`, `channels`) dans `ALLOWED`, `workstations` dans `DIRECTORIES` et `GATED`, `atelier` et `plan` gagnent `workstations` ; les deux modèles et leur propriétaire dans la carte. Avant le dossier.                                                                                                                                | un fichier sous `workstations/` est refusé avant, admis après ; un import hors `index.ts` échoue              |
-| **W1**  | Migration (deux tables, colonne `grouping`, ressource), agrégat `WorkstationMap`, gestes et requêtes, dépôt Prisma, `WorkstationOfArticles`, `KnownArticles` (dans `day/`), routes `/admin/production/workstations`. Tous les gestes en `@IntentKey` + `runSealed`. Les deux tables entrent à `UNWATCHED` de `test/day-change-triggers.e2e-spec.ts` dans le même lot que la migration. `lecteur-de-migrations`. | domaine : les trois refus et `place` à `null` ; handlers ; e2e ; `lint:write-idempotence`                     |
-| **W2**  | `workstationGroupsOf` ; la fiche d'atelier et le dossier l'appellent ; la couverture du dossier nomme les articles à ranger ; le contrat.                                                                                                                                                                                                                                                                       | **sans poste, sortie identique à aujourd'hui** ; toutes les lignes ressortent ; la panne                      |
-| **W2b** | La simulation du catalogue en production : requête, route, couverture de contrôle, filigrane.                                                                                                                                                                                                                                                                                                                   | tous les articles vendables ressortent une seule fois ; mode prod et mode boutique ; rien n'est écrit en base |
-| **W3**  | Les fiches de poste (`/fournil?poste=`, onglets, en-tête, messages, « poste fixe » → « tablette » dans tout le back-office) ; la page Postes, l'option mode boutique / mode prod, l'alerte du Prod manager (`pablo`), le rail et les tuiles.                                                                                                                                                                    | spec de l'écran ; essai dans Chrome sur le scénario de commandes                                              |
-| **W3b** | Le rangement servi au front (§ 7, B3) : le prévisionnel, le récapitulatif et les filtres des réassorts ne rangent plus eux-mêmes.                                                                                                                                                                                                                                                                               | les écrans, dans les deux modes ; plus aucun `catalogRootShelves` dans ces écrans                             |
-| **W4**  | Doc d'état des postes du fournil (dans `fournil/`) ; `la-fiche-d-atelier.md` et `dossier-prod-du-jour.md` à jour ; le spécimen du dossier montre un poste. Le plan est supprimé.                                                                                                                                                                                                                                | —                                                                                                             |
-
----
-
-## 5. Décisions et question ouverte
-
-- **Q1 — tranchée par Hugo le 2026-11-16 : un article, un poste.** Les postes
-  sont des métiers de l'atelier : boulangerie, tourier, pâtisserie… Un article
-  fait par deux postes n'est pas traité ici ; il demanderait la recette.
-- **Q2 — tranchée par Hugo le 2026-11-16 : une option du fournil, « mode
-  boutique » ou « mode prod ».** Un réglage `grouping: "shelf" | "workstation"`
-  rejoint `ProductionDisplaySettings` (imprimerie), à côté de `showSubcategories`, et vaut
-  pour **tous** les rangements du fournil : la fiche d'atelier, le dossier du
-  jour, le prévisionnel, les filtres des réassorts et le récapitulatif. En mode
-  boutique, tout est rangé par rayon, comme aujourd'hui, même si des postes
-  sont déclarés. En mode prod, tout est rangé par poste, et ce qui n'en a pas
-  reste sous son rayon, marqué « à ranger ». Défaut : mode boutique. Le
-  dossier figé garde le mode de son premier tirage archivable (§ 3.5).
-- **Q3 — tranchée par Hugo le 2026-11-16 : tout ce qui est commandé est « à
-  produire », au sens « doit exister pour la commande ».** Peu importe qu'on le
-  fabrique ou qu'on le sorte de la réserve : une bouteille de jus ou un pot de
-  confiture revendus tels quels sont des articles comme les autres. Ils
-  prennent un poste comme les autres (par exemple « Revente » ou « Réserve »),
-  et un article sans poste reste « à ranger ». Il n'y a donc **aucune notion
-  d'article de revente** à bâtir aujourd'hui (aucune n'existe, vérifié le
-  2026-11-16).
-  **Limite assumée :** le fournil ne distingue pas ce qu'il fabrique de ce
-  qu'il sort tel quel. Le jour où il faudra le distinguer (coût de revient,
-  capacité du four, traçabilité d'un lot acheté), ce sera une propriété de
-  l'article, pas un poste, et un autre chantier.
+- **Un poste par produit.** Les déclinaisons en héritent. Un produit fait par
+  deux postes, ou une déclinaison faite ailleurs que son produit, n'est pas
+  traité ici (il faudrait la recette).
+- **Mode boutique / mode prod**, un réglage du fournil qui vaut pour tous ses
+  rangements, prévisionnel compris.
+- **Tout ce qui est commandé est « à produire »** : qu'on le fabrique ou qu'on
+  le sorte de la réserve, il prend un poste (« Revente », « Réserve »…). La
+  distinction fabriqué / revendu, le jour où il la faudra, sera une propriété
+  de l'article et un autre chantier.
+- **La même découpe de page** pour le dossier et la fiche.
+- **Les fiches d'atelier deviennent des fiches de poste.**
+- **Hugo nomme les postes.**
+- **Une simulation pour chaque mode.**
+- **Pas de bascule à vide.**
 
 ---
 
-## 7. La contradiction de `vitruve` (2026-11-16) et ses réponses
+## 5. Les lots
 
-Ce qui suit **prime** sur les sections précédentes là où elles divergent.
-
-### Bloquants
-
-- **B1 — Le dossier n'est pas figé à l'arrêt.** Il est rangé à chaque tirage,
-  avec le réglage et les rayons du moment, puis le premier tirage
-  **archivable** est figé (`plan/application/services/production-paper.service.ts`,
-  `archivable`). **Réponse :** le plan dit désormais « figé au premier tirage
-  archivable », comme le reste du dossier. La condition `archivable` gagne
-  « postes lus » : un dossier rangé par rayon faute de postes, en mode prod,
-  n'est pas archivé, et le tirage suivant réessaie.
-- **B2 — La « même forme » des groupes est fausse.** `recapOf` rend
-  `{ label, quantity, lines, intertitles }`, et `worksheetGroupsOf` rend
-  `{ key = id de famille, family, sections… }`. Le front indexe ses onglets
-  sur `group.key` (`fiche-atelier.ts`, vérifié le 2026-11-16). **Réponse :**
-  pas de fonction commune aux deux sorties. Une fonction de l'imprimerie,
-  `groupingOf(lines, mode, workstationOf, shelfOf)`, rend des **groupements
-  neutres** `{ key, title, kind: "workstation" | "shelf" | "unplaced" |
-"off_catalog", sections }`. `recapOf` et `worksheetGroupsOf` les traduisent
-  chacun dans leur forme d'aujourd'hui. Contrat `WorkshopGroup` : `key`
-  devient `ws:<id>` pour un poste (un id de famille reste un id de famille),
-  `family` vaut `null` pour un poste, et on ajoute
-  `workstation: { id, name } | null` et `unplaced: boolean`. C'est un
-  changement additif.
-- ~~**B3**~~ _La route est remplacée par celle du § 9._ **B3 (route périmée) — Le front range seul, sur le catalogue.** Le prévisionnel et le
-  récapitulatif rangent côté client (`catalogRootShelves`). Le mode prod y
-  ajouterait une troisième copie du rangement. **Réponse :** un seul rangement,
-  au serveur. Une route `GET /admin/production/grouping?skus=…` rend, pour des
-  SKU, leur groupement selon le mode du réglage (clé, titre, ordre, section).
-  Les trois écrans du front l'appellent et ne rangent plus eux-mêmes, dans les
-  deux modes. Les filtres des réassorts, qui filtrent par famille, filtrent par
-  cette clé. C'est un lot à part, **W3b**, après W3.
-
-### Sérieux
-
-- **S4 — Journal.** Chaque geste émet un fait dans la même transaction
-  (`production_workstation.declared`, `.renamed`, `.reordered`, `.archived`,
-  `production_workstation.articles_placed`), avec ses phrases de journal. Le
-  fait existant `production_display_settings.updated` porte `grouping`.
-- ~~**S5 — Idempotence.**~~ _Remplacé par le § 8 : tous les gestes passent par `@IntentKey`._ **S5 (périmé) —** Déclarer et placer sont des
-  routes « par intention » (`@IntentKey`, `runSealed`) ; renommer, réordonner
-  et archiver sont `@Idempotent`, puisque rejouer le même état est neutre.
-  C'est écrit route par route en W1.
-- **S6 — Spécimen.** La simulation est un PDF : elle a son exemple sur la
-  planche des documents (`lint:pdf-specimens`) en W2b.
-- **S7 — La source de la page Postes est trop étroite.** `SellableArticlesReader`
-  ne liste que le vendable : un article masqué mais commandé n'y est pas. Et
-  le rayon n'est lu qu'en vue pro. **Réponse :** la page Postes liste le
-  vendable **plus** les SKU des journées des 30 derniers jours qui n'y sont
-  pas, avec leur nom recopié. « À ranger » veut dire « sans poste », quel que
-  soit le groupe, « Hors catalogue » compris. Le compteur du Prod manager
-  compte donc aussi les articles hors catalogue sans poste.
-- **S8 — La porte s'arme ailleurs.** Les sous-contextes et les arêtes vivent
-  dans `dev-toolbox/gates/lib/production-subcontexts-graph.mjs` (`DIRECTORIES`,
-  `GATED`, `ALLOWED`, vérifié le 2026-11-16), et les modèles dans la carte.
-  W0 modifie les trois constantes et la carte, et vérifie avant cela qu'un
-  fichier sous `workstations/` est refusé.
-- **S9 — La migration.** Elle crée deux tables **et** ajoute la colonne
-  `production_display_settings.grouping`, `NOT NULL DEFAULT 'shelf'`, avec son
-  CHECK `('shelf', 'workstation')`. Elle passe par `lecteur-de-migrations`.
-- **S10 — Le test d'identité.** « Groupes identiques au mode boutique » ne
-  vaut que réglage `showSubcategories` éteint. Il y a deux tests : éteint,
-  identité des groupes ; allumé, des intertitres égaux aux rayons de boutique.
-
-### Mineurs
-
-- **Les noms.** Les tables s'appellent `production_workstation` et
-  `production_workstation_article`, avec `updated_by_staff_id` et
-  `updated_by_name` comme `production_display_settings`. Les deux colonnes
-  entrent au registre RGPD.
-- **« Poste fixe »** sert aussi en livraison (`livraison/loading-round/`). W3
-  le renomme « tablette » partout dans le back-office, et pas seulement dans
-  `fiche-atelier/`.
-- **La route du réglage :** `PUT /admin/production/settings/display` porte
-  `grouping` à côté de `showSubcategories`.
-- **`save(map)`** écrit la différence : les articles placés, déplacés ou
-  remis à ranger, et les postes changés. Il ne réécrit pas la carte entière.
-- **`Sku`** n'existe pas dans `src/production` : le value object est à créer
-  dans `workstations/domain/`.
-- **Restent à ouvrir en W1** (non vérifiés) : que `ProductionOrderLine.sku`
-  soit toujours le SKU produit, comportement de la porte sur un dossier
-  inconnu de `DIRECTORIES`, calendrier d'une commande fictive sans tranches
-  pour la simulation.
+| Lot     | Contenu                                                                                                                                                                                                                                                                                                                                                                | Tests                                                                                                             |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **W0**  | Porte : `workstations` dans `DIRECTORIES`, `GATED`, `ALLOWED` (`workstations: SHARED`) ; `atelier` et `plan` gagnent `workstations` ; les deux modèles et leur propriétaire dans la carte.                                                                                                                                                                             | un fichier sous `workstations/` est refusé avant, admis après                                                     |
+| **W1**  | Migration (deux tables, `grouping`, ressource) ; `UNWATCHED` et registre RGPD ; l'agrégat, ses commandes par intention, ses faits et leurs phrases ; les lectures ; `KnownArticles` dans `day/` ; `shelvesOf` et `sellableArticles` rendent `productSku` (toutes les déclinaisons) ; la page des données de `/admin/production/workstations`. `lecteur-de-migrations`. | domaine sans Nest (trois refus, `place` à `null`, noms) ; handlers ; e2e ; `lint:write-idempotence`               |
+| **W2**  | `groupingOf` ; la fiche et le dossier l'appellent ; le contrat ; `archivable` en mode prod ; le refus de `workstation` au réglage tant que W3b n'est pas là.                                                                                                                                                                                                           | mode boutique identique à aujourd'hui (deux cas de `showSubcategories`) ; toute ligne ressort une fois ; la panne |
+| **W2b** | La simulation, son spécimen.                                                                                                                                                                                                                                                                                                                                           | tous les articles ressortent ; deux modes ; rien n'est écrit                                                      |
+| **W3**  | `pablo` : la page Postes, les fiches de poste, « tablette », l'alerte.                                                                                                                                                                                                                                                                                                 | specs ; `lint:front-intent-keys` ; essai dans Chrome                                                              |
+| **W3b** | La route `grouping` ; le prévisionnel, le récapitulatif et les filtres des réassorts du fournil l'appellent ; la borne N mesurée ; la bascule en mode prod ouverte (refus à vide, confirmation).                                                                                                                                                                       | les écrans dans les deux modes ; plus de `catalogRootShelves` dans le prévisionnel ni le récapitulatif            |
+| **W4**  | Doc d'état des postes du fournil (dans `fournil/`) ; `la-fiche-d-atelier.md` et `dossier-prod-du-jour.md` à jour ; le plan est supprimé.                                                                                                                                                                                                                               | —                                                                                                                 |
 
 ---
 
-## 8. La seconde contradiction (2026-11-16) et ses réponses
+## 6. À mesurer ou vérifier pendant la construction
 
-Ce qui suit **prime** sur le § 7 là où il diverge.
-
-### Bloquants
-
-- ~~**B3 bis**~~ _Remplacé par le § 9._ **B3 bis (périmé) — La route du rangement n'avait ni hébergeur ni taille tenable.**
-  **Réponse :** elle vit dans `workstations/`, qui lit déjà l'imprimerie
-  (réglage et rangement), les canaux (rayons) et ses propres postes, sans
-  nouvelle arête. Elle **lit elle-même ses SKU** au lieu de les recevoir :
-  `GET /admin/production/grouping?scope=catalogue` pour tous les articles
-  vendables (prévisionnel, réassorts), `?scope=day&serviceDay=…` pour ceux
-  d'une journée (récapitulatif). L'URL reste courte, quel que soit le nombre
-  d'articles.
-- **S7 bis — La liste des SKU commandés n'avait pas de propriétaire.** Les
-  lignes appartiennent à `day/` (`ProductionOrderLine`). **Réponse :** `day/`
-  publie une lecture nommée, `KnownArticles` : les SKU (et leur nom recopié) des
-  journées **de J−30 à la dernière journée connue**, futures comprises. Un
-  article masqué mais commandé pour la semaine prochaine apparaît donc sur la
-  page Postes. `workstations → day` est une arête admise (tout métier lit le
-  noyau).
-
-### Sérieux
-
-- **Un tirage non archivé se signale.** En mode prod **seulement**, la
-  condition `archivable` gagne « postes lus ». Chaque tirage non archivé est
-  journalisé avec sa cause (rayons, BL, tranches ou postes). Le Prod manager
-  affiche « dossier du jour pas encore archivé » tant qu'il ne l'est pas.
-  Aujourd'hui, l'archive avale cet échec en silence : le plan élargit le cas,
-  il le rend donc visible.
-- **Le harnais e2e.** `production_workstation` et
-  `production_workstation_article` entrent dès W1 dans la liste des tables du
-  fournil sans journée (`test/day-change-triggers.e2e-spec.ts`), avec leur
-  raison : un réglage, pas un fait du jour.
-- **Idempotence, corrigée.** Rejouer un renommage ou un ordre après le geste
-  de quelqu'un d'autre le défait. **Tous** les gestes passent donc par
-  `@IntentKey` et `runSealed`, et l'écran porte la clé de son `GestureIntents`.
-- **`family: null` change de sens.** Pour un lecteur du contrat, un groupe se
-  lit d'abord par `kind`. Le JSDoc de `WorkshopGroup.family` le dit :
-  « `null` : poste, hors catalogue ou rayons illisibles ; lire `kind` ».
-
-### Mineurs
-
-- Les cinq faits entrent au catalogue `packages/contracts/src/journal-facts/`
-  et à son test de clôture. `ProductionDisplaySettingsUpdatedEvent` porte
-  `grouping` et `previous.grouping`.
-- Une ligne de réglage absente vaut `grouping: 'shelf'` dans l'adaptateur,
-  comme `showSubcategories: false` aujourd'hui.
-- **À vérifier en W1 :** la longueur réelle des SKU ; si le filtre des
-  réassorts range par famille ou ne fait que choisir des articles ; le
-  calendrier d'une commande fictive ; l'envoi d'un dossier non archivé face à
-  `lint:mail-attachment-by-reference`.
-
----
-
-## 9. La troisième contradiction (2026-11-16) et ses réponses
-
-Ce qui suit **prime** sur les §§ 7 et 8 là où ils divergent. Il n'y a plus
-qu'**une** route de rangement et **une** liste d'articles, décrites ici.
-
-### Bloquants
-
-- **`KnownArticles` ne voit pas l'avenir.** Les lignes du fournil ne sont
-  écrites qu'à l'arrêt d'une journée (`day/infrastructure/production-day-children.writer.ts`,
-  `writeOrders`). Une journée à venir n'a encore aucune ligne. **Réponse :**
-  `KnownArticles` couvre les **journées arrêtées** de J−30 à la dernière, sans
-  « futures comprises ». L'avenir se lit par le port qui sert déjà le
-  prévisionnel, `ExpectedProductionReader.expectedBetween` (canal du
-  commerce, vérifié le 2026-11-16), sur les 14 jours à venir. La page Postes
-  liste donc l'**union** des articles vendables, des articles des journées
-  arrêtées et des articles de la demande des 14 prochains jours. Un article
-  masqué mais commandé pour la semaine prochaine y est « à ranger » dès la
-  commande.
-- **La route de rangement ne couvrait pas ce que les écrans affichent.**
-  **Réponse :** les SKU partent dans le corps de la requête,
-  `POST /admin/production/workstations/grouping` (une **lecture** : une
-  `Query` sur le bus, `@Idempotent` parce qu'elle n'écrit rien). Chaque écran
-  envoie exactement les SKU qu'il affiche, et l'URL reste courte. **Un SKU
-  inconnu** (ni poste, ni rayon) va au groupe « Hors catalogue — à ranger ».
-  Toute ligne ressort donc une fois, sur les écrans comme sur la fiche. Le
-  `scope=catalogue|day` du § 8 est retiré.
-
-### Sérieux
-
-- **Le signal « dossier pas encore archivé » est retiré.** L'état « archivé »
-  n'existe qu'au stockage, et l'afficher demanderait une colonne ou un
-  téléchargement à chaque rafraîchissement. Il reste **la journalisation**
-  de chaque tirage non archivable, avec sa cause, et c'est tout. La phrase
-  « l'archive avale cet échec en silence » est fausse pour `archivable = false`,
-  qui est un choix. Seule une **panne** de l'écriture au stockage est
-  silencieuse aujourd'hui, et elle reste hors de ce plan.
-- **Les arêtes sont neuves.** W0 écrit `workstations: SHARED`, et la table des
-  lots l'énumère. « Sans nouvelle arête » (§ 8) voulait dire « sans arête
-  entre métiers en plus de `atelier → workstations` et `plan →
-workstations` ».
-- **Mode et archivage.** Si le mode bascule entre deux tirages non archivés,
-  le dossier figé est celui du mode de son tirage. C'est la même limite que
-  pour le reste du réglage (§ 3.5), assumée.
-- **Les corrections du corps.** Le § 2 nomme les vrais fichiers de la porte,
-  le S5 du § 7 est rayé, et les portes d'idempotence sont dans la table des
-  lots.
-
-### Mineurs
-
-- **La route `grouping`** est une `Query` sur le bus. Le contrôleur n'injecte
-  que `QueryBus`. Le middleware pose déjà `private`, et il n'y a pas d'autre
-  cache. Le coût d'une ouverture du prévisionnel est une lecture des postes
-  (deux petites tables) et une lecture des rayons, la même qu'aujourd'hui.
-- **`KnownArticles`** fait un `DISTINCT sku` par jointure sur
-  `production_order.service_day`, sur 30 journées arrêtées, soit quelques
-  milliers de lignes au plus. On le mesure en W1 sur la production, et on
-  ajoute un index si la mesure le demande.
-- **`nav_prefs.worksheetCategory`** garde la clé du contrat, préfixée `ws:`
-  pour un poste, sans confusion possible avec un id de famille.
-
----
-
-## 10. La quatrième contradiction (2026-11-16) et ses réponses
-
-Aucun bloquant. Ce qui suit **prime** sur les §§ 7 à 9.
-
-- **Les réassorts entrent dans la liste des articles.** La page Postes, le
-  compteur et la simulation lisent l'union de quatre sources : les articles
-  vendables, les lignes des journées arrêtées (commandes **et** réassorts),
-  la demande à venir des commandes (`ExpectedProductionReader`) et celle des
-  réassorts (`ExpectedResuppliesReader`), sur 14 jours. `KnownArticles`
-  (dans `day/`) lit donc aussi les lignes de réassort.
-- **Les filtres des réassorts ne rangent pas par rayon aujourd'hui.** Ils
-  filtrent par la catégorie que le commerce sert pour chaque article
-  (`article.categoryId`), sans rangement par racine. **En mode boutique, rien ne
-  change.** En mode prod, ils filtrent par poste, avec la clé de rangement. On
-  vérifie en W3b si `categoryId` est la catégorie feuille ou la racine. Le
-  test « plus aucun `catalogRootShelves` » ne vaut que pour le prévisionnel et
-  le récapitulatif.
-- **La route `grouping` suit les droits de ses appelants.** Elle se protège
-  par la ressource de lecture du fournil qui garde déjà le prévisionnel et le
-  récapitulatif, et non par `production_workstations`, sinon ces écrans
-  tomberaient pour un rôle qui ne règle pas les postes. On relève la
-  ressource exacte en W3b.
-- **Une lecture par POST, bornée.** C'est le premier contrôleur `@Post` du
-  dépôt qui passe par le `QueryBus`. Il porte
-  `@Idempotent("lecture : n'écrit rien")`. La porte l'admet, et un POST n'est
-  pas mis en cache. Ce n'est pas une route « par intention » : aucune clé de
-  geste. Le corps est validé par Zod : au plus 2 000 SKU, chacun de 1 à 64
-  caractères. Le comportement de la passerelle sur un POST de lecture est à
-  vérifier en W3b.
-- **« Hors catalogue — à ranger » en mode prod seulement.** En mode boutique,
-  un SKU inconnu va dans « Hors catalogue », comme aujourd'hui, et le test
-  d'identité de W2 tient.
-- **L'alerte « N articles du jour à ranger »** lit, pour le jour, la demande
-  attendue (commandes et réassorts). Elle sonne donc avant l'arrêt.
-- **Le mode prod ne se propose qu'après W3b.** Avant, le réglage reste caché.
-  Sinon, la fiche et le dossier seraient rangés par poste et le prévisionnel
-  encore par rayon, contre la décision Q2.
-- **Le coût de lecture.** La route ajoute, à chaque ouverture du prévisionnel,
-  une lecture serveur des rayons et une des postes. Le front garde sa lecture
-  du catalogue pour les noms et les unités. On le mesure en W3b sur la
-  production, puisque la base est facturée à l'opération.
+- Le coût sur la base de production : la page Postes (quatre sources),
+  l'alerte, la route `grouping`. `KnownArticles` fait un `DISTINCT` par
+  jointure sur `production_order.service_day`, avec un index à ajouter si la
+  mesure le demande.
+- Si `ExpectedProductionReader` rend encore une journée arrêtée, ce qui fixe
+  la source de l'alerte après l'arrêt.
+- Les rôles qui ont `production_resupply` sans `production_plan`.
+- Le nombre réel de SKU vendables, qui donne la borne N.
