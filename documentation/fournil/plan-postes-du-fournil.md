@@ -44,7 +44,8 @@ flowchart LR
 - **Rien ne change tant qu'on ne bascule pas.** Le mode boutique est le
   défaut, et il ne lit même pas les postes.
 - **On ne bascule pas à vide.** Le passage en mode prod est refusé tant
-  qu'aucun produit n'a de poste. S'il en reste sans poste, la bascule demande
+  qu'aucun produit n'a de poste (vidé ensuite, il range comme le mode boutique,
+  marqué « à ranger »). S'il en reste sans poste, la bascule demande
   une confirmation qui en donne le compte.
 - **On contrôle avant de basculer.** « Simuler le catalogue en production »
   sort un dossier avec tous les produits, rangés comme ils le seraient, pour
@@ -68,10 +69,17 @@ flowchart LR
 - **Les ports que le fournil déclare et que le commerce implémente**
   (`production/channels/commerce/`) :
   - `WorkshopShelvesReader.shelvesOf(skus)` : le rayon de chaque SKU, lu en
-    vue pro. Un SKU masqué ou inconnu est absent de la réponse.
+    vue pro par `listByShopSkus`, qui écarte les articles **masqués** et sans
+    taux de TVA : ils tombent en « Hors catalogue » alors que le commerce les
+    connaît. **On n'y touche pas** : le mode boutique reste identique.
+  - Le miroir du commerce (`CatalogItem`) porte, pour **toute** déclinaison,
+    `sku`, `productSku`, `name` et `categoryId`, masquée ou non. Aucune lecture
+    de `CatalogReader` ne le lit sans les filtres de vente.
   - `SellableArticlesReader.sellableArticles()` : les articles vendables, mais
     **seulement la déclinaison par défaut** de chaque produit (filtre
-    `isDefault`, `catalog-sellable-articles.reader.ts`).
+    `isDefault`, `catalog-sellable-articles.reader.ts`). Il sert la table des
+    raccourcis de fournées, qui valide un SKU produit contre lui
+    (`batch-shortcut-sale-unit.ts`) : **on n'y touche pas**.
   - `ExpectedProductionReader.expectedBetween(range)` : la demande des
     commandes par jour et par SKU (au plus 31 jours, `ServiceRange`).
   - `ExpectedResuppliesReader.expectedBetween(range)` : la même chose pour les
@@ -109,10 +117,11 @@ flowchart LR
   HTTP : un POST demande `:write`, sauf décorateur explicite
   (`platform/auth/staff-access.guard.ts`).
 - **La porte `production-subcontexts`** déclare ses sous-contextes et ses
-  arêtes dans `dev-toolbox/gates/lib/production-subcontexts-graph.mjs`
-  (`DIRECTORIES`, `GATED`, `ALLOWED`), et ses modèles dans
-  `dev-toolbox/gates/production-subcontexts.map.json`. Entre métiers, elle
-  n'admet que `atelier → quality` et `plan → resupply`.
+  arêtes dans `dev-toolbox/gates/lib/production-subcontexts-graph.mjs`, et ses
+  modèles dans `dev-toolbox/gates/production-subcontexts.map.json`. Elle
+  admet `workstations` depuis W0 (`dc47a61a8`) : `workstations: SHARED`, et
+  `atelier` et `plan` vers `workstations`. Les modèles ne peuvent entrer dans
+  la carte qu'avec le schéma (la porte refuse un modèle absent), donc en W1.
 - **Les tables du fournil sans journée** sont listées, avec leur raison, dans
   `test/day-change-triggers.e2e-spec.ts` (`UNWATCHED`). La suite vérifie que
   chaque table inscrite existe.
@@ -138,9 +147,14 @@ seules arêtes neuves entre métiers.
 Il publie, dans son `index.ts`, sous « ce que les postes savent répondre » :
 
 - `WorkstationOfProducts.workstationsOf(productSkus)` : le poste de chaque
-  produit, ou rien ;
-- `ProductionGrouping.groupingOf(lines, mode)` : le rangement complet (§ 3.4),
-  pour ceux qui rangent.
+  produit, ou rien, et la liste ordonnée des postes vivants ;
+- `PlacedProducts.count()` : combien de produits ont un poste, que la garde
+  de bascule lit (§ 3.9).
+
+Le **rangement** n'est pas publié par `workstations/` : c'est une fonction
+pure de l'imprimerie (§ 3.4), qui reçoit les postes en paramètre. L'appelant
+(`plan/`, `atelier/`, et la route du front dans `workstations/`) lit les
+postes et les articles, puis compose. L'imprimerie ne lit que `day/`.
 
 ### 3.2 Les tables (migration additive)
 
@@ -233,10 +247,27 @@ modes. Une **panne** de la lecture des postes en mode prod rend le
 rangement du mode boutique, journalise la panne, et le dossier n'est pas
 archivé (§ 3.5).
 
-**Le produit d'une ligne.** Le port des rayons, `WorkshopShelvesReader.shelvesOf`,
-rend en plus la référence produit de chaque SKU (`productSku`, que le
-commerce porte déjà). C'est un champ de plus dans une réponse qui existe, pas
-une lecture de plus.
+**Le produit d'une ligne : un port neuf, sans filtre de vente.** Le fournil
+déclare `ProductionArticlesReader` dans `channels/commerce/`, et le commerce
+l'implémente sur son miroir (`CatalogItem`), **sans les filtres de vente** :
+une déclinaison masquée ou sans taux est rendue comme les autres.
+
+```ts
+abstract articlesOf(skus): Promise<ReadonlyMap<sku, ProductionArticle>>;
+abstract allArticles(): Promise<readonly ProductionArticle[]>;
+// ProductionArticle = { sku, productSku, productName, variantName,
+//                       family: CatalogFamilyView | null, sellable: boolean }
+```
+
+- `WorkshopShelvesReader` et `SellableArticlesReader` **ne changent pas** :
+  le mode boutique ne lit que le premier, et les raccourcis de fournées
+  gardent le second.
+- En mode prod, une ligne prend le produit et le rayon de ce port. Une
+  quiche 6 parts masquée suit le poste de son produit, et un produit masqué
+  mais fabriqué peut recevoir un poste.
+- « Hors catalogue — à ranger » ne vaut que pour un SKU **absent du miroir**,
+  qu'aucun produit ne rattache. Il ne peut pas recevoir de poste, et il est
+  rare (un SKU retiré du référentiel).
 
 **La même découpe de page** (décision de Hugo, 2026-11-16). `recapOf` et
 `worksheetGroupsOf` traduisent ces groupements dans leur forme d'aujourd'hui.
@@ -310,16 +341,18 @@ Prod manager → **Postes** (`production_workstations`) :
 **Les produits listés** sont l'union de quatre sources, ramenée au produit
 par la réponse du commerce :
 
-1. les articles vendables (`SellableArticlesReader`, qui rend désormais
-   **toutes** les déclinaisons et leur `productSku`) ;
+1. tous les articles du miroir (`ProductionArticlesReader.allArticles`),
+   déclinaisons et articles masqués compris ;
 2. les lignes des journées arrêtées de J−30 à la dernière, commandes et
    réassorts : la lecture nommée `KnownArticles`, publiée par `day/` ;
 3. la demande des commandes des 14 prochains jours (`ExpectedProductionReader`) ;
 4. celle des réassorts (`ExpectedResuppliesReader`), hors réassorts « au plus
    tôt », qui n'entrent pas au plan.
 
-Un SKU que le commerce ne rattache plus à aucun produit est listé à part,
-« hors catalogue ». Il ne peut pas recevoir de poste.
+Les sources 2 à 4 ne servent plus qu'à marquer ce qui est **commandé** (le
+filtre « commandé ces jours-ci »), puisque la source 1 contient déjà tout le
+miroir. Un SKU absent du miroir est listé à part, « hors catalogue ». Il ne
+peut pas recevoir de poste.
 
 ### 3.9 La bascule en mode prod
 
@@ -331,11 +364,16 @@ Un SKU que le commerce ne rattache plus à aucun produit est listé à part,
   catalogue en production”. »
 - **Si des produits de la demande des 14 jours n'ont pas de poste,** l'écran
   demande une confirmation qui en donne le compte. Le serveur ne refuse pas.
-- **Avant W3b,** le serveur refuse `workstation` (« le mode prod arrive avec le
-  rangement des écrans du prévisionnel ») : sans ça, la fiche serait rangée
-  par poste et le prévisionnel encore par rayon.
-- Retirer des postes après la bascule ne fait pas revenir en mode boutique.
-  L'alerte le signale.
+- **Avant W3b,** `SetProductionDisplayHandler` (`atelier/`) refuse
+  `workstation` par une garde nommée `refuseWorkstationGroupingUntilScreens`.
+  Sans elle, la fiche serait rangée par poste et le prévisionnel encore par
+  rayon. **W3b supprime cette garde**, et son test passe de « refusé » à
+  « accepté ».
+- La garde « aucun produit n'a de poste » est lue par le même handler, par
+  `PlacedProducts` (arête `atelier → workstations`).
+- **Ce n'est pas un invariant.** Retirer tous les postes après la bascule ne
+  fait pas revenir en mode boutique : le fournil se range alors comme en mode
+  boutique, chaque groupe marqué « à ranger », et l'alerte le signale.
 
 ### 3.10 L'alerte du Prod manager
 
@@ -349,7 +387,8 @@ jour). Elle est servie par une requête de `workstations/`.
 Sur la page Postes : « Simuler en mode prod » et « Simuler en mode
 boutique », quel que soit le réglage.
 
-- Une pièce de chaque article vendable, déclinaisons comprises, dans une seule
+- Une pièce de chaque article vendable (`ProductionArticlesReader`, `sellable`),
+  déclinaisons comprises, dans une seule
   commande fictive, rendue par la partie « un rayon et son calendrier » du
   **vrai** dossier, avec le rangement du mode demandé.
 - La couverture compte les lignes par groupe et nomme les produits « à
@@ -385,15 +424,15 @@ boutique », quel que soit le réglage.
 
 ## 5. Les lots
 
-| Lot     | Contenu                                                                                                                                                                                                                                                                                                                                                                | Tests                                                                                                             |
-| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| **W0**  | Porte : `workstations` dans `DIRECTORIES`, `GATED`, `ALLOWED` (`workstations: SHARED`) ; `atelier` et `plan` gagnent `workstations` ; les deux modèles et leur propriétaire dans la carte.                                                                                                                                                                             | un fichier sous `workstations/` est refusé avant, admis après                                                     |
-| **W1**  | Migration (deux tables, `grouping`, ressource) ; `UNWATCHED` et registre RGPD ; l'agrégat, ses commandes par intention, ses faits et leurs phrases ; les lectures ; `KnownArticles` dans `day/` ; `shelvesOf` et `sellableArticles` rendent `productSku` (toutes les déclinaisons) ; la page des données de `/admin/production/workstations`. `lecteur-de-migrations`. | domaine sans Nest (trois refus, `place` à `null`, noms) ; handlers ; e2e ; `lint:write-idempotence`               |
-| **W2**  | `groupingOf` ; la fiche et le dossier l'appellent ; le contrat ; `archivable` en mode prod ; le refus de `workstation` au réglage tant que W3b n'est pas là.                                                                                                                                                                                                           | mode boutique identique à aujourd'hui (deux cas de `showSubcategories`) ; toute ligne ressort une fois ; la panne |
-| **W2b** | La simulation, son spécimen.                                                                                                                                                                                                                                                                                                                                           | tous les articles ressortent ; deux modes ; rien n'est écrit                                                      |
-| **W3**  | `pablo` : la page Postes, les fiches de poste, « tablette », l'alerte.                                                                                                                                                                                                                                                                                                 | specs ; `lint:front-intent-keys` ; essai dans Chrome                                                              |
-| **W3b** | La route `grouping` ; le prévisionnel, le récapitulatif et les filtres des réassorts du fournil l'appellent ; la borne N mesurée ; la bascule en mode prod ouverte (refus à vide, confirmation).                                                                                                                                                                       | les écrans dans les deux modes ; plus de `catalogRootShelves` dans le prévisionnel ni le récapitulatif            |
-| **W4**  | Doc d'état des postes du fournil (dans `fournil/`) ; `la-fiche-d-atelier.md` et `dossier-prod-du-jour.md` à jour ; le plan est supprimé.                                                                                                                                                                                                                               | —                                                                                                                 |
+| Lot       | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Tests                                                                                                             |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **W0** ✅ | Porte : `workstations` dans `DIRECTORIES`, `GATED`, `ALLOWED` ; `atelier` et `plan` → `workstations` (`dc47a61a8`). Les modèles entrent dans la carte en W1.                                                                                                                                                                                                                                                                                                                      | refusé avant, admis après ; `dev-toolbox/__tests__/production-subcontexts.test.mjs`                               |
+| **W1**    | Migration (deux tables, `grouping`, ressource) ; `UNWATCHED` et registre RGPD ; l'agrégat, ses commandes par intention, ses faits et leurs phrases ; les lectures ; `KnownArticles` dans `day/` ; le port `ProductionArticlesReader` (déclaré au fournil, implémenté par le commerce sur `CatalogItem`, sans filtre de vente) ; `PlacedProducts` ; les deux modèles dans la carte de la porte ; la page des données de `/admin/production/workstations`. `lecteur-de-migrations`. | domaine sans Nest (trois refus, `place` à `null`, noms) ; handlers ; e2e ; `lint:write-idempotence`               |
+| **W2**    | `groupingOf` ; la fiche et le dossier l'appellent ; le contrat ; `archivable` en mode prod ; le refus de `workstation` au réglage tant que W3b n'est pas là.                                                                                                                                                                                                                                                                                                                      | mode boutique identique à aujourd'hui (deux cas de `showSubcategories`) ; toute ligne ressort une fois ; la panne |
+| **W2b**   | La simulation, son spécimen.                                                                                                                                                                                                                                                                                                                                                                                                                                                      | tous les articles ressortent ; deux modes ; rien n'est écrit                                                      |
+| **W3**    | `pablo` : la page Postes, les fiches de poste, « tablette », l'alerte.                                                                                                                                                                                                                                                                                                                                                                                                            | specs ; `lint:front-intent-keys` ; essai dans Chrome                                                              |
+| **W3b**   | La route `grouping` ; le prévisionnel, le récapitulatif et les filtres des réassorts du fournil l'appellent ; la borne N mesurée ; la bascule en mode prod ouverte (refus à vide, confirmation).                                                                                                                                                                                                                                                                                  | les écrans dans les deux modes ; plus de `catalogRootShelves` dans le prévisionnel ni le récapitulatif            |
+| **W4**    | Doc d'état des postes du fournil (dans `fournil/`) ; `la-fiche-d-atelier.md` et `dossier-prod-du-jour.md` à jour ; le plan est supprimé.                                                                                                                                                                                                                                                                                                                                          | —                                                                                                                 |
 
 ---
 
@@ -407,3 +446,8 @@ boutique », quel que soit le réglage.
   la source de l'alerte après l'arrêt.
 - Les rôles qui ont `production_resupply` sans `production_plan`.
 - Le nombre réel de SKU vendables, qui donne la borne N.
+- Le prévisionnel lit aussi le réglage d'affichage **côté serveur**
+  (`plan/application/queries/get-production-forecast.handler.ts`) : vérifier
+  en W3b qu'il n'y laisse pas un rangement par rayon en mode prod.
+- `ProductionArticlesReader.allArticles` lit tout le miroir : une requête à
+  chaque ouverture de la page Postes et de la simulation, à mesurer.
