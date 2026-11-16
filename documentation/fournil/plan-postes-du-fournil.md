@@ -184,6 +184,7 @@ Prod manager → **Postes** :
 - dessous, **les articles fabriqués**, chacun avec son rayon de boutique et un
   `fold-listbox` « Poste ». Un filtre « à ranger » avec son compte, un filtre
   par rayon, et le geste « tout ce rayon → ce poste » ;
+- le bouton **« Simuler le catalogue en production »** (§ 3.7) ;
 - le réglage **mode boutique / mode prod** y est rappelé, avec un lien vers les réglages du fournil ;
 - en mode prod, le Prod manager affiche « N articles du jour à ranger » avec un lien vers ce
   filtre, tant qu'il en reste.
@@ -191,17 +192,45 @@ Prod manager → **Postes** :
 Une ressource `production_workstations` est créée par migration et accordée
 **à l'écran** (règle des droits, CLAUDE.md § 3).
 
+### 3.7 Simuler le catalogue en production
+
+Demande de Hugo, le 2026-11-16 : un bouton **« Simuler le catalogue en
+production »** sur la page Postes, qui sort un dossier de production avec
+**tous** les articles fabricables, rangés comme ils le seraient, pour contrôler
+la répartition avant de basculer en mode prod.
+
+- **La source :** tous les articles vendables, que le fournil lit déjà par
+  `SellableArticlesReader`, une pièce de chacun, dans une seule commande
+  fictive.
+- **Le rendu :** la partie « un rayon et son calendrier » du **vrai** dossier
+  du jour (`plan/domain/services/day-dossier.ts`), avec les postes et le mode
+  du moment. Le code est le même, donc ce qu'on contrôle est ce qu'on
+  imprimera. Ni fiche par commande, ni BL, ni réassorts : une commande fictive
+  n'a rien à y montrer.
+- **Le choix du mode :** « Simuler en mode prod » et « Simuler en mode
+  boutique », quel que soit le réglage en cours. On compare les deux avant de
+  basculer.
+- **La couverture** compte les articles par poste et nomme ceux qui sont « à
+  ranger ». C'est la liste de contrôle.
+- **Jamais persistée,** comme la journée d'exemple de la planche des
+  documents (`plan/application/document-specimens/specimen-day.ts`, même
+  principe) : aucune journée, aucun archivage, aucun envoi. Chaque page porte
+  « SIMULATION — ne pas produire ».
+- **La route :** `GET /admin/production/workstations/simulation.pdf?mode=workstation|shelf`,
+  une requête qui n'écrit rien, sous la ressource `production_workstations`.
+
 ---
 
 ## 4. Les lots
 
-| Lot    | Contenu                                                                                                                                                                                            | Tests                                                                                    |
-| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| **W0** | La porte `production-subcontexts` connaît `workstations/`, ses deux modèles et ses deux arêtes, avant que le dossier existe.                                                                       | un import hors `index.ts` échoue                                                         |
-| **W1** | Migration (deux tables, ressource), gestes et requête, dépôt Prisma, `WorkstationOfArticles`, routes `/admin/production/workstations`. `lecteur-de-migrations`.                                    | les deux refus, `PlaceArticles` à `null`, e2e                                            |
-| **W2** | `workstationGroupsOf` ; la fiche d'atelier et le dossier l'appellent ; la couverture du dossier nomme les articles à ranger ; le contrat.                                                          | **sans poste, sortie identique à aujourd'hui** ; toutes les lignes ressortent ; la panne |
-| **W3** | La page Postes, l'option mode boutique / mode prod, et l'alerte du Prod manager (`pablo`), le rail et les tuiles ; le prévisionnel, les filtres des réassorts et le récapitulatif suivent le mode. | spec de l'écran ; essai dans Chrome sur le scénario de commandes                         |
-| **W4** | Doc d'état des postes du fournil (dans `fournil/`) ; `la-fiche-d-atelier.md` et `dossier-prod-du-jour.md` à jour ; le spécimen du dossier montre un poste. Le plan est supprimé.                   | —                                                                                        |
+| Lot     | Contenu                                                                                                                                                                                            | Tests                                                                                                         |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **W0**  | La porte `production-subcontexts` connaît `workstations/`, ses deux modèles et ses deux arêtes, avant que le dossier existe.                                                                       | un import hors `index.ts` échoue                                                                              |
+| **W1**  | Migration (deux tables, ressource), gestes et requête, dépôt Prisma, `WorkstationOfArticles`, routes `/admin/production/workstations`. `lecteur-de-migrations`.                                    | les deux refus, `PlaceArticles` à `null`, e2e                                                                 |
+| **W2**  | `workstationGroupsOf` ; la fiche d'atelier et le dossier l'appellent ; la couverture du dossier nomme les articles à ranger ; le contrat.                                                          | **sans poste, sortie identique à aujourd'hui** ; toutes les lignes ressortent ; la panne                      |
+| **W2b** | La simulation du catalogue en production : requête, route, couverture de contrôle, filigrane.                                                                                                      | tous les articles vendables ressortent une seule fois ; mode prod et mode boutique ; rien n'est écrit en base |
+| **W3**  | La page Postes, l'option mode boutique / mode prod, et l'alerte du Prod manager (`pablo`), le rail et les tuiles ; le prévisionnel, les filtres des réassorts et le récapitulatif suivent le mode. | spec de l'écran ; essai dans Chrome sur le scénario de commandes                                              |
+| **W4**  | Doc d'état des postes du fournil (dans `fournil/`) ; `la-fiche-d-atelier.md` et `dossier-prod-du-jour.md` à jour ; le spécimen du dossier montre un poste. Le plan est supprimé.                   | —                                                                                                             |
 
 ---
 
