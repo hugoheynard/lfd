@@ -288,6 +288,11 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write:
       "Envoyer un réassort à un point depuis le fournil — pour aujourd'hui ou pour demain —, à part de la demande du comptoir.",
   },
+  production_workstations: {
+    read: "Voir les postes du fournil et le poste de chaque produit.",
+    write:
+      "Ajouter, renommer, ordonner et archiver les postes du fournil, et y placer les produits.",
+  },
   handover_counter: {
     read: "Voir la file des retraits et le détail d'une commande à remettre.",
     write: "Remettre une commande au client, au scan de son QR ou à la main.",

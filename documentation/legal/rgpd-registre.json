@@ -819,6 +819,42 @@
       "information": false
     },
     {
+      "colonne": "production.production_workstation.updated_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de l'auteur d'un geste sur `production_workstation`, lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "production.production_workstation.updated_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by_staff_id`) sur `production_workstation`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "production.production_workstation_product.updated_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de l'auteur d'un geste sur `production_workstation_product`, lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "production.production_workstation_product.updated_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by_staff_id`) sur `production_workstation_product`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "production.production_tranche_settings.updated_by_name",
       "personne": "staff",
       "categorie": "identite",

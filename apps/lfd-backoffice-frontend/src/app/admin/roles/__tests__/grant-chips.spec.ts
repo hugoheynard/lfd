@@ -137,9 +137,11 @@ describe('grantGroups', () => {
    * `card_payments`, les paiements par carte
    * (commandes/modification/plan-m2-historique-de-transactions.md, P1).
    * 73 le 2026-11-14 : `b2b_sales_oversight`, le suivi commercial
-   * (b2b/plan-suivi-commercial.md, S3).
+   * (b2b/plan-suivi-commercial.md, S3). 74 le 2026-11-16 :
+   * `production_workstations`, les postes du fournil
+   * (fournil/plan-postes-du-fournil.md, W1).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(73);
+    expect(RESOURCE_COUNT).toBe(74);
   });
 });

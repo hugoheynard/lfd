@@ -11,6 +11,7 @@ import { ProductionDayVersionSource } from "./application/services/production-da
 import { ProductionOrderRevisionDesk } from "./application/services/production-order-revision.desk.js";
 import { ProductionOrderWithdrawalDesk } from "./application/services/production-order-withdrawal.desk.js";
 import { ArrestedPlanLinesReader } from "./domain/ports/arrested-plan-lines.reader.js";
+import { KnownArticles } from "./domain/ports/known-articles.reader.js";
 import { LaunchedResupplyLookup } from "./domain/ports/launched-resupply.lookup.js";
 import { OrderRevisionNoticeLedger } from "./domain/ports/order-revision-notice.ledger.js";
 import { OrderRevisionNoticesReader } from "./domain/ports/order-revision-notices.reader.js";
@@ -30,6 +31,7 @@ import { ProductionTrancheSettingsReader } from "./domain/ports/production-tranc
 import { ProductionTrancheSettingsRepository } from "./domain/ports/production-tranche-settings.repository.js";
 import { ProductionDayChangeSweepController } from "./http/production-day-change-sweep.controller.js";
 import { PrismaArrestedPlanLinesReader } from "./infrastructure/prisma-arrested-plan-lines.reader.js";
+import { PrismaKnownArticles } from "./infrastructure/prisma-known-articles.reader.js";
 import { PrismaArrestedPlanHold } from "./infrastructure/prisma-arrested-plan.hold.js";
 import { PrismaAtelierSheetsReader } from "./infrastructure/prisma-atelier-sheets.reader.js";
 import { PrismaClosedPlansReader } from "./infrastructure/prisma-closed-plans.reader.js";
@@ -108,6 +110,8 @@ import { PrismaProductionTrancheSettingsRepository } from "./infrastructure/pris
     { provide: ArrestedPlanLinesReader, useClass: PrismaArrestedPlanLinesReader },
     { provide: PlannedOrderLinesReader, useClass: PrismaPlannedOrderLinesReader },
     { provide: LaunchedResupplyLookup, useClass: PrismaLaunchedResupplyLookup },
+    // Les articles des journées arrêtées : la page Postes et son alerte.
+    { provide: KnownArticles, useClass: PrismaKnownArticles },
     // Les canaux que le noyau implémente sur ses tables : l'arrêt du plan comme
     // limite (relié par `ProductionDeskFeedModule`, lu aussi par le guichet
     // d'admission du plan), le plan tenu arrêté (`PackingFeedModule`), les
@@ -134,6 +138,7 @@ import { PrismaProductionTrancheSettingsRepository } from "./infrastructure/pris
     ArrestedPlanLinesReader,
     PlannedOrderLinesReader,
     LaunchedResupplyLookup,
+    KnownArticles,
     ClosedPlansReader,
     // Ce que la racine de composition relie aux autres blocs.
     ProductionDayVersionSource,

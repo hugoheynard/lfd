@@ -95,6 +95,8 @@ export const ADMITTED = {
     "rapports par article : la lignée de détachement",
   "lafoliecoffee/catalog/infrastructure/prisma-catalog-cold.reader.ts":
     "livraison : le froid des produits, relayé à la tournée",
+  "lafoliecoffee/catalog/infrastructure/catalog-production-articles.reader.ts":
+    "fournil : le produit et le rayon de chaque article, sans les filtres de vente (postes du fournil, § 3.4) — fiche d'atelier et page Postes, hors du devis et du rayon",
   "lafoliecoffee/catalog/infrastructure/prisma-catalog-item.repository.ts":
     "écriture : charge l'agrégat qu'elle enregistre",
   "lafoliecoffee/catalog/infrastructure/prisma-catalog-order-limits.ts":

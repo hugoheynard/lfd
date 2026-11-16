@@ -8,6 +8,7 @@ import {
 import { DeliveryNotesModule } from "../lafoliecoffee/delivery-notes/delivery-notes.module.js";
 import { CatalogWorkshopShelvesReader } from "../lafoliecoffee/catalog/infrastructure/catalog-workshop-shelves.reader.js";
 import { CatalogSellableArticlesReader } from "../lafoliecoffee/catalog/infrastructure/catalog-sellable-articles.reader.js";
+import { CatalogProductionArticlesReader } from "../lafoliecoffee/catalog/infrastructure/catalog-production-articles.reader.js";
 import { ProductionOrderCutoffRulesReader } from "../lafoliecoffee/order-cutoffs/infrastructure/production-order-cutoff-rules.reader.js";
 import { ProductionResupplyCutoffTimeReader } from "../lafoliecoffee/order-cutoffs/infrastructure/production-resupply-cutoff-time.reader.js";
 import { OrderCutoffsModule } from "../lafoliecoffee/order-cutoffs/order-cutoffs.module.js";
@@ -34,6 +35,7 @@ import {
   PendingCommerceOrdersReader,
   PendingSettlementSweeper,
   PlannedDeliveryNotesReader,
+  ProductionArticlesReader,
   ResupplyCutoffTimeReader,
   ResupplyPrintColorsReader,
   SellableArticlesReader,
@@ -95,6 +97,9 @@ import {
     // Les articles vendables, pour la page des raccourcis du fournil (plan
     // `fournil/la-fiche-d-atelier.md`, S1) : même miroir, même lieu.
     { provide: SellableArticlesReader, useClass: CatalogSellableArticlesReader },
+    // Le produit et le rayon de chaque article, SANS les filtres de vente : les
+    // postes du fournil (`fournil/plan-postes-du-fournil.md`, § 3.4). Même miroir.
+    { provide: ProductionArticlesReader, useClass: CatalogProductionArticlesReader },
     // Le seul port du canal qui ÉCRIT chez le commerce : la clôture lui demande
     // de trancher les règlements en vol avant de compter (plan d'abandon, B1).
     // `useExisting` : l'instance est celle d'`OrdersModule`, qui a ses ports.
@@ -134,6 +139,7 @@ import {
     PendingCommerceOrdersReader,
     PendingSettlementSweeper,
     PlannedDeliveryNotesReader,
+    ProductionArticlesReader,
     ResupplyCutoffTimeReader,
     ResupplyPrintColorsReader,
     SellableArticlesReader,

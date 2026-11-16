@@ -463,3 +463,16 @@ boutique », quel que soit le réglage.
   chaque ouverture de la page Postes et de la simulation, à mesurer.
 
 - Si la fiche d'atelier tourne dans la portée `withCatalogueSnapshot`, l'adaptateur neuf lirait la base pendant que le reste lit l'instantané : vérifier en W1.
+
+## 7. Décisions prises en bâtissant W1 (2026-11-16)
+
+- **« Vendable »** (`ProductionArticle.sellable`) : servi à au moins une
+  clientèle (`servedItem`, vue pro ou publique) **et** visible au rayon
+  (`isShownAsTile`, la jumelle de `soldUnderShopSkus`).
+- **Remettre un produit « à ranger » efface sa ligne** de
+  `production_workstation_product`. C'est un réglage de la carte, pas un
+  agrégat métier : le poste, lui, s'archive, et l'historique de chaque
+  placement reste dans le fait `production_workstation.products_placed`.
+- **La porte `journal-tracked`** connaît `WorkstationMapGesture`, qui fait le
+  cycle charger, muter, sauver et journaliser des cinq gestes sous une seule
+  unité de travail, comme `DELIVERY_DELEGATES`.

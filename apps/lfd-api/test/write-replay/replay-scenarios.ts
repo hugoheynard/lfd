@@ -12,6 +12,7 @@ import { PAYMENTS_SCENARIOS } from "./payments-scenarios.js";
 import { OPS_SCENARIOS } from "./ops-scenarios.js";
 import { PIM_SCENARIOS } from "./pim-scenarios.js";
 import { PRICING_SCENARIOS } from "./pricing-scenarios.js";
+import { PRODUCTION_SCENARIOS } from "./production-scenarios.js";
 import type { ScenarioSet } from "./scenario.js";
 import { SETTINGS_SCENARIOS } from "./settings-scenarios.js";
 
@@ -34,5 +35,6 @@ export const REPLAY_SCENARIOS: ScenarioSet = {
   ...OPS_SCENARIOS,
   ...PIM_SCENARIOS,
   ...PRICING_SCENARIOS,
+  ...PRODUCTION_SCENARIOS,
   ...SETTINGS_SCENARIOS,
 };

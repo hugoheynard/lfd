@@ -6,11 +6,12 @@ import { ProductionPlanModule } from "./plan/production-plan.module.js";
 import { ProductionQualityModule } from "./quality/production-quality.module.js";
 import { ProductionResupplyModule } from "./resupply/production-resupply.module.js";
 import { ProductionPrintModule } from "./shared/print/production-print.module.js";
+import { ProductionWorkstationsModule } from "./workstations/production-workstations.module.js";
 
 /**
  * **Le fournil** — la racine de composition du bloc : elle importe un module
  * par métier (la journée, le plan, l'atelier, la qualité, le réassort,
- * l'imprimerie des papiers) et réexporte ceux dont `appBootstrap` relie les
+ * l'imprimerie des papiers, les postes) et réexporte ceux dont `appBootstrap` relie les
  * fournisseurs aux autres blocs.
  *
  * Il ne déclare PAS `DayOrdersReader` : c'est le port qu'il publie et que le
@@ -30,6 +31,7 @@ import { ProductionPrintModule } from "./shared/print/production-print.module.js
     ProductionResupplyModule,
     ProductionPlanModule,
     ProductionAtelierModule,
+    ProductionWorkstationsModule,
   ],
   // Les fournisseurs que la racine de composition relie aux autres blocs,
   // chacun exporté par le module de son métier.

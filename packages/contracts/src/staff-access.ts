@@ -520,6 +520,14 @@ export const staffResourceSchema = z.enum([
    * l'onglet. Ajoutée sans être accordée : elle s'accorde à l'écran.
    */
   "production_resupply",
+  /**
+   * **Les postes du fournil** — la page Postes du Prod manager : nommer,
+   * ordonner et archiver les postes, y placer les produits (plan
+   * `documentation/fournil/plan-postes-du-fournil.md`, § 3.8). Ajoutée sans
+   * être accordée : elle s'accorde à l'écran ; la graine ne la donne qu'à
+   * l'administrateur.
+   */
+  "production_workstations",
 
   // ── `handover.` — LE RETRAIT ────────────────────────────────────────────
   /** **Le retrait au comptoir** — la file, la remise manuelle, le scan du QR. */
@@ -835,6 +843,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   production_count_stop: "Production — Arrêt du plan",
   production_settings: "Production — Réglages",
   production_resupply: "Production — Réassorts",
+  production_workstations: "Production — Postes",
   handover_counter: "Retrait au comptoir",
   b2b_companies: "Comptes clients",
   b2b_orders: "Commandes",
@@ -978,6 +987,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // L'administrateur seul (2026-10-21, réassort R1d) : en production,
     // accordée à l'écran.
     production_resupply: "write",
+    // L'administrateur seul (2026-11-16, postes du fournil, W1) : en
+    // production, accordée à l'écran.
+    production_workstations: "write",
     handover_counter: "write",
     delivery_procedures: "write",
     delivery_decisions: "write",

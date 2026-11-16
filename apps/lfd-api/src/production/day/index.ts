@@ -72,6 +72,8 @@ export { ArrestedPlanLinesReader } from "./domain/ports/arrested-plan-lines.read
 export { PlannedOrderLinesReader } from "./domain/ports/planned-order-lines.reader.js";
 /** Un réassort est-il lancé au plan de la journée, sous le verrou de l'appelant (le réassort). */
 export { LaunchedResupplyLookup } from "./domain/ports/launched-resupply.lookup.js";
+/** Le SKU et le nom des lignes des journées arrêtées d'une plage (la page Postes, l'alerte). */
+export { KnownArticles } from "./domain/ports/known-articles.reader.js";
 
 /**
  * ## Ce qu'on écrit

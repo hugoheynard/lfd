@@ -25,7 +25,9 @@
     "ProductionResupplyLine": "day",
     "ProductionReturnRequest": "day",
     "ProductionSettings": "plan",
-    "ProductionTrancheSettings": "day"
+    "ProductionTrancheSettings": "day",
+    "ProductionWorkstation": "workstations",
+    "ProductionWorkstationProduct": "workstations"
   },
   "files": {
     "production.module.ts": "root"

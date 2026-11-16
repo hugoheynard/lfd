@@ -115,6 +115,7 @@ describe("WorkstationMap — la différence à écrire", () => {
     map.place([QUICHE], "ws-pat");
     map.place([TART], null);
     map.rename("ws-tou", "Tourière");
+    map.rename("ws-pat", " Pâtisserie ");
     const changes = map.changes();
     expect(changes.workstations.map((station) => station.name)).toEqual(["Tourière"]);
     expect([...changes.placements]).toEqual([["TAR-002", null]]);

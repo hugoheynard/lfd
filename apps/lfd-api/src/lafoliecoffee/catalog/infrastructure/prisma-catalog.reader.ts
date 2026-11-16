@@ -227,7 +227,7 @@ export class PrismaCatalogReader extends CatalogReader {
 }
 
 /** Ce que chaque lecture demande : la famille, la décision locale, la réservation. */
-function itemInclude(viewer: CatalogViewer) {
+export function itemInclude(viewer: CatalogViewer) {
   return {
     category: true as const,
     override: { select: ACCESS_DECISION_COLUMNS },

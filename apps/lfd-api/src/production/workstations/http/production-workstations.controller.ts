@@ -1,0 +1,111 @@
+import {
+  type CreatedIdResponse,
+  type DeclareWorkstationPayload,
+  declareWorkstationPayloadSchema,
+  type PlaceProductsPayload,
+  placeProductsPayloadSchema,
+  type RenameWorkstationPayload,
+  renameWorkstationPayloadSchema,
+  type ReorderWorkstationsPayload,
+  reorderWorkstationsPayloadSchema,
+  type WorkstationsPageView,
+} from "@lfd/contracts";
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Put } from "@nestjs/common";
+import { CommandBus, QueryBus } from "@nestjs/cqrs";
+
+import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
+import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { ArchiveWorkstationCommand } from "../application/commands/archive-workstation.command.js";
+import { DeclareWorkstationCommand } from "../application/commands/declare-workstation.command.js";
+import { PlaceProductsCommand } from "../application/commands/place-products.command.js";
+import { RenameWorkstationCommand } from "../application/commands/rename-workstation.command.js";
+import { ReorderWorkstationsCommand } from "../application/commands/reorder-workstations.command.js";
+import { ListWorkstationsQuery } from "../application/queries/list-workstations.query.js";
+
+/**
+ * **Prod manager › Postes** (plan `fournil/plan-postes-du-fournil.md`, § 3.8),
+ * sous `production_workstations` : la lecture (`GET`) pour qui consulte, les
+ * gestes pour qui règle le fournil. Chaque geste est **par intention**
+ * (`@IntentKey`) : rejouer un renommage après celui de quelqu'un d'autre le
+ * déferait. Archiver est un `POST` nommé — un geste, pas une colonne qu'on
+ * écrit. Il n'injecte que les bus.
+ */
+@Controller("admin/production/workstations")
+@AdminSurface("production_workstations")
+export class ProductionWorkstationsController {
+  constructor(
+    private readonly commands: CommandBus,
+    private readonly queries: QueryBus,
+  ) {}
+
+  @Get()
+  list(): Promise<WorkstationsPageView> {
+    return this.queries.execute<ListWorkstationsQuery, WorkstationsPageView>(
+      new ListWorkstationsQuery(),
+    );
+  }
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  async declare(
+    @Body(new ZodBody(declareWorkstationPayloadSchema)) payload: DeclareWorkstationPayload,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+  ): Promise<CreatedIdResponse> {
+    const id = await this.commands.execute<DeclareWorkstationCommand, string>(
+      new DeclareWorkstationCommand(payload.name, staffUserId, intentKey),
+    );
+    return { id };
+  }
+
+  @Put("order")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async reorder(
+    @Body(new ZodBody(reorderWorkstationsPayloadSchema)) payload: ReorderWorkstationsPayload,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+  ): Promise<void> {
+    await this.commands.execute<ReorderWorkstationsCommand, void>(
+      new ReorderWorkstationsCommand(payload.ids, staffUserId, intentKey),
+    );
+  }
+
+  @Put("placements")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async place(
+    @Body(new ZodBody(placeProductsPayloadSchema)) payload: PlaceProductsPayload,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+  ): Promise<void> {
+    await this.commands.execute<PlaceProductsCommand, void>(
+      new PlaceProductsCommand(payload.productSkus, payload.workstationId, staffUserId, intentKey),
+    );
+  }
+
+  @Put(":id/name")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async rename(
+    @Param("id") id: string,
+    @Body(new ZodBody(renameWorkstationPayloadSchema)) payload: RenameWorkstationPayload,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+  ): Promise<void> {
+    await this.commands.execute<RenameWorkstationCommand, void>(
+      new RenameWorkstationCommand(id, payload.name, staffUserId, intentKey),
+    );
+  }
+
+  @Post(":id/archive")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async archive(
+    @Param("id") id: string,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+  ): Promise<void> {
+    await this.commands.execute<ArchiveWorkstationCommand, void>(
+      new ArchiveWorkstationCommand(id, staffUserId, intentKey),
+    );
+  }
+}

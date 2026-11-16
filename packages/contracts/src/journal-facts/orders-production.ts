@@ -24,6 +24,7 @@ import { AFTER_CLOSE_REVISION_FACTS } from "./after-close-revisions.js";
 import { PACKING_CONTAINER_FACTS } from "./packing-containers.js";
 import { PACKING_RESERVE_FACTS } from "./packing-reserve.js";
 import { PRODUCTION_SETTINGS_FACTS } from "./production-settings.js";
+import { PRODUCTION_WORKSTATION_FACTS } from "./production-workstations.js";
 import { DELIVERY_SIMULATION_FACTS } from "./delivery-simulation.js";
 import {
   basisPoints,
@@ -765,6 +766,8 @@ export const ORDERS_PRODUCTION_FACTS = {
   ...PACKING_RESERVE_FACTS,
   /** **Les réglages du fournil** (arrêt du plan, jours fermés) — même famille. */
   ...PRODUCTION_SETTINGS_FACTS,
+  /** **Les postes du fournil** (`fournil/plan-postes-du-fournil.md`, W1) — même famille. */
+  ...PRODUCTION_WORKSTATION_FACTS,
 
   /**
    * `absorbed` : les commandes que la journée a absorbées en se fermant. Le

@@ -653,5 +653,7 @@
   "test/vitrine-xml.e2e-spec.ts": 3602,
   "test/volume-commitment-carry-over.e2e-spec.ts": 3505,
   "test/volume-ladder-carry-over.e2e-spec.ts": 4493,
-  "test/write-replay.e2e-spec.ts": 35238
+  "test/write-replay.e2e-spec.ts": 35238,
+  "test/production-workstations.e2e-spec.ts": 9700,
+  "test/production-workstations-readings.e2e-spec.ts": 4700
 }

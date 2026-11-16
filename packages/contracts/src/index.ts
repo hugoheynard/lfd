@@ -3295,3 +3295,20 @@ export type {
   UnpaidTransferInvoiceView,
   UnpaidTransferInvoicesView,
 } from "./bank-transfer.js";
+export {
+  declareWorkstationPayloadSchema,
+  placeProductsPayloadSchema,
+  renameWorkstationPayloadSchema,
+  reorderWorkstationsPayloadSchema,
+} from "./production-workstations.js";
+export type {
+  DeclareWorkstationPayload,
+  OffCatalogArticleView,
+  PlaceProductsPayload,
+  RenameWorkstationPayload,
+  ReorderWorkstationsPayload,
+  WorkstationProductVariantView,
+  WorkstationProductView,
+  WorkstationsPageView,
+  WorkstationView,
+} from "./production-workstations.js";

@@ -190,6 +190,10 @@ enum StaffResource {
   /// `documentation/reassort-boutiques/README.md`, R1d).
   /// Accordée à l'écran.
   production_resupply
+  /// LES POSTES DU FOURNIL — nommer, ordonner, archiver les postes et y
+  /// placer les produits (2026-11-16, `fournil/plan-postes-du-fournil.md`,
+  /// § 3.8). Accordée à l'écran.
+  production_workstations
   /// LE RETRAIT AU COMPTOIR — la file, la remise, le scan (même plan).
   handover_counter
   /// La FEUILLE DE ROUTE du jour, sortie de `b2b_orders` (2026-09-29,

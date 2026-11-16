@@ -343,6 +343,41 @@ const SUBSCRIPTIONS_ZONE = "subscriptions";
 const PRODUCTION_ZONE = "production";
 
 /**
+ * Les services du fournil qui journalisent eux-mêmes, et le fichier où la
+ * porte le VÉRIFIE — même geste que `DELIVERY_DELEGATES`.
+ * `WorkstationMapGesture` (postes du fournil, W1, 2026-11-16,
+ * `fournil/plan-postes-du-fournil.md`) porte le cycle commun aux cinq gestes
+ * de la carte des postes — charger sous verrou, muter, sauver, journaliser —
+ * dans l'unité de travail ; ses cinq handlers y délèguent.
+ */
+const PRODUCTION_DELEGATES = new Map([
+  [
+    "WorkstationMapGesture",
+    join(
+      "production",
+      "workstations",
+      "application",
+      "services",
+      "workstation-map-gesture.service.ts",
+    ),
+  ],
+]);
+
+/** Un handler du fournil trace, ou délègue à un service de `PRODUCTION_DELEGATES` qui le fait. */
+function auditProduction(source, index, params, handler) {
+  const delegate = [...PRODUCTION_DELEGATES.keys()].find((name) => params.includes(name));
+  if (delegate === undefined) {
+    return auditTraced(source, index, params, handler);
+  }
+  checked += 1;
+  const service = readFileSync(join(SRC, PRODUCTION_DELEGATES.get(delegate)), "utf8");
+  const traced = service.includes("publishTraced") && service.includes("uow.run(");
+  return traced
+    ? { traced: true }
+    : { traced: false, missing: [`un ${delegate} qui journalise sous UnitOfWork`], handler };
+}
+
+/**
  * **La livraison** (2026-09-29, `plan-preparation-de-tournee.md`, lot 2) :
  * ajouter, corriger, retirer, réactiver un véhicule, choisir le départ. Un
  * BLOC entier, comme le fournil. Tous ses handlers, sans tri par nom : un
@@ -694,7 +729,7 @@ const ZONES = [
   },
   {
     root: join(SRC, PRODUCTION_ZONE),
-    audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
+    audit: (source, index, params, handler) => auditProduction(source, index, params, handler),
   },
   {
     root: join(SRC, DELIVERY_ZONE),

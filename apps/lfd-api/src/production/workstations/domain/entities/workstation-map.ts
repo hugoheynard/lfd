@@ -102,6 +102,9 @@ export class WorkstationMap {
     const station = this.activeStation(id);
     const name = WorkstationName.of(rawName);
     this.refuseTakenName(name, id);
+    if (station.name === name.value) {
+      return;
+    }
     this.write({ ...station, name: name.value });
   }
 
