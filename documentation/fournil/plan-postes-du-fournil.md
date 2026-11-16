@@ -219,6 +219,28 @@ le gabarit du PDF n'est pas touché.
 rend un dossier dont les groupes sont identiques, titres compris, à ceux du
 mode boutique.
 
+#### Les fiches d'atelier deviennent des fiches de poste (décidé par Hugo le 2026-11-16)
+
+En mode prod, la fiche d'atelier (`/fournil`) montre **une fiche par poste** :
+l'onglet sur tablette et le sélecteur sur téléphone listent les postes, avec
+leur avancement, à la place des rayons. L'en-tête dit « Fiche de poste —
+Pâtisserie · fiche 2 sur 5 ». La fiche elle-même (lignes, tranches, fournées,
+pavé numérique) ne change pas.
+
+- **Ouvrir directement sa fiche :** `/fournil?poste=<id>` ouvre la fiche d'un
+  poste. La tablette de la pâtisserie peut garder ce lien en favori. Le dernier
+  poste ouvert est retenu sur l'appareil (stockage local, simple confort).
+- **Un poste sans ligne ce jour-là n'a pas de fiche,** comme un rayon vide
+  aujourd'hui.
+- **Les messages suivent le mode.** « Les rayons n'ont pas pu être lus »
+  devient, en mode prod, « Les postes n'ont pas pu être lus — les fiches sont
+  rangées par rayon ».
+- **Le mot.** Le front appelle aujourd'hui « poste fixe » la tablette posée à
+  l'atelier, par opposition au téléphone (`fiche-atelier.html`, vérifié le
+  2026-11-16). Avec les postes du fournil, ce mot désignerait deux choses. Il
+  devient « tablette » dans les commentaires et les libellés (W3), et
+  « poste » ne désigne plus que le métier de l'atelier.
+
 ### 3.5 Le figement
 
 Le dossier du jour est figé à l'arrêt : il garde les postes du moment, sans
