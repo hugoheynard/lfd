@@ -491,3 +491,14 @@ boutique », quel que soit le réglage.
   la répartition, pas un horaire. Une panne de lecture la **refuse** au lieu de
   la dégrader, sinon elle montrerait un autre rangement que celui demandé. Une
   pièce par article, même vendu au poids.
+- **W3 (serveur), le cache de la fiche** suit deux numéros de plus, lus en
+  base avant les données : le `updated_at` du réglage d'affichage et le plus
+  grand `updated_at` de la carte des postes. Pour que ce numéro monte aussi
+  quand un produit est remis « à ranger », le poste qu'il quitte est réécrit.
+  L'écran voit la fiche à jour à sa prochaine relecture.
+- **La borne N de `/grouping` vaut 500** : 99 SKU non retirés sur la base de dev
+  le 2026-11-16, soit environ cinq fois plus. À recompter en production avant
+  la bascule.
+- **Dette à rembourser en W4 :** la lecture « articles puis postes, avec repli
+  par rayon » existe en trois copies (fiche, dossier, route `/grouping`). La
+  fiche et le dossier lisent celle de `workstations/`.

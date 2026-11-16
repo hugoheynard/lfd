@@ -24,6 +24,7 @@ export { ProductionDisplaySettings } from "./domain/entities/production-display-
 export type { ProductionDisplaySettingsState } from "./domain/entities/production-display-settings.js";
 export { ProductionDisplaySettingsReader } from "./domain/ports/production-display-settings.reader.js";
 export { ProductionDisplaySettingsRepository } from "./domain/ports/production-display-settings.repository.js";
+export { ProductionDisplaySettingsVersion } from "./domain/ports/production-display-settings-version.js";
 export {
   atelierSheetPdfKey,
   productionCountPdfKey,

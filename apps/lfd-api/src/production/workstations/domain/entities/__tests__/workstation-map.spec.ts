@@ -117,7 +117,37 @@ describe("WorkstationMap — la différence à écrire", () => {
     map.rename("ws-tou", "Tourière");
     map.rename("ws-pat", " Pâtisserie ");
     const changes = map.changes();
-    expect(changes.workstations.map((station) => station.name)).toEqual(["Tourière"]);
+    // La Pâtisserie a perdu la tarte : elle est réécrite, pas renommée.
+    expect(changes.workstations.map((station) => station.name)).toEqual(["Pâtisserie", "Tourière"]);
     expect([...changes.placements]).toEqual([["TAR-002", null]]);
   });
+
+  it("réécrit le poste qu'un produit quitte, pour que le numéro de la carte bouge", () => {
+    const map = WorkstationMap.rehydrate({
+      workstations: [
+        { id: "ws-pat", name: "Pâtisserie", position: 0, archivedAt: null },
+        { id: "ws-tou", name: "Tourier", position: 1, archivedAt: null },
+      ],
+      placements: new Map([["QUI-001", "ws-pat"]]),
+    });
+    map.place([QUICHE], null);
+    expect(map.changes().workstations.map((station) => station.id)).toEqual(["ws-pat"]);
+  });
+
+  it("ne réécrit aucun poste quand un produit sans poste reste à ranger", () => {
+    const map = withTwoRehydrated();
+    map.place([QUICHE], null);
+    expect(map.changes().workstations).toEqual([]);
+    expect(map.changes().placements.size).toBe(0);
+  });
 });
+
+function withTwoRehydrated(): WorkstationMap {
+  return WorkstationMap.rehydrate({
+    workstations: [
+      { id: "ws-pat", name: "Pâtisserie", position: 0, archivedAt: null },
+      { id: "ws-tou", name: "Tourier", position: 1, archivedAt: null },
+    ],
+    placements: new Map(),
+  });
+}

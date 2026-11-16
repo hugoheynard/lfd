@@ -9,6 +9,8 @@ import { ProductionDisplaySettingsReader } from "./domain/ports/production-displ
 import { ProductionDisplaySettingsRepository } from "./domain/ports/production-display-settings.repository.js";
 import { PrismaProductionDisplaySettingsReader } from "./infrastructure/prisma-production-display-settings.reader.js";
 import { PrismaProductionDisplaySettingsRepository } from "./infrastructure/prisma-production-display-settings.repository.js";
+import { ProductionDisplaySettingsVersion } from "./domain/ports/production-display-settings-version.js";
+import { PrismaProductionDisplaySettingsVersion } from "./infrastructure/prisma-production-display-settings.version.js";
 
 /**
  * **L'imprimerie du fournil** — ce que le plan et l'atelier injectent tous
@@ -34,12 +36,18 @@ import { PrismaProductionDisplaySettingsRepository } from "./infrastructure/pris
       provide: ProductionDisplaySettingsRepository,
       useClass: PrismaProductionDisplaySettingsRepository,
     },
+    // Son numéro, que la fiche gardée met dans son étiquette.
+    {
+      provide: ProductionDisplaySettingsVersion,
+      useClass: PrismaProductionDisplaySettingsVersion,
+    },
   ],
   exports: [
     ProductionPaperArchive,
     OrderSheetPaper,
     ProductionDisplaySettingsReader,
     ProductionDisplaySettingsRepository,
+    ProductionDisplaySettingsVersion,
     DayOrderLabelHeadReader,
   ],
 })

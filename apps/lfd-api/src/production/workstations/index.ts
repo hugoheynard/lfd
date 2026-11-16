@@ -22,3 +22,5 @@
 export { WorkstationOfProducts } from "./domain/ports/workstation-of-products.js";
 /** Combien de produits ont un poste (la garde de bascule en mode prod). */
 export { PlacedProducts } from "./domain/ports/placed-products.js";
+/** Le numéro de la carte, qui change à chaque geste (l'étiquette de la fiche gardée). */
+export { WorkstationMapVersion } from "./domain/ports/workstation-map-version.js";

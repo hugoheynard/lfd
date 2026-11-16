@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { PlacedProducts } from "../domain/ports/placed-products.js";
+import { WorkstationMapVersion } from "../domain/ports/workstation-map-version.js";
 import {
   type WorkstationListing,
   WorkstationMapReader,
@@ -76,5 +77,24 @@ export class PrismaPlacedProducts extends PlacedProducts {
 
   count(): Promise<number> {
     return this.prisma.productionWorkstationProduct.count();
+  }
+}
+
+/** Le numéro de la carte : le plus récent `updated_at` des postes et des placements. */
+@Injectable()
+export class PrismaWorkstationMapVersion extends WorkstationMapVersion {
+  constructor(private readonly prisma: PrismaService) {
+    super();
+  }
+
+  async versionOf(): Promise<number> {
+    const [stations, placements] = await Promise.all([
+      this.prisma.productionWorkstation.aggregate({ _max: { updatedAt: true } }),
+      this.prisma.productionWorkstationProduct.aggregate({ _max: { updatedAt: true } }),
+    ]);
+    return Math.max(
+      stations._max.updatedAt?.getTime() ?? 0,
+      placements._max.updatedAt?.getTime() ?? 0,
+    );
   }
 }

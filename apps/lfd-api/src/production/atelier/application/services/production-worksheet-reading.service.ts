@@ -56,8 +56,9 @@ import { groupView, lineViewOf } from "./worksheet-line-views.js";
  * Le réglage d'affichage choisit le rangement (plan
  * `fournil/plan-postes-du-fournil.md`, § 3.4). En mode boutique, seuls les
  * rayons sont lus. En mode prod, les articles et les postes le sont
- * (`WorkstationPlacementReading`) ; s'ils ne répondent pas, la fiche est
- * rangée par rayon, la panne journalisée, et le contenu n'est pas complet.
+ * ; s'ils ne répondent pas, la fiche est rangée par rayon, la panne
+ * journalisée, `workstationsKnown` vaut `false` pour que l'écran le dise, et le
+ * contenu n'est pas complet. La fiche sert aussi le mode du réglage (`grouping`).
  *
  * ## Paliers et pastilles (plan `documentation/fournil/la-fiche-d-atelier.md`, §3)
  *
@@ -152,8 +153,10 @@ export class ProductionWorksheetReading {
         (group) => groupView(group, viewOf),
       ),
       shelvesKnown: grouping.shelvesKnown,
+      grouping: settings.grouping,
+      workstationsKnown: grouping.workstationsKnown,
     };
-    const complete = grouping.shelvesKnown && grouping.complete && tranches !== null;
+    const complete = grouping.shelvesKnown && grouping.workstationsKnown && tranches !== null;
     return { sheet, complete: complete && waiting !== null };
   }
 
@@ -186,7 +189,7 @@ export class ProductionWorksheetReading {
       try {
         const skus = lines.map((line) => line.sku);
         const placement = await this.placementOf(skus);
-        return { source: { mode, placement }, shelvesKnown: true, complete: true };
+        return { source: { mode, placement }, shelvesKnown: true, workstationsKnown: true };
       } catch (error) {
         this.logger.error(
           `Fiche d'atelier du ${day.value} : postes illisibles, servie rangée par rayon.`,
@@ -196,12 +199,16 @@ export class ProductionWorksheetReading {
         return {
           source: { mode: "shelf", shelves },
           shelvesKnown: shelves !== null,
-          complete: false,
+          workstationsKnown: false,
         };
       }
     }
     const shelves = await this.shelvesOrNull(day, lines);
-    return { source: { mode: "shelf", shelves }, shelvesKnown: shelves !== null, complete: true };
+    return {
+      source: { mode: "shelf", shelves },
+      shelvesKnown: shelves !== null,
+      workstationsKnown: true,
+    };
   }
 
   /**
@@ -250,8 +257,11 @@ interface WorksheetGrouping {
   readonly source: GroupingSource;
   /** `false` : les rayons n'ont pas pu être lus — tout est en « Rayon inconnu ». */
   readonly shelvesKnown: boolean;
-  /** `false` : le mode prod n'a pas pu lire ses postes, la fiche est rangée par rayon. */
-  readonly complete: boolean;
+  /**
+   * `false` : le mode prod n'a pas pu lire ses postes, la fiche est rangée par
+   * rayon. Toujours `true` en mode boutique, qui ne les lit pas.
+   */
+  readonly workstationsKnown: boolean;
 }
 
 /** Ce que le commerce annonce pour CE jour — rien du tout s'il ne dit rien. */

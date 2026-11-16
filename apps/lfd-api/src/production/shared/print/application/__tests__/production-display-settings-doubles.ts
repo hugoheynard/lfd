@@ -3,6 +3,7 @@ import type { ProductionGrouping } from "@lfd/contracts";
 import { ProductionDisplaySettings } from "../../index.js";
 import { ProductionDisplaySettingsReader } from "../../index.js";
 import { ProductionDisplaySettingsRepository } from "../../index.js";
+import { ProductionDisplaySettingsVersion } from "../../index.js";
 import type { TrancheSettingsAuthor } from "../../../../day/index.js";
 
 /** Le rangement du fournil, en mémoire : `null` tant que personne ne l'a posé. */
@@ -50,5 +51,14 @@ export class InMemoryDisplaySettings extends ProductionDisplaySettingsRepository
         return Promise.resolve(store());
       }
     })();
+  }
+}
+
+/** Le numéro du réglage, qu'une suite fait monter à la main. */
+export class SettableDisplaySettingsVersion extends ProductionDisplaySettingsVersion {
+  version = 0;
+
+  versionOf(): Promise<number> {
+    return Promise.resolve(this.version);
   }
 }

@@ -1,7 +1,9 @@
 import { z } from "zod";
 
 import type { CatalogFamilyView } from "./catalog.js";
-import { PRODUCTION_GROUPINGS } from "./production-settings.js";
+import { serviceDaySchema } from "./day-version.js";
+import { PRODUCTION_GROUPINGS, type ProductionGrouping } from "./production-settings.js";
+import type { WorkshopGroupKind } from "./production-worksheet.js";
 
 /**
  * **Les postes du fournil** — Prod manager › Postes (plan
@@ -14,7 +16,12 @@ import { PRODUCTION_GROUPINGS } from "./production-settings.js";
  * - `PUT admin/production/workstations/:id/name` ← {@link RenameWorkstationPayload} ;
  * - `PUT admin/production/workstations/order` ← {@link ReorderWorkstationsPayload} ;
  * - `POST admin/production/workstations/:id/archive` ;
- * - `PUT admin/production/workstations/placements` ← {@link PlaceProductsPayload}.
+ * - `PUT admin/production/workstations/placements` ← {@link PlaceProductsPayload} ;
+ * - `POST admin/production/workstations/grouping` ← {@link ProductionGroupingPayload}
+ *   → {@link ProductionGroupingView} — une LECTURE en `POST`, sous
+ *   `production_plan:read` ou `production_resupply:read` (§ 3.7) ;
+ * - `GET admin/production/workstations/unplaced?date=AAAA-MM-JJ` →
+ *   {@link UnplacedProductsOfDayView}, sous `production_plan:read` (§ 3.10).
  *
  * Toutes les écritures sont **par intention** (en-tête `Idempotency-Key`) :
  * rejouer un renommage après celui de quelqu'un d'autre le déferait.
@@ -99,4 +106,92 @@ export interface WorkstationsPageView {
   readonly offCatalog: readonly OffCatalogArticleView[];
   /** Les produits sans poste — le compte du filtre « à ranger ». */
   readonly unplacedCount: number;
+}
+
+/**
+ * Le plus de SKU qu'un écran fait ranger d'un appel. Mesuré le 2026-11-16 :
+ * 99 déclinaisons non retirées au miroir du commerce (`catalog_items`, base de
+ * dev semée du référentiel). Cinq fois ce nombre laisse grandir le catalogue
+ * sans qu'un écran se mette à recevoir des `400`, et le corps reste vers
+ * 35 Ko, loin du plafond des corps JSON (512 Ko). Un écran qui dépasse coupe
+ * sa liste : c'est le signe que le catalogue a changé d'échelle.
+ */
+export const PRODUCTION_GROUPING_SKUS_MAX = 500;
+
+/** `POST admin/production/workstations/grouping` — les SKU à ranger, la forme seulement. */
+export const productionGroupingPayloadSchema = z.object({
+  skus: z
+    .array(z.string().min(1).max(PRODUCT_SKU_WIRE_MAX))
+    .min(1)
+    .max(PRODUCTION_GROUPING_SKUS_MAX),
+});
+export type ProductionGroupingPayload = z.infer<typeof productionGroupingPayloadSchema>;
+
+/** L'intertitre d'un SKU dans son groupe : une sous-catégorie, ou le rayon d'un poste. */
+export interface ProductionGroupingSectionView {
+  /** L'id de la famille ; `null` = la racine du groupe elle-même, sans intertitre. */
+  readonly key: string | null;
+  readonly label: string | null;
+  /** Le rang de l'intertitre dans son groupe, à partir de 0. */
+  readonly order: number;
+}
+
+/** Où un SKU se range, selon le mode du réglage. */
+export interface ProductionGroupingEntryView {
+  readonly sku: string;
+  /** La clé du groupe : l'id du rayon racine, `ws:<id du poste>`, ou `?`. */
+  readonly key: string;
+  /** « Viennoiserie », « Pâtisserie », « Traiteur salé — à ranger », « Hors catalogue »… */
+  readonly title: string;
+  readonly kind: WorkshopGroupKind;
+  /** Le rang du groupe, à partir de 0 : les postes, puis les rayons, puis le hors catalogue. */
+  readonly order: number;
+  /** `null` : le réglage n'affiche pas les intertitres, ou le groupe n'en a pas. */
+  readonly section: ProductionGroupingSectionView | null;
+}
+
+/**
+ * Le rangement servi au front (§ 3.7) : le prévisionnel, le récapitulatif et
+ * les filtres des réassorts du fournil ne rangent plus eux-mêmes.
+ */
+export interface ProductionGroupingView {
+  /** Le mode du réglage, appliqué ici. */
+  readonly mode: ProductionGrouping;
+  readonly showSubcategories: boolean;
+  /** `false` : les rayons n'ont pas pu être lus — tout est en « Rayon inconnu ». */
+  readonly shelvesKnown: boolean;
+  /** `false` : en mode prod, les postes n'ont pas pu être lus — rangé par rayon. */
+  readonly workstationsKnown: boolean;
+  /** Un par SKU demandé, sans doublon, dans l'ordre du rangement. */
+  readonly entries: readonly ProductionGroupingEntryView[];
+}
+
+/** `GET admin/production/workstations/unplaced?date=AAAA-MM-JJ`. */
+export const unplacedProductsOfDayQuerySchema = z.object({
+  date: serviceDaySchema,
+});
+export type UnplacedProductsOfDayQuery = z.infer<typeof unplacedProductsOfDayQuerySchema>;
+
+/** Un produit du jour sans poste, et les déclinaisons du jour qui le portent. */
+export interface UnplacedProductOfDayView {
+  readonly productSku: string;
+  /** `null` : le référentiel n'a pas envoyé de nom de fiche — l'écran dit la déclinaison. */
+  readonly productName: string | null;
+  readonly skus: readonly string[];
+}
+
+/**
+ * **L'alerte du Prod manager** (§ 3.10) : les produits du jour sans poste. Avant
+ * l'arrêt, ceux de la demande attendue du jour (commandes et réassorts) ;
+ * après, ceux des lignes arrêtées du jour.
+ */
+export interface UnplacedProductsOfDayView {
+  readonly date: string;
+  /** Le mode du réglage : l'alerte ne se montre qu'en mode prod. */
+  readonly mode: ProductionGrouping;
+  /** `true` : lu sur les lignes arrêtées ; `false` : sur la demande attendue. */
+  readonly closed: boolean;
+  readonly products: readonly UnplacedProductOfDayView[];
+  /** Les SKU du jour que le commerce ne connaît plus : ils ne peuvent pas recevoir de poste. */
+  readonly offCatalog: readonly OffCatalogArticleView[];
 }

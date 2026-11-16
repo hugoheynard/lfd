@@ -150,6 +150,12 @@ export class WorkstationMap {
   /**
    * Place des produits sur un poste, ou les remet « à ranger » (`null`).
    *
+   * Le poste qu'un produit quitte compte parmi les changements : sa ligne est
+   * réécrite à l'instant du geste. Sans quoi un produit remis « à ranger »
+   * n'écrirait qu'une suppression, et le numéro de la carte
+   * (`WorkstationMapVersion`), qui lit l'instant le plus récent, ne bougerait
+   * pas.
+   *
    * @throws {WorkstationNotFoundError}
    * @throws {WorkstationArchivedError}
    */
@@ -161,6 +167,9 @@ export class WorkstationMap {
       const current = this.placed.get(product.value) ?? null;
       if (current === workstationId) {
         continue;
+      }
+      if (current !== null && this.stations.has(current)) {
+        this.changedStations.add(current);
       }
       if (workstationId === null) {
         this.placed.delete(product.value);

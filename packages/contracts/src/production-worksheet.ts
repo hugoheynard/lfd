@@ -8,6 +8,7 @@ import type {
   WorkshopLineContainer,
 } from "./production-batches.js";
 import type { QualityLineStatus } from "./production-quality.js";
+import type { ProductionGrouping } from "./production-settings.js";
 
 /**
  * **La fiche d'atelier** : ce que le fournil a à sortir aujourd'hui, et ce qui
@@ -317,6 +318,20 @@ export interface ProductionWorksheetView {
    * groupe « Rayon inconnu ». La fiche reste juste, et l'écran le dit.
    */
   readonly shelvesKnown: boolean;
+  /**
+   * Le rangement du réglage du fournil : `shelf` (mode boutique) ou
+   * `workstation` (mode prod, des fiches de poste). Facultatif dans le TYPE
+   * pour les fixtures ; le serveur l'émet toujours.
+   */
+  readonly grouping?: ProductionGrouping;
+  /**
+   * `false` = en mode prod, les postes n'ont pas pu être lus : la fiche est
+   * rangée par rayon, et l'écran le dit (« Les postes n'ont pas pu être lus —
+   * les fiches sont rangées par rayon »). Toujours `true` en mode boutique,
+   * qui ne lit pas les postes. Facultatif dans le TYPE pour les fixtures ; le
+   * serveur l'émet toujours.
+   */
+  readonly workstationsKnown?: boolean;
   /**
    * La journée servie, relativement à aujourd'hui **selon l'horloge du
    * serveur**. `null` = ni aujourd'hui ni demain.

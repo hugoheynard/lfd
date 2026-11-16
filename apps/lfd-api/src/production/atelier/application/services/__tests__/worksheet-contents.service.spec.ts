@@ -33,7 +33,11 @@ import {
 import { ProductionWorksheetReading } from "../production-worksheet-reading.service.js";
 import { WorksheetContents } from "../worksheet-contents.service.js";
 import { WorksheetDeadlinesReading } from "../worksheet-deadlines-reading.service.js";
-import { placementPorts } from "../../../../workstations/application/__tests__/placement-doubles.js";
+import {
+  placementPorts,
+  SettableWorkstationMapVersion,
+} from "../../../../workstations/application/__tests__/placement-doubles.js";
+import { SettableDisplaySettingsVersion } from "../../../../shared/print/application/__tests__/production-display-settings-doubles.js";
 
 /**
  * La fiche du fournil servie depuis l'objet des journées
@@ -123,13 +127,17 @@ function around(outage: Outage = "none") {
   );
   const cache = new MemoryDayContents();
   const clock = new FixedClock(NOW);
+  const display = new SettableDisplaySettingsVersion();
+  const stations = new SettableWorkstationMapVersion();
   const worksheets = new WorksheetContents(
     new DayVersionRegistry(Object.values(all)),
     dayContentsOver(cache),
     reading,
     clock,
+    display,
+    stations,
   );
-  return { worksheets, cache, clock, log, days, all };
+  return { worksheets, cache, clock, log, days, all, display, stations };
 }
 
 /** Laisse partir le rangement, posé après la réponse. */
@@ -149,15 +157,43 @@ describe("WorksheetContents", () => {
     expect(log.indexOf("data")).toBeGreaterThan(log.indexOf("version:orders"));
   });
 
-  it("range la fiche sous la clé `worksheet`, étiquetée des deux numéros", async () => {
-    const { worksheets, cache } = around();
+  it("range la fiche sous la clé `worksheet`, étiquetée des journaux, du réglage et des postes", async () => {
+    const { worksheets, cache, display, stations } = around();
+    display.version = 11;
+    stations.version = 13;
 
     await worksheets.read(DAY);
     await settle();
 
     expect(cache.stored).toEqual([
-      { screen: "worksheet", day: TODAY, tag: "orders:7.production:42" },
+      {
+        screen: "worksheet",
+        day: TODAY,
+        tag: "display:11.orders:7.production:42.workstations:13",
+      },
     ]);
+  });
+
+  it("relit la base après un geste sur les postes", async () => {
+    const { worksheets, days, stations } = around();
+
+    await worksheets.read(DAY);
+    await settle();
+    stations.version += 1;
+    await worksheets.read(DAY);
+
+    expect(days.loads).toBe(2);
+  });
+
+  it("relit la base après un changement du réglage d'affichage", async () => {
+    const { worksheets, days, display } = around();
+
+    await worksheets.read(DAY);
+    await settle();
+    display.version += 1;
+    await worksheets.read(DAY);
+
+    expect(days.loads).toBe(2);
   });
 
   it("sert la fiche rangée sans relire la base, à numéros égaux", async () => {

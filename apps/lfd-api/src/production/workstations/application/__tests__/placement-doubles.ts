@@ -5,6 +5,7 @@ import {
   ProductionArticlesReader,
 } from "../../../channels/commerce/index.js";
 import { PlacedProducts } from "../../domain/ports/placed-products.js";
+import { WorkstationMapVersion } from "../../domain/ports/workstation-map-version.js";
 import {
   type PlacedWorkstation,
   WorkstationOfProducts,
@@ -101,5 +102,14 @@ export class FixedPlacedProducts extends PlacedProducts {
 
   count(): Promise<number> {
     return Promise.resolve(this.placed);
+  }
+}
+
+/** Le numéro de la carte, qu'une suite fait monter à la main. */
+export class SettableWorkstationMapVersion extends WorkstationMapVersion {
+  version = 0;
+
+  versionOf(): Promise<number> {
+    return Promise.resolve(this.version);
   }
 }
