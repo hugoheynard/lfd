@@ -9,7 +9,7 @@ boutique et sans rien apprendre du référentiel.
 
 Forme retenue avec Hugo le même jour : **un poste par article**, réglé par le
 fournil, sans règle par rayon. Ni argent, ni migration de données (deux tables
-neuves), ni frontière de sécurité, ni runbook : ce plan ne passe pas par
+neuves et une colonne de réglage, additives), ni frontière de sécurité, ni runbook : ce plan ne passe pas par
 `vitruve`. Ses affirmations sur l'existant ont été vérifiées en ouvrant le
 code le 2026-11-16 (§ 2).
 
@@ -331,3 +331,91 @@ la répartition avant de basculer en mode prod.
   qu'il sort tel quel. Le jour où il faudra le distinguer (coût de revient,
   capacité du four, traçabilité d'un lot acheté), ce sera une propriété de
   l'article, pas un poste, et un autre chantier.
+
+---
+
+## 7. La contradiction de `vitruve` (2026-11-16) et ses réponses
+
+Ce qui suit **prime** sur les sections précédentes là où elles divergent.
+
+### Bloquants
+
+- **B1 — Le dossier n'est pas figé à l'arrêt.** Il est rangé à chaque tirage,
+  avec le réglage et les rayons du moment, puis le premier tirage
+  **archivable** est figé (`plan/application/services/production-paper.service.ts`,
+  `archivable`). **Réponse :** le plan dit désormais « figé au premier tirage
+  archivable », comme le reste du dossier. La condition `archivable` gagne
+  « postes lus » : un dossier rangé par rayon faute de postes, en mode prod,
+  n'est pas archivé, et le tirage suivant réessaie.
+- **B2 — La « même forme » des groupes est fausse.** `recapOf` rend
+  `{ label, quantity, lines, intertitles }`, et `worksheetGroupsOf` rend
+  `{ key = id de famille, family, sections… }`. Le front indexe ses onglets
+  sur `group.key` (`fiche-atelier.ts`, vérifié le 2026-11-16). **Réponse :**
+  pas de fonction commune aux deux sorties. Une fonction de l'imprimerie,
+  `groupingOf(lines, mode, workstationOf, shelfOf)`, rend des **groupements
+  neutres** `{ key, title, kind: "workstation" | "shelf" | "unplaced" |
+"off_catalog", sections }`. `recapOf` et `worksheetGroupsOf` les traduisent
+  chacun dans leur forme d'aujourd'hui. Contrat `WorkshopGroup` : `key`
+  devient `ws:<id>` pour un poste (un id de famille reste un id de famille),
+  `family` vaut `null` pour un poste, et on ajoute
+  `workstation: { id, name } | null` et `unplaced: boolean`. C'est un
+  changement additif.
+- **B3 — Le front range seul, sur le catalogue.** Le prévisionnel et le
+  récapitulatif rangent côté client (`catalogRootShelves`). Le mode prod y
+  ajouterait une troisième copie du rangement. **Réponse :** un seul rangement,
+  au serveur. Une route `GET /admin/production/grouping?skus=…` rend, pour des
+  SKU, leur groupement selon le mode du réglage (clé, titre, ordre, section).
+  Les trois écrans du front l'appellent et ne rangent plus eux-mêmes, dans les
+  deux modes. Les filtres des réassorts, qui filtrent par famille, filtrent par
+  cette clé. C'est un lot à part, **W3b**, après W3.
+
+### Sérieux
+
+- **S4 — Journal.** Chaque geste émet un fait dans la même transaction
+  (`production_workstation.declared`, `.renamed`, `.reordered`, `.archived`,
+  `production_workstation.articles_placed`), avec ses phrases de journal. Le
+  fait existant `production_display_settings.updated` porte `grouping`.
+- **S5 — Idempotence (`lint:write-idempotence`).** Déclarer et placer sont des
+  routes « par intention » (`@IntentKey`, `runSealed`) ; renommer, réordonner
+  et archiver sont `@Idempotent`, puisque rejouer le même état est neutre.
+  C'est écrit route par route en W1.
+- **S6 — Spécimen.** La simulation est un PDF : elle a son exemple sur la
+  planche des documents (`lint:pdf-specimens`) en W2b.
+- **S7 — La source de la page Postes est trop étroite.** `SellableArticlesReader`
+  ne liste que le vendable : un article masqué mais commandé n'y est pas. Et
+  le rayon n'est lu qu'en vue pro. **Réponse :** la page Postes liste le
+  vendable **plus** les SKU des journées des 30 derniers jours qui n'y sont
+  pas, avec leur nom recopié. « À ranger » veut dire « sans poste », quel que
+  soit le groupe, « Hors catalogue » compris. Le compteur du Prod manager
+  compte donc aussi les articles hors catalogue sans poste.
+- **S8 — La porte s'arme ailleurs.** Les sous-contextes et les arêtes vivent
+  dans `dev-toolbox/gates/lib/production-subcontexts-graph.mjs` (`DIRECTORIES`,
+  `GATED`, `ALLOWED`, vérifié le 2026-11-16), et les modèles dans la carte.
+  W0 modifie les trois constantes et la carte, et vérifie avant cela qu'un
+  fichier sous `workstations/` est refusé.
+- **S9 — La migration.** Elle crée deux tables **et** ajoute la colonne
+  `production_display_settings.grouping`, `NOT NULL DEFAULT 'shelf'`, avec son
+  CHECK `('shelf', 'workstation')`. Elle passe par `lecteur-de-migrations`.
+- **S10 — Le test d'identité.** « Groupes identiques au mode boutique » ne
+  vaut que réglage `showSubcategories` éteint. Il y a deux tests : éteint,
+  identité des groupes ; allumé, des intertitres égaux aux rayons de boutique.
+
+### Mineurs
+
+- **Les noms.** Les tables s'appellent `production_workstation` et
+  `production_workstation_article`, avec `updated_by_staff_id` et
+  `updated_by_name` comme `production_display_settings`. Les deux colonnes
+  entrent au registre RGPD.
+- **« Poste fixe »** sert aussi en livraison (`livraison/loading-round/`). W3
+  le renomme « tablette » partout dans le back-office, et pas seulement dans
+  `fiche-atelier/`.
+- **La route du réglage :** `PUT /admin/production/settings/display` porte
+  `grouping` à côté de `showSubcategories`.
+- **`save(map)`** écrit la différence : les articles placés, déplacés ou
+  remis à ranger, et les postes changés. Il ne réécrit pas la carte entière.
+- **`Sku`** n'existe pas dans `src/production` : le value object est à créer
+  dans `workstations/domain/`.
+- **Restent à ouvrir en W1** (non vérifiés) : que `ProductionOrderLine.sku`
+  soit toujours le SKU produit, comportement de la porte sur un dossier
+  inconnu de `DIRECTORIES`, calendrier d'une commande fictive sans tranches
+  pour la simulation.
