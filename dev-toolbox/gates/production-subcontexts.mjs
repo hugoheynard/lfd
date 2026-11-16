@@ -20,7 +20,8 @@
  * - **une arête hors du schéma** : chaque métier lit `day/`, `shared/print/`
  *   et `channels/` ; `shared/print/` lit `day/`, et du commerce le SEUL
  *   port de la couleur d'une commande (`ADMITTED_FILES`) ; `channels/` lit `day/` en
- *   direct ; seules `atelier → quality` et `plan → resupply` relient deux
+ *   direct ; seules `atelier → quality`, `plan → resupply`, et `atelier` et `plan` vers
+ *   `workstations` (les postes, Hugo, 2026-11-16) relient deux
  *   métiers ; `day/` n'importe que `channels/`. Les types comptent ;
  * - **un import qui passe à côté de la porte** : entre sous-contextes, on
  *   entre par `index.ts` (`channels/` n'en est pas un) ; le module Nest d'un

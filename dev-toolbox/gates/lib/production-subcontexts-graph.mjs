@@ -22,6 +22,7 @@ export const DIRECTORIES = Object.freeze({
   resupply: "resupply/",
   "shared-print": "shared/print/",
   channels: "channels/",
+  workstations: "workstations/",
 });
 
 /** La racine de composition du bloc : relie tout le monde, exemptée comme `appBootstrap/`. */
@@ -35,6 +36,7 @@ export const GATED = Object.freeze([
   "quality",
   "resupply",
   "shared-print",
+  "workstations",
 ]);
 
 const SHARED = ["day", "shared-print", "channels"];
@@ -44,10 +46,14 @@ export const ALLOWED = Object.freeze({
   day: ["channels"],
   "shared-print": ["day"],
   channels: ["day"],
-  plan: [...SHARED, "resupply"],
-  atelier: [...SHARED, "quality"],
+  plan: [...SHARED, "resupply", "workstations"],
+  atelier: [...SHARED, "quality", "workstations"],
   quality: SHARED,
   resupply: SHARED,
+  // Les postes du fournil (Hugo, 2026-11-16) : le dossier (`plan`) et la
+  // fiche (`atelier`) se rangent par poste, et le réglage du mode vit avec
+  // la fiche. Les postes ne lisent que le partagé.
+  workstations: SHARED,
 });
 
 /**

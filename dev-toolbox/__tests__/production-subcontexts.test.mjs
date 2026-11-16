@@ -133,6 +133,25 @@ test("arêtes : seules atelier → quality et plan → resupply relient deux mé
   ]);
 });
 
+test("arêtes : la fiche et le dossier lisent les postes ; les postes ne lisent que le partagé", () => {
+  const { found } = run({
+    "atelier/a.ts": imp("../workstations/index.js"),
+    "plan/a.ts": imp("../workstations/index.js"),
+    "quality/a.ts": imp("../workstations/index.js"),
+    "workstations/a.ts": imp("../day/index.js"),
+    "workstations/b.ts": imp("../plan/index.js"),
+    "day/a.ts": imp("../workstations/index.js"),
+    "workstations/index.ts": "",
+    "day/index.ts": "",
+    "plan/index.ts": "",
+  });
+  assert.deepEqual([...found.edges].sort(), [
+    "day/a.ts → workstations/index.ts",
+    "quality/a.ts → workstations/index.ts",
+    "workstations/b.ts → plan/index.ts",
+  ]);
+});
+
 test("porte : un import admis qui passe à côté de l'index.ts est compté, même en type", () => {
   const { found } = run({
     "plan/a.ts": 'import type { D } from "../day/domain/d.js";\n',
