@@ -248,15 +248,15 @@ la répartition avant de basculer en mode prod.
   sont déclarés. En mode prod, tout est rangé par poste, et ce qui n'en a pas
   reste sous son rayon, marqué « à ranger ». Défaut : mode boutique. Le
   dossier figé garde le mode de l'arrêt.
-- **Q3 — ouverte : un article que le fournil ne fabrique pas.** Exemple : une
-  bouteille de jus de pomme ou un pot de confiture achetés à un producteur et
-  revendus tels quels. Rien dans le code ne les distingue d'un croissant
-  (vérifié le 2026-11-16 : aucune notion d'article de revente au fournil ni au
-  catalogue). Commandés, ils arrivent donc aujourd'hui sur la fiche d'atelier.
-  En mode prod, ils resteraient « à ranger » pour toujours, et l'alerte du Prod
-  manager ne s'éteindrait jamais. Deux réponses possibles :
-  - **a.** un poste comme un autre, « Revente » ou « Préparation des
-    commandes » : rien de neuf à bâtir, et la ligne reste sur la fiche, ce qui
-    est juste si quelqu'un doit les sortir de la réserve ;
-  - **b.** un choix « pas fabriqué ici » à la place d'un poste : l'article
-    sort de « à ranger », mais reste sur la fiche, sous un groupe à part.
+- **Q3 — tranchée par Hugo le 2026-11-16 : tout ce qui est commandé est « à
+  produire », au sens « doit exister pour la commande ».** Peu importe qu'on le
+  fabrique ou qu'on le sorte de la réserve : une bouteille de jus ou un pot de
+  confiture revendus tels quels sont des articles comme les autres. Ils
+  prennent un poste comme les autres (par exemple « Revente » ou « Réserve »),
+  et un article sans poste reste « à ranger ». Il n'y a donc **aucune notion
+  d'article de revente** à bâtir aujourd'hui (aucune n'existe, vérifié le
+  2026-11-16).
+  **Limite assumée :** le fournil ne distingue pas ce qu'il fabrique de ce
+  qu'il sort tel quel. Le jour où il faudra le distinguer (coût de revient,
+  capacité du four, traçabilité d'un lot acheté), ce sera une propriété de
+  l'article, pas un poste, et un autre chantier.
