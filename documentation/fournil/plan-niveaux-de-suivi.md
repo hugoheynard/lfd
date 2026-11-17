@@ -545,3 +545,53 @@ colisage ; ce plan-ci ne fait que publier le fait.
   pas la réserve du colisage. Le colisage, encore en détaillé, voit
   physiquement qu'il manque des pièces et déclare son manque comme aujourd'hui ;
   le manager est déjà prévenu par la cloche du fournil.
+
+## 13. Après la quatrième contradiction (2026-11-17) — dans le périmètre de la § 12
+
+### Ce qui touche ce chantier
+
+- **Un fait publié sans abonné est perdu pour cet abonné.** La boîte d'envoi
+  ne crée une livraison que pour les abonnés connus au moment de la
+  publication (`platform/outbox/prisma-outbox.ts`). La correction ne peut donc
+  pas vivre **seulement** dans le fait : elle est **d'abord rangée au
+  fournil**, qui en est le propriétaire, et le fait n'est que son annonce.
+  Quand le colisage saura la traiter, il la relira par une **lecture publiée
+  par le fournil** (« les corrections de déclaration d'une journée »), sans
+  dépendre d'un fait qu'il n'a pas reçu. Rien n'est perdu.
+- **La part corrigée a un stockage** : une colonne
+  `production_batch.corrected_quantity` (entier, `0` par défaut, CHECK
+  `0 ≤ corrected_quantity ≤ quantity`). `outputOf` et `countedBatch`
+  (`day/domain/services/production-output.ts`) soustraient le corrigé :
+  « Faite », la fiche et le cron le voient. Migration additive, au lot N1.
+  `production_handoff` n'est pas touché.
+- **Le contrat du fait** : `production.output_corrected`, clé déterministe
+  `production.output_corrected:<id du problème>:<version>` (un second rouge
+  plus bas publie une seconde correction, avec sa propre version), charge :
+  le jour, le SKU, et **les fournées et leurs remises (`handoffId`) visées,
+  avec le N de chacune**. C'est ce qui permettra au colisage de ne jamais
+  corriger un total jour × SKU, et d'attendre qu'une remise soit reçue avant
+  de la corriger.
+- **Le retour et la correction** : la borne de `requestReturns` soustrait
+  aussi le corrigé (`remis − corrigé − rendu − retour en attente`), pour qu'un
+  retour ne redemande jamais une pièce qui n'existe pas.
+- **Rayé** : la § 10 sur le retour de l'excédent, la ligne N2 « retour de
+  l'excédent borné » (devient « correction de déclaration »), et le tableau
+  de la § 9 sur les demandes de retour (le rouge ne passe plus par là).
+
+### Ce qui attend le plan du colisage (noté, pas tranché)
+
+- L'ordre de livraison : une correction peut arriver avant la remise
+  qu'elle corrige ; l'abonné attend que les remises nommées soient reçues.
+- Le vrai invariant de la réserve : `packed + returned + sentToShop ≤
+received`, et les réservations des réassorts. La formule de la § 11 est
+  fausse ; le commentaire de `packing.prisma` cite un invariant périmé.
+- L'ordre des verrous (lire sans verrou, verrouiller les commandes par id,
+  puis la réserve, revérifier), le geste neuf « retirer du bac » par
+  `BinDesk` (`reportShortfall` ne retire rien), les commandes fermées,
+  chargées ou remises qui ne peuvent rien rendre.
+- **Selon le niveau du colisage** : en détaillé et en simple, une pièce au
+  bac a été posée par un humain, donc elle existe ; la correction ne la retire
+  pas, elle la signale au manager. En toujours vert seulement, le colisage la
+  retire.
+- La valeur `always_green` du colisage dépend de ce traitement, plus du
+  retour.
