@@ -5,8 +5,8 @@ quatre contradictions de `vitruve` ; leurs objections y sont intégrées et leur
 historique est dans git. Il bâtit les décisions de Hugo du 2026-11-17, prises
 dans la réflexion [`reflexion-fiche-simple.md`](reflexion-fiche-simple.md).
 Le plan touche à ce qui est facturé (une correction de ce qui est sorti) : il
-passe par `vitruve`. Les affirmations sur l'existant ont été vérifiées le
-2026-11-17 ; celles marquées **à vérifier** ne l'ont pas été.
+passe par `vitruve`. Toutes ses affirmations sur l'existant ont été
+vérifiées dans le code le 2026-11-17.
 
 ---
 
@@ -146,8 +146,8 @@ sequenceDiagram
   un réglage changé entre l'arrêt et ce premier passage (quelques minutes au
   plus, la fiche et le cron passant souvent) s'applique à la journée.
 - **Le niveau est servi par ligne** (`WorkshopLine.trackingLevel`) : en mode
-  boutique, un groupe-rayon mêle des lignes de postes différents. **À
-  vérifier en N1** : la façon dont `WorkshopGroup` rassemble les lignes.
+  boutique, un groupe-rayon mêle des lignes de postes différents. Servi par ligne, il vaut quel que soit le groupe où la ligne est rangée
+  (poste, rayon « à ranger » ou hors catalogue).
 
 ### 3.2 Les problèmes et le plafond
 
