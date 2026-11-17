@@ -460,3 +460,30 @@ Dans l'ordre de la table : la page (N4) est en ligne **avant** que le cron
   (`production-tracking-settings.controller.ts#setTracking`,
   `production-workstations.controller.ts#setTrackingLevel`), qui font rougir
   l'e2e `write-replay`.
+
+### Ce que N4 (partie serveur) a bâti, et ses choix (2026-11-17)
+
+- **Le rejeu** : les deux routes de réglage ont leur scénario
+  (`test/write-replay/production-scenarios.ts`, `TRACKING_SCENARIOS`).
+- **La fiche sert, par ligne**, `ceiling` (le sorti déclaré au dernier
+  rouge, traité ou non ; `null` sans rouge), `remainingUnderCeiling` (la
+  règle même de « Fait », `remainderUnderCeiling(quantity, ceiling,
+produced)`) et `problem` (`{ id, version, expected, produced, reason,
+reportedAt }`, le rouge **ouvert** seulement ; `null` une fois traité, le
+  plafond restant). Lu par un port neuf, `DayProblemsReader.allOf(day)`
+  (ISP : distinct du port de la Supervision, qui ne lit que les ouverts).
+  Les trois champs sont facultatifs dans le TYPE seulement, comme
+  `trackingLevel`. **Le cache** : rien à ajouter — la migration de N1 pose
+  sur `production_problem` les déclencheurs du journal de la journée
+  (insertion, mise à jour, suppression ; vérifié le 2026-11-17), et l'e2e
+  lit la fiche avant puis après un rouge.
+- **La page des postes** sert `trackingLevel: ProductionTrackingLevel | null`
+  sur chaque `WorkstationView` (champ requis : les doublés du front ont été
+  complétés).
+- **La page « Niveau de suivi »** lit `GET admin/production/settings/tracking`
+  (elle existait), qui sert désormais aussi `inServiceSince` (ISO, la valeur
+  du port `TrackingLevelsCommissioning`) et `inService` (mise en service
+  passée à l'horloge du serveur). Pas de route neuve : la liste des postes et
+  leur niveau viennent de `GET admin/production/workstations`.
+- **Pas fait ici** : la lecture du lien de la cloche (`?jour=…&ligne=…`) est
+  un geste du front, laissé à la partie Angular de N4.

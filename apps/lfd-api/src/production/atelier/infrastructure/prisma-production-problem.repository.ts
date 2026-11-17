@@ -8,6 +8,7 @@ import {
   type ProductionProblemState,
 } from "../domain/entities/production-problem.js";
 import {
+  DayProblemsReader,
   OpenProductionProblemsReader,
   ProductionProblemRepository,
 } from "../domain/ports/production-problem.ports.js";
@@ -127,6 +128,22 @@ export class PrismaOpenProductionProblemsReader extends OpenProductionProblemsRe
       where: { serviceDay: day.value, resolvedAt: null },
       select: PROBLEM_COLUMNS,
       orderBy: { reportedAt: "asc" },
+    });
+    return rows.map(stateOf);
+  }
+}
+
+/** Tous les problèmes d'une journée, ouverts et traités. */
+@Injectable()
+export class PrismaDayProblemsReader extends DayProblemsReader {
+  constructor(private readonly prisma: PrismaService) {
+    super();
+  }
+
+  async allOf(day: ServiceDay): Promise<readonly ProductionProblemState[]> {
+    const rows = await this.prisma.productionProblem.findMany({
+      where: { serviceDay: day.value },
+      select: PROBLEM_COLUMNS,
     });
     return rows.map(stateOf);
   }

@@ -1,3 +1,4 @@
+import { InMemoryProblems } from "../../__tests__/problem-doubles.js";
 import { instantToLocal } from "@lfd/contracts";
 
 import { DayVersionRegistry } from "../../../../../platform/day-versions/day-version-registry.js";
@@ -122,6 +123,7 @@ function around(outage: Outage = "none") {
       new UnreadWorkstationOfProducts(),
     ),
     ...trackingPorts(),
+    new InMemoryProblems().dayReader(),
   );
   const cache = new MemoryDayContents();
   const clock = new FixedClock(NOW);

@@ -10,7 +10,7 @@ import { WorkstationsService } from '../workstations.service';
 import { WorkstationsPage } from './workstations-page';
 
 const PAGE: WorkstationsPageView = {
-  workstations: [{ id: 'ws_p', name: 'Pâtisserie', position: 0 }],
+  workstations: [{ id: 'ws_p', name: 'Pâtisserie', position: 0, trackingLevel: null }],
   products: [
     {
       productSku: 'QUI',

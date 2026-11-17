@@ -3,12 +3,15 @@ import type {
   ProductionWorksheetView,
   QualityLineStatus,
   WorkshopLine,
+  WorkshopLineProblem,
   WorkshopWaitingOrders,
 } from "@lfd/contracts";
 
 import type { OvenWaitingOrders } from "../../../channels/packing/oven-waiting-orders.reader.js";
 import { deadlinesOf } from "../../../day/index.js";
 import type { TrancheThreshold } from "../../../day/index.js";
+import type { ProductionProblemState } from "../../domain/entities/production-problem.js";
+import { remainderUnderCeiling } from "../../domain/services/line-remainder.js";
 import type { WorksheetGroup } from "../../domain/services/production-worksheet-groups.js";
 import type { WorksheetLine } from "../../domain/services/production-worksheet.js";
 
@@ -28,6 +31,8 @@ export interface LineMarks {
   readonly waiting: ReadonlyMap<string, OvenWaitingOrders> | null;
   /** Le niveau de suivi de la ligne (plan des niveaux de suivi, § 3.1), servi par SKU. */
   readonly trackingLevelOf: (sku: string) => ProductionTrackingLevel;
+  /** Le problème de chaque SKU de la journée, traité ou non (§ 3.2) : le plafond survit au « traité ». */
+  readonly problems: ReadonlyMap<string, ProductionProblemState>;
 }
 
 /** Le domaine parle en `Date`, le contrat en ISO. La traduction vit ici. */
@@ -43,7 +48,35 @@ export function lineViewOf(marks: LineMarks): (line: WorksheetLine) => WorkshopL
     quality: marks.quality.get(line.sku) ?? null,
     waitingOrders: waitingOf(marks.waiting, line.sku),
     trackingLevel: marks.trackingLevelOf(line.sku),
+    ...ceilingOf(line, marks.problems.get(line.sku)),
   });
+}
+
+/**
+ * Le plafond, le reste sous le plafond et le rouge ouvert d'une ligne — la
+ * règle même de « Fait » (`remainderUnderCeiling`).
+ */
+function ceilingOf(
+  line: WorksheetLine,
+  problem: ProductionProblemState | undefined,
+): Pick<WorkshopLine, "ceiling" | "remainingUnderCeiling" | "problem"> {
+  const ceiling = problem?.produced ?? null;
+  return {
+    ceiling,
+    remainingUnderCeiling: remainderUnderCeiling(line.quantity, ceiling, line.produced),
+    problem: problem === undefined || problem.resolved !== null ? null : openProblemView(problem),
+  };
+}
+
+function openProblemView(problem: ProductionProblemState): WorkshopLineProblem {
+  return {
+    id: problem.id,
+    version: problem.version,
+    expected: problem.expected,
+    produced: problem.produced,
+    reason: problem.reason,
+    reportedAt: problem.reported.at.toISOString(),
+  };
 }
 
 /** Une copie au contrat ; `null` = aucune commande, ou colisage muet. */

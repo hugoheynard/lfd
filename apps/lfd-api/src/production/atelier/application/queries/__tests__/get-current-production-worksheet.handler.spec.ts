@@ -1,3 +1,4 @@
+import { InMemoryProblems } from "../../__tests__/problem-doubles.js";
 import { addDays, instantToLocal, localToInstant } from "@lfd/contracts";
 
 import { InMemoryDisplaySettings } from "../../../../shared/print/application/__tests__/production-display-settings-doubles.js";
@@ -119,6 +120,7 @@ function handlerFor(days: Days, now: Date = NOW): GetCurrentProductionWorksheetH
     new InMemoryDisplaySettings().reader(),
     new GroupingSourceReading(...placementPorts()),
     ...trackingPorts(),
+    new InMemoryProblems().dayReader(),
   );
   return new GetCurrentProductionWorksheetHandler(
     days,

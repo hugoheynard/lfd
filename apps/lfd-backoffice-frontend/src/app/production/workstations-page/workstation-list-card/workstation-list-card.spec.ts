@@ -70,8 +70,8 @@ function product(
 }
 
 const STATIONS: readonly WorkstationView[] = [
-  { id: 'ws_a', name: 'Boulangerie', position: 0 },
-  { id: 'ws_b', name: 'Pâtisserie', position: 1 },
+  { id: 'ws_a', name: 'Boulangerie', position: 0, trackingLevel: null },
+  { id: 'ws_b', name: 'Pâtisserie', position: 1, trackingLevel: null },
 ];
 
 let api: FakeWorkstations;
@@ -172,7 +172,7 @@ describe('les postes du fournil', () => {
 
   it('« Partir des rayons » reprend un poste qui porte déjà le nom du rayon', async () => {
     const { fixture } = await mount(
-      [{ id: 'ws_v', name: 'Viennoiserie', position: 0 }],
+      [{ id: 'ws_v', name: 'Viennoiserie', position: 0, trackingLevel: null }],
       [product('CRO', VIENNOISERIE)],
     );
 

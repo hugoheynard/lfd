@@ -1,6 +1,7 @@
 import type { CatalogFamilyView } from "@lfd/contracts";
 
 import type { ProductionArticle } from "../../../../channels/commerce/index.js";
+import type { WorkstationListing } from "../../../domain/ports/workstation-map.reader.js";
 import { workstationsPageOf } from "../workstations-page.js";
 
 const SAVORY: CatalogFamilyView = {
@@ -27,8 +28,8 @@ function article(
   };
 }
 
-const LISTING = {
-  workstations: [{ id: "ws_pastry", name: "Pâtisserie", position: 0 }],
+const LISTING: WorkstationListing = {
+  workstations: [{ id: "ws_pastry", name: "Pâtisserie", position: 0, trackingLevel: "detailed" }],
   placements: new Map([
     ["QUI-001", "ws_pastry"],
     ["OLD-009", "ws_pastry"],
@@ -104,5 +105,24 @@ describe("workstationsPageOf — la page Postes", () => {
     );
 
     expect(page.unplacedCount).toBe(2);
+  });
+
+  it("sert le niveau de suivi propre de chaque poste (niveaux de suivi, § 3.1)", () => {
+    const page = workstationsPageOf(
+      {
+        workstations: [
+          ...LISTING.workstations,
+          { id: "ws_bread", name: "Boulangerie", position: 1, trackingLevel: null },
+        ],
+        placements: new Map(),
+      },
+      [],
+      [],
+    );
+
+    expect(page.workstations).toEqual([
+      { id: "ws_pastry", name: "Pâtisserie", position: 0, trackingLevel: "detailed" },
+      { id: "ws_bread", name: "Boulangerie", position: 1, trackingLevel: null },
+    ]);
   });
 });

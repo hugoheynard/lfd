@@ -37,13 +37,19 @@ export class PrismaWorkstationMapReader extends WorkstationMapReader {
 
   async listing(): Promise<WorkstationListing> {
     const [workstations, placements] = await Promise.all([
-      this.prisma.productionWorkstation.findMany(ACTIVE_STATIONS),
+      this.prisma.productionWorkstation.findMany({
+        ...ACTIVE_STATIONS,
+        select: { ...ACTIVE_STATIONS.select, trackingLevel: true },
+      }),
       this.prisma.productionWorkstationProduct.findMany({
         select: { productSku: true, workstationId: true },
       }),
     ]);
     return {
-      workstations,
+      workstations: workstations.map((station) => ({
+        ...station,
+        trackingLevel: trackingLevelOrNull(station.trackingLevel),
+      })),
       placements: new Map(placements.map((row) => [row.productSku, row.workstationId])),
     };
   }

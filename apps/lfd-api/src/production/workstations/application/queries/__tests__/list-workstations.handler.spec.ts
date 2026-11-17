@@ -20,7 +20,9 @@ const NOW = new Date("2026-11-16T11:00:00.000Z");
 class FixedListing extends WorkstationMapReader {
   listing(): Promise<WorkstationListing> {
     return Promise.resolve({
-      workstations: [{ id: "ws_pastry", name: "Pâtisserie", position: 0 }],
+      workstations: [
+        { id: "ws_pastry", name: "Pâtisserie", position: 0, trackingLevel: "detailed" },
+      ],
       placements: new Map([["QUI-001", "ws_pastry"]]),
     });
   }

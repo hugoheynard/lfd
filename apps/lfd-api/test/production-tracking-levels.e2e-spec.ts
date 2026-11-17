@@ -18,7 +18,11 @@
  * production (`TRACKING_LEVELS_SINCE`) est encore à venir, et aucune journée
  * de test ne serait figée.
  */
-import type { CreatedIdResponse, ProductionTrackingView } from "@lfd/contracts";
+import type {
+  CreatedIdResponse,
+  ProductionTrackingView,
+  WorkstationsPageView,
+} from "@lfd/contracts";
 import { checkJournalFact } from "@lfd/contracts/journal-facts";
 
 import { DayTrackingLevelsFreezing } from "../src/production/atelier/application/services/day-tracking-levels-freezing.service.js";
@@ -99,13 +103,18 @@ function freeze() {
 
 describe("le niveau de suivi du fournil", () => {
   it("vaut toujours vert à quinze minutes tant que personne ne l'a posé", async () => {
-    expect(await tracking()).toEqual({ level: "always_green", marginMinutes: 15 });
+    expect(await tracking()).toEqual({
+      level: "always_green",
+      marginMinutes: 15,
+      inServiceSince: new Date(0).toISOString(),
+      inService: true,
+    });
   });
 
   it("se pose, fige l'auteur et écrit un fait conforme au contrat", async () => {
     await setTracking("simple", 20);
 
-    expect(await tracking()).toEqual({ level: "simple", marginMinutes: 20 });
+    expect(await tracking()).toMatchObject({ level: "simple", marginMinutes: 20 });
     const row = await ctx.prisma.productionTrackingSettings.findUniqueOrThrow({
       where: { key: "house" },
     });
@@ -192,6 +201,12 @@ describe("le niveau figé d'une journée arrêtée", () => {
 
     expect(levels.house).toBe("always_green");
     expect(levels.workstations.get(pastry)).toBe("detailed");
+    const page = jsonBody<WorkstationsPageView>(
+      await ctx.asSub(STAFF).get(WORKSTATIONS).expect(200),
+    );
+    expect(page.workstations).toEqual([
+      expect.objectContaining({ id: pastry, trackingLevel: "detailed" }),
+    ]);
     expect((await worksheetLine(ctx)).trackingLevel).toBe("detailed");
     const fact = await ctx.prisma.activityEvent.findFirstOrThrow({
       where: { type: "production_workstation.tracking_level_set" },

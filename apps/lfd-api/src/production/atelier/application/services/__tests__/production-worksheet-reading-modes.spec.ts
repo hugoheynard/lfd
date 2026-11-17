@@ -1,3 +1,4 @@
+import { InMemoryProblems } from "../../__tests__/problem-doubles.js";
 import { instantToLocal, type CatalogFamilyView, type WorkshopLine } from "@lfd/contracts";
 
 import { FixedDueThresholds } from "../../../../channels/commerce/__tests__/due-thresholds-doubles.js";
@@ -115,6 +116,7 @@ function subject(
     display.reader(),
     groupingReading,
     ...trackingPorts(tracking, groupingReading),
+    new InMemoryProblems().dayReader(),
   );
   return { reading, articles };
 }

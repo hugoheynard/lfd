@@ -1083,6 +1083,7 @@ export type {
   ProductionPackingView,
 } from "./production-packing.js";
 export type { WorkshopWaitingOrders } from "./production-worksheet.js";
+export type { WorkshopLineProblem } from "./production-worksheet.js";
 export type {
   ReleasedToReserveLine,
   WithdrawnPackingSheet,

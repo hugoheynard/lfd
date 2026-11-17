@@ -32,7 +32,12 @@ export function workstationsPageOf(
   const orderedSkus = new Set(ordered.map((article) => article.sku));
   const products = productsOf(listing, articles, orderedSkus);
   return {
-    workstations: listing.workstations.map(({ id, name, position }) => ({ id, name, position })),
+    workstations: listing.workstations.map(({ id, name, position, trackingLevel }) => ({
+      id,
+      name,
+      position,
+      trackingLevel,
+    })),
     products,
     offCatalog: offCatalogOf(articles, ordered),
     unplacedCount: products.filter((product) => product.workstationId === null).length,

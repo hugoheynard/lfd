@@ -1,8 +1,12 @@
+import type { ProductionTrackingLevel } from "@lfd/contracts";
+
 /** Un poste en service, tel que la page le lit. */
 export interface ListedWorkstation {
   readonly id: string;
   readonly name: string;
   readonly position: number;
+  /** Son niveau de suivi propre ; `null` : il suit le fournil. */
+  readonly trackingLevel: ProductionTrackingLevel | null;
 }
 
 /** Les postes en service et le poste de chaque produit placé. */

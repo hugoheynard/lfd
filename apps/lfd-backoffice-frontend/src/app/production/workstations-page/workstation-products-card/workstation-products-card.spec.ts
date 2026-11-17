@@ -36,7 +36,9 @@ function product(
   };
 }
 
-const STATIONS: readonly WorkstationView[] = [{ id: 'ws_p', name: 'Pâtisserie', position: 0 }];
+const STATIONS: readonly WorkstationView[] = [
+  { id: 'ws_p', name: 'Pâtisserie', position: 0, trackingLevel: null },
+];
 
 const PRODUCTS = [
   product('CRO', VIENNOISERIE, { workstationId: 'ws_p', ordered: true }),

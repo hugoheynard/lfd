@@ -6,6 +6,7 @@ import {
   PRODUCTION_GROUPINGS,
   PRODUCTION_TRACKING_LEVELS,
   type ProductionGrouping,
+  type ProductionTrackingLevel,
 } from "./production-settings.js";
 import type { WorkshopGroupKind } from "./production-worksheet.js";
 
@@ -90,6 +91,11 @@ export interface WorkstationView {
   readonly id: string;
   readonly name: string;
   readonly position: number;
+  /**
+   * Son niveau de suivi propre (plan `documentation/fournil/plan-niveaux-de-suivi.md`,
+   * § 3.1) ; `null` : le poste suit le fournil.
+   */
+  readonly trackingLevel: ProductionTrackingLevel | null;
 }
 
 /** Une déclinaison d'un produit, pour information sous son produit. */

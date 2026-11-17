@@ -34,6 +34,7 @@ import { servedWorksheet } from "../worksheet-content.js";
 import { WorksheetDeadlinesReading } from "../worksheet-deadlines-reading.service.js";
 import { placementPorts } from "../../../../workstations/application/__tests__/placement-doubles.js";
 import { trackingPorts } from "../../__tests__/tracking-doubles.js";
+import { InMemoryProblems } from "../../__tests__/problem-doubles.js";
 
 /**
  * Les paliers et la pastille qualité d'une ligne de la fiche (plan
@@ -114,8 +115,9 @@ function readingWith(
   due: DayDueThresholds | "down",
   checks: CheckTable,
   waiting: FixedOvenWaitingOrders = new FixedOvenWaitingOrders(),
+  problems: InMemoryProblems = new InMemoryProblems(),
 ): { read(day: ServiceDay): Promise<ProductionWorksheetView> } {
-  const reading = bareReading(due, checks, waiting);
+  const reading = bareReading(due, checks, waiting, problems);
   return { read: async (day) => servedWorksheet(await reading.contentOf(day), NOW) };
 }
 
@@ -123,6 +125,7 @@ function bareReading(
   due: DayDueThresholds | "down",
   checks: CheckTable,
   waiting: FixedOvenWaitingOrders = new FixedOvenWaitingOrders(),
+  problems: InMemoryProblems = new InMemoryProblems(),
 ): ProductionWorksheetReading {
   const settings = new InMemoryTrancheSettings(
     ProductionTrancheSettings.set("fixed", ["05:00", "07:00"]),
@@ -138,6 +141,7 @@ function bareReading(
     new InMemoryDisplaySettings().reader(),
     new GroupingSourceReading(...placementPorts()),
     ...trackingPorts(),
+    problems.dayReader(),
   );
 }
 
@@ -241,5 +245,69 @@ describe("ProductionWorksheetReading — ce qui attend le four (§3)", () => {
     expect(view.lines).toHaveLength(2);
     expect(view.lines.every((line) => line.waitingOrders === null)).toBe(true);
     expect(view.lines.find((line) => line.sku === SEIGLE)?.deadlines).toHaveLength(2);
+  });
+});
+
+/** Un rouge sur une ligne de la journée, rangé tel que le dépôt le relit. */
+function reported(
+  problems: InMemoryProblems,
+  sku: string,
+  produced: number,
+  resolved: boolean,
+): void {
+  const mark = { at: TIRAGE, staffId: "staff_1", name: "Léa" };
+  problems.rows.set(`pb_${sku}`, {
+    id: `pb_${sku}`,
+    serviceDay: DAY.value,
+    sku,
+    expected: 30,
+    produced,
+    reason: "brûlé",
+    reported: mark,
+    resolved: resolved ? mark : null,
+    version: 2,
+  });
+}
+
+describe("ProductionWorksheetReading — plafond et rouge ouvert (niveaux de suivi, § 3.2)", () => {
+  it("sert le plafond, le reste sous le plafond et le rouge ouvert de la ligne", async () => {
+    const problems = new InMemoryProblems();
+    reported(problems, SEIGLE, 18, false);
+    const sheet = await readingWith(DUE, new CheckTable(), undefined, problems).read(DAY);
+    const seigle = sheet.lines.find((line) => line.sku === SEIGLE);
+    expect(seigle).toMatchObject({
+      ceiling: 18,
+      remainingUnderCeiling: 18,
+      problem: {
+        id: `pb_${SEIGLE}`,
+        version: 2,
+        expected: 30,
+        produced: 18,
+        reason: "brûlé",
+        reportedAt: TIRAGE.toISOString(),
+      },
+    });
+  });
+
+  it("garde le plafond d'un rouge traité, sans plus le montrer ouvert", async () => {
+    const problems = new InMemoryProblems();
+    reported(problems, SEIGLE, 18, true);
+    const sheet = await readingWith(DUE, new CheckTable(), undefined, problems).read(DAY);
+    expect(sheet.lines.find((line) => line.sku === SEIGLE)).toMatchObject({
+      ceiling: 18,
+      remainingUnderCeiling: 18,
+      problem: null,
+    });
+  });
+
+  it("une ligne sans rouge n'a ni plafond ni problème, et son reste est le reste", async () => {
+    const problems = new InMemoryProblems();
+    reported(problems, SEIGLE, 18, false);
+    const sheet = await readingWith(DUE, new CheckTable(), undefined, problems).read(DAY);
+    expect(sheet.lines.find((line) => line.sku === BAGUETTE)).toMatchObject({
+      ceiling: null,
+      remainingUnderCeiling: 12,
+      problem: null,
+    });
   });
 });

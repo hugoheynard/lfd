@@ -82,7 +82,7 @@ describe("Prod manager › Postes — les gestes", () => {
       .expect(204);
 
     expect((await page()).workstations).toEqual([
-      { id: pastry, name: "Pâtisserie fine", position: 0 },
+      { id: pastry, name: "Pâtisserie fine", position: 0, trackingLevel: null },
     ]);
     const written = await facts();
     expect(written.map((fact) => fact.type)).toEqual([

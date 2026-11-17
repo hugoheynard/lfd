@@ -25,3 +25,12 @@ export abstract class ProductionProblemRepository {
 export abstract class OpenProductionProblemsReader {
   abstract openOf(day: ServiceDay): Promise<readonly ProductionProblemState[]>;
 }
+
+/**
+ * **Les problèmes d'une journée, traités compris** — port de LECTURE (ISP) :
+ * la fiche en tire le plafond de chaque ligne, qui survit au « traité », et
+ * le problème encore ouvert. Aucun geste ne passe par lui.
+ */
+export abstract class DayProblemsReader {
+  abstract allOf(day: ServiceDay): Promise<readonly ProductionProblemState[]>;
+}

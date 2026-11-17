@@ -1,3 +1,4 @@
+import { InMemoryProblems } from "../../__tests__/problem-doubles.js";
 import {
   orderLine,
   producibleOrder,
@@ -148,6 +149,7 @@ function handlerFor(
         display.reader(),
         new GroupingSourceReading(shelves, new UnreadWorkstationOfProducts()),
         ...trackingPorts(),
+        new InMemoryProblems().dayReader(),
       ),
       new FixedClock(NOW),
     ),

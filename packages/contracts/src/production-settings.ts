@@ -92,6 +92,13 @@ export interface ProductionTrackingView {
   readonly level: ProductionTrackingLevel;
   /** Minutes ajoutées à l'heure d'un palier avant de le réputer sorti. */
   readonly marginMinutes: number;
+  /**
+   * La mise en service des niveaux de suivi (`TRACKING_LEVELS_SINCE`), ISO
+   * 8601 : une journée arrêtée avant reste en détaillé.
+   */
+  readonly inServiceSince: string;
+  /** La mise en service est passée : la prochaine journée arrêtée suivra ce niveau. */
+  readonly inService: boolean;
 }
 
 /**

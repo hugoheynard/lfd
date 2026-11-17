@@ -15,10 +15,12 @@ import { BatchRecording } from "./application/services/batch-recording.service.j
 import { OutputCorrecting } from "./application/services/output-correcting.service.js";
 import { ProblemBell } from "./application/services/problem-bell.js";
 import {
+  DayProblemsReader,
   OpenProductionProblemsReader,
   ProductionProblemRepository,
 } from "./domain/ports/production-problem.ports.js";
 import {
+  PrismaDayProblemsReader,
   PrismaOpenProductionProblemsReader,
   PrismaProductionProblemRepository,
 } from "./infrastructure/prisma-production-problem.repository.js";
@@ -163,6 +165,7 @@ import { ProductionBatchShortcutsModule } from "./production-batch-shortcuts.mod
     ListOpenProductionProblemsHandler,
     { provide: ProductionProblemRepository, useClass: PrismaProductionProblemRepository },
     { provide: OpenProductionProblemsReader, useClass: PrismaOpenProductionProblemsReader },
+    { provide: DayProblemsReader, useClass: PrismaDayProblemsReader },
   ],
 })
 export class ProductionAtelierModule {}

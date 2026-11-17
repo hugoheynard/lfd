@@ -65,6 +65,24 @@ const WORKSHEET_SCENARIOS: ScenarioSet = {
   },
 };
 
+const TRACKING_SETTINGS = "production/atelier/http/production-tracking-settings.controller.ts";
+
+/** Les réglages de suivi par intention (plan `fournil/plan-niveaux-de-suivi.md`, N1). */
+const TRACKING_SCENARIOS: ScenarioSet = {
+  [routeKey(TRACKING_SETTINGS, "setTracking")]: () =>
+    Promise.resolve({
+      sub: STAFF,
+      path: "/admin/production/settings/tracking",
+      body: { level: "simple", marginMinutes: 20 },
+    }),
+
+  [routeKey(CONTROLLER, "setTrackingLevel")]: async ({ ctx }) => ({
+    sub: STAFF,
+    path: `${WORKSTATIONS}/${await workstation(ctx, "Pâtisserie")}/tracking-level`,
+    body: { trackingLevel: "detailed" },
+  }),
+};
+
 /** Les postes du fournil (plan `fournil/les-postes-du-fournil.md`, W1). */
 export const PRODUCTION_SCENARIOS: ScenarioSet = {
   [routeKey(CONTROLLER, "declare")]: () =>
@@ -94,4 +112,5 @@ export const PRODUCTION_SCENARIOS: ScenarioSet = {
   }),
 
   ...WORKSHEET_SCENARIOS,
+  ...TRACKING_SCENARIOS,
 };

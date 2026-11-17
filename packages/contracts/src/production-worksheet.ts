@@ -137,6 +137,25 @@ export interface WorkshopLine {
    */
   readonly trackingLevel?: ProductionTrackingLevel;
   /**
+   * **Le plafond de la ligne** (plan `documentation/fournil/plan-niveaux-de-suivi.md`,
+   * § 3.2) : le sorti déclaré au dernier rouge, qui survit au « traité ».
+   * `null` : la ligne n'a jamais eu de rouge ce jour.
+   * Facultatif dans le TYPE seulement : le serveur l'envoie toujours.
+   */
+  readonly ceiling?: number | null;
+  /**
+   * **Le reste à sortir sous le plafond** — `min(quantity, ceiling) − produced`,
+   * jamais négatif : ce que « Fait » déclarerait. Sans plafond, `remaining`.
+   * Facultatif dans le TYPE seulement : le serveur l'envoie toujours.
+   */
+  readonly remainingUnderCeiling?: number;
+  /**
+   * **Le problème ouvert de la ligne** — le rouge que personne n'a encore
+   * marqué traité. `null` : aucun, ou traité (le plafond, lui, reste).
+   * Facultatif dans le TYPE seulement : le serveur l'envoie toujours.
+   */
+  readonly problem?: WorkshopLineProblem | null;
+  /**
    * **Ce qui presse** — les commandes du jour dont une ligne de ce SKU attend
    * le four, telles que le colisage les compte (« 1 commande attend · remise
    * 8 h 45 »), sans nom de client. `null` = aucune n'attend.
@@ -146,6 +165,20 @@ export interface WorkshopLine {
    * seulement : le serveur l'envoie toujours.
    */
   readonly waitingOrders?: WorkshopWaitingOrders | null;
+}
+
+/** Le rouge ouvert d'une ligne, pour le panneau « Combien est réellement sorti ? ». */
+export interface WorkshopLineProblem {
+  readonly id: string;
+  /** Monte à chaque rouge sur la ligne. */
+  readonly version: number;
+  /** La quantité de la ligne au compte, au moment du rouge. */
+  readonly expected: number;
+  /** Le sorti déclaré : le plafond. */
+  readonly produced: number;
+  readonly reason: string | null;
+  /** ISO 8601. */
+  readonly reportedAt: string;
 }
 
 /** Les commandes qui attendent le four pour un SKU. */

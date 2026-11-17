@@ -8,6 +8,7 @@ import {
   type ProductionProblemState,
 } from "../../domain/entities/production-problem.js";
 import {
+  DayProblemsReader,
   OpenProductionProblemsReader,
   ProductionProblemRepository,
 } from "../../domain/ports/production-problem.ports.js";
@@ -29,6 +30,11 @@ export class InMemoryProblems {
 
   reader(): OpenProductionProblemsReader {
     return new OpenProblemsReaderOver(this);
+  }
+
+  /** Les problèmes de la journée, traités compris : ce que la fiche lit. */
+  dayReader(): DayProblemsReader {
+    return new DayProblemsReaderOver(this);
   }
 
   /** Le problème d'une ligne, ou `undefined`. */
@@ -69,6 +75,18 @@ class OpenProblemsReaderOver extends OpenProductionProblemsReader {
       [...this.table.rows.values()].filter(
         (row) => row.serviceDay === day.value && row.resolved === null,
       ),
+    );
+  }
+}
+
+class DayProblemsReaderOver extends DayProblemsReader {
+  constructor(private readonly table: InMemoryProblems) {
+    super();
+  }
+
+  allOf(day: ServiceDay): Promise<readonly ProductionProblemState[]> {
+    return Promise.resolve(
+      [...this.table.rows.values()].filter((row) => row.serviceDay === day.value),
     );
   }
 }

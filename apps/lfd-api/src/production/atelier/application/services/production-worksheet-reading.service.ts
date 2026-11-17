@@ -8,6 +8,7 @@ import {
 } from "../../../channels/packing/oven-waiting-orders.reader.js";
 import { ProductionDisplaySettings } from "../../../shared/print/index.js";
 import { ProductionDisplaySettingsReader } from "../../../shared/print/index.js";
+import { DayProblemsReader } from "../../domain/ports/production-problem.ports.js";
 import { ProductionContainerReader } from "../../domain/ports/production-container.reader.js";
 import { ProductionDayRepository } from "../../../day/index.js";
 import { QualityLineStatusReader } from "../../../quality/index.js";
@@ -74,6 +75,12 @@ import { WorksheetTrackingLevelsReading } from "./worksheet-tracking-levels.js";
  * Des postes illisibles servent les lignes en détaillé, et la fiche n'est pas
  * gardée.
  *
+ * ## Le plafond et le rouge ouvert de chaque ligne (§ 3.2)
+ *
+ * Les problèmes de la journée, traités compris : le plafond survit au
+ * « traité », le panneau rouge ne montre que l'ouvert. La table écrit au
+ * journal de la journée par déclencheur : un rouge fait relire la fiche.
+ *
  * ## Sans horloge
  *
  * Le contenu ne lit pas l'heure : il se range tel quel dans l'objet des
@@ -100,6 +107,7 @@ export class ProductionWorksheetReading {
     private readonly grouping: GroupingSourceReading,
     private readonly tracking: DayTrackingLevelsReading,
     private readonly lineLevels: WorksheetTrackingLevelsReading,
+    private readonly problems: DayProblemsReader,
   ) {}
 
   /** Le contenu de la fiche d'une journée, sans rien qui dépende de l'heure. */
@@ -107,18 +115,29 @@ export class ProductionWorksheetReading {
     // La journée part avec les autres lectures ; les pastilles la suivent, car
     // un verdict se périme contre le compte ACTUEL de la journée.
     const loading = this.days.load(day);
-    const [current, expected, producible, containers, tranches, quality, waiting, display, levels] =
-      await Promise.all([
-        loading,
-        this.expected.expectedBetween(ServiceRange.of(day.value, day.value)),
-        this.orders.producibleFor(day),
-        this.containers.allBySku(),
-        this.deadlines.read(day),
-        loading.then((loaded) => this.quality.linesOf(loaded)),
-        this.waitingOrNull(day),
-        this.display.current(),
-        loading.then((loaded) => this.tracking.levelsOf(day, loaded)),
-      ]);
+    const [
+      current,
+      expected,
+      producible,
+      containers,
+      tranches,
+      quality,
+      waiting,
+      display,
+      levels,
+      problems,
+    ] = await Promise.all([
+      loading,
+      this.expected.expectedBetween(ServiceRange.of(day.value, day.value)),
+      this.orders.producibleFor(day),
+      this.containers.allBySku(),
+      this.deadlines.read(day),
+      loading.then((loaded) => this.quality.linesOf(loaded)),
+      this.waitingOrNull(day),
+      this.display.current(),
+      loading.then((loaded) => this.tracking.levelsOf(day, loaded)),
+      this.problems.allOf(day),
+    ]);
 
     // 🔴 Le filtre par `orderId` n'est pas un confort. La clôture publie un
     // événement en processus, ni persisté ni rejoué : un abonné en échec laisse
@@ -153,6 +172,7 @@ export class ProductionWorksheetReading {
       quality: new Map(quality.map((status) => [status.sku, status])),
       waiting,
       trackingLevelOf: tracked.levelOf,
+      problems: new Map(problems.map((problem) => [problem.sku, problem])),
     });
     const sheet = {
       date: day.value,

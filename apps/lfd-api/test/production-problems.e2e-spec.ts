@@ -211,3 +211,35 @@ describe("la Supervision des problèmes", () => {
     expect(checkJournalFact(fact.type, fact.payload)).toBeNull();
   });
 });
+
+describe("la fiche sert le plafond et le rouge ouvert (N4)", () => {
+  it("relit la fiche après un rouge, sert le plafond, puis le garde une fois traité", async () => {
+    await closedDayOfTwentyFour();
+    await recordBatch(ctx, FIRST, 12);
+    // Lue AVANT le rouge : le cache de la fiche doit suivre la table des problèmes.
+    expect(await worksheetLine(ctx)).toMatchObject({
+      ceiling: null,
+      remainingUnderCeiling: 12,
+      problem: null,
+    });
+
+    await red({ produced: 10, reason: "brûlé" }).expect(204);
+    await settle();
+
+    const line = await worksheetLine(ctx);
+    expect(line).toMatchObject({
+      produced: 10,
+      ceiling: 10,
+      remainingUnderCeiling: 0,
+      problem: { version: 1, expected: 24, produced: 10, reason: "brûlé" },
+    });
+    await ctx
+      .asSub(STAFF)
+      .post(`${PROBLEMS}/${line.problem?.id ?? ""}/resolve`)
+      .set(INTENT_KEY, freshIntent())
+      .send()
+      .expect(204);
+
+    expect(await worksheetLine(ctx)).toMatchObject({ ceiling: 10, problem: null });
+  });
+});
