@@ -6,7 +6,8 @@ réflexion [`reflexion-fiche-simple.md`](reflexion-fiche-simple.md) (décisions
 simple a sa propre réflexion et viendra après. Le plan touche au manque, donc
 à ce qui est facturé : il passe par `vitruve`. Ses affirmations sur l'existant
 ont été vérifiées le 2026-11-17 ; celles marquées **à vérifier** ne l'ont pas
-été.
+été. **La § 6 corrige les §§ 2 à 5 après la contradiction de `vitruve`, et
+prime.**
 
 ---
 
@@ -197,3 +198,91 @@ démonstration (`/reglages/niveau-de-suivi/apercu`) reste à côté.
 - **Q3** — Le rouge peut-il dire **plus** que prévu (« 130 sortis » sur 120) ?
   Proposé : non en « toujours vert » (le surplus se déclare en détaillé),
   oui en « simple ».
+
+---
+
+## 6. Après la contradiction de `vitruve` (2026-11-17) — prime sur les §§ 2 à 5
+
+### Décisions de Hugo
+
+- **Q1 — toujours vert par défaut.** Deux précautions : un changement de
+  niveau (du fournil ou d'un poste) **ne prend effet qu'à la journée suivante**,
+  jamais au milieu d'une journée déjà commencée ; et la page « Niveau de
+  suivi » est **en ligne avant** que la fournée automatique ne s'active (le
+  lot N4 de la page passe avant N3).
+
+### Le rouge, refondu sur la demande de retour (bloquant 1)
+
+Le § 2 se trompait. Sur une journée arrêtée, ce qui est le cas de toute
+journée réelle (`packing_owner = packing`, `day/domain/entities/production-day.ts`),
+**annuler une fournée déjà remise n'annule rien** : `CancelBatchCommand` émet
+une **demande de retour** au colisage (`production.return_requested`), et la
+réponse du colisage fixe ce qui revient, éventuellement moins que la fournée.
+Une fournée automatique est toujours remise dès sa déclaration. Donc :
+
+- **Le rouge pose un plafond** : « pour ce jour et ce SKU, il est sorti
+  `produced` ». Il est **persistant** (`production_problem`, un par jour et
+  SKU au plus, ouvert ou traité).
+- **Si ce qui est sorti dépasse le plafond**, le rouge demande au colisage le
+  **retour** des fournées automatiques en trop, par le geste d'annulation
+  existant (qui, sur une journée arrêtée, demande le retour). Le colisage
+  répond comme aujourd'hui ; sa réponse fixe le « sorti ». Ce qui est déjà
+  dans des commandes et ne revient pas passe par le **manque du colisage**.
+- **Si ce qui est sorti est en dessous** (cas du simple), le rouge déclare la
+  différence par `RecordBatchCommand`.
+- **Aucune « part annulable » partielle** n'est inventée : seule la réponse du
+  colisage fractionne.
+- La cloche sonne **après la validation** (`AfterCommit`), pas dans la
+  transaction : un rouge qui échoue ne fait pas vibrer les téléphones.
+
+### La fournée automatique, refondue (bloquants 2, 3 et 4, sérieux)
+
+- **La cible** d'une ligne, à un instant : le **minimum** entre le cumul des
+  paliers échus (heure + marge), la **quantité au compte** du jour, et le
+  **plafond** d'un rouge s'il y en a un. Le plafond ne disparaît pas quand le
+  problème est marqué traité : le cron ne redéclare jamais ce que l'équipe a
+  dit manquer.
+- **La quantité** déclarée est `cible − sorti`, si elle est positive.
+- **L'`id`** est tiré de l'état : `auto-<jour>-<sku>-<cible>-<sorti>`. Deux
+  passages sur le même état rejouent la même charge et n'écrivent rien ; un
+  état différent donne un autre `id`, donc jamais de `BatchConflictError` en
+  boucle.
+- **Le tour ne traite que** les journées arrêtées et les SKU au compte, et
+  **isole chaque ligne** : une ligne en erreur se journalise, les autres
+  continuent, comme le tour de l'arrêt automatique.
+- **Une ligne sans palier** (SKU sans tranche, ou besoins du commerce
+  illisibles) n'est **pas** complétée automatiquement : elle reste à faire et
+  s'affiche « à confirmer » dans la Supervision. **Doute écrit** : un défaut
+  plus confortable (compléter au compte à une heure fixe) reste possible, à
+  décider à l'usage.
+- **La cadence** est celle des crons existants, **toutes les 5 minutes**
+  (`apps/lfd-api/wrangler.jsonc`), par une route `admin/production/...`
+  appelée par le Worker comme `admin/production/auto-close`, sous
+  `RecomputeGuard`. **La journée en cours** est celle que la fiche d'atelier
+  choisit déjà au serveur, à l'heure de Paris.
+- **L'auteur** des fournées automatiques est un compte de service nommé
+  (`system:always-green`) ; le registre RGPD de `production_batch.recorded_by`
+  dit « membre du staff, ou le système ».
+- Le cron vit dans **`atelier/`**, qui porte déjà les gestes de la fiche et
+  lit `workstations/` (arête admise).
+
+### Le reste
+
+- **Le cache de la fiche** (`WorksheetContents`) gagne deux versions dans sa
+  clé : celle du réglage de suivi du fournil et celle des problèmes ;
+  `setTrackingLevel` (à créer sur `WorkstationMap`) fait monter la version de
+  la carte des postes.
+- **Les portes** : `production_problem.author` et `resolved_by` au registre
+  RGPD ; « Fait », « Problème » et le niveau d'un poste par intention,
+  « Marquer traité » aussi, et la route du cron `@Idempotent` ; un **fait
+  journalisé** par problème (`production.problem_reported`,
+  `production.problem_resolved`), puisqu'il touche à ce qui est facturé.
+- **Q3 retirée** : le code accepte déjà un surplus (« une ligne complète n'est
+  pas un refus, c'est un surplus ») ; le rouge peut dire plus que prévu, dans
+  tous les niveaux.
+- **À vérifier en N1** : comment `WorkshopGroup` mêle les postes en mode
+  boutique (un groupe-rayon contient des lignes de postes différents) — le
+  niveau est alors servi **par ligne**, pas par groupe, et le `@switch` du
+  front porte sur la ligne.
+- **L'ordre des lots** devient : N1, N2, **N4** (la page et la fiche), puis
+  **N3** (le cron), puis N5.
