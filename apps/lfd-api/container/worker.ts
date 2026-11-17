@@ -634,6 +634,26 @@ async function triggerAutoClose(env: Env): Promise<void> {
 }
 
 /**
+ * Réveille le container et passe le tour de la fournée automatique (plan
+ * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.7) : pour aujourd'hui
+ * et demain, chaque journée arrêtée déclare ce que ses paliers échus disent
+ * sorti, ligne par ligne, en toujours vert.
+ *
+ * Sur le cron de RAFRAÎCHISSEMENT : un palier est réputé sorti à son heure
+ * plus la marge, à cinq minutes près. Même porte et même jeton que l'arrêt du
+ * plan ; idempotent — une fournée par état de ligne, sous un `id` déterminé.
+ * Indépendant de l'arrêt : une journée arrêtée par ce même passage est prise
+ * au suivant.
+ */
+async function triggerAlwaysGreen(env: Env): Promise<void> {
+  const token = env.RECOMPUTE_TOKEN;
+  if (!token) {
+    return;
+  }
+  await postSweep(env, token, "admin/production/tracking/always-green");
+}
+
+/**
  * Réveille le container et passe la cloche « hors tournée » de la livraison :
  * le jour de livraison est aujourd'hui, ou demain passé 16 h, le plan est
  * arrêté, et des livraisons ne sont dans aucune tournée (composition
@@ -776,6 +796,7 @@ async function refreshSweeps(env: Env): Promise<void> {
     triggerOutboxSweep(env),
     triggerMailRequestsSweep(env),
     triggerAutoClose(env),
+    triggerAlwaysGreen(env),
     triggerRoundsGapBell(env),
     triggerUnsettledShopOrderExpiry(env),
     triggerCardRefundSweep(env),

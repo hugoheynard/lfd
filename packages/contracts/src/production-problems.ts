@@ -47,8 +47,25 @@ export interface ProductionProblemView {
   readonly version: number;
 }
 
+/**
+ * **Une ligne « à confirmer »** (§ 3.7, § 3.8) : en toujours vert, mais sans
+ * palier à heure ce jour-là (pas de tranche, ou besoins du commerce
+ * illisibles). La fournée automatique ne la complète pas ; quelqu'un doit
+ * dire ce qui est sorti.
+ */
+export interface ProductionUnconfirmedLineView {
+  readonly sku: string;
+  readonly productName: string;
+  /** La quantité au compte. */
+  readonly quantity: number;
+  /** Ce que les fournées disent sorti, part corrigée déduite. */
+  readonly output: number;
+}
+
 /** `GET /admin/supervision/production-problems?date=` — les problèmes ouverts du jour. */
 export interface ProductionProblemsView {
   readonly serviceDay: string;
   readonly problems: readonly ProductionProblemView[];
+  /** Les lignes en toujours vert sans palier, pas encore sorties en entier. */
+  readonly unconfirmed: readonly ProductionUnconfirmedLineView[];
 }

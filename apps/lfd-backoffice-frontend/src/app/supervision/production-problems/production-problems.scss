@@ -10,6 +10,10 @@
   background: var(--fold-color-alert-surface);
 }
 
+.unconfirmed {
+  border-left: 3px solid var(--fold-color-warning);
+}
+
 .problem-body {
   display: flex;
   flex-direction: column;

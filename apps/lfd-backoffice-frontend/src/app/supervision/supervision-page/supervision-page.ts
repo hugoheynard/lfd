@@ -151,6 +151,8 @@ export class SupervisionPage {
   protected readonly nudges = computed(() => dataOf(this.reads.nudges()));
   /** Les rouges ouverts du fournil ; une lecture ratée le dit, la colonne reste. */
   protected readonly problems = computed(() => dataOf(this.reads.problems())?.problems ?? []);
+  /** Les lignes en toujours vert sans palier : la fournée automatique ne les complète pas. */
+  protected readonly unconfirmed = computed(() => dataOf(this.reads.problems())?.unconfirmed ?? []);
   protected readonly problemsLost = computed(() => {
     const state = this.reads.problems();
     return state.status === 'error' || (state.status === 'ready' && state.stale);

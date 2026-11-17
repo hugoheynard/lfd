@@ -96,6 +96,11 @@ export function problemScene() {
   );
   return {
     trace,
+    lock,
+    clock,
+    uow,
+    freezing,
+    recording,
     store,
     days,
     frozen,

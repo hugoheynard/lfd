@@ -116,4 +116,21 @@ describe('les problèmes du fournil en Supervision', () => {
     expect(resolved[1]?.key).toBe(resolved[0]?.key);
     expect(emitted).toHaveLength(1);
   });
+
+  it('sert les lignes à confirmer sous les rouges, sans « Marquer traité »', () => {
+    const fixture = TestBed.createComponent(ProductionProblems);
+    fixture.componentRef.setInput('problems', []);
+    fixture.componentRef.setInput('unconfirmed', [
+      { sku: 'PAI', productName: 'Baguette', quantity: 24, output: 0 },
+    ]);
+    fixture.componentRef.setInput('canResolve', true);
+    fixture.detectChanges();
+    const el: HTMLElement = fixture.nativeElement;
+
+    expect(el.querySelector('[data-unconfirmed="PAI"]')?.textContent).toContain('Baguette');
+    expect(el.querySelector('[data-unconfirmed-figures]')?.textContent).toContain(
+      '24 au compte · 0 déclarée(s)',
+    );
+    expect(el.querySelector('[data-problem-resolve]')).toBeNull();
+  });
 });

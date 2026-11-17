@@ -7,7 +7,7 @@ import {
   FoldElementTitleComponent,
 } from 'fold-ng';
 
-import type { ProductionProblemView } from '@lfd/contracts';
+import type { ProductionProblemView, ProductionUnconfirmedLineView } from '@lfd/contracts';
 
 import { serverMessageOf } from '../../production/server-message';
 import { hourLabel } from '../../production/worksheet-day';
@@ -24,6 +24,10 @@ import { SupervisionService } from '../supervision.service';
  * « Marquer traité » part sous la clé d'une {@link GestureIntents} par
  * problème ; un succès fait relire la liste (`resolved`), un refus reste
  * écrit au-dessus des cartes.
+ *
+ * Sous les rouges, les lignes « à confirmer » (§ 3.7) : en toujours vert,
+ * sans palier à heure ce jour-là, la fournée automatique ne les complète pas
+ * — quelqu'un doit dire ce qui est sorti, depuis la fiche.
  */
 @Component({
   selector: 'app-production-problems',
@@ -43,6 +47,8 @@ export class ProductionProblems {
   private readonly intents = new GestureIntents();
 
   readonly problems = input.required<readonly ProductionProblemView[]>();
+  /** Les lignes en toujours vert sans palier, pas encore sorties en entier. */
+  readonly unconfirmed = input<readonly ProductionUnconfirmedLineView[]>([]);
   /** `b2b_supervision:write` : « Marquer traité ». */
   readonly canResolve = input(false);
   /** Un problème vient d'être traité : la page relit. */
@@ -58,6 +64,11 @@ export class ProductionProblems {
     return problem.output > problem.produced
       ? `${said} · encore ${String(problem.output)} déclarées : l'écart reste à régler`
       : said;
+  }
+
+  /** « 24 au compte · 0 déclarée(s) » */
+  protected unconfirmedFigures(line: ProductionUnconfirmedLineView): string {
+    return `${String(line.quantity)} au compte · ${String(line.output)} déclarée(s)`;
   }
 
   /** « depuis 9 h 12 · par Léa Martin » */

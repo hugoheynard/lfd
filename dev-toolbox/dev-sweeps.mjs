@@ -19,6 +19,8 @@
 export const EVERY_FIVE_MINUTES = [
   "admin/outbox/sweep",
   "admin/production/auto-close",
+  // La fournée automatique du fournil (niveaux de suivi, § 3.7).
+  "admin/production/tracking/always-green",
   "admin/delivery/off-round/sweep",
   "admin/orders/unsettled-shop-orders/expire",
   // Les remboursements par carte (plan M2, lots P1.b et P1.c) : l'annulation

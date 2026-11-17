@@ -487,3 +487,52 @@ reportedAt }`, le rouge **ouvert** seulement ; `null` une fois traité, le
   leur niveau viennent de `GET admin/production/workstations`.
 - **Pas fait ici** : la lecture du lien de la cloche (`?jour=…&ligne=…`) est
   un geste du front, laissé à la partie Angular de N4.
+
+### Ce que N3 a bâti, ses choix et ses doutes (2026-11-17)
+
+**Bâti.** `POST admin/production/tracking/always-green`
+(`atelier/http/always-green.controller.ts`, `@Idempotent`, sous
+`RecomputeGuard`), appelée par le Worker sur le cron `*/5`
+(`triggerAlwaysGreen`, `container/worker.ts`) et rejouée en dev
+(`dev-toolbox/dev-sweeps.mjs`). Le tour (`RunAlwaysGreenRoundHandler`) et la
+commande d'une ligne (`RunAlwaysGreenLineHandler`), la règle pure
+(`atelier/domain/services/always-green.ts`, `alwaysGreenStep`), les lignes
+en toujours vert d'une journée (`AlwaysGreenLines`, la règle de la fiche), et
+la Supervision : `ProductionProblemsView.unconfirmed` (contrat
+`ProductionUnconfirmedLineView`, `UnconfirmedLinesReading`), affichées en
+« À confirmer » sous les rouges (`supervision/production-problems/`). Aucune
+migration.
+
+**Choix faits sans écrit, à relire.**
+
+- **Les paliers sont ceux que la fiche affiche** : `deadlinesOf(compte,
+tranches)`, ajustés au compte. Un palier « la journée » (`before: null` :
+  `day`, `undated`) **n'échoit jamais** ; une ligne **sans aucun palier à
+  heure** est « sans palier ». Conséquence à connaître : **sans tranche
+  réglée** (le défaut est le mode fixe sans heure, donc une seule tranche
+  « la journée »), **aucune ligne n'est complétée** et toutes sont « à
+  confirmer ». Une ligne qui a des paliers à heure ET un reste sans échéance
+  ne voit jamais ce reste complété d'office, sans être « à confirmer ».
+- **Une heure locale inexistante** (bascule de mars) ne fait pas échoir son
+  palier.
+- **La marge est le réglage courant**, pas une valeur figée avec le niveau.
+- **Le tour ne passe que par un port** (`AlwaysGreenLineRunner`, adaptateur
+  sur le bus, la forme de `BusAutomaticDayCloser`) : un handler n'en appelle
+  pas un autre. Chaque **journée** est isolée aussi, pas seulement chaque
+  ligne ; le compte rendu dit `recorded`, `toConfirm`, `failed` et l'erreur
+  d'une journée.
+- **La commande d'une ligne ne relit pas le niveau** : le tour l'a lu figé,
+  et il ne bouge plus.
+- **« À confirmer » dans la Supervision** : en toujours vert d'après le
+  niveau **servi** (figé, sinon celui que le premier passage figera), sans
+  palier à heure, et pas encore sortie jusqu'à `min(compte, plafond)`. Rien
+  n'est servi pour une journée non arrêtée.
+
+**Doutes ouverts.**
+
+- **Le coût** : chaque ligne relit les besoins du commerce sous son verrou
+  (§ 3.7 le demande), donc N lectures par journée arrêtée toutes les cinq
+  minutes. À mesurer sur l'environnement déployé.
+- **Le front ne propose pas de geste** sur une ligne à confirmer : elle se
+  confirme depuis la fiche (« Problème »). Un lien vers la ligne reste à
+  décider.

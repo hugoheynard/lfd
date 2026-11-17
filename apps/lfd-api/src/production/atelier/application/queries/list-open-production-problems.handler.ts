@@ -5,6 +5,7 @@ import { ProductionDayRepository, ServiceDay } from "../../../day/index.js";
 import type { ProductionDay } from "../../../day/index.js";
 import type { ProductionProblemState } from "../../domain/entities/production-problem.js";
 import { OpenProductionProblemsReader } from "../../domain/ports/production-problem.ports.js";
+import { UnconfirmedLinesReading } from "../services/unconfirmed-lines-reading.service.js";
 import { ListOpenProductionProblemsQuery } from "./list-open-production-problems.query.js";
 
 /**
@@ -15,6 +16,9 @@ import { ListOpenProductionProblemsQuery } from "./list-open-production-problems
  * Le nom et le sorti de chaque ligne se lisent sur la journée, part corrigée
  * déduite : un sorti resté au-dessus du plafond dit au responsable ce que le
  * rouge n'a pas pu corriger. Les plus anciens d'abord.
+ *
+ * À côté, les lignes « à confirmer » (§ 3.7) : en toujours vert sans palier
+ * à heure, la fournée automatique ne les complète pas.
  */
 @QueryHandler(ListOpenProductionProblemsQuery)
 export class ListOpenProductionProblemsHandler implements IQueryHandler<
@@ -24,19 +28,17 @@ export class ListOpenProductionProblemsHandler implements IQueryHandler<
   constructor(
     private readonly reader: OpenProductionProblemsReader,
     private readonly days: ProductionDayRepository,
+    private readonly unconfirmed: UnconfirmedLinesReading,
   ) {}
 
   async execute(query: ListOpenProductionProblemsQuery): Promise<ProductionProblemsView> {
     const day = ServiceDay.of(query.serviceDay);
-    const open = await this.reader.openOf(day);
-    if (open.length === 0) {
-      return { serviceDay: day.value, problems: [] };
-    }
-    const current = await this.days.load(day);
+    const [open, current] = await Promise.all([this.reader.openOf(day), this.days.load(day)]);
     const problems = [...open]
       .sort((left, right) => left.reported.at.getTime() - right.reported.at.getTime())
       .map((problem) => viewOf(problem, current));
-    return { serviceDay: day.value, problems };
+    const unconfirmed = await this.unconfirmed.of(day, current);
+    return { serviceDay: day.value, problems, unconfirmed };
   }
 }
 

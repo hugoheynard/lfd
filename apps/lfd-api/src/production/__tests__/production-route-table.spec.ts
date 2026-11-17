@@ -122,6 +122,7 @@ const EXPECTED: readonly string[] = [
   "POST | admin/production/quality/sweep | - | [] | 200 | public | RecomputeGuard",
   "POST | admin/production/settings/closed-days | production_settings | [] | 204 | public | AdminAuthGuard+StaffAccessGuard",
   "POST | admin/production/settings/dossier-recipients | production_settings | [] | - | public | AdminAuthGuard+StaffAccessGuard",
+  "POST | admin/production/tracking/always-green | - | [] | 200 | public | RecomputeGuard",
   "POST | admin/production/worksheet/:date/lines/:sku/done | production_worksheet | [] | 204 | public | AdminAuthGuard+StaffAccessGuard",
   "POST | admin/production/worksheet/:date/lines/:sku/problem | production_worksheet | [] | 204 | public | AdminAuthGuard+StaffAccessGuard",
   "POST | admin/production/worksheet/:date/retake | production_worksheet | [] | - | public | AdminAuthGuard+StaffAccessGuard",

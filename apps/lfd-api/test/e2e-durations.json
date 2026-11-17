@@ -484,6 +484,7 @@
   "test/prisma-connection-release.e2e-spec.ts": 3638,
   "test/product-audience.e2e-spec.ts": 3105,
   "test/product-suggestions.e2e-spec.ts": 3347,
+  "test/production-always-green.e2e-spec.ts": 9000,
   "test/production-auto-close.e2e-spec.ts": 4536,
   "test/production-batch-cancel.e2e-spec.ts": 4248,
   "test/production-batch.e2e-spec.ts": 21480,

@@ -57,4 +57,10 @@ describe("les crons du Worker et de wrangler.jsonc", () => {
     expect(WORKER).toContain('"admin/vitrine/sweep"');
     expect(WORKER).toMatch(/refreshSweeps[\s\S]*triggerVitrineSweep\(env\)/);
   });
+
+  it("la fournée automatique du fournil passe au cron de rafraîchissement (niveaux de suivi, N3)", () => {
+    expect(WORKER).toContain('"admin/production/tracking/always-green"');
+    expect(WORKER).toMatch(/refreshSweeps[\s\S]*triggerAlwaysGreen\(env\)/);
+    expect(workerCrons().get("KEEP_WARM_CRON")).toBe("*/5 * * * *");
+  });
 });

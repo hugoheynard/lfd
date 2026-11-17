@@ -36,3 +36,21 @@
     </div>
   </fold-card>
 }
+
+@for (line of unconfirmed(); track line.sku) {
+  <fold-card radius="sm" class="unconfirmed" [attr.data-unconfirmed]="line.sku">
+    <fold-element-title
+      cardHeader
+      variant="title"
+      [level]="3"
+      [title]="line.productName"
+      [subtitle]="line.sku"
+    >
+      <fold-badge titleAction variant="warning" radius="square" content="À confirmer" />
+    </fold-element-title>
+    <div class="problem-body">
+      <span class="problem-figures" data-unconfirmed-figures>{{ unconfirmedFigures(line) }}</span>
+      <span class="problem-since">Sans palier ce jour-là : rien n'est déclaré d'office.</span>
+    </div>
+  </fold-card>
+}

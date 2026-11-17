@@ -1116,6 +1116,7 @@ export { reportWorkshopProblemSchema } from "./production-problems.js";
 export type {
   ProductionProblemView,
   ProductionProblemsView,
+  ProductionUnconfirmedLineView,
   ReportWorkshopProblem,
 } from "./production-problems.js";
 export {

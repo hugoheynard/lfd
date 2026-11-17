@@ -7,6 +7,13 @@ import { ProductionQualityModule } from "../quality/production-quality.module.js
 import { ProductionPrintModule } from "../shared/print/production-print.module.js";
 import { ProductionWorkstationsModule } from "../workstations/production-workstations.module.js";
 import { CancelBatchHandler } from "./application/commands/cancel-batch.handler.js";
+import { RunAlwaysGreenLineHandler } from "./application/commands/run-always-green-line.handler.js";
+import { RunAlwaysGreenRoundHandler } from "./application/commands/run-always-green-round.handler.js";
+import { UnconfirmedLinesReading } from "./application/services/unconfirmed-lines-reading.service.js";
+import { BusAlwaysGreenLineRunner } from "./application/services/bus-always-green-line-runner.js";
+import { AlwaysGreenLineRunner } from "./domain/ports/always-green-line-runner.js";
+import { AlwaysGreenLines } from "./application/services/always-green-lines.service.js";
+import { AlwaysGreenController } from "./http/always-green.controller.js";
 import { MarkLineDoneHandler } from "./application/commands/mark-line-done.handler.js";
 import { ReportProblemHandler } from "./application/commands/report-problem.handler.js";
 import { ResolveProblemHandler } from "./application/commands/resolve-problem.handler.js";
@@ -105,6 +112,8 @@ import { ProductionBatchShortcutsModule } from "./production-batch-shortcuts.mod
     ProductionSupervisionController,
     ProductionDisplaySettingsController,
     ProductionTrackingSettingsController,
+    // La fournée automatique : la route du cron, sous RecomputeGuard.
+    AlwaysGreenController,
     // La fiche d'atelier d'EXEMPLE de la planche des documents.
     AdminAtelierSheetSpecimenController,
   ],
@@ -136,6 +145,12 @@ import { ProductionBatchShortcutsModule } from "./production-batch-shortcuts.mod
     // niveau figé d'une journée — lire et figer sont deux ports —, et la mise
     // en service.
     SetProductionTrackingHandler,
+    // La fournée automatique (toujours vert) : le tour, et une commande par ligne.
+    RunAlwaysGreenRoundHandler,
+    RunAlwaysGreenLineHandler,
+    AlwaysGreenLines,
+    UnconfirmedLinesReading,
+    { provide: AlwaysGreenLineRunner, useClass: BusAlwaysGreenLineRunner },
     GetProductionTrackingHandler,
     DayTrackingLevelsReading,
     DayTrackingLevelsFreezing,
