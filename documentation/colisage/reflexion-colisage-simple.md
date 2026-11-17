@@ -192,3 +192,9 @@ fournil et au colisage, le partage des demi-bacs.
 la règle qui va avec ; la page les lit et les écrit chacun par sa porte. Une
 table centrale « complexité » qui commanderait les modules mélangerait leurs
 règles, et aucun ne pourrait plus changer la sienne seul.
+
+## Décision 2 — appeler le manager (Hugo, 2026-11-17)
+
+Comme au fournil : **la cloche du back-office** pour toutes les personnes qui
+ont le droit, et le rouge **visible sur l'écran de Supervision**, dans la
+colonne du colisage, tant que le manager n'a pas décidé.

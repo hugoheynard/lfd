@@ -192,3 +192,12 @@ réputées sorties à 7 h 15 et 120 à 9 h 45, et elles alimentent alors le
 colisage. La marge laisse au fournil le temps de signaler un problème avant
 que le colisage ne se serve. Elle se règle sur la page « Niveau de suivi »,
 avec le niveau du fournil.
+
+## Décision 2 — appeler le manager (Hugo, 2026-11-17)
+
+**La cloche du back-office**, pour **toutes les personnes qui ont le droit**
+(la ressource de supervision de la production, à nommer dans le plan), avec la
+ligne, le manque et la raison ; un clic mène à la ligne. Et le rouge **se voit
+sur l'écran de Supervision**, dans la colonne du fournil, tant qu'il n'est pas
+traité. Pas de son, de SMS ni d'e-mail pour l'instant : on les ajoutera si le
+terrain montre que la cloche ne suffit pas. Le colisage suit la même règle.
