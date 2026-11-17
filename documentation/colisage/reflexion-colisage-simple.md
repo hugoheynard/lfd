@@ -1,0 +1,136 @@
+# Réflexion — un colisage simple, au choix
+
+**État : 🗒️ réflexion, rien n'est décidé ni bâti** (2026-11-17). Demande de
+Hugo : « le colisage qu'on a fait est extrêmement complet et c'est très bien,
+seulement j'ai besoin d'en avoir une version simplifiée et qu'on choisisse quoi
+utiliser avec un réglage (défaut simple) ». Les affirmations sur l'existant
+ont été vérifiées le 2026-11-17 dans [`colisage.md`](colisage.md),
+[`../commandes/reliquat/reliquat.md`](../commandes/reliquat/reliquat.md) et
+`apps/lfd-api/src/packing/domain/entities/packing-sheet.ts`.
+
+Ce document n'est pas un plan. Il pose l'idée, ce qu'elle garde, ce qu'elle
+change, et les questions à trancher avant d'en écrire un. Le plan touchera à
+ce qui est facturé (le manque) : il passera par `vitruve`.
+
+---
+
+## 1. En simple
+
+Aujourd'hui, coliser une commande, c'est ouvrir des contenants (sacs, bacs),
+y répartir chaque produit, imprimer les étiquettes, puis déclarer la commande
+prête. C'est complet, et c'est long quand tout va bien, ce qui est le cas le
+plus fréquent.
+
+L'idée : un réglage **Réglages › Colisage › « Colisage simple / détaillé »**,
+**simple par défaut**. En mode simple, une commande se traite en un geste :
+
+```mermaid
+flowchart LR
+    C["Une commande<br/>au colisage"] --> Q{"Tout est<br/>conforme ?"}
+    Q -- oui --> G["✅ Tout est prêt<br/>un bouton"]
+    Q -- non --> R["🟥 Il y a un problème<br/>cocher ce qui manque"]
+    G --> P["Commande prête"]
+    R --> M["Le manager est appelé"]
+    M --> D{"Décision<br/>du manager"}
+    D -- "partir incomplète" --> P2["Prête, avec<br/>ce qui est là"]
+    D -- "attendre / trouver" --> C
+```
+
+- **✅ Le chemin vert, « Tout est prêt ».** Un bouton : chaque produit est
+  considéré comme coché, la commande passe prête. Pas de contenant à ouvrir,
+  pas de répartition, pas d'étiquette.
+- **🟥 Le chemin rouge, « Il y a un problème ».** On coche les produits qui ne
+  respectent pas le bon de commande, avec la quantité réellement là : 0 pour
+  une absence, moins pour un manque partiel. Le manager est appelé, et il
+  décide comme aujourd'hui : partir incomplète, ou attendre.
+
+Le mode détaillé reste disponible, inchangé, pour qui en a besoin (bacs
+partagés, étiquettes, plan de chargement).
+
+## 2. Ce qui ne change pas
+
+Le mode simple n'est **qu'un autre écran**. Ses deux gestes sont faits de
+gestes qui existent déjà. Aucune règle n'est contournée :
+
+| Règle d'aujourd'hui                                                                                                               | En mode simple                                                                                                                |
+| --------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| **La réserve** : on ne met au bac que ce que le four a sorti (`PackingStock`, au bac ≤ reçu − rendu)                              | Le chemin vert est **refusé** tant que le four n'a pas sorti de quoi remplir la commande ; le bouton dit ce qui manque encore |
+| **Le manque** : « Il manque » fige les quantités au bac et prévient le commerce (`reportShortfall`, `packing.shortfall_reported`) | Le chemin rouge **est** ce geste, avec les quantités cochées                                                                  |
+| **La décision** : un bac incomplet ne se ferme pas sans décision (`ShortfallAwaitingDecisionError`)                               | Inchangé : le manager décide depuis la fiche commande                                                                         |
+| **Le bon et la facture** ne comptent que ce qui part                                                                              | Inchangé                                                                                                                      |
+| **Carte ou bon de fidélité** : jamais de départ incomplet (le remboursement n'est pas branché)                                    | Inchangé (question Q3)                                                                                                        |
+| **Le fait `packing.order_packed`** fait passer la commande prête au commerce                                                      | Inchangé                                                                                                                      |
+
+## 3. Ce qui change
+
+### Le chemin vert, en coulisse
+
+Le serveur fait en une transaction ce que le poste détaillé fait à la main :
+
+1. ouvrir **un contenant** pour la commande (un sac pour un retrait, un bac
+   pour une livraison, voir Q1) ;
+2. y répartir **toutes** les quantités (`allocate`), sous le verrou de la
+   réserve ;
+3. fermer (`seal`).
+
+C'est un geste par intention (une clé par clic), comme les autres écritures
+du poste.
+
+### Le chemin rouge, en coulisse
+
+1. ouvrir le contenant et y répartir **ce qui est là**, selon les quantités
+   cochées ;
+2. déclarer le manque (`reportShortfall`), qui fige ces quantités et prévient
+   le commerce ;
+3. **appeler le manager** : c'est la seule chose vraiment neuve. Aujourd'hui,
+   le manque se lit dans la page Commandes, la fiche commande et la
+   Supervision, mais rien ne prévient quelqu'un (vérifié le 2026-11-17 : aucune
+   notification de manque dans `staff/notifications/`).
+
+### Les étiquettes
+
+En mode simple, il n'y en a pas à imprimer. Pour un retrait, le sac porte le
+numéro de commande écrit à la main ou rien, et le comptoir retrouve la commande
+par son numéro. Pour une livraison, voir Q1.
+
+## 4. Questions à trancher avant le plan
+
+- **Q1 — La livraison.** Aujourd'hui, une livraison vit par ses **bacs** : ils
+  sont déclarés à la livraison au colisage (`BinDesk`), ont un code court et un
+  QR, se scannent au chargement, et « Partir » vérifie qu'ils sont chargés
+  ([`chargement-les-bacs.md`](chargement-les-bacs.md)). Sans étiquette, deux
+  voies :
+  - **a.** en mode simple, une commande livrée a **un bac sans code à
+    scanner**, et le chargement coche des **commandes** : il faut alors aussi
+    un mode simple au chargement ;
+  - **b.** le mode simple ne vaut d'abord que pour le **retrait au comptoir**,
+    et la livraison garde ses bacs et leurs étiquettes. Plus petit, et ça
+    permet d'essayer le principe.
+- **Q2 — Appeler le manager.** Une notification dans la cloche du back-office
+  suffit-elle, ou faut-il un son au poste du manager, un SMS, autre chose ?
+  Qui est « le manager » : un rôle, ou une personne de garde ?
+- **Q3 — Carte et bon de fidélité.** Une commande payée par carte ou par bon
+  ne peut jamais partir incomplète aujourd'hui. Le chemin rouge appelle le
+  manager quand même ; on garde le refus de partir incomplète (il doit trouver
+  le produit ou joindre le client) ?
+- **Q4 — Le chemin vert avant la fin du four.** Refuser tant que tout n'est
+  pas sorti du four (proposé), ou laisser déclarer prêt « de confiance » ? La
+  seconde voie casserait la réserve, qui empêche deux commandes de prendre les
+  mêmes pièces.
+- **Q5 — Le réglage.** Pour tout le colisage, ou par site / par acheminement
+  (simple au comptoir, détaillé en livraison) ? Basculer en cours de journée :
+  les commandes déjà commencées en mode détaillé restent dans leur mode.
+- **Q6 — Les commandes déjà colisées en détaillé** s'affichent en lecture
+  seule dans le mode simple, ou s'ouvrent dans le poste détaillé ?
+
+## 5. Ce que le plan aura à vérifier
+
+- Que la composition du chemin vert respecte l'ordre des verrous du poste
+  (la commande, puis les bacs, puis la réserve, [`colisage.md`](colisage.md) § 4.3).
+- Que le chemin rouge produit **le même** manque que « Il manque » au poste
+  détaillé, pour que la décision du manager, le bon de livraison et la facture
+  n'y voient aucune différence.
+- Le droit : le chemin vert et le chemin rouge sous `production_packing:write`
+  comme le poste ; la décision du manager reste sous son droit actuel.
+- La Supervision et la page Commandes lisent le même `board` : elles doivent
+  rester justes dans les deux modes.
