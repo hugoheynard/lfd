@@ -1,0 +1,10 @@
+@if (problem(); as said) {
+  <fold-callout variant="alert" data-line-problem>
+    {{ said }}
+    @if (ceiling(); as cap) {
+      · {{ cap }}
+    }
+  </fold-callout>
+} @else if (ceiling(); as cap) {
+  <fold-callout variant="neutral" data-line-ceiling>{{ cap }}</fold-callout>
+}

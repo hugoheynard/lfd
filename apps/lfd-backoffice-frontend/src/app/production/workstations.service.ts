@@ -6,6 +6,7 @@ import {
   type PlaceProductsPayload,
   type ProductionGrouping,
   type ProductionGroupingView,
+  type ProductionTrackingLevel,
   type UnplacedProductsOfDayView,
   type WorkstationsPageView,
 } from '@lfd/contracts';
@@ -52,6 +53,21 @@ export class WorkstationsService {
 
   async reorder(ids: readonly string[], intentKey: string): Promise<void> {
     await firstValueFrom(this.http.put(`${WORKSTATIONS}/order`, { ids }, intentOptions(intentKey)));
+  }
+
+  /** Le niveau de suivi propre au poste ; `null` : il suit le fournil. */
+  async setTrackingLevel(
+    id: string,
+    trackingLevel: ProductionTrackingLevel | null,
+    intentKey: string,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.put(
+        `${WORKSTATIONS}/${encodeURIComponent(id)}/tracking-level`,
+        { trackingLevel },
+        intentOptions(intentKey),
+      ),
+    );
   }
 
   async archive(id: string, intentKey: string): Promise<void> {

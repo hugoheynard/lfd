@@ -1,0 +1,56 @@
+:host {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'what action'
+    'steps steps'
+    'note note';
+  align-items: center;
+  gap: var(--fold-space-sm) var(--fold-space-md);
+  padding: var(--fold-space-md);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text);
+}
+
+:host(.is-problem) {
+  border-color: var(--fold-color-alert-border);
+  box-shadow: inset 3px 0 0 var(--fold-color-alert);
+}
+
+.lg-what {
+  display: flex;
+  flex-direction: column;
+  grid-area: what;
+  gap: var(--fold-space-xs);
+}
+
+.lg-name {
+  font-weight: var(--fold-weight-semibold);
+}
+
+.lg-figures {
+  font-family: var(--fold-font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-muted);
+}
+
+.lg-steps {
+  display: flex;
+  flex-wrap: wrap;
+  grid-area: steps;
+  gap: var(--fold-space-xs);
+}
+
+.lg-action {
+  grid-area: action;
+}
+
+.lg-note {
+  grid-area: note;
+}
+
+.lg-note:empty {
+  display: none;
+}

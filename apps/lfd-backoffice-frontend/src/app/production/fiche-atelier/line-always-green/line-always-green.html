@@ -1,0 +1,25 @@
+<span class="lg-what">
+  <span class="lg-name">{{ line().productName }}</span>
+  <span class="lg-figures" data-line-figures>{{ figures() }}</span>
+</span>
+
+<span class="lg-steps" aria-label="Paliers">
+  @for (step of steps(); track step.key) {
+    <fold-badge radius="square" [variant]="step.variant" [content]="step.label" data-line-step />
+  }
+</span>
+
+<button
+  foldButton
+  type="button"
+  class="lg-action"
+  intent="danger"
+  emphasis="outline"
+  data-line-problem-button
+  [disabled]="busy()"
+  (click)="problem.emit()"
+>
+  Problème
+</button>
+
+<app-line-problem-note class="lg-note" [line]="line()" />

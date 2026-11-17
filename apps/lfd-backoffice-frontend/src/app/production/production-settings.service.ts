@@ -6,11 +6,14 @@ import type {
   DossierStaffCandidateView,
   ProductionDisplayPayload,
   ProductionSettingsView,
+  ProductionTrackingPayload,
+  ProductionTrackingView,
   ProductionTranchesPayload,
 } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
+import { intentOptions } from '../shared/gesture-intents';
 
 const SETTINGS = `${B2B_API_BASE}/admin/production/settings`;
 const RECIPIENTS = `${SETTINGS}/dossier-recipients`;
@@ -30,6 +33,16 @@ export class ProductionSettingsService {
 
   settings(): Promise<ProductionSettingsView> {
     return firstValueFrom(this.http.get<ProductionSettingsView>(SETTINGS));
+  }
+
+  /** Le niveau de suivi du fournil, sa marge et sa mise en service (plan des niveaux de suivi). */
+  tracking(): Promise<ProductionTrackingView> {
+    return firstValueFrom(this.http.get<ProductionTrackingView>(`${SETTINGS}/tracking`));
+  }
+
+  /** Pose le niveau du fournil et sa marge ; par intention. */
+  async saveTracking(payload: ProductionTrackingPayload, intentKey: string): Promise<void> {
+    await firstValueFrom(this.http.put(`${SETTINGS}/tracking`, payload, intentOptions(intentKey)));
   }
 
   async addClosedDay(date: string): Promise<void> {

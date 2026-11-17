@@ -209,6 +209,20 @@
               [(view)]="preparationView"
             />
           }
+          <!-- Les rouges du fournil, en tête de colonne jusqu'à « Marquer traité »
+               (plan des niveaux de suivi, § 3.8). -->
+          @if (problemsLost()) {
+            <fold-callout variant="warning" data-problems-lost>
+              Les problèmes signalés au fournil n'ont pas pu être lus.
+            </fold-callout>
+          }
+          @if (problems().length > 0) {
+            <app-production-problems
+              [problems]="problems()"
+              [canResolve]="canResolveProblems()"
+              (resolved)="reads.readProblems()"
+            />
+          }
           @if (preparationView() === 'slots' && worksheet(); as sheet) {
             <app-preparation-slots [view]="sheet" [date]="sheet.date" [narrow]="narrow()" />
           } @else if (preparationBoard(); as board) {

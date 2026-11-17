@@ -1,4 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import {
+  afterNextRender,
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  ElementRef,
+  inject,
+  Injector,
+  input,
+  signal,
+} from '@angular/core';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -28,7 +39,7 @@ import {
 import { StaffPrefsService } from '../../shared/staff-prefs/staff-prefs.service';
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
 import { VersionWatcher } from '../../shared/version/version-watcher';
-import { isoDay } from '../worksheet-day';
+import { dayLabelOf, isoDay } from '../worksheet-day';
 import { DriftBanner } from './drift-banner/drift-banner';
 import { WorkshopDayReader } from './workshop-day.reader';
 import { WorkshopGestures } from './workshop-gestures';
@@ -36,6 +47,9 @@ import { WorkshopClock } from './workshop-clock';
 import { WorkshopKeypadOpener } from './workshop-keypad-opener';
 import { WorkshopShortcutsReader } from './workshop-shortcuts.reader';
 import { WorksheetLine } from './worksheet-line/worksheet-line';
+import { LineAlwaysGreen } from './line-always-green/line-always-green';
+import { LineSimple } from './line-simple/line-simple';
+import { WorkshopProblemOpener } from './workshop-problem-opener';
 import { type SlotEntry, WorksheetSlots } from './worksheet-slots/worksheet-slots';
 import { WorkshopWallClock } from './workshop-wall-clock/workshop-wall-clock';
 import { SaleQuantityPipe } from '../../shared/sale-quantity/sale-quantity.pipe';
@@ -112,6 +126,8 @@ function presses(line: WorkshopLine): boolean {
     FoldToastComponent,
     FoldTabsComponent,
     FoldViewToggleComponent,
+    LineAlwaysGreen,
+    LineSimple,
     WorksheetLine,
     WorksheetSlots,
   ],
@@ -123,6 +139,7 @@ function presses(line: WorkshopLine): boolean {
     WorkshopShortcutsReader,
     WorkshopClock,
     WorkshopKeypadOpener,
+    WorkshopProblemOpener,
   ],
   templateUrl: './fiche-atelier.html',
   styleUrl: './fiche-atelier.scss',
@@ -152,6 +169,45 @@ export class FicheAtelier {
   /** `/fournil?poste=<id>` : la fiche d'un poste, demandée par l'adresse. */
   readonly workstationParam = input<string | undefined>(undefined, { alias: 'poste' });
 
+  /**
+   * `/fournil?jour=<jour>&ligne=<sku>` : le lien de la cloche d'un rouge (plan
+   * des niveaux de suivi, § 3.8). La fiche ouvre la fiche qui porte la ligne et
+   * la montre — si la journée lue est celle du lien.
+   */
+  readonly dayParam = input<string | undefined>(undefined, { alias: 'jour' });
+  readonly lineParam = input<string | undefined>(undefined, { alias: 'ligne' });
+
+  /** La ligne que le lien désigne, sur la journée lue ; `null` sinon. */
+  protected readonly linkedSku = computed(() => {
+    const sku = this.lineParam();
+    const date = this.day.date();
+    const asked = this.dayParam();
+    if (sku === undefined || sku === '' || date === null) {
+      return null;
+    }
+    return asked === undefined || asked === '' || asked === date ? sku : null;
+  });
+
+  /** « samedi 16 août » quand le lien vise une autre journée que celle lue. */
+  protected readonly linkedElsewhere = computed(() => {
+    const asked = this.dayParam();
+    const date = this.day.date();
+    return asked === undefined || asked === '' || date === null || asked === date
+      ? null
+      : dayLabelOf(asked);
+  });
+
+  /** La fiche qui porte la ligne du lien. */
+  private readonly linkedKey = computed(() => {
+    const sku = this.linkedSku();
+    if (sku === null) {
+      return null;
+    }
+    return (
+      this.day.groups().find((group) => group.lines.some((line) => line.sku === sku))?.key ?? null
+    );
+  });
+
   /** La fiche choisie à l'écran pendant la session. */
   private readonly chosen = signal<string | null>(null);
   /** La dernière fiche ouverte par la personne (`nav_prefs.worksheetCategory`). */
@@ -177,6 +233,7 @@ export class FicheAtelier {
       reload: () => this.day.refresh(),
       clockDay: () => isoDay(new Date()),
     });
+    this.showLinkedLine();
     // La préférence n'arrive pas avant la personne : `GET /admin/me` est déjà en
     // vol pour les droits. Si elle n'arrive jamais, la première fiche suffit.
     void this.prefs.worksheetCategory().then((category) => this.remembered.set(category));
@@ -185,7 +242,7 @@ export class FicheAtelier {
   /** La fiche affichée : celle qu'on a choisie, ou la première s'il n'y a pas de choix. */
   protected readonly current = computed<WorkshopGroup | null>(() => {
     const groups = this.day.groups();
-    const keys = [this.chosen(), this.asked(), this.remembered()];
+    const keys = [this.chosen(), this.linkedKey(), this.asked(), this.remembered()];
     for (const key of keys) {
       const found = key === null ? undefined : groups.find((group) => group.key === key);
       if (found !== undefined) {
@@ -300,6 +357,34 @@ export class FicheAtelier {
       queryParams: { poste },
       queryParamsHandling: 'merge',
       replaceUrl: true,
+    });
+  }
+
+  /**
+   * Amène la ligne du lien sous les yeux, une fois, quand elle est rendue.
+   * Une lecture de la page, pas un état : la relecture périodique ne la refait pas.
+   */
+  private showLinkedLine(): void {
+    const host = inject(ElementRef<HTMLElement>);
+    const injector = inject(Injector);
+    let shown = false;
+    effect(() => {
+      const sku = this.linkedSku();
+      if (shown || sku === null || this.linkedKey() === null) {
+        return;
+      }
+      shown = true;
+      afterNextRender(
+        () => {
+          const lines: NodeListOf<HTMLElement> = host.nativeElement.querySelectorAll('[data-line]');
+          const element = [...lines].find((line) => line.dataset['line'] === sku);
+          // jsdom n'a pas `scrollIntoView` : la garde vaut pour les tests seulement.
+          if (element !== undefined && 'scrollIntoView' in element) {
+            element.scrollIntoView({ block: 'center' });
+          }
+        },
+        { injector },
+      );
     });
   }
 

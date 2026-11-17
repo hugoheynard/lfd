@@ -1,0 +1,11 @@
+.tl-stack,
+.tl-fournil,
+.tl-stations {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.tl-save {
+  align-self: flex-start;
+}

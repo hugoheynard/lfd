@@ -6,9 +6,11 @@ import type {
   ProductionWorksheetRetake,
   ProductionWorksheetView,
   RecordWorkshopBatch,
+  ReportWorkshopProblem,
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
+import { intentOptions } from '../shared/gesture-intents';
 
 /**
  * La **fiche d'atelier** d'une journée : ce qu'il y a à sortir, et ce qui l'est.
@@ -68,6 +70,29 @@ export class WorksheetService {
   async cancelBatch(date: string, batchId: string): Promise<void> {
     const url = `${this.worksheetUrl(date)}/batches/${encodeURIComponent(batchId)}`;
     await firstValueFrom(this.http.delete<void>(url));
+  }
+
+  /**
+   * **« Fait »** (plan `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.6) :
+   * le serveur déclare une fournée du reste sous le plafond. Par intention.
+   */
+  async markDone(date: string, sku: string, intentKey: string): Promise<void> {
+    const url = `${this.worksheetUrl(date)}/lines/${encodeURIComponent(sku)}/done`;
+    await firstValueFrom(this.http.post<void>(url, {}, intentOptions(intentKey)));
+  }
+
+  /**
+   * **Le rouge** (§ 3.4) : combien est réellement sorti. Le serveur pose le
+   * plafond, corrige ou complète les fournées, et sonne la cloche. Par intention.
+   */
+  async reportProblem(
+    date: string,
+    sku: string,
+    payload: ReportWorkshopProblem,
+    intentKey: string,
+  ): Promise<void> {
+    const url = `${this.worksheetUrl(date)}/lines/${encodeURIComponent(sku)}/problem`;
+    await firstValueFrom(this.http.post<void>(url, payload, intentOptions(intentKey)));
   }
 
   /** Le **retirage** : absorber ce qui est arrivé depuis que le plan est arrêté. */

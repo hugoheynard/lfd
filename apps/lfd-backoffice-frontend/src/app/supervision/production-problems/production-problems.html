@@ -1,0 +1,38 @@
+@if (refusal(); as refused) {
+  <fold-callout variant="alert" data-problem-refused>{{ refused }}</fold-callout>
+}
+
+@for (problem of problems(); track problem.id) {
+  <fold-card radius="sm" class="problem" [attr.data-problem]="problem.id">
+    <fold-element-title
+      cardHeader
+      variant="title"
+      [level]="3"
+      [title]="problem.productName"
+      [subtitle]="problem.sku"
+    >
+      <fold-badge titleAction variant="alert" radius="square" content="Problème" />
+    </fold-element-title>
+    <div class="problem-body">
+      <span class="problem-figures" data-problem-figures>{{ figures(problem) }}</span>
+      @if (problem.reason !== null) {
+        <span class="problem-reason" data-problem-reason>{{ problem.reason }}</span>
+      }
+      <span class="problem-since">{{ since(problem) }}</span>
+      @if (canResolve()) {
+        <button
+          foldButton
+          type="button"
+          size="sm"
+          emphasis="outline"
+          class="problem-resolve"
+          [attr.data-problem-resolve]="problem.id"
+          [disabled]="resolving() !== null"
+          (click)="resolve(problem)"
+        >
+          Marquer traité
+        </button>
+      }
+    </div>
+  </fold-card>
+}

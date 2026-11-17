@@ -1,0 +1,106 @@
+<fold-page-layout title="Niveau de suivi">
+  <p description>
+    Ce que l'équipe du fournil a à déclarer, pour tout le fournil puis poste par poste.
+  </p>
+  <a pageActions foldButton size="sm" emphasis="outline" intent="neutral" routerLink="apercu">
+    Voir l'aperçu
+  </a>
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture du niveau de suivi…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de lire le niveau de suivi">
+        <button foldButton type="button" (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      <div class="tl-stack">
+        @if (notYet(); as since) {
+          <fold-callout variant="warning" data-not-in-service>
+            Les niveaux de suivi ne s'appliquent pas encore : mise en service le {{ since }}. D'ici
+            là, chaque journée reste en détaillé.
+          </fold-callout>
+        }
+
+        @if (refusal(); as refused) {
+          <fold-callout variant="alert" data-refused>{{ refused }}</fold-callout>
+        }
+
+        <fold-card>
+          <fold-element-title
+            cardHeader
+            variant="title"
+            title="Le fournil"
+            subtitle="Vaut à partir de la prochaine journée arrêtée"
+          />
+          <div class="tl-fournil">
+            <fold-view-toggle
+              ariaLabel="Niveau de suivi du fournil"
+              [options]="levelOptions"
+              [value]="level()"
+              (valueChange)="chooseLevel($event)"
+            />
+            <fold-number-input
+              label="Marge après l'heure d'un palier, en minutes"
+              hint="Un palier est réputé sorti à son heure plus cette marge (toujours vert)."
+              [value]="margin()"
+              (valueChange)="margin.set($event)"
+              [min]="0"
+              [readOnly]="!canWriteTracking()"
+              integer
+            />
+            @if (canWriteTracking()) {
+              <button
+                foldButton
+                type="button"
+                class="tl-save"
+                data-save-tracking
+                [disabled]="!canSave()"
+                (click)="save()"
+              >
+                Enregistrer
+              </button>
+            }
+          </div>
+        </fold-card>
+
+        <fold-card>
+          <fold-element-title
+            cardHeader
+            variant="title"
+            title="Les postes"
+            subtitle="Un poste suit le fournil, sauf s'il a son propre niveau"
+          />
+          @if (stations(); as list) {
+            @if (list.length === 0) {
+              <fold-empty-state
+                title="Aucun poste"
+                subtitle="Toutes les lignes suivent le niveau du fournil."
+              />
+            } @else {
+              <div class="tl-stations">
+                @for (station of list; track station.id) {
+                  <fold-listbox
+                    size="sm"
+                    [label]="station.name"
+                    [options]="stationOptions()"
+                    [value]="stationChoice(station)"
+                    [disabled]="!canWriteStations() || savingStation() !== null"
+                    [attr.data-station]="station.id"
+                    (selectionChange)="setStation(station, $event)"
+                  />
+                }
+              </div>
+            }
+          } @else {
+            <fold-callout variant="alert" data-stations-lost>
+              Les postes n'ont pas pu être lus : leur niveau ne s'affiche pas.
+            </fold-callout>
+          }
+        </fold-card>
+      </div>
+    }
+  }
+</fold-page-layout>

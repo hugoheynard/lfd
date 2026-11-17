@@ -25,6 +25,7 @@ import { WorkshopDayReader } from './workshop-day.reader';
 import { WorkshopGestures } from './workshop-gestures';
 import { WorkshopShortcutsReader } from './workshop-shortcuts.reader';
 import { WorkshopKeypadOpener } from './workshop-keypad-opener';
+import { WorkshopProblemOpener } from './workshop-problem-opener';
 
 /**
  * Le veilleur de journée, doublé : il garde la relecture que l'écran lui
@@ -184,6 +185,14 @@ class FakeWorksheetService {
     await this.answer();
   }
 
+  /** « Fait » : la journée, le SKU et la clé d'intention reçus. */
+  readonly dones: { readonly date: string; readonly sku: string; readonly key: string }[] = [];
+
+  async markDone(date: string, sku: string, key: string): Promise<void> {
+    this.dones.push({ date, sku, key });
+    await this.answer();
+  }
+
   releaseWrites(): void {
     for (const resolve of this.heldWrites.splice(0)) {
       resolve();
@@ -230,6 +239,16 @@ const keypad = {
   answer: null as number | null,
   openFor(_line: WorkshopLine, preset: number): Promise<number | null> {
     this.presets.push(preset);
+    return Promise.resolve(this.answer);
+  },
+};
+
+/** Le panneau rouge doublé : il retient la ligne ouverte, et rend `answer`. */
+const problemPanel = {
+  opened: [] as { readonly date: string; readonly sku: string }[],
+  answer: false,
+  openFor(date: string, opened: WorkshopLine): Promise<boolean> {
+    this.opened.push({ date, sku: opened.sku });
     return Promise.resolve(this.answer);
   },
 };
@@ -282,6 +301,8 @@ describe('la fiche d’atelier', () => {
     prefs = new FakePrefs();
     keypad.presets = [];
     keypad.answer = null;
+    problemPanel.opened = [];
+    problemPanel.answer = false;
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
@@ -312,6 +333,7 @@ describe('la fiche d’atelier', () => {
           WorkshopShortcutsReader,
           { provide: WorkshopClock, useValue: { minutes: signal(NOW), seconds: signal(NOW * 60) } },
           { provide: WorkshopKeypadOpener, useValue: keypad },
+          { provide: WorkshopProblemOpener, useValue: problemPanel },
         ],
       },
     });
@@ -916,6 +938,120 @@ describe('la fiche d’atelier', () => {
 
       expect(api.cancels).toEqual([{ date: DAY, id: api.batches[0]?.id }]);
       expect(el.querySelector('.fa-undo')).toBeNull();
+    });
+  });
+
+  describe('les niveaux de suivi (plan des niveaux de suivi, § 3.10)', () => {
+    /** Le rayon des pains, une ligne par niveau. */
+    function mixed(): WorkshopGroup {
+      const green = line({ sku: 'CRO', productName: 'Croissant', trackingLevel: 'always_green' });
+      const simple = line({ sku: 'SEI', productName: 'Pain de seigle', trackingLevel: 'simple' });
+      const detailed = line({ trackingLevel: 'detailed' });
+      return {
+        ...painTodo(),
+        lines: [green, simple, detailed],
+        pending: [green, simple, detailed],
+      };
+    }
+
+    it('choisit le composant de la ligne selon son niveau servi', async () => {
+      api.view = sheet({ groups: [mixed()] });
+
+      const { el } = await render();
+
+      expect(el.querySelector('app-line-always-green[data-line="CRO"]')).not.toBeNull();
+      expect(el.querySelector('app-line-simple[data-line="SEI"]')).not.toBeNull();
+      expect(el.querySelector('app-worksheet-line[data-line="BAG"]')).not.toBeNull();
+      expect(el.querySelectorAll('app-worksheet-line')).toHaveLength(1);
+    });
+
+    it('une ligne sans niveau servi reste en détaillé', async () => {
+      const { el } = await render();
+
+      expect(el.querySelectorAll('app-worksheet-line')).toHaveLength(2);
+      expect(el.querySelector('app-line-simple, app-line-always-green')).toBeNull();
+    });
+
+    it('« Fait » part sans quantité, sous une clé d’intention, puis la fiche relit', async () => {
+      api.view = sheet({ groups: [mixed()] });
+      const { fixture, el } = await render();
+      const readsBefore = api.reads;
+
+      el.querySelector<HTMLButtonElement>('app-line-simple [data-line-done-button]')?.click();
+      await settle(fixture);
+
+      expect(api.dones).toHaveLength(1);
+      expect(api.dones[0]).toMatchObject({ date: DAY, sku: 'SEI' });
+      expect(api.dones[0]?.key).not.toBe('');
+      expect(api.batches).toHaveLength(0);
+      expect(api.reads).toBe(readsBefore + 1);
+    });
+
+    it('un « Fait » refusé garde sa clé : le réessai rejoue la même intention', async () => {
+      api.view = sheet({ groups: [mixed()] });
+      api.writeError = new HttpErrorResponse({ status: 0 });
+      const { fixture, el } = await render();
+      const done = (): void =>
+        el.querySelector<HTMLButtonElement>('app-line-simple [data-line-done-button]')?.click();
+
+      done();
+      await settle(fixture);
+      api.writeError = null;
+      done();
+      await settle(fixture);
+
+      expect(api.dones).toHaveLength(2);
+      expect(api.dones[1]?.key).toBe(api.dones[0]?.key);
+    });
+
+    it('« Problème » ouvre le panneau rouge sur la ligne, et relit s’il a été pris', async () => {
+      api.view = sheet({ groups: [mixed()] });
+      problemPanel.answer = true;
+      const { fixture, el } = await render();
+      const readsBefore = api.reads;
+
+      el.querySelector<HTMLButtonElement>(
+        'app-line-always-green [data-line-problem-button]',
+      )?.click();
+      await settle(fixture);
+
+      expect(problemPanel.opened).toEqual([{ date: DAY, sku: 'CRO' }]);
+      expect(api.reads).toBe(readsBefore + 1);
+    });
+
+    it('`?ligne=` ouvre la fiche qui porte la ligne et la désigne', async () => {
+      const viennoiseries: WorkshopGroup = {
+        ...painTodo(),
+        key: VIENNOISERIES.id,
+        family: VIENNOISERIES,
+        label: 'Viennoiseries',
+        lines: [line({ sku: 'CRO', productName: 'Croissant', trackingLevel: 'always_green' })],
+        pending: [line({ sku: 'CRO', productName: 'Croissant', trackingLevel: 'always_green' })],
+      };
+      api.view = sheet({ groups: [painTodo(), viennoiseries] });
+      const fixture = TestBed.createComponent(FicheAtelier);
+      fixture.componentRef.setInput('jour', DAY);
+      fixture.componentRef.setInput('ligne', 'CRO');
+      fixture.detectChanges();
+      await settle(fixture);
+      const el: HTMLElement = fixture.nativeElement;
+
+      expect(el.querySelector('app-line-always-green[data-line="CRO"]')?.classList).toContain(
+        'is-linked',
+      );
+      expect(el.querySelector('[data-link-elsewhere]')).toBeNull();
+    });
+
+    it('un lien vers une autre journée le dit, sans désigner de ligne', async () => {
+      const fixture = TestBed.createComponent(FicheAtelier);
+      fixture.componentRef.setInput('jour', NEXT_DAY);
+      fixture.componentRef.setInput('ligne', 'BAG');
+      fixture.detectChanges();
+      await settle(fixture);
+      const el: HTMLElement = fixture.nativeElement;
+
+      expect(text(el, '[data-link-elsewhere]')).toContain(dayLabelOf(NEXT_DAY));
+      expect(el.querySelector('.is-linked')).toBeNull();
     });
   });
 });

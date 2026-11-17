@@ -100,6 +100,14 @@
       </fold-callout>
     }
 
+    <!-- Le lien de la cloche vise une autre journée que celle du four : le dire,
+         plutôt que d'ouvrir une ligne du mauvais jour. -->
+    @if (linkedElsewhere(); as other) {
+      <fold-callout variant="info" class="fa-note" data-link-elsewhere>
+        Le lien suivi vise le {{ other }} — la fiche montre la journée en cours au four.
+      </fold-callout>
+    }
+
     @if (gestures.retakeFailed()) {
       <fold-callout variant="alert" class="fa-note">
         Le retirage n'a pas abouti — la fiche affichée est toujours celle du tirage lu. Réessayez.
@@ -251,14 +259,41 @@
               @if (intertitles().get(line.sku); as intertitle) {
                 <h2 class="fa-subcategory" data-subcategory>{{ intertitle }}</h2>
               }
-              <app-worksheet-line
-                [line]="line"
-                [busy]="gestures.isBusy(line)"
-                [now]="now()"
-                [shortcuts]="shortcuts.bySku().get(line.sku) ?? []"
-                (recorded)="gestures.record(line, $event)"
-                (cancelled)="gestures.cancel(line, $event)"
-              />
+              <!-- Le niveau de suivi de la LIGNE, servi (plan des niveaux de suivi,
+                   § 3.10) : un groupe-rayon mêle des postes de niveaux différents. -->
+              @switch (line.trackingLevel) {
+                @case ('always_green') {
+                  <app-line-always-green
+                    [line]="line"
+                    [busy]="gestures.isBusy(line)"
+                    [class.is-linked]="linkedSku() === line.sku"
+                    [attr.data-line]="line.sku"
+                    (problem)="gestures.reportProblem(line)"
+                  />
+                }
+                @case ('simple') {
+                  <app-line-simple
+                    [line]="line"
+                    [busy]="gestures.isBusy(line)"
+                    [class.is-linked]="linkedSku() === line.sku"
+                    [attr.data-line]="line.sku"
+                    (done)="gestures.markDone(line)"
+                    (problem)="gestures.reportProblem(line)"
+                  />
+                }
+                @default {
+                  <app-worksheet-line
+                    [line]="line"
+                    [busy]="gestures.isBusy(line)"
+                    [now]="now()"
+                    [shortcuts]="shortcuts.bySku().get(line.sku) ?? []"
+                    [class.is-linked]="linkedSku() === line.sku"
+                    [attr.data-line]="line.sku"
+                    (recorded)="gestures.record(line, $event)"
+                    (cancelled)="gestures.cancel(line, $event)"
+                  />
+                }
+              }
             } @empty {
               <fold-empty-state
                 title="Tout est sorti"
@@ -310,14 +345,36 @@
                   @if (doneIntertitles().get(line.sku); as intertitle) {
                     <h2 class="fa-subcategory" data-subcategory>{{ intertitle }}</h2>
                   }
-                  <app-worksheet-line
-                    [line]="line"
-                    [busy]="gestures.isBusy(line)"
-                    [now]="now()"
-                    [shortcuts]="shortcuts.bySku().get(line.sku) ?? []"
-                    (recorded)="gestures.record(line, $event)"
-                    (cancelled)="gestures.cancel(line, $event)"
-                  />
+                  @switch (line.trackingLevel) {
+                    @case ('always_green') {
+                      <app-line-always-green
+                        [line]="line"
+                        [busy]="gestures.isBusy(line)"
+                        [attr.data-line]="line.sku"
+                        (problem)="gestures.reportProblem(line)"
+                      />
+                    }
+                    @case ('simple') {
+                      <app-line-simple
+                        [line]="line"
+                        [busy]="gestures.isBusy(line)"
+                        [attr.data-line]="line.sku"
+                        (done)="gestures.markDone(line)"
+                        (problem)="gestures.reportProblem(line)"
+                      />
+                    }
+                    @default {
+                      <app-worksheet-line
+                        [line]="line"
+                        [busy]="gestures.isBusy(line)"
+                        [now]="now()"
+                        [shortcuts]="shortcuts.bySku().get(line.sku) ?? []"
+                        [attr.data-line]="line.sku"
+                        (recorded)="gestures.record(line, $event)"
+                        (cancelled)="gestures.cancel(line, $event)"
+                      />
+                    }
+                  }
                 }
               </div>
             }

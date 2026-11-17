@@ -1,0 +1,28 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.problem {
+  border-color: var(--fold-color-alert-border);
+  border-left: 3px solid var(--fold-color-alert);
+  background: var(--fold-color-alert-surface);
+}
+
+.problem-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--fold-space-xs);
+}
+
+.problem-figures {
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-alert-text);
+}
+
+.problem-since {
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}

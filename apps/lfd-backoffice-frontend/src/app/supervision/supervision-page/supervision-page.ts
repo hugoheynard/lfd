@@ -37,6 +37,7 @@ import { PackingBand } from '../packing-band/packing-band';
 import { PackingColumn } from '../packing-column/packing-column';
 import { PreparationBand } from '../preparation-band/preparation-band';
 import { PreparationColumn } from '../preparation-column/preparation-column';
+import { ProductionProblems } from '../production-problems/production-problems';
 import { ALL_SHELVES, preparationBoard } from '../preparation-shelves';
 import { PreparationSlots, type PreparationView } from '../preparation-slots/preparation-slots';
 import type { QualityRequest } from '../quality-badges';
@@ -108,6 +109,7 @@ const BOARD_NARROW = '(max-width: 900px)';
     PackingColumn,
     PreparationBand,
     PreparationColumn,
+    ProductionProblems,
     DayCalendar,
     SupervisionColumn,
     StockBoard,
@@ -147,6 +149,15 @@ export class SupervisionPage {
   protected readonly handover = this.reads.handover;
   /** Les relances d'un retrait en retard : leurs délais et leurs traces (2026-10-25). */
   protected readonly nudges = computed(() => dataOf(this.reads.nudges()));
+  /** Les rouges ouverts du fournil ; une lecture ratée le dit, la colonne reste. */
+  protected readonly problems = computed(() => dataOf(this.reads.problems())?.problems ?? []);
+  protected readonly problemsLost = computed(() => {
+    const state = this.reads.problems();
+    return state.status === 'error' || (state.status === 'ready' && state.stale);
+  });
+  protected readonly canResolveProblems = computed(() =>
+    this.permissions.can('b2b_supervision:write'),
+  );
 
   /** Journée (les trois colonnes) ou Stock (lot S1) ; le jour choisi vaut pour les deux. */
   protected readonly view = signal<SupervisionView>('day');

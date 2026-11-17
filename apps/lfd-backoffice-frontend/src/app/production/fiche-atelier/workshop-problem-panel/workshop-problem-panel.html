@@ -1,0 +1,48 @@
+<fold-panel-header
+  title="Combien est réellement sorti ?"
+  [subtitle]="data().line.productName"
+  closeLabel="Fermer"
+/>
+
+<fold-panel-body>
+  <div class="wp-form">
+    @if (open(); as said) {
+      <fold-callout variant="info" data-problem-open>{{ said }}</fold-callout>
+    }
+    <fold-number-input
+      [label]="quantityLabel()"
+      [hint]="hint()"
+      [value]="produced()"
+      (valueChange)="produced.set($event)"
+      [min]="0"
+      integer
+      data-problem-produced
+    />
+    <fold-input
+      label="Raison"
+      optional
+      placeholder="fournée ratée, matière manquante, panne…"
+      [value]="reason()"
+      (valueChange)="reason.set($event)"
+    />
+    @if (refusal(); as refused) {
+      <fold-callout variant="alert" data-problem-refused>{{ refused }}</fold-callout>
+    }
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  <button foldButton type="button" emphasis="outline" intent="neutral" (click)="close()">
+    Annuler
+  </button>
+  <button
+    foldButton
+    type="button"
+    intent="danger"
+    data-problem-submit
+    [disabled]="!valid() || sending()"
+    (click)="submit()"
+  >
+    Signaler le problème
+  </button>
+</fold-panel-footer>

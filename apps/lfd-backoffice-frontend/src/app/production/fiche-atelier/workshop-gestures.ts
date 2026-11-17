@@ -4,11 +4,13 @@ import { inject, Injectable, signal } from '@angular/core';
 import type { WorkshopBatch, WorkshopLine } from '@lfd/contracts';
 
 import { PermissionsStore } from '../../auth/permissions.store';
+import { GestureIntents } from '../../shared/gesture-intents';
 import { ulid } from '../../shared/ulid';
 import { serverMessageOf } from '../server-message';
 import { markKey } from '../worksheet-day';
 import { WorksheetService } from '../worksheet.service';
 import { WorkshopDayReader } from './workshop-day.reader';
+import { WorkshopProblemOpener } from './workshop-problem-opener';
 
 /**
  * La réponse n'est pas arrivée : le serveur a peut-être écrit. On ne reprend
@@ -54,6 +56,10 @@ export class WorkshopGestures {
   private readonly api = inject(WorksheetService);
   private readonly permissions = inject(PermissionsStore);
   private readonly day = inject(WorkshopDayReader);
+  private readonly problems = inject(WorkshopProblemOpener);
+
+  /** « Fait » par intention : un double appui ne déclare qu'une fois (plan des niveaux de suivi, § 3.6). */
+  private readonly intents = new GestureIntents();
 
   /**
    * Le dernier geste refusé, dit en entier, avec la raison du SERVEUR — « pièces
@@ -103,6 +109,42 @@ export class WorkshopGestures {
     );
     if (accepted && sent.id !== null) {
       this.lastAccepted.set({ line, id: sent.id, quantity });
+    }
+  }
+
+  /**
+   * **« Fait »** (niveau simple) : le serveur déclare le reste sous le plafond.
+   * L'écran n'envoie aucune quantité. La clé de l'intention reste celle de la
+   * ligne tant que le geste n'a pas abouti.
+   */
+  async markDone(line: WorkshopLine): Promise<void> {
+    const sent: { subject: string | null } = { subject: null };
+    const accepted = await this.send(
+      line,
+      async (date) => {
+        const subject = `done|${date}|${line.sku}`;
+        await this.api.markDone(date, line.sku, this.intents.keyFor(subject));
+        sent.subject = subject;
+      },
+      'La ligne n’a pas été marquée faite',
+    );
+    if (accepted && sent.subject !== null) {
+      this.intents.done(sent.subject);
+    }
+  }
+
+  /**
+   * **« Problème »** : ouvre le panneau rouge, qui envoie lui-même ; un
+   * signalement pris fait relire la fiche.
+   */
+  async reportProblem(line: WorkshopLine): Promise<void> {
+    const date = this.day.date();
+    if (date === null || this.isBusy(line)) {
+      return;
+    }
+    this.refusal.set(null);
+    if (await this.problems.openFor(date, line)) {
+      await this.day.rereadAfterWrite();
     }
   }
 

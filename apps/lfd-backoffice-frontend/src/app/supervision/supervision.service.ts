@@ -8,10 +8,12 @@ import type {
   DaySupervisionView,
   HandoverQueueView,
   ProductionPackingView,
+  ProductionProblemsView,
   ProductionWorksheetView,
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
+import { intentOptions } from '../shared/gesture-intents';
 
 /**
  * **Les quatre lectures de la Supervision du jour**, toutes sous
@@ -89,6 +91,26 @@ export class SupervisionService {
     return firstValueFrom(
       this.http.get<DayStockOverviewView>(
         `${B2B_API_BASE}/admin/supervision/stock/${encodeURIComponent(date)}`,
+      ),
+    );
+  }
+
+  /** Les problèmes ouverts du fournil ce jour-là (plan des niveaux de suivi, § 3.8). */
+  async productionProblems(date: string): Promise<ProductionProblemsView> {
+    return firstValueFrom(
+      this.http.get<ProductionProblemsView>(
+        `${B2B_API_BASE}/admin/supervision/production-problems?date=${encodeURIComponent(date)}`,
+      ),
+    );
+  }
+
+  /** « Marquer traité » : le problème quitte le rouge, son plafond reste. Par intention. */
+  async resolveProductionProblem(id: string, intentKey: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post(
+        `${B2B_API_BASE}/admin/supervision/production-problems/${encodeURIComponent(id)}/resolve`,
+        {},
+        intentOptions(intentKey),
       ),
     );
   }

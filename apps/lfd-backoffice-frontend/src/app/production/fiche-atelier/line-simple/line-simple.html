@@ -1,0 +1,35 @@
+<span class="ls-what">
+  <span class="ls-name">{{ line().productName }}</span>
+  <span class="ls-figures" data-line-figures>{{ figures() }}</span>
+</span>
+
+<span class="ls-actions">
+  @if (line().done) {
+    <fold-badge variant="success" content="✓ fait" data-line-done-badge />
+  } @else if (left() > 0) {
+    <button
+      foldButton
+      type="button"
+      size="lg"
+      data-line-done-button
+      [disabled]="busy()"
+      (click)="done.emit()"
+    >
+      {{ doneLabel() }}
+    </button>
+  }
+  <button
+    foldButton
+    type="button"
+    size="lg"
+    intent="danger"
+    emphasis="outline"
+    data-line-problem-button
+    [disabled]="busy()"
+    (click)="problem.emit()"
+  >
+    Problème
+  </button>
+</span>
+
+<app-line-problem-note class="ls-note" [line]="line()" />

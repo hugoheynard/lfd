@@ -216,6 +216,15 @@ export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
     needs: 'production_workstations:read',
   },
   {
+    // Le niveau de suivi du fournil et de ses postes
+    // (`documentation/fournil/plan-niveaux-de-suivi.md`, § 3.10).
+    key: 'reglages-tracking-levels',
+    label: 'Niveau de suivi',
+    link: '/reglages/niveau-de-suivi',
+    icon: 'sliders',
+    needs: 'production_settings:read',
+  },
+  {
     // Aperçu de démonstration des trois niveaux de suivi, sur une fausse
     // journée (`documentation/fournil/reflexion-fiche-simple.md`, Hugo,
     // 2026-11-17) : rien n'est enregistré.

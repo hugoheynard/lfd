@@ -5,6 +5,7 @@ import type {
   DaySupervisionView,
   HandoverQueueView,
   ProductionPackingView,
+  ProductionProblemsView,
   ProductionWorksheetView,
 } from '@lfd/contracts';
 
@@ -37,6 +38,8 @@ export class SupervisionReads {
   readonly stock = signal<ColumnState<DayStockOverviewView>>(LOADING);
   /** Les relances d'un retrait en retard (2026-10-25), relues avec la colonne du retrait. */
   readonly nudges = signal<ColumnState<CustomerNudgesView>>(LOADING);
+  /** Les problèmes ouverts du fournil (plan des niveaux de suivi, § 3.8), relus avec la colonne. */
+  readonly problems = signal<ColumnState<ProductionProblemsView>>(LOADING);
 
   constructor(
     private readonly service: SupervisionService,
@@ -46,7 +49,15 @@ export class SupervisionReads {
 
   /** Tout relire depuis le jour du serveur — le premier chargement, ou quand il a échoué. */
   async load(): Promise<void> {
-    const all = [this.day, this.preparation, this.packing, this.handover, this.stock, this.nudges];
+    const all = [
+      this.day,
+      this.preparation,
+      this.packing,
+      this.handover,
+      this.stock,
+      this.nudges,
+      this.problems,
+    ];
     all.forEach((column) => column.set(LOADING));
     this.quality.reset();
     let day: DaySupervisionView;
@@ -114,6 +125,7 @@ export class SupervisionReads {
       this.readColumn('handover', date),
       this.readStock(date),
       this.readNudges(),
+      this.readProblems(),
       this.quality.read(date),
     ]);
   }
@@ -126,6 +138,16 @@ export class SupervisionReads {
     }
     const current = (): boolean => date === this.date();
     return readInto(this.nudges, () => this.service.customerNudges(date), current);
+  }
+
+  /** Relire les problèmes du fournil — après « Marquer traité », sans attendre la relecture. */
+  readProblems(): Promise<void> {
+    const date = this.date();
+    if (date === null) {
+      return Promise.resolve();
+    }
+    const current = (): boolean => date === this.date();
+    return readInto(this.problems, () => this.service.productionProblems(date), current);
   }
 
   private readStock(date: string, reset = false): Promise<void> {

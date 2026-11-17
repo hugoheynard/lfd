@@ -202,6 +202,17 @@ export const reglagesRoutes: Routes = [
           ),
       },
       {
+        // Le niveau de suivi du fournil et de ses postes
+        // (`documentation/fournil/plan-niveaux-de-suivi.md`, § 3.10).
+        path: 'niveau-de-suivi',
+        canActivate: [permissionGuard('production_settings:read')],
+        title: 'Niveau de suivi — LFC B2B admin',
+        loadComponent: () =>
+          import('./tracking-levels/tracking-levels-page/tracking-levels-page').then(
+            (m) => m.TrackingLevelsPage,
+          ),
+      },
+      {
         // Aperçu de démonstration des niveaux de suivi, sur une fausse journée
         // (`documentation/fournil/reflexion-fiche-simple.md`) : aucun appel serveur.
         path: 'niveau-de-suivi/apercu',
