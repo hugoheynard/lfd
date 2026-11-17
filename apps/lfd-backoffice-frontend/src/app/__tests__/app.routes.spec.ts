@@ -332,6 +332,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'reglages/production/postes': 'production_workstations:read',
   // La simulation du dossier de prod, une page des Réglages (2026-11-17).
   'reglages/production/simulation': 'production_workstations:read',
+  'reglages/niveau-de-suivi/apercu': 'production_settings:read',
   // LE COMPTOIR non plus : la file de retrait (`handover_counter`) et la
   // commande pro (`b2b_place_order`) sont deux droits. Attester un retrait
   // passe par `retrait/:token`, qui exige l'écriture.

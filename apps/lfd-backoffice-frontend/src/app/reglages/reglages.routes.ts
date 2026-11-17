@@ -201,6 +201,17 @@ export const reglagesRoutes: Routes = [
             (m) => m.ProductionSimulationPage,
           ),
       },
+      {
+        // Aperçu de démonstration des niveaux de suivi, sur une fausse journée
+        // (`documentation/fournil/reflexion-fiche-simple.md`) : aucun appel serveur.
+        path: 'niveau-de-suivi/apercu',
+        canActivate: [permissionGuard('production_settings:read')],
+        title: 'Aperçu des niveaux de suivi — LFC B2B admin',
+        loadComponent: () =>
+          import('./tracking-levels/tracking-levels-preview/tracking-levels-preview').then(
+            (m) => m.TrackingLevelsPreview,
+          ),
+      },
 
       // RÉGLAGES › LIVRAISON (Hugo, 2026-10-13) — ce qui SE RÈGLE de la
       // livraison, venu de `/livraison/` ; les écrans du jour y restent.

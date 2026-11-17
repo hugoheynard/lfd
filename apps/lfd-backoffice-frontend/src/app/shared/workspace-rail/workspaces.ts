@@ -215,6 +215,16 @@ export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
     icon: 'play',
     needs: 'production_workstations:read',
   },
+  {
+    // Aperçu de démonstration des trois niveaux de suivi, sur une fausse
+    // journée (`documentation/fournil/reflexion-fiche-simple.md`, Hugo,
+    // 2026-11-17) : rien n'est enregistré.
+    key: 'reglages-tracking-levels-preview',
+    label: 'Niveaux de suivi (aperçu)',
+    link: '/reglages/niveau-de-suivi/apercu',
+    icon: 'eye',
+    needs: 'production_settings:read',
+  },
 ];
 
 /**

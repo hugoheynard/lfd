@@ -1,0 +1,220 @@
+<fold-page-layout title="Aperçu des niveaux de suivi" icon="eye">
+  <div class="preview">
+    <fold-callout variant="warning">
+      Démonstration sur une fausse journée : rien n'est enregistré, rien ne part au colisage ni à
+      l'équipe, et les niveaux de suivi ne sont pas encore en service. Avancez l'horloge, changez de
+      niveau, signalez un problème pour voir ce que chacun aurait à faire.
+    </fold-callout>
+
+    <fold-card>
+      <fold-element-title
+        cardHeader
+        variant="title"
+        title="La journée de démonstration"
+        [subtitle]="'Il est ' + clock()"
+      />
+      <div class="controls">
+        <fold-view-toggle
+          ariaLabel="Niveau de suivi"
+          [options]="levels"
+          [value]="level()"
+          (valueChange)="chooseLevel($event)"
+        />
+        <div class="clock">
+          <button foldButton type="button" emphasis="outline" (click)="advance(15)">+15 min</button>
+          <button foldButton type="button" emphasis="outline" (click)="advance(60)">+1 h</button>
+          <button foldButton type="button" emphasis="soft" intent="neutral" (click)="resetClock()">
+            Revenir à 5 h
+          </button>
+        </div>
+        @if (level() === 'always-green') {
+          <fold-number-input
+            class="margin"
+            label="Marge après l'heure du palier, en minutes"
+            [value]="margin()"
+            (valueChange)="margin.set($event)"
+            [min]="0"
+            [max]="120"
+            integer
+          />
+        }
+      </div>
+    </fold-card>
+
+    @if (red(); as draft) {
+      <fold-card>
+        <fold-element-title
+          cardHeader
+          variant="title"
+          title="Combien est réellement sorti ?"
+          [subtitle]="redProduct()?.name ?? ''"
+        />
+        <div class="red-form">
+          <fold-number-input
+            label="Pièces sorties"
+            [hint]="'Sur ' + draft.expected"
+            [value]="redQuantity()"
+            (valueChange)="redQuantity.set($event)"
+            [min]="0"
+            [max]="draft.expected"
+            integer
+          />
+          <fold-input
+            label="Raison"
+            optional
+            placeholder="fournée ratée, matière manquante, panne…"
+            [value]="redReason()"
+            (valueChange)="redReason.set($event)"
+          />
+          @if (draft.viaPacking) {
+            <fold-callout variant="warning">
+              Des pièces sont déjà au colisage : rien n'est défait au fournil, le manque passera par
+              le colisage sur les commandes concernées.
+            </fold-callout>
+          } @else if (draft.correction) {
+            <fold-callout variant="info">
+              Correction d'un vert : la fournée automatique de {{ draft.expected }} serait annulée,
+              et une fournée de ce qui est vraiment sorti déclarée à sa place.
+            </fold-callout>
+          }
+          <div class="red-actions">
+            <button foldButton type="button" intent="danger" (click)="confirmRed()">
+              Prévenir le manager
+            </button>
+            <button
+              foldButton
+              type="button"
+              emphasis="outline"
+              intent="neutral"
+              (click)="cancelRed()"
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+      </fold-card>
+    }
+
+    <div class="board">
+      <div class="stations">
+        @for (station of stations; track station) {
+          <fold-card>
+            <fold-element-title cardHeader variant="title" [title]="station" />
+            @if (level() === 'detailed') {
+              <div class="detailed">
+                @for (entry of linesOf(station); track entry.line.sku) {
+                  <app-worksheet-line
+                    [line]="entry.line"
+                    [now]="now()"
+                    (recorded)="recordBatch(entry.line.sku, $event)"
+                    (cancelled)="cancelBatch(entry.line.sku, $event)"
+                  />
+                }
+              </div>
+            } @else {
+              <ul class="rows">
+                @for (row of rowsOf(station); track row.product.sku) {
+                  <li class="row" [attr.data-sku]="row.product.sku">
+                    <span class="row-name">{{ row.product.name }}</span>
+                    <span class="row-count">{{ row.produced }} / {{ row.total }}</span>
+                    <span class="row-note">{{ row.note }}</span>
+                    <fold-badge
+                      [variant]="badge(row.status).variant"
+                      [content]="badge(row.status).label"
+                    />
+                    <span class="row-actions">
+                      @if (level() === 'simple' && row.status === 'pending') {
+                        <button
+                          foldButton
+                          type="button"
+                          size="sm"
+                          (click)="markDone(row.product.sku)"
+                        >
+                          Fait
+                        </button>
+                      }
+                      @if (row.status !== 'problem') {
+                        <button
+                          foldButton
+                          type="button"
+                          size="sm"
+                          intent="danger"
+                          (click)="openRed(row.product.sku)"
+                        >
+                          Problème
+                        </button>
+                      }
+                    </span>
+                  </li>
+                }
+              </ul>
+            }
+          </fold-card>
+        }
+      </div>
+
+      <div class="side">
+        <fold-card>
+          <fold-element-title
+            cardHeader
+            variant="title"
+            icon="bell"
+            title="Cloche (aperçu)"
+            subtitle="Ce que reçoivent les personnes qui supervisent la production"
+          >
+            <fold-badge
+              titleAction
+              [variant]="openAlerts().length > 0 ? 'alert' : 'neutral'"
+              [content]="'' + openAlerts().length"
+            />
+          </fold-element-title>
+          @if (alerts().length === 0) {
+            <fold-empty-state title="Aucune alerte" subtitle="Un rouge arrive ici." />
+          } @else {
+            <ul class="alerts">
+              @for (alert of alerts(); track alert.id) {
+                <li class="bell-item" [class.is-treated]="alert.treated">
+                  <span class="alert-when">{{ alert.at }} · {{ alert.station }}</span>
+                  <span>{{ alertText(alert) }}</span>
+                  @if (alert.viaPacking) {
+                    <span class="alert-when">Le manque passera par le colisage.</span>
+                  }
+                </li>
+              }
+            </ul>
+          }
+        </fold-card>
+
+        <fold-card>
+          <fold-element-title
+            cardHeader
+            variant="title"
+            title="Supervision — fournil"
+            subtitle="Un rouge y reste tant qu'il n'est pas traité"
+          />
+          @if (openAlerts().length === 0) {
+            <fold-empty-state title="Rien à traiter" subtitle="Tout va comme prévu." />
+          } @else {
+            <ul class="alerts">
+              @for (alert of openAlerts(); track alert.id) {
+                <li class="supervision-item">
+                  <fold-badge variant="alert" content="manque" />
+                  <span>{{ alertText(alert) }}</span>
+                  <button
+                    foldButton
+                    type="button"
+                    size="sm"
+                    emphasis="outline"
+                    (click)="markTreated(alert.id)"
+                  >
+                    Marquer traité
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        </fold-card>
+      </div>
+    </div>
+  </div>
+</fold-page-layout>

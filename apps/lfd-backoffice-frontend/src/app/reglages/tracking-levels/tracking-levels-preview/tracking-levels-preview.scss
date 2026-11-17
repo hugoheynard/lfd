@@ -1,0 +1,112 @@
+.preview,
+.side,
+.stations,
+.red-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+.controls,
+.clock,
+.red-actions,
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-md);
+}
+
+.controls {
+  justify-content: space-between;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: var(--fold-space-lg);
+  align-items: start;
+}
+
+@media (max-width: 1023px) {
+  .board {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Les jetons que la ligne de la fiche d'atelier lit par héritage (`fiche-atelier.scss`). */
+.detailed {
+  --fa-line-columns: 112px minmax(0, 1fr) 300px auto;
+  --fa-line-areas: 'left what progress actions' 'left batches batches batches';
+  --fa-gesture-height: 52px;
+  --fa-quick-flex: none;
+  --fa-row-gap: var(--fold-space-2xl);
+  --fa-row-pad-x: var(--fold-space-xl);
+  --fa-row-pad-y: var(--fold-space-lg);
+  --fa-size-qty: 30px;
+  --fa-size-name: 17px;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.rows,
+.alerts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  grid-template-areas: 'name count badge actions' 'note note note note';
+  align-items: center;
+  gap: var(--fold-space-xs) var(--fold-space-md);
+  padding: var(--fold-space-sm) 0;
+  border-bottom: 1px solid var(--fold-color-border);
+}
+
+.row-name {
+  grid-area: name;
+  font-weight: 600;
+}
+
+.row-count {
+  grid-area: count;
+  font-variant-numeric: tabular-nums;
+}
+
+.row-note,
+.alert-when {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.row-note {
+  grid-area: note;
+}
+
+.row-actions {
+  grid-area: actions;
+}
+
+.bell-item,
+.supervision-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.supervision-item {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.is-treated {
+  opacity: 0.6;
+}
