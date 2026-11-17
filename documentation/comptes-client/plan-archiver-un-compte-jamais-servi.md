@@ -211,3 +211,20 @@ Ce qui suit **prime** sur les §§ 2 à 4.
 - Le droit du geste : la ressource `StaffResource` qui permet de résilier, à
   nommer en A1.
 - À vérifier en A1 : si `lint:context-version-columns` lit `companies`.
+
+## 7. Décisions de Hugo (2026-11-17)
+
+- **Q1 — non** : un **site** rattaché à un principal ne s'archive pas ; il se
+  détache d'abord. L'archivage refuse une société dont `parent_company_id` est
+  posé, et le rattachement refuse une société archivée.
+- **Q2 — oui** : archiver ne touche pas aux personnes ; elles gardent l'accès à
+  leurs autres sociétés.
+- **Q3 — oui** : **le même mur ferme les comptes résiliés.** Partout où le plan
+  dit « une société archivée » pour l'accès (principal, entrée d'un invité,
+  `readCompanyStanding`, `inheritedSiteWhere`, boutique), il faut lire « une
+  société archivée **ou résiliée** ». Le verrou de la passation refuse les deux.
+  Le statut `terminated` existant et la colonne `archived_at` sont les deux
+  conditions du même prédicat, écrit une seule fois (« la société est fermée »)
+  et lu par tous ces murs. Les comptes déjà résiliés en production perdent
+  l'accès de leurs membres au déploiement : **à compter avant de livrer** (combien
+  de comptes résiliés ont des membres actifs), et à annoncer.
