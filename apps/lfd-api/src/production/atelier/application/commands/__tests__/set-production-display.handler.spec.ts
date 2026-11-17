@@ -8,10 +8,7 @@ import {
 import { ProductionDisplaySettings } from "../../../../shared/print/index.js";
 import { InMemoryDisplaySettings } from "../../../../shared/print/application/__tests__/production-display-settings-doubles.js";
 import { FixedPlacedProducts } from "../../../../workstations/application/__tests__/placement-doubles.js";
-import {
-  NoProductPlacedError,
-  WorkstationGroupingNotYetOpenError,
-} from "../../../domain/errors/production-display-errors.js";
+import { NoProductPlacedError } from "../../../domain/errors/production-display-errors.js";
 import { SetProductionDisplayCommand } from "../set-production-display.command.js";
 import { SetProductionDisplayHandler } from "../set-production-display.handler.js";
 
@@ -99,18 +96,15 @@ describe("SetProductionDisplayHandler", () => {
     expect(events.traced).toEqual([]);
   });
 
-  /**
-   * Garde provisoire `refuseWorkstationGroupingUntilScreens` : W3b la retire,
-   * et ce test passe de « refusé » à « accepté ».
-   */
-  it("refuse le mode prod tant que les écrans du prévisionnel ne rangent pas par poste", async () => {
+  it("accepte le mode prod dès qu'un produit a un poste, et journalise l'avant et l'après", async () => {
     const { handler, settings, events } = subject(null, 3);
 
-    await expect(
-      handler.execute(new SetProductionDisplayCommand(false, "staff-1", "workstation")),
-    ).rejects.toThrow(WorkstationGroupingNotYetOpenError);
-    expect(settings.writes).toEqual([]);
-    expect(events.traced).toEqual([]);
+    await handler.execute(new SetProductionDisplayCommand(false, "staff-1", "workstation"));
+
+    expect(settings.posed?.grouping).toBe("workstation");
+    expect(events.traced[0]?.journalFact()).toMatchObject({
+      payload: { grouping: "workstation", previous: { grouping: "shelf" } },
+    });
   });
 
   it("revenir en mode boutique depuis le mode prod est toujours admis, et journalisé", async () => {

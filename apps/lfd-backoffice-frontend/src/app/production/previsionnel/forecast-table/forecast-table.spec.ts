@@ -54,7 +54,7 @@ const HEADERS: readonly ForecastHeader[] = [
 
 const RAYONS: readonly ForecastRayon[] = [
   {
-    family: { id: 'fam_01J9V1', name: 'Viennoiseries', position: 1 },
+    key: 'fam_01J9V1',
     label: 'Viennoiseries',
     quantities: [100, 60],
     totalUnits: 160,

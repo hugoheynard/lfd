@@ -8,9 +8,9 @@ import {
   signal,
 } from '@angular/core';
 import type {
-  CatalogItemView,
   ProductionDueThresholdsView,
   ProductionForecastView,
+  ProductionGroupingView,
   ProductionWorksheetView,
 } from '@lfd/contracts';
 import {
@@ -24,6 +24,7 @@ import { parisToday } from '../../../shared/paris-today';
 import { WorkshopClock } from '../../fiche-atelier/workshop-clock';
 import { ProductionService } from '../../production.service';
 import { WorksheetService } from '../../worksheet.service';
+import { WorkstationsService } from '../../workstations.service';
 import { dayTrancheGrid } from '../day-tranche-matrix';
 import { tranchesNow } from '../day-tranches-section/day-tranches-section';
 import { ForecastTable } from '../forecast-table/forecast-table';
@@ -41,7 +42,7 @@ type LoadState = 'loading' | 'ready' | 'error';
  * toutes les catégories, réassorts compris (Hugo, 2026-11-01) ; le compte à
  * rebours ne fait que les répartir par tranche, le reste va « Sans heure ».
  * La fiche d'atelier n'apporte que le sorti. Sans l'un ou l'autre, la grille
- * reste juste et le dit. Les rayons viennent du catalogue, comme la matrice.
+ * reste juste et le dit. Le rangement vient du serveur, comme la matrice.
  */
 @Component({
   selector: 'app-day-tranche-wall',
@@ -61,14 +62,10 @@ export class DayTrancheWall {
   private readonly production = inject(ProductionService);
   private readonly worksheets = inject(WorksheetService);
   private readonly clock = inject(WorkshopClock);
+  private readonly workstations = inject(WorkstationsService);
 
   /** La journée de service, `AAAA-MM-JJ`. */
   readonly date = input.required<string>();
-  /** Le catalogue que la page a lu avec la matrice : les rayons. */
-  readonly catalogue = input.required<readonly CatalogItemView[]>();
-  /** `false` = le catalogue n'a pas répondu (la page le dit déjà). */
-  readonly shelvesKnown = input(true);
-  readonly showSubcategories = input(false);
   /** Le plan de la journée est-il arrêté ? `null` = la page ne l'a pas lu. */
   readonly planClosed = input<boolean | null>(null);
 
@@ -80,6 +77,17 @@ export class DayTrancheWall {
   private readonly worksheet = signal<ProductionWorksheetView | null>(null);
   /** La fiche n'a pas répondu : ni unité, ni sorti. */
   protected readonly worksheetLost = signal(false);
+  /**
+   * Le rangement des SKU de la grille, demandé au serveur (plan des postes,
+   * § 3.7). `null` : rien à ranger, ou la lecture a échoué (`shelvesLost`).
+   */
+  private readonly grouping = signal<ProductionGroupingView | null>(null);
+  /** Le rangement ou les rayons n'ont pas pu être lus : tout est en « Rayon inconnu ». */
+  protected readonly shelvesLost = signal(false);
+  /** En mode prod, les postes n'ont pas pu être lus : la grille est rangée par rayon. */
+  protected readonly workstationsLost = computed(
+    () => this.grouping()?.workstationsKnown === false,
+  );
 
   private readonly today = computed(() => parisToday());
 
@@ -118,15 +126,7 @@ export class DayTrancheWall {
 
   protected readonly rayons = computed(() => {
     const grid = this.grid();
-    return grid === null
-      ? []
-      : trancheRayons(
-          grid,
-          this.catalogue(),
-          this.shelvesKnown(),
-          this.showSubcategories(),
-          this.withState(),
-        );
+    return grid === null ? [] : trancheRayons(grid, this.grouping(), this.withState());
   });
 
   constructor() {
@@ -158,6 +158,28 @@ export class DayTrancheWall {
     this.dueLost.set(due.status === 'rejected');
     this.worksheet.set(worksheet.status === 'fulfilled' ? worksheet.value : null);
     this.worksheetLost.set(worksheet.status === 'rejected');
+    // Le rangement des lignes que la grille montre — exactement celles-là.
+    const skus = this.grid()?.rows.map((row) => row.sku) ?? [];
+    const grouping = await this.readGrouping(skus);
+    if (seq !== this.readSeq) {
+      return;
+    }
+    this.grouping.set(grouping ?? null);
+    this.shelvesLost.set(grouping === undefined || grouping?.shelvesKnown === false);
     this.state.set('ready');
+  }
+
+  /** `null` s'il n'y a rien à ranger, `undefined` si la lecture a échoué. */
+  private async readGrouping(
+    skus: readonly string[],
+  ): Promise<ProductionGroupingView | null | undefined> {
+    if (skus.length === 0) {
+      return null;
+    }
+    try {
+      return await this.workstations.grouping(skus);
+    } catch {
+      return undefined;
+    }
   }
 }

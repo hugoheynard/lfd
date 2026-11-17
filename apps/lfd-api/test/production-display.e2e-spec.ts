@@ -106,9 +106,7 @@ describe("Réglages › Production › Rangement des fiches", () => {
     expect(await ctx.prisma.productionDisplaySettings.count()).toBe(0);
   });
 
-  // Garde provisoire `refuseWorkstationGroupingUntilScreens` : W3b la retire,
-  // et ce test passe de « refusé » à « accepté ».
-  it("refuse le mode prod, produits placés, tant que les écrans du prévisionnel ne suivent pas", async () => {
+  it("accepte le mode prod dès qu'un produit a un poste", async () => {
     const created = await staff()
       .post("/admin/production/workstations")
       .set(INTENT_KEY, freshIntent())
@@ -120,15 +118,15 @@ describe("Réglages › Production › Rangement des fiches", () => {
       .send({ productSkus: ["VIE-001"], workstationId: jsonBody<CreatedIdResponse>(created).id })
       .expect(204);
 
-    const response = await staff()
+    await staff()
       .put(DISPLAY)
       .send({ showSubcategories: false, grouping: "workstation" })
-      .expect(409);
+      .expect(204);
 
-    expect(jsonBody<{ code: string }>(response).code).toBe(
-      "production.display_settings.workstation_grouping_not_open",
-    );
-    expect((await settings()).display).toEqual({ showSubcategories: false, grouping: "shelf" });
+    expect((await settings()).display).toEqual({
+      showSubcategories: false,
+      grouping: "workstation",
+    });
   });
 
   it("refuse un rangement inconnu en 400", async () => {

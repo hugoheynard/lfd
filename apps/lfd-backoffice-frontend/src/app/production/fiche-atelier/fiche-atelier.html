@@ -20,13 +20,20 @@
           }
           <!-- Au téléphone, le sélecteur de poste le dit déjà (Hugo, 2026-10-28). -->
           @if (current() && !compact()) {
+            @if (workstationName(); as name) {
+              · Fiche de poste — {{ name }}
+            }
             · fiche {{ rank() }} sur {{ day.groups().length }}
           }
         </p>
-        <!-- Le rayon se lit dans les onglets (poste fixe) ou le sélecteur (téléphone) :
+        <!-- Le rayon se lit dans les onglets (tablette) ou le sélecteur (téléphone) :
              le titre reste pour les lecteurs d'écran, pas pour l'œil (Hugo, 2026-10-28). -->
         <h1 class="fa-title fa-title--unseen">
-          {{ current()?.label ?? 'Fiche d’atelier' }}
+          @if (workstationName(); as name) {
+            Fiche de poste — {{ name }}
+          } @else {
+            {{ current()?.label ?? 'Fiche d’atelier' }}
+          }
         </h1>
       </div>
 
@@ -74,6 +81,13 @@
       <fold-callout variant="warning" class="fa-note">
         Les rayons n'ont pas pu être lus — les quantités sont justes, mais les fiches ne sont pas
         séparées par poste. Rechargez pour les retrouver.
+      </fold-callout>
+    }
+
+    <!-- Mode prod : les postes n'ont pas pu être lus, le serveur a rangé par rayon. -->
+    @if (day.workstationsLost() && day.state() === 'ready') {
+      <fold-callout variant="warning" class="fa-note" data-workstations-lost>
+        Les postes n'ont pas pu être lus — les fiches sont rangées par rayon.
       </fold-callout>
     }
 
@@ -127,7 +141,7 @@
       }
     }
 
-    <!-- Les onglets, au poste fixe seulement : un rayon, son avancement. EN
+    <!-- Les onglets, à la tablette seulement : un rayon, son avancement. EN
          DERNIER dans la bande : l'onglet actif se raccorde au corps. -->
     @if (!compact() && current(); as fiche) {
       <!-- Des onglets de classeur, comme la maquette : l'onglet actif prend le
@@ -179,7 +193,7 @@
   @default {
     @if (current(); as fiche) {
       <section class="fa-body" aria-label="Lignes à sortir">
-        <!-- Au poste fixe seulement : au téléphone, la bande répète ce que le
+        <!-- À la tablette seulement : au téléphone, la bande répète ce que le
              sélecteur du masthead dit déjà (maquette, Hugo 2026-10-28). -->
         @if (!compact()) {
           <div class="fa-band">
@@ -190,7 +204,7 @@
               {{ fiche.lineCount }} faite{{ fiche.doneCount > 1 ? 's' : '' }} ·
               {{ fiche.totalUnits }} pièce{{ fiche.totalUnits > 1 ? 's' : '' }} au total
             </span>
-            <!-- La bascule, à droite du bandeau au poste fixe ; en tête de liste au pouce. -->
+            <!-- La bascule, à droite du bandeau à la tablette ; en tête de liste au pouce. -->
             <fold-view-toggle
               class="fa-view"
               ariaLabel="Lecture de la fiche"
@@ -202,12 +216,12 @@
         }
 
         <!--
-          UNE seule liste, UN seul composant de ligne. Le poste fixe montre tout
+          UNE seule liste, UN seul composant de ligne. La tablette montre tout
           dans l'ordre de la fiche (`lines`) ; le téléphone ne garde que ce qui
           reste (`pending`), les lignes faites descendant dans le bloc replié du
           bas. Ce qui change est la SOURCE — servie —, jamais le gabarit.
 
-          Deux listes au poste fixe (en cours / faite) ont été essayées puis
+          Deux listes à la tablette (en cours / faite) ont été essayées puis
           retirées le 2026-09-14 : on y perdait en ergonomie.
         -->
         <div class="fa-lines">

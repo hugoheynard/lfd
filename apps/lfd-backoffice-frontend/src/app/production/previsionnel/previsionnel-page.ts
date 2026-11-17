@@ -8,9 +8,9 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import type {
-  CatalogItemView,
   ProductionForecastDay,
   ProductionForecastView,
+  ProductionGroupingView,
 } from '@lfd/contracts';
 import {
   FoldButtonComponent,
@@ -25,7 +25,6 @@ import {
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
-import { AdminCatalogService } from '../../commandes/catalog.service';
 import { refreshWhileVisible } from '../../shared/periodic-refresh';
 import { ProductionService } from '../production.service';
 import { NotifyService } from '../../notify.service';
@@ -34,6 +33,7 @@ import { DossierDuJour, defaultDossierDate } from './dossier-du-jour/dossier-du-
 import { ForecastTable } from './forecast-table/forecast-table';
 import { ReopenDay } from './reopen-day/reopen-day';
 import { forecastRayons, totalOfRayons } from './previsionnel-matrix';
+import { WorkstationsService } from '../workstations.service';
 import { autoCloseAheadLabel } from './auto-close-label';
 import {
   DAY_FOOT_ROWS,
@@ -145,7 +145,7 @@ type ForecastView = 'matrix' | 'dossier' | 'tranches';
 })
 export class PrevisionnelPage {
   private readonly production = inject(ProductionService);
-  private readonly catalog = inject(AdminCatalogService);
+  private readonly workstations = inject(WorkstationsService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly notify = inject(NotifyService);
@@ -239,27 +239,30 @@ export class PrevisionnelPage {
 
   /** La matrice lue. Nommée `forecast` et non `view` : `view` est la lecture ouverte. */
   private readonly forecast = signal<ProductionForecastView | null>(null);
-  /** Lu avec la matrice — les rayons de la vue par tranche aussi. */
-  protected readonly catalogue = signal<readonly CatalogItemView[]>([]);
+  /**
+   * Le rangement des SKU de la matrice, demandé au serveur (plan des postes,
+   * § 3.7) : par rayon en mode boutique, par poste en mode prod. `null` : rien
+   * à ranger, ou la lecture a échoué (`shelvesLost`).
+   */
+  private readonly grouping = signal<ProductionGroupingView | null>(null);
 
   /**
-   * 🔴 La lecture du catalogue a-t-elle échoué ?
+   * 🔴 Le rangement ou les rayons n'ont-ils pas pu être lus ?
    *
-   * Elle ne fait pas tomber l'écran — le prévisionnel reste juste sans elle —
-   * mais elle ne peut pas passer en silence : sans catalogue, chaque SKU tombe
-   * dans le groupe des produits absents, et la grille affirmerait que le
-   * fournil fabrique des articles retirés de la vente.
+   * Elle ne fait pas tomber l'écran — le prévisionnel reste juste sans eux —
+   * mais elle ne peut pas passer en silence : chaque SKU tombe alors dans un
+   * groupe « Rayon inconnu ».
    */
   protected readonly shelvesLost = signal(false);
 
-  /** Le réglage « Afficher les sous-catégories » du fournil, servi avec la matrice (2026-10-30). */
-  protected readonly showSubcategories = computed(
-    () => this.forecast()?.showSubcategories === true,
+  /** En mode prod, les postes n'ont pas pu être lus : la grille est rangée par rayon. */
+  protected readonly workstationsLost = computed(
+    () => this.grouping()?.workstationsKnown === false,
   );
 
   protected readonly rayons = computed(() => {
     const forecast = this.forecast();
-    return forecast === null ? [] : forecastRayons(forecast, this.catalogue(), !this.shelvesLost());
+    return forecast === null ? [] : forecastRayons(forecast, this.grouping());
   });
 
   protected readonly headers = computed(() => {
@@ -572,28 +575,42 @@ export class PrevisionnelPage {
     }
   }
 
+  /**
+   * Le rangement de ces SKU ; `null` s'il n'y a rien à ranger, `undefined` si
+   * la lecture a échoué.
+   */
+  private async readGrouping(
+    skus: readonly string[],
+  ): Promise<ProductionGroupingView | null | undefined> {
+    if (skus.length === 0) {
+      return null;
+    }
+    try {
+      return await this.workstations.grouping(skus);
+    } catch {
+      return undefined;
+    }
+  }
+
   protected async load(from: string = this.from()): Promise<void> {
     const seq = ++this.readSeq;
     this.state.set('loading');
     try {
-      // Le catalogue part avec la matrice : sans lui, la grille n'a pas de
-      // rayons. Une lecture ratée ne doit pas faire disparaître le prévisionnel
-      // — mais elle ne doit pas se taire non plus, d'où le `null` plutôt qu'un
-      // tableau vide : les deux se lisent pareil à l'affichage, et un seul des
-      // deux est une panne.
-      const [forecast, catalogue, ahead] = await Promise.all([
+      const [forecast, ahead] = await Promise.all([
         this.production.forecast(from, windowEnd(from)),
-        this.catalog.list().catch(() => null),
         this.readAhead(from),
       ]);
+      // Le rangement des SKU affichés : une lecture ratée ne fait pas
+      // disparaître le prévisionnel, mais elle se dit (`shelvesLost`).
+      const grouping = await this.readGrouping(forecast.lines.map((line) => line.sku));
       if (seq !== this.readSeq) {
         return;
       }
       this.now.set(new Date());
       this.forecast.set(forecast);
       this.aheadRead.set(ahead);
-      this.shelvesLost.set(catalogue === null);
-      this.catalogue.set(catalogue ?? []);
+      this.shelvesLost.set(grouping === undefined || grouping?.shelvesKnown === false);
+      this.grouping.set(grouping ?? null);
       this.state.set('ready');
     } catch {
       if (seq === this.readSeq) {

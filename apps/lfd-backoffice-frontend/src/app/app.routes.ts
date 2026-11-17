@@ -804,6 +804,16 @@ export const routes: Routes = [
           ),
       },
       {
+        // Les postes du fournil (plan `fournil/plan-postes-du-fournil.md`, § 3.8).
+        path: 'postes',
+        canActivate: [permissionGuard('production_workstations:read')],
+        title: 'Postes — Prod manager — LFC B2B admin',
+        loadComponent: () =>
+          import('./production/workstations-page/workstations-page').then(
+            (m) => m.WorkstationsPage,
+          ),
+      },
+      {
         path: 'reassorts/brouillon/:draftId',
         canActivate: [permissionGuard('production_resupply:write')],
         title: 'Brouillon de réassort — Prod manager — LFC B2B admin',

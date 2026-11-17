@@ -1,5 +1,5 @@
 import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
-import type { CatalogItemView } from '@lfd/contracts';
+import type { ProductionGroupingView } from '@lfd/contracts';
 
 import type { SlotState } from '../fiche-atelier/workshop-deadlines';
 import type { TrancheCell, TrancheColumn, TrancheGrid, TrancheRow } from './day-tranche-matrix';
@@ -135,13 +135,12 @@ const EMPTY_CELL: ForecastCell = {
 
 /**
  * Les lignes de la grille — tous les produits du prévisionnel ce jour-là —,
- * rangées comme la matrice : mêmes rayons, même ordre, mêmes intertitres.
+ * rangées comme la matrice : même rangement servi, même ordre, mêmes intertitres.
  */
 export function trancheRayons(
   grid: TrancheGrid,
-  catalogue: readonly CatalogItemView[],
-  shelvesKnown: boolean,
-  showSubcategories: boolean,
+  /** Le rangement servi ; `null` : pas lu, tout en « Rayon inconnu ». */
+  grouping: ProductionGroupingView | null,
   /** Le jour même, fiche lue : l'état de chaque case. Ailleurs, le compte seul. */
   withState: boolean,
 ): readonly ForecastRayon[] {
@@ -156,5 +155,5 @@ export function trancheRayons(
     };
     return row.mismatch === null ? product : { ...product, warning: row.mismatch };
   });
-  return shelvedRayons(products, grid.columns.length, catalogue, shelvesKnown, showSubcategories);
+  return shelvedRayons(products, grid.columns.length, grouping);
 }

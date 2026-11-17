@@ -7,7 +7,8 @@ import type {
 } from '@lfd/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { AdminCatalogService } from '../../../commandes/catalog.service';
+import { WorkstationsService } from '../../workstations.service';
+import { shelfGrouping } from '../../__tests__/shelf-grouping-fixture';
 import { PrevisionnelPage } from '../previsionnel-page';
 import { NotifyService } from '../../../notify.service';
 import { ProductionService } from '../../production.service';
@@ -141,7 +142,10 @@ async function mount(
         provide: ProductionService,
         useValue: { forecast: async () => view, closeDay },
       },
-      { provide: AdminCatalogService, useValue: { list: async () => [] } },
+      {
+        provide: WorkstationsService,
+        useValue: { grouping: async (skus: readonly string[]) => shelfGrouping(skus, []) },
+      },
       { provide: NotifyService, useValue: toasts },
       { provide: PermissionsStore, useValue: grants(...granted) },
     ],
@@ -374,7 +378,10 @@ describe('le prévisionnel — arrêter le plan', () => {
         providers: [
           provideRouter([]),
           { provide: ProductionService, useValue: { forecast: forecastCall, closeDay } },
-          { provide: AdminCatalogService, useValue: { list: async () => [] } },
+          {
+            provide: WorkstationsService,
+            useValue: { grouping: async (skus: readonly string[]) => shelfGrouping(skus, []) },
+          },
           { provide: PermissionsStore, useValue: grants(ARREST) },
         ],
       });
@@ -443,7 +450,10 @@ describe('le prévisionnel — arrêter le plan', () => {
         providers: [
           provideRouter([]),
           { provide: ProductionService, useValue: { forecast: forecastCall, closeDay } },
-          { provide: AdminCatalogService, useValue: { list: async () => [] } },
+          {
+            provide: WorkstationsService,
+            useValue: { grouping: async (skus: readonly string[]) => shelfGrouping(skus, []) },
+          },
           { provide: PermissionsStore, useValue: grants(ARREST) },
         ],
       });
@@ -538,7 +548,10 @@ describe('le prévisionnel — arrêter le plan', () => {
         providers: [
           provideRouter([]),
           { provide: ProductionService, useValue: { forecast: async () => served } },
-          { provide: AdminCatalogService, useValue: { list: async () => [] } },
+          {
+            provide: WorkstationsService,
+            useValue: { grouping: async (skus: readonly string[]) => shelfGrouping(skus, []) },
+          },
         ],
       });
       const page = TestBed.runInInjectionContext(() => new PrevisionnelPage());

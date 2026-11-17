@@ -502,3 +502,14 @@ boutique », quel que soit le réglage.
 - **Dette à rembourser en W4 :** la lecture « articles puis postes, avec repli
   par rayon » existe en trois copies (fiche, dossier, route `/grouping`). La
   fiche et le dossier lisent celle de `workstations/`.
+- **W3 (écrans), « Partir des rayons »** ne place que les produits sans poste,
+  et reprend un poste qui porte déjà le nom du rayon. La confirmation de
+  bascule compte les produits **commandés ces jours-ci** sans poste (journées
+  arrêtées depuis J−30 et demande à venir). La garde
+  `refuseWorkstationGroupingUntilScreens` est retirée : la bascule est ouverte,
+  et seule reste la garde « aucun produit n'a de poste ».
+- **À reprendre en W4 :**
+  - les réassorts reviennent **en silence** au filtre par catégorie si le
+    rangement ne se lit pas : il faut le dire à l'écran ;
+  - l'adresse `?poste=` ne suit pas un changement de fiche à l'écran ;
+  - l'alerte ne se relit pas et ne compte pas les SKU hors catalogue.

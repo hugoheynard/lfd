@@ -324,6 +324,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'prod-manager/reassorts': 'production_resupply:read',
   'prod-manager/reassorts/nouveau': 'production_resupply:write',
   'prod-manager/reassorts/brouillon/:draftId': 'production_resupply:write',
+  // Les postes du fournil (plan des postes, § 3.8).
+  'prod-manager/postes': 'production_workstations:read',
   // Partis en Réglages › Production le 2026-10-13 (Hugo).
   'reglages/production/fournil': 'production_settings:read',
   // Les raccourcis du fournil (plan des raccourcis, S1, 2026-10-28).

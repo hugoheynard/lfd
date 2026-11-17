@@ -73,7 +73,7 @@
       @if (categoryOptions().length > 1) {
         <fold-view-toggle
           data-resupply-categories
-          ariaLabel="Filtrer par famille"
+          [ariaLabel]="filterLabel()"
           size="sm"
           [options]="categoryOptions()"
           [value]="category()"

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -18,7 +18,11 @@ import {
 } from 'fold-ng';
 
 import { sectionIntertitles } from '@lfd/b2b-ui/catalog';
-import type { WorkshopGroup, WorkshopLine } from '@lfd/contracts';
+import {
+  WORKSTATION_GROUP_KEY_PREFIX,
+  type WorkshopGroup,
+  type WorkshopLine,
+} from '@lfd/contracts';
 
 import { StaffPrefsService } from '../../shared/staff-prefs/staff-prefs.service';
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
@@ -142,8 +146,18 @@ export class FicheAtelier {
   /** Le bloc des lignes faites, sur téléphone. Replié : on vient voir ce qui reste. */
   protected readonly doneOpen = signal(false);
 
-  /** La fiche choisie. `null` tant que rien n'a été lu ni préféré. */
+  /** `/fournil?poste=<id>` : la fiche d'un poste, demandée par l'adresse. */
+  readonly workstationParam = input<string | undefined>(undefined, { alias: 'poste' });
+
+  /** La fiche choisie à l'écran pendant la session. */
   private readonly chosen = signal<string | null>(null);
+  /** La dernière fiche ouverte par la personne (`nav_prefs.worksheetCategory`). */
+  private readonly remembered = signal<string | null>(null);
+  /** La clé de la fiche que l'adresse demande. */
+  private readonly asked = computed(() => {
+    const id = this.workstationParam();
+    return id === undefined || id === '' ? null : `${WORKSTATION_GROUP_KEY_PREFIX}${id}`;
+  });
 
   constructor() {
     // 🔴 Une lecture UNIQUE, et pas un `effect` : la journée est choisie au
@@ -162,19 +176,24 @@ export class FicheAtelier {
     });
     // La préférence n'arrive pas avant la personne : `GET /admin/me` est déjà en
     // vol pour les droits. Si elle n'arrive jamais, la première fiche suffit.
-    void this.prefs.worksheetCategory().then((category) => {
-      if (category !== null && this.chosen() === null) {
-        this.chosen.set(category);
-      }
-    });
+    void this.prefs.worksheetCategory().then((category) => this.remembered.set(category));
   }
 
   /** La fiche affichée : celle qu'on a choisie, ou la première s'il n'y a pas de choix. */
   protected readonly current = computed<WorkshopGroup | null>(() => {
     const groups = this.day.groups();
-    const key = this.chosen();
-    return groups.find((group) => group.key === key) ?? groups[0] ?? null;
+    const keys = [this.chosen(), this.asked(), this.remembered()];
+    for (const key of keys) {
+      const found = key === null ? undefined : groups.find((group) => group.key === key);
+      if (found !== undefined) {
+        return found;
+      }
+    }
+    return groups[0] ?? null;
   });
+
+  /** Le nom du poste de la fiche ouverte (mode prod) ; `null` pour un rayon. */
+  protected readonly workstationName = computed(() => this.current()?.workstation?.name ?? null);
 
   /** Le rang de la fiche dans la liste servie — « fiche 2 sur 5 ». */
   protected readonly rank = computed(() => {
@@ -182,7 +201,7 @@ export class FicheAtelier {
     return current === null ? 0 : this.day.groups().indexOf(current) + 1;
   });
 
-  /** Les onglets du poste fixe : le rayon et son avancement, tels que servis. */
+  /** Les onglets de la tablette : le rayon et son avancement, tels que servis. */
   protected readonly tabs = computed<readonly FoldTabItem[]>(() =>
     this.day.groups().map((group) => ({
       key: group.key,
@@ -203,7 +222,7 @@ export class FicheAtelier {
     })),
   );
 
-  /** Toutes les lignes de la fiche, dans l'ordre servi — le poste fixe. */
+  /** Toutes les lignes de la fiche, dans l'ordre servi — la tablette. */
   protected readonly lines = computed(() => this.current()?.lines ?? []);
 
   /** Ce qui reste à sortir, tel que servi — le téléphone. */

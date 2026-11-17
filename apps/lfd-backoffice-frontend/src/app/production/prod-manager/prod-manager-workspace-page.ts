@@ -6,10 +6,11 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { WorkshopClock } from '../fiche-atelier/workshop-clock';
 import { WorkshopWallClock } from '../fiche-atelier/workshop-wall-clock/workshop-wall-clock';
 import { permittedProdManagerViews } from './prod-manager-views';
+import { UnplacedProductsAlert } from './unplaced-products-alert/unplaced-products-alert';
 
 /**
  * **L'espace Prod manager** — la bande des onglets (Prévisionnel,
- * Réassorts), puis la vue ouverte (lot R3d, Hugo 2026-10-21 : « les onglets
+ * Réassorts, Postes), puis la vue ouverte (lot R3d, Hugo 2026-10-21 : « les onglets
  * comme ceux du comptoir »).
  *
  * ⚠️ **Elle n'est pas une page** : aucun `fold-page-layout` ici, chaque vue
@@ -21,7 +22,13 @@ import { permittedProdManagerViews } from './prod-manager-views';
 @Component({
   selector: 'app-prod-manager-workspace-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldSurfaceDirective, FoldViewNavComponent, RouterOutlet, WorkshopWallClock],
+  imports: [
+    FoldSurfaceDirective,
+    FoldViewNavComponent,
+    RouterOutlet,
+    UnplacedProductsAlert,
+    WorkshopWallClock,
+  ],
   // Une horloge par espace ouvert : elle s'arrête quand on le quitte.
   providers: [WorkshopClock],
   templateUrl: './prod-manager-workspace-page.html',

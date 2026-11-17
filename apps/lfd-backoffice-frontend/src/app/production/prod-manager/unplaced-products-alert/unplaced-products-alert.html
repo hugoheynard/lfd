@@ -1,0 +1,19 @@
+@if (count() > 0) {
+  <fold-callout variant="warning" data-unplaced-alert>
+    {{ count() }} produit{{ count() > 1 ? 's' : '' }} du jour à ranger : sans poste,
+    {{ count() > 1 ? 'ils restent' : 'il reste' }} sous {{ count() > 1 ? 'leur' : 'son' }} rayon sur
+    les fiches.
+    @if (canOpen()) {
+      <a
+        foldButton
+        size="sm"
+        emphasis="outline"
+        routerLink="/prod-manager/postes"
+        [queryParams]="filter"
+        data-unplaced-link
+      >
+        Les ranger
+      </a>
+    }
+  </fold-callout>
+}

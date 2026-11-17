@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import type {
   LiveStockAlertsView,
+  ProductionGroupingView,
   ResupplyProductionDayView,
   StaffPermission,
 } from '@lfd/contracts';
@@ -13,6 +14,7 @@ import { PickupAddressesService } from '../../../b2b/reglages/pickup-addresses.s
 import { BakehouseResuppliesService } from '../bakehouse-resupplies.service';
 import { LiveStockAlertsService } from '../live-stock-alerts.service';
 import { ResuppliesToProduceService } from '../resupplies-to-produce.service';
+import { WorkstationsService } from '../../workstations.service';
 import { ResupplyProductionTab } from './resupply-production-tab';
 
 /**
@@ -125,10 +127,30 @@ class FakeBakehouse {
   }
 }
 
+/** Le rangement servi : en mode prod, le croissant et la baguette au même poste. */
+function prodGrouping(skus: readonly string[]): ProductionGroupingView {
+  return {
+    mode: 'workstation',
+    showSubcategories: false,
+    shelvesKnown: true,
+    workstationsKnown: true,
+    entries: skus.map((sku) => ({
+      sku,
+      key: sku === 'GRA' ? 'fam_t' : 'ws:four',
+      title: sku === 'GRA' ? 'Traiteur — à ranger' : 'Four',
+      kind: sku === 'GRA' ? ('unplaced' as const) : ('workstation' as const),
+      order: sku === 'GRA' ? 1 : 0,
+      section: null,
+    })),
+  };
+}
+
 async function mount(
   resupplies = new FakeResupplies(),
   granted: readonly StaffPermission[] = [],
   bakehouse = new FakeBakehouse(),
+  grouping: (skus: readonly string[]) => Promise<ProductionGroupingView> = () =>
+    Promise.reject(new Error('non lu')),
 ) {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -139,6 +161,7 @@ async function mount(
       { provide: LiveStockAlertsService, useValue: new FakeAlerts() },
       { provide: BakehouseResuppliesService, useValue: bakehouse },
       { provide: PickupAddressesService, useValue: { list: () => Promise.resolve([]) } },
+      { provide: WorkstationsService, useValue: { grouping } },
       {
         provide: PermissionsStore,
         useValue: {
@@ -287,6 +310,41 @@ describe("l'onglet Réassorts de Prod manager", () => {
 
       fixture.destroy();
       expect(vi.getTimerCount()).toBe(0);
+    });
+  });
+
+  describe('le filtre, selon le rangement du fournil (plan des postes, § 3.7)', () => {
+    const labels = (options: readonly { label: string }[]): string[] =>
+      options.map((option) => option.label);
+
+    it('mode boutique : une puce par famille, comme avant', async () => {
+      const resupplies = new FakeResupplies();
+      resupplies.weighed = true;
+      const { fixture } = await mount(resupplies, [], new FakeBakehouse(), (skus) =>
+        Promise.resolve({ ...prodGrouping(skus), mode: 'shelf' }),
+      );
+      expect(labels(fixture.componentInstance['categoryOptions']())).toEqual([
+        'Tout',
+        'Viennoiseries',
+        'Pains',
+        'Traiteur',
+      ]);
+    });
+
+    it('mode prod : une puce par poste, dans l’ordre des fiches, et le filtre suit', async () => {
+      const resupplies = new FakeResupplies();
+      resupplies.weighed = true;
+      const { fixture } = await mount(resupplies, [], new FakeBakehouse(), (skus) =>
+        Promise.resolve(prodGrouping(skus)),
+      );
+      const tab = fixture.componentInstance;
+      expect(labels(tab['categoryOptions']())).toEqual(['Tout', 'Four', 'Traiteur — à ranger']);
+      tab['category'].set('ws:four');
+      expect(
+        tab['visibleRows']()
+          .map((row) => row.sku)
+          .sort(),
+      ).toEqual(['BAG', 'CRO']);
     });
   });
 });

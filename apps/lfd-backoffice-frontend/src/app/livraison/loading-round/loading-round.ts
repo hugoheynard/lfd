@@ -102,7 +102,7 @@ export class LoadingRound {
   readonly canWrite = input(false);
   /** « Partir », offert par l'hôte ; `null` : l'écran ne le propose pas. */
   readonly departure = input<LoadingDeparture | null>(null);
-  /** Le téléphone du livreur, ou le poste fixe du dépôt (deux colonnes, plus grand). */
+  /** Le téléphone du livreur, ou la tablette du dépôt (deux colonnes, plus grand). */
   readonly layout = input<'phone' | 'depot'>('phone');
   /** Le bouton de « Tout est chargé » ; `null` : l'hôte n'en offre pas. */
   readonly doneLabel = input<string | null>(null);

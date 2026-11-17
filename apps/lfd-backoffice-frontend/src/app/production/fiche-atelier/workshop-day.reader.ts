@@ -57,6 +57,17 @@ export class WorkshopDayReader {
    */
   readonly shelvesLost = computed(() => this.view()?.shelvesKnown === false);
 
+  /** Le réglage du fournil range-t-il par poste (mode prod) ? */
+  readonly byWorkstation = computed(() => this.view()?.grouping === 'workstation');
+
+  /**
+   * En mode prod, la lecture des postes a-t-elle échoué au serveur ? Les fiches
+   * sont alors rangées par rayon, et l'écran doit le dire.
+   */
+  readonly workstationsLost = computed(
+    () => this.byWorkstation() && this.view()?.workstationsKnown === false,
+  );
+
   readonly drift = computed(() => this.view()?.drift ?? null);
 
   /** « 4 h 05 », l'heure du tirage. `null` = le plan n'est pas arrêté. */

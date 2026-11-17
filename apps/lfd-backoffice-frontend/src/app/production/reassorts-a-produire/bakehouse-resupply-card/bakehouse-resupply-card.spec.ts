@@ -11,6 +11,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { PickupAddressesService } from '../../../b2b/reglages/pickup-addresses.service';
 import { BakehouseResuppliesService } from '../bakehouse-resupplies.service';
+import { WorkstationsService } from '../../workstations.service';
 import { BakehouseResupplyCard } from './bakehouse-resupply-card';
 
 /**
@@ -150,6 +151,11 @@ async function mount(
     providers: [
       { provide: PickupAddressesService, useValue: pickups },
       { provide: BakehouseResuppliesService, useValue: bakehouse },
+      // Le rangement non lu : le filtre reste par famille, comme en mode boutique.
+      {
+        provide: WorkstationsService,
+        useValue: { grouping: () => Promise.reject(new Error('non lu')) },
+      },
       { provide: FoldPanelHostService, useValue: panels },
     ],
   });

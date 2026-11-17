@@ -239,7 +239,9 @@ export class App {
       // Le prévisionnel, ou les réassorts — un droit à part depuis le
       // 2026-10-28 (Hugo) : la fiche d'atelier seule n'ouvre plus Prod manager.
       this.permissions.can('production_plan:read') ||
-      this.permissions.can('production_resupply:read'),
+      this.permissions.can('production_resupply:read') ||
+      // Les postes du fournil, un onglet de Prod manager.
+      this.permissions.can('production_workstations:read'),
   );
 
   /**

@@ -7,8 +7,29 @@ import type {
 import { describe, expect, it } from 'vitest';
 
 import { dayTrancheGrid, type TrancheGrid } from './day-tranche-matrix';
+import { shelfGrouping } from '../__tests__/shelf-grouping-fixture';
 import { forecastRayons } from './previsionnel-matrix';
-import { trancheColumns, trancheFootRows, trancheRayons } from './previsionnel-tranches';
+import {
+  trancheColumns,
+  trancheFootRows,
+  trancheRayons as servedTrancheRayons,
+} from './previsionnel-tranches';
+
+/** La grille rangée comme le serveur la range en mode boutique. */
+function trancheRayons(
+  grid: TrancheGrid,
+  catalogue: readonly CatalogItemView[],
+  shelvesKnown: boolean,
+  showSubcategories: boolean,
+  withState: boolean,
+) {
+  const skus = grid.rows.map((row) => row.sku);
+  return servedTrancheRayons(
+    grid,
+    shelfGrouping(skus, shelvesKnown ? catalogue : null, showSubcategories),
+    withState,
+  );
+}
 
 /** Les fabriques de la journée par tranche : colonnes, pied, rayons. */
 
@@ -243,7 +264,13 @@ describe('les rayons de la journée par tranche', () => {
       item('TAR', { id: 'p', name: 'Pâtisseries', position: 2 }),
       item('CHO', { id: 'c', name: 'Chocolat & confiserie', position: 3 }),
     ];
-    const matrix = forecastRayons(forecast, shelves);
+    const matrix = forecastRayons(
+      forecast,
+      shelfGrouping(
+        forecast.lines.map((line) => line.sku),
+        shelves,
+      ),
+    );
     const tranches = trancheRayons(
       dayTrancheGrid(forecast, '2026-11-01', due, null, null),
       shelves,

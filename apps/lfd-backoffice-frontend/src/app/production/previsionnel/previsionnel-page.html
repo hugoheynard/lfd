@@ -316,16 +316,20 @@
         />
       } @else {
         <!--
-          🔴 Le catalogue n'a pas répondu. La grille reste juste — les pièces
-          et les jours viennent du fournil, pas de lui — mais ses rayons sont
-          perdus, et un groupe « Hors catalogue » dirait alors que tout est
-          retiré de la vente. Un échec partiel laisse le contenu à l'écran et
-          se DIT : c'est le seul cas où un callout est le bon état.
+          🔴 Le rangement n'a pas répondu. La grille reste juste — les pièces
+          et les jours viennent du fournil — mais ses rayons sont perdus. Un
+          échec partiel laisse le contenu à l'écran et se DIT : c'est le seul
+          cas où un callout est le bon état.
         -->
         @if (shelvesLost()) {
           <fold-callout variant="warning" class="pv-lost">
             Les rayons n'ont pas pu être lus — la grille est juste, mais ses produits ne sont pas
             rangés. Réessayez pour les retrouver.
+          </fold-callout>
+        }
+        @if (workstationsLost()) {
+          <fold-callout variant="warning" class="pv-lost" data-workstations-lost>
+            Les postes n'ont pas pu être lus — la grille est rangée par rayon.
           </fold-callout>
         }
 
@@ -342,17 +346,10 @@
 } @else if (view() === 'tranches') {
   <!--
     **La journée par tranche.** Sœur du layout comme la matrice, et la même
-    table : une colonne par tranche. Sa journée est la sienne ; les rayons,
-    le réglage des sous-catégories et l'arrêt du plan viennent de ce que la
-    page a lu.
+    table : une colonne par tranche. Sa journée et son rangement sont les
+    siens ; l'arrêt du plan vient de ce que la page a lu.
   -->
-  <app-day-tranche-wall
-    [date]="trancheDate()"
-    [catalogue]="catalogue()"
-    [shelvesKnown]="!shelvesLost()"
-    [showSubcategories]="showSubcategories()"
-    [planClosed]="trancheClosed()"
-  />
+  <app-day-tranche-wall [date]="trancheDate()" [planClosed]="trancheClosed()" />
 } @else {
   <!--
     **Le dossier du jour.** Sœur du layout comme la matrice, et pour la même
@@ -360,9 +357,5 @@
     fenêtre de sept jours du prévisionnel ne le commande pas, et c'est
     délibéré — on tire UN service, on ne tire pas une semaine.
   -->
-  <app-dossier-du-jour
-    [(date)]="dossierDate"
-    [closed]="dossierClosed()"
-    [showSubcategories]="showSubcategories()"
-  />
+  <app-dossier-du-jour [(date)]="dossierDate" [closed]="dossierClosed()" />
 }

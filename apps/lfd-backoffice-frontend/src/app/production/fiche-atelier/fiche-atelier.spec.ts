@@ -4,6 +4,7 @@ import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import {
   SHELF_LABEL_UNKNOWN,
   UNSHELVED_WORKSHOP_GROUP_KEY,
+  WORKSTATION_GROUP_KEY_PREFIX,
   type ProductionWorksheetView,
   type StaffNavPreferencesPatch,
   type WorkshopGroup,
@@ -408,7 +409,7 @@ describe('la fiche d’atelier', () => {
     expect(el.querySelectorAll('[data-subcategory]')).toHaveLength(0);
   });
 
-  it('montre au poste fixe toutes les lignes servies, dans l’ordre servi', async () => {
+  it('montre à la tablette toutes les lignes servies, dans l’ordre servi', async () => {
     api.view = sheet({ groups: [painBaguetteDone()] });
     const { el } = await render();
 
@@ -725,6 +726,99 @@ describe('la fiche d’atelier', () => {
 
     expect(text(el, '.fa-title').trim()).toBe('Viennoiseries');
     expect(text(el, '.fa-eyebrow')).toContain('fiche 1 sur 2');
+  });
+
+  describe('les fiches de poste (mode prod, plan des postes § 3.6)', () => {
+    /** La fiche du poste « Pâtisserie », telle que le serveur la sert en mode prod. */
+    function pastryStation(): WorkshopGroup {
+      return {
+        ...painTodo(),
+        key: `${WORKSTATION_GROUP_KEY_PREFIX}ws_pat`,
+        family: null,
+        kind: 'workstation',
+        workstation: { id: 'ws_pat', name: 'Pâtisserie' },
+        unplaced: false,
+        label: 'Pâtisserie',
+      };
+    }
+
+    /** Un rayon sans poste, « à ranger » : son titre tel que servi. */
+    function unplacedShelf(): WorkshopGroup {
+      return {
+        ...viennoiserieTodo(),
+        kind: 'unplaced',
+        workstation: null,
+        unplaced: true,
+        label: 'Viennoiseries — à ranger',
+      };
+    }
+
+    async function renderAt(
+      poste: string,
+    ): Promise<{ fixture: ComponentFixture<FicheAtelier>; el: HTMLElement }> {
+      const fixture = TestBed.createComponent(FicheAtelier);
+      fixture.componentRef.setInput('poste', poste);
+      fixture.detectChanges();
+      await settle(fixture);
+      return { fixture, el: fixture.nativeElement };
+    }
+
+    it('dit « Fiche de poste — <nom> · fiche N sur M »', async () => {
+      api.view = sheet({ grouping: 'workstation', groups: [pastryStation(), unplacedShelf()] });
+      const { el } = await render();
+
+      expect(text(el, '.fa-eyebrow')).toContain('Fiche de poste — Pâtisserie');
+      expect(text(el, '.fa-eyebrow')).toContain('fiche 1 sur 2');
+      expect(text(el, '.fa-title').trim()).toBe('Fiche de poste — Pâtisserie');
+    });
+
+    it('un rayon « à ranger » garde son titre tel que servi', async () => {
+      api.view = sheet({ grouping: 'workstation', groups: [unplacedShelf(), pastryStation()] });
+      const { el } = await render();
+
+      expect(text(el, '.fa-title').trim()).toBe('Viennoiseries — à ranger');
+      expect(text(el, '.fa-eyebrow')).not.toContain('Fiche de poste');
+    });
+
+    it('`?poste=<id>` ouvre la fiche de ce poste, avant la préférence', async () => {
+      api.view = sheet({ grouping: 'workstation', groups: [unplacedShelf(), pastryStation()] });
+      prefs.category = VIENNOISERIES.id;
+      const { el } = await renderAt('ws_pat');
+
+      expect(text(el, '.fa-title').trim()).toBe('Fiche de poste — Pâtisserie');
+      expect(text(el, '.fa-eyebrow')).toContain('fiche 2 sur 2');
+    });
+
+    it('retient le poste choisi pour la personne, sous sa clé `ws:`', async () => {
+      api.view = sheet({ grouping: 'workstation', groups: [unplacedShelf(), pastryStation()] });
+      const { fixture } = await render();
+
+      fixture.componentInstance['choose'](`${WORKSTATION_GROUP_KEY_PREFIX}ws_pat`);
+
+      expect(prefs.remembered).toEqual([{ worksheetCategory: 'ws:ws_pat' }]);
+    });
+
+    it('dit quand les postes n’ont pas pu être lus — la fiche est rangée par rayon', async () => {
+      api.view = sheet({
+        grouping: 'workstation',
+        workstationsKnown: false,
+        groups: [viennoiserieTodo()],
+      });
+      const { el } = await render();
+
+      expect(text(el, '[data-workstations-lost]')).toContain(
+        "Les postes n'ont pas pu être lus — les fiches sont rangées par rayon",
+      );
+      expect(el.querySelectorAll('app-worksheet-line')).toHaveLength(1);
+    });
+
+    it('en mode boutique, ne dit rien des postes', async () => {
+      api.view = sheet({ grouping: 'shelf', workstationsKnown: true });
+      const { el } = await render();
+
+      expect(el.querySelector('[data-workstations-lost]')).toBeNull();
+      expect(text(el, '.fa-eyebrow')).not.toContain('Fiche de poste');
+    });
   });
 
   describe('les paliers et la vue par tranche (fournée v3)', () => {

@@ -3,7 +3,8 @@ import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import type { ProductionForecastView } from '@lfd/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { AdminCatalogService } from '../../../commandes/catalog.service';
+import { WorkstationsService } from '../../workstations.service';
+import { shelfGrouping } from '../../__tests__/shelf-grouping-fixture';
 import { PrevisionnelPage } from '../previsionnel-page';
 import { ProductionService } from '../../production.service';
 import { WorksheetService } from '../../worksheet.service';
@@ -83,7 +84,10 @@ async function render(): Promise<{ fixture: ComponentFixture<PrevisionnelPage>; 
         provide: WorksheetService,
         useValue: { worksheet: async () => Promise.reject(new Error()) },
       },
-      { provide: AdminCatalogService, useValue: { list: async () => [] } },
+      {
+        provide: WorkstationsService,
+        useValue: { grouping: async (skus: readonly string[]) => shelfGrouping(skus, []) },
+      },
     ],
   });
   const fixture = TestBed.createComponent(PrevisionnelPage);

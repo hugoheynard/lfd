@@ -1,14 +1,12 @@
 import {
-  SHELF_LABEL_OFF_CATALOG,
-  SHELF_LABEL_UNKNOWN,
-  type CatalogFamilyNodeView,
-  type CatalogFamilyView,
-  type CatalogItemView,
   type AtelierSheet,
   type OrderSaleUnit,
   type ProductionDayResupply,
+  type ProductionGroupingView,
 } from '@lfd/contracts';
-import { arrangedShelf, catalogRootShelves, saleQuantityLabel } from '@lfd/b2b-ui/catalog';
+import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
+
+import { servedGroups } from './served-groups';
 
 /**
  * La **récapitulation de production** : ce que le lot représente, rayon par
@@ -19,10 +17,9 @@ import { arrangedShelf, catalogRootShelves, saleQuantityLabel } from '@lfd/b2b-u
  * 240 croissants, puis répartit. Les bons de commande disent la répartition ;
  * ce récapitulatif dit la fabrication. Aucun ne remplace l'autre.
  *
- * **La catégorie vient du catalogue, pas de la commande.** Une ligne de commande
- * ne fige que le nom et le prix : le rayon d'un produit est une propriété du
- * catalogue d'aujourd'hui, et c'est le catalogue d'aujourd'hui qu'on suit pour
- * s'organiser au fournil. Un SKU absent du catalogue (produit retiré depuis) ne
+ * **Le rangement vient du serveur, pas de la commande** (`POST
+ * …/workstations/grouping`, plan des postes § 3.7) : par rayon en mode
+ * boutique, par poste en mode prod. Un SKU que le rangement ne nomme pas ne
  * disparaît pas pour autant — il tombe dans un groupe à part, en fin de liste.
  */
 
@@ -51,8 +48,8 @@ export interface ProductionRecapLine {
 
 /** Un rayon et son contenu. */
 export interface ProductionRecapGroup {
-  /** `null` = les SKU dont la famille n'est pas connue (retirés, ou catalogue illisible). */
-  readonly family: CatalogFamilyView | null;
+  /** La clé du groupe servi : l'id du rayon racine, `ws:<id du poste>`, `?`. */
+  readonly key: string;
   readonly label: string;
   /** Les pièces du rayon : un article au poids y compte une par commande (P6). */
   readonly quantity: number;
@@ -62,27 +59,6 @@ export interface ProductionRecapGroup {
   /** Les intertitres de sous-catégorie (SKU de la première ligne → nom) ; vide, réglage éteint. */
   readonly intertitles: ReadonlyMap<string, string>;
 }
-
-/**
- * Le groupe des produits que le catalogue ne connaît plus — jamais silencieux.
- *
- * ⚠️ En exploitation normale, **il n'apparaît pas** : le catalogue du
- * back-office rend les articles vendables sous le SKU du PRODUIT, celui que
- * portent les lignes de commande, et un groupe vide n'est jamais rendu. Il ne
- * se remplit qu'avec un article **retiré** depuis la commande.
- */
-const OFF_CATALOG_LABEL = SHELF_LABEL_OFF_CATALOG;
-
-/**
- * Le même groupe quand le catalogue n'a **pas pu être lu**.
- *
- * 🔴 Sans cette distinction, une lecture en échec range TOUT sous « Hors
- * catalogue » — et la feuille affirme que le fournil fabrique des produits
- * retirés de la vente. Un mensonge plausible est le pire des deux : rien à
- * l'écran ne dit que la phrase vient d'une panne. Corrigé le 2026-09-11, en
- * même temps que le prévisionnel, qui portait le défaut recopié d'ici.
- */
-const UNKNOWN_SHELF_LABEL = SHELF_LABEL_UNKNOWN;
 
 interface Tally {
   productName: string;
@@ -94,48 +70,41 @@ interface Tally {
 }
 
 /**
- * Agrège les lignes d'un lot, groupées par rayon.
+ * Agrège les lignes d'un lot, groupées par le rangement servi.
  *
- * Les rayons sont les catégories RACINE (2026-10-30) et sortent dans
- * l'**ordre du référentiel** (la `position` de la racine, via
- * `catalogRootShelves`) et non par poids : c'est l'ordre que l'équipe connaît déjà du catalogue, et un
- * ordre qui bougerait d'un jour à l'autre obligerait à relire la feuille en
- * entier. À l'intérieur d'un rayon, en revanche, la **quantité décroissante** —
- * c'est par le plus gros que le fournil commence. À quantité égale, par nom,
- * pour que deux tirages rendent exactement la même feuille.
+ * Les groupes sortent dans l'ordre du serveur. À l'intérieur d'un groupe, la
+ * **quantité décroissante** — c'est par le plus gros que le fournil commence.
+ * À quantité égale, par nom, pour que deux tirages rendent la même feuille.
  */
 export function productionRecap(
   sheets: readonly AtelierSheet[],
-  catalogue: readonly CatalogItemView[],
-  /**
-   * Le catalogue a-t-il été LU ? `false` = la lecture a échoué, et l'absence
-   * d'un SKU ne prouve alors rien sur lui. Un défaut à `true` : l'appelant
-   * normal a son catalogue, et c'est la panne qui doit se déclarer.
-   */
-  shelvesKnown = true,
+  /** Le rangement servi ; `null` : pas lu, tout tombe en « Rayon inconnu ». */
+  grouping: ProductionGroupingView | null,
   /**
    * Les réassorts de la journée (R3d-bis, Hugo 2026-10-21) : ils vont sur les
    * mêmes fiches de poste, dans le total — c'est ce que le poste enfourne.
    */
   resupplies: readonly ProductionDayResupply[] = [],
-  /** Le réglage « Afficher les sous-catégories » du fournil (2026-10-30). */
-  showSubcategories = false,
 ): readonly ProductionRecapGroup[] {
-  const familyOf = new Map(catalogue.map((item) => [item.sku, item.family]));
   const tallied = talliesOf(sheets, resupplies);
   const biggestFirst = (a: ProductionRecapLine, b: ProductionRecapLine): number =>
     recapPieces(b) - recapPieces(a) || a.productName.localeCompare(b.productName, 'fr');
-  return catalogRootShelves(tallied, (line) => familyOf.get(line.sku) ?? null).map((shelf) => {
-    const { lines, intertitles } = arrangedShelf(shelf.sections, biggestFirst, showSubcategories);
-    return {
-      family: shelf.root,
-      label: shelfLabel(shelf.root, shelvesKnown),
-      quantity: lines.reduce((sum, line) => sum + recapPieces(line), 0),
-      resupplyQuantity: lines.reduce((sum, line) => sum + recapResupplyPieces(line), 0),
-      lines,
-      intertitles,
-    };
-  });
+  return servedGroups(tallied, grouping, biggestFirst).map((group) => ({
+    key: group.key,
+    label: group.title,
+    quantity: group.lines.reduce((sum, line) => sum + recapPieces(line), 0),
+    resupplyQuantity: group.lines.reduce((sum, line) => sum + recapResupplyPieces(line), 0),
+    lines: group.lines,
+    intertitles: group.intertitles,
+  }));
+}
+
+/** Les SKU qu'un lot et ses réassorts font afficher — ceux qu'on fait ranger. */
+export function recapSkus(
+  sheets: readonly AtelierSheet[],
+  resupplies: readonly ProductionDayResupply[],
+): readonly string[] {
+  return talliesOf(sheets, resupplies).map((line) => line.sku);
 }
 
 /** Additionne par SKU les lignes des bons et celles des réassorts. */
@@ -209,21 +178,6 @@ export function recapPieces(line: ProductionRecapLine): number {
  */
 export function recapResupplyPieces(line: ProductionRecapLine): number {
   return line.saleUnit === 'weight' ? line.resupplyCount : line.resupplyQuantity;
-}
-
-/**
- * Le nom d'un rayon — et ce qu'on dit quand on ne le connaît pas.
- *
- * Exporté parce que la **fiche d'atelier** groupe les mêmes SKU par les mêmes
- * rayons, et doit dire la panne avec les mêmes mots. Deux écrans du même fournil
- * qui nommeraient différemment une lecture ratée du catalogue en feraient deux
- * incidents distincts (ouvert le 2026-09-13).
- */
-export function shelfLabel(family: CatalogFamilyNodeView | null, shelvesKnown: boolean): string {
-  if (family !== null) {
-    return family.name;
-  }
-  return shelvesKnown ? OFF_CATALOG_LABEL : UNKNOWN_SHELF_LABEL;
 }
 
 /** Le total de pièces du lot, réassorts compris — le chiffre qu'on annonce au fournil. */

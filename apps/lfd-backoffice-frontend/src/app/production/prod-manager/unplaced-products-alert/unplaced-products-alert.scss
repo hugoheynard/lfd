@@ -1,0 +1,6 @@
+/* Sous la bande des onglets, dans les marges de la page : la bande ne bouge pas. */
+:host {
+  display: block;
+  flex: 0 0 auto;
+  padding: var(--fold-space-sm) var(--fold-page-gutter) 0;
+}

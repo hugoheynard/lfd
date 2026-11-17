@@ -7,7 +7,8 @@ import type {
 } from '@lfd/contracts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { AdminCatalogService } from '../../../commandes/catalog.service';
+import { WorkstationsService } from '../../workstations.service';
+import { shelfGrouping } from '../../__tests__/shelf-grouping-fixture';
 import { ProductionService } from '../../production.service';
 import { DossierDuJour } from './dossier-du-jour';
 
@@ -71,7 +72,10 @@ async function render(
           }),
         },
       },
-      { provide: AdminCatalogService, useValue: { list: async () => [] } },
+      {
+        provide: WorkstationsService,
+        useValue: { grouping: async (skus: readonly string[]) => shelfGrouping(skus, []) },
+      },
     ],
   });
   const fixture = TestBed.createComponent(DossierDuJour);

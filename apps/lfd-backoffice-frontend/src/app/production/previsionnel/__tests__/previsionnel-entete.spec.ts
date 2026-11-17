@@ -3,7 +3,8 @@ import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import type { ProductionForecastView } from '@lfd/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { AdminCatalogService } from '../../../commandes/catalog.service';
+import { WorkstationsService } from '../../workstations.service';
+import { shelfGrouping } from '../../__tests__/shelf-grouping-fixture';
 import { PrevisionnelPage } from '../previsionnel-page';
 import { ProductionService } from '../../production.service';
 
@@ -65,7 +66,10 @@ async function render(): Promise<ComponentFixture<PrevisionnelPage>> {
       // `batch` manque exprès : le dossier, s'il s'ouvre, tombe dans son état
       // d'erreur — ce qui est éprouvé ici est l'en-tête, pas le dossier.
       { provide: ProductionService, useValue: { forecast: async () => FORECAST } },
-      { provide: AdminCatalogService, useValue: { list: async () => [] } },
+      {
+        provide: WorkstationsService,
+        useValue: { grouping: async (skus: readonly string[]) => shelfGrouping(skus, []) },
+      },
     ],
   });
   const fixture = TestBed.createComponent(PrevisionnelPage);

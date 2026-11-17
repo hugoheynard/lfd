@@ -28,6 +28,13 @@ describe('les onglets de Prod manager', () => {
     expect(keys(['production_resupply:read'])).toEqual(['reassorts']);
   });
 
+  it('ouvre les postes à leur seul droit, en dernier', () => {
+    expect(keys(['production_workstations:read'])).toEqual(['postes']);
+    expect(
+      keys(['production_plan:read', 'production_resupply:read', 'production_workstations:read']),
+    ).toEqual(['previsionnel', 'reassorts', 'postes']);
+  });
+
   it('n’ouvre rien au comptoir seul', () => {
     expect(keys(['handover_counter:read'])).toEqual([]);
   });

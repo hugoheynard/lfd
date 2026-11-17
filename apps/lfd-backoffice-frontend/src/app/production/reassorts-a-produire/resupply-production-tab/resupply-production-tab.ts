@@ -26,6 +26,13 @@ import { parisToday } from '../../../shared/paris-today';
 import { shiftDay } from '../../previsionnel/previsionnel-range';
 import { BakehouseDraftsSection } from '../bakehouse-drafts-section/bakehouse-drafts-section';
 import { LiveStockAlertsService } from '../live-stock-alerts.service';
+import {
+  filterKeyOf,
+  type WorkstationFilter,
+  workstationFilterOf,
+  workstationOptionsOf,
+} from '../../workstation-filter';
+import { WorkstationsService } from '../../workstations.service';
 import { ResuppliesToProduceService } from '../resupplies-to-produce.service';
 import { ResupplyLaunchCard } from '../resupply-launch-card/resupply-launch-card';
 import { resupplyLaunchRows } from '../resupply-launch-card/resupply-launch-rows';
@@ -99,6 +106,7 @@ function normalize(text: string): string {
 export class ResupplyProductionTab {
   private readonly service = inject(ResuppliesToProduceService);
   private readonly stockAlerts = inject(LiveStockAlertsService);
+  private readonly workstations = inject(WorkstationsService);
   private readonly permissions = inject(PermissionsStore);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -159,8 +167,28 @@ export class ResupplyProductionTab {
   protected readonly query = signal('');
   protected readonly category = signal<string>(ALL_CATEGORIES);
 
-  /** « Tout », puis une puce par famille du catalogue, dans son ordre. */
+  /**
+   * En mode prod, le poste de chaque produit (plan des postes, § 3.7) ;
+   * `null` en mode boutique ou rangement non lu : le filtre reste la famille.
+   */
+  private readonly stations = signal<WorkstationFilter | null>(null);
+  /** Le nom du filtre : par poste en mode prod, par famille sinon. */
+  protected readonly filterLabel = computed(() =>
+    this.stations() === null ? 'Filtrer par famille' : 'Filtrer par poste',
+  );
+
+  /** « Tout », puis une puce par famille du catalogue (ou par poste en mode prod), dans son ordre. */
   protected readonly categoryOptions = computed(() => {
+    const stations = this.stations();
+    if (stations !== null) {
+      return [
+        { value: ALL_CATEGORIES, label: 'Tout' },
+        ...workstationOptionsOf(
+          stations,
+          this.rows().map((row) => row.sku),
+        ).map(({ value, label }) => ({ value, label })),
+      ];
+    }
     const families = new Map<string, string>();
     for (const article of this.view()?.articles ?? []) {
       if (!families.has(article.categoryId)) {
@@ -176,9 +204,11 @@ export class ResupplyProductionTab {
   protected readonly visibleRows = computed(() => {
     const query = normalize(this.query().trim());
     const category = this.category();
+    const stations = this.stations();
     return this.rows().filter(
       (row) =>
-        (category === ALL_CATEGORIES || row.categoryId === category) &&
+        (category === ALL_CATEGORIES ||
+          filterKeyOf(stations, row.sku, row.categoryId) === category) &&
         (query === '' || normalize(`${row.name} ${row.sku}`).includes(query)),
     );
   });
@@ -238,6 +268,21 @@ export class ResupplyProductionTab {
     });
   }
 
+  /**
+   * Le rangement des produits affichés : une lecture ratée laisse le filtre
+   * par famille, la table reste juste.
+   */
+  private async readStations(skus: readonly string[]): Promise<WorkstationFilter | null> {
+    if (skus.length === 0) {
+      return null;
+    }
+    try {
+      return workstationFilterOf(await this.workstations.grouping(skus));
+    } catch {
+      return null;
+    }
+  }
+
   protected async load(day: string = this.day()): Promise<void> {
     const seq = ++this.readSeq;
     // « loading » au premier chargement seulement : une relecture (geste,
@@ -256,6 +301,11 @@ export class ResupplyProductionTab {
       }
       this.view.set(view);
       this.alerts.set(alerts);
+      const stations = await this.readStations(this.rows().map((row) => row.sku));
+      if (seq !== this.readSeq) {
+        return;
+      }
+      this.stations.set(stations);
       this.alertsLost.set(alerts === null);
       this.state.set('ready');
     } catch {

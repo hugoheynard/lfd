@@ -1,0 +1,123 @@
+<fold-card data-workstation-products>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    title="Les produits"
+    subtitle="Le poste d’un produit vaut pour toutes ses déclinaisons. Un produit sans poste reste sous son rayon, « à ranger »."
+  />
+
+  <div class="body">
+    <div class="filters">
+      <fold-checkbox
+        [label]="unplacedLabel()"
+        [checked]="onlyUnplaced()"
+        (checkedChange)="onlyUnplaced.set($event)"
+        data-filter-unplaced
+      />
+      <fold-checkbox
+        label="Commandés ces jours-ci"
+        [checked]="onlyOrdered()"
+        (checkedChange)="onlyOrdered.set($event)"
+        data-filter-ordered
+      />
+      <fold-listbox
+        class="filter"
+        size="sm"
+        label="Rayon"
+        placeholder="Tous les rayons"
+        allowClear
+        [options]="shelfOptions()"
+        [value]="shelf()"
+        (valueChange)="shelf.set($event)"
+        data-filter-shelf
+      />
+      <fold-search
+        class="filter"
+        placeholder="Chercher un produit"
+        ariaLabel="Chercher un produit"
+        [value]="query()"
+        (valueChange)="query.set($event)"
+        [resultCount]="visibleProducts().length"
+        resultLabel="produits"
+      />
+    </div>
+
+    @if (canWrite() && shelf() !== null && targetOptions().length > 0) {
+      <div class="filters" data-bulk>
+        <fold-listbox
+          class="filter"
+          size="sm"
+          label="Tout ce rayon vers le poste"
+          placeholder="Choisir un poste"
+          [options]="targetOptions()"
+          [value]="bulkTarget()"
+          (valueChange)="bulkTarget.set($event)"
+          data-bulk-target
+        />
+        <button
+          foldButton
+          size="sm"
+          [disabled]="busy() || bulkTarget() === null"
+          (click)="placeShelf()"
+          data-bulk-place
+        >
+          Placer les {{ shelfProducts().length }} produits
+        </button>
+      </div>
+    }
+
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce data-placement-refusal>{{ message }}</fold-callout>
+    }
+
+    <fold-data-table
+      data-products-table
+      density="compact"
+      hover
+      caption="Les produits du fournil et leur poste"
+      [columns]="columns"
+      [rows]="visibleProducts()"
+      [rowKey]="skuOf"
+      [empty]="nothingFound"
+    >
+      <ng-template foldCell="shelf" let-product>
+        <span class="muted">{{ shelfNameOf(product) }}</span>
+      </ng-template>
+      <ng-template foldCell="product" let-product>
+        <span class="product">
+          {{ nameOf(product) }}
+          @for (variant of product.variants; track variant.sku) {
+            <span class="muted">
+              {{ variant.variantName }} · {{ variant.sku
+              }}{{ variant.sellable ? '' : ' · pas en vente' }}
+            </span>
+          }
+        </span>
+      </ng-template>
+      <ng-template foldCell="workstation" let-product>
+        @if (canWrite()) {
+          <fold-listbox
+            size="sm"
+            [ariaLabel]="'Poste de ' + nameOf(product)"
+            [options]="workstationOptions()"
+            [value]="placementOf(product)"
+            [disabled]="busy()"
+            (selectionChange)="place(product, $event)"
+            [attr.data-placement]="product.productSku"
+          />
+        } @else {
+          <span>{{ workstationNameOf(product) }}</span>
+        }
+      </ng-template>
+    </fold-data-table>
+
+    @if (offCatalog().length > 0) {
+      <fold-callout variant="info" data-off-catalog>
+        Commandés, mais plus au catalogue — ils ne peuvent pas recevoir de poste :
+        @for (article of offCatalog(); track article.sku; let last = $last) {
+          {{ article.productName }} ({{ article.sku }}){{ last ? '.' : ',' }}
+        }
+      </fold-callout>
+    }
+  </div>
+</fold-card>

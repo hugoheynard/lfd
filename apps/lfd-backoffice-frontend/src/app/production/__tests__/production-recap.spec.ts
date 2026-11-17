@@ -1,7 +1,34 @@
-import type { CatalogFamilyView, CatalogItemView, AtelierSheet } from '@lfd/contracts';
+import type {
+  AtelierSheet,
+  CatalogFamilyView,
+  CatalogItemView,
+  ProductionDayResupply,
+} from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { productionRecap, resupplyPieces, totalPieces } from '../production-recap';
+import {
+  productionRecap as servedRecap,
+  recapSkus,
+  resupplyPieces,
+  totalPieces,
+} from '../production-recap';
+import { shelfGrouping } from './shelf-grouping-fixture';
+
+/** Le récapitulatif rangé comme le serveur le range en mode boutique. */
+function productionRecap(
+  sheets: readonly AtelierSheet[],
+  catalogue: readonly CatalogItemView[],
+  shelvesKnown = true,
+  resupplies: readonly ProductionDayResupply[] = [],
+  showSubcategories = false,
+) {
+  const grouping = shelfGrouping(
+    recapSkus(sheets, resupplies),
+    shelvesKnown ? catalogue : null,
+    showSubcategories,
+  );
+  return servedRecap(sheets, grouping, resupplies);
+}
 
 function sheet(reference: string, lines: [string, string, number][]): AtelierSheet {
   return {

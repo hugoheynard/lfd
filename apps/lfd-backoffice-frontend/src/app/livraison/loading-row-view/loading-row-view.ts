@@ -35,7 +35,7 @@ export class LoadingRowView {
   readonly nextKey = input<string | null>(null);
   /** Toucher une tuile la désigne ; `false` : lecture seule. */
   readonly canPick = input(false);
-  /** Le poste fixe du dépôt dessine plus grand. */
+  /** La tablette du dépôt dessine plus grand. */
   readonly size = input<'phone' | 'depot'>('phone');
 
   /** La clé du bac désigné d'un toucher. */

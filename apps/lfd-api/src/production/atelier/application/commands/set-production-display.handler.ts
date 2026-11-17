@@ -6,10 +6,7 @@ import { Clock } from "../../../../platform/time/clock.js";
 import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
 import { ProductionDisplaySettings } from "../../../shared/print/index.js";
 import { ProductionDisplaySettingsUpdatedEvent } from "../../domain/events/production-display-settings.events.js";
-import {
-  NoProductPlacedError,
-  WorkstationGroupingNotYetOpenError,
-} from "../../domain/errors/production-display-errors.js";
+import { NoProductPlacedError } from "../../domain/errors/production-display-errors.js";
 import { ProductionDisplaySettingsReader } from "../../../shared/print/index.js";
 import { ProductionDisplaySettingsRepository } from "../../../shared/print/index.js";
 import { PlacedProducts } from "../../../workstations/index.js";
@@ -53,7 +50,6 @@ export class SetProductionDisplayHandler implements ICommandHandler<
       }
       if (next.grouping === "workstation" && previous.grouping !== "workstation") {
         await this.refuseEmptyWorkstationGrouping();
-        refuseWorkstationGroupingUntilScreens();
       }
       const authors = await this.authors.identify([command.staffUserId]);
       await this.settings.save(next, this.clock.now(), {
@@ -70,18 +66,4 @@ export class SetProductionDisplayHandler implements ICommandHandler<
       throw new NoProductPlacedError();
     }
   }
-}
-
-/**
- * **Garde provisoire, à retirer en W3b** (plan
- * `fournil/plan-postes-du-fournil.md`, § 3.9) : tant que le prévisionnel, le
- * récapitulatif et les filtres des réassorts rangent eux-mêmes par rayon,
- * basculer en mode prod rangerait la fiche et le dossier par poste et ces
- * écrans encore par rayon. W3b supprime cette fonction et son appel, et son
- * test passe de « refusé » à « accepté ».
- *
- * @throws {WorkstationGroupingNotYetOpenError} toujours.
- */
-function refuseWorkstationGroupingUntilScreens(): never {
-  throw new WorkstationGroupingNotYetOpenError();
 }

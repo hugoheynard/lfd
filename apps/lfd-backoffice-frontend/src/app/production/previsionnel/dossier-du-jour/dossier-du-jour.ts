@@ -19,14 +19,14 @@ import {
   type FoldViewToggleOption,
 } from 'fold-ng';
 import type {
-  CatalogItemView,
   ProductionBatchView,
   ProductionDayResuppliesView,
+  ProductionGroupingView,
 } from '@lfd/contracts';
 
-import { AdminCatalogService } from '../../../commandes/catalog.service';
 import { FicheProduction } from '../../fiche-production/fiche-production';
-import { productionRecap, resupplyPieces, totalPieces } from '../../production-recap';
+import { productionRecap, recapSkus, resupplyPieces, totalPieces } from '../../production-recap';
+import { WorkstationsService } from '../../workstations.service';
 import { ProductionService } from '../../production.service';
 import { DayTranchesSection } from '../day-tranches-section/day-tranches-section';
 import { DueThresholdsSection } from '../due-thresholds-section/due-thresholds-section';
@@ -125,7 +125,7 @@ export function defaultDossierDate(): string {
 })
 export class DossierDuJour {
   private readonly production = inject(ProductionService);
-  private readonly catalog = inject(AdminCatalogService);
+  private readonly workstations = inject(WorkstationsService);
 
   protected readonly state = signal<LoadState>('loading');
   private readonly destroyRef = inject(DestroyRef);
@@ -143,28 +143,26 @@ export class DossierDuJour {
    * 409 du serveur qui tranche.
    */
   readonly closed = input<boolean | null>(null);
-  /**
-   * Le réglage « Afficher les sous-catégories » du fournil (2026-10-30), lu
-   * par le parent dans le prévisionnel : un intertitre par sous-catégorie dans
-   * chaque rayon racine.
-   */
-  readonly showSubcategories = input(false);
   protected readonly view = signal<string>('recap');
   protected readonly views = VIEWS;
 
   private readonly batch = signal<ProductionBatchView | null>(null);
-  private readonly catalogue = signal<readonly CatalogItemView[]>([]);
+  /** Le rangement servi des SKU du lot (plan des postes, § 3.7). `null` : pas lu. */
+  private readonly grouping = signal<ProductionGroupingView | null>(null);
 
   protected readonly sheets = computed(() => this.batch()?.sheets ?? []);
   /**
-   * 🔴 La lecture du catalogue a-t-elle échoué ?
+   * 🔴 Le rangement ou les rayons n'ont-ils pas pu être lus ?
    *
-   * Elle ne fait pas tomber l'écran — le lot reste juste sans elle — mais elle
-   * ne peut pas passer en silence : sans catalogue, chaque SKU tombe dans le
-   * groupe des produits absents, et la feuille affirmerait que le fournil
-   * fabrique des articles retirés de la vente.
+   * Elle ne fait pas tomber l'écran — le lot reste juste sans eux — mais elle
+   * ne peut pas passer en silence : sans rayons, chaque SKU tombe dans un
+   * groupe « Rayon inconnu ».
    */
   protected readonly shelvesLost = signal(false);
+  /** En mode prod, les postes n'ont pas pu être lus : le lot est rangé par rayon. */
+  protected readonly workstationsLost = computed(
+    () => this.grouping()?.workstationsKnown === false,
+  );
 
   /**
    * Les réassorts (R3d) : figés à l'arrêt, envoyés sinon ; dans les fiches de
@@ -178,13 +176,7 @@ export class DossierDuJour {
 
   /** Les fiches de poste : commandes + réassorts, total d'abord (R3d-bis). */
   protected readonly recap = computed(() =>
-    productionRecap(
-      this.sheets(),
-      this.catalogue(),
-      !this.shelvesLost(),
-      this.resupplySheets(),
-      this.showSubcategories(),
-    ),
+    productionRecap(this.sheets(), this.grouping(), this.resupplySheets()),
   );
   protected readonly pieces = computed(() => totalPieces(this.recap()));
   protected readonly resupplyPieces = computed(() => resupplyPieces(this.recap()));
@@ -245,24 +237,40 @@ export class DossierDuJour {
   protected async load(date: string = this.date()): Promise<void> {
     this.state.set('loading');
     try {
-      // Le catalogue part avec le lot : sans lui, le récapitulatif n'a pas de
-      // rayons. Une lecture ratée ne doit pas faire disparaître la production —
-      // mais elle ne doit pas se taire non plus, d'où le `null` plutôt qu'un
-      // tableau vide : les deux se lisent pareil à l'affichage, et un seul des
-      // deux est une panne.
-      const [batch, catalogue, resupplies] = await Promise.all([
+      const [batch, resupplies] = await Promise.all([
         this.production.batch(date),
-        this.catalog.list().catch(() => null),
         this.readResupplies(date),
       ]);
+      // Le rangement des SKU affichés, demandé au serveur : une lecture ratée
+      // ne fait pas disparaître la production, mais elle se dit (`shelvesLost`).
+      const grouping = await this.readGrouping(
+        recapSkus(batch.sheets, resupplySheetsOf(resupplies?.resupplies ?? [])),
+      );
       this.batch.set(batch);
       this.resupplies.set(resupplies);
       this.resuppliesLost.set(resupplies === null);
-      this.shelvesLost.set(catalogue === null);
-      this.catalogue.set(catalogue ?? []);
+      this.shelvesLost.set(grouping === undefined || grouping?.shelvesKnown === false);
+      this.grouping.set(grouping ?? null);
       this.state.set('ready');
     } catch {
       this.state.set('error');
+    }
+  }
+
+  /**
+   * Le rangement de ces SKU ; `null` s'il n'y a rien à ranger, `undefined` si
+   * la lecture a échoué.
+   */
+  private async readGrouping(
+    skus: readonly string[],
+  ): Promise<ProductionGroupingView | null | undefined> {
+    if (skus.length === 0) {
+      return null;
+    }
+    try {
+      return await this.workstations.grouping(skus);
+    } catch {
+      return undefined;
     }
   }
 

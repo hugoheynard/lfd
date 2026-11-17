@@ -10,6 +10,8 @@ import { describe, expect, it } from 'vitest';
 import { ProductionService } from '../../production.service';
 import { parisToday } from '../../../shared/paris-today';
 import { WorksheetService } from '../../worksheet.service';
+import { WorkstationsService } from '../../workstations.service';
+import { shelfGrouping } from '../../__tests__/shelf-grouping-fixture';
 import { DayTrancheWall } from './day-tranche-wall';
 
 /**
@@ -141,11 +143,16 @@ async function mount(
         provide: WorksheetService,
         useValue: { worksheet: () => Promise.resolve({ ...SHEET, date }) },
       },
+      {
+        provide: WorkstationsService,
+        useValue: {
+          grouping: (skus: readonly string[]) => Promise.resolve(shelfGrouping(skus, [])),
+        },
+      },
     ],
   });
   const fixture = TestBed.createComponent(DayTrancheWall);
   fixture.componentRef.setInput('date', date);
-  fixture.componentRef.setInput('catalogue', []);
   fixture.detectChanges();
   await fixture.whenStable();
   // Deux lectures en parallèle : on laisse leurs promesses se régler.

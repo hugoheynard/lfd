@@ -28,6 +28,21 @@
             </fold-callout>
           </div>
         }
+        @if (shelvesLost()) {
+          <div class="dtw-note">
+            <fold-callout variant="warning">
+              Les rayons n'ont pas pu être lus — la grille est juste, mais ses produits ne sont pas
+              rangés. Réessayez pour les retrouver.
+            </fold-callout>
+          </div>
+        }
+        @if (workstationsLost()) {
+          <div class="dtw-note">
+            <fold-callout variant="warning" data-workstations-lost>
+              Les postes n'ont pas pu être lus — la grille est rangée par rayon.
+            </fold-callout>
+          </div>
+        }
         @if (worksheetLost()) {
           <div class="dtw-note">
             <fold-callout variant="warning">

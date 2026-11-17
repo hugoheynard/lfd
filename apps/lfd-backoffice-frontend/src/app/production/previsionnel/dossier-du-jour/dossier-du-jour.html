@@ -62,15 +62,20 @@
 }
 
 <!--
-  🔴 Le catalogue n'a pas répondu. Le lot reste juste — les commandes et leurs
-  quantités viennent du serveur de production, pas de lui — mais ses rayons sont
-  perdus, et un groupe « Hors catalogue » dirait alors que tout est retiré de la
-  vente. Un échec partiel laisse le contenu à l'écran et se DIT.
+  🔴 Le rangement n'a pas répondu. Le lot reste juste — les commandes et leurs
+  quantités viennent du serveur de production — mais ses rayons sont perdus.
+  Un échec partiel laisse le contenu à l'écran et se DIT.
 -->
 @if (shelvesLost() && state() === 'ready') {
   <fold-callout variant="warning">
     Les rayons n'ont pas pu être lus — le lot est juste, mais ses produits ne sont pas rangés.
     Rechargez pour les retrouver.
+  </fold-callout>
+}
+
+@if (workstationsLost() && state() === 'ready') {
+  <fold-callout variant="warning" data-workstations-lost>
+    Les postes n'ont pas pu être lus — le lot est rangé par rayon.
   </fold-callout>
 }
 

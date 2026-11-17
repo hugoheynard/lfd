@@ -1,7 +1,27 @@
 import type { CatalogFamilyView, CatalogItemView, ProductionForecastView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { forecastRayons, totalOfRayons } from './previsionnel-matrix';
+import { shelfGrouping } from '../__tests__/shelf-grouping-fixture';
+import { forecastRayons as servedRayons, totalOfRayons } from './previsionnel-matrix';
+
+/**
+ * La matrice rangée comme le serveur la range en mode boutique : les attentes
+ * d'avant le rangement servi (plan des postes, § 3.7) restent les mêmes.
+ */
+function forecastRayons(
+  forecast: ProductionForecastView,
+  catalogue: readonly CatalogItemView[],
+  shelvesKnown = true,
+) {
+  return servedRayons(
+    forecast,
+    shelfGrouping(
+      forecast.lines.map((line) => line.sku),
+      shelvesKnown ? catalogue : null,
+      forecast.showSubcategories === true,
+    ),
+  );
+}
 
 const DAYS = ['2026-09-03', '2026-09-04', '2026-09-05'];
 
@@ -71,7 +91,7 @@ describe('forecastRayons', () => {
       [item('GAL-1', galettes)],
     );
     expect(rayons.map((rayon) => rayon.label)).toEqual(['Galettes']);
-    expect(rayons[0]?.family).toEqual(galettes);
+    expect(rayons[0]?.key).toBe(galettes.id);
   });
 
   it("trie les produits d'un rayon par quantité décroissante, puis par nom", () => {
@@ -116,7 +136,7 @@ describe('forecastRayons', () => {
       [item('VIE-1', VIENNOISERIES)],
     );
     expect(rayons.map((rayon) => rayon.label)).toEqual(['Viennoiseries', 'Hors catalogue']);
-    expect(rayons[1]?.family).toBeNull();
+    expect(rayons[1]?.key).toBe('?');
     expect(totalOfRayons(rayons)).toBe(13);
   });
 
@@ -263,6 +283,6 @@ describe('forecastRayons — catégories racine (2026-10-30)', () => {
       CATALOGUE,
     );
 
-    expect(rayons.map((rayon) => rayon.family?.id ?? null)).toEqual(['fam_vien', null]);
+    expect(rayons.map((rayon) => rayon.key)).toEqual(['fam_vien', '?']);
   });
 });

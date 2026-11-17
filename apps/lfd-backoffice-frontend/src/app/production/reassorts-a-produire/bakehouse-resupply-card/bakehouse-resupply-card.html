@@ -75,7 +75,7 @@
         @if (familyOptions().length > 2) {
           <fold-view-toggle
             data-bakehouse-families
-            ariaLabel="Filtrer par famille"
+            [ariaLabel]="filterLabel()"
             size="sm"
             [options]="familyOptions()"
             [value]="family()"

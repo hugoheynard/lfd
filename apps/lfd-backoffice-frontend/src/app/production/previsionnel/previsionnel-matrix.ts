@@ -1,59 +1,27 @@
 import {
-  SHELF_LABEL_OFF_CATALOG,
-  SHELF_LABEL_UNKNOWN,
-  type CatalogFamilyNodeView,
-  type CatalogFamilyView,
-  type CatalogItemView,
   type OrderSaleUnit,
+  type ProductionGroupingView,
   type ProductionForecastLine,
   type ProductionForecastView,
 } from '@lfd/contracts';
-import { arrangedShelf, catalogRootShelves, saleQuantityLabel } from '@lfd/b2b-ui/catalog';
+import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 
 import type { SlotState } from '../fiche-atelier/workshop-deadlines';
+import { servedGroups } from '../served-groups';
 
 /**
  * La **matrice du prévisionnel**, telle que l'écran la lit — et rien d'autre.
  *
  * Le serveur rend la grille à plat, une ligne par produit, triée par SKU : un
- * ordre stable, donc deux lectures rendent la même chose. L'ordre d'AFFICHAGE,
- * lui, est ici, parce qu'il dépend du **catalogue d'aujourd'hui** :
- *
- * - les rayons sont les catégories RACINE (2026-10-30, « Viennoiserie fine »
- *   tombe dans « Viennoiserie ») et sortent dans l'**ordre du référentiel**
- *   (la `position` de la racine, via `catalogRootShelves`) et non par poids — c'est l'ordre que l'équipe connaît déjà, et un ordre qui
- *   bougerait d'un jour à l'autre obligerait à relire la grille en entier ;
- * - à l'intérieur d'un rayon, la **quantité décroissante** sur toute la plage :
- *   c'est par le plus gros que le fournil commence. À égalité, par nom, pour que
- *   deux affichages rendent la même grille.
- *
- * C'est la même règle que la récapitulation du jour (`production-recap.ts`), et
- * pour la même raison : le rayon est une propriété du catalogue, pas de la
- * commande. Un SKU que le catalogue ne connaît plus ne disparaît pas pour autant
- * — il tombe dans un groupe à part, en fin de liste.
+ * ordre stable, donc deux lectures rendent la même chose. Le RANGEMENT aussi
+ * vient du serveur (`POST …/workstations/grouping`, plan des postes § 3.7) :
+ * par rayon racine dans l'ordre du référentiel en mode boutique, par poste en
+ * mode prod. L'écran ne garde que l'ordre à l'intérieur d'un groupe, la
+ * **quantité décroissante** sur toute la plage : c'est par le plus gros que le
+ * fournil commence. À égalité, par nom, pour que deux affichages rendent la
+ * même grille. C'est la même règle que la récapitulation du jour
+ * (`production-recap.ts`).
  */
-
-/**
- * Le groupe des produits que le catalogue ne connaît plus — jamais silencieux.
- *
- * ⚠️ En exploitation normale, **il n'apparaît pas** : un SKU vendu aujourd'hui
- * est dans le catalogue vendable, et c'est le même identifiant des deux côtés
- * (`VIE-001`, le SKU du PRODUIT, pas la déclinaison du PIM). Il ne se remplit
- * qu'avec un article **retiré** depuis la commande — `withdrawnAt` le sort des
- * lectures vendables sans effacer ce qui a été vendu. Un groupe vide n'est
- * jamais rendu.
- */
-const OFF_CATALOG_LABEL = SHELF_LABEL_OFF_CATALOG;
-
-/**
- * Le même groupe quand le catalogue n'a **pas pu être lu**.
- *
- * 🔴 Sans cette distinction, une lecture de catalogue en échec range TOUT sous
- * « Hors catalogue » — et l'écran affirme alors que le fournil fabrique des
- * produits retirés de la vente. C'est un mensonge plausible, donc du pire
- * genre : rien à l'écran ne dit que la phrase vient d'une panne.
- */
-const UNKNOWN_SHELF_LABEL = SHELF_LABEL_UNKNOWN;
 
 /**
  * Le facteur au-delà duquel une quantité est **exceptionnelle** : deux fois la
@@ -107,8 +75,8 @@ export interface ForecastProduct {
 
 /** Un rayon : son nom, son poids par jour, et ses produits. */
 export interface ForecastRayon {
-  /** `null` = les SKU dont la famille n'est pas connue (retirés, ou catalogue illisible). */
-  readonly family: CatalogFamilyView | null;
+  /** La clé du groupe servi : l'id du rayon racine, `ws:<id du poste>`, `?`. */
+  readonly key: string;
   readonly label: string;
   /** Le total du rayon jour par jour — la ligne de tête du groupe. */
   readonly quantities: readonly number[];
@@ -122,7 +90,8 @@ export interface ForecastRayon {
 }
 
 /**
- * Groupe les lignes du prévisionnel par rayon.
+ * Groupe les lignes du prévisionnel par le rangement servi (§ 3.7 du plan des
+ * postes) : un rayon en mode boutique, un poste en mode prod.
  *
  * ⚠️ Le nombre de colonnes vient de `view.days`, **jamais** de la longueur d'une
  * ligne : le contrat promet les deux égales, et s'y fier ici ferait dépendre
@@ -130,63 +99,44 @@ export interface ForecastRayon {
  */
 export function forecastRayons(
   view: ProductionForecastView,
-  catalogue: readonly CatalogItemView[],
-  /**
-   * Le catalogue a-t-il été LU ? `false` = la lecture a échoué, et l'absence
-   * d'un SKU ne prouve alors rien sur lui. Un défaut à `true` : l'appelant
-   * normal a son catalogue, et c'est la panne qui doit se déclarer.
-   */
-  shelvesKnown = true,
+  /** `null` : le rangement n'a pas été lu — tout tombe en « Rayon inconnu ». */
+  grouping: ProductionGroupingView | null,
 ): readonly ForecastRayon[] {
   const width = view.days.length;
   const peakColumn = view.days.findIndex((day) => day.date === view.peakDate);
   const products = view.lines.map((line) => productOf(line, width, peakColumn));
-  return shelvedRayons(products, width, catalogue, shelvesKnown, view.showSubcategories === true);
+  return shelvedRayons(products, width, grouping);
 }
 
 /**
- * Range des produits déjà chiffrés en rayons — la règle de la matrice, que la
- * journée par tranche partage : rayons racine dans l'ordre du référentiel,
- * plus gros d'abord, intertitres si le réglage est allumé, et un total de
- * rayon en PIÈCES (un produit au poids y pèse une pièce par case).
+ * Range des produits déjà chiffrés par le rangement servi — la règle de la
+ * matrice, que la journée par tranche partage : les groupes dans l'ordre du
+ * serveur, plus gros d'abord, intertitres si le réglage est allumé, et un
+ * total de groupe en PIÈCES (un produit au poids y pèse une pièce par case).
  */
 export function shelvedRayons(
   products: readonly ForecastProduct[],
   width: number,
-  catalogue: readonly CatalogItemView[],
-  shelvesKnown: boolean,
-  showSubcategories: boolean,
+  grouping: ProductionGroupingView | null,
 ): readonly ForecastRayon[] {
-  const familyOf = new Map(catalogue.map((item) => [item.sku, item.family]));
   const byQuantity = (a: ForecastProduct, b: ForecastProduct): number =>
     piecesOf(b) - piecesOf(a) || a.productName.localeCompare(b.productName, 'fr');
 
-  return catalogRootShelves(products, (product) => familyOf.get(product.sku) ?? null).map(
-    (shelf) => {
-      const { lines, intertitles } = arrangedShelf(shelf.sections, byQuantity, showSubcategories);
-      // Un rayon additionne des produits différents : un produit au poids y
-      // pèse une pièce par jour où il sort, jamais ses grammes (P6).
-      const quantities = Array.from({ length: width }, (_unused, column) =>
-        lines.reduce((sum, line) => sum + (line.cells[column]?.pieces ?? 0), 0),
-      );
-      return {
-        family: shelf.root,
-        label: labelOf(shelf.root, shelvesKnown),
-        quantities,
-        totalUnits: quantities.reduce((sum, quantity) => sum + quantity, 0),
-        lines,
-        intertitles,
-      };
-    },
-  );
-}
-
-/** Le nom d'un rayon — et ce qu'on dit quand on ne le connaît pas. */
-function labelOf(family: CatalogFamilyNodeView | null, shelvesKnown: boolean): string {
-  if (family !== null) {
-    return family.name;
-  }
-  return shelvesKnown ? OFF_CATALOG_LABEL : UNKNOWN_SHELF_LABEL;
+  return servedGroups(products, grouping, byQuantity).map((group) => {
+    // Un groupe additionne des produits différents : un produit au poids y
+    // pèse une pièce par jour où il sort, jamais ses grammes (P6).
+    const quantities = Array.from({ length: width }, (_unused, column) =>
+      group.lines.reduce((sum, line) => sum + (line.cells[column]?.pieces ?? 0), 0),
+    );
+    return {
+      key: group.key,
+      label: group.title,
+      quantities,
+      totalUnits: quantities.reduce((sum, quantity) => sum + quantity, 0),
+      lines: group.lines,
+      intertitles: group.intertitles,
+    };
+  });
 }
 
 /** Le total de pièces de la plage — le chiffre qu'on annonce en une phrase. */

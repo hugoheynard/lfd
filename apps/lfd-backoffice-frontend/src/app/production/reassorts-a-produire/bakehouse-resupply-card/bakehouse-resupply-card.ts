@@ -40,6 +40,8 @@ import { requestedAmountLabel, requestedLines, withQuantity } from './bakehouse-
 import { BakehouseDraftsStore } from '../bakehouse-drafts.store';
 import { BakehouseQuantityStepper } from '../bakehouse-quantity-stepper/bakehouse-quantity-stepper';
 import { BakehouseResuppliesService } from '../bakehouse-resupplies.service';
+import { type WorkstationFilter, workstationFilterOf } from '../../workstation-filter';
+import { WorkstationsService } from '../../workstations.service';
 
 /** Le téléphone — le même seuil que la feuille de style, plus large que l'étroit commun. */
 const PHONE_QUERY = '(max-width: 768px)';
@@ -107,6 +109,7 @@ interface SiteChoice {
 export class BakehouseResupplyCard {
   private readonly service = inject(BakehouseResuppliesService);
   private readonly pickups = inject(PickupAddressesService);
+  private readonly workstations = inject(WorkstationsService);
   protected readonly draftsStore = inject(BakehouseDraftsStore);
   /** Le libellé de chaque point, pour la liste des brouillons. */
   protected readonly siteLabels = computed(
@@ -154,9 +157,19 @@ export class BakehouseResupplyCard {
   /** La famille retenue par le filtre ; `ALL_FAMILIES` par défaut. */
   protected readonly family = signal<string>(ALL_FAMILIES);
 
-  /** « Tout », puis une puce par famille, avec ce qui y est déjà saisi. */
+  /**
+   * En mode prod, le poste de chaque article (plan des postes, § 3.7) ;
+   * `null` en mode boutique ou rangement non lu : le filtre reste la famille.
+   */
+  private readonly stations = signal<WorkstationFilter | null>(null);
+  /** Le nom du filtre : par poste en mode prod, par famille sinon. */
+  protected readonly filterLabel = computed(() =>
+    this.stations() === null ? 'Filtrer par famille' : 'Filtrer par poste',
+  );
+
+  /** « Tout », puis une puce par famille (ou par poste), avec ce qui y est déjà saisi. */
   protected readonly familyOptions = computed(() =>
-    familyOptionsOf(this.articles(), this.quantities()),
+    familyOptionsOf(this.articles(), this.quantities(), this.stations()),
   );
   /** En mobile, la famille est dans le filtre : la table garde produit et quantité. */
   protected readonly columns = computed(() =>
@@ -181,7 +194,7 @@ export class BakehouseResupplyCard {
 
   /** Les articles de la famille retenue et de la recherche, dans l'ordre du catalogue. */
   protected readonly visibleArticles = computed(() =>
-    articlesMatching(this.articles(), this.family(), this.query()),
+    articlesMatching(this.articles(), this.family(), this.query(), this.stations()),
   );
   protected readonly nothingFound = { title: 'Aucun produit ne correspond.' };
 
@@ -213,6 +226,7 @@ export class BakehouseResupplyCard {
       const [sites, articles] = await Promise.all([this.pickups.list(), this.service.articles()]);
       this.sites.set(sites.map((site) => ({ id: site.id, label: site.label })));
       this.articles.set(articles);
+      this.stations.set(await this.readStations(articles.map((article) => article.sku)));
     } catch {
       this.loadFailed.set(true);
     }
@@ -231,6 +245,21 @@ export class BakehouseResupplyCard {
       this.draftMissing.set(true);
     } else {
       await this.resume(draft);
+    }
+  }
+
+  /**
+   * Le rangement des articles : une lecture ratée laisse le filtre par
+   * famille, la table reste juste.
+   */
+  private async readStations(skus: readonly string[]): Promise<WorkstationFilter | null> {
+    if (skus.length === 0) {
+      return null;
+    }
+    try {
+      return workstationFilterOf(await this.workstations.grouping(skus));
+    } catch {
+      return null;
     }
   }
 
