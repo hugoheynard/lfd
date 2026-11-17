@@ -8,7 +8,8 @@ simple a sa propre réflexion et viendra après. Le plan touche au manque, donc
 ont été vérifiées le 2026-11-17 ; celles marquées **à vérifier** ne l'ont pas
 été. **La § 6 corrige les §§ 2 à 5 après la première contradiction de `vitruve`,
 la § 7 corrige la § 6 après la seconde, la § 10 corrige tout après la
-troisième ; la plus récente prime.**
+troisième, la § 11 remplace le retour par une correction de déclaration ; la
+plus récente prime.**
 
 ---
 
@@ -474,3 +475,55 @@ inexprimable, pas vérifié.
 | **N4** | Le front : les composants de ligne, le panneau rouge, le `@switch` par ligne, la page « Niveau de suivi ».                                                        |
 | **N3** | Le cron : la route, `RunAlwaysGreenLineCommand` sous le verrou, l'appel du Worker.                                                                                |
 | **N5** | Doc d'état, réflexion et plan retirés.                                                                                                                            |
+
+---
+
+## 11. Une correction de déclaration, pas un retour (Hugo, 2026-11-17) — prime sur tout
+
+**Un retour et une erreur de déclaration ne sont pas la même chose.**
+
+|                         | Un retour (existe, inchangé)                                | Une correction de déclaration (neuf)                                                 |
+| ----------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Ce qui s'est passé      | des pièces **existent** au colisage, le fournil les reprend | des pièces ont été déclarées sorties mais **n'ont jamais existé**                    |
+| Ce qui bouge            | des pièces reviennent                                       | **rien**                                                                             |
+| Ce que fait le colisage | les rend et confirme combien                                | **corrige son compte**, et met en manque les commandes qui comptaient sur ces pièces |
+
+Le rouge ne passe donc **plus par la demande de retour** (§§ 7 et 10 rayés
+sur ce point) :
+
+- **Le fournil** pose le plafond et publie un fait neuf, la **correction de
+  déclaration** : « pour ce jour et ce SKU, N pièces déclarées n'existent
+  pas » (`production.output_corrected`, dans `production/channels/packing/`,
+  le canal que le fournil déclare). Le fait est le même à tous les niveaux du
+  fournil. Côté fournil, le sorti de la ligne baisse de N : les fournées
+  concernées (les plus récentes d'abord) portent la part corrigée, sans être
+  supprimées, et le registre de la ligne garde la trace.
+- **Le colisage** s'y abonne (`@DurableHandler`) et le traite à **son**
+  niveau (§ 9) : il baisse sa réserve de N. Si ces pièces étaient libres,
+  c'est fini. S'il en avait déjà réparti dans des commandes, ces commandes
+  passent en **manque** (`reportShortfall`), et le manager décide. En
+  détaillé et en simple, le poste voit l'alerte sur ces commandes ; en
+  toujours vert, c'est automatique.
+- **Le retour existant** reste la reprise physique de pièces, inchangé.
+
+### 🔴 La contrainte du colisage : jamais de réserve négative
+
+L'invariant du colisage est **au bac ≤ reçu − rendu**
+([`../colisage/colisage.md`](../colisage/colisage.md) § 4.3), et une
+réserve relue à découvert est **refusée** (`PackingStock.fromSnapshot`,
+`packing.stock.overdrawn`, erreur technique). Baisser la réserve de N alors que
+des pièces sont déjà au bac la mettrait à découvert.
+
+**Donc, dans une seule unité de travail et sous les verrous du colisage,
+dans leur ordre (la commande, puis les bacs, puis la réserve) :**
+
+1. calculer ce qui manque à la réserve après correction :
+   `manque = au bac − (reçu − N − rendu)` ;
+2. si `manque > 0`, **retirer d'abord** ces pièces des commandes concernées et
+   les déclarer en manque (les commandes les plus récemment colisées d'abord,
+   **à trancher dans le plan du colisage**) ;
+3. **puis seulement** baisser `reçu` de N.
+
+La réserve n'est jamais à découvert, pas même un instant dans la transaction.
+Le détail (quelles commandes, quel ordre, l'écran) appartient au plan du
+colisage ; ce plan-ci ne fait que publier le fait.

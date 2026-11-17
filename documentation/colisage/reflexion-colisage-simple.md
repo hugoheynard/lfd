@@ -206,3 +206,15 @@ Le colisage **ne connaît pas le niveau du fournil**. Il reçoit des faits
 **chacun de ses niveaux**, y compris en toujours vert, où il rend seul ce qui
 n'est dans aucune commande et déclare un manque sur les commandes déjà prêtes.
 Voir [`../fournil/plan-niveaux-de-suivi.md`](../fournil/plan-niveaux-de-suivi.md), § 9.
+
+## 🔴 La correction de déclaration et la réserve (Hugo, 2026-11-17)
+
+Le fournil publiera « N pièces déclarées n'existent pas »
+([`../fournil/plan-niveaux-de-suivi.md`](../fournil/plan-niveaux-de-suivi.md), § 11).
+Le colisage baisse alors sa réserve de N. **Contrainte** : la réserve ne doit
+**jamais** passer à découvert (au bac ≤ reçu − rendu, et
+`PackingStock.fromSnapshot` refuse une réserve à découvert). Il faut donc
+**d'abord** retirer des commandes les pièces qui n'existent plus et les
+déclarer en manque, **puis** baisser la réserve, dans une seule unité de
+travail, sous les verrous dans leur ordre (commande, bacs, réserve). Le plan du
+colisage tranche quelles commandes perdent les pièces.
