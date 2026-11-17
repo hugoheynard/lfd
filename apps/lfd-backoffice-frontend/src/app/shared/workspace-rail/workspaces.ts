@@ -205,6 +205,16 @@ export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
     icon: 'sliders',
     needs: 'production_workstations:read',
   },
+  {
+    // Simuler le dossier de prod (`documentation/fournil/les-postes-du-fournil.md`,
+    // § 3.11) : une page à part plutôt qu'une simulation par option (Hugo,
+    // 2026-11-17), sous le droit des postes comme sa route.
+    key: 'reglages-simulation',
+    label: 'Simuler le dossier de prod',
+    link: '/reglages/production/simulation',
+    icon: 'play',
+    needs: 'production_workstations:read',
+  },
 ];
 
 /**

@@ -3,7 +3,7 @@
  * `fournil/les-postes-du-fournil.md`, § 3.11), sur le vrai Postgres jetable.
  *
  * Ce que seule cette suite prouve : la route sous `production_workstations`,
- * la forme du mode refusée en 400, le PDF rangé dans le mode demandé sur le
+ * la forme du mode et des sous-catégories refusée en 400, le PDF rangé dans le mode demandé sur le
  * vrai miroir du commerce, et rien d'écrit en base.
  */
 import type { CreatedIdResponse } from "@lfd/contracts";
@@ -100,9 +100,23 @@ describe("GET /admin/production/workstations/simulation.pdf", () => {
     expect(await counts()).toEqual(before);
   });
 
-  it("400 sur un mode inconnu", async () => {
+  it("sous-catégories choisies à la demande, sans toucher au réglage", async () => {
+    const before = await counts();
+
+    for (const shown of ["true", "false"]) {
+      const response = await getPdf(
+        admin(ctx),
+        `${SIMULATION}?mode=shelf&showSubcategories=${shown}`,
+      ).expect(200);
+      expect(textOf(response)).toContain("SIMULATION — ne pas produire");
+    }
+    expect(await counts()).toEqual(before);
+  });
+
+  it("400 sur un mode inconnu ou un affichage des sous-catégories mal formé", async () => {
     await admin(ctx).get(`${SIMULATION}?mode=bakery`).expect(400);
     await admin(ctx).get(SIMULATION).expect(400);
+    await admin(ctx).get(`${SIMULATION}?mode=shelf&showSubcategories=oui`).expect(400);
   });
 
   it("403 sans la ressource des postes", async () => {

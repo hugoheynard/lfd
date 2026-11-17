@@ -9,8 +9,8 @@ import { type ProductionPaper, servePaper } from "../../shared/print/index.js";
 import { GetProductionSimulationPdfQuery } from "../application/queries/get-production-simulation-pdf.query.js";
 
 /**
- * **Simuler le catalogue en production** — Prod manager › Postes (plan
- * `documentation/fournil/les-postes-du-fournil.md`, § 3.11), sous `production_workstations`
+ * **Simuler le dossier de prod** — Réglages › Production › Simulation
+ * (`documentation/fournil/les-postes-du-fournil.md`, § 3.11), sous `production_workstations`
  * en lecture, à côté des routes des postes.
  *
  * La route vit au plan et non dans `workstations/` : elle rend une partie du
@@ -28,7 +28,10 @@ export class ProductionSimulationController {
     @Res({ passthrough: true }) response: Response,
   ): Promise<StreamableFile> {
     const pdf = await this.queries.execute<GetProductionSimulationPdfQuery, ProductionPaper>(
-      new GetProductionSimulationPdfQuery(query.mode),
+      new GetProductionSimulationPdfQuery(
+        query.mode,
+        query.showSubcategories === undefined ? null : query.showSubcategories === "true",
+      ),
     );
     return servePaper(response, pdf);
   }

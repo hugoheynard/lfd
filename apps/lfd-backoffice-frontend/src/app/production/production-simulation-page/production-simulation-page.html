@@ -1,0 +1,70 @@
+<fold-page-layout title="Simuler le dossier de prod">
+  @if (loading()) {
+    <fold-loading message="Lecture du réglage du fournil…" />
+  } @else {
+    <fold-card data-simulation-card>
+      <fold-element-title
+        cardHeader
+        variant="title"
+        title="Le dossier, sur tout le catalogue"
+        subtitle="Une pièce de chaque article vendable, rangée par le vrai code du dossier de prod. Rien n’est enregistré, archivé ni envoyé."
+      />
+
+      <div class="body">
+        @if (settingUnread()) {
+          <fold-callout variant="info" data-setting-unread>
+            Le réglage du fournil n’a pas pu être lu : les choix partent du mode boutique, sans
+            sous-catégories.
+          </fold-callout>
+        }
+
+        <div class="choice">
+          <fold-element-title variant="caps" title="Rangement" />
+          <fold-view-toggle
+            data-simulation-mode
+            ariaLabel="Rangement"
+            [options]="modeOptions"
+            [value]="mode()"
+            (valueChange)="chooseMode($event)"
+          />
+        </div>
+        <div class="choice">
+          <fold-element-title variant="caps" title="Sous-catégories" />
+          <fold-view-toggle
+            data-simulation-subcategories
+            ariaLabel="Sous-catégories"
+            [options]="subcategoryOptions"
+            [value]="subcategoriesValue()"
+            (valueChange)="chooseSubcategories($event)"
+          />
+        </div>
+
+        <div class="actions">
+          <button
+            foldButton
+            icon="download"
+            [disabled]="simulating()"
+            (click)="simulate()"
+            data-simulate
+          >
+            Simuler
+          </button>
+        </div>
+
+        @if (refusal(); as message) {
+          <fold-callout variant="alert" announce data-simulation-refusal>{{
+            message
+          }}</fold-callout>
+        }
+        @if (blockedPdf(); as pdf) {
+          <fold-callout variant="info" data-simulation-blocked>
+            Le navigateur a bloqué l’ouverture d’un nouvel onglet.
+            <a foldButton emphasis="outline" size="sm" [href]="pdf.url" [download]="pdf.fileName">
+              Télécharger la simulation
+            </a>
+          </fold-callout>
+        }
+      </div>
+    </fold-card>
+  }
+</fold-page-layout>

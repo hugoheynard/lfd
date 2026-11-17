@@ -5,7 +5,7 @@ export class NoProductPlacedError extends BusinessError {
   constructor() {
     super(
       "production.display_settings.no_product_placed",
-      "Aucun produit n'a de poste : rangez-les depuis la page Postes, ou partez de “Simuler le catalogue en production”.",
+      "Aucun produit n'a de poste : rangez-les depuis la page Postes, ou partez de “Simuler le dossier de prod” (Réglages › Production).",
     );
   }
 }

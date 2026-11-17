@@ -190,6 +190,17 @@ export const reglagesRoutes: Routes = [
             (m) => m.WorkstationsPage,
           ),
       },
+      {
+        // Simuler le dossier de prod (`documentation/fournil/les-postes-du-fournil.md`,
+        // § 3.11) : une page dédiée (Hugo, 2026-11-17), sous le droit de sa route.
+        path: 'production/simulation',
+        canActivate: [permissionGuard('production_workstations:read')],
+        title: 'Simuler le dossier de prod — LFC B2B admin',
+        loadComponent: () =>
+          import('../production/production-simulation-page/production-simulation-page').then(
+            (m) => m.ProductionSimulationPage,
+          ),
+      },
 
       // RÉGLAGES › LIVRAISON (Hugo, 2026-10-13) — ce qui SE RÈGLE de la
       // livraison, venu de `/livraison/` ; les écrans du jour y restent.

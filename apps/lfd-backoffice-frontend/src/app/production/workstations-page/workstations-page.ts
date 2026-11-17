@@ -22,7 +22,7 @@ type LoadState = 'loading' | 'error' | 'ready';
 /**
  * **Prod manager › Postes** (`documentation/fournil/les-postes-du-fournil.md`,
  * § 3.8) : les postes du fournil, le poste de chaque produit, le réglage
- * mode boutique / mode prod et ses deux simulations.
+ * mode boutique / mode prod, et le lien vers la simulation du dossier.
  *
  * Une page de détail : plusieurs sujets, une `fold-card` chacun. Elle relit
  * tout après chaque geste accepté. Le réglage se lit sous `production_settings`

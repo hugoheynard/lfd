@@ -38,10 +38,16 @@ flowchart LR
 - **On ne bascule pas à vide.** Le passage en mode prod est refusé tant
   qu'aucun produit n'a de poste. S'il en reste sans poste parmi les produits
   commandés, une confirmation en donne le compte.
-- **On contrôle avant de basculer.** « Simuler en mode prod » et « Simuler en
-  mode boutique » sortent un dossier avec une pièce de chaque article
-  vendable, rangé par le vrai code du dossier. Rien n'est enregistré, et chaque
-  page porte « SIMULATION — ne pas produire ».
+- **On contrôle avant de basculer.** La page « Simuler le dossier de prod »
+  (Réglages › Production, `/reglages/production/simulation`) sort un dossier
+  avec une pièce de chaque article vendable, rangé par le vrai code du
+  dossier. On y choisit le rangement (mode boutique ou mode prod) et
+  l'affichage des sous-catégories, pré-réglés sur le réglage en vigueur. Rien
+  n'est enregistré, et chaque page porte « SIMULATION — ne pas produire ». Une
+  page à part plutôt qu'une simulation par option (décidé par Hugo le
+  2026-11-17) ; la carte du rangement de la page Postes y mène par un lien.
+  En mode prod sans aucun produit placé, tout ressort « à ranger » : c'est
+  voulu.
 - **Un produit oublié ne disparaît pas.** Il reste sous son rayon, marqué « à
   ranger ». La page Postes du fournil le compte, et le Prod manager affiche
   « N produits du jour à ranger » dès qu'il est commandé, avant l'arrêt ; son
@@ -145,12 +151,12 @@ disent dans un encadré.
 
 ### Les autres routes (`admin/production/workstations`)
 
-| Route                                                                     | Ce qu'elle fait                                                                                                                          |
-| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET`                                                                     | la page Postes : les postes, et les produits (miroir, journées arrêtées de J−30, demande des 14 prochains jours, commandes et réassorts) |
-| `POST`, `PUT order`, `PUT :id/name`, `POST :id/archive`, `PUT placements` | les cinq gestes                                                                                                                          |
-| `GET unplaced?date=`                                                      | l'alerte : avant l'arrêt sur la demande du jour, après sur les lignes du jour (`KnownArticles`, publié par `day/`)                       |
-| `GET simulation.pdf?mode=`                                                | la simulation, rendue par `plan/` ; elle refuse sur panne au lieu de se dégrader                                                         |
+| Route                                                                     | Ce qu'elle fait                                                                                                                                   |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`                                                                     | la page Postes : les postes, et les produits (miroir, journées arrêtées de J−30, demande des 14 prochains jours, commandes et réassorts)          |
+| `POST`, `PUT order`, `PUT :id/name`, `POST :id/archive`, `PUT placements` | les cinq gestes                                                                                                                                   |
+| `GET unplaced?date=`                                                      | l'alerte : avant l'arrêt sur la demande du jour, après sur les lignes du jour (`KnownArticles`, publié par `day/`)                                |
+| `GET simulation.pdf?mode=&showSubcategories=`                             | la simulation, rendue par `plan/` ; `showSubcategories` (`true`/`false`) absent : celui du réglage ; elle refuse sur panne au lieu de se dégrader |
 
 La bascule passe par `PUT /admin/production/settings/display` (`grouping`),
 refusée tant que `PlacedProducts.count()` vaut 0.
@@ -164,7 +170,14 @@ relecture.
 
 ### Les écrans
 
-- `production/workstations-page/` : le rangement (mode et simulations), les
+- `production/production-simulation-page/` : « Simuler le dossier de prod »,
+  `/reglages/production/simulation`, sous `production_workstations:read`
+  comme sa route, au rail comme aux tuiles. Le réglage se lit sous
+  `production_settings:read` ; sans lui, les choix partent du mode boutique
+  sans sous-catégories, et la page le dit. Le PDF s'ouvre dans un onglet, un
+  lien de téléchargement le remplace si le navigateur le bloque.
+- `production/workstations-page/` : le rangement (le mode, et un lien vers la
+  simulation), les
   postes, les produits avec un `fold-listbox` par ligne et les filtres
   (`?filtre=a-ranger`). Elle vit aux Réglages (`/reglages/production/postes`,
   décidé par Hugo le 2026-11-17), au rail comme aux tuiles du menu mobile ;

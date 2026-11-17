@@ -7,7 +7,7 @@
   />
 
   <div class="body">
-    <!-- Sans le droit de lire le réglage : les simulations seules. -->
+    <!-- Sans le droit de lire le réglage : le lien vers la simulation seul. -->
     @if (canRead() && display() === null) {
       <fold-callout variant="warning" data-grouping-unknown>
         Le réglage du fournil n’a pas pu être lu — le mode ne peut pas être changé d’ici.
@@ -48,39 +48,10 @@
       <fold-callout variant="alert" announce data-grouping-refusal>{{ message }}</fold-callout>
     }
 
-    <div class="actions">
-      <button
-        foldButton
-        emphasis="outline"
-        icon="download"
-        [disabled]="simulating() !== null"
-        (click)="simulate('workstation')"
-        data-simulate="workstation"
-      >
-        Simuler en mode prod
-      </button>
-      <button
-        foldButton
-        emphasis="outline"
-        icon="download"
-        [disabled]="simulating() !== null"
-        (click)="simulate('shelf')"
-        data-simulate="shelf"
-      >
-        Simuler en mode boutique
-      </button>
-    </div>
-
-    @if (simulationRefusal(); as message) {
-      <fold-callout variant="alert" announce data-simulation-refusal>{{ message }}</fold-callout>
-    }
-    @if (blockedPdf(); as pdf) {
-      <fold-callout variant="info">
-        Le navigateur a bloqué l’ouverture d’un nouvel onglet.
-        <a foldButton emphasis="outline" size="sm" [href]="pdf.url" [download]="pdf.fileName">
-          Télécharger la simulation
-        </a>
-      </fold-callout>
-    }
+    <p class="simulation">
+      <a routerLink="/reglages/production/simulation" data-simulation-link>
+        Simuler le dossier de prod
+      </a>
+    </p>
   </div>
 </fold-card>

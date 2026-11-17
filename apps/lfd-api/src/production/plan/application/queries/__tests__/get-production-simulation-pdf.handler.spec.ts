@@ -41,7 +41,15 @@ function named(base: ProductionArticle, variantName: string, sellable = true): P
 }
 
 const QUICHE_8 = named(article("QUI-8", "QUI", SALTY), "Quiche lorraine — 8 parts");
-const QUICHE_6 = named(article("QUI-6", "QUI", SALTY), "Quiche lorraine — 6 parts");
+/** Une sous-catégorie du traiteur : l'intertitre que montrent les sous-catégories. */
+const TARTS: CatalogFamilyView = {
+  id: "fam-tarts",
+  name: "Tartes salées",
+  position: 1,
+  root: { id: SALTY.id, name: SALTY.name, position: SALTY.position },
+};
+
+const QUICHE_6 = named(article("QUI-6", "QUI", TARTS), "Quiche lorraine — 6 parts");
 const BAGUETTE = named(article("BAG", "BAG", BREADS), "Baguette tradition");
 const UNSOLD = named(article("OLD", "OLD", BREADS), "Pain retiré du rayon", false);
 const CATALOGUE = [QUICHE_8, QUICHE_6, BAGUETTE, UNSOLD];
@@ -118,6 +126,24 @@ describe("GetProductionSimulationPdfHandler — la simulation du catalogue", () 
     expect(text).toContain("Pains — à ranger");
     expect(text).toContain("2 lignes");
     expect(text).toContain("1 article");
+  });
+
+  it("sous-catégories demandées : l'intertitre paraît, malgré un réglage qui les cache", async () => {
+    const { handler } = scene();
+
+    const shown = pagesOf(
+      (await handler.execute(new GetProductionSimulationPdfQuery("shelf", true))).bytes,
+    ).join("");
+    const byDefault = pagesOf(
+      (await handler.execute(new GetProductionSimulationPdfQuery("shelf"))).bytes,
+    ).join("");
+    const hidden = pagesOf(
+      (await handler.execute(new GetProductionSimulationPdfQuery("shelf", false))).bytes,
+    ).join("");
+
+    expect(shown).toContain(TARTS.name.toUpperCase());
+    expect(hidden).not.toContain(TARTS.name.toUpperCase());
+    expect(byDefault).toBe(hidden);
   });
 
   it("chaque page porte la mention de simulation", async () => {

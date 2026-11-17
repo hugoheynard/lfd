@@ -1,5 +1,6 @@
 import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import type { ProductionSettingsView, StaffPermission, WorkstationsPageView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
@@ -48,6 +49,7 @@ async function mount(
   TestBed.configureTestingModule({
     imports: [WorkstationsPage],
     providers: [
+      provideRouter([]),
       { provide: WorkstationsService, useValue: { page } },
       {
         provide: ProductionSettingsService,

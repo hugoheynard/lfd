@@ -1,0 +1,19 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+  align-items: center;
+}
+
+.choice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  align-items: flex-start;
+}

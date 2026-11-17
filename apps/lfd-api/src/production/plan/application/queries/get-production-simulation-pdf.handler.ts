@@ -35,6 +35,8 @@ const SIMULATION_LABEL = "Simulation du catalogue";
  * Chaque article tombe donc dans « Sans heure » — la page montre la mise en
  * page, pas un horaire.
  *
+ * Les sous-catégories suivent la demande, ou à défaut le réglage en vigueur.
+ *
  * Aucun port d'écriture : rien n'est persisté, ni archivé, ni envoyé. Une
  * lecture du rangement en panne refuse la simulation plutôt que de montrer
  * un autre rangement que celui demandé.
@@ -73,7 +75,9 @@ export class GetProductionSimulationPdfHandler implements IQueryHandler<
     if (!grouping.workstationsKnown) {
       throw new SimulationGroupingUnreadableError("postes");
     }
-    const { showSubcategories } = display ?? ProductionDisplaySettings.defaults();
+    const showSubcategories =
+      query.showSubcategories ??
+      (display ?? ProductionDisplaySettings.defaults()).showSubcategories;
     const dossier = dayDossierFrom(
       [simulationOrderOf(lines)],
       grouping.source,

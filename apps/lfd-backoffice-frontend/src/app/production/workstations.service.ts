@@ -92,11 +92,11 @@ export class WorkstationsService {
     );
   }
 
-  /** Le catalogue simulé en production, rangé dans ce mode (§ 3.11). */
-  simulationPdf(mode: ProductionGrouping): Promise<Blob> {
+  /** Le dossier de prod simulé : rangé dans ce mode, sous-catégories affichées ou non (§ 3.11). */
+  simulationPdf(mode: ProductionGrouping, showSubcategories: boolean): Promise<Blob> {
     return firstValueFrom(
       this.http.get(`${WORKSTATIONS}/simulation.pdf`, {
-        params: { mode },
+        params: { mode, showSubcategories: String(showSubcategories) },
         responseType: 'blob',
       }),
     );

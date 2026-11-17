@@ -1,10 +1,10 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import type { ProductionDisplayPayload, ProductionDisplayView } from '@lfd/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { ProductionSettingsService } from '../../production-settings.service';
-import { WorkstationsService } from '../../workstations.service';
 import { ProductionGroupingCard } from './production-grouping-card';
 
 class FakeSettings {
@@ -27,10 +27,7 @@ async function mount(
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [ProductionGroupingCard],
-    providers: [
-      { provide: ProductionSettingsService, useValue: settings },
-      { provide: WorkstationsService, useValue: {} },
-    ],
+    providers: [{ provide: ProductionSettingsService, useValue: settings }, provideRouter([])],
   });
   const fixture = TestBed.createComponent(ProductionGroupingCard);
   fixture.componentRef.setInput('display', display);
@@ -96,7 +93,7 @@ describe('le rangement du fournil', () => {
       status: 409,
       error: {
         message:
-          'Aucun produit n’a de poste : rangez-les depuis la page Postes, ou partez de “Simuler le catalogue en production”.',
+          'Aucun produit n’a de poste : rangez-les depuis la page Postes, ou partez de “Simuler le dossier de prod” (Réglages › Production).',
       },
     });
     const { fixture, saves } = await mount(SHOP, 0);
@@ -141,6 +138,16 @@ describe('le rangement du fournil', () => {
     await settle();
 
     expect(settings.saved).toEqual([{ showSubcategories: false, grouping: 'shelf' }]);
+  });
+
+  it('mène à la page de simulation, sans plus simuler elle-même', async () => {
+    const { fixture } = await mount(SHOP, 0);
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('[data-simulation-link]')?.getAttribute('href')).toBe(
+      '/reglages/production/simulation',
+    );
+    expect(el.querySelector('[data-simulate]')).toBeNull();
   });
 
   it('dit quand le réglage n’a pas pu être lu', async () => {
