@@ -38,6 +38,7 @@ function ovenBatch(sku: string, quantity: number, initials: string): ProductionB
     cancelled: null,
     returned: 0,
     pendingReturn: 0,
+    corrected: 0,
   };
 }
 
@@ -350,6 +351,7 @@ describe("worksheetOf — les fournées (plan des fournées, D2, §4)", () => {
       cancelled: null,
       returned: 0,
       pendingReturn: 0,
+      corrected: 0,
     };
   }
 

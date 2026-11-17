@@ -8,6 +8,7 @@ import type { ProductionWorksheetReading } from "../services/production-workshee
 import { WorksheetContents } from "../services/worksheet-contents.service.js";
 import { SettableDisplaySettingsVersion } from "../../../shared/print/application/__tests__/production-display-settings-doubles.js";
 import { SettableWorkstationMapVersion } from "../../../workstations/application/__tests__/placement-doubles.js";
+import { InMemoryTrackingSettings } from "./tracking-doubles.js";
 
 /** La fiche servie par l'objet des journées, autour d'une lecture et d'une horloge. */
 export function worksheetContentsAround(
@@ -22,5 +23,6 @@ export function worksheetContentsAround(
     clock,
     new SettableDisplaySettingsVersion(),
     new SettableWorkstationMapVersion(),
+    new InMemoryTrackingSettings().version(),
   );
 }

@@ -157,3 +157,17 @@ describe('le rangement du fournil (production_display_settings.updated)', () => 
     expect(sentence(hidden)).toBe('Colette Martin a masqué les sous-catégories au fournil');
   });
 });
+
+describe('le suivi du fournil (production_tracking_settings.updated)', () => {
+  it('dit le niveau et la marge, avant et après', () => {
+    const changed = fact('production_tracking_settings.updated', {
+      level: 'simple',
+      marginMinutes: 20,
+      previous: { level: 'always_green', marginMinutes: 15 },
+    });
+    expect(sentence(changed)).toBe(
+      'Colette Martin a réglé le suivi du fournil : simple, marge de 20 min ; c’était toujours vert, marge de 15 min',
+    );
+    expect(renderFact(changed).detail).toEqual([]);
+  });
+});

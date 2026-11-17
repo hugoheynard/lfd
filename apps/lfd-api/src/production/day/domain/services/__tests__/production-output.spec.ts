@@ -25,6 +25,7 @@ function batch(
     cancelled: cancelled ? { at: SIX, by: "staff-2" } : null,
     returned: 0,
     pendingReturn: 0,
+    corrected: 0,
   };
 }
 
@@ -124,5 +125,29 @@ describe("countedBatch — ce que le colisage a rendu", () => {
     const entry = { ...batch("a", 30), returned: 30 };
 
     expect(outputOf(30, [countedBatch(entry)])).toMatchObject({ produced: 0, complete: false });
+  });
+});
+
+describe("countedBatch — la part corrigée (plan des niveaux de suivi, § 3.3)", () => {
+  it("retire la part corrigée, en plus de ce qui est rendu", () => {
+    const entry = { ...batch("a", 30), returned: 5, corrected: 10 };
+
+    expect(countedBatch(entry).quantity).toBe(15);
+  });
+
+  it("outputOf ne compte plus les pièces corrigées : la ligne redevient à faire", () => {
+    const entry = { ...batch("a", 30), corrected: 12 };
+
+    expect(outputOf(30, [countedBatch(entry)])).toMatchObject({
+      produced: 18,
+      remaining: 12,
+      complete: false,
+    });
+  });
+
+  it("entièrement corrigée, la fournée compte zéro sans être annulée", () => {
+    const counted = countedBatch({ ...batch("a", 20), corrected: 20 });
+
+    expect(counted).toMatchObject({ quantity: 0, cancelled: null });
   });
 });

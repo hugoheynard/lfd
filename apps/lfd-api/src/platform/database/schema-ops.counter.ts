@@ -272,6 +272,11 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   // Les postes du fournil et le poste de chaque produit (Réglages › Production, 2026-11-16).
   ProductionWorkstation: "production",
   ProductionWorkstationProduct: "production",
+  // Les niveaux de suivi (plan `fournil/plan-niveaux-de-suivi.md`) : le réglage
+  // unique, le niveau figé d'une journée, et les problèmes déclarés au rouge.
+  ProductionTrackingSettings: "production",
+  ProductionDayTrackingLevel: "production",
+  ProductionProblem: "production",
   // La remise au colisage (2026-10-04, `colisage/colisage.md`, K1) :
   // une ligne par fournée déclarée, et une par retour.
   ProductionHandoff: "production",

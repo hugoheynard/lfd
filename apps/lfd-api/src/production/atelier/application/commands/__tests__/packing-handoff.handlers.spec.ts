@@ -124,6 +124,7 @@ describe("déclarer une fournée, c'est la remettre au colisage", () => {
       cancelled: { at: EARLIER, by: "staff-1" },
       returned: 0,
       pendingReturn: 0,
+      corrected: 0,
     });
 
     await handler.execute(record(FIRST, 12));
@@ -177,6 +178,7 @@ describe("annuler une fournée remise, c'est la reprendre (journée `legacy`)", 
       cancelled: null,
       returned: 0,
       pendingReturn: 0,
+      corrected: 0,
     });
 
     await cancel.execute(new CancelBatchCommand(DAY, FIRST, "staff-3"));

@@ -106,6 +106,7 @@ describe("ProductionDay.reopen", () => {
       cancelled: { at: RETAKEN, by: "s1" },
       returned: 0,
       pendingReturn: 0,
+      corrected: 0,
     };
     const cancelled = ProductionDay.fromSnapshot({ ...snapshot, batches: [backfill] });
 

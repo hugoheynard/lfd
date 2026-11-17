@@ -104,8 +104,8 @@ describe("WorkstationMap — la différence à écrire", () => {
   it("ne rend que ce qui a changé depuis la relecture", () => {
     const map = WorkstationMap.rehydrate({
       workstations: [
-        { id: "ws-pat", name: "Pâtisserie", position: 0, archivedAt: null },
-        { id: "ws-tou", name: "Tourier", position: 1, archivedAt: null },
+        { id: "ws-pat", name: "Pâtisserie", position: 0, archivedAt: null, trackingLevel: null },
+        { id: "ws-tou", name: "Tourier", position: 1, archivedAt: null, trackingLevel: null },
       ],
       placements: new Map([
         ["QUI-001", "ws-pat"],
@@ -125,8 +125,8 @@ describe("WorkstationMap — la différence à écrire", () => {
   it("réécrit le poste qu'un produit quitte, pour que le numéro de la carte bouge", () => {
     const map = WorkstationMap.rehydrate({
       workstations: [
-        { id: "ws-pat", name: "Pâtisserie", position: 0, archivedAt: null },
-        { id: "ws-tou", name: "Tourier", position: 1, archivedAt: null },
+        { id: "ws-pat", name: "Pâtisserie", position: 0, archivedAt: null, trackingLevel: null },
+        { id: "ws-tou", name: "Tourier", position: 1, archivedAt: null, trackingLevel: null },
       ],
       placements: new Map([["QUI-001", "ws-pat"]]),
     });
@@ -145,9 +145,53 @@ describe("WorkstationMap — la différence à écrire", () => {
 function withTwoRehydrated(): WorkstationMap {
   return WorkstationMap.rehydrate({
     workstations: [
-      { id: "ws-pat", name: "Pâtisserie", position: 0, archivedAt: null },
-      { id: "ws-tou", name: "Tourier", position: 1, archivedAt: null },
+      { id: "ws-pat", name: "Pâtisserie", position: 0, archivedAt: null, trackingLevel: null },
+      { id: "ws-tou", name: "Tourier", position: 1, archivedAt: null, trackingLevel: null },
     ],
     placements: new Map(),
   });
 }
+
+describe("WorkstationMap — le niveau de suivi d'un poste (plan des niveaux de suivi, § 3.1)", () => {
+  it("un poste neuf suit le fournil", () => {
+    expect(
+      withTwo()
+        .active()
+        .map((station) => station.trackingLevel),
+    ).toEqual([null, null]);
+  });
+
+  it("pose un niveau propre, puis le rend au fournil, et retient chaque changement", () => {
+    const map = withTwoRehydrated();
+
+    map.setTrackingLevel("ws-pat", "detailed");
+    expect(map.changes().workstations).toEqual([
+      {
+        id: "ws-pat",
+        name: "Pâtisserie",
+        position: 0,
+        archivedAt: null,
+        trackingLevel: "detailed",
+      },
+    ]);
+
+    map.setTrackingLevel("ws-pat", null);
+    expect(map.active()[0]?.trackingLevel).toBeNull();
+  });
+
+  it("le même niveau, reposé, ne change rien à écrire", () => {
+    const map = withTwoRehydrated();
+
+    map.setTrackingLevel("ws-tou", null);
+
+    expect(map.changes().workstations).toEqual([]);
+  });
+
+  it("refuse un poste archivé ou inconnu", () => {
+    const map = withTwoRehydrated();
+    map.archive("ws-tou", AT);
+
+    expect(() => map.setTrackingLevel("ws-tou", "simple")).toThrow(WorkstationArchivedError);
+    expect(() => map.setTrackingLevel("ws-nope", "simple")).toThrow(WorkstationNotFoundError);
+  });
+});

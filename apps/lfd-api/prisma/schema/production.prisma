@@ -74,12 +74,14 @@ model ProductionDay {
   /// une journée jamais arrêtée. Le CHECK de la migration tient les deux valeurs.
   packingOwner String @default("legacy") @map("packing_owner")
 
-  orders     ProductionOrder[]
-  resupplies ProductionResupply[]
-  counts     ProductionCount[]
-  batches    ProductionBatch[]
-  handoffs   ProductionHandoff[]
-  returns    ProductionReturnRequest[]
+  orders        ProductionOrder[]
+  resupplies    ProductionResupply[]
+  counts        ProductionCount[]
+  batches       ProductionBatch[]
+  handoffs      ProductionHandoff[]
+  returns       ProductionReturnRequest[]
+  trackingLevel ProductionDayTrackingLevel?
+  problems      ProductionProblem[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -279,11 +281,17 @@ model ProductionBatch {
 
   /// Le SKU du compte, opaque. Pas de clé vers `production_count` : chaque
   /// `save` en régénère les `id`, et un SKU retiré du compte garde ses fournées.
-  sku      String
-  quantity Int
+  sku               String
+  quantity          Int
+  /// **La part corrigée** (plan `fournil/plan-niveaux-de-suivi.md`, § 3.3) :
+  /// des pièces déclarées qui n'ont jamais existé, prises sur la part remise
+  /// au colisage. « Sorti » en est diminué. CHECK `0 ≤ corrected ≤ quantity`.
+  correctedQuantity Int    @default(0) @map("corrected_quantity")
 
   recordedAt DateTime @map("recorded_at") @db.Timestamptz(6)
-  /// La fiche staff qui a déclaré, figée. Elle ne vient jamais de la charge.
+  /// La fiche staff qui a déclaré, figée, ou le système
+  /// (`system:always-green`, la fournée automatique). Elle ne vient jamais de
+  /// la charge.
   recordedBy String   @map("recorded_by")
   /// Vides autorisées : on déclare d'abord, on signe si on veut.
   initials   String   @default("")
@@ -875,6 +883,10 @@ model ProductionWorkstation {
   updatedByStaffId String    @map("updated_by_staff_id")
   /// `null` : la fiche ne portait pas de nom au moment du geste — on n'en invente pas.
   updatedByName    String?   @map("updated_by_name")
+  /// Le niveau de suivi propre au poste — `always_green` | `simple` |
+  /// `detailed` (CHECK en base) ; `null` : il suit le fournil (plan
+  /// `fournil/plan-niveaux-de-suivi.md`, § 3.1).
+  trackingLevel    String?   @map("tracking_level")
 
   products ProductionWorkstationProduct[]
 
@@ -900,5 +912,88 @@ model ProductionWorkstationProduct {
 
   @@index([workstationId])
   @@map("production_workstation_product")
+  @@schema("production")
+}
+
+/// **Le niveau de suivi du fournil et sa marge** — Réglages › Niveau de suivi
+/// (plan `fournil/plan-niveaux-de-suivi.md`, § 3.1) : UNE ligne, clé
+/// naturelle `house`. Ligne absente : `always_green`, marge de 15 minutes. Il
+/// vaut à partir de la prochaine journée arrêtée : une journée lit le niveau
+/// figé à son premier passage (`production_day_tracking_level`).
+///
+/// **Aucune journée** : exception écrite dans `test/day-change-triggers.e2e-spec.ts`.
+model ProductionTrackingSettings {
+  /// Toujours `house` : il n'y a qu'un réglage.
+  key              String   @id
+  /// `always_green` | `simple` | `detailed` (CHECK en base).
+  level            String   @default("always_green")
+  /// Minutes ajoutées à l'heure d'un palier (CHECK en base, borne du domaine).
+  marginMinutes    Int      @default(15) @map("margin_minutes")
+  updatedAt        DateTime @map("updated_at") @db.Timestamptz(6)
+  /// Qui l'a posé : l'id de fiche survit à tout, le nom est un instantané.
+  updatedByStaffId String   @map("updated_by_staff_id")
+  /// `null` : la fiche ne portait pas de nom au moment du geste — on n'en invente pas.
+  updatedByName    String?  @map("updated_by_name")
+
+  @@map("production_tracking_settings")
+  @@schema("production")
+}
+
+/// **Le niveau de suivi figé d'une journée** (plan
+/// `fournil/plan-niveaux-de-suivi.md`, § 3.1) : le niveau du fournil et
+/// celui de chaque poste, résolus au premier passage d'`atelier/` sur la
+/// journée arrêtée, sous son verrou. Clé : la journée — une seconde écriture
+/// ignore le conflit, et une journée réouverte, reprise ou réannoncée garde
+/// son premier niveau. Jamais réécrite.
+///
+/// Déclencheurs du journal de la journée : le niveau posé fait relire la fiche.
+model ProductionDayTrackingLevel {
+  serviceDay        String        @id @map("service_day") @db.VarChar(10)
+  day               ProductionDay @relation(fields: [serviceDay], references: [serviceDay], onDelete: Cascade)
+  /// Le niveau du fournil à cet instant (CHECK en base).
+  houseLevel        String        @map("house_level")
+  /// Id de poste → son niveau résolu (le sien, sinon celui du fournil), pour
+  /// chaque poste en service à cet instant. Objet JSON (CHECK en base).
+  workstationLevels Json          @map("workstation_levels")
+  frozenAt          DateTime      @map("frozen_at") @db.Timestamptz(6)
+
+  @@map("production_day_tracking_level")
+  @@schema("production")
+}
+
+/// **Un problème déclaré sur une ligne de la fiche** — le rouge (plan
+/// `fournil/plan-niveaux-de-suivi.md`, § 3.2) : combien est réellement sorti
+/// (`produced`, le plafond), une raison si on veut. Un par journée et SKU ; un
+/// second rouge le remplace et fait monter `version`. Le plafond survit au
+/// « traité » (`resolved_*`). Jamais supprimé.
+///
+/// Déclencheurs du journal de la journée : un rouge fait relire la fiche.
+model ProductionProblem {
+  /// ULID.
+  id                String        @id
+  serviceDay        String        @map("service_day") @db.VarChar(10)
+  day               ProductionDay @relation(fields: [serviceDay], references: [serviceDay], onDelete: Cascade)
+  /// Le SKU de la ligne, opaque.
+  sku               String
+  /// Ce que la ligne attendait au moment du rouge (entier ≥ 0, CHECK).
+  expected          Int
+  /// Le sorti déclaré : le plafond que rien ne dépasse plus ce jour pour ce SKU (≥ 0, CHECK).
+  produced          Int
+  /// Rognée, 1 à 500 caractères (CHECK) ; `null` : aucune raison donnée.
+  reason            String?
+  reportedAt        DateTime      @map("reported_at") @db.Timestamptz(6)
+  /// Qui l'a déclaré : l'id de fiche survit à tout, le nom est un instantané.
+  reportedByStaffId String        @map("reported_by_staff_id")
+  /// `null` : la fiche ne portait pas de nom au moment du geste — on n'en invente pas.
+  reportedByName    String?       @map("reported_by_name")
+  /// `null` : encore ouvert. Avec `resolved_by_staff_id` (CHECK : les deux ou aucun).
+  resolvedAt        DateTime?     @map("resolved_at") @db.Timestamptz(6)
+  resolvedByStaffId String?       @map("resolved_by_staff_id")
+  resolvedByName    String?       @map("resolved_by_name")
+  /// Monte à chaque rouge (≥ 1, CHECK) : la clé de la cloche et du fait de correction.
+  version           Int           @default(1)
+
+  @@unique([serviceDay, sku])
+  @@map("production_problem")
   @@schema("production")
 }

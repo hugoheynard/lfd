@@ -132,9 +132,12 @@ sequenceDiagram
   d'une journée est écrit dans `production_day_tracking_level` (le niveau du
   fournil et de chaque poste, résolus à cet instant ; modèle d'`atelier`,
   inscrit à la carte de la porte ; **clé unique sur le jour**, insertion qui
-  ignore un conflit) **par le premier lecteur d'`atelier/`** qui trouve la
-  journée arrêtée sans niveau figé : la fiche ou le cron, sous le verrou de la
-  journée. Ce n'est **pas** un abonné à `production.day_closed` : un abonné
+  ignore un conflit) **par le premier geste d'`atelier/`** qui trouve la
+  journée arrêtée sans niveau figé : le cron, « Fait » ou « Problème », sous le
+  verrou de la journée (`DayTrackingLevelsFreezing`). **La fiche ne fige pas** :
+  une lecture n'écrit rien (CLAUDE.md § 4). Tant que rien n'est figé, elle sert
+  le réglage courant résolu ; le cron passe toutes les 5 minutes, l'écart dure
+  donc 5 minutes au plus. Ce n'est **pas** un abonné à `production.day_closed` : un abonné
   durable passe après la validation, la fiche lirait « détaillé » entre
   l'arrêt et lui, et une journée ouverte par un lancement « au plus tôt » ne
   publie jamais `day_closed`. `plan/` n'a rien à écrire ni à lire.
@@ -148,6 +151,21 @@ sequenceDiagram
 - **Le niveau est servi par ligne** (`WorkshopLine.trackingLevel`) : en mode
   boutique, un groupe-rayon mêle des lignes de postes différents. Servi par ligne, il vaut quel que soit le groupe où la ligne est rangée
   (poste, rayon « à ranger » ou hors catalogue).
+
+**Doutes ouverts par N1 (2026-11-17, à trancher par Hugo).**
+
+- **La fiche ne fige pas.** `CLAUDE.md` § 4 interdit qu'une lecture écrive
+  (« pas même un compteur ») ; N1 a donc bâti le figement comme un service
+  (`DayTrackingLevelsFreezing`), que N3 appellera depuis le cron et que N2
+  pourra appeler depuis « Fait » et « Problème », sous le même verrou. La
+  fiche sert le niveau figé, sinon celui que le premier passage figera, sans
+  rien écrire. Le cron passant toutes les cinq minutes, la « limite assumée »
+  ci-dessus est la même ; elle ne tient plus si le cron tombe.
+- **`TRACKING_LEVELS_SINCE` est une constante du code**
+  (`atelier/domain/services/tracking-levels-since.ts`, au 2027-01-01 en
+  attendant), lue par un port que les e2e remplacent. La poser « au
+  déploiement » demande donc un commit ; une variable lue par `AppConfig`
+  la poserait sans commit, au prix d'un réglage de plus à ne pas oublier.
 
 ### 3.2 Les problèmes et le plafond
 
@@ -173,10 +191,35 @@ CHECK `0 ≤ corrected_quantity ≤ quantity`).
   un test : `countedBatch` (`day/domain/services/production-output.ts` ;
   `outputOf` y passe), `producedOf` et `effectiveBatchesOf`
   (`day/domain/entities/production-day.batches.ts`), `on-site-share.ts`
-  (la part gardée = `quantity − corrigé − remis`), la vue servie au front
+  (la part gardée = `quantity − remis`, inchangée ; la part
+  encore au colisage = `remis − rendu − corrigé`), la vue servie au front
   (`worksheet-line-views.ts`), et `dev/scenario/scenario-facts.reader.ts`.
   **N1 commence par les recenser tous**, SQL brut compris (le dossier, le
   prévisionnel, le récapitulatif), et inscrit la liste ici.
+
+  **Le recensement (N1, vérifié le 2026-11-17).** Une seule lecture de
+  `production_batch` en code servi : `BATCH_COLUMNS` de
+  `day/infrastructure/prisma-production-batch.repository.ts`, que le
+  chargement de la journée réemploie (`production-day.row.ts`). Aucun SQL
+  brut ne lit la table (seuls la purge et le semis de `dev/` la vident) ; le
+  dossier, le prévisionnel et le récapitulatif ne lisent pas les fournées
+  (leur `ProductionBatchView` est le compte du commerce, pas cette table).
+  Les lecteurs, fichier par fichier :
+
+  | Fichier                                                    | Ce qu'il lit                                         | Corrigé                                       |
+  | ---------------------------------------------------------- | ---------------------------------------------------- | --------------------------------------------- |
+  | `day/infrastructure/prisma-production-batch.repository.ts` | la colonne, vers `ProductionBatchSnapshot.corrected` | lu et écrit                                   |
+  | `day/domain/services/production-output.ts`                 | `countedBatch`, et par lui `outputOf`                | déduit                                        |
+  | `day/domain/entities/production-day.batches.ts`            | `effectiveBatchesOf`, `producedOf`, `batchToCancel`  | déduit (par `countedBatch`)                   |
+  | `atelier/domain/services/production-worksheet.ts`          | la fiche : sorti, reste, surplus, fournées servies   | déduit (par `countedBatch`)                   |
+  | `atelier/domain/services/production-worksheet-drift.ts`    | « déjà commencée » : au moins une fournée vivante    | inchangé : une fournée corrigée a commencé    |
+  | `atelier/application/services/worksheet-line-views.ts`     | la quantité de chaque fournée servie au front        | déduit (fournées déjà comptées)               |
+  | `atelier/domain/services/on-site-share.ts`                 | la part remise encore au colisage                    | `remis − rendu − corrigé` (voir PLAN)         |
+  | `atelier/application/services/packing-handoffs.service.ts` | `handOver` (par `handedShareOf`), `requestReturns`   | `handOver` déduit ; `requestReturns` : N2     |
+  | `day/application/handlers/on-packing-returned.handler.ts`  | « tout rendu » annule la fournée                     | `rendu + corrigé ≥ remis`                     |
+  | `dev/scenario/scenario-facts.reader.ts`                    | `groupBy` des quantités par SKU                      | déduit (`bakedBySku`)                         |
+  | `day/domain/entities/production-day.reopening.ts`          | une fournée vivante bloque la réouverture            | inchangé : une fournée corrigée reste vivante |
+
 - La borne du retour partiel (`requestReturns`,
   `atelier/application/services/packing-handoffs.service.ts`) devient
   `remis − corrigé − rendu − retour en attente`.

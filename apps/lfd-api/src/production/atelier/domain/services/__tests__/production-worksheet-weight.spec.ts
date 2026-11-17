@@ -36,6 +36,7 @@ function batch(id: string, sku: string, quantity: number): ProductionBatchSnapsh
     cancelled: null,
     returned: 0,
     pendingReturn: 0,
+    corrected: 0,
   };
 }
 

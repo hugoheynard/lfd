@@ -11,6 +11,7 @@ import { DeclareWorkstationHandler } from "./application/commands/declare-workst
 import { PlaceProductsHandler } from "./application/commands/place-products.handler.js";
 import { RenameWorkstationHandler } from "./application/commands/rename-workstation.handler.js";
 import { ReorderWorkstationsHandler } from "./application/commands/reorder-workstations.handler.js";
+import { SetWorkstationTrackingLevelHandler } from "./application/commands/set-workstation-tracking-level.handler.js";
 import { ListWorkstationsHandler } from "./application/queries/list-workstations.handler.js";
 import { WorkstationMapGesture } from "./application/services/workstation-map-gesture.service.js";
 import { PlacedProducts } from "./domain/ports/placed-products.js";
@@ -18,6 +19,7 @@ import { WorkstationMapReader } from "./domain/ports/workstation-map.reader.js";
 import { WorkstationMapRepository } from "./domain/ports/workstation-map.repository.js";
 import { WorkstationOfProducts } from "./domain/ports/workstation-of-products.js";
 import { WorkstationMapVersion } from "./domain/ports/workstation-map-version.js";
+import { WorkstationTrackingLevels } from "./domain/ports/workstation-tracking-levels.js";
 import { ProductionWorkstationsController } from "./http/production-workstations.controller.js";
 import { PrismaWorkstationMapRepository } from "./infrastructure/prisma-workstation-map.repository.js";
 import {
@@ -25,6 +27,7 @@ import {
   PrismaWorkstationMapReader,
   PrismaWorkstationMapVersion,
   PrismaWorkstationOfProducts,
+  PrismaWorkstationTrackingLevels,
 } from "./infrastructure/prisma-workstation-readers.js";
 
 /**
@@ -34,10 +37,11 @@ import {
  * Il sert aussi aux autres écrans du fournil le rangement de leurs SKU et
  * l'alerte du Prod manager (§ 3.7, § 3.10).
  *
- * Écrire la carte et la lire sont deux ports (ISP) ; il exporte les quatre
+ * Écrire la carte et la lire sont deux ports (ISP) ; il exporte les cinq
  * lectures que les autres métiers liront — le rangement de SKU et le poste
- * des produits (la fiche et le dossier), le compte des produits placés (la garde de bascule) et le
- * numéro de la carte (l'étiquette de la fiche gardée).
+ * des produits (la fiche et le dossier), le compte des produits placés (la garde de bascule), le
+ * numéro de la carte (l'étiquette de la fiche gardée) et le niveau de suivi
+ * propre de chaque poste (le niveau figé d'une journée).
  */
 @Module({
   // L'imprimerie : le réglage du rangement, que lisent la route du rangement et l'alerte.
@@ -50,6 +54,7 @@ import {
     ReorderWorkstationsHandler,
     ArchiveWorkstationHandler,
     PlaceProductsHandler,
+    SetWorkstationTrackingLevelHandler,
     ListWorkstationsHandler,
     GetProductionGroupingHandler,
     GetUnplacedProductsOfDayHandler,
@@ -59,7 +64,14 @@ import {
     { provide: WorkstationOfProducts, useClass: PrismaWorkstationOfProducts },
     { provide: PlacedProducts, useClass: PrismaPlacedProducts },
     { provide: WorkstationMapVersion, useClass: PrismaWorkstationMapVersion },
+    { provide: WorkstationTrackingLevels, useClass: PrismaWorkstationTrackingLevels },
   ],
-  exports: [GroupingSourceReading, WorkstationOfProducts, PlacedProducts, WorkstationMapVersion],
+  exports: [
+    GroupingSourceReading,
+    WorkstationOfProducts,
+    PlacedProducts,
+    WorkstationMapVersion,
+    WorkstationTrackingLevels,
+  ],
 })
 export class ProductionWorkstationsModule {}

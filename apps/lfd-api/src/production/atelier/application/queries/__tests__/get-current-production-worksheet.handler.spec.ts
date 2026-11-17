@@ -28,6 +28,7 @@ import {
 import { worksheetContentsAround } from "../../__tests__/worksheet-contents-doubles.js";
 import { WorksheetDeadlinesReading } from "../../services/worksheet-deadlines-reading.service.js";
 import { placementPorts } from "../../../../workstations/application/__tests__/placement-doubles.js";
+import { trackingPorts } from "../../__tests__/tracking-doubles.js";
 
 /**
  * **La fiche en cours** : demain si son plan est arrêté, aujourd'hui sinon.
@@ -117,6 +118,7 @@ function handlerFor(days: Days, now: Date = NOW): GetCurrentProductionWorksheetH
     new FixedOvenWaitingOrders(),
     new InMemoryDisplaySettings().reader(),
     new GroupingSourceReading(...placementPorts()),
+    ...trackingPorts(),
   );
   return new GetCurrentProductionWorksheetHandler(
     days,

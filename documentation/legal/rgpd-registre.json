@@ -624,7 +624,7 @@
       "colonne": "production.production_batch.recorded_by",
       "personne": "staff",
       "categorie": "auteur-geste",
-      "finalite": "Tracer quel membre du staff a fait le geste (`recorded_by`) sur `production_batch`.",
+      "finalite": "Tracer qui a déclaré la fournée (`recorded_by`) sur `production_batch` : un membre du staff, ou le système (`system:always-green`, la fournée automatique du niveau toujours vert).",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
@@ -814,6 +814,60 @@
       "personne": "staff",
       "categorie": "auteur-geste",
       "finalite": "Tracer quel membre du staff a fait le geste (`updated_by_staff_id`) sur `production_display_settings`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "production.production_problem.reported_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de l'auteur d'un geste sur `production_problem`, lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "production.production_problem.reported_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`reported_by_staff_id`) sur `production_problem`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "production.production_problem.resolved_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de l'auteur d'un geste sur `production_problem`, lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "production.production_problem.resolved_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`resolved_by_staff_id`) sur `production_problem`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "production.production_tracking_settings.updated_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de l'auteur d'un geste sur `production_tracking_settings`, lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "production.production_tracking_settings.updated_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by_staff_id`) sur `production_tracking_settings`.",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false

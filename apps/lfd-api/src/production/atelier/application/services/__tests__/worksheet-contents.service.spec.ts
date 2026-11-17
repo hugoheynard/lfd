@@ -40,6 +40,10 @@ import {
   UnreadWorkstationOfProducts,
 } from "../../../../workstations/application/__tests__/placement-doubles.js";
 import { SettableDisplaySettingsVersion } from "../../../../shared/print/application/__tests__/production-display-settings-doubles.js";
+import {
+  SettableTrackingSettingsVersion,
+  trackingPorts,
+} from "../../__tests__/tracking-doubles.js";
 
 /**
  * La fiche du fournil servie depuis l'objet des journées
@@ -117,11 +121,13 @@ function around(outage: Outage = "none") {
       outage === "shelves" ? new FailingProductionArticles() : new FixedProductionArticles([]),
       new UnreadWorkstationOfProducts(),
     ),
+    ...trackingPorts(),
   );
   const cache = new MemoryDayContents();
   const clock = new FixedClock(NOW);
   const display = new SettableDisplaySettingsVersion();
   const stations = new SettableWorkstationMapVersion();
+  const tracking = new SettableTrackingSettingsVersion();
   const worksheets = new WorksheetContents(
     new DayVersionRegistry(Object.values(all)),
     dayContentsOver(cache),
@@ -129,8 +135,9 @@ function around(outage: Outage = "none") {
     clock,
     display,
     stations,
+    tracking,
   );
-  return { worksheets, cache, clock, log, days, all, display, stations };
+  return { worksheets, cache, clock, log, days, all, display, stations, tracking };
 }
 
 /** Laisse partir le rangement, posé après la réponse. */
@@ -150,10 +157,11 @@ describe("WorksheetContents", () => {
     expect(log.indexOf("data")).toBeGreaterThan(log.indexOf("version:orders"));
   });
 
-  it("range la fiche sous la clé `worksheet`, étiquetée des journaux, du réglage et des postes", async () => {
-    const { worksheets, cache, display, stations } = around();
+  it("range la fiche sous la clé `worksheet`, étiquetée des journaux, des réglages et des postes", async () => {
+    const { worksheets, cache, display, stations, tracking } = around();
     display.version = 11;
     stations.version = 13;
+    tracking.version = 17;
 
     await worksheets.read(DAY);
     await settle();
@@ -162,7 +170,7 @@ describe("WorksheetContents", () => {
       {
         screen: "worksheet",
         day: TODAY,
-        tag: "display:11.orders:7.production:42.workstations:13",
+        tag: "display:11.orders:7.production:42.tracking:17.workstations:13",
       },
     ]);
   });
@@ -184,6 +192,17 @@ describe("WorksheetContents", () => {
     await worksheets.read(DAY);
     await settle();
     display.version += 1;
+    await worksheets.read(DAY);
+
+    expect(days.loads).toBe(2);
+  });
+
+  it("relit la base après un changement du réglage de suivi", async () => {
+    const { worksheets, days, tracking } = around();
+
+    await worksheets.read(DAY);
+    await settle();
+    tracking.version += 1;
     await worksheets.read(DAY);
 
     expect(days.loads).toBe(2);

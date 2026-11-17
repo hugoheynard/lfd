@@ -269,6 +269,16 @@ export const PRODUCTION_GROUPING = domain('rangement du fournil', {
   workstation: 'Par poste (mode prod)',
 });
 
+/**
+ * Le niveau de suivi du fournil ou d'un poste (`production_tracking_settings.updated`,
+ * `production_workstation.tracking_level_set`).
+ */
+export const PRODUCTION_TRACKING_LEVEL = domain('niveau de suivi', {
+  always_green: 'Toujours vert',
+  simple: 'Simple',
+  detailed: 'Détaillé',
+});
+
 /** Le mode des tranches de production (`production_tranche_settings.updated`, T1). */
 export const PRODUCTION_TRANCHE_MODE = domain('mode des tranches de production', {
   fixed: 'Fixes',
@@ -358,6 +368,7 @@ export const ORDERS_VALUES: ValueFamily = {
     CONTAINER_NATURE,
     PRODUCTION_CLOSE_MODE,
     PRODUCTION_GROUPING,
+    PRODUCTION_TRACKING_LEVEL,
     PRODUCTION_TRANCHE_MODE,
     DOSSIER_RECIPIENT_KIND,
     DELIVERY_VAT_MODE,

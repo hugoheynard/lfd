@@ -111,6 +111,7 @@ describe("RecordBatchHandler", () => {
         cancelled: null,
         returned: 0,
         pendingReturn: 0,
+        corrected: 0,
       },
     ]);
   });

@@ -30,6 +30,7 @@ function batch(id: string, quantity: number, extra: Partial<ProductionBatchSnaps
     cancelled: null,
     returned: 0,
     pendingReturn: 0,
+    corrected: 0,
     ...extra,
   };
   return snapshot;
@@ -48,7 +49,7 @@ describe("la part servie sur place", () => {
     const second = handedQuantityOf({
       counted: 30,
       onSite: 10,
-      earlier: [{ quantity: 24, handed: 20, returned: 0 }],
+      earlier: [{ quantity: 24, handed: 20, returned: 0, corrected: 0 }],
       quantity: 10,
     });
     // 6 restent à garder ; les 4 au-delà du compte vont au colisage.
@@ -60,10 +61,23 @@ describe("la part servie sur place", () => {
       handedQuantityOf({
         counted: 30,
         onSite: 10,
-        earlier: [{ quantity: 20, handed: 20, returned: 0 }],
+        earlier: [{ quantity: 20, handed: 20, returned: 0, corrected: 0 }],
         quantity: 10,
       }),
     ).toBe(0);
+  });
+
+  it("une part corrigée se prend sur la part remise : le colisage attend d'autant plus", () => {
+    // 20 remis dont 8 corrigés (jamais existé) : le colisage en a 12 sur 20
+    // attendus, la fournée suivante lui va pour 8 ; rien de plus n'est gardé.
+    expect(
+      handedQuantityOf({
+        counted: 30,
+        onSite: 10,
+        earlier: [{ quantity: 30, handed: 20, returned: 0, corrected: 8 }],
+        quantity: 8,
+      }),
+    ).toBe(8);
   });
 
   it("un retour du colisage ne change pas la part gardée", () => {
@@ -72,7 +86,7 @@ describe("la part servie sur place", () => {
       handedQuantityOf({
         counted: 30,
         onSite: 10,
-        earlier: [{ quantity: 20, handed: 20, returned: 5 }],
+        earlier: [{ quantity: 20, handed: 20, returned: 5, corrected: 0 }],
         quantity: 5,
       }),
     ).toBe(5);
@@ -97,5 +111,16 @@ describe("la part servie sur place", () => {
       batches: [batch("b0", 14, { cancelled: { at: AT, by: "staff-1" } })],
     };
     expect(handedShareOf(day, batch("b1", 14), new Map([["b0", 10]]))).toBe(10);
+  });
+
+  it("la part corrigée d'une fournée remise est redemandée à la suivante, sans toucher à la part gardée", () => {
+    // 14 au compte, dont 4 sur place : b0 a remis 10, dont 6 corrigés. Le
+    // colisage n'en a que 4 sur 10 : b1 lui en remet 6, et garde les 4.
+    const day = {
+      counts: [{ sku: SKU, productName: "Croissant", quantity: 14, saleUnit: "piece" as const }],
+      resupplies: [resupply(false, 4)],
+      batches: [batch("b0", 10, { corrected: 6 })],
+    };
+    expect(handedShareOf(day, batch("b1", 10), new Map([["b0", 10]]))).toBe(6);
   });
 });

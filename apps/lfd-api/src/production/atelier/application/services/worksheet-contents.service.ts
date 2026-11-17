@@ -7,6 +7,7 @@ import { Clock } from "../../../../platform/time/clock.js";
 import type { ServiceDay } from "../../../day/index.js";
 import { ProductionDisplaySettingsVersion } from "../../../shared/print/index.js";
 import { WorkstationMapVersion } from "../../../workstations/index.js";
+import { ProductionTrackingSettingsVersion } from "../../domain/ports/production-tracking-settings.ports.js";
 import { ProductionWorksheetReading } from "./production-worksheet-reading.service.js";
 import {
   isStorableWorksheet,
@@ -24,13 +25,20 @@ import {
 const WORKSHEET_JOURNALS: readonly DayJournal[] = ["production", "orders"];
 
 /**
- * Les deux numéros sans journée que l'étiquette porte en plus des journaux :
+ * Les numéros sans journée que l'étiquette porte en plus des journaux :
  * le rangement de la fiche en dépend, et ni le réglage ni les postes n'écrivent
  * de journal de journée. Ce sont des sujets de l'étiquette seulement — l'écran
  * ne les suit pas par la porte des versions.
  */
 const DISPLAY_SUBJECT = "display";
 const WORKSTATIONS_SUBJECT = "workstations";
+/**
+ * Le réglage de suivi du fournil : une journée pas encore figée sert le
+ * réglage courant, qui n'écrit aucun journal de journée (plan
+ * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.9). Le niveau d'un
+ * poste monte déjà le numéro de la carte, et le niveau figé écrit au journal.
+ */
+const TRACKING_SUBJECT = "tracking";
 
 /**
  * **La fiche du fournil d'une journée, servie depuis l'objet des journées**
@@ -73,18 +81,21 @@ export class WorksheetContents {
     private readonly clock: Clock,
     private readonly display: ProductionDisplaySettingsVersion,
     private readonly workstations: WorkstationMapVersion,
+    private readonly tracking: ProductionTrackingSettingsVersion,
   ) {}
 
   async read(day: ServiceDay): Promise<ProductionWorksheetView> {
-    const [journals, display, workstations] = await Promise.all([
+    const [journals, display, workstations, tracking] = await Promise.all([
       this.journals.versionsOf(WORKSHEET_JOURNALS, day.value),
       this.display.versionOf(),
       this.workstations.versionOf(),
+      this.tracking.versionOf(),
     ]);
     const versions = [
       ...journals,
       { subject: DISPLAY_SUBJECT, version: display },
       { subject: WORKSTATIONS_SUBJECT, version: workstations },
+      { subject: TRACKING_SUBJECT, version: tracking },
     ];
     const content = await this.contents.contentOf(
       { screen: WORKSHEET_SCREEN, day: day.value, versions },

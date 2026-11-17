@@ -165,6 +165,21 @@ describe("la réponse du colisage (`packing.returned`)", () => {
     expect(durable.of(RETURN_REQUESTED)).toHaveLength(2);
   });
 
+  it("tout le RÉEL rendu, la part corrigée en plus : la fournée s'annule (plan des niveaux de suivi, § 3.3)", async () => {
+    const { answer, requestId, store, days } = await requested();
+    const stored = store.rows.get(FIRST);
+    if (stored === undefined) {
+      throw new Error("fournée semée introuvable");
+    }
+    // 4 des 12 pièces remises n'ont jamais existé : le colisage n'en rend que 8.
+    store.rows.set(FIRST, { ...stored, batch: { ...stored.batch, corrected: 4 } });
+
+    await answer.handle(delivery(requestId, 8));
+
+    expect(store.batches[0]?.cancelled).toEqual({ at: DECIDED, by: "staff-3" });
+    expect(await producedAfter(days)).toBe(0);
+  });
+
   it("une réponse livrée deux fois ne reprend qu'une fois", async () => {
     const { answer, requestId, ledger, days } = await requested();
 
@@ -187,6 +202,7 @@ describe("une fournée jamais remise, sur une journée `packing`", () => {
       cancelled: null,
       returned: 0,
       pendingReturn: 0,
+      corrected: 0,
     });
 
     await cancel.execute(new CancelBatchCommand(DAY, FIRST, "staff-3"));

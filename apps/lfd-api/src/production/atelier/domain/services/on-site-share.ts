@@ -22,6 +22,11 @@ import type {
  * Calculé sur les fournées VIVANTES et ce que le registre dit de chacune
  * (`handed`) : une fournée annulée sort du calcul avec sa part, et un retour
  * du colisage n'en change pas la part gardée.
+ *
+ * La part corrigée (plan `fournil/plan-niveaux-de-suivi.md`, § 3.3) se prend
+ * sur la part remise, jamais sur la part gardée : elle ne change pas ce qui
+ * est monté sur place, et le colisage n'a plus, d'une fournée, que
+ * `remis − rendu − corrigé`.
  */
 
 /** Une fournée déjà déclarée du même article, et ce qui en a été remis. */
@@ -31,6 +36,8 @@ export interface EarlierBatchShare {
   readonly handed: number;
   /** Ce que le colisage en a rendu. */
   readonly returned: number;
+  /** Sa part corrigée : des pièces remises qui n'ont jamais existé. */
+  readonly corrected: number;
 }
 
 /** La part d'un article servie sur place : Σ des réassorts non servis par transfert. */
@@ -57,7 +64,10 @@ export function handedQuantityOf(input: {
   readonly quantity: number;
 }): number {
   const kept = input.earlier.reduce((total, batch) => total + batch.quantity - batch.handed, 0);
-  const handed = input.earlier.reduce((total, batch) => total + batch.handed - batch.returned, 0);
+  const handed = input.earlier.reduce(
+    (total, batch) => total + batch.handed - batch.returned - batch.corrected,
+    0,
+  );
   const packingNeed = Math.max(0, input.counted - input.onSite);
   const toPacking = Math.min(input.quantity, Math.max(0, packingNeed - handed));
   const keep = Math.min(input.quantity - toPacking, Math.max(0, input.onSite - kept));
@@ -87,6 +97,7 @@ export function handedShareOf(
       quantity: other.quantity,
       handed: handedByBatch.get(other.id) ?? 0,
       returned: other.returned,
+      corrected: other.corrected,
     }));
   return handedQuantityOf({
     counted: day.counts.find((item) => item.sku === batch.sku)?.quantity ?? 0,

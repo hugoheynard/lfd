@@ -1,5 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
+import { trackingLevelOrNull } from "./tracking-level-column.js";
+
 import { isUniqueViolation } from "../../../platform/database/json-columns.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { currentTransaction } from "../../../platform/database/transaction.store.js";
@@ -33,6 +35,7 @@ interface WorkstationRow {
   readonly name: string;
   readonly position: number;
   readonly archivedAt: Date | null;
+  readonly trackingLevel: string | null;
 }
 
 interface PlacementRow {
@@ -45,7 +48,10 @@ function toDomain(
   placements: readonly PlacementRow[],
 ): WorkstationMap {
   const state: WorkstationMapState = {
-    workstations: stations.map((row) => ({ ...row })),
+    workstations: stations.map((row) => ({
+      ...row,
+      trackingLevel: trackingLevelOrNull(row.trackingLevel),
+    })),
     placements: new Map(placements.map((row) => [row.productSku, row.workstationId])),
   };
   return WorkstationMap.rehydrate(state);
@@ -57,6 +63,7 @@ function toPersistence(station: Workstation, stamp: WorkstationMapStamp) {
     name: station.name,
     position: station.position,
     archivedAt: station.archivedAt,
+    trackingLevel: station.trackingLevel,
     updatedAt: stamp.at,
     updatedByStaffId: stamp.staffUserId,
     updatedByName: stamp.name,
@@ -85,7 +92,7 @@ export class PrismaWorkstationMapRepository extends WorkstationMapRepository {
     await this.lock();
     const [stations, placements] = await Promise.all([
       this.prisma.productionWorkstation.findMany({
-        select: { id: true, name: true, position: true, archivedAt: true },
+        select: { id: true, name: true, position: true, archivedAt: true, trackingLevel: true },
       }),
       this.prisma.productionWorkstationProduct.findMany({
         select: { productSku: true, workstationId: true },

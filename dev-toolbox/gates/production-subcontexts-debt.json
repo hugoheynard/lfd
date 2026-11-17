@@ -39,11 +39,12 @@
     "quality": 1,
     "resupply": 0,
     "shared-print": 39,
-    "workstations": 4
+    "workstations": 5
   },
   "$r3": "R3 (2026-11-15) : day/index.ts rangé en six sections et ramené de 78 à 73 noms ; ce qu’un seul métier lit et qui n’appartient pas à l’agrégat lui est rendu. La taille de chaque index est désormais une dette décroissante (indexSize).",
   "$r4": "R4 (2026-11-15) : chaque table du noyau est lue chez lui — quatre adaptateurs déplacés au noyau avec la même requête, deux lectures coupées en un port du noyau (ArrestedPlanLinesReader, PlannedOrderLinesReader) et une règle restée au métier, le port des réassorts lancés passé au noyau. models 10 → 0, roots 4 → 0. day/index.ts 73 → 75, admis : trois capacités publiées, une sortie.",
   "$w1": "W1 des postes du fournil (2026-11-16, documentation/fournil/les-postes-du-fournil.md, § 3.1 et § 3.8) : day/index.ts 75 → 76, admis — une capacité publiée (KnownArticles, les articles des journées arrêtées, que la page Postes et son alerte lisent). workstations/index.ts naît à 2 : les deux lectures que le plan fait publier (WorkstationOfProducts, PlacedProducts), sans leurs types.",
   "$w3": "W3 des postes du fournil (2026-11-16, documentation/fournil/les-postes-du-fournil.md, § 7 « Pour W3, le cache de la fiche ») : shared-print 38 → 39 et workstations 2 → 3, admis — deux capacités publiées, le numéro du réglage d'affichage (ProductionDisplaySettingsVersion) et celui de la carte des postes (WorkstationMapVersion), que la fiche gardée de l'atelier met dans son étiquette. Deux ports et non une méthode de plus sur les lectures existantes (ISP) : seul l'atelier lit ces numéros.",
+  "$n1": "N1 des niveaux de suivi (2026-11-17, documentation/fournil/plan-niveaux-de-suivi.md, § 3.1) : workstations 4 → 5, admis — une capacité publiée, le niveau de suivi propre de chaque poste en service (WorkstationTrackingLevels), que l'atelier lit pour figer le niveau d'une journée et servir celui d'une ligne. Un port à part (ISP) : seul l'atelier le lit, et ni la page Postes ni le rangement n'en ont besoin.",
   "$w4": "W4 des postes du fournil (2026-11-17, documentation/fournil/les-postes-du-fournil.md, § 7 « Dette à rembourser en W4 ») : workstations 3 → 4, admis — une capacité publiée, la lecture « articles puis postes, avec repli par rayon » (GroupingSourceReading), que la fiche de l'atelier, le dossier du plan et sa simulation lisent au lieu de leurs deux copies, retirées."
 }

@@ -93,7 +93,10 @@ async function readComposed(
   return { expected: routed.length, assigned };
 }
 
-/** Un article est « sorti » quand ses fournées non annulées couvrent son compte. */
+/**
+ * Un article est « sorti » quand ses fournées non annulées, part corrigée
+ * déduite, couvrent son compte.
+ */
 async function readProduction(
   prisma: PrismaClient,
   forDay: string,
@@ -105,13 +108,30 @@ async function readProduction(
   const batches = await prisma.productionBatch.groupBy({
     by: ["sku"],
     where: { serviceDay: forDay, cancelledAt: null },
-    _sum: { quantity: true },
+    _sum: { quantity: true, correctedQuantity: true },
   });
-  const baked = new Map(batches.map((batch) => [batch.sku, batch._sum.quantity ?? 0]));
+  const baked = bakedBySku(batches);
   return {
     items: counts.length,
     done: counts.filter((item) => (baked.get(item.sku) ?? 0) >= item.quantity).length,
   };
+}
+
+/** Une somme de fournées par SKU, telle que `groupBy` la rend. */
+export interface BatchSums {
+  readonly sku: string;
+  readonly _sum: { readonly quantity: number | null; readonly correctedQuantity: number | null };
+}
+
+/**
+ * Ce qui est sorti, par SKU : Σ des quantités moins Σ des parts corrigées
+ * (plan `fournil/plan-niveaux-de-suivi.md`, § 3.3) — des pièces déclarées
+ * qui n'ont jamais existé ne sortent pas.
+ */
+export function bakedBySku(sums: readonly BatchSums[]): ReadonlyMap<string, number> {
+  return new Map(
+    sums.map((sum) => [sum.sku, (sum._sum.quantity ?? 0) - (sum._sum.correctedQuantity ?? 0)]),
+  );
 }
 
 /** Les bacs vivants des arrêts vivants des tournées du jour, et ceux qui sont chargés. */

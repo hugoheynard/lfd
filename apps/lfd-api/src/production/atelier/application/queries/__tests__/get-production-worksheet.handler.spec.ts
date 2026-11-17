@@ -44,6 +44,7 @@ import {
   shelfArticles,
   UnreadWorkstationOfProducts,
 } from "../../../../workstations/application/__tests__/placement-doubles.js";
+import { trackingPorts } from "../../__tests__/tracking-doubles.js";
 
 /**
  * Le jour est DÉRIVÉ de maintenant : `relativeDay` le compare à l'horloge, et un
@@ -146,6 +147,7 @@ function handlerFor(
         new FixedOvenWaitingOrders(),
         display.reader(),
         new GroupingSourceReading(shelves, new UnreadWorkstationOfProducts()),
+        ...trackingPorts(),
       ),
       new FixedClock(NOW),
     ),

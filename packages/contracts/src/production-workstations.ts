@@ -2,7 +2,11 @@ import { z } from "zod";
 
 import type { CatalogFamilyView } from "./catalog.js";
 import { serviceDaySchema } from "./day-version.js";
-import { PRODUCTION_GROUPINGS, type ProductionGrouping } from "./production-settings.js";
+import {
+  PRODUCTION_GROUPINGS,
+  PRODUCTION_TRACKING_LEVELS,
+  type ProductionGrouping,
+} from "./production-settings.js";
 import type { WorkshopGroupKind } from "./production-worksheet.js";
 
 /**
@@ -17,6 +21,8 @@ import type { WorkshopGroupKind } from "./production-worksheet.js";
  * - `PUT admin/production/workstations/order` ← {@link ReorderWorkstationsPayload} ;
  * - `POST admin/production/workstations/:id/archive` ;
  * - `PUT admin/production/workstations/placements` ← {@link PlaceProductsPayload} ;
+ * - `PUT admin/production/workstations/:id/tracking-level` ←
+ *   {@link SetWorkstationTrackingLevelPayload} (plan des niveaux de suivi, § 3.1) ;
  * - `POST admin/production/workstations/grouping` ← {@link ProductionGroupingPayload}
  *   → {@link ProductionGroupingView} — une LECTURE en `POST`, sous
  *   `production_plan:read` ou `production_resupply:read` (§ 3.7) ;
@@ -55,6 +61,17 @@ export const placeProductsPayloadSchema = z.object({
   workstationId: z.string().min(1).nullable(),
 });
 export type PlaceProductsPayload = z.infer<typeof placeProductsPayloadSchema>;
+
+/**
+ * Le niveau de suivi propre à un poste ; `null` : le poste suit le fournil.
+ * Il vaut à partir de la prochaine journée arrêtée.
+ */
+export const setWorkstationTrackingLevelPayloadSchema = z
+  .object({ trackingLevel: z.enum(PRODUCTION_TRACKING_LEVELS).nullable() })
+  .strict();
+export type SetWorkstationTrackingLevelPayload = z.infer<
+  typeof setWorkstationTrackingLevelPayloadSchema
+>;
 
 /**
  * `GET admin/production/simulation.pdf?mode=…&showSubcategories=…`

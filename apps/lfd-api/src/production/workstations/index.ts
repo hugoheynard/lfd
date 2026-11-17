@@ -29,3 +29,5 @@ export { GroupingSourceReading } from "./application/services/grouping-source-re
 export { PlacedProducts } from "./domain/ports/placed-products.js";
 /** Le numéro de la carte, qui change à chaque geste (l'étiquette de la fiche gardée). */
 export { WorkstationMapVersion } from "./domain/ports/workstation-map-version.js";
+/** Le niveau de suivi propre de chaque poste en service (le niveau figé d'une journée, la fiche). */
+export { WorkstationTrackingLevels } from "./domain/ports/workstation-tracking-levels.js";

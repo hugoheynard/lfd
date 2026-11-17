@@ -83,6 +83,33 @@ export class GroupingSourceReading {
     };
   }
 
+  /**
+   * **Le poste de chaque SKU** — SKU → id de son poste ; un SKU absent n'a
+   * pas de poste. Lu par la fiche quand un poste a un niveau de suivi propre
+   * (plan `fournil/plan-niveaux-de-suivi.md`, § 3.1), quel que soit le mode
+   * de rangement : un rangement par poste déjà lu (`read`) suffit, sans
+   * relire. `null` : articles ou postes illisibles — panne journalisée avec
+   * ce qu'on lisait (`about`), jamais tue.
+   */
+  async workstationOfSkus(
+    skus: readonly string[],
+    about: string,
+    read: GroupingSource,
+  ): Promise<ReadonlyMap<string, string> | null> {
+    if (read.mode === "workstation") {
+      return workstationBySku(read.placement);
+    }
+    try {
+      return workstationBySku(await this.placementOf([...new Set(skus)]));
+    } catch (error) {
+      this.logger.error(
+        `${about} : postes illisibles, niveaux de suivi des postes inconnus.`,
+        error instanceof Error ? error.stack : String(error),
+      );
+      return null;
+    }
+  }
+
   /** Le produit et le rayon de chaque SKU, sans les filtres de vente, puis leurs postes. Une panne lève. */
   private async placementOf(
     skus: readonly string[],
@@ -113,4 +140,18 @@ export class GroupingSourceReading {
       return null;
     }
   }
+}
+
+/** SKU → id du poste de son produit, d'après un rangement par poste. */
+function workstationBySku(
+  placement: Extract<GroupingSource, { readonly mode: "workstation" }>["placement"],
+): ReadonlyMap<string, string> {
+  const bySku = new Map<string, string>();
+  for (const [sku, article] of placement.articles) {
+    const workstation = placement.byProduct.get(article.productSku);
+    if (workstation !== undefined) {
+      bySku.set(sku, workstation);
+    }
+  }
+  return bySku;
 }

@@ -9,6 +9,7 @@ import {
   ProductionDayNotClosedError,
 } from "../../errors/production-errors.js";
 import { ServiceDay } from "../../value-objects/service-day.value-object.js";
+import { effectiveBatchesOf } from "../production-day.batches.js";
 import { ProductionDay, type ProductionBatchSnapshot } from "../production-day.js";
 
 /**
@@ -48,6 +49,7 @@ function batch(id: string, quantity: number, cancelled = false): ProductionBatch
     cancelled: cancelled ? { at: FIVE, by: "staff-2" } : null,
     returned: 0,
     pendingReturn: 0,
+    corrected: 0,
   };
 }
 
@@ -112,5 +114,26 @@ describe("« sorti » se lit sur les seules fournées", () => {
 
   it("une ligne sans fournée n'a rien sorti, quoi qu'en dise l'ancienne coche", () => {
     expect(day([]).producedOf(SKU)).toBe(0);
+  });
+  it("la part corrigée d'une fournée ne compte pas (plan des niveaux de suivi, § 3.3)", () => {
+    const corrected = { ...batch("a", 10), corrected: 4 };
+
+    expect(day([corrected, batch("c", 14)]).producedOf(SKU)).toBe(20);
+  });
+});
+
+describe("effectiveBatchesOf — chaque fournée pour ce qu'elle compte", () => {
+  it("déduit la part corrigée et ce qui est rendu, sans retirer la fournée", () => {
+    const corrected = { ...batch("a", 10), corrected: 3, returned: 2 };
+
+    const effective = effectiveBatchesOf({
+      day: ServiceDay.of(DAY),
+      isClosed: true,
+      orders: [],
+      counts: [],
+      batches: [corrected],
+    });
+
+    expect(effective).toEqual([{ ...corrected, quantity: 5 }]);
   });
 });

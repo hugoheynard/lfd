@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { PRODUCTION_GROUPINGS } from "../production-settings.js";
+import { PRODUCTION_GROUPINGS, PRODUCTION_TRACKING_LEVELS } from "../production-settings.js";
 import { clockTime, count, day, fact, payload, retired, subjectLabel } from "./fact.js";
 
 /**
@@ -20,6 +20,10 @@ const closeSettings = () =>
 
 /** Le rangement du fournil : par rayon de boutique ou par poste. */
 const grouping = () => z.enum(PRODUCTION_GROUPINGS);
+
+/** Le niveau de suivi du fournil et sa marge, en minutes. */
+const trackingSettings = () =>
+  payload({ level: z.enum(PRODUCTION_TRACKING_LEVELS), marginMinutes: count() });
 
 const closedDay = () => payload({ subjectLabel: subjectLabel(), serviceDay: day() });
 
@@ -100,6 +104,15 @@ export const PRODUCTION_SETTINGS_FACTS = {
       grouping: grouping().optional(),
       previous: payload({ showSubcategories: z.boolean(), grouping: grouping().optional() }),
     }),
+  ),
+  /**
+   * Le niveau de suivi du fournil et sa marge (plan
+   * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.1) : l'état posé et
+   * celui qu'il remplace, défaut compris. Il vaut à partir de la prochaine
+   * journée arrêtée. Un réglage unique, sans `subjectLabel`.
+   */
+  "production_tracking_settings.updated": fact(
+    payload({ ...trackingSettings().shape, previous: trackingSettings() }),
   ),
   /**
    * Un raccourci du fournil (plan `fournil/la-fiche-d-atelier.md`,

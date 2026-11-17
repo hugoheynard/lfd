@@ -8,7 +8,7 @@ import type {
   WorkshopLineContainer,
 } from "./production-batches.js";
 import type { QualityLineStatus } from "./production-quality.js";
-import type { ProductionGrouping } from "./production-settings.js";
+import type { ProductionGrouping, ProductionTrackingLevel } from "./production-settings.js";
 
 /**
  * **La fiche d'atelier** : ce que le fournil a à sortir aujourd'hui, et ce qui
@@ -127,6 +127,15 @@ export interface WorkshopLine {
    * l'envoie toujours ; un double qui l'omet se lit `null`.
    */
   readonly quality?: QualityLineStatus | null;
+  /**
+   * **Le niveau de suivi de la ligne** (plan
+   * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.1) : celui de son
+   * poste, sinon celui du fournil, tels que la journée les a figés. Servi par
+   * ligne parce qu'un groupe-rayon mêle des lignes de postes différents.
+   * Facultatif dans le TYPE seulement : le serveur l'envoie toujours ; un
+   * double qui l'omet se lit `detailed`.
+   */
+  readonly trackingLevel?: ProductionTrackingLevel;
   /**
    * **Ce qui presse** — les commandes du jour dont une ligne de ce SKU attend
    * le four, telles que le colisage les compte (« 1 commande attend · remise

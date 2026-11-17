@@ -15,6 +15,7 @@ export const BATCH_COLUMNS = {
   serviceDay: true,
   sku: true,
   quantity: true,
+  correctedQuantity: true,
   recordedAt: true,
   recordedBy: true,
   initials: true,
@@ -27,6 +28,7 @@ interface BatchRow {
   readonly id: string;
   readonly sku: string;
   readonly quantity: number;
+  readonly correctedQuantity: number;
   readonly recordedAt: Date;
   readonly recordedBy: string;
   readonly initials: string;
@@ -83,6 +85,7 @@ export function batchOf(row: BatchRow, returns: BatchReturns = NO_RETURN): Produ
         : { at: row.cancelledAt, by: row.cancelledBy },
     returned: returns.returned,
     pendingReturn: returns.pendingReturn,
+    corrected: row.correctedQuantity,
   };
 }
 
@@ -139,6 +142,7 @@ function batchRowOf(day: ServiceDay, batch: ProductionBatchSnapshot) {
     serviceDay: day.value,
     sku: batch.sku,
     quantity: batch.quantity,
+    correctedQuantity: batch.corrected,
     recordedAt: batch.recorded.at,
     recordedBy: batch.recorded.by,
     initials: batch.recorded.initials,

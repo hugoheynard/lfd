@@ -8,6 +8,8 @@ import {
   renameWorkstationPayloadSchema,
   type ReorderWorkstationsPayload,
   reorderWorkstationsPayloadSchema,
+  type SetWorkstationTrackingLevelPayload,
+  setWorkstationTrackingLevelPayloadSchema,
   type WorkstationsPageView,
 } from "@lfd/contracts";
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Put } from "@nestjs/common";
@@ -22,6 +24,7 @@ import { DeclareWorkstationCommand } from "../application/commands/declare-works
 import { PlaceProductsCommand } from "../application/commands/place-products.command.js";
 import { RenameWorkstationCommand } from "../application/commands/rename-workstation.command.js";
 import { ReorderWorkstationsCommand } from "../application/commands/reorder-workstations.command.js";
+import { SetWorkstationTrackingLevelCommand } from "../application/commands/set-workstation-tracking-level.command.js";
 import { ListWorkstationsQuery } from "../application/queries/list-workstations.query.js";
 
 /**
@@ -94,6 +97,21 @@ export class ProductionWorkstationsController {
   ): Promise<void> {
     await this.commands.execute<RenameWorkstationCommand, void>(
       new RenameWorkstationCommand(id, payload.name, staffUserId, intentKey),
+    );
+  }
+
+  /** Le niveau de suivi propre au poste ; `null` : il suit le fournil. */
+  @Put(":id/tracking-level")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async setTrackingLevel(
+    @Param("id") id: string,
+    @Body(new ZodBody(setWorkstationTrackingLevelPayloadSchema))
+    payload: SetWorkstationTrackingLevelPayload,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+  ): Promise<void> {
+    await this.commands.execute<SetWorkstationTrackingLevelCommand, void>(
+      new SetWorkstationTrackingLevelCommand(id, payload.trackingLevel, staffUserId, intentKey),
     );
   }
 

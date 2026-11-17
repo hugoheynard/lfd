@@ -1,4 +1,5 @@
 import type {
+  ProductionTrackingLevel,
   ProductionWorksheetView,
   QualityLineStatus,
   WorkshopLine,
@@ -25,6 +26,8 @@ export interface LineMarks {
   readonly quality: ReadonlyMap<string, QualityLineStatus>;
   /** `null` = le colisage n'a pas répondu : aucune ligne n'affirme rien. */
   readonly waiting: ReadonlyMap<string, OvenWaitingOrders> | null;
+  /** Le niveau de suivi de la ligne (plan des niveaux de suivi, § 3.1), servi par SKU. */
+  readonly trackingLevelOf: (sku: string) => ProductionTrackingLevel;
 }
 
 /** Le domaine parle en `Date`, le contrat en ISO. La traduction vit ici. */
@@ -39,6 +42,7 @@ export function lineViewOf(marks: LineMarks): (line: WorksheetLine) => WorkshopL
           })),
     quality: marks.quality.get(line.sku) ?? null,
     waitingOrders: waitingOf(marks.waiting, line.sku),
+    trackingLevel: marks.trackingLevelOf(line.sku),
   });
 }
 

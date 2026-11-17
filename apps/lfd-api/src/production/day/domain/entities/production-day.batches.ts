@@ -164,5 +164,14 @@ export function batchToRecord(
   if (!Number.isInteger(quantity) || quantity < 1) {
     throw new InvalidBatchQuantityError(quantity);
   }
-  return { id, sku, quantity, recorded, cancelled: null, returned: 0, pendingReturn: 0 };
+  return {
+    id,
+    sku,
+    quantity,
+    recorded,
+    cancelled: null,
+    returned: 0,
+    pendingReturn: 0,
+    corrected: 0,
+  };
 }

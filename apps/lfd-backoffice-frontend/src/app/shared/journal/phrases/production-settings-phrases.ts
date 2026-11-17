@@ -13,7 +13,7 @@ import {
   type Phrase,
   type Segment,
 } from '../phrase';
-import { PRODUCTION_CLOSE_MODE } from '../values/orders-values';
+import { PRODUCTION_CLOSE_MODE, PRODUCTION_TRACKING_LEVEL } from '../values/orders-values';
 
 /**
  * **Les réglages du fournil** (plan `documentation/fournil/arret-du-plan.md`,
@@ -64,6 +64,19 @@ function displayTerms(payload: Payload): Segment[] {
   );
   const subcategoriesChanged = payload['showSubcategories'] !== previous?.['showSubcategories'];
   return subcategoriesChanged ? [mode, text(' et '), subcategories] : [mode];
+}
+
+/** « toujours vert, marge de 15 min ». */
+function trackingTerms(raw: unknown): Segment[] {
+  const settings = recordOf(raw);
+  if (settings === null) {
+    return [text('les valeurs par défaut')];
+  }
+  const margin = settings['marginMinutes'];
+  return [
+    valueIn(PRODUCTION_TRACKING_LEVEL, settings['level'], { inSentence: true }),
+    ...(typeof margin === 'number' ? [text(`, marge de ${String(margin)} min`)] : []),
+  ];
 }
 
 const closedDay =
@@ -198,6 +211,17 @@ export const PRODUCTION_SETTINGS_PHRASES = {
     ),
   'production_display_settings.updated': (fact) =>
     byActor(fact, displayTerms(fact.payload), ['showSubcategories', 'grouping', 'previous']),
+  'production_tracking_settings.updated': (fact) =>
+    byActor(
+      fact,
+      [
+        text('a réglé le suivi du fournil : '),
+        ...trackingTerms(fact.payload),
+        text(' ; c’était '),
+        ...trackingTerms(fact.payload['previous']),
+      ],
+      ['level', 'marginMinutes', 'previous'],
+    ),
   'production_settings.close_changed': (fact) =>
     byActor(
       fact,

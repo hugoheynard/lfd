@@ -11,6 +11,11 @@ import {
   WorkstationOfProducts,
   type WorkstationsOfProducts,
 } from "../domain/ports/workstation-of-products.js";
+import {
+  type WorkstationOwnTrackingLevel,
+  WorkstationTrackingLevels,
+} from "../domain/ports/workstation-tracking-levels.js";
+import { trackingLevelOrNull } from "./tracking-level-column.js";
 
 /** Les postes en service, dans l'ordre des fiches (l'id départage deux rangs égaux). */
 const ACTIVE_STATIONS = {
@@ -96,5 +101,25 @@ export class PrismaWorkstationMapVersion extends WorkstationMapVersion {
       stations._max.updatedAt?.getTime() ?? 0,
       placements._max.updatedAt?.getTime() ?? 0,
     );
+  }
+}
+
+/** Le niveau propre de chaque poste en service : une requête sur les postes. */
+@Injectable()
+export class PrismaWorkstationTrackingLevels extends WorkstationTrackingLevels {
+  constructor(private readonly prisma: PrismaService) {
+    super();
+  }
+
+  async ofActive(): Promise<readonly WorkstationOwnTrackingLevel[]> {
+    const rows = await this.prisma.productionWorkstation.findMany({
+      where: { archivedAt: null },
+      orderBy: [{ position: "asc" }, { id: "asc" }],
+      select: { id: true, trackingLevel: true },
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      trackingLevel: trackingLevelOrNull(row.trackingLevel),
+    }));
   }
 }

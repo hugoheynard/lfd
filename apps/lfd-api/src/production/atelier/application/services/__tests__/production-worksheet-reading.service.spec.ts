@@ -33,6 +33,7 @@ import { GroupingSourceReading } from "../../../../workstations/index.js";
 import { servedWorksheet } from "../worksheet-content.js";
 import { WorksheetDeadlinesReading } from "../worksheet-deadlines-reading.service.js";
 import { placementPorts } from "../../../../workstations/application/__tests__/placement-doubles.js";
+import { trackingPorts } from "../../__tests__/tracking-doubles.js";
 
 /**
  * Les paliers et la pastille qualité d'une ligne de la fiche (plan
@@ -136,6 +137,7 @@ function bareReading(
     waiting,
     new InMemoryDisplaySettings().reader(),
     new GroupingSourceReading(...placementPorts()),
+    ...trackingPorts(),
   );
 }
 

@@ -1,3 +1,5 @@
+import type { ProductionTrackingLevel } from "@lfd/contracts";
+
 import {
   WorkstationArchivedError,
   WorkstationNameTakenError,
@@ -15,6 +17,8 @@ export interface Workstation {
   readonly position: number;
   /** `null` : en service. */
   readonly archivedAt: Date | null;
+  /** Le niveau de suivi propre au poste ; `null` : il suit le fournil. */
+  readonly trackingLevel: ProductionTrackingLevel | null;
 }
 
 /** L'état d'une carte, tel qu'un dépôt le relit (`toDomain`). */
@@ -90,7 +94,7 @@ export class WorkstationMap {
     const name = WorkstationName.of(rawName);
     this.refuseTakenName(name, null);
     const last = this.active().at(-1)?.position ?? -1;
-    this.write({ id, name: name.value, position: last + 1, archivedAt: null });
+    this.write({ id, name: name.value, position: last + 1, archivedAt: null, trackingLevel: null });
   }
 
   /**
@@ -145,6 +149,23 @@ export class WorkstationMap {
       throw new WorkstationStillUsedError(station.name, used);
     }
     this.write({ ...station, archivedAt: at });
+  }
+
+  /**
+   * Le niveau de suivi propre au poste, ou `null` : il suit le fournil (plan
+   * `fournil/plan-niveaux-de-suivi.md`, § 3.1). Il vaut à partir de la
+   * prochaine journée arrêtée : une journée garde le niveau figé à son premier
+   * passage. Le même niveau, reposé, ne change rien.
+   *
+   * @throws {WorkstationNotFoundError}
+   * @throws {WorkstationArchivedError} un poste archivé ne se règle plus.
+   */
+  setTrackingLevel(id: string, level: ProductionTrackingLevel | null): void {
+    const station = this.activeStation(id);
+    if (station.trackingLevel === level) {
+      return;
+    }
+    this.write({ ...station, trackingLevel: level });
   }
 
   /**

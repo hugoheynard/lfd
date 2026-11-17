@@ -54,7 +54,13 @@ describe("DeclareWorkstationHandler", () => {
     );
 
     expect(id).toBe("ws_000001");
-    expect(maps.station(id)).toEqual({ id, name: "Tourier", position: 2, archivedAt: null });
+    expect(maps.station(id)).toEqual({
+      id,
+      name: "Tourier",
+      position: 2,
+      archivedAt: null,
+      trackingLevel: null,
+    });
     expect(maps.saved[0]?.stamp).toEqual({
       at: NOW,
       staffUserId: STAFF_ID,

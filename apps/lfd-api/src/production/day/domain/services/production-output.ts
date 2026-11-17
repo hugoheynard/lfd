@@ -62,10 +62,13 @@ export function outputOf(quantity: number, active: readonly ProductionBatchSnaps
 
 /**
  * La fournée telle qu'elle COMPTE : sa quantité moins ce que le colisage a
- * rendu (K2, §13 B2). « Sorti » ne baisse que par une réponse du colisage —
- * jamais par la demande — donc une fournée en « retour en attente » compte
- * entière.
+ * rendu (K2, §13 B2) et moins sa part corrigée (plan
+ * `fournil/plan-niveaux-de-suivi.md`, § 3.3). « Sorti » ne baisse que par une
+ * réponse du colisage — jamais par la demande — donc une fournée en « retour
+ * en attente » compte entière. Une fournée entièrement corrigée compte zéro,
+ * et reste une fournée : elle n'est pas annulée.
  */
 export function countedBatch(batch: ProductionBatchSnapshot): ProductionBatchSnapshot {
-  return batch.returned === 0 ? batch : { ...batch, quantity: batch.quantity - batch.returned };
+  const deducted = batch.returned + batch.corrected;
+  return deducted === 0 ? batch : { ...batch, quantity: batch.quantity - deducted };
 }

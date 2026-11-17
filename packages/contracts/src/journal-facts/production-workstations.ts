@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { PRODUCTION_TRACKING_LEVELS } from "../production-settings.js";
 import { count, fact, named, payload, subjectLabel } from "./fact.js";
 
 /**
@@ -12,6 +13,9 @@ import { count, fact, named, payload, subjectLabel } from "./fact.js";
  * nom qui le dit.
  */
 const workstation = () => named("production_workstation");
+
+/** Un niveau de suivi propre, ou `null` : le poste suit le fournil. */
+const ownTrackingLevel = () => z.enum(PRODUCTION_TRACKING_LEVELS).nullable();
 
 export const PRODUCTION_WORKSTATION_FACTS = {
   /** Un poste neuf, au rang `position` (en dernier). */
@@ -38,6 +42,18 @@ export const PRODUCTION_WORKSTATION_FACTS = {
       workstation: workstation().nullable(),
       skus: z.array(z.string().min(1)),
       count: count(),
+    }),
+  ),
+  /**
+   * Le niveau de suivi propre au poste (plan des niveaux de suivi, § 3.1) ;
+   * `null` : il suit le fournil. `previous` dit celui qu'il avait. Il vaut à
+   * partir de la prochaine journée arrêtée.
+   */
+  "production_workstation.tracking_level_set": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      trackingLevel: ownTrackingLevel(),
+      previous: payload({ trackingLevel: ownTrackingLevel() }),
     }),
   ),
 } as const;

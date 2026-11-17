@@ -1,3 +1,4 @@
+import type { ProductionTrackingLevel } from "@lfd/contracts";
 import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
 import type { JournalFact, JournaledEvent } from "../../../../platform/journal/journal-fact.js";
@@ -15,6 +16,7 @@ export const WORKSTATION_FACTS = {
   reordered: "production_workstation.reordered",
   archived: "production_workstation.archived",
   productsPlaced: "production_workstation.products_placed",
+  trackingLevelSet: "production_workstation.tracking_level_set",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
 const SUBJECT_TYPE = "production_workstation";
@@ -111,6 +113,24 @@ export class WorkstationProductsPlacedEvent implements JournaledEvent {
     return stationFact(WORKSTATION_FACTS.productsPlaced, this.station, {
       workstation: { id: this.station.id, name: this.station.name },
       ...placement,
+    });
+  }
+}
+
+/**
+ * Le niveau de suivi propre au poste (plan `fournil/plan-niveaux-de-suivi.md`,
+ * § 3.1) ; `null` : il suit le fournil. `previous` dit celui qu'il avait.
+ */
+export class WorkstationTrackingLevelSetEvent implements JournaledEvent {
+  constructor(
+    readonly station: Workstation,
+    readonly previous: ProductionTrackingLevel | null,
+  ) {}
+
+  journalFact(): JournalFact {
+    return stationFact(WORKSTATION_FACTS.trackingLevelSet, this.station, {
+      trackingLevel: this.station.trackingLevel,
+      previous: { trackingLevel: this.previous },
     });
   }
 }

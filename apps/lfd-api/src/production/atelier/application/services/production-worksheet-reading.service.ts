@@ -16,9 +16,11 @@ import { GroupingSourceReading } from "../../../workstations/index.js";
 import { worksheetOf, type DemandedItem } from "../../domain/services/production-worksheet.js";
 import { ServiceDay } from "../../../day/index.js";
 import { ServiceRange } from "../../../day/index.js";
+import { DayTrackingLevelsReading } from "./day-tracking-levels-reading.service.js";
 import type { WorksheetContent } from "./worksheet-content.js";
 import { WorksheetDeadlinesReading } from "./worksheet-deadlines-reading.service.js";
 import { groupView, lineViewOf } from "./worksheet-line-views.js";
+import { WorksheetTrackingLevelsReading } from "./worksheet-tracking-levels.js";
 
 /**
  * **La lecture d'une fiche d'atelier**, partagée par ses deux routes.
@@ -64,6 +66,14 @@ import { groupView, lineViewOf } from "./worksheet-line-views.js";
  * port que le fournil déclare. Sans nom de client. Une panne du colisage est
  * **journalisée** et met `waitingOrders: null` partout : la fiche reste servie.
  *
+ * ## Le niveau de suivi de chaque ligne
+ *
+ * Le niveau figé de la journée, sinon celui que le premier passage figera
+ * (plan `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.1), puis celui
+ * du poste de chaque ligne. La lecture ne fige rien : elle n'écrit pas.
+ * Des postes illisibles servent les lignes en détaillé, et la fiche n'est pas
+ * gardée.
+ *
  * ## Sans horloge
  *
  * Le contenu ne lit pas l'heure : il se range tel quel dans l'objet des
@@ -88,6 +98,8 @@ export class ProductionWorksheetReading {
     private readonly waiting: OvenWaitingOrdersReader,
     private readonly display: ProductionDisplaySettingsReader,
     private readonly grouping: GroupingSourceReading,
+    private readonly tracking: DayTrackingLevelsReading,
+    private readonly lineLevels: WorksheetTrackingLevelsReading,
   ) {}
 
   /** Le contenu de la fiche d'une journée, sans rien qui dépende de l'heure. */
@@ -95,7 +107,7 @@ export class ProductionWorksheetReading {
     // La journée part avec les autres lectures ; les pastilles la suivent, car
     // un verdict se périme contre le compte ACTUEL de la journée.
     const loading = this.days.load(day);
-    const [current, expected, producible, containers, tranches, quality, waiting, display] =
+    const [current, expected, producible, containers, tranches, quality, waiting, display, levels] =
       await Promise.all([
         loading,
         this.expected.expectedBetween(ServiceRange.of(day.value, day.value)),
@@ -105,6 +117,7 @@ export class ProductionWorksheetReading {
         loading.then((loaded) => this.quality.linesOf(loaded)),
         this.waitingOrNull(day),
         this.display.current(),
+        loading.then((loaded) => this.tracking.levelsOf(day, loaded)),
       ]);
 
     // 🔴 Le filtre par `orderId` n'est pas un confort. La clôture publie un
@@ -129,10 +142,17 @@ export class ProductionWorksheetReading {
       settings.grouping,
       `Fiche d'atelier du ${day.value}`,
     );
+    const tracked = await this.lineLevels.read(
+      day,
+      levels,
+      worksheet.lines.map((line) => line.sku),
+      grouping.source,
+    );
     const viewOf = lineViewOf({
       tranches,
       quality: new Map(quality.map((status) => [status.sku, status])),
       waiting,
+      trackingLevelOf: tracked.levelOf,
     });
     const sheet = {
       date: day.value,
@@ -147,7 +167,8 @@ export class ProductionWorksheetReading {
       grouping: settings.grouping,
       workstationsKnown: grouping.workstationsKnown,
     };
-    const complete = grouping.shelvesKnown && grouping.workstationsKnown && tranches !== null;
+    const complete =
+      grouping.shelvesKnown && grouping.workstationsKnown && tranches !== null && tracked.known;
     return { sheet, complete: complete && waiting !== null };
   }
 

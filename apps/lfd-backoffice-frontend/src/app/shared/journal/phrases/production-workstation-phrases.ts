@@ -9,9 +9,12 @@ import {
   subject,
   subjectLabelOf,
   text,
+  valueIn,
   type Phrase,
   type PhraseFact,
+  type Segment,
 } from '../phrase';
+import { PRODUCTION_TRACKING_LEVEL } from '../values/orders-values';
 
 /**
  * **Les postes du fournil** — le miroir de `production_workstation.*` dans
@@ -83,10 +86,33 @@ const productsPlaced: Phrase = (fact) => {
   );
 };
 
+/** Le niveau propre, ou `null` : le poste suit le fournil. */
+function ownLevel(raw: unknown): Segment | null {
+  return raw === null || raw === undefined
+    ? null
+    : valueIn(PRODUCTION_TRACKING_LEVEL, raw, { inSentence: true });
+}
+
+const trackingLevelSet: Phrase = (fact) => {
+  const now = ownLevel(fact.payload['trackingLevel']);
+  const before = ownLevel(recordOf(fact.payload['previous'])?.['trackingLevel']);
+  return byActor(
+    fact,
+    [
+      ...(now === null
+        ? [text('a remis le poste '), station(fact), text(' au niveau de suivi du fournil')]
+        : [text('a réglé le suivi du poste '), station(fact), text(' : '), now]),
+      ...(before === null ? [text(' ; il suivait le fournil')] : [text(' ; c’était '), before]),
+    ],
+    ['subjectLabel', 'trackingLevel', 'previous'],
+  );
+};
+
 export const PRODUCTION_WORKSTATION_PHRASES = {
   'production_workstation.declared': declared,
   'production_workstation.renamed': renamed,
   'production_workstation.reordered': reordered,
   'production_workstation.archived': archived,
   'production_workstation.products_placed': productsPlaced,
+  'production_workstation.tracking_level_set': trackingLevelSet,
 } satisfies Partial<Record<JournalFactType, Phrase>>;

@@ -74,6 +74,39 @@ export const productionDisplayPayloadSchema = z
 export type ProductionDisplayPayload = z.infer<typeof productionDisplayPayloadSchema>;
 
 /**
+ * **Les niveaux de suivi du fournil** (plan
+ * `documentation/fournil/plan-niveaux-de-suivi.md`, § 1) : `always_green` —
+ * chaque palier est réputé sorti à son heure plus une marge, seul geste le
+ * rouge ; `simple` — « Fait » ou « Problème » par produit ; `detailed` — les
+ * fournées, plaques et paliers. Sans réglage enregistré : `always_green`.
+ */
+export const PRODUCTION_TRACKING_LEVELS = ["always_green", "simple", "detailed"] as const;
+export type ProductionTrackingLevel = (typeof PRODUCTION_TRACKING_LEVELS)[number];
+
+/**
+ * `GET /admin/production/settings/tracking` — le niveau du fournil et sa
+ * marge. Il vaut à partir de la prochaine journée arrêtée : une journée
+ * arrêtée garde le niveau figé à son premier passage.
+ */
+export interface ProductionTrackingView {
+  readonly level: ProductionTrackingLevel;
+  /** Minutes ajoutées à l'heure d'un palier avant de le réputer sorti. */
+  readonly marginMinutes: number;
+}
+
+/**
+ * `PUT /admin/production/settings/tracking` — la forme. La borne de la marge
+ * est jugée par le domaine, qui nomme le refus.
+ */
+export const productionTrackingPayloadSchema = z
+  .object({
+    level: z.enum(PRODUCTION_TRACKING_LEVELS),
+    marginMinutes: z.number().int(),
+  })
+  .strict();
+export type ProductionTrackingPayload = z.infer<typeof productionTrackingPayloadSchema>;
+
+/**
  * **Les tranches de production** (Hugo, 2026-10-28) : `fixed` — les heures
  * réglées ici, où chaque besoin tombe dans la dernière tranche au plus tard à
  * son heure ; `computed` — les heures des besoins eux-mêmes.

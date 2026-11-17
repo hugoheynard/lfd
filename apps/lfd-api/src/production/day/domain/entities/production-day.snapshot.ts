@@ -146,6 +146,12 @@ export interface ProductionBatchSnapshot {
   readonly returned: number;
   /** Les pièces demandées en retour, sans réponse encore — « retour en attente ». */
   readonly pendingReturn: number;
+  /**
+   * **La part corrigée** (plan `fournil/plan-niveaux-de-suivi.md`, § 3.3) :
+   * des pièces déclarées qui n'ont jamais existé, prises sur la part remise
+   * au colisage. « Sorti » en est diminué ; la fournée n'est pas annulée.
+   */
+  readonly corrected: number;
 }
 
 /**

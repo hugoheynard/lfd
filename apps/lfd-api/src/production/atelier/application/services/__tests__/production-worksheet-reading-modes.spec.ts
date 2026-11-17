@@ -1,4 +1,4 @@
-import { instantToLocal, type CatalogFamilyView } from "@lfd/contracts";
+import { instantToLocal, type CatalogFamilyView, type WorkshopLine } from "@lfd/contracts";
 
 import { FixedDueThresholds } from "../../../../channels/commerce/__tests__/due-thresholds-doubles.js";
 import {
@@ -37,6 +37,12 @@ import { FixedOvenWaitingOrders } from "../../__tests__/oven-waiting-doubles.js"
 import { ProductionWorksheetReading } from "../production-worksheet-reading.service.js";
 import { GroupingSourceReading } from "../../../../workstations/index.js";
 import { WorksheetDeadlinesReading } from "../worksheet-deadlines-reading.service.js";
+import {
+  InMemoryTrackingSettings,
+  type TrackingScene,
+  trackingPorts,
+} from "../../__tests__/tracking-doubles.js";
+import { ProductionTrackingSettings } from "../../../domain/entities/production-tracking-settings.js";
 
 /**
  * **La fiche selon le mode** (`documentation/fournil/les-postes-du-fournil.md`,
@@ -88,8 +94,13 @@ const ARTICLES = [
   { ...article(BAGUETTE, "PAI", BREADS), sellable: false },
 ];
 
-function subject(grouping: "shelf" | "workstation", workstations: WorkstationOfProducts) {
+function subject(
+  grouping: "shelf" | "workstation",
+  workstations: WorkstationOfProducts,
+  tracking: TrackingScene = {},
+) {
   const articles = new FixedProductionArticles(ARTICLES);
+  const groupingReading = new GroupingSourceReading(articles, workstations);
   const display = new InMemoryDisplaySettings(
     ProductionDisplaySettings.of({ showSubcategories: false, grouping }),
   );
@@ -102,7 +113,8 @@ function subject(grouping: "shelf" | "workstation", workstations: WorkstationOfP
     qualityLinesFrom(new CheckTable()),
     new FixedOvenWaitingOrders(),
     display.reader(),
-    new GroupingSourceReading(articles, workstations),
+    groupingReading,
+    ...trackingPorts(tracking, groupingReading),
   );
   return { reading, articles };
 }
@@ -158,6 +170,70 @@ describe("ProductionWorksheetReading — mode boutique, mode prod", () => {
       expect(content.complete).toBe(false);
       expect(logs.errors).toEqual([
         expect.stringContaining("postes illisibles, servie rangée par rayon"),
+      ]);
+    } finally {
+      logs.release();
+    }
+  });
+});
+
+describe("ProductionWorksheetReading — le niveau de suivi de chaque ligne", () => {
+  const PASTRY_DETAILED: TrackingScene = {
+    settings: new InMemoryTrackingSettings(
+      ProductionTrackingSettings.of({ level: "simple", marginMinutes: 15 }),
+    ),
+    stations: [{ id: "ws_pastry", trackingLevel: "detailed" }],
+  };
+  const CROISSANT_ON_PASTRY = () =>
+    new FixedWorkstationOfProducts(
+      [{ id: "ws_pastry", name: "Pâtisserie", position: 0 }],
+      new Map([["VIE", "ws_pastry"]]),
+    );
+
+  function levels(content: { sheet: { lines: readonly WorkshopLine[] } }) {
+    return Object.fromEntries(content.sheet.lines.map((line) => [line.sku, line.trackingLevel]));
+  }
+
+  it("tous les postes au niveau du fournil : chaque ligne l'est, sans lire les postes", async () => {
+    const workstations = new UnreadWorkstationOfProducts();
+    const { reading } = subject("shelf", workstations);
+
+    const content = await reading.contentOf(DAY);
+
+    expect(levels(content)).toEqual({ [BAGUETTE]: "always_green", [CROISSANT]: "always_green" });
+    expect(workstations.calls).toBe(0);
+  });
+
+  it("en mode boutique, la ligne d'un poste réglé prend son niveau, les autres celui du fournil", async () => {
+    const { reading } = subject("shelf", CROISSANT_ON_PASTRY(), PASTRY_DETAILED);
+
+    const content = await reading.contentOf(DAY);
+
+    expect(levels(content)).toEqual({ [BAGUETTE]: "simple", [CROISSANT]: "detailed" });
+    expect(content.complete).toBe(true);
+  });
+
+  it("en mode prod, le rangement déjà lu suffit", async () => {
+    const workstations = CROISSANT_ON_PASTRY();
+    const { reading } = subject("workstation", workstations, PASTRY_DETAILED);
+
+    const content = await reading.contentOf(DAY);
+
+    expect(levels(content)).toEqual({ [BAGUETTE]: "simple", [CROISSANT]: "detailed" });
+    expect(workstations.asked).toHaveLength(1);
+  });
+
+  it("des postes illisibles servent les lignes en détaillé, et la fiche n'est pas gardée", async () => {
+    const logs = CapturedLogs.capture();
+    try {
+      const { reading } = subject("shelf", new FailingWorkstationOfProducts(), PASTRY_DETAILED);
+
+      const content = await reading.contentOf(DAY);
+
+      expect(levels(content)).toEqual({ [BAGUETTE]: "detailed", [CROISSANT]: "detailed" });
+      expect(content.complete).toBe(false);
+      expect(logs.errors).toEqual([
+        expect.stringContaining("niveaux de suivi des postes inconnus"),
       ]);
     } finally {
       logs.release();

@@ -11,6 +11,32 @@ import { RecordBatchHandler } from "./application/commands/record-batch.handler.
 import { RemoveProductionContainerHandler } from "./application/commands/remove-production-container.handler.js";
 import { SetProductionContainerHandler } from "./application/commands/set-production-container.handler.js";
 import { SetProductionDisplayHandler } from "./application/commands/set-production-display.handler.js";
+import { SetProductionTrackingHandler } from "./application/commands/set-production-tracking.handler.js";
+import { GetProductionTrackingHandler } from "./application/queries/get-production-tracking.handler.js";
+import { DayTrackingLevelsFreezing } from "./application/services/day-tracking-levels-freezing.service.js";
+import { DayTrackingLevelsReading } from "./application/services/day-tracking-levels-reading.service.js";
+import { WorksheetTrackingLevelsReading } from "./application/services/worksheet-tracking-levels.js";
+import {
+  DayTrackingLevelsFreezer,
+  FrozenTrackingLevelsReader,
+} from "./domain/ports/day-tracking-levels.ports.js";
+import {
+  ProductionTrackingSettingsReader,
+  ProductionTrackingSettingsRepository,
+  ProductionTrackingSettingsVersion,
+} from "./domain/ports/production-tracking-settings.ports.js";
+import { TrackingLevelsCommissioning } from "./domain/ports/tracking-levels-commissioning.js";
+import { ProductionTrackingSettingsController } from "./http/production-tracking-settings.controller.js";
+import { ConstantTrackingLevelsCommissioning } from "./infrastructure/constant-tracking-levels-commissioning.js";
+import {
+  PrismaDayTrackingLevelsFreezer,
+  PrismaFrozenTrackingLevelsReader,
+} from "./infrastructure/prisma-day-tracking-levels.js";
+import {
+  PrismaProductionTrackingSettingsReader,
+  PrismaProductionTrackingSettingsRepository,
+  PrismaProductionTrackingSettingsVersion,
+} from "./infrastructure/prisma-production-tracking-settings.js";
 import { GetAtelierSheetPdfHandler } from "./application/queries/get-atelier-sheet-pdf.handler.js";
 import { GetAtelierSheetSpecimenHandler } from "./application/queries/get-atelier-sheet-specimen.handler.js";
 import { GetCurrentProductionWorksheetHandler } from "./application/queries/get-current-production-worksheet.handler.js";
@@ -61,6 +87,7 @@ import { ProductionBatchShortcutsModule } from "./production-batch-shortcuts.mod
     ProductionWorksheetController,
     ProductionSupervisionController,
     ProductionDisplaySettingsController,
+    ProductionTrackingSettingsController,
     // La fiche d'atelier d'EXEMPLE de la planche des documents.
     AdminAtelierSheetSpecimenController,
   ],
@@ -87,6 +114,27 @@ import { ProductionBatchShortcutsModule } from "./production-batch-shortcuts.mod
     SetProductionDisplayHandler,
     // La remise au colisage d'une fournée déclarée ou annulée.
     PackingHandoffs,
+    // Les niveaux de suivi (plan des niveaux de suivi) : le réglage du
+    // fournil — lire, écrire et son numéro sont trois ports (ISP) —, le
+    // niveau figé d'une journée — lire et figer sont deux ports —, et la mise
+    // en service.
+    SetProductionTrackingHandler,
+    GetProductionTrackingHandler,
+    DayTrackingLevelsReading,
+    DayTrackingLevelsFreezing,
+    WorksheetTrackingLevelsReading,
+    { provide: ProductionTrackingSettingsReader, useClass: PrismaProductionTrackingSettingsReader },
+    {
+      provide: ProductionTrackingSettingsRepository,
+      useClass: PrismaProductionTrackingSettingsRepository,
+    },
+    {
+      provide: ProductionTrackingSettingsVersion,
+      useClass: PrismaProductionTrackingSettingsVersion,
+    },
+    { provide: FrozenTrackingLevelsReader, useClass: PrismaFrozenTrackingLevelsReader },
+    { provide: DayTrackingLevelsFreezer, useClass: PrismaDayTrackingLevelsFreezer },
+    { provide: TrackingLevelsCommissioning, useClass: ConstantTrackingLevelsCommissioning },
   ],
 })
 export class ProductionAtelierModule {}

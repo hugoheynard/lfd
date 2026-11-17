@@ -68,12 +68,13 @@ export class OnPackingReturned implements DurableSubscriber {
       (candidate) => candidate.id === answered.batchId,
     );
     // « Tout rendu » = tout ce que le colisage a REÇU, pas la fournée : une
-    // part gardée pour un réassort sur place ne lui a jamais été remise (R3c).
+    // part gardée pour un réassort sur place ne lui a jamais été remise (R3c),
+    // et une part corrigée n'a jamais existé (plan des niveaux de suivi, § 3.3).
     const handed =
       batch === undefined
         ? undefined
         : (await this.handed.handedAmong(day, [batch.id])).get(batch.id);
-    if (batch !== undefined && batch.returned >= (handed ?? batch.quantity)) {
+    if (batch !== undefined && batch.returned + batch.corrected >= (handed ?? batch.quantity)) {
       await this.batches.cancel(day, batch.id, { at: event.decidedAt, by: answered.requested.by });
     }
   }

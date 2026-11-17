@@ -71,6 +71,10 @@ const UNWATCHED: Readonly<Record<string, string>> = {
   // Les raccourcis du fournil (Réglages › Production, 2026-10-28) : un réglage par produit.
   "production.production_batch_shortcut":
     "les raccourcis du fournil, un réglage par produit sans journée",
+  // Le niveau de suivi du fournil (plan des niveaux de suivi, N1) : un réglage.
+  // Le niveau figé d'une journée et les problèmes, eux, ont leurs déclencheurs.
+  "production.production_tracking_settings":
+    "le niveau de suivi du fournil, un réglage unique sans journée",
   // Les postes du fournil (plan des postes, W1, 2026-11-16) : un réglage.
   "production.production_workstation": "les postes du fournil, un réglage sans journée",
   "production.production_workstation_product":

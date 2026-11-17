@@ -73,7 +73,7 @@ export class InMemoryWorkstationMaps extends WorkstationMapRepository {
 
 /** Un poste en service. */
 export function station(id: string, name: string, position: number): Workstation {
-  return { id, name, position, archivedAt: null };
+  return { id, name, position, archivedAt: null, trackingLevel: null };
 }
 
 /** Le personnel qui règle les postes, connu de l'annuaire. */
