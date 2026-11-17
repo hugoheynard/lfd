@@ -9,8 +9,8 @@ export interface DeclarationCorrection {
 
 /**
  * **« Les corrections de déclaration d'une journée »** — lecture nommée que le
- * fournil DÉCLARE et IMPLÉMENTE (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.5).
+ * fournil DÉCLARE et IMPLÉMENTE (
+ * `documentation/fournil/les-niveaux-de-suivi.md`).
  *
  * Le colisage la relira quand il saura traiter une correction : rien ne se
  * perd, même pour une correction publiée (`production.output_corrected`)

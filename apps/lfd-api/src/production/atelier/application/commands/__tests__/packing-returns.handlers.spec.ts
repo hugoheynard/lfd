@@ -172,7 +172,7 @@ describe("la réponse du colisage (`packing.returned`)", () => {
     expect(durable.of(RETURN_REQUESTED)).toHaveLength(2);
   });
 
-  it("tout le RÉEL rendu, la part corrigée en plus : la fournée s'annule (plan des niveaux de suivi, § 3.3)", async () => {
+  it("tout le RÉEL rendu, la part corrigée en plus : la fournée s'annule (`fournil/les-niveaux-de-suivi.md`)", async () => {
     const { answer, requestId, store, days } = await requested();
     const stored = store.rows.get(FIRST);
     if (stored === undefined) {

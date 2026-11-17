@@ -45,7 +45,7 @@ export const PRODUCTION_WORKSTATION_FACTS = {
     }),
   ),
   /**
-   * Le niveau de suivi propre au poste (plan des niveaux de suivi, § 3.1) ;
+   * Le niveau de suivi propre au poste (`fournil/les-niveaux-de-suivi.md`) ;
    * `null` : il suit le fournil. `previous` dit celui qu'il avait. Il vaut à
    * partir de la prochaine journée arrêtée.
    */

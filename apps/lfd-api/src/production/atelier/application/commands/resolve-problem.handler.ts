@@ -14,8 +14,7 @@ import { ProductionProblemRepository } from "../../domain/ports/production-probl
 import { ResolveProblemCommand } from "./resolve-problem.command.js";
 
 /**
- * **« Marquer traité »** (plan `documentation/fournil/plan-niveaux-de-suivi.md`,
- * § 3.8).
+ * **« Marquer traité »** (`documentation/fournil/les-niveaux-de-suivi.md`).
  *
  * Une fois par intention, sous le verrou de la journée du problème — le même
  * que le rouge, qui le remplace et le rouvre : le problème est relu SOUS lui,

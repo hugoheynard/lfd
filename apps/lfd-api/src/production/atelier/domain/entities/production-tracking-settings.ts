@@ -16,7 +16,7 @@ export interface ProductionTrackingSettingsState {
 
 /**
  * **Le niveau de suivi du fournil et sa marge** — Réglages › Niveau de suivi
- * (plan `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.1).
+ * (`documentation/fournil/les-niveaux-de-suivi.md`).
  *
  * Un réglage, pas un agrégat : il n'a ni transition ni règle qui dépende de
  * l'état précédent. La seule règle — une marge en minutes entières, bornée —

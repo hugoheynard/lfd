@@ -95,7 +95,7 @@ export class SupervisionService {
     );
   }
 
-  /** Les problèmes ouverts du fournil ce jour-là (plan des niveaux de suivi, § 3.8). */
+  /** Les problèmes ouverts du fournil ce jour-là (`fournil/les-niveaux-de-suivi.md`). */
   async productionProblems(date: string): Promise<ProductionProblemsView> {
     return firstValueFrom(
       this.http.get<ProductionProblemsView>(

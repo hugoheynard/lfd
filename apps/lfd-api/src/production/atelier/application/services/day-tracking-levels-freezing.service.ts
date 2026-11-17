@@ -12,8 +12,8 @@ import { type DayTrackingLevels, mustFreeze } from "../../domain/services/tracki
 import { DayTrackingLevelsReading } from "./day-tracking-levels-reading.service.js";
 
 /**
- * **Le niveau de suivi figé au premier passage d'une journée arrêtée** (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.1).
+ * **Le niveau de suivi figé au premier passage d'une journée arrêtée** (
+ * `documentation/fournil/les-niveaux-de-suivi.md`).
  *
  * Sous le verrou de la journée, relue sous lui : arrêtée depuis la mise en
  * service et sans niveau figé, elle reçoit le niveau du fournil et de chaque

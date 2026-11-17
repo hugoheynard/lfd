@@ -34,8 +34,8 @@ const DISPLAY_SUBJECT = "display";
 const WORKSTATIONS_SUBJECT = "workstations";
 /**
  * Le réglage de suivi du fournil : une journée pas encore figée sert le
- * réglage courant, qui n'écrit aucun journal de journée (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.9). Le niveau d'un
+ * réglage courant, qui n'écrit aucun journal de journée (
+ * `documentation/fournil/les-niveaux-de-suivi.md`). Le niveau d'un
  * poste monte déjà le numéro de la carte, et le niveau figé écrit au journal.
  */
 const TRACKING_SUBJECT = "tracking";

@@ -634,8 +634,8 @@ async function triggerAutoClose(env: Env): Promise<void> {
 }
 
 /**
- * Réveille le container et passe le tour de la fournée automatique (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.7) : pour aujourd'hui
+ * Réveille le container et passe le tour de la fournée automatique (
+ * `documentation/fournil/les-niveaux-de-suivi.md`) : pour aujourd'hui
  * et demain, chaque journée arrêtée déclare ce que ses paliers échus disent
  * sorti, ligne par ligne, en toujours vert.
  *

@@ -1,7 +1,7 @@
 /**
  * **Un tour de la fournée automatique** — le passage du cron du Worker,
- * toutes les cinq minutes (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.7). Sans argument :
+ * toutes les cinq minutes (
+ * `documentation/fournil/les-niveaux-de-suivi.md`). Sans argument :
  * aujourd'hui et demain se lisent sur le `Clock`, à l'heure de Paris.
  */
 export class RunAlwaysGreenRoundCommand {}

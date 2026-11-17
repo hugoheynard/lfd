@@ -1,6 +1,6 @@
 /**
- * **Le rouge d'une ligne** — « combien est réellement sorti ? » (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.4).
+ * **Le rouge d'une ligne** — « combien est réellement sorti ? » (
+ * `documentation/fournil/les-niveaux-de-suivi.md`).
  */
 export class ReportProblemCommand {
   constructor(

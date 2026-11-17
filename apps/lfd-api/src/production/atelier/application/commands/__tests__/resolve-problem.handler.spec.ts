@@ -10,7 +10,7 @@ import { RecordBatchCommand } from "../record-batch.command.js";
 import { ReportProblemCommand } from "../report-problem.command.js";
 import { ResolveProblemCommand } from "../resolve-problem.command.js";
 
-/** **« Marquer traité »** (plan `fournil/plan-niveaux-de-suivi.md`, § 3.8), ports doublés. */
+/** **« Marquer traité »** (`fournil/les-niveaux-de-suivi.md`), ports doublés. */
 async function reported() {
   const scene = problemScene();
   await scene.record.execute(new RecordBatchCommand(SCENE_DAY, SCENE_SKU, "b1", 80, "", "s"));

@@ -128,7 +128,7 @@ describe("countedBatch — ce que le colisage a rendu", () => {
   });
 });
 
-describe("countedBatch — la part corrigée (plan des niveaux de suivi, § 3.3)", () => {
+describe("countedBatch — la part corrigée (`fournil/les-niveaux-de-suivi.md`)", () => {
   it("retire la part corrigée, en plus de ce qui est rendu", () => {
     const entry = { ...batch("a", 30), returned: 5, corrected: 10 };
 

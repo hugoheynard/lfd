@@ -15,8 +15,8 @@ import {
 } from "../../domain/services/output-correction.js";
 
 /**
- * **Corriger ce qui a été déclaré** (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.4, § 3.5) : la part
+ * **Corriger ce qui a été déclaré** (
+ * `documentation/fournil/les-niveaux-de-suivi.md`) : la part
  * corrigée des fournées remises de la ligne monte, et
  * `production.output_corrected` part — **seulement si quelque chose a été
  * corrigé**.

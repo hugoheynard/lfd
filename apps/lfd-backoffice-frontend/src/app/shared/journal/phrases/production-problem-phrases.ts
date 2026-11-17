@@ -14,8 +14,7 @@ import {
 
 /**
  * **Les problèmes du fournil** — le miroir de `production_problem.*` dans
- * `@lfd/contracts` (`documentation/fournil/plan-niveaux-de-suivi.md`, § 3.4,
- * § 3.8). Le sujet est le produit de la ligne ; la phrase dit ce que le
+ * `@lfd/contracts` (`documentation/fournil/les-niveaux-de-suivi.md`). Le sujet est le produit de la ligne ; la phrase dit ce que le
  * rouge a fait des fournées, parce que c'est ce qui touche au facturé.
  */
 function product(fact: PhraseFact): Segment {

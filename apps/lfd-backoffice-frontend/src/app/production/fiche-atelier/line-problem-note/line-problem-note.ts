@@ -7,8 +7,8 @@ import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 import { hourLabel } from '../../worksheet-day';
 
 /**
- * **Le rouge d'une ligne, tel que servi** (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.2) : le problème
+ * **Le rouge d'une ligne, tel que servi** (
+ * `documentation/fournil/les-niveaux-de-suivi.md`) : le problème
  * ouvert — sorti déclaré, raison, heure — puis le plafond, qui survit au
  * « traité ». Rien n'est calculé : tout vient de la ligne.
  */

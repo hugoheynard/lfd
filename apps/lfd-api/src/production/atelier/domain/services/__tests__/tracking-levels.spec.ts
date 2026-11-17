@@ -9,8 +9,8 @@ import {
 } from "../tracking-levels.js";
 
 /**
- * **Le niveau de suivi d'une journée et de ses lignes** (plan
- * `fournil/plan-niveaux-de-suivi.md`, § 3.1). Ces instants ne sont comparés
+ * **Le niveau de suivi d'une journée et de ses lignes** (
+ * `fournil/les-niveaux-de-suivi.md`). Ces instants ne sont comparés
  * qu'entre eux (la mise en service et l'arrêt), jamais à l'horloge.
  */
 const SINCE = new Date("2026-12-01T00:00:00.000Z");

@@ -12,8 +12,8 @@ export interface CorrectedHandoff {
 }
 
 /**
- * **Une correction de déclaration** (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.5) : des pièces que
+ * **Une correction de déclaration** (
+ * `documentation/fournil/les-niveaux-de-suivi.md`) : des pièces que
  * le fournil a remises au colisage n'ont jamais existé. Ce n'est pas un
  * retour — rien ne bouge physiquement.
  *

@@ -5,8 +5,8 @@ import type { ProductionProblemState } from "../entities/production-problem.js";
 import type { OutputCorrection } from "../services/output-correction.js";
 
 /**
- * **Les faits d'un problème du fournil** (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.4, § 3.11). La ligne
+ * **Les faits d'un problème du fournil** (
+ * `documentation/fournil/les-niveaux-de-suivi.md`). La ligne
  * ne garde que le dernier rouge ; le journal garde chacun, avec les fournées
  * qu'il a corrigées — la trace de ce qui touche au facturé.
  */

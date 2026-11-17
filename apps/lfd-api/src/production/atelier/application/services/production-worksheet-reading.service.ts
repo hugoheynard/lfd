@@ -70,12 +70,12 @@ import { WorksheetTrackingLevelsReading } from "./worksheet-tracking-levels.js";
  * ## Le niveau de suivi de chaque ligne
  *
  * Le niveau figé de la journée, sinon celui que le premier passage figera
- * (plan `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.1), puis celui
+ * (`documentation/fournil/les-niveaux-de-suivi.md`), puis celui
  * du poste de chaque ligne. La lecture ne fige rien : elle n'écrit pas.
  * Des postes illisibles servent les lignes en détaillé, et la fiche n'est pas
  * gardée.
  *
- * ## Le plafond et le rouge ouvert de chaque ligne (§ 3.2)
+ * ## Le plafond et le rouge ouvert de chaque ligne
  *
  * Les problèmes de la journée, traités compris : le plafond survit au
  * « traité », le panneau rouge ne montre que l'ouvert. La table écrit au

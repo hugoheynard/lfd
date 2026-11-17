@@ -35,7 +35,7 @@ export class ProductionSettingsService {
     return firstValueFrom(this.http.get<ProductionSettingsView>(SETTINGS));
   }
 
-  /** Le niveau de suivi du fournil, sa marge et sa mise en service (plan des niveaux de suivi). */
+  /** Le niveau de suivi du fournil, sa marge et sa mise en service (`fournil/les-niveaux-de-suivi.md`). */
   tracking(): Promise<ProductionTrackingView> {
     return firstValueFrom(this.http.get<ProductionTrackingView>(`${SETTINGS}/tracking`));
   }

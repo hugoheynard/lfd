@@ -38,6 +38,10 @@ sequenceDiagram
 > dossier sont rangés par **poste** au lieu du rayon, avec la même mise en
 > page : un poste prend la place d'un rayon, un produit sans poste reste sous
 > son rayon, « à ranger ». Voir [`les-postes-du-fournil.md`](les-postes-du-fournil.md).
+>
+> **Niveaux de suivi.** Ce qui suit décrit le niveau **détaillé**. En
+> toujours vert (le défaut) et en simple, une ligne n'a que « Problème », ou
+> « Fait » et « Problème » : voir [`les-niveaux-de-suivi.md`](les-niveaux-de-suivi.md).
 
 ## Partie technique
 

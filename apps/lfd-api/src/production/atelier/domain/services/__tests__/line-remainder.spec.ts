@@ -1,6 +1,6 @@
 import { remainderUnderCeiling } from "../line-remainder.js";
 
-/** Le reste à sortir de « Fait » (plan `fournil/plan-niveaux-de-suivi.md`, § 3.6). */
+/** Le reste à sortir de « Fait » (`fournil/les-niveaux-de-suivi.md`). */
 describe("remainderUnderCeiling", () => {
   it("sans plafond, le reste du compte", () => {
     expect(remainderUnderCeiling(120, null, 80)).toBe(40);

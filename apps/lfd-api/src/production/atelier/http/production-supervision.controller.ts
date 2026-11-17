@@ -21,8 +21,8 @@ const NO_CONTENT = 204;
 /**
  * **Le fournil vu depuis la Supervision**
  * (`documentation/supervision/architecture-supervision-du-jour.md`, §3) — un
- * seul geste : « Marquer traité » un problème du fournil (plan
- * `fournil/plan-niveaux-de-suivi.md`, § 3.8), sous `b2b_supervision:write`.
+ * seul geste : « Marquer traité » un problème du fournil (
+ * `fournil/les-niveaux-de-suivi.md`), sous `b2b_supervision:write`.
  *
  * Une seconde PORTE sur les lectures du fournil, pas une seconde lecture :
  * chaque route envoie exactement la query que `ProductionWorksheetController`

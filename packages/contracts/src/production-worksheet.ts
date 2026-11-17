@@ -128,8 +128,8 @@ export interface WorkshopLine {
    */
   readonly quality?: QualityLineStatus | null;
   /**
-   * **Le niveau de suivi de la ligne** (plan
-   * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.1) : celui de son
+   * **Le niveau de suivi de la ligne** (
+   * `documentation/fournil/les-niveaux-de-suivi.md`) : celui de son
    * poste, sinon celui du fournil, tels que la journée les a figés. Servi par
    * ligne parce qu'un groupe-rayon mêle des lignes de postes différents.
    * Facultatif dans le TYPE seulement : le serveur l'envoie toujours ; un
@@ -137,8 +137,7 @@ export interface WorkshopLine {
    */
   readonly trackingLevel?: ProductionTrackingLevel;
   /**
-   * **Le plafond de la ligne** (plan `documentation/fournil/plan-niveaux-de-suivi.md`,
-   * § 3.2) : le sorti déclaré au dernier rouge, qui survit au « traité ».
+   * **Le plafond de la ligne** (`documentation/fournil/les-niveaux-de-suivi.md`) : le sorti déclaré au dernier rouge, qui survit au « traité ».
    * `null` : la ligne n'a jamais eu de rouge ce jour.
    * Facultatif dans le TYPE seulement : le serveur l'envoie toujours.
    */

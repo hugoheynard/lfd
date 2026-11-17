@@ -1,6 +1,6 @@
 /**
- * E2E du **rouge, de « Fait » et de « Marquer traité »** — plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, lot N2, sur le vrai
+ * E2E du **rouge, de « Fait » et de « Marquer traité »** —
+ * `documentation/fournil/les-niveaux-de-suivi.md`, sur le vrai
  * Postgres jetable.
  *
  * Ce que seule cette suite prouve :

@@ -1,8 +1,8 @@
 import type { ProductionTrackingLevel } from "@lfd/contracts";
 
 /**
- * **Le niveau de suivi d'une journée et de ses lignes** (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.1) — des fonctions
+ * **Le niveau de suivi d'une journée et de ses lignes** (
+ * `documentation/fournil/les-niveaux-de-suivi.md`) — des fonctions
  * pures.
  *
  * - Le niveau d'une ligne : celui de son poste, sinon celui du fournil. Une

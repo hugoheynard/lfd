@@ -2,8 +2,8 @@ import type { ProductionBatchSnapshot } from "../../../day/index.js";
 import { stillAtPackingOf } from "./on-site-share.js";
 
 /**
- * **Où se prend une correction de déclaration** (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.3, § 3.4).
+ * **Où se prend une correction de déclaration** (
+ * `documentation/fournil/les-niveaux-de-suivi.md`).
  *
  * Le rouge dit qu'il est sorti moins que les fournées ne le disent : l'écart
  * est un nombre de pièces déclarées qui n'ont jamais existé. Il se prend sur

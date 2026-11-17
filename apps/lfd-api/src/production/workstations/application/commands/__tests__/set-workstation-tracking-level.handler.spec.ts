@@ -9,8 +9,7 @@ import { SetWorkstationTrackingLevelCommand } from "../set-workstation-tracking-
 import { SetWorkstationTrackingLevelHandler } from "../set-workstation-tracking-level.handler.js";
 
 /**
- * **Le niveau de suivi d'un poste** (plan `fournil/plan-niveaux-de-suivi.md`,
- * § 3.1). L'instant du geste n'est comparé qu'à ce que le geste écrit.
+ * **Le niveau de suivi d'un poste** (`fournil/les-niveaux-de-suivi.md`). L'instant du geste n'est comparé qu'à ce que le geste écrit.
  */
 const NOW = new Date("2026-11-17T09:00:00.000Z");
 let keys = 0;

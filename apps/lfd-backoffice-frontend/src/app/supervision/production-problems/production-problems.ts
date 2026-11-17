@@ -15,8 +15,8 @@ import { GestureIntents } from '../../shared/gesture-intents';
 import { SupervisionService } from '../supervision.service';
 
 /**
- * **Les problèmes ouverts du fournil** (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.8) — en tête de la
+ * **Les problèmes ouverts du fournil** (
+ * `documentation/fournil/les-niveaux-de-suivi.md`) — en tête de la
  * colonne Préparation, en rouge jusqu'à ce qu'un responsable les marque
  * traités. Une carte par rouge : le produit, l'attendu, le sorti déclaré, ce
  * que les fournées disent maintenant, la raison et depuis quand.
@@ -25,7 +25,7 @@ import { SupervisionService } from '../supervision.service';
  * problème ; un succès fait relire la liste (`resolved`), un refus reste
  * écrit au-dessus des cartes.
  *
- * Sous les rouges, les lignes « à confirmer » (§ 3.7) : en toujours vert,
+ * Sous les rouges, les lignes « à confirmer » : en toujours vert,
  * sans palier à heure ce jour-là, la fournée automatique ne les complète pas
  * — quelqu'un doit dire ce qui est sorti, depuis la fiche.
  */

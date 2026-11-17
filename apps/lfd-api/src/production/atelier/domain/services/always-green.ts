@@ -3,8 +3,8 @@ import { addMinutes, localToInstant } from "@lfd/contracts";
 import { remainderUnderCeiling } from "./line-remainder.js";
 
 /**
- * **La fournée automatique d'une ligne en toujours vert** (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.7) — des fonctions
+ * **La fournée automatique d'une ligne en toujours vert** (
+ * `documentation/fournil/les-niveaux-de-suivi.md`) — des fonctions
  * pures.
  *
  * - Un palier est **échu** quand son heure plus la marge du réglage est

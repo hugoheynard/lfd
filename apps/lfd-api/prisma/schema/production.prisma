@@ -283,7 +283,7 @@ model ProductionBatch {
   /// `save` en régénère les `id`, et un SKU retiré du compte garde ses fournées.
   sku               String
   quantity          Int
-  /// **La part corrigée** (plan `fournil/plan-niveaux-de-suivi.md`, § 3.3) :
+  /// **La part corrigée** (`fournil/les-niveaux-de-suivi.md`) :
   /// des pièces déclarées qui n'ont jamais existé, prises sur la part remise
   /// au colisage. « Sorti » en est diminué. CHECK `0 ≤ corrected ≤ quantity`.
   correctedQuantity Int    @default(0) @map("corrected_quantity")
@@ -884,8 +884,8 @@ model ProductionWorkstation {
   /// `null` : la fiche ne portait pas de nom au moment du geste — on n'en invente pas.
   updatedByName    String?   @map("updated_by_name")
   /// Le niveau de suivi propre au poste — `always_green` | `simple` |
-  /// `detailed` (CHECK en base) ; `null` : il suit le fournil (plan
-  /// `fournil/plan-niveaux-de-suivi.md`, § 3.1).
+  /// `detailed` (CHECK en base) ; `null` : il suit le fournil (
+  /// `fournil/les-niveaux-de-suivi.md`).
   trackingLevel    String?   @map("tracking_level")
 
   products ProductionWorkstationProduct[]
@@ -916,7 +916,7 @@ model ProductionWorkstationProduct {
 }
 
 /// **Le niveau de suivi du fournil et sa marge** — Réglages › Niveau de suivi
-/// (plan `fournil/plan-niveaux-de-suivi.md`, § 3.1) : UNE ligne, clé
+/// (`fournil/les-niveaux-de-suivi.md`) : UNE ligne, clé
 /// naturelle `house`. Ligne absente : `always_green`, marge de 15 minutes. Il
 /// vaut à partir de la prochaine journée arrêtée : une journée lit le niveau
 /// figé à son premier passage (`production_day_tracking_level`).
@@ -939,8 +939,8 @@ model ProductionTrackingSettings {
   @@schema("production")
 }
 
-/// **Le niveau de suivi figé d'une journée** (plan
-/// `fournil/plan-niveaux-de-suivi.md`, § 3.1) : le niveau du fournil et
+/// **Le niveau de suivi figé d'une journée** (
+/// `fournil/les-niveaux-de-suivi.md`) : le niveau du fournil et
 /// celui de chaque poste, résolus au premier passage d'`atelier/` sur la
 /// journée arrêtée, sous son verrou. Clé : la journée — une seconde écriture
 /// ignore le conflit, et une journée réouverte, reprise ou réannoncée garde
@@ -961,8 +961,8 @@ model ProductionDayTrackingLevel {
   @@schema("production")
 }
 
-/// **Un problème déclaré sur une ligne de la fiche** — le rouge (plan
-/// `fournil/plan-niveaux-de-suivi.md`, § 3.2) : combien est réellement sorti
+/// **Un problème déclaré sur une ligne de la fiche** — le rouge (
+/// `fournil/les-niveaux-de-suivi.md`) : combien est réellement sorti
 /// (`produced`, le plafond), une raison si on veut. Un par journée et SKU ; un
 /// second rouge le remplace et fait monter `version`. Le plafond survit au
 /// « traité » (`resolved_*`). Jamais supprimé.

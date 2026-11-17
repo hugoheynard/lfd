@@ -7,8 +7,7 @@ import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 import { LineProblemNote } from '../line-problem-note/line-problem-note';
 
 /**
- * **Une ligne « simple »** (plan `documentation/fournil/plan-niveaux-de-suivi.md`,
- * § 1, § 3.6) : ✅ « Fait » ou 🟥 « Problème », par produit.
+ * **Une ligne « simple »** (`documentation/fournil/les-niveaux-de-suivi.md`) : ✅ « Fait » ou 🟥 « Problème », par produit.
  *
  * « Fait » n'envoie aucune quantité : le serveur déclare le reste sous le
  * plafond (`remainingUnderCeiling`). Il est désarmé quand ce reste est nul —

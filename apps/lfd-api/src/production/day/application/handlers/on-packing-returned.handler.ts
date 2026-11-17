@@ -69,7 +69,7 @@ export class OnPackingReturned implements DurableSubscriber {
     );
     // « Tout rendu » = tout ce que le colisage a REÇU, pas la fournée : une
     // part gardée pour un réassort sur place ne lui a jamais été remise (R3c),
-    // et une part corrigée n'a jamais existé (plan des niveaux de suivi, § 3.3).
+    // et une part corrigée n'a jamais existé (`fournil/les-niveaux-de-suivi.md`).
     const handed =
       batch === undefined
         ? undefined

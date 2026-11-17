@@ -4,7 +4,7 @@ import {
   InvalidProblemReasonError,
 } from "../../errors/problem-errors.js";
 
-/** Le problème d'une ligne (plan `fournil/plan-niveaux-de-suivi.md`, § 3.2). Instants recopiés. */
+/** Le problème d'une ligne (`fournil/les-niveaux-de-suivi.md`). Instants recopiés. */
 const AT = new Date("2026-11-17T09:00:00.000Z");
 const LATER = new Date("2026-11-17T10:00:00.000Z");
 const IDENTITY = { id: "pb_1", serviceDay: "2026-11-18", sku: "CRO" };

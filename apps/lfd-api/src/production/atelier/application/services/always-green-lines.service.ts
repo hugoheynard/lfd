@@ -8,8 +8,8 @@ import { WorksheetTrackingLevelsReading } from "./worksheet-tracking-levels.js";
 const NO_GROUPING_READ = { mode: "shelf", shelves: null } as const;
 
 /**
- * **Les lignes d'une journée en toujours vert** (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.7, § 3.8) : les SKU
+ * **Les lignes d'une journée en toujours vert** (
+ * `documentation/fournil/les-niveaux-de-suivi.md`) : les SKU
  * au compte dont la ligne suit le niveau `always_green`, d'après les niveaux
  * que l'appelant a lus (figés pour le cron, servis pour la Supervision).
  *

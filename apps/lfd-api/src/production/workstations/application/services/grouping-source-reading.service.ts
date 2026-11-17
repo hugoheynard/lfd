@@ -86,7 +86,7 @@ export class GroupingSourceReading {
   /**
    * **Le poste de chaque SKU** — SKU → id de son poste ; un SKU absent n'a
    * pas de poste. Lu par la fiche quand un poste a un niveau de suivi propre
-   * (plan `fournil/plan-niveaux-de-suivi.md`, § 3.1), quel que soit le mode
+   * (`fournil/les-niveaux-de-suivi.md`), quel que soit le mode
    * de rangement : un rangement par poste déjà lu (`read`) suffit, sans
    * relire. `null` : articles ou postes illisibles — panne journalisée avec
    * ce qu'on lisait (`about`), jamais tue.

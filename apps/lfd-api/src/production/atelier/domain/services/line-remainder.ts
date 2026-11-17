@@ -1,6 +1,6 @@
 /**
- * **Le reste à sortir d'une ligne, sous son plafond** (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.2, § 3.6) :
+ * **Le reste à sortir d'une ligne, sous son plafond** (
+ * `documentation/fournil/les-niveaux-de-suivi.md`) :
  * `min(compte, plafond) − sorti`, jamais négatif.
  *
  * Le plafond est le sorti déclaré au dernier rouge de la ligne ; il survit au

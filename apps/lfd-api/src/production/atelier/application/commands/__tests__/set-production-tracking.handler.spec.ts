@@ -13,8 +13,7 @@ import { SetProductionTrackingCommand } from "../set-production-tracking.command
 import { SetProductionTrackingHandler } from "../set-production-tracking.handler.js";
 
 /**
- * Réglages › Niveau de suivi (plan `fournil/plan-niveaux-de-suivi.md`,
- * § 3.1), ports doublés. L'instant n'est comparé qu'à ce que le geste écrit.
+ * Réglages › Niveau de suivi (`fournil/les-niveaux-de-suivi.md`), ports doublés. L'instant n'est comparé qu'à ce que le geste écrit.
  */
 const NOW = new Date("2026-11-17T09:00:00.000Z");
 let keys = 0;

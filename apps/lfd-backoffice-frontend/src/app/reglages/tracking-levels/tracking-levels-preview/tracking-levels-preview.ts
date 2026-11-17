@@ -84,7 +84,7 @@ const STATUS_BADGE: Readonly<
 
 /**
  * **Aperçu des trois niveaux de suivi du fournil**, sur une fausse journée
- * (`documentation/fournil/reflexion-fiche-simple.md`, décisions 1 à 3).
+ * (`documentation/fournil/les-niveaux-de-suivi.md`).
  *
  * Démonstration seulement : aucun appel au serveur, aucun enregistrement,
  * tout l'état vit dans les signaux du composant et disparaît en quittant la

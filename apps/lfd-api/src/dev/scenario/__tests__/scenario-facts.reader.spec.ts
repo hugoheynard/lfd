@@ -1,7 +1,7 @@
 import { bakedBySku } from "../scenario-facts.reader.js";
 
 describe("bakedBySku — ce qui est sorti, par SKU", () => {
-  it("déduit la part corrigée des fournées (plan des niveaux de suivi, § 3.3)", () => {
+  it("déduit la part corrigée des fournées (`fournil/les-niveaux-de-suivi.md`)", () => {
     const baked = bakedBySku([
       { sku: "VIE-001-1", _sum: { quantity: 24, correctedQuantity: 9 } },
       { sku: "PAI-001-1", _sum: { quantity: 12, correctedQuantity: 0 } },

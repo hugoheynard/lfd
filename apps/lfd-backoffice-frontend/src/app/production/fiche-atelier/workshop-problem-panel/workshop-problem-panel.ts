@@ -27,8 +27,7 @@ export interface ProblemPanelData {
 }
 
 /**
- * **Le panneau rouge** (plan `documentation/fournil/plan-niveaux-de-suivi.md`,
- * § 3.4, § 3.10) — « Combien est réellement sorti ? », une raison si on veut.
+ * **Le panneau rouge** (`documentation/fournil/les-niveaux-de-suivi.md`) — « Combien est réellement sorti ? », une raison si on veut.
  * Partagé par les lignes « toujours vert » et « simple ».
  *
  * Le champ part VIDE : l'écran n'invente pas de quantité, c'est l'équipe qui

@@ -12,7 +12,7 @@ import { RecordBatchCommand } from "../record-batch.command.js";
 import { ReportProblemCommand } from "../report-problem.command.js";
 
 /**
- * **Le rouge** (plan `fournil/plan-niveaux-de-suivi.md`, § 3.4), ports doublés.
+ * **Le rouge** (`fournil/les-niveaux-de-suivi.md`), ports doublés.
  */
 const OUTPUT_CORRECTED = "production.output_corrected";
 

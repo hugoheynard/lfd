@@ -13,7 +13,7 @@ import { CancelBatchCommand } from "../../commands/cancel-batch.command.js";
 import { ListOpenProductionProblemsHandler } from "../list-open-production-problems.handler.js";
 import { ListOpenProductionProblemsQuery } from "../list-open-production-problems.query.js";
 
-/** La Supervision des problèmes (plan `fournil/plan-niveaux-de-suivi.md`, § 3.8). */
+/** La Supervision des problèmes (`fournil/les-niveaux-de-suivi.md`). */
 describe("ListOpenProductionProblemsHandler", () => {
   it("sert le problème ouvert : nom, attendu, plafond, sorti, raison, depuis quand", async () => {
     const scene = alwaysGreenScene();

@@ -106,8 +106,8 @@ export const PRODUCTION_SETTINGS_FACTS = {
     }),
   ),
   /**
-   * Le niveau de suivi du fournil et sa marge (plan
-   * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.1) : l'état posé et
+   * Le niveau de suivi du fournil et sa marge (
+   * `documentation/fournil/les-niveaux-de-suivi.md`) : l'état posé et
    * celui qu'il remplace, défaut compris. Il vaut à partir de la prochaine
    * journée arrêtée. Un réglage unique, sans `subjectLabel`.
    */

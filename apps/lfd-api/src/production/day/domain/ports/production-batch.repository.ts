@@ -48,8 +48,8 @@ export abstract class ProductionBatchRepository {
   abstract cancel(day: ServiceDay, id: string, mark: PackedMark): Promise<void>;
 
   /**
-   * Pose la part corrigée **totale** de chaque fournée nommée (plan
-   * `fournil/plan-niveaux-de-suivi.md`, § 3.3) : des pièces déclarées qui
+   * Pose la part corrigée **totale** de chaque fournée nommée (
+   * `fournil/les-niveaux-de-suivi.md`) : des pièces déclarées qui
    * n'ont jamais existé.
    *
    * Une écriture CIBLÉE, de la même figure que `cancel` : le rouge relit la

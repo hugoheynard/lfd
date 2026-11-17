@@ -18,8 +18,8 @@ import { DayTrackingLevelsFreezing } from "../day-tracking-levels-freezing.servi
 import { DayTrackingLevelsReading } from "../day-tracking-levels-reading.service.js";
 
 /**
- * **Le niveau figé au premier passage** (plan
- * `fournil/plan-niveaux-de-suivi.md`, § 3.1), ports doublés. L'arrêt et la
+ * **Le niveau figé au premier passage** (
+ * `fournil/les-niveaux-de-suivi.md`), ports doublés. L'arrêt et la
  * mise en service ne sont comparés qu'entre eux, jamais à l'horloge.
  */
 const DAY = "2026-12-03";

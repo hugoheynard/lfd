@@ -73,7 +73,7 @@ export class WorksheetService {
   }
 
   /**
-   * **« Fait »** (plan `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.6) :
+   * **« Fait »** (`documentation/fournil/les-niveaux-de-suivi.md`) :
    * le serveur déclare une fournée du reste sous le plafond. Par intention.
    */
   async markDone(date: string, sku: string, intentKey: string): Promise<void> {
@@ -82,7 +82,7 @@ export class WorksheetService {
   }
 
   /**
-   * **Le rouge** (§ 3.4) : combien est réellement sorti. Le serveur pose le
+   * **Le rouge** : combien est réellement sorti. Le serveur pose le
    * plafond, corrige ou complète les fournées, et sonne la cloche. Par intention.
    */
   async reportProblem(

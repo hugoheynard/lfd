@@ -143,7 +143,7 @@ export class ProductionWorksheetController {
   }
 
   /**
-   * **« Fait »** (plan `fournil/plan-niveaux-de-suivi.md`, § 3.6) : une
+   * **« Fait »** (`fournil/les-niveaux-de-suivi.md`) : une
    * fournée du reste à sortir, sous le plafond d'un rouge. Une ligne déjà
    * faite ne déclare rien. Par intention : un double appui ne déclare qu'une
    * fois.
@@ -162,7 +162,7 @@ export class ProductionWorksheetController {
   }
 
   /**
-   * **Le rouge** (plan `fournil/plan-niveaux-de-suivi.md`, § 3.4) :
+   * **Le rouge** (`fournil/les-niveaux-de-suivi.md`) :
    * « combien est réellement sorti ? ». Il pose un plafond, corrige ce qui
    * a été déclaré en trop ou déclare ce qui manque, et sonne dans la cloche
    * de la Supervision. Par intention.

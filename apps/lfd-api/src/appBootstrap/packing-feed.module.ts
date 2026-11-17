@@ -120,8 +120,8 @@ import { ProductionModule } from "../production/production.module.js";
     // l'implémente : la même requête, le même verrou partagé, dans la
     // transaction de l'appelant.
     { provide: ArrestedPlanHold, useExisting: PrismaArrestedPlanHold },
-    // Les corrections de déclaration d'une journée (plan
-    // `fournil/plan-niveaux-de-suivi.md`, § 3.5) — la production déclare ET
+    // Les corrections de déclaration d'une journée (
+    // `fournil/les-niveaux-de-suivi.md`) — la production déclare ET
     // implémente, le colisage les relira quand il saura les traiter. Aucun
     // lecteur aujourd'hui.
     { provide: OutputCorrectionsReader, useExisting: PrismaOutputCorrectionsReader },

@@ -18,8 +18,8 @@ export interface WorksheetTrackingLevels {
 }
 
 /**
- * **Le niveau de suivi de chaque ligne de la fiche** (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.1) : celui du poste
+ * **Le niveau de suivi de chaque ligne de la fiche** (
+ * `documentation/fournil/les-niveaux-de-suivi.md`) : celui du poste
  * de son produit dans la journée, sinon celui du fournil. Servi par ligne,
  * il vaut quel que soit le groupe où la ligne est rangée.
  *

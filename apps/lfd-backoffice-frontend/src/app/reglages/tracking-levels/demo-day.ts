@@ -4,7 +4,7 @@ import { minutesOf } from '../../production/fiche-atelier/workshop-deadlines';
 
 /**
  * **La fausse journée de l'aperçu des niveaux de suivi**
- * (`documentation/fournil/reflexion-fiche-simple.md`). Rien ne vient du
+ * (`documentation/fournil/les-niveaux-de-suivi.md`). Rien ne vient du
  * serveur et rien n'y part : c'est une démonstration pour un décisionnaire.
  *
  * Fonctions pures ; « maintenant » est un nombre de minutes depuis minuit,

@@ -7,8 +7,8 @@ import { StaffNotifier } from "../../../../staff/notifications/domain/ports/staf
 import type { ProductionProblemState } from "../../domain/entities/production-problem.js";
 
 /**
- * Qui reçoit : qui voit la Supervision, où le problème reste en rouge (plan
- * `fournil/plan-niveaux-de-suivi.md`, § 3.4). Résolu à l'envoi par la
+ * Qui reçoit : qui voit la Supervision, où le problème reste en rouge (
+ * `fournil/les-niveaux-de-suivi.md`). Résolu à l'envoi par la
  * cloche, jamais figé.
  */
 const AUDIENCE: StaffPermission = "b2b_supervision:read";
@@ -17,8 +17,7 @@ const KIND = "production.problem_reported";
 const RUNG = "production-problem-bell";
 
 /**
- * **La cloche d'un rouge** (plan `documentation/fournil/plan-niveaux-de-suivi.md`,
- * § 3.4, § 3.8).
+ * **La cloche d'un rouge** (`documentation/fournil/les-niveaux-de-suivi.md`).
  *
  * Elle sonne APRÈS la validation (`AfterCommit`, la file d'après validation de
  * l'unité de travail) : `notify` envoie dès l'appel, et un rouge annulé par

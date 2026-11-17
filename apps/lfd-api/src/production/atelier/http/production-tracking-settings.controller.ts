@@ -14,8 +14,8 @@ import { SetProductionTrackingCommand } from "../application/commands/set-produc
 import { GetProductionTrackingQuery } from "../application/queries/get-production-tracking.query.js";
 
 /**
- * **Le niveau de suivi du fournil** (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.1) — un réglage de
+ * **Le niveau de suivi du fournil** (
+ * `documentation/fournil/les-niveaux-de-suivi.md`) — un réglage de
  * l'atelier, servi sous le préfixe et la surface des réglages du fournil
  * (`production_settings`), comme le rangement. Le niveau d'un poste se règle
  * par la route de son propriétaire (`workstations/`).

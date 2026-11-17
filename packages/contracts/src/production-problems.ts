@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 /**
- * **Le rouge d'une ligne de la fiche** (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.4) : « combien est
+ * **Le rouge d'une ligne de la fiche** (
+ * `documentation/fournil/les-niveaux-de-suivi.md`) : « combien est
  * réellement sorti ? », et une raison si on veut.
  *
  * `produced` est un entier ici ; « au moins zéro » et la longueur de la
@@ -18,7 +18,7 @@ export const reportWorkshopProblemSchema = z
 export type ReportWorkshopProblem = z.infer<typeof reportWorkshopProblemSchema>;
 
 /**
- * **Un problème ouvert**, tel que la Supervision le montre (§ 3.8) : la ligne
+ * **Un problème ouvert**, tel que la Supervision le montre : la ligne
  * reste en rouge jusqu'à ce qu'un responsable la marque traitée.
  */
 export interface ProductionProblemView {
@@ -48,7 +48,7 @@ export interface ProductionProblemView {
 }
 
 /**
- * **Une ligne « à confirmer »** (§ 3.7, § 3.8) : en toujours vert, mais sans
+ * **Une ligne « à confirmer »** : en toujours vert, mais sans
  * palier à heure ce jour-là (pas de tranche, ou besoins du commerce
  * illisibles). La fournée automatique ne la complète pas ; quelqu'un doit
  * dire ce qui est sorti.

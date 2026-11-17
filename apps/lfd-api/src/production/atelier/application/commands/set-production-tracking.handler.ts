@@ -18,8 +18,8 @@ import { SetProductionTrackingCommand } from "./set-production-tracking.command.
 const SETTINGS_SUBJECT = "house";
 
 /**
- * Pose le niveau de suivi du fournil et sa marge (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.1). **Une fois par
+ * Pose le niveau de suivi du fournil et sa marge (
+ * `documentation/fournil/les-niveaux-de-suivi.md`). **Une fois par
  * intention** : rejouer ce réglage après celui de quelqu'un d'autre ne le
  * défait pas.
  *

@@ -4,7 +4,7 @@ import { GetProductionTrackingHandler } from "../get-production-tracking.handler
 
 /**
  * Ce que la page « Niveau de suivi » lit : le réglage, et si la mise en
- * service est passée (plan `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.1).
+ * service est passée (`documentation/fournil/les-niveaux-de-suivi.md`).
  * Les instants sont relatifs à l'horloge du test.
  */
 const NOW = new Date();

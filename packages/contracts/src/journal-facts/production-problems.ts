@@ -3,8 +3,8 @@ import { z } from "zod";
 import { count, day, fact, payload, subjectLabel } from "./fact.js";
 
 /**
- * **Les problèmes du fournil** (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.4, § 3.8) : le rouge
+ * **Les problèmes du fournil** (
+ * `documentation/fournil/les-niveaux-de-suivi.md`) : le rouge
  * d'une ligne et sa prise en charge. Ce qui touche au facturé — des pièces
  * déclarées qui n'ont jamais existé — y laisse une trace complète.
  *

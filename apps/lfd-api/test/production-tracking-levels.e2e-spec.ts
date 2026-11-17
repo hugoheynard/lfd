@@ -1,6 +1,6 @@
 /**
- * E2E des **niveaux de suivi du fournil** — plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, lot N1, sur le vrai
+ * E2E des **niveaux de suivi du fournil** —
+ * `documentation/fournil/les-niveaux-de-suivi.md`, sur le vrai
  * Postgres jetable.
  *
  * Ce que seule cette suite prouve :
@@ -222,8 +222,8 @@ describe("la part corrigée d'une fournée", () => {
     expect(await recordBatch(ctx, FIRST, 24)).toBe(204);
     const before = await dayVersionOf(ctx.asSub(STAFF), "production", SERVICE_DAY);
 
-    // Aucun geste ne l'écrit encore (le rouge vient au lot N2) : la colonne
-    // est posée en base pour éprouver ses lecteurs.
+    // Posée en base directement, sans passer par le rouge : la suite
+    // éprouve ici les lecteurs de la colonne, pas le geste.
     await ctx.prisma.productionBatch.update({
       where: { id: FIRST },
       data: { correctedQuantity: 9 },

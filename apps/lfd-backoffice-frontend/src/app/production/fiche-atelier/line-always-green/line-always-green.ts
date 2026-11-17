@@ -15,8 +15,8 @@ interface StepBadge {
 }
 
 /**
- * **Une ligne « toujours vert »** (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 1, § 3.10) : rien à
+ * **Une ligne « toujours vert »** (
+ * `documentation/fournil/les-niveaux-de-suivi.md`) : rien à
  * cocher. Chaque palier est réputé sorti à son heure plus la marge, par le
  * serveur ; la ligne montre l'avancement palier par palier, tel que les
  * fournées le disent, et offre un seul geste : 🟥 « Problème ».

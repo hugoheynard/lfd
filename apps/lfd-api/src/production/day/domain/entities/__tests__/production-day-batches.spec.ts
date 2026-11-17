@@ -115,7 +115,7 @@ describe("« sorti » se lit sur les seules fournées", () => {
   it("une ligne sans fournée n'a rien sorti, quoi qu'en dise l'ancienne coche", () => {
     expect(day([]).producedOf(SKU)).toBe(0);
   });
-  it("la part corrigée d'une fournée ne compte pas (plan des niveaux de suivi, § 3.3)", () => {
+  it("la part corrigée d'une fournée ne compte pas (`fournil/les-niveaux-de-suivi.md`)", () => {
     const corrected = { ...batch("a", 10), corrected: 4 };
 
     expect(day([corrected, batch("c", 14)]).producedOf(SKU)).toBe(20);

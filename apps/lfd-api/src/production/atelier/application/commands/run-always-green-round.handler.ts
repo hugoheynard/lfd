@@ -20,8 +20,8 @@ import {
 } from "./run-always-green-round.command.js";
 
 /**
- * **Le tour de la fournée automatique** (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.7).
+ * **Le tour de la fournée automatique** (
+ * `documentation/fournil/les-niveaux-de-suivi.md`).
  *
  * Pour aujourd'hui et demain à l'heure de Paris — la fiche en cours est
  * demain dès que son plan est arrêté —, chaque journée **arrêtée** : son

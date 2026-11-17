@@ -8,7 +8,7 @@ ont été vérifiées le 2026-11-17 dans [`colisage.md`](colisage.md),
 [`../commandes/reliquat/reliquat.md`](../commandes/reliquat/reliquat.md) et
 `apps/lfd-api/src/packing/domain/entities/packing-sheet.ts`.
 
-La fiche d'atelier a sa jumelle : [`../fournil/reflexion-fiche-simple.md`](../fournil/reflexion-fiche-simple.md).
+La fiche d'atelier a ses niveaux de suivi, bâtis : [`../fournil/les-niveaux-de-suivi.md`](../fournil/les-niveaux-de-suivi.md).
 
 Ce document n'est pas un plan. Il pose l'idée, ce qu'elle garde, ce qu'elle
 change, et les questions à trancher avant d'en écrire un. Le plan touchera à
@@ -205,12 +205,12 @@ Le colisage **ne connaît pas le niveau du fournil**. Il reçoit des faits
 (« N pièces remises », « rends-moi N pièces ») et doit savoir les traiter à
 **chacun de ses niveaux**, y compris en toujours vert, où il rend seul ce qui
 n'est dans aucune commande et déclare un manque sur les commandes déjà prêtes.
-Voir [`../fournil/plan-niveaux-de-suivi.md`](../fournil/plan-niveaux-de-suivi.md), § 9.
+Voir [`../fournil/les-niveaux-de-suivi.md`](../fournil/les-niveaux-de-suivi.md).
 
 ## 🔴 La correction de déclaration et la réserve (Hugo, 2026-11-17)
 
-Le fournil publiera « N pièces déclarées n'existent pas »
-([`../fournil/plan-niveaux-de-suivi.md`](../fournil/plan-niveaux-de-suivi.md), § 11).
+Le fournil publie « N pièces déclarées n'existent pas » (`production.output_corrected`,
+[`../fournil/les-niveaux-de-suivi.md`](../fournil/les-niveaux-de-suivi.md), « Reste à faire »).
 Le colisage baisse alors sa réserve de N. **Contrainte** : la réserve ne doit
 **jamais** passer à découvert (au bac ≤ reçu − rendu, et
 `PackingStock.fromSnapshot` refuse une réserve à découvert). Il faut donc

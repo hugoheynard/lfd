@@ -1,6 +1,6 @@
 /**
- * **« Fait »** — la ligne est sortie en entier (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.6) : une fournée du
+ * **« Fait »** — la ligne est sortie en entier (
+ * `documentation/fournil/les-niveaux-de-suivi.md`) : une fournée du
  * reste à sortir, sous le plafond s'il y en a un.
  */
 export class MarkLineDoneCommand {

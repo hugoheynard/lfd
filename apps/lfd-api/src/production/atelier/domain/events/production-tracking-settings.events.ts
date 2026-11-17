@@ -4,8 +4,8 @@ import type { JournalFact, JournaledEvent } from "../../../../platform/journal/j
 import type { ProductionTrackingSettingsState } from "../entities/production-tracking-settings.js";
 
 /**
- * **Le fait du niveau de suivi du fournil** (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.11). La ligne ne
+ * **Le fait du niveau de suivi du fournil** (
+ * `documentation/fournil/les-niveaux-de-suivi.md`). La ligne ne
  * garde que le dernier état ; le journal est la seule mémoire de qui a
  * changé la façon dont le fournil suit ses lignes.
  */

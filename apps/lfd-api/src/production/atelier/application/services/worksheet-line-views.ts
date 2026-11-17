@@ -29,9 +29,9 @@ export interface LineMarks {
   readonly quality: ReadonlyMap<string, QualityLineStatus>;
   /** `null` = le colisage n'a pas répondu : aucune ligne n'affirme rien. */
   readonly waiting: ReadonlyMap<string, OvenWaitingOrders> | null;
-  /** Le niveau de suivi de la ligne (plan des niveaux de suivi, § 3.1), servi par SKU. */
+  /** Le niveau de suivi de la ligne (`fournil/les-niveaux-de-suivi.md`), servi par SKU. */
   readonly trackingLevelOf: (sku: string) => ProductionTrackingLevel;
-  /** Le problème de chaque SKU de la journée, traité ou non (§ 3.2) : le plafond survit au « traité ». */
+  /** Le problème de chaque SKU de la journée, traité ou non : le plafond survit au « traité ». */
   readonly problems: ReadonlyMap<string, ProductionProblemState>;
 }
 

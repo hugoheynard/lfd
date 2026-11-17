@@ -74,8 +74,8 @@ export const productionDisplayPayloadSchema = z
 export type ProductionDisplayPayload = z.infer<typeof productionDisplayPayloadSchema>;
 
 /**
- * **Les niveaux de suivi du fournil** (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 1) : `always_green` —
+ * **Les niveaux de suivi du fournil** (
+ * `documentation/fournil/les-niveaux-de-suivi.md`) : `always_green` —
  * chaque palier est réputé sorti à son heure plus une marge, seul geste le
  * rouge ; `simple` — « Fait » ou « Problème » par produit ; `detailed` — les
  * fournées, plaques et paliers. Sans réglage enregistré : `always_green`.

@@ -10,8 +10,8 @@ import { DayTrackingLevelsReading } from "./day-tracking-levels-reading.service.
 import { WorksheetDeadlinesReading } from "./worksheet-deadlines-reading.service.js";
 
 /**
- * **Les lignes « à confirmer » d'une journée** (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.7, § 3.8) : en
+ * **Les lignes « à confirmer » d'une journée** (
+ * `documentation/fournil/les-niveaux-de-suivi.md`) : en
  * toujours vert, sans palier à heure — la fournée automatique ne les complète
  * pas —, et pas encore sorties jusqu'à leur compte (sous le plafond d'un
  * rouge, traité ou non).

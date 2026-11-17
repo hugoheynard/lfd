@@ -13,7 +13,7 @@ import { DayTrackingLevelsFreezing } from "../services/day-tracking-levels-freez
 import { MarkLineDoneCommand } from "./mark-line-done.command.js";
 
 /**
- * **« Fait »** (plan `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.6).
+ * **« Fait »** (`documentation/fournil/les-niveaux-de-suivi.md`).
  *
  * Une fois par intention, dans une unité de travail, sous le verrou de la
  * journée : le geste fige le niveau de suivi de la journée s'il ne l'est pas,

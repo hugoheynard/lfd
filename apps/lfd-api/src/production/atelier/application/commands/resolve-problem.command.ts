@@ -1,6 +1,6 @@
 /**
- * **« Marquer traité »** — un responsable a pris le rouge en charge (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.8). Le plafond reste.
+ * **« Marquer traité »** — un responsable a pris le rouge en charge (
+ * `documentation/fournil/les-niveaux-de-suivi.md`). Le plafond reste.
  */
 export class ResolveProblemCommand {
   constructor(

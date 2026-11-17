@@ -140,7 +140,7 @@ import { ProductionBatchShortcutsModule } from "./production-batch-shortcuts.mod
     SetProductionDisplayHandler,
     // La remise au colisage d'une fournée déclarée ou annulée.
     PackingHandoffs,
-    // Les niveaux de suivi (plan des niveaux de suivi) : le réglage du
+    // Les niveaux de suivi (`fournil/les-niveaux-de-suivi.md`) : le réglage du
     // fournil — lire, écrire et son numéro sont trois ports (ISP) —, le
     // niveau figé d'une journée — lire et figer sont deux ports —, et la mise
     // en service.
@@ -167,8 +167,7 @@ import { ProductionBatchShortcutsModule } from "./production-batch-shortcuts.mod
     { provide: FrozenTrackingLevelsReader, useClass: PrismaFrozenTrackingLevelsReader },
     { provide: DayTrackingLevelsFreezer, useClass: PrismaDayTrackingLevelsFreezer },
     { provide: TrackingLevelsCommissioning, useClass: ConstantTrackingLevelsCommissioning },
-    // « Fait », le rouge et « Marquer traité » (plan des niveaux de suivi,
-    // N2) : l'écriture commune d'une fournée, la correction de ce qui a été
+    // « Fait », le rouge et « Marquer traité » (`fournil/les-niveaux-de-suivi.md`) : l'écriture commune d'une fournée, la correction de ce qui a été
     // déclaré, la cloche d'après validation, et les problèmes — écrire et
     // lire les ouverts sont deux ports (ISP).
     BatchRecording,

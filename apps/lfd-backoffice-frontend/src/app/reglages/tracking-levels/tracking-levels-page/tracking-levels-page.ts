@@ -53,8 +53,8 @@ function isLevel(value: string): value is ProductionTrackingLevel {
 }
 
 /**
- * **La page « Niveau de suivi »** (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.1, § 3.10) : le
+ * **La page « Niveau de suivi »** (
+ * `documentation/fournil/les-niveaux-de-suivi.md`) : le
  * niveau du fournil et sa marge, puis le niveau propre de chaque poste.
  *
  * Elle rassemble deux propriétaires : le réglage du fournil s'écrit chez

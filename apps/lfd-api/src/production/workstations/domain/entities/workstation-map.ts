@@ -152,8 +152,8 @@ export class WorkstationMap {
   }
 
   /**
-   * Le niveau de suivi propre au poste, ou `null` : il suit le fournil (plan
-   * `fournil/plan-niveaux-de-suivi.md`, § 3.1). Il vaut à partir de la
+   * Le niveau de suivi propre au poste, ou `null` : il suit le fournil (
+   * `fournil/les-niveaux-de-suivi.md`). Il vaut à partir de la
    * prochaine journée arrêtée : une journée garde le niveau figé à son premier
    * passage. Le même niveau, reposé, ne change rien.
    *

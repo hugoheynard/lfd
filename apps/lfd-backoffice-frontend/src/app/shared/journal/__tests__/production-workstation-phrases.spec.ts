@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { renderFact, type FactInput } from '../render-fact';
 
-/** **Le niveau de suivi d'un poste** (plan des niveaux de suivi, § 3.1). */
+/** **Le niveau de suivi d'un poste** (`fournil/les-niveaux-de-suivi.md`). */
 
 function fact(payload: Record<string, unknown>): FactInput {
   return {

@@ -152,7 +152,7 @@ function withTwoRehydrated(): WorkstationMap {
   });
 }
 
-describe("WorkstationMap — le niveau de suivi d'un poste (plan des niveaux de suivi, § 3.1)", () => {
+describe("WorkstationMap — le niveau de suivi d'un poste (`fournil/les-niveaux-de-suivi.md`)", () => {
   it("un poste neuf suit le fournil", () => {
     expect(
       withTwo()

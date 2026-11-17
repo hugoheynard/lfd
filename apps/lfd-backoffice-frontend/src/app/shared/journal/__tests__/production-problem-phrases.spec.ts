@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { renderFact, type FactInput } from '../render-fact';
 
-/** **Les problèmes du fournil** (plan des niveaux de suivi, § 3.4, § 3.8). */
+/** **Les problèmes du fournil** (`fournil/les-niveaux-de-suivi.md`). */
 
 function fact(type: string, payload: Record<string, unknown>): FactInput {
   return {

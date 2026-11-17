@@ -13,8 +13,8 @@ import {
 const OK = 200;
 
 /**
- * Endpoint **machine** de la fournée automatique (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.7). Même porte que
+ * Endpoint **machine** de la fournée automatique (
+ * `documentation/fournil/les-niveaux-de-suivi.md`). Même porte que
  * `admin/production/auto-close` : le `RecomputeGuard` et son jeton, présentés
  * par le Worker sur le cron de rafraîchissement, toutes les cinq minutes
  * (`container/worker.ts`). Pas de droit staff.

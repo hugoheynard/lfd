@@ -23,7 +23,7 @@ import type {
  * (`handed`) : une fournée annulée sort du calcul avec sa part, et un retour
  * du colisage n'en change pas la part gardée.
  *
- * La part corrigée (plan `fournil/plan-niveaux-de-suivi.md`, § 3.3) se prend
+ * La part corrigée (`fournil/les-niveaux-de-suivi.md`) se prend
  * sur la part remise, jamais sur la part gardée : elle ne change pas ce qui
  * est monté sur place, et le colisage n'a plus, d'une fournée, que
  * `remis − rendu − corrigé`.
@@ -109,8 +109,8 @@ export function handedShareOf(
 
 /**
  * **Ce que le colisage tient encore d'une fournée remise** — ce qu'un retour
- * peut lui redemander et ce qu'un rouge peut corriger (plan
- * `fournil/plan-niveaux-de-suivi.md`, § 3.3) :
+ * peut lui redemander et ce qu'un rouge peut corriger (
+ * `fournil/les-niveaux-de-suivi.md`) :
  * `remis − rendu − retour en attente − corrigé`, jamais négatif.
  */
 export function stillAtPackingOf(batch: ProductionBatchSnapshot, handed: number): number {

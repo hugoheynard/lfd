@@ -35,8 +35,7 @@ export interface ProductionProblemState {
 }
 
 /**
- * **Le problème d'une ligne** (plan `documentation/fournil/plan-niveaux-de-suivi.md`,
- * § 3.2) — un par journée et SKU.
+ * **Le problème d'une ligne** (`documentation/fournil/les-niveaux-de-suivi.md`) — un par journée et SKU.
  *
  * Le sorti déclaré est un **plafond** : rien ne dépasse plus ce nombre ce
  * jour-là pour ce produit, même après « traité ». Un second rouge **remplace**

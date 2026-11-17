@@ -16,8 +16,8 @@ import {
 } from "../../domain/services/tracking-levels.js";
 
 /**
- * **Les niveaux de suivi qu'une journée sert** (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.1) : le niveau figé
+ * **Les niveaux de suivi qu'une journée sert** (
+ * `documentation/fournil/les-niveaux-de-suivi.md`) : le niveau figé
  * s'il existe ; en détaillé une journée arrêtée avant la mise en service ;
  * sinon les niveaux que le premier passage figera — le réglage du fournil et
  * celui de chaque poste, résolus maintenant.

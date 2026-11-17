@@ -2,8 +2,8 @@ import type { ServiceDay } from "../../../day/index.js";
 import type { ProductionProblem, ProductionProblemState } from "../entities/production-problem.js";
 
 /**
- * **Le port d'écriture des problèmes** (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.2) : il prend et rend
+ * **Le port d'écriture des problèmes** (
+ * `documentation/fournil/les-niveaux-de-suivi.md`) : il prend et rend
  * l'agrégat. Le rouge et « traité » le relisent sous le verrou de la journée,
  * le mutent par une méthode métier, puis le sauvent.
  */

@@ -769,7 +769,7 @@ export const ORDERS_PRODUCTION_FACTS = {
   ...PRODUCTION_SETTINGS_FACTS,
   /** **Les postes du fournil** (`documentation/fournil/les-postes-du-fournil.md`, W1) — même famille. */
   ...PRODUCTION_WORKSTATION_FACTS,
-  /** **Les problèmes du fournil** (`fournil/plan-niveaux-de-suivi.md`, § 3.4) — même famille. */
+  /** **Les problèmes du fournil** (`fournil/les-niveaux-de-suivi.md`) — même famille. */
   ...PRODUCTION_PROBLEM_FACTS,
 
   /**

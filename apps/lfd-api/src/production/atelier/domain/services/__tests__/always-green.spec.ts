@@ -8,7 +8,7 @@ import {
 } from "../always-green.js";
 
 /**
- * La fournée automatique (plan `fournil/plan-niveaux-de-suivi.md`, § 3.7) :
+ * La fournée automatique (`fournil/les-niveaux-de-suivi.md`) :
  * paliers échus à l'heure plus la marge, bornés par le compte et le plafond,
  * moins le sorti ; l'`id` suit le nombre de fournées. Les dates ne sont
  * comparées qu'à un instant construit sur la même journée.

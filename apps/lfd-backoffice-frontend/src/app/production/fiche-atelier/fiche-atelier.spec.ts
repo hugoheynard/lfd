@@ -941,7 +941,7 @@ describe('la fiche d’atelier', () => {
     });
   });
 
-  describe('les niveaux de suivi (plan des niveaux de suivi, § 3.10)', () => {
+  describe('les niveaux de suivi (`fournil/les-niveaux-de-suivi.md`)', () => {
     /** Le rayon des pains, une ligne par niveau. */
     function mixed(): WorkshopGroup {
       const green = line({ sku: 'CRO', productName: 'Croissant', trackingLevel: 'always_green' });

@@ -38,7 +38,7 @@ export class SupervisionReads {
   readonly stock = signal<ColumnState<DayStockOverviewView>>(LOADING);
   /** Les relances d'un retrait en retard (2026-10-25), relues avec la colonne du retrait. */
   readonly nudges = signal<ColumnState<CustomerNudgesView>>(LOADING);
-  /** Les problèmes ouverts du fournil (plan des niveaux de suivi, § 3.8), relus avec la colonne. */
+  /** Les problèmes ouverts du fournil (`fournil/les-niveaux-de-suivi.md`), relus avec la colonne. */
   readonly problems = signal<ColumnState<ProductionProblemsView>>(LOADING);
 
   constructor(

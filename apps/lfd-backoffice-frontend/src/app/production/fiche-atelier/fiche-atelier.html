@@ -259,8 +259,7 @@
               @if (intertitles().get(line.sku); as intertitle) {
                 <h2 class="fa-subcategory" data-subcategory>{{ intertitle }}</h2>
               }
-              <!-- Le niveau de suivi de la LIGNE, servi (plan des niveaux de suivi,
-                   § 3.10) : un groupe-rayon mêle des postes de niveaux différents. -->
+              <!-- Le niveau de suivi de la LIGNE, servi (`fournil/les-niveaux-de-suivi.md`) : un groupe-rayon mêle des postes de niveaux différents. -->
               @switch (line.trackingLevel) {
                 @case ('always_green') {
                   <app-line-always-green

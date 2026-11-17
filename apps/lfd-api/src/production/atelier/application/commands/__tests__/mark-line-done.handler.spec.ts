@@ -9,7 +9,7 @@ import { MarkLineDoneCommand } from "../mark-line-done.command.js";
 import { RecordBatchCommand } from "../record-batch.command.js";
 import { ReportProblemCommand } from "../report-problem.command.js";
 
-/** **« Fait »** (plan `fournil/plan-niveaux-de-suivi.md`, § 3.6), ports doublés. */
+/** **« Fait »** (`fournil/les-niveaux-de-suivi.md`), ports doublés. */
 function done(key = nextIntent()) {
   return new MarkLineDoneCommand(SCENE_DAY, SCENE_SKU, "staff-1", key);
 }

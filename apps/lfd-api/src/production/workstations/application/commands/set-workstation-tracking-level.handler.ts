@@ -8,8 +8,8 @@ import { changedStation } from "../workstation-support.js";
 import { SetWorkstationTrackingLevelCommand } from "./set-workstation-tracking-level.command.js";
 
 /**
- * Règle le niveau de suivi propre d'un poste (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.1). **Une fois par
+ * Règle le niveau de suivi propre d'un poste (
+ * `documentation/fournil/les-niveaux-de-suivi.md`). **Une fois par
  * intention** : rejouer ce réglage après celui de quelqu'un d'autre ne le
  * défait pas. Le même niveau, reposé, n'écrit ni ne journalise rien.
  *

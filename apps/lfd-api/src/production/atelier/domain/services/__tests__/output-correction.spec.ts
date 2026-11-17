@@ -2,8 +2,8 @@ import type { ProductionBatchSnapshot } from "../../../../day/index.js";
 import { correctableOf, outputCorrectionOf } from "../output-correction.js";
 
 /**
- * La répartition d'une correction de déclaration (plan
- * `fournil/plan-niveaux-de-suivi.md`, § 3.3, § 3.4). Les instants ne sont
+ * La répartition d'une correction de déclaration (
+ * `fournil/les-niveaux-de-suivi.md`). Les instants ne sont
  * comparés qu'entre eux : ils ne disent que l'ordre de sortie.
  */
 function batch(

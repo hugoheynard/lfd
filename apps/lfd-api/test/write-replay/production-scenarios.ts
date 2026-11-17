@@ -39,7 +39,7 @@ async function closedDayWithBatch(ctx: E2eContext): Promise<void> {
   expect(await recordBatch(ctx, "01K6A0000000000000000000A1", 2)).toBe(204);
 }
 
-/** Les gestes de la fiche par intention (plan `fournil/plan-niveaux-de-suivi.md`, N2). */
+/** Les gestes de la fiche par intention (`fournil/les-niveaux-de-suivi.md`). */
 const WORKSHEET_SCENARIOS: ScenarioSet = {
   [routeKey(WORKSHEET, "markDone")]: async ({ ctx }) => {
     await closedDayWithBatch(ctx);
@@ -67,7 +67,7 @@ const WORKSHEET_SCENARIOS: ScenarioSet = {
 
 const TRACKING_SETTINGS = "production/atelier/http/production-tracking-settings.controller.ts";
 
-/** Les réglages de suivi par intention (plan `fournil/plan-niveaux-de-suivi.md`, N1). */
+/** Les réglages de suivi par intention (`fournil/les-niveaux-de-suivi.md`). */
 const TRACKING_SCENARIOS: ScenarioSet = {
   [routeKey(TRACKING_SETTINGS, "setTracking")]: () =>
     Promise.resolve({

@@ -217,7 +217,7 @@ export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
   },
   {
     // Le niveau de suivi du fournil et de ses postes
-    // (`documentation/fournil/plan-niveaux-de-suivi.md`, § 3.10).
+    // (`documentation/fournil/les-niveaux-de-suivi.md`).
     key: 'reglages-tracking-levels',
     label: 'Niveau de suivi',
     link: '/reglages/niveau-de-suivi',
@@ -226,8 +226,8 @@ export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
   },
   {
     // Aperçu de démonstration des trois niveaux de suivi, sur une fausse
-    // journée (`documentation/fournil/reflexion-fiche-simple.md`, Hugo,
-    // 2026-11-17) : rien n'est enregistré.
+    // journée (`documentation/fournil/les-niveaux-de-suivi.md` ; décidé par
+    // Hugo le 2026-11-17) : rien n'est enregistré.
     key: 'reglages-tracking-levels-preview',
     label: 'Niveaux de suivi (aperçu)',
     link: '/reglages/niveau-de-suivi/apercu',

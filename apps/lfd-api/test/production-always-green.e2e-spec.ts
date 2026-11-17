@@ -1,6 +1,6 @@
 /**
- * E2E de la **fournée automatique** (toujours vert) — plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.7, lot N3, sur le
+ * E2E de la **fournée automatique** (toujours vert) —
+ * `documentation/fournil/les-niveaux-de-suivi.md`, sur le
  * vrai Postgres jetable : la route que le cron du Worker appelle toutes les
  * cinq minutes.
  *

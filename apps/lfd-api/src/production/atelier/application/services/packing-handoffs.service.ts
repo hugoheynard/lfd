@@ -129,8 +129,8 @@ export class PackingHandoffs {
    * refusé — tout au bac — se redemande après la décoche au colisage (§10.2).
    *
    * La demande est bornée à ce que le colisage tient encore de la fournée :
-   * `remis − corrigé − rendu − retour en attente` (plan
-   * `fournil/plan-niveaux-de-suivi.md`, § 3.3). Des pièces corrigées n'ont
+   * `remis − corrigé − rendu − retour en attente` (
+   * `fournil/les-niveaux-de-suivi.md`). Des pièces corrigées n'ont
    * jamais existé : les redemander ferait rendre ce que le colisage n'a pas.
    *
    * @returns les fournées dont le colisage n'a RIEN — jamais remises, ou

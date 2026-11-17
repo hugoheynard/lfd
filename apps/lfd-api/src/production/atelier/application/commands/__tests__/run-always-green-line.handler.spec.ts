@@ -6,7 +6,7 @@ import { RecordBatchCommand } from "../record-batch.command.js";
 import { ReportProblemCommand } from "../report-problem.command.js";
 import { RunAlwaysGreenLineCommand } from "../run-always-green-line.command.js";
 
-/** La fournée automatique d'une ligne (plan `fournil/plan-niveaux-de-suivi.md`, § 3.7), ports doublés. */
+/** La fournée automatique d'une ligne (`fournil/les-niveaux-de-suivi.md`), ports doublés. */
 function at(time: string): Date {
   const instant = localToInstant(SCENE_DAY, time);
   if (instant === null) {

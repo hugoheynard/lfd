@@ -20,8 +20,8 @@ import {
 } from "./run-always-green-line.command.js";
 
 /**
- * **La fournée automatique d'une ligne** (plan
- * `documentation/fournil/plan-niveaux-de-suivi.md`, § 3.7).
+ * **La fournée automatique d'une ligne** (
+ * `documentation/fournil/les-niveaux-de-suivi.md`).
  *
  * Dans une unité de travail, le verrou de la journée **d'abord**, puis tout
  * se relit sous lui : les paliers (heure + marge du réglage), le compte, le

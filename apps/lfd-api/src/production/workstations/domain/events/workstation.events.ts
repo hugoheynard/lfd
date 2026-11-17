@@ -118,8 +118,7 @@ export class WorkstationProductsPlacedEvent implements JournaledEvent {
 }
 
 /**
- * Le niveau de suivi propre au poste (plan `fournil/plan-niveaux-de-suivi.md`,
- * § 3.1) ; `null` : il suit le fournil. `previous` dit celui qu'il avait.
+ * Le niveau de suivi propre au poste (`fournil/les-niveaux-de-suivi.md`) ; `null` : il suit le fournil. `previous` dit celui qu'il avait.
  */
 export class WorkstationTrackingLevelSetEvent implements JournaledEvent {
   constructor(

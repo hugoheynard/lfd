@@ -125,7 +125,7 @@ export interface BatchSums {
 
 /**
  * Ce qui est sorti, par SKU : Σ des quantités moins Σ des parts corrigées
- * (plan `fournil/plan-niveaux-de-suivi.md`, § 3.3) — des pièces déclarées
+ * (`fournil/les-niveaux-de-suivi.md`) — des pièces déclarées
  * qui n'ont jamais existé ne sortent pas.
  */
 export function bakedBySku(sums: readonly BatchSums[]): ReadonlyMap<string, number> {

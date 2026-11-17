@@ -15,8 +15,7 @@ export interface BatchAuthor {
 /**
  * **Écrire une fournée et la remettre au colisage** — le geste commun à toute
  * déclaration : la fournée de l'écran (`RecordBatchHandler`), « Fait » et le
- * surplus d'un rouge (plan `documentation/fournil/plan-niveaux-de-suivi.md`,
- * § 3.4, § 3.6). Une fournée ordinaire, quel que soit le geste qui la pose.
+ * surplus d'un rouge (`documentation/fournil/les-niveaux-de-suivi.md`). Une fournée ordinaire, quel que soit le geste qui la pose.
  *
  * 🔴 L'appelant a pris le verrou de la journée et l'a rechargée SOUS lui,
  * dans son unité de travail : ce service n'en ouvre pas. L'agrégat refuse

@@ -58,7 +58,7 @@ export class WorkshopGestures {
   private readonly day = inject(WorkshopDayReader);
   private readonly problems = inject(WorkshopProblemOpener);
 
-  /** « Fait » par intention : un double appui ne déclare qu'une fois (plan des niveaux de suivi, § 3.6). */
+  /** « Fait » par intention : un double appui ne déclare qu'une fois (`fournil/les-niveaux-de-suivi.md`). */
   private readonly intents = new GestureIntents();
 
   /**

@@ -23,7 +23,7 @@ import type { WorkshopGroupKind } from "./production-worksheet.js";
  * - `POST admin/production/workstations/:id/archive` ;
  * - `PUT admin/production/workstations/placements` ← {@link PlaceProductsPayload} ;
  * - `PUT admin/production/workstations/:id/tracking-level` ←
- *   {@link SetWorkstationTrackingLevelPayload} (plan des niveaux de suivi, § 3.1) ;
+ *   {@link SetWorkstationTrackingLevelPayload} (`fournil/les-niveaux-de-suivi.md`) ;
  * - `POST admin/production/workstations/grouping` ← {@link ProductionGroupingPayload}
  *   → {@link ProductionGroupingView} — une LECTURE en `POST`, sous
  *   `production_plan:read` ou `production_resupply:read` (§ 3.7) ;
@@ -92,8 +92,7 @@ export interface WorkstationView {
   readonly name: string;
   readonly position: number;
   /**
-   * Son niveau de suivi propre (plan `documentation/fournil/plan-niveaux-de-suivi.md`,
-   * § 3.1) ; `null` : le poste suit le fournil.
+   * Son niveau de suivi propre (`documentation/fournil/les-niveaux-de-suivi.md`) ; `null` : le poste suit le fournil.
    */
   readonly trackingLevel: ProductionTrackingLevel | null;
 }

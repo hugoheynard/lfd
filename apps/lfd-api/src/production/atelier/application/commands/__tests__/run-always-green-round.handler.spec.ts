@@ -20,7 +20,7 @@ import { WorksheetTrackingLevelsReading } from "../../services/worksheet-trackin
 import { RunAlwaysGreenLineCommand } from "../run-always-green-line.command.js";
 import { RunAlwaysGreenRoundHandler } from "../run-always-green-round.handler.js";
 
-/** Le tour de la fournée automatique (plan `fournil/plan-niveaux-de-suivi.md`, § 3.7), ports doublés. */
+/** Le tour de la fournée automatique (`fournil/les-niveaux-de-suivi.md`), ports doublés. */
 
 /** Les journées arrêtées, par jour. */
 class ArrestedDays extends ProductionDayStatusReader {
