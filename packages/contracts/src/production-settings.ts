@@ -49,7 +49,7 @@ export interface ProductionSettingsView {
 export interface ProductionDisplayView {
   readonly showSubcategories: boolean;
   /**
-   * Le rangement des lignes (plan `fournil/plan-postes-du-fournil.md`) :
+   * Le rangement des lignes (`documentation/fournil/les-postes-du-fournil.md`) :
    * `shelf` (mode boutique, par rayon) ou `workstation` (mode prod, par
    * poste). Sans réglage enregistré : `shelf`. Facultatif dans le TYPE pour
    * les fixtures ; le serveur l'émet toujours.

@@ -19,7 +19,7 @@ const PAST_DAYS = 30;
 const COMING_DAYS = 13;
 
 /**
- * **La page Postes** (plan `fournil/plan-postes-du-fournil.md`, § 3.8) :
+ * **La page Postes** (`documentation/fournil/les-postes-du-fournil.md`, § 3.8) :
  * l'union de quatre sources, ramenée au produit par la réponse du commerce.
  *
  * 1. tous les articles du miroir, déclinaisons et masqués compris ;

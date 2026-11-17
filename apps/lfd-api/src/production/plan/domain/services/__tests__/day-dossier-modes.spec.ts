@@ -8,7 +8,7 @@ import { dayDossierFrom, dayDossierOf } from "../day-dossier.js";
 
 /**
  * **Le récapitulatif du dossier dans les deux modes** (plan
- * `fournil/plan-postes-du-fournil.md`, § 3.4) : un poste prend la place d'un
+ * `documentation/fournil/les-postes-du-fournil.md`, § 3.4) : un poste prend la place d'un
  * rayon, la page ne change pas. Aucune date comparée à l'horloge.
  */
 const SALTY = { id: "fam-salty", name: "Traiteur salé", position: 1 };

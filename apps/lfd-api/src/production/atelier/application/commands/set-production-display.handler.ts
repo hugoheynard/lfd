@@ -18,7 +18,7 @@ import { SetProductionDisplayCommand } from "./set-production-display.command.js
  * annule le réglage. Reposer l'état en vigueur n'écrit rien et ne journalise
  * rien : l'auteur figé reste celui qui l'a vraiment posé.
  *
- * La bascule en mode prod (plan `fournil/plan-postes-du-fournil.md`, § 3.9)
+ * La bascule en mode prod (`documentation/fournil/les-postes-du-fournil.md`, § 3.9)
  * est refusée tant qu'aucun produit n'a de poste. Rester en mode prod après
  * avoir retiré tous les postes n'est pas refusé : ce n'est pas un invariant,
  * le fournil se range alors comme en mode boutique, « à ranger ».

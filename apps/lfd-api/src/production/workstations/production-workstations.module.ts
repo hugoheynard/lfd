@@ -28,7 +28,7 @@ import {
 } from "./infrastructure/prisma-workstation-readers.js";
 
 /**
- * **Les postes du fournil** (plan `fournil/plan-postes-du-fournil.md`) : la
+ * **Les postes du fournil** (`documentation/fournil/les-postes-du-fournil.md`) : la
  * carte des postes, ses cinq gestes par intention et la page Postes.
  *
  * Il sert aussi aux autres écrans du fournil le rangement de leurs SKU et

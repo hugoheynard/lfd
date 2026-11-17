@@ -1,7 +1,7 @@
 /**
  * E2E du **rangement servi au front**, de **l'alerte du Prod manager** et des
  * **numéros que la fiche gardée met dans son étiquette** (plan
- * `fournil/plan-postes-du-fournil.md`, § 3.7, § 3.10 ; lots W3 et W3b), sur le
+ * `fournil/les-postes-du-fournil.md`, § 3.7, § 3.10 ; lots W3 et W3b), sur le
  * vrai Postgres jetable.
  *
  * Le mode prod est posé par le port d'écriture du réglage : la route refuse

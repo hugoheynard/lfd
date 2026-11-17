@@ -20,7 +20,7 @@ export const UNPLACED_FILTER = 'a-ranger';
 type LoadState = 'loading' | 'error' | 'ready';
 
 /**
- * **Prod manager › Postes** (plan `fournil/plan-postes-du-fournil.md`,
+ * **Prod manager › Postes** (`documentation/fournil/les-postes-du-fournil.md`,
  * § 3.8) : les postes du fournil, le poste de chaque produit, le réglage
  * mode boutique / mode prod et ses deux simulations.
  *

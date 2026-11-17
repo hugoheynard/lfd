@@ -19,7 +19,7 @@ export interface WorkstationsOfProducts {
 /**
  * **« À quel poste ces produits vont-ils ? »** — la lecture que les postes
  * publient pour la fiche d'atelier et le dossier du jour (plan
- * `fournil/plan-postes-du-fournil.md`, § 3.1). Une requête sur les produits
+ * `documentation/fournil/les-postes-du-fournil.md`, § 3.1). Une requête sur les produits
  * demandés, jamais la carte entière chargée puis filtrée.
  *
  * Une panne réelle **lève** : c'est à l'appelant de ranger alors comme en

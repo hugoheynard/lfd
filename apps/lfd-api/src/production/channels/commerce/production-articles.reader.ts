@@ -19,7 +19,7 @@ export interface ProductionArticle {
 /**
  * **Le produit et le rayon de ce que le fournil fabrique**, demandés au
  * commerce **sans les filtres de vente** (plan
- * `fournil/plan-postes-du-fournil.md`, § 3.4).
+ * `documentation/fournil/les-postes-du-fournil.md`, § 3.4).
  *
  * Un poste s'attache au PRODUIT, et le fournil ne connaît que le SKU de ses
  * lignes : il lui faut la référence produit de chaque déclinaison, masquée

@@ -13,7 +13,7 @@ export interface ProductionDisplaySettingsState {
  *
  * Prévisionnel, fiche d'atelier et dossier du jour rangent par catégorie
  * RACINE (mode boutique) ou par poste (mode prod, plan
- * `fournil/plan-postes-du-fournil.md`) ; `showSubcategories` dit s'ils posent,
+ * `documentation/fournil/les-postes-du-fournil.md`) ; `showSubcategories` dit s'ils posent,
  * dans chaque groupe, un intertitre par sous-catégorie ou par rayon. Aucune
  * règle de cette classe ne refuse une écriture : la garde de bascule en mode
  * prod lit les postes, et vit dans le cas d'usage qui pose le réglage.

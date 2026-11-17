@@ -5,7 +5,7 @@ import { groupingOf, type GroupingSource } from "../../../shared/print/index.js"
 
 /**
  * **La simulation du catalogue en production** (plan
- * `fournil/plan-postes-du-fournil.md`, § 3.11) : une pièce de chaque article
+ * `documentation/fournil/les-postes-du-fournil.md`, § 3.11) : une pièce de chaque article
  * vendable, dans UNE commande fictive, rangée dans le mode demandé par le
  * rangement même du dossier (`groupingOf`).
  *

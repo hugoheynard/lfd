@@ -7,7 +7,7 @@ import { worksheetGroupsFrom, worksheetGroupsOf } from "../production-worksheet-
 import type { WorksheetLine } from "../production-worksheet.js";
 
 /**
- * **Les fiches dans les deux modes** (plan `fournil/plan-postes-du-fournil.md`,
+ * **Les fiches dans les deux modes** (`documentation/fournil/les-postes-du-fournil.md`,
  * § 3.4) : un poste prend la place d'un rayon. Fonction pure, sans date
  * comparée à l'horloge.
  */

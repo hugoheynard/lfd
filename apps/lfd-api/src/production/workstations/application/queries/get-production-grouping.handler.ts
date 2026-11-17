@@ -10,7 +10,7 @@ import { GroupingSourceReading } from "../services/grouping-source-reading.servi
 import { GetProductionGroupingQuery } from "./get-production-grouping.query.js";
 
 /**
- * **Le rangement servi au front** (plan `fournil/plan-postes-du-fournil.md`,
+ * **Le rangement servi au front** (`documentation/fournil/les-postes-du-fournil.md`,
  * § 3.7) : pour chaque SKU, son groupe et son intertitre selon le mode du
  * RÉGLAGE — par rayon en mode boutique, par poste en mode prod. Un SKU que le
  * commerce ne connaît pas va en « Hors catalogue » (« — à ranger » en mode

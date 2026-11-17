@@ -40,7 +40,7 @@ import { GroupingSourceReading } from "../../../../workstations/index.js";
 import { WorksheetDeadlinesReading } from "../worksheet-deadlines-reading.service.js";
 
 /**
- * **La fiche selon le mode** (plan `fournil/plan-postes-du-fournil.md`,
+ * **La fiche selon le mode** (`documentation/fournil/les-postes-du-fournil.md`,
  * § 3.4) : le mode boutique ne lit pas les postes, le mode prod range par
  * poste, et une panne des postes range par rayon en le journalisant. Le jour
  * est dérivé de maintenant. Le croissant est rangé, pour l'épreuve, au

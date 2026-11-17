@@ -16,7 +16,7 @@ async function workstation(ctx: E2eContext, name: string): Promise<string> {
   return jsonBody<{ id: string }>(response).id;
 }
 
-/** Les postes du fournil (plan `fournil/plan-postes-du-fournil.md`, W1). */
+/** Les postes du fournil (plan `fournil/les-postes-du-fournil.md`, W1). */
 export const PRODUCTION_SCENARIOS: ScenarioSet = {
   [routeKey(CONTROLLER, "declare")]: () =>
     Promise.resolve({ sub: STAFF, path: WORKSTATIONS, body: { name: "Tourier" } }),

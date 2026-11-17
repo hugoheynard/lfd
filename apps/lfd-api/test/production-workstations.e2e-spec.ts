@@ -1,5 +1,5 @@
 /**
- * E2E des **postes du fournil** (plan `fournil/plan-postes-du-fournil.md`,
+ * E2E des **postes du fournil** (plan `fournil/les-postes-du-fournil.md`,
  * lot W1), sur le vrai Postgres jetable.
  *
  * Ce que seule cette suite prouve : les deux tables et l'index unique des

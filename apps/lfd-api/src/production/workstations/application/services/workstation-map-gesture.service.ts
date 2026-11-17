@@ -20,7 +20,7 @@ export type WorkstationMapMutation<R> = (map: WorkstationMap) => WorkstationMapO
 
 /**
  * **Un geste sur la carte des postes** (plan
- * `fournil/plan-postes-du-fournil.md`, § 3.3) — le cycle commun aux cinq
+ * `documentation/fournil/les-postes-du-fournil.md`, § 3.3) — le cycle commun aux cinq
  * commandes : charger la carte sous son verrou, la muter par une méthode
  * métier (qui refuse la transition illégale), sauver sa différence, publier
  * les faits et sceller l'intention (`seal`, reçu de `OncePerIntent.runSealed`

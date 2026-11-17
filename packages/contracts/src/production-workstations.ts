@@ -7,7 +7,7 @@ import type { WorkshopGroupKind } from "./production-worksheet.js";
 
 /**
  * **Les postes du fournil** — Prod manager › Postes (plan
- * `documentation/fournil/plan-postes-du-fournil.md`, § 3.3 et § 3.8, lot W1),
+ * `documentation/fournil/les-postes-du-fournil.md`, § 3.3 et § 3.8, lot W1),
  * sous `production_workstations` :
  *
  * - `GET admin/production/workstations` → {@link WorkstationsPageView} ;

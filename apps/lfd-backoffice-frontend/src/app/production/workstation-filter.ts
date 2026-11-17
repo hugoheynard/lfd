@@ -2,7 +2,7 @@ import type { ProductionGroupingEntryView, ProductionGroupingView } from '@lfd/c
 
 /**
  * **Le filtre par poste des réassorts du fournil** (plan
- * `fournil/plan-postes-du-fournil.md`, § 3.7) : en mode prod, les puces du
+ * `documentation/fournil/les-postes-du-fournil.md`, § 3.7) : en mode prod, les puces du
  * filtre sont les groupes servis (un poste, ou un rayon « à ranger ») ; en mode
  * boutique, rien ne change — le filtre reste celui de la famille
  * (`categoryId`). Le réassort du COMPTOIR n'est jamais concerné.

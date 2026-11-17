@@ -13,7 +13,7 @@ const UNPLACED_TARGET = "unplaced";
 /**
  * Place des produits sur un poste, ou les remet « à ranger » — « tout ce
  * rayon → ce poste » passe ici, sans laisser de règle (plan
- * `fournil/plan-postes-du-fournil.md`, § 3.8). **Une fois par intention**.
+ * `documentation/fournil/les-postes-du-fournil.md`, § 3.8). **Une fois par intention**.
  * Le fait ne nomme que les produits qui ont réellement changé ; aucun : rien
  * n'est écrit.
  *

@@ -33,7 +33,7 @@ interface ShelfSeed {
 }
 
 /**
- * **Les postes du fournil** (plan `fournil/plan-postes-du-fournil.md`, § 3.8) :
+ * **Les postes du fournil** (`documentation/fournil/les-postes-du-fournil.md`, § 3.8) :
  * les ajouter (nommés à l'écran), les renommer, les ordonner, les archiver, et
  * « Partir des rayons ».
  *

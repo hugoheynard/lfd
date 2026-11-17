@@ -91,7 +91,7 @@ export const PRODUCTION_SETTINGS_FACTS = {
    */
   /**
    * Le rangement du fournil. `grouping` (rayon ou poste, plan
-   * `fournil/plan-postes-du-fournil.md`) est absent des faits écrits avant
+   * `documentation/fournil/les-postes-du-fournil.md`) est absent des faits écrits avant
    * qu'il existe : ils valaient tous `shelf`.
    */
   "production_display_settings.updated": fact(

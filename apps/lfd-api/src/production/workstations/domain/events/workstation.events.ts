@@ -4,7 +4,7 @@ import type { JournalFact, JournaledEvent } from "../../../../platform/journal/j
 import type { Workstation } from "../entities/workstation-map.js";
 
 /**
- * **Les faits des postes du fournil** (plan `fournil/plan-postes-du-fournil.md`,
+ * **Les faits des postes du fournil** (`documentation/fournil/les-postes-du-fournil.md`,
  * § 3.3) — un par geste, écrit dans la transaction qui l'enregistre. Les
  * lignes ne gardent que le dernier état et son auteur ; le journal est la
  * seule mémoire de qui a rangé quoi, et quand.

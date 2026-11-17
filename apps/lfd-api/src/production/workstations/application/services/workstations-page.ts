@@ -14,7 +14,7 @@ export interface OrderedArticle {
 }
 
 /**
- * **La page Postes** (plan `fournil/plan-postes-du-fournil.md`, § 3.8) — une
+ * **La page Postes** (`documentation/fournil/les-postes-du-fournil.md`, § 3.8) — une
  * fonction pure : les postes, puis chaque produit du miroir avec ses
  * déclinaisons, son rayon et son poste, dans l'ordre du catalogue.
  *

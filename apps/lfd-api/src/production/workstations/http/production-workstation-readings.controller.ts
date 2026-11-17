@@ -20,7 +20,7 @@ import { GetUnplacedProductsOfDayQuery } from "../application/queries/get-unplac
 
 /**
  * **Ce que les postes servent aux autres écrans du fournil** (plan
- * `fournil/plan-postes-du-fournil.md`, § 3.7 et § 3.10), sous l'URL des
+ * `documentation/fournil/les-postes-du-fournil.md`, § 3.7 et § 3.10), sous l'URL des
  * postes mais sous les droits de ceux qui les lisent : le prévisionnel et le
  * récapitulatif (`production_plan:read`), les réassorts du fournil
  * (`production_resupply:read`). La page Postes, elle, reste sous

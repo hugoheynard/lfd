@@ -7,7 +7,7 @@ import {
 
 /**
  * **Le rangement servi**, appliqué à des lignes d'écran (plan
- * `fournil/plan-postes-du-fournil.md`, § 3.7).
+ * `documentation/fournil/les-postes-du-fournil.md`, § 3.7).
  *
  * Le prévisionnel et le récapitulatif ne rangent plus eux-mêmes : le serveur
  * dit, pour chaque SKU affiché, son groupe (un rayon en mode boutique, un poste

@@ -1,6 +1,6 @@
 /**
  * E2E des **lectures des postes du fournil** (plan
- * `fournil/plan-postes-du-fournil.md`, lot W1), sur le vrai Postgres jetable :
+ * `fournil/les-postes-du-fournil.md`, lot W1), sur le vrai Postgres jetable :
  * ce que les postes publient (`WorkstationOfProducts`, `PlacedProducts`), ce
  * que la journée publie (`KnownArticles`), et le port que le commerce
  * implémente sans les filtres de vente (`ProductionArticlesReader`).

@@ -10,7 +10,7 @@ import { GetProductionSimulationPdfQuery } from "../application/queries/get-prod
 
 /**
  * **Simuler le catalogue en production** — Prod manager › Postes (plan
- * `fournil/plan-postes-du-fournil.md`, § 3.11), sous `production_workstations`
+ * `documentation/fournil/les-postes-du-fournil.md`, § 3.11), sous `production_workstations`
  * en lecture, à côté des routes des postes.
  *
  * La route vit au plan et non dans `workstations/` : elle rend une partie du

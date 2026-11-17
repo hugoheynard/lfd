@@ -24,7 +24,7 @@ import { GetProductionSimulationPdfQuery } from "../get-production-simulation-pd
 import { GetProductionSimulationSpecimenHandler } from "../get-production-simulation-specimen.handler.js";
 
 /**
- * **La simulation du catalogue** (plan `fournil/plan-postes-du-fournil.md`,
+ * **La simulation du catalogue** (`documentation/fournil/les-postes-du-fournil.md`,
  * § 3.11) : chaque article vendable ressort une fois, déclinaisons comprises,
  * dans le mode demandé quel que soit le réglage, et rien n'est écrit.
  */

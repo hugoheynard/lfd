@@ -13,7 +13,7 @@ import { rootShelvesOf, type ShelfSection } from "./root-shelves.js";
 
 /**
  * **Le rangement du fournil, dans ses deux modes** (plan
- * `fournil/plan-postes-du-fournil.md`, § 3.4).
+ * `documentation/fournil/les-postes-du-fournil.md`, § 3.4).
  *
  * Une fonction pure, que la fiche d'atelier et le dossier du jour traduisent
  * chacun dans leur forme. Elle ne lit rien : l'appelant lui passe les rayons

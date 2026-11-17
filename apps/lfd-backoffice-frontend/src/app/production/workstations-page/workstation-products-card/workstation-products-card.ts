@@ -59,7 +59,7 @@ function rootOf(
 }
 
 /**
- * **Les produits et leur poste** (plan `fournil/plan-postes-du-fournil.md`,
+ * **Les produits et leur poste** (`documentation/fournil/les-postes-du-fournil.md`,
  * § 3.8) : chaque produit avec son rayon, ses déclinaisons dessous pour
  * information, et le choix de son poste. Les déclinaisons en héritent.
  *

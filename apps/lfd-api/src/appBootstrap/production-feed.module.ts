@@ -98,7 +98,7 @@ import {
     // `fournil/la-fiche-d-atelier.md`, S1) : même miroir, même lieu.
     { provide: SellableArticlesReader, useClass: CatalogSellableArticlesReader },
     // Le produit et le rayon de chaque article, SANS les filtres de vente : les
-    // postes du fournil (`fournil/plan-postes-du-fournil.md`, § 3.4). Même miroir.
+    // postes du fournil (`documentation/fournil/les-postes-du-fournil.md`, § 3.4). Même miroir.
     { provide: ProductionArticlesReader, useClass: CatalogProductionArticlesReader },
     // Le seul port du canal qui ÉCRIT chez le commerce : la clôture lui demande
     // de trancher les règlements en vol avant de compter (plan d'abandon, B1).

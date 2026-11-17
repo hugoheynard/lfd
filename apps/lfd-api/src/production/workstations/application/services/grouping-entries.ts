@@ -8,7 +8,7 @@ import {
 } from "../../../shared/print/index.js";
 
 /**
- * **Où chaque SKU se range** (plan `fournil/plan-postes-du-fournil.md`,
+ * **Où chaque SKU se range** (`documentation/fournil/les-postes-du-fournil.md`,
  * § 3.7) — une fonction pure, la traduction de `groupingOf` pour les écrans
  * qui rangeaient eux-mêmes (prévisionnel, récapitulatif, réassorts du fournil).
  *

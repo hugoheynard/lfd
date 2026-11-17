@@ -178,7 +178,7 @@ export class ProductionPaperRenderer {
   /**
    * Un dossier dégradé n'est pas gardé : le tirage suivant le refera. Chaque
    * refus est journalisé avec ses causes — rayons, BL, tranches, et en mode
-   * prod les postes (plan `fournil/plan-postes-du-fournil.md`, § 3.5).
+   * prod les postes (`documentation/fournil/les-postes-du-fournil.md`, § 3.5).
    */
   private archivable(serviceDay: string, inputs: DossierInputs): boolean {
     const causes = [

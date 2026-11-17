@@ -28,7 +28,7 @@ import { ProductionPaperRenderer } from "../production-paper.service.js";
 
 /**
  * **Le dossier du jour selon le mode** (plan
- * `fournil/plan-postes-du-fournil.md`, § 3.4–3.5) : le mode boutique ne lit
+ * `documentation/fournil/les-postes-du-fournil.md`, § 3.4–3.5) : le mode boutique ne lit
  * pas les postes ; en mode prod, le dossier n'est archivable que si les
  * postes ont été lus, et chaque tirage non archivable est journalisé avec sa
  * cause. Le jour est dérivé de maintenant ; la clôture n'est que recopiée.

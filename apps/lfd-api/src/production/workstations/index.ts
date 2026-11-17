@@ -1,6 +1,6 @@
 /**
  * La porte des postes (`workstations/`) : ce que les autres métiers du fournil
- * lisent des postes (plan `fournil/plan-postes-du-fournil.md`, § 3.1). Tout le
+ * lisent des postes (`documentation/fournil/les-postes-du-fournil.md`, § 3.1). Tout le
  * reste de `workstations/` est privé (on y entre par cet index, qui ne fait
  * que réexporter : `documentation/fournil/architecture-contexte-production.md`,
  * « Les règles de la surface » ; porte `lint:production-subcontexts`).

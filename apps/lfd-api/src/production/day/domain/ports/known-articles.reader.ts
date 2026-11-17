@@ -9,7 +9,7 @@ export interface KnownArticle {
 /**
  * **« Quels articles les journées arrêtées de cette plage portaient-elles ? »**
  * — le SKU et le nom des lignes de commande ET de réassort des seules
- * journées CLOSES (plan `fournil/plan-postes-du-fournil.md`, § 3.8 et
+ * journées CLOSES (`documentation/fournil/les-postes-du-fournil.md`, § 3.8 et
  * § 3.10). Chaque SKU une fois : la page Postes marque ce qui a été commandé
  * ces jours-ci, l'alerte compte les produits du jour à ranger.
  *

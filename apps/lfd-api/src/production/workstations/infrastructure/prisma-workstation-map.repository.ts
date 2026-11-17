@@ -64,7 +64,7 @@ function toPersistence(station: Workstation, stamp: WorkstationMapStamp) {
 }
 
 /**
- * Le dépôt de la carte des postes (plan `fournil/plan-postes-du-fournil.md`,
+ * Le dépôt de la carte des postes (`documentation/fournil/les-postes-du-fournil.md`,
  * § 3.3). Le chargement prend `pg_advisory_xact_lock` sur la carte, tenu
  * jusqu'au `COMMIT` : deux gestes concurrents se suivent, et les règles de
  * l'agrégat (nom unique, poste vide avant l'archivage, poste en service)

@@ -90,7 +90,7 @@ export function worksheetGroupsOf(
 
 /**
  * Range les lignes dans le mode du réglage (plan
- * `fournil/plan-postes-du-fournil.md`, § 3.4) : par rayon comme
+ * `documentation/fournil/les-postes-du-fournil.md`, § 3.4) : par rayon comme
  * {@link worksheetGroupsOf}, ou par poste — un poste prend la place d'un
  * rayon, et ses intertitres sont les rayons d'où viennent ses lignes.
  */

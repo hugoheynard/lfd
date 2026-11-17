@@ -15,7 +15,7 @@ import {
 
 /**
  * **Les postes du fournil** — le miroir de `production_workstation.*` dans
- * `@lfd/contracts` (plan `fournil/plan-postes-du-fournil.md`, § 3.3, W1). Le
+ * `@lfd/contracts` (`documentation/fournil/les-postes-du-fournil.md`, § 3.3, W1). Le
  * sujet est le poste et son nom du moment ; l'ordre des fiches et le retour
  * « à ranger » visent la carte entière.
  */

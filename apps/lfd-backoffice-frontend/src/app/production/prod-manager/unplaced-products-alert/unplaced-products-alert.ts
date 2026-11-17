@@ -24,7 +24,7 @@ import { UNPLACED_FILTER } from '../../workstations-page/workstations-page';
 export const DAY_CHECK_MS = 60_000;
 
 /**
- * **L'alerte du Prod manager** (plan `fournil/plan-postes-du-fournil.md`,
+ * **L'alerte du Prod manager** (`documentation/fournil/les-postes-du-fournil.md`,
  * § 3.10) : en mode prod, « N produits du jour à ranger », avec un lien vers
  * la page Postes filtrée, et les articles du jour hors catalogue, qui ne
  * peuvent pas recevoir de poste. Le serveur choisit sa source (la demande

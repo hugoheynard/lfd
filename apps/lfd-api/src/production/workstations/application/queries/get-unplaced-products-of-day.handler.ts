@@ -22,7 +22,7 @@ import { type DayArticle, unplacedProductsOf } from "../services/unplaced-produc
 import { GetUnplacedProductsOfDayQuery } from "./get-unplaced-products-of-day.query.js";
 
 /**
- * **L'alerte du Prod manager** (plan `fournil/plan-postes-du-fournil.md`,
+ * **L'alerte du Prod manager** (`documentation/fournil/les-postes-du-fournil.md`,
  * § 3.10) : les produits du jour qui n'ont pas de poste.
  *
  * - **Avant l'arrêt**, la demande attendue du seul jour : commandes

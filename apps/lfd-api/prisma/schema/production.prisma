@@ -856,7 +856,7 @@ model ProductionBatchShortcut {
 }
 
 /// **Un poste du fournil** — boulangerie, tourier, pâtisserie (plan
-/// `fournil/plan-postes-du-fournil.md`, § 3.2). Hugo les nomme et les ordonne ;
+/// `fournil/les-postes-du-fournil.md`, § 3.2). Hugo les nomme et les ordonne ;
 /// un poste s'archive (`archived_at`), il ne s'efface pas. Index unique partiel
 /// `lower(name)` sur les vivants, posé en SQL brut. Agrégat : `WorkstationMap`.
 ///
@@ -882,7 +882,7 @@ model ProductionWorkstation {
   @@schema("production")
 }
 
-/// **Le poste d'un produit** (plan `fournil/plan-postes-du-fournil.md`,
+/// **Le poste d'un produit** (plan `fournil/les-postes-du-fournil.md`,
 /// § 3.2) : la référence PRODUIT (opaque, aucune clé vers le catalogue), et
 /// le poste qui le fait. Toutes ses déclinaisons en héritent. Pas de ligne :
 /// le produit est « à ranger ».

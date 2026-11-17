@@ -1,6 +1,6 @@
 /**
  * E2E de la **simulation du catalogue en production** (plan
- * `fournil/plan-postes-du-fournil.md`, § 3.11), sur le vrai Postgres jetable.
+ * `fournil/les-postes-du-fournil.md`, § 3.11), sur le vrai Postgres jetable.
  *
  * Ce que seule cette suite prouve : la route sous `production_workstations`,
  * la forme du mode refusée en 400, le PDF rangé dans le mode demandé sur le

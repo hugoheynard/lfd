@@ -37,7 +37,7 @@ export const PROD_MANAGER_VIEWS: readonly ProdManagerView[] = [
     needsAnyOf: ['production_resupply:read'],
   },
   {
-    // Les postes du fournil (plan `fournil/plan-postes-du-fournil.md`, § 3.8) :
+    // Les postes du fournil (`documentation/fournil/les-postes-du-fournil.md`, § 3.8) :
     // un droit à part, celui de la carte des postes.
     key: 'postes',
     label: 'Postes',

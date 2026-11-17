@@ -3,7 +3,7 @@ import { z } from "zod";
 import { count, fact, named, payload, subjectLabel } from "./fact.js";
 
 /**
- * **Les postes du fournil** (plan `documentation/fournil/plan-postes-du-fournil.md`,
+ * **Les postes du fournil** (`documentation/fournil/les-postes-du-fournil.md`,
  * § 3.3, lot W1, 2026-11-16) — un fait par geste de la page Postes.
  *
  * Le sujet est le poste (`production_workstation`, son id) et son nom du

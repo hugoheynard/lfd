@@ -35,6 +35,11 @@ flowchart LR
 
 ---
 
+> **Rangement par poste.** En mode prod (réglage du fournil), la fiche et le
+> dossier sont rangés par **poste** au lieu du rayon, avec la même mise en
+> page : un poste prend la place d'un rayon, un produit sans poste reste sous
+> son rayon, « à ranger ». Voir [`les-postes-du-fournil.md`](les-postes-du-fournil.md).
+
 ## Partie technique
 
 ### La mise en page

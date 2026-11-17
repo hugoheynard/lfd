@@ -16,7 +16,7 @@ export interface UnplacedProducts {
 }
 
 /**
- * **Les produits du jour à ranger** (plan `fournil/plan-postes-du-fournil.md`,
+ * **Les produits du jour à ranger** (`documentation/fournil/les-postes-du-fournil.md`,
  * § 3.10) — une fonction pure. Chaque SKU du jour est ramené à son produit ;
  * un produit sans poste, ou dont le poste n'est plus en service, est « à
  * ranger », avec les déclinaisons du jour qui le portent. Un SKU absent du

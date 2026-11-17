@@ -112,7 +112,7 @@ export function dayDossierOf(
 
 /**
  * Monte le dossier dans le mode du réglage (plan
- * `fournil/plan-postes-du-fournil.md`, § 3.4) : par rayon comme
+ * `documentation/fournil/les-postes-du-fournil.md`, § 3.4) : par rayon comme
  * {@link dayDossierOf}, ou par poste — un poste prend la place d'un rayon.
  */
 export function dayDossierFrom(

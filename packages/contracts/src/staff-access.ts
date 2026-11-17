@@ -523,7 +523,7 @@ export const staffResourceSchema = z.enum([
   /**
    * **Les postes du fournil** — la page Postes du Prod manager : nommer,
    * ordonner et archiver les postes, y placer les produits (plan
-   * `documentation/fournil/plan-postes-du-fournil.md`, § 3.8). Ajoutée sans
+   * `documentation/fournil/les-postes-du-fournil.md`, § 3.8). Ajoutée sans
    * être accordée : elle s'accorde à l'écran ; la graine ne la donne qu'à
    * l'administrateur.
    */

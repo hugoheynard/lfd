@@ -32,7 +32,7 @@ const MODE_OPTIONS: readonly FoldViewToggleOption[] = [
 
 /**
  * **Le rangement du fournil, et ses deux simulations** (plan
- * `fournil/plan-postes-du-fournil.md`, § 3.9 et § 3.11).
+ * `documentation/fournil/les-postes-du-fournil.md`, § 3.9 et § 3.11).
  *
  * Passer en mode prod demande une confirmation qui donne le compte des
  * produits commandés sans poste ; le serveur, lui, ne refuse que la bascule à

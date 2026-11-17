@@ -766,7 +766,7 @@ export const ORDERS_PRODUCTION_FACTS = {
   ...PACKING_RESERVE_FACTS,
   /** **Les réglages du fournil** (arrêt du plan, jours fermés) — même famille. */
   ...PRODUCTION_SETTINGS_FACTS,
-  /** **Les postes du fournil** (`fournil/plan-postes-du-fournil.md`, W1) — même famille. */
+  /** **Les postes du fournil** (`documentation/fournil/les-postes-du-fournil.md`, W1) — même famille. */
   ...PRODUCTION_WORKSTATION_FACTS,
 
   /**

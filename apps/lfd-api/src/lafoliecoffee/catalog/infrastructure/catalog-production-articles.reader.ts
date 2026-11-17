@@ -20,7 +20,7 @@ const AUDIENCE_VIEWERS = [staffViewer("pro"), staffViewer("public")] as const;
 /**
  * **Le produit et le rayon de ce que le fournil fabrique**, lus dans le miroir
  * (`catalog_items`) **sans les filtres de vente** (plan
- * `fournil/plan-postes-du-fournil.md`, § 3.4).
+ * `documentation/fournil/les-postes-du-fournil.md`, § 3.4).
  *
  * Toute déclinaison est rendue, masquée, sans taux ou hors vignette comprise :
  * le fournil range des lignes déjà commandées, et un poste s'attache à leur

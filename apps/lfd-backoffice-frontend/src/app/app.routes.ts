@@ -804,7 +804,7 @@ export const routes: Routes = [
           ),
       },
       {
-        // Les postes du fournil (plan `fournil/plan-postes-du-fournil.md`, § 3.8).
+        // Les postes du fournil (`documentation/fournil/les-postes-du-fournil.md`, § 3.8).
         path: 'postes',
         canActivate: [permissionGuard('production_workstations:read')],
         title: 'Postes — Prod manager — LFC B2B admin',

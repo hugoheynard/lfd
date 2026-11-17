@@ -346,7 +346,7 @@ const PRODUCTION_ZONE = "production";
  * Les services du fournil qui journalisent eux-mêmes, et le fichier où la
  * porte le VÉRIFIE — même geste que `DELIVERY_DELEGATES`.
  * `WorkstationMapGesture` (postes du fournil, W1, 2026-11-16,
- * `fournil/plan-postes-du-fournil.md`) porte le cycle commun aux cinq gestes
+ * `documentation/fournil/les-postes-du-fournil.md`) porte le cycle commun aux cinq gestes
  * de la carte des postes — charger sous verrou, muter, sauver, journaliser —
  * dans l'unité de travail ; ses cinq handlers y délèguent.
  */

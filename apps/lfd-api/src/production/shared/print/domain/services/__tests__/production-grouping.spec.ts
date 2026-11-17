@@ -15,7 +15,7 @@ import { rootShelvesOf } from "../root-shelves.js";
 
 /**
  * **Le rangement du fournil, dans ses deux modes** (plan
- * `fournil/plan-postes-du-fournil.md`, § 3.4), en fonction pure.
+ * `documentation/fournil/les-postes-du-fournil.md`, § 3.4), en fonction pure.
  */
 const SALTY = { id: "fam-salty", name: "Traiteur salé", position: 2 };
 const BREADS: CatalogFamilyView = { id: "fam-bread", name: "Pains", position: 0 };

@@ -43,7 +43,7 @@ import { groupView, lineViewOf } from "./worksheet-line-views.js";
  * ## Mode boutique, mode prod
  *
  * Le réglage d'affichage choisit le rangement (plan
- * `fournil/plan-postes-du-fournil.md`, § 3.4). En mode boutique, seuls les
+ * `documentation/fournil/les-postes-du-fournil.md`, § 3.4). En mode boutique, seuls les
  * rayons sont lus. En mode prod, les articles et les postes le sont
  * ; s'ils ne répondent pas, la fiche est rangée par rayon, la panne
  * journalisée, `workstationsKnown` vaut `false` pour que l'écran le dise, et le

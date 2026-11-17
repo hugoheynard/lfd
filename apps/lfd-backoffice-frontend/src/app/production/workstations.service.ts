@@ -17,7 +17,7 @@ import { intentOptions } from '../shared/gesture-intents';
 const WORKSTATIONS = `${B2B_API_BASE}/admin/production/workstations`;
 
 /**
- * **Les postes du fournil** (plan `fournil/plan-postes-du-fournil.md`, § 3.7 à
+ * **Les postes du fournil** (`documentation/fournil/les-postes-du-fournil.md`, § 3.7 à
  * § 3.11) — la page Postes, le rangement servi aux écrans du fournil, et
  * l'alerte du Prod manager.
  *

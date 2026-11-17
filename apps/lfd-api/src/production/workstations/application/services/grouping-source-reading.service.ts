@@ -23,7 +23,7 @@ export interface GroupingSourceRead {
 
 /**
  * **Ce qu'un papier ou un écran du fournil lit pour ranger des SKU** (plan
- * `fournil/plan-postes-du-fournil.md`, § 3.4–3.7), selon le mode : les rayons
+ * `documentation/fournil/les-postes-du-fournil.md`, § 3.4–3.7), selon le mode : les rayons
  * en mode boutique, les articles du commerce puis les postes en mode prod.
  * La fiche d'atelier, le dossier du jour, sa simulation et la route du
  * rangement lisent tous celle-ci : un seul rangement, une seule lecture.

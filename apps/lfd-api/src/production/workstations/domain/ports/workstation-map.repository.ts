@@ -10,7 +10,7 @@ export interface WorkstationMapStamp {
 
 /**
  * Port d'**écriture** de la carte des postes (plan
- * `fournil/plan-postes-du-fournil.md`, § 3.3) : la carte se charge entière
+ * `documentation/fournil/les-postes-du-fournil.md`, § 3.3) : la carte se charge entière
  * — une dizaine de postes, quelques centaines de produits — et se sauve par
  * sa différence (`WorkstationMap.changes`).
  *

@@ -25,7 +25,7 @@ import { ReorderWorkstationsCommand } from "../application/commands/reorder-work
 import { ListWorkstationsQuery } from "../application/queries/list-workstations.query.js";
 
 /**
- * **Prod manager › Postes** (plan `fournil/plan-postes-du-fournil.md`, § 3.8),
+ * **Prod manager › Postes** (`documentation/fournil/les-postes-du-fournil.md`, § 3.8),
  * sous `production_workstations` : la lecture (`GET`) pour qui consulte, les
  * gestes pour qui règle le fournil. Chaque geste est **par intention**
  * (`@IntentKey`) : rejouer un renommage après celui de quelqu'un d'autre le

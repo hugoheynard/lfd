@@ -24,7 +24,7 @@ import type { SimulationCover } from "./production-simulation.js";
 
 /**
  * **La simulation du catalogue en production, en PDF** (plan
- * `fournil/plan-postes-du-fournil.md`, § 3.11) — une couverture qui compte
+ * `documentation/fournil/les-postes-du-fournil.md`, § 3.11) — une couverture qui compte
  * les lignes par groupe et nomme les articles « à ranger », puis la partie
  * « un rayon et son calendrier » du dossier du jour, dessinée par le même
  * code (`drawRecapWithCalendars`). Ni bon de commande, ni BL, ni réassort.
