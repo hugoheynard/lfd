@@ -95,14 +95,14 @@ describe("groupingEntriesOf — mode prod", () => {
     ]);
   });
 
-  it("donne pour intertitre d'un poste le rayon racine d'où vient le SKU", () => {
+  it("ne donne pas d'intertitre de boutique à un poste", () => {
     const entries = groupingEntriesOf(
       ["QUI-8"],
       { mode: "workstation", placement: PLACEMENT },
       true,
     );
 
-    expect(entries[0]?.section).toEqual({ key: "fam-salty", label: "Traiteur salé", order: 0 });
+    expect(entries[0]?.section).toEqual({ key: null, label: null, order: 0 });
   });
 
   it("rend chaque SKU reçu exactement une fois", () => {

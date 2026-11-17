@@ -180,7 +180,7 @@ function workstationGroupsOf<T>(
     placement.articles.get(skuOf(line))?.family;
   const stations = placement.workstations.flatMap((workstation) => {
     const items = byWorkstation.get(workstation.id);
-    return items === undefined ? [] : [stationGroupOf(workstation, items, familyOf)];
+    return items === undefined ? [] : [stationGroupOf(workstation, items)];
   });
   // Une ligne sans poste a un article, donc un rayon : rien n'y reste sans rayon.
   const shelved = shelvedGroupsOf(withoutWorkstation, familyOf, true, offCatalogTitle());
@@ -193,16 +193,19 @@ function offCatalogTitle(): string {
   return `${SHELF_LABEL_OFF_CATALOG}${UNPLACED_GROUP_SUFFIX}`;
 }
 
-/** Une fiche de poste ; ses intertitres sont les rayons RACINE d'où viennent ses lignes. */
+/**
+ * Une fiche de poste, **sans intertitre** : une seule section, la racine
+ * elle-même (`family: null`), dont les lignes gardent l'ordre de la fiche.
+ * Un poste parle la langue du fournil ; y remettre les rayons de la boutique
+ * en intertitres, c'est ce que le rangement par poste veut quitter (décidé
+ * par Hugo le 2026-11-17). « Afficher les sous-catégories » ne vaut donc
+ * qu'en mode boutique.
+ */
 function stationGroupOf<T>(
   workstation: GroupingWorkstation,
   lines: readonly T[],
-  familyOf: (line: T) => CatalogFamilyView | undefined,
 ): ProductionGroup<T> {
-  const sections = rootShelvesOf(lines, familyOf).shelves.map((shelf): ShelfSection<T> => ({
-    family: { ...shelf.root },
-    items: shelf.items,
-  }));
+  const sections: readonly ShelfSection<T>[] = [{ family: null, items: lines }];
   return {
     key: `${WORKSTATION_GROUP_KEY_PREFIX}${workstation.id}`,
     title: workstation.name,

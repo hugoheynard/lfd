@@ -117,7 +117,7 @@ describe("dayDossierFrom", () => {
     expect(dossier.pieces).toBe(51);
   });
 
-  it("mode prod, sous-catégories posées : les rayons d'où viennent les lignes du poste", () => {
+  it("mode prod, sous-catégories posées : un poste n'a pas d'intertitre de boutique", () => {
     const dossier = dayDossierFrom(
       ORDERS,
       {
@@ -132,11 +132,12 @@ describe("dayDossierFrom", () => {
     );
 
     expect(dossier.recap[0]?.label).toBe("Pâtisserie");
-    expect(dossier.recap[0]?.lines.map((line) => line.sku)).toEqual(["BAG-1", "QUI-8", "QUI-6"]);
-    expect([...(dossier.recap[0]?.intertitles ?? new Map())]).toEqual([
-      ["BAG-1", "Pains"],
-      ["QUI-8", "Traiteur salé"],
+    expect(dossier.recap[0]?.lines.map((line) => line.sku).sort()).toEqual([
+      "BAG-1",
+      "QUI-6",
+      "QUI-8",
     ]);
+    expect([...(dossier.recap[0]?.intertitles ?? new Map())]).toEqual([]);
     expect(dossier.recap[1]?.label).toBe("Traiteur salé — à ranger");
   });
 

@@ -116,7 +116,8 @@ describe("groupingOf — mode prod", () => {
     expect(groups[3]?.lines).toEqual(["XXX-1"]);
   });
 
-  it("les intertitres d'un poste sont les rayons RACINE d'où viennent ses lignes", () => {
+  /** Décidé par Hugo le 2026-11-17 : un poste parle la langue du fournil, sans rayon de boutique. */
+  it("un poste n'a pas d'intertitre de boutique : une seule section, la racine", () => {
     const groups = groupingOf(LINES, sku, {
       mode: "workstation",
       placement: placement([
@@ -129,10 +130,7 @@ describe("groupingOf — mode prod", () => {
 
     expect(
       pastry?.sections.map((section) => [section.family?.name ?? null, section.items]),
-    ).toEqual([
-      ["Pâtisserie", ["TAR-1"]],
-      ["Traiteur salé", ["QUI-8", "QUI-6", "CAK-1"]],
-    ]);
+    ).toEqual([[null, pastry?.lines]]);
   });
 
   it("un poste sans ligne n'a pas de groupe", () => {

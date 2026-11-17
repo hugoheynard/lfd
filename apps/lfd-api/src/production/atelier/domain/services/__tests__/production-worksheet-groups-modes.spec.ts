@@ -103,7 +103,7 @@ describe("worksheetGroupsFrom", () => {
     expect(groups[1]?.sections).toBeUndefined();
   });
 
-  it("mode prod, sous-catégories posées : les rayons d'où viennent les lignes du poste", () => {
+  it("mode prod, sous-catégories posées : un poste n'a qu'une section, sans titre", () => {
     const groups = worksheetGroupsFrom(
       LINES,
       {
@@ -120,11 +120,9 @@ describe("worksheetGroupsFrom", () => {
       true,
     );
 
-    expect(groups[0]?.sections).toEqual([
-      { key: "fam-bread", label: "Pains", skus: ["BAG-1"] },
-      { key: "fam-salty", label: "Traiteur salé", skus: ["QUI-8"] },
-    ]);
-    expect(groups[0]?.lines.map((l) => l.sku)).toEqual(["BAG-1", "QUI-8"]);
+    // L'ordre reçu : `worksheetOf` a déjà trié, le plus gros d'abord.
+    expect(groups[0]?.sections).toEqual([{ key: null, label: null, skus: ["QUI-8", "BAG-1"] }]);
+    expect(groups[0]?.lines.map((l) => l.sku)).toEqual(["QUI-8", "BAG-1"]);
   });
 
   it("mode prod, produit sans poste : son rayon « à ranger », avec sa famille", () => {

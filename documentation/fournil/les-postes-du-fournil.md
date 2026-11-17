@@ -116,8 +116,9 @@ Une fonction pure de l'imprimerie, `groupingOf`
 
 - **mode boutique** : exactement `rootShelvesOf`, sans lire les postes ;
 - **mode prod** : un groupe par poste dans l'ordre des postes, puis les rayons
-  « — à ranger », puis « Hors catalogue — à ranger ». Les sections d'un poste
-  sont les rayons de boutique d'où viennent ses lignes.
+  « — à ranger », puis « Hors catalogue — à ranger ». Un poste n'a **pas
+  d'intertitre de boutique** (décidé par Hugo le 2026-11-17) : « afficher les
+  sous-catégories » ne vaut qu'en mode boutique.
 
 Toute ligne qui entre ressort une fois. La fiche et le dossier la traduisent
 dans leur forme d'aujourd'hui : un poste prend la place d'un rayon, et la mise
