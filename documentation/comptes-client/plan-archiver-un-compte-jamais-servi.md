@@ -1,7 +1,7 @@
 # Plan — archiver un compte client qui n'a jamais servi
 
 **État : 📝 plan, rien n'est bâti** (2026-11-17, v2 après une contradiction de
-`vitruve`). Demande de Hugo : un membre du staff a créé un client en double,
+`vitruve` ; la § 6 corrige la v2 après la seconde, et **prime**). Demande de Hugo : un membre du staff a créé un client en double,
 qui n'a jamais commandé ni signé de mandat, et il faut le faire disparaître.
 Décisions de Hugo du même jour : pas d'effacement, un **archivage** qui le
 retire des vues ; le geste vit dans la **zone de danger** de la fiche client.
@@ -149,3 +149,65 @@ permet de résilier.
   son espace client pour ses membres. Faut-il le fermer de la même façon
   (principal et `readCompanyStanding`) ? C'est un trou de sécurité qui existe
   déjà, sans lien avec l'archivage.
+
+---
+
+## 6. La seconde contradiction (2026-11-17) : ce qui corrige la v2
+
+Ce qui suit **prime** sur les §§ 2 à 4.
+
+### Bloquants
+
+- **Le cache du principal.** Le déclencheur `companies_principal_stamp` est
+  filtré par colonnes (`UPDATE OF "id", "status", "parent_company_id"`,
+  migration `20261105120000_l_estampille_filtree_par_colonnes`) : il ne
+  monterait pas sur `archived_at`. **A1 le refait**, dans une nouvelle
+  migration, avec `archived_at` dans `UPDATE OF`.
+- **L'héritage en liste.** `inheritedSiteWhere` est lu aussi par
+  `readReachableSites` et par le mur des commandes du principal
+  (`orders/infrastructure/company-order-wall.ts`). **A2** y ajoute
+  `archivedAt: null` sur le site **et** sur son principal, et `standingFromRow`
+  refuse une société archivée en propre comme par héritage. Le rattachement
+  d'une société archivée comme site est refusé.
+- **Le verrou de la passation.** Le § 2 se trompait : la passation ne verrouille
+  ni l'adresse, ni le payeur, ni le site ; elle prend la journée (ou la
+  vitrine), puis le titulaire du bon, puis écrit (`place-order.handler.ts`).
+  Trois handlers écrivent une commande (le client, le staff pour le client, la
+  boutique), tous par `PrismaOrderRepository.place`. **Le verrou se pose là**,
+  une fois pour les trois : `SELECT archived_at … FOR SHARE` sur `company_id`
+  et sur `principal_company_id`, avant le `create`, et un compte archivé est
+  refusé. L'archivage prend la seule ligne `companies` : pas d'interblocage.
+
+### Sérieux
+
+- **L'entrée d'un invité** accepte ses rattachements bruts sans lire la société
+  (`customer-principal.resolver.ts`, `canEnter`) : `findBySub` charge
+  `company.archivedAt`, et `canEnter` / l'acceptation écartent une société
+  archivée. **Une personne qui n'a plus aucune société ouverte** voit l'écran
+  « aucun compte » existant (à vérifier en A2).
+- **L'empreinte se tire du schéma, pas d'une liste.** 47 colonnes `*company_id`
+  dans 23 fichiers `.prisma` (vérifié le 2026-11-17). La porte part du motif
+  `@map("…company_id")`. Les treize que la v2 omettait sont à classer, dont
+  « retient » : `KnownBankAccount`, `AccountBankExportLine`,
+  `PayerBillingMode`, `PayerCollectionMeans`, `BillingStatement`,
+  `CollectionTest`, `CollectionNotice`, `MercurialeDraft`,
+  `Promotion.audience_company_id`, `OrderOpeningExemption` ; et « suit le
+  compte » : `DeliveryProcedure`, `OwnEstablishment`, `CompanyTermination`.
+  A1 chiffre le nombre de propriétaires, donc de lectures d'empreinte.
+- **Ce que la porte ne voit pas** : les identifiants de société dans les
+  `jsonb`, les faits du journal et les demandes d'e-mail. Elle ne tient que les
+  colonnes.
+- **Les producteurs automatiques** (alertes de compte dormant, relances
+  d'onboarding, `growth`) visent justement un compte vide : **A3** les
+  inventorie et leur fait écarter un compte archivé.
+- **Le CHECK** ne lie que `archived_at` et `archive_reason` ; l'identifiant et
+  le nom de l'auteur restent nullables, comme `activated_by_staff_id`. La durée
+  de conservation du nom se décide avec le registre RGPD.
+- **L'irréversible** : le déclencheur refait en A1 ne se corrige que par une
+  autre migration.
+
+### Mineurs
+
+- Le droit du geste : la ressource `StaffResource` qui permet de résilier, à
+  nommer en A1.
+- À vérifier en A1 : si `lint:context-version-columns` lit `companies`.
