@@ -202,6 +202,8 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     "production_display_settings.",
     // Les raccourcis du fournil, « 1 plaque · 24 » (Réglages › Production, 2026-10-28).
     "production_batch_shortcut.",
+    // Les postes du fournil (Réglages › Production, 2026-11-16).
+    "production_workstation.",
     // Les destinataires du dossier du jour par e-mail (E1, 2026-10-06).
     "production_dossier_recipient.",
   ],

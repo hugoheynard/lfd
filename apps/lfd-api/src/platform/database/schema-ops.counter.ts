@@ -269,6 +269,9 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   ProductionDisplaySettings: "production",
   // Les raccourcis du fournil (Réglages › Production, 2026-10-28) : un réglage par produit.
   ProductionBatchShortcut: "production",
+  // Les postes du fournil et le poste de chaque produit (Réglages › Production, 2026-11-16).
+  ProductionWorkstation: "production",
+  ProductionWorkstationProduct: "production",
   // La remise au colisage (2026-10-04, `colisage/colisage.md`, K1) :
   // une ligne par fournée déclarée, et une par retour.
   ProductionHandoff: "production",

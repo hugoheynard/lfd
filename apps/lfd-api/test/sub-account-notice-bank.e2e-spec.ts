@@ -226,6 +226,9 @@ describe("la preuve de mandat d'un site", () => {
       .send({ ...RIB, holderLegalForm: "SARL" })
       .expect(204);
     await ctx.asSub(s.housekeeper).post(`/companies/${s.site}/mandate`).expect(200);
+    // Les avis des gestes de préparation (le RIB, le mandat) partent d'abord :
+    // vidée avant eux, la boîte recevait l'avis du RIB après coup.
+    await ctx.drain();
     mails.splice(0);
 
     await ctx

@@ -330,6 +330,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'reglages/production/raccourcis': 'production_settings:read',
   // Les postes du fournil (plan des postes, § 3.8), un réglage depuis le 2026-11-17.
   'reglages/production/postes': 'production_workstations:read',
+  // La simulation du dossier de prod, une page des Réglages (2026-11-17).
+  'reglages/production/simulation': 'production_workstations:read',
   // LE COMPTOIR non plus : la file de retrait (`handover_counter`) et la
   // commande pro (`b2b_place_order`) sont deux droits. Attester un retrait
   // passe par `retrait/:token`, qui exige l'écriture.
