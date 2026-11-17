@@ -200,7 +200,8 @@ verrou de la journée :
 4. écrit ou remplace le problème (plafond, version) ;
 5. **après validation**, par la file d'après validation déjà en place
    (`AfterCommit`, celle du signal des rayons), fait sonner la cloche,
-   `audience: b2b_supervision:read`, clé `problème:<id>:<version>`.
+   `audience: "b2b_supervision:read"` (un `StaffPermission`, de la même forme
+   que celle de `plan-arrest-bell.ts`), clé `problème:<id>:<version>`.
 
 Un fait journalisé `production.problem_reported` (et
 `production.problem_resolved` au « traité ») porte le SKU, l'attendu, le
@@ -234,9 +235,11 @@ d'écriture que `RecordBatchHandler`. Une ligne déjà faite ne fait rien.
 Une route du cron, dans `atelier/` :
 `POST admin/production/tracking/always-green`, `@Idempotent`, sous
 `RecomputeGuard`, appelée toutes les 5 minutes par le Worker
-(`container/worker.ts`). Pour la journée en cours (celle que la fiche
-choisit au serveur, à l'heure de Paris ; **à vérifier en N3** : le service
-qui la choisit), si elle est arrêtée :
+(`container/worker.ts`). Pour **aujourd'hui et demain**, à l'heure de Paris, chaque
+journée **arrêtée** (vérifié le 2026-11-17 : la fiche en cours est demain si
+son plan est arrêté, aujourd'hui sinon, `GetCurrentProductionWorksheetHandler` ;
+le fournil travaille donc la nuit sur la journée du lendemain, et les paliers
+sont des instants datés) :
 
 - pour chaque SKU **au compte**, dont la ligne est en toujours vert d'après le
   niveau figé, le tour envoie une commande par ligne,
@@ -267,9 +270,22 @@ fiche.
 
 ### 3.9 Le cache
 
-La clé de `WorksheetContents` gagne la version du réglage de suivi, celle du
-niveau figé de la journée et celle des problèmes ; `setTrackingLevel` fait
-monter la version de la carte des postes.
+La version de la fiche suit le **journal des changements de la journée**
+(`production_day_change` : `max(id)` et `count(*)`,
+`day/application/services/production-day-version.source.ts`), plus la carte
+des postes et le réglage d'affichage (`WorksheetContents`). Donc :
+
+- **toute fournée insérée ou modifiée écrit déjà une ligne au journal de la
+  journée**, par les déclencheurs `production_batch_day_change_insert` et
+  `_update` (migration `20260928160000_les_fournees`, sans filtre de colonne ;
+  vérifié le 2026-11-17) : « Fait », la fournée automatique et la correction
+  (`corrected_quantity`) rafraîchissent la fiche sans version de plus ;
+- **le problème** (`production_problem`) reçoit le même déclencheur, par sa
+  colonne de jour, dans la migration de N1 ;
+- **le niveau figé** écrit aussi une ligne au journal quand il est posé ;
+- la clé gagne seulement **la version du réglage de suivi** (le réglage du
+  fournil, lu tant qu'aucune journée n'est figée) ; `setTrackingLevel` fait
+  monter la version de la carte des postes.
 
 ### 3.10 Le front
 
