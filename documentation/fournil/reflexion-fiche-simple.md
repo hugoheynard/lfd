@@ -183,3 +183,12 @@ fournil et au colisage, le partage des demi-bacs.
 la règle qui va avec ; la page les lit et les écrit chacun par sa porte. Une
 table centrale « complexité » qui commanderait les modules mélangerait leurs
 règles, et aucun ne pourrait plus changer la sienne seul.
+
+## Décision 1 — quand « toujours vert » considère un produit sorti (Hugo, 2026-11-17)
+
+**À l'heure de chaque palier, plus une marge réglable.** Avec deux paliers
+(120 avant 7 h, 120 avant 9 h 30) et une marge de 15 minutes, 120 pièces sont
+réputées sorties à 7 h 15 et 120 à 9 h 45, et elles alimentent alors le
+colisage. La marge laisse au fournil le temps de signaler un problème avant
+que le colisage ne se serve. Elle se règle sur la page « Niveau de suivi »,
+avec le niveau du fournil.
