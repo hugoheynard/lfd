@@ -8,6 +8,8 @@ ont été vérifiées le 2026-11-17 dans [`colisage.md`](colisage.md),
 [`../commandes/reliquat/reliquat.md`](../commandes/reliquat/reliquat.md) et
 `apps/lfd-api/src/packing/domain/entities/packing-sheet.ts`.
 
+La fiche d'atelier a sa jumelle : [`../fournil/reflexion-fiche-simple.md`](../fournil/reflexion-fiche-simple.md).
+
 Ce document n'est pas un plan. Il pose l'idée, ce qu'elle garde, ce qu'elle
 change, et les questions à trancher avant d'en écrire un. Le plan touchera à
 ce qui est facturé (le manque) : il passera par `vitruve`.
