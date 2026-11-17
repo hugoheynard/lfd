@@ -7,7 +7,8 @@ simple a sa propre réflexion et viendra après. Le plan touche au manque, donc
 à ce qui est facturé : il passe par `vitruve`. Ses affirmations sur l'existant
 ont été vérifiées le 2026-11-17 ; celles marquées **à vérifier** ne l'ont pas
 été. **La § 6 corrige les §§ 2 à 5 après la première contradiction de `vitruve`,
-la § 7 corrige la § 6 après la seconde ; la plus récente prime.**
+la § 7 corrige la § 6 après la seconde, la § 10 corrige tout après la
+troisième ; la plus récente prime.**
 
 ---
 
@@ -399,3 +400,77 @@ pas celui du colisage. Chacun reçoit les faits de l'autre et sait les traiter
 - **Le contrat** entre les deux est le canal existant
   (`production/channels/packing/`) : le fournil le déclare et y publie, le
   colisage s'y abonne. Aucune lecture du réglage de l'autre.
+
+---
+
+## 10. Après la troisième contradiction (2026-11-17) — prime sur tout
+
+### Bloquants
+
+- **Le cron calcule sous le verrou.** Un handler propre au cron
+  (`RunAlwaysGreenLineCommand`, dans `atelier/`) prend le verrou de la
+  journée, **puis** relit le plafond, le sorti et `n`, et seulement alors
+  calcule la quantité et déclare la fournée (par le même service d'écriture que
+  `RecordBatchHandler`). Un rouge ou une fournée humaine validés entre-temps
+  sont donc vus : ni excédent fantôme, ni double comptage.
+- **Le niveau est figé par `atelier/`**, par un abonné interne au fait
+  `production.day_closed` : il écrit `production_day_tracking_level` (modèle
+  d'`atelier`, inscrit à la carte de la porte). `plan/` n'a pas à lire le
+  réglage du fournil ; aucune arête neuve.
+
+### Le retour partiel existe déjà (vérifié par `vitruve` le 2026-11-17)
+
+`production_return_request.quantity` existe, le fait
+`production.return_requested` la porte, le colisage rend
+`requested` (`giveBack`), et `OnPackingReturned` inscrit le rendu et
+n'annule la fournée que lorsque tout est revenu ; la fournée n'est pas
+réduite, son `returned` monte. **Aucune migration, aucun contrat de fait
+neuf.** Le seul changement : `requestReturns`
+(`atelier/application/services/packing-handoffs.service.ts`) reçoit une
+quantité et la borne à `remis − returned − retour en attente`, au lieu de
+redemander toute la fournée. Le commentaire du schéma qui dit le contraire est
+corrigé au passage, et le `requestId` documenté (`return-<fournée>-<n>`)
+s'aligne sur celui du code (`return-<ULID>`).
+
+### Le rouge, réécrit une dernière fois
+
+- Il demande le retour de **`sorti − plafond`**, **quel que soit le
+  moment** : les fournées des paliers précédents et les fournées humaines sont
+  déjà remises. La marge réduit seulement la fréquence de ces retours.
+- Il parcourt **toutes** les fournées remises de la ligne (automatiques,
+  « Fait », humaines), les plus récentes d'abord, en sautant celles qui ont
+  déjà un retour en attente.
+- La § 6 (« par le geste d'annulation existant ») est rayée : le rouge appelle
+  `requestReturns` avec une quantité, pas `CancelBatchCommand`.
+
+### Le niveau figé : deux cas tranchés
+
+- **Une journée sans niveau figé** (arrêtée avant le déploiement) est en
+  **détaillé**. Le cron ne la touche jamais.
+- **Une journée réouverte puis refermée garde le niveau de son premier
+  arrêt.** Un changement de réglage pendant la réouverture vaut pour la
+  journée suivante, comme toujours.
+
+### Le défaut
+
+Le réglage du fournil est **« toujours vert » par défaut** (décision Q1), et
+celui du colisage aussi, quand il existera. Une journée n'en hérite qu'à son
+arrêt, et les journées arrêtées avant le déploiement restent en détaillé.
+
+### Le colisage
+
+Son niveau est **son** réglage, dans **son** bloc, porté par **son** plan
+(§ 9). Pour qu'il ne soit jamais réglé en toujours vert avant de savoir
+traiter un retour en toujours vert, la valeur `always_green` **n'existe pas**
+dans l'énum de son réglage tant que ce lot n'est pas livré : l'interdit est
+inexprimable, pas vérifié.
+
+### Les lots, mis à jour
+
+| Lot    | Contenu                                                                                                                                                           |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **N1** | Réglages (fournil, poste), niveau figé à l'arrêt (abonné d'`atelier`), table des problèmes, niveau servi par ligne ; migration additive, `lecteur-de-migrations`. |
+| **N2** | « Fait », « Problème » (plafond, retour de l'excédent borné), la cloche après validation, la Supervision des problèmes.                                           |
+| **N4** | Le front : les composants de ligne, le panneau rouge, le `@switch` par ligne, la page « Niveau de suivi ».                                                        |
+| **N3** | Le cron : la route, `RunAlwaysGreenLineCommand` sous le verrou, l'appel du Worker.                                                                                |
+| **N5** | Doc d'état, réflexion et plan retirés.                                                                                                                            |
