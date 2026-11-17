@@ -6,8 +6,8 @@ réflexion [`reflexion-fiche-simple.md`](reflexion-fiche-simple.md) (décisions
 simple a sa propre réflexion et viendra après. Le plan touche au manque, donc
 à ce qui est facturé : il passe par `vitruve`. Ses affirmations sur l'existant
 ont été vérifiées le 2026-11-17 ; celles marquées **à vérifier** ne l'ont pas
-été. **La § 6 corrige les §§ 2 à 5 après la contradiction de `vitruve`, et
-prime.**
+été. **La § 6 corrige les §§ 2 à 5 après la première contradiction de `vitruve`,
+la § 7 corrige la § 6 après la seconde ; la plus récente prime.**
 
 ---
 
@@ -286,3 +286,71 @@ Une fournée automatique est toujours remise dès sa déclaration. Donc :
   front porte sur la ligne.
 - **L'ordre des lots** devient : N1, N2, **N4** (la page et la fiche), puis
   **N3** (le cron), puis N5.
+
+---
+
+## 7. Après la seconde contradiction (2026-11-17) — prime sur la § 6
+
+Les trois bloquants tiennent au même point : corriger **après coup** une
+fournée automatique déjà remise. La demande de retour existante rend une
+fournée **entière** (`requestReturns`, `atelier/application/services/packing-handoffs.service.ts`),
+et une fournée annulée puis rejouée sous le même `id` ne se réécrit pas
+(`assertSameCharge`, `day/domain/entities/production-day.batches.ts`).
+
+### Le rouge, en deux temps
+
+1. **Pendant la marge** (entre l'heure du palier et l'heure + marge), rien
+   n'est encore remis : le rouge pose seulement le **plafond**, et la fournée
+   automatique déclare le minimum. **Aucun retour.** C'est l'usage prévu de la
+   marge (décision 1).
+2. **Après la marge**, les pièces sont au colisage. Le rouge pose le plafond
+   et demande le retour **de l'excédent seulement** : la demande de retour
+   gagne une **quantité demandée** (`production_return_request.quantity`, et
+   le fait `production.return_requested` la porte). Le colisage voit « 40
+   demandés » et répond comme aujourd'hui. Le geste se fait dans l'unité de
+   travail et sous le verrou du rouge, sur la liste des fournées
+   automatiques, en sautant celles qui ont déjà un retour en attente et en
+   comptant ce retour dans l'excédent. Un second rouge pendant un retour en
+   attente n'échoue donc pas.
+3. **Un retour refusé** (le colisage ne rend rien) laisse l'excédent visible
+   en Supervision (« 40 en trop au colisage »), et le responsable peut
+   redemander le retour.
+
+### L'`id` de la fournée automatique
+
+`auto-<jour>-<sku>-<n>`, où `n` est le **nombre de fournées de la ligne,
+annulées comprises**. Il ne revient jamais en arrière : une fournée annulée
+puis une nouvelle déclaration donnent un autre `id`. Deux passages sur le même
+état gardent le même `n`, donc le même `id`. Le verrou de la journée, pris par
+`RecordBatchHandler`, sérialise deux passages concurrents ; pas de bail à part.
+
+### Le plafond
+
+Un par jour et SKU. **Un second rouge le remplace**, plus haut ou plus bas :
+plus haut, il relève la cible du cron ; plus bas, il demande le retour de
+l'excédent.
+
+### La prise d'effet à la journée suivante
+
+Le niveau **est figé dans la journée à son arrêt** : l'arrêt du plan écrit le
+niveau résolu de chaque poste et du fournil (`production_day_tracking_level`,
+une ligne par poste plus le fournil). La fiche et le cron lisent le niveau de
+la journée, jamais le réglage courant. Un changement à 10 h vaut donc pour la
+prochaine journée arrêtée.
+
+### Le niveau, servi par ligne
+
+En mode boutique, un groupe-rayon mêle des lignes de postes différents : le
+niveau est servi **par ligne** (`WorkshopLine.trackingLevel`), et le
+`@switch` du front porte sur la ligne. La § 3.6 se lit ainsi.
+
+### Le reste
+
+- Le fait `production.problem_reported` porte les fournées visées par une
+  demande de retour : la trace de ce qui touche au facturé est complète.
+- La route du cron vit dans `atelier/` (`admin/production/tracking/always-green`),
+  et s'ajoute aux appels du Worker (`container/worker.ts`).
+- `recorded_by` est une chaîne libre : `system:always-green` y entre sans
+  changement de schéma.
+- **Rayés** : la § 3.2 (cron chaque minute, route `/internal/…`, `id` par
+  palier, bail) et le point 3 de la § 3.4 (« part annulable »).
