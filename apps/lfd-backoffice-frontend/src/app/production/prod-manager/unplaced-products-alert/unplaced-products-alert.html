@@ -1,8 +1,17 @@
-@if (count() > 0) {
+@if (count() > 0 || offCatalog() > 0) {
   <fold-callout variant="warning" data-unplaced-alert>
-    {{ count() }} produit{{ count() > 1 ? 's' : '' }} du jour à ranger : sans poste,
-    {{ count() > 1 ? 'ils restent' : 'il reste' }} sous {{ count() > 1 ? 'leur' : 'son' }} rayon sur
-    les fiches.
+    @if (count() > 0) {
+      {{ count() }} produit{{ count() > 1 ? 's' : '' }} du jour à ranger : sans poste,
+      {{ count() > 1 ? 'ils restent' : 'il reste' }} sous {{ count() > 1 ? 'leur' : 'son' }} rayon
+      sur les fiches.
+    }
+    @if (offCatalog() > 0) {
+      <span data-unplaced-off-catalog>
+        {{ offCatalog() }} article{{ offCatalog() > 1 ? 's' : '' }} du jour hors catalogue :
+        {{ offCatalog() > 1 ? 'ils ne peuvent' : 'il ne peut' }} pas recevoir de poste et
+        {{ offCatalog() > 1 ? 'restent' : 'reste' }} en « Rayon inconnu » sur les fiches.
+      </span>
+    }
     @if (canOpen()) {
       <a
         foldButton

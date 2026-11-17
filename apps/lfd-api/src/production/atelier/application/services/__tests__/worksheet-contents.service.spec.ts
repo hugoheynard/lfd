@@ -31,6 +31,7 @@ import {
   MemoryDayContents,
 } from "../../../../../platform/day-versions/__tests__/day-contents-doubles.js";
 import { ProductionWorksheetReading } from "../production-worksheet-reading.service.js";
+import { GroupingSourceReading } from "../../../../workstations/index.js";
 import { WorksheetContents } from "../worksheet-contents.service.js";
 import { WorksheetDeadlinesReading } from "../worksheet-deadlines-reading.service.js";
 import {
@@ -115,7 +116,6 @@ function around(outage: Outage = "none") {
     new NoDemand(),
     new NoOrders(),
     new NoContainers(),
-    new Shelves(outage === "shelves"),
     new WorksheetDeadlinesReading(
       new FixedDueThresholds(outage === "deadlines" ? "down" : undefined),
       new InMemoryTrancheSettings().reader(),
@@ -123,7 +123,7 @@ function around(outage: Outage = "none") {
     qualityLinesFrom(new CheckTable()),
     new FixedOvenWaitingOrders(outage === "waiting" ? "down" : undefined),
     new InMemoryDisplaySettings().reader(),
-    ...placementPorts(),
+    new GroupingSourceReading(new Shelves(outage === "shelves"), ...placementPorts()),
   );
   const cache = new MemoryDayContents();
   const clock = new FixedClock(NOW);

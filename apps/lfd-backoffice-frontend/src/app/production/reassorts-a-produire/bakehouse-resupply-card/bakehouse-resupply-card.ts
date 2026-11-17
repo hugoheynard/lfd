@@ -40,7 +40,11 @@ import { requestedAmountLabel, requestedLines, withQuantity } from './bakehouse-
 import { BakehouseDraftsStore } from '../bakehouse-drafts.store';
 import { BakehouseQuantityStepper } from '../bakehouse-quantity-stepper/bakehouse-quantity-stepper';
 import { BakehouseResuppliesService } from '../bakehouse-resupplies.service';
-import { type WorkstationFilter, workstationFilterOf } from '../../workstation-filter';
+import {
+  GROUPING_LOSS_TEXT,
+  readWorkstationFilter,
+  type WorkstationFilter,
+} from '../../workstation-filter';
 import { WorkstationsService } from '../../workstations.service';
 
 /** Le téléphone — le même seuil que la feuille de style, plus large que l'étroit commun. */
@@ -162,6 +166,8 @@ export class BakehouseResupplyCard {
    * `null` en mode boutique ou rangement non lu : le filtre reste la famille.
    */
   private readonly stations = signal<WorkstationFilter | null>(null);
+  /** Ce que la lecture du rangement a perdu : le texte du `fold-callout`, ou `null`. */
+  protected readonly groupingLost = signal<string | null>(null);
   /** Le nom du filtre : par poste en mode prod, par famille sinon. */
   protected readonly filterLabel = computed(() =>
     this.stations() === null ? 'Filtrer par famille' : 'Filtrer par poste',
@@ -226,7 +232,13 @@ export class BakehouseResupplyCard {
       const [sites, articles] = await Promise.all([this.pickups.list(), this.service.articles()]);
       this.sites.set(sites.map((site) => ({ id: site.id, label: site.label })));
       this.articles.set(articles);
-      this.stations.set(await this.readStations(articles.map((article) => article.sku)));
+      // Une lecture ratée laisse le filtre par famille, et le dit.
+      const stations = await readWorkstationFilter(
+        (skus) => this.workstations.grouping(skus),
+        articles.map((article) => article.sku),
+      );
+      this.stations.set(stations.filter);
+      this.groupingLost.set(stations.loss === null ? null : GROUPING_LOSS_TEXT[stations.loss]);
     } catch {
       this.loadFailed.set(true);
     }
@@ -245,21 +257,6 @@ export class BakehouseResupplyCard {
       this.draftMissing.set(true);
     } else {
       await this.resume(draft);
-    }
-  }
-
-  /**
-   * Le rangement des articles : une lecture ratée laisse le filtre par
-   * famille, la table reste juste.
-   */
-  private async readStations(skus: readonly string[]): Promise<WorkstationFilter | null> {
-    if (skus.length === 0) {
-      return null;
-    }
-    try {
-      return workstationFilterOf(await this.workstations.grouping(skus));
-    } catch {
-      return null;
     }
   }
 

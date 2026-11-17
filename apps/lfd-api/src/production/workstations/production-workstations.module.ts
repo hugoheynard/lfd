@@ -34,9 +34,9 @@ import {
  * Il sert aussi aux autres écrans du fournil le rangement de leurs SKU et
  * l'alerte du Prod manager (§ 3.7, § 3.10).
  *
- * Écrire la carte et la lire sont deux ports (ISP) ; il exporte les trois
- * lectures que les autres métiers liront — le poste des produits (la fiche
- * et le dossier), le compte des produits placés (la garde de bascule) et le
+ * Écrire la carte et la lire sont deux ports (ISP) ; il exporte les quatre
+ * lectures que les autres métiers liront — le rangement de SKU et le poste
+ * des produits (la fiche et le dossier), le compte des produits placés (la garde de bascule) et le
  * numéro de la carte (l'étiquette de la fiche gardée).
  */
 @Module({
@@ -60,6 +60,6 @@ import {
     { provide: PlacedProducts, useClass: PrismaPlacedProducts },
     { provide: WorkstationMapVersion, useClass: PrismaWorkstationMapVersion },
   ],
-  exports: [WorkstationOfProducts, PlacedProducts, WorkstationMapVersion],
+  exports: [GroupingSourceReading, WorkstationOfProducts, PlacedProducts, WorkstationMapVersion],
 })
 export class ProductionWorkstationsModule {}

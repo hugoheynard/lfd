@@ -1,4 +1,3 @@
-import type { CatalogFamilyView, ProductionGrouping } from "@lfd/contracts";
 import { Injectable, Logger } from "@nestjs/common";
 
 import { DayOrdersReader } from "../../../channels/commerce/day-orders.reader.js";
@@ -7,24 +6,14 @@ import {
   OvenWaitingOrdersReader,
   type OvenWaitingOrders,
 } from "../../../channels/packing/oven-waiting-orders.reader.js";
-import { WorkshopShelvesReader } from "../../../channels/commerce/workshop-shelves.reader.js";
 import { ProductionDisplaySettings } from "../../../shared/print/index.js";
 import { ProductionDisplaySettingsReader } from "../../../shared/print/index.js";
 import { ProductionContainerReader } from "../../domain/ports/production-container.reader.js";
 import { ProductionDayRepository } from "../../../day/index.js";
 import { QualityLineStatusReader } from "../../../quality/index.js";
 import { worksheetGroupsFrom } from "../../domain/services/production-worksheet-groups.js";
-import type { GroupingSource } from "../../../shared/print/index.js";
-import { WorkstationOfProducts } from "../../../workstations/index.js";
-import {
-  type ProductionArticle,
-  ProductionArticlesReader,
-} from "../../../channels/commerce/production-articles.reader.js";
-import {
-  worksheetOf,
-  type DemandedItem,
-  type Worksheet,
-} from "../../domain/services/production-worksheet.js";
+import { GroupingSourceReading } from "../../../workstations/index.js";
+import { worksheetOf, type DemandedItem } from "../../domain/services/production-worksheet.js";
 import { ServiceDay } from "../../../day/index.js";
 import { ServiceRange } from "../../../day/index.js";
 import type { WorksheetContent } from "./worksheet-content.js";
@@ -94,13 +83,11 @@ export class ProductionWorksheetReading {
     private readonly expected: ExpectedProductionReader,
     private readonly orders: DayOrdersReader,
     private readonly containers: ProductionContainerReader,
-    private readonly shelves: WorkshopShelvesReader,
     private readonly deadlines: WorksheetDeadlinesReading,
     private readonly quality: QualityLineStatusReader,
     private readonly waiting: OvenWaitingOrdersReader,
     private readonly display: ProductionDisplaySettingsReader,
-    private readonly articles: ProductionArticlesReader,
-    private readonly workstations: WorkstationOfProducts,
+    private readonly grouping: GroupingSourceReading,
   ) {}
 
   /** Le contenu de la fiche d'une journée, sans rien qui dépende de l'heure. */
@@ -137,7 +124,11 @@ export class ProductionWorksheetReading {
       containers,
     });
     const settings = display ?? ProductionDisplaySettings.defaults();
-    const grouping = await this.groupingOf(day, worksheet.lines, settings.grouping);
+    const grouping = await this.grouping.read(
+      worksheet.lines.map((line) => line.sku),
+      settings.grouping,
+      `Fiche d'atelier du ${day.value}`,
+    );
     const viewOf = lineViewOf({
       tranches,
       quality: new Map(quality.map((status) => [status.sku, status])),
@@ -161,57 +152,6 @@ export class ProductionWorksheetReading {
   }
 
   /**
-   * Le produit et le rayon de chaque SKU au commerce, sans les filtres de
-   * vente, puis le poste de ces produits. Une panne lève.
-   */
-  private async placementOf(
-    skus: readonly string[],
-  ): Promise<Extract<GroupingSource, { readonly mode: "workstation" }>["placement"]> {
-    const articles: ReadonlyMap<string, ProductionArticle> =
-      skus.length === 0 ? new Map() : await this.articles.articlesOf(skus);
-    const productSkus = [...new Set([...articles.values()].map((item) => item.productSku))];
-    const { workstations, byProduct } = await this.workstations.workstationsOf(productSkus);
-    return { workstations, articles, byProduct };
-  }
-
-  /**
-   * Ce que le rangement lit, selon le mode. Le mode boutique ne lit que les
-   * rayons. Le mode prod lit les articles et les postes ; leur panne range la
-   * fiche comme en mode boutique, **journalisée**, et la fiche n'est pas
-   * rangée comme complète.
-   */
-  private async groupingOf(
-    day: ServiceDay,
-    lines: Worksheet["lines"],
-    mode: ProductionGrouping,
-  ): Promise<WorksheetGrouping> {
-    if (mode === "workstation") {
-      try {
-        const skus = lines.map((line) => line.sku);
-        const placement = await this.placementOf(skus);
-        return { source: { mode, placement }, shelvesKnown: true, workstationsKnown: true };
-      } catch (error) {
-        this.logger.error(
-          `Fiche d'atelier du ${day.value} : postes illisibles, servie rangée par rayon.`,
-          error instanceof Error ? error.stack : String(error),
-        );
-        const shelves = await this.shelvesOrNull(day, lines);
-        return {
-          source: { mode: "shelf", shelves },
-          shelvesKnown: shelves !== null,
-          workstationsKnown: false,
-        };
-      }
-    }
-    const shelves = await this.shelvesOrNull(day, lines);
-    return {
-      source: { mode: "shelf", shelves },
-      shelvesKnown: shelves !== null,
-      workstationsKnown: true,
-    };
-  }
-
-  /**
    * Ce qui attend le four, ou `null` si le colisage n'a pas répondu — la panne
    * part au journal avec le jour et sa cause, jamais en silence.
    */
@@ -228,40 +168,6 @@ export class ProductionWorksheetReading {
       return null;
     }
   }
-
-  /**
-   * Les rayons, ou `null` si le commerce n'a pas répondu — **jamais en silence** :
-   * la panne part au journal avec le jour et sa cause.
-   */
-  private async shelvesOrNull(
-    day: ServiceDay,
-    lines: Worksheet["lines"],
-  ): Promise<ReadonlyMap<string, CatalogFamilyView> | null> {
-    if (lines.length === 0) {
-      return new Map();
-    }
-    try {
-      return await this.shelves.shelvesOf(lines.map((line) => line.sku));
-    } catch (error) {
-      this.logger.error(
-        `Fiche d'atelier du ${day.value} : rayons illisibles, servie en « Rayon inconnu ».`,
-        error instanceof Error ? error.stack : String(error),
-      );
-      return null;
-    }
-  }
-}
-
-/** Le rangement de la fiche, et ce que ses lectures ont pu dire. */
-interface WorksheetGrouping {
-  readonly source: GroupingSource;
-  /** `false` : les rayons n'ont pas pu être lus — tout est en « Rayon inconnu ». */
-  readonly shelvesKnown: boolean;
-  /**
-   * `false` : le mode prod n'a pas pu lire ses postes, la fiche est rangée par
-   * rayon. Toujours `true` en mode boutique, qui ne les lit pas.
-   */
-  readonly workstationsKnown: boolean;
 }
 
 /** Ce que le commerce annonce pour CE jour — rien du tout s'il ne dit rien. */

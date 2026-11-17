@@ -70,6 +70,10 @@
         (textChange)="name.set($event)"
       />
 
+      @if (groupingLost(); as lost) {
+        <fold-callout variant="warning" data-grouping-lost>{{ lost }}</fold-callout>
+      }
+
       <!-- Le filtre et la recherche sur UNE ligne : ils règlent la même table. -->
       <div class="filters">
         @if (familyOptions().length > 2) {

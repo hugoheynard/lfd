@@ -18,7 +18,7 @@ import { FixedPaperLogo } from "../../../../shared/print/application/__tests__/p
 import { FixedPlannedDeliveryNotes } from "../../../../channels/commerce/__tests__/planned-delivery-notes-doubles.js";
 import { OrderSheetPaper } from "../../../../shared/print/index.js";
 import { ProductionPaperRenderer } from "../production-paper.service.js";
-import { DossierGroupingReading } from "../dossier-grouping-reading.service.js";
+import { GroupingSourceReading } from "../../../../workstations/index.js";
 import { placementPorts } from "../../../../workstations/application/__tests__/placement-doubles.js";
 
 /**
@@ -66,7 +66,7 @@ function papersWith(
 ): { papers: ProductionPaperRenderer } {
   return {
     papers: new ProductionPaperRenderer(
-      new DossierGroupingReading(new NoShelves(), ...placementPorts()),
+      new GroupingSourceReading(new NoShelves(), ...placementPorts()),
       new OrderSheetPaper(new NoAdminOrigin(), colors, new FixedPaperLogo()),
       resupplyColors,
       new FixedPaperLogo(),

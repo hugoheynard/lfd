@@ -18,7 +18,7 @@ import {
 import type { WorkstationOfProducts } from "../../../../workstations/index.js";
 import { SIMULATION_MARK } from "../../../domain/services/production-simulation-pdf.js";
 import { SimulationGroupingUnreadableError } from "../../../domain/errors/production-simulation-errors.js";
-import { DossierGroupingReading } from "../../services/dossier-grouping-reading.service.js";
+import { GroupingSourceReading } from "../../../../workstations/index.js";
 import { GetProductionSimulationPdfHandler } from "../get-production-simulation-pdf.handler.js";
 import { GetProductionSimulationPdfQuery } from "../get-production-simulation-pdf.query.js";
 import { GetProductionSimulationSpecimenHandler } from "../get-production-simulation-specimen.handler.js";
@@ -68,7 +68,7 @@ function scene(workstations: WorkstationOfProducts = new UnreadWorkstationOfProd
   );
   const handler = new GetProductionSimulationPdfHandler(
     articles,
-    new DossierGroupingReading(shelves, articles, workstations),
+    new GroupingSourceReading(shelves, articles, workstations),
     settings.reader(),
     new FixedPaperLogo(),
     new FixedClock(new Date()),
@@ -148,7 +148,7 @@ describe("GetProductionSimulationPdfHandler — la simulation du catalogue", () 
       : [];
     expect(names).toEqual([
       "ProductionArticlesReader",
-      "DossierGroupingReading",
+      "GroupingSourceReading",
       "ProductionDisplaySettingsReader",
       "BrandLogoSource",
       "Clock",

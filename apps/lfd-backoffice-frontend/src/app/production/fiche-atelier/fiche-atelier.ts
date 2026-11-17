@@ -17,6 +17,7 @@ import {
   type FoldViewToggleOption,
 } from 'fold-ng';
 
+import { ActivatedRoute, Router } from '@angular/router';
 import { sectionIntertitles } from '@lfd/b2b-ui/catalog';
 import {
   WORKSTATION_GROUP_KEY_PREFIX,
@@ -135,6 +136,8 @@ export class FicheAtelier {
   /** Les raccourcis « + 1 plaque (24) », lus une fois pour toute la fiche (S2). */
   protected readonly shortcuts = inject(WorkshopShortcutsReader);
   private readonly prefs = inject(StaffPrefsService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly compact = narrowViewport(WORKSHOP_NARROW);
 
@@ -280,11 +283,24 @@ export class FicheAtelier {
     }
   }
 
-  /** Change de fiche, et le retient pour la personne. */
+  /**
+   * Change de fiche, le retient pour la personne, et l'adresse le suit : une
+   * fiche de poste pose `?poste=<id>`, un rayon le retire. Sans recharger ni
+   * empiler l'historique (`replaceUrl`) — l'adresse copiée ouvre la fiche vue.
+   */
   protected choose(key: string): void {
     this.chosen.set(key);
     this.doneOpen.set(false);
     void this.prefs.remember({ worksheetCategory: key });
+    const poste = key.startsWith(WORKSTATION_GROUP_KEY_PREFIX)
+      ? key.slice(WORKSTATION_GROUP_KEY_PREFIX.length)
+      : null;
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { poste },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   protected toggleDone(): void {

@@ -23,7 +23,7 @@ import {
 } from "../../../../workstations/application/__tests__/placement-doubles.js";
 import type { WorkstationOfProducts } from "../../../../workstations/index.js";
 import { FixedTrancheReading } from "../../__tests__/tranche-reading-doubles.js";
-import { DossierGroupingReading } from "../dossier-grouping-reading.service.js";
+import { GroupingSourceReading } from "../../../../workstations/index.js";
 import { ProductionPaperRenderer } from "../production-paper.service.js";
 
 /**
@@ -62,7 +62,7 @@ function renderer(
 ) {
   const shelves = new Shelves();
   const papers = new ProductionPaperRenderer(
-    new DossierGroupingReading(
+    new GroupingSourceReading(
       shelves,
       ...placementPorts([article(CROISSANT, "VIE", SALTY)], workstations),
     ),

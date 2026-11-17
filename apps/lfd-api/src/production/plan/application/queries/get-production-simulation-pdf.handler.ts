@@ -17,17 +17,17 @@ import {
   simulationOrderOf,
 } from "../../domain/services/production-simulation.js";
 import { renderProductionSimulationPdf } from "../../domain/services/production-simulation-pdf.js";
-import { DossierGroupingReading } from "../services/dossier-grouping-reading.service.js";
+import { GroupingSourceReading } from "../../../workstations/index.js";
 import { GetProductionSimulationPdfQuery } from "./get-production-simulation-pdf.query.js";
 
 /** Ce que les journaux du rangement disent de la simulation, à la place d'un jour. */
-const SIMULATION_LABEL = "simulation du catalogue";
+const SIMULATION_LABEL = "Simulation du catalogue";
 
 /**
  * **Rend la simulation du catalogue** dans le mode demandé : les articles
  * vendables du miroir du commerce, une pièce chacun, dans une commande
  * fictive ; le rangement lu par la lecture même du dossier
- * (`DossierGroupingReading`), monté par `dayDossierFrom`, et la partie
+ * (`GroupingSourceReading`, celle de la fiche aussi), monté par `dayDossierFrom`, et la partie
  * « un rayon et son calendrier » dessinée par le code du dossier.
  *
  * Le calendrier se tire **sans tranches** : une commande fictive n'a pas
@@ -46,7 +46,7 @@ export class GetProductionSimulationPdfHandler implements IQueryHandler<
 > {
   constructor(
     private readonly articles: ProductionArticlesReader,
-    private readonly grouping: DossierGroupingReading,
+    private readonly grouping: GroupingSourceReading,
     private readonly display: ProductionDisplaySettingsReader,
     private readonly logo: BrandLogoSource,
     private readonly clock: Clock,
@@ -59,14 +59,18 @@ export class GetProductionSimulationPdfHandler implements IQueryHandler<
       sellable.map((article) => ({ sku: article.sku, name: article.variantName })),
     );
     const [grouping, display, logo] = await Promise.all([
-      this.grouping.read(SIMULATION_LABEL, lines, query.mode),
+      this.grouping.read(
+        lines.map((line) => line.sku),
+        query.mode,
+        SIMULATION_LABEL,
+      ),
       this.display.current(),
       this.logo.load(),
     ]);
-    if (!grouping.shelvesRead) {
+    if (!grouping.shelvesKnown) {
       throw new SimulationGroupingUnreadableError("rayons");
     }
-    if (!grouping.workstationsRead) {
+    if (!grouping.workstationsKnown) {
       throw new SimulationGroupingUnreadableError("postes");
     }
     const { showSubcategories } = display ?? ProductionDisplaySettings.defaults();

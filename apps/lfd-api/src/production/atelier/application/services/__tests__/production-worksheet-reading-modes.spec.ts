@@ -36,6 +36,7 @@ import { ProductionContainerReader } from "../../../domain/ports/production-cont
 import type { ContainerRule } from "../../../domain/services/production-worksheet.js";
 import { FixedOvenWaitingOrders } from "../../__tests__/oven-waiting-doubles.js";
 import { ProductionWorksheetReading } from "../production-worksheet-reading.service.js";
+import { GroupingSourceReading } from "../../../../workstations/index.js";
 import { WorksheetDeadlinesReading } from "../worksheet-deadlines-reading.service.js";
 
 /**
@@ -106,12 +107,11 @@ function subject(grouping: "shelf" | "workstation", workstations: WorkstationOfP
     new NoDemand(),
     new NoOrders(),
     new NoContainers(),
-    shelves,
     new WorksheetDeadlinesReading(new FixedDueThresholds(), new InMemoryTrancheSettings().reader()),
     qualityLinesFrom(new CheckTable()),
     new FixedOvenWaitingOrders(),
     display.reader(),
-    ...placementPorts(ARTICLES, workstations),
+    new GroupingSourceReading(shelves, ...placementPorts(ARTICLES, workstations)),
   );
   return { reading, shelves };
 }

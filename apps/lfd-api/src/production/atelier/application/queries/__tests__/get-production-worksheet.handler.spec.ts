@@ -29,6 +29,7 @@ import { ServiceDay } from "../../../../day/index.js";
 import { GetProductionWorksheetHandler } from "../get-production-worksheet.handler.js";
 import { GetProductionWorksheetQuery } from "../get-production-worksheet.query.js";
 import { ProductionWorksheetReading } from "../../services/production-worksheet-reading.service.js";
+import { GroupingSourceReading } from "../../../../workstations/index.js";
 import { FixedOvenWaitingOrders } from "../../__tests__/oven-waiting-doubles.js";
 import { FixedDueThresholds } from "../../../../channels/commerce/__tests__/due-thresholds-doubles.js";
 import { InMemoryTrancheSettings } from "../../../../day/application/__tests__/production-tranche-settings-doubles.js";
@@ -146,7 +147,6 @@ function handlerFor(
         new Expected(expected),
         commerce,
         new Containers(rules),
-        shelves,
         new WorksheetDeadlinesReading(
           new FixedDueThresholds(),
           new InMemoryTrancheSettings().reader(),
@@ -154,7 +154,7 @@ function handlerFor(
         qualityLinesFrom(new CheckTable()),
         new FixedOvenWaitingOrders(),
         display.reader(),
-        ...placementPorts(),
+        new GroupingSourceReading(shelves, ...placementPorts()),
       ),
       new FixedClock(NOW),
     ),

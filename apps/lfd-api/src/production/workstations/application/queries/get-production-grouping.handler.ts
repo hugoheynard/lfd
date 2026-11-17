@@ -32,7 +32,7 @@ export class GetProductionGroupingHandler implements IQueryHandler<
   async execute(query: GetProductionGroupingQuery): Promise<ProductionGroupingView> {
     const skus = [...new Set(query.skus)];
     const settings = (await this.display.current()) ?? ProductionDisplaySettings.defaults();
-    const read = await this.reading.read(skus, settings.grouping);
+    const read = await this.reading.read(skus, settings.grouping, "Rangement servi au front");
     return {
       mode: settings.grouping,
       showSubcategories: settings.showSubcategories,

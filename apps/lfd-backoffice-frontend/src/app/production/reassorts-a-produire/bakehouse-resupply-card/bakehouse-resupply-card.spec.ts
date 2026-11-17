@@ -297,6 +297,14 @@ describe('BakehouseResupplyCard', () => {
     expect(rows).toEqual(['BAG']);
   });
 
+  it('dit à l’écran que le rangement n’a pas pu être lu, au lieu de revenir en silence à la famille', async () => {
+    const { fixture } = await mount();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-grouping-lost]')?.textContent).toContain(
+      "Le rangement du fournil n'a pas pu être lu",
+    );
+  });
+
   it('retire par les pas « − », sans descendre sous zéro', async () => {
     const { fixture, card, bakehouse, add, press } = await mount();
     card['siteId'].set('site_v');

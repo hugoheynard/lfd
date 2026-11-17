@@ -29,7 +29,8 @@ import { LiveStockAlertsService } from '../live-stock-alerts.service';
 import {
   filterKeyOf,
   type WorkstationFilter,
-  workstationFilterOf,
+  GROUPING_LOSS_TEXT,
+  readWorkstationFilter,
   workstationOptionsOf,
 } from '../../workstation-filter';
 import { WorkstationsService } from '../../workstations.service';
@@ -172,6 +173,8 @@ export class ResupplyProductionTab {
    * `null` en mode boutique ou rangement non lu : le filtre reste la famille.
    */
   private readonly stations = signal<WorkstationFilter | null>(null);
+  /** Ce que la lecture du rangement a perdu : le texte du `fold-callout`, ou `null`. */
+  protected readonly groupingLost = signal<string | null>(null);
   /** Le nom du filtre : par poste en mode prod, par famille sinon. */
   protected readonly filterLabel = computed(() =>
     this.stations() === null ? 'Filtrer par famille' : 'Filtrer par poste',
@@ -268,21 +271,6 @@ export class ResupplyProductionTab {
     });
   }
 
-  /**
-   * Le rangement des produits affichés : une lecture ratée laisse le filtre
-   * par famille, la table reste juste.
-   */
-  private async readStations(skus: readonly string[]): Promise<WorkstationFilter | null> {
-    if (skus.length === 0) {
-      return null;
-    }
-    try {
-      return workstationFilterOf(await this.workstations.grouping(skus));
-    } catch {
-      return null;
-    }
-  }
-
   protected async load(day: string = this.day()): Promise<void> {
     const seq = ++this.readSeq;
     // « loading » au premier chargement seulement : une relecture (geste,
@@ -301,11 +289,16 @@ export class ResupplyProductionTab {
       }
       this.view.set(view);
       this.alerts.set(alerts);
-      const stations = await this.readStations(this.rows().map((row) => row.sku));
+      // Une lecture ratée laisse le filtre par famille, et le dit.
+      const stations = await readWorkstationFilter(
+        (skus) => this.workstations.grouping(skus),
+        this.rows().map((row) => row.sku),
+      );
       if (seq !== this.readSeq) {
         return;
       }
-      this.stations.set(stations);
+      this.stations.set(stations.filter);
+      this.groupingLost.set(stations.loss === null ? null : GROUPING_LOSS_TEXT[stations.loss]);
       this.alertsLost.set(alerts === null);
       this.state.set('ready');
     } catch {

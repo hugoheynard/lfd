@@ -24,10 +24,7 @@ import {
 } from "../../domain/services/day-dossier-calendar.js";
 import { ServiceDay } from "../../../day/index.js";
 import { DossierDeadlinesReading } from "./dossier-deadlines-reading.service.js";
-import {
-  type DossierGrouping,
-  DossierGroupingReading,
-} from "./dossier-grouping-reading.service.js";
+import { GroupingSourceReading } from "../../../workstations/index.js";
 import { countPaperRowsOf } from "../../../shared/print/index.js";
 import { dayDossierPdfKey, renderDayDossierPdf } from "../../domain/services/day-dossier-pdf.js";
 import type { PaperDraft, PaperSlot } from "../../../shared/print/index.js";
@@ -74,7 +71,7 @@ export function dayDossierSlotOf(day: ProductionDay): PaperSlot {
 
 /** Ce que le dossier lit au tirage, chaque lecture faillible à `null`. */
 interface DossierInputs {
-  readonly grouping: DossierGrouping;
+  readonly grouping: Awaited<ReturnType<GroupingSourceReading["read"]>>;
   readonly marks: OrderSheetMarks;
   readonly resupplyColors: Awaited<ReturnType<ResupplyPrintColorsReader["colorsOf"]>>;
   readonly logo: Awaited<ReturnType<BrandLogoSource["load"]>>;
@@ -99,7 +96,7 @@ export class ProductionPaperRenderer {
   private readonly logger = new Logger(ProductionPaperRenderer.name);
 
   constructor(
-    private readonly grouping: DossierGroupingReading,
+    private readonly grouping: GroupingSourceReading,
     private readonly sheets: OrderSheetPaper,
     private readonly resupplyColors: ResupplyPrintColorsReader,
     private readonly logo: BrandLogoSource,
@@ -185,10 +182,10 @@ export class ProductionPaperRenderer {
    */
   private archivable(serviceDay: string, inputs: DossierInputs): boolean {
     const causes = [
-      inputs.grouping.shelvesRead ? null : "rayons",
+      inputs.grouping.shelvesKnown ? null : "rayons",
       inputs.deliveryNotes === null ? "bons de livraison" : null,
       inputs.tranches === null ? "tranches" : null,
-      inputs.grouping.workstationsRead ? null : "postes",
+      inputs.grouping.workstationsKnown ? null : "postes",
     ].filter((cause): cause is string => cause !== null);
     if (causes.length === 0) {
       return true;
@@ -219,7 +216,12 @@ export class ProductionPaperRenderer {
     // Le rangement (mode, sous-catégories, postes) est lu au tirage et figé
     // avec le papier archivé, comme les rayons.
     const settings = display ?? ProductionDisplaySettings.defaults();
-    const grouping = await this.grouping.read(snapshot.serviceDay, lines, settings.grouping);
+    // Les SKU du jour — commandes ET réassorts, qui vont sur les mêmes fiches.
+    const grouping = await this.grouping.read(
+      lines.map((line) => line.sku),
+      settings.grouping,
+      `Dossier du ${snapshot.serviceDay}`,
+    );
     const { showSubcategories } = settings;
     return { grouping, marks, resupplyColors, logo, deliveryNotes, showSubcategories, tranches };
   }

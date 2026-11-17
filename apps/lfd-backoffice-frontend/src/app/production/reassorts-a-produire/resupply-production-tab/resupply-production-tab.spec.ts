@@ -346,5 +346,28 @@ describe("l'onglet Réassorts de Prod manager", () => {
           .sort(),
       ).toEqual(['BAG', 'CRO']);
     });
+
+    it('rangement non lu : le filtre reste par famille, et l’écran le dit', async () => {
+      const { el } = await mount();
+      expect(el.querySelector('[data-grouping-lost]')?.textContent).toContain(
+        "Le rangement du fournil n'a pas pu être lu",
+      );
+    });
+
+    it('postes illisibles en mode prod : les puces sont des rayons, et l’écran le dit', async () => {
+      const { el } = await mount(new FakeResupplies(), [], new FakeBakehouse(), (skus) =>
+        Promise.resolve({ ...prodGrouping(skus), workstationsKnown: false }),
+      );
+      expect(el.querySelector('[data-grouping-lost]')?.textContent).toContain(
+        "Les postes n'ont pas pu être lus",
+      );
+    });
+
+    it('rangement lu : rien à signaler', async () => {
+      const { el } = await mount(new FakeResupplies(), [], new FakeBakehouse(), (skus) =>
+        Promise.resolve(prodGrouping(skus)),
+      );
+      expect(el.querySelector('[data-grouping-lost]')).toBeNull();
+    });
   });
 });

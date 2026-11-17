@@ -34,6 +34,7 @@ import {
   qualityLinesFrom,
 } from "../../../../quality/application/__tests__/quality-doubles.js";
 import { ProductionWorksheetReading } from "../production-worksheet-reading.service.js";
+import { GroupingSourceReading } from "../../../../workstations/index.js";
 import { servedWorksheet } from "../worksheet-content.js";
 import { WorksheetDeadlinesReading } from "../worksheet-deadlines-reading.service.js";
 import { placementPorts } from "../../../../workstations/application/__tests__/placement-doubles.js";
@@ -141,12 +142,11 @@ function bareReading(
     new NoDemand(),
     new NoOrders(),
     new NoContainers(),
-    new NoShelves(),
     new WorksheetDeadlinesReading(new FixedDueThresholds(due), settings.reader()),
     qualityLinesFrom(checks),
     waiting,
     new InMemoryDisplaySettings().reader(),
-    ...placementPorts(),
+    new GroupingSourceReading(new NoShelves(), ...placementPorts()),
   );
 }
 

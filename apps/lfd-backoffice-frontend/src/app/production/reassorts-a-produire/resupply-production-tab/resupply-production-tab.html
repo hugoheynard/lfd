@@ -69,6 +69,10 @@
       </fold-callout>
     }
 
+    @if (groupingLost(); as lost) {
+      <fold-callout variant="warning" data-grouping-lost>{{ lost }}</fold-callout>
+    }
+
     <div class="rp-filters">
       @if (categoryOptions().length > 1) {
         <fold-view-toggle

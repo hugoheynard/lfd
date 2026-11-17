@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter, Router } from '@angular/router';
 import {
   SHELF_LABEL_UNKNOWN,
   UNSHELVED_WORKSHOP_GROUP_KEY,
@@ -284,6 +285,7 @@ describe('la fiche d’atelier', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
+        provideRouter([]),
         { provide: VersionWatcher, useValue: fakeWatcher },
         { provide: WorksheetService, useValue: api },
         { provide: StaffPrefsService, useValue: prefs },
@@ -796,6 +798,20 @@ describe('la fiche d’atelier', () => {
       fixture.componentInstance['choose'](`${WORKSTATION_GROUP_KEY_PREFIX}ws_pat`);
 
       expect(prefs.remembered).toEqual([{ worksheetCategory: 'ws:ws_pat' }]);
+    });
+
+    it('l’adresse suit la fiche choisie à l’écran : `?poste=` posé pour un poste, retiré pour un rayon', async () => {
+      api.view = sheet({ grouping: 'workstation', groups: [unplacedShelf(), pastryStation()] });
+      const { fixture } = await render();
+      const router = TestBed.inject(Router);
+
+      fixture.componentInstance['choose'](`${WORKSTATION_GROUP_KEY_PREFIX}ws_pat`);
+      await settle(fixture);
+      expect(router.parseUrl(router.url).queryParams).toEqual({ poste: 'ws_pat' });
+
+      fixture.componentInstance['choose'](unplacedShelf().key);
+      await settle(fixture);
+      expect(router.parseUrl(router.url).queryParams).toEqual({});
     });
 
     it('dit quand les postes n’ont pas pu être lus — la fiche est rangée par rayon', async () => {

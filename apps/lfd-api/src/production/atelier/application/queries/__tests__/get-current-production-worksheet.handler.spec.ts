@@ -17,6 +17,7 @@ import { ProductionDayRepository } from "../../../../day/index.js";
 import type { ContainerRule } from "../../../domain/services/production-worksheet.js";
 import { ServiceDay } from "../../../../day/index.js";
 import { ProductionWorksheetReading } from "../../services/production-worksheet-reading.service.js";
+import { GroupingSourceReading } from "../../../../workstations/index.js";
 import { GetCurrentProductionWorksheetHandler } from "../get-current-production-worksheet.handler.js";
 import { FixedOvenWaitingOrders } from "../../__tests__/oven-waiting-doubles.js";
 import { FixedDueThresholds } from "../../../../channels/commerce/__tests__/due-thresholds-doubles.js";
@@ -118,12 +119,11 @@ function handlerFor(days: Days, now: Date = NOW): GetCurrentProductionWorksheetH
     new NoDemand(),
     new NoOrders(),
     new NoContainers(),
-    new NoShelves(),
     new WorksheetDeadlinesReading(new FixedDueThresholds(), new InMemoryTrancheSettings().reader()),
     qualityLinesFrom(new CheckTable()),
     new FixedOvenWaitingOrders(),
     new InMemoryDisplaySettings().reader(),
-    ...placementPorts(),
+    new GroupingSourceReading(new NoShelves(), ...placementPorts()),
   );
   return new GetCurrentProductionWorksheetHandler(
     days,
