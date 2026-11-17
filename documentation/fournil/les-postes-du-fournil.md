@@ -1,8 +1,10 @@
 # Les postes du fournil
 
-**État : ✅ bâti** (2026-11-17, du lot W0 `dc47a61a8` au lot W4 `3eac3da00`),
-essayé dans Chrome sur le dev le 2026-11-17. Décisions de Hugo du
-2026-11-16.
+**État : ✅ en production depuis le 2026-11-17** (`71915a045`), essayé dans
+Chrome sur le dev le même jour. Décisions de Hugo des 2026-11-16 et 17.
+Après le déploiement : accorder `production_workstations` dans
+`/admin/staff-roles`, sans quoi les pages Postes et Simulation restent
+fermées.
 
 ---
 
