@@ -128,14 +128,23 @@ sequenceDiagram
   méthode neuve de l'agrégat, `WorkstationMap.setTrackingLevel`, par intention.
   `null` : le poste suit le fournil. Le geste fait monter la version de la
   carte des postes.
-- **Le niveau figé à l'arrêt** : un abonné interne d'`atelier/` au fait
-  `production.day_closed` écrit `production_day_tracking_level` (le niveau du
-  fournil et celui de chaque poste, résolus à cet instant ; modèle
-  d'`atelier`, inscrit à la carte de la porte). `plan/` n'a rien à lire.
+- **Le niveau figé au premier passage d'une journée arrêtée.** Le niveau
+  d'une journée est écrit dans `production_day_tracking_level` (le niveau du
+  fournil et de chaque poste, résolus à cet instant ; modèle d'`atelier`,
+  inscrit à la carte de la porte ; **clé unique sur le jour**, insertion qui
+  ignore un conflit) **par le premier lecteur d'`atelier/`** qui trouve la
+  journée arrêtée sans niveau figé : la fiche ou le cron, sous le verrou de la
+  journée. Ce n'est **pas** un abonné à `production.day_closed` : un abonné
+  durable passe après la validation, la fiche lirait « détaillé » entre
+  l'arrêt et lui, et une journée ouverte par un lancement « au plus tôt » ne
+  publie jamais `day_closed`. `plan/` n'a rien à écrire ni à lire.
 - **La fiche et le cron lisent le niveau figé**, jamais le réglage courant.
-  **Une journée sans niveau figé** (arrêtée avant le déploiement) est en
-  **détaillé**. **Une journée réouverte puis refermée garde le niveau de son
-  premier arrêt.**
+  **Une journée arrêtée avant la mise en service** (la date de service
+  `TRACKING_LEVELS_SINCE`, posée au déploiement) reste en **détaillé** et n'est
+  jamais figée. **Une journée réouverte, reprise ou réannoncée garde son
+  premier niveau** : la clé unique l'empêche d'être réécrit. **Limite assumée** :
+  un réglage changé entre l'arrêt et ce premier passage (quelques minutes au
+  plus, la fiche et le cron passant souvent) s'applique à la journée.
 - **Le niveau est servi par ligne** (`WorkshopLine.trackingLevel`) : en mode
   boutique, un groupe-rayon mêle des lignes de postes différents. **À
   vérifier en N1** : la façon dont `WorkshopGroup` rassemble les lignes.
@@ -152,12 +161,27 @@ pour ce jour et ce SKU.
 ### 3.3 La part corrigée d'une fournée
 
 Une colonne `production_batch.corrected_quantity` (entier, `0` par défaut,
-CHECK `0 ≤ corrected_quantity ≤ quantity`). `outputOf` et `countedBatch`
-soustraient le corrigé : « Faite », la fiche, le cron et la Supervision le
-voient. `production_handoff` n'est pas touché. La borne du retour partiel
-(`requestReturns`, `atelier/application/services/packing-handoffs.service.ts`)
-devient `remis − corrigé − rendu − retour en attente`, pour qu'un retour ne
-redemande jamais une pièce qui n'existe pas.
+CHECK `0 ≤ corrected_quantity ≤ quantity`).
+
+- **Elle se prend sur la part remise au colisage**, jamais sur la part gardée
+  sur place par un réassort (`on-site-share.ts`) : ce sont des pièces que le
+  colisage croyait avoir. **Borne, tenue par le domaine** : pour chaque
+  fournée, `corrigé ≤ remis − rendu − retour en attente`. Le rouge **saute**
+  une fournée qui a un retour en attente ; s'il ne trouve pas assez de part
+  corrigeable, il corrige ce qu'il peut et le problème dit le reste au manager.
+- **Les lecteurs qui somment les fournées déduisent le corrigé**, chacun avec
+  un test : `countedBatch` (`day/domain/services/production-output.ts` ;
+  `outputOf` y passe), `producedOf` et `effectiveBatchesOf`
+  (`day/domain/entities/production-day.batches.ts`), `on-site-share.ts`
+  (la part gardée = `quantity − corrigé − remis`), la vue servie au front
+  (`worksheet-line-views.ts`), et `dev/scenario/scenario-facts.reader.ts`.
+  **N1 commence par les recenser tous**, SQL brut compris (le dossier, le
+  prévisionnel, le récapitulatif), et inscrit la liste ici.
+- La borne du retour partiel (`requestReturns`,
+  `atelier/application/services/packing-handoffs.service.ts`) devient
+  `remis − corrigé − rendu − retour en attente`.
+- Une fournée automatique entièrement corrigée reste comptée à zéro ; elle
+  n'est pas annulée.
 
 ### 3.4 « Problème » — le rouge
 
@@ -174,7 +198,8 @@ verrou de la journée :
    code accepte déjà un surplus), déclare la différence par une fournée
    ordinaire ;
 4. écrit ou remplace le problème (plafond, version) ;
-5. **après validation** (`AfterCommit`), fait sonner la cloche,
+5. **après validation**, par la file d'après validation déjà en place
+   (`AfterCommit`, celle du signal des rayons), fait sonner la cloche,
    `audience: b2b_supervision:read`, clé `problème:<id>:<version>`.
 
 Un fait journalisé `production.problem_reported` (et
@@ -282,13 +307,16 @@ monter la version de la carte des postes.
 
 ## 4. Les lots
 
-| Lot    | Contenu                                                                                                                                                                                                                                   |
-| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **N1** | Migration additive : réglage du fournil, colonne du poste, niveau figé, table des problèmes, `corrected_quantity` ; l'abonné qui fige le niveau ; `outputOf` qui déduit le corrigé ; le niveau servi par ligne ; `lecteur-de-migrations`. |
-| **N2** | « Fait », « Problème » (plafond, correction, fait publié, lecture des corrections), la cloche après validation, la Supervision des problèmes, la borne du retour.                                                                         |
-| **N4** | Le front : composants de ligne, panneau rouge, `@switch`, page « Niveau de suivi » (`pablo`). Avant le cron : la page est en ligne avant que toujours vert n'agisse.                                                                      |
-| **N3** | Le cron : la route, `RunAlwaysGreenLineCommand` sous le verrou, l'appel du Worker.                                                                                                                                                        |
-| **N5** | Doc d'état ; réflexion et plan retirés.                                                                                                                                                                                                   |
+Dans l'ordre de la table : la page (N4) est en ligne **avant** que le cron
+(N3) n'agisse.
+
+| Lot    | Contenu                                                                                                                                                                                                                                                                                                                        |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **N1** | Le recensement des lecteurs des fournées (§ 3.3) ; migration additive : réglage du fournil, colonne du poste, niveau figé, table des problèmes, `corrected_quantity` ; le niveau figé au premier passage, et `TRACKING_LEVELS_SINCE` ; `outputOf` qui déduit le corrigé ; le niveau servi par ligne ; `lecteur-de-migrations`. |
+| **N2** | « Fait », « Problème » (plafond, correction, fait publié, lecture des corrections), la cloche après validation, la Supervision des problèmes, la borne du retour.                                                                                                                                                              |
+| **N4** | Le front : composants de ligne, panneau rouge, `@switch`, page « Niveau de suivi » (`pablo`). Avant le cron : la page est en ligne avant que toujours vert n'agisse.                                                                                                                                                           |
+| **N3** | Le cron : la route, `RunAlwaysGreenLineCommand` sous le verrou, l'appel du Worker.                                                                                                                                                                                                                                             |
+| **N5** | Doc d'état ; réflexion et plan retirés.                                                                                                                                                                                                                                                                                        |
 
 ## 5. Pour le plan du colisage (noté, pas tranché)
 
