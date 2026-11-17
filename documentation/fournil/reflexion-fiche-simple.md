@@ -91,3 +91,44 @@ rouge. Le manager est prévenu deux fois, au four puis au bac (question Q5).
   manque au four annoncé au colisage avant qu'il ne bute dessus) ?
 - **Q6 — Basculer en cours de journée.** Les fournées déjà déclarées en mode
   détaillé comptent telles quelles, et « Fait » ne déclare que le reste.
+
+## 5. Plus loin : « toujours vert », la gestion par exception
+
+Hugo, 2026-11-17 : « on aurait même presque un mode always green non ? »
+Oui : on part du principe que **tout sort comme prévu**, et on ne déclare
+**que ce qui ne sort pas**. Plus aucun « Fait » : seul le bouton rouge existe.
+
+```mermaid
+flowchart LR
+    H["L'heure du palier<br/>(120 avant 7 h)"] --> A["Le système déclare<br/>le palier sorti"]
+    A --> K["Au colisage"]
+    P["🟥 Problème,<br/>avant ou après"] --> C["Correction :<br/>ce qui est vraiment sorti"]
+    C --> M["Le manager est appelé"]
+```
+
+**La vraie question : quand le système considère-t-il que c'est sorti ?**
+Parce que c'est ce moment-là qui remplit la réserve du colisage.
+
+| Moment                                           | Ce que ça donne                                 | Le risque                                                                     |
+| ------------------------------------------------ | ----------------------------------------------- | ----------------------------------------------------------------------------- |
+| **À l'arrêt du plan**, tout d'un coup            | le colisage peut tout déclarer prêt dès le soir | on colise des commandes avant que le pain existe ; un manque se découvre tard |
+| **À l'heure de chaque palier** (proposé)         | la réserve se remplit au rythme prévu du four   | un palier raté et non signalé passe pour sorti                                |
+| **Au premier geste du colisage** sur la commande | rien n'est sorti « en avance »                  | le fournil ne voit plus rien de ce qui avance                                 |
+
+Ce qu'on perd, et qu'il faut accepter en connaissance de cause :
+
+- **La barre d'avancement ne dit plus la réalité**, seulement le plan. La
+  Supervision montre « sorti » à l'heure prévue, même si le four a du retard.
+- **Un oubli devient un mensonge.** En mode détaillé, un produit oublié reste
+  « à faire » et se voit. En « toujours vert », il passe pour sorti, et le
+  manque se découvre au colisage (s'il est détaillé) ou chez le client.
+- **Le chemin rouge doit pouvoir corriger après coup** : déclarer « en fait,
+  seulement 80 sur 120 » après l'heure du palier. Ça veut dire **annuler une
+  partie** d'une fournée automatique, ce que le geste d'annulation ne sait pas
+  faire aujourd'hui (il annule une fournée **entière**, et seulement si ses
+  pièces ne sont pas au bac).
+
+Les trois niveaux formeraient alors un seul réglage, du plus léger au plus
+précis : **toujours vert** (exceptions seulement), **simple** (vert / rouge par
+produit), **détaillé** (fournées, plaques, paliers). Question **Q7** : lequel
+par défaut, et peut-on mélanger (toujours vert au fournil, simple au colisage) ?
