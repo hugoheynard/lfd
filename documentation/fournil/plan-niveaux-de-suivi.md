@@ -355,18 +355,20 @@ niveau est servi **par ligne** (`WorkshopLine.trackingLevel`), et le
 - **Rayés** : la § 3.2 (cron chaque minute, route `/internal/…`, `id` par
   palier, bail) et le point 3 de la § 3.4 (« part annulable »).
 
-## 8. Décision de Hugo (2026-11-17) : la version complète, et tout en vert ensemble
+## 8. Décision de Hugo (2026-11-17) : la version complète
 
 - **Le rouge après la marge demande le retour de l'excédent** (§ 7), avec la
   quantité demandée côté colisage. Pas de version allégée.
-- **Le fournil et le colisage passent en « toujours vert » en même temps.**
-  C'est ce qui rend le retour de l'excédent obligatoire : en toujours vert, le
-  colisage déclare une commande prête dès que sa réserve la couvre ; une
-  réserve gonflée de pièces qui n'existent pas ferait déclarer prêtes, puis
-  facturer, des commandes impossibles.
-- **Conséquence sur l'ordre** : le colisage « toujours vert » a son propre plan
-  ([`../colisage/reflexion-colisage-simple.md`](../colisage/reflexion-colisage-simple.md)
-  à transformer), et **aucun des deux n'est activé seul** en production. La
-  page « Niveau de suivi » refuse « toujours vert » au colisage tant que le
-  retour de l'excédent n'est pas en service, et les deux s'activent dans le
-  même déploiement.
+- **Les niveaux restent indépendants** : le fournil, chacun de ses postes et
+  le colisage ont chacun le leur, et toutes les combinaisons sont permises.
+  Au lancement, Hugo passera tout en « toujours vert » en même temps : c'est un
+  choix de déploiement, pas une règle du système.
+- **La seule condition technique** : le colisage ne peut être réglé en
+  « toujours vert » que si **le retour de l'excédent est en service**. En
+  toujours vert, le colisage déclare une commande prête dès que sa réserve la
+  couvre ; sans ce retour, une réserve gonflée de pièces qui n'existent pas
+  ferait déclarer prêtes, puis facturer, des commandes impossibles. La page
+  « Niveau de suivi » refuse donc « toujours vert » au colisage tant que ce
+  lot n'est pas livré.
+- **Le colisage « toujours vert » a son propre plan**, à tirer de
+  [`../colisage/reflexion-colisage-simple.md`](../colisage/reflexion-colisage-simple.md).
