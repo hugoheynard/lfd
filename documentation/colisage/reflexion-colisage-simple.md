@@ -157,3 +157,16 @@ manque réel se noie dans le faux. Donc :
   demande, et le seul geste du poste est « Il y a un problème ». Comme au
   fournil, ce qui le déclenche est à trancher : à l'heure de l'échéance de la
   commande, ou dès que tout est reçu du four.
+
+## Décidé par Hugo le 2026-11-17 : trois niveaux
+
+| Niveau                     | Ce que fait l'équipe                                                 | Pour qui                          |
+| -------------------------- | -------------------------------------------------------------------- | --------------------------------- |
+| **Toujours vert** (défaut) | rien, sauf le rouge quand ça ne va pas                               | l'équipe qui ne cochera jamais    |
+| **Simple**                 | un vert ou un rouge par produit (fournil) ou par commande (colisage) | qui veut confirmer sans détailler |
+| **Détaillé**               | fournées, plaques et paliers ; contenants, répartition et étiquettes | qui veut tout suivre              |
+
+Restent à trancher avant le plan : le moment où « toujours vert » considère un
+produit sorti (proposé : l'heure de chaque palier), la façon d'appeler le
+manager, la correction d'un vert après coup, et si fournil et colisage
+partagent un réglage ou en ont un chacun.
