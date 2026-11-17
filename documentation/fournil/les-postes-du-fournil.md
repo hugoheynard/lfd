@@ -15,7 +15,7 @@ La quiche est au rayon « Traiteur salé », et c'est la pâtisserie qui la fait
 Le fournil tient deux choses, et rien d'autre :
 
 - **sa liste de postes**, que l'on nomme et ordonne à l'écran
-  (Prod manager → Postes) ;
+  (Réglages › Production › Postes du fournil, `/reglages/production/postes`) ;
 - **le poste de chaque produit**. Toutes ses déclinaisons (quiche 6 parts,
   8 parts) en héritent.
 
@@ -43,8 +43,9 @@ flowchart LR
   vendable, rangé par le vrai code du dossier. Rien n'est enregistré, et chaque
   page porte « SIMULATION — ne pas produire ».
 - **Un produit oublié ne disparaît pas.** Il reste sous son rayon, marqué « à
-  ranger ». La page Postes le compte, et le Prod manager affiche « N produits
-  du jour à ranger » dès qu'il est commandé, avant l'arrêt.
+  ranger ». La page Postes du fournil le compte, et le Prod manager affiche
+  « N produits du jour à ranger » dès qu'il est commandé, avant l'arrêt ; son
+  lien « Les ranger » ouvre `/reglages/production/postes?filtre=a-ranger`.
 - **« Partir des rayons »** crée un poste par rayon racine et y place les
   produits sans poste : un premier jeu de noms à corriger.
 - **Tout ce qui est commandé est « à produire »** : un article revendu tel quel
@@ -165,7 +166,9 @@ relecture.
 
 - `production/workstations-page/` : le rangement (mode et simulations), les
   postes, les produits avec un `fold-listbox` par ligne et les filtres
-  (`?filtre=a-ranger`).
+  (`?filtre=a-ranger`). Elle vit aux Réglages (`/reglages/production/postes`,
+  décidé par Hugo le 2026-11-17), au rail comme aux tuiles du menu mobile ;
+  l'ancienne adresse `/prod-manager/postes` y redirige, filtre compris.
 - `production/fiche-atelier/` : les fiches de poste, `/fournil?poste=<id>`
   (l'adresse suit la fiche choisie), le choix retenu par personne dans
   `nav_prefs.worksheetCategory`.

@@ -69,7 +69,7 @@ describe('l’alerte du Prod manager', () => {
       '2 produits du jour à ranger',
     );
     expect(el.querySelector('[data-unplaced-link]')?.getAttribute('href')).toBe(
-      '/prod-manager/postes?filtre=a-ranger',
+      '/reglages/production/postes?filtre=a-ranger',
     );
   });
 

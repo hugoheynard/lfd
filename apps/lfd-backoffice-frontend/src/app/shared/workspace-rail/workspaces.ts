@@ -196,6 +196,15 @@ export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
     icon: 'grid',
     needs: 'production_settings:read',
   },
+  {
+    // Les postes du fournil (`documentation/fournil/les-postes-du-fournil.md`,
+    // § 3.8) : un réglage du fournil (Hugo, 2026-11-17), sous leur droit à part.
+    key: 'reglages-postes',
+    label: 'Postes du fournil',
+    link: '/reglages/production/postes',
+    icon: 'sliders',
+    needs: 'production_workstations:read',
+  },
 ];
 
 /**

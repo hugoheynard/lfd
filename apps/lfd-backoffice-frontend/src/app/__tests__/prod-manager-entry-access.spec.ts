@@ -127,10 +127,10 @@ describe("App — l'entrée Prod manager (R3d)", () => {
     expect(railLabels(['handover_counter:write'])).not.toContain('Prod manager');
   });
 
-  /** Les postes du fournil, un onglet de Prod manager (plan des postes, § 3.8). */
-  it('paraît au rail ET aux tuiles pour qui ne tient que les postes', async () => {
-    expect(railLabels(['production_workstations:read'])).toContain('Prod manager');
-    expect(await tileLabels(['production_workstations:read'])).toEqual(['Prod manager']);
+  /** Les postes du fournil vivent aux Réglages (Hugo, 2026-11-17). */
+  it('reste fermée à qui ne tient que les postes', async () => {
+    expect(railLabels(['production_workstations:read'])).not.toContain('Prod manager');
+    expect(await tileLabels(['production_workstations:read'])).toEqual([]);
   });
 
   it('paraît aussi aux tuiles du menu mobile, sous le même droit', async () => {

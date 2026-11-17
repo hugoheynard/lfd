@@ -179,6 +179,17 @@ export const reglagesRoutes: Routes = [
             (m) => m.BatchShortcutsPage,
           ),
       },
+      {
+        // Les postes du fournil (`documentation/fournil/les-postes-du-fournil.md`,
+        // § 3.8) : un réglage, sous leur droit à part (Hugo, 2026-11-17).
+        path: 'production/postes',
+        canActivate: [permissionGuard('production_workstations:read')],
+        title: 'Postes du fournil — LFC B2B admin',
+        loadComponent: () =>
+          import('../production/workstations-page/workstations-page').then(
+            (m) => m.WorkstationsPage,
+          ),
+      },
 
       // RÉGLAGES › LIVRAISON (Hugo, 2026-10-13) — ce qui SE RÈGLE de la
       // livraison, venu de `/livraison/` ; les écrans du jour y restent.

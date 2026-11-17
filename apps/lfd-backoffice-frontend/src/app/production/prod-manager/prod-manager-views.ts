@@ -36,15 +36,6 @@ export const PROD_MANAGER_VIEWS: readonly ProdManagerView[] = [
     // prévisionnel ne l'ouvrent.
     needsAnyOf: ['production_resupply:read'],
   },
-  {
-    // Les postes du fournil (`documentation/fournil/les-postes-du-fournil.md`, § 3.8) :
-    // un droit à part, celui de la carte des postes.
-    key: 'postes',
-    label: 'Postes',
-    link: '/prod-manager/postes',
-    icon: 'sliders',
-    needsAnyOf: ['production_workstations:read'],
-  },
 ];
 
 /** Les onglets que ces droits ouvrent, dans l'ordre. */

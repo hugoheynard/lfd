@@ -804,14 +804,10 @@ export const routes: Routes = [
           ),
       },
       {
-        // Les postes du fournil (`documentation/fournil/les-postes-du-fournil.md`, § 3.8).
+        // Les postes vivent aux Réglages (Hugo, 2026-11-17) ; l'ancienne
+        // adresse y mène, `?filtre=` compris (le routeur garde la requête).
         path: 'postes',
-        canActivate: [permissionGuard('production_workstations:read')],
-        title: 'Postes — Prod manager — LFC B2B admin',
-        loadComponent: () =>
-          import('./production/workstations-page/workstations-page').then(
-            (m) => m.WorkstationsPage,
-          ),
+        redirectTo: '/reglages/production/postes',
       },
       {
         path: 'reassorts/brouillon/:draftId',

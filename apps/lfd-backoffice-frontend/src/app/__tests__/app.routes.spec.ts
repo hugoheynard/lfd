@@ -324,12 +324,12 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'prod-manager/reassorts': 'production_resupply:read',
   'prod-manager/reassorts/nouveau': 'production_resupply:write',
   'prod-manager/reassorts/brouillon/:draftId': 'production_resupply:write',
-  // Les postes du fournil (plan des postes, § 3.8).
-  'prod-manager/postes': 'production_workstations:read',
   // Partis en Réglages › Production le 2026-10-13 (Hugo).
   'reglages/production/fournil': 'production_settings:read',
   // Les raccourcis du fournil (plan des raccourcis, S1, 2026-10-28).
   'reglages/production/raccourcis': 'production_settings:read',
+  // Les postes du fournil (plan des postes, § 3.8), un réglage depuis le 2026-11-17.
+  'reglages/production/postes': 'production_workstations:read',
   // LE COMPTOIR non plus : la file de retrait (`handover_counter`) et la
   // commande pro (`b2b_place_order`) sont deux droits. Attester un retrait
   // passe par `retrait/:token`, qui exige l'écriture.
@@ -574,6 +574,14 @@ describe("l'arbre de routes du back-office", () => {
       '/catalogue-publie',
     );
     expect(children.find((child) => child.path === '')?.redirectTo).toBe('/commercial/demandes');
+  });
+
+  it('renvoie l’ancienne page Postes du Prod manager vers les Réglages', () => {
+    // Partie aux Réglages le 2026-11-17 (Hugo) ; `?filtre=` suit la redirection.
+    const prodManager = routes.find((route) => route.path === 'prod-manager');
+    const old = (prodManager?.children ?? []).find((child) => child.path === 'postes');
+    expect(old?.redirectTo).toBe('/reglages/production/postes');
+    expect(old?.loadComponent).toBeUndefined();
   });
 
   it('renvoie l’ancienne adresse des règles comptables vers les produits', () => {
