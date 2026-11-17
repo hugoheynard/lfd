@@ -372,3 +372,30 @@ niveau est servi **par ligne** (`WorkshopLine.trackingLevel`), et le
   lot n'est pas livré.
 - **Le colisage « toujours vert » a son propre plan**, à tirer de
   [`../colisage/reflexion-colisage-simple.md`](../colisage/reflexion-colisage-simple.md).
+
+## 9. L'indépendance des parties (Hugo, 2026-11-17) — prime sur la § 8
+
+**Le colisage ne connaît pas le niveau du fournil**, et le fournil ne connaît
+pas celui du colisage. Chacun reçoit les faits de l'autre et sait les traiter
+**à chacun de ses propres niveaux**.
+
+- **Ce que le fournil publie** ne dépend pas de son niveau : « N pièces
+  remises » (`production.handed_to_packing`), « rends-moi N pièces » (la
+  demande de retour, avec sa quantité, § 7). Une fournée automatique, un
+  « Fait » ou une plaque saisie au pavé produisent le **même** fait.
+- **Ce que le colisage en fait** dépend de **son** niveau, jamais de celui du
+  fournil :
+
+  | Niveau du colisage | Une demande de retour de N pièces                                                                                                                                     |
+  | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | **Détaillé**       | le coliseur la voit et répond, comme aujourd'hui                                                                                                                      |
+  | **Simple**         | le poste la voit et répond en un geste                                                                                                                                |
+  | **Toujours vert**  | le colisage rend seul ce qui n'est dans aucune commande ; ce qui est déjà dans des commandes prêtes devient un **manque** sur ces commandes, et le manager est appelé |
+
+- **La condition de la § 8 tombe** : il n'y a pas de « colisage toujours vert
+  refusé tant que le fournil n'a pas son retour ». Le colisage, à tous ses
+  niveaux, sait traiter une demande de retour **avec quantité** ; c'est une
+  capacité du colisage, livrée avec son plan, et non un réglage croisé.
+- **Le contrat** entre les deux est le canal existant
+  (`production/channels/packing/`) : le fournil le déclare et y publie, le
+  colisage s'y abonne. Aucune lecture du réglage de l'autre.

@@ -198,3 +198,11 @@ règles, et aucun ne pourrait plus changer la sienne seul.
 Comme au fournil : **la cloche du back-office** pour toutes les personnes qui
 ont le droit, et le rouge **visible sur l'écran de Supervision**, dans la
 colonne du colisage, tant que le manager n'a pas décidé.
+
+## L'indépendance du colisage (Hugo, 2026-11-17)
+
+Le colisage **ne connaît pas le niveau du fournil**. Il reçoit des faits
+(« N pièces remises », « rends-moi N pièces ») et doit savoir les traiter à
+**chacun de ses niveaux**, y compris en toujours vert, où il rend seul ce qui
+n'est dans aucune commande et déclare un manque sur les commandes déjà prêtes.
+Voir [`../fournil/plan-niveaux-de-suivi.md`](../fournil/plan-niveaux-de-suivi.md), § 9.
