@@ -219,3 +219,22 @@ terrain montre que la cloche ne suffit pas. Le colisage suit la même règle.
 
 On ne défait donc jamais en silence ce que le colisage a fait, et le manque ne
 se perd pas.
+
+## Décision 4 — un niveau pour le fournil, remplaçable par poste (Hugo, 2026-11-17)
+
+**Pour la production : un réglage global, que chaque poste du fournil peut
+remplacer.** Le fournil a un niveau (par exemple « toujours vert ») ; un poste
+(les postes de [`les-postes-du-fournil.md`](les-postes-du-fournil.md)) peut en
+porter un autre (la Pâtisserie en « détaillé »). Sans réglage propre, un poste
+suit le niveau du fournil.
+
+- **Où ça vit** : le niveau global avec le réglage d'affichage du fournil,
+  dans l'imprimerie ou le métier qui le lira (à trancher dans le plan) ; le
+  niveau d'un poste sur le poste lui-même, dans `workstations/`, qui le
+  possède déjà.
+- **Une ligne sans poste** (mode boutique, ou produit « à ranger ») suit le
+  niveau du fournil.
+- **La fiche de poste** affiche le niveau de son poste ; la page « Niveau de
+  suivi » montre le niveau du fournil et la liste des postes qui le
+  remplacent.
+- **Le colisage** garde son propre réglage, séparé du fournil.
