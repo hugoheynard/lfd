@@ -527,3 +527,21 @@ dans leur ordre (la commande, puis les bacs, puis la réserve) :**
 La réserve n'est jamais à découvert, pas même un instant dans la transaction.
 Le détail (quelles commandes, quel ordre, l'écran) appartient au plan du
 colisage ; ce plan-ci ne fait que publier le fait.
+
+## 12. Le périmètre de ce chantier (Hugo, 2026-11-17)
+
+**Ce chantier livre le fournil et le fait, pas son traitement au colisage.**
+
+- **Dedans** : les trois niveaux du fournil (réglage global, par poste, figé à
+  l'arrêt), la fournée automatique, « Fait », « Problème » (plafond, cloche,
+  Supervision), la **publication** du fait de correction de déclaration
+  (`production.output_corrected`), la page « Niveau de suivi » et la fiche à
+  trois niveaux.
+- **Dehors, à repenser le moment venu** : ce que le colisage fait du fait
+  (baisser sa réserve sans jamais la mettre à découvert, quelles commandes
+  perdent les pièces), et le colisage à trois niveaux. Le fait reste dans la
+  boîte d'envoi, publié et tracé, sans abonné tant que ce plan n'existe pas.
+- **Ce que ça veut dire au service, en attendant** : une correction ne baisse
+  pas la réserve du colisage. Le colisage, encore en détaillé, voit
+  physiquement qu'il manque des pièces et déclare son manque comme aujourd'hui ;
+  le manager est déjà prévenu par la cloche du fournil.
