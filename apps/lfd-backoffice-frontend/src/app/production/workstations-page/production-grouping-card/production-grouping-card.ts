@@ -3,10 +3,12 @@ import {
   Component,
   computed,
   DestroyRef,
+  effect,
   inject,
   input,
   output,
   signal,
+  untracked,
 } from '@angular/core';
 import type { ProductionDisplayView, ProductionGrouping } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
@@ -83,6 +85,12 @@ export class ProductionGroupingCard {
 
   constructor() {
     inject(DestroyRef).onDestroy(() => this.revoke());
+    // Un refus dit l'état de la carte au moment du geste : dès que les postes
+    // changent (un rayon placé, un poste créé), il ne dit plus rien de vrai.
+    effect(() => {
+      this.unplacedOrdered();
+      untracked(() => this.refusal.set(null));
+    });
   }
 
   protected choose(value: string): void {

@@ -111,6 +111,29 @@ describe('le rangement du fournil', () => {
     expect(saves).toEqual([]);
   });
 
+  /**
+   * Régression : le refus « aucun produit n'a de poste » restait affiché après
+   * « Partir des rayons », qui venait pourtant de placer les produits
+   * (essai dans Chrome du 2026-11-17).
+   */
+  it('efface le refus dès que les postes changent', async () => {
+    settings.refusal = new HttpErrorResponse({
+      status: 409,
+      error: { message: 'Aucun produit n’a de poste.' },
+    });
+    const { fixture } = await mount(SHOP, 0);
+    fixture.componentInstance['choose']('workstation');
+    await settle();
+    fixture.detectChanges();
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('[data-grouping-refusal]')).not.toBeNull();
+
+    fixture.componentRef.setInput('unplacedOrdered', 12);
+    fixture.detectChanges();
+
+    expect(host.querySelector('[data-grouping-refusal]')).toBeNull();
+  });
+
   it('revenir en mode boutique part sans confirmation', async () => {
     const { fixture } = await mount({ showSubcategories: false, grouping: 'workstation' }, 9);
 
