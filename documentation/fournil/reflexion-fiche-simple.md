@@ -201,3 +201,21 @@ ligne, le manque et la raison ; un clic mène à la ligne. Et le rouge **se voit
 sur l'écran de Supervision**, dans la colonne du fournil, tant qu'il n'est pas
 traité. Pas de son, de SMS ni d'e-mail pour l'instant : on les ajoutera si le
 terrain montre que la cloche ne suffit pas. Le colisage suit la même règle.
+
+## Décision 3 — corriger un vert après coup (Hugo, 2026-11-17)
+
+**Avec les mécaniques déjà en place**, sans geste neuf au cœur du fournil :
+
+1. « Toujours vert » déclare, à l'heure du palier plus la marge, **une
+   fournée ordinaire** (`RecordBatchCommand`) de la quantité du palier. Elle
+   part au colisage comme toute fournée.
+2. Corriger (« 80 seulement ») **annule cette fournée** (`CancelBatchCommand`)
+   puis **en déclare une de 80**. Ce sont les deux gestes d'aujourd'hui, dans
+   une même unité de travail.
+3. L'annulation refuse déjà une fournée dont des pièces sont au bac (la part
+   annulable se lit au colisage). Dans ce cas, rien n'est défait : le rouge
+   prévient le manager, et c'est **le manque du colisage**
+   (`reportShortfall`) qui le porte sur les commandes concernées.
+
+On ne défait donc jamais en silence ce que le colisage a fait, et le manque ne
+se perd pas.
