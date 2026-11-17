@@ -136,3 +136,24 @@ par son numéro. Pour une livraison, voir Q1.
   comme le poste ; la décision du manager reste sous son droit actuel.
 - La Supervision et la page Commandes lisent le même `board` : elles doivent
   rester justes dans les deux modes.
+
+## Ce que dit le terrain (2026-11-17)
+
+La manager, rapportée par Hugo : **« ils ne cocheront jamais »**.
+
+C'est la donnée qui tranche le mode par défaut. Un geste vert que personne ne
+fait laisse tout « à faire » : l'écran ment alors dans l'autre sens, et le
+manque réel se noie dans le faux. Donc :
+
+- **le mode par défaut est « toujours vert »** : tout est réputé fait à
+  l'heure prévue, et le seul geste demandé est le **rouge**, quand ça ne va
+  pas ;
+- le **rouge doit coûter le moins possible** : un geste, la quantité réelle,
+  la raison facultative, et le manager prévenu sans rien faire de plus ;
+- les modes simple et détaillé restent au réglage, pour qui veut suivre de
+  près.
+- **Au colisage aussi**, la conséquence est la même : une commande passe
+  prête **d'elle-même** quand la réserve du colisage contient tout ce qu'elle
+  demande, et le seul geste du poste est « Il y a un problème ». Comme au
+  fournil, ce qui le déclenche est à trancher : à l'heure de l'échéance de la
+  commande, ou dès que tout est reçu du four.

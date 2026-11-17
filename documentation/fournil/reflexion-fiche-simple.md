@@ -132,3 +132,19 @@ Les trois niveaux formeraient alors un seul réglage, du plus léger au plus
 précis : **toujours vert** (exceptions seulement), **simple** (vert / rouge par
 produit), **détaillé** (fournées, plaques, paliers). Question **Q7** : lequel
 par défaut, et peut-on mélanger (toujours vert au fournil, simple au colisage) ?
+
+## Ce que dit le terrain (2026-11-17)
+
+La manager, rapportée par Hugo : **« ils ne cocheront jamais »**.
+
+C'est la donnée qui tranche le mode par défaut. Un geste vert que personne ne
+fait laisse tout « à faire » : l'écran ment alors dans l'autre sens, et le
+manque réel se noie dans le faux. Donc :
+
+- **le mode par défaut est « toujours vert »** : tout est réputé fait à
+  l'heure prévue, et le seul geste demandé est le **rouge**, quand ça ne va
+  pas ;
+- le **rouge doit coûter le moins possible** : un geste, la quantité réelle,
+  la raison facultative, et le manager prévenu sans rien faire de plus ;
+- les modes simple et détaillé restent au réglage, pour qui veut suivre de
+  près.
