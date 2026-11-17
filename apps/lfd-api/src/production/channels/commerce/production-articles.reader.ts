@@ -24,23 +24,26 @@ export interface ProductionArticle {
  * Un poste s'attache au PRODUIT, et le fournil ne connaît que le SKU de ses
  * lignes : il lui faut la référence produit de chaque déclinaison, masquée
  * ou sans taux comprise — une quiche 6 parts masquée suit le poste de son
- * produit, et un produit masqué mais fabriqué peut recevoir un poste. Une
- * déclinaison **retirée** n'est pas rendue.
+ * produit, et un produit masqué mais fabriqué peut recevoir un poste.
  *
- * Un port à part et non une méthode de plus sur {@link WorkshopShelvesReader}
- * (ISP) : le mode boutique ne lit que le rayon, filtres de vente compris, et
- * n'a pas à changer.
+ * C'est aussi la seule lecture du rayon pour le fournil, dans les deux modes
+ * de rangement : la production est agnostique de l'état de vente (décidé par
+ * Hugo le 2026-11-17).
  *
  * Il vit dans `channels/commerce/` : la production le déclare, le commerce
  * l'implémente, `appBootstrap` les relie.
  */
 export abstract class ProductionArticlesReader {
   /**
-   * L'article de chaque SKU demandé. Un SKU absent du miroir ou retiré est
-   * **absent** de la table. Une panne réelle lève.
+   * L'article de chaque SKU demandé, **retiré compris** : une commande passée
+   * avant le retrait se range encore. Un SKU absent du miroir est **absent**
+   * de la table — c'est le seul « Hors catalogue ». Une panne réelle lève.
    */
   abstract articlesOf(skus: readonly string[]): Promise<ReadonlyMap<string, ProductionArticle>>;
 
-  /** Tous les articles du miroir, déclinaisons et masqués compris, dans l'ordre du catalogue. */
+  /**
+   * Tous les articles du miroir, déclinaisons et masqués compris, dans l'ordre
+   * du catalogue — **sans les retirés** : ce sont les articles à ranger.
+   */
   abstract allArticles(): Promise<readonly ProductionArticle[]>;
 }

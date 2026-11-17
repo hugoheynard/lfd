@@ -1,4 +1,4 @@
-import { addDays, instantToLocal, localToInstant, type CatalogFamilyView } from "@lfd/contracts";
+import { addDays, instantToLocal, localToInstant } from "@lfd/contracts";
 
 import { InMemoryDisplaySettings } from "../../../../shared/print/application/__tests__/production-display-settings-doubles.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
@@ -10,7 +10,6 @@ import {
   ExpectedProductionReader,
   type ExpectedDayProduction,
 } from "../../../../channels/commerce/expected-production.reader.js";
-import { WorkshopShelvesReader } from "../../../../channels/commerce/workshop-shelves.reader.js";
 import { ProductionDay } from "../../../../day/domain/entities/production-day.js";
 import { ProductionContainerReader } from "../../../domain/ports/production-container.reader.js";
 import { ProductionDayRepository } from "../../../../day/index.js";
@@ -100,12 +99,6 @@ class NoContainers extends ProductionContainerReader {
   }
 }
 
-class NoShelves extends WorkshopShelvesReader {
-  shelvesOf(): Promise<ReadonlyMap<string, CatalogFamilyView>> {
-    return Promise.resolve(new Map());
-  }
-}
-
 function closedOn(day: string): ProductionDay {
   const production = ProductionDay.open(ServiceDay.of(day));
   production.close([ORDER], new Set<string>(), new Date(NOW.getTime() - 60 * 60 * 1000), null);
@@ -123,7 +116,7 @@ function handlerFor(days: Days, now: Date = NOW): GetCurrentProductionWorksheetH
     qualityLinesFrom(new CheckTable()),
     new FixedOvenWaitingOrders(),
     new InMemoryDisplaySettings().reader(),
-    new GroupingSourceReading(new NoShelves(), ...placementPorts()),
+    new GroupingSourceReading(...placementPorts()),
   );
   return new GetCurrentProductionWorksheetHandler(
     days,

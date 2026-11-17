@@ -1,4 +1,3 @@
-import type { CatalogFamilyView } from "@lfd/contracts";
 import type { MailReceipt } from "@lfd/mailer";
 
 import {
@@ -12,8 +11,9 @@ import {
   StaffNotifier,
   type StaffNotice,
 } from "../../../../staff/notifications/domain/ports/staff-notifier.js";
-import { WorkshopShelvesReader } from "../../../channels/commerce/workshop-shelves.reader.js";
+import type { ProductionArticle } from "../../../channels/commerce/index.js";
 import type { ProductionDay } from "../../../day/index.js";
+import { article } from "../../../workstations/application/__tests__/placement-doubles.js";
 import {
   DossierDispatchLog,
   type DossierDispatchOutcome,
@@ -103,13 +103,9 @@ export class Bell extends StaffNotifier {
 }
 
 /** Les rayons : tout en Viennoiseries. */
-export class Shelves extends WorkshopShelvesReader {
-  shelvesOf(): Promise<ReadonlyMap<string, CatalogFamilyView>> {
-    return Promise.resolve(
-      new Map([["VIE-001", { id: "fam-vien", name: "Viennoiseries", position: 0 }]]),
-    );
-  }
-}
+export const DOSSIER_ARTICLES: readonly ProductionArticle[] = [
+  article("VIE-001", "VIE", { id: "fam-vien", name: "Viennoiseries", position: 0 }),
+];
 
 /** Sans origine du back-office : aucun QR, le papier reste juste. */
 export class NoAdminOrigin extends AppConfig {

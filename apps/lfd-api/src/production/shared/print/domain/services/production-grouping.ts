@@ -25,9 +25,14 @@ import { rootShelvesOf, type ShelfSection } from "./root-shelves.js";
  *   pas pu être lus).
  * - **Mode prod** : un groupe par poste qui a des lignes, dans l'ordre des
  *   postes ; puis, pour les produits sans poste, un groupe par rayon titré
- *   « … — à ranger » ; puis « Hors catalogue — à ranger » pour un SKU que le
- *   commerce ne connaît plus, qui n'a pas de produit et ne peut donc pas
+ *   « … — à ranger » ; puis « Hors catalogue — à ranger » pour un SKU absent
+ *   du miroir du catalogue, qui n'a pas de produit et ne peut donc pas
  *   recevoir de poste.
+ *
+ * Dans les deux modes, le rayon ne dépend pas de l'état de vente (décidé par
+ * Hugo le 2026-11-17) : un article masqué, réservé à une clientèle, sans taux
+ * ou retiré se range sous son vrai rayon. « Hors catalogue » ne vaut que pour
+ * un SKU absent du miroir.
  *
  * Toute ligne reçue ressort dans exactement un groupe, dans les deux modes.
  * Aucun groupe vide.

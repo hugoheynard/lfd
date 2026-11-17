@@ -22,14 +22,22 @@ const AUDIENCE_VIEWERS = [staffViewer("pro"), staffViewer("public")] as const;
  * (`catalog_items`) **sans les filtres de vente** (plan
  * `documentation/fournil/les-postes-du-fournil.md`, § 3.4).
  *
- * Toute déclinaison est rendue, masquée, sans taux ou hors vignette comprise :
- * le fournil range des lignes déjà commandées, et un poste s'attache à leur
- * produit. Seule une déclinaison **retirée** est écartée (`STILL_SOLD`).
+ * Toute déclinaison est rendue, masquée, réservée, sans taux ou hors vignette
+ * comprise : le fournil range des lignes déjà commandées, et un poste
+ * s'attache à leur produit. Le fournil est agnostique de l'état de vente
+ * (décidé par Hugo le 2026-11-17).
+ *
+ * Le retrait se lit selon la question :
+ * - `articlesOf` rend aussi une déclinaison **retirée** : une commande passée
+ *   avant le retrait se fabrique encore, et doit se ranger sous son rayon ;
+ * - `allArticles` l'écarte (`STILL_SOLD`) : la page Postes et la simulation
+ *   listent ce qui reste à ranger, et un article retiré n'y a plus sa place.
  *
  * `sellable` suit la règle même de la vente, sans en écrire une copie : la
  * déclinaison paraît au rayon (`isShownAsTile`, la jumelle de
  * `soldUnderShopSkus`) et `servedItem` la sert à au moins une clientèle —
- * masquages, réservations, taux et prix compris.
+ * masquages, réservations, taux et prix compris ; un article retiré ne l'est
+ * jamais.
  *
  * La famille passe par la lignée puis `familyView`, comme celle de
  * `listByShopSkus` : sans la lignée, une sous-catégorie se rangerait sous
@@ -49,24 +57,31 @@ export class CatalogProductionArticlesReader extends ProductionArticlesReader {
     if (skus.length === 0) {
       return new Map();
     }
-    const articles = await this.read({ sku: { in: [...skus] } });
-    return new Map(articles.map((article) => [article.sku, article]));
-  }
-
-  allArticles(): Promise<readonly ProductionArticle[]> {
-    return this.read({});
-  }
-
-  private async read(where: {
-    readonly sku?: { readonly in: string[] };
-  }): Promise<ProductionArticle[]> {
     const rows = await timeCatalogueRead(() =>
+      // withdrawn-filter: exempt — une commande passée avant le retrait se
+      // range encore sous son rayon ; ce n'est pas une mise en vente.
       this.prisma.catalogItem.findMany({
-        where: { ...where, ...STILL_SOLD },
+        where: { sku: { in: [...skus] } },
         include: itemInclude(staffViewer("pro")),
         orderBy: [{ category: { position: "asc" } }, { position: "asc" }, { sku: "asc" }],
       }),
     );
+    const articles = await this.articlesFrom(rows);
+    return new Map(articles.map((article) => [article.sku, article]));
+  }
+
+  async allArticles(): Promise<readonly ProductionArticle[]> {
+    const rows = await timeCatalogueRead(() =>
+      this.prisma.catalogItem.findMany({
+        where: { ...STILL_SOLD },
+        include: itemInclude(staffViewer("pro")),
+        orderBy: [{ category: { position: "asc" } }, { position: "asc" }, { sku: "asc" }],
+      }),
+    );
+    return this.articlesFrom(rows);
+  }
+
+  private async articlesFrom(rows: readonly ArticleRow[]): Promise<ProductionArticle[]> {
     const lineage = await this.lineage(rows);
     return rows.map((row) => articleOf(row, lineage));
   }
@@ -85,7 +100,10 @@ export class CatalogProductionArticlesReader extends ProductionArticlesReader {
   }
 }
 
-function articleOf(row: ItemRow, lineage: Lineage): ProductionArticle {
+/** Une ligne du miroir, avec son retrait : `articlesOf` rend aussi les retirés. */
+type ArticleRow = ItemRow & { readonly withdrawnAt: Date | null };
+
+function articleOf(row: ArticleRow, lineage: Lineage): ProductionArticle {
   return {
     sku: shopSkuOf(row),
     productSku: row.productSku,
@@ -93,6 +111,7 @@ function articleOf(row: ItemRow, lineage: Lineage): ProductionArticle {
     variantName: shopItemName(row.name),
     family: familyOf(row, lineage),
     sellable:
+      row.withdrawnAt === null &&
       isShownAsTile(row) &&
       AUDIENCE_VIEWERS.some((viewer) => servedItem(row, viewer, lineage) !== null),
   };

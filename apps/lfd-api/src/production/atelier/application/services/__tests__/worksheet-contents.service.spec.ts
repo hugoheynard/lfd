@@ -1,4 +1,4 @@
-import { type CatalogFamilyView, instantToLocal } from "@lfd/contracts";
+import { instantToLocal } from "@lfd/contracts";
 
 import { DayVersionRegistry } from "../../../../../platform/day-versions/day-version-registry.js";
 import { sources } from "../../../../../platform/day-versions/__tests__/day-versions-doubles.js";
@@ -11,7 +11,6 @@ import {
   type ExpectedDayProduction,
   ExpectedProductionReader,
 } from "../../../../channels/commerce/expected-production.reader.js";
-import { WorkshopShelvesReader } from "../../../../channels/commerce/workshop-shelves.reader.js";
 import type { ProductionDay } from "../../../../day/index.js";
 import { ProductionContainerReader } from "../../../domain/ports/production-container.reader.js";
 import { ProductionDayRepository } from "../../../../day/index.js";
@@ -35,8 +34,10 @@ import { GroupingSourceReading } from "../../../../workstations/index.js";
 import { WorksheetContents } from "../worksheet-contents.service.js";
 import { WorksheetDeadlinesReading } from "../worksheet-deadlines-reading.service.js";
 import {
-  placementPorts,
+  FailingProductionArticles,
+  FixedProductionArticles,
   SettableWorkstationMapVersion,
+  UnreadWorkstationOfProducts,
 } from "../../../../workstations/application/__tests__/placement-doubles.js";
 import { SettableDisplaySettingsVersion } from "../../../../shared/print/application/__tests__/production-display-settings-doubles.js";
 
@@ -87,17 +88,6 @@ class NoContainers extends ProductionContainerReader {
   }
 }
 
-class Shelves extends WorkshopShelvesReader {
-  constructor(private readonly down: boolean) {
-    super();
-  }
-  shelvesOf(): Promise<ReadonlyMap<string, CatalogFamilyView>> {
-    return this.down
-      ? Promise.reject(new Error("commerce injoignable"))
-      : Promise.resolve(new Map());
-  }
-}
-
 type Outage = "none" | "shelves" | "deadlines" | "waiting";
 
 function around(outage: Outage = "none") {
@@ -123,7 +113,10 @@ function around(outage: Outage = "none") {
     qualityLinesFrom(new CheckTable()),
     new FixedOvenWaitingOrders(outage === "waiting" ? "down" : undefined),
     new InMemoryDisplaySettings().reader(),
-    new GroupingSourceReading(new Shelves(outage === "shelves"), ...placementPorts()),
+    new GroupingSourceReading(
+      outage === "shelves" ? new FailingProductionArticles() : new FixedProductionArticles([]),
+      new UnreadWorkstationOfProducts(),
+    ),
   );
   const cache = new MemoryDayContents();
   const clock = new FixedClock(NOW);

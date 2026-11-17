@@ -8,10 +8,7 @@
 import type { CreatedIdResponse } from "@lfd/contracts";
 
 import type { PlacedResupply, ProducibleOrder } from "../src/production/channels/commerce/index.js";
-import {
-  ProductionArticlesReader,
-  WorkshopShelvesReader,
-} from "../src/production/channels/commerce/index.js";
+import { ProductionArticlesReader } from "../src/production/channels/commerce/index.js";
 import {
   KnownArticles,
   ProductionDayRepository,
@@ -109,7 +106,7 @@ describe("KnownArticles — les articles des journées arrêtées", () => {
 });
 
 describe("ProductionArticlesReader — le commerce, sans les filtres de vente", () => {
-  it("rend une déclinaison masquée avec son produit, jamais une retirée ni une inconnue", async () => {
+  it("rend une déclinaison masquée ou retirée avec son produit, jamais une inconnue", async () => {
     await ctx.prisma.catalogItemOverride.create({
       data: { sku: "VIE-002-1", isHidden: true, isHiddenPublic: true },
     });
@@ -122,7 +119,14 @@ describe("ProductionArticlesReader — le commerce, sans les filtres de vente", 
       .get(ProductionArticlesReader)
       .articlesOf(["VIE-001-1", "VIE-002-1", "VIE-004-1", "NOPE-1"]);
 
-    expect([...articles.keys()].sort()).toEqual(["VIE-001-1", "VIE-002-1"]);
+    // Le fournil est agnostique de la vente (Hugo, 2026-11-17) : une commande
+    // passée avant le retrait se range encore sous son rayon.
+    expect([...articles.keys()].sort()).toEqual(["VIE-001-1", "VIE-002-1", "VIE-004-1"]);
+    expect(articles.get("VIE-004-1")).toMatchObject({
+      productSku: "VIE-004",
+      sellable: false,
+      family: { id: "fam-vien" },
+    });
     expect(articles.get("VIE-002-1")).toMatchObject({
       productSku: "VIE-002",
       sellable: false,
@@ -133,21 +137,19 @@ describe("ProductionArticlesReader — le commerce, sans les filtres de vente", 
   });
 });
 
-describe("Le rayon d'un article vendable, lu par les deux ports", () => {
-  // Le mode boutique range par `WorkshopShelvesReader`, le mode prod par
-  // `ProductionArticlesReader` : pour un article vendu, ils disent le même rayon.
-  it("rend, pour chaque SKU vendable du miroir, le même rayon par les deux ports", async () => {
-    const all = await ctx.app.get(ProductionArticlesReader).allArticles();
-    const sellable = all.filter((item) => item.sellable);
-    expect(sellable.length).toBeGreaterThan(0);
-    const skus = sellable.map((item) => item.sku);
+describe("ProductionArticlesReader.allArticles — les articles à ranger", () => {
+  it("n'écarte que les retirés", async () => {
+    await ctx.prisma.catalogItem.update({
+      where: { sku: "VIE-004-1" },
+      data: { withdrawnAt: CLOSED_AT },
+    });
 
-    const shelves = await ctx.app.get(WorkshopShelvesReader).shelvesOf(skus);
-    const articles = await ctx.app.get(ProductionArticlesReader).articlesOf(skus);
+    const skus = (await ctx.app.get(ProductionArticlesReader).allArticles()).map(
+      (item) => item.sku,
+    );
 
-    for (const sku of skus) {
-      expect([sku, articles.get(sku)?.family]).toEqual([sku, shelves.get(sku)]);
-    }
+    expect(skus).toContain("VIE-001-1");
+    expect(skus).not.toContain("VIE-004-1");
   });
 });
 

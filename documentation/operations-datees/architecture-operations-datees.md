@@ -152,7 +152,7 @@ catalogue. Il a six appelants, et deux ne vendent pas :
 | fiche et lot de la boutique (`catalog-backed-product-catalog.ts:40/48`)  | oui     | idem                                                                                             |
 | passation et devis (`order-drafting.service.ts`, via `resolveMany`)      | oui     | garde D6                                                                                         |
 | paniers et brouillons (`save-shop-cart`, `save-order-draft`)             | oui     | acceptés, mais la ligne dit pourquoi elle ne passera pas                                         |
-| fiche atelier du fournil (`catalog-workshop-shelves.reader.ts:41`)       | **non** | **aucun filtre** : la bûche du 24 reste lisible le 26                                            |
+| fiche atelier du fournil (`catalog-production-articles.reader.ts`)       | **non** | **aucun filtre** : la bûche du 24 reste lisible le 26                                            |
 | écrans de tarification (`catalog-backed-product-catalog.ts:63`, `all()`) | **non** | **aucun filtre** : on négocie le prix d'une bûche avant son annonce — c'est la préparation de D1 |
 
 Le lecteur reste donc tel qu'il est ; les vendeurs appellent `operationAccess`

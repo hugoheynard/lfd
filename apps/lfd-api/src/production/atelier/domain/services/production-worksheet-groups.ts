@@ -74,9 +74,10 @@ export interface WorksheetSection {
  * ## Le groupe sans rayon, et ses deux libellés
  *
  * `shelves: null` = la lecture a ÉCHOUÉ. Tout va alors dans « Rayon inconnu »,
- * et surtout pas « Hors catalogue », qui affirmerait que le fournil fabrique des
- * articles retirés de la vente. Une table lue mais sans ce SKU, elle, dit bien
- * « Hors catalogue ».
+ * et surtout pas « Hors catalogue », qui affirmerait que ces articles sont
+ * absents du catalogue. Une table lue mais sans ce SKU, elle, dit bien
+ * « Hors catalogue » : le SKU est absent du miroir — un article masqué,
+ * réservé ou retiré y garde son rayon.
  *
  * Aucun groupe vide : un onglet « 0 ligne » est un onglet qu'on ouvre pour rien.
  */

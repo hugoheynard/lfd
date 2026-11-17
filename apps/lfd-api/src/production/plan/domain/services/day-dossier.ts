@@ -28,7 +28,7 @@ import {
  *
  * Fonction pure : les rayons sont passés par l'appelant, `null` si leur
  * lecture a échoué (tout tombe alors dans « Rayon inconnu », jamais « Hors
- * catalogue », qui affirmerait des articles retirés de la vente).
+ * catalogue », qui affirmerait des articles absents du catalogue).
  */
 
 /** Un produit à fabriquer, commandes et réassorts confondus. */

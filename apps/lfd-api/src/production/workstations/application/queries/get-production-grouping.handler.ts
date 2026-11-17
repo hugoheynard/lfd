@@ -12,9 +12,9 @@ import { GetProductionGroupingQuery } from "./get-production-grouping.query.js";
 /**
  * **Le rangement servi au front** (`documentation/fournil/les-postes-du-fournil.md`,
  * § 3.7) : pour chaque SKU, son groupe et son intertitre selon le mode du
- * RÉGLAGE — par rayon en mode boutique, par poste en mode prod. Un SKU que le
- * commerce ne connaît pas va en « Hors catalogue » (« — à ranger » en mode
- * prod) : il n'est jamais refusé, puisqu'un écran le montre quand même.
+ * RÉGLAGE — par rayon en mode boutique, par poste en mode prod. Un SKU absent
+ * du miroir du catalogue va en « Hors catalogue » (« — à ranger » en mode
+ * prod) ; masqué, réservé ou retiré, il garde son rayon : il n'est jamais refusé, puisqu'un écran le montre quand même.
  *
  * Les SKU en double ne ressortent qu'une fois. Il n'écrit rien, pas même un
  * compteur — §4.

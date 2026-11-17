@@ -20,7 +20,7 @@ import {
   ExpectedProductionReader,
   type ExpectedDayProduction,
 } from "../../../../channels/commerce/expected-production.reader.js";
-import { WorkshopShelvesReader } from "../../../../channels/commerce/workshop-shelves.reader.js";
+import type { ProductionArticlesReader } from "../../../../channels/commerce/index.js";
 import { ProductionDay } from "../../../../day/domain/entities/production-day.js";
 import { ProductionContainerReader } from "../../../domain/ports/production-container.reader.js";
 import { ProductionDayRepository } from "../../../../day/index.js";
@@ -39,7 +39,11 @@ import {
 } from "../../../../quality/application/__tests__/quality-doubles.js";
 import { worksheetContentsAround } from "../../__tests__/worksheet-contents-doubles.js";
 import { WorksheetDeadlinesReading } from "../../services/worksheet-deadlines-reading.service.js";
-import { placementPorts } from "../../../../workstations/application/__tests__/placement-doubles.js";
+import {
+  FailingProductionArticles,
+  shelfArticles,
+  UnreadWorkstationOfProducts,
+} from "../../../../workstations/application/__tests__/placement-doubles.js";
 
 /**
  * Le jour est DÉRIVÉ de maintenant : `relativeDay` le compare à l'horloge, et un
@@ -101,19 +105,6 @@ class Containers extends ProductionContainerReader {
   }
 }
 
-/** Les rayons doublés : une table fixe, ou une panne du commerce. */
-class Shelves extends WorkshopShelvesReader {
-  constructor(private readonly table: ReadonlyMap<string, CatalogFamilyView> | "down") {
-    super();
-  }
-
-  shelvesOf(): Promise<ReadonlyMap<string, CatalogFamilyView>> {
-    return this.table === "down"
-      ? Promise.reject(new Error("catalogue injoignable"))
-      : Promise.resolve(this.table);
-  }
-}
-
 const PAINS: CatalogFamilyView = { id: "fam-pain", name: "Pains", position: 1 };
 const SEIGLE_AU_PAIN = new Map<string, CatalogFamilyView>([["PAI-SEI", PAINS]]);
 
@@ -136,7 +127,7 @@ function handlerFor(
   producible: readonly ProducibleOrder[],
   expected: readonly ExpectedDayProduction[],
   rules: ReadonlyMap<string, ContainerRule> = new Map(),
-  shelves: Shelves = new Shelves(SEIGLE_AU_PAIN),
+  shelves: ProductionArticlesReader = shelfArticles(SEIGLE_AU_PAIN),
   commerce: Commerce = new Commerce(producible),
   display: InMemoryDisplaySettings = new InMemoryDisplaySettings(),
 ): GetProductionWorksheetHandler {
@@ -154,7 +145,7 @@ function handlerFor(
         qualityLinesFrom(new CheckTable()),
         new FixedOvenWaitingOrders(),
         display.reader(),
-        new GroupingSourceReading(shelves, ...placementPorts()),
+        new GroupingSourceReading(shelves, new UnreadWorkstationOfProducts()),
       ),
       new FixedClock(NOW),
     ),
@@ -243,7 +234,7 @@ describe("GetProductionWorksheetHandler", () => {
       [],
       [demandOfDay(30)],
       new Map(),
-      new Shelves(SEIGLE_AU_PAIN),
+      shelfArticles(SEIGLE_AU_PAIN),
       commerce,
     );
 
@@ -276,7 +267,7 @@ describe("GetProductionWorksheetHandler", () => {
       [order("ord_1", 30)],
       [],
       new Map(),
-      new Shelves("down"),
+      new FailingProductionArticles(),
     );
 
     const view = await handler.execute(new GetProductionWorksheetQuery(DAY));

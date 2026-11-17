@@ -1,9 +1,6 @@
-import type { CatalogFamilyView } from "@lfd/contracts";
-
 import { InMemoryDisplaySettings } from "../../../../shared/print/application/__tests__/production-display-settings-doubles.js";
 import { AppConfig } from "../../../../../platform/config/app-config.js";
 import type { ProducibleOrder } from "../../../../channels/commerce/day-orders.reader.js";
-import { WorkshopShelvesReader } from "../../../../channels/commerce/workshop-shelves.reader.js";
 import {
   ProductionDay,
   type ProductionOrderSnapshot,
@@ -53,12 +50,6 @@ class NoAdminOrigin extends AppConfig {
   }
 }
 
-class NoShelves extends WorkshopShelvesReader {
-  shelvesOf(): Promise<ReadonlyMap<string, CatalogFamilyView>> {
-    return Promise.resolve(new Map());
-  }
-}
-
 function papersWith(
   colors: FixedOrderPrintColors,
   resupplyColors = new FixedResupplyPrintColors(),
@@ -66,7 +57,7 @@ function papersWith(
 ): { papers: ProductionPaperRenderer } {
   return {
     papers: new ProductionPaperRenderer(
-      new GroupingSourceReading(new NoShelves(), ...placementPorts()),
+      new GroupingSourceReading(...placementPorts()),
       new OrderSheetPaper(new NoAdminOrigin(), colors, new FixedPaperLogo()),
       resupplyColors,
       new FixedPaperLogo(),

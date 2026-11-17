@@ -34,7 +34,7 @@ import {
   NoAdminOrigin,
   OneDay,
   RecordingDossierMails,
-  Shelves,
+  DOSSIER_ARTICLES,
 } from "../../__tests__/dossier-dispatch-doubles.js";
 import { InMemoryProductionStore } from "../../../../shared/print/application/__tests__/production-store-doubles.js";
 import { DossierDispatch } from "../../services/dossier-dispatch.service.js";
@@ -199,7 +199,7 @@ export function setup(
     options.recipients ?? new RecipientsRows(rows),
     new Directory().put(staffCard()),
     new ProductionPaperRenderer(
-      new GroupingSourceReading(new Shelves(), ...placementPorts()),
+      new GroupingSourceReading(...placementPorts(DOSSIER_ARTICLES)),
       new OrderSheetPaper(new NoAdminOrigin(), new FixedOrderPrintColors(), new FixedPaperLogo()),
       new FixedResupplyPrintColors(),
       new FixedPaperLogo(),

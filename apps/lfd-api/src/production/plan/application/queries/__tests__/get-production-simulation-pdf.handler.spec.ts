@@ -3,7 +3,6 @@ import type { CatalogFamilyView } from "@lfd/contracts";
 import { pdfPages } from "../../../../../platform/pdf/__tests__/pdf-text.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { ProductionArticle } from "../../../../channels/commerce/production-articles.reader.js";
-import { WorkshopShelvesReader } from "../../../../channels/commerce/workshop-shelves.reader.js";
 import { CapturedLogs } from "../../../../shared/print/application/__tests__/captured-logs.js";
 import { FixedPaperLogo } from "../../../../shared/print/application/__tests__/paper-logo-doubles.js";
 import { InMemoryDisplaySettings } from "../../../../shared/print/application/__tests__/production-display-settings-doubles.js";
@@ -54,34 +53,20 @@ const BAGUETTE = named(article("BAG", "BAG", BREADS), "Baguette tradition");
 const UNSOLD = named(article("OLD", "OLD", BREADS), "Pain retiré du rayon", false);
 const CATALOGUE = [QUICHE_8, QUICHE_6, BAGUETTE, UNSOLD];
 
-/** Les rayons du mode boutique ; retient chaque demande. */
-class Shelves extends WorkshopShelvesReader {
-  readonly asked: (readonly string[])[] = [];
-  shelvesOf(skus: readonly string[]): Promise<ReadonlyMap<string, CatalogFamilyView>> {
-    this.asked.push(skus);
-    const shelves = new Map<string, CatalogFamilyView>();
-    for (const item of CATALOGUE.filter((candidate) => skus.includes(candidate.sku))) {
-      shelves.set(item.sku, item.family);
-    }
-    return Promise.resolve(shelves);
-  }
-}
-
 /** Le réglage en vigueur est le mode boutique : la simulation ne doit pas le suivre. */
 function scene(workstations: WorkstationOfProducts = new UnreadWorkstationOfProducts()) {
-  const shelves = new Shelves();
   const articles = new FixedProductionArticles(CATALOGUE);
   const settings = new InMemoryDisplaySettings(
     ProductionDisplaySettings.of({ showSubcategories: false, grouping: "shelf" }),
   );
   const handler = new GetProductionSimulationPdfHandler(
     articles,
-    new GroupingSourceReading(shelves, articles, workstations),
+    new GroupingSourceReading(articles, workstations),
     settings.reader(),
     new FixedPaperLogo(),
     new FixedClock(new Date()),
   );
-  return { handler, shelves, articles, settings };
+  return { handler, articles, settings };
 }
 
 const PASTRY = new FixedWorkstationOfProducts(
@@ -101,12 +86,12 @@ describe("GetProductionSimulationPdfHandler — la simulation du catalogue", () 
   });
 
   it("mode boutique : chaque article vendable, déclinaisons comprises, est rangé une fois", async () => {
-    const { handler, shelves } = scene();
+    const { handler, articles } = scene();
 
     const paper = await handler.execute(new GetProductionSimulationPdfQuery("shelf"));
     const text = pagesOf(paper.bytes).join("");
 
-    expect(shelves.asked).toEqual([["QUI-8", "QUI-6", "BAG"]]);
+    expect(articles.asked).toEqual([["QUI-8", "QUI-6", "BAG"]]);
     expect(text).toContain("Quiche lorraine");
     expect(text).toContain("Baguette tradition");
     expect(text).not.toContain("Pain retiré du rayon");
@@ -115,12 +100,11 @@ describe("GetProductionSimulationPdfHandler — la simulation du catalogue", () 
   });
 
   it("mode prod, quel que soit le réglage : rangé par poste, l'article sans poste nommé « à ranger »", async () => {
-    const { handler, shelves, articles } = scene(PASTRY);
+    const { handler, articles } = scene(PASTRY);
 
     const paper = await handler.execute(new GetProductionSimulationPdfQuery("workstation"));
     const text = pagesOf(paper.bytes).join("");
 
-    expect(shelves.asked).toEqual([]);
     expect(articles.asked).toEqual([["QUI-8", "QUI-6", "BAG"]]);
     expect(text).toContain("Pâtisserie");
     expect(text).toContain("Pains — à ranger");

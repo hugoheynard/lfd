@@ -42,6 +42,33 @@ export class FixedProductionArticles extends ProductionArticlesReader {
   }
 }
 
+/** Le commerce injoignable : la lecture des articles lève, et compte ses appels. */
+export class FailingProductionArticles extends ProductionArticlesReader {
+  calls = 0;
+
+  articlesOf(): Promise<ReadonlyMap<string, ProductionArticle>> {
+    this.calls += 1;
+    return Promise.reject(new Error("commerce injoignable"));
+  }
+
+  allArticles(): Promise<readonly ProductionArticle[]> {
+    this.calls += 1;
+    return Promise.reject(new Error("commerce injoignable"));
+  }
+}
+
+/**
+ * Le commerce qui connaît ces rayons, par SKU : chaque SKU devient un article
+ * de son propre produit. Pour les suites qui ne rangent que par rayon.
+ */
+export function shelfArticles(
+  shelves: ReadonlyMap<string, CatalogFamilyView>,
+): FixedProductionArticles {
+  return new FixedProductionArticles(
+    [...shelves].map(([sku, family]) => article(sku, sku, family)),
+  );
+}
+
 /** Les postes, dans l'ordre reçu, et le poste de quelques produits. */
 export class FixedWorkstationOfProducts extends WorkstationOfProducts {
   readonly asked: (readonly string[])[] = [];

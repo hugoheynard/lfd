@@ -147,13 +147,16 @@ export interface WorkshopWaitingOrders {
   readonly earliestHandover: string | null;
 }
 
-/** Le libellé du groupe des SKU que le catalogue ne connaît pas. */
+/**
+ * Le libellé du groupe des SKU absents du miroir du catalogue. Un article
+ * masqué, réservé à une clientèle ou retiré n'y va pas : il garde son rayon.
+ */
 export const SHELF_LABEL_OFF_CATALOG = "Hors catalogue";
 
 /**
  * Le libellé du groupe quand la lecture des rayons a ÉCHOUÉ. Distinct du
- * précédent : « Hors catalogue » affirmerait que le fournil fabrique des articles
- * retirés de la vente.
+ * précédent : « Hors catalogue » affirmerait que ces articles sont absents du
+ * catalogue.
  */
 export const SHELF_LABEL_UNKNOWN = "Rayon inconnu";
 

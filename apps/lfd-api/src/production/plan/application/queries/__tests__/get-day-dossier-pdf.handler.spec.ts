@@ -9,7 +9,10 @@ import { instantToLocal } from "@lfd/contracts";
 import { AppConfig } from "../../../../../platform/config/app-config.js";
 import { pdfPages } from "../../../../../platform/pdf/__tests__/pdf-text.js";
 import type { ProducibleOrder } from "../../../../channels/commerce/day-orders.reader.js";
-import { WorkshopShelvesReader } from "../../../../channels/commerce/workshop-shelves.reader.js";
+import {
+  type ProductionArticle,
+  ProductionArticlesReader,
+} from "../../../../channels/commerce/index.js";
 import { ProductionDay } from "../../../../day/domain/entities/production-day.js";
 import { ProductionDayNotClosedError } from "../../../../day/index.js";
 import { ProductionDayRepository } from "../../../../day/index.js";
@@ -28,7 +31,10 @@ import { ProductionPaperRenderer } from "../../services/production-paper.service
 import { GetDayDossierPdfHandler } from "../get-day-dossier-pdf.handler.js";
 import { GetDayDossierPdfQuery } from "../get-day-dossier-pdf.query.js";
 import { GroupingSourceReading } from "../../../../workstations/index.js";
-import { placementPorts } from "../../../../workstations/application/__tests__/placement-doubles.js";
+import {
+  article,
+  UnreadWorkstationOfProducts,
+} from "../../../../workstations/application/__tests__/placement-doubles.js";
 
 /**
  * **Le dossier du jour, servi** : refusé avant l'arrêt, archivé au premier
@@ -61,16 +67,21 @@ class Days extends ProductionDayRepository {
   }
 }
 
-class Shelves extends WorkshopShelvesReader {
+/** Le commerce : le croissant et son rayon, ou une panne ; compte ses lectures. */
+class Shelves extends ProductionArticlesReader {
   broken = false;
   asked = 0;
 
-  shelvesOf(): Promise<ReadonlyMap<string, CatalogFamilyView>> {
+  articlesOf(): Promise<ReadonlyMap<string, ProductionArticle>> {
     this.asked += 1;
     if (this.broken) {
       return Promise.reject(new TypeError("commerce injoignable"));
     }
-    return Promise.resolve(new Map([["VIE-001", VIENNOISERIES]]));
+    return Promise.resolve(new Map([["VIE-001", article("VIE-001", "VIE", VIENNOISERIES)]]));
+  }
+
+  allArticles(): Promise<readonly ProductionArticle[]> {
+    return Promise.reject(new TypeError("le dossier ne liste pas le catalogue"));
   }
 }
 
@@ -94,7 +105,7 @@ function setup(
   const store = new InMemoryProductionStore();
   const shelves = new Shelves();
   const renderer = new ProductionPaperRenderer(
-    new GroupingSourceReading(shelves, ...placementPorts()),
+    new GroupingSourceReading(shelves, new UnreadWorkstationOfProducts()),
     new OrderSheetPaper(new NoAdminOrigin(), colors, new FixedPaperLogo()),
     new FixedResupplyPrintColors(),
     new FixedPaperLogo(),

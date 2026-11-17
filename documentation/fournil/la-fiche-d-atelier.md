@@ -62,15 +62,18 @@ forme.
 
 ### Le rangement par catégorie racine
 
-Les rayons viennent du commerce par `WorkshopShelvesReader`
-(`channels/commerce/`), implémenté par `CatalogWorkshopShelvesReader` sur la
-vue des familles (`CatalogFamilyView.root`, `path`). Un onglet par **catégorie
+Les rayons viennent du commerce par `ProductionArticlesReader.articlesOf`
+(`channels/commerce/`), implémenté par `CatalogProductionArticlesReader` sur le
+miroir des articles **sans les filtres de vente**, avec la vue des familles
+(`CatalogFamilyView.root`, `path`) : la même lecture dans les deux modes, et
+un article masqué, réservé à une clientèle ou retiré garde son vrai rayon
+([`les-postes-du-fournil.md`](les-postes-du-fournil.md)). Un onglet par **catégorie
 racine** ; le réglage « Afficher les sous-catégories » (Réglages › Production,
 carte « Rangement des fiches », `PUT admin/production/settings/display`,
 table `production_display_settings`, défaut non) pose des intertitres
 (`WorkshopGroup.sections`), jamais un onglet. Ordre : racines par `position`
 puis nom ; dans une racine, les articles rangés directement en tête, puis les
-sous-catégories. Un SKU sans famille va dans « Hors catalogue » ; une lecture
+sous-catégories. Seul un SKU absent du miroir du catalogue va dans « Hors catalogue » ; une lecture
 des rayons en échec rend `shelvesKnown: false` et un groupe « Rayon inconnu »,
 la fiche reste servie. Le même rangement vaut au prévisionnel et au dossier
 du jour ([`le-previsionnel.md`](le-previsionnel.md)).

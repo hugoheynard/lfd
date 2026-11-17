@@ -1,10 +1,11 @@
 import type { CatalogFamilyView } from "@lfd/contracts";
 
-import { WorkshopShelvesReader } from "../../../../channels/commerce/index.js";
+import type { ProductionArticlesReader } from "../../../../channels/commerce/index.js";
 import { InMemoryDisplaySettings } from "../../../../shared/print/application/__tests__/production-display-settings-doubles.js";
 import { ProductionDisplaySettings } from "../../../../shared/print/index.js";
 import {
   article,
+  FailingProductionArticles,
   FailingWorkstationOfProducts,
   FixedProductionArticles,
   FixedWorkstationOfProducts,
@@ -18,60 +19,31 @@ import { GetProductionGroupingQuery } from "../get-production-grouping.query.js"
 const SAVORY: CatalogFamilyView = { id: "fam-savory", name: "Traiteur salé", position: 1 };
 const BREADS: CatalogFamilyView = { id: "fam-bread", name: "Pains", position: 0 };
 
-/** Les rayons du commerce, ou une panne. */
-class Shelves extends WorkshopShelvesReader {
-  readonly asked: (readonly string[])[] = [];
-
-  constructor(private readonly down = false) {
-    super();
-  }
-
-  shelvesOf(skus: readonly string[]): Promise<ReadonlyMap<string, CatalogFamilyView>> {
-    this.asked.push(skus);
-    if (this.down) {
-      return Promise.reject(new Error("commerce injoignable"));
-    }
-    const known = new Map([
-      ["QUI-8", SAVORY],
-      ["BAG-1", BREADS],
-    ]);
-    return Promise.resolve(
-      new Map(
-        skus.flatMap((sku) => {
-          const family = known.get(sku);
-          return family === undefined ? [] : [[sku, family] as const];
-        }),
-      ),
-    );
-  }
-}
-
 function handlerFor(
   mode: "shelf" | "workstation",
   workstations: WorkstationOfProducts,
-  shelves = new Shelves(),
+  articles: ProductionArticlesReader = new FixedProductionArticles([
+    article("QUI-8", "QUI", SAVORY),
+    { ...article("BAG-1", "BAG", BREADS), sellable: false },
+  ]),
 ) {
   const settings = new InMemoryDisplaySettings(
     mode === "shelf"
       ? null
       : ProductionDisplaySettings.of({ showSubcategories: false, grouping: mode }),
   );
-  const articles = new FixedProductionArticles([
-    article("QUI-8", "QUI", SAVORY),
-    article("BAG-1", "BAG", BREADS),
-  ]);
-  const reading = new GroupingSourceReading(shelves, articles, workstations);
-  return {
-    handler: new GetProductionGroupingHandler(settings.reader(), reading),
-    shelves,
-    articles,
-  };
+  const reading = new GroupingSourceReading(articles, workstations);
+  return { handler: new GetProductionGroupingHandler(settings.reader(), reading) };
 }
 
 describe("GetProductionGroupingHandler — le rangement servi au front", () => {
   it("range par rayon sans réglage posé, sans lire les postes, et sans doublon", async () => {
     const workstations = new UnreadWorkstationOfProducts();
-    const { handler, articles } = handlerFor("shelf", workstations);
+    const articles = new FixedProductionArticles([
+      article("QUI-8", "QUI", SAVORY),
+      article("BAG-1", "BAG", BREADS),
+    ]);
+    const { handler } = handlerFor("shelf", workstations, articles);
 
     const view = await handler.execute(
       new GetProductionGroupingQuery(["QUI-8", "BAG-1", "QUI-8", "X"]),
@@ -84,11 +56,11 @@ describe("GetProductionGroupingHandler — le rangement servi au front", () => {
       ["X", "Hors catalogue"],
     ]);
     expect(workstations.calls).toBe(0);
-    expect(articles.asked).toEqual([]);
+    expect(articles.asked).toEqual([["QUI-8", "BAG-1", "X"]]);
   });
 
   it("range par poste en mode prod, un SKU inconnu en « Hors catalogue — à ranger »", async () => {
-    const { handler, shelves } = handlerFor(
+    const { handler } = handlerFor(
       "workstation",
       new FixedWorkstationOfProducts(
         [{ id: "ws-pat", name: "Pâtisserie", position: 0 }],
@@ -104,7 +76,6 @@ describe("GetProductionGroupingHandler — le rangement servi au front", () => {
       ["BAG-1", "fam-bread", "Pains — à ranger", "unplaced"],
       ["X", "?", "Hors catalogue — à ranger", "off_catalog"],
     ]);
-    expect(shelves.asked).toEqual([]);
   });
 
   it("range par rayon et le dit quand les postes sont illisibles en mode prod", async () => {
@@ -121,11 +92,34 @@ describe("GetProductionGroupingHandler — le rangement servi au front", () => {
   });
 
   it("met tout en « Rayon inconnu » et le dit quand les rayons sont illisibles", async () => {
-    const { handler } = handlerFor("shelf", new UnreadWorkstationOfProducts(), new Shelves(true));
+    const { handler } = handlerFor(
+      "shelf",
+      new UnreadWorkstationOfProducts(),
+      new FailingProductionArticles(),
+    );
 
     const view = await handler.execute(new GetProductionGroupingQuery(["QUI-8"]));
 
     expect(view.shelvesKnown).toBe(false);
     expect(view.entries[0]).toMatchObject({ title: "Rayon inconnu", kind: "off_catalog" });
   });
+
+  // Le fournil est agnostique de la vente (Hugo, 2026-11-17) : un article
+  // masqué, réservé ou retiré se range sous son vrai rayon, dans les deux modes.
+  it.each(["shelf", "workstation"] as const)(
+    "range sous son rayon un article qui ne se vend plus (mode %s)",
+    async (mode) => {
+      const { handler } = handlerFor(
+        mode,
+        mode === "shelf"
+          ? new UnreadWorkstationOfProducts()
+          : new FixedWorkstationOfProducts([], new Map()),
+      );
+
+      const view = await handler.execute(new GetProductionGroupingQuery(["BAG-1"]));
+
+      expect(view.entries[0]).toMatchObject({ key: "fam-bread" });
+      expect(view.entries[0]?.kind).not.toBe("off_catalog");
+    },
+  );
 });

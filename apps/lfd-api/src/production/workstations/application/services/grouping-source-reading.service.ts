@@ -4,7 +4,6 @@ import { Injectable, Logger } from "@nestjs/common";
 import {
   type ProductionArticle,
   ProductionArticlesReader,
-  WorkshopShelvesReader,
 } from "../../../channels/commerce/index.js";
 import type { GroupingSource } from "../../../shared/print/index.js";
 import { WorkstationOfProducts } from "../../domain/ports/workstation-of-products.js";
@@ -23,8 +22,15 @@ export interface GroupingSourceRead {
 
 /**
  * **Ce qu'un papier ou un écran du fournil lit pour ranger des SKU** (plan
- * `documentation/fournil/les-postes-du-fournil.md`, § 3.4–3.7), selon le mode : les rayons
- * en mode boutique, les articles du commerce puis les postes en mode prod.
+ * `documentation/fournil/les-postes-du-fournil.md`, § 3.4–3.7), selon le mode : le rayon
+ * des articles du commerce en mode boutique, les articles puis les postes en
+ * mode prod.
+ *
+ * Les deux modes lisent le rayon par la même lecture,
+ * `ProductionArticlesReader.articlesOf` : le fournil est agnostique de l'état
+ * de vente (décidé par Hugo le 2026-11-17). Un article masqué, réservé à une
+ * clientèle, sans taux ou retiré se range sous son vrai rayon ; seul un SKU
+ * absent du miroir tombe en « Hors catalogue ».
  * La fiche d'atelier, le dossier du jour, sa simulation et la route du
  * rangement lisent tous celle-ci : un seul rangement, une seule lecture.
  *
@@ -39,7 +45,6 @@ export class GroupingSourceReading {
   private readonly logger = new Logger(GroupingSourceReading.name);
 
   constructor(
-    private readonly shelves: WorkshopShelvesReader,
     private readonly articles: ProductionArticlesReader,
     private readonly workstations: WorkstationOfProducts,
   ) {}
@@ -89,7 +94,7 @@ export class GroupingSourceReading {
     return { workstations, articles, byProduct };
   }
 
-  /** Les rayons, ou `null` : panne journalisée, jamais tue. */
+  /** Le rayon de chaque SKU connu du miroir, ou `null` : panne journalisée, jamais tue. */
   private async shelvesOrNull(
     skus: readonly string[],
     about: string,
@@ -98,7 +103,8 @@ export class GroupingSourceReading {
       return new Map();
     }
     try {
-      return await this.shelves.shelvesOf(skus);
+      const articles = await this.articles.articlesOf(skus);
+      return new Map([...articles].map(([sku, article]) => [sku, article.family]));
     } catch (error) {
       this.logger.error(
         `${about} : rayons illisibles, servie en « Rayon inconnu ».`,

@@ -10,7 +10,7 @@ import { CardProviders } from "../src/card-payment/domain/ports/card-providers.j
 import { ProductCatalogReader } from "../src/lafoliecoffee/catalog/domain/ports/product-catalog.reader.js";
 import { OrderOperations } from "../src/lafoliecoffee/orders/application/services/order-operations.service.js";
 import { OperationDayRequiredError } from "../src/lafoliecoffee/orders/domain/errors/order-operation-errors.js";
-import { WorkshopShelvesReader } from "../src/production/channels/commerce/workshop-shelves.reader.js";
+import { ProductionArticlesReader } from "../src/production/channels/commerce/index.js";
 import { deliverAsFacts } from "./catalog-facts-delivery.js";
 import { snapshotOf } from "./catalog-ingest-fixtures.js";
 import { prepareAtCommerce } from "./operations-at-commerce-seed.js";
@@ -181,8 +181,8 @@ describe("hors de toute fenêtre", () => {
   });
 
   it("la fiche atelier et la tarification la voient toujours (D5)", async () => {
-    const shelves = await ctx.app.get(WorkshopShelvesReader).shelvesOf(["PAT-002-1"]);
-    expect(shelves.has("PAT-002-1")).toBe(true);
+    const articles = await ctx.app.get(ProductionArticlesReader).articlesOf(["PAT-002-1"]);
+    expect(articles.has("PAT-002-1")).toBe(true);
     expect(
       await ctx.app.get(ProductCatalogReader).resolve("PAT-002-1", staffViewer("pro")),
     ).not.toBeNull();

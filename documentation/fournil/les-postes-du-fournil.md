@@ -110,13 +110,21 @@ fait : `production_workstation.declared`, `.renamed`, `.reordered`,
 ### Le produit d'une ligne
 
 Le fournil déclare `ProductionArticlesReader` (`channels/commerce/`), que le
-commerce implémente sur son miroir `CatalogItem`, **sans les filtres de vente
-mais avec `STILL_SOLD`** : une déclinaison masquée suit le poste de son
-produit, et un produit masqué mais fabriqué peut recevoir un poste.
-`WorkshopShelvesReader` (le rayon, en mode boutique) et `SellableArticlesReader`
-(les raccourcis de fournées) ne changent pas. Un SKU absent du miroir ou
-retiré va dans « Hors catalogue — à ranger », et ne peut pas recevoir de
-poste.
+commerce implémente sur son miroir `CatalogItem`, **sans les filtres de
+vente** : une déclinaison masquée suit le poste de son produit, et un produit
+masqué mais fabriqué peut recevoir un poste.
+
+**La production est agnostique de l'état de vente** (décidé par Hugo le
+2026-11-17). `articlesOf` est la seule lecture du rayon pour le fournil, dans
+les deux modes : en mode boutique, `GroupingSourceReading` en tire la table
+SKU → famille que `rootShelvesOf` range. Un article masqué, réservé à une
+clientèle, sans taux ou **retiré** se range sous son vrai rayon — une commande
+passée avant le retrait se fabrique encore (exception inscrite à
+`lint:withdrawn-filter`). `allArticles` (la page Postes, la simulation) écarte
+les retirés (`STILL_SOLD`) : ce sont les articles à ranger, et la simulation
+garde en plus son filtre `sellable`. Seul un SKU **absent du miroir** va dans
+« Hors catalogue » (« — à ranger » en mode prod), et ne peut pas recevoir de
+poste. `SellableArticlesReader` (les raccourcis de fournées) ne change pas.
 
 ### Le rangement
 

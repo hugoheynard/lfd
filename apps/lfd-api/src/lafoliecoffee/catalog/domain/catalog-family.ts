@@ -54,7 +54,7 @@ export interface CatalogFamilyAncestor {
  * La famille telle qu'un écran la reçoit — sans slug. Sa **racine** et son
  * chemin y voyagent depuis le 2026-10-30 : le fournil range par catégorie
  * racine (« Viennoiserie fine » sous « Viennoiserie »), et il ne lit pas le
- * miroir — il reçoit cette vue par `WorkshopShelvesReader`. Ses parentes
+ * miroir — il reçoit cette vue par `ProductionArticlesReader`. Ses parentes
  * aussi depuis le 2026-11-03, quand elle en a.
  */
 export function familyView(family: CatalogFamily): CatalogFamilyView {

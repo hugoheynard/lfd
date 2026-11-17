@@ -6,7 +6,6 @@ import {
   ProductionSpecimenDeliveryNoteReader,
 } from "../lafoliecoffee/delivery-notes/infrastructure/production-planned-delivery-notes.reader.js";
 import { DeliveryNotesModule } from "../lafoliecoffee/delivery-notes/delivery-notes.module.js";
-import { CatalogWorkshopShelvesReader } from "../lafoliecoffee/catalog/infrastructure/catalog-workshop-shelves.reader.js";
 import { CatalogSellableArticlesReader } from "../lafoliecoffee/catalog/infrastructure/catalog-sellable-articles.reader.js";
 import { CatalogProductionArticlesReader } from "../lafoliecoffee/catalog/infrastructure/catalog-production-articles.reader.js";
 import { ProductionOrderCutoffRulesReader } from "../lafoliecoffee/order-cutoffs/infrastructure/production-order-cutoff-rules.reader.js";
@@ -40,7 +39,6 @@ import {
   ResupplyPrintColorsReader,
   SellableArticlesReader,
   SpecimenDeliveryNoteReader,
-  WorkshopShelvesReader,
 } from "../production/channels/commerce/index.js";
 
 /**
@@ -93,7 +91,6 @@ import {
     // Le rayon d'un article, pour ranger la fiche d'atelier. Son adaptateur vit
     // chez `catalog/` et non chez `orders/` : c'est là que sont le miroir du
     // catalogue et la seule table famille → rayon.
-    { provide: WorkshopShelvesReader, useClass: CatalogWorkshopShelvesReader },
     // Les articles vendables, pour la page des raccourcis du fournil (plan
     // `fournil/la-fiche-d-atelier.md`, S1) : même miroir, même lieu.
     { provide: SellableArticlesReader, useClass: CatalogSellableArticlesReader },
@@ -144,7 +141,6 @@ import {
     ResupplyPrintColorsReader,
     SellableArticlesReader,
     SpecimenDeliveryNoteReader,
-    WorkshopShelvesReader,
   ],
 })
 export class ProductionFeedModule {}

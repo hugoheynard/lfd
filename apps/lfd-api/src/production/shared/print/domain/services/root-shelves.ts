@@ -9,7 +9,7 @@ import type { CatalogFamilyNodeView, CatalogFamilyView } from "@lfd/contracts";
  * range désormais par racine, et le réglage « Afficher les sous-catégories »
  * pose, DANS le groupe racine, un intertitre par sous-catégorie.
  *
- * Fonction pure : la famille arrive du commerce par `WorkshopShelvesReader`
+ * Fonction pure : la famille arrive du commerce par `ProductionArticlesReader`
  * (sa `root` comprise) ; rien ici ne lit le catalogue.
  */
 

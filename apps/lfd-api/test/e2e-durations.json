@@ -656,6 +656,7 @@
   "test/write-replay.e2e-spec.ts": 35238,
   "test/production-workstations.e2e-spec.ts": 9700,
   "test/production-workstations-readings.e2e-spec.ts": 4700,
+  "test/production-unsold-shelving.e2e-spec.ts": 9082,
   "test/production-workstations-simulation.e2e-spec.ts": 9500,
   "test/production-workstations-grouping.e2e-spec.ts": 8800
 }

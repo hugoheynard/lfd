@@ -7,7 +7,6 @@ import {
   FixedResupplyPrintColors,
 } from "../../../../channels/commerce/__tests__/order-print-colors-doubles.js";
 import { FixedPlannedDeliveryNotes } from "../../../../channels/commerce/__tests__/planned-delivery-notes-doubles.js";
-import { WorkshopShelvesReader } from "../../../../channels/commerce/workshop-shelves.reader.js";
 import { CROISSANT, closedDay } from "../../../../day/application/__tests__/closed-day-doubles.js";
 import { ServiceDay } from "../../../../day/index.js";
 import { CapturedLogs } from "../../../../shared/print/application/__tests__/captured-logs.js";
@@ -19,7 +18,7 @@ import {
   FixedWorkstationOfProducts,
   UnreadWorkstationOfProducts,
   article,
-  placementPorts,
+  FixedProductionArticles,
 } from "../../../../workstations/application/__tests__/placement-doubles.js";
 import type { WorkstationOfProducts } from "../../../../workstations/index.js";
 import { FixedTrancheReading } from "../../__tests__/tranche-reading-doubles.js";
@@ -38,13 +37,11 @@ const DAY = instantToLocal(NOW).day;
 const CLOSED = new Date(NOW.getTime() - 2 * 60 * 60 * 1000);
 const SALTY: CatalogFamilyView = { id: "fam-salty", name: "Traiteur salé", position: 1 };
 
-class Shelves extends WorkshopShelvesReader {
-  asked = 0;
-  shelvesOf(): Promise<ReadonlyMap<string, CatalogFamilyView>> {
-    this.asked += 1;
-    return Promise.resolve(new Map([[CROISSANT, SALTY]]));
-  }
-}
+/**
+ * Le croissant ne se vend plus (masqué, réservé ou retiré) : le fournil est
+ * agnostique de la vente (Hugo, 2026-11-17), il garde son rayon dans les deux modes.
+ */
+const UNSOLD_CROISSANT = { ...article(CROISSANT, "VIE", SALTY), sellable: false };
 
 class NoAdminOrigin extends AppConfig {
   override adminBaseUrl(): string | null {
@@ -60,12 +57,9 @@ function renderer(
   workstations: WorkstationOfProducts,
   tranches = new FixedTrancheReading(),
 ) {
-  const shelves = new Shelves();
+  const shelves = new FixedProductionArticles([UNSOLD_CROISSANT]);
   const papers = new ProductionPaperRenderer(
-    new GroupingSourceReading(
-      shelves,
-      ...placementPorts([article(CROISSANT, "VIE", SALTY)], workstations),
-    ),
+    new GroupingSourceReading(shelves, workstations),
     new OrderSheetPaper(new NoAdminOrigin(), new FixedOrderPrintColors(), new FixedPaperLogo()),
     new FixedResupplyPrintColors(),
     new FixedPaperLogo(),
@@ -102,7 +96,7 @@ describe("ProductionPaperRenderer — le dossier selon le mode", () => {
 
     expect(paper.archivable).toBe(true);
     expect(workstations.calls).toBe(0);
-    expect(shelves.asked).toBe(1);
+    expect(shelves.asked).toHaveLength(1);
     expect(pdfPages(paper.bytes).join("")).toContain("Traiteur salé");
     expect(logs.warnings).toEqual([]);
   });
@@ -113,7 +107,7 @@ describe("ProductionPaperRenderer — le dossier selon le mode", () => {
     const paper = await papers.dossierOf(theDay());
 
     expect(paper.archivable).toBe(true);
-    expect(shelves.asked).toBe(0);
+    expect(shelves.asked).toHaveLength(1);
     expect(pdfPages(paper.bytes).join("")).toContain("Pâtisserie");
   });
 
@@ -123,7 +117,7 @@ describe("ProductionPaperRenderer — le dossier selon le mode", () => {
     const paper = await papers.dossierOf(theDay());
 
     expect(paper.archivable).toBe(false);
-    expect(shelves.asked).toBe(1);
+    expect(shelves.asked).toHaveLength(2);
     expect(pdfPages(paper.bytes).join("")).toContain("Traiteur salé");
     expect(logs.errors).toEqual([expect.stringContaining("postes illisibles")]);
     expect(logs.warnings).toEqual([expect.stringContaining("(illisibles : postes)")]);

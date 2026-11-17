@@ -9,7 +9,6 @@ import {
   ExpectedProductionReader,
   type ExpectedDayProduction,
 } from "../../../../channels/commerce/expected-production.reader.js";
-import { WorkshopShelvesReader } from "../../../../channels/commerce/workshop-shelves.reader.js";
 import { InMemoryTrancheSettings } from "../../../../day/application/__tests__/production-tranche-settings-doubles.js";
 import {
   BAGUETTE,
@@ -29,7 +28,7 @@ import {
   FixedWorkstationOfProducts,
   UnreadWorkstationOfProducts,
   article,
-  placementPorts,
+  FixedProductionArticles,
 } from "../../../../workstations/application/__tests__/placement-doubles.js";
 import type { WorkstationOfProducts } from "../../../../workstations/index.js";
 import { ProductionContainerReader } from "../../../domain/ports/production-container.reader.js";
@@ -82,23 +81,15 @@ class NoContainers extends ProductionContainerReader {
   }
 }
 
-class Shelves extends WorkshopShelvesReader {
-  calls = 0;
-  shelvesOf(): Promise<ReadonlyMap<string, CatalogFamilyView>> {
-    this.calls += 1;
-    return Promise.resolve(
-      new Map([
-        [CROISSANT, SALTY],
-        [BAGUETTE, BREADS],
-      ]),
-    );
-  }
-}
-
-const ARTICLES = [article(CROISSANT, "VIE", SALTY), article(BAGUETTE, "PAI", BREADS)];
+// La baguette ne se vend plus (masquée, réservée ou retirée) : le fournil est
+// agnostique de la vente (Hugo, 2026-11-17), elle garde son rayon dans les deux modes.
+const ARTICLES = [
+  article(CROISSANT, "VIE", SALTY),
+  { ...article(BAGUETTE, "PAI", BREADS), sellable: false },
+];
 
 function subject(grouping: "shelf" | "workstation", workstations: WorkstationOfProducts) {
-  const shelves = new Shelves();
+  const articles = new FixedProductionArticles(ARTICLES);
   const display = new InMemoryDisplaySettings(
     ProductionDisplaySettings.of({ showSubcategories: false, grouping }),
   );
@@ -111,15 +102,15 @@ function subject(grouping: "shelf" | "workstation", workstations: WorkstationOfP
     qualityLinesFrom(new CheckTable()),
     new FixedOvenWaitingOrders(),
     display.reader(),
-    new GroupingSourceReading(shelves, ...placementPorts(ARTICLES, workstations)),
+    new GroupingSourceReading(articles, workstations),
   );
-  return { reading, shelves };
+  return { reading, articles };
 }
 
 describe("ProductionWorksheetReading — mode boutique, mode prod", () => {
   it("le mode boutique range par rayon sans lire les postes", async () => {
     const workstations = new UnreadWorkstationOfProducts();
-    const { reading, shelves } = subject("shelf", workstations);
+    const { reading, articles } = subject("shelf", workstations);
 
     const content = await reading.contentOf(DAY);
 
@@ -128,12 +119,12 @@ describe("ProductionWorksheetReading — mode boutique, mode prod", () => {
       ["fam-salty", "shelf"],
     ]);
     expect(workstations.calls).toBe(0);
-    expect(shelves.calls).toBe(1);
+    expect(articles.asked).toHaveLength(1);
     expect(content.complete).toBe(true);
   });
 
-  it("le mode prod range par poste, sans lire les rayons de la vente", async () => {
-    const { reading, shelves } = subject(
+  it("le mode prod range par poste, et par rayon « à ranger » le reste", async () => {
+    const { reading, articles } = subject(
       "workstation",
       new FixedWorkstationOfProducts(
         [{ id: "ws_pastry", name: "Pâtisserie", position: 0 }],
@@ -147,7 +138,7 @@ describe("ProductionWorksheetReading — mode boutique, mode prod", () => {
       ["ws:ws_pastry", "Pâtisserie", false],
       ["fam-bread", "Pains — à ranger", true],
     ]);
-    expect(shelves.calls).toBe(0);
+    expect(articles.asked).toHaveLength(1);
     expect(content.sheet.shelvesKnown).toBe(true);
     expect(content.complete).toBe(true);
   });
@@ -155,7 +146,7 @@ describe("ProductionWorksheetReading — mode boutique, mode prod", () => {
   it("une panne des postes range par rayon, journalisée, et la fiche n'est pas complète", async () => {
     const logs = CapturedLogs.capture();
     try {
-      const { reading, shelves } = subject("workstation", new FailingWorkstationOfProducts());
+      const { reading, articles } = subject("workstation", new FailingWorkstationOfProducts());
 
       const content = await reading.contentOf(DAY);
 
@@ -163,7 +154,7 @@ describe("ProductionWorksheetReading — mode boutique, mode prod", () => {
         ["fam-bread", "shelf"],
         ["fam-salty", "shelf"],
       ]);
-      expect(shelves.calls).toBe(1);
+      expect(articles.asked).toHaveLength(2);
       expect(content.complete).toBe(false);
       expect(logs.errors).toEqual([
         expect.stringContaining("postes illisibles, servie rangée par rayon"),

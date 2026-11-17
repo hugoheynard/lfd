@@ -47,7 +47,6 @@ export {
   PackingOrderPackedEvent,
   PackingOrderPackedPayloadError,
 } from "../packing/packing-order-packed.event.js";
-export { WorkshopShelvesReader } from "./workshop-shelves.reader.js";
 export { type SellableArticle, SellableArticlesReader } from "./sellable-articles.reader.js";
 export { type ProductionArticle, ProductionArticlesReader } from "./production-articles.reader.js";
 export {

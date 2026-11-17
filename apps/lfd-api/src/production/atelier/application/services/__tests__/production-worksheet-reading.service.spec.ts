@@ -2,11 +2,7 @@ import {
   orderLine,
   producibleOrder,
 } from "../../../../channels/commerce/__tests__/producible-order.fixture.js";
-import {
-  instantToLocal,
-  type CatalogFamilyView,
-  type ProductionWorksheetView,
-} from "@lfd/contracts";
+import { instantToLocal, type ProductionWorksheetView } from "@lfd/contracts";
 
 import { InMemoryDisplaySettings } from "../../../../shared/print/application/__tests__/production-display-settings-doubles.js";
 import {
@@ -18,7 +14,6 @@ import {
   ExpectedProductionReader,
   type ExpectedDayProduction,
 } from "../../../../channels/commerce/expected-production.reader.js";
-import { WorkshopShelvesReader } from "../../../../channels/commerce/workshop-shelves.reader.js";
 import { ProductionDay } from "../../../../day/domain/entities/production-day.js";
 import { ProductionTrancheSettings } from "../../../../day/index.js";
 import { QualityCheck } from "../../../../quality/domain/entities/quality-check.js";
@@ -84,12 +79,6 @@ class NoContainers extends ProductionContainerReader {
   }
 }
 
-class NoShelves extends WorkshopShelvesReader {
-  shelvesOf(): Promise<ReadonlyMap<string, CatalogFamilyView>> {
-    return Promise.resolve(new Map());
-  }
-}
-
 /** Seigle 30 et baguette 12 au plan, arrêté il y a une heure. */
 function closedDay(): ProductionDay {
   const day = ProductionDay.open(DAY);
@@ -146,7 +135,7 @@ function bareReading(
     qualityLinesFrom(checks),
     waiting,
     new InMemoryDisplaySettings().reader(),
-    new GroupingSourceReading(new NoShelves(), ...placementPorts()),
+    new GroupingSourceReading(...placementPorts()),
   );
 }
 
