@@ -24,6 +24,7 @@ import { AFTER_CLOSE_REVISION_FACTS } from "./after-close-revisions.js";
 import { PACKING_CONTAINER_FACTS } from "./packing-containers.js";
 import { PACKING_RESERVE_FACTS } from "./packing-reserve.js";
 import { PRODUCTION_SETTINGS_FACTS } from "./production-settings.js";
+import { PRODUCTION_PROBLEM_FACTS } from "./production-problems.js";
 import { PRODUCTION_WORKSTATION_FACTS } from "./production-workstations.js";
 import { DELIVERY_SIMULATION_FACTS } from "./delivery-simulation.js";
 import {
@@ -768,6 +769,8 @@ export const ORDERS_PRODUCTION_FACTS = {
   ...PRODUCTION_SETTINGS_FACTS,
   /** **Les postes du fournil** (`documentation/fournil/les-postes-du-fournil.md`, W1) — même famille. */
   ...PRODUCTION_WORKSTATION_FACTS,
+  /** **Les problèmes du fournil** (`fournil/plan-niveaux-de-suivi.md`, § 3.4) — même famille. */
+  ...PRODUCTION_PROBLEM_FACTS,
 
   /**
    * `absorbed` : les commandes que la journée a absorbées en se fermant. Le

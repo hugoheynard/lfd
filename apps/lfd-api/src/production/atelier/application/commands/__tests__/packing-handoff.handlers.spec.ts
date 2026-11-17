@@ -14,6 +14,7 @@ import { CancelBatchCommand } from "../cancel-batch.command.js";
 import { CancelBatchHandler } from "../cancel-batch.handler.js";
 import { RecordBatchCommand } from "../record-batch.command.js";
 import { RecordBatchHandler } from "../record-batch.handler.js";
+import { BatchRecording } from "../../services/batch-recording.service.js";
 
 /**
  * **La remise au colisage** (plan `colisage/colisage.md`, K1 :
@@ -63,7 +64,13 @@ function setup(base: ProductionDay = closedDay()) {
     store,
     ledger: handoffs.ledger,
     durable: handoffs.durable,
-    record: new RecordBatchHandler(days, store, lock, clock, uow, handoffs.service),
+    record: new RecordBatchHandler(
+      days,
+      lock,
+      clock,
+      uow,
+      new BatchRecording(store, handoffs.service),
+    ),
     cancel: new CancelBatchHandler(days, store, lock, clock, uow, handoffs.service),
   };
 }

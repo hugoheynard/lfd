@@ -28,6 +28,7 @@ import {
   DayPackingProgressReader,
   InscribedOrderHeaderReader,
   OrderLabelHeadReader,
+  OutputCorrectionsReader,
   OvenWaitingOrdersReader,
   PackedOrdersReader,
   PackingDayVersionReader,
@@ -39,6 +40,7 @@ import {
   DayInscribedOrderHeaderReader,
   DayPlannedDestinationsReader,
   PrismaArrestedPlanHold,
+  PrismaOutputCorrectionsReader,
 } from "../production/day/production-day.module.js";
 import { DayOrderLabelHeadReader } from "../production/shared/print/production-print.module.js";
 import { ProductionModule } from "../production/production.module.js";
@@ -118,6 +120,11 @@ import { ProductionModule } from "../production/production.module.js";
     // l'implémente : la même requête, le même verrou partagé, dans la
     // transaction de l'appelant.
     { provide: ArrestedPlanHold, useExisting: PrismaArrestedPlanHold },
+    // Les corrections de déclaration d'une journée (plan
+    // `fournil/plan-niveaux-de-suivi.md`, § 3.5) — la production déclare ET
+    // implémente, le colisage les relira quand il saura les traiter. Aucun
+    // lecteur aujourd'hui.
+    { provide: OutputCorrectionsReader, useExisting: PrismaOutputCorrectionsReader },
   ],
   exports: [
     PackingDayVersionReader,
@@ -137,6 +144,7 @@ import { ProductionModule } from "../production/production.module.js";
     ReserveShopRelease,
     PackingRevisionDesk,
     ArrestedPlanHold,
+    OutputCorrectionsReader,
   ],
 })
 export class PackingFeedModule {}

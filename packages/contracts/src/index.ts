@@ -1111,6 +1111,12 @@ export type {
   WorkshopSection,
   WorkshopGroupKind,
 } from "./production-worksheet.js";
+export { reportWorkshopProblemSchema } from "./production-problems.js";
+export type {
+  ProductionProblemView,
+  ProductionProblemsView,
+  ReportWorkshopProblem,
+} from "./production-problems.js";
 export {
   recordWorkshopBatchSchema,
   workshopBatchIdSchema,

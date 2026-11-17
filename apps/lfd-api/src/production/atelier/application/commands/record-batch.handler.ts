@@ -2,11 +2,10 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { ProductionBatchRepository } from "../../../day/index.js";
 import { ProductionDayLock } from "../../../day/index.js";
 import { ProductionDayRepository } from "../../../day/index.js";
 import { ServiceDay } from "../../../day/index.js";
-import { PackingHandoffs } from "../services/packing-handoffs.service.js";
+import { BatchRecording } from "../services/batch-recording.service.js";
 import { RecordBatchCommand } from "./record-batch.command.js";
 
 /**
@@ -32,6 +31,8 @@ import { RecordBatchCommand } from "./record-batch.command.js";
  * `colisage/colisage.md`, §11.2 ; §13, B3) : déclarer, écrire la remise et publier `production.handed_to_packing` partent
  * ensemble. `handoffId` = l'`id` de la fournée — un rejeu est absorbé. Une
  * fournée rejouée APRÈS son annulation ne se remet pas : elle ne compte plus.
+ * Le geste commun vit dans `BatchRecording`, que « Fait » et le rouge
+ * appellent aussi.
  *
  * Rend `void` : le client relit la fiche — §4.
  *
@@ -42,11 +43,10 @@ import { RecordBatchCommand } from "./record-batch.command.js";
 export class RecordBatchHandler implements ICommandHandler<RecordBatchCommand, void> {
   constructor(
     private readonly days: ProductionDayRepository,
-    private readonly batches: ProductionBatchRepository,
     private readonly lock: ProductionDayLock,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
-    private readonly handoffs: PackingHandoffs,
+    private readonly recording: BatchRecording,
   ) {}
 
   async execute(command: RecordBatchCommand): Promise<void> {
@@ -54,16 +54,12 @@ export class RecordBatchHandler implements ICommandHandler<RecordBatchCommand, v
     await this.uow.run(async () => {
       await this.lock.lock(day);
       const current = await this.days.load(day);
-      const batch = current.batchToRecord(command.batchId, command.sku, command.quantity, {
-        at: this.clock.now(),
-        by: command.staffUserId,
-        initials: command.initials,
-      });
-      const stored = await this.batches.record(day, batch);
-      current.acknowledge(batch, stored.serviceDay, stored.batch);
-      if (stored.batch.cancelled === null) {
-        await this.handoffs.handOver(day, current, stored.batch);
-      }
+      await this.recording.record(
+        day,
+        current,
+        { id: command.batchId, sku: command.sku, quantity: command.quantity },
+        { at: this.clock.now(), by: command.staffUserId, initials: command.initials },
+      );
     });
   }
 }

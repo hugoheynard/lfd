@@ -364,6 +364,59 @@ des postes et le réglage d'affichage (`WorksheetContents`). Donc :
 - `production-subcontexts` : `production_tracking_settings`,
   `production_day_tracking_level` et `production_problem` à `atelier`.
 
+### 3.12 Ce que N2 a bâti, ses choix et ses doutes (2026-11-17)
+
+**Bâti.** `POST …/worksheet/:date/lines/:sku/problem` et `…/done`
+(`atelier/http/production-worksheet.controller.ts`), `GET` et
+`POST admin/supervision/production-problems[/:id/resolve]`
+(`atelier/http/production-supervision.controller.ts`), tous par intention
+(`runSealed`) sauf la lecture. L'agrégat `ProductionProblem`
+(`atelier/domain/entities/`), la répartition du corrigé
+(`apps/lfd-api/src/production/atelier/domain/services/output-correction.ts`, `outputCorrectionOf`), le
+reste sous plafond (`apps/lfd-api/src/production/atelier/domain/services/line-remainder.ts`), l'écriture commune d'une fournée
+(`BatchRecording`, que `RecordBatchHandler` emploie désormais), la correction
+et son fait (`OutputCorrecting`), la cloche (`ProblemBell`, par
+`AfterCommit` + `BackgroundWork`, la forme de
+`delivery/application/plan-arrested-bell.ts`). `ProductionBatchRepository.correct`
+(noyau) pose la part corrigée totale. Le fait `production.output_corrected`
+et la lecture `OutputCorrectionsReader` sont au canal `channels/packing/` ;
+la lecture est implémentée par le noyau (`apps/lfd-api/src/production/day/infrastructure/prisma-output-corrections.reader.ts`),
+propriétaire de `production_batch`, et reliée par `PackingFeedModule`. La
+borne du retour (`requestReturns`) est `stillAtPackingOf`
+(`on-site-share.ts`). Aucune migration.
+
+**Choix faits sans écrit, à relire.**
+
+- **Les faits journalisés s'appellent `production_problem.reported` et
+  `production_problem.resolved`**, pas `production.problem_reported` : le
+  catalogue nomme un type `<sujet>.<verbe>` et le sujet est le problème. La
+  nature de la cloche garde `production.problem_reported`.
+- **« Attendu » est la quantité de la ligne au compte** au moment du rouge, pas
+  le cumul des paliers échus (que N3 lira).
+- **Un second rouge rouvre un problème traité** : il redevient rouge dans la
+  Supervision, version + 1.
+- **Le reste non corrigé n'a pas de colonne** : le fait journalisé le porte
+  (`uncorrected`), et la Supervision sert le sorti actuel (`output`) à côté du
+  plafond ; un sorti resté au-dessus du plafond dit l'écart au manager.
+- **Le surplus d'un rouge** est une fournée d'`id` `problem-<id>-<version>`,
+  signée de l'auteur du rouge ; « Fait » tire `done-<ULID>`.
+- **Une fournée entièrement corrigée ou rendue s'annule tout de suite** quand
+  on l'annule : le colisage n'en tient plus rien, il n'y a rien à lui
+  redemander.
+- **Le lien de la cloche** est `/fournil?jour=<jour>&ligne=<sku>` ; la fiche ne
+  lit pas encore ces paramètres (N4).
+- **Le fait `production.output_corrected` n'a pas de `fromPayload`** : sans
+  abonné, il n'a pas de lecteur ; le premier abonné l'écrira.
+
+**Doutes ouverts.**
+
+- **Le plafond ne borne que « Fait » (et bornera la fournée automatique).** Une
+  fournée déclarée à la main en détaillé après un rouge n'est pas refusée :
+  le § 3.2 dit « rien ne dépasse plus », mais aucun lot ne dit si
+  `RecordBatchHandler` doit refuser. À trancher par Hugo.
+- **La fiche ne sert pas le plafond** ni le problème d'une ligne : le front
+  (N4) en aura besoin pour le panneau rouge ; aucun contrat ne le porte encore.
+
 ## 4. Les lots
 
 Dans l'ordre de la table : la page (N4) est en ligne **avant** que le cron
@@ -394,3 +447,16 @@ Dans l'ordre de la table : la page (N4) est en ligne **avant** que le cron
   la signale au manager. En toujours vert seulement, le colisage la retire.
 - Sa valeur `always_green` n'existe pas tant que ce traitement n'est pas
   livré.
+
+### Décisions prises après N2 (2026-11-17)
+
+- **Le plafond ne borne que l'automatique** : « Fait » et la fournée
+  automatique. Une fournée **saisie à la main** après un rouge n'est pas
+  refusée : quelqu'un a compté des pièces qui existent. Le § 3.2 (« rien ne
+  dépasse plus ») se lit ainsi.
+- **N4 ajoute à la fiche le plafond et le problème ouvert d'une ligne**, pour
+  le panneau rouge, et lit le lien de la cloche (`/fournil?jour=…&ligne=…`).
+- **N4 inscrit les scénarios de rejeu** des deux routes de réglage de N1
+  (`production-tracking-settings.controller.ts#setTracking`,
+  `production-workstations.controller.ts#setTrackingLevel`), qui font rougir
+  l'e2e `write-replay`.

@@ -23,6 +23,7 @@ import { CancelBatchCommand } from "../cancel-batch.command.js";
 import { CancelBatchHandler } from "../cancel-batch.handler.js";
 import { RecordBatchCommand } from "../record-batch.command.js";
 import { RecordBatchHandler } from "../record-batch.handler.js";
+import { BatchRecording } from "../../services/batch-recording.service.js";
 
 /**
  * **Déclarer et annuler une fournée** (plan `la-fiche-d-atelier.md`,
@@ -87,7 +88,13 @@ function setup(base: ProductionDay = closedDay()) {
     trace,
     lock,
     handoffs,
-    record: new RecordBatchHandler(days, store, lock, clock, uow, handoffs.service),
+    record: new RecordBatchHandler(
+      days,
+      lock,
+      clock,
+      uow,
+      new BatchRecording(store, handoffs.service),
+    ),
     cancel: new CancelBatchHandler(days, store, lock, clock, uow, handoffs.service),
   };
 }

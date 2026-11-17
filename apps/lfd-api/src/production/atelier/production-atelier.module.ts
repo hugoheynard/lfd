@@ -7,6 +7,21 @@ import { ProductionQualityModule } from "../quality/production-quality.module.js
 import { ProductionPrintModule } from "../shared/print/production-print.module.js";
 import { ProductionWorkstationsModule } from "../workstations/production-workstations.module.js";
 import { CancelBatchHandler } from "./application/commands/cancel-batch.handler.js";
+import { MarkLineDoneHandler } from "./application/commands/mark-line-done.handler.js";
+import { ReportProblemHandler } from "./application/commands/report-problem.handler.js";
+import { ResolveProblemHandler } from "./application/commands/resolve-problem.handler.js";
+import { ListOpenProductionProblemsHandler } from "./application/queries/list-open-production-problems.handler.js";
+import { BatchRecording } from "./application/services/batch-recording.service.js";
+import { OutputCorrecting } from "./application/services/output-correcting.service.js";
+import { ProblemBell } from "./application/services/problem-bell.js";
+import {
+  OpenProductionProblemsReader,
+  ProductionProblemRepository,
+} from "./domain/ports/production-problem.ports.js";
+import {
+  PrismaOpenProductionProblemsReader,
+  PrismaProductionProblemRepository,
+} from "./infrastructure/prisma-production-problem.repository.js";
 import { RecordBatchHandler } from "./application/commands/record-batch.handler.js";
 import { RemoveProductionContainerHandler } from "./application/commands/remove-production-container.handler.js";
 import { SetProductionContainerHandler } from "./application/commands/set-production-container.handler.js";
@@ -135,6 +150,19 @@ import { ProductionBatchShortcutsModule } from "./production-batch-shortcuts.mod
     { provide: FrozenTrackingLevelsReader, useClass: PrismaFrozenTrackingLevelsReader },
     { provide: DayTrackingLevelsFreezer, useClass: PrismaDayTrackingLevelsFreezer },
     { provide: TrackingLevelsCommissioning, useClass: ConstantTrackingLevelsCommissioning },
+    // « Fait », le rouge et « Marquer traité » (plan des niveaux de suivi,
+    // N2) : l'écriture commune d'une fournée, la correction de ce qui a été
+    // déclaré, la cloche d'après validation, et les problèmes — écrire et
+    // lire les ouverts sont deux ports (ISP).
+    BatchRecording,
+    OutputCorrecting,
+    ProblemBell,
+    MarkLineDoneHandler,
+    ReportProblemHandler,
+    ResolveProblemHandler,
+    ListOpenProductionProblemsHandler,
+    { provide: ProductionProblemRepository, useClass: PrismaProductionProblemRepository },
+    { provide: OpenProductionProblemsReader, useClass: PrismaOpenProductionProblemsReader },
   ],
 })
 export class ProductionAtelierModule {}

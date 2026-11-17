@@ -4,13 +4,15 @@ import {
   type ProductionWorksheetQuery,
   type ProductionWorksheetView,
   type RecordWorkshopBatch,
+  type ReportWorkshopProblem,
   productionContainerSchema,
   productionWorksheetQuerySchema,
   recordWorkshopBatchSchema,
+  reportWorkshopProblemSchema,
   workshopBatchIdSchema,
   workshopBatchRefSchema,
 } from "@lfd/contracts";
-import { Body, Controller, Delete, Get, HttpCode, Param, Put, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import {
@@ -21,6 +23,9 @@ import {
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody, ZodParam, ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import { CancelBatchCommand } from "../application/commands/cancel-batch.command.js";
+import { MarkLineDoneCommand } from "../application/commands/mark-line-done.command.js";
+import { ReportProblemCommand } from "../application/commands/report-problem.command.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { RecordBatchCommand } from "../application/commands/record-batch.command.js";
 import { RemoveProductionContainerCommand } from "../application/commands/remove-production-container.command.js";
 import { SetProductionContainerCommand } from "../application/commands/set-production-container.command.js";
@@ -134,6 +139,52 @@ export class ProductionWorksheetController {
   ): Promise<void> {
     await this.commands.execute<RecordBatchCommand, void>(
       new RecordBatchCommand(date, sku, batchId, body.quantity, body.initials, staffUserId),
+    );
+  }
+
+  /**
+   * **« Fait »** (plan `fournil/plan-niveaux-de-suivi.md`, § 3.6) : une
+   * fournée du reste à sortir, sous le plafond d'un rouge. Une ligne déjà
+   * faite ne déclare rien. Par intention : un double appui ne déclare qu'une
+   * fois.
+   */
+  @Post("worksheet/:date/lines/:sku/done")
+  @HttpCode(NO_CONTENT)
+  async markDone(
+    @Param("date", DAY) date: string,
+    @Param("sku") sku: string,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+  ): Promise<void> {
+    await this.commands.execute<MarkLineDoneCommand, void>(
+      new MarkLineDoneCommand(date, sku, staffUserId, intentKey),
+    );
+  }
+
+  /**
+   * **Le rouge** (plan `fournil/plan-niveaux-de-suivi.md`, § 3.4) :
+   * « combien est réellement sorti ? ». Il pose un plafond, corrige ce qui
+   * a été déclaré en trop ou déclare ce qui manque, et sonne dans la cloche
+   * de la Supervision. Par intention.
+   */
+  @Post("worksheet/:date/lines/:sku/problem")
+  @HttpCode(NO_CONTENT)
+  async reportProblem(
+    @Param("date", DAY) date: string,
+    @Param("sku") sku: string,
+    @Body(new ZodBody(reportWorkshopProblemSchema)) body: ReportWorkshopProblem,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+  ): Promise<void> {
+    await this.commands.execute<ReportProblemCommand, void>(
+      new ReportProblemCommand(
+        date,
+        sku,
+        body.produced,
+        body.reason ?? null,
+        staffUserId,
+        intentKey,
+      ),
     );
   }
 

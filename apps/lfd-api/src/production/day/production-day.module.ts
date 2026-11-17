@@ -33,6 +33,7 @@ import { ProductionDayChangeSweepController } from "./http/production-day-change
 import { PrismaArrestedPlanLinesReader } from "./infrastructure/prisma-arrested-plan-lines.reader.js";
 import { PrismaKnownArticles } from "./infrastructure/prisma-known-articles.reader.js";
 import { PrismaArrestedPlanHold } from "./infrastructure/prisma-arrested-plan.hold.js";
+import { PrismaOutputCorrectionsReader } from "./infrastructure/prisma-output-corrections.reader.js";
 import { PrismaAtelierSheetsReader } from "./infrastructure/prisma-atelier-sheets.reader.js";
 import { PrismaClosedPlansReader } from "./infrastructure/prisma-closed-plans.reader.js";
 import { PrismaFrozenResuppliesReader } from "./infrastructure/prisma-frozen-resupplies.reader.js";
@@ -122,6 +123,8 @@ import { PrismaProductionTrancheSettingsRepository } from "./infrastructure/pris
     PrismaArrestedPlanHold,
     PrismaFrozenResuppliesReader,
     PrismaAtelierSheetsReader,
+    // Les corrections de déclaration d'une journée (`PackingFeedModule`).
+    PrismaOutputCorrectionsReader,
   ],
   exports: [
     // Ce que les métiers injectent du noyau.
@@ -151,6 +154,7 @@ import { PrismaProductionTrancheSettingsRepository } from "./infrastructure/pris
     PrismaArrestedPlanHold,
     PrismaFrozenResuppliesReader,
     PrismaAtelierSheetsReader,
+    PrismaOutputCorrectionsReader,
   ],
 })
 export class ProductionDayModule {}
@@ -168,6 +172,7 @@ export {
   PrismaClosedPlansReader,
   PrismaFrozenResuppliesReader,
   PrismaOrderInscriptionReader,
+  PrismaOutputCorrectionsReader,
   ProductionDayVersionSource,
   ProductionOrderRevisionDesk,
   ProductionOrderWithdrawalDesk,

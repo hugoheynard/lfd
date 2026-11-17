@@ -3,10 +3,14 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import type { PackedMark, ProductionBatchSnapshot } from "../domain/entities/production-day.js";
 import {
+  type BatchCorrected,
   ProductionBatchRepository,
   type RecordedBatch,
 } from "../domain/ports/production-batch.repository.js";
-import { BatchToCancelMissingError } from "../domain/errors/batch-errors.js";
+import {
+  BatchToCancelMissingError,
+  BatchToCorrectMissingError,
+} from "../domain/errors/batch-errors.js";
 import type { ServiceDay } from "../domain/value-objects/service-day.value-object.js";
 
 /** Les colonnes d'une fournée qu'on relit — la même forme au chargement de la journée. */
@@ -131,6 +135,19 @@ export class PrismaProductionBatchRepository extends ProductionBatchRepository {
     });
     if (stored === null) {
       throw new BatchToCancelMissingError(id, day.value);
+    }
+  }
+
+  /** Une ligne par fournée ; zéro ligne touchée : la fournée n'est pas de ce jour. */
+  async correct(day: ServiceDay, corrections: readonly BatchCorrected[]): Promise<void> {
+    for (const correction of corrections) {
+      const { count } = await this.prisma.productionBatch.updateMany({
+        where: { id: correction.id, serviceDay: day.value },
+        data: { correctedQuantity: correction.totalCorrected },
+      });
+      if (count === 0) {
+        throw new BatchToCorrectMissingError(correction.id, day.value);
+      }
     }
   }
 }

@@ -18,6 +18,8 @@
  * | `InscribedOrderHeaderReader` | port publié (A1) | l'en-tête figé d'une commande, pour la pierre tombale |
  * | `OrderLabelHeadReader`  | port publié      | l'acheminement et le créneau, pour l'étiquette d'un sac |
  * | `ArrestedPlanHold`      | port publié (2026-11-02) | tenir le plan arrêté pendant un geste — contre la réouverture |
+ * | `OutputCorrectedEvent`  | fait durable     | des pièces remises n'ont jamais existé (le rouge), sans abonné encore |
+ * | `OutputCorrectionsReader` | port publié    | les corrections de déclaration d'une journée — pour qui les traitera |
  *
  * `lint:context-boundaries` n'autorise `packing → production` que par ce
  * dossier, et `production → packing` jamais : le fournil publie, il ne sait
@@ -58,6 +60,15 @@ export {
   PackingReturnedPayloadError,
 } from "./packing-returned.event.js";
 export { ArrestedPlanHold, type PlanHoldState } from "./arrested-plan.hold.js";
+export {
+  type CorrectedHandoff,
+  OutputCorrectedEvent,
+  PRODUCTION_OUTPUT_CORRECTED,
+} from "./output-corrected.event.js";
+export {
+  type DeclarationCorrection,
+  OutputCorrectionsReader,
+} from "./output-corrections.reader.js";
 export { PackingDayVersionReader } from "./packing-day-version.reader.js";
 export { PackedOrdersReader, type PackedOrderSeal } from "./packed-orders.reader.js";
 export { OvenWaitingOrdersReader, type OvenWaitingOrders } from "./oven-waiting-orders.reader.js";

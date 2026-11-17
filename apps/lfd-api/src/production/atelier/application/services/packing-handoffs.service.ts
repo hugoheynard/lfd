@@ -18,7 +18,7 @@ import type {
   ProductionDay,
   ServiceDay,
 } from "../../../day/index.js";
-import { handedShareOf } from "../../domain/services/on-site-share.js";
+import { handedShareOf, stillAtPackingOf } from "../../domain/services/on-site-share.js";
 
 /**
  * **Remettre au colisage, et reprendre** — le registre et le fait durable,
@@ -128,8 +128,14 @@ export class PackingHandoffs {
    * L'identifiant est neuf à chaque demande (`return-<id>`, ULID) : un retour
    * refusé — tout au bac — se redemande après la décoche au colisage (§10.2).
    *
-   * @returns les fournées JAMAIS remises, que l'appelant annule tout de suite :
-   *   le colisage ne les a pas, il n'a rien à rendre.
+   * La demande est bornée à ce que le colisage tient encore de la fournée :
+   * `remis − corrigé − rendu − retour en attente` (plan
+   * `fournil/plan-niveaux-de-suivi.md`, § 3.3). Des pièces corrigées n'ont
+   * jamais existé : les redemander ferait rendre ce que le colisage n'a pas.
+   *
+   * @returns les fournées dont le colisage n'a RIEN — jamais remises, ou
+   *   remises puis entièrement corrigées ou rendues —, que l'appelant annule
+   *   tout de suite : il n'y a rien à rendre.
    */
   async requestReturns(
     day: ServiceDay,
@@ -140,11 +146,13 @@ export class PackingHandoffs {
       day,
       batches.map((batch) => batch.id),
     );
-    for (const batch of batches.filter((candidate) => handed.has(candidate.id))) {
+    const held = (batch: ProductionBatchSnapshot): number =>
+      stillAtPackingOf(batch, handed.get(batch.id) ?? 0);
+    for (const batch of batches.filter((candidate) => held(candidate) > 0)) {
       const requestId = `return-${this.ids.next()}`;
-      // Ce que le colisage a reçu de la fournée, pas la fournée : une part
+      // Ce que le colisage tient de la fournée, pas la fournée : une part
       // gardée pour un réassort sur place ne lui a jamais été remise (R3c).
-      const quantity = handed.get(batch.id) ?? batch.quantity;
+      const quantity = held(batch);
       await this.requests.request(day, {
         requestId,
         batchId: batch.id,
@@ -164,6 +172,6 @@ export class PackingHandoffs {
         ).durableFact(),
       );
     }
-    return batches.filter((batch) => !handed.has(batch.id));
+    return batches.filter((batch) => held(batch) === 0);
   }
 }

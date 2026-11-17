@@ -79,3 +79,16 @@ export class BatchToCancelMissingError extends TechnicalError {
     );
   }
 }
+
+/**
+ * Le rouge corrige une fournée que la base ne porte pas ce jour-là : la
+ * relecture sous le verrou l'a pourtant vue. Un défaut, pas un refus métier.
+ */
+export class BatchToCorrectMissingError extends TechnicalError {
+  constructor(id: string, serviceDay: string) {
+    super(
+      "production.batch.correct_missing",
+      `La fournée ${id} du ${serviceDay} devait être corrigée mais n'existe pas en base : rien n'a été corrigé et le rouge n'est pas posé. Rechargez la fiche d'atelier et refaites le rouge ; si le défaut revient, signalez-le à l'équipe technique.`,
+    );
+  }
+}

@@ -106,3 +106,13 @@ export function handedShareOf(
     quantity: batch.quantity,
   });
 }
+
+/**
+ * **Ce que le colisage tient encore d'une fournée remise** — ce qu'un retour
+ * peut lui redemander et ce qu'un rouge peut corriger (plan
+ * `fournil/plan-niveaux-de-suivi.md`, § 3.3) :
+ * `remis − rendu − retour en attente − corrigé`, jamais négatif.
+ */
+export function stillAtPackingOf(batch: ProductionBatchSnapshot, handed: number): number {
+  return Math.max(0, handed - batch.returned - batch.pendingReturn - batch.corrected);
+}

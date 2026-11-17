@@ -4,10 +4,14 @@ import {
   type ProductionBatchSnapshot,
 } from "../../domain/entities/production-day.js";
 import {
+  type BatchCorrected,
   ProductionBatchRepository,
   type RecordedBatch,
 } from "../../domain/ports/production-batch.repository.js";
-import { BatchToCancelMissingError } from "../../domain/errors/batch-errors.js";
+import {
+  BatchToCancelMissingError,
+  BatchToCorrectMissingError,
+} from "../../domain/errors/batch-errors.js";
 import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
@@ -81,6 +85,21 @@ export class InMemoryBatches extends ProductionBatchRepository {
     }
     if (stored.batch.cancelled === null) {
       this.rows.set(id, { ...stored, batch: { ...stored.batch, cancelled: mark } });
+    }
+    return Promise.resolve();
+  }
+
+  correct(day: ServiceDay, corrections: readonly BatchCorrected[]): Promise<void> {
+    for (const correction of corrections) {
+      this.trace.push(`correct:${correction.id}`);
+      const stored = this.rows.get(correction.id);
+      if (stored === undefined || stored.serviceDay !== day.value) {
+        return Promise.reject(new BatchToCorrectMissingError(correction.id, day.value));
+      }
+      this.rows.set(correction.id, {
+        ...stored,
+        batch: { ...stored.batch, corrected: correction.totalCorrected },
+      });
     }
     return Promise.resolve();
   }

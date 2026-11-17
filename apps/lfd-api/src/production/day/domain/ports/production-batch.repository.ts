@@ -46,4 +46,25 @@ export abstract class ProductionBatchRepository {
    * @throws {BatchToCancelMissingError} aucune fournée de ce jour sous cet `id`.
    */
   abstract cancel(day: ServiceDay, id: string, mark: PackedMark): Promise<void>;
+
+  /**
+   * Pose la part corrigée **totale** de chaque fournée nommée (plan
+   * `fournil/plan-niveaux-de-suivi.md`, § 3.3) : des pièces déclarées qui
+   * n'ont jamais existé.
+   *
+   * Une écriture CIBLÉE, de la même figure que `cancel` : le rouge relit la
+   * journée SOUS le verrou, la répartition du domaine (`outputCorrectionOf`)
+   * borne chaque part à `remis − rendu − retour en attente`, et ce port
+   * n'écrit que ce qu'elle a laissé passer. Le CHECK de la table
+   * (`0 ≤ corrigé ≤ quantité`) tient le reste.
+   *
+   * @throws {BatchToCorrectMissingError} une fournée nommée n'est pas de ce jour.
+   */
+  abstract correct(day: ServiceDay, corrections: readonly BatchCorrected[]): Promise<void>;
+}
+
+/** Une fournée et sa part corrigée en tout, après le rouge. */
+export interface BatchCorrected {
+  readonly id: string;
+  readonly totalCorrected: number;
 }

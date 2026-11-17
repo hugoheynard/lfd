@@ -14,6 +14,7 @@ import { CancelBatchCommand } from "../cancel-batch.command.js";
 import { CancelBatchHandler } from "../cancel-batch.handler.js";
 import { RecordBatchCommand } from "../record-batch.command.js";
 import { RecordBatchHandler } from "../record-batch.handler.js";
+import { BatchRecording } from "../../services/batch-recording.service.js";
 
 /**
  * **Le réassort du Labo ne passe pas au colisage** (réassort, R3c, décision 3
@@ -77,11 +78,10 @@ function setup() {
     ...handoffs,
     record: new RecordBatchHandler(
       days,
-      store,
       new RecordingDayLock(),
       clock,
       uow,
-      handoffs.service,
+      new BatchRecording(store, handoffs.service),
     ),
     cancel: new CancelBatchHandler(
       days,

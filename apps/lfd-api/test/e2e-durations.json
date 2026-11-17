@@ -659,5 +659,6 @@
   "test/production-unsold-shelving.e2e-spec.ts": 9082,
   "test/production-workstations-simulation.e2e-spec.ts": 9500,
   "test/production-workstations-grouping.e2e-spec.ts": 8800,
-  "test/production-tracking-levels.e2e-spec.ts": 12000
+  "test/production-tracking-levels.e2e-spec.ts": 12000,
+  "test/production-problems.e2e-spec.ts": 12000
 }
