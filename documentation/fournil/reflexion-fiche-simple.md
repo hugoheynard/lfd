@@ -161,3 +161,25 @@ Restent à trancher avant le plan : le moment où « toujours vert » considère
 produit sorti (proposé : l'heure de chaque palier), la façon d'appeler le
 manager, la correction d'un vert après coup, et si fournil et colisage
 partagent un réglage ou en ont un chacun.
+
+## Une page transverse : Réglages › Niveau de suivi (décidé par Hugo le 2026-11-17)
+
+Le niveau de suivi est une même question posée à chaque poste : combien de
+gestes demande-t-on à l'équipe ? Elle se règle sur **une seule page**, une
+ligne par poste, le même choix à trois niveaux et une phrase qui dit ce que
+l'équipe aura à faire.
+
+| Poste                    | Toujours vert           | Simple                                         | Détaillé                            |
+| ------------------------ | ----------------------- | ---------------------------------------------- | ----------------------------------- |
+| **Fournil**              | rien, sauf « Problème » | « Fait » ou « Problème » par produit           | fournées, plaques, paliers          |
+| **Colisage — retrait**   | rien, sauf « Problème » | « Tout est prêt » ou « Problème » par commande | contenants, répartition, étiquettes |
+| **Colisage — livraison** | plus tard               | plus tard                                      | bacs, étiquettes (aujourd'hui)      |
+| **Chargement**           | plus tard               | plus tard                                      | scan des bacs (aujourd'hui)         |
+
+Les réglages voisins de même nature peuvent y venir : le contrôle qualité au
+fournil et au colisage, le partage des demi-bacs.
+
+**La page rassemble, elle ne possède pas.** Chaque bloc garde son réglage et
+la règle qui va avec ; la page les lit et les écrit chacun par sa porte. Une
+table centrale « complexité » qui commanderait les modules mélangerait leurs
+règles, et aucun ne pourrait plus changer la sienne seul.
