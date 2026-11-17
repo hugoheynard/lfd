@@ -255,6 +255,25 @@ fold-page-layout {
   min-height: 0;
   padding: var(--fold-space-lg) var(--fold-page-gutter);
   overflow-y: auto;
+  /* La ligne se range sur la largeur de la LISTE, pas de la fenêtre : la barre
+     latérale du back-office en prend une part que la media query ne voit pas. */
+  container: fa-lines / inline-size;
+}
+
+/*
+  🔴 Sur quatre colonnes, 112 px + 300 px + deux gestes de 52 px ne laissent
+  plus rien au nom sous ~1100 px de liste : `minmax(0, 1fr)` le réduisait à
+  zéro, et la barre à paliers passait SUR le nom et la colonne de gauche. En
+  dessous, la barre passe sous le nom, à côté de la colonne de gauche. Sous
+  1024 px de fenêtre, c'est la carte du téléphone qui s'applique.
+*/
+@media (min-width: 1024px) {
+  @container fa-lines (max-width: 1100px) {
+    app-worksheet-line {
+      --fa-line-columns: 112px minmax(0, 1fr) auto;
+      --fa-line-areas: 'left what actions' 'left progress progress' 'left batches batches';
+    }
+  }
 }
 
 /* « Annuler la dernière » : au-dessus du pied, sans rien pousser. */

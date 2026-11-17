@@ -115,6 +115,8 @@
   font-size: var(--fa-size-name);
   font-weight: var(--fold-weight-bold);
   letter-spacing: var(--fold-tracking-tight);
+  /* Un nom plus long que sa colonne revient à la ligne, il ne déborde pas. */
+  overflow-wrap: anywhere;
 }
 
 :host(.is-done) .wl-name {

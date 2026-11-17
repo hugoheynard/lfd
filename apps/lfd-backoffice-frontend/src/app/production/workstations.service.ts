@@ -95,7 +95,7 @@ export class WorkstationsService {
   /** Le dossier de prod simulé : rangé dans ce mode, sous-catégories affichées ou non (§ 3.11). */
   simulationPdf(mode: ProductionGrouping, showSubcategories: boolean): Promise<Blob> {
     return firstValueFrom(
-      this.http.get(`${WORKSTATIONS}/simulation.pdf`, {
+      this.http.get(`${B2B_API_BASE}/admin/production/simulation.pdf`, {
         params: { mode, showSubcategories: String(showSubcategories) },
         responseType: 'blob',
       }),

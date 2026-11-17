@@ -57,7 +57,7 @@ export const placeProductsPayloadSchema = z.object({
 export type PlaceProductsPayload = z.infer<typeof placeProductsPayloadSchema>;
 
 /**
- * `GET admin/production/workstations/simulation.pdf?mode=…&showSubcategories=…`
+ * `GET admin/production/simulation.pdf?mode=…&showSubcategories=…`
  * — le mode dans lequel ranger le catalogue simulé, et l'affichage des
  * sous-catégories, quel que soit le réglage du fournil. `showSubcategories`
  * absent : celui du réglage.

@@ -11,13 +11,14 @@ import { GetProductionSimulationPdfQuery } from "../application/queries/get-prod
 /**
  * **Simuler le dossier de prod** — Réglages › Production › Simulation
  * (`documentation/fournil/les-postes-du-fournil.md`, § 3.11), sous `production_workstations`
- * en lecture, à côté des routes des postes.
+ * en lecture : elle simule tout le dossier (rangement et sous-catégories), pas
+ * les postes seuls, d'où son adresse sous `admin/production`.
  *
  * La route vit au plan et non dans `workstations/` : elle rend une partie du
  * dossier du jour, que seul le plan monte, et `workstations/` ne lit pas
  * `plan/` (porte `production-subcontexts`). Il n'injecte que le `QueryBus`.
  */
-@Controller("admin/production/workstations")
+@Controller("admin/production")
 @AdminSurface("production_workstations")
 export class ProductionSimulationController {
   constructor(private readonly queries: QueryBus) {}

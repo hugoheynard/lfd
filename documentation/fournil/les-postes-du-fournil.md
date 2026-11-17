@@ -151,12 +151,17 @@ disent dans un encadré.
 
 ### Les autres routes (`admin/production/workstations`)
 
-| Route                                                                     | Ce qu'elle fait                                                                                                                                   |
-| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET`                                                                     | la page Postes : les postes, et les produits (miroir, journées arrêtées de J−30, demande des 14 prochains jours, commandes et réassorts)          |
-| `POST`, `PUT order`, `PUT :id/name`, `POST :id/archive`, `PUT placements` | les cinq gestes                                                                                                                                   |
-| `GET unplaced?date=`                                                      | l'alerte : avant l'arrêt sur la demande du jour, après sur les lignes du jour (`KnownArticles`, publié par `day/`)                                |
-| `GET simulation.pdf?mode=&showSubcategories=`                             | la simulation, rendue par `plan/` ; `showSubcategories` (`true`/`false`) absent : celui du réglage ; elle refuse sur panne au lieu de se dégrader |
+| Route                                                                     | Ce qu'elle fait                                                                                                                          |
+| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`                                                                     | la page Postes : les postes, et les produits (miroir, journées arrêtées de J−30, demande des 14 prochains jours, commandes et réassorts) |
+| `POST`, `PUT order`, `PUT :id/name`, `POST :id/archive`, `PUT placements` | les cinq gestes                                                                                                                          |
+| `GET unplaced?date=`                                                      | l'alerte : avant l'arrêt sur la demande du jour, après sur les lignes du jour (`KnownArticles`, publié par `day/`)                       |
+
+La simulation a sa propre adresse, hors des postes, parce qu'elle simule tout
+le dossier (rangement et sous-catégories) : `GET /admin/production/simulation.pdf?mode=&showSubcategories=`,
+sous `production_workstations` en lecture, rendue par `plan/` ;
+`showSubcategories` (`true`/`false`) absent : celui du réglage ; elle refuse
+sur panne au lieu de se dégrader.
 
 La bascule passe par `PUT /admin/production/settings/display` (`grouping`),
 refusée tant que `PlacedProducts.count()` vaut 0.

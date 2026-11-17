@@ -15,7 +15,7 @@ import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const WORKSTATIONS = "/admin/production/workstations";
-const SIMULATION = `${WORKSTATIONS}/simulation.pdf`;
+const SIMULATION = "/admin/production/simulation.pdf";
 
 let ctx: E2eContext;
 
@@ -65,7 +65,7 @@ async function counts(): Promise<readonly number[]> {
   ];
 }
 
-describe("GET /admin/production/workstations/simulation.pdf", () => {
+describe("GET /admin/production/simulation.pdf", () => {
   it("mode boutique : un PDF rangé par rayon, marqué simulation", async () => {
     const response = await getPdf(admin(ctx), `${SIMULATION}?mode=shelf`).expect(200);
 
