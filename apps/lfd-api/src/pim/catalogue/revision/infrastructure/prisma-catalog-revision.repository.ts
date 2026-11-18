@@ -1,20 +1,16 @@
 import { Injectable } from "@nestjs/common";
 
 import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js";
-import { referenceFrom } from "../../../../platform/id/reference.js";
-import { UuidGenerator } from "../../../../platform/id/uuid-generator.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import {
   CatalogRevisionRepository,
   type RevisionRecord,
 } from "../domain/ports/catalog-revision.repository.js";
+import { CatalogRevision } from "../domain/entities/catalog-revision.js";
 import { RevisionHashAlreadyTakenError } from "../domain/errors/revision-errors.js";
 import type { RevisionIndex } from "../domain/diff.js";
 import { toJsonObject, type JsonObject } from "../domain/fingerprint.js";
 import type { Revision } from "../domain/revision.js";
-
-/** Le préfixe des révisions — `P` aux produits, `C` aux sociétés, `R` ici. */
-const REVISION_PREFIX = "R";
 
 /**
  * Violation d'unicité Prisma (`P2002`) — **duck-typée**, sans importer les
@@ -31,10 +27,7 @@ function isUniqueViolation(error: unknown): boolean {
 
 @Injectable()
 export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
-  constructor(
-    private readonly prisma: PimPrismaService,
-    private readonly ids: UuidGenerator,
-  ) {
+  constructor(private readonly prisma: PimPrismaService) {
     super();
   }
 
@@ -45,21 +38,24 @@ export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
    * colonne n'était pas unique (la plus ANCIENNE fait foi) est devenu sans objet
    * plutôt que d'être devenu tacite.
    */
-  async byHash(hash: string): Promise<RevisionRecord | null> {
+  async loadByHash(hash: string): Promise<CatalogRevision | null> {
     const row = await this.prisma.catalogRevision.findUnique({
       where: { hash },
       include: { _count: { select: { items: true } } },
     });
-    return row === null ? null : toRecord(row);
+    return row === null ? null : CatalogRevision.rehydrate(toRecord(row));
   }
 
-  async rename(revisionId: string, label: string, note: string | null): Promise<void> {
-    // La note n'est écrite que si on en apporte une : nommer une ancre sans
-    // rien dire de plus ne doit pas effacer ce qu'une autre main y avait mis.
-    await this.prisma.catalogRevision.update({
-      where: { id: revisionId },
-      data: { label, ...(note === null ? {} : { note }) },
-    });
+  async load(reference: string): Promise<CatalogRevision | null> {
+    const found = await this.byReference(reference);
+    return found === null ? null : CatalogRevision.rehydrate(found);
+  }
+
+  async save(revision: CatalogRevision): Promise<void> {
+    const { id, label, note } = revision.toState();
+    // `label` et `note` sont ceux de l'agrégat, qui a déjà gardé la règle : la
+    // note qu'on n'apporte pas reste celle qu'il a relue, donc rien ne s'efface.
+    await this.prisma.catalogRevision.update({ where: { id }, data: { label, note } });
   }
 
   async list(limit: number): Promise<readonly RevisionRecord[]> {
@@ -152,20 +148,12 @@ export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
     return new Map(rows.map((row) => [row.sku, toJsonObject(asRecord(row.content.payload))]));
   }
 
-  async save(
-    record: Omit<RevisionRecord, "id">,
-    revision: Revision,
-    ticket: WriteTicket,
-  ): Promise<{ readonly id: string; readonly reference: string }> {
+  async add(revision: CatalogRevision, photograph: Revision, ticket: WriteTicket): Promise<void> {
     // Le laissez-passer n'ouvre rien ici : une révision ne modifie aucune table
     // du catalogue, elle le PHOTOGRAPHIE. Il est exigé quand même — c'est ce qui
     // garantit que le fait est tracé avant que la ligne existe.
     void ticket;
-    const id = this.ids.next();
-    // Dérivée de l'identifiant, pas tirée d'un compteur : lire « le dernier
-    // numéro » pour ajouter un est une course, et deux publications simultanées
-    // calculaient le même.
-    const reference = referenceFrom(REVISION_PREFIX, id);
+    const { id, reference, label, hash, takenAt, takenBy } = revision.toState();
     // Trois écritures SÉQUENTIELLES, sans `$transaction` : l'atomicité vient de
     // l'unité de travail du handler, qui englobe déjà la trace du journal. En
     // ouvrir une seconde ici serait une transaction imbriquée — que Prisma ne
@@ -175,7 +163,7 @@ export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
     // réécrit, et deux articles identiques d'une même capture n'entrent qu'une
     // fois.
     await this.prisma.catalogContent.createMany({
-      data: revision.items.map((item) => ({ hash: item.hash, payload: item.payload })),
+      data: photograph.items.map((item) => ({ hash: item.hash, payload: item.payload })),
       skipDuplicates: true,
     });
     // La violation d'unicité est TRADUITE ici, et nulle part ailleurs : le
@@ -185,30 +173,21 @@ export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
     // suite honnête : rattraper l'ancre du gagnant.
     await this.prisma.catalogRevision
       .create({
-        data: {
-          id,
-          reference,
-          label: record.label,
-          hash: record.hash,
-          header: { ...revision.header },
-          takenAt: record.takenAt,
-          takenBy: record.takenBy,
-        },
+        data: { id, reference, label, hash, header: { ...photograph.header }, takenAt, takenBy },
       })
       .catch((error: unknown) => {
         if (isUniqueViolation(error)) {
-          throw new RevisionHashAlreadyTakenError(record.hash);
+          throw new RevisionHashAlreadyTakenError(hash);
         }
         throw error;
       });
     await this.prisma.catalogRevisionItem.createMany({
-      data: revision.items.map((item) => ({
+      data: photograph.items.map((item) => ({
         revisionId: id,
         sku: item.sku,
         contentHash: item.hash,
       })),
     });
-    return { id, reference };
   }
 }
 

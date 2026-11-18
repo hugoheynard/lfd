@@ -2,10 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
-import {
-  RevisionAlreadyNamedError,
-  RevisionNotFoundError,
-} from "../domain/errors/revision-errors.js";
+import { RevisionNotFoundError } from "../domain/errors/revision-errors.js";
 import { CatalogRevisionRepository } from "../domain/ports/catalog-revision.repository.js";
 
 export class RenameCatalogRevisionCommand {
@@ -38,11 +35,8 @@ export class RenameCatalogRevisionCommand {
  * autrement — et l'écran qui relit une publication d'il y a trois mois lirait
  * alors une intention que personne n'avait ce jour-là.
  *
- * ⚠️ C'est une écriture nue sur une ligne, sans agrégat, et c'est assumé : une
- * révision n'a ni transition ni invariant — c'est une photographie immuable
- * dont le seul champ mobile est son nom, et ce nom ne peut rien refuser que la
- * garde ci-dessus. Lui bâtir un agrégat serait la cérémonie que le §3.1 de
- * `CLAUDE.md` déconseille.
+ * La règle est celle de l'agrégat `CatalogRevision` : le handler charge, appelle
+ * `name`, sauve.
  *
  * @throws {RevisionNotFoundError} la référence ne désigne aucune ancre.
  * @throws {RevisionAlreadyNamedError} elle porte déjà un nom.
@@ -59,13 +53,11 @@ export class RenameCatalogRevisionHandler implements ICommandHandler<
   ) {}
 
   async execute(command: RenameCatalogRevisionCommand): Promise<void> {
-    const revision = await this.revisions.byReference(command.reference);
+    const revision = await this.revisions.load(command.reference);
     if (revision === null) {
       throw new RevisionNotFoundError(command.reference);
     }
-    if (revision.label !== null) {
-      throw new RevisionAlreadyNamedError(revision.reference, revision.label);
-    }
+    revision.name(command.label, command.note);
     // La trace et le nom dans la MÊME transaction. Un nom écrit sans trace ne se
     // voit nulle part : l'écran l'affiche, et le jour où quelqu'un demande qui
     // l'a posé, le blanc ne se comble plus.
@@ -85,7 +77,7 @@ export class RenameCatalogRevisionHandler implements ICommandHandler<
           note: command.note,
         },
       });
-      await this.revisions.rename(revision.id, command.label, command.note);
+      await this.revisions.save(revision);
     });
   }
 }

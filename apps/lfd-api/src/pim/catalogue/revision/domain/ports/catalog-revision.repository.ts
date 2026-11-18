@@ -1,6 +1,7 @@
 import type { WriteTicket } from "../../../../../platform/journal/scoped-journal.js";
 import type { RevisionIndex } from "../diff.js";
 import type { JsonObject } from "../fingerprint.js";
+import type { CatalogRevision } from "../entities/catalog-revision.js";
 import type { Revision } from "../revision.js";
 
 /** Une révision posée, telle qu'on la relit. */
@@ -42,40 +43,34 @@ export abstract class CatalogRevisionRepository {
    * l'empreinte la retrouve et la publication réussie s'inscrit dessus, au lieu
    * de poser un doublon.
    */
-  abstract byHash(hash: string): Promise<RevisionRecord | null>;
+  abstract loadByHash(hash: string): Promise<CatalogRevision | null>;
 
   /**
    * Pose la révision : les contenus **manquants** d'abord, l'ancre ensuite.
    *
-   * Rend l'identifiant ET la référence : cette dernière est FABRIQUÉE ici, à
-   * partir de l'identifiant, et l'appelant ne peut donc pas la connaître avant.
+   * L'identifiant et la référence sont fabriqués par l'appelant (la factory de
+   * l'agrégat les exige) ; le dépôt écrit ce qu'on lui rend.
    *
    * « Manquants » est tout l'objet du magasin partagé — un contenu déjà connu
    * n'est pas réécrit, il est référencé. Une capture d'un catalogue inchangé
    * n'écrit donc que la ligne d'ancre et ses appartenances.
+   *
+   * @throws {RevisionHashAlreadyTakenError} la base refuse : une autre ancre
+   *   porte déjà cette empreinte (la course de deux pushs simultanés).
    */
-  abstract save(
-    record: Omit<RevisionRecord, "id" | "articles" | "reference">,
-    revision: Revision,
-    ticket: WriteTicket,
-  ): Promise<{ readonly id: string; readonly reference: string }>;
+  abstract add(revision: CatalogRevision, photograph: Revision, ticket: WriteTicket): Promise<void>;
+
+  /**
+   * Écrit le nom (et la note) d'une ancre posée — le seul champ qui bouge.
+   * La règle « une ancre nommée ne se renomme pas » est celle de l'agrégat, pas
+   * celle du dépôt.
+   */
+  abstract save(revision: CatalogRevision): Promise<void>;
+
+  /** Une ancre par sa référence, en agrégat. `null` = elle n'existe pas. */
+  abstract load(reference: string): Promise<CatalogRevision | null>;
 
   /** Les ancres, de la plus récente à la plus ancienne. */
-  /**
-   * **Nomme une ancre qui ne l'était pas.**
-   *
-   * Une écriture NUE, et sa justification est écrite ici plutôt que sur un
-   * agrégat qui n'existe pas : une révision n'a ni transition ni invariant —
-   * c'est une photographie immuable. Le seul champ qui puisse bouger est le nom
-   * qu'on lui donne, et il ne peut rien refuser. Lui bâtir un agrégat serait de
-   * la cérémonie (cf. §3.1 de `CLAUDE.md`, « où NE PAS mettre d'agrégat »).
-   *
-   * ⚠️ Elle ne s'applique qu'à une ancre **sans nom** : la garde vit dans le
-   * cas d'usage, pas ici, parce qu'elle n'est pas la même selon qu'on répare à
-   * la main ou qu'on nomme au passage d'un push.
-   */
-  abstract rename(revisionId: string, label: string, note: string | null): Promise<void>;
-
   abstract list(limit: number): Promise<readonly RevisionRecord[]>;
 
   /** Une ancre par sa référence. `null` = elle n'existe pas. */

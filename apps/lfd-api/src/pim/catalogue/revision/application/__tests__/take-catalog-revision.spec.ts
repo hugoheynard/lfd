@@ -1,8 +1,10 @@
 import { Test } from "@nestjs/testing";
 
+import { UuidGenerator } from "../../../../../platform/id/uuid-generator.js";
 import { UnitOfWork } from "../../../../../platform/database/unit-of-work.js";
 import { Clock } from "../../../../../platform/time/clock.js";
 import { PimJournal, type PimJournalEntry } from "../../../../journal/pim-journal.js";
+import { CatalogRevision } from "../../domain/entities/catalog-revision.js";
 import { RevisionHashAlreadyTakenError } from "../../domain/errors/revision-errors.js";
 import {
   CatalogRevisionRepository,
@@ -62,14 +64,26 @@ class RacingRepository extends CatalogRevisionRepository {
     super();
   }
 
-  byHash(): Promise<RevisionRecord | null> {
+  loadByHash(): Promise<CatalogRevision | null> {
     this.byHashCalls += 1;
-    return Promise.resolve(this.byHashCalls === 1 ? null : this.winner);
+    return Promise.resolve(
+      this.byHashCalls === 1 || this.winner === null
+        ? null
+        : CatalogRevision.rehydrate(this.winner),
+    );
   }
 
-  save(): Promise<{ readonly id: string; readonly reference: string }> {
+  add(): Promise<void> {
     this.saveCalls += 1;
     return Promise.reject(new RevisionHashAlreadyTakenError("empreinte"));
+  }
+
+  save(): Promise<void> {
+    throw new Error("Non utilisé.");
+  }
+
+  load(): Promise<CatalogRevision | null> {
+    throw new Error("Non utilisé.");
   }
 
   list(): Promise<readonly RevisionRecord[]> {
@@ -77,10 +91,6 @@ class RacingRepository extends CatalogRevisionRepository {
   }
 
   byReference(): Promise<RevisionRecord | null> {
-    throw new Error("Non utilisé.");
-  }
-
-  rename(): Promise<void> {
     throw new Error("Non utilisé.");
   }
 
@@ -106,6 +116,7 @@ async function build(winner: RevisionRecord | null) {
       // Un catalogue VIDE : ces cas parlent de la course, pas du contenu.
       { provide: CatalogRevisionSource, useValue: { snapshotItems: () => Promise.resolve([]) } },
       { provide: PimJournal, useValue: new SilentJournal() },
+      { provide: UuidGenerator, useValue: { next: () => "rev_neuve" } },
       { provide: Clock, useValue: { now: () => new Date("2026-01-02T09:00:00.000Z") } },
       { provide: UnitOfWork, useValue: { run: (work: () => Promise<unknown>) => work() } },
     ],

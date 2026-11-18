@@ -3,12 +3,18 @@ import type { CatalogRevisionTakenView } from "@lfd/pim-contracts";
 
 import { currentRequestContext } from "../../../../platform/context/request-context.store.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { referenceFrom } from "../../../../platform/id/reference.js";
+import { UuidGenerator } from "../../../../platform/id/uuid-generator.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
+import { CatalogRevision } from "../domain/entities/catalog-revision.js";
 import { RevisionHashAlreadyTakenError } from "../domain/errors/revision-errors.js";
 import { CatalogRevisionRepository } from "../domain/ports/catalog-revision.repository.js";
 import { buildRevision, ENTERED_PRO_PRICE_HEADER } from "../domain/revision.js";
 import { CatalogRevisionSource } from "../domain/ports/catalog-revision.source.js";
+
+/** Le préfixe des révisions — `P` aux produits, `C` aux sociétés, `R` ici. */
+const REVISION_PREFIX = "R";
 
 /** Ce qu'une capture rend : l'ancre posée, ou celle qui existait déjà. */
 export type TakenRevision = CatalogRevisionTakenView;
@@ -68,6 +74,7 @@ export class TakeCatalogRevisionHandler implements ICommandHandler<
     private readonly revisions: CatalogRevisionRepository,
     private readonly journal: PimJournal,
     private readonly clock: Clock,
+    private readonly ids: UuidGenerator,
     private readonly uow: UnitOfWork,
   ) {}
 
@@ -79,7 +86,7 @@ export class TakeCatalogRevisionHandler implements ICommandHandler<
     // ancre existe-t-elle ? » avant de savoir laquelle. La lecture quitte donc
     // le `Promise.all` — un aller-retour de plus par pose, contre une garde qui
     // pose la bonne question.
-    const existing = await this.revisions.byHash(revision.hash);
+    const existing = await this.revisions.loadByHash(revision.hash);
     if (existing !== null) {
       // 🔴 **Une ancre muette prend le nom qu'on lui apporte.**
       //
@@ -92,9 +99,9 @@ export class TakeCatalogRevisionHandler implements ICommandHandler<
       // sien. Le nom dit avec quelle intention un catalogue est parti chez des
       // clients ; le réécrire au passage d'un push le raconterait autrement,
       // sans que personne ne l'ait demandé.
-      const named = existing.label ?? command.label;
-      if (existing.label === null && command.label !== null) {
-        await this.revisions.rename(existing.id, command.label, command.note);
+      if (!existing.isNamed && command.label !== null) {
+        existing.name(command.label, command.note);
+        await this.revisions.save(existing);
         await this.journal.trace({
           type: PIM_EVENTS.catalogRevisionNamed,
           subjectType: "catalog_revision",
@@ -110,7 +117,7 @@ export class TakeCatalogRevisionHandler implements ICommandHandler<
         id: existing.id,
         reference: existing.reference,
         hash: existing.hash,
-        label: named,
+        label: existing.label,
         created: false,
       };
     }
@@ -120,21 +127,32 @@ export class TakeCatalogRevisionHandler implements ICommandHandler<
     // Le fait et l'ancre dans la MÊME transaction. Une ancre est une lecture
     // qu'on enregistre, mais elle s'enregistre : si la trace passait et l'ancre
     // non, l'historique affirmerait une révision que la base ne porte pas.
-    const posed = await this.pose(command, revision, takenAt, takenBy).catch(
-      async (error: unknown) => {
-        // Course perdue : un autre push vient de poser exactement cette ancre.
-        // On la rattrape plutôt que de rendre une erreur pour un résultat qui
-        // est déjà là.
-        if (!(error instanceof RevisionHashAlreadyTakenError)) {
-          throw error;
-        }
-        const winner = await this.revisions.byHash(revision.hash);
-        if (winner === null) {
-          throw error;
-        }
-        return { id: winner.id, reference: winner.reference, adopted: true as const };
-      },
-    );
+    const id = this.ids.next();
+    const anchor = CatalogRevision.take({
+      id,
+      // Dérivée de l'identifiant, pas tirée d'un compteur : lire « le dernier
+      // numéro » pour ajouter un est une course, et deux publications
+      // simultanées calculaient le même.
+      reference: referenceFrom(REVISION_PREFIX, id),
+      label: command.label,
+      note: command.note,
+      hash: revision.hash,
+      takenAt,
+      takenBy,
+    });
+    const posed = await this.pose(command, revision, anchor).catch(async (error: unknown) => {
+      // Course perdue : un autre push vient de poser exactement cette ancre.
+      // On la rattrape plutôt que de rendre une erreur pour un résultat qui
+      // est déjà là.
+      if (!(error instanceof RevisionHashAlreadyTakenError)) {
+        throw error;
+      }
+      const winner = await this.revisions.loadByHash(revision.hash);
+      if (winner === null) {
+        throw error;
+      }
+      return { id: winner.id, reference: winner.reference, adopted: true as const };
+    });
     return {
       id: posed.id,
       reference: posed.reference,
@@ -148,8 +166,7 @@ export class TakeCatalogRevisionHandler implements ICommandHandler<
   private async pose(
     command: TakeCatalogRevisionCommand,
     revision: ReturnType<typeof buildRevision>,
-    takenAt: Date,
-    takenBy: string,
+    anchor: CatalogRevision,
   ): Promise<{ readonly id: string; readonly reference: string }> {
     return this.uow.run(async () => {
       const ticket = await this.journal.trace({
@@ -172,11 +189,8 @@ export class TakeCatalogRevisionHandler implements ICommandHandler<
         // La portée d'une ancre : combien d'articles elle fige.
         blast: { articles: revision.items.length },
       });
-      return this.revisions.save(
-        { label: command.label, note: command.note, hash: revision.hash, takenAt, takenBy },
-        revision,
-        ticket,
-      );
+      await this.revisions.add(anchor, revision, ticket);
+      return { id: anchor.id, reference: anchor.reference };
     });
   }
 }
