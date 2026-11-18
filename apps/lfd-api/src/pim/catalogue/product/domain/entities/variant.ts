@@ -12,7 +12,6 @@ import {
 } from "../errors/sale-unit-errors.js";
 import type { SaleUnitClearance } from "../value-objects/sale-reference-usage.js";
 import { BlankVariantInternalLabelError } from "../errors/variant-label-errors.js";
-import { DormantSheetWouldWakeError } from "../errors/variant-lifecycle-errors.js";
 import {
   DefaultVariantCannotFollowMinQuantityError,
   MinQuantityOnWeightSaleError,
@@ -35,11 +34,10 @@ import {
   openedSnapshot,
   type OpenedVariantInput,
 } from "./variant-snapshot-mapper.js";
+import { VariantRegulatory } from "./variant-regulatory.js";
 import { VariantLifecycle } from "./variant-lifecycle.js";
-import { ASPECT_FLAG, type VariantAspect, type VariantFlag } from "./variant-aspect.js";
+import { ASPECT_FLAG, type VariantAspect } from "./variant-aspect.js";
 import type {
-  VariantAllergenSheetSnapshot,
-  VariantNutritionSnapshot,
   VariantNutritionValues,
   VariantPricing,
   VariantSnapshot,
@@ -89,9 +87,8 @@ export class Variant {
   private minQuantitiesValue: MinQuantities;
   private minQuantityFollowsDefaultFlag: boolean;
   private customRecipeFlag: boolean;
-  private allergenSheetValue: VariantAllergenSheetSnapshot | null;
-  private nutritionValue: VariantNutritionSnapshot | null;
-  private readonly followsDefault: Record<VariantFlag, boolean>;
+  private regulatory: VariantRegulatory;
+  private pricingFollowsValue: boolean;
 
   /**
    * L'instantané, et non onze arguments positionnels.
@@ -124,13 +121,8 @@ export class Variant {
     this.minQuantitiesValue = snapshot.minQuantities;
     this.minQuantityFollowsDefaultFlag = snapshot.minQuantityFollowsDefault;
     this.customRecipeFlag = snapshot.customRecipe ?? false;
-    this.allergenSheetValue = snapshot.allergenSheet;
-    this.nutritionValue = snapshot.nutrition;
-    this.followsDefault = {
-      regulatory: snapshot.regulatoryFollowsDefault,
-      pricing: snapshot.pricingFollowsDefault,
-      nutrition: snapshot.nutritionFollowsDefault,
-    };
+    this.regulatory = VariantRegulatory.fromSnapshot(snapshot);
+    this.pricingFollowsValue = snapshot.pricingFollowsDefault;
   }
 
   /** La déclinaison née avec son produit : par défaut, en tête, sans tarif, hors taxe ({@link openedDefaultSnapshot}). */
@@ -177,21 +169,22 @@ export class Variant {
 
   /** Suit-elle les allergènes du défaut plutôt que d'en déclarer ? */
   get regulatoryFollowsDefault(): boolean {
-    return this.followsDefault.regulatory;
+    return this.regulatory.followsAllergens;
   }
 
   /** Suit-elle les valeurs nutritionnelles du défaut plutôt que les siennes ? */
   get nutritionFollowsDefault(): boolean {
-    return this.followsDefault.nutrition;
+    return this.regulatory.followsNutrition;
   }
 
   /** Suit-elle le tarif du défaut — prix et poids — plutôt que le sien ? */
   get pricingFollowsDefault(): boolean {
-    return this.followsDefault.pricing;
+    return this.pricingFollowsValue;
   }
 
   follows(aspect: VariantAspect): boolean {
-    return this.followsDefault[ASPECT_FLAG[aspect]];
+    const flag = ASPECT_FLAG[aspect];
+    return flag === "pricing" ? this.pricingFollowsValue : this.regulatory.follows(flag);
   }
 
   /**
@@ -213,7 +206,7 @@ export class Variant {
    * c'est l'agrégat — seul à voir le défaut — qui décide si elle est couverte.
    */
   get declaresOwnAllergens(): boolean {
-    return this.allergenSheetValue !== null;
+    return this.regulatory.declaresOwnAllergens;
   }
 
   /**
@@ -247,10 +240,7 @@ export class Variant {
    * depuis le lot 7 du plan.
    */
   declareAllergens(declaration: AllergenDeclaration): void {
-    this.allergenSheetValue = {
-      declared: declaration.allergens,
-      mayContain: declaration.mayContain,
-    };
+    this.regulatory = this.regulatory.declareAllergens(declaration);
   }
 
   /**
@@ -263,7 +253,7 @@ export class Variant {
    * plus, il n'y a donc plus rien à préserver au passage.
    */
   declareNutritionValues(values: VariantNutritionValues): void {
-    this.nutritionValue = values;
+    this.regulatory = this.regulatory.declareNutritionValues(values);
   }
 
   /**
@@ -284,7 +274,12 @@ export class Variant {
     if (aligned && this.lifecycle.isDefault) {
       throw new DefaultVariantCannotFollowItselfError(this.skuValue);
     }
-    this.followsDefault[ASPECT_FLAG[aspect]] = aligned;
+    const flag = ASPECT_FLAG[aspect];
+    if (flag === "pricing") {
+      this.pricingFollowsValue = aligned;
+    } else {
+      this.regulatory = this.regulatory.align(flag, aligned);
+    }
   }
 
   /**
@@ -508,9 +503,8 @@ export class Variant {
    *   demanderait d'effacer cette saisie, et la garder la réveillerait.
    */
   promoteToDefault(resolved: VariantSnapshot): void {
-    this.refuseDormantWake("allergens", this.followsDefault.regulatory, resolved.allergenSheet);
-    this.refuseDormantWake("nutrition", this.followsDefault.nutrition, resolved.nutrition);
-    if (this.followsDefault.pricing) {
+    const regulatory = this.regulatory.promote(this.skuValue, resolved);
+    if (this.pricingFollowsValue) {
       this.priceCentsValue = resolved.priceCents;
       this.weightGramsValue = resolved.weightGrams;
       this.proPriceMillicentsValue = resolved.proPriceMillicents;
@@ -519,31 +513,13 @@ export class Variant {
       this.pricePerKgShownPublicFlag = resolved.pricePerKgShownPublic;
       this.pricePerKgShownProFlag = resolved.pricePerKgShownPro;
     }
-    if (this.followsDefault.regulatory) {
-      this.allergenSheetValue = resolved.allergenSheet;
-    }
-    if (this.followsDefault.nutrition) {
-      this.nutritionValue = resolved.nutrition;
-    }
     if (this.minQuantityFollowsDefaultFlag) {
       this.minQuantitiesValue = resolved.minQuantities;
     }
-    this.followsDefault.regulatory = false;
-    this.followsDefault.pricing = false;
-    this.followsDefault.nutrition = false;
+    this.regulatory = regulatory;
+    this.pricingFollowsValue = false;
     this.minQuantityFollowsDefaultFlag = false;
     this.lifecycle = this.lifecycle.promote();
-  }
-
-  private refuseDormantWake(
-    half: "allergens" | "nutrition",
-    follows: boolean,
-    seen: object | null,
-  ): void {
-    const own = half === "allergens" ? this.allergenSheetValue : this.nutritionValue;
-    if (follows && seen === null && own !== null) {
-      throw new DormantSheetWouldWakeError(this.skuValue, half);
-    }
   }
 
   /**
@@ -601,11 +577,11 @@ export class Variant {
       minQuantities: this.minQuantitiesValue,
       minQuantityFollowsDefault: this.minQuantityFollowsDefaultFlag,
       customRecipe: this.customRecipeFlag,
-      regulatoryFollowsDefault: this.followsDefault.regulatory,
-      pricingFollowsDefault: this.followsDefault.pricing,
-      nutritionFollowsDefault: this.followsDefault.nutrition,
-      allergenSheet: this.allergenSheetValue,
-      nutrition: this.nutritionValue,
+      regulatoryFollowsDefault: this.regulatory.followsAllergens,
+      pricingFollowsDefault: this.pricingFollowsValue,
+      nutritionFollowsDefault: this.regulatory.followsNutrition,
+      allergenSheet: this.regulatory.allergenSheet,
+      nutrition: this.regulatory.nutrition,
     };
   }
 }
