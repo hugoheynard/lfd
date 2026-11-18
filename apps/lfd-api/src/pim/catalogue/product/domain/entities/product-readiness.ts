@@ -1,5 +1,4 @@
 import { AnonymousReadinessError, ProductNotDeclaredReadyError } from "../errors/product-errors.js";
-import { ProductChangedAfterReadinessError } from "../errors/product-readiness-errors.js";
 
 /**
  * Ce qu'une **déclaration de publiabilité** vaut : sa date et son auteur.
@@ -49,18 +48,12 @@ export class ProductReadiness {
    * @param at l'instant de la déclaration (l'horloge de la requête).
    * @param by qui signe ; `null` hors requête (seed, cron), où personne n'a
    *   regardé la fiche.
-   * @param contentUpdatedAt la dernière modification du contenu, `null` quand
-   *   aucune n'est connue ; passée en argument pour que l'agrégat reste pur.
    *
    * @throws {AnonymousReadinessError} personne ne signe.
-   * @throws {ProductChangedAfterReadinessError} le contenu est plus récent que `at`.
    */
-  declare(at: Date, by: string | null, contentUpdatedAt: Date | null): void {
+  declare(at: Date, by: string | null): void {
     if (by === null || by === "") {
       throw new AnonymousReadinessError(this.productId);
-    }
-    if (contentUpdatedAt !== null && contentUpdatedAt > at) {
-      throw new ProductChangedAfterReadinessError(this.productId);
     }
     this.current = { readyAt: at, readyBy: by };
   }

@@ -8,7 +8,6 @@ import { PimJournalReader } from "../../../journal/pim-journal-reader.js";
 import { ArchivedProductNotReadyError } from "../domain/errors/product-errors.js";
 import type { ReadinessSignature } from "../domain/entities/product-readiness.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
-import { ReadinessReader } from "../domain/ports/readiness.reader.js";
 import { ReadinessRepository } from "../domain/ports/readiness.repository.js";
 import { signatureStillHolds } from "../domain/services/readiness-renewal.js";
 import { requireProduct } from "../shared/product-support.js";
@@ -42,7 +41,6 @@ export class DeclareProductReadyHandler implements ICommandHandler<
   constructor(
     private readonly products: ProductRepository,
     private readonly readiness: ReadinessRepository,
-    private readonly reads: ReadinessReader,
     private readonly journal: PimJournal,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
@@ -65,11 +63,7 @@ export class DeclareProductReadyHandler implements ICommandHandler<
     // L'horloge de la requête, pas `new Date()` : la déclaration se compare à
     // des dates de modification, et deux sources de temps qui divergent d'une
     // milliseconde suffiraient à la dire périmée à l'instant où elle est faite.
-    readiness.declare(
-      new Date(this.clock.now()),
-      actor,
-      await this.reads.contentUpdatedAt(command.id),
-    );
+    readiness.declare(new Date(this.clock.now()), actor);
     const { sku, name } = product.snapshot();
     // Le fait et la signature dans la MÊME transaction. Une seule écriture ne
     // dispense pas de l'unité de travail : si la trace passait et la
