@@ -130,20 +130,39 @@ plan à part.
   au comptoir). Aujourd'hui, `OrderShortfall.report` ne regarde pas le statut,
   et rouvrir un sac ne publie rien : le comptoir remettrait une commande dont
   la décision est attendue. **Le statut ne bouge pas** (« prête » est lu par
-  trop d'écrans et d'e-mails pour redescendre). À la place :
-  - la **remise normale** au comptoir est **refusée** tant qu'un manque attend
-    une décision : « Il manque des produits : la décision du superviseur est
-    attendue. » — à vérifier au bâti dans le chemin de la remise normale, et à
-    ajouter s'il n'y est pas ;
-  - le **départ incomplet au comptoir**
-    (`lafoliecoffee/orders/http/admin-counter-incomplete-handover.controller.ts`,
-    sous `handover_counter` seulement aujourd'hui) exige **aussi**
-    `b2b_orders_shortfall:write`, le droit de la décision du superviseur
-    (`admin-order-shortfall.controller.ts`). Un superviseur au comptoir le fait
-    toujours ; un vendeur seul ne le peut plus. Frontière de droits : `vitruve`
-    d'office, et à accorder à l'écran Rôles aux rôles superviseur.
-  - **Rien n'est envoyé au client** au signalement : c'est la décision du
-    superviseur qui déclenche la communication existante.
+  trop d'écrans et d'e-mails pour redescendre), et **rien n'est envoyé au
+  client** au signalement. À la place, **au comptoir seulement** — la remise à
+  la porte n'est pas touchée : la feuille de tournée dit déjà un manque
+  (`handover/channels/commerce/delivery-run-sheet.reader.ts`) :
+  - **la remise normale est refusée** tant qu'un manque attend une décision.
+    Le retrait ne lit pas le commerce (`handover → lafoliecoffee` interdit) :
+    le commerce ajoute un champ `awaitingShortfallDecision` au sujet qu'il sert
+    déjà au retrait (`HandoverSubjectReader`, `handover/channels/commerce/`),
+    et le geste du comptoir refuse, par le scan (`confirm-handover`) comme par
+    la saisie (`confirm-manual-handover`) : « Il manque des produits : la
+    décision du superviseur est attendue. » ;
+  - **le départ incomplet au comptoir passe sous le droit du superviseur.** Le
+    garde ne sait pas exiger deux droits à la fois
+    (`platform/auth/admin-surface.decorator.ts` : `RequirePermission` remplace,
+    `RequireAnyPermission` est un OU) : la route `POST …/incomplete-handover`
+    (`lafoliecoffee/orders/http/admin-counter-incomplete-handover.controller.ts`)
+    prend `@RequirePermission("b2b_orders_shortfall:write")`, le droit de la
+    décision (`admin-order-shortfall.controller.ts`) ; l'aperçu reste sous
+    `handover_counter:read`. Son JSDoc (« tout vendeur ») se réécrit dans le
+    même commit ;
+  - **les écrans le disent** : la file du comptoir et la Supervision portent un
+    indicateur « décision attendue » ; le dialogue du départ incomplet
+    (`handover-shop/incomplete-handover-dialog/`, `handover-detail`) masque son
+    bouton sans le droit, et le contrat de l'aperçu
+    (`packages/contracts/src/counter-incomplete-handover.ts`) gagne le refus
+    « décision du superviseur ».
+  - 🔴 **Avant le déploiement** : seul `admin` a `b2b_orders_shortfall` dans
+    la graine (`packages/contracts/src/staff-access.ts`) ; `commercial`,
+    `comptabilite` et `comptoir` ont `handover_counter:write` sans lui. Hugo
+    accorde `b2b_orders_shortfall:write` **à l'écran Rôles** (`/admin/roles`)
+    aux rôles qui décident — jamais en migration
+    (`lint:no-role-grants-in-migrations`). Sans ce geste, seul l'administrateur
+    peut décider d'un départ incomplet.
 - **D8 — La cloche sonne chez le commerce**, celui qui décide, quand il
   enregistre un manque (sur le modèle de `ring-failed-order-mail.handler.ts`).
   Vérifié le 2026-11-18 : aucun manque ne sonne aujourd'hui.
@@ -251,7 +270,15 @@ Hugo) :
 | B1 le manquant et la correction comptaient deux fois une pièce | D9 étape 1                                           |
 | B2 rien ne refusait de rouvrir une commande déjà retirée       | D5, `handed_over_at`                                 |
 | S3 « décision attendue » n'est pas un statut                   | D7 : le statut ne bouge plus ; la remise est bloquée |
-| S4 « Problème » après une décision du manager                  | D5, refus nommé                                      |
-| S5 pas de CHECK de la réserve ; `free` et `availableTo`        | D6                                                   |
-| S6 clé, contenu et moment du rattrapage                        | D9, § 4                                              |
-| m « déjà remise » : le mot est réservé au prix                 | « retirée »                                          |
+
+**Troisième contradiction** (D7, la décision au superviseur) : deux droits à
+la fois impossibles (la route passe sous le seul droit du superviseur), aucun
+rôle superviseur dans la graine (à accorder à l'écran avant déploiement), la
+remise normale aveugle aux manques (un champ du sujet servi par le commerce),
+l'aperçu qui ne connaît pas l'appelant (le front masque, le contrat nomme le
+refus), la porte du livreur (non touchée), aucun indicateur au comptoir
+(file et Supervision). Toutes reprises en D7.
+| S4 « Problème » après une décision du manager | D5, refus nommé |
+| S5 pas de CHECK de la réserve ; `free` et `availableTo` | D6 |
+| S6 clé, contenu et moment du rattrapage | D9, § 4 |
+| m « déjà remise » : le mot est réservé au prix | « retirée » |
