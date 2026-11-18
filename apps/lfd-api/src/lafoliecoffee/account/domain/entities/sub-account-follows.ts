@@ -1,6 +1,7 @@
 import type { CompanyFollowAspect } from "@lfd/contracts";
 
 import {
+  BillingFollowAcrossNaturesError,
   BillingFollowNeedsActiveParentError,
   NotASubAccountError,
 } from "../errors/hierarchy-errors.js";
@@ -71,6 +72,9 @@ export class SubAccountFollows {
     if (aspect === "billing" && parent.status !== "active") {
       throw new BillingFollowNeedsActiveParentError(parentId);
     }
+    if (aspect === "billing" && !sameNature(child, parent)) {
+      throw new BillingFollowAcrossNaturesError(parentId);
+    }
     if (this.openFor(aspect) !== null) {
       return false;
     }
@@ -104,4 +108,12 @@ export class SubAccountFollows {
   private openFor(aspect: CompanyFollowAspect): FollowPeriod | null {
     return this.periodsValue.find((p) => p.aspect === aspect && p.isOpen) ?? null;
   }
+}
+
+/**
+ * Même nature (entreprise ou organisme public) ? Une forme encore vide n'en a
+ * pas : elle suit son payeur, et c'est lui qu'on lit.
+ */
+function sameNature(child: Company, parent: Company): boolean {
+  return child.formeJuridique.trim() === "" || child.isPublic === parent.isPublic;
 }

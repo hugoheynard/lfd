@@ -22,6 +22,7 @@ import {
   InMemoryCompanies,
   InMemoryFollows,
   RecordingHierarchyLock,
+  RecordingPublicPayerOpening,
 } from "./hierarchy-doubles.js";
 
 const clock = new FixedClock(new Date("2030-03-01T08:00:00.000Z"));
@@ -135,6 +136,7 @@ function handler(
   readonly run: () => Promise<void>;
   readonly log: CallLog;
   readonly companies: InMemoryCompanies;
+  readonly opening: RecordingPublicPayerOpening;
 } {
   const log = new CallLog();
   const companies = new InMemoryCompanies(
@@ -152,6 +154,7 @@ function handler(
     new Date(clock.now().getTime() - 1),
   );
   const reader = new FollowsReaderOver(new InMemoryFollows(log, new Map([["chalet", follows]])));
+  const opening = new RecordingPublicPayerOpening(log);
   const activate = new ActivateCompanyByStaffHandler(
     companies,
     new FicheOf(log, chaletView(parentStatus)),
@@ -161,11 +164,13 @@ function handler(
     new NoStaff(),
     new RecordingHierarchyLock(log),
     reader,
+    opening,
   );
   return {
     run: () => activate.execute(new ActivateCompanyByStaffCommand("chalet", "staff_1")),
     log,
     companies,
+    opening,
   };
 }
 
@@ -182,6 +187,14 @@ describe("Activer un sous-compte qui suit la facturation (sous-comptes §2.1 bis
     expect(log.calls.indexOf("follows:chalet")).toBeGreaterThan(lock);
     expect(log.calls.indexOf("load:groupe")).toBeGreaterThan(lock);
     expect(companies.saved[0]?.status).toBe("active");
+  });
+
+  it("n'ouvre aucun moyen d'encaissement : le site règle par le moyen de son principal", async () => {
+    const { run, opening } = handler(principalCompany("active"), "active");
+
+    await run();
+
+    expect(opening.opened).toEqual([]);
   });
 
   it("reste bloqué quand le principal n'est pas actif", async () => {

@@ -22,6 +22,8 @@ export interface PanierBlockerFacts {
   readonly settlement: StaffSettlement;
   readonly linkOffered: boolean;
   readonly settlesOnAccount: boolean;
+  /** Un organisme public : au compte, toujours ; le serveur dit le refus. */
+  readonly payerIsPublic?: boolean;
   readonly refusal: AdminOrderEstimateNotice | null;
 }
 
@@ -69,6 +71,13 @@ function settlementBlockers(facts: PanierBlockerFacts): readonly PanierBlocker[]
         view: 'settings',
       },
     ];
+  }
+  if (facts.payerIsPublic === true) {
+    // Un organisme public part au compte, toujours. Son compte suspendu, c'est
+    // le refus de l'estimation qui le dit, tel que le serveur l'écrit
+    // (`orders.settlement.public_buyer_account_unavailable`) : « aucun crédit
+    // accordé » serait faux, et la carte n'est pas une sortie.
+    return [];
   }
   if (facts.settlement === 'account' && !facts.settlesOnAccount) {
     return [

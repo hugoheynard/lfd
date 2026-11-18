@@ -9,6 +9,7 @@ import { LegalEntityRepository } from "../../domain/ports/legal-entity.repositor
 import { PayerCollectionMeansRepository } from "../../domain/ports/payer-collection-means.repository.js";
 import { PayerChangeLock } from "../../domain/ports/payer-change-lock.js";
 import { PayerStandingReader } from "../../domain/ports/payer-standing.reader.js";
+import { ensureMeansCancellableFor } from "../../domain/services/collection-means-payer.js";
 import { loadOrFail } from "../legal-entity-support.js";
 import { CancelPayerCollectionMeansCommand } from "./cancel-payer-collection-means.command.js";
 
@@ -39,6 +40,7 @@ export class CancelPayerCollectionMeansHandler implements ICommandHandler<
     if (standing === null) {
       throw new BillingPayerNotFoundError(command.payerCompanyId);
     }
+    ensureMeansCancellableFor(standing);
     const payer = { id: standing.companyId, name: standing.name };
     // Sous le verrou du payeur (K11), comme la pose : un changement remplacé
     // pendant l'annulation est relu, jamais annulé à la place d'un autre.

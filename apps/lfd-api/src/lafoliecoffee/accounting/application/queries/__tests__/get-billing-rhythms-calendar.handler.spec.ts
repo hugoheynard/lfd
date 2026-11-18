@@ -184,6 +184,7 @@ describe("GetBillingRhythmsCalendarHandler — les trois rythmes sur un axe", ()
       companyId: "cmp_site",
       name: "Le Site",
       active: true,
+      public: false,
       follows: [
         {
           companyId: "cmp_site",

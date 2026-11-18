@@ -140,6 +140,11 @@ export class PanierCommande {
    * 2026-11-03) : règlement au compte seulement.
    */
   readonly linkOffered = input(true);
+  /**
+   * Le payeur est un organisme public (plan clients publics, B5) : il règle au
+   * compte, facture déposée sur Chorus Pro. Ni choix du règlement, ni lien.
+   */
+  readonly payerIsPublic = input(false);
 
   /** Ce que l'écran ne calcule PAS, dit près du sous-total. */
   protected readonly TOTALS_LATER =
@@ -247,6 +252,7 @@ export class PanierCommande {
       settlement: this.settlement(),
       linkOffered: this.linkOffered(),
       settlesOnAccount: this.settlesOnAccount(),
+      payerIsPublic: this.payerIsPublic(),
       refusal: this.estimate()?.refusal ?? null,
     }),
   );

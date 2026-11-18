@@ -43,8 +43,15 @@ import {
   DirectDebitNotBlockedError,
   NoDirectDebitToBlockError,
 } from "../errors/direct-debit-errors.js";
+import {
+  PublicPayerDirectDebitBlockRefusedError,
+  PublicPayerTermsRequiredError,
+} from "../errors/public-payer-errors.js";
 
 const TEXT_MAX_LENGTH = 160;
+
+/** Le crédit qu'un organisme public reçoit à l'activation : il règle au mois, par virement. */
+const PUBLIC_PAYER_TERM: DeferredTerm = "monthly";
 
 /** Identité légale déclarée au formulaire « Créer une entreprise ». */
 export interface CompanyIdentityInput {
@@ -734,8 +741,13 @@ export class Company {
    * raison et l'auteur du premier blocage.
    * @throws {NoDirectDebitToBlockError} aucun crédit accordé : ce client paie
    * déjà par carte.
+   * @throws {PublicPayerDirectDebitBlockRefusedError} un organisme public n'est
+   * jamais prélevé, et le blocage le renverrait à la carte.
    */
   blockDirectDebit(reason: string, at: Date, by: string): void {
+    if (this.isPublic) {
+      throw new PublicPayerDirectDebitBlockRefusedError(this.identityId ?? "");
+    }
     if (this.directDebitBlockValue !== null) {
       throw new DirectDebitAlreadyBlockedError(this.identityId ?? "");
     }
@@ -783,9 +795,14 @@ export class Company {
    *
    * @returns `false` quand ces crédits sont déjà accordés et qu'aucune demande
    * n'attend : rien n'a changé.
+   * @throws {PublicPayerTermsRequiredError} retirer le compte d'un organisme
+   * public qui l'a : il ne règle qu'au compte.
    */
   grantTerms(terms: readonly DeferredTerm[]): boolean {
     const granted = [...new Set(terms)];
+    if (this.isPublic && granted.length === 0 && this.grantedTermsValue.length > 0) {
+      throw new PublicPayerTermsRequiredError(this.identityId ?? "");
+    }
     const sameTerms =
       granted.length === this.grantedTermsValue.length &&
       granted.every((term) => this.grantedTermsValue.includes(term));
@@ -913,6 +930,9 @@ export class Company {
    * pièces** (TVA/KBIS/adresses, selon les settings) est une policy vérifiée en
    * amont par le cas d'usage — elle croise plusieurs tables, hors de cet agrégat.
    * Refuse toute société qui n'est pas `pending` (déjà active, suspendue, close).
+   *
+   * Un organisme public (forme juridique publique) sort de l'activation au
+   * compte, sans blocage : il ne règle jamais autrement.
    */
   activate(
     activatedAt: Date,
@@ -969,6 +989,20 @@ export class Company {
     this.statusValue = "active";
     this.activatedAtValue = activatedAt;
     this.activatedByValue = by;
+    if (this.isPublic) {
+      this.openPublicAccount();
+    }
+  }
+
+  /**
+   * Un organisme public règle au compte, par virement, dès l'activation : le
+   * système lui pose ce qu'un pro reçoit du staff. Un blocage posé pendant
+   * l'attente tombe — il n'a pas de sens pour qui n'est jamais prélevé.
+   */
+  private openPublicAccount(): void {
+    this.grantedTermsValue = [PUBLIC_PAYER_TERM];
+    this.requestedTermValue = null;
+    this.directDebitBlockValue = null;
   }
 
   /**

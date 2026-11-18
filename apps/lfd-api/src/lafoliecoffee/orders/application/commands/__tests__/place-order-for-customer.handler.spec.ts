@@ -26,6 +26,10 @@ import {
   SuspendedCompanyAccountSettlementError,
   OrderCompanyNotFoundError,
 } from "../../../domain/errors/order-errors.js";
+import {
+  PublicBuyerAccountUnavailableError,
+  PublicBuyerCardRefusedError,
+} from "../../../domain/errors/public-buyer-errors.js";
 import { OrderPlacedEvent } from "../../../domain/events/order-placed.event.js";
 import {
   OrderGuardReader,
@@ -253,6 +257,7 @@ function guard(
     },
     companyStatusOf: () => Promise.resolve(status),
     settlesOnAccount: () => Promise.resolve(onAccount),
+    isPublicPayer: () => Promise.resolve(false),
   };
 }
 
@@ -453,6 +458,16 @@ function draftingFor(guardDouble: OrderGuardReader, options: DraftingOptions = {
     new FixedLineClassifications(),
     options.shelf ?? shelfCircuitOf(options.plans ?? openPlanGate()),
   );
+}
+
+/** La même garde, pour un payeur organisme public (plan clients publics, P1b, B5). */
+function asPublicPayer(base: OrderGuardReader): OrderGuardReader {
+  return {
+    roleOf: (userId, companyId) => base.roleOf(userId, companyId),
+    companyStatusOf: (companyId) => base.companyStatusOf(companyId),
+    settlesOnAccount: (companyId) => base.settlesOnAccount(companyId),
+    isPublicPayer: () => Promise.resolve(true),
+  };
 }
 
 function handler(
@@ -956,6 +971,33 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
     expect(sink.placed).toBeNull();
   });
 
+  it("REFUSE le lien de paiement à un organisme public (P1b, B5)", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const intents = { intent: null as CardPreparationRequest | null };
+    const publicGuard = asPublicPayer(guard("orders"));
+
+    await expect(
+      handler(publicGuard, sink, { payments: payments(intents) }).execute(
+        placement("staff_1", payload({ settlement: "link" })),
+      ),
+    ).rejects.toBeInstanceOf(PublicBuyerCardRefusedError);
+    expect(sink.placed).toBeNull();
+    expect(intents.intent).toBeNull();
+  });
+
+  it("REFUSE le compte d'un organisme public suspendu, sans proposer la carte", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const publicGuard = asPublicPayer(guard("orders", "suspended", "granted"));
+
+    const refusal = handler(publicGuard, sink).execute(
+      placement("staff_1", payload({ settlement: "account" })),
+    );
+
+    await expect(refusal).rejects.toBeInstanceOf(PublicBuyerAccountUnavailableError);
+    await expect(refusal).rejects.toThrow(/ne peut pas payer par carte/u);
+    expect(sink.placed).toBeNull();
+  });
+
   it("REFUSE aussi le compte à une société non active", async () => {
     const sink = { placed: null as OrderToPlace | null };
 
@@ -1109,6 +1151,7 @@ describe("PlaceOrderForCustomerHandler — un site facturé à son principal", (
         asked.push(companyId);
         return Promise.resolve(companyId === "alpes" ? "granted" : "none");
       },
+      isPublicPayer: () => Promise.resolve(false),
     };
 
     await handler(payerGuard, sink, { payers }).execute(

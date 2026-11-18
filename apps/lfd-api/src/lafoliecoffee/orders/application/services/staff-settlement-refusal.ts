@@ -8,6 +8,10 @@ import {
 } from "../../domain/errors/order-errors.js";
 import { CounterAccountSettlementNotGrantedError } from "../../domain/errors/shelf-order-errors.js";
 import { ShelfWithoutCreditRefusedError } from "../../domain/errors/shelf-circuit-errors.js";
+import {
+  PublicBuyerAccountUnavailableError,
+  PublicBuyerCardRefusedError,
+} from "../../domain/errors/public-buyer-errors.js";
 import { accountStanding, settlingStatusOf, type SettlementPorts } from "./order-settlement.js";
 import type { ShelfCircuit } from "./shelf-circuit.service.js";
 
@@ -32,6 +36,9 @@ export interface StaffSettlementPorts {
  *   un crédit réellement accordé, celui du payeur (T44) ;
  * - `link` sur la vitrine suit le réglage du pro sans crédit (Q7).
  *
+ * - un payeur public (sa forme juridique) ne règle jamais par lien, et un
+ *   compte qui ne règle pas lui est refusé sans repli (`publicBuyerRefusal`).
+ *
  * Au comptoir (`atCounter`), le refus nomme sa cause et un geste qui existe
  * au comptoir — pas « réglez par lien » (Hugo, 2026-11-03). Mêmes lectures
  * que `accountStanding`, séparées pour distinguer la société inactive du
@@ -48,9 +55,14 @@ export async function staffSettlementRefusal(
   | SuspendedCompanyAccountSettlementError
   | CounterAccountSettlementNotGrantedError
   | ShelfWithoutCreditRefusedError
+  | PublicBuyerCardRefusedError
+  | PublicBuyerAccountUnavailableError
   | null
 > {
   const parties = { companyId, payerId: order.billedCompanyId };
+  if (await ports.guard.isPublicPayer(order.billedCompanyId ?? companyId)) {
+    return publicBuyerRefusal(ports.guard, parties, settlement);
+  }
   if (settlement === "account" && atCounter) {
     return counterAccountRefusal(ports.guard, parties);
   }
@@ -79,6 +91,23 @@ export async function staffSettlementRefusal(
     return new ShelfWithoutCreditRefusedError(companyId);
   }
   return null;
+}
+
+/**
+ * Le refus d'un payeur public : le lien (la carte) toujours, le compte quand
+ * il ne règle pas — au comptoir comme à la saisie, avec les mêmes mots.
+ */
+async function publicBuyerRefusal(
+  guard: StaffSettlementPorts["guard"],
+  parties: { readonly companyId: string; readonly payerId: string | null },
+  settlement: StaffSettlement,
+): Promise<PublicBuyerCardRefusedError | PublicBuyerAccountUnavailableError | null> {
+  if (settlement === "link") {
+    return new PublicBuyerCardRefusedError();
+  }
+  return (await accountStanding(guard, parties)) === "granted"
+    ? null
+    : new PublicBuyerAccountUnavailableError();
 }
 
 /** Le refus du comptoir, par cause — ou `null` quand le compte règle. */

@@ -57,6 +57,7 @@ import { BillingStatementRepository } from "./domain/ports/billing-statement.rep
 import { StatementBuyerReader } from "./domain/ports/statement-buyer.reader.js";
 import { InvoiceIssuersReader } from "./domain/ports/invoice-issuers.reader.js";
 import { PrismaInvoiceIssuersReader } from "./infrastructure/prisma-invoice-issuers.reader.js";
+import { PublicPayerOpener } from "./application/public-payer-opener.js";
 import { PrismaBillingStatementRepository } from "./infrastructure/prisma-billing-statement.repository.js";
 import { PrismaStatementBuyerReader } from "./infrastructure/prisma-statement-buyer.reader.js";
 import { CancelledOrdersReader } from "./domain/ports/cancelled-orders.reader.js";
@@ -293,6 +294,7 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     { provide: BillingStatementRepository, useClass: PrismaBillingStatementRepository },
     { provide: StatementBuyerReader, useClass: PrismaStatementBuyerReader },
     { provide: InvoiceIssuersReader, useClass: PrismaInvoiceIssuersReader },
+    PublicPayerOpener,
     { provide: BillingStatementReader, useClass: PrismaBillingStatementReader },
     { provide: CancelledOrdersReader, useClass: PrismaCancelledOrdersReader },
     // L'annulation d'une commande au compte (doc `documentation/commandes/annulation/annulation-par-le-staff.md`,
@@ -406,7 +408,10 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
   // `FirstMandateLedger` sort pour la frappe, seule à savoir qu'un mandat naît.
   // `AccountOrderEngaging` sort pour la commande, qui le reçoit sous SES
   // tokens (`appBootstrap/account-order-engagement.module.ts`).
+  // `PublicPayerOpener` sort pour l'activation d'un organisme public, qui le
+  // reçoit sous le token d'`account` (`appBootstrap/public-payer-opening.module.ts`).
   exports: [
+    PublicPayerOpener,
     CreditorReader,
     LegalEntityLogoReader,
     FirstMandateLedger,

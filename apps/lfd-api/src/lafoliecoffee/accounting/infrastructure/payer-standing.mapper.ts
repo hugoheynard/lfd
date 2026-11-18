@@ -1,4 +1,4 @@
-import { companyDisplayName } from "@lfd/contracts";
+import { companyDisplayName, isPublicLegalForm, toLegalForm } from "@lfd/contracts";
 
 import type { PayerStanding } from "../domain/ports/payer-standing.reader.js";
 
@@ -15,6 +15,7 @@ export function payerStandingSelect(at: Date) {
     id: true,
     raisonSociale: true,
     enseigne: true,
+    formeJuridique: true,
     status: true,
     follows: {
       where: {
@@ -41,6 +42,7 @@ interface NamedRow {
 /** La ligne lue par `payerStandingSelect`. */
 export interface PayerStandingRow extends NamedRow {
   readonly id: string;
+  readonly formeJuridique: string;
   readonly status: string;
   readonly follows: readonly {
     readonly companyId: string;
@@ -56,6 +58,7 @@ export function payerStandingOf(row: PayerStandingRow): PayerStanding {
     companyId: row.id,
     name: companyDisplayName(row),
     active: row.status === ACTIVE_COMPANY,
+    public: isPublicForm(row.formeJuridique),
     follows: row.follows.map((follow) => ({
       companyId: follow.companyId,
       payerId: follow.parentId,
@@ -64,4 +67,10 @@ export function payerStandingOf(row: PayerStandingRow): PayerStanding {
       validTo: follow.validTo,
     })),
   };
+}
+
+/** La nature publique EST la forme juridique ; vide ou hors catalogue, elle n'est pas publique. */
+function isPublicForm(formeJuridique: string): boolean {
+  const form = toLegalForm(formeJuridique);
+  return form !== null && isPublicLegalForm(form);
 }

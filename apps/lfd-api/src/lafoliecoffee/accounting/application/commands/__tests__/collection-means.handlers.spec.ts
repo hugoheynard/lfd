@@ -7,6 +7,8 @@ import {
   CollectionMeansReturnPendingError,
   NoScheduledCollectionMeansError,
   NotACollectionMeansPayerError,
+  PublicPayerDirectDebitRefusedError,
+  PublicPayerMeansCancelRefusedError,
 } from "../../../domain/errors/collection-means-errors.js";
 import { ModeChangeBlocksMeansChangeError } from "../../../domain/errors/payer-change-pending-errors.js";
 import { InvalidCollectionMeansError } from "../../../domain/errors/invalid-collection-means.error.js";
@@ -44,6 +46,7 @@ const SITE = {
   companyId: "cmp_site",
   name: "Site Annexe",
   active: true,
+  public: false,
   follows: [
     {
       companyId: "cmp_site",
@@ -54,8 +57,27 @@ const SITE = {
     },
   ],
 };
-const NEWCOMER = { companyId: "cmp_new", name: "Le Nouveau", active: true, follows: [] };
-const RETURNED = { companyId: "cmp_ret", name: "Le Rejeté", active: true, follows: [] };
+const NEWCOMER = {
+  companyId: "cmp_new",
+  name: "Le Nouveau",
+  active: true,
+  public: false,
+  follows: [],
+};
+const SCHOOL = {
+  companyId: "cmp_school",
+  name: "École du Mont-Blanc",
+  active: true,
+  public: true,
+  follows: [],
+};
+const RETURNED = {
+  companyId: "cmp_ret",
+  name: "Le Rejeté",
+  active: true,
+  public: false,
+  follows: [],
+};
 
 function world(whileWaiting: (modes: PayerModesStore) => void = () => undefined) {
   const entities = new StepEntities(new SettingSteps());
@@ -68,7 +90,7 @@ function world(whileWaiting: (modes: PayerModesStore) => void = () => undefined)
   const dates = new ModeDatesStore();
   const clock = new FixedClock(NOW);
   const events = new RecordingPublisher();
-  const standings = new FixedStandings([PAYER, SITE, NEWCOMER, RETURNED]);
+  const standings = new FixedStandings([PAYER, SITE, NEWCOMER, RETURNED, SCHOOL]);
   return {
     means,
     modes,
@@ -110,6 +132,42 @@ const toTransfer = (companyId: string, reason = REASON) =>
   new SetPayerCollectionMeansCommand("le1", companyId, "bank_transfer", reason, "staff_1");
 
 describe("SetPayerCollectionMeansHandler", () => {
+  it("refuse le prélèvement à un organisme public, sans rien écrire (P1b, B3)", async () => {
+    const w = world();
+    const toDebit = new SetPayerCollectionMeansCommand(
+      "le1",
+      SCHOOL.companyId,
+      "sepa_debit",
+      REASON,
+      "staff_1",
+    );
+
+    await expect(w.set.execute(toDebit)).rejects.toThrow(PublicPayerDirectDebitRefusedError);
+    await expect(w.set.execute(toDebit)).rejects.toThrow(/organisme public.*virement/u);
+    expect(w.means.rows).toEqual([]);
+    expect(w.lock.locked).toEqual([]);
+  });
+
+  it("refuse d'annuler le moyen programmé d'un organisme public", async () => {
+    const w = world();
+    await w.set.execute(toTransfer(SCHOOL.companyId));
+
+    await expect(
+      w.cancel.execute(new CancelPayerCollectionMeansCommand("le1", SCHOOL.companyId, "staff_1")),
+    ).rejects.toThrow(PublicPayerMeansCancelRefusedError);
+  });
+
+  it("laisse poser le virement à un organisme public", async () => {
+    const w = world();
+
+    await w.set.execute(toTransfer(SCHOOL.companyId));
+
+    expect(w.means.rows[0]).toMatchObject({
+      payerCompanyId: SCHOOL.companyId,
+      means: "bank_transfer",
+    });
+  });
+
   it("programme le virement d'un payeur qui a commandé, et le journalise sur lui", async () => {
     const w = world();
 

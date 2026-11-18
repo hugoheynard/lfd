@@ -302,3 +302,25 @@ function validate(host: HTMLElement): HTMLButtonElement | undefined {
     (b) => b.textContent.trim() === 'Valider la commande',
   );
 }
+
+/** Plan clients publics, B5 : un organisme public part au compte, sans choix ni lien. */
+describe('PanierCommande — un organisme public', () => {
+  it('ne propose aucun règlement à choisir, et dit le compte et Chorus', () => {
+    const { host } = mountFull(new CartStore(), { payerIsPublic: true, linkOffered: false });
+
+    expect(host.querySelector('input[name="settlement"]')).toBeNull();
+    expect(host.querySelector('[data-public-payer]')?.textContent).toContain(
+      'au compte, facture Chorus',
+    );
+  });
+
+  it('ne dit pas « aucun crédit accordé » à un public dont le compte ne règle pas', () => {
+    const { host } = mountFull(new CartStore(), {
+      payerIsPublic: true,
+      settlesOnAccount: false,
+      linkOffered: false,
+    });
+
+    expect(host.textContent).not.toContain('aucun crédit ne lui a été accordé');
+  });
+});

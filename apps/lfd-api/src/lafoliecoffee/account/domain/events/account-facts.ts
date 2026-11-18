@@ -52,6 +52,8 @@ export const ACCOUNT_FACTS = {
   kbisUploaded: "company.kbis_uploaded",
   /** Un agent corrige l'identité légale ou commerciale. */
   identityCorrected: "company.identity_corrected",
+  /** Un agent relève la fiche Chorus Pro d'un organisme public. */
+  chorusRoutingRecorded: "company.chorus_routing_recorded",
   /** Un agent accorde (ou retire) des délais de paiement. */
   paymentTermsGranted: "company.payment_terms_granted",
   /** Un agent suspend, réactive ou résilie le compte. */

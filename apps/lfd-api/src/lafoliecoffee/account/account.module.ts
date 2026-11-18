@@ -181,6 +181,8 @@ import { CompanyFollowsReader } from "./domain/ports/company-follows.reader.js";
 import { CompanyFollowsRepository } from "./domain/ports/company-follows.repository.js";
 import { PrismaAccountHierarchyLock } from "./infrastructure/prisma-account-hierarchy.lock.js";
 import { PrismaCompanyFollowsReader } from "./infrastructure/prisma-company-follows.reader.js";
+import { BillingNatureNeighboursReader } from "./domain/ports/billing-nature-neighbours.reader.js";
+import { PrismaBillingNatureNeighboursReader } from "./infrastructure/prisma-billing-nature-neighbours.reader.js";
 import { PrismaCompanyFollowsRepository } from "./infrastructure/prisma-company-follows.repository.js";
 import { AdminCompanyMembersController } from "./http/admin-company-members.controller.js";
 import { AdminCompanyContactsController } from "./http/admin-company-contacts.controller.js";
@@ -383,6 +385,7 @@ import {
     SetGroupWithoutDeliveryHandler,
     { provide: AccountHierarchyLock, useClass: PrismaAccountHierarchyLock },
     { provide: CompanyFollowsReader, useClass: PrismaCompanyFollowsReader },
+    { provide: BillingNatureNeighboursReader, useClass: PrismaBillingNatureNeighboursReader },
     { provide: CompanyFollowsRepository, useClass: PrismaCompanyFollowsRepository },
     { provide: CollectionFormRepository, useClass: PrismaCollectionFormRepository },
     ChangeCompanyStatusHandler,

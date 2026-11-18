@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { isPublicLegalForm, toLegalForm } from "@lfd/contracts";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { Clock } from "../../../platform/time/clock.js";
@@ -50,5 +51,14 @@ export class PrismaOrderGuardReader extends OrderGuardReader {
     }
     // Le crédit reste accordé ; seul le prélèvement est suspendu.
     return company.directDebitBlockedAt === null ? "granted" : "blocked";
+  }
+
+  async isPublicPayer(companyId: string): Promise<boolean> {
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+      select: { formeJuridique: true },
+    });
+    const form = company === null ? null : toLegalForm(company.formeJuridique);
+    return form !== null && isPublicLegalForm(form);
   }
 }

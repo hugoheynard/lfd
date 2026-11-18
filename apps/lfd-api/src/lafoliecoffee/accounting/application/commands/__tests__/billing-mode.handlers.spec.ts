@@ -44,6 +44,7 @@ const SITE = {
   companyId: "cmp_site",
   name: "Site Annexe",
   active: true,
+  public: false,
   follows: [
     {
       companyId: "cmp_site",
@@ -56,7 +57,13 @@ const SITE = {
 };
 
 /** Un payeur qui n'a jamais commandé : son changement de mode est immédiat. */
-const NEWCOMER = { companyId: "cmp_new", name: "Le Nouveau", active: true, follows: [] };
+const NEWCOMER = {
+  companyId: "cmp_new",
+  name: "Le Nouveau",
+  active: true,
+  public: false,
+  follows: [],
+};
 
 function world(whileWaiting: (means: PayerMeansStore) => void = () => undefined) {
   const entities = new StepEntities(new SettingSteps());

@@ -85,6 +85,8 @@ interface Monde {
   readonly granted?: readonly string[];
   /** La comptabilité a suspendu le prélèvement (`directDebitBlocked`). */
   readonly blocked?: boolean;
+  /** Le payeur est un organisme public (`payerIsPublic`). */
+  readonly publicPayer?: boolean;
   readonly service?: ServiceChoice | null;
   readonly panier?: boolean;
   /** Le réglage « Ouverture de la boutique » ; absent = pas encore lu (ouvert). */
@@ -184,6 +186,7 @@ function boot({
   panier = true,
   granted = [],
   blocked = false,
+  publicPayer = false,
   opening,
   unservable = false,
   exempted = false,
@@ -226,7 +229,9 @@ function boot({
         provide: ClientCompany,
         useValue: {
           company: signal(
-            granted.length === 0 ? null : { grantedTerms: granted, directDebitBlocked: blocked },
+            granted.length === 0 && !publicPayer
+              ? null
+              : { grantedTerms: granted, directDebitBlocked: blocked, payerIsPublic: publicPayer },
           ),
         },
       },
@@ -633,6 +638,27 @@ describe('le panier demande COMMENT régler, à qui a le choix', () => {
     await Promise.resolve();
 
     expect(regle).toEqual([null]);
+  });
+});
+
+/** Plan clients publics, B5 : un organisme public règle au compte, jamais par carte. */
+describe('le panier d’un organisme public', () => {
+  it('🔴 ne propose que le compte, et dit Chorus et le virement', async () => {
+    const fixture = boot({ auth: RECONNU, granted: ['monthly'], publicPayer: true });
+    const text = el(fixture).textContent ?? '';
+
+    expect(text).not.toContain(FR.cart.settleCard);
+    expect(text).toContain(FR.cart.payHintPublic);
+    el(fixture).querySelector<HTMLButtonElement>('button[data-settle-public]')?.click();
+    await Promise.resolve();
+    expect(regle).toEqual(['account']);
+  });
+
+  it('🔴 sans compte qui règle : aucun bouton de paiement, jamais la carte', () => {
+    const fixture = boot({ auth: RECONNU, granted: [], publicPayer: true });
+
+    expect(el(fixture).querySelector('button.pay')).toBeNull();
+    expect(el(fixture).querySelector('[data-public-account-unavailable]')).not.toBeNull();
   });
 });
 

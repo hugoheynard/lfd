@@ -89,6 +89,39 @@ export class BillingFollowNeedsActiveParentError extends BusinessError {
   }
 }
 
+/**
+ * Un site ne suit la facturation que d'un principal de même nature : une
+ * entreprise et un organisme public ne se facturent pas pareil (Chorus Pro,
+ * virement sur mandat administratif). Une forme vide n'a pas de nature.
+ */
+export class BillingFollowAcrossNaturesError extends BusinessError {
+  constructor(readonly parentId: string) {
+    super(
+      "account.hierarchy.billing_across_natures",
+      "Ce site et son compte principal n'ont pas la même nature (entreprise / organisme public) : il ne peut pas en suivre la facturation.",
+    );
+  }
+}
+
+/**
+ * Une correction de forme juridique changerait la nature d'un compte lié en
+ * facturation : le principal qu'il suit, ou les sites qui le suivent, n'ont
+ * pas cette nature.
+ */
+export class BillingNatureChangeAcrossFollowError extends BusinessError {
+  constructor(
+    readonly companyId: string,
+    readonly side: "principal" | "sites",
+  ) {
+    super(
+      "account.hierarchy.billing_nature_change",
+      side === "principal"
+        ? "Ce compte et son compte principal doivent garder la même nature (entreprise / organisme public) : il en suit la facturation. Arrêtez d'abord ce suivi, ou ouvrez un autre compte."
+        : "Ce compte et ses sites doivent garder la même nature (entreprise / organisme public) : ils en suivent la facturation. Arrêtez d'abord leur suivi, ou ouvrez un autre compte.",
+    );
+  }
+}
+
 /** Le suivi du tarif est une décision du commercial (Q9). */
 export class PricingFollowNotAllowedError extends AuthorizationError {
   constructor(readonly aspect: CompanyFollowAspect = "pricing") {

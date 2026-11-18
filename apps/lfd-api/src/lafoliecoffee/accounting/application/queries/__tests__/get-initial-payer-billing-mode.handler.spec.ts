@@ -39,6 +39,7 @@ const SITE: PayerStanding = {
   companyId: "cmp_site",
   name: "Le Site",
   active: true,
+  public: false,
   follows: [
     {
       companyId: "cmp_site",

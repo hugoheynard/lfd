@@ -17,6 +17,7 @@ import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { StaffDirectory } from "../../domain/ports/staff-directory.js";
 import { AccountHierarchyLock } from "../../domain/ports/account-hierarchy.lock.js";
 import { CompanyFollowsReader } from "../../domain/ports/company-follows.reader.js";
+import { PublicPayerOpening } from "../../domain/ports/public-payer-opening.js";
 import type { Company } from "../../domain/entities/company.js";
 import { activationGate } from "../../domain/services/activation-gate.js";
 import { ActivateCompanyByStaffCommand } from "./activate-company.command.js";
@@ -40,6 +41,10 @@ import { ActivateCompanyByStaffCommand } from "./activate-company.command.js";
  * la hiérarchie, dans la transaction de la transition, et c'est l'agrégat qui
  * tranche : un « cesser de suivre » ou un « détacher » concurrent passe avant
  * ou après, jamais au milieu.
+ *
+ * **Organisme public** (forme juridique publique) : l'agrégat lui accorde le
+ * compte, et le virement est posé chez chaque entité émettrice en service
+ * (`PublicPayerOpening`), dans la même transaction.
  */
 @CommandHandler(ActivateCompanyByStaffCommand)
 export class ActivateCompanyByStaffHandler implements ICommandHandler<
@@ -55,6 +60,7 @@ export class ActivateCompanyByStaffHandler implements ICommandHandler<
     private readonly staff: StaffDirectory,
     private readonly lock: AccountHierarchyLock,
     private readonly follows: CompanyFollowsReader,
+    private readonly publicPayers: PublicPayerOpening,
   ) {}
 
   async execute(command: ActivateCompanyByStaffCommand): Promise<void> {
@@ -98,6 +104,15 @@ export class ActivateCompanyByStaffHandler implements ICommandHandler<
       // Jalon de conversion — et acte d'un agent sur le compte d'un tiers : la
       // trace part dans la transaction de la transition.
       await this.companies.save(company);
+      // Un organisme public qui règle seul s'ouvre au virement chez chaque
+      // entité. Un site qui suit `billing` prend le moyen de son principal.
+      if (company.isPublic && carrier === null) {
+        await this.publicPayers.open(
+          { id: command.companyId, name: company.displayName() },
+          activatedAt,
+          command.staffUserId,
+        );
+      }
       await this.events.publishTraced(
         new CompanyActivatedEvent(companyNamed(command.companyId, company), activatedAt),
       );

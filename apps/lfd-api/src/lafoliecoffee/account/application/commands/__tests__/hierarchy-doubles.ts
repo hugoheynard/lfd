@@ -10,7 +10,15 @@ import {
   PricingFollowJournal,
   type PricingFollowEntry,
 } from "../../../domain/ports/pricing-follow.journal.js";
+import {
+  BillingNatureNeighboursReader,
+  type BillingNatureNeighbours,
+} from "../../../domain/ports/billing-nature-neighbours.reader.js";
 import { SiteMandateRevocation } from "../../../domain/ports/site-mandate-revocation.js";
+import {
+  PublicPayerOpening,
+  type OpenedPublicPayer,
+} from "../../../domain/ports/public-payer-opening.js";
 import { StaffDirectory, type StaffIdentity } from "../../../domain/ports/staff-directory.js";
 import { CollectionFormHistory } from "../../../domain/entities/collection-form-history.js";
 import { CollectionFormRepository } from "../../../domain/ports/collection-form.repository.js";
@@ -186,5 +194,30 @@ export class KnownStaff extends StaffDirectory {
 
   identify(reference: string): Promise<StaffIdentity | null> {
     return Promise.resolve(this.known.get(reference) ?? null);
+  }
+}
+
+/** L'ouverture d'un payeur public : chaque appel est rangé, et inscrit au journal. */
+export class RecordingPublicPayerOpening extends PublicPayerOpening {
+  readonly opened: { readonly payer: OpenedPublicPayer; readonly staffUserId: string }[] = [];
+  constructor(private readonly log: CallLog = new CallLog()) {
+    super();
+  }
+  open(payer: OpenedPublicPayer, _at: Date, staffUserId: string): Promise<void> {
+    this.log.calls.push(`openPublic:${payer.id}`);
+    this.opened.push({ payer, staffUserId });
+    return Promise.resolve();
+  }
+}
+
+/** Les voisins de facturation d'une société, fixés par le test ; aucun par défaut. */
+export class FixedNatureNeighbours extends BillingNatureNeighboursReader {
+  constructor(
+    private readonly neighbours: BillingNatureNeighbours = { principalForm: null, siteForms: [] },
+  ) {
+    super();
+  }
+  neighboursOf(): Promise<BillingNatureNeighbours> {
+    return Promise.resolve(this.neighbours);
   }
 }

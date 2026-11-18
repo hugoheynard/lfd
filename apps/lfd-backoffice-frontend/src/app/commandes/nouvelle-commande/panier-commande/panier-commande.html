@@ -89,22 +89,28 @@
       ></textarea>
     </label>
 
-    <fieldset class="pan-settle">
-      <legend class="pan-label">Règlement</legend>
-      @for (mode of settlementModes(); track mode) {
-        <label class="pan-radio" [class.is-off]="mode === 'account' && !settlesOnAccount()">
-          <input
-            type="radio"
-            name="settlement"
-            [value]="mode"
-            [checked]="settlement() === mode"
-            [disabled]="mode === 'account' && !settlesOnAccount()"
-            (change)="onSettlement(mode)"
-          />
-          <span>{{ labels[mode] }}</span>
-        </label>
-      }
-    </fieldset>
+    @if (payerIsPublic()) {
+      <fold-callout variant="info" data-public-payer>
+        <strong>Organisme public</strong>&nbsp;: au compte, facture Chorus.
+      </fold-callout>
+    } @else {
+      <fieldset class="pan-settle">
+        <legend class="pan-label">Règlement</legend>
+        @for (mode of settlementModes(); track mode) {
+          <label class="pan-radio" [class.is-off]="mode === 'account' && !settlesOnAccount()">
+            <input
+              type="radio"
+              name="settlement"
+              [value]="mode"
+              [checked]="settlement() === mode"
+              [disabled]="mode === 'account' && !settlesOnAccount()"
+              (change)="onSettlement(mode)"
+            />
+            <span>{{ labels[mode] }}</span>
+          </label>
+        }
+      </fieldset>
+    }
   </div>
 </fold-tab-panel>
 
@@ -189,6 +195,9 @@
         @if (settlement() === 'account') {
           Cette commande partira <strong>au compte</strong> et sera facturée sur la période en
           cours. Rien ne sera encaissé maintenant.
+          @if (payerIsPublic()) {
+            La facture sera déposée sur Chorus Pro, réglée par virement.
+          }
         } @else {
           Un <strong>lien de règlement</strong> sera créé ; il faudra le transmettre au client pour
           que la commande soit payée.

@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1818 textes
+## Sommaire — 1820 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -31,7 +31,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Choix de l’heure — le sélecteur de créneau](#espace-slotpicker) | `slotPicker` | 15 |
 | [Choix de l’heure — l’étape du créneau](#espace-slotstep) | `slotStep` | 11 |
 | [Choix de l’heure — le rappel téléphonique](#espace-rappel) | `rappel` | 12 |
-| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 100 |
+| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 102 |
 | [Règlement](#espace-pay) | `pay` | 21 |
 | [Confirmation](#espace-done) | `done` | 28 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 12 |
@@ -50,7 +50,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Les cases des e-mails marketing, « Mes e-mails » et le pied de page](#espace-marketingconsent) | `marketingConsent` | 29 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1818** |
+| **Total** | | **1820** |
 
 ## Le parcours de commande
 
@@ -732,7 +732,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 ### Panier, connexion et saisie invité — `cart`
 
-Source : `fr.ts · en.ts · it.ts` · 100 textes.
+Source : `fr.ts · en.ts · it.ts` · 102 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -796,6 +796,8 @@ Source : `fr.ts · en.ts · it.ts` · 100 textes.
 | `cart.settleTitle` | Comment réglez-vous ? | How are you paying? | Come pagate ? |  |
 | `cart.settleCard` | Paiement direct | Pay now | Pagamento diretto |  |
 | `cart.settleAccount` | Ajouter au compte | Add to the account | Aggiungi al conto |  |
+| `cart.payHintPublic` | Au compte — facture déposée sur Chorus Pro, réglée par virement. | On account — invoice filed on Chorus Pro, paid by bank transfer. | Sul conto — fattura depositata su Chorus Pro, saldata con bonifico. |  |
+| `cart.publicAccountUnavailable` | Votre organisme règle uniquement au compte, et ce compte ne peut pas régler aujourd’hui. Contactez-nous pour le rétablir : la commande ne peut pas se payer par carte. | Your organisation pays on account only, and that account cannot settle today. Contact us to restore it: the order cannot be paid by card. | Il vostro ente paga solo sul conto, e questo conto oggi non può saldare. Ci contatti per ripristinarlo: l’ordine non può essere pagato con carta. |  |
 | `cart.closeEmpty` | Fermer | Close | Chiudi |  |
 | `cart.whoTitle` | Qui passe cette commande ? | Who is placing this order? | Chi effettua questo ordine? |  |
 | `cart.whoHint` | Il nous faut un nom et une adresse pour vous envoyer votre QR de retrait. | We need a name and an address to send you your pickup QR. | Ci servono un nome e un indirizzo per inviarle il QR di ritiro. |  |

@@ -178,6 +178,25 @@
         <strong>{{ t().cart.ordersClosed }}</strong>
         {{ t().cart.ordersClosedHint }}
       </fold-callout>
+    } @else if (publicPayer()) {
+      <!-- Un organisme public règle au compte, par virement : jamais la carte
+         (plan clients publics, B5). Sans compte, aucun bouton. -->
+      @if (mayUseAccount()) {
+        <button
+          class="pay"
+          type="button"
+          [disabled]="payBlocked()"
+          [attr.aria-describedby]="payNoteId"
+          data-settle-public
+          (click)="void proceedOnAccount()"
+        >
+          {{ t().cart.settleAccount }}
+        </button>
+      } @else {
+        <fold-callout variant="alert" data-public-account-unavailable>
+          {{ t().cart.publicAccountUnavailable }}
+        </fold-callout>
+      }
     } @else if (mayUseAccount()) {
       <!-- 🔴 DEUX ACTIONS, et non un interrupteur (Hugo, 2026-09-21). Payer
          comptant reste TOUJOURS possible, y compris au mensuel : régler tout de
@@ -227,7 +246,8 @@
         [attr.data-pay-blocked]="payNoteIsReason() ? '' : null"
         [attr.data-slot-missing]="slotMissing() ? '' : null"
       >
-        @if (payNoteIsReason()) {
+        <!-- Un organisme public lit toujours comment il règle : il n'a pas le choix. -->
+        @if (payNoteIsReason() || (publicPayer() && mayUseAccount())) {
           {{ payNote() }}
         }
       </p>

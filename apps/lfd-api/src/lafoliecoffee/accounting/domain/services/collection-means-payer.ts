@@ -1,7 +1,12 @@
 import type { NamedPayer } from "../entities/payer-billing-mode-history.js";
 import { BillingPayerNotFoundError } from "../errors/billing-mode-errors.js";
-import { NotACollectionMeansPayerError } from "../errors/collection-means-errors.js";
+import {
+  NotACollectionMeansPayerError,
+  PublicPayerDirectDebitRefusedError,
+  PublicPayerMeansCancelRefusedError,
+} from "../errors/collection-means-errors.js";
 import type { PayerStanding } from "../ports/payer-standing.reader.js";
+import type { CollectionMeans } from "../value-objects/collection-means.js";
 import { billingFollowAt } from "./billed-payer.js";
 
 /**
@@ -41,4 +46,28 @@ export function requireCollectionMeansPayer(
     throw new NotACollectionMeansPayerError(standing.name, payer.name);
   }
   return payer;
+}
+
+/**
+ * Un organisme public règle par virement : le prélèvement lui est refusé à
+ * l'écriture, quel que soit l'auteur du geste.
+ *
+ * @throws {PublicPayerDirectDebitRefusedError}
+ */
+export function ensureMeansAllowedFor(standing: PayerStanding, means: CollectionMeans): void {
+  if (standing.public && means === "sepa_debit") {
+    throw new PublicPayerDirectDebitRefusedError(standing.name);
+  }
+}
+
+/**
+ * Un organisme public n'annule pas de moyen programmé : il n'a que le
+ * virement, et l'annuler le rendrait au prélèvement.
+ *
+ * @throws {PublicPayerMeansCancelRefusedError}
+ */
+export function ensureMeansCancellableFor(standing: PayerStanding): void {
+  if (standing.public) {
+    throw new PublicPayerMeansCancelRefusedError(standing.name);
+  }
 }

@@ -1,6 +1,7 @@
 import type { Prisma } from "../../../platform/database/client/client.js";
 import type { CustomerRole } from "../../../platform/database/client/client.js";
 import type { CompanyView, ContactView } from "../domain/ports/account.reader.js";
+import { isPublicFormeJuridique } from "../domain/value-objects/public-nature.js";
 import { requiresVatNumber } from "../domain/value-objects/vat-liability.js";
 
 /**
@@ -35,6 +36,13 @@ export const COMPANY_VIEW_SELECT = {
   contactFonction: true,
   contactEmail: true,
   contactTelephone: true,
+  // Le principal suivi en `billing` (période ouverte) : c'est le PAYEUR, et
+  // sa nature décide de la carte. Une période s'ouvre et se ferme à
+  // l'instant du geste : ouverte veut dire en cours.
+  follows: {
+    where: { aspect: "billing", validTo: null },
+    select: { parent: { select: { formeJuridique: true } } },
+  },
   contacts: {
     orderBy: { createdAt: "asc" },
     select: {
@@ -71,6 +79,9 @@ export function toCompanyView(role: CustomerRole, company: CompanyViewRow): Comp
     grantedTerms: company.grantedTerms,
     requestedTerm: company.requestedTerm,
     directDebitBlocked: company.directDebitBlockedAt !== null,
+    payerIsPublic: isPublicFormeJuridique(
+      company.follows[0]?.parent.formeJuridique ?? company.formeJuridique,
+    ),
     fulfillmentPreference: {
       method: company.preferredFulfillmentMethod,
       pickupAddressId: company.preferredPickupAddressId,

@@ -21,6 +21,9 @@ class StatusGuard implements SettlementGuard {
   settlesOnAccount(): Promise<AccountSettlementStanding> {
     return Promise.resolve(this.standing);
   }
+  isPublicPayer(): Promise<boolean> {
+    return Promise.reject(new Error("non utilisé"));
+  }
 }
 
 /**

@@ -165,3 +165,24 @@ export class DirectDebitUnblockedEvent extends CompanyStaffAct {
     return ACCOUNT_FACTS.directDebitUnblocked;
   }
 }
+
+/** Un agent a relevé la fiche Chorus Pro d'un organisme public : ce qu'il a lu, et quand. */
+export class ChorusRoutingRecordedEvent extends CompanyStaffAct {
+  constructor(
+    company: NamedRef,
+    readonly routing: {
+      readonly commitmentRequired: boolean;
+      readonly serviceCodeRequired: boolean;
+      readonly defaultServiceCode: string;
+      readonly checkedOn: string;
+    },
+  ) {
+    super(company);
+  }
+  protected type(): JournalFactType {
+    return ACCOUNT_FACTS.chorusRoutingRecorded;
+  }
+  protected override details(): Record<string, unknown> {
+    return { ...this.routing };
+  }
+}

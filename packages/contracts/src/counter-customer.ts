@@ -78,6 +78,11 @@ export const counterCustomerViewSchema = z.object({
   reference: z.string(),
   status: companyStatusSchema,
   settlesOnAccount: z.boolean(),
+  /**
+   * Le payeur (le principal suivi en `billing`, sinon la société) est un
+   * organisme public : il ne paie jamais par carte ni par lien.
+   */
+  payerIsPublic: z.boolean(),
   /** Livraisons non archivées, la défaut en tête. */
   deliveryAddresses: z.array(counterDeliveryAddressSchema),
   buyers: z.array(counterCustomerBuyerSchema),

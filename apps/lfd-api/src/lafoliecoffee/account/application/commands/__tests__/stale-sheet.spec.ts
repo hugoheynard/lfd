@@ -1,3 +1,5 @@
+import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
+import { FixedNatureNeighbours } from "./hierarchy-doubles.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { CompanyChangedSinceReadError } from "../../../domain/errors/account-errors.js";
@@ -12,6 +14,9 @@ import { UpdatePrimaryContactByStaffCommand } from "../update-primary-contact-by
 import { UpdatePrimaryContactByStaffHandler } from "../update-primary-contact-by-staff.handler.js";
 import { AddressReaderWithA1, InMemoryCompanies } from "./member-acts-doubles.js";
 import { silentGestures } from "./site-gesture-doubles.js";
+
+/** L'instant des voisins de facturation : relu tel quel, jamais comparé. */
+const NATURE_CLOCK = new FixedClock(new Date(0));
 
 /**
  * Les quatre gestes de la fiche staff refusent une fiche lue à une autre
@@ -51,9 +56,13 @@ function build() {
   const uow = new DirectUnitOfWork();
   const gestures: Record<string, (revision: number | null) => Promise<void>> = {
     identity: (revision) =>
-      new UpdateIdentityByStaffHandler(companies, events, uow).execute(
-        new UpdateIdentityByStaffCommand("c1", IDENTITY, revision),
-      ),
+      new UpdateIdentityByStaffHandler(
+        companies,
+        events,
+        uow,
+        new FixedNatureNeighbours(),
+        NATURE_CLOCK,
+      ).execute(new UpdateIdentityByStaffCommand("c1", IDENTITY, revision)),
     contact: (revision) =>
       new UpdatePrimaryContactByStaffHandler(companies, events, uow, silentGestures()).execute(
         new UpdatePrimaryContactByStaffCommand("c1", HOLDER, revision),

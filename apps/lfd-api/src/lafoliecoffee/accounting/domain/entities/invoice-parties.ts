@@ -5,6 +5,10 @@ import {
   orderSettlementBlockers,
   type InvoiceSellerFacts,
 } from "../services/invoice-issuance-blockers.js";
+import {
+  publicPayerMeansBlockers,
+  type InvoiceSettlementKind,
+} from "../services/public-payer-means-blocker.js";
 import type { InvoiceNumber } from "../value-objects/invoice-number.js";
 import type {
   InvoiceBuyer,
@@ -21,7 +25,8 @@ export interface IssuableParties {
 }
 
 /**
- * Juge les parties par `invoiceIssuanceBlockers` (E0) et les bons par
+ * Juge les parties par `invoiceIssuanceBlockers` (E0), le moyen d'un payeur
+ * public par `publicPayerMeansBlockers`, et les bons par
  * `orderDeliveryBlockers` (M5, lot ZA), et refuse en citant TOUS les manques
  * — l'écran du dossier et l'émission disent la même chose. Rien n'est
  * comblé : un SIREN vide, un taux absent ou une date de livraison inconnue
@@ -37,10 +42,12 @@ export function issuableParties(
   seller: InvoiceSeller,
   buyer: InvoiceBuyer | null,
   orders: readonly InvoiceOrderReference[],
+  settlement: InvoiceSettlementKind,
 ): IssuableParties {
   const legalEntityId = seller.legalEntityId;
   const blockers = [
     ...invoiceIssuanceBlockers(sellerFacts, buyer),
+    ...publicPayerMeansBlockers(buyer, settlement),
     ...orderDeliveryBlockers(orders),
     ...orderSettlementBlockers(orders),
   ];

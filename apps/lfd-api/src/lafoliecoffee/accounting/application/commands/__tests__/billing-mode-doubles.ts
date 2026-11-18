@@ -184,6 +184,7 @@ export const PAYER: PayerStanding = {
   companyId: "cmp_payer",
   name: "Le Bistrot",
   active: true,
+  public: false,
   follows: [],
 };
 

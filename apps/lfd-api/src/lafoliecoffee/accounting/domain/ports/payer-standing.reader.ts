@@ -6,6 +6,8 @@ export interface PayerStanding {
   readonly name: string;
   /** La société est au statut `active` (ni en attente, ni suspendue, ni résiliée). */
   readonly active: boolean;
+  /** Sa forme juridique est celle d'un organisme public : il règle par virement. */
+  readonly public: boolean;
   /** Les périodes `billing` où ce compte est le SITE, qui couvrent l'instant. */
   readonly follows: readonly BillingFollow[];
 }

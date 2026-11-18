@@ -103,3 +103,31 @@ export class SeveralClientCollectionMeansError extends BusinessError {
     );
   }
 }
+
+/**
+ * **Un organisme public ne se prélève pas** : il règle par virement, sur
+ * mandat administratif. Le prélèvement lui est refusé à l'écriture.
+ */
+export class PublicPayerDirectDebitRefusedError extends BusinessError {
+  constructor(readonly payerName: string) {
+    super(
+      "accounting.collection_means.public_payer_direct_debit",
+      `« ${payerName} » est un organisme public : il règle par virement, jamais par prélèvement. ` +
+        `Laissez le virement comme moyen d'encaissement.`,
+    );
+  }
+}
+
+/**
+ * **Le virement d'un organisme public ne s'annule pas** : l'annuler le
+ * rendrait au prélèvement, qu'il ne peut pas recevoir.
+ */
+export class PublicPayerMeansCancelRefusedError extends BusinessError {
+  constructor(readonly payerName: string) {
+    super(
+      "accounting.collection_means.public_payer_cancel",
+      `« ${payerName} » est un organisme public : il règle par virement, et son moyen ` +
+        `d'encaissement ne s'annule pas. Il n'y a rien à faire.`,
+    );
+  }
+}

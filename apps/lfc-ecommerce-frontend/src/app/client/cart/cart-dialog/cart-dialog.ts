@@ -27,7 +27,7 @@ import { GuestIdentityForm, type GuestIdentity } from '../guest-identity-form/gu
 import type { OrderSettlement } from '@lfd/contracts';
 
 import { AuthFacade } from '../../../auth/auth.facade';
-import { settlesOnAccount } from '../../../account/settles-on-account';
+import { payerIsPublic, settlesOnAccount } from '../../../account/settles-on-account';
 import { ClientCompany } from '../../client-company.service';
 import { formatCents } from '../../format-money';
 import { ClientCart } from '../client-cart.service';
@@ -216,6 +216,12 @@ export class CartDialog {
    */
   protected readonly mayUseAccount = computed(() => settlesOnAccount(this.firm.company()));
 
+  /**
+   * **Un organisme public ne paie jamais par carte** (plan clients publics,
+   * B5) : au compte, son seul règlement ; sans compte (suspendu), aucun.
+   */
+  protected readonly publicPayer = computed(() => payerIsPublic(this.firm.company()));
+
   protected readonly t = inject(ClientCopyService).t;
   protected readonly cart = inject(ClientCart);
   protected readonly choice = this.order.choice;
@@ -333,6 +339,9 @@ export class CartDialog {
   private readonly settleHint = computed(() => {
     const c = this.t().cart;
     const delivery = this.choice()?.mode === 'delivery';
+    if (this.publicPayer()) {
+      return c.payHintPublic;
+    }
     if (this.mayUseAccount()) {
       return delivery ? c.payHintAccountDelivery : c.payHintAccountPickup;
     }

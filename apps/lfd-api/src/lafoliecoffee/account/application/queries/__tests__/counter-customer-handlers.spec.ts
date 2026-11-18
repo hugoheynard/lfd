@@ -58,12 +58,13 @@ function company(options: {
   readonly status?: CompanyStatus;
   readonly onAccount?: boolean;
   readonly blocked?: boolean;
+  readonly formeJuridique?: string;
 }): Company {
   return Company.reconstitute({
     id: options.id ?? "c1",
     raisonSociale: "PQ Marais",
     enseigne: "Le Pain Quotidien",
-    formeJuridique: "SAS",
+    formeJuridique: options.formeJuridique ?? "SAS",
     siret: "81245678900021",
     vatNumber: "",
     contact: null,
@@ -213,6 +214,7 @@ describe("GetCounterCustomerHandler", () => {
       reference: "CLI-0001",
       status: "active",
       settlesOnAccount: true,
+      payerIsPublic: false,
       deliveryAddresses: [DELIVERY],
       buyers: [
         {
@@ -262,6 +264,13 @@ describe("GetCounterCustomerHandler", () => {
     const { handler } = detail(CARD, company({ onAccount: false }), [], principal);
 
     expect((await handler.execute(new GetCounterCustomerQuery("c1"))).settlesOnAccount).toBe(true);
+  });
+
+  it("dit que le payeur est public quand le principal suivi en facturation l'est (P1b, B6)", async () => {
+    const principal = company({ id: "p1", onAccount: true, formeJuridique: "public_state" });
+    const { handler } = detail(CARD, company({ onAccount: false }), [], principal);
+
+    expect((await handler.execute(new GetCounterCustomerQuery("c1"))).payerIsPublic).toBe(true);
   });
 
   it("dit « pas au compte » pour un site dont le principal suivi n'a pas de crédit", async () => {

@@ -30,6 +30,18 @@ export class PrismaPayerCollectionMeansRepository extends PayerCollectionMeansRe
 
   async save(history: PayerCollectionMeansHistory): Promise<void> {
     const record = history.toPersistence();
+    // Les annulations d'abord : un segment neuf peut prendre effet au même
+    // instant qu'un segment qu'il annule, et l'index unique des segments
+    // vivants refuserait l'insertion avant l'annulation.
+    for (const entry of record.entries) {
+      if (!record.cancelledIds.includes(entry.id) || entry.cancelledAt === null) {
+        continue;
+      }
+      await this.prisma.payerCollectionMeans.updateMany({
+        where: { id: entry.id, cancelledAt: null },
+        data: { cancelledAt: entry.cancelledAt, cancelledByStaffId: entry.cancelledByStaffId },
+      });
+    }
     const fresh = record.entries.filter((entry) => record.freshIds.includes(entry.id));
     if (fresh.length > 0) {
       await this.prisma.payerCollectionMeans.createMany({
@@ -45,15 +57,6 @@ export class PrismaPayerCollectionMeansRepository extends PayerCollectionMeansRe
           cancelledAt: entry.cancelledAt,
           cancelledByStaffId: entry.cancelledByStaffId,
         })),
-      });
-    }
-    for (const entry of record.entries) {
-      if (!record.cancelledIds.includes(entry.id) || entry.cancelledAt === null) {
-        continue;
-      }
-      await this.prisma.payerCollectionMeans.updateMany({
-        where: { id: entry.id, cancelledAt: null },
-        data: { cancelledAt: entry.cancelledAt, cancelledByStaffId: entry.cancelledByStaffId },
       });
     }
   }

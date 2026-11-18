@@ -1,4 +1,5 @@
 import {
+  BillingFollowAcrossNaturesError,
   BillingFollowNeedsActiveParentError,
   NotASubAccountError,
 } from "../../errors/hierarchy-errors.js";
@@ -73,5 +74,60 @@ describe("SubAccountFollows — le suivi daté d'un principal", () => {
 
     expect(follows.closeAll(T1)).toEqual(["billing", "pricing"]);
     expect(follows.open).toEqual([]);
+  });
+});
+
+describe("SubAccountFollows — la facturation ne se suit qu'entre comptes de même nature", () => {
+  function chaletOfForm(formeJuridique: string) {
+    const chalet = chaletCompany();
+    chalet.correctIdentity({
+      raisonSociale: "",
+      formeJuridique,
+      siret: "",
+      siren: "",
+      enseigne: "",
+      vatNumber: "",
+    });
+    return chalet;
+  }
+
+  it("refuse qu'un site public suive la facturation d'une entreprise, en le disant", () => {
+    const follows = SubAccountFollows.none("chalet");
+    const site = chaletOfForm("public_establishment");
+
+    expect(() => follows.follow("billing", site, principalCompany(), T0)).toThrow(
+      BillingFollowAcrossNaturesError,
+    );
+    expect(() => follows.follow("billing", site, principalCompany(), T0)).toThrow(
+      /n'ont pas la même nature \(entreprise \/ organisme public\)/u,
+    );
+  });
+
+  it("admet un site à forme vide : il n'a pas de nature, il suit son payeur", () => {
+    expect(
+      SubAccountFollows.none("chalet").follow("billing", chaletCompany(), principalCompany(), T0),
+    ).toBe(true);
+  });
+
+  it("admet deux entreprises", () => {
+    expect(
+      SubAccountFollows.none("chalet").follow(
+        "billing",
+        chaletOfForm("sarl"),
+        principalCompany(),
+        T0,
+      ),
+    ).toBe(true);
+  });
+
+  it("laisse le tarif se suivre entre natures : seule la facturation est gardée", () => {
+    expect(
+      SubAccountFollows.none("chalet").follow(
+        "pricing",
+        chaletOfForm("public_state"),
+        principalCompany(),
+        T0,
+      ),
+    ).toBe(true);
   });
 });

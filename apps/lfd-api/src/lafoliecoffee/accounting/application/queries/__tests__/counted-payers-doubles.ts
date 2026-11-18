@@ -39,7 +39,7 @@ export function activePayer(
   companyId: string,
   overrides: Partial<PayerStanding> = {},
 ): PayerStanding {
-  return { companyId, name: companyId, active: true, follows: [], ...overrides };
+  return { companyId, name: companyId, active: true, public: false, follows: [], ...overrides };
 }
 
 /** Un mandat actif signé de ce compte chez cette entité — celui que le lot prendrait. */

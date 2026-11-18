@@ -4,7 +4,6 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { PayerCollectionMeansChangedEvent } from "../../domain/events/collection-means.events.js";
 import { BillingModeDatesReader } from "../../domain/ports/billing-mode-dates.reader.js";
 import { LegalEntityRepository } from "../../domain/ports/legal-entity.repository.js";
 import { PayerChangeLock } from "../../domain/ports/payer-change-lock.js";
@@ -13,10 +12,13 @@ import { PayerCollectionMeansRepository } from "../../domain/ports/payer-collect
 import { PayerOrderHistoryReader } from "../../domain/ports/payer-order-history.reader.js";
 import { PayerStandingReader } from "../../domain/ports/payer-standing.reader.js";
 import { PendingBankReturnsReader } from "../../domain/ports/pending-bank-returns.reader.js";
-import { requireCollectionMeansPayer } from "../../domain/services/collection-means-payer.js";
-import { PayerTimeline } from "../../domain/services/payer-timeline.js";
+import {
+  ensureMeansAllowedFor,
+  requireCollectionMeansPayer,
+} from "../../domain/services/collection-means-payer.js";
 import { collectionMeansOf } from "../../domain/value-objects/collection-means.js";
 import { loadOrFail } from "../legal-entity-support.js";
+import { changePayerCollectionMeans } from "../payer-collection-means-change.js";
 import { SetPayerCollectionMeansCommand } from "./set-payer-collection-means.command.js";
 
 /**
@@ -25,7 +27,8 @@ import { SetPayerCollectionMeansCommand } from "./set-payer-collection-means.com
  * date le changement sur les clôtures du MODE du payeur — immédiat s'il n'a
  * jamais commandé et que rien n'est écrit depuis sa dernière clôture, sinon
  * la prochaine — et refuse pendant un retour bancaire ou un changement de
- * mode programmé (K1). Le même moyen redemandé n'écrit rien.
+ * mode programmé (K1). Le même moyen redemandé n'écrit rien. Un organisme
+ * public ne se voit jamais poser le prélèvement.
  *
  * Sous le verrou du payeur (K11), pris AVANT de lire les deux historiques :
  * un geste de mode simultané attend, puis lit ce moyen programmé. Le
@@ -39,15 +42,15 @@ export class SetPayerCollectionMeansHandler implements ICommandHandler<
   constructor(
     private readonly entities: LegalEntityRepository,
     private readonly standings: PayerStandingReader,
-    private readonly modeDates: BillingModeDatesReader,
-    private readonly payerModes: PayerBillingModesReader,
-    private readonly payerMeans: PayerCollectionMeansRepository,
-    private readonly orderHistory: PayerOrderHistoryReader,
-    private readonly bankReturns: PendingBankReturnsReader,
-    private readonly lock: PayerChangeLock,
+    readonly modeDates: BillingModeDatesReader,
+    readonly payerModes: PayerBillingModesReader,
+    readonly payerMeans: PayerCollectionMeansRepository,
+    readonly orderHistory: PayerOrderHistoryReader,
+    readonly bankReturns: PendingBankReturnsReader,
+    readonly lock: PayerChangeLock,
     private readonly clock: Clock,
-    private readonly ids: IdGenerator,
-    private readonly events: DomainEventPublisher,
+    readonly ids: IdGenerator,
+    readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
   ) {}
 
@@ -55,40 +58,18 @@ export class SetPayerCollectionMeansHandler implements ICommandHandler<
     const means = collectionMeansOf(command.means);
     const entity = await loadOrFail(this.entities, command.legalEntityId);
     const at = this.clock.now();
-    const payer = requireCollectionMeansPayer(
-      command.payerCompanyId,
-      await this.standings.standingOf(command.payerCompanyId, at),
-      at,
-    );
-    await this.uow.run(async () => {
-      await this.lock.lock(payer.id);
-      const history = await this.payerMeans.load(entity.id, payer);
-      const closures = PayerTimeline.of(
-        await this.payerModes.segmentsOfPayer(entity.id, payer.id),
-        await this.modeDates.timelinesOf(entity.id),
-      );
-      const change = history.change(
+    const standing = await this.standings.standingOf(command.payerCompanyId, at);
+    const payer = requireCollectionMeansPayer(command.payerCompanyId, standing, at);
+    if (standing !== null) {
+      ensureMeansAllowedFor(standing, means);
+    }
+    await this.uow.run(() =>
+      changePayerCollectionMeans(this, { id: entity.id, name: entity.name }, payer, {
         means,
-        { segmentId: this.ids.next(), at, staffId: command.staffId, reason: command.reason },
-        closures,
-        {
-          opening: !(await this.orderHistory.hasEverOrdered(payer.id)),
-          returnPending: await this.bankReturns.hasPendingReturn(entity.id, payer.id),
-          pendingMode: closures.pendingChange(at),
-        },
-      );
-      if (change === null) {
-        return;
-      }
-      await this.payerMeans.save(history);
-      await this.events.publishTraced(
-        new PayerCollectionMeansChangedEvent(
-          payer,
-          { id: entity.id, name: entity.name },
-          at,
-          change,
-        ),
-      );
-    });
+        at,
+        staffId: command.staffId,
+        reason: command.reason,
+      }),
+    );
   }
 }

@@ -372,7 +372,12 @@ export class NouvelleCommandePage {
    * Le « Lien de règlement » est-il proposé ? Pas au comptoir (E4, Hugo,
    * 2026-11-03) : règlement au compte seulement, et le serveur le refuse.
    */
-  protected readonly linkOffered = this.origin !== 'counter';
+  protected readonly linkOffered = computed(
+    () => this.origin !== 'counter' && !(this.company()?.payerIsPublic ?? false),
+  );
+
+  /** Un organisme public : au compte, facture Chorus — rien à choisir. */
+  protected readonly payerIsPublic = computed(() => this.company()?.payerIsPublic ?? false);
 
   /**
    * **La commande qu'on passerait**, quand la saisie est assez complète pour
@@ -530,9 +535,18 @@ export class NouvelleCommandePage {
       this.deliveryAvailability.set(deliveryAvailability);
       // Le règlement se pré-remplit par le payeur (plan du jour J §11.3) : au
       // compte s'il y a droit, le lien sinon. Un brouillon repris garde le sien.
-      // Au comptoir, le lien n'est pas proposé (E4) : au compte, toujours.
-      this.draft.settlement.set(company.settlesOnAccount || !this.linkOffered ? 'account' : 'link');
+      // Au comptoir, le lien n'est pas proposé (E4) : au compte, toujours. Un
+      // organisme public non plus : au compte, toujours (plan clients publics, B5).
+      this.draft.settlement.set(
+        company.settlesOnAccount || company.payerIsPublic || this.origin === 'counter'
+          ? 'account'
+          : 'link',
+      );
       this.resume(saved, catalogue, company.addresses);
+      // Un brouillon repris ne rouvre pas le lien à un organisme public.
+      if (company.payerIsPublic) {
+        this.draft.settlement.set('account');
+      }
       this.state.set('ready');
     } catch (error) {
       // Le message du serveur quand il y en a un (le 404 du comptoir), le
@@ -632,7 +646,8 @@ export class NouvelleCommandePage {
         shelfIssue: this.shelfIssue,
         estimate: this.estimate.asReadonly(),
         estimateReady: this.estimateReady,
-        linkOffered: this.linkOffered,
+        linkOffered: this.linkOffered(),
+        payerIsPublic: this.payerIsPublic(),
       },
     });
     const placed = await ref.closed;

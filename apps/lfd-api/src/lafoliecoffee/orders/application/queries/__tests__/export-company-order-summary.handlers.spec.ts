@@ -40,6 +40,9 @@ class OwnRole extends OrderGuardReader {
   settlesOnAccount(): Promise<AccountSettlementStanding> {
     return Promise.reject(new Error("non utilisé"));
   }
+  isPublicPayer(): Promise<boolean> {
+    return Promise.reject(new Error("non utilisé"));
+  }
 }
 
 /** Rend, sous le « mur », les seules commandes qu'il connaît ; compte ses lectures. */

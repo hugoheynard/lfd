@@ -541,6 +541,7 @@
   "test/promotions-weekly-hours.e2e-spec.ts": 3832,
   "test/promotions-weight.e2e-spec.ts": 3819,
   "test/prospects.e2e-spec.ts": 2831,
+  "test/public-payer.e2e-spec.ts": 7000,
   "test/public-pickup-slots-surface.e2e-spec.ts": 2858,
   "test/public-pickup-slots.e2e-spec.ts": 5880,
   "test/public-subscription-wall.e2e-spec.ts": 5062,

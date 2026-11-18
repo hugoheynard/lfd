@@ -1,6 +1,6 @@
 # Plan — les clients publics (armée, écoles, mairies) et Chorus Pro
 
-> 🟨 **Plan v2, rien de bâti** (2026-11-18). Contredit par `vitruve` le
+> 🟨 **Plan v2** (2026-11-18). **P1a ✅ bâti** (`f4f10fb25`, § 6 bis), **P1b ✅ bâti** (2026-11-18, § 6 ter) ; P2–P4 restent. Contredit par `vitruve` le
 > 2026-11-18 : 4 bloquants et 7 sérieux, tous intégrés (§ 10).
 
 # Partie 1 — En simple
@@ -225,14 +225,110 @@ routage est relevé). Hors forme publique, rien ne change.
 **Écrans** : § 5.1, sauf le bloc paiement qui, en P1a, n'est qu'un texte
 (« Virement — mandat administratif… ») : les refus serveur viennent en P1b.
 
+## 6 ter. P1b — un organisme public règle au compte, par virement
+
+> 🟨 v2 du 2026-11-18. La v1 DÉRIVAIT la nature à la lecture ; `vitruve`
+> (même jour) a montré qu'une dizaine de lecteurs (moyen effectif, émission,
+> lot de prélèvement, comptoir, boutique) lui échappaient. La v2 ÉCRIT les
+> faits une fois, à l'activation, et garde un filet à l'émission.
+
+### En simple
+
+Un organisme public **commande toujours au compte** et **paie toujours par
+virement** : jamais de carte, jamais de prélèvement. À l'activation, le
+système lui pose lui-même ce qu'un pro reçoit du staff (le compte, le
+virement), puis refuse tout geste qui le déferait. Et si malgré tout une
+facture publique devait partir au prélèvement, **elle ne s'émet pas** : elle
+est bloquée avec un motif nommé.
+
+### Ce qui existe (ouvert le 2026-11-18)
+
+- « Au compte » se calcule à trois endroits sur les mêmes données :
+  `Company.settlesOnAccount()` (`company.ts:720`, comptoir), le lecteur
+  `prisma-order-guard.reader.ts:42` (passation) et le front de la boutique
+  (`settles-on-account.ts`) — tous sur `granted_terms` et le blocage du
+  prélèvement.
+- Le moyen d'encaissement est une ligne datée par (entité, payeur) ; sans
+  ligne, `sepa_debit`. Il est lu par `collectionMeansAt` et `.at(...)` à
+  l'émission, au lot, aux payeurs comptés, à la fiche, dans `growth` et dans
+  `account` (`transfer-payers.projection.ts`).
+- `invoice-issuance-blockers.ts` porte déjà les motifs qui bloquent une
+  émission (vendeur, payeur, commande).
+
+### Décisions
+
+- **B1 — Activer un organisme public lui accorde le compte.** Dans
+  `Company.activate`, une forme publique pose `granted_terms = ["monthly"]`.
+  L'agrégat refuse ensuite, pour une forme publique, de retirer le compte et
+  de **bloquer le prélèvement** (409 nommé). Les trois calculs « au compte »
+  restent inchangés et disent juste, puisqu'ils lisent ces données.
+- **B2 — Activer un organisme public écrit le virement.** Dans la même
+  transaction que l'activation, `account` appelle un port qu'il déclare
+  (`PublicPayerOpening`, implémenté par `accounting`, relié par le module) :
+  une ligne `bank_transfer`, motif « organisme public », chez **chaque entité
+  émettrice en service**. Elle remplace toute ligne `sepa_debit` posée
+  pendant `pending`. Un mandat déjà signé reste en base, **inerte** : le
+  moyen effectif est le virement.
+- **B3 — Le prélèvement est refusé à l'écriture** pour un payeur public
+  (`SetPayerCollectionMeansHandler`, la nature lue par `PayerStandingReader`).
+- **B4 — Le filet : une facture publique ne s'émet jamais au prélèvement.**
+  Nouveau motif dans `invoice-issuance-blockers.ts` :
+  `public_payer_not_on_transfer` (« Ce client est un organisme public : il
+  règle par virement. Posez le virement comme moyen d'encaissement chez cette
+  entité. »). Il couvre l'entité ouverte après l'activation, et tout chemin
+  oublié : sans facture émise, rien n'entre dans un lot.
+- **B5 — La carte n'est jamais le repli d'un payeur public.** Dans
+  `requiresCardFor` : payeur public et `settlement === "card"` ⇒
+  `PublicBuyerCardRefusedError` (409) ; payeur public sans compte
+  (suspendu) ⇒ refus nommé, jamais la carte en silence (le chemin du
+  back-office sans choix compris, `order-settlement.ts:89-92` et
+  `staff-settlement-refusal.ts`). La nature est lue par
+  `OrderGuardReader`, qui lit déjà la société.
+- **B6 — Qui tranche : le payeur.** Pour la carte comme pour le compte. Un
+  site ne suit en `billing` qu'un principal de même nature (P1a), donc le
+  front, qui lit la société qui commande, et le serveur, qui lit le payeur,
+  ne divergent pas.
+- **B7 — L'échéance** reste celle du virement de l'entité jusqu'à P3 (D7).
+
+### Écrans
+
+- Boutique et back-office : le compte s'affiche déjà (B1) ; la carte est
+  masquée quand la forme du payeur est publique (`isPublicLegalForm`, déjà
+  servie avec la société).
+- Fiche client : bloc fixe déjà fait (P1a) ; le bouton « Bloquer le
+  prélèvement » n'apparaît pas.
+
+### Tests
+
+Domaine : activation publique ⇒ compte accordé ; refus de retirer le compte
+et de bloquer le prélèvement. Application : activation ⇒ `bank_transfer` à
+chaque entité, par-dessus une ligne `sepa_debit` antérieure ; écriture
+`sepa_debit` refusée ; carte refusée, payeur public suspendu refusé sans
+repli. **Émission** : un payeur public au prélèvement est bloqué par
+`public_payer_not_on_transfer`. E2E : passation boutique en carte refusée,
+au compte acceptée ; activation puis lecture du moyen à la fiche.
+
+### Objections de `vitruve` (2026-11-18) et leur sort
+
+| Objection                                   | Sort                                                                      |
+| ------------------------------------------- | ------------------------------------------------------------------------- |
+| B ligne `sepa_debit` antérieure non ignorée | écrasée par la ligne écrite à l'activation (B2) + filet à l'émission (B4) |
+| B lecteurs du défaut mal comptés            | plus de défaut dérivé : des données écrites (B1, B2)                      |
+| B trois calculs « au compte »               | B1 écrit `granted_terms` : les trois lisent juste sans changer            |
+| S site privé / principal public             | B6, et P1a refuse le suivi entre natures                                  |
+| S blocage du prélèvement d'un public        | refusé par l'agrégat (B1)                                                 |
+| S mandats existants                         | inertes (B2)                                                              |
+| S repli carte d'un public suspendu          | refus nommé (B5)                                                          |
+| S « nature figée dès l'ouverture »          | faux pendant `pending` : la v2 n'en dépend plus                           |
+
 ## 7. Lots
 
-| Lot    | Contenu                                                                                                                                 | Dépend de                                                     |
-| ------ | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| **P1** | D1, D2, D3 : routage du payeur, geste « passer public », virement forcé, carte refusée, suivi refusé entre natures ; fiche client       | —                                                             |
-| **P2** | D4, D5 : engagement sur la commande et ses révisions, clé de clôture à trois termes, BT-13 et référence acheteur ; champ dans le panier | P1, mapping Chorus vérifié, inventaire des lecteurs de la clé |
-| **P3** | D6, D7, D8 : journal de transmission, échéance au dépôt, `ManualChorusDeposit`, file « À déposer »                                      | P2                                                            |
-| **P4** | Adaptateur de la plateforme agréée, lecture de l'annuaire Chorus (exigences relues)                                                     | Q4 de [`plan-zero-faille.md`](plan-zero-faille.md)            |
+| Lot       | Contenu                                                                                                                                 | Dépend de                                                     |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| **P1** ✅ | D1, D2, D3 : routage du payeur, geste « passer public », virement forcé, carte refusée, suivi refusé entre natures ; fiche client       | —                                                             |
+| **P2**    | D4, D5 : engagement sur la commande et ses révisions, clé de clôture à trois termes, BT-13 et référence acheteur ; champ dans le panier | P1, mapping Chorus vérifié, inventaire des lecteurs de la clé |
+| **P3**    | D6, D7, D8 : journal de transmission, échéance au dépôt, `ManualChorusDeposit`, file « À déposer »                                      | P2                                                            |
+| **P4**    | Adaptateur de la plateforme agréée, lecture de l'annuaire Chorus (exigences relues)                                                     | Q4 de [`plan-zero-faille.md`](plan-zero-faille.md)            |
 
 ## 8. Décisions de Hugo (2026-11-18)
 

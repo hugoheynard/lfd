@@ -109,6 +109,22 @@ class BuyersWithout extends StatementBuyerReader {
   }
 }
 
+/** Un acheteur organisme public : sa forme juridique le dit. */
+class BuyersPublic extends StatementBuyerReader {
+  constructor(private readonly publicId: string) {
+    super();
+  }
+  async buyersOf(ids: readonly string[]): Promise<ReadonlyMap<string, StatementBuyer>> {
+    const all = await new FixedBuyers().buyersOf(ids);
+    return new Map(
+      [...all.entries()].map(([id, buyer]) => [
+        id,
+        id === this.publicId ? { ...buyer, legalForm: "public_establishment" } : buyer,
+      ]),
+    );
+  }
+}
+
 function harness(
   options: {
     buyers?: StatementBuyerReader;
@@ -250,6 +266,26 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
     const signaled = h.outcomes.rows.get(PRINCIPAL);
     expect(signaled?.invoiceId).toBeNull();
     expect(signaled?.message).toContain("SIREN");
+  });
+
+  it("un organisme public au prélèvement est signalé `public_payer_not_on_transfer` ; au virement, il est facturé (P1b, B4)", async () => {
+    const means = new PayerMeansStore();
+    means.rows.push(meansRow("c_port", "bank_transfer", paris("2026-08-01"), ENTITY_ID));
+    const h = harness({ buyers: new BuyersPublic("c_principal"), means });
+    const port = harness({ buyers: new BuyersPublic("c_port"), means });
+    h.reader.orders = [bon("c_principal")];
+    port.reader.orders = [bon("c_port")];
+
+    const report = await h.run();
+    const transferred = await port.run();
+
+    expect(report.issued).toEqual([]);
+    expect(report.blocked.map((issue) => issue.payerCompanyId)).toEqual(["c_principal"]);
+    expect(h.outcomes.rows.get(PRINCIPAL)?.message).toContain(
+      "est un organisme public : il règle par virement",
+    );
+    expect(h.invoices.inserted).toEqual([]);
+    expect(transferred.issued.map((issue) => issue.payerCompanyId)).toEqual(["c_port"]);
   });
 
   it("un payeur signalé est journalisé `invoice.signalled` : sa raison, jamais un montant", async () => {

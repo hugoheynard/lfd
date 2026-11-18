@@ -6,6 +6,10 @@ import type {
 } from "../../../../card-payment/channels/requests/index.js";
 import type { Order } from "../../domain/entities/order.js";
 import { TermsNotGrantedError } from "../../domain/errors/order-errors.js";
+import {
+  PublicBuyerAccountUnavailableError,
+  PublicBuyerCardRefusedError,
+} from "../../domain/errors/public-buyer-errors.js";
 import type { OrderCompanyStatus } from "../../domain/ports/company-status.reader.js";
 import type {
   AccountSettlementStanding,
@@ -15,7 +19,7 @@ import { ORDER_CARD_SUBJECT_TYPE, orderCardTag } from "./order-card-subject.js";
 
 /** Les deux ports dont la décision de règlement a besoin, et eux seuls. */
 export interface SettlementPorts {
-  readonly guard: Pick<OrderGuardReader, "companyStatusOf" | "settlesOnAccount">;
+  readonly guard: Pick<OrderGuardReader, "companyStatusOf" | "settlesOnAccount" | "isPublicPayer">;
   readonly payments: Pick<CardPayments, "prepare">;
 }
 
@@ -61,6 +65,9 @@ export async function settleOrder(
  * **La carte est-elle requise ?** — le choix du client d'abord, la règle ensuite.
  *
  * @throws {TermsNotGrantedError} le compte a été demandé sans crédit accordé.
+ * @throws {PublicBuyerCardRefusedError} la carte, pour un payeur public.
+ * @throws {PublicBuyerAccountUnavailableError} un payeur public dont le
+ * compte ne règle pas : jamais de repli sur la carte.
  */
 async function requiresCardFor(
   guard: SettlementPorts["guard"],
@@ -70,6 +77,10 @@ async function requiresCardFor(
   const { companyId } = parties;
   const standing = await accountStanding(guard, parties);
   const onAccount = standing === "granted";
+  // Qui tranche : le PAYEUR, comme pour le crédit.
+  if (companyId !== null && (await guard.isPublicPayer(parties.payerId ?? companyId))) {
+    return publicBuyerRequiresCard(onAccount, settlement);
+  }
   // **Payer comptant est toujours possible**, y compris pour une société à qui
   // le mensuel a été accordé. Le crédit est une facilité, pas une obligation :
   // un client qui veut régler tout de suite avec SON tarif doit pouvoir le
@@ -90,6 +101,21 @@ async function requiresCardFor(
   // back-office, qui n'a personne devant l'écran pour choisir. Un prélèvement
   // bloqué y bascule sur la carte en silence — personne n'a demandé le compte.
   return !onAccount;
+}
+
+/**
+ * Un organisme public règle au compte, toujours : la carte est refusée quand
+ * il la demande, et un compte qui ne règle pas est refusé plutôt que rabattu
+ * sur la carte.
+ */
+function publicBuyerRequiresCard(onAccount: boolean, settlement: OrderSettlement | null): false {
+  if (settlement === "card") {
+    throw new PublicBuyerCardRefusedError();
+  }
+  if (!onAccount) {
+    throw new PublicBuyerAccountUnavailableError();
+  }
+  return false;
 }
 
 /** La société qui commande, et le payeur copié sur la commande. */

@@ -4,7 +4,7 @@ import { collectionMeansPayerOf, requireCollectionMeansPayer } from "../collecti
 import { paris } from "./billing-mode-fixtures.js";
 
 const AT = paris("2026-10-08");
-const ALONE = { companyId: "cmp_a", name: "Seul SAS", active: true, follows: [] };
+const ALONE = { companyId: "cmp_a", name: "Seul SAS", active: true, public: false, follows: [] };
 const FOLLOW = {
   companyId: "cmp_site",
   payerId: "cmp_group",
@@ -12,7 +12,13 @@ const FOLLOW = {
   validFrom: paris("2026-09-01"),
   validTo: null,
 };
-const SITE = { companyId: "cmp_site", name: "Site Annexe", active: true, follows: [FOLLOW] };
+const SITE = {
+  companyId: "cmp_site",
+  name: "Site Annexe",
+  active: true,
+  public: false,
+  follows: [FOLLOW],
+};
 
 describe("le payeur qui porte le moyen (V1)", () => {
   it("un compte qui règle seul porte son moyen", () => {

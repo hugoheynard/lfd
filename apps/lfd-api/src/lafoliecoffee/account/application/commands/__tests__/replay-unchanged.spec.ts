@@ -1,3 +1,4 @@
+import { FixedNatureNeighbours } from "./hierarchy-doubles.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
@@ -50,6 +51,9 @@ import {
   OwnerMembership,
 } from "./member-acts-doubles.js";
 import { silentGestures } from "./site-gesture-doubles.js";
+
+/** L'instant des voisins de facturation : relu tel quel, jamais comparé. */
+const NATURE_CLOCK = new FixedClock(new Date(0));
 
 /**
  * Régression : rejoué (double clic, onglet qui renvoie sa requête), chacun de
@@ -242,7 +246,13 @@ describe("rejouer un geste du staff qui ne change rien", () => {
 
   it("l'identité, la préférence, les délais accordés", async () => {
     const b = build();
-    const identity = new UpdateIdentityByStaffHandler(b.companies, b.events, b.uow);
+    const identity = new UpdateIdentityByStaffHandler(
+      b.companies,
+      b.events,
+      b.uow,
+      new FixedNatureNeighbours(),
+      NATURE_CLOCK,
+    );
     const payload = {
       enseigne: "Marais Café",
       vatNumber: "",

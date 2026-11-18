@@ -1,3 +1,6 @@
+import { Clock } from "../../../../platform/time/clock.js";
+import { BillingNatureNeighboursReader } from "../../domain/ports/billing-nature-neighbours.reader.js";
+import { ensureBillingNatureKept } from "../../domain/services/billing-nature-kept.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
@@ -28,6 +31,8 @@ export class UpdateIdentityByStaffHandler implements ICommandHandler<
     private readonly companies: CompanyRepository,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly neighbours: BillingNatureNeighboursReader,
+    private readonly clock: Clock,
   ) {}
 
   async execute(command: UpdateIdentityByStaffCommand): Promise<void> {
@@ -36,6 +41,7 @@ export class UpdateIdentityByStaffHandler implements ICommandHandler<
       throw new CompanyNotFoundError(command.companyId);
     }
     const vatBefore = company.vatNumber;
+    const formBefore = company.formeJuridique;
     const siretBefore = company.siretDigits;
     // Le back-office **corrige** là où le client ne fait que compléter : une
     // faute de frappe saisie au comptoir restait gravée, et le compte portait
@@ -53,6 +59,13 @@ export class UpdateIdentityByStaffHandler implements ICommandHandler<
     // Après la méthode métier : un rejeu à l'identique n'a rien changé et
     // sort au-dessus, il ne devient pas un refus.
     company.ensureReadAt(command.expectedRevision);
+    // Un suivi `billing` relie deux comptes de même nature : la correction ne le défait pas.
+    ensureBillingNatureKept({
+      companyId: command.companyId,
+      formBefore,
+      formAfter: company.formeJuridique,
+      neighbours: await this.neighbours.neighboursOf(command.companyId, this.clock.now()),
+    });
     await this.uow.run(async () => {
       await this.companies.save(company);
       await this.events.publishTraced(

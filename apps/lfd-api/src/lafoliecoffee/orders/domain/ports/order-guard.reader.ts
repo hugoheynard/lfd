@@ -36,4 +36,11 @@ export abstract class OrderGuardReader extends CompanyStatusReader {
    * « suspendu » plutôt que « jamais accordé ».
    */
   abstract settlesOnAccount(companyId: string): Promise<AccountSettlementStanding>;
+
+  /**
+   * Ce payeur est-il un organisme public (sa forme juridique) ? Il règle
+   * toujours au compte : la carte lui est refusée, et ne sert jamais de
+   * repli. `false` pour une société inconnue.
+   */
+  abstract isPublicPayer(companyId: string): Promise<boolean>;
 }

@@ -425,6 +425,9 @@ export const IT: ClientCopy = {
     settleTitle: 'Come pagate ?',
     settleCard: 'Pagamento diretto',
     settleAccount: 'Aggiungi al conto',
+    payHintPublic: 'Sul conto — fattura depositata su Chorus Pro, saldata con bonifico.',
+    publicAccountUnavailable:
+      'Il vostro ente paga solo sul conto, e questo conto oggi non può saldare. Ci contatti per ripristinarlo: l’ordine non può essere pagato con carta.',
     closeEmpty: 'Chiudi',
     whoTitle: 'Chi effettua questo ordine?',
     whoHint: 'Ci servono un nome e un indirizzo per inviarle il QR di ritiro.',

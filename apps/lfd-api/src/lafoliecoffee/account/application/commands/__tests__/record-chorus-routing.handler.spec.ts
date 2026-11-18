@@ -1,3 +1,5 @@
+import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import {
   ChorusRoutingNotPublicError,
   CompanyNotFoundError,
@@ -84,8 +86,16 @@ class KnownStaff extends StaffDirectory {
 }
 
 function handlerFor(target: Company | null, routings = new InMemoryRoutings()) {
+  const events = new RecordingPublisher();
   return {
-    handler: new RecordChorusRoutingHandler(new OneCompany(target), routings, new KnownStaff()),
+    events,
+    handler: new RecordChorusRoutingHandler(
+      new OneCompany(target),
+      routings,
+      new KnownStaff(),
+      events,
+      new DirectUnitOfWork(),
+    ),
     routings,
   };
 }
@@ -103,6 +113,20 @@ describe("RecordChorusRoutingHandler", () => {
       name: "Camille",
       role: "commercial",
     });
+  });
+
+  it("journalise le relevé sur la société, avec ce qui a été lu", async () => {
+    const { handler, events } = handlerFor(company("public_state"));
+
+    await handler.execute(new RecordChorusRoutingCommand("c1", "staff_1", READING));
+
+    expect(events.traced.map((event) => event.journalFact())).toEqual([
+      expect.objectContaining({
+        type: "company.chorus_routing_recorded",
+        subjectId: "c1",
+        payload: expect.objectContaining(READING),
+      }),
+    ]);
   });
 
   it("garde l'identifiant seul d'un agent que l'annuaire ne connaît pas", async () => {

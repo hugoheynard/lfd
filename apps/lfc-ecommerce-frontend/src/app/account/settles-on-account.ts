@@ -25,7 +25,25 @@ export function settlesOnAccount(company: CompanyView | null): boolean {
   return company !== null && company.grantedTerms.includes(MONTHLY) && !company.directDebitBlocked;
 }
 
-/** Le crédit est accordé, mais la comptabilité en a suspendu le prélèvement. */
+/**
+ * Le crédit est accordé, mais la comptabilité en a suspendu le prélèvement.
+ * Jamais vrai pour un organisme public : il n'est pas prélevé, il n'y a pas de
+ * prélèvement à suspendre.
+ */
 export function directDebitSuspended(company: CompanyView | null): boolean {
-  return company !== null && company.grantedTerms.includes(MONTHLY) && company.directDebitBlocked;
+  return (
+    company !== null &&
+    !payerIsPublic(company) &&
+    company.grantedTerms.includes(MONTHLY) &&
+    company.directDebitBlocked
+  );
+}
+
+/**
+ * **Le payeur est-il un organisme public ?** Calculé au serveur sur le PAYEUR
+ * (le principal suivi en facturation, sinon la société) : un public règle au
+ * compte, par virement, et la carte ne lui est jamais proposée.
+ */
+export function payerIsPublic(company: CompanyView | null): boolean {
+  return company?.payerIsPublic === true;
 }

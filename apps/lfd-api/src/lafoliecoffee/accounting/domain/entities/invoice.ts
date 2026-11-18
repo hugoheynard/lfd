@@ -5,6 +5,7 @@ import {
   InvoiceDocumentAlreadyAttachedError,
 } from "../errors/invoice-errors.js";
 import type { InvoiceSellerFacts } from "../services/invoice-issuance-blockers.js";
+import type { InvoiceSettlementKind } from "../services/public-payer-means-blocker.js";
 import { InvoiceNumber } from "../value-objects/invoice-number.js";
 import {
   assertLines,
@@ -18,8 +19,10 @@ import {
 import { assertCorrectable, assertDates, assertOrders } from "./invoice-shape.js";
 import { distinctDeliveryAddress, issuableParties } from "./invoice-parties.js";
 import {
+  BANK_CARD,
   COMMERCIAL_INVOICE,
   CREDIT_NOTE,
+  SEPA_CREDIT_TRANSFER,
   type InvoiceBuyer,
   type InvoiceLineInput,
   type InvoiceOrderReference,
@@ -108,6 +111,7 @@ export class Invoice {
       input.seller,
       input.buyer,
       input.orders,
+      settlementKindOf(input.paymentMeans),
     );
     assertDates(input.number, input.issuedOn, input.dueOn);
     if (input.orders.length === 0) {
@@ -266,4 +270,12 @@ export class Invoice {
       documentSha256: this.documentSha256Value,
     };
   }
+}
+
+/** Ce que le filet du payeur public lit du moyen de la facture. */
+function settlementKindOf(means: InvoicePaymentMeans | null): InvoiceSettlementKind {
+  if (means?.code === SEPA_CREDIT_TRANSFER) {
+    return "transfer";
+  }
+  return means?.code === BANK_CARD ? "card" : "other";
 }

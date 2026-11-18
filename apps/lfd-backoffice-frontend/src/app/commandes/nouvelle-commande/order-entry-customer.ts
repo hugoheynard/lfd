@@ -1,5 +1,7 @@
 import {
   companyDisplayName,
+  isPublicLegalForm,
+  toLegalForm,
   type CompanyMemberView,
   type CompanyStatus,
   type CounterCustomerView,
@@ -27,6 +29,11 @@ export interface OrderEntryCustomer {
   readonly status: CompanyStatus;
   /** Le règlement « au compte » est-il proposable ? Le serveur décide de toute façon. */
   readonly settlesOnAccount: boolean;
+  /**
+   * Le payeur est-il un organisme public ? Il règle au compte, facture sur
+   * Chorus Pro : ni choix du règlement, ni lien de paiement par carte.
+   */
+  readonly payerIsPublic: boolean;
   /** Le carnet de livraison, la défaut en tête. */
   readonly addresses: readonly DeliveryAddressView[];
   readonly buyers: readonly OrderEntryBuyer[];
@@ -47,6 +54,7 @@ export type AdminCompanyFacts = Pick<
   | 'status'
   | 'grantedTerms'
   | 'directDebitBlocked'
+  | 'formeJuridique'
   | 'fulfillmentPreference'
 > & { readonly addresses: Pick<AdminCompanyDetail['addresses'], 'deliveries'> };
 
@@ -64,6 +72,9 @@ export function customerFromAdminCompany(
     status: company.status,
     settlesOnAccount:
       company.status === 'active' && company.grantedTerms.length > 0 && !company.directDebitBlocked,
+    // La forme de la société suffit : un site ne suit en facturation qu'un
+    // principal de même nature (plan clients publics, B6).
+    payerIsPublic: isPublicForm(company.formeJuridique),
     addresses: company.addresses.deliveries,
     buyers: members,
     preferredPickupId: company.fulfillmentPreference.pickupAddressId,
@@ -82,8 +93,14 @@ export function customerFromCounter(customer: CounterCustomerView): OrderEntryCu
     }),
     status: customer.status,
     settlesOnAccount: customer.settlesOnAccount,
+    payerIsPublic: customer.payerIsPublic,
     addresses: customer.deliveryAddresses,
     buyers: customer.buyers,
     preferredPickupId: null,
   };
+}
+
+function isPublicForm(raw: string): boolean {
+  const form = toLegalForm(raw);
+  return form !== null && isPublicLegalForm(form);
 }

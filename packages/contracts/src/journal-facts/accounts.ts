@@ -184,6 +184,13 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
    * les lignes d'avant gardent ce nom.
    */
   "company.kbis_uploaded_by_staff": retired(payload({ fileName: z.string() })),
+  /** Un agent relève la fiche Chorus Pro d'un organisme public. */
+  "company.chorus_routing_recorded": labelled({
+    commitmentRequired: z.boolean(),
+    serviceCodeRequired: z.boolean(),
+    defaultServiceCode: z.string(),
+    checkedOn: day(),
+  }),
   "company.identity_corrected": labelled({
     raisonSociale: z.string(),
     formeJuridique: z.string(),

@@ -25,7 +25,13 @@ import { declaredEntity, SettingSteps, StepEntities } from "./mandate-setting-do
 const NOW = paris("2026-10-08", "11:00");
 
 /** Un compte qu'on ouvre : il n'a jamais commandé. */
-const NEWCOMER = { companyId: "cmp_new", name: "Le Nouveau", active: true, follows: [] };
+const NEWCOMER = {
+  companyId: "cmp_new",
+  name: "Le Nouveau",
+  active: true,
+  public: false,
+  follows: [],
+};
 
 function world() {
   const entities = new StepEntities(new SettingSteps());

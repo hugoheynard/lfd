@@ -858,6 +858,7 @@ export const ACCOUNTS_PHRASES = {
   'company.kbis_uploaded': kbisUploaded,
   'company.kbis_uploaded_by_staff': kbisUploaded,
   'company.identity_corrected': onClient('a corrigé l’identité légale ', 'of'),
+  'company.chorus_routing_recorded': onClient('a relevé la fiche Chorus Pro ', 'of'),
   'company.identity_edited': identityEdited,
   'company.payment_terms_granted': paymentTermsGranted,
   'company.payment_term_requested': paymentTermRequested,

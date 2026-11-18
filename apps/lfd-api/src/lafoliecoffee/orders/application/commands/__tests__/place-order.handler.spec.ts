@@ -44,6 +44,10 @@ import {
   PickupNotConfiguredError,
   TermsNotGrantedError,
 } from "../../../domain/errors/order-errors.js";
+import {
+  PublicBuyerAccountUnavailableError,
+  PublicBuyerCardRefusedError,
+} from "../../../domain/errors/public-buyer-errors.js";
 import { SalesTermsOutdatedError } from "../../../domain/errors/sales-terms-outdated.error.js";
 import { OrderTotalChangedError } from "../../../domain/errors/order-total-changed.error.js";
 import { UnknownSkuError } from "../../../../catalog/domain/errors/unknown-sku.error.js";
@@ -312,6 +316,7 @@ function guard(
     roleOf: () => Promise.resolve(role),
     companyStatusOf: () => Promise.resolve(status),
     settlesOnAccount: () => Promise.resolve(onAccount),
+    isPublicPayer: () => Promise.resolve(false),
   };
 }
 
@@ -1682,6 +1687,87 @@ describe("PlaceOrderHandler — un article d'opération datée", () => {
   });
 });
 
+/** La même garde, pour un payeur organisme public (plan clients publics, P1b, B5). */
+function asPublicPayer(base: OrderGuardReader): OrderGuardReader {
+  return {
+    roleOf: (userId, companyId) => base.roleOf(userId, companyId),
+    companyStatusOf: (companyId) => base.companyStatusOf(companyId),
+    settlesOnAccount: (companyId) => base.settlesOnAccount(companyId),
+    isPublicPayer: () => Promise.resolve(true),
+  };
+}
+
+/**
+ * Un **organisme public** paie au compte, toujours (plan clients publics,
+ * P1b, B5) : la carte lui est refusée, et ne sert jamais de repli.
+ */
+describe("PlaceOrderHandler — payeur public", () => {
+  function publicHandler(
+    standing: AccountSettlementStanding,
+    sink: { placed: OrderToPlace | null },
+    intentSink: { intent: CardPreparationRequest | null },
+  ): PlaceOrderHandler {
+    return new SeeingPlaceOrderHandler(
+      asPublicPayer(guard("orders", "active", standing)),
+      drafting(pickups(LABO_POINT), zones()),
+      capturingRepo(sink),
+      payments(intentSink),
+      noRetrieval,
+      events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
+      new RecordingDurable(),
+      intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
+      noOrderMarketing(),
+    );
+  }
+
+  it("REFUSE la carte à un organisme public, sans intention ni commande", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const intentSink = { intent: null as CardPreparationRequest | null };
+
+    const refusal = publicHandler("granted", sink, intentSink).execute(
+      new PlaceOrderCommand("u1", payload({ settlement: "card" }), "c1"),
+    );
+
+    await expect(refusal).rejects.toBeInstanceOf(PublicBuyerCardRefusedError);
+    expect(sink.placed).toBeNull();
+    expect(intentSink.intent).toBeNull();
+  });
+
+  it("accepte le compte, sans intention de carte", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const intentSink = { intent: null as CardPreparationRequest | null };
+
+    await publicHandler("granted", sink, intentSink).execute(
+      new PlaceOrderCommand("u1", payload({ settlement: "account" }), "c1"),
+    );
+
+    expect(sink.placed?.paymentStatus).toBe("not_required");
+    expect(intentSink.intent).toBeNull();
+  });
+
+  /** Régression du plan : un payeur public sans compte basculait sur la carte en silence. */
+  it("sans compte ni mode choisi, REFUSE plutôt que de basculer sur la carte", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const intentSink = { intent: null as CardPreparationRequest | null };
+
+    const refusal = publicHandler("none", sink, intentSink).execute(
+      new PlaceOrderCommand("u1", payload(), "c1"),
+    );
+
+    await expect(refusal).rejects.toBeInstanceOf(PublicBuyerAccountUnavailableError);
+    expect(intentSink.intent).toBeNull();
+    expect(sink.placed).toBeNull();
+  });
+});
+
 /**
  * Le prélèvement **bloqué** par la comptabilité (plan « blocage du
  * prélèvement », §1) : le crédit reste accordé, mais la commande ne se porte
@@ -2022,6 +2108,7 @@ describe("PlaceOrderHandler — un site facturé à son principal", () => {
         asked.push(companyId);
         return Promise.resolve(companyId === "alpes" ? "granted" : "none");
       },
+      isPublicPayer: () => Promise.resolve(false),
     };
     return new SeeingPlaceOrderHandler(
       payerGuard,

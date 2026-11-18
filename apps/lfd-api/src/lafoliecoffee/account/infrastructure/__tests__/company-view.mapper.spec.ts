@@ -28,6 +28,7 @@ const ROW: CompanyViewRow = {
   contactFonction: "Gérante",
   contactEmail: "camille@halles.fr",
   contactTelephone: "01 42 71 08 44",
+  follows: [],
   contacts: [
     {
       id: "k1",
@@ -42,6 +43,19 @@ const ROW: CompanyViewRow = {
 };
 
 describe("toCompanyView", () => {
+  it("dit la nature du PAYEUR : le principal suivi en facturation, sinon la société", () => {
+    expect(toCompanyView("owner", ROW).payerIsPublic).toBe(false);
+    expect(
+      toCompanyView("owner", { ...ROW, formeJuridique: "public_establishment" }).payerIsPublic,
+    ).toBe(true);
+    const site = {
+      ...ROW,
+      formeJuridique: "",
+      follows: [{ parent: { formeJuridique: "public_state" } }],
+    };
+    expect(toCompanyView("owner", site).payerIsPublic).toBe(true);
+  });
+
   it("porte le rôle que l'appelant a établi — le rôle effectif d'un site atteint", () => {
     expect(toCompanyView("admin", ROW).role).toBe("admin");
     expect(toCompanyView("owner", ROW).role).toBe("owner");

@@ -1,3 +1,6 @@
+import { Clock } from "../../../../platform/time/clock.js";
+import { BillingNatureNeighboursReader } from "../../domain/ports/billing-nature-neighbours.reader.js";
+import { ensureBillingNatureKept } from "../../domain/services/billing-nature-kept.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
@@ -34,6 +37,8 @@ export class UpdateCompanyIdentityHandler implements ICommandHandler<
     private readonly companies: CompanyRepository,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly neighbours: BillingNatureNeighboursReader,
+    private readonly clock: Clock,
   ) {}
 
   async execute(command: UpdateCompanyIdentityCommand): Promise<void> {
@@ -45,6 +50,7 @@ export class UpdateCompanyIdentityHandler implements ICommandHandler<
       throw new CompanyNotFoundError(command.companyId);
     }
     const before = identityOf(company);
+    const formBefore = company.formeJuridique;
     // Complète ce qui manquait à l'ouverture. Sans SIRET, pas d'activation
     // possible : ce serait un compte ouvert pour rien. L'identité légale passe
     // avant la TVA, qui se compare au SIREN qu'elle pose.
@@ -57,6 +63,12 @@ export class UpdateCompanyIdentityHandler implements ICommandHandler<
     company.editSoftIdentityAsMember({
       enseigne: command.payload.enseigne,
       vatNumber: command.payload.vatNumber,
+    });
+    ensureBillingNatureKept({
+      companyId: command.companyId,
+      formBefore,
+      formAfter: company.formeJuridique,
+      neighbours: await this.neighbours.neighboursOf(command.companyId, this.clock.now()),
     });
     const fields = changedFields(IDENTITY_FIELDS, before, identityOf(company));
     await this.uow.run(async () => {

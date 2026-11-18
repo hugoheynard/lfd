@@ -420,6 +420,9 @@ export const EN: ClientCopy = {
     settleTitle: 'How are you paying?',
     settleCard: 'Pay now',
     settleAccount: 'Add to the account',
+    payHintPublic: 'On account — invoice filed on Chorus Pro, paid by bank transfer.',
+    publicAccountUnavailable:
+      'Your organisation pays on account only, and that account cannot settle today. Contact us to restore it: the order cannot be paid by card.',
     closeEmpty: 'Close',
     whoTitle: 'Who is placing this order?',
     whoHint: 'We need a name and an address to send you your pickup QR.',

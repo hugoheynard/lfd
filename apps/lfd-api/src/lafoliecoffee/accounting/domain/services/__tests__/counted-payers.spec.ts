@@ -18,7 +18,7 @@ function lot(
 }
 
 function standing(companyId: string, overrides: Partial<PayerStanding> = {}): PayerStanding {
-  return { companyId, name: companyId, active: true, follows: [], ...overrides };
+  return { companyId, name: companyId, active: true, public: false, follows: [], ...overrides };
 }
 
 describe("countedPayerIdsAt — qui compte comme client d'une entité", () => {

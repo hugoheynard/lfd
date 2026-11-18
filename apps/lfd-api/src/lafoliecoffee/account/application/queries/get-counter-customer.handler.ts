@@ -70,6 +70,7 @@ export class GetCounterCustomerHandler implements IQueryHandler<
       reference: card.reference,
       status: company.status,
       settlesOnAccount: payer?.status === "active" && payer.settlesOnAccount(),
+      payerIsPublic: payer?.isPublic ?? false,
       deliveryAddresses: [...addresses.deliveries],
       buyers: members.filter((member) => member.status === "active").map(toBuyer),
     };

@@ -22,6 +22,7 @@ const SITE = {
   companyId: "cmp_site",
   name: "Site Annexe",
   active: true,
+  public: false,
   follows: [
     {
       companyId: "cmp_site",

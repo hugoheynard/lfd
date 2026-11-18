@@ -1,7 +1,12 @@
 import type { CompanyView } from '@lfd/contracts';
 
 import { TOMMEUSES } from '../client/mon-compte/account.fixture';
-import { directDebitSuspended, settlementSummary, settlesOnAccount } from './account.model';
+import {
+  directDebitSuspended,
+  payerIsPublic,
+  settlementSummary,
+  settlesOnAccount,
+} from './account.model';
 
 const GRANTED: CompanyView = TOMMEUSES;
 const SUSPENDED: CompanyView = { ...TOMMEUSES, directDebitBlocked: true };
@@ -19,6 +24,13 @@ describe('le règlement au compte', () => {
     expect(directDebitSuspended(SUSPENDED)).toBe(true);
     expect(directDebitSuspended(GRANTED)).toBe(false);
     expect(directDebitSuspended({ ...NONE, directDebitBlocked: true })).toBe(false);
+  });
+
+  it('ne dit jamais « prélèvement suspendu » à un organisme public : il n’est pas prélevé', () => {
+    expect(directDebitSuspended({ ...SUSPENDED, payerIsPublic: true })).toBe(false);
+    expect(payerIsPublic({ ...GRANTED, payerIsPublic: true })).toBe(true);
+    expect(payerIsPublic(GRANTED)).toBe(false);
+    expect(payerIsPublic(null)).toBe(false);
   });
 
   it('ne résume pas un crédit suspendu parmi les moyens de règlement', () => {

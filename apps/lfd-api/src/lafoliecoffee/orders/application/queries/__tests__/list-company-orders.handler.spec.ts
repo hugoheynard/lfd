@@ -32,6 +32,9 @@ class OwnRole extends OrderGuardReader {
   settlesOnAccount(): Promise<AccountSettlementStanding> {
     return Promise.reject(new Error("non utilisé"));
   }
+  isPublicPayer(): Promise<boolean> {
+    return Promise.reject(new Error("non utilisé"));
+  }
 }
 
 class RecordingList extends CompanyOrderListReader {

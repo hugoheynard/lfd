@@ -15,6 +15,9 @@ import {
 import { cancellableOf, isQuietSince, pendingOf, type BillingGesture } from "./billing-gesture.js";
 import type { NamedPayer } from "./payer-billing-mode-history.js";
 
+/** Un organisme public règle par virement, jamais par prélèvement. */
+const PUBLIC_PAYER_MEANS: CollectionMeans = "bank_transfer";
+
 /**
  * Les clôtures du payeur, lues sur son MODE (C1) : le moyen ne crée aucune
  * clôture, il s'y range. `PayerTimeline` en est l'implémentation.
@@ -167,6 +170,58 @@ export class PayerCollectionMeansHistory {
     ];
     this.fresh.add(gesture.segmentId);
     return { kind: "scheduled", from, to: means, effectiveAt, immediate, reason };
+  }
+
+  /**
+   * **Ouvre un organisme public au virement**, à son activation : le
+   * virement vaut dès la dernière clôture passée, et tout segment vivant qui
+   * commence à elle ou après (un prélèvement programmé, ou posé pendant
+   * l'attente) est annulé. Ce n'est pas un changement du staff : ni la règle
+   * de l'immédiat, ni « un seul changement à la fois », ni le retour bancaire
+   * ne s'y appliquent — un compte qui n'était pas actif n'a encore été
+   * facturé ni prélevé sur aucune période à protéger.
+   *
+   * @returns le changement, ou `null` si le virement valait déjà et que rien
+   * n'était programmé.
+   */
+  openAsPublicPayer(gesture: MeansGesture, closures: PayerClosures): PayerMeansChange | null {
+    const reason = reasonOf(gesture.reason);
+    const lastClosure = closures.previousClosureOf(closures.closureAfter(gesture.at));
+    const from = collectionMeansAt(this.entries, gesture.at).means;
+    const superseded = this.entries.filter(
+      (entry) => entry.cancelledAt === null && entry.effectiveFrom >= lastClosure,
+    );
+    if (from === PUBLIC_PAYER_MEANS && superseded.length === 0) {
+      return null;
+    }
+    this.entries = this.entries.map((entry) =>
+      superseded.includes(entry)
+        ? { ...entry, cancelledAt: gesture.at, cancelledByStaffId: gesture.staffId }
+        : entry,
+    );
+    superseded.forEach((entry) => this.cancelled.add(entry.id));
+    this.entries = [
+      ...this.entries,
+      {
+        id: gesture.segmentId,
+        effectiveFrom: lastClosure,
+        means: PUBLIC_PAYER_MEANS,
+        reason,
+        createdAt: gesture.at,
+        createdByStaffId: gesture.staffId,
+        cancelledAt: null,
+        cancelledByStaffId: null,
+      },
+    ];
+    this.fresh.add(gesture.segmentId);
+    return {
+      kind: "scheduled",
+      from,
+      to: PUBLIC_PAYER_MEANS,
+      effectiveAt: lastClosure,
+      immediate: true,
+      reason,
+    };
   }
 
   /**

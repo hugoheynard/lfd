@@ -67,7 +67,12 @@ export function settlementLabel(mean: SettlementMean): string {
 
 import { settlesOnAccount } from './settles-on-account';
 
-export { MONTHLY, directDebitSuspended, settlesOnAccount } from './settles-on-account';
+export {
+  MONTHLY,
+  directDebitSuspended,
+  payerIsPublic,
+  settlesOnAccount,
+} from './settles-on-account';
 
 /**
  * Ce dont une société dispose, en une phrase : le socle, plus les crédits

@@ -886,6 +886,13 @@ export interface ClientCopy {
     readonly settleCard: string;
     readonly settleAccount: string;
     /**
+     * **Un organisme public** (plan clients publics, B5) : il règle au compte,
+     * jamais par carte. La note sous l'unique bouton dit comment.
+     */
+    readonly payHintPublic: string;
+    /** Un organisme public dont le compte ne règle pas : ni compte, ni carte — pas de bouton. */
+    readonly publicAccountUnavailable: string;
+    /**
      * Le bouton d'un panier vide : il ferme le panneau (2026-10-09). Il disait
      * « Voir le rayon » et, ouvert depuis « Mes commandes », y ramenait.
      */

@@ -51,6 +51,7 @@ function fiche(overrides: Partial<AdminCompanyFacts> = {}): AdminCompanyFacts {
     status: 'active',
     grantedTerms: ['monthly'],
     directDebitBlocked: false,
+    formeJuridique: 'sarl',
     addresses: { deliveries: [ADDRESS] },
     fulfillmentPreference: NO_FULFILLMENT_PREFERENCE,
     ...overrides,
@@ -65,6 +66,7 @@ describe('customerFromCounter', () => {
     reference: 'C-1',
     status: 'active',
     settlesOnAccount: true,
+    payerIsPublic: false,
     deliveryAddresses: [ADDRESS],
     buyers: [
       { userId: 'u1', firstName: 'Anne', lastName: 'Périn', email: 'a@b.fr', role: 'owner' },
@@ -76,6 +78,7 @@ describe('customerFromCounter', () => {
       displayName: 'Chez Périn',
       status: 'active',
       settlesOnAccount: true,
+      payerIsPublic: false,
       addresses: [ADDRESS],
       buyers: counter.buyers,
       // Le comptoir ne lit pas la préférence : la présélection retombe sur le
@@ -88,6 +91,10 @@ describe('customerFromCounter', () => {
     expect(customerFromCounter({ ...counter, tradeName: '' }).displayName).toBe(
       'Boulangerie Périn SARL',
     );
+  });
+
+  it('prend `payerIsPublic` tel que le serveur l’a calculé', () => {
+    expect(customerFromCounter({ ...counter, payerIsPublic: true }).payerIsPublic).toBe(true);
   });
 
   it('prend `settlesOnAccount` tel que le serveur l’a calculé', () => {
@@ -103,6 +110,7 @@ describe('customerFromAdminCompany', () => {
       displayName: 'Boulangerie Périn SARL',
       status: 'active',
       settlesOnAccount: true,
+      payerIsPublic: false,
       addresses: [ADDRESS],
       buyers: [MEMBER],
       preferredPickupId: null,
@@ -126,5 +134,13 @@ describe('customerFromAdminCompany', () => {
     ['la comptabilité a bloqué le prélèvement', { directDebitBlocked: true }],
   ])('ne règle pas au compte quand %s', (_label, overrides) => {
     expect(customerFromAdminCompany(fiche(overrides), []).settlesOnAccount).toBe(false);
+  });
+
+  it('reconnaît un organisme public à sa forme juridique', () => {
+    expect(
+      customerFromAdminCompany(fiche({ formeJuridique: 'public_local_authority' }), [])
+        .payerIsPublic,
+    ).toBe(true);
+    expect(customerFromAdminCompany(fiche({ formeJuridique: '' }), []).payerIsPublic).toBe(false);
   });
 });

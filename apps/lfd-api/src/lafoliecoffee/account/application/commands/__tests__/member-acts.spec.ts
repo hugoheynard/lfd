@@ -1,3 +1,4 @@
+import { FixedNatureNeighbours } from "./hierarchy-doubles.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
@@ -52,6 +53,9 @@ import {
 import { silentGestures } from "./site-gesture-doubles.js";
 import { randomUUID } from "node:crypto";
 import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+
+/** L'instant des voisins de facturation : relu tel quel, jamais comparé. */
+const NATURE_CLOCK = new FixedClock(new Date(0));
 
 /** Une correction réelle de l'adresse semée : la même charge rejouée ne change rien. */
 const CORRECTED = { ...DELIVERY, ligne2: "Bâtiment B" };
@@ -267,9 +271,14 @@ describe("l'identité et le délai, par le client", () => {
   it("l'identité éditée nomme les champs changés, sans leurs valeurs", async () => {
     const { events, uow, member, companies } = build();
 
-    await new UpdateCompanyIdentityHandler(member, companies, events, uow).execute(
-      new UpdateCompanyIdentityCommand("u1", "c1", IDENTITY),
-    );
+    await new UpdateCompanyIdentityHandler(
+      member,
+      companies,
+      events,
+      uow,
+      new FixedNatureNeighbours(),
+      NATURE_CLOCK,
+    ).execute(new UpdateCompanyIdentityCommand("u1", "c1", IDENTITY));
 
     expect(events.factTypes()).toEqual(["company.identity_edited"]);
     expect(events.traced[0]?.journalFact().payload).toEqual({
@@ -281,7 +290,14 @@ describe("l'identité et le délai, par le client", () => {
 
   it("un envoi qui ne change rien n'écrit aucun fait", async () => {
     const { events, uow, member, companies } = build();
-    const handler = new UpdateCompanyIdentityHandler(member, companies, events, uow);
+    const handler = new UpdateCompanyIdentityHandler(
+      member,
+      companies,
+      events,
+      uow,
+      new FixedNatureNeighbours(),
+      NATURE_CLOCK,
+    );
     await handler.execute(new UpdateCompanyIdentityCommand("u1", "c1", IDENTITY));
 
     await handler.execute(new UpdateCompanyIdentityCommand("u1", "c1", IDENTITY));

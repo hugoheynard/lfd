@@ -122,6 +122,13 @@ export interface CompanyView {
    * façon ; ce champ sert à ne plus le proposer. Ajouté le 2026-09-25.
    */
   readonly directDebitBlocked: boolean;
+  /**
+   * Le PAYEUR (le principal suivi en facturation, sinon la société) est un
+   * organisme public : il ne paie jamais par carte. Toujours envoyé par le
+   * serveur ; facultatif pour que les écrans construits sans lui restent
+   * valides.
+   */
+  readonly payerIsPublic?: boolean;
   /** Rôle de la personne dans CETTE société. */
   readonly role: CompanyMemberRole;
   /** Contact **principal** (carte « Admin du compte entreprise »), toujours présent. */

@@ -40,6 +40,8 @@ export interface PanierPanelData {
   readonly estimateReady: Signal<boolean>;
   /** Le « Lien de règlement » est-il proposé ? Faux au comptoir (E4). */
   readonly linkOffered: boolean;
+  /** Un organisme public : au compte, facture Chorus. */
+  readonly payerIsPublic: boolean;
 }
 
 /**
