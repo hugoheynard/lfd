@@ -69,7 +69,7 @@ export function renderProductionSimulationPdf(
       pages.finish({
         logo: print.logo,
         // Aucun tirage : la simulation n'est jamais arrêtée (Hugo, 2026-11-18).
-        headerRight: `${weekdayShortDate(todayOf(print.at))} · v0`,
+        headerRight: `Simulation du ${weekdayShortDate(todayOf(print.at))} · v0`,
         headerRightBold: true,
         footerLeft: `${SIMULATION_MARK} · ${MODE_LABELS[cover.mode]} · tirée le ${parisDateTime(print.at)}`,
       });

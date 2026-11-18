@@ -30,6 +30,7 @@ import {
 import { isMadeToOrder, MADE_TO_ORDER_MENTION } from "../../../shared/print/index.js";
 import { drawRouting } from "../../../shared/print/index.js";
 import { contentRightOf, PaperPages } from "../../../../platform/pdf/paper-pages.js";
+import { todayOf } from "../../../day/index.js";
 
 /**
  * **Le dossier du jour, en PDF** — une couverture, le récapitulatif (un rayon
@@ -357,12 +358,16 @@ function drawScan(doc: Doc, url: string, reference: string, y: number): void {
  * (retrait ou livraison), pas celui où on la fabrique.
  */
 /**
- * L'en-tête de chaque page, en gras : le jour du lot et le tirage (Hugo,
- * 2026-11-18) — une fiche de poste qui traîne dit d'elle-même si elle est
- * la dernière.
+ * L'en-tête de chaque page, en gras (Hugo, 2026-11-18) : le jour du plan —
+ * celui du dernier tirage, arrêt ou retirage, à l'heure de Paris —, le jour
+ * du lot, et le tirage. Une fiche de poste qui traîne dit d'elle-même de
+ * quand elle date, pour quel jour, et si elle est la dernière.
  */
-export function dossierHeader(stamp: Pick<DossierStamp, "serviceDay" | "printRun">): string {
-  return `Lot pour le ${weekdayShortDate(stamp.serviceDay)} · v${String(stamp.printRun)}`;
+export function dossierHeader(
+  stamp: Pick<DossierStamp, "serviceDay" | "printRun" | "closedAt" | "retakenAt">,
+): string {
+  const planDay = todayOf(stamp.retakenAt ?? stamp.closedAt);
+  return `Plan du ${weekdayShortDate(planDay)} pour le ${weekdayShortDate(stamp.serviceDay)} · v${String(stamp.printRun)}`;
 }
 
 function lotBanner(stamp: DossierStamp): string {

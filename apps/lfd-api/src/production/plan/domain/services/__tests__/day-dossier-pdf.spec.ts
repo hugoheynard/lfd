@@ -561,7 +561,7 @@ describe("renderDayDossierPdf — la mise en page du 2026-10-25 (Hugo)", () => {
 
   it("pose l'en-tête sur chaque page, et ne nomme plus « La Folie Coffee — Fournil »", async () => {
     const pages = pdfPages(await rendered(two, STAMP, () => "", NO_COLORS, NO_COLORS));
-    expect(pages.every((page) => page.includes("Lot pour le jeu. 8 oct."))).toBe(true);
+    expect(pages.every((page) => page.includes("pour le jeu. 8 oct. · v1"))).toBe(true);
     expect(pages.join("")).not.toContain("La Folie Coffee");
   });
 
