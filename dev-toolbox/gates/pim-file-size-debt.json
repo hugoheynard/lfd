@@ -1,0 +1,21 @@
+{
+  "$comment": "Les fichiers de src/pim au-delà de 300 lignes, relevés le 2026-11-18 à la naissance de dev-toolbox/gates/pim-file-size.mjs (documentation/pim/plan-referentiel-a-neuf.md, L0). admitted : leur taille est leur nature, datés avec leur raison. files : la dette, à la taille relevée ; elle ne peut que décroître (L5 découpe Product et Variant).",
+  "since": "2026-11-18",
+  "admitted": {
+    "journal/pim-journal.ts": {
+      "since": "2026-11-18",
+      "reason": "le vocabulaire des événements du journal : une entrée par fait, le découper disperserait la liste qu'on lit d'un coup d'œil"
+    },
+    "catalogue/product/http/product.controller.ts": {
+      "since": "2026-11-18",
+      "reason": "la surface HTTP de la fiche : une route par geste, chacune ne fait que traduire vers le bus"
+    }
+  },
+  "files": {
+    "catalogue/product/domain/entities/product.ts": 1058,
+    "catalogue/product/domain/entities/variant.ts": 1037,
+    "catalogue/product/infrastructure/prisma-product.repository.ts": 420,
+    "catalogue/product/domain/errors/product-errors.ts": 331,
+    "channels/b2b-platform/products/catalog-facts.ts": 306
+  }
+}

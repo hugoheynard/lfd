@@ -198,7 +198,14 @@
 >   un noyau (`day/`) et des métiers autour ; la porte tient la carte fichier →
 >   sous-contexte, les arêtes admises, l'entrée par `index.ts`, le propriétaire
 >   de chaque modèle du schéma `production` et les abonnés durables entre
->   métiers, et compte ce qui viole aujourd'hui en dette décroissante. C'est la
+>   métiers, et compte ce qui viole aujourd'hui en dette décroissante. Et **75**
+>   et **76** depuis le 2026-11-18 avec `lint:pim-subcontexts` et
+>   `lint:pim-file-size` (plan `documentation/pim/plan-referentiel-a-neuf.md`,
+>   L0) : le référentiel se lit dans un seul sens — des référentiels de base
+>   vers le catalogue, du catalogue vers les canaux, le noyau lu par tous —,
+>   la carte connaît l'arborescence d'avant et d'après le déménagement, et
+>   aucun fichier n'y dépasse 300 lignes hors liste admise ; ce qui viole
+>   aujourd'hui est une dette comptée qui ne peut que décroître. C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -982,8 +989,8 @@ client, les vraies migrations et les vraies contraintes.
   commerce : dette explicitement notée dans le fichier, à basculer sur les
   factories du domaine dès que les entités existent.
 
-**Le PIM a le même harnais, et il est fourni** : 15 fichiers `test/pim-*.e2e-spec.ts`,
-**192 tests**, sur le vrai Postgres jetable — cycle de vie d'une fiche,
+**Le PIM a le même harnais, et il est fourni** : 32 fichiers `test/pim-*.e2e-spec.ts`
+(compté le 2026-11-18), sur le vrai Postgres jetable — cycle de vie d'une fiche,
 allergènes, révisions, matrice de canaux, atomicité du journal, mur d'accès,
 localisation, taux, contextes de vente. Trois autres e2e le traversent depuis le
 B2B (`catalog-ingest`, `catalog-parity`, `admin-catalog`).
@@ -1478,7 +1485,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 74 portes du dépôt, toutes, et un résumé à la fin
+pnpm lint:gates         # les 76 portes du dépôt, toutes, et un résumé à la fin
 pnpm gate <nom>         # une porte (pnpm gate --list : la liste, avec ce qu'elle tient)
 pnpm lint:watch         # relance les portes dont un fichier lu change
 pnpm tool               # les outils occasionnels (digests, carte, axe…) ; pnpm tool <nom>

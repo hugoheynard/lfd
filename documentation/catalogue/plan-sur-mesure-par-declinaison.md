@@ -1,6 +1,6 @@
 # Le sur mesure par déclinaison — plan
 
-> 🟦 **Bâti le 2026-11-18 (D1 serveur, D2 back-office), non déployé.** Demande de Hugo le 2026-11-18 : « si un
+> ✅ **Bâti et déployé le 2026-11-18 (D1 serveur, D2 back-office).** Demande de Hugo le 2026-11-18 : « si un
 > produit a des déclinaisons, toutes les déclinaisons passent en mode
 > réservation, je veux qu'on descende la granularité au niveau déclinaison ».
 > Revient sur D1 du § 13 de [`plan-articles-sur-mesure.md`](plan-articles-sur-mesure.md)

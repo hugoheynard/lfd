@@ -179,6 +179,20 @@
       ]
     },
     {
+      "name": "pim-subcontexts",
+      "script": "dev-toolbox/gates/pim-subcontexts.mjs",
+      "holds": "Le référentiel se lit dans un seul sens : des référentiels de base vers le catalogue, du catalogue vers les canaux, le noyau lu par tous, aucun cycle ; la carte connaît l'arborescence d'avant et d'après le déménagement, et les imports qui violent aujourd'hui sont une dette comptée par fichier qui ne peut que décroître.",
+      "since": "2026-11-18",
+      "watch": ["apps/lfd-api/src/pim/**", "dev-toolbox/gates/pim-subcontexts*"]
+    },
+    {
+      "name": "pim-file-size",
+      "script": "dev-toolbox/gates/pim-file-size.mjs",
+      "holds": "Aucun fichier du référentiel au-delà de 300 lignes hors liste admise datée ; les dépassements d'aujourd'hui sont une dette à leur taille relevée, qui ne peut que décroître.",
+      "since": "2026-11-18",
+      "watch": ["apps/lfd-api/src/pim/**", "dev-toolbox/gates/pim-file-size*"]
+    },
+    {
       "name": "mail-through-block",
       "script": "dev-toolbox/gates/mail-through-block.mjs",
       "holds": "Un e-mail s'envoie par la porte `Mail` du bloc `mail` ; personne d'autre n'injecte le mailer.",
