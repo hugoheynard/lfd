@@ -12,7 +12,7 @@
     }
   },
   "files": {
-    "catalogue/product/domain/entities/product.ts": 850,
+    "catalogue/product/domain/entities/product.ts": 811,
     "catalogue/product/domain/entities/variant.ts": 1037,
     "catalogue/product/infrastructure/prisma-product.repository.ts": 420,
     "catalogue/product/domain/errors/product-errors.ts": 331,

@@ -23,12 +23,12 @@ import type { AllergenDeclaration } from "../value-objects/nutrition-declaration
 import type { Sku } from "../value-objects/sku.value-object.js";
 import type { SaleUnitClearance } from "../value-objects/sale-reference-usage.js";
 import { type MinQuantities } from "../value-objects/min-quantities.js";
-import { effectiveAudience, type Audience } from "../../../shared/domain/value-objects/audience.js";
+import type { Audience } from "../../../shared/domain/value-objects/audience.js";
 import type { CategoryVatPercents } from "../../../shared/domain/ports/catalogue-reader.js";
-import { activationGapsOf, type ActivationGaps } from "../services/activation-gaps.js";
+import type { ActivationGaps } from "../services/activation-gaps.js";
+import { ProductCompleteness } from "../services/product-completeness.js";
 import {
   isCompliantForActivation,
-  productCompliance,
   type ComplianceFinding,
 } from "../services/product-compliance.js";
 import { refusalOf } from "./activation-refusal.js";
@@ -310,40 +310,18 @@ export class Product {
 
   /**
    * **Invariant 7, tel que le lot 2b le tient** : on ne met pas en vente ce
-   * qu'on ne peut pas étiqueter — mais le refus se fait désormais **par
-   * construction**, déclinaison par déclinaison, et non sur la fiche entière.
+   * qu'on ne peut pas étiqueter — le refus se fait **par construction**,
+   * déclinaison par déclinaison. Activer exige **au moins une déclinaison non
+   * arrêtée complète** (un prix public, un prix pro HT saisi, un taux pour
+   * chaque contexte de vente en service). Les allergènes ne refusent plus rien
+   * (la composition corrige la déclaration servie, l'absence se sert par
+   * précaution : `effective-allergens.ts`), et les valeurs nutritionnelles
+   * n'entrent PAS dans ce compte : le règlement (UE) n° 1169/2011 les exempte
+   * dans les deux cas de vente de La Folie Coffee (art. 9 §1 c) et l)).
    *
-   * Activer exige **au moins une déclinaison non arrêtée complète** (C1 et 2b3
-   * de `plan-catalogue-synchronise-par-audience.md`) : un prix public, un prix
-   * pro HT saisi (seule source depuis le lot R3), et un taux pour chaque
-   * contexte de vente en service. Les allergènes ne refusent plus rien depuis
-   * le 2026-10-27 (`plan-allergenes-jamais-bloquants.md`) : la composition
-   * corrige la déclaration servie, l'absence de déclaration se sert par
-   * précaution (`effective-allergens.ts`). Les autres
-   * déclinaisons n'empêchent rien : la projection des faits ET l'envoi actuel
-   * (`variant_sans_allergenes`) les écartent de la vente — c'est ce qui rend
-   * l'assouplissement sûr, et c'est pourquoi il n'a pas été fait avant.
-   *
-   * 🔴 **Les valeurs nutritionnelles n'entrent PAS dans ce compte**, et ce n'est
-   * pas un desserrage : le règlement (UE) n° 1169/2011 rend les allergènes
-   * obligatoires (art. 9 §1 point c) et exempte la déclaration nutritionnelle
-   * (point l) dans les deux cas de vente de La Folie Coffee
-   * (`plan-separer-allergenes-et-nutrition.md`, D2, vérifié le 2026-09-22).
-   *
-   * Un produit archivé se restaure d'abord : passer d'« retiré de la vente » à
-   * « en ligne » d'un seul geste ferait sauter l'étape où quelqu'un regarde.
-   *
-   * Le jugement porte sur les déclinaisons RÉSOLUES : une alignée porte le prix
-   * et la déclaration du défaut qu'elle suit. Taux et contextes arrivent
-   * résolus : ils dépendent de registres que la fiche ne voit pas.
-   */
-  /**
-   * **Ce qui manque pour activer**, sans rien muter — le même jugement que
-   * `activate` refuse (elle l'appelle), pour que la liste dise « activable »
-   * avec exactement le code qui accepte ou refuse le geste.
-   *
-   * Jugé sur les déclinaisons RÉSOLUES, quel que soit le statut : le statut
-   * est l'affaire de {@link Product.isActivatableWith}.
+   * Un produit archivé se restaure d'abord. Le jugement lui-même — les trois
+   * lectures ci-dessous — est {@link ProductCompleteness}, jugé sur les
+   * déclinaisons RÉSOLUES.
    */
   activationGapsWith(
     vatPercents: CategoryVatPercents,
@@ -351,61 +329,44 @@ export class Product {
     citedAllergens: readonly string[],
     categoryAudience: Audience,
   ): ActivationGaps {
-    return activationGapsOf(
-      this.complianceWith(vatPercents, rules, citedAllergens, categoryAudience),
-    );
+    return this.completeness().gaps(vatPercents, rules, citedAllergens, categoryAudience);
   }
 
-  /**
-   * **Le jugement unique** de la fiche ({@link productCompliance}) — tous ses
-   * constats, bloquants et avertissements, quel que soit son statut.
-   * `citedAllergens` : ce que portent les ingrédients qu'elle cite, résolu par
-   * le handler ; `categoryAudience` : celle de sa famille, dont elle hérite si
-   * elle n'en pose pas — un prix n'est exigé que pour l'audience visée.
-   */
+  /** Le jugement unique de la fiche : tous ses constats, quel que soit son statut. */
   complianceWith(
     vatPercents: CategoryVatPercents,
     rules: CompletenessRules,
     citedAllergens: readonly string[],
     categoryAudience: Audience,
   ): ComplianceFinding[] {
-    return productCompliance(
-      this.resolvedVariants(),
-      vatPercents,
-      rules,
-      citedAllergens,
-      effectiveAudience(this.fields.options.audience, categoryAudience),
-    );
+    return this.completeness().findings(vatPercents, rules, citedAllergens, categoryAudience);
   }
 
-  /**
-   * Les déclinaisons **résolues** — une alignée porte la déclaration du défaut.
-   * La seule résolution du référentiel : le jugement et l'encart de
-   * composition la lisent tous deux, pour ne jamais diverger.
-   */
-  resolvedVariants(): VariantSnapshot[] {
-    return this.variantList.map((variant) => this.resolvedSnapshot(variant));
-  }
-
-  /**
-   * Une activation **changerait-elle** la fiche ? Vrai seulement pour un
-   * brouillon complet. Une fiche publiée rend `false` (l'activer ne fait rien,
-   * elle n'est pas « à activer »), une archivée aussi (`activate` la refuse :
-   * elle se restaure d'abord). Choix du 2026-10-26 : le filtre « Activables »
-   * de la liste ne montre que ce que « Activer » ferait passer en vente.
-   */
+  /** Une activation changerait-elle la fiche ? Vrai seulement pour un brouillon complet. */
   isActivatableWith(
     vatPercents: CategoryVatPercents,
     rules: CompletenessRules,
     citedAllergens: readonly string[],
     categoryAudience: Audience,
   ): boolean {
-    return (
-      this.fields.status === "draft" &&
-      isCompliantForActivation(
-        this.complianceWith(vatPercents, rules, citedAllergens, categoryAudience),
-      )
-    );
+    return this.completeness().isActivatable(vatPercents, rules, citedAllergens, categoryAudience);
+  }
+
+  private completeness(): ProductCompleteness {
+    return ProductCompleteness.of({
+      status: this.fields.status,
+      variants: this.resolvedVariants(),
+      audience: this.fields.options.audience,
+    });
+  }
+
+  /**
+   * Les déclinaisons **résolues** — une alignée porte la déclaration du défaut.
+   * Le jugement et l'encart de composition la lisent tous deux, pour ne jamais
+   * diverger.
+   */
+  resolvedVariants(): VariantSnapshot[] {
+    return this.variantList.map((variant) => this.resolvedSnapshot(variant));
   }
 
   activate(
