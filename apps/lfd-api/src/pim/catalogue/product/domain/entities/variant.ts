@@ -5,7 +5,6 @@ import {
 } from "../errors/product-errors.js";
 import type { LocalizedText } from "../../../shared/domain/value-objects/localized-text.js";
 import type { AllergenDeclaration } from "../value-objects/nutrition-declaration.js";
-import type { ProPriceHt } from "../value-objects/pro-price-ht.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
 import {
   SaleReferenceInUseError,
@@ -24,7 +23,6 @@ import {
   MinQuantityOnWeightSaleError,
 } from "../errors/min-quantity-errors.js";
 import {
-  NO_MIN_QUANTITIES,
   isEmptyMinQuantities,
   sameMinQuantities,
   type MinQuantities,
@@ -36,228 +34,29 @@ import {
   type SaleUnit,
 } from "../value-objects/sale-terms.js";
 
-/**
- * **La déclaration d'allergènes** — ce que la déclinaison contient, et ses
- * traces. `null` = personne ne s'est prononcé ; `declared: []` = « aucun
- * allergène », une affirmation.
- *
- * Les deux tableaux voyagent ENSEMBLE parce qu'ils viennent d'une seule ligne
- * de `variant_allergens` : l'absence devient indivisible, et on ne peut pas
- * lire les traces sans avoir traité le silence
- * (`plan-separer-allergenes-et-nutrition.md`, §5 et §7).
- */
-export interface VariantAllergenSheetSnapshot {
-  readonly declared: readonly string[];
-  readonly mayContain: readonly string[];
-}
+import {
+  defaultSnapshotFrom,
+  openedDefaultSnapshot,
+  openedSnapshot,
+  type OpenedVariantInput,
+} from "./variant-snapshot-mapper.js";
+import { ASPECT_FLAG, type VariantAspect, type VariantFlag } from "./variant-aspect.js";
+import type {
+  VariantAllergenSheetSnapshot,
+  VariantNutritionSnapshot,
+  VariantNutritionValues,
+  VariantPricing,
+  VariantSnapshot,
+} from "./variant-snapshot.js";
 
-/**
- * Ce que l'instantané rend sous `nutrition` : les valeurs pour 100 g, chaque
- * champ `null` quand elle n'est pas renseignée — **et rien d'autre**.
- *
- * Les traces en sont sorties le 2026-09-22 (lot 7 du plan
- * `plan-separer-allergenes-et-nutrition.md`) : une trace est une déclaration
- * d'allergène, elle suit le drapeau des allergènes, et la laisser ici obligeait
- * à recoller les deux moitiés à chaque lecture.
- */
-export interface VariantNutritionSnapshot {
-  readonly energyKcal: number | null;
-  readonly fatG: number | null;
-  readonly saturatedFatG: number | null;
-  readonly carbsG: number | null;
-  readonly sugarsG: number | null;
-  readonly proteinG: number | null;
-  readonly saltG: number | null;
-  readonly glycemicIndex: number | null;
-}
-
-/**
- * **Ce que la moitié nutrition pose** — exactement ce que l'instantané rend.
- *
- * Un alias et non une forme dérivée : depuis que les traces ont quitté la
- * nutrition, ce qu'on écrit et ce qu'on lit sont la même chose, et un `Omit`
- * laisserait croire qu'il reste un champ à retrancher.
- */
-export type VariantNutritionValues = VariantNutritionSnapshot;
-
-/**
- * Ce qu'une déclinaison peut **suivre** de celle par défaut, tel qu'on le
- * DEMANDE — la surface acceptée en écriture.
- *
- * Une union nommée et non des méthodes jumelles : le jour où une quatrième
- * section devient alignable, c'est une valeur de plus ici et une colonne de
- * plus en base — pas un chemin de plus à tenir d'accord avec les autres.
- *
- * Trois sections seulement, et c'est le MODÈLE qui le décide : l'identité, la
- * communication et les visuels sont portés par la fiche, donc une déclinaison
- * ne peut pas en diverger — il n'y a rien à aligner sur ce qu'on ne possède pas.
- */
-export type VariantAspect = "regulatory" | "allergens" | "pricing" | "nutrition";
-
-/**
- * Les drapeaux réellement PORTÉS — un par colonne, et trois pour quatre mots.
- *
- * `regulatory_follows_default` est devenue celle des allergènes le 2026-09-22
- * sans changer de nom : elle garde sa valeur et ses lecteurs, et n'en perd
- * qu'une moitié de sens (`plan-separer-allergenes-et-nutrition.md`, §6d).
- */
-type VariantFlag = "regulatory" | "pricing" | "nutrition";
-
-/**
- * 🔴 **Le seul endroit où `"regulatory"` et `"allergens"` se rejoignent.**
- *
- * Les valeurs de l'énumération s'AJOUTENT, on ne renomme pas : `"regulatory"`
- * est déjà posée dans des faits de journal que personne ne réécrira. Elle
- * désigne donc le drapeau des allergènes, exactement comme `"allergens"`.
- *
- * Plus aucun écran ne l'émet depuis le 2026-09-22 ; elle reste acceptée le
- * temps que la bascule du back-office soit en production, puisque les deux ne
- * se déploient pas ensemble. Le jour où elle se retire, cette table perd une
- * ligne et rien d'autre — résoudre la correspondance ailleurs (un `if` dans le
- * handler, un autre dans l'adaptateur) l'aurait rendue impossible à retirer
- * sans les retrouver tous.
- */
-const ASPECT_FLAG: Readonly<Record<VariantAspect, VariantFlag>> = {
-  regulatory: "regulatory",
-  allergens: "regulatory",
-  pricing: "pricing",
-  nutrition: "nutrition",
-};
-
-export interface VariantSnapshot {
-  readonly id: string;
-  readonly sku: string;
-  readonly name: LocalizedText;
-  readonly options: Readonly<Record<string, string>>;
-  readonly isDefault: boolean;
-  readonly isDiscontinued: boolean;
-  /**
-   * Le produit qu'elle est devenue par détachement
-   * (`plan-gestes-de-declinaison.md`, G2) — posé avec `isDiscontinued`, et ce
-   * qui interdit de la désarchiver. Facultatif à la LECTURE de l'instantané
-   * (absent = `null`) : les dizaines d'instantanés de test écrits avant lui
-   * n'ont pas à le nommer ; l'agrégat le rend toujours.
-   */
-  readonly detachedToProductId?: string | null | undefined;
-  /**
-   * La déclinaison dont elle est la COPIE, quand un détachement l'a fait
-   * naître (`plan-pro-voit-les-declinaisons.md`, « Trace de la déclinaison
-   * d'origine »). Posée à la naissance ({@link Variant.openDefaultFrom}),
-   * jamais réécrite : un changement de défaut ne la déplace pas. Facultatif à
-   * la LECTURE (absent = `null`), comme `detachedToProductId`.
-   */
-  readonly detachedFromVariantId?: string | null | undefined;
-  /**
-   * Le **libellé interne** posé en propre (`plan-identite-de-declinaison.md`,
-   * I3) ; `null` = c'est le français du nom de boutique. Facultatif à la
-   * LECTURE, comme `detachedToProductId`, pour les instantanés de test écrits
-   * avant lui.
-   */
-  readonly internalLabel?: string | null | undefined;
-  readonly position: number;
-  /**
-   * Cette déclinaison **suit les ALLERGÈNES de celle par défaut** — traces
-   * comprises, puisqu'une trace est un allergène.
-   *
-   * Un drapeau, et non l'absence de `allergens` : cette absence dit déjà « rien
-   * n'a été déclaré », l'état que l'invariant 7 refuse de mettre en vente. Lui
-   * faire dire aussi « hérite » ferait dire deux choses au même silence, dont
-   * l'une autoriserait la vente d'un article non étiqueté.
-   *
-   * Le nom reste celui de la COLONNE, qui ne bouge pas (§6d du plan).
-   *
-   * Toujours `false` sur la déclinaison par défaut : elle ne peut pas se suivre
-   * elle-même.
-   */
-  readonly regulatoryFollowsDefault: boolean;
-  /**
-   * Cette déclinaison **suit les VALEURS nutritionnelles de celle par défaut**.
-   *
-   * Séparé du précédent parce que les deux moitiés de la fiche s'enregistrent
-   * séparément depuis le lot 3 : un drapeau unique aurait fait suivre le défaut
-   * sur une moitié qu'on venait de saisir à la main.
-   *
-   * Toujours `false` sur la déclinaison par défaut.
-   */
-  readonly nutritionFollowsDefault: boolean;
-  /**
-   * Cette déclinaison **suit le tarif de celle par défaut** — prix ET poids
-   * ensemble, jamais l'un sans l'autre : un prix hérité au-dessus d'un poids
-   * propre décrirait un article que personne ne vend.
-   *
-   * Toujours `false` sur la déclinaison par défaut.
-   */
-  readonly pricingFollowsDefault: boolean;
-  /** Prix canonique en centimes ; `null` = pas encore tarifé. */
-  readonly priceCents: number | null;
-  /** Poids net de l'unité vendue, en grammes ; `null` = non renseigné. */
-  readonly weightGrams: number | null;
-  /**
-   * Le prix professionnel HORS TAXE saisi, en millicentimes (10⁻⁵ €) ;
-   * `null` = pas saisi. Lu seulement sous la méthode `entered` (lot P) ; il
-   * suit le défaut avec le prix public quand `pricingFollowsDefault`.
-   */
-  readonly proPriceMillicents: number | null;
-  /**
-   * Le prix au kilo pro HT SAISI, en millicentimes ; `null` = non saisi.
-   * Informatif (`saisir-un-prix.md`) : jamais calculé, jamais appliqué.
-   */
-  readonly proPricePerKgMillicents: number | null;
-  /** Le prix au kilo public TTC SAISI, en centimes ; `null` = non saisi. */
-  readonly publicPricePerKgTtcCents: number | null;
-  /**
-   * Chaque prix au kilo est-il MONTRÉ en boutique, par audience
-   * (`saisir-un-prix.md`) ? Faux : le prix reste saisi, mais le canal ne
-   * reçoit plus CELUI-LÀ — le public TTC aux particuliers, le pro HT aux pros.
-   * Vrais par défaut ; suivent le défaut avec le tarif quand
-   * `pricingFollowsDefault`.
-   */
-  readonly pricePerKgShownPublic: boolean;
-  readonly pricePerKgShownPro: boolean;
-  /**
-   * L'unité de vente, propre à CETTE déclinaison — jamais héritée du défaut,
-   * même quand elle en suit le tarif (`vente-au-poids.md`). Le pas et le
-   * minimum, en grammes, suivent l'unité : `null` à la pièce.
-   */
-  readonly saleUnit: SaleUnit;
-  readonly weightMinGrams: number | null;
-  readonly weightStepGrams: number | null;
-  /**
-   * **A-t-elle déjà été publiée ?** — vrai dès que son produit a été mis en
-   * vente avec elle, et pour toujours : une fiche retirée de la vente a pu
-   * être commandée. C'est ce qui fige l'unité de vente.
-   */
-  readonly hasBeenPublished: boolean;
-  /**
-   * La quantité minimale d'achat, en pièces, par audience
-   * (`plan-quantite-minimale.md`). `null` = aucun minimum pour l'audience. **Résolue** dans
-   * l'instantané de l'agrégat : une déclinaison qui suit le défaut rend ici
-   * celle du défaut, et une déclinaison au poids n'en rend jamais.
-   */
-  readonly minQuantities: MinQuantities;
-  /**
-   * Suit-elle la quantité minimale du défaut ? Toujours `false` sur le défaut.
-   * Le même idiome que {@link VariantSnapshot.pricingFollowsDefault}, hors de
-   * {@link VariantAspect} : elle a sa propre route, pas la case d'alignement.
-   */
-  readonly minQuantityFollowsDefault: boolean;
-  /**
-   * **Sur mesure** — une recette faite pour un ou quelques clients
-   * (`plan-sur-mesure-par-declinaison.md`, V1). Le référentiel ne connaît
-   * aucune société : à qui l'article est attribué se décide au commerce.
-   * Facultatif à la LECTURE (absent = `false`, la valeur de la colonne) ;
-   * l'entité le rend toujours. Jamais résolu sur le défaut : chaque
-   * déclinaison porte le sien.
-   */
-  readonly customRecipe?: boolean | undefined;
-  /**
-   * La déclaration d'allergènes, traces comprises. `null` = **non
-   * renseignée** ; `declared: []` = « aucun allergène » déclaré.
-   */
-  readonly allergenSheet: VariantAllergenSheetSnapshot | null;
-  /** Les valeurs pour 100 g ; `null` = personne n'en a saisi aucune. */
-  readonly nutrition: VariantNutritionSnapshot | null;
-}
+export { followsDefaultIn, type VariantAspect } from "./variant-aspect.js";
+export type {
+  VariantAllergenSheetSnapshot,
+  VariantNutritionSnapshot,
+  VariantNutritionValues,
+  VariantPricing,
+  VariantSnapshot,
+} from "./variant-snapshot.js";
 
 /**
  * **La déclinaison — une entité DANS l'agrégat produit.**
@@ -275,35 +74,6 @@ export interface VariantSnapshot {
  * porte pour que le produit puisse répondre « suis-je publiable ? » sans aller
  * la rechercher ailleurs.
  */
-/** Ce que la section « Tarif & TVA » possède, pour une déclinaison. */
-export interface VariantPricing {
-  readonly priceCents: number | null;
-  readonly weightGrams: number | null;
-  /**
-   * Le prix pro HT saisi (lot P). **Absent = inchangé** : les écrans et les
-   * semis d'avant le lot n'envoient pas ce champ, et l'absence ne doit pas
-   * effacer une saisie. `null` = effacer.
-   */
-  readonly proPrice?: ProPriceHt | null;
-  /**
-   * Les prix au kilo saisis (`saisir-un-prix.md`). Même règle que le prix
-   * pro : **absent = inchangé**, `null` = effacer.
-   */
-  readonly proPricePerKg?: ProPriceHt | null;
-  readonly publicPricePerKgTtcCents?: number | null;
-  /** Montrer chaque prix au kilo à son audience (`saisir-un-prix.md`). Absent = inchangé. */
-  readonly pricePerKgShownPublic?: boolean;
-  readonly pricePerKgShownPro?: boolean;
-  /**
-   * L'unité de vente et, au poids, le pas et le minimum
-   * (`vente-au-poids.md`). Chaque champ : **absent = inchangé**. Passer à
-   * la pièce sans les nommer efface le pas et le minimum, qui suivent l'unité.
-   */
-  readonly saleUnit?: SaleUnit;
-  readonly weightMinGrams?: number | null;
-  readonly weightStepGrams?: number | null;
-}
-
 export class Variant {
   private readonly identity: string;
   private readonly skuValue: string;
@@ -375,139 +145,26 @@ export class Variant {
     };
   }
 
-  /**
-   * La déclinaison née avec son produit : par défaut, en tête, sans tarif.
-   *
-   * Elle naît **hors taxe**, l'assiette historique du référentiel. Un article
-   * neuf n'a aucune raison de basculer sans qu'on le décide, et le défaut de la
-   * base dit la même chose.
-   */
+  /** La déclinaison née avec son produit : par défaut, en tête, sans tarif, hors taxe ({@link openedDefaultSnapshot}). */
   static openDefault(input: { id: string; sku: Sku; name: LocalizedText }): Variant {
-    return new Variant({
-      id: input.id,
-      sku: input.sku.value,
-      name: input.name,
-      internalLabel: input.name.fr,
-      options: {},
-      isDefault: true,
-      isDiscontinued: false,
-      position: 0,
-      priceCents: null,
-      weightGrams: null,
-      proPriceMillicents: null,
-      proPricePerKgMillicents: null,
-      publicPricePerKgTtcCents: null,
-      pricePerKgShownPublic: true,
-      pricePerKgShownPro: true,
-      ...PIECE_SALE_TERMS,
-      hasBeenPublished: false,
-      minQuantities: NO_MIN_QUANTITIES,
-      minQuantityFollowsDefault: false,
-      // Elle ne peut pas se suivre elle-même : c'est ELLE, le défaut.
-      regulatoryFollowsDefault: false,
-      pricingFollowsDefault: false,
-      nutritionFollowsDefault: false,
-      allergenSheet: null,
-      nutrition: null,
-    });
+    return new Variant(openedDefaultSnapshot(input));
   }
 
-  /**
-   * Une déclinaison **de plus** — jamais la première, jamais celle par défaut.
-   *
-   * Elle naît **alignée** sur la fiche réglementaire du défaut, et c'est le seul
-   * état de naissance défendable : née nue, elle rendrait sa fiche impubliable
-   * (invariant 7), et — sur un produit DÉJÀ en vente — elle partirait au canal
-   * avec `allergens: null`, que le récepteur ne doit surtout pas lire comme
-   * « sans allergène ». Se désaligner est ensuite un geste, qui oblige à
-   * déclarer.
-   *
-   * Sans tarif : une seconde déclinaison existe précisément parce qu'elle se
-   * vend autrement. Recopier le prix du défaut inventerait une décision
-   * commerciale que personne n'a prise — et un prix faux se facture.
-   */
-  static open(input: {
-    id: string;
-    sku: Sku;
-    name: LocalizedText;
-    options: Readonly<Record<string, string>>;
-    position: number;
-    /** Celui du défaut au moment de l'ajout : c'est l'agrégat qui le passe. */
-    customRecipe: boolean;
-  }): Variant {
-    return new Variant({
-      id: input.id,
-      sku: input.sku.value,
-      name: input.name,
-      internalLabel: input.name.fr,
-      options: input.options,
-      isDefault: false,
-      isDiscontinued: false,
-      position: input.position,
-      priceCents: null,
-      weightGrams: null,
-      proPriceMillicents: null,
-      proPricePerKgMillicents: null,
-      publicPricePerKgTtcCents: null,
-      pricePerKgShownPublic: true,
-      pricePerKgShownPro: true,
-      // À la pièce, comme tout l'existant ; publiée seulement si son produit
-      // est déjà en vente — c'est l'agrégat qui le dit (`Product.addVariant`).
-      ...PIECE_SALE_TERMS,
-      hasBeenPublished: false,
-      // Aucun minimum, et ne suit pas : un minimum hérité d'office
-      // refuserait des commandes que personne n'a décidé de refuser.
-      minQuantities: NO_MIN_QUANTITIES,
-      minQuantityFollowsDefault: false,
-      customRecipe: input.customRecipe,
-      regulatoryFollowsDefault: true,
-      // Les VALEURS naissent alignées pour la même raison que les allergènes :
-      // née nue, la déclinaison afficherait un tableau vide là où celui du
-      // défaut décrit la même pâte. Se désaligner est ensuite un geste.
-      nutritionFollowsDefault: true,
-      // Le TARIF, lui, ne s'aligne pas d'office : une seconde déclinaison
-      // existe le plus souvent parce qu'elle se vend autrement, et un prix
-      // hérité par défaut se facturerait sans que personne l'ait décidé.
-      pricingFollowsDefault: false,
-      allergenSheet: null,
-      nutrition: null,
-    });
+  /** Une déclinaison **de plus** — jamais la première, jamais le défaut ({@link openedSnapshot}). */
+  static open(input: OpenedVariantInput): Variant {
+    return new Variant(openedSnapshot(input));
   }
 
   static reconstitute(snapshot: VariantSnapshot): Variant {
     return new Variant(snapshot);
   }
 
-  /**
-   * Le défaut d'un produit **né d'une déclinaison détachée**
-   * (`plan-gestes-de-declinaison.md`, D3) : tout ce qu'elle voyait, en propre.
-   *
-   * `resolved` est l'instantané RÉSOLU par son ancienne fiche — prix, allergènes,
-   * valeurs et minimum du défaut qu'elle suivait y sont déjà substitués. Elle ne
-   * suit plus rien : c'est elle, le défaut. Elle n'a jamais été publiée sous sa
-   * nouvelle référence, donc son unité de vente n'est pas figée.
-   */
+  /** Le défaut d'un produit **né d'une déclinaison détachée** ({@link defaultSnapshotFrom}). */
   static openDefaultFrom(
     resolved: VariantSnapshot,
     input: { id: string; sku: Sku; name: LocalizedText },
   ): Variant {
-    return new Variant({
-      ...resolved,
-      id: input.id,
-      sku: input.sku.value,
-      name: input.name,
-      internalLabel: input.name.fr,
-      isDefault: true,
-      isDiscontinued: false,
-      detachedToProductId: null,
-      detachedFromVariantId: resolved.id,
-      position: 0,
-      hasBeenPublished: false,
-      minQuantityFollowsDefault: false,
-      regulatoryFollowsDefault: false,
-      pricingFollowsDefault: false,
-      nutritionFollowsDefault: false,
-    });
+    return new Variant(defaultSnapshotFrom(resolved, input));
   }
 
   get id(): string {
@@ -1018,20 +675,4 @@ function requirePositiveOrNull(field: string, value: number | null): number | nu
     throw new ZeroPricePerKgError(field);
   }
   return count;
-}
-
-/**
- * Le drapeau d'une section, **lu sur un instantané** plutôt que sur l'entité.
- *
- * Pour l'appelant qui a relevé l'état d'AVANT et veut savoir si le geste change
- * quelque chose : l'entité, elle, porte déjà la nouvelle valeur. Exporté pour
- * que la correspondance `"regulatory"` → allergènes n'existe qu'ici.
- */
-export function followsDefaultIn(snapshot: VariantSnapshot, aspect: VariantAspect): boolean {
-  const flags: Record<VariantFlag, boolean> = {
-    regulatory: snapshot.regulatoryFollowsDefault,
-    pricing: snapshot.pricingFollowsDefault,
-    nutrition: snapshot.nutritionFollowsDefault,
-  };
-  return flags[ASPECT_FLAG[aspect]];
 }
