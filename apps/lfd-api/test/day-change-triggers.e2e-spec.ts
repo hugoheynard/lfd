@@ -111,6 +111,11 @@ const UNWATCHED: Readonly<Record<string, string>> = {
   // Les réglages du colisage (Réglages › Colisage, 2026-10-25) : un réglage.
   // Ce qu'il permet — l'autre moitié d'un bac — s'écrit dans `container`, surveillée.
   "packing.packing_settings": "les réglages du colisage, un réglage unique sans journée",
+  // Vérifié le 2026-11-18 dans `output-correction-applier.ts` : le registre ne
+  // s'écrit qu'après `stocks.save(stock)` du même jour, dans la même
+  // transaction, et le déclencheur du stock avance déjà la journée.
+  "packing.packing_applied_correction":
+    "écrite seulement avec le stock du même jour, dans la même transaction, dont le déclencheur avance déjà la journée",
   "delivery.delivery_geocode":
     "le cache du géocodage, clé d'une adresse et non d'un jour — une proposition appliquée s'écrit dans `delivery_round`, surveillée",
   // Le simulateur (lot 9, L9-C7, 2026-09-29) : des arrêts INVENTÉS, sans

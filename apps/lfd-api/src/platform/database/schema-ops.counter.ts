@@ -354,6 +354,8 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   // K2b : les contenants d'une commande et leur contenu.
   PackingContainer: "packing",
   PackingContainerLine: "packing",
+  // Le colisage simple (C4) : ce que les corrections du fournil ont baissé.
+  PackingAppliedCorrection: "packing",
   ProductionReturnRequest: "production",
   // Le réassort (R3a, R3b, 2026-10-22) : figé au plan du fournil, puis
   // recopié au colisage pour y être emballé.

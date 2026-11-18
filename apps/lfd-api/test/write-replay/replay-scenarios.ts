@@ -10,6 +10,7 @@ import { MAIL_SCENARIOS } from "./mail-scenarios.js";
 import { MEDIA_VITRINE_SCENARIOS } from "./media-vitrine-scenarios.js";
 import { PAYMENTS_SCENARIOS } from "./payments-scenarios.js";
 import { OPS_SCENARIOS } from "./ops-scenarios.js";
+import { PACKING_SCENARIOS } from "./packing-scenarios.js";
 import { PIM_SCENARIOS } from "./pim-scenarios.js";
 import { PRICING_SCENARIOS } from "./pricing-scenarios.js";
 import { PRODUCTION_SCENARIOS } from "./production-scenarios.js";
@@ -33,6 +34,7 @@ export const REPLAY_SCENARIOS: ScenarioSet = {
   ...DOCUMENTS_SCENARIOS,
   ...GROWTH_SCENARIOS,
   ...OPS_SCENARIOS,
+  ...PACKING_SCENARIOS,
   ...PIM_SCENARIOS,
   ...PRICING_SCENARIOS,
   ...PRODUCTION_SCENARIOS,
