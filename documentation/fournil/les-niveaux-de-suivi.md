@@ -2,7 +2,7 @@
 
 **État : ✅ bâti sur `dev`, pas encore en production** (lots N1 à N4 et N3,
 dernier commit `ca8bd7e2a`). Décisions de Hugo du 2026-11-17. Avant de le
-mettre en service, lire [« Avant la mise en service »](#avant-la-mise-en-service).
+mettre en service, lire « À la mise en service », plus bas.
 
 La fiche elle-même (lignes, paliers, fournées) est décrite dans
 [`la-fiche-d-atelier.md`](la-fiche-d-atelier.md) ; les postes dans
@@ -248,11 +248,12 @@ et l'e2e `write-replay` (les deux routes de réglage).
 
 ---
 
-## Avant la mise en service
+## À la mise en service
 
-- **`TRACKING_LEVELS_SINCE` vaut aujourd'hui le 2027-01-01** : aucune journée
-  n'est figée ni complétée d'office. Il faut la poser au déploiement (un
-  commit), à l'instant de la mise en service.
+- **`TRACKING_LEVELS_SINCE` vaut le 2026-11-18 à minuit** (décidé par Hugo
+  le 2026-11-18) : une journée arrêtée avant reste en détaillé ; la première
+  arrêtée depuis suit le niveau réglé, toujours vert par défaut — le régler à
+  l'écran avant son arrêt si l'équipe doit garder sa fiche.
 - **Il faut des tranches à heure.** Avec le réglage des tranches par défaut
   (mode fixe sans heure, une seule tranche « la journée »), toutes les lignes
   sont « à confirmer » et la fournée automatique **ne déclare rien**.
