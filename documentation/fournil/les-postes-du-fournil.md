@@ -3,7 +3,7 @@
 **État : ✅ en production depuis le 2026-11-17** (`71915a045`), essayé dans
 Chrome sur le dev le même jour. Décisions de Hugo des 2026-11-16 et 17.
 Après le déploiement : accorder `production_workstations` dans
-`/admin/staff-roles`, sans quoi les pages Postes et Simulation restent
+`/admin/roles` (écran « Rôles »), sans quoi les pages Postes et Simulation restent
 fermées.
 
 ---
@@ -213,7 +213,7 @@ relecture.
   calculée sur le dev (99 SKU non retirés).
 - Mesurer en production le coût de la page Postes (quatre sources), de
   l'alerte et du rangement servi, la base étant facturée à l'opération.
-- Accorder `production_workstations` dans `/admin/staff-roles` après le
+- Accorder `production_workstations` dans `/admin/roles` (écran « Rôles ») après le
   déploiement, sinon la page Postes reste inaccessible.
 - Le calendrier de la simulation n'a qu'une colonne « Sans heure » : une
   commande fictive n'a pas d'échéance.
