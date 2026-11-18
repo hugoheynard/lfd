@@ -1,8 +1,8 @@
 import { Global, Module } from "@nestjs/common";
 
-import { CitedAllergensReader } from "../pim/catalogue/product/domain/ports/cited-allergens.reader.js";
-import { IngredientCitationsReader } from "../pim/catalogue/product/domain/ports/ingredient-citations.reader.js";
-import { ProductCompositionCopier } from "../pim/catalogue/product/domain/ports/product-composition.copier.js";
+import { CitedAllergensReader } from "../pim/reference/ingredients/domain/ports/cited-allergens.reader.js";
+import { IngredientCitationsReader } from "../pim/reference/ingredients/domain/ports/ingredient-citations.reader.js";
+import { ProductCompositionCopier } from "../pim/reference/ingredients/domain/ports/product-composition.copier.js";
 import { IngredientCompositionCopier } from "../pim/reference/ingredients/infrastructure/ingredient-composition-copier.js";
 import { PrismaIngredientCitationsReader } from "../pim/reference/ingredients/infrastructure/prisma-ingredient-citations.reader.js";
 import { PrismaCitedAllergensReader } from "../pim/reference/ingredients/infrastructure/prisma-cited-allergens.reader.js";
