@@ -12,12 +12,7 @@ import {
 } from "../errors/sale-unit-errors.js";
 import type { SaleUnitClearance } from "../value-objects/sale-reference-usage.js";
 import { BlankVariantInternalLabelError } from "../errors/variant-label-errors.js";
-import {
-  DetachedVariantNotRestorableError,
-  DormantSheetWouldWakeError,
-  VariantAlreadyDiscontinuedError,
-  VariantNotDiscontinuedError,
-} from "../errors/variant-lifecycle-errors.js";
+import { DormantSheetWouldWakeError } from "../errors/variant-lifecycle-errors.js";
 import {
   DefaultVariantCannotFollowMinQuantityError,
   MinQuantityOnWeightSaleError,
@@ -40,6 +35,7 @@ import {
   openedSnapshot,
   type OpenedVariantInput,
 } from "./variant-snapshot-mapper.js";
+import { VariantLifecycle } from "./variant-lifecycle.js";
 import { ASPECT_FLAG, type VariantAspect, type VariantFlag } from "./variant-aspect.js";
 import type {
   VariantAllergenSheetSnapshot,
@@ -75,15 +71,12 @@ export type {
  * la rechercher ailleurs.
  */
 export class Variant {
+  private lifecycle: VariantLifecycle;
   private readonly identity: string;
   private readonly skuValue: string;
   private nameValue: LocalizedText;
   private internalLabelValue: string | null;
   private readonly optionsValue: Readonly<Record<string, string>>;
-  private defaultFlag: boolean;
-  private discontinuedFlag: boolean;
-  private detachedToProductIdValue: string | null;
-  private readonly detachedFromVariantIdValue: string | null;
   private positionValue: number;
   private priceCentsValue: number | null;
   private weightGramsValue: number | null;
@@ -93,7 +86,6 @@ export class Variant {
   private pricePerKgShownPublicFlag: boolean;
   private pricePerKgShownProFlag: boolean;
   private saleTermsValue: SaleTerms;
-  private publishedFlag: boolean;
   private minQuantitiesValue: MinQuantities;
   private minQuantityFollowsDefaultFlag: boolean;
   private customRecipeFlag: boolean;
@@ -115,10 +107,7 @@ export class Variant {
     this.nameValue = snapshot.name;
     this.internalLabelValue = snapshot.internalLabel ?? null;
     this.optionsValue = snapshot.options;
-    this.defaultFlag = snapshot.isDefault;
-    this.discontinuedFlag = snapshot.isDiscontinued;
-    this.detachedToProductIdValue = snapshot.detachedToProductId ?? null;
-    this.detachedFromVariantIdValue = snapshot.detachedFromVariantId ?? null;
+    this.lifecycle = VariantLifecycle.fromSnapshot(snapshot);
     this.positionValue = snapshot.position;
     this.priceCentsValue = snapshot.priceCents;
     this.weightGramsValue = snapshot.weightGrams;
@@ -132,7 +121,6 @@ export class Variant {
       weightMinGrams: snapshot.weightMinGrams,
       weightStepGrams: snapshot.weightStepGrams,
     };
-    this.publishedFlag = snapshot.hasBeenPublished;
     this.minQuantitiesValue = snapshot.minQuantities;
     this.minQuantityFollowsDefaultFlag = snapshot.minQuantityFollowsDefault;
     this.customRecipeFlag = snapshot.customRecipe ?? false;
@@ -176,11 +164,11 @@ export class Variant {
   }
 
   get isDefault(): boolean {
-    return this.defaultFlag;
+    return this.lifecycle.isDefault;
   }
 
   get isDiscontinued(): boolean {
-    return this.discontinuedFlag;
+    return this.lifecycle.isDiscontinued;
   }
 
   get position(): number {
@@ -293,7 +281,7 @@ export class Variant {
    * et c'est l'instantané de l'agrégat qui y met celui du défaut.
    */
   alignOnDefault(aspect: VariantAspect, aligned: boolean): void {
-    if (aligned && this.defaultFlag) {
+    if (aligned && this.lifecycle.isDefault) {
       throw new DefaultVariantCannotFollowItselfError(this.skuValue);
     }
     this.followsDefault[ASPECT_FLAG[aspect]] = aligned;
@@ -429,7 +417,7 @@ export class Variant {
    */
   changeMinQuantities(next: MinQuantities | "follow"): boolean {
     if (next === "follow") {
-      if (this.defaultFlag) {
+      if (this.lifecycle.isDefault) {
         throw new DefaultVariantCannotFollowMinQuantityError(this.skuValue);
       }
       this.refuseOnWeight(true);
@@ -475,69 +463,34 @@ export class Variant {
     return this.saleTermsValue.saleUnit;
   }
 
-  /**
-   * Inscrit qu'elle part à la vente. Irréversible : un retrait de la vente ne
-   * rend pas ce qui a pu être commandé entre-temps.
-   */
+  /** Inscrit qu'elle part à la vente — irréversible ({@link VariantLifecycle.markPublished}). */
   markPublished(): void {
-    this.publishedFlag = true;
+    this.lifecycle = this.lifecycle.markPublished();
   }
 
-  /**
-   * **La sort de la vente**, sans la supprimer (`plan-gestes-de-declinaison.md`,
-   * D1). Irréversible ici : sa référence n'est jamais réattribuée, et les
-   * commandes qui la citent gardent leur sens. Les refus qui dépendent de ses
-   * sœurs (le défaut, la dernière vivante) sont ceux de l'agrégat.
-   */
+  /** **La sort de la vente**, sans la supprimer ; les refus qui dépendent de ses sœurs sont ceux de l'agrégat. */
   discontinue(): void {
-    if (this.discontinuedFlag) {
-      throw new VariantAlreadyDiscontinuedError(this.skuValue);
-    }
-    this.discontinuedFlag = true;
+    this.lifecycle = this.lifecycle.discontinue(this.skuValue);
   }
 
-  /** L'archive en la disant devenue ce produit — le détachement (G2). */
+  /** L'archive en la disant devenue ce produit — le détachement. */
   detachTo(productId: string): void {
-    this.discontinue();
-    this.detachedToProductIdValue = productId;
+    this.lifecycle = this.lifecycle.detachTo(this.skuValue, productId);
   }
 
   /** Le produit qu'elle est devenue, ou `null`. */
   get detachedToProductId(): string | null {
-    return this.detachedToProductIdValue;
+    return this.lifecycle.detachedToProductId;
   }
 
-  /**
-   * **La remet en vente**, à son rang et sous sa référence d'origine. Refuse
-   * une déclinaison devenue un produit : elle vit déjà sous une autre fiche, et
-   * la remettre en vente vendrait deux fois le même article.
-   * `detachedProductLabel` : le nom de ce produit, pour que le refus le dise
-   * (l'agrégat n'en connaît que l'id).
-   *
-   * @throws {VariantNotDiscontinuedError} elle n'est pas archivée.
-   * @throws {DetachedVariantNotRestorableError} elle est devenue un produit.
-   */
+  /** **La remet en vente**, à son rang ; refuse celle devenue un produit ({@link VariantLifecycle.restore}). */
   restore(detachedProductLabel?: string): void {
-    if (!this.discontinuedFlag) {
-      throw new VariantNotDiscontinuedError(this.skuValue);
-    }
-    if (this.detachedToProductIdValue !== null) {
-      throw new DetachedVariantNotRestorableError(
-        this.skuValue,
-        this.detachedToProductIdValue,
-        detachedProductLabel,
-      );
-    }
-    this.discontinuedFlag = false;
+    this.lifecycle = this.lifecycle.restore(this.skuValue, detachedProductLabel);
   }
 
-  /**
-   * **Cède la place de défaut** (`plan-gestes-de-declinaison.md`, G4). Elle
-   * garde tout ce qu'elle porte : un défaut ne suit rien, donc tout ce qu'elle
-   * avait était déjà à elle.
-   */
+  /** **Cède la place de défaut** : elle garde tout ce qu'elle porte. */
   demote(): void {
-    this.defaultFlag = false;
+    this.lifecycle = this.lifecycle.demote();
   }
 
   /**
@@ -579,7 +532,7 @@ export class Variant {
     this.followsDefault.pricing = false;
     this.followsDefault.nutrition = false;
     this.minQuantityFollowsDefaultFlag = false;
-    this.defaultFlag = true;
+    this.lifecycle = this.lifecycle.promote();
   }
 
   private refuseDormantWake(
@@ -631,10 +584,10 @@ export class Variant {
       name: this.nameValue,
       internalLabel: this.internalLabelValue,
       options: this.optionsValue,
-      isDefault: this.defaultFlag,
-      isDiscontinued: this.discontinuedFlag,
-      detachedToProductId: this.detachedToProductIdValue,
-      detachedFromVariantId: this.detachedFromVariantIdValue,
+      isDefault: this.lifecycle.isDefault,
+      isDiscontinued: this.lifecycle.isDiscontinued,
+      detachedToProductId: this.lifecycle.detachedToProductId,
+      detachedFromVariantId: this.lifecycle.detachedFromVariantId,
       position: this.positionValue,
       priceCents: this.priceCentsValue,
       weightGrams: this.weightGramsValue,
@@ -644,7 +597,7 @@ export class Variant {
       pricePerKgShownPublic: this.pricePerKgShownPublicFlag,
       pricePerKgShownPro: this.pricePerKgShownProFlag,
       ...this.saleTermsValue,
-      hasBeenPublished: this.publishedFlag,
+      hasBeenPublished: this.lifecycle.hasBeenPublished,
       minQuantities: this.minQuantitiesValue,
       minQuantityFollowsDefault: this.minQuantityFollowsDefaultFlag,
       customRecipe: this.customRecipeFlag,
