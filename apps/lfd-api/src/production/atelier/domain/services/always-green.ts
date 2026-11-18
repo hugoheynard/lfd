@@ -101,3 +101,23 @@ export function alwaysGreenStep(line: AlwaysGreenLine, now: Date): AlwaysGreenSt
 function timeOf(step: AlwaysGreenDeadline): string | null {
   return step.before;
 }
+
+/**
+ * **Ce que la fournée automatique ne complétera jamais** d'une ligne : la
+ * part de son reste (sous le plafond) au-delà de ses paliers à heure. Un
+ * palier « la journée » n'échoit jamais ; une ligne qui en porte un, seul ou
+ * à côté de paliers à heure, garde cette part à confirmer à la main. Des
+ * paliers illisibles (`null`) n'automatisent rien.
+ */
+export function unautomatedRemainder(line: {
+  readonly counted: number;
+  readonly deadlines: readonly AlwaysGreenDeadline[] | null;
+  readonly ceiling: number | null;
+  readonly output: number;
+}): number {
+  const target = line.ceiling === null ? line.counted : Math.min(line.counted, line.ceiling);
+  const timed = (line.deadlines ?? [])
+    .filter((step) => timeOf(step) !== null)
+    .reduce((total, step) => total + step.quantity, 0);
+  return Math.max(0, target - Math.max(line.output, Math.min(timed, target)));
+}

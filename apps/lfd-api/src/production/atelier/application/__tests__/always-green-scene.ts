@@ -55,6 +55,7 @@ export function alwaysGreenScene(due: DayDueThresholds | "down" = CROISSANT_DUE)
     ...scene,
     deadlines,
     lines,
+    trackingSettings: settings,
     unconfirmed: new UnconfirmedLinesReading(
       trackingReadingOf({ frozen: scene.frozen, settings }),
       lines,

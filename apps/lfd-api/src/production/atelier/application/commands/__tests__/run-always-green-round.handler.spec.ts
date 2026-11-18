@@ -85,6 +85,9 @@ function roundOn(options: {
     ),
     runner,
     commissioning,
+    scene.deadlines,
+    scene.trackingSettings.reader(),
+    scene.problems.dayReader(),
   );
   return { scene, runner, round };
 }
@@ -96,9 +99,9 @@ describe("RunAlwaysGreenRoundHandler", () => {
     const report = await round.execute();
 
     expect(scene.frozen.rows.has(SCENE_DAY)).toBe(true);
-    expect([...runner.calls].sort()).toEqual(
-      [`${SCENE_DAY}:${SCENE_SKU}`, `${SCENE_DAY}:${BAGUETTE}`].sort(),
-    );
+    // Seule la ligne qui a une fournée à déclarer passe sous le verrou ; la
+    // baguette, sans palier, est triée « à confirmer » sans lecture de plus.
+    expect(runner.calls).toEqual([`${SCENE_DAY}:${SCENE_SKU}`]);
     expect(report.days[0]).toEqual({
       serviceDay: SCENE_DAY,
       arrested: true,

@@ -2,16 +2,12 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import {
-  deadlinesOf,
-  ProductionDayLock,
-  ProductionDayRepository,
-  ServiceDay,
-} from "../../../day/index.js";
+import { ProductionDayLock, ProductionDayRepository, ServiceDay } from "../../../day/index.js";
 import { ProductionTrackingSettings } from "../../domain/entities/production-tracking-settings.js";
 import { ProductionProblemRepository } from "../../domain/ports/production-problem.ports.js";
 import { ProductionTrackingSettingsReader } from "../../domain/ports/production-tracking-settings.ports.js";
 import { ALWAYS_GREEN_AUTHOR, alwaysGreenStep } from "../../domain/services/always-green.js";
+import { alwaysGreenLineOf } from "../services/always-green-line-of.js";
 import { BatchRecording } from "../services/batch-recording.service.js";
 import { WorksheetDeadlinesReading } from "../services/worksheet-deadlines-reading.service.js";
 import {
@@ -75,16 +71,11 @@ export class RunAlwaysGreenLineHandler implements ICommandHandler<
     ]);
     const now = this.clock.now();
     const step = alwaysGreenStep(
-      {
-        serviceDay: day.value,
-        sku,
-        counted: item.quantity,
-        deadlines: tranches === null ? null : deadlinesOf(item.quantity, tranches.get(sku) ?? []),
+      alwaysGreenLineOf(day, current, sku, item.quantity, {
+        tranches,
         marginMinutes: (settings ?? ProductionTrackingSettings.defaults()).marginMinutes,
-        ceiling: problem?.state.produced ?? null,
-        output: current.producedOf(sku),
-        batchCount: current.batches.filter((batch) => batch.sku === sku).length,
-      },
+        ceilings: new Map(problem === null ? [] : [[sku, problem.state.produced]]),
+      }),
       now,
     );
     if (step.kind !== "record") {

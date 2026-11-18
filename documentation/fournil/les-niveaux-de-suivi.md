@@ -259,13 +259,14 @@ et l'e2e `write-replay` (les deux routes de réglage).
   seule tranche, « la journée ») met toutes les lignes « à confirmer », et la
   fournée automatique n'y **déclare rien**.
 - **Un reste sans échéance n'est pas complété** : une ligne qui a des paliers
-  à heure plus un reste « la journée » voit ses paliers complétés, jamais ce
-  reste, et elle n'est pas « à confirmer » pour autant.
+  à heure plus un reste « la journée » voit ses paliers complétés, et ce
+  reste est servi « à confirmer » en Supervision (`unautomatedRemainder`).
 - **La marge est celle du réglage courant**, pas une valeur figée avec le
   niveau de la journée.
-- **Le coût est à mesurer en production** : chaque ligne relit les besoins du
-  commerce sous son verrou, soit une lecture par ligne en toujours vert toutes
-  les 5 minutes, par journée arrêtée.
+- **Le coût est à mesurer en production** : le tour lit chaque journée
+  arrêtée une fois (compte, paliers, réglage, problèmes) et trie ses lignes
+  hors verrou ; seule une ligne qui a une fournée à déclarer prend le verrou
+  et se relit. Avant la mise en service, il ne lit rien.
 
 ## Reste à faire
 

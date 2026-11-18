@@ -5,6 +5,7 @@ import {
   alwaysGreenStep,
   dueCumulative,
   hasTimedDeadline,
+  unautomatedRemainder,
 } from "../always-green.js";
 
 /**
@@ -105,5 +106,57 @@ describe("dueCumulative et hasTimedDeadline", () => {
     expect(dueCumulative(DAY, steps, 0, at("23:59"))).toBe(50);
     expect(hasTimedDeadline(steps)).toBe(true);
     expect(hasTimedDeadline(null)).toBe(false);
+  });
+});
+
+describe("unautomatedRemainder — ce que la fournée automatique ne complétera pas", () => {
+  /**
+   * Régression : une ligne de 10 pièces à heure et 5 « la journée » voyait ses
+   * 10 déclarées, et ses 5 n'étaient nulle part — ni sorties, ni à confirmer.
+   */
+  it("le reste « la journée » à côté de paliers à heure reste à confirmer", () => {
+    const deadlines = [
+      { quantity: 10, before: "08:00" },
+      { quantity: 5, before: null },
+    ];
+    expect(unautomatedRemainder({ counted: 15, deadlines, ceiling: null, output: 10 })).toBe(5);
+    expect(unautomatedRemainder({ counted: 15, deadlines, ceiling: null, output: 0 })).toBe(5);
+  });
+
+  it("une ligne toute à heure n'a rien à confirmer", () => {
+    const deadlines = [{ quantity: 15, before: "08:00" }];
+    expect(unautomatedRemainder({ counted: 15, deadlines, ceiling: null, output: 0 })).toBe(0);
+  });
+
+  it("une ligne sans palier à heure, ou illisible, est toute à confirmer", () => {
+    expect(
+      unautomatedRemainder({
+        counted: 15,
+        deadlines: [{ quantity: 15, before: null }],
+        ceiling: null,
+        output: 4,
+      }),
+    ).toBe(11);
+    expect(unautomatedRemainder({ counted: 15, deadlines: null, ceiling: null, output: 0 })).toBe(
+      15,
+    );
+  });
+
+  it("le plafond d'un rouge borne le reste", () => {
+    const deadlines = [
+      { quantity: 10, before: "08:00" },
+      { quantity: 5, before: null },
+    ];
+    expect(unautomatedRemainder({ counted: 15, deadlines, ceiling: 12, output: 10 })).toBe(2);
+    expect(unautomatedRemainder({ counted: 15, deadlines, ceiling: 8, output: 0 })).toBe(0);
+  });
+
+  it("au-delà des paliers à heure déjà sorti, il ne reste que ce qui manque au compte", () => {
+    const deadlines = [
+      { quantity: 10, before: "08:00" },
+      { quantity: 5, before: null },
+    ];
+    expect(unautomatedRemainder({ counted: 15, deadlines, ceiling: null, output: 13 })).toBe(2);
+    expect(unautomatedRemainder({ counted: 15, deadlines, ceiling: null, output: 15 })).toBe(0);
   });
 });
