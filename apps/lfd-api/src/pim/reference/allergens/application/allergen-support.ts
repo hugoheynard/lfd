@@ -1,3 +1,4 @@
+import { assertFree } from "../../../shared/assert-free.js";
 import type { AllergenCategory } from "../domain/entities/allergen-category.js";
 import type { AllergenEntry } from "../domain/entities/allergen-entry.js";
 import {
@@ -66,9 +67,7 @@ export async function ensureCategoryKeyFree(
   categories: AllergenCategoryRepository,
   key: string,
 ): Promise<void> {
-  if ((await categories.findByKey(key)) !== null) {
-    throw new AllergenCategoryKeyTakenError(key);
-  }
+  assertFree(await categories.findByKey(key), () => new AllergenCategoryKeyTakenError(key));
 }
 
 /** Le jumeau côté entrées — un code est une identité de stockage. */
@@ -76,9 +75,7 @@ export async function ensureCodeFree(
   entries: AllergenEntryRepository,
   code: string,
 ): Promise<void> {
-  if ((await entries.findByCode(code)) !== null) {
-    throw new AllergenCodeTakenError(code);
-  }
+  assertFree(await entries.findByCode(code), () => new AllergenCodeTakenError(code));
 }
 
 /**

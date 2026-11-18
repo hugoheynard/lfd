@@ -1,3 +1,4 @@
+import { assertFree } from "../../../shared/assert-free.js";
 import { CategoryNotFoundError, CategorySlugTakenError } from "../domain/errors/category-errors.js";
 import type { Category } from "../domain/entities/category.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
@@ -44,12 +45,14 @@ export async function assertSlugFree(
   categories: CategoryRepository,
   category: Category,
 ): Promise<void> {
-  const holder = await categories.findBySlugFr(category.slug.fr);
-  if (holder !== null && holder.id !== category.id) {
-    throw new CategorySlugTakenError(category.slug.fr, {
-      id: holder.id,
-      name: holder.name.fr,
-      isArchived: holder.isArchived,
-    });
-  }
+  assertFree(
+    await categories.findBySlugFr(category.slug.fr),
+    (holder) =>
+      new CategorySlugTakenError(category.slug.fr, {
+        id: holder.id,
+        name: holder.name.fr,
+        isArchived: holder.isArchived,
+      }),
+    (holder) => holder.id === category.id,
+  );
 }

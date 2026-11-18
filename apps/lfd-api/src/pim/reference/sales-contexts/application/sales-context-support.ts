@@ -1,3 +1,4 @@
+import { assertFree } from "../../../shared/assert-free.js";
 import {
   SalesContextKeyTakenError,
   SalesContextNotFoundError,
@@ -23,7 +24,5 @@ export async function requireContext(
 
 /** Refuse une clé déjà portée. La base tranche en dernier ; ceci explique. */
 export async function ensureKeyFree(contexts: SalesContextRepository, key: string): Promise<void> {
-  if ((await contexts.findByKey(key)) !== null) {
-    throw new SalesContextKeyTakenError(key);
-  }
+  assertFree(await contexts.findByKey(key), () => new SalesContextKeyTakenError(key));
 }
