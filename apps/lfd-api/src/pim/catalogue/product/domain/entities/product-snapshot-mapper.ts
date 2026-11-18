@@ -2,7 +2,13 @@ import type { VariantSnapshot } from "./variant.js";
 import type { LocalizedText } from "../../../shared/domain/value-objects/localized-text.js";
 import { ProductCommerceOptions } from "../value-objects/product-commerce-options.js";
 import { VatByContext } from "../value-objects/vat-by-context.js";
-import type { ProductKind, ProductSnapshot, ProductStatus } from "./product-state.js";
+import {
+  slugOf,
+  type NewProductInput,
+  type ProductKind,
+  type ProductSnapshot,
+  type ProductStatus,
+} from "./product-state.js";
 
 /**
  * Tout ce que la fiche porte HORS déclinaisons, sous sa forme de domaine : les
@@ -75,5 +81,49 @@ export function productSnapshot(
     originVariantId: fields.originVariantId,
     variantsAsTiles: fields.options.variantsAsTiles,
     variants: [...variants],
+  };
+}
+
+/**
+ * Les champs d'une fiche qu'on OUVRE : INVISIBLE (brouillon, ce qui rend
+ * l'invariant 7 tenable), sans dérogation de TVA, avec les réglages de base.
+ */
+export function openedFields(input: NewProductInput): ProductFields {
+  return {
+    id: input.id,
+    sku: input.sku.value,
+    name: input.name,
+    slug: slugOf(input.name),
+    kind: input.kind,
+    categoryId: input.categoryId,
+    status: "draft",
+    vat: VatByContext.none(),
+    options: ProductCommerceOptions.initial(),
+    originVariantId: null,
+  };
+}
+
+/**
+ * Les champs d'une fiche **née d'un détachement** : le nom de la déclinaison,
+ * la famille, le genre, la TVA et les réglages de la fiche d'origine (copiés,
+ * jamais partagés), et brouillon — un produit neuf n'a jamais été relu sous sa
+ * nouvelle référence.
+ */
+export function detachedFields(
+  origin: ProductFields,
+  born: { readonly id: string; readonly sku: string; readonly name: LocalizedText },
+  variantId: string,
+): ProductFields {
+  return {
+    id: born.id,
+    sku: born.sku,
+    name: born.name,
+    slug: slugOf(born.name),
+    kind: origin.kind,
+    categoryId: origin.categoryId,
+    status: "draft",
+    vat: origin.vat.copy(),
+    options: origin.options.forDetachedProduct(),
+    originVariantId: variantId,
   };
 }
