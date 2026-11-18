@@ -26,7 +26,7 @@ import { DeliveryNoteTerms } from "../src/lafoliecoffee/delivery-notes/domain/va
 import { ShortfallDecisionReader } from "../src/lafoliecoffee/orders/domain/ports/shortfall-decision.reader.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { DurablePublisher } from "../src/platform/outbox/durable-publisher.js";
-import { PackingOrderPackedEvent } from "../src/production/channels/commerce/index.js";
+import { PackingOrderPackedEvent } from "../src/packing/channels/commerce/index.js";
 import { E2E_STAFF_ID, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { asPlacedBeforeM3 } from "./order-discount-fixtures.js";
 import { handOver, pickupSite } from "./order-factory.js";

@@ -67,29 +67,29 @@ sequenceDiagram
 
 ## 2. Les faits entre blocs (relevé du 2026-11-18)
 
-| Fait                            | Publié par | Déclaré dans   | Écouté par                             |
-| ------------------------------- | ---------- | -------------- | -------------------------------------- |
-| `production.day_closed`         | fournil    | fournil        | commerce, livraison, fournil (dossier) |
-| `production.day_retaken`        | fournil    | fournil        | livraison, fournil (dossier)           |
-| `production.day_reopened`       | fournil    | fournil        | commerce, livraison, colisage          |
-| `production.packing_list_drawn` | fournil    | fournil        | colisage                               |
-| `production.handed_to_packing`  | fournil    | fournil        | colisage                               |
-| `production.return_requested`   | fournil    | fournil        | colisage                               |
-| `production.resupply_*`         | fournil    | fournil        | colisage, livraison, commerce          |
-| `production.output_corrected`   | fournil    | fournil        | **personne** (🔴 cas G)                |
-| `packing.order_packed`          | colisage   | ⚠️ **fournil** | commerce (prête, bon de reliquat)      |
-| `packing.returned`              | colisage   | ⚠️ **fournil** | fournil                                |
-| `packing.shortfall_reported`    | colisage   | colisage       | commerce                               |
-| `packing.shortfall_cleared`     | colisage   | colisage       | commerce                               |
-| `handover.handed_over`          | retrait    | retrait        | commerce, colisage                     |
-| `delivery.round_departed`       | livraison  | livraison      | retrait, commerce (e-mail)             |
-| `delivery.orders_brought_back`  | livraison  | livraison      | retrait                                |
-| `delivery.transfer_*`           | livraison  | livraison      | commerce                               |
+| Fait                            | Publié par | Déclaré dans | Écouté par                             |
+| ------------------------------- | ---------- | ------------ | -------------------------------------- |
+| `production.day_closed`         | fournil    | fournil      | commerce, livraison, fournil (dossier) |
+| `production.day_retaken`        | fournil    | fournil      | livraison, fournil (dossier)           |
+| `production.day_reopened`       | fournil    | fournil      | commerce, livraison, colisage          |
+| `production.packing_list_drawn` | fournil    | fournil      | colisage                               |
+| `production.handed_to_packing`  | fournil    | fournil      | colisage                               |
+| `production.return_requested`   | fournil    | fournil      | colisage                               |
+| `production.resupply_*`         | fournil    | fournil      | colisage, livraison, commerce          |
+| `production.output_corrected`   | fournil    | fournil      | **personne** (🔴 cas G)                |
+| `packing.order_packed`          | colisage   | colisage     | commerce (prête, bon de reliquat)      |
+| `packing.returned`              | colisage   | fournil      | fournil                                |
+| `packing.shortfall_reported`    | colisage   | colisage     | commerce                               |
+| `packing.shortfall_cleared`     | colisage   | colisage     | commerce                               |
+| `handover.handed_over`          | retrait    | retrait      | commerce, colisage                     |
+| `delivery.round_departed`       | livraison  | livraison    | retrait, commerce (e-mail)             |
+| `delivery.orders_brought_back`  | livraison  | livraison    | retrait                                |
+| `delivery.transfer_*`           | livraison  | livraison    | commerce                               |
 
-⚠️ **Deux faits du colisage sont déclarés chez le fournil**
-(`production/channels/packing/packing-order-packed.event.ts`, et
-`packing.returned`). Le propriétaire doit parler de ce qui est à lui : ils
-rentrent au colisage (plan du colisage, lot C0), sans changer leur valeur.
+`packing.order_packed` est déclaré par le colisage, qui le publie
+(`packing/channels/commerce/`). `packing.returned` est déclaré par le fournil :
+c'est la réponse à **sa** demande de retour, un geste partagé dont il fixe les
+termes, et le fournil ne peut pas importer le colisage.
 
 Les **questions** synchrones les plus chargées : le fournil lit les commandes
 du jour au commerce (`production/channels/commerce/DayOrdersReader`) ; le

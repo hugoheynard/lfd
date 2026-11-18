@@ -5,6 +5,7 @@
  * | Pièce                           | Nature                         | Ce qu'elle porte                        |
  * | ------------------------------- | ------------------------------ | --------------------------------------- |
  * | `PackedResuppliesReader`        | port déclaré ET implémenté ici | l'emballé d'un réassort, une fois clos  |
+ * | `PackingOrderPackedEvent`       | fait durable publié ici        | la commande colisée — le commerce la rend prête |
  * | `PackingShortfallReportedEvent` | fait durable publié ici        | « il manque » : les quantités au bac    |
  * | `PackingShortfallClearedEvent`  | fait durable publié ici        | le bac s'est fermé complet, signal levé |
  * | `ShortfallDesk`                 | port déclaré ET implémenté ici | le départ incomplet décidé (E6b)        |
@@ -32,6 +33,11 @@ export {
   PackingShortfallReportedEvent,
   type ShortfallReportedLine,
 } from "./packing-shortfall-reported.event.js";
+export {
+  PACKING_ORDER_PACKED,
+  PackingOrderPackedEvent,
+  PackingOrderPackedPayloadError,
+} from "./packing-order-packed.event.js";
 export {
   PACKING_SHORTFALL_CLEARED,
   PackingShortfallClearedEvent,

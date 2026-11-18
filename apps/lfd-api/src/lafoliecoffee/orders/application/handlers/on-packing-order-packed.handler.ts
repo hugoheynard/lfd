@@ -6,11 +6,11 @@ import {
   DurableHandler,
   type DurableSubscriber,
 } from "../../../../platform/outbox/durable-handler.js";
+import { FIRST_SHIPMENT_RANK } from "../../../../production/channels/commerce/index.js";
 import {
-  FIRST_SHIPMENT_RANK,
   PACKING_ORDER_PACKED,
   PackingOrderPackedEvent,
-} from "../../../../production/channels/commerce/index.js";
+} from "../../../../packing/channels/commerce/index.js";
 import { MarkOrderReadyCommand } from "../commands/mark-order-ready.command.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */

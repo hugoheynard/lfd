@@ -42,11 +42,6 @@ export { PendingSettlementSweeper } from "./pending-settlement.sweeper.js";
 // Le bac fermé AU COLISAGE : déclaré dans le canal du colisage, relu ici par
 // le commerce, dont la seule surface vers le fournil est ce dossier. Le seul
 // fait « bac fait » depuis K3c (`production.order_packed` est retiré).
-export {
-  PACKING_ORDER_PACKED,
-  PackingOrderPackedEvent,
-  PackingOrderPackedPayloadError,
-} from "../packing/packing-order-packed.event.js";
 export { type SellableArticle, SellableArticlesReader } from "./sellable-articles.reader.js";
 export { type ProductionArticle, ProductionArticlesReader } from "./production-articles.reader.js";
 export {

@@ -25,7 +25,7 @@ import { HandoverAttestation } from "../src/handover/application/services/handov
 import { HandoverSubjectReader } from "../src/handover/channels/commerce/handover-subject.reader.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { DurablePublisher } from "../src/platform/outbox/durable-publisher.js";
-import { PackingOrderPackedEvent } from "../src/production/channels/commerce/index.js";
+import { PackingOrderPackedEvent } from "../src/packing/channels/commerce/index.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   CompanyStatus,

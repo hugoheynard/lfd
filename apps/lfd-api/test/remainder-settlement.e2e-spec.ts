@@ -31,7 +31,7 @@ import { LoyaltySettings } from "../src/lafoliecoffee/loyalty/domain/value-objec
 import { PrismaLoyaltySettingsStore } from "../src/lafoliecoffee/loyalty/infrastructure/prisma-loyalty-settings.store.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { DurablePublisher } from "../src/platform/outbox/durable-publisher.js";
-import { PackingOrderPackedEvent } from "../src/production/channels/commerce/index.js";
+import { PackingOrderPackedEvent } from "../src/packing/channels/commerce/index.js";
 import { E2E_STAFF_ID, serviceDay, type E2eContext } from "./e2e-harness.js";
 import {
   bootstrapProductionDay,

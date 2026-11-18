@@ -1,9 +1,6 @@
 import type { DurableEvent, DurableFact } from "../../../platform/outbox/durable-event.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
-import {
-  shipmentKeySuffix,
-  shipmentRankOf,
-} from "../../day/domain/value-objects/shipment-ref.value-object.js";
+import { shipmentKeySuffix, shipmentRankOf } from "../../../production/channels/packing/index.js";
 
 /** Nom stable du fait, clé de routage vers `@DurableHandler`. */
 export const PACKING_ORDER_PACKED = "packing.order_packed";
@@ -28,8 +25,9 @@ export const PACKING_ORDER_PACKED = "packing.order_packed";
  * la même clé, absorbée. Fermer un bac déjà fermé publie un fait NEUF
  * (`…:reannounced:<instant>`) : la réannonce, filet humain d'un abonné perdu.
  *
- * Déclaré par le fournil dans son canal (§12.1) — le colisage le publie, le
- * commerce le lit par `production/channels/commerce/`.
+ * Déclaré et publié par le colisage, qui ne sait pas qui l'écoute : le
+ * commerce le lit par ce canal (décidé par Hugo le 2026-11-18 — le
+ * propriétaire parle de ce qui est à lui).
  */
 export class PackingOrderPackedEvent implements DurableEvent {
   constructor(

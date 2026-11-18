@@ -55,10 +55,14 @@ flowchart LR
 ### Les faits du colisage sont à lui (Hugo, 2026-11-18)
 
 Le colisage publie ce qu'il a fait, dans ses mots, et **ne sait pas qui
-écoute** ; chaque voisin apprend à traiter ses faits. Aujourd'hui, deux faits
-du colisage sont **déclarés dans le canal du fournil** : `packing.order_packed`
-(`production/channels/packing/packing-order-packed.event.ts`) et
-`packing.returned`. Ils rentrent au colisage (lot C0).
+écoute** ; chaque voisin apprend à traiter ses faits. `packing.order_packed`
+était déclaré dans le canal du fournil, qui ne le publie ni ne le lit : il
+est déclaré au colisage depuis le lot C0
+(`packing/channels/commerce/packing-order-packed.event.ts`). `packing.returned`,
+lui, **reste déclaré par le fournil** : c'est la réponse à sa demande de
+retour, un geste qu'il partage avec le colisage et dont il fixe les termes
+(CLAUDE.md § 3, « le propriétaire parle de ce qui est à lui »), et le fournil
+ne peut pas importer le colisage.
 
 La livraison n'apprend pas encore : en retrait, rien ne la concerne. Le jour où
 le colisage simple vaudra pour la livraison, c'est **elle** qui traitera
@@ -226,15 +230,10 @@ flowchart LR
     C4 --> C5["C5 doc d'état"]
 ```
 
-- **C0** — `PackingOrderPackedEvent` et l'événement de `packing.returned`
-  passent de `production/channels/packing/` à `packing/channels/` ; valeurs et
-  clés inchangées. Importeurs à basculer, relevés le 2026-11-18 :
-  `production/channels/commerce/index.ts` (réexport),
-  `lafoliecoffee/orders/application/handlers/on-packing-order-packed.handler.ts`,
-  `lafoliecoffee/delivery-notes/application/handlers/on-remainder-packed.handler.ts`,
-  `packing/application/station/close-packing-order.handler.ts`, et l'abonné du
-  fournil à `packing.returned`. Portes à relancer : `context-boundaries`,
-  `production-subcontexts`, `durable-cross-block`.
+- **C0** — ✅ bâti le 2026-11-18 sur `feat/colisage-simple` :
+  `PackingOrderPackedEvent` passe dans `packing/channels/commerce/` ; valeur
+  et clés inchangées ; ses lecteurs du commerce, ses tests et cinq e2e
+  l'importent du colisage. `packing.returned` reste au fournil (§ 1).
 - **C1** — migration, réglage, niveau figé, ligne de la page Niveau de suivi.
 - **C2** — « Problème » (serveur et écran), D5 à D8, « Pièces retrouvées ».
 - **C3** — « Tout est prêt » (serveur et écran).

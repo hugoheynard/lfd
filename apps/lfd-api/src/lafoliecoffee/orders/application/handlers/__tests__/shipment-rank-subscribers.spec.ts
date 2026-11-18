@@ -6,7 +6,7 @@ import {
   PackingShortfallClearedEvent,
   PackingShortfallReportedEvent,
 } from "../../../../../packing/channels/commerce/index.js";
-import { PackingOrderPackedEvent } from "../../../../../production/channels/commerce/index.js";
+import { PackingOrderPackedEvent } from "../../../../../packing/channels/commerce/index.js";
 import type { DurableEvent } from "../../../../../platform/outbox/durable-event.js";
 import type { DurableSubscriber } from "../../../../../platform/outbox/durable-handler.js";
 import { ClearOrderShortfallCommand } from "../../commands/clear-order-shortfall.command.js";

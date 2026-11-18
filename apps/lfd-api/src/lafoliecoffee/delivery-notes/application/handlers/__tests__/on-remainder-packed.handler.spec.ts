@@ -1,7 +1,7 @@
 import { CommandBus } from "@nestjs/cqrs";
 import { Test } from "@nestjs/testing";
 
-import { PackingOrderPackedEvent } from "../../../../../production/channels/commerce/index.js";
+import { PackingOrderPackedEvent } from "../../../../../packing/channels/commerce/index.js";
 import { PrepareRemainderNoteCommand } from "../../commands/prepare-remainder-note.command.js";
 import { OnRemainderPacked } from "../on-remainder-packed.handler.js";
 

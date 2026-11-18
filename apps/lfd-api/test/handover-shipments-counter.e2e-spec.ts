@@ -18,7 +18,7 @@ import { ORDER_TERMS } from "../src/lafoliecoffee/delivery-notes/domain/value-ob
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { DurablePublisher } from "../src/platform/outbox/durable-publisher.js";
-import { PackingOrderPackedEvent } from "../src/production/channels/commerce/index.js";
+import { PackingOrderPackedEvent } from "../src/packing/channels/commerce/index.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   CompanyStatus,

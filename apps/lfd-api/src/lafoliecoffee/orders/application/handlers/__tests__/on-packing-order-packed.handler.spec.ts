@@ -1,7 +1,7 @@
 import { CommandBus } from "@nestjs/cqrs";
 import { Test } from "@nestjs/testing";
 
-import { PACKING_ORDER_PACKED } from "../../../../../production/channels/commerce/index.js";
+import { PACKING_ORDER_PACKED } from "../../../../../packing/channels/commerce/index.js";
 import { MarkOrderReadyCommand } from "../../commands/mark-order-ready.command.js";
 import { OnPackingOrderPacked } from "../on-packing-order-packed.handler.js";
 

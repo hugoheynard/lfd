@@ -10,7 +10,6 @@
  * | `HandedToPackingEvent`  | fait durable     | une fournée sortie = remise au colisage       |
  * | `ReturnRequestedEvent`  | fait durable     | une fournée remise, puis annulée              |
  * | `PackingReturnedEvent`  | fait durable     | la réponse du colisage à un retour            |
- * | `PackingOrderPackedEvent` | fait durable   | un bac fermé au colisage — lu par le commerce |
  * | `QualityHeldOrdersReader` | port publié (K3a) | les commandes retenues au contrôle, pour le poste |
  * | `PlannedDestinationsReader` | port publié (K3a) | la destination figée au plan, pour le poste |
  * | `PackedOrdersReader`    | port (K3a)       | « cette commande est-elle colisée ? »         |
@@ -49,11 +48,6 @@ export {
   ReturnRequestedEvent,
   ReturnRequestedPayloadError,
 } from "./return-requested.event.js";
-export {
-  PACKING_ORDER_PACKED,
-  PackingOrderPackedEvent,
-  PackingOrderPackedPayloadError,
-} from "./packing-order-packed.event.js";
 export {
   PACKING_RETURNED,
   PackingReturnedEvent,
