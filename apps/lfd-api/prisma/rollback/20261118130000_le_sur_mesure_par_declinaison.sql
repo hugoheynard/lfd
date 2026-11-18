@@ -1,0 +1,22 @@
+-- RETOUR ARRIÈRE de 20261118130000_le_sur_mesure_par_declinaison
+-- (documentation/catalogue/plan-sur-mesure-par-declinaison.md, V4).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
+-- « appliquée ».
+--
+-- Le code d'avant lit `pim.product.custom_recipe`, que le code D1 n'écrit
+-- plus : la colonne garde la valeur du report, et le retour arrière est le
+-- retour du code seul, suivi d'une réémission complète du catalogue.
+--
+-- ⚠️ Ce qui a été coché ou décoché PAR DÉCLINAISON entre-temps n'est pas
+-- remonté sur la fiche. Pour rendre la fiche sur mesure dès qu'une de ses
+-- déclinaisons l'est (règle du report 13.3, aucun article ne s'ouvre) :
+--
+--   UPDATE pim.product p
+--      SET custom_recipe = true
+--    WHERE EXISTS (SELECT 1 FROM pim.product_variant v
+--                   WHERE v.product_id = p.id AND v.custom_recipe);
+--
+-- Retirer la colonne serait un resserrement ultérieur, sur décision de Hugo :
+--
+--   ALTER TABLE pim.product_variant DROP COLUMN custom_recipe;

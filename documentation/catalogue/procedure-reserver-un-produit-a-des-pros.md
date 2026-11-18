@@ -19,12 +19,21 @@ flowchart LR
     C --> D["4. Fiche client<br/>Tarifs<br/>le prix du client"]
 ```
 
-**1. Déclarer le produit sur mesure** — au **Référentiel**, sur la fiche du
-produit, section Commerce, cocher **« Sur mesure »**.
+**1. Déclarer la déclinaison sur mesure** — au **Référentiel**, sur la fiche
+du produit, ouvrir l'onglet de la déclinaison, carte **« Identité de la
+déclinaison »**, cocher **« Sur mesure »**. La case s'enregistre tout de
+suite, à part de « Tout enregistrer ».
 
-- La case vaut pour **toutes les déclinaisons** du produit.
+- La case vaut pour **cette déclinaison seulement** : une fiche peut avoir
+  une déclinaison sur mesure et les autres ouvertes à tous. Pour tout le
+  produit, cocher chaque déclinaison.
+- 🔒 **Le défaut d'une fiche sans vignettes ne peut pas être sur mesure** :
+  le rayon ne montrerait que lui, et la fiche disparaîtrait pour tous. Le
+  serveur refuse, la case revient et le message le dit : cocher « montrer
+  chaque déclinaison en vignette », ou choisir un autre défaut.
 - La fiche reste en audience « pro », comme d'habitude.
-- 🔒 **Tant qu'aucun compte ne lui est réservé, aucun pro ne le voit**, et
+- 🔒 **Tant qu'aucun compte ne lui est attribué, aucun pro ne voit cette
+  déclinaison**, et
   aucun particulier. C'est voulu : un produit fait pour un client ne peut pas
   apparaître chez tous les pros pendant qu'on le prépare.
 
@@ -90,9 +99,14 @@ le fournil et le colisage : [`plan-sur-mesure-partout.md`](plan-sur-mesure-parto
 
 ### Qui tient quoi
 
-- **Le fait « sur mesure » appartient au référentiel** (`pim.product.custom_recipe`),
-  posé par la case de la fiche
-  (`apps/lfd-backoffice-frontend/src/app/pim/catalogue/product-form/form-sections/custom-recipe/`).
+- **Le fait « sur mesure » appartient au référentiel, par déclinaison**
+  (`pim.product_variants.custom_recipe` ;
+  [`plan-sur-mesure-par-declinaison.md`](plan-sur-mesure-par-declinaison.md)),
+  posé par la case de la déclinaison
+  (`apps/lfd-backoffice-frontend/src/app/pim/catalogue/product-form/form-sections/variant-custom-recipe/`,
+  route `PUT /pim/catalogue/products/:id/variants/:variantId/custom-recipe`,
+  fait `product.variant_custom_recipe_changed`). `pim.products.custom_recipe`
+  est une colonne morte, plus lue ni écrite.
   Il traverse le canal `pim/channels/b2b-platform/` vers le commerce
   (`catalog_items.custom_recipe`). Le référentiel ne connaît aucun compte.
 - **La réservation appartient au commerce** (`src/lafoliecoffee/catalog`) :
@@ -120,12 +134,12 @@ commande rejouée ou révisée garde ses lignes déjà passées.
 
 ### Écrans
 
-| Écran                                     | Fichier                                                   |
-| ----------------------------------------- | --------------------------------------------------------- |
-| Case « Sur mesure » de la fiche produit   | `pim/catalogue/product-form/form-sections/custom-recipe/` |
-| Onglet « Articles réservés »              | `fiche-client/articles-reserves/`                         |
-| Panneau « Attribuer » du catalogue publié | `b2b/catalogue/made-to-order-panel/`                      |
-| Analytics › Sur mesure                    | `analytics/sur-mesure/`                                   |
+| Écran                                     | Fichier                                                           |
+| ----------------------------------------- | ----------------------------------------------------------------- |
+| Case « Sur mesure » de la déclinaison     | `pim/catalogue/product-form/form-sections/variant-custom-recipe/` |
+| Onglet « Articles réservés »              | `fiche-client/articles-reserves/`                                 |
+| Panneau « Attribuer » du catalogue publié | `b2b/catalogue/made-to-order-panel/`                              |
+| Analytics › Sur mesure                    | `analytics/sur-mesure/`                                           |
 
 (chemins relatifs à `apps/lfd-backoffice-frontend/src/app/`.)
 

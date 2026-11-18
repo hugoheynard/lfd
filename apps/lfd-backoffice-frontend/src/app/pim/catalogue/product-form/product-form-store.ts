@@ -697,8 +697,6 @@ export class ProductFormStore {
    * l'écrit seule, sur sa propre route, comme la limite de commande.
    */
   readonly operationOnly = signal(false);
-  /** Sur mesure (R3). Hors des sections, comme l'opération. */
-  readonly customRecipe = signal(false);
   /** Demande le froid (lot 4 bis). Hors des sections, comme la réservation. */
   readonly requiresCold = signal(false);
   /** Chaque déclinaison en vignette au rayon. Hors des sections, comme le froid. */
@@ -2161,6 +2159,15 @@ export class ProductFormStore {
     );
   }
 
+  /** La case « Sur mesure » d'une déclinaison, posée tout de suite (et remise sur un refus). */
+  setVariantCustomRecipe(variantId: string, customRecipe: boolean): void {
+    this.variantsValue.update((variants) =>
+      variants.map((variant) =>
+        variant.id === variantId ? { ...variant, customRecipe } : variant,
+      ),
+    );
+  }
+
   /** **Archive une déclinaison** — puis relit : l'onglet disparaît, la liste à part la montre. */
   discontinueVariant(variantId: string): Promise<boolean> {
     return this.runVariantGesture((id) => this.products.discontinueVariant(id, variantId));
@@ -2439,7 +2446,6 @@ export class ProductFormStore {
     // ils se lisent sur la déclinaison ouverte, plus sur le produit aplati.
     this.vatOverride.set(product.vatByContext);
     this.operationOnly.set(product.operationOnly);
-    this.customRecipe.set(product.customRecipe);
     this.requiresCold.set(product.requiresCold);
     this.variantsAsTiles.set(product.variantsAsTiles);
     this.audience.set(product.audience);

@@ -1,110 +1,200 @@
 import { bareVariant, tarte } from "../../../application/__tests__/audience-doubles.js";
+import { CustomRecipeDefaultWithoutTilesError } from "../../errors/custom-recipe-errors.js";
+import { VariantNotFoundError } from "../../errors/product-errors.js";
 import { Sku } from "../../value-objects/sku.value-object.js";
 import { Product } from "../product.js";
 
 /**
- * **Sur mesure** — un fait de la fiche (`plan-articles-sur-mesure.md` § 13,
- * D1) : décoché par défaut, réversible, sans refus, et hérité au détachement
- * (13.6-8).
+ * **Sur mesure, par déclinaison** (`plan-sur-mesure-par-declinaison.md`) :
+ * décoché à la naissance, réversible, une seule déclinaison bascule (V1), le
+ * défaut d'une fiche sans vignettes ne le porte jamais (V5 (a), aux trois
+ * gestes), une déclinaison ajoutée hérite du défaut, et un détachement emporte
+ * la valeur de sa déclinaison.
  */
 
-const open = (): Product =>
-  Product.open({
-    id: "prod_1",
-    sku: Sku.create("CHO-FLOR"),
-    name: { fr: "Florentin" },
-    kind: "daily",
-    categoryId: "cat_1",
-    defaultVariant: { id: "var_1", sku: Sku.create("CHO-FLOR-1"), name: { fr: "Florentin" } },
-  });
+const DEFAULT_ID = "prd_tarte_v1";
+const PARTS_ID = "prd_tarte_v2";
 
-function twoVariants(customRecipe: boolean): Product {
+function twoVariants(
+  options: { defaultCustom?: boolean; partsCustom?: boolean; tiles?: boolean } = {},
+): Product {
   return Product.reconstitute(
     tarte({
-      customRecipe,
+      variantsAsTiles: options.tiles ?? true,
       variants: [
-        bareVariant({ priceCents: 3_200 }),
+        bareVariant({ priceCents: 3_200, customRecipe: options.defaultCustom ?? false }),
         bareVariant({
-          id: "prd_tarte_v2",
+          id: PARTS_ID,
           sku: "PAT-7-2",
           name: { fr: "Six parts" },
           isDefault: false,
           position: 1,
           priceCents: 1_800,
+          customRecipe: options.partsCustom ?? false,
         }),
       ],
     }),
   );
 }
 
-function detachSecond(subject: Product): Product {
-  return subject.detachVariant("prd_tarte_v2", {
+function customOf(product: Product): Record<string, boolean | undefined> {
+  return Object.fromEntries(
+    product.persistenceSnapshot().variants.map((variant) => [variant.id, variant.customRecipe]),
+  );
+}
+
+function detachParts(subject: Product): Product {
+  return subject.detachVariant(PARTS_ID, {
     id: "prd_neuf",
     sku: Sku.create("P-NEUF22"),
     defaultVariant: { id: "prd_neuf_v1", sku: Sku.create("P-NEUF22-1") },
   });
 }
 
-describe("Product — sur mesure", () => {
-  it("une fiche naît ouverte : le sur mesure se coche, il ne se devine pas", () => {
-    expect(open().customRecipe).toBe(false);
-    expect(open().persistenceSnapshot().customRecipe).toBe(false);
+describe("Product — sur mesure par déclinaison", () => {
+  it("une fiche naît ouverte : sa déclinaison par défaut n'est pas sur mesure", () => {
+    const product = Product.open({
+      id: "prod_1",
+      sku: Sku.create("CHO-FLOR"),
+      name: { fr: "Florentin" },
+      kind: "daily",
+      categoryId: "cat_1",
+      defaultVariant: { id: "var_1", sku: Sku.create("CHO-FLOR-1"), name: { fr: "Florentin" } },
+    });
+
+    expect(product.persistenceSnapshot().variants[0]?.customRecipe).toBe(false);
   });
 
-  it("se coche, et dit qu'elle a changé", () => {
-    const product = open();
+  it("seule la déclinaison visée bascule, et dit qu'elle a changé", () => {
+    const product = twoVariants();
 
-    expect(product.declareCustomRecipe(true)).toBe(true);
-    expect(product.snapshot().customRecipe).toBe(true);
+    expect(product.declareVariantCustomRecipe(PARTS_ID, true)).toBe(true);
+    expect(customOf(product)).toEqual({ [DEFAULT_ID]: false, [PARTS_ID]: true });
   });
 
   it("ne dit rien changé quand elle le disait déjà — pas de fait à journaliser", () => {
-    expect(open().declareCustomRecipe(false)).toBe(false);
+    expect(twoVariants({ partsCustom: true }).declareVariantCustomRecipe(PARTS_ID, true)).toBe(
+      false,
+    );
+  });
+
+  it("n'est jamais résolu sur le défaut : la sœur garde sa case dans l'instantané servi", () => {
+    const product = twoVariants({ defaultCustom: true });
+
+    expect(product.snapshot().variants.map((variant) => variant.customRecipe)).toEqual([
+      true,
+      false,
+    ]);
+  });
+
+  it("refuse la déclinaison d'une autre fiche", () => {
+    expect(() => twoVariants().declareVariantCustomRecipe("prd_autre", true)).toThrow(
+      VariantNotFoundError,
+    );
   });
 
   it("se règle même archivée : le geste prépare, il ne vend pas", () => {
-    const product = open();
+    const product = twoVariants();
     product.archive();
 
-    expect(product.declareCustomRecipe(true)).toBe(true);
+    expect(product.declareVariantCustomRecipe(PARTS_ID, true)).toBe(true);
   });
 
-  it("garde la case à la reconstitution", () => {
-    const product = open();
-    product.declareCustomRecipe(true);
+  it("garde la case à la reconstitution, et une ligne relue sans elle se lit ouverte", () => {
+    const product = twoVariants();
+    product.declareVariantCustomRecipe(PARTS_ID, true);
+    expect(customOf(Product.reconstitute(product.persistenceSnapshot()))[PARTS_ID]).toBe(true);
 
-    expect(Product.reconstitute(product.persistenceSnapshot()).customRecipe).toBe(true);
+    const older = bareVariant();
+    expect(
+      Product.reconstitute(tarte({ variants: [older] })).snapshot().variants[0]?.customRecipe,
+    ).toBe(false);
+  });
+});
+
+describe("Product — V5 : le défaut d'une fiche sans vignettes n'est pas sur mesure", () => {
+  it("geste 1 : refuse de cocher le défaut d'une fiche sans vignettes, sans rien muter", () => {
+    const product = twoVariants({ tiles: false });
+
+    expect(() => product.declareVariantCustomRecipe(DEFAULT_ID, true)).toThrow(
+      CustomRecipeDefaultWithoutTilesError,
+    );
+    expect(customOf(product)[DEFAULT_ID]).toBe(false);
   });
 
-  it("une ligne relue sans la case se lit ouverte — la valeur de la colonne", () => {
-    const { customRecipe, ...older } = open().persistenceSnapshot();
-    void customRecipe;
+  it("geste 1 : la sœur d'une fiche sans vignettes, elle, se coche", () => {
+    expect(twoVariants({ tiles: false }).declareVariantCustomRecipe(PARTS_ID, true)).toBe(true);
+  });
 
-    expect(Product.reconstitute(older).customRecipe).toBe(false);
+  it("geste 1 : le défaut se coche quand chaque déclinaison a sa vignette, et se décoche toujours", () => {
+    expect(twoVariants().declareVariantCustomRecipe(DEFAULT_ID, true)).toBe(true);
+    expect(
+      twoVariants({ tiles: false, defaultCustom: true }).declareVariantCustomRecipe(
+        DEFAULT_ID,
+        false,
+      ),
+    ).toBe(true);
+  });
+
+  it("geste 2 : refuse de décocher les vignettes quand le défaut est sur mesure", () => {
+    const product = twoVariants({ defaultCustom: true });
+
+    expect(() => product.showVariantsAsTiles(false)).toThrow(CustomRecipeDefaultWithoutTilesError);
+    expect(product.variantsAsTiles).toBe(true);
+  });
+
+  it("geste 2 : décocher les vignettes passe quand seule une sœur est sur mesure", () => {
+    expect(twoVariants({ partsCustom: true }).showVariantsAsTiles(false)).toBe(true);
+  });
+
+  it("geste 3 : refuse de faire d'une déclinaison sur mesure le défaut d'une fiche sans vignettes", () => {
+    const product = twoVariants({ tiles: false, partsCustom: true });
+
+    expect(() => product.makeVariantDefault(PARTS_ID)).toThrow(
+      CustomRecipeDefaultWithoutTilesError,
+    );
+    expect(product.persistenceSnapshot().variants.find((v) => v.isDefault)?.id).toBe(DEFAULT_ID);
+  });
+
+  it("geste 3 : la même bascule passe quand chaque déclinaison a sa vignette", () => {
+    const product = twoVariants({ partsCustom: true });
+
+    product.makeVariantDefault(PARTS_ID);
+
+    expect(product.persistenceSnapshot().variants.find((v) => v.isDefault)?.id).toBe(PARTS_ID);
+    expect(customOf(product)).toEqual({ [DEFAULT_ID]: false, [PARTS_ID]: true });
+  });
+});
+
+describe("Product — sur mesure aux gestes de déclinaison", () => {
+  it("une déclinaison ajoutée hérite du sur mesure du défaut", () => {
+    const custom = twoVariants({ defaultCustom: true });
+    const open = twoVariants({ partsCustom: true });
+    const input = { sku: Sku.create("PAT-7-3"), name: { fr: "Part" }, options: {} };
+
+    expect(custom.addVariant({ ...input, id: "v3" }).snapshot().customRecipe).toBe(true);
+    expect(open.addVariant({ ...input, id: "v3" }).snapshot().customRecipe).toBe(false);
   });
 
   /**
-   * 13.6-8 : sans l'héritage, détacher la déclinaison d'une recette réservée
-   * ferait naître une fiche ouverte, servie à tous les pros dès sa validation.
+   * Sans l'héritage, détacher une déclinaison réservée ferait naître une fiche
+   * ouverte, servie à tous les pros dès sa validation.
    */
-  it("une déclinaison détachée d'une fiche sur mesure l'est aussi", () => {
-    expect(detachSecond(twoVariants(true)).snapshot().customRecipe).toBe(true);
-    expect(detachSecond(twoVariants(false)).snapshot().customRecipe).toBe(false);
+  it("un détachement emporte la valeur de SA déclinaison, pas celle du défaut", () => {
+    expect(
+      detachParts(twoVariants({ partsCustom: true })).snapshot().variants[0]?.customRecipe,
+    ).toBe(true);
+    expect(
+      detachParts(twoVariants({ defaultCustom: true })).snapshot().variants[0]?.customRecipe,
+    ).toBe(false);
   });
 
-  /** L'héritage copie la case, il ne la déplace pas : la fiche d'origine garde la sienne. */
-  it("détacher ne change pas la case de la fiche d'origine", () => {
-    const origin = twoVariants(true);
-    detachSecond(origin);
-    expect(origin.customRecipe).toBe(true);
-  });
+  it("une déclinaison désarchivée garde sa case", () => {
+    const product = twoVariants({ partsCustom: true });
+    product.discontinueVariant(PARTS_ID);
 
-  it("la fiche née du détachement se décoche seule, sans toucher l'origine", () => {
-    const origin = twoVariants(true);
-    const born = detachSecond(origin);
+    product.restoreVariant(PARTS_ID);
 
-    expect(born.declareCustomRecipe(false)).toBe(true);
-    expect(born.customRecipe).toBe(false);
-    expect(origin.customRecipe).toBe(true);
+    expect(customOf(product)[PARTS_ID]).toBe(true);
   });
 });

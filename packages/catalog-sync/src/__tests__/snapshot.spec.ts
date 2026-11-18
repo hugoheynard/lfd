@@ -42,6 +42,7 @@ const variant = {
   weightMinGrams: null,
   weightStepGrams: null,
   minQuantities: { pro: null, public: null },
+  customRecipe: false,
 };
 
 const snapshot = {
@@ -80,7 +81,6 @@ const snapshot = {
       // Traverse depuis la v12 : le croissant se conserve au sec.
       requiresCold: false,
       variantsAsTiles: true,
-      customRecipe: false,
     },
   ],
   // L'échelle traverse depuis la v7 — vide est le cas courant, et il est net.

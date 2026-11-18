@@ -774,9 +774,11 @@ Bâti, non commité, non déployé. Chemins relatifs à `apps/lfd-api/`.
   schémas, dans la migration). Retour : `prisma/rollback/` du même nom. L'ordre
   de déploiement (migration → code → « Tout réémettre ») et les requêtes de
   constat sont au runbook (« Avant de déployer « le sur mesure au référentiel » »).
-- **Le fait** : `Product.declareCustomRecipe` ; `SetProductCustomRecipeCommand`
-  (`apps/lfd-api/src/pim/catalogue/product/application/set-product-custom-recipe.ts`, modèle de
-  `set-product-operation-only.ts` : journal `product.custom_recipe_changed`,
+- **Le fait** (⚠️ descendu sur la déclinaison depuis le 2026-11-18 :
+  `SetVariantCustomRecipeCommand`, `apps/lfd-api/src/pim/catalogue/product/application/set-variant-custom-recipe.ts`, fil v18 —
+  [`plan-sur-mesure-par-declinaison.md`](plan-sur-mesure-par-declinaison.md)) :
+  `Product.declareCustomRecipe` ; `SetProductCustomRecipeCommand`, retiré
+  (modèle de `set-product-operation-only.ts` : journal `product.custom_recipe_changed`,
   émission dans la même unité de travail) ; route
   `PUT /pim/catalogue/products/:id/custom-recipe` (`{ customRecipe }`, droit
   `pim_catalog`) ; la vue de fiche porte `customRecipe`. Le détachement hérite

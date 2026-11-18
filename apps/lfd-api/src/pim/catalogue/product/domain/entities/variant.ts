@@ -242,6 +242,15 @@ export interface VariantSnapshot {
    */
   readonly minQuantityFollowsDefault: boolean;
   /**
+   * **Sur mesure** — une recette faite pour un ou quelques clients
+   * (`plan-sur-mesure-par-declinaison.md`, V1). Le référentiel ne connaît
+   * aucune société : à qui l'article est attribué se décide au commerce.
+   * Facultatif à la LECTURE (absent = `false`, la valeur de la colonne) ;
+   * l'entité le rend toujours. Jamais résolu sur le défaut : chaque
+   * déclinaison porte le sien.
+   */
+  readonly customRecipe?: boolean | undefined;
+  /**
    * La déclaration d'allergènes, traces comprises. `null` = **non
    * renseignée** ; `declared: []` = « aucun allergène » déclaré.
    */
@@ -317,6 +326,7 @@ export class Variant {
   private publishedFlag: boolean;
   private minQuantitiesValue: MinQuantities;
   private minQuantityFollowsDefaultFlag: boolean;
+  private customRecipeFlag: boolean;
   private allergenSheetValue: VariantAllergenSheetSnapshot | null;
   private nutritionValue: VariantNutritionSnapshot | null;
   private readonly followsDefault: Record<VariantFlag, boolean>;
@@ -355,6 +365,7 @@ export class Variant {
     this.publishedFlag = snapshot.hasBeenPublished;
     this.minQuantitiesValue = snapshot.minQuantities;
     this.minQuantityFollowsDefaultFlag = snapshot.minQuantityFollowsDefault;
+    this.customRecipeFlag = snapshot.customRecipe ?? false;
     this.allergenSheetValue = snapshot.allergenSheet;
     this.nutritionValue = snapshot.nutrition;
     this.followsDefault = {
@@ -421,6 +432,8 @@ export class Variant {
     name: LocalizedText;
     options: Readonly<Record<string, string>>;
     position: number;
+    /** Celui du défaut au moment de l'ajout : c'est l'agrégat qui le passe. */
+    customRecipe: boolean;
   }): Variant {
     return new Variant({
       id: input.id,
@@ -446,6 +459,7 @@ export class Variant {
       // refuserait des commandes que personne n'a décidé de refuser.
       minQuantities: NO_MIN_QUANTITIES,
       minQuantityFollowsDefault: false,
+      customRecipe: input.customRecipe,
       regulatoryFollowsDefault: true,
       // Les VALEURS naissent alignées pour la même raison que les allergènes :
       // née nue, la déclinaison afficherait un tableau vide là où celui du
@@ -780,6 +794,25 @@ export class Variant {
     }
   }
 
+  /** Une recette sur mesure ? */
+  get customRecipe(): boolean {
+    return this.customRecipeFlag;
+  }
+
+  /**
+   * **La déclare sur mesure** — ou la rend ouverte. Le refus qui dépend de la
+   * fiche (le défaut d'une fiche sans vignettes, V5) est celui de l'agrégat.
+   *
+   * @returns `false` quand elle le disait déjà.
+   */
+  declareCustomRecipe(customRecipe: boolean): boolean {
+    if (this.customRecipeFlag === customRecipe) {
+      return false;
+    }
+    this.customRecipeFlag = customRecipe;
+    return true;
+  }
+
   /** L'unité dans laquelle elle se vend — la sienne, jamais celle du défaut. */
   get saleUnit(): SaleUnit {
     return this.saleTermsValue.saleUnit;
@@ -957,6 +990,7 @@ export class Variant {
       hasBeenPublished: this.publishedFlag,
       minQuantities: this.minQuantitiesValue,
       minQuantityFollowsDefault: this.minQuantityFollowsDefaultFlag,
+      customRecipe: this.customRecipeFlag,
       regulatoryFollowsDefault: this.followsDefault.regulatory,
       pricingFollowsDefault: this.followsDefault.pricing,
       nutritionFollowsDefault: this.followsDefault.nutrition,

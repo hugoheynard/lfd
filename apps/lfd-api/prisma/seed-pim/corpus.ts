@@ -89,9 +89,10 @@ export interface CorpusProduct {
    */
   readonly variants?: readonly CorpusVariant[] | undefined;
   /**
-   * **Sur mesure** (`documentation/catalogue/plan-articles-sur-mesure.md` § 13,
-   * D1). Absent = fiche ouverte. Le corpus n'attribue la fiche à aucun compte :
-   * c'est un geste du commerce, et le semis montre l'état « à attribuer ».
+   * **Sur mesure de la déclinaison par défaut**
+   * (`documentation/catalogue/plan-sur-mesure-par-declinaison.md`, V1). Absent
+   * = ouverte. Le corpus n'attribue l'article à aucun compte : c'est un geste
+   * du commerce, et le semis montre l'état « à attribuer ».
    */
   readonly customRecipe?: boolean | undefined;
 }

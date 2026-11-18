@@ -84,6 +84,7 @@ function variantsOf(productIndex: number, count: number): SyncProduct["variants"
     mayContain: null,
     allergensPrecautionary: false,
     allergenTexts: null,
+    customRecipe: false,
   }));
 }
 
@@ -101,7 +102,6 @@ function productOf(index: number, variantCount: number): SyncProduct {
     operationOnly: false,
     requiresCold: false,
     variantsAsTiles: true,
-    customRecipe: false,
   };
 }
 

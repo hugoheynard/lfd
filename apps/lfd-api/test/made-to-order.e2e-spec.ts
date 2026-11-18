@@ -57,7 +57,7 @@ beforeEach(async () => {
 
 const staff = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);
 
-/** `custom` : les fiches que le référentiel dit sur mesure (fil v17, § 13 D1). */
+/** `custom` : les articles que le référentiel dit sur mesure (fil v18, par déclinaison). */
 function snapshot(skus: readonly string[], custom: readonly string[] = []): CatalogSnapshot {
   return {
     version: CATALOG_SNAPSHOT_VERSION,
@@ -101,6 +101,7 @@ function snapshot(skus: readonly string[], custom: readonly string[] = []): Cata
           mayContain: null,
           allergensPrecautionary: false,
           allergenTexts: null,
+          customRecipe: custom.includes(sku),
         },
       ],
       note: null,
@@ -109,7 +110,6 @@ function snapshot(skus: readonly string[], custom: readonly string[] = []): Cata
       operationOnly: false,
       requiresCold: false,
       variantsAsTiles: true,
-      customRecipe: custom.includes(sku),
       productName: null,
     })),
     orderTimeLimits: [],

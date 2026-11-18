@@ -349,6 +349,13 @@ export interface VariantView {
   /** Suit-elle la quantité minimale du défaut ? Toujours `false` sur le défaut. */
   readonly minQuantityFollowsDefault: boolean;
   /**
+   * **Sur mesure** — une recette faite pour un ou quelques clients, posée sur
+   * CETTE déclinaison (`plan-sur-mesure-par-declinaison.md`, V1). Cochée,
+   * aucun pro ne la voit tant qu'aucun compte ne lui est attribué dans
+   * Catalogue publié. Jamais résolue sur le défaut : chacune porte la sienne.
+   */
+  readonly customRecipe: boolean;
+  /**
    * La déclaration d'allergènes, traces comprises ; `null` = non renseignée.
    *
    * ⚠️ **Résolue.** Une déclinaison alignée rend ici la déclaration du défaut,
@@ -397,12 +404,6 @@ export interface ProductView {
    * `true` pour toute fiche tant que personne ne l'a décochée.
    */
   readonly variantsAsTiles: boolean;
-  /**
-   * **Sur mesure** — une recette faite pour un ou quelques clients
-   * (`plan-articles-sur-mesure.md` § 13). Cochée, aucun pro ne la voit tant
-   * qu'aucun compte ne lui est attribué dans Catalogue publié (D3, D4).
-   */
-  readonly customRecipe: boolean;
   /**
    * La clientèle **propre** à la fiche ; `null` = elle suit sa famille. La
    * dérogation seule, comme les canaux — l'effective est à côté.
@@ -640,13 +641,15 @@ export type SetProductVariantsAsTilesPayload = z.infer<
 >;
 
 /**
- * **Sur mesure** — la case de la fiche (`PUT /pim/catalogue/products/:id/custom-recipe`,
- * `documentation/catalogue/plan-articles-sur-mesure.md` § 13, D1). L'état de la case.
+ * **Sur mesure** — la case d'une déclinaison
+ * (`PUT /pim/catalogue/products/:id/variants/:variantId/custom-recipe`,
+ * `documentation/catalogue/plan-sur-mesure-par-declinaison.md`, V1). L'état de
+ * la case.
  */
-export const setProductCustomRecipePayloadSchema = z.strictObject({
+export const setVariantCustomRecipePayloadSchema = z.strictObject({
   customRecipe: z.boolean(),
 });
-export type SetProductCustomRecipePayload = z.infer<typeof setProductCustomRecipePayloadSchema>;
+export type SetVariantCustomRecipePayload = z.infer<typeof setVariantCustomRecipePayloadSchema>;
 
 /**
  * **Élargir ou restreindre à qui la fiche vend** — ou la rendre à sa famille

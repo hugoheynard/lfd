@@ -29,6 +29,7 @@ const variant = {
   weightMinGrams: null,
   weightStepGrams: null,
   minQuantities: { pro: null, public: null },
+  customRecipe: false,
 };
 
 const product = {
@@ -44,7 +45,6 @@ const product = {
   operationOnly: false,
   requiresCold: false,
   variantsAsTiles: false,
-  customRecipe: false,
 };
 
 describe("syncProductSchema — variantsAsTiles", () => {

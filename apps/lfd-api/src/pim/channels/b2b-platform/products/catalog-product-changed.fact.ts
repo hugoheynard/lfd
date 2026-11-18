@@ -43,9 +43,9 @@ const payloadSchema = z.object({
     // avant elle, et lue `true` — la valeur que la colonne du référentiel a
     // donnée à toute fiche existante.
     variantsAsTiles: z.boolean().default(true),
-    // Fil v17 (`plan-articles-sur-mesure.md` § 13) : absent d'un fait émis
-    // avant lui, et lu ABSENT — pas `false`. Le commerce laisse alors sa
-    // colonne intacte (13.6-4) : la migration de report l'a posée.
+    // Le sur mesure de la FICHE, porté par la v17 seule : relu, plus émis
+    // (v18 : il est sur chaque déclinaison). Absent, il est lu ABSENT — pas
+    // `false` : le commerce laisse alors sa colonne intacte.
     customRecipe: z.boolean().optional(),
     // L7 de `plan-pro-voit-les-declinaisons.md` (fait seul, sans version
     // d'instantané) : absente d'un fait émis avant elle, et lue `null`. Une
@@ -73,6 +73,10 @@ const payloadSchema = z.object({
       // fait seul, sans version d'instantané) : absente d'un fait émis avant
       // elle, et lue `null` — la règle du défaut s'applique alors au commerce.
       detachedFromVariantSku: z.string().min(1).nullable().default(null),
+      // Le sur mesure de la déclinaison (fil v18,
+      // `plan-sur-mesure-par-declinaison.md`, V3) : absent d'un fait émis
+      // avant lui, et lu ABSENT — le commerce retombe sur l'en-tête v17.
+      customRecipe: z.boolean().optional(),
     }),
   ),
   gaps: z.record(z.string(), z.array(z.string().min(1))),

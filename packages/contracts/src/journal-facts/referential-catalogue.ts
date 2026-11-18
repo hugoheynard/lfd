@@ -483,11 +483,24 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
     payload({ subjectLabel: subjectLabel(), from: z.boolean(), to: z.boolean() }),
   ),
   /**
-   * La fiche devient sur mesure (`to: true`) ou redevient ouverte (`to: false`)
-   * — `plan-articles-sur-mesure.md` § 13, D1.
+   * La FICHE est devenue sur mesure (`to: true`) ou redevenue ouverte
+   * (`to: false`) — un fait du passé, plus émis depuis que le sur mesure se
+   * pose par déclinaison ; il reste lisible.
    */
   "product.custom_recipe_changed": fact(
     payload({ subjectLabel: subjectLabel(), from: z.boolean(), to: z.boolean() }),
+  ),
+  /**
+   * Une déclinaison devient sur mesure (`to: true`) ou redevient ouverte
+   * (`to: false`) — `plan-sur-mesure-par-declinaison.md`, V1.
+   */
+  "product.variant_custom_recipe_changed": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      variant: named("variant"),
+      from: z.boolean(),
+      to: z.boolean(),
+    }),
   ),
   /**
    * **La quantité minimale d'une déclinaison** — son minimum pro et son

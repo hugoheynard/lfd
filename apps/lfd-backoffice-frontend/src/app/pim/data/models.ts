@@ -104,6 +104,12 @@ export interface Variant {
   internalLabel: string;
   isDefault: boolean;
   isDiscontinued: boolean;
+  /**
+   * **Sur mesure** (`plan-sur-mesure-par-declinaison.md`, V1) : une recette faite
+   * pour des comptes précis. Tant qu'aucun compte ne lui est attribué dans
+   * Catalogue publié, aucun pro ne voit cette déclinaison.
+   */
+  customRecipe: boolean;
   /** Le rang, à partir de 0 — c'est lui que la référence suffixe (`-1`, `-2`). */
   position: number;
   /** Prix public TTC en centimes ; `null` = pas encore tarifé. */
@@ -204,12 +210,6 @@ export interface Product {
    * commandable. `false` = article courant.
    */
   operationOnly: boolean;
-  /**
-   * **Sur mesure** (R3 du plan des articles sur mesure) : une recette faite pour
-   * des comptes précis. Tant qu'aucun compte ne lui est attribué dans Catalogue
-   * publié, aucun pro ne le voit. `false` = article courant.
-   */
-  customRecipe: boolean;
   /**
    * **Demande le froid** (lot 4 bis du plan de préparation de tournée) : la
    * livraison ne le charge qu'en bac isotherme. `false` = rien de déclaré.

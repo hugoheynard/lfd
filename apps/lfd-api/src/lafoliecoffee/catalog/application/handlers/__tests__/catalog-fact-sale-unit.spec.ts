@@ -143,12 +143,27 @@ describe("receivedProductOf — la quantité minimale", () => {
 });
 
 /**
- * Fil v17 (`plan-articles-sur-mesure.md`, 13.6-4) : trois états, pas deux.
- * `true` pose, `false` rouvre, ABSENT ne touche pas — lire l'absence `false`
- * réécrirait une fiche reportée à `true` par la migration et l'ouvrirait au public.
+ * Le sur mesure (`plan-sur-mesure-par-declinaison.md`, V3) : celui de la
+ * déclinaison (v18) gagne ; absent, celui de la fiche (v17) ; absent des deux,
+ * la valeur reste ABSENTE — jamais lue `false` : un fait en vol réécrirait
+ * sinon un article reporté à `true` et l'ouvrirait au public.
  */
 describe("receivedProductOf — le sur mesure", () => {
-  it.each([true, false])("range `%s` sur chaque article de la fiche", (customRecipe) => {
+  it.each([true, false])("v18 : range `%s` sur l'article de CETTE déclinaison", (customRecipe) => {
+    const fact = CatalogProductChangedFact.fromPayload(payload({ variant: { customRecipe } }));
+
+    expect(receivedProductOf(fact).items[0]?.customRecipe).toBe(customRecipe);
+  });
+
+  it("v18 : le champ de la déclinaison gagne sur un en-tête qui dirait autre chose", () => {
+    const fact = CatalogProductChangedFact.fromPayload(
+      payload({ product: { customRecipe: true }, variant: { customRecipe: false } }),
+    );
+
+    expect(receivedProductOf(fact).items[0]?.customRecipe).toBe(false);
+  });
+
+  it.each([true, false])("repli v17 : range `%s`, celui de la fiche", (customRecipe) => {
     const fact = CatalogProductChangedFact.fromPayload(payload({ product: { customRecipe } }));
 
     expect(receivedProductOf(fact).items[0]?.customRecipe).toBe(customRecipe);

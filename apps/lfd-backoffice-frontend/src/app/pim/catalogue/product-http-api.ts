@@ -31,7 +31,7 @@ import type { Product, ProductKind, Variant } from '../data/models';
 import type { CreatedIdResponse } from '@lfd/contracts';
 import type {
   SetProductOperationOnlyPayload,
-  SetProductCustomRecipePayload,
+  SetVariantCustomRecipePayload,
   SetProductColdRequirementPayload,
   SetProductVariantsAsTilesPayload,
   UpdateVariantPricingPayload,
@@ -161,6 +161,7 @@ function toVariant(variant: VariantView): Variant {
     internalLabel: variant.internalLabel,
     isDefault: variant.isDefault,
     isDiscontinued: variant.isDiscontinued,
+    customRecipe: variant.customRecipe,
     position: variant.position,
     priceCents: variant.priceCents,
     weightGrams: variant.weightGrams,
@@ -211,7 +212,6 @@ export function backendToProduct(
     variants: product.variants.map(toVariant),
     vatByContext: product.vatByContext,
     operationOnly: product.operationOnly,
-    customRecipe: product.customRecipe,
     requiresCold: product.requiresCold,
     variantsAsTiles: product.variantsAsTiles,
     audience: product.audience,
@@ -629,12 +629,17 @@ export class ProductHttpApi {
   }
 
   /**
-   * **Sur mesure** — une écriture à part, journalisée par le serveur
-   * (`product.custom_recipe_changed`), hors de l'enregistrement des sections.
+   * **Sur mesure, par déclinaison** — une écriture à part, journalisée par le
+   * serveur (`product.variant_custom_recipe_changed`), hors de l'enregistrement
+   * des sections. Le serveur refuse le défaut d'une fiche sans vignettes.
    */
-  async setCustomRecipe(id: string, customRecipe: boolean): Promise<void> {
-    const payload: SetProductCustomRecipePayload = { customRecipe };
-    await this.put(`products/${id}/custom-recipe`, payload);
+  async setVariantCustomRecipe(
+    productId: string,
+    variantId: string,
+    customRecipe: boolean,
+  ): Promise<void> {
+    const payload: SetVariantCustomRecipePayload = { customRecipe };
+    await this.put(`products/${productId}/variants/${variantId}/custom-recipe`, payload);
   }
 
   /**

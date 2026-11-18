@@ -293,8 +293,9 @@ function operationOnlyChanged(fact: PhraseFact): Said {
 }
 
 /**
- * « … a déclaré « Tartelette » sur mesure » — le fait de la fiche (§ 13 du plan
- * des articles sur mesure, D1). L'attribuer à des comptes est un autre fait.
+ * « … a déclaré « Tartelette » sur mesure » — le fait de la FICHE, que plus rien
+ * n'écrit : les lignes déjà posées se lisent encore, dans leurs mots. Le sur
+ * mesure se déclare par déclinaison (`variantCustomRecipeChanged`).
  */
 function customRecipeChanged(fact: PhraseFact): Said {
   const custom = fact.payload['to'] === true;
@@ -323,6 +324,25 @@ function coldRequirementChanged(fact: PhraseFact): Said {
       text(cold ? ' demande le froid' : ' ne demande plus le froid'),
     ],
     ['subjectLabel', 'from', 'to'],
+  );
+}
+
+/**
+ * « … a déclaré « Tartelette », déclinaison « 6 parts » sur mesure » — le fait
+ * d'une déclinaison. L'attribuer à des comptes est un autre fait.
+ */
+function variantCustomRecipeChanged(fact: PhraseFact): Said {
+  const custom = fact.payload['to'] === true;
+  const variant = variantOf(fact.payload);
+  return byActor(
+    fact,
+    [
+      text('a déclaré '),
+      ...theSubject(fact, PRODUCT),
+      ...variant.segments,
+      text(custom ? ' sur mesure' : ' hors sur mesure'),
+    ],
+    ['subjectLabel', variant.key, 'from', 'to'],
   );
 }
 
@@ -399,6 +419,7 @@ export const REFERENTIAL_PHRASES = {
   'product.channels_changed': channelsChanged,
   'product.operation_only_changed': operationOnlyChanged,
   'product.custom_recipe_changed': customRecipeChanged,
+  'product.variant_custom_recipe_changed': variantCustomRecipeChanged,
   'product.cold_requirement_changed': coldRequirementChanged,
   'product.variants_as_tiles_changed': variantsAsTilesChanged,
   'product.declared_ready': onProduct('a déclaré', ' prête à publier'),

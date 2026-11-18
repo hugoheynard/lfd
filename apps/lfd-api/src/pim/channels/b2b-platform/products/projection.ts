@@ -116,6 +116,9 @@ export function projectVariant(
     mayContain: [...served.mayContain],
     allergensPrecautionary: served.precautionary,
     allergenTexts: allergenTextsOf(naming, served.allergens, served.mayContain),
+    // Le sur mesure de CETTE déclinaison (v18, `plan-sur-mesure-par-declinaison.md`) :
+    // jamais résolu sur le défaut, chacune porte le sien.
+    customRecipe: variant.customRecipe ?? false,
   };
 }
 

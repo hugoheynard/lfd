@@ -31,6 +31,7 @@ const piece = {
   weightMinGrams: null,
   weightStepGrams: null,
   minQuantities: { pro: null, public: null },
+  customRecipe: false,
 };
 
 const byWeight = {
@@ -60,7 +61,6 @@ function snapshotOf(version: number, variants: readonly Record<string, unknown>[
         operationOnly: false,
         requiresCold: false,
         variantsAsTiles: true,
-        customRecipe: false,
       },
     ],
     orderTimeLimits: [],

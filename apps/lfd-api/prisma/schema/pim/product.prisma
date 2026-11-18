@@ -81,8 +81,11 @@ model Product {
   /// commerce. Cochée et sans réservation, la fiche n'est servie à personne
   /// (D3). Rien à voir avec `kind = made_to_order` (« Sur commande »).
   ///
-  /// `false` par défaut ; `20261102240000_le_sur_mesure_au_referentiel` a
-  /// reporté à `true` les fiches dont une déclinaison était marquée côté commerce.
+  /// ⚠️ **COLONNE MORTE** — plus lue ni écrite : le sur mesure est un fait de
+  /// la DÉCLINAISON (`ProductVariant.customRecipe`,
+  /// `documentation/catalogue/plan-sur-mesure-par-declinaison.md`, V1 et V4).
+  /// Elle reste en base (CLAUDE.md § 0) avec la valeur qu'elle avait au
+  /// report `20261118130000_le_sur_mesure_par_declinaison`.
   customRecipe Boolean @default(false) @map("custom_recipe")
 
   /// **À qui la fiche vend, quand elle ne suit pas sa famille** — `pro` |
@@ -283,6 +286,15 @@ model ProductVariant {
   /// `saisir-un-prix.md`, § 3), et cette colonne n'est plus lue
   /// pour ça (vérifié le 2026-10-29).
   hasBeenPublished Boolean @default(false) @map("has_been_published")
+
+  /// **Sur mesure** — une recette faite pour un ou quelques clients, posée
+  /// déclinaison par déclinaison (Hugo, 2026-11-18,
+  /// `documentation/catalogue/plan-sur-mesure-par-declinaison.md`, V1). Le
+  /// référentiel ne connaît aucune société : attribuer l'article à des comptes
+  /// reste au commerce. Cochée et sans réservation, la déclinaison n'est servie
+  /// à personne (D3). Le défaut d'une fiche sans vignettes ne la porte jamais
+  /// (V5, tenu par l'agrégat `Product`).
+  customRecipe Boolean @default(false) @map("custom_recipe")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

@@ -19,6 +19,7 @@ function variant(id: string, overrides: Partial<Variant> = {}): Variant {
     internalLabel: id,
     isDefault: false,
     isDiscontinued: false,
+    customRecipe: false,
     position: 0,
     priceCents: null,
     weightGrams: null,

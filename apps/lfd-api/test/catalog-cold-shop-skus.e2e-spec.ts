@@ -64,6 +64,7 @@ function variant(sku: string, position: number, priceMillicents: number | null):
     mayContain: null,
     allergensPrecautionary: false,
     allergenTexts: null,
+    customRecipe: false,
   };
 }
 
@@ -81,7 +82,6 @@ function product(sku: string, requiresCold: boolean, variants: readonly Variant[
     operationOnly: false,
     requiresCold,
     variantsAsTiles: true,
-    customRecipe: false,
   };
 }
 

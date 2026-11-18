@@ -30,6 +30,7 @@ const variant = {
   weightMinGrams: null,
   weightStepGrams: null,
   minQuantities: { pro: 6, public: 2 },
+  customRecipe: false,
 };
 
 describe("syncMinQuantitiesSchema", () => {

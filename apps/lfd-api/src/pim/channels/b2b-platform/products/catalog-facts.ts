@@ -73,10 +73,11 @@ export interface CatalogProductHead {
   /** Chaque déclinaison en vignette au rayon (fil v16, `plan-declinaisons-en-vignette.md`). */
   readonly variantsAsTiles: boolean;
   /**
-   * **Sur mesure** (fil v17, `plan-articles-sur-mesure.md` § 13, D1). Toujours
-   * émis ; absent d'un fait d'AVANT la v17, et alors le commerce laisse sa
-   * colonne intacte (13.6-4) — jamais lu `false` : un fait en vol réécrirait
-   * sinon une fiche reportée par la migration, et l'ouvrirait au public.
+   * **Sur mesure de la fiche** (fil v17) — **relu, plus émis** : depuis la v18,
+   * le fait est porté par chaque déclinaison (`CatalogVariantFact.customRecipe`,
+   * `plan-sur-mesure-par-declinaison.md`, V3). Un fait v17 en vol le porte
+   * encore, et le commerce s'y replie quand la déclinaison ne dit rien ; absent
+   * des deux, il laisse sa colonne intacte — jamais lu `false`.
    */
   readonly customRecipe?: boolean | undefined;
   /**
@@ -98,8 +99,15 @@ export interface CatalogProductHead {
  * `minQuantities` est `null` sur un fait d'avant le fil v15 — relu, jamais
  * émis : l'émission porte toujours les minimums effectifs, `null` compris.
  */
-export type CatalogVariantFact = Omit<SyncVariant, "minQuantities"> & {
+export type CatalogVariantFact = Omit<SyncVariant, "minQuantities" | "customRecipe"> & {
   readonly nameTranslations: CatalogTranslations | null;
+  /**
+   * **Sur mesure** (fil v18) — toujours émis ; absent d'un fait d'avant la
+   * v18, et alors le commerce retombe sur l'en-tête v17, sinon laisse sa
+   * colonne intacte. Jamais lu `false` : un fait en vol rouvrirait au public
+   * un article reporté.
+   */
+  readonly customRecipe?: boolean | undefined;
   readonly minQuantities: SyncMinQuantities | null;
   /**
    * **Le SKU de la déclinaison dont celle-ci est la copie**, quand un
@@ -242,7 +250,6 @@ export function projectProductFact(input: ProductFactInput): CatalogProductFactB
       operationOnly: product.operationOnly,
       requiresCold: product.requiresCold,
       variantsAsTiles: product.variantsAsTiles ?? true,
-      customRecipe: product.customRecipe ?? false,
       detachedFromSku: input.detachedFromSku,
     },
     variants,

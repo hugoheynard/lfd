@@ -40,6 +40,7 @@ const DEFAULT_VARIANT: Variant = {
   internalLabel: 'Gros florentin lait',
   isDefault: true,
   isDiscontinued: false,
+  customRecipe: false,
   position: 0,
   priceCents: 250,
   weightGrams: 100,

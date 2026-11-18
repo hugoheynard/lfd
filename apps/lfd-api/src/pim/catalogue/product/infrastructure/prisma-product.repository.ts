@@ -70,6 +70,7 @@ interface VariantRow extends MinQuantityColumns {
   pricingFollowsDefault: boolean;
   nutritionFollowsDefault: boolean;
   minQuantityFollowsDefault: boolean;
+  customRecipe: boolean;
   allergenSheet: AllergensRow | null;
   nutritionValues: NutritionRow | null;
 }
@@ -87,7 +88,6 @@ interface ProductRow {
   audience: string | null;
   originVariantId: string | null;
   variantsAsTiles: boolean;
-  customRecipe: boolean;
   variants: VariantRow[];
   contextVat: readonly { vatRateId: string; context: { key: string } }[];
 }
@@ -135,6 +135,7 @@ function toVariant(row: VariantRow): VariantSnapshot {
     nutritionFollowsDefault: row.nutritionFollowsDefault,
     minQuantities: minQuantitiesOf(row),
     minQuantityFollowsDefault: row.minQuantityFollowsDefault,
+    customRecipe: row.customRecipe,
     // 🔴 Pas de ligne = personne n'a déclaré (`null`) ; une ligne, même à
     // tableau vide, est une AFFIRMATION (« aucun allergène »). C'est tout
     // l'intérêt d'une table séparée : le tri-état est structurel.
@@ -198,7 +199,6 @@ function toProduct(row: ProductRow): Product {
     audience: row.audience === null ? null : audience(row.audience),
     originVariantId: row.originVariantId,
     variantsAsTiles: row.variantsAsTiles,
-    customRecipe: row.customRecipe,
     variants: row.variants.map(toVariant),
     vatByContext: Object.fromEntries(
       row.contextVat.map((line) => [line.context.key, line.vatRateId]),
@@ -235,7 +235,9 @@ function toColumns(snapshot: ProductSnapshot) {
     audience: snapshot.audience,
     originVariantId: snapshot.originVariantId ?? null,
     variantsAsTiles: snapshot.variantsAsTiles ?? true,
-    customRecipe: snapshot.customRecipe ?? false,
+    // `custom_recipe` de la fiche n'est plus ni lu ni écrit : colonne morte, qui
+    // garde la valeur du report pour qu'un retour au code d'avant ne rouvre rien
+    // (`plan-sur-mesure-par-declinaison.md`, V4).
   };
 }
 
@@ -303,6 +305,9 @@ export class PrismaProductRepository extends ProductRepository {
                 // La trace d'un détachement s'écrit à la naissance, et nulle part ailleurs.
                 detachedFromVariantId: defaultVariant.detachedFromVariantId ?? null,
                 position: defaultVariant.position,
+                // Un produit né d'un détachement garde le sur mesure de la
+                // déclinaison qu'il était.
+                customRecipe: defaultVariant.customRecipe ?? false,
               },
             },
           },
@@ -383,6 +388,7 @@ export class PrismaProductRepository extends ProductRepository {
             pricingFollowsDefault: variant.pricingFollowsDefault,
             nutritionFollowsDefault: variant.nutritionFollowsDefault,
             minQuantityFollowsDefault: variant.minQuantityFollowsDefault,
+            customRecipe: variant.customRecipe ?? false,
             ...minQuantityColumns(variant.minQuantities),
           },
           update: {
@@ -404,6 +410,7 @@ export class PrismaProductRepository extends ProductRepository {
             pricingFollowsDefault: variant.pricingFollowsDefault,
             nutritionFollowsDefault: variant.nutritionFollowsDefault,
             minQuantityFollowsDefault: variant.minQuantityFollowsDefault,
+            customRecipe: variant.customRecipe ?? false,
             ...minQuantityColumns(variant.minQuantities),
           },
         }),

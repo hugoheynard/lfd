@@ -45,6 +45,7 @@ import {
   VariantAlreadyDiscontinuedError,
 } from "../errors/variant-lifecycle-errors.js";
 import { PricingAlignmentAcrossUnitsError } from "../errors/sale-unit-errors.js";
+import { CustomRecipeDefaultWithoutTilesError } from "../errors/custom-recipe-errors.js";
 import type { CompletenessRules } from "../services/variant-completeness.js";
 
 export type ProductKind = "daily" | "made_to_order" | "resale";
@@ -130,13 +131,6 @@ export interface ProductSnapshot {
    * fiche) : l'agrégat le rend toujours.
    */
   readonly variantsAsTiles?: boolean | undefined;
-  /**
-   * **Sur mesure** — une recette faite pour un ou quelques clients
-   * (`plan-articles-sur-mesure.md` § 13, D1). Le référentiel ne connaît aucune
-   * société : à qui l'article est attribué se décide au commerce. Facultatif à
-   * la LECTURE (absent = `false`) : l'agrégat le rend toujours.
-   */
-  readonly customRecipe?: boolean | undefined;
 }
 
 /**
@@ -190,8 +184,6 @@ export class Product {
     // Une fiche naît en montrant chaque déclinaison (Hugo, 2026-10-29) : le
     // comportement de base, qu'on décoche fiche par fiche.
     private variantsAsTilesValue = true,
-    // Une fiche naît ouverte : « sur mesure » se coche, il ne se devine pas.
-    private customRecipeValue = false,
   ) {}
 
   static open(input: NewProductInput): Product {
@@ -235,7 +227,6 @@ export class Product {
       snapshot.audience,
       snapshot.originVariantId ?? null,
       snapshot.variantsAsTiles ?? true,
-      snapshot.customRecipe ?? false,
     );
   }
 
@@ -335,41 +326,57 @@ export class Product {
    * **Montre chaque déclinaison en vignette** au rayon — ou seulement la
    * déclinaison par défaut (`plan-declinaisons-en-vignette.md`, V1).
    *
-   * Aucune règle ne refuse le geste : une fiche à une seule déclinaison le
-   * porte sans effet, et le prend dès qu'on lui en ajoute une. Ce que l'option
-   * change se juge chez ceux qui VENDENT (la vitrine), pas ici.
+   * Une fiche à une seule déclinaison le porte sans effet, et le prend dès
+   * qu'on lui en ajoute une. Un seul refus : décocher quand le défaut est sur
+   * mesure (V5 de `plan-sur-mesure-par-declinaison.md`).
    *
    * @returns `false` quand la fiche le disait déjà ({@link StatusChanged}).
+   * @throws {CustomRecipeDefaultWithoutTilesError} le défaut est sur mesure.
    */
   showVariantsAsTiles(variantsAsTiles: boolean): boolean {
     if (this.variantsAsTilesValue === variantsAsTiles) {
       return false;
     }
+    this.refuseCustomDefaultWithoutTiles(this.defaultVariant, variantsAsTiles);
     this.variantsAsTilesValue = variantsAsTiles;
     return true;
   }
 
-  /** Une recette sur mesure ? */
-  get customRecipe(): boolean {
-    return this.customRecipeValue;
+  /**
+   * **Déclare une déclinaison sur mesure** — ou la rend ouverte
+   * (`plan-sur-mesure-par-declinaison.md`, V1). Seule elle bascule : ses
+   * sœurs gardent leur case. Ce que la case change se juge chez ceux qui
+   * VENDENT — le commerce ne sert un article sur mesure qu'aux comptes
+   * auxquels il l'a attribué (D3).
+   *
+   * Se règle quel que soit le statut, archivée comprise : le geste prépare, il
+   * ne vend pas.
+   *
+   * @returns `false` quand elle le disait déjà ({@link StatusChanged}).
+   * @throws {CustomRecipeDefaultWithoutTilesError} le défaut d'une fiche sans vignettes (V5).
+   */
+  declareVariantCustomRecipe(variantId: string, customRecipe: boolean): boolean {
+    const target = this.variant(variantId);
+    if (customRecipe && target.isDefault) {
+      this.refuseCustomDefaultWithoutTiles(target, this.variantsAsTilesValue, true);
+    }
+    return target.declareCustomRecipe(customRecipe);
   }
 
   /**
-   * **Déclare la fiche sur mesure** — ou la rend ouverte
-   * (`plan-articles-sur-mesure.md` § 13, D1).
-   *
-   * Aucune règle ne refuse le geste : ce que la case change se juge chez ceux
-   * qui VENDENT — le commerce ne sert un article sur mesure qu'aux comptes
-   * auxquels il l'a attribué (D3).
-   *
-   * @returns `false` quand la fiche le disait déjà ({@link StatusChanged}).
+   * **V5 (a)** — une fiche sans vignettes ne paraît au rayon que par son
+   * défaut : sur mesure, elle disparaîtrait pour tous les pros sans
+   * réservation. L'état que les trois gestes laisseraient est jugé ici, avant
+   * toute mutation.
    */
-  declareCustomRecipe(customRecipe: boolean): boolean {
-    if (this.customRecipeValue === customRecipe) {
-      return false;
+  private refuseCustomDefaultWithoutTiles(
+    defaultVariant: Variant,
+    variantsAsTiles: boolean,
+    customRecipe = defaultVariant.customRecipe,
+  ): void {
+    if (customRecipe && !variantsAsTiles) {
+      throw new CustomRecipeDefaultWithoutTilesError(defaultVariant.sku);
     }
-    this.customRecipeValue = customRecipe;
-    return true;
   }
 
   /** Sa propre audience, ou `null` s'il suit sa famille. */
@@ -784,10 +791,10 @@ export class Product {
       this.requiresColdValue,
       this.audienceValue,
       variantId,
+      // Une fiche née d'un détachement montre ses vignettes ; son défaut garde
+      // le sur mesure de la déclinaison qu'il était (`resolved`), si bien que le
+      // détachement n'ouvre à tous les pros aucune recette réservée.
       true,
-      // Une déclinaison détachée d'une fiche sur mesure le reste (13.6-8) :
-      // sinon le détachement ouvrirait à tous les pros une recette réservée.
-      this.customRecipeValue,
     );
   }
 
@@ -822,6 +829,7 @@ export class Product {
    *   nouvelle a reçues en propre — elles se persistent par leurs ports dédiés.
    * @throws {VariantAlreadyDefaultError} elle l'est déjà.
    * @throws {DiscontinuedVariantNotDefaultableError} elle est archivée.
+   * @throws {CustomRecipeDefaultWithoutTilesError} elle est sur mesure sur une fiche sans vignettes (V5).
    * @throws {DormantSheetWouldWakeError} cf. {@link Variant.promoteToDefault}.
    * @throws {PricingAlignmentAcrossUnitsError} une sœur suivrait un tarif d'une autre unité.
    */
@@ -833,6 +841,7 @@ export class Product {
     if (target.isDiscontinued) {
       throw new DiscontinuedVariantNotDefaultableError(target.sku);
     }
+    this.refuseCustomDefaultWithoutTiles(target, this.variantsAsTilesValue);
     const previous = this.defaultVariant;
     const resolved = this.resolvedSnapshot(target);
     const inherited = {
@@ -865,7 +874,13 @@ export class Product {
     name: LocalizedText;
     options: Readonly<Record<string, string>>;
   }): Variant {
-    const variant = Variant.open({ ...input, position: this.nextVariantPosition });
+    // Elle hérite du sur mesure du défaut : sur une fiche réservée, une
+    // déclinaison neuve naît fermée comme ses sœurs plutôt qu'ouverte à tous.
+    const variant = Variant.open({
+      ...input,
+      position: this.nextVariantPosition,
+      customRecipe: this.defaultVariant.customRecipe,
+    });
     // Sur une fiche en vente, elle part au prochain envoi : déjà publiée.
     if (this.statusValue === "published") {
       variant.markPublished();
@@ -994,7 +1009,6 @@ export class Product {
       audience: this.audienceValue,
       originVariantId: this.originVariantIdValue,
       variantsAsTiles: this.variantsAsTilesValue,
-      customRecipe: this.customRecipeValue,
     };
   }
 }

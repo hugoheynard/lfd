@@ -140,6 +140,7 @@ export class GetProductDetailHandler implements IQueryHandler<
       variants: product.snapshot().variants.map((variant) => ({
         ...variant,
         internalLabel: product.variantInternalLabel(variant.id),
+        customRecipe: variant.customRecipe ?? false,
       })),
       ...audienceView(product, category.audience),
       editorial,

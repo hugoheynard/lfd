@@ -250,12 +250,23 @@ describe("projectProductFact", () => {
     ).toBe(false);
   });
 
-  /** Fil v17 (`plan-articles-sur-mesure.md` § 13, D1) : toujours émis, tel que la fiche le dit. */
-  it("porte le sur mesure de la fiche, `false` compris", () => {
-    expect(projectProductFact(input()).product.customRecipe).toBe(false);
-    expect(
-      projectProductFact(input({ product: tarte({ customRecipe: true }) })).product.customRecipe,
-    ).toBe(true);
+  /**
+   * Fil v18 (`plan-sur-mesure-par-declinaison.md`, V3) : toujours émis sur
+   * chaque déclinaison, `false` compris — et l'en-tête ne le porte plus.
+   */
+  it("porte le sur mesure de chaque déclinaison, plus celui de la fiche", () => {
+    const base = tarte({ status: "published" });
+    const [only] = base.variants;
+    if (only === undefined) {
+      throw new RangeError("la fiche de test porte au moins une déclinaison");
+    }
+    const custom = { ...base, variants: [{ ...only, customRecipe: true }] };
+
+    expect(projectProductFact(input()).variants[0]?.customRecipe).toBe(false);
+    expect(projectProductFact(input({ product: custom })).variants[0]?.customRecipe).toBe(true);
+    expect(projectProductFact(input({ product: custom })).product).not.toHaveProperty(
+      "customRecipe",
+    );
   });
 
   /** L7 de `plan-pro-voit-les-declinaisons.md` : la filiation du détachement voyage. */

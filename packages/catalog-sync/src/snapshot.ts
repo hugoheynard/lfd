@@ -21,7 +21,7 @@ import { z } from "zod";
  * pire qu'un push refusé, parce qu'il facture des prix qui n'existent pas.
  * Toute rupture de forme incrémente ce nombre.
  */
-export const CATALOG_SNAPSHOT_VERSION = 17;
+export const CATALOG_SNAPSHOT_VERSION = 18;
 
 /**
  * Une famille de produits, **à plat**.
@@ -392,6 +392,17 @@ export const syncVariantSchema = z.object({
    * durable émis avant le champ se rejoue, et l'absence s'y lit `null`.
    */
   allergenTexts: z.record(z.string().min(1), syncAllergenTextsSchema).nullable().default(null),
+  /**
+   * **Sur mesure** — une recette faite pour un ou quelques clients (v18,
+   * `documentation/catalogue/plan-sur-mesure-par-declinaison.md`, V1 et V3).
+   * Un fait de la DÉCLINAISON : le récepteur le pose sur l'article de ce SKU
+   * et décide à quels comptes il est attribué — le référentiel ne connaît
+   * aucune société.
+   *
+   * Obligatoire : un émetteur qui l'oublie échoue à l'émission plutôt que de
+   * laisser lire « ouvert à tous ».
+   */
+  customRecipe: z.boolean(),
 });
 
 export type SyncVariant = z.infer<typeof syncVariantSchema>;
@@ -575,17 +586,6 @@ export const syncProductSchema = z.object({
    * l'émission plutôt que de laisser le récepteur choisir.
    */
   variantsAsTiles: z.boolean(),
-  /**
-   * **Sur mesure** — une recette faite pour un ou quelques clients (v17,
-   * `documentation/catalogue/plan-articles-sur-mesure.md` § 13, D1). Un fait
-   * de la fiche, que le récepteur descend sur ses articles ; c'est lui qui
-   * décide à quels comptes l'article est attribué — le référentiel ne connaît
-   * aucune société.
-   *
-   * Obligatoire, comme `variantsAsTiles` : un émetteur qui l'oublie échoue à
-   * l'émission plutôt que de laisser lire « ouvert à tous ».
-   */
-  customRecipe: z.boolean(),
 });
 export type SyncProduct = z.infer<typeof syncProductSchema>;
 
@@ -737,6 +737,7 @@ export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
     z.literal(15),
     z.literal(16),
     z.literal(17),
+    z.literal(18),
   ]),
   products: z.array(
     syncProductSchema.extend({
@@ -751,8 +752,9 @@ export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
       // Absent avant la v16 : seule la déclinaison par défaut paraissait au
       // rayon. C'est la VERSION qui dit comment lire.
       variantsAsTiles: z.boolean().optional(),
-      // Absent avant la v17 : le sur mesure ne traversait pas, il se posait
-      // au commerce. C'est la VERSION qui dit comment lire.
+      // Le sur mesure de la FICHE, porté par la v17 seule : absent avant (il
+      // se posait au commerce), et descendu sur la déclinaison depuis la v18.
+      // C'est la VERSION qui dit comment lire.
       customRecipe: z.boolean().optional(),
       // Absents avant la v8 : l'éditorial et le visuel ne traversaient pas. Une
       // arrivée d'avant la bascule reste lisible, et se lit alors « ni ligne ni
@@ -793,6 +795,10 @@ export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
             weightStepGrams: z.number().int().positive().nullable().optional(),
             // Absente avant la v15 : aucune quantité minimale n'existait.
             minQuantities: syncMinQuantitiesSchema.optional(),
+            // Absent avant la v18 : le sur mesure était un fait de la fiche
+            // (v17), ou ne traversait pas. Jamais lu `false` : c'est la
+            // VERSION qui dit comment lire.
+            customRecipe: z.boolean().optional(),
             // La limite RÉSOLUE, telle que la v6 la portait sur l'article. Elle
             // n'est plus émise, et reste lisible : une arrivée mise en file un
             // mardi peut être relue le jeudi, sur un code qui a changé.

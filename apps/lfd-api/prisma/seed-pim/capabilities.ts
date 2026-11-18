@@ -4,9 +4,9 @@ import type { CommandBus } from "@nestjs/cqrs";
 
 import { AddProductVariantCommand } from "../../src/pim/catalogue/product/application/add-product-variant.js";
 import { DiscontinueProductVariantCommand } from "../../src/pim/catalogue/product/application/discontinue-product-variant.js";
-import { SetProductCustomRecipeCommand } from "../../src/pim/catalogue/product/application/set-product-custom-recipe.js";
 import { SetProductMinQuantitiesCommand } from "../../src/pim/catalogue/product/application/set-product-min-quantities.js";
 import { SetProductVariantsAsTilesCommand } from "../../src/pim/catalogue/product/application/set-product-variants-as-tiles.js";
+import { SetVariantCustomRecipeCommand } from "../../src/pim/catalogue/product/application/set-variant-custom-recipe.js";
 import { SetVariantShopNameCommand } from "../../src/pim/catalogue/product/application/set-variant-shop-name.js";
 import { UpdateVariantPricingCommand } from "../../src/pim/catalogue/product/application/update-variant-pricing.js";
 import type { PrismaService } from "../../src/platform/database/prisma.service.js";
@@ -40,11 +40,29 @@ export async function replayCapabilities(
     );
   }
   if (product.customRecipe === true) {
-    // Idempotent : une case déjà cochée n'écrit pas de fait.
-    await bus.execute<SetProductCustomRecipeCommand, void>(
-      new SetProductCustomRecipeCommand(productId, true),
-    );
+    await declareDefaultCustomRecipe(bus, prisma, productId);
   }
+}
+
+/**
+ * Coche le sur mesure de la déclinaison par défaut — idempotent : une case
+ * déjà cochée n'écrit pas de fait.
+ */
+async function declareDefaultCustomRecipe(
+  bus: CommandBus,
+  prisma: PrismaService,
+  productId: string,
+): Promise<void> {
+  const defaultVariant = await prisma.productVariant.findFirst({
+    where: { productId, isDefault: true },
+    select: { id: true },
+  });
+  if (defaultVariant === null) {
+    return;
+  }
+  await bus.execute<SetVariantCustomRecipeCommand, void>(
+    new SetVariantCustomRecipeCommand(productId, defaultVariant.id, true),
+  );
 }
 
 /** Les conditions de vente au poids que la tarification du défaut porte, ou rien. */

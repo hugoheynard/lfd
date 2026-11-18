@@ -1,8 +1,14 @@
 /**
- * La migration `20261102240000_le_sur_mesure_au_referentiel` REPORTE l'ancien
- * marqueur du commerce (`catalog_item_overrides.is_made_to_order`) sur la fiche
- * du référentiel et sur tous ses articles
- * (`documentation/catalogue/plan-articles-sur-mesure.md` § 13.3, 13.6-5).
+ * Les deux REPORTS du sur mesure, rejoués dans l'ordre où la production les a
+ * reçus :
+ *
+ * - `20261102240000_le_sur_mesure_au_referentiel` reporte l'ancien marqueur du
+ *   commerce (`catalog_item_overrides.is_made_to_order`) sur la fiche du
+ *   référentiel et sur tous ses articles
+ *   (`documentation/catalogue/plan-articles-sur-mesure.md` § 13.3, 13.6-5) ;
+ * - `20261118130000_le_sur_mesure_par_declinaison` reporte la case de la fiche
+ *   sur chacune de ses déclinaisons
+ *   (`documentation/catalogue/plan-sur-mesure-par-declinaison.md`, V4).
  *
  * La base de test est déjà migrée : l'override est posé « à l'ancienne », puis
  * le REPORT de la migration — ses instructions après les deux `ADD COLUMN`,
@@ -27,6 +33,10 @@ const stubAdminVerifier = {
 const MIGRATION = join(
   process.cwd(),
   "prisma/migrations/20261102240000_le_sur_mesure_au_referentiel/migration.sql",
+);
+const VARIANT_MIGRATION = join(
+  process.cwd(),
+  "prisma/migrations/20261118130000_le_sur_mesure_par_declinaison/migration.sql",
 );
 /** Le report commence à ce commentaire ; ce qui précède étend le schéma, déjà fait. */
 const REPORT_STARTS = "-- Les fiches dont au moins une déclinaison était marquée au commerce.";
@@ -82,12 +92,19 @@ async function markedTheOldWay(sku: string): Promise<void> {
   });
 }
 
-async function replayReport(): Promise<void> {
-  const sql = readFileSync(MIGRATION, "utf8");
-  const report = sql.slice(sql.indexOf(REPORT_STARTS));
+/** Rejoue les `UPDATE` d'une migration, à partir d'un repère ; le schéma est déjà étendu. */
+async function replayUpdates(file: string, from: string): Promise<void> {
+  const sql = readFileSync(file, "utf8");
+  const report = sql.slice(sql.indexOf(from));
   for (const statement of report.split(/;\s*\n/).filter((part) => part.includes("UPDATE"))) {
     await ctx.prisma.$executeRawUnsafe(statement);
   }
+}
+
+/** Les deux reports, dans l'ordre de la production. */
+async function replayReport(): Promise<void> {
+  await replayUpdates(MIGRATION, REPORT_STARTS);
+  await replayUpdates(VARIANT_MIGRATION, "UPDATE");
 }
 
 describe("le report du marqueur sur mesure", () => {
@@ -101,9 +118,11 @@ describe("le report du marqueur sur mesure", () => {
 
     const product = await ctx.prisma.product.findUniqueOrThrow({
       where: { id: fiche.id },
-      select: { customRecipe: true },
+      select: { customRecipe: true, variants: { select: { customRecipe: true } } },
     });
     expect(product.customRecipe).toBe(true);
+    expect(product.variants).toHaveLength(2);
+    expect(product.variants.every((variant) => variant.customRecipe)).toBe(true);
     const items = await ctx.prisma.catalogItem.findMany({
       where: { productId: fiche.id },
       select: { customRecipe: true },
@@ -114,6 +133,9 @@ describe("le report du marqueur sur mesure", () => {
     expect(
       (await ctx.prisma.product.findUniqueOrThrow({ where: { id: other.id } })).customRecipe,
     ).toBe(false);
+    expect(
+      await ctx.prisma.productVariant.count({ where: { productId: other.id, customRecipe: true } }),
+    ).toBe(0);
     expect(
       await ctx.prisma.catalogItem.count({ where: { productId: other.id, customRecipe: true } }),
     ).toBe(0);
@@ -131,20 +153,45 @@ describe("le report du marqueur sur mesure", () => {
     ).toBe(true);
   });
 
-  /** 13.6-4 : la fiche reportée, réémise, porte `true` — le fait suivant ne défait pas le report. */
-  it("la fiche reportée se réémet sur mesure", async () => {
+  /**
+   * 13.6-4 et V4 : la fiche reportée, réémise en v18, porte `true` sur chaque
+   * déclinaison — le fait suivant ne défait aucun des deux reports.
+   */
+  it("la fiche reportée se réémet sur mesure, déclinaison par déclinaison", async () => {
     const { fiche, second } = await twoVariants("Tarte du chef");
     await markedTheOldWay(second);
     await replayReport();
 
     await staff()
-      .put(`${PRODUCTS}/${fiche.id}/variants-as-tiles`)
-      .send({ variantsAsTiles: false })
+      .put(`${PRODUCTS}/${fiche.id}/cold-requirement`)
+      .send({ requiresCold: true })
       .expect(200);
     await relayAll(ctx);
 
     expect(
       await ctx.prisma.catalogItem.count({ where: { productId: fiche.id, customRecipe: false } }),
     ).toBe(0);
+  });
+});
+
+describe("le report de la fiche sur ses déclinaisons (V4)", () => {
+  it("la colonne de la fiche reste intacte, et le code ne l'écrit plus", async () => {
+    const { fiche, second } = await twoVariants("Tarte du chef");
+    await markedTheOldWay(second);
+    await replayReport();
+    const variant = await ctx.prisma.productVariant.findFirstOrThrow({
+      where: { productId: fiche.id, isDefault: false },
+      select: { id: true },
+    });
+
+    await staff()
+      .put(`${PRODUCTS}/${fiche.id}/variants/${variant.id}/custom-recipe`)
+      .send({ customRecipe: false })
+      .expect(200);
+
+    // Colonne morte : un retour au code d'avant retrouve la fiche fermée.
+    expect(
+      (await ctx.prisma.product.findUniqueOrThrow({ where: { id: fiche.id } })).customRecipe,
+    ).toBe(true);
   });
 });

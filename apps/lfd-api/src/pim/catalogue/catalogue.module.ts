@@ -65,7 +65,7 @@ import { PrismaProductImageUsage } from "./product/infrastructure/prisma-product
 import { SetProductOperationOnlyHandler } from "./product/application/set-product-operation-only.js";
 import { SetProductColdRequirementHandler } from "./product/application/set-product-cold-requirement.js";
 import { SetProductVariantsAsTilesHandler } from "./product/application/set-product-variants-as-tiles.js";
-import { SetProductCustomRecipeHandler } from "./product/application/set-product-custom-recipe.js";
+import { SetVariantCustomRecipeHandler } from "./product/application/set-variant-custom-recipe.js";
 import { SetProductVatHandler } from "./product/application/set-product-vat.js";
 import { UpdateProductEditorialHandler } from "./product/application/update-product-editorial.js";
 import { UpdateProductIdentityHandler } from "./product/application/update-product-identity.js";
@@ -101,7 +101,7 @@ import { GetProductSaleUnitUsageHandler } from "./product/application/get-produc
 import { ProductMinQuantitiesController } from "./product/http/product-min-quantities.controller.js";
 import { ProductVariantsAsTilesController } from "./product/http/product-variants-as-tiles.controller.js";
 import { ProductDeletionController } from "./product/http/product-deletion.controller.js";
-import { ProductCustomRecipeController } from "./product/http/product-custom-recipe.controller.js";
+import { VariantCustomRecipeController } from "./product/http/variant-custom-recipe.controller.js";
 import { ProductVariantLifecycleController } from "./product/http/product-variant-lifecycle.controller.js";
 import { ReferenceController } from "./shared/http/reference.controller.js";
 import { PrismaCatalogueReader } from "./shared/infrastructure/prisma-catalogue-reader.js";
@@ -155,7 +155,7 @@ import {
     ProductSaleUnitUsageController,
     ProductMinQuantitiesController,
     ProductVariantsAsTilesController,
-    ProductCustomRecipeController,
+    VariantCustomRecipeController,
     ProductVariantLifecycleController,
     ProductHistoryController,
     ReferenceController,
@@ -188,7 +188,7 @@ import {
     SetProductOperationOnlyHandler,
     SetProductColdRequirementHandler,
     SetProductVariantsAsTilesHandler,
-    SetProductCustomRecipeHandler,
+    SetVariantCustomRecipeHandler,
     SetProductVatHandler,
     UpdateProductEditorialHandler,
     SaveVariantAllergensHandler,
