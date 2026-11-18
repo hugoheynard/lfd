@@ -1,8 +1,8 @@
 # Les niveaux de suivi du fournil
 
-**État : ✅ bâti sur `dev`, pas encore en production** (lots N1 à N4 et N3,
-dernier commit `ca8bd7e2a`). Décisions de Hugo du 2026-11-17. Avant de le
-mettre en service, lire « À la mise en service », plus bas.
+**État : ✅ en production depuis le 2026-11-18 (`bf32f26ee`)**, en service
+depuis le même jour. Décisions de Hugo des 2026-11-17 et 2026-11-18. Ce qu'il
+faut régler à l'écran : « À la mise en service », plus bas.
 
 La fiche elle-même (lignes, paliers, fournées) est décrite dans
 [`la-fiche-d-atelier.md`](la-fiche-d-atelier.md) ; les postes dans
