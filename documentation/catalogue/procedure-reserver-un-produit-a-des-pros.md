@@ -32,6 +32,9 @@ produit, section Commerce, cocher **« Sur mesure »**.
 client, onglet **« Articles réservés »**, champ **« Réserver un article à ce
 compte »** : chercher le produit par son nom ou sa référence, l'ajouter.
 
+- Seuls les produits cochés **« Sur mesure »** au geste 1 y sont proposés :
+  un produit absent de la liste n'a pas encore sa case.
+
 - **Un compte principal** : ses sites en profitent aussi. L'onglet du site
   les montre « via » le principal, en lecture seule.
 - **Un site seul** : le principal ne le voit pas.
