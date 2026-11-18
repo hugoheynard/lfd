@@ -13,7 +13,7 @@ import {
   type ProductRecord,
   type VariantRecord,
 } from "../domain/ports/product.repository.js";
-import { ReadinessRepository } from "../domain/ports/readiness.repository.js";
+import { ReadinessReader } from "../domain/ports/readiness.reader.js";
 import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
 import { requireCategory } from "../../category/application/category-support.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
@@ -49,7 +49,7 @@ export type ProductDetail = Omit<ProductRecord, "variants"> &
      *   Le champ reste servi UN déploiement, le temps que les fronts en ligne
      *   basculent sur `readinessStale` (audit 2026-09-01, tranche 3 — étendre,
      *   basculer, resserrer). À supprimer au resserrement, avec la méthode
-     *   `ReadinessRepository.contentUpdatedAt` qui n'aura plus de lecteur.
+     *   `ReadinessReader.contentUpdatedAt` qui n'aura plus de lecteur.
      */
     readonly contentUpdatedAt: string | null;
     /**
@@ -81,7 +81,7 @@ export class GetProductDetailHandler implements IQueryHandler<
   constructor(
     private readonly products: ProductRepository,
     private readonly editorials: EditorialReader,
-    private readonly readiness: ReadinessRepository,
+    private readonly readiness: ReadinessReader,
     private readonly journal: PimJournalReader,
     private readonly clock: Clock,
     private readonly staffAuthors: StaffAuthorDirectory,

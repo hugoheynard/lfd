@@ -91,6 +91,7 @@ import { PrismaCatalogRevisionSource } from "./revision/infrastructure/prisma-ca
 import { CatalogOverviewReader } from "./revision/domain/ports/catalog-overview.reader.js";
 import { PrismaCatalogOverviewReader } from "./revision/infrastructure/prisma-catalog-overview.reader.js";
 import { EditorialReader } from "./product/domain/ports/editorial-reader.js";
+import { ReadinessReader } from "./product/domain/ports/readiness.reader.js";
 import { ReadinessRepository } from "./product/domain/ports/readiness.repository.js";
 import { EditorialRepository } from "./product/domain/ports/editorial.repository.js";
 import { NutritionValuesRepository } from "./product/domain/ports/nutrition-values.repository.js";
@@ -115,6 +116,7 @@ import { DetachmentLineageReader } from "./product/domain/ports/detachment-linea
 import { PrismaDetachmentLineageReader } from "./product/infrastructure/prisma-detachment-lineage.reader.js";
 import { PublishedAllergensReader } from "./product/domain/ports/published-allergens.reader.js";
 import { PrismaPublishedAllergensReader } from "./product/infrastructure/prisma-published-allergens.reader.js";
+import { PrismaReadinessReader } from "./product/infrastructure/prisma-readiness.reader.js";
 import { PrismaReadinessRepository } from "./product/infrastructure/prisma-readiness.repository.js";
 import { PrismaEditorialRepository } from "./product/infrastructure/prisma-editorial.repository.js";
 import { PrismaNutritionValuesRepository } from "./product/infrastructure/prisma-nutrition-values.repository.js";
@@ -252,6 +254,7 @@ import { PrismaSkuAvailability } from "./product/infrastructure/prisma-sku-avail
     GetCatalogOverviewHandler,
     RenameCatalogRevisionHandler,
     { provide: ReadinessRepository, useClass: PrismaReadinessRepository },
+    { provide: ReadinessReader, useClass: PrismaReadinessReader },
     { provide: CategoryEditorialReader, useClass: PrismaCategoryEditorialReader },
     { provide: CategoryEditorialRepository, useClass: PrismaCategoryEditorialRepository },
     // La matrice des allergènes (plan AM1) : un port de lecture à elle.

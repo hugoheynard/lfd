@@ -2,9 +2,11 @@ import { PimJournalReader, type PimJournalFact } from "../../../../journal/pim-j
 import { Product, type ProductSnapshot } from "../../domain/entities/product.js";
 import { ProductRepository } from "../../domain/ports/product.repository.js";
 import {
-  ReadinessRepository,
-  type ProductReadiness,
-} from "../../domain/ports/readiness.repository.js";
+  ProductReadiness,
+  type ReadinessSignature,
+} from "../../domain/entities/product-readiness.js";
+import { ReadinessReader } from "../../domain/ports/readiness.reader.js";
+import { ReadinessRepository } from "../../domain/ports/readiness.repository.js";
 
 /**
  * Les doubles de la signature, partagés par sa pose et son retrait.
@@ -79,25 +81,39 @@ export class FakeProducts extends ProductRepository {
   }
 }
 
+/** Le dépôt de la signature : `declared` est ce que la « base » porte. */
 export class FakeReadiness extends ReadinessRepository {
-  declared: ProductReadiness | null = null;
+  declared: ReadinessSignature | null = null;
 
-  read(): Promise<ProductReadiness | null> {
-    return Promise.resolve(this.declared);
+  load(productId: string): Promise<ProductReadiness> {
+    return Promise.resolve(
+      this.declared === null
+        ? ProductReadiness.unsigned(productId)
+        : ProductReadiness.signed(productId, this.declared),
+    );
   }
-  readMany(): Promise<ReadonlyMap<string, ProductReadiness>> {
+  save(readiness: ProductReadiness): Promise<void> {
+    this.declared = readiness.signature;
+    return Promise.resolve();
+  }
+}
+
+/** Les lectures de la signature, sur la « base » du double d'écriture. */
+export class FakeReadinessReader extends ReadinessReader {
+  constructor(
+    private readonly store: FakeReadiness = new FakeReadiness(),
+    private readonly contentDate: Date | null = NOW,
+  ) {
+    super();
+  }
+  read(): Promise<ReadinessSignature | null> {
+    return Promise.resolve(this.store.declared);
+  }
+  readMany(): Promise<ReadonlyMap<string, ReadinessSignature>> {
     return Promise.resolve(new Map());
   }
   contentUpdatedAt(): Promise<Date | null> {
-    return Promise.resolve(NOW);
-  }
-  declare(_productId: string, readiness: ProductReadiness): Promise<void> {
-    this.declared = readiness;
-    return Promise.resolve();
-  }
-  withdraw(): Promise<void> {
-    this.declared = null;
-    return Promise.resolve();
+    return Promise.resolve(this.contentDate);
   }
 }
 

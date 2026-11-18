@@ -21,12 +21,10 @@ import type request from "supertest";
 import { PIM_VERSIONED_TABLES } from "../src/pim/changes/domain/pim-versioned-tables.js";
 import { isContentFact } from "../src/pim/catalogue/product/domain/content-facts.js";
 import { IllustratedProductsReader } from "../src/pim/catalogue/product/domain/ports/illustrated-products.reader.js";
-import {
-  type ProductReadiness,
-  ReadinessRepository,
-} from "../src/pim/catalogue/product/domain/ports/readiness.repository.js";
+import type { ReadinessSignature } from "../src/pim/catalogue/product/domain/entities/product-readiness.js";
+import { ReadinessReader } from "../src/pim/catalogue/product/domain/ports/readiness.reader.js";
 import { PrismaIllustratedProductsReader } from "../src/pim/catalogue/product/infrastructure/prisma-illustrated-products.reader.js";
-import { PrismaReadinessRepository } from "../src/pim/catalogue/product/infrastructure/prisma-readiness.repository.js";
+import { PrismaReadinessReader } from "../src/pim/catalogue/product/infrastructure/prisma-readiness.reader.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import type { PackedContent } from "../src/platform/day-versions/content-compression.js";
 import { VersionedContentCache } from "../src/platform/day-versions/versioned-content-cache.js";
@@ -73,26 +71,20 @@ class CountingIllustrated extends IllustratedProductsReader {
 }
 
 /** Le vrai dépôt, compté sur `contentUpdatedAt` : le détail seul l'appelle. */
-class CountingReadiness extends ReadinessRepository {
-  inner: ReadinessRepository | null = null;
+class CountingReadiness extends ReadinessReader {
+  inner: ReadinessReader | null = null;
   detailReads = 0;
-  read(productId: string): Promise<ProductReadiness | null> {
+  read(productId: string): Promise<ReadinessSignature | null> {
     return this.delegate().read(productId);
   }
-  readMany(productIds: readonly string[]): Promise<ReadonlyMap<string, ProductReadiness>> {
+  readMany(productIds: readonly string[]): Promise<ReadonlyMap<string, ReadinessSignature>> {
     return this.delegate().readMany(productIds);
   }
   contentUpdatedAt(productId: string): Promise<Date | null> {
     this.detailReads += 1;
     return this.delegate().contentUpdatedAt(productId);
   }
-  declare(productId: string, readiness: ProductReadiness): Promise<void> {
-    return this.delegate().declare(productId, readiness);
-  }
-  withdraw(productId: string): Promise<void> {
-    return this.delegate().withdraw(productId);
-  }
-  private delegate(): ReadinessRepository {
+  private delegate(): ReadinessReader {
     if (this.inner === null) {
       throw new RangeError("dépôt des signatures pas encore branché");
     }
@@ -111,11 +103,11 @@ beforeAll(async () => {
       { token: AdminTokenVerifier, value: stubAdminVerifier },
       { token: VersionedContentCache, value: new MemoryContents() },
       { token: IllustratedProductsReader, value: illustrated },
-      { token: ReadinessRepository, value: readiness },
+      { token: ReadinessReader, value: readiness },
     ],
   });
   illustrated.inner = new PrismaIllustratedProductsReader(ctx.prisma);
-  readiness.inner = new PrismaReadinessRepository(ctx.prisma);
+  readiness.inner = new PrismaReadinessReader(ctx.prisma);
 });
 
 afterAll(async () => {

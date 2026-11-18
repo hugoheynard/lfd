@@ -8,11 +8,13 @@ import {
   ArchivedProductNotReadyError,
   ProductNotFoundError,
 } from "../../domain/errors/product-errors.js";
+import { ProductChangedAfterReadinessError } from "../../domain/errors/product-readiness-errors.js";
 import type { ProductSnapshot } from "../../domain/entities/product.js";
 import {
   FakeProductHistory,
   FakeProducts,
   FakeReadiness,
+  FakeReadinessReader,
   NOW,
   PRODUCT_ID,
   snapshot,
@@ -31,13 +33,18 @@ import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-em
  * forme, et aucun code ne dira que 10,00 € est le bon prix. Ce qui se teste,
  * c'est donc qui signe, quand, et les deux cas où signer n'a pas de sens.
  */
-function build(status: ProductSnapshot["status"] = "draft", factsSince: readonly string[] = []) {
+function build(
+  status: ProductSnapshot["status"] = "draft",
+  factsSince: readonly string[] = [],
+  contentDate: Date | null = NOW,
+) {
   const readiness = new FakeReadiness();
   const journal = new RecordingJournal();
   const emitter = new RecordingCatalogEmitter();
   const handler = new DeclareProductReadyHandler(
     new FakeProducts(snapshot(status)),
     readiness,
+    new FakeReadinessReader(readiness, contentDate),
     journal,
     new FixedClock(NOW),
     new DirectUnitOfWork(),
@@ -96,6 +103,33 @@ describe("DeclareProductReady", () => {
     expect(readiness.declared).toBeNull();
   });
 
+  /**
+   * La signature ne précède pas ce qu'elle couvre : une fiche dont le contenu
+   * est plus récent que l'instant de la déclaration n'est pas signée.
+   */
+  it("refuse une fiche plus récente que sa preuve, sans rien écrire ni tracer", async () => {
+    const { handler, readiness, journal, emitter } = build(
+      "draft",
+      [],
+      new Date(NOW.getTime() + 1),
+    );
+
+    await expect(
+      asStaff(() => handler.execute(new DeclareProductReadyCommand(PRODUCT_ID))),
+    ).rejects.toBeInstanceOf(ProductChangedAfterReadinessError);
+    expect(readiness.declared).toBeNull();
+    expect(journal.entries).toEqual([]);
+    expect(emitter.products).toEqual([]);
+  });
+
+  it("accepte une fiche modifiée à l'instant même de la déclaration", async () => {
+    const { handler, readiness } = build("draft", [], NOW);
+
+    await asStaff(() => handler.execute(new DeclareProductReadyCommand(PRODUCT_ID)));
+
+    expect(readiness.declared).toEqual({ readyAt: NOW, readyBy: "staff_hugo" });
+  });
+
   it("refuse de se prononcer sur une fiche archivée", async () => {
     const { handler } = build("archived");
 
@@ -108,6 +142,7 @@ describe("DeclareProductReady", () => {
     const handler = new DeclareProductReadyHandler(
       new FakeProducts(null),
       new FakeReadiness(),
+      new FakeReadinessReader(),
       new RecordingJournal(),
       new FixedClock(NOW),
       new DirectUnitOfWork(),

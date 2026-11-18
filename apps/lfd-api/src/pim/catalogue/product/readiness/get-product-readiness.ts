@@ -2,7 +2,7 @@ import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import type { ProductReadinessView } from "@lfd/pim-contracts";
 
 import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
-import { ReadinessRepository } from "../domain/ports/readiness.repository.js";
+import { ReadinessReader } from "../domain/ports/readiness.reader.js";
 
 export class GetProductReadinessQuery {
   constructor(readonly id: string) {}
@@ -23,7 +23,7 @@ export class GetProductReadinessHandler implements IQueryHandler<
   ProductReadinessView | null
 > {
   constructor(
-    private readonly readiness: ReadinessRepository,
+    private readonly readiness: ReadinessReader,
     private readonly staffAuthors: StaffAuthorDirectory,
   ) {}
 

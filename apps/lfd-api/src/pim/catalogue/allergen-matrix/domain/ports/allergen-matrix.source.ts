@@ -62,7 +62,7 @@ export abstract class AllergenMatrixSource {
    * d'allergènes. `null` = aucune fiche.
    *
    * Ce sont les `updated_at` des lignes — la seule trace datée qui existe
-   * (vérifié le 2026-10-20 : `ReadinessRepository.contentUpdatedAt` lit les
+   * (vérifié le 2026-10-20 : `ReadinessReader.contentUpdatedAt` lit les
    * mêmes, et le journal n'a pas de lecture « dernier fait » sur un lot).
    * Une publication touche la ligne de la fiche, et c'est voulu ici : elle
    * change la matrice.

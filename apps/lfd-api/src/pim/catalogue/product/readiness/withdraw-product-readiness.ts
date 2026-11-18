@@ -2,10 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
-import {
-  ArchivedProductReadinessError,
-  ProductNotDeclaredReadyError,
-} from "../domain/errors/product-errors.js";
+import { ArchivedProductReadinessError } from "../domain/errors/product-errors.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { ReadinessRepository } from "../domain/ports/readiness.repository.js";
 import { requireProduct } from "../shared/product-support.js";
@@ -20,8 +17,9 @@ export class WithdrawProductReadinessCommand {
  * (décision de Hugo, 2026-10-26 : une signature posée par erreur ne se
  * défaisait pas).
  *
- * La ligne `product_readiness` est SUPPRIMÉE, et c'est délibéré : elle n'a
- * jamais porté d'historique — `declare` l'écrase à chaque nouvelle signature.
+ * La ligne `product_readiness` est SUPPRIMÉE (l'agrégat non signé n'en laisse
+ * pas), et c'est délibéré : elle n'a jamais porté d'historique — `declare`
+ * l'écrase à chaque nouvelle signature.
  * L'historique est au journal, qui garde la signature et son retrait. Une
  * colonne `withdrawn_at` aurait obligé chaque lecteur (fiche, capture de
  * révision) à apprendre qu'une ligne présente peut ne rien signer.
@@ -48,9 +46,8 @@ export class WithdrawProductReadinessHandler implements ICommandHandler<
     if (product.status === "archived") {
       throw new ArchivedProductReadinessError(command.id);
     }
-    if ((await this.readiness.read(command.id)) === null) {
-      throw new ProductNotDeclaredReadyError(command.id);
-    }
+    const readiness = await this.readiness.load(command.id);
+    readiness.withdraw();
     const { sku, name } = product.snapshot();
     // Le fait et le retrait dans la même transaction, pour la raison de
     // `DeclareProductReadyHandler` : l'historique ne doit jamais affirmer ce
@@ -62,7 +59,7 @@ export class WithdrawProductReadinessHandler implements ICommandHandler<
         subjectId: command.id,
         payload: { subjectLabel: name.fr, sku, name },
       });
-      await this.readiness.withdraw(command.id);
+      await this.readiness.save(readiness);
       await this.emitter.emitProducts([command.id]);
     });
   }

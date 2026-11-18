@@ -5,11 +5,10 @@ import { Clock } from "../../../../platform/time/clock.js";
 import { currentRequestContext } from "../../../../platform/context/request-context.store.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { PimJournalReader } from "../../../journal/pim-journal-reader.js";
-import {
-  AnonymousReadinessError,
-  ArchivedProductNotReadyError,
-} from "../domain/errors/product-errors.js";
+import { ArchivedProductNotReadyError } from "../domain/errors/product-errors.js";
+import type { ReadinessSignature } from "../domain/entities/product-readiness.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
+import { ReadinessReader } from "../domain/ports/readiness.reader.js";
 import { ReadinessRepository } from "../domain/ports/readiness.repository.js";
 import { signatureStillHolds } from "../domain/services/readiness-renewal.js";
 import { requireProduct } from "../shared/product-support.js";
@@ -43,6 +42,7 @@ export class DeclareProductReadyHandler implements ICommandHandler<
   constructor(
     private readonly products: ProductRepository,
     private readonly readiness: ReadinessRepository,
+    private readonly reads: ReadinessReader,
     private readonly journal: PimJournal,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
@@ -55,13 +55,21 @@ export class DeclareProductReadyHandler implements ICommandHandler<
     if (product.status === "archived") {
       throw new ArchivedProductNotReadyError(command.id);
     }
-    const actor = currentRequestContext()?.actor.id;
-    if (actor === undefined || actor === null) {
-      throw new AnonymousReadinessError(command.id);
-    }
-    if (await this.alreadySigned(command.id, actor)) {
+    // Hors requête (seed, cron) il n'y a personne : l'agrégat refuse alors de
+    // signer, et le rejeu ne s'examine que pour une identité réelle.
+    const actor = currentRequestContext()?.actor.id ?? null;
+    const readiness = await this.readiness.load(command.id);
+    if (actor !== null && (await this.alreadySigned(command.id, readiness.signature, actor))) {
       return;
     }
+    // L'horloge de la requête, pas `new Date()` : la déclaration se compare à
+    // des dates de modification, et deux sources de temps qui divergent d'une
+    // milliseconde suffiraient à la dire périmée à l'instant où elle est faite.
+    readiness.declare(
+      new Date(this.clock.now()),
+      actor,
+      await this.reads.contentUpdatedAt(command.id),
+    );
     const { sku, name } = product.snapshot();
     // Le fait et la signature dans la MÊME transaction. Une seule écriture ne
     // dispense pas de l'unité de travail : si la trace passait et la
@@ -75,20 +83,16 @@ export class DeclareProductReadyHandler implements ICommandHandler<
         subjectId: command.id,
         payload: { subjectLabel: name.fr, sku, name },
       });
-      await this.readiness.declare(command.id, {
-        // L'horloge de la requête, pas `new Date()` : la déclaration se compare
-        // à des dates de modification, et deux sources de temps qui divergent
-        // d'une milliseconde suffiraient à la dire périmée à l'instant où elle
-        // est faite.
-        readyAt: new Date(this.clock.now()),
-        readyBy: actor,
-      });
+      await this.readiness.save(readiness);
       await this.emitter.emitProducts([command.id]);
     });
   }
 
-  private async alreadySigned(productId: string, actor: string): Promise<boolean> {
-    const current = await this.readiness.read(productId);
+  private async alreadySigned(
+    productId: string,
+    current: ReadinessSignature | null,
+    actor: string,
+  ): Promise<boolean> {
     if (current === null) {
       return false;
     }

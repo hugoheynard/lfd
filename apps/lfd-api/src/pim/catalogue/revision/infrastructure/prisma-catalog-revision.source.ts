@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { CatalogueReader } from "../../shared/domain/ports/catalogue-reader.js";
 import { EditorialReader } from "../../product/domain/ports/editorial-reader.js";
-import { ReadinessRepository } from "../../product/domain/ports/readiness.repository.js";
+import { ReadinessReader } from "../../product/domain/ports/readiness.reader.js";
 import { ImageCatalogue } from "../../shared/domain/ports/image-catalogue.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import type { VariantNutritionView } from "../../product/domain/ports/product.repository.js";
@@ -26,7 +26,7 @@ export class PrismaCatalogRevisionSource extends CatalogRevisionSource {
   constructor(
     private readonly catalogue: CatalogueReader,
     private readonly editorials: EditorialReader,
-    private readonly readiness: ReadinessRepository,
+    private readonly readiness: ReadinessReader,
     private readonly prisma: PimPrismaService,
     private readonly images: ImageCatalogue,
   ) {

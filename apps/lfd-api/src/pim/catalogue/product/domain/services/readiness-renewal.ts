@@ -1,5 +1,5 @@
 import { isContentFact } from "../content-facts.js";
-import type { ProductReadiness } from "../ports/readiness.repository.js";
+import type { ReadinessSignature } from "../entities/product-readiness.js";
 
 /**
  * La signature en place vaut-elle déjà ce qu'une nouvelle déclaration dirait ?
@@ -15,7 +15,7 @@ import type { ProductReadiness } from "../ports/readiness.repository.js";
  * @param factTypesSince les types des faits sur la fiche depuis `current.readyAt`.
  */
 export function signatureStillHolds(
-  current: ProductReadiness | null,
+  current: ReadinessSignature | null,
   signer: string,
   factTypesSince: readonly string[],
 ): boolean {

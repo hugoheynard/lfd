@@ -1,21 +1,12 @@
 import { Injectable } from "@nestjs/common";
 
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
-import {
-  ReadinessRepository,
-  type ProductReadiness,
-} from "../domain/ports/readiness.repository.js";
+import { ProductReadiness } from "../domain/entities/product-readiness.js";
+import { ReadinessRepository } from "../domain/ports/readiness.repository.js";
 
 /**
- * La déclaration en base, et la date qui la périme.
- *
- * ## Les tables qui datent une fiche
- *
- * Quatre, et la liste est ICI parce qu'elle n'a pas d'autre endroit où vivre :
- * elle décrit le SCHÉMA, et c'est l'adaptateur qui connaît le schéma. Une
- * table qu'on ajouterait à la fiche sans l'ajouter ici ne périmerait rien —
- * c'est le seul défaut possible de ce modèle, et il est tenu par un test qui
- * modifie chaque table et vérifie que la date bouge.
+ * L'écriture de la déclaration en base. Les deux mappers sont ici : la ligne
+ * rehydrate l'agrégat, et l'agrégat dit s'il faut poser ou retirer la ligne.
  */
 @Injectable()
 export class PrismaReadinessRepository extends ReadinessRepository {
@@ -23,61 +14,25 @@ export class PrismaReadinessRepository extends ReadinessRepository {
     super();
   }
 
-  async read(productId: string): Promise<ProductReadiness | null> {
+  async load(productId: string): Promise<ProductReadiness> {
     const row = await this.prisma.productReadiness.findUnique({ where: { productId } });
-    return row === null ? null : { readyAt: row.readyAt, readyBy: row.readyBy };
+    return row === null
+      ? ProductReadiness.unsigned(productId)
+      : ProductReadiness.signed(productId, { readyAt: row.readyAt, readyBy: row.readyBy });
   }
 
-  async readMany(productIds: readonly string[]): Promise<ReadonlyMap<string, ProductReadiness>> {
-    if (productIds.length === 0) {
-      return new Map();
+  async save(readiness: ProductReadiness): Promise<void> {
+    const { productId, signature } = readiness;
+    if (signature === null) {
+      // `deleteMany` et non `delete` : une course entre deux retraits ne doit
+      // pas finir en 500 sur une ligne déjà partie.
+      await this.prisma.productReadiness.deleteMany({ where: { productId } });
+      return;
     }
-    const rows = await this.prisma.productReadiness.findMany({
-      where: { productId: { in: [...productIds] } },
-    });
-    return new Map(
-      rows.map((row) => [row.productId, { readyAt: row.readyAt, readyBy: row.readyBy }]),
-    );
-  }
-
-  async contentUpdatedAt(productId: string): Promise<Date | null> {
-    const product = await this.prisma.product.findUnique({
-      where: { id: productId },
-      select: {
-        updatedAt: true,
-        variants: { select: { updatedAt: true } },
-        editorial: { select: { updatedAt: true } },
-        media: { select: { updatedAt: true } },
-      },
-    });
-    if (product === null) {
-      return null;
-    }
-    const dates = [
-      product.updatedAt,
-      ...product.variants.map((variant) => variant.updatedAt),
-      ...product.media.map((slot) => slot.updatedAt),
-      ...(product.editorial === null ? [] : [product.editorial.updatedAt]),
-    ];
-    // `reduce` et pas `Math.max` : ce dernier passerait par des nombres, et
-    // rendrait un `number` là où tout le reste manipule des `Date`.
-    return dates.reduce((latest, date) => (date > latest ? date : latest));
-  }
-
-  async declare(productId: string, readiness: ProductReadiness): Promise<void> {
     await this.prisma.productReadiness.upsert({
       where: { productId },
-      create: { productId, readyAt: readiness.readyAt, readyBy: readiness.readyBy },
-      update: { readyAt: readiness.readyAt, readyBy: readiness.readyBy },
+      create: { productId, readyAt: signature.readyAt, readyBy: signature.readyBy },
+      update: { readyAt: signature.readyAt, readyBy: signature.readyBy },
     });
-  }
-
-  /**
-   * `deleteMany` et non `delete` : retirer une signature absente n'est pas une
-   * erreur d'infrastructure (le handler a déjà refusé le cas, et une course
-   * entre deux retraits ne doit pas finir en 500).
-   */
-  async withdraw(productId: string): Promise<void> {
-    await this.prisma.productReadiness.deleteMany({ where: { productId } });
   }
 }

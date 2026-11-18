@@ -15,11 +15,11 @@ import {
   type ProductEditorialView,
   type ProductMediaRecord,
 } from "../../domain/ports/editorial-reader.js";
-import { ReadinessRepository } from "../../domain/ports/readiness.repository.js";
+import { ReadinessReader } from "../../domain/ports/readiness.reader.js";
 import {
   FakeProductHistory,
   FakeProducts,
-  FakeReadiness,
+  FakeReadinessReader,
   NOW,
   PRODUCT_ID,
   snapshot,
@@ -93,13 +93,13 @@ class NoLineage extends DetachmentLineageReader {
 }
 
 /** Un dépôt qui ne date aucun contenu : la fiche a disparu entre deux lectures. */
-class UndatedReadiness extends FakeReadiness {
+class UndatedReadiness extends FakeReadinessReader {
   override contentUpdatedAt(): Promise<Date | null> {
     return Promise.resolve(null);
   }
 }
 
-function handlerOver(readiness: ReadinessRepository): GetProductDetailHandler {
+function handlerOver(readiness: ReadinessReader): GetProductDetailHandler {
   return new GetProductDetailHandler(
     new FakeProducts(snapshot("draft")),
     new NoEditorial(),
@@ -115,7 +115,7 @@ function handlerOver(readiness: ReadinessRepository): GetProductDetailHandler {
 
 describe("GetProductDetailHandler — contentUpdatedAt", () => {
   it("sert la date du contenu en ISO quand le dépôt la connaît", async () => {
-    const detail = await handlerOver(new FakeReadiness()).execute(
+    const detail = await handlerOver(new FakeReadinessReader()).execute(
       new GetProductDetailQuery(PRODUCT_ID),
     );
 
