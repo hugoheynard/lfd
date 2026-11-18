@@ -16,16 +16,13 @@ import {
   type VariantNutritionValues,
   type VariantSnapshot,
 } from "./variant.js";
-import {
-  slugify,
-  type LocalizedText,
-} from "../../../shared/domain/value-objects/localized-text.js";
+import { type LocalizedText } from "../../../shared/domain/value-objects/localized-text.js";
 import type { SalesContext } from "../../../../reference/sales-contexts/domain/value-objects/sales-context.js";
 import type { ContextVat } from "../../../shared/domain/value-objects/context-vat.js";
 import type { AllergenDeclaration } from "../value-objects/nutrition-declaration.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
 import type { SaleUnitClearance } from "../value-objects/sale-reference-usage.js";
-import { NO_MIN_QUANTITIES, type MinQuantities } from "../value-objects/min-quantities.js";
+import { type MinQuantities } from "../value-objects/min-quantities.js";
 import { effectiveAudience, type Audience } from "../../../shared/domain/value-objects/audience.js";
 import type { CategoryVatPercents } from "../../../shared/domain/ports/catalogue-reader.js";
 import { activationGapsOf, type ActivationGaps } from "../services/activation-gaps.js";
@@ -35,7 +32,6 @@ import {
   type ComplianceFinding,
 } from "../services/product-compliance.js";
 import { refusalOf } from "./activation-refusal.js";
-import { alignedAllergenSheet } from "../services/aligned-allergen-sheet.js";
 import {
   DefaultVariantNotDetachableError,
   DefaultVariantNotDiscontinuableError,
@@ -46,107 +42,34 @@ import {
 } from "../errors/variant-lifecycle-errors.js";
 import { PricingAlignmentAcrossUnitsError } from "../errors/sale-unit-errors.js";
 import { CustomRecipeDefaultWithoutTilesError } from "../errors/custom-recipe-errors.js";
+import { resolveVariant } from "./variant-resolution.js";
+import {
+  productFieldsFrom,
+  productSnapshot,
+  type ProductFields,
+} from "./product-snapshot-mapper.js";
+import {
+  slugOf,
+  type DefaultVariantChange,
+  type NewProductInput,
+  type ProductKind,
+  type ProductSnapshot,
+  type ProductStatus,
+  type StatusChanged,
+} from "./product-state.js";
 import { VatByContext } from "../value-objects/vat-by-context.js";
 import { ProductCommerceOptions } from "../value-objects/product-commerce-options.js";
 import type { CompletenessRules } from "../services/variant-completeness.js";
 
-export type ProductKind = "daily" | "made_to_order" | "resale";
-/**
- * `deleted` : une fiche archivée qu'on a **supprimée** — elle disparaît de tout
- * le référentiel, archives comprises, mais la ligne reste en base et son SKU
- * reste pris (`documentation/pim/plan-effacer-une-fiche-archivee.md`, v4). Un
- * soft delete, parce que le dépôt n'efface pas un agrégat métier.
- */
-export type ProductStatus = "draft" | "published" | "archived" | "deleted";
-
-/**
- * La fiche est-elle **vivante** — brouillon ou en ligne ? Une archivée est
- * sortie du catalogue, une supprimée de tout. La définition vit ici pour que
- * chaque lecteur qui écartait `archived` écarte aussi `deleted` sans réécrire
- * la liste.
- */
-export function isLiveStatus(status: ProductStatus): boolean {
-  return status === "draft" || status === "published";
-}
-
-/**
- * Ce qu'un verbe de cycle de vie a **réellement** fait.
- *
- * `false` = le produit y était déjà. Il n'y a alors rien à écrire, et surtout
- * **rien à journaliser** : le journal est la trace d'audit, et un fait
- * `product.unpublished` sur une fiche qui n'était pas en vente est un fait qui
- * n'a pas eu lieu. Trois des quatre verbes journalisaient inconditionnellement
- * (audit 2026-09-01).
- *
- * À distinguer d'une transition **impossible**, qui lève : « il y était déjà »
- * est un non-événement, « ça n'a pas de sens » est une erreur d'appelant.
- */
-export type StatusChanged = boolean;
-
-export interface ProductSnapshot {
-  readonly id: string;
-  readonly sku: string;
-  readonly name: LocalizedText;
-  readonly slug: LocalizedText;
-  readonly kind: ProductKind;
-  readonly categoryId: string;
-  readonly status: ProductStatus;
-  readonly variants: readonly VariantSnapshot[];
-  /**
-   * Les taux propres à CE produit, par clé de contexte — sa **dérogation** à sa
-   * famille. Clé absente = il hérite, et c'est le cas courant.
-   */
-  readonly vatByContext: ContextVat;
-  /**
-   * **Vendu seulement pendant une opération** — la bûche, pas le croissant
-   * (D3 de `documentation/operations-datees/architecture-operations-datees.md`).
-   *
-   * Un fait de la FICHE et non de la ligne d'opération : retirer la bûche de
-   * Noël, masquer ou archiver Noël doit la rendre invisible, jamais la vendre
-   * toute l'année.
-   */
-  readonly operationOnly: boolean;
-  /**
-   * **Demande le froid** — se conserve au réfrigérateur (lot 4 bis du plan de
-   * préparation de tournée, v2-2). La livraison ne le charge qu'en bac
-   * isotherme.
-   *
-   * `false` n'affirme rien : c'est l'état de toute fiche tant que personne n'a
-   * dit qu'elle était froide, pas une déclaration « se conserve au sec ».
-   */
-  readonly requiresCold: boolean;
-  /**
-   * À qui la fiche vend quand elle ne suit pas sa famille. `null` = elle
-   * hérite (C2 du plan `plan-catalogue-synchronise-par-audience.md`).
-   */
-  readonly audience: Audience | null;
-  /**
-   * La déclinaison dont il est né par détachement (`plan-gestes-de-declinaison.md`,
-   * G2) ; `null` = né d'une création. Facultatif à la LECTURE (absent = `null`),
-   * comme `VariantSnapshot.detachedToProductId` : l'agrégat le rend toujours.
-   */
-  readonly originVariantId?: string | null | undefined;
-  /**
-   * **Montrer chaque déclinaison en vignette** au rayon de la boutique
-   * (`plan-declinaisons-en-vignette.md`, V1) ; `false` = seule la déclinaison
-   * par défaut. Facultatif à la LECTURE (absent = `true`, la valeur de toute
-   * fiche) : l'agrégat le rend toujours.
-   */
-  readonly variantsAsTiles?: boolean | undefined;
-}
-
-/**
- * Ouvrir un produit, c'est ouvrir **sa déclinaison par défaut avec lui**.
- * Les créer séparément ouvrirait une fenêtre où l'invariant 2 est faux.
- */
-export interface NewProductInput {
-  readonly id: string;
-  readonly sku: Sku;
-  readonly name: LocalizedText;
-  readonly kind: ProductKind;
-  readonly categoryId: string;
-  readonly defaultVariant: { readonly id: string; readonly sku: Sku; readonly name: LocalizedText };
-}
+export {
+  isLiveStatus,
+  type DefaultVariantChange,
+  type NewProductInput,
+  type ProductKind,
+  type ProductSnapshot,
+  type ProductStatus,
+  type StatusChanged,
+} from "./product-state.js";
 
 /**
  * **Le produit — l'agrégat, déclinaisons comprises.**
@@ -170,76 +93,56 @@ export interface NewProductInput {
  */
 export class Product {
   private constructor(
-    private readonly identity: string,
-    private readonly skuValue: string,
-    private nameValue: LocalizedText,
-    private slugValue: LocalizedText,
-    private kindValue: ProductKind,
-    private categoryIdValue: string,
-    private statusValue: ProductStatus,
+    private fields: ProductFields,
     private readonly variantList: Variant[],
-    private vatValue: VatByContext,
-    private optionsValue: ProductCommerceOptions,
-    private readonly originVariantIdValue: string | null = null,
   ) {}
 
   static open(input: NewProductInput): Product {
     return new Product(
-      input.id,
-      input.sku.value,
-      input.name,
-      slugOf(input.name),
-      input.kind,
-      input.categoryId,
-      // Un produit naît INVISIBLE : c'est ce qui rend l'invariant 7 tenable.
-      "draft",
+      {
+        id: input.id,
+        sku: input.sku.value,
+        name: input.name,
+        slug: slugOf(input.name),
+        kind: input.kind,
+        categoryId: input.categoryId,
+        // Un produit naît INVISIBLE : c'est ce qui rend l'invariant 7 tenable.
+        status: "draft",
+        vat: VatByContext.none(),
+        options: ProductCommerceOptions.initial(),
+        originVariantId: null,
+      },
       [Variant.openDefault(input.defaultVariant)],
-      VatByContext.none(),
-      ProductCommerceOptions.initial(),
     );
   }
 
   static reconstitute(snapshot: ProductSnapshot): Product {
     assertVariants(snapshot);
     return new Product(
-      snapshot.id,
-      snapshot.sku,
-      snapshot.name,
-      snapshot.slug,
-      snapshot.kind,
-      snapshot.categoryId,
-      snapshot.status,
+      productFieldsFrom(snapshot),
       snapshot.variants.map((variant) => Variant.reconstitute(variant)),
-      VatByContext.reconstitute(snapshot.vatByContext),
-      ProductCommerceOptions.of({
-        operationOnly: snapshot.operationOnly,
-        requiresCold: snapshot.requiresCold,
-        audience: snapshot.audience,
-        variantsAsTiles: snapshot.variantsAsTiles ?? true,
-      }),
-      snapshot.originVariantId ?? null,
     );
   }
 
   get id(): string {
-    return this.identity;
+    return this.fields.id;
   }
 
   get sku(): string {
-    return this.skuValue;
+    return this.fields.sku;
   }
 
   get status(): ProductStatus {
-    return this.statusValue;
+    return this.fields.status;
   }
 
   get categoryId(): string {
-    return this.categoryIdValue;
+    return this.fields.categoryId;
   }
 
   /** Les taux propres au produit — sa dérogation. Vide = il hérite. */
   get vatByContext(): ContextVat {
-    return this.vatValue.toMap();
+    return this.fields.vat.toMap();
   }
 
   /**
@@ -249,12 +152,12 @@ export class Product {
    * {@link VatByContext}.
    */
   setVat(vat: ContextVat, contexts: readonly SalesContext[]): void {
-    this.vatValue = VatByContext.declare(vat, contexts);
+    this.fields = { ...this.fields, vat: VatByContext.declare(vat, contexts) };
   }
 
   /** Vendu seulement pendant une opération ? */
   get operationOnly(): boolean {
-    return this.optionsValue.operationOnly;
+    return this.fields.options.operationOnly;
   }
 
   /**
@@ -268,12 +171,12 @@ export class Product {
    * comme pour un statut ({@link StatusChanged}).
    */
   reserveForOperations(operationOnly: boolean): boolean {
-    return this.changeOptions(this.optionsValue.withOperationOnly(operationOnly));
+    return this.changeOptions(this.fields.options.withOperationOnly(operationOnly));
   }
 
   /** Demande le froid ? */
   get requiresCold(): boolean {
-    return this.optionsValue.requiresCold;
+    return this.fields.options.requiresCold;
   }
 
   /**
@@ -287,12 +190,12 @@ export class Product {
    * ({@link StatusChanged}).
    */
   declareColdRequirement(requiresCold: boolean): boolean {
-    return this.changeOptions(this.optionsValue.withRequiresCold(requiresCold));
+    return this.changeOptions(this.fields.options.withRequiresCold(requiresCold));
   }
 
   /** Montre-t-il chaque déclinaison en vignette ? */
   get variantsAsTiles(): boolean {
-    return this.optionsValue.variantsAsTiles;
+    return this.fields.options.variantsAsTiles;
   }
 
   /**
@@ -307,11 +210,11 @@ export class Product {
    * @throws {CustomRecipeDefaultWithoutTilesError} le défaut est sur mesure.
    */
   showVariantsAsTiles(variantsAsTiles: boolean): boolean {
-    if (this.optionsValue.variantsAsTiles === variantsAsTiles) {
+    if (this.fields.options.variantsAsTiles === variantsAsTiles) {
       return false;
     }
     this.refuseCustomDefaultWithoutTiles(this.defaultVariant, variantsAsTiles);
-    return this.changeOptions(this.optionsValue.withVariantsAsTiles(variantsAsTiles));
+    return this.changeOptions(this.fields.options.withVariantsAsTiles(variantsAsTiles));
   }
 
   /**
@@ -330,7 +233,7 @@ export class Product {
   declareVariantCustomRecipe(variantId: string, customRecipe: boolean): boolean {
     const target = this.variant(variantId);
     if (customRecipe && target.isDefault) {
-      this.refuseCustomDefaultWithoutTiles(target, this.optionsValue.variantsAsTiles, true);
+      this.refuseCustomDefaultWithoutTiles(target, this.fields.options.variantsAsTiles, true);
     }
     return target.declareCustomRecipe(customRecipe);
   }
@@ -353,7 +256,7 @@ export class Product {
 
   /** Sa propre audience, ou `null` s'il suit sa famille. */
   get audience(): Audience | null {
-    return this.optionsValue.audience;
+    return this.fields.options.audience;
   }
 
   /**
@@ -364,15 +267,15 @@ export class Product {
    * @returns `false` quand elle le disait déjà ({@link StatusChanged}).
    */
   changeAudience(audience: Audience | null): boolean {
-    return this.changeOptions(this.optionsValue.withAudience(audience));
+    return this.changeOptions(this.fields.options.withAudience(audience));
   }
 
   /** Pose les nouveaux réglages ; `false` quand ils étaient déjà ceux-là. */
   private changeOptions(next: ProductCommerceOptions): boolean {
-    if (next === this.optionsValue) {
+    if (next === this.fields.options) {
       return false;
     }
-    this.optionsValue = next;
+    this.fields = { ...this.fields, options: next };
     return true;
   }
 
@@ -390,20 +293,19 @@ export class Product {
 
   /** Renomme — et re-dérive le slug. */
   rename(name: LocalizedText): void {
-    refuseEditOfArchived(this.statusValue, this.identity, "rename");
-    this.nameValue = name;
-    this.slugValue = slugOf(name);
+    refuseEditOfArchived(this.fields.status, this.fields.id, "rename");
+    this.fields = { ...this.fields, name, slug: slugOf(name) };
   }
 
   changeKind(kind: ProductKind): void {
-    refuseEditOfArchived(this.statusValue, this.identity, "change_kind");
-    this.kindValue = kind;
+    refuseEditOfArchived(this.fields.status, this.fields.id, "change_kind");
+    this.fields = { ...this.fields, kind };
   }
 
   /** Range le produit dans une autre famille (`ReclassifyProduct`). */
   reclassify(categoryId: string): void {
-    refuseEditOfArchived(this.statusValue, this.identity, "reclassify");
-    this.categoryIdValue = categoryId;
+    refuseEditOfArchived(this.fields.status, this.fields.id, "reclassify");
+    this.fields = { ...this.fields, categoryId };
   }
 
   /**
@@ -472,7 +374,7 @@ export class Product {
       vatPercents,
       rules,
       citedAllergens,
-      effectiveAudience(this.optionsValue.audience, categoryAudience),
+      effectiveAudience(this.fields.options.audience, categoryAudience),
     );
   }
 
@@ -499,7 +401,7 @@ export class Product {
     categoryAudience: Audience,
   ): boolean {
     return (
-      this.statusValue === "draft" &&
+      this.fields.status === "draft" &&
       isCompliantForActivation(
         this.complianceWith(vatPercents, rules, citedAllergens, categoryAudience),
       )
@@ -513,17 +415,17 @@ export class Product {
     categoryAudience: Audience,
   ): StatusChanged {
     this.refuseIfDeleted();
-    if (this.statusValue === "archived") {
-      throw new ArchivedProductNotPublishableError(this.identity);
+    if (this.fields.status === "archived") {
+      throw new ArchivedProductNotPublishableError(this.fields.id);
     }
-    if (this.statusValue === "published") {
+    if (this.fields.status === "published") {
       return false;
     }
     const findings = this.complianceWith(vatPercents, rules, citedAllergens, categoryAudience);
     if (!isCompliantForActivation(findings)) {
-      throw refusalOf(this.identity, findings);
+      throw refusalOf(this.fields.id, findings);
     }
-    this.statusValue = "published";
+    this.fields = { ...this.fields, status: "published" };
     // Toutes partent avec la fiche : c'est ce qui fige leur unité de vente.
     for (const variant of this.variantList) {
       variant.markPublished();
@@ -543,13 +445,13 @@ export class Product {
    * succès.
    */
   deactivate(): StatusChanged {
-    if (this.statusValue === "archived") {
-      throw new ArchivedProductNotWithdrawableError(this.identity);
+    if (this.fields.status === "archived") {
+      throw new ArchivedProductNotWithdrawableError(this.fields.id);
     }
-    if (this.statusValue !== "published") {
+    if (this.fields.status !== "published") {
       return false;
     }
-    this.statusValue = "draft";
+    this.fields = { ...this.fields, status: "draft" };
     return true;
   }
 
@@ -562,10 +464,10 @@ export class Product {
    */
   archive(): StatusChanged {
     this.refuseIfDeleted();
-    if (this.statusValue === "archived") {
+    if (this.fields.status === "archived") {
       return false;
     }
-    this.statusValue = "archived";
+    this.fields = { ...this.fields, status: "archived" };
     return true;
   }
 
@@ -578,10 +480,10 @@ export class Product {
    * la vente sur un geste qui prétendait l'y ramener.
    */
   restore(): StatusChanged {
-    if (this.statusValue !== "archived") {
-      throw new NotArchivedProductNotRestorableError(this.identity, this.statusValue);
+    if (this.fields.status !== "archived") {
+      throw new NotArchivedProductNotRestorableError(this.fields.id, this.fields.status);
     }
-    this.statusValue = "draft";
+    this.fields = { ...this.fields, status: "draft" };
     return true;
   }
 
@@ -597,16 +499,16 @@ export class Product {
    * @throws {NotArchivedProductNotDeletableError} la fiche n'est pas archivée.
    */
   delete(): void {
-    if (this.statusValue !== "archived") {
-      throw new NotArchivedProductNotDeletableError(this.identity, this.statusValue);
+    if (this.fields.status !== "archived") {
+      throw new NotArchivedProductNotDeletableError(this.fields.id, this.fields.status);
     }
-    this.statusValue = "deleted";
+    this.fields = { ...this.fields, status: "deleted" };
   }
 
   /** Une supprimée ne redevient rien depuis l'écran (plan v4, point 2). */
   private refuseIfDeleted(): void {
-    if (this.statusValue === "deleted") {
-      throw new DeletedProductNotChangeableError(this.identity);
+    if (this.fields.status === "deleted") {
+      throw new DeletedProductNotChangeableError(this.fields.id);
     }
   }
 
@@ -687,7 +589,7 @@ export class Product {
   private variant(variantId: string): Variant {
     const found = this.variantList.find((candidate) => candidate.id === variantId);
     if (found === undefined) {
-      throw new VariantNotFoundError(this.identity, variantId);
+      throw new VariantNotFoundError(this.fields.id, variantId);
     }
     return found;
   }
@@ -758,17 +660,19 @@ export class Product {
     const resolved = this.resolvedSnapshot(target);
     target.detachTo(input.id);
     return new Product(
-      input.id,
-      input.sku.value,
-      resolved.name,
-      slugOf(resolved.name),
-      this.kindValue,
-      this.categoryIdValue,
-      "draft",
+      {
+        id: input.id,
+        sku: input.sku.value,
+        name: resolved.name,
+        slug: slugOf(resolved.name),
+        kind: this.fields.kind,
+        categoryId: this.fields.categoryId,
+        status: "draft",
+        vat: this.fields.vat.copy(),
+        options: this.fields.options.forDetachedProduct(),
+        originVariantId: variantId,
+      },
       [Variant.openDefaultFrom(resolved, { ...input.defaultVariant, name: resolved.name })],
-      this.vatValue.copy(),
-      this.optionsValue.forDetachedProduct(),
-      variantId,
     );
   }
 
@@ -815,7 +719,7 @@ export class Product {
     if (target.isDiscontinued) {
       throw new DiscontinuedVariantNotDefaultableError(target.sku);
     }
-    this.refuseCustomDefaultWithoutTiles(target, this.optionsValue.variantsAsTiles);
+    this.refuseCustomDefaultWithoutTiles(target, this.fields.options.variantsAsTiles);
     const previous = this.defaultVariant;
     const resolved = this.resolvedSnapshot(target);
     const inherited = {
@@ -856,7 +760,7 @@ export class Product {
       customRecipe: this.defaultVariant.customRecipe,
     });
     // Sur une fiche en vente, elle part au prochain envoi : déjà publiée.
-    if (this.statusValue === "published") {
+    if (this.fields.status === "published") {
       variant.markPublished();
     }
     this.variantList.push(variant);
@@ -887,48 +791,15 @@ export class Product {
   alignVariant(variantId: string, aspect: VariantAspect, aligned: boolean): void {
     const variant = this.variantList.find((candidate) => candidate.id === variantId);
     if (variant === undefined) {
-      throw new VariantNotInProductError(this.identity, variantId);
+      throw new VariantNotInProductError(this.fields.id, variantId);
     }
     variant.alignOnDefault(aspect, aligned);
     this.assertPricingUnitsAgree();
   }
 
-  /**
-   * Ce que le défaut prête à une déclinaison alignée, section par section.
-   *
-   * Trois sections, dont les deux moitiés de la fiche réglementaire, qui
-   * s'enregistrent et s'héritent séparément (un format différent de la même
-   * pâte suit les allergènes du défaut, pas ses valeurs). Le prix et le poids
-   * voyagent ensemble : c'est le couple que la section « Tarif » enregistre.
-   */
+  /** Le jugement d'une déclinaison alignée porte sur ce que le défaut lui prête ({@link resolveVariant}). */
   private resolvedSnapshot(variant: Variant): VariantSnapshot {
-    const own = variant.snapshot();
-    const source = this.defaultVariant.snapshot();
-    // Chaque moitié vient EN ENTIER de celui que SON drapeau désigne. Les
-    // traces « peut contenir » voyagent avec les allergènes et non avec les
-    // valeurs : ce sont des allergènes, et les faire suivre le mauvais drapeau
-    // mettrait sur une étiquette la trace d'un autre article (plan §5). Depuis
-    // le lot 7, rien ne se recolle plus ici — les deux moitiés sont deux
-    // champs, et prendre l'un pour l'autre demanderait de le vouloir.
-    const valuesFrom = variant.follows("nutrition") ? source : own;
-    const pricing = variant.follows("pricing")
-      ? {
-          priceCents: source.priceCents,
-          weightGrams: source.weightGrams,
-          proPriceMillicents: source.proPriceMillicents,
-          proPricePerKgMillicents: source.proPricePerKgMillicents,
-          publicPricePerKgTtcCents: source.publicPricePerKgTtcCents,
-          pricePerKgShownPublic: source.pricePerKgShownPublic,
-          pricePerKgShownPro: source.pricePerKgShownPro,
-        }
-      : {};
-    return {
-      ...own,
-      allergenSheet: alignedAllergenSheet(own, source),
-      nutrition: valuesFrom.nutrition,
-      ...pricing,
-      minQuantities: effectiveMinQuantities(own, source),
-    };
+    return resolveVariant(variant, this.defaultVariant);
   }
 
   /**
@@ -941,44 +812,26 @@ export class Product {
    * finirait par donner trois réponses.
    */
   snapshot(): ProductSnapshot {
-    return { ...this.head(), variants: this.variantList.map((v) => this.resolvedSnapshot(v)) };
+    return productSnapshot(
+      this.fields,
+      this.variantList.map((variant) => this.resolvedSnapshot(variant)),
+    );
   }
 
   /**
    * L'instantané **non résolu** — chaque déclinaison avec ce qu'elle PORTE.
    *
-   * 🔴 C'est celui qu'on PERSISTE, et la distinction n'est pas cosmétique.
-   * {@link snapshot} résout l'héritage : une déclinaison alignée en sort avec le
-   * prix et la fiche du défaut. Écrire CE tableau-là dans ses colonnes propres
-   * recopierait le défaut chez elle, et détruirait ce qu'elle avait — alors que
-   * {@link Variant.follows} promet l'inverse : « s'aligner puis se désaligner
-   * rend ce qu'on avait écrit ».
-   *
-   * Les lecteurs n'y perdent rien : ils passent tous par l'agrégat
-   * (`CatalogueReader.publishable` fait `listAll().map(p => p.snapshot())`) et
-   * reçoivent donc la résolution **à la lecture**, là où elle doit vivre.
+   * 🔴 C'est celui qu'on PERSISTE : {@link snapshot} résout l'héritage, et
+   * écrire CE tableau-là dans les colonnes propres d'une alignée recopierait le
+   * défaut chez elle, alors que {@link Variant.follows} promet que « s'aligner
+   * puis se désaligner rend ce qu'on avait écrit ». Les lecteurs n'y perdent
+   * rien : ils passent par l'agrégat et reçoivent la résolution à la lecture.
    */
   persistenceSnapshot(): ProductSnapshot {
-    return { ...this.head(), variants: this.variantList.map((variant) => variant.snapshot()) };
-  }
-
-  /** Ce que les deux instantanés partagent — tout sauf les déclinaisons. */
-  private head(): Omit<ProductSnapshot, "variants"> {
-    return {
-      id: this.identity,
-      sku: this.skuValue,
-      name: this.nameValue,
-      slug: this.slugValue,
-      kind: this.kindValue,
-      categoryId: this.categoryIdValue,
-      status: this.statusValue,
-      vatByContext: this.vatValue.toMap(),
-      operationOnly: this.optionsValue.operationOnly,
-      requiresCold: this.optionsValue.requiresCold,
-      audience: this.optionsValue.audience,
-      originVariantId: this.originVariantIdValue,
-      variantsAsTiles: this.optionsValue.variantsAsTiles,
-    };
+    return productSnapshot(
+      this.fields,
+      this.variantList.map((variant) => variant.snapshot()),
+    );
   }
 }
 
@@ -994,34 +847,4 @@ function assertVariants(snapshot: ProductSnapshot): void {
       `${String(defaults)} déclinaison(s) par défaut au lieu d’une`,
     );
   }
-}
-
-/**
- * Ce que {@link Product.makeVariantDefault} rend à son appelant : l'ancien
- * défaut, pour le journal, et les moitiés de fiche que la nouvelle a reçues en
- * propre — la fiche réglementaire s'écrit par ses ports, pas par `save`.
- */
-export interface DefaultVariantChange {
-  readonly previousDefaultId: string;
-  readonly inherited: { readonly allergens: boolean; readonly nutrition: boolean };
-}
-
-/**
- * La quantité minimale **effective** d'une déclinaison : la sienne, ou celle
- * du défaut si elle le suit — et jamais aucune au poids, dont le minimum est en
- * grammes (`plan-quantite-minimale.md`, Q3). Le poids se juge sur ELLE : une
- * déclinaison passée au poids après avoir posé une grille ne la sert plus.
- */
-function effectiveMinQuantities(own: VariantSnapshot, source: VariantSnapshot): MinQuantities {
-  if (own.saleUnit === "weight") {
-    return NO_MIN_QUANTITIES;
-  }
-  return own.minQuantityFollowsDefault ? source.minQuantities : own.minQuantities;
-}
-
-/** Le slug d'un produit — dérivé du nom, jamais saisi. */
-function slugOf(name: LocalizedText): LocalizedText {
-  return name.en === undefined
-    ? { fr: slugify(name.fr) }
-    : { fr: slugify(name.fr), en: slugify(name.en) };
 }
