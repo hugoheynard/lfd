@@ -120,6 +120,17 @@ export class PrismaMediaCarriers extends MediaCarriers {
    * devient `to` — avec SON rang. Sous deux rôles différents, les deux lignes
    * restent : ce ne sont pas des doublons.
    *
+   * ⚠️ **Pourquoi pas par un port éditorial** (vérifié le 2026-11-18) : le seul
+   * port d'écriture des visuels d'une fiche, `EditorialRepository`
+   * (`replaceMedia`), remplace la liste ENTIÈRE d'UNE fiche à partir d'une
+   * liste d'éléments ; ici on repointe **toutes** les fiches et familles qui
+   * tiennent une URL, sans rien en connaître d'autre. Passer par lui obligerait
+   * à lire chaque fiche, reconstruire sa liste, la réécrire — donc à changer la
+   * requête, le nombre d'écritures et les dates de modification que la
+   * péremption des signatures lit. Aucun port d'écriture n'existe pour les
+   * visuels des familles. La requête reste ici, dans l'adaptateur du canal que
+   * le référentiel publie à la médiathèque.
+   *
    * ⚠️ Pas de réannonce ici : la médiathèque publie dans la même transaction
    * le fait durable `media.asset_described` sur `to`, que le référentiel
    * écoute déjà pour réannoncer les fiches qui le montrent en `hero` ou
