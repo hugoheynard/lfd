@@ -2,10 +2,10 @@ import { Controller, HttpCode, Param, Post } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
-import { DetachProductVariantCommand } from "../application/detach-product-variant.js";
-import { DiscontinueProductVariantCommand } from "../application/discontinue-product-variant.js";
-import { MakeVariantDefaultCommand } from "../application/make-variant-default.js";
-import { RestoreProductVariantCommand } from "../application/restore-product-variant.js";
+import { DetachProductVariantCommand } from "../variants/detach-product-variant.js";
+import { DiscontinueProductVariantCommand } from "../variants/discontinue-product-variant.js";
+import { MakeVariantDefaultCommand } from "../variants/make-variant-default.js";
+import { RestoreProductVariantCommand } from "../variants/restore-product-variant.js";
 import { Idempotent } from "../../../../platform/shared/http/idempotent.decorator.js";
 
 /**

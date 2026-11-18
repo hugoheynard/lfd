@@ -89,9 +89,9 @@ Le contrat (`catalog-emitter.ts:10-17`) :
 
 Au 2026-10-17, **33 fichiers** (hors tests) du référentiel appellent `emitter.emitProducts`
 ou `emitter.emitCategories` — toutes les écritures de fiche et de famille
-(par exemple `apps/lfd-api/src/pim/catalogue/product/application/create-product.ts:172`,
-`apps/lfd-api/src/pim/catalogue/product/application/update-product-identity.ts:102`,
-`apps/lfd-api/src/pim/catalogue/product/application/activate-product.ts:65`).
+(par exemple `apps/lfd-api/src/pim/catalogue/product/lifecycle/create-product.ts:172`,
+`apps/lfd-api/src/pim/catalogue/product/lifecycle/update-product-identity.ts:102`,
+`apps/lfd-api/src/pim/catalogue/product/lifecycle/activate-product.ts:65`).
 
 ### Verrou, puis numéro
 

@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { readCompletenessRules } from "../../../catalogue/product/application/completeness-support.js";
+import { readCompletenessRules } from "../../../catalogue/product/regulatory/completeness-support.js";
 import { ActiveSalesContextsReader } from "../../../reference/sales-contexts/domain/ports/active-sales-contexts.reader.js";
 import { AllergenCatalogueReader } from "../../../reference/allergens/domain/ports/allergen-catalogue.reader.js";
 import { AllergenNaming } from "../../../reference/allergens/domain/services/allergen-naming.js";

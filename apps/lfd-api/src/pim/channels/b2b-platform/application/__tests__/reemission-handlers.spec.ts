@@ -8,7 +8,7 @@ import {
   StaffAuthorDirectory,
   StaffAuthors,
 } from "../../../../../staff/directory/domain/staff-author-directory.js";
-import { tarte } from "../../../../catalogue/product/application/__tests__/audience-doubles.js";
+import { tarte } from "../../../../catalogue/product/shared/__tests__/audience-doubles.js";
 import { ProductNotFoundError } from "../../../../catalogue/product/domain/errors/product-errors.js";
 import type { ProductRecord } from "../../../../catalogue/product/domain/ports/product.repository.js";
 import { RecordingCatalogEmitter } from "../../../../catalogue/shared/domain/ports/__tests__/catalog-emitter-doubles.js";

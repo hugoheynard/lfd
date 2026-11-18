@@ -3,7 +3,7 @@ import { QueryBus } from "@nestjs/cqrs";
 import type { ProductSaleUnitUsageView } from "@lfd/pim-contracts";
 
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
-import { GetProductSaleUnitUsageQuery } from "../application/get-product-sale-unit-usage.js";
+import { GetProductSaleUnitUsageQuery } from "../sale/get-product-sale-unit-usage.js";
 
 /**
  * **Ce qui fige l'unité de vente des déclinaisons d'une fiche** — lu par la

@@ -5,7 +5,7 @@ import { Product } from "../../../../catalogue/product/domain/entities/product.j
 import {
   bareVariant,
   tarte,
-} from "../../../../catalogue/product/application/__tests__/audience-doubles.js";
+} from "../../../../catalogue/product/shared/__tests__/audience-doubles.js";
 import { projectVariant, vatOf, type AllergenContext } from "../projection.js";
 
 /** Ni composition citée, ni catalogue publié : la déclinaison parle seule. */

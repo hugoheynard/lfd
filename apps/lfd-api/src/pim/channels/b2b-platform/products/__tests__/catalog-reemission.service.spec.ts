@@ -1,6 +1,6 @@
 import { UnitOfWork } from "../../../../../platform/database/unit-of-work.js";
 import type { ProductRecord } from "../../../../catalogue/product/domain/ports/product.repository.js";
-import { tarte } from "../../../../catalogue/product/application/__tests__/audience-doubles.js";
+import { tarte } from "../../../../catalogue/product/shared/__tests__/audience-doubles.js";
 import { CatalogEmitter } from "../../../../catalogue/shared/domain/ports/catalog-emitter.js";
 import {
   CatalogFactsReader,

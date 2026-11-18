@@ -2,7 +2,7 @@ import { Controller, Delete, HttpCode, HttpStatus, Param } from "@nestjs/common"
 import { CommandBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
-import { DeleteProductCommand } from "../application/delete-product.js";
+import { DeleteProductCommand } from "../lifecycle/delete-product.js";
 import { Idempotent } from "../../../../platform/shared/http/idempotent.decorator.js";
 
 /**

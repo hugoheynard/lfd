@@ -80,7 +80,7 @@ partira d'un statut déjà posé.
    statut réel) ; `restore()` refuse une `deleted` avec le même refus
    qu'aujourd'hui (elle n'est pas archivée) ; `archive()` sur une `deleted`
    refuse aussi — une supprimée ne redevient rien par l'écran.
-3. `DeleteProductCommand` + handler (`apps/lfd-api/src/pim/catalogue/product/application/delete-product.ts`,
+3. `DeleteProductCommand` + handler (`apps/lfd-api/src/pim/catalogue/product/lifecycle/delete-product.ts`,
    colocalisé, style PIM) : `requireProduct` → `product.delete()` → dans `uow.run` : journal
    `PIM_EVENTS.productDeleted` (`product.deleted`, charge
    `{ subjectLabel, sku, name }`), `save`, `emitProducts([id])` — le fait

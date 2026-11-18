@@ -2,17 +2,17 @@ import { randomUUID } from "node:crypto";
 
 import type { CommandBus } from "@nestjs/cqrs";
 
-import { ArchiveProductCommand } from "../../src/pim/catalogue/product/application/archive-product.js";
-import { CreateProductCommand } from "../../src/pim/catalogue/product/application/create-product.js";
-import { SaveVariantAllergensCommand } from "../../src/pim/catalogue/product/application/save-variant-allergens.js";
-import { SaveVariantNutritionCommand } from "../../src/pim/catalogue/product/application/save-variant-nutrition.js";
-import { DeclareProductReadyCommand } from "../../src/pim/catalogue/product/application/declare-product-ready.js";
-import { ActivateProductCommand } from "../../src/pim/catalogue/product/application/activate-product.js";
+import { ArchiveProductCommand } from "../../src/pim/catalogue/product/lifecycle/archive-product.js";
+import { CreateProductCommand } from "../../src/pim/catalogue/product/lifecycle/create-product.js";
+import { SaveVariantAllergensCommand } from "../../src/pim/catalogue/product/regulatory/save-variant-allergens.js";
+import { SaveVariantNutritionCommand } from "../../src/pim/catalogue/product/regulatory/save-variant-nutrition.js";
+import { DeclareProductReadyCommand } from "../../src/pim/catalogue/product/readiness/declare-product-ready.js";
+import { ActivateProductCommand } from "../../src/pim/catalogue/product/lifecycle/activate-product.js";
 import { ProductNotActivatableError } from "../../src/pim/catalogue/product/domain/errors/product-errors.js";
-import { SetProductVatCommand } from "../../src/pim/catalogue/product/application/set-product-vat.js";
-import { UpdateProductEditorialCommand } from "../../src/pim/catalogue/product/application/update-product-editorial.js";
-import { UpdateVariantPricingCommand } from "../../src/pim/catalogue/product/application/update-variant-pricing.js";
-import { UpdateProductIdentityCommand } from "../../src/pim/catalogue/product/application/update-product-identity.js";
+import { SetProductVatCommand } from "../../src/pim/catalogue/product/sale/set-product-vat.js";
+import { UpdateProductEditorialCommand } from "../../src/pim/catalogue/product/media/update-product-editorial.js";
+import { UpdateVariantPricingCommand } from "../../src/pim/catalogue/product/sale/update-variant-pricing.js";
+import { UpdateProductIdentityCommand } from "../../src/pim/catalogue/product/lifecycle/update-product-identity.js";
 import type { NutritionValues } from "../../src/pim/catalogue/product/domain/value-objects/nutrition-declaration.js";
 import type { PrismaService } from "../../src/platform/database/prisma.service.js";
 import type { CorpusNutrition, CorpusProduct } from "./corpus.js";

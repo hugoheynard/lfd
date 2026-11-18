@@ -3,7 +3,7 @@ import {
   bareVariant,
   SELLABLE_VARIANT,
   tarte,
-} from "../../../../catalogue/product/application/__tests__/audience-doubles.js";
+} from "../../../../catalogue/product/shared/__tests__/audience-doubles.js";
 import type { CatalogFamilyRecord } from "../../../../catalogue/shared/domain/ports/catalog-facts.reader.js";
 import type { CategoryVatPercents } from "../../../../catalogue/shared/domain/ports/catalogue-reader.js";
 import type { CompletenessRules } from "../../../../catalogue/product/domain/services/variant-completeness.js";

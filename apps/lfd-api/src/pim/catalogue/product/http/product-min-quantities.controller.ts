@@ -7,7 +7,7 @@ import {
 
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
-import { SetProductMinQuantitiesCommand } from "../application/set-product-min-quantities.js";
+import { SetProductMinQuantitiesCommand } from "../sale/set-product-min-quantities.js";
 import { Idempotent } from "../../../../platform/shared/http/idempotent.decorator.js";
 
 /**

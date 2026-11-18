@@ -7,7 +7,7 @@ import {
 
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
-import { SetProductVariantsAsTilesCommand } from "../application/set-product-variants-as-tiles.js";
+import { SetProductVariantsAsTilesCommand } from "../sale/set-product-variants-as-tiles.js";
 import { Idempotent } from "../../../../platform/shared/http/idempotent.decorator.js";
 
 /**

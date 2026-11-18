@@ -7,7 +7,7 @@ import {
   PRODUCT_ID,
   family,
   tarte,
-} from "../../../product/application/__tests__/audience-doubles.js";
+} from "../../../product/shared/__tests__/audience-doubles.js";
 import {
   SetCategoryAudienceCommand,
   SetCategoryAudienceHandler,
@@ -15,7 +15,7 @@ import {
 import {
   SetProductAudienceCommand,
   SetProductAudienceHandler,
-} from "../../../product/application/set-product-audience.js";
+} from "../../../product/sale/set-product-audience.js";
 import { CatalogEmitter } from "../../domain/ports/catalog-emitter.js";
 import { CatalogReemission, type ReemissionReport } from "../../domain/ports/catalog-reemission.js";
 

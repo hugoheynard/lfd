@@ -7,7 +7,7 @@ import {
 
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
-import { SetVariantCustomRecipeCommand } from "../application/set-variant-custom-recipe.js";
+import { SetVariantCustomRecipeCommand } from "../variants/set-variant-custom-recipe.js";
 import { Idempotent } from "../../../../platform/shared/http/idempotent.decorator.js";
 
 /**

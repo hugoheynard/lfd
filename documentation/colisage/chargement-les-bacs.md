@@ -524,7 +524,7 @@ PDF du serveur depuis le 2026-10-25), `livraison/bin-page/` (le QR ouvert),
 `livraison/loading-page/` et `livraison/loading-round-page/` (chargement,
 scan, Partir), `livraison/loading-plan/` (plan).
 
-**Référentiel** : `apps/lfd-api/src/pim/catalogue/product/application/set-product-cold-requirement.ts`
+**Référentiel** : `apps/lfd-api/src/pim/catalogue/product/sale/set-product-cold-requirement.ts`
 et la section `pim/catalogue/product-form/form-sections/cold-requirement/` du
 front.
 

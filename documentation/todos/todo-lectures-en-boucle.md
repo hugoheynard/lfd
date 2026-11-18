@@ -35,7 +35,7 @@ plus rentable au moins rentable.
 Un fichier touché est un fichier corrigé.
 
 - **Réémission du catalogue** — `pim/channels/b2b-platform/products/catalog-facts.source.ts:141-146` (`lineage.originOf` par variante) et `pim/catalogue/shared/infrastructure/repository-catalog-facts.reader.ts:31-58` (`findById` un par un) : `findMany` avec `in`.
-- **Usage d'une référence de vente** — `lafoliecoffee/catalog/infrastructure/prisma-sale-reference-usage.ts:136-148, 173-181, 195-203` : un `findFirst` par article et par table, environ 10 requêtes par article, au changement d'unité (`pim/catalogue/product/application/sale-unit-clearance-support.ts:24`) : une requête par table.
+- **Usage d'une référence de vente** — `lafoliecoffee/catalog/infrastructure/prisma-sale-reference-usage.ts:136-148, 173-181, 195-203` : un `findFirst` par article et par table, environ 10 requêtes par article, au changement d'unité (`pim/catalogue/product/sale/sale-unit-clearance-support.ts:24`) : une requête par table.
 - **Mandats d'un site** — `lafoliecoffee/payments/infrastructure/prisma-site-mandates.reader.ts:27-33` : `findMany` avec `in`.
 - **Blocages du prélèvement** — `lafoliecoffee/account/application/queries/list-direct-debit-blocks.handler.ts:43-47` : un `identifyAll` au lieu d'un `identify` par ligne.
 - **Familles absentes du cache** — `pim/catalogue/shared/infrastructure/prisma-catalogue-reader.ts:84-93` : `listAll` existe déjà (ligne 109).

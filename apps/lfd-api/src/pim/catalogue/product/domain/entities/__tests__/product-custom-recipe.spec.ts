@@ -1,4 +1,4 @@
-import { bareVariant, tarte } from "../../../application/__tests__/audience-doubles.js";
+import { bareVariant, tarte } from "../../../shared/__tests__/audience-doubles.js";
 import { CustomRecipeDefaultWithoutTilesError } from "../../errors/custom-recipe-errors.js";
 import { VariantNotFoundError } from "../../errors/product-errors.js";
 import { Sku } from "../../value-objects/sku.value-object.js";

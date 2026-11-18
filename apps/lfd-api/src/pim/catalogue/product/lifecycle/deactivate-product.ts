@@ -1,0 +1,54 @@
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
+
+import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
+import { ProductRepository } from "../domain/ports/product.repository.js";
+import { requireProduct } from "../shared/product-support.js";
+import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
+
+export class DeactivateProductCommand {
+  constructor(readonly id: string) {}
+}
+
+/**
+ * Désactive — l'ancien « dépublier » (1e du plan
+ * `plan-catalogue-synchronise-par-audience.md`) ; la route `/unpublish` et la
+ * valeur de journal restent.
+ *
+ * Retire le produit de la vente en ligne — il redevient brouillon, il n'est
+ * pas archivé. Les deux gestes sont distincts : dépublier est un retrait
+ * temporaire, archiver est une sortie de catalogue.
+ */
+@CommandHandler(DeactivateProductCommand)
+export class DeactivateProductHandler implements ICommandHandler<DeactivateProductCommand, void> {
+  constructor(
+    private readonly products: ProductRepository,
+    private readonly journal: PimJournal,
+    private readonly uow: UnitOfWork,
+    private readonly emitter: CatalogEmitter,
+  ) {}
+
+  async execute(command: DeactivateProductCommand): Promise<void> {
+    const product = await requireProduct(this.products, command.id);
+    // Un produit déjà en brouillon n'est pas retiré de la vente : il n'y était
+    // pas. Le fait était pourtant tracé inconditionnellement, avec sa portée —
+    // « N articles cessent d'être vendus » sur une fiche qui n'a pas bougé
+    // (audit 2026-09-01).
+    if (!product.deactivate()) {
+      return;
+    }
+    const { sku, name, variants } = product.snapshot();
+    await this.uow.run(async () => {
+      const ticket = await this.journal.trace({
+        type: PIM_EVENTS.productUnpublished,
+        subjectType: "product",
+        subjectId: command.id,
+        payload: { subjectLabel: name.fr, sku, name },
+        // La portée d'un retrait : les articles qui cessent d'être vendus.
+        blast: { variants: variants.length },
+      });
+      await this.products.save(product, ticket);
+      await this.emitter.emitProducts([command.id]);
+    });
+  }
+}

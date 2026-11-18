@@ -4,7 +4,7 @@ import {
   CATEGORY_ID,
   OneCategory,
   family,
-} from "../../../product/application/__tests__/audience-doubles.js";
+} from "../../../product/shared/__tests__/audience-doubles.js";
 import type { Audience } from "../../../shared/domain/value-objects/audience.js";
 import { CategoryFrozenError, CategoryNotFoundError } from "../../domain/errors/category-errors.js";
 import {

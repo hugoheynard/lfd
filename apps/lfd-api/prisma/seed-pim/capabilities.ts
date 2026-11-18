@@ -2,13 +2,13 @@ import { randomUUID } from "node:crypto";
 
 import type { CommandBus } from "@nestjs/cqrs";
 
-import { AddProductVariantCommand } from "../../src/pim/catalogue/product/application/add-product-variant.js";
-import { DiscontinueProductVariantCommand } from "../../src/pim/catalogue/product/application/discontinue-product-variant.js";
-import { SetProductMinQuantitiesCommand } from "../../src/pim/catalogue/product/application/set-product-min-quantities.js";
-import { SetProductVariantsAsTilesCommand } from "../../src/pim/catalogue/product/application/set-product-variants-as-tiles.js";
-import { SetVariantCustomRecipeCommand } from "../../src/pim/catalogue/product/application/set-variant-custom-recipe.js";
-import { SetVariantShopNameCommand } from "../../src/pim/catalogue/product/application/set-variant-shop-name.js";
-import { UpdateVariantPricingCommand } from "../../src/pim/catalogue/product/application/update-variant-pricing.js";
+import { AddProductVariantCommand } from "../../src/pim/catalogue/product/variants/add-product-variant.js";
+import { DiscontinueProductVariantCommand } from "../../src/pim/catalogue/product/variants/discontinue-product-variant.js";
+import { SetProductMinQuantitiesCommand } from "../../src/pim/catalogue/product/sale/set-product-min-quantities.js";
+import { SetProductVariantsAsTilesCommand } from "../../src/pim/catalogue/product/sale/set-product-variants-as-tiles.js";
+import { SetVariantCustomRecipeCommand } from "../../src/pim/catalogue/product/variants/set-variant-custom-recipe.js";
+import { SetVariantShopNameCommand } from "../../src/pim/catalogue/product/variants/set-variant-shop-name.js";
+import { UpdateVariantPricingCommand } from "../../src/pim/catalogue/product/sale/update-variant-pricing.js";
 import type { PrismaService } from "../../src/platform/database/prisma.service.js";
 import type { CorpusProduct, CorpusVariant } from "./corpus.js";
 import { SEED_STAFF_ID } from "./harness.js";

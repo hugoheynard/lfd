@@ -21,7 +21,7 @@
   carte indexée par clé de contexte).
 - **L'audience** se règle à la fiche par sa propre route, hors de « Tout
   enregistrer » : `SetProductAudienceCommand`
-  (`apps/lfd-api/src/pim/catalogue/product/application/set-product-audience.ts`),
+  (`apps/lfd-api/src/pim/catalogue/product/sale/set-product-audience.ts`),
   fait `product.audience_changed`, carte `app-audience-form`.
 - **L'ordre des cartes du commerce** est Audience, puis Tarif & TVA, puis Limite
   de commande, Vente en opération et Logistique (`product-form-page.html`,

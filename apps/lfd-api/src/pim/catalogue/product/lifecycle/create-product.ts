@@ -1,0 +1,208 @@
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
+import { Inject } from "@nestjs/common";
+import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
+
+import { AllergenCatalogueReader } from "../../../reference/allergens/domain/ports/allergen-catalogue.reader.js";
+import { UuidGenerator } from "../../../../platform/id/uuid-generator.js";
+import { CREATED_ID_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
+import { intentSubject } from "../../../../platform/intent/intent-subject.js";
+import {
+  CategoryArchivedError,
+  CategoryNotFoundError,
+} from "../../category/domain/errors/category-errors.js";
+import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
+import { EditorialRepository } from "../domain/ports/editorial.repository.js";
+import { NutritionValuesRepository } from "../domain/ports/nutrition-values.repository.js";
+import { VariantAllergensRepository } from "../domain/ports/variant-allergens.repository.js";
+import { ProductRepository, type ProductKind } from "../domain/ports/product.repository.js";
+import {
+  proposeProductSku,
+  proposeSku,
+  variantSkuRoot,
+  type SkuAvailability,
+} from "../domain/services/sku-generator.js";
+import {
+  localizedText,
+  type LocalizedText,
+} from "../../shared/domain/value-objects/localized-text.js";
+import {
+  editorial,
+  isEmptyEditorial,
+  mediaItems,
+  type EditorialInput,
+  type MediaInput,
+} from "../domain/value-objects/editorial.js";
+import type { NutritionValues } from "../domain/value-objects/nutrition-declaration.js";
+import { validatedDeclaration } from "../regulatory/declaration-support.js";
+import { Sku } from "../domain/value-objects/sku.value-object.js";
+import { SKU_AVAILABILITY } from "../infrastructure/prisma-sku-availability.js";
+import { Product } from "../domain/entities/product.js";
+import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
+
+export interface CreateProductInput {
+  /** Le nom, dans les langues renseignées — la source est obligatoire. Une
+   *  CARTE et non `nameFr` + `nameEn` : ouvrir une langue ne doit pas ajouter un
+   *  champ ici, ni chez les quatre autres commandes qui portaient les mêmes. */
+  readonly name: LocalizedText;
+  readonly kind: ProductKind;
+  readonly categoryId: string;
+  /**
+   * Laissé vide, une référence opaque `P-XXXXXX` est **proposée**. Renseigné, il permet
+   * de reprendre une référence existante (reprise de l'ancien catalogue, format imposé).
+   */
+  readonly sku?: string | undefined;
+  /**
+   * Fiche réglementaire de la déclinaison par défaut. **Absente** = non renseignée
+   * (bloque la publication) ; `[]` = « aucun allergène », une affirmation positive.
+   */
+  readonly allergens?: readonly string[] | undefined;
+  readonly mayContain?: readonly string[] | undefined;
+  readonly nutrition?: NutritionValues | undefined;
+  /** Couche éditoriale — entièrement optionnelle. */
+  readonly editorial?: EditorialInput | undefined;
+  readonly media?: readonly MediaInput[] | undefined;
+}
+
+/**
+ * `intentKey` : la clé que l'écran a fabriquée pour ce geste — un double clic
+ * sur « Créer » ne crée qu'une fiche (la référence proposée change à chaque
+ * appel, rien d'autre ne refuserait la seconde).
+ */
+export class CreateProductCommand {
+  constructor(
+    readonly input: CreateProductInput,
+    readonly staffUserId: string,
+    readonly intentKey: string,
+  ) {}
+}
+
+/**
+ * Crée le produit **et sa déclinaison par défaut** — indissociables (invariant 2).
+ * La persistance les écrit en une transaction : l'invariant n'est jamais faux.
+ * Une fois par intention : la clé est scellée dans cette transaction, et un
+ * rejeu de la même clé rend la même fiche.
+ */
+@CommandHandler(CreateProductCommand)
+export class CreateProductHandler implements ICommandHandler<CreateProductCommand, string> {
+  constructor(
+    private readonly products: ProductRepository,
+    private readonly categories: CategoryRepository,
+    private readonly allergenSheets: VariantAllergensRepository,
+    private readonly nutritionValues: NutritionValuesRepository,
+    private readonly allergens: AllergenCatalogueReader,
+    private readonly editorials: EditorialRepository,
+    private readonly journal: PimJournal,
+    private readonly uow: UnitOfWork,
+    @Inject(UuidGenerator) private readonly ids: UuidGenerator,
+    @Inject(SKU_AVAILABILITY) private readonly availability: SkuAvailability,
+    private readonly emitter: CatalogEmitter,
+    private readonly intents: OncePerIntent,
+  ) {}
+
+  execute(command: CreateProductCommand): Promise<string> {
+    return this.intents.runSealed(
+      {
+        actorId: command.staffUserId,
+        key: command.intentKey,
+        gesture: "pim.product.create",
+        subject: intentSubject("product", command.input),
+      },
+      CREATED_ID_REPLAY,
+      (seal) => this.create(command, seal),
+    );
+  }
+
+  private async create(
+    command: CreateProductCommand,
+    seal: (id: string) => Promise<void>,
+  ): Promise<string> {
+    const { input } = command;
+    const name = localizedText("nom", input.name);
+    const category = await this.categories.findById(input.categoryId);
+
+    if (category === null) {
+      throw new CategoryNotFoundError(input.categoryId);
+    }
+    if (category.isArchived) {
+      throw new CategoryArchivedError(input.categoryId);
+    }
+
+    const sku =
+      input.sku === undefined || input.sku.trim() === ""
+        ? await proposeProductSku(() => this.ids.next(), this.availability)
+        : Sku.create(input.sku);
+
+    // Validée AVANT toute écriture : une fiche refusée ne doit pas laisser
+    // derrière elle un produit à moitié créé.
+    //
+    // Aucun code n'était déjà déclaré — la fiche naît avec le produit. Un code
+    // archivé y est donc TOUJOURS un ajout à neuf, et il est refusé (D2 bis).
+    const declaration =
+      input.allergens === undefined
+        ? null
+        : await validatedDeclaration(
+            this.allergens,
+            {
+              allergens: input.allergens,
+              mayContain: input.mayContain,
+              nutrition: input.nutrition,
+            },
+            [],
+          );
+
+    const story = editorial(input.editorial ?? {});
+    const visuals = mediaItems(input.media ?? []);
+
+    const productId = this.ids.next();
+    const variantId = this.ids.next();
+    const variantSku = await proposeSku(variantSkuRoot(sku, 0), this.availability);
+
+    const product = Product.open({
+      id: productId,
+      sku,
+      name,
+      kind: input.kind,
+      categoryId: input.categoryId,
+      defaultVariant: { id: variantId, sku: variantSku, name },
+    });
+    // UNE trace pour UN geste, même si l'ouverture touche trois dépôts : la
+    // fiche naît d'un seul acte, et trois lignes de journal pour un formulaire
+    // rendraient l'historique illisible là où il doit se lire d'un trait.
+    await this.uow.run(async () => {
+      const ticket = await this.journal.trace({
+        type: PIM_EVENTS.productCreated,
+        subjectType: "product",
+        subjectId: productId,
+        payload: {
+          subjectLabel: name.fr,
+          sku: sku.value,
+          name,
+          kind: input.kind,
+          // La famille NOMMÉE (D5 du plan des phrases du journal).
+          category: { id: category.id, name: category.name.fr },
+          declared: declaration !== null,
+        },
+      });
+      await this.products.add(product, ticket);
+
+      if (declaration !== null) {
+        // Deux tables, deux écritures — la fiche naît d'un seul geste, mais ses
+        // deux moitiés ne se touchent plus (§6a du plan). Les valeurs ne
+        // s'écrivent que si le formulaire en portait : une ligne de huit `null`
+        // dirait « quelqu'un a saisi », ce qui n'est pas vrai.
+        await this.allergenSheets.save(variantId, declaration, ticket);
+        if (input.nutrition !== undefined) {
+          await this.nutritionValues.save(variantId, declaration, ticket);
+        }
+      }
+      if (!isEmptyEditorial(story) || visuals.length > 0) {
+        await this.editorials.save(productId, story, visuals, ticket);
+      }
+      await this.emitter.emitProducts([productId]);
+      await seal(productId);
+    });
+
+    return productId;
+  }
+}

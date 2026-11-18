@@ -73,7 +73,7 @@ d'événements et une surface HTTP —, et les découper ne lirait pas mieux.
   (`declareAllergens`, `declareNutritionValues`, `alignOnDefault`, `follows`),
   la vente (`price`, `changeSaleTerms`, `pricePerKg`, `hasOwnProPrice`,
   `changeMinQuantities`, `saleUnit`), les noms et le sur mesure.
-- **Les écarts aux couches** : `catalogue/product/application/create-product.ts:39`,
+- **Les écarts aux couches** : `catalogue/product/lifecycle/create-product.ts:39`,
   `add-product-variant.ts:20`, `detach-product-variant.ts:22` importent le
   jeton `SKU_AVAILABILITY` de `infrastructure/prisma-sku-availability.ts` ;
   `channels/b2b-platform/products/prisma-publication-sequence.ts` est un

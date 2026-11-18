@@ -642,7 +642,7 @@ expose à tous les pros une recette faite pour un client.
 - **D1. Le fait.** « Sur mesure » est un attribut de la **fiche** (toutes ses
   déclinaisons), saisi au référentiel, section Commerce de la fiche. Il
   traverse le fil vers le commerce comme `operationOnly` le fait déjà —
-  précédent exact : `pim/catalogue/product/application/set-product-operation-only.ts`
+  précédent exact : `pim/catalogue/product/sale/set-product-operation-only.ts`
   → `pim/channels/b2b-platform/products/catalog-facts.ts:67,231`
   → `lafoliecoffee/catalog/application/handlers/catalog-fact-mapping.ts:65`
   → `lafoliecoffee/catalog/infrastructure/catalog-item-columns.ts:99`
@@ -775,7 +775,7 @@ Bâti, non commité, non déployé. Chemins relatifs à `apps/lfd-api/`.
   de déploiement (migration → code → « Tout réémettre ») et les requêtes de
   constat sont au runbook (« Avant de déployer « le sur mesure au référentiel » »).
 - **Le fait** (⚠️ descendu sur la déclinaison depuis le 2026-11-18 :
-  `SetVariantCustomRecipeCommand`, `apps/lfd-api/src/pim/catalogue/product/application/set-variant-custom-recipe.ts`, fil v18 —
+  `SetVariantCustomRecipeCommand`, `apps/lfd-api/src/pim/catalogue/product/variants/set-variant-custom-recipe.ts`, fil v18 —
   [`plan-sur-mesure-par-declinaison.md`](plan-sur-mesure-par-declinaison.md)) :
   `Product.declareCustomRecipe` ; `SetProductCustomRecipeCommand`, retiré
   (modèle de `set-product-operation-only.ts` : journal `product.custom_recipe_changed`,

@@ -1,4 +1,4 @@
-import { bareVariant, tarte } from "../../../application/__tests__/audience-doubles.js";
+import { bareVariant, tarte } from "../../../shared/__tests__/audience-doubles.js";
 import { VariantNotFoundError } from "../../errors/product-errors.js";
 import { PricingAlignmentAcrossUnitsError } from "../../errors/sale-unit-errors.js";
 import {

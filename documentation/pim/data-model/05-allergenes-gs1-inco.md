@@ -472,7 +472,7 @@ mayContain, certified)` rend la liste des contradictions, par déclinaison. Pas
   déclinaisons depuis `ingredients/` en SQL direct — est **remboursée le
   2026-10-27** : le lecteur est supprimé, et l'encart de composition d'une
   fiche est calculé par le catalogue
-  (`apps/lfd-api/src/pim/catalogue/product/application/read-product-ingredient-allergens.ts`), sur
+  (`apps/lfd-api/src/pim/catalogue/product/regulatory/read-product-ingredient-allergens.ts`), sur
   `Product.resolvedVariants()` et ce même port ;
 - **le refus dans l'agrégat** — `publish()` prend les contradictions en
   argument et lève. Le handler charge, le service calcule, l'agrégat refuse ;

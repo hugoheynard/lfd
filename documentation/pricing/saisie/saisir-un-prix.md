@@ -309,7 +309,7 @@ client, celui de son plus petit seuil), puis prend la médiane. La règle
 `pricePerKgShownPublic` et `pricePerKgShownPro`, `BOOLEAN NOT NULL DEFAULT true`
 (migration `20261029160000_prix_au_kilo_par_audience`).
 
-**L'écriture** : `pim/catalogue/product/application/update-variant-pricing.ts`
+**L'écriture** : `pim/catalogue/product/sale/update-variant-pricing.ts`
 (commande `UpdateVariantPricingPayload`, `@lfd/pim-contracts`) ; la
 déclinaison mute par `price()` (`variant.ts`), `ZeroPricePerKgError` refuse un
 kilo à zéro. L'héritage du tarif du défaut est résolu par `resolvedSnapshot`
@@ -378,7 +378,7 @@ passe la réponse au domaine.
 
 **La lecture de l'écran** : `GET /pim/catalogue/products/:id/sale-unit-usage`
 (`product/http/product-sale-unit-usage.controller.ts`,
-`application/get-product-sale-unit-usage.ts`).
+`sale/get-product-sale-unit-usage.ts`).
 
 **Le panier** : `shop-cart-quoting.service.ts` rend `removedLines` avec la
 raison `sale_unit_changed` (`packages/contracts/src/shop-quote.ts`).
